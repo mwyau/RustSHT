@@ -4714,4 +4714,306 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    #[ignore = "M3 high-spin all-grid check; run this check in release mode"]
+    fn m3_spin_three_and_four_t511_all_grids_match_ducc_and_analytic_fields() {
+        // DUCC 0.41.0 references use T511, phi0=0.37 and one thread.
+        // The analysis map is generated independently from pixel-index formulas.
+        let degree = 511;
+        let nphi = 2 * degree + 3;
+        for kind in [
+            GridKind::GaussLegendre,
+            GridKind::ClenshawCurtis,
+            GridKind::Fejer1,
+        ] {
+            let ntheta = degree + usize::from(kind == GridKind::ClenshawCurtis) + 1;
+            let grid = GridSpec::new(kind, ntheta, nphi, 0.37).unwrap();
+            for spin in [3, 4] {
+                let plan = ShtPlan::new(
+                    grid.clone(),
+                    HarmonicSpec::new(degree, degree, spin).unwrap(),
+                )
+                .unwrap();
+                let high_mode = plan.harmonics().index(degree, degree).unwrap();
+                let mut e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+                let b = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+                e[high_mode] = Complex64::new(1.0, 0.0);
+                let mut workspace = plan.workspace().unwrap();
+                let mut first = vec![0.0; plan.sample_count];
+                let mut second = vec![0.0; plan.sample_count];
+                plan.synthesis_spin_into(&e, &b, &mut first, &mut second, &mut workspace)
+                    .unwrap();
+
+                let (expected_first, expected_second, expected_analysis) = match (kind, spin) {
+                    (GridKind::GaussLegendre, 3) => (
+                        [
+                            0.021758378615044895,
+                            -0.02188695021363462,
+                            -0.023685529484134948,
+                            -0.014183031847404092,
+                            -0.021627967439358613,
+                        ],
+                        [
+                            1.5316666088753335,
+                            -1.509843199479402,
+                            -1.1445944644979498,
+                            2.359348926174194,
+                            -1.5533605224635534,
+                        ],
+                        [
+                            (
+                                Complex64::new(2.069501617069886e-8, 0.0),
+                                Complex64::new(-2.7429145021623706e-8, 0.0),
+                            ),
+                            (
+                                Complex64::new(1.4535838590743135e-6, 1.7837491274690076e-5),
+                                Complex64::new(7.488982643744704e-6, -6.0721641062644385e-5),
+                            ),
+                            (
+                                Complex64::new(0.00014862612689717672, 0.00012156006725935135),
+                                Complex64::new(0.0002363540181397813, 0.00031071886783181973),
+                            ),
+                        ],
+                    ),
+                    (GridKind::GaussLegendre, 4) => (
+                        [
+                            2.350355488212745,
+                            -2.364243883470501,
+                            -2.5585276917540427,
+                            -1.5320611582240165,
+                            -2.336268380532461,
+                        ],
+                        [
+                            0.018649684052313466,
+                            -0.01838396063194246,
+                            -0.013936665464417086,
+                            0.028727604158337524,
+                            -0.018913830722309476,
+                        ],
+                        [
+                            (
+                                Complex64::new(3.3462556051042415e-9, 0.0),
+                                Complex64::new(3.668230950184262e-11, 0.0),
+                            ),
+                            (
+                                Complex64::new(5.739156318742611e-5, 5.5155920888535827e-5),
+                                Complex64::new(-3.7409098771640497e-6, -2.4811487597217522e-5),
+                            ),
+                            (
+                                Complex64::new(-0.0003030026293630465, 0.00024227781526364243),
+                                Complex64::new(0.00010893340858517173, -0.0001631130064309241),
+                            ),
+                        ],
+                    ),
+                    (GridKind::ClenshawCurtis, 3) => (
+                        [
+                            -1.6776506023809333e-15,
+                            1.6875639430594517e-15,
+                            1.8262409855895577e-15,
+                            1.093563649358178e-15,
+                            1.6675954235774899e-15,
+                        ],
+                        [
+                            1.5352823927012231,
+                            -1.5134074650896026,
+                            -1.147296492555462,
+                            2.3649186080079945,
+                            -1.5570275188062004,
+                        ],
+                        [
+                            (
+                                Complex64::new(2.4242417101390347e-8, 0.0),
+                                Complex64::new(-2.480469607986025e-8, 0.0),
+                            ),
+                            (
+                                Complex64::new(2.4703879175392515e-6, 2.1868474330074364e-5),
+                                Complex64::new(9.927404638665334e-6, -5.700715149015852e-5),
+                            ),
+                            (
+                                Complex64::new(0.00015973845404200805, 0.00013098210953502835),
+                                Complex64::new(0.000216485357678718, 0.0002870206880362535),
+                            ),
+                        ],
+                    ),
+                    (GridKind::ClenshawCurtis, 4) => (
+                        [
+                            2.3558264834744733,
+                            -2.3697472071800014,
+                            -2.5644832559011634,
+                            -1.5356273844308002,
+                            -2.341706584797356,
+                        ],
+                        [
+                            -1.2065135921999756e-15,
+                            1.1893230104429772e-15,
+                            9.016118592463421e-16,
+                            -1.858489655436024e-15,
+                            1.2236021684348639e-15,
+                        ],
+                        [
+                            (
+                                Complex64::new(5.1929979409988405e-9, 0.0),
+                                Complex64::new(2.2167944513689238e-10, 0.0),
+                            ),
+                            (
+                                Complex64::new(5.5800829994515236e-5, 5.7695652436830015e-5),
+                                Complex64::new(-3.2236603322795114e-6, -2.2763160619093822e-5),
+                            ),
+                            (
+                                Complex64::new(-0.0002802358706607522, 0.00022159314867697247),
+                                Complex64::new(0.0001174640754122743, -0.0001752720222787794),
+                            ),
+                        ],
+                    ),
+                    (GridKind::Fejer1, 3) => (
+                        [
+                            0.021779535864226204,
+                            -0.02190823248230369,
+                            -0.023708560641839894,
+                            -0.01419682303765089,
+                            -0.021648997880297963,
+                        ],
+                        [
+                            1.5316595482353412,
+                            -1.5098362394404388,
+                            -1.144589188173844,
+                            2.3593380501041095,
+                            -1.5533533618194788,
+                        ],
+                        [
+                            (
+                                Complex64::new(2.235529970051836e-8, 0.0),
+                                Complex64::new(-2.7525640862541656e-8, 0.0),
+                            ),
+                            (
+                                Complex64::new(2.909518996783257e-7, 1.799665136412528e-5),
+                                Complex64::new(7.276252362086791e-6, -6.203552076659921e-5),
+                            ),
+                            (
+                                Complex64::new(0.00014885998864306508, 0.00012186007902761095),
+                                Complex64::new(0.00023662795830389665, 0.00031109386645033506),
+                            ),
+                        ],
+                    ),
+                    (GridKind::Fejer1, 4) => (
+                        [
+                            2.350344804668872,
+                            -2.3642331367969094,
+                            -2.5585160619631537,
+                            -1.5320541942380652,
+                            -2.336257761021554,
+                        ],
+                        [
+                            0.018667818892349784,
+                            -0.018401837084131088,
+                            -0.013950217393668432,
+                            0.02875553870696456,
+                            -0.018932222416970942,
+                        ],
+                        [
+                            (
+                                Complex64::new(3.187280571616479e-9, 0.0),
+                                Complex64::new(2.6463433945618163e-10, 0.0),
+                            ),
+                            (
+                                Complex64::new(5.808557663704942e-5, 5.716765688952045e-5),
+                                Complex64::new(-1.9891484935852085e-6, -2.132051404114898e-5),
+                            ),
+                            (
+                                Complex64::new(-0.0003033747841735894, 0.00024255981437613892),
+                                Complex64::new(0.0001092267143635806, -0.00016335555962365282),
+                            ),
+                        ],
+                    ),
+                    _ => unreachable!(),
+                };
+
+                let sample_longitudes = [0, 1, 17, nphi / 2, nphi - 1];
+                let middle_ring = ntheta / 2;
+                let mut ducc_synthesis_max_error = 0.0_f64;
+                for (slot, longitude) in sample_longitudes.into_iter().enumerate() {
+                    let index = middle_ring * nphi + longitude;
+                    for (actual, expected) in [
+                        (first[index], expected_first[slot]),
+                        (second[index], expected_second[slot]),
+                    ] {
+                        let error = (actual - expected).abs();
+                        ducc_synthesis_max_error = ducc_synthesis_max_error.max(error);
+                        assert!(
+                            error <= 2e-11,
+                            "{kind:?} spin {spin} T{degree} DUCC S error={error:.3e}"
+                        );
+                    }
+                }
+
+                let log_common = sectoral_spin_log_common(degree, spin);
+                let mut analytic_synthesis_max_error = 0.0_f64;
+                let mut analytic_synthesis_error_squares = 0.0_f64;
+                for (ring, &theta) in plan.grid.theta().iter().enumerate() {
+                    for longitude in 0..nphi {
+                        let phi = plan.grid.longitude(longitude).unwrap();
+                        let (expected_first, expected_second) =
+                            sectoral_spin_reference(degree, spin, theta, phi, log_common);
+                        for (actual, expected) in [
+                            (first[ring * nphi + longitude], expected_first),
+                            (second[ring * nphi + longitude], expected_second),
+                        ] {
+                            let error = (actual - expected).abs();
+                            analytic_synthesis_max_error = analytic_synthesis_max_error.max(error);
+                            analytic_synthesis_error_squares += error * error;
+                            assert!(
+                                error <= 5e-11,
+                                "{kind:?} spin {spin} T{degree} analytic S error={error:.3e}"
+                            );
+                        }
+                    }
+                }
+
+                for row in 0..ntheta {
+                    for column in 0..nphi {
+                        let index = row * nphi + column;
+                        let i = row as f64;
+                        let j = column as f64;
+                        first[index] =
+                            (0.17 * i + 0.23 * j).sin() + 0.2 * (0.11 * i - 0.31 * j).cos();
+                        second[index] =
+                            (0.19 * i - 0.13 * j).cos() - 0.15 * (0.29 * i + 0.07 * j).sin();
+                    }
+                }
+                let mut analyzed_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+                let mut analyzed_b = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+                plan.analysis_spin_into(
+                    &first,
+                    &second,
+                    &mut analyzed_e,
+                    &mut analyzed_b,
+                    &mut workspace,
+                )
+                .unwrap();
+                let selected_modes = [(spin, 0), (128, 1), (degree, degree)];
+                let mut ducc_analysis_max_error = 0.0_f64;
+                for (mode, (expected_e, expected_b)) in
+                    selected_modes.into_iter().zip(expected_analysis)
+                {
+                    let index = plan.harmonics().index(mode.0, mode.1).unwrap();
+                    for (actual, expected) in [
+                        (analyzed_e[index], expected_e),
+                        (analyzed_b[index], expected_b),
+                    ] {
+                        let error = (actual - expected).norm();
+                        ducc_analysis_max_error = ducc_analysis_max_error.max(error);
+                        assert!(
+                            error <= 5e-12,
+                            "{kind:?} spin {spin} T{degree} DUCC A mode={mode:?}, actual={actual:?}, expected={expected:?}, error={error:.3e}"
+                        );
+                    }
+                }
+                eprintln!(
+                    "M3 spin {spin} T{degree} {kind:?}: DUCC S max abs={ducc_synthesis_max_error:.3e}; analytic S max abs={analytic_synthesis_max_error:.3e}, RMS={:.3e}; DUCC A selected coefficient max abs={ducc_analysis_max_error:.3e}",
+                    (analytic_synthesis_error_squares / (2 * plan.sample_count) as f64).sqrt(),
+                );
+            }
+        }
+    }
 }
