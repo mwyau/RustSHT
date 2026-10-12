@@ -33,3 +33,7 @@ parallel = ["dep:rayon"]
 [[example]]
 name = "m1a_bench"
 required-features = ["parallel"]
+
+[[example]]
+name = "m1b_bench"
+required-features = ["parallel"]
