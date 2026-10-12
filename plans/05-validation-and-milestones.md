@@ -271,6 +271,19 @@ The two-run timing averages are lower in all four cases. They measure one host a
 
 These measurements cover one host, dtype, grid and bandlimit. No DUCC timing was collected for this change. On rustc 1.99.0 and 1.89.0, `cargo test --workspace --all-features` passes 73 library unit tests and 10 f32 integration tests; seven opt-in high-bandlimit tests are ignored. On rustc 1.99.0, `cargo test -p rustsht --no-default-features` passes 71 library unit tests and 10 f32 integration tests, with the same seven tests ignored. Workspace Clippy with warnings denied passes on both compilers. Formatting and `git diff --check` pass. The Python binding tests were not run because this change does not modify the bindings.
 
+### f32 recurrence normalization magnitude checks (M4, 2026-10-12)
+
+`normalize_pair_lanes` now selects the larger absolute recurrence value and checks its scale thresholds using the unsigned magnitude bits. For finite IEEE-754 values, unsigned magnitude order matches numeric order; the current recurrence supplies finite pairs, and debug builds assert that constraint. The rescaling operations and exponent updates are unchanged. The T511 scalar benchmark used f32, GL `512x1025`, one or eight Rayon threads, one warmup and five timed samples per run. The plan and workspace were reused. Each table value averages two per-run medians in milliseconds; the estimated numeric-array footprint was 8.13 MiB.
+
+| Operation | Threads | Before | After | Change |
+| --- | ---: | ---: | ---: | ---: |
+| Synthesis | 1 | 617.665 | 591.653 | -4.2% |
+| Synthesis | 8 | 112.768 | 110.297 | -2.2% |
+| Analysis | 1 | 735.521 | 720.346 | -2.1% |
+| Analysis | 8 | 162.783 | 160.041 | -1.7% |
+
+These measurements cover one host, dtype, grid and bandlimit. No DUCC timing was collected for this change. The unit test compares the bit-based normalization with the previous float-magnitude algorithm at zero, subnormal, `SMALL` and `BIG` thresholds, and large finite values. On rustc 1.99.0 and 1.89.0, `cargo test --workspace --all-features` passes 74 library unit tests and 10 f32 integration tests; seven opt-in high-bandlimit tests are ignored. On rustc 1.99.0, `cargo test -p rustsht --no-default-features` passes 72 library unit tests and 10 f32 integration tests, with the same seven ignored. Workspace Clippy with warnings denied passes on both compilers. Formatting and `git diff --check` pass. Python binding tests were not run because this change does not modify the bindings.
+
 ### f32 phase and pole edge cases (M4, 2026-10-12)
 
 Scalar and spin transforms retain `phi0` as f64 while forming each order phase, then convert the sine and cosine to the selected transform type. If `m*phi0` overflows f64, phase setup derives the integer-order phase by exponentiating `e^(i phi0)`. Grid and prepared CC colatitudes remain f64 through sine/cosine evaluation; the exact `0` and `pi` endpoints produce exact zero sine values before conversion to f32. Regression tests synthesize scalar and spin fields at `phi0=f64::MAX`, requiring finite f32/f64 outputs that agree within `3e-6`; an independent scalar `Y_22` check compares the order-two phase with the square of `e^(i phi0)`. A CC scalar `Y_11` test requires every f32 sample at the south pole to be exactly zero. On rustc 1.99.0 and 1.89.0, `cargo test --workspace --all-features` passes 71 unit tests and 10 f32 integration tests, with seven opt-in high-bandlimit tests ignored. On rustc 1.99.0, `cargo test -p rustsht --no-default-features` passes 69 unit tests and 10 f32 integration tests, with the same seven tests ignored. `cargo test --test f32`, Clippy with warnings denied on both compilers, formatting checks and `uv run pytest python/tests` pass; pytest reports eight tests. These edge-case tests do not extend the high-bandlimit f32 validation domain or address the open f32 SIMD performance gap.
