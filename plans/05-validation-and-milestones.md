@@ -232,7 +232,18 @@ The release harnesses used rustc 1.99.0, f64, T511 GL `512 x 1025`, one warmup a
 | Spin-1 analysis | 1 | 1669.132 | 1425.995 | 1426.612 | -14.53% |
 | Spin-1 analysis | 8 | 425.267 | 355.187 | 362.421 | -14.78% |
 
-An independent Python comparison used the rebuilt editable extension, `ducc0==0.41.0`, deterministic T511 coefficients and random analysis maps on the same GL shape. With one thread, scalar synthesis and analysis took 671.909 ms and 807.811 ms in RustSHT versus 12.017 ms and 12.636 ms in DUCC; spin-1 took 1371.739 ms and 1412.450 ms versus 24.190 ms and 25.265 ms. With eight threads, scalar took 108.469 ms and 217.977 ms versus 2.049 ms and 1.838 ms; spin-1 took 205.204 ms and 362.623 ms versus 4.173 ms and 3.833 ms. The Python comparison used five timed samples after one warmup. Scalar map maximum absolute/RMS errors were `2.627e-14`/`7.674e-16`, and analysis coefficient errors were `1.291e-15`/`2.146e-16`. Spin-1 map errors were `3.054e-14`/`7.729e-16`, and coefficient errors were `1.409e-15`/`2.391e-16`. Across these operations and thread counts, RustSHT is 49–119 times slower than DUCC; M4 performance acceptance remains open.
+Callgrind on the optimized T127 scalar GL harness recorded 253,637,022 instruction references before the common-case reordering and 174,268,270 afterward, a 31.3% reduction. `multiply_component_scaled` fell from 49.19% to 26.83% of total references. The final path checks normal operands before zero and nonfinite boundary cases. After confirming that their product is normal, `scale_normal_binary` adjusts its exponent bits when the scaled result is normal and delegates boundary results to the general scaler. Bitwise tests compare that helper with the staged reference across normal values and exponents from -4097 to 4097; the general scaling test also covers signed zero, infinities and NaN.
+
+The final scalar measurements average three per-run medians after one warmup and five timed samples. They use the same rustc 1.99.0 release build and AMD Ryzen 9 5950X host as the earlier T511 measurements:
+
+| Operation | Threads | Guarded multiply, earlier order | Common-case path | Change from earlier order |
+| --- | ---: | ---: | ---: | ---: |
+| Scalar synthesis | 1 | 667.130 | 461.915 | -30.76% |
+| Scalar synthesis | 8 | 103.903 | 73.677 | -29.09% |
+| Scalar analysis | 1 | 806.614 | 551.584 | -31.62% |
+| Scalar analysis | 8 | 216.405 | 147.511 | -31.84% |
+
+An independent Python comparison used the rebuilt editable extension, `ducc0==0.41.0`, deterministic T511 coefficients and seeded random analysis maps on the same GL shape. Each operation had one warmup and five timed samples; RustSHT and DUCC used the same one- or eight-thread setting. With one thread, scalar synthesis and analysis took 471.541 ms and 552.281 ms in RustSHT versus 12.043 ms and 12.240 ms in DUCC; spin-1 took 1362.377 ms and 1389.893 ms versus 25.781 ms and 25.992 ms. With eight threads, scalar took 79.025 ms and 146.604 ms versus 1.871 ms and 1.773 ms; spin-1 took 206.881 ms and 358.471 ms versus 3.742 ms and 3.722 ms. Scalar synthesis map maximum absolute/RMS errors were `2.627e-14`/`7.674e-16`; analysis coefficient errors were `1.436e-15`/`2.179e-16`. Spin-1 map errors were `3.054e-14`/`7.729e-16`, and analysis coefficient errors were `1.659e-15`/`2.410e-16`. Across these operations and thread counts, RustSHT is 39–96 times slower than DUCC; M4 performance acceptance remains open.
 
 ### Python plan binding (M5, 2026-10-12)
 
