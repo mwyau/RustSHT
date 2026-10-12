@@ -314,13 +314,17 @@ fn spin1_scalar_fast_synthesis_matches_general_channel_cases() {
         )
         .unwrap();
 
-        for (fast, general) in fast_first
+        for (index, (fast, general)) in fast_first
             .iter()
             .zip(&workspace.spectra)
             .chain(fast_second.iter().zip(&workspace.spin_spectra))
+            .enumerate()
         {
             let error = (*fast - *general).norm();
-            assert!(error <= 3e-11, "{name} discrepancy={error:.3e}");
+            assert!(
+                error <= 3e-11,
+                "{name} index={index} fast={fast:?} general={general:?} discrepancy={error:.3e}"
+            );
         }
     }
 }

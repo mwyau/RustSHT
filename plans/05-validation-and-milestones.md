@@ -1164,3 +1164,23 @@ At one worker the fast path was already selected, so the new thread-selection co
 At T1023 GL `1024x2049`, RustSHT plan analysis changed from the `7a59057` baseline of `3,486.459 ms` to `1,282.778 ms` at one thread and from `1,205.138 ms` to `321.159 ms` at eight threads. The one-thread change includes the SIMD reducer from the preceding increment; the eight-thread comparison shows the effect of selecting that reduced scalar-conversion path instead of the general recurrence. DUCC measured `245.799 ms` and `37.845 ms`; the ratios fell from `14.1x`/`31.3x` to `5.2x`/`8.5x`. Rust errors against DUCC were `1.796e-14` maximum absolute, `1.924e-16` RMS and `7.532e-14` relative L2 at both thread counts. At T511, errors were `1.240e-14`/`2.106e-16`/`4.123e-14` at one thread and `1.240e-14`/`2.106e-16`/`4.123e-14` at eight threads. Copy and allocation costs remained below `4 ms` at T1023 and below `0.3 ms` at T511.
 
 The T511 release spin-1/2 DUCC and adjoint checks passed on GL, CC and F1 with eight Rayon workers. T1023 exact-analysis checks passed for spin 1 and 2 on all three grids. T511 spin-3/4 DUCC, analytic and adjoint regressions passed on all grids after the selection change. The specialized path is retained: it improves the target eight-worker spin-1 analysis by `68.1%`, and the T1023 Python-plan/DUCC gap falls from `31.3x` to `8.5x`. The remaining gap includes recurrence and accumulation work; the latest phase measurements predate this selection change, so no updated phase split or instruction-count reduction is claimed.
+
+### Fused spin-1 scalar-conversion synthesis (2026-10-12)
+
+The spin-1 STANDARD synthesis conversion accumulated transformed scalar coefficients through a degree callback and scalar latitude loops. It now runs the existing register-resident paired scalar synthesis kernel on each latitude block for both converted coefficient rows, then applies `1/sin(theta)` once per ring. Blocks excluded by the polar order limits or requiring binary scaling use the paired recurrence and scaled multiplication path. The converted coefficient arrays are degree-indexed, so each kernel call receives the order-local slice beginning at `m`. The change reuses recurrence scratch and adds no workspace storage.
+
+Native measurements used `m1b_bench 1 511 8 synthesis`, f64, T511 GL `512x1025`, `phi0=0.37`, reused plans and workspaces, one warm-up and five timed samples per process run. The before build was commit `c96fa86`; both builds used rustc `1.99.0 (b940084d7 2026-09-28)`, Cargo's standard release optimization, Pulp runtime AVX2/FMA dispatch, and no `target-cpu=native`. The AMD Ryzen 9 5950X host ran Linux `7.0.14`; each process was pinned to CPUs 0–7. Values are medians and ranges of three run medians in milliseconds:
+
+| Threads | Before (`c96fa86`) | Fused synthesis | Change |
+| ---: | ---: | ---: | ---: |
+| 1 | `472.932; 2.101` | `133.496; 2.412` | `-71.8%` |
+| 8 | `83.031; 0.340` | `46.471; 0.208` | `-44.0%` |
+
+The Python-plan comparison used Python `3.11.15`, NumPy `2.4.6`, installed `ducc0==0.41.0` from revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`, and three run medians of five samples after warm-up. It used the same T511 GL geometry, coefficients, `phi0`, eight-CPU affinity and explicit one/eight-thread settings. Python-plan timings include Rust workspace creation per call; the native measurements reuse workspaces. The ratio is RustSHT time divided by DUCC0 time:
+
+| Threads | RustSHT plan (ms) | DUCC0 (ms) | Ratio | RustSHT/DUCC0 output max absolute / RMS / relative L2 error |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | `131.899; 0.653` | `27.126; 1.551` | `4.9x` | `2.519e-14 / 7.700e-16 / 6.326e-14` |
+| 8 | `48.394; 6.659` | `5.404; 1.578` | `9.0x` | `2.519e-14 / 7.700e-16 / 6.326e-14` |
+
+The T511 spin-1 fast-path comparison with the general recurrence passed for E-only, B-only and mixed E/B coefficients at `3e-11` tolerance. Release DUCC and roundtrip checks passed for spin 1 and 2 on GL, CC and F1 at T511. Sparse T1023 synthesis passed for spins 1 and 2 on all three grids; spin-3/4 T511 DUCC and analytic regressions also passed. Workspace tests cover scalar and spin adjoints. No new phase timer or hardware-counter result was collected for this change; `perf_event_paranoid=4` blocks `perf stat`. The whole-transform result and unchanged workspace size support this kernel reuse for the tested T511 workload.
