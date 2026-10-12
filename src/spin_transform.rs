@@ -889,21 +889,26 @@ impl<T: ShtScalar> ShtPlan<T> {
                             Complex::<T>::new(T::zero(), T::one()) * e_coefficient * odd_basis
                                 + b_coefficient * even_basis;
                         let spectrum_index = group_ring * spectrum_len + m;
-                        let phased_q = q_value * phase;
-                        let phased_u = u_value * phase;
-                        if nphi.is_multiple_of(2) && m == nphi / 2 {
-                            q_spectra[spectrum_index] +=
-                                Complex::new(nyquist_scale * phased_q.re, T::zero());
-                            u_spectra[spectrum_index] +=
-                                Complex::new(nyquist_scale * phased_u.re, T::zero());
-                        } else {
-                            q_spectra[spectrum_index] += phased_q * fourier_scale;
-                            u_spectra[spectrum_index] += phased_u * fourier_scale;
-                        }
+                        q_spectra[spectrum_index] += q_value;
+                        u_spectra[spectrum_index] += u_value;
                     }
                     Ok(())
                 },
             )?;
+            for group_ring in 0..ring_end - ring_start {
+                let spectrum_index = group_ring * spectrum_len + m;
+                let phased_q = q_spectra[spectrum_index] * phase;
+                let phased_u = u_spectra[spectrum_index] * phase;
+                if nphi.is_multiple_of(2) && m == nphi / 2 {
+                    q_spectra[spectrum_index] =
+                        Complex::new(nyquist_scale * phased_q.re, T::zero());
+                    u_spectra[spectrum_index] =
+                        Complex::new(nyquist_scale * phased_u.re, T::zero());
+                } else {
+                    q_spectra[spectrum_index] = phased_q * fourier_scale;
+                    u_spectra[spectrum_index] = phased_u * fourier_scale;
+                }
+            }
         }
         Ok(())
     }
