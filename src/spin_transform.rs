@@ -1284,6 +1284,57 @@ mod tests {
             + harmonic_inner_product(spec, left_b, right_b)
     }
 
+    fn sectoral_spin_log_common(degree: usize, spin: usize) -> f64 {
+        let log_binomial = (1..=degree - spin)
+            .map(|index| ((degree + spin + index) as f64).ln() - (index as f64).ln())
+            .sum::<f64>();
+        0.5 * (log_binomial + ((2 * degree + 1) as f64 / (4.0 * std::f64::consts::PI)).ln())
+            - std::f64::consts::LN_2
+    }
+
+    fn sectoral_spin_reference(
+        degree: usize,
+        spin: usize,
+        theta: f64,
+        phi: f64,
+        log_common: f64,
+    ) -> (f64, f64) {
+        let (sin_half, cos_half) = (theta / 2.0).sin_cos();
+        let log_power = |base: f64, exponent: usize| {
+            if exponent == 0 {
+                0.0
+            } else if base == 0.0 {
+                f64::NEG_INFINITY
+            } else {
+                exponent as f64 * base.ln()
+            }
+        };
+        let plus_sign = if (degree + spin + 1).is_multiple_of(2) {
+            1.0
+        } else {
+            -1.0
+        };
+        let minus_sign = if (degree + 1).is_multiple_of(2) {
+            1.0
+        } else {
+            -1.0
+        };
+        let plus = plus_sign
+            * (log_common
+                + log_power(cos_half, degree + spin)
+                + log_power(sin_half, degree - spin))
+            .exp();
+        let minus = minus_sign
+            * (log_common
+                + log_power(cos_half, degree - spin)
+                + log_power(sin_half, degree + spin))
+            .exp();
+        (
+            2.0 * (plus + minus) * (degree as f64 * phi).cos(),
+            -2.0 * (plus - minus) * (degree as f64 * phi).sin(),
+        )
+    }
+
     #[test]
     #[expect(
         clippy::excessive_precision,
@@ -4172,6 +4223,156 @@ mod tests {
                     "M3 spin {spin} T{degree} {kind:?}: DUCC sparse synthesis max abs={max_error:.3e}, RMS={:.3e}; STANDARD-GRAD_ONLY max abs={gradient_max_error:.3e}, RMS={:.3e}",
                     (error_squares / count as f64).sqrt(),
                     (gradient_error_squares / (2 * plan.sample_count) as f64).sqrt(),
+                );
+            }
+        }
+    }
+
+    #[test]
+    #[ignore = "M3 sparse T2047 synthesis check; run this check in release mode"]
+    #[expect(
+        clippy::excessive_precision,
+        reason = "The literals retain printed DUCC 0.41.0 reference values."
+    )]
+    fn m3_spin_t2047_sparse_synthesis_matches_ducc_and_sectoral_formula() {
+        // DUCC 0.41.0 references use a^E_(2047,2047)=1, phi0=0.37 and nthreads=1.
+        // The Wigner-d sectoral formula is checked at every sample on 65 rings.
+        let degree = 2047;
+        let ntheta = 65;
+        let nphi = 2 * degree + 3;
+        for kind in [
+            GridKind::GaussLegendre,
+            GridKind::ClenshawCurtis,
+            GridKind::Fejer1,
+        ] {
+            let grid = GridSpec::new(kind, ntheta, nphi, 0.37).unwrap();
+            for spin in [1, 2] {
+                let plan = ShtPlan::new(
+                    grid.clone(),
+                    HarmonicSpec::new(degree, degree, spin).unwrap(),
+                )
+                .unwrap();
+                let high_mode = plan.harmonics().index(degree, degree).unwrap();
+                let mut e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+                let b = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+                e[high_mode] = Complex64::new(1.0, 0.0);
+                let mut workspace = plan.workspace().unwrap();
+                let mut first = vec![0.0; plan.sample_count];
+                let mut second = vec![0.0; plan.sample_count];
+                plan.synthesis_spin_into(&e, &b, &mut first, &mut second, &mut workspace)
+                    .unwrap();
+
+                // All three grids have theta=pi/2 at their middle ring for odd ntheta.
+                // These samples are static outputs from ducc0==0.41.0.
+                let (expected_first, expected_second) = match (kind, spin) {
+                    (GridKind::Fejer1, 1) => (
+                        [
+                            1.1015587667186156e-15,
+                            -1.1022467302080192e-15,
+                            -1.1124584825502832e-15,
+                            -3.0159540880018856e-16,
+                            -1.1008649739104192e-15,
+                        ],
+                        [
+                            -1.0601942551631958,
+                            1.0512460199516056,
+                            0.90734996706382121,
+                            -3.8874063655543365,
+                            1.0691368799521002,
+                        ],
+                    ),
+                    (GridKind::Fejer1, 2) => (
+                        [
+                            -3.8857806088139322,
+                            3.8882074200449486,
+                            3.9242296736300024,
+                            1.0638865820242214,
+                            3.8833332344912224,
+                        ],
+                        [
+                            6.002172983489843e-16,
+                            -5.9515135355864421e-16,
+                            -5.1368618839031055e-16,
+                            2.2008122897803329e-15,
+                            -6.0528006686032456e-16,
+                        ],
+                    ),
+                    (_, 1) => (
+                        [
+                            2.3810981481297348e-16,
+                            -2.3825852304716785e-16,
+                            -2.404658664341898e-16,
+                            -6.5192007097157444e-17,
+                            -2.3795984652978313e-16,
+                        ],
+                        [
+                            -1.0601942551631958,
+                            1.0512460199516056,
+                            0.90734996706382121,
+                            -3.8874063655543365,
+                            1.0691368799521002,
+                        ],
+                    ),
+                    (_, 2) => (
+                        [
+                            -3.8857806088139322,
+                            3.8882074200449486,
+                            3.9242296736300024,
+                            1.0638865820242214,
+                            3.8833332344912224,
+                        ],
+                        [
+                            1.2974126671711845e-16,
+                            -1.2864622647748256e-16,
+                            -1.1103694771905273e-16,
+                            4.7572133470349097e-16,
+                            -1.3083562038130585e-16,
+                        ],
+                    ),
+                    _ => unreachable!(),
+                };
+                let sample_longitudes = [0, 1, 17, nphi / 2, nphi - 1];
+                let middle_ring = ntheta / 2;
+                let mut ducc_maximum_error = 0.0_f64;
+                for (slot, longitude) in sample_longitudes.into_iter().enumerate() {
+                    let index = middle_ring * nphi + longitude;
+                    for (actual, expected) in [
+                        (first[index], expected_first[slot]),
+                        (second[index], expected_second[slot]),
+                    ] {
+                        let error = (actual - expected).abs();
+                        ducc_maximum_error = ducc_maximum_error.max(error);
+                        assert!(
+                            error <= 2e-10,
+                            "{kind:?} spin {spin} DUCC error={error:.3e}"
+                        );
+                    }
+                }
+
+                let log_common = sectoral_spin_log_common(degree, spin);
+                let (mut maximum_error, mut error_squares) = (0.0_f64, 0.0_f64);
+                for (ring, &theta) in plan.grid.theta().iter().enumerate() {
+                    for longitude in 0..nphi {
+                        let phi = plan.grid.longitude(longitude).unwrap();
+                        let (expected_first, expected_second) =
+                            sectoral_spin_reference(degree, spin, theta, phi, log_common);
+                        for (actual, expected) in [
+                            (first[ring * nphi + longitude], expected_first),
+                            (second[ring * nphi + longitude], expected_second),
+                        ] {
+                            let error = (actual - expected).abs();
+                            maximum_error = maximum_error.max(error);
+                            error_squares += error * error;
+                            assert!(
+                                error <= 5e-10,
+                                "{kind:?} spin {spin} T{degree} analytic error={error:.3e}"
+                            );
+                        }
+                    }
+                }
+                eprintln!(
+                    "M3 spin {spin} T{degree} {kind:?}: DUCC middle-ring samples max abs={ducc_maximum_error:.3e}; analytic map max abs={maximum_error:.3e}, RMS={:.3e}",
+                    (error_squares / (2 * plan.sample_count) as f64).sqrt(),
                 );
             }
         }
