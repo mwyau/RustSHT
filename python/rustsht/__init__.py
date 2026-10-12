@@ -6,5 +6,8 @@
 from importlib.metadata import version
 
 from . import _rustsht as _rustsht
+from ._rustsht import ShtPlan
 
 __version__ = version("rustsht")
+
+__all__ = ["ShtPlan", "__version__"]

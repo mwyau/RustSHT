@@ -20,3 +20,8 @@ def test_typing_marker_is_packaged() -> None:
     from importlib.resources import files
 
     assert files("rustsht").joinpath("py.typed").is_file()
+    assert files("rustsht").joinpath("__init__.pyi").is_file()
+
+
+def test_plan_is_exported() -> None:
+    assert rustsht.ShtPlan is rustsht._rustsht.ShtPlan
