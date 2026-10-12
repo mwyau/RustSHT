@@ -396,6 +396,8 @@ The four two-run timing averages are lower for this workload. They measure one h
 
 On rustc 1.99.0 and 1.89.0, `cargo test --workspace --all-features` passes 75 library unit tests and 10 f32 integration tests; seven opt-in high-bandlimit tests are ignored. On rustc 1.99.0, `cargo test -p rustsht --no-default-features` passes 73 library unit tests and 10 f32 integration tests, with the same seven ignored. Workspace Clippy with warnings denied passes on both compilers. Formatting and `git diff --check` pass. Python binding tests were not run because this change does not modify the bindings.
 
+A follow-up prototype updated the threshold tracker's exponent bits instead of multiplying the temporary maximum after each rescale. Its focused reference test passed, and Callgrind 3.26.0 references for T127 spin-1 GL synthesis fell from 255,300,338 to 253,145,506 (0.84%) on the same CPU and compiler. Two-run T511 f32 GL measurements increased in all four cases: synthesis from 1132.685 to 1165.414 ms at one thread and 175.707 to 177.780 ms at eight; analysis from 1241.490 to 1259.368 ms at one thread and 286.721 to 289.445 ms at eight. The prototype was reverted because the complete workload was slower despite the lower instruction count.
+
 ### f32 phase and pole edge cases (M4, 2026-10-12)
 
 Scalar and spin transforms retain `phi0` as f64 while forming each order phase, then convert the sine and cosine to the selected transform type. If `m*phi0` overflows f64, phase setup derives the integer-order phase by exponentiating `e^(i phi0)`. Grid and prepared CC colatitudes remain f64 through sine/cosine evaluation; the exact `0` and `pi` endpoints produce exact zero sine values before conversion to f32.
