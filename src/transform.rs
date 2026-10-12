@@ -8,7 +8,7 @@ use rayon::prelude::*;
 
 use crate::error::ShtError;
 use crate::grid::GridKind;
-use crate::legendre::{LATITUDE_BLOCK_SIZE, ShtScalar};
+use crate::legendre::{LATITUDE_BLOCK_SIZE, ShtScalar, longitude_phase, sin_cos_from_f64};
 use crate::plan::ShtPlan;
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
@@ -39,10 +39,9 @@ impl<T: ShtScalar> ShtPlan<T> {
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
         let lmax = self.harmonics.lmax();
-        let phi0 = T::from_f64(self.grid.phi0()).expect("longitude origin is representable");
+        let phi0 = self.grid.phi0();
         for (ring, &theta) in self.grid.theta().iter().enumerate() {
-            let theta = T::from_f64(theta).expect("grid colatitude is representable");
-            (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
+            (workspace.theta_sin[ring], workspace.theta_cos[ring]) = sin_cos_from_f64(theta);
             workspace.ring_order_limits[ring] = T::polar_order_limit(
                 lmax,
                 0,
@@ -142,7 +141,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         alm: &[Complex<T>],
         nphi: usize,
         spectrum_len: usize,
-        phi0: T,
+        phi0: f64,
         group_ring_start: usize,
         spectra: &mut [Complex<T>],
         theta_sin: &[T],
@@ -165,10 +164,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             let phase = if m == 0 {
                 Complex::new(T::one(), T::zero())
             } else {
-                Complex::from_polar(
-                    T::one(),
-                    T::from_usize(m).expect("mode converts to transform scalar") * phi0,
-                )
+                longitude_phase::<T>(m, phi0, false)
             };
             T::for_each_y_lm_dispatched(
                 arch,
@@ -317,7 +313,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             .expect("CC adjoint analysis requires the prepared CC operator");
         let prepared_ntheta = resampling.prepared_ntheta();
         for (ring, &theta) in resampling.prepared_theta().iter().enumerate() {
-            (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
+            (workspace.theta_sin[ring], workspace.theta_cos[ring]) = sin_cos_from_f64::<T>(theta);
             workspace.ring_order_limits[ring] = T::polar_order_limit(
                 self.harmonics.lmax(),
                 0,
@@ -332,7 +328,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             alm,
             1,
             self.fft.spectrum_len(),
-            T::from_f64(self.grid.phi0()).expect("longitude origin is representable"),
+            self.grid.phi0(),
             0,
             &mut workspace.prepared_spectra,
             &workspace.theta_sin[..prepared_ntheta],
@@ -405,7 +401,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                 &mut workspace.cc_fft_scratch,
             )?;
             for (ring, &theta) in resampling.prepared_theta().iter().enumerate() {
-                (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
+                (workspace.theta_sin[ring], workspace.theta_cos[ring]) =
+                    sin_cos_from_f64::<T>(theta);
                 workspace.ring_order_limits[ring] = T::polar_order_limit(
                     self.harmonics.lmax(),
                     0,
@@ -420,8 +417,8 @@ impl<T: ShtScalar> ShtPlan<T> {
             )
         } else {
             for (ring, &theta) in self.grid.theta().iter().enumerate() {
-                let theta = T::from_f64(theta).expect("grid colatitude is representable");
-                (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
+                (workspace.theta_sin[ring], workspace.theta_cos[ring]) =
+                    sin_cos_from_f64::<T>(theta);
                 workspace.ring_order_limits[ring] = T::polar_order_limit(
                     self.harmonics.lmax(),
                     0,
@@ -450,7 +447,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     analysis_spectra,
                     nphi,
                     spectrum_len,
-                    T::from_f64(self.grid.phi0()).expect("longitude origin is representable"),
+                    self.grid.phi0(),
                     analysis_ring_weights,
                     theta_sin,
                     theta_cos,
@@ -466,7 +463,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     analysis_spectra,
                     nphi,
                     spectrum_len,
-                    T::from_f64(self.grid.phi0()).expect("longitude origin is representable"),
+                    self.grid.phi0(),
                     analysis_ring_weights,
                     theta_sin,
                     theta_cos,
@@ -486,7 +483,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 analysis_spectra,
                 nphi,
                 spectrum_len,
-                T::from_f64(self.grid.phi0()).expect("longitude origin is representable"),
+                self.grid.phi0(),
                 analysis_ring_weights,
                 theta_sin,
                 theta_cos,
@@ -518,7 +515,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         spectra: &[Complex<T>],
         nphi: usize,
         spectrum_len: usize,
-        phi0: T,
+        phi0: f64,
         ring_weights: Option<&[f64]>,
         theta_sin: &[T],
         theta_cos: &[T],
@@ -614,7 +611,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         spectra: &[Complex<T>],
         nphi: usize,
         spectrum_len: usize,
-        phi0: T,
+        phi0: f64,
         ring_weights: Option<&[f64]>,
         theta_sin: &[T],
         theta_cos: &[T],
@@ -634,10 +631,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             let phase = if m == 0 {
                 Complex::new(T::one(), T::zero())
             } else {
-                Complex::from_polar(
-                    T::one(),
-                    -(T::from_usize(m).expect("mode converts to transform scalar") * phi0),
-                )
+                longitude_phase::<T>(m, phi0, true)
             };
             T::for_each_y_lm_dispatched(
                 arch,
