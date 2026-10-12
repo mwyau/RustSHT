@@ -66,15 +66,17 @@ The root Cargo workspace includes the separate `python/` PyO3 extension crate al
 
 The uv development environment pins Python 3.11 with `.python-version`, consistent with the PyO3 `abi3-py311` baseline. The `python/rustsht/py.typed` PEP 561 marker and `__init__.pyi` stub are installed with the package. Generate Cargo and uv lockfiles with their own package managers where registries are accessible; only then enable locked installs in permanent CI. Do not create temporary GitHub Actions jobs to generate lockfiles.
 
-The root `pyproject.toml` uses maturin as its build backend. Its `[tool.maturin]` settings point to the `python` Cargo member and build the native extension as `rustsht._rustsht`, alongside `python/rustsht/__init__.py`. The Python project version is `0.1.0.dev0` (PEP 440 form) and the Rust packages use `0.1.0-dev.0` (Cargo semver form). NumPy is a runtime dependency for the array API; the `dev` group contains DUCC, NumPy and pytest. DUCC is not a runtime dependency.
+The root `pyproject.toml` uses maturin as its build backend. Its `[tool.maturin]` settings point to the `python` Cargo member and build the native extension as `rustsht._rustsht`, alongside `python/rustsht/__init__.py`. The Python project version is `0.1.0.dev0` (PEP 440 form) and the Rust packages use `0.1.0-dev.0` (Cargo semver form). NumPy is a runtime dependency for the array API; the `dev` group contains DUCC, NumPy and pytest. DUCC is not a runtime dependency. Source and wheel distributions include the project GPL license and `LICENSE-THIRD-PARTY`, which records the selected licenses for resolved Rust dependencies.
 
 `uv sync` builds and installs the local Python package. `uv run pytest python/tests` checks the compiled extension, numerical calls, array validation and DUCC comparisons. `cargo test --workspace` checks both Rust crates. The extension exposes the verified f64 operations through `ShtPlan`.
 
-The Python API currently exposes a reusable plan class. Procedural functions and `get_gridweights` remain planned. The transforms use DUCC's unit `ringfactor`; arbitrary per-ring scaling is not exposed.
+The Python API exposes a reusable plan class and top-level procedural functions. The transforms use DUCC's unit `ringfactor`; arbitrary per-ring scaling is not exposed.
 
 ## Python binding
 
 `rustsht.ShtPlan(kind, ntheta, nphi, lmax, mmax, spin=0, phi0=0.0)` accepts `kind` values `"GL"`, `"CC"` and `"F1"`. Map rings run north to south, longitude samples run eastward, and `phi0` is in radians. The plan exposes scalar and spin STANDARD `synthesis`, `analysis`, `adjoint_synthesis` and `adjoint_analysis`, spin `synthesis_gradient` and its adjoint, and scalar `synthesis_deriv1` and its adjoint. Standard coefficient arrays use order-major packing and shapes `(1, nalm)` for scalar plans and `(2, nalm)` for spin plans. Standard maps use component-first shapes `(ncomp, ntheta, nphi)`. Gradient and derivative synthesis take one coefficient channel and return two map components.
+
+The top-level `synthesis_2d`, `analysis_2d`, `adjoint_synthesis_2d`, `adjoint_analysis_2d` and `get_gridweights` functions use the same packed coefficient layout and grid conventions. `analysis_2d` infers grid dimensions from the map; `adjoint_analysis_2d` takes `ntheta` and `nphi`. The analysis functions use STANDARD mode. Synthesis and adjoint synthesis accept `STANDARD`, `GRAD_ONLY` and `DERIV1`; `DERIV1` uses `spin=1` with one scalar coefficient channel. `get_gridweights` returns ring weights that sum to `4*pi`; divide by `nphi` for per-pixel weights.
 
 The binding accepts `complex128` coefficients and `float64` maps. Inputs must be C-contiguous; the binding copies them into Rust-owned vectors before releasing the GIL. Each call creates a workspace and returns a new NumPy array. Input shape and numerical-operation errors are reported as `ValueError`; an unsupported NumPy dtype is rejected during argument conversion. Exact-analysis sampling limits match the Rust API. Noncontiguous inputs, zero-copy borrowing, f32/complex64 and per-call thread control are not implemented.
 
@@ -88,4 +90,3 @@ A RustSHT adapter should match that numerical boundary. spharmgrid, **not the Ru
 
 - f64/f32 kernel sharing and Python thread configuration.
 - Strided and batched inputs and zero-copy borrowing.
-- GPL wheel/source distribution review before release.

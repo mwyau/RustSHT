@@ -8,6 +8,9 @@ from numpy.typing import NDArray
 
 __version__: str
 
+GridKind = Literal["GL", "CC", "F1"]
+SynthesisMode = Literal["STANDARD", "GRAD_ONLY", "DERIV1"]
+
 class ShtPlan:
     """Reusable GL, CC, or F1 plan; map rings run north to south and longitudes eastward from phi0."""
 
@@ -39,3 +42,47 @@ class ShtPlan:
     def adjoint_synthesis_gradient(self, map: NDArray[np.float64]) -> NDArray[np.complex128]: ...
     def synthesis_deriv1(self, alm: NDArray[np.complex128]) -> NDArray[np.float64]: ...
     def adjoint_synthesis_deriv1(self, map: NDArray[np.float64]) -> NDArray[np.complex128]: ...
+
+def synthesis_2d(
+    alm: NDArray[np.complex128],
+    spin: int,
+    lmax: int,
+    geometry: GridKind,
+    ntheta: int,
+    nphi: int,
+    mmax: int | None = None,
+    phi0: float = 0.0,
+    mode: SynthesisMode = "STANDARD",
+) -> NDArray[np.float64]: ...
+
+def analysis_2d(
+    map: NDArray[np.float64],
+    spin: int,
+    lmax: int,
+    geometry: GridKind,
+    mmax: int | None = None,
+    phi0: float = 0.0,
+) -> NDArray[np.complex128]: ...
+
+def adjoint_synthesis_2d(
+    map: NDArray[np.float64],
+    spin: int,
+    lmax: int,
+    geometry: GridKind,
+    mmax: int | None = None,
+    phi0: float = 0.0,
+    mode: SynthesisMode = "STANDARD",
+) -> NDArray[np.complex128]: ...
+
+def adjoint_analysis_2d(
+    alm: NDArray[np.complex128],
+    spin: int,
+    lmax: int,
+    geometry: GridKind,
+    ntheta: int,
+    nphi: int,
+    mmax: int | None = None,
+    phi0: float = 0.0,
+) -> NDArray[np.float64]: ...
+
+def get_gridweights(geometry: GridKind, ntheta: int) -> NDArray[np.float64]: ...

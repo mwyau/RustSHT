@@ -29,7 +29,9 @@ impl PythonShtPlan {
     /// `phi0` gives the longitude of the first sample on each ring, in radians.
     #[new]
     #[pyo3(signature = (kind, ntheta, nphi, lmax, mmax, spin=0, phi0=0.0))]
+    #[allow(clippy::too_many_arguments)]
     fn new(
+        py: Python<'_>,
         kind: &str,
         ntheta: usize,
         nphi: usize,
@@ -38,19 +40,14 @@ impl PythonShtPlan {
         spin: usize,
         phi0: f64,
     ) -> PyResult<Self> {
-        let kind = match kind.to_ascii_uppercase().as_str() {
-            "GL" => GridKind::GaussLegendre,
-            "CC" => GridKind::ClenshawCurtis,
-            "F1" => GridKind::Fejer1,
-            _ => {
-                return Err(PyValueError::new_err(
-                    "kind must be one of 'GL', 'CC', or 'F1'",
-                ));
-            }
-        };
-        let grid = GridSpec::new(kind, ntheta, nphi, phi0).map_err(to_python_error)?;
-        let harmonics = HarmonicSpec::new(lmax, mmax, spin).map_err(to_python_error)?;
-        let plan = ShtPlan::new(grid, harmonics).map_err(to_python_error)?;
+        let kind = grid_kind(kind, "kind")?;
+        let plan = py
+            .detach(move || {
+                let grid = GridSpec::new(kind, ntheta, nphi, phi0)?;
+                let harmonics = HarmonicSpec::new(lmax, mmax, spin)?;
+                ShtPlan::new(grid, harmonics)
+            })
+            .map_err(to_python_error)?;
         Ok(Self { plan })
     }
 
@@ -369,6 +366,215 @@ impl PythonShtPlan {
     }
 }
 
+#[derive(Clone, Copy)]
+enum SynthesisMode {
+    Standard,
+    GradientOnly,
+    Derivative1,
+}
+
+impl SynthesisMode {
+    fn parse(value: &str, spin: usize) -> PyResult<Self> {
+        match value.to_ascii_uppercase().as_str() {
+            "STANDARD" => Ok(Self::Standard),
+            "GRAD_ONLY" => Ok(Self::GradientOnly),
+            "DERIV1" if spin == 1 => Ok(Self::Derivative1),
+            "DERIV1" => Err(PyValueError::new_err("DERIV1 mode requires spin=1")),
+            _ => Err(PyValueError::new_err(
+                "mode must be one of 'STANDARD', 'GRAD_ONLY', or 'DERIV1'",
+            )),
+        }
+    }
+
+    fn plan_spin(self, spin: usize) -> usize {
+        if matches!(self, Self::Derivative1) {
+            0
+        } else {
+            spin
+        }
+    }
+}
+
+/// Synthesize a scalar or spin field from packed coefficients.
+///
+/// `alm` uses RustSHT's order-major layout. STANDARD output has shape
+/// `(1, ntheta, nphi)` for scalar plans and `(2, ntheta, nphi)` for spin
+/// plans. GRAD_ONLY and DERIV1 output two map components.
+#[pyfunction]
+#[pyo3(signature = (alm, spin, lmax, geometry, ntheta, nphi, mmax=None, phi0=0.0, mode="STANDARD"))]
+#[allow(clippy::too_many_arguments)]
+fn synthesis_2d<'py>(
+    py: Python<'py>,
+    alm: PyReadonlyArrayDyn<'py, Complex64>,
+    spin: usize,
+    lmax: usize,
+    geometry: &str,
+    ntheta: usize,
+    nphi: usize,
+    mmax: Option<usize>,
+    phi0: f64,
+    mode: &str,
+) -> PyResult<Bound<'py, PyArrayDyn<f64>>> {
+    let mode = SynthesisMode::parse(mode, spin)?;
+    let plan = PythonShtPlan::new(
+        py,
+        geometry,
+        ntheta,
+        nphi,
+        lmax,
+        mmax.unwrap_or(lmax),
+        mode.plan_spin(spin),
+        phi0,
+    )?;
+    match mode {
+        SynthesisMode::Standard => plan.synthesis(py, alm),
+        SynthesisMode::GradientOnly => plan.synthesis_gradient(py, alm),
+        SynthesisMode::Derivative1 => plan.synthesis_deriv1(py, alm),
+    }
+}
+
+/// Analyze a scalar map or spin map pair into packed coefficients.
+///
+/// `map` uses component-first order and RustSHT's order-major coefficient
+/// layout. `ntheta` and `nphi` are read from the map shape.
+#[pyfunction]
+#[pyo3(signature = (map, spin, lmax, geometry, mmax=None, phi0=0.0))]
+fn analysis_2d<'py>(
+    py: Python<'py>,
+    map: PyReadonlyArrayDyn<'py, f64>,
+    spin: usize,
+    lmax: usize,
+    geometry: &str,
+    mmax: Option<usize>,
+    phi0: f64,
+) -> PyResult<Bound<'py, PyArrayDyn<Complex64>>> {
+    let (ntheta, nphi) = map_dimensions(&map, "map")?;
+    let plan = PythonShtPlan::new(
+        py,
+        geometry,
+        ntheta,
+        nphi,
+        lmax,
+        mmax.unwrap_or(lmax),
+        spin,
+        phi0,
+    )?;
+    plan.analysis(py, map)
+}
+
+/// Apply the adjoint of STANDARD, GRAD_ONLY, or DERIV1 synthesis.
+///
+/// `map` uses component-first order. The returned coefficients use
+/// RustSHT's order-major layout.
+#[pyfunction]
+#[pyo3(signature = (map, spin, lmax, geometry, mmax=None, phi0=0.0, mode="STANDARD"))]
+#[allow(clippy::too_many_arguments)]
+fn adjoint_synthesis_2d<'py>(
+    py: Python<'py>,
+    map: PyReadonlyArrayDyn<'py, f64>,
+    spin: usize,
+    lmax: usize,
+    geometry: &str,
+    mmax: Option<usize>,
+    phi0: f64,
+    mode: &str,
+) -> PyResult<Bound<'py, PyArrayDyn<Complex64>>> {
+    let (ntheta, nphi) = map_dimensions(&map, "map")?;
+    let mode = SynthesisMode::parse(mode, spin)?;
+    let plan = PythonShtPlan::new(
+        py,
+        geometry,
+        ntheta,
+        nphi,
+        lmax,
+        mmax.unwrap_or(lmax),
+        mode.plan_spin(spin),
+        phi0,
+    )?;
+    match mode {
+        SynthesisMode::Standard => plan.adjoint_synthesis(py, map),
+        SynthesisMode::GradientOnly => plan.adjoint_synthesis_gradient(py, map),
+        SynthesisMode::Derivative1 => plan.adjoint_synthesis_deriv1(py, map),
+    }
+}
+
+/// Apply the adjoint of exact STANDARD analysis to packed coefficients.
+///
+/// `alm` uses RustSHT's order-major layout. The output map uses
+/// component-first order.
+#[pyfunction]
+#[pyo3(signature = (alm, spin, lmax, geometry, ntheta, nphi, mmax=None, phi0=0.0))]
+#[allow(clippy::too_many_arguments)]
+fn adjoint_analysis_2d<'py>(
+    py: Python<'py>,
+    alm: PyReadonlyArrayDyn<'py, Complex64>,
+    spin: usize,
+    lmax: usize,
+    geometry: &str,
+    ntheta: usize,
+    nphi: usize,
+    mmax: Option<usize>,
+    phi0: f64,
+) -> PyResult<Bound<'py, PyArrayDyn<f64>>> {
+    let plan = PythonShtPlan::new(
+        py,
+        geometry,
+        ntheta,
+        nphi,
+        lmax,
+        mmax.unwrap_or(lmax),
+        spin,
+        phi0,
+    )?;
+    plan.adjoint_analysis(py, alm)
+}
+
+/// Return the `ntheta` ring weights for a GL, CC, or F1 grid.
+///
+/// The weights sum to `4*pi`; divide by `nphi` for per-pixel quadrature
+/// weights on a complete longitude ring.
+#[pyfunction]
+#[pyo3(signature = (geometry, ntheta))]
+fn get_gridweights<'py>(
+    py: Python<'py>,
+    geometry: &str,
+    ntheta: usize,
+) -> PyResult<Bound<'py, PyArrayDyn<f64>>> {
+    let kind = grid_kind(geometry, "geometry")?;
+    let weights = py
+        .detach(move || {
+            let grid = GridSpec::new(kind, ntheta, 1, 0.0)?;
+            Ok(grid.ring_weights().to_vec())
+        })
+        .map_err(to_python_error)?;
+    output_array(py, &[ntheta], weights)
+}
+
+fn map_dimensions<T: Element>(
+    map: &PyReadonlyArrayDyn<'_, T>,
+    name: &str,
+) -> PyResult<(usize, usize)> {
+    let array = map.as_array();
+    let shape = array.shape();
+    if shape.len() != 3 {
+        return Err(PyValueError::new_err(format!(
+            "{name} must have shape (ncomp, ntheta, nphi); got {shape:?}"
+        )));
+    }
+    Ok((shape[1], shape[2]))
+}
+
+fn grid_kind(value: &str, name: &str) -> PyResult<GridKind> {
+    match value.to_ascii_uppercase().as_str() {
+        "GL" => Ok(GridKind::GaussLegendre),
+        "CC" => Ok(GridKind::ClenshawCurtis),
+        "F1" => Ok(GridKind::Fejer1),
+        _ => Err(PyValueError::new_err(format!(
+            "{name} must be one of 'GL', 'CC', or 'F1'"
+        ))),
+    }
+}
+
 fn read_array<'py, T: Element + Copy>(
     array: PyReadonlyArrayDyn<'py, T>,
     expected_shape: &[usize],
@@ -409,5 +615,10 @@ fn to_python_error(error: ShtError) -> PyErr {
 #[pymodule]
 fn _rustsht(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<PythonShtPlan>()?;
+    module.add_function(wrap_pyfunction!(synthesis_2d, module)?)?;
+    module.add_function(wrap_pyfunction!(analysis_2d, module)?)?;
+    module.add_function(wrap_pyfunction!(adjoint_synthesis_2d, module)?)?;
+    module.add_function(wrap_pyfunction!(adjoint_analysis_2d, module)?)?;
+    module.add_function(wrap_pyfunction!(get_gridweights, module)?)?;
     Ok(())
 }
