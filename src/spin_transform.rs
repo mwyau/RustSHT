@@ -7,13 +7,18 @@ use num_complex::Complex;
 use rayon::prelude::*;
 
 use crate::error::ShtError;
-use crate::legendre::{LATITUDE_BLOCK_SIZE, ShtScalar, longitude_phase, sin_cos_from_f64};
+use crate::legendre::{
+    LATITUDE_BLOCK_SIZE, ShtScalar, longitude_phase, scalar_to_spin1, sin_cos_from_f64,
+    spin1_to_scalar,
+};
 use crate::plan::ShtPlan;
 #[cfg(feature = "parallel")]
 use crate::transform::weighted_order_midpoint;
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 const MAX_SUPPORTED_SPIN: usize = 4;
+const SPIN1_FAST_LMAX: usize = 500;
+const SPIN1_FAST_MIN_SIN_THETA: f64 = 0.0001;
 
 #[allow(private_bounds)]
 impl<T: ShtScalar> ShtPlan<T> {
@@ -381,6 +386,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             Some(b_alm),
             spin,
             false,
+            false,
             1,
             self.fft.spectrum_len(),
             self.grid.phi0(),
@@ -696,6 +702,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
         let phi0 = self.grid.phi0();
+        let allow_fast_scalar = !derivative_norm && b_alm.is_some();
         self.prepare_spin_latitudes(workspace, recurrence_spin);
         workspace
             .spectra
@@ -730,6 +737,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             b_alm,
                             recurrence_spin,
                             derivative_norm,
+                            allow_fast_scalar,
                             nphi,
                             spectrum_len,
                             phi0,
@@ -750,6 +758,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     b_alm,
                     recurrence_spin,
                     derivative_norm,
+                    allow_fast_scalar,
                     nphi,
                     spectrum_len,
                     phi0,
@@ -771,6 +780,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             b_alm,
             recurrence_spin,
             derivative_norm,
+            allow_fast_scalar,
             nphi,
             spectrum_len,
             phi0,
@@ -815,6 +825,79 @@ impl<T: ShtScalar> ShtPlan<T> {
         b_alm: Option<&[Complex<T>]>,
         spin: usize,
         derivative_norm: bool,
+        allow_fast_scalar: bool,
+        nphi: usize,
+        spectrum_len: usize,
+        phi0: f64,
+        ring_start: usize,
+        ring_end: usize,
+        q_spectra: &mut [Complex<T>],
+        u_spectra: &mut [Complex<T>],
+        theta_sin: &[T],
+        theta_cos: &[T],
+        ring_order_limits: &[usize],
+        arch: pulp::Arch,
+        recurrence: &mut RecurrenceWorkspace<T>,
+    ) -> Result<(), ShtError> {
+        debug_assert_eq!(ring_end - ring_start, theta_sin.len());
+        debug_assert_eq!(theta_cos.len(), theta_sin.len());
+        debug_assert_eq!(q_spectra.len(), theta_sin.len() * spectrum_len);
+        debug_assert_eq!(u_spectra.len(), q_spectra.len());
+        let fast_scalar_enabled = allow_fast_scalar
+            && spin == 1
+            && !derivative_norm
+            && b_alm.is_some()
+            && self.harmonics.lmax() >= SPIN1_FAST_LMAX
+            && T::supports_paired_scalar()
+            && recurrence.fast_scalar_first.len() >= self.harmonics.lmax() + 2;
+        let fast_sine_min =
+            T::from_f64(SPIN1_FAST_MIN_SIN_THETA).expect("spin-1 fast sine limit is representable");
+        let mut segment_start = 0;
+        while segment_start < theta_sin.len() {
+            let segment_fast = fast_scalar_enabled && theta_sin[segment_start] >= fast_sine_min;
+            let mut segment_end = segment_start + 1;
+            while segment_end < theta_sin.len()
+                && (fast_scalar_enabled && theta_sin[segment_end] >= fast_sine_min) == segment_fast
+            {
+                segment_end += 1;
+            }
+            let spectrum_start = segment_start * spectrum_len;
+            let spectrum_end = segment_end * spectrum_len;
+            self.synthesize_spin_ring_group_mode(
+                e_alm,
+                b_alm,
+                spin,
+                derivative_norm,
+                segment_fast,
+                nphi,
+                spectrum_len,
+                phi0,
+                ring_start + segment_start,
+                ring_start + segment_end,
+                &mut q_spectra[spectrum_start..spectrum_end],
+                &mut u_spectra[spectrum_start..spectrum_end],
+                &theta_sin[segment_start..segment_end],
+                &theta_cos[segment_start..segment_end],
+                ring_order_limits,
+                arch,
+                recurrence,
+            )?;
+            segment_start = segment_end;
+        }
+        Ok(())
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Each latitude segment receives plan inputs and its caller-owned recurrence workspace."
+    )]
+    fn synthesize_spin_ring_group_mode(
+        &self,
+        e_alm: &[Complex<T>],
+        b_alm: Option<&[Complex<T>]>,
+        spin: usize,
+        derivative_norm: bool,
+        fast_scalar: bool,
         nphi: usize,
         spectrum_len: usize,
         phi0: f64,
@@ -837,66 +920,178 @@ impl<T: ShtScalar> ShtPlan<T> {
         let fourier_scale = T::from_usize(nphi).expect("longitude count converts");
         let nyquist_scale = fourier_scale * T::from_f64(2.0).expect("two is representable");
         for m in 0..=mmax {
-            let initial = T::fill_spin_factors(
-                spin,
-                m,
-                lmax,
-                &mut recurrence.spin_alpha,
-                &mut recurrence.spin_coefficient_a,
-                &mut recurrence.spin_coefficient_b,
-            )?;
             let phase = longitude_phase::<T>(m, phi0, false);
-            T::for_each_spin_lm_dispatched(
-                arch,
-                &initial,
-                lmax,
-                theta_sin,
-                theta_cos,
-                &recurrence.spin_coefficient_a,
-                &recurrence.spin_coefficient_b,
-                &mut recurrence.spin_previous_plus,
-                &mut recurrence.spin_current_plus,
-                &mut recurrence.spin_next_plus,
-                &mut recurrence.spin_exponents_plus,
-                &mut recurrence.spin_previous_minus,
-                &mut recurrence.spin_current_minus,
-                &mut recurrence.spin_next_minus,
-                &mut recurrence.spin_exponents_minus,
-                |degree, group_ring_start, plus, plus_exp, minus, minus_exp| {
-                    let coefficient_index = self
-                        .harmonics
-                        .index(degree, m)
-                        .expect("the recurrence visits degrees in the packed order");
-                    let e_coefficient = e_alm[coefficient_index];
-                    let b_coefficient = b_alm
-                        .map(|values| values[coefficient_index])
-                        .unwrap_or_else(|| Complex::new(T::zero(), T::zero()));
-                    let alpha_norm = recurrence.spin_alpha[degree]
-                        * T::spin_normalization(spin, degree, derivative_norm);
-                    for lane in 0..plus.len() {
-                        let group_ring = group_ring_start + lane;
-                        let global_ring = ring_start + group_ring;
-                        if m > ring_order_limits[global_ring] {
-                            continue;
+            if fast_scalar {
+                let coefficient_start = self
+                    .harmonics
+                    .index(m, m)
+                    .expect("every packed order starts at its diagonal degree");
+                let coefficient_count = lmax - m + 1;
+                let scalar_lmax = lmax + 1;
+                let scalar_coefficient_count = scalar_lmax + 1;
+                let b_coefficients = b_alm.expect("the scalar conversion requires E and B");
+                spin1_to_scalar(
+                    m,
+                    lmax,
+                    &e_alm[coefficient_start..coefficient_start + coefficient_count],
+                    &b_coefficients[coefficient_start..coefficient_start + coefficient_count],
+                    &mut recurrence.fast_scalar_first[..scalar_coefficient_count],
+                    &mut recurrence.fast_scalar_second[..scalar_coefficient_count],
+                );
+                T::fill_epsilon(m, scalar_lmax, &mut recurrence.epsilon);
+                let paired_factors_ready = T::fill_paired_scalar_factors(
+                    m,
+                    scalar_lmax,
+                    &recurrence.epsilon,
+                    &mut recurrence.spin_alpha,
+                    &mut recurrence.spin_coefficient_a,
+                    &mut recurrence.spin_coefficient_b,
+                );
+                debug_assert!(paired_factors_ready);
+                T::for_each_y_lm_paired_dispatched(
+                    arch,
+                    m,
+                    scalar_lmax,
+                    theta_sin,
+                    theta_cos,
+                    self.sectoral_norms[m],
+                    &recurrence.spin_coefficient_a,
+                    &recurrence.spin_coefficient_b,
+                    &mut recurrence.previous,
+                    &mut recurrence.current,
+                    &mut recurrence.next,
+                    &mut recurrence.exponents,
+                    |l, block_ring_start, basis, exponents| {
+                        let pair_index = (l - m) / 2;
+                        let next_even = l < scalar_lmax - 1;
+                        let next_first = if next_even {
+                            recurrence.fast_scalar_first[l + 2]
+                        } else {
+                            Complex::new(T::zero(), T::zero())
+                        };
+                        let next_second = if next_even {
+                            recurrence.fast_scalar_second[l + 2]
+                        } else {
+                            Complex::new(T::zero(), T::zero())
+                        };
+                        let even_first = (recurrence.fast_scalar_first[l]
+                            * recurrence.epsilon[l + 1]
+                            + next_first * recurrence.epsilon[l + 2])
+                            * recurrence.spin_alpha[pair_index];
+                        let even_second = (recurrence.fast_scalar_second[l]
+                            * recurrence.epsilon[l + 1]
+                            + next_second * recurrence.epsilon[l + 2])
+                            * recurrence.spin_alpha[pair_index];
+                        let odd_first = if l < scalar_lmax {
+                            recurrence.fast_scalar_first[l + 1] * recurrence.spin_alpha[pair_index]
+                        } else {
+                            Complex::new(T::zero(), T::zero())
+                        };
+                        let odd_second = if l < scalar_lmax {
+                            recurrence.fast_scalar_second[l + 1] * recurrence.spin_alpha[pair_index]
+                        } else {
+                            Complex::new(T::zero(), T::zero())
+                        };
+                        for lane in 0..basis.len() {
+                            let group_ring = block_ring_start + lane;
+                            let global_ring = ring_start + group_ring;
+                            if m > ring_order_limits[global_ring] {
+                                continue;
+                            }
+                            let inverse_sine = theta_sin[group_ring].recip();
+                            let cosine_over_sine = theta_cos[group_ring] * inverse_sine;
+                            let first = T::multiply_complex_scaled_product(
+                                even_first,
+                                basis[lane],
+                                inverse_sine,
+                                exponents[lane],
+                            ) + T::multiply_complex_scaled_product(
+                                odd_first,
+                                basis[lane],
+                                cosine_over_sine,
+                                exponents[lane],
+                            );
+                            let second = T::multiply_complex_scaled_product(
+                                even_second,
+                                basis[lane],
+                                inverse_sine,
+                                exponents[lane],
+                            ) + T::multiply_complex_scaled_product(
+                                odd_second,
+                                basis[lane],
+                                cosine_over_sine,
+                                exponents[lane],
+                            );
+                            let spectrum_index = group_ring * spectrum_len + m;
+                            q_spectra[spectrum_index] += first;
+                            u_spectra[spectrum_index] += second;
                         }
-                        let plus_value =
-                            T::scaled_basis_value(plus[lane], plus_exp[lane], alpha_norm);
-                        let minus_value =
-                            T::scaled_basis_value(minus[lane], minus_exp[lane], alpha_norm);
-                        let even_basis = plus_value + minus_value;
-                        let odd_basis = plus_value - minus_value;
-                        let q_value = e_coefficient * even_basis
-                            + Complex::<T>::new(T::zero(), -T::one()) * b_coefficient * odd_basis;
-                        let u_value =
-                            Complex::<T>::new(T::zero(), T::one()) * e_coefficient * odd_basis
-                                + b_coefficient * even_basis;
-                        let spectrum_index = group_ring * spectrum_len + m;
-                        q_spectra[spectrum_index] += q_value;
-                        u_spectra[spectrum_index] += u_value;
-                    }
-                    Ok(())
-                },
-            )?;
+                        Ok(())
+                    },
+                )?;
+            } else {
+                let initial = T::fill_spin_factors(
+                    spin,
+                    m,
+                    lmax,
+                    &mut recurrence.spin_alpha,
+                    &mut recurrence.spin_coefficient_a,
+                    &mut recurrence.spin_coefficient_b,
+                )?;
+                T::for_each_spin_lm_dispatched(
+                    arch,
+                    &initial,
+                    lmax,
+                    theta_sin,
+                    theta_cos,
+                    &recurrence.spin_coefficient_a,
+                    &recurrence.spin_coefficient_b,
+                    &mut recurrence.spin_previous_plus,
+                    &mut recurrence.spin_current_plus,
+                    &mut recurrence.spin_next_plus,
+                    &mut recurrence.spin_exponents_plus,
+                    &mut recurrence.spin_previous_minus,
+                    &mut recurrence.spin_current_minus,
+                    &mut recurrence.spin_next_minus,
+                    &mut recurrence.spin_exponents_minus,
+                    |degree, group_ring_start, plus, plus_exp, minus, minus_exp| {
+                        let coefficient_index = self
+                            .harmonics
+                            .index(degree, m)
+                            .expect("the recurrence visits degrees in the packed order");
+                        let e_coefficient = e_alm[coefficient_index];
+                        let b_coefficient = b_alm
+                            .map(|values| values[coefficient_index])
+                            .unwrap_or_else(|| Complex::new(T::zero(), T::zero()));
+                        let alpha_norm = recurrence.spin_alpha[degree]
+                            * T::spin_normalization(spin, degree, derivative_norm);
+                        for lane in 0..plus.len() {
+                            let group_ring = group_ring_start + lane;
+                            let global_ring = ring_start + group_ring;
+                            if m > ring_order_limits[global_ring] {
+                                continue;
+                            }
+                            let plus_value =
+                                T::scaled_basis_value(plus[lane], plus_exp[lane], alpha_norm);
+                            let minus_value =
+                                T::scaled_basis_value(minus[lane], minus_exp[lane], alpha_norm);
+                            let even_basis = plus_value + minus_value;
+                            let odd_basis = plus_value - minus_value;
+                            let q_value = e_coefficient * even_basis
+                                + Complex::<T>::new(T::zero(), -T::one())
+                                    * b_coefficient
+                                    * odd_basis;
+                            let u_value =
+                                Complex::<T>::new(T::zero(), T::one()) * e_coefficient * odd_basis
+                                    + b_coefficient * even_basis;
+                            let spectrum_index = group_ring * spectrum_len + m;
+                            q_spectra[spectrum_index] += q_value;
+                            u_spectra[spectrum_index] += u_value;
+                        }
+                        Ok(())
+                    },
+                )?;
+            }
             for group_ring in 0..ring_end - ring_start {
                 let spectrum_index = group_ring * spectrum_len + m;
                 let phased_q = q_spectra[spectrum_index] * phase;
@@ -942,6 +1137,43 @@ impl<T: ShtScalar> ShtPlan<T> {
     ) -> Result<(), ShtError> {
         let lmax = self.harmonics.lmax();
         let longitude_count = T::from_usize(nphi).expect("longitude count converts");
+        // The paired scalar path is faster for one worker but loses throughput
+        // to the general spin kernel with eight workers on the T511 GL case.
+        let fast_scalar_enabled = self.grid.kind() == crate::grid::GridKind::GaussLegendre
+            && recurrence_spin == 1
+            && self.harmonics.spin() == 1
+            && !derivative_norm
+            && b_alm.is_some()
+            && ring_weights.is_some()
+            && lmax >= SPIN1_FAST_LMAX
+            && T::supports_paired_scalar()
+            && recurrence.fast_scalar_first.len() >= lmax + 2
+            && recurrence.fast_spin_first.len() > lmax
+            && {
+                #[cfg(feature = "parallel")]
+                {
+                    rayon::current_num_threads() == 1
+                }
+                #[cfg(not(feature = "parallel"))]
+                {
+                    true
+                }
+            };
+        let fast_range = if fast_scalar_enabled {
+            let minimum_sine = T::from_f64(SPIN1_FAST_MIN_SIN_THETA)
+                .expect("spin-1 fast sine limit is representable");
+            let start = theta_sin
+                .iter()
+                .position(|&sine| sine >= minimum_sine)
+                .unwrap_or(theta_sin.len());
+            let end = theta_sin[start..]
+                .iter()
+                .position(|&sine| sine < minimum_sine)
+                .map_or(theta_sin.len(), |offset| start + offset);
+            (start < end).then_some((start, end))
+        } else {
+            None
+        };
         let mut coefficient_start = 0;
         for m in m_start..m_end {
             let coefficient_count = lmax - m + 1;
@@ -950,7 +1182,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             let mut b_coefficients = b_alm.as_deref_mut().map(|values| {
                 &mut values[coefficient_start..coefficient_start + coefficient_count]
             });
-            let initial = T::fill_spin_factors(
+            let mut initial = T::fill_spin_factors(
                 recurrence_spin,
                 m,
                 lmax,
@@ -959,80 +1191,292 @@ impl<T: ShtScalar> ShtPlan<T> {
                 &mut recurrence.spin_coefficient_b,
             )?;
             let phase = longitude_phase::<T>(m, phi0, true);
-            for block_start in (0..theta_sin.len()).step_by(LATITUDE_BLOCK_SIZE) {
-                let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(theta_sin.len());
-                let block_len = block_end - block_start;
-                for lane in 0..block_len {
-                    let ring = block_start + lane;
-                    let spectrum_start = ring * spectrum_len;
-                    let mut q_weighted = q_spectra[spectrum_start + m] * phase;
-                    let mut u_weighted = u_spectra[spectrum_start + m] * phase;
-                    let mut scale = ring_weights.map_or(T::one(), |weights| {
-                        T::from_f64(weights[ring]).expect("ring weight is representable")
-                    });
-                    if normalize_fourier {
-                        scale /= longitude_count;
-                    }
-                    q_weighted *= scale;
-                    u_weighted *= scale;
-                    recurrence.weighted_spin_q_spectrum[lane] = q_weighted;
-                    recurrence.weighted_spin_u_spectrum[lane] = u_weighted;
-                }
-                let weighted_q_spectrum = &recurrence.weighted_spin_q_spectrum[..block_len];
-                let weighted_u_spectrum = &recurrence.weighted_spin_u_spectrum[..block_len];
-                T::for_each_spin_lm_dispatched(
+            if let Some((fast_start, fast_end)) = fast_range {
+                self.analyze_spin_scalar_fast_order(
+                    q_spectra,
+                    u_spectra,
+                    spectrum_len,
+                    longitude_count,
+                    phase,
+                    ring_weights.expect("the fast analysis path uses exact ring weights"),
+                    normalize_fourier,
+                    m,
+                    fast_start,
+                    fast_end,
+                    theta_sin,
+                    theta_cos,
                     arch,
-                    &initial,
-                    lmax,
-                    &theta_sin[block_start..block_end],
-                    &theta_cos[block_start..block_end],
-                    &recurrence.spin_coefficient_a,
-                    &recurrence.spin_coefficient_b,
-                    &mut recurrence.spin_previous_plus,
-                    &mut recurrence.spin_current_plus,
-                    &mut recurrence.spin_next_plus,
-                    &mut recurrence.spin_exponents_plus,
-                    &mut recurrence.spin_previous_minus,
-                    &mut recurrence.spin_current_minus,
-                    &mut recurrence.spin_next_minus,
-                    &mut recurrence.spin_exponents_minus,
-                    |degree, ring_start, plus, plus_exp, minus, minus_exp| {
-                        let alpha_norm = recurrence.spin_alpha[degree]
-                            * T::spin_normalization(recurrence_spin, degree, derivative_norm);
-                        let coefficient = &mut e_coefficients[degree - m];
-                        let mut b_coefficient = b_coefficients
-                            .as_deref_mut()
-                            .map(|values| &mut values[degree - m]);
-                        for lane in 0..plus.len() {
-                            let ring = ring_start + lane;
-                            if m > ring_order_limits[block_start + ring] {
-                                continue;
-                            }
-                            let plus_value =
-                                T::scaled_basis_value(plus[lane], plus_exp[lane], alpha_norm);
-                            let minus_value =
-                                T::scaled_basis_value(minus[lane], minus_exp[lane], alpha_norm);
-                            let even_basis = plus_value + minus_value;
-                            let odd_basis = plus_value - minus_value;
-                            let q_fourier = weighted_q_spectrum[ring];
-                            let u_fourier = weighted_u_spectrum[ring];
-                            *coefficient += q_fourier * even_basis
-                                + Complex::<T>::new(T::zero(), -T::one()) * u_fourier * odd_basis;
-                            if let Some(b_coefficient) = b_coefficient.as_mut() {
-                                **b_coefficient +=
-                                    Complex::<T>::new(T::zero(), T::one()) * q_fourier * odd_basis
-                                        + u_fourier * even_basis;
-                            }
-                        }
-                        Ok(())
-                    },
+                    e_coefficients,
+                    b_coefficients.as_deref_mut(),
+                    recurrence,
                 )?;
+                initial = T::fill_spin_factors(
+                    recurrence_spin,
+                    m,
+                    lmax,
+                    &mut recurrence.spin_alpha,
+                    &mut recurrence.spin_coefficient_a,
+                    &mut recurrence.spin_coefficient_b,
+                )?;
+            }
+            let first_normal_end = fast_range.map_or(theta_sin.len(), |(start, _)| start);
+            let second_normal_start = fast_range.map_or(theta_sin.len(), |(_, end)| end);
+            for (segment_start, segment_end) in [
+                (0, first_normal_end),
+                (second_normal_start, theta_sin.len()),
+            ] {
+                for block_start in (segment_start..segment_end).step_by(LATITUDE_BLOCK_SIZE) {
+                    let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(segment_end);
+                    let block_len = block_end - block_start;
+                    for lane in 0..block_len {
+                        let ring = block_start + lane;
+                        let spectrum_start = ring * spectrum_len;
+                        let mut q_weighted = q_spectra[spectrum_start + m] * phase;
+                        let mut u_weighted = u_spectra[spectrum_start + m] * phase;
+                        let mut scale = ring_weights.map_or(T::one(), |weights| {
+                            T::from_f64(weights[ring]).expect("ring weight is representable")
+                        });
+                        if normalize_fourier {
+                            scale /= longitude_count;
+                        }
+                        q_weighted *= scale;
+                        u_weighted *= scale;
+                        recurrence.weighted_spin_q_spectrum[lane] = q_weighted;
+                        recurrence.weighted_spin_u_spectrum[lane] = u_weighted;
+                    }
+                    let weighted_q_spectrum = &recurrence.weighted_spin_q_spectrum[..block_len];
+                    let weighted_u_spectrum = &recurrence.weighted_spin_u_spectrum[..block_len];
+                    T::for_each_spin_lm_dispatched(
+                        arch,
+                        &initial,
+                        lmax,
+                        &theta_sin[block_start..block_end],
+                        &theta_cos[block_start..block_end],
+                        &recurrence.spin_coefficient_a,
+                        &recurrence.spin_coefficient_b,
+                        &mut recurrence.spin_previous_plus,
+                        &mut recurrence.spin_current_plus,
+                        &mut recurrence.spin_next_plus,
+                        &mut recurrence.spin_exponents_plus,
+                        &mut recurrence.spin_previous_minus,
+                        &mut recurrence.spin_current_minus,
+                        &mut recurrence.spin_next_minus,
+                        &mut recurrence.spin_exponents_minus,
+                        |degree, ring_start, plus, plus_exp, minus, minus_exp| {
+                            let alpha_norm = recurrence.spin_alpha[degree]
+                                * T::spin_normalization(recurrence_spin, degree, derivative_norm);
+                            let coefficient = &mut e_coefficients[degree - m];
+                            let mut b_coefficient = b_coefficients
+                                .as_deref_mut()
+                                .map(|values| &mut values[degree - m]);
+                            for lane in 0..plus.len() {
+                                let ring = ring_start + lane;
+                                if m > ring_order_limits[block_start + ring] {
+                                    continue;
+                                }
+                                let plus_value =
+                                    T::scaled_basis_value(plus[lane], plus_exp[lane], alpha_norm);
+                                let minus_value =
+                                    T::scaled_basis_value(minus[lane], minus_exp[lane], alpha_norm);
+                                let even_basis = plus_value + minus_value;
+                                let odd_basis = plus_value - minus_value;
+                                let q_fourier = weighted_q_spectrum[ring];
+                                let u_fourier = weighted_u_spectrum[ring];
+                                *coefficient += q_fourier * even_basis
+                                    + Complex::<T>::new(T::zero(), -T::one())
+                                        * u_fourier
+                                        * odd_basis;
+                                if let Some(b_coefficient) = b_coefficient.as_mut() {
+                                    **b_coefficient += Complex::<T>::new(T::zero(), T::one())
+                                        * q_fourier
+                                        * odd_basis
+                                        + u_fourier * even_basis;
+                                }
+                            }
+                            Ok(())
+                        },
+                    )?;
+                }
             }
             coefficient_start += coefficient_count;
         }
         debug_assert_eq!(coefficient_start, e_alm.len());
         if let Some(b_alm) = b_alm {
             debug_assert_eq!(coefficient_start, b_alm.len());
+        }
+        Ok(())
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The spin-1 fast analysis segment needs its Fourier weights, latitude lanes, and worker scratch."
+    )]
+    fn analyze_spin_scalar_fast_order(
+        &self,
+        q_spectra: &[Complex<T>],
+        u_spectra: &[Complex<T>],
+        spectrum_len: usize,
+        longitude_count: T,
+        phase: Complex<T>,
+        ring_weights: &[f64],
+        normalize_fourier: bool,
+        m: usize,
+        ring_start: usize,
+        ring_end: usize,
+        theta_sin: &[T],
+        theta_cos: &[T],
+        arch: pulp::Arch,
+        e_coefficients: &mut [Complex<T>],
+        mut b_coefficients: Option<&mut [Complex<T>]>,
+        recurrence: &mut RecurrenceWorkspace<T>,
+    ) -> Result<(), ShtError> {
+        let scalar_lmax = self.harmonics.lmax() + 1;
+        let scalar_coefficient_count = scalar_lmax + 1;
+        recurrence.fast_scalar_first[..scalar_coefficient_count]
+            .fill(Complex::new(T::zero(), T::zero()));
+        recurrence.fast_scalar_second[..scalar_coefficient_count]
+            .fill(Complex::new(T::zero(), T::zero()));
+        T::fill_epsilon(m, scalar_lmax, &mut recurrence.epsilon);
+        let paired_factors_ready = T::fill_paired_scalar_factors(
+            m,
+            scalar_lmax,
+            &recurrence.epsilon,
+            &mut recurrence.spin_alpha,
+            &mut recurrence.spin_coefficient_a,
+            &mut recurrence.spin_coefficient_b,
+        );
+        debug_assert!(paired_factors_ready);
+
+        for block_start in (ring_start..ring_end).step_by(LATITUDE_BLOCK_SIZE) {
+            let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(ring_end);
+            let block_len = block_end - block_start;
+            for lane in 0..block_len {
+                let ring = block_start + lane;
+                let spectrum_start = ring * spectrum_len;
+                let mut scale = T::from_f64(ring_weights[ring])
+                    .expect("ring weight is representable")
+                    / theta_sin[ring];
+                if normalize_fourier {
+                    scale /= longitude_count;
+                }
+                recurrence.weighted_spin_q_spectrum[lane] =
+                    q_spectra[spectrum_start + m] * phase * scale;
+                recurrence.weighted_spin_u_spectrum[lane] =
+                    u_spectra[spectrum_start + m] * phase * scale;
+            }
+            let weighted_q = &recurrence.weighted_spin_q_spectrum[..block_len];
+            let weighted_u = &recurrence.weighted_spin_u_spectrum[..block_len];
+            let paired_used = T::for_each_y_lm_paired_dispatched(
+                arch,
+                m,
+                scalar_lmax,
+                &theta_sin[block_start..block_end],
+                &theta_cos[block_start..block_end],
+                self.sectoral_norms[m],
+                &recurrence.spin_coefficient_a,
+                &recurrence.spin_coefficient_b,
+                &mut recurrence.previous,
+                &mut recurrence.current,
+                &mut recurrence.next,
+                &mut recurrence.exponents,
+                |l, local_ring_start, basis, exponents| {
+                    let mut first_even = recurrence.fast_scalar_first[l];
+                    let mut second_even = recurrence.fast_scalar_second[l];
+                    let mut first_odd = if l < scalar_lmax {
+                        recurrence.fast_scalar_first[l + 1]
+                    } else {
+                        Complex::new(T::zero(), T::zero())
+                    };
+                    let mut second_odd = if l < scalar_lmax {
+                        recurrence.fast_scalar_second[l + 1]
+                    } else {
+                        Complex::new(T::zero(), T::zero())
+                    };
+                    for lane in 0..basis.len() {
+                        let local_ring = local_ring_start + lane;
+                        let ring = block_start + local_ring;
+                        let q = weighted_q[local_ring];
+                        let u = weighted_u[local_ring];
+                        first_even += T::multiply_complex_scaled(q, basis[lane], exponents[lane]);
+                        second_even += T::multiply_complex_scaled(u, basis[lane], exponents[lane]);
+                        if l < scalar_lmax {
+                            first_odd += T::multiply_complex_scaled_product(
+                                q,
+                                basis[lane],
+                                theta_cos[ring],
+                                exponents[lane],
+                            );
+                            second_odd += T::multiply_complex_scaled_product(
+                                u,
+                                basis[lane],
+                                theta_cos[ring],
+                                exponents[lane],
+                            );
+                        }
+                    }
+                    recurrence.fast_scalar_first[l] = first_even;
+                    recurrence.fast_scalar_second[l] = second_even;
+                    if l < scalar_lmax {
+                        recurrence.fast_scalar_first[l + 1] = first_odd;
+                        recurrence.fast_scalar_second[l + 1] = second_odd;
+                    }
+                    Ok(())
+                },
+            )?;
+            debug_assert!(paired_used);
+        }
+
+        let mut previous_even_first = Complex::new(T::zero(), T::zero());
+        let mut previous_even_second = Complex::new(T::zero(), T::zero());
+        for (pair_index, l) in (m..=scalar_lmax).step_by(2).enumerate() {
+            let even_first = recurrence.fast_scalar_first[l];
+            let even_second = recurrence.fast_scalar_second[l];
+            let odd_first = if l < scalar_lmax {
+                recurrence.fast_scalar_first[l + 1]
+            } else {
+                Complex::new(T::zero(), T::zero())
+            };
+            let odd_second = if l < scalar_lmax {
+                recurrence.fast_scalar_second[l + 1]
+            } else {
+                Complex::new(T::zero(), T::zero())
+            };
+            let previous_factor = if pair_index == 0 {
+                T::zero()
+            } else {
+                recurrence.spin_alpha[pair_index - 1] * recurrence.epsilon[l]
+            };
+            recurrence.fast_scalar_first[l] = even_first
+                * (recurrence.spin_alpha[pair_index] * recurrence.epsilon[l + 1])
+                + previous_even_first * previous_factor;
+            recurrence.fast_scalar_second[l] = even_second
+                * (recurrence.spin_alpha[pair_index] * recurrence.epsilon[l + 1])
+                + previous_even_second * previous_factor;
+            if l < scalar_lmax {
+                recurrence.fast_scalar_first[l + 1] = odd_first * recurrence.spin_alpha[pair_index];
+                recurrence.fast_scalar_second[l + 1] =
+                    odd_second * recurrence.spin_alpha[pair_index];
+            }
+            previous_even_first = even_first;
+            previous_even_second = even_second;
+        }
+
+        let coefficient_count = self.harmonics.lmax() - m + 1;
+        let fast_e = &mut recurrence.fast_spin_first[..coefficient_count];
+        let fast_b = &mut recurrence.fast_spin_second[..coefficient_count];
+        scalar_to_spin1(
+            m,
+            self.harmonics.lmax(),
+            &recurrence.fast_scalar_first[..scalar_coefficient_count],
+            &recurrence.fast_scalar_second[..scalar_coefficient_count],
+            fast_e,
+            fast_b,
+        );
+        for index in 0..coefficient_count {
+            e_coefficients[index] += fast_e[index];
+            if let Some(b_coefficients) = b_coefficients.as_deref_mut() {
+                b_coefficients[index] += fast_b[index];
+            }
         }
         Ok(())
     }

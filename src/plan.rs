@@ -21,6 +21,7 @@ pub struct ShtPlan<T: ShtScalar = f64> {
     pub(crate) spectrum_count: usize,
     pub(crate) recurrence_factor_count: usize,
     pub(crate) spin_recurrence_factor_count: usize,
+    pub(crate) spin_fast_coefficient_count: usize,
 }
 
 #[allow(private_bounds)]
@@ -51,7 +52,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let recurrence_factor_count =
             harmonics
                 .lmax()
-                .checked_add(4)
+                .checked_add(5)
                 .ok_or(ShtError::IntegerOverflow {
                     quantity: "scalar recurrence factor count",
                 })?;
@@ -62,6 +63,17 @@ impl<T: ShtScalar> ShtPlan<T> {
                 .ok_or(ShtError::IntegerOverflow {
                     quantity: "spin recurrence factor count",
                 })?;
+        let spin_fast_coefficient_count =
+            if harmonics.spin() == 1 && harmonics.lmax() >= 500 && T::supports_paired_scalar() {
+                harmonics
+                    .lmax()
+                    .checked_add(2)
+                    .ok_or(ShtError::IntegerOverflow {
+                        quantity: "spin-1 fast scalar coefficient count",
+                    })?
+            } else {
+                0
+            };
         let sectoral_norms = T::sectoral_normalizations(harmonics.mmax())?;
         let cc_resampling = match grid.kind() {
             crate::grid::GridKind::ClenshawCurtis | crate::grid::GridKind::Fejer1 => Some(
@@ -80,6 +92,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             spectrum_count,
             recurrence_factor_count,
             spin_recurrence_factor_count,
+            spin_fast_coefficient_count,
         })
     }
 
@@ -111,6 +124,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             self.grid.ntheta(),
             self.recurrence_factor_count,
             self.spin_recurrence_factor_count,
+            self.spin_fast_coefficient_count,
             &self.fft,
             self.cc_resampling.as_ref(),
         )

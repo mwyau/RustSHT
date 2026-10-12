@@ -1095,6 +1095,26 @@ impl<T: ShtScalar> ShtPlan<T> {
                     recurrence.spin_coefficient_b.len(),
                 ),
                 (
+                    "workspace spin-1 fast scalar first coefficients",
+                    self.spin_fast_coefficient_count,
+                    recurrence.fast_scalar_first.len(),
+                ),
+                (
+                    "workspace spin-1 fast scalar second coefficients",
+                    self.spin_fast_coefficient_count,
+                    recurrence.fast_scalar_second.len(),
+                ),
+                (
+                    "workspace spin-1 fast E coefficients",
+                    self.spin_fast_coefficient_count,
+                    recurrence.fast_spin_first.len(),
+                ),
+                (
+                    "workspace spin-1 fast B coefficients",
+                    self.spin_fast_coefficient_count,
+                    recurrence.fast_spin_second.len(),
+                ),
+                (
                     "workspace positive-spin previous values",
                     recurrence_scratch_len,
                     recurrence.spin_previous_plus.len(),

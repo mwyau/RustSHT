@@ -50,12 +50,17 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     pub(crate) spin_exponents_minus: Vec<i64>,
     pub(crate) weighted_spin_q_spectrum: Vec<Complex<T>>,
     pub(crate) weighted_spin_u_spectrum: Vec<Complex<T>>,
+    pub(crate) fast_scalar_first: Vec<Complex<T>>,
+    pub(crate) fast_scalar_second: Vec<Complex<T>>,
+    pub(crate) fast_spin_first: Vec<Complex<T>>,
+    pub(crate) fast_spin_second: Vec<Complex<T>>,
 }
 
 impl<T: ShtScalar> RecurrenceWorkspace<T> {
     fn new(
         recurrence_factor_count: usize,
         spin_recurrence_factor_count: usize,
+        spin_fast_coefficient_count: usize,
         recurrence_scratch_len: usize,
     ) -> Result<Self, ShtError> {
         Ok(Self {
@@ -107,18 +112,36 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
                 recurrence_scratch_len,
                 "weighted spin U Fourier modes",
             )?,
+            fast_scalar_first: allocate_complex(
+                spin_fast_coefficient_count,
+                "spin-1 fast scalar first coefficients",
+            )?,
+            fast_scalar_second: allocate_complex(
+                spin_fast_coefficient_count,
+                "spin-1 fast scalar second coefficients",
+            )?,
+            fast_spin_first: allocate_complex(
+                spin_fast_coefficient_count,
+                "spin-1 fast E coefficients",
+            )?,
+            fast_spin_second: allocate_complex(
+                spin_fast_coefficient_count,
+                "spin-1 fast B coefficients",
+            )?,
         })
     }
 }
 
 #[allow(private_bounds)]
 impl<T: ShtScalar> ShtWorkspace<T> {
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
         spectrum_count: usize,
         nphi: usize,
         ntheta: usize,
         recurrence_factor_count: usize,
         spin_recurrence_factor_count: usize,
+        spin_fast_coefficient_count: usize,
         fft: &RealFftPlan<T>,
         cc_resampling: Option<&CCResamplingPlan<T>>,
     ) -> Result<Self, ShtError> {
@@ -155,6 +178,7 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             recurrence_workers.push(RecurrenceWorkspace::new(
                 recurrence_factor_count,
                 spin_recurrence_factor_count,
+                spin_fast_coefficient_count,
                 recurrence_scratch_len,
             )?);
         }

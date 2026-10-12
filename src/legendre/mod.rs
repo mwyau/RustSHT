@@ -6,6 +6,9 @@ mod scalar_f32;
 mod scalar_paired;
 mod spin;
 mod spin_f32;
+mod spin_fast;
+
+pub(crate) use spin_fast::{scalar_to_spin1, spin1_to_scalar};
 
 use num_complex::Complex;
 use pulp::Arch;
@@ -74,6 +77,10 @@ pub(crate) trait ShtScalar:
     + std::ops::RemAssign
     + std::ops::SubAssign
 {
+    fn supports_paired_scalar() -> bool {
+        false
+    }
+
     type SpinInitial;
 
     fn sectoral_normalizations(mmax: usize) -> Result<Vec<Self>, ShtError>;
@@ -180,6 +187,10 @@ pub(crate) trait ShtScalar:
 
 impl ShtScalar for f64 {
     type SpinInitial = spin::SpinInitial;
+
+    fn supports_paired_scalar() -> bool {
+        true
+    }
 
     fn sectoral_normalizations(mmax: usize) -> Result<Vec<Self>, ShtError> {
         scalar::sectoral_normalizations(mmax)

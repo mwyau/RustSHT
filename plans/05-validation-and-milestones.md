@@ -795,3 +795,35 @@ The rebuilt Python extension was measured against `ducc0==0.41.0` at the same DU
 | Scalar analysis | 8 | `31.774 (0.631)` | `1.740 (<0.001)` | `18.3x` |
 
 Scalar synthesis maximum absolute/RMS/relative L2 error was `2.316e-14`/`7.232e-16`/`6.114e-14`; analysis error was `3.722e-15`/`1.045e-16`/`2.046e-14`. The same rebuilt extension measured the unchanged spin-1 path at T511: synthesis was `1262.916 ms` and `195.012 ms` with one and eight threads, versus DUCC's `24.308 ms` and `3.793 ms`; analysis was `1280.497 ms` and `185.167 ms`, versus `24.757 ms` and `3.644 ms`. Spin-1 maximum absolute errors remained `2.365e-14` for synthesis and `1.463e-14` for analysis. The paired recurrence improves scalar synthesis but does not close the remaining DUCC gap; spin 1 remains a higher-priority kernel target.
+
+### DUCC scalar-conversion path for spin-1 STANDARD transforms (M4/M5, 2026-10-12)
+
+For spin-1 STANDARD synthesis at `lmax >= 500`, RustSHT now converts E/B coefficients into two scalar coefficient rows, evaluates the paired f64 scalar recurrence, and divides the middle-latitude sums by `sin(theta)`. Rings with `sin(theta) < 0.0001` use the general spin recurrence. Spin-1 exact analysis uses the transpose coefficient conversion and the paired scalar recurrence on GL rings whose sine meets the same cutoff; Fourier phase, ring quadrature, and `1/nphi` scaling are applied once to each input component. The coefficient conversions adapt DUCC `spin1to0` and `spin0to1` in `sht.cc` at revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`. CC/F1 analysis, GRAD_ONLY, DERIV1, and adjoint-synthesis paths use the general spin recurrence. Standard synthesis and its adjoint-analysis use the same standard synthesis operator.
+
+The fast path is selected only for f64 STANDARD spin-1 operations with both coefficient channels. Four per-worker `Complex64` arrays of length `lmax+2` hold the converted and transposed coefficients. This adds `32,832` bytes per worker at T511 and `131,136` bytes per worker at T2047. The T511 one-thread Python workspace uses one worker (`32.1 KiB`); its eight-thread workspace uses eight workers (`256.5 KiB`). No map-sized or harmonic-matrix workspace is added.
+
+The focused synthesis regression compares the fast and general spin recurrences over 65 T511 GL rings, including the near-pole fallback, for E-only, B-only, and mixed E/B inputs at `phi0=0.37`. The largest Fourier-coefficient discrepancy is bounded by `3e-11`. The coefficient-conversion test checks the spin-1 basis through T16 and verifies the adjoint coefficient transform for every order. The release T511 spin-1 DUCC check passed on GL, CC and F1; the T1023 exact-analysis comparison passed on all three grids. The release T2047 sparse spin-1/2 synthesis check passed on all grids. The T511 spin-3/4 all-grid regression and T2047 sparse spin-3/4 check passed after the shared-kernel change. STANDARD spin adjoint identities, spin-1/2 regression tests, GRAD_ONLY and DERIV1 tests, and the f32 spin-1 through spin-4 tests passed.
+
+Native release timings used `examples/m1b_bench.rs`, rustc 1.99.0, f64, T511 GL `512x1025`, `phi0=0.37`, an AMD Ryzen 9 5950X with AVX2/FMA dispatch and no AVX-512, reused plans/workspaces, one warmup, five timed samples, and three repeated runs. Before values are the general spin recurrence from the previous implementation; after values enable spin-1 scalar conversion for synthesis and one-worker analysis. Entries give the median and range of the three run medians in milliseconds:
+
+| Operation | Threads | General (median; range) | Scalar conversion (median; range) | Change |
+| --- | ---: | ---: | ---: | ---: |
+| Synthesis | 1 | `1261.893; 12.116` | `555.661; 6.893` | `-56.0%` |
+| Synthesis | 8 | `187.478; 2.021` | `98.354; 1.582` | `-47.5%` |
+| Analysis | 1 | `1287.612; 1.470` | `743.343; 4.235` | `-42.3%` |
+| Analysis | 8 | `183.233; 2.465` | `178.864; 3.355` | `-2.4%` |
+
+An isolated analysis-path comparison measured the general and scalar-conversion variants at `1247.876 ms` and `743.343 ms` with one worker (`-40.4%`). At eight workers, scalar conversion took `205.712 ms` versus `178.864 ms` for the general path (`+15.0%`). The analysis fast path therefore runs only with one Rayon worker. Synthesis improved at both measured thread counts.
+
+The rebuilt Python extension was compared with `ducc0==0.41.0` from the same source revision on T511 GL, with Python 3.11.15 and NumPy 2.4.6. Each result is the median of two run medians; ranges are in milliseconds. Each run used one warmup and five timed samples. RustSHT plan methods reuse the plan and allocate a workspace per call; procedural functions construct a plan and workspace:
+
+| Operation | Threads | RustSHT plan (median; range) | Procedural RustSHT (median; range) | DUCC (median; range) | Plan / DUCC |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Synthesis | 1 | `557.368; 3.742` | `557.511; 0.903` | `24.479; 0.543` | `22.8x` |
+| Synthesis | 8 | `105.087; 1.430` | `101.582; 0.263` | `3.750; 0.123` | `28.0x` |
+| Analysis | 1 | `696.101; 0.699` | `692.377; 0.359` | `24.882; 0.055` | `28.0x` |
+| Analysis | 8 | `190.822; 7.762` | `184.648; 0.018` | `3.535; 0.033` | `54.0x` |
+
+Synthesis errors against DUCC were `2.515e-14` maximum absolute, `7.703e-16` RMS and `6.328e-14` relative L2 at both thread counts. Analysis errors were `1.237e-14`, `2.126e-16` and `4.163e-14` with one thread, and `1.463e-14`, `2.298e-16` and `4.500e-14` with eight threads. The measured plan-construction time was `0.035–0.037 ms`; NumPy input copies took `0.087–0.106 ms` for coefficients and `0.136–0.193 ms` for maps; output allocation took `0.001 ms`. These Python costs are small relative to transform execution. RustSHT remains `22.8–54.0x` slower than DUCC for these plan-method comparisons.
+
+`cargo fmt --all -- --check`, workspace Clippy with warnings denied, `cargo test --workspace --all-features` (82 library tests and 10 f32 integration tests passed; seven opt-in checks ignored), `cargo test -p rustsht --no-default-features` (79 library tests and 10 f32 integration tests passed; seven opt-in checks ignored), and `uv run pytest python/tests` (eight passed) passed. The release T2047 sparse spin check and T511 spin-3/4 regression also passed. No instruction-count profile was collected for this change.
