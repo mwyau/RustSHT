@@ -34,12 +34,12 @@ Implement the algorithms in Rust using published literature and DUCC for behavio
 
 ## Selected implementation defaults (2026-10-11)
 
-These choices guide implementation without routine confirmation. Revise them when implementation evidence, tests or a concrete downstream need supports a change; record why. The D02 operation limit was set to spin 4 on 2026-10-12 after spin 3 and 4 passed analytic and DUCC checks for the full operation family on GL, CC and F1 at `lmax=spin`. The supporting measurements are recorded in [05](05-validation-and-milestones.md). Higher spins require the same validation before this limit changes.
+These choices guide implementation without routine confirmation. Revise them when implementation evidence, tests or a concrete downstream need supports a change; record why. The D02 operation limit was set to spin 4 on 2026-10-12 after spin 3 and 4 passed analytic and DUCC checks for the full operation family on GL, CC and F1 at `lmax=spin`. A later check covers STANDARD synthesis and exact analysis through T511 on all three grids. The supporting measurements are recorded in [05](05-validation-and-milestones.md). Higher spins require the same validation before this limit changes.
 
 | ID | Selected choice | Consequence |
 | --- | --- | --- |
 | D01 | Idiomatic Rust `ShtPlan`; DUCC-familiar Python functions | Plan contains grid, bandlimits and spin; use explicit operation/mode-specific methods. No mode in `HarmonicSpec` or public kernel trait hierarchy. |
-| D02 | Required parity spins: 0, 1 and 2; current operation limit is spin 4 | Spin 3 and 4 passed all-grid operation checks at `lmax=spin`; spin 5 and above remain unsupported pending separate verification. |
+| D02 | Required parity spins: 0, 1 and 2; current operation limit is spin 4 | Spin 3 and 4 passed all-grid operation checks at `lmax=spin` and STANDARD synthesis/exact analysis through T511; spin 5 and above remain unsupported pending separate verification. |
 | D03 | f64 first, f32 after f64 all-grid correctness | Verify f32 separately, particularly at high bandlimits. |
 | D04 | Private real-FFT adapter over RustFFT | For even longitude lengths pack pairs of real samples into a half-length complex FFT, then reconstruct the nonnegative Hermitian spectrum. Invert for synthesis. Use full-length complex RustFFT for odd lengths initially. No RealFFT dependency or FFT butterflies. |
 | D05 | Independent GPL-2.0-or-later Rust/Python packages | Keep spharmgrid independent, with a separately packaged optional backend; review combined distribution before release. |
