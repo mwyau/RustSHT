@@ -3706,4 +3706,193 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    #[ignore = "M3 sparse T1023 synthesis check; run this check in release mode"]
+    #[expect(
+        clippy::excessive_precision,
+        reason = "The literals retain printed DUCC 0.41.0 reference values."
+    )]
+    fn m3_spin_t1023_sparse_synthesis_matches_ducc() {
+        // DUCC 0.41.0 references use a^E_(1023,1023)=1, phi0=0.37, nthreads=1.
+        // They cover ring 31 of a 65-ring grid and j=[0,1,17,nphi/2,nphi-1].
+        let degree = 1023;
+        let ntheta = 65;
+        let nphi = 2 * degree + 3;
+        for kind in [
+            GridKind::GaussLegendre,
+            GridKind::ClenshawCurtis,
+            GridKind::Fejer1,
+        ] {
+            let grid = GridSpec::new(kind, ntheta, nphi, 0.37).unwrap();
+            for spin in [1, 2] {
+                let plan = ShtPlan::new(
+                    grid.clone(),
+                    HarmonicSpec::new(degree, degree, spin).unwrap(),
+                )
+                .unwrap();
+                let high_mode = plan.harmonics().index(degree, degree).unwrap();
+                let mut e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+                let b = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+                e[high_mode] = Complex64::new(1.0, 0.0);
+                let mut workspace = plan.workspace().unwrap();
+                let mut first = vec![0.0; plan.sample_count];
+                let mut second = vec![0.0; plan.sample_count];
+                plan.synthesis_spin_into(&e, &b, &mut first, &mut second, &mut workspace)
+                    .unwrap();
+
+                let (expected_first, expected_second) = match (kind, spin) {
+                    (GridKind::GaussLegendre, 1) => (
+                        [
+                            -0.0026008582624004115,
+                            0.00283106137020556,
+                            0.006502857926006633,
+                            0.05005946407273143,
+                            0.0023706001277953108,
+                        ],
+                        [
+                            1.0440133527351534,
+                            -1.0437527830547122,
+                            -1.0365855770823591,
+                            0.05184723102990156,
+                            -1.0442518340477787,
+                        ],
+                    ),
+                    (GridKind::GaussLegendre, 2) => (
+                        [
+                            0.05435601666252876,
+                            -0.05916709158518613,
+                            -0.13590492757334846,
+                            -1.046205824666246,
+                            -0.04954379172039536,
+                        ],
+                        [
+                            -0.10007570596629436,
+                            0.10005072860881592,
+                            0.09936370368177835,
+                            -0.004969906020954131,
+                            0.10009856600506513,
+                        ],
+                    ),
+                    (GridKind::ClenshawCurtis, 1) => (
+                        [
+                            -0.0025172268401400556,
+                            0.0027400276940073853,
+                            0.006293756467087817,
+                            0.048449786129678055,
+                            0.0022943727288769426,
+                        ],
+                        [
+                            0.9872920548389174,
+                            -0.9870456419223036,
+                            -0.9802678306104462,
+                            0.04903036836369357,
+                            -0.9875175794498488,
+                        ],
+                    ),
+                    (GridKind::ClenshawCurtis, 2) => (
+                        [
+                            0.05141125476026481,
+                            -0.05596168751281744,
+                            -0.12854221636636906,
+                            -0.9895271487152227,
+                            -0.04685973429106343,
+                        ],
+                        [
+                            -0.09686303421042028,
+                            0.09683885868641512,
+                            0.09617388891809334,
+                            -0.004810360039752212,
+                            0.09688516038675976,
+                        ],
+                    ),
+                    (GridKind::Fejer1, 1) => (
+                        [
+                            -0.002573559915789246,
+                            0.00280134683493901,
+                            0.006434604583564386,
+                            0.04953404497505026,
+                            0.0023457185473952577,
+                        ],
+                        [
+                            1.025145780618557,
+                            -1.0248899199940147,
+                            -1.0178522408856654,
+                            0.05091023978554628,
+                            -1.0253799520597107,
+                        ],
+                    ),
+                    (GridKind::Fejer1, 2) => (
+                        [
+                            0.05337653486315186,
+                            -0.05810091542129314,
+                            -0.1334559548344109,
+                            -1.0273534578707713,
+                            -0.04865102500859692,
+                        ],
+                        [
+                            -0.09902708853582051,
+                            0.09900237289712947,
+                            0.09832254678329747,
+                            -0.004917830144685581,
+                            0.0990497090415809,
+                        ],
+                    ),
+                    _ => unreachable!(),
+                };
+
+                let ring = 31;
+                let longitudes = [0, 1, 17, nphi / 2, nphi - 1];
+                let (mut max_error, mut error_squares) = (0.0_f64, 0.0_f64);
+                let mut count = 0usize;
+                for (slot, longitude) in longitudes.into_iter().enumerate() {
+                    let index = ring * nphi + longitude;
+                    for (actual, expected) in [
+                        (first[index], expected_first[slot]),
+                        (second[index], expected_second[slot]),
+                    ] {
+                        let error = (actual - expected).abs();
+                        max_error = max_error.max(error);
+                        error_squares += error * error;
+                        count += 1;
+                        assert!(
+                            error <= 8e-11,
+                            "{kind:?} spin {spin} T{degree} synthesis error={error:.3e}"
+                        );
+                    }
+                }
+
+                let mut gradient_first = vec![0.0; plan.sample_count];
+                let mut gradient_second = vec![0.0; plan.sample_count];
+                plan.synthesis_gradient_into(
+                    &e,
+                    &mut gradient_first,
+                    &mut gradient_second,
+                    &mut workspace,
+                )
+                .unwrap();
+                let (mut gradient_max_error, mut gradient_error_squares) = (0.0_f64, 0.0_f64);
+                for ((&standard_first, &standard_second), (&gradient_first, &gradient_second)) in
+                    first
+                        .iter()
+                        .zip(&second)
+                        .zip(gradient_first.iter().zip(&gradient_second))
+                {
+                    for error in [
+                        (standard_first - gradient_first).abs(),
+                        (standard_second - gradient_second).abs(),
+                    ] {
+                        gradient_max_error = gradient_max_error.max(error);
+                        gradient_error_squares += error * error;
+                    }
+                }
+                assert!(gradient_max_error <= 2e-11);
+                eprintln!(
+                    "M3 spin {spin} T{degree} {kind:?}: DUCC sparse synthesis max abs={max_error:.3e}, RMS={:.3e}; STANDARD-GRAD_ONLY max abs={gradient_max_error:.3e}, RMS={:.3e}",
+                    (error_squares / count as f64).sqrt(),
+                    (gradient_error_squares / (2 * plan.sample_count) as f64).sqrt(),
+                );
+            }
+        }
+    }
 }
