@@ -17,6 +17,7 @@ pub struct ShtPlan {
     pub(crate) sample_count: usize,
     pub(crate) spectrum_count: usize,
     pub(crate) recurrence_factor_count: usize,
+    pub(crate) spin_recurrence_factor_count: usize,
 }
 
 impl ShtPlan {
@@ -50,6 +51,13 @@ impl ShtPlan {
                 .ok_or(ShtError::IntegerOverflow {
                     quantity: "scalar recurrence factor count",
                 })?;
+        let spin_recurrence_factor_count =
+            harmonics
+                .lmax()
+                .checked_add(2)
+                .ok_or(ShtError::IntegerOverflow {
+                    quantity: "spin recurrence factor count",
+                })?;
         let sectoral_norms = sectoral_normalizations(harmonics.mmax())?;
 
         Ok(Self {
@@ -60,6 +68,7 @@ impl ShtPlan {
             sample_count,
             spectrum_count,
             recurrence_factor_count,
+            spin_recurrence_factor_count,
         })
     }
 
@@ -90,6 +99,7 @@ impl ShtPlan {
             self.grid.nphi(),
             self.grid.ntheta(),
             self.recurrence_factor_count,
+            self.spin_recurrence_factor_count,
             &self.fft,
         )
     }

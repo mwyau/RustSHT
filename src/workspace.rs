@@ -13,6 +13,7 @@ use crate::legendre::LATITUDE_BLOCK_SIZE;
 /// for each concurrent execution.
 pub struct ShtWorkspace {
     pub(crate) spectra: Vec<Complex64>,
+    pub(crate) spin_spectra: Vec<Complex64>,
     pub(crate) row: Vec<f64>,
     pub(crate) theta_sin: Vec<f64>,
     pub(crate) theta_cos: Vec<f64>,
@@ -28,11 +29,23 @@ pub(crate) struct RecurrenceWorkspace {
     pub(crate) current: Vec<f64>,
     pub(crate) next: Vec<f64>,
     pub(crate) exponents: Vec<i64>,
+    pub(crate) spin_alpha: Vec<f64>,
+    pub(crate) spin_coefficient_a: Vec<f64>,
+    pub(crate) spin_coefficient_b: Vec<f64>,
+    pub(crate) spin_previous_plus: Vec<f64>,
+    pub(crate) spin_current_plus: Vec<f64>,
+    pub(crate) spin_next_plus: Vec<f64>,
+    pub(crate) spin_exponents_plus: Vec<i64>,
+    pub(crate) spin_previous_minus: Vec<f64>,
+    pub(crate) spin_current_minus: Vec<f64>,
+    pub(crate) spin_next_minus: Vec<f64>,
+    pub(crate) spin_exponents_minus: Vec<i64>,
 }
 
 impl RecurrenceWorkspace {
     fn new(
         recurrence_factor_count: usize,
+        spin_recurrence_factor_count: usize,
         recurrence_scratch_len: usize,
     ) -> Result<Self, ShtError> {
         Ok(Self {
@@ -41,6 +54,41 @@ impl RecurrenceWorkspace {
             current: allocate_real(recurrence_scratch_len, "current recurrence values")?,
             next: allocate_real(recurrence_scratch_len, "next recurrence values")?,
             exponents: allocate_exponents(recurrence_scratch_len)?,
+            spin_alpha: allocate_real(spin_recurrence_factor_count, "spin recurrence alpha")?,
+            spin_coefficient_a: allocate_real(
+                spin_recurrence_factor_count,
+                "spin recurrence coefficient A",
+            )?,
+            spin_coefficient_b: allocate_real(
+                spin_recurrence_factor_count,
+                "spin recurrence coefficient B",
+            )?,
+            spin_previous_plus: allocate_real(
+                recurrence_scratch_len,
+                "positive-spin previous recurrence values",
+            )?,
+            spin_current_plus: allocate_real(
+                recurrence_scratch_len,
+                "positive-spin current recurrence values",
+            )?,
+            spin_next_plus: allocate_real(
+                recurrence_scratch_len,
+                "positive-spin next recurrence values",
+            )?,
+            spin_exponents_plus: allocate_exponents(recurrence_scratch_len)?,
+            spin_previous_minus: allocate_real(
+                recurrence_scratch_len,
+                "negative-spin previous recurrence values",
+            )?,
+            spin_current_minus: allocate_real(
+                recurrence_scratch_len,
+                "negative-spin current recurrence values",
+            )?,
+            spin_next_minus: allocate_real(
+                recurrence_scratch_len,
+                "negative-spin next recurrence values",
+            )?,
+            spin_exponents_minus: allocate_exponents(recurrence_scratch_len)?,
         })
     }
 }
@@ -51,6 +99,7 @@ impl ShtWorkspace {
         nphi: usize,
         ntheta: usize,
         recurrence_factor_count: usize,
+        spin_recurrence_factor_count: usize,
         fft: &RealFftPlan,
     ) -> Result<Self, ShtError> {
         let recurrence_scratch_len = ntheta.min(LATITUDE_BLOCK_SIZE);
@@ -77,12 +126,14 @@ impl ShtWorkspace {
         for _ in 0..worker_count {
             recurrence_workers.push(RecurrenceWorkspace::new(
                 recurrence_factor_count,
+                spin_recurrence_factor_count,
                 recurrence_scratch_len,
             )?);
         }
 
         Ok(Self {
             spectra: allocate_complex(spectrum_count, "Fourier spectrum")?,
+            spin_spectra: allocate_complex(spectrum_count, "spin Fourier spectrum")?,
             row: allocate_real(nphi, "longitude row")?,
             theta_sin: allocate_real(ntheta, "latitude sine values")?,
             theta_cos: allocate_real(ntheta, "latitude cosine values")?,

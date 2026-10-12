@@ -525,7 +525,7 @@ impl ShtPlan {
         }
     }
 
-    fn check_workspace(&self, workspace: &ShtWorkspace) -> Result<(), ShtError> {
+    pub(crate) fn check_workspace(&self, workspace: &ShtWorkspace) -> Result<(), ShtError> {
         let recurrence_scratch_len = self.grid.ntheta().min(LATITUDE_BLOCK_SIZE);
         if workspace.ring_group_size == 0 {
             return Err(ShtError::BufferLength {
@@ -538,6 +538,11 @@ impl ShtPlan {
             "workspace Fourier spectra",
             self.spectrum_count,
             workspace.spectra.len(),
+        )?;
+        check_len(
+            "workspace spin Fourier spectra",
+            self.spectrum_count,
+            workspace.spin_spectra.len(),
         )?;
         check_len(
             "workspace longitude row",
@@ -592,6 +597,61 @@ impl ShtPlan {
                     "workspace recurrence exponents",
                     recurrence_scratch_len,
                     recurrence.exponents.len(),
+                ),
+                (
+                    "workspace spin recurrence alpha factors",
+                    self.spin_recurrence_factor_count,
+                    recurrence.spin_alpha.len(),
+                ),
+                (
+                    "workspace spin recurrence A factors",
+                    self.spin_recurrence_factor_count,
+                    recurrence.spin_coefficient_a.len(),
+                ),
+                (
+                    "workspace spin recurrence B factors",
+                    self.spin_recurrence_factor_count,
+                    recurrence.spin_coefficient_b.len(),
+                ),
+                (
+                    "workspace positive-spin previous values",
+                    recurrence_scratch_len,
+                    recurrence.spin_previous_plus.len(),
+                ),
+                (
+                    "workspace positive-spin current values",
+                    recurrence_scratch_len,
+                    recurrence.spin_current_plus.len(),
+                ),
+                (
+                    "workspace positive-spin next values",
+                    recurrence_scratch_len,
+                    recurrence.spin_next_plus.len(),
+                ),
+                (
+                    "workspace positive-spin exponents",
+                    recurrence_scratch_len,
+                    recurrence.spin_exponents_plus.len(),
+                ),
+                (
+                    "workspace negative-spin previous values",
+                    recurrence_scratch_len,
+                    recurrence.spin_previous_minus.len(),
+                ),
+                (
+                    "workspace negative-spin current values",
+                    recurrence_scratch_len,
+                    recurrence.spin_current_minus.len(),
+                ),
+                (
+                    "workspace negative-spin next values",
+                    recurrence_scratch_len,
+                    recurrence.spin_next_minus.len(),
+                ),
+                (
+                    "workspace negative-spin exponents",
+                    recurrence_scratch_len,
+                    recurrence.spin_exponents_minus.len(),
                 ),
             ] {
                 check_len(buffer, expected, actual)?;

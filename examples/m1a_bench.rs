@@ -84,17 +84,21 @@ fn main() {
     });
 
     let spectrum_len = nphi / 2 + 1;
+    let spin_recurrence_factors = rayon_threads * 3 * (lmax + 2) * size_of::<f64>();
+    let spin_recurrence_lanes = rayon_threads * 64 * (6 * size_of::<f64>() + 2 * size_of::<i64>());
     let core_bytes = map.len() * size_of::<f64>()
         + alm.len() * size_of::<Complex64>()
         + analyzed.len() * size_of::<Complex64>()
-        + ntheta * spectrum_len * size_of::<Complex64>()
+        + 2 * ntheta * spectrum_len * size_of::<Complex64>()
         + nphi * size_of::<f64>()
         + rayon_threads * (lmax + 1) * size_of::<f64>()
         + 2 * ntheta * size_of::<f64>()
         + ntheta * size_of::<usize>()
         + rayon_threads * 64 * (3 * size_of::<f64>() + size_of::<i64>())
         + 2 * ntheta * size_of::<f64>()
-        + (lmax + 1) * size_of::<f64>();
+        + (lmax + 1) * size_of::<f64>()
+        + spin_recurrence_factors
+        + spin_recurrence_lanes;
     println!("T{lmax}; GL {ntheta}x{nphi}; f64; 1 vs {rayon_threads} threads; 5 samples, median");
     println!(
         "synthesis_one_thread_ms={:.3}",
