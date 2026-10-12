@@ -368,8 +368,12 @@ fn normalize_pair_lanes(
     exponents: &mut [i64],
 ) -> Result<(), ShtError> {
     for lane in 0..previous.len() {
-        let mut maximum = previous[lane].abs().max(current[lane].abs());
-        while maximum > BIG {
+        let previous_bits = previous[lane].to_bits() & 0x7fff_ffff;
+        let current_bits = current[lane].to_bits() & 0x7fff_ffff;
+        debug_assert!(previous_bits < 0x7f80_0000 && current_bits < 0x7f80_0000);
+        let mut maximum_bits = previous_bits.max(current_bits);
+        let mut maximum = f32::from_bits(maximum_bits);
+        while maximum_bits > BIG.to_bits() {
             previous[lane] *= SCALE_DOWN;
             current[lane] *= SCALE_DOWN;
             exponents[lane] = exponents[lane]
@@ -378,8 +382,9 @@ fn normalize_pair_lanes(
                     quantity: "scalar recurrence scale",
                 })?;
             maximum *= SCALE_DOWN;
+            maximum_bits = maximum.to_bits() & 0x7fff_ffff;
         }
-        while maximum != 0.0 && maximum < SMALL {
+        while maximum_bits != 0 && maximum_bits < SMALL.to_bits() {
             previous[lane] *= SCALE_UP;
             current[lane] *= SCALE_UP;
             exponents[lane] = exponents[lane]
@@ -388,6 +393,7 @@ fn normalize_pair_lanes(
                     quantity: "scalar recurrence scale",
                 })?;
             maximum *= SCALE_UP;
+            maximum_bits = maximum.to_bits() & 0x7fff_ffff;
         }
     }
     Ok(())
@@ -494,6 +500,82 @@ mod tests {
             }
         }
         value * 2.0_f32.powi(exponent as i32)
+    }
+
+    fn reference_normalize_pair_lanes(
+        previous: &mut [f32],
+        current: &mut [f32],
+        exponents: &mut [i64],
+    ) {
+        for lane in 0..previous.len() {
+            let mut maximum = previous[lane].abs().max(current[lane].abs());
+            while maximum > BIG {
+                previous[lane] *= SCALE_DOWN;
+                current[lane] *= SCALE_DOWN;
+                exponents[lane] += 80;
+                maximum *= SCALE_DOWN;
+            }
+            while maximum != 0.0 && maximum < SMALL {
+                previous[lane] *= SCALE_UP;
+                current[lane] *= SCALE_UP;
+                exponents[lane] -= 80;
+                maximum *= SCALE_UP;
+            }
+        }
+    }
+
+    #[test]
+    fn f32_pair_normalization_matches_float_magnitude_reference() {
+        let initial_previous = [
+            0.0,
+            f32::from_bits(1),
+            f32::from_bits(SMALL.to_bits() - 1),
+            -f32::from_bits(BIG.to_bits() + 1),
+            f32::MAX,
+            f32::MIN_POSITIVE,
+            -0.5,
+            0.0,
+        ];
+        let initial_current = [
+            -0.0,
+            0.0,
+            0.0,
+            BIG,
+            f32::MIN_POSITIVE,
+            -f32::from_bits(1),
+            0.25,
+            SMALL,
+        ];
+        let mut actual_previous = initial_previous;
+        let mut actual_current = initial_current;
+        let mut actual_exponents = [0; 8];
+        let mut expected_previous = initial_previous;
+        let mut expected_current = initial_current;
+        let mut expected_exponents = [0; 8];
+
+        normalize_pair_lanes(
+            &mut actual_previous,
+            &mut actual_current,
+            &mut actual_exponents,
+        )
+        .unwrap();
+        reference_normalize_pair_lanes(
+            &mut expected_previous,
+            &mut expected_current,
+            &mut expected_exponents,
+        );
+
+        for lane in 0..initial_previous.len() {
+            assert_eq!(
+                actual_previous[lane].to_bits(),
+                expected_previous[lane].to_bits()
+            );
+            assert_eq!(
+                actual_current[lane].to_bits(),
+                expected_current[lane].to_bits()
+            );
+            assert_eq!(actual_exponents[lane], expected_exponents[lane]);
+        }
     }
 
     #[test]
