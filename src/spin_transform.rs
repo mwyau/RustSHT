@@ -151,6 +151,211 @@ impl ShtPlan {
     ) -> Result<(), ShtError> {
         let spin = self.supported_spin()?;
         self.check_analysis_sampling()?;
+        self.map_to_spin_coefficients(
+            first_component,
+            second_component,
+            e_alm,
+            Some(b_alm),
+            spin,
+            false,
+            Some(self.grid.ring_weights()),
+            true,
+            workspace,
+        )
+    }
+
+    /// Applies the adjoint of spin-1 or spin-2 STANDARD synthesis.
+    ///
+    /// The map dot product is an unweighted pixel sum. The returned E/B
+    /// coefficients use the real harmonic inner product, including weight
+    /// two for `m > 0`. This operation accepts the even longitude Nyquist
+    /// order and has no latitude sampling floor.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the plan spin is not 1 or 2, longitude sampling is
+    /// insufficient, a buffer length differs from the plan, or the workspace
+    /// is incompatible.
+    pub fn adjoint_synthesis_spin_into(
+        &self,
+        first_component: &[f64],
+        second_component: &[f64],
+        e_alm: &mut [Complex64],
+        b_alm: &mut [Complex64],
+        workspace: &mut ShtWorkspace,
+    ) -> Result<(), ShtError> {
+        let spin = self.supported_spin()?;
+        self.check_synthesis_longitude()?;
+        self.map_to_spin_coefficients(
+            first_component,
+            second_component,
+            e_alm,
+            Some(b_alm),
+            spin,
+            false,
+            None,
+            false,
+            workspace,
+        )
+    }
+
+    /// Applies the adjoint of spin-1 or spin-2 `GRAD_ONLY` synthesis.
+    ///
+    /// The two input maps produce only the first (gradient) coefficient
+    /// channel. The map dot product is an unweighted pixel sum; the real
+    /// harmonic inner product weights `m > 0` by two.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the plan spin is not 1 or 2, longitude sampling is
+    /// insufficient, a buffer length differs from the plan, or the workspace
+    /// is incompatible.
+    pub fn adjoint_synthesis_gradient_into(
+        &self,
+        first_component: &[f64],
+        second_component: &[f64],
+        e_alm: &mut [Complex64],
+        workspace: &mut ShtWorkspace,
+    ) -> Result<(), ShtError> {
+        let spin = self.supported_spin()?;
+        self.check_synthesis_longitude()?;
+        self.map_to_spin_coefficients(
+            first_component,
+            second_component,
+            e_alm,
+            None,
+            spin,
+            false,
+            None,
+            false,
+            workspace,
+        )
+    }
+
+    /// Applies the adjoint of scalar `DERIV1` synthesis.
+    ///
+    /// The input slices contain the theta and phi derivative map components.
+    /// The output is a scalar coefficient channel, with degree zero equal to
+    /// zero. The map dot product is an unweighted pixel sum.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the plan is not scalar, longitude sampling is
+    /// insufficient, a buffer length differs from the plan, or the workspace
+    /// is incompatible.
+    pub fn adjoint_synthesis_deriv1_into(
+        &self,
+        theta_derivative: &[f64],
+        phi_derivative: &[f64],
+        alm: &mut [Complex64],
+        workspace: &mut ShtWorkspace,
+    ) -> Result<(), ShtError> {
+        if self.harmonics.spin() != 0 {
+            return Err(ShtError::UnsupportedSpin {
+                spin: self.harmonics.spin(),
+            });
+        }
+        self.check_synthesis_longitude()?;
+        check_len(
+            "theta derivative input",
+            self.sample_count,
+            theta_derivative.len(),
+        )?;
+        check_len(
+            "phi derivative input",
+            self.sample_count,
+            phi_derivative.len(),
+        )?;
+        check_len(
+            "scalar coefficient output",
+            self.harmonics.nalm(),
+            alm.len(),
+        )?;
+        self.check_workspace(workspace)?;
+        if self.harmonics.lmax() == 0 {
+            alm.fill(Complex64::new(0.0, 0.0));
+            return Ok(());
+        }
+        self.map_to_spin_coefficients(
+            theta_derivative,
+            phi_derivative,
+            alm,
+            None,
+            1,
+            true,
+            None,
+            false,
+            workspace,
+        )
+    }
+
+    /// Applies the adjoint of exact spin-1 or spin-2 GL analysis.
+    ///
+    /// The output maps are STANDARD spin synthesis scaled on each ring by its
+    /// GL pixel weight, `ring_weight / nphi`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the plan spin is not 1 or 2, exact-analysis
+    /// sampling is insufficient, a coefficient or output buffer is invalid,
+    /// or the workspace is incompatible.
+    pub fn adjoint_analysis_spin_into(
+        &self,
+        e_alm: &[Complex64],
+        b_alm: &[Complex64],
+        first_component: &mut [f64],
+        second_component: &mut [f64],
+        workspace: &mut ShtWorkspace,
+    ) -> Result<(), ShtError> {
+        self.supported_spin()?;
+        self.check_analysis_sampling()?;
+        self.harmonics.validate_coefficients(e_alm)?;
+        self.harmonics.validate_coefficients(b_alm)?;
+        check_len("E coefficient input", self.harmonics.nalm(), e_alm.len())?;
+        check_len("B coefficient input", self.harmonics.nalm(), b_alm.len())?;
+        check_len(
+            "first spin map output",
+            self.sample_count,
+            first_component.len(),
+        )?;
+        check_len(
+            "second spin map output",
+            self.sample_count,
+            second_component.len(),
+        )?;
+        self.check_workspace(workspace)?;
+        self.synthesis_spin_into(e_alm, b_alm, first_component, second_component, workspace)?;
+        self.apply_analysis_pixel_weights(first_component);
+        self.apply_analysis_pixel_weights(second_component);
+        Ok(())
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The map-to-coefficient driver covers weighted analysis and the four synthesis adjoints."
+    )]
+    fn map_to_spin_coefficients(
+        &self,
+        first_component: &[f64],
+        second_component: &[f64],
+        e_alm: &mut [Complex64],
+        mut b_alm: Option<&mut [Complex64]>,
+        recurrence_spin: usize,
+        derivative_norm: bool,
+        ring_weights: Option<&[f64]>,
+        normalize_fourier: bool,
+        workspace: &mut ShtWorkspace,
+    ) -> Result<(), ShtError> {
+        if !matches!(recurrence_spin, 1 | 2) {
+            return Err(ShtError::UnsupportedSpin {
+                spin: recurrence_spin,
+            });
+        }
+        if !derivative_norm && self.harmonics.spin() != recurrence_spin {
+            return Err(ShtError::UnsupportedSpin {
+                spin: self.harmonics.spin(),
+            });
+        }
         check_len(
             "first spin map input",
             self.sample_count,
@@ -162,7 +367,9 @@ impl ShtPlan {
             second_component.len(),
         )?;
         check_len("E coefficient output", self.harmonics.nalm(), e_alm.len())?;
-        check_len("B coefficient output", self.harmonics.nalm(), b_alm.len())?;
+        if let Some(b_alm) = b_alm.as_deref() {
+            check_len("B coefficient output", self.harmonics.nalm(), b_alm.len())?;
+        }
         self.check_workspace(workspace)?;
 
         let ntheta = self.grid.ntheta();
@@ -185,8 +392,10 @@ impl ShtPlan {
         }
 
         e_alm.fill(Complex64::new(0.0, 0.0));
-        b_alm.fill(Complex64::new(0.0, 0.0));
-        self.prepare_spin_latitudes(workspace, spin);
+        if let Some(b_alm) = b_alm.as_deref_mut() {
+            b_alm.fill(Complex64::new(0.0, 0.0));
+        }
+        self.prepare_spin_latitudes(workspace, recurrence_spin);
         let arch = pulp::Arch::new();
         let order_count = self.harmonics.mmax() + 1;
 
@@ -201,7 +410,10 @@ impl ShtPlan {
                     nphi,
                     spectrum_len,
                     self.grid.phi0(),
-                    self.grid.ring_weights(),
+                    ring_weights,
+                    normalize_fourier,
+                    recurrence_spin,
+                    derivative_norm,
                     &workspace.theta_sin,
                     &workspace.theta_cos,
                     &workspace.ring_order_limits,
@@ -209,7 +421,7 @@ impl ShtPlan {
                     0,
                     order_count,
                     e_alm,
-                    b_alm,
+                    b_alm.as_deref_mut(),
                     &mut workspace.recurrence_workers[..worker_count],
                 )?;
             } else {
@@ -219,7 +431,10 @@ impl ShtPlan {
                     nphi,
                     spectrum_len,
                     self.grid.phi0(),
-                    self.grid.ring_weights(),
+                    ring_weights,
+                    normalize_fourier,
+                    recurrence_spin,
+                    derivative_norm,
                     &workspace.theta_sin,
                     &workspace.theta_cos,
                     &workspace.ring_order_limits,
@@ -227,7 +442,7 @@ impl ShtPlan {
                     0,
                     order_count,
                     e_alm,
-                    b_alm,
+                    b_alm.as_deref_mut(),
                     &mut workspace.recurrence_workers[0],
                 )?;
             }
@@ -239,7 +454,10 @@ impl ShtPlan {
             nphi,
             spectrum_len,
             self.grid.phi0(),
-            self.grid.ring_weights(),
+            ring_weights,
+            normalize_fourier,
+            recurrence_spin,
+            derivative_norm,
             &workspace.theta_sin,
             &workspace.theta_cos,
             &workspace.ring_order_limits,
@@ -247,17 +465,19 @@ impl ShtPlan {
             0,
             order_count,
             e_alm,
-            b_alm,
+            b_alm.as_deref_mut(),
             &mut workspace.recurrence_workers[0],
         )?;
 
-        for degree in 0..=self.harmonics.lmax() {
+        for degree in recurrence_spin..=self.harmonics.lmax() {
             let index = self
                 .harmonics
                 .index(degree, 0)
                 .expect("order zero contains every degree");
             e_alm[index].im = 0.0;
-            b_alm[index].im = 0.0;
+            if let Some(b_alm) = b_alm.as_deref_mut() {
+                b_alm[index].im = 0.0;
+            }
         }
         Ok(())
     }
@@ -524,7 +744,10 @@ impl ShtPlan {
         nphi: usize,
         spectrum_len: usize,
         phi0: f64,
-        ring_weights: &[f64],
+        ring_weights: Option<&[f64]>,
+        normalize_fourier: bool,
+        recurrence_spin: usize,
+        derivative_norm: bool,
         theta_sin: &[f64],
         theta_cos: &[f64],
         ring_order_limits: &[usize],
@@ -532,20 +755,20 @@ impl ShtPlan {
         m_start: usize,
         m_end: usize,
         e_alm: &mut [Complex64],
-        b_alm: &mut [Complex64],
+        mut b_alm: Option<&mut [Complex64]>,
         recurrence: &mut RecurrenceWorkspace,
     ) -> Result<(), ShtError> {
-        let spin = self.harmonics.spin();
         let lmax = self.harmonics.lmax();
         let mut coefficient_start = 0;
         for m in m_start..m_end {
             let coefficient_count = lmax - m + 1;
             let e_coefficients =
                 &mut e_alm[coefficient_start..coefficient_start + coefficient_count];
-            let b_coefficients =
-                &mut b_alm[coefficient_start..coefficient_start + coefficient_count];
+            let mut b_coefficients = b_alm.as_deref_mut().map(|values| {
+                &mut values[coefficient_start..coefficient_start + coefficient_count]
+            });
             let initial = fill_spin_factors(
-                spin,
+                recurrence_spin,
                 m,
                 lmax,
                 &mut recurrence.spin_alpha,
@@ -570,10 +793,12 @@ impl ShtPlan {
                 &mut recurrence.spin_next_minus,
                 &mut recurrence.spin_exponents_minus,
                 |degree, ring_start, plus, plus_exp, minus, minus_exp| {
-                    let alpha_norm =
-                        recurrence.spin_alpha[degree] * spin_normalization(spin, degree, false);
+                    let alpha_norm = recurrence.spin_alpha[degree]
+                        * spin_normalization(recurrence_spin, degree, derivative_norm);
                     let coefficient = &mut e_coefficients[degree - m];
-                    let b_coefficient = &mut b_coefficients[degree - m];
+                    let mut b_coefficient = b_coefficients
+                        .as_deref_mut()
+                        .map(|values| &mut values[degree - m]);
                     for lane in 0..plus.len() {
                         let ring = ring_start + lane;
                         if m > ring_order_limits[ring] {
@@ -585,15 +810,18 @@ impl ShtPlan {
                         let even_basis = plus_value + minus_value;
                         let odd_basis = plus_value - minus_value;
                         let spectrum_start = ring * spectrum_len;
-                        let q_fourier = q_spectra[spectrum_start + m] * phase / nphi as f64;
-                        let u_fourier = u_spectra[spectrum_start + m] * phase / nphi as f64;
-                        let weight = ring_weights[ring];
-                        *coefficient += (q_fourier * even_basis
-                            + Complex64::new(0.0, -1.0) * u_fourier * odd_basis)
-                            * weight;
-                        *b_coefficient += (Complex64::new(0.0, 1.0) * q_fourier * odd_basis
-                            + u_fourier * even_basis)
-                            * weight;
+                        let mut scale = ring_weights.map_or(1.0, |weights| weights[ring]);
+                        if normalize_fourier {
+                            scale /= nphi as f64;
+                        }
+                        let q_fourier = q_spectra[spectrum_start + m] * phase * scale;
+                        let u_fourier = u_spectra[spectrum_start + m] * phase * scale;
+                        *coefficient += q_fourier * even_basis
+                            + Complex64::new(0.0, -1.0) * u_fourier * odd_basis;
+                        if let Some(b_coefficient) = b_coefficient.as_mut() {
+                            **b_coefficient += Complex64::new(0.0, 1.0) * q_fourier * odd_basis
+                                + u_fourier * even_basis;
+                        }
                     }
                     Ok(())
                 },
@@ -601,7 +829,9 @@ impl ShtPlan {
             coefficient_start += coefficient_count;
         }
         debug_assert_eq!(coefficient_start, e_alm.len());
-        debug_assert_eq!(coefficient_start, b_alm.len());
+        if let Some(b_alm) = b_alm {
+            debug_assert_eq!(coefficient_start, b_alm.len());
+        }
         Ok(())
     }
 
@@ -617,7 +847,10 @@ impl ShtPlan {
         nphi: usize,
         spectrum_len: usize,
         phi0: f64,
-        ring_weights: &[f64],
+        ring_weights: Option<&[f64]>,
+        normalize_fourier: bool,
+        recurrence_spin: usize,
+        derivative_norm: bool,
         theta_sin: &[f64],
         theta_cos: &[f64],
         ring_order_limits: &[usize],
@@ -625,7 +858,7 @@ impl ShtPlan {
         m_start: usize,
         m_end: usize,
         e_alm: &mut [Complex64],
-        b_alm: &mut [Complex64],
+        b_alm: Option<&mut [Complex64]>,
         recurrence: &mut [RecurrenceWorkspace],
     ) -> Result<(), ShtError> {
         let order_count = m_end - m_start;
@@ -637,6 +870,9 @@ impl ShtPlan {
                 spectrum_len,
                 phi0,
                 ring_weights,
+                normalize_fourier,
+                recurrence_spin,
+                derivative_norm,
                 theta_sin,
                 theta_cos,
                 ring_order_limits,
@@ -662,7 +898,12 @@ impl ShtPlan {
             .expect("the end of an order group starts the next order");
         let coefficient_split = coefficient_mid - coefficient_start;
         let (left_e, right_e) = e_alm.split_at_mut(coefficient_split);
-        let (left_b, right_b) = b_alm.split_at_mut(coefficient_split);
+        let (left_b, right_b) = if let Some(b_alm) = b_alm {
+            let (left, right) = b_alm.split_at_mut(coefficient_split);
+            (Some(left), Some(right))
+        } else {
+            (None, None)
+        };
         let left_worker_count = recurrence.len().div_ceil(2);
         let (left_recurrence, right_recurrence) = recurrence.split_at_mut(left_worker_count);
         let (left_result, right_result) = rayon::join(
@@ -674,6 +915,9 @@ impl ShtPlan {
                     spectrum_len,
                     phi0,
                     ring_weights,
+                    normalize_fourier,
+                    recurrence_spin,
+                    derivative_norm,
                     theta_sin,
                     theta_cos,
                     ring_order_limits,
@@ -693,6 +937,9 @@ impl ShtPlan {
                     spectrum_len,
                     phi0,
                     ring_weights,
+                    normalize_fourier,
+                    recurrence_spin,
+                    derivative_norm,
                     theta_sin,
                     theta_cos,
                     ring_order_limits,
@@ -737,22 +984,6 @@ impl ShtPlan {
                 nphi: self.grid.nphi(),
             })
         }
-    }
-
-    fn check_analysis_sampling(&self) -> Result<(), ShtError> {
-        if self.grid.ntheta() <= self.harmonics.lmax() {
-            return Err(ShtError::AnalysisLatitudeUndersampled {
-                lmax: self.harmonics.lmax(),
-                ntheta: self.grid.ntheta(),
-            });
-        }
-        if self.harmonics.mmax() > (self.grid.nphi() - 1) / 2 {
-            return Err(ShtError::AnalysisLongitudeUndersampled {
-                mmax: self.harmonics.mmax(),
-                nphi: self.grid.nphi(),
-            });
-        }
-        Ok(())
     }
 }
 
@@ -838,6 +1069,42 @@ mod tests {
             "actual={actual:?}, expected={expected:?}, error={:.3e}",
             (actual - expected).norm()
         );
+    }
+
+    fn map_inner_product(left: &[f64], right: &[f64]) -> f64 {
+        left.iter().zip(right).map(|(x, y)| x * y).sum()
+    }
+
+    fn harmonic_inner_product(spec: &HarmonicSpec, left: &[Complex64], right: &[Complex64]) -> f64 {
+        let mut result = 0.0;
+        for m in 0..=spec.mmax() {
+            let weight = if m == 0 { 1.0 } else { 2.0 };
+            for l in spec.spin().max(m)..=spec.lmax() {
+                let index = spec.index(l, m).unwrap();
+                result += weight * (left[index].conj() * right[index]).re;
+            }
+        }
+        result
+    }
+
+    fn spin_map_inner_product(
+        left_first: &[f64],
+        left_second: &[f64],
+        right_first: &[f64],
+        right_second: &[f64],
+    ) -> f64 {
+        map_inner_product(left_first, right_first) + map_inner_product(left_second, right_second)
+    }
+
+    fn spin_harmonic_inner_product(
+        spec: &HarmonicSpec,
+        left_e: &[Complex64],
+        left_b: &[Complex64],
+        right_e: &[Complex64],
+        right_b: &[Complex64],
+    ) -> f64 {
+        harmonic_inner_product(spec, left_e, right_e)
+            + harmonic_inner_product(spec, left_b, right_b)
     }
 
     #[test]
@@ -974,6 +1241,370 @@ mod tests {
             assert_complex_close(actual_e, expected_e, 8e-13);
             assert_complex_close(actual_b, expected_b, 8e-13);
         }
+    }
+
+    #[test]
+    fn spin_adjoint_operators_match_ducc_and_inner_products() {
+        // References: ducc0 0.41.0, GL 3x7, phi0=0.37, one thread.
+        for spin in [1, 2] {
+            let plan = make_plan(spin, 2, 2, 3, 7);
+            let (e, b) = coefficients(&plan);
+            let (input_first, input_second) = arbitrary_maps(&plan);
+            let mut workspace = plan.workspace().unwrap();
+
+            let mut synthesized_first = vec![0.0; plan.sample_count];
+            let mut synthesized_second = vec![0.0; plan.sample_count];
+            plan.synthesis_spin_into(
+                &e,
+                &b,
+                &mut synthesized_first,
+                &mut synthesized_second,
+                &mut workspace,
+            )
+            .unwrap();
+            let mut adjoint_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            let mut adjoint_b = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            plan.adjoint_synthesis_spin_into(
+                &input_first,
+                &input_second,
+                &mut adjoint_e,
+                &mut adjoint_b,
+                &mut workspace,
+            )
+            .unwrap();
+            let (expected_e, expected_b) = if spin == 1 {
+                (
+                    [
+                        Complex64::new(0.0, 0.0),
+                        Complex64::new(-4.304_852_637_841_806, 0.0),
+                        Complex64::new(0.594_467_893_478_704_9, 0.0),
+                        Complex64::new(0.191_987_240_026_905_5, -0.155_484_991_948_925_9),
+                        Complex64::new(0.005_566_252_562_547, 0.159_878_214_894_219_5),
+                        Complex64::new(-0.111_026_790_541_622_9, 0.034_591_870_587_753_7),
+                    ],
+                    [
+                        Complex64::new(0.0, 0.0),
+                        Complex64::new(-4.755_618_446_083_105, 0.0),
+                        Complex64::new(-0.005_348_600_090_854_1, 0.0),
+                        Complex64::new(0.560_677_720_510_292_4, 0.430_912_220_287_711_6),
+                        Complex64::new(0.074_918_874_664_593_5, -0.076_897_461_383_145_1),
+                        Complex64::new(-0.292_729_976_427_507_2, -0.142_364_588_620_335_7),
+                    ],
+                )
+            } else {
+                (
+                    [
+                        Complex64::new(0.0, 0.0),
+                        Complex64::new(0.0, 0.0),
+                        Complex64::new(-3.830_844_164_316_75, 0.0),
+                        Complex64::new(0.0, 0.0),
+                        Complex64::new(0.190_270_797_105_077_7, -0.139_890_518_676_951_7),
+                        Complex64::new(0.153_808_087_304_361_4, -0.266_731_025_579_472_3),
+                    ],
+                    [
+                        Complex64::new(0.0, 0.0),
+                        Complex64::new(0.0, 0.0),
+                        Complex64::new(-4.233_362_144_504_837, 0.0),
+                        Complex64::new(0.0, 0.0),
+                        Complex64::new(0.548_745_566_635_568_1, 0.408_396_348_205_166_3),
+                        Complex64::new(0.052_938_390_213_741_3, 0.103_326_719_720_155_4),
+                    ],
+                )
+            };
+            for ((&actual_e, &actual_b), (&expected_e, &expected_b)) in adjoint_e
+                .iter()
+                .zip(&adjoint_b)
+                .zip(expected_e.iter().zip(&expected_b))
+            {
+                assert_complex_close(actual_e, expected_e, 4e-13);
+                assert_complex_close(actual_b, expected_b, 4e-13);
+            }
+            assert_close(
+                spin_map_inner_product(
+                    &synthesized_first,
+                    &synthesized_second,
+                    &input_first,
+                    &input_second,
+                ),
+                spin_harmonic_inner_product(plan.harmonics(), &e, &b, &adjoint_e, &adjoint_b),
+                2e-12,
+            );
+
+            let mut analyzed_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            let mut analyzed_b = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            plan.analysis_spin_into(
+                &input_first,
+                &input_second,
+                &mut analyzed_e,
+                &mut analyzed_b,
+                &mut workspace,
+            )
+            .unwrap();
+            let mut analysis_adjoint_first = vec![0.0; plan.sample_count];
+            let mut analysis_adjoint_second = vec![0.0; plan.sample_count];
+            plan.adjoint_analysis_spin_into(
+                &e,
+                &b,
+                &mut analysis_adjoint_first,
+                &mut analysis_adjoint_second,
+                &mut workspace,
+            )
+            .unwrap();
+            let (expected_first, expected_second) = if spin == 1 {
+                (
+                    [
+                        (0, -0.037_382_873_397_486_7),
+                        (3, 0.065_442_391_714_093_7),
+                        (10, -0.062_561_838_187_364_4),
+                        (20, 0.036_614_770_103_661_2),
+                    ],
+                    [
+                        (0, 0.026_476_346_722_301_8),
+                        (3, -0.009_328_231_563_205_1),
+                        (10, 0.085_436_105_922_155_8),
+                        (20, 0.025_908_640_899_011_7),
+                    ],
+                )
+            } else {
+                (
+                    [
+                        (0, -0.051_564_316_608_804_2),
+                        (3, -0.037_419_391_301_285_5),
+                        (10, -0.056_398_295_178_104_4),
+                        (20, 0.000_141_652_674_139),
+                    ],
+                    [
+                        (0, 0.097_859_863_113_170_1),
+                        (3, 0.011_017_925_793_126_9),
+                        (10, 0.050_864_605_894_971),
+                        (20, 0.037_484_942_444_285_8),
+                    ],
+                )
+            };
+            for (index, expected) in expected_first {
+                assert_close(analysis_adjoint_first[index], expected, 2e-14);
+            }
+            for (index, expected) in expected_second {
+                assert_close(analysis_adjoint_second[index], expected, 2e-14);
+            }
+            assert_close(
+                spin_harmonic_inner_product(plan.harmonics(), &analyzed_e, &analyzed_b, &e, &b),
+                spin_map_inner_product(
+                    &input_first,
+                    &input_second,
+                    &analysis_adjoint_first,
+                    &analysis_adjoint_second,
+                ),
+                2e-12,
+            );
+
+            let mut gradient_first = vec![0.0; plan.sample_count];
+            let mut gradient_second = vec![0.0; plan.sample_count];
+            plan.synthesis_gradient_into(
+                &e,
+                &mut gradient_first,
+                &mut gradient_second,
+                &mut workspace,
+            )
+            .unwrap();
+            let mut gradient_adjoint = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            plan.adjoint_synthesis_gradient_into(
+                &input_first,
+                &input_second,
+                &mut gradient_adjoint,
+                &mut workspace,
+            )
+            .unwrap();
+            for (&actual, &expected) in gradient_adjoint.iter().zip(&expected_e) {
+                assert_complex_close(actual, expected, 4e-13);
+            }
+            assert_close(
+                spin_map_inner_product(
+                    &gradient_first,
+                    &gradient_second,
+                    &input_first,
+                    &input_second,
+                ),
+                harmonic_inner_product(plan.harmonics(), &e, &gradient_adjoint),
+                2e-12,
+            );
+        }
+    }
+
+    #[test]
+    fn spin_synthesis_adjoints_accept_even_longitude_nyquist_order() {
+        // References: ducc0 0.41.0, GL 3x4, phi0=0.37, one thread.
+        for (spin, expected_e, expected_b) in [
+            (
+                1,
+                [
+                    Complex64::new(0.0, 0.0),
+                    Complex64::new(-2.029_575_686_464_789, 0.0),
+                    Complex64::new(0.452_936_406_865_718_45, 0.0),
+                    Complex64::new(0.027_248_283_458_920_986, -0.021_338_495_900_768_042),
+                    Complex64::new(-0.016_750_784_124_226_37, 0.096_577_982_026_280_07),
+                    Complex64::new(-0.015_443_713_201_206_216, -0.005_395_642_560_412_243),
+                ],
+                [
+                    Complex64::new(0.0, 0.0),
+                    Complex64::new(-2.890_005_846_365_780_5, 0.0),
+                    Complex64::new(-0.116_673_029_539_538_55, 0.0),
+                    Complex64::new(0.301_655_848_666_466_05, 0.211_822_691_591_908_97),
+                    Complex64::new(0.016_552_871_349_277_794, -0.005_261_494_054_254_939),
+                    Complex64::new(-0.154_574_133_111_514_08, -0.192_640_812_963_896_73),
+                ],
+            ),
+            (
+                2,
+                [
+                    Complex64::new(0.0, 0.0),
+                    Complex64::new(0.0, 0.0),
+                    Complex64::new(-1.805_872_850_620_483_7, 0.0),
+                    Complex64::new(0.0, 0.0),
+                    Complex64::new(0.026_440_758_886_784_245, -0.018_540_320_152_576_37),
+                    Complex64::new(0.185_024_900_446_692_18, -0.135_227_815_896_944_1),
+                ],
+                [
+                    Complex64::new(0.0, 0.0),
+                    Complex64::new(0.0, 0.0),
+                    Complex64::new(-2.572_767_322_741_793, 0.0),
+                    Complex64::new(0.0, 0.0),
+                    Complex64::new(0.296_268_768_559_663_16, 0.202_773_481_944_890_12),
+                    Complex64::new(-0.001_495_524_759_687_719_4, 0.017_994_398_447_773_54),
+                ],
+            ),
+        ] {
+            let plan = make_plan(spin, 2, 2, 3, 4);
+            let (e, b) = coefficients(&plan);
+            let (input_first, input_second) = arbitrary_maps(&plan);
+            let mut workspace = plan.workspace().unwrap();
+            let mut synthesized_first = vec![0.0; plan.sample_count];
+            let mut synthesized_second = vec![0.0; plan.sample_count];
+            plan.synthesis_spin_into(
+                &e,
+                &b,
+                &mut synthesized_first,
+                &mut synthesized_second,
+                &mut workspace,
+            )
+            .unwrap();
+            let mut adjoint_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            let mut adjoint_b = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            plan.adjoint_synthesis_spin_into(
+                &input_first,
+                &input_second,
+                &mut adjoint_e,
+                &mut adjoint_b,
+                &mut workspace,
+            )
+            .unwrap();
+            for ((&actual_e, &actual_b), (&reference_e, &reference_b)) in adjoint_e
+                .iter()
+                .zip(&adjoint_b)
+                .zip(expected_e.iter().zip(&expected_b))
+            {
+                assert_complex_close(actual_e, reference_e, 6e-13);
+                assert_complex_close(actual_b, reference_b, 6e-13);
+            }
+            assert!(adjoint_e[5].im.abs() > 1e-4);
+            assert_close(
+                spin_map_inner_product(
+                    &synthesized_first,
+                    &synthesized_second,
+                    &input_first,
+                    &input_second,
+                ),
+                spin_harmonic_inner_product(plan.harmonics(), &e, &b, &adjoint_e, &adjoint_b),
+                3e-12,
+            );
+
+            let mut gradient_first = vec![0.0; plan.sample_count];
+            let mut gradient_second = vec![0.0; plan.sample_count];
+            plan.synthesis_gradient_into(
+                &e,
+                &mut gradient_first,
+                &mut gradient_second,
+                &mut workspace,
+            )
+            .unwrap();
+            let mut gradient_adjoint = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            plan.adjoint_synthesis_gradient_into(
+                &input_first,
+                &input_second,
+                &mut gradient_adjoint,
+                &mut workspace,
+            )
+            .unwrap();
+            for (&actual, &expected) in gradient_adjoint.iter().zip(&adjoint_e) {
+                assert_complex_close(actual, expected, 2e-14);
+            }
+            assert_close(
+                spin_map_inner_product(
+                    &gradient_first,
+                    &gradient_second,
+                    &input_first,
+                    &input_second,
+                ),
+                harmonic_inner_product(plan.harmonics(), &e, &gradient_adjoint),
+                3e-12,
+            );
+        }
+    }
+
+    #[test]
+    fn derivative_adjoint_matches_ducc_and_inner_product() {
+        // Reference: ducc0 0.41.0, GL 3x7, phi0=0.37, one thread, DERIV1 mode.
+        let plan = make_plan(0, 2, 2, 3, 7);
+        let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        for (l, m, value) in [
+            (0, 0, Complex64::new(0.7, 0.0)),
+            (1, 0, Complex64::new(-0.2, 0.0)),
+            (2, 0, Complex64::new(0.1, 0.0)),
+            (1, 1, Complex64::new(0.4, 0.3)),
+            (2, 1, Complex64::new(-0.2, 0.15)),
+            (2, 2, Complex64::new(0.1, -0.6)),
+        ] {
+            alm[plan.harmonics.index(l, m).unwrap()] = value;
+        }
+        let (input_first, input_second) = arbitrary_maps(&plan);
+        let mut workspace = plan.workspace().unwrap();
+        let mut derivative_first = vec![0.0; plan.sample_count];
+        let mut derivative_second = vec![0.0; plan.sample_count];
+        plan.synthesis_deriv1_into(
+            &alm,
+            &mut derivative_first,
+            &mut derivative_second,
+            &mut workspace,
+        )
+        .unwrap();
+        let mut adjoint = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        plan.adjoint_synthesis_deriv1_into(
+            &input_first,
+            &input_second,
+            &mut adjoint,
+            &mut workspace,
+        )
+        .unwrap();
+        for (&actual, expected) in adjoint.iter().zip([
+            Complex64::new(0.0, 0.0),
+            Complex64::new(-6.087_980_984_453_476, 0.0),
+            Complex64::new(1.456_143_007_490_010_4, 0.0),
+            Complex64::new(0.271_510_958_648_628_5, -0.219_888_984_359_642_5),
+            Complex64::new(0.013_634_478_557_699_4, 0.391_620_047_477_875_4),
+            Complex64::new(-0.271_958_984_605_841_6, 0.084_732_432_188_385_7),
+        ]) {
+            assert!((actual - expected).norm() < 5e-13);
+        }
+        assert_close(
+            spin_map_inner_product(
+                &derivative_first,
+                &derivative_second,
+                &input_first,
+                &input_second,
+            ),
+            harmonic_inner_product(plan.harmonics(), &alm, &adjoint),
+            2e-12,
+        );
     }
 
     #[test]
@@ -1122,6 +1753,22 @@ mod tests {
     }
 
     #[test]
+    fn spin_adjoint_analysis_rejects_even_longitude_nyquist_order() {
+        for spin in [1, 2] {
+            let plan = make_plan(spin, 2, 2, 3, 4);
+            let mut workspace = plan.workspace().unwrap();
+            let e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            let b = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            let mut first = vec![0.0; plan.sample_count];
+            let mut second = vec![0.0; plan.sample_count];
+            assert_eq!(
+                plan.adjoint_analysis_spin_into(&e, &b, &mut first, &mut second, &mut workspace,),
+                Err(ShtError::AnalysisLongitudeUndersampled { mmax: 2, nphi: 4 })
+            );
+        }
+    }
+
+    #[test]
     fn spin_operations_reject_unsupported_spin_and_invalid_coefficients() {
         let unsupported = make_plan(3, 3, 1, 4, 5);
         let mut unsupported_workspace = unsupported.workspace().unwrap();
@@ -1146,6 +1793,26 @@ mod tests {
                 &unsupported_second,
                 &mut unsupported_e,
                 &mut unsupported_b,
+                &mut unsupported_workspace,
+            ),
+            Err(ShtError::UnsupportedSpin { spin: 3 })
+        );
+        assert_eq!(
+            unsupported.adjoint_synthesis_spin_into(
+                &unsupported_first,
+                &unsupported_second,
+                &mut unsupported_e,
+                &mut unsupported_b,
+                &mut unsupported_workspace,
+            ),
+            Err(ShtError::UnsupportedSpin { spin: 3 })
+        );
+        assert_eq!(
+            unsupported.adjoint_analysis_spin_into(
+                &unsupported_coefficients,
+                &unsupported_coefficients,
+                &mut unsupported_first,
+                &mut unsupported_second,
                 &mut unsupported_workspace,
             ),
             Err(ShtError::UnsupportedSpin { spin: 3 })
@@ -1260,6 +1927,105 @@ mod tests {
         }
         for (&actual, &expected) in two_b.iter().zip(&one_b) {
             assert_complex_close(actual, expected, 3e-14);
+        }
+
+        let (input_first, input_second) = arbitrary_maps(&plan);
+        let mut one_adjoint_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        let mut one_adjoint_b = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        let mut two_adjoint_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        let mut two_adjoint_b = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        one_thread
+            .install(|| {
+                plan.adjoint_synthesis_spin_into(
+                    &input_first,
+                    &input_second,
+                    &mut one_adjoint_e,
+                    &mut one_adjoint_b,
+                    &mut one_workspace,
+                )
+            })
+            .unwrap();
+        two_threads
+            .install(|| {
+                plan.adjoint_synthesis_spin_into(
+                    &input_first,
+                    &input_second,
+                    &mut two_adjoint_e,
+                    &mut two_adjoint_b,
+                    &mut two_workspace,
+                )
+            })
+            .unwrap();
+        for (&one, &two) in one_adjoint_e.iter().zip(&two_adjoint_e) {
+            assert_complex_close(two, one, 3e-14);
+        }
+        for (&one, &two) in one_adjoint_b.iter().zip(&two_adjoint_b) {
+            assert_complex_close(two, one, 3e-14);
+        }
+
+        let mut one_analysis_adjoint_first = vec![0.0; plan.sample_count];
+        let mut one_analysis_adjoint_second = vec![0.0; plan.sample_count];
+        let mut two_analysis_adjoint_first = vec![0.0; plan.sample_count];
+        let mut two_analysis_adjoint_second = vec![0.0; plan.sample_count];
+        one_thread
+            .install(|| {
+                plan.adjoint_analysis_spin_into(
+                    &e,
+                    &b,
+                    &mut one_analysis_adjoint_first,
+                    &mut one_analysis_adjoint_second,
+                    &mut one_workspace,
+                )
+            })
+            .unwrap();
+        two_threads
+            .install(|| {
+                plan.adjoint_analysis_spin_into(
+                    &e,
+                    &b,
+                    &mut two_analysis_adjoint_first,
+                    &mut two_analysis_adjoint_second,
+                    &mut two_workspace,
+                )
+            })
+            .unwrap();
+        for (&one, &two) in one_analysis_adjoint_first
+            .iter()
+            .zip(&two_analysis_adjoint_first)
+        {
+            assert_close(two, one, 3e-14);
+        }
+        for (&one, &two) in one_analysis_adjoint_second
+            .iter()
+            .zip(&two_analysis_adjoint_second)
+        {
+            assert_close(two, one, 3e-14);
+        }
+
+        let mut one_gradient_adjoint = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        let mut two_gradient_adjoint = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        one_thread
+            .install(|| {
+                plan.adjoint_synthesis_gradient_into(
+                    &input_first,
+                    &input_second,
+                    &mut one_gradient_adjoint,
+                    &mut one_workspace,
+                )
+            })
+            .unwrap();
+        two_threads
+            .install(|| {
+                plan.adjoint_synthesis_gradient_into(
+                    &input_first,
+                    &input_second,
+                    &mut two_gradient_adjoint,
+                    &mut two_workspace,
+                )
+            })
+            .unwrap();
+        for (&one, &two) in one_gradient_adjoint.iter().zip(&two_gradient_adjoint) {
+            assert_complex_close(two, one, 3e-14);
         }
     }
 
@@ -1470,6 +2236,93 @@ mod tests {
                 assert_complex_close(recovered_e[index], expected_e[slot], 2e-10);
                 assert_complex_close(recovered_b[index], expected_b[slot], 2e-10);
             }
+
+            let mut adjoint_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            let mut adjoint_b = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            plan.adjoint_synthesis_spin_into(
+                &map_first,
+                &map_second,
+                &mut adjoint_e,
+                &mut adjoint_b,
+                &mut workspace,
+            )
+            .unwrap();
+            let mut synthesis_first = vec![0.0; plan.sample_count];
+            let mut synthesis_second = vec![0.0; plan.sample_count];
+            plan.synthesis_spin_into(
+                &recovered_e,
+                &recovered_b,
+                &mut synthesis_first,
+                &mut synthesis_second,
+                &mut workspace,
+            )
+            .unwrap();
+            assert_close(
+                spin_map_inner_product(
+                    &synthesis_first,
+                    &synthesis_second,
+                    &map_first,
+                    &map_second,
+                ),
+                spin_harmonic_inner_product(
+                    plan.harmonics(),
+                    &recovered_e,
+                    &recovered_b,
+                    &adjoint_e,
+                    &adjoint_b,
+                ),
+                2e-8,
+            );
+
+            let mut analysis_adjoint_first = vec![0.0; plan.sample_count];
+            let mut analysis_adjoint_second = vec![0.0; plan.sample_count];
+            plan.adjoint_analysis_spin_into(
+                &recovered_e,
+                &recovered_b,
+                &mut analysis_adjoint_first,
+                &mut analysis_adjoint_second,
+                &mut workspace,
+            )
+            .unwrap();
+            assert_close(
+                spin_harmonic_inner_product(
+                    plan.harmonics(),
+                    &recovered_e,
+                    &recovered_b,
+                    &recovered_e,
+                    &recovered_b,
+                ),
+                spin_map_inner_product(
+                    &map_first,
+                    &map_second,
+                    &analysis_adjoint_first,
+                    &analysis_adjoint_second,
+                ),
+                2e-8,
+            );
+
+            let mut gradient_adjoint = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            plan.adjoint_synthesis_gradient_into(
+                &map_first,
+                &map_second,
+                &mut gradient_adjoint,
+                &mut workspace,
+            )
+            .unwrap();
+            let mut gradient_first = vec![0.0; plan.sample_count];
+            let mut gradient_second = vec![0.0; plan.sample_count];
+            plan.synthesis_gradient_into(
+                &recovered_e,
+                &mut gradient_first,
+                &mut gradient_second,
+                &mut workspace,
+            )
+            .unwrap();
+            assert_close(
+                spin_map_inner_product(&gradient_first, &gradient_second, &map_first, &map_second),
+                harmonic_inner_product(plan.harmonics(), &recovered_e, &gradient_adjoint),
+                2e-8,
+            );
         }
     }
 }
