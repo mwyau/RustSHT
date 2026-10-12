@@ -334,11 +334,13 @@ pub(crate) fn multiply_complex_scaled(value: Complex64, factor: f64, exponent: i
     if factor.is_normal() {
         if value.re.is_normal() && value.im.is_normal() {
             let product = Complex64::new(value.re * factor, value.im * factor);
-            if product.re.is_normal()
-                && product.im.is_normal()
-                && let Some(scaled) = scale_complex_normal_binary(product, exponent)
-            {
-                return scaled;
+            if product.re.is_normal() && product.im.is_normal() {
+                if exponent == 0 {
+                    return product;
+                }
+                if let Some(scaled) = scale_complex_normal_binary(product, exponent) {
+                    return scaled;
+                }
             }
         }
         return Complex64::new(
@@ -367,11 +369,13 @@ pub(crate) fn multiply_complex_scaled_product(
             (value.re * factor) * additional_factor,
             (value.im * factor) * additional_factor,
         );
-        if product.re.is_normal()
-            && product.im.is_normal()
-            && let Some(scaled) = scale_complex_normal_binary(product, exponent)
-        {
-            return scaled;
+        if product.re.is_normal() && product.im.is_normal() {
+            if exponent == 0 {
+                return product;
+            }
+            if let Some(scaled) = scale_complex_normal_binary(product, exponent) {
+                return scaled;
+            }
         }
     }
     Complex64::new(
@@ -1524,6 +1528,37 @@ mod tests {
         let expected_scale = 2.0_f64.powi(-400);
         assert!((actual.re / expected_scale - 1.0e300).abs() / 1.0e300 < 2e-15);
         assert!((actual.im / expected_scale + 1.0e300).abs() / 1.0e300 < 2e-15);
+    }
+
+    #[test]
+    fn normal_complex_products_skip_identity_binary_scaling() {
+        let value = Complex64::new(0.75, -1.25);
+        let factor = 1.125;
+        let additional_factor = -0.875;
+        let expected = Complex64::new(
+            (value.re * factor) * additional_factor,
+            (value.im * factor) * additional_factor,
+        );
+
+        let actual = multiply_complex_scaled_product(value, factor, additional_factor, 0);
+        assert_eq!(actual.re.to_bits(), expected.re.to_bits());
+        assert_eq!(actual.im.to_bits(), expected.im.to_bits());
+    }
+
+    #[test]
+    fn complex_product_keeps_fallback_when_first_product_underflows() {
+        let value = Complex64::new(1.0e-200, -2.0e-200);
+        let factor = 1.0e-200;
+        let additional_factor = 1.0e300;
+
+        let actual = multiply_complex_scaled_product(value, factor, additional_factor, 0);
+        let expected = Complex64::new(
+            multiply_component_scaled_product(value.re, factor, additional_factor, 0),
+            multiply_component_scaled_product(value.im, factor, additional_factor, 0),
+        );
+        assert_eq!(actual.re.to_bits(), expected.re.to_bits());
+        assert_eq!(actual.im.to_bits(), expected.im.to_bits());
+        assert!(actual.re.is_normal() && actual.im.is_normal());
     }
 
     #[test]
