@@ -401,3 +401,26 @@ The current recurrence computes `(cos(theta)*current - epsilon[l]*previous)/epsi
 | Analysis | `516.457, 517.436, 516.911` (`516.911`; `0.979`) | `137.004, 140.699, 136.425` (`137.004`; `4.274`) |
 
 I tested reciprocal multiplication, a fused numerator with reciprocal multiplication, a compensated high/low reciprocal, and precomputed `a_lm=1/epsilon[l+1]`, `b_lm=epsilon[l]/epsilon[l+1]` with a fused update. The scalar-reference test compares the vector-lane recurrence with the retained division-based recurrence at a relative tolerance of `2e-13`, including near-polar and high-order lanes. Reciprocal multiplication first exceeded this limit at `(m,l,ring)=(0,20,15)` with `2.621e-13` relative error and at `(255,467,5)` with `2.654e-13`. The fused-numerator variant reached `5.449e-13` and `1.027e-12` at those tests; the compensated reciprocal reached `2.621e-13` and `5.045e-12`; and the `a,b` variant reached `1.062e-12` and `6.992e-13`. I did not relax the reference tolerance. The variants were rejected before timing because they failed this numerical acceptance check. The f32 `a,b` prototype passed the dispatched-versus-scalar-backend recurrence check and the existing scalar DUCC checks on GL, CC and F1; that does not override the f64 failure. DUCC's pinned [`Ylmgen::prepare` and scalar kernels](https://raw.githubusercontent.com/mreineck/ducc/c1ed01b8fda69d2a378190f0915f1a19762dddbf/src/ducc0/sht/sht_inner_loop.h) precompute paired-degree `alpha` and `coef` values, then use a two-step recurrence in the normal-range kernels. The simple one-step reciprocal substitutions tested here do not reproduce that method. No recurrence source or workspace change was retained, and no post-change timing is reported because every f64 candidate failed the existing scalar-reference check.
+
+### Paired normal-range complex scaling (M4, 2026-10-12)
+
+Scalar f64 and f32 multiplication now checks the real and imaginary products together. When both products are normal and their binary exponent adjustments remain normal, the function updates both stored exponents and returns the pair. Other inputs use the existing per-component or split-binary path. The change adds no workspace storage and leaves binary scaling in place for subnormal, overflow and underflow cases. The bitwise split-reference tests pass for both precisions, including signed zero, subnormal operands and results, infinities, NaN, exponents from -4097 to 4097, unequal component magnitudes, and normal-range boundary transitions. Scalar GL/CC/F1 DUCC comparisons and scalar adjoint identities pass for f64 and f32. On T511 GL with `ducc0==0.41.0` at source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`, the Python comparison reports the same scalar errors as the preceding implementation: synthesis maximum absolute/RMS/relative L2 errors are `2.627e-14`/`7.674e-16`/`6.487e-14`; analysis errors are `1.010e-14`/`2.281e-16`/`4.467e-14`. Native release timings use rustc 1.99.0, f64, T511 GL `512x1025`, `phi0=0.37`, AVX2/FMA dispatch, reused plans and workspaces, an x86-64 CPU, one warmup and five timed samples per operation. Each cell gives the three run medians, their median and range, in milliseconds:
+
+| Operation | Threads | Before | After | Change |
+| --- | ---: | ---: | ---: | ---: |
+| Synthesis | 1 | `527.717, 526.529, 527.055` (`527.055`; `1.188`) | `371.174, 369.799, 370.029` (`370.029`; `1.375`) | `-29.8%` |
+| Synthesis | 8 | `85.373, 85.653, 81.474` (`85.373`; `4.179`) | `60.166, 62.665, 60.328` (`60.328`; `2.499`) | `-29.3%` |
+| Analysis | 1 | `517.767, 519.898, 518.155` (`518.155`; `2.131`) | `337.816, 338.390, 338.872` (`338.390`; `1.056`) | `-34.7%` |
+| Analysis | 8 | `137.261, 137.142, 138.100` (`137.261`; `0.958`) | `88.888, 92.461, 91.198` (`91.198`; `3.573`) | `-33.6%` |
+
+
+The rebuilt Python extension used Python 3.11.15, NumPy 2.4.6, and `ducc0==0.41.0`. Each Python timing is the median of two run medians; each run had one warmup and five samples. RustSHT plan methods reuse a plan, while procedural functions construct a plan and workspace for each call:
+
+| Operation | Threads | RustSHT plan | RustSHT procedural | DUCC | Plan / DUCC |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Synthesis | 1 | `366.764 ms` | `369.891 ms` | `11.810 ms` | `31.1x` |
+| Synthesis | 8 | `59.607 ms` | `61.514 ms` | `1.811 ms` | `32.9x` |
+| Analysis | 1 | `332.942 ms` | `334.447 ms` | `11.862 ms` | `28.1x` |
+| Analysis | 8 | `89.563 ms` | `89.638 ms` | `1.766 ms` | `50.7x` |
+
+Input copies took `0.051–0.087 ms` and output allocation took `0.001 ms` in the Python runs. The paired scaling path reduces native scalar transform time; Python data copying remains small relative to the transform. The measured speedup does not close the remaining gap to DUCC.

@@ -294,6 +294,15 @@ fn normalize_pair_lanes(
 /// Multiplies a complex value by a scaled recurrence value without overflow.
 pub(crate) fn multiply_complex_scaled(value: Complex64, factor: f64, exponent: i64) -> Complex64 {
     if factor.is_normal() {
+        if value.re.is_normal() && value.im.is_normal() {
+            let product = Complex64::new(value.re * factor, value.im * factor);
+            if product.re.is_normal()
+                && product.im.is_normal()
+                && let Some(scaled) = scale_complex_normal_binary(product, exponent)
+            {
+                return scaled;
+            }
+        }
         return Complex64::new(
             multiply_component_scaled_with_normal_factor(value.re, factor, exponent),
             multiply_component_scaled_with_normal_factor(value.im, factor, exponent),
@@ -303,6 +312,29 @@ pub(crate) fn multiply_complex_scaled(value: Complex64, factor: f64, exponent: i
         multiply_component_scaled(value.re, factor, exponent),
         multiply_component_scaled(value.im, factor, exponent),
     )
+}
+
+fn scale_complex_normal_binary(value: Complex64, exponent: i64) -> Option<Complex64> {
+    if exponent == 0 {
+        return Some(value);
+    }
+    if !(-4096..=4096).contains(&exponent) {
+        return None;
+    }
+
+    let real_bits = value.re.to_bits();
+    let imag_bits = value.im.to_bits();
+    let real_exponent = ((real_bits >> 52) & 0x7ff) as i64 + exponent;
+    let imag_exponent = ((imag_bits >> 52) & 0x7ff) as i64 + exponent;
+    if !(1..0x7ff).contains(&real_exponent) || !(1..0x7ff).contains(&imag_exponent) {
+        return None;
+    }
+
+    let exponent_mask = 0x7ff_u64 << 52;
+    Some(Complex64::new(
+        f64::from_bits((real_bits & !exponent_mask) | ((real_exponent as u64) << 52)),
+        f64::from_bits((imag_bits & !exponent_mask) | ((imag_exponent as u64) << 52)),
+    ))
 }
 
 fn multiply_component_scaled_with_normal_factor(value: f64, factor: f64, exponent: i64) -> f64 {
@@ -891,6 +923,20 @@ mod tests {
         );
         assert_eq!(actual.re.to_bits(), expected.re.to_bits());
         assert_eq!(actual.im.to_bits(), expected.im.to_bits());
+
+        for (complex, factor, exponent) in [
+            (Complex64::new(1.5, 0.25), 0.75, 2),
+            (Complex64::new(f64::MIN_POSITIVE, -1.5), 0.5, -1),
+            (Complex64::new(f64::MAX, 0.25), 2.0, 0),
+        ] {
+            let actual = multiply_complex_scaled(complex, factor, exponent);
+            let expected = Complex64::new(
+                reference_multiply_component_scaled(complex.re, factor, exponent),
+                reference_multiply_component_scaled(complex.im, factor, exponent),
+            );
+            assert_eq!(actual.re.to_bits(), expected.re.to_bits());
+            assert_eq!(actual.im.to_bits(), expected.im.to_bits());
+        }
     }
 
     #[test]
