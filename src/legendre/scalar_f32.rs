@@ -240,7 +240,7 @@ fn multiply_component_scaled_with_normal_factor(value: f32, factor: f32, exponen
     if value.is_normal() {
         let product = value * factor;
         if product.is_normal() {
-            let scaled = scale_binary(product, exponent);
+            let scaled = scale_normal_binary(product, exponent);
             if scaled.is_normal() {
                 return scaled;
             }
@@ -263,7 +263,7 @@ fn multiply_component_scaled(value: f32, factor: f32, exponent: i64) -> f32 {
     if value.is_normal() && factor.is_normal() {
         let product = value * factor;
         if product.is_normal() {
-            let scaled = scale_binary(product, exponent);
+            let scaled = scale_normal_binary(product, exponent);
             if scaled.is_normal() {
                 return scaled;
             }
@@ -429,9 +429,155 @@ pub(crate) fn scale_binary(mut value: f32, mut exponent: i64) -> f32 {
     value * 2.0_f32.powi(exponent as i32)
 }
 
+fn scale_normal_binary(value: f32, exponent: i64) -> f32 {
+    debug_assert!(value.is_normal());
+    if exponent == 0 {
+        return value;
+    }
+    if exponent > 4096 {
+        return f32::INFINITY.copysign(value);
+    }
+    if exponent < -4096 {
+        return 0.0_f32.copysign(value);
+    }
+
+    let bits = value.to_bits();
+    let raw_exponent = ((bits >> 23) & 0xff) as i64;
+    let scaled_exponent = raw_exponent + exponent;
+    if (1..0xff).contains(&scaled_exponent) {
+        let exponent_mask = 0xff_u32 << 23;
+        return f32::from_bits((bits & !exponent_mask) | ((scaled_exponent as u32) << 23));
+    }
+    scale_binary(value, exponent)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn reference_multiply_component_scaled(value: f32, factor: f32, exponent: i64) -> f32 {
+        if value == 0.0 || factor == 0.0 || !value.is_finite() || !factor.is_finite() {
+            return scale_binary(value * factor, exponent);
+        }
+        let (value_mantissa, value_exponent) = split_binary(value);
+        let (factor_mantissa, factor_exponent) = split_binary(factor);
+        scale_binary(
+            value_mantissa * factor_mantissa,
+            exponent
+                .saturating_add(value_exponent)
+                .saturating_add(factor_exponent),
+        )
+    }
+
+    fn reference_scale_binary(mut value: f32, mut exponent: i64) -> f32 {
+        if value == 0.0 || !value.is_finite() {
+            return value;
+        }
+        if exponent > 4096 {
+            return value.signum() * f32::INFINITY;
+        }
+        if exponent < -4096 {
+            return 0.0_f32.copysign(value);
+        }
+        while exponent > 127 {
+            value *= 2.0_f32.powi(127);
+            exponent -= 127;
+            if !value.is_finite() {
+                return value;
+            }
+        }
+        while exponent < -126 {
+            value *= 2.0_f32.powi(-126);
+            exponent += 126;
+            if value == 0.0 {
+                return value;
+            }
+        }
+        value * 2.0_f32.powi(exponent as i32)
+    }
+
+    #[test]
+    fn f32_binary_scaling_matches_staged_products() {
+        let values = [
+            0.0,
+            -0.0,
+            0.125,
+            -0.75,
+            1.0,
+            -1.5,
+            f32::MIN_POSITIVE,
+            f32::from_bits(1),
+            f32::INFINITY,
+            f32::NEG_INFINITY,
+            f32::NAN,
+        ];
+        let exponents = [
+            -4097, -512, -254, -127, -126, -81, -1, 0, 1, 81, 126, 127, 512, 4097,
+        ];
+        for value in values {
+            for exponent in exponents {
+                let actual = scale_binary(value, exponent);
+                let expected = reference_scale_binary(value, exponent);
+                assert_eq!(actual.to_bits(), expected.to_bits());
+                if value.is_normal() {
+                    assert_eq!(
+                        scale_normal_binary(value, exponent).to_bits(),
+                        expected.to_bits()
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn f32_scaled_complex_multiply_matches_split_reference() {
+        let values = [
+            0.0,
+            -0.0,
+            0.125,
+            -0.75,
+            1.0,
+            -1.5,
+            f32::MIN_POSITIVE,
+            -f32::MAX,
+            f32::from_bits(1),
+            f32::from_bits(0x6e46_ed13),
+        ];
+        let factors = [
+            0.5,
+            -0.75,
+            1.125,
+            f32::MAX,
+            f32::MIN_POSITIVE,
+            f32::from_bits(1),
+            0.0,
+            f32::INFINITY,
+            f32::from_bits(0x21d3_bb30),
+        ];
+        let exponents = [-4097, -512, -255, -127, -126, -1, 0, 1, 126, 127, 512, 4097];
+
+        for value in values {
+            for factor in factors {
+                for exponent in exponents {
+                    let actual = multiply_component_scaled(value, factor, exponent);
+                    let expected = reference_multiply_component_scaled(value, factor, exponent);
+                    assert_eq!(
+                        actual.to_bits(),
+                        expected.to_bits(),
+                        "value={value:e}, factor={factor:e}, exponent={exponent}"
+                    );
+                    let complex = Complex32::new(value, -value);
+                    let actual = multiply_complex_scaled(complex, factor, exponent);
+                    let expected = Complex32::new(
+                        reference_multiply_component_scaled(value, factor, exponent),
+                        reference_multiply_component_scaled(-value, factor, exponent),
+                    );
+                    assert_eq!(actual.re.to_bits(), expected.re.to_bits());
+                    assert_eq!(actual.im.to_bits(), expected.im.to_bits());
+                }
+            }
+        }
+    }
 
     fn values_over_rings(arch: Arch, m: usize, lmax: usize, theta: &[f32]) -> Vec<Vec<f32>> {
         let sin_theta = theta.iter().map(|value| value.sin()).collect::<Vec<_>>();

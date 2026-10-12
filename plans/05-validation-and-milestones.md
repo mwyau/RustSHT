@@ -318,6 +318,25 @@ Callgrind instruction references for one f32 spin-1 GL synthesis at T127 fell fr
 
 The estimated numeric-array footprint remains 12.13 MiB. These two-run timings show a small, mixed change; the Callgrind result supports a lower instruction count for the profiled synthesis, but these measurements do not establish a general speedup. No new DUCC timing was collected for this change.
 
+### f32 normal binary scaling fast path (M4, 2026-10-12)
+
+The f32 scalar recurrence now adjusts the exponent bits directly when multiplying a normal value by a power of two produces another normal value. Subnormal, overflow, and extreme-exponent results use the general binary scaler. The fast path is used by both scalar recurrence multiply helpers; zero, nonfinite, and boundary products retain the general or split-binary paths.
+
+Unit tests compare normal-value scaling with staged multiplication and compare the optimized complex multiply with a split-binary reference. The cases include signed zero, normal and subnormal inputs and outputs, infinities, NaN, and exponents from -4097 to 4097. Existing f32 integration checks compare transform results with `ducc0==0.41.0` (source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`) and analytic fields.
+
+Callgrind instruction references for one f32 scalar GL synthesis at T127 fell from 182,424,872 at `897ed70` to 174,130,980 with the fast path, a 4.55% reduction. The release profile used rustc 1.99.0, AVX2/FMA runtime dispatch, and one Rayon thread on an AMD Ryzen 9 5950X. A T511 scalar benchmark used f32, GL `512x1025`, one or eight Rayon threads, one warmup, and five timed samples per run. Each table value averages two per-run medians in milliseconds; the plan and workspace were reused. The estimated core numeric-array footprint was 8.13 MiB.
+
+| Operation | Threads | Before | After | Change |
+| --- | ---: | ---: | ---: | ---: |
+| Synthesis | 1 | 756.300 | 728.565 | -3.7% |
+| Synthesis | 8 | 143.088 | 138.013 | -3.5% |
+| Analysis | 1 | 887.067 | 842.292 | -5.0% |
+| Analysis | 8 | 195.777 | 186.292 | -4.8% |
+
+The two-run timing averages are lower in all four cases. They measure one host and workload; they do not establish a general speedup or close the f32 performance gap with DUCC. The benchmark did not collect DUCC timings.
+
+On rustc 1.99.0 and 1.89.0, `cargo test --workspace --all-features` passes 73 library unit tests and 10 f32 integration tests; seven opt-in high-bandlimit tests are ignored. On rustc 1.99.0, `cargo test -p rustsht --no-default-features` passes 71 library unit tests and 10 f32 integration tests, with the same seven tests ignored. Workspace Clippy with warnings denied passes on both compilers. Formatting and `git diff --check` pass. The Python binding tests were not run because this change does not modify the bindings.
+
 ### f32 phase and pole edge cases (M4, 2026-10-12)
 
 Scalar and spin transforms retain `phi0` as f64 while forming each order phase, then convert the sine and cosine to the selected transform type. If `m*phi0` overflows f64, phase setup derives the integer-order phase by exponentiating `e^(i phi0)`. Grid and prepared CC colatitudes remain f64 through sine/cosine evaluation; the exact `0` and `pi` endpoints produce exact zero sine values before conversion to f32.
