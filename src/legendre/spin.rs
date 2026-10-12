@@ -468,6 +468,9 @@ pub(crate) fn scaled_basis_value(value: f64, exponent: i64, alpha_norm: f64) -> 
         return 0.0;
     }
     let product = value * alpha_norm;
+    if exponent == 0 {
+        return product;
+    }
     crate::legendre::scale_binary(product, exponent)
 }
 
@@ -488,6 +491,44 @@ pub(crate) fn spin_normalization(spin: usize, degree: usize, derivative: bool) -
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn scaled_spin_basis_matches_binary_scaling_reference() {
+        let values = [
+            0.0,
+            -0.0,
+            0.125,
+            -0.75,
+            f64::MIN_POSITIVE,
+            f64::from_bits(1),
+            f64::INFINITY,
+            f64::NAN,
+        ];
+        let normalizations = [
+            0.0,
+            -0.0,
+            0.5,
+            -1.25,
+            f64::MIN_POSITIVE,
+            f64::INFINITY,
+            f64::NAN,
+        ];
+        let exponents = [-4097, -1022, -1, 0, 1, 1023, 4097];
+
+        for value in values {
+            for alpha_norm in normalizations {
+                for exponent in exponents {
+                    let expected = if value == 0.0 || alpha_norm == 0.0 {
+                        0.0
+                    } else {
+                        crate::legendre::scale_binary(value * alpha_norm, exponent)
+                    };
+                    let actual = scaled_basis_value(value, exponent, alpha_norm);
+                    assert_eq!(actual.to_bits(), expected.to_bits());
+                }
+            }
+        }
+    }
 
     fn evaluate(
         spin: usize,
