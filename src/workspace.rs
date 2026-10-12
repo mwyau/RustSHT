@@ -159,6 +159,7 @@ impl<T: ShtScalar> ShtWorkspace<T> {
         spectrum_count: usize,
         nphi: usize,
         ntheta: usize,
+        analysis_order_count: usize,
         recurrence_factor_count: usize,
         spin_recurrence_factor_count: usize,
         spin_fast_coefficient_count: usize,
@@ -187,7 +188,9 @@ impl<T: ShtScalar> ShtWorkspace<T> {
                 .ok_or(ShtError::IntegerOverflow {
                     quantity: "parallel latitude group size",
                 })?;
-        let worker_count = ring_block_count.div_ceil(blocks_per_group);
+        let ring_worker_count = ring_block_count.div_ceil(blocks_per_group);
+        let analysis_worker_count = available_workers.min(analysis_order_count).max(1);
+        let worker_count = ring_worker_count.max(analysis_worker_count);
         let mut recurrence_workers = Vec::new();
         recurrence_workers
             .try_reserve_exact(worker_count)

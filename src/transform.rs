@@ -76,7 +76,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         #[cfg(feature = "parallel")]
         {
             let group_ring_count = workspace.ring_group_size.min(ntheta);
-            let parallel_groups = workspace.recurrence_workers.len();
+            let parallel_groups = ntheta.div_ceil(group_ring_count);
             let use_parallel = rayon::current_num_threads() > 1 && parallel_groups > 1;
             if use_parallel {
                 let spectrum_group_len = group_ring_count.checked_mul(spectrum_len).ok_or(
@@ -84,12 +84,11 @@ impl<T: ShtScalar> ShtPlan<T> {
                         quantity: "parallel Fourier spectrum group size",
                     },
                 )?;
-                let expected_groups = ntheta.div_ceil(group_ring_count);
-                debug_assert_eq!(expected_groups, parallel_groups);
+                debug_assert!(parallel_groups <= workspace.recurrence_workers.len());
                 workspace
                     .spectra
                     .par_chunks_mut(spectrum_group_len)
-                    .zip(workspace.recurrence_workers.par_iter_mut())
+                    .zip(workspace.recurrence_workers[..parallel_groups].par_iter_mut())
                     .enumerate()
                     .map(|(group_index, (group_spectra, recurrence))| {
                         let ring_start = group_index * group_ring_count;
@@ -1088,11 +1087,13 @@ impl<T: ShtScalar> ShtPlan<T> {
             .grid
             .ntheta()
             .div_ceil(workspace.ring_group_size.min(self.grid.ntheta()));
-        check_len(
-            "workspace recurrence worker groups",
-            expected_worker_count,
-            workspace.recurrence_workers.len(),
-        )?;
+        if workspace.recurrence_workers.len() < expected_worker_count {
+            return Err(ShtError::BufferLength {
+                buffer: "workspace recurrence worker groups",
+                expected: expected_worker_count,
+                actual: workspace.recurrence_workers.len(),
+            });
+        }
         for recurrence in &workspace.recurrence_workers {
             for (buffer, expected, actual) in [
                 (

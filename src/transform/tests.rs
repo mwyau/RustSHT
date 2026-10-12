@@ -383,6 +383,44 @@ fn scalar_analysis_recovers_closed_form_fields_at_minimum_sampling() {
 
 #[cfg(feature = "parallel")]
 #[test]
+fn workspace_sizes_analysis_scratch_for_order_parallelism() {
+    let plan = make_plan(127, 127, 128, 257, 0.37);
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let sixteen_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(16)
+        .build()
+        .unwrap();
+    let mut one_thread_workspace = one_thread.install(|| plan.workspace()).unwrap();
+    let mut sixteen_thread_workspace = sixteen_threads.install(|| plan.workspace()).unwrap();
+
+    assert_eq!(
+        sixteen_thread_workspace.ring_group_size,
+        LATITUDE_BLOCK_SIZE
+    );
+    assert_eq!(sixteen_thread_workspace.recurrence_workers.len(), 16);
+
+    let map = arbitrary_map(&plan);
+    let mut one_thread_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut sixteen_thread_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    one_thread
+        .install(|| plan.analysis_into(&map, &mut one_thread_alm, &mut one_thread_workspace))
+        .unwrap();
+    sixteen_threads
+        .install(|| {
+            plan.analysis_into(&map, &mut sixteen_thread_alm, &mut sixteen_thread_workspace)
+        })
+        .unwrap();
+
+    for (&single, &parallel) in one_thread_alm.iter().zip(&sixteen_thread_alm) {
+        assert!((single - parallel).norm() < 2e-13);
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
 fn rayon_groups_match_one_thread_for_synthesis_and_analysis() {
     let plan = make_plan(3, 2, 131, 9, 0.41);
     let input_alm = coefficients(plan.harmonics());
