@@ -6,12 +6,14 @@ use crate::fft::RealFftPlan;
 use crate::grid::GridSpec;
 use crate::harmonics::HarmonicSpec;
 use crate::legendre::sectoral_normalizations;
+use crate::meridional::CCResamplingPlan;
 use crate::workspace::ShtWorkspace;
 
 /// Reusable grid, harmonic and Fourier metadata for spherical transforms.
 pub struct ShtPlan {
     pub(crate) grid: GridSpec,
     pub(crate) harmonics: HarmonicSpec,
+    pub(crate) cc_resampling: Option<CCResamplingPlan>,
     pub(crate) fft: RealFftPlan,
     pub(crate) sectoral_norms: Vec<f64>,
     pub(crate) sample_count: usize,
@@ -59,10 +61,16 @@ impl ShtPlan {
                     quantity: "spin recurrence factor count",
                 })?;
         let sectoral_norms = sectoral_normalizations(harmonics.mmax())?;
+        let cc_resampling = if grid.kind() == crate::grid::GridKind::ClenshawCurtis {
+            Some(CCResamplingPlan::new(grid.ntheta(), harmonics.lmax())?)
+        } else {
+            None
+        };
 
         Ok(Self {
             grid,
             harmonics,
+            cc_resampling,
             fft,
             sectoral_norms,
             sample_count,
@@ -101,6 +109,7 @@ impl ShtPlan {
             self.recurrence_factor_count,
             self.spin_recurrence_factor_count,
             &self.fft,
+            self.cc_resampling.as_ref(),
         )
     }
 }

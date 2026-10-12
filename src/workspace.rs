@@ -6,6 +6,7 @@ use num_complex::Complex64;
 use crate::error::ShtError;
 use crate::fft::{RealFftPlan, RealFftWorkspace};
 use crate::legendre::LATITUDE_BLOCK_SIZE;
+use crate::meridional::CCResamplingPlan;
 
 /// Mutable scratch for one transform execution.
 ///
@@ -14,6 +15,10 @@ use crate::legendre::LATITUDE_BLOCK_SIZE;
 pub struct ShtWorkspace {
     pub(crate) spectra: Vec<Complex64>,
     pub(crate) spin_spectra: Vec<Complex64>,
+    pub(crate) prepared_spectra: Vec<Complex64>,
+    pub(crate) prepared_spin_spectra: Vec<Complex64>,
+    pub(crate) cc_profile: Vec<Complex64>,
+    pub(crate) cc_fft_scratch: Vec<Complex64>,
     pub(crate) row: Vec<f64>,
     pub(crate) theta_sin: Vec<f64>,
     pub(crate) theta_cos: Vec<f64>,
@@ -101,8 +106,17 @@ impl ShtWorkspace {
         recurrence_factor_count: usize,
         spin_recurrence_factor_count: usize,
         fft: &RealFftPlan,
+        cc_resampling: Option<&CCResamplingPlan>,
     ) -> Result<Self, ShtError> {
-        let recurrence_scratch_len = ntheta.min(LATITUDE_BLOCK_SIZE);
+        let prepared_ntheta = cc_resampling.map_or(0, CCResamplingPlan::prepared_ntheta);
+        let latitude_count = ntheta.max(prepared_ntheta);
+        let prepared_spectrum_count =
+            prepared_ntheta
+                .checked_mul(fft.spectrum_len())
+                .ok_or(ShtError::IntegerOverflow {
+                    quantity: "prepared CC Fourier spectrum count",
+                })?;
+        let recurrence_scratch_len = latitude_count.min(LATITUDE_BLOCK_SIZE);
         let ring_block_count = ntheta.div_ceil(LATITUDE_BLOCK_SIZE);
         #[cfg(feature = "parallel")]
         let available_workers = rayon::current_num_threads();
@@ -134,10 +148,26 @@ impl ShtWorkspace {
         Ok(Self {
             spectra: allocate_complex(spectrum_count, "Fourier spectrum")?,
             spin_spectra: allocate_complex(spectrum_count, "spin Fourier spectrum")?,
+            prepared_spectra: allocate_complex(
+                prepared_spectrum_count,
+                "prepared CC Fourier spectrum",
+            )?,
+            prepared_spin_spectra: allocate_complex(
+                prepared_spectrum_count,
+                "prepared spin CC Fourier spectrum",
+            )?,
+            cc_profile: allocate_complex(
+                cc_resampling.map_or(0, CCResamplingPlan::workspace_profile_len),
+                "CC meridional profile",
+            )?,
+            cc_fft_scratch: allocate_complex(
+                cc_resampling.map_or(0, CCResamplingPlan::workspace_fft_scratch_len),
+                "CC meridional FFT scratch",
+            )?,
             row: allocate_real(nphi, "longitude row")?,
-            theta_sin: allocate_real(ntheta, "latitude sine values")?,
-            theta_cos: allocate_real(ntheta, "latitude cosine values")?,
-            ring_order_limits: allocate_usizes(ntheta)?,
+            theta_sin: allocate_real(latitude_count, "latitude sine values")?,
+            theta_cos: allocate_real(latitude_count, "latitude cosine values")?,
+            ring_order_limits: allocate_usizes(latitude_count)?,
             recurrence_workers,
             ring_group_size,
             fft: fft.workspace()?,

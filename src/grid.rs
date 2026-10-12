@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: GPL-2.0-or-later
 //
-// This file contains a Rust translation of DUCC's Gauss-Legendre integrator.
+// This file contains Rust translations of DUCC's Gauss-Legendre integrator and
+// Clenshaw-Curtis quadrature setup.
 /*
  *  This file is part of the MR utility library.
  *
@@ -25,6 +26,9 @@
 
 use std::f64::consts::{PI, TAU};
 
+use num_complex::Complex64;
+use rustfft::FftPlanner;
+
 use crate::error::ShtError;
 
 /// Latitude grid used by a rectangular spherical harmonic transform.
@@ -32,13 +36,16 @@ use crate::error::ShtError;
 pub enum GridKind {
     /// Gauss-Legendre colatitudes and quadrature weights.
     GaussLegendre,
+    /// Equally spaced Clenshaw-Curtis colatitudes, including both poles.
+    ClenshawCurtis,
 }
 
 /// A regular latitude-longitude grid in canonical core order.
 ///
 /// Latitude rings run from north to south. Longitude samples run eastward from
 /// `phi0`, in radians. `ring_weights` include the azimuthal factor `2π` and sum
-/// to `4π` for the complete sphere.
+/// to `4π` for the complete sphere. Exact CC analysis uses prepared-grid
+/// meridional resampling in addition to these grid weights.
 #[derive(Clone, Debug, PartialEq)]
 pub struct GridSpec {
     kind: GridKind,
@@ -50,14 +57,14 @@ pub struct GridSpec {
 }
 
 impl GridSpec {
-    /// Constructs a Gauss-Legendre grid.
+    /// Constructs a grid of the selected kind.
     ///
     /// # Errors
     ///
-    /// Returns an error when either dimension is zero, `phi0` is not finite,
-    /// memory allocation fails, or the small-grid root iteration fails.
+    /// Returns an error when a dimension is too small for the selected grid,
+    /// `phi0` is not finite, memory allocation fails, or quadrature setup fails.
     pub fn new(kind: GridKind, ntheta: usize, nphi: usize, phi0: f64) -> Result<Self, ShtError> {
-        if ntheta == 0 {
+        if ntheta == 0 || (kind == GridKind::ClenshawCurtis && ntheta < 2) {
             return Err(ShtError::InvalidThetaCount);
         }
         if nphi == 0 {
@@ -67,7 +74,10 @@ impl GridSpec {
             return Err(ShtError::NonFinitePhi0);
         }
 
-        let (theta, ring_weights) = gauss_legendre_geometry(ntheta)?;
+        let (theta, ring_weights) = match kind {
+            GridKind::GaussLegendre => gauss_legendre_geometry(ntheta)?,
+            GridKind::ClenshawCurtis => clenshaw_curtis_geometry(ntheta)?,
+        };
         Ok(Self {
             kind,
             ntheta,
@@ -109,6 +119,9 @@ impl GridSpec {
     }
 
     /// Returns latitude-ring quadrature weights, including the `2π` factor.
+    ///
+    /// Exact CC analysis uses the prepared-grid resampling operator, not these
+    /// weights as a direct per-ring multiplier.
     #[must_use]
     pub fn ring_weights(&self) -> &[f64] {
         &self.ring_weights
@@ -119,6 +132,93 @@ impl GridSpec {
     pub fn longitude(&self, j: usize) -> Option<f64> {
         (j < self.nphi).then(|| self.phi0 + TAU * (j as f64) / (self.nphi as f64))
     }
+}
+
+fn clenshaw_curtis_geometry(ntheta: usize) -> Result<(Vec<f64>, Vec<f64>), ShtError> {
+    let mut theta = allocate_f64(ntheta, "CC colatitude")?;
+    let ring_weights = clenshaw_curtis_ring_weights(ntheta)?;
+    let north_count = ntheta.div_ceil(2);
+    for i in 0..north_count {
+        let north_theta = PI * i as f64 / (ntheta - 1) as f64;
+        let south = ntheta - 1 - i;
+        theta[i] = north_theta;
+        theta[south] = PI - north_theta;
+    }
+    // The north pole is exactly zero; computing its reflected value preserves
+    // DUCC's endpoint construction for the south pole.
+    theta[0] = 0.0;
+    Ok((theta, ring_weights))
+}
+
+/*
+ * The Waldvogel CC weight setup below is translated from DUCC's
+ * src/ducc0/sht/sht.cc, Copyright (C) 2020-2025 Max-Planck-Society,
+ * Martin Reinecke, revision c1ed01b8fda69d2a378190f0915f1a19762dddbf. That
+ * source is licensed under the GNU General Public License, version 2 or (at
+ * your option) any later version. It is distributed without any warranty;
+ * see the license notice above for details.
+ */
+pub(crate) fn clenshaw_curtis_ring_weights(ntheta: usize) -> Result<Vec<f64>, ShtError> {
+    if ntheta < 2 {
+        return Err(ShtError::InvalidThetaCount);
+    }
+    let n = ntheta - 1;
+    let denominator = n
+        .checked_mul(n)
+        .and_then(|square| square.checked_sub(1))
+        .and_then(|value| value.checked_add(n & 1))
+        .ok_or(ShtError::IntegerOverflow {
+            quantity: "CC quadrature weight denominator",
+        })?;
+    let dw = -1.0 / denominator as f64;
+    let mut packed = allocate_f64(n, "CC quadrature spectrum")?;
+    packed[0] = 2.0 + dw;
+    for k in 1..(n / 2) {
+        let twice_k = 2.0 * k as f64;
+        packed[2 * k - 1] = 2.0 / (1.0 - twice_k * twice_k) + dw;
+    }
+    if n > 1 {
+        let half = n / 2;
+        let idx = 2 * half - 1;
+        let factor = ((2 - (n & 1)) * n - 1) as f64;
+        packed[idx] = (n as f64 - 3.0) / (2 * half - 1) as f64 - 1.0 - dw * factor;
+    }
+
+    let mut spectrum = allocate_complex(n, "CC quadrature Fourier spectrum")?;
+    spectrum[0] = Complex64::new(packed[0], 0.0);
+    for k in 1..=n / 2 {
+        let real = packed[2 * k - 1];
+        let imag = if 2 * k < n { packed[2 * k] } else { 0.0 };
+        spectrum[k] = Complex64::new(real, imag);
+        let mirror = n - k;
+        if k != mirror {
+            spectrum[mirror] = Complex64::new(real, -imag);
+        }
+    }
+    let mut planner = FftPlanner::<f64>::new();
+    let inverse = planner.plan_fft_inverse(n);
+    let mut scratch = allocate_complex(
+        inverse.get_inplace_scratch_len(),
+        "CC quadrature FFT scratch",
+    )?;
+    inverse.process_with_scratch(&mut spectrum, &mut scratch);
+
+    let mut ring_weights = allocate_f64(ntheta, "CC ring weights")?;
+    for i in 0..ntheta.div_ceil(2) {
+        let weight = spectrum[i].re * TAU / n as f64;
+        ring_weights[i] = weight;
+        ring_weights[ntheta - 1 - i] = weight;
+    }
+    Ok(ring_weights)
+}
+
+fn allocate_complex(len: usize, array: &'static str) -> Result<Vec<Complex64>, ShtError> {
+    let mut values = Vec::new();
+    values
+        .try_reserve_exact(len)
+        .map_err(|_| ShtError::AllocationFailed { array })?;
+    values.resize(len, Complex64::new(0.0, 0.0));
+    Ok(values)
 }
 
 fn allocate_f64(len: usize, array: &'static str) -> Result<Vec<f64>, ShtError> {
@@ -481,6 +581,76 @@ mod tests {
             let grid = GridSpec::new(GridKind::GaussLegendre, ntheta, 1, 0.0).unwrap();
             close(grid.theta()[ring], expected_theta, 2.5e-15);
             close(grid.ring_weights()[ring], expected_weight, 2e-15);
+        }
+    }
+
+    #[test]
+    #[allow(clippy::excessive_precision)]
+    fn clenshaw_curtis_nodes_and_weights_match_ducc_0410() {
+        let references = [
+            (2, vec![TAU, TAU]),
+            (
+                3,
+                vec![
+                    2.094_395_102_393_195_7,
+                    8.377_580_409_572_783,
+                    2.094_395_102_393_195_7,
+                ],
+            ),
+            (
+                4,
+                vec![
+                    0.698_131_700_797_731_6,
+                    5.585_053_606_381_853,
+                    5.585_053_606_381_853,
+                    0.698_131_700_797_731_6,
+                ],
+            ),
+            (
+                5,
+                vec![
+                    0.418_879_020_478_639_34,
+                    3.351_032_163_829_112_5,
+                    5.026_548_245_743_669,
+                    3.351_032_163_829_112_5,
+                    0.418_879_020_478_639_34,
+                ],
+            ),
+        ];
+        for (ntheta, expected_weights) in references {
+            let grid = GridSpec::new(GridKind::ClenshawCurtis, ntheta, 1, 0.0).unwrap();
+            for (ring, (&theta, &weight)) in
+                grid.theta().iter().zip(grid.ring_weights()).enumerate()
+            {
+                let north_ring = ring.min(ntheta - 1 - ring);
+                let north_theta = PI * north_ring as f64 / (ntheta - 1) as f64;
+                let expected_theta = if ring <= ntheta - 1 - ring {
+                    north_theta
+                } else {
+                    PI - north_theta
+                };
+                close(theta, expected_theta, 0.0);
+                close(weight, expected_weights[ring], 2e-15);
+            }
+            close(grid.ring_weights().iter().sum(), 4.0 * PI, 2e-14);
+        }
+
+        for ntheta in 2..=20 {
+            let grid = GridSpec::new(GridKind::ClenshawCurtis, ntheta, 1, 0.0).unwrap();
+            for degree in 0..ntheta {
+                let actual: f64 = grid
+                    .theta()
+                    .iter()
+                    .zip(grid.ring_weights())
+                    .map(|(&theta, &weight)| theta.cos().powi(degree as i32) * weight / TAU)
+                    .sum();
+                let expected = if degree % 2 == 0 {
+                    2.0 / (degree as f64 + 1.0)
+                } else {
+                    0.0
+                };
+                close(actual, expected, 4e-14);
+            }
         }
     }
 

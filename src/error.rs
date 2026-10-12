@@ -6,7 +6,7 @@ use std::fmt::{Display, Formatter};
 /// Errors returned while constructing a grid or executing an SHT operation.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ShtError {
-    /// A grid must contain at least one latitude ring.
+    /// A grid must contain enough latitude rings for its geometry.
     InvalidThetaCount,
     /// A grid must contain at least one longitude sample per ring.
     InvalidPhiCount,
@@ -22,7 +22,7 @@ pub enum ShtError {
     SpinExceedsLmax { spin: usize, lmax: usize },
     /// The requested spin operation is not implemented.
     UnsupportedSpin { spin: usize },
-    /// Exact GL analysis requires at least `lmax + 1` latitude rings.
+    /// Exact analysis has too few latitude rings for the selected geometry.
     AnalysisLatitudeUndersampled { lmax: usize, ntheta: usize },
     /// The requested analysis order exceeds the non-aliased longitude range.
     AnalysisLongitudeUndersampled { mmax: usize, nphi: usize },
@@ -53,7 +53,9 @@ pub enum ShtError {
 impl Display for ShtError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::InvalidThetaCount => f.write_str("ntheta must be at least 1"),
+            Self::InvalidThetaCount => {
+                f.write_str("ntheta is too small for the selected grid geometry")
+            }
             Self::InvalidPhiCount => f.write_str("nphi must be at least 1"),
             Self::NonFinitePhi0 => f.write_str("phi0 must be finite"),
             Self::AllocationFailed { array } => {
@@ -74,8 +76,7 @@ impl Display for ShtError {
             }
             Self::AnalysisLatitudeUndersampled { lmax, ntheta } => write!(
                 f,
-                "exact GL analysis through lmax={lmax} requires at least {} latitude rings, received {ntheta}",
-                lmax.saturating_add(1)
+                "exact analysis through lmax={lmax} requires more latitude rings, received {ntheta}"
             ),
             Self::AnalysisLongitudeUndersampled { mmax, nphi } => write!(
                 f,

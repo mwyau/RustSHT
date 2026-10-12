@@ -132,7 +132,8 @@ impl ShtPlan {
 
     /// Analyzes two real spin-1 or spin-2 map components into E/B coefficients.
     ///
-    /// Exact GL analysis requires `ntheta >= lmax + 1` and
+    /// Exact GL analysis requires `ntheta >= lmax + 1`; exact CC analysis
+    /// requires `ntheta >= lmax + 2`. Both require
     /// `mmax <= (nphi - 1) / 2`. Each output coefficient slice has the plan's
     /// packed length; degrees below the spin are returned as zero.
     ///
@@ -289,10 +290,11 @@ impl ShtPlan {
         )
     }
 
-    /// Applies the adjoint of exact spin-1 or spin-2 GL analysis.
+    /// Applies the adjoint of exact spin-1 or spin-2 analysis.
     ///
-    /// The output maps are STANDARD spin synthesis scaled on each ring by its
-    /// GL pixel weight, `ring_weight / nphi`.
+    /// The output maps are STANDARD spin synthesis. GL analysis scales each
+    /// ring by `ring_weight / nphi`; CC analysis uses the adjoint of its
+    /// prepared-grid resampling path.
     ///
     /// # Errors
     ///
@@ -324,9 +326,105 @@ impl ShtPlan {
             second_component.len(),
         )?;
         self.check_workspace(workspace)?;
-        self.synthesis_spin_into(e_alm, b_alm, first_component, second_component, workspace)?;
-        self.apply_analysis_pixel_weights(first_component);
-        self.apply_analysis_pixel_weights(second_component);
+        if self.cc_resampling.is_some() {
+            self.adjoint_analysis_spin_cc_into(
+                e_alm,
+                b_alm,
+                first_component,
+                second_component,
+                workspace,
+            )
+        } else {
+            self.synthesis_spin_into(e_alm, b_alm, first_component, second_component, workspace)?;
+            self.apply_analysis_pixel_weights(first_component);
+            self.apply_analysis_pixel_weights(second_component);
+            Ok(())
+        }
+    }
+
+    fn adjoint_analysis_spin_cc_into(
+        &self,
+        e_alm: &[Complex64],
+        b_alm: &[Complex64],
+        first_component: &mut [f64],
+        second_component: &mut [f64],
+        workspace: &mut ShtWorkspace,
+    ) -> Result<(), ShtError> {
+        let spin = self.supported_spin()?;
+        let resampling = self
+            .cc_resampling
+            .as_ref()
+            .expect("CC adjoint analysis requires the prepared CC operator");
+        let prepared_ntheta = resampling.prepared_ntheta();
+        for (ring, &theta) in resampling.prepared_theta().iter().enumerate() {
+            (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
+            workspace.ring_order_limits[ring] = polar_order_limit(
+                self.harmonics.lmax(),
+                spin,
+                workspace.theta_sin[ring],
+                workspace.theta_cos[ring],
+            );
+        }
+        workspace.prepared_spectra.fill(Complex64::new(0.0, 0.0));
+        workspace
+            .prepared_spin_spectra
+            .fill(Complex64::new(0.0, 0.0));
+        self.synthesize_spin_ring_group(
+            e_alm,
+            Some(b_alm),
+            spin,
+            false,
+            1,
+            self.fft.spectrum_len(),
+            self.grid.phi0(),
+            0,
+            prepared_ntheta,
+            &mut workspace.prepared_spectra,
+            &mut workspace.prepared_spin_spectra,
+            &workspace.theta_sin[..prepared_ntheta],
+            &workspace.theta_cos[..prepared_ntheta],
+            &workspace.ring_order_limits[..prepared_ntheta],
+            pulp::Arch::new(),
+            &mut workspace.recurrence_workers[0],
+        )?;
+        resampling.restore_original(
+            &workspace.prepared_spectra,
+            &mut workspace.spectra,
+            self.fft.spectrum_len(),
+            self.harmonics.mmax(),
+            spin,
+            &mut workspace.cc_profile,
+            &mut workspace.cc_fft_scratch,
+        )?;
+        resampling.restore_original(
+            &workspace.prepared_spin_spectra,
+            &mut workspace.spin_spectra,
+            self.fft.spectrum_len(),
+            self.harmonics.mmax(),
+            spin,
+            &mut workspace.cc_profile,
+            &mut workspace.cc_fft_scratch,
+        )?;
+        let nphi = self.grid.nphi();
+        let spectrum_len = self.fft.spectrum_len();
+        for ring in 0..self.grid.ntheta() {
+            let start = ring * spectrum_len;
+            workspace.spectra[start].im = 0.0;
+            workspace.spin_spectra[start].im = 0.0;
+            self.fft.inverse(
+                &workspace.spectra[start..start + spectrum_len],
+                &mut workspace.row,
+                &mut workspace.fft,
+            )?;
+            let output_start = ring * nphi;
+            first_component[output_start..output_start + nphi].copy_from_slice(&workspace.row);
+            self.fft.inverse(
+                &workspace.spin_spectra[start..start + spectrum_len],
+                &mut workspace.row,
+                &mut workspace.fft,
+            )?;
+            second_component[output_start..output_start + nphi].copy_from_slice(&workspace.row);
+        }
         Ok(())
     }
 
@@ -395,7 +493,70 @@ impl ShtPlan {
         if let Some(b_alm) = b_alm.as_deref_mut() {
             b_alm.fill(Complex64::new(0.0, 0.0));
         }
-        self.prepare_spin_latitudes(workspace, recurrence_spin);
+        let (
+            q_spectra,
+            u_spectra,
+            analysis_ntheta,
+            analysis_ring_weights,
+            analysis_normalize_fourier,
+        ) = if let Some(resampling) = self
+            .cc_resampling
+            .as_ref()
+            .filter(|_| ring_weights.is_some())
+        {
+            for value in &mut workspace.spectra {
+                *value /= nphi as f64;
+            }
+            for value in &mut workspace.spin_spectra {
+                *value /= nphi as f64;
+            }
+            resampling.to_prepared(
+                &workspace.spectra,
+                &mut workspace.prepared_spectra,
+                spectrum_len,
+                self.harmonics.mmax(),
+                recurrence_spin,
+                &mut workspace.cc_profile,
+                &mut workspace.cc_fft_scratch,
+            )?;
+            resampling.to_prepared(
+                &workspace.spin_spectra,
+                &mut workspace.prepared_spin_spectra,
+                spectrum_len,
+                self.harmonics.mmax(),
+                recurrence_spin,
+                &mut workspace.cc_profile,
+                &mut workspace.cc_fft_scratch,
+            )?;
+            for (ring, &theta) in resampling.prepared_theta().iter().enumerate() {
+                (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
+                workspace.ring_order_limits[ring] = polar_order_limit(
+                    self.harmonics.lmax(),
+                    recurrence_spin,
+                    workspace.theta_sin[ring],
+                    workspace.theta_cos[ring],
+                );
+            }
+            (
+                workspace.prepared_spectra.as_slice(),
+                workspace.prepared_spin_spectra.as_slice(),
+                resampling.prepared_ntheta(),
+                None,
+                false,
+            )
+        } else {
+            self.prepare_spin_latitudes(workspace, recurrence_spin);
+            (
+                workspace.spectra.as_slice(),
+                workspace.spin_spectra.as_slice(),
+                ntheta,
+                ring_weights,
+                normalize_fourier,
+            )
+        };
+        let theta_sin = &workspace.theta_sin[..analysis_ntheta];
+        let theta_cos = &workspace.theta_cos[..analysis_ntheta];
+        let ring_order_limits = &workspace.ring_order_limits[..analysis_ntheta];
         let arch = pulp::Arch::new();
         let order_count = self.harmonics.mmax() + 1;
 
@@ -405,18 +566,18 @@ impl ShtPlan {
             let use_parallel = rayon::current_num_threads() > 1 && worker_count > 1;
             if use_parallel {
                 self.analyze_spin_order_groups_parallel(
-                    &workspace.spectra,
-                    &workspace.spin_spectra,
+                    q_spectra,
+                    u_spectra,
                     nphi,
                     spectrum_len,
                     self.grid.phi0(),
-                    ring_weights,
-                    normalize_fourier,
+                    analysis_ring_weights,
+                    analysis_normalize_fourier,
                     recurrence_spin,
                     derivative_norm,
-                    &workspace.theta_sin,
-                    &workspace.theta_cos,
-                    &workspace.ring_order_limits,
+                    theta_sin,
+                    theta_cos,
+                    ring_order_limits,
                     arch,
                     0,
                     order_count,
@@ -426,18 +587,18 @@ impl ShtPlan {
                 )?;
             } else {
                 self.analyze_spin_order_group(
-                    &workspace.spectra,
-                    &workspace.spin_spectra,
+                    q_spectra,
+                    u_spectra,
                     nphi,
                     spectrum_len,
                     self.grid.phi0(),
-                    ring_weights,
-                    normalize_fourier,
+                    analysis_ring_weights,
+                    analysis_normalize_fourier,
                     recurrence_spin,
                     derivative_norm,
-                    &workspace.theta_sin,
-                    &workspace.theta_cos,
-                    &workspace.ring_order_limits,
+                    theta_sin,
+                    theta_cos,
+                    ring_order_limits,
                     arch,
                     0,
                     order_count,
@@ -449,18 +610,18 @@ impl ShtPlan {
         }
         #[cfg(not(feature = "parallel"))]
         self.analyze_spin_order_group(
-            &workspace.spectra,
-            &workspace.spin_spectra,
+            q_spectra,
+            u_spectra,
             nphi,
             spectrum_len,
             self.grid.phi0(),
-            ring_weights,
-            normalize_fourier,
+            analysis_ring_weights,
+            analysis_normalize_fourier,
             recurrence_spin,
             derivative_norm,
-            &workspace.theta_sin,
-            &workspace.theta_cos,
-            &workspace.ring_order_limits,
+            theta_sin,
+            theta_cos,
+            ring_order_limits,
             arch,
             0,
             order_count,
@@ -1008,6 +1169,14 @@ mod tests {
     fn make_plan(spin: usize, lmax: usize, mmax: usize, ntheta: usize, nphi: usize) -> ShtPlan {
         ShtPlan::new(
             GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, 0.37).unwrap(),
+            HarmonicSpec::new(lmax, mmax, spin).unwrap(),
+        )
+        .unwrap()
+    }
+
+    fn make_cc_plan(spin: usize, lmax: usize, mmax: usize, ntheta: usize, nphi: usize) -> ShtPlan {
+        ShtPlan::new(
+            GridSpec::new(GridKind::ClenshawCurtis, ntheta, nphi, 0.37).unwrap(),
             HarmonicSpec::new(lmax, mmax, spin).unwrap(),
         )
         .unwrap()
@@ -2322,6 +2491,459 @@ mod tests {
                 spin_map_inner_product(&gradient_first, &gradient_second, &map_first, &map_second),
                 harmonic_inner_product(plan.harmonics(), &recovered_e, &gradient_adjoint),
                 2e-8,
+            );
+        }
+    }
+
+    fn assert_cc_spin_coefficients(
+        e: &[Complex64],
+        b: &[Complex64],
+        references: &[(usize, Complex64, Complex64)],
+        tolerance: f64,
+    ) {
+        for &(index, expected_e, expected_b) in references {
+            assert_complex_close(e[index], expected_e, tolerance);
+            assert_complex_close(b[index], expected_b, tolerance);
+        }
+    }
+
+    fn assert_cc_spin_map_samples(
+        first: &[f64],
+        second: &[f64],
+        references: &[(usize, f64, f64)],
+        tolerance: f64,
+    ) {
+        for &(index, expected_first, expected_second) in references {
+            assert_close(first[index], expected_first, tolerance);
+            assert_close(second[index], expected_second, tolerance);
+        }
+    }
+
+    #[test]
+    #[allow(clippy::excessive_precision)]
+    fn clenshaw_curtis_spin_operations_match_ducc_and_adjoint_identities() {
+        // DUCC references: ducc0==0.41.0, CC 4x5, phi0=0.37, one thread.
+        for spin in [1, 2] {
+            let plan = make_cc_plan(spin, 2, 2, 4, 5);
+            let (e, b) = coefficients(&plan);
+            let (input_first, input_second) = arbitrary_maps(&plan);
+            let mut workspace = plan.workspace().unwrap();
+
+            let mut synthesized_first = vec![0.0; plan.sample_count];
+            let mut synthesized_second = vec![0.0; plan.sample_count];
+            plan.synthesis_spin_into(
+                &e,
+                &b,
+                &mut synthesized_first,
+                &mut synthesized_second,
+                &mut workspace,
+            )
+            .unwrap();
+            let synthesis_references = if spin == 1 {
+                [
+                    (0, -0.130_913_993_965_584_34, 0.171_860_611_462_911_54),
+                    (5, -0.016_428_603_075_617_221, -0.032_805_389_433_844_825),
+                    (19, -0.000_928_712_053_871_821_9, 0.022_129_785_676_624_596),
+                ]
+            } else {
+                [
+                    (0, -0.058_892_455_413_158_004, 0.156_275_368_893_607_24),
+                    (5, -0.104_375_050_603_352_67, 0.177_290_419_041_157_17),
+                    (19, 0.097_487_802_581_672_4, 0.098_471_217_532_856_2),
+                ]
+            };
+            assert_cc_spin_map_samples(
+                &synthesized_first,
+                &synthesized_second,
+                &synthesis_references,
+                8e-14,
+            );
+
+            let mut analyzed_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            let mut analyzed_b = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            plan.analysis_spin_into(
+                &input_first,
+                &input_second,
+                &mut analyzed_e,
+                &mut analyzed_b,
+                &mut workspace,
+            )
+            .unwrap();
+            let analysis_references = if spin == 1 {
+                [
+                    (
+                        1,
+                        Complex64::new(-2.612_955_077_711_654, 0.0),
+                        Complex64::new(-3.001_662_136_091_308_5, 0.0),
+                    ),
+                    (
+                        3,
+                        Complex64::new(0.021_002_053_606_507_8, -0.045_793_602_877_552_11),
+                        Complex64::new(0.329_592_441_937_579_47, 0.209_604_689_959_377_64),
+                    ),
+                    (
+                        5,
+                        Complex64::new(-0.012_393_768_821_333_053, 0.004_749_812_096_456_83),
+                        Complex64::new(-0.184_929_371_801_667_8, -0.129_315_391_538_746_91),
+                    ),
+                ]
+            } else {
+                [
+                    (
+                        2,
+                        Complex64::new(-2.534_258_249_101_103_6, 0.0),
+                        Complex64::new(-2.912_496_978_593_333_9, 0.0),
+                    ),
+                    (
+                        4,
+                        Complex64::new(0.021_151_007_160_142_413, -0.034_840_695_347_129_046),
+                        Complex64::new(0.332_274_115_139_816_86, 0.195_208_217_446_319_17),
+                    ),
+                    (
+                        5,
+                        Complex64::new(0.124_251_712_561_700_26, -0.151_791_468_343_976_8),
+                        Complex64::new(0.013_886_323_920_175_251, 0.015_301_143_441_011_789),
+                    ),
+                ]
+            };
+            assert_cc_spin_coefficients(&analyzed_e, &analyzed_b, &analysis_references, 8e-13);
+
+            let mut adjoint_synthesis_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            let mut adjoint_synthesis_b = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            plan.adjoint_synthesis_spin_into(
+                &input_first,
+                &input_second,
+                &mut adjoint_synthesis_e,
+                &mut adjoint_synthesis_b,
+                &mut workspace,
+            )
+            .unwrap();
+            let synthesis_adjoint_references = if spin == 1 {
+                [
+                    (
+                        1,
+                        Complex64::new(-2.339_239_031_408_69, 0.0),
+                        Complex64::new(-2.687_227_686_285_246_4, 0.0),
+                    ),
+                    (
+                        3,
+                        Complex64::new(0.032_028_328_732_417_545, -0.110_290_988_876_756_03),
+                        Complex64::new(0.505_419_123_211_926_7, 0.378_512_676_833_292_98),
+                    ),
+                    (
+                        5,
+                        Complex64::new(-0.011_687_714_987_987_126, 0.005_468_360_226_964_545_5),
+                        Complex64::new(-0.164_640_419_195_042_44, -0.117_389_292_647_135_45),
+                    ),
+                ]
+            } else {
+                [
+                    (
+                        2,
+                        Complex64::new(-2.264_958_452_861_051, 0.0),
+                        Complex64::new(-2.601_897_019_112_555_7, 0.0),
+                    ),
+                    (
+                        4,
+                        Complex64::new(0.018_919_777_741_599_818, -0.033_495_276_055_368_756),
+                        Complex64::new(0.296_712_078_719_778_34, 0.177_698_223_104_298_2),
+                    ),
+                    (
+                        5,
+                        Complex64::new(0.265_897_033_575_491_05, -0.274_614_979_563_999),
+                        Complex64::new(0.047_895_818_012_903_844, 0.039_117_078_080_879_35),
+                    ),
+                ]
+            };
+            assert_cc_spin_coefficients(
+                &adjoint_synthesis_e,
+                &adjoint_synthesis_b,
+                &synthesis_adjoint_references,
+                8e-13,
+            );
+
+            let mut adjoint_analysis_first = vec![0.0; plan.sample_count];
+            let mut adjoint_analysis_second = vec![0.0; plan.sample_count];
+            plan.adjoint_analysis_spin_into(
+                &e,
+                &b,
+                &mut adjoint_analysis_first,
+                &mut adjoint_analysis_second,
+                &mut workspace,
+            )
+            .unwrap();
+            let analysis_adjoint_references = if spin == 1 {
+                [
+                    (0, -0.030_759_606_053_735_657, 0.036_192_005_621_084_9),
+                    (5, -0.005_547_105_210_100_101, -0.052_974_247_507_400_68),
+                    (19, -0.002_069_536_116_825_507_5, 0.008_025_389_616_706_956),
+                ]
+            } else {
+                [
+                    (0, -0.006_838_814_213_977_9, 0.026_952_561_786_282_143),
+                    (5, -0.111_987_949_435_876_78, 0.181_364_806_762_543_88),
+                    (19, 0.020_254_357_559_741_532, 0.018_396_658_748_369_588),
+                ]
+            };
+            assert_cc_spin_map_samples(
+                &adjoint_analysis_first,
+                &adjoint_analysis_second,
+                &analysis_adjoint_references,
+                8e-13,
+            );
+            assert_close(
+                spin_map_inner_product(
+                    &synthesized_first,
+                    &synthesized_second,
+                    &input_first,
+                    &input_second,
+                ),
+                spin_harmonic_inner_product(
+                    plan.harmonics(),
+                    &e,
+                    &b,
+                    &adjoint_synthesis_e,
+                    &adjoint_synthesis_b,
+                ),
+                2e-12,
+            );
+            assert_close(
+                spin_harmonic_inner_product(plan.harmonics(), &analyzed_e, &analyzed_b, &e, &b),
+                spin_map_inner_product(
+                    &input_first,
+                    &input_second,
+                    &adjoint_analysis_first,
+                    &adjoint_analysis_second,
+                ),
+                2e-12,
+            );
+        }
+    }
+
+    #[test]
+    #[allow(clippy::excessive_precision)]
+    fn clenshaw_curtis_gradient_modes_match_ducc_and_adjoint_identities() {
+        // DUCC references: ducc0==0.41.0, CC 4x5, phi0=0.37, one thread.
+        for spin in [1, 2] {
+            let plan = make_cc_plan(spin, 2, 2, 4, 5);
+            let (e, _) = coefficients(&plan);
+            let (first_input, second_input) = arbitrary_maps(&plan);
+            let mut workspace = plan.workspace().unwrap();
+            let mut first_output = vec![0.0; plan.sample_count];
+            let mut second_output = vec![0.0; plan.sample_count];
+
+            plan.synthesis_gradient_into(&e, &mut first_output, &mut second_output, &mut workspace)
+                .unwrap();
+            let map_references = if spin == 1 {
+                [
+                    (0, -0.139_001_236_673_356_7, 0.065_415_120_289_367_34),
+                    (5, 0.009_134_288_207_353_32, -0.034_043_948_310_996_56),
+                    (19, -0.031_053_446_309_564_477, 0.021_109_363_924_096_514),
+                ]
+            } else {
+                [
+                    (0, -0.097_820_836_943_549_01, 0.089_319_182_349_286_58),
+                    (5, -0.123_730_410_826_428_91, 0.082_948_977_740_022_52),
+                    (19, 0.026_638_221_359_579_07, 0.129_758_381_766_572_23),
+                ]
+            };
+            assert_cc_spin_map_samples(&first_output, &second_output, &map_references, 8e-14);
+
+            let mut adjoint_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            plan.adjoint_synthesis_gradient_into(
+                &first_input,
+                &second_input,
+                &mut adjoint_e,
+                &mut workspace,
+            )
+            .unwrap();
+            let adjoint_references: &[(usize, Complex64)] = if spin == 1 {
+                &[
+                    (1, Complex64::new(-2.339_239_031_408_69, 0.0)),
+                    (2, Complex64::new(0.217_924_448_403_946_23, 0.0)),
+                    (
+                        3,
+                        Complex64::new(0.032_028_328_732_417_545, -0.110_290_988_876_756_04),
+                    ),
+                    (
+                        4,
+                        Complex64::new(0.206_325_639_584_846_32, -0.132_032_852_262_769_56),
+                    ),
+                    (
+                        5,
+                        Complex64::new(-0.011_687_714_987_987_126, 0.005_468_360_226_964_545_5),
+                    ),
+                ]
+            } else {
+                &[
+                    (2, Complex64::new(-2.264_958_452_861_051, 0.0)),
+                    (
+                        4,
+                        Complex64::new(0.018_919_777_741_599_82, -0.033_495_276_055_368_756),
+                    ),
+                    (
+                        5,
+                        Complex64::new(0.265_897_033_575_491_05, -0.274_614_979_563_999),
+                    ),
+                ]
+            };
+            for &(index, expected) in adjoint_references {
+                assert_complex_close(adjoint_e[index], expected, 8e-13);
+            }
+
+            let zero = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            assert_close(
+                spin_map_inner_product(&first_output, &second_output, &first_input, &second_input),
+                spin_harmonic_inner_product(plan.harmonics(), &e, &zero, &adjoint_e, &zero),
+                2e-12,
+            );
+        }
+    }
+
+    #[test]
+    #[allow(clippy::excessive_precision)]
+    fn clenshaw_curtis_spin_analysis_accepts_minimum_even_longitudes() {
+        // DUCC references: ducc0==0.41.0, CC 4x6, phi0=0.37, one thread.
+        for spin in [1, 2] {
+            let plan = make_cc_plan(spin, 2, 2, 4, 6);
+            let (first, second) = arbitrary_maps(&plan);
+            let mut workspace = plan.workspace().unwrap();
+            let mut e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            let mut b = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            plan.analysis_spin_into(&first, &second, &mut e, &mut b, &mut workspace)
+                .unwrap();
+            let reference_indices = if spin == 1 { [1, 5] } else { [2, 5] };
+            let references = if spin == 1 {
+                [
+                    (-2.745_417_965_488_028_4, -2.960_933_933_046_018_9),
+                    (-0.026_862_782_484_817_417, -0.179_358_063_239_723_45),
+                ]
+            } else {
+                [
+                    (-2.662_837_082_796_514_2, -2.872_925_433_354_386_1),
+                    (0.095_858_214_893_881_23, 0.020_663_181_787_752_796),
+                ]
+            };
+            for (slot, &index) in reference_indices.iter().enumerate() {
+                assert_close(e[index].re, references[slot].0, 8e-13);
+                assert_close(b[index].re, references[slot].1, 8e-13);
+                if index == 5 {
+                    let (expected_e_im, expected_b_im) = if spin == 1 {
+                        (0.008_161_696_566_889_63, -0.093_329_874_742_590_76)
+                    } else {
+                        (-0.149_357_800_132_309_34, 0.026_001_781_896_984_398)
+                    };
+                    assert_close(e[index].im, expected_e_im, 8e-13);
+                    assert_close(b[index].im, expected_b_im, 8e-13);
+                }
+            }
+            let (test_e, test_b) = coefficients(&plan);
+            let mut adjoint_first = vec![0.0; plan.sample_count];
+            let mut adjoint_second = vec![0.0; plan.sample_count];
+            plan.adjoint_analysis_spin_into(
+                &test_e,
+                &test_b,
+                &mut adjoint_first,
+                &mut adjoint_second,
+                &mut workspace,
+            )
+            .unwrap();
+            assert_close(
+                spin_harmonic_inner_product(plan.harmonics(), &e, &b, &test_e, &test_b),
+                spin_map_inner_product(&first, &second, &adjoint_first, &adjoint_second),
+                2e-12,
+            );
+        }
+    }
+
+    #[test]
+    #[allow(clippy::excessive_precision)]
+    fn clenshaw_curtis_oversampled_spin_analysis_and_adjoint_match_ducc() {
+        // DUCC references: ducc0==0.41.0, CC 7x5, phi0=0.37, one thread.
+        for spin in [1, 2] {
+            let plan = make_cc_plan(spin, 2, 2, 7, 5);
+            let (first, second) = arbitrary_maps(&plan);
+            let (e, b) = coefficients(&plan);
+            let mut workspace = plan.workspace().unwrap();
+            let mut analyzed_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            let mut analyzed_b = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            plan.analysis_spin_into(
+                &first,
+                &second,
+                &mut analyzed_e,
+                &mut analyzed_b,
+                &mut workspace,
+            )
+            .unwrap();
+            let analysis_indices = if spin == 1 { [1, 3, 5] } else { [2, 4, 5] };
+            let analysis_references = if spin == 1 {
+                [
+                    (
+                        Complex64::new(-3.201_290_644_015_710_7, 0.0),
+                        Complex64::new(-2.708_664_055_064_725_4, 0.0),
+                    ),
+                    (
+                        Complex64::new(-0.071_123_529_631_083_82, -0.096_929_917_301_682_57),
+                        Complex64::new(0.231_689_503_121_457_97, 0.223_052_640_302_583_62),
+                    ),
+                    (
+                        Complex64::new(0.034_968_400_629_645_326, 0.048_876_147_346_835_576),
+                        Complex64::new(-0.131_753_492_287_878_36, -0.117_856_284_954_902_72),
+                    ),
+                ]
+            } else {
+                [
+                    (
+                        Complex64::new(-3.056_854_799_859_842, 0.0),
+                        Complex64::new(-2.587_440_593_321_033_2, 0.0),
+                    ),
+                    (
+                        Complex64::new(-0.074_068_722_658_374_37, -0.084_167_475_868_191_27),
+                        Complex64::new(0.239_869_490_508_036_66, 0.212_826_756_809_062_38),
+                    ),
+                    (
+                        Complex64::new(0.117_119_618_474_327_16, -0.100_121_944_841_738_64),
+                        Complex64::new(0.059_015_335_553_978_27, -0.019_955_044_264_876_733),
+                    ),
+                ]
+            };
+            for (slot, &index) in analysis_indices.iter().enumerate() {
+                assert_complex_close(analyzed_e[index], analysis_references[slot].0, 1e-12);
+                assert_complex_close(analyzed_b[index], analysis_references[slot].1, 1e-12);
+            }
+
+            let mut adjoint_first = vec![0.0; plan.sample_count];
+            let mut adjoint_second = vec![0.0; plan.sample_count];
+            plan.adjoint_analysis_spin_into(
+                &e,
+                &b,
+                &mut adjoint_first,
+                &mut adjoint_second,
+                &mut workspace,
+            )
+            .unwrap();
+            let map_indices = [0, 5, 34];
+            let map_references = if spin == 1 {
+                [
+                    (-0.004_700_325_047_935_751, 0.006_170_468_964_723_809),
+                    (-0.031_590_205_493_114_08, 0.028_840_734_143_826_846),
+                    (-0.000_033_344_399_608_513_03, 0.000_794_545_966_939_429),
+                ]
+            } else {
+                [
+                    (-0.002_114_469_774_603_898_7, 0.005_610_897_724_036_468),
+                    (-0.031_006_030_509_425_925, 0.062_261_727_115_643_76),
+                    (0.003_500_193_878_916_505, 0.003_535_502_326_757_304_6),
+                ]
+            };
+            for (slot, &index) in map_indices.iter().enumerate() {
+                assert_close(adjoint_first[index], map_references[slot].0, 1e-12);
+                assert_close(adjoint_second[index], map_references[slot].1, 1e-12);
+            }
+            assert_close(
+                spin_harmonic_inner_product(plan.harmonics(), &analyzed_e, &analyzed_b, &e, &b),
+                spin_map_inner_product(&first, &second, &adjoint_first, &adjoint_second),
+                3e-12,
             );
         }
     }
