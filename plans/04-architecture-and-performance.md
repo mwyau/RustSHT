@@ -10,26 +10,30 @@ Build one harmonic kernel family for spin-0 and DUCC-supported spin-positive rec
 
 **GL is the first full feature gate** (D11). Only after scalar/spin/vector, derivative and adjoint tests pass on GL should CC and F1 integrate through the same core. Preserve vectorization opportunities in the interface; don't build and then discard a scalar-only `Y_lm` matrix implementation. For GL analysis, weight Fourier modes according to the GL latitude quadrature. For CC/F1 analysis, implement the distinct prepared-CC meridional resampling, parity, padding and weighting stages, with a matching adjoint. Their FFT/convolution costs belong in performance accounting; RustFFT will serve both longitude FFTs and any needed latitude FFTs.
 
-## FFT choice and measurement
+## FFT: RustFFT plus a private real-input adapter
 
-Start with **RustFFT**, converting real longitude rows into complex FFT buffers and keeping the nonnegative Fourier modes with the correct normalization and `phi0` phase. Synthesis explicitly restores the conjugate-symmetric spectrum. This baseline may use roughly twice the FFT-stage work of a packed real-input method for even lengths; measure before introducing `realfft` or custom packing. Keep the FFT backend internal. Reuse planned FFTs and explicit scratch buffers, including meridional resampling transforms. Investigate the cost of transpose/packing and per-worker FFT scratch separately from FFT arithmetic. DUCC FFT porting is not an initial task.
+RustFFT is the **only FFT algorithm dependency**. Port DUCC's relevant real-transform packing strategy, not the PocketFFT implementation. Implement the narrow real-input helpers used for longitude rows:
 
-## Stable SIMD and dispatch
+- **Even `nphi`:** pack `x[2j] + i*x[2j+1]` into `nphi/2` complex samples. Run the planned half-length complex FFT; reconstruct `nphi/2+1` nonnegative Hermitian modes using cached twiddles. Invert these steps for synthesis. Handle correct scaling for the unnormalized RustFFT direction.
+- **Odd `nphi`:** begin with a full-length complex RustFFT and extract/reconstruct conjugate frequencies. The highest positive mode is not a Nyquist mode; optimize only when profiling warrants it.
+- Check length 1/2, DC, even-length real Nyquist mode, zero-padded/truncated `mmax`, `phi0` shifts, and inverse/adjoint scaling. Validate against a direct full-complex FFT, not solely with the adapter's own roundtrip.
+- Cache FFT plans, twiddle constants and reusable worker scratch. Run RustFFT with caller-owned scratch, without allocation in steady execution. RustFFT handles FFT-specific CPU SIMD; avoid an FFT backend framework or hand-written butterfly kernels.
 
-- Portable reference kernel with ordinary Rust loops and compiler auto-vectorization.
-- x86-64: conditional AVX2/FMA and AVX-512 kernels with a portable baseline. Rust 1.89 stabilizes AVX-512 target features and many intrinsics; every specialized kernel must check its required CPU feature subsets.
-- AArch64: NEON plus portable fallback for other targets.
-- Detect CPU features once at plan creation; select a kernel outside hot loops. Isolate unsafe intrinsic calls in small, feature-checked boundaries; do not require AVX-512 on every x86-64 machine.
-- Start with `std::arch` if exact layout/instruction control is needed; compare `pulp` only after an accurate reference path exists.
-- Portable distributed wheels must not require `-C target-cpu=native`; use runtime dispatch for supported variants. SIMD across independent latitude rings (or independent batch elements) while respecting the recurrence in degree `l`. Reproduce the required rescaling, polar cutoff and reflection behavior before comparing peak vector instruction throughput.
+## DUCC recurrence with early SIMD
+
+Port DUCC's normalized, scaled scalar and spin recurrence with its polar cutoffs, parity and sectoral handling. Establish an independently checked scalar reference, then vectorize the **same recurrence** across independent latitude rings using `pulp` during GL M1. Avoid rewriting the mathematical algorithm into a dense matrix multiplication.
+
+- Iterate degree `l` sequentially while grouping latitude lanes and independent order `m` work into bounded, cache-friendly blocks. Prefer unit-stride SIMD access and reuse recurrence constants and buffers.
+- Dispatch AVX2/FMA, AVX-512 (with `pulp`'s `x86-v4` feature) and AArch64 NEON only where CPU features are present. Keep a portable scalar fallback and test it explicitly.
+- Preserve per-lane underflow/overflow rescaling, reflection parity and polar cutoffs. Use FMA where numerically appropriate and test floating-point order differences; no global fast-math.
+- Use `std::arch` intrinsics only for an identified missing operation or measured improvement, confined to small runtime-checked boundaries. No unstable `std::simd`, `wide`, or SIMD trait hierarchy in the public API.
 
 ## Threading, memory and allocation
 
-- Rayon remains an **optional** dependency; benchmark scheduling over independent `m` blocks, rings or batches, and avoid parallelizing many short FFTs unnecessarily.
-- Establish per-worker scratch lifetime and bound worst-case allocations from `ncomp`, `lmax`, `mmax`, `ntheta`, `nphi` and batch.
-- Use `checked_mul`/`checked_add` for `nalm`, map dimensions and buffer index offsets.
-- Avoid an `O(L^3)` dense basis cache. At `L=8191`, one full triangular complex128 coefficient array already occupies roughly **512 MiB**; one `8192 x 16384` float64 map is **1 GiB**, before copies or scratch.
-- Keep the no-allocation hot path measurable and differentiate initialization, warmed execution, internal packing and Python conversion.
+- Optional Rayon runs coarse independent `m` or ring-FFT blocks during GL M1. Avoid per-degree jobs, atomics on coefficients, nested parallel pools and shared mutable scratch.
+- Each worker receives separate prepared scratch. Pack harmonic coefficients externally as before; internally use bounded contiguous Fourier and latitude-lane blocks. Record scratch size and copying cost.
+- Use checked integer arithmetic for array sizes and offsets. Avoid dense `O(L^3)` bases and unnecessary full-map copies. At `L=8191`, a complex128 triangular harmonic array occupies about 512 MiB, and an `8192 x 16384` float64 map about 1 GiB, before scratch.
+- Benchmark plan construction, FFT, recurrence, packing, memory and full repeated execution with one and multiple threads as soon as GL works.
 
 ## Benchmark method
 
@@ -39,4 +43,4 @@ Compare RustSHT with the pinned DUCC CPU implementation on identical hardware, d
 - Plan construction versus steady-state repeated execution.
 - One-thread and multi-thread scaling; AVX2/AVX-512/NEON dispatch selected.
 - CPU type, compiler flags, memory/RSS, correctness tolerance and run-to-run spread.
-- True minimum odd `Nφ=2*mmax+1`, smallest even `Nφ=2*mmax+2`, and FFT-friendly alternatives; compare correctness and performance separately. A within-2x DUCC throughput ratio is an **initial optimization checkpoint**, not a feature acceptance requirement or an achieved result. Never trade correct high-bandlimit results for that ratio. Dependencies: `rustfft`; optional `rayon`. Add PyO3/NumPy/maturin in the Python layer; keep `realfft`, `ndarray`, `pulp` and other runtime crates optional until measured need.
+- True minimum odd `Nφ=2*mmax+1`, smallest even `Nφ=2*mmax+2`, and FFT-friendly alternatives; compare correctness and performance separately. Compare against the pinned DUCC implementation during GL M1, not only at M4. If slower by more than 2×, profile FFT, recurrence, packing and scheduling in the same session without weakening correctness. Benchmark AVX2 against AVX-512 where supported; a wider SIMD vector is not necessarily faster. Core dependencies: `rustfft`, `num-complex`, `pulp` (enable `x86-v4` for AVX-512), and optional `rayon`. Avoid `gauss-quad`, `realfft`, `ndarray`, `faer`, `wide` or additional SIMD/FFT libraries without a concrete measured need. PyO3 remains in the existing Python member.

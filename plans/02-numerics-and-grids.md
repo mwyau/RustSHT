@@ -8,7 +8,6 @@ Define **synthesis** `S: alm -> map`, **analysis** `A: map -> alm`, **adjoint sy
 
 Before implementing the first recurrence, establish scalar `Y_lm` normalization and phase, Fourier signs/scaling, negative-`m` reality relationship, packed indexing and both inner products. Verify against published mathematics, independent low-degree fields and the pinned DUCC revision, rather than relying on roundtrips. For spin, establish spin-weighted and E/B conventions, angular derivative signs and mode relationships before coding the recurrence. For uniform longitude rings, DUCC's `get_gridweights` gives latitude-ring weights `w_i` that sum to `4*pi`; each pixel has integration weight `w_i/nphi`. FFT normalization is separate. DUCC `ringfactor` is fixed to one in the initial RustSHT API and parity tests.
 
-
 ## GL first: complete operation family (approved D11)
 
 Work on one grid with a shared, grid-independent recurrence/FFT driver:
@@ -30,6 +29,13 @@ With `Nθ = ntheta`, `Nφ = nphi` and `lmax=L`, exact analysis in DUCC's rectang
 | F1 | `(i+1/2)*pi/Nθ`, excluding poles | `Nθ - 1` |
 
 For alias-free **analysis**, `mmax <= floor((Nφ-1)/2)`, in addition to `0 <= mmax <= lmax`. Thus `Nφ=2*mmax+1` is the minimum odd longitude count and `2*mmax+2` the smallest even one. Test both. Report errors for invalid exact-analysis input rather than silently returning aliased coefficients. Some **synthesis** configurations have different longitude/degree constraints; do not apply exact-analysis limits to all operations indiscriminately. The `get_gridweights` values from DUCC include azimuthal integration (`2*pi` times latitude-rule weights): for a full sphere their sum should be `4*pi`. Test symmetry, positivity where expected, pole behavior and exact low-degree moments. Compare nodes, weights and `maximum_safe_l` separately. DUCC's **CC/F1 high-bandlimit analysis is not simple quadrature on the original latitude rings**. Its `analysis_2d` computes longitude Fourier modes, resamples their meridional profiles to a prepared CC grid (`resample_to_prepared_CC`) using pole/reflection parity, zero padding and convolution with suitable weights, and then performs the Legendre adjoint. `adjoint_analysis_2d` reverses that path through `resample_from_prepared_CC`. Model these as an explicit analysis-side operator and its adjoint. Do **not** replace this by simple CC/F1 weights or assume it follows directly from the 2023 general-NUFFT paper.
+
+## Numerical algorithms to port
+
+- GL: port DUCC's `GL_Integrator` node/weight/colatitude ordering. Its small-grid method iterates Legendre roots in `long double`; above 100 rings it uses Bogaert/FastGL expansions and symmetry. Match the published approximations, source terms and tested numerical behavior. No third-party quadrature crate.
+- CC/F1: port DUCC's FFT-based Waldvogel weights and prepared-CC resampling including pole flags, parity, phase shifts, padding, convolution and matching adjoint. Use RustFFT for FFT execution.
+- Legendre/spin: retain scaled normalized recurrence, sectoral initialization, rescaling, reflection parity and polar cutoffs; use SIMD across independent latitude lanes while keeping degree recurrence sequential.
+- FFT: implement only the even-length real-input packing/Hermitian recombination necessary around complex RustFFT; handle odd lengths with the full-complex path. Verify direct FFT outputs against an independent full-complex implementation before SHT integration. See [04](04-architecture-and-performance.md) for memory blocking, threading and runtime dispatch.
 
 ## Storage and coordinate conventions
 

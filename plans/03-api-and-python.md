@@ -28,7 +28,7 @@ plan.synthesis_into(&alm, &mut map, &mut work)?;
 plan.analysis_into(&map, &mut recovered, &mut work)?;
 ```
 
-The signatures, error type, scratch lifetime and zero-allocation guarantees need a proof-of-concept. Implement STANDARD `S`, `A`, `S*` and `A*` as separate mathematical operations. For valid synthesis-only modes, use explicit methods such as `synthesis_gradient_into`, `adjoint_synthesis_gradient_into`, `synthesis_deriv1_into` and `adjoint_synthesis_deriv1_into`; DERIV1 uses a spin-1 computation with scalar coefficients. Do not invent derivative analysis or put a mode in `HarmonicSpec`. Expose counts, grid coordinates, weights and safe analysis degree. Initially accept contiguous slices and reject invalid size, nonreal `m=0` input and nonzero `l<spin` coefficients.
+The signatures, error type, scratch lifetime and zero-allocation guarantees need a proof-of-concept. Implement STANDARD `S`, `A`, `S*` and `A*` as separate mathematical operations. For valid synthesis-only modes, use explicit methods such as `synthesis_gradient_into`, `adjoint_synthesis_gradient_into`, `synthesis_deriv1_into` and `adjoint_synthesis_deriv1_into`; DERIV1 uses a spin-1 computation with scalar coefficients. Do not invent derivative analysis or put a mode in `HarmonicSpec`. Expose counts, grid coordinates, weights and safe analysis degree. Initially accept contiguous slices and reject invalid size, nonreal `m=0` input and nonzero `l<spin` coefficients. Use contiguous slices and small blocked workspaces in the numerical core. Do not require `ndarray` or a general matrix library. The plan selects runtime SIMD via `pulp` and the scalar path remains testable. The real-input FFT packing helper is private and specialized to longitude spectra.
 
 ## Code organization
 
@@ -43,13 +43,13 @@ src/
   plan.rs                # ShtPlan and precomputed constants
   workspace.rs           # Explicit mutable FFT/Legendre scratch
   transform.rs           # Public transform methods and dispatch
-  fft.rs                 # Private RustFFT integration
+  fft.rs                 # RustFFT plus a small real-input packing adapter
   legendre/
     mod.rs               # Shared recurrence metadata
     scalar.rs            # Spin-0 normalized recurrence
     spin.rs              # Spin-weighted recurrence
   meridional.rs          # CC/F1 preparation and adjoint
-  kernels/               # Scalar, SIMD and architecture dispatch later
+  kernels/               # Scalar reference and SIMD dispatch (when used)
 ```
 
 These are design boundaries, not instructions to create empty modules. Start with the minimum modules actually used. Hide implementation helpers with `pub(crate)` or private visibility and expose only stable numerical types. Keep coefficient and ring layout well documented and use checked indexing. The root Cargo workspace includes the separate `python/` PyO3 extension crate alongside `python/rustsht/` and `python/tests/`. Only this member depends on PyO3; the core `rustsht` crate stays Rust-only. `python/rustsht` contains the Python package, and maturin builds `rustsht._rustsht`. Do not add a new workspace member for each numerical subsystem.
@@ -57,7 +57,6 @@ These are design boundaries, not instructions to create empty modules. Start wit
 ## Python binding scaffold
 
 The uv development environment pins Python 3.11 with `.python-version`, consistent with the PyO3 `abi3-py311` baseline. The `python/rustsht/py.typed` PEP 561 marker is installed with the package. Add stubs for public numerical bindings when implemented. Generate Cargo and uv lockfiles with their own package managers where registries are accessible; only then enable locked installs in permanent CI. Do not create temporary GitHub Actions jobs to generate lockfiles. The root `pyproject.toml` uses maturin as its build backend. Its `[tool.maturin]` settings point to the `python` Cargo member and build the native extension as `rustsht._rustsht`, alongside `python/rustsht/__init__.py`. The Python project version is `0.1.0.dev0` (PEP 440 form) and the Rust packages use `0.1.0-dev.0` (Cargo semver form). The `dev` group contains DUCC, NumPy and pytest; the published runtime dependency list is empty. Run `uv sync` to build/install the local Python package, then `uv run pytest python/tests` to check import of the compiled extension. `cargo test --workspace` checks both Rust crates. No SHT functions or fictitious placeholders are exposed by the extension yet. Add Python SHT bindings only after the corresponding native Rust operations are implemented and verified. The numerical Python API will eventually contain DUCC-familiar procedural functions and a reusable plan class. Do not publish placeholder numerical operations. Initial parity uses DUCC's unit `ringfactor`; arbitrary per-ring scaling is deferred.
-
 
 ## Python binding
 

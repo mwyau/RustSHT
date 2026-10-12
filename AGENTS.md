@@ -1,6 +1,6 @@
 # RustSHT contributor instructions
 
-RustSHT is an independent GPL-2.0-or-later Rust library implementing spherical harmonic transform algorithms used by [DUCC](https://gitlab.mpcdf.mpg.de/mtr/ducc). DUCC is the numerical reference. Consult the [decisions](plans/00-scope-and-decisions.md), [numerical specification](plans/02-numerics-and-grids.md), and [DUCC operation crosswalk](plans/06-ducc-contract-crosswalk.md) before changing numerical code.
+RustSHT is an independent GPL-2.0-or-later Rust library implementing spherical harmonic transform algorithms used by [DUCC](https://github.com/mreineck/ducc). DUCC is the numerical reference. Consult the [decisions](plans/00-scope-and-decisions.md), [numerical specification](plans/02-numerics-and-grids.md), and [DUCC operation crosswalk](plans/06-ducc-contract-crosswalk.md) before changing numerical code.
 
 ## Writing
 
@@ -12,7 +12,9 @@ Apply [write-like-a-scientist/SKILL.md](https://github.com/mwyau/write-like-a-sc
 - Follow the [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/checklist.html). Prefer concrete validated structs/enums with private fields, inherent methods, `Result`-returning constructors and operations, and documented panics/errors. Do not create public trait hierarchies, unsafe stride interfaces or a generic FFT-backend plugin API without a concrete need.
 - The Rust core owns numerical `GridSpec`, `HarmonicSpec`, `ShtPlan`, `ShtWorkspace`, packed coefficients and transform operations. Plans contain geometry, bandlimits and spin; operation-specific methods select valid modes. Use a direct `num-complex` dependency for public `Complex64`. Plans are reusable and hold no mutable execution scratch; caller-owned workspaces serve each invocation/worker. Use checked arithmetic and validate buffer lengths, channels, spin, modes and sampling.
 - Core arrays use canonical north-to-south colatitude and equally spaced eastward longitude; `phi0` is in radians. Python and spharmgrid adapters handle user coordinate order, Xarray metadata, geographic winds, physical units and spectral filtering. The numerical core does not depend on Python, NumPy, Xarray or spharmgrid.
-- Use RustFFT initially with reusable FFT scratch. Rayon is optional. Preserve a portable scalar path; add AVX2/FMA, AVX-512 and AArch64 NEON runtime dispatch after correctness. Never share mutable scratch between workers.
+- Port DUCC's core numerical methods from the pinned GitHub source, including GL iterative/Bogaert quadrature, CC/F1 weights and meridional resampling, and scaled scalar/spin recurrences. Do not substitute `gauss-quad` or a generic matrix implementation. Retain applicable source notices for direct translations.
+- Use RustFFT as the sole FFT engine. Implement a small private even-length real-input packing/Hermitian reconstruction helper around a half-length complex RustFFT; use a full-complex fallback for odd lengths. Do not add RealFFT or implement FFT butterflies. Test the helper against direct complex FFTs.
+- Build GL kernels with scalar-reference checks and `pulp` SIMD (`x86-v4` for AVX-512), blocked latitude lanes, portable runtime dispatch, and optional coarse Rayon scheduling during M1. Reserve raw `std::arch` for measured gaps. Avoid `ndarray` in the numerical core and never share mutable scratch between workers.
 - Pin uv to Python 3.11 with `.python-version`, matching `abi3-py311`. Keep `python/rustsht/py.typed` as a PEP 561 marker, with public typing stubs when numerical bindings are added.
 - The Python binding crate, importable package and tests live together under `python/` (`python/Cargo.toml`, `python/src/`, `python/rustsht/`, and `python/tests/`), packaged by maturin through the root `pyproject.toml`. The Rust-only `rustsht` crate does not depend on PyO3. `uv sync` builds the editable Python package and installs the `dev` group (`ducc0`, `numpy`, `pytest`); `ducc0` is not a runtime dependency. The extension currently contains only a module initializer, no numerical transforms.
 - Use **Albert M. W. Yau** for new code attribution. Cite Martin Reinecke and collaborators. If copyrightable source expression is copied/adapted/directly translated from DUCC, preserve its original license and copyright notices and record the revision. Do not copy `python/test/test_sht.py` without reviewing its GPL-3.0-or-later header; implement the numerical cases independently.
@@ -26,8 +28,7 @@ Apply [write-like-a-scientist/SKILL.md](https://github.com/mwyau/write-like-a-sc
 
 ## Long autonomous implementation sessions
 
-Use [the milestone and long-session rules](plans/05-validation-and-milestones.md) on a **new branch from main**. Continue through M1a, M1b/M1c, M2a/M2b and later stages as correctness and resources permit. The selections in [00](plans/00-scope-and-decisions.md) do not need routine confirmation. Commit working increments, document skipped tests and blockers, and never weaken tests to advance. Do not push unless authorized during the implementation session or merge into `main`. End with a numerical test and commit report.
-
+Use [the milestone and long-session rules](plans/05-validation-and-milestones.md) on a **new branch from main**. Continue through M1a (including DUCC GL quadrature, FFT adapter, SIMD, coarse threading and initial benchmarks), M1b/M1c, M2a/M2b and later stages as correctness and resources permit. The selections in [00](plans/00-scope-and-decisions.md) do not need routine confirmation. Commit working increments, document skipped tests and blockers, and never weaken tests to advance. Do not push unless authorized during the implementation session or merge into `main`. End with a numerical test and commit report.
 
 ## GitHub Actions
 
