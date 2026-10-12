@@ -1,22 +1,20 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use num_complex::Complex64;
+use num_complex::Complex;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
 use crate::error::ShtError;
-use crate::legendre::{
-    fill_spin_factors, for_each_spin_lm_dispatched, polar_order_limit, scaled_basis_value,
-    spin_normalization,
-};
+use crate::legendre::ShtScalar;
 use crate::plan::ShtPlan;
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 const MAX_SUPPORTED_SPIN: usize = 4;
 
-impl ShtPlan {
+#[allow(private_bounds)]
+impl<T: ShtScalar> ShtPlan<T> {
     /// Synthesizes two real map components for a spin-1 through spin-4 field.
     ///
     /// `e_alm` and `b_alm` are packed coefficient channels. The output slices
@@ -33,11 +31,11 @@ impl ShtPlan {
     /// incompatible.
     pub fn synthesis_spin_into(
         &self,
-        e_alm: &[Complex64],
-        b_alm: &[Complex64],
-        first_component: &mut [f64],
-        second_component: &mut [f64],
-        workspace: &mut ShtWorkspace,
+        e_alm: &[Complex<T>],
+        b_alm: &[Complex<T>],
+        first_component: &mut [T],
+        second_component: &mut [T],
+        workspace: &mut ShtWorkspace<T>,
     ) -> Result<(), ShtError> {
         let spin = self.supported_spin()?;
         self.synthesis_spin_core(
@@ -64,10 +62,10 @@ impl ShtPlan {
     /// incompatible.
     pub fn synthesis_gradient_into(
         &self,
-        e_alm: &[Complex64],
-        first_component: &mut [f64],
-        second_component: &mut [f64],
-        workspace: &mut ShtWorkspace,
+        e_alm: &[Complex<T>],
+        first_component: &mut [T],
+        second_component: &mut [T],
+        workspace: &mut ShtWorkspace<T>,
     ) -> Result<(), ShtError> {
         let spin = self.supported_spin()?;
         self.synthesis_spin_core(
@@ -94,10 +92,10 @@ impl ShtPlan {
     /// sampling is insufficient, or the workspace is incompatible.
     pub fn synthesis_deriv1_into(
         &self,
-        alm: &[Complex64],
-        theta_derivative: &mut [f64],
-        phi_derivative: &mut [f64],
-        workspace: &mut ShtWorkspace,
+        alm: &[Complex<T>],
+        theta_derivative: &mut [T],
+        phi_derivative: &mut [T],
+        workspace: &mut ShtWorkspace<T>,
     ) -> Result<(), ShtError> {
         if self.harmonics.spin() != 0 {
             return Err(ShtError::UnsupportedSpin {
@@ -119,8 +117,8 @@ impl ShtPlan {
             )?;
             self.check_synthesis_longitude()?;
             self.check_workspace(workspace)?;
-            theta_derivative.fill(0.0);
-            phi_derivative.fill(0.0);
+            theta_derivative.fill(T::zero());
+            phi_derivative.fill(T::zero());
             return Ok(());
         }
         self.synthesis_spin_core(
@@ -149,11 +147,11 @@ impl ShtPlan {
     /// the workspace is incompatible.
     pub fn analysis_spin_into(
         &self,
-        first_component: &[f64],
-        second_component: &[f64],
-        e_alm: &mut [Complex64],
-        b_alm: &mut [Complex64],
-        workspace: &mut ShtWorkspace,
+        first_component: &[T],
+        second_component: &[T],
+        e_alm: &mut [Complex<T>],
+        b_alm: &mut [Complex<T>],
+        workspace: &mut ShtWorkspace<T>,
     ) -> Result<(), ShtError> {
         let spin = self.supported_spin()?;
         self.check_analysis_sampling()?;
@@ -184,11 +182,11 @@ impl ShtPlan {
     /// the workspace is incompatible.
     pub fn adjoint_synthesis_spin_into(
         &self,
-        first_component: &[f64],
-        second_component: &[f64],
-        e_alm: &mut [Complex64],
-        b_alm: &mut [Complex64],
-        workspace: &mut ShtWorkspace,
+        first_component: &[T],
+        second_component: &[T],
+        e_alm: &mut [Complex<T>],
+        b_alm: &mut [Complex<T>],
+        workspace: &mut ShtWorkspace<T>,
     ) -> Result<(), ShtError> {
         let spin = self.supported_spin()?;
         self.check_synthesis_longitude()?;
@@ -218,10 +216,10 @@ impl ShtPlan {
     /// the workspace is incompatible.
     pub fn adjoint_synthesis_gradient_into(
         &self,
-        first_component: &[f64],
-        second_component: &[f64],
-        e_alm: &mut [Complex64],
-        workspace: &mut ShtWorkspace,
+        first_component: &[T],
+        second_component: &[T],
+        e_alm: &mut [Complex<T>],
+        workspace: &mut ShtWorkspace<T>,
     ) -> Result<(), ShtError> {
         let spin = self.supported_spin()?;
         self.check_synthesis_longitude()?;
@@ -251,10 +249,10 @@ impl ShtPlan {
     /// is incompatible.
     pub fn adjoint_synthesis_deriv1_into(
         &self,
-        theta_derivative: &[f64],
-        phi_derivative: &[f64],
-        alm: &mut [Complex64],
-        workspace: &mut ShtWorkspace,
+        theta_derivative: &[T],
+        phi_derivative: &[T],
+        alm: &mut [Complex<T>],
+        workspace: &mut ShtWorkspace<T>,
     ) -> Result<(), ShtError> {
         if self.harmonics.spin() != 0 {
             return Err(ShtError::UnsupportedSpin {
@@ -279,7 +277,7 @@ impl ShtPlan {
         )?;
         self.check_workspace(workspace)?;
         if self.harmonics.lmax() == 0 {
-            alm.fill(Complex64::new(0.0, 0.0));
+            alm.fill(Complex::<T>::new(T::zero(), T::zero()));
             return Ok(());
         }
         self.map_to_spin_coefficients(
@@ -308,11 +306,11 @@ impl ShtPlan {
     /// or the workspace is incompatible.
     pub fn adjoint_analysis_spin_into(
         &self,
-        e_alm: &[Complex64],
-        b_alm: &[Complex64],
-        first_component: &mut [f64],
-        second_component: &mut [f64],
-        workspace: &mut ShtWorkspace,
+        e_alm: &[Complex<T>],
+        b_alm: &[Complex<T>],
+        first_component: &mut [T],
+        second_component: &mut [T],
+        workspace: &mut ShtWorkspace<T>,
     ) -> Result<(), ShtError> {
         self.supported_spin()?;
         self.check_analysis_sampling()?;
@@ -349,11 +347,11 @@ impl ShtPlan {
 
     fn adjoint_analysis_spin_cc_into(
         &self,
-        e_alm: &[Complex64],
-        b_alm: &[Complex64],
-        first_component: &mut [f64],
-        second_component: &mut [f64],
-        workspace: &mut ShtWorkspace,
+        e_alm: &[Complex<T>],
+        b_alm: &[Complex<T>],
+        first_component: &mut [T],
+        second_component: &mut [T],
+        workspace: &mut ShtWorkspace<T>,
     ) -> Result<(), ShtError> {
         let spin = self.supported_spin()?;
         let resampling = self
@@ -363,17 +361,19 @@ impl ShtPlan {
         let prepared_ntheta = resampling.prepared_ntheta();
         for (ring, &theta) in resampling.prepared_theta().iter().enumerate() {
             (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
-            workspace.ring_order_limits[ring] = polar_order_limit(
+            workspace.ring_order_limits[ring] = T::polar_order_limit(
                 self.harmonics.lmax(),
                 spin,
                 workspace.theta_sin[ring],
                 workspace.theta_cos[ring],
             );
         }
-        workspace.prepared_spectra.fill(Complex64::new(0.0, 0.0));
+        workspace
+            .prepared_spectra
+            .fill(Complex::<T>::new(T::zero(), T::zero()));
         workspace
             .prepared_spin_spectra
-            .fill(Complex64::new(0.0, 0.0));
+            .fill(Complex::<T>::new(T::zero(), T::zero()));
         self.synthesize_spin_ring_group(
             e_alm,
             Some(b_alm),
@@ -381,7 +381,7 @@ impl ShtPlan {
             false,
             1,
             self.fft.spectrum_len(),
-            self.grid.phi0(),
+            T::from_f64(self.grid.phi0()).expect("longitude origin is representable"),
             0,
             prepared_ntheta,
             &mut workspace.prepared_spectra,
@@ -414,8 +414,8 @@ impl ShtPlan {
         let spectrum_len = self.fft.spectrum_len();
         for ring in 0..self.grid.ntheta() {
             let start = ring * spectrum_len;
-            workspace.spectra[start].im = 0.0;
-            workspace.spin_spectra[start].im = 0.0;
+            workspace.spectra[start].im = T::zero();
+            workspace.spin_spectra[start].im = T::zero();
             self.fft.inverse(
                 &workspace.spectra[start..start + spectrum_len],
                 &mut workspace.row,
@@ -439,15 +439,15 @@ impl ShtPlan {
     )]
     fn map_to_spin_coefficients(
         &self,
-        first_component: &[f64],
-        second_component: &[f64],
-        e_alm: &mut [Complex64],
-        mut b_alm: Option<&mut [Complex64]>,
+        first_component: &[T],
+        second_component: &[T],
+        e_alm: &mut [Complex<T>],
+        mut b_alm: Option<&mut [Complex<T>]>,
         recurrence_spin: usize,
         derivative_norm: bool,
         ring_weights: Option<&[f64]>,
         normalize_fourier: bool,
-        workspace: &mut ShtWorkspace,
+        workspace: &mut ShtWorkspace<T>,
     ) -> Result<(), ShtError> {
         if !matches!(recurrence_spin, 1..=MAX_SUPPORTED_SPIN) {
             return Err(ShtError::UnsupportedSpin {
@@ -494,9 +494,9 @@ impl ShtPlan {
             )?;
         }
 
-        e_alm.fill(Complex64::new(0.0, 0.0));
+        e_alm.fill(Complex::<T>::new(T::zero(), T::zero()));
         if let Some(b_alm) = b_alm.as_deref_mut() {
-            b_alm.fill(Complex64::new(0.0, 0.0));
+            b_alm.fill(Complex::<T>::new(T::zero(), T::zero()));
         }
         let (
             q_spectra,
@@ -510,10 +510,10 @@ impl ShtPlan {
             .filter(|_| ring_weights.is_some())
         {
             for value in &mut workspace.spectra {
-                *value /= nphi as f64;
+                *value /= T::from_usize(nphi).expect("longitude count converts");
             }
             for value in &mut workspace.spin_spectra {
-                *value /= nphi as f64;
+                *value /= T::from_usize(nphi).expect("longitude count converts");
             }
             resampling.to_prepared(
                 &workspace.spectra,
@@ -535,7 +535,7 @@ impl ShtPlan {
             )?;
             for (ring, &theta) in resampling.prepared_theta().iter().enumerate() {
                 (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
-                workspace.ring_order_limits[ring] = polar_order_limit(
+                workspace.ring_order_limits[ring] = T::polar_order_limit(
                     self.harmonics.lmax(),
                     recurrence_spin,
                     workspace.theta_sin[ring],
@@ -575,7 +575,7 @@ impl ShtPlan {
                     u_spectra,
                     nphi,
                     spectrum_len,
-                    self.grid.phi0(),
+                    T::from_f64(self.grid.phi0()).expect("longitude origin is representable"),
                     analysis_ring_weights,
                     analysis_normalize_fourier,
                     recurrence_spin,
@@ -596,7 +596,7 @@ impl ShtPlan {
                     u_spectra,
                     nphi,
                     spectrum_len,
-                    self.grid.phi0(),
+                    T::from_f64(self.grid.phi0()).expect("longitude origin is representable"),
                     analysis_ring_weights,
                     analysis_normalize_fourier,
                     recurrence_spin,
@@ -619,7 +619,7 @@ impl ShtPlan {
             u_spectra,
             nphi,
             spectrum_len,
-            self.grid.phi0(),
+            T::from_f64(self.grid.phi0()).expect("longitude origin is representable"),
             analysis_ring_weights,
             analysis_normalize_fourier,
             recurrence_spin,
@@ -640,9 +640,9 @@ impl ShtPlan {
                 .harmonics
                 .index(degree, 0)
                 .expect("order zero contains every degree");
-            e_alm[index].im = 0.0;
+            e_alm[index].im = T::zero();
             if let Some(b_alm) = b_alm.as_deref_mut() {
-                b_alm[index].im = 0.0;
+                b_alm[index].im = T::zero();
             }
         }
         Ok(())
@@ -654,13 +654,13 @@ impl ShtPlan {
     )]
     fn synthesis_spin_core(
         &self,
-        e_alm: &[Complex64],
-        b_alm: Option<&[Complex64]>,
-        first_component: &mut [f64],
-        second_component: &mut [f64],
+        e_alm: &[Complex<T>],
+        b_alm: Option<&[Complex<T>]>,
+        first_component: &mut [T],
+        second_component: &mut [T],
         recurrence_spin: usize,
         derivative_norm: bool,
-        workspace: &mut ShtWorkspace,
+        workspace: &mut ShtWorkspace<T>,
     ) -> Result<(), ShtError> {
         if !matches!(recurrence_spin, 1..=MAX_SUPPORTED_SPIN) {
             return Err(ShtError::UnsupportedSpin {
@@ -692,10 +692,14 @@ impl ShtPlan {
         let ntheta = self.grid.ntheta();
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
-        let phi0 = self.grid.phi0();
+        let phi0 = T::from_f64(self.grid.phi0()).expect("longitude origin is representable");
         self.prepare_spin_latitudes(workspace, recurrence_spin);
-        workspace.spectra.fill(Complex64::new(0.0, 0.0));
-        workspace.spin_spectra.fill(Complex64::new(0.0, 0.0));
+        workspace
+            .spectra
+            .fill(Complex::<T>::new(T::zero(), T::zero()));
+        workspace
+            .spin_spectra
+            .fill(Complex::<T>::new(T::zero(), T::zero()));
         let arch = pulp::Arch::new();
 
         #[cfg(feature = "parallel")]
@@ -804,22 +808,22 @@ impl ShtPlan {
     )]
     fn synthesize_spin_ring_group(
         &self,
-        e_alm: &[Complex64],
-        b_alm: Option<&[Complex64]>,
+        e_alm: &[Complex<T>],
+        b_alm: Option<&[Complex<T>]>,
         spin: usize,
         derivative_norm: bool,
         nphi: usize,
         spectrum_len: usize,
-        phi0: f64,
+        phi0: T,
         ring_start: usize,
         ring_end: usize,
-        q_spectra: &mut [Complex64],
-        u_spectra: &mut [Complex64],
-        theta_sin: &[f64],
-        theta_cos: &[f64],
+        q_spectra: &mut [Complex<T>],
+        u_spectra: &mut [Complex<T>],
+        theta_sin: &[T],
+        theta_cos: &[T],
         ring_order_limits: &[usize],
         arch: pulp::Arch,
-        recurrence: &mut RecurrenceWorkspace,
+        recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<(), ShtError> {
         let lmax = self.harmonics.lmax();
         let mmax = self.harmonics.mmax();
@@ -828,7 +832,7 @@ impl ShtPlan {
         debug_assert_eq!(u_spectra.len(), q_spectra.len());
 
         for m in 0..=mmax {
-            let initial = fill_spin_factors(
+            let initial = T::fill_spin_factors(
                 spin,
                 m,
                 lmax,
@@ -836,8 +840,11 @@ impl ShtPlan {
                 &mut recurrence.spin_coefficient_a,
                 &mut recurrence.spin_coefficient_b,
             )?;
-            let phase = Complex64::from_polar(1.0, m as f64 * phi0);
-            for_each_spin_lm_dispatched(
+            let phase = Complex::from_polar(
+                T::one(),
+                T::from_usize(m).expect("mode converts to transform scalar") * phi0,
+            );
+            T::for_each_spin_lm_dispatched(
                 arch,
                 &initial,
                 lmax,
@@ -861,35 +868,40 @@ impl ShtPlan {
                     let e_coefficient = e_alm[coefficient_index];
                     let b_coefficient = b_alm
                         .map(|values| values[coefficient_index])
-                        .unwrap_or_default();
+                        .unwrap_or_else(|| Complex::new(T::zero(), T::zero()));
                     let alpha_norm = recurrence.spin_alpha[degree]
-                        * spin_normalization(spin, degree, derivative_norm);
+                        * T::spin_normalization(spin, degree, derivative_norm);
                     for lane in 0..plus.len() {
                         let group_ring = group_ring_start + lane;
                         let global_ring = ring_start + group_ring;
                         if m > ring_order_limits[global_ring] {
                             continue;
                         }
-                        let plus_value = scaled_basis_value(plus[lane], plus_exp[lane], alpha_norm);
+                        let plus_value =
+                            T::scaled_basis_value(plus[lane], plus_exp[lane], alpha_norm);
                         let minus_value =
-                            scaled_basis_value(minus[lane], minus_exp[lane], alpha_norm);
+                            T::scaled_basis_value(minus[lane], minus_exp[lane], alpha_norm);
                         let even_basis = plus_value + minus_value;
                         let odd_basis = plus_value - minus_value;
                         let q_value = e_coefficient * even_basis
-                            + Complex64::new(0.0, -1.0) * b_coefficient * odd_basis;
-                        let u_value = Complex64::new(0.0, 1.0) * e_coefficient * odd_basis
-                            + b_coefficient * even_basis;
+                            + Complex::<T>::new(T::zero(), -T::one()) * b_coefficient * odd_basis;
+                        let u_value =
+                            Complex::<T>::new(T::zero(), T::one()) * e_coefficient * odd_basis
+                                + b_coefficient * even_basis;
                         let spectrum_index = group_ring * spectrum_len + m;
                         let phased_q = q_value * phase;
                         let phased_u = u_value * phase;
                         if nphi.is_multiple_of(2) && m == nphi / 2 {
+                            let scale = T::from_usize(nphi).expect("longitude count converts")
+                                * T::from_f64(2.0).expect("two is representable");
                             q_spectra[spectrum_index] +=
-                                Complex64::new(2.0 * nphi as f64 * phased_q.re, 0.0);
+                                Complex::new(scale * phased_q.re, T::zero());
                             u_spectra[spectrum_index] +=
-                                Complex64::new(2.0 * nphi as f64 * phased_u.re, 0.0);
+                                Complex::new(scale * phased_u.re, T::zero());
                         } else {
-                            q_spectra[spectrum_index] += phased_q * nphi as f64;
-                            u_spectra[spectrum_index] += phased_u * nphi as f64;
+                            let scale = T::from_usize(nphi).expect("longitude count converts");
+                            q_spectra[spectrum_index] += phased_q * scale;
+                            u_spectra[spectrum_index] += phased_u * scale;
                         }
                     }
                     Ok(())
@@ -905,24 +917,24 @@ impl ShtPlan {
     )]
     fn analyze_spin_order_group(
         &self,
-        q_spectra: &[Complex64],
-        u_spectra: &[Complex64],
+        q_spectra: &[Complex<T>],
+        u_spectra: &[Complex<T>],
         nphi: usize,
         spectrum_len: usize,
-        phi0: f64,
+        phi0: T,
         ring_weights: Option<&[f64]>,
         normalize_fourier: bool,
         recurrence_spin: usize,
         derivative_norm: bool,
-        theta_sin: &[f64],
-        theta_cos: &[f64],
+        theta_sin: &[T],
+        theta_cos: &[T],
         ring_order_limits: &[usize],
         arch: pulp::Arch,
         m_start: usize,
         m_end: usize,
-        e_alm: &mut [Complex64],
-        mut b_alm: Option<&mut [Complex64]>,
-        recurrence: &mut RecurrenceWorkspace,
+        e_alm: &mut [Complex<T>],
+        mut b_alm: Option<&mut [Complex<T>]>,
+        recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<(), ShtError> {
         let lmax = self.harmonics.lmax();
         let mut coefficient_start = 0;
@@ -933,7 +945,7 @@ impl ShtPlan {
             let mut b_coefficients = b_alm.as_deref_mut().map(|values| {
                 &mut values[coefficient_start..coefficient_start + coefficient_count]
             });
-            let initial = fill_spin_factors(
+            let initial = T::fill_spin_factors(
                 recurrence_spin,
                 m,
                 lmax,
@@ -941,8 +953,11 @@ impl ShtPlan {
                 &mut recurrence.spin_coefficient_a,
                 &mut recurrence.spin_coefficient_b,
             )?;
-            let phase = Complex64::from_polar(1.0, -(m as f64 * phi0));
-            for_each_spin_lm_dispatched(
+            let phase = Complex::from_polar(
+                T::one(),
+                -(T::from_usize(m).expect("mode converts to transform scalar") * phi0),
+            );
+            T::for_each_spin_lm_dispatched(
                 arch,
                 &initial,
                 lmax,
@@ -960,7 +975,7 @@ impl ShtPlan {
                 &mut recurrence.spin_exponents_minus,
                 |degree, ring_start, plus, plus_exp, minus, minus_exp| {
                     let alpha_norm = recurrence.spin_alpha[degree]
-                        * spin_normalization(recurrence_spin, degree, derivative_norm);
+                        * T::spin_normalization(recurrence_spin, degree, derivative_norm);
                     let coefficient = &mut e_coefficients[degree - m];
                     let mut b_coefficient = b_coefficients
                         .as_deref_mut()
@@ -970,23 +985,27 @@ impl ShtPlan {
                         if m > ring_order_limits[ring] {
                             continue;
                         }
-                        let plus_value = scaled_basis_value(plus[lane], plus_exp[lane], alpha_norm);
+                        let plus_value =
+                            T::scaled_basis_value(plus[lane], plus_exp[lane], alpha_norm);
                         let minus_value =
-                            scaled_basis_value(minus[lane], minus_exp[lane], alpha_norm);
+                            T::scaled_basis_value(minus[lane], minus_exp[lane], alpha_norm);
                         let even_basis = plus_value + minus_value;
                         let odd_basis = plus_value - minus_value;
                         let spectrum_start = ring * spectrum_len;
-                        let mut scale = ring_weights.map_or(1.0, |weights| weights[ring]);
+                        let mut scale = ring_weights.map_or(T::one(), |weights| {
+                            T::from_f64(weights[ring]).expect("ring weight is representable")
+                        });
                         if normalize_fourier {
-                            scale /= nphi as f64;
+                            scale /= T::from_usize(nphi).expect("longitude count converts");
                         }
                         let q_fourier = q_spectra[spectrum_start + m] * phase * scale;
                         let u_fourier = u_spectra[spectrum_start + m] * phase * scale;
                         *coefficient += q_fourier * even_basis
-                            + Complex64::new(0.0, -1.0) * u_fourier * odd_basis;
+                            + Complex::<T>::new(T::zero(), -T::one()) * u_fourier * odd_basis;
                         if let Some(b_coefficient) = b_coefficient.as_mut() {
-                            **b_coefficient += Complex64::new(0.0, 1.0) * q_fourier * odd_basis
-                                + u_fourier * even_basis;
+                            **b_coefficient +=
+                                Complex::<T>::new(T::zero(), T::one()) * q_fourier * odd_basis
+                                    + u_fourier * even_basis;
                         }
                     }
                     Ok(())
@@ -1008,24 +1027,24 @@ impl ShtPlan {
     )]
     fn analyze_spin_order_groups_parallel(
         &self,
-        q_spectra: &[Complex64],
-        u_spectra: &[Complex64],
+        q_spectra: &[Complex<T>],
+        u_spectra: &[Complex<T>],
         nphi: usize,
         spectrum_len: usize,
-        phi0: f64,
+        phi0: T,
         ring_weights: Option<&[f64]>,
         normalize_fourier: bool,
         recurrence_spin: usize,
         derivative_norm: bool,
-        theta_sin: &[f64],
-        theta_cos: &[f64],
+        theta_sin: &[T],
+        theta_cos: &[T],
         ring_order_limits: &[usize],
         arch: pulp::Arch,
         m_start: usize,
         m_end: usize,
-        e_alm: &mut [Complex64],
-        b_alm: Option<&mut [Complex64]>,
-        recurrence: &mut [RecurrenceWorkspace],
+        e_alm: &mut [Complex<T>],
+        b_alm: Option<&mut [Complex<T>]>,
+        recurrence: &mut [RecurrenceWorkspace<T>],
     ) -> Result<(), ShtError> {
         let order_count = m_end - m_start;
         if order_count <= 1 || recurrence.len() <= 1 {
@@ -1122,10 +1141,11 @@ impl ShtPlan {
         right_result
     }
 
-    fn prepare_spin_latitudes(&self, workspace: &mut ShtWorkspace, spin: usize) {
+    fn prepare_spin_latitudes(&self, workspace: &mut ShtWorkspace<T>, spin: usize) {
         for (ring, &theta) in self.grid.theta().iter().enumerate() {
+            let theta = T::from_f64(theta).expect("grid colatitude is representable");
             (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
-            workspace.ring_order_limits[ring] = polar_order_limit(
+            workspace.ring_order_limits[ring] = T::polar_order_limit(
                 self.harmonics.lmax(),
                 spin,
                 workspace.theta_sin[ring],
@@ -1168,6 +1188,7 @@ fn check_len(buffer: &'static str, expected: usize, actual: usize) -> Result<(),
 #[cfg(test)]
 mod tests {
     use super::*;
+    use num_complex::Complex64;
 
     use crate::{GridKind, GridSpec, HarmonicSpec};
 

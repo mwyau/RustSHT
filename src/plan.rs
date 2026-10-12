@@ -5,24 +5,26 @@ use crate::error::ShtError;
 use crate::fft::RealFftPlan;
 use crate::grid::GridSpec;
 use crate::harmonics::HarmonicSpec;
-use crate::legendre::sectoral_normalizations;
+use crate::legendre::ShtScalar;
 use crate::meridional::CCResamplingPlan;
 use crate::workspace::ShtWorkspace;
 
 /// Reusable grid, harmonic and Fourier metadata for spherical transforms.
-pub struct ShtPlan {
+#[allow(private_bounds)]
+pub struct ShtPlan<T: ShtScalar = f64> {
     pub(crate) grid: GridSpec,
     pub(crate) harmonics: HarmonicSpec,
-    pub(crate) cc_resampling: Option<CCResamplingPlan>,
-    pub(crate) fft: RealFftPlan,
-    pub(crate) sectoral_norms: Vec<f64>,
+    pub(crate) cc_resampling: Option<CCResamplingPlan<T>>,
+    pub(crate) fft: RealFftPlan<T>,
+    pub(crate) sectoral_norms: Vec<T>,
     pub(crate) sample_count: usize,
     pub(crate) spectrum_count: usize,
     pub(crate) recurrence_factor_count: usize,
     pub(crate) spin_recurrence_factor_count: usize,
 }
 
-impl ShtPlan {
+#[allow(private_bounds)]
+impl<T: ShtScalar> ShtPlan<T> {
     /// Constructs a plan for a grid and harmonic bandlimit.
     ///
     /// The plan is immutable. Each concurrent operation needs its own
@@ -39,7 +41,7 @@ impl ShtPlan {
                 .ok_or(ShtError::IntegerOverflow {
                     quantity: "grid sample count",
                 })?;
-        let fft = RealFftPlan::new(grid.nphi())?;
+        let fft = RealFftPlan::<T>::new(grid.nphi())?;
         let spectrum_count =
             grid.ntheta()
                 .checked_mul(fft.spectrum_len())
@@ -60,10 +62,10 @@ impl ShtPlan {
                 .ok_or(ShtError::IntegerOverflow {
                     quantity: "spin recurrence factor count",
                 })?;
-        let sectoral_norms = sectoral_normalizations(harmonics.mmax())?;
+        let sectoral_norms = T::sectoral_normalizations(harmonics.mmax())?;
         let cc_resampling = match grid.kind() {
             crate::grid::GridKind::ClenshawCurtis | crate::grid::GridKind::Fejer1 => Some(
-                CCResamplingPlan::new(grid.kind(), grid.ntheta(), harmonics.lmax())?,
+                CCResamplingPlan::<T>::new(grid.kind(), grid.ntheta(), harmonics.lmax())?,
             ),
             crate::grid::GridKind::GaussLegendre => None,
         };
@@ -102,8 +104,8 @@ impl ShtPlan {
     /// # Errors
     ///
     /// Returns an error if any workspace allocation fails.
-    pub fn workspace(&self) -> Result<ShtWorkspace, ShtError> {
-        ShtWorkspace::new(
+    pub fn workspace(&self) -> Result<ShtWorkspace<T>, ShtError> {
+        ShtWorkspace::<T>::new(
             self.spectrum_count,
             self.grid.nphi(),
             self.grid.ntheta(),

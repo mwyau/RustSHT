@@ -4,38 +4,39 @@
 use std::f64::consts::PI;
 use std::sync::Arc;
 
-use num_complex::Complex64;
-use rustfft::{Fft, FftPlanner};
+use num_complex::Complex;
+use rustfft::num_traits::{Float, Zero};
+use rustfft::{Fft, FftNum, FftPlanner};
 
 use crate::error::ShtError;
 
-enum Engine {
+enum Engine<T: FftNum> {
     Even {
-        forward: Arc<dyn Fft<f64>>,
-        inverse: Arc<dyn Fft<f64>>,
-        twiddles: Vec<Complex64>,
+        forward: Arc<dyn Fft<T>>,
+        inverse: Arc<dyn Fft<T>>,
+        twiddles: Vec<Complex<T>>,
     },
     Odd {
-        forward: Arc<dyn Fft<f64>>,
-        inverse: Arc<dyn Fft<f64>>,
+        forward: Arc<dyn Fft<T>>,
+        inverse: Arc<dyn Fft<T>>,
     },
 }
 
 /// Reusable real-input FFT plan for one longitude length.
-pub(crate) struct RealFftPlan {
+pub(crate) struct RealFftPlan<T: FftNum = f64> {
     n: usize,
     transform_len: usize,
     scratch_len: usize,
-    engine: Engine,
+    engine: Engine<T>,
 }
 
 /// Mutable storage for one real FFT execution.
-pub(crate) struct RealFftWorkspace {
-    transform: Vec<Complex64>,
-    scratch: Vec<Complex64>,
+pub(crate) struct RealFftWorkspace<T: FftNum = f64> {
+    transform: Vec<Complex<T>>,
+    scratch: Vec<Complex<T>>,
 }
 
-impl RealFftPlan {
+impl<T: FftNum + Float> RealFftPlan<T> {
     pub(crate) fn new(n: usize) -> Result<Self, ShtError> {
         if n == 0 {
             return Err(ShtError::InvalidPhiCount);
@@ -43,7 +44,7 @@ impl RealFftPlan {
 
         let even = n.is_multiple_of(2);
         let transform_len = if even { n / 2 } else { n };
-        let mut planner = FftPlanner::<f64>::new();
+        let mut planner = FftPlanner::<T>::new();
         let forward = planner.plan_fft_forward(transform_len);
         let inverse = planner.plan_fft_inverse(transform_len);
         let scratch_len = forward
@@ -63,9 +64,11 @@ impl RealFftPlan {
                     array: "real FFT twiddle",
                 })?;
             for k in 0..twiddle_count {
-                let angle = -PI * (k as f64) / (transform_len as f64);
+                let angle = -T::from_f64(PI).expect("pi is representable")
+                    * T::from_usize(k).expect("usize converts to the FFT scalar")
+                    / T::from_usize(transform_len).expect("usize converts to the FFT scalar");
                 let (sin, cos) = angle.sin_cos();
-                twiddles.push(Complex64::new(cos, sin));
+                twiddles.push(Complex::new(cos, sin));
             }
             Engine::Even {
                 forward,
@@ -84,8 +87,8 @@ impl RealFftPlan {
         })
     }
 
-    pub(crate) fn workspace(&self) -> Result<RealFftWorkspace, ShtError> {
-        Ok(RealFftWorkspace {
+    pub(crate) fn workspace(&self) -> Result<RealFftWorkspace<T>, ShtError> {
+        Ok(RealFftWorkspace::<T> {
             transform: allocate_complex(self.transform_len, "real FFT transform")?,
             scratch: allocate_complex(self.scratch_len, "real FFT scratch")?,
         })
@@ -98,9 +101,9 @@ impl RealFftPlan {
     /// Computes the unnormalized DFT modes `0..=floor(n/2)` of a real row.
     pub(crate) fn forward(
         &self,
-        input: &[f64],
-        output: &mut [Complex64],
-        workspace: &mut RealFftWorkspace,
+        input: &[T],
+        output: &mut [Complex<T>],
+        workspace: &mut RealFftWorkspace<T>,
     ) -> Result<(), ShtError> {
         check_len("real FFT input", self.n, input.len())?;
         check_len("real FFT spectrum", self.spectrum_len(), output.len())?;
@@ -111,28 +114,29 @@ impl RealFftPlan {
                 forward, twiddles, ..
             } => {
                 for (j, pair) in input.as_chunks::<2>().0.iter().enumerate() {
-                    workspace.transform[j] = Complex64::new(pair[0], pair[1]);
+                    workspace.transform[j] = Complex::new(pair[0], pair[1]);
                 }
                 forward.process_with_scratch(&mut workspace.transform, &mut workspace.scratch);
 
                 let half = self.transform_len;
+                let half_scalar = T::from_f64(0.5).expect("half is representable");
                 for (k, value) in output.iter_mut().enumerate() {
                     let z = workspace.transform[k % half];
                     let mirror = workspace.transform[(half - (k % half)) % half].conj();
                     let difference = z - mirror;
-                    *value =
-                        (z + mirror) * 0.5 + Complex64::new(0.0, -0.5) * twiddles[k] * difference;
+                    *value = (z + mirror) * half_scalar
+                        + Complex::new(T::zero(), -half_scalar) * twiddles[k] * difference;
                 }
-                output[0].im = 0.0;
-                output[half].im = 0.0;
+                output[0].im = T::zero();
+                output[half].im = T::zero();
             }
             Engine::Odd { forward, .. } => {
                 for (slot, &sample) in workspace.transform.iter_mut().zip(input) {
-                    *slot = Complex64::new(sample, 0.0);
+                    *slot = Complex::new(sample, T::zero());
                 }
                 forward.process_with_scratch(&mut workspace.transform, &mut workspace.scratch);
                 output.copy_from_slice(&workspace.transform[..self.spectrum_len()]);
-                output[0].im = 0.0;
+                output[0].im = T::zero();
             }
         }
 
@@ -142,9 +146,9 @@ impl RealFftPlan {
     /// Reconstructs a real row from its unnormalized nonnegative Fourier modes.
     pub(crate) fn inverse(
         &self,
-        input: &[Complex64],
-        output: &mut [f64],
-        workspace: &mut RealFftWorkspace,
+        input: &[Complex<T>],
+        output: &mut [T],
+        workspace: &mut RealFftWorkspace<T>,
     ) -> Result<(), ShtError> {
         check_len("real FFT spectrum", self.spectrum_len(), input.len())?;
         check_len("real FFT output", self.n, output.len())?;
@@ -155,10 +159,10 @@ impl RealFftPlan {
                 inverse, twiddles, ..
             } => {
                 let half = self.transform_len;
-                if input[0].im != 0.0 {
+                if input[0].im != T::zero() {
                     return Err(ShtError::NonRealFftEdge { index: 0 });
                 }
-                if input[half].im != 0.0 {
+                if input[half].im != T::zero() {
                     return Err(ShtError::NonRealFftEdge { index: half });
                 }
 
@@ -170,22 +174,26 @@ impl RealFftPlan {
                         input[half - k].conj()
                     };
                     let difference = a - b;
-                    workspace.transform[k] =
-                        (a + b) * 0.5 + Complex64::new(0.0, 0.5) * twiddles[k].conj() * difference;
+                    workspace.transform[k] = (a + b)
+                        * T::from_f64(0.5).expect("half is representable")
+                        + Complex::new(T::zero(), T::from_f64(0.5).expect("half is representable"))
+                            * twiddles[k].conj()
+                            * difference;
                 }
 
                 inverse.process_with_scratch(&mut workspace.transform, &mut workspace.scratch);
-                let scale = 1.0 / (half as f64);
+                let scale =
+                    T::one() / T::from_usize(half).expect("usize converts to the FFT scalar");
                 for (j, pair) in output.as_chunks_mut::<2>().0.iter_mut().enumerate() {
                     pair[0] = workspace.transform[j].re * scale;
                     pair[1] = workspace.transform[j].im * scale;
                 }
             }
             Engine::Odd { inverse, .. } => {
-                if input[0].im != 0.0 {
+                if input[0].im != T::zero() {
                     return Err(ShtError::NonRealFftEdge { index: 0 });
                 }
-                workspace.transform[0] = Complex64::new(input[0].re, 0.0);
+                workspace.transform[0] = Complex::new(input[0].re, T::zero());
                 let highest_positive_mode = self.n / 2;
                 for (k, &mode) in input
                     .iter()
@@ -198,7 +206,8 @@ impl RealFftPlan {
                 }
 
                 inverse.process_with_scratch(&mut workspace.transform, &mut workspace.scratch);
-                let scale = 1.0 / (self.n as f64);
+                let scale =
+                    T::one() / T::from_usize(self.n).expect("usize converts to the FFT scalar");
                 for (value, sample) in output.iter_mut().zip(&workspace.transform) {
                     *value = sample.re * scale;
                 }
@@ -208,7 +217,7 @@ impl RealFftPlan {
         Ok(())
     }
 
-    fn check_workspace(&self, workspace: &RealFftWorkspace) -> Result<(), ShtError> {
+    fn check_workspace(&self, workspace: &RealFftWorkspace<T>) -> Result<(), ShtError> {
         check_len(
             "real FFT workspace transform",
             self.transform_len,
@@ -234,18 +243,21 @@ fn check_len(buffer: &'static str, expected: usize, actual: usize) -> Result<(),
     }
 }
 
-fn allocate_complex(len: usize, array: &'static str) -> Result<Vec<Complex64>, ShtError> {
+fn allocate_complex<T: FftNum + Zero>(
+    len: usize,
+    array: &'static str,
+) -> Result<Vec<Complex<T>>, ShtError> {
     let mut values = Vec::new();
     values
         .try_reserve_exact(len)
         .map_err(|_| ShtError::AllocationFailed { array })?;
-    values.resize(len, Complex64::new(0.0, 0.0));
+    values.resize(len, Complex::new(T::zero(), T::zero()));
     Ok(values)
 }
 
 #[cfg(test)]
 mod tests {
-    use num_complex::Complex64;
+    use num_complex::{Complex32, Complex64};
     use rustfft::FftPlanner;
 
     use super::*;
@@ -302,6 +314,48 @@ mod tests {
                 assert_eq!(actual[0].im, 0.0);
                 if n % 2 == 0 {
                     assert_eq!(actual[n / 2].im, 0.0);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn f32_real_fft_matches_full_complex_rustfft() {
+        for n in [1, 2, 3, 4, 5, 8, 31, 32, 33] {
+            let plan = RealFftPlan::<f32>::new(n).unwrap();
+            let mut workspace = plan.workspace().unwrap();
+            for input in sample_rows(n) {
+                let input: Vec<f32> = input.into_iter().map(|value| value as f32).collect();
+                let mut actual = vec![Complex32::new(0.0, 0.0); plan.spectrum_len()];
+                plan.forward(&input, &mut actual, &mut workspace).unwrap();
+
+                let mut planner = FftPlanner::<f32>::new();
+                let fft = planner.plan_fft_forward(n);
+                let mut expected: Vec<_> = input
+                    .iter()
+                    .map(|&value| Complex32::new(value, 0.0))
+                    .collect();
+                let mut scratch = vec![Complex32::new(0.0, 0.0); fft.get_inplace_scratch_len()];
+                fft.process_with_scratch(&mut expected, &mut scratch);
+                for k in 0..plan.spectrum_len() {
+                    let error = (actual[k] - expected[k]).norm();
+                    assert!(
+                        error <= 8e-5 * expected[k].norm().max(1.0),
+                        "n={n}, k={k}, actual={:?}, expected={:?}, error={error:.3e}",
+                        actual[k],
+                        expected[k]
+                    );
+                }
+                assert_eq!(actual[0].im, 0.0);
+                if n.is_multiple_of(2) {
+                    assert_eq!(actual[n / 2].im, 0.0);
+                }
+
+                let mut reconstructed = vec![0.0_f32; n];
+                plan.inverse(&actual, &mut reconstructed, &mut workspace)
+                    .unwrap();
+                for (&value, &reference) in reconstructed.iter().zip(&input) {
+                    assert!((value - reference).abs() <= 4e-6 * reference.abs().max(1.0));
                 }
             }
         }

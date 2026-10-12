@@ -1,21 +1,19 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use num_complex::Complex64;
+use num_complex::Complex;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
 use crate::error::ShtError;
 use crate::grid::GridKind;
-use crate::legendre::{
-    LATITUDE_BLOCK_SIZE, fill_epsilon, for_each_y_lm_dispatched, multiply_complex_scaled,
-    polar_order_limit,
-};
+use crate::legendre::{LATITUDE_BLOCK_SIZE, ShtScalar};
 use crate::plan::ShtPlan;
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
-impl ShtPlan {
+#[allow(private_bounds)]
+impl<T: ShtScalar> ShtPlan<T> {
     /// Synthesizes one real scalar field into north-to-south row-major samples.
     ///
     /// For even longitude counts, the Nyquist order is allowed and its
@@ -27,9 +25,9 @@ impl ShtPlan {
     /// longitude sampling, a buffer length mismatch, or an incompatible workspace.
     pub fn synthesis_into(
         &self,
-        alm: &[Complex64],
-        map: &mut [f64],
-        workspace: &mut ShtWorkspace,
+        alm: &[Complex<T>],
+        map: &mut [T],
+        workspace: &mut ShtWorkspace<T>,
     ) -> Result<(), ShtError> {
         self.check_scalar_spin()?;
         self.harmonics.validate_coefficients(alm)?;
@@ -41,17 +39,18 @@ impl ShtPlan {
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
         let lmax = self.harmonics.lmax();
-        let phi0 = self.grid.phi0();
+        let phi0 = T::from_f64(self.grid.phi0()).expect("longitude origin is representable");
         for (ring, &theta) in self.grid.theta().iter().enumerate() {
+            let theta = T::from_f64(theta).expect("grid colatitude is representable");
             (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
-            workspace.ring_order_limits[ring] = polar_order_limit(
+            workspace.ring_order_limits[ring] = T::polar_order_limit(
                 lmax,
                 0,
                 workspace.theta_sin[ring],
                 workspace.theta_cos[ring],
             );
         }
-        workspace.spectra.fill(Complex64::new(0.0, 0.0));
+        workspace.spectra.fill(Complex::new(T::zero(), T::zero()));
         let arch = pulp::Arch::new();
         #[cfg(feature = "parallel")]
         {
@@ -140,17 +139,17 @@ impl ShtPlan {
     )]
     fn synthesize_ring_group(
         &self,
-        alm: &[Complex64],
+        alm: &[Complex<T>],
         nphi: usize,
         spectrum_len: usize,
-        phi0: f64,
+        phi0: T,
         group_ring_start: usize,
-        spectra: &mut [Complex64],
-        theta_sin: &[f64],
-        theta_cos: &[f64],
+        spectra: &mut [Complex<T>],
+        theta_sin: &[T],
+        theta_cos: &[T],
         ring_order_limits: &[usize],
         arch: pulp::Arch,
-        recurrence: &mut RecurrenceWorkspace,
+        recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<(), ShtError> {
         let lmax = self.harmonics.lmax();
         let mmax = self.harmonics.mmax();
@@ -158,17 +157,20 @@ impl ShtPlan {
         debug_assert_eq!(theta_sin.len(), theta_cos.len());
 
         for m in 0..=mmax {
-            fill_epsilon(m, lmax, &mut recurrence.epsilon);
+            T::fill_epsilon(m, lmax, &mut recurrence.epsilon);
             let coefficient_start = self
                 .harmonics
                 .index(m, m)
                 .expect("every packed order starts at its diagonal degree");
             let phase = if m == 0 {
-                Complex64::new(1.0, 0.0)
+                Complex::new(T::one(), T::zero())
             } else {
-                Complex64::from_polar(1.0, m as f64 * phi0)
+                Complex::from_polar(
+                    T::one(),
+                    T::from_usize(m).expect("mode converts to transform scalar") * phi0,
+                )
             };
-            for_each_y_lm_dispatched(
+            T::for_each_y_lm_dispatched(
                 arch,
                 m,
                 lmax,
@@ -190,7 +192,7 @@ impl ShtPlan {
                         }
                         let spectrum_index = group_ring * spectrum_len + m;
                         spectra[spectrum_index] +=
-                            multiply_complex_scaled(coefficient, current[lane], exponents[lane]);
+                            T::multiply_complex_scaled(coefficient, current[lane], exponents[lane]);
                     }
                     Ok(())
                 },
@@ -203,9 +205,15 @@ impl ShtPlan {
                 let spectrum_index = group_ring * spectrum_len + m;
                 let phased = spectra[spectrum_index] * phase;
                 if nphi.is_multiple_of(2) && m == nphi / 2 {
-                    spectra[spectrum_index] = Complex64::new(2.0 * nphi as f64 * phased.re, 0.0);
+                    spectra[spectrum_index] = Complex::new(
+                        T::from_usize(nphi).expect("longitude count converts")
+                            * T::from_f64(2.0).expect("two is representable")
+                            * phased.re,
+                        T::zero(),
+                    );
                 } else {
-                    spectra[spectrum_index] = phased * nphi as f64;
+                    spectra[spectrum_index] =
+                        phased * T::from_usize(nphi).expect("sample count converts");
                 }
             }
         }
@@ -224,9 +232,9 @@ impl ShtPlan {
     /// sampling, a buffer length mismatch, or an incompatible workspace.
     pub fn analysis_into(
         &self,
-        map: &[f64],
-        alm: &mut [Complex64],
-        workspace: &mut ShtWorkspace,
+        map: &[T],
+        alm: &mut [Complex<T>],
+        workspace: &mut ShtWorkspace<T>,
     ) -> Result<(), ShtError> {
         self.check_scalar_spin()?;
         self.check_analysis_sampling()?;
@@ -249,9 +257,9 @@ impl ShtPlan {
     /// a buffer length mismatch, or an incompatible workspace.
     pub fn adjoint_synthesis_into(
         &self,
-        map: &[f64],
-        alm: &mut [Complex64],
-        workspace: &mut ShtWorkspace,
+        map: &[T],
+        alm: &mut [Complex<T>],
+        workspace: &mut ShtWorkspace<T>,
     ) -> Result<(), ShtError> {
         self.check_scalar_spin()?;
         self.check_synthesis_order()?;
@@ -277,9 +285,9 @@ impl ShtPlan {
     /// incompatible workspace.
     pub fn adjoint_analysis_into(
         &self,
-        alm: &[Complex64],
-        map: &mut [f64],
-        workspace: &mut ShtWorkspace,
+        alm: &[Complex<T>],
+        map: &mut [T],
+        workspace: &mut ShtWorkspace<T>,
     ) -> Result<(), ShtError> {
         self.check_scalar_spin()?;
         self.check_analysis_sampling()?;
@@ -299,9 +307,9 @@ impl ShtPlan {
 
     fn adjoint_analysis_cc_into(
         &self,
-        alm: &[Complex64],
-        map: &mut [f64],
-        workspace: &mut ShtWorkspace,
+        alm: &[Complex<T>],
+        map: &mut [T],
+        workspace: &mut ShtWorkspace<T>,
     ) -> Result<(), ShtError> {
         let resampling = self
             .cc_resampling
@@ -310,19 +318,21 @@ impl ShtPlan {
         let prepared_ntheta = resampling.prepared_ntheta();
         for (ring, &theta) in resampling.prepared_theta().iter().enumerate() {
             (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
-            workspace.ring_order_limits[ring] = polar_order_limit(
+            workspace.ring_order_limits[ring] = T::polar_order_limit(
                 self.harmonics.lmax(),
                 0,
                 workspace.theta_sin[ring],
                 workspace.theta_cos[ring],
             );
         }
-        workspace.prepared_spectra.fill(Complex64::new(0.0, 0.0));
+        workspace
+            .prepared_spectra
+            .fill(Complex::new(T::zero(), T::zero()));
         self.synthesize_ring_group(
             alm,
             1,
             self.fft.spectrum_len(),
-            self.grid.phi0(),
+            T::from_f64(self.grid.phi0()).expect("longitude origin is representable"),
             0,
             &mut workspace.prepared_spectra,
             &workspace.theta_sin[..prepared_ntheta],
@@ -344,7 +354,7 @@ impl ShtPlan {
         let spectrum_len = self.fft.spectrum_len();
         for ring in 0..self.grid.ntheta() {
             let start = ring * spectrum_len;
-            workspace.spectra[start].im = 0.0;
+            workspace.spectra[start].im = T::zero();
             self.fft.inverse(
                 &workspace.spectra[start..start + spectrum_len],
                 &mut workspace.row,
@@ -358,9 +368,9 @@ impl ShtPlan {
 
     fn analyze_map_to_coefficients(
         &self,
-        map: &[f64],
-        alm: &mut [Complex64],
-        workspace: &mut ShtWorkspace,
+        map: &[T],
+        alm: &mut [Complex<T>],
+        workspace: &mut ShtWorkspace<T>,
         ring_weights: Option<&[f64]>,
     ) -> Result<(), ShtError> {
         let ntheta = self.grid.ntheta();
@@ -383,7 +393,7 @@ impl ShtPlan {
                 .filter(|_| ring_weights.is_some())
         {
             for value in &mut workspace.spectra {
-                *value /= nphi as f64;
+                *value /= T::from_usize(nphi).expect("longitude count converts");
             }
             resampling.to_prepared(
                 &workspace.spectra,
@@ -396,7 +406,7 @@ impl ShtPlan {
             )?;
             for (ring, &theta) in resampling.prepared_theta().iter().enumerate() {
                 (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
-                workspace.ring_order_limits[ring] = polar_order_limit(
+                workspace.ring_order_limits[ring] = T::polar_order_limit(
                     self.harmonics.lmax(),
                     0,
                     workspace.theta_sin[ring],
@@ -410,8 +420,9 @@ impl ShtPlan {
             )
         } else {
             for (ring, &theta) in self.grid.theta().iter().enumerate() {
+                let theta = T::from_f64(theta).expect("grid colatitude is representable");
                 (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
-                workspace.ring_order_limits[ring] = polar_order_limit(
+                workspace.ring_order_limits[ring] = T::polar_order_limit(
                     self.harmonics.lmax(),
                     0,
                     workspace.theta_sin[ring],
@@ -424,7 +435,7 @@ impl ShtPlan {
         let theta_cos = &workspace.theta_cos[..analysis_ntheta];
         let ring_order_limits = &workspace.ring_order_limits[..analysis_ntheta];
 
-        alm.fill(Complex64::new(0.0, 0.0));
+        alm.fill(Complex::new(T::zero(), T::zero()));
         let lmax = self.harmonics.lmax();
         let mmax = self.harmonics.mmax();
         let arch = pulp::Arch::new();
@@ -439,7 +450,7 @@ impl ShtPlan {
                     analysis_spectra,
                     nphi,
                     spectrum_len,
-                    self.grid.phi0(),
+                    T::from_f64(self.grid.phi0()).expect("longitude origin is representable"),
                     analysis_ring_weights,
                     theta_sin,
                     theta_cos,
@@ -455,7 +466,7 @@ impl ShtPlan {
                     analysis_spectra,
                     nphi,
                     spectrum_len,
-                    self.grid.phi0(),
+                    T::from_f64(self.grid.phi0()).expect("longitude origin is representable"),
                     analysis_ring_weights,
                     theta_sin,
                     theta_cos,
@@ -475,7 +486,7 @@ impl ShtPlan {
                 analysis_spectra,
                 nphi,
                 spectrum_len,
-                self.grid.phi0(),
+                T::from_f64(self.grid.phi0()).expect("longitude origin is representable"),
                 analysis_ring_weights,
                 theta_sin,
                 theta_cos,
@@ -492,7 +503,7 @@ impl ShtPlan {
                 .harmonics
                 .index(l, 0)
                 .expect("order zero contains every degree");
-            alm[index].im = 0.0;
+            alm[index].im = T::zero();
         }
         Ok(())
     }
@@ -504,19 +515,19 @@ impl ShtPlan {
     )]
     fn analyze_order_groups_parallel(
         &self,
-        spectra: &[Complex64],
+        spectra: &[Complex<T>],
         nphi: usize,
         spectrum_len: usize,
-        phi0: f64,
+        phi0: T,
         ring_weights: Option<&[f64]>,
-        theta_sin: &[f64],
-        theta_cos: &[f64],
+        theta_sin: &[T],
+        theta_cos: &[T],
         ring_order_limits: &[usize],
         arch: pulp::Arch,
         m_start: usize,
         m_end: usize,
-        alm: &mut [Complex64],
-        recurrence: &mut [RecurrenceWorkspace],
+        alm: &mut [Complex<T>],
+        recurrence: &mut [RecurrenceWorkspace<T>],
     ) -> Result<(), ShtError> {
         let order_count = m_end - m_start;
         if order_count <= 1 || recurrence.len() <= 1 {
@@ -600,32 +611,35 @@ impl ShtPlan {
     )]
     fn analyze_order_group(
         &self,
-        spectra: &[Complex64],
+        spectra: &[Complex<T>],
         nphi: usize,
         spectrum_len: usize,
-        phi0: f64,
+        phi0: T,
         ring_weights: Option<&[f64]>,
-        theta_sin: &[f64],
-        theta_cos: &[f64],
+        theta_sin: &[T],
+        theta_cos: &[T],
         ring_order_limits: &[usize],
         arch: pulp::Arch,
         m_start: usize,
         m_end: usize,
-        alm: &mut [Complex64],
-        recurrence: &mut RecurrenceWorkspace,
+        alm: &mut [Complex<T>],
+        recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<(), ShtError> {
         let lmax = self.harmonics.lmax();
         let mut coefficient_start = 0;
         for m in m_start..m_end {
             let coefficient_count = lmax - m + 1;
             let coefficients = &mut alm[coefficient_start..coefficient_start + coefficient_count];
-            fill_epsilon(m, lmax, &mut recurrence.epsilon);
+            T::fill_epsilon(m, lmax, &mut recurrence.epsilon);
             let phase = if m == 0 {
-                Complex64::new(1.0, 0.0)
+                Complex::new(T::one(), T::zero())
             } else {
-                Complex64::from_polar(1.0, -(m as f64 * phi0))
+                Complex::from_polar(
+                    T::one(),
+                    -(T::from_usize(m).expect("mode converts to transform scalar") * phi0),
+                )
             };
-            for_each_y_lm_dispatched(
+            T::for_each_y_lm_dispatched(
                 arch,
                 m,
                 lmax,
@@ -647,10 +661,13 @@ impl ShtPlan {
                         let spectrum_start = ring * spectrum_len;
                         let mut weighted = spectra[spectrum_start + m] * phase;
                         if let Some(ring_weights) = ring_weights {
-                            weighted *= ring_weights[ring] / nphi as f64;
+                            let weight = T::from_f64(ring_weights[ring])
+                                .expect("ring weight is representable");
+                            weighted *=
+                                weight / T::from_usize(nphi).expect("longitude count converts");
                         }
                         *coefficient +=
-                            multiply_complex_scaled(weighted, current[lane], exponents[lane]);
+                            T::multiply_complex_scaled(weighted, current[lane], exponents[lane]);
                     }
                     Ok(())
                 },
@@ -706,10 +723,11 @@ impl ShtPlan {
         Ok(())
     }
 
-    pub(crate) fn apply_analysis_pixel_weights(&self, map: &mut [f64]) {
+    pub(crate) fn apply_analysis_pixel_weights(&self, map: &mut [T]) {
         let nphi = self.grid.nphi();
         for (ring, &ring_weight) in self.grid.ring_weights().iter().enumerate() {
-            let scale = ring_weight / nphi as f64;
+            let scale = T::from_f64(ring_weight / nphi as f64)
+                .expect("analysis pixel weight is representable");
             let start = ring * nphi;
             for sample in &mut map[start..start + nphi] {
                 *sample *= scale;
@@ -717,7 +735,7 @@ impl ShtPlan {
         }
     }
 
-    pub(crate) fn check_workspace(&self, workspace: &ShtWorkspace) -> Result<(), ShtError> {
+    pub(crate) fn check_workspace(&self, workspace: &ShtWorkspace<T>) -> Result<(), ShtError> {
         let prepared_ntheta = self
             .cc_resampling
             .as_ref()
@@ -901,6 +919,7 @@ fn check_len(buffer: &'static str, expected: usize, actual: usize) -> Result<(),
 
 #[cfg(test)]
 mod tests {
+    use num_complex::Complex64;
     use std::f64::consts::{PI, TAU};
 
     use super::*;

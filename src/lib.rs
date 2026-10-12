@@ -26,3 +26,6 @@ pub use workspace::ShtWorkspace;
 
 /// Complex double-precision harmonic coefficient.
 pub type Complex64 = num_complex::Complex64;
+
+/// Complex single-precision harmonic coefficient.
+pub type Complex32 = num_complex::Complex32;
