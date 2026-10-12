@@ -84,6 +84,7 @@ impl ShtPlan {
         ShtWorkspace::new(
             self.spectrum_count,
             self.grid.nphi(),
+            self.grid.ntheta(),
             self.recurrence_factor_count,
             &self.fft,
         )
