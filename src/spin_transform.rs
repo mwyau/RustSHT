@@ -3708,6 +3708,287 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "M3 exact T1023 spin analysis check; run this check in release mode"]
+    fn m3_spin_t1023_exact_analysis_matches_ducc() {
+        // DUCC 0.41.0 references use phi0=0.37 and nthreads=1.
+        // Synthesis fixtures use a^E_(1023,1023)=1; analysis fixtures use the map formulas below.
+        let degree = 1023;
+        let nphi = 2 * degree + 3;
+        for kind in [
+            GridKind::GaussLegendre,
+            GridKind::ClenshawCurtis,
+            GridKind::Fejer1,
+        ] {
+            let ntheta = degree + usize::from(kind == GridKind::ClenshawCurtis) + 1;
+            let grid = GridSpec::new(kind, ntheta, nphi, 0.37).unwrap();
+            for spin in [1, 2] {
+                let plan = ShtPlan::new(
+                    grid.clone(),
+                    HarmonicSpec::new(degree, degree, spin).unwrap(),
+                )
+                .unwrap();
+                let high_mode = plan.harmonics().index(degree, degree).unwrap();
+                let low_mode = plan.harmonics().index(spin, 0).unwrap();
+                let mut e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+                let b = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+                e[high_mode] = Complex64::new(1.0, 0.0);
+                let mut workspace = plan.workspace().unwrap();
+                let mut first = vec![0.0; plan.sample_count];
+                let mut second = vec![0.0; plan.sample_count];
+                plan.synthesis_spin_into(&e, &b, &mut first, &mut second, &mut workspace)
+                    .unwrap();
+
+                let (expected_first, expected_second, expected_analysis) = match (kind, spin) {
+                    (GridKind::GaussLegendre, 1) => (
+                        [
+                            0.0002692592537113718,
+                            -0.00029309150858882133,
+                            -0.000673221873510172,
+                            -0.005182509993825906,
+                            -0.0002454213020701616,
+                        ],
+                        [
+                            3.3797276730555463,
+                            -3.3788841449939198,
+                            -3.355682138717093,
+                            0.16784222253861777,
+                            -3.3804996956447932,
+                        ],
+                        [
+                            (
+                                Complex64::new(-3.970105309790821e-9, 0.0),
+                                Complex64::new(-2.1898731870038686e-9, 0.0),
+                            ),
+                            (
+                                Complex64::new(-5.753979607020647e-5, -2.378876053935398e-6),
+                                Complex64::new(-4.556171734751286e-6, -9.071625001329272e-7),
+                            ),
+                        ],
+                    ),
+                    (GridKind::GaussLegendre, 2) => (
+                        [
+                            0.17535897243750975,
+                            -0.19088007215302083,
+                            -0.43844545483196995,
+                            -3.37518437950739,
+                            -0.15983416262243652,
+                        ],
+                        [
+                            0.010348643387021999,
+                            -0.010346060524749888,
+                            -0.010275016549598708,
+                            0.0005139287760327167,
+                            -0.010351007301288382,
+                        ],
+                        [
+                            (
+                                Complex64::new(-2.7869138063251393e-9, 0.0),
+                                Complex64::new(-2.7227224767817692e-9, 0.0),
+                            ),
+                            (
+                                Complex64::new(1.5874021743134444e-6, -4.515016053545278e-6),
+                                Complex64::new(-1.888614041135579e-6, 5.7250248487014354e-5),
+                            ),
+                        ],
+                    ),
+                    (GridKind::ClenshawCurtis, 1) => (
+                        [
+                            -1.0766275818895656e-17,
+                            1.1719203623084968e-17,
+                            2.6918637995237438e-17,
+                            2.0722159501906292e-16,
+                            9.813120230780253e-18,
+                        ],
+                        [
+                            3.3837900421491245,
+                            -3.3829455001826334,
+                            -3.3597156055306705,
+                            0.1680439657331586,
+                            -3.3845629926950016,
+                        ],
+                        [
+                            (
+                                Complex64::new(-5.0217365309611435e-9, -1.523876245149916e-22),
+                                Complex64::new(-6.057643341435993e-9, 4.2941432788971746e-20),
+                            ),
+                            (
+                                Complex64::new(-5.6315820110577476e-5, -2.310852903137655e-6),
+                                Complex64::new(-3.790328915571601e-6, -1.195645014199101e-6),
+                            ),
+                        ],
+                    ),
+                    (GridKind::ClenshawCurtis, 2) => (
+                        [
+                            0.17556913153174913,
+                            -0.19110883252105015,
+                            -0.43897091012165323,
+                            -3.379229371800783,
+                            -0.16002571599651416,
+                        ],
+                        [
+                            -4.1378788866709244e-16,
+                            4.1368461357234587e-16,
+                            4.1084393819288594e-16,
+                            -2.0549312137524346e-17,
+                            4.1388240918120196e-16,
+                        ],
+                        [
+                            (
+                                Complex64::new(-2.8534515942596718e-9, 2.0381702198409198e-26),
+                                Complex64::new(-4.0501662408845994e-9, 4.4262338146783985e-20),
+                            ),
+                            (
+                                Complex64::new(2.2006264408083243e-6, -3.7347210725520073e-6),
+                                Complex64::new(-1.8145388279689996e-6, 5.6033549984767706e-5),
+                            ),
+                        ],
+                    ),
+                    (GridKind::Fejer1, 1) => (
+                        [
+                            0.0002693904437578937,
+                            -0.00029323431032401504,
+                            -0.0006735498845541299,
+                            -0.005185035046234766,
+                            -0.0002455408776524013,
+                        ],
+                        [
+                            3.379723706345291,
+                            -3.3788801792736933,
+                            -3.355678200228539,
+                            0.16784202554598165,
+                            -3.3804957280284307,
+                        ],
+                        [
+                            (
+                                Complex64::new(-4.745294030805409e-9, -8.276311203503119e-22),
+                                Complex64::new(-4.612248802094115e-9, -5.808191933468817e-21),
+                            ),
+                            (
+                                Complex64::new(-5.764429994134854e-5, -2.383943930654648e-6),
+                                Complex64::new(-4.5584040933637115e-6, -9.081814664123858e-7),
+                            ),
+                        ],
+                    ),
+                    (GridKind::Fejer1, 2) => (
+                        [
+                            0.175358767226784,
+                            -0.19087984877900355,
+                            -0.4384449417489569,
+                            -3.3751804297577648,
+                            -0.15983397557934373,
+                        ],
+                        [
+                            0.01035368552462822,
+                            -0.010351101403916093,
+                            -0.010280022814227973,
+                            0.0005141791759655065,
+                            -0.010356050590657263,
+                        ],
+                        [
+                            (
+                                Complex64::new(-2.7812303811775246e-9, -1.3278710101432483e-19),
+                                Complex64::new(-2.7197106514111454e-9, -1.3948727442036295e-25),
+                            ),
+                            (
+                                Complex64::new(1.5893284646122541e-6, -4.517207500789589e-6),
+                                Complex64::new(-1.8935509212736803e-6, 5.735450303181667e-5),
+                            ),
+                        ],
+                    ),
+                    _ => unreachable!(),
+                };
+
+                let longitudes = [0, 1, 17, nphi / 2, nphi - 1];
+                let middle_ring = ntheta / 2;
+                let mut synthesis_max_error = 0.0_f64;
+                let mut synthesis_error_squares = 0.0_f64;
+                for (slot, longitude) in longitudes.into_iter().enumerate() {
+                    let index = middle_ring * nphi + longitude;
+                    for (actual, expected) in [
+                        (first[index], expected_first[slot]),
+                        (second[index], expected_second[slot]),
+                    ] {
+                        let error = (actual - expected).abs();
+                        synthesis_max_error = synthesis_max_error.max(error);
+                        synthesis_error_squares += error * error;
+                        assert!(
+                            error <= 2e-10,
+                            "{kind:?} spin {spin} T{degree} synthesis error={error:.3e}"
+                        );
+                    }
+                }
+
+                let mut arbitrary_first = vec![0.0; plan.sample_count];
+                let mut arbitrary_second = vec![0.0; plan.sample_count];
+                for i in 0..ntheta {
+                    for j in 0..nphi {
+                        arbitrary_first[i * nphi + j] = (0.17 * i as f64 + 0.23 * j as f64).sin()
+                            + 0.2 * (0.11 * i as f64 - 0.31 * j as f64).cos();
+                        arbitrary_second[i * nphi + j] = (0.19 * i as f64 - 0.13 * j as f64).cos()
+                            - 0.15 * (0.29 * i as f64 + 0.07 * j as f64).sin();
+                    }
+                }
+                let mut analyzed_e = vec![Complex64::new(0.0, 0.0); e.len()];
+                let mut analyzed_b = vec![Complex64::new(0.0, 0.0); b.len()];
+                plan.analysis_spin_into(
+                    &arbitrary_first,
+                    &arbitrary_second,
+                    &mut analyzed_e,
+                    &mut analyzed_b,
+                    &mut workspace,
+                )
+                .unwrap();
+                let (mut analysis_max_error, mut analysis_error_squares) = (0.0_f64, 0.0_f64);
+                for (slot, index) in [low_mode, high_mode].into_iter().enumerate() {
+                    for (actual, expected) in [
+                        (analyzed_e[index], expected_analysis[slot].0),
+                        (analyzed_b[index], expected_analysis[slot].1),
+                    ] {
+                        let error = (actual - expected).norm();
+                        analysis_max_error = analysis_max_error.max(error);
+                        analysis_error_squares += error * error;
+                        assert!(
+                            error <= 2e-11,
+                            "{kind:?} spin {spin} T{degree} analysis error={error:.3e}"
+                        );
+                    }
+                }
+
+                let mut recovered_e = vec![Complex64::new(0.0, 0.0); e.len()];
+                let mut recovered_b = vec![Complex64::new(0.0, 0.0); b.len()];
+                plan.analysis_spin_into(
+                    &first,
+                    &second,
+                    &mut recovered_e,
+                    &mut recovered_b,
+                    &mut workspace,
+                )
+                .unwrap();
+                let (mut roundtrip_max_error, mut roundtrip_error_squares) = (0.0_f64, 0.0_f64);
+                for index in 0..e.len() {
+                    let expected = if index == high_mode { 1.0 } else { 0.0 };
+                    let e_error = (recovered_e[index] - Complex64::new(expected, 0.0)).norm();
+                    let b_error = recovered_b[index].norm();
+                    roundtrip_max_error = roundtrip_max_error.max(e_error).max(b_error);
+                    roundtrip_error_squares += e_error * e_error + b_error * b_error;
+                    assert!(
+                        e_error <= 2e-10 && b_error <= 2e-10,
+                        "{kind:?} spin {spin} T{degree} coefficient {index}: E={:?}, B={:?}",
+                        recovered_e[index],
+                        recovered_b[index]
+                    );
+                }
+                eprintln!(
+                    "M3 spin {spin} T{degree} {kind:?}: DUCC synthesis samples max abs={synthesis_max_error:.3e}, RMS={:.3e}; DUCC analysis coefficients max abs={analysis_max_error:.3e}, RMS={:.3e}; synthesis-analysis coefficient max abs={roundtrip_max_error:.3e}, RMS={:.3e}",
+                    (synthesis_error_squares / 10.0).sqrt(),
+                    (analysis_error_squares / 4.0).sqrt(),
+                    (roundtrip_error_squares / (2 * e.len()) as f64).sqrt(),
+                );
+            }
+        }
+    }
+
+    #[test]
     #[ignore = "M3 sparse T1023 synthesis check; run this check in release mode"]
     #[expect(
         clippy::excessive_precision,
