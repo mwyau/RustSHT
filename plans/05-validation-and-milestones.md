@@ -917,3 +917,21 @@ The one-worker scalar-conversion path benefits from skipping inactive latitude b
 | 8 | `150.139; 0.609` | `3.819; 0.004` | `39.3x` | `1.527e-14 / 2.540e-16 / 4.973e-14` |
 
 The T511 all-grid spin-1/2 DUCC and roundtrip test passed with one thread. The T1023 exact-analysis DUCC test passed for spins 1 and 2 on GL, CC and F1 with one thread. Spin-2 maximum coefficient errors were `3.332e-17`, `2.558e-17`, and `1.410e-17` at T511, and `1.178e-17`, `8.491e-18`, and `8.223e-18` at T1023, respectively. The numerical results include analysis/adjoint and synthesis-analysis checks. The one-worker fast path is retained; the eight-worker general path remains a separate performance target.
+
+### Overflow-safe scalar SIMD analysis reduction (2026-10-12)
+
+The paired scalar-analysis SIMD reducer multiplies Fourier values by normalized recurrence lanes before reducing latitude contributions. Finite Fourier values can still overflow in an intermediate product even when the scaled scalar result is finite. A once-per-block check now bounds every input and the absolute sum across the block. The vector reducer runs only when this bound is safe and all recurrence exponents are zero. Otherwise, the existing binary-scaled scalar reducer handles the block. Nonfinite inputs also use that fallback. The check adds no workspace storage and does not change the ordinary SIMD arithmetic. The focused test uses a finite `1e308` Fourier value, a recurrence value of `2`, and `cos(theta)=0.5`. Direct multiplication overflows before the final factor can bring the result back to `1e308`; the scaled fallback returns the finite reference value. Ordinary SIMD results continue to match the scaled lane reference, and `spin2_scalar_fast_analysis_honors_the_polar_order_cutoff` passes with the reducer gate present. Native measurements used `m1a_bench 511 8 analysis`, f64, T511 GL `512x1025`, reused plan and workspace, one warm-up and five timed samples per process, three process runs, and affinity to 8 pinned CPU cores on the x86-64 CPU. Rust was `1.99.0 (b940084d7 2026-09-28)` with Cargo release optimization and portable Pulp AVX2/FMA dispatch. The no-gate baseline was `c69dae9`; the tested version includes the gate. Values are medians and ranges of process medians in milliseconds:
+
+| Threads | Before (`c69dae9`) | With safety check | Observed change |
+| ---: | ---: | ---: | ---: |
+| 1 | `78.147; 1.798` | `74.864; 0.372` | `-4.2%` |
+| 8 | `20.971; 0.134` | `20.814; 0.569` | `-0.7%` |
+
+The timing does not show an overhead from the block check. The one-thread difference is not attributed to the check because the runs were collected in separate sessions. The eight-thread timings overlap. The estimated numeric-array workspace is `16.08 MiB` at one worker and `16.26 MiB` at eight workers in both versions. The Python extension was rebuilt from the tested source and compared with installed `ducc0==0.41.0` from revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`. Python was `3.11.15`, NumPy `2.4.6`; each plan measurement used three run medians, warm plans and explicit one/eight-thread settings, 8 pinned CPU cores. RustSHT plan calls create a workspace per invocation. The ratio is RustSHT/DUCC0:
+
+| Grid and threads | RustSHT (ms) | DUCC0 (ms) | Ratio | Max absolute / RMS / relative L2 coefficient error |
+| --- | ---: | ---: | ---: | ---: |
+| T511, 1 | `80.399` | `12.149` | `6.6x` | `3.794e-15 / 1.046e-16 / 2.049e-14` |
+| T511, 8 | `21.576` | `1.660` | `13.0x` | `3.794e-15 / 1.046e-16 / 2.049e-14` |
+| T1023, 1 | `683.366` | `120.193` | `5.7x` | `1.036e-14 / 1.259e-16 / 4.927e-14` |
+| T1023, 8 | `196.234` | `16.152` | `12.1x` | `1.036e-14 / 1.259e-16 / 4.927e-14` |

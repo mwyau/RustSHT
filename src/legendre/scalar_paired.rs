@@ -143,6 +143,7 @@ pub(crate) fn synthesize_order_block_dispatched(
 )]
 pub(crate) fn accumulate_analysis_pair_dispatched(
     arch: Arch,
+    products_safe: bool,
     same_real: &[f64],
     same_imag: &[f64],
     opposite_real: &[f64],
@@ -158,7 +159,7 @@ pub(crate) fn accumulate_analysis_pair_dispatched(
     debug_assert_eq!(exponents.len(), basis.len());
     debug_assert_eq!(cos_theta.len(), basis.len());
 
-    if exponents.iter().all(|&exponent| exponent == 0) {
+    if products_safe && exponents.iter().all(|&exponent| exponent == 0) {
         return arch.dispatch(AnalysisPairAccumulation {
             same_real,
             same_imag,
@@ -185,6 +186,33 @@ pub(crate) fn accumulate_analysis_pair_dispatched(
         );
     }
     (same, opposite)
+}
+
+/// Checks once per latitude block whether Fourier values can multiply the
+/// largest unscaled recurrence lane and reduce across the block safely.
+pub(crate) fn analysis_products_safe(
+    same_real: &[f64],
+    same_imag: &[f64],
+    opposite_real: &[f64],
+    opposite_imag: &[f64],
+    cos_theta: &[f64],
+) -> bool {
+    debug_assert_eq!(same_real.len(), same_imag.len());
+    debug_assert_eq!(same_real.len(), opposite_real.len());
+    debug_assert_eq!(same_real.len(), opposite_imag.len());
+    debug_assert_eq!(same_real.len(), cos_theta.len());
+    // Bound the absolute sum as well as each product. This keeps both the
+    // vector reduction and the accumulation of vector partials finite.
+    let max_input = f64::MAX / scalar::BIG / (2.0 * same_real.len().max(1) as f64);
+    same_real
+        .iter()
+        .chain(same_imag)
+        .chain(opposite_real)
+        .chain(opposite_imag)
+        .all(|value| value.is_finite() && value.abs() <= max_input)
+        && cos_theta
+            .iter()
+            .all(|value| value.is_finite() && value.abs() <= 1.0)
 }
 
 struct AnalysisPairAccumulation<'a> {

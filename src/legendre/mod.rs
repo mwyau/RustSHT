@@ -180,12 +180,22 @@ pub(crate) trait ShtScalar:
         Ok(false)
     }
     fn multiply_complex_scaled(value: Complex<Self>, factor: Self, exponent: i64) -> Complex<Self>;
+    fn scalar_analysis_products_safe(
+        _same_real: &[Self],
+        _same_imag: &[Self],
+        _opposite_real: &[Self],
+        _opposite_imag: &[Self],
+        _cos_theta: &[Self],
+    ) -> bool {
+        false
+    }
     #[expect(
         clippy::too_many_arguments,
         reason = "Paired analysis combines two parity spectra with lane recurrence values."
     )]
     fn accumulate_scalar_analysis_pair(
         _arch: Arch,
+        _products_safe: bool,
         same_real: &[Self],
         same_imag: &[Self],
         opposite_real: &[Self],
@@ -458,8 +468,25 @@ impl ShtScalar for f64 {
         scalar::multiply_complex_scaled(value, factor, exponent)
     }
 
+    fn scalar_analysis_products_safe(
+        same_real: &[Self],
+        same_imag: &[Self],
+        opposite_real: &[Self],
+        opposite_imag: &[Self],
+        cos_theta: &[Self],
+    ) -> bool {
+        scalar_paired::analysis_products_safe(
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            cos_theta,
+        )
+    }
+
     fn accumulate_scalar_analysis_pair(
         arch: Arch,
+        products_safe: bool,
         same_real: &[Self],
         same_imag: &[Self],
         opposite_real: &[Self],
@@ -470,6 +497,7 @@ impl ShtScalar for f64 {
     ) -> (Complex<Self>, Complex<Self>) {
         scalar_paired::accumulate_analysis_pair_dispatched(
             arch,
+            products_safe,
             same_real,
             same_imag,
             opposite_real,

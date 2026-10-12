@@ -838,6 +838,13 @@ impl<T: ShtScalar> ShtPlan<T> {
                     let same_imag = &recurrence.analysis_same_imag[..block_len];
                     let opposite_real = &recurrence.analysis_opposite_real[..block_len];
                     let opposite_imag = &recurrence.analysis_opposite_imag[..block_len];
+                    let product_range_safe = T::scalar_analysis_products_safe(
+                        same_real,
+                        same_imag,
+                        opposite_real,
+                        opposite_imag,
+                        &theta_cos[block_start..block_end],
+                    );
                     // Paired degrees l=m+2k use north+south for the even term;
                     // the intervening odd term uses north-south and cos(theta).
                     paired_used = T::for_each_y_lm_paired_dispatched(
@@ -864,6 +871,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             let lane_end = ring_start + current.len();
                             let (same_sum, opposite_sum) = T::accumulate_scalar_analysis_pair(
                                 arch,
+                                product_range_safe,
                                 &same_real[ring_start..lane_end],
                                 &same_imag[ring_start..lane_end],
                                 &opposite_real[ring_start..lane_end],
