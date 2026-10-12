@@ -179,6 +179,110 @@ fn sectoral_spin_reference(
 }
 
 #[test]
+fn spin2_scalar_fast_synthesis_honors_full_and_mixed_polar_blocks() {
+    let lmax = 511;
+    let ntheta = lmax + 1;
+    let m = 450;
+    let plan = make_plan(2, lmax, lmax, ntheta, 2 * lmax + 3);
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_spin_latitudes(&mut workspace, 2);
+    let block_size = crate::legendre::LATITUDE_BLOCK_SIZE;
+    let limits = &workspace.ring_order_limits[..ntheta];
+    let excluded_block = limits
+        .chunks(block_size)
+        .position(|block| block.iter().all(|&limit| limit < m))
+        .expect("the polar grid has a fully excluded block at m=450");
+    let mixed_block = limits
+        .chunks(block_size)
+        .position(|block| {
+            block.iter().any(|&limit| limit < m) && block.iter().any(|&limit| limit >= m)
+        })
+        .expect("the cutoff crosses a 64-ring block at m=450");
+
+    let mut e_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut b_alm = vec![Complex64::new(0.0, 0.0); e_alm.len()];
+    for degree in m..=lmax {
+        let index = plan.harmonics().index(degree, m).unwrap();
+        e_alm[index] = Complex64::new((degree % 11 + 1) as f64, (degree % 7 + 1) as f64) * 1e-5;
+        b_alm[index] = Complex64::new((degree % 13 + 1) as f64, -((degree % 5 + 1) as f64)) * 1e-5;
+    }
+    let spectrum_len = plan.fft.spectrum_len();
+    let mut actual_q = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
+    let mut actual_u = vec![Complex64::new(0.0, 0.0); actual_q.len()];
+    plan.synthesize_spin2_scalar_order(
+        m,
+        &e_alm,
+        &b_alm,
+        spectrum_len,
+        0,
+        &mut actual_q,
+        &mut actual_u,
+        &workspace.theta_sin[..ntheta],
+        &workspace.theta_cos[..ntheta],
+        limits,
+        pulp::Arch::new(),
+        &mut workspace.recurrence_workers[0],
+    )
+    .unwrap();
+
+    let all_active_limits = vec![lmax; ntheta];
+    let mut reference_workspace = plan.workspace().unwrap();
+    plan.prepare_spin_latitudes(&mut reference_workspace, 2);
+    let mut reference_q = vec![Complex64::new(0.0, 0.0); actual_q.len()];
+    let mut reference_u = vec![Complex64::new(0.0, 0.0); actual_u.len()];
+    plan.synthesize_spin2_scalar_order(
+        m,
+        &e_alm,
+        &b_alm,
+        spectrum_len,
+        0,
+        &mut reference_q,
+        &mut reference_u,
+        &reference_workspace.theta_sin[..ntheta],
+        &reference_workspace.theta_cos[..ntheta],
+        &all_active_limits,
+        pulp::Arch::new(),
+        &mut reference_workspace.recurrence_workers[0],
+    )
+    .unwrap();
+
+    let excluded_start = excluded_block * block_size;
+    let excluded_end = (excluded_start + block_size).min(ntheta);
+    for ring in excluded_start..excluded_end {
+        let index = ring * spectrum_len + m;
+        assert_eq!(actual_q[index], Complex64::new(0.0, 0.0));
+        assert_eq!(actual_u[index], Complex64::new(0.0, 0.0));
+    }
+
+    let mixed_start = mixed_block * block_size;
+    let mixed_end = (mixed_start + block_size).min(ntheta);
+    let mut active_output_seen = false;
+    for (ring, &limit) in limits.iter().enumerate().take(mixed_end).skip(mixed_start) {
+        let index = ring * spectrum_len + m;
+        if limit < m {
+            assert_eq!(actual_q[index], Complex64::new(0.0, 0.0));
+            assert_eq!(actual_u[index], Complex64::new(0.0, 0.0));
+        } else {
+            active_output_seen |= actual_q[index] != Complex64::new(0.0, 0.0)
+                || actual_u[index] != Complex64::new(0.0, 0.0);
+            for (actual, reference) in [
+                (actual_q[index], reference_q[index]),
+                (actual_u[index], reference_u[index]),
+            ] {
+                assert!(
+                    (actual - reference).norm() <= 3e-11,
+                    "ring={ring}, actual={actual:?}, all-active={reference:?}"
+                );
+            }
+        }
+    }
+    assert!(
+        active_output_seen,
+        "active lanes in a mixed block contribute"
+    );
+}
+
+#[test]
 #[expect(
     clippy::excessive_precision,
     reason = "These decimal fixtures retain the printed DUCC reference values."
