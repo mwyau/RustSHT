@@ -77,6 +77,10 @@ impl ShtPlan {
 
     /// Creates mutable scratch sized for this plan.
     ///
+    /// With the `parallel` feature, worker scratch uses the thread count of the
+    /// active Rayon pool. Create the workspace inside a custom pool when that
+    /// pool will execute the transform.
+    ///
     /// # Errors
     ///
     /// Returns an error if any workspace allocation fails.

@@ -3,13 +3,16 @@
 
 use num_complex::Complex64;
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
+
 use crate::error::ShtError;
 use crate::legendre::{
     LATITUDE_BLOCK_SIZE, fill_epsilon, for_each_y_lm_dispatched, multiply_complex_scaled,
     polar_order_limit,
 };
 use crate::plan::ShtPlan;
-use crate::workspace::ShtWorkspace;
+use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 impl ShtPlan {
     /// Synthesizes one real scalar field into north-to-south row-major samples.
@@ -37,47 +40,126 @@ impl ShtPlan {
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
         let lmax = self.harmonics.lmax();
-        let mmax = self.harmonics.mmax();
         let phi0 = self.grid.phi0();
-        let order_offsets = &self.harmonics;
-        let (
-            spectra,
-            row,
-            epsilon,
-            theta_sin,
-            theta_cos,
-            active_rings,
-            recurrence_previous,
-            recurrence_current,
-            recurrence_next,
-            recurrence_exponents,
-            fft_workspace,
-        ) = (
-            &mut workspace.spectra,
-            &mut workspace.row,
-            &mut workspace.epsilon,
-            &mut workspace.theta_sin,
-            &mut workspace.theta_cos,
-            &mut workspace.active_rings,
-            &mut workspace.recurrence_previous,
-            &mut workspace.recurrence_current,
-            &mut workspace.recurrence_next,
-            &mut workspace.recurrence_exponents,
-            &mut workspace.fft,
-        );
-
         for (ring, &theta) in self.grid.theta().iter().enumerate() {
-            (theta_sin[ring], theta_cos[ring]) = theta.sin_cos();
+            (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
+            workspace.ring_order_limits[ring] = polar_order_limit(
+                lmax,
+                0,
+                workspace.theta_sin[ring],
+                workspace.theta_cos[ring],
+            );
         }
-        spectra.fill(Complex64::new(0.0, 0.0));
+        workspace.spectra.fill(Complex64::new(0.0, 0.0));
         let arch = pulp::Arch::new();
-        for m in 0..=mmax {
-            fill_epsilon(m, lmax, epsilon);
-            for ring in 0..ntheta {
-                active_rings[ring] =
-                    m <= polar_order_limit(lmax, 0, theta_sin[ring], theta_cos[ring]);
+        #[cfg(feature = "parallel")]
+        {
+            let group_ring_count = workspace.ring_group_size.min(ntheta);
+            let parallel_groups = workspace.recurrence_workers.len();
+            let use_parallel = rayon::current_num_threads() > 1 && parallel_groups > 1;
+            if use_parallel {
+                let spectrum_group_len = group_ring_count.checked_mul(spectrum_len).ok_or(
+                    ShtError::IntegerOverflow {
+                        quantity: "parallel Fourier spectrum group size",
+                    },
+                )?;
+                let expected_groups = ntheta.div_ceil(group_ring_count);
+                debug_assert_eq!(expected_groups, parallel_groups);
+                workspace
+                    .spectra
+                    .par_chunks_mut(spectrum_group_len)
+                    .zip(workspace.recurrence_workers.par_iter_mut())
+                    .enumerate()
+                    .map(|(group_index, (group_spectra, recurrence))| {
+                        let ring_start = group_index * group_ring_count;
+                        let ring_end =
+                            (ring_start + group_spectra.len() / spectrum_len).min(ntheta);
+                        self.synthesize_ring_group(
+                            alm,
+                            nphi,
+                            spectrum_len,
+                            phi0,
+                            ring_start,
+                            &mut group_spectra[..(ring_end - ring_start) * spectrum_len],
+                            &workspace.theta_sin[ring_start..ring_end],
+                            &workspace.theta_cos[ring_start..ring_end],
+                            &workspace.ring_order_limits,
+                            arch,
+                            recurrence,
+                        )
+                    })
+                    .try_for_each(|result| result)?;
+            } else {
+                self.synthesize_ring_group(
+                    alm,
+                    nphi,
+                    spectrum_len,
+                    phi0,
+                    0,
+                    &mut workspace.spectra,
+                    &workspace.theta_sin,
+                    &workspace.theta_cos,
+                    &workspace.ring_order_limits,
+                    arch,
+                    &mut workspace.recurrence_workers[0],
+                )?;
             }
-            let coefficient_start = order_offsets
+        }
+        #[cfg(not(feature = "parallel"))]
+        {
+            self.synthesize_ring_group(
+                alm,
+                nphi,
+                spectrum_len,
+                phi0,
+                0,
+                &mut workspace.spectra,
+                &workspace.theta_sin,
+                &workspace.theta_cos,
+                &workspace.ring_order_limits,
+                arch,
+                &mut workspace.recurrence_workers[0],
+            )?;
+        }
+
+        for ring in 0..ntheta {
+            let start = ring * spectrum_len;
+            let ring_spectrum = &workspace.spectra[start..start + spectrum_len];
+            self.fft
+                .inverse(ring_spectrum, &mut workspace.row, &mut workspace.fft)?;
+            let output_start = ring * nphi;
+            map[output_start..output_start + nphi].copy_from_slice(&workspace.row);
+        }
+        Ok(())
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Each synthesis group uses plan geometry and its caller-owned worker scratch."
+    )]
+    fn synthesize_ring_group(
+        &self,
+        alm: &[Complex64],
+        nphi: usize,
+        spectrum_len: usize,
+        phi0: f64,
+        group_ring_start: usize,
+        spectra: &mut [Complex64],
+        theta_sin: &[f64],
+        theta_cos: &[f64],
+        ring_order_limits: &[usize],
+        arch: pulp::Arch,
+        recurrence: &mut RecurrenceWorkspace,
+    ) -> Result<(), ShtError> {
+        let lmax = self.harmonics.lmax();
+        let mmax = self.harmonics.mmax();
+        debug_assert_eq!(spectra.len(), theta_sin.len() * spectrum_len);
+        debug_assert_eq!(theta_sin.len(), theta_cos.len());
+
+        for m in 0..=mmax {
+            fill_epsilon(m, lmax, &mut recurrence.epsilon);
+            let coefficient_start = self
+                .harmonics
                 .index(m, m)
                 .expect("every packed order starts at its diagonal degree");
             let phase = if m == 0 {
@@ -92,30 +174,32 @@ impl ShtPlan {
                 theta_sin,
                 theta_cos,
                 self.sectoral_norms[m],
-                epsilon,
-                recurrence_previous,
-                recurrence_current,
-                recurrence_next,
-                recurrence_exponents,
+                &recurrence.epsilon,
+                &mut recurrence.previous,
+                &mut recurrence.current,
+                &mut recurrence.next,
+                &mut recurrence.exponents,
                 |l, ring_start, current, exponents| {
                     let coefficient = alm[coefficient_start + (l - m)];
                     for lane in 0..current.len() {
-                        let ring = ring_start + lane;
-                        if !active_rings[ring] {
+                        let group_ring = ring_start + lane;
+                        let global_ring = group_ring_start + group_ring;
+                        if m > ring_order_limits[global_ring] {
                             continue;
                         }
-                        let spectrum_index = ring * spectrum_len + m;
+                        let spectrum_index = group_ring * spectrum_len + m;
                         spectra[spectrum_index] +=
                             multiply_complex_scaled(coefficient, current[lane], exponents[lane]);
                     }
                     Ok(())
                 },
             )?;
-            for (ring, &active) in active_rings.iter().enumerate() {
-                if !active {
+            for group_ring in 0..theta_sin.len() {
+                let global_ring = group_ring_start + group_ring;
+                if m > ring_order_limits[global_ring] {
                     continue;
                 }
-                let spectrum_index = ring * spectrum_len + m;
+                let spectrum_index = group_ring * spectrum_len + m;
                 let phased = spectra[spectrum_index] * phase;
                 if nphi.is_multiple_of(2) && m == nphi / 2 {
                     spectra[spectrum_index] = Complex64::new(2.0 * nphi as f64 * phased.re, 0.0);
@@ -123,14 +207,6 @@ impl ShtPlan {
                     spectra[spectrum_index] = phased * nphi as f64;
                 }
             }
-        }
-
-        for ring in 0..ntheta {
-            let start = ring * spectrum_len;
-            let ring_spectrum = &spectra[start..start + spectrum_len];
-            self.fft.inverse(ring_spectrum, row, fft_workspace)?;
-            let output_start = ring * nphi;
-            map[output_start..output_start + nphi].copy_from_slice(row);
         }
         Ok(())
     }
@@ -170,57 +246,222 @@ impl ShtPlan {
         let ntheta = self.grid.ntheta();
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
-        let (
-            spectra,
-            epsilon,
-            theta_sin,
-            theta_cos,
-            active_rings,
-            recurrence_previous,
-            recurrence_current,
-            recurrence_next,
-            recurrence_exponents,
-            fft_workspace,
-        ) = (
-            &mut workspace.spectra,
-            &mut workspace.epsilon,
-            &mut workspace.theta_sin,
-            &mut workspace.theta_cos,
-            &mut workspace.active_rings,
-            &mut workspace.recurrence_previous,
-            &mut workspace.recurrence_current,
-            &mut workspace.recurrence_next,
-            &mut workspace.recurrence_exponents,
-            &mut workspace.fft,
-        );
+        let spectra = &mut workspace.spectra;
         for ring in 0..ntheta {
             let input_start = ring * nphi;
             let spectrum_start = ring * spectrum_len;
             self.fft.forward(
                 &map[input_start..input_start + nphi],
                 &mut spectra[spectrum_start..spectrum_start + spectrum_len],
-                fft_workspace,
+                &mut workspace.fft,
             )?;
         }
 
         alm.fill(Complex64::new(0.0, 0.0));
         let lmax = self.harmonics.lmax();
         let mmax = self.harmonics.mmax();
-        let phi0 = self.grid.phi0();
         for (ring, &theta) in self.grid.theta().iter().enumerate() {
-            (theta_sin[ring], theta_cos[ring]) = theta.sin_cos();
+            (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
+            workspace.ring_order_limits[ring] = polar_order_limit(
+                lmax,
+                0,
+                workspace.theta_sin[ring],
+                workspace.theta_cos[ring],
+            );
         }
         let arch = pulp::Arch::new();
-        for m in 0..=mmax {
-            fill_epsilon(m, lmax, epsilon);
-            for ring in 0..ntheta {
-                active_rings[ring] =
-                    m <= polar_order_limit(lmax, 0, theta_sin[ring], theta_cos[ring]);
+
+        #[cfg(feature = "parallel")]
+        {
+            let order_count = mmax + 1;
+            let worker_count = workspace.recurrence_workers.len().min(order_count);
+            let use_parallel = rayon::current_num_threads() > 1 && worker_count > 1;
+            if use_parallel {
+                self.analyze_order_groups_parallel(
+                    &workspace.spectra,
+                    nphi,
+                    spectrum_len,
+                    self.grid.phi0(),
+                    self.grid.ring_weights(),
+                    &workspace.theta_sin,
+                    &workspace.theta_cos,
+                    &workspace.ring_order_limits,
+                    arch,
+                    0,
+                    order_count,
+                    alm,
+                    &mut workspace.recurrence_workers[..worker_count],
+                )?;
+            } else {
+                self.analyze_order_group(
+                    &workspace.spectra,
+                    nphi,
+                    spectrum_len,
+                    self.grid.phi0(),
+                    self.grid.ring_weights(),
+                    &workspace.theta_sin,
+                    &workspace.theta_cos,
+                    &workspace.ring_order_limits,
+                    arch,
+                    0,
+                    order_count,
+                    alm,
+                    &mut workspace.recurrence_workers[0],
+                )?;
             }
-            let coefficient_start = self
+        }
+        #[cfg(not(feature = "parallel"))]
+        {
+            let order_count = mmax + 1;
+            self.analyze_order_group(
+                &workspace.spectra,
+                nphi,
+                spectrum_len,
+                self.grid.phi0(),
+                self.grid.ring_weights(),
+                &workspace.theta_sin,
+                &workspace.theta_cos,
+                &workspace.ring_order_limits,
+                arch,
+                0,
+                order_count,
+                alm,
+                &mut workspace.recurrence_workers[0],
+            )?;
+        }
+        for l in 0..=lmax {
+            let index = self
                 .harmonics
-                .index(m, m)
-                .expect("every packed order starts at its diagonal degree");
+                .index(l, 0)
+                .expect("order zero contains every degree");
+            alm[index].im = 0.0;
+        }
+        Ok(())
+    }
+
+    #[cfg(feature = "parallel")]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The parallel analysis groups share plan geometry and split caller-owned outputs and scratch."
+    )]
+    fn analyze_order_groups_parallel(
+        &self,
+        spectra: &[Complex64],
+        nphi: usize,
+        spectrum_len: usize,
+        phi0: f64,
+        ring_weights: &[f64],
+        theta_sin: &[f64],
+        theta_cos: &[f64],
+        ring_order_limits: &[usize],
+        arch: pulp::Arch,
+        m_start: usize,
+        m_end: usize,
+        alm: &mut [Complex64],
+        recurrence: &mut [RecurrenceWorkspace],
+    ) -> Result<(), ShtError> {
+        let order_count = m_end - m_start;
+        if order_count <= 1 || recurrence.len() <= 1 {
+            return self.analyze_order_group(
+                spectra,
+                nphi,
+                spectrum_len,
+                phi0,
+                ring_weights,
+                theta_sin,
+                theta_cos,
+                ring_order_limits,
+                arch,
+                m_start,
+                m_end,
+                alm,
+                recurrence
+                    .first_mut()
+                    .expect("each analysis group has at least one recurrence workspace"),
+            );
+        }
+
+        let left_order_count = order_count.div_ceil(2);
+        let m_mid = m_start + left_order_count;
+        let coefficient_start = self
+            .harmonics
+            .index(m_start, m_start)
+            .expect("every packed order starts at its diagonal degree");
+        let coefficient_mid = self
+            .harmonics
+            .index(m_mid, m_mid)
+            .expect("the end of an order group starts the next order");
+        let coefficient_split = coefficient_mid - coefficient_start;
+        let (left_alm, right_alm) = alm.split_at_mut(coefficient_split);
+        let left_worker_count = recurrence.len().div_ceil(2);
+        let (left_recurrence, right_recurrence) = recurrence.split_at_mut(left_worker_count);
+
+        let (left_result, right_result) = rayon::join(
+            || {
+                self.analyze_order_groups_parallel(
+                    spectra,
+                    nphi,
+                    spectrum_len,
+                    phi0,
+                    ring_weights,
+                    theta_sin,
+                    theta_cos,
+                    ring_order_limits,
+                    arch,
+                    m_start,
+                    m_mid,
+                    left_alm,
+                    left_recurrence,
+                )
+            },
+            || {
+                self.analyze_order_groups_parallel(
+                    spectra,
+                    nphi,
+                    spectrum_len,
+                    phi0,
+                    ring_weights,
+                    theta_sin,
+                    theta_cos,
+                    ring_order_limits,
+                    arch,
+                    m_mid,
+                    m_end,
+                    right_alm,
+                    right_recurrence,
+                )
+            },
+        );
+        left_result?;
+        right_result
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The recurrence group uses plan geometry, grid weights and caller-owned worker scratch."
+    )]
+    fn analyze_order_group(
+        &self,
+        spectra: &[Complex64],
+        nphi: usize,
+        spectrum_len: usize,
+        phi0: f64,
+        ring_weights: &[f64],
+        theta_sin: &[f64],
+        theta_cos: &[f64],
+        ring_order_limits: &[usize],
+        arch: pulp::Arch,
+        m_start: usize,
+        m_end: usize,
+        alm: &mut [Complex64],
+        recurrence: &mut RecurrenceWorkspace,
+    ) -> Result<(), ShtError> {
+        let lmax = self.harmonics.lmax();
+        let mut coefficient_start = 0;
+        for m in m_start..m_end {
+            let coefficient_count = lmax - m + 1;
+            let coefficients = &mut alm[coefficient_start..coefficient_start + coefficient_count];
+            fill_epsilon(m, lmax, &mut recurrence.epsilon);
             let phase = if m == 0 {
                 Complex64::new(1.0, 0.0)
             } else {
@@ -233,20 +474,19 @@ impl ShtPlan {
                 theta_sin,
                 theta_cos,
                 self.sectoral_norms[m],
-                epsilon,
-                recurrence_previous,
-                recurrence_current,
-                recurrence_next,
-                recurrence_exponents,
+                &recurrence.epsilon,
+                &mut recurrence.previous,
+                &mut recurrence.current,
+                &mut recurrence.next,
+                &mut recurrence.exponents,
                 |l, ring_start, current, exponents| {
-                    let coefficient = &mut alm[coefficient_start + (l - m)];
-                    for (lane, &ring_weight) in self.grid.ring_weights()
-                        [ring_start..ring_start + current.len()]
+                    let coefficient = &mut coefficients[l - m];
+                    for (lane, &ring_weight) in ring_weights[ring_start..ring_start + current.len()]
                         .iter()
                         .enumerate()
                     {
                         let ring = ring_start + lane;
-                        if !active_rings[ring] {
+                        if m > ring_order_limits[ring] {
                             continue;
                         }
                         let spectrum_start = ring * spectrum_len;
@@ -258,14 +498,9 @@ impl ShtPlan {
                     Ok(())
                 },
             )?;
+            coefficient_start += coefficient_count;
         }
-        for l in 0..=lmax {
-            let index = self
-                .harmonics
-                .index(l, 0)
-                .expect("order zero contains every degree");
-            alm[index].im = 0.0;
-        }
+        debug_assert_eq!(coefficient_start, alm.len());
         Ok(())
     }
 
@@ -292,6 +527,13 @@ impl ShtPlan {
 
     fn check_workspace(&self, workspace: &ShtWorkspace) -> Result<(), ShtError> {
         let recurrence_scratch_len = self.grid.ntheta().min(LATITUDE_BLOCK_SIZE);
+        if workspace.ring_group_size == 0 {
+            return Err(ShtError::BufferLength {
+                buffer: "workspace latitude group size",
+                expected: 1,
+                actual: 0,
+            });
+        }
         check_len(
             "workspace Fourier spectra",
             self.spectrum_count,
@@ -302,11 +544,6 @@ impl ShtPlan {
             self.grid.nphi(),
             workspace.row.len(),
         )?;
-        check_len(
-            "workspace scalar recurrence factors",
-            self.recurrence_factor_count,
-            workspace.epsilon.len(),
-        )?;
         for (buffer, actual) in [
             ("workspace latitude sine values", workspace.theta_sin.len()),
             (
@@ -314,31 +551,51 @@ impl ShtPlan {
                 workspace.theta_cos.len(),
             ),
             (
-                "workspace active latitude rings",
-                workspace.active_rings.len(),
+                "workspace latitude order limits",
+                workspace.ring_order_limits.len(),
             ),
         ] {
             check_len(buffer, self.grid.ntheta(), actual)?;
         }
-        for (buffer, actual) in [
-            (
-                "workspace previous recurrence values",
-                workspace.recurrence_previous.len(),
-            ),
-            (
-                "workspace current recurrence values",
-                workspace.recurrence_current.len(),
-            ),
-            (
-                "workspace next recurrence values",
-                workspace.recurrence_next.len(),
-            ),
-            (
-                "workspace recurrence exponents",
-                workspace.recurrence_exponents.len(),
-            ),
-        ] {
-            check_len(buffer, recurrence_scratch_len, actual)?;
+        let expected_worker_count = self
+            .grid
+            .ntheta()
+            .div_ceil(workspace.ring_group_size.min(self.grid.ntheta()));
+        check_len(
+            "workspace recurrence worker groups",
+            expected_worker_count,
+            workspace.recurrence_workers.len(),
+        )?;
+        for recurrence in &workspace.recurrence_workers {
+            for (buffer, expected, actual) in [
+                (
+                    "workspace scalar recurrence factors",
+                    self.recurrence_factor_count,
+                    recurrence.epsilon.len(),
+                ),
+                (
+                    "workspace previous recurrence values",
+                    recurrence_scratch_len,
+                    recurrence.previous.len(),
+                ),
+                (
+                    "workspace current recurrence values",
+                    recurrence_scratch_len,
+                    recurrence.current.len(),
+                ),
+                (
+                    "workspace next recurrence values",
+                    recurrence_scratch_len,
+                    recurrence.next.len(),
+                ),
+                (
+                    "workspace recurrence exponents",
+                    recurrence_scratch_len,
+                    recurrence.exponents.len(),
+                ),
+            ] {
+                check_len(buffer, expected, actual)?;
+            }
         }
         Ok(())
     }
@@ -571,6 +828,70 @@ mod tests {
             for (actual, expected) in actual.iter().zip(&expected) {
                 assert!((*actual - *expected).norm() < 2e-13);
             }
+        }
+    }
+
+    #[cfg(feature = "parallel")]
+    #[test]
+    fn rayon_groups_match_one_thread_for_synthesis_and_analysis() {
+        let plan = make_plan(3, 2, 131, 9, 0.41);
+        let input_alm = coefficients(plan.harmonics());
+        let expected_map = analytic_map(&plan, &input_alm);
+        let one_thread = rayon::ThreadPoolBuilder::new()
+            .num_threads(1)
+            .build()
+            .unwrap();
+        let two_threads = rayon::ThreadPoolBuilder::new()
+            .num_threads(2)
+            .build()
+            .unwrap();
+        let mut one_thread_workspace = one_thread.install(|| plan.workspace()).unwrap();
+        let mut two_thread_workspace = two_threads.install(|| plan.workspace()).unwrap();
+        let mut one_thread_map = vec![0.0; plan.sample_count];
+        let mut two_thread_map = vec![0.0; plan.sample_count];
+
+        one_thread
+            .install(|| {
+                plan.synthesis_into(&input_alm, &mut one_thread_map, &mut one_thread_workspace)
+            })
+            .unwrap();
+        two_threads
+            .install(|| {
+                plan.synthesis_into(&input_alm, &mut two_thread_map, &mut two_thread_workspace)
+            })
+            .unwrap();
+        for (&one_thread, &two_threads) in one_thread_map.iter().zip(&two_thread_map) {
+            assert_close(two_threads, one_thread, 2e-14);
+        }
+        for (&actual, &expected) in two_thread_map.iter().zip(&expected_map) {
+            assert_close(actual, expected, 3e-14);
+        }
+
+        let mut one_thread_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        let mut two_thread_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        one_thread
+            .install(|| {
+                plan.analysis_into(
+                    &expected_map,
+                    &mut one_thread_alm,
+                    &mut one_thread_workspace,
+                )
+            })
+            .unwrap();
+        two_threads
+            .install(|| {
+                plan.analysis_into(
+                    &expected_map,
+                    &mut two_thread_alm,
+                    &mut two_thread_workspace,
+                )
+            })
+            .unwrap();
+        for (&one_thread, &two_threads) in one_thread_alm.iter().zip(&two_thread_alm) {
+            assert!((one_thread - two_threads).norm() < 2e-14);
+        }
+        for (&actual, &expected) in two_thread_alm.iter().zip(&input_alm) {
+            assert!((actual - expected).norm() < 2e-13);
         }
     }
 

@@ -29,3 +29,7 @@ rayon = { version = "1", optional = true }
 [features]
 default = ["parallel"]
 parallel = ["dep:rayon"]
+
+[[example]]
+name = "m1a_bench"
+required-features = ["parallel"]
