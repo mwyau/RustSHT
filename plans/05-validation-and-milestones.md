@@ -691,3 +691,52 @@ Native release timings used rustc 1.99.0, f64, T511 GL `512x1025`, `phi0=0.37`, 
 | Analysis | 8 | `54.108; 7.774` | `53.544; 4.808` | `-1.0%` |
 
 The analysis differences fall within the run variation, and synthesis is slower in both thread settings. Callgrind instruction counts were not collected because the whole-transform measurements did not meet the performance criterion. The block-skipping change was removed.
+
+### Scalar normal-range recurrence stage (M4, 2026-10-12)
+
+The f64 scalar recurrence now enters an ordinary-arithmetic stage after every latitude lane in its 64-ring block reaches exponent zero. It uses the existing SIMD three-term update without calling lane normalization while each previous/current pair remains within the existing `2^-400` to `2^400` range. A per-degree magnitude check returns the whole block to the scaled path when a lane pair crosses that range, before the next recurrence step. The transition uses the same recurrence operations and adds no workspace memory. This first stage retains the normalized epsilon recurrence; paired-degree coefficient transformation remains a separate experiment.
+
+The transition test uses order 255 and four latitudes. One near-polar lane begins with a negative binary exponent and reaches exponent zero during the recurrence; an interior lane remains in ordinary range. Every degree is checked against the retained scalar recurrence with relative error at most `2e-13`. The release T2047 scalar test also passed DUCC and closed-form comparisons on GL, CC and F1.
+
+Native release measurements used rustc 1.99.0, f64, AVX2/FMA dispatch, an AMD Ryzen 9 5950X, reused plans and workspaces, one warmup and five timed samples per operation. Each entry is the median and range of three run medians, in milliseconds. T511 and T1023 used GL `512x1025` and `1024x2049`; T127 used GL `128x257`:
+
+| Bandlimit | Operation | Threads | Before (median; range) | Staged (median; range) | Change | Estimated numeric arrays |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| 127 | Synthesis | 1 | `6.829; 0.134` | `6.349; 0.091` | `-7.0%` | `1.11 MiB` |
+| 127 | Synthesis | 8 | `3.586; 0.280` | `3.371; 0.074` | `-6.0%` | `1.11 MiB` |
+| 127 | Analysis | 1 | `5.863; 0.173` | `5.649; 0.120` | `-3.7%` | `1.11 MiB` |
+| 127 | Analysis | 8 | `3.177; 0.124` | `3.051; 0.050` | `-4.0%` | `1.11 MiB` |
+| 511 | Synthesis | 1 | `358.573; 1.131` | `344.432; 1.882` | `-3.9%` | `16.25 MiB` |
+| 511 | Synthesis | 8 | `55.687; 5.655` | `53.063; 1.673` | `-4.7%` | `16.25 MiB` |
+| 511 | Analysis | 1 | `320.139; 1.435` | `315.721; 1.094` | `-1.4%` | `16.25 MiB` |
+| 511 | Analysis | 8 | `49.656; 2.771` | `51.369; 7.307` | `+3.5%` | `16.25 MiB` |
+| 1023 | Synthesis | 1 | `2878.420; 15.965` | `2718.456; 27.871` | `-5.6%` | `64.43 MiB` |
+| 1023 | Synthesis | 8 | `470.642; 34.063` | `443.733; 18.029` | `-5.7%` | `64.43 MiB` |
+| 1023 | Analysis | 1 | `2590.039; 106.294` | `2376.549; 33.930` | `-8.2%` | `64.43 MiB` |
+| 1023 | Analysis | 8 | `415.100; 6.779` | `391.370; 7.145` | `-5.7%` | `64.43 MiB` |
+
+The T511 eight-thread analysis medians have overlapping run ranges and do not establish a slowdown. The other native comparisons improve by `1.4–8.2%`. The workspace footprint is unchanged. Callgrind 3.26.0 counted one-thread T127 synthesis and analysis together: instruction references fell from `259,840,696` to `241,482,840` (`-7.1%`). References attributed to `multiply_complex_scaled` remained `89,595,102`; the reduction came from recurrence range handling.
+
+The Python extension was rebuilt for the staged source and compared with `ducc0==0.41.0` at source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`. Python 3.11.15 and NumPy 2.4.6 were used. Every timing is the median of two run medians, with their range in parentheses. Rust plan methods reuse their plan and construct a workspace per call; procedural calls construct both plan and workspace:
+
+| Bandlimit | Operation | Threads | Plan before → staged | Procedural before → staged | DUCC before → staged | Plan speedup |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| 511 | Synthesis | 1 | `377.374 (0.112) → 345.362 (0.230)` | `385.920 (1.714) → 352.847 (3.204)` | `11.552 (0.056) → 11.667 (0.073)` | `8.5%` |
+| 511 | Synthesis | 8 | `64.312 (1.532) → 52.893 (1.173)` | `64.141 (11.509) → 59.464 (1.474)` | `1.852 (0.033) → 1.804 (0.005)` | `17.7%` |
+| 511 | Analysis | 1 | `334.200 (0.396) → 297.634 (0.270)` | `336.377 (0.086) → 299.457 (0.980)` | `11.930 (0.036) → 12.164 (0.017)` | `10.9%` |
+| 511 | Analysis | 8 | `54.438 (1.682) → 48.815 (2.176)` | `59.450 (2.721) → 47.977 (0.029)` | `1.675 (0.032) → 1.971 (0.029)` | `10.3%` |
+
+The staged T511 plan-to-DUCC ratios are `29.6x` and `29.3x` for synthesis, and `24.5x` and `24.8x` for analysis at one and eight threads. Synthesis maximum absolute/RMS/relative L2 error is `2.627e-14`/`7.674e-16`/`6.487e-14`; analysis error is `1.010e-14`/`2.281e-16`/`4.467e-14`. At T511, NumPy input-copy measurements were `0.052–0.085 ms` and output allocation was `0.001 ms`.
+
+At T1023 GL, the staged Python benchmark reported these medians and ranges of two run medians, in milliseconds:
+
+| Operation | Threads | Rust plan | Procedural Rust | DUCC | Plan-to-DUCC |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Synthesis | 1 | `2626.664 (16.403)` | `2619.677 (0.867)` | `113.304 (0.745)` | `23.2x` |
+| Synthesis | 8 | `426.694 (9.767)` | `435.032 (14.290)` | `16.753 (0.646)` | `25.5x` |
+| Analysis | 1 | `2286.198 (7.162)` | `2286.934 (0.771)` | `117.131 (1.400)` | `19.5x` |
+| Analysis | 8 | `373.047 (1.153)` | `375.066 (7.508)` | `16.120 (0.284)` | `23.1x` |
+
+Synthesis error was `1.459e-13` maximum absolute, `2.748e-15` RMS and `1.161e-13` relative L2; analysis error was `2.109e-14`, `2.208e-16` and `8.642e-14`. These errors matched at one and eight threads. T1023 NumPy input copies took `0.145–1.195 ms`; output allocation took `0.001–0.002 ms`.
+
+Rust 1.89 passed the focused scaled-to-normal transition test. Rust 1.99 all-feature tests passed 78 library tests and 10 f32 integration tests, with seven high-bandlimit tests ignored; no-default-feature tests passed 75 library tests and the same 10 f32 tests. The release T2047 scalar DUCC/analytic test passed. Formatting, workspace Clippy with warnings denied, and all eight Python tests passed. The existing spin-3/4 regression test passed.

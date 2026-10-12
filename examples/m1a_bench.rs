@@ -23,10 +23,17 @@ fn measure(mut operation: impl FnMut()) -> Duration {
 }
 
 fn main() {
-    let lmax = 511;
+    let mut arguments = std::env::args().skip(1);
+    let lmax = arguments
+        .next()
+        .map(|value| value.parse().expect("lmax must be an integer"))
+        .unwrap_or(511);
     let ntheta = lmax + 1;
     let nphi = 2 * lmax + 3;
-    let rayon_threads = 8;
+    let rayon_threads = arguments
+        .next()
+        .map(|value| value.parse().expect("thread count must be an integer"))
+        .unwrap_or(8);
     let one_thread_pool = rayon::ThreadPoolBuilder::new()
         .num_threads(1)
         .build()

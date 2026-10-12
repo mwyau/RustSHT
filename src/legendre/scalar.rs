@@ -218,6 +218,7 @@ where
         let mut previous = previous;
         let mut current = current;
         let mut next = next;
+        let mut normal_range = false;
         for ring in 0..sin_theta.len() {
             let sectoral = scaled_power(sin_theta[ring], m)?;
             let sectoral = normalize_value(
@@ -259,7 +260,13 @@ where
                     / epsilon[l + 1];
             }
 
-            normalize_pair_lanes(current, next, exponents)?;
+            if normal_range {
+                if pair_lanes_need_scaling(current, next) {
+                    normal_range = normalize_pair_lanes(current, next, exponents)?;
+                }
+            } else {
+                normal_range = normalize_pair_lanes(current, next, exponents)?;
+            }
             std::mem::swap(&mut previous, &mut current);
             std::mem::swap(&mut current, &mut next);
         }
@@ -271,9 +278,10 @@ fn normalize_pair_lanes(
     previous: &mut [f64],
     current: &mut [f64],
     exponents: &mut [i64],
-) -> Result<(), ShtError> {
+) -> Result<bool, ShtError> {
     debug_assert_eq!(previous.len(), current.len());
     debug_assert_eq!(previous.len(), exponents.len());
+    let mut normal_range = true;
     for ring in 0..previous.len() {
         let mut previous_value = ScaledValue {
             mantissa: previous[ring],
@@ -287,8 +295,25 @@ fn normalize_pair_lanes(
         previous[ring] = previous_value.mantissa;
         current[ring] = current_value.mantissa;
         exponents[ring] = current_value.exponent;
+        normal_range &=
+            exponents[ring] == 0 && pair_is_in_normal_range(previous[ring], current[ring]);
     }
-    Ok(())
+    Ok(normal_range)
+}
+
+#[inline(always)]
+fn pair_is_in_normal_range(previous: f64, current: f64) -> bool {
+    let maximum = previous.abs().max(current.abs());
+    maximum <= BIG && (maximum == 0.0 || maximum >= SMALL)
+}
+
+#[inline(always)]
+fn pair_lanes_need_scaling(previous: &[f64], current: &[f64]) -> bool {
+    debug_assert_eq!(previous.len(), current.len());
+    previous
+        .iter()
+        .zip(current)
+        .any(|(&previous, &current)| !pair_is_in_normal_range(previous, current))
 }
 
 /// Multiplies a complex value by a scaled recurrence value without overflow.
@@ -710,6 +735,65 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn scaled_to_normal_transition_matches_scalar_reference() {
+        let m = 255;
+        let lmax = 768;
+        let theta: [f64; 4] = [0.15, 0.2, 0.3, 0.8];
+        let sin_theta: Vec<_> = theta.iter().map(|theta| theta.sin()).collect();
+        let cos_theta: Vec<_> = theta.iter().map(|theta| theta.cos()).collect();
+        let norms = sectoral_normalizations(m).unwrap();
+        let mut epsilon = vec![0.0; lmax + 1];
+        fill_epsilon(m, lmax, &mut epsilon);
+        let mut previous = vec![0.0; theta.len()];
+        let mut current = vec![0.0; theta.len()];
+        let mut next = vec![0.0; theta.len()];
+        let mut exponents = vec![0; theta.len()];
+        let expected: Vec<_> = theta.iter().map(|&theta| values(m, lmax, theta)).collect();
+        let mut saw_scaled = [false; 4];
+        let mut saw_normal_after_scaled = [false; 4];
+
+        for_each_y_lm_dispatched(
+            Arch::new(),
+            m,
+            lmax,
+            &sin_theta,
+            &cos_theta,
+            norms[m],
+            &epsilon,
+            &mut previous,
+            &mut current,
+            &mut next,
+            &mut exponents,
+            |l, _, mantissas, exponents| {
+                for lane in 0..mantissas.len() {
+                    let observed = scale_binary(mantissas[lane], exponents[lane]);
+                    let reference = expected[lane][l - m];
+                    let relative_error = if reference == 0.0 {
+                        if observed == 0.0 { 0.0 } else { f64::INFINITY }
+                    } else {
+                        (observed - reference).abs() / reference.abs()
+                    };
+                    assert!(
+                        relative_error <= 2e-13,
+                        "m={m}, l={l}, ring={lane}, observed={observed:.16e}, reference={reference:.16e}, relative error={relative_error:.3e}"
+                    );
+                    if exponents[lane] < 0 {
+                        saw_scaled[lane] = true;
+                    } else if saw_scaled[lane] {
+                        saw_normal_after_scaled[lane] = true;
+                    }
+                }
+                Ok(())
+            },
+        )
+        .unwrap();
+
+        assert!(saw_scaled[0]);
+        assert!(saw_normal_after_scaled[0]);
+        assert!(!saw_scaled[3]);
     }
 
     #[test]
