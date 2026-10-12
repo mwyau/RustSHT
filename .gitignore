@@ -1,0 +1,19 @@
+# Rust/Cargo build artifacts
+/target/
+**/*.rs.bk
+
+# Python binding build artifacts (future)
+.venv/
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+*.dylib
+*.egg-info/
+dist/
+build/
+
+# Editor and system
+.DS_Store
+.idea/
+.vscode/

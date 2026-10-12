@@ -1,0 +1,16 @@
+[package]
+name = "rustsht-python"
+version = "0.1.0-dev.0"
+edition = "2024"
+rust-version = "1.85"
+authors = ["Albert M. W. Yau"]
+license = "GPL-2.0-or-later"
+publish = false
+
+[lib]
+name = "_rustsht"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.29", features = ["abi3-py311"] }
+rustsht = { path = ".." }

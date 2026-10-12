@@ -1,0 +1,29 @@
+[package]
+name = "rustsht"
+version = "0.1.0-dev.0"
+edition = "2024"
+rust-version = "1.85"
+authors = ["Albert M. W. Yau"]
+license = "GPL-2.0-or-later"
+description = "Rust spherical harmonic transforms library"
+repository = "https://github.com/mwyau/RustSHT"
+readme = "README.md"
+keywords = ["spherical-harmonics", "sht", "numerics", "atmosphere"]
+categories = ["science"]
+
+exclude = [
+    "/AGENTS.md",
+    "/plans/",
+]
+
+[workspace]
+members = ["python"]
+resolver = "3"
+
+[dependencies]
+rustfft = "6.4"
+rayon = { version = "1", optional = true }
+
+[features]
+default = ["parallel"]
+parallel = ["dep:rayon"]
