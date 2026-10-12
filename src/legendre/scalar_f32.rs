@@ -20,6 +20,7 @@
 use std::f32::consts::PI;
 
 use num_complex::Complex32;
+use pulp::{Arch, Simd, WithSimd};
 
 use crate::error::ShtError;
 use crate::legendre::LATITUDE_BLOCK_SIZE;
@@ -79,6 +80,7 @@ pub(crate) fn fill_epsilon(m: usize, lmax: usize, output: &mut [f32]) {
     reason = "The recurrence receives grid lanes and caller-owned recurrence scratch explicitly."
 )]
 pub(crate) fn for_each_y_lm_dispatched<F>(
+    arch: Arch,
     m: usize,
     lmax: usize,
     sin_theta: &[f32],
@@ -96,15 +98,83 @@ where
 {
     debug_assert_eq!(sin_theta.len(), cos_theta.len());
     debug_assert!(epsilon.len() > lmax);
+    let scratch_len = sin_theta.len().min(LATITUDE_BLOCK_SIZE);
+    debug_assert!(previous.len() >= scratch_len);
+    debug_assert!(current.len() >= scratch_len);
+    debug_assert!(next.len() >= scratch_len);
+    debug_assert!(exponents.len() >= scratch_len);
+
     for ring_start in (0..sin_theta.len()).step_by(LATITUDE_BLOCK_SIZE) {
         let ring_end = (ring_start + LATITUDE_BLOCK_SIZE).min(sin_theta.len());
         let block_len = ring_end - ring_start;
-        let mut previous = &mut previous[..block_len];
-        let mut current = &mut current[..block_len];
-        let mut next = &mut next[..block_len];
-        let exponents = &mut exponents[..block_len];
-        for lane in 0..block_len {
-            let sectoral = scaled_power(sin_theta[ring_start + lane], m)?;
+        arch.dispatch(ForEachYlm32 {
+            ring_start,
+            m,
+            lmax,
+            sin_theta: &sin_theta[ring_start..ring_end],
+            cos_theta: &cos_theta[ring_start..ring_end],
+            sectoral_norm,
+            epsilon,
+            previous: &mut previous[..block_len],
+            current: &mut current[..block_len],
+            next: &mut next[..block_len],
+            exponents: &mut exponents[..block_len],
+            visit: &mut visit,
+        })?;
+    }
+    Ok(())
+}
+
+struct ForEachYlm32<'a, F> {
+    ring_start: usize,
+    m: usize,
+    lmax: usize,
+    sin_theta: &'a [f32],
+    cos_theta: &'a [f32],
+    sectoral_norm: f32,
+    epsilon: &'a [f32],
+    previous: &'a mut [f32],
+    current: &'a mut [f32],
+    next: &'a mut [f32],
+    exponents: &'a mut [i64],
+    visit: F,
+}
+
+impl<F> WithSimd for ForEachYlm32<'_, F>
+where
+    F: FnMut(usize, usize, &[f32], &[i64]) -> Result<(), ShtError>,
+{
+    type Output = Result<(), ShtError>;
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let ForEachYlm32 {
+            ring_start,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            epsilon,
+            previous,
+            current,
+            next,
+            exponents,
+            mut visit,
+        } = self;
+        debug_assert!(m <= lmax);
+        debug_assert_eq!(sin_theta.len(), cos_theta.len());
+        debug_assert_eq!(sin_theta.len(), previous.len());
+        debug_assert_eq!(sin_theta.len(), current.len());
+        debug_assert_eq!(sin_theta.len(), next.len());
+        debug_assert_eq!(sin_theta.len(), exponents.len());
+        debug_assert!(epsilon.len() > lmax);
+
+        let mut previous = previous;
+        let mut current = current;
+        let mut next = next;
+        for lane in 0..sin_theta.len() {
+            let sectoral = scaled_power(sin_theta[lane], m)?;
             let value = normalize_value(
                 sectoral.mantissa * sectoral_norm * if m.is_multiple_of(2) { 1.0 } else { -1.0 },
                 sectoral.exponent,
@@ -113,22 +183,43 @@ where
             current[lane] = value.mantissa;
             exponents[lane] = value.exponent;
         }
+
         for l in m..=lmax {
             visit(l, ring_start, current, exponents)?;
             if l == lmax {
                 break;
             }
-            for lane in 0..block_len {
-                let ring = ring_start + lane;
-                next[lane] = (cos_theta[ring] * current[lane] - epsilon[l] * previous[lane])
+
+            let epsilon_l = simd.splat_f32s(epsilon[l]);
+            let epsilon_next = simd.splat_f32s(epsilon[l + 1]);
+            let (current_vectors, current_tail) = S::as_simd_f32s(current);
+            let (previous_vectors, previous_tail) = S::as_simd_f32s(previous);
+            let (cos_vectors, cos_tail) = S::as_simd_f32s(cos_theta);
+            let (next_vectors, next_tail) = S::as_mut_simd_f32s(next);
+            debug_assert_eq!(current_vectors.len(), previous_vectors.len());
+            debug_assert_eq!(current_vectors.len(), cos_vectors.len());
+            debug_assert_eq!(current_vectors.len(), next_vectors.len());
+            for block in 0..current_vectors.len() {
+                let degree_term = simd.mul_f32s(epsilon_l, previous_vectors[block]);
+                let latitude_term = simd.mul_f32s(cos_vectors[block], current_vectors[block]);
+                next_vectors[block] =
+                    simd.div_f32s(simd.sub_f32s(latitude_term, degree_term), epsilon_next);
+            }
+            debug_assert_eq!(current_tail.len(), previous_tail.len());
+            debug_assert_eq!(current_tail.len(), cos_tail.len());
+            debug_assert_eq!(current_tail.len(), next_tail.len());
+            for index in 0..current_tail.len() {
+                next_tail[index] = (cos_tail[index] * current_tail[index]
+                    - epsilon[l] * previous_tail[index])
                     / epsilon[l + 1];
             }
+
             normalize_pair_lanes(current, next, exponents)?;
             std::mem::swap(&mut previous, &mut current);
             std::mem::swap(&mut current, &mut next);
         }
+        Ok(())
     }
-    Ok(())
 }
 
 pub(crate) fn multiply_complex_scaled(value: Complex32, factor: f32, exponent: i64) -> Complex32 {
@@ -336,4 +427,79 @@ pub(crate) fn scale_binary(mut value: f32, mut exponent: i64) -> f32 {
         }
     }
     value * 2.0_f32.powi(exponent as i32)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn values_over_rings(arch: Arch, m: usize, lmax: usize, theta: &[f32]) -> Vec<Vec<f32>> {
+        let sin_theta = theta.iter().map(|value| value.sin()).collect::<Vec<_>>();
+        let cos_theta = theta.iter().map(|value| value.cos()).collect::<Vec<_>>();
+        let mut epsilon = vec![0.0; lmax + 1];
+        fill_epsilon(m, lmax, &mut epsilon);
+        let scratch_len = theta.len().min(LATITUDE_BLOCK_SIZE);
+        let mut previous = vec![0.0; scratch_len];
+        let mut current = vec![0.0; scratch_len];
+        let mut next = vec![0.0; scratch_len];
+        let mut exponents = vec![0; scratch_len];
+        let mut result = vec![vec![0.0; theta.len()]; lmax - m + 1];
+        let sectoral_norm = sectoral_normalizations(m).unwrap()[m];
+        for_each_y_lm_dispatched(
+            arch,
+            m,
+            lmax,
+            &sin_theta,
+            &cos_theta,
+            sectoral_norm,
+            &epsilon,
+            &mut previous,
+            &mut current,
+            &mut next,
+            &mut exponents,
+            |degree, ring_start, values, exponents| {
+                for lane in 0..values.len() {
+                    result[degree - m][ring_start + lane] =
+                        scale_binary(values[lane], exponents[lane]);
+                }
+                Ok(())
+            },
+        )
+        .unwrap();
+        result
+    }
+
+    #[test]
+    fn runtime_simd_recurrence_matches_scalar_fallback_across_blocks_and_tails() {
+        let mut theta = (0..129)
+            .map(|ring| PI * (ring as f32 + 0.5) / 129.0)
+            .collect::<Vec<_>>();
+        theta[0] = 1.0e-6;
+        theta[1] = 1.0e-3;
+        theta[127] = PI - 1.0e-3;
+        theta[128] = PI - 1.0e-6;
+
+        for m in [0, 1, 2, 31, 96] {
+            let expected = values_over_rings(Arch::Scalar, m, 127, &theta);
+            let actual = values_over_rings(Arch::new(), m, 127, &theta);
+            for (degree_offset, (expected_values, actual_values)) in
+                expected.iter().zip(&actual).enumerate()
+            {
+                for (ring, (&expected, &actual)) in
+                    expected_values.iter().zip(actual_values).enumerate()
+                {
+                    assert!(
+                        actual.is_finite(),
+                        "m={m}, l={}, ring={ring}: non-finite result {actual}",
+                        m + degree_offset
+                    );
+                    assert!(
+                        (actual - expected).abs() <= 5.0e-6,
+                        "m={m}, l={}, ring={ring}: actual {actual:.9e}, scalar {expected:.9e}",
+                        m + degree_offset
+                    );
+                }
+            }
+        }
+    }
 }
