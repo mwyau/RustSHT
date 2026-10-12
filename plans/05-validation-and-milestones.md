@@ -31,16 +31,20 @@ For GL spin-0 through T255, start with provisional relative L2 error `<=5e-11` f
 | Tier | Example | Gate |
 | --- | --- | --- |
 | Basic | T0, T1, T5, T42 | Normalization, shapes, signs, invalid inputs |
-| CI | T127, T255 | All supported spins/operations on available grids |
-| High | T511, T1023 | Stable recurrence, high-spin and CC/F1 analysis |
-| Extended | T2047, T4095 | High-bandlimit comparisons on suitably provisioned hosts |
+| CI | T127, T255 | Required spins 0–2; current spin-3/4 regression suite |
+| High | T511, T1023 | Scalar and spin 1 first, then spin 2; preserve recorded spin-3/4 limits |
+| Extended | T2047, T4095 | Opt-in high-bandlimit comparisons for spins 0–2; retain current spin-3/4 coverage |
 | Stress | T8191+ | Explicit opt-in, track peak memory and numerical behavior |
 
 Stress tiers are **not release promises**. Publish a tested maximum for each `(grid, dtype, spin/mode, operation)` rather than asserting a uniform numerical maximum from one case. Test minimum permitted ring count and oversampled ring count separately.
 
+## Spin priorities
+
+Scalar and spin-1 correctness, performance and release coverage take priority. Spin 1 covers horizontal vector winds, gradients, E/B decomposition, divergence and vorticity workflows. Optimize spin 2 after spins 0 and 1; spins 0–2 remain the required parity set. The current API and tested operation limit remains spin 4. Preserve spin-3/4 behavior and run its existing regression tests after shared-kernel changes, but defer new specialization and high-bandlimit expansion. Do not implement spin 5+ without new authorization.
+
 ## Milestones (approved D11 ordering)
 
-**M0 — Project setup:** GPL license, citations, AGENTS.md, plans, Cargo scaffold and CI configuration. No SHT code yet.
+**M0 — Project setup:** GPL license, citations, AGENTS.md, plans, Cargo scaffold and CI configuration.
 
 **M1 — Complete GL operation family**
 
@@ -53,23 +57,22 @@ Stress tiers are **not release promises**. Publish a tested maximum for each `(g
 - **M2a:** CC geometry and analysis/adjoint-analysis prepared-CC resampling; test every GL-supported operator on CC, including near-minimal ring counts.
 - **M2b:** F1 staggered geometry and its resampling/adjoint; repeat the full operation matrix.
 
-**M3 — High-bandlimit acceptance:** Complete all-grid f64 parity, analytic/DUCC comparisons and actual tested degree/spin limits at T511/T1023 and opt-in T2047+. Fix critical numerical defects before focusing on speed.
+**M3 — High-bandlimit acceptance:** Complete all-grid f64 parity for spins 0–2, analytic/DUCC comparisons and actual tested degree/spin limits at T511/T1023 and opt-in T2047+. Preserve the current spin-3/4 operation limit and regression coverage without expanding its high-bandlimit range.
 
-**M4 — Performance tuning and dtype:** Tune the SIMD, coarse threading and scratch layout implemented during M1; implement and verify f32 and report reproducible DUCC benchmarks.
+**M4 — Performance tuning and dtype:** Optimize scalar and spin-1 SIMD, recurrence, accumulation, scheduling and scratch layout first, then spin 2. Verify f32 at affordable bandlimits and report reproducible DUCC benchmarks. Run current spin-3/4 regression tests after shared-kernel changes; defer new spin-3/4 specialization and high-bandlimit expansion.
 
-**M5 — Python binding:** Optional PyO3/NumPy numerical API; plan-oriented plus procedural functions, packaging, GIL release, shape/dtype tests and wheel license review.
+**M5 — Python binding:** The PyO3/NumPy plan and procedural APIs are implemented. Complete safe borrowed inputs, reusable workspace and caller-provided output work, then maintain packaging, GIL, shape/dtype and wheel-license checks.
 
 **M6 — spharmgrid:** Optional RustSHT backend matching its scalar/derivative/vector adapter, with independent parity, thread behavior and packaging review. Keep DUCC default until tested.
 
 ## Long autonomous implementation sessions
 
-Start from current `main` on a **new feature branch**, using [00](00-scope-and-decisions.md) without routine human checkpoints:
+For a new implementation session, start from `main` on a feature branch. Continue an active session on its existing branch. Use [00](00-scope-and-decisions.md) without routine human checkpoints. M1 and M2 operation work and the recorded M3 checks are implemented; M4 performance tuning remains active, while the M5 Python API exists and has additional performance work outstanding.
 
-1. Establish normalization/phase and implement **M1a**: DUCC-derived GL geometry, scalar f64 S/A, public plan, RustFFT with verified in-tree real-input adapter, reusable scratch, scalar-reference tests, `pulp` SIMD recurrence, coarse Rayon scheduling and initial release benchmarks.
-2. Implement **M1b**: GL spin 1/2 STANDARD, E/B and applicable derivative/gradient synthesis; then **M1c**: STANDARD adjoints and derivative/gradient adjoints, with independent identities.
-3. Once GL tests pass, complete **M2a CC** and **M2b F1** on the same recurrence engine, including CC/F1 prepared-CC meridional resampling and its adjoint.
-4. Run affordable **M3** high-degree checks. If possible continue with **M4** f32 and tuning existing SIMD/thread scheduling, comparing AVX2 against AVX-512 on suitable hosts; proceed to **M5** Python functions/plan and **M6** spharmgrid adapter only when earlier work is verified.
-5. Commit after each independently functioning, tested increment, then move on. Run relevant format, lint and numerical tests before commits, plus full suites periodically. Do not add unfinished placeholders, weaken tests, create temporary GitHub Actions jobs or commit large generated fixtures. Skip resource-intensive optional stress/benchmark tests with an explicit note rather than blocking other work. End with branch and commit list, operators/grids/spins/degrees tested, reference revision, command results, blockers and skipped checks. Push only when explicitly authorized for that session; do not merge into `main`.
+1. Continue scalar and spin-1 performance work, then optimize spin 2. Use pinned-DUCC comparisons, independent analytic checks and the spin-3/4 regression suite for shared-kernel changes.
+2. Complete remaining M4 validation and f32 checks at affordable bandlimits. Compare AVX2/FMA with AVX-512 only on hardware that executes the relevant ISA.
+3. Complete the remaining M5 Python input, workspace and output-reuse work, then proceed to the optional M6 spharmgrid adapter when numerical behavior and packaging are verified.
+4. Commit each independently functioning, tested increment. Run relevant formatting, lint and numerical checks before commits, plus full suites periodically. Do not add unfinished placeholders, weaken tests, create temporary GitHub Actions jobs or commit large generated fixtures. Skip resource-intensive optional stress/benchmark tests with an explicit note rather than blocking other work. End with branch and commit list, operators/grids/spins/degrees tested, reference revision, command results, blockers and skipped checks. Push only when explicitly authorized for that session; do not merge into `main`.
 
 ## Required evidence for each merged numerical milestone
 

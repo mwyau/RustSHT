@@ -15,6 +15,7 @@ Implement high-bandlimit SHT algorithms used by DUCC in an independent **RustSHT
 | D13 | **GL/CC/F1 parity is the release objective**, reaffirmed 2026-10-11 | All three grids must pass the same supported operator/spin test matrix and explicit high-bandlimit checks before claiming full scope. |
 | D14 | **Rust 1.89 minimum**, approved 2026-10-11 | Stable AVX-512 target features and intrinsics, with runtime CPU checks and a portable fallback. |
 | D15 | **Long autonomous implementation sessions**, approved 2026-10-11 | Work on a new feature branch through as many independently verified milestones as possible, preserving GL-first ordering. |
+| D22 | **Scalar and low-spin performance priority**, approved 2026-10-12 | Optimize scalar and spin-1 transforms first, then spin 2. Preserve spin-3/4 support and regression coverage without expanding those implementations; do not add spin 5+ without new authorization. |
 
 ### D11 rationale
 
@@ -23,6 +24,10 @@ A scalar-only implementation on all grids would defer spin recurrence, component
 ### D12 rationale
 
 Implement the algorithms in Rust using published literature and DUCC for behavioral comparison. DUCC source-code copying or direct translation, if it occurs, requires preserving its actual notices and tracking the original version; citing an algorithm does not itself transfer source copyright.
+
+### D22 rationale
+
+Scalar transforms support atmospheric scalar fields. Spin 1 supports horizontal vector winds, gradients, E/B decomposition, divergence and vorticity workflows. Spin 2 remains an important symmetric trace-free tensor operation and follows scalar and spin-1 optimization. The required parity set is spins 0–2. The current API and tested operation limit includes spin 4, but new spin-3/4 specialization and high-bandlimit expansion are deferred. Keep their existing implementation and regression tests, including when shared kernels change. Spin 5 and above require new authorization.
 
 ## Working engineering defaults (not yet final)
 
@@ -34,12 +39,12 @@ Implement the algorithms in Rust using published literature and DUCC for behavio
 
 ## Selected implementation defaults (2026-10-11)
 
-These choices guide implementation without routine confirmation. Revise them when implementation evidence, tests or a concrete downstream need supports a change; record why. The D02 operation limit was set to spin 4 on 2026-10-12 after spin 3 and 4 passed analytic and DUCC checks for the full operation family on GL, CC and F1 at `lmax=spin`. Later checks cover sparse STANDARD synthesis through T2047 and selected exact-analysis coefficients through T1023 on all three grids. The supporting measurements are recorded in [05](05-validation-and-milestones.md). Higher spins require the same validation before this limit changes.
+These choices guide implementation without routine confirmation. Revise them when implementation evidence, tests or a concrete downstream need supports a change; record why. The D02 operation limit was set to spin 4 on 2026-10-12 after spin 3 and 4 passed analytic and DUCC checks for the full operation family on GL, CC and F1 at `lmax=spin`. Later checks cover sparse STANDARD synthesis through T2047 and selected exact-analysis coefficients through T1023 on all three grids. The supporting measurements are recorded in [05](05-validation-and-milestones.md). This operation limit does not change the D22 optimization order or authorize spin 5+.
 
 | ID | Selected choice | Consequence |
 | --- | --- | --- |
 | D01 | Idiomatic Rust `ShtPlan`; DUCC-familiar Python functions | Plan contains grid, bandlimits and spin; use explicit operation/mode-specific methods. No mode in `HarmonicSpec` or public kernel trait hierarchy. |
-| D02 | Required parity spins: 0, 1 and 2; current operation limit is spin 4 | Spin 3 and 4 passed all-grid operation checks at `lmax=spin`, sparse synthesis through T2047 and selected exact-analysis coefficient checks through T1023; spin 5 and above remain unsupported pending separate verification. |
+| D02 | Required parity spins: 0, 1 and 2; current operation limit is spin 4 | Spin 3 and 4 passed all-grid operation checks at `lmax=spin`, sparse synthesis through T2047 and selected exact-analysis coefficient checks through T1023; spin 5 and above remain unsupported and require new authorization. |
 | D03 | f64 first, f32 after f64 all-grid correctness | Verify f32 separately, particularly at high bandlimits. |
 | D04 | Private real-FFT adapter over RustFFT | For even longitude lengths pack pairs of real samples into a half-length complex FFT, then reconstruct the nonnegative Hermitian spectrum. Invert for synthesis. Use full-length complex RustFFT for odd lengths initially. No RealFFT dependency or FFT butterflies. |
 | D05 | Independent GPL-2.0-or-later Rust/Python packages | Keep spharmgrid independent, with a separately packaged optional backend; review combined distribution before release. |
