@@ -637,3 +637,18 @@ The same zero-exponent shortcut was tested in f32, then removed. Its bitwise ref
 With the final source, Rust 1.99 all-features tests pass 77 library tests and 10 f32 integration tests, with seven opt-in high-bandlimit tests ignored. No-default-features tests pass 74 library tests and the same 10 f32 tests. Rust 1.89 passes the new binary-scaling regression test. Formatting and all-feature Clippy with warnings denied pass; `uv run pytest python/tests` passes all eight tests.
 
 With the final source, Rust 1.99 all-features tests pass 77 library tests and 10 f32 integration tests, with seven opt-in high-bandlimit tests ignored. No-default-features tests pass 74 library tests and the same 10 f32 tests. Rust 1.89 passes the new binary-scaling regression test. Formatting and all-feature Clippy with warnings denied pass; `uv run pytest python/tests` passes all eight tests.
+
+### Fused scalar synthesis accumulation trial (M4, 2026-10-12)
+
+I prototyped a `YlmVisitor` path that accumulated scalar synthesis values across latitude lanes with `pulp` multiply-adds. The fast branch required zero recurrence exponents, normal recurrence values, and normal-range products; scaled lanes and blocks with polar-inactive rings used `multiply_complex_scaled` in scalar code. Per-worker real and imaginary lanes reused the existing Fourier scratch size. The implementation passed the T255 scalar DUCC and analytic checks, all 10 f32 integration tests, and a T127 Python comparison with `ducc0==0.41.0` at revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`. T127 synthesis maximum absolute/RMS/relative L2 error was `4.302e-16`/`3.681e-17`/`1.243e-14`; analysis error was `3.490e-15`/`2.189e-16`/`1.046e-14`.
+
+The native release benchmark used rustc 1.99.0, f64, T511 GL `512x1025`, `phi0=0.37`, an AMD Ryzen 9 5950X with AVX2/FMA, reused plans/workspaces, one warmup and five timed samples per operation. The before and trial values are three run medians, their median and range, in milliseconds:
+
+| Operation | Threads | Before | Fused trial | Change |
+| --- | ---: | ---: | ---: | ---: |
+| Scalar synthesis | 1 | `378.752, 405.141, 382.180` (`382.180`; `26.389`) | `504.780, 505.291, 505.042` (`505.042`; `0.511`) | `+32.1%` |
+| Scalar synthesis | 8 | `69.452, 70.510, 67.089` (`69.452`; `3.421`) | `82.522, 79.422, 79.839` (`79.839`; `3.100`) | `+15.0%` |
+| Scalar analysis | 1 | `337.745, 348.843, 342.813` (`342.813`; `11.098`) | `334.373, 336.556, 335.874` (`335.874`; `2.183`) | `-2.0%` |
+| Scalar analysis | 8 | `61.920, 60.858, 51.921` (`60.858`; `9.999`) | `54.552, 50.450, 52.486` (`52.486`; `4.102`) | `-13.8%` |
+
+Callgrind 3.26.0 counted one T127 GL f64 synthesis after plan and workspace setup. Instruction references fell from `134,680,957` to `96,449,265` (`-28.4%`). In the baseline profile, the scalar callback accounted for `92,125,424` inclusive references and `multiply_complex_scaled` for `55,416,586`. In the trial, `accumulate_scalar_synthesis` accounted for `48,899,366`, `normalize_pair_lanes` for `31,472,256`, and `multiply_complex_scaled` for `2,434,112`; these inclusive counts overlap. The lower instruction count did not reduce native runtime. The analysis timings do not isolate the scratch-layout change from the visitor change; the eight-thread ranges overlap, and the one-thread change is small. I removed the trial and retained the existing scalar callback and complex scratch layout.
