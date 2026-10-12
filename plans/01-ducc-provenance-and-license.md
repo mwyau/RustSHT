@@ -7,6 +7,7 @@ The README cites:
 1. Reinecke and Seljebotn (2013), *Libsharp – spherical harmonic transforms revisited*, [doi:10.1051/0004-6361/201321494](https://doi.org/10.1051/0004-6361/201321494): isolatitude SHT, spin and CPU-oriented transform methods.
 2. Ishioka (2018), *A New Recurrence Formula for Efficient Computation of Spherical Harmonic Transform*, [doi:10.2151/jmsj.2018-019](https://doi.org/10.2151/jmsj.2018-019): FMA-friendly associated-Legendre recurrence and high-bandlimit stability.
 3. Reinecke, Belkner and Carron (2023), *Improved cosmic microwave background (de-)lensing using general spherical harmonic transforms*, [doi:10.1051/0004-6361/202346717](https://doi.org/10.1051/0004-6361/202346717): general-grid transforms, adjoints and NUFFT applications.
+4. Waldvogel (2006), *Fast Construction of the Fejér and Clenshaw–Curtis Quadrature Rules*, [doi:10.1007/s10543-006-0045-4](https://doi.org/10.1007/s10543-006-0045-4): FFT-based CC/F1 quadrature construction cited in DUCC's `get_gridweights`.
 
 The 2023 paper is **not by itself a specification for high-bandlimit CC/F1 exact analysis**. Use the actual DUCC implementation and tests to define that specific behavior. Earlier libpsht history need not be cited in the short README.
 

@@ -2,7 +2,7 @@
 
 ## Public/private boundary
 
-Keep `ShtPlan` immutable with its FFT plans, precomputed recurrence coefficients and selected dispatch function. `ShtWorkspace` owns mutable scratch per invocation or worker; no global mutable state. Prefer internal concrete kernel implementations and `pub(crate)` helpers over public abstraction traits. The Rust library starts as a single crate; add a Python workspace package only when bindings are implemented. The native API uses borrowed slices with checked shapes and `Result`-returning operations, and does not know about Xarray or geographic wind units. See [03](03-api-and-python.md) for the proposed modules.
+Keep `ShtPlan` immutable with its FFT plans, precomputed recurrence coefficients and selected dispatch function. `ShtWorkspace` owns mutable scratch per invocation or worker; no global mutable state. Prefer internal concrete kernel implementations and `pub(crate)` helpers over public abstraction traits. The workspace already has one native numerical crate and one Python binding crate. Implement Python numerical bindings after native correctness; do not add further crates without a concrete need. The native API uses borrowed slices with checked shapes and `Result`-returning operations, and does not know about Xarray or geographic wind units. See [03](03-api-and-python.md) for the proposed modules.
 
 ## Shared engine and grid-specific stages
 
@@ -21,9 +21,9 @@ Keep the FFT backend internal. Reuse planned FFTs and explicit scratch buffers, 
 ## Stable SIMD and dispatch
 
 - Portable reference kernel with ordinary Rust loops and compiler auto-vectorization.
-- x86-64: conditional AVX2 + FMA and AVX-512 kernels; an SSE2-safe baseline.
+- x86-64: conditional AVX2/FMA and AVX-512 kernels with a portable baseline. Rust 1.89 stabilizes AVX-512 target features and many intrinsics; every specialized kernel must check its required CPU feature subsets.
 - AArch64: NEON plus portable fallback for other targets.
-- Detect CPU features once at plan creation; select a kernel implementation outside hot loops.
+- Detect CPU features once at plan creation; select a kernel outside hot loops. Isolate unsafe intrinsic calls in small, feature-checked boundaries; do not require AVX-512 on every x86-64 machine.
 - Start with `std::arch` if exact layout/instruction control is needed; compare `pulp` only after an accurate reference path exists.
 - Portable distributed wheels must not require `-C target-cpu=native`; use runtime dispatch for supported variants.
 
@@ -45,7 +45,7 @@ Compare RustSHT with the pinned DUCC CPU implementation on identical hardware, d
 - Plan construction versus steady-state repeated execution.
 - One-thread and multi-thread scaling; AVX2/AVX-512/NEON dispatch selected.
 - CPU type, compiler flags, memory/RSS, correctness tolerance and run-to-run spread.
-- Near-minimal `Nφ=2*mmax+2` versus FFT-friendly alternatives; both are mathematical tests, not a guarantee of equal FFT performance.
+- True minimum odd `Nφ=2*mmax+1`, smallest even `Nφ=2*mmax+2`, and FFT-friendly alternatives; compare correctness and performance separately.
 
 A within-2x DUCC throughput ratio is an **initial optimization checkpoint**, not a feature acceptance requirement or an achieved result. Never trade correct high-bandlimit results for that ratio.
 

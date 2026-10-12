@@ -8,10 +8,11 @@ Apply [write-like-a-scientist/SKILL.md](https://github.com/mwyau/write-like-a-sc
 
 ## Rust API
 
+- Use stable Rust **1.89+** (Rust 2024). AVX-512 target features and many intrinsics are stable in Rust 1.89; detect required CPU subsets at runtime and preserve a portable fallback. Do not impose global AVX-512 flags in release builds.
 - Follow the [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/checklist.html). Prefer concrete validated structs/enums with private fields, inherent methods, `Result`-returning constructors and operations, and documented panics/errors. Do not create public trait hierarchies, unsafe stride interfaces or a generic FFT-backend plugin API without a concrete need.
-- The Rust core owns numerical `GridSpec`, `HarmonicSpec`, `ShtPlan`, `ShtWorkspace`, packed coefficients and transform operations. Plans are reusable and hold no mutable execution scratch; caller-owned workspaces serve each invocation/worker. Use checked arithmetic and validate buffer lengths, channels, spin, modes and sampling.
+- The Rust core owns numerical `GridSpec`, `HarmonicSpec`, `ShtPlan`, `ShtWorkspace`, packed coefficients and transform operations. Plans contain geometry, bandlimits and spin; operation-specific methods select valid modes. Use a direct `num-complex` dependency for public `Complex64`. Plans are reusable and hold no mutable execution scratch; caller-owned workspaces serve each invocation/worker. Use checked arithmetic and validate buffer lengths, channels, spin, modes and sampling.
 - Core arrays use canonical north-to-south colatitude and equally spaced eastward longitude; `phi0` is in radians. Python and spharmgrid adapters handle user coordinate order, Xarray metadata, geographic winds, physical units and spectral filtering. The numerical core does not depend on Python, NumPy, Xarray or spharmgrid.
-- Use RustFFT initially, with explicit reusable FFT scratch. Rayon is optional. Use stable Rust and preserve a scalar reference path. Add SIMD and CPU dispatch after correctness, keeping a portable wheel/binary baseline; never share mutable scratch between workers.
+- Use RustFFT initially with reusable FFT scratch. Rayon is optional. Preserve a portable scalar path; add AVX2/FMA, AVX-512 and AArch64 NEON runtime dispatch after correctness. Never share mutable scratch between workers.
 - Pin uv to Python 3.11 with `.python-version`, matching `abi3-py311`. Keep `python/rustsht/py.typed` as a PEP 561 marker, with public typing stubs when numerical bindings are added.
 - The Python binding crate, importable package and tests live together under `python/` (`python/Cargo.toml`, `python/src/`, `python/rustsht/`, and `python/tests/`), packaged by maturin through the root `pyproject.toml`. The Rust-only `rustsht` crate does not depend on PyO3. `uv sync` builds the editable Python package and installs the `dev` group (`ducc0`, `numpy`, `pytest`); `ducc0` is not a runtime dependency. The extension currently contains only a module initializer, no numerical transforms.
 - Use **Albert M. W. Yau** for new code attribution. Cite Martin Reinecke and collaborators. If copyrightable source expression is copied/adapted/directly translated from DUCC, preserve its original license and copyright notices and record the revision. Do not copy `python/test/test_sht.py` without reviewing its GPL-3.0-or-later header; implement the numerical cases independently.
@@ -20,8 +21,13 @@ Apply [write-like-a-scientist/SKILL.md](https://github.com/mwyau/write-like-a-sc
 
 - **Approved order (D11):** implement the full applicable scalar, spin/vector, derivative, analysis/synthesis and adjoint operation family on GL first. Then use the same Legendre/spin kernels for CC and F1; the latter require specialized exact-analysis and adjoint resampling.
 - Distinguish synthesis `S`, analysis `A`, and their separate adjoints `S*` and `A*`. DUCC rectangular `analysis_2d` and `adjoint_analysis_2d` use STANDARD only; GRAD_ONLY/DERIV1 modes belong to synthesis and its adjoint. Use the real-field harmonic inner product, with double weight on `m>0`, in adjoint tests.
-- Exact analysis needs `ntheta >= lmax+1` on GL/F1, `ntheta >= lmax+2` on CC, and `mmax <= (nphi-1)/2` (integer division). Do not impose analysis limits on synthesis without checking the actual operator requirements. Reject invalid inputs instead of truncating silently.
-- Maintain scaled normalized Legendre recurrences, polar cutoffs, reflection parity, spin signs and high-degree bounded memory use. Do not replace CC/F1 meridional Fourier resampling with direct low-resolution quadrature.
+- Exact analysis needs `ntheta >= lmax+1` on GL/F1, `ntheta >= lmax+2` on CC, and `mmax <= (nphi-1)/2` (integer division). Test minimum odd/even longitude counts; initial parity uses unit `ringfactor`. Do not impose analysis limits on synthesis without checking the actual operator requirements. Reject invalid inputs instead of truncating silently.
+- Verify normalization/phase and FFT scaling against independently evaluated low-degree fields and pinned DUCC. Reject nonreal input `m=0` and nonzero `l<spin` coefficients. Maintain scaled normalized Legendre recurrences, polar cutoffs, reflection parity, spin signs and high-degree bounded memory use. Do not replace CC/F1 meridional Fourier resampling with direct low-resolution quadrature.
+
+## Long autonomous implementation sessions
+
+Use [the milestone and long-session rules](plans/05-validation-and-milestones.md) on a **new branch from main**. Continue through M1a, M1b/M1c, M2a/M2b and later stages as correctness and resources permit. The selections in [00](plans/00-scope-and-decisions.md) do not need routine confirmation. Commit working increments, document skipped tests and blockers, and never weaken tests to advance. Do not push unless authorized during the implementation session or merge into `main`. End with a numerical test and commit report.
+
 
 ## GitHub Actions
 

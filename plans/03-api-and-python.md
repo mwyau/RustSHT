@@ -12,13 +12,12 @@ GL, CC and F1 use one public plan and operation family. Internally, grid-specifi
 | --- | --- |
 | `GridKind` | `GaussLegendre`, `ClenshawCurtis`, `Fejer1` |
 | `GridSpec` | Validated `kind`, `ntheta`, `nphi`, `phi0` (radians). Core order is north-to-south and eastward-cyclic. |
-| `HarmonicSpec` | Inclusive `lmax`, `mmax`, nonnegative spin and mode; validate channels and `l<spin` behavior. |
-| `TransformMode` | `Standard`, `GradientOnly`, `FirstDerivative`. Enforce DUCC operation/mode applicability. |
+| `HarmonicSpec` | Inclusive `lmax`, `mmax` and nonnegative spin; validate channels, `m=0` and `l<spin` behavior. Mode is not plan state. |
 | `ShtPlan` | Immutable reusable FFT plans, quadrature and recurrence coefficients; chosen CPU dispatch. Construct with `Result`. |
 | `ShtWorkspace` | Explicit execution scratch, separate for each concurrent execution/worker; size derived from plan. |
 | `ShtError` | Structured invalid grid, undersampling, spin/mode, shape, overflow, unsupported configuration and allocation errors. |
 
-`rustfft::num_complex::Complex<f64>` may be used for packed coefficients to avoid a separate complex dependency initially; decide whether to re-export a stable `Complex64` alias before a public release. Generalize to f32 only when validated. Do not preemptively expose internal FFT types, planner traits, SIMD implementations, or thread-pool types.
+Use a direct `num-complex` dependency and expose a `Complex64` alias; do not depend on RustFFT's re-export for the public coefficient type. Generalize to f32 only when validated. Do not preemptively expose internal FFT types, planner traits, SIMD implementations, or thread-pool types.
 
 Provisional usage (illustration, **not implemented or finalized**):
 
@@ -33,7 +32,7 @@ plan.synthesis_into(&alm, &mut map, &mut work)?;
 plan.analysis_into(&map, &mut recovered, &mut work)?;
 ```
 
-The signatures, error type, scratch lifetime and zero-allocation guarantees need a proof-of-concept. Implement `S`, `A`, `S*` and `A*` as separate methods with real mathematical semantics. A plan for non-STANDARD synthesis must reject unsupported analysis calls instead of implying that an unimplemented derivative analysis exists. Offer plan accessors for coefficient count, component count, grid coordinates, weights and safe analysis degree.
+The signatures, error type, scratch lifetime and zero-allocation guarantees need a proof-of-concept. Implement STANDARD `S`, `A`, `S*` and `A*` as separate mathematical operations. For valid synthesis-only modes, use explicit methods such as `synthesis_gradient_into`, `adjoint_synthesis_gradient_into`, `synthesis_deriv1_into` and `adjoint_synthesis_deriv1_into`; DERIV1 uses a spin-1 computation with scalar coefficients. Do not invent derivative analysis or put a mode in `HarmonicSpec`. Expose counts, grid coordinates, weights and safe analysis degree. Initially accept contiguous slices and reject invalid size, nonreal `m=0` input and nonzero `l<spin` coefficients.
 
 ## Code organization
 
@@ -69,6 +68,9 @@ The root `pyproject.toml` uses maturin as its build backend. Its `[tool.maturin]
 
 Run `uv sync` to build/install the local Python package, then `uv run pytest python/tests` to check import of the compiled extension. `cargo test --workspace` checks both Rust crates. No SHT functions or fictitious placeholders are exposed by the extension yet. Add Python SHT bindings only after the corresponding native Rust operations are implemented and verified.
 
+The numerical Python API will eventually contain DUCC-familiar procedural functions and a reusable plan class. Do not publish placeholder numerical operations. Initial parity uses DUCC's unit `ringfactor`; arbitrary per-ring scaling is deferred.
+
+
 ## Python binding
 
 Expose two API styles if useful: DUCC-familiar `analysis_2d`, `synthesis_2d`, `adjoint_synthesis_2d`, `adjoint_analysis_2d` and `get_gridweights`; and a reusable Python plan class. Accept `float64/complex128` first, later `float32/complex64`. Validate shapes `(ncomp, ntheta, nphi)` and packed coefficient arrays, release the GIL for computation, and document when NumPy inputs are copied. Noncontiguous array support and zero-copy borrowing are later measured design decisions; avoid undefined aliasing.
@@ -81,7 +83,6 @@ A RustSHT adapter should match that numerical boundary. spharmgrid, **not the Ru
 
 ## Remaining choices
 
-- Plan mode at construction or per method; exact spin coverage and derivative mode shapes.
-- Public re-export of `num_complex`, scalar generic implementation versus f64/f32 separate kernels.
-- Contiguous versus strided/batch buffers; thread configuration and `Send`/`Sync` guarantees.
-- Independent PyPI package metadata and GPL wheel/source distribution.
+- Exact derivative method signatures, f64/f32 kernel sharing and thread configuration after working prototypes.
+- Future strided/batch inputs and safe `Send`/`Sync` guarantees.
+- GPL wheel/source distribution review before release.

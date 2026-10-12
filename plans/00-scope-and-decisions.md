@@ -15,6 +15,8 @@ Copyright for original Rust code: **Albert M. W. Yau** and contributors. License
 | D11 | **Feature-first / GL first**, approved 2026-10-11 | Complete scalar, spin/vector, applicable derivative modes, synthesis/analysis and both adjoint families on GL before bringing the *same engine* to CC and F1. Incremental GL substeps are allowed. |
 | D12 | **DUCC as algorithmic/numerical reference**, approved 2026-10-11 | RustSHT is not DUCC's upstream/downstream repository or an official DUCC release. Original Rust code and adapted source expression have different provenance obligations. |
 | D13 | **GL/CC/F1 parity is the release objective**, reaffirmed 2026-10-11 | All three grids must pass the same supported operator/spin test matrix and explicit high-bandlimit checks before claiming full scope. |
+| D14 | **Rust 1.89 minimum**, approved 2026-10-11 | Stable AVX-512 target features and intrinsics, with runtime CPU checks and a portable fallback. |
+| D15 | **Long autonomous implementation sessions**, approved 2026-10-11 | Work on a new feature branch through as many independently verified milestones as possible, preserving GL-first ordering. |
 
 ### D11 rationale
 
@@ -26,28 +28,35 @@ Implement the algorithms in Rust using published literature and DUCC for behavio
 
 ## Working engineering defaults (not yet final)
 
-- Stable Rust 2024; use RustFFT for longitude transforms. No RealFFT dependency or DUCC FFT port until measurement supports it.
-- Implement **f64/complex128** first, but design for f32/complex64. Both precisions are in the eventual feature matrix.
+- Rust 2024 with MSRV **1.89**; use RustFFT for longitude transforms. Rust 1.89 stabilizes AVX-512 target features and many intrinsics, but AVX-512 execution still requires runtime CPU detection. No RealFFT dependency or DUCC FFT port without measurement.
+- Implement **f64/complex128** first, with a direct `num-complex` dependency for the public `Complex64` alias; design for f32/complex64. Both precisions are in the eventual feature matrix.
 - Reusable plans and scratch buffers; optional Rayon; CPU runtime dispatch for x86-64 and AArch64 after scalar/reference correctness.
 - Python bindings via a separate optional layer; keep spharmgrid decoupled.
 - Avoid large precomputed dense harmonic matrices and hidden high-bandlimit caps.
 
-## Open questions
+## Selected implementation defaults (2026-10-11)
 
-| ID | Question | Current proposal |
+These choices guide implementation without routine confirmation. Revise them when implementation evidence, tests or a concrete downstream need supports a change; record why.
+
+| ID | Selected choice | Consequence |
 | --- | --- | --- |
-| D01 | Rust API vs exact DUCC API shape | Idiomatic `ShtPlan` plus familiar procedural Python functions; mathematical parity is required, identical syntax is not |
-| D02 | Positive-spin support | Establish spin 0, 1, 2 parity; test spin 3/4 and determine the maximum supported range from DUCC behavior and memory/performance |
-| D03 | f32 timeline | f64 first; f32 required before all-feature release |
-| D04 | Real-input longitude FFT | RustFFT complex baseline; real-packing optimization if FFT fraction justifies it |
-| D05 | GPL packaging alongside BSD spharmgrid | Separate optional Python backend, review how actual wheels and redistributions are combined |
-| D06 | Accuracy/performance thresholds | Define per dtype/spin/operator/grid tolerance against analytic and DUCC references; benchmark T255–T8191 as resources permit |
-| D07 | Python API | Expose both into-buffer operations and convenience functions after core Rust proof |
-| D08 | Wind/vector API | Low-level DUCC spherical components plus explicit geographic east/north wrappers |
-| D09 | Nonrectangular grids and arbitrary ring sampling | Out of current scope; target rectangular GL/CC/F1 and document the boundary |
-| D10 | Multiarch | Portable fallback, x86-64 AVX2/FMA/AVX-512 and AArch64 NEON, dispatched at plan creation |
+| D01 | Idiomatic Rust `ShtPlan`; DUCC-familiar Python functions | Plan contains grid, bandlimits and spin; use explicit operation/mode-specific methods. No mode in `HarmonicSpec` or public kernel trait hierarchy. |
+| D02 | Required parity spins: 0, 1 and 2 | Higher spins are optional and require separate analytic and DUCC verification. |
+| D03 | f64 first, f32 after f64 all-grid correctness | Verify f32 separately, particularly at high bandlimits. |
+| D04 | Complex RustFFT baseline | Reuse plans/scratch; real packing or `realfft` requires benchmark evidence. |
+| D05 | Independent GPL-2.0-or-later Rust/Python packages | Keep spharmgrid independent, with a separately packaged optional backend; review combined distribution before release. |
+| D06 | Accuracy before speed | Through GL scalar T255, use provisional relative L2 `<=5e-11` for independent analytic and pinned-DUCC comparisons, and adjoint normalized residual `<=1e-10`; define absolute near-zero checks. Set distinct high-L/spin/f32 criteria from evidence. |
+| D07 | Contiguous into-buffer Rust methods, Python API after native parity | Reuse `ShtWorkspace`; add procedural Python functions and a reusable plan after verified Rust operations. |
+| D08 | Theta/phi vector components in core | Convert geographic winds `(u,v) -> (-v,u)` in spharmgrid only. |
+| D09 | Rectangular GL, CC and F1 only | Arbitrary rings, other geometries, NUFFT and GPU are outside current scope. |
+| D10 | Runtime SIMD under stable Rust 1.89 | Scalar fallback; AVX2/FMA, AVX-512 and AArch64 NEON variants with exact feature checks, no global `target-cpu=native` in portable binaries. |
+| D16 | Unit `ringfactor` in initial API | Compare with DUCC's default scaling of one; defer arbitrary per-ring scaling. |
+| D17 | Strict input validation | Reject nonreal input `m=0` coefficients and nonzero `l<spin` coefficients rather than discarding them. |
+| D18 | Incremental autonomous implementation | Work on a new branch, commit independently tested steps and continue; disclose unaffordable stress tests or blocked stages without weakening tests. |
 
-Record new owner decisions here with date, evidence and consequences. Do not convert proposals into approved requirements without review.
+## Evidence-dependent choices
+
+Higher-spin maximum, high-bandlimit and f32 tolerances, SIMD speedups, final allocation guarantees, batching/strides, thread defaults and safe concurrency behavior need measured evidence. Copied or translated DUCC source needs separate copyright and license review.
 
 ## Excluded from initial parity scope
 
