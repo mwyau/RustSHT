@@ -1257,3 +1257,25 @@ The Python extension was rebuilt from this source and compared with installed `d
 | T1023, 8 | `310.705` | `40.390` | `7.7x` | `1.600e-14 / 1.924e-16 / 7.533e-14` |
 
 Release DUCC and roundtrip checks passed for spins 1 and 2 at T511 on GL, CC and F1 with one and eight Rayon workers. T1023 exact-analysis checks passed for spins 1 and 2 on all three grids with one and eight workers. Spin-2 analysis coefficient maximum errors at T511 were `1.944e-17`, `2.558e-17` and `1.410e-17` on GL, CC and F1; at T1023 they were `8.664e-18`, `8.491e-18` and `8.223e-18`. The T511 spin-3/4 all-grid DUCC, analytic and adjoint regression passed with eight workers. Spin adjoint identities, the focused spin-2 polar-cutoff test, formatting, Clippy with warnings denied, workspace tests (95 unit tests and 10 f32 tests passed; seven opt-in tests ignored), no-default-feature tests (92 unit tests and 10 f32 tests passed; seven opt-in tests ignored), and Python tests (eight passed) passed. `perf stat` remains blocked by `perf_event_paranoid=4`; hardware counters were not collected for this change.
+
+### Fused spin-2 scalar-conversion synthesis (2026-10-12)
+
+The spin-2 GL scalar-conversion synthesis path now sends each converted scalar coefficient row through the register-resident Pulp synthesis block in 64-ring groups. The kernel accumulates degrees in SIMD registers; the caller applies `1/sin(theta)^2` after each block. A block that contains a polar-cutoff lane or needs binary recurrence scaling uses the existing scaled scalar recurrence. The implementation reuses the existing coefficient, recurrence and spectrum buffers.
+
+Callgrind 3.26.0 compared one release T511 spin-2 synthesis on the Ryzen 9 5950X, with one Rayon worker, `phi0=0.37`, and the same E/B coefficient arrays. The temporary harness includes plan and workspace construction as well as the transform. The no-fusion run was measured before the change; the fused run used the same harness and compiler. Callgrind instruction references fell from `10,459,343,346` to `3,164,579,254` (`-69.7%`). Data references fell from `3,116,256,432` to `877,826,918` (`-71.8%`), simulated L1 data misses from `53,385,528` to `12,157,285` (`-77.2%`), and branch instructions from `1,525,279,101` to `518,515,607` (`-66.0%`). Last-level cache misses, including instruction and data misses, were `350,103` before and `352,236` after. The pre-change self profile attributed `6.01 billion` instructions (`57.4%`) to `multiply_complex_scaled_product`; after the change, the largest self entry was the Pulp x86-v3 `FusedSynthesisBlock` at `903 million` instructions (`28.6%`). These simulator counts are not CPU cycles. `perf stat` remains unavailable because `perf_event_paranoid=4`.
+
+Native release measurements used `m1b_bench 2 511 8 synthesis`, f64, T511 GL `512x1025`, `phi0=0.37`, reused plan and workspace, one warm-up and five timed samples per process, three process runs, and affinity to CPUs 0–7. Rust was `1.99.0 (b940084d7 2026-09-28)` with Cargo release optimization and portable Pulp AVX2/FMA dispatch. Values are medians and ranges of process medians in milliseconds:
+
+| Threads | Before fusion | Fused synthesis | Change |
+| ---: | ---: | ---: | ---: |
+| 1 | `479.266; 4.469` | `142.715; 1.656` | `-70.2%` |
+| 8 | `82.165; 2.146` | `51.980; 1.059` | `-36.7%` |
+
+The rebuilt Python extension was compared with installed `ducc0==0.41.0` from revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`, using Python `3.11.15`, NumPy `2.4.6`, three run medians, warm plans, and the same T511 input at explicit one/eight-thread settings. RustSHT plan calls create a workspace per invocation:
+
+| Threads | RustSHT plan (ms) | DUCC0 (ms) | Ratio | Max absolute / RMS / relative L2 map error |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | `146.078` | `28.371` | `5.2x` | `5.624e-14 / 1.611e-15 / 1.323e-13` |
+| 8 | `54.910` | `5.656` | `9.7x` | `5.624e-14 / 1.611e-15 / 1.323e-13` |
+
+The T511 all-grid spin-1/2 DUCC and roundtrip test passed with one and eight workers. Sparse T1023 spin-1/2 synthesis passed against DUCC and the GRAD_ONLY relation on GL, CC and F1 at both thread counts; spin-2 maximum map errors were `4.115e-15`, `3.463e-15` and `3.934e-15`. Sparse T2047 synthesis passed against DUCC and the sectoral analytic formula at both thread counts for spins 1–4; spin-2 middle-ring DUCC sample error was `2.085e-13` and analytic map maximum/RMS errors were `1.236e-11`/`3.88e-13`. Workspace spin adjoint identities and the full formatting, Clippy, Rust and Python suites passed. The tested improvement is retained; the remaining T511 plan gap is `5.2x` at one worker and `9.7x` at eight.
