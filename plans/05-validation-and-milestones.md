@@ -328,12 +328,33 @@ Callgrind instruction references for one f32 scalar GL synthesis at T127 fell fr
 
 | Operation | Threads | Before | After | Change |
 | --- | ---: | ---: | ---: | ---: |
-| Synthesis | 1 | 756.300 | 728.565 | -3.7% |
+| Synthesis | 1 | 756.300 | 728.566 | -3.7% |
 | Synthesis | 8 | 143.088 | 138.013 | -3.5% |
 | Analysis | 1 | 887.067 | 842.292 | -5.0% |
 | Analysis | 8 | 195.777 | 186.292 | -4.8% |
 
 The two-run timing averages are lower in all four cases. They measure one host and workload; they do not establish a general speedup or close the f32 performance gap with DUCC. The benchmark did not collect DUCC timings.
+
+On rustc 1.99.0 and 1.89.0, `cargo test --workspace --all-features` passes 73 library unit tests and 10 f32 integration tests; seven opt-in high-bandlimit tests are ignored. On rustc 1.99.0, `cargo test -p rustsht --no-default-features` passes 71 library unit tests and 10 f32 integration tests, with the same seven tests ignored. Workspace Clippy with warnings denied passes on both compilers. Formatting and `git diff --check` pass. The Python binding tests were not run because this change does not modify the bindings.
+
+### Skip duplicate scaling at f32 recurrence boundaries (M4, 2026-10-12)
+
+`scale_normal_binary` now returns a value only when exponent adjustment keeps the product normal. For subnormal, overflow and extreme-exponent results it returns `None`, allowing the caller to use the split-binary path without first calculating and discarding a result from the general scaler. This preserves the split path's rounding at subnormal boundaries.
+
+The bitwise unit tests compare fast-path results with staged power-of-two scaling and compare the complex multiply with the split-binary reference across signed zero, normal and subnormal operands, infinities, NaN, and exponents from -4097 to 4097. They cover the underflow tie where staged scaling rounds to the minimum normal value while exponent adjustment requires the split path. The existing f32 integration suite compares transforms with `ducc0==0.41.0` (source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`) and analytic fields.
+
+Callgrind 3.26.0 instruction references for one f32 scalar GL synthesis at T127 fell from 174,130,980 at `3124301` to 154,501,046, an 11.27% reduction. The release build used rustc 1.99.0, AVX2/FMA runtime dispatch, and one Rayon thread on an AMD Ryzen 9 5950X.
+
+The T511 scalar benchmark used f32, GL `512x1025`, one or eight Rayon threads, one warmup and five timed samples per run. The plan and workspace were reused. Each table value averages two per-run medians in milliseconds. The comparison used the same temporary harness and compiler at `3124301` and the working tree with the boundary fallback change. The estimated core numeric-array footprint was 8.13 MiB.
+
+| Operation | Threads | Before | After | Change |
+| --- | ---: | ---: | ---: | ---: |
+| Synthesis | 1 | 728.566 | 617.665 | -15.2% |
+| Synthesis | 8 | 138.013 | 112.768 | -18.3% |
+| Analysis | 1 | 842.292 | 735.521 | -12.7% |
+| Analysis | 8 | 186.292 | 162.783 | -12.6% |
+
+These measurements cover one host, dtype, grid and bandlimit. No DUCC timing was collected for this change.
 
 On rustc 1.99.0 and 1.89.0, `cargo test --workspace --all-features` passes 73 library unit tests and 10 f32 integration tests; seven opt-in high-bandlimit tests are ignored. On rustc 1.99.0, `cargo test -p rustsht --no-default-features` passes 71 library unit tests and 10 f32 integration tests, with the same seven tests ignored. Workspace Clippy with warnings denied passes on both compilers. Formatting and `git diff --check` pass. The Python binding tests were not run because this change does not modify the bindings.
 

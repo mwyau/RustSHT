@@ -239,11 +239,10 @@ pub(crate) fn multiply_complex_scaled(value: Complex32, factor: f32, exponent: i
 fn multiply_component_scaled_with_normal_factor(value: f32, factor: f32, exponent: i64) -> f32 {
     if value.is_normal() {
         let product = value * factor;
-        if product.is_normal() {
-            let scaled = scale_normal_binary(product, exponent);
-            if scaled.is_normal() {
-                return scaled;
-            }
+        if product.is_normal()
+            && let Some(scaled) = scale_normal_binary(product, exponent)
+        {
+            return scaled;
         }
     }
     if value == 0.0 || !value.is_finite() {
@@ -262,11 +261,10 @@ fn multiply_component_scaled_with_normal_factor(value: f32, factor: f32, exponen
 fn multiply_component_scaled(value: f32, factor: f32, exponent: i64) -> f32 {
     if value.is_normal() && factor.is_normal() {
         let product = value * factor;
-        if product.is_normal() {
-            let scaled = scale_normal_binary(product, exponent);
-            if scaled.is_normal() {
-                return scaled;
-            }
+        if product.is_normal()
+            && let Some(scaled) = scale_normal_binary(product, exponent)
+        {
+            return scaled;
         }
     }
     if value == 0.0 || factor == 0.0 || !value.is_finite() || !factor.is_finite() {
@@ -429,16 +427,16 @@ pub(crate) fn scale_binary(mut value: f32, mut exponent: i64) -> f32 {
     value * 2.0_f32.powi(exponent as i32)
 }
 
-fn scale_normal_binary(value: f32, exponent: i64) -> f32 {
+fn scale_normal_binary(value: f32, exponent: i64) -> Option<f32> {
     debug_assert!(value.is_normal());
     if exponent == 0 {
-        return value;
+        return Some(value);
     }
     if exponent > 4096 {
-        return f32::INFINITY.copysign(value);
+        return None;
     }
     if exponent < -4096 {
-        return 0.0_f32.copysign(value);
+        return None;
     }
 
     let bits = value.to_bits();
@@ -446,9 +444,11 @@ fn scale_normal_binary(value: f32, exponent: i64) -> f32 {
     let scaled_exponent = raw_exponent + exponent;
     if (1..0xff).contains(&scaled_exponent) {
         let exponent_mask = 0xff_u32 << 23;
-        return f32::from_bits((bits & !exponent_mask) | ((scaled_exponent as u32) << 23));
+        return Some(f32::from_bits(
+            (bits & !exponent_mask) | ((scaled_exponent as u32) << 23),
+        ));
     }
-    scale_binary(value, exponent)
+    None
 }
 
 #[cfg(test)]
@@ -506,6 +506,7 @@ mod tests {
             1.0,
             -1.5,
             f32::MIN_POSITIVE,
+            f32::from_bits(0x00ff_ffff),
             f32::from_bits(1),
             f32::INFINITY,
             f32::NEG_INFINITY,
@@ -520,10 +521,14 @@ mod tests {
                 let expected = reference_scale_binary(value, exponent);
                 assert_eq!(actual.to_bits(), expected.to_bits());
                 if value.is_normal() {
-                    assert_eq!(
-                        scale_normal_binary(value, exponent).to_bits(),
-                        expected.to_bits()
-                    );
+                    let scaled = scale_normal_binary(value, exponent);
+                    let raw_exponent = i64::from((value.to_bits() >> 23) & 0xff);
+                    let scaled_exponent = raw_exponent + exponent;
+                    let should_use_fast_path = (1..0xff).contains(&scaled_exponent);
+                    assert_eq!(scaled.is_some(), should_use_fast_path);
+                    if let Some(scaled) = scaled {
+                        assert_eq!(scaled.to_bits(), expected.to_bits());
+                    }
                 }
             }
         }
@@ -540,6 +545,7 @@ mod tests {
             -1.5,
             f32::MIN_POSITIVE,
             -f32::MAX,
+            f32::from_bits(0x017f_ffff),
             f32::from_bits(1),
             f32::from_bits(0x6e46_ed13),
         ];
@@ -555,6 +561,17 @@ mod tests {
             f32::from_bits(0x21d3_bb30),
         ];
         let exponents = [-4097, -512, -255, -127, -126, -1, 0, 1, 126, 127, 512, 4097];
+
+        let boundary_value = f32::from_bits(0x017f_ffff);
+        assert_eq!((boundary_value * 0.5).to_bits(), 0x00ff_ffff);
+        let boundary_actual =
+            multiply_complex_scaled(Complex32::new(boundary_value, -boundary_value), 0.5, -1);
+        let boundary_expected = Complex32::new(
+            reference_multiply_component_scaled(boundary_value, 0.5, -1),
+            reference_multiply_component_scaled(-boundary_value, 0.5, -1),
+        );
+        assert_eq!(boundary_actual.re.to_bits(), boundary_expected.re.to_bits());
+        assert_eq!(boundary_actual.im.to_bits(), boundary_expected.im.to_bits());
 
         for value in values {
             for factor in factors {
