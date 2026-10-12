@@ -75,7 +75,7 @@ pub(crate) fn polar_order_limit(lmax: usize, spin: usize, sin_theta: f64, cos_th
 /// Fills the order-dependent scalar recurrence factors through `lmax`.
 pub(crate) fn fill_epsilon(m: usize, lmax: usize, output: &mut [f64]) {
     debug_assert!(m <= lmax);
-    debug_assert_eq!(output.len(), lmax + 1);
+    debug_assert!(output.len() > lmax);
     for (l, value) in output.iter_mut().enumerate().skip(m) {
         *value = epsilon(l, m);
     }
@@ -274,7 +274,7 @@ where
     }
 }
 
-fn normalize_pair_lanes(
+pub(super) fn normalize_pair_lanes(
     previous: &mut [f64],
     current: &mut [f64],
     exponents: &mut [i64],
@@ -301,6 +301,19 @@ fn normalize_pair_lanes(
     Ok(normal_range)
 }
 
+pub(super) fn sectoral_value(
+    sin_theta: f64,
+    m: usize,
+    sectoral_norm: f64,
+) -> Result<(f64, i64), ShtError> {
+    let value = scaled_power(sin_theta, m)?;
+    let value = normalize_value(
+        value.mantissa * sectoral_norm * if m.is_multiple_of(2) { 1.0 } else { -1.0 },
+        value.exponent,
+    )?;
+    Ok((value.mantissa, value.exponent))
+}
+
 #[inline(always)]
 fn pair_is_in_normal_range(previous: f64, current: f64) -> bool {
     let maximum = previous.abs().max(current.abs());
@@ -308,7 +321,7 @@ fn pair_is_in_normal_range(previous: f64, current: f64) -> bool {
 }
 
 #[inline(always)]
-fn pair_lanes_need_scaling(previous: &[f64], current: &[f64]) -> bool {
+pub(super) fn pair_lanes_need_scaling(previous: &[f64], current: &[f64]) -> bool {
     debug_assert_eq!(previous.len(), current.len());
     previous
         .iter()
@@ -336,6 +349,34 @@ pub(crate) fn multiply_complex_scaled(value: Complex64, factor: f64, exponent: i
     Complex64::new(
         multiply_component_scaled(value.re, factor, exponent),
         multiply_component_scaled(value.im, factor, exponent),
+    )
+}
+
+pub(crate) fn multiply_complex_scaled_product(
+    value: Complex64,
+    factor: f64,
+    additional_factor: f64,
+    exponent: i64,
+) -> Complex64 {
+    if factor.is_normal()
+        && additional_factor.is_normal()
+        && value.re.is_normal()
+        && value.im.is_normal()
+    {
+        let product = Complex64::new(
+            (value.re * factor) * additional_factor,
+            (value.im * factor) * additional_factor,
+        );
+        if product.re.is_normal()
+            && product.im.is_normal()
+            && let Some(scaled) = scale_complex_normal_binary(product, exponent)
+        {
+            return scaled;
+        }
+    }
+    Complex64::new(
+        multiply_component_scaled_product(value.re, factor, additional_factor, exponent),
+        multiply_component_scaled_product(value.im, factor, additional_factor, exponent),
     )
 }
 
@@ -405,6 +446,33 @@ fn multiply_component_scaled(value: f64, factor: f64, exponent: i64) -> f64 {
         exponent
             .saturating_add(value_exponent)
             .saturating_add(factor_exponent),
+    )
+}
+
+fn multiply_component_scaled_product(
+    value: f64,
+    factor: f64,
+    additional_factor: f64,
+    exponent: i64,
+) -> f64 {
+    if value == 0.0
+        || factor == 0.0
+        || additional_factor == 0.0
+        || !value.is_finite()
+        || !factor.is_finite()
+        || !additional_factor.is_finite()
+    {
+        return scale_binary((value * factor) * additional_factor, exponent);
+    }
+    let (value_mantissa, value_exponent) = split_binary(value);
+    let (factor_mantissa, factor_exponent) = split_binary(factor);
+    let (additional_mantissa, additional_exponent) = split_binary(additional_factor);
+    scale_binary(
+        (value_mantissa * factor_mantissa) * additional_mantissa,
+        exponent
+            .saturating_add(value_exponent)
+            .saturating_add(factor_exponent)
+            .saturating_add(additional_exponent),
     )
 }
 
@@ -700,6 +768,253 @@ mod tests {
         );
         assert!((values(1, 2, theta)[1] + (15.0 / (8.0 * PI)).sqrt() * sin * cos).abs() < 3e-16);
         assert!((values(2, 2, theta)[0] - (15.0 / (32.0 * PI)).sqrt() * sin * sin).abs() < 3e-16);
+    }
+
+    #[test]
+    fn ducc_paired_degree_recurrence_preserves_coefficient_transform_and_adjoint() {
+        let lmax = 128;
+        let theta = [0.003, 0.37, 1.1, 1.57, std::f64::consts::PI - 0.003];
+        let sin_theta: Vec<_> = theta.iter().map(|value| value.sin()).collect();
+        let cos_theta: Vec<_> = theta.iter().map(|value| value.cos()).collect();
+        let mut epsilon = vec![0.0; lmax + 4];
+        for m in 0..=lmax {
+            fill_epsilon(m, lmax, &mut epsilon[..=lmax]);
+            for (l, value) in epsilon.iter_mut().enumerate().skip(lmax + 1) {
+                *value = super::epsilon(l, m);
+            }
+
+            let degrees = lmax - m + 1;
+            let coefficients: Vec<_> = (m..=lmax)
+                .map(|l| ((l as f64 * 1.618 + m as f64).sin()) / (l - m + 1) as f64)
+                .collect();
+            let factor_count = lmax / 2 + 2;
+            let mut alpha = vec![0.0; factor_count];
+            let mut coefficient_a = vec![0.0; factor_count];
+            let mut coefficient_b = vec![0.0; factor_count];
+            super::super::scalar_paired::fill_factors(
+                m,
+                lmax,
+                &epsilon,
+                &mut alpha,
+                &mut coefficient_a,
+                &mut coefficient_b,
+            );
+            let pair_count = (lmax - m + 2) / 2;
+            let mut paired_by_arch = Vec::new();
+            for arch in [Arch::Scalar, Arch::new()] {
+                let mut previous = vec![0.0; theta.len()];
+                let mut current = vec![0.0; theta.len()];
+                let mut next = vec![0.0; theta.len()];
+                let mut exponents = vec![0; theta.len()];
+                let mut paired = vec![vec![0.0; theta.len()]; pair_count];
+                super::super::scalar_paired::for_each_y_lm_paired_dispatched(
+                    arch,
+                    m,
+                    lmax,
+                    &sin_theta,
+                    &cos_theta,
+                    sectoral_normalizations(m).unwrap()[m],
+                    &coefficient_a,
+                    &coefficient_b,
+                    &mut previous,
+                    &mut current,
+                    &mut next,
+                    &mut exponents,
+                    |l, ring_start, values, exponents| {
+                        let pair = (l - m) / 2;
+                        for lane in 0..values.len() {
+                            paired[pair][ring_start + lane] =
+                                scale_binary(values[lane], exponents[lane]);
+                        }
+                        Ok(())
+                    },
+                )
+                .unwrap();
+                paired_by_arch.push(paired);
+            }
+            let paired = &paired_by_arch[1];
+            for (pair, pair_values) in paired.iter().enumerate() {
+                for (ring, &actual) in pair_values.iter().enumerate() {
+                    let reference = paired_by_arch[0][pair][ring];
+                    let error = (actual - reference).abs();
+                    assert!(
+                        error <= 2e-12 * reference.abs().max(1.0),
+                        "m={m}, pair={pair}, ring={ring}, SIMD={actual:.16e}, scalar={reference:.16e}"
+                    );
+                }
+            }
+
+            for (ring, &theta_value) in theta.iter().enumerate() {
+                let cos = cos_theta[ring];
+                let direct = values(m, lmax, theta_value);
+                let paired: Vec<_> = paired.iter().map(|pair| pair[ring]).collect();
+
+                let mut synthesis_direct = 0.0;
+                let mut synthesis_paired = 0.0;
+                let mut analysis_even = vec![0.0; paired.len()];
+                let mut analysis_odd = vec![0.0; paired.len()];
+                for (pair, l) in (m..=lmax).step_by(2).enumerate() {
+                    let offset = l - m;
+                    synthesis_direct += coefficients[offset] * direct[offset];
+                    let next_even = if l + 2 <= lmax {
+                        coefficients[offset + 2]
+                    } else {
+                        0.0
+                    };
+                    let transformed_even = alpha[pair]
+                        * (epsilon[l + 1] * coefficients[offset] + epsilon[l + 2] * next_even);
+                    let transformed_odd = if l < lmax {
+                        coefficients[offset + 1]
+                    } else {
+                        0.0
+                    };
+                    synthesis_paired +=
+                        paired[pair] * (transformed_even + cos * alpha[pair] * transformed_odd);
+                    analysis_even[pair] = paired[pair] * 0.73;
+                    analysis_odd[pair] = cos * paired[pair] * 0.73;
+                    if l < lmax {
+                        synthesis_direct += coefficients[offset + 1] * direct[offset + 1];
+                    }
+                }
+
+                assert!(
+                    (synthesis_paired - synthesis_direct).abs()
+                        <= 2e-12 * synthesis_direct.abs().max(1.0),
+                    "m={m}, theta={theta_value}, paired={synthesis_paired:.16e}, direct={synthesis_direct:.16e}"
+                );
+
+                let mut analysis_recovered = vec![0.0; degrees];
+                for (pair, l) in (m..=lmax).step_by(2).enumerate() {
+                    let previous = if pair == 0 {
+                        0.0
+                    } else {
+                        alpha[pair - 1] * epsilon[l] * analysis_even[pair - 1]
+                    };
+                    analysis_recovered[l - m] =
+                        alpha[pair] * epsilon[l + 1] * analysis_even[pair] + previous;
+                    if l < lmax {
+                        analysis_recovered[l + 1 - m] = alpha[pair] * analysis_odd[pair];
+                    }
+                }
+                for (degree, (&actual, &expected)) in
+                    analysis_recovered.iter().zip(&direct).enumerate()
+                {
+                    assert!(
+                        (actual - 0.73 * expected).abs()
+                            <= 2e-12 * (0.73 * expected).abs().max(1.0),
+                        "m={m}, theta={theta_value}, l={}, recovered={actual:.16e}, reference={expected:.16e}",
+                        m + degree
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn ducc_paired_recurrence_scaled_to_normal_transition_matches_reference() {
+        let m = 255;
+        let lmax = 768;
+        let theta: [f64; 4] = [0.15, 0.2, 0.3, 0.8];
+        let sin_theta: Vec<_> = theta.iter().map(|value| value.sin()).collect();
+        let cos_theta: Vec<_> = theta.iter().map(|value| value.cos()).collect();
+        let mut epsilon = vec![0.0; lmax + 4];
+        fill_epsilon(m, lmax, &mut epsilon);
+        let factor_count = lmax / 2 + 2;
+        let mut alpha = vec![0.0; factor_count];
+        let mut coefficient_a = vec![0.0; factor_count];
+        let mut coefficient_b = vec![0.0; factor_count];
+        super::super::scalar_paired::fill_factors(
+            m,
+            lmax,
+            &epsilon,
+            &mut alpha,
+            &mut coefficient_a,
+            &mut coefficient_b,
+        );
+        let coefficients: Vec<_> = (m..=lmax).map(|l| 1.0 / (l - m + 1) as f64).collect();
+        let expected: Vec<_> = theta
+            .iter()
+            .map(|&angle| {
+                values(m, lmax, angle)
+                    .iter()
+                    .zip(&coefficients)
+                    .map(|(basis, coefficient)| basis * coefficient)
+                    .sum::<f64>()
+            })
+            .collect();
+        let mut previous = vec![0.0; theta.len()];
+        let mut current = vec![0.0; theta.len()];
+        let mut next = vec![0.0; theta.len()];
+        let mut exponents = vec![0; theta.len()];
+        let mut observed = vec![0.0; theta.len()];
+        let mut saw_scaled = [false; 4];
+        let mut saw_normal_after_scaled = [false; 4];
+
+        super::super::scalar_paired::for_each_y_lm_paired_dispatched(
+            Arch::new(),
+            m,
+            lmax,
+            &sin_theta,
+            &cos_theta,
+            sectoral_normalizations(m).unwrap()[m],
+            &coefficient_a,
+            &coefficient_b,
+            &mut previous,
+            &mut current,
+            &mut next,
+            &mut exponents,
+            |l, _, paired_basis, exponents| {
+                let pair_index = (l - m) / 2;
+                let offset = l - m;
+                let next_even = if l + 2 <= lmax {
+                    coefficients[offset + 2]
+                } else {
+                    0.0
+                };
+                let transformed_even = alpha[pair_index]
+                    * (epsilon[l + 1] * coefficients[offset] + epsilon[l + 2] * next_even);
+                let transformed_odd = if l < lmax {
+                    alpha[pair_index] * coefficients[offset + 1]
+                } else {
+                    0.0
+                };
+                for lane in 0..paired_basis.len() {
+                    let combined = transformed_even + cos_theta[lane] * transformed_odd;
+                    observed[lane] += multiply_complex_scaled(
+                        Complex64::new(combined, 0.0),
+                        paired_basis[lane],
+                        exponents[lane],
+                    )
+                    .re;
+                    if exponents[lane] < 0 {
+                        saw_scaled[lane] = true;
+                    } else if saw_scaled[lane] {
+                        saw_normal_after_scaled[lane] = true;
+                    }
+                }
+                Ok(())
+            },
+        )
+        .unwrap();
+
+        for lane in 0..theta.len() {
+            let error = (observed[lane] - expected[lane]).abs();
+            assert!(
+                error <= 2e-11 * expected[lane].abs().max(1.0),
+                "m={m}, theta={}, paired={:.16e}, reference={:.16e}, error={error:.3e}",
+                theta[lane],
+                observed[lane],
+                expected[lane]
+            );
+            if lane < 3 {
+                assert!(saw_scaled[lane], "lane {lane} never used binary scaling");
+                assert!(
+                    saw_normal_after_scaled[lane],
+                    "lane {lane} did not enter normal arithmetic after scaling"
+                );
+            }
+        }
+        assert!(!saw_scaled[3], "interior lane unexpectedly used scaling");
     }
 
     #[test]

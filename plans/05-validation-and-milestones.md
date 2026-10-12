@@ -759,3 +759,39 @@ Native release measurements used rustc 1.99.0, f64, AVX2/FMA dispatch, the AMD R
 Callgrind 3.26.0 instruction references for T127 one-thread synthesis plus analysis fell from `241,482,840` to `179,841,418` (`-25.5%`). References attributed to `multiply_complex_scaled` fell from `89,595,102` to `66,971,461` (`-25.3%`). The work reduction comes from evaluating half as many latitude lanes in the recurrence and accumulation.
 
 The rebuilt Python extension was compared with `ducc0==0.41.0` at source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf` on T511 GL. RustSHT plan analysis took `169.535 ms` with one thread and `34.593 ms` with eight threads; DUCC took `12.433 ms` and `1.704 ms`. The plan-to-DUCC ratios were `13.6x` and `20.3x`. Maximum absolute/RMS/relative L2 coefficient errors were `6.960e-15`/`1.602e-16`/`3.137e-14` at both thread counts. The release T511/T1023/T2047 scalar comparison against DUCC and analytic fields passed on GL, CC and F1. `cargo test --workspace --all-features` passed 78 library tests and 10 f32 integration tests, with seven high-bandlimit tests ignored; `cargo test -p rustsht --no-default-features` passed 75 library tests and the same 10 f32 tests. Rust 1.89 passed the transform test set (41 passed, seven ignored). Formatting, workspace Clippy with warnings denied, and all eight Python tests passed. The existing spin-3/4 regression also passed.
+
+### DUCC transformed paired-degree scalar recurrence (M4, 2026-10-12)
+
+The f64 scalar synthesis and analysis paths now use DUCC's transformed two-degree recurrence from `sht_inner_loop.h` at revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`. Each order prepares DUCC's `alpha`, `a` and `b` factors and transforms the harmonic coefficients before recurrence accumulation; analysis applies the transpose coefficient transform after latitude accumulation. Sectoral initialization and recurrence values retain binary exponents near the poles. Once a latitude block enters the existing normal-value interval, the paired recurrence uses SIMD multiply-adds without per-degree normalization until a lane crosses the interval. The scaled path remains active for transition and out-of-range lanes. f32 keeps the existing one-degree recurrence. The paired factors reuse existing per-worker spin-factor scratch; the scalar epsilon array adds three values per worker (24 bytes for f64). No dense basis or additional spectrum workspace is allocated.
+
+The recurrence test checks the transformed basis and both coefficient transforms for every order through T128 at polar, interior and equatorial latitudes, comparing `Arch::Scalar` and runtime dispatch, including a SIMD tail. A separate T768, order-255 case confirms three near-polar lanes transition from scaled to ordinary values and match the retained scalar recurrence after coefficient transformation; an interior lane remains unscaled. The release scalar T511/T1023/T2047 DUCC and analytic checks passed on GL, CC and F1. Scalar DUCC comparisons and adjoint identities, f32 scalar/spin checks and the spin-3/4 shared-kernel regression passed. Rust 1.89 passed the paired transition test and transform tests (41 passed, seven opt-in high-bandlimit tests ignored).
+
+Native release measurements used rustc 1.99.0, f64, AVX2/FMA, an AMD Ryzen 9 5950X, GL grids with `nphi=2*lmax+3`, `phi0=0.37`, reused plans/workspaces, one warmup and five samples per operation. The before medians use commit `fb470b5`; the after values are medians and ranges of three run medians, in milliseconds. The earlier synthesis record preserved medians but not every run range.
+
+| Bandlimit | Operation | Threads | Before median | Paired median (range) | Change | Estimated numeric arrays |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| 127 | Synthesis | 1 | `6.349` | `5.569 (0.386)` | `-12.3%` | `1.11 MiB` |
+| 127 | Synthesis | 8 | `3.371` | `3.056 (0.143)` | `-9.3%` | `1.11 MiB` |
+| 127 | Analysis | 1 | `2.612` | `2.710 (0.015)` | `+3.8%` | `1.11 MiB` |
+| 127 | Analysis | 8 | `1.688` | `1.590 (0.035)` | `-5.8%` | `1.11 MiB` |
+| 511 | Synthesis | 1 | `344.432` | `300.864 (1.139)` | `-12.7%` | `16.25 MiB` |
+| 511 | Synthesis | 8 | `53.063` | `48.611 (4.658)` | `-8.4%` | `16.25 MiB` |
+| 511 | Analysis | 1 | `168.799` | `171.860 (0.321)` | `+1.8%` | `16.25 MiB` |
+| 511 | Analysis | 8 | `33.283` | `31.945 (4.589)` | `-4.0%` | `16.25 MiB` |
+| 1023 | Synthesis | 1 | `2718.456` | `2268.994 (9.786)` | `-16.5%` | `64.43 MiB` |
+| 1023 | Synthesis | 8 | `443.733` | `388.398 (6.937)` | `-12.5%` | `64.43 MiB` |
+| 1023 | Analysis | 1 | `1392.168` | `1410.099 (8.312)` | `+1.3%` | `64.43 MiB` |
+| 1023 | Analysis | 8 | `281.124` | `273.985 (13.297)` | `-2.5%` | `64.43 MiB` |
+
+Synthesis improves in all measured cases. Analysis is 1.3–3.8% slower at one thread and 2.5–5.8% faster at eight threads; the small changes should be treated as neutral at this sample count. Callgrind 3.26.0 instruction references for a warmed T127 one-thread synthesis plus analysis fell from `179,841,418` to `166,142,881` (`-7.6%`). The rounded numeric-array estimates are unchanged; the only storage increase is 24 bytes per f64 recurrence worker.
+
+The rebuilt Python extension was measured against `ducc0==0.41.0` at the same DUCC revision, with Python 3.11.15, NumPy 2.4.6, T511 GL and `phi0=0.37`. Each timing is the median of two run medians, with their range in parentheses; each run used one warmup and five timed samples. RustSHT plan methods reuse the plan and create a workspace per call. Errors are identical at one and eight threads:
+
+| Operation | Threads | RustSHT plan (ms) | DUCC (ms) | RustSHT / DUCC |
+| --- | ---: | ---: | ---: | ---: |
+| Scalar synthesis | 1 | `306.301 (1.487)` | `11.765 (0.020)` | `26.0x` |
+| Scalar synthesis | 8 | `50.160 (0.598)` | `1.752 (0.006)` | `28.6x` |
+| Scalar analysis | 1 | `165.310 (0.854)` | `11.870 (0.048)` | `13.9x` |
+| Scalar analysis | 8 | `31.774 (0.631)` | `1.740 (<0.001)` | `18.3x` |
+
+Scalar synthesis maximum absolute/RMS/relative L2 error was `2.316e-14`/`7.232e-16`/`6.114e-14`; analysis error was `3.722e-15`/`1.045e-16`/`2.046e-14`. The same rebuilt extension measured the unchanged spin-1 path at T511: synthesis was `1262.916 ms` and `195.012 ms` with one and eight threads, versus DUCC's `24.308 ms` and `3.793 ms`; analysis was `1280.497 ms` and `185.167 ms`, versus `24.757 ms` and `3.644 ms`. Spin-1 maximum absolute errors remained `2.365e-14` for synthesis and `1.463e-14` for analysis. The paired recurrence improves scalar synthesis but does not close the remaining DUCC gap; spin 1 remains a higher-priority kernel target.

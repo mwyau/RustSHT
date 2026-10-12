@@ -3,6 +3,7 @@
 
 mod scalar;
 mod scalar_f32;
+mod scalar_paired;
 mod spin;
 mod spin_f32;
 
@@ -98,7 +99,49 @@ pub(crate) trait ShtScalar:
     ) -> Result<(), ShtError>
     where
         F: FnMut(usize, usize, &[Self], &[i64]) -> Result<(), ShtError>;
+    fn fill_paired_scalar_factors(
+        _m: usize,
+        _lmax: usize,
+        _epsilon: &[Self],
+        _alpha: &mut [Self],
+        _coefficient_a: &mut [Self],
+        _coefficient_b: &mut [Self],
+    ) -> bool {
+        false
+    }
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The paired recurrence receives order factors and caller-owned lane scratch explicitly."
+    )]
+    fn for_each_y_lm_paired_dispatched<F>(
+        _arch: Arch,
+        _m: usize,
+        _lmax: usize,
+        _sin_theta: &[Self],
+        _cos_theta: &[Self],
+        _sectoral_norm: Self,
+        _coefficient_a: &[Self],
+        _coefficient_b: &[Self],
+        _previous: &mut [Self],
+        _current: &mut [Self],
+        _next: &mut [Self],
+        _exponents: &mut [i64],
+        _visit: F,
+    ) -> Result<bool, ShtError>
+    where
+        F: FnMut(usize, usize, &[Self], &[i64]) -> Result<(), ShtError>,
+    {
+        Ok(false)
+    }
     fn multiply_complex_scaled(value: Complex<Self>, factor: Self, exponent: i64) -> Complex<Self>;
+    fn multiply_complex_scaled_product(
+        value: Complex<Self>,
+        factor: Self,
+        additional_factor: Self,
+        exponent: i64,
+    ) -> Complex<Self> {
+        Self::multiply_complex_scaled(value * additional_factor, factor, exponent)
+    }
     fn fill_spin_factors(
         spin: usize,
         m: usize,
@@ -183,8 +226,65 @@ impl ShtScalar for f64 {
         )
     }
 
+    fn fill_paired_scalar_factors(
+        m: usize,
+        lmax: usize,
+        epsilon: &[Self],
+        alpha: &mut [Self],
+        coefficient_a: &mut [Self],
+        coefficient_b: &mut [Self],
+    ) -> bool {
+        scalar_paired::fill_factors(m, lmax, epsilon, alpha, coefficient_a, coefficient_b);
+        true
+    }
+
+    fn for_each_y_lm_paired_dispatched<F>(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        sectoral_norm: Self,
+        coefficient_a: &[Self],
+        coefficient_b: &[Self],
+        previous: &mut [Self],
+        current: &mut [Self],
+        next: &mut [Self],
+        exponents: &mut [i64],
+        visit: F,
+    ) -> Result<bool, ShtError>
+    where
+        F: FnMut(usize, usize, &[Self], &[i64]) -> Result<(), ShtError>,
+    {
+        scalar_paired::for_each_y_lm_paired_dispatched(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            previous,
+            current,
+            next,
+            exponents,
+            visit,
+        )?;
+        Ok(true)
+    }
+
     fn multiply_complex_scaled(value: Complex<Self>, factor: Self, exponent: i64) -> Complex<Self> {
         scalar::multiply_complex_scaled(value, factor, exponent)
+    }
+
+    fn multiply_complex_scaled_product(
+        value: Complex<Self>,
+        factor: Self,
+        additional_factor: Self,
+        exponent: i64,
+    ) -> Complex<Self> {
+        scalar::multiply_complex_scaled_product(value, factor, additional_factor, exponent)
     }
 
     fn fill_spin_factors(
