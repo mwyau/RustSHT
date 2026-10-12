@@ -64,17 +64,19 @@ The root Cargo workspace includes the separate `python/` PyO3 extension crate al
 
 ## Python binding scaffold
 
-The uv development environment pins Python 3.11 with `.python-version`, consistent with the PyO3 `abi3-py311` baseline. The `python/rustsht/py.typed` PEP 561 marker is installed with the package. Add stubs for public numerical bindings when implemented. Generate Cargo and uv lockfiles with their own package managers where registries are accessible; only then enable locked installs in permanent CI. Do not create temporary GitHub Actions jobs to generate lockfiles.
+The uv development environment pins Python 3.11 with `.python-version`, consistent with the PyO3 `abi3-py311` baseline. The `python/rustsht/py.typed` PEP 561 marker and `__init__.pyi` stub are installed with the package. Generate Cargo and uv lockfiles with their own package managers where registries are accessible; only then enable locked installs in permanent CI. Do not create temporary GitHub Actions jobs to generate lockfiles.
 
-The root `pyproject.toml` uses maturin as its build backend. Its `[tool.maturin]` settings point to the `python` Cargo member and build the native extension as `rustsht._rustsht`, alongside `python/rustsht/__init__.py`. The Python project version is `0.1.0.dev0` (PEP 440 form) and the Rust packages use `0.1.0-dev.0` (Cargo semver form). The `dev` group contains DUCC, NumPy and pytest; the published runtime dependency list is empty.
+The root `pyproject.toml` uses maturin as its build backend. Its `[tool.maturin]` settings point to the `python` Cargo member and build the native extension as `rustsht._rustsht`, alongside `python/rustsht/__init__.py`. The Python project version is `0.1.0.dev0` (PEP 440 form) and the Rust packages use `0.1.0-dev.0` (Cargo semver form). NumPy is a runtime dependency for the array API; the `dev` group contains DUCC, NumPy and pytest. DUCC is not a runtime dependency.
 
-Run `uv sync` to build/install the local Python package, then `uv run pytest python/tests` to check import of the compiled extension. `cargo test --workspace` checks both Rust crates. No SHT functions or fictitious placeholders are exposed by the extension yet. Add Python SHT bindings only after the corresponding native Rust operations are implemented and verified.
+`uv sync` builds and installs the local Python package. `uv run pytest python/tests` checks the compiled extension, numerical calls, array validation and DUCC comparisons. `cargo test --workspace` checks both Rust crates. The extension exposes the verified f64 operations through `ShtPlan`.
 
-The numerical Python API will eventually contain DUCC-familiar procedural functions and a reusable plan class. Do not publish placeholder numerical operations. Initial parity uses DUCC's unit `ringfactor`; arbitrary per-ring scaling is deferred.
+The Python API currently exposes a reusable plan class. Procedural functions and `get_gridweights` remain planned. The transforms use DUCC's unit `ringfactor`; arbitrary per-ring scaling is not exposed.
 
 ## Python binding
 
-Expose two API styles if useful: DUCC-familiar `analysis_2d`, `synthesis_2d`, `adjoint_synthesis_2d`, `adjoint_analysis_2d` and `get_gridweights`; and a reusable Python plan class. Accept `float64/complex128` first, later `float32/complex64`. Validate shapes `(ncomp, ntheta, nphi)` and packed coefficient arrays, release the GIL for computation, and document when NumPy inputs are copied. Noncontiguous array support and zero-copy borrowing are later measured design decisions; avoid undefined aliasing.
+`rustsht.ShtPlan(kind, ntheta, nphi, lmax, mmax, spin=0, phi0=0.0)` accepts `kind` values `"GL"`, `"CC"` and `"F1"`. Map rings run north to south, longitude samples run eastward, and `phi0` is in radians. The plan exposes scalar and spin STANDARD `synthesis`, `analysis`, `adjoint_synthesis` and `adjoint_analysis`, spin `synthesis_gradient` and its adjoint, and scalar `synthesis_deriv1` and its adjoint. Standard coefficient arrays use order-major packing and shapes `(1, nalm)` for scalar plans and `(2, nalm)` for spin plans. Standard maps use component-first shapes `(ncomp, ntheta, nphi)`. Gradient and derivative synthesis take one coefficient channel and return two map components.
+
+The binding accepts `complex128` coefficients and `float64` maps. Inputs must be C-contiguous; the binding copies them into Rust-owned vectors before releasing the GIL. Each call creates a workspace and returns a new NumPy array. Input shape and numerical-operation errors are reported as `ValueError`; an unsupported NumPy dtype is rejected during argument conversion. Exact-analysis sampling limits match the Rust API. Noncontiguous inputs, zero-copy borrowing, f32/complex64 and per-call thread control are not implemented.
 
 ## spharmgrid adapter boundary
 
@@ -84,6 +86,6 @@ A RustSHT adapter should match that numerical boundary. spharmgrid, **not the Ru
 
 ## Remaining choices
 
-- Exact derivative method signatures, f64/f32 kernel sharing and thread configuration after working prototypes.
-- Future strided/batch inputs and safe `Send`/`Sync` guarantees.
+- f64/f32 kernel sharing and Python thread configuration.
+- Strided and batched inputs and zero-copy borrowing.
 - GPL wheel/source distribution review before release.
