@@ -118,6 +118,32 @@ pub(crate) trait ShtScalar:
     }
     #[expect(
         clippy::too_many_arguments,
+        reason = "The fused scalar block receives operator data and worker scratch explicitly."
+    )]
+    fn synthesize_paired_scalar_block_dispatched(
+        _arch: Arch,
+        _m: usize,
+        _lmax: usize,
+        _sin_theta: &[Self],
+        _cos_theta: &[Self],
+        _sectoral_norm: Self,
+        _epsilon: &[Self],
+        _alpha: &[Self],
+        _coefficient_a: &[Self],
+        _coefficient_b: &[Self],
+        _coefficients: &[Complex<Self>],
+        _ring_order_limits: &[usize],
+        _spectrum_len: usize,
+        _spectra: &mut [Complex<Self>],
+        _previous: &mut [Self],
+        _current: &mut [Self],
+        _next: &mut [Self],
+        _exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        Ok(false)
+    }
+    #[expect(
+        clippy::too_many_arguments,
         reason = "The paired recurrence receives order factors and caller-owned lane scratch explicitly."
     )]
     fn for_each_y_lm_paired_dispatched<F>(
@@ -283,6 +309,48 @@ impl ShtScalar for f64 {
             visit,
         )?;
         Ok(true)
+    }
+
+    fn synthesize_paired_scalar_block_dispatched(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        sectoral_norm: Self,
+        epsilon: &[Self],
+        alpha: &[Self],
+        coefficient_a: &[Self],
+        coefficient_b: &[Self],
+        coefficients: &[Complex<Self>],
+        ring_order_limits: &[usize],
+        spectrum_len: usize,
+        spectra: &mut [Complex<Self>],
+        previous: &mut [Self],
+        current: &mut [Self],
+        next: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        scalar_paired::synthesize_order_block_dispatched(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            epsilon,
+            alpha,
+            coefficient_a,
+            coefficient_b,
+            coefficients,
+            ring_order_limits,
+            spectrum_len,
+            spectra,
+            previous,
+            current,
+            next,
+            exponents,
+        )
     }
 
     fn multiply_complex_scaled(value: Complex<Self>, factor: Self, exponent: i64) -> Complex<Self> {

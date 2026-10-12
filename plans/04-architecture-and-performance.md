@@ -36,6 +36,8 @@ Port DUCC's normalized, scaled scalar and spin recurrence with its polar cutoffs
 
 The October 2026 comparison of `fearless_simd` 1.1.0 and `pulp` 0.22.3 retained Pulp. AVX2 recurrence throughput and full-transform timings did not show a repeatable Fearless advantage, and its temporary integration duplicated the paired recurrence control flow. The comparison and the separate register-resident fused-kernel prototype are recorded in [05](05-validation-and-milestones.md).
 
+F64 scalar synthesis uses a Pulp kernel that keeps the paired recurrence state and real/imaginary sums in SIMD registers across degree pairs. It writes the final latitude sums once per block. Blocks with polar-inactive rings or scaled sectoral initialization use the existing scaled paired recurrence. The fast kernel applies only to scalar synthesis; f32, analysis, and spin operations use their existing paths. Its numerical and timing results are recorded in [05](05-validation-and-milestones.md).
+
 ## Threading, memory and allocation
 
 - Optional Rayon runs coarse independent `m` or ring-FFT blocks during GL M1. Avoid per-degree jobs, atomics on coefficients, nested parallel pools and shared mutable scratch.

@@ -911,6 +911,320 @@ mod tests {
     }
 
     #[test]
+    fn fused_paired_synthesis_matches_scaled_reference_with_vector_tails() {
+        let lmax = 95;
+        let norms = sectoral_normalizations(lmax).unwrap();
+        for lane_count in [64, 61] {
+            let theta: Vec<_> = (0..lane_count)
+                .map(|ring| 0.19 + 2.76 * ring as f64 / (lane_count - 1) as f64)
+                .collect();
+            let sin_theta: Vec<_> = theta.iter().map(|value| value.sin()).collect();
+            let cos_theta: Vec<_> = theta.iter().map(|value| value.cos()).collect();
+            let ring_order_limits = vec![lmax; lane_count];
+
+            for m in [0, 1, 17, 78, 79] {
+                let mut epsilon = vec![0.0; lmax + 4];
+                for (degree, value) in epsilon.iter_mut().enumerate().skip(m) {
+                    *value = super::epsilon(degree, m);
+                }
+                let factor_count = lmax / 2 + 2;
+                let mut alpha = vec![0.0; factor_count];
+                let mut coefficient_a = vec![0.0; factor_count];
+                let mut coefficient_b = vec![0.0; factor_count];
+                super::super::scalar_paired::fill_factors(
+                    m,
+                    lmax,
+                    &epsilon,
+                    &mut alpha,
+                    &mut coefficient_a,
+                    &mut coefficient_b,
+                );
+                let coefficients: Vec<_> = (m..=lmax)
+                    .map(|degree| {
+                        Complex64::new(
+                            (0.31 * degree as f64 + 0.73 * m as f64).sin(),
+                            (0.19 * degree as f64 - 0.41 * m as f64).cos(),
+                        ) / (degree - m + 1) as f64
+                    })
+                    .collect();
+
+                for arch in [Arch::Scalar, Arch::new()] {
+                    let spectrum_len = lmax + 1;
+                    let mut actual = vec![Complex64::new(0.0, 0.0); lane_count * spectrum_len];
+                    let mut previous = vec![0.0; lane_count];
+                    let mut current = vec![0.0; lane_count];
+                    let mut next = vec![0.0; lane_count];
+                    let mut exponents = vec![0; lane_count];
+                    let used = super::super::scalar_paired::synthesize_order_block_dispatched(
+                        arch,
+                        m,
+                        lmax,
+                        &sin_theta,
+                        &cos_theta,
+                        norms[m],
+                        &epsilon,
+                        &alpha,
+                        &coefficient_a,
+                        &coefficient_b,
+                        &coefficients,
+                        &ring_order_limits,
+                        spectrum_len,
+                        &mut actual,
+                        &mut previous,
+                        &mut current,
+                        &mut next,
+                        &mut exponents,
+                    )
+                    .unwrap();
+                    assert!(used, "lane_count={lane_count}, m={m}, arch={arch:?}");
+
+                    let mut expected = vec![Complex64::new(0.0, 0.0); lane_count];
+                    super::super::scalar_paired::for_each_y_lm_paired_dispatched(
+                        arch,
+                        m,
+                        lmax,
+                        &sin_theta,
+                        &cos_theta,
+                        norms[m],
+                        &coefficient_a,
+                        &coefficient_b,
+                        &mut previous,
+                        &mut current,
+                        &mut next,
+                        &mut exponents,
+                        |degree, ring_start, basis, basis_exponents| {
+                            let pair = (degree - m) / 2;
+                            let offset = degree - m;
+                            let next_even = if degree + 2 <= lmax {
+                                coefficients[offset + 2]
+                            } else {
+                                Complex64::new(0.0, 0.0)
+                            };
+                            let even = (coefficients[offset] * epsilon[degree + 1]
+                                + next_even * epsilon[degree + 2])
+                                * alpha[pair];
+                            let odd = if degree < lmax {
+                                coefficients[offset + 1] * alpha[pair]
+                            } else {
+                                Complex64::new(0.0, 0.0)
+                            };
+                            for lane in 0..basis.len() {
+                                expected[ring_start + lane] += super::multiply_complex_scaled(
+                                    even,
+                                    basis[lane],
+                                    basis_exponents[lane],
+                                )
+                                    + super::multiply_complex_scaled_product(
+                                        odd,
+                                        basis[lane],
+                                        cos_theta[ring_start + lane],
+                                        basis_exponents[lane],
+                                    );
+                            }
+                            Ok(())
+                        },
+                    )
+                    .unwrap();
+
+                    for ring in 0..lane_count {
+                        let observed = actual[ring * spectrum_len + m];
+                        let error = (observed - expected[ring]).norm();
+                        assert!(
+                            error <= 2e-12 * expected[ring].norm().max(1.0),
+                            "lane_count={lane_count}, m={m}, ring={ring}, fused={observed:?}, reference={:?}, error={error:.3e}",
+                            expected[ring]
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn fused_paired_synthesis_declines_inactive_and_scaled_blocks() {
+        let lmax = 32;
+        let m = 3;
+        let mut epsilon = vec![0.0; lmax + 4];
+        for (degree, value) in epsilon.iter_mut().enumerate().skip(m) {
+            *value = super::epsilon(degree, m);
+        }
+        let factor_count = lmax / 2 + 2;
+        let mut alpha = vec![0.0; factor_count];
+        let mut coefficient_a = vec![0.0; factor_count];
+        let mut coefficient_b = vec![0.0; factor_count];
+        super::super::scalar_paired::fill_factors(
+            m,
+            lmax,
+            &epsilon,
+            &mut alpha,
+            &mut coefficient_a,
+            &mut coefficient_b,
+        );
+        let coefficients = vec![Complex64::new(0.25, -0.5); lmax - m + 1];
+        let norms = sectoral_normalizations(lmax).unwrap();
+        let spectrum_len = lmax + 1;
+        for (sin_theta, ring_order_limits, expected_used) in [
+            (vec![0.5; 4], vec![lmax, lmax, m - 1, lmax], false),
+            (vec![1e-200; 4], vec![lmax; 4], false),
+        ] {
+            let cos_theta = vec![0.8; sin_theta.len()];
+            let mut spectra = vec![Complex64::new(0.0, 0.0); sin_theta.len() * spectrum_len];
+            let mut previous = vec![0.0; sin_theta.len()];
+            let mut current = vec![0.0; sin_theta.len()];
+            let mut next = vec![0.0; sin_theta.len()];
+            let mut exponents = vec![0; sin_theta.len()];
+            let used = super::super::scalar_paired::synthesize_order_block_dispatched(
+                Arch::new(),
+                m,
+                lmax,
+                &sin_theta,
+                &cos_theta,
+                norms[m],
+                &epsilon,
+                &alpha,
+                &coefficient_a,
+                &coefficient_b,
+                &coefficients,
+                &ring_order_limits,
+                spectrum_len,
+                &mut spectra,
+                &mut previous,
+                &mut current,
+                &mut next,
+                &mut exponents,
+            )
+            .unwrap();
+            assert_eq!(used, expected_used);
+            assert!(
+                spectra
+                    .iter()
+                    .all(|value| *value == Complex64::new(0.0, 0.0))
+            );
+        }
+    }
+
+    #[test]
+    fn fused_paired_synthesis_matches_scaled_reference_at_high_order() {
+        let lmax = 768;
+        let m = 255;
+        let norms = sectoral_normalizations(lmax).unwrap();
+        let theta: Vec<_> = (0..64)
+            .map(|ring| 0.42 + 2.30 * ring as f64 / 63.0)
+            .collect();
+        let sin_theta: Vec<_> = theta.iter().map(|value| value.sin()).collect();
+        let cos_theta: Vec<_> = theta.iter().map(|value| value.cos()).collect();
+        let ring_order_limits = vec![lmax; theta.len()];
+        let mut epsilon = vec![0.0; lmax + 4];
+        for (degree, value) in epsilon.iter_mut().enumerate().skip(m) {
+            *value = super::epsilon(degree, m);
+        }
+        let factor_count = lmax / 2 + 2;
+        let mut alpha = vec![0.0; factor_count];
+        let mut coefficient_a = vec![0.0; factor_count];
+        let mut coefficient_b = vec![0.0; factor_count];
+        super::super::scalar_paired::fill_factors(
+            m,
+            lmax,
+            &epsilon,
+            &mut alpha,
+            &mut coefficient_a,
+            &mut coefficient_b,
+        );
+        let coefficients: Vec<_> = (m..=lmax)
+            .map(|degree| {
+                Complex64::new(
+                    (0.31 * degree as f64 + 0.73 * m as f64).sin(),
+                    (0.19 * degree as f64 - 0.41 * m as f64).cos(),
+                ) / ((degree - m + 1) as f64).sqrt()
+            })
+            .collect();
+        let spectrum_len = lmax + 1;
+        let mut actual = vec![Complex64::new(0.0, 0.0); theta.len() * spectrum_len];
+        let mut previous = vec![0.0; theta.len()];
+        let mut current = vec![0.0; theta.len()];
+        let mut next = vec![0.0; theta.len()];
+        let mut exponents = vec![0; theta.len()];
+        assert!(
+            super::super::scalar_paired::synthesize_order_block_dispatched(
+                Arch::new(),
+                m,
+                lmax,
+                &sin_theta,
+                &cos_theta,
+                norms[m],
+                &epsilon,
+                &alpha,
+                &coefficient_a,
+                &coefficient_b,
+                &coefficients,
+                &ring_order_limits,
+                spectrum_len,
+                &mut actual,
+                &mut previous,
+                &mut current,
+                &mut next,
+                &mut exponents,
+            )
+            .unwrap()
+        );
+
+        let mut expected = vec![Complex64::new(0.0, 0.0); theta.len()];
+        super::super::scalar_paired::for_each_y_lm_paired_dispatched(
+            Arch::new(),
+            m,
+            lmax,
+            &sin_theta,
+            &cos_theta,
+            norms[m],
+            &coefficient_a,
+            &coefficient_b,
+            &mut previous,
+            &mut current,
+            &mut next,
+            &mut exponents,
+            |degree, ring_start, basis, basis_exponents| {
+                let pair = (degree - m) / 2;
+                let offset = degree - m;
+                let next_even = if degree + 2 <= lmax {
+                    coefficients[offset + 2]
+                } else {
+                    Complex64::new(0.0, 0.0)
+                };
+                let even = (coefficients[offset] * epsilon[degree + 1]
+                    + next_even * epsilon[degree + 2])
+                    * alpha[pair];
+                let odd = if degree < lmax {
+                    coefficients[offset + 1] * alpha[pair]
+                } else {
+                    Complex64::new(0.0, 0.0)
+                };
+                for lane in 0..basis.len() {
+                    expected[ring_start + lane] +=
+                        super::multiply_complex_scaled(even, basis[lane], basis_exponents[lane])
+                            + super::multiply_complex_scaled_product(
+                                odd,
+                                basis[lane],
+                                cos_theta[ring_start + lane],
+                                basis_exponents[lane],
+                            );
+                }
+                Ok(())
+            },
+        )
+        .unwrap();
+
+        for ring in 0..theta.len() {
+            let observed = actual[ring * spectrum_len + m];
+            let error = (observed - expected[ring]).norm();
+            assert!(
+                error <= 5e-12 * expected[ring].norm().max(1.0),
+                "ring={ring}, fused={observed:?}, reference={:?}, error={error:.3e}",
+                expected[ring]
+            );
+        }
+    }
+
+    #[test]
     fn ducc_paired_recurrence_scaled_to_normal_transition_matches_reference() {
         let m = 255;
         let lmax = 768;

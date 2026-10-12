@@ -15,6 +15,7 @@
  * Author: Martin Reinecke
  */
 
+use num_complex::Complex64;
 use pulp::{Arch, Simd, WithSimd};
 
 use crate::error::ShtError;
@@ -54,6 +55,214 @@ pub(crate) fn fill_factors(
         coefficient_b[index] = -coefficient_a[index]
             * (epsilon[degree + 2] * epsilon[degree + 2]
                 + epsilon[degree + 1] * epsilon[degree + 1]);
+    }
+}
+
+/// Tries a register-resident scalar synthesis block for ordinary recurrence values.
+///
+/// A block is declined when any lane is excluded by the polar order limit or
+/// sectoral initialization needs binary scaling. Callers then use the general
+/// paired recurrence, which retains per-lane scaling.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The fused block receives recurrence factors, spectra and worker scratch explicitly."
+)]
+pub(crate) fn synthesize_order_block_dispatched(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[f64],
+    cos_theta: &[f64],
+    sectoral_norm: f64,
+    epsilon: &[f64],
+    alpha: &[f64],
+    coefficient_a: &[f64],
+    coefficient_b: &[f64],
+    coefficients: &[Complex64],
+    ring_order_limits: &[usize],
+    spectrum_len: usize,
+    spectra: &mut [Complex64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    next: &mut [f64],
+    exponents: &mut [i64],
+) -> Result<bool, ShtError> {
+    debug_assert_eq!(sin_theta.len(), cos_theta.len());
+    debug_assert_eq!(sin_theta.len(), ring_order_limits.len());
+    debug_assert_eq!(spectra.len(), sin_theta.len() * spectrum_len);
+    debug_assert!(previous.len() >= sin_theta.len());
+    debug_assert!(current.len() >= sin_theta.len());
+    debug_assert!(next.len() >= sin_theta.len());
+    debug_assert!(exponents.len() >= sin_theta.len());
+    debug_assert!(coefficients.len() > lmax - m);
+
+    if sin_theta.is_empty() || ring_order_limits.iter().any(|&limit| m > limit) {
+        return Ok(false);
+    }
+
+    for ring in 0..sin_theta.len() {
+        let (value, exponent) = scalar::sectoral_value(sin_theta[ring], m, sectoral_norm)?;
+        previous[ring] = 0.0;
+        current[ring] = value;
+        exponents[ring] = exponent;
+    }
+    if !scalar::normalize_pair_lanes(
+        &mut previous[..sin_theta.len()],
+        &mut current[..sin_theta.len()],
+        &mut exponents[..sin_theta.len()],
+    )? {
+        return Ok(false);
+    }
+
+    arch.dispatch(FusedSynthesisBlock {
+        m,
+        lmax,
+        cos_theta,
+        epsilon,
+        alpha,
+        coefficient_a,
+        coefficient_b,
+        coefficients,
+        current: &current[..sin_theta.len()],
+        sum_re: &mut previous[..sin_theta.len()],
+        sum_im: &mut next[..sin_theta.len()],
+    });
+    for ring in 0..sin_theta.len() {
+        spectra[ring * spectrum_len + m] += Complex64::new(previous[ring], next[ring]);
+    }
+    Ok(true)
+}
+
+struct FusedSynthesisBlock<'a> {
+    m: usize,
+    lmax: usize,
+    cos_theta: &'a [f64],
+    epsilon: &'a [f64],
+    alpha: &'a [f64],
+    coefficient_a: &'a [f64],
+    coefficient_b: &'a [f64],
+    coefficients: &'a [Complex64],
+    current: &'a [f64],
+    sum_re: &'a mut [f64],
+    sum_im: &'a mut [f64],
+}
+
+impl WithSimd for FusedSynthesisBlock<'_> {
+    type Output = ();
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) {
+        let FusedSynthesisBlock {
+            m,
+            lmax,
+            cos_theta,
+            epsilon,
+            alpha,
+            coefficient_a,
+            coefficient_b,
+            coefficients,
+            current,
+            sum_re,
+            sum_im,
+        } = self;
+        let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
+        let (initial_vectors, initial_tail) = S::as_simd_f64s(current);
+        let (sum_re_vectors, sum_re_tail) = S::as_mut_simd_f64s(sum_re);
+        let (sum_im_vectors, sum_im_tail) = S::as_mut_simd_f64s(sum_im);
+        let pair_count = (lmax - m + 2) / 2;
+
+        for lane_block in 0..cosine_vectors.len() {
+            let cosine = cosine_vectors[lane_block];
+            let mut previous = simd.splat_f64s(0.0);
+            let mut current = initial_vectors[lane_block];
+            let mut accumulated_re = simd.splat_f64s(0.0);
+            let mut accumulated_im = simd.splat_f64s(0.0);
+            for pair in 0..pair_count {
+                let l = m + 2 * pair;
+                let offset = l - m;
+                let next_even = if l + 2 <= lmax {
+                    coefficients[offset + 2]
+                } else {
+                    Complex64::new(0.0, 0.0)
+                };
+                let coefficient_even = (coefficients[offset] * epsilon[l + 1]
+                    + next_even * epsilon[l + 2])
+                    * alpha[pair];
+                let coefficient_odd = if l < lmax {
+                    coefficients[offset + 1] * alpha[pair]
+                } else {
+                    Complex64::new(0.0, 0.0)
+                };
+                let coefficient_re = simd.mul_add_f64s(
+                    simd.splat_f64s(coefficient_odd.re),
+                    cosine,
+                    simd.splat_f64s(coefficient_even.re),
+                );
+                let coefficient_im = simd.mul_add_f64s(
+                    simd.splat_f64s(coefficient_odd.im),
+                    cosine,
+                    simd.splat_f64s(coefficient_even.im),
+                );
+                accumulated_re = simd.mul_add_f64s(current, coefficient_re, accumulated_re);
+                accumulated_im = simd.mul_add_f64s(current, coefficient_im, accumulated_im);
+
+                if pair + 1 < pair_count {
+                    let cosine_squared = simd.mul_f64s(cosine, cosine);
+                    let leading = simd.mul_add_f64s(
+                        simd.splat_f64s(coefficient_a[pair]),
+                        cosine_squared,
+                        simd.splat_f64s(coefficient_b[pair]),
+                    );
+                    let next = simd.mul_add_f64s(leading, current, previous);
+                    previous = current;
+                    current = next;
+                }
+            }
+            sum_re_vectors[lane_block] = accumulated_re;
+            sum_im_vectors[lane_block] = accumulated_im;
+        }
+
+        for lane in 0..cosine_tail.len() {
+            let cosine = cosine_tail[lane];
+            let mut previous = 0.0;
+            let mut current = initial_tail[lane];
+            let mut accumulated_re = 0.0;
+            let mut accumulated_im = 0.0;
+            for pair in 0..pair_count {
+                let l = m + 2 * pair;
+                let offset = l - m;
+                let next_even = if l + 2 <= lmax {
+                    coefficients[offset + 2]
+                } else {
+                    Complex64::new(0.0, 0.0)
+                };
+                let coefficient_even = (coefficients[offset] * epsilon[l + 1]
+                    + next_even * epsilon[l + 2])
+                    * alpha[pair];
+                let coefficient_odd = if l < lmax {
+                    coefficients[offset + 1] * alpha[pair]
+                } else {
+                    Complex64::new(0.0, 0.0)
+                };
+                accumulated_re = current.mul_add(
+                    coefficient_odd.re.mul_add(cosine, coefficient_even.re),
+                    accumulated_re,
+                );
+                accumulated_im = current.mul_add(
+                    coefficient_odd.im.mul_add(cosine, coefficient_even.im),
+                    accumulated_im,
+                );
+
+                if pair + 1 < pair_count {
+                    let leading = coefficient_a[pair].mul_add(cosine * cosine, coefficient_b[pair]);
+                    let next = leading.mul_add(current, previous);
+                    previous = current;
+                    current = next;
+                }
+            }
+            sum_re_tail[lane] = accumulated_re;
+            sum_im_tail[lane] = accumulated_im;
+        }
     }
 }
 
