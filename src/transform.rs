@@ -7,6 +7,7 @@ use num_complex::Complex64;
 use rayon::prelude::*;
 
 use crate::error::ShtError;
+use crate::grid::GridKind;
 use crate::legendre::{
     LATITUDE_BLOCK_SIZE, fill_epsilon, for_each_y_lm_dispatched, multiply_complex_scaled,
     polar_order_limit,
@@ -211,15 +212,16 @@ impl ShtPlan {
         Ok(())
     }
 
-    /// Analyzes GL samples into real-field scalar harmonic coefficients.
+    /// Analyzes samples into real-field scalar harmonic coefficients.
     ///
-    /// Exact analysis requires `ntheta >= lmax + 1` and
+    /// Exact GL analysis requires `ntheta >= lmax + 1`; exact CC analysis
+    /// requires `ntheta >= lmax + 2`. Both require
     /// `mmax <= (nphi - 1) / 2`.
     ///
     /// # Errors
     ///
-    /// Returns an error for non-scalar spin, insufficient GL sampling, a
-    /// buffer length mismatch, or an incompatible workspace.
+    /// Returns an error for non-scalar spin, insufficient exact-analysis
+    /// sampling, a buffer length mismatch, or an incompatible workspace.
     pub fn analysis_into(
         &self,
         map: &[f64],
@@ -227,18 +229,7 @@ impl ShtPlan {
         workspace: &mut ShtWorkspace,
     ) -> Result<(), ShtError> {
         self.check_scalar_spin()?;
-        if self.grid.ntheta() <= self.harmonics.lmax() {
-            return Err(ShtError::AnalysisLatitudeUndersampled {
-                lmax: self.harmonics.lmax(),
-                ntheta: self.grid.ntheta(),
-            });
-        }
-        if self.harmonics.mmax() > (self.grid.nphi() - 1) / 2 {
-            return Err(ShtError::AnalysisLongitudeUndersampled {
-                mmax: self.harmonics.mmax(),
-                nphi: self.grid.nphi(),
-            });
-        }
+        self.check_analysis_sampling()?;
         check_len("map input", self.sample_count, map.len())?;
         check_len("coefficient output", self.harmonics.nalm(), alm.len())?;
         self.check_workspace(workspace)?;
@@ -271,11 +262,13 @@ impl ShtPlan {
         self.analyze_map_to_coefficients(map, alm, workspace, None)
     }
 
-    /// Applies the adjoint of exact scalar GL analysis.
+    /// Applies the adjoint of exact scalar analysis.
     ///
-    /// Exact analysis requires `ntheta >= lmax + 1` and
-    /// `mmax <= (nphi - 1) / 2`. The output is STANDARD synthesis scaled on
-    /// each ring by its GL pixel weight, `ring_weight / nphi`.
+    /// Exact GL analysis requires `ntheta >= lmax + 1`; exact CC analysis
+    /// requires `ntheta >= lmax + 2`. Both require
+    /// `mmax <= (nphi - 1) / 2`. GL output is STANDARD synthesis scaled on
+    /// each ring by `ring_weight / nphi`; CC output uses the adjoint of the
+    /// prepared-grid resampling operator.
     ///
     /// # Errors
     ///
@@ -295,8 +288,71 @@ impl ShtPlan {
         check_len("map output", self.sample_count, map.len())?;
         self.check_workspace(workspace)?;
 
-        self.synthesis_into(alm, map, workspace)?;
-        self.apply_analysis_pixel_weights(map);
+        if self.cc_resampling.is_some() {
+            self.adjoint_analysis_cc_into(alm, map, workspace)
+        } else {
+            self.synthesis_into(alm, map, workspace)?;
+            self.apply_analysis_pixel_weights(map);
+            Ok(())
+        }
+    }
+
+    fn adjoint_analysis_cc_into(
+        &self,
+        alm: &[Complex64],
+        map: &mut [f64],
+        workspace: &mut ShtWorkspace,
+    ) -> Result<(), ShtError> {
+        let resampling = self
+            .cc_resampling
+            .as_ref()
+            .expect("CC adjoint analysis requires the prepared CC operator");
+        let prepared_ntheta = resampling.prepared_ntheta();
+        for (ring, &theta) in resampling.prepared_theta().iter().enumerate() {
+            (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
+            workspace.ring_order_limits[ring] = polar_order_limit(
+                self.harmonics.lmax(),
+                0,
+                workspace.theta_sin[ring],
+                workspace.theta_cos[ring],
+            );
+        }
+        workspace.prepared_spectra.fill(Complex64::new(0.0, 0.0));
+        self.synthesize_ring_group(
+            alm,
+            1,
+            self.fft.spectrum_len(),
+            self.grid.phi0(),
+            0,
+            &mut workspace.prepared_spectra,
+            &workspace.theta_sin[..prepared_ntheta],
+            &workspace.theta_cos[..prepared_ntheta],
+            &workspace.ring_order_limits[..prepared_ntheta],
+            pulp::Arch::new(),
+            &mut workspace.recurrence_workers[0],
+        )?;
+        resampling.restore_original(
+            &workspace.prepared_spectra,
+            &mut workspace.spectra,
+            self.fft.spectrum_len(),
+            self.harmonics.mmax(),
+            0,
+            &mut workspace.cc_profile,
+            &mut workspace.cc_fft_scratch,
+        )?;
+        let nphi = self.grid.nphi();
+        let spectrum_len = self.fft.spectrum_len();
+        for ring in 0..self.grid.ntheta() {
+            let start = ring * spectrum_len;
+            workspace.spectra[start].im = 0.0;
+            self.fft.inverse(
+                &workspace.spectra[start..start + spectrum_len],
+                &mut workspace.row,
+                &mut workspace.fft,
+            )?;
+            let output_start = ring * nphi;
+            map[output_start..output_start + nphi].copy_from_slice(&workspace.row);
+        }
         Ok(())
     }
 
@@ -321,18 +377,56 @@ impl ShtPlan {
             )?;
         }
 
+        let (analysis_spectra, analysis_ntheta, analysis_ring_weights) = if let Some(resampling) =
+            self.cc_resampling
+                .as_ref()
+                .filter(|_| ring_weights.is_some())
+        {
+            for value in &mut workspace.spectra {
+                *value /= nphi as f64;
+            }
+            resampling.to_prepared(
+                &workspace.spectra,
+                &mut workspace.prepared_spectra,
+                spectrum_len,
+                self.harmonics.mmax(),
+                0,
+                &mut workspace.cc_profile,
+                &mut workspace.cc_fft_scratch,
+            )?;
+            for (ring, &theta) in resampling.prepared_theta().iter().enumerate() {
+                (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
+                workspace.ring_order_limits[ring] = polar_order_limit(
+                    self.harmonics.lmax(),
+                    0,
+                    workspace.theta_sin[ring],
+                    workspace.theta_cos[ring],
+                );
+            }
+            (
+                workspace.prepared_spectra.as_slice(),
+                resampling.prepared_ntheta(),
+                None,
+            )
+        } else {
+            for (ring, &theta) in self.grid.theta().iter().enumerate() {
+                (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
+                workspace.ring_order_limits[ring] = polar_order_limit(
+                    self.harmonics.lmax(),
+                    0,
+                    workspace.theta_sin[ring],
+                    workspace.theta_cos[ring],
+                );
+            }
+            (workspace.spectra.as_slice(), ntheta, ring_weights)
+        };
+        let theta_sin = &workspace.theta_sin[..analysis_ntheta];
+        let theta_cos = &workspace.theta_cos[..analysis_ntheta];
+        let ring_order_limits = &workspace.ring_order_limits[..analysis_ntheta];
+
         alm.fill(Complex64::new(0.0, 0.0));
         let lmax = self.harmonics.lmax();
         let mmax = self.harmonics.mmax();
-        for (ring, &theta) in self.grid.theta().iter().enumerate() {
-            (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
-            workspace.ring_order_limits[ring] = polar_order_limit(
-                lmax,
-                0,
-                workspace.theta_sin[ring],
-                workspace.theta_cos[ring],
-            );
-        }
         let arch = pulp::Arch::new();
 
         #[cfg(feature = "parallel")]
@@ -342,14 +436,14 @@ impl ShtPlan {
             let use_parallel = rayon::current_num_threads() > 1 && worker_count > 1;
             if use_parallel {
                 self.analyze_order_groups_parallel(
-                    &workspace.spectra,
+                    analysis_spectra,
                     nphi,
                     spectrum_len,
                     self.grid.phi0(),
-                    ring_weights,
-                    &workspace.theta_sin,
-                    &workspace.theta_cos,
-                    &workspace.ring_order_limits,
+                    analysis_ring_weights,
+                    theta_sin,
+                    theta_cos,
+                    ring_order_limits,
                     arch,
                     0,
                     order_count,
@@ -358,14 +452,14 @@ impl ShtPlan {
                 )?;
             } else {
                 self.analyze_order_group(
-                    &workspace.spectra,
+                    analysis_spectra,
                     nphi,
                     spectrum_len,
                     self.grid.phi0(),
-                    ring_weights,
-                    &workspace.theta_sin,
-                    &workspace.theta_cos,
-                    &workspace.ring_order_limits,
+                    analysis_ring_weights,
+                    theta_sin,
+                    theta_cos,
+                    ring_order_limits,
                     arch,
                     0,
                     order_count,
@@ -378,14 +472,14 @@ impl ShtPlan {
         {
             let order_count = mmax + 1;
             self.analyze_order_group(
-                &workspace.spectra,
+                analysis_spectra,
                 nphi,
                 spectrum_len,
                 self.grid.phi0(),
-                ring_weights,
-                &workspace.theta_sin,
-                &workspace.theta_cos,
-                &workspace.ring_order_limits,
+                analysis_ring_weights,
+                theta_sin,
+                theta_cos,
+                ring_order_limits,
                 arch,
                 0,
                 order_count,
@@ -589,7 +683,14 @@ impl ShtPlan {
     }
 
     pub(crate) fn check_analysis_sampling(&self) -> Result<(), ShtError> {
-        if self.grid.ntheta() <= self.harmonics.lmax() {
+        let minimum_ntheta = match self.grid.kind() {
+            GridKind::GaussLegendre => self.harmonics.lmax().checked_add(1),
+            GridKind::ClenshawCurtis => self.harmonics.lmax().checked_add(2),
+        }
+        .ok_or(ShtError::IntegerOverflow {
+            quantity: "exact-analysis latitude count",
+        })?;
+        if self.grid.ntheta() < minimum_ntheta {
             return Err(ShtError::AnalysisLatitudeUndersampled {
                 lmax: self.harmonics.lmax(),
                 ntheta: self.grid.ntheta(),
@@ -616,7 +717,12 @@ impl ShtPlan {
     }
 
     pub(crate) fn check_workspace(&self, workspace: &ShtWorkspace) -> Result<(), ShtError> {
-        let recurrence_scratch_len = self.grid.ntheta().min(LATITUDE_BLOCK_SIZE);
+        let prepared_ntheta = self
+            .cc_resampling
+            .as_ref()
+            .map_or(0, |resampling| resampling.prepared_ntheta());
+        let latitude_count = self.grid.ntheta().max(prepared_ntheta);
+        let recurrence_scratch_len = latitude_count.min(LATITUDE_BLOCK_SIZE);
         if workspace.ring_group_size == 0 {
             return Err(ShtError::BufferLength {
                 buffer: "workspace latitude group size",
@@ -634,6 +740,35 @@ impl ShtPlan {
             self.spectrum_count,
             workspace.spin_spectra.len(),
         )?;
+        let prepared_spectrum_count = prepared_ntheta.checked_mul(self.fft.spectrum_len()).ok_or(
+            ShtError::IntegerOverflow {
+                quantity: "prepared CC Fourier spectrum count",
+            },
+        )?;
+        check_len(
+            "workspace prepared CC Fourier spectra",
+            prepared_spectrum_count,
+            workspace.prepared_spectra.len(),
+        )?;
+        check_len(
+            "workspace prepared spin CC Fourier spectra",
+            prepared_spectrum_count,
+            workspace.prepared_spin_spectra.len(),
+        )?;
+        check_len(
+            "workspace CC meridional profile",
+            self.cc_resampling
+                .as_ref()
+                .map_or(0, |resampling| resampling.workspace_profile_len()),
+            workspace.cc_profile.len(),
+        )?;
+        check_len(
+            "workspace CC meridional FFT scratch",
+            self.cc_resampling
+                .as_ref()
+                .map_or(0, |resampling| resampling.workspace_fft_scratch_len()),
+            workspace.cc_fft_scratch.len(),
+        )?;
         check_len(
             "workspace longitude row",
             self.grid.nphi(),
@@ -650,7 +785,7 @@ impl ShtPlan {
                 workspace.ring_order_limits.len(),
             ),
         ] {
-            check_len(buffer, self.grid.ntheta(), actual)?;
+            check_len(buffer, latitude_count, actual)?;
         }
         let expected_worker_count = self
             .grid
@@ -765,7 +900,7 @@ fn check_len(buffer: &'static str, expected: usize, actual: usize) -> Result<(),
 
 #[cfg(test)]
 mod tests {
-    use std::f64::consts::PI;
+    use std::f64::consts::{PI, TAU};
 
     use super::*;
     use crate::grid::{GridKind, GridSpec};
@@ -774,6 +909,14 @@ mod tests {
     fn make_plan(lmax: usize, mmax: usize, ntheta: usize, nphi: usize, phi0: f64) -> ShtPlan {
         ShtPlan::new(
             GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, phi0).unwrap(),
+            HarmonicSpec::scalar(lmax, mmax).unwrap(),
+        )
+        .unwrap()
+    }
+
+    fn make_cc_plan(lmax: usize, mmax: usize, ntheta: usize, nphi: usize, phi0: f64) -> ShtPlan {
+        ShtPlan::new(
+            GridSpec::new(GridKind::ClenshawCurtis, ntheta, nphi, phi0).unwrap(),
             HarmonicSpec::scalar(lmax, mmax).unwrap(),
         )
         .unwrap()
@@ -863,6 +1006,14 @@ mod tests {
         assert!(
             (actual - expected).abs() <= tolerance * expected.abs().max(1.0),
             "actual={actual:.16e}, expected={expected:.16e}"
+        );
+    }
+
+    fn assert_complex_close(actual: Complex64, expected: Complex64, tolerance: f64) {
+        assert!(
+            (actual - expected).norm() <= tolerance,
+            "actual={actual:?}, expected={expected:?}, error={:.3e}",
+            (actual - expected).norm()
         );
     }
 
@@ -1452,5 +1603,300 @@ mod tests {
             spin_plan.synthesis_into(&spin_alm, &mut spin_map, &mut spin_workspace),
             Err(ShtError::UnsupportedSpin { spin: 1 })
         );
+    }
+
+    #[test]
+    #[expect(
+        clippy::excessive_precision,
+        reason = "The fixture values retain printed ducc0 0.41.0 outputs."
+    )]
+    fn clenshaw_curtis_scalar_operations_match_ducc_and_adjoint_identities() {
+        // DUCC reference: ducc0==0.41.0, CC 4x5, phi0=0.37, one thread.
+        let plan = make_cc_plan(2, 2, 4, 5, 0.37);
+        let alm = coefficients(plan.harmonics());
+        let map = arbitrary_map(&plan);
+        let mut workspace = plan.workspace().unwrap();
+
+        let mut synthesized = vec![0.0; plan.sample_count];
+        plan.synthesis_into(&alm, &mut synthesized, &mut workspace)
+            .unwrap();
+        let analytic = analytic_map(&plan, &alm);
+        for (&actual, &expected) in synthesized.iter().zip(&analytic) {
+            assert_close(actual, expected, 5e-14);
+        }
+        for (index, expected) in [
+            (0, 0.162_824_164_911_634_76),
+            (1, 0.162_824_164_911_634_76),
+            (2, 0.162_824_164_911_634_76),
+            (3, 0.162_824_164_911_634_76),
+            (4, 0.162_824_164_911_634_76),
+            (5, 0.420_719_530_114_416_26),
+            (10, 0.196_350_610_822_396_35),
+            (15, 0.358_265_169_672_802_75),
+            (19, 0.358_265_169_672_802_75),
+        ] {
+            assert_close(synthesized[index], expected, 3e-14);
+        }
+
+        let mut analyzed = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        plan.analysis_into(&map, &mut analyzed, &mut workspace)
+            .unwrap();
+        let expected_analysis = [
+            Complex64::new(2.763_651_652_288_861_4, 0.0),
+            Complex64::new(-0.327_153_874_969_685_84, 0.0),
+            Complex64::new(-0.027_926_626_089_303_408, 0.0),
+            Complex64::new(0.199_456_242_909_442_36, -0.367_684_272_467_260_32),
+            Complex64::new(-0.000_170_607_730_796_683_42, -0.025_218_840_386_616_675),
+            Complex64::new(-0.129_749_726_124_326_17, 0.200_921_712_854_862_38),
+        ];
+        for (&actual, expected) in analyzed.iter().zip(expected_analysis) {
+            assert_complex_close(actual, expected, 5e-13);
+        }
+
+        let mut synthesis_adjoint = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        plan.adjoint_synthesis_into(&map, &mut synthesis_adjoint, &mut workspace)
+            .unwrap();
+        let expected_synthesis_adjoint = [
+            Complex64::new(4.355_007_000_427_095, 0.0),
+            Complex64::new(-1.105_228_186_479_379_1, 0.0),
+            Complex64::new(4.190_099_197_329_241, 0.0),
+            Complex64::new(0.178_562_514_316_362_64, -0.329_168_078_214_253_7),
+            Complex64::new(-0.000_190_919_979_042_051_46, -0.028_221_349_968_109_447),
+            Complex64::new(-0.115_918_089_919_755_52, 0.179_490_470_259_712_76),
+        ];
+        for (&actual, expected) in synthesis_adjoint.iter().zip(expected_synthesis_adjoint) {
+            assert_complex_close(actual, expected, 5e-13);
+        }
+
+        let mut analysis_adjoint = vec![0.0; plan.sample_count];
+        plan.adjoint_analysis_into(&alm, &mut analysis_adjoint, &mut workspace)
+            .unwrap();
+        for (index, expected) in [
+            (0, 0.001_918_749_569_064_584_5),
+            (1, 0.029_734_322_064_137_043),
+            (2, 0.031_597_426_064_432_131),
+            (3, 0.000_767_287_972_306_324_17),
+            (4, 0.048_788_395_282_923_627),
+            (5, 0.460_244_027_175_822_19),
+            (10, 0.259_746_036_479_518_88),
+            (15, 0.040_122_946_665_733_537),
+            (19, 0.086_992_592_379_592_532),
+        ] {
+            assert_close(analysis_adjoint[index], expected, 3e-13);
+        }
+        assert_close(
+            map_inner_product(&synthesized, &map),
+            harmonic_inner_product(plan.harmonics(), &alm, &synthesis_adjoint),
+            5e-13,
+        );
+        assert_close(
+            harmonic_inner_product(plan.harmonics(), &analyzed, &alm),
+            map_inner_product(&map, &analysis_adjoint),
+            5e-13,
+        );
+    }
+
+    #[test]
+    #[allow(clippy::excessive_precision)]
+    fn clenshaw_curtis_deriv1_and_adjoint_match_ducc() {
+        // DUCC references: ducc0==0.41.0, CC 4x5, phi0=0.37, one thread.
+        let plan = make_cc_plan(2, 2, 4, 5, 0.37);
+        let alm = coefficients(plan.harmonics());
+        let mut theta_derivative = vec![0.0; plan.sample_count];
+        let mut phi_derivative = vec![0.0; plan.sample_count];
+        let mut workspace = plan.workspace().unwrap();
+
+        plan.synthesis_deriv1_into(
+            &alm,
+            &mut theta_derivative,
+            &mut phi_derivative,
+            &mut workspace,
+        )
+        .unwrap();
+        for (index, expected_theta, expected_phi) in [
+            (0, 0.189_187_523_633_865_48, 0.397_551_229_793_163_65),
+            (5, 0.045_449_220_099_812_365, 0.848_041_919_092_327_8),
+            (10, -0.248_109_173_647_102_92, 0.743_707_688_160_535_6),
+            (19, 0.351_033_268_398_765_7, -0.469_131_834_353_264_5),
+        ] {
+            assert_close(theta_derivative[index], expected_theta, 8e-14);
+            assert_close(phi_derivative[index], expected_phi, 8e-14);
+        }
+
+        let mut first_input = vec![0.0; plan.sample_count];
+        let mut second_input = vec![0.0; plan.sample_count];
+        for i in 0..plan.grid.ntheta() {
+            for j in 0..plan.grid.nphi() {
+                let index = i * plan.grid.nphi() + j;
+                first_input[index] = (0.17 * i as f64 + 0.23 * j as f64).sin()
+                    + 0.2 * (0.11 * i as f64 - 0.31 * j as f64).cos();
+                second_input[index] = (0.19 * i as f64 - 0.13 * j as f64).cos()
+                    - 0.15 * (0.29 * i as f64 + 0.07 * j as f64).sin();
+            }
+        }
+        let mut adjoint = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        plan.adjoint_synthesis_deriv1_into(
+            &first_input,
+            &second_input,
+            &mut adjoint,
+            &mut workspace,
+        )
+        .unwrap();
+        let expected_adjoint = [
+            Complex64::new(0.0, 0.0),
+            Complex64::new(-3.308_183_563_850_672, 0.0),
+            Complex64::new(0.533_803_701_067_148_1, 0.0),
+            Complex64::new(0.045_294_896_873_528_77, -0.155_975_012_277_048_55),
+            Complex64::new(0.505_392_537_836_259_8, -0.323_413_117_328_060_7),
+            Complex64::new(-0.028_628_937_979_647_68, 0.013_394_692_285_793_142),
+        ];
+        for (&actual, expected) in adjoint.iter().zip(expected_adjoint) {
+            assert_complex_close(actual, expected, 8e-13);
+        }
+        assert_close(
+            map_inner_product(&theta_derivative, &first_input)
+                + map_inner_product(&phi_derivative, &second_input),
+            harmonic_inner_product(plan.harmonics(), &alm, &adjoint),
+            2e-12,
+        );
+    }
+
+    #[test]
+    #[allow(clippy::excessive_precision)]
+    fn clenshaw_curtis_analysis_matches_ducc_without_initial_resampling() {
+        // DUCC reference: ducc0==0.41.0, CC 7x5, phi0=0.37, one thread.
+        let plan = make_cc_plan(2, 2, 7, 5, 0.37);
+        let map = arbitrary_map(&plan);
+        let mut coefficients = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        let mut workspace = plan.workspace().unwrap();
+        plan.analysis_into(&map, &mut coefficients, &mut workspace)
+            .unwrap();
+        let expected = [
+            Complex64::new(3.312_543_485_375_359_7, 0.0),
+            Complex64::new(-0.440_646_384_701_871_9, 0.0),
+            Complex64::new(-0.080_662_065_710_822_795, 0.0),
+            Complex64::new(0.194_847_818_808_176_12, -0.271_708_531_406_952_56),
+            Complex64::new(0.009_293_865_922_364_808, -0.086_372_734_621_443_25),
+            Complex64::new(-0.103_237_895_255_551_15, 0.149_175_081_850_113_86),
+        ];
+        for (&actual, expected) in coefficients.iter().zip(expected) {
+            assert_complex_close(actual, expected, 8e-13);
+        }
+
+        let alm = self::coefficients(plan.harmonics());
+        let mut analysis_adjoint = vec![0.0; plan.sample_count];
+        plan.adjoint_analysis_into(&alm, &mut analysis_adjoint, &mut workspace)
+            .unwrap();
+        for (index, expected) in [
+            (0, 0.005_846_025_146_437_542),
+            (1, 0.005_846_025_146_437_542),
+            (2, 0.005_846_025_146_437_542),
+            (3, 0.005_846_025_146_437_542),
+            (4, 0.005_846_025_146_437_542),
+            (5, 0.100_321_125_155_782_02),
+            (10, 0.241_687_658_976_767_94),
+            (15, 0.230_819_221_966_427_18),
+            (34, 0.012_863_122_572_356_323),
+        ] {
+            assert_close(analysis_adjoint[index], expected, 8e-13);
+        }
+    }
+
+    #[test]
+    #[expect(
+        clippy::excessive_precision,
+        reason = "The fixture values retain printed ducc0 0.41.0 outputs."
+    )]
+    fn clenshaw_curtis_minimum_even_longitude_count_matches_ducc() {
+        // DUCC reference: ducc0==0.41.0, CC 4x6, phi0=0.37, one thread.
+        let plan = make_cc_plan(2, 2, 4, 6, 0.37);
+        let map = arbitrary_map(&plan);
+        let mut coefficients = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        let mut workspace = plan.workspace().unwrap();
+        plan.analysis_into(&map, &mut coefficients, &mut workspace)
+            .unwrap();
+        let expected = [
+            Complex64::new(2.903_561_518_322_166_4, 0.0),
+            Complex64::new(-0.293_423_837_509_477_2, 0.0),
+            Complex64::new(-0.030_031_189_191_877_417, 0.0),
+            Complex64::new(0.210_231_077_576_941_93, -0.360_541_545_558_988_21),
+            Complex64::new(-0.003_831_592_732_144_799_6, -0.034_803_087_930_531_502),
+            Complex64::new(-0.089_972_128_440_015_786, 0.193_588_058_937_762_71),
+        ];
+        for (&actual, expected) in coefficients.iter().zip(expected) {
+            assert_complex_close(actual, expected, 8e-13);
+        }
+        let test_alm = self::coefficients(plan.harmonics());
+        let mut analysis_adjoint = vec![0.0; plan.sample_count];
+        plan.adjoint_analysis_into(&test_alm, &mut analysis_adjoint, &mut workspace)
+            .unwrap();
+        assert_close(
+            harmonic_inner_product(plan.harmonics(), &coefficients, &test_alm),
+            map_inner_product(&map, &analysis_adjoint),
+            8e-13,
+        );
+
+        let undersampled_longitudes = make_cc_plan(2, 2, 4, 4, 0.37);
+        let mut undersampled_workspace = undersampled_longitudes.workspace().unwrap();
+        let mut undersampled_coefficients =
+            vec![Complex64::new(0.0, 0.0); undersampled_longitudes.harmonics().nalm()];
+        let undersampled_map = vec![0.0; undersampled_longitudes.sample_count];
+        assert_eq!(
+            undersampled_longitudes.analysis_into(
+                &undersampled_map,
+                &mut undersampled_coefficients,
+                &mut undersampled_workspace,
+            ),
+            Err(ShtError::AnalysisLongitudeUndersampled { mmax: 2, nphi: 4 })
+        );
+
+        let undersampled_latitudes = make_cc_plan(2, 2, 3, 5, 0.37);
+        let mut latitude_workspace = undersampled_latitudes.workspace().unwrap();
+        let mut latitude_coefficients =
+            vec![Complex64::new(0.0, 0.0); undersampled_latitudes.harmonics().nalm()];
+        let latitude_map = vec![0.0; undersampled_latitudes.sample_count];
+        assert_eq!(
+            undersampled_latitudes.analysis_into(
+                &latitude_map,
+                &mut latitude_coefficients,
+                &mut latitude_workspace,
+            ),
+            Err(ShtError::AnalysisLatitudeUndersampled { lmax: 2, ntheta: 3 })
+        );
+    }
+
+    #[test]
+    fn clenshaw_curtis_t255_sectoral_analysis_matches_closed_form() {
+        let plan = make_cc_plan(255, 255, 257, 513, 0.37);
+        let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        let sectoral_index = plan.harmonics().index(255, 255).unwrap();
+        alm[sectoral_index] = Complex64::new(1.0, 0.0);
+        let mut workspace = plan.workspace().unwrap();
+        let mut map = vec![0.0; plan.sample_count];
+        plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
+
+        let mut sectoral_norm = 1.0 / (4.0 * PI).sqrt();
+        for degree in 1..=255 {
+            sectoral_norm *= ((2 * degree + 1) as f64 / (2 * degree) as f64).sqrt();
+        }
+        for (ring, &theta) in plan.grid.theta().iter().enumerate() {
+            let amplitude = -2.0 * sectoral_norm * theta.sin().powi(255);
+            for longitude in 0..plan.grid.nphi() {
+                let phi = plan.grid.phi0() + TAU * longitude as f64 / plan.grid.nphi() as f64;
+                let expected = amplitude * (255.0 * phi).cos();
+                assert_close(map[ring * plan.grid.nphi() + longitude], expected, 4e-12);
+            }
+        }
+
+        let mut recovered = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        plan.analysis_into(&map, &mut recovered, &mut workspace)
+            .unwrap();
+        for (index, &actual) in recovered.iter().enumerate() {
+            let expected = if index == sectoral_index { 1.0 } else { 0.0 };
+            assert!(
+                (actual.re - expected).abs() <= 2e-9 && actual.im.abs() <= 2e-9,
+                "coefficient {index}: actual={actual:?}, expected real={expected}"
+            );
+        }
     }
 }

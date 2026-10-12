@@ -3,14 +3,15 @@
 
 //! Spherical harmonic transforms on regular latitude-longitude grids.
 //!
-//! The first implemented geometry is the Gauss-Legendre grid. Latitude rings
-//! run north to south; longitude samples run eastward from `phi0` in radians.
+//! Gauss-Legendre and Clenshaw-Curtis grids use north-to-south latitude rings;
+//! longitude samples run eastward from `phi0` in radians.
 
 mod error;
 mod fft;
 mod grid;
 mod harmonics;
 mod legendre;
+mod meridional;
 mod plan;
 mod spin_transform;
 mod transform;
