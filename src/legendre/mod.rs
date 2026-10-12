@@ -264,7 +264,7 @@ impl ShtScalar for f32 {
     }
 
     fn for_each_y_lm_dispatched<F>(
-        _arch: Arch,
+        arch: Arch,
         m: usize,
         lmax: usize,
         sin_theta: &[Self],
@@ -281,6 +281,7 @@ impl ShtScalar for f32 {
         F: FnMut(usize, usize, &[Self], &[i64]) -> Result<(), ShtError>,
     {
         scalar_f32::for_each_y_lm_dispatched(
+            arch,
             m,
             lmax,
             sin_theta,
@@ -311,7 +312,7 @@ impl ShtScalar for f32 {
     }
 
     fn for_each_spin_lm_dispatched<F>(
-        _arch: Arch,
+        arch: Arch,
         initial: &Self::SpinInitial,
         lmax: usize,
         sin_theta: &[Self],
@@ -332,6 +333,7 @@ impl ShtScalar for f32 {
         F: FnMut(usize, usize, &[Self], &[i64], &[Self], &[i64]) -> Result<(), ShtError>,
     {
         spin_f32::for_each_spin_lm_dispatched(
+            arch,
             initial,
             lmax,
             sin_theta,
