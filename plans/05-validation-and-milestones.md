@@ -183,11 +183,11 @@ An opt-in release test checks sparse spin-1 through spin-4 synthesis at T2047 on
 | 3 | `2.169e-13` | `1.218e-11` | `4.259e-13` |
 | 4 | `2.096e-13` | `1.013e-11` | `2.122e-13` |
 
-Five middle-ring samples per component are compared with static `ducc0==0.41.0` references. The three middle rings lie at the equator. The expanded test ran in 32.75 s in release mode on an AMD Ryzen 9 5950X with rustc 1.99.0 and AVX2/FMA runtime dispatch; DUCC used one thread.
+Five middle-ring samples per component are compared with static `ducc0==0.41.0` references. The three middle rings lie at the equator. The expanded test ran in 33.80 s in release mode on an AMD Ryzen 9 5950X with rustc 1.99.0 and AVX2/FMA runtime dispatch; DUCC used one thread.
 
 A routine test validates spin 3 and 4 on all three grids at `lmax=mmax=spin`, with minimum exact-analysis latitude counts and `nphi=2*lmax+3`. Synthesis of the `a^E_(spin,0)=1` field matches its analytic form, `q(theta)=-sqrt((2spin+1) binom(2spin,spin)/(4*pi)) (sin(theta)/2)^spin`, with a zero second component at every sample. DUCC 0.41.0 references cover three synthesis samples per grid/spin and selected coefficients from arbitrary-map analysis. Both spins pass STANDARD `S/A/S*/A*`, `GRAD_ONLY` synthesis and its adjoint identity on GL, CC and F1. Across the six cases, maximum DUCC synthesis-sample error is `2.776e-16`, maximum analytic-map error is `1.665e-16` (largest RMS `7.905e-17`), maximum selected DUCC analysis-coefficient error is `1.776e-15`, maximum `A(S)` coefficient error is `1.157e-15`, and the largest absolute adjoint inner-product residual is `3.331e-16`. This full-operation check covers spin 3/4 through `lmax=spin`; spin 5 and above remain rejected.
 
-An opt-in release check extends spin-3/4 STANDARD synthesis and exact analysis to T511 on GL, CC and F1, using minimum exact-analysis latitude counts and `nphi=1025`. Sectoral synthesis is compared at five middle-ring samples with static `ducc0==0.41.0` references and at every pixel with the closed-form Wigner-d expression. Analysis of deterministic arbitrary maps is compared with DUCC for three selected E/B mode pairs per case. Across six cases, the maximum DUCC synthesis-sample error is `6.528e-14`, the maximum analytic-map error is `2.169e-12` (largest RMS `9.632e-14`), and the maximum selected DUCC analysis-coefficient error is `2.273e-17`. The test ran in 3.55 s in release mode on the AMD Ryzen 9 5950X with rustc 1.99.0 and AVX2/FMA runtime dispatch; DUCC used one thread.
+An opt-in release check extends spin-3/4 STANDARD synthesis and exact analysis to T511 on GL, CC and F1, using minimum exact-analysis latitude counts and `nphi=1025`. Sectoral synthesis is compared at five middle-ring samples with static `ducc0==0.41.0` references and at every pixel with the closed-form Wigner-d expression. Analysis of deterministic arbitrary maps is compared with DUCC for three selected E/B mode pairs per case. Across six cases, the maximum DUCC synthesis-sample error is `6.528e-14`, the maximum analytic-map error is `2.169e-12` (largest RMS `9.632e-14`), and the maximum selected DUCC analysis-coefficient error is `2.273e-17`. The test ran in 3.63 s in release mode on the AMD Ryzen 9 5950X with rustc 1.99.0 and AVX2/FMA runtime dispatch; DUCC used one thread.
 
 An additional opt-in test checks spin-3/4 exact analysis at T1023 on GL, CC and F1 using the minimum exact-analysis latitude counts and `nphi=2049`. Analysis of deterministic arbitrary maps is compared with DUCC for the lowest `m=0` coefficient and the sectoral `(lmax,mmax)` coefficient in both E and B. The largest absolute coefficient error across six cases is `8.882e-18`. This test checks selected output coefficients and does not claim a full coefficient comparison at T1023.
 
@@ -213,24 +213,26 @@ The 32-ring block reduces the equal-weight mean of scalar synthesis and analysis
 
 The spin measurements favor 64 rings in three of the four cases. The 16-ring block has lower scalar analysis times and higher scalar synthesis times; 128 rings provide only four blocks on this grid and reduce eight-thread throughput. The implementation retains the shared 64-ring block for scalar and spin kernels. Run the harnesses with `cargo run --release --example m1a_bench` and `cargo run --release --example m1b_bench`. The eight-worker run estimates 16.23 MiB for all numeric arrays, including maps, coefficient buffers, plan geometry and workspace scratch; RustFFT scratch and executable/runtime allocations are excluded. Numerical correctness comparisons use `ducc0==0.41.0`; the benchmark runs do not time DUCC. These measurements cover scalar and spin-1 f64 GL T511 on this CPU; they do not measure AVX-512 or other architectures. The f32/complex64 core remains unimplemented.
 
-### Binary scaling fast path (M4, 2026-10-12)
+### Scaled recurrence multiply fast paths (M4, 2026-10-12)
 
-Callgrind instruction counts for a debug T127 scalar GL run attributed 72.42% of inclusive instruction references to `multiply_component_scaled`. Stage timers at T511 showed the Legendre recurrence took 1537 ms in synthesis and 2153 ms in analysis; FFT stages took 5.1 ms and 3.1 ms, respectively. `scale_binary` used `powi` to form powers of two for each recurrence sample. The implementation now adjusts the stored exponent bits when both the input and result are normal numbers, retaining the staged multiplication path for subnormal, overflow and underflow boundaries. A test compares the optimized result bit-for-bit against the former staged path across signed zero, normal and subnormal values, and exponents from -4097 to 4097.
+Stage timers at T511 showed the Legendre recurrence took 1537 ms in synthesis and 2153 ms in analysis; FFT stages took 5.1 ms and 3.1 ms, respectively. The first change makes `scale_binary` adjust stored exponent bits when both the input and result are normal numbers, retaining the staged multiplication path for subnormal, overflow and underflow boundaries. A test compares its result bit-for-bit against the former staged path across signed zero, normal and subnormal values, and exponents from -4097 to 4097.
 
-The release harnesses used rustc 1.99.0, f64, T511 GL `512 x 1025`, one warmup and five samples per operation, with one-worker and eight-worker Rayon pools. Timings are medians in milliseconds on the AMD Ryzen 9 5950X with AVX2/FMA and no AVX-512:
+Callgrind on an optimized T127 scalar GL run then attributed 66.29% of instruction references to `multiply_component_scaled`. The second change multiplies finite normal operands directly when their product is also normal, then applies the recurrence scale. It returns the direct result only when that scaled result is normal; zero, subnormal and overflow outputs use the split path. The bitwise test compares both paths across varied normal and subnormal values, signed zero, an infinite factor and exponents from -4097 to 4097, including a subnormal-output rounding boundary.
 
-| Operation | Threads | Before | After | Change |
-| --- | ---: | ---: | ---: | ---: |
-| Scalar synthesis | 1 | 1557.719 | 779.198 | -49.97% |
-| Scalar synthesis | 8 | 232.519 | 120.363 | -48.24% |
-| Scalar analysis | 1 | 2174.312 | 1062.602 | -51.13% |
-| Scalar analysis | 8 | 529.998 | 278.115 | -47.53% |
-| Spin-1 synthesis | 1 | 1652.310 | 1393.163 | -15.68% |
-| Spin-1 synthesis | 8 | 245.744 | 204.563 | -16.76% |
-| Spin-1 analysis | 1 | 1669.132 | 1425.995 | -14.56% |
-| Spin-1 analysis | 8 | 425.267 | 355.187 | -16.49% |
+The release harnesses used rustc 1.99.0, f64, T511 GL `512 x 1025`, one warmup and five samples per operation, with one-worker and eight-worker Rayon pools. Before and exponent-path values are single-run medians; guarded direct-multiply values average two run medians. Timings are in milliseconds on the AMD Ryzen 9 5950X with AVX2/FMA and no AVX-512:
 
-An independent Python comparison used the rebuilt editable extension, `ducc0==0.41.0`, deterministic T511 coefficients and random analysis maps on the same GL shape. With one thread, scalar synthesis and analysis took 798.166 ms and 1066.136 ms in RustSHT versus 12.341 ms and 12.328 ms in DUCC; spin-1 took 1378.826 ms and 1398.172 ms versus 24.434 ms and 24.852 ms. With eight threads, scalar took 126.170 ms and 289.150 ms versus 1.904 ms and 1.891 ms; spin-1 took 202.788 ms and 364.914 ms versus 3.705 ms and 3.562 ms. The Python comparison used five timed samples after one warmup. Scalar map maximum absolute/RMS errors were `2.627e-14`/`7.674e-16`, and analysis coefficient errors were `1.291e-15`/`2.146e-16`. Spin-1 map errors were `3.054e-14`/`7.729e-16`, and coefficient errors were `1.409e-15`/`2.391e-16`. The scalar improvement is about 48–51%; spin-1 improves by 15–17%. RustSHT remains 55–153 times slower than DUCC for these operations and thread counts, so M4 performance acceptance remains open.
+| Operation | Threads | Before | After exponent path | After direct multiply | Overall change |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Scalar synthesis | 1 | 1557.719 | 779.198 | 667.130 | -57.17% |
+| Scalar synthesis | 8 | 232.519 | 120.363 | 103.903 | -55.31% |
+| Scalar analysis | 1 | 2174.312 | 1062.602 | 806.614 | -62.90% |
+| Scalar analysis | 8 | 529.998 | 278.115 | 216.405 | -59.17% |
+| Spin-1 synthesis | 1 | 1652.310 | 1393.163 | 1399.512 | -15.30% |
+| Spin-1 synthesis | 8 | 245.744 | 204.563 | 204.958 | -16.60% |
+| Spin-1 analysis | 1 | 1669.132 | 1425.995 | 1426.612 | -14.53% |
+| Spin-1 analysis | 8 | 425.267 | 355.187 | 362.421 | -14.78% |
+
+An independent Python comparison used the rebuilt editable extension, `ducc0==0.41.0`, deterministic T511 coefficients and random analysis maps on the same GL shape. With one thread, scalar synthesis and analysis took 671.909 ms and 807.811 ms in RustSHT versus 12.017 ms and 12.636 ms in DUCC; spin-1 took 1371.739 ms and 1412.450 ms versus 24.190 ms and 25.265 ms. With eight threads, scalar took 108.469 ms and 217.977 ms versus 2.049 ms and 1.838 ms; spin-1 took 205.204 ms and 362.623 ms versus 4.173 ms and 3.833 ms. The Python comparison used five timed samples after one warmup. Scalar map maximum absolute/RMS errors were `2.627e-14`/`7.674e-16`, and analysis coefficient errors were `1.291e-15`/`2.146e-16`. Spin-1 map errors were `3.054e-14`/`7.729e-16`, and coefficient errors were `1.409e-15`/`2.391e-16`. Across these operations and thread counts, RustSHT is 49–119 times slower than DUCC; M4 performance acceptance remains open.
 
 ### Python plan binding (M5, 2026-10-12)
 
@@ -238,7 +240,7 @@ The PyO3 extension exposes `rustsht.ShtPlan` and top-level procedural functions 
 
 Python tests convert between RustSHT's order-major coefficient packing and DUCC's default alm layout. Plan and procedural scalar S, A, S* and A* are compared with `ducc0==0.41.0` on GL, CC and F1; the procedural ring weights are compared on each grid. Spin-2 STANDARD S, A, S* and A*, GRAD_ONLY S and S*, and scalar DERIV1 S and S* are compared through both interfaces on GL. The tests use `phi0 != 0`, check the scalar real-harmonic adjoint identity, and reject incorrect shapes, dtypes and Fortran-contiguous arrays. The largest comparison tolerance is `2e-12`; DUCC runs with one thread. The pinned DUCC source revision is `c1ed01b8fda69d2a378190f0915f1a19762dddbf`.
 
-On an AMD Ryzen 9 5950X, `cargo fmt --all -- --check`, workspace Clippy with warnings denied and `cargo test --workspace --all-features` pass on rustc 1.89.0 and 1.99.0. Each workspace test run passes 67 tests with seven high-bandlimit tests ignored. The Rust 1.99.0 no-default-features suite passes 65 tests with the same seven tests ignored.
+On an AMD Ryzen 9 5950X, `cargo fmt --all -- --check`, workspace Clippy with warnings denied and `cargo test --workspace --all-features` pass on rustc 1.89.0 and 1.99.0. Each workspace test run passes 68 tests with seven high-bandlimit tests ignored. The Rust 1.99.0 no-default-features suite passes 66 tests with the same seven tests ignored.
 
 `uv run pytest python/tests` passes eight tests with Python 3.11.15, NumPy 2.4.6 and `ducc0==0.41.0`. It validates f64/complex128 inputs and the listed plan and procedural operations against the editable package.
 
