@@ -518,3 +518,16 @@ The rebuilt Python extension used Python 3.11.15, NumPy 2.4.6 and `ducc0==0.41.0
 Plan construction measured `0.035–0.041 ms`, input copies `0.104–0.213 ms`, and output allocation `0.001 ms` in these runs. The phase/scale hoist reduces native and Python plan synthesis time while retaining the DUCC error range; it does not close the remaining performance gap. The eight-thread DUCC spread reflects two run medians and should not be read as an optimization effect.
 
 Formatting, workspace Clippy with warnings denied, all-features tests and no-default-features tests passed with Rust 1.89.0 and 1.99.0. Each Rust test suite passed 75 tests with seven opt-in high-bandlimit checks ignored, plus all 10 f32 integration tests. `uv run pytest python/tests` passed all eight tests with Python 3.11.15.
+
+### Scalar recurrence reciprocal-factor investigation (M4, 2026-10-12)
+
+The current recurrence computes `(cos(theta)*current - epsilon[l]*previous)/epsilon[l+1]`. Three T511 release runs established the scalar GL baseline before this investigation on an AMD Ryzen 9 5950X, rustc 1.99.0, f64, AVX2/FMA runtime dispatch, `phi0=0.37`, and one/eight-thread pools. `examples/m1a_bench.rs` reused a plan and workspace, with one warmup and five samples per operation per run:
+
+| Operation | One-thread run medians (median; range ms) | Eight-thread run medians (median; range ms) |
+| --- | ---: | ---: |
+| Synthesis | `525.214, 525.521, 524.876` (`525.214`; `0.645`) | `81.436, 85.797, 82.154` (`82.154`; `4.361`) |
+| Analysis | `516.457, 517.436, 516.911` (`516.911`; `0.979`) | `137.004, 140.699, 136.425` (`137.004`; `4.274`) |
+
+I tested reciprocal multiplication, a fused numerator with reciprocal multiplication, a compensated high/low reciprocal, and precomputed `a_lm=1/epsilon[l+1]`, `b_lm=epsilon[l]/epsilon[l+1]` with a fused update. The scalar-reference test compares the vector-lane recurrence with the retained division-based recurrence at a relative tolerance of `2e-13`, including near-polar and high-order lanes. Reciprocal multiplication first exceeded this limit at `(m,l,ring)=(0,20,15)` with `2.621e-13` relative error and at `(255,467,5)` with `2.654e-13`. The fused-numerator variant reached `5.449e-13` and `1.027e-12` at those tests; the compensated reciprocal reached `2.621e-13` and `5.045e-12`; and the `a,b` variant reached `1.062e-12` and `6.992e-13`. I did not relax the reference tolerance. The variants were rejected before timing because they failed this numerical acceptance check.
+
+The f32 `a,b` prototype passed the dispatched-versus-scalar-backend recurrence check and the existing scalar DUCC checks on GL, CC and F1; that does not override the f64 failure. DUCC's pinned [`Ylmgen::prepare` and scalar kernels](https://raw.githubusercontent.com/mreineck/ducc/c1ed01b8fda69d2a378190f0915f1a19762dddbf/src/ducc0/sht/sht_inner_loop.h) precompute paired-degree `alpha` and `coef` values, then use a two-step recurrence in the normal-range kernels. The simple one-step reciprocal substitutions tested here do not reproduce that method. No recurrence source or workspace change was retained, and no post-change timing is reported because every f64 candidate failed the existing scalar-reference check.
