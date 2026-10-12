@@ -424,3 +424,12 @@ The rebuilt Python extension used Python 3.11.15, NumPy 2.4.6, and `ducc0==0.41.
 | Analysis | 8 | `89.563 ms` | `89.638 ms` | `1.766 ms` | `50.7x` |
 
 Input copies took `0.051–0.087 ms` and output allocation took `0.001 ms` in the Python runs. The paired scaling path reduces native scalar transform time; Python data copying remains small relative to the transform. The measured speedup does not close the remaining gap to DUCC.
+
+### Spin synthesis coefficient-rotation hoist trial (M4, 2026-10-12)
+
+A prototype moved the complex multiplications by `i` and `-i` on E/B coefficients outside the latitude-lane loop in `synthesize_spin_ring_group`. The spin f64 operator suite passed 23 tests with six high-bandlimit cases ignored; all ten f32 integration tests passed, including DUCC comparisons, adjoints, GRAD_ONLY and DERIV1. Native release timings used rustc 1.99.0, f64, spin 1, T511 GL `512x1025`, `phi0=0.37`, AVX2/FMA dispatch, reused plan/workspace, an x86-64 CPU, one warmup and five samples per operation. The three run medians had no consistent synthesis improvement:
+
+| Operation | Threads | Before (median; range ms) | Prototype (median; range ms) | Change |
+| --- | ---: | ---: | ---: | ---: |
+| Synthesis | 1 | `1275.961; 17.201` | `1280.270; 8.904` | `+0.34%` |
+| Synthesis | 8 | `192.712; 6.608` | `192.134; 0.817` | `-0.30%` |
