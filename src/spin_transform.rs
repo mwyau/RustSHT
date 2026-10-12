@@ -1442,6 +1442,18 @@ impl<T: ShtScalar> ShtPlan<T> {
                     }
                     let weighted_q_spectrum = &recurrence.weighted_spin_q_spectrum[..block_len];
                     let weighted_u_spectrum = &recurrence.weighted_spin_u_spectrum[..block_len];
+                    if T::supports_paired_scalar() {
+                        for lane in 0..block_len {
+                            recurrence.analysis_same_real[lane] = weighted_q_spectrum[lane].re;
+                            recurrence.analysis_same_imag[lane] = weighted_q_spectrum[lane].im;
+                            recurrence.analysis_opposite_real[lane] = weighted_u_spectrum[lane].re;
+                            recurrence.analysis_opposite_imag[lane] = weighted_u_spectrum[lane].im;
+                        }
+                    }
+                    let analysis_q_real = &recurrence.analysis_same_real[..block_len];
+                    let analysis_q_imag = &recurrence.analysis_same_imag[..block_len];
+                    let analysis_u_real = &recurrence.analysis_opposite_real[..block_len];
+                    let analysis_u_imag = &recurrence.analysis_opposite_imag[..block_len];
                     T::for_each_spin_lm_dispatched(
                         arch,
                         &initial,
@@ -1465,28 +1477,59 @@ impl<T: ShtScalar> ShtPlan<T> {
                             let mut b_coefficient = b_coefficients
                                 .as_deref_mut()
                                 .map(|values| &mut values[degree - m]);
-                            for lane in 0..plus.len() {
-                                let ring = ring_start + lane;
-                                if m > ring_order_limits[block_start + ring] {
-                                    continue;
-                                }
-                                let plus_value =
-                                    T::scaled_basis_value(plus[lane], plus_exp[lane], alpha_norm);
-                                let minus_value =
-                                    T::scaled_basis_value(minus[lane], minus_exp[lane], alpha_norm);
-                                let even_basis = plus_value + minus_value;
-                                let odd_basis = plus_value - minus_value;
-                                let q_fourier = weighted_q_spectrum[ring];
-                                let u_fourier = weighted_u_spectrum[ring];
-                                *coefficient += q_fourier * even_basis
-                                    + Complex::<T>::new(T::zero(), -T::one())
-                                        * u_fourier
-                                        * odd_basis;
+                            if T::supports_paired_scalar() {
+                                let lane_end = ring_start + plus.len();
+                                let (e_contribution, b_contribution) =
+                                    T::accumulate_spin_analysis_block(
+                                        arch,
+                                        m,
+                                        &analysis_q_real[ring_start..lane_end],
+                                        &analysis_q_imag[ring_start..lane_end],
+                                        &analysis_u_real[ring_start..lane_end],
+                                        &analysis_u_imag[ring_start..lane_end],
+                                        plus,
+                                        plus_exp,
+                                        minus,
+                                        minus_exp,
+                                        alpha_norm,
+                                        &ring_order_limits
+                                            [block_start + ring_start..block_start + lane_end],
+                                        b_coefficient.is_some(),
+                                    );
+                                *coefficient += e_contribution;
                                 if let Some(b_coefficient) = b_coefficient.as_mut() {
-                                    **b_coefficient += Complex::<T>::new(T::zero(), T::one())
-                                        * q_fourier
-                                        * odd_basis
-                                        + u_fourier * even_basis;
+                                    **b_coefficient += b_contribution;
+                                }
+                            } else {
+                                for lane in 0..plus.len() {
+                                    let ring = ring_start + lane;
+                                    if m > ring_order_limits[block_start + ring] {
+                                        continue;
+                                    }
+                                    let plus_value = T::scaled_basis_value(
+                                        plus[lane],
+                                        plus_exp[lane],
+                                        alpha_norm,
+                                    );
+                                    let minus_value = T::scaled_basis_value(
+                                        minus[lane],
+                                        minus_exp[lane],
+                                        alpha_norm,
+                                    );
+                                    let even_basis = plus_value + minus_value;
+                                    let odd_basis = plus_value - minus_value;
+                                    let q_fourier = weighted_q_spectrum[ring];
+                                    let u_fourier = weighted_u_spectrum[ring];
+                                    *coefficient += q_fourier * even_basis
+                                        + Complex::<T>::new(T::zero(), -T::one())
+                                            * u_fourier
+                                            * odd_basis;
+                                    if let Some(b_coefficient) = b_coefficient.as_mut() {
+                                        **b_coefficient += Complex::<T>::new(T::zero(), T::one())
+                                            * q_fourier
+                                            * odd_basis
+                                            + u_fourier * even_basis;
+                                    }
                                 }
                             }
                             Ok(())
