@@ -4566,6 +4566,141 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "M3 high-spin exact-analysis T1023 check; run this check in release mode"]
+    fn m3_spin_three_and_four_t1023_exact_analysis_matches_ducc() {
+        // DUCC 0.41.0 references use deterministic maps, phi0=0.37 and one thread.
+        let degree = 1023;
+        let nphi = 2 * degree + 3;
+        for kind in [
+            GridKind::GaussLegendre,
+            GridKind::ClenshawCurtis,
+            GridKind::Fejer1,
+        ] {
+            let ntheta = degree + usize::from(kind == GridKind::ClenshawCurtis) + 1;
+            for spin in [3, 4] {
+                let plan = ShtPlan::new(
+                    GridSpec::new(kind, ntheta, nphi, 0.37).unwrap(),
+                    HarmonicSpec::new(degree, degree, spin).unwrap(),
+                )
+                .unwrap();
+                let (expected_low, expected_sectoral) = match (kind, spin) {
+                    (GridKind::GaussLegendre, 3) => (
+                        (
+                            Complex64::new(6.081437129307585e-11, 0.0),
+                            Complex64::new(1.0231104848956346e-11, 0.0),
+                        ),
+                        (
+                            Complex64::new(-5.675308074549429e-5, -1.3894519746032559e-6),
+                            Complex64::new(-4.469558524892187e-6, -2.2624639044714076e-6),
+                        ),
+                    ),
+                    (GridKind::GaussLegendre, 4) => (
+                        (
+                            Complex64::new(5.184718104938012e-11, 0.0),
+                            Complex64::new(1.6270404420515953e-11, 0.0),
+                        ),
+                        (
+                            Complex64::new(2.9298922190006932e-6, -4.419929093855126e-6),
+                            Complex64::new(-8.821792899411789e-7, 5.60501229627666e-5),
+                        ),
+                    ),
+                    (GridKind::ClenshawCurtis, 3) => (
+                        (
+                            Complex64::new(7.269955478419545e-11, 0.0),
+                            Complex64::new(2.7346913656753508e-11, 6.701164155394357e-20),
+                        ),
+                        (
+                            Complex64::new(-5.5548274707962206e-5, -1.3095607129762022e-6),
+                            Complex64::new(-3.676028538607881e-6, -3.1981614453430745e-6),
+                        ),
+                    ),
+                    (GridKind::ClenshawCurtis, 4) => (
+                        (
+                            Complex64::new(5.2990596906847176e-11, 0.0),
+                            Complex64::new(2.4128616571573914e-11, 8.261474378121507e-20),
+                        ),
+                        (
+                            Complex64::new(4.1846426871489025e-6, -3.614433698993269e-6),
+                            Complex64::new(-7.967077658667091e-7, 5.486178105231755e-5),
+                        ),
+                    ),
+                    (GridKind::Fejer1, 3) => (
+                        (
+                            Complex64::new(7.027579354743823e-11, 0.0),
+                            Complex64::new(1.9309400963416208e-11, 4.50432024596083e-21),
+                        ),
+                        (
+                            Complex64::new(-5.685691558825787e-5, -1.3942485532993349e-6),
+                            Complex64::new(-4.471712363615764e-6, -2.2652960182642644e-6),
+                        ),
+                    ),
+                    (GridKind::Fejer1, 4) => (
+                        (
+                            Complex64::new(5.1731818492207214e-11, 0.0),
+                            Complex64::new(1.625938528964583e-11, 6.361872894215043e-21),
+                        ),
+                        (
+                            Complex64::new(2.9336278104640267e-6, -4.422048649946405e-6),
+                            Complex64::new(-8.868258225951987e-7, 5.615336734718681e-5),
+                        ),
+                    ),
+                    _ => unreachable!(),
+                };
+
+                let mut first = vec![0.0; plan.sample_count];
+                let mut second = vec![0.0; plan.sample_count];
+                for row in 0..ntheta {
+                    for column in 0..nphi {
+                        let index = row * nphi + column;
+                        let i = row as f64;
+                        let j = column as f64;
+                        first[index] =
+                            (0.17 * i + 0.23 * j).sin() + 0.2 * (0.11 * i - 0.31 * j).cos();
+                        second[index] =
+                            (0.19 * i - 0.13 * j).cos() - 0.15 * (0.29 * i + 0.07 * j).sin();
+                    }
+                }
+                let mut analyzed_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+                let mut analyzed_b = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+                let mut workspace = plan.workspace().unwrap();
+                plan.analysis_spin_into(
+                    &first,
+                    &second,
+                    &mut analyzed_e,
+                    &mut analyzed_b,
+                    &mut workspace,
+                )
+                .unwrap();
+
+                let selected_modes = [
+                    (plan.harmonics().index(spin, 0).unwrap(), expected_low),
+                    (
+                        plan.harmonics().index(degree, degree).unwrap(),
+                        expected_sectoral,
+                    ),
+                ];
+                let mut maximum_error = 0.0_f64;
+                for (index, (expected_e, expected_b)) in selected_modes {
+                    for (actual, expected) in [
+                        (analyzed_e[index], expected_e),
+                        (analyzed_b[index], expected_b),
+                    ] {
+                        let error = (actual - expected).norm();
+                        maximum_error = maximum_error.max(error);
+                        assert!(
+                            error <= 5e-12,
+                            "{kind:?} spin {spin} T{degree} DUCC A error={error:.3e}"
+                        );
+                    }
+                }
+                eprintln!(
+                    "M3 spin {spin} T{degree} {kind:?}: DUCC analysis selected-coefficient max abs={maximum_error:.3e}"
+                );
+            }
+        }
+    }
+
+    #[test]
     #[ignore = "M3 sparse T2047 synthesis check; run this check in release mode"]
     #[expect(
         clippy::excessive_precision,
