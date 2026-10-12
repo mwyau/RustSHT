@@ -34,6 +34,8 @@ plan.analysis_into(&map, &mut recovered, &mut work)?;
 
 The signatures, error type, scratch lifetime and zero-allocation guarantees need a proof-of-concept. Implement STANDARD `S`, `A`, `S*` and `A*` as separate mathematical operations. For valid synthesis-only modes, use explicit methods such as `synthesis_gradient_into`, `adjoint_synthesis_gradient_into`, `synthesis_deriv1_into` and `adjoint_synthesis_deriv1_into`; DERIV1 uses a spin-1 computation with scalar coefficients. Do not invent derivative analysis or put a mode in `HarmonicSpec`. Expose counts, grid coordinates, weights and safe analysis degree. Initially accept contiguous slices and reject invalid size, nonreal `m=0` input and nonzero `l<spin` coefficients.
 
+Use contiguous slices and small blocked workspaces in the numerical core. Do not require `ndarray` or a general matrix library. The plan selects runtime SIMD via `pulp` and the scalar path remains testable. The real-input FFT packing helper is private and specialized to longitude spectra.
+
 ## Code organization
 
 Start with a **single Rust library crate** rather than a premature multi-crate workspace. Suggested modules:
@@ -47,13 +49,13 @@ src/
   plan.rs                # ShtPlan and precomputed constants
   workspace.rs           # Explicit mutable FFT/Legendre scratch
   transform.rs           # Public transform methods and dispatch
-  fft.rs                 # Private RustFFT integration
+  fft.rs                 # RustFFT plus a small real-input packing adapter
   legendre/
     mod.rs               # Shared recurrence metadata
     scalar.rs            # Spin-0 normalized recurrence
     spin.rs              # Spin-weighted recurrence
   meridional.rs          # CC/F1 preparation and adjoint
-  kernels/               # Scalar, SIMD and architecture dispatch later
+  kernels/               # Scalar reference and SIMD dispatch (when used)
 ```
 
 These are design boundaries, not instructions to create empty modules. Start with the minimum modules actually used. Hide implementation helpers with `pub(crate)` or private visibility and expose only stable numerical types. Keep coefficient and ring layout well documented and use checked indexing.
@@ -69,7 +71,6 @@ The root `pyproject.toml` uses maturin as its build backend. Its `[tool.maturin]
 Run `uv sync` to build/install the local Python package, then `uv run pytest python/tests` to check import of the compiled extension. `cargo test --workspace` checks both Rust crates. No SHT functions or fictitious placeholders are exposed by the extension yet. Add Python SHT bindings only after the corresponding native Rust operations are implemented and verified.
 
 The numerical Python API will eventually contain DUCC-familiar procedural functions and a reusable plan class. Do not publish placeholder numerical operations. Initial parity uses DUCC's unit `ringfactor`; arbitrary per-ring scaling is deferred.
-
 
 ## Python binding
 

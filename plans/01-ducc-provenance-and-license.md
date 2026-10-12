@@ -13,11 +13,11 @@ The 2023 paper is **not by itself a specification for high-bandlimit CC/F1 exact
 
 ## Reference source
 
-- DUCC project: https://gitlab.mpcdf.mpg.de/mtr/ducc
-- Readable mirror: https://github.com/mreineck/ducc
+- DUCC GitHub repository: https://github.com/mreineck/ducc
 - Initially pinned comparison revision: `c1ed01b8fda69d2a378190f0915f1a19762dddbf` on `ducc0` (2026-10-09).
 - SHT interface: `src/ducc0/sht/sht.h`
 - Algorithms, geometry, quadrature, resampling and adjoints: `src/ducc0/sht/sht.cc`, `sht_inner_loop.h`, `sht_utils.h`
+- GL integrator: `src/ducc0/math/gl_integrator.h`, `gl_integrator.cc` (iterative small-N and Bogaert/FastGL large-N)
 - Python signatures, geometry limits and modes: `python/sht_pymod.cc`
 - Test structure: `python/test/test_sht.py`
 - Operator definitions: `doc/sht.rst`
@@ -31,6 +31,8 @@ RustSHT uses **GPL-2.0-or-later** by project choice. Code newly authored by Albe
 If material is **copied, adapted, or directly translated** from DUCC, inspect the license header on that specific file, retain original copyright and applicable license notices, record the reference revision and changes, and check distribution obligations. DUCC SHT implementation files are GPL-2.0-or-later; identified DUCC FFT files have a separate BSD-3-Clause option. These exceptions do not apply generically.
 
 **Do not copy DUCC tests wholesale.** The inspected `python/test/test_sht.py` file carries a **GPL-3.0-or-later** header, unlike the C++ SHT implementation's GPL-2.0-or-later header. Reproduce the mathematical test *ideas* independently; if copying test source expression becomes necessary, review resulting GPL version compatibility and attribution explicitly.
+
+DUCC's `gl_integrator.cc` explicitly credits Ignace Bogaert and contains code modified from FastGL. Check and preserve the actual source notices when porting the fast approximation and coefficient tables. The small-grid iterative calculation uses C++ `long double`; numerical agreement with an f64 Rust path requires testing.
 
 RustFFT is available under MIT/Apache-2.0 licenses. Preserve required notices for all concrete dependencies and future Python wheels. Do not assume mathematical ideas, independently written code, benchmark outputs and copied expression have identical copyright implications.
 

@@ -14,7 +14,6 @@ Before implementing the first recurrence, establish scalar `Y_lm` normalization 
 
 For uniform longitude rings, DUCC's `get_gridweights` gives latitude-ring weights `w_i` that sum to `4*pi`; each pixel has integration weight `w_i/nphi`. FFT normalization is separate. DUCC `ringfactor` is fixed to one in the initial RustSHT API and parity tests.
 
-
 ## GL first: complete operation family (approved D11)
 
 Work on one grid with a shared, grid-independent recurrence/FFT driver:
@@ -42,6 +41,15 @@ For alias-free **analysis**, `mmax <= floor((Nφ-1)/2)`, in addition to `0 <= mm
 The `get_gridweights` values from DUCC include azimuthal integration (`2*pi` times latitude-rule weights): for a full sphere their sum should be `4*pi`. Test symmetry, positivity where expected, pole behavior and exact low-degree moments. Compare nodes, weights and `maximum_safe_l` separately.
 
 DUCC's **CC/F1 high-bandlimit analysis is not simple quadrature on the original latitude rings**. Its `analysis_2d` computes longitude Fourier modes, resamples their meridional profiles to a prepared CC grid (`resample_to_prepared_CC`) using pole/reflection parity, zero padding and convolution with suitable weights, and then performs the Legendre adjoint. `adjoint_analysis_2d` reverses that path through `resample_from_prepared_CC`. Model these as an explicit analysis-side operator and its adjoint. Do **not** replace this by simple CC/F1 weights or assume it follows directly from the 2023 general-NUFFT paper.
+
+## Numerical algorithms to port
+
+- GL: port DUCC's `GL_Integrator` node/weight/colatitude ordering. Its small-grid method iterates Legendre roots in `long double`; above 100 rings it uses Bogaert/FastGL expansions and symmetry. Match the published approximations, source terms and tested numerical behavior. No third-party quadrature crate.
+- CC/F1: port DUCC's FFT-based Waldvogel weights and prepared-CC resampling including pole flags, parity, phase shifts, padding, convolution and matching adjoint. Use RustFFT for FFT execution.
+- Legendre/spin: retain scaled normalized recurrence, sectoral initialization, rescaling, reflection parity and polar cutoffs; use SIMD across independent latitude lanes while keeping degree recurrence sequential.
+- FFT: implement only the even-length real-input packing/Hermitian recombination necessary around complex RustFFT; handle odd lengths with the full-complex path. Verify direct FFT outputs against an independent full-complex implementation before SHT integration.
+
+See [04](04-architecture-and-performance.md) for memory blocking, threading and runtime dispatch.
 
 ## Storage and coordinate conventions
 

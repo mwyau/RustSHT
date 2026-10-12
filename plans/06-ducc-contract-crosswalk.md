@@ -1,6 +1,6 @@
 # DUCC operation and grid crosswalk
 
-This document maps the GL/CC/F1 subset of the DUCC `ducc0` API to RustSHT operations. Reference: commit `c1ed01b8fda69d2a378190f0915f1a19762dddbf` (2026-10-09) in [mreineck/ducc](https://github.com/mreineck/ducc/tree/ducc0). Source comparisons define behavior; they do not prescribe the Rust code organization.
+This document maps the GL/CC/F1 subset of the DUCC `ducc0` API to RustSHT operations. Reference: commit [`c1ed01b8fda69d2a378190f0915f1a19762dddbf`](https://github.com/mreineck/ducc/commit/c1ed01b8fda69d2a378190f0915f1a19762dddbf) (2026-10-09) in [mreineck/ducc](https://github.com/mreineck/ducc). Source comparisons define behavior; they do not prescribe the Rust code organization.
 
 ## Supported operators
 
@@ -31,7 +31,6 @@ The Python `analysis_2d` documentation additionally states `mmax <= floor((nphi-
 
 DUCC's rectangular operators accept per-ring `ringfactor`. The first RustSHT API uses only its default value of one; arbitrary ring scaling is deferred and not part of the initial parity claim. STANDARD analysis/adjoint analysis have no GRAD_ONLY or DERIV1 modes; these belong to synthesis and its adjoint.
 
-
 ## Harmonic representation
 
 - Packed `alm`: for each nonnegative order `m=0..mmax`, degrees `l=m..lmax`. `nalm = (mmax+1)*(lmax+1) - mmax*(mmax+1)/2`.
@@ -51,7 +50,7 @@ GL analysis instead performs weighted longitude FFTs using GL quadrature and a L
 | Topic | DUCC file |
 | --- | --- |
 | Transform signatures, spin/modes | `src/ducc0/sht/sht.h`, `python/sht_pymod.cc` |
-| Safe grid degree and weights | `src/ducc0/sht/sht.cc` `maximum_safe_l`, `get_gridweights` |
+| Safe grid degree and weights | `src/ducc0/sht/sht.cc` `maximum_safe_l`, `get_gridweights`; `src/ducc0/math/gl_integrator.{h,cc}` for GL nodes/weights |
 | Scaled recurrences, polar cutoff, SIMD | `src/ducc0/sht/sht_inner_loop.h` |
 | CC/F1 analysis and both adjoints | `src/ducc0/sht/sht.cc`, `sht_utils.h` |
 | Operator definitions | `doc/sht.rst` |

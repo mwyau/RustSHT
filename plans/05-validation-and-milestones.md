@@ -21,6 +21,12 @@ Use absolute and norm-relative errors with a sensible near-zero floor; report wo
 
 For GL spin-0 through T255, start with provisional relative L2 error `<=5e-11` for independently evaluated analytic fields and pinned-DUCC comparisons, and normalized adjoint identity residual `<=1e-10`. Define relative L2 error as `||computed-reference||_2 / max(||reference||_2, absolute_floor)`; choose and record a fixed `absolute_floor`, an absolute near-zero tolerance and worst absolute error before tests. These limits are targets, not achieved results. Define separate high-L, spin and f32 thresholds from numerical evidence, not from failing tests.
 
+## FFT, quadrature and SIMD checks during M1
+
+- Compare GL nodes/weights from the port against pinned DUCC and independent quadrature moments at `ntheta=1,2,3,99,100,101,127,255,1024` and available larger sizes. Check northern/southern symmetry and high-degree polar accuracy; account for DUCC's `long double` small-grid calculation.
+- Compare the custom real-input FFT against direct full-complex RustFFT for odd/even `nphi=1,2,3,4,5,6,7,8,31,32,33` and larger lengths. Cover impulse, constant, Fourier modes, DC/Nyquist, phase shift, truncation and inverse scaling.
+- Compare scalar and SIMD recurrences through T255 (and higher where feasible), including pole rescaling, near-sectoral modes, FMA differences and all implemented spin/adjoint modes. Do not infer support for AVX-512/NEON from compilation without execution.
+- Benchmark one-thread, Rayon, scalar, AVX2 and AVX-512 paths on supported CPUs, reporting FFT, recurrence, packing, setup, workspace and total release-mode execution. Preserve a test-only scalar/ISA override if feasible without a new public backend API.
 
 ## Bandlimit and memory ladder
 
@@ -40,8 +46,8 @@ Stress tiers are **not release promises**. Publish a tested maximum for each `(g
 
 **M1 — Complete GL operation family**
 
-- **M1a:** Core Rust harmonic/grid specs, packed layout, RustFFT interface, GL nodes/weights, stable scalar f64 synthesis and analysis.
-- **M1b:** GL spin=1/2 STANDARD synthesis/analysis, vector E/B and applicable GRAD_ONLY/DERIV1 synthesis. Design for higher spins; record actual validated range.
+- **M1a:** Core Rust harmonic/grid specs, packed layout, faithful DUCC GL iterative/Bogaert node/weight algorithms, RustFFT plus a private real-input adapter, stable scalar f64 synthesis/analysis, scalar reference, `pulp` SIMD recurrence, coarse Rayon scheduling and initial release-mode profiling.
+- **M1b:** GL spin=1/2 STANDARD synthesis/analysis, vector E/B and applicable GRAD_ONLY/DERIV1 synthesis on the shared DUCC-derived scaled SIMD recurrence. Design for higher spins; record validated range.
 - **M1c:** GL adjoint synthesis and adjoint analysis; GRAD_ONLY/DERIV1 adjoint synthesis; inner-product proofs/tests, GL full-operation parity and high-`L` accuracy gate.
 
 **M2 — Same engine, additional grids**
@@ -51,7 +57,7 @@ Stress tiers are **not release promises**. Publish a tested maximum for each `(g
 
 **M3 — High-bandlimit acceptance:** Complete all-grid f64 parity, analytic/DUCC comparisons and actual tested degree/spin limits at T511/T1023 and opt-in T2047+. Fix critical numerical defects before focusing on speed.
 
-**M4 — Optimization and dtype:** Stable-Rust multiarch SIMD dispatch, parallelism, scratch reuse, f32 implementation/verification and reproducible DUCC benchmarks.
+**M4 — Performance tuning and dtype:** Tune the SIMD, coarse threading and scratch layout implemented during M1; implement and verify f32 and report reproducible DUCC benchmarks.
 
 **M5 — Python binding:** Optional PyO3/NumPy numerical API; plan-oriented plus procedural functions, packaging, GIL release, shape/dtype tests and wheel license review.
 
@@ -61,14 +67,13 @@ Stress tiers are **not release promises**. Publish a tested maximum for each `(g
 
 Start from current `main` on a **new feature branch**, using [00](00-scope-and-decisions.md) without routine human checkpoints:
 
-1. Establish normalization/phase and implement **M1a**: GL scalar f64 S/A, public plan, reusable scratch, analytic and pinned-DUCC tests.
+1. Establish normalization/phase and implement **M1a**: DUCC-derived GL geometry, scalar f64 S/A, public plan, RustFFT with verified in-tree real-input adapter, reusable scratch, scalar-reference tests, `pulp` SIMD recurrence, coarse Rayon scheduling and initial release benchmarks.
 2. Implement **M1b**: GL spin 1/2 STANDARD, E/B and applicable derivative/gradient synthesis; then **M1c**: STANDARD adjoints and derivative/gradient adjoints, with independent identities.
 3. Once GL tests pass, complete **M2a CC** and **M2b F1** on the same recurrence engine, including CC/F1 prepared-CC meridional resampling and its adjoint.
-4. Run affordable **M3** high-degree checks. If possible continue with **M4** f32 and runtime-dispatched SIMD, including AVX-512 on Rust 1.89; proceed to **M5** Python functions/plan and **M6** spharmgrid adapter only when earlier work is verified.
+4. Run affordable **M3** high-degree checks. If possible continue with **M4** f32 and tuning existing SIMD/thread scheduling, comparing AVX2 against AVX-512 on suitable hosts; proceed to **M5** Python functions/plan and **M6** spharmgrid adapter only when earlier work is verified.
 5. Commit after each independently functioning, tested increment, then move on. Run relevant format, lint and numerical tests before commits, plus full suites periodically. Do not add unfinished placeholders, weaken tests, create temporary GitHub Actions jobs or commit large generated fixtures. Skip resource-intensive optional stress/benchmark tests with an explicit note rather than blocking other work.
 
 End with branch and commit list, operators/grids/spins/degrees tested, reference revision, command results, blockers and skipped checks. Push only when explicitly authorized for that session; do not merge into `main`.
-
 
 ## Required evidence for each merged numerical milestone
 
