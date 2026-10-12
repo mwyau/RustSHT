@@ -303,6 +303,15 @@ fn multiply_component_scaled(value: f64, factor: f64, exponent: i64) -> f64 {
     if value == 0.0 || factor == 0.0 || !value.is_finite() || !factor.is_finite() {
         return scale_binary(value * factor, exponent);
     }
+    if value.is_normal() && factor.is_normal() {
+        let product = value * factor;
+        if product.is_normal() {
+            let scaled = scale_binary(product, exponent);
+            if scaled.is_normal() {
+                return scaled;
+            }
+        }
+    }
     let (value_mantissa, value_exponent) = split_binary(value);
     let (factor_mantissa, factor_exponent) = split_binary(factor);
     scale_binary(
@@ -473,6 +482,20 @@ pub(crate) fn scale_binary(mut value: f64, mut exponent: i64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn reference_multiply_component_scaled(value: f64, factor: f64, exponent: i64) -> f64 {
+        if value == 0.0 || factor == 0.0 || !value.is_finite() || !factor.is_finite() {
+            return scale_binary(value * factor, exponent);
+        }
+        let (value_mantissa, value_exponent) = split_binary(value);
+        let (factor_mantissa, factor_exponent) = split_binary(factor);
+        scale_binary(
+            value_mantissa * factor_mantissa,
+            exponent
+                .saturating_add(value_exponent)
+                .saturating_add(factor_exponent),
+        )
+    }
 
     fn reference_scale_binary(mut value: f64, mut exponent: i64) -> f64 {
         if value == 0.0 || !value.is_finite() {
@@ -733,6 +756,50 @@ mod tests {
                     expected.to_bits(),
                     "value={value:e}, exponent={exponent}, actual={actual:e}, expected={expected:e}"
                 );
+            }
+        }
+    }
+
+    #[test]
+    fn scaled_multiply_matches_split_reference() {
+        let values = [
+            0.0,
+            -0.0,
+            0.125,
+            -0.75,
+            1.0,
+            -1.5,
+            f64::MIN_POSITIVE,
+            -f64::MAX,
+            f64::from_bits(1),
+            f64::from_bits(0x6e46_ed13_0a30_155d),
+        ];
+        let factors = [
+            0.5,
+            -0.75,
+            1.125,
+            f64::MAX,
+            f64::MIN_POSITIVE,
+            f64::from_bits(1),
+            0.0,
+            f64::INFINITY,
+            f64::from_bits(0x21d3_bb30_e0c3_d752),
+        ];
+        let exponents = [
+            -4097, -2048, -1285, -1023, -1022, -1, 0, 1, 1022, 1023, 2048, 4097,
+        ];
+
+        for value in values {
+            for factor in factors {
+                for exponent in exponents {
+                    let actual = multiply_component_scaled(value, factor, exponent);
+                    let expected = reference_multiply_component_scaled(value, factor, exponent);
+                    assert_eq!(
+                        actual.to_bits(),
+                        expected.to_bits(),
+                        "value={value:e}, factor={factor:e}, exponent={exponent}, actual={actual:e}, expected={expected:e}"
+                    );
+                }
             }
         }
     }
