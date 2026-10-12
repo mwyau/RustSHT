@@ -706,7 +706,70 @@ For f64 spin-2 STANDARD transforms with `lmax >= 500`, synthesis converts E/B co
 | Analysis | 1 | `1310.395; 17.579` | `740.092; 8.492` | `-43.5%` |
 | Analysis | 8 | `184.454; 4.611` | `184.236; 2.627` | `-0.1%` |
 
-The first eight-worker analysis run with scalar conversion enabled measured `214.279 ms`, so the fast analysis path is disabled above one worker. This retains the one-worker improvement without a multithread regression. The rebuilt release Python extension was compared with `ducc0==0.41.0` at the same pinned source revision. The host was the x86-64 CPU; Python was 3.11.15 and NumPy 2.4.6. The harness used T511 GL inputs, reused the plan, allocated a workspace per RustSHT call, and took two run medians of five samples after a warmup. RustSHT plan timings include their per-call workspace allocation; all times are milliseconds:
+The first eight-worker analysis run with scalar conversion enabled measured `214.279 ms`, so the fast analysis path is disabled above one worker. This retains the one-worker improvement without a multithread regression.
+
+### Comparative profiling baseline and normal-range multiplication (M4, 2026-10-12)
+
+The T511 phase profile identifies recurrence and harmonic accumulation as the largest excess-cost phases. RustSHT longitude FFTs are a small fraction of one-thread scalar and spin-1 transforms. At eight threads, FFT work and Python-side workspace allocation become more visible, but the recurrence and accumulation phases still dominate the absolute gap. Measurements ran on an x86-64 CPU (host topology omitted) under Linux, 8 pinned CPU cores. The host supports AVX2 and FMA, but not AVX-512. Rust used `rustc 1.99.0` (LLVM 23.1.1), `cargo build --release`, and the default release flags `-C opt-level=3 -C embed-bitcode=no -C strip=debuginfo`; no `RUSTFLAGS`, `target-cpu=native`, LTO, or fast-math flags were used. Pulp selected its AVX2/FMA runtime path. Native benchmark examples reused plans and workspaces. Python benchmarks used Python 3.11.15, NumPy 2.4.6, T511 GL grids (`512x1025`), `lmax=mmax=511`, `phi0=0.37`, one warm-up and five timed samples per run, and two process runs. Rust plan methods allocate a workspace per call; the procedural functions also construct a plan per call. The end-to-end reference was the installed `ducc0==0.41.0` wheel at source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`. The wheel contains GCC 14.2.1 and GCC 8.5.0 build identifiers, but does not record its SHT compiler flags. Its SHT disassembly uses two-lane XMM instructions and contains no YMM, ZMM, or FMA instructions. A temporary source build at the same revision identifies itself as DUCC 0.41.1. CMake 4.2.3 and GCC 15.2.0 compiled it with `-O3 -DNDEBUG -flto=auto -fno-fat-lto-objects -fPIC -fvisibility=hidden -march=native -g -ffast-math`; that build emits YMM and FMA instructions. Source-build phase results below are therefore separate from the installed 0.41.0 wheel timings.
+
+| T511 operation | Threads | RustSHT Python plan (ms) | DUCC 0.41.0 (ms) | Ratio | Excess (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Scalar synthesis | 1 | `81.670` | `13.843` | `5.9x` | `67.827` |
+| Scalar analysis | 1 | `160.008` | `12.270` | `13.0x` | `147.738` |
+| Scalar synthesis | 8 | `29.833` | `3.690` | `8.1x` | `26.143` |
+| Scalar analysis | 8 | `31.325` | `1.681` | `18.6x` | `29.644` |
+| Spin-1 synthesis | 1 | `482.704` | `26.571` | `18.2x` | `456.133` |
+| Spin-1 analysis | 1 | `700.185` | `24.989` | `28.0x` | `675.196` |
+| Spin-1 synthesis | 8 | `85.325` | `5.744` | `14.9x` | `79.581` |
+| Spin-1 analysis | 8 | `185.610` | `3.373` | `55.0x` | `182.237` |
+
+The Rust plan and procedural function medians differed by at most 1.9% at T511; plan construction is about `0.036 ms`. At one thread, NumPy copies took `0.05–0.11 ms` for coefficients and `0.07–0.21 ms` for maps; output allocation took `0.001 ms`. At T1023, coefficient and map copies took `1.3 ms` and `3.8 ms`, compared with transform times from `196 ms` to `7,980 ms`. Python copying does not explain the transform gap. The native scalar workspace estimate is `16.08 MiB` at one worker and `16.25 MiB` at eight workers; the multiplication change below adds no scratch storage. T127 Python-plan results are sensitive to Rayon scheduling because the transforms are small. Rust scalar analysis measured `2.577 ms` at one thread and `1.856 ms` at eight, against DUCC `0.999 ms` and `0.206 ms`; the eight-thread Rust run spread was `0.738 ms`. Spin-1 synthesis measured `21.229 ms` and `13.401 ms`, against DUCC `2.487 ms` and `0.611 ms`; the eight-thread Rust spread was `4.608 ms`. T127 is used for instruction profiling, not stable throughput ratios. T1023 checks show the same kernel scaling at larger grids. Each value is a median of five timed samples from one process run; errors compare RustSHT against DUCC 0.41.0:
+
+| T1023 operation | Threads | RustSHT Python plan (ms) | DUCC 0.41.0 (ms) | Max absolute error |
+| --- | ---: | ---: | ---: | ---: |
+| Scalar synthesis | 1 | `647.842` | `120.055` | `1.575e-13` |
+| Scalar analysis | 1 | `1,327.678` | `118.734` | `1.041e-14` |
+| Scalar synthesis | 8 | `195.732` | `18.551` | `1.575e-13` |
+| Scalar analysis | 8 | `270.569` | `15.956` | `1.041e-14` |
+| Spin-1 synthesis | 1 | `3,698.866` | `248.707` | `1.611e-13` |
+| Spin-1 analysis | 1 | `7,980.375` | `250.312` | `1.730e-14` |
+| Spin-1 synthesis | 8 | `685.743` | `40.148` | `1.611e-13` |
+| Spin-1 analysis | 8 | `1,591.153` | `38.462` | `1.812e-14` |
+
+Phase timers cover complete longitude loops, preparation stages, and recurrence/accumulation scheduling. The Rust phases use reused native workspaces. DUCC phases use the temporary 0.41.1 source build; whole DUCC Python measurements include wrapper and output handling. Phase subtotals therefore do not equal the DUCC whole-call times, especially for eight-thread synthesis.
+
+| T511 phase | Threads | RustSHT (ms) | DUCC source 0.41.1 (ms) | Ratio | Excess (ms) | Rust share of whole | DUCC share of whole |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Scalar synthesis recurrence and accumulation | 1 | `75.27` | `6.66` | `11.3x` | `68.61` | `92.2%` | `68.0%` |
+| Scalar synthesis inverse FFT and row copy | 1 | `3.48` | `1.79` | `1.9x` | `1.69` | `4.3%` | `18.2%` |
+| Scalar synthesis recurrence and accumulation | 8 | `25.78` | `1.04` | `24.8x` | `24.74` | `86.4%` | `33.2%` |
+| Scalar synthesis inverse FFT and row copy | 8 | `3.52` | `0.38` | `9.3x` | `3.14` | `11.8%` | `12.1%` |
+| Scalar analysis recurrence and accumulation | 1 | `154.9` | `4.49` | `34.5x` | `150.4` | `97.6%` | `69.7%` |
+| Scalar analysis FFT and packing | 1 | `3.4` | `1.85` | `1.8x` | `1.6` | `2.1%` | `28.7%` |
+| Scalar analysis recurrence and accumulation | 8 | `27.1` | `0.71` | `38.2x` | `26.4` | `87.7%` | `66.2%` |
+| Scalar analysis FFT and packing | 8 | `3.4` | `0.30` | `11.3x` | `3.1` | `11.0%` | `28.0%` |
+| Spin-1 synthesis recurrence, conversion and accumulation | 1 | `469.4` | `14.8` | `31.7x` | `454.6` | `98.3%` | `72.9%` |
+| Spin-1 synthesis inverse FFT and row copy | 1 | `7.8` | `3.74` | `2.1x` | `4.1` | `1.6%` | `18.4%` |
+| Spin-1 synthesis recurrence, conversion and accumulation | 8 | `75.9` | `2.00` | `38.0x` | `73.9` | `90.4%` | `46.9%` |
+| Spin-1 synthesis inverse FFT and row copy | 8 | `7.9` | `0.58` | `13.6x` | `7.3` | `9.4%` | `13.5%` |
+| Spin-1 analysis recurrence, conversion and accumulation | 1 | `684.3` | `8.88` | `77.1x` | `675.4` | `99.0%` | `69.3%` |
+| Spin-1 analysis FFT and packing | 1 | `6.7` | `3.83` | `1.7x` | `2.9` | `1.0%` | `29.9%` |
+| Spin-1 analysis recurrence, conversion and accumulation | 8 | `173.9` | `1.40` | `124.2x` | `172.5` | `96.0%` | `68.1%` |
+| Spin-1 analysis FFT and packing | 8 | `7.1` | `0.62` | `11.5x` | `6.5` | `3.9%` | `30.0%` |
+
+Warm phase totals reconcile with native Rust timings within `2–7 ms`. Rust scalar analysis at T511 takes about `158.7 ms` at one thread and `30.9 ms` at eight across the timed phases. The DUCC source analysis phases take about `6.4 ms` and `1.0 ms`; whole-call medians were `6.443 ms` and `1.072 ms`. The larger spin-1 synthesis difference at eight threads includes about `1.7 ms` of DUCC Python wrapper and output handling outside the phase timers. Across the table, recurrence and accumulation account for the largest absolute excess; FFT threading is not the next optimization target. The scalar synthesis phase measurements use reused native Rust workspaces and source-build DUCC whole-call medians of `9.800 ms` (one thread) and `3.126 ms` (eight threads). Rust phase medians were `75.27/3.48 ms` and `25.78/3.52 ms` for recurrence plus accumulation and inverse FFT plus row copy. DUCC phase medians were `6.66/1.79 ms` and `1.04/0.38 ms`. DUCC's per-call scratch allocation phase was `1.319 ms` and `1.514 ms` at one and eight threads, respectively, but individual samples ranged from about `0.006 ms` to `1.54 ms`; treat these allocator measurements as variable. Repeated native Rust workspace creation took `3.77–3.91 ms` with one worker and `3.74–4.04 ms` with eight workers for scalar and spin-1 workspaces. Plan construction took `0.034–0.039 ms`. The Python plan-method timings above include this workspace creation on each call; native phase rows exclude it by reusing the workspace. The first measured change bypasses binary scaling when a complex product has exponent zero and both output components are normal. The scaled fallback still handles underflow, overflow, subnormals, signed zero and non-finite inputs. This path also applies to `multiply_complex_scaled`, which is used by spin transforms. It adds no workspace bytes. Native T511 release timings used reused plans and workspaces, one warm-up, five samples per run and three process runs. Values are medians and ranges of run medians:
+
+| Operation | Threads | Before (ms) | After (ms) | Change |
+| --- | ---: | ---: | ---: | ---: |
+| Scalar analysis | 1 | `163.962; 1.186` | `157.944; 1.958` | `-3.7%` |
+| Scalar analysis | 8 | `31.452; 1.337` | `30.787; 0.927` | `-2.1%` |
+| Spin-1 synthesis | 1 | `562.386; 1.753` | `486.063; 3.115` | `-13.6%` |
+| Spin-1 synthesis | 8 | `96.761; 1.618` | `82.886; 0.415` | `-14.3%` |
+| Spin-1 analysis | 1 | `716.505; 6.820` | `695.025; 5.726` | `-3.0%` |
+| Spin-1 analysis | 8 | `183.996; 0.122` | `175.986; 2.500` | `-4.4%` |
+
+
+`cargo test --workspace --all-features` passed 88 library tests and 10 f32 integration tests, with seven opt-in high-bandlimit tests ignored. `cargo test -p rustsht --no-default-features` passed 85 library tests and 10 f32 tests, with the same seven tests ignored. `uv run pytest python/tests` passed eight tests. The measured scalar-analysis improvement is smaller than the remaining kernel gap; the next experiment targets register-resident SIMD accumulation in scalar analysis. The rebuilt release Python extension was compared with `ducc0==0.41.0` at the same pinned source revision. The host was the x86-64 CPU; Python was 3.11.15 and NumPy 2.4.6. The harness used T511 GL inputs, reused the plan, allocated a workspace per RustSHT call, and took two run medians of five samples after a warmup. RustSHT plan timings include their per-call workspace allocation; all times are milliseconds:
 
 | Operation | Threads | RustSHT plan (median; range) | DUCC (median; range) | Plan / DUCC |
 | --- | ---: | ---: | ---: | ---: |

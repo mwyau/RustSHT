@@ -18,6 +18,16 @@ import rustsht
 lmax = int(sys.argv[1]) if len(sys.argv) > 1 else 511
 spin = int(sys.argv[2]) if len(sys.argv) > 2 else 0
 geometry = sys.argv[4] if len(sys.argv) > 4 else "GL"
+runs = int(sys.argv[5]) if len(sys.argv) > 5 else 2
+scope = sys.argv[6] if len(sys.argv) > 6 else "full"
+if scope not in {"full", "plan"}:
+    raise SystemExit("scope must be 'full' or 'plan'")
+operation = sys.argv[7] if len(sys.argv) > 7 else "both"
+if operation not in {"both", "synthesis", "analysis"}:
+    raise SystemExit("operation must be 'both', 'synthesis' or 'analysis'")
+backend = sys.argv[8] if len(sys.argv) > 8 else "both"
+if backend not in {"both", "rust", "ducc"}:
+    raise SystemExit("backend must be 'both', 'rust' or 'ducc'")
 phi0 = 0.37
 ntheta = lmax + (2 if geometry == "CC" else 1)
 nphi = 2 * lmax + 3
@@ -63,7 +73,7 @@ def rust_plan_analysis():
 def rust_proc_analysis():
     return rustsht.analysis_2d(map_in, spin=spin, lmax=lmax, geometry=geometry, mmax=lmax, phi0=phi0)
 
-def time_runs(fn, count=2):
+def time_runs(fn, count=runs):
     run_medians = []
     for _ in range(count):
         fn()
@@ -93,21 +103,26 @@ def report(name, fn):
     ms = time_runs(fn)
     print(f"{name}_run_medians_ms=" + ",".join(f"{x:.3f}" for x in ms) + f"; median={np.median(ms):.3f}; spread={max(ms)-min(ms):.3f}")
 
-print(f"T{lmax} {geometry} {ntheta}x{nphi} spin={spin} threads={threads} python={sys.version.split()[0]} numpy={np.__version__} ducc={ducc0.__version__}")
+print(f"T{lmax} {geometry} {ntheta}x{nphi} spin={spin} threads={threads} runs={runs} scope={scope} operation={operation} backend={backend} python={sys.version.split()[0]} numpy={np.__version__} ducc={ducc0.__version__}")
 print("plan_construction_ms=" + ",".join(f"{x:.3f}" for x in time_runs(lambda: rustsht.ShtPlan(geometry, ntheta, nphi, lmax, lmax, spin=spin, phi0=phi0))))
 print("numpy_alm_copy_ms=" + ",".join(f"{x:.3f}" for x in time_runs(lambda: np.array(alm, copy=True))))
 print("numpy_map_copy_ms=" + ",".join(f"{x:.3f}" for x in time_runs(lambda: np.array(map_in, copy=True))))
 print("numpy_output_allocation_ms=" + ",".join(f"{x:.3f}" for x in time_runs(lambda: np.empty((ncomp, ntheta, nphi), dtype=np.float64))))
-expected_map = ducc_synth()
-rust_map = rust_plan_synth()
-print("synthesis_error=" + errors(rust_map, expected_map))
-report("synthesis_rust_plan", rust_plan_synth)
-report("synthesis_rust_procedural", rust_proc_synth)
-report("synthesis_ducc", ducc_synth)
-expected_alm_ducc = ducc_analysis()
-expected_alm = to_rust_layout(expected_alm_ducc)
-rust_alm = rust_plan_analysis()
-print("analysis_error=" + errors(rust_alm, expected_alm))
-report("analysis_rust_plan", rust_plan_analysis)
-report("analysis_rust_procedural", rust_proc_analysis)
-report("analysis_ducc", ducc_analysis)
+if operation in {"both", "synthesis"}:
+    if backend == "both":
+        print("synthesis_error=" + errors(rust_plan_synth(), ducc_synth()))
+    if backend in {"both", "rust"}:
+        report("synthesis_rust_plan", rust_plan_synth)
+        if scope == "full":
+            report("synthesis_rust_procedural", rust_proc_synth)
+    if backend in {"both", "ducc"}:
+        report("synthesis_ducc", ducc_synth)
+if operation in {"both", "analysis"}:
+    if backend == "both":
+        print("analysis_error=" + errors(rust_plan_analysis(), to_rust_layout(ducc_analysis())))
+    if backend in {"both", "rust"}:
+        report("analysis_rust_plan", rust_plan_analysis)
+        if scope == "full":
+            report("analysis_rust_procedural", rust_proc_analysis)
+    if backend in {"both", "ducc"}:
+        report("analysis_ducc", ducc_analysis)
