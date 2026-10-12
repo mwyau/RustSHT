@@ -1728,6 +1728,10 @@ impl<T: ShtScalar> ShtPlan<T> {
             let u_real = &recurrence.analysis_opposite_real[..block_len];
             let u_imag = &recurrence.analysis_opposite_imag[..block_len];
             let block_cosine = &theta_cos[block_start..block_end];
+            let q_products_safe =
+                T::scalar_analysis_products_safe(q_real, q_imag, q_real, q_imag, block_cosine);
+            let u_products_safe =
+                T::scalar_analysis_products_safe(u_real, u_imag, u_real, u_imag, block_cosine);
             let paired_used = T::for_each_y_lm_paired_dispatched(
                 arch,
                 m,
@@ -1759,6 +1763,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     let cosine = &block_cosine[lanes.clone()];
                     let (q_even, q_odd) = T::accumulate_scalar_analysis_pair(
                         arch,
+                        q_products_safe,
                         &q_real[lanes.clone()],
                         &q_imag[lanes.clone()],
                         &q_real[lanes.clone()],
@@ -1769,6 +1774,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     );
                     let (u_even, u_odd) = T::accumulate_scalar_analysis_pair(
                         arch,
+                        u_products_safe,
                         &u_real[lanes.clone()],
                         &u_imag[lanes.clone()],
                         &u_real[lanes.clone()],

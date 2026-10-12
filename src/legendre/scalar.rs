@@ -26,7 +26,7 @@ use pulp::{Arch, Simd, WithSimd};
 
 use crate::error::ShtError;
 
-const BIG: f64 = f64::from_bits(1423_u64 << 52);
+pub(super) const BIG: f64 = f64::from_bits(1423_u64 << 52);
 const SMALL: f64 = f64::from_bits(623_u64 << 52);
 const SCALE_UP: f64 = f64::from_bits(1823_u64 << 52);
 const SCALE_DOWN: f64 = f64::from_bits(223_u64 << 52);
@@ -1250,9 +1250,18 @@ mod tests {
             let cos_theta: Vec<_> = (0..lane_count)
                 .map(|lane| (0.31 * lane as f64 + 0.2).cos())
                 .collect();
+            let products_safe = super::super::scalar_paired::analysis_products_safe(
+                &same_real,
+                &same_imag,
+                &opposite_real,
+                &opposite_imag,
+                &cos_theta,
+            );
+            assert!(products_safe);
 
             let actual = super::super::scalar_paired::accumulate_analysis_pair_dispatched(
                 Arch::new(),
+                products_safe,
                 &same_real,
                 &same_imag,
                 &opposite_real,
@@ -1290,6 +1299,53 @@ mod tests {
     }
 
     #[test]
+    fn paired_analysis_extreme_finite_products_use_scaled_fallback() {
+        let same_real = [0.25];
+        let same_imag = [-0.5];
+        let opposite_real = [1.0e308];
+        let opposite_imag = [-1.0e308];
+        let basis = [2.0];
+        let exponents = [0];
+        let cos_theta = [0.5];
+        let products_safe = super::super::scalar_paired::analysis_products_safe(
+            &same_real,
+            &same_imag,
+            &opposite_real,
+            &opposite_imag,
+            &cos_theta,
+        );
+        assert!(!products_safe);
+
+        let actual = super::super::scalar_paired::accumulate_analysis_pair_dispatched(
+            Arch::new(),
+            products_safe,
+            &same_real,
+            &same_imag,
+            &opposite_real,
+            &opposite_imag,
+            &basis,
+            &exponents,
+            &cos_theta,
+        );
+        let expected_same =
+            multiply_complex_scaled(Complex64::new(same_real[0], same_imag[0]), basis[0], 0);
+        let expected_opposite = multiply_complex_scaled_product(
+            Complex64::new(opposite_real[0], opposite_imag[0]),
+            basis[0],
+            cos_theta[0],
+            0,
+        );
+
+        assert!(actual.1.re.is_finite() && actual.1.im.is_finite());
+        assert_eq!(actual.0.re.to_bits(), expected_same.re.to_bits());
+        assert_eq!(actual.0.im.to_bits(), expected_same.im.to_bits());
+        assert_eq!(actual.1.re.to_bits(), expected_opposite.re.to_bits());
+        assert_eq!(actual.1.im.to_bits(), expected_opposite.im.to_bits());
+        assert_eq!(actual.1.re, 1.0e308);
+        assert_eq!(actual.1.im, -1.0e308);
+    }
+
+    #[test]
     fn paired_analysis_scaled_lanes_use_the_general_multiply_path() {
         let same_real = [0.75, -0.25, 0.5];
         let same_imag = [-0.5, 0.875, -0.125];
@@ -1300,6 +1356,7 @@ mod tests {
         let cos_theta = [0.25, -0.5, 0.75];
         let actual = super::super::scalar_paired::accumulate_analysis_pair_dispatched(
             Arch::new(),
+            true,
             &same_real,
             &same_imag,
             &opposite_real,
