@@ -169,6 +169,43 @@ pub(crate) trait ShtScalar:
         Ok(false)
     }
     fn multiply_complex_scaled(value: Complex<Self>, factor: Self, exponent: i64) -> Complex<Self>;
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Paired analysis combines two parity spectra with lane recurrence values."
+    )]
+    fn accumulate_scalar_analysis_pair(
+        _arch: Arch,
+        same_real: &[Self],
+        same_imag: &[Self],
+        opposite_real: &[Self],
+        opposite_imag: &[Self],
+        basis: &[Self],
+        exponents: &[i64],
+        cos_theta: &[Self],
+    ) -> (Complex<Self>, Complex<Self>) {
+        debug_assert_eq!(same_real.len(), basis.len());
+        debug_assert_eq!(same_imag.len(), basis.len());
+        debug_assert_eq!(opposite_real.len(), basis.len());
+        debug_assert_eq!(opposite_imag.len(), basis.len());
+        debug_assert_eq!(exponents.len(), basis.len());
+        debug_assert_eq!(cos_theta.len(), basis.len());
+        let mut same = Complex::new(Self::zero(), Self::zero());
+        let mut opposite = Complex::new(Self::zero(), Self::zero());
+        for lane in 0..basis.len() {
+            same += Self::multiply_complex_scaled(
+                Complex::new(same_real[lane], same_imag[lane]),
+                basis[lane],
+                exponents[lane],
+            );
+            opposite += Self::multiply_complex_scaled_product(
+                Complex::new(opposite_real[lane], opposite_imag[lane]),
+                basis[lane],
+                cos_theta[lane],
+                exponents[lane],
+            );
+        }
+        (same, opposite)
+    }
     fn multiply_complex_scaled_product(
         value: Complex<Self>,
         factor: Self,
@@ -357,6 +394,28 @@ impl ShtScalar for f64 {
 
     fn multiply_complex_scaled(value: Complex<Self>, factor: Self, exponent: i64) -> Complex<Self> {
         scalar::multiply_complex_scaled(value, factor, exponent)
+    }
+
+    fn accumulate_scalar_analysis_pair(
+        arch: Arch,
+        same_real: &[Self],
+        same_imag: &[Self],
+        opposite_real: &[Self],
+        opposite_imag: &[Self],
+        basis: &[Self],
+        exponents: &[i64],
+        cos_theta: &[Self],
+    ) -> (Complex<Self>, Complex<Self>) {
+        scalar_paired::accumulate_analysis_pair_dispatched(
+            arch,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            basis,
+            exponents,
+            cos_theta,
+        )
     }
 
     fn multiply_complex_scaled_product(

@@ -1229,6 +1229,107 @@ mod tests {
     }
 
     #[test]
+    fn paired_analysis_simd_accumulation_matches_scaled_lane_reference() {
+        for lane_count in [64, 61] {
+            let same_real: Vec<_> = (0..lane_count)
+                .map(|lane| (0.17 * lane as f64).sin())
+                .collect();
+            let same_imag: Vec<_> = (0..lane_count)
+                .map(|lane| (0.11 * lane as f64).cos())
+                .collect();
+            let opposite_real: Vec<_> = (0..lane_count)
+                .map(|lane| (0.07 * lane as f64 + 0.3).cos())
+                .collect();
+            let opposite_imag: Vec<_> = (0..lane_count)
+                .map(|lane| (0.23 * lane as f64 - 0.2).sin())
+                .collect();
+            let basis: Vec<_> = (0..lane_count)
+                .map(|lane| (0.13 * lane as f64 + 0.1).sin())
+                .collect();
+            let exponents = vec![0; lane_count];
+            let cos_theta: Vec<_> = (0..lane_count)
+                .map(|lane| (0.31 * lane as f64 + 0.2).cos())
+                .collect();
+
+            let actual = super::super::scalar_paired::accumulate_analysis_pair_dispatched(
+                Arch::new(),
+                &same_real,
+                &same_imag,
+                &opposite_real,
+                &opposite_imag,
+                &basis,
+                &exponents,
+                &cos_theta,
+            );
+            let mut expected_same = Complex64::new(0.0, 0.0);
+            let mut expected_opposite = Complex64::new(0.0, 0.0);
+            for lane in 0..lane_count {
+                expected_same += multiply_complex_scaled(
+                    Complex64::new(same_real[lane], same_imag[lane]),
+                    basis[lane],
+                    0,
+                );
+                expected_opposite += multiply_complex_scaled_product(
+                    Complex64::new(opposite_real[lane], opposite_imag[lane]),
+                    basis[lane],
+                    cos_theta[lane],
+                    0,
+                );
+            }
+
+            for (actual, expected) in [actual.0, actual.1]
+                .into_iter()
+                .zip([expected_same, expected_opposite])
+            {
+                assert!(
+                    (actual - expected).norm() < 2e-13 * expected.norm().max(1.0),
+                    "lanes={lane_count}, actual={actual:?}, expected={expected:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn paired_analysis_scaled_lanes_use_the_general_multiply_path() {
+        let same_real = [0.75, -0.25, 0.5];
+        let same_imag = [-0.5, 0.875, -0.125];
+        let opposite_real = [0.625, -0.75, 0.375];
+        let opposite_imag = [0.25, 0.5, -0.625];
+        let basis = [0.5, -0.75, 0.25];
+        let exponents = [0, -1074, 900];
+        let cos_theta = [0.25, -0.5, 0.75];
+        let actual = super::super::scalar_paired::accumulate_analysis_pair_dispatched(
+            Arch::new(),
+            &same_real,
+            &same_imag,
+            &opposite_real,
+            &opposite_imag,
+            &basis,
+            &exponents,
+            &cos_theta,
+        );
+        let mut expected_same = Complex64::new(0.0, 0.0);
+        let mut expected_opposite = Complex64::new(0.0, 0.0);
+        for lane in 0..basis.len() {
+            expected_same += multiply_complex_scaled(
+                Complex64::new(same_real[lane], same_imag[lane]),
+                basis[lane],
+                exponents[lane],
+            );
+            expected_opposite += multiply_complex_scaled_product(
+                Complex64::new(opposite_real[lane], opposite_imag[lane]),
+                basis[lane],
+                cos_theta[lane],
+                exponents[lane],
+            );
+        }
+        assert_eq!(actual.0.re.to_bits(), expected_same.re.to_bits());
+        assert_eq!(actual.0.im.to_bits(), expected_same.im.to_bits());
+        assert_eq!(actual.1.re.to_bits(), expected_opposite.re.to_bits());
+        assert_eq!(actual.1.im.to_bits(), expected_opposite.im.to_bits());
+    }
+
+    #[test]
     fn ducc_paired_recurrence_scaled_to_normal_transition_matches_reference() {
         let m = 255;
         let lmax = 768;
