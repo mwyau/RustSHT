@@ -247,6 +247,85 @@ fn spin_one_gl_matches_ducc_0410_and_weighted_analysis() {
 }
 
 #[test]
+fn spin1_scalar_fast_synthesis_matches_general_channel_cases() {
+    let lmax = 511;
+    let ntheta = 65;
+    let nphi = 2 * lmax + 3;
+    let plan = make_plan(1, lmax, lmax, ntheta, nphi);
+    let (mut mixed_e, mut mixed_b) = coefficients(&plan);
+    for value in mixed_e.iter_mut().chain(mixed_b.iter_mut()) {
+        *value *= 1e-5;
+    }
+    let zero = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let cases = [
+        ("E-only", mixed_e.as_slice(), zero.as_slice()),
+        ("B-only", zero.as_slice(), mixed_b.as_slice()),
+        ("mixed E/B", mixed_e.as_slice(), mixed_b.as_slice()),
+    ];
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_spin_latitudes(&mut workspace, 1);
+
+    for (name, e_alm, b_alm) in cases {
+        workspace.spectra.fill(Complex64::new(0.0, 0.0));
+        workspace.spin_spectra.fill(Complex64::new(0.0, 0.0));
+        plan.synthesize_spin_ring_group(
+            e_alm,
+            Some(b_alm),
+            1,
+            false,
+            true,
+            nphi,
+            plan.fft.spectrum_len(),
+            plan.grid.phi0(),
+            0,
+            ntheta,
+            &mut workspace.spectra,
+            &mut workspace.spin_spectra,
+            &workspace.theta_sin[..ntheta],
+            &workspace.theta_cos[..ntheta],
+            &workspace.ring_order_limits[..ntheta],
+            pulp::Arch::new(),
+            &mut workspace.recurrence_workers[0],
+        )
+        .unwrap();
+        let fast_first = workspace.spectra.clone();
+        let fast_second = workspace.spin_spectra.clone();
+
+        workspace.spectra.fill(Complex64::new(0.0, 0.0));
+        workspace.spin_spectra.fill(Complex64::new(0.0, 0.0));
+        plan.synthesize_spin_ring_group(
+            e_alm,
+            Some(b_alm),
+            1,
+            false,
+            false,
+            nphi,
+            plan.fft.spectrum_len(),
+            plan.grid.phi0(),
+            0,
+            ntheta,
+            &mut workspace.spectra,
+            &mut workspace.spin_spectra,
+            &workspace.theta_sin[..ntheta],
+            &workspace.theta_cos[..ntheta],
+            &workspace.ring_order_limits[..ntheta],
+            pulp::Arch::new(),
+            &mut workspace.recurrence_workers[0],
+        )
+        .unwrap();
+
+        for (fast, general) in fast_first
+            .iter()
+            .zip(&workspace.spectra)
+            .chain(fast_second.iter().zip(&workspace.spin_spectra))
+        {
+            let error = (*fast - *general).norm();
+            assert!(error <= 3e-11, "{name} discrepancy={error:.3e}");
+        }
+    }
+}
+
+#[test]
 #[expect(
     clippy::excessive_precision,
     reason = "These decimal fixtures retain the printed DUCC reference values."
@@ -2860,7 +2939,7 @@ fn m3_spin_t511_all_grids_matches_ducc_and_roundtrips() {
                     analysis_value_count += 1;
                     assert!(
                         error <= 2e-10,
-                        "{kind:?} spin {spin} T{degree} analysis error={error:.3e}"
+                        "{kind:?} spin {spin} T{degree} analysis error={error:.3e}: actual={actual:?}, expected={expected:?}"
                     );
                 }
             }
