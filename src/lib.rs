@@ -12,6 +12,7 @@ mod grid;
 mod harmonics;
 mod legendre;
 mod plan;
+mod spin_transform;
 mod transform;
 mod workspace;
 
