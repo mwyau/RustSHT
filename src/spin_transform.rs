@@ -1334,12 +1334,33 @@ impl<T: ShtScalar> ShtPlan<T> {
                 continue;
             }
 
+            let (fallback_sine, fallback_cosine, compact_ring_indices) =
+                if block_order_limits.iter().any(|&limit| m > limit) {
+                    let mut compact_len = 0;
+                    for (local_ring, &limit) in block_order_limits.iter().enumerate() {
+                        if m <= limit {
+                            recurrence.compact_theta_sin[compact_len] = block_sine[local_ring];
+                            recurrence.compact_theta_cos[compact_len] = block_cosine[local_ring];
+                            recurrence.compact_ring_indices[compact_len] = local_ring;
+                            compact_len += 1;
+                        }
+                    }
+                    debug_assert!(compact_len > 0);
+                    (
+                        &recurrence.compact_theta_sin[..compact_len],
+                        &recurrence.compact_theta_cos[..compact_len],
+                        Some(&recurrence.compact_ring_indices[..compact_len]),
+                    )
+                } else {
+                    (block_sine, block_cosine, None)
+                };
+
             T::for_each_y_lm_paired_dispatched(
                 arch,
                 m,
                 scalar_lmax,
-                block_sine,
-                block_cosine,
+                fallback_sine,
+                fallback_cosine,
                 self.sectoral_norms[m],
                 &recurrence.spin_coefficient_a,
                 &recurrence.spin_coefficient_b,
@@ -1378,16 +1399,18 @@ impl<T: ShtScalar> ShtPlan<T> {
                         Complex::new(T::zero(), T::zero())
                     };
                     for lane in 0..basis.len() {
-                        let local_ring = block_ring_start + lane;
+                        let fallback_lane = block_ring_start + lane;
+                        let local_ring = compact_ring_indices
+                            .map_or(fallback_lane, |indices| indices[fallback_lane]);
                         let group_ring = block_start + local_ring;
                         let global_ring = ring_start + group_ring;
                         if m > ring_order_limits[global_ring] {
                             continue;
                         }
-                        let inverse_sine = block_sine[local_ring].recip();
+                        let inverse_sine = fallback_sine[fallback_lane].recip();
                         let inverse_sine_squared = inverse_sine * inverse_sine;
                         let cosine_over_sine_squared =
-                            block_cosine[local_ring] * inverse_sine_squared;
+                            fallback_cosine[fallback_lane] * inverse_sine_squared;
                         let first = T::multiply_complex_scaled_product(
                             even_first,
                             basis[lane],

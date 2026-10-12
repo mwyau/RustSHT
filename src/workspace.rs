@@ -54,6 +54,9 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     pub(crate) analysis_same_imag: Vec<T>,
     pub(crate) analysis_opposite_real: Vec<T>,
     pub(crate) analysis_opposite_imag: Vec<T>,
+    pub(crate) compact_theta_sin: Vec<T>,
+    pub(crate) compact_theta_cos: Vec<T>,
+    pub(crate) compact_ring_indices: Vec<usize>,
     pub(crate) fast_scalar_first: Vec<Complex<T>>,
     pub(crate) fast_scalar_second: Vec<Complex<T>>,
     pub(crate) fast_spin_first: Vec<Complex<T>>,
@@ -131,6 +134,18 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
             analysis_opposite_imag: allocate_real(
                 recurrence_scratch_len,
                 "opposite-parity analysis imaginary spectrum",
+            )?,
+            compact_theta_sin: allocate_real(
+                recurrence_scratch_len,
+                "compacted latitude sine values",
+            )?,
+            compact_theta_cos: allocate_real(
+                recurrence_scratch_len,
+                "compacted latitude cosine values",
+            )?,
+            compact_ring_indices: allocate_usizes(
+                recurrence_scratch_len,
+                "compacted latitude ring indices",
             )?,
             fast_scalar_first: allocate_complex(
                 spin_fast_coefficient_count,
@@ -228,7 +243,7 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             row: allocate_real(nphi, "longitude row")?,
             theta_sin: allocate_real(latitude_count, "latitude sine values")?,
             theta_cos: allocate_real(latitude_count, "latitude cosine values")?,
-            ring_order_limits: allocate_usizes(latitude_count)?,
+            ring_order_limits: allocate_usizes(latitude_count, "latitude order limits")?,
             recurrence_workers,
             ring_group_size,
             fft: fft.workspace()?,
@@ -268,13 +283,11 @@ fn allocate_exponents(len: usize) -> Result<Vec<i64>, ShtError> {
     Ok(values)
 }
 
-fn allocate_usizes(len: usize) -> Result<Vec<usize>, ShtError> {
+fn allocate_usizes(len: usize, array: &'static str) -> Result<Vec<usize>, ShtError> {
     let mut values = Vec::new();
     values
         .try_reserve_exact(len)
-        .map_err(|_| ShtError::AllocationFailed {
-            array: "latitude order limits",
-        })?;
+        .map_err(|_| ShtError::AllocationFailed { array })?;
     values.resize(len, 0);
     Ok(values)
 }

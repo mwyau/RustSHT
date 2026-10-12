@@ -194,8 +194,12 @@ fn spin2_scalar_fast_synthesis_honors_full_and_mixed_polar_blocks() {
         .expect("the polar grid has a fully excluded block at m=450");
     let mixed_block = limits
         .chunks(block_size)
-        .position(|block| {
-            block.iter().any(|&limit| limit < m) && block.iter().any(|&limit| limit >= m)
+        .enumerate()
+        .find_map(|(block_index, block)| {
+            (block_index > 0
+                && block.iter().any(|&limit| limit < m)
+                && block.iter().any(|&limit| limit >= m))
+            .then_some(block_index)
         })
         .expect("the cutoff crosses a 64-ring block at m=450");
 
@@ -280,6 +284,31 @@ fn spin2_scalar_fast_synthesis_honors_full_and_mixed_polar_blocks() {
         active_output_seen,
         "active lanes in a mixed block contribute"
     );
+
+    let segment_spectrum_len = (mixed_end - mixed_start) * spectrum_len;
+    let mut segment_q = vec![Complex64::new(0.0, 0.0); segment_spectrum_len];
+    let mut segment_u = vec![Complex64::new(0.0, 0.0); segment_spectrum_len];
+    plan.synthesize_spin2_scalar_order(
+        m,
+        &e_alm,
+        &b_alm,
+        spectrum_len,
+        mixed_start,
+        &mut segment_q,
+        &mut segment_u,
+        &workspace.theta_sin[mixed_start..mixed_end],
+        &workspace.theta_cos[mixed_start..mixed_end],
+        limits,
+        pulp::Arch::new(),
+        &mut workspace.recurrence_workers[0],
+    )
+    .unwrap();
+    for (local_ring, ring) in (mixed_start..mixed_end).enumerate() {
+        let actual_index = ring * spectrum_len + m;
+        let segment_index = local_ring * spectrum_len + m;
+        assert_eq!(segment_q[segment_index], actual_q[actual_index]);
+        assert_eq!(segment_u[segment_index], actual_u[actual_index]);
+    }
 }
 
 #[test]
