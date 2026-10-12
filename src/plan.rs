@@ -51,7 +51,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let recurrence_factor_count =
             harmonics
                 .lmax()
-                .checked_add(1)
+                .checked_add(4)
                 .ok_or(ShtError::IntegerOverflow {
                     quantity: "scalar recurrence factor count",
                 })?;

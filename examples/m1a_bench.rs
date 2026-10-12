@@ -102,7 +102,7 @@ fn main() {
         + analyzed.len() * size_of::<Complex64>()
         + 2 * ntheta * spectrum_len * size_of::<Complex64>()
         + nphi * size_of::<f64>()
-        + rayon_threads * (lmax + 1) * size_of::<f64>()
+        + rayon_threads * (lmax + 4) * size_of::<f64>()
         + 2 * ntheta * size_of::<f64>()
         + ntheta * size_of::<usize>()
         + rayon_threads * LATITUDE_BLOCK_SIZE * (3 * size_of::<f64>() + size_of::<i64>())

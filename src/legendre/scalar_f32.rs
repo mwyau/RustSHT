@@ -69,7 +69,7 @@ pub(crate) fn polar_order_limit(lmax: usize, spin: usize, sin_theta: f32, cos_th
 
 pub(crate) fn fill_epsilon(m: usize, lmax: usize, output: &mut [f32]) {
     debug_assert!(m <= lmax);
-    debug_assert_eq!(output.len(), lmax + 1);
+    debug_assert!(output.len() > lmax);
     for (l, value) in output.iter_mut().enumerate().skip(m) {
         *value = epsilon(l, m);
     }
