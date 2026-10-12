@@ -1,10 +1,13 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-//! Spherical harmonic transforms on Gauss–Legendre, Clenshaw–Curtis, and Fejér-1 grids.
+//! Spherical harmonic transforms on regular latitude-longitude grids.
 //!
-//! The planned numerical API supports scalar and spin-weighted transforms,
-//! angular derivatives, and their mathematical adjoints.
-//! The current crate is a scaffold; see `plans/` for the numerical specification.
+//! The first implemented geometry is the Gauss-Legendre grid. Latitude rings
+//! run north to south; longitude samples run eastward from `phi0` in radians.
 
-#![warn(missing_docs)]
+mod error;
+mod grid;
+
+pub use error::ShtError;
+pub use grid::{GridKind, GridSpec};
