@@ -5,7 +5,7 @@ use crate::error::ShtError;
 use crate::fft::RealFftPlan;
 use crate::grid::GridSpec;
 use crate::harmonics::HarmonicSpec;
-use crate::legendre::ShtScalar;
+use crate::legendre::{ShtScalar, fill_spin2_factors};
 use crate::meridional::CCResamplingPlan;
 use crate::workspace::ShtWorkspace;
 
@@ -22,6 +22,8 @@ pub struct ShtPlan<T: ShtScalar = f64> {
     pub(crate) recurrence_factor_count: usize,
     pub(crate) spin_recurrence_factor_count: usize,
     pub(crate) spin_fast_coefficient_count: usize,
+    pub(crate) spin2_fast_f1: Vec<T>,
+    pub(crate) spin2_fast_f2: Vec<T>,
 }
 
 #[allow(private_bounds)]
@@ -49,13 +51,14 @@ impl<T: ShtScalar> ShtPlan<T> {
                 .ok_or(ShtError::IntegerOverflow {
                     quantity: "grid Fourier spectrum count",
                 })?;
-        let recurrence_factor_count =
-            harmonics
-                .lmax()
-                .checked_add(5)
-                .ok_or(ShtError::IntegerOverflow {
-                    quantity: "scalar recurrence factor count",
-                })?;
+        let spin2_fast_enabled =
+            harmonics.spin() == 2 && harmonics.lmax() >= 500 && T::supports_paired_scalar();
+        let recurrence_factor_count = harmonics
+            .lmax()
+            .checked_add(if spin2_fast_enabled { 6 } else { 5 })
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "scalar recurrence factor count",
+            })?;
         let spin_recurrence_factor_count =
             harmonics
                 .lmax()
@@ -63,17 +66,41 @@ impl<T: ShtScalar> ShtPlan<T> {
                 .ok_or(ShtError::IntegerOverflow {
                     quantity: "spin recurrence factor count",
                 })?;
-        let spin_fast_coefficient_count =
-            if harmonics.spin() == 1 && harmonics.lmax() >= 500 && T::supports_paired_scalar() {
+        let spin_fast_coefficient_count = match (harmonics.spin(), T::supports_paired_scalar()) {
+            (1, true) if harmonics.lmax() >= 500 => {
                 harmonics
                     .lmax()
                     .checked_add(2)
                     .ok_or(ShtError::IntegerOverflow {
                         quantity: "spin-1 fast scalar coefficient count",
                     })?
-            } else {
-                0
-            };
+            }
+            (2, true) if harmonics.lmax() >= 500 => {
+                harmonics
+                    .lmax()
+                    .checked_add(5)
+                    .ok_or(ShtError::IntegerOverflow {
+                        quantity: "spin-2 fast scalar coefficient count",
+                    })?
+            }
+            _ => 0,
+        };
+        let spin2_factor_count = if spin2_fast_enabled {
+            harmonics
+                .lmax()
+                .checked_add(1)
+                .ok_or(ShtError::IntegerOverflow {
+                    quantity: "spin-2 scalar conversion factor count",
+                })?
+        } else {
+            0
+        };
+        let mut spin2_fast_f1 =
+            vec![T::from_f64(0.0).expect("zero is representable"); spin2_factor_count];
+        let mut spin2_fast_f2 = spin2_fast_f1.clone();
+        if spin2_fast_enabled {
+            fill_spin2_factors(harmonics.lmax(), &mut spin2_fast_f1, &mut spin2_fast_f2);
+        }
         let sectoral_norms = T::sectoral_normalizations(harmonics.mmax())?;
         let cc_resampling = match grid.kind() {
             crate::grid::GridKind::ClenshawCurtis | crate::grid::GridKind::Fejer1 => Some(
@@ -93,6 +120,8 @@ impl<T: ShtScalar> ShtPlan<T> {
             recurrence_factor_count,
             spin_recurrence_factor_count,
             spin_fast_coefficient_count,
+            spin2_fast_f1,
+            spin2_fast_f2,
         })
     }
 
