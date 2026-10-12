@@ -3,8 +3,9 @@
 
 //! Spherical harmonic transforms on regular latitude-longitude grids.
 //!
-//! Gauss-Legendre and Clenshaw-Curtis grids use north-to-south latitude rings;
-//! longitude samples run eastward from `phi0` in radians.
+//! Gauss-Legendre, Clenshaw-Curtis and Fejer first-rule grids use
+//! north-to-south latitude rings; longitude samples run eastward from `phi0`
+//! in radians.
 
 mod error;
 mod fft;

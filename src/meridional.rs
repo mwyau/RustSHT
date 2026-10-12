@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- * This module translates DUCC's prepared Clenshaw-Curtis resampling path and
- * the FFT-size search used to select its prepared grid.
+ * This module translates DUCC's prepared CC/F1 resampling path and the
+ * FFT-size search used to select its prepared grid.
  *
  * The resampling path is from DUCC's MR utility library, src/ducc0/sht/sht.cc,
  * Copyright (C) 2020-2025 Max-Planck-Society, Martin Reinecke, revision
@@ -30,7 +30,7 @@ use num_complex::Complex64;
 use rustfft::{Fft, FftPlanner};
 
 use crate::error::ShtError;
-use crate::grid::clenshaw_curtis_ring_weights;
+use crate::grid::{GridKind, clenshaw_curtis_ring_weights};
 
 struct FftPair {
     forward: Arc<dyn Fft<f64>>,
@@ -52,9 +52,11 @@ impl FftPair {
     }
 }
 
-/// Prepared CC analysis grid and its meridional FFT operators.
+/// Prepared CC analysis grid and CC/F1 meridional FFT operators.
 pub(crate) struct CCResamplingPlan {
     original_ntheta: usize,
+    original_north_pole: bool,
+    phase_shift: Vec<Complex64>,
     prepared_theta: Vec<f64>,
     original_full_len: usize,
     prepared_full_len: usize,
@@ -68,7 +70,18 @@ pub(crate) struct CCResamplingPlan {
 }
 
 impl CCResamplingPlan {
-    pub(crate) fn new(original_ntheta: usize, lmax: usize) -> Result<Self, ShtError> {
+    pub(crate) fn new(
+        original_kind: GridKind,
+        original_ntheta: usize,
+        lmax: usize,
+    ) -> Result<Self, ShtError> {
+        let original_north_pole = match original_kind {
+            GridKind::ClenshawCurtis => true,
+            GridKind::Fejer1 => false,
+            GridKind::GaussLegendre => {
+                unreachable!("CC/F1 resampling is only prepared for those grid kinds")
+            }
+        };
         let minimum_prepared = lmax.checked_add(1).ok_or(ShtError::IntegerOverflow {
             quantity: "prepared CC latitude count",
         })?;
@@ -84,19 +97,28 @@ impl CCResamplingPlan {
             .ok_or(ShtError::IntegerOverflow {
                 quantity: "prepared CC reflected latitude length",
             })?;
-        let original_full_len = original_ntheta
+        let original_reflected_len = original_ntheta
             .checked_sub(1)
-            .and_then(|value| value.checked_mul(2))
-            .ok_or(ShtError::IntegerOverflow {
-                quantity: "CC reflected latitude length",
-            })?;
+            .and_then(|value| value.checked_mul(2));
+        let original_full_len = match original_kind {
+            GridKind::ClenshawCurtis => original_reflected_len,
+            GridKind::Fejer1 => original_ntheta.checked_mul(2),
+            GridKind::GaussLegendre => unreachable!("validated above"),
+        }
+        .ok_or(ShtError::IntegerOverflow {
+            quantity: "CC/F1 reflected latitude length",
+        })?;
         let minimum_skip = lmax
             .checked_mul(2)
             .and_then(|value| value.checked_add(2))
             .ok_or(ShtError::IntegerOverflow {
                 quantity: "CC resampling threshold",
             })?;
-        let needs_resampling = original_ntheta < minimum_skip;
+        let needs_resampling = match original_kind {
+            GridKind::ClenshawCurtis => original_ntheta < minimum_skip,
+            GridKind::Fejer1 => true,
+            GridKind::GaussLegendre => unreachable!("validated above"),
+        };
         let full_len = if needs_resampling {
             prepared_full_len
                 .checked_mul(2)
@@ -118,6 +140,21 @@ impl CCResamplingPlan {
         }
         prepared_theta[0] = 0.0;
 
+        let mut phase_shift = allocate_complex(
+            if original_north_pole {
+                0
+            } else {
+                original_ntheta + 1
+            },
+            "F1 meridional phase shift",
+        )?;
+        if !original_north_pole {
+            for (index, value) in phase_shift.iter_mut().enumerate() {
+                let angle = std::f64::consts::PI * index as f64 / original_full_len as f64;
+                *value = Complex64::from_polar(1.0, angle);
+            }
+        }
+
         let mut planner = FftPlanner::<f64>::new();
         let original_fft = FftPair::new(&mut planner, original_full_len);
         let prepared_fft = FftPair::new(&mut planner, prepared_full_len);
@@ -129,6 +166,8 @@ impl CCResamplingPlan {
 
         Ok(Self {
             original_ntheta,
+            original_north_pole,
+            phase_shift,
             prepared_theta,
             original_full_len,
             prepared_full_len,
@@ -151,7 +190,11 @@ impl CCResamplingPlan {
     }
 
     pub(crate) const fn workspace_profile_len(&self) -> usize {
-        self.full_len
+        if self.original_full_len > self.full_len {
+            self.original_full_len
+        } else {
+            self.full_len
+        }
     }
 
     pub(crate) const fn workspace_fft_scratch_len(&self) -> usize {
@@ -190,7 +233,11 @@ impl CCResamplingPlan {
             )?,
             output.len(),
         )?;
-        check_len("CC meridional profile", self.full_len, profile.len())?;
+        check_len(
+            "CC/F1 meridional profile",
+            self.workspace_profile_len(),
+            profile.len(),
+        )?;
         check_len(
             "CC meridional FFT scratch",
             self.fft_scratch_len,
@@ -213,16 +260,27 @@ impl CCResamplingPlan {
             self.fill_reflected_profile(
                 input,
                 self.original_ntheta,
+                nfull_in,
                 spectrum_len,
                 m,
                 reflected_sign,
+                self.original_north_pole,
                 profile,
             );
             if self.needs_resampling {
                 self.original_fft
                     .forward
                     .process_with_scratch(&mut profile[..nfull_in], fft_scratch);
-                pad_spectrum(profile, nfull_in, self.full_len);
+                apply_phase_shift(
+                    &mut profile[..nfull_in],
+                    self.original_ntheta,
+                    &self.phase_shift,
+                );
+                if self.full_len > nfull_in {
+                    pad_spectrum(profile, nfull_in, self.full_len);
+                } else if self.full_len < nfull_in {
+                    truncate_spectrum(profile, nfull_in, self.full_len);
+                }
                 self.full_fft
                     .inverse
                     .process_with_scratch(&mut profile[..self.full_len], fft_scratch);
@@ -237,7 +295,7 @@ impl CCResamplingPlan {
                 .process_with_scratch(&mut profile[..nfull_out], fft_scratch);
 
             for ring in 0..self.prepared_ntheta() {
-                let mirror = reflected_ring(nfull_out, ring);
+                let mirror = reflected_ring(nfull_out, ring, true);
                 let endpoint_scale = if mirror == ring { 0.5 } else { 1.0 };
                 output[ring * spectrum_len + m] =
                     endpoint_scale * norm * (profile[ring] + reflected_sign * profile[mirror]);
@@ -278,7 +336,11 @@ impl CCResamplingPlan {
             )?,
             output.len(),
         )?;
-        check_len("CC meridional profile", self.full_len, profile.len())?;
+        check_len(
+            "CC/F1 meridional profile",
+            self.workspace_profile_len(),
+            profile.len(),
+        )?;
         check_len(
             "CC meridional FFT scratch",
             self.fft_scratch_len,
@@ -301,9 +363,11 @@ impl CCResamplingPlan {
             self.fill_reflected_profile(
                 input,
                 self.prepared_ntheta(),
+                nfull_in,
                 spectrum_len,
                 m,
                 reflected_sign,
+                true,
                 profile,
             );
             self.prepared_fft
@@ -319,14 +383,23 @@ impl CCResamplingPlan {
                 self.full_fft
                     .inverse
                     .process_with_scratch(&mut profile[..self.full_len], fft_scratch);
-                truncate_spectrum(profile, self.full_len, nfull_out);
+                if nfull_out > self.full_len {
+                    pad_spectrum(profile, self.full_len, nfull_out);
+                } else if nfull_out < self.full_len {
+                    truncate_spectrum(profile, self.full_len, nfull_out);
+                }
+                apply_phase_shift(
+                    &mut profile[..nfull_out],
+                    self.original_ntheta,
+                    &self.phase_shift,
+                );
                 self.original_fft
                     .forward
                     .process_with_scratch(&mut profile[..nfull_out], fft_scratch);
             }
 
             for ring in 0..self.original_ntheta {
-                let mirror = reflected_ring(nfull_out, ring);
+                let mirror = reflected_ring(nfull_out, ring, self.original_north_pole);
                 let endpoint_scale = if mirror == ring { 0.5 } else { 1.0 };
                 output[ring * spectrum_len + m] =
                     endpoint_scale * norm * (profile[ring] + reflected_sign * profile[mirror]);
@@ -335,19 +408,24 @@ impl CCResamplingPlan {
         Ok(())
     }
 
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The profile reflection needs the input layout, Fourier mode, parity and pole convention."
+    )]
     fn fill_reflected_profile(
         &self,
         input: &[Complex64],
         ring_count: usize,
+        full_len: usize,
         spectrum_len: usize,
         m: usize,
         reflected_sign: f64,
+        north_pole_included: bool,
         profile: &mut [Complex64],
     ) {
         profile.fill(Complex64::new(0.0, 0.0));
-        let full_len = 2 * (ring_count - 1);
         for ring in 0..ring_count {
-            let mirror = full_len - ring;
+            let mirror = full_len - 1 + usize::from(north_pole_included) - ring;
             let value = input[ring * spectrum_len + m];
             profile[ring] = value;
             if mirror < full_len && mirror != ring {
@@ -356,6 +434,23 @@ impl CCResamplingPlan {
                 profile[ring] = 0.5 * (profile[ring] + reflected_sign * value);
             }
         }
+    }
+}
+
+fn apply_phase_shift(profile: &mut [Complex64], ring_count: usize, shift: &[Complex64]) {
+    if shift.is_empty() {
+        return;
+    }
+    let mut mirror = profile.len() - 1;
+    for index in 1..ring_count + 1 {
+        if index > mirror {
+            break;
+        }
+        if index != mirror {
+            profile[index] *= shift[index].conj();
+        }
+        profile[mirror] *= shift[index];
+        mirror -= 1;
     }
 }
 
@@ -395,8 +490,8 @@ fn truncate_spectrum(profile: &mut [Complex64], old_len: usize, new_len: usize) 
     profile.copy_within(old_len - move_count..old_len, destination);
 }
 
-fn reflected_ring(full_len: usize, ring: usize) -> usize {
-    let mirror = full_len - ring;
+fn reflected_ring(full_len: usize, ring: usize, north_pole_included: bool) -> usize {
+    let mirror = full_len - 1 + usize::from(north_pole_included) - ring;
     if mirror == full_len { 0 } else { mirror }
 }
 
@@ -464,6 +559,15 @@ fn allocate_f64(len: usize, array: &'static str) -> Result<Vec<f64>, ShtError> {
         .try_reserve_exact(len)
         .map_err(|_| ShtError::AllocationFailed { array })?;
     values.resize(len, 0.0);
+    Ok(values)
+}
+
+fn allocate_complex(len: usize, array: &'static str) -> Result<Vec<Complex64>, ShtError> {
+    let mut values = Vec::new();
+    values
+        .try_reserve_exact(len)
+        .map_err(|_| ShtError::AllocationFailed { array })?;
+    values.resize(len, Complex64::new(0.0, 0.0));
     Ok(values)
 }
 

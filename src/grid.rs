@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 //
 // This file contains Rust translations of DUCC's Gauss-Legendre integrator and
-// Clenshaw-Curtis quadrature setup.
+// Clenshaw-Curtis/Fejer first-rule quadrature setup.
 /*
  *  This file is part of the MR utility library.
  *
@@ -38,14 +38,16 @@ pub enum GridKind {
     GaussLegendre,
     /// Equally spaced Clenshaw-Curtis colatitudes, including both poles.
     ClenshawCurtis,
+    /// Equally spaced Fejer first-rule colatitudes, excluding both poles.
+    Fejer1,
 }
 
 /// A regular latitude-longitude grid in canonical core order.
 ///
 /// Latitude rings run from north to south. Longitude samples run eastward from
 /// `phi0`, in radians. `ring_weights` include the azimuthal factor `2π` and sum
-/// to `4π` for the complete sphere. Exact CC analysis uses prepared-grid
-/// meridional resampling in addition to these grid weights.
+/// to `4π` for the complete sphere. Exact CC and F1 analysis uses
+/// prepared-grid meridional resampling in addition to these grid weights.
 #[derive(Clone, Debug, PartialEq)]
 pub struct GridSpec {
     kind: GridKind,
@@ -77,6 +79,7 @@ impl GridSpec {
         let (theta, ring_weights) = match kind {
             GridKind::GaussLegendre => gauss_legendre_geometry(ntheta)?,
             GridKind::ClenshawCurtis => clenshaw_curtis_geometry(ntheta)?,
+            GridKind::Fejer1 => fejer1_geometry(ntheta)?,
         };
         Ok(Self {
             kind,
@@ -120,7 +123,7 @@ impl GridSpec {
 
     /// Returns latitude-ring quadrature weights, including the `2π` factor.
     ///
-    /// Exact CC analysis uses the prepared-grid resampling operator, not these
+    /// Exact CC and F1 analysis uses prepared-grid resampling, not these
     /// weights as a direct per-ring multiplier.
     #[must_use]
     pub fn ring_weights(&self) -> &[f64] {
@@ -147,6 +150,18 @@ fn clenshaw_curtis_geometry(ntheta: usize) -> Result<(Vec<f64>, Vec<f64>), ShtEr
     // The north pole is exactly zero; computing its reflected value preserves
     // DUCC's endpoint construction for the south pole.
     theta[0] = 0.0;
+    Ok((theta, ring_weights))
+}
+
+fn fejer1_geometry(ntheta: usize) -> Result<(Vec<f64>, Vec<f64>), ShtError> {
+    let mut theta = allocate_f64(ntheta, "F1 colatitude")?;
+    let ring_weights = fejer1_ring_weights(ntheta)?;
+    for i in 0..ntheta.div_ceil(2) {
+        let north_theta = PI * (i as f64 + 0.5) / ntheta as f64;
+        let south = ntheta - 1 - i;
+        theta[i] = north_theta;
+        theta[south] = PI - north_theta;
+    }
     Ok((theta, ring_weights))
 }
 
@@ -206,6 +221,57 @@ pub(crate) fn clenshaw_curtis_ring_weights(ntheta: usize) -> Result<Vec<f64>, Sh
     let mut ring_weights = allocate_f64(ntheta, "CC ring weights")?;
     for i in 0..ntheta.div_ceil(2) {
         let weight = spectrum[i].re * TAU / n as f64;
+        ring_weights[i] = weight;
+        ring_weights[ntheta - 1 - i] = weight;
+    }
+    Ok(ring_weights)
+}
+
+/*
+ * The Waldvogel F1 weight setup below is translated from DUCC's
+ * src/ducc0/sht/sht.cc, Copyright (C) 2020-2025 Max-Planck-Society,
+ * Martin Reinecke, revision c1ed01b8fda69d2a378190f0915f1a19762dddbf. That
+ * source is licensed under the GNU General Public License, version 2 or (at
+ * your option) any later version. It is distributed without any warranty;
+ * see the license notice above for details.
+ */
+fn fejer1_ring_weights(ntheta: usize) -> Result<Vec<f64>, ShtError> {
+    let mut packed = allocate_f64(ntheta, "F1 quadrature spectrum")?;
+    packed[0] = 2.0;
+    for k in 1..=((ntheta - 1) / 2) {
+        let phase = PI * k as f64 / ntheta as f64;
+        let (imag, real) = phase.sin_cos();
+        let k_f64 = k as f64;
+        let denominator = 1.0 - 4.0 * k_f64 * k_f64;
+        packed[2 * k - 1] = 2.0 / denominator * real;
+        packed[2 * k] = 2.0 / denominator * imag;
+    }
+    if ntheta.is_multiple_of(2) {
+        packed[ntheta - 1] = 0.0;
+    }
+
+    let mut spectrum = allocate_complex(ntheta, "F1 quadrature Fourier spectrum")?;
+    spectrum[0] = Complex64::new(packed[0], 0.0);
+    for k in 1..=ntheta / 2 {
+        let real = packed[2 * k - 1];
+        let imag = if 2 * k < ntheta { packed[2 * k] } else { 0.0 };
+        spectrum[k] = Complex64::new(real, imag);
+        let mirror = ntheta - k;
+        if k != mirror {
+            spectrum[mirror] = Complex64::new(real, -imag);
+        }
+    }
+    let mut planner = FftPlanner::<f64>::new();
+    let inverse = planner.plan_fft_inverse(ntheta);
+    let mut scratch = allocate_complex(
+        inverse.get_inplace_scratch_len(),
+        "F1 quadrature FFT scratch",
+    )?;
+    inverse.process_with_scratch(&mut spectrum, &mut scratch);
+
+    let mut ring_weights = allocate_f64(ntheta, "F1 ring weights")?;
+    for i in 0..ntheta.div_ceil(2) {
+        let weight = spectrum[i].re * TAU / ntheta as f64;
         ring_weights[i] = weight;
         ring_weights[ntheta - 1 - i] = weight;
     }
@@ -650,6 +716,88 @@ mod tests {
                     0.0
                 };
                 close(actual, expected, 4e-14);
+            }
+        }
+    }
+
+    #[test]
+    #[allow(clippy::excessive_precision)]
+    fn fejer1_nodes_and_weights_match_ducc_0410() {
+        let references = [
+            (1, vec![12.566_370_614_359_172]),
+            (2, vec![TAU, TAU]),
+            (
+                3,
+                vec![
+                    2.792_526_803_190_927,
+                    6.981_317_007_977_318,
+                    2.792_526_803_190_927,
+                ],
+            ),
+            (
+                4,
+                vec![
+                    1.660_631_674_203_671_5,
+                    4.622_553_632_975_915,
+                    4.622_553_632_975_915,
+                    1.660_631_674_203_671_5,
+                ],
+            ),
+            (
+                5,
+                vec![
+                    1.054_200_549_522_407,
+                    3.302_141_263_455_439_5,
+                    3.853_686_988_403_479_2,
+                    3.302_141_263_455_439_5,
+                    1.054_200_549_522_407,
+                ],
+            ),
+            (
+                6,
+                vec![
+                    0.745_569_186_077_503_9,
+                    2.373_647_782_712_288,
+                    3.163_968_338_389_794,
+                    3.163_968_338_389_794,
+                    2.373_647_782_712_288,
+                    0.745_569_186_077_503_9,
+                ],
+            ),
+        ];
+        for (ntheta, expected_weights) in references {
+            let grid = GridSpec::new(GridKind::Fejer1, ntheta, 1, 0.0).unwrap();
+            for (ring, (&theta, &weight)) in
+                grid.theta().iter().zip(grid.ring_weights()).enumerate()
+            {
+                let north_ring = ring.min(ntheta - 1 - ring);
+                let north_theta = PI * (north_ring as f64 + 0.5) / ntheta as f64;
+                let expected_theta = if ring <= ntheta - 1 - ring {
+                    north_theta
+                } else {
+                    PI - north_theta
+                };
+                close(theta, expected_theta, 0.0);
+                close(weight, expected_weights[ring], 2e-15);
+            }
+            close(grid.ring_weights().iter().sum(), 4.0 * PI, 2e-14);
+        }
+
+        for ntheta in 1..=20 {
+            let grid = GridSpec::new(GridKind::Fejer1, ntheta, 1, 0.0).unwrap();
+            for degree in 0..ntheta {
+                let actual: f64 = grid
+                    .theta()
+                    .iter()
+                    .zip(grid.ring_weights())
+                    .map(|(&theta, &weight)| theta.cos().powi(degree as i32) * weight / TAU)
+                    .sum();
+                let expected = if degree % 2 == 0 {
+                    2.0 / (degree as f64 + 1.0)
+                } else {
+                    0.0
+                };
+                close(actual, expected, 5e-14);
             }
         }
     }
