@@ -935,3 +935,23 @@ The timing does not show an overhead from the block check. The one-thread differ
 | T511, 8 | `21.576` | `1.660` | `13.0x` | `3.794e-15 / 1.046e-16 / 2.049e-14` |
 | T1023, 1 | `683.366` | `120.193` | `5.7x` | `1.036e-14 / 1.259e-16 / 4.927e-14` |
 | T1023, 8 | `196.234` | `16.152` | `12.1x` | `1.036e-14 / 1.259e-16 / 4.927e-14` |
+
+
+### SIMD and parallel spin-2 scalar-conversion analysis (2026-10-12)
+
+The spin-2 GL analysis conversion now stores weighted Q and U components in existing real/imaginary worker buffers and uses the paired Pulp reducer for even- and odd-degree accumulation. Binary-scaled recurrence lanes and unsafe Fourier products use the scalar scaled reducer. The path applies the per-ring polar order limits used by general analysis. The high-bandlimit path is selected for one or multiple Rayon workers, each with its own recurrence and accumulation buffers. Native measurements used `m1b_bench 2 511 8 analysis`, f64, T511 GL `512x1025`, `phi0=0.37`, reused plan and workspace, one warm-up and five timed samples per process, three process runs, and affinity to 8 pinned CPU cores on the x86-64 CPU. Rust was `1.99.0 (b940084d7 2026-09-28)` with Cargo release optimization and portable Pulp AVX2/FMA dispatch. Each entry is the median and range of process medians in milliseconds:
+
+| Implementation | 1 thread | 8 threads |
+| --- | ---: | ---: |
+| Before the spin-2 SIMD reducer | `523.755; 1.480` | `151.583; 2.376` |
+| SIMD reducer, parallel fast path disabled | `214.774; 4.489` | `151.999; 0.601` |
+| SIMD reducer selected for parallel analysis | `214.981; 3.152` | `48.218; 1.468` |
+
+The SIMD reducer lowered one-thread time by `59.0%`. Selecting the conversion in parallel lowered eight-thread time by `68.3%`; one-thread timings before and after that selection differ by `0.1%`. The reducer uses existing worker arrays and adds no workspace storage. The Python extension was rebuilt from this source and compared with installed `ducc0==0.41.0` from revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`. Python was `3.11.15`, NumPy `2.4.6`; each plan measurement used three run medians, warm plans and explicit one/eight-thread settings, 8 pinned CPU cores. RustSHT plan calls create a workspace per invocation. The ratio is RustSHT/DUCC0:
+
+| Grid and threads | RustSHT (ms) | DUCC0 (ms) | Ratio | Max absolute / RMS / relative L2 coefficient error |
+| --- | ---: | ---: | ---: | ---: |
+| T511, 1 | `219.745` | `28.182` | `7.8x` | `1.274e-14 / 2.432e-16 / 4.762e-14` |
+| T511, 8 | `49.543` | `3.924` | `12.6x` | `1.274e-14 / 2.432e-16 / 4.762e-14` |
+| T1023, 1 | `1,319.507` | `261.388` | `5.1x` | `1.600e-14 / 1.924e-16 / 7.533e-14` |
+| T1023, 8 | `310.705` | `40.390` | `7.7x` | `1.600e-14 / 1.924e-16 / 7.533e-14` |
