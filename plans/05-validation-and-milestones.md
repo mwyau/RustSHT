@@ -1232,3 +1232,28 @@ The Python extension was rebuilt from the tested source and compared with instal
 | T1023, 8 | `196.234` | `16.152` | `12.1x` | `1.036e-14 / 1.259e-16 / 4.927e-14` |
 
 At T1023, plan construction took `0.10 ms`; NumPy input copies took `0.13–1.26 ms`; output allocation took `0.001 ms`. The paired SIMD analysis tests, extreme finite-product fallback, spin-2 high-order cutoff regression, scalar and spin adjoint identities, DUCC comparisons and analytic tests passed. `cargo fmt --all -- --check`, workspace Clippy with warnings denied, `cargo test --workspace --all-features` (95 unit tests and 10 f32 tests passed; seven opt-in tests ignored), `cargo test -p rustsht --no-default-features` (92 unit tests and 10 f32 tests passed; seven opt-in tests ignored), and `uv run pytest python/tests` (eight passed) passed. The Python extension was rebuilt before the final Python tests and timing comparisons. `perf stat` remains unavailable at `perf_event_paranoid=4`; no hardware-counter comparison was collected.
+
+### SIMD and parallel spin-2 scalar-conversion analysis (2026-10-12)
+
+The spin-2 GL analysis conversion now stores weighted Q and U components in existing real/imaginary worker buffers and uses the paired Pulp reducer for even- and odd-degree accumulation. Binary-scaled recurrence lanes and unsafe Fourier products use the scalar scaled reducer. The path applies the per-ring polar order limits used by general analysis. The high-bandlimit path is selected for one or multiple Rayon workers, each with its own recurrence and accumulation buffers.
+
+Native measurements used `m1b_bench 2 511 8 analysis`, f64, T511 GL `512x1025`, `phi0=0.37`, reused plan and workspace, one warm-up and five timed samples per process, three process runs, and affinity to CPUs 0–7 on the AMD Ryzen 9 5950X. Rust was `1.99.0 (b940084d7 2026-09-28)` with Cargo release optimization and portable Pulp AVX2/FMA dispatch. Each entry is the median and range of process medians in milliseconds:
+
+| Implementation | 1 thread | 8 threads |
+| --- | ---: | ---: |
+| Before the spin-2 SIMD reducer | `523.755; 1.480` | `151.583; 2.376` |
+| SIMD reducer, parallel fast path disabled | `214.774; 4.489` | `151.999; 0.601` |
+| SIMD reducer selected for parallel analysis | `214.981; 3.152` | `48.218; 1.468` |
+
+The SIMD reducer lowered one-thread time by `59.0%`. Selecting the conversion in parallel lowered eight-thread time by `68.3%`; one-thread timings before and after that selection differ by `0.1%`. The reducer uses existing worker arrays and adds no workspace storage.
+
+The Python extension was rebuilt from this source and compared with installed `ducc0==0.41.0` from revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`. Python was `3.11.15`, NumPy `2.4.6`; each plan measurement used three run medians, warm plans and explicit one/eight-thread settings, pinned to CPUs 0–7. RustSHT plan calls create a workspace per invocation. The ratio is RustSHT/DUCC0:
+
+| Grid and threads | RustSHT (ms) | DUCC0 (ms) | Ratio | Max absolute / RMS / relative L2 coefficient error |
+| --- | ---: | ---: | ---: | ---: |
+| T511, 1 | `219.745` | `28.182` | `7.8x` | `1.274e-14 / 2.432e-16 / 4.762e-14` |
+| T511, 8 | `49.543` | `3.924` | `12.6x` | `1.274e-14 / 2.432e-16 / 4.762e-14` |
+| T1023, 1 | `1,319.507` | `261.388` | `5.1x` | `1.600e-14 / 1.924e-16 / 7.533e-14` |
+| T1023, 8 | `310.705` | `40.390` | `7.7x` | `1.600e-14 / 1.924e-16 / 7.533e-14` |
+
+Release DUCC and roundtrip checks passed for spins 1 and 2 at T511 on GL, CC and F1 with one and eight Rayon workers. T1023 exact-analysis checks passed for spins 1 and 2 on all three grids with one and eight workers. Spin-2 analysis coefficient maximum errors at T511 were `1.944e-17`, `2.558e-17` and `1.410e-17` on GL, CC and F1; at T1023 they were `8.664e-18`, `8.491e-18` and `8.223e-18`. The T511 spin-3/4 all-grid DUCC, analytic and adjoint regression passed with eight workers. Spin adjoint identities, the focused spin-2 polar-cutoff test, formatting, Clippy with warnings denied, workspace tests (95 unit tests and 10 f32 tests passed; seven opt-in tests ignored), no-default-feature tests (92 unit tests and 10 f32 tests passed; seven opt-in tests ignored), and Python tests (eight passed) passed. `perf stat` remains blocked by `perf_event_paranoid=4`; hardware counters were not collected for this change.
