@@ -1294,7 +1294,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 &ring_order_limits[ring_start + block_start..ring_start + block_end];
             let spectrum_start = block_start * spectrum_len;
             let spectrum_end = block_end * spectrum_len;
-            let fused_first = T::synthesize_paired_scalar_block_dispatched(
+            let fused_pair = T::synthesize_paired_scalar_pair_block_dispatched(
                 arch,
                 m,
                 scalar_lmax,
@@ -1306,36 +1306,21 @@ impl<T: ShtScalar> ShtPlan<T> {
                 &recurrence.spin_coefficient_a,
                 &recurrence.spin_coefficient_b,
                 &recurrence.fast_scalar_first[m..=scalar_lmax],
-                block_order_limits,
-                spectrum_len,
-                &mut q_spectra[spectrum_start..spectrum_end],
-                &mut recurrence.previous[..block_len],
-                &mut recurrence.current[..block_len],
-                &mut recurrence.next[..block_len],
-                &mut recurrence.exponents[..block_len],
-            )?;
-            let fused_second = T::synthesize_paired_scalar_block_dispatched(
-                arch,
-                m,
-                scalar_lmax,
-                block_sine,
-                block_cosine,
-                self.sectoral_norms[m],
-                &recurrence.epsilon,
-                &recurrence.spin_alpha,
-                &recurrence.spin_coefficient_a,
-                &recurrence.spin_coefficient_b,
                 &recurrence.fast_scalar_second[m..=scalar_lmax],
                 block_order_limits,
                 spectrum_len,
+                &mut q_spectra[spectrum_start..spectrum_end],
                 &mut u_spectra[spectrum_start..spectrum_end],
                 &mut recurrence.previous[..block_len],
                 &mut recurrence.current[..block_len],
                 &mut recurrence.next[..block_len],
                 &mut recurrence.exponents[..block_len],
+                &mut recurrence.analysis_same_real[..block_len],
+                &mut recurrence.analysis_same_imag[..block_len],
+                &mut recurrence.analysis_opposite_real[..block_len],
+                &mut recurrence.analysis_opposite_imag[..block_len],
             )?;
-            debug_assert_eq!(fused_first, fused_second);
-            if fused_first && fused_second {
+            if fused_pair {
                 for (local_ring, &sine) in block_sine.iter().enumerate() {
                     let spectrum_index = local_ring * spectrum_len + m;
                     let inverse_sine = sine.recip();

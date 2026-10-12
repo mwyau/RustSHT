@@ -951,6 +951,14 @@ mod tests {
                         ) / (degree - m + 1) as f64
                     })
                     .collect();
+                let second_coefficients: Vec<_> = (m..=lmax)
+                    .map(|degree| {
+                        Complex64::new(
+                            (0.23 * degree as f64 - 0.37 * m as f64).cos(),
+                            (0.29 * degree as f64 + 0.17 * m as f64).sin(),
+                        ) / (degree - m + 2) as f64
+                    })
+                    .collect();
 
                 for arch in [Arch::Scalar, Arch::new()] {
                     let spectrum_len = lmax + 1;
@@ -981,6 +989,83 @@ mod tests {
                     )
                     .unwrap();
                     assert!(used, "lane_count={lane_count}, m={m}, arch={arch:?}");
+
+                    let mut dual_first = vec![Complex64::new(0.0, 0.0); lane_count * spectrum_len];
+                    let mut dual_second = dual_first.clone();
+                    let mut first_sum_re = vec![0.0; lane_count];
+                    let mut first_sum_im = vec![0.0; lane_count];
+                    let mut second_sum_re = vec![0.0; lane_count];
+                    let mut second_sum_im = vec![0.0; lane_count];
+                    let dual_used =
+                        super::super::scalar_paired::synthesize_order_pair_block_dispatched(
+                            arch,
+                            m,
+                            lmax,
+                            &sin_theta,
+                            &cos_theta,
+                            norms[m],
+                            &epsilon,
+                            &alpha,
+                            &coefficient_a,
+                            &coefficient_b,
+                            &coefficients,
+                            &second_coefficients,
+                            &ring_order_limits,
+                            spectrum_len,
+                            &mut dual_first,
+                            &mut dual_second,
+                            &mut previous,
+                            &mut current,
+                            &mut next,
+                            &mut exponents,
+                            &mut first_sum_re,
+                            &mut first_sum_im,
+                            &mut second_sum_re,
+                            &mut second_sum_im,
+                        )
+                        .unwrap();
+                    assert!(dual_used, "lane_count={lane_count}, m={m}, arch={arch:?}");
+                    let mut separate_second =
+                        vec![Complex64::new(0.0, 0.0); lane_count * spectrum_len];
+                    let second_used =
+                        super::super::scalar_paired::synthesize_order_block_dispatched(
+                            arch,
+                            m,
+                            lmax,
+                            &sin_theta,
+                            &cos_theta,
+                            norms[m],
+                            &epsilon,
+                            &alpha,
+                            &coefficient_a,
+                            &coefficient_b,
+                            &second_coefficients,
+                            &ring_order_limits,
+                            spectrum_len,
+                            &mut separate_second,
+                            &mut previous,
+                            &mut current,
+                            &mut next,
+                            &mut exponents,
+                        )
+                        .unwrap();
+                    assert!(
+                        second_used,
+                        "second channel should use the ordinary fast path"
+                    );
+                    for ring in 0..lane_count {
+                        let first_error = (dual_first[ring * spectrum_len + m]
+                            - actual[ring * spectrum_len + m])
+                            .norm();
+                        let second_error = (dual_second[ring * spectrum_len + m]
+                            - separate_second[ring * spectrum_len + m])
+                            .norm();
+                        assert!(first_error <= 3e-14, "first channel error={first_error:e}");
+                        assert!(
+                            second_error <= 3e-14,
+                            "second channel error={second_error:e}"
+                        );
+                    }
 
                     let mut expected = vec![Complex64::new(0.0, 0.0); lane_count];
                     super::super::scalar_paired::for_each_y_lm_paired_dispatched(
