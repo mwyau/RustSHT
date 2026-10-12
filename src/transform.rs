@@ -2173,10 +2173,10 @@ mod tests {
         clippy::excessive_precision,
         reason = "The literals retain printed DUCC 0.41.0 reference values."
     )]
-    fn m3_scalar_t511_t1023_all_grids_matches_ducc_and_closed_form() {
+    fn m3_scalar_t511_t1023_t2047_all_grids_matches_ducc_and_closed_form() {
         // DUCC 0.41.0 references use a_(L,L)=1, phi0=0.37, nthreads=1.
         // The five values are the middle-ring samples at j=[0,1,17,nphi/2,nphi-1].
-        for degree in [511, 1023] {
+        for degree in [511, 1023, 2047] {
             let nphi = 2 * degree + 3;
             for kind in [
                 GridKind::GaussLegendre,
@@ -2238,6 +2238,27 @@ mod tests {
                         0.43930046853539056,
                         3.3817663359725523,
                         0.16014585566842582,
+                    ],
+                    (2047, GridKind::GaussLegendre) => [
+                        3.887238035280272,
+                        -3.8896657567270916,
+                        -3.9257015210558133,
+                        -1.0642856103322809,
+                        -3.884789743029231,
+                    ],
+                    (2047, GridKind::ClenshawCurtis) => [
+                        3.889578098030304,
+                        -3.8920072809313684,
+                        -3.9280647382845477,
+                        -1.0649262953352392,
+                        -3.8871283319416836,
+                    ],
+                    (2047, GridKind::Fejer1) => [
+                        3.887236892735931,
+                        -3.889664613469189,
+                        -3.925700367206211,
+                        -1.0642852975154442,
+                        -3.8847886012044954,
                     ],
                     _ => unreachable!(),
                 };
