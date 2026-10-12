@@ -232,9 +232,9 @@ The release harnesses used rustc 1.99.0, f64, T511 GL `512 x 1025`, one warmup a
 | Spin-1 analysis | 1 | 1669.132 | 1425.995 | 1426.612 | -14.53% |
 | Spin-1 analysis | 8 | 425.267 | 355.187 | 362.421 | -14.78% |
 
-Callgrind on the optimized T127 scalar GL harness recorded 253,637,022 instruction references before the common-case reordering and 174,268,270 afterward, a 31.3% reduction. `multiply_component_scaled` fell from 49.19% to 26.83% of total references. The final path checks normal operands before zero and nonfinite boundary cases. After confirming that their product is normal, `scale_normal_binary` adjusts its exponent bits when the scaled result is normal and delegates boundary results to the general scaler. Bitwise tests compare that helper with the staged reference across normal values and exponents from -4097 to 4097; the general scaling test also covers signed zero, infinities and NaN.
+Callgrind on the optimized T127 scalar GL harness recorded 253,637,022 instruction references before the common-case reordering and 174,268,270 afterward, a 31.3% reduction. These runs used the rustc 1.99.0 release build on an AMD Ryzen 9 5950X with AVX2/FMA runtime dispatch. `multiply_component_scaled` fell from 49.19% to 26.83% of total references. The final path checks normal operands before zero and nonfinite boundary cases. After confirming that their product is normal, `scale_normal_binary` adjusts its exponent bits when the scaled result is normal and delegates boundary results to the general scaler. Bitwise tests compare that helper with the staged reference across normal values and exponents from -4097 to 4097; the general scaling test also covers signed zero, infinities and NaN.
 
-The final scalar measurements average three per-run medians after one warmup and five timed samples. They use the same rustc 1.99.0 release build and AMD Ryzen 9 5950X host as the earlier T511 measurements:
+The common-case scalar measurements average three per-run medians after one warmup and five timed samples. They use the same rustc 1.99.0 release build and AMD Ryzen 9 5950X host as the earlier T511 measurements:
 
 | Operation | Threads | Guarded multiply, earlier order | Common-case path | Change from earlier order |
 | --- | ---: | ---: | ---: | ---: |
@@ -242,6 +242,19 @@ The final scalar measurements average three per-run medians after one warmup and
 | Scalar synthesis | 8 | 103.903 | 73.677 | -29.09% |
 | Scalar analysis | 1 | 806.614 | 551.584 | -31.62% |
 | Scalar analysis | 8 | 216.405 | 147.511 | -31.84% |
+
+The next change shares the normal-factor check between the real and imaginary components of each complex recurrence value. Its bitwise regression compares both components with the staged reference across the same value, factor and exponent cases, including a complex value whose normal real component takes the fast path while its subnormal imaginary component takes the fallback. On the same T127 harness, Callgrind instruction references fell from 174,268,270 to 168,222,614 (3.47%); the component helper fell to 24.49% of references. Three-run T511 timing averages also improved across all four scalar operations, by 0.62–2.42%:
+
+| Operation | Threads | Common-case path | Shared factor check | Change |
+| --- | ---: | ---: | ---: | ---: |
+| Scalar synthesis | 1 | 461.915 ms | 450.753 ms | -2.42% |
+| Scalar synthesis | 8 | 73.677 ms | 72.680 ms | -1.35% |
+| Scalar analysis | 1 | 551.584 ms | 543.562 ms | -1.45% |
+| Scalar analysis | 8 | 147.511 ms | 146.592 ms | -0.62% |
+
+The T511 timings use the same rustc 1.99.0 release harness, CPU, one warmup and five timed samples per operation recorded above.
+
+These timings are for the implementation that passed all seven high-bandlimit release checks against `ducc0==0.41.0` (source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`), covering scalar and spin transforms through T2047 and analytic recurrence checks.
 
 An independent Python comparison used the rebuilt editable extension, `ducc0==0.41.0`, deterministic T511 coefficients and seeded random analysis maps on the same GL shape. Each operation had one warmup and five timed samples; RustSHT and DUCC used the same one- or eight-thread setting. With one thread, scalar synthesis and analysis took 471.541 ms and 552.281 ms in RustSHT versus 12.043 ms and 12.240 ms in DUCC; spin-1 took 1362.377 ms and 1389.893 ms versus 25.781 ms and 25.992 ms. With eight threads, scalar took 79.025 ms and 146.604 ms versus 1.871 ms and 1.773 ms; spin-1 took 206.881 ms and 358.471 ms versus 3.742 ms and 3.722 ms. Scalar synthesis map maximum absolute/RMS errors were `2.627e-14`/`7.674e-16`; analysis coefficient errors were `1.436e-15`/`2.179e-16`. Spin-1 map errors were `3.054e-14`/`7.729e-16`, and analysis coefficient errors were `1.659e-15`/`2.410e-16`. Across these operations and thread counts, RustSHT is 39–96 times slower than DUCC; M4 performance acceptance remains open.
 
