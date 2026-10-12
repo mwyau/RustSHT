@@ -102,7 +102,8 @@ fn main() {
         + 2 * ntheta * size_of::<f64>()
         + (lmax + 1) * size_of::<f64>()
         + spin_recurrence_factors
-        + spin_recurrence_lanes;
+        + spin_recurrence_lanes
+        + rayon_threads * LATITUDE_BLOCK_SIZE * 3 * size_of::<Complex64>();
     println!("T{lmax}; GL {ntheta}x{nphi}; f64; 1 vs {rayon_threads} threads; 5 samples, median");
     println!(
         "synthesis_one_thread_ms={:.3}",

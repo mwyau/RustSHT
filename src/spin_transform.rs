@@ -7,7 +7,7 @@ use num_complex::Complex;
 use rayon::prelude::*;
 
 use crate::error::ShtError;
-use crate::legendre::{ShtScalar, longitude_phase, sin_cos_from_f64};
+use crate::legendre::{LATITUDE_BLOCK_SIZE, ShtScalar, longitude_phase, sin_cos_from_f64};
 use crate::plan::ShtPlan;
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
@@ -952,60 +952,75 @@ impl<T: ShtScalar> ShtPlan<T> {
                 &mut recurrence.spin_coefficient_b,
             )?;
             let phase = longitude_phase::<T>(m, phi0, true);
-            T::for_each_spin_lm_dispatched(
-                arch,
-                &initial,
-                lmax,
-                theta_sin,
-                theta_cos,
-                &recurrence.spin_coefficient_a,
-                &recurrence.spin_coefficient_b,
-                &mut recurrence.spin_previous_plus,
-                &mut recurrence.spin_current_plus,
-                &mut recurrence.spin_next_plus,
-                &mut recurrence.spin_exponents_plus,
-                &mut recurrence.spin_previous_minus,
-                &mut recurrence.spin_current_minus,
-                &mut recurrence.spin_next_minus,
-                &mut recurrence.spin_exponents_minus,
-                |degree, ring_start, plus, plus_exp, minus, minus_exp| {
-                    let alpha_norm = recurrence.spin_alpha[degree]
-                        * T::spin_normalization(recurrence_spin, degree, derivative_norm);
-                    let coefficient = &mut e_coefficients[degree - m];
-                    let mut b_coefficient = b_coefficients
-                        .as_deref_mut()
-                        .map(|values| &mut values[degree - m]);
-                    for lane in 0..plus.len() {
-                        let ring = ring_start + lane;
-                        if m > ring_order_limits[ring] {
-                            continue;
-                        }
-                        let plus_value =
-                            T::scaled_basis_value(plus[lane], plus_exp[lane], alpha_norm);
-                        let minus_value =
-                            T::scaled_basis_value(minus[lane], minus_exp[lane], alpha_norm);
-                        let even_basis = plus_value + minus_value;
-                        let odd_basis = plus_value - minus_value;
-                        let spectrum_start = ring * spectrum_len;
-                        let mut scale = ring_weights.map_or(T::one(), |weights| {
-                            T::from_f64(weights[ring]).expect("ring weight is representable")
-                        });
-                        if normalize_fourier {
-                            scale /= longitude_count;
-                        }
-                        let q_fourier = q_spectra[spectrum_start + m] * phase * scale;
-                        let u_fourier = u_spectra[spectrum_start + m] * phase * scale;
-                        *coefficient += q_fourier * even_basis
-                            + Complex::<T>::new(T::zero(), -T::one()) * u_fourier * odd_basis;
-                        if let Some(b_coefficient) = b_coefficient.as_mut() {
-                            **b_coefficient +=
-                                Complex::<T>::new(T::zero(), T::one()) * q_fourier * odd_basis
-                                    + u_fourier * even_basis;
-                        }
+            for block_start in (0..theta_sin.len()).step_by(LATITUDE_BLOCK_SIZE) {
+                let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(theta_sin.len());
+                let block_len = block_end - block_start;
+                for lane in 0..block_len {
+                    let ring = block_start + lane;
+                    let spectrum_start = ring * spectrum_len;
+                    let mut q_weighted = q_spectra[spectrum_start + m] * phase;
+                    let mut u_weighted = u_spectra[spectrum_start + m] * phase;
+                    let mut scale = ring_weights.map_or(T::one(), |weights| {
+                        T::from_f64(weights[ring]).expect("ring weight is representable")
+                    });
+                    if normalize_fourier {
+                        scale /= longitude_count;
                     }
-                    Ok(())
-                },
-            )?;
+                    q_weighted *= scale;
+                    u_weighted *= scale;
+                    recurrence.weighted_spin_q_spectrum[lane] = q_weighted;
+                    recurrence.weighted_spin_u_spectrum[lane] = u_weighted;
+                }
+                let weighted_q_spectrum = &recurrence.weighted_spin_q_spectrum[..block_len];
+                let weighted_u_spectrum = &recurrence.weighted_spin_u_spectrum[..block_len];
+                T::for_each_spin_lm_dispatched(
+                    arch,
+                    &initial,
+                    lmax,
+                    &theta_sin[block_start..block_end],
+                    &theta_cos[block_start..block_end],
+                    &recurrence.spin_coefficient_a,
+                    &recurrence.spin_coefficient_b,
+                    &mut recurrence.spin_previous_plus,
+                    &mut recurrence.spin_current_plus,
+                    &mut recurrence.spin_next_plus,
+                    &mut recurrence.spin_exponents_plus,
+                    &mut recurrence.spin_previous_minus,
+                    &mut recurrence.spin_current_minus,
+                    &mut recurrence.spin_next_minus,
+                    &mut recurrence.spin_exponents_minus,
+                    |degree, ring_start, plus, plus_exp, minus, minus_exp| {
+                        let alpha_norm = recurrence.spin_alpha[degree]
+                            * T::spin_normalization(recurrence_spin, degree, derivative_norm);
+                        let coefficient = &mut e_coefficients[degree - m];
+                        let mut b_coefficient = b_coefficients
+                            .as_deref_mut()
+                            .map(|values| &mut values[degree - m]);
+                        for lane in 0..plus.len() {
+                            let ring = ring_start + lane;
+                            if m > ring_order_limits[block_start + ring] {
+                                continue;
+                            }
+                            let plus_value =
+                                T::scaled_basis_value(plus[lane], plus_exp[lane], alpha_norm);
+                            let minus_value =
+                                T::scaled_basis_value(minus[lane], minus_exp[lane], alpha_norm);
+                            let even_basis = plus_value + minus_value;
+                            let odd_basis = plus_value - minus_value;
+                            let q_fourier = weighted_q_spectrum[ring];
+                            let u_fourier = weighted_u_spectrum[ring];
+                            *coefficient += q_fourier * even_basis
+                                + Complex::<T>::new(T::zero(), -T::one()) * u_fourier * odd_basis;
+                            if let Some(b_coefficient) = b_coefficient.as_mut() {
+                                **b_coefficient +=
+                                    Complex::<T>::new(T::zero(), T::one()) * q_fourier * odd_basis
+                                        + u_fourier * even_basis;
+                            }
+                        }
+                        Ok(())
+                    },
+                )?;
+            }
             coefficient_start += coefficient_count;
         }
         debug_assert_eq!(coefficient_start, e_alm.len());
