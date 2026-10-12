@@ -26,19 +26,20 @@
 
 use std::sync::Arc;
 
-use num_complex::Complex64;
-use rustfft::{Fft, FftPlanner};
+use num_complex::Complex;
+use rustfft::num_traits::{Float, Zero};
+use rustfft::{Fft, FftNum, FftPlanner};
 
 use crate::error::ShtError;
 use crate::grid::{GridKind, clenshaw_curtis_ring_weights};
 
-struct FftPair {
-    forward: Arc<dyn Fft<f64>>,
-    inverse: Arc<dyn Fft<f64>>,
+struct FftPair<T: FftNum> {
+    forward: Arc<dyn Fft<T>>,
+    inverse: Arc<dyn Fft<T>>,
 }
 
-impl FftPair {
-    fn new(planner: &mut FftPlanner<f64>, len: usize) -> Self {
+impl<T: FftNum> FftPair<T> {
+    fn new(planner: &mut FftPlanner<T>, len: usize) -> Self {
         Self {
             forward: planner.plan_fft_forward(len),
             inverse: planner.plan_fft_inverse(len),
@@ -53,23 +54,23 @@ impl FftPair {
 }
 
 /// Prepared CC analysis grid and CC/F1 meridional FFT operators.
-pub(crate) struct CCResamplingPlan {
+pub(crate) struct CCResamplingPlan<T: FftNum = f64> {
     original_ntheta: usize,
     original_north_pole: bool,
-    phase_shift: Vec<Complex64>,
-    prepared_theta: Vec<f64>,
+    phase_shift: Vec<Complex<T>>,
+    prepared_theta: Vec<T>,
     original_full_len: usize,
     prepared_full_len: usize,
     full_len: usize,
     needs_resampling: bool,
-    weights: Vec<f64>,
-    original_fft: FftPair,
-    prepared_fft: FftPair,
-    full_fft: FftPair,
+    weights: Vec<T>,
+    original_fft: FftPair<T>,
+    prepared_fft: FftPair<T>,
+    full_fft: FftPair<T>,
     fft_scratch_len: usize,
 }
 
-impl CCResamplingPlan {
+impl<T: FftNum + Float> CCResamplingPlan<T> {
     pub(crate) fn new(
         original_kind: GridKind,
         original_ntheta: usize,
@@ -128,17 +129,21 @@ impl CCResamplingPlan {
         } else {
             original_full_len
         };
-        let weights = clenshaw_curtis_ring_weights(full_len / 2 + 1)?;
+        let weights = clenshaw_curtis_ring_weights(full_len / 2 + 1)?
+            .into_iter()
+            .map(|weight| T::from_f64(weight).expect("quadrature weight is representable"))
+            .collect();
 
-        let mut prepared_theta = allocate_f64(prepared_ntheta, "prepared CC colatitudes")?;
+        let mut prepared_theta = allocate_real(prepared_ntheta, "prepared CC colatitudes")?;
         let north_count = prepared_ntheta.div_ceil(2);
         for i in 0..north_count {
             let theta = std::f64::consts::PI * i as f64 / (prepared_ntheta - 1) as f64;
             let south = prepared_ntheta - 1 - i;
-            prepared_theta[i] = theta;
-            prepared_theta[south] = std::f64::consts::PI - theta;
+            prepared_theta[i] = T::from_f64(theta).expect("colatitude is representable");
+            prepared_theta[south] =
+                T::from_f64(std::f64::consts::PI - theta).expect("colatitude is representable");
         }
-        prepared_theta[0] = 0.0;
+        prepared_theta[0] = T::zero();
 
         let mut phase_shift = allocate_complex(
             if original_north_pole {
@@ -151,11 +156,14 @@ impl CCResamplingPlan {
         if !original_north_pole {
             for (index, value) in phase_shift.iter_mut().enumerate() {
                 let angle = std::f64::consts::PI * index as f64 / original_full_len as f64;
-                *value = Complex64::from_polar(1.0, angle);
+                let (sin, cos) = T::from_f64(angle)
+                    .expect("phase angle is representable")
+                    .sin_cos();
+                *value = Complex::new(cos, sin);
             }
         }
 
-        let mut planner = FftPlanner::<f64>::new();
+        let mut planner = FftPlanner::<T>::new();
         let original_fft = FftPair::new(&mut planner, original_full_len);
         let prepared_fft = FftPair::new(&mut planner, prepared_full_len);
         let full_fft = FftPair::new(&mut planner, full_len);
@@ -181,7 +189,7 @@ impl CCResamplingPlan {
         })
     }
 
-    pub(crate) fn prepared_theta(&self) -> &[f64] {
+    pub(crate) fn prepared_theta(&self) -> &[T] {
         &self.prepared_theta
     }
 
@@ -207,13 +215,13 @@ impl CCResamplingPlan {
     )]
     pub(crate) fn to_prepared(
         &self,
-        input: &[Complex64],
-        output: &mut [Complex64],
+        input: &[Complex<T>],
+        output: &mut [Complex<T>],
         spectrum_len: usize,
         mmax: usize,
         spin: usize,
-        profile: &mut [Complex64],
-        fft_scratch: &mut [Complex64],
+        profile: &mut [Complex<T>],
+        fft_scratch: &mut [Complex<T>],
     ) -> Result<(), ShtError> {
         check_len(
             "CC input Fourier spectra",
@@ -243,20 +251,29 @@ impl CCResamplingPlan {
             self.fft_scratch_len,
             fft_scratch.len(),
         )?;
-        output.fill(Complex64::new(0.0, 0.0));
+        output.fill(Complex::new(T::zero(), T::zero()));
         let nfull_in = self.original_full_len;
         let nfull_out = self.prepared_full_len;
-        let norm = 0.5
-            / (nfull_out as f64
+        let norm = T::from_f64(0.5).expect("half is representable")
+            / (T::from_usize(nfull_out).expect("usize converts to the transform scalar")
                 * if self.needs_resampling {
-                    nfull_in as f64
+                    T::from_usize(nfull_in).expect("usize converts to the transform scalar")
                 } else {
-                    1.0
+                    T::one()
                 });
-        let parity = if spin.is_multiple_of(2) { 1.0 } else { -1.0 };
+        let parity = if spin.is_multiple_of(2) {
+            T::one()
+        } else {
+            -T::one()
+        };
 
         for m in 0..=mmax {
-            let reflected_sign = parity * if m.is_multiple_of(2) { 1.0 } else { -1.0 };
+            let order_parity = if m.is_multiple_of(2) {
+                T::one()
+            } else {
+                -T::one()
+            };
+            let reflected_sign = parity * order_parity;
             self.fill_reflected_profile(
                 input,
                 self.original_ntheta,
@@ -296,9 +313,13 @@ impl CCResamplingPlan {
 
             for ring in 0..self.prepared_ntheta() {
                 let mirror = reflected_ring(nfull_out, ring, true);
-                let endpoint_scale = if mirror == ring { 0.5 } else { 1.0 };
+                let endpoint_scale = if mirror == ring {
+                    T::from_f64(0.5).expect("half is representable")
+                } else {
+                    T::one()
+                };
                 output[ring * spectrum_len + m] =
-                    endpoint_scale * norm * (profile[ring] + reflected_sign * profile[mirror]);
+                    (profile[ring] + profile[mirror] * reflected_sign) * (endpoint_scale * norm);
             }
         }
         Ok(())
@@ -310,13 +331,13 @@ impl CCResamplingPlan {
     )]
     pub(crate) fn restore_original(
         &self,
-        input: &[Complex64],
-        output: &mut [Complex64],
+        input: &[Complex<T>],
+        output: &mut [Complex<T>],
         spectrum_len: usize,
         mmax: usize,
         spin: usize,
-        profile: &mut [Complex64],
-        fft_scratch: &mut [Complex64],
+        profile: &mut [Complex<T>],
+        fft_scratch: &mut [Complex<T>],
     ) -> Result<(), ShtError> {
         check_len(
             "prepared CC Fourier spectra",
@@ -346,20 +367,29 @@ impl CCResamplingPlan {
             self.fft_scratch_len,
             fft_scratch.len(),
         )?;
-        output.fill(Complex64::new(0.0, 0.0));
+        output.fill(Complex::new(T::zero(), T::zero()));
         let nfull_in = self.prepared_full_len;
         let nfull_out = self.original_full_len;
-        let norm = 0.5
-            / (nfull_in as f64
+        let norm = T::from_f64(0.5).expect("half is representable")
+            / (T::from_usize(nfull_in).expect("usize converts to the transform scalar")
                 * if self.needs_resampling {
-                    nfull_out as f64
+                    T::from_usize(nfull_out).expect("usize converts to the transform scalar")
                 } else {
-                    1.0
+                    T::one()
                 });
-        let parity = if spin.is_multiple_of(2) { 1.0 } else { -1.0 };
+        let parity = if spin.is_multiple_of(2) {
+            T::one()
+        } else {
+            -T::one()
+        };
 
         for m in 0..=mmax {
-            let reflected_sign = parity * if m.is_multiple_of(2) { 1.0 } else { -1.0 };
+            let order_parity = if m.is_multiple_of(2) {
+                T::one()
+            } else {
+                -T::one()
+            };
+            let reflected_sign = parity * order_parity;
             self.fill_reflected_profile(
                 input,
                 self.prepared_ntheta(),
@@ -400,9 +430,13 @@ impl CCResamplingPlan {
 
             for ring in 0..self.original_ntheta {
                 let mirror = reflected_ring(nfull_out, ring, self.original_north_pole);
-                let endpoint_scale = if mirror == ring { 0.5 } else { 1.0 };
+                let endpoint_scale = if mirror == ring {
+                    T::from_f64(0.5).expect("half is representable")
+                } else {
+                    T::one()
+                };
                 output[ring * spectrum_len + m] =
-                    endpoint_scale * norm * (profile[ring] + reflected_sign * profile[mirror]);
+                    (profile[ring] + profile[mirror] * reflected_sign) * (endpoint_scale * norm);
             }
         }
         Ok(())
@@ -414,30 +448,35 @@ impl CCResamplingPlan {
     )]
     fn fill_reflected_profile(
         &self,
-        input: &[Complex64],
+        input: &[Complex<T>],
         ring_count: usize,
         full_len: usize,
         spectrum_len: usize,
         m: usize,
-        reflected_sign: f64,
+        reflected_sign: T,
         north_pole_included: bool,
-        profile: &mut [Complex64],
+        profile: &mut [Complex<T>],
     ) {
-        profile.fill(Complex64::new(0.0, 0.0));
+        profile.fill(Complex::new(T::zero(), T::zero()));
         for ring in 0..ring_count {
             let mirror = full_len - 1 + usize::from(north_pole_included) - ring;
             let value = input[ring * spectrum_len + m];
             profile[ring] = value;
             if mirror < full_len && mirror != ring {
-                profile[mirror] = reflected_sign * value;
+                profile[mirror] = value * reflected_sign;
             } else {
-                profile[ring] = 0.5 * (profile[ring] + reflected_sign * value);
+                profile[ring] = (profile[ring] + value * reflected_sign)
+                    * T::from_f64(0.5).expect("half is representable");
             }
         }
     }
 }
 
-fn apply_phase_shift(profile: &mut [Complex64], ring_count: usize, shift: &[Complex64]) {
+fn apply_phase_shift<T: FftNum + Float>(
+    profile: &mut [Complex<T>],
+    ring_count: usize,
+    shift: &[Complex<T>],
+) {
     if shift.is_empty() {
         return;
     }
@@ -447,29 +486,33 @@ fn apply_phase_shift(profile: &mut [Complex64], ring_count: usize, shift: &[Comp
             break;
         }
         if index != mirror {
-            profile[index] *= shift[index].conj();
+            profile[index] = profile[index] * shift[index].conj();
         }
-        profile[mirror] *= shift[index];
+        profile[mirror] = profile[mirror] * shift[index];
         mirror -= 1;
     }
 }
 
-fn multiply_cc_weights(profile: &mut [Complex64], full_len: usize, weights: &[f64]) {
+fn multiply_cc_weights<T: FftNum + Float>(
+    profile: &mut [Complex<T>],
+    full_len: usize,
+    weights: &[T],
+) {
     let half = full_len / 2;
     for i in 0..=half {
         let mirror = full_len - i;
         let mut scale = weights[i];
         if i == 0 || i == mirror {
-            scale *= 2.0;
+            scale = scale * T::from_f64(2.0).expect("two is representable");
         }
-        profile[i] *= scale;
+        profile[i] = profile[i] * scale;
         if mirror < full_len && mirror != i {
-            profile[mirror] *= weights[i];
+            profile[mirror] = profile[mirror] * weights[i];
         }
     }
 }
 
-fn pad_spectrum(profile: &mut [Complex64], old_len: usize, new_len: usize) {
+fn pad_spectrum<T: FftNum + Zero>(profile: &mut [Complex<T>], old_len: usize, new_len: usize) {
     debug_assert!(new_len >= old_len);
     if new_len == old_len {
         return;
@@ -477,10 +520,10 @@ fn pad_spectrum(profile: &mut [Complex64], old_len: usize, new_len: usize) {
     let move_count = old_len / 2;
     profile.copy_within(old_len - move_count..old_len, new_len - move_count);
     profile[new_len - move_count - (new_len - old_len)..new_len - move_count]
-        .fill(Complex64::new(0.0, 0.0));
+        .fill(Complex::new(T::zero(), T::zero()));
 }
 
-fn truncate_spectrum(profile: &mut [Complex64], old_len: usize, new_len: usize) {
+fn truncate_spectrum<T: FftNum>(profile: &mut [Complex<T>], old_len: usize, new_len: usize) {
     debug_assert!(new_len <= old_len);
     if new_len == old_len {
         return;
@@ -553,21 +596,24 @@ fn iter_23(n: usize, mut value: usize, mut best: usize) -> Result<usize, ShtErro
     }
 }
 
-fn allocate_f64(len: usize, array: &'static str) -> Result<Vec<f64>, ShtError> {
+fn allocate_real<T: FftNum + Zero>(len: usize, array: &'static str) -> Result<Vec<T>, ShtError> {
     let mut values = Vec::new();
     values
         .try_reserve_exact(len)
         .map_err(|_| ShtError::AllocationFailed { array })?;
-    values.resize(len, 0.0);
+    values.resize(len, T::zero());
     Ok(values)
 }
 
-fn allocate_complex(len: usize, array: &'static str) -> Result<Vec<Complex64>, ShtError> {
+fn allocate_complex<T: FftNum + Zero>(
+    len: usize,
+    array: &'static str,
+) -> Result<Vec<Complex<T>>, ShtError> {
     let mut values = Vec::new();
     values
         .try_reserve_exact(len)
         .map_err(|_| ShtError::AllocationFailed { array })?;
-    values.resize(len, Complex64::new(0.0, 0.0));
+    values.resize(len, Complex::new(T::zero(), T::zero()));
     Ok(values)
 }
 

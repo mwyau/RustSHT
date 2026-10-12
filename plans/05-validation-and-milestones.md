@@ -271,6 +271,23 @@ An independent Python comparison used the rebuilt editable extension, `ducc0==0.
 
 All seven release-mode high-bandlimit checks pass against `ducc0==0.41.0` at source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`; they cover scalar and spin transforms through T2047, including analytic recurrence checks. The rebuilt Python extension also passes all eight DUCC comparison tests.
 
+### f32 plan, workspace and transform support (M4, 2026-10-12)
+
+`ShtPlan<T = f64>` and `ShtWorkspace<T = f64>` support f32 and f64. `Complex32` and `Complex64` identify the matching coefficient types. `GridSpec` stores coordinates and quadrature weights as f64; plan construction converts the numerical metadata to the selected arithmetic type. The FFT adapter and CC/F1 resampler execute in that type. The f64 recurrence uses `pulp` SIMD; the f32 recurrence uses scalar latitude-lane loops.
+
+The Rust integration tests use `ducc0==0.41.0` (source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`) and float32/complex64 inputs. Static scalar synthesis and analysis references cover T2 on GL `3x5`, CC `4x5` and F1 `3x5`, all with `phi0=0.37`. A spin-1 GL `2x3` synthesis reference covers T1 at `phi0=0.23`. A spin-1 sparse GL synthesis case compares selected map samples at T127. Independent f32 analytic checks cover scalar `m=0` fields on all three grids, `Y_11` derivatives on GL, and a T127 scalar sectoral field. Scalar `S*` and `A*` identities pass on GL/CC/F1; spin-1 through spin-4 STANDARD `S`, `A`, `S*`, `A*`, GRAD_ONLY synthesis and its adjoint pass at `lmax=spin` with exact-analysis minimum latitude counts and minimum odd longitude counts. DERIV1 synthesis and its adjoint pass at T2. The FFT helper compares f32 spectra and roundtrips with full-complex RustFFT at lengths 1, 2, 3, 4, 5, 8, 31, 32 and 33. The T127 f32 cases cover scalar and spin-1 GL synthesis; they do not test T127 analysis or other grids.
+
+The release benchmark uses `examples/m4_f32_bench.rs` on an AMD Ryzen 9 5950X (16 cores, 32 threads), x86_64 AVX2/FMA, rustc 1.99.0, f32 spin-1, GL `512x1025`, T511 and `phi0=0.37`. RustSHT reuses its plan and workspace. `ducc0==0.41.0` with NumPy 2.4.6 uses `synthesis_2d` and `analysis_2d` on the same dtype, grid, coefficients, and thread counts. Each operation has one warmup and five timed samples; the table reports each median.
+
+| Operation | Threads | RustSHT | DUCC | RustSHT / DUCC |
+| --- | ---: | ---: | ---: | ---: |
+| Spin-1 synthesis | 1 | 1340.185 ms | 27.495 ms | 48.7x |
+| Spin-1 synthesis | 8 | 197.964 ms | 3.795 ms | 52.2x |
+| Spin-1 analysis | 1 | 1405.229 ms | 25.061 ms | 56.1x |
+| Spin-1 analysis | 8 | 330.506 ms | 3.522 ms | 93.8x |
+
+The RustSHT medians show 6.8x synthesis and 4.3x analysis speedups from one to eight threads. The estimated numeric arrays use 12.13 MiB and exclude RustFFT plan and execution scratch, allocator metadata, and process memory. RustSHT took 48.7–93.8 times longer than DUCC in these measurements. The f32 recurrence uses scalar lanes; f32 SIMD and memory-traffic optimizations are unimplemented. These one-host measurements do not establish a performance acceptance result.
+
 ### Python plan binding (M5, 2026-10-12)
 
 The PyO3 extension exposes `rustsht.ShtPlan` and top-level procedural functions for GL, CC and F1 grids. They accept `float64` maps and `complex128` coefficients in component-first NumPy arrays. The plan methods and procedural functions cover scalar and spin STANDARD synthesis, analysis and both adjoints, spin gradient synthesis and its adjoint, and scalar DERIV1 synthesis and its adjoint. `get_gridweights` returns the grid ring weights. Inputs must be C-contiguous; each call copies its inputs into Rust-owned vectors, releases the GIL for workspace creation and transform execution, and returns a new NumPy array. The package includes the PEP 561 marker and `__init__.pyi` stub.

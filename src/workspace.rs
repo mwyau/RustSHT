@@ -1,53 +1,56 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use num_complex::Complex64;
+use num_complex::Complex;
+use rustfft::FftNum;
+use rustfft::num_traits::Zero;
 
 use crate::error::ShtError;
 use crate::fft::{RealFftPlan, RealFftWorkspace};
-use crate::legendre::LATITUDE_BLOCK_SIZE;
+use crate::legendre::{LATITUDE_BLOCK_SIZE, ShtScalar};
 use crate::meridional::CCResamplingPlan;
 
 /// Mutable scratch for one transform execution.
 ///
 /// Create a workspace with [`crate::ShtPlan::workspace`]. Use a separate workspace
 /// for each concurrent execution.
-pub struct ShtWorkspace {
-    pub(crate) spectra: Vec<Complex64>,
-    pub(crate) spin_spectra: Vec<Complex64>,
-    pub(crate) prepared_spectra: Vec<Complex64>,
-    pub(crate) prepared_spin_spectra: Vec<Complex64>,
-    pub(crate) cc_profile: Vec<Complex64>,
-    pub(crate) cc_fft_scratch: Vec<Complex64>,
-    pub(crate) row: Vec<f64>,
-    pub(crate) theta_sin: Vec<f64>,
-    pub(crate) theta_cos: Vec<f64>,
+#[allow(private_bounds)]
+pub struct ShtWorkspace<T: ShtScalar = f64> {
+    pub(crate) spectra: Vec<Complex<T>>,
+    pub(crate) spin_spectra: Vec<Complex<T>>,
+    pub(crate) prepared_spectra: Vec<Complex<T>>,
+    pub(crate) prepared_spin_spectra: Vec<Complex<T>>,
+    pub(crate) cc_profile: Vec<Complex<T>>,
+    pub(crate) cc_fft_scratch: Vec<Complex<T>>,
+    pub(crate) row: Vec<T>,
+    pub(crate) theta_sin: Vec<T>,
+    pub(crate) theta_cos: Vec<T>,
     pub(crate) ring_order_limits: Vec<usize>,
-    pub(crate) recurrence_workers: Vec<RecurrenceWorkspace>,
+    pub(crate) recurrence_workers: Vec<RecurrenceWorkspace<T>>,
     pub(crate) ring_group_size: usize,
-    pub(crate) fft: RealFftWorkspace,
+    pub(crate) fft: RealFftWorkspace<T>,
 }
 
-pub(crate) struct RecurrenceWorkspace {
-    pub(crate) epsilon: Vec<f64>,
-    pub(crate) previous: Vec<f64>,
-    pub(crate) current: Vec<f64>,
-    pub(crate) next: Vec<f64>,
+pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
+    pub(crate) epsilon: Vec<T>,
+    pub(crate) previous: Vec<T>,
+    pub(crate) current: Vec<T>,
+    pub(crate) next: Vec<T>,
     pub(crate) exponents: Vec<i64>,
-    pub(crate) spin_alpha: Vec<f64>,
-    pub(crate) spin_coefficient_a: Vec<f64>,
-    pub(crate) spin_coefficient_b: Vec<f64>,
-    pub(crate) spin_previous_plus: Vec<f64>,
-    pub(crate) spin_current_plus: Vec<f64>,
-    pub(crate) spin_next_plus: Vec<f64>,
+    pub(crate) spin_alpha: Vec<T>,
+    pub(crate) spin_coefficient_a: Vec<T>,
+    pub(crate) spin_coefficient_b: Vec<T>,
+    pub(crate) spin_previous_plus: Vec<T>,
+    pub(crate) spin_current_plus: Vec<T>,
+    pub(crate) spin_next_plus: Vec<T>,
     pub(crate) spin_exponents_plus: Vec<i64>,
-    pub(crate) spin_previous_minus: Vec<f64>,
-    pub(crate) spin_current_minus: Vec<f64>,
-    pub(crate) spin_next_minus: Vec<f64>,
+    pub(crate) spin_previous_minus: Vec<T>,
+    pub(crate) spin_current_minus: Vec<T>,
+    pub(crate) spin_next_minus: Vec<T>,
     pub(crate) spin_exponents_minus: Vec<i64>,
 }
 
-impl RecurrenceWorkspace {
+impl<T: ShtScalar> RecurrenceWorkspace<T> {
     fn new(
         recurrence_factor_count: usize,
         spin_recurrence_factor_count: usize,
@@ -98,15 +101,16 @@ impl RecurrenceWorkspace {
     }
 }
 
-impl ShtWorkspace {
+#[allow(private_bounds)]
+impl<T: ShtScalar> ShtWorkspace<T> {
     pub(crate) fn new(
         spectrum_count: usize,
         nphi: usize,
         ntheta: usize,
         recurrence_factor_count: usize,
         spin_recurrence_factor_count: usize,
-        fft: &RealFftPlan,
-        cc_resampling: Option<&CCResamplingPlan>,
+        fft: &RealFftPlan<T>,
+        cc_resampling: Option<&CCResamplingPlan<T>>,
     ) -> Result<Self, ShtError> {
         let prepared_ntheta = cc_resampling.map_or(0, CCResamplingPlan::prepared_ntheta);
         let latitude_count = ntheta.max(prepared_ntheta);
@@ -175,21 +179,24 @@ impl ShtWorkspace {
     }
 }
 
-fn allocate_complex(len: usize, array: &'static str) -> Result<Vec<Complex64>, ShtError> {
+fn allocate_complex<T: FftNum + Zero>(
+    len: usize,
+    array: &'static str,
+) -> Result<Vec<Complex<T>>, ShtError> {
     let mut values = Vec::new();
     values
         .try_reserve_exact(len)
         .map_err(|_| ShtError::AllocationFailed { array })?;
-    values.resize(len, Complex64::new(0.0, 0.0));
+    values.resize(len, Complex::new(T::zero(), T::zero()));
     Ok(values)
 }
 
-fn allocate_real(len: usize, array: &'static str) -> Result<Vec<f64>, ShtError> {
+fn allocate_real<T: FftNum + Zero>(len: usize, array: &'static str) -> Result<Vec<T>, ShtError> {
     let mut values = Vec::new();
     values
         .try_reserve_exact(len)
         .map_err(|_| ShtError::AllocationFailed { array })?;
-    values.resize(len, 0.0);
+    values.resize(len, T::zero());
     Ok(values)
 }
 

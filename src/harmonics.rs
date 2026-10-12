@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-use num_complex::Complex64;
+use num_complex::Complex;
+use rustfft::num_traits::Float;
 
 use crate::error::ShtError;
 
@@ -109,7 +110,7 @@ impl HarmonicSpec {
     ///
     /// Returns an error for a length mismatch, a nonreal `m=0` value, or a
     /// nonzero coefficient with `l < spin`.
-    pub fn validate_coefficients(&self, alm: &[Complex64]) -> Result<(), ShtError> {
+    pub fn validate_coefficients<T: Float>(&self, alm: &[Complex<T>]) -> Result<(), ShtError> {
         if alm.len() != self.nalm {
             return Err(ShtError::CoefficientCount {
                 expected: self.nalm,
@@ -119,7 +120,7 @@ impl HarmonicSpec {
 
         for l in 0..=self.lmax {
             let value = alm[self.order_offsets[0] + l];
-            if value.im != 0.0 {
+            if value.im != T::zero() {
                 return Err(ShtError::NonRealMZero { degree: l });
             }
         }
@@ -128,7 +129,7 @@ impl HarmonicSpec {
             for m in 0..=l.min(self.mmax) {
                 let index = self.order_offsets[m] + (l - m);
                 let value = alm[index];
-                if value.re != 0.0 || value.im != 0.0 {
+                if value.re != T::zero() || value.im != T::zero() {
                     return Err(ShtError::NonzeroBelowSpin {
                         spin: self.spin,
                         degree: l,
