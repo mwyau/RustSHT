@@ -344,3 +344,31 @@ The scalar synthesis map error against DUCC had maximum absolute error `2.627e-1
 | F1 | 1 | 186.212 / 5.835 (0.112 / 0.013) | 195.379 / 14.113 (1.147 / 0.214) |
 
 Maximum absolute, RMS and relative L2 errors on CC were `3.490e-15`, `1.648e-16`, `2.793e-14` for scalar synthesis; `1.169e-14`, `2.425e-16`, `2.376e-14` for scalar analysis; `4.338e-15`, `1.426e-16`, `2.349e-14` for spin-1 synthesis; and `9.907e-15`, `1.782e-16`, `1.747e-14` for spin-1 analysis. The corresponding F1 errors were `4.625e-15`, `1.727e-16`, `2.922e-14`; `1.185e-14`, `2.448e-16`, `2.399e-14`; `5.627e-15`, `1.516e-16`, `2.492e-14`; and `9.921e-15`, `1.785e-16`, `1.749e-14`.
+
+
+### Analysis Fourier-weight hoisting (M4/M5, 2026-10-12)
+
+Scalar and spin analysis now prepare the order phase and applicable ring scaling once per `(m, ring)` and reuse those Fourier values for all degree updates. Each recurrence worker uses three 64-lane complex buffers; scalar analysis uses one and spin analysis uses two. Ring blocks and degree accumulation order are unchanged. GL weights and longitude normalization remain in the analysis projection. CC/F1 prepared-grid weighting and Fourier normalization remain in the resampling stage. Focused Rust checks passed for scalar and spin DUCC references and adjoint identities on GL, CC and F1. f32 scalar and spin all-grid DUCC/analytic checks and adjoint identities also passed. The T511 Python comparisons after rebuilding the extension retained the baseline error values at printed precision: scalar synthesis/analysis relative L2 errors were `6.487e-14`/`4.467e-14`, and spin-1 errors were `6.675e-14`/`4.500e-14`. Native release comparisons used rustc 1.99.0, AVX2/FMA dispatch, f64, GL `512x1025`, T511, `phi0=0.37`, one warmup and five timed samples per operation on an x86-64 CPU. Plans and workspaces were reused. The before values are the two run medians reported in the baseline; three runs were made after the change. Synthesis is included to show the unaffected path.
+
+| Operation | Threads | Before run medians (mean ms) | After run medians (median ms) | Change vs. before mean |
+| --- | ---: | ---: | ---: | ---: |
+| Scalar synthesis | 1 | 535.197, 532.742 (533.970) | 535.780, 530.185, 525.899 (530.185) | -0.7% |
+| Scalar synthesis | 8 | 84.013, 84.180 (84.097) | 85.044, 85.123, 82.767 (85.044) | +1.1% |
+| Scalar analysis | 1 | 564.943, 570.466 (567.705) | 531.494, 523.459, 529.094 (529.094) | -6.8% |
+| Scalar analysis | 8 | 150.777, 153.673 (152.225) | 142.007, 140.031, 139.524 (140.031) | -8.0% |
+| Spin-1 synthesis | 1 | 1398.575, 1413.754 (1406.165) | 1441.264, 1431.320, 1556.177 (1441.264) | +2.5% |
+| Spin-1 synthesis | 8 | 223.924, 209.477 (216.701) | 215.173, 214.867, 211.066 (214.867) | -0.8% |
+| Spin-1 analysis | 1 | 1463.448, 1437.675 (1450.562) | 1372.452, 1369.446, 1499.743 (1372.452) | -5.4% |
+| Spin-1 analysis | 8 | 409.633, 370.695 (390.164) | 341.385, 345.875, 336.099 (341.385) | -12.5% |
+
+
+Python comparisons used Python 3.11.15, NumPy 2.4.6, `ducc0==0.41.0`, the rebuilt editable extension and the same T511 grid/data/thread settings as the baseline. Each median is the median of two run medians; each run had one warmup and five timed samples. Plan methods, procedural functions and DUCC were measured separately. The before values below are plan medians; their spreads and procedural timings are in the baseline table above.
+
+| Operation | Threads | Plan before (ms) | Plan after (median; spread ms) | Procedural after (median; spread ms) | DUCC after (median; spread ms) | Plan change | Plan / DUCC after |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Scalar analysis | 1 | 559.307 | 481.628; 1.848 | 483.365; 2.510 | 12.383; 0.114 | -13.9% | 38.9x |
+| Scalar analysis | 8 | 152.961 | 129.949; 1.506 | 132.104; 2.210 | 1.871; 0.129 | -15.1% | 69.4x |
+| Spin-1 analysis | 1 | 1497.584 | 1349.172; 9.721 | 1352.689; 3.281 | 25.653; 0.205 | -9.9% | 52.6x |
+| Spin-1 analysis | 8 | 379.849 | 347.557; 4.466 | 341.697; 2.273 | 3.622; 0.001 | -8.5% | 96.0x |
+
+This change reduces native analysis time and total profiled instruction references without changing the DUCC error at the reported precision. T511 GL remains 39–96 times slower than DUCC in these Python plan measurements. The new buffers add `3 * 64 * sizeof(Complex64)` bytes per recurrence worker (`0.0234 MiB` for eight workers); the estimated T511 eight-worker numeric-array footprints become 16.25 MiB for scalar and 24.26 MiB for spin 1. A separate eleven-sample native measurement found T511 scalar plan construction at `0.0334 ms` median (0.1092 ms spread) and workspace allocation at `3.6745 ms` (0.9984 ms spread). The Python harness measured plan construction at `0.035–0.039 ms`, input copies at `0.052–0.203 ms` and output allocation at `0.001–0.002 ms`; these costs remain small relative to transform execution. No FFT or meridional-resampling implementation changed.

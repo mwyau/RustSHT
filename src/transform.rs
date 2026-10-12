@@ -630,38 +630,52 @@ impl<T: ShtScalar> ShtPlan<T> {
             } else {
                 longitude_phase::<T>(m, phi0, true)
             };
-            T::for_each_y_lm_dispatched(
-                arch,
-                m,
-                lmax,
-                theta_sin,
-                theta_cos,
-                self.sectoral_norms[m],
-                &recurrence.epsilon,
-                &mut recurrence.previous,
-                &mut recurrence.current,
-                &mut recurrence.next,
-                &mut recurrence.exponents,
-                |l, ring_start, current, exponents| {
-                    let coefficient = &mut coefficients[l - m];
-                    for lane in 0..current.len() {
-                        let ring = ring_start + lane;
-                        if m > ring_order_limits[ring] {
-                            continue;
-                        }
-                        let spectrum_start = ring * spectrum_len;
-                        let mut weighted = spectra[spectrum_start + m] * phase;
-                        if let Some(ring_weights) = ring_weights {
-                            let weight = T::from_f64(ring_weights[ring])
-                                .expect("ring weight is representable");
-                            weighted *= weight / longitude_count;
-                        }
-                        *coefficient +=
-                            T::multiply_complex_scaled(weighted, current[lane], exponents[lane]);
+            for block_start in (0..theta_sin.len()).step_by(LATITUDE_BLOCK_SIZE) {
+                let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(theta_sin.len());
+                let block_len = block_end - block_start;
+                for (lane, weighted) in recurrence.weighted_spectrum[..block_len]
+                    .iter_mut()
+                    .enumerate()
+                {
+                    let ring = block_start + lane;
+                    let spectrum_start = ring * spectrum_len;
+                    *weighted = spectra[spectrum_start + m] * phase;
+                    if let Some(ring_weights) = ring_weights {
+                        let weight =
+                            T::from_f64(ring_weights[ring]).expect("ring weight is representable");
+                        *weighted *= weight / longitude_count;
                     }
-                    Ok(())
-                },
-            )?;
+                }
+                let weighted_spectrum = &recurrence.weighted_spectrum[..block_len];
+                T::for_each_y_lm_dispatched(
+                    arch,
+                    m,
+                    lmax,
+                    &theta_sin[block_start..block_end],
+                    &theta_cos[block_start..block_end],
+                    self.sectoral_norms[m],
+                    &recurrence.epsilon,
+                    &mut recurrence.previous,
+                    &mut recurrence.current,
+                    &mut recurrence.next,
+                    &mut recurrence.exponents,
+                    |l, ring_start, current, exponents| {
+                        let coefficient = &mut coefficients[l - m];
+                        for lane in 0..current.len() {
+                            let ring = ring_start + lane;
+                            if m > ring_order_limits[block_start + ring] {
+                                continue;
+                            }
+                            *coefficient += T::multiply_complex_scaled(
+                                weighted_spectrum[ring],
+                                current[lane],
+                                exponents[lane],
+                            );
+                        }
+                        Ok(())
+                    },
+                )?;
+            }
             coefficient_start += coefficient_count;
         }
         debug_assert_eq!(coefficient_start, alm.len());

@@ -48,6 +48,9 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     pub(crate) spin_current_minus: Vec<T>,
     pub(crate) spin_next_minus: Vec<T>,
     pub(crate) spin_exponents_minus: Vec<i64>,
+    pub(crate) weighted_spectrum: Vec<Complex<T>>,
+    pub(crate) weighted_spin_q_spectrum: Vec<Complex<T>>,
+    pub(crate) weighted_spin_u_spectrum: Vec<Complex<T>>,
 }
 
 impl<T: ShtScalar> RecurrenceWorkspace<T> {
@@ -97,6 +100,18 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
                 "negative-spin next recurrence values",
             )?,
             spin_exponents_minus: allocate_exponents(recurrence_scratch_len)?,
+            weighted_spectrum: allocate_complex(
+                recurrence_scratch_len,
+                "weighted scalar Fourier modes",
+            )?,
+            weighted_spin_q_spectrum: allocate_complex(
+                recurrence_scratch_len,
+                "weighted spin Q Fourier modes",
+            )?,
+            weighted_spin_u_spectrum: allocate_complex(
+                recurrence_scratch_len,
+                "weighted spin U Fourier modes",
+            )?,
         })
     }
 }
