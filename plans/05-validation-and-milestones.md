@@ -676,3 +676,18 @@ The full order-major path reduces one-thread analysis time by `5.6%` against the
 The rebuilt extension was compared with `ducc0==0.41.0` at source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`, using Python 3.11.15, NumPy 2.4.6, T511 GL data, and two runs of one warmup plus five samples. Plan analysis took `332.538 ms` (range `3.037 ms`) with one thread and `63.610 ms` (range `7.013 ms`) with eight threads; DUCC took `12.339 ms` (range `0.136 ms`) and `1.857 ms` (range `0.154 ms`). The measured plan-to-DUCC ratios were `26.9x` and `34.3x`. Analysis errors were `1.010e-14` maximum absolute, `2.281e-16` RMS and `4.467e-14` relative L2 at both thread counts. Input copying measured `0.052–0.084 ms`, and output allocation measured `0.001 ms`.
 
 Rust 1.89 all-feature tests passed 77 library tests and 10 f32 integration tests, with seven opt-in high-bandlimit tests ignored. The no-default-features suite passed 74 library tests and the same 10 f32 tests. Formatting and workspace Clippy with warnings denied passed; `uv run pytest python/tests` passed all eight tests. Scalar DUCC comparisons and adjoint identities passed on GL, CC and F1.
+
+### Scalar polar-block skipping trial (M4, 2026-10-12)
+
+The prototype skipped a 64-ring scalar recurrence block when every ring's existing `ring_order_limits` excluded the current order. Partially active blocks kept their per-ring cutoff checks. The recurrence and its cutoff were unchanged, and workspace memory did not increase. Rust 1.89 all-feature tests passed 77 library tests and 10 f32 integration tests, with seven high-bandlimit tests ignored; scalar DUCC/analytic cases and the spin-3/4 regression test passed.
+
+Native release timings used rustc 1.99.0, f64, T511 GL `512x1025`, `phi0=0.37`, AVX2/FMA dispatch, reused plans and workspaces, an AMD Ryzen 9 5950X, one warmup and five timed samples per run. Each table entry gives three run medians, their median and range in milliseconds:
+
+| Operation | Threads | Before (median; range) | Trial (median; range) | Change |
+| --- | ---: | ---: | ---: | ---: |
+| Synthesis | 1 | `357.103; 6.183` | `365.469; 3.299` | `+2.3%` |
+| Synthesis | 8 | `55.907; 0.695` | `64.249; 6.822` | `+14.9%` |
+| Analysis | 1 | `318.615; 0.902` | `313.851; 1.067` | `-1.5%` |
+| Analysis | 8 | `54.108; 7.774` | `53.544; 4.808` | `-1.0%` |
+
+The analysis differences fall within the run variation, and synthesis is slower in both thread settings. Callgrind instruction counts were not collected because the whole-transform measurements did not meet the performance criterion. The block-skipping change was removed.
