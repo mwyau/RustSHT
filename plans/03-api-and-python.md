@@ -10,12 +10,12 @@ RustSHT is a native Rust numerical library. Its public API should follow the [Ru
 | --- | --- |
 | `GridKind` | Implemented: `GaussLegendre`. Planned: `ClenshawCurtis`, `Fejer1`. |
 | `GridSpec` | Validated `kind`, `ntheta`, `nphi`, `phi0` (radians); currently constructs Gauss-Legendre grids. Core order is north-to-south and eastward-cyclic. |
-| `HarmonicSpec` | Inclusive `lmax`, `mmax` and nonnegative spin; validate channels, `m=0` and `l<spin` behavior. Mode is not plan state. Implemented with order-major packed `m >= 0` coefficients. |
-| `ShtPlan` | Immutable reusable FFT plans, quadrature and recurrence coefficients; chosen CPU dispatch. Construct with `Result`. |
-| `ShtWorkspace` | Explicit execution scratch, separate for each concurrent execution/worker; size derived from plan. |
+| `HarmonicSpec` | Inclusive `lmax`, `mmax` and nonnegative spin; validate spin bounds, real `m=0` and `l<spin` coefficient behavior. Mode is not plan state. Implemented with order-major packed `m >= 0` coefficients. |
+| `ShtPlan` | Implemented for scalar GL analysis and synthesis; immutable FFT, quadrature and recurrence metadata. Construct with `Result`. |
+| `ShtWorkspace` | Implemented caller-owned FFT and Fourier scratch; use a separate workspace for each concurrent execution. |
 | `ShtError` | Structured invalid grid, undersampling, spin/mode, shape, overflow, unsupported configuration and allocation errors. |
 
-Use a direct `num-complex` dependency and expose a `Complex64` alias; do not depend on RustFFT's re-export for the public coefficient type. The `GridKind` type currently contains only `GaussLegendre`; `GridSpec`, `HarmonicSpec`, `ShtError` and the alias are implemented. `HarmonicSpec::index(l, m)` returns the order-major packed offset, and its coefficient validator rejects a nonreal `m=0` value or a nonzero mode with `l < spin`. Generalize to f32 only when validated. Do not preemptively expose internal FFT types, planner traits, SIMD implementations, or thread-pool types. Provisional usage (illustration, **not implemented or finalized**):
+Use a direct `num-complex` dependency and expose a `Complex64` alias; do not depend on RustFFT's re-export for the public coefficient type. The `GridKind` type currently contains only `GaussLegendre`; `GridSpec`, `HarmonicSpec`, scalar GL `ShtPlan`, `ShtWorkspace`, `ShtError` and the alias are implemented. `HarmonicSpec::index(l, m)` returns the order-major packed offset, and its coefficient validator rejects a nonreal `m=0` value or a nonzero mode with `l < spin`. `ShtPlan` currently provides scalar `synthesis_into` and exact GL `analysis_into`; both reject nonzero spin until those recurrences are implemented. Generalize to f32 only when validated. Do not preemptively expose internal FFT types, planner traits, SIMD implementations, or thread-pool types. Current scalar GL usage:
 
 ```rust
 use rustsht::{GridKind, GridSpec, HarmonicSpec, ShtPlan};
