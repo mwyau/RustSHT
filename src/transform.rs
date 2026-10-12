@@ -155,6 +155,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         debug_assert_eq!(spectra.len(), theta_sin.len() * spectrum_len);
         debug_assert_eq!(theta_sin.len(), theta_cos.len());
 
+        let fourier_scale = T::from_usize(nphi).expect("longitude count converts");
+        let nyquist_scale = fourier_scale * T::from_f64(2.0).expect("two is representable");
         for m in 0..=mmax {
             T::fill_epsilon(m, lmax, &mut recurrence.epsilon);
             let coefficient_start = self
@@ -201,15 +203,9 @@ impl<T: ShtScalar> ShtPlan<T> {
                 let spectrum_index = group_ring * spectrum_len + m;
                 let phased = spectra[spectrum_index] * phase;
                 if nphi.is_multiple_of(2) && m == nphi / 2 {
-                    spectra[spectrum_index] = Complex::new(
-                        T::from_usize(nphi).expect("longitude count converts")
-                            * T::from_f64(2.0).expect("two is representable")
-                            * phased.re,
-                        T::zero(),
-                    );
+                    spectra[spectrum_index] = Complex::new(nyquist_scale * phased.re, T::zero());
                 } else {
-                    spectra[spectrum_index] =
-                        phased * T::from_usize(nphi).expect("sample count converts");
+                    spectra[spectrum_index] = phased * fourier_scale;
                 }
             }
         }
@@ -623,6 +619,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<(), ShtError> {
         let lmax = self.harmonics.lmax();
+        let longitude_count = T::from_usize(nphi).expect("longitude count converts");
         let mut coefficient_start = 0;
         for m in m_start..m_end {
             let coefficient_count = lmax - m + 1;
@@ -657,8 +654,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         if let Some(ring_weights) = ring_weights {
                             let weight = T::from_f64(ring_weights[ring])
                                 .expect("ring weight is representable");
-                            weighted *=
-                                weight / T::from_usize(nphi).expect("longitude count converts");
+                            weighted *= weight / longitude_count;
                         }
                         *coefficient +=
                             T::multiply_complex_scaled(weighted, current[lane], exponents[lane]);

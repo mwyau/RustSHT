@@ -303,6 +303,21 @@ The release benchmark repeats the initial RustSHT setup on rustc 1.99.0. Both th
 
 The SIMD run gives 6.5x synthesis and 4.3x analysis speedups from one to eight RustSHT threads. The estimated numeric-array footprint remains 12.13 MiB, excluding RustFFT plan and execution scratch, allocator metadata, and process memory. SIMD reduces the scalar-lane medians by 8.4–12.1%; RustSHT remains 27–86 times slower than DUCC in these measurements. f32 performance acceptance and memory-traffic optimization remain open.
 
+### Reuse Fourier scale constants in transform loops (M4, 2026-10-12)
+
+Scalar and spin synthesis now convert the longitude count to the transform precision outside the order and ring loops. Scalar and spin analysis reuse that conversion in their coefficient loops. Spin synthesis also computes its Nyquist scale once per ring group. These changes retain the same multiplication and division order.
+
+Callgrind instruction references for one f32 spin-1 GL synthesis at T127 fell from 272,923,166 to 265,643,293 (2.67%) on the AMD Ryzen 9 5950X with rustc 1.99.0, release optimization, AVX2/FMA dispatch and one Rayon thread. The T511 release benchmark compared two runs before and two after the change, each with one warmup and five samples per operation. Values below are averages of the per-run medians in milliseconds; the workload used f32, spin 1, GL `512x1025`, and one or eight Rayon threads.
+
+| Operation | Threads | Before | After | Change |
+| --- | ---: | ---: | ---: | ---: |
+| Synthesis | 1 | 1174.303 | 1168.563 | -0.49% |
+| Synthesis | 8 | 184.243 | 178.572 | -3.08% |
+| Analysis | 1 | 1286.292 | 1273.005 | -1.03% |
+| Analysis | 8 | 295.586 | 297.207 | +0.55% |
+
+The estimated numeric-array footprint remains 12.13 MiB. These two-run timings show a small, mixed change; the Callgrind result supports a lower instruction count for the profiled synthesis, but these measurements do not establish a general speedup. No new DUCC timing was collected for this change.
+
 ### f32 phase and pole edge cases (M4, 2026-10-12)
 
 Scalar and spin transforms retain `phi0` as f64 while forming each order phase, then convert the sine and cosine to the selected transform type. If `m*phi0` overflows f64, phase setup derives the integer-order phase by exponentiating `e^(i phi0)`. Grid and prepared CC colatitudes remain f64 through sine/cosine evaluation; the exact `0` and `pi` endpoints produce exact zero sine values before conversion to f32.

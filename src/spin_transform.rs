@@ -832,6 +832,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         debug_assert_eq!(q_spectra.len(), (ring_end - ring_start) * spectrum_len);
         debug_assert_eq!(u_spectra.len(), q_spectra.len());
 
+        let fourier_scale = T::from_usize(nphi).expect("longitude count converts");
+        let nyquist_scale = fourier_scale * T::from_f64(2.0).expect("two is representable");
         for m in 0..=mmax {
             let initial = T::fill_spin_factors(
                 spin,
@@ -890,16 +892,13 @@ impl<T: ShtScalar> ShtPlan<T> {
                         let phased_q = q_value * phase;
                         let phased_u = u_value * phase;
                         if nphi.is_multiple_of(2) && m == nphi / 2 {
-                            let scale = T::from_usize(nphi).expect("longitude count converts")
-                                * T::from_f64(2.0).expect("two is representable");
                             q_spectra[spectrum_index] +=
-                                Complex::new(scale * phased_q.re, T::zero());
+                                Complex::new(nyquist_scale * phased_q.re, T::zero());
                             u_spectra[spectrum_index] +=
-                                Complex::new(scale * phased_u.re, T::zero());
+                                Complex::new(nyquist_scale * phased_u.re, T::zero());
                         } else {
-                            let scale = T::from_usize(nphi).expect("longitude count converts");
-                            q_spectra[spectrum_index] += phased_q * scale;
-                            u_spectra[spectrum_index] += phased_u * scale;
+                            q_spectra[spectrum_index] += phased_q * fourier_scale;
+                            u_spectra[spectrum_index] += phased_u * fourier_scale;
                         }
                     }
                     Ok(())
@@ -935,6 +934,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<(), ShtError> {
         let lmax = self.harmonics.lmax();
+        let longitude_count = T::from_usize(nphi).expect("longitude count converts");
         let mut coefficient_start = 0;
         for m in m_start..m_end {
             let coefficient_count = lmax - m + 1;
@@ -991,7 +991,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             T::from_f64(weights[ring]).expect("ring weight is representable")
                         });
                         if normalize_fourier {
-                            scale /= T::from_usize(nphi).expect("longitude count converts");
+                            scale /= longitude_count;
                         }
                         let q_fourier = q_spectra[spectrum_start + m] * phase * scale;
                         let u_fourier = u_spectra[spectrum_start + m] * phase * scale;
