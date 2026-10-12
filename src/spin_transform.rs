@@ -14,8 +14,10 @@ use crate::legendre::{
 use crate::plan::ShtPlan;
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
+const MAX_SUPPORTED_SPIN: usize = 4;
+
 impl ShtPlan {
-    /// Synthesizes the two real map components for a spin-1 or spin-2 field.
+    /// Synthesizes two real map components for a spin-1 through spin-4 field.
     ///
     /// `e_alm` and `b_alm` are packed coefficient channels. The output slices
     /// are the two map components in DUCC order, each stored north-to-south
@@ -25,9 +27,10 @@ impl ShtPlan {
     ///
     /// # Errors
     ///
-    /// Returns an error if the plan spin is not 1 or 2, an input coefficient
-    /// is invalid, a buffer length differs from the plan, synthesis longitude
-    /// sampling is insufficient, or the workspace is incompatible.
+    /// Returns an error if the plan spin is outside `1..=4`, an input
+    /// coefficient is invalid, a buffer length differs from the plan,
+    /// synthesis longitude sampling is insufficient, or the workspace is
+    /// incompatible.
     pub fn synthesis_spin_into(
         &self,
         e_alm: &[Complex64],
@@ -55,9 +58,10 @@ impl ShtPlan {
     ///
     /// # Errors
     ///
-    /// Returns an error if the plan spin is not 1 or 2, an input coefficient
-    /// is invalid, a buffer length differs from the plan, synthesis longitude
-    /// sampling is insufficient, or the workspace is incompatible.
+    /// Returns an error if the plan spin is outside `1..=4`, an input
+    /// coefficient is invalid, a buffer length differs from the plan,
+    /// synthesis longitude sampling is insufficient, or the workspace is
+    /// incompatible.
     pub fn synthesis_gradient_into(
         &self,
         e_alm: &[Complex64],
@@ -130,7 +134,8 @@ impl ShtPlan {
         )
     }
 
-    /// Analyzes two real spin-1 or spin-2 map components into E/B coefficients.
+    /// Analyzes two real map components into spin-1 through spin-4 E/B
+    /// coefficients.
     ///
     /// Exact GL and F1 analysis require `ntheta >= lmax + 1`; exact CC analysis
     /// requires `ntheta >= lmax + 2`. All require
@@ -139,7 +144,7 @@ impl ShtPlan {
     ///
     /// # Errors
     ///
-    /// Returns an error if the plan spin is not 1 or 2, exact-analysis
+    /// Returns an error if the plan spin is outside `1..=4`, exact-analysis
     /// sampling is insufficient, a buffer length differs from the plan, or
     /// the workspace is incompatible.
     pub fn analysis_spin_into(
@@ -165,7 +170,7 @@ impl ShtPlan {
         )
     }
 
-    /// Applies the adjoint of spin-1 or spin-2 STANDARD synthesis.
+    /// Applies the adjoint of spin-1 through spin-4 STANDARD synthesis.
     ///
     /// The map dot product is an unweighted pixel sum. The returned E/B
     /// coefficients use the real harmonic inner product, including weight
@@ -174,9 +179,9 @@ impl ShtPlan {
     ///
     /// # Errors
     ///
-    /// Returns an error if the plan spin is not 1 or 2, longitude sampling is
-    /// insufficient, a buffer length differs from the plan, or the workspace
-    /// is incompatible.
+    /// Returns an error if the plan spin is outside `1..=4`, longitude
+    /// sampling is insufficient, a buffer length differs from the plan, or
+    /// the workspace is incompatible.
     pub fn adjoint_synthesis_spin_into(
         &self,
         first_component: &[f64],
@@ -200,7 +205,7 @@ impl ShtPlan {
         )
     }
 
-    /// Applies the adjoint of spin-1 or spin-2 `GRAD_ONLY` synthesis.
+    /// Applies the adjoint of spin-1 through spin-4 `GRAD_ONLY` synthesis.
     ///
     /// The two input maps produce only the first (gradient) coefficient
     /// channel. The map dot product is an unweighted pixel sum; the real
@@ -208,9 +213,9 @@ impl ShtPlan {
     ///
     /// # Errors
     ///
-    /// Returns an error if the plan spin is not 1 or 2, longitude sampling is
-    /// insufficient, a buffer length differs from the plan, or the workspace
-    /// is incompatible.
+    /// Returns an error if the plan spin is outside `1..=4`, longitude
+    /// sampling is insufficient, a buffer length differs from the plan, or
+    /// the workspace is incompatible.
     pub fn adjoint_synthesis_gradient_into(
         &self,
         first_component: &[f64],
@@ -290,7 +295,7 @@ impl ShtPlan {
         )
     }
 
-    /// Applies the adjoint of exact spin-1 or spin-2 analysis.
+    /// Applies the adjoint of exact spin-1 through spin-4 analysis.
     ///
     /// The output maps are STANDARD spin synthesis. GL analysis scales each
     /// ring by `ring_weight / nphi`; CC analysis uses the adjoint of its
@@ -298,7 +303,7 @@ impl ShtPlan {
     ///
     /// # Errors
     ///
-    /// Returns an error if the plan spin is not 1 or 2, exact-analysis
+    /// Returns an error if the plan spin is outside `1..=4`, exact-analysis
     /// sampling is insufficient, a coefficient or output buffer is invalid,
     /// or the workspace is incompatible.
     pub fn adjoint_analysis_spin_into(
@@ -444,7 +449,7 @@ impl ShtPlan {
         normalize_fourier: bool,
         workspace: &mut ShtWorkspace,
     ) -> Result<(), ShtError> {
-        if !matches!(recurrence_spin, 1 | 2) {
+        if !matches!(recurrence_spin, 1..=MAX_SUPPORTED_SPIN) {
             return Err(ShtError::UnsupportedSpin {
                 spin: recurrence_spin,
             });
@@ -657,7 +662,7 @@ impl ShtPlan {
         derivative_norm: bool,
         workspace: &mut ShtWorkspace,
     ) -> Result<(), ShtError> {
-        if !matches!(recurrence_spin, 1 | 2) {
+        if !matches!(recurrence_spin, 1..=MAX_SUPPORTED_SPIN) {
             return Err(ShtError::UnsupportedSpin {
                 spin: recurrence_spin,
             });
@@ -1131,7 +1136,7 @@ impl ShtPlan {
 
     fn supported_spin(&self) -> Result<usize, ShtError> {
         match self.harmonics.spin() {
-            spin @ (1 | 2) => Ok(spin),
+            spin @ 1..=MAX_SUPPORTED_SPIN => Ok(spin),
             spin => Err(ShtError::UnsupportedSpin { spin }),
         }
     }
@@ -1290,6 +1295,14 @@ mod tests {
             .sum::<f64>();
         0.5 * (log_binomial + ((2 * degree + 1) as f64 / (4.0 * std::f64::consts::PI)).ln())
             - std::f64::consts::LN_2
+    }
+
+    fn lowest_spin_harmonic_m0_reference(spin: usize, theta: f64) -> f64 {
+        let central_binomial = (1..=spin)
+            .map(|index| (spin + index) as f64 / index as f64)
+            .product::<f64>();
+        -(((2 * spin + 1) as f64 * central_binomial / (4.0 * std::f64::consts::PI)).sqrt())
+            * (0.5 * theta.sin()).powi(spin as i32)
     }
 
     fn sectoral_spin_reference(
@@ -1997,8 +2010,332 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::excessive_precision,
+        reason = "The literals retain printed DUCC 0.41.0 reference values."
+    )]
+    fn spin_three_and_four_match_ducc_analytic_fields_and_adjoint_identities() {
+        // DUCC 0.41.0 references use phi0=0.37 and nthreads=1.
+        for spin in [3, 4] {
+            let lmax = spin;
+            let nphi = 2 * lmax + 3;
+            for kind in [
+                GridKind::GaussLegendre,
+                GridKind::ClenshawCurtis,
+                GridKind::Fejer1,
+            ] {
+                let ntheta = lmax + usize::from(kind == GridKind::ClenshawCurtis) + 1;
+                let plan = ShtPlan::new(
+                    GridSpec::new(kind, ntheta, nphi, 0.37).unwrap(),
+                    HarmonicSpec::new(lmax, lmax, spin).unwrap(),
+                )
+                .unwrap();
+                let m_zero_mode = plan.harmonics().index(spin, 0).unwrap();
+                let sectoral_mode = plan.harmonics().index(spin, spin).unwrap();
+
+                let mut analytic_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+                let analytic_b = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+                analytic_e[m_zero_mode] = Complex64::new(1.0, 0.0);
+                let mut workspace = plan.workspace().unwrap();
+                let mut first = vec![0.0; plan.sample_count];
+                let mut second = vec![0.0; plan.sample_count];
+                plan.synthesis_spin_into(
+                    &analytic_e,
+                    &analytic_b,
+                    &mut first,
+                    &mut second,
+                    &mut workspace,
+                )
+                .unwrap();
+                let mut ducc_synthesis_max_error = 0.0_f64;
+                let mut analytic_synthesis_max_error = 0.0_f64;
+                let mut analytic_synthesis_error_squares = 0.0_f64;
+                let mut analytic_synthesis_sample_count = 0usize;
+
+                // Static DUCC samples use rows [0, ntheta/2, ntheta-1], j=0.
+                let expected_ducc = match (kind, spin) {
+                    (GridKind::GaussLegendre, 3) => [
+                        -0.054817524242523459,
+                        -0.34701775377308403,
+                        -0.054817524242523459,
+                    ],
+                    (GridKind::ClenshawCurtis, 3) => [
+                        -3.337790589062273e-45,
+                        -0.41722382363278404,
+                        -3.337790589062273e-45,
+                    ],
+                    (GridKind::Fejer1, 3) => [
+                        -0.023382345886603487,
+                        -0.32901457457089117,
+                        -0.023382345886603487,
+                    ],
+                    (GridKind::GaussLegendre, 4) => [
+                        -0.014153550227730075,
+                        -0.44253269244498256,
+                        -0.014153550227730075,
+                    ],
+                    (GridKind::ClenshawCurtis, 4) => [
+                        -7.0805230791197211e-60,
+                        -0.36205175936061507,
+                        -7.0805230791197211e-60,
+                    ],
+                    (GridKind::Fejer1, 4) => [
+                        -0.0040352906061222587,
+                        -0.44253269244498256,
+                        -0.0040352906061222587,
+                    ],
+                    _ => unreachable!(),
+                };
+                let rows = [0, ntheta / 2, ntheta - 1];
+                for (row, expected) in rows.into_iter().zip(expected_ducc) {
+                    let index = row * nphi;
+                    for (actual, expected) in [(first[index], expected), (second[index], 0.0)] {
+                        let error = (actual - expected).abs();
+                        ducc_synthesis_max_error = ducc_synthesis_max_error.max(error);
+                        assert!(
+                            error <= 3e-14,
+                            "{kind:?} spin {spin} DUCC S error={error:.3e}"
+                        );
+                    }
+                }
+                for (ring, &theta) in plan.grid.theta().iter().enumerate() {
+                    let expected = lowest_spin_harmonic_m0_reference(spin, theta);
+                    for longitude in 0..nphi {
+                        let index = ring * nphi + longitude;
+                        for (actual, expected) in [(first[index], expected), (second[index], 0.0)] {
+                            let error = (actual - expected).abs();
+                            analytic_synthesis_max_error = analytic_synthesis_max_error.max(error);
+                            analytic_synthesis_error_squares += error * error;
+                            analytic_synthesis_sample_count += 1;
+                            assert!(
+                                error <= 3e-14,
+                                "{kind:?} spin {spin} analytic S error={error:.3e}"
+                            );
+                        }
+                    }
+                }
+
+                let mut recovered_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+                let mut recovered_b = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+                let mut roundtrip_analysis_max_error = 0.0_f64;
+                plan.analysis_spin_into(
+                    &first,
+                    &second,
+                    &mut recovered_e,
+                    &mut recovered_b,
+                    &mut workspace,
+                )
+                .unwrap();
+                for index in 0..plan.harmonics.nalm() {
+                    let expected = if index == m_zero_mode {
+                        Complex64::new(1.0, 0.0)
+                    } else {
+                        Complex64::new(0.0, 0.0)
+                    };
+                    let e_error = (recovered_e[index] - expected).norm();
+                    let b_error = recovered_b[index].norm();
+                    roundtrip_analysis_max_error =
+                        roundtrip_analysis_max_error.max(e_error).max(b_error);
+                    assert!(e_error <= 3e-12 && b_error <= 3e-12);
+                }
+
+                let (input_first, input_second) = arbitrary_maps(&plan);
+                let mut analyzed_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+                let mut analyzed_b = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+                plan.analysis_spin_into(
+                    &input_first,
+                    &input_second,
+                    &mut analyzed_e,
+                    &mut analyzed_b,
+                    &mut workspace,
+                )
+                .unwrap();
+                let expected_analysis = match (kind, spin) {
+                    (GridKind::GaussLegendre, 3) => [
+                        (
+                            Complex64::new(-2.5624192608658785, 0.0),
+                            Complex64::new(-2.5186532570202198, 0.0),
+                        ),
+                        (
+                            Complex64::new(0.043309451773531224, -0.046575550988545114),
+                            Complex64::new(0.04906763451384076, 0.048846736939148455),
+                        ),
+                    ],
+                    (GridKind::ClenshawCurtis, 3) => [
+                        (
+                            Complex64::new(-2.6975523577414426, 0.0),
+                            Complex64::new(-2.5615763553922557, 0.0),
+                        ),
+                        (
+                            Complex64::new(0.027404575317222315, -0.04353582407459089),
+                            Complex64::new(0.030457222488887239, 0.049018020596425856),
+                        ),
+                    ],
+                    (GridKind::Fejer1, 3) => [
+                        (
+                            Complex64::new(-2.5033401301133527, 3.3144716534937704e-16),
+                            Complex64::new(-2.4612400853159939, 0.0),
+                        ),
+                        (
+                            Complex64::new(0.043957963425012382, -0.042837743704757895),
+                            Complex64::new(0.049126622697667162, 0.045558983025713866),
+                        ),
+                    ],
+                    (GridKind::GaussLegendre, 4) => [
+                        (
+                            Complex64::new(-2.2993398767809983, 0.0),
+                            Complex64::new(-2.258292856214644, 0.0),
+                        ),
+                        (
+                            Complex64::new(0.055396084413428213, 0.0073873299572970261),
+                            Complex64::new(0.060665080308287669, 0.02269883381804097),
+                        ),
+                    ],
+                    (GridKind::ClenshawCurtis, 4) => [
+                        (
+                            Complex64::new(-2.326978141824704, 8.8084162393368395e-18),
+                            Complex64::new(-2.283731088252011, 4.4042081196684197e-18),
+                        ),
+                        (
+                            Complex64::new(0.059365947319141854, 0.02309949634471475),
+                            Complex64::new(0.0530982155748317, 0.011287609932186941),
+                        ),
+                    ],
+                    (GridKind::Fejer1, 4) => [
+                        (
+                            Complex64::new(-2.3026107544882368, -5.8722774928912263e-18),
+                            Complex64::new(-2.2615693641179146, -1.4680693732228064e-17),
+                        ),
+                        (
+                            Complex64::new(0.05247260029983386, 0.0083980269847998626),
+                            Complex64::new(0.057257469573341067, 0.024314133578218253),
+                        ),
+                    ],
+                    _ => unreachable!(),
+                };
+                let mut ducc_analysis_max_error = 0.0_f64;
+                for (index, (expected_e, expected_b)) in [m_zero_mode, sectoral_mode]
+                    .into_iter()
+                    .zip(expected_analysis)
+                {
+                    let e_error = (analyzed_e[index] - expected_e).norm();
+                    let b_error = (analyzed_b[index] - expected_b).norm();
+                    ducc_analysis_max_error = ducc_analysis_max_error.max(e_error).max(b_error);
+                    assert!(e_error <= 2e-12 && b_error <= 2e-12);
+                }
+
+                let (e, b) = coefficients(&plan);
+                let mut synthesized_first = vec![0.0; plan.sample_count];
+                let mut synthesized_second = vec![0.0; plan.sample_count];
+                plan.synthesis_spin_into(
+                    &e,
+                    &b,
+                    &mut synthesized_first,
+                    &mut synthesized_second,
+                    &mut workspace,
+                )
+                .unwrap();
+                let mut adjoint_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+                let mut adjoint_b = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+                plan.adjoint_synthesis_spin_into(
+                    &input_first,
+                    &input_second,
+                    &mut adjoint_e,
+                    &mut adjoint_b,
+                    &mut workspace,
+                )
+                .unwrap();
+                let synthesis_adjoint_left = spin_map_inner_product(
+                    &synthesized_first,
+                    &synthesized_second,
+                    &input_first,
+                    &input_second,
+                );
+                let synthesis_adjoint_right =
+                    spin_harmonic_inner_product(&plan.harmonics, &e, &b, &adjoint_e, &adjoint_b);
+                let mut adjoint_identity_max_error =
+                    (synthesis_adjoint_left - synthesis_adjoint_right).abs();
+                assert!(adjoint_identity_max_error <= 2e-11);
+
+                let mut analysis_adjoint_first = vec![0.0; plan.sample_count];
+                let mut analysis_adjoint_second = vec![0.0; plan.sample_count];
+                plan.adjoint_analysis_spin_into(
+                    &e,
+                    &b,
+                    &mut analysis_adjoint_first,
+                    &mut analysis_adjoint_second,
+                    &mut workspace,
+                )
+                .unwrap();
+                let analysis_adjoint_left =
+                    spin_harmonic_inner_product(&plan.harmonics, &analyzed_e, &analyzed_b, &e, &b);
+                let analysis_adjoint_right = spin_map_inner_product(
+                    &input_first,
+                    &input_second,
+                    &analysis_adjoint_first,
+                    &analysis_adjoint_second,
+                );
+                adjoint_identity_max_error = adjoint_identity_max_error
+                    .max((analysis_adjoint_left - analysis_adjoint_right).abs());
+                assert!(adjoint_identity_max_error <= 2e-11);
+
+                let zero_b = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+                let mut gradient_first = vec![0.0; plan.sample_count];
+                let mut gradient_second = vec![0.0; plan.sample_count];
+                plan.synthesis_gradient_into(
+                    &e,
+                    &mut gradient_first,
+                    &mut gradient_second,
+                    &mut workspace,
+                )
+                .unwrap();
+                let mut standard_first = vec![0.0; plan.sample_count];
+                let mut standard_second = vec![0.0; plan.sample_count];
+                plan.synthesis_spin_into(
+                    &e,
+                    &zero_b,
+                    &mut standard_first,
+                    &mut standard_second,
+                    &mut workspace,
+                )
+                .unwrap();
+                for (&gradient, &standard) in gradient_first.iter().zip(&standard_first) {
+                    assert_close(gradient, standard, 2e-13);
+                }
+                for (&gradient, &standard) in gradient_second.iter().zip(&standard_second) {
+                    assert_close(gradient, standard, 2e-13);
+                }
+                let mut gradient_adjoint = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+                plan.adjoint_synthesis_gradient_into(
+                    &input_first,
+                    &input_second,
+                    &mut gradient_adjoint,
+                    &mut workspace,
+                )
+                .unwrap();
+                let gradient_adjoint_left = spin_map_inner_product(
+                    &gradient_first,
+                    &gradient_second,
+                    &input_first,
+                    &input_second,
+                );
+                let gradient_adjoint_right =
+                    harmonic_inner_product(&plan.harmonics, &e, &gradient_adjoint);
+                adjoint_identity_max_error = adjoint_identity_max_error
+                    .max((gradient_adjoint_left - gradient_adjoint_right).abs());
+                assert!(adjoint_identity_max_error <= 2e-11);
+                eprintln!(
+                    "spin {spin} {kind:?}: DUCC S max={ducc_synthesis_max_error:.3e}; analytic S max={analytic_synthesis_max_error:.3e}, RMS={:.3e}; DUCC A selected coefficients max={ducc_analysis_max_error:.3e}; A(S) max coefficient={roundtrip_analysis_max_error:.3e}; adjoint inner-product max absolute residual={adjoint_identity_max_error:.3e}",
+                    (analytic_synthesis_error_squares / analytic_synthesis_sample_count as f64)
+                        .sqrt(),
+                );
+            }
+        }
+    }
+
+    #[test]
     fn spin_operations_reject_unsupported_spin_and_invalid_coefficients() {
-        let unsupported = make_plan(3, 3, 1, 4, 5);
+        let unsupported = make_plan(5, 5, 1, 6, 5);
         let mut unsupported_workspace = unsupported.workspace().unwrap();
         let unsupported_coefficients = vec![Complex64::new(0.0, 0.0); unsupported.harmonics.nalm()];
         let mut unsupported_first = vec![0.0; unsupported.sample_count];
@@ -2013,7 +2350,7 @@ mod tests {
                 &mut unsupported_second,
                 &mut unsupported_workspace,
             ),
-            Err(ShtError::UnsupportedSpin { spin: 3 })
+            Err(ShtError::UnsupportedSpin { spin: 5 })
         );
         assert_eq!(
             unsupported.analysis_spin_into(
@@ -2023,7 +2360,7 @@ mod tests {
                 &mut unsupported_b,
                 &mut unsupported_workspace,
             ),
-            Err(ShtError::UnsupportedSpin { spin: 3 })
+            Err(ShtError::UnsupportedSpin { spin: 5 })
         );
         assert_eq!(
             unsupported.adjoint_synthesis_spin_into(
@@ -2033,7 +2370,7 @@ mod tests {
                 &mut unsupported_b,
                 &mut unsupported_workspace,
             ),
-            Err(ShtError::UnsupportedSpin { spin: 3 })
+            Err(ShtError::UnsupportedSpin { spin: 5 })
         );
         assert_eq!(
             unsupported.adjoint_analysis_spin_into(
@@ -2043,7 +2380,7 @@ mod tests {
                 &mut unsupported_second,
                 &mut unsupported_workspace,
             ),
-            Err(ShtError::UnsupportedSpin { spin: 3 })
+            Err(ShtError::UnsupportedSpin { spin: 5 })
         );
 
         let plan = make_plan(1, 1, 1, 2, 3);
