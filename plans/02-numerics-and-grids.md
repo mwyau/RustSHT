@@ -13,7 +13,7 @@ Before implementing the first recurrence, establish scalar `Y_lm` normalization 
 Work on one grid with a shared, grid-independent recurrence/FFT driver:
 
 1. Spin-0 scalar `S/A`, normalization, phase, packed coefficients, GL nodes and weights.
-2. Spin-1 and spin-2 STANDARD `S/A` including vector E/B. Spin 3 and 4 pass all-grid operation checks at `lmax=spin`, plus STANDARD synthesis and exact analysis through T511; higher spins remain unsupported pending separate validation.
+2. Spin-1 and spin-2 STANDARD `S/A` including vector E/B. Spin 3 and 4 pass all-grid operation checks at `lmax=spin`, sparse synthesis through T2047, and exact analysis through T511; higher spins remain unsupported pending separate validation.
 3. `GRAD_ONLY` and `DERIV1` synthesis and adjoint synthesis where valid.
 4. Both STANDARD `S*` and `A*` for scalar/spin; verify adjoint identities on the real harmonic domain.
 5. Gate GL completion on this entire validated matrix, including high-degree numerical checks. Then add **CC**, then **F1**, reusing the transform drivers and introducing only the required ring locations, quadrature and spectral meridional resampling paths. Every supported operation gets a fresh grid-specific parity test.
