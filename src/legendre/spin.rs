@@ -362,19 +362,22 @@ fn recurrence_step<S: Simd>(
     let (previous_vectors, previous_tail) = S::as_simd_f64s(previous);
     let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cosine);
     let (next_vectors, next_tail) = S::as_mut_simd_f64s(next);
+    let coupling = simd.splat_f64s(-coefficient_b);
     for index in 0..current_vectors.len() {
-        let leading = simd.sub_f64s(
-            simd.mul_f64s(simd.splat_f64s(coefficient_a), cosine_vectors[index]),
-            simd.splat_f64s(coefficient_b),
+        let leading = simd.mul_add_f64s(
+            simd.splat_f64s(coefficient_a),
+            cosine_vectors[index],
+            coupling,
         );
-        next_vectors[index] = simd.sub_f64s(
-            simd.mul_f64s(leading, current_vectors[index]),
-            previous_vectors[index],
+        next_vectors[index] = simd.mul_add_f64s(
+            leading,
+            current_vectors[index],
+            simd.neg_f64s(previous_vectors[index]),
         );
     }
     for index in 0..current_tail.len() {
-        let leading = coefficient_a * cosine_tail[index] - coefficient_b;
-        next_tail[index] = leading * current_tail[index] - previous_tail[index];
+        let leading = coefficient_a.mul_add(cosine_tail[index], -coefficient_b);
+        next_tail[index] = leading.mul_add(current_tail[index], -previous_tail[index]);
     }
 }
 
