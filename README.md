@@ -1,6 +1,6 @@
 # RustSHT
 
-RustSHT is being developed to implement spherical harmonic transform algorithms used by [DUCC](https://github.com/mreineck/ducc) in Rust, using [RustFFT](https://github.com/ejmahler/RustFFT). The planned library targets high-bandlimit scalar, vector and spin-weighted analysis, synthesis, derivatives and adjoints on Gauss–Legendre (GL), Clenshaw–Curtis (CC) and Fejér-1 (F1) grids, with native Rust and Python interfaces. Numerical transforms are not implemented yet.
+RustSHT implements spherical harmonic transforms in Rust, using [DUCC](https://github.com/mreineck/ducc) as its numerical reference. It supports scalar and spin-weighted synthesis and analysis, their adjoints, scalar derivatives and gradient-only synthesis on Gauss–Legendre (GL), Clenshaw–Curtis (CC) and Fejér-1 (F1) grids through Rust and Python APIs.
 
 ## References
 

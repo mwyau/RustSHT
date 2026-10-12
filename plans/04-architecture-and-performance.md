@@ -8,6 +8,8 @@ Keep `ShtPlan` immutable with its FFT plans, precomputed recurrence coefficients
 
 Build one harmonic kernel family for spin-0 and DUCC-supported spin-positive recurrences, synthesis/adjoint synthesis, and analysis/adjoint analysis. The harmonic core receives ring coordinates and prepared Fourier modes, not hard-coded GL/CC/F1 choices. Grid-specific code handles nodes, quadrature and any meridional preparation/reconstruction.
 
+Performance work prioritizes scalar and spin-1 kernels, then spin 2. The supported required-parity set is spins 0–2. Preserve the current spin-3/4 API and regression tests, but defer new specialization and high-bandlimit expansion for those spins. Do not add spin 5+ without new authorization.
+
 **GL is the first full feature gate** (D11). Only after scalar/spin/vector, derivative and adjoint tests pass on GL should CC and F1 integrate through the same core. Preserve vectorization opportunities in the interface; don't build and then discard a scalar-only `Y_lm` matrix implementation.
 
 For GL analysis, weight Fourier modes according to the GL latitude quadrature. For CC/F1 analysis, implement the distinct prepared-CC meridional resampling, parity, padding and weighting stages, with a matching adjoint. Their FFT/convolution costs belong in performance accounting; RustFFT will serve both longitude FFTs and any needed latitude FFTs.
