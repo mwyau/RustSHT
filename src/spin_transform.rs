@@ -1399,6 +1399,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         fast_end,
                         theta_sin,
                         theta_cos,
+                        ring_order_limits,
                         arch,
                         e_coefficients,
                         b_coefficients.as_deref_mut(),
@@ -1520,6 +1521,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         ring_end: usize,
         theta_sin: &[T],
         theta_cos: &[T],
+        ring_order_limits: &[usize],
         arch: pulp::Arch,
         e_coefficients: &mut [Complex<T>],
         mut b_coefficients: Option<&mut [Complex<T>]>,
@@ -1544,6 +1546,12 @@ impl<T: ShtScalar> ShtPlan<T> {
 
         for block_start in (ring_start..ring_end).step_by(LATITUDE_BLOCK_SIZE) {
             let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(ring_end);
+            if ring_order_limits[block_start..block_end]
+                .iter()
+                .all(|&limit| m > limit)
+            {
+                continue;
+            }
             let block_len = block_end - block_start;
             for lane in 0..block_len {
                 let ring = block_start + lane;
@@ -1589,6 +1597,9 @@ impl<T: ShtScalar> ShtPlan<T> {
                     };
                     for lane in 0..basis.len() {
                         let local_ring = local_ring_start + lane;
+                        if m > ring_order_limits[block_start + local_ring] {
+                            continue;
+                        }
                         let ring = block_start + local_ring;
                         let q = weighted_q[local_ring];
                         let u = weighted_u[local_ring];

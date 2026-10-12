@@ -326,6 +326,88 @@ fn spin1_scalar_fast_synthesis_matches_general_channel_cases() {
 }
 
 #[test]
+fn spin1_scalar_fast_analysis_honors_the_polar_order_cutoff() {
+    let lmax = 511;
+    let ntheta = lmax + 1;
+    let nphi = 2 * lmax + 3;
+    let m = 450;
+    let plan = make_plan(1, lmax, lmax, ntheta, nphi);
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_spin_latitudes(&mut workspace, 1);
+    let ring = (0..ntheta)
+        .find(|&ring| {
+            workspace.theta_sin[ring] > 0.4
+                && workspace.theta_sin[ring] < 0.6
+                && workspace.ring_order_limits[ring] < m
+        })
+        .expect("a mid-latitude ring is below the high-order cutoff");
+    let spectrum_len = plan.fft.spectrum_len();
+    let mut q_spectra = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
+    let u_spectra = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
+    q_spectra[ring * spectrum_len + m] = Complex64::new(1.0, 0.25);
+    let coefficient_count = lmax - m + 1;
+    let mut e_coefficients = vec![Complex64::new(0.0, 0.0); coefficient_count];
+    let mut b_coefficients = vec![Complex64::new(0.0, 0.0); coefficient_count];
+
+    plan.analyze_spin_scalar_fast_order(
+        &q_spectra,
+        &u_spectra,
+        spectrum_len,
+        nphi as f64,
+        longitude_phase::<f64>(m, plan.grid.phi0(), true),
+        plan.grid.ring_weights(),
+        true,
+        m,
+        0,
+        ntheta,
+        &workspace.theta_sin,
+        &workspace.theta_cos,
+        &workspace.ring_order_limits,
+        pulp::Arch::new(),
+        &mut e_coefficients,
+        Some(&mut b_coefficients),
+        &mut workspace.recurrence_workers[0],
+    )
+    .unwrap();
+    assert!(
+        e_coefficients
+            .iter()
+            .chain(&b_coefficients)
+            .all(|value| *value == Complex64::new(0.0, 0.0))
+    );
+
+    let all_active_limits = vec![lmax; ntheta];
+    e_coefficients.fill(Complex64::new(0.0, 0.0));
+    b_coefficients.fill(Complex64::new(0.0, 0.0));
+    plan.analyze_spin_scalar_fast_order(
+        &q_spectra,
+        &u_spectra,
+        spectrum_len,
+        nphi as f64,
+        longitude_phase::<f64>(m, plan.grid.phi0(), true),
+        plan.grid.ring_weights(),
+        true,
+        m,
+        0,
+        ntheta,
+        &workspace.theta_sin,
+        &workspace.theta_cos,
+        &all_active_limits,
+        pulp::Arch::new(),
+        &mut e_coefficients,
+        Some(&mut b_coefficients),
+        &mut workspace.recurrence_workers[0],
+    )
+    .unwrap();
+    assert!(
+        e_coefficients
+            .iter()
+            .chain(&b_coefficients)
+            .any(|value| *value != Complex64::new(0.0, 0.0))
+    );
+}
+
+#[test]
 #[expect(
     clippy::excessive_precision,
     reason = "These decimal fixtures retain the printed DUCC reference values."
