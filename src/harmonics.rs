@@ -1,0 +1,263 @@
+// SPDX-FileCopyrightText: 2026 Albert M. W. Yau
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+use num_complex::Complex64;
+
+use crate::error::ShtError;
+
+/// Bandlimit and spin for a packed set of real-field harmonic coefficients.
+///
+/// Coefficients are stored by increasing order `m`, with degrees `l=m..=lmax`
+/// within each order. The coefficient at `(l,m)` is at [`Self::index`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HarmonicSpec {
+    lmax: usize,
+    mmax: usize,
+    spin: usize,
+    order_offsets: Vec<usize>,
+    nalm: usize,
+}
+
+impl HarmonicSpec {
+    /// Constructs a packed layout for inclusive degree/order limits and spin.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when `mmax > lmax`, `spin > lmax`, the packed size
+    /// overflows `usize`, or allocation of order offsets fails.
+    pub fn new(lmax: usize, mmax: usize, spin: usize) -> Result<Self, ShtError> {
+        if mmax > lmax {
+            return Err(ShtError::InvalidHarmonicBounds { lmax, mmax });
+        }
+        if spin > lmax {
+            return Err(ShtError::SpinExceedsLmax { spin, lmax });
+        }
+
+        let nalm = packed_len(lmax, mmax)?;
+        let order_count = mmax.checked_add(1).ok_or(ShtError::IntegerOverflow {
+            quantity: "harmonic order count",
+        })?;
+        let mut order_offsets = Vec::new();
+        order_offsets
+            .try_reserve_exact(order_count)
+            .map_err(|_| ShtError::AllocationFailed {
+                array: "harmonic order-offset",
+            })?;
+
+        let mut offset = 0usize;
+        for m in 0..=mmax {
+            order_offsets.push(offset);
+            let order_len = lmax - m + 1;
+            offset = offset
+                .checked_add(order_len)
+                .ok_or(ShtError::IntegerOverflow {
+                    quantity: "packed harmonic offset",
+                })?;
+        }
+        debug_assert_eq!(offset, nalm);
+
+        Ok(Self {
+            lmax,
+            mmax,
+            spin,
+            order_offsets,
+            nalm,
+        })
+    }
+
+    /// Constructs a scalar (`spin=0`) harmonic layout.
+    pub fn scalar(lmax: usize, mmax: usize) -> Result<Self, ShtError> {
+        Self::new(lmax, mmax, 0)
+    }
+
+    /// Returns the maximum degree.
+    #[must_use]
+    pub const fn lmax(&self) -> usize {
+        self.lmax
+    }
+
+    /// Returns the maximum nonnegative order.
+    #[must_use]
+    pub const fn mmax(&self) -> usize {
+        self.mmax
+    }
+
+    /// Returns the nonnegative spin weight.
+    #[must_use]
+    pub const fn spin(&self) -> usize {
+        self.spin
+    }
+
+    /// Returns the number of packed `m >= 0` coefficients.
+    #[must_use]
+    pub const fn nalm(&self) -> usize {
+        self.nalm
+    }
+
+    /// Returns the packed index of `(l,m)`, or `None` outside this layout.
+    #[must_use]
+    pub fn index(&self, l: usize, m: usize) -> Option<usize> {
+        if m > self.mmax || l < m || l > self.lmax {
+            return None;
+        }
+        self.order_offsets[m].checked_add(l - m)
+    }
+
+    /// Checks the packed length, real `m=0` coefficients, and spin-forbidden modes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for a length mismatch, a nonreal `m=0` value, or a
+    /// nonzero coefficient with `l < spin`.
+    pub fn validate_coefficients(&self, alm: &[Complex64]) -> Result<(), ShtError> {
+        if alm.len() != self.nalm {
+            return Err(ShtError::CoefficientCount {
+                expected: self.nalm,
+                actual: alm.len(),
+            });
+        }
+
+        for l in 0..=self.lmax {
+            let value = alm[self.order_offsets[0] + l];
+            if value.im != 0.0 {
+                return Err(ShtError::NonRealMZero { degree: l });
+            }
+        }
+
+        for l in 0..self.spin {
+            for m in 0..=l.min(self.mmax) {
+                let index = self.order_offsets[m] + (l - m);
+                let value = alm[index];
+                if value.re != 0.0 || value.im != 0.0 {
+                    return Err(ShtError::NonzeroBelowSpin {
+                        spin: self.spin,
+                        degree: l,
+                        order: m,
+                    });
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+fn packed_len(lmax: usize, mmax: usize) -> Result<usize, ShtError> {
+    if mmax == 0 {
+        return lmax.checked_add(1).ok_or(ShtError::IntegerOverflow {
+            quantity: "packed harmonic length",
+        });
+    }
+
+    let order_count = mmax.checked_add(1).ok_or(ShtError::IntegerOverflow {
+        quantity: "harmonic order count",
+    })?;
+    let first_order_len = lmax.checked_add(1).ok_or(ShtError::IntegerOverflow {
+        quantity: "packed harmonic length",
+    })?;
+    let last_order_len = (lmax - mmax)
+        .checked_add(1)
+        .ok_or(ShtError::IntegerOverflow {
+            quantity: "packed harmonic length",
+        })?;
+    let order_len_sum =
+        first_order_len
+            .checked_add(last_order_len)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "packed harmonic length",
+            })?;
+
+    let (factor_a, factor_b) = if order_count % 2 == 0 {
+        (order_count / 2, order_len_sum)
+    } else {
+        (order_count, order_len_sum / 2)
+    };
+    factor_a
+        .checked_mul(factor_b)
+        .ok_or(ShtError::IntegerOverflow {
+            quantity: "packed harmonic length",
+        })
+}
+
+#[cfg(test)]
+mod tests {
+    use num_complex::Complex64;
+
+    use super::*;
+
+    #[test]
+    fn packed_offsets_follow_order_major_layout() {
+        let spec = HarmonicSpec::new(3, 2, 0).unwrap();
+        assert_eq!(spec.nalm(), 9);
+        assert_eq!(spec.index(0, 0), Some(0));
+        assert_eq!(spec.index(3, 0), Some(3));
+        assert_eq!(spec.index(1, 1), Some(4));
+        assert_eq!(spec.index(3, 1), Some(6));
+        assert_eq!(spec.index(2, 2), Some(7));
+        assert_eq!(spec.index(3, 2), Some(8));
+        assert_eq!(spec.index(0, 1), None);
+        assert_eq!(spec.index(4, 0), None);
+        assert_eq!(spec.index(3, 3), None);
+    }
+
+    #[test]
+    fn packed_length_matches_triangular_and_rectangular_cases() {
+        assert_eq!(HarmonicSpec::scalar(0, 0).unwrap().nalm(), 1);
+        assert_eq!(HarmonicSpec::scalar(3, 3).unwrap().nalm(), 10);
+        assert_eq!(HarmonicSpec::scalar(3, 1).unwrap().nalm(), 7);
+        assert_eq!(HarmonicSpec::scalar(3, 0).unwrap().nalm(), 4);
+    }
+
+    #[test]
+    fn constructor_rejects_invalid_bounds_and_overflow() {
+        assert_eq!(
+            HarmonicSpec::new(2, 3, 0),
+            Err(ShtError::InvalidHarmonicBounds { lmax: 2, mmax: 3 })
+        );
+        assert_eq!(
+            HarmonicSpec::new(0, 0, 1),
+            Err(ShtError::SpinExceedsLmax { spin: 1, lmax: 0 })
+        );
+        assert_eq!(
+            HarmonicSpec::scalar(usize::MAX, 0),
+            Err(ShtError::IntegerOverflow {
+                quantity: "packed harmonic length"
+            })
+        );
+    }
+
+    #[test]
+    fn coefficient_validation_checks_length_reality_and_spin_floor() {
+        let scalar = HarmonicSpec::scalar(2, 1).unwrap();
+        let mut alm = vec![Complex64::new(0.0, 0.0); scalar.nalm()];
+        alm[scalar.index(2, 1).unwrap()] = Complex64::new(1.0, 2.0);
+        assert_eq!(scalar.validate_coefficients(&alm), Ok(()));
+
+        let mut nonreal_m0 = alm.clone();
+        nonreal_m0[scalar.index(1, 0).unwrap()].im = 1e-30;
+        assert_eq!(
+            scalar.validate_coefficients(&nonreal_m0),
+            Err(ShtError::NonRealMZero { degree: 1 })
+        );
+        assert_eq!(
+            scalar.validate_coefficients(&alm[..alm.len() - 1]),
+            Err(ShtError::CoefficientCount {
+                expected: scalar.nalm(),
+                actual: scalar.nalm() - 1
+            })
+        );
+
+        let spin2 = HarmonicSpec::new(3, 2, 2).unwrap();
+        let mut spin_alm = vec![Complex64::new(0.0, 0.0); spin2.nalm()];
+        spin_alm[spin2.index(2, 0).unwrap()] = Complex64::new(1.0, 0.0);
+        assert_eq!(spin2.validate_coefficients(&spin_alm), Ok(()));
+        spin_alm[spin2.index(1, 1).unwrap()] = Complex64::new(1.0, 0.0);
+        assert_eq!(
+            spin2.validate_coefficients(&spin_alm),
+            Err(ShtError::NonzeroBelowSpin {
+                spin: 2,
+                degree: 1,
+                order: 1
+            })
+        );
+    }
+}

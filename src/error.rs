@@ -16,6 +16,30 @@ pub enum ShtError {
     AllocationFailed { array: &'static str },
     /// Newton iteration did not converge for the indicated positive root.
     QuadratureConvergence { ntheta: usize, root: usize },
+    /// Harmonic bounds require `mmax <= lmax`.
+    InvalidHarmonicBounds { lmax: usize, mmax: usize },
+    /// The spin must not exceed `lmax`.
+    SpinExceedsLmax { spin: usize, lmax: usize },
+    /// A packed coefficient array has the wrong number of values.
+    CoefficientCount { expected: usize, actual: usize },
+    /// A transform input or output buffer has the wrong length.
+    BufferLength {
+        buffer: &'static str,
+        expected: usize,
+        actual: usize,
+    },
+    /// An input coefficient with `m=0` has a nonzero imaginary part.
+    NonRealMZero { degree: usize },
+    /// An input coefficient below the spin's minimum degree is nonzero.
+    NonzeroBelowSpin {
+        spin: usize,
+        degree: usize,
+        order: usize,
+    },
+    /// The DC or Nyquist value of a real Fourier spectrum is not real.
+    NonRealFftEdge { index: usize },
+    /// A checked size or offset calculation overflowed `usize`.
+    IntegerOverflow { quantity: &'static str },
 }
 
 impl Display for ShtError {
@@ -31,6 +55,46 @@ impl Display for ShtError {
                 f,
                 "Gauss-Legendre Newton iteration failed for ntheta={ntheta}, root={root}"
             ),
+            Self::InvalidHarmonicBounds { lmax, mmax } => {
+                write!(f, "mmax={mmax} must not exceed lmax={lmax}")
+            }
+            Self::SpinExceedsLmax { spin, lmax } => {
+                write!(f, "spin={spin} must not exceed lmax={lmax}")
+            }
+            Self::CoefficientCount { expected, actual } => {
+                write!(
+                    f,
+                    "expected {expected} packed coefficients, received {actual}"
+                )
+            }
+            Self::BufferLength {
+                buffer,
+                expected,
+                actual,
+            } => write!(
+                f,
+                "expected {expected} values in {buffer}, received {actual}"
+            ),
+            Self::NonRealMZero { degree } => {
+                write!(f, "the m=0 coefficient at degree {degree} must be real")
+            }
+            Self::NonzeroBelowSpin {
+                spin,
+                degree,
+                order,
+            } => write!(
+                f,
+                "coefficient (l={degree}, m={order}) must be zero for spin={spin}"
+            ),
+            Self::NonRealFftEdge { index } => {
+                write!(
+                    f,
+                    "real Fourier spectrum edge at index {index} must be real"
+                )
+            }
+            Self::IntegerOverflow { quantity } => {
+                write!(f, "{quantity} does not fit in usize")
+            }
         }
     }
 }
