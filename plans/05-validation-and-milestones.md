@@ -597,3 +597,41 @@ Native release measurements used rustc 1.99.0, f64, T511 GL `512x1025`, `phi0=0.
 The one-thread path does not call the recursive splitter; its run-to-run differences measure benchmark variation. At eight threads, the rebuilt Python plan measured scalar analysis at `53.957 ms` (range `3.940 ms`) and spin-1 analysis at `197.045 ms` (range `2.651 ms`), versus `1.786 ms` (range `0.026 ms`) and `3.818 ms` (range `0.489 ms`) for `ducc0==0.41.0`. Procedural RustSHT analysis measured `53.157 ms` for scalar and `194.924 ms` for spin 1. The Python run used Python 3.11.15, NumPy 2.4.6, and the same T511 grid, coefficients, map, and `phi0` as the native benchmark.
 
 The Python DUCC comparison reports scalar analysis maximum absolute/RMS/relative L2 errors of `1.010e-14`/`2.281e-16`/`4.467e-14`; spin-1 errors are `1.463e-14`/`2.298e-16`/`4.500e-14`. Focused f64 scalar and spin tests pass against DUCC and adjoint identities on GL, CC and F1. The weighted-boundary unit test checks full-bandlimit, rectangular, offset, small and two-order ranges and verifies that the selected boundary minimizes the estimated work difference. Rust 1.99 all-features tests pass 76 library tests and 10 f32 integration tests, with seven high-bandlimit tests ignored; no-default-features tests pass 73 library tests and 10 f32 integration tests, with the same seven ignored. Rust 1.89 all-features tests, formatting and Clippy with warnings denied pass. `uv run pytest python/tests` passes all eight tests.
+
+### Spin basis conversion for zero recurrence exponent (M4, 2026-10-12)
+
+The f64 `scaled_basis_value` returns `value * alpha_norm` directly when the recurrence exponent is zero. It keeps the zero checks before multiplication and uses `scale_binary` for every nonzero exponent. The path adds no workspace data. Its bitwise regression compares the shortcut with the former binary-scaling path across signed zeros, normal and subnormal values, infinities, NaN, and exponents from -4097 to 4097. Focused spin tests pass against DUCC and adjoint identities on GL, CC and F1; the T511 Python DUCC errors are unchanged at `2.365e-14` maximum absolute/`8.126e-16` RMS/`6.675e-14` relative L2 for synthesis and `1.463e-14`/`2.298e-16`/`4.500e-14` for analysis.
+
+Callgrind 3.26.0 profiled f64 spin-1 T127 GL synthesis and analysis with one thread and five timed samples per operation. Total instruction references fell from `6,161,382,864` to `5,504,145,390` (`-10.7%`). References attributed to `scaled_basis_value` fell from `1,268,460,624` to `611,779,824` (`-51.8%`). `recurrence_step` and `normalize_pair_lanes` counts were unchanged.
+
+Native f64 T511 spin-1 synthesis timings used rustc 1.99.0, AVX2/FMA dispatch, GL `512x1025`, `phi0=0.37`, reused plan and workspace, an AMD Ryzen 9 5950X, one warmup and five samples per operation. Three runs produced these medians and ranges in milliseconds:
+
+| Threads | Before (median; range) | After (median; range) | Change |
+| ---: | ---: | ---: | ---: |
+| 1 | `1275.961; 17.201` | `1261.893; 12.116` | `-1.1%` |
+| 8 | `192.712; 6.608` | `187.478; 2.021` | `-2.7%` |
+
+Native spin analysis used an analysis-only harness with the same T511 GL map components in two independent runs per thread count. The table gives the median of those run medians, their range, and the change:
+
+| Threads | Before (median; range ms) | After (median; range ms) | Change |
+| ---: | ---: | ---: | ---: |
+| 1 | `1302.151; 15.520` | `1287.612; 1.470` | `-1.1%` |
+| 2 | `674.128; 4.653` | `658.970; 2.715` | `-2.2%` |
+| 4 | `352.158; 7.576` | `343.406; 7.407` | `-2.5%` |
+| 8 | `187.450; 3.810` | `183.233; 2.465` | `-2.2%` |
+| 16 | `187.262; 0.902` | `184.304; 2.426` | `-1.6%` |
+
+The rebuilt Python extension used Python 3.11.15, NumPy 2.4.6 and `ducc0==0.41.0` at source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`. Each timing is the median of two run medians, with their range in milliseconds. RustSHT plan methods reuse a plan; procedural calls construct a plan and workspace:
+
+| Operation | Threads | Plan before | Plan after | Procedural after | DUCC after |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Spin-1 synthesis | 1 | `1295.828; 1.254` | `1234.085; 4.594` | `1233.950; 3.192` | `24.555; 0.795` |
+| Spin-1 synthesis | 8 | `195.882; 3.562` | `188.329; 4.827` | `188.333; 2.448` | `4.071; 0.275` |
+| Spin-1 analysis | 1 | `1349.172; 9.721` | `1237.097; 7.446` | `1236.646; 7.812` | `24.745; 0.243` |
+| Spin-1 analysis | 8 | `197.045; 2.651` | `177.081; 0.186` | `176.728; 0.911` | `3.342; 0.031` |
+
+The T511 Python plan errors match the preceding implementation. RustSHT remains `46–53x` slower than DUCC in these four comparisons.
+
+The same zero-exponent shortcut was tested in f32, then removed. Its bitwise reference tests passed, but the T127 Callgrind total rose from `5,242,865,006` to `5,496,043,461` instructions (`+4.8%`). Two T511 native runs also increased all four times: synthesis from `1000.371` to `1041.570 ms` at one thread and `156.030` to `157.441 ms` at eight; analysis from `1020.537` to `1055.027 ms` at one thread and `151.225` to `153.853 ms` at eight. The accepted change applies only to f64.
+
+With the final source, Rust 1.99 all-features tests pass 77 library tests and 10 f32 integration tests, with seven opt-in high-bandlimit tests ignored. No-default-features tests pass 74 library tests and the same 10 f32 tests. Rust 1.89 passes the new binary-scaling regression test. Formatting and all-feature Clippy with warnings denied pass; `uv run pytest python/tests` passes all eight tests.
