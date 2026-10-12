@@ -572,3 +572,28 @@ Native release timings used rustc 1.99.0, f64, spin 1, T511 GL `512x1025`, `phi0
 | Synthesis | 8 | `192.712; 6.608` | `192.134; 0.817` | `-0.30%` |
 
 Spin analysis, which the prototype did not change, measured `1309.095 ms` before and `1310.403 ms` with one thread, and `335.251 ms` before and `331.392 ms` with eight threads. Callgrind 3.26.0 T127 GL profiles recorded `6,161,382,864` and `6,161,387,569` total instruction references. Inclusive references for `synthesize_spin_ring_group` (`2,887,657,092`) and its recurrence callback (`1,444,837,152`) were identical. The compiler had already moved these coefficient rotations out of the lane loop. The prototype was removed because it did not reduce instructions or measured execution time.
+
+### Weighted Rayon analysis splitting (M4/M5, 2026-10-12)
+
+Scalar and spin analysis now split order ranges at the boundary that most evenly divides the estimated coefficient work, `W(m0,m1)=sum(lmax-m+1)`. Recursive `rayon::join` and disjoint coefficient slices remain in use. Each branch receives its own recurrence workspace slice; the split gives both branches at least one order and one workspace.
+
+At T511 with `lmax=mmax=511`, eight equal-order leaves previously carried estimated work values of `30,752, 26,656, 22,560, 18,464, 14,368, 10,272, 6,176, 2,080` coefficients, a `14.8:1` largest-to-smallest ratio. The weighted leaves carried `16,368, 16,614, 16,131, 16,512, 16,248, 16,559, 16,425, 16,471`, a `1.03:1` ratio. These values estimate coefficient work; they do not account for ring-specific polar cutoffs.
+
+Native release measurements used rustc 1.99.0, f64, T511 GL `512x1025`, `phi0=0.37`, AVX2/FMA dispatch, reused plans and workspaces, an AMD Ryzen 9 5950X, one warmup and five timed samples per thread count. Two independent runs were made for scalar and spin-1 analysis at each thread count. Each table entry gives the median of the two run medians, their range, and the change from equal-order splitting, in milliseconds:
+
+| Operation | Threads | Equal-order median (range) | Weighted median (range) | Change |
+| --- | ---: | ---: | ---: | ---: |
+| Scalar analysis | 1 | `323.619 (0.104)` | `335.277 (2.466)` | `+3.6%` |
+| Scalar analysis | 2 | `251.907 (1.355)` | `178.855 (2.265)` | `-29.0%` |
+| Scalar analysis | 4 | `153.974 (2.061)` | `97.392 (5.713)` | `-36.7%` |
+| Scalar analysis | 8 | `85.994 (0.581)` | `52.574 (0.860)` | `-38.9%` |
+| Scalar analysis | 16 | `85.515 (0.348)` | `51.352 (1.733)` | `-40.0%` |
+| Spin-1 analysis | 1 | `1324.675 (11.812)` | `1302.151 (15.520)` | `-1.7%` |
+| Spin-1 analysis | 2 | `1023.100 (7.219)` | `674.128 (4.653)` | `-34.1%` |
+| Spin-1 analysis | 4 | `609.514 (5.414)` | `352.158 (7.576)` | `-42.2%` |
+| Spin-1 analysis | 8 | `337.681 (4.760)` | `187.450 (3.810)` | `-44.5%` |
+| Spin-1 analysis | 16 | `335.214 (0.254)` | `187.262 (0.902)` | `-44.1%` |
+
+The one-thread path does not call the recursive splitter; its run-to-run differences measure benchmark variation. At eight threads, the rebuilt Python plan measured scalar analysis at `53.957 ms` (range `3.940 ms`) and spin-1 analysis at `197.045 ms` (range `2.651 ms`), versus `1.786 ms` (range `0.026 ms`) and `3.818 ms` (range `0.489 ms`) for `ducc0==0.41.0`. Procedural RustSHT analysis measured `53.157 ms` for scalar and `194.924 ms` for spin 1. The Python run used Python 3.11.15, NumPy 2.4.6, and the same T511 grid, coefficients, map, and `phi0` as the native benchmark.
+
+The Python DUCC comparison reports scalar analysis maximum absolute/RMS/relative L2 errors of `1.010e-14`/`2.281e-16`/`4.467e-14`; spin-1 errors are `1.463e-14`/`2.298e-16`/`4.500e-14`. Focused f64 scalar and spin tests pass against DUCC and adjoint identities on GL, CC and F1. The weighted-boundary unit test checks full-bandlimit, rectangular, offset, small and two-order ranges and verifies that the selected boundary minimizes the estimated work difference. Rust 1.99 all-features tests pass 76 library tests and 10 f32 integration tests, with seven high-bandlimit tests ignored; no-default-features tests pass 73 library tests and 10 f32 integration tests, with the same seven ignored. Rust 1.89 all-features tests, formatting and Clippy with warnings denied pass. `uv run pytest python/tests` passes all eight tests.

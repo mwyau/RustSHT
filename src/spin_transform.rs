@@ -9,6 +9,8 @@ use rayon::prelude::*;
 use crate::error::ShtError;
 use crate::legendre::{LATITUDE_BLOCK_SIZE, ShtScalar, longitude_phase, sin_cos_from_f64};
 use crate::plan::ShtPlan;
+#[cfg(feature = "parallel")]
+use crate::transform::weighted_order_midpoint;
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 const MAX_SUPPORTED_SPIN: usize = 4;
@@ -1086,8 +1088,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     .expect("each analysis group has at least one recurrence workspace"),
             );
         }
-        let left_order_count = order_count.div_ceil(2);
-        let m_mid = m_start + left_order_count;
+        let m_mid = weighted_order_midpoint(self.harmonics.lmax(), m_start, m_end);
         let coefficient_start = self
             .harmonics
             .index(m_start, m_start)
