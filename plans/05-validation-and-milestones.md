@@ -829,3 +829,50 @@ The rebuilt Python extension was compared with `ducc0==0.41.0` from the same sou
 Synthesis errors against DUCC were `2.515e-14` maximum absolute, `7.703e-16` RMS and `6.328e-14` relative L2 at both thread counts. Analysis errors were `1.237e-14`, `2.126e-16` and `4.163e-14` with one thread, and `1.463e-14`, `2.298e-16` and `4.500e-14` with eight threads. The measured plan-construction time was `0.035–0.037 ms`; NumPy input copies took `0.087–0.106 ms` for coefficients and `0.136–0.193 ms` for maps; output allocation took `0.001 ms`. These Python costs are small relative to transform execution. RustSHT remains `22.8–54.0x` slower than DUCC for these plan-method comparisons.
 
 `cargo fmt --all -- --check`, workspace Clippy with warnings denied, `cargo test --workspace --all-features` (82 library tests and 10 f32 integration tests passed; seven opt-in checks ignored), `cargo test -p rustsht --no-default-features` (79 library tests and 10 f32 integration tests passed; seven opt-in checks ignored), and `uv run pytest python/tests` (eight passed) passed. The release T2047 sparse spin check and T511 spin-3/4 regression also passed. No instruction-count profile was collected for this change.
+
+### SIMD backend and register-resident scalar kernel evaluation (M4, 2026-10-12)
+
+I compared `fearless_simd` 1.1.0 with `pulp` 0.22.3 in a temporary f64 paired-recurrence path. The runtime-dispatched kernels used equivalent coefficients, contiguous latitude lanes, FMA arithmetic, and scalar tails. The native recurrence microbenchmark used order 17, a 64-lane block or a 61-lane block with a three-lane tail, and three runs of five timed samples. Each T127 sample ran 1,000 recurrence executions; each T511 sample ran 250. The cells give the median of the three run medians and their range, in milliseconds:
+
+| Grid | Lanes | Pulp AVX2 | Fearless AVX2 | Maximum absolute error vs. Pulp scalar | Maximum error divided by `max(1, reference maximum)` |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| T127 | 64 | `0.701; 0.002` | `0.695; 0.003` | `0` | `0` |
+| T127 | 61 | `0.700; 0.004` | `0.698; 0.003` | `0` | `0` |
+| T511 | 64 | `0.767; 0.008` | `0.760; 0.006` | `0` | `0` |
+| T511 | 61 | `0.780; 0.006` | `0.782; 0.004` | `0` | `0` |
+
+The full-transform comparison used `examples/m1a_bench.rs`, release builds, f64 GL grids (`128x257` and `512x1025`), `phi0=0.37`, reused plans/workspaces, one warmup and five timed samples. Three independent runs were made at T127 and four at T511. Each table cell gives the median and range of those run medians, in milliseconds:
+
+| Grid | Operation | Threads | Pulp | Fearless | Fearless change |
+| --- | --- | ---: | ---: | ---: | ---: |
+| T127 | Synthesis | 1 | `5.677; 0.159` | `5.552; 0.021` | `-2.2%` |
+| T127 | Synthesis | 8 | `3.132; 0.029` | `2.950; 0.459` | `-5.8%` |
+| T127 | Analysis | 1 | `2.607; 0.044` | `2.676; 0.087` | `+2.6%` |
+| T127 | Analysis | 8 | `1.544; 0.379` | `1.487; 0.055` | `-3.7%` |
+| T511 | Synthesis | 1 | `308.062; 5.197` | `301.054; 3.771` | `-2.3%` |
+| T511 | Synthesis | 8 | `50.531; 1.076` | `50.835; 3.765` | `+0.6%` |
+| T511 | Analysis | 1 | `164.792; 1.719` | `168.305; 13.382` | `+2.1%` |
+| T511 | Analysis | 8 | `31.426; 0.374` | `31.757; 1.391` | `+1.1%` |
+
+The measured AVX2 dispatch was `Level::Avx2` on an AMD Ryzen 9 5950X with rustc 1.99.0. The full T127 Callgrind 3.26.0 run, including the one- and eight-thread synthesis and analysis measurements, counted `2,060,735,023` instructions for Pulp and `2,069,555,455` for Fearless (`+0.4%`). Whole-transform timings vary by operation and thread count and do not show a repeatable Fearless advantage. The T127 eight-thread synthesis difference is within its run spread. The evaluation build added no workspace memory.
+
+Both AVX2 implementations emit four-lane `f64` loads/stores and packed FMA in the recurrence. Neither recurrence requires a horizontal lane reduction or masked operation; each lane remains an independent latitude. Both use scalar tails. The fused kernels also emit packed FMA and have no YMM stack spills in the inspected inner loops. Pulp emitted an AVX-512 implementation and Fearless emitted its AVX-512 dispatch target, but the 5950X does not support AVX-512, so neither implementation was executed at that ISA. `perf` hardware events were unavailable because `perf_event_paranoid=4`; Callgrind supplied the instruction count.
+
+The fallback timings are not an equal-width comparison. `pulp::Arch::Scalar` is one scalar lane, while Fearless's x86-64 `Level::Fallback` uses its two-lane baseline `f64` representation. For 64 latitudes, Pulp scalar took `13.639 ms` versus `1.404 ms` for Fearless fallback over 1,000 T127 recurrence executions; at T511, the times were `15.260 ms` versus `1.575 ms` over 250 executions. Their outputs differed from the Pulp scalar reference by at most `3.801e-13` absolute (maximum error divided by `max(1, reference maximum)`: `2.319e-14`) at T127 and `7.475e-12` absolute (`1.138e-13` by the same scale) at T511. The width difference makes the fallback times unsuitable for selecting a library on AVX2 hardware.
+
+I also tested a different fused kernel from the earlier rejected visitor trial above. This kernel keeps the paired recurrence state and real/imaginary sums in SIMD registers across degree pairs; it writes only the final latitude sums and does not call a visitor or store recurrence vectors after each degree. Its separate-path reference dispatches once per block and keeps scalar lane accumulation, matching the existing loop structure. The experiment used an interior GL latitude block, order 17, preallocated output and recurrence buffers, and three runs of five samples. Times are milliseconds per 200 T127 runs or 50 T511 runs; ranges are across run medians:
+
+| Grid | Lanes | Backend | Separate (median; range) | Fused (median; range) | Change |
+| --- | ---: | --- | ---: | ---: | ---: |
+| T127 | 64 | Pulp | `0.360; 0.001` | `0.248; 0.075` | `-31%` |
+| T127 | 64 | Fearless | `0.377; 0.003` | `0.207; <0.001` | `-45%` |
+| T127 | 61 | Pulp | `0.377; 0.073` | `0.199; 0.001` | `-47%` |
+| T127 | 61 | Fearless | `0.334; 0.001` | `0.203; <0.001` | `-39%` |
+| T511 | 64 | Pulp | `0.389; 0.001` | `0.223; 0.006` | `-43%` |
+| T511 | 64 | Fearless | `0.412; 0.004` | `0.224; <0.001` | `-46%` |
+| T511 | 61 | Pulp | `0.345; 0.002` | `0.221; 0.005` | `-36%` |
+| T511 | 61 | Fearless | `0.365; 0.001` | `0.223; <0.001` | `-39%` |
+
+The fused accumulation order changed the output by at most `2.842e-14` absolute (maximum error divided by `max(1, reference maximum)`: `1.344e-16`) at T127 and `1.137e-13` (`2.070e-17`) at T511. These measurements cover one all-normal order and do not establish a whole-transform gain; the production path still needs its scaled and polar fallback and end-to-end benchmarking.
+
+I retained Pulp. AVX2 recurrence and fused timings are within measurement variation, the complete transforms show no consistent improvement, the T127 Callgrind count is slightly higher with Fearless, and the temporary Fearless integration duplicates the paired recurrence control flow. This evaluation adds no permanent SIMD dependency or workspace storage. The fused prototype is a separate algorithmic candidate and will be evaluated in the production scalar path independently of the SIMD-library choice. DUCC and analytic checks passed with the Fearless dispatcher at T511, T1023 and T2047 on GL, CC and F1. The full `cargo test -p rustsht --features fearless-simd-eval` run passed 82 library and 10 f32 tests, with seven opt-in checks ignored.

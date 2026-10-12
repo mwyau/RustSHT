@@ -34,6 +34,8 @@ Port DUCC's normalized, scaled scalar and spin recurrence with its polar cutoffs
 - Preserve per-lane underflow/overflow rescaling, reflection parity and polar cutoffs. Use FMA where numerically appropriate and test floating-point order differences; no global fast-math.
 - Use `std::arch` intrinsics only for an identified missing operation or measured improvement, confined to small runtime-checked boundaries. No unstable `std::simd`, `wide`, or SIMD trait hierarchy in the public API.
 
+The October 2026 comparison of `fearless_simd` 1.1.0 and `pulp` 0.22.3 retained Pulp. AVX2 recurrence throughput and full-transform timings did not show a repeatable Fearless advantage, and its temporary integration duplicated the paired recurrence control flow. The comparison and the separate register-resident fused-kernel prototype are recorded in [05](05-validation-and-milestones.md).
+
 ## Threading, memory and allocation
 
 - Optional Rayon runs coarse independent `m` or ring-FFT blocks during GL M1. Avoid per-degree jobs, atomics on coefficients, nested parallel pools and shared mutable scratch.
