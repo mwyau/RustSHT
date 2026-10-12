@@ -34,6 +34,11 @@ fn main() {
         .next()
         .map(|value| value.parse().expect("thread count must be an integer"))
         .unwrap_or(8);
+    let operation = arguments.next().unwrap_or_else(|| "both".to_owned());
+    assert!(matches!(
+        operation.as_str(),
+        "both" | "synthesis" | "analysis"
+    ));
     let one_thread_pool = rayon::ThreadPoolBuilder::new()
         .num_threads(1)
         .build()
@@ -42,11 +47,18 @@ fn main() {
         .num_threads(rayon_threads)
         .build()
         .unwrap();
-    let plan = ShtPlan::new(
-        GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, 0.37).unwrap(),
-        HarmonicSpec::scalar(lmax, lmax).unwrap(),
-    )
-    .unwrap();
+    let make_plan = || {
+        ShtPlan::new(
+            GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, 0.37).unwrap(),
+            HarmonicSpec::scalar(lmax, lmax).unwrap(),
+        )
+        .unwrap()
+    };
+    let plan_construction = measure(|| drop(black_box(make_plan())));
+    let plan = make_plan();
+    let workspace_allocation = measure(|| {
+        drop(black_box(rayon_pool.install(|| plan.workspace()).unwrap()));
+    });
     let mut workspace = rayon_pool.install(|| plan.workspace()).unwrap();
     let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
     for m in 0..=lmax {
@@ -62,35 +74,51 @@ fn main() {
         }
     }
     let mut map = vec![0.0; ntheta * nphi];
+    for ring in 0..ntheta {
+        for longitude in 0..nphi {
+            let theta = ring as f64;
+            let phi = longitude as f64;
+            map[ring * nphi + longitude] =
+                (0.019 * theta + 0.037 * phi).sin() + 0.3 * (0.071 * theta - 0.013 * phi).cos();
+        }
+    }
     let mut analyzed = vec![Complex64::new(0.0, 0.0); alm.len()];
 
-    let synthesis_one_thread = measure(|| {
-        one_thread_pool.install(|| {
-            plan.synthesis_into(black_box(&alm), black_box(&mut map), &mut workspace)
-                .unwrap();
-            black_box(map[0]);
-        });
+    let synthesis_one_thread = (operation != "analysis").then(|| {
+        measure(|| {
+            one_thread_pool.install(|| {
+                plan.synthesis_into(black_box(&alm), black_box(&mut map), &mut workspace)
+                    .unwrap();
+                black_box(map[0]);
+            });
+        })
     });
-    let synthesis_rayon = measure(|| {
-        rayon_pool.install(|| {
-            plan.synthesis_into(black_box(&alm), black_box(&mut map), &mut workspace)
-                .unwrap();
-            black_box(map[0]);
-        });
+    let synthesis_rayon = (operation != "analysis").then(|| {
+        measure(|| {
+            rayon_pool.install(|| {
+                plan.synthesis_into(black_box(&alm), black_box(&mut map), &mut workspace)
+                    .unwrap();
+                black_box(map[0]);
+            });
+        })
     });
-    let analysis_one_thread = measure(|| {
-        one_thread_pool.install(|| {
-            plan.analysis_into(black_box(&map), black_box(&mut analyzed), &mut workspace)
-                .unwrap();
-            black_box(analyzed[0]);
-        });
+    let analysis_one_thread = (operation != "synthesis").then(|| {
+        measure(|| {
+            one_thread_pool.install(|| {
+                plan.analysis_into(black_box(&map), black_box(&mut analyzed), &mut workspace)
+                    .unwrap();
+                black_box(analyzed[0]);
+            });
+        })
     });
-    let analysis_rayon = measure(|| {
-        rayon_pool.install(|| {
-            plan.analysis_into(black_box(&map), black_box(&mut analyzed), &mut workspace)
-                .unwrap();
-            black_box(analyzed[0]);
-        });
+    let analysis_rayon = (operation != "synthesis").then(|| {
+        measure(|| {
+            rayon_pool.install(|| {
+                plan.analysis_into(black_box(&map), black_box(&mut analyzed), &mut workspace)
+                    .unwrap();
+                black_box(analyzed[0]);
+            });
+        })
     });
 
     let spectrum_len = nphi / 2 + 1;
@@ -111,23 +139,35 @@ fn main() {
         + spin_recurrence_factors
         + spin_recurrence_lanes
         + rayon_threads * LATITUDE_BLOCK_SIZE * 2 * size_of::<Complex64>();
-    println!("T{lmax}; GL {ntheta}x{nphi}; f64; 1 vs {rayon_threads} threads; 5 samples, median");
     println!(
-        "synthesis_one_thread_ms={:.3}",
-        synthesis_one_thread.as_secs_f64() * 1000.0
+        "T{lmax}; GL {ntheta}x{nphi}; f64; 1 vs {rayon_threads} threads; {operation}; 5 samples, median"
     );
     println!(
-        "synthesis_rayon_ms={:.3}",
-        synthesis_rayon.as_secs_f64() * 1000.0
+        "plan_construction_ms={:.3}",
+        plan_construction.as_secs_f64() * 1000.0
     );
     println!(
-        "analysis_one_thread_ms={:.3}",
-        analysis_one_thread.as_secs_f64() * 1000.0
+        "workspace_allocation_ms={:.3}",
+        workspace_allocation.as_secs_f64() * 1000.0
     );
-    println!(
-        "analysis_rayon_ms={:.3}",
-        analysis_rayon.as_secs_f64() * 1000.0
-    );
+    if let Some(elapsed) = synthesis_one_thread {
+        println!(
+            "synthesis_one_thread_ms={:.3}",
+            elapsed.as_secs_f64() * 1000.0
+        );
+    }
+    if let Some(elapsed) = synthesis_rayon {
+        println!("synthesis_rayon_ms={:.3}", elapsed.as_secs_f64() * 1000.0);
+    }
+    if let Some(elapsed) = analysis_one_thread {
+        println!(
+            "analysis_one_thread_ms={:.3}",
+            elapsed.as_secs_f64() * 1000.0
+        );
+    }
+    if let Some(elapsed) = analysis_rayon {
+        println!("analysis_rayon_ms={:.3}", elapsed.as_secs_f64() * 1000.0);
+    }
     println!(
         "estimated_numeric_arrays_MiB={:.2}",
         core_bytes as f64 / 2f64.powi(20)
