@@ -1472,6 +1472,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         fast_end,
                         theta_sin,
                         theta_cos,
+                        ring_order_limits,
                         arch,
                         e_coefficients,
                         b_coefficients.as_deref_mut(),
@@ -1867,6 +1868,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         ring_end: usize,
         theta_sin: &[T],
         theta_cos: &[T],
+        ring_order_limits: &[usize],
         arch: pulp::Arch,
         e_coefficients: &mut [Complex<T>],
         mut b_coefficients: Option<&mut [Complex<T>]>,
@@ -1892,21 +1894,32 @@ impl<T: ShtScalar> ShtPlan<T> {
 
         for block_start in (ring_start..ring_end).step_by(LATITUDE_BLOCK_SIZE) {
             let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(ring_end);
+            if ring_order_limits[block_start..block_end]
+                .iter()
+                .all(|&limit| m > limit)
+            {
+                continue;
+            }
             let block_len = block_end - block_start;
             for lane in 0..block_len {
                 let ring = block_start + lane;
-                let spectrum_start = ring * spectrum_len;
-                let sine = theta_sin[ring];
-                let mut scale = T::from_f64(ring_weights[ring])
-                    .expect("ring weight is representable")
-                    / (sine * sine);
-                if normalize_fourier {
-                    scale /= longitude_count;
+                if m <= ring_order_limits[ring] {
+                    let spectrum_start = ring * spectrum_len;
+                    let sine = theta_sin[ring];
+                    let mut scale = T::from_f64(ring_weights[ring])
+                        .expect("ring weight is representable")
+                        / (sine * sine);
+                    if normalize_fourier {
+                        scale /= longitude_count;
+                    }
+                    recurrence.weighted_spin_q_spectrum[lane] =
+                        q_spectra[spectrum_start + m] * phase * scale;
+                    recurrence.weighted_spin_u_spectrum[lane] =
+                        u_spectra[spectrum_start + m] * phase * scale;
+                } else {
+                    recurrence.weighted_spin_q_spectrum[lane] = Complex::new(T::zero(), T::zero());
+                    recurrence.weighted_spin_u_spectrum[lane] = Complex::new(T::zero(), T::zero());
                 }
-                recurrence.weighted_spin_q_spectrum[lane] =
-                    q_spectra[spectrum_start + m] * phase * scale;
-                recurrence.weighted_spin_u_spectrum[lane] =
-                    u_spectra[spectrum_start + m] * phase * scale;
             }
             let weighted_q = &recurrence.weighted_spin_q_spectrum[..block_len];
             let weighted_u = &recurrence.weighted_spin_u_spectrum[..block_len];
