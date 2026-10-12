@@ -258,6 +258,19 @@ These timings are for the implementation that passed all seven high-bandlimit re
 
 An independent Python comparison used the rebuilt editable extension, `ducc0==0.41.0`, deterministic T511 coefficients and seeded random analysis maps on the same GL shape. Each operation had one warmup and five timed samples; RustSHT and DUCC used the same one- or eight-thread setting. With one thread, scalar synthesis and analysis took 471.541 ms and 552.281 ms in RustSHT versus 12.043 ms and 12.240 ms in DUCC; spin-1 took 1362.377 ms and 1389.893 ms versus 25.781 ms and 25.992 ms. With eight threads, scalar took 79.025 ms and 146.604 ms versus 1.871 ms and 1.773 ms; spin-1 took 206.881 ms and 358.471 ms versus 3.742 ms and 3.722 ms. Scalar synthesis map maximum absolute/RMS errors were `2.627e-14`/`7.674e-16`; analysis coefficient errors were `1.436e-15`/`2.179e-16`. Spin-1 map errors were `3.054e-14`/`7.729e-16`, and analysis coefficient errors were `1.659e-15`/`2.410e-16`. Across these operations and thread counts, RustSHT is 39–96 times slower than DUCC; M4 performance acceptance remains open.
 
+### Fused spin recurrence step (M4, 2026-10-12)
+
+`recurrence_step` advances each spin basis with `next = (a * cos(theta) - b_eff) * current - previous`, where `b_eff` has a branch-specific sign. The implementation now expresses both stages as fused multiply-add operations through `pulp::Simd::mul_add_f64s` and `f64::mul_add`. This reduces spin-1 T511 GL runtime in every measured operation relative to commit `d4ec0c4`. Each value is an average of three per-run medians from the release `m1b_bench` harness, with one warmup and five timed samples per operation, using rustc 1.99.0, f64, an AMD Ryzen 9 5950X with AVX2/FMA and one- or eight-thread Rayon pools:
+
+| Operation | Threads | Before FMA | FMA | Change |
+| --- | ---: | ---: | ---: | ---: |
+| Spin-1 synthesis | 1 | 1371.815 ms | 1335.613 ms | -2.64% |
+| Spin-1 synthesis | 8 | 203.655 ms | 198.386 ms | -2.59% |
+| Spin-1 analysis | 1 | 1412.318 ms | 1372.486 ms | -2.82% |
+| Spin-1 analysis | 8 | 354.049 ms | 343.635 ms | -2.94% |
+
+All seven release-mode high-bandlimit checks pass against `ducc0==0.41.0` at source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`; they cover scalar and spin transforms through T2047, including analytic recurrence checks. The rebuilt Python extension also passes all eight DUCC comparison tests.
+
 ### Python plan binding (M5, 2026-10-12)
 
 The PyO3 extension exposes `rustsht.ShtPlan` and top-level procedural functions for GL, CC and F1 grids. They accept `float64` maps and `complex128` coefficients in component-first NumPy arrays. The plan methods and procedural functions cover scalar and spin STANDARD synthesis, analysis and both adjoints, spin gradient synthesis and its adjoint, and scalar DERIV1 synthesis and its adjoint. `get_gridweights` returns the grid ring weights. Inputs must be C-contiguous; each call copies its inputs into Rust-owned vectors, releases the GIL for workspace creation and transform execution, and returns a new NumPy array. The package includes the PEP 561 marker and `__init__.pyi` stub.
