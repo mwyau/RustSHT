@@ -6,18 +6,18 @@ RustSHT is a native Rust numerical library. Its public API should follow the [Ru
 
 GL, CC and F1 use one public plan and operation family. Internally, grid-specific modules produce nodes, weights and CC/F1 meridional resampling; the scalar and spin recurrence drivers do not know whether the target grid is GL, CC or F1. Keep numerical normalization explicit.
 
-## Draft native Rust types
+## Native Rust types
 
 | Type | Purpose |
 | --- | --- |
-| `GridKind` | `GaussLegendre`, `ClenshawCurtis`, `Fejer1` |
-| `GridSpec` | Validated `kind`, `ntheta`, `nphi`, `phi0` (radians). Core order is north-to-south and eastward-cyclic. |
-| `HarmonicSpec` | Inclusive `lmax`, `mmax` and nonnegative spin; validate channels, `m=0` and `l<spin` behavior. Mode is not plan state. |
+| `GridKind` | Implemented: `GaussLegendre`. Planned: `ClenshawCurtis`, `Fejer1`. |
+| `GridSpec` | Validated `kind`, `ntheta`, `nphi`, `phi0` (radians); currently constructs Gauss-Legendre grids. Core order is north-to-south and eastward-cyclic. |
+| `HarmonicSpec` | Inclusive `lmax`, `mmax` and nonnegative spin; validate channels, `m=0` and `l<spin` behavior. Mode is not plan state. Implemented with order-major packed `m >= 0` coefficients. |
 | `ShtPlan` | Immutable reusable FFT plans, quadrature and recurrence coefficients; chosen CPU dispatch. Construct with `Result`. |
 | `ShtWorkspace` | Explicit execution scratch, separate for each concurrent execution/worker; size derived from plan. |
 | `ShtError` | Structured invalid grid, undersampling, spin/mode, shape, overflow, unsupported configuration and allocation errors. |
 
-Use a direct `num-complex` dependency and expose a `Complex64` alias; do not depend on RustFFT's re-export for the public coefficient type. Generalize to f32 only when validated. Do not preemptively expose internal FFT types, planner traits, SIMD implementations, or thread-pool types.
+Use a direct `num-complex` dependency and expose a `Complex64` alias; do not depend on RustFFT's re-export for the public coefficient type. The `GridKind` type currently contains only `GaussLegendre`; `GridSpec`, `HarmonicSpec`, `ShtError` and the alias are implemented. `HarmonicSpec::index(l, m)` returns the order-major packed offset, and its coefficient validator rejects a nonreal `m=0` value or a nonzero mode with `l < spin`. Generalize to f32 only when validated. Do not preemptively expose internal FFT types, planner traits, SIMD implementations, or thread-pool types.
 
 Provisional usage (illustration, **not implemented or finalized**):
 
