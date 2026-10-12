@@ -1300,8 +1300,6 @@ impl<T: ShtScalar> ShtPlan<T> {
     ) -> Result<(), ShtError> {
         let lmax = self.harmonics.lmax();
         let longitude_count = T::from_usize(nphi).expect("longitude count converts");
-        // The paired scalar path is faster for one worker but loses throughput
-        // to the general spin kernel with eight workers on the T511 GL case.
         let fast_scalar_coefficient_count = match recurrence_spin {
             1 => lmax + 2,
             2 => lmax + 5,
@@ -1321,7 +1319,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             && {
                 #[cfg(feature = "parallel")]
                 {
-                    rayon::current_num_threads() == 1
+                    recurrence_spin == 1 || rayon::current_num_threads() == 1
                 }
                 #[cfg(not(feature = "parallel"))]
                 {
