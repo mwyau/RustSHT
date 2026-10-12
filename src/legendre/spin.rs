@@ -580,5 +580,20 @@ mod tests {
             assert!((spin2_m0[0].1[ring] - expected * 0.5).abs() < 2e-15);
             assert!((spin2_m0[0].2[ring] - expected * 0.5).abs() < 2e-15);
         }
+
+        for spin in [3, 4] {
+            let basis = evaluate(spin, 0, spin, &theta);
+            let central_binomial = (1..=spin)
+                .map(|index| (spin + index) as f64 / index as f64)
+                .product::<f64>();
+            for (ring, &angle) in theta.iter().enumerate() {
+                let half_angle_product = (angle / 2.0).sin() * (angle / 2.0).cos();
+                let expected = -0.5
+                    * (((2 * spin + 1) as f64 * central_binomial / (4.0 * PI)).sqrt())
+                    * half_angle_product.powi(spin as i32);
+                assert!((basis[0].1[ring] - expected).abs() < 3e-15);
+                assert!((basis[0].2[ring] - expected).abs() < 3e-15);
+            }
+        }
     }
 }
