@@ -4,7 +4,10 @@
 use num_complex::Complex64;
 
 use crate::error::ShtError;
-use crate::legendre::{fill_epsilon, for_each_y_lm, multiply_complex_scaled, polar_order_limit};
+use crate::legendre::{
+    LATITUDE_BLOCK_SIZE, fill_epsilon, for_each_y_lm_dispatched, multiply_complex_scaled,
+    polar_order_limit,
+};
 use crate::plan::ShtPlan;
 use crate::workspace::ShtWorkspace;
 
@@ -37,16 +40,43 @@ impl ShtPlan {
         let mmax = self.harmonics.mmax();
         let phi0 = self.grid.phi0();
         let order_offsets = &self.harmonics;
-        let (spectra, row, epsilon, fft_workspace) = (
+        let (
+            spectra,
+            row,
+            epsilon,
+            theta_sin,
+            theta_cos,
+            active_rings,
+            recurrence_previous,
+            recurrence_current,
+            recurrence_next,
+            recurrence_exponents,
+            fft_workspace,
+        ) = (
             &mut workspace.spectra,
             &mut workspace.row,
             &mut workspace.epsilon,
+            &mut workspace.theta_sin,
+            &mut workspace.theta_cos,
+            &mut workspace.active_rings,
+            &mut workspace.recurrence_previous,
+            &mut workspace.recurrence_current,
+            &mut workspace.recurrence_next,
+            &mut workspace.recurrence_exponents,
             &mut workspace.fft,
         );
 
+        for (ring, &theta) in self.grid.theta().iter().enumerate() {
+            (theta_sin[ring], theta_cos[ring]) = theta.sin_cos();
+        }
         spectra.fill(Complex64::new(0.0, 0.0));
+        let arch = pulp::Arch::new();
         for m in 0..=mmax {
             fill_epsilon(m, lmax, epsilon);
+            for ring in 0..ntheta {
+                active_rings[ring] =
+                    m <= polar_order_limit(lmax, 0, theta_sin[ring], theta_cos[ring]);
+            }
             let coefficient_start = order_offsets
                 .index(m, m)
                 .expect("every packed order starts at its diagonal degree");
@@ -55,27 +85,38 @@ impl ShtPlan {
             } else {
                 Complex64::from_polar(1.0, m as f64 * phi0)
             };
-            for ring in 0..ntheta {
-                let (sin_theta, cos_theta) = self.grid.theta()[ring].sin_cos();
-                if m > polar_order_limit(lmax, 0, sin_theta, cos_theta) {
+            for_each_y_lm_dispatched(
+                arch,
+                m,
+                lmax,
+                theta_sin,
+                theta_cos,
+                self.sectoral_norms[m],
+                epsilon,
+                recurrence_previous,
+                recurrence_current,
+                recurrence_next,
+                recurrence_exponents,
+                |l, ring_start, current, exponents| {
+                    let coefficient = alm[coefficient_start + (l - m)];
+                    for lane in 0..current.len() {
+                        let ring = ring_start + lane;
+                        if !active_rings[ring] {
+                            continue;
+                        }
+                        let spectrum_index = ring * spectrum_len + m;
+                        spectra[spectrum_index] +=
+                            multiply_complex_scaled(coefficient, current[lane], exponents[lane]);
+                    }
+                    Ok(())
+                },
+            )?;
+            for (ring, &active) in active_rings.iter().enumerate() {
+                if !active {
                     continue;
                 }
-                let mut mode = Complex64::new(0.0, 0.0);
-                for_each_y_lm(
-                    m,
-                    lmax,
-                    sin_theta,
-                    cos_theta,
-                    self.sectoral_norms[m],
-                    epsilon,
-                    |l, mantissa, exponent| {
-                        let coefficient = alm[coefficient_start + (l - m)];
-                        mode += multiply_complex_scaled(coefficient, mantissa, exponent);
-                    },
-                )?;
-
-                let phased = mode * phase;
                 let spectrum_index = ring * spectrum_len + m;
+                let phased = spectra[spectrum_index] * phase;
                 if nphi.is_multiple_of(2) && m == nphi / 2 {
                     spectra[spectrum_index] = Complex64::new(2.0 * nphi as f64 * phased.re, 0.0);
                 } else {
@@ -129,9 +170,27 @@ impl ShtPlan {
         let ntheta = self.grid.ntheta();
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
-        let (spectra, epsilon, fft_workspace) = (
+        let (
+            spectra,
+            epsilon,
+            theta_sin,
+            theta_cos,
+            active_rings,
+            recurrence_previous,
+            recurrence_current,
+            recurrence_next,
+            recurrence_exponents,
+            fft_workspace,
+        ) = (
             &mut workspace.spectra,
             &mut workspace.epsilon,
+            &mut workspace.theta_sin,
+            &mut workspace.theta_cos,
+            &mut workspace.active_rings,
+            &mut workspace.recurrence_previous,
+            &mut workspace.recurrence_current,
+            &mut workspace.recurrence_next,
+            &mut workspace.recurrence_exponents,
             &mut workspace.fft,
         );
         for ring in 0..ntheta {
@@ -148,8 +207,16 @@ impl ShtPlan {
         let lmax = self.harmonics.lmax();
         let mmax = self.harmonics.mmax();
         let phi0 = self.grid.phi0();
+        for (ring, &theta) in self.grid.theta().iter().enumerate() {
+            (theta_sin[ring], theta_cos[ring]) = theta.sin_cos();
+        }
+        let arch = pulp::Arch::new();
         for m in 0..=mmax {
             fill_epsilon(m, lmax, epsilon);
+            for ring in 0..ntheta {
+                active_rings[ring] =
+                    m <= polar_order_limit(lmax, 0, theta_sin[ring], theta_cos[ring]);
+            }
             let coefficient_start = self
                 .harmonics
                 .index(m, m)
@@ -159,33 +226,38 @@ impl ShtPlan {
             } else {
                 Complex64::from_polar(1.0, -(m as f64 * phi0))
             };
-            for (ring, (&theta, &ring_weight)) in self
-                .grid
-                .theta()
-                .iter()
-                .zip(self.grid.ring_weights())
-                .enumerate()
-            {
-                let (sin_theta, cos_theta) = theta.sin_cos();
-                if m > polar_order_limit(lmax, 0, sin_theta, cos_theta) {
-                    continue;
-                }
-                let spectrum_start = ring * spectrum_len;
-                let fourier = spectra[spectrum_start + m] * phase / nphi as f64;
-                let weighted = fourier * ring_weight;
-                for_each_y_lm(
-                    m,
-                    lmax,
-                    sin_theta,
-                    cos_theta,
-                    self.sectoral_norms[m],
-                    epsilon,
-                    |l, mantissa, exponent| {
-                        alm[coefficient_start + (l - m)] +=
-                            multiply_complex_scaled(weighted, mantissa, exponent);
-                    },
-                )?;
-            }
+            for_each_y_lm_dispatched(
+                arch,
+                m,
+                lmax,
+                theta_sin,
+                theta_cos,
+                self.sectoral_norms[m],
+                epsilon,
+                recurrence_previous,
+                recurrence_current,
+                recurrence_next,
+                recurrence_exponents,
+                |l, ring_start, current, exponents| {
+                    let coefficient = &mut alm[coefficient_start + (l - m)];
+                    for (lane, &ring_weight) in self.grid.ring_weights()
+                        [ring_start..ring_start + current.len()]
+                        .iter()
+                        .enumerate()
+                    {
+                        let ring = ring_start + lane;
+                        if !active_rings[ring] {
+                            continue;
+                        }
+                        let spectrum_start = ring * spectrum_len;
+                        let fourier = spectra[spectrum_start + m] * phase / nphi as f64;
+                        let weighted = fourier * ring_weight;
+                        *coefficient +=
+                            multiply_complex_scaled(weighted, current[lane], exponents[lane]);
+                    }
+                    Ok(())
+                },
+            )?;
         }
         for l in 0..=lmax {
             let index = self
@@ -219,6 +291,7 @@ impl ShtPlan {
     }
 
     fn check_workspace(&self, workspace: &ShtWorkspace) -> Result<(), ShtError> {
+        let recurrence_scratch_len = self.grid.ntheta().min(LATITUDE_BLOCK_SIZE);
         check_len(
             "workspace Fourier spectra",
             self.spectrum_count,
@@ -233,7 +306,41 @@ impl ShtPlan {
             "workspace scalar recurrence factors",
             self.recurrence_factor_count,
             workspace.epsilon.len(),
-        )
+        )?;
+        for (buffer, actual) in [
+            ("workspace latitude sine values", workspace.theta_sin.len()),
+            (
+                "workspace latitude cosine values",
+                workspace.theta_cos.len(),
+            ),
+            (
+                "workspace active latitude rings",
+                workspace.active_rings.len(),
+            ),
+        ] {
+            check_len(buffer, self.grid.ntheta(), actual)?;
+        }
+        for (buffer, actual) in [
+            (
+                "workspace previous recurrence values",
+                workspace.recurrence_previous.len(),
+            ),
+            (
+                "workspace current recurrence values",
+                workspace.recurrence_current.len(),
+            ),
+            (
+                "workspace next recurrence values",
+                workspace.recurrence_next.len(),
+            ),
+            (
+                "workspace recurrence exponents",
+                workspace.recurrence_exponents.len(),
+            ),
+        ] {
+            check_len(buffer, recurrence_scratch_len, actual)?;
+        }
+        Ok(())
     }
 }
 

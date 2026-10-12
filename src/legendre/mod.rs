@@ -4,6 +4,6 @@
 mod scalar;
 
 pub(crate) use scalar::{
-    fill_epsilon, for_each_y_lm, multiply_complex_scaled, polar_order_limit,
-    sectoral_normalizations,
+    LATITUDE_BLOCK_SIZE, fill_epsilon, for_each_y_lm_dispatched, multiply_complex_scaled,
+    polar_order_limit, sectoral_normalizations,
 };
