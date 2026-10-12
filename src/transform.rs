@@ -243,6 +243,70 @@ impl ShtPlan {
         check_len("coefficient output", self.harmonics.nalm(), alm.len())?;
         self.check_workspace(workspace)?;
 
+        self.analyze_map_to_coefficients(map, alm, workspace, Some(self.grid.ring_weights()))
+    }
+
+    /// Applies the adjoint of scalar synthesis under the Euclidean map dot
+    /// product and the real harmonic inner product.
+    ///
+    /// Unlike exact analysis, this operation has no latitude sampling floor.
+    /// It accepts the real Nyquist order for even longitude counts.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for non-scalar spin, insufficient longitude sampling,
+    /// a buffer length mismatch, or an incompatible workspace.
+    pub fn adjoint_synthesis_into(
+        &self,
+        map: &[f64],
+        alm: &mut [Complex64],
+        workspace: &mut ShtWorkspace,
+    ) -> Result<(), ShtError> {
+        self.check_scalar_spin()?;
+        self.check_synthesis_order()?;
+        check_len("map input", self.sample_count, map.len())?;
+        check_len("coefficient output", self.harmonics.nalm(), alm.len())?;
+        self.check_workspace(workspace)?;
+
+        self.analyze_map_to_coefficients(map, alm, workspace, None)
+    }
+
+    /// Applies the adjoint of exact scalar GL analysis.
+    ///
+    /// Exact analysis requires `ntheta >= lmax + 1` and
+    /// `mmax <= (nphi - 1) / 2`. The output is STANDARD synthesis scaled on
+    /// each ring by its GL pixel weight, `ring_weight / nphi`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for non-scalar spin, insufficient exact-analysis
+    /// sampling, invalid coefficients, a buffer length mismatch, or an
+    /// incompatible workspace.
+    pub fn adjoint_analysis_into(
+        &self,
+        alm: &[Complex64],
+        map: &mut [f64],
+        workspace: &mut ShtWorkspace,
+    ) -> Result<(), ShtError> {
+        self.check_scalar_spin()?;
+        self.check_analysis_sampling()?;
+        self.harmonics.validate_coefficients(alm)?;
+        check_len("coefficient input", self.harmonics.nalm(), alm.len())?;
+        check_len("map output", self.sample_count, map.len())?;
+        self.check_workspace(workspace)?;
+
+        self.synthesis_into(alm, map, workspace)?;
+        self.apply_analysis_pixel_weights(map);
+        Ok(())
+    }
+
+    fn analyze_map_to_coefficients(
+        &self,
+        map: &[f64],
+        alm: &mut [Complex64],
+        workspace: &mut ShtWorkspace,
+        ring_weights: Option<&[f64]>,
+    ) -> Result<(), ShtError> {
         let ntheta = self.grid.ntheta();
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
@@ -282,7 +346,7 @@ impl ShtPlan {
                     nphi,
                     spectrum_len,
                     self.grid.phi0(),
-                    self.grid.ring_weights(),
+                    ring_weights,
                     &workspace.theta_sin,
                     &workspace.theta_cos,
                     &workspace.ring_order_limits,
@@ -298,7 +362,7 @@ impl ShtPlan {
                     nphi,
                     spectrum_len,
                     self.grid.phi0(),
-                    self.grid.ring_weights(),
+                    ring_weights,
                     &workspace.theta_sin,
                     &workspace.theta_cos,
                     &workspace.ring_order_limits,
@@ -318,7 +382,7 @@ impl ShtPlan {
                 nphi,
                 spectrum_len,
                 self.grid.phi0(),
-                self.grid.ring_weights(),
+                ring_weights,
                 &workspace.theta_sin,
                 &workspace.theta_cos,
                 &workspace.ring_order_limits,
@@ -350,7 +414,7 @@ impl ShtPlan {
         nphi: usize,
         spectrum_len: usize,
         phi0: f64,
-        ring_weights: &[f64],
+        ring_weights: Option<&[f64]>,
         theta_sin: &[f64],
         theta_cos: &[f64],
         ring_order_limits: &[usize],
@@ -446,7 +510,7 @@ impl ShtPlan {
         nphi: usize,
         spectrum_len: usize,
         phi0: f64,
-        ring_weights: &[f64],
+        ring_weights: Option<&[f64]>,
         theta_sin: &[f64],
         theta_cos: &[f64],
         ring_order_limits: &[usize],
@@ -481,17 +545,16 @@ impl ShtPlan {
                 &mut recurrence.exponents,
                 |l, ring_start, current, exponents| {
                     let coefficient = &mut coefficients[l - m];
-                    for (lane, &ring_weight) in ring_weights[ring_start..ring_start + current.len()]
-                        .iter()
-                        .enumerate()
-                    {
+                    for lane in 0..current.len() {
                         let ring = ring_start + lane;
                         if m > ring_order_limits[ring] {
                             continue;
                         }
                         let spectrum_start = ring * spectrum_len;
-                        let fourier = spectra[spectrum_start + m] * phase / nphi as f64;
-                        let weighted = fourier * ring_weight;
+                        let mut weighted = spectra[spectrum_start + m] * phase;
+                        if let Some(ring_weights) = ring_weights {
+                            weighted *= ring_weights[ring] / nphi as f64;
+                        }
                         *coefficient +=
                             multiply_complex_scaled(weighted, current[lane], exponents[lane]);
                     }
@@ -522,6 +585,33 @@ impl ShtPlan {
                 mmax: self.harmonics.mmax(),
                 nphi: self.grid.nphi(),
             })
+        }
+    }
+
+    pub(crate) fn check_analysis_sampling(&self) -> Result<(), ShtError> {
+        if self.grid.ntheta() <= self.harmonics.lmax() {
+            return Err(ShtError::AnalysisLatitudeUndersampled {
+                lmax: self.harmonics.lmax(),
+                ntheta: self.grid.ntheta(),
+            });
+        }
+        if self.harmonics.mmax() > (self.grid.nphi() - 1) / 2 {
+            return Err(ShtError::AnalysisLongitudeUndersampled {
+                mmax: self.harmonics.mmax(),
+                nphi: self.grid.nphi(),
+            });
+        }
+        Ok(())
+    }
+
+    pub(crate) fn apply_analysis_pixel_weights(&self, map: &mut [f64]) {
+        let nphi = self.grid.nphi();
+        for (ring, &ring_weight) in self.grid.ring_weights().iter().enumerate() {
+            let scale = ring_weight / nphi as f64;
+            let start = ring * nphi;
+            for sample in &mut map[start..start + nphi] {
+                *sample *= scale;
+            }
         }
     }
 
@@ -740,6 +830,35 @@ mod tests {
         map
     }
 
+    fn arbitrary_map(plan: &ShtPlan) -> Vec<f64> {
+        let mut map = Vec::with_capacity(plan.sample_count);
+        for i in 0..plan.grid.ntheta() {
+            for j in 0..plan.grid.nphi() {
+                map.push(
+                    (0.17 * i as f64 + 0.23 * j as f64).sin()
+                        + 0.2 * (0.11 * i as f64 - 0.31 * j as f64).cos(),
+                );
+            }
+        }
+        map
+    }
+
+    fn map_inner_product(left: &[f64], right: &[f64]) -> f64 {
+        left.iter().zip(right).map(|(x, y)| x * y).sum()
+    }
+
+    fn harmonic_inner_product(spec: &HarmonicSpec, left: &[Complex64], right: &[Complex64]) -> f64 {
+        let mut result = 0.0;
+        for m in 0..=spec.mmax() {
+            let weight = if m == 0 { 1.0 } else { 2.0 };
+            for l in m..=spec.lmax() {
+                let index = spec.index(l, m).unwrap();
+                result += weight * (left[index].conj() * right[index]).re;
+            }
+        }
+        result
+    }
+
     fn assert_close(actual: f64, expected: f64, tolerance: f64) {
         assert!(
             (actual - expected).abs() <= tolerance * expected.abs().max(1.0),
@@ -771,6 +890,91 @@ mod tests {
         for (&actual, &reference) in map.iter().zip(&expected) {
             assert_close(actual, reference, 3e-14);
         }
+    }
+
+    #[test]
+    fn scalar_adjoint_operators_match_ducc_and_inner_products() {
+        // Reference: ducc0 0.41.0, GL 3x7, phi0=0.37, mstart for packed Rust layout.
+        let plan = make_plan(2, 2, 3, 7, 0.37);
+        let alm = coefficients(plan.harmonics());
+        let input = arbitrary_map(&plan);
+        let mut workspace = plan.workspace().unwrap();
+
+        let mut synthesized = vec![0.0; plan.sample_count];
+        plan.synthesis_into(&alm, &mut synthesized, &mut workspace)
+            .unwrap();
+        let mut synthesis_adjoint = vec![Complex64::new(0.0, 0.0); alm.len()];
+        plan.adjoint_synthesis_into(&input, &mut synthesis_adjoint, &mut workspace)
+            .unwrap();
+        for (&actual, expected) in synthesis_adjoint.iter().zip([
+            Complex64::new(4.648_960_499_291_433, 0.0),
+            Complex64::new(-0.594_467_893_478_704_9, 0.0),
+            Complex64::new(1.011_778_214_432_334_2, 0.0),
+            Complex64::new(0.378_992_673_732_543_3, -0.607_778_178_500_533),
+            Complex64::new(-0.033_014_359_575_363_2, -0.149_134_620_282_385_1),
+            Complex64::new(-0.105_833_761_840_617_6, 0.290_989_521_058_551_9),
+        ]) {
+            assert!((actual - expected).norm() < 2e-14);
+        }
+        assert_close(
+            map_inner_product(&synthesized, &input),
+            harmonic_inner_product(plan.harmonics(), &alm, &synthesis_adjoint),
+            2e-13,
+        );
+
+        let mut analyzed = vec![Complex64::new(0.0, 0.0); alm.len()];
+        plan.analysis_into(&input, &mut analyzed, &mut workspace)
+            .unwrap();
+        let mut analysis_adjoint = vec![0.0; plan.sample_count];
+        plan.adjoint_analysis_into(&alm, &mut analysis_adjoint, &mut workspace)
+            .unwrap();
+        for (index, expected) in [
+            (0, 0.180_256_485_957_303_8),
+            (1, 0.226_281_635_669_034_06),
+            (3, 0.095_259_119_859_373_66),
+            (7, 0.281_486_856_056_618_55),
+            (10, 0.368_079_725_958_397_8),
+            (20, -0.068_996_291_908_175_74),
+        ] {
+            assert_close(analysis_adjoint[index], expected, 2e-14);
+        }
+        assert_close(
+            harmonic_inner_product(plan.harmonics(), &analyzed, &alm),
+            map_inner_product(&input, &analysis_adjoint),
+            2e-13,
+        );
+    }
+
+    #[test]
+    fn scalar_synthesis_adjoint_accepts_even_longitude_nyquist_order() {
+        // Reference: ducc0 0.41.0, GL 3x4, phi0=0.31, one thread.
+        let plan = make_plan(2, 2, 3, 4, 0.31);
+        let alm = coefficients(plan.harmonics());
+        let input = arbitrary_map(&plan);
+        let mut workspace = plan.workspace().unwrap();
+        let mut synthesized = vec![0.0; plan.sample_count];
+        plan.synthesis_into(&alm, &mut synthesized, &mut workspace)
+            .unwrap();
+        let mut adjoint = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        plan.adjoint_synthesis_into(&input, &mut adjoint, &mut workspace)
+            .unwrap();
+
+        for (&actual, expected) in adjoint.iter().zip([
+            Complex64::new(2.192_070_200_391_801, 0.0),
+            Complex64::new(-0.452_936_406_865_718_34, 0.0),
+            Complex64::new(0.478_150_955_162_161_2, 0.0),
+            Complex64::new(0.219_369_995_115_942_18, -0.321_778_433_740_079_75),
+            Complex64::new(0.004_395_968_203_849_482_5, -0.028_237_897_221_759_366),
+            Complex64::new(-0.195_608_850_028_266_7, 0.139_646_919_817_436_15),
+        ]) {
+            assert!((actual - expected).norm() < 3e-14);
+        }
+        assert!(adjoint[plan.harmonics().index(2, 2).unwrap()].im.abs() > 0.1);
+        assert_close(
+            map_inner_product(&synthesized, &input),
+            harmonic_inner_product(plan.harmonics(), &alm, &adjoint),
+            2e-13,
+        );
     }
 
     #[test]
@@ -953,6 +1157,73 @@ mod tests {
         for (&actual, &expected) in two_thread_alm.iter().zip(&input_alm) {
             assert!((actual - expected).norm() < 2e-13);
         }
+
+        let input_map = arbitrary_map(&plan);
+        let mut one_adjoint = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        let mut two_adjoint = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        one_thread
+            .install(|| {
+                plan.adjoint_synthesis_into(&input_map, &mut one_adjoint, &mut one_thread_workspace)
+            })
+            .unwrap();
+        two_threads
+            .install(|| {
+                plan.adjoint_synthesis_into(&input_map, &mut two_adjoint, &mut two_thread_workspace)
+            })
+            .unwrap();
+        for (&one, &two) in one_adjoint.iter().zip(&two_adjoint) {
+            assert!((one - two).norm() < 2e-14);
+        }
+
+        let mut one_analysis_adjoint = vec![0.0; plan.sample_count];
+        let mut two_analysis_adjoint = vec![0.0; plan.sample_count];
+        one_thread
+            .install(|| {
+                plan.adjoint_analysis_into(
+                    &input_alm,
+                    &mut one_analysis_adjoint,
+                    &mut one_thread_workspace,
+                )
+            })
+            .unwrap();
+        two_threads
+            .install(|| {
+                plan.adjoint_analysis_into(
+                    &input_alm,
+                    &mut two_analysis_adjoint,
+                    &mut two_thread_workspace,
+                )
+            })
+            .unwrap();
+        for (&one, &two) in one_analysis_adjoint.iter().zip(&two_analysis_adjoint) {
+            assert_close(two, one, 2e-14);
+        }
+
+        let mut one_derivative_adjoint = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        let mut two_derivative_adjoint = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        one_thread
+            .install(|| {
+                plan.adjoint_synthesis_deriv1_into(
+                    &input_map,
+                    &expected_map,
+                    &mut one_derivative_adjoint,
+                    &mut one_thread_workspace,
+                )
+            })
+            .unwrap();
+        two_threads
+            .install(|| {
+                plan.adjoint_synthesis_deriv1_into(
+                    &input_map,
+                    &expected_map,
+                    &mut two_derivative_adjoint,
+                    &mut two_thread_workspace,
+                )
+            })
+            .unwrap();
+        for (&one, &two) in one_derivative_adjoint.iter().zip(&two_derivative_adjoint) {
+            assert!((one - two).norm() < 2e-14);
+        }
     }
 
     #[test]
@@ -1042,6 +1313,60 @@ mod tests {
                 alm[index]
             );
         }
+
+        let mut adjoint = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        plan.adjoint_synthesis_into(&map, &mut adjoint, &mut workspace)
+            .unwrap();
+        let mut synthesized = vec![0.0; plan.sample_count];
+        plan.synthesis_into(&alm, &mut synthesized, &mut workspace)
+            .unwrap();
+        assert_close(
+            map_inner_product(&synthesized, &map),
+            harmonic_inner_product(plan.harmonics(), &alm, &adjoint),
+            3e-10,
+        );
+
+        let mut analysis_adjoint = vec![0.0; plan.sample_count];
+        plan.adjoint_analysis_into(&alm, &mut analysis_adjoint, &mut workspace)
+            .unwrap();
+        assert_close(
+            harmonic_inner_product(plan.harmonics(), &alm, &alm),
+            map_inner_product(&map, &analysis_adjoint),
+            3e-10,
+        );
+
+        let second_component: Vec<_> = (0..256)
+            .flat_map(|i| {
+                (0..513).map(move |j| {
+                    let i = i as f64;
+                    let j = j as f64;
+                    (0.19 * i - 0.13 * j).cos() - 0.15 * (0.29 * i + 0.07 * j).sin()
+                })
+            })
+            .collect();
+        let mut derivative_adjoint = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        plan.adjoint_synthesis_deriv1_into(
+            &map,
+            &second_component,
+            &mut derivative_adjoint,
+            &mut workspace,
+        )
+        .unwrap();
+        let mut derivative_theta = vec![0.0; plan.sample_count];
+        let mut derivative_phi = vec![0.0; plan.sample_count];
+        plan.synthesis_deriv1_into(
+            &alm,
+            &mut derivative_theta,
+            &mut derivative_phi,
+            &mut workspace,
+        )
+        .unwrap();
+        assert_close(
+            map_inner_product(&derivative_theta, &map)
+                + map_inner_product(&derivative_phi, &second_component),
+            harmonic_inner_product(plan.harmonics(), &alm, &derivative_adjoint),
+            3e-10,
+        );
     }
 
     #[test]
@@ -1069,6 +1394,11 @@ mod tests {
             too_few_rings.analysis_into(&map, &mut alm, &mut workspace),
             Err(ShtError::AnalysisLatitudeUndersampled { lmax: 3, ntheta: 3 })
         );
+        let mut adjoint_map = vec![0.0; too_few_rings.sample_count];
+        assert_eq!(
+            too_few_rings.adjoint_analysis_into(&alm, &mut adjoint_map, &mut workspace),
+            Err(ShtError::AnalysisLatitudeUndersampled { lmax: 3, ntheta: 3 })
+        );
 
         let nyquist_analysis = make_plan(2, 2, 3, 4, 0.0);
         let mut nyquist_workspace = nyquist_analysis.workspace().unwrap();
@@ -1076,6 +1406,15 @@ mod tests {
         let mut nyquist_alm = vec![Complex64::new(0.0, 0.0); nyquist_analysis.harmonics().nalm()];
         assert_eq!(
             nyquist_analysis.analysis_into(&nyquist_map, &mut nyquist_alm, &mut nyquist_workspace),
+            Err(ShtError::AnalysisLongitudeUndersampled { mmax: 2, nphi: 4 })
+        );
+        let mut nyquist_adjoint_map = vec![0.0; nyquist_analysis.sample_count];
+        assert_eq!(
+            nyquist_analysis.adjoint_analysis_into(
+                &nyquist_alm,
+                &mut nyquist_adjoint_map,
+                &mut nyquist_workspace
+            ),
             Err(ShtError::AnalysisLongitudeUndersampled { mmax: 2, nphi: 4 })
         );
 
