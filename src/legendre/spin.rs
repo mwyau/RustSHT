@@ -426,6 +426,7 @@ fn normalize_pair_lanes(
 )]
 pub(crate) fn accumulate_analysis_dispatched(
     arch: Arch,
+    vectorizable_inputs: bool,
     m: usize,
     q_real: &[f64],
     q_imag: &[f64],
@@ -448,14 +449,10 @@ pub(crate) fn accumulate_analysis_dispatched(
     debug_assert_eq!(minus_exponents.len(), plus.len());
     debug_assert_eq!(ring_order_limits.len(), plus.len());
 
-    let vectorizable = alpha_norm.is_normal()
-        && ring_order_limits.iter().all(|&limit| m <= limit)
+    let vectorizable = vectorizable_inputs
+        && alpha_norm.is_normal()
         && plus_exponents.iter().all(|&exponent| exponent == 0)
         && minus_exponents.iter().all(|&exponent| exponent == 0)
-        && q_real.iter().all(|value| value.is_normal())
-        && q_imag.iter().all(|value| value.is_normal())
-        && u_real.iter().all(|value| value.is_normal())
-        && u_imag.iter().all(|value| value.is_normal())
         && plus.iter().all(|value| value.is_normal())
         && minus.iter().all(|value| value.is_normal());
     if vectorizable {
@@ -489,6 +486,25 @@ pub(crate) fn accumulate_analysis_dispatched(
         }
     }
     (e_sum, b_sum)
+}
+
+pub(crate) fn analysis_inputs_vectorizable(
+    m: usize,
+    q_real: &[f64],
+    q_imag: &[f64],
+    u_real: &[f64],
+    u_imag: &[f64],
+    ring_order_limits: &[usize],
+) -> bool {
+    debug_assert_eq!(q_real.len(), q_imag.len());
+    debug_assert_eq!(q_real.len(), u_real.len());
+    debug_assert_eq!(q_real.len(), u_imag.len());
+    debug_assert_eq!(q_real.len(), ring_order_limits.len());
+    ring_order_limits.iter().all(|&limit| m <= limit)
+        && q_real.iter().all(|value| value.is_normal())
+        && q_imag.iter().all(|value| value.is_normal())
+        && u_real.iter().all(|value| value.is_normal())
+        && u_imag.iter().all(|value| value.is_normal())
 }
 
 struct SpinAnalysisAccumulation<'a> {
@@ -713,8 +729,17 @@ mod tests {
             alpha_norm: f64,
             include_b: bool,
         ) -> (Complex64, Complex64) {
+            let vectorizable_inputs = analysis_inputs_vectorizable(
+                m,
+                &self.q_real,
+                &self.q_imag,
+                &self.u_real,
+                &self.u_imag,
+                &self.limits,
+            );
             accumulate_analysis_dispatched(
                 arch,
+                vectorizable_inputs,
                 m,
                 &self.q_real,
                 &self.q_imag,

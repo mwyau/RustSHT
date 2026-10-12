@@ -1097,3 +1097,36 @@ The release T511 spin-1 analysis benchmark before this change measured `466.491 
 A private visitor prototype passed the selected Pulp backend from the recurrence into the spin-analysis accumulation, removing one `Arch::dispatch` call per degree. The T511 native benchmark used f64 spin-1 STANDARD analysis, GL `512x1025`, a reused plan/workspace, one warm-up, five samples and two runs. The previous median was `167.487 ms` at eight threads; the visitor measured `441.721` and `439.994 ms` (`440.858 ms` median). One-thread measurements were `463.678 ms` before and `458.396 ms` after; the one-thread scalar-conversion path did not use this visitor.
 
 Callgrind 3.26.0 on `m1b_bench 1 127 1 analysis` recorded `3,454,390,270` instruction references, compared with `2,595,550,434` for the prior SIMD-accumulation implementation under the same 12-transform, one-worker harness (`+33.1%`). The profile attributes `698,571,732` references (`20.2%`) to the repeated per-degree vectorizable check. Removing the runtime dispatch did not offset the code generated around the visitor and its lane checks. Spin-1/2/3/4 correctness tests and f32 spin adjoint tests passed during the experiment, but the prototype was removed for its substantial throughput and instruction-count regressions. The profile points to hoisting block-invariant Fourier and cutoff eligibility checks before attempting another fused visitor.
+
+### Hoisted spin-analysis SIMD eligibility checks (2026-10-12)
+
+The preceding spin-analysis profile showed that each degree callback rescanned its Q/U Fourier lanes and ring-order limits before selecting vector accumulation. These inputs and cutoffs are invariant for an `(m, latitude block)`. The f64 path now evaluates that eligibility once before the degree recurrence and passes the result to each accumulation. Per-degree checks for spin normalization and recurrence exponents remain. Scaled or inactive blocks retain the scalar fallback. The change adds no worker storage and leaves f32 behavior unchanged.
+
+Native release measurements used rustc 1.99.0/LLVM 23.1.1, standard release optimization with portable AVX2/FMA runtime dispatch, an AMD Ryzen 9 5950X, f64 spin-1 STANDARD analysis, T511 GL `512x1025`, `phi0=0.37`, reused plan/workspace, one warm-up, five samples per run, and three process runs. Each entry is the median and range of run medians in milliseconds:
+
+| Threads | Before (ms) | After (ms) | Change |
+| ---: | ---: | ---: | ---: |
+| 1 | `463.678; 3.816` | `454.324; 2.841` | `-2.0%` |
+| 8 | `167.487; 1.837` | `148.630; 3.285` | `-11.3%` |
+
+The one-thread scalar-conversion path does not use the changed vector accumulation gate; its small timing shift is not attributed to this change. With eight threads, recurrence, conversion and accumulation fell from `159.348 ms` to `143.868 ms` (`-9.7%`). The instrumented whole call was `151.260 ms`; recurrence/conversion/accumulation, FFT and preparation took `143.868`, `7.102` and `0.164 ms`, summing to `151.134 ms`. This timer excluded packing from the FFT phase, unlike the prior phase report, so FFT timings are not compared. The pinned DUCC 0.41.1 source-build recurrence and accumulation phase was `1.40 ms`: RustSHT took `102.8x` as long, with `142.468 ms` absolute excess. The recurrence phase was `95.2%` of RustSHT's measured phase total and `69.3%` of DUCC's previously measured `2.02 ms` recurrence-plus-FFT phase total. This remains the largest measured excess.
+
+Callgrind 3.26.0 profiled `m1b_bench 1 127 1 analysis` in optimized release mode with debug symbols. In the same 12-transform, one-worker harness, instruction references fell from `2,595,550,434` to `2,179,100,442` (`-16.0%`). These are simulator instruction counts, not CPU cycles. `perf stat` remains blocked by `perf_event_paranoid=4`; Callgrind did not attribute instructions inside the installed DUCC wheel. No runtime-counter or register-spill comparison is claimed for this change.
+
+The rebuilt Python extension used Python 3.11.15, NumPy 2.4.6 and installed `ducc0==0.41.0` from source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`. T511 GL plan analysis results are medians of two run medians of five samples after warm-up:
+
+| Threads | RustSHT plan (ms) | DUCC0 (ms) | Ratio | Max absolute / RMS / relative L2 error |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | `470.353` | `24.790` | `19.0x` | `1.237e-14 / 2.126e-16 / 4.163e-14` |
+| 8 | `150.389` | `3.580` | `42.0x` | `1.463e-14 / 2.297e-16 / 4.498e-14` |
+
+T1023 GL `1024x2049` plan analysis used the same benchmark and DUCC wheel. Values are medians of two run medians; errors compare Rust packed coefficients with DUCC:
+
+| Threads | RustSHT plan (ms) | DUCC0 (ms) | Ratio | Max absolute / RMS / relative L2 error |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | `3,486.459` | `246.945` | `14.1x` | `1.730e-14 / 1.958e-16 / 7.666e-14` |
+| 8 | `1,205.138` | `38.488` | `31.3x` | `1.811e-14 / 2.123e-16 / 8.311e-14` |
+
+At T1023, plan construction took `0.10 ms`, NumPy input copies took `1.0–1.3 ms` for coefficients and `3.6–3.8 ms` for maps, and output allocation took `0.01 ms`. Python-plan timings include Rust workspace creation per call; these wrapper costs remain small beside the transform. The eight-thread T511 native improvement agrees with the instruction-count reduction, so the gate is retained. The remaining `42.0x` Python-plan gap makes spin recurrence and accumulation the next target.
+
+Focused spin-analysis tests (seven passed), all ten f32 integration tests, T511 all-grid spin-1/2 DUCC and spin-3/4 regressions, formatting, workspace Clippy with warnings denied, `cargo test --workspace --all-features` (93 unit tests passed, seven opt-in tests ignored, ten f32 tests passed), `cargo test -p rustsht --no-default-features` (90 unit tests passed, seven opt-in tests ignored, ten f32 tests passed), and `uv run pytest python/tests` (eight passed) passed. High-bandlimit checks compare with DUCC and analytic fields; routine all-grid spin adjoint identities also pass.

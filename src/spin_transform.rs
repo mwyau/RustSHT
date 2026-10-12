@@ -1454,6 +1454,14 @@ impl<T: ShtScalar> ShtPlan<T> {
                     let analysis_q_imag = &recurrence.analysis_same_imag[..block_len];
                     let analysis_u_real = &recurrence.analysis_opposite_real[..block_len];
                     let analysis_u_imag = &recurrence.analysis_opposite_imag[..block_len];
+                    let vectorizable_inputs = T::spin_analysis_inputs_vectorizable(
+                        m,
+                        analysis_q_real,
+                        analysis_q_imag,
+                        analysis_u_real,
+                        analysis_u_imag,
+                        &ring_order_limits[block_start..block_end],
+                    );
                     T::for_each_spin_lm_dispatched(
                         arch,
                         &initial,
@@ -1482,6 +1490,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                                 let (e_contribution, b_contribution) =
                                     T::accumulate_spin_analysis_block(
                                         arch,
+                                        vectorizable_inputs,
                                         m,
                                         &analysis_q_real[ring_start..lane_end],
                                         &analysis_q_imag[ring_start..lane_end],
