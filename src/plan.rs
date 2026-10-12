@@ -61,10 +61,11 @@ impl ShtPlan {
                     quantity: "spin recurrence factor count",
                 })?;
         let sectoral_norms = sectoral_normalizations(harmonics.mmax())?;
-        let cc_resampling = if grid.kind() == crate::grid::GridKind::ClenshawCurtis {
-            Some(CCResamplingPlan::new(grid.ntheta(), harmonics.lmax())?)
-        } else {
-            None
+        let cc_resampling = match grid.kind() {
+            crate::grid::GridKind::ClenshawCurtis | crate::grid::GridKind::Fejer1 => Some(
+                CCResamplingPlan::new(grid.kind(), grid.ntheta(), harmonics.lmax())?,
+            ),
+            crate::grid::GridKind::GaussLegendre => None,
         };
 
         Ok(Self {

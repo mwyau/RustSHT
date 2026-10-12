@@ -26,7 +26,7 @@ Treat the commit as the **reference baseline**, not a claim that DUCC is the ups
 
 ## License and provenance
 
-RustSHT uses **GPL-2.0-or-later** by project choice. Code newly authored by Albert M. W. Yau and contributors is attributed to its authors. `src/grid.rs` translates DUCC's CC Waldvogel weight setup from `src/ducc0/sht/sht.cc`; `src/meridional.rs` translates the prepared-CC resampling path from `sht.cc` and the FFT-friendly-size search from `src/ducc0/fft/fft.h`. These translations identify the source revision and preserve the copyright and license notices in their source files. The FFT header offers BSD-3-Clause OR GPL-2.0-or-later; RustSHT uses the GPL-2.0-or-later option.
+RustSHT uses **GPL-2.0-or-later** by project choice. Code newly authored by Albert M. W. Yau and contributors is attributed to its authors. `src/grid.rs` translates DUCC's CC and F1 Waldvogel weight setups from `src/ducc0/sht/sht.cc`; `src/meridional.rs` translates the prepared-CC/F1 resampling path from `sht.cc` and the FFT-friendly-size search from `src/ducc0/fft/fft.h`. These translations identify the source revision and preserve the copyright and license notices in their source files. The FFT header offers BSD-3-Clause OR GPL-2.0-or-later; RustSHT uses the GPL-2.0-or-later option.
 
 If material is **copied, adapted, or directly translated** from DUCC, inspect the license header on that specific file, retain original copyright and applicable license notices, record the reference revision and changes, and check distribution obligations. DUCC SHT implementation files are GPL-2.0-or-later; identified DUCC FFT files have a separate BSD-3-Clause option. These exceptions do not apply generically.
 
