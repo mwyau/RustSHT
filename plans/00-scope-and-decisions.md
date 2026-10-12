@@ -13,7 +13,7 @@ Implement high-bandlimit SHT algorithms used by DUCC in an independent **RustSHT
 | D11 | **Feature-first / GL first**, approved 2026-10-11 | Complete scalar, spin/vector, applicable derivative modes, synthesis/analysis and both adjoint families on GL before bringing the *same engine* to CC and F1. Incremental GL substeps are allowed. |
 | D12 | **DUCC as algorithmic/numerical reference**, approved 2026-10-11 | RustSHT is not DUCC's upstream/downstream repository or an official DUCC release. Original Rust code and adapted source expression have different provenance obligations. |
 | D13 | **GL/CC/F1 parity is the release objective**, reaffirmed 2026-10-11 | All three grids must pass the same supported operator/spin test matrix and explicit high-bandlimit checks before claiming full scope. |
-| D14 | **Rust 1.89 minimum**, approved 2026-10-11 | Stable AVX-512 target features and intrinsics, with runtime CPU checks and a portable fallback. |
+| D14 | **Rust 1.99.0 stable toolchain**, approved 2026-10-12 | Use the pinned stable toolchain for development, CI, benchmarks and builds. Avoid nightly-only features without a demonstrated need; preserve runtime CPU dispatch and a portable fallback. |
 | D15 | **Long autonomous implementation sessions**, approved 2026-10-11 | Work on a new feature branch through as many independently verified milestones as possible, preserving GL-first ordering. |
 | D22 | **Scalar and low-spin performance priority**, approved 2026-10-12 | Optimize scalar and spin-1 transforms first, then spin 2. Preserve spin-3/4 support and regression coverage without expanding those implementations; do not add spin 5+ without new authorization. |
 
@@ -31,7 +31,7 @@ Scalar transforms support atmospheric scalar fields. Spin 1 supports horizontal 
 
 ## Working engineering defaults (not yet final)
 
-- Rust 2024 with MSRV **1.89**. Port DUCC's numerical SHT algorithms in Rust; use RustFFT for complex FFTs plus a small private real-input FFT adapter for longitude rows. No RealFFT dependency or custom FFT butterflies. AVX-512 requires runtime CPU detection.
+- Rust 2024 with Rust **1.99.0** pinned for development and CI. Port DUCC's numerical SHT algorithms in Rust; use RustFFT for complex FFTs plus a small private real-input FFT adapter for longitude rows. No RealFFT dependency or custom FFT butterflies. AVX-512 requires runtime CPU detection.
 - Implement **f64/complex128** first, with a direct `num-complex` dependency for the public `Complex64` alias; design for f32/complex64. Both precisions are in the eventual feature matrix.
 - Reusable plans and scratch; implement a scalar reference and `pulp` SIMD recurrence over latitude lanes during GL M1, with optional Rayon for coarse independent work and runtime dispatch on x86-64 and AArch64.
 - Python bindings via a separate optional layer; keep spharmgrid decoupled.

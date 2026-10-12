@@ -2,7 +2,7 @@
 
 ## Public/private boundary
 
-Keep `ShtPlan` immutable with its FFT plans, precomputed recurrence coefficients and selected dispatch function. `ShtWorkspace` owns mutable scratch per invocation or worker; no global mutable state. Prefer internal concrete kernel implementations and `pub(crate)` helpers over public abstraction traits. The workspace already has one native numerical crate and one Python binding crate. Implement Python numerical bindings after native correctness; do not add further crates without a concrete need. The native API uses borrowed slices with checked shapes and `Result`-returning operations, and does not know about Xarray or geographic wind units. See [03](03-api-and-python.md) for the proposed modules.
+Keep `ShtPlan` immutable with its FFT plans, precomputed recurrence coefficients and selected dispatch function. `ShtWorkspace` owns mutable scratch per invocation or worker; no global mutable state. Prefer internal concrete kernel implementations and `pub(crate)` helpers over public abstraction traits. The workspace already has one native numerical crate and one Python binding crate. Implement Python numerical bindings after native correctness; do not add further crates without a concrete need. The native API uses borrowed slices with checked shapes and `Result`-returning operations, and does not know about Xarray or geographic wind units. See [03](03-api-and-python.md) for the proposed modules. Use the pinned Rust 1.99.0 stable toolchain for development, CI and benchmarks. Do not add nightly-only features without a measured need. Keep runtime CPU dispatch and portable fallbacks; distributed builds must not use `target-cpu=native`.
 
 ## Shared engine and grid-specific stages
 
