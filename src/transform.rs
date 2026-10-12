@@ -2166,4 +2166,133 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    #[ignore = "M3 high-bandlimit acceptance; run this check in release mode"]
+    #[expect(
+        clippy::excessive_precision,
+        reason = "The literals retain printed DUCC 0.41.0 reference values."
+    )]
+    fn m3_scalar_t511_t1023_all_grids_matches_ducc_and_closed_form() {
+        // DUCC 0.41.0 references use a_(L,L)=1, phi0=0.37, nthreads=1.
+        // The five values are the middle-ring samples at j=[0,1,17,nphi/2,nphi-1].
+        for degree in [511, 1023] {
+            let nphi = 2 * degree + 3;
+            for kind in [
+                GridKind::GaussLegendre,
+                GridKind::ClenshawCurtis,
+                GridKind::Fejer1,
+            ] {
+                let ntheta = degree + usize::from(kind == GridKind::ClenshawCurtis) + 1;
+                let plan = ShtPlan::new(
+                    GridSpec::new(kind, ntheta, nphi, 0.37).unwrap(),
+                    HarmonicSpec::scalar(degree, degree).unwrap(),
+                )
+                .unwrap();
+                let sectoral_index = plan.harmonics().index(degree, degree).unwrap();
+                let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+                alm[sectoral_index] = Complex64::new(1.0, 0.0);
+                let mut workspace = plan.workspace().unwrap();
+                let mut map = vec![0.0; plan.sample_count];
+                plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
+
+                let expected_ducc = match (degree, kind) {
+                    (511, GridKind::GaussLegendre) => [
+                        -2.3872256264278287,
+                        2.4013318896018663,
+                        2.5986634372168815,
+                        1.5560946744052795,
+                        2.3729175336200483,
+                    ],
+                    (511, GridKind::ClenshawCurtis) => [
+                        -2.3929622710868896,
+                        2.4071024324473411,
+                        2.6049081794661149,
+                        1.5598340621297142,
+                        2.3786197950841248,
+                    ],
+                    (511, GridKind::Fejer1) => [
+                        -2.3872144245647005,
+                        2.4013206215462395,
+                        2.598651243198931,
+                        1.5560873725569058,
+                        2.3729063988964887,
+                    ],
+                    (1023, GridKind::GaussLegendre) => [
+                        -0.17570114687664429,
+                        0.19125253260213948,
+                        0.43930098463756251,
+                        3.3817703089638673,
+                        0.1601460438121452,
+                    ],
+                    (1023, GridKind::ClenshawCurtis) => [
+                        -0.17591254311800286,
+                        0.19148263961772272,
+                        0.4398295331338507,
+                        3.3858391129822953,
+                        0.1603387248067325,
+                    ],
+                    (1023, GridKind::Fejer1) => [
+                        -0.17570094045838802,
+                        0.19125230791371206,
+                        0.43930046853539056,
+                        3.3817663359725523,
+                        0.16014585566842582,
+                    ],
+                    _ => unreachable!(),
+                };
+                let middle_ring = ntheta / 2;
+                let longitudes = [0, 1, 17, nphi / 2, nphi - 1];
+                let mut ducc_max_error: f64 = 0.0;
+                for (longitude, expected) in longitudes.into_iter().zip(expected_ducc) {
+                    let error = (map[middle_ring * nphi + longitude] - expected).abs();
+                    ducc_max_error = ducc_max_error.max(error);
+                    assert!(error <= 5e-11, "{kind:?} T{degree} DUCC error={error:.3e}");
+                }
+
+                let mut sectoral_norm = 1.0 / (4.0 * PI).sqrt();
+                for l in 1..=degree {
+                    sectoral_norm *= ((2 * l + 1) as f64 / (2 * l) as f64).sqrt();
+                }
+                let sign = if degree.is_multiple_of(2) { 1.0 } else { -1.0 };
+                let (mut analytic_max_error, mut analytic_error_squares) = (0.0_f64, 0.0_f64);
+                let mut analytic_sample_count = 0usize;
+                for (ring, &theta) in plan.grid.theta().iter().enumerate() {
+                    let amplitude = 2.0 * sign * sectoral_norm * theta.sin().powi(degree as i32);
+                    for longitude in 0..nphi {
+                        let phi = plan.grid.longitude(longitude).unwrap();
+                        let expected = amplitude * (degree as f64 * phi).cos();
+                        let error = (map[ring * nphi + longitude] - expected).abs();
+                        analytic_max_error = analytic_max_error.max(error);
+                        analytic_error_squares += error * error;
+                        analytic_sample_count += 1;
+                        assert!(
+                            error <= 5e-10,
+                            "{kind:?} T{degree} analytic map error={error:.3e}"
+                        );
+                    }
+                }
+
+                let mut recovered = vec![Complex64::new(0.0, 0.0); alm.len()];
+                plan.analysis_into(&map, &mut recovered, &mut workspace)
+                    .unwrap();
+                let (mut coefficient_max_error, mut coefficient_error_squares) = (0.0_f64, 0.0_f64);
+                for (index, actual) in recovered.iter().enumerate() {
+                    let expected = if index == sectoral_index { 1.0 } else { 0.0 };
+                    let error = (actual - Complex64::new(expected, 0.0)).norm();
+                    coefficient_max_error = coefficient_max_error.max(error);
+                    coefficient_error_squares += error * error;
+                    assert!(
+                        error <= 2e-7,
+                        "{kind:?} T{degree} coefficient {index}: actual={actual:?}, expected={expected}"
+                    );
+                }
+                eprintln!(
+                    "M3 scalar T{degree} {kind:?}: DUCC middle-row max abs={ducc_max_error:.3e}; analytic map max abs={analytic_max_error:.3e}, RMS={:.3e}; analysis coefficient max abs={coefficient_max_error:.3e}, RMS={:.3e}",
+                    (analytic_error_squares / analytic_sample_count as f64).sqrt(),
+                    (coefficient_error_squares / recovered.len() as f64).sqrt(),
+                );
+            }
+        }
+    }
 }
