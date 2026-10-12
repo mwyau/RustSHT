@@ -24,6 +24,7 @@
 
 use std::f64::consts::PI;
 
+use num_complex::Complex64;
 use pulp::{Arch, Simd, WithSimd};
 
 use crate::error::ShtError;
@@ -415,6 +416,192 @@ fn normalize_pair_lanes(
     Ok(())
 }
 
+/// Accumulates one spin-analysis degree over latitude lanes.
+///
+/// Ordinary lanes use Pulp vector arithmetic and a horizontal reduction.
+/// Scaled, inactive, or exceptional lanes use the scalar recurrence path.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The accumulation receives both Fourier components, spin bases and polar cutoffs."
+)]
+pub(crate) fn accumulate_analysis_dispatched(
+    arch: Arch,
+    m: usize,
+    q_real: &[f64],
+    q_imag: &[f64],
+    u_real: &[f64],
+    u_imag: &[f64],
+    plus: &[f64],
+    plus_exponents: &[i64],
+    minus: &[f64],
+    minus_exponents: &[i64],
+    alpha_norm: f64,
+    ring_order_limits: &[usize],
+    include_b: bool,
+) -> (Complex64, Complex64) {
+    debug_assert_eq!(q_real.len(), plus.len());
+    debug_assert_eq!(q_imag.len(), plus.len());
+    debug_assert_eq!(u_real.len(), plus.len());
+    debug_assert_eq!(u_imag.len(), plus.len());
+    debug_assert_eq!(plus_exponents.len(), plus.len());
+    debug_assert_eq!(minus.len(), plus.len());
+    debug_assert_eq!(minus_exponents.len(), plus.len());
+    debug_assert_eq!(ring_order_limits.len(), plus.len());
+
+    let vectorizable = alpha_norm.is_normal()
+        && ring_order_limits.iter().all(|&limit| m <= limit)
+        && plus_exponents.iter().all(|&exponent| exponent == 0)
+        && minus_exponents.iter().all(|&exponent| exponent == 0)
+        && q_real.iter().all(|value| value.is_normal())
+        && q_imag.iter().all(|value| value.is_normal())
+        && u_real.iter().all(|value| value.is_normal())
+        && u_imag.iter().all(|value| value.is_normal())
+        && plus.iter().all(|value| value.is_normal())
+        && minus.iter().all(|value| value.is_normal());
+    if vectorizable {
+        return arch.dispatch(SpinAnalysisAccumulation {
+            q_real,
+            q_imag,
+            u_real,
+            u_imag,
+            plus,
+            minus,
+            alpha_norm,
+            include_b,
+        });
+    }
+
+    let mut e_sum = Complex64::new(0.0, 0.0);
+    let mut b_sum = Complex64::new(0.0, 0.0);
+    for lane in 0..plus.len() {
+        if m > ring_order_limits[lane] {
+            continue;
+        }
+        let plus_value = scaled_basis_value(plus[lane], plus_exponents[lane], alpha_norm);
+        let minus_value = scaled_basis_value(minus[lane], minus_exponents[lane], alpha_norm);
+        let even_basis = plus_value + minus_value;
+        let odd_basis = plus_value - minus_value;
+        let q = Complex64::new(q_real[lane], q_imag[lane]);
+        let u = Complex64::new(u_real[lane], u_imag[lane]);
+        e_sum += q * even_basis + Complex64::new(0.0, -1.0) * u * odd_basis;
+        if include_b {
+            b_sum += Complex64::new(0.0, 1.0) * q * odd_basis + u * even_basis;
+        }
+    }
+    (e_sum, b_sum)
+}
+
+struct SpinAnalysisAccumulation<'a> {
+    q_real: &'a [f64],
+    q_imag: &'a [f64],
+    u_real: &'a [f64],
+    u_imag: &'a [f64],
+    plus: &'a [f64],
+    minus: &'a [f64],
+    alpha_norm: f64,
+    include_b: bool,
+}
+
+impl WithSimd for SpinAnalysisAccumulation<'_> {
+    type Output = (Complex64, Complex64);
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let Self {
+            q_real,
+            q_imag,
+            u_real,
+            u_imag,
+            plus,
+            minus,
+            alpha_norm,
+            include_b,
+        } = self;
+        let (q_real_vectors, q_real_tail) = S::as_simd_f64s(q_real);
+        let (q_imag_vectors, q_imag_tail) = S::as_simd_f64s(q_imag);
+        let (u_real_vectors, u_real_tail) = S::as_simd_f64s(u_real);
+        let (u_imag_vectors, u_imag_tail) = S::as_simd_f64s(u_imag);
+        let (plus_vectors, plus_tail) = S::as_simd_f64s(plus);
+        let (minus_vectors, minus_tail) = S::as_simd_f64s(minus);
+        let vector_count = plus_vectors.len();
+        debug_assert_eq!(q_real_vectors.len(), vector_count);
+        debug_assert_eq!(q_imag_vectors.len(), vector_count);
+        debug_assert_eq!(u_real_vectors.len(), vector_count);
+        debug_assert_eq!(u_imag_vectors.len(), vector_count);
+        debug_assert_eq!(minus_vectors.len(), vector_count);
+
+        let alpha = simd.splat_f64s(alpha_norm);
+        let mut e_real_sum = simd.splat_f64s(0.0);
+        let mut e_imag_sum = simd.splat_f64s(0.0);
+        let mut b_real_sum = simd.splat_f64s(0.0);
+        let mut b_imag_sum = simd.splat_f64s(0.0);
+        for index in 0..vector_count {
+            let plus_value = simd.mul_f64s(plus_vectors[index], alpha);
+            let minus_value = simd.mul_f64s(minus_vectors[index], alpha);
+            let even_basis = simd.add_f64s(plus_value, minus_value);
+            let odd_basis = simd.sub_f64s(plus_value, minus_value);
+            e_real_sum = simd.add_f64s(
+                e_real_sum,
+                simd.add_f64s(
+                    simd.mul_f64s(q_real_vectors[index], even_basis),
+                    simd.mul_f64s(u_imag_vectors[index], odd_basis),
+                ),
+            );
+            e_imag_sum = simd.add_f64s(
+                e_imag_sum,
+                simd.sub_f64s(
+                    simd.mul_f64s(q_imag_vectors[index], even_basis),
+                    simd.mul_f64s(u_real_vectors[index], odd_basis),
+                ),
+            );
+            if include_b {
+                b_real_sum = simd.add_f64s(
+                    b_real_sum,
+                    simd.sub_f64s(
+                        simd.mul_f64s(u_real_vectors[index], even_basis),
+                        simd.mul_f64s(q_imag_vectors[index], odd_basis),
+                    ),
+                );
+                b_imag_sum = simd.add_f64s(
+                    b_imag_sum,
+                    simd.add_f64s(
+                        simd.mul_f64s(u_imag_vectors[index], even_basis),
+                        simd.mul_f64s(q_real_vectors[index], odd_basis),
+                    ),
+                );
+            }
+        }
+
+        let mut e_real_tail_sum = 0.0;
+        let mut e_imag_tail_sum = 0.0;
+        let mut b_real_tail_sum = 0.0;
+        let mut b_imag_tail_sum = 0.0;
+        for lane in 0..plus_tail.len() {
+            let plus_value = plus_tail[lane] * alpha_norm;
+            let minus_value = minus_tail[lane] * alpha_norm;
+            let even_basis = plus_value + minus_value;
+            let odd_basis = plus_value - minus_value;
+            e_real_tail_sum += q_real_tail[lane] * even_basis + u_imag_tail[lane] * odd_basis;
+            e_imag_tail_sum += q_imag_tail[lane] * even_basis - u_real_tail[lane] * odd_basis;
+            if include_b {
+                b_real_tail_sum += u_real_tail[lane] * even_basis - q_imag_tail[lane] * odd_basis;
+                b_imag_tail_sum += u_imag_tail[lane] * even_basis + q_real_tail[lane] * odd_basis;
+            }
+        }
+
+        (
+            Complex64::new(
+                simd.reduce_sum_f64s(e_real_sum) + e_real_tail_sum,
+                simd.reduce_sum_f64s(e_imag_sum) + e_imag_tail_sum,
+            ),
+            Complex64::new(
+                simd.reduce_sum_f64s(b_real_sum) + b_real_tail_sum,
+                simd.reduce_sum_f64s(b_imag_sum) + b_imag_tail_sum,
+            ),
+        )
+    }
+}
+
 fn power(base: f64, mut exponent: usize) -> Result<ScaledValue, ShtError> {
     let mut result = ScaledValue {
         mantissa: 1.0,
@@ -491,6 +678,112 @@ pub(crate) fn spin_normalization(spin: usize, degree: usize, derivative: bool) -
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    struct AnalysisLanes {
+        q_real: Vec<f64>,
+        q_imag: Vec<f64>,
+        u_real: Vec<f64>,
+        u_imag: Vec<f64>,
+        plus: Vec<f64>,
+        plus_exponents: Vec<i64>,
+        minus: Vec<f64>,
+        minus_exponents: Vec<i64>,
+        limits: Vec<usize>,
+    }
+
+    impl AnalysisLanes {
+        fn new(count: usize) -> Self {
+            Self {
+                q_real: (0..count).map(|lane| 0.25 + lane as f64 * 0.007).collect(),
+                q_imag: (0..count).map(|lane| -0.4 + lane as f64 * 0.003).collect(),
+                u_real: (0..count).map(|lane| 0.15 - lane as f64 * 0.002).collect(),
+                u_imag: (0..count).map(|lane| 0.55 + lane as f64 * 0.004).collect(),
+                plus: (0..count).map(|lane| 0.31 + lane as f64 * 0.001).collect(),
+                plus_exponents: vec![0; count],
+                minus: (0..count).map(|lane| -0.17 + lane as f64 * 0.002).collect(),
+                minus_exponents: vec![0; count],
+                limits: vec![64; count],
+            }
+        }
+
+        fn accumulate(
+            &self,
+            arch: Arch,
+            m: usize,
+            alpha_norm: f64,
+            include_b: bool,
+        ) -> (Complex64, Complex64) {
+            accumulate_analysis_dispatched(
+                arch,
+                m,
+                &self.q_real,
+                &self.q_imag,
+                &self.u_real,
+                &self.u_imag,
+                &self.plus,
+                &self.plus_exponents,
+                &self.minus,
+                &self.minus_exponents,
+                alpha_norm,
+                &self.limits,
+                include_b,
+            )
+        }
+
+        fn scalar_reference(
+            &self,
+            m: usize,
+            alpha_norm: f64,
+            include_b: bool,
+        ) -> (Complex64, Complex64) {
+            let mut e_sum = Complex64::new(0.0, 0.0);
+            let mut b_sum = Complex64::new(0.0, 0.0);
+            for lane in 0..self.plus.len() {
+                if m > self.limits[lane] {
+                    continue;
+                }
+                let plus_value =
+                    scaled_basis_value(self.plus[lane], self.plus_exponents[lane], alpha_norm);
+                let minus_value =
+                    scaled_basis_value(self.minus[lane], self.minus_exponents[lane], alpha_norm);
+                let even_basis = plus_value + minus_value;
+                let odd_basis = plus_value - minus_value;
+                let q = Complex64::new(self.q_real[lane], self.q_imag[lane]);
+                let u = Complex64::new(self.u_real[lane], self.u_imag[lane]);
+                e_sum += q * even_basis + Complex64::new(0.0, -1.0) * u * odd_basis;
+                if include_b {
+                    b_sum += Complex64::new(0.0, 1.0) * q * odd_basis + u * even_basis;
+                }
+            }
+            (e_sum, b_sum)
+        }
+    }
+
+    #[test]
+    fn spin_analysis_simd_accumulation_matches_scalar_blocks_and_tails() {
+        for count in [64, 61] {
+            let lanes = AnalysisLanes::new(count);
+            let expected = lanes.scalar_reference(4, 0.75, true);
+            for arch in [Arch::Scalar, Arch::new()] {
+                let actual = lanes.accumulate(arch, 4, 0.75, true);
+                assert!((actual.0 - expected.0).norm() < 2e-14);
+                assert!((actual.1 - expected.1).norm() < 2e-14);
+            }
+        }
+    }
+
+    #[test]
+    fn spin_analysis_scaled_and_inactive_lanes_use_scalar_accumulation() {
+        let mut lanes = AnalysisLanes::new(64);
+        lanes.plus_exponents[11] = -800;
+        lanes.limits[7] = 3;
+        let expected = lanes.scalar_reference(4, 0.75, true);
+        for arch in [Arch::Scalar, Arch::new()] {
+            let actual = lanes.accumulate(arch, 4, 0.75, true);
+            assert_eq!(actual.0, expected.0);
+            assert_eq!(actual.1, expected.1);
+        }
+    }
 
     #[test]
     fn scaled_spin_basis_matches_binary_scaling_reference() {

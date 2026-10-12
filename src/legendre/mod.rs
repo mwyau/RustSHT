@@ -206,6 +206,45 @@ pub(crate) trait ShtScalar:
         }
         (same, opposite)
     }
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Spin analysis accumulation receives lane spectra, two scaled bases and cutoff metadata."
+    )]
+    fn accumulate_spin_analysis_block(
+        _arch: Arch,
+        m: usize,
+        q_real: &[Self],
+        q_imag: &[Self],
+        u_real: &[Self],
+        u_imag: &[Self],
+        plus: &[Self],
+        plus_exponents: &[i64],
+        minus: &[Self],
+        minus_exponents: &[i64],
+        alpha_norm: Self,
+        ring_order_limits: &[usize],
+        include_b: bool,
+    ) -> (Complex<Self>, Complex<Self>) {
+        let mut e_sum = Complex::new(Self::zero(), Self::zero());
+        let mut b_sum = Complex::new(Self::zero(), Self::zero());
+        for lane in 0..plus.len() {
+            if m > ring_order_limits[lane] {
+                continue;
+            }
+            let plus_value = Self::scaled_basis_value(plus[lane], plus_exponents[lane], alpha_norm);
+            let minus_value =
+                Self::scaled_basis_value(minus[lane], minus_exponents[lane], alpha_norm);
+            let even_basis = plus_value + minus_value;
+            let odd_basis = plus_value - minus_value;
+            let q = Complex::new(q_real[lane], q_imag[lane]);
+            let u = Complex::new(u_real[lane], u_imag[lane]);
+            e_sum += q * even_basis + Complex::new(Self::zero(), -Self::one()) * u * odd_basis;
+            if include_b {
+                b_sum += Complex::new(Self::zero(), Self::one()) * q * odd_basis + u * even_basis;
+            }
+        }
+        (e_sum, b_sum)
+    }
     fn multiply_complex_scaled_product(
         value: Complex<Self>,
         factor: Self,
@@ -415,6 +454,38 @@ impl ShtScalar for f64 {
             basis,
             exponents,
             cos_theta,
+        )
+    }
+
+    fn accumulate_spin_analysis_block(
+        arch: Arch,
+        m: usize,
+        q_real: &[Self],
+        q_imag: &[Self],
+        u_real: &[Self],
+        u_imag: &[Self],
+        plus: &[Self],
+        plus_exponents: &[i64],
+        minus: &[Self],
+        minus_exponents: &[i64],
+        alpha_norm: Self,
+        ring_order_limits: &[usize],
+        include_b: bool,
+    ) -> (Complex<Self>, Complex<Self>) {
+        spin::accumulate_analysis_dispatched(
+            arch,
+            m,
+            q_real,
+            q_imag,
+            u_real,
+            u_imag,
+            plus,
+            plus_exponents,
+            minus,
+            minus_exponents,
+            alpha_norm,
+            ring_order_limits,
+            include_b,
         )
     }
 
