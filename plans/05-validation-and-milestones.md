@@ -1301,3 +1301,27 @@ The Python extension was rebuilt and measured with `examples/python_perf_baselin
 | 8 | `53.062` | `5.653` | `9.4x` | `5.624e-14 / 1.611e-15 / 1.323e-13` |
 
 The focused kernel comparison passed for scalar fallback and dispatched SIMD with 64-lane and tail blocks. T511 spin-1/2 DUCC, roundtrip and adjoint checks passed on GL, CC and F1 with one and eight workers. T2047 sparse synthesis passed DUCC and sectoral analytic checks for spins 1–4 on all three grids at one and eight workers; spin-2 DUCC sample error was `2.085e-13`, with analytic map maximum/RMS errors `1.236e-11`/`3.88e-13`. Workspace size is unchanged. The change is retained for its repeatable single-thread gain; the multithreaded analysis profile is the next target.
+
+### SIMD lane accumulation for spin-2 analysis (2026-10-12)
+
+The paired scalar-analysis SIMD reducer accumulated a horizontal reduction for each 4-lane AVX2 block. It now keeps the partial sums in SIMD lanes across the full latitude block and reduces each result once at the end. Scalar tails and the overflow-safe scaled fallback are unchanged. This path is used by f64 scalar analysis and the f64 spin-1/2 scalar-conversion analysis; f32 continues to use its existing implementation. The vector reduction changes summation order.
+
+Callgrind 3.26.0 profiled one f64 spin-2 T511 GL analysis with one Rayon worker on the Ryzen 9 5950X. The harness, plan, workspace and Rust 1.99.0 release build were matched. Whole-process instruction references fell from `4,437,096,021` to `4,280,713,039` (`-3.5%`). The x86-v3 Pulp `AnalysisPairAccumulation` body fell from `445,781,364` to `289,398,412` references (`-35.1%`). These are instruction-simulator counts, not cycles; `perf stat` remains blocked by `perf_event_paranoid=4`.
+
+Native release timings used `m1b_bench 2 511 8 analysis`, reused plan and workspace, T511 GL `512x1025`, `phi0=0.37`, one warm-up and five samples per run. Each version used three process runs pinned to CPUs 0–7 on the Ryzen 9 5950X, with Rust `1.99.0 (b940084d7 2026-09-28)`, Cargo release optimization and portable Pulp AVX2/FMA dispatch. Values are medians and ranges of process medians in milliseconds:
+
+| Threads | Before | Deferred horizontal reduction | Change |
+| ---: | ---: | ---: | ---: |
+| 1 | `218.476; 3.010` | `201.506; 1.425` | `-7.8%` |
+| 8 | `48.265; 1.001` | `46.357; 0.630` | `-4.0%` |
+
+The rebuilt Python plan comparison used Python `3.11.15`, NumPy `2.4.6`, installed `ducc0==0.41.0` from revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`, three run medians of five samples, and matching maps and transform parameters. Ratios are RustSHT/DUCC0; the Python plan allocates its workspace per call:
+
+| Grid and threads | RustSHT (ms) | DUCC0 (ms) | Ratio | Max absolute / RMS / relative L2 coefficient error |
+| --- | ---: | ---: | ---: | ---: |
+| T511, 1 | `200.350` | `28.954` | `6.9x` | `1.274e-14 / 2.426e-16 / 4.751e-14` |
+| T511, 8 | `46.249` | `3.846` | `12.0x` | `1.274e-14 / 2.426e-16 / 4.751e-14` |
+| T1023, 1 | `1,172.082` | `261.085` | `4.5x` | `1.527e-14 / 1.920e-16 / 7.518e-14` |
+| T1023, 8 | `289.316` | `39.922` | `7.2x` | `1.527e-14 / 1.920e-16 / 7.518e-14` |
+
+The scalar T511/T1023/T2047 DUCC and analytic checks passed on GL, CC and F1 with one and eight workers. T511 spin-1/2 DUCC, roundtrip and adjoint checks passed on all three grids at one and eight workers. Exact spin-1/2 T1023 analysis passed on all three grids at one and eight workers; the largest spin-2 analysis coefficient errors were `1.944e-17` at T511 and `8.664e-18` at T1023. The focused overflow-fallback test and paired reducer scalar-reference test passed. The reducer adds no workspace storage. This change is retained for its measured one- and eight-thread improvement; further profiling is needed to isolate the remaining polar recurrence and accumulation costs.

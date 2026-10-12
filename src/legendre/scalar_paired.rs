@@ -341,24 +341,38 @@ impl WithSimd for AnalysisPairAccumulation<'_> {
         debug_assert_eq!(opposite_imag_vectors.len(), basis_vectors.len());
         debug_assert_eq!(cosine_vectors.len(), basis_vectors.len());
 
-        let mut same_re = 0.0;
-        let mut same_im = 0.0;
-        let mut opposite_re = 0.0;
-        let mut opposite_im = 0.0;
+        let mut same_re = simd.splat_f64s(0.0);
+        let mut same_im = simd.splat_f64s(0.0);
+        let mut opposite_re = simd.splat_f64s(0.0);
+        let mut opposite_im = simd.splat_f64s(0.0);
         for index in 0..basis_vectors.len() {
-            same_re +=
-                simd.reduce_sum_f64s(simd.mul_f64s(same_real_vectors[index], basis_vectors[index]));
-            same_im +=
-                simd.reduce_sum_f64s(simd.mul_f64s(same_imag_vectors[index], basis_vectors[index]));
-            opposite_re += simd.reduce_sum_f64s(simd.mul_f64s(
-                simd.mul_f64s(opposite_real_vectors[index], basis_vectors[index]),
-                cosine_vectors[index],
-            ));
-            opposite_im += simd.reduce_sum_f64s(simd.mul_f64s(
-                simd.mul_f64s(opposite_imag_vectors[index], basis_vectors[index]),
-                cosine_vectors[index],
-            ));
+            same_re = simd.add_f64s(
+                same_re,
+                simd.mul_f64s(same_real_vectors[index], basis_vectors[index]),
+            );
+            same_im = simd.add_f64s(
+                same_im,
+                simd.mul_f64s(same_imag_vectors[index], basis_vectors[index]),
+            );
+            opposite_re = simd.add_f64s(
+                opposite_re,
+                simd.mul_f64s(
+                    simd.mul_f64s(opposite_real_vectors[index], basis_vectors[index]),
+                    cosine_vectors[index],
+                ),
+            );
+            opposite_im = simd.add_f64s(
+                opposite_im,
+                simd.mul_f64s(
+                    simd.mul_f64s(opposite_imag_vectors[index], basis_vectors[index]),
+                    cosine_vectors[index],
+                ),
+            );
         }
+        let mut same_re = simd.reduce_sum_f64s(same_re);
+        let mut same_im = simd.reduce_sum_f64s(same_im);
+        let mut opposite_re = simd.reduce_sum_f64s(opposite_re);
+        let mut opposite_im = simd.reduce_sum_f64s(opposite_im);
         for lane in 0..basis_tail.len() {
             same_re += same_real_tail[lane] * basis_tail[lane];
             same_im += same_imag_tail[lane] * basis_tail[lane];
