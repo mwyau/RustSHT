@@ -12,6 +12,28 @@ use crate::legendre::{LATITUDE_BLOCK_SIZE, ShtScalar, longitude_phase, sin_cos_f
 use crate::plan::ShtPlan;
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
+#[cfg(feature = "parallel")]
+pub(crate) fn weighted_order_midpoint(lmax: usize, m_start: usize, m_end: usize) -> usize {
+    debug_assert!(m_start < m_end);
+    debug_assert!(m_end - 1 <= lmax);
+    debug_assert!(m_end - m_start > 1);
+
+    let total_work = (m_start..m_end).map(|m| lmax - m + 1).sum::<usize>();
+    let mut left_work = 0;
+    let mut best_mid = m_start + 1;
+    let mut best_difference = usize::MAX;
+    for m in m_start..(m_end - 1) {
+        left_work += lmax - m + 1;
+        let right_work = total_work - left_work;
+        let difference = left_work.abs_diff(right_work);
+        if difference < best_difference {
+            best_difference = difference;
+            best_mid = m + 1;
+        }
+    }
+    best_mid
+}
+
 #[allow(private_bounds)]
 impl<T: ShtScalar> ShtPlan<T> {
     /// Synthesizes one real scalar field into north-to-south row-major samples.
@@ -543,8 +565,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             );
         }
 
-        let left_order_count = order_count.div_ceil(2);
-        let m_mid = m_start + left_order_count;
+        let m_mid = weighted_order_midpoint(self.harmonics.lmax(), m_start, m_end);
         let coefficient_start = self
             .harmonics
             .index(m_start, m_start)
@@ -1058,6 +1079,32 @@ mod tests {
                 relative_error <= 1e-12,
                 "actual={actual:.16e}, expected={expected:.16e}, relative error={relative_error:.3e}"
             );
+        }
+    }
+
+    #[cfg(feature = "parallel")]
+    #[test]
+    fn weighted_order_midpoint_minimizes_coefficient_work() {
+        for (lmax, m_start, m_end) in [
+            (511, 0, 512),
+            (511, 0, 128),
+            (511, 300, 512),
+            (20, 4, 11),
+            (2, 0, 3),
+            (511, 0, 2),
+        ] {
+            let midpoint = weighted_order_midpoint(lmax, m_start, m_end);
+            assert!(m_start < midpoint && midpoint < m_end);
+            let work = |start: usize, end: usize| (start..end).map(|m| lmax - m + 1).sum::<usize>();
+            let difference = work(m_start, midpoint).abs_diff(work(midpoint, m_end));
+            for candidate in (m_start + 1)..m_end {
+                let candidate_difference =
+                    work(m_start, candidate).abs_diff(work(candidate, m_end));
+                assert!(
+                    difference <= candidate_difference,
+                    "lmax={lmax}, m_start={m_start}, m_end={m_end}, midpoint={midpoint}, candidate={candidate}"
+                );
+            }
         }
     }
 
