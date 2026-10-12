@@ -8,7 +8,9 @@ mod spin;
 mod spin_f32;
 mod spin_fast;
 
-pub(crate) use spin_fast::{scalar_to_spin1, spin1_to_scalar};
+pub(crate) use spin_fast::{
+    fill_spin2_factors, scalar_to_spin1, scalar_to_spin2, spin1_to_scalar, spin2_to_scalar,
+};
 
 use num_complex::Complex;
 use pulp::Arch;

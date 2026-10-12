@@ -114,19 +114,19 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
             )?,
             fast_scalar_first: allocate_complex(
                 spin_fast_coefficient_count,
-                "spin-1 fast scalar first coefficients",
+                "spin fast scalar first coefficients",
             )?,
             fast_scalar_second: allocate_complex(
                 spin_fast_coefficient_count,
-                "spin-1 fast scalar second coefficients",
+                "spin fast scalar second coefficients",
             )?,
             fast_spin_first: allocate_complex(
                 spin_fast_coefficient_count,
-                "spin-1 fast E coefficients",
+                "spin fast E coefficients",
             )?,
             fast_spin_second: allocate_complex(
                 spin_fast_coefficient_count,
-                "spin-1 fast B coefficients",
+                "spin fast B coefficients",
             )?,
         })
     }

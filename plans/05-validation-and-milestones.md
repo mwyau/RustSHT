@@ -901,3 +901,33 @@ The analysis implementation did not change; its measured medians varied by `4.3�
 The rebuilt Python plan was compared with `ducc0==0.41.0` from source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`, using Python 3.11.15, NumPy 2.4.6, two runs of one warmup and five timed samples, and the same input data and thread count. Plan methods construct a workspace per call. At T511, RustSHT plan synthesis medians were `84.661 ms` and `32.531 ms` at one and eight threads; DUCC medians were `11.698 ms` and `1.780 ms`. Analysis medians were `170.061 ms` and `32.448 ms`; DUCC medians were `12.306 ms` and `1.784 ms`. T511 synthesis errors were `2.316e-14` maximum absolute, `7.232e-16` RMS and `6.113e-14` relative L2. Analysis errors were `3.722e-15`, `1.045e-16` and `2.046e-14`. At T127, the Python plan synthesis medians were `3.498 ms` and `4.055 ms`, compared with DUCC's `1.098 ms` and `0.243 ms`; analysis medians were `2.667 ms` and `1.604 ms`, compared with `0.988 ms` and `0.257 ms`. The T127 eight-thread synthesis run medians differed by `1.952 ms`, so that comparison is noisy. T127 errors were `4.588e-16` maximum absolute, `3.603e-17` RMS and `1.217e-14` relative L2 for synthesis; analysis errors were `1.485e-15`, `1.002e-16` and `4.784e-15`. The end-to-end comparison shows improved scalar synthesis, but RustSHT remains slower than DUCC, especially with eight threads.
 
 `cargo fmt --all -- --check`, workspace Clippy with warnings denied, `cargo test --workspace --all-features` (85 library tests and 10 f32 integration tests passed; seven opt-in high-bandlimit tests ignored), `cargo test -p rustsht --no-default-features` (82 library tests and 10 f32 tests passed; seven opt-in tests ignored), and `uv run pytest python/tests` (eight passed) passed. The release T511/T1023/T2047 scalar DUCC and analytic check passed on all three grids.
+
+### DUCC scalar-conversion path for spin-2 STANDARD transforms (M4/M5, 2026-10-12)
+
+For f64 spin-2 STANDARD transforms with `lmax >= 500`, synthesis converts E/B coefficients to two scalar coefficient rows through degree `lmax+2`, uses the paired scalar recurrence, and divides the middle-latitude result by `sin(theta)^2`. Rings with `sin(theta) < 0.01` retain the general spin recurrence. The conversion factors and spin-2-to-scalar formulas adapt DUCC `spin2to0` in `sht.cc` at revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`. The scalar-to-spin-2 analysis conversion is the exact transpose of RustSHT's synthesis conversion, including both extension degrees. The fast analysis path is limited to exact GL analysis with one Rayon worker; CC/F1 analysis and eight-worker GL analysis use the general recurrence. GRAD_ONLY and DERIV1 remain on their existing paths. No spin-3/4 specialization was added.
+
+The added plan storage is two `f64` factor arrays, 8,192 bytes at T511 and 32,768 bytes at T2047. Four worker coefficient arrays use 33,024 bytes per worker at T511 and 131,328 bytes per worker at T2047. The extra recurrence factor uses eight bytes per worker. Thus eight-worker scratch increases by about 258 KiB at T511 and 1.00 MiB at T2047; no map-sized or dense harmonic workspace is added. The implementation is f64-only and keeps the existing portable scalar recurrence fallback.
+
+The coefficient-conversion test compares the spin-2 scalar conversion with the general spin recurrence at six latitudes through `lmax=16`, and checks its transpose against basis-vector inner products for every order. The release T511 spin-1/2 DUCC test passed for GL, CC and F1; spin-2 maximum DUCC synthesis-sample error was `5.107e-15`, maximum selected analysis-coefficient error `2.533e-17`, and maximum synthesis-analysis coefficient error `1.310e-14`. At T1023, spin-2 sparse synthesis passed on all grids with maximum DUCC sample error `4.115e-15`; exact analysis had maximum selected coefficient error `8.962e-18` and maximum synthesis-analysis coefficient error `3.175e-14`. The T2047 sparse test passed on all grids with maximum DUCC sample error `2.085e-13` and maximum analytic field error `1.236e-11` (RMS `3.883e-13`). The T511 spin-3/4 all-grid DUCC and analytic regressions and the routine spin-3/4 adjoint identities passed after the shared changes.
+
+Native release timings used `examples/m1b_bench.rs`, rustc 1.99.0, f64, T511 GL `512x1025`, `phi0=0.37`, an AMD Ryzen 9 5950X with AVX2/FMA dispatch and no AVX-512, reused plans/workspaces, one warmup, five timed samples, and three repeated runs. The before timings used the general spin recurrence; after timings enable scalar conversion for synthesis and one-worker analysis. Values are medians and ranges of the three run medians in milliseconds:
+
+| Operation | Threads | General (median; range) | Scalar conversion (median; range) | Change |
+| --- | ---: | ---: | ---: | ---: |
+| Synthesis | 1 | `1265.391; 3.790` | `572.065; 11.017` | `-54.8%` |
+| Synthesis | 8 | `188.096; 0.907` | `98.378; 3.112` | `-47.7%` |
+| Analysis | 1 | `1310.395; 17.579` | `740.092; 8.492` | `-43.5%` |
+| Analysis | 8 | `184.454; 4.611` | `184.236; 2.627` | `-0.1%` |
+
+The first eight-worker analysis run with scalar conversion enabled measured `214.279 ms`, so the fast analysis path is disabled above one worker. This retains the one-worker improvement without a multithread regression.
+
+The rebuilt release Python extension was compared with `ducc0==0.41.0` at the same pinned source revision. The host was the Ryzen 9 5950X; Python was 3.11.15 and NumPy 2.4.6. The harness used T511 GL inputs, reused the plan, allocated a workspace per RustSHT call, and took two run medians of five samples after a warmup. RustSHT plan timings include their per-call workspace allocation; all times are milliseconds:
+
+| Operation | Threads | RustSHT plan (median; range) | DUCC (median; range) | Plan / DUCC |
+| --- | ---: | ---: | ---: | ---: |
+| Synthesis | 1 | `575.255; 0.463` | `26.345; 0.215` | `21.8x` |
+| Synthesis | 8 | `102.512; 2.649` | `4.088; 0.080` | `25.1x` |
+| Analysis | 1 | `696.290; 2.904` | `27.862; 0.220` | `25.0x` |
+| Analysis | 8 | `188.181; 1.842` | `4.147; 0.078` | `45.4x` |
+
+Synthesis errors were `5.055e-14` absolute (`1.639e-15` RMS, `1.347e-13` relative L2) at both thread counts. Analysis errors were `1.317e-14` absolute (`2.707e-16` RMS, `5.301e-14` relative L2) with one thread, and `1.527e-14` (`2.541e-16`, `4.974e-14`) with eight. The T511 plan constructor took `0.036–0.039 ms`; NumPy coefficient/map copies took `0.104–0.207 ms`, and output allocation took `0.001 ms`. The scalar-conversion path improves RustSHT substantially but leaves a `21.8–45.4x` gap to DUCC, so it is not evidence of parity.

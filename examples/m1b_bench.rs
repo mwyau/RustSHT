@@ -20,6 +20,10 @@ fn measure(mut operation: impl FnMut()) -> Duration {
 }
 
 fn main() {
+    let spin = std::env::args()
+        .nth(1)
+        .map(|value| value.parse().expect("spin must be an integer"))
+        .unwrap_or(1);
     let lmax = 511;
     let ntheta = lmax + 1;
     let nphi = 2 * lmax + 3;
@@ -34,14 +38,14 @@ fn main() {
         .unwrap();
     let plan = ShtPlan::new(
         GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, 0.37).unwrap(),
-        HarmonicSpec::new(lmax, lmax, 1).unwrap(),
+        HarmonicSpec::new(lmax, lmax, spin).unwrap(),
     )
     .unwrap();
     let mut workspace = rayon_pool.install(|| plan.workspace()).unwrap();
     let mut e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
     let mut b = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
     for m in 0..=lmax {
-        for l in m.max(1)..=lmax {
+        for l in m.max(spin)..=lmax {
             let index = plan.harmonics().index(l, m).unwrap();
             let e_im = if m == 0 {
                 0.0
@@ -117,7 +121,7 @@ fn main() {
     });
 
     println!(
-        "spin-1 T{lmax}; GL {ntheta}x{nphi}; f64; 1 vs {rayon_threads} threads; 5 samples, median"
+        "spin-{spin} T{lmax}; GL {ntheta}x{nphi}; f64; 1 vs {rayon_threads} threads; 5 samples, median"
     );
     println!(
         "synthesis_one_thread_ms={:.3}",
