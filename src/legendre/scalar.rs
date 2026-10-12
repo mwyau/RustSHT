@@ -300,17 +300,17 @@ pub(crate) fn multiply_complex_scaled(value: Complex64, factor: f64, exponent: i
 }
 
 fn multiply_component_scaled(value: f64, factor: f64, exponent: i64) -> f64 {
-    if value == 0.0 || factor == 0.0 || !value.is_finite() || !factor.is_finite() {
-        return scale_binary(value * factor, exponent);
-    }
     if value.is_normal() && factor.is_normal() {
         let product = value * factor;
         if product.is_normal() {
-            let scaled = scale_binary(product, exponent);
+            let scaled = scale_normal_binary(product, exponent);
             if scaled.is_normal() {
                 return scaled;
             }
         }
+    }
+    if value == 0.0 || factor == 0.0 || !value.is_finite() || !factor.is_finite() {
+        return scale_binary(value * factor, exponent);
     }
     let (value_mantissa, value_exponent) = split_binary(value);
     let (factor_mantissa, factor_exponent) = split_binary(factor);
@@ -477,6 +477,28 @@ pub(crate) fn scale_binary(mut value: f64, mut exponent: i64) -> f64 {
         }
     }
     value * 2.0_f64.powi(exponent as i32)
+}
+
+fn scale_normal_binary(value: f64, exponent: i64) -> f64 {
+    debug_assert!(value.is_normal());
+    if exponent == 0 {
+        return value;
+    }
+    if exponent > 4096 {
+        return f64::INFINITY.copysign(value);
+    }
+    if exponent < -4096 {
+        return 0.0_f64.copysign(value);
+    }
+
+    let bits = value.to_bits();
+    let raw_exponent = ((bits >> 52) & 0x7ff) as i64;
+    let scaled_exponent = raw_exponent + exponent;
+    if (1..0x7ff).contains(&scaled_exponent) {
+        let exponent_mask = 0x7ff_u64 << 52;
+        return f64::from_bits((bits & !exponent_mask) | ((scaled_exponent as u64) << 52));
+    }
+    scale_binary(value, exponent)
 }
 
 #[cfg(test)]
@@ -741,6 +763,9 @@ mod tests {
             -1.5,
             f64::MIN_POSITIVE,
             f64::from_bits(1),
+            f64::INFINITY,
+            f64::NEG_INFINITY,
+            f64::NAN,
         ];
         let exponents = [
             -4097, -2048, -1023, -1022, -801, -800, -401, -1, 0, 1, 401, 800, 1022, 1023, 2048,
@@ -756,6 +781,13 @@ mod tests {
                     expected.to_bits(),
                     "value={value:e}, exponent={exponent}, actual={actual:e}, expected={expected:e}"
                 );
+                if value.is_normal() {
+                    assert_eq!(
+                        scale_normal_binary(value, exponent).to_bits(),
+                        expected.to_bits(),
+                        "normal value={value:e}, exponent={exponent}"
+                    );
+                }
             }
         }
     }
