@@ -565,3 +565,19 @@ The staged T511 plan-to-DUCC ratios are `29.6x` and `29.3x` for synthesis, and `
 | Analysis | 8 | `373.047 (1.153)` | `375.066 (7.508)` | `16.120 (0.284)` | `23.1x` |
 
 Synthesis error was `1.459e-13` maximum absolute, `2.748e-15` RMS and `1.161e-13` relative L2; analysis error was `2.109e-14`, `2.208e-16` and `8.642e-14`. These errors matched at one and eight threads. T1023 NumPy input copies took `0.145–1.195 ms`; output allocation took `0.001–0.002 ms`. Rust 1.89 passed the focused scaled-to-normal transition test. Rust 1.99 all-feature tests passed 78 library tests and 10 f32 integration tests, with seven high-bandlimit tests ignored; no-default-feature tests passed 75 library tests and the same 10 f32 tests. The release T2047 scalar DUCC/analytic test passed. Formatting, workspace Clippy with warnings denied, and all eight Python tests passed. The existing spin-3/4 regression test passed.
+
+### Scalar north/south paired analysis (M4, 2026-10-12)
+
+Scalar analysis pairs mirrored GL, CC and F1 latitudes, including the prepared CC/F1 grids. For each order, it forms the sum and difference of the already phased and weighted Fourier samples. The scalar parity relation `Y_lm(pi-theta) = (-1)^(l+m) Y_lm(theta)` selects the pair for each degree, so the Legendre recurrence runs on the northern half of the latitude grid. The equatorial sample is evaluated once and contributes through either parity sum. Per-ring polar limits are applied to each member of the pair. The implementation reuses the recurrence worker's Fourier scratch and adds no workspace memory. The same path handles adjoint synthesis; spin-weighted recurrences are unchanged. Native release measurements used rustc 1.99.0, f64, AVX2/FMA dispatch, the x86-64 CPU (host topology omitted), reused plans and workspaces, one warmup and five timed samples per run. Each entry gives the median and range of three run medians in milliseconds. The before values use commit `1be81f7` (the normal-range recurrence stage); GL shapes were `128x257`, `512x1025` and `1024x2049` for T127, T511 and T1023. Synthesis does not use this path and is omitted.
+
+| Bandlimit | Threads | Analysis before (median; range) | Paired (median; range) | Change | Estimated numeric arrays |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 127 | 1 | `5.649; 0.120` | `2.612; 0.106` | `-53.8%` | `1.11 MiB` |
+| 127 | 8 | `3.051; 0.050` | `1.688; 0.161` | `-44.7%` | `1.11 MiB` |
+| 511 | 1 | `315.721; 1.094` | `168.799; 1.603` | `-46.5%` | `16.25 MiB` |
+| 511 | 8 | `51.369; 7.307` | `33.283; 4.132` | `-35.2%` | `16.25 MiB` |
+| 1023 | 1 | `2376.549; 33.930` | `1392.168; 11.730` | `-41.4%` | `64.43 MiB` |
+| 1023 | 8 | `391.370; 7.145` | `281.124; 4.154` | `-28.2%` | `64.43 MiB` |
+
+
+The rebuilt Python extension was compared with `ducc0==0.41.0` at source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf` on T511 GL. RustSHT plan analysis took `169.535 ms` with one thread and `34.593 ms` with eight threads; DUCC took `12.433 ms` and `1.704 ms`. The plan-to-DUCC ratios were `13.6x` and `20.3x`. Maximum absolute/RMS/relative L2 coefficient errors were `6.960e-15`/`1.602e-16`/`3.137e-14` at both thread counts. The release T511/T1023/T2047 scalar comparison against DUCC and analytic fields passed on GL, CC and F1. `cargo test --workspace --all-features` passed 78 library tests and 10 f32 integration tests, with seven high-bandlimit tests ignored; `cargo test -p rustsht --no-default-features` passed 75 library tests and the same 10 f32 tests. Rust 1.89 passed the transform test set (41 passed, seven ignored). Formatting, workspace Clippy with warnings denied, and all eight Python tests passed. The existing spin-3/4 regression also passed.

@@ -647,16 +647,77 @@ impl<T: ShtScalar> ShtPlan<T> {
         alm: &mut [Complex<T>],
         recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<(), ShtError> {
+        self.analyze_symmetric_order_group(
+            spectra,
+            latitude_count,
+            theta_sin,
+            theta_cos,
+            ring_order_limits,
+            arch,
+            m_start,
+            m_end,
+            alm,
+            recurrence,
+        )
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The symmetric analysis group receives plan geometry and worker scratch explicitly."
+    )]
+    fn analyze_symmetric_order_group(
+        &self,
+        spectra: &[Complex<T>],
+        latitude_count: usize,
+        theta_sin: &[T],
+        theta_cos: &[T],
+        ring_order_limits: &[usize],
+        arch: pulp::Arch,
+        m_start: usize,
+        m_end: usize,
+        alm: &mut [Complex<T>],
+        recurrence: &mut RecurrenceWorkspace<T>,
+    ) -> Result<(), ShtError> {
+        // GL, CC, F1 and prepared meridional grids use mirrored colatitudes.
+        // Scalar harmonics satisfy Y_lm(pi-theta) = (-1)^(l+m) Y_lm(theta).
+        debug_assert_eq!(theta_sin.len(), latitude_count);
+        debug_assert_eq!(theta_cos.len(), latitude_count);
+        debug_assert_eq!(ring_order_limits.len(), latitude_count);
         let lmax = self.harmonics.lmax();
+        let pair_lane_count = latitude_count.div_ceil(2);
         let mut coefficient_start = 0;
+
         for m in m_start..m_end {
             let coefficient_count = lmax - m + 1;
             let coefficients = &mut alm[coefficient_start..coefficient_start + coefficient_count];
             T::fill_epsilon(m, lmax, &mut recurrence.epsilon);
-            for block_start in (0..theta_sin.len()).step_by(LATITUDE_BLOCK_SIZE) {
-                let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(theta_sin.len());
-                let weighted_spectrum =
-                    &spectra[m * latitude_count + block_start..m * latitude_count + block_end];
+
+            for block_start in (0..pair_lane_count).step_by(LATITUDE_BLOCK_SIZE) {
+                let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(pair_lane_count);
+                let block_len = block_end - block_start;
+                let order_spectra = &spectra[m * latitude_count..(m + 1) * latitude_count];
+                for lane in 0..block_len {
+                    let north_ring = block_start + lane;
+                    let south_ring = latitude_count - 1 - north_ring;
+                    let north = if m <= ring_order_limits[north_ring] {
+                        order_spectra[north_ring]
+                    } else {
+                        Complex::new(T::zero(), T::zero())
+                    };
+                    let south = if south_ring == north_ring {
+                        // The equatorial sample contributes once for either parity.
+                        Complex::new(T::zero(), T::zero())
+                    } else if m <= ring_order_limits[south_ring] {
+                        order_spectra[south_ring]
+                    } else {
+                        Complex::new(T::zero(), T::zero())
+                    };
+                    recurrence.weighted_spin_q_spectrum[lane] = north + south;
+                    recurrence.weighted_spin_u_spectrum[lane] = north - south;
+                }
+                let same_parity_spectrum = &recurrence.weighted_spin_q_spectrum[..block_len];
+                let opposite_parity_spectrum = &recurrence.weighted_spin_u_spectrum[..block_len];
+
                 T::for_each_y_lm_dispatched(
                     arch,
                     m,
@@ -671,13 +732,14 @@ impl<T: ShtScalar> ShtPlan<T> {
                     &mut recurrence.exponents,
                     |l, ring_start, current, exponents| {
                         let coefficient = &mut coefficients[l - m];
+                        let paired_spectra = if (l + m).is_multiple_of(2) {
+                            same_parity_spectrum
+                        } else {
+                            opposite_parity_spectrum
+                        };
                         for lane in 0..current.len() {
-                            let ring = ring_start + lane;
-                            if m > ring_order_limits[block_start + ring] {
-                                continue;
-                            }
                             *coefficient += T::multiply_complex_scaled(
-                                weighted_spectrum[ring],
+                                paired_spectra[ring_start + lane],
                                 current[lane],
                                 exponents[lane],
                             );
