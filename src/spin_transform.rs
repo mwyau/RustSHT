@@ -7,7 +7,7 @@ use num_complex::Complex;
 use rayon::prelude::*;
 
 use crate::error::ShtError;
-use crate::legendre::ShtScalar;
+use crate::legendre::{ShtScalar, longitude_phase, sin_cos_from_f64};
 use crate::plan::ShtPlan;
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
@@ -360,7 +360,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             .expect("CC adjoint analysis requires the prepared CC operator");
         let prepared_ntheta = resampling.prepared_ntheta();
         for (ring, &theta) in resampling.prepared_theta().iter().enumerate() {
-            (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
+            (workspace.theta_sin[ring], workspace.theta_cos[ring]) = sin_cos_from_f64::<T>(theta);
             workspace.ring_order_limits[ring] = T::polar_order_limit(
                 self.harmonics.lmax(),
                 spin,
@@ -381,7 +381,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             false,
             1,
             self.fft.spectrum_len(),
-            T::from_f64(self.grid.phi0()).expect("longitude origin is representable"),
+            self.grid.phi0(),
             0,
             prepared_ntheta,
             &mut workspace.prepared_spectra,
@@ -534,7 +534,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                 &mut workspace.cc_fft_scratch,
             )?;
             for (ring, &theta) in resampling.prepared_theta().iter().enumerate() {
-                (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
+                (workspace.theta_sin[ring], workspace.theta_cos[ring]) =
+                    sin_cos_from_f64::<T>(theta);
                 workspace.ring_order_limits[ring] = T::polar_order_limit(
                     self.harmonics.lmax(),
                     recurrence_spin,
@@ -575,7 +576,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     u_spectra,
                     nphi,
                     spectrum_len,
-                    T::from_f64(self.grid.phi0()).expect("longitude origin is representable"),
+                    self.grid.phi0(),
                     analysis_ring_weights,
                     analysis_normalize_fourier,
                     recurrence_spin,
@@ -596,7 +597,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     u_spectra,
                     nphi,
                     spectrum_len,
-                    T::from_f64(self.grid.phi0()).expect("longitude origin is representable"),
+                    self.grid.phi0(),
                     analysis_ring_weights,
                     analysis_normalize_fourier,
                     recurrence_spin,
@@ -619,7 +620,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             u_spectra,
             nphi,
             spectrum_len,
-            T::from_f64(self.grid.phi0()).expect("longitude origin is representable"),
+            self.grid.phi0(),
             analysis_ring_weights,
             analysis_normalize_fourier,
             recurrence_spin,
@@ -692,7 +693,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let ntheta = self.grid.ntheta();
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
-        let phi0 = T::from_f64(self.grid.phi0()).expect("longitude origin is representable");
+        let phi0 = self.grid.phi0();
         self.prepare_spin_latitudes(workspace, recurrence_spin);
         workspace
             .spectra
@@ -814,7 +815,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         derivative_norm: bool,
         nphi: usize,
         spectrum_len: usize,
-        phi0: T,
+        phi0: f64,
         ring_start: usize,
         ring_end: usize,
         q_spectra: &mut [Complex<T>],
@@ -840,10 +841,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 &mut recurrence.spin_coefficient_a,
                 &mut recurrence.spin_coefficient_b,
             )?;
-            let phase = Complex::from_polar(
-                T::one(),
-                T::from_usize(m).expect("mode converts to transform scalar") * phi0,
-            );
+            let phase = longitude_phase::<T>(m, phi0, false);
             T::for_each_spin_lm_dispatched(
                 arch,
                 &initial,
@@ -921,7 +919,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         u_spectra: &[Complex<T>],
         nphi: usize,
         spectrum_len: usize,
-        phi0: T,
+        phi0: f64,
         ring_weights: Option<&[f64]>,
         normalize_fourier: bool,
         recurrence_spin: usize,
@@ -953,10 +951,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 &mut recurrence.spin_coefficient_a,
                 &mut recurrence.spin_coefficient_b,
             )?;
-            let phase = Complex::from_polar(
-                T::one(),
-                -(T::from_usize(m).expect("mode converts to transform scalar") * phi0),
-            );
+            let phase = longitude_phase::<T>(m, phi0, true);
             T::for_each_spin_lm_dispatched(
                 arch,
                 &initial,
@@ -1031,7 +1026,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         u_spectra: &[Complex<T>],
         nphi: usize,
         spectrum_len: usize,
-        phi0: T,
+        phi0: f64,
         ring_weights: Option<&[f64]>,
         normalize_fourier: bool,
         recurrence_spin: usize,
@@ -1143,8 +1138,7 @@ impl<T: ShtScalar> ShtPlan<T> {
 
     fn prepare_spin_latitudes(&self, workspace: &mut ShtWorkspace<T>, spin: usize) {
         for (ring, &theta) in self.grid.theta().iter().enumerate() {
-            let theta = T::from_f64(theta).expect("grid colatitude is representable");
-            (workspace.theta_sin[ring], workspace.theta_cos[ring]) = theta.sin_cos();
+            (workspace.theta_sin[ring], workspace.theta_cos[ring]) = sin_cos_from_f64::<T>(theta);
             workspace.ring_order_limits[ring] = T::polar_order_limit(
                 self.harmonics.lmax(),
                 spin,

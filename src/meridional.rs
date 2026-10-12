@@ -58,7 +58,7 @@ pub(crate) struct CCResamplingPlan<T: FftNum = f64> {
     original_ntheta: usize,
     original_north_pole: bool,
     phase_shift: Vec<Complex<T>>,
-    prepared_theta: Vec<T>,
+    prepared_theta: Vec<f64>,
     original_full_len: usize,
     prepared_full_len: usize,
     full_len: usize,
@@ -139,11 +139,10 @@ impl<T: FftNum + Float> CCResamplingPlan<T> {
         for i in 0..north_count {
             let theta = std::f64::consts::PI * i as f64 / (prepared_ntheta - 1) as f64;
             let south = prepared_ntheta - 1 - i;
-            prepared_theta[i] = T::from_f64(theta).expect("colatitude is representable");
-            prepared_theta[south] =
-                T::from_f64(std::f64::consts::PI - theta).expect("colatitude is representable");
+            prepared_theta[i] = theta;
+            prepared_theta[south] = std::f64::consts::PI - theta;
         }
-        prepared_theta[0] = T::zero();
+        prepared_theta[0] = 0.0;
 
         let mut phase_shift = allocate_complex(
             if original_north_pole {
@@ -189,7 +188,7 @@ impl<T: FftNum + Float> CCResamplingPlan<T> {
         })
     }
 
-    pub(crate) fn prepared_theta(&self) -> &[T] {
+    pub(crate) fn prepared_theta(&self) -> &[f64] {
         &self.prepared_theta
     }
 

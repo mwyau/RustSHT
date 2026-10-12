@@ -13,6 +13,52 @@ use rustfft::num_traits::{Float, FromPrimitive};
 
 use crate::error::ShtError;
 
+pub(crate) fn longitude_phase<T: Float + FromPrimitive>(
+    order: usize,
+    phi0: f64,
+    inverse: bool,
+) -> Complex<T> {
+    let angle = order as f64 * phi0;
+    let phase = if angle.is_finite() {
+        let angle = if inverse { -angle } else { angle };
+        let (sin, cos) = angle.sin_cos();
+        Complex::<f64>::new(cos, sin)
+    } else {
+        let (sin, cos) = phi0.sin_cos();
+        let mut base = Complex::<f64>::new(cos, sin);
+        let mut result = Complex::<f64>::new(1.0, 0.0);
+        let mut exponent = order;
+        while exponent > 0 {
+            if exponent & 1 == 1 {
+                result *= base;
+            }
+            exponent >>= 1;
+            if exponent > 0 {
+                base *= base;
+            }
+        }
+        if inverse { result.conj() } else { result }
+    };
+    Complex::new(
+        T::from_f64(phase.re).expect("longitude phase is representable"),
+        T::from_f64(phase.im).expect("longitude phase is representable"),
+    )
+}
+
+pub(crate) fn sin_cos_from_f64<T: Float + FromPrimitive>(angle: f64) -> (T, T) {
+    let (sin, cos) = if angle == 0.0 {
+        (0.0, 1.0)
+    } else if angle == std::f64::consts::PI {
+        (0.0, -1.0)
+    } else {
+        angle.sin_cos()
+    };
+    (
+        T::from_f64(sin).expect("latitude sine is representable"),
+        T::from_f64(cos).expect("latitude cosine is representable"),
+    )
+}
+
 /// Numerical operations needed by the f32 and f64 transform implementations.
 ///
 /// This remains crate-private so the public API exposes only the supported

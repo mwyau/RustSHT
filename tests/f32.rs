@@ -5,7 +5,7 @@
 use std::f32::consts::PI;
 use std::f64::consts::TAU;
 
-use rustsht::{Complex32, GridKind, GridSpec, HarmonicSpec, ShtPlan};
+use rustsht::{Complex32, Complex64, GridKind, GridSpec, HarmonicSpec, ShtPlan};
 
 fn make_scalar_plan(kind: GridKind, ntheta: usize, nphi: usize) -> ShtPlan<f32> {
     ShtPlan::<f32>::new(
@@ -618,4 +618,207 @@ fn f32_t127_spin1_gl_sparse_synthesis_matches_ducc_0410() {
         assert!((first[index] - expected_first).abs() <= 5.0e-5);
         assert!((second[index] - expected_second).abs() <= 5.0e-5);
     }
+}
+
+#[test]
+fn f32_longitude_phase_handles_large_finite_phi0_for_scalar_and_spin() {
+    let phi0 = f64::MAX;
+    let scalar32 = ShtPlan::<f32>::new(
+        GridSpec::new(GridKind::GaussLegendre, 3, 5, phi0).unwrap(),
+        HarmonicSpec::scalar(2, 2).unwrap(),
+    )
+    .unwrap();
+    let scalar64 = ShtPlan::<f64>::new(
+        GridSpec::new(GridKind::GaussLegendre, 3, 5, phi0).unwrap(),
+        HarmonicSpec::scalar(2, 2).unwrap(),
+    )
+    .unwrap();
+    let mut sectoral = vec![Complex32::new(0.0, 0.0); scalar32.harmonics().nalm()];
+    let sectoral_coefficient = Complex32::new(0.37, -0.21);
+    sectoral[scalar32.harmonics().index(2, 2).unwrap()] = sectoral_coefficient;
+    let mut sectoral_map = vec![0.0_f32; 15];
+    scalar32
+        .synthesis_into(
+            &sectoral,
+            &mut sectoral_map,
+            &mut scalar32.workspace().unwrap(),
+        )
+        .unwrap();
+    let (sin_phi0, cos_phi0) = phi0.sin_cos();
+    let phase_at_phi0 = Complex64::new(cos_phi0, sin_phi0);
+    let phase_at_twice_phi0 = phase_at_phi0 * phase_at_phi0;
+    let sectoral_norm = (15.0 / (32.0 * std::f64::consts::PI)).sqrt();
+    for (ring, &theta) in scalar32.grid().theta().iter().enumerate() {
+        let amplitude = 2.0 * sectoral_norm * theta.sin().powi(2);
+        for longitude in 0..5 {
+            let ring_phase = Complex64::from_polar(1.0, TAU * 2.0 * longitude as f64 / 5.0);
+            let coefficient = Complex64::new(
+                f64::from(sectoral_coefficient.re),
+                f64::from(sectoral_coefficient.im),
+            );
+            let expected = (amplitude * (coefficient * phase_at_twice_phi0 * ring_phase).re) as f32;
+            let actual = sectoral_map[ring * 5 + longitude];
+            assert!(
+                (actual - expected).abs() <= 3.0e-6,
+                "sample ({ring}, {longitude}): actual {actual:.9e}, expected {expected:.9e}"
+            );
+        }
+    }
+
+    let coefficients32 = f32_coefficients(scalar32.harmonics());
+    let coefficients64 = coefficients32
+        .iter()
+        .map(|value| Complex64::new(f64::from(value.re), f64::from(value.im)))
+        .collect::<Vec<_>>();
+    let mut map32 = vec![0.0_f32; 15];
+    let mut map64 = vec![0.0_f64; 15];
+    scalar32
+        .synthesis_into(
+            &coefficients32,
+            &mut map32,
+            &mut scalar32.workspace().unwrap(),
+        )
+        .unwrap();
+    scalar64
+        .synthesis_into(
+            &coefficients64,
+            &mut map64,
+            &mut scalar64.workspace().unwrap(),
+        )
+        .unwrap();
+    assert!(map32.iter().all(|value| value.is_finite()));
+    assert!(map64.iter().all(|value| value.is_finite()));
+    for (&value32, &value64) in map32.iter().zip(&map64) {
+        assert!((f64::from(value32) - value64).abs() <= 3.0e-6);
+    }
+    let scalar_map32 = arbitrary_map(3, 5, 0.41);
+    let scalar_map64 = scalar_map32
+        .iter()
+        .map(|&value| f64::from(value))
+        .collect::<Vec<_>>();
+    let mut analyzed32 = vec![Complex32::new(0.0, 0.0); scalar32.harmonics().nalm()];
+    let mut analyzed64 = vec![Complex64::new(0.0, 0.0); scalar64.harmonics().nalm()];
+    scalar32
+        .analysis_into(
+            &scalar_map32,
+            &mut analyzed32,
+            &mut scalar32.workspace().unwrap(),
+        )
+        .unwrap();
+    scalar64
+        .analysis_into(
+            &scalar_map64,
+            &mut analyzed64,
+            &mut scalar64.workspace().unwrap(),
+        )
+        .unwrap();
+    for (&value32, &value64) in analyzed32.iter().zip(&analyzed64) {
+        assert!((f64::from(value32.re) - value64.re).abs() <= 3.0e-6);
+        assert!((f64::from(value32.im) - value64.im).abs() <= 3.0e-6);
+    }
+
+    let spin32 = ShtPlan::<f32>::new(
+        GridSpec::new(GridKind::GaussLegendre, 2, 3, phi0).unwrap(),
+        HarmonicSpec::new(1, 1, 1).unwrap(),
+    )
+    .unwrap();
+    let spin64 = ShtPlan::<f64>::new(
+        GridSpec::new(GridKind::GaussLegendre, 2, 3, phi0).unwrap(),
+        HarmonicSpec::new(1, 1, 1).unwrap(),
+    )
+    .unwrap();
+    let mut e32 = vec![Complex32::new(0.0, 0.0); spin32.harmonics().nalm()];
+    let mut b32 = e32.clone();
+    e32[spin32.harmonics().index(1, 0).unwrap()] = Complex32::new(0.23, 0.0);
+    e32[spin32.harmonics().index(1, 1).unwrap()] = Complex32::new(-0.31, 0.17);
+    b32[spin32.harmonics().index(1, 0).unwrap()] = Complex32::new(-0.11, 0.0);
+    b32[spin32.harmonics().index(1, 1).unwrap()] = Complex32::new(0.07, -0.19);
+    let to_f64 = |values: &[Complex32]| {
+        values
+            .iter()
+            .map(|value| Complex64::new(f64::from(value.re), f64::from(value.im)))
+            .collect::<Vec<_>>()
+    };
+    let e64 = to_f64(&e32);
+    let b64 = to_f64(&b32);
+    let mut first32 = vec![0.0_f32; 6];
+    let mut second32 = vec![0.0_f32; 6];
+    let mut first64 = vec![0.0_f64; 6];
+    let mut second64 = vec![0.0_f64; 6];
+    spin32
+        .synthesis_spin_into(
+            &e32,
+            &b32,
+            &mut first32,
+            &mut second32,
+            &mut spin32.workspace().unwrap(),
+        )
+        .unwrap();
+    spin64
+        .synthesis_spin_into(
+            &e64,
+            &b64,
+            &mut first64,
+            &mut second64,
+            &mut spin64.workspace().unwrap(),
+        )
+        .unwrap();
+    for (values32, values64) in [(&first32, &first64), (&second32, &second64)] {
+        assert!(values32.iter().all(|value| value.is_finite()));
+        assert!(values64.iter().all(|value| value.is_finite()));
+        for (&value32, &value64) in values32.iter().zip(values64) {
+            assert!((f64::from(value32) - value64).abs() <= 3.0e-6);
+        }
+    }
+    let mut analyzed_e32 = vec![Complex32::new(0.0, 0.0); spin32.harmonics().nalm()];
+    let mut analyzed_b32 = vec![Complex32::new(0.0, 0.0); spin32.harmonics().nalm()];
+    let mut analyzed_e64 = vec![Complex64::new(0.0, 0.0); spin64.harmonics().nalm()];
+    let mut analyzed_b64 = vec![Complex64::new(0.0, 0.0); spin64.harmonics().nalm()];
+    spin32
+        .analysis_spin_into(
+            &first32,
+            &second32,
+            &mut analyzed_e32,
+            &mut analyzed_b32,
+            &mut spin32.workspace().unwrap(),
+        )
+        .unwrap();
+    spin64
+        .analysis_spin_into(
+            &first64,
+            &second64,
+            &mut analyzed_e64,
+            &mut analyzed_b64,
+            &mut spin64.workspace().unwrap(),
+        )
+        .unwrap();
+    for (values32, values64) in [
+        (&analyzed_e32, &analyzed_e64),
+        (&analyzed_b32, &analyzed_b64),
+    ] {
+        for (&value32, &value64) in values32.iter().zip(values64) {
+            assert!((f64::from(value32.re) - value64.re).abs() <= 3.0e-6);
+            assert!((f64::from(value32.im) - value64.im).abs() <= 3.0e-6);
+        }
+    }
+}
+
+#[test]
+fn f32_cc_scalar_synthesis_is_constant_at_the_south_pole() {
+    let plan = ShtPlan::<f32>::new(
+        GridSpec::new(GridKind::ClenshawCurtis, 4, 5, 0.31).unwrap(),
+        HarmonicSpec::scalar(1, 1).unwrap(),
+    )
+    .unwrap();
+    let mut coefficients = vec![Complex32::new(0.0, 0.0); plan.harmonics().nalm()];
+    coefficients[plan.harmonics().index(1, 1).unwrap()] = Complex32::new(1.0, 0.0);
+    let mut map = vec![0.0_f32; 20];
+    plan.synthesis_into(&coefficients, &mut map, &mut plan.workspace().unwrap())
+        .unwrap();
+
+    let south_pole = &map[15..20];
+    assert!(
+        south_pole.iter().all(|&sample| sample == 0.0),
+        "south-pole samples must be independent of longitude and exactly zero: {south_pole:?}"
+    );
 }
