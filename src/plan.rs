@@ -147,10 +147,18 @@ impl<T: ShtScalar> ShtPlan<T> {
     ///
     /// Returns an error if any workspace allocation fails.
     pub fn workspace(&self) -> Result<ShtWorkspace<T>, ShtError> {
+        let analysis_order_count =
+            self.harmonics
+                .mmax()
+                .checked_add(1)
+                .ok_or(ShtError::IntegerOverflow {
+                    quantity: "analysis order count",
+                })?;
         ShtWorkspace::<T>::new(
             self.spectrum_count,
             self.grid.nphi(),
             self.grid.ntheta(),
+            analysis_order_count,
             self.recurrence_factor_count,
             self.spin_recurrence_factor_count,
             self.spin_fast_coefficient_count,

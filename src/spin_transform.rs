@@ -716,8 +716,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         #[cfg(feature = "parallel")]
         {
             let group_ring_count = workspace.ring_group_size.min(ntheta);
-            let use_parallel =
-                rayon::current_num_threads() > 1 && workspace.recurrence_workers.len() > 1;
+            let group_count = ntheta.div_ceil(group_ring_count);
+            let use_parallel = rayon::current_num_threads() > 1 && group_count > 1;
             if use_parallel {
                 let group_spectrum_len = group_ring_count.checked_mul(spectrum_len).ok_or(
                     ShtError::IntegerOverflow {
@@ -728,7 +728,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     .spectra
                     .par_chunks_mut(group_spectrum_len)
                     .zip(workspace.spin_spectra.par_chunks_mut(group_spectrum_len))
-                    .zip(workspace.recurrence_workers.par_iter_mut())
+                    .zip(workspace.recurrence_workers[..group_count].par_iter_mut())
                     .enumerate()
                     .try_for_each(|(group_index, ((q_spectra, u_spectra), recurrence))| {
                         let ring_start = group_index * group_ring_count;
