@@ -7,20 +7,19 @@
 //! run north to south; longitude samples run eastward from `phi0` in radians.
 
 mod error;
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "The adapter is staged before the transform kernels that consume it."
-    )
-)]
 mod fft;
 mod grid;
 mod harmonics;
+mod legendre;
+mod plan;
+mod transform;
+mod workspace;
 
 pub use error::ShtError;
 pub use grid::{GridKind, GridSpec};
 pub use harmonics::HarmonicSpec;
+pub use plan::ShtPlan;
+pub use workspace::ShtWorkspace;
 
 /// Complex double-precision harmonic coefficient.
 pub type Complex64 = num_complex::Complex64;

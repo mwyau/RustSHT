@@ -20,6 +20,14 @@ pub enum ShtError {
     InvalidHarmonicBounds { lmax: usize, mmax: usize },
     /// The spin must not exceed `lmax`.
     SpinExceedsLmax { spin: usize, lmax: usize },
+    /// The requested spin operation is not implemented.
+    UnsupportedSpin { spin: usize },
+    /// Exact GL analysis requires at least `lmax + 1` latitude rings.
+    AnalysisLatitudeUndersampled { lmax: usize, ntheta: usize },
+    /// The requested analysis order exceeds the non-aliased longitude range.
+    AnalysisLongitudeUndersampled { mmax: usize, nphi: usize },
+    /// The requested synthesis order exceeds the representable longitude range.
+    SynthesisLongitudeUndersampled { mmax: usize, nphi: usize },
     /// A packed coefficient array has the wrong number of values.
     CoefficientCount { expected: usize, actual: usize },
     /// A transform input or output buffer has the wrong length.
@@ -61,6 +69,24 @@ impl Display for ShtError {
             Self::SpinExceedsLmax { spin, lmax } => {
                 write!(f, "spin={spin} must not exceed lmax={lmax}")
             }
+            Self::UnsupportedSpin { spin } => {
+                write!(f, "spin={spin} operations are not implemented")
+            }
+            Self::AnalysisLatitudeUndersampled { lmax, ntheta } => write!(
+                f,
+                "exact GL analysis through lmax={lmax} requires at least {} latitude rings, received {ntheta}",
+                lmax.saturating_add(1)
+            ),
+            Self::AnalysisLongitudeUndersampled { mmax, nphi } => write!(
+                f,
+                "exact analysis through mmax={mmax} requires more than {} longitude samples, received {nphi}",
+                mmax.saturating_mul(2)
+            ),
+            Self::SynthesisLongitudeUndersampled { mmax, nphi } => write!(
+                f,
+                "synthesis through mmax={mmax} requires at least {} longitude samples, received {nphi}",
+                mmax.saturating_mul(2).max(1)
+            ),
             Self::CoefficientCount { expected, actual } => {
                 write!(
                     f,
