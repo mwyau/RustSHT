@@ -12,7 +12,7 @@ description = "Rust spherical harmonic transforms library"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "GPL-2.0-or-later"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "LICENSE-THIRD-PARTY"]
 authors = [{ name = "Albert M. W. Yau" }]
 dependencies = ["numpy"]
 

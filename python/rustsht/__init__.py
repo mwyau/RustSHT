@@ -6,8 +6,23 @@
 from importlib.metadata import version
 
 from . import _rustsht as _rustsht
-from ._rustsht import ShtPlan
+from ._rustsht import (
+    ShtPlan,
+    adjoint_analysis_2d,
+    adjoint_synthesis_2d,
+    analysis_2d,
+    get_gridweights,
+    synthesis_2d,
+)
 
 __version__ = version("rustsht")
 
-__all__ = ["ShtPlan", "__version__"]
+__all__ = [
+    "ShtPlan",
+    "adjoint_analysis_2d",
+    "adjoint_synthesis_2d",
+    "analysis_2d",
+    "get_gridweights",
+    "synthesis_2d",
+    "__version__",
+]

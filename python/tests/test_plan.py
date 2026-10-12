@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 from ducc0 import sht as ducc_sht
 
+import rustsht
 from rustsht import ShtPlan
 
 
@@ -69,6 +70,21 @@ def test_scalar_plan_matches_ducc(kind: str) -> None:
     actual_map = plan.synthesis(alm)
     assert actual_map.shape == (1, ntheta, nphi)
     np.testing.assert_allclose(actual_map, expected_map, rtol=2e-13, atol=2e-13)
+    np.testing.assert_allclose(
+        rustsht.synthesis_2d(
+            alm,
+            spin=0,
+            lmax=lmax,
+            geometry=kind,
+            ntheta=ntheta,
+            nphi=nphi,
+            mmax=mmax,
+            phi0=phi0,
+        ),
+        expected_map,
+        rtol=2e-13,
+        atol=2e-13,
+    )
 
     expected_alm = ducc_sht.analysis_2d(
         map=expected_map,
@@ -99,6 +115,19 @@ def test_scalar_plan_matches_ducc(kind: str) -> None:
         rtol=2e-12,
         atol=2e-12,
     )
+    np.testing.assert_allclose(
+        rustsht.analysis_2d(
+            arbitrary_map,
+            spin=0,
+            lmax=lmax,
+            geometry=kind,
+            mmax=mmax,
+            phi0=phi0,
+        ),
+        from_ducc_layout(arbitrary_alm, lmax, mmax),
+        rtol=2e-12,
+        atol=2e-12,
+    )
 
     expected_adjoint_map = ducc_sht.adjoint_analysis_2d(
         alm=to_ducc_layout(alm, lmax, mmax),
@@ -112,6 +141,21 @@ def test_scalar_plan_matches_ducc(kind: str) -> None:
         nthreads=1,
     )
     np.testing.assert_allclose(plan.adjoint_analysis(alm), expected_adjoint_map, rtol=2e-12, atol=2e-12)
+    np.testing.assert_allclose(
+        rustsht.adjoint_analysis_2d(
+            alm,
+            spin=0,
+            lmax=lmax,
+            geometry=kind,
+            ntheta=ntheta,
+            nphi=nphi,
+            mmax=mmax,
+            phi0=phi0,
+        ),
+        expected_adjoint_map,
+        rtol=2e-12,
+        atol=2e-12,
+    )
 
     expected_adjoint_alm = ducc_sht.adjoint_synthesis_2d(
         map=expected_map,
@@ -127,6 +171,26 @@ def test_scalar_plan_matches_ducc(kind: str) -> None:
         from_ducc_layout(expected_adjoint_alm, lmax, mmax),
         rtol=2e-12,
         atol=2e-12,
+    )
+    np.testing.assert_allclose(
+        rustsht.adjoint_synthesis_2d(
+            expected_map,
+            spin=0,
+            lmax=lmax,
+            geometry=kind,
+            mmax=mmax,
+            phi0=phi0,
+        ),
+        from_ducc_layout(expected_adjoint_alm, lmax, mmax),
+        rtol=2e-12,
+        atol=2e-12,
+    )
+
+    np.testing.assert_allclose(
+        rustsht.get_gridweights(kind, ntheta),
+        ducc_sht.get_gridweights(kind, ntheta),
+        rtol=2e-14,
+        atol=2e-14,
     )
 
 
@@ -151,6 +215,21 @@ def test_spin_plan_matches_ducc_and_derivative_mode() -> None:
     actual_map = plan.synthesis(alm)
     assert actual_map.shape == (2, ntheta, nphi)
     np.testing.assert_allclose(actual_map, expected_map, rtol=2e-12, atol=2e-12)
+    np.testing.assert_allclose(
+        rustsht.synthesis_2d(
+            alm,
+            spin=spin,
+            lmax=lmax,
+            geometry="GL",
+            ntheta=ntheta,
+            nphi=nphi,
+            mmax=mmax,
+            phi0=phi0,
+        ),
+        expected_map,
+        rtol=2e-12,
+        atol=2e-12,
+    )
 
     expected_alm = ducc_sht.analysis_2d(
         map=actual_map,
@@ -164,6 +243,19 @@ def test_spin_plan_matches_ducc_and_derivative_mode() -> None:
     np.testing.assert_allclose(
         plan.analysis(actual_map), from_ducc_layout(expected_alm, lmax, mmax), rtol=2e-12, atol=2e-12
     )
+    np.testing.assert_allclose(
+        rustsht.analysis_2d(
+            actual_map,
+            spin=spin,
+            lmax=lmax,
+            geometry="GL",
+            mmax=mmax,
+            phi0=phi0,
+        ),
+        from_ducc_layout(expected_alm, lmax, mmax),
+        rtol=2e-12,
+        atol=2e-12,
+    )
 
     expected_adjoint_alm = ducc_sht.adjoint_synthesis_2d(
         map=actual_map,
@@ -176,6 +268,19 @@ def test_spin_plan_matches_ducc_and_derivative_mode() -> None:
     )
     np.testing.assert_allclose(
         plan.adjoint_synthesis(actual_map),
+        from_ducc_layout(expected_adjoint_alm, lmax, mmax),
+        rtol=2e-12,
+        atol=2e-12,
+    )
+    np.testing.assert_allclose(
+        rustsht.adjoint_synthesis_2d(
+            actual_map,
+            spin=spin,
+            lmax=lmax,
+            geometry="GL",
+            mmax=mmax,
+            phi0=phi0,
+        ),
         from_ducc_layout(expected_adjoint_alm, lmax, mmax),
         rtol=2e-12,
         atol=2e-12,
@@ -195,6 +300,21 @@ def test_spin_plan_matches_ducc_and_derivative_mode() -> None:
     np.testing.assert_allclose(
         plan.adjoint_analysis(alm), expected_adjoint_map, rtol=2e-12, atol=2e-12
     )
+    np.testing.assert_allclose(
+        rustsht.adjoint_analysis_2d(
+            alm,
+            spin=spin,
+            lmax=lmax,
+            geometry="GL",
+            ntheta=ntheta,
+            nphi=nphi,
+            mmax=mmax,
+            phi0=phi0,
+        ),
+        expected_adjoint_map,
+        rtol=2e-12,
+        atol=2e-12,
+    )
 
     gradient = plan.synthesis_gradient(alm[:1])
     expected_gradient = ducc_sht.synthesis_2d(
@@ -210,6 +330,22 @@ def test_spin_plan_matches_ducc_and_derivative_mode() -> None:
         nthreads=1,
     )
     np.testing.assert_allclose(gradient, expected_gradient, rtol=2e-12, atol=2e-12)
+    np.testing.assert_allclose(
+        rustsht.synthesis_2d(
+            alm[:1],
+            spin=spin,
+            lmax=lmax,
+            geometry="GL",
+            ntheta=ntheta,
+            nphi=nphi,
+            mmax=mmax,
+            phi0=phi0,
+            mode="GRAD_ONLY",
+        ),
+        expected_gradient,
+        rtol=2e-12,
+        atol=2e-12,
+    )
 
     expected_gradient_adjoint = ducc_sht.adjoint_synthesis_2d(
         map=expected_gradient,
@@ -223,6 +359,20 @@ def test_spin_plan_matches_ducc_and_derivative_mode() -> None:
     )
     np.testing.assert_allclose(
         plan.adjoint_synthesis_gradient(expected_gradient),
+        from_ducc_layout(expected_gradient_adjoint, lmax, mmax),
+        rtol=2e-12,
+        atol=2e-12,
+    )
+    np.testing.assert_allclose(
+        rustsht.adjoint_synthesis_2d(
+            expected_gradient,
+            spin=spin,
+            lmax=lmax,
+            geometry="GL",
+            mmax=mmax,
+            phi0=phi0,
+            mode="GRAD_ONLY",
+        ),
         from_ducc_layout(expected_gradient_adjoint, lmax, mmax),
         rtol=2e-12,
         atol=2e-12,
@@ -245,6 +395,22 @@ def test_spin_plan_matches_ducc_and_derivative_mode() -> None:
     )
     assert derivative.shape == (2, ntheta, nphi)
     np.testing.assert_allclose(derivative, expected_derivative, rtol=2e-12, atol=2e-12)
+    np.testing.assert_allclose(
+        rustsht.synthesis_2d(
+            scalar_alm,
+            spin=1,
+            lmax=lmax,
+            geometry="GL",
+            ntheta=ntheta,
+            nphi=nphi,
+            mmax=mmax,
+            phi0=phi0,
+            mode="DERIV1",
+        ),
+        expected_derivative,
+        rtol=2e-12,
+        atol=2e-12,
+    )
     expected_derivative_adjoint = ducc_sht.adjoint_synthesis_2d(
         map=expected_derivative,
         spin=1,
@@ -257,6 +423,20 @@ def test_spin_plan_matches_ducc_and_derivative_mode() -> None:
     )
     np.testing.assert_allclose(
         scalar_plan.adjoint_synthesis_deriv1(expected_derivative),
+        from_ducc_layout(expected_derivative_adjoint, lmax, mmax),
+        rtol=2e-12,
+        atol=2e-12,
+    )
+    np.testing.assert_allclose(
+        rustsht.adjoint_synthesis_2d(
+            expected_derivative,
+            spin=1,
+            lmax=lmax,
+            geometry="GL",
+            mmax=mmax,
+            phi0=phi0,
+            mode="DERIV1",
+        ),
         from_ducc_layout(expected_derivative_adjoint, lmax, mmax),
         rtol=2e-12,
         atol=2e-12,
