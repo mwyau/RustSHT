@@ -415,3 +415,48 @@ On an AMD Ryzen 9 5950X, `cargo fmt --all -- --check`, workspace Clippy with war
 `uv run pytest python/tests` passes eight tests with Python 3.11.15, NumPy 2.4.6 and `ducc0==0.41.0`. It validates f64/complex128 inputs and the listed plan and procedural operations against the editable package.
 
 `uv build` creates a CPython 3.11 abi3 Linux x86_64 wheel and source archive. Both include the GPL license, `LICENSE-THIRD-PARTY`, the typing stub and PEP 561 marker; the wheel metadata declares NumPy and GPL-2.0-or-later. The third-party notice records selected license texts for 42 dependencies in the Linux x86_64 extension build graph. A clean Python 3.11.15 environment installs the wheel, imports it and passes a GL grid-weight smoke check. The full numerical suite was run against the editable package, not the installed wheel. f32/complex64 and the spharmgrid adapter are not covered.
+
+### Performance baseline before Fourier-weight hoisting (M4/M5, 2026-10-12)
+
+Measurements used an AMD Ryzen 9 5950X (16 cores, 32 threads), Rust 1.99.0 release builds, x86_64 AVX2/FMA dispatch and no AVX-512. Python measurements used Python 3.11.15, NumPy 2.4.6 and `ducc0==0.41.0` from source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`. The editable extension was rebuilt with `maturin develop --release`; its build ID matched `target/release/lib_rustsht.so`. RustSHT and DUCC used the same `phi0=0.37`, grid, coefficients, map values and thread counts. For each Python run, `RAYON_NUM_THREADS` was set to the requested thread count before process startup; the harness checks this setting before importing NumPy, DUCC or RustSHT. `examples/python_perf_baseline.py` records the Python plan, procedural and DUCC measurements. Each timed operation had one warmup and five samples per run, with two runs. Tables report the median of the run medians and their spread.
+
+The native benchmark reused one plan and workspace. Python plan methods reuse the plan but still copy inputs and allocate a workspace and output for each call; procedural functions construct a plan and workspace per call. At T511 GL `512x1025`, f64, scalar and spin 1, the native Rust results were:
+
+| Operation | Threads | Run medians (ms) | Median (ms) | Estimated numeric arrays |
+| --- | ---: | ---: | ---: | ---: |
+| Scalar synthesis | 1 | 535.197, 532.742 | 533.970 | 16.23 MiB |
+| Scalar synthesis | 8 | 84.013, 84.180 | 84.097 | 16.23 MiB |
+| Scalar analysis | 1 | 564.943, 570.466 | 567.705 | 16.23 MiB |
+| Scalar analysis | 8 | 150.777, 153.673 | 152.225 | 16.23 MiB |
+| Spin-1 synthesis | 1 | 1398.575, 1413.754 | 1406.165 | 24.24 MiB |
+| Spin-1 synthesis | 8 | 223.924, 209.477 | 216.701 | 24.24 MiB |
+| Spin-1 analysis | 1 | 1463.448, 1437.675 | 1450.562 | 24.24 MiB |
+| Spin-1 analysis | 8 | 409.633, 370.695 | 390.164 | 24.24 MiB |
+
+The Python T511 GL plan, procedural and DUCC results were:
+
+| Operation | Threads | RustSHT plan (median; spread) | RustSHT procedural (median; spread) | DUCC (median; spread) | Plan / DUCC |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Scalar synthesis | 1 | 507.187; 2.916 ms | 508.031; 7.307 ms | 11.780; 0.039 ms | 43.1x |
+| Scalar synthesis | 8 | 86.531; 1.447 ms | 84.006; 0.076 ms | 1.884; 0.194 ms | 45.9x |
+| Scalar analysis | 1 | 559.307; 3.210 ms | 558.501; 1.922 ms | 12.386; 0.013 ms | 45.2x |
+| Scalar analysis | 8 | 152.961; 0.793 ms | 151.996; 0.238 ms | 1.857; 0.097 ms | 82.4x |
+| Spin-1 synthesis | 1 | 1442.409; 1.818 ms | 1436.607; 3.778 ms | 25.424; 0.810 ms | 56.7x |
+| Spin-1 synthesis | 8 | 219.832; 1.971 ms | 216.967; 3.625 ms | 3.878; 0.186 ms | 56.7x |
+| Spin-1 analysis | 1 | 1497.584; 4.821 ms | 1488.491; 5.510 ms | 26.034; 0.300 ms | 57.5x |
+| Spin-1 analysis | 8 | 379.849; 2.547 ms | 377.871; 6.676 ms | 4.014; 0.021 ms | 94.6x |
+
+The scalar synthesis map error against DUCC had maximum absolute error `2.627e-14`, RMS error `7.674e-16` and relative L2 error `6.487e-14`; scalar analysis coefficient errors were `1.010e-14`, `2.281e-16` and `4.467e-14`. Spin-1 synthesis errors were `2.363e-14`, `8.126e-16` and `6.675e-14`; analysis errors were `1.463e-14`, `2.298e-16` and `4.500e-14`. Python plan construction took about `0.036 ms`; a separate five-sample copy check measured coefficient copies at `0.04–0.10 ms` and map copies at `0.09–0.21 ms`; output allocation took `0.001 ms`. A native T511 workspace took `3.68–3.93 ms` at the median of eleven measurements. These binding and allocation costs are small relative to transform execution.
+
+Representative Python plan timings on CC and F1 used T255, f64, one thread, `nphi=513`, and exact-analysis latitude counts (CC `257`, F1 `256`). Values are median and spread in milliseconds for the two runs:
+
+| Grid | Spin | Synthesis RustSHT / DUCC | Analysis RustSHT / DUCC |
+| --- | ---: | ---: | ---: |
+| CC | 0 | 68.384 / 1.973 (0.254 / 0.088) | 73.545 / 5.246 (0.723 / 0.056) |
+| CC | 1 | 189.635 / 7.948 (1.508 / 0.708) | 195.422 / 14.742 (0.272 / 0.144) |
+| F1 | 0 | 68.052 / 1.949 (0.320 / 0.034) | 73.331 / 5.309 (0.363 / 0.116) |
+| F1 | 1 | 186.212 / 5.835 (0.112 / 0.013) | 195.379 / 14.113 (1.147 / 0.214) |
+
+Maximum absolute, RMS and relative L2 errors on CC were `3.490e-15`, `1.648e-16`, `2.793e-14` for scalar synthesis; `1.169e-14`, `2.425e-16`, `2.376e-14` for scalar analysis; `4.338e-15`, `1.426e-16`, `2.349e-14` for spin-1 synthesis; and `9.907e-15`, `1.782e-16`, `1.747e-14` for spin-1 analysis. The corresponding F1 errors were `4.625e-15`, `1.727e-16`, `2.922e-14`; `1.185e-14`, `2.448e-16`, `2.399e-14`; `5.627e-15`, `1.516e-16`, `2.492e-14`; and `9.921e-15`, `1.785e-16`, `1.749e-14`.
+
+Callgrind 3.26.0 profiled one-thread T127 GL f64 analysis. Scalar analysis collected `211,363,418` instruction references; `for_each_y_lm_dispatched` accounted for `96.65%` inclusive, its callback `77.94%`, and `multiply_complex_scaled` `48.57%`. Spin-1 analysis collected `318,081,053` references; `for_each_spin_lm_dispatched` accounted for `96.91%` inclusive, its callback `59.62%`, `recurrence_step` `17.22%`, `scaled_basis_value` `16.62%` and `RealFftPlan::forward` `1.10%`. These inclusive counts overlap. CC and F1 T127 spin analysis collected `331,041,516` and `332,475,882` references; the geometry differences include latitude count and resampling. Linux `perf` could not access hardware events because `perf_event_paranoid=4`. Callgrind instruction counts identify recurrence and callback work as the dominant costs, while the fused callback does not expose separate elapsed times for recurrence setup, each recurrence update, scaled multiplication and complex accumulation. The first optimization target is repeated Fourier phase and quadrature work in those callbacks; FFT threading is deferred until the recurrence work is reduced.
