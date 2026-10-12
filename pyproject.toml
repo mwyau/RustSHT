@@ -1,0 +1,35 @@
+# SPDX-FileCopyrightText: 2026 Albert M. W. Yau
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+[build-system]
+requires = ["maturin>=1.15,<2"]
+build-backend = "maturin"
+
+[project]
+name = "rustsht"
+version = "0.1.0.dev0"
+description = "Rust spherical harmonic transforms library"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "GPL-2.0-or-later"
+license-files = ["LICENSE"]
+authors = [{ name = "Albert M. W. Yau" }]
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "ducc0",
+    "numpy",
+    "pytest",
+]
+
+[tool.maturin]
+manifest-path = "python/Cargo.toml"
+python-source = "python"
+module-name = "rustsht._rustsht"
+bindings = "pyo3"
+
+exclude = [
+    "AGENTS.md",
+    "plans/**",
+]
