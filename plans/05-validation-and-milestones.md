@@ -1184,3 +1184,25 @@ The Python-plan comparison used Python `3.11.15`, NumPy `2.4.6`, installed `ducc
 | 8 | `48.394; 6.659` | `5.404; 1.578` | `9.0x` | `2.519e-14 / 7.700e-16 / 6.326e-14` |
 
 The T511 spin-1 fast-path comparison with the general recurrence passed for E-only, B-only and mixed E/B coefficients at `3e-11` tolerance. Release DUCC and roundtrip checks passed for spin 1 and 2 on GL, CC and F1 at T511. Sparse T1023 synthesis passed for spins 1 and 2 on all three grids; spin-3/4 T511 DUCC and analytic regressions also passed. Workspace tests cover scalar and spin adjoints. No new phase timer or hardware-counter result was collected for this change; `perf_event_paranoid=4` blocks `perf stat`. The whole-transform result and unchanged workspace size support this kernel reuse for the tested T511 workload.
+
+### Spin-2 fast-analysis polar cutoff (2026-10-12)
+
+The spin-2 GL scalar-conversion analysis path now applies the per-ring order limit used by the spin-1 path. It skips a 64-ring block when every ring excludes `m` and sets Fourier inputs to zero for excluded lanes in partially active blocks. The recurrence and coefficient conversion therefore omit high-order polar contributions that the general path skips. The change adds no scratch storage.
+
+The focused T511 test uses `m=450` on a ring with `0.4 < sin(theta) < 0.6` and `m > ring_order_limit`. The fast analysis returns zero coefficients when only that excluded ring is populated, and returns a nonzero result when the same ring is marked active.
+
+Native measurements used `m1b_bench 2 511 8 analysis`, f64, T511 GL `512x1025`, `phi0=0.37`, reused plans/workspaces, one warm-up, five timed samples per process, and six process runs. The before build was `c69dae9`; the test host was the Ryzen 9 5950X under Linux `7.0.14`, with processes pinned to CPUs 0–7. Rust used `1.99.0 (b940084d7 2026-09-28)`, standard Cargo release optimization, and portable AVX2/FMA dispatch. Values are medians and ranges of the six process medians in milliseconds:
+
+| Threads | Before (`c69dae9`) | Cutoff handling | Change |
+| ---: | ---: | ---: | ---: |
+| 1 | `688.406; 4.045` | `531.851; 2.735` | `-22.7%` |
+| 8 | `148.851; 1.001` | `151.626; 5.966` | `+1.9%` |
+
+The one-worker scalar-conversion path benefits from skipping inactive latitude blocks. The eight-worker path uses the general spin recurrence and does not execute the new cutoff checks; its measured shift is not attributed to this change. A Python-plan comparison against installed `ducc0==0.41.0` from revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf` used Python `3.11.15`, NumPy `2.4.6`, two run medians of five samples, and the same T511 inputs:
+
+| Threads | RustSHT plan (ms) | DUCC0 (ms) | Ratio | RustSHT/DUCC0 coefficient max absolute / RMS / relative L2 error |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | `530.594; 0.231` | `27.786; 0.223` | `19.1x` | `1.317e-14 / 2.707e-16 / 5.301e-14` |
+| 8 | `150.139; 0.609` | `3.819; 0.004` | `39.3x` | `1.527e-14 / 2.540e-16 / 4.973e-14` |
+
+The T511 all-grid spin-1/2 DUCC and roundtrip test passed with one thread. The T1023 exact-analysis DUCC test passed for spins 1 and 2 on GL, CC and F1 with one thread. Spin-2 maximum coefficient errors were `3.332e-17`, `2.558e-17`, and `1.410e-17` at T511, and `1.178e-17`, `8.491e-18`, and `8.223e-18` at T1023, respectively. The numerical results include analysis/adjoint and synthesis-analysis checks. The one-worker fast path is retained; the eight-worker general path remains a separate performance target.
