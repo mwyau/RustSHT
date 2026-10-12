@@ -434,11 +434,23 @@ pub(crate) fn scale_binary(mut value: f64, mut exponent: i64) -> f64 {
     if value == 0.0 || !value.is_finite() {
         return value;
     }
+    if exponent == 0 {
+        return value;
+    }
     if exponent > 4096 {
         return value.signum() * f64::INFINITY;
     }
     if exponent < -4096 {
         return 0.0_f64.copysign(value);
+    }
+
+    let bits = value.to_bits();
+    let raw_exponent = ((bits >> 52) & 0x7ff) as i64;
+    let scaled_exponent = raw_exponent + exponent;
+    // This exact path avoids powi for the normal values in each recurrence lane.
+    if (1..0x7ff).contains(&raw_exponent) && (1..0x7ff).contains(&scaled_exponent) {
+        let exponent_mask = 0x7ff_u64 << 52;
+        return f64::from_bits((bits & !exponent_mask) | ((scaled_exponent as u64) << 52));
     }
 
     while exponent > 1023 {
@@ -461,6 +473,33 @@ pub(crate) fn scale_binary(mut value: f64, mut exponent: i64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn reference_scale_binary(mut value: f64, mut exponent: i64) -> f64 {
+        if value == 0.0 || !value.is_finite() {
+            return value;
+        }
+        if exponent > 4096 {
+            return value.signum() * f64::INFINITY;
+        }
+        if exponent < -4096 {
+            return 0.0_f64.copysign(value);
+        }
+        while exponent > 1023 {
+            value *= 2.0_f64.powi(1023);
+            exponent -= 1023;
+            if !value.is_finite() {
+                return value;
+            }
+        }
+        while exponent < -1022 {
+            value *= 2.0_f64.powi(-1022);
+            exponent += 1022;
+            if value == 0.0 {
+                return value;
+            }
+        }
+        value * 2.0_f64.powi(exponent as i32)
+    }
 
     fn values(m: usize, lmax: usize, theta: f64) -> Vec<f64> {
         let norms = sectoral_normalizations(m).unwrap();
@@ -666,6 +705,36 @@ mod tests {
         let expected_scale = 2.0_f64.powi(-400);
         assert!((actual.re / expected_scale - 1.0e300).abs() / 1.0e300 < 2e-15);
         assert!((actual.im / expected_scale + 1.0e300).abs() / 1.0e300 < 2e-15);
+    }
+
+    #[test]
+    fn binary_scaling_matches_power_of_two_products() {
+        let values = [
+            0.0,
+            -0.0,
+            0.125,
+            -0.75,
+            1.0,
+            -1.5,
+            f64::MIN_POSITIVE,
+            f64::from_bits(1),
+        ];
+        let exponents = [
+            -4097, -2048, -1023, -1022, -801, -800, -401, -1, 0, 1, 401, 800, 1022, 1023, 2048,
+            4097,
+        ];
+
+        for value in values {
+            for exponent in exponents {
+                let actual = scale_binary(value, exponent);
+                let expected = reference_scale_binary(value, exponent);
+                assert_eq!(
+                    actual.to_bits(),
+                    expected.to_bits(),
+                    "value={value:e}, exponent={exponent}, actual={actual:e}, expected={expected:e}"
+                );
+            }
+        }
     }
 
     #[test]
