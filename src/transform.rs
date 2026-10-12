@@ -450,6 +450,38 @@ impl<T: ShtScalar> ShtPlan<T> {
         let theta_cos = &workspace.theta_cos[..analysis_ntheta];
         let ring_order_limits = &workspace.ring_order_limits[..analysis_ntheta];
 
+        // Scalar plans do not use their spin-spectrum buffers, so analysis can
+        // use them for a full order-major copy without growing the workspace.
+        let order_count = self.harmonics.mmax() + 1;
+        let order_spectrum_len =
+            order_count
+                .checked_mul(analysis_ntheta)
+                .ok_or(ShtError::IntegerOverflow {
+                    quantity: "order-major analysis spectrum count",
+                })?;
+        let order_spectra = if analysis_ntheta == ntheta {
+            &mut workspace.spin_spectra[..order_spectrum_len]
+        } else {
+            &mut workspace.prepared_spin_spectra[..order_spectrum_len]
+        };
+        let longitude_count = T::from_usize(nphi).expect("longitude count converts");
+        for m in 0..order_count {
+            let phase = if m == 0 {
+                Complex::new(T::one(), T::zero())
+            } else {
+                longitude_phase::<T>(m, self.grid.phi0(), true)
+            };
+            for ring in 0..analysis_ntheta {
+                let mut weighted = analysis_spectra[ring * spectrum_len + m] * phase;
+                if let Some(ring_weights) = analysis_ring_weights {
+                    let weight =
+                        T::from_f64(ring_weights[ring]).expect("ring weight is representable");
+                    weighted *= weight / longitude_count;
+                }
+                order_spectra[m * analysis_ntheta + ring] = weighted;
+            }
+        }
+
         alm.fill(Complex::new(T::zero(), T::zero()));
         let lmax = self.harmonics.lmax();
         let mmax = self.harmonics.mmax();
@@ -462,11 +494,8 @@ impl<T: ShtScalar> ShtPlan<T> {
             let use_parallel = rayon::current_num_threads() > 1 && worker_count > 1;
             if use_parallel {
                 self.analyze_order_groups_parallel(
-                    analysis_spectra,
-                    nphi,
-                    spectrum_len,
-                    self.grid.phi0(),
-                    analysis_ring_weights,
+                    order_spectra,
+                    analysis_ntheta,
                     theta_sin,
                     theta_cos,
                     ring_order_limits,
@@ -478,11 +507,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                 )?;
             } else {
                 self.analyze_order_group(
-                    analysis_spectra,
-                    nphi,
-                    spectrum_len,
-                    self.grid.phi0(),
-                    analysis_ring_weights,
+                    order_spectra,
+                    analysis_ntheta,
                     theta_sin,
                     theta_cos,
                     ring_order_limits,
@@ -498,11 +524,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         {
             let order_count = mmax + 1;
             self.analyze_order_group(
-                analysis_spectra,
-                nphi,
-                spectrum_len,
-                self.grid.phi0(),
-                analysis_ring_weights,
+                order_spectra,
+                analysis_ntheta,
                 theta_sin,
                 theta_cos,
                 ring_order_limits,
@@ -531,10 +554,7 @@ impl<T: ShtScalar> ShtPlan<T> {
     fn analyze_order_groups_parallel(
         &self,
         spectra: &[Complex<T>],
-        nphi: usize,
-        spectrum_len: usize,
-        phi0: f64,
-        ring_weights: Option<&[f64]>,
+        latitude_count: usize,
         theta_sin: &[T],
         theta_cos: &[T],
         ring_order_limits: &[usize],
@@ -548,10 +568,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         if order_count <= 1 || recurrence.len() <= 1 {
             return self.analyze_order_group(
                 spectra,
-                nphi,
-                spectrum_len,
-                phi0,
-                ring_weights,
+                latitude_count,
                 theta_sin,
                 theta_cos,
                 ring_order_limits,
@@ -583,10 +600,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             || {
                 self.analyze_order_groups_parallel(
                     spectra,
-                    nphi,
-                    spectrum_len,
-                    phi0,
-                    ring_weights,
+                    latitude_count,
                     theta_sin,
                     theta_cos,
                     ring_order_limits,
@@ -600,10 +614,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             || {
                 self.analyze_order_groups_parallel(
                     spectra,
-                    nphi,
-                    spectrum_len,
-                    phi0,
-                    ring_weights,
+                    latitude_count,
                     theta_sin,
                     theta_cos,
                     ring_order_limits,
@@ -626,10 +637,7 @@ impl<T: ShtScalar> ShtPlan<T> {
     fn analyze_order_group(
         &self,
         spectra: &[Complex<T>],
-        nphi: usize,
-        spectrum_len: usize,
-        phi0: f64,
-        ring_weights: Option<&[f64]>,
+        latitude_count: usize,
         theta_sin: &[T],
         theta_cos: &[T],
         ring_order_limits: &[usize],
@@ -640,34 +648,15 @@ impl<T: ShtScalar> ShtPlan<T> {
         recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<(), ShtError> {
         let lmax = self.harmonics.lmax();
-        let longitude_count = T::from_usize(nphi).expect("longitude count converts");
         let mut coefficient_start = 0;
         for m in m_start..m_end {
             let coefficient_count = lmax - m + 1;
             let coefficients = &mut alm[coefficient_start..coefficient_start + coefficient_count];
             T::fill_epsilon(m, lmax, &mut recurrence.epsilon);
-            let phase = if m == 0 {
-                Complex::new(T::one(), T::zero())
-            } else {
-                longitude_phase::<T>(m, phi0, true)
-            };
             for block_start in (0..theta_sin.len()).step_by(LATITUDE_BLOCK_SIZE) {
                 let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(theta_sin.len());
-                let block_len = block_end - block_start;
-                for (lane, weighted) in recurrence.weighted_spectrum[..block_len]
-                    .iter_mut()
-                    .enumerate()
-                {
-                    let ring = block_start + lane;
-                    let spectrum_start = ring * spectrum_len;
-                    *weighted = spectra[spectrum_start + m] * phase;
-                    if let Some(ring_weights) = ring_weights {
-                        let weight =
-                            T::from_f64(ring_weights[ring]).expect("ring weight is representable");
-                        *weighted *= weight / longitude_count;
-                    }
-                }
-                let weighted_spectrum = &recurrence.weighted_spectrum[..block_len];
+                let weighted_spectrum =
+                    &spectra[m * latitude_count + block_start..m * latitude_count + block_end];
                 T::for_each_y_lm_dispatched(
                     arch,
                     m,

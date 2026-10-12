@@ -494,3 +494,19 @@ I prototyped a `YlmVisitor` path that accumulated scalar synthesis values across
 | Scalar synthesis | 8 | `69.452, 70.510, 67.089` (`69.452`; `3.421`) | `82.522, 79.422, 79.839` (`79.839`; `3.100`) | `+15.0%` |
 | Scalar analysis | 1 | `337.745, 348.843, 342.813` (`342.813`; `11.098`) | `334.373, 336.556, 335.874` (`335.874`; `2.183`) | `-2.0%` |
 | Scalar analysis | 8 | `61.920, 60.858, 51.921` (`60.858`; `9.999`) | `54.552, 50.450, 52.486` (`52.486`; `4.102`) | `-13.8%` |
+
+
+### Scalar analysis order-major Fourier storage (M4/M5, 2026-10-12)
+
+Scalar analysis now copies the active Fourier orders into contiguous latitude slices before recurrence accumulation. The transpose also applies the longitude phase and any GL ring weight and longitude normalization. CC/F1 prepared spectra retain their existing meridional normalization and are not weighted a second time. The scalar path uses the workspace's spin-spectrum arrays, which scalar transforms do not otherwise access, and removes one per-worker Fourier buffer. It adds no workspace allocation. Order-major input gives each recurrence block contiguous Fourier values; the transpose is included in the timings below. Native release measurements used rustc 1.99.0, f64, T511 GL `512x1025`, `phi0=0.37`, AVX2/FMA dispatch, reused plans and workspaces, an x86-64 CPU, one warmup and five timed samples per run. The same `m1a_bench` executable measured one and eight Rayon threads. Each table entry gives three run medians, their median and range in milliseconds:
+
+| Layout | Threads | Run medians (median; range ms) | Estimated workspace change |
+| --- | ---: | ---: | ---: |
+| Ring-major | 1 | `339.279, 337.550, 334.853` (`337.550`; `4.426`) | Baseline |
+| Tiled, 64 latitudes | 1 | `322.722, 321.959, 321.559` (`321.959`; `1.163`) | About `+0.5 MiB` at T511 |
+| Full order-major | 1 | `318.332, 318.615, 319.234` (`318.615`; `0.902`) | No added allocation |
+| Ring-major | 8 | `55.900, 64.290, 53.165` (`55.900`; `11.125`) | Baseline |
+| Tiled, 64 latitudes | 8 | `63.131, 55.411, 53.754` (`55.411`; `9.377`) | About `+0.5 MiB` at T511 |
+| Full order-major | 8 | `56.491, 48.717, 54.108` (`54.108`; `7.774`) | No added allocation |
+
+The full order-major path reduces one-thread analysis time by `5.6%` against the ring-major median. The eight-thread medians differ by `3.2%`, within the broad run-to-run variation. The tiled path reduces the one-thread median by `4.6%` and has no measured eight-thread gain. The full order-major scratch overlays the already allocated scalar-plan spin spectra; the removed per-worker buffer saves `1 KiB` per worker for f64. The tile requires about `4 MiB` at T4095, while the full order-major active range fits in the existing spectrum allocation. The full order-major path is selected for scalar analysis. The rebuilt extension was compared with `ducc0==0.41.0` at source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`, using Python 3.11.15, NumPy 2.4.6, T511 GL data, and two runs of one warmup plus five samples. Plan analysis took `332.538 ms` (range `3.037 ms`) with one thread and `63.610 ms` (range `7.013 ms`) with eight threads; DUCC took `12.339 ms` (range `0.136 ms`) and `1.857 ms` (range `0.154 ms`). The measured plan-to-DUCC ratios were `26.9x` and `34.3x`. Analysis errors were `1.010e-14` maximum absolute, `2.281e-16` RMS and `4.467e-14` relative L2 at both thread counts. Input copying measured `0.052–0.084 ms`, and output allocation measured `0.001 ms`. Rust 1.89 all-feature tests passed 77 library tests and 10 f32 integration tests, with seven opt-in high-bandlimit tests ignored. The no-default-features suite passed 74 library tests and the same 10 f32 tests. Formatting and workspace Clippy with warnings denied passed; `uv run pytest python/tests` passed all eight tests. Scalar DUCC comparisons and adjoint identities passed on GL, CC and F1.
