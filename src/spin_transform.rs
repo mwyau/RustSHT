@@ -1607,20 +1607,34 @@ impl<T: ShtScalar> ShtPlan<T> {
             let block_len = block_end - block_start;
             for lane in 0..block_len {
                 let ring = block_start + lane;
-                let spectrum_start = ring * spectrum_len;
-                let mut scale = T::from_f64(ring_weights[ring])
-                    .expect("ring weight is representable")
-                    / theta_sin[ring];
-                if normalize_fourier {
-                    scale /= longitude_count;
+                if m <= ring_order_limits[ring] {
+                    let spectrum_start = ring * spectrum_len;
+                    let mut scale = T::from_f64(ring_weights[ring])
+                        .expect("ring weight is representable")
+                        / theta_sin[ring];
+                    if normalize_fourier {
+                        scale /= longitude_count;
+                    }
+                    recurrence.weighted_spin_q_spectrum[lane] =
+                        q_spectra[spectrum_start + m] * phase * scale;
+                    recurrence.weighted_spin_u_spectrum[lane] =
+                        u_spectra[spectrum_start + m] * phase * scale;
+                } else {
+                    recurrence.weighted_spin_q_spectrum[lane] = Complex::new(T::zero(), T::zero());
+                    recurrence.weighted_spin_u_spectrum[lane] = Complex::new(T::zero(), T::zero());
                 }
-                recurrence.weighted_spin_q_spectrum[lane] =
-                    q_spectra[spectrum_start + m] * phase * scale;
-                recurrence.weighted_spin_u_spectrum[lane] =
-                    u_spectra[spectrum_start + m] * phase * scale;
+                recurrence.analysis_same_real[lane] = recurrence.weighted_spin_q_spectrum[lane].re;
+                recurrence.analysis_same_imag[lane] = recurrence.weighted_spin_q_spectrum[lane].im;
+                recurrence.analysis_opposite_real[lane] =
+                    recurrence.weighted_spin_u_spectrum[lane].re;
+                recurrence.analysis_opposite_imag[lane] =
+                    recurrence.weighted_spin_u_spectrum[lane].im;
             }
-            let weighted_q = &recurrence.weighted_spin_q_spectrum[..block_len];
-            let weighted_u = &recurrence.weighted_spin_u_spectrum[..block_len];
+            let q_real = &recurrence.analysis_same_real[..block_len];
+            let q_imag = &recurrence.analysis_same_imag[..block_len];
+            let u_real = &recurrence.analysis_opposite_real[..block_len];
+            let u_imag = &recurrence.analysis_opposite_imag[..block_len];
+            let block_cosine = &theta_cos[block_start..block_end];
             let paired_used = T::for_each_y_lm_paired_dispatched(
                 arch,
                 m,
@@ -1647,30 +1661,34 @@ impl<T: ShtScalar> ShtPlan<T> {
                     } else {
                         Complex::new(T::zero(), T::zero())
                     };
-                    for lane in 0..basis.len() {
-                        let local_ring = local_ring_start + lane;
-                        if m > ring_order_limits[block_start + local_ring] {
-                            continue;
-                        }
-                        let ring = block_start + local_ring;
-                        let q = weighted_q[local_ring];
-                        let u = weighted_u[local_ring];
-                        first_even += T::multiply_complex_scaled(q, basis[lane], exponents[lane]);
-                        second_even += T::multiply_complex_scaled(u, basis[lane], exponents[lane]);
-                        if l < scalar_lmax {
-                            first_odd += T::multiply_complex_scaled_product(
-                                q,
-                                basis[lane],
-                                theta_cos[ring],
-                                exponents[lane],
-                            );
-                            second_odd += T::multiply_complex_scaled_product(
-                                u,
-                                basis[lane],
-                                theta_cos[ring],
-                                exponents[lane],
-                            );
-                        }
+                    let lane_end = local_ring_start + basis.len();
+                    let lanes = local_ring_start..lane_end;
+                    let cosine = &block_cosine[lanes.clone()];
+                    let (q_even, q_odd) = T::accumulate_scalar_analysis_pair(
+                        arch,
+                        &q_real[lanes.clone()],
+                        &q_imag[lanes.clone()],
+                        &q_real[lanes.clone()],
+                        &q_imag[lanes.clone()],
+                        basis,
+                        exponents,
+                        cosine,
+                    );
+                    let (u_even, u_odd) = T::accumulate_scalar_analysis_pair(
+                        arch,
+                        &u_real[lanes.clone()],
+                        &u_imag[lanes.clone()],
+                        &u_real[lanes.clone()],
+                        &u_imag[lanes],
+                        basis,
+                        exponents,
+                        cosine,
+                    );
+                    first_even += q_even;
+                    second_even += u_even;
+                    if l < scalar_lmax {
+                        first_odd += q_odd;
+                        second_odd += u_odd;
                     }
                     recurrence.fast_scalar_first[l] = first_even;
                     recurrence.fast_scalar_second[l] = second_even;
