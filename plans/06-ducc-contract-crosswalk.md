@@ -23,7 +23,12 @@ This document maps the GL/CC/F1 subset of the DUCC `ducc0` API to RustSHT operat
 | CC | `theta_i = i*pi/(ntheta-1)` (includes poles) | `ntheta - 2` |
 | F1 | `theta_i = (i+1/2)*pi/ntheta` | `ntheta - 1` |
 
-The Python `analysis_2d` documentation additionally states `mmax <= floor((nphi-1)/2)`. Longitude samples are `phi0 + 2*pi*j/nphi`. Synthesis may admit other geometry/order combinations; validate each operation rather than requiring exact-analysis sampling universally. `get_gridweights` already contains the azimuthal `2*pi` factor; their sum over latitudes should be `4*pi`. Check FFT normalization separately to avoid applying the same factor twice.
+The Python `analysis_2d` documentation additionally states `mmax <= floor((nphi-1)/2)`. Longitude samples are `phi0 + 2*pi*j/nphi`. Synthesis may admit other geometry/order combinations; validate each operation rather than requiring exact-analysis sampling universally. `get_gridweights` already contains azimuthal `2*pi`; the ring weights sum to `4*pi` and the per-pixel weight for uniform longitude sampling is `w_i/nphi`. Check FFT normalization separately. The minimum longitude count for exact analysis is `2*mmax+1` (odd), or `2*mmax+2` for even sampling.
+
+## Initial RustSHT subset
+
+DUCC's rectangular operators accept per-ring `ringfactor`. The first RustSHT API uses only its default value of one; arbitrary ring scaling is deferred and not part of the initial parity claim. STANDARD analysis/adjoint analysis have no GRAD_ONLY or DERIV1 modes; these belong to synthesis and its adjoint.
+
 
 ## Harmonic representation
 
