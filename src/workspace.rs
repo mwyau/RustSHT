@@ -50,6 +50,10 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     pub(crate) spin_exponents_minus: Vec<i64>,
     pub(crate) weighted_spin_q_spectrum: Vec<Complex<T>>,
     pub(crate) weighted_spin_u_spectrum: Vec<Complex<T>>,
+    pub(crate) analysis_same_real: Vec<T>,
+    pub(crate) analysis_same_imag: Vec<T>,
+    pub(crate) analysis_opposite_real: Vec<T>,
+    pub(crate) analysis_opposite_imag: Vec<T>,
     pub(crate) fast_scalar_first: Vec<Complex<T>>,
     pub(crate) fast_scalar_second: Vec<Complex<T>>,
     pub(crate) fast_spin_first: Vec<Complex<T>>,
@@ -111,6 +115,22 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
             weighted_spin_u_spectrum: allocate_complex(
                 recurrence_scratch_len,
                 "weighted spin U Fourier modes",
+            )?,
+            analysis_same_real: allocate_real(
+                recurrence_scratch_len,
+                "same-parity analysis real spectrum",
+            )?,
+            analysis_same_imag: allocate_real(
+                recurrence_scratch_len,
+                "same-parity analysis imaginary spectrum",
+            )?,
+            analysis_opposite_real: allocate_real(
+                recurrence_scratch_len,
+                "opposite-parity analysis real spectrum",
+            )?,
+            analysis_opposite_imag: allocate_real(
+                recurrence_scratch_len,
+                "opposite-parity analysis imaginary spectrum",
             )?,
             fast_scalar_first: allocate_complex(
                 spin_fast_coefficient_count,

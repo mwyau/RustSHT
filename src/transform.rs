@@ -828,6 +828,18 @@ impl<T: ShtScalar> ShtPlan<T> {
                 let same_parity_spectrum = &recurrence.weighted_spin_q_spectrum[..block_len];
                 let opposite_parity_spectrum = &recurrence.weighted_spin_u_spectrum[..block_len];
                 if paired_used {
+                    for lane in 0..block_len {
+                        recurrence.analysis_same_real[lane] = same_parity_spectrum[lane].re;
+                        recurrence.analysis_same_imag[lane] = same_parity_spectrum[lane].im;
+                        recurrence.analysis_opposite_real[lane] = opposite_parity_spectrum[lane].re;
+                        recurrence.analysis_opposite_imag[lane] = opposite_parity_spectrum[lane].im;
+                    }
+                    let same_real = &recurrence.analysis_same_real[..block_len];
+                    let same_imag = &recurrence.analysis_same_imag[..block_len];
+                    let opposite_real = &recurrence.analysis_opposite_real[..block_len];
+                    let opposite_imag = &recurrence.analysis_opposite_imag[..block_len];
+                    // Paired degrees l=m+2k use north+south for the even term;
+                    // the intervening odd term uses north-south and cos(theta).
                     paired_used = T::for_each_y_lm_paired_dispatched(
                         arch,
                         m,
@@ -843,37 +855,26 @@ impl<T: ShtScalar> ShtPlan<T> {
                         &mut recurrence.exponents,
                         |l, ring_start, current, exponents| {
                             let offset = l - m;
-                            let even_parity_spectrum = if (l + m).is_multiple_of(2) {
-                                same_parity_spectrum
-                            } else {
-                                opposite_parity_spectrum
-                            };
-                            let odd_parity_spectrum = if (l + m).is_multiple_of(2) {
-                                opposite_parity_spectrum
-                            } else {
-                                same_parity_spectrum
-                            };
                             let mut even_coefficient = coefficients[offset];
                             let mut odd_coefficient = if l < lmax {
                                 coefficients[offset + 1]
                             } else {
                                 Complex::new(T::zero(), T::zero())
                             };
-                            for lane in 0..current.len() {
-                                let ring = ring_start + lane;
-                                even_coefficient += T::multiply_complex_scaled(
-                                    even_parity_spectrum[ring],
-                                    current[lane],
-                                    exponents[lane],
-                                );
-                                if l < lmax {
-                                    odd_coefficient += T::multiply_complex_scaled_product(
-                                        odd_parity_spectrum[ring],
-                                        current[lane],
-                                        theta_cos[block_start + ring],
-                                        exponents[lane],
-                                    );
-                                }
+                            let lane_end = ring_start + current.len();
+                            let (same_sum, opposite_sum) = T::accumulate_scalar_analysis_pair(
+                                arch,
+                                &same_real[ring_start..lane_end],
+                                &same_imag[ring_start..lane_end],
+                                &opposite_real[ring_start..lane_end],
+                                &opposite_imag[ring_start..lane_end],
+                                current,
+                                exponents,
+                                &theta_cos[block_start + ring_start..block_start + lane_end],
+                            );
+                            even_coefficient += same_sum;
+                            if l < lmax {
+                                odd_coefficient += opposite_sum;
                             }
                             coefficients[offset] = even_coefficient;
                             if l < lmax {
@@ -1125,6 +1126,26 @@ impl<T: ShtScalar> ShtPlan<T> {
                     "workspace spin recurrence B factors",
                     self.spin_recurrence_factor_count,
                     recurrence.spin_coefficient_b.len(),
+                ),
+                (
+                    "workspace same-parity analysis real spectrum",
+                    recurrence_scratch_len,
+                    recurrence.analysis_same_real.len(),
+                ),
+                (
+                    "workspace same-parity analysis imaginary spectrum",
+                    recurrence_scratch_len,
+                    recurrence.analysis_same_imag.len(),
+                ),
+                (
+                    "workspace opposite-parity analysis real spectrum",
+                    recurrence_scratch_len,
+                    recurrence.analysis_opposite_real.len(),
+                ),
+                (
+                    "workspace opposite-parity analysis imaginary spectrum",
+                    recurrence_scratch_len,
+                    recurrence.analysis_opposite_imag.len(),
                 ),
                 (
                     "workspace spin-1 fast scalar first coefficients",

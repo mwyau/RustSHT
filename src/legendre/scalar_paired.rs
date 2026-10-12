@@ -133,6 +133,125 @@ pub(crate) fn synthesize_order_block_dispatched(
     Ok(true)
 }
 
+/// Accumulates a paired scalar analysis block across its latitude lanes.
+///
+/// Normal recurrence lanes use vector products and horizontal reductions.
+/// Lanes carrying binary scale exponents retain the scalar scaled path.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The analysis kernel receives parity spectra and recurrence lanes explicitly."
+)]
+pub(crate) fn accumulate_analysis_pair_dispatched(
+    arch: Arch,
+    same_real: &[f64],
+    same_imag: &[f64],
+    opposite_real: &[f64],
+    opposite_imag: &[f64],
+    basis: &[f64],
+    exponents: &[i64],
+    cos_theta: &[f64],
+) -> (Complex64, Complex64) {
+    debug_assert_eq!(same_real.len(), basis.len());
+    debug_assert_eq!(same_imag.len(), basis.len());
+    debug_assert_eq!(opposite_real.len(), basis.len());
+    debug_assert_eq!(opposite_imag.len(), basis.len());
+    debug_assert_eq!(exponents.len(), basis.len());
+    debug_assert_eq!(cos_theta.len(), basis.len());
+
+    if exponents.iter().all(|&exponent| exponent == 0) {
+        return arch.dispatch(AnalysisPairAccumulation {
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            basis,
+            cos_theta,
+        });
+    }
+
+    let mut same = Complex64::new(0.0, 0.0);
+    let mut opposite = Complex64::new(0.0, 0.0);
+    for lane in 0..basis.len() {
+        same += scalar::multiply_complex_scaled(
+            Complex64::new(same_real[lane], same_imag[lane]),
+            basis[lane],
+            exponents[lane],
+        );
+        opposite += scalar::multiply_complex_scaled_product(
+            Complex64::new(opposite_real[lane], opposite_imag[lane]),
+            basis[lane],
+            cos_theta[lane],
+            exponents[lane],
+        );
+    }
+    (same, opposite)
+}
+
+struct AnalysisPairAccumulation<'a> {
+    same_real: &'a [f64],
+    same_imag: &'a [f64],
+    opposite_real: &'a [f64],
+    opposite_imag: &'a [f64],
+    basis: &'a [f64],
+    cos_theta: &'a [f64],
+}
+
+impl WithSimd for AnalysisPairAccumulation<'_> {
+    type Output = (Complex64, Complex64);
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let AnalysisPairAccumulation {
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            basis,
+            cos_theta,
+        } = self;
+        let (same_real_vectors, same_real_tail) = S::as_simd_f64s(same_real);
+        let (same_imag_vectors, same_imag_tail) = S::as_simd_f64s(same_imag);
+        let (opposite_real_vectors, opposite_real_tail) = S::as_simd_f64s(opposite_real);
+        let (opposite_imag_vectors, opposite_imag_tail) = S::as_simd_f64s(opposite_imag);
+        let (basis_vectors, basis_tail) = S::as_simd_f64s(basis);
+        let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
+        debug_assert_eq!(same_real_vectors.len(), basis_vectors.len());
+        debug_assert_eq!(same_imag_vectors.len(), basis_vectors.len());
+        debug_assert_eq!(opposite_real_vectors.len(), basis_vectors.len());
+        debug_assert_eq!(opposite_imag_vectors.len(), basis_vectors.len());
+        debug_assert_eq!(cosine_vectors.len(), basis_vectors.len());
+
+        let mut same_re = 0.0;
+        let mut same_im = 0.0;
+        let mut opposite_re = 0.0;
+        let mut opposite_im = 0.0;
+        for index in 0..basis_vectors.len() {
+            same_re +=
+                simd.reduce_sum_f64s(simd.mul_f64s(same_real_vectors[index], basis_vectors[index]));
+            same_im +=
+                simd.reduce_sum_f64s(simd.mul_f64s(same_imag_vectors[index], basis_vectors[index]));
+            opposite_re += simd.reduce_sum_f64s(simd.mul_f64s(
+                simd.mul_f64s(opposite_real_vectors[index], basis_vectors[index]),
+                cosine_vectors[index],
+            ));
+            opposite_im += simd.reduce_sum_f64s(simd.mul_f64s(
+                simd.mul_f64s(opposite_imag_vectors[index], basis_vectors[index]),
+                cosine_vectors[index],
+            ));
+        }
+        for lane in 0..basis_tail.len() {
+            same_re += same_real_tail[lane] * basis_tail[lane];
+            same_im += same_imag_tail[lane] * basis_tail[lane];
+            opposite_re += (opposite_real_tail[lane] * basis_tail[lane]) * cosine_tail[lane];
+            opposite_im += (opposite_imag_tail[lane] * basis_tail[lane]) * cosine_tail[lane];
+        }
+        (
+            Complex64::new(same_re, same_im),
+            Complex64::new(opposite_re, opposite_im),
+        )
+    }
+}
+
 struct FusedSynthesisBlock<'a> {
     m: usize,
     lmax: usize,

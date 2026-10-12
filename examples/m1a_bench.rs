@@ -138,6 +138,7 @@ fn main() {
         + (lmax + 1) * size_of::<f64>()
         + spin_recurrence_factors
         + spin_recurrence_lanes
+        + rayon_threads * LATITUDE_BLOCK_SIZE * 4 * size_of::<f64>()
         + rayon_threads * LATITUDE_BLOCK_SIZE * 2 * size_of::<Complex64>();
     println!(
         "T{lmax}; GL {ntheta}x{nphi}; f64; 1 vs {rayon_threads} threads; {operation}; 5 samples, median"
