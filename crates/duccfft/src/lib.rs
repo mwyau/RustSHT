@@ -7,6 +7,7 @@
 
 mod complex;
 mod real;
+mod simd;
 
 pub use complex::{ComplexFftPlan, ComplexFftWorkspace, FftError};
 pub use num_complex::{Complex, Complex64};
