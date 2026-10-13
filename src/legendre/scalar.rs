@@ -775,6 +775,13 @@ mod tests {
     }
 
     #[test]
+    fn paired_range_guard_keeps_small_state_when_partner_is_normal() {
+        assert!(pair_lanes_need_scaling(&[0.0], &[SMALL / 2.0]));
+        assert!(!pair_lanes_need_scaling(&[BIG], &[SMALL / 2.0]));
+        assert!(pair_lanes_need_scaling(&[BIG * 2.0], &[0.0]));
+    }
+
+    #[test]
     fn ducc_paired_degree_recurrence_preserves_coefficient_transform_and_adjoint() {
         let lmax = 128;
         let theta = [0.003, 0.37, 1.1, 1.57, std::f64::consts::PI - 0.003];
