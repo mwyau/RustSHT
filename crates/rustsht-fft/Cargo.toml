@@ -1,0 +1,53 @@
+[package]
+name = "rustsht-fft"
+version = "0.1.0-dev.0"
+edition = "2024"
+rust-version = "1.99"
+authors = ["Albert M. W. Yau"]
+license = "BSD-3-Clause"
+description = "Standalone Rust crate for one-dimensional FFT algorithms"
+repository = "https://github.com/mwyau/RustSHT"
+publish = false
+
+[workspace]
+resolver = "3"
+
+[dependencies]
+num-complex = "0.4"
+num-traits = "0.2"
+
+[dev-dependencies]
+rustfft = "6.4"
+
+[[bench]]
+name = "rustfft"
+harness = false
+
+[[bench]]
+name = "multipass_prototype"
+harness = false
+
+[[bench]]
+name = "real_radix4_prototype"
+harness = false
+
+[[bench]]
+name = "real_complexify_prototype"
+harness = false
+
+[[bench]]
+name = "bluestein_phase_prototype"
+harness = false
+
+[[bench]]
+name = "f32_real_simd"
+harness = false
+
+[[bench]]
+name = "across_row_prototype"
+harness = false
+
+[[bench]]
+name = "rader_real_prototype"
+path = "benches/prototypes/rader_real.rs"
+harness = false
