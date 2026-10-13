@@ -337,7 +337,7 @@ fn fixed_radices_match_analytic_impulses_constants_and_fourier_modes() {
 
 #[test]
 fn general_prime_and_bluestein_paths_match_direct_dfts() {
-    for n in [107, 109, 113, 137, 241] {
+    for n in [13, 17, 19, 23, 31, 41, 53, 73, 103, 107, 109, 113, 137, 241] {
         let input: Vec<_> = (0..n).map(|index| signal_f64(index + 5, n + 2)).collect();
         let expected = direct_dft_f64(&input, true);
         let plan = ComplexFftPlan::<f64>::new(n).unwrap();
@@ -370,6 +370,58 @@ fn general_prime_and_bluestein_paths_match_direct_dfts() {
     let mut actual_inverse = independent_spectrum;
     plan.inverse(&mut actual_inverse, &mut workspace).unwrap();
     assert_f32_close(&actual_inverse, &expected_inverse, n);
+
+    let n = 103;
+    let input: Vec<_> = (0..n).map(|index| signal_f32(index + 11, n)).collect();
+    let expected = direct_dft_f32(&input, true);
+    let plan = ComplexFftPlan::<f32>::new(n).unwrap();
+    let mut workspace = plan.workspace().unwrap();
+    let mut actual = input;
+    plan.forward(&mut actual, &mut workspace).unwrap();
+    assert_f32_close(&actual, &expected, n);
+}
+
+#[test]
+fn general_prime_inverse_keeps_maximum_finite_dc_spectra_finite() {
+    let n = 103;
+
+    let plan64 = ComplexFftPlan::<f64>::new(n).unwrap();
+    let mut workspace64 = plan64.workspace().unwrap();
+    let mut spectrum64 = vec![Complex::new(0.0, 0.0); n];
+    spectrum64[0] = Complex::new(f64::MAX, 0.0);
+    plan64.inverse(&mut spectrum64, &mut workspace64).unwrap();
+    let expected64 = f64::MAX / n as f64;
+    for (index, value) in spectrum64.iter().enumerate() {
+        assert!(
+            value.re.is_finite() && value.im.is_finite(),
+            "index={index}"
+        );
+        assert!(
+            (value.re - expected64).abs() <= 2.0e-12 * expected64,
+            "index={index}, actual={}, expected={expected64}",
+            value.re
+        );
+        assert!(value.im.abs() <= 2.0e-12 * expected64, "index={index}");
+    }
+
+    let plan32 = ComplexFftPlan::<f32>::new(n).unwrap();
+    let mut workspace32 = plan32.workspace().unwrap();
+    let mut spectrum32 = vec![Complex::new(0.0, 0.0); n];
+    spectrum32[0] = Complex::new(f32::MAX, 0.0);
+    plan32.inverse(&mut spectrum32, &mut workspace32).unwrap();
+    let expected32 = f32::MAX / n as f32;
+    for (index, value) in spectrum32.iter().enumerate() {
+        assert!(
+            value.re.is_finite() && value.im.is_finite(),
+            "index={index}"
+        );
+        assert!(
+            (value.re - expected32).abs() <= 4.0e-6 * expected32,
+            "index={index}, actual={}, expected={expected32}",
+            value.re
+        );
+        assert!(value.im.abs() <= 4.0e-6 * expected32, "index={index}");
+    }
 }
 
 #[test]

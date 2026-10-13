@@ -110,6 +110,7 @@ struct ComplexPass<T> {
     l1: usize,
     ido: usize,
     twiddles: Vec<Complex<T>>,
+    prime_phase_indices: Vec<u8>,
 }
 
 struct PassExecution<'a, T> {
@@ -121,6 +122,7 @@ struct PassExecution<'a, T> {
     radix_input: &'a mut [Complex<T>],
     radix_output: &'a mut [Complex<T>],
     blue_plan: Option<&'a BluesteinPlan<T>>,
+    prime_phase_indices: &'a [u8],
     blue_buffer: &'a mut [Complex<T>],
     blue_workspace: Option<&'a mut ComplexFftWorkspace<T>>,
     simd: Option<SimdKernels<T>>,
@@ -218,11 +220,26 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
                     twiddles[branch * ido + inner] = roots[root_index];
                 }
             }
+            let mut prime_phase_indices = Vec::new();
+            if (13..110).contains(&radix) && !radix.is_multiple_of(2) {
+                let phase_count = ((radix - 1) / 2)
+                    .checked_mul(radix)
+                    .ok_or(FftError::AllocationFailed)?;
+                prime_phase_indices = try_vec(phase_count, 0_u8)?;
+                for branch in 1..=(radix - 1) / 2 {
+                    for frequency in 0..radix {
+                        let phase = bounded_product_mod(branch, frequency, radix);
+                        prime_phase_indices[(branch - 1) * radix + frequency] =
+                            u8::try_from(phase).map_err(|_| FftError::AllocationFailed)?;
+                    }
+                }
+            }
             passes.push(ComplexPass {
                 radix,
                 l1,
                 ido,
                 twiddles,
+                prime_phase_indices,
             });
             l1 = pass_span;
         }
@@ -372,6 +389,7 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
                 radix_input: &mut workspace.radix_input,
                 radix_output: &mut workspace.radix_output,
                 blue_plan: blue,
+                prime_phase_indices: &pass.prime_phase_indices,
                 blue_buffer: &mut workspace.bluestein_buffer,
                 blue_workspace: workspace.bluestein_workspaces[stage].as_mut(),
                 simd,
@@ -1202,14 +1220,25 @@ impl<T: Float + FromPrimitive> PassExecution<'_, T> {
                         .expect("Bluestein pass has a workspace"),
                 );
             } else {
-                radix_transform(
-                    radix,
-                    &self.radix_input[..radix],
-                    &mut self.radix_output[..radix],
-                    self.roots,
-                    root_stride,
-                    self.direction,
-                );
+                if self.prime_phase_indices.is_empty() {
+                    radix_transform(
+                        radix,
+                        &self.radix_input[..radix],
+                        &mut self.radix_output[..radix],
+                        self.roots,
+                        root_stride,
+                        self.direction,
+                    );
+                } else {
+                    radix_general_prime_precomputed_phases(
+                        &self.radix_input[..radix],
+                        &mut self.radix_output[..radix],
+                        self.roots,
+                        root_stride,
+                        self.direction,
+                        self.prime_phase_indices,
+                    );
+                }
             }
         } else {
             radix_transform_fixed::<R, T>(
@@ -1310,6 +1339,32 @@ fn radix_general_prime<T: Float + FromPrimitive>(
             let opposite = radix - branch;
             let root_index = bounded_product_mod(branch, frequency, radix) * root_stride;
             let root = directed_root(roots, root_index, direction);
+            let pair = input[branch] + input[opposite];
+            let difference = input[branch] - input[opposite];
+            sum = sum + pair * root.re + imaginary(difference) * root.im;
+        }
+        *result = sum;
+    }
+}
+
+fn radix_general_prime_precomputed_phases<T: Float + FromPrimitive>(
+    input: &[Complex<T>],
+    output: &mut [Complex<T>],
+    roots: &[Complex<T>],
+    root_stride: usize,
+    direction: Direction,
+    phase_indices: &[u8],
+) {
+    let radix = input.len();
+    let half = (radix - 1) / 2;
+    debug_assert!(!radix.is_multiple_of(2));
+    debug_assert_eq!(phase_indices.len(), half * radix);
+    for (frequency, result) in output.iter_mut().enumerate() {
+        let mut sum = input[0];
+        for branch in 1..=half {
+            let opposite = radix - branch;
+            let phase = usize::from(phase_indices[(branch - 1) * radix + frequency]);
+            let root = directed_root(roots, phase * root_stride, direction);
             let pair = input[branch] + input[opposite];
             let difference = input[branch] - input[opposite];
             sum = sum + pair * root.re + imaginary(difference) * root.im;
