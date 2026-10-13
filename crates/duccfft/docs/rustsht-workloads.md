@@ -46,6 +46,9 @@ Longitude map rows are contiguous, with row `r` beginning at `r*nphi`. The
 half-spectrum rows are contiguous with length `nphi/2+1`. The complex
 meridional profile is contiguous. Plans contain reusable FFT metadata; mutable
 buffers live in `ShtWorkspace`. Independent SHT calls therefore use separate
-workspaces. The duccfft batch API will target contiguous rows and caller-owned
-scratch so the host library can schedule batches without nested worker pools. All current RustSHT FFT paths are f64 or f32 through generic numeric bounds. The benchmark suite will include both precisions after the native kernels
+workspaces. DUCCFFT now provides contiguous row-major batch methods that reuse
+one caller-owned workspace and do not create a worker pool. They preserve row
+order but currently execute one transform at a time; across-row SIMD remains
+unimplemented. The batch API comparison is in
+[`m4-batch-api.md`](m4-batch-api.md). All current RustSHT FFT paths are f64 or f32 through generic numeric bounds. The benchmark suite will include both precisions after the native kernels
 support them.
