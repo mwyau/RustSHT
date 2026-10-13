@@ -1220,52 +1220,104 @@ impl<T: ShtScalar> ShtPlan<T> {
             }
         }
 
-        let (fallback_sin, fallback_cos, compact_ring_indices) = if has_excluded_ring {
-            let mut compact_len = 0;
-            for (ring, &limit) in ring_order_limits.iter().enumerate() {
-                if m <= limit {
-                    recurrence.compact_theta_sin[compact_len] = theta_sin[ring];
-                    recurrence.compact_theta_cos[compact_len] = theta_cos[ring];
-                    recurrence.compact_ring_indices[compact_len] = ring;
-                    compact_len += 1;
+        let mut split_transition_attempted = false;
+        let mut split_polar_count = None;
+        if self.harmonics.lmax() >= SPIN1_TRANSITION_MIN_LMAX {
+            let transition_min_sine =
+                T::from_f64(0.01).expect("paired scalar transition sine limit converts");
+            let active_start = ring_order_limits
+                .iter()
+                .position(|&limit| m <= limit)
+                .expect("the block has at least one active ring");
+            let active_end = ring_order_limits
+                .iter()
+                .rposition(|&limit| m <= limit)
+                .expect("the block has at least one active ring")
+                + 1;
+            let has_polar_endpoint = theta_sin[active_start] < transition_min_sine
+                || theta_sin[active_end - 1] < transition_min_sine;
+            if has_polar_endpoint {
+                split_transition_attempted = true;
+                if theta_sin[active_start..active_end]
+                    .iter()
+                    .any(|&sine| sine >= transition_min_sine)
+                {
+                    split_polar_count = try_synthesize_spin1_transition_safe_lanes(
+                        arch,
+                        m,
+                        scalar_lmax,
+                        spectrum_len,
+                        self.sectoral_norms[m],
+                        theta_sin,
+                        theta_cos,
+                        ring_order_limits,
+                        q_spectra,
+                        u_spectra,
+                        recurrence,
+                    )?;
                 }
             }
-            debug_assert!(compact_len > 0);
-            (
-                &recurrence.compact_theta_sin[..compact_len],
-                &recurrence.compact_theta_cos[..compact_len],
-                Some(&recurrence.compact_ring_indices[..compact_len]),
-            )
-        } else {
-            (theta_sin, theta_cos, None)
-        };
-        let fallback_len = fallback_sin.len();
-        let mut staged_pair = if self.harmonics.lmax() >= SPIN1_TRANSITION_MIN_LMAX {
-            T::try_synthesize_paired_scalar_transition_dispatched(
-                arch,
-                m,
-                scalar_lmax,
-                fallback_sin,
-                fallback_cos,
-                self.sectoral_norms[m],
-                &recurrence.epsilon,
-                &recurrence.spin_alpha,
-                &recurrence.spin_coefficient_a,
-                &recurrence.spin_coefficient_b,
-                &recurrence.fast_scalar_first[m..=scalar_lmax],
-                &recurrence.fast_scalar_second[m..=scalar_lmax],
-                &mut recurrence.previous[..fallback_len],
-                &mut recurrence.current[..fallback_len],
-                &mut recurrence.next[..fallback_len],
-                &mut recurrence.exponents[..fallback_len],
-                &mut recurrence.analysis_same_real[..fallback_len],
-                &mut recurrence.analysis_same_imag[..fallback_len],
-                &mut recurrence.analysis_opposite_real[..fallback_len],
-                &mut recurrence.analysis_opposite_imag[..fallback_len],
-            )?
-        } else {
-            false
-        };
+        }
+        if split_polar_count == Some(0) {
+            return Ok(());
+        }
+        let (fallback_sin, fallback_cos, compact_ring_indices, fallback_len, split_polar_fallback) =
+            if let Some(polar_count) = split_polar_count {
+                (
+                    &recurrence.spin_previous_minus[..polar_count],
+                    &recurrence.spin_current_minus[..polar_count],
+                    None,
+                    polar_count,
+                    true,
+                )
+            } else if has_excluded_ring {
+                let mut compact_len = 0;
+                for (ring, &limit) in ring_order_limits.iter().enumerate() {
+                    if m <= limit {
+                        recurrence.compact_theta_sin[compact_len] = theta_sin[ring];
+                        recurrence.compact_theta_cos[compact_len] = theta_cos[ring];
+                        recurrence.compact_ring_indices[compact_len] = ring;
+                        compact_len += 1;
+                    }
+                }
+                debug_assert!(compact_len > 0);
+                (
+                    &recurrence.compact_theta_sin[..compact_len],
+                    &recurrence.compact_theta_cos[..compact_len],
+                    Some(&recurrence.compact_ring_indices[..compact_len]),
+                    compact_len,
+                    false,
+                )
+            } else {
+                (theta_sin, theta_cos, None, block_len, false)
+            };
+        let mut staged_pair =
+            if self.harmonics.lmax() >= SPIN1_TRANSITION_MIN_LMAX && !split_transition_attempted {
+                T::try_synthesize_paired_scalar_transition_dispatched(
+                    arch,
+                    m,
+                    scalar_lmax,
+                    fallback_sin,
+                    fallback_cos,
+                    self.sectoral_norms[m],
+                    &recurrence.epsilon,
+                    &recurrence.spin_alpha,
+                    &recurrence.spin_coefficient_a,
+                    &recurrence.spin_coefficient_b,
+                    &recurrence.fast_scalar_first[m..=scalar_lmax],
+                    &recurrence.fast_scalar_second[m..=scalar_lmax],
+                    &mut recurrence.previous[..fallback_len],
+                    &mut recurrence.current[..fallback_len],
+                    &mut recurrence.next[..fallback_len],
+                    &mut recurrence.exponents[..fallback_len],
+                    &mut recurrence.analysis_same_real[..fallback_len],
+                    &mut recurrence.analysis_same_imag[..fallback_len],
+                    &mut recurrence.analysis_opposite_real[..fallback_len],
+                    &mut recurrence.analysis_opposite_imag[..fallback_len],
+                )?
+            } else {
+                false
+            };
         if staged_pair {
             for (lane, &sin_theta) in fallback_sin.iter().enumerate() {
                 let inverse_sine = sin_theta.recip();
@@ -1342,8 +1394,12 @@ impl<T: ShtScalar> ShtPlan<T> {
                 };
                 for lane in 0..basis.len() {
                     let fallback_ring = block_ring_start + lane;
-                    let group_ring = compact_ring_indices
-                        .map_or(fallback_ring, |indices| indices[fallback_ring]);
+                    let group_ring = if split_polar_fallback {
+                        usize::try_from(recurrence.spin_exponents_minus[fallback_ring])
+                            .expect("saved ring index is nonnegative")
+                    } else {
+                        compact_ring_indices.map_or(fallback_ring, |indices| indices[fallback_ring])
+                    };
                     let inverse_sine = fallback_sin[fallback_ring].recip();
                     let cosine_over_sine = fallback_cos[fallback_ring] * inverse_sine;
                     let first = T::multiply_complex_scaled_product(
@@ -2579,6 +2635,111 @@ fn check_len(buffer: &'static str, expected: usize, actual: usize) -> Result<(),
             actual,
         })
     }
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The polar-lane split uses one block's geometry, spectra and worker scratch."
+)]
+#[cold]
+#[inline(never)]
+fn try_synthesize_spin1_transition_safe_lanes<T: ShtScalar>(
+    arch: pulp::Arch,
+    m: usize,
+    scalar_lmax: usize,
+    spectrum_len: usize,
+    sectoral_norm: T,
+    theta_sin: &[T],
+    theta_cos: &[T],
+    ring_order_limits: &[usize],
+    q_spectra: &mut [Complex<T>],
+    u_spectra: &mut [Complex<T>],
+    recurrence: &mut RecurrenceWorkspace<T>,
+) -> Result<Option<usize>, ShtError> {
+    debug_assert_eq!(theta_sin.len(), theta_cos.len());
+    debug_assert_eq!(theta_sin.len(), ring_order_limits.len());
+    debug_assert_eq!(q_spectra.len(), theta_sin.len() * spectrum_len);
+    debug_assert_eq!(u_spectra.len(), q_spectra.len());
+
+    let transition_min_sine = T::from_f64(0.01).expect("paired transition sine limit converts");
+    let mut transition_len = 0;
+    let mut polar_len = 0;
+    for ring in 0..theta_sin.len() {
+        if m > ring_order_limits[ring] {
+            continue;
+        }
+        if theta_sin[ring] >= transition_min_sine {
+            recurrence.spin_previous_plus[transition_len] = theta_sin[ring];
+            recurrence.spin_current_plus[transition_len] = theta_cos[ring];
+            recurrence.spin_exponents_plus[transition_len] =
+                i64::try_from(ring).expect("local ring index fits i64");
+            transition_len += 1;
+        } else {
+            recurrence.spin_previous_minus[polar_len] = theta_sin[ring];
+            recurrence.spin_current_minus[polar_len] = theta_cos[ring];
+            recurrence.spin_exponents_minus[polar_len] =
+                i64::try_from(ring).expect("local ring index fits i64");
+            polar_len += 1;
+        }
+    }
+    if transition_len == 0 {
+        return Ok(None);
+    }
+
+    let transitioned = T::try_synthesize_paired_scalar_transition_dispatched(
+        arch,
+        m,
+        scalar_lmax,
+        &recurrence.spin_previous_plus[..transition_len],
+        &recurrence.spin_current_plus[..transition_len],
+        sectoral_norm,
+        &recurrence.epsilon,
+        &recurrence.spin_alpha,
+        &recurrence.spin_coefficient_a,
+        &recurrence.spin_coefficient_b,
+        &recurrence.fast_scalar_first[m..=scalar_lmax],
+        &recurrence.fast_scalar_second[m..=scalar_lmax],
+        &mut recurrence.previous[..transition_len],
+        &mut recurrence.current[..transition_len],
+        &mut recurrence.next[..transition_len],
+        &mut recurrence.exponents[..transition_len],
+        &mut recurrence.analysis_same_real[..transition_len],
+        &mut recurrence.analysis_same_imag[..transition_len],
+        &mut recurrence.analysis_opposite_real[..transition_len],
+        &mut recurrence.analysis_opposite_imag[..transition_len],
+    )?;
+    if !transitioned {
+        return Ok(None);
+    }
+    for lane in 0..transition_len {
+        let inverse_sine = recurrence.spin_previous_plus[lane].recip();
+        if ![
+            recurrence.analysis_same_real[lane] * inverse_sine,
+            recurrence.analysis_same_imag[lane] * inverse_sine,
+            recurrence.analysis_opposite_real[lane] * inverse_sine,
+            recurrence.analysis_opposite_imag[lane] * inverse_sine,
+        ]
+        .into_iter()
+        .all(|value| value.is_finite())
+        {
+            return Ok(None);
+        }
+    }
+    for lane in 0..transition_len {
+        let ring = usize::try_from(recurrence.spin_exponents_plus[lane])
+            .expect("saved ring index is nonnegative");
+        let spectrum_index = ring * spectrum_len + m;
+        let inverse_sine = recurrence.spin_previous_plus[lane].recip();
+        q_spectra[spectrum_index] += Complex::new(
+            recurrence.analysis_same_real[lane] * inverse_sine,
+            recurrence.analysis_same_imag[lane] * inverse_sine,
+        );
+        u_spectra[spectrum_index] += Complex::new(
+            recurrence.analysis_opposite_real[lane] * inverse_sine,
+            recurrence.analysis_opposite_imag[lane] * inverse_sine,
+        );
+    }
+    Ok(Some(polar_len))
 }
 
 #[cfg(test)]
