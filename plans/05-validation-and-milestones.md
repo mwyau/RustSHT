@@ -1477,6 +1477,33 @@ A bounded scheduling prototype doubled the target group count for parallel works
 
 The source audit and profiling reviews were read-only. Reviewer Sol confirmed that the task-size change was a suitable bounded test, then noted that a 64-ring boundary can repartition the spin-2 threshold tail and should be checked numerically; the added T1023 test covers that case and polar exclusion. The reviewer also cautioned that the block intervals are not CPU cycles and that the test-only phase timer does not isolate the scaled prefix. In a follow-up review, Sol confirmed the corrected lane accounting, ratio and regression coverage; its final arithmetic correction changed the mixed-block-only share to `5.06%`. The next profile follows the updated priority toward spin-0 and spin-1 STANDARD, GRAD_ONLY and DERIV1 on GL, CC and F1, including lower-bandlimit fast-path eligibility. Active-lane compaction and scaled-to-normal continuation will be measured independently on those paths. FFT optimization remains out of scope.
 
+### Spin-0 fully excluded synthesis blocks (2026-10-12)
+
+At `674e5ed`, scalar synthesis sent every 64-ring block through the paired fused attempt. If any lane exceeded the polar order limit, the fused attempt declined and the scaled recurrence evaluated all lanes. The accumulation callback then skipped excluded rings. The synthesis loop now skips a block when `m` exceeds every ring limit in that block. It writes no Fourier values for an excluded block, so phase and inverse-FFT handling are unchanged.
+
+A temporary release diagnostic counted potential paired recurrence lane work as `block_len * ((lmax - m) / 2 + 1)`. It separated fully excluded blocks from inactive lanes in mixed blocks and from fully active blocks rejected by sectoral scaling. These counts describe RustSHT's potential recurrence work; they are not elapsed time, executed instructions, or DUCC batch counts. DUCC `fill_a2m()` compacts active north/south ring pairs into SIMD batches, while this change skips only blocks with no active ring. The diagnostic used the production polar-order limits on GL, CC and F1. CC/F1 analysis counts used the prepared meridional grid. A read-only review by Sol confirmed the paired degree count and that skipping a fully excluded synthesis block cannot affect another block's recurrence state.
+
+Fully excluded scalar-synthesis pair-lane work / total potential pair-lane work was:
+
+| Grid | T63 | T127 | T255 | T511 | T1023 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| GL | `0 / 67,584` | `0 / 532,480` | `0 / 4,227,072` | `1,590,016 / 33,685,504` | `31,457,152 / 268,959,744` |
+| CC | `0 / 68,640` | `196 / 536,640` | `6,084 / 4,243,584` | `1,642,820 / 33,751,296` | `31,764,356 / 269,222,400` |
+| F1 | `0 / 67,584` | `0 / 532,480` | `0 / 4,227,072` | `1,607,296 / 33,685,504` | `31,550,720 / 268,959,744` |
+
+At T1023 GL, fully excluded blocks account for `11.7%` of potential paired lane work and `38.1%` of the lane work in blocks rejected by the fused attempt. Mixed-block inactive lanes account for a separate `4.6%` of total potential lane work. T255 has no fully excluded GL or F1 blocks, and CC has `0.14%`; low-band synthesis should gain little from this skip.
+
+The native comparison used `examples/m1a_bench.rs`, f64 GL, full `mmax`, `phi0=0.37`, reused plans and workspaces, one warm-up and five timed samples per process, with three process runs pinned to CPUs 0–7 on an AMD Ryzen 9 5950X (Linux `7.0.14`). Rust was `1.99.0 (b940084d7 2026-09-28)`, Cargo release optimization with runtime AVX2/FMA dispatch and no `target-cpu=native`. Each entry is the median and range of process medians in milliseconds:
+
+| Bandlimit | Threads | Before | After | Change |
+| ---: | ---: | ---: | ---: | ---: |
+| T511 | 1 | `79.9 (79.1–80.7)` | `75.3 (74.5–76.4)` | `-5.7%` |
+| T511 | 8 | `29.1 (28.5–29.8)` | `27.0 (26.9–30.4)` | `-7.3%` |
+| T1023 | 1 | `655.5 (652.8–660.1)` | `569.2 (567.9–571.9)` | `-13.2%` |
+| T1023 | 8 | `193.4 (192.6–196.3)` | `161.2 (160.1–161.6)` | `-16.7%` |
+
+Percentage changes use the unrounded process medians. The T511 eight-thread ranges overlap. At T1023, the measured synthesis reductions were `86.3 ms` with one thread and `32.2 ms` with eight. The skip adds no workspace memory. The T511/T1023/T2047 scalar analytic and DUCC test passed against `ducc0==0.41.0` built from source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf` on GL, CC and F1. At T2047 the largest analytic map error was `9.96e-12`, and the largest DUCC sample error was `2.08e-13`. Scalar synthesis/analysis adjoint tests passed on GL, CC and F1. The fully excluded analysis-pair work is also measurable, but its separate skip is not part of this change and requires an independent timing comparison.
+
 ### Spin-0/1 baseline and priority reset (2026-10-12)
 
 The numerical library baseline is commit `01c387e`; the GL/CC/F1 and mode options are in benchmark-harness commit `f0d6894`. The native harness accepts spin-1 STANDARD, GRAD_ONLY and DERIV1 operations; DERIV1 leaves its ignored scalar monopole zero. The Python harness compares plan calls against installed `ducc0==0.41.0`. The pinned DUCC source revision is `c1ed01b8fda69d2a378190f0915f1a19762dddbf`. Measurements use an AMD Ryzen 9 5950X, Linux `7.0.14`, CPUs 0–7, `rustc 1.99.0 (b940084d7 2026-09-28)`, Cargo release settings, runtime AVX2/FMA dispatch and no `target-cpu=native`; the host has no AVX-512. Native calls reuse plans and workspaces. Python calls reuse the plan but allocate a workspace per operation. Both harnesses warm each operation and take five timed samples per process; the native T63–T511 table is the median of three process medians. T1023 STANDARD is three runs, while T1023 GRAD_ONLY/DERIV1 are single-run screening values. Each Python comparison has one process run of five samples. All grids use `phi0=0.37`, full `mmax=lmax`, and `nphi=2*lmax+3`.
