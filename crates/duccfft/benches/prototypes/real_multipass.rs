@@ -727,7 +727,7 @@ fn benchmark_len(len: usize, rows: usize) {
             prototype_checksum,
         );
         emit(
-            "DUCCFFT recursive",
+            "DUCCFFT production",
             name,
             len,
             rows,
