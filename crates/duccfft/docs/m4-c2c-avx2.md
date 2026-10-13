@@ -123,6 +123,13 @@ across the single-call and batch measurements. It remains 2.25–4.20× slower t
 default RustFFT and 1.19–2.25× slower than native-target DUCC. The vector path
 reduces the scalar gap but does not close the architecture gap.
 
+Those cross-library ratios describe the earlier M4 build, before the targeted
+f64 radix-eight `ido=1` pass. The later paired comparison at length 4,096
+measured 38.63% forward and 29.73% inverse median latency reductions over the
+preceding M4 source; its raw samples and Callgrind profile are in
+[`m4-c2c-ido1.md`](m4-c2c-ido1.md). That experiment does not refresh the
+RustFFT or DUCC comparison matrix, and other smooth lengths remain open.
+
 Release assembly was emitted with
 `cargo rustc --release --lib -- --emit=asm`. It contains packed AVX2
 floating-point instructions in both f32 and f64 pass kernels. It also retains
