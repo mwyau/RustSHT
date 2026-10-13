@@ -1548,3 +1548,18 @@ At T127, a temporary diagnostic counted 48 mixed active/inactive latitude blocks
 | F1 DERIV1 | `3.965/2.583` | `3.892/2.394` | `-2.0%/-8.6%` |
 
 The per-process timing ranges overlap in every grid, mode and thread comparison. DERIV1 uses the spin-1 scalar-conversion synthesis path at T127 and exercised the mixed-block eligibility trial; its overlapping ranges also show no resolved gain. The guarded branch adds checks without a reproducible whole-transform gain and was rejected. Its temporary extreme-coefficient comparison produced finite, closely matching spectra on GL/CC/F1, but selected the highest mixed order, likely the sectoral order with one degree pair. It did not establish a multi-degree transition handoff. Sol's second read-only review found no safety issue in the guarded branch and noted this test-coverage limit. No source change or regression test from either prototype was retained.
+
+### Scalar analysis active-ring scheduling (2026-10-13)
+
+The scalar analysis order splitter now uses the existing active-ring work estimate from T511. At lower limits, it keeps the degree-only midpoint because T255 comparisons were inconclusive. The change affects only which disjoint order ranges workers receive; recurrence and per-coefficient accumulation are unchanged. It uses the prepared `ring_order_limits` and adds no scratch or workspace storage. The same release executable, built from `ecee5f0` with a temporary environment-controlled midpoint selection, was used for both schedules. `examples/m1b_bench.rs` measured f64 scalar analysis with full `mmax`, `phi0=0.37`, reused plans/workspaces, one warm-up and five calls per process. Process order alternated, with three paired runs on GL/CC at each bandlimit and six on F1. Runs were 8 pinned CPU cores on an x86-64 CPU / Linux; Rust was `1.99.0 (b940084d7 2026-09-28)`, Cargo release `opt-level=3`, 16 codegen units, LTO off, and runtime AVX2/FMA dispatch without `target-cpu=native`. Values are median process medians in milliseconds, one/eight threads; the parenthesized ranges are the eight-thread process medians for degree-only / active-ring scheduling:
+
+| Grid / bandlimit | Degree-only | Active-ring | Paired median 8-thread gain |
+| --- | ---: | ---: | ---: |
+| GL T511 | `32.272/11.039` | `32.086/9.610` (`10.828–11.062 / 9.453–9.787`) | `13.1%` |
+| CC T511 | `40.196/17.817` | `40.337/16.887` (`17.687–17.878 / 16.586–17.013`) | `4.5%` |
+| F1 T511 | `40.391/18.216` | `40.827/17.307` (`17.562–18.468 / 16.765–18.533`) | `4.7%` |
+| GL T1023 | `233.154/75.459` | `238.850/70.376` (`74.752–77.330 / 69.959–72.694`) | `6.0%` |
+| CC T1023 | `274.218/111.051` | `272.482/107.161` (`110.191–112.037 / 104.967–107.690`) | `3.9%` |
+| F1 T1023 | `279.020/114.953` | `275.429/110.728` (`111.786–117.712 / 108.172–121.320`) | `1.9%` |
+
+The one-thread path does not call the recursive parallel splitter, so its observed differences are controls and are not attributed to scheduling. The GL/CC eight-thread ranges are separated at both bandlimits. F1 is variable: the T511 paired gains were favorable in five of six runs, while T1023 had two noisy losses and overlapping ranges. No one-thread speedup is claimed. The test comparing one/eight-thread scalar analysis outputs passed at T255 and T1023 GL; the T255 DUCC 0.41.0 coefficient fixture, scalar adjoint identities, and release scalar DUCC/analytic checks through T2047 on GL/CC/F1 passed. Sol's strictly read-only review found no mathematical, cutoff, scratch-ownership or race blocker and recommended the T511 gate; its performance conclusion was limited to the eight-thread results. No FFT code changed.

@@ -200,6 +200,38 @@ fn active_ring_weighted_order_midpoint_balances_active_work() {
     );
 }
 
+#[cfg(feature = "parallel")]
+#[test]
+fn scalar_active_ring_schedule_matches_one_and_eight_threads() {
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    for lmax in [255, 1023] {
+        let plan = make_plan(lmax, lmax, lmax + 1, 2 * lmax + 3, 0.37);
+        let input = arbitrary_map(&plan);
+        let mut one_workspace = one_thread.install(|| plan.workspace()).unwrap();
+        let mut eight_workspace = eight_threads.install(|| plan.workspace()).unwrap();
+        let mut one_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        let mut eight_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+
+        one_thread
+            .install(|| plan.analysis_into(&input, &mut one_alm, &mut one_workspace))
+            .unwrap();
+        eight_threads
+            .install(|| plan.analysis_into(&input, &mut eight_alm, &mut eight_workspace))
+            .unwrap();
+
+        for (&one, &eight) in one_alm.iter().zip(&eight_alm) {
+            assert!((one - eight).norm() < 2e-13);
+        }
+    }
+}
+
 #[test]
 fn scalar_synthesis_matches_independent_low_degree_harmonics() {
     let plan = make_plan(3, 2, 5, 9, 0.23);

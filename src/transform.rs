@@ -953,7 +953,16 @@ impl<T: ShtScalar> ShtPlan<T> {
             );
         }
 
-        let m_mid = weighted_order_midpoint(self.harmonics.lmax(), m_start, m_end);
+        let m_mid = if self.harmonics.lmax() >= 511 {
+            active_ring_weighted_order_midpoint(
+                self.harmonics.lmax(),
+                m_start,
+                m_end,
+                ring_order_limits,
+            )
+        } else {
+            weighted_order_midpoint(self.harmonics.lmax(), m_start, m_end)
+        };
         let coefficient_start = self
             .harmonics
             .index(m_start, m_start)
