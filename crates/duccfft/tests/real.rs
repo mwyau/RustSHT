@@ -309,7 +309,8 @@ fn f32_real_radix3_and_radix5_multipasses_match_f64_references() {
 fn f32_large_smooth_prime_bluestein_and_sht_lengths_match_f64_references() {
     println!("precision,operation,n,max_abs,rms,relative_l2,scaled_max,nonfinite");
     for n in [
-        98, 128, 257, 512, 1024, 1920, 2048, 4096, 131, 137, 241, 1025, 2049, 4097,
+        98, 128, 131, 137, 145, 146, 147, 150, 241, 255, 256, 257, 511, 512, 513, 721, 722, 723,
+        726, 1023, 1024, 1025, 1441, 1442, 1443, 1452, 1920, 2048, 2049, 4096, 4097,
     ] {
         let plan = RealFftPlan::<f32>::new(n).unwrap();
         let mut workspace = plan.workspace().unwrap();

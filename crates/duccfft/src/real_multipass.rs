@@ -13,8 +13,8 @@ use num_traits::{Float, FromPrimitive};
 use crate::FftError;
 use crate::complex::{BluesteinPlan, ComplexFftWorkspace, Direction, check_vec_len, try_vec};
 use crate::simd::{
-    RealRadix2ForwardInteriorKernel, RealRadix2InteriorKernel, RealRadix4ForwardInteriorKernel,
-    RealRadix4InteriorKernel,
+    RealGeneralPrimeIdo1Kernel, RealGeneralPrimeIdo1Params, RealRadix2ForwardInteriorKernel,
+    RealRadix2InteriorKernel, RealRadix4ForwardInteriorKernel, RealRadix4InteriorKernel,
 };
 
 mod inverse_terminal;
@@ -26,7 +26,18 @@ struct Pass<T> {
     twiddles: Vec<T>,
     prime_roots: Vec<Complex<T>>,
     prime_phase_indices: Vec<u8>,
+    prime_cosines: Vec<T>,
+    prime_sines: Vec<T>,
+    prime_ido1_kernel: Option<RealGeneralPrimeIdo1Kernel<T>>,
     bluestein_stage: Option<usize>,
+}
+
+pub(crate) struct RealMultipassKernels<T> {
+    pub(crate) radix2_interior: Option<RealRadix2InteriorKernel<T>>,
+    pub(crate) radix2_forward_interior: Option<RealRadix2ForwardInteriorKernel<T>>,
+    pub(crate) radix4_forward_interior: Option<RealRadix4ForwardInteriorKernel<T>>,
+    pub(crate) radix4_interior: Option<RealRadix4InteriorKernel<T>>,
+    pub(crate) prime_ido1: Option<RealGeneralPrimeIdo1Kernel<T>>,
 }
 
 pub(crate) struct RealMultipassPlan<T> {
@@ -74,10 +85,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         len: usize,
         factors: &[usize],
         roots: &[Complex<T>],
-        radix2_interior_kernel: Option<RealRadix2InteriorKernel<T>>,
-        radix2_forward_interior_kernel: Option<RealRadix2ForwardInteriorKernel<T>>,
-        radix4_forward_interior_kernel: Option<RealRadix4ForwardInteriorKernel<T>>,
-        radix4_interior_kernel: Option<RealRadix4InteriorKernel<T>>,
+        kernels: RealMultipassKernels<T>,
     ) -> Result<Option<Self>, FftError> {
         if len <= 1 {
             return Ok(None);
@@ -147,6 +155,29 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                     }
                 }
             }
+            let prime_vector_count =
+                if ido == 1 && (17..135).contains(&radix) && kernels.prime_ido1.is_some() {
+                    let half = radix / 2;
+                    half.checked_mul(half).ok_or(FftError::AllocationFailed)?
+                } else {
+                    0
+                };
+            check_vec_len::<T>(prime_vector_count)?;
+            let mut prime_cosines = try_vec(prime_vector_count, T::zero())?;
+            let mut prime_sines = try_vec(prime_vector_count, T::zero())?;
+            if prime_vector_count != 0 {
+                let half = radix / 2;
+                for multiplier in 1..=half {
+                    for frequency in 1..=half {
+                        let phase =
+                            usize::from(prime_phase_indices[multiplier * radix + frequency]);
+                        let root = prime_roots[phase];
+                        let coefficient = (multiplier - 1) * half + frequency - 1;
+                        prime_cosines[coefficient] = root.re;
+                        prime_sines[coefficient] = root.im;
+                    }
+                }
+            }
             passes.push(Pass {
                 radix,
                 l1,
@@ -154,6 +185,11 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                 twiddles,
                 prime_roots,
                 prime_phase_indices,
+                prime_cosines,
+                prime_sines,
+                prime_ido1_kernel: (prime_vector_count != 0)
+                    .then_some(kernels.prime_ido1)
+                    .flatten(),
                 bluestein_stage,
             });
             l1 = pass_len;
@@ -162,10 +198,10 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         Ok(Some(Self {
             len,
             passes,
-            radix2_interior_kernel,
-            radix2_forward_interior_kernel,
-            radix4_forward_interior_kernel,
-            radix4_interior_kernel,
+            radix2_interior_kernel: kernels.radix2_interior,
+            radix2_forward_interior_kernel: kernels.radix2_forward_interior,
+            radix4_forward_interior_kernel: kernels.radix4_forward_interior,
+            radix4_interior_kernel: kernels.radix4_interior,
         }))
     }
 
@@ -447,6 +483,27 @@ fn forward_general_prime<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], 
     let l1 = pass.l1;
 
     if ido == 1 {
+        if let Some(kernel) = pass.prime_ido1_kernel {
+            // SAFETY: the plan installs this kernel only after runtime AVX2
+            // detection and allocates coefficient tables with `half * half`
+            // entries. The multipass buffers are disjoint and contain the
+            // complete `radix * l1` pass.
+            unsafe {
+                kernel(
+                    input,
+                    output,
+                    RealGeneralPrimeIdo1Params {
+                        l1,
+                        radix,
+                        cosines: &pass.prime_cosines,
+                        sines: &pass.prime_sines,
+                        inverse: false,
+                        scale: T::one(),
+                    },
+                )
+            }
+            return;
+        }
         for group in 0..l1 {
             let input0 = input[group];
             let mut dc = input0;
@@ -574,6 +631,27 @@ fn inverse_general_prime<T: Float + FromPrimitive>(
     let two = scalar::<T>(2.0);
 
     if ido == 1 {
+        if let Some(kernel) = pass.prime_ido1_kernel {
+            // SAFETY: the plan installs this kernel only after runtime AVX2
+            // detection and allocates coefficient tables with `half * half`
+            // entries. The multipass buffers are disjoint and contain the
+            // complete `radix * l1` pass.
+            unsafe {
+                kernel(
+                    input,
+                    output,
+                    RealGeneralPrimeIdo1Params {
+                        l1,
+                        radix,
+                        cosines: &pass.prime_cosines,
+                        sines: &pass.prime_sines,
+                        inverse: true,
+                        scale,
+                    },
+                )
+            }
+            return;
+        }
         for group in 0..l1 {
             let input_start = group * radix;
             let dc = input[input_start];
