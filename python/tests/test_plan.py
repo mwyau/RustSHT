@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 # SPDX-License-Identifier: GPL-2.0-or-later
 
+from concurrent.futures import ThreadPoolExecutor
+
 import numpy as np
 import pytest
 from ducc0 import sht as ducc_sht
@@ -456,6 +458,13 @@ def test_adjoint_pairings_and_input_validation() -> None:
     right = np.sum(packed_weights * (alm.conj() * adjoint).real)
     assert left == pytest.approx(right, rel=2e-12, abs=2e-12)
 
+    readonly_alm = alm.copy()
+    readonly_alm.setflags(write=False)
+    readonly_map = map_values.copy()
+    readonly_map.setflags(write=False)
+    np.testing.assert_array_equal(plan.synthesis(readonly_alm), synthesized)
+    np.testing.assert_array_equal(plan.analysis(readonly_map), plan.analysis(map_values))
+
     with pytest.raises(ValueError, match="shape"):
         plan.synthesis(alm[:, :-1])
     with pytest.raises(TypeError):
@@ -466,4 +475,17 @@ def test_adjoint_pairings_and_input_validation() -> None:
     spin_map = np.zeros(spin_plan.map_shape)
     with pytest.raises(ValueError, match="C-contiguous"):
         spin_plan.adjoint_synthesis(np.asfortranarray(spin_map))
+
+
+def test_readonly_input_can_be_shared_by_concurrent_calls() -> None:
+    plan = ShtPlan("GL", 5, 9, 3, 3)
+    alm = random_alm(1, 3, 3, 0, seed=59)
+    alm.setflags(write=False)
+    expected = plan.synthesis(alm)
+
+    with ThreadPoolExecutor(max_workers=2) as workers:
+        outputs = list(workers.map(plan.synthesis, [alm, alm]))
+
+    for output in outputs:
+        np.testing.assert_array_equal(output, expected)
 
