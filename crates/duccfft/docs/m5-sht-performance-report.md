@@ -20,7 +20,7 @@ The largest bottleneck depends on the workload. N=257 and N=723 need a prime alg
 - Workload and Rader comparison harness: [`3a737b04a2b8c60f316ca27cdd563890dbadded9`](https://github.com/mwyau/RustSHT/commit/3a737b04a2b8c60f316ca27cdd563890dbadded9).
 - Compact M5 result tables: [`cfdf9ae570e2463ad57cde482e985bd86253b96a`](https://github.com/mwyau/RustSHT/commit/cfdf9ae570e2463ad57cde482e985bd86253b96a).
 - Paired performance baseline for the f64 kernel: `a1240461ee7174404f76710e2bb1d7eb0d2371d8`.
-- This report is the final documentation commit after the source, harness and result commits; its pushed branch tip is supplied in the final completion message.
+- The T72–T720 benchmark report was committed after the source, harness and result commits. The M6 standalone-readiness audit began from clean branch tip `b92727ef16aef366a951347be1a9ac8646d03305`; its additions are recorded in later commits on `feat/duccfft`.
 - Pinned DUCC source: `c1ed01b8fda69d2a378190f0915f1a19762dddbf`.
 - Inspected Admiral checkout: `ce67bc00ff9e6de96bf5b75f7a789581105ddb58`.
 
@@ -55,6 +55,8 @@ The representative release benchmark binary fingerprints are Rust `rustfft` SHA-
 ### Sampling and timings
 
 Plans and workspaces were created before execution timings. All repeated row runs reused one plan, input/output storage and caller-owned scratch. Each operation used the same deterministic trigonometric inputs and spectrum formulas across libraries. The benchmark measured single transforms, scalar row counts `L+1`, and spin-1 row counts `2(L+1)` for f64. The f32 cross-library pass measured single transforms and 32 sequential rows. C2C measured single rows and RustSHT-shaped meridional row counts. Whole-call timing includes each library's public real packing, normalization and output conversion.
+
+All reported throughput measurements use one FFT worker. An eight-worker throughput matrix was not collected. The inspected RustSHT longitude loops and DUCCFFT batch methods execute rows serially, so the reported row counts reproduce the current FFT call pattern; shared-plan concurrency is covered by correctness tests but its throughput under an external worker pool is unmeasured. These tables must not be interpreted as eight-thread results. Measure worker scaling with the actual SHT scheduler during integration, where task partitioning and workspace ownership can be included in the whole-operation timing.
 
 The f64 real-prime candidate was compared with the source baseline in six alternating process pairs for each length, row class and direction. The reported candidate gain is the median within-pair baseline/candidate ratio; ranges show the minimum and maximum paired ratios. The reference timing columns come from six process-level cross-library samples over the same deterministic workload. f32 real comparisons used three process rounds. C2C cross-library row batches used six process samples; C2C single transforms used three. The factor-order screen used three process pairs, and the Rader comparison used three alternating baseline/prototype process pairs. Individual process samples use warmups and repeated timed calls; setup measurements use repeated plan/workspace constructions. Summary CSVs preserve the values used here.
 
@@ -502,9 +504,15 @@ The production general-prime kernel adds approximately 400 net source/test lines
 
 ## Numerical validation and checks
 
-The current default-target crate tests passed: 11 library/unit tests, 2 across-row tests, 24 complex integration tests and 30 real integration tests. Coverage includes f32/f64 direct DFTs, large smooth/general-prime/Bluestein/SHT lengths, extreme inverse paths, normalization, endpoint handling and separate workspaces. New f64 C2C direct DFT cases cover 146/722/1442/1452. New f32 large-reference cases include the target workload lengths and N=4097. The Rader prototype validation passed direct C2C DFTs for p=241/257, real N=257/723 direct comparisons, RustFFT agreement, pinned DUCC output dumps and finite-range comparisons.
+The M5 default-target crate tests passed: 11 library/unit tests, 2 across-row tests, 24 complex integration tests and 30 real integration tests. Coverage includes f32/f64 direct DFTs, large smooth/general-prime/Bluestein/SHT lengths, extreme inverse paths, normalization, endpoint handling and separate workspaces. New f64 C2C direct DFT cases cover 146/722/1442/1452. New f32 large-reference cases include the target workload lengths and N=4097. The Rader prototype validation passed direct C2C DFTs for p=241/257, real N=257/723 direct comparisons, RustFFT agreement, pinned DUCC output dumps and finite-range comparisons.
 
-Formatting and `cargo clippy --all-targets --all-features -- -D warnings` passed for the crate manifest. Both the portable runtime-dispatch tests and a second `-C target-cpu=native` test run passed all 67 unit and integration tests. The workspace-wide RustSHT tests and Python binding tests were not run: all modifications are under `crates/duccfft/**`, and no SHT or binding source changed. No test tolerances were weakened.
+The M6 closeout added a concurrent f32 real Bluestein test for shared immutable plans with independent workspaces. It checks both directions against direct DFTs. The current crate suite contains 68 tests: 11 library/unit, 2 across-row, 24 complex, and 31 real. The portable and release tests used `cargo test --manifest-path crates/duccfft/Cargo.toml --all-features` and `cargo test --release --manifest-path crates/duccfft/Cargo.toml --all-features`. The same suite passed with `CARGO_TARGET_DIR=/tmp/duccfft-final-native-target RUSTFLAGS='-C target-cpu=native'`. The crate Clippy, formatting, rustdoc with warnings denied, and standalone example commands are listed in [`standalone-readiness.md`](standalone-readiness.md) and passed. `cargo package --list` includes the API example and readiness guide. Exact future RustSHT workspace and adapter steps are also recorded there.
+
+The workspace-wide RustSHT tests and Python binding tests were not run: all modifications are under `crates/duccfft/**`, and no SHT or binding source changed. No test tolerances were weakened. The measured row batches are not complete SHT wall times. DUCCFFT is functionally implemented but performance-incomplete, and the package remains `publish = false` pending the gaps listed below and full SHT integration measurements.
+
+## Final standalone review
+
+The read-only R37 readiness review accepted the isolated manifest, runtime dependency set, attribution, normalization/layout contract, performance caveats, and standalone integration guide. It requested two documentation corrections; both are applied and recorded in [`review-log.md`](review-log.md). The added f32 concurrent real Bluestein test was confirmed to use independent forward and inverse DFT references and one workspace per worker. No additional M6 blocker was found; the documented performance gaps still prevent a performance-complete publication recommendation. Earlier checkpoint dispositions remain in the review log.
 
 ## Remaining bottlenecks and ranked follow-up
 
@@ -513,6 +521,7 @@ Formatting and `cargo clippy --all-targets --all-features -- -D warnings` passed
 3. **Full SHT sampling evaluation.** Measure the complete scalar and spin-1 forward/inverse operation at the minimum odd/even counts and current `2L+3`. Keep all longitude orders through L and verify analysis/adjoint identities at each candidate grid.
 4. **f32 general-prime/Bluestein gap.** The new kernel is f64-only. T127/T360 f32 still spend heavily in the same prime routes. Reuse the numerical guard and cost evidence before writing f32 SIMD.
 5. **Remaining smooth-path differences.** Continue only with a specific profile-supported bottleneck; the present M5 data does not justify a planner rewrite or another generic decomposition framework.
+6. **External worker scaling.** The crate safely supports shared immutable plans with separate workspaces, but eight-worker throughput is unmeasured. Benchmark the RustSHT scheduler's real row partition after integration rather than adding a worker pool to this crate.
 
 ## Detailed results index
 
