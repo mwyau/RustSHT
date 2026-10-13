@@ -391,53 +391,60 @@ fn inverse_radix4<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output:
         return;
     }
     let sqrt2 = scalar::<T>(std::f64::consts::SQRT_2);
-    for k in 0..l1 {
-        let x0 = input[index(0, 0, k, ido, 4)];
-        let x3 = input[index(ido - 1, 3, k, ido, 4)];
+    let two = scalar::<T>(2.0);
+    let block_len = 4 * ido;
+    let branch_len = ido * l1;
+    debug_assert_eq!(input.len(), block_len * l1);
+    debug_assert_eq!(output.len(), 4 * branch_len);
+    let (output0, tail) = output.split_at_mut(branch_len);
+    let (output1, tail) = tail.split_at_mut(branch_len);
+    let (output2, output3) = tail.split_at_mut(branch_len);
+    let output_blocks = output0
+        .chunks_exact_mut(ido)
+        .zip(output1.chunks_exact_mut(ido))
+        .zip(output2.chunks_exact_mut(ido))
+        .zip(output3.chunks_exact_mut(ido));
+    for (input_block, output_block) in input.chunks_exact(block_len).zip(output_blocks) {
+        let (input0, tail) = input_block.split_at(ido);
+        let (input1, tail) = tail.split_at(ido);
+        let (input2, input3) = tail.split_at(ido);
+        let (((output0, output1), output2), output3) = output_block;
+
+        let x0 = input0[0];
+        let x3 = input3[ido - 1];
         let (tr2, tr1) = (x0 + x3, x0 - x3);
-        let tr3 = scalar::<T>(2.0) * input[index(ido - 1, 1, k, ido, 4)];
-        let tr4 = scalar::<T>(2.0) * input[index(0, 2, k, ido, 4)];
-        output[index(0, k, 0, ido, l1)] = tr2 + tr3;
-        output[index(0, k, 2, ido, l1)] = tr2 - tr3;
-        output[index(0, k, 3, ido, l1)] = tr1 + tr4;
-        output[index(0, k, 1, ido, l1)] = tr1 - tr4;
-    }
-    if ido.is_multiple_of(2) {
-        for k in 0..l1 {
-            let (ti1, ti2) = (
-                input[index(0, 3, k, ido, 4)] + input[index(0, 1, k, ido, 4)],
-                input[index(0, 3, k, ido, 4)] - input[index(0, 1, k, ido, 4)],
-            );
-            let x0 = input[index(ido - 1, 0, k, ido, 4)];
-            let x2 = input[index(ido - 1, 2, k, ido, 4)];
+        let tr3 = two * input1[ido - 1];
+        let tr4 = two * input2[0];
+        output0[0] = tr2 + tr3;
+        output2[0] = tr2 - tr3;
+        output3[0] = tr1 + tr4;
+        output1[0] = tr1 - tr4;
+
+        if ido.is_multiple_of(2) {
+            let (ti1, ti2) = (input3[0] + input1[0], input3[0] - input1[0]);
+            let x0 = input0[ido - 1];
+            let x2 = input2[ido - 1];
             let (tr2, tr1) = (x0 + x2, x0 - x2);
-            output[index(ido - 1, k, 0, ido, l1)] = tr2 + tr2;
-            output[index(ido - 1, k, 1, ido, l1)] = sqrt2 * (tr1 - ti1);
-            output[index(ido - 1, k, 2, ido, l1)] = ti2 + ti2;
-            output[index(ido - 1, k, 3, ido, l1)] = -sqrt2 * (tr1 + ti1);
+            output0[ido - 1] = tr2 + tr2;
+            output1[ido - 1] = sqrt2 * (tr1 - ti1);
+            output2[ido - 1] = ti2 + ti2;
+            output3[ido - 1] = -sqrt2 * (tr1 + ti1);
         }
-    }
-    if ido <= 2 {
-        return;
-    }
-    for k in 0..l1 {
+
+        if ido <= 2 {
+            continue;
+        }
         for i in (2..ido).step_by(2) {
             let ic = ido - i;
             let (tr2, tr1) = (
-                input[index(i - 1, 0, k, ido, 4)] + input[index(ic - 1, 3, k, ido, 4)],
-                input[index(i - 1, 0, k, ido, 4)] - input[index(ic - 1, 3, k, ido, 4)],
+                input0[i - 1] + input3[ic - 1],
+                input0[i - 1] - input3[ic - 1],
             );
-            let (ti1, ti2) = (
-                input[index(i, 0, k, ido, 4)] + input[index(ic, 3, k, ido, 4)],
-                input[index(i, 0, k, ido, 4)] - input[index(ic, 3, k, ido, 4)],
-            );
-            let (tr4, ti3) = (
-                input[index(i, 2, k, ido, 4)] + input[index(ic, 1, k, ido, 4)],
-                input[index(i, 2, k, ido, 4)] - input[index(ic, 1, k, ido, 4)],
-            );
+            let (ti1, ti2) = (input0[i] + input3[ic], input0[i] - input3[ic]);
+            let (tr4, ti3) = (input2[i] + input1[ic], input2[i] - input1[ic]);
             let (tr3, ti4) = (
-                input[index(i - 1, 2, k, ido, 4)] + input[index(ic - 1, 1, k, ido, 4)],
-                input[index(i - 1, 2, k, ido, 4)] - input[index(ic - 1, 1, k, ido, 4)],
+                input2[i - 1] + input1[ic - 1],
+                input2[i - 1] - input1[ic - 1],
             );
             let (x0r, cr3) = (tr2 + tr3, tr2 - tr3);
             let (x0i, ci3) = (ti2 + ti3, ti2 - ti3);
@@ -449,14 +456,14 @@ fn inverse_radix4<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output:
                 multiply_pm(twiddle(pass, 2, i - 2), twiddle(pass, 2, i - 1), ci3, cr3);
             let (y3i, y3r) =
                 multiply_pm(twiddle(pass, 3, i - 2), twiddle(pass, 3, i - 1), ci4, cr4);
-            output[index(i - 1, k, 0, ido, l1)] = x0r;
-            output[index(i, k, 0, ido, l1)] = x0i;
-            output[index(i, k, 1, ido, l1)] = y1i;
-            output[index(i - 1, k, 1, ido, l1)] = y1r;
-            output[index(i, k, 2, ido, l1)] = y2i;
-            output[index(i - 1, k, 2, ido, l1)] = y2r;
-            output[index(i, k, 3, ido, l1)] = y3i;
-            output[index(i - 1, k, 3, ido, l1)] = y3r;
+            output0[i - 1] = x0r;
+            output0[i] = x0i;
+            output1[i] = y1i;
+            output1[i - 1] = y1r;
+            output2[i] = y2i;
+            output2[i - 1] = y2r;
+            output3[i] = y3i;
+            output3[i - 1] = y3r;
         }
     }
 }
