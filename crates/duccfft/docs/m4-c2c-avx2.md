@@ -299,7 +299,11 @@ The paired timing results are small and inconsistent: individual medians range
 from a 1.99% regression to a 3.20% gain, and most larger sizes do not favor the
 candidate in all six pairs. Removing per-vector direction tests has not
 produced a stable whole-call gain across the measured sizes. This experiment
-does not explain or close the remaining smooth-radix gap to RustFFT. The
-read-only R21 review will assess whether the loop simplification justifies its
-larger code footprint and this retain-or-revert decision before the code change
-is finalized.
+does not explain or close the remaining smooth-radix gap to RustFFT.
+
+The read-only R21 review verified all 672 records, matching checksums, paired
+gains, setup values, symbol sizes, and frame sizes. It found no implementation
+defect and recommended reverting the specialization because timing gains were
+inconsistent while the symbols grew substantially. Commit `5a8dcf1` reverts
+`de0673c`; the paired samples and generated-code findings remain as experiment
+evidence.
