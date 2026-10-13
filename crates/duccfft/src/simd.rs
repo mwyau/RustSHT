@@ -4,6 +4,8 @@
 use num_complex::Complex;
 use num_traits::{Float, FromPrimitive};
 
+pub(crate) type RealRadix4InteriorKernel<T> = unsafe fn(&[T], [&mut [T]; 4], usize, &[T]) -> usize;
+
 pub(crate) struct SimdPass<'a, T> {
     pub(crate) radix: usize,
     pub(crate) l1: usize,
@@ -18,6 +20,11 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
     const AVX2_COMPLEX_LANES: usize;
 
     fn avx2_available() -> bool;
+
+    /// Returns the inverse radix-four interior kernel when AVX2 is available.
+    fn real_radix4_interior_kernel() -> Option<RealRadix4InteriorKernel<Self>> {
+        None
+    }
 
     /// Executes the first fixed-radix pass over contiguous complex values.
     ///
@@ -46,7 +53,7 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
 mod x86 {
     use std::sync::OnceLock;
 
-    use super::{Complex, SimdPass, SimdScalar};
+    use super::{Complex, RealRadix4InteriorKernel, SimdPass, SimdScalar};
 
     static AVX2_AVAILABLE: OnceLock<bool> = OnceLock::new();
 
@@ -59,6 +66,14 @@ mod x86 {
 
         fn avx2_available() -> bool {
             available()
+        }
+
+        fn real_radix4_interior_kernel() -> Option<RealRadix4InteriorKernel<Self>> {
+            if available() {
+                Some(f64_real_kernel::inverse_radix4_interior)
+            } else {
+                None
+            }
         }
 
         unsafe fn avx2_first_pass(data: &mut [Complex<Self>], pass: &SimdPass<'_, Self>) {
@@ -608,6 +623,121 @@ mod x86 {
             }
         }
     }
+
+    mod f64_real_kernel {
+        use std::arch::x86_64::*;
+
+        #[inline]
+        #[target_feature(enable = "avx2")]
+        unsafe fn multiply_pm(roots: __m256d, values: __m256d) -> __m256d {
+            let even_values = _mm256_movedup_pd(values);
+            let odd_values = _mm256_permute_pd(values, 0b1111);
+            let roots_swapped = _mm256_permute_pd(roots, 0b0101);
+            let even_products = _mm256_mul_pd(roots, even_values);
+            let odd_products = _mm256_mul_pd(roots_swapped, odd_values);
+            let sums = _mm256_add_pd(even_products, odd_products);
+            let differences = _mm256_sub_pd(odd_products, even_products);
+            _mm256_blend_pd(sums, differences, 0b1010)
+        }
+
+        #[target_feature(enable = "avx2")]
+        pub(super) unsafe fn inverse_radix4_interior(
+            input: &[f64],
+            output: [&mut [f64]; 4],
+            ido: usize,
+            twiddles: &[f64],
+        ) -> usize {
+            debug_assert!(ido > 2);
+            debug_assert!(ido.is_multiple_of(2));
+            debug_assert_eq!(input.len(), 4 * ido);
+            debug_assert!(output.iter().all(|branch| branch.len() == ido));
+            debug_assert!(twiddles.len() >= 3 * (ido - 1));
+
+            let input0 = input.as_ptr();
+            let input1 = unsafe { input0.add(ido) };
+            let input2 = unsafe { input1.add(ido) };
+            let input3 = unsafe { input2.add(ido) };
+            let twiddle1 = twiddles.as_ptr();
+            let twiddle2 = unsafe { twiddle1.add(ido - 1) };
+            let twiddle3 = unsafe { twiddle2.add(ido - 1) };
+            let output0 = output[0].as_mut_ptr();
+            let output1 = output[1].as_mut_ptr();
+            let output2 = output[2].as_mut_ptr();
+            let output3 = output[3].as_mut_ptr();
+
+            let mut i = 2;
+            while i + 2 < ido {
+                let ic = ido - i;
+                let x0 = unsafe { _mm256_loadu_pd(input0.add(i - 1)) };
+                let x3 = unsafe { _mm256_loadu_pd(input3.add(ic - 3)) };
+                let x3 = _mm256_permute4x64_pd(x3, 0b0100_1110);
+                let x2 = unsafe { _mm256_loadu_pd(input2.add(i - 1)) };
+                let x1 = unsafe { _mm256_loadu_pd(input1.add(ic - 3)) };
+                let x1 = _mm256_permute4x64_pd(x1, 0b0100_1110);
+
+                let sum03 = _mm256_add_pd(x0, x3);
+                let diff03 = _mm256_sub_pd(x0, x3);
+                let sum21 = _mm256_add_pd(x2, x1);
+                let diff21 = _mm256_sub_pd(x2, x1);
+
+                let out0_real = _mm256_add_pd(
+                    _mm256_permute_pd(sum03, 0b0000),
+                    _mm256_permute_pd(sum21, 0b0000),
+                );
+                let out0_imag = _mm256_add_pd(
+                    _mm256_permute_pd(diff03, 0b1111),
+                    _mm256_permute_pd(diff21, 0b1111),
+                );
+                let out0 = _mm256_unpacklo_pd(out0_real, out0_imag);
+
+                let cr2 = _mm256_sub_pd(
+                    _mm256_permute_pd(diff03, 0b0000),
+                    _mm256_permute_pd(sum21, 0b1111),
+                );
+                let ci2 = _mm256_add_pd(
+                    _mm256_permute_pd(sum03, 0b1111),
+                    _mm256_permute_pd(diff21, 0b0000),
+                );
+                let values1 = _mm256_unpacklo_pd(ci2, cr2);
+
+                let cr3 = _mm256_sub_pd(
+                    _mm256_permute_pd(sum03, 0b0000),
+                    _mm256_permute_pd(sum21, 0b0000),
+                );
+                let ci3 = _mm256_sub_pd(
+                    _mm256_permute_pd(diff03, 0b1111),
+                    _mm256_permute_pd(diff21, 0b1111),
+                );
+                let values2 = _mm256_unpacklo_pd(ci3, cr3);
+
+                let cr4 = _mm256_add_pd(
+                    _mm256_permute_pd(diff03, 0b0000),
+                    _mm256_permute_pd(sum21, 0b1111),
+                );
+                let ci4 = _mm256_sub_pd(
+                    _mm256_permute_pd(sum03, 0b1111),
+                    _mm256_permute_pd(diff21, 0b0000),
+                );
+                let values3 = _mm256_unpacklo_pd(ci4, cr4);
+
+                let roots1 = unsafe { _mm256_loadu_pd(twiddle1.add(i - 2)) };
+                let roots2 = unsafe { _mm256_loadu_pd(twiddle2.add(i - 2)) };
+                let roots3 = unsafe { _mm256_loadu_pd(twiddle3.add(i - 2)) };
+                let result1 = unsafe { multiply_pm(roots1, values1) };
+                let result2 = unsafe { multiply_pm(roots2, values2) };
+                let result3 = unsafe { multiply_pm(roots3, values3) };
+
+                unsafe {
+                    _mm256_storeu_pd(output0.add(i - 1), out0);
+                    _mm256_storeu_pd(output1.add(i - 1), _mm256_permute_pd(result1, 0b0101));
+                    _mm256_storeu_pd(output2.add(i - 1), _mm256_permute_pd(result2, 0b0101));
+                    _mm256_storeu_pd(output3.add(i - 1), _mm256_permute_pd(result3, 0b0101));
+                }
+                i += 4;
+            }
+            i
+        }
+    }
 }
 
 #[cfg(not(target_arch = "x86_64"))]
@@ -787,6 +917,138 @@ mod tests {
                             );
                         }
                     }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn f64_real_inverse_radix4_interior_matches_scalar_equations() {
+        let Some(kernel) = <f64 as SimdScalar>::real_radix4_interior_kernel() else {
+            return;
+        };
+        for ido in [4, 6, 8, 10, 12, 16, 32, 64] {
+            let input: Vec<_> = (0..4 * ido)
+                .map(|index| {
+                    let x = index as f64;
+                    (x * 0.37).sin() + 0.25 * (x * 0.19).cos()
+                })
+                .collect();
+            let twiddles: Vec<_> = (0..3 * (ido - 1))
+                .map(|index| {
+                    let x = index as f64;
+                    (x * 0.23).cos() + 0.5 * (x * 0.41).sin()
+                })
+                .collect();
+            let sentinel = f64::NAN;
+            let mut actual0 = vec![sentinel; ido];
+            let mut actual1 = vec![sentinel; ido];
+            let mut actual2 = vec![sentinel; ido];
+            let mut actual3 = vec![sentinel; ido];
+            let start = unsafe {
+                kernel(
+                    &input,
+                    [&mut actual0, &mut actual1, &mut actual2, &mut actual3],
+                    ido,
+                    &twiddles,
+                )
+            };
+            let actual = [actual0, actual1, actual2, actual3];
+
+            for i in (2..start).step_by(4) {
+                let ic = ido - i;
+                let input0 = &input[0..ido];
+                let input1 = &input[ido..2 * ido];
+                let input2 = &input[2 * ido..3 * ido];
+                let input3 = &input[3 * ido..4 * ido];
+                let (tr2, tr1) = (
+                    input0[i - 1] + input3[ic - 1],
+                    input0[i - 1] - input3[ic - 1],
+                );
+                let (ti1, ti2) = (input0[i] + input3[ic], input0[i] - input3[ic]);
+                let (tr4, ti3) = (input2[i] + input1[ic], input2[i] - input1[ic]);
+                let (tr3, ti4) = (
+                    input2[i - 1] + input1[ic - 1],
+                    input2[i - 1] - input1[ic - 1],
+                );
+                let (x0r, cr3) = (tr2 + tr3, tr2 - tr3);
+                let (x0i, ci3) = (ti2 + ti3, ti2 - ti3);
+                let (cr4, cr2) = (tr1 + tr4, tr1 - tr4);
+                let (ci2, ci4) = (ti1 + ti4, ti1 - ti4);
+                let multiply = |branch: usize, component: usize, e: f64, f: f64| {
+                    let offset = (branch - 1) * (ido - 1) + component;
+                    let c = twiddles[offset];
+                    let d = twiddles[offset + 1];
+                    (c * e + d * f, c * f - d * e)
+                };
+                let (y1i, y1r) = multiply(1, i - 2, ci2, cr2);
+                let (y2i, y2r) = multiply(2, i - 2, ci3, cr3);
+                let (y3i, y3r) = multiply(3, i - 2, ci4, cr4);
+                let expected = [(x0r, x0i), (y1r, y1i), (y2r, y2i), (y3r, y3i)];
+                let next_ic = ido - i - 2;
+                let (next_tr2, next_tr1) = (
+                    input0[i + 1] + input3[next_ic - 1],
+                    input0[i + 1] - input3[next_ic - 1],
+                );
+                let (next_ti1, next_ti2) = (
+                    input0[i + 2] + input3[next_ic],
+                    input0[i + 2] - input3[next_ic],
+                );
+                let (next_tr4, next_ti3) = (
+                    input2[i + 2] + input1[next_ic],
+                    input2[i + 2] - input1[next_ic],
+                );
+                let (next_tr3, next_ti4) = (
+                    input2[i + 1] + input1[next_ic - 1],
+                    input2[i + 1] - input1[next_ic - 1],
+                );
+                let (next_x0r, next_cr3) = (next_tr2 + next_tr3, next_tr2 - next_tr3);
+                let (next_x0i, next_ci3) = (next_ti2 + next_ti3, next_ti2 - next_ti3);
+                let (next_cr4, next_cr2) = (next_tr1 + next_tr4, next_tr1 - next_tr4);
+                let (next_ci2, next_ci4) = (next_ti1 + next_ti4, next_ti1 - next_ti4);
+                let (next_y1i, next_y1r) = multiply(1, i, next_ci2, next_cr2);
+                let (next_y2i, next_y2r) = multiply(2, i, next_ci3, next_cr3);
+                let (next_y3i, next_y3r) = multiply(3, i, next_ci4, next_cr4);
+                let next_expected = [
+                    (next_x0r, next_x0i),
+                    (next_y1r, next_y1i),
+                    (next_y2r, next_y2i),
+                    (next_y3r, next_y3i),
+                ];
+                for branch in 0..4 {
+                    for (offset, expected_value) in [expected[branch].0, expected[branch].1]
+                        .into_iter()
+                        .enumerate()
+                    {
+                        let observed = actual[branch][i - 1 + offset];
+                        assert!(
+                            (observed - expected_value).abs() < 3.0e-12,
+                            "ido={ido}, i={i}, branch={branch}: {observed} != {expected_value}"
+                        );
+                    }
+                    for (offset, expected_value) in
+                        [next_expected[branch].0, next_expected[branch].1]
+                            .into_iter()
+                            .enumerate()
+                    {
+                        let observed = actual[branch][i + 1 + offset];
+                        assert!(
+                            (observed - expected_value).abs() < 3.0e-12,
+                            "ido={ido}, i={}, branch={branch}: {observed} != {expected_value}",
+                            i + 2
+                        );
+                    }
+                }
+            }
+            for branch in &actual {
+                for (index, &value) in branch.iter().enumerate() {
+                    if index == 0 || index + 1 == ido || index < 1 || index >= start - 1 {
+                        continue;
+                    }
+                    assert!(
+                        value.is_finite(),
+                        "ido={ido}, index={index} was not written"
+                    );
                 }
             }
         }
