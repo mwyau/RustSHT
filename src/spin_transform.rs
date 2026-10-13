@@ -1961,9 +1961,14 @@ impl<T: ShtScalar> ShtPlan<T> {
                 continue;
             }
             let block_len = block_end - block_start;
+            let compaction_enabled = self.harmonics.lmax() >= 255;
+            let mut active_lanes = 0;
             for lane in 0..block_len {
                 let ring = block_start + lane;
                 if m <= ring_order_limits[ring] {
+                    if compaction_enabled {
+                        active_lanes += 1;
+                    }
                     let spectrum_start = ring * spectrum_len;
                     let ring_weight = ring_weights.map_or(T::one(), |weights| {
                         T::from_f64(weights[ring]).expect("ring weight is representable")
@@ -1980,6 +1985,38 @@ impl<T: ShtScalar> ShtPlan<T> {
                     recurrence.weighted_spin_q_spectrum[lane] = Complex::new(T::zero(), T::zero());
                     recurrence.weighted_spin_u_spectrum[lane] = Complex::new(T::zero(), T::zero());
                 }
+            }
+            let compact = compaction_enabled && active_lanes < block_len;
+            if compact {
+                let mut compact_len = 0;
+                for lane in 0..block_len {
+                    let ring = block_start + lane;
+                    if m <= ring_order_limits[ring] {
+                        recurrence.compact_theta_sin[compact_len] = theta_sin[ring];
+                        recurrence.compact_theta_cos[compact_len] = theta_cos[ring];
+                        let weighted_q = recurrence.weighted_spin_q_spectrum[lane];
+                        let weighted_u = recurrence.weighted_spin_u_spectrum[lane];
+                        recurrence.weighted_spin_q_spectrum[compact_len] = weighted_q;
+                        recurrence.weighted_spin_u_spectrum[compact_len] = weighted_u;
+                        compact_len += 1;
+                    }
+                }
+                debug_assert_eq!(compact_len, active_lanes);
+            }
+            let (block_sine, block_cosine, lane_count) = if compact {
+                (
+                    &recurrence.compact_theta_sin[..active_lanes],
+                    &recurrence.compact_theta_cos[..active_lanes],
+                    active_lanes,
+                )
+            } else {
+                (
+                    &theta_sin[block_start..block_end],
+                    &theta_cos[block_start..block_end],
+                    block_len,
+                )
+            };
+            for lane in 0..lane_count {
                 recurrence.analysis_same_real[lane] = recurrence.weighted_spin_q_spectrum[lane].re;
                 recurrence.analysis_same_imag[lane] = recurrence.weighted_spin_q_spectrum[lane].im;
                 recurrence.analysis_opposite_real[lane] =
@@ -1987,11 +2024,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                 recurrence.analysis_opposite_imag[lane] =
                     recurrence.weighted_spin_u_spectrum[lane].im;
             }
-            let q_real = &recurrence.analysis_same_real[..block_len];
-            let q_imag = &recurrence.analysis_same_imag[..block_len];
-            let u_real = &recurrence.analysis_opposite_real[..block_len];
-            let u_imag = &recurrence.analysis_opposite_imag[..block_len];
-            let block_cosine = &theta_cos[block_start..block_end];
+            let q_real = &recurrence.analysis_same_real[..lane_count];
+            let q_imag = &recurrence.analysis_same_imag[..lane_count];
+            let u_real = &recurrence.analysis_opposite_real[..lane_count];
+            let u_imag = &recurrence.analysis_opposite_imag[..lane_count];
             let q_products_safe =
                 T::scalar_analysis_products_safe(q_real, q_imag, q_real, q_imag, block_cosine);
             let u_products_safe =
@@ -2000,8 +2036,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                 arch,
                 m,
                 scalar_lmax,
-                &theta_sin[block_start..block_end],
-                &theta_cos[block_start..block_end],
+                block_sine,
+                block_cosine,
                 self.sectoral_norms[m],
                 &recurrence.spin_coefficient_a,
                 &recurrence.spin_coefficient_b,

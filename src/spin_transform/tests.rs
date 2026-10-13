@@ -953,7 +953,7 @@ fn spin1_scalar_fast_analysis_honors_the_polar_order_cutoff() {
         .expect("a mid-latitude ring is below the high-order cutoff");
     let spectrum_len = plan.fft.spectrum_len();
     let mut q_spectra = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
-    let u_spectra = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
+    let mut u_spectra = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
     q_spectra[ring * spectrum_len + m] = Complex64::new(1.0, 0.25);
     let coefficient_count = lmax - m + 1;
     let mut e_coefficients = vec![Complex64::new(0.0, 0.0); coefficient_count];
@@ -1015,11 +1015,90 @@ fn spin1_scalar_fast_analysis_honors_the_polar_order_cutoff() {
             .chain(&b_coefficients)
             .any(|value| *value != Complex64::new(0.0, 0.0))
     );
+
+    assert!(
+        workspace.ring_order_limits[..ntheta]
+            .chunks(crate::legendre::LATITUDE_BLOCK_SIZE)
+            .any(|block| block.iter().any(|&limit| limit < m)
+                && block.iter().any(|&limit| limit >= m))
+    );
+    let mut reference_q = vec![Complex64::new(0.0, 0.0); q_spectra.len()];
+    let mut reference_u = vec![Complex64::new(0.0, 0.0); u_spectra.len()];
+    for ring in 0..ntheta {
+        let amplitude = ((ring * 13 % 17) as f64 - 8.0) * 1e-3;
+        let index = ring * spectrum_len + m;
+        q_spectra[index] = Complex64::new(amplitude, amplitude * 0.25);
+        u_spectra[index] = Complex64::new(-amplitude * 0.7, amplitude * 0.4);
+        if m <= workspace.ring_order_limits[ring] {
+            reference_q[index] = q_spectra[index];
+            reference_u[index] = u_spectra[index];
+        }
+    }
+
+    e_coefficients.fill(Complex64::new(0.0, 0.0));
+    b_coefficients.fill(Complex64::new(0.0, 0.0));
+    plan.analyze_spin_scalar_fast_order(
+        &q_spectra,
+        &u_spectra,
+        spectrum_len,
+        nphi as f64,
+        longitude_phase::<f64>(m, plan.grid.phi0(), true),
+        Some(plan.grid.ring_weights()),
+        true,
+        m,
+        0,
+        ntheta,
+        &workspace.theta_sin,
+        &workspace.theta_cos,
+        &workspace.ring_order_limits,
+        pulp::Arch::new(),
+        &mut e_coefficients,
+        Some(&mut b_coefficients),
+        &mut workspace.recurrence_workers[0],
+    )
+    .unwrap();
+    let compacted_e = e_coefficients.clone();
+    let compacted_b = b_coefficients.clone();
+
+    e_coefficients.fill(Complex64::new(0.0, 0.0));
+    b_coefficients.fill(Complex64::new(0.0, 0.0));
+    plan.analyze_spin_scalar_fast_order(
+        &reference_q,
+        &reference_u,
+        spectrum_len,
+        nphi as f64,
+        longitude_phase::<f64>(m, plan.grid.phi0(), true),
+        Some(plan.grid.ring_weights()),
+        true,
+        m,
+        0,
+        ntheta,
+        &workspace.theta_sin,
+        &workspace.theta_cos,
+        &all_active_limits,
+        pulp::Arch::new(),
+        &mut e_coefficients,
+        Some(&mut b_coefficients),
+        &mut workspace.recurrence_workers[0],
+    )
+    .unwrap();
+    for (channel, actual, expected) in [
+        ("E", &compacted_e, &e_coefficients),
+        ("B", &compacted_b, &b_coefficients),
+    ] {
+        for (index, (&actual, &expected)) in actual.iter().zip(expected).enumerate() {
+            let error = (actual - expected).norm();
+            assert!(
+                error <= 3e-10 * expected.norm().max(1.0),
+                "mixed high-order cutoff {channel}[{index}] error={error:.3e}"
+            );
+        }
+    }
 }
 
 #[test]
 fn spin1_standard_analysis_scalar_conversion_matches_general_and_adjoint_on_all_grids() {
-    for lmax in [63, 127] {
+    for lmax in [63, 127, 255] {
         for kind in [
             GridKind::GaussLegendre,
             GridKind::ClenshawCurtis,
@@ -2519,6 +2598,54 @@ fn spin_transform_matches_between_one_and_two_rayon_threads() {
         .unwrap();
     for (&one, &two) in one_gradient_adjoint.iter().zip(&two_gradient_adjoint) {
         assert_complex_close(two, one, 3e-14);
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn spin1_compacted_analysis_matches_between_one_and_eight_rayon_threads() {
+    let plan = make_plan(1, 511, 511, 512, 1025);
+    let (first, second) = arbitrary_maps(&plan);
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let mut one_workspace = one_thread.install(|| plan.workspace()).unwrap();
+    let mut eight_workspace = eight_threads.install(|| plan.workspace()).unwrap();
+    let mut one_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut one_b = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut eight_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut eight_b = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+
+    one_thread
+        .install(|| {
+            plan.analysis_spin_into(&first, &second, &mut one_e, &mut one_b, &mut one_workspace)
+        })
+        .unwrap();
+    eight_threads
+        .install(|| {
+            plan.analysis_spin_into(
+                &first,
+                &second,
+                &mut eight_e,
+                &mut eight_b,
+                &mut eight_workspace,
+            )
+        })
+        .unwrap();
+
+    for (channel, one, eight) in [("E", &one_e, &eight_e), ("B", &one_b, &eight_b)] {
+        for (index, (&one, &eight)) in one.iter().zip(eight).enumerate() {
+            let error = (eight - one).norm();
+            assert!(
+                error <= 5e-13,
+                "spin-1 T511 {channel}[{index}] differs between one/eight threads"
+            );
+        }
     }
 }
 
