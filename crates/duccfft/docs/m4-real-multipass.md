@@ -864,3 +864,53 @@ the portable target remains the reported default. LTO showed no repeatable
 execution gain in these cases. Raw timings, workspace costs, and checksums are
 in
 [`m4-real-radix4-forward-avx2-build-flag-samples.csv`](../benches/results/m4-real-radix4-forward-avx2-build-flag-samples.csv).
+
+## General odd-prime terminal pass at N=1025
+
+The real multipass planner now accepts an odd prime radix below 135 when its
+pass has `ido == 1`. This covers the terminal radix-41 pass in the
+`1025 = 5^2 × 41` factorization. The forward schedule runs that pass first;
+the inverse schedule runs it last and applies normalization while writing the
+output. The pass uses the existing factor order, packed real spectrum, and
+root table. Its radix-41 butterfly is a symmetric direct real DFT, rather than
+DUCC's optimized `rfftpg` coefficient-sum kernel. Other general-prime passes
+remain on the recursive executor. The pass is used only for finite values whose maximum magnitude is at most
+`MAX/(4*N)`. Larger or nonfinite inputs retain the recursive residual-corrected
+path. Tests compare N=1025 forward and inverse outputs with independent f64
+DFTs, compare f32 outputs with f64 references, and check that maximum-finite
+f32 and f64 inputs take the fallback without producing nonfinite results. The native Rust outputs also agree with pinned DUCC revision
+`c1ed01b8fda69d2a378190f0915f1a19762dddbf`: maximum scaled component errors
+were `6.01e-14` for R2C and `2.78e-17` for C2R.
+
+### Paired public-operation timings
+
+The benchmark compares the recursive path at source commit `a05b2b4` with the
+multipass path at `b49b962`. Both binaries used the existing
+`bench-native-real` harness, the same deterministic inputs, warm plans, and
+one warm-up followed by seven timed samples per process. Five interleaved
+process pairs measured one transform; three pairs measured 512 transforms
+sequentially and report nanoseconds per transform. Processes were pinned to
+logical one CPU core on an x86-64 CPU. Rust was 1.99.0, Cargo's `bench`
+profile used `opt-level=3`, and no custom `RUSTFLAGS`, LTO, or target CPU flag
+was set. The Legendre workload was active, so absolute times are provisional. The paired direction of the change was consistent: the multipass binary was
+faster in every process pair. Raw process medians are in
+[`m4-real-prime-process-samples.csv`](../benches/results/m4-real-prime-process-samples.csv).
+
+| Rows | Operation | Recursive, median | Multipass, median | Ratio |
+|---:|---|---:|---:|---:|
+| 1 | R2C | 31.809 µs | 12.263 µs | 2.59× |
+| 1 | C2R | 46.096 µs | 20.629 µs | 2.23× |
+| 512 | R2C | 32.146 µs | 12.138 µs | 2.65× |
+| 512 | C2R | 47.629 µs | 21.184 µs | 2.25× |
+
+Plan construction increased from about 16.1 to 17.4 µs for R2C and 15.1 to
+16.4 µs for C2R. Reusable workspace grew from 12,544 to 28,944 bytes because
+the multipass schedule adds two N-element f64 buffers while retaining
+recursive fallback scratch. Workspace allocation increased from about 0.8
+to 1.2 µs for R2C and from 0.185 to 0.374 µs for C2R. The operation-time
+reduction is large relative to these setup costs for repeated plan use. This result supports the DUCC-style pass schedule for the 1025 workload; it
+does not validate the generic kernel's performance for other radices. Lengths
+257 and 2049 still use Bluestein in the recursive executor, and 4097 still
+uses recursion for its `ido > 1` prime pass. The current pass therefore
+reduces one important odd-real gap without completing the general-prime or
+Bluestein port.
