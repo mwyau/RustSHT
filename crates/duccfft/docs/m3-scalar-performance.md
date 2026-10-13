@@ -335,3 +335,74 @@ comparison should precede real SIMD. M4 has since added the guarded
 radix-2/radix-4 path and measured its pass costs; see
 [`m4-real-multipass.md`](m4-real-multipass.md). The R3B ratio and Callgrind
 scope corrections are included above.
+
+## Fixed-radix scalar pass follow-up
+
+Commit `de5e5df` extends the existing stack-local butterfly path from radices
+2, 4, and 8 to fixed radices 3, 5, and 7. It uses local input, output, and
+correction arrays instead of the workspace radix arrays. The butterfly,
+twiddle, inverse scaling, and high-range residual equations are unchanged.
+The existing AVX2 dispatch remains limited to radices 2, 4, and 8; this change
+adds no SIMD code.
+
+The baseline is source commit `42dabaf`; the candidate is `de5e5df`. Both
+used the same benchmark source (`rustfft.rs`, SHA-256
+`ca57805ec9fdff65f52a058f326dc25d848a36f6cc2086cf7cae2670e75fbb73`) and
+lockfile SHA-256
+`e61d5628d09dc7c10e54e15cb5f3aeb5dd5c28392b44692ed153784ad8ca21ba`.
+Rust was `1.99.0 (b940084d7 2026-09-28)` with the optimized Cargo `bench`
+profile, no custom `RUSTFLAGS`, LTO, or target CPU setting. The host was an
+AMD Ryzen 9 5950X. Each process was pinned to logical CPU 30. Six baseline /
+candidate process pairs alternated implementation order. Each measurement
+used a warmed plan and workspace, one warmup, and seven timed samples. Batch
+32 runs sequential row transforms with one reused plan and workspace and is
+reported per transform. Inputs use the deterministic native benchmark
+formulas. The Legendre workload shared the host; timing values are provisional.
+
+Each cell gives the median process time in microseconds as
+`baseline → candidate` and the median paired speedup `baseline/candidate`.
+Batch values are per transform. The ratios are medians of the six paired
+ratios and may differ from ratios of the displayed medians.
+
+| Operation | N | One transform, µs | Batch 32, µs / transform |
+| --- | ---: | ---: | ---: |
+| C2C forward | 525 | 4.809 → 3.982 (1.21×) | 4.758 → 3.962 (1.20×) |
+| C2C inverse | 525 | 5.340 → 4.774 (1.12×) | 5.287 → 4.723 (1.12×) |
+| C2C forward | 1,372 | 12.468 → 10.725 (1.16×) | 12.529 → 10.793 (1.16×) |
+| C2C inverse | 1,372 | 13.996 → 12.633 (1.11×) | 14.024 → 12.702 (1.11×) |
+| R2C | 257 | 11.647 → 10.129 (1.15×) | 11.601 → 10.140 (1.15×) |
+| C2R | 257 | 11.822 → 10.360 (1.14×) | 11.786 → 10.314 (1.14×) |
+| R2C | 2,049 | 94.897 → 86.161 (1.10×) | 96.264 → 87.499 (1.10×) |
+| C2R | 2,049 | 96.510 → 88.355 (1.10×) | 97.944 → 89.177 (1.10×) |
+| R2C | 1,372 | 7.254 → 6.332 (1.15×) | 7.319 → 6.353 (1.15×) |
+| C2R | 1,372 | 8.501 → 7.835 (1.09×) | 8.502 → 7.872 (1.08×) |
+
+The 525- and 1,372-point C2C plans are the nested convolution transforms for
+real Bluestein radices 257 and 683. All six pairs favored the candidate for
+both C2C directions and for both public real directions at N=257, 1,372, and
+2,049. Smooth C2C controls at lengths 75, 125, 225, and 1,920 also favored
+the candidate in all three process pairs for both directions. The N=525 real
+C2R control was slower in every pair (median ratio 0.934×); its real pass
+source path is unchanged, so this remains an unexplained control result. N=525
+R2C was effectively unchanged. Workspace byte counts matched in all 144
+paired records. The full setup and timing records are in
+[`m3-c2c-fixed-radix-scalar-process-samples.csv`](../benches/results/m3-c2c-fixed-radix-scalar-process-samples.csv),
+SHA-256 `cb20e8d9590cee7ce1c800700de7d54a0ded06dd52e68300dc8c72b11dd4be9a`.
+
+The measured benchmark binary SHA-256 values are
+`0fea5774ab5c1d5f9c0cf4f41249157b21bd660e9cea046f9d612e1d85b1a3de`
+(baseline) and
+`b39ef0163ecc60eb1135e591d92e9d97938bd57791e9d34d66cc24526cf2441d`
+(candidate). Release `nm` symbol sizes fell from 38,503 to 35,537 bytes for
+`execute_first_pass_in_place<f64>` and from 37,910 to 36,132 bytes for
+`ComplexFftPlan::execute_with_simd_unchecked`. The in-place dispatcher stack
+frame grew from 728 to 1,144 bytes, and the complex execution dispatcher grew
+from 1,112 to 1,624 bytes. These counts describe generated code size and stack
+use; they do not attribute the measured speedup to a particular instruction.
+
+The C2C and real improvements are source-to-source comparisons, not refreshed
+cross-library controls. The RustFFT and DUCC columns in the earlier prime and
+real tables retain their original source revisions; current
+DUCCFFT/RustFFT/DUCC ratios have not been measured for this candidate. Full
+crate tests, Clippy, and formatting pass. A focused read-only review of the
+fixed-radix change and these paired results is pending.
