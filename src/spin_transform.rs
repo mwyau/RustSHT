@@ -18,6 +18,7 @@ use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 const MAX_SUPPORTED_SPIN: usize = 4;
 const SPIN2_FAST_MIN_LMAX: usize = 500;
+const SPIN1_TRANSITION_MIN_LMAX: usize = 255;
 const SPIN1_FAST_MIN_SIN_THETA: f64 = 0.0001;
 const SPIN2_FAST_MIN_SIN_THETA: f64 = 0.01;
 
@@ -1219,6 +1220,65 @@ impl<T: ShtScalar> ShtPlan<T> {
             (theta_sin, theta_cos, None)
         };
         let fallback_len = fallback_sin.len();
+        let mut staged_pair = if self.harmonics.lmax() >= SPIN1_TRANSITION_MIN_LMAX {
+            T::try_synthesize_paired_scalar_transition_dispatched(
+                arch,
+                m,
+                scalar_lmax,
+                fallback_sin,
+                fallback_cos,
+                self.sectoral_norms[m],
+                &recurrence.epsilon,
+                &recurrence.spin_alpha,
+                &recurrence.spin_coefficient_a,
+                &recurrence.spin_coefficient_b,
+                &recurrence.fast_scalar_first[m..=scalar_lmax],
+                &recurrence.fast_scalar_second[m..=scalar_lmax],
+                &mut recurrence.previous[..fallback_len],
+                &mut recurrence.current[..fallback_len],
+                &mut recurrence.next[..fallback_len],
+                &mut recurrence.exponents[..fallback_len],
+                &mut recurrence.analysis_same_real[..fallback_len],
+                &mut recurrence.analysis_same_imag[..fallback_len],
+                &mut recurrence.analysis_opposite_real[..fallback_len],
+                &mut recurrence.analysis_opposite_imag[..fallback_len],
+            )?
+        } else {
+            false
+        };
+        if staged_pair {
+            for (lane, &sin_theta) in fallback_sin.iter().enumerate() {
+                let inverse_sine = sin_theta.recip();
+                staged_pair = [
+                    recurrence.analysis_same_real[lane] * inverse_sine,
+                    recurrence.analysis_same_imag[lane] * inverse_sine,
+                    recurrence.analysis_opposite_real[lane] * inverse_sine,
+                    recurrence.analysis_opposite_imag[lane] * inverse_sine,
+                ]
+                .into_iter()
+                .all(|value| value.is_finite());
+                if !staged_pair {
+                    break;
+                }
+            }
+        }
+        if staged_pair {
+            for lane in 0..fallback_len {
+                let local_ring = compact_ring_indices.map_or(lane, |indices| indices[lane]);
+                let spectrum_index = local_ring * spectrum_len + m;
+                let inverse_sine = fallback_sin[lane].recip();
+                q_spectra[spectrum_index] += Complex::new(
+                    recurrence.analysis_same_real[lane] * inverse_sine,
+                    recurrence.analysis_same_imag[lane] * inverse_sine,
+                );
+                u_spectra[spectrum_index] += Complex::new(
+                    recurrence.analysis_opposite_real[lane] * inverse_sine,
+                    recurrence.analysis_opposite_imag[lane] * inverse_sine,
+                );
+            }
+            return Ok(());
+        }
+
         T::for_each_y_lm_paired_dispatched(
             arch,
             m,

@@ -464,6 +464,176 @@ fn spin1_scalar_fast_synthesis_matches_general_channel_cases() {
 }
 
 #[test]
+fn spin1_scalar_transition_preserves_the_sine_cutoff_boundary() {
+    let lmax = 511;
+    let m = 64;
+    let ntheta = lmax + 1;
+    let nphi = 2 * lmax + 3;
+    let plan = make_plan(1, lmax, m, ntheta, nphi);
+    let mut e_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut b_alm = vec![Complex64::new(0.0, 0.0); e_alm.len()];
+    for degree in m..=lmax {
+        let index = plan.harmonics().index(degree, m).unwrap();
+        e_alm[index] = Complex64::new(
+            (degree % 13 + 1) as f64 * 1e-6,
+            (degree % 7 + 1) as f64 * 2e-7,
+        );
+        b_alm[index] = Complex64::new(
+            -((degree % 11 + 1) as f64) * 8e-7,
+            (degree % 5 + 1) as f64 * 3e-7,
+        );
+    }
+
+    let scalar_lmax = lmax + 1;
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_spin_latitudes(&mut workspace, 1);
+    let recurrence = &mut workspace.recurrence_workers[0];
+    <f64 as ShtScalar>::fill_epsilon(m, scalar_lmax, &mut recurrence.epsilon);
+    assert!(<f64 as ShtScalar>::fill_paired_scalar_factors(
+        m,
+        scalar_lmax,
+        &recurrence.epsilon,
+        &mut recurrence.spin_alpha,
+        &mut recurrence.spin_coefficient_a,
+        &mut recurrence.spin_coefficient_b,
+    ));
+    for degree in m..=scalar_lmax {
+        recurrence.fast_scalar_first[degree] = Complex64::new(
+            ((degree * 7 + 3) % 19 + 1) as f64 * 1e-6,
+            ((degree * 11 + 5) % 23 + 1) as f64 * 1e-6,
+        );
+        recurrence.fast_scalar_second[degree] = Complex64::new(
+            ((degree * 13 + 7) % 17 + 1) as f64 * 1e-6,
+            -(((degree * 5 + 9) % 29 + 1) as f64) * 1e-6,
+        );
+    }
+
+    let below_cutoff = [0.009_999_f64];
+    let below_cosine = [(1.0 - below_cutoff[0] * below_cutoff[0]).sqrt()];
+    let staged_below = <f64 as ShtScalar>::try_synthesize_paired_scalar_transition_dispatched(
+        pulp::Arch::new(),
+        m,
+        scalar_lmax,
+        &below_cutoff,
+        &below_cosine,
+        plan.sectoral_norms[m],
+        &recurrence.epsilon,
+        &recurrence.spin_alpha,
+        &recurrence.spin_coefficient_a,
+        &recurrence.spin_coefficient_b,
+        &recurrence.fast_scalar_first[m..=scalar_lmax],
+        &recurrence.fast_scalar_second[m..=scalar_lmax],
+        &mut recurrence.previous,
+        &mut recurrence.current,
+        &mut recurrence.next,
+        &mut recurrence.exponents,
+        &mut recurrence.analysis_same_real,
+        &mut recurrence.analysis_same_imag,
+        &mut recurrence.analysis_opposite_real,
+        &mut recurrence.analysis_opposite_imag,
+    )
+    .unwrap();
+    assert!(!staged_below, "the staged path excludes sin(theta)<0.01");
+
+    let sines: Vec<_> = (0..63)
+        .map(|lane| 0.010_001 + lane as f64 * 0.0001)
+        .collect();
+    let cosines: Vec<_> = sines
+        .iter()
+        .map(|sine| (1.0 - sine * sine).sqrt())
+        .collect();
+    let staged_active = <f64 as ShtScalar>::try_synthesize_paired_scalar_transition_dispatched(
+        pulp::Arch::new(),
+        m,
+        scalar_lmax,
+        &sines,
+        &cosines,
+        plan.sectoral_norms[m],
+        &recurrence.epsilon,
+        &recurrence.spin_alpha,
+        &recurrence.spin_coefficient_a,
+        &recurrence.spin_coefficient_b,
+        &recurrence.fast_scalar_first[m..=scalar_lmax],
+        &recurrence.fast_scalar_second[m..=scalar_lmax],
+        &mut recurrence.previous,
+        &mut recurrence.current,
+        &mut recurrence.next,
+        &mut recurrence.exponents,
+        &mut recurrence.analysis_same_real,
+        &mut recurrence.analysis_same_imag,
+        &mut recurrence.analysis_opposite_real,
+        &mut recurrence.analysis_opposite_imag,
+    )
+    .unwrap();
+    assert!(staged_active, "the 63-lane block enters the staged path");
+
+    let below_cosines = below_cosine;
+    for (theta_sin, theta_cos) in [(&below_cutoff[..], &below_cosines[..]), (&sines, &cosines)] {
+        let limits = vec![lmax; theta_sin.len()];
+        let spectrum_len = plan.fft.spectrum_len();
+        let mut fast_q = vec![Complex64::new(0.0, 0.0); theta_sin.len() * spectrum_len];
+        let mut fast_u = vec![Complex64::new(0.0, 0.0); fast_q.len()];
+        plan.synthesize_spin_ring_group(
+            &e_alm,
+            Some(&b_alm),
+            1,
+            false,
+            true,
+            nphi,
+            spectrum_len,
+            plan.grid.phi0(),
+            0,
+            theta_sin.len(),
+            &mut fast_q,
+            &mut fast_u,
+            theta_sin,
+            theta_cos,
+            &limits,
+            pulp::Arch::new(),
+            recurrence,
+        )
+        .unwrap();
+
+        let mut general_q = vec![Complex64::new(0.0, 0.0); fast_q.len()];
+        let mut general_u = vec![Complex64::new(0.0, 0.0); fast_q.len()];
+        plan.synthesize_spin_ring_group(
+            &e_alm,
+            Some(&b_alm),
+            1,
+            false,
+            false,
+            nphi,
+            spectrum_len,
+            plan.grid.phi0(),
+            0,
+            theta_sin.len(),
+            &mut general_q,
+            &mut general_u,
+            theta_sin,
+            theta_cos,
+            &limits,
+            pulp::Arch::new(),
+            recurrence,
+        )
+        .unwrap();
+
+        for (actual, expected) in fast_q
+            .iter()
+            .zip(&general_q)
+            .chain(fast_u.iter().zip(&general_u))
+        {
+            let error = (*actual - *expected).norm();
+            assert!(
+                error <= 3e-11 * expected.norm().max(1.0),
+                "sin(theta) range={:?}..{:?}, actual={actual:?}, expected={expected:?}, error={error:.3e}",
+                theta_sin.first(),
+                theta_sin.last()
+            );
+        }
+    }
+}
+
+#[test]
 fn spin1_t63_t127_scalar_conversion_matches_general_on_all_grids() {
     for lmax in [63, 127] {
         for grid_kind in [
