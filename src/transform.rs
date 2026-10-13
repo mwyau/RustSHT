@@ -70,6 +70,44 @@ pub(crate) fn weighted_order_midpoint(lmax: usize, m_start: usize, m_end: usize)
     best_mid
 }
 
+#[cfg(feature = "parallel")]
+pub(crate) fn active_ring_weighted_order_midpoint(
+    lmax: usize,
+    m_start: usize,
+    m_end: usize,
+    ring_order_limits: &[usize],
+) -> usize {
+    debug_assert!(m_start < m_end);
+    debug_assert!(m_end - 1 <= lmax);
+    debug_assert!(m_end - m_start > 1);
+
+    let order_work = |m: usize| {
+        let active_lanes = ring_order_limits
+            .iter()
+            .filter(|&&limit| m <= limit)
+            .count() as u128;
+        (lmax - m + 1) as u128 * active_lanes
+    };
+    let total_work = (m_start..m_end).map(order_work).sum::<u128>();
+    if total_work == 0 {
+        return weighted_order_midpoint(lmax, m_start, m_end);
+    }
+
+    let mut left_work = 0_u128;
+    let mut best_mid = m_start + 1;
+    let mut best_difference = u128::MAX;
+    for m in m_start..(m_end - 1) {
+        left_work += order_work(m);
+        let right_work = total_work - left_work;
+        let difference = left_work.abs_diff(right_work);
+        if difference < best_difference {
+            best_difference = difference;
+            best_mid = m + 1;
+        }
+    }
+    best_mid
+}
+
 #[inline]
 #[expect(
     clippy::too_many_arguments,

@@ -164,6 +164,42 @@ fn weighted_order_midpoint_minimizes_coefficient_work() {
     }
 }
 
+#[cfg(feature = "parallel")]
+#[test]
+fn active_ring_weighted_order_midpoint_balances_active_work() {
+    let lmax = 31;
+    let m_start = 0;
+    let m_end = lmax + 1;
+    let all_active = vec![lmax; 12];
+    assert_eq!(
+        active_ring_weighted_order_midpoint(lmax, m_start, m_end, &all_active),
+        weighted_order_midpoint(lmax, m_start, m_end)
+    );
+
+    let mixed_limits = [31, 31, 19, 10, 4, 0];
+    let midpoint = active_ring_weighted_order_midpoint(lmax, m_start, m_end, &mixed_limits);
+    assert!(m_start < midpoint && midpoint < m_end);
+    assert_ne!(midpoint, weighted_order_midpoint(lmax, m_start, m_end));
+    let work = |start: usize, end: usize| {
+        (start..end)
+            .map(|m| (lmax - m + 1) * mixed_limits.iter().filter(|&&limit| m <= limit).count())
+            .sum::<usize>()
+    };
+    let difference = work(m_start, midpoint).abs_diff(work(midpoint, m_end));
+    for candidate in (m_start + 1)..m_end {
+        assert!(
+            difference <= work(m_start, candidate).abs_diff(work(candidate, m_end)),
+            "midpoint={midpoint}, candidate={candidate}"
+        );
+    }
+
+    let no_active_rings = [0; 6];
+    assert_eq!(
+        active_ring_weighted_order_midpoint(lmax, 8, m_end, &no_active_rings),
+        weighted_order_midpoint(lmax, 8, m_end)
+    );
+}
+
 #[test]
 fn scalar_synthesis_matches_independent_low_degree_harmonics() {
     let plan = make_plan(3, 2, 5, 9, 0.23);

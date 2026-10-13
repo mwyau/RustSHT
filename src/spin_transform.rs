@@ -13,7 +13,7 @@ use crate::legendre::{
 };
 use crate::plan::ShtPlan;
 #[cfg(feature = "parallel")]
-use crate::transform::weighted_order_midpoint;
+use crate::transform::{active_ring_weighted_order_midpoint, weighted_order_midpoint};
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 const MAX_SUPPORTED_SPIN: usize = 4;
@@ -2433,7 +2433,16 @@ impl<T: ShtScalar> ShtPlan<T> {
                     .expect("each analysis group has at least one recurrence workspace"),
             );
         }
-        let m_mid = weighted_order_midpoint(self.harmonics.lmax(), m_start, m_end);
+        let m_mid = if self.harmonics.lmax() >= 255 {
+            active_ring_weighted_order_midpoint(
+                self.harmonics.lmax(),
+                m_start,
+                m_end,
+                ring_order_limits,
+            )
+        } else {
+            weighted_order_midpoint(self.harmonics.lmax(), m_start, m_end)
+        };
         let coefficient_start = self
             .harmonics
             .index(m_start, m_start)
