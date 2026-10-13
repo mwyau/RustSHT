@@ -1119,3 +1119,67 @@ fn shared_real_plans_execute_concurrently_with_separate_workspaces() {
         }
     });
 }
+
+#[test]
+fn contiguous_real_batches_match_direct_dfts() {
+    for n in [15, 16] {
+        let rows = 3;
+        let plan = RealFftPlan::<f64>::new(n).unwrap();
+        let mut workspace = plan.workspace().unwrap();
+        let input: Vec<_> = (0..rows)
+            .flat_map(|row| (0..n).map(move |index| real_signal(index + 13 * row, n)))
+            .collect();
+        let expected_spectrum: Vec<_> = input.chunks_exact(n).flat_map(direct_r2c_f64).collect();
+        let expected_output: Vec<_> = expected_spectrum
+            .chunks_exact(plan.spectrum_len())
+            .flat_map(|row| direct_c2r_f64(row, n))
+            .collect();
+
+        let mut spectrum = vec![Complex::new(0.0, 0.0); rows * plan.spectrum_len()];
+        plan.forward_batch(&input, &mut spectrum, &mut workspace)
+            .unwrap();
+        assert_complex_f64_close(&spectrum, &expected_spectrum, n);
+
+        let mut output = vec![0.0; rows * n];
+        plan.inverse_batch(&expected_spectrum, &mut output, &mut workspace)
+            .unwrap();
+        assert_f64_close(&output, &expected_output, n);
+        plan.inverse_batch(&spectrum, &mut output, &mut workspace)
+            .unwrap();
+        assert_f64_close(&output, &input, n);
+    }
+}
+
+#[test]
+fn real_batch_rejects_incomplete_rows_and_wrong_output_lengths() {
+    let plan = RealFftPlan::<f64>::new(4).unwrap();
+    let mut workspace = plan.workspace().unwrap();
+    let input = [0.0; 5];
+    let mut spectrum = [Complex::new(0.0, 0.0); 6];
+    assert_eq!(
+        plan.forward_batch(&input, &mut spectrum, &mut workspace),
+        Err(FftError::BatchBufferLength {
+            buffer: "input",
+            row_len: 4,
+            actual: 5,
+        })
+    );
+
+    let input = [0.0; 8];
+    let mut wrong_spectrum = [Complex::new(0.0, 0.0); 4];
+    assert_eq!(
+        plan.forward_batch(&input, &mut wrong_spectrum, &mut workspace),
+        Err(FftError::BufferLength {
+            buffer: "spectrum",
+            expected: 6,
+            actual: 4,
+        })
+    );
+
+    let mut empty_spectrum = [];
+    let mut empty_output = [];
+    plan.forward_batch(&[], &mut empty_spectrum, &mut workspace)
+        .unwrap();
+    plan.inverse_batch(&empty_spectrum, &mut empty_output, &mut workspace)
+        .unwrap();
+}

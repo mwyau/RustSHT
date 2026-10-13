@@ -655,3 +655,48 @@ fn shared_f32_plan_executes_concurrently_with_separate_workspaces() {
         }
     });
 }
+
+#[test]
+fn contiguous_complex_batches_match_independent_dfts() {
+    for n in [16, 17] {
+        let rows = 3;
+        let plan = ComplexFftPlan::<f64>::new(n).unwrap();
+        let mut workspace = plan.workspace().unwrap();
+        let input: Vec<_> = (0..rows)
+            .flat_map(|row| (0..n).map(move |index| signal_f64(index + 11 * row, n)))
+            .collect();
+        let expected_forward: Vec<_> = input
+            .chunks_exact(n)
+            .flat_map(|row| direct_dft_f64(row, true))
+            .collect();
+        let expected_inverse: Vec<_> = expected_forward
+            .chunks_exact(n)
+            .flat_map(|row| normalized_direct_inverse(direct_dft_f64(row, false), 1.0 / n as f64))
+            .collect();
+
+        let mut values = input.clone();
+        plan.forward_batch(&mut values, &mut workspace).unwrap();
+        assert_f64_close(&values, &expected_forward, n);
+        plan.inverse_batch(&mut values, &mut workspace).unwrap();
+        assert_f64_close(&values, &expected_inverse, n);
+        assert_f64_close(&values, &input, n);
+    }
+}
+
+#[test]
+fn complex_batch_rejects_incomplete_rows_and_accepts_empty_batches() {
+    let plan = ComplexFftPlan::<f64>::new(4).unwrap();
+    let mut workspace = plan.workspace().unwrap();
+    let mut incomplete = vec![Complex::new(0.0, 0.0); 5];
+    assert_eq!(
+        plan.forward_batch(&mut incomplete, &mut workspace),
+        Err(FftError::BatchBufferLength {
+            buffer: "values",
+            row_len: 4,
+            actual: 5,
+        })
+    );
+    let mut empty = [];
+    plan.forward_batch(&mut empty, &mut workspace).unwrap();
+    plan.inverse_batch(&mut empty, &mut workspace).unwrap();
+}
