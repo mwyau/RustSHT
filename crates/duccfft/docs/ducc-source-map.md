@@ -75,8 +75,10 @@ complex kernels while keeping separate top-level real passes.
 
 DUCC's in-place real format stores DC at element 0, then each positive
 frequency's real and imaginary components at `2*k-1` and `2*k`. Even-length
-Nyquist occupies element `N-1` as a real value. The public Rust API will use
-`Complex<T>` values for bins `0..=floor(N/2)` and convert at the boundary.
+Nyquist occupies element `N-1` as a real value. The public Rust API uses
+`Complex<T>` values for bins `0..=floor(N/2)`. The Rust plan operates directly
+on that half-spectrum layout. The C++ reference harness converts DUCC's packed
+values to this public form for comparisons.
 
 ## Roots, arithmetic, and scratch
 
@@ -164,10 +166,31 @@ lost while pre-scaling a group with a high dynamic range; a regression test
 covers both f32 and f64. The independent direct-DFT tests cover lengths 1
 through 64 in both precisions and compare inverse transforms against
 independently supplied spectra. `benches/reference/compare.py` compares native
-f64 C2C outputs against direct DUCC outputs at the benchmark lengths.
+f64 C2C, R2C, and C2R outputs against direct DUCC outputs at the benchmark
+lengths.
 
 The `bench-native` output records plan construction, workspace allocation,
-and the complete public C2C operation. It does not expose a separate
+and the complete public C2C or R2C/C2R operation. It does not expose a separate
 unnormalized butterfly-only measurement. Compare `public_operation_ns` with
 other libraries' whole-call measurements; do not compare it with an
 unnormalized kernel-only timing.
+
+## M2 Rust implementation status
+
+`src/real.rs` follows `rfftpass::factorize()`'s radix order: factors of four,
+a leading factor of two, and then ascending odd factors. Its recursive real
+decimation-in-time pass stores only child half-spectra. Forward combination
+uses conjugation when a wrapped child frequency falls above its Nyquist bin.
+Inverse combination reconstructs the required Hermitian partner, ignores the
+imaginary DC and even Nyquist components, and distributes `1/n` across the
+radix recursion. A residual correction preserves small terms when inverse
+scaling would round them away. Execution uses caller-owned scratch and makes
+no heap allocations.
+
+The public half-spectrum is also the Rust pass representation, so no FFTPACK
+packing conversion is needed in the Rust API. The C++ harness still converts
+DUCC's packed real array for numerical comparisons. M2 implements fixed
+radix-2/3/4/5 butterflies derived from `rfftp2`, `rfftp3`, `rfftp4`, and
+`rfftp5`, expressed over ordinary half-spectra. It has not ported `rfftpg`,
+`rfftpblue`, or DUCC's conditional `rfftp_complexify` planner. Larger radix
+factors currently use a generic O(p^2) combine until the M3 general-prime work.

@@ -6,6 +6,8 @@
 //! The crate uses immutable plans with caller-owned execution workspaces.
 
 mod complex;
+mod real;
 
 pub use complex::{ComplexFftPlan, ComplexFftWorkspace, FftError};
 pub use num_complex::{Complex, Complex64};
+pub use real::{RealFftPlan, RealFftWorkspace};

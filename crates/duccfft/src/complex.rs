@@ -624,7 +624,7 @@ fn factorize(len: usize) -> Result<Vec<usize>, FftError> {
     Ok(factors)
 }
 
-fn unity_root<T: Float + FromPrimitive>(index: usize, len: usize) -> Complex<T> {
+pub(crate) fn unity_root<T: Float + FromPrimitive>(index: usize, len: usize) -> Complex<T> {
     if index == 0 {
         return Complex::new(T::one(), T::zero());
     }
@@ -729,7 +729,7 @@ fn mul_mod(left: usize, right: usize, modulus: usize) -> usize {
     ((left as u128 * right as u128) % modulus as u128) as usize
 }
 
-fn try_vec<T: Copy>(len: usize, value: T) -> Result<Vec<T>, FftError> {
+pub(crate) fn try_vec<T: Copy>(len: usize, value: T) -> Result<Vec<T>, FftError> {
     let mut result = Vec::new();
     result
         .try_reserve_exact(len)
@@ -738,7 +738,11 @@ fn try_vec<T: Copy>(len: usize, value: T) -> Result<Vec<T>, FftError> {
     Ok(result)
 }
 
-fn check_len(buffer: &'static str, expected: usize, actual: usize) -> Result<(), FftError> {
+pub(crate) fn check_len(
+    buffer: &'static str,
+    expected: usize,
+    actual: usize,
+) -> Result<(), FftError> {
     if expected == actual {
         Ok(())
     } else {

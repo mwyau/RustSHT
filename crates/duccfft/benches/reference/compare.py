@@ -134,12 +134,16 @@ def main() -> None:
         rtol=args.rtol,
         atol=args.atol,
     )
-    complex_reference = {
-        key: value for key, value in expected.items() if key[0].startswith("c2c_")
-    }
     compare_records(
-        "DUCCFFT f64 C2C",
-        complex_reference,
+        "DUCCFFT f64 C2C/R2C/C2R",
+        expected,
+        native_output,
+        rtol=args.rtol,
+        atol=args.atol,
+    )
+    compare_records(
+        "DUCCFFT vs RustFFT f64",
+        rustfft_output,
         native_output,
         rtol=args.rtol,
         atol=args.atol,
