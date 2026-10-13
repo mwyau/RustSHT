@@ -16,6 +16,17 @@ pub(crate) type RealRadix2ForwardInteriorKernel<T> =
     unsafe fn([&[T]; 2], [&mut [T]; 2], usize, &[T]) -> usize;
 pub(crate) type RealRadix4ForwardInteriorKernel<T> =
     unsafe fn([&[T]; 4], [&mut [T]; 4], usize, &[T]) -> usize;
+#[derive(Clone, Copy)]
+pub(crate) struct RealGeneralPrimeIdo1Params<'a, T> {
+    pub(crate) l1: usize,
+    pub(crate) radix: usize,
+    pub(crate) cosines: &'a [T],
+    pub(crate) sines: &'a [T],
+    pub(crate) inverse: bool,
+    pub(crate) scale: T,
+}
+pub(crate) type RealGeneralPrimeIdo1Kernel<T> =
+    for<'a> unsafe fn(&[T], &mut [T], RealGeneralPrimeIdo1Params<'a, T>);
 /// A fixed-radix AVX2 complex pass function pointer.
 ///
 /// The ordinary pass pointer follows `avx2_pass`'s vector-width contract. A
@@ -51,6 +62,11 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
 
     /// Returns the inverse radix-four interior kernel when AVX2 is available.
     fn real_radix4_interior_kernel() -> Option<RealRadix4InteriorKernel<Self>> {
+        None
+    }
+
+    /// Returns the real general-prime `ido == 1` kernel when supported.
+    fn real_general_prime_ido1_kernel() -> Option<RealGeneralPrimeIdo1Kernel<Self>> {
         None
     }
 
@@ -97,8 +113,9 @@ mod x86 {
     use std::sync::OnceLock;
 
     use super::{
-        Complex, ComplexPassKernel, RealRadix2ForwardInteriorKernel, RealRadix2InteriorKernel,
-        RealRadix4ForwardInteriorKernel, RealRadix4InteriorKernel, SimdPass, SimdScalar,
+        Complex, ComplexPassKernel, RealGeneralPrimeIdo1Kernel, RealRadix2ForwardInteriorKernel,
+        RealRadix2InteriorKernel, RealRadix4ForwardInteriorKernel, RealRadix4InteriorKernel,
+        SimdPass, SimdScalar,
     };
 
     static AVX2_AVAILABLE: OnceLock<bool> = OnceLock::new();
@@ -121,6 +138,14 @@ mod x86 {
         fn real_radix4_interior_kernel() -> Option<RealRadix4InteriorKernel<Self>> {
             if available() {
                 Some(f64_real_kernel::inverse_radix4_interior)
+            } else {
+                None
+            }
+        }
+
+        fn real_general_prime_ido1_kernel() -> Option<RealGeneralPrimeIdo1Kernel<Self>> {
+            if available() {
+                Some(f64_real_kernel::general_prime_ido1)
             } else {
                 None
             }
@@ -780,6 +805,8 @@ mod x86 {
     mod f64_real_kernel {
         use std::arch::x86_64::*;
 
+        use super::super::RealGeneralPrimeIdo1Params;
+
         #[inline]
         #[target_feature(enable = "avx2")]
         unsafe fn multiply_pm(roots: __m256d, values: __m256d) -> __m256d {
@@ -1073,6 +1100,168 @@ mod x86 {
                 i += 4;
             }
             i
+        }
+
+        /// Executes an `ido == 1` real general-prime pass, vectorizing across
+        /// consecutive frequencies in the packed real spectrum.
+        ///
+        /// # Safety
+        ///
+        /// The caller must have detected AVX2 support. `radix` must be odd
+        /// and at least 7, `l1` must be positive, `input` and `output` must
+        /// each contain at least `radix * l1` values, the coefficient slices
+        /// must contain at least `(radix / 2)^2` values, and input/output
+        /// storage must not overlap.
+        #[target_feature(enable = "avx2")]
+        pub(super) unsafe fn general_prime_ido1(
+            input: &[f64],
+            output: &mut [f64],
+            params: RealGeneralPrimeIdo1Params<'_, f64>,
+        ) {
+            let RealGeneralPrimeIdo1Params {
+                l1,
+                radix,
+                cosines,
+                sines,
+                inverse,
+                scale,
+            } = params;
+            let half = radix / 2;
+            let coefficient_count = half * half;
+            debug_assert!(radix >= 7 && radix % 2 == 1);
+            debug_assert!(l1 > 0);
+            debug_assert!(input.len() >= radix * l1);
+            debug_assert!(output.len() >= radix * l1);
+            debug_assert!(cosines.len() >= coefficient_count);
+            debug_assert!(sines.len() >= coefficient_count);
+
+            if !inverse {
+                let zero = _mm_setzero_pd();
+                for group in 0..l1 {
+                    let input0 = input[group];
+                    let mut dc = input0;
+                    for branch in 1..=half {
+                        dc += input[branch * l1 + group] + input[(radix - branch) * l1 + group];
+                    }
+                    let output_start = group * radix;
+                    output[output_start] = dc;
+
+                    let mut frequency_index = 0;
+                    while frequency_index + 1 < half {
+                        let mut sum_re = _mm_set1_pd(input0);
+                        let mut sum_im = zero;
+                        for branch in 1..=half {
+                            let left = input[branch * l1 + group];
+                            let right = input[(radix - branch) * l1 + group];
+                            let pair = _mm_set1_pd(left + right);
+                            let difference = _mm_set1_pd(left - right);
+                            let coefficient_start = (branch - 1) * half + frequency_index;
+                            let cosine =
+                                unsafe { _mm_loadu_pd(cosines.as_ptr().add(coefficient_start)) };
+                            let sine =
+                                unsafe { _mm_loadu_pd(sines.as_ptr().add(coefficient_start)) };
+                            sum_re = _mm_add_pd(sum_re, _mm_mul_pd(pair, cosine));
+                            sum_im = _mm_sub_pd(sum_im, _mm_mul_pd(difference, sine));
+                        }
+
+                        let output_pair = unsafe {
+                            output
+                                .as_mut_ptr()
+                                .add(output_start + 1 + 2 * frequency_index)
+                        };
+                        unsafe {
+                            _mm_storeu_pd(output_pair, _mm_unpacklo_pd(sum_re, sum_im));
+                            _mm_storeu_pd(output_pair.add(2), _mm_unpackhi_pd(sum_re, sum_im));
+                        }
+                        frequency_index += 2;
+                    }
+
+                    if frequency_index < half {
+                        let frequency = frequency_index + 1;
+                        let mut sum_re = input0;
+                        let mut sum_im = 0.0;
+                        for branch in 1..=half {
+                            let left = input[branch * l1 + group];
+                            let right = input[(radix - branch) * l1 + group];
+                            let coefficient = (branch - 1) * half + frequency_index;
+                            sum_re += (left + right) * cosines[coefficient];
+                            sum_im -= (left - right) * sines[coefficient];
+                        }
+                        let output_start = output_start + 2 * frequency - 1;
+                        output[output_start] = sum_re;
+                        output[output_start + 1] = sum_im;
+                    }
+                }
+                return;
+            }
+
+            let two = _mm_set1_pd(2.0);
+            for group in 0..l1 {
+                let input_start = group * radix;
+                let dc = input[input_start];
+                let mut zero_frequency_sample = dc;
+                for frequency in 1..=half {
+                    zero_frequency_sample += 2.0 * input[input_start + 2 * frequency - 1];
+                }
+                output[group] = zero_frequency_sample * scale;
+
+                for sample in 1..=half {
+                    let coefficient_start = (sample - 1) * half;
+                    let mut positive = _mm_setzero_pd();
+                    let mut negative = _mm_setzero_pd();
+                    let mut frequency_index = 0;
+                    while frequency_index + 1 < half {
+                        let packed = unsafe {
+                            _mm256_loadu_pd(
+                                input.as_ptr().add(input_start + 1 + 2 * frequency_index),
+                            )
+                        };
+                        let low = _mm256_castpd256_pd128(packed);
+                        let high = _mm256_extractf128_pd(packed, 1);
+                        let real = _mm_unpacklo_pd(low, high);
+                        let imag = _mm_unpackhi_pd(low, high);
+                        let cosine = unsafe {
+                            _mm_loadu_pd(cosines.as_ptr().add(coefficient_start + frequency_index))
+                        };
+                        let sine = unsafe {
+                            _mm_loadu_pd(sines.as_ptr().add(coefficient_start + frequency_index))
+                        };
+                        let real_cosine = _mm_mul_pd(real, cosine);
+                        let imaginary_sine = _mm_mul_pd(imag, sine);
+                        positive = _mm_add_pd(
+                            positive,
+                            _mm_mul_pd(two, _mm_sub_pd(real_cosine, imaginary_sine)),
+                        );
+                        negative = _mm_add_pd(
+                            negative,
+                            _mm_mul_pd(two, _mm_add_pd(real_cosine, imaginary_sine)),
+                        );
+                        frequency_index += 2;
+                    }
+
+                    let mut positive_parts = [0.0; 2];
+                    let mut negative_parts = [0.0; 2];
+                    unsafe {
+                        _mm_storeu_pd(positive_parts.as_mut_ptr(), positive);
+                        _mm_storeu_pd(negative_parts.as_mut_ptr(), negative);
+                    }
+                    let mut positive_sum = dc + positive_parts[0] + positive_parts[1];
+                    let mut negative_sum = dc + negative_parts[0] + negative_parts[1];
+                    if frequency_index < half {
+                        let frequency = frequency_index + 1;
+                        let coefficient = coefficient_start + frequency_index;
+                        let real = input[input_start + 2 * frequency - 1];
+                        let imag = input[input_start + 2 * frequency];
+                        let real_cosine = real * cosines[coefficient];
+                        let imaginary_sine = imag * sines[coefficient];
+                        positive_sum += 2.0 * (real_cosine - imaginary_sine);
+                        negative_sum += 2.0 * (real_cosine + imaginary_sine);
+                    }
+
+                    output[sample * l1 + group] = positive_sum * scale;
+                    output[(radix - sample) * l1 + group] = negative_sum * scale;
+                }
+            }
         }
     }
 
@@ -1389,7 +1578,7 @@ impl SimdScalar for f32 {
 mod tests {
     use num_complex::Complex;
 
-    use super::{SimdPass, SimdScalar};
+    use super::{RealGeneralPrimeIdo1Params, SimdPass, SimdScalar};
 
     fn root(index: usize, len: usize, inverse: bool) -> Complex<f64> {
         let sign = if inverse { 1.0 } else { -1.0 };
@@ -1411,6 +1600,143 @@ mod tests {
             (actual.im - expected.im).abs() < 2.0e-12,
             "{context}: {actual} != {expected}"
         );
+    }
+
+    #[test]
+    fn f64_real_general_prime_ido1_matches_direct_dfts_and_preserves_guards() {
+        if !<f64 as SimdScalar>::avx2_available() {
+            return;
+        }
+        let Some(kernel) = <f64 as SimdScalar>::real_general_prime_ido1_kernel() else {
+            panic!("AVX2 general-prime kernel should be available");
+        };
+
+        for radix in [17, 37, 41, 73, 103, 131] {
+            let half = radix / 2;
+            let mut cosines = vec![0.0; half * half];
+            let mut sines = vec![0.0; half * half];
+            for multiplier in 1..=half {
+                for frequency in 1..=half {
+                    let angle = std::f64::consts::TAU * (multiplier * frequency % radix) as f64
+                        / radix as f64;
+                    let index = (multiplier - 1) * half + frequency - 1;
+                    cosines[index] = angle.cos();
+                    sines[index] = angle.sin();
+                }
+            }
+
+            for l1 in [1, 2, 3, 7] {
+                let input: Vec<_> = (0..radix * l1)
+                    .map(|index| (index as f64 * 0.173).sin() + (index as f64 * 0.071).cos())
+                    .collect();
+                let mut forward_storage = vec![1234.5; radix * l1 + 2];
+                let (forward_guard, forward_tail) = forward_storage.split_at_mut(1);
+                let (forward, forward_end_guard) = forward_tail.split_at_mut(radix * l1);
+                // SAFETY: this test runs only after AVX2 detection and provides
+                // disjoint, correctly sized input/output and coefficient slices.
+                unsafe {
+                    kernel(
+                        &input,
+                        forward,
+                        RealGeneralPrimeIdo1Params {
+                            l1,
+                            radix,
+                            cosines: &cosines,
+                            sines: &sines,
+                            inverse: false,
+                            scale: 1.0,
+                        },
+                    )
+                }
+                assert_eq!(forward_guard[0], 1234.5);
+                assert_eq!(forward_end_guard[0], 1234.5);
+                for group in 0..l1 {
+                    for frequency in 0..=half {
+                        let value = (0..radix).fold(Complex::new(0.0, 0.0), |sum, sample| {
+                            let angle = std::f64::consts::TAU * (sample * frequency % radix) as f64
+                                / radix as f64;
+                            sum + input[sample * l1 + group]
+                                * Complex::new(angle.cos(), -angle.sin())
+                        });
+                        let (actual_re, actual_im) = if frequency == 0 {
+                            (forward[group * radix], 0.0)
+                        } else {
+                            (
+                                forward[group * radix + 2 * frequency - 1],
+                                forward[group * radix + 2 * frequency],
+                            )
+                        };
+                        let context = format!("forward radix={radix}, l1={l1}, f={frequency}");
+                        assert!((actual_re - value.re).abs() < 3.0e-11, "{context}");
+                        assert!((actual_im - value.im).abs() < 3.0e-11, "{context}");
+                    }
+                }
+
+                let mut packed = vec![0.0; radix * l1];
+                for group in 0..l1 {
+                    packed[group * radix] = (group as f64 * 0.31).sin();
+                    for frequency in 1..=half {
+                        packed[group * radix + 2 * frequency - 1] =
+                            (group as f64 * 0.17 + frequency as f64 * 0.21).cos();
+                        packed[group * radix + 2 * frequency] =
+                            (group as f64 * 0.13 - frequency as f64 * 0.19).sin();
+                    }
+                }
+                let scale = 0.25;
+                let mut inverse_storage = vec![-4321.0; radix * l1 + 2];
+                let (inverse_guard, inverse_tail) = inverse_storage.split_at_mut(1);
+                let (inverse, inverse_end_guard) = inverse_tail.split_at_mut(radix * l1);
+                // SAFETY: this test runs only after AVX2 detection and provides
+                // disjoint, correctly sized input/output and coefficient slices.
+                unsafe {
+                    kernel(
+                        &packed,
+                        inverse,
+                        RealGeneralPrimeIdo1Params {
+                            l1,
+                            radix,
+                            cosines: &cosines,
+                            sines: &sines,
+                            inverse: true,
+                            scale,
+                        },
+                    )
+                }
+                assert_eq!(inverse_guard[0], -4321.0);
+                assert_eq!(inverse_end_guard[0], -4321.0);
+                for group in 0..l1 {
+                    for sample in 0..radix {
+                        let value = (0..radix).fold(Complex::new(0.0, 0.0), |sum, frequency| {
+                            let bin = if frequency <= half {
+                                let index = group * radix;
+                                if frequency == 0 {
+                                    Complex::new(packed[index], 0.0)
+                                } else {
+                                    Complex::new(
+                                        packed[index + 2 * frequency - 1],
+                                        packed[index + 2 * frequency],
+                                    )
+                                }
+                            } else {
+                                let mirror = radix - frequency;
+                                let index = group * radix;
+                                Complex::new(
+                                    packed[index + 2 * mirror - 1],
+                                    -packed[index + 2 * mirror],
+                                )
+                            };
+                            let angle = std::f64::consts::TAU * (sample * frequency % radix) as f64
+                                / radix as f64;
+                            sum + bin * Complex::new(angle.cos(), angle.sin())
+                        });
+                        let actual = inverse[sample * l1 + group];
+                        let expected = value.re * scale;
+                        let context = format!("inverse radix={radix}, l1={l1}, n={sample}");
+                        assert!((actual - expected).abs() < 5.0e-11, "{context}");
+                    }
+                }
+            }
+        }
     }
 
     fn root32(index: usize, len: usize, inverse: bool) -> Complex<f32> {

@@ -19,10 +19,12 @@ use crate::complex::{
     BluesteinPlan, ComplexFftPlan, ComplexFftWorkspace, Direction, check_batch_rows, check_len,
     check_vec_len, checked_batch_len, try_vec, unity_root,
 };
-use crate::real_multipass::{MultipassBluestein, RealMultipassPlan, RealMultipassWorkspace};
+use crate::real_multipass::{
+    MultipassBluestein, RealMultipassKernels, RealMultipassPlan, RealMultipassWorkspace,
+};
 use crate::simd::{
-    RealRadix2ForwardInteriorKernel, RealRadix2InteriorKernel, RealRadix4ForwardInteriorKernel,
-    RealRadix4InteriorKernel, SimdScalar,
+    RealGeneralPrimeIdo1Kernel, RealRadix2ForwardInteriorKernel, RealRadix2InteriorKernel,
+    RealRadix4ForwardInteriorKernel, RealRadix4InteriorKernel, SimdScalar,
 };
 
 /// An immutable one-dimensional real FFT plan.
@@ -113,6 +115,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
         real_radix2_forward_interior_kernel: Option<RealRadix2ForwardInteriorKernel<T>>,
         real_radix4_forward_interior_kernel: Option<RealRadix4ForwardInteriorKernel<T>>,
         real_radix4_interior_kernel: Option<RealRadix4InteriorKernel<T>>,
+        real_general_prime_ido1_kernel: Option<RealGeneralPrimeIdo1Kernel<T>>,
     ) -> Result<Self, FftError> {
         if len == 0 {
             return Err(FftError::InvalidLength);
@@ -155,10 +158,13 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                 len,
                 &factors,
                 &roots,
-                real_radix2_interior_kernel,
-                real_radix2_forward_interior_kernel,
-                real_radix4_forward_interior_kernel,
-                real_radix4_interior_kernel,
+                RealMultipassKernels {
+                    radix2_interior: real_radix2_interior_kernel,
+                    radix2_forward_interior: real_radix2_forward_interior_kernel,
+                    radix4_forward_interior: real_radix4_forward_interior_kernel,
+                    radix4_interior: real_radix4_interior_kernel,
+                    prime_ido1: real_general_prime_ido1_kernel,
+                },
             )?
         };
 
@@ -703,6 +709,7 @@ macro_rules! implement_public_api {
                     <$scalar as SimdScalar>::real_radix2_forward_interior_kernel(),
                     <$scalar as SimdScalar>::real_radix4_forward_interior_kernel(),
                     <$scalar as SimdScalar>::real_radix4_interior_kernel(),
+                    <$scalar as SimdScalar>::real_general_prime_ido1_kernel(),
                 )
             }
         }
