@@ -820,6 +820,42 @@ fn workspace_ring_groups_add_parallelism_for_underfilled_synthesis() {
 
 #[cfg(feature = "parallel")]
 #[test]
+fn synthesis_workspace_from_larger_pool_is_safe_in_smaller_pool() {
+    let plan = make_plan(3, 2, 256, 9, 0.41);
+    let input = coefficients(plan.harmonics());
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let two_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(2)
+        .build()
+        .unwrap();
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+
+    let mut shared_workspace = eight_threads.install(|| plan.workspace()).unwrap();
+    let mut single_workspace = one_thread.install(|| plan.workspace()).unwrap();
+    assert_eq!(shared_workspace.ring_group_size, LATITUDE_BLOCK_SIZE / 2);
+
+    let mut shared_output = vec![0.0; plan.sample_count];
+    let mut single_output = vec![0.0; plan.sample_count];
+    two_threads
+        .install(|| plan.synthesis_into(&input, &mut shared_output, &mut shared_workspace))
+        .unwrap();
+    one_thread
+        .install(|| plan.synthesis_into(&input, &mut single_output, &mut single_workspace))
+        .unwrap();
+
+    for (&shared, &single) in shared_output.iter().zip(&single_output) {
+        assert!((shared - single).abs() < 2e-14);
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
 fn rayon_groups_match_one_thread_for_synthesis_and_analysis() {
     let plan = make_plan(3, 2, 131, 9, 0.41);
     let input_alm = coefficients(plan.harmonics());
