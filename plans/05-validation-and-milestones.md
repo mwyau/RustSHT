@@ -1502,7 +1502,24 @@ The native comparison used `examples/m1a_bench.rs`, f64 GL, full `mmax`, `phi0=0
 | T1023 | 1 | `655.5 (652.8–660.1)` | `569.2 (567.9–571.9)` | `-13.2%` |
 | T1023 | 8 | `193.4 (192.6–196.3)` | `161.2 (160.1–161.6)` | `-16.7%` |
 
-Percentage changes use the unrounded process medians. The T511 eight-thread ranges overlap. At T1023, the measured synthesis reductions were `86.3 ms` with one thread and `32.2 ms` with eight. The skip adds no workspace memory. The T511/T1023/T2047 scalar analytic and DUCC test passed against `ducc0==0.41.0` built from source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf` on GL, CC and F1. At T2047 the largest analytic map error was `9.96e-12`, and the largest DUCC sample error was `2.08e-13`. Scalar synthesis/analysis adjoint tests passed on GL, CC and F1. The fully excluded analysis-pair work is also measurable, but its separate skip is not part of this change and requires an independent timing comparison.
+Percentage changes use the unrounded process medians. The T511 eight-thread ranges overlap. At T1023, the measured synthesis reductions were `86.3 ms` with one thread and `32.2 ms` with eight. The skip adds no workspace memory. The T511/T1023/T2047 scalar analytic and DUCC test passed against `ducc0==0.41.0` built from source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf` on GL, CC and F1. At T2047 the largest analytic map error was `9.96e-12`, and the largest DUCC sample error was `2.08e-13`. Scalar synthesis/analysis adjoint tests passed on GL, CC and F1. The corresponding analysis-pair work estimate motivated the separate skip below.
+
+### Spin-0 fully excluded analysis pair blocks (2026-10-12)
+
+`analyze_symmetric_order_group()` formed a north/south spectrum pair for every 64-lane block and advanced the recurrence even when the polar cutoff excluded every pair in that block. The analysis loop now skips such blocks. Scalar order limits rise monotonically from each pole toward the equator, so the nearest-equator north ring (`block_end - 1`) and mirrored south ring (`latitude_count - block_end`) bound the cutoff for all pairs in a block. A per-worker minimum of these block bounds avoids checking blocks for orders that cannot exclude any block. This retains the existing per-ring zeroing for mixed blocks and adds no workspace storage. The equatorial singleton remains in the final block and is never double-counted.
+
+A corrected cutoff diagnostic estimated `15,728,576 / 134,479,872` potential paired degree-lanes in fully excluded GL blocks at T1023 (`11.7%`). Inactive lanes in mixed blocks account for a separate `4.6%`; this change does not compact those lanes. These are potential lane counts, not elapsed time or executed instruction counts. A read-only Sol review checked the monotonic endpoint bound, mirrored indices and equatorial handling.
+
+The native comparison used `examples/m1a_bench.rs` with f64 GL, `phi0=0.37`, full `mmax`, reused plan/workspace, one warm-up and five timed samples per process. Three process runs were pinned to CPUs 0–7 on an AMD Ryzen 9 5950X (Linux `7.0.14`), with rustc `1.99.0 (b940084d7 2026-09-28)`, Cargo release optimization, runtime AVX2/FMA dispatch and no `target-cpu=native`. The before build was `a329461`; after uses the candidate source. Each cell gives the median and range of process medians in milliseconds; percentages use unrounded medians:
+
+| Bandlimit | Threads | Before | After | Change |
+| ---: | ---: | ---: | ---: | ---: |
+| T511 | 1 | `76.5 (76.3–77.0)` | `60.9 (60.0–61.7)` | `-20.3%` |
+| T511 | 8 | `21.7 (21.2–21.8)` | `15.9 (15.9–16.1)` | `-26.7%` |
+| T1023 | 1 | `657.6 (653.7–657.9)` | `364.1 (363.9–366.0)` | `-44.6%` |
+| T1023 | 8 | `193.3 (192.4–195.1)` | `102.5 (102.2–104.1)` | `-47.0%` |
+
+The reductions at T511 were `15.5 ms` and `5.8 ms`; at T1023 they were `293.6 ms` and `90.8 ms`. Low-band checks showed no material regression: T63 was `0.191/0.133` to `0.189/0.130 ms`, T127 `1.142/0.586` to `1.119/0.606 ms`, and T255 `9.945/3.257` to `9.628/3.308 ms` at one/eight threads. T127 and T255 were slightly faster at one thread; eight-thread process ranges overlap. The scalar analysis adjoint tests passed on GL, CC and F1. The T511/T1023/T2047 all-grid test against static `ducc0==0.41.0` references from revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf` and the analytic sectoral field passed; maximum DUCC sample error was `2.08e-13`, and the maximum T2047 analysis coefficient error was `4.18e-14`. The new branch adds no memory.
 
 ### Spin-0/1 baseline and priority reset (2026-10-12)
 

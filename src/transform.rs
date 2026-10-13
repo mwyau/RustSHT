@@ -789,6 +789,13 @@ impl<T: ShtScalar> ShtPlan<T> {
         debug_assert_eq!(ring_order_limits.len(), latitude_count);
         let lmax = self.harmonics.lmax();
         let pair_lane_count = latitude_count.div_ceil(2);
+        let mut minimum_block_limit = lmax;
+        for block_start in (0..pair_lane_count).step_by(LATITUDE_BLOCK_SIZE) {
+            let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(pair_lane_count);
+            let block_limit =
+                ring_order_limits[block_end - 1].max(ring_order_limits[latitude_count - block_end]);
+            minimum_block_limit = minimum_block_limit.min(block_limit);
+        }
         let mut coefficient_start = 0;
 
         for m in m_start..m_end {
@@ -807,6 +814,15 @@ impl<T: ShtScalar> ShtPlan<T> {
             for block_start in (0..pair_lane_count).step_by(LATITUDE_BLOCK_SIZE) {
                 let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(pair_lane_count);
                 let block_len = block_end - block_start;
+                if m > minimum_block_limit && block_len < pair_lane_count {
+                    // The scalar cutoff rises toward the equator on each hemisphere;
+                    // these endpoints bound the cutoff for every mirrored pair.
+                    let block_limit = ring_order_limits[block_end - 1]
+                        .max(ring_order_limits[latitude_count - block_end]);
+                    if m > block_limit {
+                        continue;
+                    }
+                }
                 let order_spectra = &spectra[m * latitude_count..(m + 1) * latitude_count];
                 for lane in 0..block_len {
                     let north_ring = block_start + lane;
