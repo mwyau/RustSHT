@@ -18,7 +18,7 @@ use crate::complex::{
     try_vec, unity_root,
 };
 use crate::real_multipass::{RealMultipassPlan, RealMultipassWorkspace};
-use crate::simd::{RealRadix4InteriorKernel, SimdScalar};
+use crate::simd::{RealRadix4ForwardInteriorKernel, RealRadix4InteriorKernel, SimdScalar};
 
 /// An immutable one-dimensional real FFT plan.
 ///
@@ -104,6 +104,7 @@ impl<T> RealFftWorkspace<T> {
 impl<T: Float + FromPrimitive> RealFftPlan<T> {
     fn try_new(
         len: usize,
+        real_radix4_forward_interior_kernel: Option<RealRadix4ForwardInteriorKernel<T>>,
         real_radix4_interior_kernel: Option<RealRadix4InteriorKernel<T>>,
     ) -> Result<Self, FftError> {
         if len == 0 {
@@ -143,7 +144,13 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
         let multipass = if use_complexify {
             None
         } else {
-            RealMultipassPlan::try_new(len, &factors, &roots, real_radix4_interior_kernel)?
+            RealMultipassPlan::try_new(
+                len,
+                &factors,
+                &roots,
+                real_radix4_forward_interior_kernel,
+                real_radix4_interior_kernel,
+            )?
         };
 
         Ok(Self {
@@ -572,7 +579,11 @@ macro_rules! implement_public_api {
             /// [`FftError::AllocationFailed`] if plan storage cannot be
             /// reserved.
             pub fn new(len: usize) -> Result<Self, FftError> {
-                Self::try_new(len, <$scalar as SimdScalar>::real_radix4_interior_kernel())
+                Self::try_new(
+                    len,
+                    <$scalar as SimdScalar>::real_radix4_forward_interior_kernel(),
+                    <$scalar as SimdScalar>::real_radix4_interior_kernel(),
+                )
             }
         }
     };
