@@ -14,7 +14,7 @@ use std::fmt;
 use num_complex::Complex;
 use num_traits::{Float, FromPrimitive};
 
-use crate::simd::{SimdKernels, SimdPass, SimdScalar};
+use crate::simd::{ComplexPassKernel, SimdPass, SimdScalar};
 
 /// Errors returned by FFT plan construction and execution.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -124,6 +124,15 @@ struct PassExecution<'a, T> {
     blue_buffer: &'a mut [Complex<T>],
     blue_workspace: Option<&'a mut ComplexFftWorkspace<T>>,
     simd: Option<SimdKernels<T>>,
+}
+
+type FirstPassKernel<T> = unsafe fn(&mut [Complex<T>], &SimdPass<'_, T>);
+#[derive(Clone, Copy)]
+struct SimdKernels<T> {
+    complex_lanes: usize,
+    first_pass: FirstPassKernel<T>,
+    pass: ComplexPassKernel<T>,
+    ido1_radix8_pass: Option<ComplexPassKernel<T>>,
 }
 
 /// Mutable scratch for repeated execution of a [`ComplexFftPlan`].
@@ -271,7 +280,7 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
         workspace: &mut ComplexFftWorkspace<T>,
         direction: Direction,
     ) -> Result<(), FftError> {
-        self.execute_inverse_scaled(values, workspace, direction, T::one(), None)
+        self.execute_inverse_scaled(values, workspace, direction, T::one())
     }
 
     pub(crate) fn execute_inverse_scaled(
@@ -280,9 +289,8 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
         workspace: &mut ComplexFftWorkspace<T>,
         direction: Direction,
         inverse_output_scale: T,
-        simd: Option<SimdKernels<T>>,
     ) -> Result<(), FftError> {
-        self.execute_with_simd(values, workspace, direction, inverse_output_scale, simd)
+        self.execute_with_simd(values, workspace, direction, inverse_output_scale, None)
     }
 
     fn execute_avx2(
@@ -308,11 +316,16 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
     ) where
         T: SimdScalar,
     {
-        let kernels = SimdKernels::runtime();
+        let kernels = T::avx2_available().then_some(SimdKernels {
+            complex_lanes: T::AVX2_COMPLEX_LANES,
+            first_pass: T::avx2_first_pass,
+            pass: T::avx2_pass,
+            ido1_radix8_pass: T::avx2_ido1_radix8_pass_kernel(),
+        });
         self.execute_with_simd_unchecked(values, workspace, direction, T::one(), kernels);
     }
 
-    pub(crate) fn execute_with_simd(
+    fn execute_with_simd(
         &self,
         values: &mut [Complex<T>],
         workspace: &mut ComplexFftWorkspace<T>,
@@ -573,7 +586,6 @@ impl<T: Float + FromPrimitive> BluesteinPlan<T> {
         direction: Direction,
         convolution_buffer: &mut [Complex<T>],
         convolution_workspace: &mut ComplexFftWorkspace<T>,
-        simd: Option<SimdKernels<T>>,
     ) {
         debug_assert_eq!(input.len(), self.len);
         debug_assert_eq!(output.len(), self.len);
@@ -607,13 +619,7 @@ impl<T: Float + FromPrimitive> BluesteinPlan<T> {
         buffer[self.len..].fill(Complex::new(T::zero(), T::zero()));
 
         self.convolution
-            .execute_with_simd(
-                buffer,
-                convolution_workspace,
-                Direction::Forward,
-                T::one(),
-                simd,
-            )
+            .execute(buffer, convolution_workspace, Direction::Forward)
             .expect("Bluestein convolution workspace matches its plan");
         let input_spectrum_max = buffer.iter().fold(T::zero(), |maximum, value| {
             maximum.max(value.re.abs()).max(value.im.abs())
@@ -640,13 +646,7 @@ impl<T: Float + FromPrimitive> BluesteinPlan<T> {
             *value = *value * kernel;
         }
         self.convolution
-            .execute_with_simd(
-                buffer,
-                convolution_workspace,
-                Direction::Inverse,
-                T::one(),
-                simd,
-            )
+            .execute(buffer, convolution_workspace, Direction::Inverse)
             .expect("Bluestein convolution workspace matches its plan");
 
         for index in 0..self.len {
@@ -929,7 +929,7 @@ fn execute_first_pass_direct_radix<const R: usize, T: Float + FromPrimitive>(
     debug_assert_eq!(pass.l1, 1);
     let inverse = execution.direction == Direction::Inverse;
     if let Some(kernels) = execution.simd
-        && matches!(R, 2 | 4 | 7 | 8)
+        && matches!(R, 2 | 4 | 8)
         && (!inverse || execution.defer_inverse_normalization)
         && pass.ido >= kernels.complex_lanes
         && pass.ido.is_multiple_of(kernels.complex_lanes)
@@ -1075,7 +1075,7 @@ fn execute_direct_radix_pass<const R: usize, T: Float + FromPrimitive>(
         return;
     }
     if let Some(kernels) = execution.simd
-        && matches!(R, 2 | 4 | 7 | 8)
+        && matches!(R, 2 | 4 | 8)
         && (!inverse || execution.defer_inverse_normalization)
         && pass.ido >= kernels.complex_lanes
         && pass.ido.is_multiple_of(kernels.complex_lanes)
@@ -1200,7 +1200,6 @@ impl<T: Float + FromPrimitive> PassExecution<'_, T> {
                     self.blue_workspace
                         .as_deref_mut()
                         .expect("Bluestein pass has a workspace"),
-                    self.simd,
                 );
             } else {
                 radix_transform(
