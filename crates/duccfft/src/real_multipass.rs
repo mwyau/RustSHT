@@ -117,25 +117,22 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
     ) {
         pack_spectrum(spectrum, &mut workspace.first);
         let mut current_is_first = true;
-        let last_pass = self.passes.len() - 1;
-        for (index, pass) in self.passes.iter().enumerate() {
-            if index == last_pass {
-                if current_is_first {
-                    execute_inverse_pass(pass, &workspace.first, output);
-                } else {
-                    execute_inverse_pass(pass, &workspace.second, output);
-                }
-            } else if current_is_first {
+        for pass in &self.passes {
+            if current_is_first {
                 execute_inverse_pass(pass, &workspace.first, &mut workspace.second);
-                current_is_first = false;
             } else {
                 execute_inverse_pass(pass, &workspace.second, &mut workspace.first);
-                current_is_first = true;
             }
+            current_is_first = !current_is_first;
         }
+        let transformed = if current_is_first {
+            &workspace.first
+        } else {
+            &workspace.second
+        };
         let scale = scalar::<T>(1.0 / self.len as f64);
-        for sample in output {
-            *sample = *sample * scale;
+        for (sample, &value) in output.iter_mut().zip(transformed) {
+            *sample = value * scale;
         }
     }
 }
