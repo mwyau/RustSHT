@@ -1772,3 +1772,26 @@ The earlier paired scalar-conversion path advanced and accumulated the Q and U c
 | F1 T511 | Spin-1 GRAD_ONLY synthesis | `58.333/22.257` | `54.891/19.645` | `-5.9%/-11.7%` |
 
 The one-thread result improved in every valid GL/CC/F1 case. Eight-thread changes were smaller, with the F1 GRAD_ONLY series showing substantial process variability; only its median is reported and no precise scaling claim is made. The native harness rejects spin-1 DERIV1, correctly, because DERIV1 is a scalar derivative operation; it was mistakenly included in one screening loop and its panics are excluded. Plan construction and workspace-allocation samples overlapped between baseline and candidate (plan about `0.13–0.17 ms`, workspace about `7.4–8.3 ms`); they do not explain the execution change. On final source, `cargo test -p rustsht --lib spin1_scalar_` passed seven focused tests, including comparison to the general channel recurrence and all-grid scalar-conversion coverage. `cargo test --release -p rustsht --lib m3_spin_t511_all_grids_matches_ducc_and_roundtrips -- --ignored` passed the opt-in T511 GL/CC/F1 spin-1/2 DUCC and roundtrip check with the candidate active. Existing focused adjoint checks are unchanged by this synthesis-only path. The DUCC test emits no aggregate error statistic, so this entry records fixture/test acceptance rather than inventing a measured max error. Keep this result as a bounded f64 spin-1 synthesis optimization; analysis, f32, DERIV1, and spin 2 are unchanged. No FFT code changed.
+
+### Bounded scalar GL Legendre table compared with Torch-harmonics (2026-10-13)
+
+Torch-harmonics PR [#322](https://github.com/NVIDIA/torch-harmonics/pull/322) uses precomputed weights with storage indexed by order, degree, and all latitude rows. Its folded CC/F1 analysis path also stores a complete output tensor and builds it in order/degree blocks; the source sets the basis block to roughly 8 MiB, which bounds construction scratch but not the cached projection. The inspected PR head is `37751d3e90b8f12fe9439c52847f4c5d70d5a627` (base `97f7d2756d2d2d3b974d8ee31ca04e032fdf1d05`). Torch-harmonics was not installed in the benchmark environment, so its execution time was not measured. The Rust experiment stores only `m <= l <= lmax` and the northern half of each GL grid. Latitude is contiguous within each `(m,l)` pair. Synthesis reflects basis values with `(-1)^(l+m)`; analysis applies that parity while summing north and south Fourier samples. It uses the existing order-major worker spectrum and adds no transform-sized workspace. The f64 GL table is limited to `111 <= lmax <= 255`, `mmax >= ceil(3*lmax/4)`, exact GL sampling and at most 34 MiB. f32, spin plans, CC/F1 and larger tables use recurrence. For full triangular support and `ntheta=lmax+1`, the Rust table occupies `8*ceil(ntheta/2)*((lmax+1)*(lmax+2)/2)` bytes. A dense float64 Torch table with the same full dimensions occupies `8*(lmax+1)^3` bytes, or twice that for the vector table. The table payloads below are exact element counts; T360 and above are temporary measurements with the production gate raised and are disabled in the committed implementation.
+
+| Bandlimit | Rust north-triangular table | Torch scalar table | Torch two-row vector table |
+| --- | ---: | ---: | ---: |
+| T72 | 0.762 MiB (not eligible) | 2.97 MiB | 5.93 MiB |
+| T127 | 4.03 MiB | 16 MiB | 32 MiB |
+| T255 | 32.13 MiB | 128 MiB | 256 MiB |
+| T360 | 90.23 MiB (temporary) | 358.9 MiB | 717.9 MiB |
+| T511 | 256.5 MiB (temporary) | 1 GiB | 2 GiB |
+| T720 | 716.87 MiB (temporary) | 2.79 GiB | 5.59 GiB |
+
+The table experiment used `examples/m1b_bench.rs`, f64 full-bandlimit GL transforms, `phi0=0.37`, `nphi=2*lmax+3`, one warm-up and five timed calls per process, reused native plans and workspaces, and one/eight-thread Rayon pools. Three process runs were used for T127/T255 and the temporary T360/T511/T720 screen. Baseline measurements came from commit `7c7e963`; runs were 8 pinned CPU cores on the x86-64 CPU under Linux. Rust was `1.99.0 (b940084d7 2026-09-28)`, LLVM `23.1.1`, release `opt-level=3`, default 16 codegen units, LTO off, runtime AVX2/FMA dispatch and no `target-cpu=native`. Values are median process medians in milliseconds, one/eight threads:
+
+| Bandlimit / plan | Setup | Scalar synthesis recurrence → table | Scalar analysis recurrence → table |
+| --- | ---: | ---: | ---: |
+| T127, production | `0.018 → 2.402 ms` | `1.884/0.542 → 0.962/0.343` | `1.114/0.579 → 0.702/0.347` |
+| T255, production | `0.017 → 33.238 ms` | `13.579/4.018 → 6.574/1.681` | `6.553/2.244 → 5.011/1.565` |
+| T360, temporary | `0.034 → 89.6 ms` | `26.145/6.918 → 16.184/5.132` | `15.558/5.712 → 11.997/5.368` |
+| T511, temporary | `0.035 → 251.2 ms` | `60.979/15.962 → 43.239/12.873` | `36.171/10.142 → 32.731/14.435` |
+| T720, temporary | `0.091 → 678.9 ms` | `153.981/43.642 → 115.706/34.477` | `97.507/27.644 → 89.412/37.918` |
