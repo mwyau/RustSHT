@@ -100,6 +100,32 @@ fn map_inner_product(left: &[f64], right: &[f64]) -> f64 {
     left.iter().zip(right).map(|(x, y)| x * y).sum()
 }
 
+fn relative_l2_real(actual: &[f64], expected: &[f64]) -> f64 {
+    let (difference, reference) = actual.iter().zip(expected).fold(
+        (0.0, 0.0),
+        |(difference, reference), (&actual, &expected)| {
+            (
+                difference + (actual - expected).powi(2),
+                reference + expected.powi(2),
+            )
+        },
+    );
+    (difference / reference.max(1e-300)).sqrt()
+}
+
+fn relative_l2_complex(actual: &[Complex64], expected: &[Complex64]) -> f64 {
+    let (difference, reference) = actual.iter().zip(expected).fold(
+        (0.0, 0.0),
+        |(difference, reference), (&actual, &expected)| {
+            (
+                difference + (actual - expected).norm_sqr(),
+                reference + expected.norm_sqr(),
+            )
+        },
+    );
+    (difference / reference.max(1e-300)).sqrt()
+}
+
 fn harmonic_inner_product(spec: &HarmonicSpec, left: &[Complex64], right: &[Complex64]) -> f64 {
     let mut result = 0.0;
     for m in 0..=spec.mmax() {
@@ -716,6 +742,191 @@ fn t255_mixed_synthesis_matches_ducc_0410_samples() {
     ] {
         assert_close(map[ring * 513 + longitude], reference, 2e-14);
     }
+}
+
+#[test]
+fn precomputed_scalar_gl_matches_recurrence_for_all_four_operators() {
+    for (lmax, mmax, nphi) in [
+        (127, 96, 256),
+        (127, 127, 257),
+        (128, 128, 258),
+        (255, 255, 513),
+    ] {
+        let mut plan = make_plan(lmax, mmax, lmax + 1, nphi, 0.37);
+        let table = plan
+            .scalar_legendre_table
+            .take()
+            .expect("measured GL scalar bandlimits use the bounded table");
+        let mut input_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        for m in 0..=mmax {
+            for l in m..=lmax {
+                let im = if m == 0 {
+                    0.0
+                } else {
+                    ((l * 13 + m * 5) % 23) as f64 - 11.0
+                };
+                input_alm[plan.harmonics().index(l, m).unwrap()] =
+                    Complex64::new(((l * 7 + m * 11) % 19) as f64 * 1e-5, im * 1e-5);
+            }
+        }
+        let input_map = arbitrary_map(&plan);
+        let mut workspace = plan.workspace().unwrap();
+        let mut recurrence_map = vec![0.0; plan.sample_count];
+        let mut recurrence_alm = vec![Complex64::new(0.0, 0.0); input_alm.len()];
+        let mut recurrence_s_adjoint = recurrence_alm.clone();
+        let mut recurrence_a_adjoint = vec![0.0; plan.sample_count];
+
+        plan.synthesis_into(&input_alm, &mut recurrence_map, &mut workspace)
+            .unwrap();
+        plan.analysis_into(&input_map, &mut recurrence_alm, &mut workspace)
+            .unwrap();
+        plan.adjoint_synthesis_into(&input_map, &mut recurrence_s_adjoint, &mut workspace)
+            .unwrap();
+        plan.adjoint_analysis_into(&input_alm, &mut recurrence_a_adjoint, &mut workspace)
+            .unwrap();
+
+        plan.scalar_legendre_table = Some(table);
+        let mut table_map = vec![0.0; plan.sample_count];
+        let mut table_alm = vec![Complex64::new(0.0, 0.0); input_alm.len()];
+        let mut table_s_adjoint = table_alm.clone();
+        let mut table_a_adjoint = vec![0.0; plan.sample_count];
+        plan.synthesis_into(&input_alm, &mut table_map, &mut workspace)
+            .unwrap();
+        plan.analysis_into(&input_map, &mut table_alm, &mut workspace)
+            .unwrap();
+        plan.adjoint_synthesis_into(&input_map, &mut table_s_adjoint, &mut workspace)
+            .unwrap();
+        plan.adjoint_analysis_into(&input_alm, &mut table_a_adjoint, &mut workspace)
+            .unwrap();
+
+        assert!(relative_l2_real(&table_map, &recurrence_map) < 2e-12);
+        assert!(relative_l2_complex(&table_alm, &recurrence_alm) < 2e-12);
+        assert!(relative_l2_complex(&table_s_adjoint, &recurrence_s_adjoint) < 2e-12);
+        assert!(relative_l2_real(&table_a_adjoint, &recurrence_a_adjoint) < 2e-12);
+    }
+}
+
+#[test]
+fn precomputed_scalar_synthesis_applies_asymmetric_mirrored_cutoffs() {
+    let plan = make_plan(127, 127, 128, 257, 0.37);
+    let table = plan
+        .scalar_legendre_table
+        .as_ref()
+        .expect("the T127 GL scalar table is eligible");
+    let north_ring = 20;
+    let south_ring = plan.grid.ntheta() - 1 - north_ring;
+    let m = 64;
+    let l = m + 1;
+    let basis = table.degree_lanes(m, l - m)[north_ring];
+    assert_ne!(basis, 0.0);
+
+    let coefficient = Complex64::new(0.4, -0.7);
+    let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    alm[plan.harmonics().index(l, m).unwrap()] = coefficient;
+    let mut ring_limits = vec![plan.harmonics().lmax(); plan.grid.ntheta()];
+    ring_limits[north_ring] = m - 1;
+    ring_limits[south_ring] = m;
+    let mut order_row = vec![Complex64::new(0.0, 0.0); plan.grid.ntheta()];
+
+    assert!(accumulate_precomputed_synthesis_order(
+        &plan,
+        table,
+        &alm,
+        &ring_limits,
+        m,
+        &mut order_row,
+    ));
+
+    let phase = Complex64::from_polar(1.0, m as f64 * plan.grid.phi0());
+    assert_eq!(order_row[north_ring], Complex64::new(0.0, 0.0));
+    let expected_south = coefficient * (-basis) * phase * plan.grid.nphi() as f64;
+    assert!((order_row[south_ring] - expected_south).norm() < 1e-13);
+}
+
+#[test]
+fn precomputed_scalar_table_is_not_allocated_for_spin_plans() {
+    let grid = GridSpec::new(GridKind::GaussLegendre, 128, 257, 0.37).unwrap();
+    let harmonics = HarmonicSpec::new(127, 127, 1).unwrap();
+    let plan: ShtPlan<f64> = ShtPlan::new(grid, harmonics).unwrap();
+    assert!(plan.scalar_legendre_table.is_none());
+}
+
+#[test]
+fn precomputed_scalar_table_respects_bandlimit_and_grid_bounds() {
+    assert!(
+        make_plan(72, 72, 73, 147, 0.37)
+            .scalar_legendre_table
+            .is_none()
+    );
+    assert!(
+        make_plan(127, 127, 128, 257, 0.37)
+            .scalar_legendre_table
+            .is_some()
+    );
+    assert!(
+        make_plan(255, 255, 256, 513, 0.37)
+            .scalar_legendre_table
+            .is_some()
+    );
+    assert!(
+        make_plan(360, 360, 361, 723, 0.37)
+            .scalar_legendre_table
+            .is_none()
+    );
+    assert!(
+        make_plan(720, 720, 721, 1443, 0.37)
+            .scalar_legendre_table
+            .is_none()
+    );
+
+    let cc_plan = make_cc_plan(127, 127, 129, 257, 0.37);
+    assert!(cc_plan.scalar_legendre_table.is_none());
+    let f1_plan = make_f1_plan(127, 127, 128, 257, 0.37);
+    assert!(f1_plan.scalar_legendre_table.is_none());
+
+    let f32_grid = GridSpec::new(GridKind::GaussLegendre, 128, 257, 0.37).unwrap();
+    let f32_harmonics = HarmonicSpec::scalar(127, 127).unwrap();
+    let f32_plan: ShtPlan<f32> = ShtPlan::new(f32_grid, f32_harmonics).unwrap();
+    assert!(f32_plan.scalar_legendre_table.is_none());
+}
+
+#[test]
+fn precomputed_scalar_table_uses_scaled_recurrence_for_extreme_inputs() {
+    let mut plan = make_plan(255, 255, 256, 513, 0.37);
+    let table = plan
+        .scalar_legendre_table
+        .take()
+        .expect("the bounded T255 GL scalar table is eligible");
+    let mut workspace = plan.workspace().unwrap();
+    let mut input_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    input_alm[plan.harmonics().index(220, 200).unwrap()] = Complex64::new(1.0e300, -2.0e299);
+    let mut recurrence_map = vec![0.0; plan.sample_count];
+    plan.synthesis_into(&input_alm, &mut recurrence_map, &mut workspace)
+        .unwrap();
+
+    plan.scalar_legendre_table = Some(table);
+    let mut fallback_map = vec![0.0; plan.sample_count];
+    plan.synthesis_into(&input_alm, &mut fallback_map, &mut workspace)
+        .unwrap();
+    assert_eq!(fallback_map, recurrence_map);
+
+    let table = plan.scalar_legendre_table.take().unwrap();
+    let ring = plan.grid.ntheta() / 2;
+    let order = 200;
+    let mut input_map = vec![0.0; plan.sample_count];
+    for longitude in 0..plan.grid.nphi() {
+        let phi = plan.grid.longitude(longitude).unwrap();
+        input_map[ring * plan.grid.nphi() + longitude] = 1.0e300 * (order as f64 * phi).cos();
+    }
+    let mut recurrence_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    plan.analysis_into(&input_map, &mut recurrence_alm, &mut workspace)
+        .unwrap();
+
+    plan.scalar_legendre_table = Some(table);
+    let mut fallback_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    plan.analysis_into(&input_map, &mut fallback_alm, &mut workspace)
+        .unwrap();
+    assert_eq!(fallback_alm, recurrence_alm);
 }
 
 #[test]

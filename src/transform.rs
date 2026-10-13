@@ -108,6 +108,54 @@ pub(crate) fn active_ring_weighted_order_midpoint(
     best_mid
 }
 
+fn accumulate_precomputed_synthesis_order<T: ShtScalar>(
+    plan: &ShtPlan<T>,
+    table: &crate::legendre::ScalarLegendreTable<T>,
+    alm: &[Complex<T>],
+    ring_order_limits: &[usize],
+    m: usize,
+    order_row: &mut [Complex<T>],
+) -> bool {
+    let ntheta = order_row.len();
+    let nphi = plan.grid.nphi();
+    let lmax = plan.harmonics.lmax();
+    for degree_offset in 0..=(lmax - m) {
+        let l = m + degree_offset;
+        let coefficient = alm[plan
+            .harmonics
+            .index(l, m)
+            .expect("precomputed scalar order is within the harmonic layout")];
+        if !table.input_is_safe(coefficient.re) || !table.input_is_safe(coefficient.im) {
+            return false;
+        }
+        let parity = if (l + m).is_multiple_of(2) {
+            T::one()
+        } else {
+            -T::one()
+        };
+        for (north_ring, &basis) in table.degree_lanes(m, degree_offset).iter().enumerate() {
+            let south_ring = ntheta - 1 - north_ring;
+            if m <= ring_order_limits[north_ring] {
+                order_row[north_ring] += coefficient * basis;
+            }
+            if south_ring != north_ring && m <= ring_order_limits[south_ring] {
+                order_row[south_ring] += coefficient * (parity * basis);
+            }
+        }
+    }
+
+    let phase = if m == 0 {
+        Complex::new(T::one(), T::zero())
+    } else {
+        longitude_phase::<T>(m, plan.grid.phi0(), false)
+    };
+    let scale = phase * T::from_usize(nphi).expect("longitude count converts");
+    for value in order_row {
+        *value *= scale;
+    }
+    true
+}
+
 #[inline]
 #[expect(
     clippy::too_many_arguments,
@@ -211,6 +259,11 @@ impl<T: ShtScalar> ShtPlan<T> {
             );
         }
         workspace.spectra.fill(Complex::new(T::zero(), T::zero()));
+        if let Some(table) = self.scalar_legendre_table.as_ref()
+            && self.synthesize_scalar_table(alm, map, workspace, table)?
+        {
+            return Ok(());
+        }
         let arch = pulp::Arch::new();
         #[cfg(feature = "parallel")]
         {
@@ -290,6 +343,95 @@ impl<T: ShtScalar> ShtPlan<T> {
             map[output_start..output_start + nphi].copy_from_slice(&workspace.row);
         }
         Ok(())
+    }
+
+    fn synthesize_scalar_table(
+        &self,
+        alm: &[Complex<T>],
+        map: &mut [T],
+        workspace: &mut ShtWorkspace<T>,
+        table: &crate::legendre::ScalarLegendreTable<T>,
+    ) -> Result<bool, ShtError> {
+        let ntheta = self.grid.ntheta();
+        let nphi = self.grid.nphi();
+        let spectrum_len = self.fft.spectrum_len();
+        let mmax = self.harmonics.mmax();
+        let order_count = mmax + 1;
+        let order_spectrum_count =
+            order_count
+                .checked_mul(ntheta)
+                .ok_or(ShtError::IntegerOverflow {
+                    quantity: "precomputed scalar synthesis spectrum count",
+                })?;
+        let order_spectra = &mut workspace.spin_spectra[..order_spectrum_count];
+        order_spectra.fill(Complex::new(T::zero(), T::zero()));
+
+        #[cfg(feature = "parallel")]
+        let all_inputs_safe = if rayon::current_num_threads() > 1 && order_count > 1 {
+            order_spectra
+                .par_chunks_mut(ntheta)
+                .enumerate()
+                .all(|(m, order_row)| {
+                    accumulate_precomputed_synthesis_order(
+                        self,
+                        table,
+                        alm,
+                        &workspace.ring_order_limits[..ntheta],
+                        m,
+                        order_row,
+                    )
+                })
+        } else {
+            order_spectra
+                .chunks_mut(ntheta)
+                .enumerate()
+                .all(|(m, order_row)| {
+                    accumulate_precomputed_synthesis_order(
+                        self,
+                        table,
+                        alm,
+                        &workspace.ring_order_limits[..ntheta],
+                        m,
+                        order_row,
+                    )
+                })
+        };
+        #[cfg(not(feature = "parallel"))]
+        let all_inputs_safe = order_spectra
+            .chunks_mut(ntheta)
+            .enumerate()
+            .all(|(m, order_row)| {
+                accumulate_precomputed_synthesis_order(
+                    self,
+                    table,
+                    alm,
+                    &workspace.ring_order_limits[..ntheta],
+                    m,
+                    order_row,
+                )
+            });
+
+        if !all_inputs_safe {
+            return Ok(false);
+        }
+
+        workspace.spectra.fill(Complex::new(T::zero(), T::zero()));
+        for m in 0..order_count {
+            for ring in 0..ntheta {
+                workspace.spectra[ring * spectrum_len + m] = order_spectra[m * ntheta + ring];
+            }
+        }
+        for ring in 0..ntheta {
+            let spectrum_start = ring * spectrum_len;
+            self.fft.inverse(
+                &workspace.spectra[spectrum_start..spectrum_start + spectrum_len],
+                &mut workspace.row,
+                &mut workspace.fft,
+            )?;
+            let map_start = ring * nphi;
+            map[map_start..map_start + nphi].copy_from_slice(&workspace.row);
+        }
+        Ok(true)
     }
 
     #[expect(
@@ -777,6 +919,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         let ntheta = self.grid.ntheta();
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
+        let scalar_table = self.scalar_legendre_table.as_ref();
+        let mut scalar_table_inputs_safe = true;
         let spectra = &mut workspace.spectra;
         for ring in 0..ntheta {
             let input_start = ring * nphi;
@@ -859,19 +1003,39 @@ impl<T: ShtScalar> ShtPlan<T> {
                 longitude_phase::<T>(m, self.grid.phi0(), true)
             };
             for ring in 0..analysis_ntheta {
-                let mut weighted = analysis_spectra[ring * spectrum_len + m] * phase;
+                let mut weighted = if scalar_table.is_some() && m > ring_order_limits[ring] {
+                    Complex::new(T::zero(), T::zero())
+                } else {
+                    analysis_spectra[ring * spectrum_len + m] * phase
+                };
                 if let Some(ring_weights) = analysis_ring_weights {
                     let weight =
                         T::from_f64(ring_weights[ring]).expect("ring weight is representable");
                     weighted *= weight / longitude_count;
                 }
+                if let Some(table) = scalar_table {
+                    scalar_table_inputs_safe &=
+                        table.input_is_safe(weighted.re) && table.input_is_safe(weighted.im);
+                }
                 order_spectra[m * analysis_ntheta + ring] = weighted;
             }
         }
+        let scalar_table = scalar_table.filter(|_| scalar_table_inputs_safe);
 
         alm.fill(Complex::new(T::zero(), T::zero()));
         let lmax = self.harmonics.lmax();
         let mmax = self.harmonics.mmax();
+        if let Some(table) = scalar_table {
+            self.analyze_scalar_table(order_spectra, alm, table);
+            for l in 0..=lmax {
+                let index = self
+                    .harmonics
+                    .index(l, 0)
+                    .expect("order zero contains every degree");
+                alm[index].im = T::zero();
+            }
+            return Ok(());
+        }
         let arch = pulp::Arch::new();
 
         #[cfg(feature = "parallel")]
@@ -933,6 +1097,110 @@ impl<T: ShtScalar> ShtPlan<T> {
             alm[index].im = T::zero();
         }
         Ok(())
+    }
+
+    fn analyze_scalar_table(
+        &self,
+        order_spectra: &[Complex<T>],
+        alm: &mut [Complex<T>],
+        table: &crate::legendre::ScalarLegendreTable<T>,
+    ) {
+        let order_count = self.harmonics.mmax() + 1;
+        #[cfg(feature = "parallel")]
+        {
+            let workers = rayon::current_num_threads().min(order_count).max(1);
+            self.analyze_scalar_table_groups(order_spectra, table, 0, order_count, alm, workers);
+        }
+        #[cfg(not(feature = "parallel"))]
+        self.analyze_scalar_table_group(order_spectra, table, 0, order_count, alm);
+    }
+
+    #[cfg(feature = "parallel")]
+    fn analyze_scalar_table_groups(
+        &self,
+        order_spectra: &[Complex<T>],
+        table: &crate::legendre::ScalarLegendreTable<T>,
+        m_start: usize,
+        m_end: usize,
+        alm: &mut [Complex<T>],
+        worker_count: usize,
+    ) {
+        if m_end - m_start <= 1 || worker_count <= 1 {
+            self.analyze_scalar_table_group(order_spectra, table, m_start, m_end, alm);
+            return;
+        }
+        let m_mid = weighted_order_midpoint(self.harmonics.lmax(), m_start, m_end);
+        let coefficient_start = self
+            .harmonics
+            .index(m_start, m_start)
+            .expect("every packed order starts at its diagonal degree");
+        let coefficient_mid = self
+            .harmonics
+            .index(m_mid, m_mid)
+            .expect("the end of an order group starts the next order");
+        let (left_alm, right_alm) = alm.split_at_mut(coefficient_mid - coefficient_start);
+        let left_worker_count = worker_count.div_ceil(2);
+        rayon::join(
+            || {
+                self.analyze_scalar_table_groups(
+                    order_spectra,
+                    table,
+                    m_start,
+                    m_mid,
+                    left_alm,
+                    left_worker_count,
+                );
+            },
+            || {
+                self.analyze_scalar_table_groups(
+                    order_spectra,
+                    table,
+                    m_mid,
+                    m_end,
+                    right_alm,
+                    worker_count - left_worker_count,
+                );
+            },
+        );
+    }
+
+    fn analyze_scalar_table_group(
+        &self,
+        order_spectra: &[Complex<T>],
+        table: &crate::legendre::ScalarLegendreTable<T>,
+        m_start: usize,
+        m_end: usize,
+        alm: &mut [Complex<T>],
+    ) {
+        let ntheta = self.grid.ntheta();
+        let lmax = self.harmonics.lmax();
+        let mut coefficient_start = 0;
+        for m in m_start..m_end {
+            let coefficient_count = lmax - m + 1;
+            let coefficients = &mut alm[coefficient_start..coefficient_start + coefficient_count];
+            for (degree_offset, coefficient) in coefficients.iter_mut().enumerate() {
+                let l = m + degree_offset;
+                let parity = if (l + m).is_multiple_of(2) {
+                    T::one()
+                } else {
+                    -T::one()
+                };
+                let mut sum = Complex::new(T::zero(), T::zero());
+                for (north_ring, &basis) in table.degree_lanes(m, degree_offset).iter().enumerate()
+                {
+                    let south_ring = ntheta - 1 - north_ring;
+                    let north = order_spectra[m * ntheta + north_ring];
+                    let south = if south_ring != north_ring {
+                        order_spectra[m * ntheta + south_ring] * parity
+                    } else {
+                        Complex::new(T::zero(), T::zero())
+                    };
+                    sum += (north + south) * basis;
+                }
+                *coefficient = sum;
+            }
+            coefficient_start += coefficient_count;
+        }
     }
 
     #[cfg(feature = "parallel")]
