@@ -2104,4 +2104,40 @@ The accepted 16-ring policy was compared with the prior 64-ring grouping in six 
 
 Every paired eight-thread synthesis comparison favored 16-ring tasks; reductions ranged from `19.7%` to `47.9%`. One-thread ranges overlapped with mixed signs, so no serial change is claimed. Analysis ranges also overlap, and no analysis improvement is claimed. A release Python-plan comparison with `ducc0==0.41.0` (source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`) at eight threads covered scalar and spin-1 STANDARD synthesis/analysis and spin-1 GRAD_ONLY/DERIV1 synthesis on GL/CC/F1 with `phi0=0.37`; maximum relative-L2 error was `1.20e-14`, maximum absolute error was `6.12e-15`. Focused one/eight-thread scalar and spin-1 STANDARD, GRAD_ONLY and DERIV1 synthesis checks passed on all three grids. The full release all-feature suite passed (118 Rust tests and 10 f32 tests; 8 high-bandlimit tests ignored).
 
-The cutoff and scaling data are unchanged by task sizing. The existing spin-1 STANDARD analysis profile reports 100% cutoff-active lane work, no mixed blocks, and no scaled lanes at T63; at T127 it reports 99.8% active work, 48 mixed GL blocks (46 CC/F1), and 10–13% scaled lanes in the paired fast path. Thus T63 has no inactive ring work to compact, while T127 compaction can remove little degree work and the earlier guarded synthesis continuation did not improve whole transforms. Those results are specific to STANDARD analysis and the recorded T127 mixed-block synthesis screen; no new compaction or scaled-to-normal continuation was added for scalar, STANDARD, GRAD_ONLY or DERIV1 paths. No FFT code changed.
+The cutoff and scaling data are unchanged by task sizing. The existing spin-1 STANDARD analysis profile reports 100% cutoff-active lane work, no mixed blocks, and no scaled lanes at T63; at T127 it reports 99.8% active work, 48 mixed GL blocks (46 CC/F1), and 10–13% scaled lanes in the paired fast path. Thus T63 has no inactive ring work to compact, while T127 compaction can remove little degree work and the earlier guarded synthesis continuation did not improve whole transforms. Those results are specific to STANDARD analysis and the recorded T127 mixed-block synthesis screen; no new compaction or scaled-to-normal continuation was added for scalar, STANDARD, GRAD_ONLY or DERIV1 paths. Sol's focused read-only review confirmed that the T63 groups use disjoint worker scratch and spectra, including CC's one-ring tail, and verified the reported 8-thread paired results. No FFT code changed.
+
+### Spin-1 scalar-conversion eligibility below T63 (2026-10-13)
+
+`SPIN1_FAST_MIN_LMAX` is 15 for f64 scalar-conversion synthesis and STANDARD analysis. This enables the existing scalar-conversion path for spin-1 STANDARD, GRAD_ONLY and DERIV1 synthesis at T15, T31 and T47. An eligibility-1 screen found no repeatable T1 improvement and mixed T7 results; those limits use the general recurrence. The threshold does not change f32 dispatch because f32 does not enable paired scalar kernels. At T14, the spin-1 and DERIV1 tests exercise the general-path side of the boundary; at T15, they compare scalar-conversion results against the general recurrence.
+
+The native comparison used `examples/m1b_bench.rs`, full `mmax`, `phi0=0.37`, `nphi=2*lmax+3`, minimum exact-analysis ring counts, and reused f64 plans/workspaces. Each process warmed each operation once and took five timed samples; five alternating process pairs were compared. The one-thread and eight-thread columns show median process medians in milliseconds, before the threshold change at 63 and after lowering it to 15. Runs were pinned to CPUs 0–7 on an AMD Ryzen 9 5950X running Linux `7.0.14-20-pve`, with Rust `1.99.0 (b940084d7 2026-09-28)`, release `opt-level=3`, 16 codegen units, LTO disabled and runtime AVX2/FMA dispatch; `target-cpu=native` was not used. Plan and workspace construction were outside transform timings.
+
+| Bandlimit | Grid | Spin-1 STANDARD synthesis, 1T/8T | Spin-1 GRAD_ONLY synthesis, 1T/8T | DERIV1 synthesis, 1T/8T |
+| --- | --- | ---: | ---: | ---: |
+| T15 | GL | `0.071/0.060 → 0.022/0.025` | `0.071/0.063 → 0.022/0.026` | `0.071/0.072 → 0.024/0.028` |
+| T15 | CC | `0.079/0.065 → 0.046/0.047` | `0.073/0.064 → 0.037/0.045` | `0.063/0.064 → 0.038/0.048` |
+| T15 | F1 | `0.071/0.061 → 0.020/0.029` | `0.069/0.061 → 0.023/0.027` | `0.072/0.073 → 0.024/0.027` |
+| T31 | GL | `0.382/0.380 → 0.069/0.072` | `0.382/0.385 → 0.084/0.085` | `0.382/0.386 → 0.073/0.075` |
+| T31 | CC | `0.396/0.398 → 0.139/0.148` | `0.401/0.403 → 0.138/0.140` | `0.397/0.459 → 0.144/0.147` |
+| T31 | F1 | `0.387/0.385 → 0.085/0.073` | `0.382/0.384 → 0.071/0.073` | `0.385/0.387 → 0.076/0.075` |
+| T47 | GL | `1.233/1.217 → 0.186/0.218` | `1.212/1.201 → 0.192/0.226` | `1.212/1.218 → 0.193/0.202` |
+| T47 | CC | `1.237/1.262 → 0.348/0.349` | `1.282/1.262 → 0.347/0.352` | `1.280/1.286 → 0.362/0.370` |
+| T47 | F1 | `1.204/1.189 → 0.186/0.227` | `1.201/1.203 → 0.188/0.228` | `1.213/1.199 → 0.192/0.198` |
+
+The synthesis reductions across grid and mode cells were 39.7–71.8% at T15, 62.6–81.9% at T31 and 71.7–84.9% at T47 with one thread; with eight threads they were 25.0–63.0%, 57.1–81.4% and 71.2–84.4%, respectively. The T63 controls use the same fast path before and after the threshold change and showed no resolved change. STANDARD analysis also improved at T15/T31/T47:
+
+| Bandlimit | Grid | 1 thread, before → after (ms) | 8 threads, before → after (ms) |
+| --- | --- | ---: | ---: |
+| T15 | GL | `0.053 → 0.025` | `0.027 → 0.019` |
+| T15 | CC | `0.068 → 0.048` | `0.039 → 0.035` |
+| T15 | F1 | `0.082 → 0.058` | `0.044 → 0.033` |
+| T31 | GL | `0.336 → 0.083` | `0.101 → 0.042` |
+| T31 | CC | `0.405 → 0.184` | `0.150 → 0.115` |
+| T31 | F1 | `0.412 → 0.191` | `0.147 → 0.121` |
+| T47 | GL | `1.045 → 0.202` | `0.258 → 0.118` |
+| T47 | CC | `1.277 → 0.452` | `0.381 → 0.270` |
+| T47 | F1 | `1.301 → 0.471` | `0.383 → 0.267` |
+
+Median plan-construction times were `0.004/0.007/0.018 ms` before and after at T15/T31/T47. Eight-thread workspace-allocation medians changed from `0.027/0.028/0.038 ms` to `0.027/0.029/0.039 ms`. The four per-worker complex buffers add 1,088 bytes at T15; the eight-worker workspace adds 8.5 KiB. The transform does not allocate another map or spectrum.
+
+The candidate Python extension matched `ducc0==0.41.0` at source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf` on T15/T31/T47 GL/CC/F1 with `phi0=0.37`. Comparisons covered spin-1 STANDARD synthesis/analysis and both adjoints, E-only and B-only synthesis, GRAD_ONLY synthesis and adjoint, and DERIV1 synthesis and adjoint. Dense coefficients were scaled by `1e-5`; analysis used deterministic finite maps. Every comparison passed `rtol=atol=3e-12`; the largest absolute error was `1.010e-10`, and the maximum normalized L2 error `||actual-reference||₂ / max(||reference||₂, 1)` was `1.788e-14`. The extended fast-versus-general regressions cover T14/T15/T31/T47 for synthesis, STANDARD analysis and adjoint identities, and DERIV1 on all three grids. The T511 all-grid spin check and T1023 sparse-synthesis and exact-analysis DUCC checks passed after the change. The focused read-only Sol review found no numerical or memory blocker; it confirmed the `lmax+1` scalar recurrence row is allocated, `l<spin` coefficients stay excluded, and f32 does not use this path. No FFT code changed.
