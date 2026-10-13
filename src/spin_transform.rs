@@ -1723,6 +1723,30 @@ impl<T: ShtScalar> ShtPlan<T> {
             let mut b_coefficients = b_alm.as_deref_mut().map(|values| {
                 &mut values[coefficient_start..coefficient_start + coefficient_count]
             });
+            let phase = longitude_phase::<T>(m, phi0, true);
+            if recurrence_spin == 1 && fast_range == Some((0, theta_sin.len())) {
+                self.analyze_spin_scalar_fast_order(
+                    q_spectra,
+                    u_spectra,
+                    spectrum_len,
+                    longitude_count,
+                    phase,
+                    ring_weights,
+                    normalize_fourier,
+                    m,
+                    0,
+                    theta_sin.len(),
+                    theta_sin,
+                    theta_cos,
+                    ring_order_limits,
+                    arch,
+                    e_coefficients,
+                    b_coefficients.as_deref_mut(),
+                    recurrence,
+                )?;
+                coefficient_start += coefficient_count;
+                continue;
+            }
             let mut initial = T::fill_spin_factors(
                 recurrence_spin,
                 m,
@@ -1731,7 +1755,6 @@ impl<T: ShtScalar> ShtPlan<T> {
                 &mut recurrence.spin_coefficient_a,
                 &mut recurrence.spin_coefficient_b,
             )?;
-            let phase = longitude_phase::<T>(m, phi0, true);
             if let Some((fast_start, fast_end)) = fast_range {
                 if recurrence_spin == 2 {
                     self.analyze_spin2_scalar_fast_order(
