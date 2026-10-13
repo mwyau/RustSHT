@@ -351,7 +351,7 @@ Single calls and sequential batches of 32 are reported separately.
 
 The R2C input-copy removal improves the 4,096 median by 1.9% for one call
 and 1.6% for batches of 32. At smaller lengths, batch results range from 2.2%
-slower to 0.3% faster. The direct C2R output path is 9.6% slower at length 64
+slower to 0.3% faster. The direct C2R output path is 9.8% slower at length 64
 for a single call and 9.1% slower for batches; at length 4,096 it is 2.1%
 slower for a single call and 0.1% faster for batches. It showed no consistent
 gain, so revision `9b10ef8` restored the previous C2R destination. For R2C,
