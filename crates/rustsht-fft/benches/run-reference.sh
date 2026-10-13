@@ -18,7 +18,7 @@ printf '%s\n' '== Benchmark environment =='
 if [[ -f "${reference_binary%/*}/build-info.txt" ]]; then
     cat "${reference_binary%/*}/build-info.txt"
 else
-    printf 'DUCC revision: %s\n' "$(git -C "${DUCC_SRC:-/tmp/rustsht-fft-ducc}" rev-parse HEAD)"
+    printf 'DUCC revision: %s\n' "$(git -C "${DUCC_SRC:-/tmp/duccfft-ducc}" rev-parse HEAD)"
 fi
 printf 'Rust compiler: %s\n' "$(rustc --version)"
 printf 'Rust benchmark profile: cargo bench release defaults (opt-level=3)\n'

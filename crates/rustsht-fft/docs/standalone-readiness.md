@@ -76,7 +76,8 @@ merge the crate into the RustSHT workspace merely to build or test it.
 The crate is functionally implemented and independently testable, but remains
 performance-incomplete. The M5 report identifies prime real transforms and
 large C2C general-prime passes that are still slower than RustFFT or DUCC on
-some target lengths. The measured Rader implementation is a benchmark-only
-prototype. The package keeps `publish = false`; separate publication should
-wait until those performance gaps and the integration-level SHT results have
-been reviewed.
+some target lengths. A bounded f64 Rader route is now selected for real lengths
+257 and 723, with the former Bluestein/recursive path retained as a numerical
+fallback. The package keeps `publish = false`; separate publication should
+wait until the remaining performance gaps and integration-level SHT results
+have been reviewed.

@@ -2,7 +2,7 @@
 
 The current call sites were inspected in `src/fft.rs`, `src/meridional.rs`,
 `src/grid.rs`, `src/plan.rs`, `src/workspace.rs`, `src/transform.rs`, and
-`src/spin_transform.rs` on the `feat/rustsht_fft` worktree at `8e4a8df`.
+`src/spin_transform.rs` on the `feat/duccfft` worktree at `8e4a8df`.
 
 ## Longitude transforms
 
