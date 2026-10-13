@@ -61,9 +61,8 @@ Rust used 1.99.0 (`b940084d7`, LLVM 23.1.1), Cargo 1.99.0, and the default
 optimized `bench` profile (`-C opt-level=3`, `-C embed-bitcode=no`,
 `-C strip=debuginfo`). No custom `RUSTFLAGS`, LTO, or target CPU setting was
 used. RustFFT was 6.4.1 and used the existing RustSHT-style half-length
-complex real adapter. The direct C++ DUCC timing harness currently uses
-double precision, so this f32 change is compared with RustFFT and its own
-paired baseline; the table does not claim an f32 C++ DUCC timing.
+complex real adapter. The direct C++ DUCC f32 comparisons use separate
+portable and native builds and are reported below.
 
 Each table timing is the median of 84 values (12 process pairs times seven
 samples) in nanoseconds per transform. Raw gain is the median of the paired
@@ -152,3 +151,160 @@ Release disassembly of
 `vmovups`, `vpermpd`, `vaddps`, `vsubps`, `vblendps`, `vmulps`, and shuffle
 instructions. The vector loop has one back-edge branch and no helper calls or
 stack spills. It uses runtime AVX2 dispatch and emits no FMA instructions.
+
+## Direct C++ DUCC comparison
+
+The direct reference uses `pocketfft_r<float>` from DUCC revision
+`c1ed01b8fda69d2a378190f0915f1a19762dddbf`. Its adapter copies the real input
+to a reusable packed buffer, runs the in-place plan, and unpacks the
+nonnegative spectrum. The inverse packs the supplied Hermitian spectrum,
+runs DUCC with scale `1/N`, and copies the real output. Input and output
+arrays, plan, work buffer, and plan scratch are allocated before timing. The
+Rust calls include public validation and caller-owned workspace execution;
+the C++ calls include the adapter copies and packing but do not add a Rust
+wrapper's validation cost.
+
+All three implementations use the same f32-rounded real and spectrum input
+formulas. The C++ input helpers use volatile f32 intermediates to preserve
+Rust's operation rounding when the native compiler enables FMA. The native
+build may still use FMA inside DUCC's transform kernels. The timed calls
+include the real adapter, transform, normalization, and output handling.
+Single calls repeat `max(262144/N, 16)` transforms per sample. The 32-row
+case repeats `max(floor(262144/N/32), 1)` batches and reports nanoseconds per
+row. Inputs and outputs are prepared outside the timer. The C++ adapter
+processes rows serially, matching the Rust convenience batch path.
+
+The portable C++ binary used g++ 15.2.0 with
+`-std=c++20 -O3 -DNDEBUG -pthread` and DUCC's scalar planner
+(`DUCCFFT_DUCC_VECTORIZE=0`). Rust used rustc 1.99.0 and the default optimized
+bench profile without target-CPU flags. That Rust binary still uses runtime
+AVX2 dispatch for the specialized kernel; “portable” describes its build
+target and does not mean scalar execution. The native C++ binary used
+`-std=c++20 -O3 -DNDEBUG -march=native -pthread` and DUCC's vectorized planner
+(`DUCCFFT_DUCC_VECTORIZE=1`). Its Rust counterpart used
+`RUSTFLAGS='-C target-cpu=native'`. The two native binaries target the same
+host ISA through different compilers.
+
+The host was an AMD Ryzen 9 5950X. The direct C++ portable and native Rust/C++
+samples were collected in one interleaved session. Every process was pinned
+to logical CPU 30; there were 12 process samples per length and build, with
+seven timed samples per direction and row count. Build order alternated
+within each length. Portable RustFFT and DUCCFFT values reuse the earlier R25
+campaign, which also had 12 process pairs per length. The portable cross-
+library values therefore come from separate campaigns and are unpaired.
+load averages at the beginning of the comparison session were 3.75/3.93/3.90;
+after the final collection they were 2.48/3.34/3.71. Absolute timings remain
+provisional because CPU interference cannot be ruled out. Each cell below is
+the median of 84 values (12 processes times seven samples). Ratios are
+`DUCCFFT/RustFFT` and `DUCCFFT/direct DUCC`;
+values above 1 mean DUCCFFT took longer.
+
+### Portable builds
+
+Single transforms, microseconds per call:
+
+| N | R2C DUCCFFT / RustFFT / DUCC | Ratios FFT/Rust, FFT/DUCC | C2R DUCCFFT / RustFFT / DUCC | Ratios FFT/Rust, FFT/DUCC |
+|---:|---:|---:|---:|---:|
+| 128 | 0.358 / 0.219 / 0.220 | 1.64×, 1.62× | 0.299 / 0.146 / 0.213 | 2.06×, 1.40× |
+| 256 | 0.609 / 0.436 / 0.452 | 1.40×, 1.35× | 0.575 / 0.290 / 0.454 | 1.98×, 1.27× |
+| 512 | 1.472 / 0.892 / 0.996 | 1.65×, 1.48× | 1.185 / 0.596 / 0.967 | 1.99×, 1.23× |
+| 1,024 | 2.515 / 1.811 / 2.092 | 1.39×, 1.20× | 2.394 / 1.253 / 2.050 | 1.91×, 1.17× |
+| 2,048 | 6.171 / 3.743 / 4.561 | 1.65×, 1.35× | 4.986 / 2.630 / 4.508 | 1.90×, 1.11× |
+| 4,096 | 10.749 / 7.671 / 9.657 | 1.40×, 1.11× | 10.294 / 5.421 / 9.789 | 1.90×, 1.05× |
+
+Batch of 32 independent rows, microseconds per transform:
+
+| N | R2C DUCCFFT / RustFFT / DUCC | Ratios FFT/Rust, FFT/DUCC | C2R DUCCFFT / RustFFT / DUCC | Ratios FFT/Rust, FFT/DUCC |
+|---:|---:|---:|---:|---:|
+| 128 | 0.358 / 0.219 / 0.222 | 1.63×, 1.61× | 0.294 / 0.146 / 0.216 | 2.01×, 1.36× |
+| 256 | 0.607 / 0.439 / 0.453 | 1.38×, 1.34× | 0.579 / 0.293 / 0.450 | 1.98×, 1.29× |
+| 512 | 1.480 / 0.886 / 1.007 | 1.67×, 1.47× | 1.196 / 0.593 / 0.965 | 2.02×, 1.24× |
+| 1,024 | 2.532 / 1.817 / 2.106 | 1.39×, 1.20× | 2.395 / 1.264 / 2.072 | 1.89×, 1.16× |
+| 2,048 | 6.195 / 3.783 / 4.571 | 1.64×, 1.36× | 5.040 / 2.672 / 4.574 | 1.89×, 1.10× |
+| 4,096 | 10.827 / 7.779 / 9.644 | 1.39×, 1.12× | 10.379 / 5.488 / 9.836 | 1.89×, 1.06× |
+
+### Native x86 builds
+
+Single transforms, microseconds per call:
+
+| N | R2C DUCCFFT / RustFFT / DUCC | Ratios FFT/Rust, FFT/DUCC | C2R DUCCFFT / RustFFT / DUCC | Ratios FFT/Rust, FFT/DUCC |
+|---:|---:|---:|---:|---:|
+| 128 | 0.320 / 0.201 / 0.199 | 1.59×, 1.60× | 0.267 / 0.132 / 0.209 | 2.02×, 1.28× |
+| 256 | 0.541 / 0.409 / 0.399 | 1.32×, 1.36× | 0.507 / 0.273 / 0.380 | 1.86×, 1.34× |
+| 512 | 1.286 / 0.836 / 0.877 | 1.54×, 1.47× | 1.036 / 0.585 / 0.766 | 1.77×, 1.35× |
+| 1,024 | 2.207 / 1.722 / 1.843 | 1.28×, 1.20× | 2.081 / 1.188 / 1.778 | 1.75×, 1.17× |
+| 2,048 | 5.410 / 3.554 / 3.710 | 1.52×, 1.46× | 4.468 / 2.525 / 3.593 | 1.77×, 1.24× |
+| 4,096 | 9.432 / 7.304 / 7.748 | 1.29×, 1.22× | 9.384 / 5.251 / 7.376 | 1.79×, 1.27× |
+
+Batch of 32 independent rows, microseconds per transform:
+
+| N | R2C DUCCFFT / RustFFT / DUCC | Ratios FFT/Rust, FFT/DUCC | C2R DUCCFFT / RustFFT / DUCC | Ratios FFT/Rust, FFT/DUCC |
+|---:|---:|---:|---:|---:|
+| 128 | 0.319 / 0.200 / 0.201 | 1.59×, 1.59× | 0.262 / 0.133 / 0.209 | 1.97×, 1.25× |
+| 256 | 0.534 / 0.411 / 0.402 | 1.30×, 1.33× | 0.507 / 0.277 / 0.383 | 1.83×, 1.33× |
+| 512 | 1.298 / 0.822 / 0.884 | 1.58×, 1.47× | 1.045 / 0.584 / 0.772 | 1.79×, 1.35× |
+| 1,024 | 2.206 / 1.727 / 1.869 | 1.28×, 1.18× | 2.156 / 1.203 / 1.816 | 1.79×, 1.19× |
+| 2,048 | 5.427 / 3.612 / 3.707 | 1.50×, 1.46× | 4.527 / 2.557 / 3.624 | 1.77×, 1.25× |
+| 4,096 | 9.545 / 7.410 / 7.683 | 1.29×, 1.24× | 9.447 / 5.343 / 7.469 | 1.77×, 1.26× |
+
+In the native-build measurements, DUCCFFT is about 1.28–1.59× slower than
+RustFFT for R2C and 1.75–2.02× slower for C2R. Direct native DUCC is close to
+native RustFFT for R2C and faster than DUCCFFT at every measured length. The
+f32 inverse AVX2 kernel lowers the C2R time at selected radix-two stages; it
+does not remove the broader real-inverse execution gap.
+
+### Setup and storage
+
+Rust setup entries are medians of 12 process-level medians of 20 plan or
+workspace creations. `RustFFT adapter setup` includes both directional plans,
+the complex transform buffer, FFT scratch, twiddle allocation, and twiddle
+generation. The direct C++ entries are medians of 12 process-level medians of
+20 individually timed operations; destruction occurs after each timed
+interval. DUCC's plan scratch and the adapter's reusable packed-data buffer
+are separate. The Rust workspace bytes are from
+`RealFftWorkspace::scratch_bytes()`.
+
+| N | Build | DUCCFFT plan / workspace (µs) | RustFFT adapter setup (µs) | Direct DUCC plan / scratch allocation / work allocation (µs) | Direct DUCC plan scratch / work bytes | DUCCFFT workspace bytes |
+|---:|---|---:|---:|---:|---:|---:|
+| 128 | Portable | 2.625 / 0.141 | 1.934 | 0.471 / 0.025 / 0.026 | 512 / 512 | 2,064 |
+| 256 | Portable | 5.120 / 0.170 | 3.767 | 0.581 / 0.030 / 0.030 | 1,024 / 1,024 | 3,616 |
+| 512 | Portable | 9.143 / 0.205 | 6.092 | 1.022 / 0.040 / 0.040 | 2,048 / 2,048 | 7,728 |
+| 1,024 | Portable | 18.185 / 0.251 | 12.304 | 1.358 / 0.050 / 0.050 | 4,096 / 4,096 | 13,888 |
+| 2,048 | Portable | 32.632 / 0.351 | 25.674 | 2.445 / 0.080 / 0.080 | 8,192 / 8,192 | 30,288 |
+| 4,096 | Portable | 64.693 / 0.571 | 51.689 | 3.642 / 0.140 / 0.140 | 16,384 / 16,384 | 54,880 |
+| 128 | Native | 2.555 / 0.151 | 1.638 | 0.446 / 0.020 / 0.020 | 512 / 512 | 2,064 |
+| 256 | Native | 4.969 / 0.161 | 3.672 | 0.551 / 0.030 / 0.030 | 1,024 / 1,024 | 3,616 |
+| 512 | Native | 8.101 / 0.186 | 5.926 | 0.872 / 0.040 / 0.040 | 2,048 / 2,048 | 7,728 |
+| 1,024 | Native | 15.990 / 0.240 | 12.093 | 1.418 / 0.110 / 0.050 | 12,768 / 4,096 | 13,888 |
+| 2,048 | Native | 36.584 / 0.361 | 25.323 | 2.215 / 0.196 / 0.080 | 25,056 / 8,192 | 30,288 |
+| 4,096 | Native | 62.784 / 0.571 | 50.239 | 3.537 / 0.391 / 0.140 | 49,632 / 16,384 | 54,880 |
+
+The direct C++ work buffer is one N-float array reused serially across rows;
+output arrays are caller storage and are not counted as scratch. Batch setup
+measurements are retained in the raw records. The native DUCC planner uses
+larger aligned plan scratch for N≥1,024.
+
+The direct DUCC timing records are
+[`m4-f32-ducc-portable-process-samples.csv`](../benches/results/m4-f32-ducc-portable-process-samples.csv)
+and
+[`m4-f32-ducc-native-process-samples.csv`](../benches/results/m4-f32-ducc-native-process-samples.csv).
+The Rust native-target records are
+[`m4-f32-rust-native-process-samples.csv`](../benches/results/m4-f32-rust-native-process-samples.csv).
+Each direct C++ file has 2,016 unique rows; the Rust native file has 2,016.
+The direct C++ binaries were built from source hash
+`501f659379908ad935cd4334e8aa10cce1e5ae9057c0ffdf8d693d0cefcbc919` and have
+SHA-256 `73d0dadf702faf8a01231ac5085398ecf0215bacc9d8d1a679cfa0247816b068`
+(portable) and
+`c4a4e81b4f10c3954c92258a0b4244a0f15a9454aa479965dfdfab4d9d5d858f`
+(native). The Rust native benchmark binary SHA-256 is
+`6526addbc977011cb4ef8b058ba8933821430f296b66d1888eb4f6789a560a1f`.
+The benchmark source SHA-256 is
+`76ea65520ac18ab604087c9011c81f61b5f54b597dbfb3b45ad7cf9320c2b665`; the
+crate lockfile SHA-256 is
+`e61d5628d09dc7c10e54e15cb5f3aeb5dd5c28392b44692ed153784ad8ca21ba`. Raw
+CSV SHA-256 values are `dfe61b3b4b3e9d459fe401ea6175980cf48734e05cbda4f1236685c8922d95e6`
+(portable DUCC),
+`2e8d7af99cea7cd80fc7ee8b71b733180c0478d57b8aa2897f257b18819faed6`
+(native DUCC), and
+`39b29a13e70376a1f3f7a21da689c6e3db4c98ab420443b8f5314ea80ea52f23`
+(native Rust).
