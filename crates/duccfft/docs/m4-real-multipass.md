@@ -137,12 +137,37 @@ No timing sample was retained from the failing version.
 ## Production radix-2/radix-4 path
 
 The scalar production path was added at source revision
-`eb8085bf45c94d85c3ac083d436ca4586dd17b59`. It uses the
-same packed passes as the reviewed prototype for plans containing only radix
-2 and radix 4, while preserving DUCC's conditional complexify selection. It
-uses stage twiddles derived from the plan's root table and two reusable
-caller-owned real buffers. Other factorisations continue through the recursive
-executor.
+`eb8085bf45c94d85c3ac083d436ca4586dd17b59`. It uses packed passes for plans
+containing only radix 2 and radix 4, while preserving DUCC's conditional
+complexify selection. It uses stage twiddles derived from the plan's root
+table and two reusable caller-owned real buffers. Other factorisations
+continue through the recursive executor.
+
+### Radix-3 and radix-5 passes
+
+The production pass plan now also handles factor trees made from radices 2, 3,
+4, and 5. The scalar radix-3 and radix-5 equations follow pinned DUCC's
+`rfftp3` and `rfftp5`, including their odd-`ido` indexing and pass order.
+Odd-length packed spectra keep both components of the final positive-frequency
+bin; only even lengths treat the final bin as real Nyquist. The AVX2 radix-2
+and radix-4 interiors run only when `ido` is even, as required by their vector
+loops; odd `ido` cases use the scalar loops.
+
+Direct f64 DFT tests cover lengths 75, 125, and 225 in both directions. f32
+tests compare the same lengths with f64 DFTs after f32 input rounding. The
+largest relative L2 error was `1.30e-7`, and no output was nonfinite. A
+focused output comparison against DUCC at
+`c1ed01b8fda69d2a378190f0915f1a19762dddbf` gave these maximum componentwise
+absolute errors:
+
+| N | R2C | C2R |
+|---:|---:|---:|
+| 75 | 1.421e-14 | 2.776e-17 |
+| 125 | 4.260e-15 | 2.776e-17 |
+| 225 | 7.105e-15 | 1.583e-17 |
+
+These are correctness results only. Paired execution timings against the prior
+recursive plan, RustFFT, and portable/native DUCC are still pending.
 
 Forward multipass eligibility requires finite inputs with maximum absolute
 sample at most `MAX/(4*N)`. Larger or nonfinite inputs use the existing

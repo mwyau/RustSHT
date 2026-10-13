@@ -3,7 +3,7 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: BSD-3-Clause
 //
-// Scalar real radix-2/radix-4 pass equations and packed layout are adapted
+// Scalar real radix-2/3/4/5 pass equations and packed layout are adapted
 // from DUCC fft1d_impl.h at c1ed01b8fda69d2a378190f0915f1a19762dddbf.
 
 use num_complex::Complex;
@@ -49,7 +49,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         radix4_forward_interior_kernel: Option<RealRadix4ForwardInteriorKernel<T>>,
         radix4_interior_kernel: Option<RealRadix4InteriorKernel<T>>,
     ) -> Result<Option<Self>, FftError> {
-        if len <= 1 || factors.iter().any(|&radix| !matches!(radix, 2 | 4)) {
+        if len <= 1 || factors.iter().any(|&radix| !matches!(radix, 2..=5)) {
             return Ok(None);
         }
 
@@ -61,6 +61,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         for &radix in factors {
             let pass_len = l1.checked_mul(radix).ok_or(FftError::AllocationFailed)?;
             let ido = len / pass_len;
+            debug_assert!(!matches!(radix, 3 | 5) || ido % 2 == 1);
             let twiddle_len = (radix - 1)
                 .checked_mul(ido.saturating_sub(1))
                 .ok_or(FftError::AllocationFailed)?;
@@ -232,7 +233,9 @@ fn execute_forward_pass<T: Float + FromPrimitive>(
     match pass.radix {
         2 => forward_radix2(pass, input, output, radix2_forward_interior_kernel),
         4 => forward_radix4(pass, input, output, radix4_forward_interior_kernel),
-        _ => unreachable!("real multipass plan contains only radix 2 and 4"),
+        3 => forward_radix3(pass, input, output),
+        5 => forward_radix5(pass, input, output),
+        _ => unreachable!("real multipass plan contains only radices 2 through 5"),
     }
 }
 
@@ -246,7 +249,9 @@ fn execute_inverse_pass<T: Float + FromPrimitive>(
     match pass.radix {
         2 => inverse_radix2(pass, input, output, radix2_interior_kernel),
         4 => inverse_radix4(pass, input, output, radix4_interior_kernel),
-        _ => unreachable!("real multipass plan contains only radix 2 and 4"),
+        3 => inverse_radix3(pass, input, output),
+        5 => inverse_radix5(pass, input, output),
+        _ => unreachable!("real multipass plan contains only radices 2 through 5"),
     }
 }
 
@@ -289,6 +294,7 @@ fn forward_radix2<T: Float + FromPrimitive>(
         let output_start = 2 * k * ido;
         let (output0, output1) = output[output_start..output_start + 2 * ido].split_at_mut(ido);
         let scalar_start = if ido >= 16
+            && ido.is_multiple_of(2)
             && let Some(kernel) = radix2_forward_interior_kernel
         {
             // SAFETY: plan construction installs this kernel only after AVX2
@@ -365,6 +371,7 @@ fn inverse_radix2<T: Float + FromPrimitive>(
         let output0 = &mut output0[k * ido..(k + 1) * ido];
         let output1 = &mut output1[k * ido..(k + 1) * ido];
         let scalar_start = if ido >= 16
+            && ido.is_multiple_of(2)
             && let Some(kernel) = radix2_interior_kernel
         {
             // SAFETY: plan construction installs this kernel only after AVX2
@@ -395,6 +402,105 @@ fn inverse_radix2<T: Float + FromPrimitive>(
             output0[i] = x1;
             output1[i] = y_i;
             output1[i - 1] = y_im1;
+        }
+    }
+}
+
+fn forward_radix3<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output: &mut [T]) {
+    let l1 = pass.l1;
+    let ido = pass.ido;
+    let taur = scalar::<T>(-0.5);
+    let taui = scalar::<T>(0.866_025_403_784_438_6);
+
+    for k in 0..l1 {
+        let x0 = input[index(0, k, 0, ido, l1)];
+        let x1 = input[index(0, k, 1, ido, l1)];
+        let x2 = input[index(0, k, 2, ido, l1)];
+        let cr2 = x1 + x2;
+        output[index(0, 0, k, ido, 3)] = x0 + cr2;
+        output[index(0, 2, k, ido, 3)] = taui * (x2 - x1);
+        output[index(ido - 1, 1, k, ido, 3)] = x0 + taur * cr2;
+    }
+    if ido == 1 {
+        return;
+    }
+
+    for k in 0..l1 {
+        for i in (2..ido).step_by(2) {
+            let ic = ido - i;
+            let (dr2, di2) = multiply_pm(
+                twiddle(pass, 1, i - 2),
+                twiddle(pass, 1, i - 1),
+                input[index(i - 1, k, 1, ido, l1)],
+                input[index(i, k, 1, ido, l1)],
+            );
+            let (dr3, di3) = multiply_pm(
+                twiddle(pass, 2, i - 2),
+                twiddle(pass, 2, i - 1),
+                input[index(i - 1, k, 2, ido, l1)],
+                input[index(i, k, 2, ido, l1)],
+            );
+            let (dr2, di2, dr3, di3) = (dr2 + dr3, di2 + di3, di2 - di3, dr3 - dr2);
+            let x0r = input[index(i - 1, k, 0, ido, l1)];
+            let x0i = input[index(i, k, 0, ido, l1)];
+            output[index(i - 1, 0, k, ido, 3)] = x0r + dr2;
+            output[index(i, 0, k, ido, 3)] = x0i + di2;
+            let tr2 = x0r + taur * dr2;
+            let ti2 = x0i + taur * di2;
+            let tr3 = taui * dr3;
+            let ti3 = taui * di3;
+            output[index(i - 1, 2, k, ido, 3)] = tr2 + tr3;
+            output[index(ic - 1, 1, k, ido, 3)] = tr2 - tr3;
+            output[index(i, 2, k, ido, 3)] = ti3 + ti2;
+            output[index(ic, 1, k, ido, 3)] = ti3 - ti2;
+        }
+    }
+}
+
+fn inverse_radix3<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output: &mut [T]) {
+    let l1 = pass.l1;
+    let ido = pass.ido;
+    let two = scalar::<T>(2.0);
+    let taur = scalar::<T>(-0.5);
+    let taui = scalar::<T>(0.866_025_403_784_438_6);
+
+    for k in 0..l1 {
+        let dc = input[index(0, 0, k, ido, 3)];
+        let tr2 = two * input[index(ido - 1, 1, k, ido, 3)];
+        let cr2 = dc + taur * tr2;
+        output[index(0, k, 0, ido, l1)] = dc + tr2;
+        let ci3 = two * taui * input[index(0, 2, k, ido, 3)];
+        output[index(0, k, 2, ido, l1)] = cr2 + ci3;
+        output[index(0, k, 1, ido, l1)] = cr2 - ci3;
+    }
+    if ido == 1 {
+        return;
+    }
+
+    for k in 0..l1 {
+        for i in (2..ido).step_by(2) {
+            let ic = ido - i;
+            let tr2 = input[index(i - 1, 2, k, ido, 3)] + input[index(ic - 1, 1, k, ido, 3)];
+            let ti2 = input[index(i, 2, k, ido, 3)] - input[index(ic, 1, k, ido, 3)];
+            let cr2 = input[index(i - 1, 0, k, ido, 3)] + taur * tr2;
+            let ci2 = input[index(i, 0, k, ido, 3)] + taur * ti2;
+            output[index(i - 1, k, 0, ido, l1)] = input[index(i - 1, 0, k, ido, 3)] + tr2;
+            output[index(i, k, 0, ido, l1)] = input[index(i, 0, k, ido, 3)] + ti2;
+            let cr3 =
+                taui * (input[index(i - 1, 2, k, ido, 3)] - input[index(ic - 1, 1, k, ido, 3)]);
+            let ci3 = taui * (input[index(i, 2, k, ido, 3)] + input[index(ic, 1, k, ido, 3)]);
+            let dr3 = cr2 + ci3;
+            let dr2 = cr2 - ci3;
+            let di2 = ci2 + cr3;
+            let di3 = ci2 - cr3;
+            let (re2, im2) =
+                multiply_pm(twiddle(pass, 1, i - 2), twiddle(pass, 1, i - 1), di2, dr2);
+            let (re3, im3) =
+                multiply_pm(twiddle(pass, 2, i - 2), twiddle(pass, 2, i - 1), di3, dr3);
+            output[index(i - 1, k, 1, ido, l1)] = im2;
+            output[index(i, k, 1, ido, l1)] = re2;
+            output[index(i - 1, k, 2, ido, l1)] = im3;
+            output[index(i, k, 2, ido, l1)] = re3;
         }
     }
 }
@@ -465,6 +571,7 @@ fn forward_radix4<T: Float + FromPrimitive>(
         let (output1, tail) = tail.split_at_mut(ido);
         let (output2, output3) = tail.split_at_mut(ido);
         let scalar_start = if ido >= 16
+            && ido.is_multiple_of(2)
             && let Some(kernel) = radix4_forward_interior_kernel
         {
             // SAFETY: plan construction installs this kernel only after AVX2
@@ -588,6 +695,7 @@ fn inverse_radix4<T: Float + FromPrimitive>(
             continue;
         }
         let scalar_start = if ido >= 16
+            && ido.is_multiple_of(2)
             && let Some(kernel) = radix4_interior_kernel
         {
             // SAFETY: plan construction installs this kernel only after AVX2
@@ -639,11 +747,157 @@ fn inverse_radix4<T: Float + FromPrimitive>(
     }
 }
 
+fn forward_radix5<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output: &mut [T]) {
+    let l1 = pass.l1;
+    let ido = pass.ido;
+    let tr11 = scalar::<T>(0.309_016_994_374_947_45);
+    let ti11 = scalar::<T>(0.951_056_516_295_153_5);
+    let tr12 = scalar::<T>(-0.809_016_994_374_947_5);
+    let ti12 = scalar::<T>(0.587_785_252_292_473_1);
+
+    for k in 0..l1 {
+        let x0 = input[index(0, k, 0, ido, l1)];
+        let x1 = input[index(0, k, 1, ido, l1)];
+        let x2 = input[index(0, k, 2, ido, l1)];
+        let x3 = input[index(0, k, 3, ido, l1)];
+        let x4 = input[index(0, k, 4, ido, l1)];
+        let (cr2, ci5) = (x4 + x1, x4 - x1);
+        let (cr3, ci4) = (x3 + x2, x3 - x2);
+        output[index(0, 0, k, ido, 5)] = x0 + cr2 + cr3;
+        output[index(ido - 1, 1, k, ido, 5)] = x0 + tr11 * cr2 + tr12 * cr3;
+        output[index(0, 2, k, ido, 5)] = ti11 * ci5 + ti12 * ci4;
+        output[index(ido - 1, 3, k, ido, 5)] = x0 + tr12 * cr2 + tr11 * cr3;
+        output[index(0, 4, k, ido, 5)] = ti12 * ci5 - ti11 * ci4;
+    }
+    if ido == 1 {
+        return;
+    }
+
+    for k in 0..l1 {
+        for i in (2..ido).step_by(2) {
+            let ic = ido - i;
+            let (dr2, di2) = multiply_pm(
+                twiddle(pass, 1, i - 2),
+                twiddle(pass, 1, i - 1),
+                input[index(i - 1, k, 1, ido, l1)],
+                input[index(i, k, 1, ido, l1)],
+            );
+            let (dr3, di3) = multiply_pm(
+                twiddle(pass, 2, i - 2),
+                twiddle(pass, 2, i - 1),
+                input[index(i - 1, k, 2, ido, l1)],
+                input[index(i, k, 2, ido, l1)],
+            );
+            let (dr4, di4) = multiply_pm(
+                twiddle(pass, 3, i - 2),
+                twiddle(pass, 3, i - 1),
+                input[index(i - 1, k, 3, ido, l1)],
+                input[index(i, k, 3, ido, l1)],
+            );
+            let (dr5, di5) = multiply_pm(
+                twiddle(pass, 4, i - 2),
+                twiddle(pass, 4, i - 1),
+                input[index(i - 1, k, 4, ido, l1)],
+                input[index(i, k, 4, ido, l1)],
+            );
+            let (dr2, di2, dr5, di5) = (dr2 + dr5, di2 + di5, di2 - di5, dr5 - dr2);
+            let (dr3, di3, dr4, di4) = (dr3 + dr4, di3 + di4, di3 - di4, dr4 - dr3);
+            let x0r = input[index(i - 1, k, 0, ido, l1)];
+            let x0i = input[index(i, k, 0, ido, l1)];
+            output[index(i - 1, 0, k, ido, 5)] = x0r + dr2 + dr3;
+            output[index(i, 0, k, ido, 5)] = x0i + di2 + di3;
+            let tr2 = x0r + tr11 * dr2 + tr12 * dr3;
+            let ti2 = x0i + tr11 * di2 + tr12 * di3;
+            let tr3 = x0r + tr12 * dr2 + tr11 * dr3;
+            let ti3 = x0i + tr12 * di2 + tr11 * di3;
+            let tr5 = ti11 * dr5 + ti12 * dr4;
+            let ti5 = ti11 * di5 + ti12 * di4;
+            let tr4 = ti12 * dr5 - ti11 * dr4;
+            let ti4 = ti12 * di5 - ti11 * di4;
+            output[index(i - 1, 2, k, ido, 5)] = tr2 + tr5;
+            output[index(ic - 1, 1, k, ido, 5)] = tr2 - tr5;
+            output[index(i, 2, k, ido, 5)] = ti5 + ti2;
+            output[index(ic, 1, k, ido, 5)] = ti5 - ti2;
+            output[index(i - 1, 4, k, ido, 5)] = tr3 + tr4;
+            output[index(ic - 1, 3, k, ido, 5)] = tr3 - tr4;
+            output[index(i, 4, k, ido, 5)] = ti4 + ti3;
+            output[index(ic, 3, k, ido, 5)] = ti4 - ti3;
+        }
+    }
+}
+
+fn inverse_radix5<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output: &mut [T]) {
+    let l1 = pass.l1;
+    let ido = pass.ido;
+    let two = scalar::<T>(2.0);
+    let tr11 = scalar::<T>(0.309_016_994_374_947_45);
+    let ti11 = scalar::<T>(0.951_056_516_295_153_5);
+    let tr12 = scalar::<T>(-0.809_016_994_374_947_5);
+    let ti12 = scalar::<T>(0.587_785_252_292_473_1);
+
+    for k in 0..l1 {
+        let dc = input[index(0, 0, k, ido, 5)];
+        let ti5 = two * input[index(0, 2, k, ido, 5)];
+        let ti4 = two * input[index(0, 4, k, ido, 5)];
+        let tr2 = two * input[index(ido - 1, 1, k, ido, 5)];
+        let tr3 = two * input[index(ido - 1, 3, k, ido, 5)];
+        output[index(0, k, 0, ido, l1)] = dc + tr2 + tr3;
+        let cr2 = dc + tr11 * tr2 + tr12 * tr3;
+        let cr3 = dc + tr12 * tr2 + tr11 * tr3;
+        let (ci5, ci4) = multiply_pm(ti5, ti4, ti11, ti12);
+        output[index(0, k, 4, ido, l1)] = cr2 + ci5;
+        output[index(0, k, 1, ido, l1)] = cr2 - ci5;
+        output[index(0, k, 3, ido, l1)] = cr3 + ci4;
+        output[index(0, k, 2, ido, l1)] = cr3 - ci4;
+    }
+    if ido == 1 {
+        return;
+    }
+
+    for k in 0..l1 {
+        for i in (2..ido).step_by(2) {
+            let ic = ido - i;
+            let tr2 = input[index(i - 1, 2, k, ido, 5)] + input[index(ic - 1, 1, k, ido, 5)];
+            let tr5 = input[index(i - 1, 2, k, ido, 5)] - input[index(ic - 1, 1, k, ido, 5)];
+            let ti5 = input[index(i, 2, k, ido, 5)] + input[index(ic, 1, k, ido, 5)];
+            let ti2 = input[index(i, 2, k, ido, 5)] - input[index(ic, 1, k, ido, 5)];
+            let tr3 = input[index(i - 1, 4, k, ido, 5)] + input[index(ic - 1, 3, k, ido, 5)];
+            let tr4 = input[index(i - 1, 4, k, ido, 5)] - input[index(ic - 1, 3, k, ido, 5)];
+            let ti4 = input[index(i, 4, k, ido, 5)] + input[index(ic, 3, k, ido, 5)];
+            let ti3 = input[index(i, 4, k, ido, 5)] - input[index(ic, 3, k, ido, 5)];
+            let x0r = input[index(i - 1, 0, k, ido, 5)];
+            let x0i = input[index(i, 0, k, ido, 5)];
+            output[index(i - 1, k, 0, ido, l1)] = x0r + tr2 + tr3;
+            output[index(i, k, 0, ido, l1)] = x0i + ti2 + ti3;
+            let cr2 = x0r + tr11 * tr2 + tr12 * tr3;
+            let ci2 = x0i + tr11 * ti2 + tr12 * ti3;
+            let cr3 = x0r + tr12 * tr2 + tr11 * tr3;
+            let ci3 = x0i + tr12 * ti2 + tr11 * ti3;
+            let (cr5, cr4) = multiply_pm(tr5, tr4, ti11, ti12);
+            let (ci5, ci4) = multiply_pm(ti5, ti4, ti11, ti12);
+            let (dr4, dr3) = (cr3 + ci4, cr3 - ci4);
+            let (di3, di4) = (ci3 + cr4, ci3 - cr4);
+            let (dr5, dr2) = (cr2 + ci5, cr2 - ci5);
+            let (di2, di5) = (ci2 + cr5, ci2 - cr5);
+            for (branch, dr, di) in [(1, dr2, di2), (2, dr3, di3), (3, dr4, di4), (4, dr5, di5)] {
+                let (imag, real) = multiply_pm(
+                    twiddle(pass, branch, i - 2),
+                    twiddle(pass, branch, i - 1),
+                    di,
+                    dr,
+                );
+                output[index(i - 1, k, branch, ido, l1)] = real;
+                output[index(i, k, branch, ido, l1)] = imag;
+            }
+        }
+    }
+}
+
 fn unpack_spectrum<T: Float>(packed: &[T], spectrum: &mut [Complex<T>]) {
     let len = packed.len();
     spectrum[0] = Complex::new(packed[0], T::zero());
     for k in 1..=len / 2 {
-        if k == len / 2 {
+        if len.is_multiple_of(2) && k == len / 2 {
             spectrum[k] = Complex::new(packed[len - 1], T::zero());
         } else {
             spectrum[k] = Complex::new(packed[2 * k - 1], packed[2 * k]);
@@ -654,11 +908,11 @@ fn unpack_spectrum<T: Float>(packed: &[T], spectrum: &mut [Complex<T>]) {
 fn pack_spectrum<T: Float>(spectrum: &[Complex<T>], packed: &mut [T]) {
     let len = packed.len();
     debug_assert_eq!(spectrum.len(), len / 2 + 1);
-    // DC, every interior real/imaginary pair, and Nyquist cover the full
-    // packed buffer for the even lengths accepted by this executor.
+    // DC, each positive-frequency real/imaginary pair, and (for even lengths)
+    // the real Nyquist bin cover the full packed buffer.
     packed[0] = spectrum[0].re;
     for (k, &value) in spectrum.iter().enumerate().skip(1) {
-        if k == len / 2 {
+        if len.is_multiple_of(2) && k == len / 2 {
             packed[len - 1] = value.re;
         } else {
             packed[2 * k - 1] = value.re;

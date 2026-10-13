@@ -991,6 +991,24 @@ fn main() {
     match args.next().as_deref() {
         Some("dump-all") => dump_all(),
         Some("dump-native-all") => dump_native_all(),
+        Some("dump-native") => {
+            let mode = Mode::parse(&args.next().expect("mode is required"));
+            let n = args.next().expect("length is required").parse().unwrap();
+            let values = match mode {
+                Mode::ComplexForward | Mode::ComplexInverse => native_complex_output(mode, n),
+                Mode::RealForward | Mode::RealInverse => native_real_output(mode, n),
+            };
+            for (index, value) in values.iter().enumerate() {
+                println!(
+                    "{},{},{},{:.17e},{:.17e}",
+                    mode.name(),
+                    n,
+                    index,
+                    value.re,
+                    value.im
+                );
+            }
+        }
         Some("dump") => {
             let mode = Mode::parse(&args.next().expect("mode is required"));
             let n = args.next().expect("length is required").parse().unwrap();
@@ -1140,7 +1158,7 @@ fn main() {
         }
         _ => {
             eprintln!(
-                "usage: rustfft-bench dump-all | dump-native-all | dump MODE N | bench [N ...] | bench-scalar [N ...] | bench-sht | bench-real-multipass [N ...] | bench-native [N ...] | bench-native-real N [BATCH ...] | bench-native-batch-api N [BATCH ...] | bench-profile-real-inverse N normal|high [ITERATIONS]"
+                "usage: rustfft-bench dump-all | dump-native-all | dump MODE N | dump-native MODE N | bench [N ...] | bench-scalar [N ...] | bench-sht | bench-real-multipass [N ...] | bench-native [N ...] | bench-native-real N [BATCH ...] | bench-native-batch-api N [BATCH ...] | bench-profile-real-inverse N normal|high [ITERATIONS]"
             );
             eprintln!("no benchmark was run; use `bench` to start the workload");
         }
