@@ -182,6 +182,34 @@ fn f64_real_transforms_match_independent_dfts_for_lengths_one_through_sixty_four
 }
 
 #[test]
+fn f64_real_radix2_inverse_pass_matches_independent_dfts() {
+    for n in [128, 512, 2048] {
+        let plan = RealFftPlan::<f64>::new(n).unwrap();
+        let mut workspace = plan.workspace().unwrap();
+        let input: Vec<_> = (0..n).map(|index| real_signal(index + 19, n + 5)).collect();
+        let expected_spectrum = direct_r2c_f64(&input);
+        let mut actual_spectrum = vec![Complex::new(0.0, 0.0); plan.spectrum_len()];
+        plan.forward(&input, &mut actual_spectrum, &mut workspace)
+            .unwrap();
+        assert_complex_f64_close(&actual_spectrum, &expected_spectrum, n);
+
+        let independent_spectrum: Vec<_> = (0..plan.spectrum_len())
+            .map(|index| {
+                Complex::new(
+                    real_signal(index + 31, n + 7),
+                    real_signal(index + 13, n + 11) * 0.2,
+                )
+            })
+            .collect();
+        let expected_samples = direct_c2r_f64(&independent_spectrum, n);
+        let mut actual_samples = vec![0.0; n];
+        plan.inverse(&independent_spectrum, &mut actual_samples, &mut workspace)
+            .unwrap();
+        assert_f64_close(&actual_samples, &expected_samples, n);
+    }
+}
+
+#[test]
 fn f32_real_transforms_match_independent_dfts_for_lengths_one_through_sixty_four() {
     for n in 1..=64 {
         let plan = RealFftPlan::<f32>::new(n).unwrap();
