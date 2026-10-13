@@ -250,6 +250,34 @@ fn f64_large_smooth_multipass_matches_independent_dfts() {
 }
 
 #[test]
+fn f64_4096_smooth_transform_matches_rustfft_forward_and_inverse() {
+    use rustfft::FftPlanner;
+
+    let n = 4096;
+    let input = random_signal_f64(n, 0x71d3_9a4c_2e85_b60f);
+    let mut expected_forward = input.clone();
+    FftPlanner::<f64>::new()
+        .plan_fft_forward(n)
+        .process(&mut expected_forward);
+
+    let plan = ComplexFftPlan::<f64>::new(n).unwrap();
+    let mut workspace = plan.workspace().unwrap();
+    let mut actual_forward = input;
+    plan.forward(&mut actual_forward, &mut workspace).unwrap();
+    assert_f64_close(&actual_forward, &expected_forward, n);
+
+    let spectrum = random_signal_f64(n, 0x2c8f_4e17_a563_d901);
+    let mut expected_inverse = spectrum.clone();
+    FftPlanner::<f64>::new()
+        .plan_fft_inverse(n)
+        .process(&mut expected_inverse);
+    let expected_inverse = normalized_direct_inverse(expected_inverse, 1.0 / n as f64);
+    let mut actual_inverse = spectrum;
+    plan.inverse(&mut actual_inverse, &mut workspace).unwrap();
+    assert_f64_close(&actual_inverse, &expected_inverse, n);
+}
+
+#[test]
 fn fixed_radices_match_analytic_impulses_constants_and_fourier_modes() {
     for n in [7, 8, 11, 16] {
         let plan = ComplexFftPlan::<f64>::new(n).unwrap();
@@ -505,6 +533,31 @@ fn normalized_inverse_handles_maximum_finite_constant_spectra() {
     );
     assert_eq!(values[0], Complex::new(f32::MAX, 0.0));
     assert_eq!(values[1], Complex::new(0.0, 0.0));
+}
+
+#[test]
+fn normalized_inverse_large_finite_spectrum_keeps_scalar_residual_fallback() {
+    let n = 4096;
+    let plan = ComplexFftPlan::<f64>::new(n).unwrap();
+    let mut workspace = plan.workspace().unwrap();
+    let mut spectrum = vec![Complex::new(0.0, 0.0); n];
+    spectrum[0] = Complex::new(f64::MAX, 0.0);
+
+    plan.inverse(&mut spectrum, &mut workspace).unwrap();
+
+    let expected = f64::MAX / n as f64;
+    for (index, value) in spectrum.iter().enumerate() {
+        assert!(
+            value.re.is_finite() && value.im.is_finite(),
+            "index={index}"
+        );
+        assert!(
+            (value.re - expected).abs() <= 2.0e-12 * expected,
+            "index={index}, actual={}, expected={expected}",
+            value.re
+        );
+        assert!(value.im.abs() <= 2.0e-12 * expected, "index={index}");
+    }
 }
 
 #[test]

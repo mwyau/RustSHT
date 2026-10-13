@@ -16,6 +16,12 @@ pub(crate) type RealRadix2ForwardInteriorKernel<T> =
     unsafe fn([&[T]; 2], [&mut [T]; 2], usize, &[T]) -> usize;
 pub(crate) type RealRadix4ForwardInteriorKernel<T> =
     unsafe fn([&[T]; 4], [&mut [T]; 4], usize, &[T]) -> usize;
+/// A fixed-radix AVX2 complex pass function pointer.
+///
+/// The ordinary pass pointer follows `avx2_pass`'s vector-width contract. A
+/// low-`ido` pointer returned separately may use its own narrower contract.
+pub(crate) type ComplexPassKernel<T> =
+    unsafe fn(&[Complex<T>], &mut [Complex<T>], &SimdPass<'_, T>);
 
 pub(crate) struct SimdPass<'a, T> {
     pub(crate) radix: usize,
@@ -31,6 +37,17 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
     const AVX2_COMPLEX_LANES: usize;
 
     fn avx2_available() -> bool;
+
+    /// Returns the f64 radix-eight pass kernel for `ido == 1`, if supported.
+    ///
+    /// A returned pointer may be called only after runtime AVX2 detection and
+    /// when `radix == 8`, `ido == 1`, and `l1 >= 2` is even. Its input and
+    /// output must be disjoint and each contain at least `8 * l1` complex
+    /// values. This contract is separate from the ordinary pass kernel's
+    /// vector-width divisibility requirement.
+    fn avx2_ido1_radix8_pass_kernel() -> Option<ComplexPassKernel<Self>> {
+        None
+    }
 
     /// Returns the inverse radix-four interior kernel when AVX2 is available.
     fn real_radix4_interior_kernel() -> Option<RealRadix4InteriorKernel<Self>> {
@@ -80,7 +97,7 @@ mod x86 {
     use std::sync::OnceLock;
 
     use super::{
-        Complex, RealRadix2ForwardInteriorKernel, RealRadix2InteriorKernel,
+        Complex, ComplexPassKernel, RealRadix2ForwardInteriorKernel, RealRadix2InteriorKernel,
         RealRadix4ForwardInteriorKernel, RealRadix4InteriorKernel, SimdPass, SimdScalar,
     };
 
@@ -95,6 +112,10 @@ mod x86 {
 
         fn avx2_available() -> bool {
             available()
+        }
+
+        fn avx2_ido1_radix8_pass_kernel() -> Option<ComplexPassKernel<Self>> {
+            Some(f64_kernel::pass_ido1_radix8)
         }
 
         fn real_radix4_interior_kernel() -> Option<RealRadix4InteriorKernel<Self>> {
@@ -406,6 +427,53 @@ mod x86 {
                 4 => unsafe { pass_fixed::<4>(input, output, pass) },
                 8 => unsafe { pass_fixed::<8>(input, output, pass) },
                 _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
+            }
+        }
+
+        /// # Safety
+        ///
+        /// The caller must have detected AVX2 and provide a disjoint
+        /// radix-eight pass with `ido == 1`, even `l1 >= 2`, and slices of at
+        /// least `8 * l1` complex elements.
+        #[target_feature(enable = "avx2")]
+        pub(super) unsafe fn pass_ido1_radix8(
+            input: &[Complex<f64>],
+            output: &mut [Complex<f64>],
+            pass: &SimdPass<'_, f64>,
+        ) {
+            debug_assert_eq!(pass.radix, 8);
+            debug_assert_eq!(pass.ido, 1);
+            debug_assert!(pass.l1 >= 2 && pass.l1.is_multiple_of(2));
+            debug_assert!(input.len() >= 8 * pass.l1);
+            debug_assert!(output.len() >= 8 * pass.l1);
+
+            let input_ptr = input.as_ptr();
+            let output_ptr = output.as_mut_ptr();
+            let scale = _mm256_set1_pd(if pass.inverse {
+                pass.inverse_scale
+            } else {
+                1.0
+            });
+            for outer in (0..pass.l1).step_by(2) {
+                let first_base = 8 * outer;
+                let second_base = first_base + 8;
+                let mut values = [_mm256_setzero_pd(); 8];
+                for pair in 0..4 {
+                    let first = unsafe { load(input_ptr, first_base + 2 * pair) };
+                    let second = unsafe { load(input_ptr, second_base + 2 * pair) };
+                    values[2 * pair] = _mm256_permute2f128_pd::<0x20>(first, second);
+                    values[2 * pair + 1] = _mm256_permute2f128_pd::<0x31>(first, second);
+                }
+
+                let transformed = unsafe { radix8(&values, pass.inverse) };
+                for (branch, &result) in transformed.iter().enumerate() {
+                    let value = if pass.inverse {
+                        _mm256_mul_pd(result, scale)
+                    } else {
+                        result
+                    };
+                    unsafe { store(output_ptr, branch * pass.l1 + outer, value) };
+                }
             }
         }
 
@@ -1465,6 +1533,58 @@ mod tests {
                                 ),
                             );
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn f64_ido1_radix8_pass_matches_scalar_equations() {
+        let Some(kernel) = <f64 as SimdScalar>::avx2_ido1_radix8_pass_kernel() else {
+            return;
+        };
+        if !<f64 as SimdScalar>::avx2_available() {
+            return;
+        }
+
+        for l1 in [2, 8] {
+            let radix = 8;
+            let len = radix * l1;
+            let input: Vec<_> = (0..len).map(signal).collect();
+            for inverse in [false, true] {
+                let inverse_scale = if inverse { 1.0 / len as f64 } else { 1.0 };
+                let twiddles = vec![Complex::new(1.0, 0.0); radix];
+                let pass = SimdPass {
+                    radix,
+                    l1,
+                    ido: 1,
+                    twiddles: &twiddles,
+                    inverse,
+                    inverse_scale,
+                };
+                let mut actual = vec![Complex::new(f64::NAN, f64::NAN); len];
+                // SAFETY: the kernel is returned only for x86 AVX2 builds,
+                // runtime support is checked above, and the disjoint slices
+                // have the dimensions required for this pass.
+                unsafe { kernel(&input, &mut actual, &pass) };
+
+                for outer in 0..l1 {
+                    for frequency in 0..radix {
+                        let mut expected = Complex::new(0.0, 0.0);
+                        for branch in 0..radix {
+                            expected += input[branch + radix * outer]
+                                * root(branch * frequency * l1, len, inverse);
+                        }
+                        expected *= inverse_scale;
+                        let output_index = outer + l1 * frequency;
+                        assert_close(
+                            actual[output_index],
+                            expected,
+                            &format!(
+                                "l1 {l1}, inverse {inverse}, outer {outer}, frequency {frequency}"
+                            ),
+                        );
                     }
                 }
             }

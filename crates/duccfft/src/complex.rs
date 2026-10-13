@@ -14,7 +14,7 @@ use std::fmt;
 use num_complex::Complex;
 use num_traits::{Float, FromPrimitive};
 
-use crate::simd::{SimdPass, SimdScalar};
+use crate::simd::{ComplexPassKernel, SimdPass, SimdScalar};
 
 /// Errors returned by FFT plan construction and execution.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -127,13 +127,12 @@ struct PassExecution<'a, T> {
 }
 
 type FirstPassKernel<T> = unsafe fn(&mut [Complex<T>], &SimdPass<'_, T>);
-type PassKernel<T> = unsafe fn(&[Complex<T>], &mut [Complex<T>], &SimdPass<'_, T>);
-
 #[derive(Clone, Copy)]
 struct SimdKernels<T> {
     complex_lanes: usize,
     first_pass: FirstPassKernel<T>,
-    pass: PassKernel<T>,
+    pass: ComplexPassKernel<T>,
+    ido1_radix8_pass: Option<ComplexPassKernel<T>>,
 }
 
 /// Mutable scratch for repeated execution of a [`ComplexFftPlan`].
@@ -321,6 +320,7 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
             complex_lanes: T::AVX2_COMPLEX_LANES,
             first_pass: T::avx2_first_pass,
             pass: T::avx2_pass,
+            ido1_radix8_pass: T::avx2_ido1_radix8_pass_kernel(),
         });
         self.execute_with_simd_unchecked(values, workspace, direction, T::one(), kernels);
     }
@@ -1048,21 +1048,46 @@ fn execute_direct_radix_pass<const R: usize, T: Float + FromPrimitive>(
     let inverse = execution.direction == Direction::Inverse;
     if let Some(kernels) = execution.simd
         && (!inverse || execution.defer_inverse_normalization)
+        && pass.radix == 8
+        && pass.ido == 1
+        && pass.l1 >= 2
+        && pass.l1.is_multiple_of(2)
+        && let Some(kernel) = kernels.ido1_radix8_pass
+    {
+        let simd_pass = SimdPass {
+            radix: pass.radix,
+            l1: pass.l1,
+            ido: pass.ido,
+            twiddles: &pass.twiddles,
+            inverse,
+            inverse_scale: if inverse {
+                execution.inverse_output_scale
+            } else {
+                T::one()
+            },
+        };
+        // SAFETY: runtime dispatch checked AVX2; this alternate kernel is
+        // selected only for radix eight, ido one, even l1, and disjoint
+        // plan-owned input/output buffers.
+        unsafe { kernel(input, output, &simd_pass) };
+        return;
+    }
+    if let Some(kernels) = execution.simd
+        && (!inverse || execution.defer_inverse_normalization)
         && pass.ido >= kernels.complex_lanes
         && pass.ido.is_multiple_of(kernels.complex_lanes)
     {
-        let inverse_scale = if inverse {
-            execution.inverse_output_scale
-        } else {
-            T::one()
-        };
         let simd_pass = SimdPass {
             radix,
             l1: pass.l1,
             ido: pass.ido,
             twiddles: &pass.twiddles,
             inverse,
-            inverse_scale,
+            inverse_scale: if inverse {
+                execution.inverse_output_scale
+            } else {
+                T::one()
+            },
         };
         // SAFETY: plan construction validates pass dimensions, runtime
         // dispatch checked AVX2, and the kernel width divides `ido`.
