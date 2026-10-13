@@ -113,7 +113,7 @@ include real packing or unpacking.
 The candidate C2R/RustFFT ratios, using medians of paired timing ratios, were
 2.05, 1.99, and 1.90 for single transforms at lengths 128, 512, and 2,048.
 For batches of 32 they were 2.01, 2.02, and 1.89. Candidate R2C ratios were
-1.64–1.66 for single transforms and 1.63–1.67 for batches at those lengths.
+1.64–1.65 for single transforms and 1.63–1.67 for batches at those lengths.
 The kernel reduces the inverse gap but does not remove it.
 
 Each process timed 20 plan constructions and 20 workspace allocations. The
@@ -142,7 +142,8 @@ sample order, repeat count, and checksums.
 The Legendre workload shared the host. Load averages at the end of collection
 were 3.02, 3.27, and 3.43 for one, five, and fifteen minutes, so the absolute
 times remain provisional. The paired controls support retaining
-this kernel at 128, 512, and 2,048. Review R25 is pending.
+this kernel at 128, 512, and 2,048. Review R25 found no remaining numerical,
+safety, bounds, or measurement issue after the ratio correction.
 
 ## Generated code
 
