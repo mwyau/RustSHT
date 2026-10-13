@@ -77,6 +77,8 @@ The compact Rust table was compared with Rust's recurrence kernels, not with Tor
 
 A memory-bounded blocked Rust transform could generate a basis tile, contract it into the output, and discard the tile. That would cap resident basis storage, but it would either regenerate basis values for each transform or require a bounded tile cache. No timing here shows that this would outperform the recurrence kernel or Torch-harmonics' full contraction on its target GPU. The existing compact table already tests the persistent-table option at small GL bands. No second dense or blocked precomputation path was added. The CC/F1 folded projection is a different analysis operator from a GL basis table; Rust continues to use its exact resampling and recurrence path.
 
+These results do not justify another table implementation. The current Rust table already tests triangular storage, north/south symmetry, contiguous latitude rows, bounded plan memory and setup amortization against the recurrence implementation. It improves repeated scalar GL transforms through T255 under a 34 MiB cap. Larger tables consume increasing memory and lose analysis throughput at eight threads. Torch-harmonics' blocked construction limits temporary basis storage but still materializes its full final projection. A streamed CPU tile could lower resident memory further, but it would recompute basis values or need a cache; neither option has measured an end-to-end advantage over recurrence or the existing compact table. The available machine did not have PyTorch installed, so this comparison establishes storage and Rust-side crossover behavior, not Torch GPU execution speed.
+
 ## Native recurrence and table results
 
 Each cell gives one-thread / eight-thread medians. Baseline plan construction did not build a table. Candidate plan construction includes the table. Candidate timing ranges are shown in the text rather than hiding setup behind execution throughput.
@@ -205,6 +207,18 @@ This spin-2 result is an instruction-level profile, not an elapsed-time comparis
 Callgrind 3.26.0 profiled `taskset -c 30 valgrind --tool=callgrind --callgrind-out-file=/tmp/rustsht-scalar-t511-analysis.callgrind target/release/examples/m1b_bench 0 511 1 analysis GL STANDARD` on the same Ryzen 9 5950X and Rust 1.99.0 release build. The workload was f64 GL `512x1025`, STANDARD analysis, and one-thread execution. Across the complete benchmark process, Callgrind recorded 8.02 billion instruction references. The instrumented analysis medians were 2.384 s and 2.367 s for the two one-thread pools; these times do not represent native latency.
 
 The paired scalar recurrence visitor accounted for 86.6% of instruction references, and its Pulp recurrence vectorizer accounted for 46.3% as exclusive cost. The paired analysis accumulator vectorizer accounted for 11.6%; its binary-scaled complex multiplication helpers accounted for about 9.0% combined. These instruction counts indicate that recurrence updates and accumulation still dominate scalar analysis. They do not show that the table method should extend to T511 or higher: the compact T720 table increased process peak RSS to 786,656 KiB, added 679 ms of setup, and slowed eight-thread analysis by 37%. The profile also does not compare Rust and DUCC instructions under equivalent builds.
+
+### Rejected two-accumulator analysis experiment
+
+The scalar paired-analysis reducer was changed temporarily to alternate vector blocks between two SIMD accumulators per channel, with the aim of shortening each accumulator's dependency chain. The baseline binary came from `fbc8e76`; the candidate changed only this reducer. Five alternating process pairs ran the native `m1b_bench` release example with reused plans and workspaces, f64 GL STANDARD analysis, one warm-up and five timed samples per process. Runs were pinned to CPUs 0–7 on the Ryzen 9 5950X under Linux `7.0.14-20-pve`, using Rust 1.99.0, release `opt-level=3`, 16 codegen units, LTO off, runtime AVX2/FMA dispatch, and no `target-cpu=native`. Values are medians of process medians, with ranges across the five process medians, in milliseconds:
+
+| Operation | Baseline 1T | Candidate 1T | Baseline 8T | Candidate 8T |
+| --- | ---: | ---: | ---: | ---: |
+| Scalar analysis T511 | `26.169 [25.563–27.202]` | `27.467 [27.106–27.729]` | `8.697 [8.404–8.866]` | `8.659 [8.386–8.882]` |
+| Scalar analysis T1023 | `190.877 [189.835–193.858]` | `200.935 [199.923–201.892]` | `63.973 [63.277–64.550]` | `64.252 [63.825–65.099]` |
+| Spin-1 analysis T511 | `75.860 [75.388–77.121]` | `82.040 [80.157–82.400]` | `21.675 [21.095–22.471]` | `22.189 [21.857–22.378]` |
+
+The candidate was 5.0%, 5.3% and 8.1% slower in the one-thread cases; eight-thread results overlapped or changed by less than 2.4%. The AVX2 `AnalysisPairAccumulation` body grew from 1,006 to 1,919 bytes. Disassembly showed no YMM stack spill loads or stores in the vector body, so register spills do not explain the regression. The candidate passed focused scalar-reference, extreme-finite-input, spin-1 conversion and DUCC tests, but its whole-transform timings did not improve. The source change was reverted. This interleaving variant is not a basis for revisiting prior fused-accumulation prototypes without new evidence.
 
 ## Review and further experiments
 
