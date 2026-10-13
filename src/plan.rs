@@ -5,7 +5,7 @@ use crate::error::ShtError;
 use crate::fft::RealFftPlan;
 use crate::grid::GridSpec;
 use crate::harmonics::HarmonicSpec;
-use crate::legendre::{SPIN1_FAST_MIN_LMAX, ShtScalar, fill_spin2_factors};
+use crate::legendre::{SPIN1_FAST_MIN_LMAX, ScalarLegendreTable, ShtScalar, fill_spin2_factors};
 use crate::meridional::CCResamplingPlan;
 use crate::workspace::ShtWorkspace;
 
@@ -24,6 +24,7 @@ pub struct ShtPlan<T: ShtScalar = f64> {
     pub(crate) spin_fast_coefficient_count: usize,
     pub(crate) spin2_fast_f1: Vec<T>,
     pub(crate) spin2_fast_f2: Vec<T>,
+    pub(crate) scalar_legendre_table: Option<ScalarLegendreTable<T>>,
 }
 
 #[allow(private_bounds)]
@@ -106,6 +107,8 @@ impl<T: ShtScalar> ShtPlan<T> {
             fill_spin2_factors(harmonics.lmax(), &mut spin2_fast_f1, &mut spin2_fast_f2);
         }
         let sectoral_norms = T::sectoral_normalizations(harmonics.mmax())?;
+        let scalar_legendre_table =
+            ScalarLegendreTable::build_if_beneficial(&grid, &harmonics, &sectoral_norms);
         let cc_resampling = match grid.kind() {
             crate::grid::GridKind::ClenshawCurtis | crate::grid::GridKind::Fejer1 => Some(
                 CCResamplingPlan::<T>::new(grid.kind(), grid.ntheta(), harmonics.lmax())?,
@@ -126,6 +129,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             spin_fast_coefficient_count,
             spin2_fast_f1,
             spin2_fast_f2,
+            scalar_legendre_table,
         })
     }
 

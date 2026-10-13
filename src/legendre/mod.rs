@@ -4,12 +4,14 @@
 mod scalar;
 mod scalar_f32;
 mod scalar_paired;
+mod scalar_table;
 mod spin;
 mod spin_f32;
 mod spin_fast;
 
 pub(crate) const SPIN1_FAST_MIN_LMAX: usize = 15;
 
+pub(crate) use scalar_table::ScalarLegendreTable;
 pub(crate) use spin_fast::{
     fill_spin2_factors, scalar_to_spin1, scalar_to_spin2, spin1_to_scalar, spin2_to_scalar,
 };
@@ -82,6 +84,10 @@ pub(crate) trait ShtScalar:
     + std::ops::SubAssign
 {
     fn supports_paired_scalar() -> bool {
+        false
+    }
+
+    fn supports_precomputed_scalar() -> bool {
         false
     }
 
@@ -471,6 +477,10 @@ impl ShtScalar for f64 {
     type SpinInitial = spin::SpinInitial;
 
     fn supports_paired_scalar() -> bool {
+        true
+    }
+
+    fn supports_precomputed_scalar() -> bool {
         true
     }
 
