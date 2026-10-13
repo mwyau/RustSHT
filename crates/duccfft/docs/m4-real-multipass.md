@@ -504,3 +504,148 @@ nanoseconds. R2C timings serve as a paired control, and all baseline/candidate
 checksums match. Keep the small-size gains provisional while the shared host is
 active. Raw process samples are in
 [`m4-real-pack-paired-process-samples.csv`](../benches/results/m4-real-pack-paired-process-samples.csv).
+
+## Inverse radix-four branch slices
+
+The inverse radix-4 pass reads each input `k` group from four contiguous
+segments, while its output is stored in four branch-major segments. The pass
+now obtains those segments once with safe slices and advances through
+`chunks_exact`, instead of recomputing multidimensional input and output
+indices for each butterfly element. The radix constant `2` is also constructed
+once per pass. The radix equations, pass order, and scratch ownership are
+unchanged.
+
+The paired comparison used baseline source
+`74f61eee647deed1a37f6507bcb5d5285f26caae` and candidate source
+`4cbe4e940f1912228e2f1376b200dd304460601c`. Six processes per source and length
+ran in alternating order, pinned to CPU 30 on the Ryzen 9 5950X. Both binaries
+used Rust 1.99.0 and Cargo's `bench` profile with `opt-level=3`, debug
+information, no custom `RUSTFLAGS`, no LTO, and no target CPU setting. Plans
+were built before timing. Each process discarded one warm-up and reported the
+median of seven samples from `bench-native-real N 1 32`. Public-operation
+timings include packing and normalization; batch figures are per transform
+for 32 sequential transforms. The Legendre workload was active, so these
+timings are provisional. Plan construction, scratch allocation, R2C control
+timings, and all per-process samples are in the raw CSV.
+
+Each timing cell gives baseline / candidate microseconds per transform and
+candidate speed change, calculated as `(baseline / candidate) - 1`.
+
+| N | Single C2R | Batch of 32 C2R |
+|---:|---:|---:|
+| 64 | 0.230 / 0.190 (+21.1%) | 0.206 / 0.175 (+17.5%) |
+| 128 | 0.491 / 0.451 (+8.9%) | 0.477 / 0.394 (+21.1%) |
+| 256 | 1.012 / 0.782 (+29.5%) | 1.003 / 0.725 (+38.3%) |
+| 512 | 2.204 / 1.749 (+26.1%) | 2.187 / 1.727 (+26.6%) |
+| 1,024 | 4.694 / 3.461 (+35.6%) | 4.700 / 3.428 (+37.1%) |
+| 2,048 | 10.605 / 8.000 (+32.6%) | 10.597 / 8.023 (+32.1%) |
+| 4,096 | 22.593 / 15.985 (+41.3%) | 22.784 / 16.056 (+41.9%) |
+
+The unchanged R2C operation is a paired timing control. For each process, I
+calculated `baseline_norm = baseline_C2R / baseline_R2C` and
+`candidate_norm = candidate_C2R / candidate_R2C`, then calculated
+`(baseline_norm / candidate_norm) - 1`. The median of those six paired speed
+gains at lengths 256–4,096 is 31.9–42.0% for one transform and 27.8–42.5% for
+batches.
+At lengths 64 and 128, results vary more across process pairs; treat those
+gains cautiously. Baseline and candidate checksums and workspace sizes match.
+
+Callgrind 3.26.0 collected process-wide instruction references for three warm
+ups and 100 timed C2R inverses at N=1,024. The profile includes plan
+construction, workspace allocation, and input setup; reported instruction
+counts are not timings. For normal finite spectra, counts fell from
+13,587,745 at baseline to 9,712,753 at candidate, a 28.52% reduction. The
+`execute_inverse_pass` self-cost row fell from 7,662,582 to 3,943,458
+references. For the high-range residual-corrected fallback, counts were
+57,981,992 and 57,980,016, respectively. The fallback work is unchanged. The
+paired Callgrind profiles are
+[`baseline normal`](../benches/results/m4-real-radix4-slices-baseline-normal.out.gz),
+[`candidate normal`](../benches/results/m4-real-radix4-slices-candidate-normal.out.gz),
+[`baseline high-range`](../benches/results/m4-real-radix4-slices-baseline-high.out.gz),
+and [`candidate high-range`](../benches/results/m4-real-radix4-slices-candidate-high.out.gz).
+
+Release disassembly for the f64 `execute_inverse_pass` symbol contained 59
+`jae`/`jbe` branches in the baseline and 30 in the candidate. This count also
+includes loop-control branches. The general `ido > 1` butterfly still uses
+scalar `movsd`/`addsd`/`subsd`/`mulsd` operations, so slice partitioning has
+not closed the remaining vectorization gap. The full process samples are in
+[`m4-real-radix4-slices-paired-process-samples.csv`](../benches/results/m4-real-radix4-slices-paired-process-samples.csv).
+
+## Current real production comparison
+
+The comparison below uses production source revision
+`4cbe4e940f1912228e2f1376b200dd304460601c`. Rust measurements were collected
+in six CPU-pinned processes with `bench-real-multipass`, which verifies the
+production outputs against the packed-real prototype and RustFFT adapter
+before timing. Each operation reports the median of seven timed samples after
+one warm-up. Plan construction and workspace allocation report 20-repetition
+means. The direct C++ DUCC controls were measured in six more CPU-pinned
+processes, alternating portable and native build order. The C++ harness uses
+the same deterministic real inputs and public half-spectrum conversion. The
+independent Rust and C++ process sets match checksums to the reported decimal
+precision.
+
+Both sets used an AMD Ryzen 9 5950X, logical CPU 30, one execution thread,
+f64, and Rust 1.99.0 (`b940084d7`, LLVM 23.1.1), Cargo 1.99.0, the optimized
+`bench` profile, no custom Rust flags, LTO, or target CPU setting. RustFFT was
+6.4.1 with runtime dispatch. DUCC was pinned to
+`c1ed01b8fda69d2a378190f0915f1a19762dddbf`, built with g++ 15.2.0. The
+portable flags were `-std=c++20 -O3 -DNDEBUG -pthread`; the native build added
+`-march=native`. The Legendre workload was active during the runs, so absolute
+times remain provisional.
+
+Each cell gives `DUCCFFT / RustFFT adapter / DUCC portable / DUCC native` in
+microseconds per transform, followed by the DUCCFFT slowdown ratios against
+RustFFT, portable DUCC, and native DUCC in that order.
+
+### One transform
+
+| N | R2C, µs (ratios) | C2R, µs (ratios) |
+|---:|---|---|
+| 64 | 0.210 / 0.140 / 0.136 / 0.136 (1.50 / 1.55 / 1.55×) | 0.181 / 0.111 / 0.141 / 0.150 (1.64 / 1.28 / 1.21×) |
+| 128 | 0.441 / 0.261 / 0.250 / 0.251 (1.69 / 1.76 / 1.76×) | 0.411 / 0.201 / 0.281 / 0.251 (2.04 / 1.46 / 1.64×) |
+| 256 | 0.931 / 0.501 / 0.476 / 0.511 (1.86 / 1.96 / 1.82×) | 0.766 / 0.391 / 0.511 / 0.481 (1.96 / 1.50 / 1.59×) |
+| 512 | 2.109 / 1.022 / 1.052 / 1.102 (2.06 / 2.00 / 1.91×) | 1.809 / 0.786 / 1.112 / 0.962 (2.30 / 1.63 / 1.88×) |
+| 1,024 | 4.448 / 2.179 / 2.194 / 2.360 (2.04 / 2.03 / 1.88×) | 3.446 / 1.718 / 2.255 / 2.054 (2.01 / 1.53 / 1.68×) |
+| 2,048 | 9.954 / 4.473 / 4.824 / 5.240 (2.22 / 2.06 / 1.90×) | 7.990 / 3.592 / 5.215 / 4.583 (2.22 / 1.53 / 1.74×) |
+| 4,096 | 21.324 / 9.723 / 11.287 / 12.358 (2.19 / 1.89 / 1.73×) | 15.770 / 7.804 / 11.752 / 10.555 (2.02 / 1.34 / 1.49×) |
+
+### Sequential batch of 32
+
+| N | R2C, µs (ratios) | C2R, µs (ratios) |
+|---:|---|---|
+| 64 | 0.182 / 0.121 / 0.121 / 0.118 (1.51 / 1.51 / 1.54×) | 0.163 / 0.093 / 0.120 / 0.123 (1.76 / 1.36 / 1.33×) |
+| 128 | 0.428 / 0.247 / 0.242 / 0.251 (1.73 / 1.77 / 1.70×) | 0.401 / 0.185 / 0.254 / 0.229 (2.16 / 1.57 / 1.75×) |
+| 256 | 0.900 / 0.488 / 0.467 / 0.496 (1.84 / 1.93 / 1.81×) | 0.728 / 0.374 / 0.497 / 0.477 (1.95 / 1.46 / 1.53×) |
+| 512 | 2.049 / 1.010 / 1.071 / 1.150 (2.03 / 1.91 / 1.78×) | 1.720 / 0.792 / 1.126 / 0.981 (2.17 / 1.53 / 1.75×) |
+| 1,024 | 4.373 / 2.201 / 2.261 / 2.457 (1.99 / 1.93 / 1.78×) | 3.425 / 1.702 / 2.286 / 2.066 (2.01 / 1.50 / 1.66×) |
+| 2,048 | 10.058 / 4.672 / 5.070 / 5.588 (2.15 / 1.98 / 1.80×) | 8.038 / 3.653 / 5.297 / 4.608 (2.20 / 1.52 / 1.74×) |
+| 4,096 | 21.517 / 10.187 / 11.579 / 12.498 (2.11 / 1.86 / 1.72×) | 15.924 / 8.027 / 12.176 / 11.030 (1.98 / 1.31 / 1.44×) |
+
+Plan-construction and workspace-allocation medians are in microseconds.
+Scratch is reusable workspace in bytes; plan-table sizes are not exposed by
+the production plan, RustFFT adapter, or direct DUCC plan.
+
+| N | DUCCFFT production: plan / workspace / scratch | RustFFT: plan / workspace / scratch | DUCC portable: plan / workspace / scratch | DUCC native: plan / workspace / scratch |
+|---:|---:|---:|---:|---:|
+| 64 | 1.108 / 0.131 / 2,048 | 0.975 / 0.018 / 512 | 0.351 / 0.014 / 512 | 0.356 / 0.013 / 512 |
+| 1,024 | 16.785 / 0.357 / 27,776 | 17.458 / 0.139 / 16,384 | 1.297 / 0.071 / 8,192 | 1.179 / 0.071 / 8,192 |
+| 4,096 | 66.016 / 1.018 / 109,760 | 62.415 / 0.510 / 65,536 | 3.442 / 0.310 / 32,768 | 3.063 / 0.312 / 32,768 |
+
+The real inverse radix-four slice change lowered normal N=1,024 process-wide
+instruction references by 28.52%; its inverse pass self-cost fell from
+7,662,582 to 3,943,458 references. The updated public-operation comparison
+places smooth R2C and C2R at about 1.5–2.3× RustFFT, down from the recursive
+real executor's roughly 10–18× gap. The ordinary finite-input path already
+uses the M3 range check to skip residual construction; high-range values keep
+the correction fallback. The large M1 C2R/R2C asymmetry at lengths 1,025 and
+2,049 was not explained by ordinary smooth radix combinations: M3's Bluestein
+and inverse fast-path work reduced those ratios to about 1.5× and 1.0×. The
+smooth C2R timings here are close to R2C timings, while the remaining smooth
+gap and the still-scalar general `ido > 1` inverse loop warrant further M4
+optimization.
+
+Raw process samples are in
+[`m4-real-slices-production-vs-rustfft-process-samples.csv`](../benches/results/m4-real-slices-production-vs-rustfft-process-samples.csv)
+and
+[`m4-real-slices-ducc-controls.csv`](../benches/results/m4-real-slices-ducc-controls.csv).
