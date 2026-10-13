@@ -15,6 +15,7 @@ use rustfft::{Fft, FftPlanner};
 const LENGTHS: &[usize] = &[256, 1024];
 const ROW_COUNTS: &[usize] = &[2, 3, 4, 8, 16, 32];
 const PAIRS: usize = 7;
+const SETUP_REPETITIONS: usize = 20;
 
 fn input_value(row: usize, index: usize, _len: usize) -> Complex64 {
     let x = (index + 1 + 3 * row) as f64;
@@ -109,8 +110,84 @@ where
     (ns_per_transform, black_box(checksum(work)))
 }
 
+fn mean_setup_ns<F, R>(mut operation: F) -> f64
+where
+    F: FnMut() -> R,
+{
+    let start = Instant::now();
+    for _ in 0..SETUP_REPETITIONS {
+        black_box(operation());
+    }
+    start.elapsed().as_nanos() as f64 / SETUP_REPETITIONS as f64
+}
+
+fn run_setup(process_sample: &str) {
+    println!("process_sample,n,rows,kind,implementation,mean_ns,scratch_bytes");
+    for &len in LENGTHS {
+        let native = ComplexFftPlan::<f64>::new(len).expect("DUCCFFT plan");
+        let across = AcrossRowPlan::new(len).expect("across-row plan");
+        let mut planner = FftPlanner::<f64>::new();
+        let rustfft_forward = planner.plan_fft_forward(len);
+        let rustfft_inverse = planner.plan_fft_inverse(len);
+        let rustfft_scratch_len = rustfft_forward
+            .get_inplace_scratch_len()
+            .max(rustfft_inverse.get_inplace_scratch_len());
+
+        let native_plan_ns = mean_setup_ns(|| ComplexFftPlan::<f64>::new(len));
+        let across_plan_ns = mean_setup_ns(|| AcrossRowPlan::new(len));
+        let rustfft_plan_ns = mean_setup_ns(|| {
+            let mut planner = FftPlanner::<f64>::new();
+            (planner.plan_fft_forward(len), planner.plan_fft_inverse(len))
+        });
+
+        for &rows in ROW_COUNTS {
+            let native_workspace = native.workspace().expect("DUCCFFT workspace");
+            let across_workspace = across.workspace(rows).expect("across-row workspace");
+            let native_workspace_ns = mean_setup_ns(|| native.workspace());
+            let across_workspace_ns = mean_setup_ns(|| across.workspace(rows));
+            let rustfft_workspace_ns = mean_setup_ns(|| {
+                let mut scratch = Vec::with_capacity(rustfft_scratch_len);
+                scratch.resize(rustfft_scratch_len, Complex64::new(0.0, 0.0));
+                scratch
+            });
+
+            for (name, ns, scratch_bytes) in [
+                ("duccfft", native_plan_ns, 0),
+                ("rustfft", rustfft_plan_ns, 0),
+                ("across_row", across_plan_ns, 0),
+                (
+                    "duccfft",
+                    native_workspace_ns,
+                    native_workspace.scratch_bytes().unwrap_or(0),
+                ),
+                (
+                    "rustfft",
+                    rustfft_workspace_ns,
+                    rustfft_scratch_len * std::mem::size_of::<Complex64>(),
+                ),
+                (
+                    "across_row",
+                    across_workspace_ns,
+                    across_workspace.scratch_bytes(),
+                ),
+            ] {
+                let kind = if scratch_bytes == 0 {
+                    "plan"
+                } else {
+                    "workspace"
+                };
+                println!("{process_sample},{len},{rows},{kind},{name},{ns:.3},{scratch_bytes}");
+            }
+        }
+    }
+}
+
 fn main() {
     let process_sample = std::env::var("DUCCFFT_PROCESS_SAMPLE").unwrap_or_else(|_| "local".into());
+    if std::env::args().any(|argument| argument == "setup") {
+        run_setup(&process_sample);
+        return;
+    }
     println!(
         "process_sample,n,rows,direction,pair,order,implementation,operations,ns_per_transform,checksum,scratch_bytes"
     );
