@@ -811,3 +811,120 @@ maximum absolute difference was `1.819e-12`; maximum scaled difference was
 `6.821e-13`. The comparison also checked RustFFT against both references.
 The comparison summary and build metadata are in
 [`m4-real-radix4-ido-interior-ducc-comparison.txt`](../benches/results/m4-real-radix4-ido-interior-ducc-comparison.txt).
+
+## Forward radix-four interior AVX2 experiment
+
+The forward radix-four interior pass now gathers its four branch slices once
+per `l1` group and uses an f64 AVX2 kernel when runtime detection succeeds and
+`ido >= 16`. The kernel evaluates two adjacent complex positions per vector;
+the scalar equations handle the remaining tail and all non-AVX2 cases. The
+plan stores the kernel pointer and allocates no additional execution scratch.
+The candidate also replaces the former multidimensional `index` calls in the
+scalar interior loop with branch-local slices. The whole-call comparison
+measures both changes together, so it does not attribute the full gain to
+vector arithmetic alone. f32 and non-x86 targets continue to use scalar
+execution.
+
+The paired comparison used baseline source
+`3f5731c70702293449e50bf35419b9293fdf59bc` and candidate source
+`ffe4524b345eb9f2192f534ecd63152b5f5053d3`. Twelve baseline/candidate process
+pairs per length alternated execution order and were pinned to logical CPU 30
+of an AMD Ryzen 9 5950X. Each process ran `bench-native-real N 1 32`, with one
+warm-up and seven timed samples. Inputs use the harness's deterministic
+`real_value` and `spectrum_value` functions. Rust used rustc 1.99.0
+(`b940084d7`, LLVM 23.1.1), Cargo 1.99.0, the default optimized `bench`
+profile (`-C opt-level=3`, `-C embed-bitcode=no`, `-C strip=debuginfo`), no
+custom `RUSTFLAGS`, no LTO, and no target CPU flag. The Legendre workload was
+active during the runs, so wall times remain provisional.
+
+The table gives the median paired speed gain `(baseline / candidate) - 1`.
+R2C calls execute the candidate pass; C2R is a control. Gains are positive
+when the candidate is faster.
+
+| N | R2C single | R2C batch 32 | C2R single control | C2R batch 32 control |
+|---:|---:|---:|---:|---:|
+| 64 | +16.32% | +14.91% | −0.29% | +0.79% |
+| 128 | +12.17% | +12.11% | +1.18% | +1.95% |
+| 256 | +31.95% | +31.12% | +0.08% | +1.83% |
+| 512 | +24.65% | +25.07% | +0.30% | +0.13% |
+| 1,024 | +45.58% | +44.67% | −0.21% | +0.79% |
+| 2,048 | +39.54% | +37.24% | +0.23% | +0.54% |
+| 4,096 | +55.08% | +55.04% | −0.00% | −0.20% |
+
+All twelve R2C pairs favored the candidate at every length. C2R control
+changes range from −0.29% to +1.95%, consistent with process variation. Raw
+paired timings, setup costs, scratch sizes, and checksums are in
+[`m4-real-radix4-forward-avx2-paired-process-samples.csv`](../benches/results/m4-real-radix4-forward-avx2-paired-process-samples.csv).
+
+For cross-library timings, twelve CPU-pinned processes per library and length
+used the same public-operation harness and input formulas. Task order rotated
+across the four implementations. Ratios use the ratio of the displayed
+medians. Each timing cell gives `DUCCFFT / RustFFT / DUCC portable / DUCC
+native` in microseconds per transform, followed by the DUCCFFT ratios against
+RustFFT, portable DUCC, and native-target DUCC.
+
+### Single transform
+
+| N | R2C, µs (timings; ratios) | C2R, µs (timings; ratios) |
+|---:|---|---|
+| 64 | 0.181 / 0.140 / 0.140 / 0.140 (1.29 / 1.29 / 1.29×) | 0.171 / 0.111 / 0.141 / 0.141 (1.55 / 1.21 / 1.21×) |
+| 128 | 0.401 / 0.261 / 0.266 / 0.266 (1.54 / 1.51 / 1.51×) | 0.381 / 0.210 / 0.281 / 0.250 (1.81 / 1.36 / 1.52×) |
+| 256 | 0.717 / 0.501 / 0.491 / 0.501 (1.43 / 1.46 / 1.43×) | 0.642 / 0.391 / 0.531 / 0.471 (1.64 / 1.21 / 1.36×) |
+| 512 | 1.663 / 1.032 / 1.187 / 1.152 (1.61 / 1.40 / 1.44×) | 1.508 / 0.802 / 1.213 / 1.012 (1.88 / 1.24 / 1.49×) |
+| 1,024 | 3.201 / 2.244 / 2.620 / 2.550 (1.43 / 1.22 / 1.26×) | 2.685 / 1.829 / 2.655 / 2.200 (1.47 / 1.01 / 1.22×) |
+| 2,048 | 7.384 / 4.559 / 5.972 / 5.701 (1.62 / 1.24 / 1.30×) | 6.537 / 3.777 / 6.056 / 5.025 (1.73 / 1.08 / 1.30×) |
+| 4,096 | 13.806 / 9.654 / 12.439 / 12.649 (1.43 / 1.11 / 1.09×) | 12.033 / 7.845 / 12.224 / 10.520 (1.53 / 0.98 / 1.14×) |
+
+### Sequential batch of 32
+
+| N | R2C, µs (timings; ratios) | C2R, µs (timings; ratios) |
+|---:|---|---|
+| 64 | 0.161 / 0.121 / 0.134 / 0.127 (1.33 / 1.20 / 1.27×) | 0.147 / 0.092 / 0.135 / 0.126 (1.59 / 1.08 / 1.16×) |
+| 128 | 0.385 / 0.246 / 0.267 / 0.261 (1.57 / 1.44 / 1.48×) | 0.356 / 0.185 / 0.269 / 0.246 (1.92 / 1.32 / 1.45×) |
+| 256 | 0.696 / 0.492 / 0.517 / 0.500 (1.41 / 1.35 / 1.39×) | 0.625 / 0.377 / 0.489 / 0.455 (1.66 / 1.28 / 1.37×) |
+| 512 | 1.640 / 1.037 / 1.083 / 1.152 (1.58 / 1.51 / 1.42×) | 1.487 / 0.786 / 1.134 / 0.988 (1.89 / 1.31 / 1.51×) |
+| 1,024 | 3.066 / 2.176 / 2.249 / 2.448 (1.41 / 1.36 / 1.25×) | 2.662 / 1.698 / 2.301 / 2.115 (1.57 / 1.16 / 1.26×) |
+| 2,048 | 7.330 / 4.685 / 5.059 / 5.593 (1.56 / 1.45 / 1.31×) | 6.516 / 3.660 / 5.347 / 4.696 (1.78 / 1.22 / 1.39×) |
+| 4,096 | 13.876 / 10.248 / 11.210 / 12.390 (1.35 / 1.24 / 1.12×) | 12.130 / 8.169 / 11.612 / 10.546 (1.48 / 1.04 / 1.15×) |
+
+RustFFT uses its default runtime planner. Portable DUCC used g++ 15.2.0 with
+`-std=c++20 -O3 -DNDEBUG -pthread`; native-target DUCC added `-march=native`.
+Both DUCC builds used the scalar planner (`vectorize=false`). The Rust build
+used no native target flag, so the native DUCC comparison is labeled as an ISA
+difference. Per-process cross-library data are in
+[`m4-real-radix4-forward-avx2-cross-library-process-samples.csv`](../benches/results/m4-real-radix4-forward-avx2-cross-library-process-samples.csv).
+
+Plan construction, workspace allocation, and reusable scratch storage are
+separate from execution. Each cell below is a median of twelve process-level
+samples. DUCC scratch counts its kernel buffer and excludes the real adapter's
+packed working array; the Rust workspace counts include its working buffers.
+
+| N | DUCCFFT: plan / workspace / scratch | RustFFT: plan / workspace / scratch | DUCC portable: plan / workspace / kernel scratch | DUCC native: plan / workspace / kernel scratch |
+|---:|---:|---:|---:|---:|
+| 64 | 1.473 / 0.368 / 2,048 | 2.729 / 0.018 / 512 | 0.380 / 0.013 / 512 | 0.377 / 0.013 / 512 |
+| 128 | 2.692 / 0.439 / 4,128 | 3.787 / 0.028 / 2,048 | 0.512 / 0.015 / 1,024 | 0.510 / 0.015 / 1,024 |
+| 256 | 4.876 / 0.484 / 7,232 | 5.863 / 0.053 / 4,096 | 0.701 / 0.030 / 2,048 | 0.680 / 0.030 / 2,048 |
+| 512 | 8.843 / 0.617 / 15,456 | 9.557 / 0.144 / 8,192 | 1.045 / 0.116 / 4,096 | 1.028 / 0.115 / 4,096 |
+| 1,024 | 17.766 / 0.826 / 27,776 | 20.395 / 0.266 / 16,384 | 1.465 / 0.211 / 8,192 | 1.402 / 0.210 / 8,192 |
+| 2,048 | 34.172 / 1.459 / 60,576 | 34.749 / 0.513 / 32,768 | 2.464 / 0.685 / 16,384 | 2.430 / 0.679 / 16,384 |
+| 4,096 | 67.012 / 2.227 / 109,760 | 66.345 / 0.982 / 65,536 | 3.662 / 0.734 / 32,768 | 3.353 / 0.747 / 32,768 |
+
+Plan and workspace times are in microseconds. The candidate uses the same
+workspace byte counts as the baseline; the additional kernel metadata is one
+function pointer in the immutable plan. Release disassembly of
+`f64_real_kernel::forward_radix4_interior` contains `vmovupd`, `vmulpd`,
+`vaddpd`, `vsubpd`, `vpermpd`, and `vunpcklpd` in the vector loop. It has a
+single loop branch, no helper calls, and no stack-local spills; the prologue
+saves callee-preserved registers. This confirms packed instructions execute
+on the measured x86-64 path. The pinned DUCC numerical comparison checked
+202,347 f64 output records across C2C, R2C, and C2R; DUCCFFT's maximum absolute
+error was `1.819e-12` and maximum scaled error was `6.821e-13`. The record is
+[`m4-real-radix4-forward-avx2-ducc-comparison.txt`](../benches/results/m4-real-radix4-forward-avx2-ducc-comparison.txt).
+
+The kernel cuts most of the previous R2C gap. DUCCFFT is 1.29–1.62× slower
+than RustFFT for single transforms and 1.35–1.57× slower for batches of 32.
+C2R is 1.47–1.88× and 1.48–1.92× slower, respectively. The AVX2 path covers
+the f64 radix-four interior pass; radix-two, small-`ido`, f32, and
+generic-prime execution need separate optimization. These measurements
+support keeping this kernel during M4 and do not establish performance
+completion.
