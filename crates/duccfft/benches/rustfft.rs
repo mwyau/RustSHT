@@ -986,6 +986,52 @@ fn profile_native_real_inverse(n: usize, high_dynamic_range: bool, iterations: u
     );
 }
 
+fn profile_native_complex(n: usize, forward: bool, iterations: usize) {
+    let plan = ComplexFftPlan::<f64>::new(n).expect("native complex plan");
+    let mut workspace = plan.workspace().expect("native complex workspace");
+    let input: Vec<_> = (0..n).map(|index| complex_value(index, 0)).collect();
+    let mut values = vec![Complex64::new(0.0, 0.0); n];
+    for _ in 0..3 {
+        values.copy_from_slice(&input);
+        if forward {
+            plan.forward(&mut values, &mut workspace)
+                .expect("native complex forward transform");
+        } else {
+            plan.inverse(&mut values, &mut workspace)
+                .expect("native complex inverse transform");
+        }
+    }
+    let start = Instant::now();
+    for _ in 0..iterations {
+        values.copy_from_slice(&input);
+        if forward {
+            plan.forward(&mut values, &mut workspace)
+                .expect("native complex forward transform");
+        } else {
+            plan.inverse(&mut values, &mut workspace)
+                .expect("native complex inverse transform");
+        }
+    }
+    let elapsed = start.elapsed();
+    black_box(values.as_slice());
+    assert!(
+        values
+            .iter()
+            .all(|value| value.re.is_finite() && value.im.is_finite())
+    );
+    let checksum = values
+        .iter()
+        .fold(0.0, |sum, value| sum + value.re * 0.17 + value.im * 0.11);
+    black_box(checksum);
+    println!(
+        "c2c_profile,{},{},{:.3},{:.9}",
+        n,
+        if forward { "forward" } else { "inverse" },
+        elapsed.as_nanos() as f64 / iterations as f64,
+        checksum
+    );
+}
+
 fn main() {
     let mut args = std::env::args().skip(1).filter(|arg| arg != "--bench");
     match args.next().as_deref() {
@@ -1144,6 +1190,22 @@ fn main() {
             assert!(matches!(range.as_str(), "normal" | "high"));
             profile_native_real_inverse(n, range == "high", iterations);
         }
+        Some("bench-profile-complex") => {
+            println!("mode,n,direction,operation_ns,checksum");
+            let n = args
+                .next()
+                .expect("length is required")
+                .parse()
+                .expect("length must be an integer");
+            let direction = args.next().expect("direction is required");
+            let iterations = args
+                .next()
+                .map(|value| value.parse().expect("iteration count must be an integer"))
+                .unwrap_or(100);
+            assert!(iterations > 0, "iteration count must be positive");
+            assert!(matches!(direction.as_str(), "forward" | "inverse"));
+            profile_native_complex(n, direction == "forward", iterations);
+        }
         Some("bench") | Some("bench-scalar") => {
             let scalar = std::env::args().any(|arg| arg == "bench-scalar");
             let sizes: Vec<usize> = args
@@ -1158,7 +1220,7 @@ fn main() {
         }
         _ => {
             eprintln!(
-                "usage: rustfft-bench dump-all | dump-native-all | dump MODE N | dump-native MODE N | bench [N ...] | bench-scalar [N ...] | bench-sht | bench-real-multipass [N ...] | bench-native [N ...] | bench-native-real N [BATCH ...] | bench-native-batch-api N [BATCH ...] | bench-profile-real-inverse N normal|high [ITERATIONS]"
+                "usage: rustfft-bench dump-all | dump-native-all | dump MODE N | dump-native MODE N | bench [N ...] | bench-scalar [N ...] | bench-sht | bench-real-multipass [N ...] | bench-native [N ...] | bench-native-real N [BATCH ...] | bench-native-batch-api N [BATCH ...] | bench-profile-real-inverse N normal|high [ITERATIONS] | bench-profile-complex N forward|inverse [ITERATIONS]"
             );
             eprintln!("no benchmark was run; use `bench` to start the workload");
         }
