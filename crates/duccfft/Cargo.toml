@@ -42,3 +42,7 @@ harness = false
 [[bench]]
 name = "f32_real_simd"
 harness = false
+
+[[bench]]
+name = "across_row_prototype"
+harness = false
