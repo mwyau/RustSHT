@@ -22,6 +22,58 @@ def parse_records(output: str) -> dict[tuple[str, int, int], tuple[float, float]
     return records
 
 
+def compare_records(
+    label: str,
+    expected: dict[tuple[str, int, int], tuple[float, float]],
+    actual: dict[tuple[str, int, int], tuple[float, float]],
+    *,
+    rtol: float,
+    atol: float,
+) -> None:
+    if expected.keys() != actual.keys():
+        missing_actual = sorted(expected.keys() - actual.keys())[:8]
+        missing_expected = sorted(actual.keys() - expected.keys())[:8]
+        raise SystemExit(
+            f"{label} output shape mismatch: missing {missing_actual}; "
+            f"unexpected {missing_expected}"
+        )
+
+    max_abs = 0.0
+    max_scaled = 0.0
+    worst_abs = None
+    worst_scaled = None
+    for key, expected_value in expected.items():
+        actual_value = actual[key]
+        for component, (got, want) in zip(
+            ("real", "imag"), zip(actual_value, expected_value, strict=True), strict=True
+        ):
+            if not math.isfinite(got) or not math.isfinite(want):
+                raise SystemExit(
+                    f"{label} nonfinite value at {key} {component}: "
+                    f"expected={want}, actual={got}"
+                )
+            error = abs(got - want)
+            scaled = error / max(abs(got), abs(want), 1.0)
+            if error > max_abs:
+                max_abs = error
+                worst_abs = (key, component)
+            if scaled > max_scaled:
+                max_scaled = scaled
+                worst_scaled = (key, component)
+            if error > atol + rtol * abs(want):
+                raise SystemExit(
+                    f"{label} mismatch at {key} {component}: "
+                    f"expected={want}, actual={got}, abs_error={error:.3e}"
+                )
+
+    print(
+        f"{label}: compared {len(expected)} output records "
+        f"({2 * len(expected)} scalar components); max_abs={max_abs:.3e}; "
+        f"worst_abs={worst_abs}; max_scaled={max_scaled:.3e}; "
+        f"worst_scaled={worst_scaled}"
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -57,47 +109,43 @@ def main() -> None:
         text=True,
         capture_output=True,
     )
-    left = parse_records(ducc.stdout)
-    right = parse_records(rustfft.stdout)
-    if left.keys() != right.keys():
-        missing_rustfft = sorted(left.keys() - right.keys())[:8]
-        missing_ducc = sorted(right.keys() - left.keys())[:8]
-        raise SystemExit(
-            f"output shape mismatch: RustFFT missing {missing_rustfft}; "
-            f"DUCC missing {missing_ducc}"
-        )
-
-    max_abs = 0.0
-    max_scaled = 0.0
-    worst_abs = None
-    worst_scaled = None
-    for key, expected in left.items():
-        actual = right[key]
-        for component, (a, e) in zip(("real", "imag"), zip(actual, expected, strict=True), strict=True):
-            if not math.isfinite(a) or not math.isfinite(e):
-                raise SystemExit(
-                    f"nonfinite value at {key} {component}: DUCC={e}, RustFFT={a}"
-                )
-            error = abs(a - e)
-            scale = max(abs(a), abs(e), 1.0)
-            scaled = error / scale
-            if error > max_abs:
-                max_abs = error
-                worst_abs = (key, component)
-            if scaled > max_scaled:
-                max_scaled = scaled
-                worst_scaled = (key, component)
-            if error > args.atol + args.rtol * abs(e):
-                raise SystemExit(
-                    f"mismatch at {key} {component}: DUCC={expected}, RustFFT={actual}, "
-                    f"abs_error={error:.3e}"
-                )
-
+    native = subprocess.run(
+        [
+            "cargo",
+            "bench",
+            "--manifest-path",
+            str(args.manifest),
+            "--bench",
+            "rustfft",
+            "--",
+            "dump-native-all",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    expected = parse_records(ducc.stdout)
+    rustfft_output = parse_records(rustfft.stdout)
+    native_output = parse_records(native.stdout)
+    compare_records(
+        "RustFFT",
+        expected,
+        rustfft_output,
+        rtol=args.rtol,
+        atol=args.atol,
+    )
+    complex_reference = {
+        key: value for key, value in expected.items() if key[0].startswith("c2c_")
+    }
+    compare_records(
+        "DUCCFFT f64 C2C",
+        complex_reference,
+        native_output,
+        rtol=args.rtol,
+        atol=args.atol,
+    )
     print(
-        f"DUCC vectorize={'on' if os.environ.get('DUCCFFT_DUCC_VECTORIZE') == '1' else 'off'}; "
-        f"compared {len(left)} output values; max_abs={max_abs:.3e}; "
-        f"worst_abs={worst_abs}; max_scaled={max_scaled:.3e}; "
-        f"worst_scaled={worst_scaled}"
+        f"DUCC vectorize={'on' if os.environ.get('DUCCFFT_DUCC_VECTORIZE') == '1' else 'off'}"
     )
 
 
