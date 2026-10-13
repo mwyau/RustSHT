@@ -131,10 +131,22 @@ pub(crate) trait ShtScalar:
     ) -> bool {
         false
     }
+    fn prepare_paired_scalar_synthesis_coefficients(
+        _m: usize,
+        _lmax: usize,
+        _epsilon: &[Self],
+        _alpha: &[Self],
+        _coefficients: &[Complex<Self>],
+        _coefficient_even: &mut [Complex<Self>],
+        _coefficient_odd: &mut [Complex<Self>],
+    ) -> bool {
+        false
+    }
     #[expect(
         clippy::too_many_arguments,
         reason = "The fused scalar block receives operator data and worker scratch explicitly."
     )]
+    #[cfg(test)]
     fn synthesize_paired_scalar_block_dispatched(
         _arch: Arch,
         _m: usize,
@@ -147,6 +159,31 @@ pub(crate) trait ShtScalar:
         _coefficient_a: &[Self],
         _coefficient_b: &[Self],
         _coefficients: &[Complex<Self>],
+        _ring_order_limits: &[usize],
+        _spectrum_len: usize,
+        _spectra: &mut [Complex<Self>],
+        _previous: &mut [Self],
+        _current: &mut [Self],
+        _next: &mut [Self],
+        _exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        Ok(false)
+    }
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The prepared scalar block receives operator data and worker scratch explicitly."
+    )]
+    fn synthesize_paired_scalar_block_prepared_dispatched(
+        _arch: Arch,
+        _m: usize,
+        _lmax: usize,
+        _sin_theta: &[Self],
+        _cos_theta: &[Self],
+        _sectoral_norm: Self,
+        _coefficient_a: &[Self],
+        _coefficient_b: &[Self],
+        _coefficient_even: &[Complex<Self>],
+        _coefficient_odd: &[Complex<Self>],
         _ring_order_limits: &[usize],
         _spectrum_len: usize,
         _spectra: &mut [Complex<Self>],
@@ -473,6 +510,27 @@ impl ShtScalar for f64 {
         true
     }
 
+    fn prepare_paired_scalar_synthesis_coefficients(
+        m: usize,
+        lmax: usize,
+        epsilon: &[Self],
+        alpha: &[Self],
+        coefficients: &[Complex<Self>],
+        coefficient_even: &mut [Complex<Self>],
+        coefficient_odd: &mut [Complex<Self>],
+    ) -> bool {
+        scalar_paired::prepare_synthesis_coefficients(
+            m,
+            lmax,
+            epsilon,
+            alpha,
+            coefficients,
+            coefficient_even,
+            coefficient_odd,
+        );
+        true
+    }
+
     fn for_each_y_lm_paired_dispatched<F>(
         arch: Arch,
         m: usize,
@@ -545,6 +603,7 @@ impl ShtScalar for f64 {
         Ok(true)
     }
 
+    #[cfg(test)]
     fn synthesize_paired_scalar_block_dispatched(
         arch: Arch,
         m: usize,
@@ -577,6 +636,46 @@ impl ShtScalar for f64 {
             coefficient_a,
             coefficient_b,
             coefficients,
+            ring_order_limits,
+            spectrum_len,
+            spectra,
+            previous,
+            current,
+            next,
+            exponents,
+        )
+    }
+
+    fn synthesize_paired_scalar_block_prepared_dispatched(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        sectoral_norm: Self,
+        coefficient_a: &[Self],
+        coefficient_b: &[Self],
+        coefficient_even: &[Complex<Self>],
+        coefficient_odd: &[Complex<Self>],
+        ring_order_limits: &[usize],
+        spectrum_len: usize,
+        spectra: &mut [Complex<Self>],
+        previous: &mut [Self],
+        current: &mut [Self],
+        next: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        scalar_paired::synthesize_order_block_precomputed_dispatched(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            coefficient_even,
+            coefficient_odd,
             ring_order_limits,
             spectrum_len,
             spectra,

@@ -345,12 +345,29 @@ impl<T: ShtScalar> ShtPlan<T> {
                     &recurrence.spin_alpha,
                     &alm[coefficient_start..],
                 );
+            let coefficient_pair_count = (lmax - m + 2) / 2;
+            let coefficients_prepared = paired_factors_ready
+                && paired_coefficients_finite
+                && recurrence.fast_spin_first.len() >= coefficient_pair_count
+                && recurrence.fast_spin_second.len() >= coefficient_pair_count
+                && T::prepare_paired_scalar_synthesis_coefficients(
+                    m,
+                    lmax,
+                    &recurrence.epsilon,
+                    &recurrence.spin_alpha,
+                    &alm[coefficient_start..],
+                    &mut recurrence.fast_spin_first[..coefficient_pair_count],
+                    &mut recurrence.fast_spin_second[..coefficient_pair_count],
+                );
             let phase = if m == 0 {
                 Complex::new(T::one(), T::zero())
             } else {
                 longitude_phase::<T>(m, phi0, false)
             };
-            let paired_used = if paired_factors_ready && paired_coefficients_finite {
+            let paired_used = if paired_factors_ready
+                && paired_coefficients_finite
+                && coefficients_prepared
+            {
                 for block_start in (0..theta_sin.len()).step_by(LATITUDE_BLOCK_SIZE) {
                     let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(theta_sin.len());
                     let block_len = block_end - block_start;
@@ -361,18 +378,17 @@ impl<T: ShtScalar> ShtPlan<T> {
                     }
                     let spectrum_start = block_start * spectrum_len;
                     let spectrum_end = block_end * spectrum_len;
-                    let fused = T::synthesize_paired_scalar_block_dispatched(
+                    let fused = T::synthesize_paired_scalar_block_prepared_dispatched(
                         arch,
                         m,
                         lmax,
                         &theta_sin[block_start..block_end],
                         &theta_cos[block_start..block_end],
                         self.sectoral_norms[m],
-                        &recurrence.epsilon,
-                        &recurrence.spin_alpha,
                         &recurrence.spin_coefficient_a,
                         &recurrence.spin_coefficient_b,
-                        &alm[coefficient_start..],
+                        &recurrence.fast_spin_first[..coefficient_pair_count],
+                        &recurrence.fast_spin_second[..coefficient_pair_count],
                         ring_limits,
                         spectrum_len,
                         &mut spectra[spectrum_start..spectrum_end],

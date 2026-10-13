@@ -58,6 +58,44 @@ pub(crate) fn fill_factors(
     }
 }
 
+/// Transforms the scalar harmonic coefficients used by the paired synthesis
+/// recurrence. These values depend on order and degree, not on latitude.
+pub(crate) fn prepare_synthesis_coefficients(
+    m: usize,
+    lmax: usize,
+    epsilon: &[f64],
+    alpha: &[f64],
+    coefficients: &[Complex64],
+    coefficient_even: &mut [Complex64],
+    coefficient_odd: &mut [Complex64],
+) {
+    debug_assert!(m <= lmax);
+    debug_assert!(epsilon.len() > lmax + 2);
+    let pair_count = (lmax - m + 2) / 2;
+    debug_assert!(alpha.len() >= pair_count);
+    debug_assert!(coefficients.len() > lmax - m);
+    debug_assert!(coefficient_even.len() >= pair_count);
+    debug_assert!(coefficient_odd.len() >= pair_count);
+
+    for pair in 0..pair_count {
+        let degree = m + 2 * pair;
+        let offset = degree - m;
+        let next_even = if degree + 2 <= lmax {
+            coefficients[offset + 2]
+        } else {
+            Complex64::new(0.0, 0.0)
+        };
+        coefficient_even[pair] = (coefficients[offset] * epsilon[degree + 1]
+            + next_even * epsilon[degree + 2])
+            * alpha[pair];
+        coefficient_odd[pair] = if degree < lmax {
+            coefficients[offset + 1] * alpha[pair]
+        } else {
+            Complex64::new(0.0, 0.0)
+        };
+    }
+}
+
 /// Tries a register-resident scalar synthesis block for ordinary recurrence values.
 ///
 /// A block is declined when any lane is excluded by the polar order limit or
@@ -67,6 +105,7 @@ pub(crate) fn fill_factors(
     clippy::too_many_arguments,
     reason = "The fused block receives recurrence factors, spectra and worker scratch explicitly."
 )]
+#[cfg(test)]
 pub(crate) fn synthesize_order_block_dispatched(
     arch: Arch,
     m: usize,
@@ -87,6 +126,62 @@ pub(crate) fn synthesize_order_block_dispatched(
     next: &mut [f64],
     exponents: &mut [i64],
 ) -> Result<bool, ShtError> {
+    let pair_count = (lmax - m + 2) / 2;
+    let mut coefficient_even = vec![Complex64::new(0.0, 0.0); pair_count];
+    let mut coefficient_odd = vec![Complex64::new(0.0, 0.0); pair_count];
+    prepare_synthesis_coefficients(
+        m,
+        lmax,
+        epsilon,
+        alpha,
+        coefficients,
+        &mut coefficient_even,
+        &mut coefficient_odd,
+    );
+    synthesize_order_block_precomputed_dispatched(
+        arch,
+        m,
+        lmax,
+        sin_theta,
+        cos_theta,
+        sectoral_norm,
+        coefficient_a,
+        coefficient_b,
+        &coefficient_even,
+        &coefficient_odd,
+        ring_order_limits,
+        spectrum_len,
+        spectra,
+        previous,
+        current,
+        next,
+        exponents,
+    )
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The precomputed fused block receives operator data and worker scratch explicitly."
+)]
+pub(crate) fn synthesize_order_block_precomputed_dispatched(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[f64],
+    cos_theta: &[f64],
+    sectoral_norm: f64,
+    coefficient_a: &[f64],
+    coefficient_b: &[f64],
+    coefficient_even: &[Complex64],
+    coefficient_odd: &[Complex64],
+    ring_order_limits: &[usize],
+    spectrum_len: usize,
+    spectra: &mut [Complex64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    next: &mut [f64],
+    exponents: &mut [i64],
+) -> Result<bool, ShtError> {
     debug_assert_eq!(sin_theta.len(), cos_theta.len());
     debug_assert_eq!(sin_theta.len(), ring_order_limits.len());
     debug_assert_eq!(spectra.len(), sin_theta.len() * spectrum_len);
@@ -94,7 +189,9 @@ pub(crate) fn synthesize_order_block_dispatched(
     debug_assert!(current.len() >= sin_theta.len());
     debug_assert!(next.len() >= sin_theta.len());
     debug_assert!(exponents.len() >= sin_theta.len());
-    debug_assert!(coefficients.len() > lmax - m);
+    let pair_count = (lmax - m + 2) / 2;
+    debug_assert!(coefficient_even.len() >= pair_count);
+    debug_assert!(coefficient_odd.len() >= pair_count);
 
     if sin_theta.is_empty() || ring_order_limits.iter().any(|&limit| m > limit) {
         return Ok(false);
@@ -118,11 +215,10 @@ pub(crate) fn synthesize_order_block_dispatched(
         m,
         lmax,
         cos_theta,
-        epsilon,
-        alpha,
         coefficient_a,
         coefficient_b,
-        coefficients,
+        coefficient_even,
+        coefficient_odd,
         current: &current[..sin_theta.len()],
         sum_re: &mut previous[..sin_theta.len()],
         sum_im: &mut next[..sin_theta.len()],
@@ -848,11 +944,10 @@ struct FusedSynthesisBlock<'a> {
     m: usize,
     lmax: usize,
     cos_theta: &'a [f64],
-    epsilon: &'a [f64],
-    alpha: &'a [f64],
     coefficient_a: &'a [f64],
     coefficient_b: &'a [f64],
-    coefficients: &'a [Complex64],
+    coefficient_even: &'a [Complex64],
+    coefficient_odd: &'a [Complex64],
     current: &'a [f64],
     sum_re: &'a mut [f64],
     sum_im: &'a mut [f64],
@@ -867,11 +962,10 @@ impl WithSimd for FusedSynthesisBlock<'_> {
             m,
             lmax,
             cos_theta,
-            epsilon,
-            alpha,
             coefficient_a,
             coefficient_b,
-            coefficients,
+            coefficient_even,
+            coefficient_odd,
             current,
             sum_re,
             sum_im,
@@ -889,21 +983,8 @@ impl WithSimd for FusedSynthesisBlock<'_> {
             let mut accumulated_re = simd.splat_f64s(0.0);
             let mut accumulated_im = simd.splat_f64s(0.0);
             for pair in 0..pair_count {
-                let l = m + 2 * pair;
-                let offset = l - m;
-                let next_even = if l + 2 <= lmax {
-                    coefficients[offset + 2]
-                } else {
-                    Complex64::new(0.0, 0.0)
-                };
-                let coefficient_even = (coefficients[offset] * epsilon[l + 1]
-                    + next_even * epsilon[l + 2])
-                    * alpha[pair];
-                let coefficient_odd = if l < lmax {
-                    coefficients[offset + 1] * alpha[pair]
-                } else {
-                    Complex64::new(0.0, 0.0)
-                };
+                let coefficient_even = coefficient_even[pair];
+                let coefficient_odd = coefficient_odd[pair];
                 let coefficient_re = simd.mul_add_f64s(
                     simd.splat_f64s(coefficient_odd.re),
                     cosine,
@@ -940,21 +1021,8 @@ impl WithSimd for FusedSynthesisBlock<'_> {
             let mut accumulated_re = 0.0;
             let mut accumulated_im = 0.0;
             for pair in 0..pair_count {
-                let l = m + 2 * pair;
-                let offset = l - m;
-                let next_even = if l + 2 <= lmax {
-                    coefficients[offset + 2]
-                } else {
-                    Complex64::new(0.0, 0.0)
-                };
-                let coefficient_even = (coefficients[offset] * epsilon[l + 1]
-                    + next_even * epsilon[l + 2])
-                    * alpha[pair];
-                let coefficient_odd = if l < lmax {
-                    coefficients[offset + 1] * alpha[pair]
-                } else {
-                    Complex64::new(0.0, 0.0)
-                };
+                let coefficient_even = coefficient_even[pair];
+                let coefficient_odd = coefficient_odd[pair];
                 accumulated_re = current.mul_add(
                     coefficient_odd.re.mul_add(cosine, coefficient_even.re),
                     accumulated_re,
@@ -1460,6 +1528,75 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn synthesis_coefficient_preparation_matches_degree_transform_at_boundaries() {
+        for m in 0..=4 {
+            for lmax in m..=m + 9 {
+                let mut epsilon = vec![0.0; lmax + 4];
+                for (degree, value) in epsilon.iter_mut().enumerate().skip(m + 1) {
+                    let degree_f = degree as f64;
+                    let order_f = m as f64;
+                    *value = (((degree_f - order_f) * (degree_f + order_f))
+                        / ((2.0 * degree_f + 1.0) * (2.0 * degree_f - 1.0)))
+                        .sqrt();
+                }
+                let factor_count = lmax / 2 + 2;
+                let mut alpha = vec![0.0; factor_count];
+                let mut coefficient_a = vec![0.0; factor_count];
+                let mut coefficient_b = vec![0.0; factor_count];
+                fill_factors(
+                    m,
+                    lmax,
+                    &epsilon,
+                    &mut alpha,
+                    &mut coefficient_a,
+                    &mut coefficient_b,
+                );
+                let coefficients: Vec<_> = (m..=lmax)
+                    .map(|degree| {
+                        Complex64::new(
+                            (0.31 * degree as f64 + 0.73 * m as f64).sin(),
+                            (0.19 * degree as f64 - 0.41 * m as f64).cos(),
+                        )
+                    })
+                    .collect();
+                let pair_count = (lmax - m + 2) / 2;
+                let mut coefficient_even = vec![Complex64::new(0.0, 0.0); pair_count];
+                let mut coefficient_odd = vec![Complex64::new(0.0, 0.0); pair_count];
+
+                prepare_synthesis_coefficients(
+                    m,
+                    lmax,
+                    &epsilon,
+                    &alpha,
+                    &coefficients,
+                    &mut coefficient_even,
+                    &mut coefficient_odd,
+                );
+
+                for pair in 0..pair_count {
+                    let degree = m + 2 * pair;
+                    let offset = degree - m;
+                    let next_even = if degree + 2 <= lmax {
+                        coefficients[offset + 2]
+                    } else {
+                        Complex64::new(0.0, 0.0)
+                    };
+                    let expected_even = (coefficients[offset] * epsilon[degree + 1]
+                        + next_even * epsilon[degree + 2])
+                        * alpha[pair];
+                    let expected_odd = if degree < lmax {
+                        coefficients[offset + 1] * alpha[pair]
+                    } else {
+                        Complex64::new(0.0, 0.0)
+                    };
+                    assert_eq!(coefficient_even[pair], expected_even);
+                    assert_eq!(coefficient_odd[pair], expected_odd);
+                }
+            }
+        }
+    }
 
     #[test]
     fn fused_synthesis_continuation_declines_on_late_tail_range_failure() {
