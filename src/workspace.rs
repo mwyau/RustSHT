@@ -204,16 +204,19 @@ impl<T: ShtScalar> ShtWorkspace<T> {
                     quantity: "parallel latitude group size",
                 })?;
         let existing_ring_worker_count = ntheta.div_ceil(ring_group_size);
-        // Profiling experiment: increase synthesis granularity for T255/T511
-        // sized grids and when block grouping leaves workers idle. Keep
-        // multi-block groups aligned to the 64-lane recurrence blocks.
+        // Increase synthesis granularity when block grouping leaves workers
+        // idle. Keep multi-block groups aligned to recurrence block boundaries.
         if available_workers > 1
-            && ntheta >= 256
+            && ntheta >= 128
             && (ring_block_count <= 9 || existing_ring_worker_count < worker_limit)
         {
             let candidate_blocks_per_group = blocks_per_group.div_ceil(2);
             ring_group_size = if blocks_per_group == 1 {
-                LATITUDE_BLOCK_SIZE / 2
+                if ntheta < 256 {
+                    LATITUDE_BLOCK_SIZE / 4
+                } else {
+                    LATITUDE_BLOCK_SIZE / 2
+                }
             } else {
                 candidate_blocks_per_group
                     .checked_mul(LATITUDE_BLOCK_SIZE)
