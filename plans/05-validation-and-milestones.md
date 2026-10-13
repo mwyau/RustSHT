@@ -2141,3 +2141,19 @@ The synthesis reductions across grid and mode cells were 39.7–71.8% at T15, 62
 Median plan-construction times were `0.004/0.007/0.018 ms` before and after at T15/T31/T47. Eight-thread workspace-allocation medians changed from `0.027/0.028/0.038 ms` to `0.027/0.029/0.039 ms`. The four per-worker complex buffers add 1,088 bytes at T15; the eight-worker workspace adds 8.5 KiB. The transform does not allocate another map or spectrum.
 
 The candidate Python extension matched `ducc0==0.41.0` at source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf` on T15/T31/T47 GL/CC/F1 with `phi0=0.37`. Comparisons covered spin-1 STANDARD synthesis/analysis and both adjoints, E-only and B-only synthesis, GRAD_ONLY synthesis and adjoint, and DERIV1 synthesis and adjoint. Dense coefficients were scaled by `1e-5`; analysis used deterministic finite maps. Every comparison passed `rtol=atol=3e-12`; the largest absolute error was `1.010e-10`, and the maximum normalized L2 error `||actual-reference||₂ / max(||reference||₂, 1)` was `1.788e-14`. The extended fast-versus-general regressions cover T14/T15/T31/T47 for synthesis, STANDARD analysis and adjoint identities, and DERIV1 on all three grids. The T511 all-grid spin check and T1023 sparse-synthesis and exact-analysis DUCC checks passed after the change. The focused read-only Sol review found no numerical or memory blocker; it confirmed the `lmax+1` scalar recurrence row is allocated, `l<spin` coefficients stay excluded, and f32 does not use this path. No FFT code changed.
+
+### Spin analysis factor preparation reordering (2026-10-13, rejected)
+
+A candidate moved `fill_spin_factors()` after the partial paired-scalar analysis pass. The paired pass overwrites these factor arrays, so the candidate removed one spin-factor preparation per order before rebuilding factors for the polar recurrence. It changed no recurrence or accumulation arithmetic. Two alternating baseline/candidate process pairs used `examples/m1b_bench.rs` on f64 spin-1 STANDARD analysis at T255, T511 and T1023 on CC/F1, with a T511 GL control. Plans and workspaces were reused; each process warmed once and timed five calls. Runs used CPUs 0–7 on the Ryzen 9 5950X / Linux `7.0.14-20-pve`, Rust `1.99.0 (b940084d7 2026-09-28)`, release `opt-level=3`, 16 codegen units, LTO off and runtime AVX2/FMA dispatch. The medians below are computed from two process medians, in milliseconds; changes are candidate relative to baseline.
+
+| Grid / bandlimit | Baseline 1T/8T | Candidate 1T/8T | Change 1T/8T |
+| --- | ---: | ---: | ---: |
+| CC T255 | `22.402/9.098` | `23.308/9.024` | `+4.0%/-0.8%` |
+| CC T511 | `115.318/42.738` | `118.684/41.776` | `+2.9%/-2.3%` |
+| CC T1023 | `780.994/256.520` | `821.461/277.094` | `+5.2%/+8.0%` |
+| F1 T255 | `22.921/9.305` | `23.162/9.595` | `+1.0%/+3.1%` |
+| F1 T511 | `125.103/45.670` | `127.818/47.700` | `+2.2%/+4.4%` |
+| F1 T1023 | `776.008/279.298` | `815.582/286.052` | `+5.1%/+2.4%` |
+| GL T511 control | `90.707/24.339` | `91.155/25.474` | `+0.5%/+4.7%` |
+
+Process ranges overlapped in most comparisons, and the candidate was slower in both thread counts for CC T1023 and all F1 bandlimits. The T511 GL control showed no improvement. The focused spin-1 fast-versus-general analysis and adjoint regression passed with the candidate, but the whole-transform measurements do not support retaining it. The source uses the previous factor order.
