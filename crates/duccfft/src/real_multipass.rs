@@ -22,7 +22,6 @@ struct Pass<T> {
 pub(crate) struct RealMultipassPlan<T> {
     len: usize,
     passes: Vec<Pass<T>>,
-    radix4_ido_one_kernel: Option<unsafe fn(&[T], &mut [T], usize)>,
 }
 
 pub(crate) struct RealMultipassWorkspace<T> {
@@ -35,7 +34,6 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         len: usize,
         factors: &[usize],
         roots: &[Complex<T>],
-        radix4_ido_one_kernel: Option<unsafe fn(&[T], &mut [T], usize)>,
     ) -> Result<Option<Self>, FftError> {
         if len <= 1 || factors.iter().any(|&radix| !matches!(radix, 2 | 4)) {
             return Ok(None);
@@ -72,11 +70,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
             l1 = pass_len;
         }
         debug_assert_eq!(l1, len);
-        Ok(Some(Self {
-            len,
-            passes,
-            radix4_ido_one_kernel,
-        }))
+        Ok(Some(Self { len, passes }))
     }
 
     pub(crate) fn try_workspace(&self) -> Result<RealMultipassWorkspace<T>, FftError> {
@@ -125,19 +119,9 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         let mut current_is_first = true;
         for pass in &self.passes {
             if current_is_first {
-                execute_inverse_pass(
-                    pass,
-                    &workspace.first,
-                    &mut workspace.second,
-                    self.radix4_ido_one_kernel,
-                );
+                execute_inverse_pass(pass, &workspace.first, &mut workspace.second);
             } else {
-                execute_inverse_pass(
-                    pass,
-                    &workspace.second,
-                    &mut workspace.first,
-                    self.radix4_ido_one_kernel,
-                );
+                execute_inverse_pass(pass, &workspace.second, &mut workspace.first);
             }
             current_is_first = !current_is_first;
         }
@@ -190,15 +174,10 @@ fn execute_forward_pass<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], o
     }
 }
 
-fn execute_inverse_pass<T: Float + FromPrimitive>(
-    pass: &Pass<T>,
-    input: &[T],
-    output: &mut [T],
-    radix4_ido_one_kernel: Option<unsafe fn(&[T], &mut [T], usize)>,
-) {
+fn execute_inverse_pass<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output: &mut [T]) {
     match pass.radix {
         2 => inverse_radix2(pass, input, output),
-        4 => inverse_radix4(pass, input, output, radix4_ido_one_kernel),
+        4 => inverse_radix4(pass, input, output),
         _ => unreachable!("real multipass plan contains only radix 2 and 4"),
     }
 }
@@ -390,23 +369,10 @@ fn forward_radix4<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output:
     }
 }
 
-fn inverse_radix4<T: Float + FromPrimitive>(
-    pass: &Pass<T>,
-    input: &[T],
-    output: &mut [T],
-    radix4_ido_one_kernel: Option<unsafe fn(&[T], &mut [T], usize)>,
-) {
+fn inverse_radix4<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output: &mut [T]) {
     let l1 = pass.l1;
     let ido = pass.ido;
     if ido == 1 {
-        if l1 >= 4
-            && let Some(kernel) = radix4_ido_one_kernel
-        {
-            // SAFETY: plan construction installs this kernel only after AVX2
-            // runtime detection; pass buffers have exactly four l1 values.
-            unsafe { kernel(input, output, l1) };
-            return;
-        }
         let (branch0, tail) = output.split_at_mut(l1);
         let (branch1, tail) = tail.split_at_mut(l1);
         let (branch2, branch3) = tail.split_at_mut(l1);

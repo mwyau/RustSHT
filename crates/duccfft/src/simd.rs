@@ -19,12 +19,6 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
 
     fn avx2_available() -> bool;
 
-    /// Returns the real inverse radix-four terminal-pass kernel when this
-    /// scalar type has a runtime-supported implementation.
-    fn real_radix4_ido_one_kernel() -> Option<unsafe fn(&[Self], &mut [Self], usize)> {
-        None
-    }
-
     /// Executes the first fixed-radix pass over contiguous complex values.
     ///
     /// # Safety
@@ -65,14 +59,6 @@ mod x86 {
 
         fn avx2_available() -> bool {
             available()
-        }
-
-        fn real_radix4_ido_one_kernel() -> Option<unsafe fn(&[Self], &mut [Self], usize)> {
-            if available() {
-                Some(f64_real_kernel::inverse_radix4_ido_one)
-            } else {
-                None
-            }
         }
 
         unsafe fn avx2_first_pass(data: &mut [Complex<Self>], pass: &SimdPass<'_, Self>) {
@@ -622,62 +608,6 @@ mod x86 {
             }
         }
     }
-
-    mod f64_real_kernel {
-        use std::arch::x86_64::*;
-
-        #[target_feature(enable = "avx2")]
-        pub(super) unsafe fn inverse_radix4_ido_one(input: &[f64], output: &mut [f64], l1: usize) {
-            debug_assert_eq!(input.len(), 4 * l1);
-            debug_assert_eq!(output.len(), 4 * l1);
-
-            let vector_end = l1 / 4 * 4;
-            for k in (0..vector_end).step_by(4) {
-                let input_ptr = input.as_ptr();
-                let x01 = unsafe { _mm256_loadu_pd(input_ptr.add(4 * k)) };
-                let x11 = unsafe { _mm256_loadu_pd(input_ptr.add(4 * k + 4)) };
-                let x21 = unsafe { _mm256_loadu_pd(input_ptr.add(4 * k + 8)) };
-                let x31 = unsafe { _mm256_loadu_pd(input_ptr.add(4 * k + 12)) };
-
-                // Transpose four contiguous packed butterflies so AVX2 lanes
-                // hold the same radix branch from four adjacent k values.
-                let t00 = _mm256_unpacklo_pd(x01, x11);
-                let t01 = _mm256_unpackhi_pd(x01, x11);
-                let t10 = _mm256_unpacklo_pd(x21, x31);
-                let t11 = _mm256_unpackhi_pd(x21, x31);
-                let x0 = _mm256_permute2f128_pd(t00, t10, 0x20);
-                let x2 = _mm256_permute2f128_pd(t00, t10, 0x31);
-                let x1 = _mm256_permute2f128_pd(t01, t11, 0x20);
-                let x3 = _mm256_permute2f128_pd(t01, t11, 0x31);
-
-                let tr2 = _mm256_add_pd(x0, x3);
-                let tr1 = _mm256_sub_pd(x0, x3);
-                let two = _mm256_set1_pd(2.0);
-                let tr3 = _mm256_mul_pd(two, x1);
-                let tr4 = _mm256_mul_pd(two, x2);
-
-                let output_ptr = output.as_mut_ptr();
-                unsafe {
-                    _mm256_storeu_pd(output_ptr.add(k), _mm256_add_pd(tr2, tr3));
-                    _mm256_storeu_pd(output_ptr.add(l1 + k), _mm256_sub_pd(tr1, tr4));
-                    _mm256_storeu_pd(output_ptr.add(2 * l1 + k), _mm256_sub_pd(tr2, tr3));
-                    _mm256_storeu_pd(output_ptr.add(3 * l1 + k), _mm256_add_pd(tr1, tr4));
-                }
-            }
-
-            for k in vector_end..l1 {
-                let source = &input[4 * k..4 * k + 4];
-                let tr2 = source[0] + source[3];
-                let tr1 = source[0] - source[3];
-                let tr3 = 2.0 * source[1];
-                let tr4 = 2.0 * source[2];
-                output[k] = tr2 + tr3;
-                output[l1 + k] = tr1 - tr4;
-                output[2 * l1 + k] = tr2 - tr3;
-                output[3 * l1 + k] = tr1 + tr4;
-            }
-        }
-    }
 }
 
 #[cfg(not(target_arch = "x86_64"))]
@@ -857,39 +787,6 @@ mod tests {
                             );
                         }
                     }
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn f64_real_inverse_radix4_terminal_kernel_matches_scalar_equations() {
-        let Some(kernel) = <f64 as SimdScalar>::real_radix4_ido_one_kernel() else {
-            return;
-        };
-        for l1 in [1, 2, 3, 4, 5, 8, 12, 16, 64] {
-            let input: Vec<_> = (0..4 * l1)
-                .map(|index| {
-                    let x = index as f64;
-                    (x * 0.37).sin() + 0.25 * (x * 0.19).cos()
-                })
-                .collect();
-            let mut actual = vec![0.0; 4 * l1];
-            unsafe { kernel(&input, &mut actual, l1) };
-
-            for (k, source) in input.chunks_exact(4).enumerate() {
-                let tr2 = source[0] + source[3];
-                let tr1 = source[0] - source[3];
-                let tr3 = 2.0 * source[1];
-                let tr4 = 2.0 * source[2];
-                let expected = [tr2 + tr3, tr1 - tr4, tr2 - tr3, tr1 + tr4];
-                for branch in 0..4 {
-                    let observed = actual[branch * l1 + k];
-                    assert!(
-                        (observed - expected[branch]).abs() <= 2.0e-14,
-                        "l1={l1}, k={k}, branch={branch}: {observed} != {}",
-                        expected[branch]
-                    );
                 }
             }
         }
