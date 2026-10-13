@@ -696,7 +696,68 @@ fn complex_batch_rejects_incomplete_rows_and_accepts_empty_batches() {
             actual: 5,
         })
     );
+    let mut incomplete = vec![Complex::new(0.0, 0.0); 5];
+    assert_eq!(
+        plan.inverse_batch(&mut incomplete, &mut workspace),
+        Err(FftError::BatchBufferLength {
+            buffer: "values",
+            row_len: 4,
+            actual: 5,
+        })
+    );
+    let other_plan = ComplexFftPlan::<f64>::new(3).unwrap();
+    let mut other_workspace = other_plan.workspace().unwrap();
+    let mut values = vec![Complex::new(0.0, 0.0); 8];
+    assert_eq!(
+        plan.forward_batch(&mut values, &mut other_workspace),
+        Err(FftError::BufferLength {
+            buffer: "workspace",
+            expected: 4,
+            actual: 3,
+        })
+    );
     let mut empty = [];
     plan.forward_batch(&mut empty, &mut workspace).unwrap();
     plan.inverse_batch(&mut empty, &mut workspace).unwrap();
+}
+
+#[test]
+fn f32_complex_bluestein_batch_matches_independent_f64_dfts() {
+    let n = 137;
+    let rows = 2;
+    let plan = ComplexFftPlan::<f32>::new(n).unwrap();
+    let mut workspace = plan.workspace().unwrap();
+    let input32: Vec<_> = (0..rows)
+        .flat_map(|row| (0..n).map(move |index| signal_f32(index + 7 * row, n)))
+        .collect();
+    let input64: Vec<_> = input32
+        .iter()
+        .map(|value| Complex::new(value.re as f64, value.im as f64))
+        .collect();
+    let expected_forward: Vec<_> = input64
+        .chunks_exact(n)
+        .flat_map(|row| direct_dft_f64(row, true))
+        .map(|value| Complex::new(value.re as f32, value.im as f32))
+        .collect();
+
+    let mut values = input32;
+    plan.forward_batch(&mut values, &mut workspace).unwrap();
+    assert_f32_close(&values, &expected_forward, n);
+
+    let spectrum32: Vec<_> = (0..rows)
+        .flat_map(|row| (0..n).map(move |index| signal_f32(index + 19 * row, n + 3)))
+        .collect();
+    let spectrum64: Vec<_> = spectrum32
+        .iter()
+        .map(|value| Complex::new(value.re as f64, value.im as f64))
+        .collect();
+    let expected_inverse: Vec<_> = spectrum64
+        .chunks_exact(n)
+        .flat_map(|row| normalized_direct_inverse(direct_dft_f64(row, false), 1.0 / n as f64))
+        .map(|value| Complex::new(value.re as f32, value.im as f32))
+        .collect();
+    let mut inverse_values = spectrum32;
+    plan.inverse_batch(&mut inverse_values, &mut workspace)
+        .unwrap();
+    assert_f32_close(&inverse_values, &expected_inverse, n);
 }

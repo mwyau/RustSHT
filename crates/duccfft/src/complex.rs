@@ -41,7 +41,7 @@ pub enum FftError {
         /// The length supplied by the caller.
         actual: usize,
     },
-    /// A requested flat batch length exceeds the addressable slice size.
+    /// A requested flat batch element count overflows `usize`.
     BatchLengthOverflow {
         /// The name of the buffer whose required length overflowed.
         buffer: &'static str,
@@ -79,7 +79,7 @@ impl fmt::Display for FftError {
                 row_len,
             } => write!(
                 f,
-                "{buffer} length overflows for {rows} batch rows of length {row_len}"
+                "{buffer} element count overflows for {rows} batch rows of length {row_len}"
             ),
         }
     }
@@ -446,8 +446,9 @@ macro_rules! implement_public_api {
             /// data using one reusable workspace.
             ///
             /// The buffer length must be an integer multiple of the plan
-            /// length. A zero-length batch is a no-op. Rows execute in order;
-            /// this method does not create threads or allocate scratch.
+            /// length. A zero-length batch is a no-op. Output rows retain
+            /// input order; this method does not create threads or allocate
+            /// scratch.
             ///
             /// # Errors
             ///
@@ -486,8 +487,9 @@ macro_rules! implement_public_api {
             /// row-major complex data using one reusable workspace.
             ///
             /// The buffer length must be an integer multiple of the plan
-            /// length. A zero-length batch is a no-op. Rows execute in order;
-            /// this method does not create threads or allocate scratch.
+            /// length. A zero-length batch is a no-op. Output rows retain
+            /// input order; this method does not create threads or allocate
+            /// scratch.
             ///
             /// # Errors
             ///

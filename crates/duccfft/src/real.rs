@@ -256,9 +256,9 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
     ///
     /// The input length determines the row count and must be a multiple of
     /// the plan length. The output contains one `spectrum_len()` row per
-    /// input row. Rows execute in order with one reusable workspace; this
-    /// method does not allocate scratch or create threads. Empty batches are
-    /// accepted when both data buffers are empty.
+    /// input row. Output rows retain input order with one reusable workspace;
+    /// this method does not allocate scratch or create threads. Empty batches
+    /// are accepted when both data buffers are empty.
     ///
     /// # Errors
     ///
@@ -442,8 +442,8 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
     ///
     /// The spectrum length determines the row count and must be a multiple
     /// of `spectrum_len()`. The output contains one `len()` row per spectrum
-    /// row. Rows execute in order with one reusable workspace; this method
-    /// does not allocate scratch or create threads. Empty batches are
+    /// row. Output rows retain input order with one reusable workspace; this
+    /// method does not allocate scratch or create threads. Empty batches are
     /// accepted when both data buffers are empty.
     ///
     /// # Errors
