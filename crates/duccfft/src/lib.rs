@@ -6,6 +6,7 @@
 //! The crate uses immutable plans with caller-owned execution workspaces.
 
 mod complex;
+mod rader;
 mod real;
 mod real_multipass;
 mod simd;

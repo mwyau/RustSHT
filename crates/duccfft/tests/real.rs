@@ -1,4 +1,5 @@
 use num_complex::Complex;
+use rustfft::FftPlanner;
 
 use duccfft::{FftError, RealFftPlan};
 
@@ -43,6 +44,35 @@ fn direct_c2r_f64(spectrum: &[Complex<f64>], n: usize) -> Vec<f64> {
         .collect()
 }
 
+fn rustfft_r2c_f64(input: &[f64]) -> Vec<Complex<f64>> {
+    let n = input.len();
+    let mut values: Vec<_> = input
+        .iter()
+        .map(|&value| Complex::new(value, 0.0))
+        .collect();
+    FftPlanner::<f64>::new()
+        .plan_fft_forward(n)
+        .process(&mut values);
+    values.truncate(n / 2 + 1);
+    values
+}
+
+fn rustfft_c2r_f64(spectrum: &[Complex<f64>], n: usize) -> Vec<f64> {
+    let mut values = vec![Complex::new(0.0, 0.0); n];
+    values[0] = Complex::new(spectrum[0].re, 0.0);
+    for frequency in 1..=n / 2 {
+        values[frequency] = spectrum[frequency];
+        values[n - frequency] = spectrum[frequency].conj();
+    }
+    FftPlanner::<f64>::new()
+        .plan_fft_inverse(n)
+        .process(&mut values);
+    values
+        .into_iter()
+        .map(|value| value.re / n as f64)
+        .collect()
+}
+
 fn assert_f64_close(actual: &[f64], expected: &[f64], n: usize) {
     for (index, (&actual, &expected)) in actual.iter().zip(expected).enumerate() {
         let tolerance = 3.0e-12 * (n as f64).max(expected.abs()).max(1.0);
@@ -63,6 +93,26 @@ fn assert_complex_f64_close(actual: &[Complex<f64>], expected: &[Complex<f64>], 
         assert!(
             (actual - expected).norm() <= tolerance,
             "n={n}, mismatch at {index}: actual={actual}, expected={expected}, tolerance={tolerance}"
+        );
+    }
+}
+
+fn assert_tiny_f64_close(actual: &[f64], expected: &[f64]) {
+    let tolerance = 8.0 * f64::from_bits(1);
+    for (index, (&actual, &expected)) in actual.iter().zip(expected).enumerate() {
+        assert!(
+            (actual - expected).abs() <= tolerance,
+            "tiny mismatch at {index}: actual={actual:e}, expected={expected:e}, tolerance={tolerance:e}"
+        );
+    }
+}
+
+fn assert_tiny_complex_f64_close(actual: &[Complex<f64>], expected: &[Complex<f64>]) {
+    let tolerance = 8.0 * f64::from_bits(1);
+    for (index, (&actual, &expected)) in actual.iter().zip(expected).enumerate() {
+        assert!(
+            (actual - expected).norm() <= tolerance,
+            "tiny complex mismatch at {index}: actual={actual}, expected={expected}, tolerance={tolerance:e}"
         );
     }
 }
@@ -350,7 +400,7 @@ fn f32_large_smooth_prime_bluestein_and_sht_lengths_match_f64_references() {
 
 #[test]
 fn real_general_prime_and_bluestein_paths_match_independent_dfts() {
-    for n in [98, 127, 131, 137, 241, 257, 1025, 2049, 4097] {
+    for n in [98, 127, 131, 137, 241, 257, 723, 1025, 2049, 4097] {
         let plan = RealFftPlan::<f64>::new(n).unwrap();
         let mut workspace = plan.workspace().unwrap();
         let input: Vec<_> = (0..n).map(|index| real_signal(index + 3, n + 5)).collect();
@@ -407,6 +457,160 @@ fn real_general_prime_and_bluestein_paths_match_independent_dfts() {
     plan.inverse(&independent_spectrum, &mut actual_samples, &mut workspace)
         .unwrap();
     assert_f32_close(&actual_samples, &expected_samples, n);
+}
+
+#[test]
+fn selected_rader_real_routes_match_direct_and_rustfft_and_keep_extreme_fallbacks() {
+    for n in [241, 257, 723] {
+        let plan = RealFftPlan::<f64>::new(n).unwrap();
+        let mut workspace = plan.workspace().unwrap();
+        let input: Vec<_> = (0..n).map(|index| real_signal(index + 3, n + 5)).collect();
+        let mut spectrum = vec![Complex::new(0.0, 0.0); plan.spectrum_len()];
+        plan.forward(&input, &mut spectrum, &mut workspace).unwrap();
+        let expected_spectrum = direct_r2c_f64(&input);
+        assert_complex_f64_close(&spectrum, &expected_spectrum, n);
+        assert_complex_f64_close(&spectrum, &rustfft_r2c_f64(&input), n);
+
+        let mut impulse = vec![0.0; n];
+        impulse[n / 3] = -0.75;
+        let expected_impulse = direct_r2c_f64(&impulse);
+        plan.forward(&impulse, &mut spectrum, &mut workspace)
+            .unwrap();
+        assert_complex_f64_close(&spectrum, &expected_impulse, n);
+        assert_complex_f64_close(&spectrum, &rustfft_r2c_f64(&impulse), n);
+
+        let batch_input = [input.clone(), impulse].concat();
+        let mut batch_spectrum = vec![Complex::new(0.0, 0.0); 2 * plan.spectrum_len()];
+        plan.forward_batch(&batch_input, &mut batch_spectrum, &mut workspace)
+            .unwrap();
+        let half_spectrum = plan.spectrum_len();
+        assert_complex_f64_close(
+            &batch_spectrum[..half_spectrum],
+            &rustfft_r2c_f64(&input),
+            n,
+        );
+        assert_complex_f64_close(
+            &batch_spectrum[half_spectrum..],
+            &rustfft_r2c_f64(&batch_input[n..]),
+            n,
+        );
+        let mut batch_output = vec![0.0; 2 * n];
+        plan.inverse_batch(&batch_spectrum, &mut batch_output, &mut workspace)
+            .unwrap();
+        assert_f64_close(&batch_output[..n], &input, n);
+        assert_f64_close(&batch_output[n..], &batch_input[n..], n);
+
+        let input_spectrum: Vec<_> = (0..plan.spectrum_len())
+            .map(|index| {
+                Complex::new(
+                    real_signal(index + 17, n + 2),
+                    real_signal(index + 9, n + 11) * 0.3,
+                )
+            })
+            .collect();
+        let expected_samples = direct_c2r_f64(&input_spectrum, n);
+        let mut samples = vec![0.0; n];
+        plan.inverse(&input_spectrum, &mut samples, &mut workspace)
+            .unwrap();
+        assert_f64_close(&samples, &expected_samples, n);
+        assert_f64_close(&samples, &rustfft_c2r_f64(&input_spectrum, n), n);
+
+        let cancellation: Vec<_> = (0..n)
+            .map(|index| {
+                let sign = if index.is_multiple_of(2) { 1.0 } else { -1.0 };
+                sign + if index.is_multiple_of(7) {
+                    1.0e-12
+                } else {
+                    0.0
+                }
+            })
+            .collect();
+        let expected_cancellation = direct_r2c_f64(&cancellation);
+        plan.forward(&cancellation, &mut spectrum, &mut workspace)
+            .unwrap();
+        assert_complex_f64_close(&spectrum, &expected_cancellation, n);
+        assert_complex_f64_close(&spectrum, &rustfft_r2c_f64(&cancellation), n);
+
+        let dynamic_spectrum: Vec<_> = (0..plan.spectrum_len())
+            .map(|index| {
+                Complex::new(
+                    if index.is_multiple_of(7) {
+                        1.0
+                    } else {
+                        1.0e-12
+                    },
+                    if index.is_multiple_of(11) {
+                        -0.75
+                    } else {
+                        2.0e-13
+                    },
+                )
+            })
+            .collect();
+        let expected_dynamic = direct_c2r_f64(&dynamic_spectrum, n);
+        plan.inverse(&dynamic_spectrum, &mut samples, &mut workspace)
+            .unwrap();
+        assert_f64_close(&samples, &expected_dynamic, n);
+        assert_f64_close(&samples, &rustfft_c2r_f64(&dynamic_spectrum, n), n);
+
+        let mut maximum_impulse = vec![0.0; n];
+        let maximum_amplitude = if n == 241 {
+            f64::MAX / (4.0 * n as f64)
+        } else {
+            f64::MAX
+        };
+        maximum_impulse[0] = maximum_amplitude;
+        plan.forward(&maximum_impulse, &mut spectrum, &mut workspace)
+            .unwrap();
+        assert!(
+            spectrum
+                .iter()
+                .all(|value| value.re.is_finite() && value.im.is_finite())
+        );
+        let expected_maximum_impulse =
+            vec![Complex::new(maximum_amplitude, 0.0); plan.spectrum_len()];
+        if n == 241 {
+            assert_complex_f64_close(&spectrum, &expected_maximum_impulse, n);
+        } else {
+            assert_eq!(spectrum, expected_maximum_impulse);
+        }
+        for amplitude in [f64::MIN_POSITIVE, f64::from_bits(1)] {
+            let mut impulse = vec![0.0; n];
+            impulse[0] = amplitude;
+            plan.forward(&impulse, &mut spectrum, &mut workspace)
+                .unwrap();
+            assert_tiny_complex_f64_close(
+                &spectrum,
+                &vec![Complex::new(amplitude, 0.0); plan.spectrum_len()],
+            );
+
+            let mut tiny_spectrum = vec![Complex::new(0.0, 0.0); plan.spectrum_len()];
+            tiny_spectrum[0].re = amplitude * n as f64;
+            plan.inverse(&tiny_spectrum, &mut samples, &mut workspace)
+                .unwrap();
+            assert_tiny_f64_close(&samples, &vec![amplitude; n]);
+        }
+
+        let mut maximum_spectrum = vec![Complex::new(0.0, 0.0); plan.spectrum_len()];
+        maximum_spectrum[0].re = f64::MAX;
+        plan.inverse(&maximum_spectrum, &mut samples, &mut workspace)
+            .unwrap();
+        let maximum_expected = f64::MAX / n as f64;
+        let maximum_tolerance = maximum_expected * 4.0 * f64::EPSILON;
+        assert!(samples.iter().all(|&value| {
+            value.is_finite() && (value - maximum_expected).abs() <= maximum_tolerance
+        }));
+
+        let mut nonfinite_input = vec![0.0; n];
+        nonfinite_input[n / 2] = f64::INFINITY;
+        plan.forward(&nonfinite_input, &mut spectrum, &mut workspace)
+            .unwrap();
+        assert!(
+            spectrum
+                .iter()
+                .any(|value| !value.re.is_finite() || !value.im.is_finite())
+        );
+    }
 }
 
 #[test]

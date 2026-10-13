@@ -325,6 +325,18 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
         Ok(())
     }
 
+    pub(crate) fn execute_runtime(
+        &self,
+        values: &mut [Complex<T>],
+        workspace: &mut ComplexFftWorkspace<T>,
+        direction: Direction,
+    ) -> Result<(), FftError>
+    where
+        T: SimdScalar,
+    {
+        self.execute_avx2(values, workspace, direction)
+    }
+
     fn execute_avx2_unchecked(
         &self,
         values: &mut [Complex<T>],

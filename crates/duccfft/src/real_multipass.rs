@@ -12,6 +12,7 @@ use num_traits::{Float, FromPrimitive};
 
 use crate::FftError;
 use crate::complex::{BluesteinPlan, ComplexFftWorkspace, Direction, check_vec_len, try_vec};
+use crate::rader::{RaderPrimePlan, RaderPrimeWorkspace};
 use crate::simd::{
     RealGeneralPrimeIdo1Kernel, RealGeneralPrimeIdo1Params, RealRadix2ForwardInteriorKernel,
     RealRadix2InteriorKernel, RealRadix4ForwardInteriorKernel, RealRadix4InteriorKernel,
@@ -30,6 +31,7 @@ struct Pass<T> {
     prime_sines: Vec<T>,
     prime_ido1_kernel: Option<RealGeneralPrimeIdo1Kernel<T>>,
     bluestein_stage: Option<usize>,
+    rader_stage: bool,
 }
 
 pub(crate) struct RealMultipassKernels<T> {
@@ -54,19 +56,23 @@ pub(crate) struct RealMultipassWorkspace<T> {
     second: Vec<T>,
 }
 
-pub(crate) struct MultipassBluestein<'a, T> {
+pub(crate) struct MultipassTransforms<'a, T> {
     plans: &'a [Option<BluesteinPlan<T>>],
     buffer: &'a mut [Complex<T>],
     workspaces: &'a mut [Option<ComplexFftWorkspace<T>>],
+    rader: Option<&'a RaderPrimePlan<T>>,
+    rader_workspace: Option<&'a mut RaderPrimeWorkspace<T>>,
     radix_input: &'a mut [Complex<T>],
     radix_output: &'a mut [Complex<T>],
 }
 
-impl<'a, T> MultipassBluestein<'a, T> {
+impl<'a, T> MultipassTransforms<'a, T> {
     pub(crate) fn new(
         plans: &'a [Option<BluesteinPlan<T>>],
         buffer: &'a mut [Complex<T>],
         workspaces: &'a mut [Option<ComplexFftWorkspace<T>>],
+        rader: Option<&'a RaderPrimePlan<T>>,
+        rader_workspace: Option<&'a mut RaderPrimeWorkspace<T>>,
         radix_input: &'a mut [Complex<T>],
         radix_output: &'a mut [Complex<T>],
     ) -> Self {
@@ -74,6 +80,8 @@ impl<'a, T> MultipassBluestein<'a, T> {
             plans,
             buffer,
             workspaces,
+            rader,
+            rader_workspace,
             radix_input,
             radix_output,
         }
@@ -86,6 +94,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         factors: &[usize],
         roots: &[Complex<T>],
         kernels: RealMultipassKernels<T>,
+        rader_radix: Option<usize>,
     ) -> Result<Option<Self>, FftError> {
         if len <= 1 {
             return Ok(None);
@@ -99,7 +108,13 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         for (stage, &radix) in factors.iter().enumerate() {
             let pass_len = l1.checked_mul(radix).ok_or(FftError::AllocationFailed)?;
             let ido = len / pass_len;
-            let bluestein_stage = if radix >= 135 {
+            let rader_stage = rader_radix == Some(radix) && ido == 1;
+            if rader_radix == Some(radix) && !rader_stage {
+                return Ok(None);
+            }
+            let bluestein_stage = if rader_stage {
+                None
+            } else if radix >= 135 {
                 if ido != 1 {
                     return Ok(None);
                 }
@@ -191,8 +206,12 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                     .then_some(kernels.prime_ido1)
                     .flatten(),
                 bluestein_stage,
+                rader_stage,
             });
             l1 = pass_len;
+        }
+        if rader_radix.is_some() && !passes.iter().any(|pass: &Pass<T>| pass.rader_stage) {
+            return Ok(None);
         }
         debug_assert_eq!(l1, len);
         Ok(Some(Self {
@@ -218,7 +237,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         input: &[T],
         spectrum: &mut [Complex<T>],
         workspace: &mut RealMultipassWorkspace<T>,
-        bluestein: &mut MultipassBluestein<'_, T>,
+        transforms: &mut MultipassTransforms<'_, T>,
     ) {
         let mut passes = self.passes.iter().rev();
         let Some(first_pass) = passes.next() else {
@@ -230,7 +249,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
             &mut workspace.second,
             self.radix2_forward_interior_kernel,
             self.radix4_forward_interior_kernel,
-            bluestein,
+            transforms,
         );
         let mut current_is_first = false;
         for pass in passes {
@@ -241,7 +260,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                     &mut workspace.second,
                     self.radix2_forward_interior_kernel,
                     self.radix4_forward_interior_kernel,
-                    bluestein,
+                    transforms,
                 );
             } else {
                 execute_forward_pass(
@@ -250,7 +269,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                     &mut workspace.first,
                     self.radix2_forward_interior_kernel,
                     self.radix4_forward_interior_kernel,
-                    bluestein,
+                    transforms,
                 );
             }
             current_is_first = !current_is_first;
@@ -268,12 +287,13 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         spectrum: &[Complex<T>],
         output: &mut [T],
         workspace: &mut RealMultipassWorkspace<T>,
-        bluestein: &mut MultipassBluestein<'_, T>,
+        rader_dc_only: bool,
+        transforms: &mut MultipassTransforms<'_, T>,
     ) -> bool {
         // Packing already reads every component used by the transform. Fold
         // the overflow guard into that pass so ordinary inputs do not require
         // a separate full-spectrum scan.
-        if !pack_spectrum_if_safe(spectrum, &mut workspace.first) {
+        if !pack_spectrum_if_safe(spectrum, &mut workspace.first) && !rader_dc_only {
             return false;
         }
         let mut current_is_first = true;
@@ -289,8 +309,8 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                 } else {
                     &workspace.second
                 };
-                if pass.bluestein_stage.is_some() {
-                    bluestein.inverse(pass, input, output, scale);
+                if pass.bluestein_stage.is_some() || pass.rader_stage {
+                    transforms.inverse(pass, input, output, scale);
                 } else {
                     inverse_terminal::execute(pass, input, output, scale);
                 }
@@ -301,7 +321,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                     &mut workspace.second,
                     self.radix2_interior_kernel,
                     self.radix4_interior_kernel,
-                    bluestein,
+                    transforms,
                 );
             } else {
                 execute_inverse_pass(
@@ -310,7 +330,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                     &mut workspace.first,
                     self.radix2_interior_kernel,
                     self.radix4_interior_kernel,
-                    bluestein,
+                    transforms,
                 );
             }
             if index != last_pass {
@@ -356,10 +376,10 @@ fn execute_forward_pass<T: Float + FromPrimitive>(
     output: &mut [T],
     radix2_forward_interior_kernel: Option<RealRadix2ForwardInteriorKernel<T>>,
     radix4_forward_interior_kernel: Option<RealRadix4ForwardInteriorKernel<T>>,
-    bluestein: &mut MultipassBluestein<'_, T>,
+    transforms: &mut MultipassTransforms<'_, T>,
 ) {
-    if pass.bluestein_stage.is_some() {
-        bluestein.forward(pass, input, output);
+    if pass.bluestein_stage.is_some() || pass.rader_stage {
+        transforms.forward(pass, input, output);
         return;
     }
     match pass.radix {
@@ -377,10 +397,10 @@ fn execute_inverse_pass<T: Float + FromPrimitive>(
     output: &mut [T],
     radix2_interior_kernel: Option<RealRadix2InteriorKernel<T>>,
     radix4_interior_kernel: Option<RealRadix4InteriorKernel<T>>,
-    bluestein: &mut MultipassBluestein<'_, T>,
+    transforms: &mut MultipassTransforms<'_, T>,
 ) {
-    if pass.bluestein_stage.is_some() {
-        bluestein.inverse(pass, input, output, T::one());
+    if pass.bluestein_stage.is_some() || pass.rader_stage {
+        transforms.inverse(pass, input, output, T::one());
         return;
     }
     match pass.radix {
@@ -392,8 +412,39 @@ fn execute_inverse_pass<T: Float + FromPrimitive>(
     }
 }
 
-impl<T: Float + FromPrimitive> MultipassBluestein<'_, T> {
+impl<T: Float + FromPrimitive> MultipassTransforms<'_, T> {
     fn forward(&mut self, pass: &Pass<T>, input: &[T], output: &mut [T]) {
+        if pass.rader_stage {
+            let rader = self.rader.expect("Rader pass has a precomputed plan");
+            let rader_workspace = self
+                .rader_workspace
+                .as_mut()
+                .expect("Rader pass has a reusable workspace");
+            let radix = pass.radix;
+            let half = radix / 2;
+            debug_assert_eq!(rader.radix(), radix);
+            debug_assert_eq!(pass.ido, 1);
+            for group in 0..pass.l1 {
+                for branch in 0..radix {
+                    self.radix_input[branch] =
+                        Complex::new(input[branch * pass.l1 + group], T::zero());
+                }
+                rader.execute(
+                    &self.radix_input[..radix],
+                    &mut self.radix_output[..radix],
+                    Direction::Forward,
+                    rader_workspace,
+                );
+                let output_start = group * radix;
+                output[output_start] = self.radix_output[0].re;
+                for frequency in 1..=half {
+                    let value = self.radix_output[frequency];
+                    output[output_start + 2 * frequency - 1] = value.re;
+                    output[output_start + 2 * frequency] = value.im;
+                }
+            }
+            return;
+        }
         let stage = pass
             .bluestein_stage
             .expect("Bluestein pass has a plan stage");
@@ -433,6 +484,39 @@ impl<T: Float + FromPrimitive> MultipassBluestein<'_, T> {
     }
 
     fn inverse(&mut self, pass: &Pass<T>, input: &[T], output: &mut [T], scale: T) {
+        if pass.rader_stage {
+            let rader = self.rader.expect("Rader pass has a precomputed plan");
+            let rader_workspace = self
+                .rader_workspace
+                .as_mut()
+                .expect("Rader pass has a reusable workspace");
+            let radix = pass.radix;
+            let half = radix / 2;
+            debug_assert_eq!(rader.radix(), radix);
+            debug_assert_eq!(pass.ido, 1);
+            for group in 0..pass.l1 {
+                let input_start = group * radix;
+                self.radix_input[0] = Complex::new(input[input_start], T::zero());
+                for frequency in 1..=half {
+                    let value = Complex::new(
+                        input[input_start + 2 * frequency - 1],
+                        input[input_start + 2 * frequency],
+                    );
+                    self.radix_input[frequency] = value;
+                    self.radix_input[radix - frequency] = value.conj();
+                }
+                rader.execute(
+                    &self.radix_input[..radix],
+                    &mut self.radix_output[..radix],
+                    Direction::Inverse,
+                    rader_workspace,
+                );
+                for sample in 0..radix {
+                    output[sample * pass.l1 + group] = self.radix_output[sample].re * scale;
+                }
+            }
+            return;
+        }
         let stage = pass
             .bluestein_stage
             .expect("Bluestein pass has a plan stage");
