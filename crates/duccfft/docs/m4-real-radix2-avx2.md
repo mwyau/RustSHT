@@ -39,18 +39,19 @@ the plan and took seven timed samples for R2C and C2R at batch counts 1 and 32. 
 |---:|:---:|---:|---:|
 | 128 | yes | 0.381 / 0.331; +18.6%; +12.5% (12/12 pairs) | 0.355 / 0.305; +16.5%; +11.3% (8/12 pairs) |
 | 256 | no | 0.631 / 0.631; +0.0%; −2.8% (1/12 pairs) | 0.599 / 0.596; −0.3%; −0.5% (5/12 pairs) |
-| 512 | yes | 1.493 / 1.313; +13.7%; +12.6% (10/12 pairs) | 1.472 / 1.290; +14.2%; +12.5% (12/12 pairs) |
-| 1,024 | no | 2.640 / 2.675; −1.3%; −1.1% (5/12 pairs) | 2.631 / 2.670; −1.4%; −4.9% (0/12 pairs) |
+| 512 | yes | 1.493 / 1.313; +13.7%; +12.6% (10/12 pairs) | 1.472 / 1.290; +14.1%; +12.4% (12/12 pairs) |
+| 1,024 | no | 2.640 / 2.675; −1.3%; −1.1% (5/12 pairs) | 2.631 / 2.670; −1.4%; −4.8% (0/12 pairs) |
 | 2,048 | yes | 6.462 / 5.776; +12.1%; +11.0% (12/12 pairs) | 6.489 / 5.795; +11.9%; +8.5% (12/12 pairs) |
 | 4,096 | no | 11.867 / 11.963; −0.9%; −3.7% (0/12 pairs) | 11.968 / 12.079; −1.0%; −4.1% (0/12 pairs) |
 
-The R2C control median changes (`baseline / candidate − 1`) ranged from
-−0.6% to +5.1% for single calls and +0.8% to +3.7% for batches. For the
+Counts in parentheses are the process pairs with a positive R2C-adjusted
+estimate. The R2C control median changes (`baseline / candidate − 1`) ranged
+from −0.6% to +5.1% for single calls and +0.8% to +3.7% for batches. For the
 no-radix-two C2R controls, raw single-call medians changed −1.3% to +0.0%,
 batch medians changed −1.4% to −0.3%, and R2C-adjusted estimates changed
-−0.5% to −4.9%. At 512 and 2,048,
+−0.5% to −4.8%. At 512 and 2,048,
 all 12 C2R process pairs favored the candidate in both single and batch
-measurements; the R2C-adjusted median gains were 12.5–12.6% at 512 and
+measurements; the R2C-adjusted median gains were 12.4–12.6% at 512 and
 8.5–11.0% at 2,048. The paired process records contain 576 unique rows. Baseline and candidate
 checksums and workspace sizes match for every length, direction, batch count,
 and process pair. The baseline and candidate default-profile benchmark binary
@@ -91,10 +92,10 @@ microseconds per transform and total microseconds for the 32-transform call. Rat
 |---:|---:|---:|---:|
 | 128 | 0.325 / 0.188 / 0.257 / 0.229 | 10.384 / 6.002 / 8.235 / 7.329 | 1.73 / 1.26 / 1.42× |
 | 512 | 1.305 / 0.787 / 1.129 / 0.996 | 41.758 / 25.198 / 36.123 / 31.865 | 1.66 / 1.16 / 1.31× |
-| 2,048 | 5.851 / 3.655 / 5.297 / 4.689 | 187.242 / 116.975 / 169.519 / 150.062 | 1.60 / 1.11 / 1.25× |
+| 2,048 | 5.851 / 3.655 / 5.297 / 4.689 | 187.242 / 116.975 / 169.519 / 150.062 | 1.60 / 1.10 / 1.25× |
 
 The candidate closes part of the C2R gap at 512 and 2,048. C2R remains
-1.60–1.73× slower than RustFFT in these cases. It is 1.12–1.19× slower than
+1.60–1.73× slower than RustFFT in these cases. It is 1.10–1.19× slower than
 portable DUCC at 512 and 2,048, and 1.25–1.36× slower than native-target DUCC. The 128-point paired result has wider control variation and is less conclusive. The raw cross-library records contain 576 unique rows and are in
 [`m4-real-radix2-cross-library-process-samples.csv`](../benches/results/m4-real-radix2-cross-library-process-samples.csv). The Rust benchmark binary SHA-256 was
 `f0fa7b843e527a6041e8aa3b091c0debe43505e0466fa090680566eadac372d8`. The
