@@ -953,6 +953,8 @@ mod tests {
                     &twiddles,
                 )
             };
+            let expected_start = 2 + 4 * ((ido - 2) / 4);
+            assert_eq!(start, expected_start, "ido={ido}");
             let actual = [actual0, actual1, actual2, actual3];
 
             for i in (2..start).step_by(4) {
@@ -1041,13 +1043,17 @@ mod tests {
                 }
             }
             for branch in &actual {
-                for (index, &value) in branch.iter().enumerate() {
-                    if index == 0 || index + 1 == ido || index < 1 || index >= start - 1 {
-                        continue;
-                    }
+                assert!(branch[0].is_nan(), "ido={ido}, index=0 was overwritten");
+                for (index, &value) in branch.iter().enumerate().take(start - 1).skip(1) {
                     assert!(
                         value.is_finite(),
                         "ido={ido}, index={index} was not written"
+                    );
+                }
+                for (index, &value) in branch.iter().enumerate().skip(start - 1) {
+                    assert!(
+                        value.is_nan(),
+                        "ido={ido}, untouched index={index} was overwritten"
                     );
                 }
             }

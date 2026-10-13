@@ -838,43 +838,44 @@ fn inverse_preserves_small_terms_in_high_dynamic_range_spectra() {
 
 #[test]
 fn real_inverse_normalization_fast_path_matches_random_spectra() {
-    let n = 1024;
-    let mut state = 0x3c6e_f372_fe94_f82b_u64;
-    let mut next_value = || {
-        state ^= state << 13;
-        state ^= state >> 7;
-        state ^= state << 17;
-        2.0 * ((state >> 11) as f64 / (1_u64 << 53) as f64) - 1.0
-    };
+    for n in [1024, 2048, 4096] {
+        let mut state = 0x3c6e_f372_fe94_f82b_u64 ^ n as u64;
+        let mut next_value = || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            2.0 * ((state >> 11) as f64 / (1_u64 << 53) as f64) - 1.0
+        };
 
-    let spectrum64: Vec<_> = (0..=n / 2)
-        .map(|_| Complex::new(next_value(), next_value()))
-        .collect();
-    let expected64 = direct_c2r_f64(&spectrum64, n);
-    let plan64 = RealFftPlan::<f64>::new(n).unwrap();
-    let mut workspace64 = plan64.workspace().unwrap();
-    let mut actual64 = vec![0.0; n];
-    plan64
-        .inverse(&spectrum64, &mut actual64, &mut workspace64)
-        .unwrap();
-    assert_f64_close(&actual64, &expected64, n);
+        let spectrum64: Vec<_> = (0..=n / 2)
+            .map(|_| Complex::new(next_value(), next_value()))
+            .collect();
+        let expected64 = direct_c2r_f64(&spectrum64, n);
+        let plan64 = RealFftPlan::<f64>::new(n).unwrap();
+        let mut workspace64 = plan64.workspace().unwrap();
+        let mut actual64 = vec![0.0; n];
+        plan64
+            .inverse(&spectrum64, &mut actual64, &mut workspace64)
+            .unwrap();
+        assert_f64_close(&actual64, &expected64, n);
 
-    let spectrum32: Vec<_> = spectrum64
-        .iter()
-        .map(|value| Complex::new(value.re as f32, value.im as f32))
-        .collect();
-    let rounded_spectrum64: Vec<_> = spectrum32
-        .iter()
-        .map(|value| Complex::new(value.re as f64, value.im as f64))
-        .collect();
-    let expected32 = direct_c2r_f64(&rounded_spectrum64, n);
-    let plan32 = RealFftPlan::<f32>::new(n).unwrap();
-    let mut workspace32 = plan32.workspace().unwrap();
-    let mut actual32 = vec![0.0; n];
-    plan32
-        .inverse(&spectrum32, &mut actual32, &mut workspace32)
-        .unwrap();
-    assert_f32_close(&actual32, &expected32, n);
+        let spectrum32: Vec<_> = spectrum64
+            .iter()
+            .map(|value| Complex::new(value.re as f32, value.im as f32))
+            .collect();
+        let rounded_spectrum64: Vec<_> = spectrum32
+            .iter()
+            .map(|value| Complex::new(value.re as f64, value.im as f64))
+            .collect();
+        let expected32 = direct_c2r_f64(&rounded_spectrum64, n);
+        let plan32 = RealFftPlan::<f32>::new(n).unwrap();
+        let mut workspace32 = plan32.workspace().unwrap();
+        let mut actual32 = vec![0.0; n];
+        plan32
+            .inverse(&spectrum32, &mut actual32, &mut workspace32)
+            .unwrap();
+        assert_f32_close(&actual32, &expected32, n);
+    }
 }
 
 #[test]
