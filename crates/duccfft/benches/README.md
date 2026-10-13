@@ -62,3 +62,8 @@ active is provisional. Use repeated process-level runs for comparisons.
 The paired M4 measurement for fusing real inverse eligibility with packed
 spectrum conversion is in
 [`docs/m4-real-inverse-pack.md`](../docs/m4-real-inverse-pack.md).
+
+`bench-profile-complex N forward|inverse [ITERATIONS]` runs repeated public
+f64 C2C operations with the same input restored before each transform. Its
+Callgrind use and the N=4,096 pass profile are documented in
+[`docs/m4-c2c-ido1.md`](../docs/m4-c2c-ido1.md).
