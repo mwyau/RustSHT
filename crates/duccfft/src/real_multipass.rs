@@ -474,8 +474,10 @@ fn unpack_spectrum<T: Float>(packed: &[T], spectrum: &mut [Complex<T>]) {
 }
 
 fn pack_spectrum<T: Float>(spectrum: &[Complex<T>], packed: &mut [T]) {
-    packed.fill(T::zero());
     let len = packed.len();
+    debug_assert_eq!(spectrum.len(), len / 2 + 1);
+    // DC, every interior real/imaginary pair, and Nyquist cover the full
+    // packed buffer for the even lengths accepted by this executor.
     packed[0] = spectrum[0].re;
     for (k, &value) in spectrum.iter().enumerate().skip(1) {
         if k == len / 2 {
