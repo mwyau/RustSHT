@@ -379,7 +379,7 @@ int main(int argc, char** argv) {
       return 0;
     }
     if (command == "bench-one" && (argc == 4 || argc == 5)) {
-      std::cout << "mode,n,plan_ns,scratch_ns,scratch_bytes,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum\n";
+      std::cout << "mode,n,plan_ns,scratch_ns,kernel_scratch_bytes,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum\n";
       if (argc == 5) {
         benchmark(parse_mode(argv[2]), std::stoull(argv[3]),
                   std::stoull(argv[4]));
@@ -390,7 +390,7 @@ int main(int argc, char** argv) {
       return 0;
     }
     if (command == "bench-sht" && argc == 2) {
-      std::cout << "mode,n,plan_ns,scratch_ns,scratch_bytes,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum\n";
+      std::cout << "mode,n,plan_ns,scratch_ns,kernel_scratch_bytes,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum\n";
       for (const auto [n, rows] : sht_workloads)
         for (const auto mode : {Mode::c2c_forward, Mode::c2c_inverse,
                                 Mode::r2c, Mode::c2r})
@@ -398,7 +398,7 @@ int main(int argc, char** argv) {
       return 0;
     }
     if (command == "bench") {
-      std::cout << "mode,n,plan_ns,scratch_ns,scratch_bytes,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum\n";
+      std::cout << "mode,n,plan_ns,scratch_ns,kernel_scratch_bytes,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum\n";
       if (argc == 2) {
         for (const auto n : benchmark_lengths)
           for (const auto mode : {Mode::c2c_forward, Mode::c2c_inverse,

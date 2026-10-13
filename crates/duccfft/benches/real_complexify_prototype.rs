@@ -4,6 +4,7 @@
 // Bounded full-operation experiment for DUCC's rfftp_complexify algorithm.
 // It forces the packed-real wrapper around the crate's complex multipass plan
 // at smooth even lengths where DUCC's scalar planner selects real passes.
+// Plan construction and reusable workspace allocation are measured separately.
 
 use std::hint::black_box;
 use std::time::{Duration, Instant};
@@ -16,20 +17,22 @@ const ZERO: C = C::new(0.0, 0.0);
 const SAMPLE_COUNT: usize = 7;
 const BATCH_COUNT: usize = 32;
 
-struct ForcedComplexify {
+struct ForcedComplexifyPlan {
     len: usize,
     complex: ComplexFftPlan<f64>,
-    workspace: duccfft::ComplexFftWorkspace<f64>,
     roots: Vec<C>,
+}
+
+struct ForcedComplexifyWorkspace {
+    workspace: duccfft::ComplexFftWorkspace<f64>,
     packed: Vec<C>,
 }
 
-impl ForcedComplexify {
+impl ForcedComplexifyPlan {
     fn new(len: usize) -> Self {
         assert!(len.is_multiple_of(2));
         let complex_len = len / 2;
         let complex = ComplexFftPlan::<f64>::new(complex_len).expect("complex plan");
-        let workspace = complex.workspace().expect("complex workspace");
         let roots = (0..complex_len)
             .map(|index| {
                 let angle = std::f64::consts::TAU * index as f64 / len as f64;
@@ -39,46 +42,65 @@ impl ForcedComplexify {
         Self {
             len,
             complex,
-            workspace,
             roots,
-            packed: vec![ZERO; complex_len],
         }
     }
 
-    fn scratch_bytes(&self) -> usize {
-        self.workspace
-            .scratch_bytes()
-            .expect("complex workspace byte count")
-            + self.packed.len() * std::mem::size_of::<C>()
+    fn workspace(&self) -> ForcedComplexifyWorkspace {
+        ForcedComplexifyWorkspace {
+            workspace: self.complex.workspace().expect("complex workspace"),
+            packed: vec![ZERO; self.len / 2],
+        }
     }
 
-    fn forward(&mut self, input: &[f64], spectrum: &mut [C]) {
+    fn scratch_bytes(&self, workspace: &ForcedComplexifyWorkspace) -> usize {
+        workspace
+            .workspace
+            .scratch_bytes()
+            .expect("complex workspace byte count")
+            + workspace.packed.len() * std::mem::size_of::<C>()
+    }
+
+    fn forward(
+        &self,
+        input: &[f64],
+        spectrum: &mut [C],
+        workspace: &mut ForcedComplexifyWorkspace,
+    ) {
         let half = self.len / 2;
         let (pairs, remainder) = input.as_chunks::<2>();
         debug_assert!(remainder.is_empty());
-        for (slot, pair) in self.packed.iter_mut().zip(pairs) {
+        for (slot, pair) in workspace.packed.iter_mut().zip(pairs) {
             *slot = C::new(pair[0], pair[1]);
         }
         self.complex
-            .forward(&mut self.packed, &mut self.workspace)
+            .forward(&mut workspace.packed, &mut workspace.workspace)
             .expect("complex forward");
-        spectrum[0] = C::new(self.packed[0].re + self.packed[0].im, 0.0);
+        spectrum[0] = C::new(workspace.packed[0].re + workspace.packed[0].im, 0.0);
         let mut index = 1;
         let mut mirror = half - 1;
         while index <= mirror {
-            let (left, right) =
-                complexify_forward_pair(self.packed[index], self.packed[mirror], self.roots[index]);
+            let (left, right) = complexify_forward_pair(
+                workspace.packed[index],
+                workspace.packed[mirror],
+                self.roots[index],
+            );
             spectrum[index] = left;
             spectrum[mirror] = right;
             index += 1;
             mirror -= 1;
         }
-        spectrum[half] = C::new(self.packed[0].re - self.packed[0].im, 0.0);
+        spectrum[half] = C::new(workspace.packed[0].re - workspace.packed[0].im, 0.0);
     }
 
-    fn inverse(&mut self, spectrum: &[C], output: &mut [f64]) {
+    fn inverse(
+        &self,
+        spectrum: &[C],
+        output: &mut [f64],
+        workspace: &mut ForcedComplexifyWorkspace,
+    ) {
         let half = self.len / 2;
-        self.packed[0] = C::new(
+        workspace.packed[0] = C::new(
             spectrum[0].re + spectrum[half].re,
             spectrum[0].re - spectrum[half].re,
         );
@@ -90,17 +112,17 @@ impl ForcedComplexify {
                 spectrum[mirror].conj(),
                 self.roots[index],
             );
-            self.packed[index] = left;
-            self.packed[mirror] = right;
+            workspace.packed[index] = left;
+            workspace.packed[mirror] = right;
             index += 1;
             mirror -= 1;
         }
         self.complex
-            .inverse(&mut self.packed, &mut self.workspace)
+            .inverse(&mut workspace.packed, &mut workspace.workspace)
             .expect("complex inverse");
         let (pairs, remainder) = output.as_chunks_mut::<2>();
         debug_assert!(remainder.is_empty());
-        for (pair, value) in pairs.iter_mut().zip(&self.packed) {
+        for (pair, value) in pairs.iter_mut().zip(&workspace.packed) {
             pair[0] = value.re * 0.5;
             pair[1] = value.im * 0.5;
         }
@@ -202,7 +224,7 @@ fn benchmark(len: usize, rows: usize) {
     let plan_time = {
         let start = Instant::now();
         for _ in 0..20 {
-            black_box(RealFftPlan::<f64>::new(len).expect("real plan").len());
+            black_box(RealFftPlan::<f64>::new(len).expect("real plan"));
         }
         start.elapsed().as_nanos() as f64 / 20.0
     };
@@ -211,7 +233,7 @@ fn benchmark(len: usize, rows: usize) {
     let real_workspace_time = {
         let start = Instant::now();
         for _ in 0..20 {
-            black_box(real_plan.workspace().expect("real workspace").len());
+            black_box(real_plan.workspace().expect("real workspace"));
         }
         start.elapsed().as_nanos() as f64 / 20.0
     };
@@ -219,28 +241,23 @@ fn benchmark(len: usize, rows: usize) {
         .scratch_bytes()
         .expect("real workspace byte count");
 
-    let mut complexify = ForcedComplexify::new(len);
+    let complexify_plan = ForcedComplexifyPlan::new(len);
     let complexify_plan_time = {
         let start = Instant::now();
         for _ in 0..20 {
-            black_box(ForcedComplexify::new(len).scratch_bytes());
+            black_box(ForcedComplexifyPlan::new(len));
         }
         start.elapsed().as_nanos() as f64 / 20.0
     };
+    let mut complexify_workspace = complexify_plan.workspace();
     let complexify_workspace_time = {
         let start = Instant::now();
         for _ in 0..20 {
-            black_box(
-                complexify
-                    .complex
-                    .workspace()
-                    .expect("complex workspace")
-                    .len(),
-            );
+            black_box(complexify_plan.workspace());
         }
         start.elapsed().as_nanos() as f64 / 20.0
     };
-    let complexify_scratch_bytes = complexify.scratch_bytes();
+    let complexify_scratch_bytes = complexify_plan.scratch_bytes(&complexify_workspace);
 
     let bins = len / 2 + 1;
     let input: Vec<_> = (0..rows)
@@ -268,18 +285,20 @@ fn benchmark(len: usize, rows: usize) {
     }) / rows as f64;
     let complexify_forward_ns = measure(|| {
         for row in 0..rows {
-            complexify.forward(
+            complexify_plan.forward(
                 &input[row * len..(row + 1) * len],
                 &mut complexify_spectrum[row * bins..(row + 1) * bins],
+                &mut complexify_workspace,
             );
         }
         black_box(complexify_spectrum.as_slice());
     }) / rows as f64;
-    let mut verify_complexify = ForcedComplexify::new(len);
+    let verify_complexify = ForcedComplexifyPlan::new(len);
+    let mut verify_workspace = verify_complexify.workspace();
     let mut one_spectrum = vec![ZERO; bins];
     let mut one_output = vec![0.0; len];
-    verify_complexify.forward(&input[..len], &mut one_spectrum);
-    verify_complexify.inverse(&one_spectrum, &mut one_output);
+    verify_complexify.forward(&input[..len], &mut one_spectrum, &mut verify_workspace);
+    verify_complexify.inverse(&one_spectrum, &mut one_output, &mut verify_workspace);
     compare_outputs(len, &input[..len], &one_spectrum, &one_output);
 
     let real_inverse_ns = measure(|| {
@@ -296,9 +315,10 @@ fn benchmark(len: usize, rows: usize) {
     }) / rows as f64;
     let complexify_inverse_ns = measure(|| {
         for row in 0..rows {
-            complexify.inverse(
+            complexify_plan.inverse(
                 &spectrum_input[row * bins..(row + 1) * bins],
                 &mut complexify_output[row * len..(row + 1) * len],
+                &mut complexify_workspace,
             );
         }
         black_box(complexify_output.as_slice());
