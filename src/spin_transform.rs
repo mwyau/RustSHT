@@ -1973,7 +1973,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 continue;
             }
             let block_len = block_end - block_start;
-            let compaction_enabled = self.harmonics.lmax() >= 255;
+            let compaction_enabled = self.harmonics.lmax() >= 127;
             let mut active_lanes = 0;
             for lane in 0..block_len {
                 let ring = block_start + lane;

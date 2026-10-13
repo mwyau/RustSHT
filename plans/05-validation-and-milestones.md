@@ -1879,3 +1879,20 @@ Native f64 results use reused plans/workspaces, `examples/m1b_bench.rs`, `phi0=0
 | F1 T191 | `4.947/2.649` | `3.779/2.076` | `23.6%/21.6%` |
 
 T127 median gains were consistent across seven runs, though their timing ranges overlap; T191 ranges are clearly separated. T63 was below the gate, and T255 remained on its prior code path. Focused and full Rust tests passed. DUCC Python comparisons at T127/T191 across GL/CC/F1 and one/eight threads, including full-array inputs, had maximum relative-L2 error `1.85e-14` and maximum absolute error `8.85e-15`. The independent read-only Sol review found no actionable correctness, indexing, cutoff or ownership issue; it noted that the small embedded coefficient fixture is sparse, while full-array comparisons and mixed/equatorial tests provide broader coverage. No FFT code changed.
+
+### Spin-1 analysis active-pair compaction crossover (2026-10-13)
+
+Lowered the f64 spin-1 STANDARD scalar-conversion analysis compaction gate from T255 to T127. The implementation keeps each hemisphere's polar-order mask, ring weighting and prepared CC/F1 spectra, packs active lanes in order into existing per-worker scratch, and repeats product-safety selection using the compact lane count. f32, GRAD_ONLY/DERIV1 and spin-2 paths are unchanged. The all-grid general-path and adjoint regression now includes T191 in addition to T63/T127/T255.
+
+Native timing conditions match the scalar analysis compaction experiment above: `examples/m1b_bench.rs`, reused f64 plans/workspaces, `phi0=0.37`, full `mmax`, one warm-up and five timed calls, processes pinned to CPUs 0–7 on Ryzen 9 5950X / Linux `7.0.14-20-pve`, `rustc 1.99.0 (b940084d7 2026-09-28)`, release `opt-level=3`, 16 codegen units, LTO off, runtime AVX2/FMA and no `target-cpu=native`. Three alternating process runs were used per source; values are medians of process medians in milliseconds, one/eight threads:
+
+| Grid / bandlimit | Parent | Compacted | Reduction |
+| --- | ---: | ---: | ---: |
+| GL T127 | `3.301/1.937` | `3.084/1.515` | `6.6%/21.8%` |
+| CC T127 | `4.653/2.600` | `4.384/2.361` | `5.8%/9.2%` |
+| F1 T127 | `4.689/2.747` | `4.419/2.338` | `5.8%/14.9%` |
+| GL T191 | `12.370/4.494` | `8.337/3.050` | `32.6%/32.1%` |
+| CC T191 | `15.528/6.761` | `11.502/4.962` | `25.9%/26.6%` |
+| F1 T191 | `15.608/6.823` | `11.663/5.122` | `25.3%/24.9%` |
+
+T63 remains below the gate; T255 was an unchanged-path control. T127 process ranges overlap for some cases, while all T191 candidate ranges are materially lower. The whole-transform gains reflect changed block eligibility for normal-range SIMD as well as fewer active lanes, and are not attributed only to lane removal. The focused candidate tests passed on all grids, comparing E/B conversion with the general recurrence and checking the analysis-adjoint identity. DUCC 0.41.0 full-array comparisons at T127/T191 on GL/CC/F1 and one/eight threads had maximum relative-L2 error `2.032e-14` and maximum absolute error `9.139e-15`. The independent read-only Sol review found no cutoff, indexing, weighting, product-safety, ownership or test blocker and supported acceptance. No FFT code changed.
