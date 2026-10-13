@@ -38,3 +38,7 @@ harness = false
 [[bench]]
 name = "bluestein_phase_prototype"
 harness = false
+
+[[bench]]
+name = "f32_real_simd"
+harness = false
