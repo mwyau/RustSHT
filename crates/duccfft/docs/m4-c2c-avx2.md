@@ -206,8 +206,8 @@ plan structure, and workspace size are unchanged. The f32 C2C and real kernels
 are unchanged. The benchmark source was identical for both revisions (Git blob
 `3bdbb3d7f441816bf2f2475e45a9f5eb92664cdb`, SHA-256
 `6a85531e042175af96e9bcdc07368c15908e46212b7d441d68c57cfb7b9b4cba`). Both
-used the same lockfile (SHA-256
-`07e3ac929c8f1f6b708b36810accef15d5a9e71918f35d541246c6df15da26d1`). The
+used `crates/duccfft/Cargo.lock` (SHA-256
+`e61d5628d09dc7c10e54e15cb5f3aeb5dd5c28392b44692ed153784ad8ca21ba`). The
 build used Rust 1.99.0 (`b940084d7`, LLVM 23.1.1), Cargo's optimized `bench`
 profile (`opt-level=3`), and no custom `RUSTFLAGS`, LTO, or target CPU. The host
 was an x86-64 CPU; each process was pinned to logical one CPU core. Six paired
@@ -231,8 +231,10 @@ count. Raw process samples, including R2C and C2R timings, are in
 | 2,048 | 11.462 → 11.482 (+0.83%; 4/6) | 7.906 → 7.788 (+1.89%; 4/6) | 14.197 → 14.247 (+0.57%; 3/6) | 14.342 → 14.331 (−0.29%; 2/6) |
 | 4,096 | 26.821 → 26.760 (−0.13%; 3/6) | 19.015 → 18.757 (+1.57%; 5/6) | 32.627 → 32.206 (+1.36%; 4/6) | 32.398 → 32.176 (+0.90%; 4/6) |
 
-Median setup measurements are unchanged within noise and require the same
-scratch allocation in both revisions:
+Median setup measurements use only `c2c_forward` records with
+`batch_count=1`, across the six process samples per revision. They are
+unchanged within noise and require the same scratch allocation in both
+revisions:
 
 | n | Plan, baseline → specialized | Workspace, baseline → specialized | Scratch bytes |
 |---:|---:|---:|---:|
