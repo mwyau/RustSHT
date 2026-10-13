@@ -209,3 +209,63 @@ accepted the measurements as evidence for production migration, subject to
 the inverse overflow guard and broader f32/factorization coverage above. The
 review also corrected the speedup ranges to R2C 7.54–9.59× and C2R
 5.58–7.90×. See [`review-log.md`](review-log.md).
+
+## Extended f32 reference results
+
+The test rounds deterministic inputs to f32 and compares R2C and C2R outputs
+with direct f64 DFT results. The inverse reference starts from an independently
+generated spectrum rounded to f32. Relative L2 error is measured against the
+reference norm; scaled maximum error is `max_abs / max(max_abs(reference), 1)`. The regression threshold is `2e-5` for both relative L2 and scaled maximum
+error. All cases produced finite outputs.
+
+| N | Operation | Maximum absolute error | RMS error | Relative L2 error | Scaled maximum error | Nonfinite outputs |
+|---:|---|---:|---:|---:|---:|---:|
+| 1,024 | R2C | 1.979333e-5 | 2.177696e-6 | 9.435559e-8 | 4.108365e-8 | 0 |
+| 1,024 | C2R | 2.557050e-8 | 2.420661e-9 | 1.055837e-7 | 2.557050e-8 | 0 |
+| 2,048 | R2C | 6.339549e-5 | 3.750638e-6 | 1.148544e-7 | 8.019161e-8 | 0 |
+| 2,048 | C2R | 1.802713e-8 | 1.818367e-9 | 1.121747e-7 | 1.802713e-8 | 0 |
+| 4,096 | R2C | 6.797638e-5 | 4.729309e-6 | 1.025061e-7 | 3.601881e-8 | 0 |
+| 4,096 | C2R | 1.989863e-8 | 1.279362e-9 | 1.113922e-7 | 1.989863e-8 | 0 |
+| 131 | R2C | 4.552524e-6 | 1.230563e-6 | 1.495768e-7 | 9.161282e-8 | 0 |
+| 131 | C2R | 7.193387e-8 | 1.016111e-8 | 1.646036e-7 | 7.193387e-8 | 0 |
+| 137 | R2C | 4.397613e-6 | 1.922694e-6 | 2.283866e-7 | 6.906177e-8 | 0 |
+| 137 | C2R | 3.126593e-8 | 9.028811e-9 | 1.461969e-7 | 3.126593e-8 | 0 |
+| 241 | R2C | 1.098623e-5 | 2.386483e-6 | 2.128470e-7 | 1.146154e-7 | 0 |
+| 241 | C2R | 2.890058e-8 | 6.972531e-9 | 1.520110e-7 | 2.890058e-8 | 0 |
+| 1,025 | R2C | 2.590250e-5 | 3.348933e-6 | 1.448441e-7 | 5.470471e-8 | 0 |
+| 1,025 | C2R | 4.983872e-8 | 3.231033e-9 | 1.410660e-7 | 4.983872e-8 | 0 |
+| 2,049 | R2C | 4.402593e-5 | 7.356031e-6 | 2.252050e-7 | 5.799603e-8 | 0 |
+| 2,049 | C2R | 7.740066e-8 | 3.320199e-9 | 2.049111e-7 | 7.740066e-8 | 0 |
+| 4,097 | R2C | 1.069371e-4 | 1.036629e-5 | 2.246139e-7 | 5.556124e-8 | 0 |
+| 4,097 | C2R | 3.450700e-8 | 2.100125e-9 | 1.828404e-7 | 3.450700e-8 | 0 |
+
+These cases cover smooth lengths, general-prime factors, Bluestein plans, and
+the SHT lengths 1,025, 2,049, and 4,097. Direct DFT agreement is established
+for these inputs and lengths; it does not test every input distribution.
+
+## Release-code inspection
+
+The release symbol `duccfft::real_multipass::execute_forward_pass::<f64>` in
+the benchmark binary built from `de5f87f` contains scalar `addsd`, `subsd`,
+and `mulsd` operations. The inspected forward and inverse pass symbols contain
+no packed floating-point arithmetic or V-prefixed instructions. The forward
+symbol has a 184-byte stack frame, about 140 stack-reference instructions, 74
+branches, and 64 comparisons. The disassembly includes runtime index and loop
+bounds checks. These observations show that the pass is scalar and retains
+indexing overhead; they do not attribute a measured fraction of execution time
+to any instruction class. The production path is 1.7–3.2× slower than the
+compared RustFFT adapter, so scalar loop and memory access work remains before
+extensive SIMD optimization.
+
+## R6 production review
+
+The read-only reviewer accepted the production radix-2/radix-4 path with no
+actionable correctness or measurement findings. The review checked pass
+equations, twiddle signs and indexing, pass order, packed layout, disjoint
+workspace use, the forward and inverse eligibility guards, checked allocation
+and index arithmetic, and conditional complexify precedence. It confirmed
+that the six-process raw samples support the reported production gains over
+the earlier recursive implementation and the reported RustFFT and portable
+DUCC comparisons. The reviewer also noted that fallback scratch is duplicated
+in the current workspace. The review did not run builds or tests. See
+[`review-log.md`](review-log.md).
