@@ -921,6 +921,10 @@ pinned DUCC reference. It exercises an interior radix-7 pass with `l1=2` and
 radix-17 (`ido=241`) stage through the multipass general-prime kernel and
 retains radix-241 Bluestein at `ido=1`. Screening measurements show no
 reliable whole-call speedup at N=4097, and workspace is about twice the
-recursive-only baseline. Lengths 257 and 2049 still use Bluestein in the
-recursive executor. The general-prime implementation is a correctness and
-execution-structure step; further scalar profiling is needed before SIMD work.
+recursive-only baseline. Lengths 257 and 2049 already use terminal Bluestein
+passes in the real multipass executor. Earlier cross-library measurements
+reported 10× and 2.8× RustFFT gaps. A later scalar nested-FFT optimization
+improved both operations at both lengths in all six paired process samples;
+see [`m3-scalar-performance.md`](m3-scalar-performance.md). That screen did not
+refresh the cross-library controls, so current gap ratios remain unmeasured. The general-prime implementation is a correctness and execution-structure
+step; further scalar profiling is needed before SIMD work.

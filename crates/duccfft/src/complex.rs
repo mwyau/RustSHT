@@ -694,7 +694,7 @@ fn execute_first_pass_in_place_inner<const R: usize, T: Float + FromPrimitive>(
     debug_assert_eq!(pass.l1, 1);
     let radix = if R == 0 { pass.radix } else { R };
     debug_assert_eq!(radix, pass.radix);
-    if R == 2 || R == 4 || R == 8 {
+    if matches!(R, 2 | 3 | 4 | 5 | 7 | 8) {
         execute_first_pass_direct_radix::<R, T>(data, pass, execution);
         return;
     }
@@ -824,7 +824,7 @@ fn execute_pass_inner<const R: usize, T: Float + FromPrimitive>(
 ) {
     let radix = if R == 0 { pass.radix } else { R };
     debug_assert_eq!(radix, pass.radix);
-    if R == 2 || R == 4 || R == 8 {
+    if matches!(R, 2 | 3 | 4 | 5 | 7 | 8) {
         execute_direct_radix_pass::<R, T>(input, output, pass, execution);
         return;
     }
@@ -925,10 +925,11 @@ fn execute_first_pass_direct_radix<const R: usize, T: Float + FromPrimitive>(
     execution: &PassExecution<'_, T>,
 ) {
     let radix = R;
-    debug_assert!(radix == 2 || radix == 4 || radix == 8);
+    debug_assert!(matches!(radix, 2 | 3 | 4 | 5 | 7 | 8));
     debug_assert_eq!(pass.l1, 1);
     let inverse = execution.direction == Direction::Inverse;
     if let Some(kernels) = execution.simd
+        && matches!(R, 2 | 4 | 8)
         && (!inverse || execution.defer_inverse_normalization)
         && pass.ido >= kernels.complex_lanes
         && pass.ido.is_multiple_of(kernels.complex_lanes)
@@ -1044,9 +1045,10 @@ fn execute_direct_radix_pass<const R: usize, T: Float + FromPrimitive>(
     execution: &PassExecution<'_, T>,
 ) {
     let radix = R;
-    debug_assert!(radix == 2 || radix == 4 || radix == 8);
+    debug_assert!(matches!(radix, 2 | 3 | 4 | 5 | 7 | 8));
     let inverse = execution.direction == Direction::Inverse;
     if let Some(kernels) = execution.simd
+        && matches!(R, 2 | 4 | 8)
         && (!inverse || execution.defer_inverse_normalization)
         && pass.radix == 8
         && pass.ido == 1
