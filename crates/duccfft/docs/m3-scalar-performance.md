@@ -124,7 +124,26 @@ it ends in workspace. A temporary all-out-of-place first-pass comparison was
 neutral at N=1,024 and slower by about 13–17% at N=2,048 and 4,096. A separate
 copy profile measured 0.12 µs at N=1,024 and 0.91 µs at N=4,096; these are
 about 1.5% and 2.3% of C2C forward time. The measured schedule therefore
-keeps the in-place first pass. Stage-local twiddles avoid root-index modulus in the C2C butterflies. The
+keeps the in-place first pass. The bounded radix-4 stage prototype compares its generic combine helper with
+an explicit `l1`/`ido` loop over the same complex-valued stage. Each timing is
+the median of seven samples; each sample repeats the stage 256 times. The table
+gives the median of two process-level runs in microseconds. Both processes
+were pinned to logical one CPU core on the x86-64 CPU and used Rust 1.99.0's
+optimized `bench` profile without custom flags.
+
+| N | `l1` | `ido` | R2C generic / explicit | C2R generic / explicit |
+| ---: | ---: | ---: | ---: | ---: |
+| 64 | 16 | 1 | 0.225 / 0.092 | 0.225 / 0.095 |
+| 256 | 64 | 1 | 0.892 / 0.361 | 0.918 / 0.375 |
+| 1,024 | 64 | 4 | 1.976 / 1.215 | 1.970 / 1.221 |
+| 4,096 | 64 | 16 | 7.332 / 4.602 | 7.321 / 4.618 |
+
+The explicit stage is 1.6–2.5× faster in these cases. This prototype does
+not implement DUCC's packed-real `rfftp4` pass and does not include child
+transforms, full-pass buffer movement, or the whole real transform. It
+supports specializing the stage loop, but it does not decide whether the
+recursive real executor should be replaced. Raw per-process results are in
+`benches/results/m3-real-radix4-stage.csv`. Stage-local twiddles avoid root-index modulus in the C2C butterflies. The
 plan stores these twiddles as well as the full root table. The `ido == 1`
 pass skips the runtime complex multiply because its stage roots are unity. Two-process measurements show a small or neutral timing change from this
 guard, so it is retained for the exact arithmetic simplification and match to
@@ -217,13 +236,13 @@ prototype over the current complex multipass plan ran 5.4–9.4× faster for R2C
 and 5.4–6.5× faster for C2R at lengths 512–4,096. This prototype omits the
 production extreme-value path and does not justify changing DUCC's planner
 thresholds. It supports a targeted real multipass experiment before real SIMD
-work. The next scalar work should prototype DUCC's real pass loop structure on a
-representative smooth size and compare it with the recursive real path and the
-bounded complexify result. C2C can proceed to M4 SIMD and batched execution
-using the measured multipass structure. The real kernel should enter SIMD
-work after the scalar schedule comparison. General-prime kernels also use
-less complementary-output reuse than DUCC, and the large-length balanced
-packet grouping used by DUCC above 10,000 is not implemented.
+work. The next scalar work should prototype DUCC's packed-real pass loop structure
+on a representative smooth size and compare a full real multipass with the
+recursive real path and the bounded complexify result. C2C can proceed to M4
+SIMD and batched execution using the measured multipass structure. The real
+kernel should enter SIMD work after the scalar schedule comparison. General-prime kernels also use less complementary-output reuse than DUCC, and
+the large-length balanced packet grouping used by DUCC above 10,000 is not
+implemented.
 
 ## Reviewer conclusions
 
