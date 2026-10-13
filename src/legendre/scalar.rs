@@ -261,7 +261,7 @@ where
             }
 
             if normal_range {
-                if pair_lanes_need_scaling(current, next) {
+                if pair_lanes_need_scaling(simd, current, next) {
                     normal_range = normalize_pair_lanes(current, next, exponents)?;
                 }
             } else {
@@ -321,11 +321,35 @@ fn pair_is_in_normal_range(previous: f64, current: f64) -> bool {
 }
 
 #[inline(always)]
-pub(super) fn pair_lanes_need_scaling(previous: &[f64], current: &[f64]) -> bool {
+pub(super) fn pair_lanes_need_scaling<S: Simd>(simd: S, previous: &[f64], current: &[f64]) -> bool {
     debug_assert_eq!(previous.len(), current.len());
-    previous
+    let (previous_vectors, previous_tail) = S::as_simd_f64s(previous);
+    let (current_vectors, current_tail) = S::as_simd_f64s(current);
+    debug_assert_eq!(previous_vectors.len(), current_vectors.len());
+    debug_assert_eq!(previous_tail.len(), current_tail.len());
+
+    let big = simd.splat_f64s(BIG);
+    let zeros = simd.splat_f64s(0.0);
+    for index in 0..previous_vectors.len() {
+        let previous = simd.abs_f64s(previous_vectors[index]);
+        let current = simd.abs_f64s(current_vectors[index]);
+        let previous_ordered = simd.equal_f64s(previous, previous);
+        let current_ordered = simd.equal_f64s(current, current);
+        let maximum = simd.max_f64s(previous, current);
+        let maximum = simd.select_f64s(current_ordered, maximum, previous);
+        let maximum = simd.select_f64s(previous_ordered, maximum, current);
+        let below_upper_bound = simd.less_than_or_equal_f64s(maximum, big);
+        let is_zero = simd.equal_f64s(maximum, zeros);
+        let lower_check = simd.select_f64s(is_zero, big, maximum);
+        let in_range = simd.select_f64s(below_upper_bound, lower_check, zeros);
+        if simd.reduce_min_f64s(in_range) < SMALL {
+            return true;
+        }
+    }
+
+    previous_tail
         .iter()
-        .zip(current)
+        .zip(current_tail)
         .any(|(&previous, &current)| !pair_is_in_normal_range(previous, current))
 }
 
@@ -663,6 +687,19 @@ fn scale_normal_binary(value: f64, exponent: i64) -> f64 {
 mod tests {
     use super::*;
 
+    struct PairRangeCheck<'a> {
+        previous: &'a [f64],
+        current: &'a [f64],
+    }
+
+    impl WithSimd for PairRangeCheck<'_> {
+        type Output = bool;
+
+        fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+            pair_lanes_need_scaling(simd, self.previous, self.current)
+        }
+    }
+
     fn reference_multiply_component_scaled(value: f64, factor: f64, exponent: i64) -> f64 {
         if value == 0.0 || factor == 0.0 || !value.is_finite() || !factor.is_finite() {
             return scale_binary(value * factor, exponent);
@@ -775,10 +812,51 @@ mod tests {
     }
 
     #[test]
-    fn paired_range_guard_keeps_small_state_when_partner_is_normal() {
-        assert!(pair_lanes_need_scaling(&[0.0], &[SMALL / 2.0]));
-        assert!(!pair_lanes_need_scaling(&[BIG], &[SMALL / 2.0]));
-        assert!(pair_lanes_need_scaling(&[BIG * 2.0], &[0.0]));
+    fn paired_range_guard_matches_scalar_reference_on_vectors_and_tails() {
+        let cases = [
+            (0.0, 0.0),
+            (0.0, SMALL / 2.0),
+            (BIG, SMALL / 2.0),
+            (BIG * 2.0, 0.0),
+            (SMALL, BIG),
+            (f64::NAN, BIG),
+            (BIG, f64::NAN),
+            (f64::NAN, SMALL / 2.0),
+            (f64::NAN, f64::NAN),
+            (f64::INFINITY, f64::NAN),
+        ];
+
+        for (previous_value, current_value) in cases {
+            let previous = [previous_value; 17];
+            let current = [current_value; 17];
+            let expected = !pair_is_in_normal_range(previous_value, current_value);
+            for arch in [Arch::Scalar, Arch::new()] {
+                let actual = arch.dispatch(PairRangeCheck {
+                    previous: &previous,
+                    current: &current,
+                });
+                assert_eq!(actual, expected, "{previous_value:?}, {current_value:?}");
+            }
+        }
+
+        for failing_lane in [3, 16] {
+            let mut previous = [BIG; 17];
+            let mut current = [SMALL; 17];
+            previous[failing_lane] = 0.0;
+            current[failing_lane] = SMALL / 2.0;
+            let expected = previous
+                .iter()
+                .zip(current)
+                .any(|(&previous, current)| !pair_is_in_normal_range(previous, current));
+            for arch in [Arch::Scalar, Arch::new()] {
+                let actual = arch.dispatch(PairRangeCheck {
+                    previous: &previous,
+                    current: &current,
+                });
+                assert!(actual, "failing lane {failing_lane}");
+                assert_eq!(actual, expected, "failing lane {failing_lane}");
+            }
+        }
     }
 
     #[test]
