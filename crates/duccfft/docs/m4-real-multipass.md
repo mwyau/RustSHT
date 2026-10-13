@@ -570,3 +570,49 @@ optimization. Raw process samples are in
 [`m4-real-slices-production-vs-rustfft-process-samples.csv`](../benches/results/m4-real-slices-production-vs-rustfft-process-samples.csv)
 and
 [`m4-real-slices-ducc-controls.csv`](../benches/results/m4-real-slices-ducc-controls.csv).
+
+## Terminal-pass AVX2 experiment
+
+I tested a f64 AVX2 kernel for the inverse radix-four `ido == 1` pass. It
+transposed four packed butterflies, evaluated four independent scalar
+butterflies in vector lanes, and stored the four output branches. The
+candidate used runtime AVX2 detection and retained the scalar fallback. It
+matched the scalar pass in direct kernel tests and passed the complete
+`duccfft` test suite, including the existing real inverse extreme-value and
+reference tests. The baseline source was `6a58762976a5b6cdfd264fd5edbaf16c291dd6f0`; the
+candidate source was `d5c8c63c2317f5cc2e230bda42d8f1d21ae3dec3`. Twelve
+process pairs were pinned to logical one CPU core. Pair order alternated between
+baseline-first and candidate-first. Each process measured public R2C/C2R calls
+with one transform and batch count 32, using the harness's deterministic
+normal inputs, one warm-up, and seven timed samples. Rust used version 1.99.0,
+Cargo's `bench` profile at `opt-level=3`, no custom `RUSTFLAGS`, no LTO, and no
+`target-cpu` setting. The CPU was an x86-64 CPU with AVX2. The Legendre
+workload was active, so these wall-time results remain provisional. The table gives the median paired speed gain for the candidate in percent;
+positive values mean lower candidate time. R2C is a control because it does
+not use the inverse kernel.
+
+| N | R2C, one / batch 32 | C2R, one / batch 32 |
+|---:|---:|---:|
+| 64 | -0.23 / +3.09 | +5.26 / +0.58 |
+| 128 | +2.24 / +1.63 | -2.14 / +0.90 |
+| 256 | +0.00 / -0.41 | +1.47 / +2.63 |
+| 512 | +0.71 / +1.64 | -0.30 / -0.25 |
+| 1,024 | +1.21 / +1.88 | +0.15 / -0.02 |
+| 2,048 | +2.43 / +2.21 | -0.65 / -1.12 |
+| 4,096 | +1.17 / +1.57 | -1.86 / -1.61 |
+
+All paired checksums match. The small R2C changes show the size of variation
+that cannot be attributed to this inverse-only kernel. C2R gains vary by
+length and turn into small regressions at 2,048 and 4,096. The counterbalanced
+public-call data therefore does not support retaining the extra kernel and
+dispatch path.
+
+instruction references fell from 42,132,211 to 41,014,476 (2.65%). The
+plan creation and setup, and are not execution-time measurements. Release
+disassembly contains `vmovupd`, `vunpcklpd`/`vunpckhpd`, `vperm2f128`,
+`vaddpd`, and `vsubpd` in the candidate's vector loop. The lower instruction
+count did not result in a consistent whole-call C2R gain. The kernel was
+removed in `a6a2560` pending a more substantial gain from the scalar
+`ido > 1` inverse loop. Raw paired samples are in
+[`m4-real-radix4-avx2-counterbalanced-process-samples.csv`](../benches/results/m4-real-radix4-avx2-counterbalanced-process-samples.csv). Compressed process profiles are in
+and
