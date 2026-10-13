@@ -210,10 +210,12 @@ separates or combines its Hermitian modes. Complex and real inverse scaling
 use a finite-input fast path that defers `1/N` until the end when the conservative
 bound `max_component <= MAX/(4*N)` holds; high-range inputs retain conditional
 prescaling and residual correction. M3 initially routed real plans through the recursive pass tree. M4 added a
-packed-real multipass executor for plans factored entirely into radix 2 and 4;
-eligible finite R2C inputs and inverse-safe C2R spectra use that executor. Complexified plans, other factorizations, and high-range or nonfinite inputs
-retain their existing paths. The bounded `rfftp_complexify` prototype is not a
-planner change for lengths where DUCC selects real passes. Current M4 timings,
+packed-real multipass executor for radix 2, 3, 4, and 5 stages, odd-`ido`
+general-prime stages, and terminal Bluestein stages with `ido == 1`. Eligible finite R2C inputs and inverse-safe C2R spectra use that executor. Complexified plans, unsupported pass combinations, and high-range or
+nonfinite inputs retain their existing paths. The scalar `rfftp_complexify`
+planner condition is implemented for even lengths above 1,000 when the length
+exceeds 10,000 or factorization contains a factor above five; DUCC's separate
+results, and the multipass-versus-recursion decision are in
 [`m4-real-multipass.md`](m4-real-multipass.md). The M3 scalar baseline remains
 in [`m3-scalar-performance.md`](m3-scalar-performance.md); prime and Bluestein
 validation is in [`m3-prime-bluestein.md`](m3-prime-bluestein.md).

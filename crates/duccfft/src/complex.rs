@@ -1075,6 +1075,7 @@ fn execute_direct_radix_pass<const R: usize, T: Float + FromPrimitive>(
         return;
     }
     if let Some(kernels) = execution.simd
+        && matches!(R, 2 | 4 | 8)
         && (!inverse || execution.defer_inverse_normalization)
         && pass.ido >= kernels.complex_lanes
         && pass.ido.is_multiple_of(kernels.complex_lanes)
