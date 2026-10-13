@@ -17,6 +17,15 @@ FFTPACK real packing to and from the public nonnegative
 complex spectrum before comparisons. C2C, R2C, and C2R comparisons use an
 unnormalized forward transform and an inverse scaled by `1/n`.
 
+`reference/build-f32.sh` builds `ducc_fft_f32.cpp` against the same pinned
+revision. Its portable default is `-O3 -DNDEBUG`; set
+`CXXFLAGS='-O3 -DNDEBUG -march=native'` for a separately labelled native
+build. The f32 harness uses the same f32-rounded real and Hermitian-spectrum
+inputs as `f32_real_simd.rs`, runs one transform and 32 independent rows, and
+records seven timed samples per operation plus plan and scratch setup. Set
+`DUCCFFT_DUCC_VECTORIZE=1` to select DUCC's vectorized planner passes. Record
+that setting and the compiler flags because they change the reference path.
+
 The RustFFT baseline uses reusable plans and scratch. Its real adapter packs
 even real inputs into a half-length complex transform and uses a full complex
 transform for odd lengths, matching the current RustSHT workload. Plan
