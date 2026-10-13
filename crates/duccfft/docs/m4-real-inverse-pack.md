@@ -56,18 +56,21 @@ timing control.
 
 The C2R single-call and batch timings favored the candidate in 11/12 and
 10/12 pairs at N=1,024, 12/12 pairs at N=1,920, and 11/12 and 10/12 pairs at
-N=4,096. N=64 did not benefit. Normalizing each C2R result by its same-process
-R2C control gives median gains of 2.21%/1.88% at N=1,024, 2.50%/2.98% at
-N=1,920, and 1.93%/1.73% at N=4,096 (single/batch). This control-adjusted
-comparison supports a small improvement for longer multipass inverses, not a
-broad latency reduction at every length. Plan and workspace setup remain unchanged in behavior. Medians across the
-12 process samples and reusable workspace bytes are:
+N=4,096. N=64 did not benefit. The control-adjusted paired speed gain is the
+median over the twelve process pairs of
+`((baseline_C2R / candidate_C2R) / (baseline_R2C / candidate_R2C)) - 1`. This gives 2.21%/1.88% at N=1,024, 2.50%/2.98% at N=1,920, and
+1.93%/1.73% at N=4,096 (single/batch). These are speed gains relative to the
+R2C control; the main table reports paired latency reductions. The comparison
+supports a small improvement for longer multipass inverses, not a broad
+latency reduction at every length. Plan and workspace setup remain unchanged in behavior. Each setup cell uses
+only mode=`r2c`, batch_count=1 records: twelve process samples per build and
+length. Reusable workspace bytes are also shown:
 
 | N | Baseline plan / workspace, µs | Candidate plan / workspace, µs | Scratch bytes, both |
 |---:|---:|---:|---:|
 | 64 | 1.787 / 0.492 | 1.790 / 0.486 | 2,048 |
 | 1,024 | 17.910 / 1.100 | 18.042 / 1.181 | 27,776 |
-| 1,920 | 33.071 / 1.868 | 33.199 / 1.798 | 56,816 |
+| 1,920 | 33.071 / 1.867 | 33.199 / 1.798 | 56,816 |
 | 4,096 | 69.318 / 3.225 | 69.416 / 3.212 | 109,760 |
 
 The 384 raw process records, including timings, setup, scratch, process order,
