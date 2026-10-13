@@ -959,7 +959,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     }
                 }
                 let order_spectra = &spectra[m * latitude_count..(m + 1) * latitude_count];
-                let compact_candidate = T::supports_paired_scalar() && lmax >= 255;
+                let compact_candidate = T::supports_paired_scalar() && lmax >= 127;
                 let lane_count = prepare_symmetric_analysis_pair_block(
                     m,
                     latitude_count,
