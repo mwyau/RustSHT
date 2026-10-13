@@ -21,10 +21,11 @@ all processes were pinned to logical one CPU core on an x86-64 CPU, and plans
 were warmed before seven timed samples. Timings measure the public R2C or
 C2R call with reusable workspaces. The batch column is per transform for a
 public call over 32 rows. R2C inputs use the harness's deterministic real
-sequence; C2R uses its deterministic Hermitian spectrum. The table reports each run separately to expose host variation. Each timing
-cell is the median process time in microseconds, baseline to candidate; the
-parentheses give the median paired speed gain and the number of pairs favoring
-the candidate. Positive gains mean lower candidate time.
+sequence; C2R uses its deterministic Hermitian spectrum. The table reports each run separately to expose host variation. Report Run 1
+maps to `run2` in the raw CSV, and Run 2 maps to `run3`. Each timing cell is
+the median of six process-level medians in microseconds, baseline to candidate. The parenthesized gain is the median of the six matched
+`baseline/candidate - 1` gains; the count gives pairs with a positive gain. Timing medians and paired gains are aggregated separately. Positive gains mean
+lower candidate time.
 
 | N | Radix-two stage `ido` | Run 1 R2C single | Run 1 R2C batch 32 | Run 2 R2C single | Run 2 R2C batch 32 |
 |---:|---:|---:|---:|---:|---:|
@@ -59,7 +60,11 @@ limits of `2e-5`. Twelve baseline/candidate process pairs were pinned to the
 same CPU; each process used seven alternating RustFFT/DUCCFFT samples. The
 table shows median times in microseconds per transform, the displayed
 DUCCFFT/RustFFT ratio before and after this change, the median paired gain,
-and candidate-favored pair count.
+and candidate-favored pair count. Each timing cell is the median of 12
+process-level medians, with seven in-process samples per process. Each paired
+gain is the median of `baseline/candidate - 1` across the 12 matching process
+pairs. Displayed DUCCFFT/RustFFT ratios divide the corresponding unrounded
+DUCCFFT and RustFFT timing medians.
 
 | N | Radix-two stage `ido` | R2C single: DUCCFFT baseline → candidate | RustFFT ratio baseline → candidate | Paired gain | R2C batch 32: DUCCFFT baseline → candidate | RustFFT ratio baseline → candidate | Paired gain |
 |---:|---:|---:|---:|---:|---:|---:|---:|
@@ -73,7 +78,7 @@ and candidate-favored pair count.
 
 The f32 results show gains of 15–18% at all three radix-two lengths, with all
 12 pairs favoring the candidate. The no-radix-two R2C controls are within
-1.1% of baseline. C2R remains an unchanged control. The benchmark completed
+1.7% of baseline. C2R remains an unchanged control. The benchmark completed
 all output comparisons; the broader f32 direct-DFT error metrics and extreme
 value cases remain in [`m4-real-multipass.md`](m4-real-multipass.md).
 
