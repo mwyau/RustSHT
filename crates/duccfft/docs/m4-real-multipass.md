@@ -540,8 +540,12 @@ RustFFT, portable DUCC, and native DUCC in that order.
 | 2,048 | 10.058 / 4.672 / 5.070 / 5.588 (2.15 / 1.98 / 1.80×) | 8.038 / 3.653 / 5.297 / 4.608 (2.20 / 1.52 / 1.74×) |
 | 4,096 | 21.517 / 10.187 / 11.579 / 12.498 (2.11 / 1.86 / 1.72×) | 15.924 / 8.027 / 12.176 / 11.030 (1.98 / 1.31 / 1.44×) |
 
-Plan-construction and workspace-allocation medians are in microseconds. Scratch is reusable workspace in bytes; plan-table sizes are not exposed by
-the production plan, RustFFT adapter, or direct DUCC plan.
+Plan-construction and workspace-allocation medians are in microseconds. Each
+setup value is the median of records from six processes, pooling the R2C and
+C2R records with `batch_count=1` only. Scratch is reusable workspace in bytes. The DUCC values report kernel scratch and its allocation cost; they exclude the
+adapter's packed working buffer, while the Rust workspace counts include the
+corresponding working storage. Plan-table sizes are not exposed by the
+production plan, RustFFT adapter, or direct DUCC plan.
 
 | N | DUCCFFT production: plan / workspace / scratch | RustFFT: plan / workspace / scratch | DUCC portable: plan / workspace / scratch | DUCC native: plan / workspace / scratch |
 |---:|---:|---:|---:|---:|
@@ -553,11 +557,13 @@ The real inverse radix-four slice change lowered normal N=1,024 process-wide
 instruction references by 28.52%; its inverse pass self-cost fell from
 7,662,582 to 3,943,458 references. The updated public-operation comparison
 places smooth R2C and C2R at about 1.5–2.3× RustFFT, down from the recursive
-real executor's roughly 10–18× gap. The ordinary finite-input path already
-uses the M3 range check to skip residual construction; high-range values keep
-the correction fallback. The large M1 C2R/R2C asymmetry at lengths 1,025 and
-2,049 was not explained by ordinary smooth radix combinations: M3's Bluestein
-and inverse fast-path work reduced those ratios to about 1.5× and 1.0×. The
+real executor's roughly 10–18× gap. The ordinary finite-input path uses the
+M3 range check to skip residual construction; high-range values keep the
+correction fallback. The historical M2 measurements show large C2R/R2C
+asymmetry at lengths 1,025 and 2,049. Current measurements reduce the ratios
+to about 1.5× and 1.0×, respectively. M3 introduced Bluestein handling and the
+inverse range fast path in the same period, so these whole-operation timings
+do not isolate the contribution of either change to that reduction. The
 smooth C2R timings here are close to R2C timings, while the remaining smooth
 gap and the still-scalar general `ido > 1` inverse loop warrant further M4
 optimization. Raw process samples are in

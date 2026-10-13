@@ -186,11 +186,12 @@ outside the bound, including nonfinite inputs, use conditional stage
 prescaling and residual correction. The bound is conservative and is not a
 claim of bitwise equivalence to scaling each stage. The historical 1,025 result was 79.2 µs R2C and 221.3 µs C2R; the current
 result is 32.7 and 49.1 µs. At 2,049, the earlier 1.91 ms and 6.77 ms results
-are now 117.8 and 115.5 µs. The 2,049 gain mostly comes from replacing the
-quadratic 683-point combine with Bluestein. The 1,025 C2R/R2C ratio narrowed
-from 2.8× to 1.5× after both the inverse fast path and M3 general-prime work. At smooth length 1,024, C2R is faster than R2C (27.4 versus 38.8 µs). These
-whole-operation measurements do not assign the historical gains to a single
-change. The inverse tests cover normal random inputs, cancellation, mixed dynamic
+are now 117.8 and 115.5 µs. The new 2,049 plan replaces the quadratic
+683-point combine with Bluestein, and the 1,025 C2R/R2C ratio narrowed from
+2.8× to 1.5×. M3 changed both general-prime execution and inverse range
+handling, so these whole-operation measurements do not isolate the
+contribution of either change to the historical gains. At smooth length 1,024,
+C2R is faster than R2C (27.4 versus 38.8 µs). The inverse tests cover normal random inputs, cancellation, mixed dynamic
 range, maximum finite values, minimum normal and subnormal values, direct
 inverse DFTs, pinned DUCC comparisons, and f32/f64. The existing extreme-value
 regressions pass. No residual correction is performed for eligible ordinary
