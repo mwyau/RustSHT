@@ -203,6 +203,9 @@ impl<T: ShtScalar> ShtPlan<T> {
                     let block_len = block_end - block_start;
                     let ring_limits = &ring_order_limits
                         [group_ring_start + block_start..group_ring_start + block_end];
+                    if ring_limits.iter().all(|&limit| m > limit) {
+                        continue;
+                    }
                     let spectrum_start = block_start * spectrum_len;
                     let spectrum_end = block_end * spectrum_len;
                     let fused = T::synthesize_paired_scalar_block_dispatched(
