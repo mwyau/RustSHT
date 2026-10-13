@@ -34,6 +34,71 @@ pub(crate) fn weighted_order_midpoint(lmax: usize, m_start: usize, m_end: usize)
     best_mid
 }
 
+#[inline]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The block preparation maps mirrored inputs into existing worker scratch."
+)]
+fn prepare_symmetric_analysis_pair_block<T: ShtScalar>(
+    m: usize,
+    latitude_count: usize,
+    block_start: usize,
+    block_len: usize,
+    compact: bool,
+    order_spectra: &[Complex<T>],
+    ring_order_limits: &[usize],
+    theta_sin: &[T],
+    theta_cos: &[T],
+    same_parity: &mut [Complex<T>],
+    opposite_parity: &mut [Complex<T>],
+    compact_theta_sin: &mut [T],
+    compact_theta_cos: &mut [T],
+) -> usize {
+    let mut active_pair_lanes = 0;
+    for lane in 0..block_len {
+        let north_ring = block_start + lane;
+        let south_ring = latitude_count - 1 - north_ring;
+        let north_active = m <= ring_order_limits[north_ring];
+        let south_active = south_ring != north_ring && m <= ring_order_limits[south_ring];
+        if compact && (north_active || south_active) {
+            active_pair_lanes += 1;
+        }
+        let north = if north_active {
+            order_spectra[north_ring]
+        } else {
+            Complex::new(T::zero(), T::zero())
+        };
+        // The equatorial singleton has no reflected sample and contributes once to both parities.
+        let south = if south_active {
+            order_spectra[south_ring]
+        } else {
+            Complex::new(T::zero(), T::zero())
+        };
+        same_parity[lane] = north + south;
+        opposite_parity[lane] = north - south;
+    }
+
+    if compact && active_pair_lanes < block_len {
+        let mut compact_len = 0;
+        for lane in 0..block_len {
+            let north_ring = block_start + lane;
+            let south_ring = latitude_count - 1 - north_ring;
+            let north_active = m <= ring_order_limits[north_ring];
+            let south_active = south_ring != north_ring && m <= ring_order_limits[south_ring];
+            if north_active || south_active {
+                compact_theta_sin[compact_len] = theta_sin[north_ring];
+                compact_theta_cos[compact_len] = theta_cos[north_ring];
+                same_parity[compact_len] = same_parity[lane];
+                opposite_parity[compact_len] = opposite_parity[lane];
+                compact_len += 1;
+            }
+        }
+        compact_len
+    } else {
+        block_len
+    }
+}
+
 #[allow(private_bounds)]
 impl<T: ShtScalar> ShtPlan<T> {
     /// Synthesizes one real scalar field into north-to-south row-major samples.
@@ -894,44 +959,55 @@ impl<T: ShtScalar> ShtPlan<T> {
                     }
                 }
                 let order_spectra = &spectra[m * latitude_count..(m + 1) * latitude_count];
-                for lane in 0..block_len {
-                    let north_ring = block_start + lane;
-                    let south_ring = latitude_count - 1 - north_ring;
-                    let north = if m <= ring_order_limits[north_ring] {
-                        order_spectra[north_ring]
-                    } else {
-                        Complex::new(T::zero(), T::zero())
-                    };
-                    let south = if south_ring == north_ring {
-                        // The equatorial sample contributes once for either parity.
-                        Complex::new(T::zero(), T::zero())
-                    } else if m <= ring_order_limits[south_ring] {
-                        order_spectra[south_ring]
-                    } else {
-                        Complex::new(T::zero(), T::zero())
-                    };
-                    recurrence.weighted_spin_q_spectrum[lane] = north + south;
-                    recurrence.weighted_spin_u_spectrum[lane] = north - south;
+                let compact_candidate = T::supports_paired_scalar() && lmax >= 255;
+                let lane_count = prepare_symmetric_analysis_pair_block(
+                    m,
+                    latitude_count,
+                    block_start,
+                    block_len,
+                    compact_candidate,
+                    order_spectra,
+                    ring_order_limits,
+                    theta_sin,
+                    theta_cos,
+                    &mut recurrence.weighted_spin_q_spectrum,
+                    &mut recurrence.weighted_spin_u_spectrum,
+                    &mut recurrence.compact_theta_sin,
+                    &mut recurrence.compact_theta_cos,
+                );
+                if lane_count == 0 {
+                    continue;
                 }
-                let same_parity_spectrum = &recurrence.weighted_spin_q_spectrum[..block_len];
-                let opposite_parity_spectrum = &recurrence.weighted_spin_u_spectrum[..block_len];
+                let compact_mixed_block = compact_candidate && lane_count < block_len;
+                let pair_sin = if compact_mixed_block {
+                    &recurrence.compact_theta_sin[..lane_count]
+                } else {
+                    &theta_sin[block_start..block_end]
+                };
+                let pair_cos = if compact_mixed_block {
+                    &recurrence.compact_theta_cos[..lane_count]
+                } else {
+                    &theta_cos[block_start..block_end]
+                };
+                let same_parity_spectrum = &recurrence.weighted_spin_q_spectrum[..lane_count];
+                let opposite_parity_spectrum = &recurrence.weighted_spin_u_spectrum[..lane_count];
                 if paired_used {
-                    for lane in 0..block_len {
+                    for lane in 0..lane_count {
                         recurrence.analysis_same_real[lane] = same_parity_spectrum[lane].re;
                         recurrence.analysis_same_imag[lane] = same_parity_spectrum[lane].im;
                         recurrence.analysis_opposite_real[lane] = opposite_parity_spectrum[lane].re;
                         recurrence.analysis_opposite_imag[lane] = opposite_parity_spectrum[lane].im;
                     }
-                    let same_real = &recurrence.analysis_same_real[..block_len];
-                    let same_imag = &recurrence.analysis_same_imag[..block_len];
-                    let opposite_real = &recurrence.analysis_opposite_real[..block_len];
-                    let opposite_imag = &recurrence.analysis_opposite_imag[..block_len];
+                    let same_real = &recurrence.analysis_same_real[..lane_count];
+                    let same_imag = &recurrence.analysis_same_imag[..lane_count];
+                    let opposite_real = &recurrence.analysis_opposite_real[..lane_count];
+                    let opposite_imag = &recurrence.analysis_opposite_imag[..lane_count];
                     let product_range_safe = T::scalar_analysis_products_safe(
                         same_real,
                         same_imag,
                         opposite_real,
                         opposite_imag,
-                        &theta_cos[block_start..block_end],
+                        pair_cos,
                     );
                     // Paired degrees l=m+2k use north+south for the even term;
                     // the intervening odd term uses north-south and cos(theta).
@@ -939,8 +1015,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                         arch,
                         m,
                         lmax,
-                        &theta_sin[block_start..block_end],
-                        &theta_cos[block_start..block_end],
+                        pair_sin,
+                        pair_cos,
                         self.sectoral_norms[m],
                         &recurrence.spin_coefficient_a,
                         &recurrence.spin_coefficient_b,
@@ -967,7 +1043,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                                 &opposite_imag[ring_start..lane_end],
                                 current,
                                 exponents,
-                                &theta_cos[block_start + ring_start..block_start + lane_end],
+                                &pair_cos[ring_start..lane_end],
                             );
                             even_coefficient += same_sum;
                             if l < lmax {
@@ -986,8 +1062,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                         arch,
                         m,
                         lmax,
-                        &theta_sin[block_start..block_end],
-                        &theta_cos[block_start..block_end],
+                        pair_sin,
+                        pair_cos,
                         self.sectoral_norms[m],
                         &recurrence.epsilon,
                         &mut recurrence.previous,
