@@ -975,7 +975,7 @@ terminal pair loop, release assembly uses SSE2 `movupd` loads and `mulpd` to
 multiply the real-cosine and imaginary-sine products, followed by scalar
 `subsd`/`addsd` accumulation. This is compiler-generated SSE2 within one
 frequency-bin pair; the kernel has no explicit AVX2 or across-sample SIMD
-loop. The archived profiles are
+loop. Archived N=1,025 profiles are
 and
 
 The candidate passed all crate tests, including the cancellation, minimum
@@ -985,10 +985,11 @@ agreed with pinned DUCC for prime lengths 7, 13, 17, 31, 41, 53, 107, 109,
 113, 127, and 131, and composite lengths 49, 98, and 1,025; the maximum
 absolute error was `6.94e-17`. The N=4,097 control was slower in all six
 pairs even though its radix-17 pass uses the interior loop. Matching
-showed 138,321,828 versus 139,050,695 instruction references and 133,030
-versus 148,798 simulated conditional mispredictions for N=4,097 C2R. These
-figures are consistent with a small code-layout effect but do not identify a
-hardware cause. R2C at N=4,097 also slowed, where this inverse kernel does not
-execute; shared-host variation or binary layout may contribute, and these
-measurements do not distinguish them. Raw timing rows are in
+references and 133,030 versus 148,798 simulated conditional mispredictions
+for N=4,097 C2R. The archived
+and
+profiles support inspection of these counts. They are consistent with a small
+code-layout effect but do not identify a hardware cause. R2C at N=4,097 also
+slowed, where this inverse kernel does not execute; shared-host variation or
+binary layout may contribute, and these measurements do not distinguish them. Raw timing rows are in
 [`m4-real-prime-pairsym-process-samples.csv`](../benches/results/m4-real-prime-pairsym-process-samples.csv).
