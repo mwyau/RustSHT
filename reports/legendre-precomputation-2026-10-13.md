@@ -277,3 +277,22 @@ The final release Python extension was compared with installed `ducc0==0.41.0`, 
 The scalar eight-thread Python measurements had a `2.930 ms` run-group spread. The native reused-workspace comparison is the performance acceptance measure; RustSHT still takes about 2.5–9.2 times longer in these Python-plan cases.
 
 Focused regressions compare mixed scaled and normal lanes with scalar references at 64- and 61-lane widths, verify subnormal basis fallback bitwise, and confirm that extreme finite products that overflow before longitude scaling use the scaled path. `cargo test --workspace --all-features` passed after the final SIMD mask change (128 Rust tests and 10 f32 integration tests; 8 ignored). No-default-feature tests passed (118 Rust and 10 f32 tests; 7 ignored); Clippy, formatting and nine Python tests passed. Release DUCC tests passed (30 passed, 7 ignored), as did the ignored scalar T2047 GL/CC/F1 DUCC and analytic check and the T1023 spin exact-analysis DUCC check. The read-only Sol review found no correctness blocker and requested the all-feature suite after the final mask edit; that suite passed. Full acceptance evidence is recorded in [the milestone notes](../plans/05-validation-and-milestones.md#mixed-exponent-simd-analysis-accumulation).
+
+## T511 spin-1 analysis profile and worker-granularity screen
+
+Hardware counters remained unavailable (`perf_event_paranoid=4`), so Callgrind 3.26.0 profiled the one-thread f64 T127 GL spin-1 STANDARD analysis benchmark. The command was `taskset -c 30 valgrind --tool=callgrind --callgrind-out-file=/tmp/rustsht-4c732e5-spin1-t127-analysis.callgrind target/release/examples/m1b_bench 1 127 1 analysis GL STANDARD`. The complete benchmark process recorded 451,137,951 instruction references; the benchmark warms and measures two Rayon pool configurations, so these counts are not a single transform and are not cycles. `analyze_spin_order_group` accounted for 86.62% inclusive references, `analyze_spin_scalar_fast_order` for 86.53%, and RustFFT forward transforms for 9.29%. The spin scalar-conversion recurrence remains the dominant measured region. FFT optimization is not part of this phase.
+
+Temporary timing around the recursive leaves of T511 spin-1 analysis measured eight leaves with estimated degree-lane work between 7.35 and 7.64 million per leaf. Elapsed leaf times ranged from 7.38 to 10.46 ms. All leaves started within 0.35 ms and finished between 7.66 and 10.64 ms, indicating moderate cost spread without a delayed branch. The hooks were removed after profiling.
+
+A temporary scheduling candidate allowed recursive analysis to use all 16 recurrence workspaces already present in the T511 workspace, rather than limiting the split to the eight Rayon workers. This doubled the number of order tasks without adding workspaces. Three alternating baseline/candidate process pairs ran release `m1b_bench`, with one warm-up and five timed calls, on the AMD Ryzen 9 5950X, pinned to CPUs 0–31. The table reports medians of process medians and min–max ranges, in milliseconds:
+
+| Analysis | Threads | Current schedule | 2x task candidate | Change |
+| --- | ---: | ---: | ---: | ---: |
+| Scalar T511 | 1 | `24.283 [24.000–24.562]` | `23.684 [23.564–23.726]` | `-2.5%` |
+| Scalar T511 | 8 | `7.562 [7.443–7.597]` | `7.712 [7.674–7.961]` | `+2.0%` |
+| Spin-1 T511 | 1 | `66.695 [65.734–67.497]` | `65.591 [65.401–66.465]` | `-1.7%` |
+| Spin-1 T511 | 8 | `17.744 [17.722–20.961]` | `17.753 [17.151–18.652]` | `+0.1%` |
+
+The one-thread spin difference is not meaningful because that path is serial. Scalar analysis was slower at eight threads, and spin-1 was unchanged within the process spread. Peak RSS samples overlapped. Focused scalar/spin scheduling tests passed, but the scheduling change was reverted and is not accepted. A current-source scaling screen measured T511 scalar analysis medians of 23.736/14.624/10.357/7.715/7.638/7.077 ms and spin-1 medians of 66.764/37.857/26.124/17.617/16.368/13.769 ms at 1/2/4/8/16/32 threads. These values are scaling observations, not paired candidate measurements.
+
+The next profiling target is the composition of fast versus general/scaled recurrence degrees in `analyze_spin_scalar_fast_order`, then a matched comparison against the general spin analysis path. This should establish whether a specific recurrence regime or scalar-conversion overhead justifies a code change before further scheduling experiments.
