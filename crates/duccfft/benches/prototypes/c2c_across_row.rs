@@ -4,6 +4,7 @@
 //! Experimental power-of-two C2C path with SIMD lanes across independent rows.
 
 use num_complex::Complex64;
+use std::time::{Duration, Instant};
 
 pub struct AcrossRowPlan {
     len: usize,
@@ -14,6 +15,13 @@ pub struct AcrossRowPlan {
 pub struct AcrossRowWorkspace {
     rows: usize,
     values: Vec<Complex64>,
+}
+
+#[derive(Clone, Copy, Default)]
+pub struct ExecutionPhases {
+    pub pack: Duration,
+    pub transform: Duration,
+    pub unpack: Duration,
 }
 
 impl AcrossRowPlan {
@@ -80,12 +88,40 @@ impl AcrossRowPlan {
         self.execute_with_backend(values, workspace, inverse, false)
     }
 
+    pub fn execute_profiled(
+        &self,
+        values: &mut [Complex64],
+        workspace: &mut AcrossRowWorkspace,
+        inverse: bool,
+    ) -> Result<ExecutionPhases, &'static str> {
+        let mut phases = ExecutionPhases::default();
+        self.execute_inner(
+            values,
+            workspace,
+            inverse,
+            avx2_available(),
+            Some(&mut phases),
+        )?;
+        Ok(phases)
+    }
+
     fn execute_with_backend(
         &self,
         values: &mut [Complex64],
         workspace: &mut AcrossRowWorkspace,
         inverse: bool,
         use_avx2: bool,
+    ) -> Result<(), &'static str> {
+        self.execute_inner(values, workspace, inverse, use_avx2, None)
+    }
+
+    fn execute_inner(
+        &self,
+        values: &mut [Complex64],
+        workspace: &mut AcrossRowWorkspace,
+        inverse: bool,
+        use_avx2: bool,
+        mut phases: Option<&mut ExecutionPhases>,
     ) -> Result<(), &'static str> {
         if !values.len().is_multiple_of(self.len) {
             return Err("batch buffer has an incomplete row");
@@ -95,12 +131,17 @@ impl AcrossRowPlan {
             return Err("workspace row count does not match batch");
         }
 
+        let phase_start = phases.as_ref().map(|_| Instant::now());
         for (row, source) in values.chunks_exact(self.len).enumerate() {
             for (index, &value) in source.iter().enumerate() {
                 workspace.values[self.bit_reversed[index] * rows + row] = value;
             }
         }
+        if let (Some(phases), Some(start)) = (phases.as_mut(), phase_start) {
+            phases.pack = start.elapsed();
+        }
 
+        let phase_start = phases.as_ref().map(|_| Instant::now());
         if use_avx2 {
             #[cfg(target_arch = "x86_64")]
             // SAFETY: runtime dispatch confirms AVX2. The kernel writes only
@@ -116,11 +157,18 @@ impl AcrossRowPlan {
         } else {
             stage_scalar(&mut workspace.values, self.len, rows, &self.roots, inverse);
         }
+        if let (Some(phases), Some(start)) = (phases.as_mut(), phase_start) {
+            phases.transform = start.elapsed();
+        }
 
+        let phase_start = phases.as_ref().map(|_| Instant::now());
         for (row, destination) in values.chunks_exact_mut(self.len).enumerate() {
             for (index, slot) in destination.iter_mut().enumerate() {
                 *slot = workspace.values[index * rows + row];
             }
+        }
+        if let (Some(phases), Some(start)) = (phases.as_mut(), phase_start) {
+            phases.unpack = start.elapsed();
         }
         Ok(())
     }
