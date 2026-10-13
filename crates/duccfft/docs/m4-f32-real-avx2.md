@@ -170,7 +170,7 @@ and workspace for each timed batch call.
 ## Correctness and generated code
 
 The f32 real tests compare against independently evaluated f64 DFTs for
-lengths 1–64 and lengths 1,024, 2,048, 4,096, 131, 137, 241, 1,025, 2,049,
+lengths 1–64, 128, 512, 1,024, 2,048, 4,096, 131, 137, 241, 1,025, 2,049,
 and 4,097. They also exercise the real complexify planner path, cancellation,
 dynamic range, maximum finite values, minimum normal and subnormal values,
 and inverse normalization fallback. The reported independent-DFT metric
@@ -181,6 +181,10 @@ L2-scaled output-agreement gate above.
 
 | N | Operation | Maximum absolute error | RMS error | Relative L2 error | DFT-scaled maximum error | Nonfinite |
 |---:|---|---:|---:|---:|---:|---:|
+| 128 | R2C | 2.17e−6 | 7.13e−7 | 8.76e−8 | 5.30e−8 | 0 |
+| 128 | C2R | 3.39e−8 | 6.04e−9 | 9.68e−8 | 3.39e−8 | 0 |
+| 512 | R2C | 1.25e−5 | 1.69e−6 | 1.04e−7 | 4.98e−8 | 0 |
+| 512 | C2R | 3.12e−8 | 3.53e−9 | 1.09e−7 | 3.12e−8 | 0 |
 | 1,024 | R2C | 1.98e−5 | 2.18e−6 | 9.44e−8 | 4.11e−8 | 0 |
 | 1,024 | C2R | 2.56e−8 | 2.42e−9 | 1.06e−7 | 2.56e−8 | 0 |
 | 2,048 | R2C | 6.34e−5 | 3.75e−6 | 1.15e−7 | 8.02e−8 | 0 |
@@ -209,10 +213,12 @@ The reviewer independently checked vector bounds, mirror indices, twiddles,
 tail coverage, dispatch, and the generated loops; it found no implementation
 defect.
 
-The f64 kernels remain unchanged. Other real radix families, across-row
-SIMD, and the remaining RustFFT and DUCC gaps still require work. This
-measurement supports one targeted f32 AVX2 pass family; it does not establish
-performance completion.
+The f64 kernels remain unchanged. The f32 inverse radix-two interior kernel
+and its paired measurements are documented in
+[`m4-f32-radix2-avx2.md`](m4-f32-radix2-avx2.md). Other real radix families,
+across-row SIMD, and the remaining RustFFT and DUCC gaps still require work.
+These measurements support targeted f32 AVX2 pass families; they do not
+establish performance completion.
 
 ## Callgrind profile at N=4,096
 
