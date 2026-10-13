@@ -172,10 +172,12 @@ shared the host, so these timings remain provisional. The benchmark used the pub
 `real_value(index, row)` samples and `spectrum_value(index, n, row)` inverse
 spectra. A batch contains 32 sequential row transforms with one reused plan
 and workspace. Time values below are per transform. Batch totals are shown in
-parentheses. Paired gains are medians of the six per-process relative gains;
-they need not equal the ratio of the displayed medians.
+parentheses. Paired latency reductions are the medians of
+`1 - candidate / baseline` across the six process pairs. They need not equal
+the latency reduction calculated from the displayed medians; these percentages
+are not speedup percentages, which would use `baseline / candidate - 1`.
 
-| N | Operation | Single baseline → candidate, µs | Paired gain | Batch 32 baseline → candidate per transform, µs (batch total, µs) | Paired gain |
+| N | Operation | Single baseline → candidate, µs | Paired latency reduction | Batch 32 baseline → candidate per transform, µs (batch total, µs) | Paired latency reduction |
 |---:|:---:|---:|---:|---:|---:|
 | 225 | R2C | 0.932 → 0.667 | 28.9% | 0.914 → 0.635 (29.255 → 20.329) | 30.5% |
 | 225 | C2R | 0.871 → 0.681 | 21.9% | 0.842 → 0.659 (26.941 → 21.085) | 21.6% |
@@ -194,7 +196,7 @@ instruction counts for that whole symbol fell from 25 to 19 `imul`
 instructions and from 2,160 to 1,954 total instructions. The symbol still
 contains pass dispatch and cold bounds-check paths, so these counts do not
 attribute a runtime share to the radix-3/5 inner loops. The contiguous-slice
-change improved median public latency by 10–31% in the four measured cases,
+change reduced median public latency by 10–31% in the four measured cases,
 without reducing workspace size. Using the earlier N=225 control medians in
 the tables above, the new candidate is 1.30/1.30/1.33× slower than RustFFT,
 portable DUCC, and native DUCC for R2C, and 1.26/1.26/1.62× slower for C2R. Those are ratios of independently measured medians. No RustFFT or DUCC control
