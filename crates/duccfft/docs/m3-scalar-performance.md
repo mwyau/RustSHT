@@ -3,7 +3,12 @@
 Date: 2026-10-13. The implementation measured here is source commit
 `0fa6b54` (`feat/duccfft`). Benchmark metadata and refreshed results are in
 commit `d613dd6`. The pinned DUCC reference is
-`c1ed01b8fda69d2a378190f0915f1a19762dddbf`. M3 adds the complex and real general-prime passes, Bluestein plans, the
+`c1ed01b8fda69d2a378190f0915f1a19762dddbf`. This is a historical M3 checkpoint. Its real-transform measurements and
+architecture statements describe source commit `0fa6b54`, before the guarded
+real radix-2/radix-4 multipass executor and AVX2 C2C kernels were added. See
+[`m4-real-multipass.md`](m4-real-multipass.md) and
+[`m4-c2c-avx2.md`](m4-c2c-avx2.md) for the current M4 implementation and
+measurements. M3 adds the complex and real general-prime passes, Bluestein plans, the
 DUCC-conditioned real complexify plan, a complex multipass executor, and a
 finite-input inverse-normalization fast path. Correctness checks pass, but
 smooth real transforms and several C2C cases still have multi-fold timing
@@ -155,9 +160,9 @@ independent butterflies. The large pass symbol also contains cold generic
 radix branches and bounds-check failure blocks. The inspection did not show
 that those branches execute in the smooth cases, and it did not establish a
 register-spill cost. RustFFT's default planner has runtime SIMD kernels; the
-Rust scalar control does not. The real executor still uses a recursive pass tree. At N=1,024 its factor
-tree is `[4, 4, 4, 4, 4]` and executes 1,365 recursion calls per transform.
-warm-up and 100 timed normal C2R operations (103 root recursion calls). It
+Rust scalar control does not. At M3 source commit `0fa6b54`, the real executor used a recursive pass tree. At N=1,024 its factor tree was `[4, 4, 4, 4, 4]` and executed 1,365 recursion
+calls per transform.
+warm-up runs and 100 timed normal C2R operations (103 root recursion calls). It
 records 44.0 million instruction references. Recursive execution accounts
 for 41.1 million inclusive references (93.4%); `small_radix_dft_all` accounts
 for 7.20 million (16.4%). The root multiplication and output-scale expression
@@ -230,18 +235,19 @@ schedule. The buffer experiment supports the in-place first pass, and the
 copyback profile shows that final copying is a small share of total time. This structure is simpler to map to DUCC's vector-friendly pass dimensions
 than the previous recursive tree. C2C scalar execution is still 4.4–5.9×
 slower than RustFFT's default planner and 1.9–2.5× slower than portable DUCC
-over the measured smooth lengths. The real pass tree remains recursive and is 10–18× slower than RustFFT's
-default planner at these smooth lengths. A complete forced-complexify
-prototype over the current complex multipass plan ran 5.4–9.4× faster for R2C
-and 5.4–6.5× faster for C2R at lengths 512–4,096. This prototype omits the
-production extreme-value path and does not justify changing DUCC's planner
+over the measured smooth lengths. At this M3 checkpoint, the real pass tree remained recursive and was 10–18×
+slower than RustFFT's default planner at these smooth lengths. A complete
+forced-complexify prototype over the current complex multipass plan ran
+5.4–9.4× faster for R2C and 5.4–6.5× faster for C2R at lengths 512–4,096. This prototype omits the production extreme-value path and does not justify
+changing DUCC's planner
 thresholds. It supports a targeted real multipass experiment before real SIMD
-work. The next scalar work should prototype DUCC's packed-real pass loop structure
-on a representative smooth size and compare a full real multipass with the
-recursive real path and the bounded complexify result. C2C can proceed to M4
-SIMD and batched execution using the measured multipass structure. The real
-kernel should enter SIMD work after the scalar schedule comparison. General-prime kernels also use less complementary-output reuse than DUCC, and
-the large-length balanced packet grouping used by DUCC above 10,000 is not
+work. The next scalar work identified here was to prototype DUCC's packed-real pass
+loop structure on a representative smooth size and compare it with recursion
+and the bounded complexify result. M4 implemented and measured the production
+radix-2/radix-4 path; the current results and remaining RustFFT/DUCC gap are in
+[`m4-real-multipass.md`](m4-real-multipass.md). The M4 C2C AVX2 implementation
+is reported in [`m4-c2c-avx2.md`](m4-c2c-avx2.md). Remaining work includes
+other real pass families, real-kernel SIMD, and a transform-batch API. General-prime kernels also use less complementary-output reuse than DUCC. The large-length balanced packet grouping used by DUCC above 10,000 is not
 implemented.
 
 ## Reviewer conclusions
@@ -257,4 +263,6 @@ coverage in `m3-prime-bluestein.md`. R3B found no numerical, aliasing,
 workspace-ownership, or checked-sizing defect. It supports the C2C multipass
 decision and in-place first pass. It considers recursive real execution an
 interim correctness implementation and agrees that a real multipass
-corrections are included above.
+comparison should precede real SIMD. M4 has since added the guarded
+radix-2/radix-4 path and measured its pass costs; see
+scope corrections are included above.

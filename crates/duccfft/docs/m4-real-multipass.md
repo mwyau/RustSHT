@@ -255,7 +255,32 @@ bounds checks. These observations show that the pass is scalar and retains
 indexing overhead; they do not attribute a measured fraction of execution time
 to any instruction class. The production path is 1.7–3.2× slower than the
 compared RustFFT adapter, so scalar loop and memory access work remains before
-extensive SIMD optimization.
+extensive SIMD optimization. An optimized benchmark binary with debug information was built from source
+`cc849b5` using Rust 1.99.0, `CARGO_PROFILE_BENCH_DEBUG=true`, and Cargo's
+with `bench-profile-real-inverse 1024 normal 100` and
+`bench-profile-real-inverse 1024 high 100`: three warm-ups and 100 timed
+inverses at length 1,024. The process-wide counts include plan construction,
+workspace allocation, and input setup. The normal finite spectrum passes the inverse bound and uses the packed-real
+multipass path. Its process records 14,484,805 instruction references. The
+inclusive cost under `RealMultipassPlan::inverse` is 11,774,857 references
+(81.3% of the process total). `callgrind_annotate` attributes 7,662,582
+references (52.9%) as the self-cost of `execute_inverse_pass`; inline
+arithmetic attributed to core-library source files is separate. The inverse
+pass loop has the largest source-attributed self-cost. The high-range input fills every bin with `MAX/8`, takes the recursive
+residual-corrected fallback, and records 57,980,103 references, 4.00 times the
+normal profile. The normal/high difference combines the change from
+multipass to recursion with high-range scaling and residual recovery. It does
+not isolate the correction arithmetic. The M3 profile before production real
+multipass measured 44.0 million references for normal input and 57.9 million
+for high-range input; the new normal path reduces its process-wide reference
+count while retaining the high-range fallback. The two current raw profiles
+
+An earlier uninstrumented production comparison at source `de5f87f` showed
+C2R 7.1–7.3% slower than R2C at length 1,024. The later paired `ido == 1`
+comparison above, with candidate source `a9486fb`, shows C2R 0.5% slower for a
+profile itself was collected from source `cc849b5`; its counts are not timing
+measurements. The extreme-value fallback retains the correction path and has
+not been optimized by this change.
 
 ## R6 production review
 
