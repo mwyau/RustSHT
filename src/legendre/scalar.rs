@@ -811,7 +811,7 @@ mod tests {
                 let mut next = vec![0.0; theta.len()];
                 let mut exponents = vec![0; theta.len()];
                 let mut paired = vec![vec![0.0; theta.len()]; pair_count];
-                super::super::scalar_paired::for_each_y_lm_paired_dispatched(
+                super::super::scalar_paired::for_each_y_lm_paired_status_dispatched(
                     arch,
                     m,
                     lmax,
@@ -824,8 +824,11 @@ mod tests {
                     &mut current,
                     &mut next,
                     &mut exponents,
-                    |l, ring_start, values, exponents| {
+                    |l, ring_start, values, exponents, normal_range| {
                         let pair = (l - m) / 2;
+                        if normal_range {
+                            assert!(exponents.iter().all(|&exponent| exponent == 0));
+                        }
                         for lane in 0..values.len() {
                             paired[pair][ring_start + lane] =
                                 scale_binary(values[lane], exponents[lane]);
@@ -1347,6 +1350,7 @@ mod tests {
             let actual = super::super::scalar_paired::accumulate_analysis_pair_dispatched(
                 Arch::new(),
                 products_safe,
+                true,
                 &same_real,
                 &same_imag,
                 &opposite_real,
@@ -1404,6 +1408,7 @@ mod tests {
         let actual = super::super::scalar_paired::accumulate_analysis_pair_dispatched(
             Arch::new(),
             products_safe,
+            true,
             &same_real,
             &same_imag,
             &opposite_real,
@@ -1442,6 +1447,7 @@ mod tests {
         let actual = super::super::scalar_paired::accumulate_analysis_pair_dispatched(
             Arch::new(),
             true,
+            false,
             &same_real,
             &same_imag,
             &opposite_real,

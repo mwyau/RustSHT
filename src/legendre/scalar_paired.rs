@@ -692,6 +692,7 @@ impl WithSimd for StagedSynthesisPairTransition<'_> {
 pub(crate) fn accumulate_analysis_pair_dispatched(
     arch: Arch,
     products_safe: bool,
+    normal_range: bool,
     same_real: &[f64],
     same_imag: &[f64],
     opposite_real: &[f64],
@@ -707,7 +708,8 @@ pub(crate) fn accumulate_analysis_pair_dispatched(
     debug_assert_eq!(exponents.len(), basis.len());
     debug_assert_eq!(cos_theta.len(), basis.len());
 
-    if products_safe && exponents.iter().all(|&exponent| exponent == 0) {
+    if products_safe && normal_range {
+        debug_assert!(exponents.iter().all(|&exponent| exponent == 0));
         return arch.dispatch(AnalysisPairAccumulation {
             same_real,
             same_imag,
@@ -1292,6 +1294,49 @@ pub(crate) fn for_each_y_lm_paired_dispatched<F>(
 where
     F: FnMut(usize, usize, &[f64], &[i64]) -> Result<(), ShtError>,
 {
+    for_each_y_lm_paired_status_dispatched(
+        arch,
+        m,
+        lmax,
+        sin_theta,
+        cos_theta,
+        sectoral_norm,
+        coefficient_a,
+        coefficient_b,
+        previous,
+        current,
+        next,
+        exponents,
+        |l, ring_start, basis, lane_exponents, _normal_range| {
+            visit(l, ring_start, basis, lane_exponents)
+        },
+    )
+}
+
+/// Visits paired scalar basis values and reports whether all lanes are in the
+/// ordinary floating-point range at each degree pair.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The recurrence uses plan factors, geometry and caller-owned lane scratch."
+)]
+pub(crate) fn for_each_y_lm_paired_status_dispatched<F>(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[f64],
+    cos_theta: &[f64],
+    sectoral_norm: f64,
+    coefficient_a: &[f64],
+    coefficient_b: &[f64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    next: &mut [f64],
+    exponents: &mut [i64],
+    mut visit: F,
+) -> Result<(), ShtError>
+where
+    F: FnMut(usize, usize, &[f64], &[i64], bool) -> Result<(), ShtError>,
+{
     debug_assert!(m <= lmax);
     debug_assert_eq!(sin_theta.len(), cos_theta.len());
     let scratch_len = sin_theta.len().min(LATITUDE_BLOCK_SIZE);
@@ -1340,7 +1385,7 @@ struct ForEachPairedYlm<'a, F> {
 
 impl<F> WithSimd for ForEachPairedYlm<'_, F>
 where
-    F: FnMut(usize, usize, &[f64], &[i64]) -> Result<(), ShtError>,
+    F: FnMut(usize, usize, &[f64], &[i64], bool) -> Result<(), ShtError>,
 {
     type Output = Result<(), ShtError>;
 
@@ -1374,7 +1419,7 @@ where
         let mut normal_range = scalar::normalize_pair_lanes(previous, current, exponents)?;
 
         for (pair_index, l) in (m..=lmax).step_by(2).enumerate() {
-            visit(l, ring_start, current, exponents)?;
+            visit(l, ring_start, current, exponents, normal_range)?;
             if l + 2 > lmax {
                 break;
             }
