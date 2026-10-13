@@ -88,5 +88,5 @@ workspace and output ordering match the longitude-row storage used by
 RustSHT, and the validation tests cover f32/f64, inverse scaling, Bluestein,
 real complexify, incomplete rows, and workspace mismatches. The measured
 across-row C2C prototype did not speed up whole batch calls at lengths 256 and
-1,024; its two layout conversions took 57–63% of 32-row execution time. See
+1,024; its two layout conversions took about 56–63% of 32-row execution time. See
 [`m4-across-row-prototype.md`](m4-across-row-prototype.md) for the measurements.
