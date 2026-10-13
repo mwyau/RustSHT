@@ -409,6 +409,78 @@ fn real_general_prime_and_bluestein_paths_match_independent_dfts() {
 }
 
 #[test]
+fn terminal_real_prime_inverse_covers_cancellation_and_finite_extremes() {
+    let n = 41;
+    let bins = n / 2 + 1;
+
+    let plan64 = RealFftPlan::<f64>::new(n).unwrap();
+    let mut workspace64 = plan64.workspace().unwrap();
+    let cancellation64 = vec![Complex::new(1.0, 0.0); bins];
+    let expected64 = direct_c2r_f64(&cancellation64, n);
+    let mut actual64 = vec![0.0; n];
+    plan64
+        .inverse(&cancellation64, &mut actual64, &mut workspace64)
+        .unwrap();
+    assert_f64_close(&actual64, &expected64, n);
+    assert!(actual64[1..].iter().all(|&value| value.abs() < 1.0e-12));
+
+    for amplitude in [f64::MIN_POSITIVE, f64::from_bits(1)] {
+        let mut spectrum = vec![Complex::new(0.0, 0.0); bins];
+        spectrum[0].re = amplitude * n as f64;
+        plan64
+            .inverse(&spectrum, &mut actual64, &mut workspace64)
+            .unwrap();
+        assert_eq!(actual64, vec![amplitude; n]);
+    }
+
+    let mut maximum64 = vec![Complex::new(0.0, 0.0); bins];
+    maximum64[0].re = f64::MAX;
+    let expected_maximum64 = direct_c2r_f64(&maximum64, n);
+    plan64
+        .inverse(&maximum64, &mut actual64, &mut workspace64)
+        .unwrap();
+    assert!(actual64.iter().all(|value| value.is_finite()));
+    assert_f64_close(&actual64, &expected_maximum64, n);
+
+    let plan32 = RealFftPlan::<f32>::new(n).unwrap();
+    let mut workspace32 = plan32.workspace().unwrap();
+    let cancellation32 = vec![Complex::new(1.0_f32, 0.0); bins];
+    let cancellation32_f64: Vec<_> = cancellation32
+        .iter()
+        .map(|value| Complex::new(value.re as f64, value.im as f64))
+        .collect();
+    let expected32 = direct_c2r_f64(&cancellation32_f64, n);
+    let mut actual32 = vec![0.0_f32; n];
+    plan32
+        .inverse(&cancellation32, &mut actual32, &mut workspace32)
+        .unwrap();
+    assert_f32_close(&actual32, &expected32, n);
+    assert!(actual32[1..].iter().all(|&value| value.abs() < 2.0e-6));
+
+    for amplitude in [f32::MIN_POSITIVE, f32::from_bits(1)] {
+        let mut spectrum = vec![Complex::new(0.0, 0.0); bins];
+        spectrum[0].re = amplitude * n as f32;
+        plan32
+            .inverse(&spectrum, &mut actual32, &mut workspace32)
+            .unwrap();
+        assert_eq!(actual32, vec![amplitude; n]);
+    }
+
+    let mut maximum32 = vec![Complex::new(0.0, 0.0); bins];
+    maximum32[0].re = f32::MAX;
+    let maximum32_f64: Vec<_> = maximum32
+        .iter()
+        .map(|value| Complex::new(value.re as f64, value.im as f64))
+        .collect();
+    let expected_maximum32 = direct_c2r_f64(&maximum32_f64, n);
+    plan32
+        .inverse(&maximum32, &mut actual32, &mut workspace32)
+        .unwrap();
+    assert!(actual32.iter().all(|value| value.is_finite()));
+    assert_f32_close(&actual32, &expected_maximum32, n);
+}
+
+#[test]
 fn real_complexify_planner_path_matches_f64_and_f32_direct_dfts() {
     let n = 1026;
     let plan64 = RealFftPlan::<f64>::new(n).unwrap();

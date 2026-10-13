@@ -1076,7 +1076,7 @@ sample indices `n` and `radix-n` together. Their cosine terms are equal and
 their sine terms have opposite signs. The loop shares each `Re(X_k) cos(...)`
 product and applies the two sine signs to produce both samples. This follows
 the paired real-coefficient sums in DUCC's pinned
-[`rfftpg`](https://github.com/mreineck/ducc/blob/c1ed01b8fda69d2a378190f0915f1a19762dddbf/src/ducc0/fft/fft1d_impl.h#L2229-L2523)
+[`rfftpg`](https://github.com/mreineck/ducc/blob/c1ed01b8fda69d2a378190f0915f1a19762dddbf/src/ducc0/fft/fft1d_impl.h#L2229-L2606)
 pass. It changes only terminal real-prime C2R passes with radix below 135.
 
 The comparison used the `bench-native-real` harness, deterministic
@@ -1088,7 +1088,9 @@ and no target CPU flag. Each operation was single-threaded. The Legendre
 workload was active, so timings are provisional. The baseline binary was
 built from `1f0b14b2124eb421b5628e2d6d0d92255131a1ce`; the candidate was built
 from `0c0ee9aab8481fcfd6f09e153563a7f1f45dc4e1`. The raw CSV records both
-binary hashes and all process measurements.
+binary hashes and all process measurements. This comparison also includes a
+one-line AVX2 availability guard change in the complex radix path from
+`2d8c622`; the N=1,025 C2R workload does not execute that path.
 
 | N | Operation | Rows | Baseline median | Candidate median | Paired speedup | Pairs favoring candidate |
 |---:|---|---:|---:|---:|---:|---:|
@@ -1103,30 +1105,41 @@ binary hashes and all process measurements.
 
 Paired speedups are the median of six baseline-to-candidate latency ratios.
 Batch rows run sequentially with a shared plan and workspace; table values are
-per-transform times. At N=1,025, C2R plan construction medians were 16.98 and
-16.99 µs, workspace allocation medians were 0.384 and 0.381 µs, and scratch
-remained 28,944 bytes. R2C timings at the same length show no execution gain.
+per-transform times. For C2R with `batch_count=1` at N=1,025, the six-record
+plan construction medians were 16.98 and 16.99 µs; workspace allocation
+medians were 0.389 and 0.382 µs. Scratch remained 28,944 bytes. R2C timings at
+the same length show no execution gain.
 
-Callgrind profiled 20 normal-spectrum C2R operations at N=1,025. Instruction
+Callgrind whole-process totals for N=1,025 normal-spectrum C2R included plan
+and workspace setup, three warmups, and 20 measured calls. Instruction
 references fell from 14,696,836 to 9,642,013 (34.4%); simulated conditional
 branches fell from 2,142,428 to 1,186,934 (44.6%), and simulated conditional
 mispredictions fell from 31,274 to 19,794 (36.7%). These are Callgrind branch
 simulation results, not hardware performance counters. Linux denied
-`perf stat` access because `perf_event_paranoid` was 4. The release kernel
-uses scalar `mulsd`/`addsd` operations; it has no packed floating-point
-instructions. The archived profiles are
+`perf stat` access because `perf_event_paranoid` was 4. In the candidate's
+terminal pair loop, release assembly uses SSE2 `movupd` loads and `mulpd` to
+multiply the real-cosine and imaginary-sine products, followed by scalar
+`subsd`/`addsd` accumulation. This is compiler-generated SSE2 within one
+frequency-bin pair; the kernel has no explicit AVX2 or across-sample SIMD
+loop. The archived profiles are
 [`baseline`](../benches/results/m4-real-prime-pairsym-baseline-callgrind.out.gz)
 and
 [`candidate`](../benches/results/m4-real-prime-pairsym-candidate-callgrind.out.gz).
 
-The candidate passed all crate tests, including f32 comparisons with f64
-references and direct DFT checks. Its f64 C2R outputs agreed with pinned DUCC
-for prime lengths 7, 13, 17, 31, 41, 53, 107, 109, 113, 127, and 131, and
-composite lengths 49, 98, and 1,025; the maximum absolute error was
-`6.94e-17`. The N=4,097 control was slower in all six pairs even though its
-radix-17 pass uses the interior loop. R2C at N=4,097 also slowed, where this
-inverse kernel does not execute. The cause may be shared-host variation or
-binary code layout; these measurements do not distinguish them.
+The candidate passed all crate tests, including the cancellation, minimum
+normal, subnormal, and maximum-finite-value cases for f32 and f64, f32
+comparisons with f64 references, and direct DFT checks. Its f64 C2R outputs
+agreed with pinned DUCC for prime lengths 7, 13, 17, 31, 41, 53, 107, 109,
+113, 127, and 131, and composite lengths 49, 98, and 1,025; the maximum
+absolute error was `6.94e-17`. The N=4,097 control was slower in all six
+pairs even though its radix-17 pass uses the interior loop. Matching
+Callgrind control profiles
+showed 138,321,828 versus 139,050,695 instruction references and 133,030
+versus 148,798 simulated conditional mispredictions for N=4,097 C2R. These
+figures are consistent with a small code-layout effect but do not identify a
+hardware cause. R2C at N=4,097 also slowed, where this inverse kernel does not
+execute; shared-host variation or binary layout may contribute, and these
+measurements do not distinguish them.
 
 Raw timing rows are in
 [`m4-real-prime-pairsym-process-samples.csv`](../benches/results/m4-real-prime-pairsym-process-samples.csv).
