@@ -284,20 +284,22 @@ revisions:
 | 2,048 | 27.171 → 27.220 µs | 0.312 → 0.316 µs | 33,024 |
 | 4,096 | 54.046 → 54.139 µs | 0.568 → 0.564 µs | 65,792 |
 
-Release disassembly contains packed AVX2 operations in both revisions. In the
-baseline, the compiler had already placed direction-dependent branches before
-the inner loops. Const specialization duplicates direction-specific code but
-does not remove a measured loop branch. The `f64_kernel::first_pass` symbol
-grew from 1,888 to 2,544 bytes and `f64_kernel::pass` from 2,571 to 4,518
-bytes. Their stack frames fell from 120 to 40 bytes and from 200 to 136 bytes,
-respectively. These code-size and stack-frame differences do not establish a
-runtime benefit on their own.
+Release disassembly contains packed AVX2 operations in both revisions. The
+baseline radix-four and radix-eight loops contain direction-dependent tests
+for inverse scaling and twiddle conjugation. The candidate selects direction
+at pass entry and removes those tests from the specialized loop bodies. Each
+baseline symbol has 15 direction tests; each candidate symbol retains three
+tests at entry for radix dispatch. The `f64_kernel::first_pass` symbol grew
+from 1,888 to 2,544 bytes and `f64_kernel::pass` from 2,571 to 4,518 bytes.
+Their stack frames fell from 120 to 40 bytes and from 200 to 136 bytes,
+respectively. The reduced loop branching does not establish a runtime benefit
+on its own.
 
 The paired timing results are small and inconsistent: individual medians range
 from a 1.99% regression to a 3.20% gain, and most larger sizes do not favor the
-candidate in all six pairs. This experiment does not explain or close the
-remaining smooth-radix gap to RustFFT. The compiler had already hoisted the
-direction branch, so this specialization has no strong measured case for
-remaining in the production kernel. The read-only R21 review will assess the
-experiment and this retain-or-revert decision before the code change is
-finalized.
+candidate in all six pairs. Removing per-vector direction tests has not
+produced a stable whole-call gain across the measured sizes. This experiment
+does not explain or close the remaining smooth-radix gap to RustFFT. The
+read-only R21 review will assess whether the loop simplification justifies its
+larger code footprint and this retain-or-revert decision before the code change
+is finalized.
