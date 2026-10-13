@@ -121,9 +121,10 @@ wall-time cost of either feature. `cargo fmt --manifest-path crates/duccfft/Carg
 `cargo test --manifest-path crates/duccfft/Cargo.toml --all-targets`, and
 `cargo clippy --manifest-path crates/duccfft/Cargo.toml --all-targets --all-features -- -D warnings`
 passed. The test run covered 3 SIMD unit tests, 17 complex integration tests,
-and 21 real integration tests. This change affects public C2C calls only. Real transforms still use their
-recursive scalar execution path. Compare a complete packed-real multipass
-prototype with that path before adding real SIMD.
+and 21 real integration tests. This change affects public C2C calls only. At the measured source revision,
+real transforms used the recursive scalar executor. The subsequent packed-real
+radix-2/radix-4 multipass implementation is measured in
+[`m4-real-multipass.md`](m4-real-multipass.md).
 
 ## Fixed-radix loop specialization
 
@@ -187,8 +188,11 @@ instructions per function still reference stack-resident vector values. Loop-cou
 not measure branch frequency or attribute wall time to stack references. The M3 review accepted the DUCC `l1`/`ido` C2C multipass schedule after
 measurements showed lower execution time than the earlier recursive tree. The
 fixed-radix change adds a smaller gain. Smooth C2C execution is still 2.03–4.16×
-slower than RustFFT in this comparison. R2C/C2R still use recursive execution;
-the next scalar architecture comparison should measure a packed-real multipass
-executor before adding real SIMD. The M3 inverse fast path skips residual
-correction for inputs under its tested finite-input bound, but this C2C
-experiment does not measure its effect on real-transform timing.
+slower than RustFFT in this comparison. At the measured source revision, R2C/C2R
+used recursive execution. The later real multipass path handles safe plans
+factored entirely into radix 2 and 4; other factorisations and ineligible
+dynamic ranges use the existing real executor. Its timings and remaining
+RustFFT/DUCC gaps are reported in
+[`m4-real-multipass.md`](m4-real-multipass.md). The M3 inverse fast path skips
+residual correction for inputs under its tested finite-input bound, but this
+C2C experiment does not measure its effect on real-transform timing.
