@@ -634,8 +634,8 @@ fn spin1_scalar_transition_preserves_the_sine_cutoff_boundary() {
 }
 
 #[test]
-fn spin1_t63_t127_scalar_conversion_matches_general_on_all_grids() {
-    for lmax in [63, 127] {
+fn spin1_scalar_conversion_matches_general_on_all_grids() {
+    for lmax in [63, 127, 224] {
         for grid_kind in [
             GridKind::GaussLegendre,
             GridKind::ClenshawCurtis,
@@ -1822,102 +1822,44 @@ fn derivative_adjoint_matches_ducc_and_inner_product() {
 
 #[test]
 fn deriv1_scalar_conversion_matches_general_recurrence_and_analytic_fields() {
-    let lmax = 63;
-    for grid_kind in [
-        GridKind::GaussLegendre,
-        GridKind::ClenshawCurtis,
-        GridKind::Fejer1,
-    ] {
-        let ntheta = lmax + usize::from(grid_kind == GridKind::ClenshawCurtis) + 1;
-        for nphi in [126, 127] {
-            let make_plan = || {
-                ShtPlan::new(
-                    GridSpec::new(grid_kind, ntheta, nphi, 0.37).unwrap(),
-                    HarmonicSpec::scalar(lmax, lmax).unwrap(),
-                )
-                .unwrap()
-            };
-            let fast_plan = make_plan();
-            let mut general_plan = make_plan();
-            general_plan.spin_fast_coefficient_count = 0;
-            let mut alm = vec![Complex64::new(0.0, 0.0); fast_plan.harmonics.nalm()];
-            for m in 0..=lmax {
-                for l in m..=lmax {
-                    let index = fast_plan.harmonics.index(l, m).unwrap();
-                    let re = ((l * 7 + m * 11) % 19 + 1) as f64 * 1e-4;
-                    let im = if m == 0 {
-                        0.0
-                    } else {
-                        ((l * 13 + m * 5) % 23 + 1) as f64 * 1e-4
-                    };
-                    alm[index] = Complex64::new(re, im);
+    for lmax in [63, 224] {
+        for grid_kind in [
+            GridKind::GaussLegendre,
+            GridKind::ClenshawCurtis,
+            GridKind::Fejer1,
+        ] {
+            let ntheta = lmax + usize::from(grid_kind == GridKind::ClenshawCurtis) + 1;
+            for nphi in [2 * lmax, 2 * lmax + 1] {
+                let make_plan = || {
+                    ShtPlan::new(
+                        GridSpec::new(grid_kind, ntheta, nphi, 0.37).unwrap(),
+                        HarmonicSpec::scalar(lmax, lmax).unwrap(),
+                    )
+                    .unwrap()
+                };
+                let fast_plan = make_plan();
+                let mut general_plan = make_plan();
+                general_plan.spin_fast_coefficient_count = 0;
+                let mut alm = vec![Complex64::new(0.0, 0.0); fast_plan.harmonics.nalm()];
+                for m in 0..=lmax {
+                    for l in m..=lmax {
+                        let index = fast_plan.harmonics.index(l, m).unwrap();
+                        let re = ((l * 7 + m * 11) % 19 + 1) as f64 * 1e-4;
+                        let im = if m == 0 {
+                            0.0
+                        } else {
+                            ((l * 13 + m * 5) % 23 + 1) as f64 * 1e-4
+                        };
+                        alm[index] = Complex64::new(re, im);
+                    }
                 }
-            }
 
-            let mut fast_workspace = fast_plan.workspace().unwrap();
-            let mut general_workspace = general_plan.workspace().unwrap();
-            let mut fast_theta = vec![0.0; fast_plan.sample_count];
-            let mut fast_phi = vec![0.0; fast_plan.sample_count];
-            let mut general_theta = vec![0.0; general_plan.sample_count];
-            let mut general_phi = vec![0.0; general_plan.sample_count];
-            fast_plan
-                .synthesis_deriv1_into(&alm, &mut fast_theta, &mut fast_phi, &mut fast_workspace)
-                .unwrap();
-            general_plan
-                .synthesis_deriv1_into(
-                    &alm,
-                    &mut general_theta,
-                    &mut general_phi,
-                    &mut general_workspace,
-                )
-                .unwrap();
-            for (component, actual, expected) in [
-                ("theta", &fast_theta, &general_theta),
-                ("phi", &fast_phi, &general_phi),
-            ] {
-                let error = actual
-                    .iter()
-                    .zip(expected)
-                    .map(|(actual, expected)| (actual - expected).powi(2))
-                    .sum::<f64>()
-                    .sqrt();
-                let reference = expected
-                    .iter()
-                    .map(|value| value * value)
-                    .sum::<f64>()
-                    .sqrt();
-                let relative_error = error / reference.max(1e-300);
-                assert!(
-                    relative_error <= 2e-11,
-                    "grid={grid_kind:?}, nphi={nphi}, component={component}, relative error={relative_error:.3e}"
-                );
-            }
-
-            let (input_theta, input_phi) = arbitrary_maps(&fast_plan);
-            let mut adjoint = vec![Complex64::new(0.0, 0.0); fast_plan.harmonics.nalm()];
-            fast_plan
-                .adjoint_synthesis_deriv1_into(
-                    &input_theta,
-                    &input_phi,
-                    &mut adjoint,
-                    &mut fast_workspace,
-                )
-                .unwrap();
-            let map_product =
-                spin_map_inner_product(&fast_theta, &fast_phi, &input_theta, &input_phi);
-            let harmonic_product = harmonic_inner_product(fast_plan.harmonics(), &alm, &adjoint);
-            assert!(
-                (map_product - harmonic_product).abs()
-                    <= 2e-10 * map_product.abs().max(harmonic_product.abs()).max(1.0),
-                "grid={grid_kind:?}, nphi={nphi}, map={map_product:.17e}, harmonic={harmonic_product:.17e}"
-            );
-
-            for (l, m, expected_factor) in [
-                (1, 0, (3.0 / (4.0 * std::f64::consts::PI)).sqrt()),
-                (1, 1, (3.0 / (2.0 * std::f64::consts::PI)).sqrt()),
-            ] {
-                alm.fill(Complex64::new(0.0, 0.0));
-                alm[fast_plan.harmonics.index(l, m).unwrap()] = Complex64::new(1.0, 0.0);
+                let mut fast_workspace = fast_plan.workspace().unwrap();
+                let mut general_workspace = general_plan.workspace().unwrap();
+                let mut fast_theta = vec![0.0; fast_plan.sample_count];
+                let mut fast_phi = vec![0.0; fast_plan.sample_count];
+                let mut general_theta = vec![0.0; general_plan.sample_count];
+                let mut general_phi = vec![0.0; general_plan.sample_count];
                 fast_plan
                     .synthesis_deriv1_into(
                         &alm,
@@ -1926,35 +1868,106 @@ fn deriv1_scalar_conversion_matches_general_recurrence_and_analytic_fields() {
                         &mut fast_workspace,
                     )
                     .unwrap();
-                for (ring, &theta) in fast_plan.grid.theta().iter().enumerate() {
-                    for longitude in 0..nphi {
-                        let phi = fast_plan.grid.phi0()
-                            + 2.0 * std::f64::consts::PI * longitude as f64 / nphi as f64;
-                        let index = ring * nphi + longitude;
-                        let (expected_theta, expected_phi) = if m == 0 {
-                            (-expected_factor * theta.sin(), 0.0)
-                        } else {
-                            (
-                                -expected_factor * theta.cos() * phi.cos(),
-                                expected_factor * phi.sin(),
-                            )
-                        };
-                        assert_close(fast_theta[index], expected_theta, 2e-12);
-                        assert_close(fast_phi[index], expected_phi, 2e-12);
+                general_plan
+                    .synthesis_deriv1_into(
+                        &alm,
+                        &mut general_theta,
+                        &mut general_phi,
+                        &mut general_workspace,
+                    )
+                    .unwrap();
+                for (component, actual, expected) in [
+                    ("theta", &fast_theta, &general_theta),
+                    ("phi", &fast_phi, &general_phi),
+                ] {
+                    let error = actual
+                        .iter()
+                        .zip(expected)
+                        .map(|(actual, expected)| (actual - expected).powi(2))
+                        .sum::<f64>()
+                        .sqrt();
+                    let reference = expected
+                        .iter()
+                        .map(|value| value * value)
+                        .sum::<f64>()
+                        .sqrt();
+                    let relative_error = error / reference.max(1e-300);
+                    assert!(
+                        relative_error <= 2e-11,
+                        "grid={grid_kind:?}, nphi={nphi}, component={component}, relative error={relative_error:.3e}"
+                    );
+                }
+
+                let (input_theta, input_phi) = arbitrary_maps(&fast_plan);
+                let mut adjoint = vec![Complex64::new(0.0, 0.0); fast_plan.harmonics.nalm()];
+                fast_plan
+                    .adjoint_synthesis_deriv1_into(
+                        &input_theta,
+                        &input_phi,
+                        &mut adjoint,
+                        &mut fast_workspace,
+                    )
+                    .unwrap();
+                let map_product =
+                    spin_map_inner_product(&fast_theta, &fast_phi, &input_theta, &input_phi);
+                let harmonic_product =
+                    harmonic_inner_product(fast_plan.harmonics(), &alm, &adjoint);
+                assert!(
+                    (map_product - harmonic_product).abs()
+                        <= 2e-10 * map_product.abs().max(harmonic_product.abs()).max(1.0),
+                    "grid={grid_kind:?}, nphi={nphi}, map={map_product:.17e}, harmonic={harmonic_product:.17e}"
+                );
+
+                for (l, m, expected_factor) in [
+                    (1, 0, (3.0 / (4.0 * std::f64::consts::PI)).sqrt()),
+                    (1, 1, (3.0 / (2.0 * std::f64::consts::PI)).sqrt()),
+                ] {
+                    alm.fill(Complex64::new(0.0, 0.0));
+                    alm[fast_plan.harmonics.index(l, m).unwrap()] = Complex64::new(1.0, 0.0);
+                    fast_plan
+                        .synthesis_deriv1_into(
+                            &alm,
+                            &mut fast_theta,
+                            &mut fast_phi,
+                            &mut fast_workspace,
+                        )
+                        .unwrap();
+                    for (ring, &theta) in fast_plan.grid.theta().iter().enumerate() {
+                        for longitude in 0..nphi {
+                            let phi = fast_plan.grid.phi0()
+                                + 2.0 * std::f64::consts::PI * longitude as f64 / nphi as f64;
+                            let index = ring * nphi + longitude;
+                            let (expected_theta, expected_phi) = if m == 0 {
+                                (-expected_factor * theta.sin(), 0.0)
+                            } else {
+                                (
+                                    -expected_factor * theta.cos() * phi.cos(),
+                                    expected_factor * phi.sin(),
+                                )
+                            };
+                            assert_close(fast_theta[index], expected_theta, 2e-12);
+                            assert_close(fast_phi[index], expected_phi, 2e-12);
+                        }
                     }
                 }
-            }
 
-            alm.fill(Complex64::new(0.0, 0.0));
-            alm[fast_plan.harmonics.index(0, 0).unwrap()] = Complex64::new(1.7, 0.0);
-            fast_plan
-                .synthesis_deriv1_into(&alm, &mut fast_theta, &mut fast_phi, &mut fast_workspace)
-                .unwrap();
-            assert!(fast_theta.iter().all(|&value| value == 0.0));
-            assert!(fast_phi.iter().all(|&value| value == 0.0));
+                alm.fill(Complex64::new(0.0, 0.0));
+                alm[fast_plan.harmonics.index(0, 0).unwrap()] = Complex64::new(1.7, 0.0);
+                fast_plan
+                    .synthesis_deriv1_into(
+                        &alm,
+                        &mut fast_theta,
+                        &mut fast_phi,
+                        &mut fast_workspace,
+                    )
+                    .unwrap();
+                assert!(fast_theta.iter().all(|&value| value == 0.0));
+                assert!(fast_phi.iter().all(|&value| value == 0.0));
+            }
         }
     }
 
+    let lmax = 63;
     let fast_plan = ShtPlan::new(
         GridSpec::new(GridKind::GaussLegendre, lmax + 1, 1, 0.37).unwrap(),
         HarmonicSpec::scalar(lmax, 0).unwrap(),

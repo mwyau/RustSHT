@@ -1840,3 +1840,25 @@ The direct CC pole regression sets nonzero Fourier sentinels and verifies that t
 Callgrind 3.26.0 on the T255 GL spin-1 GRAD_ONLY benchmark counted `5.139` billion instruction references across the one- and eight-thread harness runs. `scalar::multiply_complex_scaled_product` accounted for `1.350` billion self references (26.3%); inclusive inverse-FFT references were 5.6%. These simulated references are not cycles or elapsed phase times. `perf_event_paranoid=4` still blocks hardware counters. The scalar-scaled multiplication path is the next profiling target for spin-0/1 recurrence and accumulation; FFT work is deferred.
 
 Final checks passed: formatting, workspace Clippy with warnings denied, 111 Rust tests and 10 f32 tests with all features (8 ignored), 106 Rust tests and 10 f32 tests without default features (7 ignored), and all 8 Python tests. The high-bandlimit release DUCC tests listed above passed. Sol's strictly read-only review found no numerical or benchmark blocker; it confirmed that the CC sentinel exercises the segment guard and that the GL/F1 public cases test cutoff output without requiring that guard branch.
+
+### Spin-1 synthesis transition gate at T224 (2026-10-13)
+
+Lowered `SPIN1_TRANSITION_MIN_LMAX` from 255 to 224. This enables the existing guarded scaled-to-normal continuation in the spin-1 scalar-conversion synthesis path at T224. The recurrence, finite-output checks, scaled fallback and worker scratch are unchanged. T63, T127 and T223 remain below the gate; T255 and higher were already eligible. No scalar, spin-2, f32 or FFT path changed.
+
+Native timings used `examples/m1b_bench.rs` with reused plans/workspaces, f64, `phi0=0.37`, full `mmax`, `nphi=2*lmax+3`, one warm-up and five timed calls per process. Three alternating baseline/candidate process runs were pinned to CPUs 0–7 on an AMD Ryzen 9 5950X, Linux `7.0.14-20-pve`, using `rustc 1.99.0 (b940084d7 2026-09-28)`, Cargo release defaults (`opt-level=3`, 16 codegen units, LTO off) and runtime AVX2/FMA dispatch without `target-cpu=native`. The baseline is `6addcfb`; candidate production code differs only by the threshold constant. Each cell reports one/eight-thread process medians in milliseconds:
+
+| Grid / mode | T224 baseline → candidate | Reduction | T254 baseline → candidate | Reduction |
+| --- | ---: | ---: | ---: | ---: |
+| GL STANDARD | `14.516/8.518 → 14.169/7.893` | `2.4%/7.3%` | `24.938/12.027 → 20.374/9.566` | `18.3%/20.5%` |
+| GL GRAD_ONLY | `15.239/8.754 → 14.620/8.062` | `4.1%/7.9%` | `26.055/12.229 → 20.756/9.887` | `20.3%/19.2%` |
+| GL DERIV1 | `15.002/8.832 → 14.563/8.268` | `2.9%/6.4%` | `25.726/12.310 → 20.521/9.637` | `20.2%/21.7%` |
+| CC STANDARD | `16.592/9.326 → 15.196/8.209` | `8.4%/12.0%` | `26.983/13.179 → 23.205/11.271` | `14.0%/14.5%` |
+| CC GRAD_ONLY | `16.700/9.556 → 15.053/8.342` | `9.9%/12.7%` | `27.519/13.200 → 23.871/11.084` | `13.3%/16.0%` |
+| CC DERIV1 | `17.413/9.777 → 15.323/8.587` | `12.0%/12.2%` | `27.621/13.349 → 23.805/11.147` | `13.8%/16.5%` |
+| F1 STANDARD | `15.389/9.095 → 13.189/7.446` | `14.3%/18.1%` | `25.929/12.696 → 21.247/9.850` | `18.1%/22.4%` |
+| F1 GRAD_ONLY | `15.692/9.226 → 13.246/7.570` | `15.6%/17.9%` | `26.591/12.432 → 21.684/10.171` | `18.5%/18.2%` |
+| F1 DERIV1 | `15.811/9.375 → 13.307/7.672` | `15.8%/18.2%` | `26.517/12.605 → 21.570/9.986` | `18.7%/20.8%` |
+
+At T224 GL, baseline and candidate process-median ranges did not overlap in any mode or thread count; for STANDARD they were `14.345–14.654/8.393–8.528` and `13.930–14.180/7.824–8.090` ms. T223 GL controls for STANDARD, GRAD_ONLY and DERIV1 changed by at most 0.7%, within run variability. The T224 gain is smaller on GL than CC/F1, while T254 shows clear whole-transform reductions on all grids and modes.
+
+The candidate passed all-grid T224 spin-1 STANDARD and GRAD_ONLY spectrum comparisons against the general recurrence, and DERIV1 comparisons against the general recurrence with analytic `Y10`/`Y11`, zero-monopole and synthesis-adjoint checks for even and odd `nphi`. Against installed DUCC `0.41.0` from source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`, T224 synthesis relative-L2 errors across GL/CC/F1, STANDARD/GRAD_ONLY/DERIV1 and one/eight threads were `2.35e-14–3.37e-14`; the largest absolute error was `6.564e-13` in DERIV1. Focused Rust tests passed. Sol's strictly read-only review found no correctness or cutoff blocker; it recommended retaining the gate and treating the smaller GL gain cautiously. No FFT code changed.
