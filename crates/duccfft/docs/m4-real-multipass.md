@@ -616,3 +616,66 @@ removed in `a6a2560` pending a more substantial gain from the scalar
 `ido > 1` inverse loop. Raw paired samples are in
 [`m4-real-radix4-avx2-counterbalanced-process-samples.csv`](../benches/results/m4-real-radix4-avx2-counterbalanced-process-samples.csv). Compressed process profiles are in
 and
+
+## Inverse radix-four interior AVX2 experiment
+
+The terminal-pass experiment did not vectorize enough work to produce a
+repeatable whole-call gain. I then tested the heavier inverse radix-four
+interior loop. The f64 AVX2 kernel processes two adjacent packed complex
+positions per vector, handles all four output branches, and returns the first
+position for the scalar remainder. Plan construction installs the kernel only
+when runtime AVX2 detection succeeds. The scalar equations remain the fallback
+for short `ido` values and the unvectorized tail. The forward real transform
+does not call this kernel. The baseline source was
+`6a58762976a5b6cdfd264fd5edbaf16c291dd6f0`; the candidate source was
+`8e285c4d8e6e456dd9ac785ae6d39140a7d44fcc`. Each source was built with Rust
+1.99.0 (`b940084d7`, LLVM 23.1.1) and Cargo 1.99.0 on an x86-64 CPU. The bench profile used Cargo defaults: `-C opt-level=3`,
+`-C embed-bitcode=no`, and `-C strip=debuginfo`. No `RUSTFLAGS`, LTO, or
+`target-cpu` setting was present. Both binaries used the same `x86_64-unknown-
+linux-gnu` target. Each process ran `bench-native-real N 1 32`, pinned to
+logical one CPU core. The deterministic inputs come from the benchmark's bounded
+`real_value` and `spectrum_value` functions. Each process performed a warm-up
+and seven timed samples; twelve baseline/candidate process pairs per length
+alternated execution order. The table reports median per-transform times
+across the process samples. The ratio is baseline divided by candidate; the
+paired gain is the median of the twelve per-pair values of
+`baseline/candidate - 1`.
+
+| N | R2C, one call, µs (ratio; paired gain) | R2C, batch 32, µs (ratio; paired gain) | C2R, one call, µs (ratio; paired gain) | C2R, batch 32, µs (ratio; paired gain) |
+|---:|---:|---:|---:|---:|
+| 64 | 0.220 / 0.221 (0.995×; −0.45%) | 0.189 / 0.184 (1.023×; +2.29%) | 0.180 / 0.170 (1.059×; +5.88%) | 0.156 / 0.146 (1.065×; +6.09%) |
+| 128 | 0.451 / 0.446 (1.012×; +2.27%) | 0.434 / 0.429 (1.012×; +1.28%) | 0.401 / 0.381 (1.051×; +2.62%) | 0.375 / 0.361 (1.038×; +3.32%) |
+| 256 | 0.947 / 0.942 (1.005×; +0.49%) | 0.914 / 0.908 (1.007×; +0.76%) | 0.717 / 0.632 (1.134×; +14.17%) | 0.687 / 0.609 (1.127×; +13.20%) |
+| 512 | 2.104 / 2.094 (1.005×; +0.24%) | 2.092 / 2.052 (1.019×; +2.02%) | 1.664 / 1.508 (1.103×; +10.32%) | 1.642 / 1.488 (1.103×; +9.86%) |
+| 1,024 | 4.468 / 4.478 (0.998×; +0.11%) | 4.456 / 4.344 (1.026×; +2.62%) | 3.221 / 2.675 (1.204×; +20.68%) | 3.234 / 2.676 (1.208×; +20.43%) |
+| 2,048 | 10.124 / 10.174 (0.995×; −0.54%) | 10.164 / 10.061 (1.010×; +1.31%) | 7.549 / 6.527 (1.157×; +15.88%) | 7.578 / 6.554 (1.156×; +15.81%) |
+| 4,096 | 21.675 / 21.370 (1.014×; +1.43%) | 21.896 / 21.629 (1.012×; +1.45%) | 15.168 / 11.988 (1.265×; +26.23%) | 15.287 / 12.114 (1.262×; +25.91%) |
+
+All reported paired checksums match. R2C is a control and does not execute the
+inverse kernel. Its batch changes range from +0.76% to +2.62%; its single-call
+changes range from −0.54% to +2.27%. C2R batch gains are positive in all
+twelve process pairs at lengths 256 through 4,096, with median paired gains of
+9.86% to 25.91%. At 64 and 128, the smaller C2R gains are not clearly
+separated from shared-host variation. The Legendre workload was active during
+the runs, so these measurements remain provisional. The public-call setup measurements show no new workspace storage. For each
+length, baseline and candidate report the same scratch byte count: 2,048;
+4,128; 7,232; 15,456; 27,776; 60,576; and 109,760 bytes, respectively. Median
+plan construction times were 1.475 / 1.499, 2.667 / 2.726, 4.824 / 4.704,
+9.078 / 8.940, 17.149 / 17.445, 34.293 / 34.516, and 67.685 / 67.955 µs
+(baseline / candidate). Median workspace allocation times were 0.315 / 0.312,
+0.377 / 0.385, 0.516 / 0.426, 0.682 / 0.598, 0.743 / 0.811, 1.326 / 1.314,
+and 2.144 / 2.146 µs. These setup measurements show no consistent candidate
+penalty; the candidate stores only a function pointer in its immutable plan. Release disassembly of
+`duccfft::simd::x86::f64_real_kernel::inverse_radix4_interior` contains packed
+YMM operations including `vmovupd`, `vpermpd`, `vaddpd`, `vsubpd`, `vmulpd`,
+and `vunpcklpd`. The vector loop has a loop branch and no helper calls or
+stack-local spill stores. The function saves callee-preserved registers in its
+prologue. This confirms that the measured path executes packed arithmetic;
+the whole-call timing remains the performance evidence. The batch controls and all-pair C2R gains at lengths 256 and above support
+retaining this targeted kernel while the wider M4 review proceeds. They also
+show that scalar radix-four interior work accounted for a measurable share of
+smooth C2R time: the matching R2C calls did not use the new kernel and remained
+near their baseline. This result concerns smooth radix-four passes and does
+not explain the larger residual C2R/R2C gap at generic-prime SHT lengths. The
+terminal-pass-only kernel remains rejected. Raw process samples, including plan and workspace timings, are in
+[`m4-real-radix4-ido-interior-paired-process-samples.csv`](../benches/results/m4-real-radix4-ido-interior-paired-process-samples.csv).
