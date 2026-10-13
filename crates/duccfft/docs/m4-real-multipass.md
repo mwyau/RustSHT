@@ -325,16 +325,16 @@ traffic reduction, but this experiment does not establish a general speedup. Nei
 The radix-2 and radix-4 pass functions now use a dedicated loop when `ido == 1`. Forward passes read separated branch planes and write contiguous butterfly
 groups. Inverse passes read contiguous groups and write separated output
 planes. The specialization uses safe slice chunking; other `ido` values keep
-the general pass loops. The paired native-only comparison used baseline `06813e9c7f758098751f8556fac0faad684a1a0d`
-and the candidate source recorded in this commit. Six processes per revision and length
-ran in alternating order, pinned to one CPU core. Each process warmed the plan once
-and reported the median of seven execution samples. The machine was an x86-64 CPU with Rust 1.99.0, `opt-level=3`, no custom `RUSTFLAGS`, no LTO,
+the general pass loops. The paired native-only comparison used baseline
+`06813e9c7f758098751f8556fac0faad684a1a0d` and candidate source `a9486fb`. Six processes per revision and length ran in alternating order, pinned to one CPU core. Each process warmed the plan once and reported the median of seven
+execution samples. The machine was an x86-64 CPU with Rust 1.99.0, `opt-level=3`, no custom `RUSTFLAGS`, no LTO,
 and no target CPU setting. The shared Legendre workload was active, so these
 results remain provisional. The harness includes the public operation's
 packing and output conversion. Batch timings below are per transform for a
 sequential batch of 32. Plan and workspace times remain in the raw data but
 are not affected by the pass-loop change. Each cell gives baseline / candidate time in microseconds and candidate speed
-change relative to baseline, calculated as `(baseline time / candidate time) - 1`. Negative percentages are regressions.
+change relative to baseline, calculated as `(baseline time / candidate time) -
+1`. Negative percentages are regressions.
 
 | N | Operation | Single | Batch of 32 |
 |---:|---|---:|---:|
