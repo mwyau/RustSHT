@@ -488,6 +488,35 @@ fn real_complexify_preserves_maximum_finite_transform_results() {
 }
 
 #[test]
+fn odd_real_inverse_counts_last_bin_imaginary_value_for_overflow_bound() {
+    let plan64 = RealFftPlan::<f64>::new(3).unwrap();
+    let mut workspace64 = plan64.workspace().unwrap();
+    let spectrum64 = [Complex::new(0.0, 0.0), Complex::new(0.0, f64::MAX)];
+    let mut output64 = [0.0; 3];
+    plan64
+        .inverse(&spectrum64, &mut output64, &mut workspace64)
+        .unwrap();
+    let expected64 = f64::MAX / 3.0 * 3.0_f64.sqrt();
+    assert!(output64.iter().all(|value| value.is_finite()));
+    assert_eq!(output64[0], 0.0);
+    assert!((output64[1] / -expected64 - 1.0).abs() < 1.0e-12);
+    assert!((output64[2] / expected64 - 1.0).abs() < 1.0e-12);
+
+    let plan32 = RealFftPlan::<f32>::new(3).unwrap();
+    let mut workspace32 = plan32.workspace().unwrap();
+    let spectrum32 = [Complex::new(0.0, 0.0), Complex::new(0.0, f32::MAX)];
+    let mut output32 = [0.0; 3];
+    plan32
+        .inverse(&spectrum32, &mut output32, &mut workspace32)
+        .unwrap();
+    let expected32 = f32::MAX / 3.0 * 3.0_f32.sqrt();
+    assert!(output32.iter().all(|value| value.is_finite()));
+    assert_eq!(output32[0], 0.0);
+    assert!((output32[1] / -expected32 - 1.0).abs() < 1.0e-5);
+    assert!((output32[2] / expected32 - 1.0).abs() < 1.0e-5);
+}
+
+#[test]
 fn real_complexify_inverse_preserves_roundable_subnormal_dc() {
     let n = 1026;
     let plan64 = RealFftPlan::<f64>::new(n).unwrap();
