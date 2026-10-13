@@ -250,6 +250,26 @@ fn f64_large_smooth_multipass_matches_independent_dfts() {
 }
 
 #[test]
+fn f64_sht_meridional_complex_lengths_match_independent_dfts() {
+    for n in [146, 722, 1442, 1452] {
+        let input = random_signal_f64(n, 0x1b73_5a94_c6d8_e20f ^ n as u64);
+        let expected_forward = direct_dft_f64(&input, true);
+        let plan = ComplexFftPlan::<f64>::new(n).unwrap();
+        let mut workspace = plan.workspace().unwrap();
+        let mut actual_forward = input;
+        plan.forward(&mut actual_forward, &mut workspace).unwrap();
+        assert_f64_close(&actual_forward, &expected_forward, n);
+
+        let spectrum = random_signal_f64(n, 0x5e29_14a7_b3c8_d60f ^ n as u64);
+        let expected_inverse =
+            normalized_direct_inverse(direct_dft_f64(&spectrum, false), 1.0 / n as f64);
+        let mut actual_inverse = spectrum;
+        plan.inverse(&mut actual_inverse, &mut workspace).unwrap();
+        assert_f64_close(&actual_inverse, &expected_inverse, n);
+    }
+}
+
+#[test]
 fn f64_4096_smooth_transform_matches_rustfft_forward_and_inverse() {
     use rustfft::FftPlanner;
 
