@@ -58,3 +58,7 @@ samples; the median is reported. Plan construction and scratch allocation use
 and profile, CPU, ISA path, process affinity, thread count, and input formula
 with each result. A measurement made while another compute-heavy process is
 active is provisional. Use repeated process-level runs for comparisons.
+
+The paired M4 measurement for fusing real inverse eligibility with packed
+spectrum conversion is in
+[`docs/m4-real-inverse-pack.md`](../docs/m4-real-inverse-pack.md).
