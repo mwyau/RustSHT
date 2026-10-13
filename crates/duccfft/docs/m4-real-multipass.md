@@ -299,3 +299,50 @@ the earlier recursive implementation and the reported RustFFT and portable
 DUCC comparisons. The reviewer also noted that fallback scratch is duplicated
 in the current workspace. The review did not run builds or tests. See
 [`review-log.md`](review-log.md).
+
+## First and final pass buffer experiment
+
+At source revision `90821180d8889c60ca736a2b30fa0628c8ea02ed`, R2C executes
+the first reverse-order pass from the caller's input, removing the initial
+workspace copy. C2R writes its final unnormalized pass to the caller's output,
+then scales that output in place. This changes the final pass destination but
+does not remove the normalization loop. The workspace size is unchanged.
+
+The comparison uses six process samples from the earlier production build at
+`de5f87f796722bfff1e83c7a620f91b5ab28c35d` and 12 process samples from the
+buffer experiment. Each process is pinned to CPU 30 and reports the median of
+one warm-up and seven timed samples. Plan and workspace construction use 20
+repetitions. Both builds use Rust 1.99.0, `opt-level=3`, no custom `RUSTFLAGS`,
+no LTO, and no target CPU setting. The host ran the Legendre workload; the
+one-minute load average was 3.28 after the buffer experiment, so the comparison
+remains provisional. Raw measurements are in
+[`m4-real-copy-elimination-process-samples.csv`](../benches/results/m4-real-copy-elimination-process-samples.csv).
+
+Each cell gives the earlier production median followed by the buffer
+experiment median in microseconds per transform. Single calls and batches of
+32 are separate measurements.
+
+| N | Operation | Single | Batch of 32 |
+|---:|---|---:|---:|
+| 64 | R2C | 0.245 / 0.235 | 0.209 / 0.205 |
+| 64 | C2R | 0.260 / 0.276 | 0.220 / 0.236 |
+| 128 | R2C | 0.491 / 0.591 | 0.471 / 0.473 |
+| 128 | C2R | 0.516 / 0.531 | 0.495 / 0.507 |
+| 256 | R2C | 1.012 / 1.252 | 0.987 / 1.010 |
+| 256 | C2R | 1.082 / 1.122 | 1.050 / 1.071 |
+| 512 | R2C | 2.234 / 2.269 | 2.224 / 2.234 |
+| 512 | C2R | 2.385 / 2.450 | 2.376 / 2.373 |
+| 1,024 | R2C | 4.729 / 4.834 | 4.714 / 4.704 |
+| 1,024 | C2R | 5.064 / 5.145 | 5.057 / 5.053 |
+| 2,048 | R2C | 10.680 / 10.796 | 10.661 / 10.684 |
+| 2,048 | C2R | 11.291 / 11.482 | 11.332 / 11.335 |
+| 4,096 | R2C | 23.099 / 22.537 | 23.555 / 22.676 |
+| 4,096 | C2R | 24.767 / 24.462 | 24.987 / 24.251 |
+
+At 4,096, the buffer experiment is 2.4–3.7% faster for R2C and 1.2–3.0%
+faster for C2R. Batch timings are within 2.3% at every smaller length; the
+single-call results below 512 show two timing clusters and do not support a
+stable difference. The measured gain is limited to the largest tested length.
+The code keeps the direct pass boundaries, while the report treats smaller
+lengths as ties or regressions and does not count this result as broad scalar
+performance improvement.
