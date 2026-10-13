@@ -606,6 +606,166 @@ fn spin1_t63_t127_scalar_conversion_matches_general_on_all_grids() {
 }
 
 #[test]
+fn spin1_scalar_synthesis_compacts_mixed_high_order_cutoff_blocks() {
+    let lmax = 511;
+    let m = 450;
+    let ntheta = lmax + 1;
+    let plan = make_plan(1, lmax, lmax, ntheta, 2 * lmax + 3);
+    let spectrum_len = plan.fft.spectrum_len();
+    let coefficient_start = plan.harmonics().index(m, m).unwrap();
+    let coefficient_count = lmax - m + 1;
+    let mut e_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut b_alm = vec![Complex64::new(0.0, 0.0); e_alm.len()];
+    for degree in m..=lmax {
+        let index = plan.harmonics().index(degree, m).unwrap();
+        e_alm[index] = Complex64::new((degree % 11 + 1) as f64, (degree % 7 + 1) as f64) * 1e-5;
+        b_alm[index] = Complex64::new((degree % 13 + 1) as f64, -((degree % 5 + 1) as f64)) * 1e-5;
+    }
+
+    let prepare_order = |workspace: &mut crate::workspace::ShtWorkspace| {
+        let recurrence = &mut workspace.recurrence_workers[0];
+        let scalar_lmax = lmax + 1;
+        spin1_to_scalar(
+            m,
+            lmax,
+            &e_alm[coefficient_start..coefficient_start + coefficient_count],
+            Some(&b_alm[coefficient_start..coefficient_start + coefficient_count]),
+            &mut recurrence.fast_scalar_first[..scalar_lmax + 1],
+            &mut recurrence.fast_scalar_second[..scalar_lmax + 1],
+        );
+        <f64 as ShtScalar>::fill_epsilon(m, scalar_lmax, &mut recurrence.epsilon);
+        assert!(<f64 as ShtScalar>::fill_paired_scalar_factors(
+            m,
+            scalar_lmax,
+            &recurrence.epsilon,
+            &mut recurrence.spin_alpha,
+            &mut recurrence.spin_coefficient_a,
+            &mut recurrence.spin_coefficient_b,
+        ));
+    };
+
+    let mut actual_workspace = plan.workspace().unwrap();
+    plan.prepare_spin_latitudes(&mut actual_workspace, 1);
+    let limits = actual_workspace.ring_order_limits[..ntheta].to_vec();
+    assert!(
+        limits
+            .chunks(crate::legendre::LATITUDE_BLOCK_SIZE)
+            .any(|block| {
+                block.iter().any(|&limit| limit < m) && block.iter().any(|&limit| limit >= m)
+            })
+    );
+    assert!(
+        limits
+            .chunks(crate::legendre::LATITUDE_BLOCK_SIZE)
+            .any(|block| block.iter().all(|&limit| limit < m))
+    );
+
+    let mut actual_q = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
+    let mut actual_u = vec![Complex64::new(0.0, 0.0); actual_q.len()];
+    prepare_order(&mut actual_workspace);
+    for block_start in (0..ntheta).step_by(crate::legendre::LATITUDE_BLOCK_SIZE) {
+        let block_end = (block_start + crate::legendre::LATITUDE_BLOCK_SIZE).min(ntheta);
+        let spectrum_start = block_start * spectrum_len;
+        let spectrum_end = block_end * spectrum_len;
+        plan.synthesize_spin1_scalar_block(
+            m,
+            lmax + 1,
+            spectrum_len,
+            &actual_workspace.theta_sin[block_start..block_end],
+            &actual_workspace.theta_cos[block_start..block_end],
+            &limits[block_start..block_end],
+            pulp::Arch::new(),
+            &mut actual_workspace.recurrence_workers[0],
+            &mut actual_q[spectrum_start..spectrum_end],
+            &mut actual_u[spectrum_start..spectrum_end],
+        )
+        .unwrap();
+    }
+
+    let mut reference_workspace = plan.workspace().unwrap();
+    plan.prepare_spin_latitudes(&mut reference_workspace, 1);
+    prepare_order(&mut reference_workspace);
+    let all_active_limits = vec![lmax; ntheta];
+    let mut reference_q = vec![Complex64::new(0.0, 0.0); actual_q.len()];
+    let mut reference_u = vec![Complex64::new(0.0, 0.0); actual_u.len()];
+    for block_start in (0..ntheta).step_by(crate::legendre::LATITUDE_BLOCK_SIZE) {
+        let block_end = (block_start + crate::legendre::LATITUDE_BLOCK_SIZE).min(ntheta);
+        let spectrum_start = block_start * spectrum_len;
+        let spectrum_end = block_end * spectrum_len;
+        plan.synthesize_spin1_scalar_block(
+            m,
+            lmax + 1,
+            spectrum_len,
+            &reference_workspace.theta_sin[block_start..block_end],
+            &reference_workspace.theta_cos[block_start..block_end],
+            &all_active_limits[block_start..block_end],
+            pulp::Arch::new(),
+            &mut reference_workspace.recurrence_workers[0],
+            &mut reference_q[spectrum_start..spectrum_end],
+            &mut reference_u[spectrum_start..spectrum_end],
+        )
+        .unwrap();
+    }
+
+    for (ring, &limit) in limits.iter().enumerate() {
+        let index = ring * spectrum_len + m;
+        if m > limit {
+            assert_eq!(actual_q[index], Complex64::new(0.0, 0.0));
+            assert_eq!(actual_u[index], Complex64::new(0.0, 0.0));
+        } else {
+            let q_error = (actual_q[index] - reference_q[index]).norm();
+            let u_error = (actual_u[index] - reference_u[index]).norm();
+            assert!(q_error <= 3e-11, "ring={ring} Q error={q_error:.3e}");
+            assert!(u_error <= 3e-11, "ring={ring} U error={u_error:.3e}");
+        }
+    }
+
+    let boundary_ring = (0..ntheta)
+        .filter(|&ring| limits[ring] >= m)
+        .min_by_key(|&ring| limits[ring] - m)
+        .expect("at least one ring is active at the selected order");
+    let mut boundary_q = vec![Complex64::new(0.0, 0.0); spectrum_len];
+    let mut boundary_u = vec![Complex64::new(0.0, 0.0); spectrum_len];
+    plan.synthesize_spin1_scalar_block(
+        m,
+        lmax + 1,
+        spectrum_len,
+        &[reference_workspace.theta_sin[boundary_ring]],
+        &[reference_workspace.theta_cos[boundary_ring]],
+        &[lmax],
+        pulp::Arch::new(),
+        &mut reference_workspace.recurrence_workers[0],
+        &mut boundary_q,
+        &mut boundary_u,
+    )
+    .unwrap();
+    for (name, actual, expected) in [
+        (
+            "Q",
+            actual_q[boundary_ring * spectrum_len + m],
+            boundary_q[m],
+        ),
+        (
+            "U",
+            actual_u[boundary_ring * spectrum_len + m],
+            boundary_u[m],
+        ),
+    ] {
+        let scale = expected.norm();
+        let error = (actual - expected).norm();
+        if scale == 0.0 {
+            assert_eq!(actual, expected, "boundary ring={boundary_ring} {name}");
+        } else {
+            assert!(
+                error <= 1e-11 * scale,
+                "boundary ring={boundary_ring} {name} relative error={:.3e}",
+                error / scale
+            );
+        }
+    }
+}
+
+#[test]
 fn spin1_scalar_fast_analysis_honors_the_polar_order_cutoff() {
     let lmax = 511;
     let ntheta = lmax + 1;

@@ -994,7 +994,6 @@ impl<T: ShtScalar> ShtPlan<T> {
                             m,
                             scalar_lmax,
                             spectrum_len,
-                            ring_start + block_start,
                             &theta_sin[block_start..block_end],
                             &theta_cos[block_start..block_end],
                             &ring_order_limits[ring_start + block_start..ring_start + block_end],
@@ -1095,7 +1094,6 @@ impl<T: ShtScalar> ShtPlan<T> {
         m: usize,
         scalar_lmax: usize,
         spectrum_len: usize,
-        ring_start: usize,
         theta_sin: &[T],
         theta_cos: &[T],
         ring_order_limits: &[usize],
@@ -1110,70 +1108,97 @@ impl<T: ShtScalar> ShtPlan<T> {
         debug_assert_eq!(q_spectra.len(), block_len * spectrum_len);
         debug_assert_eq!(u_spectra.len(), q_spectra.len());
 
-        let fused_first = T::synthesize_paired_scalar_block_dispatched(
-            arch,
-            m,
-            scalar_lmax,
-            theta_sin,
-            theta_cos,
-            self.sectoral_norms[m],
-            &recurrence.epsilon,
-            &recurrence.spin_alpha,
-            &recurrence.spin_coefficient_a,
-            &recurrence.spin_coefficient_b,
-            &recurrence.fast_scalar_first[m..=scalar_lmax],
-            ring_order_limits,
-            spectrum_len,
-            q_spectra,
-            &mut recurrence.previous[..block_len],
-            &mut recurrence.current[..block_len],
-            &mut recurrence.next[..block_len],
-            &mut recurrence.exponents[..block_len],
-        )?;
-        let fused_second = T::synthesize_paired_scalar_block_dispatched(
-            arch,
-            m,
-            scalar_lmax,
-            theta_sin,
-            theta_cos,
-            self.sectoral_norms[m],
-            &recurrence.epsilon,
-            &recurrence.spin_alpha,
-            &recurrence.spin_coefficient_a,
-            &recurrence.spin_coefficient_b,
-            &recurrence.fast_scalar_second[m..=scalar_lmax],
-            ring_order_limits,
-            spectrum_len,
-            u_spectra,
-            &mut recurrence.previous[..block_len],
-            &mut recurrence.current[..block_len],
-            &mut recurrence.next[..block_len],
-            &mut recurrence.exponents[..block_len],
-        )?;
-        debug_assert_eq!(fused_first, fused_second);
-        if fused_first && fused_second {
-            for (ring, &sin_theta) in theta_sin.iter().enumerate() {
-                let spectrum_index = ring * spectrum_len + m;
-                let inverse_sine = sin_theta.recip();
-                q_spectra[spectrum_index] *= inverse_sine;
-                u_spectra[spectrum_index] *= inverse_sine;
-            }
+        let has_excluded_ring = ring_order_limits.iter().any(|&limit| m > limit);
+        if ring_order_limits.iter().all(|&limit| m > limit) {
             return Ok(());
         }
 
+        if !has_excluded_ring {
+            let fused_first = T::synthesize_paired_scalar_block_dispatched(
+                arch,
+                m,
+                scalar_lmax,
+                theta_sin,
+                theta_cos,
+                self.sectoral_norms[m],
+                &recurrence.epsilon,
+                &recurrence.spin_alpha,
+                &recurrence.spin_coefficient_a,
+                &recurrence.spin_coefficient_b,
+                &recurrence.fast_scalar_first[m..=scalar_lmax],
+                ring_order_limits,
+                spectrum_len,
+                q_spectra,
+                &mut recurrence.previous[..block_len],
+                &mut recurrence.current[..block_len],
+                &mut recurrence.next[..block_len],
+                &mut recurrence.exponents[..block_len],
+            )?;
+            let fused_second = T::synthesize_paired_scalar_block_dispatched(
+                arch,
+                m,
+                scalar_lmax,
+                theta_sin,
+                theta_cos,
+                self.sectoral_norms[m],
+                &recurrence.epsilon,
+                &recurrence.spin_alpha,
+                &recurrence.spin_coefficient_a,
+                &recurrence.spin_coefficient_b,
+                &recurrence.fast_scalar_second[m..=scalar_lmax],
+                ring_order_limits,
+                spectrum_len,
+                u_spectra,
+                &mut recurrence.previous[..block_len],
+                &mut recurrence.current[..block_len],
+                &mut recurrence.next[..block_len],
+                &mut recurrence.exponents[..block_len],
+            )?;
+            debug_assert_eq!(fused_first, fused_second);
+            if fused_first && fused_second {
+                for (ring, &sin_theta) in theta_sin.iter().enumerate() {
+                    let spectrum_index = ring * spectrum_len + m;
+                    let inverse_sine = sin_theta.recip();
+                    q_spectra[spectrum_index] *= inverse_sine;
+                    u_spectra[spectrum_index] *= inverse_sine;
+                }
+                return Ok(());
+            }
+        }
+
+        let (fallback_sin, fallback_cos, compact_ring_indices) = if has_excluded_ring {
+            let mut compact_len = 0;
+            for (ring, &limit) in ring_order_limits.iter().enumerate() {
+                if m <= limit {
+                    recurrence.compact_theta_sin[compact_len] = theta_sin[ring];
+                    recurrence.compact_theta_cos[compact_len] = theta_cos[ring];
+                    recurrence.compact_ring_indices[compact_len] = ring;
+                    compact_len += 1;
+                }
+            }
+            debug_assert!(compact_len > 0);
+            (
+                &recurrence.compact_theta_sin[..compact_len],
+                &recurrence.compact_theta_cos[..compact_len],
+                Some(&recurrence.compact_ring_indices[..compact_len]),
+            )
+        } else {
+            (theta_sin, theta_cos, None)
+        };
+        let fallback_len = fallback_sin.len();
         T::for_each_y_lm_paired_dispatched(
             arch,
             m,
             scalar_lmax,
-            theta_sin,
-            theta_cos,
+            fallback_sin,
+            fallback_cos,
             self.sectoral_norms[m],
             &recurrence.spin_coefficient_a,
             &recurrence.spin_coefficient_b,
-            &mut recurrence.previous[..block_len],
-            &mut recurrence.current[..block_len],
-            &mut recurrence.next[..block_len],
-            &mut recurrence.exponents[..block_len],
+            &mut recurrence.previous[..fallback_len],
+            &mut recurrence.current[..fallback_len],
+            &mut recurrence.next[..fallback_len],
+            &mut recurrence.exponents[..fallback_len],
             |l, block_ring_start, basis, exponents| {
                 let pair_index = (l - m) / 2;
                 let next_even = if l < scalar_lmax - 1 {
@@ -1203,13 +1228,11 @@ impl<T: ShtScalar> ShtPlan<T> {
                     Complex::new(T::zero(), T::zero())
                 };
                 for lane in 0..basis.len() {
-                    let group_ring = block_ring_start + lane;
-                    let global_ring = ring_start + group_ring;
-                    if m > ring_order_limits[global_ring - ring_start] {
-                        continue;
-                    }
-                    let inverse_sine = theta_sin[group_ring].recip();
-                    let cosine_over_sine = theta_cos[group_ring] * inverse_sine;
+                    let fallback_ring = block_ring_start + lane;
+                    let group_ring = compact_ring_indices
+                        .map_or(fallback_ring, |indices| indices[fallback_ring]);
+                    let inverse_sine = fallback_sin[fallback_ring].recip();
+                    let cosine_over_sine = fallback_cos[fallback_ring] * inverse_sine;
                     let first = T::multiply_complex_scaled_product(
                         even_first,
                         basis[lane],
