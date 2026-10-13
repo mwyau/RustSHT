@@ -14,7 +14,7 @@ use crate::FftError;
 use crate::complex::{BluesteinPlan, ComplexFftWorkspace, Direction, check_vec_len, try_vec};
 use crate::simd::{
     RealRadix2ForwardInteriorKernel, RealRadix2InteriorKernel, RealRadix4ForwardInteriorKernel,
-    RealRadix4InteriorKernel,
+    RealRadix4InteriorKernel, SimdKernels,
 };
 
 mod inverse_terminal;
@@ -48,6 +48,7 @@ pub(crate) struct MultipassBluestein<'a, T> {
     workspaces: &'a mut [Option<ComplexFftWorkspace<T>>],
     radix_input: &'a mut [Complex<T>],
     radix_output: &'a mut [Complex<T>],
+    simd: Option<SimdKernels<T>>,
 }
 
 impl<'a, T> MultipassBluestein<'a, T> {
@@ -57,6 +58,7 @@ impl<'a, T> MultipassBluestein<'a, T> {
         workspaces: &'a mut [Option<ComplexFftWorkspace<T>>],
         radix_input: &'a mut [Complex<T>],
         radix_output: &'a mut [Complex<T>],
+        simd: Option<SimdKernels<T>>,
     ) -> Self {
         Self {
             plans,
@@ -64,6 +66,7 @@ impl<'a, T> MultipassBluestein<'a, T> {
             workspaces,
             radix_input,
             radix_output,
+            simd,
         }
     }
 }
@@ -363,6 +366,7 @@ impl<T: Float + FromPrimitive> MultipassBluestein<'_, T> {
                 Direction::Forward,
                 self.buffer,
                 convolution_workspace,
+                self.simd,
             );
             let output_start = group * radix;
             output[output_start] = self.radix_output[0].re;
@@ -409,6 +413,7 @@ impl<T: Float + FromPrimitive> MultipassBluestein<'_, T> {
                 Direction::Inverse,
                 self.buffer,
                 convolution_workspace,
+                self.simd,
             );
             for sample in 0..radix {
                 output[sample * pass.l1 + group] = self.radix_output[sample].re * scale;

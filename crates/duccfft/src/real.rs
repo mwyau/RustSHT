@@ -22,7 +22,7 @@ use crate::complex::{
 use crate::real_multipass::{MultipassBluestein, RealMultipassPlan, RealMultipassWorkspace};
 use crate::simd::{
     RealRadix2ForwardInteriorKernel, RealRadix2InteriorKernel, RealRadix4ForwardInteriorKernel,
-    RealRadix4InteriorKernel, SimdScalar,
+    RealRadix4InteriorKernel, SimdKernels, SimdScalar,
 };
 
 /// An immutable one-dimensional real FFT plan.
@@ -33,6 +33,7 @@ use crate::simd::{
 /// components supplied to [`Self::inverse`] are ignored.
 pub struct RealFftPlan<T> {
     len: usize,
+    simd: Option<SimdKernels<T>>,
     factors: Vec<usize>,
     roots: Vec<Complex<T>>,
     scratch_len: usize,
@@ -109,6 +110,7 @@ impl<T> RealFftWorkspace<T> {
 impl<T: Float + FromPrimitive> RealFftPlan<T> {
     fn try_new(
         len: usize,
+        simd: Option<SimdKernels<T>>,
         real_radix2_interior_kernel: Option<RealRadix2InteriorKernel<T>>,
         real_radix2_forward_interior_kernel: Option<RealRadix2ForwardInteriorKernel<T>>,
         real_radix4_forward_interior_kernel: Option<RealRadix4ForwardInteriorKernel<T>>,
@@ -164,6 +166,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
 
         Ok(Self {
             len,
+            simd,
             factors,
             roots,
             scratch_len,
@@ -302,6 +305,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
         spectrum: &mut [Complex<T>],
         workspace: &mut RealFftWorkspace<T>,
     ) -> Result<(), FftError> {
+        let simd = self.simd;
         if let Some(complexify) = self.complexify.as_ref() {
             let complex_len = self.len / 2;
             let values = &mut workspace.scratch[..complex_len];
@@ -310,13 +314,15 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
             for (value, pair) in values.iter_mut().zip(input_pairs) {
                 *value = Complex::new(pair[0], pair[1]);
             }
-            complexify.execute(
+            complexify.execute_with_simd(
                 values,
                 workspace
                     .complexify_workspace
                     .as_mut()
                     .expect("complexified plan has a complex workspace"),
                 Direction::Forward,
+                T::one(),
+                simd,
             )?;
 
             let (maximum, all_finite) =
@@ -395,6 +401,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                 &mut workspace.bluestein_workspaces,
                 &mut workspace.radix_input,
                 &mut workspace.radix_output,
+                simd,
             );
             multipass.forward(
                 input,
@@ -416,6 +423,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
             bluestein_workspaces: &mut workspace.bluestein_workspaces,
             radix_input: &mut workspace.radix_input,
             radix_output: &mut workspace.radix_output,
+            simd,
         }
         .recurse(
             input,
@@ -496,6 +504,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
         output: &mut [T],
         workspace: &mut RealFftWorkspace<T>,
     ) -> Result<(), FftError> {
+        let simd = self.simd;
         if let Some(complexify) = self.complexify.as_ref() {
             let complex_len = self.len / 2;
             let (maximum, all_finite) = spectrum.iter().enumerate().fold(
@@ -574,6 +583,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                     complex_workspace,
                     Direction::Inverse,
                     main_scale,
+                    simd,
                 )?;
                 for (index, value) in values.iter().enumerate() {
                     output[2 * index] = value.re;
@@ -586,6 +596,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                         complex_workspace,
                         Direction::Inverse,
                         half,
+                        simd,
                     )?;
                     for (index, value) in residual_values.iter().enumerate() {
                         output[2 * index] = output[2 * index] + value.re;
@@ -618,6 +629,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                         .expect("complexified plan has a complex workspace"),
                     Direction::Inverse,
                     scalar::<T>(0.5),
+                    simd,
                 )?;
                 for (index, value) in values.iter().enumerate() {
                     output[2 * index] = value.re;
@@ -634,6 +646,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                 &mut workspace.bluestein_workspaces,
                 &mut workspace.radix_input,
                 &mut workspace.radix_output,
+                simd,
             );
             if multipass.inverse_if_safe(
                 spectrum,
@@ -663,6 +676,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
             radix_input: &mut workspace.radix_input,
             radix_output: &mut workspace.radix_output,
             radix_saved: &mut workspace.radix_saved,
+            simd,
         }
         .recurse(
             spectrum,
@@ -699,6 +713,7 @@ macro_rules! implement_public_api {
             pub fn new(len: usize) -> Result<Self, FftError> {
                 Self::try_new(
                     len,
+                    SimdKernels::<$scalar>::runtime(),
                     <$scalar as SimdScalar>::real_radix2_interior_kernel(),
                     <$scalar as SimdScalar>::real_radix2_forward_interior_kernel(),
                     <$scalar as SimdScalar>::real_radix4_forward_interior_kernel(),
@@ -727,6 +742,7 @@ struct RealForwardExecutor<'a, T> {
     bluestein_workspaces: &'a mut [Option<ComplexFftWorkspace<T>>],
     radix_input: &'a mut [Complex<T>],
     radix_output: &'a mut [Complex<T>],
+    simd: Option<SimdKernels<T>>,
 }
 
 impl<T: Float + FromPrimitive> RealForwardExecutor<'_, T> {
@@ -785,6 +801,7 @@ impl<T: Float + FromPrimitive> RealForwardExecutor<'_, T> {
                     self.bluestein_workspaces[layout.stage]
                         .as_mut()
                         .expect("Bluestein stage has a workspace"),
+                    self.simd,
                 );
                 for radix_frequency in 0..radix {
                     let frequency = child_frequency + radix_frequency * child_len;
@@ -859,6 +876,7 @@ struct RealInverseExecutor<'a, T> {
     radix_input: &'a mut [Complex<T>],
     radix_output: &'a mut [Complex<T>],
     radix_saved: &'a mut [Complex<T>],
+    simd: Option<SimdKernels<T>>,
 }
 
 impl<T: Float + FromPrimitive> RealInverseExecutor<'_, T> {
@@ -919,6 +937,7 @@ impl<T: Float + FromPrimitive> RealInverseExecutor<'_, T> {
                     self.bluestein_workspaces[layout.stage]
                         .as_mut()
                         .expect("Bluestein stage has a workspace"),
+                    self.simd,
                 );
 
                 if prescale {
@@ -940,6 +959,7 @@ impl<T: Float + FromPrimitive> RealInverseExecutor<'_, T> {
                         self.bluestein_workspaces[layout.stage]
                             .as_mut()
                             .expect("Bluestein stage has a workspace"),
+                        self.simd,
                     );
                 }
 
