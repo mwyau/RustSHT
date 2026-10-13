@@ -1,8 +1,9 @@
 # DUCCFFT
 
 DUCCFFT is a standalone Rust crate for one-dimensional real and complex FFTs.
-The current revision contains the isolated package and reference benchmark
-infrastructure; it does not yet expose native transform operations.
+The current revision exposes native f32 and f64 complex transforms using
+mixed-radix plans and caller-owned workspaces. Real transforms and optimized
+general-prime passes remain under development.
 
 The crate will use reusable plans and caller-owned scratch for f32 and f64
 transforms. Its design follows the one-dimensional algorithms in DUCC at

@@ -139,3 +139,35 @@ copyright and SPDX notices at file level, identify the pinned commit, and be
 listed in `LICENSE-THIRD-PARTY`, which includes the full BSD conditions and
 disclaimer. The C++ reference harness compiles the pinned source from an
 external checkout and is not a runtime dependency.
+
+## M1 Rust implementation status
+
+`src/complex.rs` uses the complex factor order from `cfftpass::factorize()` in
+`fft.h`. It executes those factors with an independent recursive
+decimation-in-time schedule and plan-owned roots. Radices 2, 3, 4, 5, 7, 8,
+and 11 use fixed butterflies corresponding to the pinned DUCC kernels. Other
+radix leaves currently use a direct O(p^2) DFT. This fallback is temporary:
+the DUCC `cfftpg` path for primes below 110 and `cfftpblue` path for larger
+primes have not been ported. The current engine does not include
+`cfftp_vecpass` or DUCC's nested scheduling.
+
+The root table applies `RootCalc`'s octant reflection and evaluates f32/f64
+roots with double-precision trigonometry; f32 stores the rounded f32 values.
+It retains a full root table rather than DUCC's two-table reconstruction.
+Plans retain that table and each workspace retains an output array and two
+small-radix arrays. Execution performs no heap allocation. The inverse
+distributes `1/n` across radix stages. It pre-scales a stage only when its
+input magnitude approaches an overflow bound; otherwise it scales the
+butterfly output. This avoids both avoidable overflow on large inputs and
+underflow of small subnormal inputs. A correction transform recovers terms
+lost while pre-scaling a group with a high dynamic range; a regression test
+covers both f32 and f64. The independent direct-DFT tests cover lengths 1
+through 64 in both precisions and compare inverse transforms against
+independently supplied spectra. `benches/reference/compare.py` compares native
+f64 C2C outputs against direct DUCC outputs at the benchmark lengths.
+
+The `bench-native` output records plan construction, workspace allocation,
+and the complete public C2C operation. It does not expose a separate
+unnormalized butterfly-only measurement. Compare `public_operation_ns` with
+other libraries' whole-call measurements; do not compare it with an
+unnormalized kernel-only timing.

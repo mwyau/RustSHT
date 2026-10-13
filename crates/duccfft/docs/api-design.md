@@ -15,8 +15,9 @@ The planned operations are:
 Forward transforms will compute the unnormalized negative-exponent DFT. Inverse
 transforms will include a `1/n` scale. The real inverse will reject nonzero
 imaginary parts at DC and, for even `n`, Nyquist. The `n == 1` transform is
-valid; zero is rejected by the plan constructor. Exact error types and whether
-the complex API exposes a scaling option will be decided before M1.
+valid; zero is rejected by the plan constructor. The public inverse remains
+normalized; there is no scaling option in the initial API. Operations report
+invalid lengths and mismatched buffers through `FftError`.
 
 The plan and workspace types will use concrete fields and checked constructors.
 Invalid lengths, arithmetic overflow, allocation failure, and mismatched

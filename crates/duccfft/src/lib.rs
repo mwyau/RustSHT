@@ -3,5 +3,9 @@
 
 //! Standalone one-dimensional FFT crate under development.
 //!
-//! The current milestone establishes the isolated Cargo package and reference
-//! harness. Native transform plans are not available yet.
+//! The crate uses immutable plans with caller-owned execution workspaces.
+
+mod complex;
+
+pub use complex::{ComplexFftPlan, ComplexFftWorkspace, FftError};
+pub use num_complex::{Complex, Complex64};

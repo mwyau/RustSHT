@@ -1,8 +1,8 @@
 # M0 benchmark baseline
 
-Date: 2026-10-12. This baseline measures DUCC and RustFFT before native
-DUCCFFT transforms exist. It is reference data, not a DUCCFFT performance
-result.
+Date: 2026-10-12. This baseline measures DUCC and RustFFT before the native
+DUCCFFT implementation was added. It is reference data, not a DUCCFFT
+performance result.
 
 ## Build and measurement conditions
 
@@ -49,15 +49,16 @@ These measurements do not establish an overall performance winner.
 
 ## Standard length matrix and numerical comparison
 
-The matrix includes 30 lengths, four directions (C2C forward, C2C inverse,
+The matrix includes 33 lengths, four directions (C2C forward, C2C inverse,
 R2C, and C2R), and one-row and 32-row cases. For lengths above 10,000, the
 32-row case is capped at four rows. It includes the required SHT lengths and
 prime and threshold probes such as 107, 109, 113, 1,013, 10,000, and 10,001.
 
-The direct comparison checks 151,606 scalar output components against pinned
-DUCC for each planner mode. Both modes passed with `atol=2e-11` and
-`rtol=2e-11`. Maximum absolute error was `2.956e-12`. The maximum scaled error
-`error / max(1, abs(DUCC), abs(RustFFT))` was `1.085e-12`. The comparison
+The M0 reference comparison checked 187,574 complex output records (375,148
+scalar components) against pinned DUCC for each planner mode. Both modes
+passed with `atol=2e-11` and `rtol=2e-11`. Maximum absolute error was
+`2.956e-12`. The maximum scaled error
+`error / max(1, abs(DUCC), abs(RustFFT))` was `1.137e-12`. The comparison
 rejects nonfinite values from either implementation.
 
 Raw results are in [`benches/results/`](../benches/results/):

@@ -4,6 +4,7 @@
 use std::hint::black_box;
 use std::time::{Duration, Instant};
 
+use duccfft::ComplexFftPlan;
 use num_complex::Complex64;
 use rustfft::{Fft, FftPlanner};
 
@@ -11,8 +12,8 @@ const BATCH_COUNT: usize = 32;
 const SAMPLE_COUNT: usize = 7;
 
 const BENCHMARK_LENGTHS: &[usize] = &[
-    31, 32, 33, 64, 107, 109, 113, 127, 128, 241, 257, 511, 512, 683, 1023, 1024, 1025, 1026, 2047,
-    2048, 2049, 4097, 998, 1000, 1001, 1002, 1008, 1013, 10000, 10001,
+    31, 32, 33, 64, 107, 109, 113, 127, 128, 131, 137, 241, 257, 511, 512, 683, 998, 1000, 1001,
+    1002, 1008, 1013, 1023, 1024, 1025, 1026, 2047, 2048, 2049, 4097, 10000, 10001, 10008,
 ];
 const SHT_WORKLOADS: &[(usize, usize)] = &[(257, 128), (1025, 512), (2049, 1024), (4097, 2048)];
 
@@ -319,6 +320,19 @@ fn output(mode: Mode, n: usize) -> Vec<Complex64> {
     }
 }
 
+fn native_complex_output(mode: Mode, n: usize) -> Vec<Complex64> {
+    let plan = ComplexFftPlan::<f64>::new(n).expect("native complex plan");
+    let mut workspace = plan.workspace().expect("native complex workspace");
+    let mut values: Vec<_> = (0..n).map(|i| complex_value(i, 0)).collect();
+    match mode {
+        Mode::ComplexForward => plan.forward(&mut values, &mut workspace),
+        Mode::ComplexInverse => plan.inverse(&mut values, &mut workspace),
+        Mode::RealForward | Mode::RealInverse => unreachable!("complex mode required"),
+    }
+    .expect("native complex transform");
+    values
+}
+
 fn dump_all() {
     for &n in BENCHMARK_LENGTHS {
         for mode in [
@@ -328,6 +342,23 @@ fn dump_all() {
             Mode::RealInverse,
         ] {
             for (index, value) in output(mode, n).iter().enumerate() {
+                println!(
+                    "{},{},{},{:.17e},{:.17e}",
+                    mode.name(),
+                    n,
+                    index,
+                    value.re,
+                    value.im
+                );
+            }
+        }
+    }
+}
+
+fn dump_native_all() {
+    for &n in BENCHMARK_LENGTHS {
+        for mode in [Mode::ComplexForward, Mode::ComplexInverse] {
+            for (index, value) in native_complex_output(mode, n).iter().enumerate() {
                 println!(
                     "{},{},{},{:.17e},{:.17e}",
                     mode.name(),
@@ -515,10 +546,70 @@ fn benchmark_sht_workloads() {
     }
 }
 
+fn benchmark_native_complex(mode: Mode, n: usize, rows: usize) {
+    let rows = if n > 10000 { rows.min(4) } else { rows };
+    let start = Instant::now();
+    for _ in 0..20 {
+        black_box(
+            ComplexFftPlan::<f64>::new(n)
+                .expect("native FFT plan")
+                .len(),
+        );
+    }
+    let plan_ns = start.elapsed().as_nanos() as f64 / 20.0;
+
+    let plan = ComplexFftPlan::<f64>::new(n).expect("native FFT plan");
+    let start = Instant::now();
+    for _ in 0..20 {
+        black_box(plan.workspace().expect("native FFT workspace").len());
+    }
+    let scratch_ns = start.elapsed().as_nanos() as f64 / 20.0;
+    let mut workspace = plan.workspace().expect("native FFT workspace");
+    let mut data = vec![Complex64::new(0.0, 0.0); rows * n];
+    let fill = |data: &mut [Complex64]| {
+        for row in 0..rows {
+            for index in 0..n {
+                data[row * n + index] = complex_value(index, row);
+            }
+        }
+    };
+    let forward = matches!(mode, Mode::ComplexForward);
+    let call_time = measure(|| {
+        fill(&mut data);
+        let start = Instant::now();
+        for row in 0..rows {
+            let values = &mut data[row * n..(row + 1) * n];
+            if forward {
+                plan.forward(values, &mut workspace)
+                    .expect("native forward FFT");
+            } else {
+                plan.inverse(values, &mut workspace)
+                    .expect("native inverse FFT");
+            }
+        }
+        start.elapsed()
+    })
+    .as_nanos() as f64
+        / rows as f64;
+    let checksum = data[0].re + data[0].im;
+    println!(
+        "{},{},{:.9},{:.9},{:.9},{:.9},{},{}",
+        mode.name(),
+        n,
+        plan_ns,
+        scratch_ns,
+        call_time,
+        call_time * rows as f64,
+        rows,
+        checksum
+    );
+}
+
 fn main() {
     let mut args = std::env::args().skip(1).filter(|arg| arg != "--bench");
     match args.next().as_deref() {
         Some("dump-all") => dump_all(),
+        Some("dump-native-all") => dump_native_all(),
         Some("dump") => {
             let mode = Mode::parse(&args.next().expect("mode is required"));
             let n = args.next().expect("length is required").parse().unwrap();
@@ -552,6 +643,25 @@ fn main() {
         Some("bench-sht") => {
             benchmark_sht_workloads();
         }
+        Some("bench-native") => {
+            println!(
+                "mode,n,plan_ns,workspace_ns,public_operation_ns,batch_operation_ns,batch_count,checksum"
+            );
+            let sizes: Vec<usize> = args
+                .map(|value| value.parse().expect("length must be an integer"))
+                .collect();
+            let sizes = if sizes.is_empty() {
+                BENCHMARK_LENGTHS.to_vec()
+            } else {
+                sizes
+            };
+            for n in sizes {
+                for mode in [Mode::ComplexForward, Mode::ComplexInverse] {
+                    benchmark_native_complex(mode, n, 1);
+                    benchmark_native_complex(mode, n, BATCH_COUNT);
+                }
+            }
+        }
         Some("bench") => {
             println!(
                 "mode,n,plan_ns,scratch_ns,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum"
@@ -577,7 +687,9 @@ fn main() {
             }
         }
         _ => {
-            eprintln!("usage: rustfft-bench dump-all | dump MODE N | bench [N ...] | bench-sht");
+            eprintln!(
+                "usage: rustfft-bench dump-all | dump-native-all | dump MODE N | bench [N ...] | bench-sht | bench-native [N ...]"
+            );
             eprintln!("no benchmark was run; use `bench` to start the workload");
         }
     }
