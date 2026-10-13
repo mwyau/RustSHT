@@ -120,6 +120,22 @@ mod x86 {
             available()
         }
 
+        fn real_radix4_interior_kernel() -> Option<RealRadix4InteriorKernel<Self>> {
+            if available() {
+                Some(f32_real_kernel::inverse_radix4_interior)
+            } else {
+                None
+            }
+        }
+
+        fn real_radix4_forward_interior_kernel() -> Option<RealRadix4ForwardInteriorKernel<Self>> {
+            if available() {
+                Some(f32_real_kernel::forward_radix4_interior)
+            } else {
+                None
+            }
+        }
+
         unsafe fn avx2_first_pass(data: &mut [Complex<Self>], pass: &SimdPass<'_, Self>) {
             // SAFETY: the caller upholds the trait's AVX2 and layout contract.
             unsafe { f32_kernel::first_pass(data, pass) }
@@ -856,6 +872,202 @@ mod x86 {
                     _mm256_storeu_pd(output3.add(i - 1), _mm256_permute_pd(result3, 0b0101));
                 }
                 i += 4;
+            }
+            i
+        }
+    }
+
+    mod f32_real_kernel {
+        use std::arch::x86_64::*;
+
+        type V = __m256;
+
+        #[inline]
+        #[target_feature(enable = "avx2")]
+        unsafe fn multiply_pm(roots: V, values: V) -> V {
+            let even_values = _mm256_moveldup_ps(values);
+            let odd_values = _mm256_movehdup_ps(values);
+            let roots_swapped = _mm256_permute_ps(roots, 0b1011_0001);
+            let even_products = _mm256_mul_ps(roots, even_values);
+            let odd_products = _mm256_mul_ps(roots_swapped, odd_values);
+            let sums = _mm256_add_ps(even_products, odd_products);
+            let differences = _mm256_sub_ps(odd_products, even_products);
+            _mm256_blend_ps(sums, differences, 0b1010_1010)
+        }
+
+        #[inline]
+        #[target_feature(enable = "avx2")]
+        unsafe fn swap_pair(value: V) -> V {
+            _mm256_permute_ps(value, 0b1011_0001)
+        }
+
+        #[inline]
+        #[target_feature(enable = "avx2")]
+        unsafe fn reverse_complex_order(value: V) -> V {
+            let order = _mm256_setr_epi32(6, 7, 4, 5, 2, 3, 0, 1);
+            _mm256_permutevar8x32_ps(value, order)
+        }
+
+        #[inline]
+        #[target_feature(enable = "avx2")]
+        unsafe fn real(value: V) -> V {
+            _mm256_moveldup_ps(value)
+        }
+
+        #[inline]
+        #[target_feature(enable = "avx2")]
+        unsafe fn imag(value: V) -> V {
+            _mm256_movehdup_ps(value)
+        }
+
+        #[inline]
+        #[target_feature(enable = "avx2")]
+        unsafe fn pack(real: V, imag: V) -> V {
+            _mm256_blend_ps(real, imag, 0b1010_1010)
+        }
+
+        #[target_feature(enable = "avx2")]
+        pub(super) unsafe fn forward_radix4_interior(
+            input: [&[f32]; 4],
+            output: [&mut [f32]; 4],
+            ido: usize,
+            twiddles: &[f32],
+        ) -> usize {
+            debug_assert!(ido > 2);
+            debug_assert!(ido.is_multiple_of(2));
+            debug_assert!(input.iter().all(|branch| branch.len() == ido));
+            debug_assert!(output.iter().all(|branch| branch.len() == ido));
+            debug_assert!(twiddles.len() >= 3 * (ido - 1));
+
+            let input0 = input[0].as_ptr();
+            let input1 = input[1].as_ptr();
+            let input2 = input[2].as_ptr();
+            let input3 = input[3].as_ptr();
+            let twiddle1 = twiddles.as_ptr();
+            let twiddle2 = unsafe { twiddle1.add(ido - 1) };
+            let twiddle3 = unsafe { twiddle2.add(ido - 1) };
+            let output0 = output[0].as_mut_ptr();
+            let output1 = output[1].as_mut_ptr();
+            let output2 = output[2].as_mut_ptr();
+            let output3 = output[3].as_mut_ptr();
+
+            let mut i = 2;
+            while i + 6 < ido {
+                let x0 = unsafe { _mm256_loadu_ps(input0.add(i - 1)) };
+                let x1 = unsafe { _mm256_loadu_ps(input1.add(i - 1)) };
+                let x2 = unsafe { _mm256_loadu_ps(input2.add(i - 1)) };
+                let x3 = unsafe { _mm256_loadu_ps(input3.add(i - 1)) };
+                let roots1 = unsafe { _mm256_loadu_ps(twiddle1.add(i - 2)) };
+                let roots2 = unsafe { _mm256_loadu_ps(twiddle2.add(i - 2)) };
+                let roots3 = unsafe { _mm256_loadu_ps(twiddle3.add(i - 2)) };
+                let x1 = unsafe { multiply_pm(roots1, x1) };
+                let x2 = unsafe { multiply_pm(roots2, x2) };
+                let x3 = unsafe { multiply_pm(roots3, x3) };
+
+                let tr1 = _mm256_add_ps(unsafe { real(x3) }, unsafe { real(x1) });
+                let tr4 = _mm256_sub_ps(unsafe { real(x3) }, unsafe { real(x1) });
+                let ti1 = _mm256_add_ps(unsafe { imag(x1) }, unsafe { imag(x3) });
+                let ti4 = _mm256_sub_ps(unsafe { imag(x1) }, unsafe { imag(x3) });
+                let tr2 = _mm256_add_ps(unsafe { real(x0) }, unsafe { real(x2) });
+                let tr3 = _mm256_sub_ps(unsafe { real(x0) }, unsafe { real(x2) });
+                let ti2 = _mm256_add_ps(unsafe { imag(x0) }, unsafe { imag(x2) });
+                let ti3 = _mm256_sub_ps(unsafe { imag(x0) }, unsafe { imag(x2) });
+
+                let branch0 = unsafe { pack(_mm256_add_ps(tr2, tr1), _mm256_add_ps(ti1, ti2)) };
+                let branch3 = unsafe { pack(_mm256_sub_ps(tr2, tr1), _mm256_sub_ps(ti1, ti2)) };
+                let branch2 = unsafe { pack(_mm256_add_ps(tr3, ti4), _mm256_add_ps(tr4, ti3)) };
+                let branch1 = unsafe { pack(_mm256_sub_ps(tr3, ti4), _mm256_sub_ps(tr4, ti3)) };
+                let mirror = ido - i - 7;
+                unsafe {
+                    _mm256_storeu_ps(output0.add(i - 1), branch0);
+                    _mm256_storeu_ps(output2.add(i - 1), branch2);
+                    _mm256_storeu_ps(output1.add(mirror), reverse_complex_order(branch1));
+                    _mm256_storeu_ps(output3.add(mirror), reverse_complex_order(branch3));
+                }
+                i += 8;
+            }
+            i
+        }
+
+        #[target_feature(enable = "avx2")]
+        pub(super) unsafe fn inverse_radix4_interior(
+            input: &[f32],
+            output: [&mut [f32]; 4],
+            ido: usize,
+            twiddles: &[f32],
+        ) -> usize {
+            debug_assert!(ido > 2);
+            debug_assert!(ido.is_multiple_of(2));
+            debug_assert_eq!(input.len(), 4 * ido);
+            debug_assert!(output.iter().all(|branch| branch.len() == ido));
+            debug_assert!(twiddles.len() >= 3 * (ido - 1));
+
+            let input0 = input.as_ptr();
+            let input1 = unsafe { input0.add(ido) };
+            let input2 = unsafe { input1.add(ido) };
+            let input3 = unsafe { input2.add(ido) };
+            let twiddle1 = twiddles.as_ptr();
+            let twiddle2 = unsafe { twiddle1.add(ido - 1) };
+            let twiddle3 = unsafe { twiddle2.add(ido - 1) };
+            let output0 = output[0].as_mut_ptr();
+            let output1 = output[1].as_mut_ptr();
+            let output2 = output[2].as_mut_ptr();
+            let output3 = output[3].as_mut_ptr();
+
+            let mut i = 2;
+            while i + 6 < ido {
+                let ic = ido - i;
+                let x0 = unsafe { _mm256_loadu_ps(input0.add(i - 1)) };
+                let x3 = unsafe { _mm256_loadu_ps(input3.add(ic - 7)) };
+                let x3 = unsafe { reverse_complex_order(x3) };
+                let x2 = unsafe { _mm256_loadu_ps(input2.add(i - 1)) };
+                let x1 = unsafe { _mm256_loadu_ps(input1.add(ic - 7)) };
+                let x1 = unsafe { reverse_complex_order(x1) };
+
+                let sum03 = _mm256_add_ps(x0, x3);
+                let diff03 = _mm256_sub_ps(x0, x3);
+                let sum21 = _mm256_add_ps(x2, x1);
+                let diff21 = _mm256_sub_ps(x2, x1);
+
+                let out0 = unsafe {
+                    pack(
+                        _mm256_add_ps(real(sum03), real(sum21)),
+                        _mm256_add_ps(imag(diff03), imag(diff21)),
+                    )
+                };
+                let values1 = unsafe {
+                    pack(
+                        _mm256_add_ps(imag(sum03), real(diff21)),
+                        _mm256_sub_ps(real(diff03), imag(sum21)),
+                    )
+                };
+                let values2 = unsafe {
+                    pack(
+                        _mm256_sub_ps(imag(diff03), imag(diff21)),
+                        _mm256_sub_ps(real(sum03), real(sum21)),
+                    )
+                };
+                let values3 = unsafe {
+                    pack(
+                        _mm256_sub_ps(imag(sum03), real(diff21)),
+                        _mm256_add_ps(real(diff03), imag(sum21)),
+                    )
+                };
+
+                let roots1 = unsafe { _mm256_loadu_ps(twiddle1.add(i - 2)) };
+                let roots2 = unsafe { _mm256_loadu_ps(twiddle2.add(i - 2)) };
+                let roots3 = unsafe { _mm256_loadu_ps(twiddle3.add(i - 2)) };
+                let result1 = unsafe { multiply_pm(roots1, values1) };
+                let result2 = unsafe { multiply_pm(roots2, values2) };
+                let result3 = unsafe { multiply_pm(roots3, values3) };
+
+                unsafe {
+                    _mm256_storeu_ps(output0.add(i - 1), out0);
+                    _mm256_storeu_ps(output1.add(i - 1), swap_pair(result1));
+                    _mm256_storeu_ps(output2.add(i - 1), swap_pair(result2));
+                    _mm256_storeu_ps(output3.add(i - 1), swap_pair(result3));
+                }
+                i += 8;
             }
             i
         }
