@@ -134,3 +134,27 @@ defect. The f64 kernels remain unchanged. Other real radix families, across-row
 SIMD, and the remaining RustFFT and DUCC gaps still require work. This
 measurement supports one targeted f32 AVX2 pass family; it does not establish
 performance completion.
+
+
+ran the executables pinned to one CPU core. Each process measured all seven paired
+R2C and C2R samples, performed the output comparisons, and included setup;
+these are whole-process instruction counts, not isolated operation counts or
+wall times. The two whole-process totals were 529,986,594 and 529,989,033
+instruction references for the baseline, and 387,447,434 and 387,446,758 for
+the candidate. Their medians differ by 26.90% in favor of the candidate. The following function counts are inclusive and therefore overlap. Each
+listed function had the same count in both profiles of its source.
+
+| Function | Baseline instruction references | Candidate instruction references | Reduction |
+|---|---:|---:|---:|
+| `RealFftPlan<f32>::forward` | 189,200,967 | 117,754,740 | 37.76% |
+| `RealFftPlan<f32>::inverse` | 177,679,627 | 106,580,477 | 40.02% |
+| `execute_forward_pass::<f32>` | 144,053,119 | 72,606,892 | 49.60% |
+| `execute_inverse_pass::<f32>` | 128,614,254 | 57,515,104 | 55.28% |
+
+The candidate's `forward_radix4_interior` and `inverse_radix4_interior`
+functions account for 14,143,949 and 12,495,670 references, respectively. Together they are 6.88% of the candidate whole-process count. The pass
+executors still account for substantial inclusive work after this kernel;
+this profile does not separate scalar endpoints and tails from vector-loop
+cost inside those executors. It supports a pass-level follow-up and does not
+assign the full whole-call gain to SIMD instructions. Compressed profiles are archived for both runs:
+and
