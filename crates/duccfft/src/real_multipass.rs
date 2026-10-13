@@ -149,13 +149,18 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         unpack_spectrum(packed, spectrum);
     }
 
-    pub(crate) fn inverse(
+    pub(crate) fn inverse_if_safe(
         &self,
         spectrum: &[Complex<T>],
         output: &mut [T],
         workspace: &mut RealMultipassWorkspace<T>,
-    ) {
-        pack_spectrum(spectrum, &mut workspace.first);
+    ) -> bool {
+        // Packing already reads every component used by the transform. Fold
+        // the overflow guard into that pass so ordinary inputs do not require
+        // a separate full-spectrum scan.
+        if !pack_spectrum_if_safe(spectrum, &mut workspace.first) {
+            return false;
+        }
         let mut current_is_first = true;
         let scale = scalar::<T>(1.0 / self.len as f64);
         let last_pass = self.passes.len() - 1;
@@ -191,6 +196,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                 current_is_first = !current_is_first;
             }
         }
+        true
     }
 }
 
@@ -994,20 +1000,33 @@ fn unpack_spectrum<T: Float>(packed: &[T], spectrum: &mut [Complex<T>]) {
     }
 }
 
-fn pack_spectrum<T: Float>(spectrum: &[Complex<T>], packed: &mut [T]) {
+fn pack_spectrum_if_safe<T: Float + FromPrimitive>(
+    spectrum: &[Complex<T>],
+    packed: &mut [T],
+) -> bool {
     let len = packed.len();
     debug_assert_eq!(spectrum.len(), len / 2 + 1);
     // DC, each positive-frequency real/imaginary pair, and (for even lengths)
     // the real Nyquist bin cover the full packed buffer.
+    let nyquist = len / 2;
+    let mut maximum = T::zero();
+    let mut all_finite = true;
     packed[0] = spectrum[0].re;
+    all_finite &= spectrum[0].re.is_finite();
+    maximum = maximum.max(spectrum[0].re.abs());
     for (k, &value) in spectrum.iter().enumerate().skip(1) {
-        if len.is_multiple_of(2) && k == len / 2 {
+        all_finite &= value.re.is_finite();
+        maximum = maximum.max(value.re.abs());
+        if len.is_multiple_of(2) && k == nyquist {
             packed[len - 1] = value.re;
         } else {
             packed[2 * k - 1] = value.re;
             packed[2 * k] = value.im;
+            all_finite &= value.im.is_finite();
+            maximum = maximum.max(value.im.abs());
         }
     }
+    all_finite && maximum <= T::max_value() / scalar::<T>(4.0 * len as f64)
 }
 
 fn scalar<T: FromPrimitive>(value: f64) -> T {

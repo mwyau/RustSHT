@@ -1044,6 +1044,15 @@ fn real_radix_multipass_fast_paths_and_extreme_fallbacks_are_checked() {
     let n = 64;
     let plan64 = RealFftPlan::<f64>::new(n).unwrap();
     let mut workspace64 = plan64.workspace().unwrap();
+    let mut ignored_endpoint_imag64 = vec![Complex::new(0.0, 0.0); plan64.spectrum_len()];
+    ignored_endpoint_imag64[0].im = f64::NAN;
+    ignored_endpoint_imag64[n / 2].im = f64::INFINITY;
+    let mut output64 = vec![0.0; n];
+    plan64
+        .inverse(&ignored_endpoint_imag64, &mut output64, &mut workspace64)
+        .unwrap();
+    assert_eq!(output64, vec![0.0; n]);
+
     let bounded64 = f64::MAX / (4.0 * n as f64);
     let bounded_input64 = vec![bounded64; n];
     let mut spectrum64 = vec![Complex::new(0.0, 0.0); plan64.spectrum_len()];
@@ -1070,7 +1079,6 @@ fn real_radix_multipass_fast_paths_and_extreme_fallbacks_are_checked() {
     spectrum64.fill(Complex::new(0.0, 0.0));
     spectrum64[0].re = f64::MAX;
     spectrum64[n / 2].re = f64::MAX;
-    let mut output64 = vec![0.0; n];
     plan64
         .inverse(&spectrum64, &mut output64, &mut workspace64)
         .unwrap();
@@ -1088,6 +1096,15 @@ fn real_radix_multipass_fast_paths_and_extreme_fallbacks_are_checked() {
 
     let plan32 = RealFftPlan::<f32>::new(n).unwrap();
     let mut workspace32 = plan32.workspace().unwrap();
+    let mut ignored_endpoint_imag32 = vec![Complex::new(0.0, 0.0); plan32.spectrum_len()];
+    ignored_endpoint_imag32[0].im = f32::NAN;
+    ignored_endpoint_imag32[n / 2].im = f32::INFINITY;
+    let mut output32 = vec![0.0; n];
+    plan32
+        .inverse(&ignored_endpoint_imag32, &mut output32, &mut workspace32)
+        .unwrap();
+    assert_eq!(output32, vec![0.0; n]);
+
     let bounded32 = f32::MAX / (4.0 * n as f32);
     let bounded_input32 = vec![bounded32; n];
     let mut spectrum32 = vec![Complex::new(0.0, 0.0); plan32.spectrum_len()];
@@ -1114,7 +1131,6 @@ fn real_radix_multipass_fast_paths_and_extreme_fallbacks_are_checked() {
     spectrum32.fill(Complex::new(0.0, 0.0));
     spectrum32[0].re = f32::MAX;
     spectrum32[n / 2].re = f32::MAX;
-    let mut output32 = vec![0.0; n];
     plan32
         .inverse(&spectrum32, &mut output32, &mut workspace32)
         .unwrap();
