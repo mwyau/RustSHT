@@ -1121,7 +1121,7 @@ fn inverse_normalization_is_safe<T: Float + FromPrimitive>(
             return false;
         }
         maximum = maximum.max(value.re.abs());
-        if index != 0 && index != nyquist {
+        if index != 0 && !(len.is_multiple_of(2) && index == nyquist) {
             if !value.im.is_finite() {
                 return false;
             }
