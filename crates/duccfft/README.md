@@ -1,16 +1,16 @@
 # DUCCFFT
 
-DUCCFFT is a standalone Rust crate for one-dimensional real and complex FFTs. The current revision exposes native f32 and f64 complex transforms using
-mixed-radix plans and caller-owned workspaces. Real transforms and optimized
-general-prime passes remain under development. The crate will use reusable plans and caller-owned scratch for f32 and f64
-transforms. Its design follows the one-dimensional algorithms in DUCC at
-`c1ed01b8fda69d2a378190f0915f1a19762dddbf`. The package has a nested Cargo workspace. Run its checks with:
+DUCCFFT is an independent Rust implementation of the one-dimensional real
+and complex FFT algorithms used by DUCC. It provides reusable f32 and f64
+plans with caller-owned workspaces for spherical harmonic transform software.
 
-```sh
-cargo test --manifest-path crates/duccfft/Cargo.toml
-```
+## References
 
-The direct C++ DUCC reference harness and RustFFT comparison benchmark are in
-`benches/`. Build instructions and benchmark conventions are in
-`benches/README.md`. DUCCFFT is not an official DUCC release. The crate is licensed under
-BSD-3-Clause; reference-source notices are in `LICENSE-THIRD-PARTY`.
+- Reinecke, M., & Seljebotn, D. S. (2013). [Libsharp – spherical harmonic transforms revisited](https://doi.org/10.1051/0004-6361/201321494). *Astronomy & Astrophysics*, **554**, A112.
+- Ishioka, K. (2018). [A New Recurrence Formula for Efficient Computation of Spherical Harmonic Transform](https://doi.org/10.2151/jmsj.2018-019). *Journal of the Meteorological Society of Japan*, **96**(2), 241–249.
+- Reinecke, M., Belkner, S., & Carron, J. (2023). [Improved cosmic microwave background (de-)lensing using general spherical harmonic transforms](https://doi.org/10.1051/0004-6361/202346717). *Astronomy & Astrophysics*, **678**, A165.
+
+## License
+
+DUCCFFT is licensed under BSD-3-Clause. Notices for adapted DUCC source are
+listed in `LICENSE-THIRD-PARTY`.

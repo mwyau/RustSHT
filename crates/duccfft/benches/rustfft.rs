@@ -4,7 +4,7 @@
 use std::hint::black_box;
 use std::time::{Duration, Instant};
 
-use duccfft::ComplexFftPlan;
+use duccfft::{ComplexFftPlan, RealFftPlan};
 use num_complex::Complex64;
 use rustfft::{Fft, FftPlanner};
 
@@ -333,6 +333,33 @@ fn native_complex_output(mode: Mode, n: usize) -> Vec<Complex64> {
     values
 }
 
+fn native_real_output(mode: Mode, n: usize) -> Vec<Complex64> {
+    let plan = RealFftPlan::<f64>::new(n).expect("native real plan");
+    let mut workspace = plan.workspace().expect("native real workspace");
+    match mode {
+        Mode::RealForward => {
+            let input: Vec<_> = (0..n).map(|index| real_value(index, 0)).collect();
+            let mut spectrum = vec![Complex64::new(0.0, 0.0); plan.spectrum_len()];
+            plan.forward(&input, &mut spectrum, &mut workspace)
+                .expect("native real forward transform");
+            spectrum
+        }
+        Mode::RealInverse => {
+            let spectrum: Vec<_> = (0..plan.spectrum_len())
+                .map(|index| spectrum_value(index, n, 0))
+                .collect();
+            let mut output = vec![0.0; n];
+            plan.inverse(&spectrum, &mut output, &mut workspace)
+                .expect("native real inverse transform");
+            output
+                .into_iter()
+                .map(|value| Complex64::new(value, 0.0))
+                .collect()
+        }
+        Mode::ComplexForward | Mode::ComplexInverse => unreachable!("real mode required"),
+    }
+}
+
 fn dump_all() {
     for &n in BENCHMARK_LENGTHS {
         for mode in [
@@ -357,8 +384,17 @@ fn dump_all() {
 
 fn dump_native_all() {
     for &n in BENCHMARK_LENGTHS {
-        for mode in [Mode::ComplexForward, Mode::ComplexInverse] {
-            for (index, value) in native_complex_output(mode, n).iter().enumerate() {
+        for mode in [
+            Mode::ComplexForward,
+            Mode::ComplexInverse,
+            Mode::RealForward,
+            Mode::RealInverse,
+        ] {
+            let values = match mode {
+                Mode::ComplexForward | Mode::ComplexInverse => native_complex_output(mode, n),
+                Mode::RealForward | Mode::RealInverse => native_real_output(mode, n),
+            };
+            for (index, value) in values.iter().enumerate() {
                 println!(
                     "{},{},{},{:.17e},{:.17e}",
                     mode.name(),
@@ -605,6 +641,85 @@ fn benchmark_native_complex(mode: Mode, n: usize, rows: usize) {
     );
 }
 
+fn benchmark_native_real(mode: Mode, n: usize, rows: usize) {
+    let start = Instant::now();
+    for _ in 0..20 {
+        black_box(RealFftPlan::<f64>::new(n).expect("native real plan").len());
+    }
+    let plan_time = start.elapsed().as_nanos() as f64 / 20.0;
+    let plan = RealFftPlan::<f64>::new(n).expect("native real plan");
+    let start = Instant::now();
+    for _ in 0..20 {
+        black_box(plan.workspace().expect("native real workspace").len());
+    }
+    let workspace_ns = start.elapsed().as_nanos() as f64 / 20.0;
+    let mut workspace = plan.workspace().expect("native real workspace");
+    let bins = plan.spectrum_len();
+    let (operation_ns, checksum) = match mode {
+        Mode::RealForward => {
+            let input: Vec<_> = (0..rows)
+                .flat_map(|row| (0..n).map(move |index| real_value(index, row)))
+                .collect();
+            let mut spectrum = vec![Complex64::new(0.0, 0.0); rows * bins];
+            let operation_ns = measure(|| {
+                let start = Instant::now();
+                for row in 0..rows {
+                    plan.forward(
+                        &input[row * n..(row + 1) * n],
+                        &mut spectrum[row * bins..(row + 1) * bins],
+                        &mut workspace,
+                    )
+                    .expect("native real forward transform");
+                }
+                let elapsed = start.elapsed();
+                black_box(spectrum.as_slice());
+                elapsed
+            })
+            .as_nanos() as f64
+                / rows as f64;
+            black_box(spectrum.as_slice());
+            let checksum = spectrum[0].re + spectrum[0].im;
+            (operation_ns, checksum)
+        }
+        Mode::RealInverse => {
+            let input: Vec<_> = (0..rows)
+                .flat_map(|row| (0..bins).map(move |index| spectrum_value(index, n, row)))
+                .collect();
+            let mut output = vec![0.0; rows * n];
+            let operation_ns = measure(|| {
+                let start = Instant::now();
+                for row in 0..rows {
+                    plan.inverse(
+                        &input[row * bins..(row + 1) * bins],
+                        &mut output[row * n..(row + 1) * n],
+                        &mut workspace,
+                    )
+                    .expect("native real inverse transform");
+                }
+                let elapsed = start.elapsed();
+                black_box(output.as_slice());
+                elapsed
+            })
+            .as_nanos() as f64
+                / rows as f64;
+            black_box(output.as_slice());
+            (operation_ns, output[0])
+        }
+        Mode::ComplexForward | Mode::ComplexInverse => unreachable!("real mode required"),
+    };
+    println!(
+        "{},{},{:.9},{:.9},{:.9},{:.9},{},{}",
+        mode.name(),
+        n,
+        plan_time,
+        workspace_ns,
+        operation_ns,
+        operation_ns * rows as f64,
+        rows,
+        checksum
+    );
+}
+
 fn main() {
     let mut args = std::env::args().skip(1).filter(|arg| arg != "--bench");
     match args.next().as_deref() {
@@ -660,6 +775,33 @@ fn main() {
                     benchmark_native_complex(mode, n, 1);
                     benchmark_native_complex(mode, n, BATCH_COUNT);
                 }
+                for mode in [Mode::RealForward, Mode::RealInverse] {
+                    benchmark_native_real(mode, n, 1);
+                    benchmark_native_real(mode, n, BATCH_COUNT);
+                }
+            }
+        }
+        Some("bench-native-real") => {
+            println!(
+                "mode,n,plan_ns,workspace_ns,public_operation_ns,batch_operation_ns,batch_count,checksum"
+            );
+            let n = args
+                .next()
+                .expect("length is required")
+                .parse()
+                .expect("length must be an integer");
+            let row_counts: Vec<usize> = args
+                .map(|value| value.parse().expect("row count must be an integer"))
+                .collect();
+            let row_counts = if row_counts.is_empty() {
+                vec![1, BATCH_COUNT]
+            } else {
+                row_counts
+            };
+            for mode in [Mode::RealForward, Mode::RealInverse] {
+                for &rows in &row_counts {
+                    benchmark_native_real(mode, n, rows);
+                }
             }
         }
         Some("bench") => {
@@ -688,7 +830,7 @@ fn main() {
         }
         _ => {
             eprintln!(
-                "usage: rustfft-bench dump-all | dump-native-all | dump MODE N | bench [N ...] | bench-sht | bench-native [N ...]"
+                "usage: rustfft-bench dump-all | dump-native-all | dump MODE N | bench [N ...] | bench-sht | bench-native [N ...] | bench-native-real N [BATCH ...]"
             );
             eprintln!("no benchmark was run; use `bench` to start the workload");
         }
