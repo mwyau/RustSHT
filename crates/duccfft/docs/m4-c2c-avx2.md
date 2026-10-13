@@ -142,5 +142,83 @@ and 21 real integration tests.
 
 This change affects public C2C calls only. Real transforms still use their
 recursive scalar execution path. Compare a complete packed-real multipass
-prototype with that path before adding real SIMD. A reviewer assessment of the
-AVX2 implementation and its benchmark evidence is pending.
+prototype with that path before adding real SIMD.
+
+## Fixed-radix loop specialization
+
+Commit `3a692cd` moves the radix match to each AVX2 pass entry and dispatches
+to const-radix loop bodies. The butterfly expressions, twiddle convention,
+normalization, inverse fallback, pass order, and buffer schedule are unchanged.
+This is a source-to-source comparison with the unspecialized kernels in
+`b9ccc38`; it changes no planner or workspace representation.
+
+The measurements use Rust 1.99.0 (`b940084d7`, LLVM 23.1.1), the Cargo `bench`
+profile at `opt-level=3`, and no custom `RUSTFLAGS`, LTO, or target CPU. The
+machine is the same Ryzen 9 5950X, with each process pinned to logical CPU 30.
+DUCCFFT used runtime AVX2 dispatch; RustFFT 6.4.1 used its default runtime SIMD
+planner. Six process samples were collected for each DUCCFFT revision; the
+last three were run as old/fixed pairs. RustFFT has three process samples.
+Each process reports the median of seven timed operations after a warmup.
+Plans and workspaces are reused. Batch 32 means sequential transforms, not a
+batched FFT call. One-minute load averages observed during the run ranged from
+4.0 to 6.6 while the Legendre workload was active; treat the results as
+provisional. Raw process samples and source revisions are recorded in
+[`m4-c2c-avx2-specialization-process-samples.csv`](../benches/results/m4-c2c-avx2-specialization-process-samples.csv).
+
+### One transform
+
+Times are per public transform. The first pair in each cell compares the
+unspecialized and fixed-radix AVX2 source revisions; RustFFT is included as a
+concurrent timing reference.
+
+| n | Forward, base → fixed | RustFFT | Fixed / RustFFT | Inverse, base → fixed | RustFFT | Fixed / RustFFT |
+|---:|---:|---:|---:|---:|---:|---:|
+| 64 | 0.245 → 0.221 µs | 0.070 µs | 3.16× | 0.311 → 0.310 µs | 0.090 µs | 3.44× |
+| 128 | 0.486 → 0.436 µs | 0.130 µs | 3.35× | 0.661 → 0.622 µs | 0.160 µs | 3.88× |
+| 256 | 0.817 → 0.756 µs | 0.290 µs | 2.61× | 1.202 → 1.117 µs | 0.351 µs | 3.18× |
+| 512 | 1.788 → 1.663 µs | 0.641 µs | 2.59× | 2.515 → 2.405 µs | 0.751 µs | 3.20× |
+| 1,024 | 4.313 → 3.807 µs | 1.493 µs | 2.55× | 5.746 → 5.260 µs | 1.733 µs | 3.04× |
+| 2,048 | 11.146 → 11.421 µs | 3.717 µs | 3.07× | 14.051 → 14.282 µs | 4.157 µs | 3.44× |
+| 4,096 | 26.730 → 26.575 µs | 8.336 µs | 3.19× | 32.285 → 32.416 µs | 9.338 µs | 3.47× |
+
+### Sequential batch of 32
+
+Times are per transform within the batch.
+
+| n | Forward, base → fixed | RustFFT | Fixed / RustFFT | Inverse, base → fixed | RustFFT | Fixed / RustFFT |
+|---:|---:|---:|---:|---:|---:|---:|
+| 64 | 0.212 → 0.197 µs | 0.054 µs | 3.64× | 0.295 → 0.282 µs | 0.068 µs | 4.16× |
+| 128 | 0.456 → 0.406 µs | 0.120 µs | 3.38× | 0.634 → 0.587 µs | 0.149 µs | 3.93× |
+| 256 | 0.789 → 0.733 µs | 0.268 µs | 2.73× | 1.191 → 1.089 µs | 0.335 µs | 3.25× |
+| 512 | 1.757 → 1.663 µs | 0.653 µs | 2.55× | 2.533 → 2.396 µs | 0.770 µs | 3.11× |
+| 1,024 | 4.366 → 3.875 µs | 1.608 µs | 2.41× | 5.803 → 5.359 µs | 1.787 µs | 3.00× |
+| 2,048 | 8.837 → 7.909 µs | 3.900 µs | 2.03× | 14.147 → 14.066 µs | 4.204 µs | 3.35× |
+| 4,096 | 21.284 → 19.577 µs | 8.924 µs | 2.19× | 32.421 → 32.628 µs | 9.379 µs | 3.48× |
+
+Forward execution improves by about 5–12% through length 1,024 in both call
+counts. At 2,048 and 4,096 the single-call result is neutral within the
+observed variation; the sequential-batch result improves by 8–11%. Inverse
+execution improves by about 4–9% through length 1,024 and is effectively
+unchanged at 2,048 and 4,096. Keep the fixed-radix dispatch as a small
+reduction in pass overhead. Execution is still 2.03–4.16× slower than RustFFT
+across these cases.
+
+### Generated code and decision
+
+Release assembly for the fixed-radix revision contains packed AVX2 operations.
+The radix comparisons for 2, 4, and 8 appear at pass entry, before the
+specialized loops. Assembly allocates 120-byte stack frames for both
+first-pass kernels, 184 bytes for f32 multipass, and 200 bytes for f64
+multipass; the unspecialized kernels used 224–352 bytes. Seven or eight
+instructions per function still reference stack-resident vector values.
+Loop-counter and twiddle-guard branches also appear. Assembly inspection does
+not measure branch frequency or attribute wall time to stack references.
+
+The M3 review accepted the DUCC `l1`/`ido` C2C multipass schedule after
+measurements showed lower execution time than the earlier recursive tree. The
+fixed-radix change adds a smaller gain. Smooth C2C execution is still 2.03–4.16×
+slower than RustFFT in this comparison. R2C/C2R still use recursive execution;
+the next scalar architecture comparison should measure a packed-real multipass
+executor before adding real SIMD. The M3 inverse fast path skips residual
+correction for inputs under its tested finite-input bound, but this C2C
+experiment does not measure its effect on real-transform timing.
