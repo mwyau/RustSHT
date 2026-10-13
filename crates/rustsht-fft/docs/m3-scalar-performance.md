@@ -1,7 +1,7 @@
 # M3 scalar performance checkpoint
 
 Date: 2026-10-13. The implementation measured here is source commit
-`0fa6b54` (`feat/rustsht_fft`). Benchmark metadata and refreshed results are in
+`0fa6b54` (`feat/duccfft`). Benchmark metadata and refreshed results are in
 commit `d613dd6`. The pinned DUCC reference is
 `c1ed01b8fda69d2a378190f0915f1a19762dddbf`. This is a historical M3 checkpoint. Its real-transform measurements and
 architecture statements describe source commit `0fa6b54`, before the guarded
