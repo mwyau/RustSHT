@@ -22,3 +22,19 @@ rustfft = "6.4"
 [[bench]]
 name = "rustfft"
 harness = false
+
+[[bench]]
+name = "multipass_prototype"
+harness = false
+
+[[bench]]
+name = "real_radix4_prototype"
+harness = false
+
+[[bench]]
+name = "real_complexify_prototype"
+harness = false
+
+[[bench]]
+name = "bluestein_phase_prototype"
+harness = false

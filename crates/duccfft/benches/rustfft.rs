@@ -6,14 +6,15 @@ use std::time::{Duration, Instant};
 
 use duccfft::{ComplexFftPlan, RealFftPlan};
 use num_complex::Complex64;
-use rustfft::{Fft, FftPlanner};
+use rustfft::{Fft, FftPlanner, FftPlannerScalar};
 
 const BATCH_COUNT: usize = 32;
 const SAMPLE_COUNT: usize = 7;
 
 const BENCHMARK_LENGTHS: &[usize] = &[
-    31, 32, 33, 64, 107, 109, 113, 127, 128, 131, 137, 241, 257, 511, 512, 683, 998, 1000, 1001,
-    1002, 1008, 1013, 1023, 1024, 1025, 1026, 2047, 2048, 2049, 4097, 10000, 10001, 10008,
+    13, 17, 31, 32, 33, 41, 53, 64, 107, 109, 113, 127, 128, 131, 137, 241, 257, 511, 512, 683,
+    998, 1000, 1001, 1002, 1008, 1013, 1023, 1024, 1025, 1026, 2047, 2048, 2049, 4096, 4097, 10000,
+    10001, 10008,
 ];
 const SHT_WORKLOADS: &[(usize, usize)] = &[(257, 128), (1025, 512), (2049, 1024), (4097, 2048)];
 
@@ -56,8 +57,19 @@ struct ComplexPlan {
 impl ComplexPlan {
     fn new(n: usize) -> Self {
         let mut planner = FftPlanner::<f64>::new();
-        let forward = planner.plan_fft_forward(n);
-        let inverse = planner.plan_fft_inverse(n);
+        Self::new_with_plans(n, planner.plan_fft_forward(n), planner.plan_fft_inverse(n))
+    }
+
+    fn new_scalar(n: usize) -> Self {
+        let mut planner = FftPlannerScalar::<f64>::new();
+        Self::new_with_plans(n, planner.plan_fft_forward(n), planner.plan_fft_inverse(n))
+    }
+
+    fn new_with_plans(
+        n: usize,
+        forward: std::sync::Arc<dyn Fft<f64>>,
+        inverse: std::sync::Arc<dyn Fft<f64>>,
+    ) -> Self {
         let scratch_len = forward
             .get_inplace_scratch_len()
             .max(inverse.get_inplace_scratch_len());
@@ -93,8 +105,16 @@ struct RealPlan {
 
 impl RealPlan {
     fn new(n: usize) -> Self {
+        Self::new_with_complex(n, ComplexPlan::new)
+    }
+
+    fn new_scalar(n: usize) -> Self {
+        Self::new_with_complex(n, ComplexPlan::new_scalar)
+    }
+
+    fn new_with_complex(n: usize, make_complex: fn(usize) -> ComplexPlan) -> Self {
         let transform_len = if n.is_multiple_of(2) { n / 2 } else { n };
-        let complex = ComplexPlan::new(transform_len);
+        let complex = make_complex(transform_len);
         let twiddles = if n.is_multiple_of(2) {
             (0..=transform_len)
                 .map(|k| {
@@ -256,14 +276,23 @@ fn measure(mut elapsed_sample: impl FnMut() -> Duration) -> Duration {
     median_duration(durations)
 }
 
-fn plan_ns(n: usize, real: bool) -> f64 {
+fn plan_ns(n: usize, real: bool, scalar: bool) -> f64 {
     let repeats = 20;
     let start = Instant::now();
     for _ in 0..repeats {
         black_box(if real {
-            RealPlan::new(n).scratch_len()
+            (if scalar {
+                RealPlan::new_scalar(n)
+            } else {
+                RealPlan::new(n)
+            })
+            .scratch_len()
         } else {
-            ComplexPlan::new(n).scratch_len
+            if scalar {
+                ComplexPlan::new_scalar(n).scratch_len
+            } else {
+                ComplexPlan::new(n).scratch_len
+            }
         });
     }
     start.elapsed().as_nanos() as f64 / repeats as f64
@@ -408,19 +437,29 @@ fn dump_native_all() {
     }
 }
 
-fn benchmark(mode: Mode, n: usize, rows: usize) {
+fn benchmark(mode: Mode, n: usize, rows: usize, scalar: bool) {
     let rows = if n > 10000 { rows.min(4) } else { rows };
-    let plan_time = plan_ns(n, matches!(mode, Mode::RealForward | Mode::RealInverse));
+    let plan_time = plan_ns(
+        n,
+        matches!(mode, Mode::RealForward | Mode::RealInverse),
+        scalar,
+    );
     let scratch_time;
+    let scratch_bytes;
     let fft_time;
     let packing_time;
     let call_time;
     let checksum;
 
     if matches!(mode, Mode::ComplexForward | Mode::ComplexInverse) {
-        let plan = ComplexPlan::new(n);
+        let plan = if scalar {
+            ComplexPlan::new_scalar(n)
+        } else {
+            ComplexPlan::new(n)
+        };
         let mut data = vec![Complex64::new(0.0, 0.0); rows * n];
         let mut scratch = vec![Complex64::new(0.0, 0.0); plan.scratch_len];
+        scratch_bytes = scratch.len() * std::mem::size_of::<Complex64>();
         let fill = |data: &mut [Complex64]| {
             for row in 0..rows {
                 for i in 0..n {
@@ -436,7 +475,9 @@ fn benchmark(mode: Mode, n: usize, rows: usize) {
                 let range = row * n..(row + 1) * n;
                 plan.execute_raw(&mut data[range], &mut scratch, forward);
             }
-            start.elapsed()
+            let elapsed = start.elapsed();
+            black_box(data.as_slice());
+            elapsed
         })
         .as_nanos() as f64
             / rows as f64;
@@ -450,7 +491,9 @@ fn benchmark(mode: Mode, n: usize, rows: usize) {
                     plan.normalize_inverse(&mut data[range]);
                 }
             }
-            start.elapsed()
+            let elapsed = start.elapsed();
+            black_box(data.as_slice());
+            elapsed
         })
         .as_nanos() as f64
             / rows as f64;
@@ -458,11 +501,17 @@ fn benchmark(mode: Mode, n: usize, rows: usize) {
         packing_time = 0.0;
         checksum = data[0].re + data[0].im;
     } else {
-        let plan = RealPlan::new(n);
+        let plan = if scalar {
+            RealPlan::new_scalar(n)
+        } else {
+            RealPlan::new(n)
+        };
         let bins = plan.bins();
         let transform_len = plan.complex.n;
         let mut transforms = vec![Complex64::new(0.0, 0.0); rows * transform_len];
         let mut scratch = vec![Complex64::new(0.0, 0.0); plan.scratch_len()];
+        scratch_bytes =
+            (transforms.len() / rows + scratch.len()) * std::mem::size_of::<Complex64>();
         scratch_time = allocation_ns::<Complex64>(&[transform_len, plan.scratch_len()]);
         if matches!(mode, Mode::RealForward) {
             let input: Vec<_> = (0..rows)
@@ -479,7 +528,9 @@ fn benchmark(mode: Mode, n: usize, rows: usize) {
                     let transform = &mut transforms[row * transform_len..(row + 1) * transform_len];
                     plan.complex.execute_raw(transform, &mut scratch, true);
                 }
-                start.elapsed()
+                let elapsed = start.elapsed();
+                black_box(transforms.as_slice());
+                elapsed
             })
             .as_nanos() as f64
                 / rows as f64;
@@ -490,7 +541,9 @@ fn benchmark(mode: Mode, n: usize, rows: usize) {
                     plan.prepare_forward(&input[row * n..(row + 1) * n], transform);
                     plan.finish_forward(transform, &mut spectra[row * bins..(row + 1) * bins]);
                 }
-                start.elapsed()
+                let elapsed = start.elapsed();
+                black_box(spectra.as_slice());
+                elapsed
             })
             .as_nanos() as f64
                 / rows as f64;
@@ -502,7 +555,9 @@ fn benchmark(mode: Mode, n: usize, rows: usize) {
                     plan.complex.execute_raw(transform, &mut scratch, true);
                     plan.finish_forward(transform, &mut spectra[row * bins..(row + 1) * bins]);
                 }
-                start.elapsed()
+                let elapsed = start.elapsed();
+                black_box(spectra.as_slice());
+                elapsed
             })
             .as_nanos() as f64
                 / rows as f64;
@@ -522,7 +577,9 @@ fn benchmark(mode: Mode, n: usize, rows: usize) {
                     let transform = &mut transforms[row * transform_len..(row + 1) * transform_len];
                     plan.complex.execute_raw(transform, &mut scratch, false);
                 }
-                start.elapsed()
+                let elapsed = start.elapsed();
+                black_box(transforms.as_slice());
+                elapsed
             })
             .as_nanos() as f64
                 / rows as f64;
@@ -533,7 +590,9 @@ fn benchmark(mode: Mode, n: usize, rows: usize) {
                     plan.prepare_inverse(&spectra[row * bins..(row + 1) * bins], transform);
                     plan.finish_inverse(transform, &mut output[row * n..(row + 1) * n]);
                 }
-                start.elapsed()
+                let elapsed = start.elapsed();
+                black_box(output.as_slice());
+                elapsed
             })
             .as_nanos() as f64
                 / rows as f64;
@@ -545,7 +604,9 @@ fn benchmark(mode: Mode, n: usize, rows: usize) {
                     plan.complex.execute_raw(transform, &mut scratch, false);
                     plan.finish_inverse(transform, &mut output[row * n..(row + 1) * n]);
                 }
-                start.elapsed()
+                let elapsed = start.elapsed();
+                black_box(output.as_slice());
+                elapsed
             })
             .as_nanos() as f64
                 / rows as f64;
@@ -554,11 +615,12 @@ fn benchmark(mode: Mode, n: usize, rows: usize) {
     }
 
     println!(
-        "{},{},{:.9},{:.9},{:.9},{:.9},{:.9},{:.9},{},{}",
+        "{},{},{:.9},{:.9},{},{:.9},{:.9},{:.9},{:.9},{},{}",
         mode.name(),
         n,
         plan_time,
         scratch_time,
+        scratch_bytes,
         fft_time,
         packing_time,
         call_time,
@@ -569,7 +631,9 @@ fn benchmark(mode: Mode, n: usize, rows: usize) {
 }
 
 fn benchmark_sht_workloads() {
-    println!("mode,n,plan_ns,scratch_ns,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum");
+    println!(
+        "mode,n,plan_ns,scratch_ns,scratch_bytes,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum"
+    );
     for &(n, rows) in SHT_WORKLOADS {
         for mode in [
             Mode::ComplexForward,
@@ -577,7 +641,24 @@ fn benchmark_sht_workloads() {
             Mode::RealForward,
             Mode::RealInverse,
         ] {
-            benchmark(mode, n, rows);
+            benchmark(mode, n, rows, false);
+        }
+    }
+}
+
+fn benchmark_sizes(sizes: Vec<usize>, scalar: bool) {
+    println!(
+        "mode,n,plan_ns,scratch_ns,scratch_bytes,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum"
+    );
+    for n in sizes {
+        for mode in [
+            Mode::ComplexForward,
+            Mode::ComplexInverse,
+            Mode::RealForward,
+            Mode::RealInverse,
+        ] {
+            benchmark(mode, n, 1, scalar);
+            benchmark(mode, n, BATCH_COUNT, scalar);
         }
     }
 }
@@ -601,6 +682,9 @@ fn benchmark_native_complex(mode: Mode, n: usize, rows: usize) {
     }
     let scratch_ns = start.elapsed().as_nanos() as f64 / 20.0;
     let mut workspace = plan.workspace().expect("native FFT workspace");
+    let workspace_bytes = workspace
+        .scratch_bytes()
+        .expect("native complex workspace byte count");
     let mut data = vec![Complex64::new(0.0, 0.0); rows * n];
     let fill = |data: &mut [Complex64]| {
         for row in 0..rows {
@@ -623,17 +707,20 @@ fn benchmark_native_complex(mode: Mode, n: usize, rows: usize) {
                     .expect("native inverse FFT");
             }
         }
-        start.elapsed()
+        let elapsed = start.elapsed();
+        black_box(data.as_slice());
+        elapsed
     })
     .as_nanos() as f64
         / rows as f64;
     let checksum = data[0].re + data[0].im;
     println!(
-        "{},{},{:.9},{:.9},{:.9},{:.9},{},{}",
+        "{},{},{:.9},{:.9},{},{:.9},{:.9},{},{}",
         mode.name(),
         n,
         plan_ns,
         scratch_ns,
+        workspace_bytes,
         call_time,
         call_time * rows as f64,
         rows,
@@ -654,6 +741,9 @@ fn benchmark_native_real(mode: Mode, n: usize, rows: usize) {
     }
     let workspace_ns = start.elapsed().as_nanos() as f64 / 20.0;
     let mut workspace = plan.workspace().expect("native real workspace");
+    let workspace_bytes = workspace
+        .scratch_bytes()
+        .expect("native real workspace byte count");
     let bins = plan.spectrum_len();
     let (operation_ns, checksum) = match mode {
         Mode::RealForward => {
@@ -708,14 +798,48 @@ fn benchmark_native_real(mode: Mode, n: usize, rows: usize) {
         Mode::ComplexForward | Mode::ComplexInverse => unreachable!("real mode required"),
     };
     println!(
-        "{},{},{:.9},{:.9},{:.9},{:.9},{},{}",
+        "{},{},{:.9},{:.9},{},{:.9},{:.9},{},{}",
         mode.name(),
         n,
         plan_time,
         workspace_ns,
+        workspace_bytes,
         operation_ns,
         operation_ns * rows as f64,
         rows,
+        checksum
+    );
+}
+
+fn profile_native_real_inverse(n: usize, high_dynamic_range: bool, iterations: usize) {
+    let plan = RealFftPlan::<f64>::new(n).expect("native real plan");
+    let mut workspace = plan.workspace().expect("native real workspace");
+    let mut spectrum: Vec<_> = (0..plan.spectrum_len())
+        .map(|index| spectrum_value(index, n, 0))
+        .collect();
+    if high_dynamic_range {
+        spectrum.fill(Complex64::new(f64::MAX / 8.0, 0.0));
+    }
+    let mut output = vec![0.0; n];
+    for _ in 0..3 {
+        plan.inverse(&spectrum, &mut output, &mut workspace)
+            .expect("native real inverse transform");
+    }
+    let start = Instant::now();
+    for _ in 0..iterations {
+        plan.inverse(&spectrum, &mut output, &mut workspace)
+            .expect("native real inverse transform");
+    }
+    let elapsed = start.elapsed();
+    black_box(output.as_slice());
+    assert!(output.iter().all(|value| value.is_finite()));
+    let checksum: f64 = output.iter().sum();
+    black_box(checksum);
+    println!(
+        "c2r_profile,{},{},{:.3},{:.9}",
+        n,
+        if high_dynamic_range { "high" } else { "normal" },
+        elapsed.as_nanos() as f64 / iterations as f64,
         checksum
     );
 }
@@ -744,15 +868,20 @@ fn main() {
             let n = args.next().expect("length is required").parse().unwrap();
             if let Some(rows) = args.next() {
                 println!(
-                    "mode,n,plan_ns,scratch_ns,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum"
+                    "mode,n,plan_ns,scratch_ns,scratch_bytes,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum"
                 );
-                benchmark(mode, n, rows.parse().expect("row count must be an integer"));
+                benchmark(
+                    mode,
+                    n,
+                    rows.parse().expect("row count must be an integer"),
+                    false,
+                );
             } else {
                 println!(
-                    "mode,n,plan_ns,scratch_ns,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum"
+                    "mode,n,plan_ns,scratch_ns,scratch_bytes,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum"
                 );
-                benchmark(mode, n, 1);
-                benchmark(mode, n, BATCH_COUNT);
+                benchmark(mode, n, 1, false);
+                benchmark(mode, n, BATCH_COUNT, false);
             }
         }
         Some("bench-sht") => {
@@ -760,7 +889,7 @@ fn main() {
         }
         Some("bench-native") => {
             println!(
-                "mode,n,plan_ns,workspace_ns,public_operation_ns,batch_operation_ns,batch_count,checksum"
+                "mode,n,plan_ns,workspace_ns,workspace_bytes,public_operation_ns,batch_operation_ns,batch_count,checksum"
             );
             let sizes: Vec<usize> = args
                 .map(|value| value.parse().expect("length must be an integer"))
@@ -783,7 +912,7 @@ fn main() {
         }
         Some("bench-native-real") => {
             println!(
-                "mode,n,plan_ns,workspace_ns,public_operation_ns,batch_operation_ns,batch_count,checksum"
+                "mode,n,plan_ns,workspace_ns,workspace_bytes,public_operation_ns,batch_operation_ns,batch_count,checksum"
             );
             let n = args
                 .next()
@@ -804,10 +933,24 @@ fn main() {
                 }
             }
         }
-        Some("bench") => {
-            println!(
-                "mode,n,plan_ns,scratch_ns,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum"
-            );
+        Some("bench-profile-real-inverse") => {
+            println!("mode,n,input,operation_ns,checksum");
+            let n = args
+                .next()
+                .expect("length is required")
+                .parse()
+                .expect("length must be an integer");
+            let range = args.next().expect("input range is required");
+            let iterations = args
+                .next()
+                .map(|value| value.parse().expect("iteration count must be an integer"))
+                .unwrap_or(100);
+            assert!(iterations > 0, "iteration count must be positive");
+            assert!(matches!(range.as_str(), "normal" | "high"));
+            profile_native_real_inverse(n, range == "high", iterations);
+        }
+        Some("bench") | Some("bench-scalar") => {
+            let scalar = std::env::args().any(|arg| arg == "bench-scalar");
             let sizes: Vec<usize> = args
                 .map(|value| value.parse().expect("length must be an integer"))
                 .collect();
@@ -816,21 +959,11 @@ fn main() {
             } else {
                 sizes
             };
-            for n in sizes {
-                for mode in [
-                    Mode::ComplexForward,
-                    Mode::ComplexInverse,
-                    Mode::RealForward,
-                    Mode::RealInverse,
-                ] {
-                    benchmark(mode, n, 1);
-                    benchmark(mode, n, BATCH_COUNT);
-                }
-            }
+            benchmark_sizes(sizes, scalar);
         }
         _ => {
             eprintln!(
-                "usage: rustfft-bench dump-all | dump-native-all | dump MODE N | bench [N ...] | bench-sht | bench-native [N ...] | bench-native-real N [BATCH ...]"
+                "usage: rustfft-bench dump-all | dump-native-all | dump MODE N | bench [N ...] | bench-scalar [N ...] | bench-sht | bench-native [N ...] | bench-native-real N [BATCH ...] | bench-profile-real-inverse N normal|high [ITERATIONS]"
             );
             eprintln!("no benchmark was run; use `bench` to start the workload");
         }
