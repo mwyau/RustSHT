@@ -7,7 +7,7 @@
 //
 // The factor order follows DUCC's cfftpass::factorize in fft.h at
 // c1ed01b8fda69d2a378190f0915f1a19762dddbf. Execution uses an independent
-// recursive decimation-in-time schedule with caller-owned scratch.
+// multipass schedule with caller-owned scratch and alternating buffers.
 
 use std::fmt;
 
@@ -63,9 +63,29 @@ pub struct ComplexFftPlan<T> {
 
 struct ComplexPlanData<T> {
     len: usize,
-    factors: Vec<usize>,
+    passes: Vec<ComplexPass<T>>,
     roots: Vec<Complex<T>>,
     max_radix: usize,
+    bluestein: Vec<Option<BluesteinPlan<T>>>,
+}
+
+struct ComplexPass<T> {
+    radix: usize,
+    l1: usize,
+    ido: usize,
+    twiddles: Vec<Complex<T>>,
+}
+
+struct PassExecution<'a, T> {
+    roots: &'a [Complex<T>],
+    total_len: usize,
+    direction: Direction,
+    inverse_output_scale: T,
+    radix_input: &'a mut [Complex<T>],
+    radix_output: &'a mut [Complex<T>],
+    blue_plan: Option<&'a BluesteinPlan<T>>,
+    blue_buffer: &'a mut [Complex<T>],
+    blue_workspace: Option<&'a mut ComplexFftWorkspace<T>>,
 }
 
 /// Mutable scratch for repeated execution of a [`ComplexFftPlan`].
@@ -77,6 +97,8 @@ pub struct ComplexFftWorkspace<T> {
     output: Vec<Complex<T>>,
     radix_input: Vec<Complex<T>>,
     radix_output: Vec<Complex<T>>,
+    bluestein_buffer: Vec<Complex<T>>,
+    bluestein_workspaces: Vec<Option<ComplexFftWorkspace<T>>>,
 }
 
 impl<T> ComplexFftWorkspace<T> {
@@ -89,65 +111,174 @@ impl<T> ComplexFftWorkspace<T> {
     pub fn is_empty(&self) -> bool {
         false
     }
+
+    /// Returns the byte size of all reusable scratch buffers in this
+    /// workspace, including nested Bluestein workspaces.
+    ///
+    /// The count includes initialized buffer elements and excludes allocator
+    /// metadata and the plan's precomputed tables. Returns `None` only if the
+    /// total byte count overflows `usize`.
+    pub fn scratch_bytes(&self) -> Option<usize> {
+        let local_elements = [
+            self.output.len(),
+            self.radix_input.len(),
+            self.radix_output.len(),
+            self.bluestein_buffer.len(),
+        ]
+        .into_iter()
+        .try_fold(0usize, usize::checked_add)?;
+        let local_bytes = local_elements.checked_mul(std::mem::size_of::<Complex<T>>())?;
+        self.bluestein_workspaces
+            .iter()
+            .flatten()
+            .try_fold(local_bytes, |total, workspace| {
+                total.checked_add(workspace.scratch_bytes()?)
+            })
+    }
 }
 
 impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
-    fn try_new(len: usize) -> Result<Self, FftError> {
+    pub(crate) fn try_new(len: usize) -> Result<Self, FftError> {
+        Self::try_new_with_bluestein(len, true)
+    }
+
+    fn try_new_with_bluestein(len: usize, enable_bluestein: bool) -> Result<Self, FftError> {
         if len == 0 {
             return Err(FftError::InvalidLength);
         }
 
-        let mut roots = try_vec(len, Complex::new(T::zero(), T::zero()))?;
+        check_vec_len::<Complex<T>>(len)?;
         let factors = factorize(len)?;
+        let mut roots = try_vec(len, Complex::new(T::zero(), T::zero()))?;
         let max_radix = factors.iter().copied().max().unwrap_or(1);
         for (index, root) in roots.iter_mut().enumerate() {
             *root = unity_root(index, len);
+        }
+        let mut passes = Vec::new();
+        passes
+            .try_reserve_exact(factors.len())
+            .map_err(|_| FftError::AllocationFailed)?;
+        let mut l1 = 1_usize;
+        for &radix in &factors {
+            let pass_span = l1.checked_mul(radix).ok_or(FftError::AllocationFailed)?;
+            let ido = len / pass_span;
+            let twiddle_count = radix.checked_mul(ido).ok_or(FftError::AllocationFailed)?;
+            let mut twiddles = try_vec(twiddle_count, Complex::new(T::zero(), T::zero()))?;
+            for branch in 0..radix {
+                for inner in 0..ido {
+                    // The factorization guarantees branch*l1*inner < len.
+                    let root_index = branch * l1 * inner;
+                    twiddles[branch * ido + inner] = roots[root_index];
+                }
+            }
+            passes.push(ComplexPass {
+                radix,
+                l1,
+                ido,
+                twiddles,
+            });
+            l1 = pass_span;
+        }
+        let mut bluestein = Vec::new();
+        bluestein
+            .try_reserve_exact(factors.len())
+            .map_err(|_| FftError::AllocationFailed)?;
+        for &radix in &factors {
+            bluestein.push(if enable_bluestein && radix >= 110 {
+                Some(BluesteinPlan::try_new(radix)?)
+            } else {
+                None
+            });
         }
 
         Ok(Self {
             data: ComplexPlanData {
                 len,
-                factors,
+                passes,
                 roots,
                 max_radix,
+                bluestein,
             },
         })
     }
 
-    fn try_workspace(&self) -> Result<ComplexFftWorkspace<T>, FftError> {
+    pub(crate) fn try_workspace(&self) -> Result<ComplexFftWorkspace<T>, FftError> {
         let zero = Complex::new(T::zero(), T::zero());
+        let mut bluestein_buffer_len = 0;
+        let mut bluestein_workspaces = Vec::new();
+        bluestein_workspaces
+            .try_reserve_exact(self.data.bluestein.len())
+            .map_err(|_| FftError::AllocationFailed)?;
+        for plan in &self.data.bluestein {
+            if let Some(plan) = plan {
+                bluestein_buffer_len = bluestein_buffer_len.max(plan.convolution_len);
+                bluestein_workspaces.push(Some(plan.convolution.try_workspace()?));
+            } else {
+                bluestein_workspaces.push(None);
+            }
+        }
         Ok(ComplexFftWorkspace {
             len: self.data.len,
             output: try_vec(self.data.len, zero)?,
             radix_input: try_vec(self.data.max_radix, zero)?,
             radix_output: try_vec(self.data.max_radix, zero)?,
+            bluestein_buffer: try_vec(bluestein_buffer_len, zero)?,
+            bluestein_workspaces,
         })
     }
 
-    fn execute(
+    pub(crate) fn execute(
         &self,
         values: &mut [Complex<T>],
         workspace: &mut ComplexFftWorkspace<T>,
         direction: Direction,
     ) -> Result<(), FftError> {
+        self.execute_inverse_scaled(values, workspace, direction, T::one())
+    }
+
+    pub(crate) fn execute_inverse_scaled(
+        &self,
+        values: &mut [Complex<T>],
+        workspace: &mut ComplexFftWorkspace<T>,
+        direction: Direction,
+        inverse_output_scale: T,
+    ) -> Result<(), FftError> {
         check_len("values", self.data.len, values.len())?;
         check_len("workspace", self.data.len, workspace.len)?;
 
-        {
-            let mut executor = Executor {
-                input: values,
+        let mut current_is_values = true;
+        for (stage, pass) in self.data.passes.iter().enumerate() {
+            let blue = self.data.bluestein[stage].as_ref();
+            let mut execution = PassExecution {
                 roots: &self.data.roots,
                 total_len: self.data.len,
                 direction,
-                output: &mut workspace.output,
+                inverse_output_scale: if direction == Direction::Inverse
+                    && stage + 1 == self.data.passes.len()
+                {
+                    inverse_output_scale
+                } else {
+                    T::one()
+                },
                 radix_input: &mut workspace.radix_input,
                 radix_output: &mut workspace.radix_output,
+                blue_plan: blue,
+                blue_buffer: &mut workspace.bluestein_buffer,
+                blue_workspace: workspace.bluestein_workspaces[stage].as_mut(),
             };
-            executor.recurse(0, 1, self.data.len, &self.data.factors, 0);
+            if stage == 0 {
+                execute_first_pass_in_place(values, &mut workspace.output, pass, &mut execution);
+            } else if current_is_values {
+                execute_pass(values, &mut workspace.output, pass, &mut execution);
+                current_is_values = false;
+            } else {
+                execute_pass(&workspace.output, values, pass, &mut execution);
+                current_is_values = true;
+            }
         }
 
-        for (value, transformed) in values.iter_mut().zip(&workspace.output) {
-            *value = *transformed;
+        if !current_is_values {
+            values.copy_from_slice(&workspace.output);
         }
         Ok(())
     }
@@ -224,140 +355,602 @@ implement_public_api!(f32);
 implement_public_api!(f64);
 
 #[derive(Clone, Copy, Eq, PartialEq)]
-enum Direction {
+pub(crate) enum Direction {
     Forward,
     Inverse,
 }
 
-struct Executor<'a, T> {
-    input: &'a [Complex<T>],
-    roots: &'a [Complex<T>],
-    total_len: usize,
-    direction: Direction,
-    output: &'a mut [Complex<T>],
-    radix_input: &'a mut [Complex<T>],
-    radix_output: &'a mut [Complex<T>],
+pub(crate) struct BluesteinPlan<T> {
+    len: usize,
+    convolution_len: usize,
+    convolution_scale: T,
+    kernel_spectrum_max: T,
+    chirp: Vec<Complex<T>>,
+    kernel_spectrum: Vec<Complex<T>>,
+    convolution: ComplexFftPlan<T>,
 }
 
-impl<T: Float + FromPrimitive> Executor<'_, T> {
-    fn recurse(
-        &mut self,
-        input_offset: usize,
-        input_stride: usize,
-        len: usize,
-        factors: &[usize],
-        output_offset: usize,
+impl<T: Float + FromPrimitive> BluesteinPlan<T> {
+    pub(crate) fn try_new(len: usize) -> Result<Self, FftError> {
+        let twice_len = len.checked_mul(2).ok_or(FftError::AllocationFailed)?;
+        let convolution_len =
+            good_size_complex(twice_len.checked_sub(1).ok_or(FftError::AllocationFailed)?)?;
+        let convolution = ComplexFftPlan::try_new_with_bluestein(convolution_len, false)?;
+        let convolution_scale = T::from_usize(convolution_len).ok_or(FftError::AllocationFailed)?;
+        let zero = Complex::new(T::zero(), T::zero());
+        let mut chirp = try_vec(len, zero)?;
+        let mut kernel = try_vec(convolution_len, zero)?;
+
+        for (index, value) in chirp.iter_mut().enumerate() {
+            let square = mul_mod(index, index, twice_len);
+            *value = unity_root(square, twice_len).conj();
+        }
+
+        kernel[0] = Complex::new(T::one(), T::zero());
+        for index in 1..len {
+            let positive_chirp = chirp[index].conj();
+            kernel[index] = positive_chirp;
+            kernel[convolution_len - index] = positive_chirp;
+        }
+
+        let mut kernel_workspace = convolution.try_workspace()?;
+        convolution.execute(&mut kernel, &mut kernel_workspace, Direction::Forward)?;
+        let kernel_spectrum_max = kernel.iter().fold(T::zero(), |maximum, value| {
+            maximum.max(value.re.abs()).max(value.im.abs())
+        });
+
+        Ok(Self {
+            len,
+            convolution_len,
+            convolution_scale,
+            kernel_spectrum_max,
+            chirp,
+            kernel_spectrum: kernel,
+            convolution,
+        })
+    }
+
+    pub(crate) fn convolution_len(&self) -> usize {
+        self.convolution_len
+    }
+
+    pub(crate) fn convolution_workspace(&self) -> Result<ComplexFftWorkspace<T>, FftError> {
+        self.convolution.try_workspace()
+    }
+
+    pub(crate) fn execute(
+        &self,
+        input: &[Complex<T>],
+        output: &mut [Complex<T>],
+        direction: Direction,
+        convolution_buffer: &mut [Complex<T>],
+        convolution_workspace: &mut ComplexFftWorkspace<T>,
     ) {
-        if len == 1 {
-            self.output[output_offset] = self.input[input_offset];
-            return;
-        }
+        debug_assert_eq!(input.len(), self.len);
+        debug_assert_eq!(output.len(), self.len);
+        debug_assert!(convolution_buffer.len() >= self.convolution_len);
 
-        let radix = factors[0];
-        let child_len = len / radix;
-        for branch in 0..radix {
-            self.recurse(
-                input_offset + branch * input_stride,
-                input_stride * radix,
-                child_len,
-                &factors[1..],
-                output_offset + branch * child_len,
-            );
-        }
-
-        let stage_root_stride = self.total_len / len;
-        let radix_root_stride = self.total_len / radix;
-        let inverse = self.direction == Direction::Inverse;
-        let stage_scale = if inverse {
-            inverse_scale::<T>(radix)
+        let input_max = input.iter().fold(T::zero(), |maximum, value| {
+            maximum.max(value.re.abs()).max(value.im.abs())
+        });
+        let subnormal_safe_limit =
+            T::min_positive_value() * self.convolution_scale * scalar::<T>(4.0);
+        let input_scale = if input_max > T::zero() && input_max < subnormal_safe_limit {
+            let reciprocal = T::one() / input_max;
+            if reciprocal.is_finite() {
+                reciprocal
+            } else {
+                T::max_value()
+            }
+        } else if input_max > T::max_value() / (self.convolution_scale * scalar::<T>(4.0)) {
+            T::max_value() / (self.convolution_scale * scalar::<T>(4.0)) / input_max
         } else {
             T::one()
         };
-        let radix_value = scalar::<T>(radix as f64);
-        let overflow_threshold = if inverse {
-            T::max_value() / scalar::<T>(4.0 * radix as f64)
+        let buffer = &mut convolution_buffer[..self.convolution_len];
+        for index in 0..self.len {
+            let chirp = match direction {
+                Direction::Forward => self.chirp[index],
+                Direction::Inverse => self.chirp[index].conj(),
+            };
+            buffer[index] = input[index] * input_scale * chirp;
+        }
+        buffer[self.len..].fill(Complex::new(T::zero(), T::zero()));
+
+        self.convolution
+            .execute(buffer, convolution_workspace, Direction::Forward)
+            .expect("Bluestein convolution workspace matches its plan");
+        let input_spectrum_max = buffer.iter().fold(T::zero(), |maximum, value| {
+            maximum.max(value.re.abs()).max(value.im.abs())
+        });
+        let unscaled_kernel_limit = T::max_value() / (self.kernel_spectrum_max * scalar::<T>(4.0));
+        let scale_kernel = input_spectrum_max > unscaled_kernel_limit;
+        let kernel_scale = if scale_kernel {
+            T::one() / self.convolution_scale
         } else {
-            T::max_value()
+            T::one()
         };
-        for frequency in 0..child_len {
-            let prescale = if inverse {
-                let mut max_component = T::zero();
-                for branch in 0..radix {
-                    let value = self.output[output_offset + branch * child_len + frequency];
+        for (frequency, value) in buffer.iter_mut().enumerate() {
+            let kernel = match direction {
+                Direction::Forward => self.kernel_spectrum[frequency],
+                Direction::Inverse => {
+                    let reverse = if frequency == 0 {
+                        0
+                    } else {
+                        self.convolution_len - frequency
+                    };
+                    self.kernel_spectrum[reverse].conj()
+                }
+            } * kernel_scale;
+            *value = *value * kernel;
+        }
+        self.convolution
+            .execute(buffer, convolution_workspace, Direction::Inverse)
+            .expect("Bluestein convolution workspace matches its plan");
+
+        for index in 0..self.len {
+            let chirp = match direction {
+                Direction::Forward => self.chirp[index],
+                Direction::Inverse => self.chirp[index].conj(),
+            };
+            let mut value = buffer[index] * chirp;
+            if scale_kernel {
+                value = value * self.convolution_scale;
+            }
+            output[index] = value / input_scale;
+        }
+    }
+}
+
+fn execute_first_pass_in_place<T: Float + FromPrimitive>(
+    data: &mut [Complex<T>],
+    backup: &mut [Complex<T>],
+    pass: &ComplexPass<T>,
+    execution: &mut PassExecution<'_, T>,
+) {
+    if execution.blue_plan.is_some() {
+        execute_first_pass_in_place_inner::<0, T>(data, backup, pass, execution);
+        return;
+    }
+    match pass.radix {
+        2 => execute_first_pass_in_place_inner::<2, T>(data, backup, pass, execution),
+        3 => execute_first_pass_in_place_inner::<3, T>(data, backup, pass, execution),
+        4 => execute_first_pass_in_place_inner::<4, T>(data, backup, pass, execution),
+        5 => execute_first_pass_in_place_inner::<5, T>(data, backup, pass, execution),
+        7 => execute_first_pass_in_place_inner::<7, T>(data, backup, pass, execution),
+        8 => execute_first_pass_in_place_inner::<8, T>(data, backup, pass, execution),
+        11 => execute_first_pass_in_place_inner::<11, T>(data, backup, pass, execution),
+        _ => execute_first_pass_in_place_inner::<0, T>(data, backup, pass, execution),
+    }
+}
+
+fn execute_first_pass_in_place_inner<const R: usize, T: Float + FromPrimitive>(
+    data: &mut [Complex<T>],
+    backup: &mut [Complex<T>],
+    pass: &ComplexPass<T>,
+    execution: &mut PassExecution<'_, T>,
+) {
+    debug_assert_eq!(pass.l1, 1);
+    let radix = if R == 0 { pass.radix } else { R };
+    debug_assert_eq!(radix, pass.radix);
+    if R == 2 || R == 4 || R == 8 {
+        execute_first_pass_direct_radix::<R, T>(data, pass, execution);
+        return;
+    }
+    let root_stride = execution.total_len / radix;
+    let inverse = execution.direction == Direction::Inverse;
+    let stage_scale = if inverse {
+        inverse_scale::<T>(radix)
+    } else {
+        T::one()
+    };
+    let output_scale = execution.inverse_output_scale;
+    let combined_scale = stage_scale * output_scale;
+    let radix_value = scalar::<T>(radix as f64);
+    let overflow_threshold = T::max_value() / scalar::<T>(4.0 * radix as f64);
+
+    for inner in 0..pass.ido {
+        let mut max_component = T::zero();
+        for (branch, slot) in execution.radix_input.iter_mut().enumerate().take(radix) {
+            let source_index = inner + pass.ido * branch;
+            let value = data[source_index];
+            if inverse {
+                max_component = max_component.max(value.re.abs()).max(value.im.abs());
+            }
+            *slot = value;
+        }
+        let prescale = inverse && max_component > overflow_threshold;
+        if prescale {
+            for value in &mut execution.radix_input[..radix] {
+                *value = *value * stage_scale;
+            }
+        }
+        execution.transform::<R>(radix, root_stride);
+
+        if prescale {
+            for (branch, &transformed) in execution.radix_output.iter().enumerate().take(radix) {
+                let index = inner + pass.ido * branch;
+                let twiddle = directed_root(
+                    &pass.twiddles,
+                    branch * pass.ido + inner,
+                    execution.direction,
+                );
+                backup[index] = transformed * twiddle;
+            }
+            for (branch, slot) in execution.radix_input.iter_mut().enumerate().take(radix) {
+                let index = inner + pass.ido * branch;
+                let original = data[index];
+                let scaled = original * stage_scale;
+                *slot = Complex::new(
+                    prescale_residual(original.re, scaled.re, radix_value),
+                    prescale_residual(original.im, scaled.im, radix_value),
+                );
+            }
+            execution.transform::<R>(radix, root_stride);
+            for (branch, &correction) in execution.radix_output.iter().enumerate().take(radix) {
+                let index = inner + pass.ido * branch;
+                let twiddle = directed_root(
+                    &pass.twiddles,
+                    branch * pass.ido + inner,
+                    execution.direction,
+                );
+                backup[index] = (backup[index] + correction * twiddle * stage_scale) * output_scale;
+                data[index] = backup[index];
+            }
+        } else {
+            for (branch, &transformed) in execution.radix_output.iter().enumerate().take(radix) {
+                let index = inner + pass.ido * branch;
+                let twiddle = directed_root(
+                    &pass.twiddles,
+                    branch * pass.ido + inner,
+                    execution.direction,
+                );
+                let mut value = transformed * twiddle;
+                if inverse {
+                    value = value * combined_scale;
+                }
+                data[index] = value;
+            }
+        }
+    }
+}
+
+fn execute_pass<T: Float + FromPrimitive>(
+    input: &[Complex<T>],
+    output: &mut [Complex<T>],
+    pass: &ComplexPass<T>,
+    execution: &mut PassExecution<'_, T>,
+) {
+    if execution.blue_plan.is_some() {
+        execute_pass_inner::<0, T>(input, output, pass, execution);
+        return;
+    }
+
+    match pass.radix {
+        2 => execute_pass_inner::<2, T>(input, output, pass, execution),
+        3 => execute_pass_inner::<3, T>(input, output, pass, execution),
+        4 => execute_pass_inner::<4, T>(input, output, pass, execution),
+        5 => execute_pass_inner::<5, T>(input, output, pass, execution),
+        7 => execute_pass_inner::<7, T>(input, output, pass, execution),
+        8 => execute_pass_inner::<8, T>(input, output, pass, execution),
+        11 => execute_pass_inner::<11, T>(input, output, pass, execution),
+        _ => execute_pass_inner::<0, T>(input, output, pass, execution),
+    }
+}
+
+fn execute_pass_inner<const R: usize, T: Float + FromPrimitive>(
+    input: &[Complex<T>],
+    output: &mut [Complex<T>],
+    pass: &ComplexPass<T>,
+    execution: &mut PassExecution<'_, T>,
+) {
+    let radix = if R == 0 { pass.radix } else { R };
+    debug_assert_eq!(radix, pass.radix);
+    if R == 2 || R == 4 || R == 8 {
+        execute_direct_radix_pass::<R, T>(input, output, pass, execution);
+        return;
+    }
+    let radix_root_stride = execution.total_len / radix;
+    let inverse = execution.direction == Direction::Inverse;
+    let stage_scale = if inverse {
+        inverse_scale::<T>(radix)
+    } else {
+        T::one()
+    };
+    let output_scale = execution.inverse_output_scale;
+    let combined_scale = stage_scale * output_scale;
+    let radix_value = scalar::<T>(radix as f64);
+    let overflow_threshold = T::max_value() / scalar::<T>(4.0 * radix as f64);
+
+    // This l1/ido pass order matches cfft_multipass in pinned DUCC. The input
+    // and output layouts place each radix's butterfly values contiguously in
+    // the inner loop, and stage twiddles are applied after the fixed-radix
+    // transform.
+    for outer in 0..pass.l1 {
+        for inner in 0..pass.ido {
+            let mut max_component = T::zero();
+            for (branch, slot) in execution.radix_input.iter_mut().enumerate().take(radix) {
+                let source_index = inner + pass.ido * (branch + radix * outer);
+                let value = input[source_index];
+                if inverse {
                     max_component = max_component.max(value.re.abs()).max(value.im.abs());
                 }
-                max_component > overflow_threshold
-            } else {
-                false
-            };
-            for branch in 0..radix {
-                let mut value = self.output[output_offset + branch * child_len + frequency];
-                if prescale {
-                    value = value * stage_scale;
+                *slot = value;
+            }
+            let prescale = inverse && max_component > overflow_threshold;
+            if prescale {
+                for value in &mut execution.radix_input[..radix] {
+                    *value = *value * stage_scale;
                 }
-                if branch != 0 && frequency != 0 {
-                    // branch*frequency < len, so this product is below
-                    // total_len and cannot overflow for a valid plan.
-                    let root_index = branch * frequency * stage_root_stride;
-                    value = value * directed_root(self.roots, root_index, self.direction);
-                }
-                self.radix_input[branch] = value;
             }
 
-            radix_transform(
-                radix,
-                &self.radix_input[..radix],
-                &mut self.radix_output[..radix],
-                self.roots,
-                radix_root_stride,
-                self.direction,
-            );
+            execution.transform::<R>(radix, radix_root_stride);
+
+            for (branch, &transformed) in execution.radix_output.iter().enumerate().take(radix) {
+                let destination_index = inner + pass.ido * (outer + pass.l1 * branch);
+                let twiddle = directed_root(
+                    &pass.twiddles,
+                    branch * pass.ido + inner,
+                    execution.direction,
+                );
+                let mut value = transformed * twiddle;
+                if inverse && !prescale {
+                    value = value * combined_scale;
+                }
+                output[destination_index] = value;
+            }
 
             if prescale {
-                // Recover contributions rounded away while scaling the inputs.
-                // The correction is transformed before applying 1/radix so
-                // several subnormal terms can combine into a representable
-                // result. Ignore a non-finite reconstruction near MAX; that
-                // component's residual is below one ulp after normalization.
-                for branch in 0..radix {
-                    let original = self.output[output_offset + branch * child_len + frequency];
+                // Recover contributions lost while scaling a high-magnitude
+                // group. The original input remains available until this pass
+                // completes; the correction transform is needed only here.
+                for (branch, slot) in execution.radix_input.iter_mut().enumerate().take(radix) {
+                    let source_index = inner + pass.ido * (branch + radix * outer);
+                    let original = input[source_index];
                     let scaled = original * stage_scale;
-                    let residual = Complex::new(
+                    *slot = Complex::new(
                         prescale_residual(original.re, scaled.re, radix_value),
                         prescale_residual(original.im, scaled.im, radix_value),
                     );
-                    let residual = if branch != 0 && frequency != 0 {
-                        let root_index = branch * frequency * stage_root_stride;
-                        residual * directed_root(self.roots, root_index, self.direction)
-                    } else {
-                        residual
-                    };
-                    self.radix_input[branch] = residual;
                 }
-                for branch in 0..radix {
-                    self.output[output_offset + frequency + branch * child_len] =
-                        self.radix_output[branch];
+                execution.transform::<R>(radix, radix_root_stride);
+                for (branch, &correction) in execution.radix_output.iter().enumerate().take(radix) {
+                    let destination_index = inner + pass.ido * (outer + pass.l1 * branch);
+                    let twiddle = directed_root(
+                        &pass.twiddles,
+                        branch * pass.ido + inner,
+                        execution.direction,
+                    );
+                    output[destination_index] = (output[destination_index]
+                        + correction * twiddle * stage_scale)
+                        * output_scale;
                 }
+            }
+        }
+    }
+}
+
+fn execute_first_pass_direct_radix<const R: usize, T: Float + FromPrimitive>(
+    data: &mut [Complex<T>],
+    pass: &ComplexPass<T>,
+    execution: &PassExecution<'_, T>,
+) {
+    let radix = R;
+    debug_assert!(radix == 2 || radix == 4 || radix == 8);
+    debug_assert_eq!(pass.l1, 1);
+    let zero = Complex::new(T::zero(), T::zero());
+    let mut inputs = [zero; 8];
+    let mut transformed = [zero; 8];
+    let mut correction = [zero; 8];
+    let inverse = execution.direction == Direction::Inverse;
+    let stage_scale = if inverse {
+        inverse_scale::<T>(radix)
+    } else {
+        T::one()
+    };
+    let output_scale = execution.inverse_output_scale;
+    let combined_scale = stage_scale * output_scale;
+    let radix_value = scalar::<T>(radix as f64);
+    let overflow_threshold = T::max_value() / scalar::<T>(4.0 * radix as f64);
+
+    for inner in 0..pass.ido {
+        let mut max_component = T::zero();
+        for (branch, slot) in inputs.iter_mut().enumerate().take(radix) {
+            let value = data[inner + pass.ido * branch];
+            if inverse {
+                max_component = max_component.max(value.re.abs()).max(value.im.abs());
+            }
+            *slot = value;
+        }
+        let prescale = inverse && max_component > overflow_threshold;
+        if prescale {
+            for value in &mut inputs[..radix] {
+                *value = *value * stage_scale;
+            }
+        }
+        radix_transform_fixed::<R, T>(
+            &inputs[..radix],
+            &mut transformed[..radix],
+            execution.roots,
+            execution.total_len / radix,
+            execution.direction,
+        );
+
+        if prescale {
+            for (branch, slot) in inputs.iter_mut().enumerate().take(radix) {
+                let original = data[inner + pass.ido * branch];
+                let scaled = original * stage_scale;
+                *slot = Complex::new(
+                    prescale_residual(original.re, scaled.re, radix_value),
+                    prescale_residual(original.im, scaled.im, radix_value),
+                );
+            }
+            radix_transform_fixed::<R, T>(
+                &inputs[..radix],
+                &mut correction[..radix],
+                execution.roots,
+                execution.total_len / radix,
+                execution.direction,
+            );
+        }
+
+        for branch in 0..radix {
+            let index = inner + pass.ido * branch;
+            let mut value = transformed[branch];
+            if branch != 0 {
+                let twiddle = directed_root(
+                    &pass.twiddles,
+                    branch * pass.ido + inner,
+                    execution.direction,
+                );
+                value = value * twiddle;
+            }
+            if prescale {
+                if branch != 0 {
+                    let twiddle = directed_root(
+                        &pass.twiddles,
+                        branch * pass.ido + inner,
+                        execution.direction,
+                    );
+                    correction[branch] = correction[branch] * twiddle;
+                }
+                value = (value + correction[branch] * stage_scale) * output_scale;
+            } else if inverse {
+                value = value * combined_scale;
+            }
+            data[index] = value;
+        }
+    }
+}
+
+fn execute_direct_radix_pass<const R: usize, T: Float + FromPrimitive>(
+    input: &[Complex<T>],
+    output: &mut [Complex<T>],
+    pass: &ComplexPass<T>,
+    execution: &PassExecution<'_, T>,
+) {
+    let radix = R;
+    debug_assert!(radix == 2 || radix == 4 || radix == 8);
+    let zero = Complex::new(T::zero(), T::zero());
+    let mut inputs = [zero; 8];
+    let mut transformed = [zero; 8];
+    let mut correction = [zero; 8];
+    let inverse = execution.direction == Direction::Inverse;
+    let stage_scale = if inverse {
+        inverse_scale::<T>(radix)
+    } else {
+        T::one()
+    };
+    let output_scale = execution.inverse_output_scale;
+    let combined_scale = stage_scale * output_scale;
+    let radix_value = scalar::<T>(radix as f64);
+    let overflow_threshold = T::max_value() / scalar::<T>(4.0 * radix as f64);
+    let root_stride = execution.total_len / radix;
+
+    for outer in 0..pass.l1 {
+        for inner in 0..pass.ido {
+            let mut max_component = T::zero();
+            for (branch, slot) in inputs.iter_mut().enumerate().take(radix) {
+                let value = input[inner + pass.ido * (branch + radix * outer)];
+                if inverse {
+                    max_component = max_component.max(value.re.abs()).max(value.im.abs());
+                }
+                *slot = value;
+            }
+            let prescale = inverse && max_component > overflow_threshold;
+            if prescale {
+                for value in &mut inputs[..radix] {
+                    *value = *value * stage_scale;
+                }
+            }
+            radix_transform_fixed::<R, T>(
+                &inputs[..radix],
+                &mut transformed[..radix],
+                execution.roots,
+                root_stride,
+                execution.direction,
+            );
+
+            if prescale {
+                for (branch, slot) in inputs.iter_mut().enumerate().take(radix) {
+                    let original = input[inner + pass.ido * (branch + radix * outer)];
+                    let scaled = original * stage_scale;
+                    *slot = Complex::new(
+                        prescale_residual(original.re, scaled.re, radix_value),
+                        prescale_residual(original.im, scaled.im, radix_value),
+                    );
+                }
+                radix_transform_fixed::<R, T>(
+                    &inputs[..radix],
+                    &mut correction[..radix],
+                    execution.roots,
+                    root_stride,
+                    execution.direction,
+                );
+            }
+
+            for branch in 0..radix {
+                let destination_index = inner + pass.ido * (outer + pass.l1 * branch);
+                let mut value = transformed[branch];
+                if branch != 0 {
+                    let twiddle = directed_root(
+                        &pass.twiddles,
+                        branch * pass.ido + inner,
+                        execution.direction,
+                    );
+                    value = value * twiddle;
+                }
+                if prescale {
+                    if branch != 0 {
+                        let twiddle = directed_root(
+                            &pass.twiddles,
+                            branch * pass.ido + inner,
+                            execution.direction,
+                        );
+                        correction[branch] = correction[branch] * twiddle;
+                    }
+                    value = (value + correction[branch] * stage_scale) * output_scale;
+                } else if inverse {
+                    value = value * combined_scale;
+                }
+                output[destination_index] = value;
+            }
+        }
+    }
+}
+
+impl<T: Float + FromPrimitive> PassExecution<'_, T> {
+    #[inline(always)]
+    fn transform<const R: usize>(&mut self, radix: usize, root_stride: usize) {
+        if R == 0 {
+            if let Some(plan) = self.blue_plan {
+                plan.execute(
+                    &self.radix_input[..radix],
+                    &mut self.radix_output[..radix],
+                    self.direction,
+                    self.blue_buffer,
+                    self.blue_workspace
+                        .as_deref_mut()
+                        .expect("Bluestein pass has a workspace"),
+                );
+            } else {
                 radix_transform(
                     radix,
                     &self.radix_input[..radix],
                     &mut self.radix_output[..radix],
                     self.roots,
-                    radix_root_stride,
+                    root_stride,
                     self.direction,
                 );
             }
-
-            for branch in 0..radix {
-                let mut value = self.radix_output[branch];
-                if prescale {
-                    value = self.output[output_offset + frequency + branch * child_len]
-                        + value * stage_scale;
-                } else if inverse {
-                    value = value * stage_scale;
-                }
-                self.output[output_offset + frequency + branch * child_len] = value;
-            }
+        } else {
+            radix_transform_fixed::<R, T>(
+                &self.radix_input[..radix],
+                &mut self.radix_output[..radix],
+                self.roots,
+                root_stride,
+                self.direction,
+            );
         }
     }
 }
@@ -390,7 +983,56 @@ fn radix_transform<T: Float + FromPrimitive>(
         7 => radix7(input, output, direction),
         8 => radix8(input, output, direction),
         11 => radix11(input, output, direction),
-        _ => radix_direct(radix, input, output, roots, root_stride, direction),
+        _ if radix.is_multiple_of(2) => {
+            radix_direct(radix, input, output, roots, root_stride, direction)
+        }
+        _ => radix_general_prime(input, output, roots, root_stride, direction),
+    }
+}
+
+#[inline(always)]
+fn radix_transform_fixed<const R: usize, T: Float + FromPrimitive>(
+    input: &[Complex<T>],
+    output: &mut [Complex<T>],
+    roots: &[Complex<T>],
+    root_stride: usize,
+    direction: Direction,
+) {
+    match R {
+        2 => {
+            output[0] = input[0] + input[1];
+            output[1] = input[0] - input[1];
+        }
+        3 => radix3(input, output, direction),
+        4 => radix4(input, output, direction),
+        5 => radix5(input, output, direction),
+        7 => radix7(input, output, direction),
+        8 => radix8(input, output, direction),
+        11 => radix11(input, output, direction),
+        _ => radix_transform(R, input, output, roots, root_stride, direction),
+    }
+}
+
+fn radix_general_prime<T: Float + FromPrimitive>(
+    input: &[Complex<T>],
+    output: &mut [Complex<T>],
+    roots: &[Complex<T>],
+    root_stride: usize,
+    direction: Direction,
+) {
+    let radix = input.len();
+    debug_assert!(!radix.is_multiple_of(2));
+    for (frequency, result) in output.iter_mut().enumerate() {
+        let mut sum = input[0];
+        for branch in 1..=(radix - 1) / 2 {
+            let opposite = radix - branch;
+            let root_index = bounded_product_mod(branch, frequency, radix) * root_stride;
+            let root = directed_root(roots, root_index, direction);
+            let pair = input[branch] + input[opposite];
+            let difference = input[branch] - input[opposite];
+            sum = sum + pair * root.re + imaginary(difference) * root.im;
+        }
+        *result = sum;
     }
 }
 
@@ -581,7 +1223,7 @@ fn radix_direct<T: Float + FromPrimitive>(
     for (frequency, result) in output.iter_mut().enumerate().take(radix) {
         let mut sum = Complex::new(T::zero(), T::zero());
         for (branch, &value) in input.iter().enumerate().take(radix) {
-            let root_index = mul_mod(branch, frequency, radix) * root_stride;
+            let root_index = bounded_product_mod(branch, frequency, radix) * root_stride;
             sum = sum + value * directed_root(roots, root_index, direction);
         }
         *result = sum;
@@ -622,6 +1264,51 @@ fn factorize(len: usize) -> Result<Vec<usize>, FftError> {
         factors.push(remaining);
     }
     Ok(factors)
+}
+
+fn good_size_complex(minimum: usize) -> Result<usize, FftError> {
+    if minimum <= 12 {
+        return Ok(minimum);
+    }
+
+    let n = minimum as u128;
+    let mut best = 2 * n;
+    let mut factor_11 = 1_u128;
+    while factor_11 < best {
+        let mut factor_7 = factor_11;
+        while factor_7 < best {
+            let mut factor_5 = factor_7;
+            while factor_5 < best {
+                best = iter_23(n, factor_5, best);
+                if best == n {
+                    return usize::try_from(best).map_err(|_| FftError::AllocationFailed);
+                }
+                factor_5 *= 5;
+            }
+            factor_7 *= 7;
+        }
+        factor_11 *= 11;
+    }
+    usize::try_from(best).map_err(|_| FftError::AllocationFailed)
+}
+
+fn iter_23(minimum: u128, mut value: u128, mut best: u128) -> u128 {
+    while value < minimum {
+        value *= 2;
+    }
+    loop {
+        if value < minimum {
+            value *= 3;
+        } else if value > minimum {
+            best = best.min(value);
+            if value & 1 == 1 {
+                return best;
+            }
+            value >>= 1;
+        } else {
+            return minimum;
+        }
+    }
 }
 
 pub(crate) fn unity_root<T: Float + FromPrimitive>(index: usize, len: usize) -> Complex<T> {
@@ -729,6 +1416,13 @@ fn mul_mod(left: usize, right: usize, modulus: usize) -> usize {
     ((left as u128 * right as u128) % modulus as u128) as usize
 }
 
+fn bounded_product_mod(left: usize, right: usize, modulus: usize) -> usize {
+    debug_assert!(left < modulus && right < modulus);
+    // Non-Bluestein radices are bounded by their planner thresholds, so both
+    // operands and their product fit in usize on supported targets.
+    left * right % modulus
+}
+
 pub(crate) fn try_vec<T: Copy>(len: usize, value: T) -> Result<Vec<T>, FftError> {
     let mut result = Vec::new();
     result
@@ -736,6 +1430,14 @@ pub(crate) fn try_vec<T: Copy>(len: usize, value: T) -> Result<Vec<T>, FftError>
         .map_err(|_| FftError::AllocationFailed)?;
     result.resize(len, value);
     Ok(result)
+}
+
+pub(crate) fn check_vec_len<T>(len: usize) -> Result<(), FftError> {
+    if len > isize::MAX as usize / std::mem::size_of::<T>() {
+        Err(FftError::AllocationFailed)
+    } else {
+        Ok(())
+    }
 }
 
 pub(crate) fn check_len(

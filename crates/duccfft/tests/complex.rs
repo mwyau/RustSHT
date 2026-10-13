@@ -120,6 +120,37 @@ fn assert_f32_close(actual: &[Complex<f32>], expected: &[Complex<f32>], n: usize
     }
 }
 
+fn report_f32_complex_metrics(label: &str, actual: &[Complex<f32>], expected: &[Complex<f64>]) {
+    let mut max_absolute = 0.0_f64;
+    let mut max_expected = 0.0_f64;
+    let mut squared_error = 0.0_f64;
+    let mut squared_reference = 0.0_f64;
+    let mut nonfinite = 0;
+    for (&actual, &expected) in actual.iter().zip(expected) {
+        let real_error = actual.re as f64 - expected.re;
+        let imag_error = actual.im as f64 - expected.im;
+        let error_norm = real_error.hypot(imag_error);
+        max_absolute = max_absolute.max(error_norm);
+        max_expected = max_expected.max(expected.norm());
+        squared_error += error_norm * error_norm;
+        squared_reference += expected.norm_sqr();
+        nonfinite += usize::from(!actual.re.is_finite() || !actual.im.is_finite());
+    }
+    let rms = (squared_error / actual.len() as f64).sqrt();
+    let relative_l2 = (squared_error / squared_reference).sqrt();
+    let scaled_max = max_absolute / max_expected.max(1.0);
+    println!(
+        "f32,{label},{},{max_absolute:.6e},{rms:.6e},{relative_l2:.6e},{scaled_max:.6e},{nonfinite}",
+        actual.len()
+    );
+    assert_eq!(nonfinite, 0, "{label} produced nonfinite f32 outputs");
+    assert!(
+        relative_l2 < 2.0e-5,
+        "{label} relative L2 error={relative_l2}"
+    );
+    assert!(scaled_max < 2.0e-5, "{label} scaled error={scaled_max}");
+}
+
 #[test]
 fn f64_mixed_radix_matches_direct_dft_for_lengths_one_through_sixty_four() {
     for n in 1..=64 {
@@ -171,6 +202,35 @@ fn f32_mixed_radix_matches_direct_dft_for_lengths_one_through_sixty_four() {
 }
 
 #[test]
+fn f32_large_smooth_prime_bluestein_and_sht_lengths_match_f64_references() {
+    println!("precision,operation,n,max_abs,rms,relative_l2,scaled_max,nonfinite");
+    for n in [1024, 127, 137, 4097] {
+        let original32: Vec<_> = (0..n).map(|index| signal_f32(index, n)).collect();
+        let original64: Vec<_> = original32
+            .iter()
+            .map(|value| Complex::new(value.re as f64, value.im as f64))
+            .collect();
+        let expected_forward = direct_dft_f64(&original64, true);
+        let plan = ComplexFftPlan::<f32>::new(n).unwrap();
+        let mut workspace = plan.workspace().unwrap();
+        let mut actual_forward = original32;
+        plan.forward(&mut actual_forward, &mut workspace).unwrap();
+        report_f32_complex_metrics("c2c_forward", &actual_forward, &expected_forward);
+
+        let spectrum32: Vec<_> = (0..n).map(|index| signal_f32(index + 17, n + 3)).collect();
+        let spectrum64: Vec<_> = spectrum32
+            .iter()
+            .map(|value| Complex::new(value.re as f64, value.im as f64))
+            .collect();
+        let expected_inverse =
+            normalized_direct_inverse(direct_dft_f64(&spectrum64, false), 1.0 / n as f64);
+        let mut actual_inverse = spectrum32;
+        plan.inverse(&mut actual_inverse, &mut workspace).unwrap();
+        report_f32_complex_metrics("c2c_inverse", &actual_inverse, &expected_inverse);
+    }
+}
+
+#[test]
 fn fixed_radices_match_analytic_impulses_constants_and_fourier_modes() {
     for n in [7, 8, 11, 16] {
         let plan = ComplexFftPlan::<f64>::new(n).unwrap();
@@ -206,6 +266,199 @@ fn fixed_radices_match_analytic_impulses_constants_and_fourier_modes() {
         plan.forward(&mut actual, &mut workspace).unwrap();
         assert_f64_close(&actual, &expected, n);
     }
+}
+
+#[test]
+fn general_prime_and_bluestein_paths_match_direct_dfts() {
+    for n in [107, 109, 113, 137, 241] {
+        let input: Vec<_> = (0..n).map(|index| signal_f64(index + 5, n + 2)).collect();
+        let expected = direct_dft_f64(&input, true);
+        let plan = ComplexFftPlan::<f64>::new(n).unwrap();
+        let mut workspace = plan.workspace().unwrap();
+        let mut actual = input.clone();
+        plan.forward(&mut actual, &mut workspace).unwrap();
+        assert_f64_close(&actual, &expected, n);
+
+        let independent_spectrum: Vec<_> =
+            (0..n).map(|index| signal_f64(index + 19, n + 7)).collect();
+        let expected_inverse =
+            normalized_direct_inverse(direct_dft_f64(&independent_spectrum, false), 1.0 / n as f64);
+        let mut actual_inverse = independent_spectrum;
+        plan.inverse(&mut actual_inverse, &mut workspace).unwrap();
+        assert_f64_close(&actual_inverse, &expected_inverse, n);
+    }
+
+    let n = 137;
+    let input: Vec<_> = (0..n).map(|index| signal_f32(index + 3, n)).collect();
+    let expected = direct_dft_f32(&input, true);
+    let plan = ComplexFftPlan::<f32>::new(n).unwrap();
+    let mut workspace = plan.workspace().unwrap();
+    let mut actual = input;
+    plan.forward(&mut actual, &mut workspace).unwrap();
+    assert_f32_close(&actual, &expected, n);
+
+    let independent_spectrum: Vec<_> = (0..n).map(|index| signal_f32(index + 23, n + 7)).collect();
+    let expected_inverse =
+        normalized_direct_inverse(direct_dft_f32(&independent_spectrum, false), 1.0 / n as f32);
+    let mut actual_inverse = independent_spectrum;
+    plan.inverse(&mut actual_inverse, &mut workspace).unwrap();
+    assert_f32_close(&actual_inverse, &expected_inverse, n);
+}
+
+#[test]
+fn bluestein_handles_representable_high_amplitude_impulses() {
+    let plan64 = ComplexFftPlan::<f64>::new(113).unwrap();
+    let mut workspace64 = plan64.workspace().unwrap();
+    let amplitude64 = f64::MAX / 4.0;
+    let mut impulse64 = vec![Complex::new(0.0, 0.0); plan64.len()];
+    impulse64[0] = Complex::new(amplitude64, 0.0);
+    plan64.forward(&mut impulse64, &mut workspace64).unwrap();
+    assert!(
+        impulse64
+            .iter()
+            .all(|value| value.re.is_finite() && value.im.is_finite())
+    );
+    assert_f64_close(
+        &impulse64,
+        &vec![Complex::new(amplitude64, 0.0); plan64.len()],
+        plan64.len(),
+    );
+
+    let plan32 = ComplexFftPlan::<f32>::new(113).unwrap();
+    let mut workspace32 = plan32.workspace().unwrap();
+    let amplitude32 = f32::MAX / 4.0;
+    let mut impulse32 = vec![Complex::new(0.0, 0.0); plan32.len()];
+    impulse32[0] = Complex::new(amplitude32, 0.0);
+    plan32.forward(&mut impulse32, &mut workspace32).unwrap();
+    assert!(
+        impulse32
+            .iter()
+            .all(|value| value.re.is_finite() && value.im.is_finite())
+    );
+    assert_f32_close(
+        &impulse32,
+        &vec![Complex::new(amplitude32, 0.0); plan32.len()],
+        plan32.len(),
+    );
+}
+
+#[test]
+fn bluestein_preserves_subnormal_impulses_and_constant_inverse_spectra() {
+    let n = 113;
+    let tiny64 = f64::from_bits(1);
+    let plan64 = ComplexFftPlan::<f64>::new(n).unwrap();
+    let mut workspace64 = plan64.workspace().unwrap();
+    let mut impulse64 = vec![Complex::new(0.0, 0.0); n];
+    impulse64[0] = Complex::new(tiny64, 0.0);
+    plan64.forward(&mut impulse64, &mut workspace64).unwrap();
+    assert_eq!(impulse64, vec![Complex::new(tiny64, 0.0); n]);
+
+    let mut constant_spectrum64 = vec![Complex::new(tiny64, 0.0); n];
+    plan64
+        .inverse(&mut constant_spectrum64, &mut workspace64)
+        .unwrap();
+    let mut expected64 = vec![Complex::new(0.0, 0.0); n];
+    expected64[0] = Complex::new(tiny64, 0.0);
+    assert_eq!(constant_spectrum64, expected64);
+
+    let tiny32 = f32::from_bits(1);
+    let plan32 = ComplexFftPlan::<f32>::new(n).unwrap();
+    let mut workspace32 = plan32.workspace().unwrap();
+    let mut impulse32 = vec![Complex::new(0.0, 0.0); n];
+    impulse32[0] = Complex::new(tiny32, 0.0);
+    plan32.forward(&mut impulse32, &mut workspace32).unwrap();
+    assert_eq!(impulse32, vec![Complex::new(tiny32, 0.0); n]);
+
+    let mut constant_spectrum32 = vec![Complex::new(tiny32, 0.0); n];
+    plan32
+        .inverse(&mut constant_spectrum32, &mut workspace32)
+        .unwrap();
+    let mut expected32 = vec![Complex::new(0.0, 0.0); n];
+    expected32[0] = Complex::new(tiny32, 0.0);
+    assert_eq!(constant_spectrum32, expected32);
+}
+
+#[test]
+fn bluestein_scales_high_amplitude_inputs_before_the_convolution_fft() {
+    let n = 113;
+    let unit_input64: Vec<_> = (0..n)
+        .map(|index| {
+            let phase = std::f64::consts::PI * (index * index) as f64 / n as f64;
+            Complex::new(phase.cos(), phase.sin())
+        })
+        .collect();
+    let unit_expected64 = direct_dft_f64(&unit_input64, true);
+    let amplitude64 = f64::MAX / 100.0;
+    let expected64: Vec<_> = unit_expected64
+        .iter()
+        .map(|&value| value * amplitude64)
+        .collect();
+    let mut actual64: Vec<_> = unit_input64
+        .iter()
+        .map(|&value| value * amplitude64)
+        .collect();
+    let plan64 = ComplexFftPlan::<f64>::new(n).unwrap();
+    let mut workspace64 = plan64.workspace().unwrap();
+    plan64.forward(&mut actual64, &mut workspace64).unwrap();
+    assert!(
+        actual64
+            .iter()
+            .all(|value| value.re.is_finite() && value.im.is_finite())
+    );
+    assert_f64_close(&actual64, &expected64, n);
+
+    let unit_input32: Vec<_> = (0..n)
+        .map(|index| {
+            let phase = std::f64::consts::PI * (index * index) as f64 / n as f64;
+            Complex::new(phase.cos() as f32, phase.sin() as f32)
+        })
+        .collect();
+    let unit_expected32 = direct_dft_f32(&unit_input32, true);
+    let amplitude32 = f32::MAX / 100.0;
+    let expected32: Vec<_> = unit_expected32
+        .iter()
+        .map(|&value| value * amplitude32)
+        .collect();
+    let mut actual32: Vec<_> = unit_input32
+        .iter()
+        .map(|&value| value * amplitude32)
+        .collect();
+    let plan32 = ComplexFftPlan::<f32>::new(n).unwrap();
+    let mut workspace32 = plan32.workspace().unwrap();
+    plan32.forward(&mut actual32, &mut workspace32).unwrap();
+    assert!(
+        actual32
+            .iter()
+            .all(|value| value.re.is_finite() && value.im.is_finite())
+    );
+    assert_f32_close(&actual32, &expected32, n);
+}
+
+#[test]
+fn nonterminal_bluestein_stages_match_rustfft() {
+    use rustfft::FftPlanner;
+
+    let n = 113 * 113;
+    let input: Vec<_> = (0..n).map(|index| signal_f64(index + 7, n + 3)).collect();
+    let mut expected = input.clone();
+    FftPlanner::<f64>::new()
+        .plan_fft_forward(n)
+        .process(&mut expected);
+
+    let plan = ComplexFftPlan::<f64>::new(n).unwrap();
+    let mut workspace = plan.workspace().unwrap();
+    let mut actual = input;
+    plan.forward(&mut actual, &mut workspace).unwrap();
+    assert_f64_close(&actual, &expected, n);
+}
+
+#[test]
+fn impossible_allocation_size_is_rejected_before_factorization() {
+    let len = usize::MAX - 58;
+    assert!(matches!(
+        ComplexFftPlan::<f64>::new(len),
+        Err(FftError::AllocationFailed)
+    ));
 }
 
 #[test]
@@ -347,6 +600,20 @@ fn invalid_lengths_and_buffers_return_errors() {
             actual: 3,
         })
     );
+}
+
+#[test]
+fn workspace_reports_reusable_scratch_bytes() {
+    let plan = ComplexFftPlan::<f64>::new(8).unwrap();
+    let workspace = plan.workspace().unwrap();
+    assert_eq!(
+        workspace.scratch_bytes(),
+        Some(24 * std::mem::size_of::<Complex<f64>>())
+    );
+
+    let blue_plan = ComplexFftPlan::<f64>::new(137).unwrap();
+    let blue_workspace = blue_plan.workspace().unwrap();
+    assert!(blue_workspace.scratch_bytes().unwrap() > workspace.scratch_bytes().unwrap());
 }
 
 #[test]

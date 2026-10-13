@@ -25,9 +25,9 @@ constexpr std::size_t batch_count = 32;
 constexpr std::size_t sample_count = 7;
 
 const std::vector<std::size_t> benchmark_lengths{
-    31, 32, 33, 64, 107, 109, 113, 127, 128, 131, 137, 241, 257, 511,
-    512, 683, 998, 1000, 1001, 1002, 1008, 1013, 1023, 1024, 1025, 1026,
-    2047, 2048, 2049, 4097, 10000, 10001, 10008,
+    13, 17, 31, 32, 33, 41, 53, 64, 107, 109, 113, 127, 128, 131, 137, 241,
+    257, 511, 512, 683, 998, 1000, 1001, 1002, 1008, 1013, 1023, 1024, 1025,
+    1026, 2047, 2048, 2049, 4096, 4097, 10000, 10001, 10008,
 };
 const std::vector<std::pair<std::size_t, std::size_t>> sht_workloads{
     {257, 128}, {1025, 512}, {2049, 1024}, {4097, 2048}};
@@ -217,6 +217,7 @@ void benchmark(Mode mode, std::size_t n, std::size_t rows) {
   if (n > 10000) rows = std::min<std::size_t>(rows, 4);
   double plan_ns = 0.0;
   double scratch_ns = 0.0;
+  std::size_t scratch_bytes = 0;
   double fft_ns = 0.0;
   double pack_ns = 0.0;
   double call_ns = 0.0;
@@ -227,6 +228,7 @@ void benchmark(Mode mode, std::size_t n, std::size_t rows) {
     ducc0::pocketfft_c<double> plan(n, vectorize);
     std::vector<Complex> data(rows * n);
     std::vector<Complex> scratch(plan.bufsize());
+    scratch_bytes = scratch.size() * sizeof(Complex);
     const bool forward = mode == Mode::c2c_forward;
     const double scale = forward ? 1.0 : 1.0 / static_cast<double>(n);
     auto fill = [&] {
@@ -252,6 +254,7 @@ void benchmark(Mode mode, std::size_t n, std::size_t rows) {
     const std::size_t bins = spectrum_size(n);
     std::vector<double> data(rows * n);
     std::vector<double> scratch(plan.bufsize());
+    scratch_bytes = scratch.size() * sizeof(double);
     std::vector<Complex> spectra(rows * bins);
     std::vector<double> output(rows * n);
     const bool forward = mode == Mode::r2c;
@@ -340,9 +343,10 @@ void benchmark(Mode mode, std::size_t n, std::size_t rows) {
   }
 
   std::cout << mode_name(mode) << ',' << n << ',' << std::setprecision(9)
-            << plan_ns << ',' << scratch_ns << ',' << fft_ns << ',' << pack_ns
-            << ',' << call_ns << ',' << call_ns * static_cast<double>(rows)
-            << ',' << rows << ',' << checksum << '\n';
+            << plan_ns << ',' << scratch_ns << ',' << scratch_bytes << ','
+            << fft_ns << ',' << pack_ns << ',' << call_ns << ','
+            << call_ns * static_cast<double>(rows) << ',' << rows << ','
+            << checksum << '\n';
 }
 
 void usage(const char* program) {
@@ -375,7 +379,7 @@ int main(int argc, char** argv) {
       return 0;
     }
     if (command == "bench-one" && (argc == 4 || argc == 5)) {
-      std::cout << "mode,n,plan_ns,scratch_ns,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum\n";
+      std::cout << "mode,n,plan_ns,scratch_ns,scratch_bytes,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum\n";
       if (argc == 5) {
         benchmark(parse_mode(argv[2]), std::stoull(argv[3]),
                   std::stoull(argv[4]));
@@ -386,7 +390,7 @@ int main(int argc, char** argv) {
       return 0;
     }
     if (command == "bench-sht" && argc == 2) {
-      std::cout << "mode,n,plan_ns,scratch_ns,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum\n";
+      std::cout << "mode,n,plan_ns,scratch_ns,scratch_bytes,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum\n";
       for (const auto [n, rows] : sht_workloads)
         for (const auto mode : {Mode::c2c_forward, Mode::c2c_inverse,
                                 Mode::r2c, Mode::c2r})
@@ -394,7 +398,7 @@ int main(int argc, char** argv) {
       return 0;
     }
     if (command == "bench") {
-      std::cout << "mode,n,plan_ns,scratch_ns,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum\n";
+      std::cout << "mode,n,plan_ns,scratch_ns,scratch_bytes,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum\n";
       if (argc == 2) {
         for (const auto n : benchmark_lengths)
           for (const auto mode : {Mode::c2c_forward, Mode::c2c_inverse,
