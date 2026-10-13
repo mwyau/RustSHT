@@ -811,9 +811,13 @@ impl<T: Float + FromPrimitive> RealForwardExecutor<'_, T> {
                             continue;
                         }
                         let mut sum = first;
+                        let mut phase = 0;
                         for branch in 1..=(radix - 1) / 2 {
-                            let phase_index =
-                                radix_root_stride * modular_product(branch, radix_frequency, radix);
+                            phase += radix_frequency;
+                            if phase >= radix {
+                                phase -= radix;
+                            }
+                            let phase_index = radix_root_stride * phase;
                             let root = self.roots[phase_index].conj();
                             sum = sum
                                 + self.radix_input[branch] * root.re
@@ -1033,9 +1037,13 @@ impl<T: Float + FromPrimitive> RealInverseExecutor<'_, T> {
                         for branch in 0..radix {
                             let child_root_index = root_stride * branch * frequency;
                             let mut sum = first;
+                            let mut phase = 0;
                             for branch_frequency in 1..=(radix - 1) / 2 {
-                                let phase_index = radix_root_stride
-                                    * modular_product(branch_frequency, branch, radix);
+                                phase += branch;
+                                if phase >= radix {
+                                    phase -= radix;
+                                }
+                                let phase_index = radix_root_stride * phase;
                                 let phase = self.roots[phase_index];
                                 sum = sum
                                     + self.radix_input[branch_frequency] * phase.re
@@ -1066,9 +1074,13 @@ impl<T: Float + FromPrimitive> RealInverseExecutor<'_, T> {
                         for branch in 0..radix {
                             let child_root_index = root_stride * branch * frequency;
                             let mut sum = first_scaled;
+                            let mut phase = 0;
                             for branch_frequency in 1..=(radix - 1) / 2 {
-                                let phase_index = radix_root_stride
-                                    * modular_product(branch_frequency, branch, radix);
+                                phase += branch;
+                                if phase >= radix {
+                                    phase -= radix;
+                                }
+                                let phase_index = radix_root_stride * phase;
                                 let phase = self.roots[phase_index];
                                 sum = sum
                                     + self.radix_saved[branch_frequency] * phase.re
@@ -1088,9 +1100,13 @@ impl<T: Float + FromPrimitive> RealInverseExecutor<'_, T> {
                         for branch in 0..radix {
                             let child_root_index = root_stride * branch * frequency;
                             let mut correction = first_residual;
+                            let mut phase = 0;
                             for branch_frequency in 1..=(radix - 1) / 2 {
-                                let phase_index = radix_root_stride
-                                    * modular_product(branch_frequency, branch, radix);
+                                phase += branch;
+                                if phase >= radix {
+                                    phase -= radix;
+                                }
+                                let phase_index = radix_root_stride * phase;
                                 let phase = self.roots[phase_index];
                                 correction = correction
                                     + self.radix_saved[branch_frequency] * phase.re
@@ -1222,13 +1238,6 @@ fn factorize(len: usize) -> Result<Vec<usize>, FftError> {
         factors.push(remaining);
     }
     Ok(factors)
-}
-
-fn modular_product(left: usize, right: usize, modulus: usize) -> usize {
-    debug_assert!(left < modulus && right < modulus);
-    // General real radices are below the Bluestein threshold, so the product
-    // remains bounded well below usize::MAX.
-    left * right % modulus
 }
 
 fn complexify_forward_pair<T: Float + FromPrimitive>(
