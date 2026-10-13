@@ -29,8 +29,6 @@ fn main() {
         .next()
         .map(|value| value.parse().expect("lmax must be an integer"))
         .unwrap_or(511);
-    let ntheta = lmax + 1;
-    let nphi = 2 * lmax + 3;
     let rayon_threads = arguments
         .next()
         .map(|value| value.parse().expect("thread count must be an integer"))
@@ -40,6 +38,26 @@ fn main() {
         operation.as_str(),
         "both" | "synthesis" | "analysis"
     ));
+    let geometry = arguments.next().unwrap_or_else(|| "GL".to_owned());
+    let grid_kind = match geometry.as_str() {
+        "GL" => GridKind::GaussLegendre,
+        "CC" => GridKind::ClenshawCurtis,
+        "F1" => GridKind::Fejer1,
+        _ => panic!("geometry must be GL, CC, or F1"),
+    };
+    let mode = arguments.next().unwrap_or_else(|| "STANDARD".to_owned());
+    assert!(matches!(mode.as_str(), "STANDARD" | "GRAD_ONLY" | "DERIV1"));
+    assert!(mode != "GRAD_ONLY" || spin > 0);
+    assert!(mode != "DERIV1" || spin == 0);
+    assert!(mode == "STANDARD" || operation == "synthesis");
+    let ntheta = lmax
+        + if grid_kind == GridKind::ClenshawCurtis {
+            2
+        } else {
+            1
+        };
+    let nphi = 2 * lmax + 3;
+    let plan_spin = if mode == "DERIV1" { 0 } else { spin };
     let one_thread_pool = rayon::ThreadPoolBuilder::new()
         .num_threads(1)
         .build()
@@ -50,8 +68,8 @@ fn main() {
         .unwrap();
     let make_plan = || {
         ShtPlan::new(
-            GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, 0.37).unwrap(),
-            HarmonicSpec::new(lmax, lmax, spin).unwrap(),
+            GridSpec::new(grid_kind, ntheta, nphi, 0.37).unwrap(),
+            HarmonicSpec::new(lmax, lmax, plan_spin).unwrap(),
         )
         .unwrap()
     };
@@ -63,8 +81,9 @@ fn main() {
     let mut workspace = rayon_pool.install(|| plan.workspace()).unwrap();
     let mut e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
     let mut b = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let coefficient_spin = if mode == "DERIV1" { 1 } else { plan_spin };
     for m in 0..=lmax {
-        for l in m.max(spin)..=lmax {
+        for l in m.max(coefficient_spin)..=lmax {
             let index = plan.harmonics().index(l, m).unwrap();
             let e_im = if m == 0 {
                 0.0
@@ -89,14 +108,37 @@ fn main() {
     let synthesis_one_thread = (operation != "analysis").then(|| {
         measure(|| {
             one_thread_pool.install(|| {
-                plan.synthesis_spin_into(
-                    black_box(&e),
-                    black_box(&b),
-                    black_box(&mut first),
-                    black_box(&mut second),
-                    &mut workspace,
-                )
-                .unwrap();
+                match mode.as_str() {
+                    "STANDARD" if spin == 0 => plan
+                        .synthesis_into(black_box(&e), black_box(&mut first), &mut workspace)
+                        .unwrap(),
+                    "STANDARD" => plan
+                        .synthesis_spin_into(
+                            black_box(&e),
+                            black_box(&b),
+                            black_box(&mut first),
+                            black_box(&mut second),
+                            &mut workspace,
+                        )
+                        .unwrap(),
+                    "GRAD_ONLY" => plan
+                        .synthesis_gradient_into(
+                            black_box(&e),
+                            black_box(&mut first),
+                            black_box(&mut second),
+                            &mut workspace,
+                        )
+                        .unwrap(),
+                    "DERIV1" => plan
+                        .synthesis_deriv1_into(
+                            black_box(&e),
+                            black_box(&mut first),
+                            black_box(&mut second),
+                            &mut workspace,
+                        )
+                        .unwrap(),
+                    _ => unreachable!(),
+                }
                 black_box(first[0]);
             });
         })
@@ -104,14 +146,37 @@ fn main() {
     let synthesis_rayon = (operation != "analysis").then(|| {
         measure(|| {
             rayon_pool.install(|| {
-                plan.synthesis_spin_into(
-                    black_box(&e),
-                    black_box(&b),
-                    black_box(&mut first),
-                    black_box(&mut second),
-                    &mut workspace,
-                )
-                .unwrap();
+                match mode.as_str() {
+                    "STANDARD" if spin == 0 => plan
+                        .synthesis_into(black_box(&e), black_box(&mut first), &mut workspace)
+                        .unwrap(),
+                    "STANDARD" => plan
+                        .synthesis_spin_into(
+                            black_box(&e),
+                            black_box(&b),
+                            black_box(&mut first),
+                            black_box(&mut second),
+                            &mut workspace,
+                        )
+                        .unwrap(),
+                    "GRAD_ONLY" => plan
+                        .synthesis_gradient_into(
+                            black_box(&e),
+                            black_box(&mut first),
+                            black_box(&mut second),
+                            &mut workspace,
+                        )
+                        .unwrap(),
+                    "DERIV1" => plan
+                        .synthesis_deriv1_into(
+                            black_box(&e),
+                            black_box(&mut first),
+                            black_box(&mut second),
+                            &mut workspace,
+                        )
+                        .unwrap(),
+                    _ => unreachable!(),
+                }
                 black_box(first[0]);
             });
         })
@@ -131,14 +196,23 @@ fn main() {
     let analysis_one_thread = (operation != "synthesis").then(|| {
         measure(|| {
             one_thread_pool.install(|| {
-                plan.analysis_spin_into(
-                    black_box(&first),
-                    black_box(&second),
-                    black_box(&mut analyzed_e),
-                    black_box(&mut analyzed_b),
-                    &mut workspace,
-                )
-                .unwrap();
+                if spin == 0 {
+                    plan.analysis_into(
+                        black_box(&first),
+                        black_box(&mut analyzed_e),
+                        &mut workspace,
+                    )
+                    .unwrap();
+                } else {
+                    plan.analysis_spin_into(
+                        black_box(&first),
+                        black_box(&second),
+                        black_box(&mut analyzed_e),
+                        black_box(&mut analyzed_b),
+                        &mut workspace,
+                    )
+                    .unwrap();
+                }
                 black_box(analyzed_e[0]);
             });
         })
@@ -146,21 +220,30 @@ fn main() {
     let analysis_rayon = (operation != "synthesis").then(|| {
         measure(|| {
             rayon_pool.install(|| {
-                plan.analysis_spin_into(
-                    black_box(&first),
-                    black_box(&second),
-                    black_box(&mut analyzed_e),
-                    black_box(&mut analyzed_b),
-                    &mut workspace,
-                )
-                .unwrap();
+                if spin == 0 {
+                    plan.analysis_into(
+                        black_box(&first),
+                        black_box(&mut analyzed_e),
+                        &mut workspace,
+                    )
+                    .unwrap();
+                } else {
+                    plan.analysis_spin_into(
+                        black_box(&first),
+                        black_box(&second),
+                        black_box(&mut analyzed_e),
+                        black_box(&mut analyzed_b),
+                        &mut workspace,
+                    )
+                    .unwrap();
+                }
                 black_box(analyzed_e[0]);
             });
         })
     });
 
     println!(
-        "spin-{spin} T{lmax}; GL {ntheta}x{nphi}; f64; 1 vs {rayon_threads} threads; {operation}; 5 samples, median"
+        "spin-{spin} T{lmax}; {geometry} {ntheta}x{nphi}; f64; {mode}; 1 vs {rayon_threads} threads; {operation}; 5 samples, median"
     );
     println!(
         "plan_construction_ms={:.3}",
