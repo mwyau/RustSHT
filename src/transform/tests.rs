@@ -747,6 +747,7 @@ fn t255_mixed_synthesis_matches_ducc_0410_samples() {
 #[test]
 fn precomputed_scalar_gl_matches_recurrence_for_all_four_operators() {
     for (lmax, mmax, nphi) in [
+        (72, 72, 147),
         (127, 96, 256),
         (127, 127, 257),
         (128, 128, 258),
@@ -803,6 +804,18 @@ fn precomputed_scalar_gl_matches_recurrence_for_all_four_operators() {
         assert!(relative_l2_complex(&table_alm, &recurrence_alm) < 2e-12);
         assert!(relative_l2_complex(&table_s_adjoint, &recurrence_s_adjoint) < 2e-12);
         assert!(relative_l2_real(&table_a_adjoint, &recurrence_a_adjoint) < 2e-12);
+        if lmax == 72 {
+            assert_close(
+                map_inner_product(&table_map, &input_map),
+                harmonic_inner_product(&plan.harmonics, &input_alm, &table_s_adjoint),
+                2e-12,
+            );
+            assert_close(
+                harmonic_inner_product(&plan.harmonics, &table_alm, &input_alm),
+                map_inner_product(&input_map, &table_a_adjoint),
+                2e-12,
+            );
+        }
     }
 }
 
@@ -854,9 +867,14 @@ fn precomputed_scalar_table_is_not_allocated_for_spin_plans() {
 #[test]
 fn precomputed_scalar_table_respects_bandlimit_and_grid_bounds() {
     assert!(
-        make_plan(72, 72, 73, 147, 0.37)
+        make_plan(71, 71, 72, 145, 0.37)
             .scalar_legendre_table
             .is_none()
+    );
+    assert!(
+        make_plan(72, 72, 73, 147, 0.37)
+            .scalar_legendre_table
+            .is_some()
     );
     assert!(
         make_plan(127, 127, 128, 257, 0.37)

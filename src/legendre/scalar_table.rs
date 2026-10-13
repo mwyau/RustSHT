@@ -24,7 +24,7 @@ use crate::harmonics::HarmonicSpec;
 
 use super::{ShtScalar, sin_cos_from_f64};
 
-const MIN_PRECOMPUTED_LMAX: usize = 111;
+const MIN_PRECOMPUTED_LMAX: usize = 72;
 const MAX_PRECOMPUTED_LMAX: usize = 255;
 const MAX_TABLE_BYTES: usize = 34 * 1024 * 1024;
 // Keep direct table products far from overflow; larger and non-finite input
