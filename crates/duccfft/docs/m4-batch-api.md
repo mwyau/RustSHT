@@ -80,6 +80,7 @@ the new batch API.
 Keep the serial batch methods as a public row-major interface. Their reusable
 workspace and output ordering match the longitude-row storage used by
 RustSHT, and the validation tests cover f32/f64, inverse scaling, Bluestein,
-real complexify, incomplete rows, and workspace mismatches. Future work should
-measure an implementation that vectorizes across independent rows. Across-row
-SIMD remains a separate optimization.
+real complexify, incomplete rows, and workspace mismatches. The measured
+across-row C2C prototype did not speed up whole batch calls at lengths 256 and
+1,024; its two layout conversions took 57–63% of 32-row execution time. See
+[`m4-across-row-prototype.md`](m4-across-row-prototype.md) for the measurements.
