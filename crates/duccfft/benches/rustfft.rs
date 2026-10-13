@@ -814,6 +814,145 @@ fn benchmark_native_real(mode: Mode, n: usize, rows: usize) {
     );
 }
 
+fn benchmark_batch_api_sample(
+    process_sample: &str,
+    mode: &'static str,
+    n: usize,
+    rows: usize,
+    mut execute: impl FnMut(bool) -> (Duration, f64),
+) {
+    assert!(rows > 0, "batch API benchmark requires at least one row");
+    black_box(execute(false));
+    black_box(execute(true));
+    for pair in 0..SAMPLE_COUNT {
+        let (single, batch, single_checksum, batch_checksum, first) = if pair.is_multiple_of(2) {
+            let (single, single_checksum) = execute(false);
+            let (batch, batch_checksum) = execute(true);
+            (single, batch, single_checksum, batch_checksum, "single")
+        } else {
+            let (batch, batch_checksum) = execute(true);
+            let (single, single_checksum) = execute(false);
+            (single, batch, single_checksum, batch_checksum, "batch")
+        };
+        let tolerance = 32.0 * f64::EPSILON * single_checksum.abs().max(1.0);
+        assert!(
+            (single_checksum - batch_checksum).abs() <= tolerance,
+            "{mode} batch checksum mismatch: {single_checksum} != {batch_checksum}"
+        );
+        println!(
+            "{process_sample},{mode},{n},{rows},{pair},{first},{:.9},{:.9},{single_checksum:.17e},{batch_checksum:.17e}",
+            single.as_nanos() as f64 / rows as f64,
+            batch.as_nanos() as f64 / rows as f64,
+        );
+    }
+}
+
+fn benchmark_native_batch_api(n: usize, rows: usize, process_sample: &str) {
+    let complex_plan = ComplexFftPlan::<f64>::new(n).expect("native complex plan");
+    let mut complex_workspace = complex_plan.workspace().expect("native complex workspace");
+    let complex_source: Vec<_> = (0..rows)
+        .flat_map(|row| (0..n).map(move |index| complex_value(index, row)))
+        .collect();
+    let mut complex_values = vec![Complex64::new(0.0, 0.0); rows * n];
+    for (mode, inverse) in [("c2c_forward", false), ("c2c_inverse", true)] {
+        let mut execute = |batch: bool| {
+            complex_values.copy_from_slice(&complex_source);
+            let start = Instant::now();
+            if batch {
+                if inverse {
+                    complex_plan
+                        .inverse_batch(&mut complex_values, &mut complex_workspace)
+                        .expect("native inverse batch");
+                } else {
+                    complex_plan
+                        .forward_batch(&mut complex_values, &mut complex_workspace)
+                        .expect("native forward batch");
+                }
+            } else {
+                for row in complex_values.chunks_exact_mut(n) {
+                    if inverse {
+                        complex_plan
+                            .inverse(row, &mut complex_workspace)
+                            .expect("native inverse row");
+                    } else {
+                        complex_plan
+                            .forward(row, &mut complex_workspace)
+                            .expect("native forward row");
+                    }
+                }
+            }
+            let elapsed = start.elapsed();
+            black_box(complex_values.as_slice());
+            let checksum = complex_values
+                .iter()
+                .fold(0.0, |sum, value| sum + 0.17 * value.re + 0.11 * value.im);
+            (elapsed, checksum)
+        };
+        benchmark_batch_api_sample(process_sample, mode, n, rows, &mut execute);
+    }
+
+    let real_plan = RealFftPlan::<f64>::new(n).expect("native real plan");
+    let mut real_workspace = real_plan.workspace().expect("native real workspace");
+    let bins = real_plan.spectrum_len();
+    let real_input: Vec<_> = (0..rows)
+        .flat_map(|row| (0..n).map(move |index| real_value(index, row)))
+        .collect();
+    let mut real_spectrum = vec![Complex64::new(0.0, 0.0); rows * bins];
+    let mut forward = |batch: bool| {
+        let start = Instant::now();
+        if batch {
+            real_plan
+                .forward_batch(&real_input, &mut real_spectrum, &mut real_workspace)
+                .expect("native real forward batch");
+        } else {
+            for row in 0..rows {
+                real_plan
+                    .forward(
+                        &real_input[row * n..(row + 1) * n],
+                        &mut real_spectrum[row * bins..(row + 1) * bins],
+                        &mut real_workspace,
+                    )
+                    .expect("native real forward row");
+            }
+        }
+        let elapsed = start.elapsed();
+        black_box(real_spectrum.as_slice());
+        let checksum = real_spectrum
+            .iter()
+            .fold(0.0, |sum, value| sum + 0.17 * value.re + 0.11 * value.im);
+        (elapsed, checksum)
+    };
+    benchmark_batch_api_sample(process_sample, "r2c", n, rows, &mut forward);
+
+    let real_spectrum_input: Vec<_> = (0..rows)
+        .flat_map(|row| (0..bins).map(move |index| spectrum_value(index, n, row)))
+        .collect();
+    let mut real_output = vec![0.0; rows * n];
+    let mut inverse = |batch: bool| {
+        let start = Instant::now();
+        if batch {
+            real_plan
+                .inverse_batch(&real_spectrum_input, &mut real_output, &mut real_workspace)
+                .expect("native real inverse batch");
+        } else {
+            for row in 0..rows {
+                real_plan
+                    .inverse(
+                        &real_spectrum_input[row * bins..(row + 1) * bins],
+                        &mut real_output[row * n..(row + 1) * n],
+                        &mut real_workspace,
+                    )
+                    .expect("native real inverse row");
+            }
+        }
+        let elapsed = start.elapsed();
+        black_box(real_output.as_slice());
+        let checksum = real_output.iter().sum();
+        (elapsed, checksum)
+    };
+    benchmark_batch_api_sample(process_sample, "c2r", n, rows, &mut inverse);
+}
+
 fn profile_native_real_inverse(n: usize, high_dynamic_range: bool, iterations: usize) {
     let plan = RealFftPlan::<f64>::new(n).expect("native real plan");
     let mut workspace = plan.workspace().expect("native real workspace");
@@ -948,6 +1087,29 @@ fn main() {
                 }
             }
         }
+        Some("bench-native-batch-api") => {
+            println!(
+                "process_sample,mode,n,rows,pair,first,single_ns_per_transform,batch_api_ns_per_transform,single_checksum,batch_checksum"
+            );
+            let n = args
+                .next()
+                .expect("length is required")
+                .parse()
+                .expect("length must be an integer");
+            let row_counts: Vec<usize> = args
+                .map(|value| value.parse().expect("row count must be an integer"))
+                .collect();
+            let row_counts = if row_counts.is_empty() {
+                vec![1, BATCH_COUNT]
+            } else {
+                row_counts
+            };
+            let process_sample =
+                std::env::var("DUCCFFT_PROCESS_SAMPLE").unwrap_or_else(|_| String::from("0"));
+            for rows in row_counts {
+                benchmark_native_batch_api(n, rows, &process_sample);
+            }
+        }
         Some("bench-profile-real-inverse") => {
             println!("mode,n,input,operation_ns,checksum");
             let n = args
@@ -978,7 +1140,7 @@ fn main() {
         }
         _ => {
             eprintln!(
-                "usage: rustfft-bench dump-all | dump-native-all | dump MODE N | bench [N ...] | bench-scalar [N ...] | bench-sht | bench-real-multipass [N ...] | bench-native [N ...] | bench-native-real N [BATCH ...] | bench-profile-real-inverse N normal|high [ITERATIONS]"
+                "usage: rustfft-bench dump-all | dump-native-all | dump MODE N | bench [N ...] | bench-scalar [N ...] | bench-sht | bench-real-multipass [N ...] | bench-native [N ...] | bench-native-real N [BATCH ...] | bench-native-batch-api N [BATCH ...] | bench-profile-real-inverse N normal|high [ITERATIONS]"
             );
             eprintln!("no benchmark was run; use `bench` to start the workload");
         }
