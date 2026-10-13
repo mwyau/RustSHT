@@ -2037,3 +2037,39 @@ The same release executable, built from `ecee5f0` with a temporary environment-c
 | F1 T1023 | `279.020/114.953` | `275.429/110.728` (`111.786–117.712 / 108.172–121.320`) | `1.9%` |
 
 The one-thread path does not call the recursive parallel splitter, so its observed differences are controls and are not attributed to scheduling. The GL/CC eight-thread ranges are separated at both bandlimits. F1 is variable: the T511 paired gains were favorable in five of six runs, while T1023 had two noisy losses and overlapping ranges. No one-thread speedup is claimed. The test comparing one/eight-thread scalar analysis outputs passed at T255 and T1023 GL; the T255 DUCC 0.41.0 coefficient fixture, scalar adjoint identities, and release scalar DUCC/analytic checks through T2047 on GL/CC/F1 passed. Sol's strictly read-only review found no mathematical, cutoff, scratch-ownership or race blocker and recommended the T511 gate; its performance conclusion was limited to the eight-thread results. No FFT code changed.
+
+### Scalar and spin-1 synthesis ring grouping (2026-10-13)
+
+The default synthesis grouping gave each worker a contiguous group of 64-ring recurrence blocks. At 8 threads this left T255 GL/F1 with four groups, T255 CC with five, T511 CC with five, and T1023 CC with six. The new policy halves multi-block groups when that leaves workers idle and divides single-block groups into 32-ring tasks on T255/T511-sized grids. It keeps the existing 64-lane recurrence blocks intact. T1023 GL/F1 keep their previous grouping because their eight groups already fill the pool and the spin-1 trials were flat or slower. At 8 threads, the resulting task counts are T255 GL/F1 `8` and CC `9`, T511 GL/F1 `16` and CC `9`, and T1023 CC `9`.
+
+The comparison used `examples/m1b_bench.rs`, baseline `58a4dd5`, f64 full-bandlimit transforms, `phi0=0.37`, `nphi=2*lmax+3`, reused plans/workspaces, one warm-up and five timed calls per process. Two alternating process pairs were used at T255/T511 and three at T1023 CC. Each entry below is the median of the process medians, in milliseconds, for the eight-thread call. Runs were pinned to CPUs 0–7 on an AMD Ryzen 9 5950X / Linux `7.0.14-20-pve`; Rust was `1.99.0 (b940084d7 2026-09-28)`, Cargo release `opt-level=3`, 16 codegen units, LTO off, and runtime AVX2/FMA dispatch without `target-cpu=native`.
+
+Scalar STANDARD synthesis:
+
+| Grid / bandlimit | Before | After | Time reduction |
+| --- | ---: | ---: | ---: |
+| GL T255 | `6.456` | `3.656` | `43.4%` |
+| CC T255 | `6.293` | `3.448` | `45.2%` |
+| F1 T255 | `6.879` | `3.729` | `45.8%` |
+| GL T511 | `22.811` | `16.578` | `27.3%` |
+| CC T511 | `29.001` | `15.508` | `46.5%` |
+| F1 T511 | `23.213` | `16.550` | `28.7%` |
+| CC T1023 | `168.034` | `129.019` | `23.2%` |
+
+Spin-1 synthesis, with each cell showing `before → after (time reduction)`:
+
+| Grid / bandlimit | STANDARD | GRAD_ONLY | DERIV1 |
+| --- | ---: | ---: | ---: |
+| GL T255 | `8.945 → 5.601 (37.4%)` | `9.264 → 5.739 (38.0%)` | `9.267 → 5.728 (38.2%)` |
+| CC T255 | `9.869 → 6.579 (33.3%)` | `10.029 → 6.628 (33.9%)` | `10.148 → 6.862 (32.4%)` |
+| F1 T255 | `9.287 → 5.784 (37.7%)` | `9.578 → 5.853 (38.9%)` | `10.024 → 5.932 (40.8%)` |
+| GL T511 | `31.038 → 29.414 (5.2%)` | `31.877 → 25.620 (19.6%)` | `32.745 → 25.984 (20.6%)` |
+| CC T511 | `38.473 → 29.059 (24.5%)` | `39.399 → 27.335 (30.6%)` | `39.879 → 28.864 (27.6%)` |
+| F1 T511 | `31.788 → 27.151 (14.6%)` | `31.991 → 26.146 (18.3%)` | `32.424 → 30.019 (7.4%)` |
+| CC T1023 | `222.325 → 183.792 (17.3%)` | `226.359 → 185.691 (18.0%)` | `231.731 → 189.735 (18.1%)` |
+
+The two T255/T511 process ranges were separated for the cases in these tables. At T1023 CC, all three spin-1 mode ranges were separated across three pairs. One-thread controls showed no repeatable change; the executed algorithm remains serial in that setting. T1023 GL/F1 spin-1 results do not support splitting groups and are excluded from the policy. The extra worker scratch increased T511 workspace construction by about `0.2–0.8 ms`; it added no full spectrum or map. Process maximum-RSS comparisons were noisy, with observed differences within roughly `0.4 MiB` at T511.
+
+Analysis uses at most the current Rayon pool size even when a workspace has more scratch slots for finer synthesis tasks. T511/T1023 analysis controls on GL/CC/F1 stayed within about `2%` between revisions; no analysis gain is claimed. A workspace created in a 16-thread pool and reused in an 8-thread pool passed the coefficient-equivalence regression.
+
+Candidate output comparisons against DUCC `0.41.0` at source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf` covered scalar and spin-1 synthesis on GL/CC/F1 at T255/T511 and T1023 CC, including STANDARD, GRAD_ONLY and DERIV1, plus STANDARD analysis. Maximum relative L2 error was `1.73e-13`; spin-1 mode errors were at most `1.54e-13`. Existing adjoint and one/eight-thread equivalence tests passed. Release tests also passed for the ignored scalar T511/T1023/T2047 all-grid checks, spin-1/2 T511 all-grid checks, spin-1/2 T1023 checks, spin-2 T1023 synthesis, and spin-3/4 regressions. The tested change is limited to work partitioning; recurrence, polar cutoffs, FFT work and numerical conventions are unchanged.

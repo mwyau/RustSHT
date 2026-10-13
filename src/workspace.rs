@@ -197,13 +197,32 @@ impl<T: ShtScalar> ShtWorkspace<T> {
         let available_workers = 1;
         let worker_limit = available_workers.min(ring_block_count).max(1);
         let blocks_per_group = ring_block_count.div_ceil(worker_limit);
-        let ring_group_size =
+        let mut ring_group_size =
             blocks_per_group
                 .checked_mul(LATITUDE_BLOCK_SIZE)
                 .ok_or(ShtError::IntegerOverflow {
                     quantity: "parallel latitude group size",
                 })?;
-        let ring_worker_count = ring_block_count.div_ceil(blocks_per_group);
+        let existing_ring_worker_count = ntheta.div_ceil(ring_group_size);
+        // Profiling experiment: increase synthesis granularity for T255/T511
+        // sized grids and when block grouping leaves workers idle. Keep
+        // multi-block groups aligned to the 64-lane recurrence blocks.
+        if available_workers > 1
+            && ntheta >= 256
+            && (ring_block_count <= 9 || existing_ring_worker_count < worker_limit)
+        {
+            let candidate_blocks_per_group = blocks_per_group.div_ceil(2);
+            ring_group_size = if blocks_per_group == 1 {
+                LATITUDE_BLOCK_SIZE / 2
+            } else {
+                candidate_blocks_per_group
+                    .checked_mul(LATITUDE_BLOCK_SIZE)
+                    .ok_or(ShtError::IntegerOverflow {
+                        quantity: "parallel latitude group size",
+                    })?
+            };
+        }
+        let ring_worker_count = ntheta.div_ceil(ring_group_size);
         let analysis_worker_count = available_workers.min(analysis_order_count).max(1);
         let worker_count = ring_worker_count.max(analysis_worker_count);
         let mut recurrence_workers = Vec::new();

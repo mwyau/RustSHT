@@ -771,6 +771,51 @@ fn workspace_sizes_analysis_scratch_for_order_parallelism() {
     for (&single, &parallel) in one_thread_alm.iter().zip(&sixteen_thread_alm) {
         assert!((single - parallel).norm() < 2e-13);
     }
+
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let mut reused_workspace_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    eight_threads
+        .install(|| {
+            plan.analysis_into(
+                &map,
+                &mut reused_workspace_alm,
+                &mut sixteen_thread_workspace,
+            )
+        })
+        .unwrap();
+    for (&single, &parallel) in one_thread_alm.iter().zip(&reused_workspace_alm) {
+        assert!((single - parallel).norm() < 2e-13);
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn workspace_ring_groups_add_parallelism_for_underfilled_synthesis() {
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let cases = [
+        (GridKind::GaussLegendre, 255, 256, 32, 8),
+        (GridKind::GaussLegendre, 511, 512, 32, 16),
+        (GridKind::ClenshawCurtis, 511, 513, 64, 9),
+        (GridKind::GaussLegendre, 1023, 1024, 128, 8),
+        (GridKind::ClenshawCurtis, 1023, 1025, 128, 9),
+    ];
+
+    for (kind, lmax, ntheta, expected_group_size, expected_workers) in cases {
+        let plan = ShtPlan::<f64>::new(
+            GridSpec::new(kind, ntheta, 2 * lmax + 3, 0.37).unwrap(),
+            HarmonicSpec::scalar(lmax, lmax).unwrap(),
+        )
+        .unwrap();
+        let workspace = eight_threads.install(|| plan.workspace()).unwrap();
+        assert_eq!(workspace.ring_group_size, expected_group_size);
+        assert_eq!(workspace.recurrence_workers.len(), expected_workers);
+    }
 }
 
 #[cfg(feature = "parallel")]

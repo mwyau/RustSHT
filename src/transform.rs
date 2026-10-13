@@ -861,7 +861,9 @@ impl<T: ShtScalar> ShtPlan<T> {
         #[cfg(feature = "parallel")]
         {
             let order_count = mmax + 1;
-            let worker_count = workspace.recurrence_workers.len().min(order_count);
+            let worker_count = rayon::current_num_threads()
+                .min(workspace.recurrence_workers.len())
+                .min(order_count);
             let use_parallel = rayon::current_num_threads() > 1 && worker_count > 1;
             if use_parallel {
                 self.analyze_order_groups_parallel(
