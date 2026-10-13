@@ -39,6 +39,15 @@ fn checksum(values: &[Complex64]) -> f64 {
 }
 
 fn assert_close(actual: &[Complex64], expected: &[Complex64], len: usize) {
+    for (index, (&actual, &expected)) in actual.iter().zip(expected).enumerate() {
+        assert!(
+            actual.re.is_finite()
+                && actual.im.is_finite()
+                && expected.re.is_finite()
+                && expected.im.is_finite(),
+            "non-finite value at index {index}: actual={actual}, expected={expected}"
+        );
+    }
     let max_error = actual
         .iter()
         .zip(expected)
