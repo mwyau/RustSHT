@@ -18,7 +18,7 @@ use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 const MAX_SUPPORTED_SPIN: usize = 4;
 const SPIN2_FAST_MIN_LMAX: usize = 500;
-const SPIN1_TRANSITION_MIN_LMAX: usize = 224;
+const SPIN1_TRANSITION_MIN_LMAX: usize = 191;
 const SPIN1_FAST_MIN_SIN_THETA: f64 = 0.0001;
 const SPIN2_FAST_MIN_SIN_THETA: f64 = 0.01;
 
