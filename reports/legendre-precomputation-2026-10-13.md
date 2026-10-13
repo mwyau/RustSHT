@@ -243,3 +243,37 @@ The matched native experiment compared base `b20f7c2` with the SIMD candidate us
 | Spin-1 analysis T511 | `93.459 [90.956–94.067]` | `75.354 [74.984–76.292]` | `-19.4%` | `24.061 [23.718–24.854]` | `21.830 [21.748–22.145]` | `-9.3%` |
 
 Synthesis controls were within process variation: scalar T511 changed `-1.6%/-2.5%` and spin-1 T511 changed `0.0%/+1.2%` at one/eight threads. Release DUCC regressions passed for scalar T511/T1023/T2047 on GL/CC/F1 and spin-1/2 T511 on GL/CC/F1. The numerical fixtures do not print aggregate errors; the change does not alter recurrence values, summation order, or tolerances. The read-only Sol review found no correctness blocker, confirmed exceptional-value and boundary behavior, and suggested a mixed-lane test. That test now places a failing lane among otherwise in-range lanes in both the SIMD vector body and the scalar tail. Full Rust, no-default-feature, Clippy, formatting and Python checks passed as recorded in the milestone notes. This is a recurrence-path optimization and does not add or alter a precomputed table.
+
+### Mixed-exponent SIMD analysis accumulation
+
+The paired scalar analysis reducer used SIMD only when every latitude lane had exponent zero and a normal-range basis. One scaled lane sent the whole block through scalar binary-scaled multiplication. The T511 scalar Callgrind profile assigned 11.6% of process instruction references to the analysis accumulator vectorizer and about 9.0% to scaled complex multiplication helpers. The candidate accumulates exponent-zero lanes with zero or normal-range basis in SIMD, then sends other lanes through the established scaled helpers. `analysis_products_safe` gates direct products and reductions against overflow. The all-normal path is unchanged, and the candidate adds no workspace arrays or transform-sized storage.
+
+#### Native timing method and results
+
+`examples/m1b_bench.rs` measured f64 GL STANDARD analysis with full `mmax`, `phi0=0.37`, `nphi=2*lmax+3`, reused plans and workspaces, one warm-up and five timed calls per process. The baseline binary was built from commit `0cdfbcf`; the candidate was built from the final worktree. Three alternating baseline/candidate process pairs ran on CPUs 0–7 of an AMD Ryzen 9 5950X under Linux `7.0.14-20-pve`. Rust was `1.99.0 (b940084d7 2026-09-28)`, LLVM `23.1.1`, release `opt-level=3`, 16 codegen units, LTO off, portable Pulp runtime dispatch (AVX2/FMA), and no `target-cpu=native`. Values are medians of process medians with min–max ranges in milliseconds:
+
+| Operation | Bandlimit | Baseline 1T | Candidate 1T | Change | Baseline 8T | Candidate 8T | Change |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Scalar analysis | T255 | `4.771 [4.710–4.906]` | `4.238 [4.230–4.397]` | `-11.2%` | `1.436 [1.420–1.437]` | `1.472 [1.322–1.510]` | `+2.5%` |
+| Scalar analysis | T511 | `26.228 [25.818–26.537]` | `23.747 [23.667–23.897]` | `-9.5%` | `8.473 [8.385–8.690]` | `7.505 [7.167–7.562]` | `-11.4%` |
+| Scalar analysis | T1023 | `189.855 [189.804–196.505]` | `179.946 [178.149–180.466]` | `-5.2%` | `64.650 [63.751–64.863]` | `60.932 [60.908–62.077]` | `-5.8%` |
+| Spin-1 STANDARD analysis | T255 | `14.824 [14.807–15.066]` | `11.687 [11.514–11.751]` | `-21.2%` | `5.447 [5.274–5.448]` | `3.648 [3.616–3.714]` | `-33.0%` |
+| Spin-1 STANDARD analysis | T511 | `77.061 [76.703–77.666]` | `66.074 [66.066–66.125]` | `-14.3%` | `22.081 [21.903–22.458]` | `17.132 [17.131–17.370]` | `-22.4%` |
+| Spin-1 STANDARD analysis | T1023 | `531.046 [529.801–537.344]` | `493.537 [492.631–500.033]` | `-7.1%` | `152.413 [152.265–153.234]` | `138.055 [137.907–138.901]` | `-9.4%` |
+
+Scalar T255 eight-thread ranges overlap, so that row does not establish a change. Other candidate ranges are separated. The timings reuse native plans and workspaces, excluding plan and workspace construction.
+
+#### DUCC and numerical comparison
+
+The final release Python extension was compared with installed `ducc0==0.41.0`, source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`, using `examples/python_perf_baseline.py`. The workload was f64 T511 GL (`512x1025`), STANDARD analysis, full `mmax`, `phi0=0.37`; both libraries used explicit one- or eight-thread execution. The Python plan allocates an `ShtWorkspace` per call. Three run groups each took five timed calls. Rust and DUCC medians in milliseconds were:
+
+| Operation | Threads | RustSHT Python plan | DUCC 0.41.0 | Max abs. error | RMS error | Relative L2 error |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Scalar analysis | 1 | `24.125` | `6.496` | `1.238e-14` | `1.779e-16` | `3.484e-14` |
+| Scalar analysis | 8 | `7.783` | `1.003` | `1.238e-14` | `1.779e-16` | `3.484e-14` |
+| Spin-1 analysis | 1 | `65.218` | `12.604` | `1.788e-14` | `2.619e-16` | `5.128e-14` |
+| Spin-1 analysis | 8 | `17.744` | `1.924` | `1.788e-14` | `2.619e-16` | `5.128e-14` |
+
+The scalar eight-thread Python measurements had a `2.930 ms` run-group spread. The native reused-workspace comparison is the performance acceptance measure; RustSHT still takes about 2.5–9.2 times longer in these Python-plan cases.
+
+Focused regressions compare mixed scaled and normal lanes with scalar references at 64- and 61-lane widths, verify subnormal basis fallback bitwise, and confirm that extreme finite products that overflow before longitude scaling use the scaled path. `cargo test --workspace --all-features` passed after the final SIMD mask change (128 Rust tests and 10 f32 integration tests; 8 ignored). No-default-feature tests passed (118 Rust and 10 f32 tests; 7 ignored); Clippy, formatting and nine Python tests passed. Release DUCC tests passed (30 passed, 7 ignored), as did the ignored scalar T2047 GL/CC/F1 DUCC and analytic check and the T1023 spin exact-analysis DUCC check. The read-only Sol review found no correctness blocker and requested the all-feature suite after the final mask edit; that suite passed. Full acceptance evidence is recorded in [the milestone notes](../plans/05-validation-and-milestones.md#mixed-exponent-simd-analysis-accumulation).

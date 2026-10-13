@@ -896,16 +896,29 @@ pub(crate) fn accumulate_analysis_pair_dispatched(
     debug_assert_eq!(exponents.len(), basis.len());
     debug_assert_eq!(cos_theta.len(), basis.len());
 
-    if products_safe && normal_range {
-        debug_assert!(exponents.iter().all(|&exponent| exponent == 0));
-        return arch.dispatch(AnalysisPairAccumulation {
-            same_real,
-            same_imag,
-            opposite_real,
-            opposite_imag,
-            basis,
-            cos_theta,
-        });
+    if products_safe {
+        if normal_range {
+            debug_assert!(exponents.iter().all(|&exponent| exponent == 0));
+            return arch.dispatch(AnalysisPairAccumulation {
+                same_real,
+                same_imag,
+                opposite_real,
+                opposite_imag,
+                basis,
+                cos_theta,
+            });
+        }
+        if exponents.contains(&0) {
+            return arch.dispatch(MixedAnalysisPairAccumulation {
+                same_real,
+                same_imag,
+                opposite_real,
+                opposite_imag,
+                basis,
+                exponents,
+                cos_theta,
+            });
+        }
     }
 
     let mut same = Complex64::new(0.0, 0.0);
@@ -1029,6 +1042,131 @@ impl WithSimd for AnalysisPairAccumulation<'_> {
             Complex64::new(same_re, same_im),
             Complex64::new(opposite_re, opposite_im),
         )
+    }
+}
+
+struct MixedAnalysisPairAccumulation<'a> {
+    same_real: &'a [f64],
+    same_imag: &'a [f64],
+    opposite_real: &'a [f64],
+    opposite_imag: &'a [f64],
+    basis: &'a [f64],
+    exponents: &'a [i64],
+    cos_theta: &'a [f64],
+}
+
+impl WithSimd for MixedAnalysisPairAccumulation<'_> {
+    type Output = (Complex64, Complex64);
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let MixedAnalysisPairAccumulation {
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            basis,
+            exponents,
+            cos_theta,
+        } = self;
+        let (same_real_vectors, same_real_tail) = S::as_simd_f64s(same_real);
+        let (same_imag_vectors, same_imag_tail) = S::as_simd_f64s(same_imag);
+        let (opposite_real_vectors, opposite_real_tail) = S::as_simd_f64s(opposite_real);
+        let (opposite_imag_vectors, opposite_imag_tail) = S::as_simd_f64s(opposite_imag);
+        let (basis_vectors, basis_tail) = S::as_simd_f64s(basis);
+        let (exponent_vectors, exponent_tail) = S::as_simd_i64s(exponents);
+        let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
+        debug_assert_eq!(same_real_vectors.len(), basis_vectors.len());
+        debug_assert_eq!(same_imag_vectors.len(), basis_vectors.len());
+        debug_assert_eq!(opposite_real_vectors.len(), basis_vectors.len());
+        debug_assert_eq!(opposite_imag_vectors.len(), basis_vectors.len());
+        debug_assert_eq!(exponent_vectors.len(), basis_vectors.len());
+        debug_assert_eq!(cosine_vectors.len(), basis_vectors.len());
+        debug_assert_eq!(same_real_tail.len(), basis_tail.len());
+        debug_assert_eq!(same_imag_tail.len(), basis_tail.len());
+        debug_assert_eq!(opposite_real_tail.len(), basis_tail.len());
+        debug_assert_eq!(opposite_imag_tail.len(), basis_tail.len());
+        debug_assert_eq!(exponent_tail.len(), basis_tail.len());
+        debug_assert_eq!(cosine_tail.len(), basis_tail.len());
+
+        let zero_exponent = simd.splat_i64s(0);
+        let zeros = simd.splat_f64s(0.0);
+        let small = simd.splat_f64s(scalar::SMALL);
+        let big = simd.splat_f64s(scalar::BIG);
+        let mut same_re = simd.splat_f64s(0.0);
+        let mut same_im = simd.splat_f64s(0.0);
+        let mut opposite_re = simd.splat_f64s(0.0);
+        let mut opposite_im = simd.splat_f64s(0.0);
+        for index in 0..basis_vectors.len() {
+            let exponent_is_zero = simd.equal_i64s(exponent_vectors[index], zero_exponent);
+            let basis_magnitude = simd.abs_f64s(basis_vectors[index]);
+            let basis_is_zero = simd.equal_f64s(basis_magnitude, zeros);
+            let basis_is_large_enough = simd.greater_than_or_equal_f64s(basis_magnitude, small);
+            let basis_is_small_enough = simd.less_than_or_equal_f64s(basis_magnitude, big);
+            let basis_is_normal_or_zero = simd.and_m64s(
+                basis_is_small_enough,
+                simd.or_m64s(basis_is_zero, basis_is_large_enough),
+            );
+            let normal_lanes = simd.and_m64s(exponent_is_zero, basis_is_normal_or_zero);
+            let basis = simd.select_f64s(normal_lanes, basis_vectors[index], zeros);
+            let same_real = simd.select_f64s(normal_lanes, same_real_vectors[index], zeros);
+            let same_imag = simd.select_f64s(normal_lanes, same_imag_vectors[index], zeros);
+            let opposite_real = simd.select_f64s(normal_lanes, opposite_real_vectors[index], zeros);
+            let opposite_imag = simd.select_f64s(normal_lanes, opposite_imag_vectors[index], zeros);
+            same_re = simd.add_f64s(same_re, simd.mul_f64s(same_real, basis));
+            same_im = simd.add_f64s(same_im, simd.mul_f64s(same_imag, basis));
+            opposite_re = simd.add_f64s(
+                opposite_re,
+                simd.mul_f64s(simd.mul_f64s(opposite_real, basis), cosine_vectors[index]),
+            );
+            opposite_im = simd.add_f64s(
+                opposite_im,
+                simd.mul_f64s(simd.mul_f64s(opposite_imag, basis), cosine_vectors[index]),
+            );
+        }
+
+        let mut same = Complex64::new(simd.reduce_sum_f64s(same_re), simd.reduce_sum_f64s(same_im));
+        let mut opposite = Complex64::new(
+            simd.reduce_sum_f64s(opposite_re),
+            simd.reduce_sum_f64s(opposite_im),
+        );
+        let vector_lane_count = basis.len() - basis_tail.len();
+        for lane in 0..vector_lane_count {
+            if exponents[lane] != 0 || !scalar_value_in_normal_range(basis[lane]) {
+                same += scalar::multiply_complex_scaled(
+                    Complex64::new(same_real[lane], same_imag[lane]),
+                    basis[lane],
+                    exponents[lane],
+                );
+                opposite += scalar::multiply_complex_scaled_product(
+                    Complex64::new(opposite_real[lane], opposite_imag[lane]),
+                    basis[lane],
+                    cos_theta[lane],
+                    exponents[lane],
+                );
+            }
+        }
+        for lane in 0..basis_tail.len() {
+            if exponent_tail[lane] == 0 && scalar_value_in_normal_range(basis_tail[lane]) {
+                same.re += same_real_tail[lane] * basis_tail[lane];
+                same.im += same_imag_tail[lane] * basis_tail[lane];
+                opposite.re += (opposite_real_tail[lane] * basis_tail[lane]) * cosine_tail[lane];
+                opposite.im += (opposite_imag_tail[lane] * basis_tail[lane]) * cosine_tail[lane];
+            } else {
+                same += scalar::multiply_complex_scaled(
+                    Complex64::new(same_real_tail[lane], same_imag_tail[lane]),
+                    basis_tail[lane],
+                    exponent_tail[lane],
+                );
+                opposite += scalar::multiply_complex_scaled_product(
+                    Complex64::new(opposite_real_tail[lane], opposite_imag_tail[lane]),
+                    basis_tail[lane],
+                    cosine_tail[lane],
+                    exponent_tail[lane],
+                );
+            }
+        }
+        (same, opposite)
     }
 }
 
