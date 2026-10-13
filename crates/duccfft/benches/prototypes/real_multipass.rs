@@ -563,7 +563,7 @@ fn benchmark_len(len: usize, rows: usize) {
         std::hint::black_box(PackedRealPlan::new(len));
     });
     let prototype_workspace_ns = average_ns(20, || {
-        std::hint::black_box(prototype.workspace().first.len());
+        std::hint::black_box(prototype.workspace());
     });
     let prototype_scratch_bytes = prototype.scratch_bytes();
     let prototype_plan_bytes = prototype.plan_bytes;
@@ -576,7 +576,7 @@ fn benchmark_len(len: usize, rows: usize) {
         std::hint::black_box(RealFftPlan::<f64>::new(len).expect("native real plan"));
     });
     let native_workspace_ns = average_ns(20, || {
-        std::hint::black_box(real_plan.workspace().expect("real workspace").len());
+        std::hint::black_box(real_plan.workspace().expect("real workspace"));
     });
     let mut native_workspace = real_plan.workspace().expect("real workspace");
     let native_scratch_bytes = real_plan
