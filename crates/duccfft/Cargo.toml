@@ -1,0 +1,23 @@
+[package]
+name = "duccfft"
+version = "0.1.0-dev.0"
+edition = "2024"
+rust-version = "1.99"
+authors = ["Albert M. W. Yau"]
+license = "BSD-3-Clause"
+description = "Standalone Rust crate for one-dimensional FFT algorithms"
+repository = "https://github.com/mwyau/RustSHT"
+publish = false
+
+[workspace]
+resolver = "3"
+
+[dependencies]
+num-complex = "0.4"
+
+[dev-dependencies]
+rustfft = "6.4"
+
+[[bench]]
+name = "rustfft"
+harness = false
