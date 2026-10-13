@@ -179,6 +179,125 @@ fn scalar_synthesis_matches_independent_low_degree_harmonics() {
 }
 
 #[test]
+fn scalar_synthesis_compacts_mixed_high_order_cutoff_blocks() {
+    let lmax = 255;
+    let ntheta = lmax + 1;
+    let nphi = 2 * lmax + 3;
+    let plan = make_plan(lmax, lmax, ntheta, nphi, 0.37);
+    let spectrum_len = plan.fft.spectrum_len();
+    let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    for m in 0..=lmax {
+        for l in m..=lmax {
+            let index = plan.harmonics().index(l, m).unwrap();
+            let real = ((l * 7 + m * 11) % 19 + 1) as f64 * 1e-5;
+            let imaginary = if m == 0 {
+                0.0
+            } else {
+                ((l * 13 + m * 5) % 23 + 1) as f64 * 1e-5
+            };
+            alm[index] = Complex64::new(real, imaginary);
+        }
+    }
+
+    let mut compact_workspace = plan.workspace().unwrap();
+    let mut reference_workspace = plan.workspace().unwrap();
+    for (ring, &theta) in plan.grid.theta().iter().enumerate() {
+        let (sin_theta, cos_theta) = crate::legendre::sin_cos_from_f64(theta);
+        compact_workspace.theta_sin[ring] = sin_theta;
+        compact_workspace.theta_cos[ring] = cos_theta;
+        compact_workspace.ring_order_limits[ring] =
+            <f64 as crate::legendre::ShtScalar>::polar_order_limit(lmax, 0, sin_theta, cos_theta);
+        reference_workspace.theta_sin[ring] = sin_theta;
+        reference_workspace.theta_cos[ring] = cos_theta;
+        reference_workspace.ring_order_limits[ring] = lmax;
+    }
+    assert!(
+        compact_workspace.ring_order_limits[..ntheta]
+            .chunks(crate::legendre::LATITUDE_BLOCK_SIZE)
+            .any(|block| block.iter().any(|&limit| limit < 245)
+                && block.iter().any(|&limit| limit >= 245))
+    );
+
+    let mut compact_spectra = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
+    let mut reference_spectra = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
+    let arch = pulp::Arch::new();
+    plan.synthesize_ring_group(
+        &alm,
+        nphi,
+        spectrum_len,
+        plan.grid.phi0(),
+        0,
+        &mut compact_spectra,
+        &compact_workspace.theta_sin[..ntheta],
+        &compact_workspace.theta_cos[..ntheta],
+        &compact_workspace.ring_order_limits[..ntheta],
+        arch,
+        &mut compact_workspace.recurrence_workers[0],
+    )
+    .unwrap();
+    plan.synthesize_ring_group(
+        &alm,
+        nphi,
+        spectrum_len,
+        plan.grid.phi0(),
+        0,
+        &mut reference_spectra,
+        &reference_workspace.theta_sin[..ntheta],
+        &reference_workspace.theta_cos[..ntheta],
+        &reference_workspace.ring_order_limits[..ntheta],
+        arch,
+        &mut reference_workspace.recurrence_workers[0],
+    )
+    .unwrap();
+
+    for (ring, &limit) in compact_workspace.ring_order_limits[..ntheta]
+        .iter()
+        .enumerate()
+    {
+        for m in 0..=lmax {
+            let index = ring * spectrum_len + m;
+            if m > limit {
+                assert_eq!(compact_spectra[index], Complex64::new(0.0, 0.0));
+            } else {
+                let error = (compact_spectra[index] - reference_spectra[index]).norm();
+                assert!(error <= 2e-11, "ring={ring}, m={m}, error={error:.3e}");
+            }
+        }
+    }
+
+    let boundary_ring = (0..ntheta)
+        .filter(|&ring| compact_workspace.ring_order_limits[ring] >= 245)
+        .min_by_key(|&ring| compact_workspace.ring_order_limits[ring] - 245)
+        .unwrap();
+    let mut boundary_workspace = plan.workspace().unwrap();
+    let mut boundary_spectrum = vec![Complex64::new(0.0, 0.0); spectrum_len];
+    plan.synthesize_ring_group(
+        &alm,
+        nphi,
+        spectrum_len,
+        plan.grid.phi0(),
+        boundary_ring,
+        &mut boundary_spectrum,
+        &[compact_workspace.theta_sin[boundary_ring]],
+        &[compact_workspace.theta_cos[boundary_ring]],
+        &reference_workspace.ring_order_limits[..ntheta],
+        arch,
+        &mut boundary_workspace.recurrence_workers[0],
+    )
+    .unwrap();
+    let actual = compact_spectra[boundary_ring * spectrum_len + 245];
+    let expected = boundary_spectrum[245];
+    let expected_norm = expected.norm();
+    assert!(expected_norm > 0.0, "boundary reference must be nonzero");
+    let relative_error = (actual - expected).norm() / expected_norm;
+    assert!(
+        relative_error <= 1e-11,
+        "boundary ring={boundary_ring}, relative error={:.3e}",
+        relative_error
+    );
+}
+
+#[test]
 fn scalar_adjoint_operators_match_ducc_and_inner_products() {
     // Reference: ducc0 0.41.0, GL 3x7, phi0=0.37, mstart for packed Rust layout.
     let plan = make_plan(2, 2, 3, 7, 0.37);
