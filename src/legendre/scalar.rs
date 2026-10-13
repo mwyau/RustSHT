@@ -1527,7 +1527,7 @@ mod tests {
         let opposite_real = [0.625, -0.75, 0.375];
         let opposite_imag = [0.25, 0.5, -0.625];
         let basis = [0.5, -0.75, 0.25];
-        let exponents = [0, -1074, 900];
+        let exponents = [-1074, 900, -1075];
         let cos_theta = [0.25, -0.5, 0.75];
         let actual = super::super::scalar_paired::accumulate_analysis_pair_dispatched(
             Arch::new(),
@@ -1560,6 +1560,147 @@ mod tests {
         assert_eq!(actual.0.im.to_bits(), expected_same.im.to_bits());
         assert_eq!(actual.1.re.to_bits(), expected_opposite.re.to_bits());
         assert_eq!(actual.1.im.to_bits(), expected_opposite.im.to_bits());
+    }
+
+    #[test]
+    fn paired_analysis_mixed_normal_and_scaled_lanes_match_lane_reference() {
+        for lane_count in [64, 61] {
+            let same_real: Vec<_> = (0..lane_count)
+                .map(|lane| (0.17 * lane as f64).sin() * 0.5)
+                .collect();
+            let same_imag: Vec<_> = (0..lane_count)
+                .map(|lane| (0.13 * lane as f64).cos() * 0.4)
+                .collect();
+            let opposite_real: Vec<_> = (0..lane_count)
+                .map(|lane| (0.11 * lane as f64 + 0.3).cos() * 0.6)
+                .collect();
+            let opposite_imag: Vec<_> = (0..lane_count)
+                .map(|lane| (0.07 * lane as f64 - 0.2).sin() * 0.3)
+                .collect();
+            let basis: Vec<_> = (0..lane_count)
+                .map(|lane| (0.09 * lane as f64 + 0.1).sin())
+                .collect();
+            let exponents: Vec<_> = (0..lane_count)
+                .map(|lane| match lane % 3 {
+                    0 => 0,
+                    1 => -12,
+                    _ => 7,
+                })
+                .collect();
+            let cos_theta: Vec<_> = (0..lane_count)
+                .map(|lane| (0.05 * lane as f64 + 0.2).cos())
+                .collect();
+            let products_safe = super::super::scalar_paired::analysis_products_safe(
+                &same_real,
+                &same_imag,
+                &opposite_real,
+                &opposite_imag,
+                &cos_theta,
+            );
+            assert!(products_safe);
+
+            for arch in [Arch::Scalar, Arch::new()] {
+                let actual = super::super::scalar_paired::accumulate_analysis_pair_dispatched(
+                    arch,
+                    products_safe,
+                    false,
+                    &same_real,
+                    &same_imag,
+                    &opposite_real,
+                    &opposite_imag,
+                    &basis,
+                    &exponents,
+                    &cos_theta,
+                );
+                let mut expected_same = Complex64::new(0.0, 0.0);
+                let mut expected_opposite = Complex64::new(0.0, 0.0);
+                for lane in 0..lane_count {
+                    expected_same += multiply_complex_scaled(
+                        Complex64::new(same_real[lane], same_imag[lane]),
+                        basis[lane],
+                        exponents[lane],
+                    );
+                    expected_opposite += multiply_complex_scaled_product(
+                        Complex64::new(opposite_real[lane], opposite_imag[lane]),
+                        basis[lane],
+                        cos_theta[lane],
+                        exponents[lane],
+                    );
+                }
+
+                for (actual, expected) in [actual.0, actual.1]
+                    .into_iter()
+                    .zip([expected_same, expected_opposite])
+                {
+                    assert!(
+                        (actual - expected).norm() <= 2e-13 * expected.norm().max(1.0),
+                        "lanes={lane_count}, actual={actual:?}, expected={expected:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn paired_analysis_mixed_lanes_keep_subnormal_basis_on_scaled_path() {
+        let lane_count = 17;
+        let mut same_real = vec![0.0; lane_count];
+        let mut same_imag = vec![0.0; lane_count];
+        let mut opposite_real = vec![0.0; lane_count];
+        let mut opposite_imag = vec![0.0; lane_count];
+        let mut basis = vec![0.5; lane_count];
+        let mut exponents = vec![-10; lane_count];
+        let cos_theta = vec![1.0; lane_count];
+        for lane in [0, lane_count - 1] {
+            same_real[lane] = 1.0;
+            same_imag[lane] = -1.0;
+            opposite_real[lane] = 0.5;
+            opposite_imag[lane] = -0.5;
+            basis[lane] = f64::from_bits(1);
+            exponents[lane] = 0;
+        }
+        let products_safe = super::super::scalar_paired::analysis_products_safe(
+            &same_real,
+            &same_imag,
+            &opposite_real,
+            &opposite_imag,
+            &cos_theta,
+        );
+        assert!(products_safe);
+
+        for arch in [Arch::Scalar, Arch::new()] {
+            let actual = super::super::scalar_paired::accumulate_analysis_pair_dispatched(
+                arch,
+                products_safe,
+                false,
+                &same_real,
+                &same_imag,
+                &opposite_real,
+                &opposite_imag,
+                &basis,
+                &exponents,
+                &cos_theta,
+            );
+            let mut expected_same = Complex64::new(0.0, 0.0);
+            let mut expected_opposite = Complex64::new(0.0, 0.0);
+            for lane in 0..lane_count {
+                expected_same += multiply_complex_scaled(
+                    Complex64::new(same_real[lane], same_imag[lane]),
+                    basis[lane],
+                    exponents[lane],
+                );
+                expected_opposite += multiply_complex_scaled_product(
+                    Complex64::new(opposite_real[lane], opposite_imag[lane]),
+                    basis[lane],
+                    cos_theta[lane],
+                    exponents[lane],
+                );
+            }
+            assert_eq!(actual.0.re.to_bits(), expected_same.re.to_bits());
+            assert_eq!(actual.0.im.to_bits(), expected_same.im.to_bits());
+            assert_eq!(actual.1.re.to_bits(), expected_opposite.re.to_bits());
+            assert_eq!(actual.1.im.to_bits(), expected_opposite.im.to_bits());
+        }
     }
 
     #[test]
