@@ -87,6 +87,6 @@ pub(super) fn execute<T: Float + FromPrimitive>(
                 branch4[k] = (cr2 + ci5) * scale;
             }
         }
-        _ => unreachable!("real multipass plan contains only radices 2 through 5"),
+        _ => super::inverse_general_prime(pass, input, output, scale),
     }
 }

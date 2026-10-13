@@ -8,6 +8,7 @@
 // c1ed01b8fda69d2a378190f0915f1a19762dddbf. The implementation recursively
 // combines real half-spectra and uses the public Complex layout internally.
 // Radices 2, 3, 4, and 5 use fixed butterflies derived from rfftp2/3/4/5.
+// General odd primes with ido=1 use a symmetric DFT pass in the multipass plan.
 
 use num_complex::Complex;
 use num_traits::{Float, FromPrimitive};
