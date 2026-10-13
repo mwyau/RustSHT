@@ -8,6 +8,9 @@ The Rust port covers the one-dimensional pass planners and kernels in
 executor in `fftnd_impl.h`, DCT/DST wrappers, Hartley transforms, and unrelated
 DUCC subsystems are outside the port.
 
+The M1 and M2 sections below are historical snapshots. M3 status supersedes
+their implementation statements.
+
 ## Plan and execution structure
 
 `fft.h` defines `cfftpass<Tfs>` and `rfftpass<Tfs>`. Each pass reports its
@@ -142,7 +145,7 @@ listed in `LICENSE-THIRD-PARTY`, which includes the full BSD conditions and
 disclaimer. The C++ reference harness compiles the pinned source from an
 external checkout and is not a runtime dependency.
 
-## M1 Rust implementation status
+## M1 implementation snapshot
 
 `src/complex.rs` uses the complex factor order from `cfftpass::factorize()` in
 `fft.h`. It executes those factors with an independent recursive
@@ -175,7 +178,7 @@ unnormalized butterfly-only measurement. Compare `public_operation_ns` with
 other libraries' whole-call measurements; do not compare it with an
 unnormalized kernel-only timing.
 
-## M2 Rust implementation status
+## M2 implementation snapshot
 
 `src/real.rs` follows `rfftpass::factorize()`'s radix order: factors of four,
 a leading factor of two, and then ascending odd factors. Its recursive real
@@ -194,3 +197,59 @@ radix-2/3/4/5 butterflies derived from `rfftp2`, `rfftp3`, `rfftp4`, and
 `rfftp5`, expressed over ordinary half-spectra. It has not ported `rfftpg`,
 `rfftpblue`, or DUCC's conditional `rfftp_complexify` planner. Larger radix
 factors currently use a generic O(p^2) combine until the M3 general-prime work.
+
+## M3 Rust implementation status
+
+### Complex planning and execution
+
+`src/complex.rs` keeps DUCC's factor order and threshold: fixed radices 2, 3,
+4, 5, 7, 8, and 11; paired `cfftpg`-style general-prime combines below 110;
+and Bluestein for factors of 110 and above. `cfft_multipass` is represented by
+one Rust pass descriptor per factor with `l1`, `ido`, radix, and stage twiddles.
+The first pass is in-place. Later passes alternate between the caller's array
+and the workspace output array; execution copies the final result back only
+when it ends in workspace. The loop indices and source/destination layouts
+match DUCC's `CC`/`CH` indexing for scalar passes. `ido == 1` passes skip stage
+twiddle multiplication because every corresponding root is unity, as DUCC's
+specialized `cfftp*` loops do.
+
+The Rust plan still differs from DUCC in using a complete root table alongside
+stage-local twiddles and in using scalar kernels without DUCC's vector passes
+or nested scheduler. The current optimized binary retains cold bounds-check
+failure paths in pass code; the performance checkpoint records this and the
+generated instructions without treating static instruction counts as a timing
+attribution.
+
+For a general prime factor below 110, `radix_general_prime` uses the symmetric
+pair structure of `cfftpg`. Larger factors use `BluesteinPlan`. The convolution
+length follows `good_size_cmplx(2*p-1)` through `good_size_complex` and
+`iter_23`; the chirp is generated from `unity_root(index^2 mod 2*p, 2*p)`.
+DUCC stores its kernel spectrum scaled by `1/M`, where `M` is the convolution
+length. Rust stores the unscaled spectrum for ordinary amplitudes and uses
+conditional scaling for high or subnormal inputs. Each immutable stage plan
+owns its chirp, kernel spectrum, and nested complex plan. The caller workspace
+owns reusable convolution data and nested scratch.
+
+### Real planning and execution
+
+`src/real.rs` retains the real factor order and threshold: fixed radices 2, 3,
+4, and 5; paired `rfftpg`-style combinations below 135; and `rfftpblue` at 135
+and above. The real Bluestein pass reuses the common complex Bluestein plan,
+constructs needed Hermitian partners, and stores output in the public
+half-spectrum.
+
+The planner also selects `rfftp_complexify` for even lengths above 1,000 when
+the length exceeds 10,000 or factorization contains a factor above five. The
+vectorization-only DUCC condition (vectorization enabled and length divisible
+by eight) is not used by this scalar Rust planner. The complexified plan packs
+even and odd input samples, executes the nested complex multipass plan, and
+separates or combines its Hermitian modes. Complex and real inverse scaling
+use a finite-input fast path that defers `1/N` until the end when the conservative
+bound `max_component <= MAX/(4*N)` holds; high-range inputs retain conditional
+prescaling and residual correction.
+
+The real pass tree remains recursive. The `rfftp_complexify` prototype is a
+bounded benchmark, not a planner change for lengths where DUCC selects real
+passes. Current timings, profile evidence, and the recursive-versus-multipass
+decision are in `m3-scalar-performance.md`; prime and Bluestein validation is
+in `m3-prime-bluestein.md`.

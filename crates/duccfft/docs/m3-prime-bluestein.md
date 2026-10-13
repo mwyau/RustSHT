@@ -35,12 +35,14 @@ public half-spectrum.
 
 ## Correctness evidence
 
-The direct O(N²) tests check forward and inverse transforms against independent
-DFTs for the complex lengths 107, 109, 113, 137, and 241 and real lengths 127,
-131, 137, and 241, in f32 and f64. Tests also exercise nonterminal Bluestein
-stages with lengths 113² and 137², large SHT longitude lengths 1,025, 2,049,
-and 4,097, near-maximum finite values, minimum subnormals, cancellation, and
-independently supplied inverse spectra. The tests reject nonfinite outputs.
+The f64 direct O(N²) tests check forward and inverse transforms for complex
+lengths 107, 109, 113, 137, and 241 and real lengths 127, 131, 137, and 241.
+The f32 direct-DFT tests cover complex length 137, real lengths 137 and 1,026,
+and larger metric cases. f64 tests compare nonterminal Bluestein stages at
+lengths 113² and 137² against RustFFT. f32 and f64 regression tests cover SHT
+longitude lengths 1,025, 2,049, and 4,097, near-maximum finite values, minimum
+subnormals, cancellation, and independently supplied inverse spectra. The
+tests reject nonfinite outputs.
 
 The pinned DUCC comparisons checked 202,347 output records (404,694 scalar
 components) over f64 C2C, R2C, and C2R lengths through 10,008. With DUCC
