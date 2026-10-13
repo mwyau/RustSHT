@@ -6,16 +6,18 @@ containing only radices 2, 3, 4, and 5. Plans with other factors retain the
 validated recursive path; DUCC's existing real complexify and Bluestein
 selection conditions remain in place. The AVX2 radix-2/radix-4 interiors run
 only when `ido` is even. The measured lengths below use scalar radix-3/5
-passes and do not execute those vector kernels. Odd transforms store both components of their last positive-frequency bin. Only an even transform stores Nyquist as one real value. Inverse passes keep
+passes and do not execute those vector kernels. The scalar radix-3/5 loops now
+use contiguous input, output, and twiddle slices for each branch; the DUCC
+equations, pass order, and normalization remain unchanged. Odd transforms store both components of their last positive-frequency bin. Only an even transform stores Nyquist as one real value. Inverse passes keep
 the existing `MAX/(4*N)` eligibility check; spectra outside that bound or
 with nonfinite values use the residual-corrected recursive path.
 
 ## Correctness
 
 The crate tests compare f64 R2C and C2R against direct DFTs at lengths 75, 125,
-and 225. f32 tests compare those outputs with f64 DFTs after rounding the
-inputs to f32. The large mixed-radix length 1,920 (`2^7 × 3 × 5`) is also
-checked against direct f64 DFTs. Across these cases, the largest relative-L2
+225, and 1,920. f32 tests compare the short lengths with f64 DFTs after
+rounding inputs to f32; the large mixed-radix length 1,920 (`2^7 × 3 × 5`) is
+also checked in both directions. Across the f32 cases, the largest relative-L2
 error was `1.49e-7`; all outputs were finite. The f32 metrics were:
 
 | N | Operation | Maximum absolute error | RMS error | Relative L2 error | Scaled maximum error | Nonfinite outputs |
@@ -151,3 +153,53 @@ candidate harness. The Rust benchmark binary hashes are
 portable and native reference binary hashes are
 `fe241e7efa57953567675cc67d73d519488923887f9c32d0456e1f5eb1f7e86d` and
 `09fe220341903e95788d96983aeddb7652da5a1947ee01ae439b0322fdfce178`.
+
+## Contiguous scalar pass loops
+
+Commit `c804f3f` replaces repeated multidimensional index calculations in the
+radix-3 and radix-5 pass loops with contiguous branch slices and stage-local
+twiddle slices. The preceding scalar multipass implementation at `d27e611` is
+the baseline. This change adds no SIMD code and preserves the pass equations. The direct f64 DFT tests cover both directions at lengths 75, 125, 225, and
+1,920. The f32 test compares both directions at 1,920 with f64 DFTs after
+input rounding. The A/B comparison used the same `rustfft.rs` source in both builds (source
+SHA-256 `bbbcb779effb7c1121f4ad08411eea0207c7ec38eccc75278f57d0fd46784457`). Rust 1.99.0 (`b940084d7`, LLVM 23.1.1) and Cargo 1.99.0 used the optimized
+`bench` profile (`opt-level=3`), with no custom `RUSTFLAGS`, LTO, or target CPU
+flag. Runtime AVX2 dispatch for radix-2/radix-4 was the same in both binaries. The machine was an x86-64 CPU. Every process was pinned to logical one CPU core and ran one execution thread. Six process samples interleaved baseline and
+candidate order; odd samples ran the baseline first, and even samples ran the
+candidate first. Each sample warmed once and timed seven executions. Plan
+construction and workspace allocation each used 20 repetitions. Load-average telemetry was retained only in local diagnostics. The Legendre workload
+shared the host, so these timings remain provisional. The benchmark used the public real operations with deterministic
+`real_value(index, row)` samples and `spectrum_value(index, n, row)` inverse
+spectra. A batch contains 32 sequential row transforms with one reused plan
+and workspace. Time values below are per transform. Batch totals are shown in
+parentheses. Paired gains are medians of the six per-process relative gains;
+they need not equal the ratio of the displayed medians.
+
+| N | Operation | Single baseline → candidate, µs | Paired gain | Batch 32 baseline → candidate per transform, µs (batch total, µs) | Paired gain |
+|---:|:---:|---:|---:|---:|---:|
+| 225 | R2C | 0.932 → 0.667 | 28.9% | 0.914 → 0.635 (29.255 → 20.329) | 30.5% |
+| 225 | C2R | 0.871 → 0.681 | 21.9% | 0.842 → 0.659 (26.941 → 21.085) | 21.6% |
+| 1,920 | R2C | 7.589 → 6.547 | 14.2% | 7.262 → 6.183 (232.373 → 197.858) | 14.8% |
+| 1,920 | C2R | 6.332 → 5.696 | 10.3% | 6.378 → 5.725 (204.110 → 183.215) | 10.5% |
+
+The median plan construction/workspace allocation times were 4.667/0.565 µs
+for the baseline and 5.246/0.673 µs for the candidate at N=225. At N=1,920
+they were 35.099/1.782 µs and 33.581/1.935 µs. Each setup summary uses only
+`mode=r2c`, `rows=1` records: six process samples per implementation and
+length. Reusable workspace size was unchanged at 6,608 bytes for N=225 and
+56,816 bytes for N=1,920. The baseline and candidate checksums match for every operation and length. They cover the first output value; full-array direct-reference tests provide
+the correctness check. In release f64 disassembly, the
+`execute_forward_pass` symbol fell from 10,255 to 9,249 bytes. Static
+instruction counts for that whole symbol fell from 25 to 19 `imul`
+instructions and from 2,160 to 1,954 total instructions. The symbol still
+contains pass dispatch and cold bounds-check paths, so these counts do not
+attribute a runtime share to the radix-3/5 inner loops. The contiguous-slice
+change improved median public latency by 10–31% in the four measured cases,
+without reducing workspace size. Using the earlier N=225 control medians in
+the tables above, the new candidate is 1.30/1.30/1.33× slower than RustFFT,
+portable DUCC, and native DUCC for R2C, and 1.26/1.26/1.62× slower for C2R. Those are ratios of independently measured medians. No RustFFT or DUCC control
+at N=1,920 was collected in this focused A/B run. The results support keeping
+the scalar loop change before further real SIMD work. Raw records for all 96 process samples are in
+[`m4-real-radix35-slices-process-samples.csv`](../benches/results/m4-real-radix35-slices-process-samples.csv). The baseline and candidate benchmark binary SHA-256 values are
+`92875c84576b5d1d51be68fba7e4ee1382136dda624399dfb6f23d3a812b1875` and
+`691222ff38f890c02e9436368ca0291e18a07b6db07c57780ef3435a733eef26`.
