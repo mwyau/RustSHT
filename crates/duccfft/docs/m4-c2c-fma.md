@@ -63,10 +63,13 @@ small and length-dependent to close the existing C2C gap to RustFFT. Setup media
 The candidate binary contains `vfmaddsub` instructions in the FMA pass path. The optimized benchmark binary's text grew from 1,621,217 to 1,626,313 bytes. The baseline `f64_kernel::pass` has a 200-byte stack frame. The FMA pass has
 the same frame size; its code size is 2,696 bytes, compared with 2,571 bytes
 for the baseline pass. This confirms FMA code generation but does not explain
-the whole-operation regression at length 4,096. The candidate passes
+the whole-operation regression at length 4,096. The FMA candidate passed
 `cargo test --manifest-path crates/duccfft/Cargo.toml --all-features` (5 unit,
 21 complex, 26 real tests) and
-`cargo clippy --manifest-path crates/duccfft/Cargo.toml --all-targets --all-features -- -D warnings`. The current evidence supports retaining the experiment only until the R22
-read-only review assesses the numerical path, runtime dispatch, and inconsistent
-timing results. The benchmark used a DUCCFFT-only harness; no fresh RustFFT or
-direct C++ DUCC timings were collected for this source-to-source experiment.
+`cargo clippy --manifest-path crates/duccfft/Cargo.toml --all-targets --all-features -- -D warnings`. R22 found no formula, dispatch, bounds, or measurement defect. It recommended
+reverting the production path because the gains were small and mixed, with
+1.55–2.06% regressions in all four length-4,096 measurements. Commit `bd4a806`
+restores the AVX2 multiply/add-sub kernels. The length-1,024 independent DFT
+test remains in the suite. The candidate report and raw samples remain as
+experiment evidence; no fresh RustFFT or direct C++ DUCC timings were collected
+for this source-to-source comparison.
