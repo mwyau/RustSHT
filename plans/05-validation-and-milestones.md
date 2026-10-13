@@ -1877,4 +1877,26 @@ Temporary leaf timing around spin-1 T511 analysis showed eight recursive leaves 
 | Spin-1 T511 | 1 | `66.695 [65.734–67.497]` | `65.591 [65.401–66.465]` | `-1.7%` |
 | Spin-1 T511 | 8 | `17.744 [17.722–20.961]` | `17.753 [17.151–18.652]` | `+0.1%` |
 
-The one-thread spin difference is not meaningful because that path is serial. At eight threads, scalar analysis was slower and spin-1 analysis was unchanged within run spread. Peak RSS ranges also overlapped. The candidate passed focused scheduling tests, then was reverted; no dynamic task-granularity change was accepted. A separate current-source thread-count screen gave T511 scalar analysis medians of 23.736/14.624/10.357/7.715/7.638/7.077 ms and spin-1 medians of 66.764/37.857/26.124/17.617/16.368/13.769 ms for 1/2/4/8/16/32 threads, respectively. These are scaling screens, not paired before/after measurements. The next profiling pass should isolate fast-path and general/scaled recurrence degree counts within `analyze_spin_scalar_fast_order` and compare the scalar-conversion path's actual work against the corresponding general spin path. This is a more direct candidate than increasing scheduler task count. Detailed comparative matrix-storage results and Torch-harmonics limitations remain in [the Legendre precomputation report](../reports/legendre-precomputation-2026-10-13.md).
+The one-thread spin difference is not meaningful because that path is serial. At eight threads, scalar analysis was slower and spin-1 analysis was unchanged within run spread. Peak RSS ranges also overlapped. The candidate passed focused scheduling tests, then was reverted; no dynamic task-granularity change was accepted. A separate current-source thread-count screen gave T511 scalar analysis medians of 23.736/14.624/10.357/7.715/7.638/7.077 ms and spin-1 medians of 66.764/37.857/26.124/17.617/16.368/13.769 ms for 1/2/4/8/16/32 threads, respectively. These are scaling screens, not paired before/after measurements. The fast-versus-general screen below confirms the scalar-conversion route is much cheaper through the tested low and high bands. Scheduling work should next compare active-ring weighted estimates with leaf durations; merely doubling task count was neutral or slower. Detailed comparative matrix-storage results and Torch-harmonics limitations remain in [the Legendre precomputation report](../reports/legendre-precomputation-2026-10-13.md).
+
+### Spin-1 analysis fast-path comparison and conversion-factor experiment (2026-10-13)
+
+A temporary build disabled only the spin-1 scalar-conversion fast analysis path; synthesis, spin-2 dispatch and the production source remained unchanged. Three alternating process pairs compared this binary with the current fast-path binary at f64 GL T63/T127/T255/T511 using `examples/m1b_bench.rs`. Each process used one warm-up and five timed samples for its one-thread and eight-thread operations, was 8 pinned CPU cores on the x86-64 CPU, and used the Rust 1.99.0 release build with portable Pulp runtime dispatch. Values are medians of the three process medians and ranges in milliseconds:
+
+| Bandlimit | Fast path 1T | General path 1T | Fast path 8T | General path 8T |
+| --- | ---: | ---: | ---: | ---: |
+| T63 | `0.376 [0.351–0.464]` | `2.353 [2.331–2.452]` | `0.208 [0.188–0.218]` | `0.445 [0.438–0.499]` |
+| T127 | `2.177 [2.015–2.289]` | `17.911 [17.898–17.995]` | `0.958 [0.933–0.969]` | `3.012 [2.979–3.261]` |
+| T255 | `11.250 [11.141–11.310]` | `140.362 [140.107–140.937]` | `3.714 [3.638–3.716]` | `24.610 [24.303–24.636]` |
+| T511 | `64.722 [64.678–65.032]` | `1083.668 [1082.033–1085.000]` | `17.272 [17.141–17.349]` | `201.072 [200.925–202.373]` |
+
+The fast path was 2.1–16.7 times faster at one thread and 2.1–11.6 times faster at eight threads. This confirms that the existing spin-1 conversion eligibility from its low-bandlimit gate is valuable; no cutoff change is needed. The production general recurrence remains as the polar and unsupported-domain fallback. The fast/general all-grid analysis-and-adjoint test passed through T255, and the release T511 GL/CC/F1 DUCC/roundtrip test passed. A separate private experiment replaced two square-root expressions in `scalar_to_spin1` with the order's already-prepared scalar `epsilon` factors. Disassembly of that helper reduced its body from 225 to 209 instructions and scalar `sqrtsd`/`divsd` instructions from 3/3 to 1/1. Three paired process runs at the same GL workloads did not establish a whole-transform gain:
+
+| Bandlimit | Baseline 1T | Candidate 1T | Baseline 8T | Candidate 8T |
+| --- | ---: | ---: | ---: | ---: |
+| T63 | `0.351 [0.344–0.364]` | `0.346 [0.329–0.384]` | `0.234 [0.219–0.234]` | `0.233 [0.208–0.255]` |
+| T127 | `2.035 [2.008–2.084]` | `1.991 [1.976–2.194]` | `0.957 [0.929–0.973]` | `0.988 [0.964–1.011]` |
+| T255 | `11.295 [11.230–11.376]` | `11.231 [11.026–11.472]` | `3.656 [3.603–3.690]` | `3.708 [3.615–3.841]` |
+| T511 | `65.860 [65.425–66.209]` | `64.752 [64.562–65.808]` | `16.856 [16.796–17.337]` | `17.640 [16.315–20.247]` |
+
+Ranges overlap at each bandlimit, and the candidate is slower at T127/T255 eight-thread medians and noisy at T511 eight threads. It passed the spin-1 recurrence equivalence, all-grid fast/general analysis and adjoint, DUCC T511 all-grid, and analytic checks, but source changes were reverted because the instruction reduction did not improve whole-transform timing beyond measurement variability. It used no additional memory. The helper-level assembly change does not justify keeping a candidate on its own.
