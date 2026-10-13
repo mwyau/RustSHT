@@ -15,6 +15,8 @@ use crate::simd::{
     RealRadix2InteriorKernel, RealRadix4ForwardInteriorKernel, RealRadix4InteriorKernel,
 };
 
+mod inverse_terminal;
+
 struct Pass<T> {
     radix: usize,
     l1: usize,
@@ -147,8 +149,20 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
     ) {
         pack_spectrum(spectrum, &mut workspace.first);
         let mut current_is_first = true;
-        for pass in &self.passes {
-            if current_is_first {
+        let scale = scalar::<T>(1.0 / self.len as f64);
+        let last_pass = self.passes.len() - 1;
+        debug_assert_eq!(self.passes[last_pass].ido, 1);
+        for (index, pass) in self.passes.iter().enumerate() {
+            if index == last_pass {
+                // The terminal pass writes the normalized samples directly
+                // to caller storage, avoiding an unscaled scratch copyback.
+                let input = if current_is_first {
+                    &workspace.first
+                } else {
+                    &workspace.second
+                };
+                inverse_terminal::execute(pass, input, output, scale);
+            } else if current_is_first {
                 execute_inverse_pass(
                     pass,
                     &workspace.first,
@@ -165,16 +179,9 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                     self.radix4_interior_kernel,
                 );
             }
-            current_is_first = !current_is_first;
-        }
-        let transformed = if current_is_first {
-            &workspace.first
-        } else {
-            &workspace.second
-        };
-        let scale = scalar::<T>(1.0 / self.len as f64);
-        for (sample, &value) in output.iter_mut().zip(transformed) {
-            *sample = value * scale;
+            if index != last_pass {
+                current_is_first = !current_is_first;
+            }
         }
     }
 }
