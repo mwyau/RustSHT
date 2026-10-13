@@ -1442,3 +1442,30 @@ Lowered the f64 spin-1 STANDARD scalar-conversion analysis compaction gate from 
 | F1 T191 | `15.608/6.823` | `11.663/5.122` | `25.3%/24.9%` |
 
 T63 remains below the gate; T255 was an unchanged-path control. T127 process ranges overlap for some cases, while all T191 candidate ranges are materially lower. The whole-transform gains reflect changed block eligibility for normal-range SIMD as well as fewer active lanes, and are not attributed only to lane removal. The focused candidate tests passed on all grids, comparing E/B conversion with the general recurrence and checking the analysis-adjoint identity. DUCC 0.41.0 full-array comparisons at T127/T191 on GL/CC/F1 and one/eight threads had maximum relative-L2 error `2.032e-14` and maximum absolute error `9.139e-15`. The independent read-only Sol review found no cutoff, indexing, weighting, product-safety, ownership or test blocker and supported acceptance. No FFT code changed.
+
+### Spin-1 scaled-to-normal continuation gate at T191 (2026-10-13)
+
+Lowered `SPIN1_TRANSITION_MIN_LMAX` from 224 to 191. This admits the existing guarded scaled-to-normal continuation for spin-1 scalar-conversion synthesis in STANDARD, GRAD_ONLY and DERIV1 from T191. The polar sine limit, paired recurrence, prefix and late-state checks, finite-output preflight, scaled fallback and per-worker scratch are unchanged. T190 and lower remain below the gate; T224 and higher were already eligible. No scalar, f32, spin-2 or FFT code changed. The native measurements used `examples/m1b_bench.rs`, f64, full `mmax`, `phi0=0.37`, reused plan/workspace, one warm-up and five timed samples per process, and three alternating baseline/candidate process pairs. Runs were 8 pinned CPU cores on a x86-64 CPU with Linux; Rust was `1.99.0 (b940084d7 2026-09-28)`, release `opt-level=3`, 16 codegen units, LTO off, runtime AVX2/FMA and no `target-cpu=native`. Baseline is `a21b8ac`; table cells are process-median milliseconds, one/eight threads:
+
+| Bandlimit / grid / mode | Baseline | Gate 191 | Reduction |
+| --- | ---: | ---: | ---: |
+| T191 GL STANDARD | `10.977/5.737` | `11.019/5.582` | `-0.4%/2.7%` |
+| T191 GL GRAD_ONLY | `11.227/5.792` | `11.264/5.867` | `-0.3%/-1.3%` |
+| T191 GL DERIV1 | `11.416/5.917` | `11.372/5.978` | `0.4%/-1.0%` |
+| T191 CC STANDARD | `12.477/6.004` | `11.482/5.628` | `8.0%/6.3%` |
+| T191 CC GRAD_ONLY | `12.587/6.175` | `11.613/5.761` | `7.7%/6.7%` |
+| T191 CC DERIV1 | `12.979/6.454` | `11.977/5.920` | `7.7%/8.3%` |
+| T191 F1 STANDARD | `11.928/6.108` | `10.106/5.149` | `15.3%/15.7%` |
+| T191 F1 GRAD_ONLY | `12.103/6.205` | `10.271/5.369` | `15.1%/13.5%` |
+| T191 F1 DERIV1 | `12.242/6.304` | `10.409/5.463` | `15.0%/13.3%` |
+| T208 GL STANDARD | `12.700/8.096` | `11.979/7.888` | `5.7%/2.6%` |
+| T208 GL GRAD_ONLY | `12.664/8.303` | `12.086/8.064` | `4.6%/2.9%` |
+| T208 GL DERIV1 | `12.803/8.496` | `12.229/8.105` | `4.5%/4.6%` |
+| T208 CC STANDARD | `14.018/8.805` | `12.909/8.081` | `7.9%/8.2%` |
+| T208 CC GRAD_ONLY | `14.346/8.999` | `13.014/8.159` | `9.3%/9.3%` |
+| T208 CC DERIV1 | `14.524/9.115` | `13.104/8.287` | `9.8%/9.1%` |
+| T208 F1 STANDARD | `12.988/8.480` | `11.056/7.242` | `14.9%/14.6%` |
+| T208 F1 GRAD_ONLY | `13.244/8.711` | `11.250/7.403` | `15.1%/15.0%` |
+| T208 F1 DERIV1 | `13.314/8.753` | `11.387/7.518` | `14.5%/14.1%` |
+
+The three T208 process ranges were separate for every grid/mode/thread result. T191 GL is within measurement noise; CC/F1 improve in all modes. A separate T127 screen lowering the gate all the way to 127 was rejected: it slowed all nine GL/CC/F1 mode medians at one and eight threads by 12.7–35.9%, so T127 remains on the previous fallback. Focused tests compare T190 (below gate), T191 and T208 (inside the newly enabled interval), and T224 across GL/CC/F1. STANDARD E-only, B-only, mixed and GRAD_ONLY spectra are checked against the general recurrence; DERIV1 also checks even/odd longitude, analytic low-degree fields and the synthesis-adjoint identity. Direct Python-plan comparisons with `ducc0==0.41.0`, T191/T208 GL/CC/F1, all three modes and one/eight threads had maximum relative-L2 errors `2.868e-14` and `3.223e-14`, respectively; maximum absolute errors were `2.998e-13` and `4.547e-13` (DERIV1). The full Rust suite, focused expanded tests, Python suite, formatting and whitespace checks passed. Sol's strictly read-only review found no correctness blocker and recommended screening an interior band; T208 was then measured and showed gains across all grids and modes. Existing T511/T1023 spin-1 validation remains on the previously enabled path. No FFT code changed.

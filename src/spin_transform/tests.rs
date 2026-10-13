@@ -635,7 +635,7 @@ fn spin1_scalar_transition_preserves_the_sine_cutoff_boundary() {
 
 #[test]
 fn spin1_scalar_conversion_matches_general_on_all_grids() {
-    for lmax in [63, 127, 224] {
+    for lmax in [63, 127, 190, 191, 208, 224] {
         for grid_kind in [
             GridKind::GaussLegendre,
             GridKind::ClenshawCurtis,
@@ -1822,7 +1822,7 @@ fn derivative_adjoint_matches_ducc_and_inner_product() {
 
 #[test]
 fn deriv1_scalar_conversion_matches_general_recurrence_and_analytic_fields() {
-    for lmax in [63, 224] {
+    for lmax in [63, 190, 191, 208, 224] {
         for grid_kind in [
             GridKind::GaussLegendre,
             GridKind::ClenshawCurtis,
