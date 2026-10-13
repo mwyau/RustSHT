@@ -1068,3 +1068,65 @@ see [`m3-scalar-performance.md`](m3-scalar-performance.md). That screen did not
 refresh the cross-library controls, so current gap ratios remain unmeasured.
 The general-prime implementation is a correctness and execution-structure
 step; further scalar profiling is needed before SIMD work.
+
+## Symmetric terminal real-prime inverse
+
+The terminal inverse pass for an odd real radix computes the outputs for
+sample indices `n` and `radix-n` together. Their cosine terms are equal and
+their sine terms have opposite signs. The loop shares each `Re(X_k) cos(...)`
+product and applies the two sine signs to produce both samples. This follows
+the paired real-coefficient sums in DUCC's pinned
+[`rfftpg`](https://github.com/mreineck/ducc/blob/c1ed01b8fda69d2a378190f0915f1a19762dddbf/src/ducc0/fft/fft1d_impl.h#L2229-L2523)
+pass. It changes only terminal real-prime C2R passes with radix below 135.
+
+The comparison used the `bench-native-real` harness, deterministic
+`spectrum_value` inputs, warm reusable plans, one warm-up and seven timed
+samples per process. Six alternating baseline/candidate process pairs ran on
+logical CPU 30 of an AMD Ryzen 9 5950X. Rust and Cargo were 1.99.0; the
+optimized `bench` profile used `opt-level=3`, no custom `RUSTFLAGS`, no LTO,
+and no target CPU flag. Each operation was single-threaded. The Legendre
+workload was active, so timings are provisional. The baseline binary was
+built from `1f0b14b2124eb421b5628e2d6d0d92255131a1ce`; the candidate was built
+from `0c0ee9aab8481fcfd6f09e153563a7f1f45dc4e1`. The raw CSV records both
+binary hashes and all process measurements.
+
+| N | Operation | Rows | Baseline median | Candidate median | Paired speedup | Pairs favoring candidate |
+|---:|---|---:|---:|---:|---:|---:|
+| 1,025 | C2R | 1 | 25.367 µs | 14.142 µs | 1.793× | 6/6 |
+| 1,025 | C2R | 32 | 25.512 µs | 14.152 µs | 1.801× | 6/6 |
+| 1,025 | R2C | 1 | 14.166 µs | 14.176 µs | 0.999× | 1/6 |
+| 1,025 | R2C | 32 | 14.227 µs | 14.139 µs | 1.002× | 3/6 |
+| 4,097 | C2R | 1 | 241.931 µs | 245.929 µs | 0.984× | 0/6 |
+| 4,097 | C2R | 32 | 245.290 µs | 249.620 µs | 0.984× | 0/6 |
+| 4,097 | R2C | 1 | 228.972 µs | 234.863 µs | 0.974× | 0/6 |
+| 4,097 | R2C | 32 | 231.830 µs | 238.509 µs | 0.974× | 0/6 |
+
+Paired speedups are the median of six baseline-to-candidate latency ratios.
+Batch rows run sequentially with a shared plan and workspace; table values are
+per-transform times. At N=1,025, C2R plan construction medians were 16.98 and
+16.99 µs, workspace allocation medians were 0.384 and 0.381 µs, and scratch
+remained 28,944 bytes. R2C timings at the same length show no execution gain.
+
+Callgrind profiled 20 normal-spectrum C2R operations at N=1,025. Instruction
+references fell from 14,696,836 to 9,642,013 (34.4%); simulated conditional
+branches fell from 2,142,428 to 1,186,934 (44.6%), and simulated conditional
+mispredictions fell from 31,274 to 19,794 (36.7%). These are Callgrind branch
+simulation results, not hardware performance counters. Linux denied
+`perf stat` access because `perf_event_paranoid` was 4. The release kernel
+uses scalar `mulsd`/`addsd` operations; it has no packed floating-point
+instructions. The archived profiles are
+[`baseline`](../benches/results/m4-real-prime-pairsym-baseline-callgrind.out.gz)
+and
+[`candidate`](../benches/results/m4-real-prime-pairsym-candidate-callgrind.out.gz).
+
+The candidate passed all crate tests, including f32 comparisons with f64
+references and direct DFT checks. Its f64 C2R outputs agreed with pinned DUCC
+for prime lengths 7, 13, 17, 31, 41, 53, 107, 109, 113, 127, and 131, and
+composite lengths 49, 98, and 1,025; the maximum absolute error was
+`6.94e-17`. The N=4,097 control was slower in all six pairs even though its
+radix-17 pass uses the interior loop. R2C at N=4,097 also slowed, where this
+inverse kernel does not execute. The cause may be shared-host variation or
+binary code layout; these measurements do not distinguish them.
+
+Raw timing rows are in
+[`m4-real-prime-pairsym-process-samples.csv`](../benches/results/m4-real-prime-pairsym-process-samples.csv).
