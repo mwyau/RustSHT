@@ -245,7 +245,7 @@ fn f32_real_transforms_match_independent_dfts_for_lengths_one_through_sixty_four
 
 #[test]
 fn f64_real_radix3_and_radix5_multipasses_match_independent_dfts() {
-    for n in [75, 125, 225] {
+    for n in [75, 125, 225, 1920] {
         let plan = RealFftPlan::<f64>::new(n).unwrap();
         let mut workspace = plan.workspace().unwrap();
         let input: Vec<_> = (0..n).map(|index| real_signal(index + 19, n + 5)).collect();
