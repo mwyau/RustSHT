@@ -765,7 +765,7 @@ change.
 
 | N | Single C2R gain after R2C control | Batch 32 C2R gain after R2C control |
 |---:|---:|---:|
-| 256 | +10.7% | +11.3% |
+| 256 | +10.6% | +11.3% |
 | 512 | +12.4% | +7.8% |
 | 1,024 | +20.3% | +17.5% |
 | 2,048 | +16.0% | +14.8% |
@@ -809,3 +809,5 @@ lengths 1,024, 2,048, and 4,096. The pinned DUCC comparison at
 C2R it compared 202,347 output records (404,694 scalar components). DUCCFFT's
 maximum absolute difference was `1.819e-12`; maximum scaled difference was
 `6.821e-13`. The comparison also checked RustFFT against both references.
+The comparison summary and build metadata are in
+[`m4-real-radix4-ido-interior-ducc-comparison.txt`](../benches/results/m4-real-radix4-ido-interior-ducc-comparison.txt).
