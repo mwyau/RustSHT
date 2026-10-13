@@ -94,7 +94,9 @@ Each cell gives microseconds per transform / total microseconds for the full
 Times are medians in microseconds. Scratch bytes report reusable FFT workspace;
 DUCC's count is its kernel scratch and excludes the benchmark adapter buffer. RustFFT's count includes its real adapter's complex work buffer. Multipass
 DUCCFFT retains both the recursive fallback buffers and the two real pass
-buffers.
+buffers. The setup columns use only `mode=r2c`, `rows=1` records: six
+process-level samples for each length and implementation. C2R and batch setup
+records are excluded.
 
 | N | Implementation | Plan construction | Workspace allocation | Scratch bytes |
 |---:|:---|---:|---:|---:|
