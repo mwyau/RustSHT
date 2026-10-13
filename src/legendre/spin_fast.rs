@@ -32,12 +32,12 @@ pub(crate) fn spin1_to_scalar<
     m: usize,
     lmax: usize,
     e_coefficients: &[Complex<T>],
-    b_coefficients: &[Complex<T>],
+    b_coefficients: Option<&[Complex<T>]>,
     scalar_first: &mut [Complex<T>],
     scalar_second: &mut [Complex<T>],
 ) {
     debug_assert_eq!(e_coefficients.len(), lmax - m + 1);
-    debug_assert_eq!(b_coefficients.len(), lmax - m + 1);
+    debug_assert!(b_coefficients.is_none_or(|values| values.len() == lmax - m + 1));
     debug_assert!(scalar_first.len() >= lmax + 2);
     debug_assert!(scalar_second.len() >= lmax + 2);
     scalar_first.fill(Complex::new(T::zero(), T::zero()));
@@ -50,10 +50,18 @@ pub(crate) fn spin1_to_scalar<
         let lf = T::from_usize(l).expect("degree converts");
         let mut coefficient_first = Complex::new(T::zero(), T::zero());
         let mut coefficient_second = Complex::new(T::zero(), T::zero());
+        let b_coefficient = if l <= lmax {
+            b_coefficients.map_or_else(
+                || Complex::new(T::zero(), T::zero()),
+                |values| values[l - m],
+            )
+        } else {
+            Complex::new(T::zero(), T::zero())
+        };
 
         if l > 0 && l <= lmax {
             let derivative_factor = Complex::new(T::zero(), mf) / (lf * (lf + T::one())).sqrt();
-            coefficient_first += derivative_factor * b_coefficients[l - m];
+            coefficient_first += derivative_factor * b_coefficient;
             coefficient_second -= derivative_factor * e_coefficients[l - m];
         }
         if l > m && l > 1 {
@@ -75,12 +83,15 @@ pub(crate) fn spin1_to_scalar<
                 * (-lf - T::from_f64(2.0).expect("two converts")))
                 / ((l_plus_one * (lf + T::from_f64(2.0).expect("two converts"))).sqrt());
             coefficient_first -= e_coefficients[l + 1 - m] * next_factor;
-            coefficient_second -= b_coefficients[l + 1 - m] * next_factor;
+            coefficient_second -= b_coefficients.map_or_else(
+                || Complex::new(T::zero(), T::zero()),
+                |values| values[l + 1 - m],
+            ) * next_factor;
         }
 
         if l <= lmax {
             last_first = e_coefficients[l - m];
-            last_second = b_coefficients[l - m];
+            last_second = b_coefficient;
         } else {
             last_first = Complex::new(T::zero(), T::zero());
             last_second = Complex::new(T::zero(), T::zero());
@@ -508,7 +519,7 @@ mod tests {
                 m,
                 lmax,
                 &e_coefficients,
-                &b_coefficients,
+                Some(&b_coefficients),
                 &mut scalar_first,
                 &mut scalar_second,
             );
@@ -652,6 +663,61 @@ mod tests {
                 (scalar_inner_product - spin_inner_product).norm() < 1e-11,
                 "spin/scalar coefficient transforms are not adjoints for m={m}: {scalar_inner_product:?} != {spin_inner_product:?}"
             );
+        }
+    }
+
+    #[test]
+    fn spin1_e_only_conversion_matches_zero_b_at_low_degree_boundaries() {
+        for lmax in 1..=16 {
+            for m in 0..=lmax {
+                let e_coefficients: Vec<_> = (m..=lmax)
+                    .map(|l| {
+                        if l == 0 {
+                            Complex::new(0.0, 0.0)
+                        } else {
+                            Complex::new(
+                                (l * 7 + m * 3) as f64 * 0.013,
+                                if m == 0 {
+                                    0.0
+                                } else {
+                                    (l * 5 + m) as f64 * 0.017
+                                },
+                            )
+                        }
+                    })
+                    .collect();
+                let zero_b = vec![Complex::new(0.0, 0.0); lmax - m + 1];
+                let mut actual_first = vec![Complex::new(0.0, 0.0); lmax + 2];
+                let mut actual_second = actual_first.clone();
+                let mut expected_first = actual_first.clone();
+                let mut expected_second = actual_first.clone();
+
+                spin1_to_scalar(
+                    m,
+                    lmax,
+                    &e_coefficients,
+                    None,
+                    &mut actual_first,
+                    &mut actual_second,
+                );
+                spin1_to_scalar(
+                    m,
+                    lmax,
+                    &e_coefficients,
+                    Some(&zero_b),
+                    &mut expected_first,
+                    &mut expected_second,
+                );
+
+                assert_eq!(
+                    actual_first, expected_first,
+                    "first row for lmax={lmax}, m={m}"
+                );
+                assert_eq!(
+                    actual_second, expected_second,
+                    "second row for lmax={lmax}, m={m}"
+                );
+            }
         }
     }
 
