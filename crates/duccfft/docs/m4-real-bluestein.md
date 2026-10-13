@@ -14,8 +14,9 @@ magnitude guards continue through their existing executors. This follows the
 `rfft_multipass`, `rfftpass::make_pass`, and `rfftpblue` structure in DUCC
 revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`. The supported terminal
 radix condition is `radix >= 135 && ido == 1`. The focused cases are `N=257` with radix 257 and `N=2049` with factors 3 and
-683. The N=2049 pass applies Bluestein to the terminal radix 683 after the
-radix-3 pass.
+683. At N=2049, forward execution applies Bluestein to radix 683 before the
+radix-3 pass; inverse execution applies radix 3 before the terminal
+Bluestein pass.
 
 ## Paired execution timings
 
@@ -45,12 +46,13 @@ readings are in
 
 ## Cross-library controls
 
-The following controls are from one process per build; each process reports
-the median of seven timed calls. RustFFT uses the existing full-complex
-adapter for odd lengths. DUCC uses `pocketfft_r` and the public half-spectrum
-packing adapter. The table reports whole-operation time per transform,
-including the adapters. These controls are screening measurements rather
-than repeated process-level comparisons.
+RustFFT and DUCC controls are from one process per build; each process reports
+the median of seven timed calls. The DUCCFFT column reports the median across
+three process-level samples from the paired measurements above. RustFFT uses
+the existing full-complex adapter for odd lengths. DUCC uses `pocketfft_r`
+and the public half-spectrum packing adapter. The table reports
+whole-operation time per transform, including the adapters. The controls are
+screening measurements rather than repeated process-level comparisons.
 
 | N | Operation | Rows | DUCCFFT (µs) | RustFFT adapter (µs) | DUCC portable (µs) | DUCC native (µs) |
 |---:|---|---:|---:|---:|---:|---:|
@@ -71,8 +73,8 @@ DUCCFFT time but does not close these gaps.
 ## Plan and workspace costs
 
 Plan construction and `workspace()` allocation were measured 20 times per
-process. Values below are medians across the six measurements from the three
-process runs (one each at row counts 1 and 32). Scratch counts initialized
+process. Values below are medians across 12 records per length and build
+(three process runs, two row counts, and R2C/C2R). Scratch counts initialized
 reusable workspace bytes and exclude user buffers.
 
 | N | Executor | Plan construction (µs) | Workspace allocation (µs) | Scratch bytes |
