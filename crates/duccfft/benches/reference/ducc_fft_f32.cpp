@@ -60,7 +60,6 @@ void unpack(const float* packed, std::size_t n, Complex* output) {
 }
 
 void pack(const Complex* input, std::size_t n, float* packed) {
-  std::fill(packed, packed + n, 0.0f);
   packed[0] = input[0].r;
   const std::size_t last = n / 2;
   for (std::size_t k = 1; k <= last; ++k) {
@@ -76,43 +75,55 @@ void pack(const Complex* input, std::size_t n, float* packed) {
 template <typename Plan> double plan_creation_ns(std::size_t n, bool use_vectorize) {
   volatile std::size_t observed = 0;
   constexpr std::size_t repetitions = 20;
-  const auto begin = Clock::now();
+  std::vector<double> samples;
+  samples.reserve(repetitions);
   for (std::size_t i = 0; i < repetitions; ++i) {
+    const auto begin = Clock::now();
     Plan plan(n, use_vectorize);
+    const auto end = Clock::now();
+    samples.push_back(
+        std::chrono::duration<double, std::nano>(end - begin).count());
     observed = observed + plan.bufsize();
   }
-  const auto end = Clock::now();
+  std::sort(samples.begin(), samples.end());
   (void)observed;
-  return std::chrono::duration<double, std::nano>(end - begin).count() /
-         static_cast<double>(repetitions);
+  return samples[samples.size() / 2];
 }
 
 double scratch_allocation_ns(std::size_t count) {
   volatile std::size_t observed = 0;
   constexpr std::size_t repetitions = 20;
-  const auto begin = Clock::now();
+  std::vector<double> samples;
+  samples.reserve(repetitions);
   for (std::size_t i = 0; i < repetitions; ++i) {
+    const auto begin = Clock::now();
     std::vector<float> scratch(count);
+    const auto end = Clock::now();
+    samples.push_back(
+        std::chrono::duration<double, std::nano>(end - begin).count());
     observed = observed + scratch.size();
   }
-  const auto end = Clock::now();
+  std::sort(samples.begin(), samples.end());
   (void)observed;
-  return std::chrono::duration<double, std::nano>(end - begin).count() /
-         static_cast<double>(repetitions);
+  return samples[samples.size() / 2];
 }
 
 double work_allocation_ns(std::size_t count) {
   volatile std::size_t observed = 0;
   constexpr std::size_t repetitions = 20;
-  const auto begin = Clock::now();
+  std::vector<double> samples;
+  samples.reserve(repetitions);
   for (std::size_t i = 0; i < repetitions; ++i) {
+    const auto begin = Clock::now();
     std::vector<float> work(count);
+    const auto end = Clock::now();
+    samples.push_back(
+        std::chrono::duration<double, std::nano>(end - begin).count());
     observed = observed + work.size();
   }
-  const auto end = Clock::now();
+  std::sort(samples.begin(), samples.end());
   (void)observed;
-  return std::chrono::duration<double, std::nano>(end - begin).count() /
-         static_cast<double>(repetitions);
+  return samples[samples.size() / 2];
 }
 
 struct Runner {

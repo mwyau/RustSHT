@@ -27,6 +27,10 @@ records seven timed samples per operation plus plan and scratch setup. Set
 that setting and the compiler flags because they change the reference path.
 The input helpers preserve the Rust f32 rounding sequence even when the native
 compiler can contract arithmetic in DUCC's transform kernels.
+Plan construction and vector allocation are each measured 20 times; the
+reported setup value is the upper median, and object destruction occurs after
+the timed interval. Plan scratch and the reusable packed-data adapter buffer
+are reported separately.
 
 The RustFFT baseline uses reusable plans and scratch. Its real adapter packs
 even real inputs into a half-length complex transform and uses a full complex
