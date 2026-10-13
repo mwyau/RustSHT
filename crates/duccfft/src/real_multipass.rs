@@ -474,10 +474,10 @@ fn forward_general_prime<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], 
                 }
             }
             if frequency == 0 {
-                output[index(0, group, 0, ido, l1)] = sum_re;
+                output[index(0, 0, group, ido, radix)] = sum_re;
             } else {
-                output[index(ido - 1, group, 2 * frequency - 1, ido, l1)] = sum_re;
-                output[index(0, group, 2 * frequency, ido, l1)] = sum_im;
+                output[index(ido - 1, 2 * frequency - 1, group, ido, radix)] = sum_re;
+                output[index(0, 2 * frequency, group, ido, radix)] = sum_im;
             }
         }
 
@@ -504,8 +504,8 @@ fn forward_general_prime<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], 
                 dc.re = dc.re + value_re;
                 dc.im = dc.im + value_im;
             }
-            output[index(i - 1, group, 0, ido, l1)] = dc.re;
-            output[index(i, group, 0, ido, l1)] = dc.im;
+            output[index(i - 1, 0, group, ido, radix)] = dc.re;
+            output[index(i, 0, group, ido, radix)] = dc.im;
 
             for frequency in 1..=half {
                 let mut positive = Complex::new(T::zero(), T::zero());
@@ -538,10 +538,10 @@ fn forward_general_prime<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], 
                         negative_phase -= radix;
                     }
                 }
-                output[index(i - 1, group, 2 * frequency, ido, l1)] = positive.re;
-                output[index(i, group, 2 * frequency, ido, l1)] = positive.im;
-                output[index(ic - 1, group, 2 * frequency - 1, ido, l1)] = negative.re;
-                output[index(ic, group, 2 * frequency - 1, ido, l1)] = -negative.im;
+                output[index(i - 1, 2 * frequency, group, ido, radix)] = positive.re;
+                output[index(i, 2 * frequency, group, ido, radix)] = positive.im;
+                output[index(ic - 1, 2 * frequency - 1, group, ido, radix)] = negative.re;
+                output[index(ic, 2 * frequency - 1, group, ido, radix)] = -negative.im;
             }
         }
     }
@@ -585,7 +585,7 @@ fn inverse_general_prime<T: Float + FromPrimitive>(
     for group in 0..l1 {
         // The real DC lane is a Hermitian length-radix spectrum.
         for sample in 0..radix {
-            let mut value = input[index(0, group, 0, ido, l1)];
+            let mut value = input[index(0, 0, group, ido, radix)];
             let mut phase = 0;
             for frequency in 1..=half {
                 phase += sample;
@@ -593,8 +593,8 @@ fn inverse_general_prime<T: Float + FromPrimitive>(
                     phase -= radix;
                 }
                 let root = pass.prime_roots[phase];
-                let re = input[index(ido - 1, group, 2 * frequency - 1, ido, l1)];
-                let im = input[index(0, group, 2 * frequency, ido, l1)];
+                let re = input[index(ido - 1, 2 * frequency - 1, group, ido, radix)];
+                let im = input[index(0, 2 * frequency, group, ido, radix)];
                 value = value + two * (re * root.re - im * root.im);
             }
             output[index(0, group, sample, ido, l1)] = value * scale;
@@ -604,8 +604,8 @@ fn inverse_general_prime<T: Float + FromPrimitive>(
             let ic = ido - i;
             for sample in 0..radix {
                 let mut value = Complex::new(
-                    input[index(i - 1, group, 0, ido, l1)],
-                    input[index(i, group, 0, ido, l1)],
+                    input[index(i - 1, 0, group, ido, radix)],
+                    input[index(i, 0, group, ido, radix)],
                 );
                 let mut phase = 0;
                 for frequency in 1..radix {
@@ -615,14 +615,14 @@ fn inverse_general_prime<T: Float + FromPrimitive>(
                     }
                     let (re, im) = if frequency <= half {
                         (
-                            input[index(i - 1, group, 2 * frequency, ido, l1)],
-                            input[index(i, group, 2 * frequency, ido, l1)],
+                            input[index(i - 1, 2 * frequency, group, ido, radix)],
+                            input[index(i, 2 * frequency, group, ido, radix)],
                         )
                     } else {
                         let mirrored = radix - frequency;
                         (
-                            input[index(ic - 1, group, 2 * mirrored - 1, ido, l1)],
-                            -input[index(ic, group, 2 * mirrored - 1, ido, l1)],
+                            input[index(ic - 1, 2 * mirrored - 1, group, ido, radix)],
+                            -input[index(ic, 2 * mirrored - 1, group, ido, radix)],
                         )
                     };
                     value = value + Complex::new(re, im) * pass.prime_roots[phase];

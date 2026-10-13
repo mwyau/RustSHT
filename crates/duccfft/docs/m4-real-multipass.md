@@ -998,13 +998,15 @@ in
 
 ## General odd-prime terminal pass at N=1025
 
-The real multipass planner now accepts an odd prime radix below 135 when its
-pass has `ido == 1`. This covers the terminal radix-41 pass in the
-`1025 = 5^2 × 41` factorization. The forward schedule runs that pass first;
+The real multipass planner accepts an odd prime radix below 135 when its pass
+has odd `ido`. This covers the terminal radix-41 pass in the
+`1025 = 5^2 × 41` factorization and interior odd-prime passes such as radix 17
+in `4097 = 17 × 241`. The forward schedule runs the terminal 41 pass first;
 the inverse schedule runs it last and applies normalization while writing the
-output. The pass uses the existing factor order, packed real spectrum, and
-root table. Its radix-41 butterfly is a symmetric direct real DFT, rather than
-DUCC's optimized `rfftpg` coefficient-sum kernel. Other general-prime passes
+output. Terminal passes use a symmetric direct real DFT. Interior passes use
+direct complex sums with the pass twiddles and DUCC's packed real layout.
+These scalar kernels follow the pass structure but do not yet use DUCC's
+optimized `rfftpg` coefficient-sum kernel. Even-`ido` general-prime passes
 remain on the recursive executor.
 
 The pass is used only for finite values whose maximum magnitude is at most
@@ -1051,8 +1053,13 @@ binary SHA-256 hashes, per-process plan and workspace measurements, workspace
 bytes, operation timings, and checksums.
 
 This result supports the DUCC-style pass schedule for the 1025 workload; it
-does not validate the generic kernel's performance for other radices. Lengths
-257 and 2049 still use Bluestein in the recursive executor, and 4097 still
-uses recursion for its `ido > 1` prime pass. The current pass therefore
-reduces one important odd-real gap without completing the general-prime or
-Bluestein port.
+does not establish performance for the interior-prime kernel. The N=98 case
+(`2 × 7 × 7`) is checked against independent forward and inverse DFTs and the
+pinned DUCC reference. It exercises an interior radix-7 pass with `l1=2` and
+`ido=7`, which guards the group-major packed layout. N=4097 now routes its
+radix-17 (`ido=241`) stage through the multipass general-prime kernel and
+retains radix-241 Bluestein at `ido=1`. Screening measurements show no
+reliable whole-call speedup at N=4097, and workspace is about twice the
+recursive-only baseline. Lengths 257 and 2049 still use Bluestein in the
+recursive executor. The general-prime implementation is a correctness and
+execution-structure step; further scalar profiling is needed before SIMD work.
