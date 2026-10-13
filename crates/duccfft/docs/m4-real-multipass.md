@@ -804,3 +804,35 @@ the f64 radix-four interior pass; radix-two, small-`ido`, f32, and
 generic-prime execution need separate optimization. These measurements
 support keeping this kernel during M4 and do not establish performance
 completion.
+
+## Compiler-flag controls
+
+Compiler settings were compared separately from the algorithm change at
+lengths 1,024 and 4,096. All builds used source commit
+`23cfbd399c76308dadd4831e3cc7bf3dae35b8e3`, the same optimized `bench`
+profile, and separate Cargo target directories. The portable build used no
+custom `RUSTFLAGS`, LTO, or target CPU setting. The native-target build added
+`RUSTFLAGS=-C target-cpu=native`; the LTO build set
+`CARGO_PROFILE_BENCH_LTO=true` and left the target CPU unset. These are
+benchmark-only builds. Twelve process sets per length rotated the three build variants and were
+pinned to logical one CPU core. Each process ran `bench-native-real N 1 32`, with
+one warm-up and seven timed samples. The table gives the median process time
+in nanoseconds per transform. Parentheses give the median paired speed gain
+of the native-target and LTO builds relative to the portable build. The
+Legendre workload was active, so these timings remain provisional.
+
+| N | Operation | Single: portable / native / LTO (gain native / LTO) | Batch 32: portable / native / LTO (gain native / LTO) |
+|---:|---|---:|---:|
+| 1,024 | R2C | 3,085 / 2,846 / 3,081 (+8.45% / −0.02%) | 3,044 / 2,823 / 3,047 (+8.06% / −0.15%) |
+| 1,024 | C2R | 2,675 / 2,380 / 2,705 (+11.97% / −1.13%) | 2,661 / 2,375 / 2,694 (+12.28% / −1.29%) |
+| 4,096 | R2C | 13,916 / 13,230 / 13,887 (+4.89% / −0.14%) | 14,049 / 13,341 / 13,980 (+5.09% / +0.58%) |
+| 4,096 | C2R | 12,233 / 11,196 / 12,163 (+8.69% / −0.00%) | 12,328 / 11,271 / 12,344 (+9.65% / −0.05%) |
+
+The native-target gains were positive in all twelve process pairs for every
+case except single R2C at 1,024, where ten pairs favored it. LTO gains were
+mixed across pairs and lengths and ranged from −1.29% to +0.58%. Native CPU
+targeting affects generated scalar code and narrows the remaining gap, but
+the portable target remains the reported default. LTO showed no repeatable
+execution gain in these cases. Raw timings, workspace costs, and checksums are
+in
+[`m4-real-radix4-forward-avx2-build-flag-samples.csv`](../benches/results/m4-real-radix4-forward-avx2-build-flag-samples.csv).
