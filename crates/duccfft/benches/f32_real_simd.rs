@@ -65,10 +65,9 @@ impl RustFftRealPlan {
         }
     }
 
+    #[allow(clippy::chunks_exact_to_as_chunks)]
     fn forward(&mut self, input: &[f32], output: &mut [Complex32]) {
-        let (pairs, remainder) = input.as_chunks::<2>();
-        debug_assert!(remainder.is_empty());
-        for (value, pair) in self.transform.iter_mut().zip(pairs) {
+        for (value, pair) in self.transform.iter_mut().zip(input.chunks_exact(2)) {
             *value = Complex32::new(pair[0], pair[1]);
         }
         self.forward
@@ -85,6 +84,7 @@ impl RustFftRealPlan {
         output[half].im = 0.0;
     }
 
+    #[allow(clippy::chunks_exact_to_as_chunks)]
     fn inverse(&mut self, input: &[Complex32], output: &mut [f32]) {
         let half = self.n / 2;
         for k in 0..half {
@@ -100,9 +100,7 @@ impl RustFftRealPlan {
         self.inverse
             .process_with_scratch(&mut self.transform, &mut self.scratch);
         let scale = 1.0 / half as f32;
-        let (pairs, remainder) = output.as_chunks_mut::<2>();
-        debug_assert!(remainder.is_empty());
-        for (pair, value) in pairs.iter_mut().zip(&self.transform) {
+        for (pair, value) in output.chunks_exact_mut(2).zip(&self.transform) {
             pair[0] = value.re * scale;
             pair[1] = value.im * scale;
         }
