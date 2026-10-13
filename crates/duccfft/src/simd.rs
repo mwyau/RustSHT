@@ -5,6 +5,8 @@ use num_complex::Complex;
 use num_traits::{Float, FromPrimitive};
 
 pub(crate) type RealRadix4InteriorKernel<T> = unsafe fn(&[T], [&mut [T]; 4], usize, &[T]) -> usize;
+pub(crate) type RealRadix4ForwardInteriorKernel<T> =
+    unsafe fn([&[T]; 4], [&mut [T]; 4], usize, &[T]) -> usize;
 
 pub(crate) struct SimdPass<'a, T> {
     pub(crate) radix: usize,
@@ -23,6 +25,11 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
 
     /// Returns the inverse radix-four interior kernel when AVX2 is available.
     fn real_radix4_interior_kernel() -> Option<RealRadix4InteriorKernel<Self>> {
+        None
+    }
+
+    /// Returns the forward radix-four interior kernel when AVX2 is available.
+    fn real_radix4_forward_interior_kernel() -> Option<RealRadix4ForwardInteriorKernel<Self>> {
         None
     }
 
@@ -53,7 +60,9 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
 mod x86 {
     use std::sync::OnceLock;
 
-    use super::{Complex, RealRadix4InteriorKernel, SimdPass, SimdScalar};
+    use super::{
+        Complex, RealRadix4ForwardInteriorKernel, RealRadix4InteriorKernel, SimdPass, SimdScalar,
+    };
 
     static AVX2_AVAILABLE: OnceLock<bool> = OnceLock::new();
 
@@ -71,6 +80,14 @@ mod x86 {
         fn real_radix4_interior_kernel() -> Option<RealRadix4InteriorKernel<Self>> {
             if available() {
                 Some(f64_real_kernel::inverse_radix4_interior)
+            } else {
+                None
+            }
+        }
+
+        fn real_radix4_forward_interior_kernel() -> Option<RealRadix4ForwardInteriorKernel<Self>> {
+            if available() {
+                Some(f64_real_kernel::forward_radix4_interior)
             } else {
                 None
             }
@@ -640,6 +657,106 @@ mod x86 {
             _mm256_blend_pd(sums, differences, 0b1010)
         }
 
+        #[inline]
+        #[target_feature(enable = "avx2")]
+        unsafe fn pair_re(value: __m256d) -> __m256d {
+            _mm256_permute_pd(value, 0b0000)
+        }
+
+        #[inline]
+        #[target_feature(enable = "avx2")]
+        unsafe fn pair_im(value: __m256d) -> __m256d {
+            _mm256_permute_pd(value, 0b1111)
+        }
+
+        #[inline]
+        #[target_feature(enable = "avx2")]
+        unsafe fn pack_pair(real: __m256d, imag: __m256d) -> __m256d {
+            _mm256_unpacklo_pd(real, imag)
+        }
+
+        #[target_feature(enable = "avx2")]
+        pub(super) unsafe fn forward_radix4_interior(
+            input: [&[f64]; 4],
+            output: [&mut [f64]; 4],
+            ido: usize,
+            twiddles: &[f64],
+        ) -> usize {
+            debug_assert!(ido > 2);
+            debug_assert!(ido.is_multiple_of(2));
+            debug_assert!(input.iter().all(|branch| branch.len() == ido));
+            debug_assert!(output.iter().all(|branch| branch.len() == ido));
+            debug_assert!(twiddles.len() >= 3 * (ido - 1));
+
+            let input0 = input[0].as_ptr();
+            let input1 = input[1].as_ptr();
+            let input2 = input[2].as_ptr();
+            let input3 = input[3].as_ptr();
+            let twiddle1 = twiddles.as_ptr();
+            let twiddle2 = unsafe { twiddle1.add(ido - 1) };
+            let twiddle3 = unsafe { twiddle2.add(ido - 1) };
+            let output0 = output[0].as_mut_ptr();
+            let output1 = output[1].as_mut_ptr();
+            let output2 = output[2].as_mut_ptr();
+            let output3 = output[3].as_mut_ptr();
+
+            let mut i = 2;
+            while i + 2 < ido {
+                let x0 = unsafe { _mm256_loadu_pd(input0.add(i - 1)) };
+                let x1 = unsafe { _mm256_loadu_pd(input1.add(i - 1)) };
+                let x2 = unsafe { _mm256_loadu_pd(input2.add(i - 1)) };
+                let x3 = unsafe { _mm256_loadu_pd(input3.add(i - 1)) };
+                let roots1 = unsafe { _mm256_loadu_pd(twiddle1.add(i - 2)) };
+                let roots2 = unsafe { _mm256_loadu_pd(twiddle2.add(i - 2)) };
+                let roots3 = unsafe { _mm256_loadu_pd(twiddle3.add(i - 2)) };
+                let x1 = unsafe { multiply_pm(roots1, x1) };
+                let x2 = unsafe { multiply_pm(roots2, x2) };
+                let x3 = unsafe { multiply_pm(roots3, x3) };
+
+                let x0r = unsafe { pair_re(x0) };
+                let x0i = unsafe { pair_im(x0) };
+                let cr2 = unsafe { pair_re(x1) };
+                let ci2 = unsafe { pair_im(x1) };
+                let cr3 = unsafe { pair_re(x2) };
+                let ci3 = unsafe { pair_im(x2) };
+                let cr4 = unsafe { pair_re(x3) };
+                let ci4 = unsafe { pair_im(x3) };
+
+                let tr1 = _mm256_add_pd(cr4, cr2);
+                let tr4 = _mm256_sub_pd(cr4, cr2);
+                let ti1 = _mm256_add_pd(ci2, ci4);
+                let ti4 = _mm256_sub_pd(ci2, ci4);
+                let tr2 = _mm256_add_pd(x0r, cr3);
+                let tr3 = _mm256_sub_pd(x0r, cr3);
+                let ti2 = _mm256_add_pd(x0i, ci3);
+                let ti3 = _mm256_sub_pd(x0i, ci3);
+
+                let branch0 =
+                    unsafe { pack_pair(_mm256_add_pd(tr2, tr1), _mm256_add_pd(ti1, ti2)) };
+                let branch3 =
+                    unsafe { pack_pair(_mm256_sub_pd(tr2, tr1), _mm256_sub_pd(ti1, ti2)) };
+                let branch2 =
+                    unsafe { pack_pair(_mm256_add_pd(tr3, ti4), _mm256_add_pd(tr4, ti3)) };
+                let branch1 =
+                    unsafe { pack_pair(_mm256_sub_pd(tr3, ti4), _mm256_sub_pd(tr4, ti3)) };
+                let mirror = ido - i - 3;
+                unsafe {
+                    _mm256_storeu_pd(output0.add(i - 1), branch0);
+                    _mm256_storeu_pd(output2.add(i - 1), branch2);
+                    _mm256_storeu_pd(
+                        output1.add(mirror),
+                        _mm256_permute4x64_pd(branch1, 0b0100_1110),
+                    );
+                    _mm256_storeu_pd(
+                        output3.add(mirror),
+                        _mm256_permute4x64_pd(branch3, 0b0100_1110),
+                    );
+                }
+                i += 4;
+            }
+            i
+        }
+
         #[target_feature(enable = "avx2")]
         pub(super) unsafe fn inverse_radix4_interior(
             input: &[f64],
@@ -916,6 +1033,94 @@ mod tests {
                                 ),
                             );
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn f64_real_forward_radix4_interior_matches_scalar_equations() {
+        let Some(kernel) = <f64 as SimdScalar>::real_radix4_forward_interior_kernel() else {
+            return;
+        };
+        for ido in [4, 6, 8, 10, 12, 16, 32, 64] {
+            let inputs: [Vec<f64>; 4] = std::array::from_fn(|branch| {
+                (0..ido)
+                    .map(|index| {
+                        let x = (branch * ido + index) as f64;
+                        (x * 0.37).sin() + 0.25 * (x * 0.19).cos()
+                    })
+                    .collect()
+            });
+            let twiddles: Vec<_> = (0..3 * (ido - 1))
+                .map(|index| {
+                    let x = index as f64;
+                    (x * 0.23).cos() + 0.5 * (x * 0.41).sin()
+                })
+                .collect();
+            let sentinel = f64::NAN;
+            let mut actual0 = vec![sentinel; ido];
+            let mut actual1 = vec![sentinel; ido];
+            let mut actual2 = vec![sentinel; ido];
+            let mut actual3 = vec![sentinel; ido];
+            let start = unsafe {
+                kernel(
+                    [&inputs[0], &inputs[1], &inputs[2], &inputs[3]],
+                    [&mut actual0, &mut actual1, &mut actual2, &mut actual3],
+                    ido,
+                    &twiddles,
+                )
+            };
+            let expected_start = 2 + 4 * ((ido - 2) / 4);
+            assert_eq!(start, expected_start, "ido={ido}");
+            let actual = [actual0, actual1, actual2, actual3];
+            let mut expected = [
+                vec![sentinel; ido],
+                vec![sentinel; ido],
+                vec![sentinel; ido],
+                vec![sentinel; ido],
+            ];
+
+            let multiply = |branch: usize, component: usize, e: f64, f: f64| {
+                let offset = (branch - 1) * (ido - 1) + component;
+                let c = twiddles[offset];
+                let d = twiddles[offset + 1];
+                (c * e + d * f, c * f - d * e)
+            };
+            for i in (2..start).step_by(2) {
+                let ic = ido - i;
+                let (cr2, ci2) = multiply(1, i - 2, inputs[1][i - 1], inputs[1][i]);
+                let (cr3, ci3) = multiply(2, i - 2, inputs[2][i - 1], inputs[2][i]);
+                let (cr4, ci4) = multiply(3, i - 2, inputs[3][i - 1], inputs[3][i]);
+                let (tr1, tr4) = (cr4 + cr2, cr4 - cr2);
+                let (ti1, ti4) = (ci2 + ci4, ci2 - ci4);
+                let (tr2, tr3) = (inputs[0][i - 1] + cr3, inputs[0][i - 1] - cr3);
+                let (ti2, ti3) = (inputs[0][i] + ci3, inputs[0][i] - ci3);
+                expected[0][i - 1] = tr2 + tr1;
+                expected[3][ic - 1] = tr2 - tr1;
+                expected[0][i] = ti1 + ti2;
+                expected[3][ic] = ti1 - ti2;
+                expected[2][i - 1] = tr3 + ti4;
+                expected[1][ic - 1] = tr3 - ti4;
+                expected[2][i] = tr4 + ti3;
+                expected[1][ic] = tr4 - ti3;
+            }
+
+            for branch in 0..4 {
+                for index in 0..ido {
+                    if expected[branch][index].is_nan() {
+                        assert!(
+                            actual[branch][index].is_nan(),
+                            "ido={ido}, branch={branch}, untouched index={index} was overwritten"
+                        );
+                    } else {
+                        assert!(
+                            (actual[branch][index] - expected[branch][index]).abs() < 3.0e-12,
+                            "ido={ido}, branch={branch}, index={index}: {} != {}",
+                            actual[branch][index],
+                            expected[branch][index]
+                        );
                     }
                 }
             }

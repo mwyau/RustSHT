@@ -11,7 +11,7 @@ use num_traits::{Float, FromPrimitive};
 
 use crate::FftError;
 use crate::complex::{check_vec_len, try_vec};
-use crate::simd::RealRadix4InteriorKernel;
+use crate::simd::{RealRadix4ForwardInteriorKernel, RealRadix4InteriorKernel};
 
 struct Pass<T> {
     radix: usize,
@@ -23,6 +23,7 @@ struct Pass<T> {
 pub(crate) struct RealMultipassPlan<T> {
     len: usize,
     passes: Vec<Pass<T>>,
+    radix4_forward_interior_kernel: Option<RealRadix4ForwardInteriorKernel<T>>,
     radix4_interior_kernel: Option<RealRadix4InteriorKernel<T>>,
 }
 
@@ -36,6 +37,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         len: usize,
         factors: &[usize],
         roots: &[Complex<T>],
+        radix4_forward_interior_kernel: Option<RealRadix4ForwardInteriorKernel<T>>,
         radix4_interior_kernel: Option<RealRadix4InteriorKernel<T>>,
     ) -> Result<Option<Self>, FftError> {
         if len <= 1 || factors.iter().any(|&radix| !matches!(radix, 2 | 4)) {
@@ -76,6 +78,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         Ok(Some(Self {
             len,
             passes,
+            radix4_forward_interior_kernel,
             radix4_interior_kernel,
         }))
     }
@@ -98,13 +101,28 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         let Some(first_pass) = passes.next() else {
             unreachable!("real multipass plan has at least one pass")
         };
-        execute_forward_pass(first_pass, input, &mut workspace.second);
+        execute_forward_pass(
+            first_pass,
+            input,
+            &mut workspace.second,
+            self.radix4_forward_interior_kernel,
+        );
         let mut current_is_first = false;
         for pass in passes {
             if current_is_first {
-                execute_forward_pass(pass, &workspace.first, &mut workspace.second);
+                execute_forward_pass(
+                    pass,
+                    &workspace.first,
+                    &mut workspace.second,
+                    self.radix4_forward_interior_kernel,
+                );
             } else {
-                execute_forward_pass(pass, &workspace.second, &mut workspace.first);
+                execute_forward_pass(
+                    pass,
+                    &workspace.second,
+                    &mut workspace.first,
+                    self.radix4_forward_interior_kernel,
+                );
             }
             current_is_first = !current_is_first;
         }
@@ -183,10 +201,15 @@ fn twiddle<T: Copy>(pass: &Pass<T>, branch: usize, component: usize) -> T {
     pass.twiddles[(branch - 1) * (pass.ido - 1) + component]
 }
 
-fn execute_forward_pass<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output: &mut [T]) {
+fn execute_forward_pass<T: Float + FromPrimitive>(
+    pass: &Pass<T>,
+    input: &[T],
+    output: &mut [T],
+    radix4_forward_interior_kernel: Option<RealRadix4ForwardInteriorKernel<T>>,
+) {
     match pass.radix {
         2 => forward_radix2(pass, input, output),
-        4 => forward_radix4(pass, input, output),
+        4 => forward_radix4(pass, input, output, radix4_forward_interior_kernel),
         _ => unreachable!("real multipass plan contains only radix 2 and 4"),
     }
 }
@@ -299,7 +322,12 @@ fn inverse_radix2<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output:
     }
 }
 
-fn forward_radix4<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output: &mut [T]) {
+fn forward_radix4<T: Float + FromPrimitive>(
+    pass: &Pass<T>,
+    input: &[T],
+    output: &mut [T],
+    radix4_forward_interior_kernel: Option<RealRadix4ForwardInteriorKernel<T>>,
+) {
     let l1 = pass.l1;
     let ido = pass.ido;
     if ido == 1 {
@@ -348,45 +376,66 @@ fn forward_radix4<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output:
     if ido <= 2 {
         return;
     }
+    let input_branch_len = ido * l1;
+    let output_block_len = 4 * ido;
     for k in 0..l1 {
-        for i in (2..ido).step_by(2) {
+        let input0 = &input[k * ido..(k + 1) * ido];
+        let input1 = &input[input_branch_len + k * ido..input_branch_len + (k + 1) * ido];
+        let input2 = &input[2 * input_branch_len + k * ido..2 * input_branch_len + (k + 1) * ido];
+        let input3 = &input[3 * input_branch_len + k * ido..3 * input_branch_len + (k + 1) * ido];
+        let output_block = &mut output[k * output_block_len..(k + 1) * output_block_len];
+        let (output0, tail) = output_block.split_at_mut(ido);
+        let (output1, tail) = tail.split_at_mut(ido);
+        let (output2, output3) = tail.split_at_mut(ido);
+        let scalar_start = if ido >= 16
+            && let Some(kernel) = radix4_forward_interior_kernel
+        {
+            // SAFETY: plan construction installs this kernel only after AVX2
+            // runtime detection. Each input and output branch has exactly
+            // `ido` scalars, and the pass owns all three twiddle branches.
+            unsafe {
+                kernel(
+                    [input0, input1, input2, input3],
+                    [&mut *output0, &mut *output1, &mut *output2, &mut *output3],
+                    ido,
+                    &pass.twiddles,
+                )
+            }
+        } else {
+            2
+        };
+        for i in (scalar_start..ido).step_by(2) {
             let ic = ido - i;
             let (cr2, ci2) = multiply_pm(
                 twiddle(pass, 1, i - 2),
                 twiddle(pass, 1, i - 1),
-                input[index(i - 1, k, 1, ido, l1)],
-                input[index(i, k, 1, ido, l1)],
+                input1[i - 1],
+                input1[i],
             );
             let (cr3, ci3) = multiply_pm(
                 twiddle(pass, 2, i - 2),
                 twiddle(pass, 2, i - 1),
-                input[index(i - 1, k, 2, ido, l1)],
-                input[index(i, k, 2, ido, l1)],
+                input2[i - 1],
+                input2[i],
             );
             let (cr4, ci4) = multiply_pm(
                 twiddle(pass, 3, i - 2),
                 twiddle(pass, 3, i - 1),
-                input[index(i - 1, k, 3, ido, l1)],
-                input[index(i, k, 3, ido, l1)],
+                input3[i - 1],
+                input3[i],
             );
             let (tr1, tr4) = (cr4 + cr2, cr4 - cr2);
             let (ti1, ti4) = (ci2 + ci4, ci2 - ci4);
-            let (tr2, tr3) = (
-                input[index(i - 1, k, 0, ido, l1)] + cr3,
-                input[index(i - 1, k, 0, ido, l1)] - cr3,
-            );
-            let (ti2, ti3) = (
-                input[index(i, k, 0, ido, l1)] + ci3,
-                input[index(i, k, 0, ido, l1)] - ci3,
-            );
-            output[index(i - 1, 0, k, ido, 4)] = tr2 + tr1;
-            output[index(ic - 1, 3, k, ido, 4)] = tr2 - tr1;
-            output[index(i, 0, k, ido, 4)] = ti1 + ti2;
-            output[index(ic, 3, k, ido, 4)] = ti1 - ti2;
-            output[index(i - 1, 2, k, ido, 4)] = tr3 + ti4;
-            output[index(ic - 1, 1, k, ido, 4)] = tr3 - ti4;
-            output[index(i, 2, k, ido, 4)] = tr4 + ti3;
-            output[index(ic, 1, k, ido, 4)] = tr4 - ti3;
+            let (tr2, tr3) = (input0[i - 1] + cr3, input0[i - 1] - cr3);
+            let (ti2, ti3) = (input0[i] + ci3, input0[i] - ci3);
+            output0[i - 1] = tr2 + tr1;
+            output3[ic - 1] = tr2 - tr1;
+            output0[i] = ti1 + ti2;
+            output3[ic] = ti1 - ti2;
+            output2[i - 1] = tr3 + ti4;
+            output1[ic - 1] = tr3 - ti4;
+            output2[i] = tr4 + ti3;
+            output1[ic] = tr4 - ti3;
         }
     }
 }
