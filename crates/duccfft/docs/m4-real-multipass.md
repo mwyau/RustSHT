@@ -758,6 +758,19 @@ twelve process pairs at lengths 256 through 4,096, with median paired gains of
 separated from shared-host variation. The Legendre workload was active during
 the runs, so these measurements remain provisional.
 
+To account for process-to-process speed shifts, I also divided each pair's
+C2R speed ratio by that pair's R2C control ratio, then took the median across
+twelve pairs. Positive values indicate a C2R gain beyond the matched R2C
+change.
+
+| N | Single C2R gain after R2C control | Batch 32 C2R gain after R2C control |
+|---:|---:|---:|
+| 256 | +10.7% | +11.3% |
+| 512 | +12.4% | +7.8% |
+| 1,024 | +20.3% | +17.5% |
+| 2,048 | +16.0% | +14.8% |
+| 4,096 | +24.3% | +24.2% |
+
 The public-call setup measurements show no new workspace storage. For each
 length, baseline and candidate report the same scratch byte count: 2,048;
 4,128; 7,232; 15,456; 27,776; 60,576; and 109,760 bytes, respectively. Median
@@ -786,3 +799,13 @@ terminal-pass-only kernel remains rejected.
 
 Raw process samples, including plan and workspace timings, are in
 [`m4-real-radix4-ido-interior-paired-process-samples.csv`](../benches/results/m4-real-radix4-ido-interior-paired-process-samples.csv).
+
+The revised scalar unit test asserts the kernel's expected first scalar-tail
+index and verifies that the terminal endpoint and unprocessed tail remain
+untouched. The f64/f32 direct inverse-DFT test now covers random spectra at
+lengths 1,024, 2,048, and 4,096. The pinned DUCC comparison at
+`c1ed01b8fda69d2a378190f0915f1a19762dddbf` used the portable g++ 15.2.0 build
+(`-std=c++20 -O3 -DNDEBUG -pthread`, `vectorize=false`). Across C2C, R2C, and
+C2R it compared 202,347 output records (404,694 scalar components). DUCCFFT's
+maximum absolute difference was `1.819e-12`; maximum scaled difference was
+`6.821e-13`. The comparison also checked RustFFT against both references.
