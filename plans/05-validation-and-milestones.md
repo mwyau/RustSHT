@@ -1530,3 +1530,21 @@ At T1023, the general polar recurrence is scaled for `98.28%` of its CC/F1 lane-
 | F1 T511 control | `115.464/40.413` | `115.987/40.423` | `+0.5%/0.0%` |
 
 The GL one-thread process ranges are separated at T63, T127, T255 and T1023; the T511 ranges overlap. Eight-thread ranges overlap at every tested bandlimit, so no multicore speedup is claimed. The CC/F1 control ranges also overlap. The branch adds no allocation or workspace storage. On `main`, all 11 release tests matching `spin1_` passed, including the scalar-fast cutoff, all-grid adjoint comparison and one/eight-thread compacted analysis test. The ignored T511 all-grid DUCC/roundtrip check and T1023 exact-analysis DUCC check passed; spin-1 maximum selected DUCC sample error was `1.296e-14` and maximum coefficient error was `8.824e-18`. The T511 check covered spin 1 and 2 on all grids. Reviewer Sol's read-only review found no cutoff, E/B-slice or workspace issue and supported retaining the change as a GL one-thread improvement; it found no basis for claiming an eight-thread gain. Formatting and workspace Clippy passed; all-feature tests passed (114 Rust and 10 f32, 8 ignored), and no-default-feature tests passed (108 Rust and 10 f32, 7 ignored). DUCC phase timing was not part of this focused candidate comparison. No FFT code changed.
+
+### Spin-1 T127 mixed-cutoff synthesis screening (2026-10-13)
+
+At T127, a temporary diagnostic counted 48 mixed active/inactive latitude blocks for GL and 46 for CC/F1. An unguarded compact fused-synthesis prototype reduced the ordinary-coefficient timing medians in several cases, but Sol's read-only review identified a numerical risk: checking only the final unweighted result cannot detect a recurrence contribution lost to underflow and later amplified by `1/sin(theta)`. That prototype was rejected. A second prototype enabled the existing guarded scaled-to-normal transition only for mixed-cutoff blocks at T127; it kept the binary-scaled fallback when the transition or weighted-output checks declined. The guarded prototype was compared with `d1f50f6` using `examples/m1b_bench.rs`, f64 T127 synthesis, reused plans and workspaces, full `mmax`, `phi0=0.37`, one warm-up and five timed calls per process. Five alternating baseline/candidate process pairs ran on 8 pinned CPU cores of an x86-64 CPU / Linux, with `rustc 1.99.0 (b940084d7 2026-09-28)`, release `opt-level=3`, 16 codegen units, LTO off and runtime AVX2/FMA dispatch. Table values are one/eight-thread medians in milliseconds, computed from the five process medians:
+
+| Grid / mode | Baseline | Guarded transition | Median paired change |
+| --- | ---: | ---: | ---: |
+| GL STANDARD | `3.321/2.075` | `3.322/2.091` | `+0.1%/+0.8%` |
+| GL GRAD_ONLY | `3.498/2.259` | `3.419/2.218` | `-2.3%/-1.7%` |
+| GL DERIV1 control | `3.565/2.330` | `3.431/2.210` | `-3.0%/+1.1%` |
+| CC STANDARD | `4.239/2.431` | `4.213/2.398` | `-0.5%/-1.2%` |
+| CC GRAD_ONLY | `4.325/2.444` | `4.253/2.443` | `-1.6%/-0.2%` |
+| CC DERIV1 control | `4.416/2.468` | `4.209/2.441` | `-4.7%/-1.2%` |
+| F1 STANDARD | `3.827/2.321` | `3.788/2.316` | `-1.3%/-0.6%` |
+| F1 GRAD_ONLY | `3.955/2.406` | `3.914/2.414` | `-1.6%/+0.1%` |
+| F1 DERIV1 control | `3.965/2.583` | `3.892/2.394` | `-2.0%/-8.6%` |
+
+The per-process timing ranges overlap in every grid, mode and thread comparison; the apparent DERIV1 changes are noise in an unaffected scalar path. The guarded branch adds checks without a reproducible whole-transform gain and was rejected. Its temporary extreme-coefficient comparison produced finite, closely matching spectra on GL/CC/F1, but selected the highest mixed order, likely the sectoral order with one degree pair. It did not establish a multi-degree transition handoff. Sol's second read-only review found no safety issue in the guarded branch and noted this test-coverage limit. No source change or regression test from either prototype was retained.
