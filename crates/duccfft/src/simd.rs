@@ -175,8 +175,8 @@ mod x86 {
 
         #[inline]
         #[target_feature(enable = "avx2")]
-        unsafe fn complex_mul<const INVERSE: bool>(left: V, right: V) -> V {
-            let right = if INVERSE {
+        unsafe fn complex_mul(left: V, right: V, inverse: bool) -> V {
+            let right = if inverse {
                 right
             } else {
                 _mm256_mul_pd(right, _mm256_setr_pd(1.0, -1.0, 1.0, -1.0))
@@ -189,9 +189,9 @@ mod x86 {
 
         #[inline]
         #[target_feature(enable = "avx2")]
-        unsafe fn rotate_quarter<const INVERSE: bool>(value: V) -> V {
+        unsafe fn rotate_quarter(value: V, inverse: bool) -> V {
             let swapped = _mm256_permute_pd(value, 0b0101);
-            let signs = if INVERSE {
+            let signs = if inverse {
                 _mm256_setr_pd(-1.0, 1.0, -1.0, 1.0)
             } else {
                 _mm256_setr_pd(1.0, -1.0, 1.0, -1.0)
@@ -201,10 +201,10 @@ mod x86 {
 
         #[inline]
         #[target_feature(enable = "avx2")]
-        unsafe fn rotate_eighth<const INVERSE: bool>(value: V) -> V {
+        unsafe fn rotate_eighth(value: V, inverse: bool) -> V {
             let real = _mm256_movedup_pd(value);
             let imaginary = _mm256_permute_pd(value, 0b1111);
-            let sign = if INVERSE { 1.0 } else { -1.0 };
+            let sign = if inverse { 1.0 } else { -1.0 };
             let rotated_real = _mm256_sub_pd(real, _mm256_mul_pd(_mm256_set1_pd(sign), imaginary));
             let rotated_imag = _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(sign), real), imaginary);
             _mm256_mul_pd(
@@ -215,10 +215,10 @@ mod x86 {
 
         #[inline]
         #[target_feature(enable = "avx2")]
-        unsafe fn rotate_eighth_three<const INVERSE: bool>(value: V) -> V {
+        unsafe fn rotate_eighth_three(value: V, inverse: bool) -> V {
             let real = _mm256_movedup_pd(value);
             let imaginary = _mm256_permute_pd(value, 0b1111);
-            let (rotated_real, rotated_imag) = if INVERSE {
+            let (rotated_real, rotated_imag) = if inverse {
                 (
                     _mm256_sub_pd(_mm256_setzero_pd(), _mm256_add_pd(real, imaginary)),
                     _mm256_sub_pd(real, imaginary),
@@ -246,13 +246,13 @@ mod x86 {
 
         #[inline]
         #[target_feature(enable = "avx2")]
-        unsafe fn radix4<const INVERSE: bool>(input: &[V; 8]) -> [V; 8] {
+        unsafe fn radix4(input: &[V; 8], inverse: bool) -> [V; 8] {
             let mut output = [_mm256_setzero_pd(); 8];
             let even_sum = _mm256_add_pd(input[0], input[2]);
             let even_difference = _mm256_sub_pd(input[0], input[2]);
             let odd_sum = _mm256_add_pd(input[1], input[3]);
             let odd_difference = _mm256_sub_pd(input[1], input[3]);
-            let turn = unsafe { rotate_quarter::<INVERSE>(odd_difference) };
+            let turn = unsafe { rotate_quarter(odd_difference, inverse) };
             output[0] = _mm256_add_pd(even_sum, odd_sum);
             output[2] = _mm256_sub_pd(even_sum, odd_sum);
             output[1] = _mm256_add_pd(even_difference, turn);
@@ -262,7 +262,7 @@ mod x86 {
 
         #[inline]
         #[target_feature(enable = "avx2")]
-        unsafe fn radix8<const INVERSE: bool>(input: &[V; 8]) -> [V; 8] {
+        unsafe fn radix8(input: &[V; 8], inverse: bool) -> [V; 8] {
             let mut output = [_mm256_setzero_pd(); 8];
             let mut a1 = _mm256_add_pd(input[1], input[5]);
             let mut a5 = _mm256_sub_pd(input[1], input[5]);
@@ -270,12 +270,12 @@ mod x86 {
             let mut a7 = _mm256_sub_pd(input[3], input[7]);
             let old_a1 = a1;
             a1 = _mm256_add_pd(a1, a3);
-            a3 = unsafe { rotate_quarter::<INVERSE>(_mm256_sub_pd(old_a1, a3)) };
-            a7 = unsafe { rotate_quarter::<INVERSE>(a7) };
+            a3 = unsafe { rotate_quarter(_mm256_sub_pd(old_a1, a3), inverse) };
+            a7 = unsafe { rotate_quarter(a7, inverse) };
             let old_a5 = a5;
             a5 = _mm256_add_pd(a5, a7);
-            a7 = unsafe { rotate_eighth_three::<INVERSE>(_mm256_sub_pd(old_a5, a7)) };
-            a5 = unsafe { rotate_eighth::<INVERSE>(a5) };
+            a7 = unsafe { rotate_eighth_three(_mm256_sub_pd(old_a5, a7), inverse) };
+            a5 = unsafe { rotate_eighth(a5, inverse) };
 
             let a0 = _mm256_add_pd(input[0], input[4]);
             let a4 = _mm256_sub_pd(input[0], input[4]);
@@ -287,7 +287,7 @@ mod x86 {
             output[4] = _mm256_sub_pd(even_sum, a1);
             output[2] = _mm256_add_pd(even_difference, a3);
             output[6] = _mm256_sub_pd(even_difference, a3);
-            a6 = unsafe { rotate_quarter::<INVERSE>(a6) };
+            a6 = unsafe { rotate_quarter(a6, inverse) };
             let odd_sum = _mm256_add_pd(a4, a6);
             output[1] = _mm256_add_pd(odd_sum, a5);
             output[5] = _mm256_sub_pd(odd_sum, a5);
@@ -298,30 +298,27 @@ mod x86 {
 
         #[inline]
         #[target_feature(enable = "avx2")]
-        unsafe fn transform<const RADIX: usize, const INVERSE: bool>(input: &[V; 8]) -> [V; 8] {
+        unsafe fn transform<const RADIX: usize>(input: &[V; 8], inverse: bool) -> [V; 8] {
             match RADIX {
                 2 => unsafe { radix2(input) },
-                4 => unsafe { radix4::<INVERSE>(input) },
-                8 => unsafe { radix8::<INVERSE>(input) },
+                4 => unsafe { radix4(input, inverse) },
+                8 => unsafe { radix8(input, inverse) },
                 _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
             }
         }
 
         #[target_feature(enable = "avx2")]
         pub(super) unsafe fn first_pass(data: &mut [Complex<f64>], pass: &SimdPass<'_, f64>) {
-            match (pass.radix, pass.inverse) {
-                (2, false) => unsafe { first_pass_fixed::<2, false>(data, pass) },
-                (4, false) => unsafe { first_pass_fixed::<4, false>(data, pass) },
-                (8, false) => unsafe { first_pass_fixed::<8, false>(data, pass) },
-                (2, true) => unsafe { first_pass_fixed::<2, true>(data, pass) },
-                (4, true) => unsafe { first_pass_fixed::<4, true>(data, pass) },
-                (8, true) => unsafe { first_pass_fixed::<8, true>(data, pass) },
+            match pass.radix {
+                2 => unsafe { first_pass_fixed::<2>(data, pass) },
+                4 => unsafe { first_pass_fixed::<4>(data, pass) },
+                8 => unsafe { first_pass_fixed::<8>(data, pass) },
                 _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
             }
         }
 
         #[target_feature(enable = "avx2")]
-        unsafe fn first_pass_fixed<const RADIX: usize, const INVERSE: bool>(
+        unsafe fn first_pass_fixed<const RADIX: usize>(
             data: &mut [Complex<f64>],
             pass: &SimdPass<'_, f64>,
         ) {
@@ -331,18 +328,19 @@ mod x86 {
                 for (branch, slot) in input.iter_mut().enumerate().take(RADIX) {
                     *slot = unsafe { load(data_ptr, inner + pass.ido * branch) };
                 }
-                let transformed = unsafe { transform::<RADIX, INVERSE>(&input) };
+                let transformed = unsafe { transform::<RADIX>(&input, pass.inverse) };
                 for (branch, &result) in transformed.iter().enumerate().take(RADIX) {
                     let mut value = result;
                     if branch != 0 && pass.ido > 1 {
                         value = unsafe {
-                            complex_mul::<INVERSE>(
+                            complex_mul(
                                 value,
                                 load(pass.twiddles.as_ptr(), branch * pass.ido + inner),
+                                pass.inverse,
                             )
                         };
                     }
-                    if INVERSE {
+                    if pass.inverse {
                         value = _mm256_mul_pd(value, _mm256_set1_pd(pass.inverse_scale));
                     }
                     unsafe { store(data_ptr, inner + pass.ido * branch, value) };
@@ -356,19 +354,16 @@ mod x86 {
             output: &mut [Complex<f64>],
             pass: &SimdPass<'_, f64>,
         ) {
-            match (pass.radix, pass.inverse) {
-                (2, false) => unsafe { pass_fixed::<2, false>(input, output, pass) },
-                (4, false) => unsafe { pass_fixed::<4, false>(input, output, pass) },
-                (8, false) => unsafe { pass_fixed::<8, false>(input, output, pass) },
-                (2, true) => unsafe { pass_fixed::<2, true>(input, output, pass) },
-                (4, true) => unsafe { pass_fixed::<4, true>(input, output, pass) },
-                (8, true) => unsafe { pass_fixed::<8, true>(input, output, pass) },
+            match pass.radix {
+                2 => unsafe { pass_fixed::<2>(input, output, pass) },
+                4 => unsafe { pass_fixed::<4>(input, output, pass) },
+                8 => unsafe { pass_fixed::<8>(input, output, pass) },
                 _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
             }
         }
 
         #[target_feature(enable = "avx2")]
-        unsafe fn pass_fixed<const RADIX: usize, const INVERSE: bool>(
+        unsafe fn pass_fixed<const RADIX: usize>(
             input: &[Complex<f64>],
             output: &mut [Complex<f64>],
             pass: &SimdPass<'_, f64>,
@@ -382,18 +377,19 @@ mod x86 {
                         *slot =
                             unsafe { load(input_ptr, inner + pass.ido * (branch + RADIX * outer)) };
                     }
-                    let transformed = unsafe { transform::<RADIX, INVERSE>(&values) };
+                    let transformed = unsafe { transform::<RADIX>(&values, pass.inverse) };
                     for (branch, &result) in transformed.iter().enumerate().take(RADIX) {
                         let mut value = result;
                         if branch != 0 && pass.ido > 1 {
                             value = unsafe {
-                                complex_mul::<INVERSE>(
+                                complex_mul(
                                     value,
                                     load(pass.twiddles.as_ptr(), branch * pass.ido + inner),
+                                    pass.inverse,
                                 )
                             };
                         }
-                        if INVERSE {
+                        if pass.inverse {
                             value = _mm256_mul_pd(value, _mm256_set1_pd(pass.inverse_scale));
                         }
                         unsafe {
