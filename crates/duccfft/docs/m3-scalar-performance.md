@@ -370,24 +370,29 @@ ratios and may differ from ratios of the displayed medians.
 | C2C inverse | 525 | 5.340 → 4.774 (1.12×) | 5.287 → 4.723 (1.12×) |
 | C2C forward | 1,372 | 12.468 → 10.725 (1.16×) | 12.529 → 10.793 (1.16×) |
 | C2C inverse | 1,372 | 13.996 → 12.633 (1.11×) | 14.024 → 12.702 (1.11×) |
-| R2C | 257 | 11.647 → 10.129 (1.15×) | 11.601 → 10.140 (1.15×) |
+| R2C | 257 | 11.647 → 10.129 (1.15×) | 11.601 → 10.140 (1.14×) |
 | C2R | 257 | 11.822 → 10.360 (1.14×) | 11.786 → 10.314 (1.14×) |
 | R2C | 2,049 | 94.897 → 86.161 (1.10×) | 96.264 → 87.499 (1.10×) |
-| C2R | 2,049 | 96.510 → 88.355 (1.10×) | 97.944 → 89.177 (1.10×) |
+| C2R | 2,049 | 96.510 → 88.355 (1.09×) | 97.944 → 89.177 (1.10×) |
 | R2C | 1,372 | 7.254 → 6.332 (1.15×) | 7.319 → 6.353 (1.15×) |
 | C2R | 1,372 | 8.501 → 7.835 (1.09×) | 8.502 → 7.872 (1.08×) |
 
 The 525- and 1,372-point C2C plans are the nested convolution transforms for
 real Bluestein radices 257 and 683. All six pairs favored the candidate for
 both C2C directions and for both public real directions at N=257, 1,372, and
-2,049. Smooth C2C controls at lengths 75, 125, 225, and 1,920 also favored
-the candidate in all three process pairs for both directions. The N=525 real
-C2R control was slower in every pair (median ratio 0.934×); its real pass
+2,049. The N=525 real C2R control was slower in every pair: candidate latency
+was about 7.1% higher (median baseline/candidate ratio 0.934×). Its real pass
 source path is unchanged, so this remains an unexplained control result. N=525
-R2C was effectively unchanged. Workspace byte counts matched in all 144
-paired records. The full setup and timing records are in
+R2C was effectively unchanged. Workspace byte counts matched in all 288 raw
+rows, representing 144 baseline/candidate comparisons. The full setup and
+timing records are in
 [`m3-c2c-fixed-radix-scalar-process-samples.csv`](../benches/results/m3-c2c-fixed-radix-scalar-process-samples.csv),
 SHA-256 `cb20e8d9590cee7ce1c800700de7d54a0ded06dd52e68300dc8c72b11dd4be9a`.
+
+A separate six-pair screen moved radix-11 butterfly temporaries from workspace
+arrays to stack-local arrays. N=4,097 real whole-call medians were effectively
+unchanged, while nested C2C inverse length 484 regressed by about 5% in single
+calls and 4.6% in batches. The prototype was reverted.
 
 The measured benchmark binary SHA-256 values are
 `0fea5774ab5c1d5f9c0cf4f41249157b21bd660e9cea046f9d612e1d85b1a3de`
