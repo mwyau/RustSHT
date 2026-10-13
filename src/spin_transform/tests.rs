@@ -1221,7 +1221,7 @@ fn spin1_scalar_fast_analysis_honors_the_polar_order_cutoff() {
 
 #[test]
 fn spin1_standard_analysis_scalar_conversion_matches_general_and_adjoint_on_all_grids() {
-    for lmax in [63, 127, 255] {
+    for lmax in [63, 127, 191, 255] {
         for kind in [
             GridKind::GaussLegendre,
             GridKind::ClenshawCurtis,
