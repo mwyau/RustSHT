@@ -1372,6 +1372,45 @@ fn shared_real_plans_execute_concurrently_with_separate_workspaces() {
 }
 
 #[test]
+fn shared_f32_real_bluestein_plan_executes_concurrently_with_separate_workspaces() {
+    let plan = RealFftPlan::<f32>::new(137).unwrap();
+    std::thread::scope(|scope| {
+        for row in 0..4 {
+            let plan = &plan;
+            scope.spawn(move || {
+                let mut workspace = plan.workspace().unwrap();
+                let input: Vec<_> = (0..plan.len())
+                    .map(|index| real_signal(index + row, plan.len()) as f32)
+                    .collect();
+                let input_f64: Vec<_> = input.iter().map(|&value| value as f64).collect();
+                let expected_spectrum = direct_r2c_f64(&input_f64);
+                let mut spectrum = vec![Complex::new(0.0, 0.0); plan.spectrum_len()];
+                plan.forward(&input, &mut spectrum, &mut workspace).unwrap();
+                assert_complex_f32_close(&spectrum, &expected_spectrum, plan.len());
+
+                let input_spectrum: Vec<_> = (0..plan.spectrum_len())
+                    .map(|bin| {
+                        Complex::new(
+                            (0.013 * (bin + row + 1) as f64).sin() as f32,
+                            (0.021 * (bin + 2 * row + 1) as f64).cos() as f32,
+                        )
+                    })
+                    .collect();
+                let input_spectrum_f64: Vec<_> = input_spectrum
+                    .iter()
+                    .map(|value| Complex::new(value.re as f64, value.im as f64))
+                    .collect();
+                let expected_output = direct_c2r_f64(&input_spectrum_f64, plan.len());
+                let mut output = vec![0.0_f32; plan.len()];
+                plan.inverse(&input_spectrum, &mut output, &mut workspace)
+                    .unwrap();
+                assert_f32_close(&output, &expected_output, plan.len());
+            });
+        }
+    });
+}
+
+#[test]
 fn contiguous_real_batches_match_direct_dfts() {
     for n in [15, 16] {
         let rows = 3;
