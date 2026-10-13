@@ -563,8 +563,20 @@ fn inverse_general_prime<T: Float + FromPrimitive>(
     if ido == 1 {
         for group in 0..l1 {
             let input_start = group * radix;
-            for sample in 0..radix {
-                let mut value = input[input_start];
+            let dc = input[input_start];
+            let mut zero_frequency_sample = dc;
+            for frequency in 1..=half {
+                zero_frequency_sample =
+                    zero_frequency_sample + two * input[input_start + 2 * frequency - 1];
+            }
+            output[group] = zero_frequency_sample * scale;
+
+            // Real-input symmetry pairs samples n and radix-n. Their cosine
+            // product is shared, while the sine contribution changes sign.
+            for sample in 1..=half {
+                let mirror = radix - sample;
+                let mut positive = dc;
+                let mut negative = dc;
                 let mut phase = 0;
                 for frequency in 1..=half {
                     phase += sample;
@@ -574,9 +586,13 @@ fn inverse_general_prime<T: Float + FromPrimitive>(
                     let root = pass.prime_roots[phase];
                     let re = input[input_start + 2 * frequency - 1];
                     let im = input[input_start + 2 * frequency];
-                    value = value + two * (re * root.re - im * root.im);
+                    let cosine_product = re * root.re;
+                    let sine_product = im * root.im;
+                    positive = positive + two * (cosine_product - sine_product);
+                    negative = negative + two * (cosine_product + sine_product);
                 }
-                output[sample * l1 + group] = value * scale;
+                output[sample * l1 + group] = positive * scale;
+                output[mirror * l1 + group] = negative * scale;
             }
         }
         return;
