@@ -217,7 +217,7 @@ fn main() {
         return;
     }
     println!(
-        "n,convolution_len,plan_ns,workspace_ns,scratch_bytes,chirp_pack_ns,forward_fft_ns,spectral_product_ns,inverse_fft_ns,final_chirp_ns,phase_sum_ns,public_operation_ns,ratio_phase_sum_public,max_abs_error,checksum"
+        "n,convolution_len,plan_ns,workspace_ns,scratch_bytes,chirp_pack_ns,forward_fft_ns,spectral_product_ns,inverse_fft_ns,final_chirp_ns,phase_sum_ns,prototype_operation_ns,ratio_phase_sum_prototype,max_abs_error,checksum"
     );
     for len in lengths {
         let plan_ns = measure(|| {
@@ -256,19 +256,19 @@ fn main() {
 
         let phases = profile.phases(&input);
         let phase_sum: f64 = phases.iter().sum();
-        let public_ns = measure(|| {
+        let prototype_operation_ns = measure(|| {
             profile.execute(&input);
             black_box(profile.output.as_slice());
         });
         println!(
-            "{len},{},{plan_ns:.3},{workspace_ns:.3},{scratch_bytes},{:.3},{:.3},{:.3},{:.3},{:.3},{phase_sum:.3},{public_ns:.3},{:.4},{max_error:.9e},{:.9}",
+            "{len},{},{plan_ns:.3},{workspace_ns:.3},{scratch_bytes},{:.3},{:.3},{:.3},{:.3},{:.3},{phase_sum:.3},{prototype_operation_ns:.3},{:.4},{max_error:.9e},{:.9}",
             profile.convolution_len,
             phases[0],
             phases[1],
             phases[2],
             phases[3],
             phases[4],
-            phase_sum / public_ns,
+            phase_sum / prototype_operation_ns,
             profile.output[0].re + profile.output[0].im
         );
     }

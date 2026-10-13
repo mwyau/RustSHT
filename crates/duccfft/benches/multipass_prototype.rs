@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: BSD-3-Clause
 //
-// Bounded scalar execution-schedule experiment. The pass layout follows the
-// pinned DUCC cfft_multipass descriptor order; the purpose is to compare
-// buffer movement and loop organization before any production migration.
+// Bounded scalar pass-kernel experiment. The pass layout follows the pinned
+// DUCC cfft_multipass descriptor order; the complete C2C schedule is measured
+// separately in m3-recursive-vs-multipass.csv.
 
 use std::hint::black_box;
 use std::time::Instant;
@@ -15,6 +15,7 @@ type C = Complex64;
 
 const SAMPLES: usize = 7;
 const ZERO: C = C::new(0.0, 0.0);
+const COPY_TRAFFIC_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Clone)]
 struct Pass {
@@ -435,8 +436,43 @@ fn average_ns(repeats: usize, mut operation: impl FnMut()) -> f64 {
     start.elapsed().as_nanos() as f64 / repeats as f64
 }
 
+fn profile_copyback(len: usize) {
+    assert!(len > 0);
+    let source: Vec<_> = (0..len)
+        .map(|index| C::new(index as f64, -(index as f64)))
+        .collect();
+    let mut destination = vec![ZERO; len];
+    let repeats = (COPY_TRAFFIC_BYTES / (2 * len * std::mem::size_of::<C>())).max(1);
+    let mut samples = Vec::with_capacity(SAMPLES);
+    for _ in 0..SAMPLES {
+        let start = Instant::now();
+        for _ in 0..repeats {
+            destination.copy_from_slice(&source);
+            black_box(destination.as_slice());
+        }
+        samples.push(start.elapsed().as_nanos() as f64 / repeats as f64);
+    }
+    samples.sort_by(f64::total_cmp);
+    println!(
+        "copyback,{len},{repeats},{},{:.3},{:.9}",
+        2 * len * std::mem::size_of::<C>(),
+        samples[SAMPLES / 2],
+        destination[0].re + destination[len - 1].im
+    );
+}
+
 fn main() {
     let arguments: Vec<String> = std::env::args().skip(1).collect();
+    if arguments
+        .first()
+        .is_some_and(|argument| argument == "copyback")
+    {
+        println!("operation,n,repeats_per_sample,bytes_read_and_written,copyback_ns,checksum");
+        for value in arguments.iter().skip(1).filter(|value| *value != "--bench") {
+            profile_copyback(value.parse().expect("length must be an integer"));
+        }
+        return;
+    }
     let lengths: Vec<&str> = arguments
         .iter()
         .map(String::as_str)
