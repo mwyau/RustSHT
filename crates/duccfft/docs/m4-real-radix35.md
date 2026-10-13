@@ -17,9 +17,9 @@ with nonfinite values use the residual-corrected recursive path.
 
 The crate tests compare f64 R2C and C2R against direct DFTs at lengths 75, 125,
 and 225. f32 tests compare those outputs with f64 DFTs after rounding the
-inputs to f32. The largest f32 relative-L2 error was `1.30e-7`; all outputs
-were finite. The complete all-feature crate suite passed with 61 tests, and
-Clippy passed with warnings denied. The f32 metrics were:
+inputs to f32. The large mixed-radix length 1,920 (`2^7 × 3 × 5`) is also
+checked against direct f64 DFTs. Across these cases, the largest relative-L2
+error was `1.49e-7`; all outputs were finite. The f32 metrics were:
 
 | N | Operation | Maximum absolute error | RMS error | Relative L2 error | Scaled maximum error | Nonfinite outputs |
 |---:|:---:|---:|---:|---:|---:|---:|
@@ -29,6 +29,8 @@ Clippy passed with warnings denied. The f32 metrics were:
 | 125 | C2R | 4.995e-8 | 8.228e-9 | 1.295e-7 | 4.995e-8 | 0 |
 | 225 | R2C | 3.387e-6 | 1.115e-6 | 1.034e-7 | 3.224e-8 | 0 |
 | 225 | C2R | 3.119e-8 | 5.156e-9 | 1.062e-7 | 3.119e-8 | 0 |
+| 1,920 | R2C | 4.563e-5 | 3.862e-6 | 1.222e-7 | 4.892e-8 | 0 |
+| 1,920 | C2R | 4.260e-8 | 2.497e-9 | 1.488e-7 | 4.260e-8 | 0 |
 
 The pinned DUCC output comparison used revision
 `c1ed01b8fda69d2a378190f0915f1a19762dddbf`. Its maximum componentwise f64
