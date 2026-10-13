@@ -123,7 +123,9 @@ The scalar production path was added at source revision
 containing only radix 2 and radix 4, while preserving DUCC's conditional
 complexify selection. It uses stage twiddles derived from the plan's root
 table and two reusable caller-owned real buffers. Other factorisations
-continue through the recursive executor.
+continue through the recursive executor. The subsequent scalar radix-3/radix-5 implementation, direct DUCC comparison,
+and paired performance measurements are in
+[`m4-real-radix35.md`](m4-real-radix35.md).
 
 ### Radix-3 and radix-5 passes
 
