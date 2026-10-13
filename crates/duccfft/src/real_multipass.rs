@@ -3,8 +3,9 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: BSD-3-Clause
 //
-// Scalar real radix-2/3/4/5 pass equations and packed layout are adapted
-// from DUCC fft1d_impl.h at c1ed01b8fda69d2a378190f0915f1a19762dddbf.
+// Scalar real radix-2/3/4/5 pass equations and the general-prime packed layout
+// are adapted from DUCC fft1d_impl.h at
+// c1ed01b8fda69d2a378190f0915f1a19762dddbf.
 
 use num_complex::Complex;
 use num_traits::{Float, FromPrimitive};
@@ -95,7 +96,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                 }
                 Some(stage)
             } else {
-                if radix > 5 && ido != 1 {
+                if radix > 5 && ido.is_multiple_of(2) {
                     return Ok(None);
                 }
                 None
@@ -418,36 +419,130 @@ impl<T: Float + FromPrimitive> MultipassBluestein<'_, T> {
 
 fn forward_general_prime<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output: &mut [T]) {
     debug_assert!(pass.radix > 5 && pass.radix < 135);
-    debug_assert_eq!(pass.ido, 1);
     let radix = pass.radix;
     let half = radix / 2;
+    let ido = pass.ido;
+    let l1 = pass.l1;
 
-    for group in 0..pass.l1 {
-        let input0 = input[group];
-        let mut dc = input0;
-        for branch in 1..=half {
-            dc = dc + input[branch * pass.l1 + group] + input[(radix - branch) * pass.l1 + group];
+    if ido == 1 {
+        for group in 0..l1 {
+            let input0 = input[group];
+            let mut dc = input0;
+            for branch in 1..=half {
+                dc = dc + input[branch * l1 + group] + input[(radix - branch) * l1 + group];
+            }
+            let output_start = group * radix;
+            output[output_start] = dc;
+
+            for frequency in 1..=half {
+                let mut sum_re = input0;
+                let mut sum_im = T::zero();
+                let mut phase = 0;
+                for branch in 1..=half {
+                    phase += frequency;
+                    if phase >= radix {
+                        phase -= radix;
+                    }
+                    let root = pass.prime_roots[phase];
+                    let left = input[branch * l1 + group];
+                    let right = input[(radix - branch) * l1 + group];
+                    sum_re = sum_re + (left + right) * root.re;
+                    sum_im = sum_im - (left - right) * root.im;
+                }
+                output[output_start + 2 * frequency - 1] = sum_re;
+                output[output_start + 2 * frequency] = sum_im;
+            }
         }
-        let output_start = group * radix;
-        output[output_start] = dc;
+        return;
+    }
 
-        for frequency in 1..=half {
-            let mut sum_re = input0;
+    for group in 0..l1 {
+        // Transform the real-valued DC lane across the prime radix and write
+        // its positive-frequency half in DUCC's packed pass layout.
+        for frequency in 0..=half {
+            let mut sum_re = T::zero();
             let mut sum_im = T::zero();
             let mut phase = 0;
-            for branch in 1..=half {
+            for branch in 0..radix {
+                let root = pass.prime_roots[phase];
+                let value = input[index(0, group, branch, ido, l1)];
+                sum_re = sum_re + value * root.re;
+                sum_im = sum_im - value * root.im;
                 phase += frequency;
                 if phase >= radix {
                     phase -= radix;
                 }
-                let root = pass.prime_roots[phase];
-                let left = input[branch * pass.l1 + group];
-                let right = input[(radix - branch) * pass.l1 + group];
-                sum_re = sum_re + (left + right) * root.re;
-                sum_im = sum_im - (left - right) * root.im;
             }
-            output[output_start + 2 * frequency - 1] = sum_re;
-            output[output_start + 2 * frequency] = sum_im;
+            if frequency == 0 {
+                output[index(0, group, 0, ido, l1)] = sum_re;
+            } else {
+                output[index(ido - 1, group, 2 * frequency - 1, ido, l1)] = sum_re;
+                output[index(0, group, 2 * frequency, ido, l1)] = sum_im;
+            }
+        }
+
+        // Each remaining pair is a complex inner-frequency lane. Apply its
+        // pass twiddle, transform the lane across the prime radix, then place
+        // both members of the conjugate-frequency pair in DUCC's real layout.
+        for i in (2..ido).step_by(2) {
+            let ic = ido - i;
+            let mut dc = Complex::new(T::zero(), T::zero());
+            for branch in 0..radix {
+                let (value_re, value_im) = if branch == 0 {
+                    (
+                        input[index(i - 1, group, branch, ido, l1)],
+                        input[index(i, group, branch, ido, l1)],
+                    )
+                } else {
+                    multiply_pm(
+                        twiddle(pass, branch, i - 2),
+                        twiddle(pass, branch, i - 1),
+                        input[index(i - 1, group, branch, ido, l1)],
+                        input[index(i, group, branch, ido, l1)],
+                    )
+                };
+                dc.re = dc.re + value_re;
+                dc.im = dc.im + value_im;
+            }
+            output[index(i - 1, group, 0, ido, l1)] = dc.re;
+            output[index(i, group, 0, ido, l1)] = dc.im;
+
+            for frequency in 1..=half {
+                let mut positive = Complex::new(T::zero(), T::zero());
+                let mut negative = Complex::new(T::zero(), T::zero());
+                let mut positive_phase = 0;
+                let mut negative_phase = 0;
+                for branch in 0..radix {
+                    let (value_re, value_im) = if branch == 0 {
+                        (
+                            input[index(i - 1, group, branch, ido, l1)],
+                            input[index(i, group, branch, ido, l1)],
+                        )
+                    } else {
+                        multiply_pm(
+                            twiddle(pass, branch, i - 2),
+                            twiddle(pass, branch, i - 1),
+                            input[index(i - 1, group, branch, ido, l1)],
+                            input[index(i, group, branch, ido, l1)],
+                        )
+                    };
+                    let value = Complex::new(value_re, value_im);
+                    positive = positive + value * pass.prime_roots[positive_phase].conj();
+                    negative = negative + value * pass.prime_roots[negative_phase].conj();
+                    positive_phase += frequency;
+                    if positive_phase >= radix {
+                        positive_phase -= radix;
+                    }
+                    negative_phase += radix - frequency;
+                    if negative_phase >= radix {
+                        negative_phase -= radix;
+                    }
+                }
+                output[index(i - 1, group, 2 * frequency, ido, l1)] = positive.re;
+                output[index(i, group, 2 * frequency, ido, l1)] = positive.im;
+                output[index(ic - 1, group, 2 * frequency - 1, ido, l1)] = negative.re;
+                output[index(ic, group, 2 * frequency - 1, ido, l1)] = -negative.im;
+            }
         }
     }
 }
@@ -459,15 +554,38 @@ fn inverse_general_prime<T: Float + FromPrimitive>(
     scale: T,
 ) {
     debug_assert!(pass.radix > 5 && pass.radix < 135);
-    debug_assert_eq!(pass.ido, 1);
     let radix = pass.radix;
     let half = radix / 2;
+    let ido = pass.ido;
+    let l1 = pass.l1;
     let two = scalar::<T>(2.0);
 
-    for group in 0..pass.l1 {
-        let input_start = group * radix;
+    if ido == 1 {
+        for group in 0..l1 {
+            let input_start = group * radix;
+            for sample in 0..radix {
+                let mut value = input[input_start];
+                let mut phase = 0;
+                for frequency in 1..=half {
+                    phase += sample;
+                    if phase >= radix {
+                        phase -= radix;
+                    }
+                    let root = pass.prime_roots[phase];
+                    let re = input[input_start + 2 * frequency - 1];
+                    let im = input[input_start + 2 * frequency];
+                    value = value + two * (re * root.re - im * root.im);
+                }
+                output[sample * l1 + group] = value * scale;
+            }
+        }
+        return;
+    }
+
+    for group in 0..l1 {
+        // The real DC lane is a Hermitian length-radix spectrum.
         for sample in 0..radix {
-            let mut value = input[input_start];
+            let mut value = input[index(0, group, 0, ido, l1)];
             let mut phase = 0;
             for frequency in 1..=half {
                 phase += sample;
@@ -475,11 +593,49 @@ fn inverse_general_prime<T: Float + FromPrimitive>(
                     phase -= radix;
                 }
                 let root = pass.prime_roots[phase];
-                let re = input[input_start + 2 * frequency - 1];
-                let im = input[input_start + 2 * frequency];
+                let re = input[index(ido - 1, group, 2 * frequency - 1, ido, l1)];
+                let im = input[index(0, group, 2 * frequency, ido, l1)];
                 value = value + two * (re * root.re - im * root.im);
             }
-            output[sample * pass.l1 + group] = value * scale;
+            output[index(0, group, sample, ido, l1)] = value * scale;
+        }
+
+        for i in (2..ido).step_by(2) {
+            let ic = ido - i;
+            for sample in 0..radix {
+                let mut value = Complex::new(
+                    input[index(i - 1, group, 0, ido, l1)],
+                    input[index(i, group, 0, ido, l1)],
+                );
+                let mut phase = 0;
+                for frequency in 1..radix {
+                    phase += sample;
+                    if phase >= radix {
+                        phase -= radix;
+                    }
+                    let (re, im) = if frequency <= half {
+                        (
+                            input[index(i - 1, group, 2 * frequency, ido, l1)],
+                            input[index(i, group, 2 * frequency, ido, l1)],
+                        )
+                    } else {
+                        let mirrored = radix - frequency;
+                        (
+                            input[index(ic - 1, group, 2 * mirrored - 1, ido, l1)],
+                            -input[index(ic, group, 2 * mirrored - 1, ido, l1)],
+                        )
+                    };
+                    value = value + Complex::new(re, im) * pass.prime_roots[phase];
+                }
+                let (twiddle_re, twiddle_im) = if sample == 0 {
+                    (T::one(), T::zero())
+                } else {
+                    (twiddle(pass, sample, i - 2), twiddle(pass, sample, i - 1))
+                };
+                let result = value * Complex::new(twiddle_re, twiddle_im);
+                output[index(i - 1, group, sample, ido, l1)] = result.re * scale;
+                output[index(i, group, sample, ido, l1)] = result.im * scale;
+            }
         }
     }
 }
