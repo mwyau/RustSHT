@@ -1786,6 +1786,120 @@ fn spin_transform_matches_between_one_and_two_rayon_threads() {
     }
 }
 
+#[cfg(feature = "parallel")]
+#[test]
+#[ignore = "M4 T1023 spin-2 thread and polar-threshold check; run in release mode"]
+fn m4_spin2_t1023_synthesis_matches_one_and_eight_threads() {
+    let degree = 1023;
+    let ntheta = degree + 1;
+    let nphi = 2 * degree + 3;
+    let order = 105;
+    let plan = make_plan(2, degree, degree, ntheta, nphi);
+    let mut e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut b = vec![Complex64::new(0.0, 0.0); e.len()];
+    for (l, e_value, b_value) in [
+        (order, Complex64::new(0.75, 0.0), Complex64::new(-0.25, 0.0)),
+        (
+            512,
+            Complex64::new(0.125, -0.25),
+            Complex64::new(0.5, 0.125),
+        ),
+        (
+            degree,
+            Complex64::new(-0.25, 0.0),
+            Complex64::new(0.375, 0.0),
+        ),
+    ] {
+        let index = plan.harmonics().index(l, order).unwrap();
+        e[index] = e_value;
+        b[index] = b_value;
+    }
+    let low_order_index = plan.harmonics().index(2, 2).unwrap();
+    e[low_order_index] = Complex64::new(0.75, 0.0);
+    b[low_order_index] = Complex64::new(-0.25, 0.0);
+
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let mut one_workspace = one_thread.install(|| plan.workspace()).unwrap();
+    let mut eight_workspace = eight_threads.install(|| plan.workspace()).unwrap();
+    plan.prepare_spin_latitudes(&mut eight_workspace, 2);
+    let threshold_ring = eight_workspace.theta_sin[..ntheta]
+        .iter()
+        .enumerate()
+        .min_by(|(_, left), (_, right)| (*left - 0.01).abs().total_cmp(&(*right - 0.01).abs()))
+        .map(|(ring, _)| ring)
+        .unwrap();
+    assert!((eight_workspace.theta_sin[threshold_ring] - 0.01).abs() < 0.002);
+    assert!(eight_workspace.ring_order_limits[threshold_ring] >= order);
+    assert!(eight_workspace.ring_order_limits[0] < order);
+
+    let mut one_first = vec![0.0; plan.sample_count];
+    let mut one_second = vec![0.0; plan.sample_count];
+    one_thread
+        .install(|| {
+            plan.synthesis_spin_into(&e, &b, &mut one_first, &mut one_second, &mut one_workspace)
+        })
+        .unwrap();
+    let mut eight_first = vec![0.0; plan.sample_count];
+    let mut eight_second = vec![0.0; plan.sample_count];
+    eight_threads
+        .install(|| {
+            plan.synthesis_spin_into(
+                &e,
+                &b,
+                &mut eight_first,
+                &mut eight_second,
+                &mut eight_workspace,
+            )
+        })
+        .unwrap();
+
+    for (&actual, &expected) in eight_first.iter().zip(&one_first) {
+        assert_close(actual, expected, 2e-12);
+    }
+    for (&actual, &expected) in eight_second.iter().zip(&one_second) {
+        assert_close(actual, expected, 2e-12);
+    }
+
+    let threshold_start = threshold_ring * nphi;
+    let threshold_end = threshold_start + nphi;
+    let threshold_amplitude = one_first[threshold_start..threshold_end]
+        .iter()
+        .chain(&one_second[threshold_start..threshold_end])
+        .map(|value| value.abs())
+        .fold(0.0_f64, f64::max);
+    assert!(threshold_amplitude > 1e-8);
+
+    e[low_order_index] = Complex64::new(0.0, 0.0);
+    b[low_order_index] = Complex64::new(0.0, 0.0);
+    one_thread
+        .install(|| {
+            plan.synthesis_spin_into(&e, &b, &mut one_first, &mut one_second, &mut one_workspace)
+        })
+        .unwrap();
+    eight_threads
+        .install(|| {
+            plan.synthesis_spin_into(
+                &e,
+                &b,
+                &mut eight_first,
+                &mut eight_second,
+                &mut eight_workspace,
+            )
+        })
+        .unwrap();
+    assert!(one_first[..nphi].iter().all(|&value| value == 0.0));
+    assert!(one_second[..nphi].iter().all(|&value| value == 0.0));
+    assert!(eight_first[..nphi].iter().all(|&value| value == 0.0));
+    assert!(eight_second[..nphi].iter().all(|&value| value == 0.0));
+}
+
 #[test]
 #[expect(
     clippy::excessive_precision,
