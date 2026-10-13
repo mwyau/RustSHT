@@ -30,6 +30,18 @@ fn spectrum_value(index: usize, n: usize) -> Complex32 {
     }
 }
 
+fn spectrum_value_for_row(index: usize, n: usize, row: usize) -> Complex32 {
+    if index == 0 || (n.is_multiple_of(2) && index == n / 2) {
+        Complex32::new(0.4 + 0.01 * index as f32 + 0.003 * row as f32, 0.0)
+    } else {
+        let x = (index + 1) as f64 + row as f64 * 0.37;
+        Complex32::new(
+            (0.3 * (0.19 * x).sin()) as f32,
+            (0.2 * (0.07 * (x + 1.0)).cos()) as f32,
+        )
+    }
+}
+
 struct RustFftRealPlan {
     n: usize,
     forward: Arc<dyn Fft<f32>>,
@@ -289,6 +301,188 @@ fn benchmark(n: usize, process_sample: &str) {
     }
 }
 
+fn benchmark_batch32(n: usize, process_sample: &str) {
+    const ROWS: usize = 32;
+
+    let ducc_plan_ns = median_creation_ns(
+        || RealFftPlan::<f32>::new(n).expect("DUCCFFT f32 real plan"),
+        20,
+    );
+    let ducc = RealFftPlan::<f32>::new(n).expect("DUCCFFT f32 real plan");
+    let ducc_workspace_ns = median_creation_ns(|| ducc.workspace().expect("DUCCFFT workspace"), 20);
+    let mut ducc_workspace = ducc.workspace().expect("DUCCFFT workspace");
+    let rustfft_setup_ns = median_creation_ns(|| RustFftRealPlan::new(n), 20);
+    let mut rustfft = RustFftRealPlan::new(n);
+    let bins = ducc.spectrum_len();
+    let input: Vec<_> = (0..ROWS)
+        .flat_map(|row| (0..n).map(move |index| real_value(row * n + index)))
+        .collect();
+    let spectrum: Vec<_> = (0..ROWS)
+        .flat_map(|row| (0..bins).map(move |index| spectrum_value_for_row(index, n, row)))
+        .collect();
+    let mut ducc_spectrum = vec![Complex32::new(0.0, 0.0); ROWS * bins];
+    let mut rust_spectrum = vec![Complex32::new(0.0, 0.0); ROWS * bins];
+    let mut ducc_output = vec![0.0; ROWS * n];
+    let mut rust_output = vec![0.0; ROWS * n];
+    let repeats = ((262_144 / n) / ROWS).max(1);
+
+    ducc.forward_batch(&input, &mut ducc_spectrum, &mut ducc_workspace)
+        .expect("DUCCFFT R2C batch warm-up");
+    for (input_row, output_row) in input
+        .chunks_exact(n)
+        .zip(rust_spectrum.chunks_exact_mut(bins))
+    {
+        rustfft.forward(input_row, output_row);
+    }
+    ducc.inverse_batch(&spectrum, &mut ducc_output, &mut ducc_workspace)
+        .expect("DUCCFFT C2R batch warm-up");
+    for (spectrum_row, output_row) in spectrum
+        .chunks_exact(bins)
+        .zip(rust_output.chunks_exact_mut(n))
+    {
+        rustfft.inverse(spectrum_row, output_row);
+    }
+
+    let mut rows = Vec::with_capacity(SAMPLE_COUNT * 2);
+    for pair in 0..SAMPLE_COUNT {
+        if pair.is_multiple_of(2) {
+            let ducc_ns = measure(
+                || {
+                    ducc.forward_batch(&input, &mut ducc_spectrum, &mut ducc_workspace)
+                        .expect("DUCCFFT R2C batch");
+                },
+                repeats,
+            ) / ROWS as f64;
+            let ducc_checksum = checksum_complex(&ducc_spectrum);
+            let rust_ns = measure(
+                || {
+                    for (input_row, output_row) in input
+                        .chunks_exact(n)
+                        .zip(rust_spectrum.chunks_exact_mut(bins))
+                    {
+                        rustfft.forward(input_row, output_row);
+                    }
+                },
+                repeats,
+            ) / ROWS as f64;
+            let rust_checksum = checksum_complex(&rust_spectrum);
+            rows.push((
+                "r2c_batch32",
+                pair,
+                "duccfft",
+                ducc_ns,
+                rust_ns,
+                ducc_checksum,
+                rust_checksum,
+            ));
+        } else {
+            let rust_ns = measure(
+                || {
+                    for (input_row, output_row) in input
+                        .chunks_exact(n)
+                        .zip(rust_spectrum.chunks_exact_mut(bins))
+                    {
+                        rustfft.forward(input_row, output_row);
+                    }
+                },
+                repeats,
+            ) / ROWS as f64;
+            let rust_checksum = checksum_complex(&rust_spectrum);
+            let ducc_ns = measure(
+                || {
+                    ducc.forward_batch(&input, &mut ducc_spectrum, &mut ducc_workspace)
+                        .expect("DUCCFFT R2C batch");
+                },
+                repeats,
+            ) / ROWS as f64;
+            let ducc_checksum = checksum_complex(&ducc_spectrum);
+            rows.push((
+                "r2c_batch32",
+                pair,
+                "rustfft",
+                ducc_ns,
+                rust_ns,
+                ducc_checksum,
+                rust_checksum,
+            ));
+        }
+
+        if pair.is_multiple_of(2) {
+            let ducc_ns = measure(
+                || {
+                    ducc.inverse_batch(&spectrum, &mut ducc_output, &mut ducc_workspace)
+                        .expect("DUCCFFT C2R batch");
+                },
+                repeats,
+            ) / ROWS as f64;
+            let ducc_checksum = checksum_real(&ducc_output);
+            let rust_ns = measure(
+                || {
+                    for (spectrum_row, output_row) in spectrum
+                        .chunks_exact(bins)
+                        .zip(rust_output.chunks_exact_mut(n))
+                    {
+                        rustfft.inverse(spectrum_row, output_row);
+                    }
+                },
+                repeats,
+            ) / ROWS as f64;
+            let rust_checksum = checksum_real(&rust_output);
+            rows.push((
+                "c2r_batch32",
+                pair,
+                "duccfft",
+                ducc_ns,
+                rust_ns,
+                ducc_checksum,
+                rust_checksum,
+            ));
+        } else {
+            let rust_ns = measure(
+                || {
+                    for (spectrum_row, output_row) in spectrum
+                        .chunks_exact(bins)
+                        .zip(rust_output.chunks_exact_mut(n))
+                    {
+                        rustfft.inverse(spectrum_row, output_row);
+                    }
+                },
+                repeats,
+            ) / ROWS as f64;
+            let rust_checksum = checksum_real(&rust_output);
+            let ducc_ns = measure(
+                || {
+                    ducc.inverse_batch(&spectrum, &mut ducc_output, &mut ducc_workspace)
+                        .expect("DUCCFFT C2R batch");
+                },
+                repeats,
+            ) / ROWS as f64;
+            let ducc_checksum = checksum_real(&ducc_output);
+            rows.push((
+                "c2r_batch32",
+                pair,
+                "rustfft",
+                ducc_ns,
+                rust_ns,
+                ducc_checksum,
+                rust_checksum,
+            ));
+        }
+    }
+
+    compare(
+        ducc_spectrum.iter().flat_map(|value| [value.re, value.im]),
+        rust_spectrum.iter().flat_map(|value| [value.re, value.im]),
+        n,
+    );
+    compare(ducc_output.iter().copied(), rust_output.iter().copied(), n);
+    for (mode, pair, first, ducc_ns, rust_ns, ducc_checksum, rust_checksum) in rows {
+        println!(
+            "{process_sample},{mode},{n},{repeats},{pair},{first},{ducc_plan_ns:.3},{ducc_workspace_ns:.3},{rustfft_setup_ns:.3},{ducc_ns:.3},{rust_ns:.3},{ducc_checksum:.12e},{rust_checksum:.12e}"
+        );
+    }
+}
+
 fn main() {
     let args = std::env::args().skip(1).filter(|arg| arg != "--bench");
     let process_sample = std::env::var("DUCCFFT_PROCESS_SAMPLE").unwrap_or_else(|_| "0".into());
@@ -305,5 +499,6 @@ fn main() {
     );
     for n in lengths {
         benchmark(n, &process_sample);
+        benchmark_batch32(n, &process_sample);
     }
 }
