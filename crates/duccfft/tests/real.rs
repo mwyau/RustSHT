@@ -309,7 +309,7 @@ fn f32_real_radix3_and_radix5_multipasses_match_f64_references() {
 fn f32_large_smooth_prime_bluestein_and_sht_lengths_match_f64_references() {
     println!("precision,operation,n,max_abs,rms,relative_l2,scaled_max,nonfinite");
     for n in [
-        128, 512, 1024, 1920, 2048, 4096, 131, 137, 241, 1025, 2049, 4097,
+        128, 257, 512, 1024, 1920, 2048, 4096, 131, 137, 241, 1025, 2049, 4097,
     ] {
         let plan = RealFftPlan::<f32>::new(n).unwrap();
         let mut workspace = plan.workspace().unwrap();
@@ -349,7 +349,7 @@ fn f32_large_smooth_prime_bluestein_and_sht_lengths_match_f64_references() {
 
 #[test]
 fn real_general_prime_and_bluestein_paths_match_independent_dfts() {
-    for n in [127, 131, 137, 241] {
+    for n in [127, 131, 137, 241, 257] {
         let plan = RealFftPlan::<f64>::new(n).unwrap();
         let mut workspace = plan.workspace().unwrap();
         let input: Vec<_> = (0..n).map(|index| real_signal(index + 3, n + 5)).collect();
