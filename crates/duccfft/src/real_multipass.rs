@@ -12,7 +12,8 @@ use num_traits::{Float, FromPrimitive};
 use crate::FftError;
 use crate::complex::{check_vec_len, try_vec};
 use crate::simd::{
-    RealRadix2InteriorKernel, RealRadix4ForwardInteriorKernel, RealRadix4InteriorKernel,
+    RealRadix2ForwardInteriorKernel, RealRadix2InteriorKernel, RealRadix4ForwardInteriorKernel,
+    RealRadix4InteriorKernel,
 };
 
 mod inverse_terminal;
@@ -28,6 +29,7 @@ pub(crate) struct RealMultipassPlan<T> {
     len: usize,
     passes: Vec<Pass<T>>,
     radix2_interior_kernel: Option<RealRadix2InteriorKernel<T>>,
+    radix2_forward_interior_kernel: Option<RealRadix2ForwardInteriorKernel<T>>,
     radix4_forward_interior_kernel: Option<RealRadix4ForwardInteriorKernel<T>>,
     radix4_interior_kernel: Option<RealRadix4InteriorKernel<T>>,
 }
@@ -43,6 +45,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         factors: &[usize],
         roots: &[Complex<T>],
         radix2_interior_kernel: Option<RealRadix2InteriorKernel<T>>,
+        radix2_forward_interior_kernel: Option<RealRadix2ForwardInteriorKernel<T>>,
         radix4_forward_interior_kernel: Option<RealRadix4ForwardInteriorKernel<T>>,
         radix4_interior_kernel: Option<RealRadix4InteriorKernel<T>>,
     ) -> Result<Option<Self>, FftError> {
@@ -85,6 +88,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
             len,
             passes,
             radix2_interior_kernel,
+            radix2_forward_interior_kernel,
             radix4_forward_interior_kernel,
             radix4_interior_kernel,
         }))
@@ -112,6 +116,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
             first_pass,
             input,
             &mut workspace.second,
+            self.radix2_forward_interior_kernel,
             self.radix4_forward_interior_kernel,
         );
         let mut current_is_first = false;
@@ -121,6 +126,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                     pass,
                     &workspace.first,
                     &mut workspace.second,
+                    self.radix2_forward_interior_kernel,
                     self.radix4_forward_interior_kernel,
                 );
             } else {
@@ -128,6 +134,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                     pass,
                     &workspace.second,
                     &mut workspace.first,
+                    self.radix2_forward_interior_kernel,
                     self.radix4_forward_interior_kernel,
                 );
             }
@@ -219,10 +226,11 @@ fn execute_forward_pass<T: Float + FromPrimitive>(
     pass: &Pass<T>,
     input: &[T],
     output: &mut [T],
+    radix2_forward_interior_kernel: Option<RealRadix2ForwardInteriorKernel<T>>,
     radix4_forward_interior_kernel: Option<RealRadix4ForwardInteriorKernel<T>>,
 ) {
     match pass.radix {
-        2 => forward_radix2(pass, input, output),
+        2 => forward_radix2(pass, input, output, radix2_forward_interior_kernel),
         4 => forward_radix4(pass, input, output, radix4_forward_interior_kernel),
         _ => unreachable!("real multipass plan contains only radix 2 and 4"),
     }
@@ -242,7 +250,12 @@ fn execute_inverse_pass<T: Float + FromPrimitive>(
     }
 }
 
-fn forward_radix2<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output: &mut [T]) {
+fn forward_radix2<T: Float + FromPrimitive>(
+    pass: &Pass<T>,
+    input: &[T],
+    output: &mut [T],
+    radix2_forward_interior_kernel: Option<RealRadix2ForwardInteriorKernel<T>>,
+) {
     let l1 = pass.l1;
     let ido = pass.ido;
     if ido == 1 {
@@ -271,7 +284,28 @@ fn forward_radix2<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output:
         return;
     }
     for k in 0..l1 {
-        for i in (2..ido).step_by(2) {
+        let input0 = &input[k * ido..(k + 1) * ido];
+        let input1 = &input[(l1 + k) * ido..(l1 + k + 1) * ido];
+        let output_start = 2 * k * ido;
+        let (output0, output1) = output[output_start..output_start + 2 * ido].split_at_mut(ido);
+        let scalar_start = if ido >= 16
+            && let Some(kernel) = radix2_forward_interior_kernel
+        {
+            // SAFETY: plan construction installs this kernel only after AVX2
+            // runtime detection. Each branch slice has exactly `ido` values,
+            // and the pass owns the complete radix-two twiddle table.
+            unsafe {
+                kernel(
+                    [input0, input1],
+                    [&mut *output0, &mut *output1],
+                    ido,
+                    &pass.twiddles,
+                )
+            }
+        } else {
+            2
+        };
+        for i in (scalar_start..ido).step_by(2) {
             let ic = ido - i;
             let (tr2, ti2) = multiply_pm(
                 twiddle(pass, 1, i - 2),
@@ -281,10 +315,10 @@ fn forward_radix2<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output:
             );
             let x0 = input[index(i - 1, k, 0, ido, l1)];
             let x1 = input[index(i, k, 0, ido, l1)];
-            output[index(i - 1, 0, k, ido, 2)] = x0 + tr2;
-            output[index(ic - 1, 1, k, ido, 2)] = x0 - tr2;
-            output[index(i, 0, k, ido, 2)] = ti2 + x1;
-            output[index(ic, 1, k, ido, 2)] = ti2 - x1;
+            output0[i - 1] = x0 + tr2;
+            output1[ic - 1] = x0 - tr2;
+            output0[i] = ti2 + x1;
+            output1[ic] = ti2 - x1;
         }
     }
 }
