@@ -1,5 +1,10 @@
+// SPDX-FileCopyrightText: 2010-2026 Max-Planck-Society (DUCC FFT pass equations)
+// SPDX-FileCopyrightText: 2019 Peter Bell (DUCC FFT pass equations)
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: BSD-3-Clause
+//
+// The packed-real radix-four equations follow DUCC fft1d_impl.h at
+// c1ed01b8fda69d2a378190f0915f1a19762dddbf.
 
 use num_complex::Complex;
 use num_traits::{Float, FromPrimitive};
