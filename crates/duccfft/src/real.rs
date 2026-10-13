@@ -1185,6 +1185,9 @@ fn forward_multipass_is_safe<T: Float + FromPrimitive>(input: &[T], len: usize) 
         }
         maximum = maximum.max(value.abs());
     }
+    // Each stage forms linear combinations of at most `len` real samples;
+    // unit-modulus twiddles preserve their complex magnitude. The factor-four
+    // headroom also bounds componentwise butterfly intermediates and rounding.
     maximum <= T::max_value() / scalar::<T>(4.0 * len as f64)
 }
 
