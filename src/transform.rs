@@ -12,6 +12,42 @@ use crate::legendre::{LATITUDE_BLOCK_SIZE, ShtScalar, longitude_phase, sin_cos_f
 use crate::plan::ShtPlan;
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
+const SCALAR_TRANSITION_MIN_LMAX: usize = 1023;
+
+fn paired_scalar_coefficients_are_finite<T: ShtScalar>(
+    m: usize,
+    lmax: usize,
+    epsilon: &[T],
+    alpha: &[T],
+    coefficients: &[Complex<T>],
+) -> bool {
+    let pair_count = (lmax - m + 2) / 2;
+    for (pair, &pair_alpha) in alpha.iter().take(pair_count).enumerate() {
+        let l = m + 2 * pair;
+        let offset = l - m;
+        let next_even = if l + 2 <= lmax {
+            coefficients[offset + 2]
+        } else {
+            Complex::new(T::zero(), T::zero())
+        };
+        let even =
+            (coefficients[offset] * epsilon[l + 1] + next_even * epsilon[l + 2]) * pair_alpha;
+        let odd = if l < lmax {
+            coefficients[offset + 1] * pair_alpha
+        } else {
+            Complex::new(T::zero(), T::zero())
+        };
+        if !even.re.is_finite()
+            || !even.im.is_finite()
+            || !odd.re.is_finite()
+            || !odd.im.is_finite()
+        {
+            return false;
+        }
+    }
+    true
+}
+
 #[cfg(feature = "parallel")]
 pub(crate) fn weighted_order_midpoint(lmax: usize, m_start: usize, m_end: usize) -> usize {
     debug_assert!(m_start < m_end);
@@ -249,6 +285,9 @@ impl<T: ShtScalar> ShtPlan<T> {
                 .harmonics
                 .index(m, m)
                 .expect("every packed order starts at its diagonal degree");
+            let transition_enabled =
+                lmax >= SCALAR_TRANSITION_MIN_LMAX && T::supports_paired_scalar();
+            let mut transition_coefficients_ready = false;
             let paired_factors_ready = T::fill_paired_scalar_factors(
                 m,
                 lmax,
@@ -257,12 +296,23 @@ impl<T: ShtScalar> ShtPlan<T> {
                 &mut recurrence.spin_coefficient_a,
                 &mut recurrence.spin_coefficient_b,
             );
+            // Extreme finite coefficients can overflow DUCC's paired-degree
+            // coefficient transform even when the final scaled contribution
+            // is representable. Keep those orders on the unpaired scaled path.
+            let paired_coefficients_finite = !transition_enabled
+                || paired_scalar_coefficients_are_finite(
+                    m,
+                    lmax,
+                    &recurrence.epsilon,
+                    &recurrence.spin_alpha,
+                    &alm[coefficient_start..],
+                );
             let phase = if m == 0 {
                 Complex::new(T::one(), T::zero())
             } else {
                 longitude_phase::<T>(m, phi0, false)
             };
-            let paired_used = if paired_factors_ready {
+            let paired_used = if paired_factors_ready && paired_coefficients_finite {
                 for block_start in (0..theta_sin.len()).step_by(LATITUDE_BLOCK_SIZE) {
                     let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(theta_sin.len());
                     let block_len = block_end - block_start;
@@ -294,129 +344,173 @@ impl<T: ShtScalar> ShtPlan<T> {
                         &mut recurrence.exponents[..block_len],
                     )?;
                     if !fused {
-                        let compact_mixed_block =
-                            lmax >= 255 && ring_limits.iter().any(|&limit| m > limit);
-                        if compact_mixed_block {
-                            let mut compact_len = 0;
-                            for (ring, &limit) in ring_limits.iter().enumerate() {
-                                if m <= limit {
-                                    recurrence.compact_theta_sin[compact_len] =
-                                        theta_sin[block_start + ring];
-                                    recurrence.compact_theta_cos[compact_len] =
-                                        theta_cos[block_start + ring];
-                                    recurrence.compact_ring_indices[compact_len] = ring;
-                                    compact_len += 1;
+                        let transition =
+                            if transition_enabled && ring_limits.iter().all(|&limit| m <= limit) {
+                                let coefficient_count = lmax - m + 1;
+                                if !transition_coefficients_ready {
+                                    recurrence.fast_scalar_second[..coefficient_count]
+                                        .fill(Complex::new(T::zero(), T::zero()));
+                                    transition_coefficients_ready = true;
                                 }
+                                T::try_synthesize_paired_scalar_transition_dispatched(
+                                    arch,
+                                    m,
+                                    lmax,
+                                    &theta_sin[block_start..block_end],
+                                    &theta_cos[block_start..block_end],
+                                    self.sectoral_norms[m],
+                                    &recurrence.epsilon,
+                                    &recurrence.spin_alpha,
+                                    &recurrence.spin_coefficient_a,
+                                    &recurrence.spin_coefficient_b,
+                                    &alm[coefficient_start..coefficient_start + coefficient_count],
+                                    &recurrence.fast_scalar_second[..coefficient_count],
+                                    &mut recurrence.previous[..block_len],
+                                    &mut recurrence.current[..block_len],
+                                    &mut recurrence.next[..block_len],
+                                    &mut recurrence.exponents[..block_len],
+                                    &mut recurrence.analysis_same_real[..block_len],
+                                    &mut recurrence.analysis_same_imag[..block_len],
+                                    &mut recurrence.analysis_opposite_real[..block_len],
+                                    &mut recurrence.analysis_opposite_imag[..block_len],
+                                )?
+                            } else {
+                                false
+                            };
+                        if transition {
+                            for lane in 0..block_len {
+                                spectra[spectrum_start + lane * spectrum_len + m] += Complex::new(
+                                    recurrence.analysis_same_real[lane],
+                                    recurrence.analysis_same_imag[lane],
+                                );
                             }
-                            debug_assert!(compact_len > 0);
-                            T::for_each_y_lm_paired_dispatched(
-                                arch,
-                                m,
-                                lmax,
-                                &recurrence.compact_theta_sin[..compact_len],
-                                &recurrence.compact_theta_cos[..compact_len],
-                                self.sectoral_norms[m],
-                                &recurrence.spin_coefficient_a,
-                                &recurrence.spin_coefficient_b,
-                                &mut recurrence.previous[..compact_len],
-                                &mut recurrence.current[..compact_len],
-                                &mut recurrence.next[..compact_len],
-                                &mut recurrence.exponents[..compact_len],
-                                |l, ring_start, current, exponents| {
-                                    let pair_index = (l - m) / 2;
-                                    let coefficient_offset = l - m;
-                                    let next_even_coefficient = if l + 2 <= lmax {
-                                        alm[coefficient_start + coefficient_offset + 2]
-                                    } else {
-                                        Complex::new(T::zero(), T::zero())
-                                    };
-                                    let coefficient_even = (alm
-                                        [coefficient_start + coefficient_offset]
-                                        * recurrence.epsilon[l + 1]
-                                        + next_even_coefficient * recurrence.epsilon[l + 2])
-                                        * recurrence.spin_alpha[pair_index];
-                                    let coefficient_odd = if l < lmax {
-                                        alm[coefficient_start + coefficient_offset + 1]
-                                            * recurrence.spin_alpha[pair_index]
-                                    } else {
-                                        Complex::new(T::zero(), T::zero())
-                                    };
-                                    for lane in 0..current.len() {
-                                        let fallback_ring = ring_start + lane;
-                                        let local_ring =
-                                            recurrence.compact_ring_indices[fallback_ring];
-                                        let group_ring = block_start + local_ring;
-                                        let contribution = T::multiply_complex_scaled(
-                                            coefficient_even,
-                                            current[lane],
-                                            exponents[lane],
-                                        ) + T::multiply_complex_scaled_product(
-                                            coefficient_odd,
-                                            current[lane],
-                                            recurrence.compact_theta_cos[fallback_ring],
-                                            exponents[lane],
-                                        );
-                                        let spectrum_index = group_ring * spectrum_len + m;
-                                        spectra[spectrum_index] += contribution;
-                                    }
-                                    Ok(())
-                                },
-                            )?;
                         } else {
-                            T::for_each_y_lm_paired_dispatched(
-                                arch,
-                                m,
-                                lmax,
-                                &theta_sin[block_start..block_end],
-                                &theta_cos[block_start..block_end],
-                                self.sectoral_norms[m],
-                                &recurrence.spin_coefficient_a,
-                                &recurrence.spin_coefficient_b,
-                                &mut recurrence.previous[..block_len],
-                                &mut recurrence.current[..block_len],
-                                &mut recurrence.next[..block_len],
-                                &mut recurrence.exponents[..block_len],
-                                |l, ring_start, current, exponents| {
-                                    let pair_index = (l - m) / 2;
-                                    let coefficient_offset = l - m;
-                                    let next_even_coefficient = if l + 2 <= lmax {
-                                        alm[coefficient_start + coefficient_offset + 2]
-                                    } else {
-                                        Complex::new(T::zero(), T::zero())
-                                    };
-                                    let coefficient_even = (alm
-                                        [coefficient_start + coefficient_offset]
-                                        * recurrence.epsilon[l + 1]
-                                        + next_even_coefficient * recurrence.epsilon[l + 2])
-                                        * recurrence.spin_alpha[pair_index];
-                                    let coefficient_odd = if l < lmax {
-                                        alm[coefficient_start + coefficient_offset + 1]
-                                            * recurrence.spin_alpha[pair_index]
-                                    } else {
-                                        Complex::new(T::zero(), T::zero())
-                                    };
-                                    for lane in 0..current.len() {
-                                        let group_ring = block_start + ring_start + lane;
-                                        let global_ring = group_ring_start + group_ring;
-                                        if m > ring_order_limits[global_ring] {
-                                            continue;
-                                        }
-                                        let contribution = T::multiply_complex_scaled(
-                                            coefficient_even,
-                                            current[lane],
-                                            exponents[lane],
-                                        ) + T::multiply_complex_scaled_product(
-                                            coefficient_odd,
-                                            current[lane],
-                                            theta_cos[group_ring],
-                                            exponents[lane],
-                                        );
-                                        let spectrum_index = group_ring * spectrum_len + m;
-                                        spectra[spectrum_index] += contribution;
+                            let compact_mixed_block =
+                                lmax >= 255 && ring_limits.iter().any(|&limit| m > limit);
+                            if compact_mixed_block {
+                                let mut compact_len = 0;
+                                for (ring, &limit) in ring_limits.iter().enumerate() {
+                                    if m <= limit {
+                                        recurrence.compact_theta_sin[compact_len] =
+                                            theta_sin[block_start + ring];
+                                        recurrence.compact_theta_cos[compact_len] =
+                                            theta_cos[block_start + ring];
+                                        recurrence.compact_ring_indices[compact_len] = ring;
+                                        compact_len += 1;
                                     }
-                                    Ok(())
-                                },
-                            )?;
+                                }
+                                debug_assert!(compact_len > 0);
+                                T::for_each_y_lm_paired_dispatched(
+                                    arch,
+                                    m,
+                                    lmax,
+                                    &recurrence.compact_theta_sin[..compact_len],
+                                    &recurrence.compact_theta_cos[..compact_len],
+                                    self.sectoral_norms[m],
+                                    &recurrence.spin_coefficient_a,
+                                    &recurrence.spin_coefficient_b,
+                                    &mut recurrence.previous[..compact_len],
+                                    &mut recurrence.current[..compact_len],
+                                    &mut recurrence.next[..compact_len],
+                                    &mut recurrence.exponents[..compact_len],
+                                    |l, ring_start, current, exponents| {
+                                        let pair_index = (l - m) / 2;
+                                        let coefficient_offset = l - m;
+                                        let next_even_coefficient = if l + 2 <= lmax {
+                                            alm[coefficient_start + coefficient_offset + 2]
+                                        } else {
+                                            Complex::new(T::zero(), T::zero())
+                                        };
+                                        let coefficient_even = (alm
+                                            [coefficient_start + coefficient_offset]
+                                            * recurrence.epsilon[l + 1]
+                                            + next_even_coefficient * recurrence.epsilon[l + 2])
+                                            * recurrence.spin_alpha[pair_index];
+                                        let coefficient_odd = if l < lmax {
+                                            alm[coefficient_start + coefficient_offset + 1]
+                                                * recurrence.spin_alpha[pair_index]
+                                        } else {
+                                            Complex::new(T::zero(), T::zero())
+                                        };
+                                        for lane in 0..current.len() {
+                                            let fallback_ring = ring_start + lane;
+                                            let local_ring =
+                                                recurrence.compact_ring_indices[fallback_ring];
+                                            let group_ring = block_start + local_ring;
+                                            let contribution = T::multiply_complex_scaled(
+                                                coefficient_even,
+                                                current[lane],
+                                                exponents[lane],
+                                            )
+                                                + T::multiply_complex_scaled_product(
+                                                    coefficient_odd,
+                                                    current[lane],
+                                                    recurrence.compact_theta_cos[fallback_ring],
+                                                    exponents[lane],
+                                                );
+                                            let spectrum_index = group_ring * spectrum_len + m;
+                                            spectra[spectrum_index] += contribution;
+                                        }
+                                        Ok(())
+                                    },
+                                )?;
+                            } else {
+                                T::for_each_y_lm_paired_dispatched(
+                                    arch,
+                                    m,
+                                    lmax,
+                                    &theta_sin[block_start..block_end],
+                                    &theta_cos[block_start..block_end],
+                                    self.sectoral_norms[m],
+                                    &recurrence.spin_coefficient_a,
+                                    &recurrence.spin_coefficient_b,
+                                    &mut recurrence.previous[..block_len],
+                                    &mut recurrence.current[..block_len],
+                                    &mut recurrence.next[..block_len],
+                                    &mut recurrence.exponents[..block_len],
+                                    |l, ring_start, current, exponents| {
+                                        let pair_index = (l - m) / 2;
+                                        let coefficient_offset = l - m;
+                                        let next_even_coefficient = if l + 2 <= lmax {
+                                            alm[coefficient_start + coefficient_offset + 2]
+                                        } else {
+                                            Complex::new(T::zero(), T::zero())
+                                        };
+                                        let coefficient_even = (alm
+                                            [coefficient_start + coefficient_offset]
+                                            * recurrence.epsilon[l + 1]
+                                            + next_even_coefficient * recurrence.epsilon[l + 2])
+                                            * recurrence.spin_alpha[pair_index];
+                                        let coefficient_odd = if l < lmax {
+                                            alm[coefficient_start + coefficient_offset + 1]
+                                                * recurrence.spin_alpha[pair_index]
+                                        } else {
+                                            Complex::new(T::zero(), T::zero())
+                                        };
+                                        for lane in 0..current.len() {
+                                            let group_ring = block_start + ring_start + lane;
+                                            let global_ring = group_ring_start + group_ring;
+                                            if m > ring_order_limits[global_ring] {
+                                                continue;
+                                            }
+                                            let contribution = T::multiply_complex_scaled(
+                                                coefficient_even,
+                                                current[lane],
+                                                exponents[lane],
+                                            )
+                                                + T::multiply_complex_scaled_product(
+                                                    coefficient_odd,
+                                                    current[lane],
+                                                    theta_cos[group_ring],
+                                                    exponents[lane],
+                                                );
+                                            let spectrum_index = group_ring * spectrum_len + m;
+                                            spectra[spectrum_index] += contribution;
+                                        }
+                                        Ok(())
+                                    },
+                                )?;
+                            }
                         }
                     }
                 }

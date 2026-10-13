@@ -298,6 +298,173 @@ fn scalar_synthesis_compacts_mixed_high_order_cutoff_blocks() {
 }
 
 #[test]
+fn scalar_t1023_transition_fallback_matches_scaled_reference_for_extreme_coefficients() {
+    let lmax = 1023;
+    let m = 250;
+    let ring_start = 64;
+    let ring_end = ring_start + crate::legendre::LATITUDE_BLOCK_SIZE;
+    let ntheta = lmax + 1;
+    let nphi = 2 * lmax + 3;
+    let plan = make_plan(lmax, m, ntheta, nphi, 0.37);
+    let spectrum_len = plan.fft.spectrum_len();
+    let (theta_sin, theta_cos): (Vec<_>, Vec<_>) = plan.grid.theta()[ring_start..ring_end]
+        .iter()
+        .map(|theta| theta.sin_cos())
+        .unzip();
+    let ring_limits: Vec<_> = theta_sin
+        .iter()
+        .zip(&theta_cos)
+        .map(|(&sin_theta, &cos_theta)| {
+            <f64 as crate::legendre::ShtScalar>::polar_order_limit(lmax, 0, sin_theta, cos_theta)
+        })
+        .collect();
+    assert!(theta_sin.iter().all(|&sin_theta| sin_theta >= 0.01));
+    assert!(ring_limits.iter().all(|&limit| limit >= m));
+
+    let mut probe_workspace = plan.workspace().unwrap();
+    let recurrence = &mut probe_workspace.recurrence_workers[0];
+    <f64 as crate::legendre::ShtScalar>::fill_epsilon(m, lmax, &mut recurrence.epsilon);
+    assert!(
+        <f64 as crate::legendre::ShtScalar>::fill_paired_scalar_factors(
+            m,
+            lmax,
+            &recurrence.epsilon,
+            &mut recurrence.spin_alpha,
+            &mut recurrence.spin_coefficient_a,
+            &mut recurrence.spin_coefficient_b,
+        )
+    );
+    let order_len = lmax - m + 1;
+    let zero_coefficients = vec![Complex64::new(0.0, 0.0); order_len];
+    let mut probe_spectra = vec![Complex64::new(0.0, 0.0); theta_sin.len() * spectrum_len];
+    let fused = <f64 as crate::legendre::ShtScalar>::synthesize_paired_scalar_block_dispatched(
+        pulp::Arch::new(),
+        m,
+        lmax,
+        &theta_sin,
+        &theta_cos,
+        plan.sectoral_norms[m],
+        &recurrence.epsilon,
+        &recurrence.spin_alpha,
+        &recurrence.spin_coefficient_a,
+        &recurrence.spin_coefficient_b,
+        &zero_coefficients,
+        &ring_limits,
+        spectrum_len,
+        &mut probe_spectra,
+        &mut recurrence.previous,
+        &mut recurrence.current,
+        &mut recurrence.next,
+        &mut recurrence.exponents,
+    )
+    .unwrap();
+    assert!(
+        !fused,
+        "the selected block must enter the continuation path"
+    );
+
+    let mut extreme_coefficients = zero_coefficients.clone();
+    extreme_coefficients[1] = Complex64::new(f64::MAX, 0.0);
+    let second_coefficients = zero_coefficients.clone();
+    let continuation =
+        <f64 as crate::legendre::ShtScalar>::try_synthesize_paired_scalar_transition_dispatched(
+            pulp::Arch::new(),
+            m,
+            lmax,
+            &theta_sin,
+            &theta_cos,
+            plan.sectoral_norms[m],
+            &recurrence.epsilon,
+            &recurrence.spin_alpha,
+            &recurrence.spin_coefficient_a,
+            &recurrence.spin_coefficient_b,
+            &extreme_coefficients,
+            &second_coefficients,
+            &mut recurrence.previous,
+            &mut recurrence.current,
+            &mut recurrence.next,
+            &mut recurrence.exponents,
+            &mut recurrence.analysis_same_real,
+            &mut recurrence.analysis_same_imag,
+            &mut recurrence.analysis_opposite_real,
+            &mut recurrence.analysis_opposite_imag,
+        )
+        .unwrap();
+    assert!(
+        !continuation,
+        "overflow-prone transformed coefficients use scaling"
+    );
+
+    for coefficient in [f64::from_bits(1), f64::MAX] {
+        let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        let coefficient_start = plan.harmonics.index(m, m).unwrap();
+        alm[coefficient_start + 1] = Complex64::new(coefficient, 0.0);
+        let mut actual_workspace = plan.workspace().unwrap();
+        let mut actual_spectra = vec![Complex64::new(0.0, 0.0); theta_sin.len() * spectrum_len];
+        plan.synthesize_ring_group(
+            &alm,
+            nphi,
+            spectrum_len,
+            plan.grid.phi0(),
+            0,
+            &mut actual_spectra,
+            &theta_sin,
+            &theta_cos,
+            &ring_limits,
+            pulp::Arch::new(),
+            &mut actual_workspace.recurrence_workers[0],
+        )
+        .unwrap();
+
+        let mut reference_workspace = plan.workspace().unwrap();
+        let recurrence = &mut reference_workspace.recurrence_workers[0];
+        <f64 as crate::legendre::ShtScalar>::fill_epsilon(m, lmax, &mut recurrence.epsilon);
+        let mut unscaled_reference = vec![Complex64::new(0.0, 0.0); theta_sin.len()];
+        <f64 as crate::legendre::ShtScalar>::for_each_y_lm_dispatched(
+            pulp::Arch::new(),
+            m,
+            lmax,
+            &theta_sin,
+            &theta_cos,
+            plan.sectoral_norms[m],
+            &recurrence.epsilon,
+            &mut recurrence.previous,
+            &mut recurrence.current,
+            &mut recurrence.next,
+            &mut recurrence.exponents,
+            |l, ring_offset, current, exponents| {
+                let value = alm[coefficient_start + (l - m)];
+                for lane in 0..current.len() {
+                    unscaled_reference[ring_offset + lane] +=
+                        <f64 as crate::legendre::ShtScalar>::multiply_complex_scaled(
+                            value,
+                            current[lane],
+                            exponents[lane],
+                        );
+                }
+                Ok(())
+            },
+        )
+        .unwrap();
+
+        let phase = crate::legendre::longitude_phase::<f64>(m, plan.grid.phi0(), false);
+        for lane in 0..theta_sin.len() {
+            let expected = unscaled_reference[lane] * phase * nphi as f64;
+            let actual = actual_spectra[lane * spectrum_len + m];
+            if coefficient == f64::from_bits(1) {
+                assert_eq!(actual, expected, "subnormal input at lane {lane}");
+            } else {
+                let relative_error = (actual - expected).norm() / expected.norm().max(1.0);
+                assert!(
+                    actual.re.is_finite() && actual.im.is_finite() && relative_error <= 2e-13,
+                    "lane={lane}, actual={actual:?}, expected={expected:?}, relative_error={relative_error:.3e}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
 fn scalar_adjoint_operators_match_ducc_and_inner_products() {
     // Reference: ducc0 0.41.0, GL 3x7, phi0=0.37, mstart for packed Rust layout.
     let plan = make_plan(2, 2, 3, 7, 0.37);
