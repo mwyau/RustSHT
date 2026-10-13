@@ -8,6 +8,9 @@ use duccfft::{ComplexFftPlan, RealFftPlan};
 use num_complex::Complex64;
 use rustfft::{Fft, FftPlanner, FftPlannerScalar};
 
+#[path = "prototypes/real_multipass.rs"]
+mod real_multipass_prototype;
+
 const BATCH_COUNT: usize = 32;
 const SAMPLE_COUNT: usize = 7;
 
@@ -887,6 +890,18 @@ fn main() {
         Some("bench-sht") => {
             benchmark_sht_workloads();
         }
+        Some("bench-real-multipass") => {
+            let lengths: Vec<String> = args.collect();
+            let lengths = if lengths.is_empty() {
+                [64, 128, 256, 512, 1024, 2048, 4096]
+                    .into_iter()
+                    .map(|len| len.to_string())
+                    .collect::<Vec<_>>()
+            } else {
+                lengths
+            };
+            real_multipass_prototype::bench(lengths.into_iter());
+        }
         Some("bench-native") => {
             println!(
                 "mode,n,plan_ns,workspace_ns,workspace_bytes,public_operation_ns,batch_operation_ns,batch_count,checksum"
@@ -963,7 +978,7 @@ fn main() {
         }
         _ => {
             eprintln!(
-                "usage: rustfft-bench dump-all | dump-native-all | dump MODE N | bench [N ...] | bench-scalar [N ...] | bench-sht | bench-native [N ...] | bench-native-real N [BATCH ...] | bench-profile-real-inverse N normal|high [ITERATIONS]"
+                "usage: rustfft-bench dump-all | dump-native-all | dump MODE N | bench [N ...] | bench-scalar [N ...] | bench-sht | bench-real-multipass [N ...] | bench-native [N ...] | bench-native-real N [BATCH ...] | bench-profile-real-inverse N normal|high [ITERATIONS]"
             );
             eprintln!("no benchmark was run; use `bench` to start the workload");
         }
