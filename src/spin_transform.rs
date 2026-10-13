@@ -1168,46 +1168,75 @@ impl<T: ShtScalar> ShtPlan<T> {
         }
 
         if !has_excluded_ring {
-            let fused_first = T::synthesize_paired_scalar_block_dispatched(
-                arch,
-                m,
-                scalar_lmax,
-                theta_sin,
-                theta_cos,
-                self.sectoral_norms[m],
-                &recurrence.epsilon,
-                &recurrence.spin_alpha,
-                &recurrence.spin_coefficient_a,
-                &recurrence.spin_coefficient_b,
-                &recurrence.fast_scalar_first[m..=scalar_lmax],
-                ring_order_limits,
-                spectrum_len,
-                q_spectra,
-                &mut recurrence.previous[..block_len],
-                &mut recurrence.current[..block_len],
-                &mut recurrence.next[..block_len],
-                &mut recurrence.exponents[..block_len],
-            )?;
-            let fused_second = T::synthesize_paired_scalar_block_dispatched(
-                arch,
-                m,
-                scalar_lmax,
-                theta_sin,
-                theta_cos,
-                self.sectoral_norms[m],
-                &recurrence.epsilon,
-                &recurrence.spin_alpha,
-                &recurrence.spin_coefficient_a,
-                &recurrence.spin_coefficient_b,
-                &recurrence.fast_scalar_second[m..=scalar_lmax],
-                ring_order_limits,
-                spectrum_len,
-                u_spectra,
-                &mut recurrence.previous[..block_len],
-                &mut recurrence.current[..block_len],
-                &mut recurrence.next[..block_len],
-                &mut recurrence.exponents[..block_len],
-            )?;
+            let coefficient_pair_count = (scalar_lmax - m + 2) / 2;
+            let prepared_first = recurrence.fast_spin_first.len() >= coefficient_pair_count
+                && recurrence.fast_spin_second.len() >= coefficient_pair_count
+                && T::prepare_paired_scalar_synthesis_coefficients(
+                    m,
+                    scalar_lmax,
+                    &recurrence.epsilon,
+                    &recurrence.spin_alpha,
+                    &recurrence.fast_scalar_first[m..=scalar_lmax],
+                    &mut recurrence.fast_spin_first[..coefficient_pair_count],
+                    &mut recurrence.fast_spin_second[..coefficient_pair_count],
+                );
+            let fused_first = if prepared_first {
+                T::synthesize_paired_scalar_block_prepared_dispatched(
+                    arch,
+                    m,
+                    scalar_lmax,
+                    theta_sin,
+                    theta_cos,
+                    self.sectoral_norms[m],
+                    &recurrence.spin_coefficient_a,
+                    &recurrence.spin_coefficient_b,
+                    &recurrence.fast_spin_first[..coefficient_pair_count],
+                    &recurrence.fast_spin_second[..coefficient_pair_count],
+                    ring_order_limits,
+                    spectrum_len,
+                    q_spectra,
+                    &mut recurrence.previous[..block_len],
+                    &mut recurrence.current[..block_len],
+                    &mut recurrence.next[..block_len],
+                    &mut recurrence.exponents[..block_len],
+                )?
+            } else {
+                false
+            };
+            let prepared_second = recurrence.fast_spin_first.len() >= coefficient_pair_count
+                && recurrence.fast_spin_second.len() >= coefficient_pair_count
+                && T::prepare_paired_scalar_synthesis_coefficients(
+                    m,
+                    scalar_lmax,
+                    &recurrence.epsilon,
+                    &recurrence.spin_alpha,
+                    &recurrence.fast_scalar_second[m..=scalar_lmax],
+                    &mut recurrence.fast_spin_first[..coefficient_pair_count],
+                    &mut recurrence.fast_spin_second[..coefficient_pair_count],
+                );
+            let fused_second = if prepared_second {
+                T::synthesize_paired_scalar_block_prepared_dispatched(
+                    arch,
+                    m,
+                    scalar_lmax,
+                    theta_sin,
+                    theta_cos,
+                    self.sectoral_norms[m],
+                    &recurrence.spin_coefficient_a,
+                    &recurrence.spin_coefficient_b,
+                    &recurrence.fast_spin_first[..coefficient_pair_count],
+                    &recurrence.fast_spin_second[..coefficient_pair_count],
+                    ring_order_limits,
+                    spectrum_len,
+                    u_spectra,
+                    &mut recurrence.previous[..block_len],
+                    &mut recurrence.current[..block_len],
+                    &mut recurrence.next[..block_len],
+                    &mut recurrence.exponents[..block_len],
+                )?
+            } else {
+                false
+            };
             debug_assert_eq!(fused_first, fused_second);
             if fused_first && fused_second {
                 for (ring, &sin_theta) in theta_sin.iter().enumerate() {

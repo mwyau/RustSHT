@@ -67,11 +67,11 @@ impl<T: ShtScalar> ShtPlan<T> {
                     quantity: "spin recurrence factor count",
                 })?;
         let spin_fast_coefficient_count = match (harmonics.spin(), T::supports_paired_scalar()) {
-            (0, true) if harmonics.lmax() >= SPIN1_FAST_MIN_LMAX => harmonics
+            (0, true) => harmonics
                 .lmax()
                 .checked_add(2)
                 .ok_or(ShtError::IntegerOverflow {
-                    quantity: "DERIV1 fast scalar coefficient count",
+                    quantity: "paired scalar coefficient scratch count",
                 })?,
             (1, true) if harmonics.lmax() >= SPIN1_FAST_MIN_LMAX => harmonics
                 .lmax()

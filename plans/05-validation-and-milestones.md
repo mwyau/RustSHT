@@ -1712,3 +1712,27 @@ A trial lowered `SCALAR_TRANSITION_MIN_LMAX` from T1023 to T511, enabling the ex
 | GL T255 control | `13.835/3.564` | `13.816/3.625` | `-0.1%/+1.7%` |
 
 The T511 one-thread differences are within measurement variability, while all eight-thread medians are slightly slower. The T255 control is unchanged-path noise. The release scalar DUCC/analytic check through T2047 passed with the lower gate, but there is no performance case to retain it. `SCALAR_TRANSITION_MIN_LMAX` remains 1023. No source change from this trial was kept and no FFT code changed.
+
+### Paired scalar synthesis coefficient preparation (2026-10-13)
+
+
+The implementation reuses per-worker complex scratch, keeps the paired recurrence and summation order unchanged, and leaves the scaled fallback and polar cutoff unchanged. It adds no full map or spectrum. Plans below T15 allocate four short scalar coefficient scratch vectors for this path; at T14 this is at most 1 KiB per worker. No FFT code changed. Native measurements used `examples/m1b_bench.rs`, reused f64 plans and workspaces, full `mmax`, `phi0=0.37`, `nphi=2*lmax+3`, one warm-up and five timed calls per process. Baseline was `dcb562f`; the candidate was the prepared-coefficient implementation. Runs used 8 pinned CPU cores on an x86-64 CPU / Linux, Rust `1.99.0 (b940084d7 2026-09-28)`, release `opt-level=3`, 16 codegen units, LTO off and runtime AVX2/FMA dispatch without `target-cpu=native`. T511 results are medians of five alternating baseline/candidate process pairs; T1023 results use two pairs. Values are milliseconds, one/eight threads:
+
+| Grid / bandlimit | Operation | Baseline 1T/8T | Candidate 1T/8T |
+| --- | --- | ---: | ---: |
+| GL T511 | Scalar synthesis | `66.285/16.510` | `58.183/15.385` |
+| GL T511 | Spin-1 STANDARD synthesis | `76.759/22.425` | `61.916/21.224` |
+| GL T511 | Spin-1 GRAD_ONLY synthesis | `77.362/22.322` | `61.810/21.143` |
+| GL T511 | Spin-1 DERIV1 synthesis | `77.864/23.740` | `64.018/23.185` |
+| CC T511 | Scalar synthesis | `64.457/22.630` | `57.005/22.450` |
+| CC T511 | Spin-1 STANDARD synthesis | `79.952/25.916` | `63.940/25.369` |
+| CC T511 | Spin-1 GRAD_ONLY synthesis | `80.069/25.977` | `64.868/25.188` |
+| CC T511 | Spin-1 DERIV1 synthesis | `80.792/26.510` | `65.356/25.933` |
+| F1 T511 | Scalar synthesis | `67.770/16.253` | `59.105/15.662` |
+| F1 T511 | Spin-1 STANDARD synthesis | `72.327/21.435` | `57.111/21.475` |
+| F1 T511 | Spin-1 GRAD_ONLY synthesis | `72.558/21.069` | `58.024/20.572` |
+| F1 T511 | Spin-1 DERIV1 synthesis | `75.392/23.188` | `59.755/20.862` |
+| GL T1023 | Scalar synthesis | `445.576/130.630` | `382.815/129.604` |
+| GL T1023 | Spin-1 STANDARD synthesis | `550.211/160.302` | `440.740/154.616` |
+
+At GL T511, one-thread time fell by 12.2% for scalar synthesis and 17.8–19.3% for the three spin-1 modes. Eight-thread improvements were 6.8% for scalar and 2.3–5.7% for spin 1. At GL T1023, one-thread time fell by 14.9% for scalar and 20.2% for spin-1 STANDARD; eight-thread time was essentially unchanged for scalar and fell 3.2% for spin 1. CC/F1 T511 one-thread gains were 11.6–21.0%; their eight-thread gains ranged from no resolved change to 10.0%, with F1 STANDARD unchanged. The CC/F1 and T1023 candidate runs used the same prepared kernel before a small control-flow cleanup that removed an unreachable production fallback; the final-source GL T511 rerun reproduced the scalar, STANDARD and GRAD_ONLY gains. DERIV1's one-thread gain reproduced, while its eight-thread samples remained more variable. The effect is strongest at one thread because coefficient preparation removes repeated work within each vector block while the eight-thread transform is increasingly limited by parallel overhead and memory effects. The focused coefficient test compares each prepared even/odd pair with the existing degree transform, including the sectoral span and the shortest `lmax=m+1` and `lmax=m+2` tails. On final source, `cargo fmt --all -- --check`, workspace Clippy with warnings denied, all-feature tests (120 passed, 8 ignored), no-default-feature tests (110 passed, 7 ignored), and `uv run pytest python/tests` (8 passed) succeeded. Release DUCC and analytic checks passed for scalar through T2047 and spin 1 through T2047; adjoint and spin-3/4 regression tests also passed. A strictly read-only Sol review found no numerical or ownership blocker and requested the three short spans; the regression now includes them. The f32 implementation declines this f64-only helper, and spin-2 remains unchanged.
