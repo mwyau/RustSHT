@@ -464,6 +464,238 @@ fn spin1_scalar_fast_synthesis_matches_general_channel_cases() {
 }
 
 #[test]
+fn spin1_scalar_transition_splits_polar_lanes_and_matches_general() {
+    let lmax = 255;
+    for grid_kind in [
+        GridKind::GaussLegendre,
+        GridKind::ClenshawCurtis,
+        GridKind::Fejer1,
+    ] {
+        let ntheta = lmax + usize::from(grid_kind == GridKind::ClenshawCurtis) + 1;
+        let nphi = 2 * lmax + 3;
+        for (mode, plan_spin, derivative_norm) in [
+            ("STANDARD", 1, false),
+            ("GRAD_ONLY", 1, false),
+            ("DERIV1", 0, true),
+        ] {
+            let plan = ShtPlan::new(
+                GridSpec::new(grid_kind, ntheta, nphi, 0.37).unwrap(),
+                HarmonicSpec::new(lmax, lmax, plan_spin).unwrap(),
+            )
+            .unwrap();
+            let (mut e_alm, mut b_alm) = coefficients(&plan);
+            for value in e_alm.iter_mut().chain(&mut b_alm) {
+                *value *= 1e-5;
+            }
+            let mut workspace = plan.workspace().unwrap();
+            plan.prepare_spin_latitudes(&mut workspace, 1);
+            let transition_sine = 0.01;
+            let first_block = &workspace.theta_sin[..crate::legendre::LATITUDE_BLOCK_SIZE];
+            if grid_kind == GridKind::GaussLegendre || grid_kind == GridKind::Fejer1 {
+                assert!(first_block[0] < transition_sine);
+                assert!(first_block.iter().any(|&sine| sine >= transition_sine));
+            }
+
+            let spectrum_len = plan.fft.spectrum_len();
+            let block_len = crate::legendre::LATITUDE_BLOCK_SIZE;
+            let mut split_probe = None;
+            if mode == "STANDARD" && matches!(grid_kind, GridKind::GaussLegendre | GridKind::Fejer1)
+            {
+                let m = 80;
+                let scalar_lmax = lmax + 1;
+                let recurrence = &mut workspace.recurrence_workers[0];
+                <f64 as ShtScalar>::fill_epsilon(m, scalar_lmax, &mut recurrence.epsilon);
+                assert!(<f64 as ShtScalar>::fill_paired_scalar_factors(
+                    m,
+                    scalar_lmax,
+                    &recurrence.epsilon,
+                    &mut recurrence.spin_alpha,
+                    &mut recurrence.spin_coefficient_a,
+                    &mut recurrence.spin_coefficient_b,
+                ));
+                let coefficient_start = plan.harmonics().index(m, m).unwrap();
+                let coefficient_count = lmax - m + 1;
+                crate::legendre::spin1_to_scalar(
+                    m,
+                    lmax,
+                    &e_alm[coefficient_start..coefficient_start + coefficient_count],
+                    Some(&b_alm[coefficient_start..coefficient_start + coefficient_count]),
+                    &mut recurrence.fast_scalar_first,
+                    &mut recurrence.fast_scalar_second,
+                );
+
+                let mut split_q = vec![Complex64::new(0.0, 0.0); block_len * spectrum_len];
+                let mut split_u = vec![Complex64::new(0.0, 0.0); split_q.len()];
+                let active_start = workspace.ring_order_limits[..block_len]
+                    .iter()
+                    .position(|&limit| m <= limit)
+                    .expect("the block contains active rings");
+                assert!(m <= workspace.ring_order_limits[0]);
+                assert!(workspace.theta_sin[active_start] < transition_sine);
+                assert!(
+                    workspace.theta_sin[active_start..block_len]
+                        .iter()
+                        .any(|&sine| sine >= transition_sine)
+                );
+                let mut fused_spectra = vec![Complex64::new(0.0, 0.0); block_len * spectrum_len];
+                assert!(
+                    !<f64 as ShtScalar>::synthesize_paired_scalar_block_dispatched(
+                        pulp::Arch::new(),
+                        m,
+                        scalar_lmax,
+                        &workspace.theta_sin[..block_len],
+                        &workspace.theta_cos[..block_len],
+                        plan.sectoral_norms[m],
+                        &recurrence.epsilon,
+                        &recurrence.spin_alpha,
+                        &recurrence.spin_coefficient_a,
+                        &recurrence.spin_coefficient_b,
+                        &recurrence.fast_scalar_first[m..=scalar_lmax],
+                        &workspace.ring_order_limits[..block_len],
+                        spectrum_len,
+                        &mut fused_spectra,
+                        &mut recurrence.previous[..block_len],
+                        &mut recurrence.current[..block_len],
+                        &mut recurrence.next[..block_len],
+                        &mut recurrence.exponents[..block_len],
+                    )
+                    .unwrap()
+                );
+                let polar_count = try_synthesize_spin1_transition_safe_lanes(
+                    pulp::Arch::new(),
+                    m,
+                    scalar_lmax,
+                    spectrum_len,
+                    plan.sectoral_norms[m],
+                    &workspace.theta_sin[..block_len],
+                    &workspace.theta_cos[..block_len],
+                    &workspace.ring_order_limits[..block_len],
+                    &mut split_q,
+                    &mut split_u,
+                    recurrence,
+                )
+                .unwrap()
+                .expect("safe lanes complete the staged transition");
+                assert!(
+                    polar_count > 0,
+                    "the split retains polar lanes for fallback"
+                );
+                assert!((0..block_len).any(|ring| split_q[ring * spectrum_len + m].norm() > 0.0));
+                assert!((0..block_len).any(|ring| split_u[ring * spectrum_len + m].norm() > 0.0));
+                let mut block_q = vec![Complex64::new(0.0, 0.0); block_len * spectrum_len];
+                let mut block_u = vec![Complex64::new(0.0, 0.0); block_q.len()];
+                plan.synthesize_spin1_scalar_block(
+                    m,
+                    scalar_lmax,
+                    spectrum_len,
+                    &workspace.theta_sin[..block_len],
+                    &workspace.theta_cos[..block_len],
+                    &workspace.ring_order_limits[..block_len],
+                    pulp::Arch::new(),
+                    recurrence,
+                    &mut block_q,
+                    &mut block_u,
+                )
+                .unwrap();
+                split_probe = Some((m, split_q, split_u, block_q, block_u));
+            }
+
+            let mut fast_q = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
+            let mut fast_u = vec![Complex64::new(0.0, 0.0); fast_q.len()];
+            plan.synthesize_spin_ring_group(
+                &e_alm,
+                (mode == "STANDARD").then_some(b_alm.as_slice()),
+                1,
+                derivative_norm,
+                true,
+                nphi,
+                spectrum_len,
+                plan.grid.phi0(),
+                0,
+                ntheta,
+                &mut fast_q,
+                &mut fast_u,
+                &workspace.theta_sin[..ntheta],
+                &workspace.theta_cos[..ntheta],
+                &workspace.ring_order_limits[..ntheta],
+                pulp::Arch::new(),
+                &mut workspace.recurrence_workers[0],
+            )
+            .unwrap();
+
+            let mut general_q = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
+            let mut general_u = vec![Complex64::new(0.0, 0.0); general_q.len()];
+            plan.synthesize_spin_ring_group(
+                &e_alm,
+                (mode == "STANDARD").then_some(b_alm.as_slice()),
+                1,
+                derivative_norm,
+                false,
+                nphi,
+                spectrum_len,
+                plan.grid.phi0(),
+                0,
+                ntheta,
+                &mut general_q,
+                &mut general_u,
+                &workspace.theta_sin[..ntheta],
+                &workspace.theta_cos[..ntheta],
+                &workspace.ring_order_limits[..ntheta],
+                pulp::Arch::new(),
+                &mut workspace.recurrence_workers[0],
+            )
+            .unwrap();
+
+            if let Some((m, split_q, split_u, block_q, block_u)) = split_probe {
+                let phase = crate::legendre::longitude_phase::<f64>(m, plan.grid.phi0(), false);
+                let longitude_scale = nphi as f64;
+                for ring in 0..block_len {
+                    let index = ring * spectrum_len + m;
+                    let expected_q = general_q[index] / phase / longitude_scale;
+                    let expected_u = general_u[index] / phase / longitude_scale;
+                    if workspace.theta_sin[ring] >= transition_sine
+                        && m <= workspace.ring_order_limits[ring]
+                    {
+                        for (component, split, expected) in [
+                            ("Q safe", split_q[index], expected_q),
+                            ("U safe", split_u[index], expected_u),
+                        ] {
+                            let error = (split - expected).norm();
+                            assert!(
+                                error <= 3e-11 * expected.norm().max(1.0),
+                                "grid={grid_kind:?} component={component} ring={ring} split={split:?} general={expected:?} error={error:.3e}"
+                            );
+                        }
+                    }
+                    for (component, split, expected) in [
+                        ("Q full block", block_q[index], expected_q),
+                        ("U full block", block_u[index], expected_u),
+                    ] {
+                        let error = (split - expected).norm();
+                        assert!(
+                            error <= 3e-11 * expected.norm().max(1.0),
+                            "grid={grid_kind:?} component={component} ring={ring} split={split:?} general={expected:?} error={error:.3e}"
+                        );
+                    }
+                }
+            }
+
+            for (component, fast, general) in
+                [("Q", &fast_q, &general_q), ("U", &fast_u, &general_u)]
+            {
+                for (index, (&actual, &expected)) in fast.iter().zip(general).enumerate() {
+                    let error = (actual - expected).norm();
+                    assert!(
+                        error <= 3e-11 * expected.norm().max(1.0),
+                        "grid={grid_kind:?} mode={mode} component={component} index={index} fast={actual:?} general={expected:?} error={error:.3e}"
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
 fn spin1_scalar_transition_preserves_the_sine_cutoff_boundary() {
     let lmax = 511;
     let m = 64;

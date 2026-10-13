@@ -2165,3 +2165,39 @@ Callgrind attributed a large share of scalar and spin-1 analysis instructions to
 The precomputed-product variant reduced Callgrind instructions for GL T127 spin-1 analysis from `679,269,937` to `658,287,072` (`-3.1%`) and improved scalar GL analysis at T511/T1023, but regressed spin-1 one-thread analysis by `3.4–9.0%` at the measured T511/T1023 grids. Its spin-1 eight-thread results were mixed. The order-preserving FMA variant reduced scalar GL T127 instructions from `248,121,377` to `244,318,326` (`-1.5%`). Its scalar T511/T1023 elapsed times appeared `7–9%` lower across two process pairs, but the host load average was `7–14` on a 16-core CPU, and the spin-1 results included large outliers and mixed changes. Those timings do not establish a reproducible whole-transform gain or a safe scalar-only specialization. Callgrind counts describe executed instructions and are not cycle or elapsed-time measurements.
 
 The accumulator and scaled fallback remain unchanged. No additional dispatch parameter or duplicated reducer was added to distinguish scalar analysis from spin-conversion analysis. Reconsider this only with a quieter, paired whole-transform comparison that includes DUCC, adjoint checks and high-band validation; do not infer a speedup from instruction reduction alone. No FFT code changed.
+
+### Spin-1 safe-lane transition split (2026-10-13)
+
+At T255, a temporary test-only path census showed that the existing `sin(theta) >= 0.01` transition guard kept active GL/F1 lanes on scaled recurrence after the normal fused block had declined. The rejected general-path work was 12.2–13.8% of active degree-lane work at one thread and 6.1–6.9% at eight threads. CC had no comparable rejected work. The census was removed after collection. T63 and T127 remain below the transition gate and do not execute this change.
+
+The candidate packs active lanes with `sin(theta) >= 0.01` into existing worker scratch, runs the unchanged guarded transition on those lanes and scatters their spectra to the original rings. Active polar lanes remain in separate existing scratch and use the scaled paired fallback. If the safe-lane transition declines or fails its finite-output preflight, no spectrum is written by the helper and the original fallback handles all active lanes. The cutoff, transition threshold, arithmetic and polar contribution are unchanged. No worker workspace or map/spectrum allocation was added.
+
+Native whole-transform measurements used `examples/m1b_bench.rs`, f64 spin-1 synthesis with reused plans and workspaces, `phi0=0.37`, full `mmax`, `nphi=2*lmax+3`, one warm-up and five timed calls per process. Baseline commit was `277675f`; the candidate was the current source before this documentation and test-only strengthening. T255/T511 use three alternating baseline/candidate process pairs; T1023 DERIV1 uses two pairs. Runs were pinned to CPUs 8–15 on an AMD Ryzen 9 5950X / Linux `7.0.14-20-pve`. Rust was `1.99.0 (b940084d7 2026-09-28)`, Cargo release `opt-level=3`, 16 codegen units, LTO off, runtime AVX2/FMA dispatch; `target-cpu=native` was not enabled. Values are median process medians in milliseconds, one/eight threads:
+
+| Bandlimit | Grid | Mode | 1 thread, before → after | 8 threads, before → after |
+| ---: | --- | --- | ---: | ---: |
+| T255 | GL | STANDARD | `18.608 → 14.638` | `5.550 → 4.521` |
+| T255 | GL | GRAD_ONLY | `19.145 → 14.827` | `5.708 → 4.615` |
+| T255 | GL | DERIV1 | `19.451 → 15.027` | `5.783 → 4.722` |
+| T255 | CC | STANDARD | `21.657 → 21.964` | `6.676 → 6.704` |
+| T255 | CC | GRAD_ONLY | `22.079 → 22.057` | `6.744 → 6.754` |
+| T255 | CC | DERIV1 | `22.322 → 22.286` | `6.900 → 6.970` |
+| T255 | F1 | STANDARD | `19.733 → 16.197` | `5.790 → 4.911` |
+| T255 | F1 | GRAD_ONLY | `20.386 → 16.330` | `5.858 → 4.958` |
+| T255 | F1 | DERIV1 | `20.454 → 16.456` | `6.060 → 5.153` |
+| T511 | GL | STANDARD | `89.757 → 78.034` | `25.075 → 22.481` |
+| T511 | GL | GRAD_ONLY | `92.448 → 79.971` | `30.957 → 23.383` |
+| T511 | GL | DERIV1 | `93.278 → 80.056` | `27.136 → 23.698` |
+| T511 | CC | STANDARD | `94.138 → 83.142` | `32.209 → 26.431` |
+| T511 | CC | GRAD_ONLY | `98.750 → 83.913` | `39.775 → 26.593` |
+| T511 | CC | DERIV1 | `95.943 → 83.983` | `33.167 → 27.167` |
+| T511 | F1 | STANDARD | `90.880 → 74.569` | `25.132 → 22.899` |
+| T511 | F1 | GRAD_ONLY | `92.774 → 76.203` | `25.903 → 21.471` |
+| T511 | F1 | DERIV1 | `94.519 → 76.777` | `26.679 → 22.655` |
+| T1023 | GL | DERIV1 | `614.157 → 575.724` | `187.734 → 165.756` |
+| T1023 | CC | DERIV1 | `626.725 → 585.871` | `191.232 → 172.130` |
+| T1023 | F1 | DERIV1 | `623.362 → 576.612` | `189.265 → 166.351` |
+
+T255 GL and F1 improvements were 17.9–22.7% at one thread and 15.0–19.1% at eight; the CC control stayed within measurement noise. T511 one-thread improvements were 11.7–18.8%. Eight-thread medians improved, though some process ranges overlapped and the baseline contained scheduling outliers. T1023 DERIV1 improved 6.3–7.5% at one thread and 10.0–12.1% at eight across the two paired runs. A fresh three-pair T255 rerun reproduced GL STANDARD (`18.601/5.747 → 14.640/4.575 ms`) and F1 DERIV1 (`20.378/6.103 → 16.452/5.096 ms`); CC STANDARD remained a nonsplitting control (`21.880/6.677 → 21.469/6.657 ms`).
+
+The rebuilt Python plan matched installed `ducc0==0.41.0` from source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf` on T255 GL/CC/F1 for STANDARD, GRAD_ONLY and DERIV1 synthesis. It used Python `3.11.15`, NumPy `2.4.6`, matching coefficients and `phi0`, with one process per setting and three groups of five timed samples. This run checks numerical agreement, not before/after performance. Maximum absolute and relative-L2 errors were `1.095e-12` and `3.490e-14`. The ignored release DUCC tests `m3_spin_t511_all_grids_matches_ducc_and_roundtrips` and `m3_spin_t1023_sparse_synthesis_matches_ducc` passed; standard spin adjoint and spin-3/4 regression tests also passed. The focused regression proves that the T255 GL/F1 safe transition succeeds with a positive polar fallback count, checks safe outputs and the complete split block against the general recurrence, and keeps the CC nonsplitting control. Sol's strictly read-only review found no numerical, indexing, ownership or race blocker; it requested explicit proof of successful split use, which the regression now asserts. The T255 probe's first block is cutoff-active; the full-grid comparison separately covers cutoff-excluded rings. Formatting, workspace Clippy, full all-feature and no-default-feature Rust tests, and the Python suite passed. No FFT code changed.
