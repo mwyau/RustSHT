@@ -115,6 +115,8 @@ The C++ reference tool also accepts `dump MODE N` for per-output comparisons. Th
 
 Each timing cell is `DUCCFFT / RustFFT / DUCC portable / DUCC native`, in microseconds per transform. Ratios are `DUCCFFT / RustFFT`, `DUCCFFT / DUCC portable`, and `DUCCFFT / DUCC native`; below 1 means DUCCFFT is faster. `single`, `scalar` and `spin1` rows distinguish one transform, `L+1` serial transforms and `2(L+1)` serial transforms. The paired-gain cell gives the f64 real-prime kernel candidate gain over source `a124` and its observed pair range; values near 1 mean no measured change.
 
+In compact table headers, `DFFT` means DUCCFFT.
+
 | T | nφ role | N | row pattern | rows | R2C times, µs (DFFT / RustFFT / DUCC portable / DUCC native) | R2C ratios (DFFT / RustFFT / DUCC p / DUCC n) | paired gain vs a124 | C2R times, µs (DFFT / RustFFT / DUCC p / DUCC n) | C2R ratios | paired gain vs a124 |
 |---:|---|---:|---|---:|---|---|---:|---|---|---:|
 | 72 | min-odd | 145 | single | 1 | 0.756 / 0.922 / 0.762 / 0.847 | 0.82 / 0.99 / 0.89 | 1.73× (1.32–1.78×) | 0.791 / 0.932 / 0.767 / 0.691 | 0.85 / 1.03 / 1.15 | 1.65× (1.64–1.67×) |
