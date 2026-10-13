@@ -7,14 +7,9 @@ mod across_row;
 use across_row::AcrossRowPlan;
 use num_complex::Complex64;
 
-fn input_value(row: usize, index: usize, len: usize) -> Complex64 {
-    let x = index as f64;
-    let r = row as f64;
-    let phase = x / len as f64 * std::f64::consts::TAU;
-    Complex64::new(
-        (phase * 17.0 + r * 0.31).sin() + (phase * 13.0 - r).cos() * 0.2,
-        (phase * 11.0 - r * 0.23).cos() - (phase * 19.0 + r).sin() * 0.3,
-    )
+fn input_value(row: usize, index: usize, _len: usize) -> Complex64 {
+    let x = (index + 1 + 3 * row) as f64;
+    Complex64::new((0.173 * x).sin(), (0.113 * (x + 1.0)).cos())
 }
 
 fn direct_dft(input: &[Complex64], forward: bool) -> Vec<Complex64> {
