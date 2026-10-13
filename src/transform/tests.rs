@@ -752,7 +752,7 @@ fn workspace_sizes_analysis_scratch_for_order_parallelism() {
 
     assert_eq!(
         sixteen_thread_workspace.ring_group_size,
-        LATITUDE_BLOCK_SIZE
+        LATITUDE_BLOCK_SIZE / 4
     );
     assert_eq!(sixteen_thread_workspace.recurrence_workers.len(), 16);
 
@@ -799,6 +799,8 @@ fn workspace_ring_groups_add_parallelism_for_underfilled_synthesis() {
         .build()
         .unwrap();
     let cases = [
+        (GridKind::GaussLegendre, 127, 128, 16, 8),
+        (GridKind::ClenshawCurtis, 127, 129, 16, 9),
         (GridKind::GaussLegendre, 255, 256, 32, 8),
         (GridKind::GaussLegendre, 511, 512, 32, 16),
         (GridKind::ClenshawCurtis, 511, 513, 64, 9),
@@ -821,7 +823,7 @@ fn workspace_ring_groups_add_parallelism_for_underfilled_synthesis() {
 #[cfg(feature = "parallel")]
 #[test]
 fn synthesis_workspace_from_larger_pool_is_safe_in_smaller_pool() {
-    let plan = make_plan(3, 2, 256, 9, 0.41);
+    let plan = make_plan(3, 2, 128, 9, 0.41);
     let input = coefficients(plan.harmonics());
     let eight_threads = rayon::ThreadPoolBuilder::new()
         .num_threads(8)
@@ -838,7 +840,7 @@ fn synthesis_workspace_from_larger_pool_is_safe_in_smaller_pool() {
 
     let mut shared_workspace = eight_threads.install(|| plan.workspace()).unwrap();
     let mut single_workspace = one_thread.install(|| plan.workspace()).unwrap();
-    assert_eq!(shared_workspace.ring_group_size, LATITUDE_BLOCK_SIZE / 2);
+    assert_eq!(shared_workspace.ring_group_size, LATITUDE_BLOCK_SIZE / 4);
 
     let mut shared_output = vec![0.0; plan.sample_count];
     let mut single_output = vec![0.0; plan.sample_count];
