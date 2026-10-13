@@ -23,6 +23,7 @@ struct Pass<T> {
     l1: usize,
     ido: usize,
     twiddles: Vec<T>,
+    prime_roots: Vec<Complex<T>>,
 }
 
 pub(crate) struct RealMultipassPlan<T> {
@@ -49,7 +50,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         radix4_forward_interior_kernel: Option<RealRadix4ForwardInteriorKernel<T>>,
         radix4_interior_kernel: Option<RealRadix4InteriorKernel<T>>,
     ) -> Result<Option<Self>, FftError> {
-        if len <= 1 || factors.iter().any(|&radix| !matches!(radix, 2..=5)) {
+        if len <= 1 {
             return Ok(None);
         }
 
@@ -61,6 +62,9 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         for &radix in factors {
             let pass_len = l1.checked_mul(radix).ok_or(FftError::AllocationFailed)?;
             let ido = len / pass_len;
+            if radix > 5 && (radix >= 135 || ido != 1) {
+                return Ok(None);
+            }
             debug_assert!(!matches!(radix, 3 | 5) || ido % 2 == 1);
             let twiddle_len = (radix - 1)
                 .checked_mul(ido.saturating_sub(1))
@@ -76,11 +80,22 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                     twiddles[offset + 1] = root.im;
                 }
             }
+            let mut prime_roots = try_vec(
+                if radix > 5 { radix } else { 0 },
+                Complex::new(T::zero(), T::zero()),
+            )?;
+            if radix > 5 {
+                let root_stride = len / radix;
+                for (phase, root) in prime_roots.iter_mut().enumerate() {
+                    *root = roots[phase * root_stride];
+                }
+            }
             passes.push(Pass {
                 radix,
                 l1,
                 ido,
                 twiddles,
+                prime_roots,
             });
             l1 = pass_len;
         }
@@ -241,7 +256,7 @@ fn execute_forward_pass<T: Float + FromPrimitive>(
         4 => forward_radix4(pass, input, output, radix4_forward_interior_kernel),
         3 => forward_radix3(pass, input, output),
         5 => forward_radix5(pass, input, output),
-        _ => unreachable!("real multipass plan contains only radices 2 through 5"),
+        _ => forward_general_prime(pass, input, output),
     }
 }
 
@@ -257,7 +272,75 @@ fn execute_inverse_pass<T: Float + FromPrimitive>(
         4 => inverse_radix4(pass, input, output, radix4_interior_kernel),
         3 => inverse_radix3(pass, input, output),
         5 => inverse_radix5(pass, input, output),
-        _ => unreachable!("real multipass plan contains only radices 2 through 5"),
+        _ => inverse_general_prime(pass, input, output, T::one()),
+    }
+}
+
+fn forward_general_prime<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output: &mut [T]) {
+    debug_assert!(pass.radix > 5 && pass.radix < 135);
+    debug_assert_eq!(pass.ido, 1);
+    let radix = pass.radix;
+    let half = radix / 2;
+
+    for group in 0..pass.l1 {
+        let input0 = input[group];
+        let mut dc = input0;
+        for branch in 1..=half {
+            dc = dc + input[branch * pass.l1 + group] + input[(radix - branch) * pass.l1 + group];
+        }
+        let output_start = group * radix;
+        output[output_start] = dc;
+
+        for frequency in 1..=half {
+            let mut sum_re = input0;
+            let mut sum_im = T::zero();
+            let mut phase = 0;
+            for branch in 1..=half {
+                phase += frequency;
+                if phase >= radix {
+                    phase -= radix;
+                }
+                let root = pass.prime_roots[phase];
+                let left = input[branch * pass.l1 + group];
+                let right = input[(radix - branch) * pass.l1 + group];
+                sum_re = sum_re + (left + right) * root.re;
+                sum_im = sum_im - (left - right) * root.im;
+            }
+            output[output_start + 2 * frequency - 1] = sum_re;
+            output[output_start + 2 * frequency] = sum_im;
+        }
+    }
+}
+
+fn inverse_general_prime<T: Float + FromPrimitive>(
+    pass: &Pass<T>,
+    input: &[T],
+    output: &mut [T],
+    scale: T,
+) {
+    debug_assert!(pass.radix > 5 && pass.radix < 135);
+    debug_assert_eq!(pass.ido, 1);
+    let radix = pass.radix;
+    let half = radix / 2;
+    let two = scalar::<T>(2.0);
+
+    for group in 0..pass.l1 {
+        let input_start = group * radix;
+        for sample in 0..radix {
+            let mut value = input[input_start];
+            let mut phase = 0;
+            for frequency in 1..=half {
+                phase += sample;
+                if phase >= radix {
+                    phase -= radix;
+                }
+                let root = pass.prime_roots[phase];
+                let re = input[input_start + 2 * frequency - 1];
+                let im = input[input_start + 2 * frequency];
+                value = value + two * (re * root.re - im * root.im);
+            }
+            output[sample * pass.l1 + group] = value * scale;
+        }
     }
 }
 

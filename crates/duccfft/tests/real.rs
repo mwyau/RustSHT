@@ -349,7 +349,7 @@ fn f32_large_smooth_prime_bluestein_and_sht_lengths_match_f64_references() {
 
 #[test]
 fn real_general_prime_and_bluestein_paths_match_independent_dfts() {
-    for n in [127, 131, 137, 241, 257] {
+    for n in [127, 131, 137, 241, 257, 1025] {
         let plan = RealFftPlan::<f64>::new(n).unwrap();
         let mut workspace = plan.workspace().unwrap();
         let input: Vec<_> = (0..n).map(|index| real_signal(index + 3, n + 5)).collect();
@@ -1145,6 +1145,76 @@ fn real_radix_multipass_fast_paths_and_extreme_fallbacks_are_checked() {
             })
             .collect::<Vec<_>>()
     );
+
+    let prime_len = 1025;
+    let prime_plan64 = RealFftPlan::<f64>::new(prime_len).unwrap();
+    let mut prime_workspace64 = prime_plan64.workspace().unwrap();
+    let mut prime_input64 = vec![0.0; prime_len];
+    prime_input64[0] = f64::MAX;
+    let mut prime_spectrum64 = vec![Complex::new(0.0, 0.0); prime_plan64.spectrum_len()];
+    prime_plan64
+        .forward(
+            &prime_input64,
+            &mut prime_spectrum64,
+            &mut prime_workspace64,
+        )
+        .unwrap();
+    assert!(
+        prime_spectrum64
+            .iter()
+            .all(|value| value.re.is_finite() && value.im.is_finite())
+    );
+    assert_eq!(prime_spectrum64[0], Complex::new(f64::MAX, 0.0));
+
+    prime_spectrum64.fill(Complex::new(0.0, 0.0));
+    prime_spectrum64[0].re = f64::MAX;
+    let mut prime_output64 = vec![0.0; prime_len];
+    prime_plan64
+        .inverse(
+            &prime_spectrum64,
+            &mut prime_output64,
+            &mut prime_workspace64,
+        )
+        .unwrap();
+    assert_f64_close(
+        &prime_output64,
+        &vec![f64::MAX / prime_len as f64; prime_len],
+        prime_len,
+    );
+
+    let prime_plan32 = RealFftPlan::<f32>::new(prime_len).unwrap();
+    let mut prime_workspace32 = prime_plan32.workspace().unwrap();
+    let mut prime_input32 = vec![0.0; prime_len];
+    prime_input32[0] = f32::MAX;
+    let mut prime_spectrum32 = vec![Complex::new(0.0, 0.0); prime_plan32.spectrum_len()];
+    prime_plan32
+        .forward(
+            &prime_input32,
+            &mut prime_spectrum32,
+            &mut prime_workspace32,
+        )
+        .unwrap();
+    assert!(
+        prime_spectrum32
+            .iter()
+            .all(|value| value.re.is_finite() && value.im.is_finite())
+    );
+    assert_eq!(prime_spectrum32[0], Complex::new(f32::MAX, 0.0));
+
+    prime_spectrum32.fill(Complex::new(0.0, 0.0));
+    prime_spectrum32[0].re = f32::MAX;
+    let mut prime_output32 = vec![0.0; prime_len];
+    prime_plan32
+        .inverse(
+            &prime_spectrum32,
+            &mut prime_output32,
+            &mut prime_workspace32,
+        )
+        .unwrap();
+    let expected32 = f32::MAX / prime_len as f32;
+    assert!(prime_output32.iter().all(|value| {
+        value.is_finite() && (value - expected32).abs() <= expected32.abs() * 2.0e-6
+    }));
 }
 
 #[test]
