@@ -80,7 +80,7 @@ The Python API exposes a reusable plan class and top-level procedural functions.
 
 The top-level `synthesis_2d`, `analysis_2d`, `adjoint_synthesis_2d`, `adjoint_analysis_2d` and `get_gridweights` functions use the same packed coefficient layout and grid conventions. `analysis_2d` infers grid dimensions from the map; `adjoint_analysis_2d` takes `ntheta` and `nphi`. The analysis functions use STANDARD mode. Synthesis and adjoint synthesis accept `STANDARD`, `GRAD_ONLY` and `DERIV1`; `DERIV1` uses `spin=1` with one scalar coefficient channel. `get_gridweights` returns ring weights that sum to `4*pi`; divide by `nphi` for per-pixel weights.
 
-The binding accepts `complex128` coefficients and `float64` maps. Inputs must be C-contiguous; the binding copies them into Rust-owned vectors before releasing the GIL. Each call creates a workspace and returns a new NumPy array. Input shape and numerical-operation errors are reported as `ValueError`; an unsupported NumPy dtype is rejected during argument conversion. Exact-analysis sampling limits match the Rust API. Noncontiguous inputs, zero-copy borrowing, f32/complex64 and per-call thread control are not implemented.
+The binding accepts C-contiguous `complex128` coefficients and `float64` maps. It borrows input slices while numerical work runs with the GIL released, then returns a newly allocated NumPy array. The caller must not modify input storage through another alias until the call returns. Each call creates a workspace. Input shape and numerical-operation errors are reported as `ValueError`; an unsupported NumPy dtype is rejected during argument conversion. Exact-analysis sampling limits match the Rust API. Noncontiguous inputs, f32/complex64 and per-call thread control are not implemented.
 
 ## spharmgrid adapter boundary
 
@@ -91,4 +91,4 @@ A RustSHT adapter should match that numerical boundary. spharmgrid, **not the Ru
 ## Remaining choices
 
 - f32 SIMD support and Python thread configuration.
-- Strided and batched inputs and zero-copy borrowing.
+- Strided and batched inputs, reusable Python workspaces, and caller-provided output arrays.

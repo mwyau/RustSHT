@@ -13,6 +13,8 @@ use rustsht::{GridKind, GridSpec, HarmonicSpec, ShtError, ShtPlan};
 /// Standard spin arrays have shapes `(2, nalm)` and `(2, ntheta, nphi)`,
 /// where the coefficient components are E and B. Methods accept C-contiguous
 /// `complex128` or `float64` arrays and return newly allocated NumPy arrays.
+/// Input storage is borrowed during each numerical call; do not modify it
+/// through another alias until the method returns.
 /// Map rings run north to south; longitude samples run eastward from `phi0`
 /// in radians.
 #[pyclass(name = "ShtPlan", module = "rustsht._rustsht")]
@@ -80,7 +82,7 @@ impl PythonShtPlan {
         alm: PyReadonlyArrayDyn<'py, Complex64>,
     ) -> PyResult<Bound<'py, PyArrayDyn<f64>>> {
         let alm_shape = self.alm_shape();
-        let coefficients = read_array(alm, &[alm_shape.0, alm_shape.1], "alm")?;
+        let coefficients = read_array(&alm, &[alm_shape.0, alm_shape.1], "alm")?;
         let plan = &self.plan;
         let output = py
             .detach(move || {
@@ -88,7 +90,7 @@ impl PythonShtPlan {
                 let sample_count = plan.grid().ntheta() * plan.grid().nphi();
                 if plan.harmonics().spin() == 0 {
                     let mut map = vec![0.0; sample_count];
-                    plan.synthesis_into(&coefficients, &mut map, &mut workspace)?;
+                    plan.synthesis_into(coefficients, &mut map, &mut workspace)?;
                     Ok(map)
                 } else {
                     let nalm = plan.harmonics().nalm();
@@ -117,7 +119,7 @@ impl PythonShtPlan {
         map: PyReadonlyArrayDyn<'py, f64>,
     ) -> PyResult<Bound<'py, PyArrayDyn<Complex64>>> {
         let map_shape = self.map_shape();
-        let samples = read_array(map, &[map_shape.0, map_shape.1, map_shape.2], "map")?;
+        let samples = read_array(&map, &[map_shape.0, map_shape.1, map_shape.2], "map")?;
         let plan = &self.plan;
         let output = py
             .detach(move || {
@@ -125,7 +127,7 @@ impl PythonShtPlan {
                 let nalm = plan.harmonics().nalm();
                 if plan.harmonics().spin() == 0 {
                     let mut alm = vec![Complex64::new(0.0, 0.0); nalm];
-                    plan.analysis_into(&samples, &mut alm, &mut workspace)?;
+                    plan.analysis_into(samples, &mut alm, &mut workspace)?;
                     Ok(alm)
                 } else {
                     let sample_count = plan.grid().ntheta() * plan.grid().nphi();
@@ -152,7 +154,7 @@ impl PythonShtPlan {
         map: PyReadonlyArrayDyn<'py, f64>,
     ) -> PyResult<Bound<'py, PyArrayDyn<Complex64>>> {
         let map_shape = self.map_shape();
-        let samples = read_array(map, &[map_shape.0, map_shape.1, map_shape.2], "map")?;
+        let samples = read_array(&map, &[map_shape.0, map_shape.1, map_shape.2], "map")?;
         let plan = &self.plan;
         let output = py
             .detach(move || {
@@ -160,7 +162,7 @@ impl PythonShtPlan {
                 let nalm = plan.harmonics().nalm();
                 if plan.harmonics().spin() == 0 {
                     let mut alm = vec![Complex64::new(0.0, 0.0); nalm];
-                    plan.adjoint_synthesis_into(&samples, &mut alm, &mut workspace)?;
+                    plan.adjoint_synthesis_into(samples, &mut alm, &mut workspace)?;
                     Ok(alm)
                 } else {
                     let sample_count = plan.grid().ntheta() * plan.grid().nphi();
@@ -193,7 +195,7 @@ impl PythonShtPlan {
         alm: PyReadonlyArrayDyn<'py, Complex64>,
     ) -> PyResult<Bound<'py, PyArrayDyn<f64>>> {
         let alm_shape = self.alm_shape();
-        let coefficients = read_array(alm, &[alm_shape.0, alm_shape.1], "alm")?;
+        let coefficients = read_array(&alm, &[alm_shape.0, alm_shape.1], "alm")?;
         let plan = &self.plan;
         let output = py
             .detach(move || {
@@ -201,7 +203,7 @@ impl PythonShtPlan {
                 let sample_count = plan.grid().ntheta() * plan.grid().nphi();
                 if plan.harmonics().spin() == 0 {
                     let mut map = vec![0.0; sample_count];
-                    plan.adjoint_analysis_into(&coefficients, &mut map, &mut workspace)?;
+                    plan.adjoint_analysis_into(coefficients, &mut map, &mut workspace)?;
                     Ok(map)
                 } else {
                     let nalm = plan.harmonics().nalm();
@@ -233,7 +235,7 @@ impl PythonShtPlan {
         e_alm: PyReadonlyArrayDyn<'py, Complex64>,
     ) -> PyResult<Bound<'py, PyArrayDyn<f64>>> {
         self.require_gradient_plan()?;
-        let e_alm = read_array(e_alm, &[1, self.plan.harmonics().nalm()], "e_alm")?;
+        let e_alm = read_array(&e_alm, &[1, self.plan.harmonics().nalm()], "e_alm")?;
         let plan = &self.plan;
         let output = py
             .detach(move || {
@@ -241,7 +243,7 @@ impl PythonShtPlan {
                 let sample_count = plan.grid().ntheta() * plan.grid().nphi();
                 let mut first = vec![0.0; sample_count];
                 let mut second = vec![0.0; sample_count];
-                plan.synthesis_gradient_into(&e_alm, &mut first, &mut second, &mut workspace)?;
+                plan.synthesis_gradient_into(e_alm, &mut first, &mut second, &mut workspace)?;
                 first.extend(second);
                 Ok(first)
             })
@@ -261,7 +263,7 @@ impl PythonShtPlan {
     ) -> PyResult<Bound<'py, PyArrayDyn<Complex64>>> {
         self.require_gradient_plan()?;
         let map_shape = self.map_shape();
-        let samples = read_array(map, &[map_shape.0, map_shape.1, map_shape.2], "map")?;
+        let samples = read_array(&map, &[map_shape.0, map_shape.1, map_shape.2], "map")?;
         let plan = &self.plan;
         let output = py
             .detach(move || {
@@ -286,7 +288,7 @@ impl PythonShtPlan {
         alm: PyReadonlyArrayDyn<'py, Complex64>,
     ) -> PyResult<Bound<'py, PyArrayDyn<f64>>> {
         self.require_scalar_plan()?;
-        let alm = read_array(alm, &[1, self.plan.harmonics().nalm()], "alm")?;
+        let alm = read_array(&alm, &[1, self.plan.harmonics().nalm()], "alm")?;
         let plan = &self.plan;
         let output = py
             .detach(move || {
@@ -294,7 +296,7 @@ impl PythonShtPlan {
                 let sample_count = plan.grid().ntheta() * plan.grid().nphi();
                 let mut theta = vec![0.0; sample_count];
                 let mut phi = vec![0.0; sample_count];
-                plan.synthesis_deriv1_into(&alm, &mut theta, &mut phi, &mut workspace)?;
+                plan.synthesis_deriv1_into(alm, &mut theta, &mut phi, &mut workspace)?;
                 theta.extend(phi);
                 Ok(theta)
             })
@@ -317,7 +319,7 @@ impl PythonShtPlan {
     ) -> PyResult<Bound<'py, PyArrayDyn<Complex64>>> {
         self.require_scalar_plan()?;
         let samples = read_array(
-            map,
+            &map,
             &[2, self.plan.grid().ntheta(), self.plan.grid().nphi()],
             "map",
         )?;
@@ -399,7 +401,9 @@ impl SynthesisMode {
 ///
 /// `alm` uses RustSHT's order-major layout. STANDARD output has shape
 /// `(1, ntheta, nphi)` for scalar plans and `(2, ntheta, nphi)` for spin
-/// plans. GRAD_ONLY and DERIV1 output two map components.
+/// plans. GRAD_ONLY and DERIV1 output two map components. The input is
+/// borrowed while the numerical operation runs; do not mutate aliased input
+/// storage until this function returns.
 #[pyfunction]
 #[pyo3(signature = (alm, spin, lmax, geometry, ntheta, nphi, mmax=None, phi0=0.0, mode="STANDARD"))]
 #[allow(clippy::too_many_arguments)]
@@ -436,7 +440,9 @@ fn synthesis_2d<'py>(
 /// Analyze a scalar map or spin map pair into packed coefficients.
 ///
 /// `map` uses component-first order and RustSHT's order-major coefficient
-/// layout. `ntheta` and `nphi` are read from the map shape.
+/// layout. `ntheta` and `nphi` are read from the map shape. The input is
+/// borrowed while the numerical operation runs; do not mutate aliased input
+/// storage until this function returns.
 #[pyfunction]
 #[pyo3(signature = (map, spin, lmax, geometry, mmax=None, phi0=0.0))]
 fn analysis_2d<'py>(
@@ -465,7 +471,9 @@ fn analysis_2d<'py>(
 /// Apply the adjoint of STANDARD, GRAD_ONLY, or DERIV1 synthesis.
 ///
 /// `map` uses component-first order. The returned coefficients use
-/// RustSHT's order-major layout.
+/// RustSHT's order-major layout. The input is borrowed while the numerical
+/// operation runs; do not mutate aliased input storage until this function
+/// returns.
 #[pyfunction]
 #[pyo3(signature = (map, spin, lmax, geometry, mmax=None, phi0=0.0, mode="STANDARD"))]
 #[allow(clippy::too_many_arguments)]
@@ -501,7 +509,9 @@ fn adjoint_synthesis_2d<'py>(
 /// Apply the adjoint of exact STANDARD analysis to packed coefficients.
 ///
 /// `alm` uses RustSHT's order-major layout. The output map uses
-/// component-first order.
+/// component-first order. The input is borrowed while the numerical
+/// operation runs; do not mutate aliased input storage until this function
+/// returns.
 #[pyfunction]
 #[pyo3(signature = (alm, spin, lmax, geometry, ntheta, nphi, mmax=None, phi0=0.0))]
 #[allow(clippy::too_many_arguments)]
@@ -576,10 +586,10 @@ fn grid_kind(value: &str, name: &str) -> PyResult<GridKind> {
 }
 
 fn read_array<'py, T: Element + Copy>(
-    array: PyReadonlyArrayDyn<'py, T>,
+    array: &'py PyReadonlyArrayDyn<'py, T>,
     expected_shape: &[usize],
     name: &str,
-) -> PyResult<Vec<T>> {
+) -> PyResult<&'py [T]> {
     let actual_shape = array.as_array().shape().to_vec();
     if actual_shape != expected_shape {
         return Err(PyValueError::new_err(format!(
@@ -591,7 +601,7 @@ fn read_array<'py, T: Element + Copy>(
             "{name} must be C-contiguous; noncontiguous inputs are not supported"
         )));
     }
-    array.as_slice().map(<[T]>::to_vec).map_err(|_| {
+    array.as_slice().map_err(|_| {
         PyValueError::new_err(format!(
             "{name} must be C-contiguous; noncontiguous inputs are not supported"
         ))
