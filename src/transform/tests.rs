@@ -799,6 +799,9 @@ fn workspace_ring_groups_add_parallelism_for_underfilled_synthesis() {
         .build()
         .unwrap();
     let cases = [
+        (GridKind::GaussLegendre, 63, 64, 16, 8),
+        (GridKind::ClenshawCurtis, 63, 65, 16, 8),
+        (GridKind::Fejer1, 63, 64, 16, 8),
         (GridKind::GaussLegendre, 127, 128, 16, 8),
         (GridKind::ClenshawCurtis, 127, 129, 16, 9),
         (GridKind::GaussLegendre, 255, 256, 32, 8),

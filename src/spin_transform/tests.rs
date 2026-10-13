@@ -2739,6 +2739,157 @@ fn spin_transform_matches_between_one_and_two_rayon_threads() {
 
 #[cfg(feature = "parallel")]
 #[test]
+fn t63_scalar_and_spin1_synthesis_match_one_and_eight_threads() {
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+
+    for grid_kind in [
+        GridKind::GaussLegendre,
+        GridKind::ClenshawCurtis,
+        GridKind::Fejer1,
+    ] {
+        let ntheta = 64 + usize::from(grid_kind == GridKind::ClenshawCurtis);
+        let nphi = 129;
+        let scalar_plan = ShtPlan::new(
+            GridSpec::new(grid_kind, ntheta, nphi, 0.37).unwrap(),
+            HarmonicSpec::scalar(63, 63).unwrap(),
+        )
+        .unwrap();
+        let spin_plan = ShtPlan::new(
+            GridSpec::new(grid_kind, ntheta, nphi, 0.37).unwrap(),
+            HarmonicSpec::new(63, 63, 1).unwrap(),
+        )
+        .unwrap();
+        let (mut e_alm, mut b_alm) = coefficients(&spin_plan);
+        for value in e_alm.iter_mut().chain(&mut b_alm) {
+            *value *= 1e-5;
+        }
+        let mut scalar_one_workspace = one_thread.install(|| scalar_plan.workspace()).unwrap();
+        let mut scalar_eight_workspace = eight_threads.install(|| scalar_plan.workspace()).unwrap();
+        let mut spin_one_workspace = one_thread.install(|| spin_plan.workspace()).unwrap();
+        let mut spin_eight_workspace = eight_threads.install(|| spin_plan.workspace()).unwrap();
+
+        let mut scalar_one = vec![0.0; scalar_plan.sample_count];
+        let mut scalar_eight = vec![0.0; scalar_plan.sample_count];
+        one_thread
+            .install(|| {
+                scalar_plan.synthesis_into(&e_alm, &mut scalar_one, &mut scalar_one_workspace)
+            })
+            .unwrap();
+        eight_threads
+            .install(|| {
+                scalar_plan.synthesis_into(&e_alm, &mut scalar_eight, &mut scalar_eight_workspace)
+            })
+            .unwrap();
+        for (&one, &eight) in scalar_one.iter().zip(&scalar_eight) {
+            assert_close(eight, one, 3e-14);
+        }
+
+        let mut one_first = vec![0.0; spin_plan.sample_count];
+        let mut one_second = vec![0.0; spin_plan.sample_count];
+        let mut eight_first = vec![0.0; spin_plan.sample_count];
+        let mut eight_second = vec![0.0; spin_plan.sample_count];
+        one_thread
+            .install(|| {
+                spin_plan.synthesis_spin_into(
+                    &e_alm,
+                    &b_alm,
+                    &mut one_first,
+                    &mut one_second,
+                    &mut spin_one_workspace,
+                )
+            })
+            .unwrap();
+        eight_threads
+            .install(|| {
+                spin_plan.synthesis_spin_into(
+                    &e_alm,
+                    &b_alm,
+                    &mut eight_first,
+                    &mut eight_second,
+                    &mut spin_eight_workspace,
+                )
+            })
+            .unwrap();
+        for (&one, &eight) in one_first.iter().zip(&eight_first) {
+            assert_close(eight, one, 3e-14);
+        }
+        for (&one, &eight) in one_second.iter().zip(&eight_second) {
+            assert_close(eight, one, 3e-14);
+        }
+
+        let mut one_gradient_first = vec![0.0; spin_plan.sample_count];
+        let mut one_gradient_second = vec![0.0; spin_plan.sample_count];
+        let mut eight_gradient_first = vec![0.0; spin_plan.sample_count];
+        let mut eight_gradient_second = vec![0.0; spin_plan.sample_count];
+        one_thread
+            .install(|| {
+                spin_plan.synthesis_gradient_into(
+                    &e_alm,
+                    &mut one_gradient_first,
+                    &mut one_gradient_second,
+                    &mut spin_one_workspace,
+                )
+            })
+            .unwrap();
+        eight_threads
+            .install(|| {
+                spin_plan.synthesis_gradient_into(
+                    &e_alm,
+                    &mut eight_gradient_first,
+                    &mut eight_gradient_second,
+                    &mut spin_eight_workspace,
+                )
+            })
+            .unwrap();
+        for (&one, &eight) in one_gradient_first.iter().zip(&eight_gradient_first) {
+            assert_close(eight, one, 3e-14);
+        }
+        for (&one, &eight) in one_gradient_second.iter().zip(&eight_gradient_second) {
+            assert_close(eight, one, 3e-14);
+        }
+
+        let mut one_derivative_first = vec![0.0; scalar_plan.sample_count];
+        let mut one_derivative_second = vec![0.0; scalar_plan.sample_count];
+        let mut eight_derivative_first = vec![0.0; scalar_plan.sample_count];
+        let mut eight_derivative_second = vec![0.0; scalar_plan.sample_count];
+        one_thread
+            .install(|| {
+                scalar_plan.synthesis_deriv1_into(
+                    &e_alm,
+                    &mut one_derivative_first,
+                    &mut one_derivative_second,
+                    &mut scalar_one_workspace,
+                )
+            })
+            .unwrap();
+        eight_threads
+            .install(|| {
+                scalar_plan.synthesis_deriv1_into(
+                    &e_alm,
+                    &mut eight_derivative_first,
+                    &mut eight_derivative_second,
+                    &mut scalar_eight_workspace,
+                )
+            })
+            .unwrap();
+        for (&one, &eight) in one_derivative_first.iter().zip(&eight_derivative_first) {
+            assert_close(eight, one, 3e-14);
+        }
+        for (&one, &eight) in one_derivative_second.iter().zip(&eight_derivative_second) {
+            assert_close(eight, one, 3e-14);
+        }
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
 fn spin1_compacted_analysis_matches_between_one_and_eight_rayon_threads() {
     let plan = make_plan(1, 511, 511, 512, 1025);
     let (first, second) = arbitrary_maps(&plan);

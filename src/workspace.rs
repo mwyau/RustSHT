@@ -207,7 +207,7 @@ impl<T: ShtScalar> ShtWorkspace<T> {
         // Increase synthesis granularity when block grouping leaves workers
         // idle. Keep multi-block groups aligned to recurrence block boundaries.
         if available_workers > 1
-            && ntheta >= 128
+            && ntheta >= 64
             && (ring_block_count <= 9 || existing_ring_worker_count < worker_limit)
         {
             let candidate_blocks_per_group = blocks_per_group.div_ceil(2);
