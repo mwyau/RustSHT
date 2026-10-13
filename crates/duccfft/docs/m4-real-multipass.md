@@ -898,17 +898,21 @@ faster in every process pair. Raw process medians are in
 
 | Rows | Operation | Recursive, median | Multipass, median | Ratio |
 |---:|---|---:|---:|---:|
-| 1 | R2C | 31.809 µs | 12.263 µs | 2.59× |
-| 1 | C2R | 46.096 µs | 20.629 µs | 2.23× |
-| 512 | R2C | 32.146 µs | 12.138 µs | 2.65× |
-| 512 | C2R | 47.629 µs | 21.184 µs | 2.25× |
+| 1 | R2C | 32.621 µs | 13.836 µs | 2.36× |
+| 1 | C2R | 46.918 µs | 20.979 µs | 2.24× |
+| 512 | R2C | 32.686 µs | 12.314 µs | 2.65× |
+| 512 | C2R | 48.066 µs | 21.530 µs | 2.23× |
 
-Plan construction increased from about 16.1 to 17.4 µs for R2C and 15.1 to
-16.4 µs for C2R. Reusable workspace grew from 12,544 to 28,944 bytes because
-the multipass schedule adds two N-element f64 buffers while retaining
-recursive fallback scratch. Workspace allocation increased from about 0.8
-to 1.2 µs for R2C and from 0.185 to 0.374 µs for C2R. The operation-time
-reduction is large relative to these setup costs for repeated plan use. This result supports the DUCC-style pass schedule for the 1025 workload; it
+Single-row process medians show plan construction increasing from 16.703 to
+18.163 µs for R2C and 15.411 to 16.976 µs for C2R. Reusable workspace grew
+from 12,544 to 28,944 bytes because the multipass schedule adds two N-element
+f64 buffers while retaining recursive fallback scratch. Workspace allocation
+increased from 0.677 to 1.156 µs for R2C and from 0.191 to 0.372 µs for C2R. The operation-time reduction is large relative to these setup costs for
+repeated plan use. Corresponding baseline/candidate benchmark checksums differ
+by at most `8.89e-16`; this only checks benchmark-output consistency and is
+not a numerical accuracy result. The raw CSV records the source commits,
+binary SHA-256 hashes, per-process plan and workspace measurements, workspace
+bytes, operation timings, and checksums. This result supports the DUCC-style pass schedule for the 1025 workload; it
 does not validate the generic kernel's performance for other radices. Lengths
 257 and 2049 still use Bluestein in the recursive executor, and 4097 still
 uses recursion for its `ido > 1` prime pass. The current pass therefore
