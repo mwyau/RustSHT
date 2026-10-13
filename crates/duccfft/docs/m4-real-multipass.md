@@ -774,9 +774,11 @@ RustFFT uses its default runtime planner. Portable DUCC used g++ 15.2.0 with
 used no native target flag, so the native DUCC comparison is labeled as an ISA
 difference. Per-process cross-library data are in
 [`m4-real-radix4-forward-avx2-cross-library-process-samples.csv`](../benches/results/m4-real-radix4-forward-avx2-cross-library-process-samples.csv). Plan construction, workspace allocation, and reusable scratch storage are
-separate from execution. Each cell below is a median of twelve process-level
-samples. DUCC scratch counts its kernel buffer and excludes the real adapter's
-packed working array; the Rust workspace counts include its working buffers.
+separate from execution. Each setup cell below is the median of the 24
+single-call records for R2C and C2R pooled across twelve processes per
+operation. DUCC scratch counts its kernel buffer and excludes the real
+adapter's packed working array; the Rust workspace counts include its working
+buffers.
 
 | N | DUCCFFT: plan / workspace / scratch | RustFFT: plan / workspace / scratch | DUCC portable: plan / workspace / kernel scratch | DUCC native: plan / workspace / kernel scratch |
 |---:|---:|---:|---:|---:|
@@ -799,7 +801,7 @@ on the measured x86-64 path. The pinned DUCC numerical comparison checked
 202,347 f64 output records across C2C, R2C, and C2R; DUCCFFT's maximum absolute
 error was `1.819e-12` and maximum scaled error was `6.821e-13`. The record is
 [`m4-real-radix4-forward-avx2-ducc-comparison.txt`](../benches/results/m4-real-radix4-forward-avx2-ducc-comparison.txt). The kernel cuts most of the previous R2C gap. DUCCFFT is 1.29–1.62× slower
-than RustFFT for single transforms and 1.35–1.57× slower for batches of 32. C2R is 1.47–1.88× and 1.48–1.92× slower, respectively. The AVX2 path covers
+than RustFFT for single transforms and 1.33–1.58× slower for batches of 32. C2R is 1.47–1.88× and 1.48–1.92× slower, respectively. The AVX2 path covers
 the f64 radix-four interior pass; radix-two, small-`ido`, f32, and
 generic-prime execution need separate optimization. These measurements
 support keeping this kernel during M4 and do not establish performance
