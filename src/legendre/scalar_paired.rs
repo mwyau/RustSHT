@@ -201,9 +201,10 @@ pub(crate) fn synthesize_order_pair_block_dispatched(
         return Ok(false);
     }
 
-    arch.dispatch(FusedSynthesisPairBlock {
+    let fused = arch.dispatch(FusedSynthesisPairBlock {
         m,
         lmax,
+        pair_start: 0,
         cos_theta,
         epsilon,
         alpha,
@@ -211,18 +212,473 @@ pub(crate) fn synthesize_order_pair_block_dispatched(
         coefficient_b,
         first_coefficients,
         second_coefficients,
+        previous: &previous[..sin_theta.len()],
         current: &current[..sin_theta.len()],
         first_sum_re: &mut first_sum_re[..sin_theta.len()],
         first_sum_im: &mut first_sum_im[..sin_theta.len()],
         second_sum_re: &mut second_sum_re[..sin_theta.len()],
         second_sum_im: &mut second_sum_im[..sin_theta.len()],
+        initialize_sums: true,
+        check_normal_range: false,
     });
+    debug_assert!(fused);
     for ring in 0..sin_theta.len() {
         let spectrum_index = ring * spectrum_len + m;
         first_spectra[spectrum_index] += Complex64::new(first_sum_re[ring], first_sum_im[ring]);
         second_spectra[spectrum_index] += Complex64::new(second_sum_re[ring], second_sum_im[ring]);
     }
     Ok(true)
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The transition kernel receives coefficient factors and caller-owned lane scratch explicitly."
+)]
+pub(crate) fn try_synthesize_order_pair_transition_dispatched(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[f64],
+    cos_theta: &[f64],
+    sectoral_norm: f64,
+    epsilon: &[f64],
+    alpha: &[f64],
+    coefficient_a: &[f64],
+    coefficient_b: &[f64],
+    first_coefficients: &[Complex64],
+    second_coefficients: &[Complex64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    next: &mut [f64],
+    exponents: &mut [i64],
+    first_sum_re: &mut [f64],
+    first_sum_im: &mut [f64],
+    second_sum_re: &mut [f64],
+    second_sum_im: &mut [f64],
+) -> Result<bool, ShtError> {
+    let lane_count = sin_theta.len();
+    debug_assert_eq!(lane_count, cos_theta.len());
+    debug_assert!(lane_count <= LATITUDE_BLOCK_SIZE);
+    debug_assert!(previous.len() >= lane_count);
+    debug_assert!(current.len() >= lane_count);
+    debug_assert!(next.len() >= lane_count);
+    debug_assert!(exponents.len() >= lane_count);
+    debug_assert!(first_sum_re.len() >= lane_count);
+    debug_assert!(first_sum_im.len() >= lane_count);
+    debug_assert!(second_sum_re.len() >= lane_count);
+    debug_assert!(second_sum_im.len() >= lane_count);
+    debug_assert!(first_coefficients.len() > lmax - m);
+    debug_assert!(second_coefficients.len() > lmax - m);
+
+    if lane_count == 0
+        || sin_theta
+            .iter()
+            .any(|&sine| !sine.is_finite() || sine < 0.01)
+    {
+        return Ok(false);
+    }
+
+    let pair_count = (lmax - m + 2) / 2;
+    let maximum_sum_bound = 2.0 * scalar::BIG * scalar::BIG * pair_count as f64 * 10_000.0;
+    if !maximum_sum_bound.is_finite()
+        || !paired_scalar_coefficients_are_safe(
+            m,
+            lmax,
+            epsilon,
+            alpha,
+            first_coefficients,
+            second_coefficients,
+        )
+    {
+        return Ok(false);
+    }
+
+    let completed = arch.dispatch(StagedSynthesisPairTransition {
+        m,
+        lmax,
+        sin_theta,
+        cos_theta,
+        sectoral_norm,
+        coefficient_a,
+        coefficient_b,
+        epsilon,
+        alpha,
+        first_coefficients,
+        second_coefficients,
+        previous: &mut previous[..lane_count],
+        current: &mut current[..lane_count],
+        next: &mut next[..lane_count],
+        exponents: &mut exponents[..lane_count],
+        first_sum_re: &mut first_sum_re[..lane_count],
+        first_sum_im: &mut first_sum_im[..lane_count],
+        second_sum_re: &mut second_sum_re[..lane_count],
+        second_sum_im: &mut second_sum_im[..lane_count],
+    });
+    if !completed
+        || !finite_prefix_sums(
+            &first_sum_re[..lane_count],
+            &first_sum_im[..lane_count],
+            &second_sum_re[..lane_count],
+            &second_sum_im[..lane_count],
+        )
+    {
+        return Ok(false);
+    }
+    Ok(true)
+}
+
+#[inline]
+fn complex_scaled_product_is_normal_or_zero(
+    result: Complex64,
+    coefficient: Complex64,
+    recurrence: f64,
+    additional_factor: f64,
+) -> bool {
+    component_scaled_product_is_normal_or_zero(
+        result.re,
+        coefficient.re,
+        recurrence,
+        additional_factor,
+    ) && component_scaled_product_is_normal_or_zero(
+        result.im,
+        coefficient.im,
+        recurrence,
+        additional_factor,
+    )
+}
+
+#[inline]
+fn component_scaled_product_is_normal_or_zero(
+    result: f64,
+    coefficient: f64,
+    recurrence: f64,
+    additional_factor: f64,
+) -> bool {
+    result.is_normal()
+        || (result == 0.0 && (coefficient == 0.0 || recurrence == 0.0 || additional_factor == 0.0))
+}
+
+#[inline]
+fn complex_sum_is_normal_or_zero(result: Complex64, left: Complex64, right: Complex64) -> bool {
+    component_sum_is_normal_or_zero(result.re, left.re, right.re)
+        && component_sum_is_normal_or_zero(result.im, left.im, right.im)
+}
+
+#[inline]
+fn component_sum_is_normal_or_zero(result: f64, left: f64, right: f64) -> bool {
+    result.is_normal() || (result == 0.0 && left == 0.0 && right == 0.0)
+}
+
+fn paired_scalar_coefficients_are_safe(
+    m: usize,
+    lmax: usize,
+    epsilon: &[f64],
+    alpha: &[f64],
+    first_coefficients: &[Complex64],
+    second_coefficients: &[Complex64],
+) -> bool {
+    let pair_count = (lmax - m + 2) / 2;
+    debug_assert!(alpha.len() >= pair_count);
+    for (pair, &pair_alpha) in alpha.iter().take(pair_count).enumerate() {
+        let l = m + 2 * pair;
+        let offset = l - m;
+        let next_first_even = if l + 2 <= lmax {
+            first_coefficients[offset + 2]
+        } else {
+            Complex64::new(0.0, 0.0)
+        };
+        let next_second_even = if l + 2 <= lmax {
+            second_coefficients[offset + 2]
+        } else {
+            Complex64::new(0.0, 0.0)
+        };
+        let first_even = (first_coefficients[offset] * epsilon[l + 1]
+            + next_first_even * epsilon[l + 2])
+            * pair_alpha;
+        let second_even = (second_coefficients[offset] * epsilon[l + 1]
+            + next_second_even * epsilon[l + 2])
+            * pair_alpha;
+        let first_odd = if l < lmax {
+            first_coefficients[offset + 1] * pair_alpha
+        } else {
+            Complex64::new(0.0, 0.0)
+        };
+        let second_odd = if l < lmax {
+            second_coefficients[offset + 1] * pair_alpha
+        } else {
+            Complex64::new(0.0, 0.0)
+        };
+        if !complex_components_in_normal_range(first_even)
+            || !complex_components_in_normal_range(second_even)
+            || !complex_components_in_normal_range(first_odd)
+            || !complex_components_in_normal_range(second_odd)
+        {
+            return false;
+        }
+    }
+    true
+}
+
+fn complex_components_in_normal_range(value: Complex64) -> bool {
+    scalar_value_in_normal_range(value.re) && scalar_value_in_normal_range(value.im)
+}
+
+struct StagedSynthesisPairTransition<'a> {
+    m: usize,
+    lmax: usize,
+    sin_theta: &'a [f64],
+    cos_theta: &'a [f64],
+    sectoral_norm: f64,
+    coefficient_a: &'a [f64],
+    coefficient_b: &'a [f64],
+    epsilon: &'a [f64],
+    alpha: &'a [f64],
+    first_coefficients: &'a [Complex64],
+    second_coefficients: &'a [Complex64],
+    previous: &'a mut [f64],
+    current: &'a mut [f64],
+    next: &'a mut [f64],
+    exponents: &'a mut [i64],
+    first_sum_re: &'a mut [f64],
+    first_sum_im: &'a mut [f64],
+    second_sum_re: &'a mut [f64],
+    second_sum_im: &'a mut [f64],
+}
+
+impl WithSimd for StagedSynthesisPairTransition<'_> {
+    type Output = bool;
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> bool {
+        let StagedSynthesisPairTransition {
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            epsilon,
+            alpha,
+            first_coefficients,
+            second_coefficients,
+            previous,
+            current,
+            next,
+            exponents,
+            first_sum_re,
+            first_sum_im,
+            second_sum_re,
+            second_sum_im,
+        } = self;
+        let mut previous = previous;
+        let mut current = current;
+        let mut next = next;
+        for lane in 0..sin_theta.len() {
+            let (value, exponent) = match scalar::sectoral_value(sin_theta[lane], m, sectoral_norm)
+            {
+                Ok(value) => value,
+                Err(_) => return false,
+            };
+            previous[lane] = 0.0;
+            current[lane] = value;
+            exponents[lane] = exponent;
+            first_sum_re[lane] = 0.0;
+            first_sum_im[lane] = 0.0;
+            second_sum_re[lane] = 0.0;
+            second_sum_im[lane] = 0.0;
+        }
+        let mut normal_range = match scalar::normalize_pair_lanes(previous, current, exponents) {
+            Ok(normal_range) => normal_range,
+            Err(_) => return false,
+        };
+        if normal_range
+            && lane_values_in_normal_range(previous)
+            && lane_values_in_normal_range(current)
+        {
+            return FusedSynthesisPairBlock {
+                m,
+                lmax,
+                pair_start: 0,
+                cos_theta,
+                epsilon,
+                alpha,
+                coefficient_a,
+                coefficient_b,
+                first_coefficients,
+                second_coefficients,
+                previous,
+                current,
+                first_sum_re,
+                first_sum_im,
+                second_sum_re,
+                second_sum_im,
+                initialize_sums: false,
+                check_normal_range: true,
+            }
+            .with_simd(simd);
+        }
+
+        let pair_count = (lmax - m + 2) / 2;
+        for pair in 0..pair_count {
+            let l = m + 2 * pair;
+            let offset = l - m;
+            let next_first_even = if l + 2 <= lmax {
+                first_coefficients[offset + 2]
+            } else {
+                Complex64::new(0.0, 0.0)
+            };
+            let next_second_even = if l + 2 <= lmax {
+                second_coefficients[offset + 2]
+            } else {
+                Complex64::new(0.0, 0.0)
+            };
+            let first_even = (first_coefficients[offset] * epsilon[l + 1]
+                + next_first_even * epsilon[l + 2])
+                * alpha[pair];
+            let second_even = (second_coefficients[offset] * epsilon[l + 1]
+                + next_second_even * epsilon[l + 2])
+                * alpha[pair];
+            let first_odd = if l < lmax {
+                first_coefficients[offset + 1] * alpha[pair]
+            } else {
+                Complex64::new(0.0, 0.0)
+            };
+            let second_odd = if l < lmax {
+                second_coefficients[offset + 1] * alpha[pair]
+            } else {
+                Complex64::new(0.0, 0.0)
+            };
+            for lane in 0..current.len() {
+                let first_even_term =
+                    scalar::multiply_complex_scaled(first_even, current[lane], exponents[lane]);
+                let first_odd_term = scalar::multiply_complex_scaled_product(
+                    first_odd,
+                    current[lane],
+                    cos_theta[lane],
+                    exponents[lane],
+                );
+                let second_even_term =
+                    scalar::multiply_complex_scaled(second_even, current[lane], exponents[lane]);
+                let second_odd_term = scalar::multiply_complex_scaled_product(
+                    second_odd,
+                    current[lane],
+                    cos_theta[lane],
+                    exponents[lane],
+                );
+                if !complex_scaled_product_is_normal_or_zero(
+                    first_even_term,
+                    first_even,
+                    current[lane],
+                    1.0,
+                ) || !complex_scaled_product_is_normal_or_zero(
+                    first_odd_term,
+                    first_odd,
+                    current[lane],
+                    cos_theta[lane],
+                ) || !complex_scaled_product_is_normal_or_zero(
+                    second_even_term,
+                    second_even,
+                    current[lane],
+                    1.0,
+                ) || !complex_scaled_product_is_normal_or_zero(
+                    second_odd_term,
+                    second_odd,
+                    current[lane],
+                    cos_theta[lane],
+                ) {
+                    return false;
+                }
+                let first = first_even_term + first_odd_term;
+                let second = second_even_term + second_odd_term;
+                if !complex_sum_is_normal_or_zero(first, first_even_term, first_odd_term)
+                    || !complex_sum_is_normal_or_zero(second, second_even_term, second_odd_term)
+                {
+                    return false;
+                }
+                let first_sum = Complex64::new(first_sum_re[lane], first_sum_im[lane]);
+                let second_sum = Complex64::new(second_sum_re[lane], second_sum_im[lane]);
+                let next_first_sum = first_sum + first;
+                let next_second_sum = second_sum + second;
+                if !complex_sum_is_normal_or_zero(next_first_sum, first_sum, first)
+                    || !complex_sum_is_normal_or_zero(next_second_sum, second_sum, second)
+                {
+                    return false;
+                }
+                first_sum_re[lane] = next_first_sum.re;
+                first_sum_im[lane] = next_first_sum.im;
+                second_sum_re[lane] = next_second_sum.re;
+                second_sum_im[lane] = next_second_sum.im;
+            }
+            if l + 2 > lmax {
+                break;
+            }
+
+            let (current_vectors, current_tail) = S::as_simd_f64s(current);
+            let (previous_vectors, previous_tail) = S::as_simd_f64s(previous);
+            let (cos_vectors, cos_tail) = S::as_simd_f64s(cos_theta);
+            let (next_vectors, next_tail) = S::as_mut_simd_f64s(next);
+            let a = simd.splat_f64s(coefficient_a[pair]);
+            let b = simd.splat_f64s(coefficient_b[pair]);
+            for index in 0..current_vectors.len() {
+                let cosine_squared = simd.mul_f64s(cos_vectors[index], cos_vectors[index]);
+                let leading = simd.mul_add_f64s(a, cosine_squared, b);
+                next_vectors[index] =
+                    simd.mul_add_f64s(leading, current_vectors[index], previous_vectors[index]);
+            }
+            for index in 0..current_tail.len() {
+                let cosine_squared = cos_tail[index] * cos_tail[index];
+                let leading = coefficient_a[pair].mul_add(cosine_squared, coefficient_b[pair]);
+                next_tail[index] = leading.mul_add(current_tail[index], previous_tail[index]);
+            }
+            std::mem::swap(&mut previous, &mut current);
+            std::mem::swap(&mut current, &mut next);
+            if normal_range {
+                if scalar::pair_lanes_need_scaling(previous, current) {
+                    normal_range = match scalar::normalize_pair_lanes(previous, current, exponents)
+                    {
+                        Ok(normal_range) => normal_range,
+                        Err(_) => return false,
+                    };
+                }
+            } else {
+                normal_range = match scalar::normalize_pair_lanes(previous, current, exponents) {
+                    Ok(normal_range) => normal_range,
+                    Err(_) => return false,
+                };
+            }
+            if normal_range
+                && lane_values_in_normal_range(previous)
+                && lane_values_in_normal_range(current)
+            {
+                if !finite_prefix_sums(first_sum_re, first_sum_im, second_sum_re, second_sum_im) {
+                    return false;
+                }
+                return FusedSynthesisPairBlock {
+                    m,
+                    lmax,
+                    pair_start: pair + 1,
+                    cos_theta,
+                    epsilon,
+                    alpha,
+                    coefficient_a,
+                    coefficient_b,
+                    first_coefficients,
+                    second_coefficients,
+                    previous,
+                    current,
+                    first_sum_re,
+                    first_sum_im,
+                    second_sum_re,
+                    second_sum_im,
+                    initialize_sums: false,
+                    check_normal_range: true,
+                }
+                .with_simd(simd);
+            }
+        }
+        false
+    }
 }
 
 /// Accumulates a paired scalar analysis block across its latitude lanes.
@@ -519,9 +975,50 @@ impl WithSimd for FusedSynthesisBlock<'_> {
     }
 }
 
+#[inline(always)]
+fn scalar_value_in_normal_range(value: f64) -> bool {
+    value == 0.0
+        || (value.is_finite() && value.abs() <= scalar::BIG && value.abs() >= scalar::SMALL)
+}
+
+#[inline(always)]
+fn simd_values_in_normal_range<S: Simd>(simd: S, values: S::f64s) -> bool {
+    let absolute = simd.abs_f64s(values);
+    let upper_mask = simd.less_than_or_equal_f64s(absolute, simd.splat_f64s(scalar::BIG));
+    let upper_ok = simd.select_f64s(upper_mask, simd.splat_f64s(1.0), simd.splat_f64s(0.0));
+    if simd.reduce_min_f64s(upper_ok) != 1.0 {
+        return false;
+    }
+    let zero_mask = simd.equal_f64s(absolute, simd.splat_f64s(0.0));
+    let lower_values = simd.select_f64s(zero_mask, simd.splat_f64s(scalar::BIG), absolute);
+    simd.reduce_min_f64s(lower_values) >= scalar::SMALL
+}
+
+fn lane_values_in_normal_range(values: &[f64]) -> bool {
+    values
+        .iter()
+        .all(|&value| scalar_value_in_normal_range(value))
+}
+
+fn finite_prefix_sums(
+    first_real: &[f64],
+    first_imag: &[f64],
+    second_real: &[f64],
+    second_imag: &[f64],
+) -> bool {
+    let limit = f64::MAX * 0.5;
+    first_real
+        .iter()
+        .chain(first_imag)
+        .chain(second_real)
+        .chain(second_imag)
+        .all(|value| value.is_finite() && value.abs() <= limit)
+}
+
 struct FusedSynthesisPairBlock<'a> {
     m: usize,
     lmax: usize,
+    pair_start: usize,
     cos_theta: &'a [f64],
     epsilon: &'a [f64],
     alpha: &'a [f64],
@@ -529,21 +1026,25 @@ struct FusedSynthesisPairBlock<'a> {
     coefficient_b: &'a [f64],
     first_coefficients: &'a [Complex64],
     second_coefficients: &'a [Complex64],
+    previous: &'a [f64],
     current: &'a [f64],
     first_sum_re: &'a mut [f64],
     first_sum_im: &'a mut [f64],
     second_sum_re: &'a mut [f64],
     second_sum_im: &'a mut [f64],
+    initialize_sums: bool,
+    check_normal_range: bool,
 }
 
 impl WithSimd for FusedSynthesisPairBlock<'_> {
-    type Output = ();
+    type Output = bool;
 
     #[inline(always)]
-    fn with_simd<S: Simd>(self, simd: S) {
+    fn with_simd<S: Simd>(self, simd: S) -> bool {
         let FusedSynthesisPairBlock {
             m,
             lmax,
+            pair_start,
             cos_theta,
             epsilon,
             alpha,
@@ -551,29 +1052,58 @@ impl WithSimd for FusedSynthesisPairBlock<'_> {
             coefficient_b,
             first_coefficients,
             second_coefficients,
+            previous: initial_previous,
             current,
             first_sum_re,
             first_sum_im,
             second_sum_re,
             second_sum_im,
+            initialize_sums,
+            check_normal_range,
         } = self;
         let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
+        let (previous_vectors, previous_tail) = S::as_simd_f64s(initial_previous);
         let (initial_vectors, initial_tail) = S::as_simd_f64s(current);
         let (first_sum_re_vectors, first_sum_re_tail) = S::as_mut_simd_f64s(first_sum_re);
         let (first_sum_im_vectors, first_sum_im_tail) = S::as_mut_simd_f64s(first_sum_im);
         let (second_sum_re_vectors, second_sum_re_tail) = S::as_mut_simd_f64s(second_sum_re);
         let (second_sum_im_vectors, second_sum_im_tail) = S::as_mut_simd_f64s(second_sum_im);
         let pair_count = (lmax - m + 2) / 2;
+        debug_assert!(pair_start <= pair_count);
+        debug_assert_eq!(previous_vectors.len(), initial_vectors.len());
+        debug_assert_eq!(previous_tail.len(), initial_tail.len());
 
         for lane_block in 0..cosine_vectors.len() {
             let cosine = cosine_vectors[lane_block];
-            let mut previous = simd.splat_f64s(0.0);
+            let mut previous = previous_vectors[lane_block];
             let mut current = initial_vectors[lane_block];
-            let mut first_re = simd.splat_f64s(0.0);
-            let mut first_im = simd.splat_f64s(0.0);
-            let mut second_re = simd.splat_f64s(0.0);
-            let mut second_im = simd.splat_f64s(0.0);
-            for pair in 0..pair_count {
+            if check_normal_range
+                && (!simd_values_in_normal_range(simd, previous)
+                    || !simd_values_in_normal_range(simd, current))
+            {
+                return false;
+            }
+            let mut first_re = if initialize_sums {
+                simd.splat_f64s(0.0)
+            } else {
+                first_sum_re_vectors[lane_block]
+            };
+            let mut first_im = if initialize_sums {
+                simd.splat_f64s(0.0)
+            } else {
+                first_sum_im_vectors[lane_block]
+            };
+            let mut second_re = if initialize_sums {
+                simd.splat_f64s(0.0)
+            } else {
+                second_sum_re_vectors[lane_block]
+            };
+            let mut second_im = if initialize_sums {
+                simd.splat_f64s(0.0)
+            } else {
+                second_sum_im_vectors[lane_block]
+            };
+            for pair in pair_start..pair_count {
                 let l = m + 2 * pair;
                 let offset = l - m;
                 let next_first_even = if l + 2 <= lmax {
@@ -637,6 +1167,12 @@ impl WithSimd for FusedSynthesisPairBlock<'_> {
                     let next = simd.mul_add_f64s(leading, current, previous);
                     previous = current;
                     current = next;
+                    if check_normal_range
+                        && (!simd_values_in_normal_range(simd, previous)
+                            || !simd_values_in_normal_range(simd, current))
+                    {
+                        return false;
+                    }
                 }
             }
             first_sum_re_vectors[lane_block] = first_re;
@@ -647,13 +1183,35 @@ impl WithSimd for FusedSynthesisPairBlock<'_> {
 
         for lane in 0..cosine_tail.len() {
             let cosine = cosine_tail[lane];
-            let mut previous = 0.0;
+            let mut previous = previous_tail[lane];
             let mut current = initial_tail[lane];
-            let mut first_re = 0.0;
-            let mut first_im = 0.0;
-            let mut second_re = 0.0;
-            let mut second_im = 0.0;
-            for pair in 0..pair_count {
+            if check_normal_range
+                && (!scalar_value_in_normal_range(previous)
+                    || !scalar_value_in_normal_range(current))
+            {
+                return false;
+            }
+            let mut first_re = if initialize_sums {
+                0.0
+            } else {
+                first_sum_re_tail[lane]
+            };
+            let mut first_im = if initialize_sums {
+                0.0
+            } else {
+                first_sum_im_tail[lane]
+            };
+            let mut second_re = if initialize_sums {
+                0.0
+            } else {
+                second_sum_re_tail[lane]
+            };
+            let mut second_im = if initialize_sums {
+                0.0
+            } else {
+                second_sum_im_tail[lane]
+            };
+            for pair in pair_start..pair_count {
                 let l = m + 2 * pair;
                 let offset = l - m;
                 let next_first_even = if l + 2 <= lmax {
@@ -694,6 +1252,12 @@ impl WithSimd for FusedSynthesisPairBlock<'_> {
                     let next = leading.mul_add(current, previous);
                     previous = current;
                     current = next;
+                    if check_normal_range
+                        && (!scalar_value_in_normal_range(previous)
+                            || !scalar_value_in_normal_range(current))
+                    {
+                        return false;
+                    }
                 }
             }
             first_sum_re_tail[lane] = first_re;
@@ -701,6 +1265,7 @@ impl WithSimd for FusedSynthesisPairBlock<'_> {
             second_sum_re_tail[lane] = second_re;
             second_sum_im_tail[lane] = second_im;
         }
+        true
     }
 }
 
@@ -844,5 +1409,57 @@ where
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fused_synthesis_continuation_declines_on_late_tail_range_failure() {
+        let lane_count = 5;
+        let cosine = vec![0.5; lane_count];
+        let epsilon = vec![1.0; 8];
+        let alpha = vec![1.0; 4];
+        let coefficient_a = [12.0, 0.0, 0.0, 0.0];
+        let coefficient_b = [0.0; 4];
+        let first_coefficients = [Complex64::new(1.0, 0.5); 4];
+        let second_coefficients = [Complex64::new(-0.25, 0.75); 4];
+        let previous = [0.0; 5];
+        let current = [1.0, 1.0, 1.0, 1.0, scalar::BIG * 0.75];
+        let mut first_sum_re = [10.0; 5];
+        let mut first_sum_im = [20.0; 5];
+        let mut second_sum_re = [30.0; 5];
+        let mut second_sum_im = [40.0; 5];
+
+        let completed = Arch::new().dispatch(FusedSynthesisPairBlock {
+            m: 0,
+            lmax: 3,
+            pair_start: 0,
+            cos_theta: &cosine,
+            epsilon: &epsilon,
+            alpha: &alpha,
+            coefficient_a: &coefficient_a,
+            coefficient_b: &coefficient_b,
+            first_coefficients: &first_coefficients,
+            second_coefficients: &second_coefficients,
+            previous: &previous,
+            current: &current,
+            first_sum_re: &mut first_sum_re,
+            first_sum_im: &mut first_sum_im,
+            second_sum_re: &mut second_sum_re,
+            second_sum_im: &mut second_sum_im,
+            initialize_sums: false,
+            check_normal_range: true,
+        });
+
+        assert!(!completed);
+        assert_ne!(first_sum_re[0], 10.0);
+        assert_ne!(second_sum_im[3], 40.0);
+        assert_eq!(first_sum_re[4], 10.0);
+        assert_eq!(first_sum_im[4], 20.0);
+        assert_eq!(second_sum_re[4], 30.0);
+        assert_eq!(second_sum_im[4], 40.0);
     }
 }

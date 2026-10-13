@@ -27,7 +27,7 @@ use pulp::{Arch, Simd, WithSimd};
 use crate::error::ShtError;
 
 pub(super) const BIG: f64 = f64::from_bits(1423_u64 << 52);
-const SMALL: f64 = f64::from_bits(623_u64 << 52);
+pub(super) const SMALL: f64 = f64::from_bits(623_u64 << 52);
 const SCALE_UP: f64 = f64::from_bits(1823_u64 << 52);
 const SCALE_DOWN: f64 = f64::from_bits(223_u64 << 52);
 pub(crate) const LATITUDE_BLOCK_SIZE: usize = 64;
@@ -1927,6 +1927,366 @@ mod tests {
             );
             assert_eq!(actual.re.to_bits(), expected.re.to_bits());
             assert_eq!(actual.im.to_bits(), expected.im.to_bits());
+        }
+    }
+
+    #[test]
+    fn paired_synthesis_transition_matches_scaled_reference_with_tail() {
+        let m = 64;
+        let lmax = 511;
+        let lane_count = 63;
+        let sin_theta: Vec<_> = (0..lane_count)
+            .map(|lane| 0.01 + lane as f64 * 0.0001)
+            .collect();
+        let cos_theta: Vec<_> = sin_theta
+            .iter()
+            .map(|sine| (1.0 - sine * sine).sqrt())
+            .collect();
+        let sectoral_norm = sectoral_normalizations(m).unwrap()[m];
+        let mut previous = vec![0.0; lane_count];
+        let mut current = vec![0.0; lane_count];
+        let mut exponents = vec![0; lane_count];
+        for lane in 0..lane_count {
+            let (value, exponent) = sectoral_value(sin_theta[lane], m, sectoral_norm).unwrap();
+            previous[lane] = 0.0;
+            current[lane] = value;
+            exponents[lane] = exponent;
+        }
+        assert!(!normalize_pair_lanes(&mut previous, &mut current, &mut exponents).unwrap());
+
+        let mut epsilon = vec![0.0; lmax + 4];
+        fill_epsilon(m, lmax, &mut epsilon);
+        let factor_count = lmax / 2 + 2;
+        let mut alpha = vec![0.0; factor_count];
+        let mut coefficient_a = vec![0.0; factor_count];
+        let mut coefficient_b = vec![0.0; factor_count];
+        super::super::scalar_paired::fill_factors(
+            m,
+            lmax,
+            &epsilon,
+            &mut alpha,
+            &mut coefficient_a,
+            &mut coefficient_b,
+        );
+        let first_coefficients: Vec<_> = (m..=lmax)
+            .map(|degree| {
+                Complex64::new(
+                    ((degree * 7 + 3) % 19 + 1) as f64 * 1e-6,
+                    ((degree * 11 + 5) % 23 + 1) as f64 * 1e-6,
+                )
+            })
+            .collect();
+        let second_coefficients: Vec<_> = (m..=lmax)
+            .map(|degree| {
+                Complex64::new(
+                    ((degree * 13 + 7) % 17 + 1) as f64 * 1e-6,
+                    -(((degree * 5 + 9) % 29 + 1) as f64) * 1e-6,
+                )
+            })
+            .collect();
+
+        for arch in [Arch::Scalar, Arch::new()] {
+            let mut previous = vec![0.0; lane_count];
+            let mut current = vec![0.0; lane_count];
+            let mut next = vec![0.0; lane_count];
+            let mut exponents = vec![0; lane_count];
+            let mut first_sum_re = vec![0.0; lane_count];
+            let mut first_sum_im = vec![0.0; lane_count];
+            let mut second_sum_re = vec![0.0; lane_count];
+            let mut second_sum_im = vec![0.0; lane_count];
+            let staged =
+                super::super::scalar_paired::try_synthesize_order_pair_transition_dispatched(
+                    arch,
+                    m,
+                    lmax,
+                    &sin_theta,
+                    &cos_theta,
+                    sectoral_norm,
+                    &epsilon,
+                    &alpha,
+                    &coefficient_a,
+                    &coefficient_b,
+                    &first_coefficients,
+                    &second_coefficients,
+                    &mut previous,
+                    &mut current,
+                    &mut next,
+                    &mut exponents,
+                    &mut first_sum_re,
+                    &mut first_sum_im,
+                    &mut second_sum_re,
+                    &mut second_sum_im,
+                )
+                .unwrap();
+            assert!(staged, "the scaled recurrence should enter the normal path");
+
+            let mut reference_previous = vec![0.0; lane_count];
+            let mut reference_current = vec![0.0; lane_count];
+            let mut reference_next = vec![0.0; lane_count];
+            let mut reference_exponents = vec![0; lane_count];
+            let mut reference_first = vec![Complex64::new(0.0, 0.0); lane_count];
+            let mut reference_second = vec![Complex64::new(0.0, 0.0); lane_count];
+            super::super::scalar_paired::for_each_y_lm_paired_dispatched(
+                arch,
+                m,
+                lmax,
+                &sin_theta,
+                &cos_theta,
+                sectoral_norm,
+                &coefficient_a,
+                &coefficient_b,
+                &mut reference_previous,
+                &mut reference_current,
+                &mut reference_next,
+                &mut reference_exponents,
+                |l, ring_start, basis, lane_exponents| {
+                    let pair = (l - m) / 2;
+                    let offset = l - m;
+                    let next_first_even = if l + 2 <= lmax {
+                        first_coefficients[offset + 2]
+                    } else {
+                        Complex64::new(0.0, 0.0)
+                    };
+                    let next_second_even = if l + 2 <= lmax {
+                        second_coefficients[offset + 2]
+                    } else {
+                        Complex64::new(0.0, 0.0)
+                    };
+                    let first_even = (first_coefficients[offset] * epsilon[l + 1]
+                        + next_first_even * epsilon[l + 2])
+                        * alpha[pair];
+                    let second_even = (second_coefficients[offset] * epsilon[l + 1]
+                        + next_second_even * epsilon[l + 2])
+                        * alpha[pair];
+                    let first_odd = if l < lmax {
+                        first_coefficients[offset + 1] * alpha[pair]
+                    } else {
+                        Complex64::new(0.0, 0.0)
+                    };
+                    let second_odd = if l < lmax {
+                        second_coefficients[offset + 1] * alpha[pair]
+                    } else {
+                        Complex64::new(0.0, 0.0)
+                    };
+                    for lane in 0..basis.len() {
+                        let ring = ring_start + lane;
+                        let inverse_sine = sin_theta[ring].recip();
+                        let inverse_sine_squared = inverse_sine * inverse_sine;
+                        let cosine_over_sine_squared = cos_theta[ring] * inverse_sine_squared;
+                        reference_first[ring] += multiply_complex_scaled_product(
+                            first_even,
+                            basis[lane],
+                            inverse_sine_squared,
+                            lane_exponents[lane],
+                        ) + multiply_complex_scaled_product(
+                            first_odd,
+                            basis[lane],
+                            cosine_over_sine_squared,
+                            lane_exponents[lane],
+                        );
+                        reference_second[ring] += multiply_complex_scaled_product(
+                            second_even,
+                            basis[lane],
+                            inverse_sine_squared,
+                            lane_exponents[lane],
+                        ) + multiply_complex_scaled_product(
+                            second_odd,
+                            basis[lane],
+                            cosine_over_sine_squared,
+                            lane_exponents[lane],
+                        );
+                    }
+                    Ok(())
+                },
+            )
+            .unwrap();
+
+            for lane in 0..lane_count {
+                let inverse_sine = sin_theta[lane].recip();
+                let inverse_sine_squared = inverse_sine * inverse_sine;
+                let actual_first = Complex64::new(
+                    first_sum_re[lane] * inverse_sine_squared,
+                    first_sum_im[lane] * inverse_sine_squared,
+                );
+                let actual_second = Complex64::new(
+                    second_sum_re[lane] * inverse_sine_squared,
+                    second_sum_im[lane] * inverse_sine_squared,
+                );
+                assert!(
+                    (actual_first - reference_first[lane]).norm()
+                        <= 3e-12 * reference_first[lane].norm().max(1.0),
+                    "first lane={lane}, staged={actual_first:?}, scaled={:?}",
+                    reference_first[lane]
+                );
+                assert!(
+                    (actual_second - reference_second[lane]).norm()
+                        <= 3e-12 * reference_second[lane].norm().max(1.0),
+                    "second lane={lane}, staged={actual_second:?}, scaled={:?}",
+                    reference_second[lane]
+                );
+            }
+
+            let mut extreme_first = first_coefficients.clone();
+            extreme_first[0] = Complex64::new(f64::MAX, 0.0);
+            assert!(
+                !super::super::scalar_paired::try_synthesize_order_pair_transition_dispatched(
+                    arch,
+                    m,
+                    lmax,
+                    &sin_theta,
+                    &cos_theta,
+                    sectoral_norm,
+                    &epsilon,
+                    &alpha,
+                    &coefficient_a,
+                    &coefficient_b,
+                    &extreme_first,
+                    &second_coefficients,
+                    &mut previous,
+                    &mut current,
+                    &mut next,
+                    &mut exponents,
+                    &mut first_sum_re,
+                    &mut first_sum_im,
+                    &mut second_sum_re,
+                    &mut second_sum_im,
+                )
+                .unwrap()
+            );
+        }
+    }
+
+    #[test]
+    fn paired_synthesis_transition_rejects_prefix_underflow_revived_by_spin_weight() {
+        let m = 102;
+        let lmax = 511;
+        let sin_theta = [0.01];
+        let cos_theta = [(1.0_f64 - sin_theta[0] * sin_theta[0]).sqrt()];
+        let sectoral_norm = sectoral_normalizations(m).unwrap()[m];
+        let mut epsilon = vec![0.0; lmax + 4];
+        fill_epsilon(m, lmax, &mut epsilon);
+        let factor_count = lmax / 2 + 2;
+        let mut alpha = vec![0.0; factor_count];
+        let mut coefficient_a = vec![0.0; factor_count];
+        let mut coefficient_b = vec![0.0; factor_count];
+        super::super::scalar_paired::fill_factors(
+            m,
+            lmax,
+            &epsilon,
+            &mut alpha,
+            &mut coefficient_a,
+            &mut coefficient_b,
+        );
+        let mut first_coefficients = vec![Complex64::new(0.0, 0.0); lmax - m + 1];
+        let second_coefficients = vec![Complex64::new(0.0, 0.0); lmax - m + 1];
+        first_coefficients[0] = Complex64::new(2.0 * SMALL, 0.0);
+
+        for arch in [Arch::Scalar, Arch::new()] {
+            let mut control_previous = [0.0];
+            let mut control_current = [0.0];
+            let mut control_next = [0.0];
+            let mut control_exponents = [0];
+            let mut control_first_sum_re = [0.0];
+            let mut control_first_sum_im = [0.0];
+            let mut control_second_sum_re = [0.0];
+            let mut control_second_sum_im = [0.0];
+            assert!(
+                super::super::scalar_paired::try_synthesize_order_pair_transition_dispatched(
+                    arch,
+                    m,
+                    lmax,
+                    &sin_theta,
+                    &cos_theta,
+                    sectoral_norm,
+                    &epsilon,
+                    &alpha,
+                    &coefficient_a,
+                    &coefficient_b,
+                    &second_coefficients,
+                    &second_coefficients,
+                    &mut control_previous,
+                    &mut control_current,
+                    &mut control_next,
+                    &mut control_exponents,
+                    &mut control_first_sum_re,
+                    &mut control_first_sum_im,
+                    &mut control_second_sum_re,
+                    &mut control_second_sum_im,
+                )
+                .unwrap(),
+                "the same recurrence must transition when its prefix is zero"
+            );
+
+            let mut previous = [0.0];
+            let mut current = [0.0];
+            let mut next = [0.0];
+            let mut exponents = [0];
+            let mut first_sum_re = [0.0];
+            let mut first_sum_im = [0.0];
+            let mut second_sum_re = [0.0];
+            let mut second_sum_im = [0.0];
+            assert!(
+                !super::super::scalar_paired::try_synthesize_order_pair_transition_dispatched(
+                    arch,
+                    m,
+                    lmax,
+                    &sin_theta,
+                    &cos_theta,
+                    sectoral_norm,
+                    &epsilon,
+                    &alpha,
+                    &coefficient_a,
+                    &coefficient_b,
+                    &first_coefficients,
+                    &second_coefficients,
+                    &mut previous,
+                    &mut current,
+                    &mut next,
+                    &mut exponents,
+                    &mut first_sum_re,
+                    &mut first_sum_im,
+                    &mut second_sum_re,
+                    &mut second_sum_im,
+                )
+                .unwrap()
+            );
+
+            let first_even = first_coefficients[0] * epsilon[m + 1] * alpha[0];
+            let inverse_sine_squared = sin_theta[0].recip().powi(2);
+            let (sectoral_mantissa, sectoral_exponent) =
+                sectoral_value(sin_theta[0], m, sectoral_norm).unwrap();
+            assert_eq!(
+                multiply_complex_scaled(first_even, sectoral_mantissa, sectoral_exponent).re,
+                0.0,
+                "the unweighted term rounds away before late spin scaling"
+            );
+            let revived = multiply_complex_scaled_product(
+                first_even,
+                sectoral_mantissa,
+                inverse_sine_squared,
+                sectoral_exponent,
+            );
+            assert!(revived.re.is_subnormal() && revived.re != 0.0);
+            let (sectoral_mantissa, sectoral_exponent) =
+                sectoral_value(sin_theta[0], m, sectoral_norm).unwrap();
+            let expected = multiply_complex_scaled_product(
+                first_even,
+                sectoral_mantissa,
+                inverse_sine_squared,
+                sectoral_exponent,
+            );
+            assert!(expected.re.is_subnormal());
+            assert_ne!(expected.re, 0.0);
+
+            // The transition declines before writing spectra, so the caller's
+            // established scaled callback can safely rerun this order.
+            let fallback = multiply_complex_scaled_product(
+                first_even,
+                sectoral_mantissa,
+                inverse_sine_squared,
+                sectoral_exponent,
+            );
+            assert_eq!(fallback, expected);
         }
     }
 

@@ -189,6 +189,34 @@ pub(crate) trait ShtScalar:
     }
     #[expect(
         clippy::too_many_arguments,
+        reason = "The transition kernel receives paired coefficients and caller-owned recurrence and sum scratch."
+    )]
+    fn try_synthesize_paired_scalar_transition_dispatched(
+        _arch: Arch,
+        _m: usize,
+        _lmax: usize,
+        _sin_theta: &[Self],
+        _cos_theta: &[Self],
+        _sectoral_norm: Self,
+        _epsilon: &[Self],
+        _alpha: &[Self],
+        _coefficient_a: &[Self],
+        _coefficient_b: &[Self],
+        _first_coefficients: &[Complex<Self>],
+        _second_coefficients: &[Complex<Self>],
+        _previous: &mut [Self],
+        _current: &mut [Self],
+        _next: &mut [Self],
+        _exponents: &mut [i64],
+        _first_sum_re: &mut [Self],
+        _first_sum_im: &mut [Self],
+        _second_sum_re: &mut [Self],
+        _second_sum_im: &mut [Self],
+    ) -> Result<bool, ShtError> {
+        Ok(false)
+    }
+    #[expect(
+        clippy::too_many_arguments,
         reason = "The paired recurrence receives order factors and caller-owned lane scratch explicitly."
     )]
     fn for_each_y_lm_paired_dispatched<F>(
@@ -539,6 +567,52 @@ impl ShtScalar for f64 {
             spectrum_len,
             first_spectra,
             second_spectra,
+            previous,
+            current,
+            next,
+            exponents,
+            first_sum_re,
+            first_sum_im,
+            second_sum_re,
+            second_sum_im,
+        )
+    }
+
+    fn try_synthesize_paired_scalar_transition_dispatched(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        sectoral_norm: Self,
+        epsilon: &[Self],
+        alpha: &[Self],
+        coefficient_a: &[Self],
+        coefficient_b: &[Self],
+        first_coefficients: &[Complex<Self>],
+        second_coefficients: &[Complex<Self>],
+        previous: &mut [Self],
+        current: &mut [Self],
+        next: &mut [Self],
+        exponents: &mut [i64],
+        first_sum_re: &mut [Self],
+        first_sum_im: &mut [Self],
+        second_sum_re: &mut [Self],
+        second_sum_im: &mut [Self],
+    ) -> Result<bool, ShtError> {
+        scalar_paired::try_synthesize_order_pair_transition_dispatched(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            epsilon,
+            alpha,
+            coefficient_a,
+            coefficient_b,
+            first_coefficients,
+            second_coefficients,
             previous,
             current,
             next,
