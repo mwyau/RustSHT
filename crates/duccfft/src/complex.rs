@@ -14,6 +14,8 @@ use std::fmt;
 use num_complex::Complex;
 use num_traits::{Float, FromPrimitive};
 
+use crate::simd::{SimdPass, SimdScalar};
+
 /// Errors returned by FFT plan construction and execution.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum FftError {
@@ -87,6 +89,17 @@ struct PassExecution<'a, T> {
     blue_plan: Option<&'a BluesteinPlan<T>>,
     blue_buffer: &'a mut [Complex<T>],
     blue_workspace: Option<&'a mut ComplexFftWorkspace<T>>,
+    simd: Option<SimdKernels<T>>,
+}
+
+type FirstPassKernel<T> = unsafe fn(&mut [Complex<T>], &SimdPass<'_, T>);
+type PassKernel<T> = unsafe fn(&[Complex<T>], &mut [Complex<T>], &SimdPass<'_, T>);
+
+#[derive(Clone, Copy)]
+struct SimdKernels<T> {
+    complex_lanes: usize,
+    first_pass: FirstPassKernel<T>,
+    pass: PassKernel<T>,
 }
 
 /// Mutable scratch for repeated execution of a [`ComplexFftPlan`].
@@ -244,6 +257,34 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
         direction: Direction,
         inverse_output_scale: T,
     ) -> Result<(), FftError> {
+        self.execute_with_simd(values, workspace, direction, inverse_output_scale, None)
+    }
+
+    fn execute_avx2(
+        &self,
+        values: &mut [Complex<T>],
+        workspace: &mut ComplexFftWorkspace<T>,
+        direction: Direction,
+    ) -> Result<(), FftError>
+    where
+        T: SimdScalar,
+    {
+        let kernels = T::avx2_available().then_some(SimdKernels {
+            complex_lanes: T::AVX2_COMPLEX_LANES,
+            first_pass: T::avx2_first_pass,
+            pass: T::avx2_pass,
+        });
+        self.execute_with_simd(values, workspace, direction, T::one(), kernels)
+    }
+
+    fn execute_with_simd(
+        &self,
+        values: &mut [Complex<T>],
+        workspace: &mut ComplexFftWorkspace<T>,
+        direction: Direction,
+        inverse_output_scale: T,
+        simd: Option<SimdKernels<T>>,
+    ) -> Result<(), FftError> {
         check_len("values", self.data.len, values.len())?;
         check_len("workspace", self.data.len, workspace.len)?;
 
@@ -273,6 +314,7 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
                 blue_plan: blue,
                 blue_buffer: &mut workspace.bluestein_buffer,
                 blue_workspace: workspace.bluestein_workspaces[stage].as_mut(),
+                simd,
             };
             if stage == 0 {
                 execute_first_pass_in_place(values, &mut workspace.output, pass, &mut execution);
@@ -338,7 +380,7 @@ macro_rules! implement_public_api {
                 values: &mut [Complex<$scalar>],
                 workspace: &mut ComplexFftWorkspace<$scalar>,
             ) -> Result<(), FftError> {
-                self.execute(values, workspace, Direction::Forward)
+                self.execute_avx2(values, workspace, Direction::Forward)
             }
 
             /// Executes an inverse complex transform in place and scales the
@@ -353,7 +395,7 @@ macro_rules! implement_public_api {
                 values: &mut [Complex<$scalar>],
                 workspace: &mut ComplexFftWorkspace<$scalar>,
             ) -> Result<(), FftError> {
-                self.execute(values, workspace, Direction::Inverse)
+                self.execute_avx2(values, workspace, Direction::Inverse)
             }
         }
     };
@@ -774,11 +816,35 @@ fn execute_first_pass_direct_radix<const R: usize, T: Float + FromPrimitive>(
     let radix = R;
     debug_assert!(radix == 2 || radix == 4 || radix == 8);
     debug_assert_eq!(pass.l1, 1);
+    let inverse = execution.direction == Direction::Inverse;
+    if let Some(kernels) = execution.simd
+        && (!inverse || execution.defer_inverse_normalization)
+        && pass.ido >= kernels.complex_lanes
+        && pass.ido.is_multiple_of(kernels.complex_lanes)
+    {
+        let inverse_scale = if inverse {
+            execution.inverse_output_scale
+        } else {
+            T::one()
+        };
+        let simd_pass = SimdPass {
+            radix,
+            l1: pass.l1,
+            ido: pass.ido,
+            twiddles: &pass.twiddles,
+            inverse,
+            inverse_scale,
+        };
+        // SAFETY: plan construction validates pass dimensions, runtime
+        // dispatch checked AVX2, and the kernel width divides `ido`.
+        unsafe { (kernels.first_pass)(data, &simd_pass) };
+        return;
+    }
+
     let zero = Complex::new(T::zero(), T::zero());
     let mut inputs = [zero; 8];
     let mut transformed = [zero; 8];
     let mut correction = [zero; 8];
-    let inverse = execution.direction == Direction::Inverse;
     let stage_scale = if inverse && !execution.defer_inverse_normalization {
         inverse_scale::<T>(radix)
     } else {
@@ -868,11 +934,35 @@ fn execute_direct_radix_pass<const R: usize, T: Float + FromPrimitive>(
 ) {
     let radix = R;
     debug_assert!(radix == 2 || radix == 4 || radix == 8);
+    let inverse = execution.direction == Direction::Inverse;
+    if let Some(kernels) = execution.simd
+        && (!inverse || execution.defer_inverse_normalization)
+        && pass.ido >= kernels.complex_lanes
+        && pass.ido.is_multiple_of(kernels.complex_lanes)
+    {
+        let inverse_scale = if inverse {
+            execution.inverse_output_scale
+        } else {
+            T::one()
+        };
+        let simd_pass = SimdPass {
+            radix,
+            l1: pass.l1,
+            ido: pass.ido,
+            twiddles: &pass.twiddles,
+            inverse,
+            inverse_scale,
+        };
+        // SAFETY: plan construction validates pass dimensions, runtime
+        // dispatch checked AVX2, and the kernel width divides `ido`.
+        unsafe { (kernels.pass)(input, output, &simd_pass) };
+        return;
+    }
+
     let zero = Complex::new(T::zero(), T::zero());
     let mut inputs = [zero; 8];
     let mut transformed = [zero; 8];
     let mut correction = [zero; 8];
-    let inverse = execution.direction == Direction::Inverse;
     let stage_scale = if inverse && !execution.defer_inverse_normalization {
         inverse_scale::<T>(radix)
     } else {
