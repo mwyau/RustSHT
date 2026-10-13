@@ -1,6 +1,6 @@
 # T72–T720 FFT workload performance and algorithm assessment
 
-Date: 2026-10-13. Branch: `feat/duccfft`.
+Date: 2026-10-13. Branch: `feat/duccfft`. The closeout source baseline before this Admiral follow-up was `fd7c1bedb3fbb8c5e3b75d64c92d199d6673f8d2`; the report follow-up is committed separately on this branch.
 
 ## Scope and summary
 
@@ -414,11 +414,21 @@ Admiral source inspected at commit `ce67bc00ff9e6de96bf5b75f7a789581105ddb58`: [
 
 Admiral's model and published CPU-specific measurements are not treated as Ryzen 9 5950X evidence. Its inspected source is BSD-3-Clause-Attribution; the prototype below was implemented independently and has no source-expression reuse.
 
+### Admiral Rader eligibility and route selection
+
+At the inspected revision, `rader_supported(p)` requires a prime p outside the direct codelet catalogue and an available route for p−1. The inner transform is a direct codelet when p−1 is catalogued, iterative DIF when p−1 is a power of two or factors only into 2, 3, 5, 7 and 11, and four-step otherwise. Both p=257 (p−1=256) and p=241 (p−1=240) meet the inner-route condition. The plan builds `gpow` and `ginvpow`, permutes nonzero input bins by powers of a primitive root, transforms the direction-specific permuted kernel once at plan construction, then writes nonzero outputs through the inverse permutation. The inner inverse is normalized by 1/(p−1); the outer inverse contributes 1/p.
+
+Admiral's route selector ranks codelet, DIF, Good–Thomas, four-step, Rader and Bluestein candidates. Its Rader gate compares a modeled pair of inner transforms plus a per-element cost against Bluestein; the f64 threshold depends on build vector width (1.30 for the inspected narrow-width branch and 1.06 for width at least eight lanes). This is a build-specific model, not a reason to transplant its thresholds to DUCCFFT's portable runtime-dispatch build. Admiral's inspected Rader `execute` also creates local SoA scratch; the four-step inner route creates a temporary vector. DUCCFFT's prototype instead reuses its nested plan workspace and scratch across calls.
+
+Good–Thomas in Admiral replaces twiddles with CRT index maps for selected coprime factors, while four-step uses transpose, row transforms, a twiddle stage and column transforms. Those are materially different schedules from simply reversing DUCCFFT's factors. The existing bounded factor-order experiment did not implement either decomposition, and its noisy/near-neutral results do not justify their additional permutation and buffer machinery in this session.
+
 ### Rader versus Bluestein for p=257 and p=241
 
 The asymptotic setup is favorable for these two primes: Rader replaces a length-525 Bluestein convolution with a cyclic convolution of length 256 for p=257; p=241 uses length 240 rather than a length-484 Bluestein convolution. Both p−1 lengths are smooth and already supported by `ComplexFftPlan`. Rader still requires primitive-root permutations, direction-specific transformed kernels, a sum output, and permutation-aware scratch. For the T360 longitude N=723=3×241, the prototype adds an explicit radix-3 decomposition around three Rader length-241 transforms.
 
 The prototype uses reusable complex plans and scratch. It computes the transformed direction-specific kernel at plan construction, performs input and output permutations, runs inner forward FFT → pointwise product → normalized inner inverse FFT, and applies the outer normalization required by the real/mixed wrapper. Plan and scratch values below are medians from three alternating baseline/prototype process pairs. Rader timing is full public R2C/C2R call time, not only inner convolution time.
+
+For the standalone prime cases, the prototypes use a cyclic convolution of length 256 for p=257 and 240 for p=241, versus the production Bluestein lengths shown above. For N=723=3×241, the mixed-radix adapter performs three prime transforms and the radix-3 combination. The direct prime prototype tests both f64 directions against independent direct DFTs; the public real wrappers compare normal and cancellation-heavy data against direct DFTs, RustFFT and DUCC output dumps. Separate cancellation, high-dynamic-range, near-overflow (inputs scaled by transform length), minimum-normal and subnormal patterns are checked for finite results and agreement with the production real plan. `cargo bench --manifest-path crates/duccfft/Cargo.toml --bench rader_real_prototype -- validate` passed again during this follow-up.
 
 | N | row case | rows | direction | Bluestein public, µs | Rader public, µs | paired speedup (range) | plan µs B/R | workspace allocation µs B/R | scratch B/R | Rader tables B* |
 |---:|---|---:|---|---:|---:|---:|---:|---:|---:|---:|
@@ -446,7 +456,7 @@ For ordinary deterministic input/spectrum data, Rader outputs were compared agai
 | 723 | R2C | 362 | 9.670e-14 | 2.708e-16 |
 | 723 | C2R | 723 | 5.378e-17 | 4.573e-16 |
 
-The prototype also compares normal, cancellation-heavy, high-dynamic-range, near-overflow (`MAX` scaled by transform length) and minimum-normal/subnormal inputs against the production DUCCFFT path and checks for nonfinite outputs. Existing production extreme-value regressions still pass. The prototype does not implement DUCCFFT's inverse prescaling/residual-correction fallback itself; production needs that behavior before this route can replace the current path.
+The extreme-value checks compare against the production path and verify finite outputs; they do not compare those extreme cases against an independently computed direct DFT. The candidate also does not implement DUCCFFT's conditional inverse prescaling and residual-correction behavior. It is an isolated timing prototype, so it does not change production fallback behavior, but its extreme-value validation is not sufficient for promotion. A production route would need to delegate unsafe magnitudes to the existing Bluestein path or preserve the same proven safeguards; this prototype does neither. This gap, together with its 800+ lines of real/mixed-radix scaffolding, is why the measured execution gain is documented but not accepted into the production planner.
 
 ### Candidate longitude counts
 
@@ -454,7 +464,7 @@ The valid alternatives and their measured scalar-row results are in the precedin
 
 ### Factor-order screen
 
-The current real factor orders under examination are N=513 `[3,3,3,19]`, N=1025 `[5,5,41]`, and N=1443 `[3,13,37]`. The bounded alternative reversed these lists to `[19,3,3,3]`, `[41,5,5]` and `[37,13,3]`. It used existing kernels only and three process pairs. The ratio is current time / reversed time; above 1 means the reversed screen was faster.
+The current target factors are N=513 `[3,3,3,19]`, N=1025 `[5,5,41]`, N=1443 `[3,13,37]`, and the slow meridional C2C N=1442 `[2,7,103]`. The bounded alternative reversed the first three lists to `[19,3,3,3]`, `[41,5,5]` and `[37,13,3]`; for N=1442 it compared `[2,7,103]` with `[103,7,2]`. It used existing kernels only and three process pairs. The ratio is current time / reversed time; above 1 means the reversed screen was faster.
 
 | mode | N | rows / case | current, µs | reversed, µs | current / reversed (range) |
 |---|---:|---|---:|---:|---:|
