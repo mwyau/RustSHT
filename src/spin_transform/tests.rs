@@ -936,6 +936,129 @@ fn spin1_scalar_synthesis_compacts_mixed_high_order_cutoff_blocks() {
 }
 
 #[test]
+fn spin1_synthesis_skips_fully_excluded_high_order_segments_for_all_modes() {
+    let lmax = 511;
+    let m = 500;
+    let nphi = 2 * lmax + 3;
+
+    for kind in [
+        GridKind::GaussLegendre,
+        GridKind::ClenshawCurtis,
+        GridKind::Fejer1,
+    ] {
+        let ntheta = lmax + usize::from(kind == GridKind::ClenshawCurtis) + 1;
+        for mode in ["STANDARD", "GRAD_ONLY", "DERIV1"] {
+            let plan_spin = usize::from(mode != "DERIV1");
+            let plan = ShtPlan::new(
+                GridSpec::new(kind, ntheta, nphi, 0.37).unwrap(),
+                HarmonicSpec::new(lmax, m, plan_spin).unwrap(),
+            )
+            .unwrap();
+            let mut e_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+            let index = plan.harmonics().index(m, m).unwrap();
+            e_alm[index] = Complex64::new(1.0, 0.2);
+            let b_alm = vec![Complex64::new(0.0, 0.0); e_alm.len()];
+
+            let mut workspace = plan.workspace().unwrap();
+            let mut first = vec![0.0; plan.sample_count];
+            let mut second = vec![0.0; plan.sample_count];
+            match mode {
+                "STANDARD" => plan
+                    .synthesis_spin_into(&e_alm, &b_alm, &mut first, &mut second, &mut workspace)
+                    .unwrap(),
+                "GRAD_ONLY" => plan
+                    .synthesis_gradient_into(&e_alm, &mut first, &mut second, &mut workspace)
+                    .unwrap(),
+                "DERIV1" => plan
+                    .synthesis_deriv1_into(&e_alm, &mut first, &mut second, &mut workspace)
+                    .unwrap(),
+                _ => unreachable!(),
+            }
+            let first_active_ring = workspace
+                .ring_order_limits
+                .iter()
+                .position(|&limit| limit >= m)
+                .expect("sectoral order must be active on equatorial rings");
+            assert!(first_active_ring > 0, "{kind:?} must exclude polar rings");
+            assert!(
+                workspace.ring_order_limits[..first_active_ring]
+                    .iter()
+                    .all(|&limit| limit < m),
+                "{kind:?} {mode}: rings before the active transition should exclude m={m}"
+            );
+            assert!(
+                first[..first_active_ring * nphi]
+                    .iter()
+                    .chain(&second[..first_active_ring * nphi])
+                    .all(|&value| value == 0.0),
+                "{kind:?} {mode}: excluded rings must remain zero"
+            );
+            assert!(
+                first[first_active_ring * nphi..]
+                    .iter()
+                    .chain(&second[first_active_ring * nphi..])
+                    .any(|&value| value != 0.0),
+                "{kind:?} {mode}: active rings must retain the sectoral field"
+            );
+        }
+    }
+}
+
+#[test]
+fn spin1_synthesis_skips_high_orders_in_a_clenshaw_curtis_pole_segment() {
+    let lmax = 511;
+    let m = 200;
+    let ntheta = lmax + 2;
+    let nphi = 2 * lmax + 3;
+    let plan = make_cc_plan(1, lmax, m, ntheta, nphi);
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_spin_latitudes(&mut workspace, 1);
+    assert!(workspace.theta_sin[0] < SPIN1_FAST_MIN_SIN_THETA);
+    assert!(workspace.ring_order_limits[0] < m);
+
+    let mut e_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut b_alm = vec![Complex64::new(0.0, 0.0); e_alm.len()];
+    for degree in m..=lmax {
+        let index = plan.harmonics().index(degree, m).unwrap();
+        e_alm[index] = Complex64::new(0.03 * degree as f64, -0.02);
+        b_alm[index] = Complex64::new(-0.01, 0.017 * degree as f64);
+    }
+    let spectrum_len = plan.fft.spectrum_len();
+    let mut q_spectra = vec![Complex64::new(0.0, 0.0); spectrum_len];
+    let mut u_spectra = vec![Complex64::new(0.0, 0.0); spectrum_len];
+    let q_sentinel = Complex64::new(0.5, -0.25);
+    let u_sentinel = Complex64::new(-0.125, 0.75);
+    q_spectra[m] = q_sentinel;
+    u_spectra[m] = u_sentinel;
+
+    plan.synthesize_spin_ring_group_mode(
+        &e_alm,
+        Some(&b_alm),
+        1,
+        false,
+        false,
+        nphi,
+        spectrum_len,
+        plan.grid.phi0(),
+        0,
+        1,
+        &mut q_spectra,
+        &mut u_spectra,
+        &workspace.theta_sin[..1],
+        &workspace.theta_cos[..1],
+        &workspace.ring_order_limits,
+        pulp::Arch::new(),
+        &mut workspace.recurrence_workers[0],
+    )
+    .unwrap();
+
+    // The sentinel distinguishes the new segment skip from the older lane
+    // cutoff: the latter reached the final phase/scaling step for this row.
+    assert_eq!(q_spectra[m], q_sentinel);
+    assert_eq!(u_spectra[m], u_sentinel);
+}
+
+#[test]
 fn spin1_scalar_fast_analysis_honors_the_polar_order_cutoff() {
     let lmax = 511;
     let ntheta = lmax + 1;
