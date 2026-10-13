@@ -1176,10 +1176,115 @@ fn real_batch_rejects_incomplete_rows_and_wrong_output_lengths() {
         })
     );
 
+    let incomplete_spectrum = [Complex::new(0.0, 0.0); 4];
+    let mut output = [0.0; 4];
+    assert_eq!(
+        plan.inverse_batch(&incomplete_spectrum, &mut output, &mut workspace),
+        Err(FftError::BatchBufferLength {
+            buffer: "spectrum",
+            row_len: 3,
+            actual: 4,
+        })
+    );
+
+    let other_plan = RealFftPlan::<f64>::new(3).unwrap();
+    let mut other_workspace = other_plan.workspace().unwrap();
+    let spectrum = [Complex::new(0.0, 0.0); 6];
+    let mut output = [0.0; 8];
+    assert_eq!(
+        plan.inverse_batch(&spectrum, &mut output, &mut other_workspace),
+        Err(FftError::BufferLength {
+            buffer: "workspace",
+            expected: 4,
+            actual: 3,
+        })
+    );
+
     let mut empty_spectrum = [];
     let mut empty_output = [];
     plan.forward_batch(&[], &mut empty_spectrum, &mut workspace)
         .unwrap();
     plan.inverse_batch(&empty_spectrum, &mut empty_output, &mut workspace)
         .unwrap();
+}
+
+#[test]
+fn f32_real_bluestein_batch_matches_independent_f64_dfts() {
+    let n = 137;
+    let rows = 2;
+    let plan = RealFftPlan::<f32>::new(n).unwrap();
+    let mut workspace = plan.workspace().unwrap();
+    let input32: Vec<_> = (0..rows)
+        .flat_map(|row| (0..n).map(move |index| real_signal(index + 11 * row, n) as f32))
+        .collect();
+    let expected_spectrum: Vec<_> = input32
+        .chunks_exact(n)
+        .map(|row| row.iter().map(|&value| value as f64).collect::<Vec<_>>())
+        .flat_map(|row| direct_r2c_f64(&row))
+        .collect();
+    let mut actual_spectrum = vec![Complex::new(0.0, 0.0); rows * plan.spectrum_len()];
+    plan.forward_batch(&input32, &mut actual_spectrum, &mut workspace)
+        .unwrap();
+    assert_complex_f32_close(&actual_spectrum, &expected_spectrum, n);
+
+    let spectrum32: Vec<_> = (0..rows)
+        .flat_map(|row| {
+            (0..plan.spectrum_len()).map(move |index| {
+                Complex::new(
+                    real_signal(index + 23 * row, n + 3) as f32,
+                    (0.2 * real_signal(index + 17 * row, n + 7)) as f32,
+                )
+            })
+        })
+        .collect();
+    let spectrum64: Vec<_> = spectrum32
+        .iter()
+        .map(|value| Complex::new(value.re as f64, value.im as f64))
+        .collect();
+    let expected_output: Vec<_> = spectrum64
+        .chunks_exact(plan.spectrum_len())
+        .flat_map(|row| direct_c2r_f64(row, n))
+        .collect();
+    let mut actual_output = vec![0.0; rows * n];
+    plan.inverse_batch(&spectrum32, &mut actual_output, &mut workspace)
+        .unwrap();
+    assert_f32_close(&actual_output, &expected_output, n);
+}
+
+#[test]
+fn f32_real_complexify_batch_matches_independent_row_calls() {
+    let n = 1026;
+    let rows = 2;
+    let plan = RealFftPlan::<f32>::new(n).unwrap();
+    let mut workspace = plan.workspace().unwrap();
+    let input: Vec<_> = (0..rows)
+        .flat_map(|row| (0..n).map(move |index| real_signal(index + 5 * row, n) as f32))
+        .collect();
+    let mut batch_spectrum = vec![Complex::new(0.0, 0.0); rows * plan.spectrum_len()];
+    plan.forward_batch(&input, &mut batch_spectrum, &mut workspace)
+        .unwrap();
+    let mut row_spectrum = vec![Complex::new(0.0, 0.0); rows * plan.spectrum_len()];
+    for row in 0..rows {
+        plan.forward(
+            &input[row * n..(row + 1) * n],
+            &mut row_spectrum[row * plan.spectrum_len()..(row + 1) * plan.spectrum_len()],
+            &mut workspace,
+        )
+        .unwrap();
+    }
+    assert_eq!(batch_spectrum, row_spectrum);
+
+    let mut batch_output = vec![0.0; rows * n];
+    plan.inverse_batch(&batch_spectrum, &mut batch_output, &mut workspace)
+        .unwrap();
+    let mut row_output = vec![0.0; rows * n];
+    for row in 0..rows {
+        plan.inverse(
+            &batch_spectrum[row * plan.spectrum_len()..(row + 1) * plan.spectrum_len()],
+            &mut row_output[row * n..(row + 1) * n],
+            &mut workspace,
+        )
+        .unwrap();
+    }
+    assert_eq!(batch_output, row_output);
 }
