@@ -90,12 +90,72 @@ and the median gain is 2.06%; treat that small change as weak evidence. All
 through 4,096. The larger-length results support keeping the targeted kernel;
 they do not close the remaining scalar and SIMD gaps to RustFFT.
 
+## Batch of 32 transforms
+
+The batch measurement calls the public `forward_batch` or `inverse_batch`
+method for 32 distinct rows and reports latency per transform. DUCCFFT
+validates the flat row-major buffers once, then executes the rows serially
+with one reusable workspace. The RustFFT control reuses one adapter plan and
+loops over the same rows. Input, spectrum, output, and plan allocations are
+outside timing. A timed sample repeats
+`max(floor(262144 / n / 32), 1)` batch calls. The comparison checks all 32
+outputs after timing with the same relative-L2 and L2-scaled maximum-error
+limits as the single-transform benchmark.
+
+The batch extension is source commit `0cbf36d` (SHA-256
+`76ea65520ac18ab604087c9011c81f61b5f54b597dbfb3b45ad7cf9320c2b665`). The
+baseline was built from `fc3c876` with that exact harness source copied into
+its detached worktree; the candidate executable was built from `0cbf36d`,
+whose FFT implementation is unchanged from `2ef4906`. Both builds used the
+same `Cargo.lock` hash and compiler configuration recorded above. The paired
+run's one-minute load average was 2.08, with 5- and 15-minute averages of 2.33
+and 2.87. The host was still shared.
+
+Raw batch data contain 588 records per executable:
+[`baseline batch samples`](../benches/results/m4-f32-real-avx2-batch-baseline-process-samples.csv)
+and
+[`candidate batch samples`](../benches/results/m4-f32-real-avx2-batch-candidate-process-samples.csv).
+The keys match across versions. These rows measure the AVX2 production change
+inside the public batch methods; the separate comparison of the serial batch
+API against a loop of single DUCCFFT calls is in
+[`m4-batch-api.md`](m4-batch-api.md).
+
+Each table time below is the median latency in microseconds per transform
+across 42 paired samples. The ratio and paired-gain definitions match the
+single-transform table above.
+
+| N | Operation | DUCCFFT baseline → candidate | RustFFT baseline → candidate | DUCCFFT/RustFFT baseline → candidate | Paired gain | Favored pairs |
+|---:|---|---:|---:|---:|---:|---:|
+| 64 | R2C batch 32 | 0.167 → 0.152 | 0.115 → 0.115 | 1.453× → 1.315× | +9.08% | 42/42 |
+| 64 | C2R batch 32 | 0.154 → 0.143 | 0.075 → 0.075 | 2.062× → 1.906× | +7.25% | 42/42 |
+| 128 | R2C batch 32 | 0.390 → 0.362 | 0.219 → 0.220 | 1.780× → 1.647× | +7.38% | 41/42 |
+| 128 | C2R batch 32 | 0.380 → 0.355 | 0.146 → 0.152 | 2.612× → 2.344× | +10.36% | 38/42 |
+| 256 | R2C batch 32 | 0.752 → 0.605 | 0.438 → 0.438 | 1.716× → 1.384× | +19.55% | 42/42 |
+| 256 | C2R batch 32 | 0.716 → 0.579 | 0.293 → 0.304 | 2.447× → 1.905× | +21.26% | 42/42 |
+| 512 | R2C batch 32 | 1.767 → 1.507 | 0.897 → 0.912 | 1.968× → 1.655× | +15.99% | 42/42 |
+| 512 | C2R batch 32 | 1.712 → 1.465 | 0.601 → 0.635 | 2.844× → 2.310× | +18.64% | 42/42 |
+| 1,024 | R2C batch 32 | 3.487 → 2.529 | 1.803 → 1.841 | 1.941× → 1.367× | +29.06% | 42/42 |
+| 1,024 | C2R batch 32 | 3.324 → 2.396 | 1.246 → 1.317 | 2.663× → 1.817× | +31.92% | 42/42 |
+| 2,048 | R2C batch 32 | 8.111 → 6.263 | 3.761 → 3.796 | 2.152× → 1.650× | +23.09% | 42/42 |
+| 2,048 | C2R batch 32 | 7.890 → 6.032 | 2.604 → 2.732 | 3.023× → 2.204× | +27.50% | 42/42 |
+| 4,096 | R2C batch 32 | 16.465 → 10.909 | 7.695 → 7.788 | 2.138× → 1.401× | +34.57% | 42/42 |
+| 4,096 | C2R batch 32 | 15.981 → 10.612 | 5.468 → 5.653 | 2.926× → 1.886× | +35.59% | 42/42 |
+
+At N=128, 41 of 42 R2C pairs and 38 of 42 C2R pairs favor the candidate; the
+per-process median gain ranges include a −0.02% C2R result, so treat the
+smallest sizes cautiously. All pairs favor the candidate for both operations
+at lengths 256–4,096. These results show that the single-transform AVX2 gains
+carry into a 32-row call. They do not measure across-row SIMD, which remains
+unimplemented.
+
 ## Plan and workspace setup
 
-These cells show the median of six process-level medians in microseconds.
-Each process median uses 20 plan constructions or workspace allocations.
-RustFFT setup includes its planner and the adapter's transform, scratch, and
-twiddle arrays.
+The table below uses the single-transform sweep's six processes. Each cell
+shows the median of the six process-level medians in microseconds; each process
+median uses 20 plan constructions or workspace allocations. RustFFT setup
+includes its planner and the adapter's transform, scratch, and twiddle arrays.
+The batch sweep also records setup values in its raw CSVs, but reuses the plan
+and workspace for each timed batch call.
 
 | N | DUCCFFT plan baseline → candidate | DUCCFFT workspace baseline → candidate | RustFFT adapter setup baseline → candidate |
 |---:|---:|---:|---:|
