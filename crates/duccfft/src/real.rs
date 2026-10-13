@@ -617,18 +617,24 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
             return Ok(());
         }
 
-        let defer_inverse_normalization = inverse_normalization_is_safe(spectrum, self.len);
-        if defer_inverse_normalization && let Some(multipass) = self.multipass.as_ref() {
-            multipass.inverse(
+        if let Some(multipass) = self.multipass.as_ref()
+            && multipass.inverse_if_safe(
                 spectrum,
                 output,
                 workspace
                     .multipass_workspace
                     .as_mut()
                     .expect("multipass plan has a multipass workspace"),
-            );
+            )
+        {
             return Ok(());
         }
+        // Multipass eligibility was checked while packing. If that check
+        // failed, retain the residual-corrected recursive path without
+        // rescanning the spectrum. Plans without a multipass path still need
+        // the existing normalization guard for the recursive executor.
+        let defer_inverse_normalization =
+            self.multipass.is_none() && inverse_normalization_is_safe(spectrum, self.len);
         RealInverseExecutor {
             total_len: self.len,
             defer_inverse_normalization,
