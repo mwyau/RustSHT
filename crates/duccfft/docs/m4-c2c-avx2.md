@@ -196,3 +196,66 @@ RustFFT/DUCC gaps are reported in
 [`m4-real-multipass.md`](m4-real-multipass.md). The M3 inverse fast path skips
 residual correction for inputs under its tested finite-input bound, but this
 C2C experiment does not measure its effect on real-transform timing.
+
+## Transform-direction specialization experiment
+
+Commit `de0673c2d7f11b566bb822247e7e32e500be30b6` changes the f64 AVX2 C2C
+kernels to specialize the forward and inverse direction as const parameters. The dispatch selects `(radix, direction)` once at pass entry. The baseline is
+its parent, `6d60646637142aef8f06a8790e60e052bb8f2a03`. Butterfly expressions,
+plan structure, and workspace size are unchanged. The f32 C2C and real kernels
+are unchanged. The benchmark source was identical for both revisions (Git blob
+`3bdbb3d7f441816bf2f2475e45a9f5eb92664cdb`, SHA-256
+`6a85531e042175af96e9bcdc07368c15908e46212b7d441d68c57cfb7b9b4cba`). Both
+used the same lockfile (SHA-256
+`07e3ac929c8f1f6b708b36810accef15d5a9e71918f35d541246c6df15da26d1`). The
+build used Rust 1.99.0 (`b940084d7`, LLVM 23.1.1), Cargo's optimized `bench`
+profile (`opt-level=3`), and no custom `RUSTFLAGS`, LTO, or target CPU. The host
+was an x86-64 CPU; each process was pinned to logical one CPU core. Six paired
+process samples alternated which revision ran first. Inputs, plans, and
+workspaces were reused. Each single-call measurement is a warm public C2C
+operation; batch 32 is 32 sequential public operations sharing a workspace, not
+the batch API. The host also ran the Legendre workload, so timings remain
+provisional. The table gives the median of six per-process medians in microseconds. The gain
+is the median of the six paired process ratios `(baseline / specialized) - 1`;
+the pair count shows how many individual pairs favored the specialized build. Consequently the gain need not equal the ratio of the two displayed medians. All checksums matched between revisions for every direction, length, and call
+count. Raw process samples, including R2C and C2R timings, are in
+[`m4-c2c-direction-specialization-process-samples.csv`](../benches/results/m4-c2c-direction-specialization-process-samples.csv).
+
+| n | Forward, one call: baseline → specialized (gain; favored pairs) | Forward, sequential 32 | Inverse, one call | Inverse, sequential 32 |
+|---:|---:|---:|---:|---:|
+| 64 | 0.291 → 0.281 (+0.17%; 3/6) | 0.202 → 0.196 (+2.55%; 4/6) | 0.306 → 0.301 (+1.50%; 3/6) | 0.279 → 0.274 (+1.78%; 5/6) |
+| 128 | 0.416 → 0.416 (+0.00%; 2/6) | 0.394 → 0.401 (−1.99%; 0/6) | 0.591 → 0.591 (+0.77%; 3/6) | 0.577 → 0.575 (+0.74%; 5/6) |
+| 256 | 0.746 → 0.722 (+2.01%; 6/6) | 0.735 → 0.723 (+1.04%; 6/6) | 1.102 → 1.082 (+2.31%; 6/6) | 1.086 → 1.051 (+3.20%; 6/6) |
+| 512 | 1.628 → 1.593 (+1.57%; 5/6) | 1.656 → 1.639 (+0.98%; 5/6) | 2.370 → 2.315 (+2.58%; 6/6) | 2.360 → 2.314 (+2.21%; 6/6) |
+| 1,024 | 3.852 → 3.848 (−0.26%; 2/6) | 3.836 → 3.801 (+0.34%; 4/6) | 5.336 → 5.280 (+1.04%; 5/6) | 5.346 → 5.257 (+1.43%; 6/6) |
+| 2,048 | 11.462 → 11.482 (+0.83%; 4/6) | 7.906 → 7.788 (+1.89%; 4/6) | 14.197 → 14.247 (+0.57%; 3/6) | 14.342 → 14.331 (−0.29%; 2/6) |
+| 4,096 | 26.821 → 26.760 (−0.13%; 3/6) | 19.015 → 18.757 (+1.57%; 5/6) | 32.627 → 32.206 (+1.36%; 4/6) | 32.398 → 32.176 (+0.90%; 4/6) |
+
+Median setup measurements are unchanged within noise and require the same
+scratch allocation in both revisions:
+
+| n | Plan, baseline → specialized | Workspace, baseline → specialized | Scratch bytes |
+|---:|---:|---:|---:|
+| 64 | 1.843 → 1.846 µs | 0.192 → 0.190 µs | 1,280 |
+| 128 | 1.807 → 1.800 µs | 0.074 → 0.078 µs | 2,304 |
+| 256 | 3.444 → 3.454 µs | 0.086 → 0.089 µs | 4,352 |
+| 512 | 6.760 → 6.777 µs | 0.117 → 0.121 µs | 8,448 |
+| 1,024 | 13.948 → 13.953 µs | 0.183 → 0.185 µs | 16,640 |
+| 2,048 | 27.171 → 27.220 µs | 0.312 → 0.316 µs | 33,024 |
+| 4,096 | 54.046 → 54.139 µs | 0.568 → 0.564 µs | 65,792 |
+
+Release disassembly contains packed AVX2 operations in both revisions. In the
+baseline, the compiler had already placed direction-dependent branches before
+the inner loops. Const specialization duplicates direction-specific code but
+does not remove a measured loop branch. The `f64_kernel::first_pass` symbol
+grew from 1,888 to 2,544 bytes and `f64_kernel::pass` from 2,571 to 4,518
+bytes. Their stack frames fell from 120 to 40 bytes and from 200 to 136 bytes,
+respectively. These code-size and stack-frame differences do not establish a
+runtime benefit on their own. The paired timing results are small and inconsistent: individual medians range
+from a 1.99% regression to a 3.20% gain, and most larger sizes do not favor the
+candidate in all six pairs. This experiment does not explain or close the
+remaining smooth-radix gap to RustFFT. The compiler had already hoisted the
+direction branch, so this specialization has no strong measured case for
+remaining in the production kernel. The read-only R21 review will assess the
+experiment and this retain-or-revert decision before the code change is
+finalized.
