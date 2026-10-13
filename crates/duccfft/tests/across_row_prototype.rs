@@ -55,6 +55,14 @@ fn across_row_scalar_and_avx2_prototypes_match_direct_dfts() {
                     .flat_map(|row| direct_dft(row, !inverse))
                     .collect();
 
+                let mut profiled = input.clone();
+                let mut profiled_workspace = plan.workspace(rows).unwrap();
+                let phases = plan
+                    .execute_profiled(&mut profiled, &mut profiled_workspace, inverse)
+                    .unwrap();
+                assert_close(&profiled, &expected, len);
+                let _phase_total = phases.pack + phases.transform + phases.unpack;
+
                 for use_scalar in [false, true] {
                     let mut actual = input.clone();
                     let mut workspace = plan.workspace(rows).unwrap();

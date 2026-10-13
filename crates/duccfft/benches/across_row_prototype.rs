@@ -7,7 +7,7 @@ mod across_row;
 use std::hint::black_box;
 use std::time::Instant;
 
-use across_row::AcrossRowPlan;
+use across_row::{AcrossRowPlan, ExecutionPhases};
 use duccfft::ComplexFftPlan;
 use num_complex::Complex64;
 use rustfft::{Fft, FftPlanner};
@@ -182,10 +182,45 @@ fn run_setup(process_sample: &str) {
     }
 }
 
+fn run_phases(process_sample: &str) {
+    println!("process_sample,n,rows,direction,pair,phase,ns_per_transform");
+    for &len in LENGTHS {
+        let plan = AcrossRowPlan::new(len).expect("across-row plan");
+        for &rows in ROW_COUNTS {
+            let source = source(len, rows);
+            let mut workspace = plan.workspace(rows).expect("across-row workspace");
+            for &(direction, inverse) in &[("forward", false), ("inverse", true)] {
+                for pair in 0..PAIRS {
+                    let mut values = source.clone();
+                    let phases: ExecutionPhases = plan
+                        .execute_profiled(&mut values, &mut workspace, inverse)
+                        .expect("profiled across-row execution");
+                    black_box(&values);
+                    for (name, duration) in [
+                        ("pack", phases.pack),
+                        ("butterflies", phases.transform),
+                        ("unpack", phases.unpack),
+                    ] {
+                        println!(
+                            "{process_sample},{len},{rows},{direction},{pair},{name},{:.3}",
+                            duration.as_nanos() as f64 / rows as f64
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
 fn main() {
     let process_sample = std::env::var("DUCCFFT_PROCESS_SAMPLE").unwrap_or_else(|_| "local".into());
-    if std::env::args().any(|argument| argument == "setup") {
+    let arguments: Vec<_> = std::env::args().collect();
+    if arguments.iter().any(|argument| argument == "setup") {
         run_setup(&process_sample);
+        return;
+    }
+    if arguments.iter().any(|argument| argument == "phases") {
+        run_phases(&process_sample);
         return;
     }
     println!(
