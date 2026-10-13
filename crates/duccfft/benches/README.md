@@ -25,6 +25,8 @@ inputs as `f32_real_simd.rs`, runs one transform and 32 independent rows, and
 records seven timed samples per operation plus plan and scratch setup. Set
 `DUCCFFT_DUCC_VECTORIZE=1` to select DUCC's vectorized planner passes. Record
 that setting and the compiler flags because they change the reference path.
+The input helpers preserve the Rust f32 rounding sequence even when the native
+compiler can contract arithmetic in DUCC's transform kernels.
 
 The RustFFT baseline uses reusable plans and scratch. Its real adapter packs
 even real inputs into a half-length complex transform and uses a full complex

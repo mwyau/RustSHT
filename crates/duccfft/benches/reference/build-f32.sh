@@ -12,6 +12,10 @@ if [[ "$actual_commit" != "$expected_commit" ]]; then
     printf 'DUCC checkout is %s; expected %s\n' "$actual_commit" "$expected_commit" >&2
     exit 2
 fi
+if ! git -C "$DUCC_SRC" diff --quiet HEAD --; then
+    printf 'DUCC checkout has tracked source changes; refusing a mixed-revision build\n' >&2
+    exit 2
+fi
 
 build_dir=${DUCCFFT_BUILD_DIR:-/tmp/duccfft-reference-f32}
 mkdir -p "$build_dir"

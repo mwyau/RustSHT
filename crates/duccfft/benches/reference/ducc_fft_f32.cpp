@@ -22,18 +22,21 @@ constexpr std::size_t sample_count = 7;
 
 float real_value(std::size_t i) {
   const double x = static_cast<double>(i + 1);
-  return static_cast<float>(std::sin(0.173 * x)) +
-         0.25f * static_cast<float>(std::cos(0.113 * (x + 1.0)));
+  volatile float sine = static_cast<float>(std::sin(0.173 * x));
+  volatile float cosine = static_cast<float>(std::cos(0.113 * (x + 1.0)));
+  volatile float scaled_cosine = 0.25f * cosine;
+  return sine + scaled_cosine;
 }
 
 Complex spectrum_value(std::size_t k, std::size_t n, std::size_t row) {
   if (k == 0 || ((n & 1U) == 0 && k == n / 2)) {
-    return {0.4f + 0.01f * static_cast<float>(k) +
-                0.003f * static_cast<float>(row),
-            0.0f};
+    volatile float k_term = 0.01f * static_cast<float>(k);
+    volatile float row_term = 0.003f * static_cast<float>(row);
+    volatile float base_and_k = 0.4f + k_term;
+    return {base_and_k + row_term, 0.0f};
   }
-  const double x = static_cast<double>(k + 1) +
-                   static_cast<double>(row) * 0.37;
+  volatile double row_offset = static_cast<double>(row) * 0.37;
+  const double x = static_cast<double>(k + 1) + row_offset;
   return {static_cast<float>(0.3 * std::sin(0.19 * x)),
           static_cast<float>(0.2 * std::cos(0.07 * (x + 1.0)))};
 }
@@ -98,10 +101,24 @@ double scratch_allocation_ns(std::size_t count) {
          static_cast<double>(repetitions);
 }
 
+double work_allocation_ns(std::size_t count) {
+  volatile std::size_t observed = 0;
+  constexpr std::size_t repetitions = 20;
+  const auto begin = Clock::now();
+  for (std::size_t i = 0; i < repetitions; ++i) {
+    std::vector<float> work(count);
+    observed = observed + work.size();
+  }
+  const auto end = Clock::now();
+  (void)observed;
+  return std::chrono::duration<double, std::nano>(end - begin).count() /
+         static_cast<double>(repetitions);
+}
+
 struct Runner {
   Runner(std::size_t length, std::size_t row_count, bool use_vectorize)
       : n(length), rows(row_count), plan(n, use_vectorize), scratch(plan.bufsize()),
-        data(rows * n), real_input(rows * n), spectra(rows * bins(n)),
+        data(n), real_input(rows * n), spectra(rows * bins(n)),
         complex_output(rows * bins(n)), real_output(rows * n) {
     for (std::size_t row = 0; row < rows; ++row) {
       for (std::size_t i = 0; i < n; ++i)
@@ -113,7 +130,7 @@ struct Runner {
 
   void forward() {
     for (std::size_t row = 0; row < rows; ++row) {
-      float* packed = data.data() + row * n;
+      float* packed = data.data();
       std::copy(real_input.data() + row * n,
                 real_input.data() + (row + 1) * n, packed);
       plan.exec_copyback(packed, scratch.data(), 1.0f, true, 1);
@@ -123,7 +140,7 @@ struct Runner {
 
   void inverse() {
     for (std::size_t row = 0; row < rows; ++row) {
-      float* packed = data.data() + row * n;
+      float* packed = data.data();
       pack(spectra.data() + row * bins(n), n, packed);
       plan.exec_copyback(packed, scratch.data(), 1.0f / static_cast<float>(n),
                          false, 1);
@@ -170,6 +187,7 @@ void benchmark(std::size_t n, std::size_t rows, const std::string& process) {
       plan_creation_ns<ducc0::pocketfft_r<float>>(n, use_vectorize);
   Runner runner(n, rows, use_vectorize);
   const double scratch_ns = scratch_allocation_ns(runner.plan.bufsize());
+  const double work_ns = work_allocation_ns(n);
   const std::size_t repeats = rows == 1 ? std::max<std::size_t>(262144 / n, 16)
                                         : std::max<std::size_t>((262144 / n) / rows, 1);
 
@@ -189,7 +207,8 @@ void benchmark(std::size_t n, std::size_t rows, const std::string& process) {
                 << ',' << rows << ',' << repeats << ',' << sample << ','
                 << (use_vectorize ? 1 : 0) << ','
                 << plan_ns << ',' << scratch_ns << ','
-                << runner.scratch.size() * sizeof(float) << ',' << ns << ','
+                << runner.scratch.size() * sizeof(float) << ',' << work_ns
+                << ',' << runner.data.size() * sizeof(float) << ',' << ns << ','
                 << check << '\n';
     }
   }
@@ -208,7 +227,8 @@ int main(int argc, char** argv) {
                                     ? std::getenv("DUCCFFT_PROCESS_SAMPLE")
                                     : "0";
     std::cout << "process_sample,build,mode,n,rows,repeats,sample,vectorize,"
-                 "plan_ns,scratch_alloc_ns,scratch_bytes,call_ns,checksum\n";
+                 "plan_ns,scratch_alloc_ns,plan_scratch_bytes,work_alloc_ns,"
+                 "work_bytes,call_ns,checksum\n";
     benchmark(n, 1, process);
     benchmark(n, batch_rows, process);
   } catch (const std::exception& error) {
