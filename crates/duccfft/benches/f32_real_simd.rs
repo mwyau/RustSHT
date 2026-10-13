@@ -53,25 +53,28 @@ struct RustFftRealPlan {
 
 impl RustFftRealPlan {
     fn new(n: usize) -> Self {
-        assert!(n.is_multiple_of(2));
-        let half = n / 2;
+        let transform_len = if n.is_multiple_of(2) { n / 2 } else { n };
         let mut planner = FftPlanner::<f32>::new();
-        let forward = planner.plan_fft_forward(half);
-        let inverse = planner.plan_fft_inverse(half);
+        let forward = planner.plan_fft_forward(transform_len);
+        let inverse = planner.plan_fft_inverse(transform_len);
         let scratch_len = forward
             .get_inplace_scratch_len()
             .max(inverse.get_inplace_scratch_len());
-        let twiddles = (0..=half)
-            .map(|k| {
-                let angle = -std::f64::consts::PI * k as f64 / half as f64;
-                Complex32::from_polar(1.0, angle as f32)
-            })
-            .collect();
+        let twiddles = if n.is_multiple_of(2) {
+            (0..=transform_len)
+                .map(|k| {
+                    let angle = -std::f64::consts::PI * k as f64 / transform_len as f64;
+                    Complex32::from_polar(1.0, angle as f32)
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
         Self {
             n,
             forward,
             inverse,
-            transform: vec![Complex32::new(0.0, 0.0); half],
+            transform: vec![Complex32::new(0.0, 0.0); transform_len],
             scratch: vec![Complex32::new(0.0, 0.0); scratch_len],
             twiddles,
         }
@@ -79,42 +82,67 @@ impl RustFftRealPlan {
 
     #[allow(clippy::chunks_exact_to_as_chunks)]
     fn forward(&mut self, input: &[f32], output: &mut [Complex32]) {
-        for (value, pair) in self.transform.iter_mut().zip(input.chunks_exact(2)) {
-            *value = Complex32::new(pair[0], pair[1]);
+        if self.n.is_multiple_of(2) {
+            for (value, pair) in self.transform.iter_mut().zip(input.chunks_exact(2)) {
+                *value = Complex32::new(pair[0], pair[1]);
+            }
+        } else {
+            for (value, &sample) in self.transform.iter_mut().zip(input) {
+                *value = Complex32::new(sample, 0.0);
+            }
         }
         self.forward
             .process_with_scratch(&mut self.transform, &mut self.scratch);
         let half = self.n / 2;
-        for (k, result) in output.iter_mut().enumerate() {
-            let z = self.transform[k % half];
-            let mirror = self.transform[(half - k % half) % half].conj();
-            let even = (z + mirror) * 0.5;
-            let odd = Complex32::new(0.0, -0.5) * self.twiddles[k] * (z - mirror);
-            *result = even + odd;
+        if self.n.is_multiple_of(2) {
+            for (k, result) in output.iter_mut().enumerate() {
+                let z = self.transform[k % half];
+                let mirror = self.transform[(half - k % half) % half].conj();
+                let even = (z + mirror) * 0.5;
+                let odd = Complex32::new(0.0, -0.5) * self.twiddles[k] * (z - mirror);
+                *result = even + odd;
+            }
+            output[half].im = 0.0;
+        } else {
+            output.copy_from_slice(&self.transform[..output.len()]);
         }
         output[0].im = 0.0;
-        output[half].im = 0.0;
     }
 
     #[allow(clippy::chunks_exact_to_as_chunks)]
     fn inverse(&mut self, input: &[Complex32], output: &mut [f32]) {
         let half = self.n / 2;
-        for k in 0..half {
-            let a = input[k];
-            let b = if k == 0 {
-                input[half]
-            } else {
-                input[half - k].conj()
-            };
-            self.transform[k] =
-                (a + b) * 0.5 + Complex32::new(0.0, 0.5) * self.twiddles[k].conj() * (a - b);
+        if self.n.is_multiple_of(2) {
+            for k in 0..half {
+                let a = input[k];
+                let b = if k == 0 {
+                    input[half]
+                } else {
+                    input[half - k].conj()
+                };
+                self.transform[k] =
+                    (a + b) * 0.5 + Complex32::new(0.0, 0.5) * self.twiddles[k].conj() * (a - b);
+            }
+        } else {
+            self.transform[0] = Complex32::new(input[0].re, 0.0);
+            for (k, &value) in input.iter().enumerate().take(half + 1).skip(1) {
+                self.transform[k] = value;
+                self.transform[self.n - k] = value.conj();
+            }
         }
         self.inverse
             .process_with_scratch(&mut self.transform, &mut self.scratch);
-        let scale = 1.0 / half as f32;
-        for (pair, value) in output.chunks_exact_mut(2).zip(&self.transform) {
-            pair[0] = value.re * scale;
-            pair[1] = value.im * scale;
+        if self.n.is_multiple_of(2) {
+            let scale = 1.0 / half as f32;
+            for (pair, value) in output.chunks_exact_mut(2).zip(&self.transform) {
+                pair[0] = value.re * scale;
+                pair[1] = value.im * scale;
+            }
+        } else {
+            let scale = 1.0 / self.n as f32;
+            for (sample, value) in output.iter_mut().zip(&self.transform) {
+                *sample = value.re * scale;
+            }
         }
     }
 }
@@ -185,6 +213,13 @@ fn benchmark(n: usize, process_sample: &str) {
     let mut ducc_workspace = ducc.workspace().expect("DUCCFFT workspace");
     let rustfft_setup_ns = median_creation_ns(|| RustFftRealPlan::new(n), 20);
     let mut rustfft = RustFftRealPlan::new(n);
+    let ducc_scratch_bytes = ducc_workspace
+        .scratch_bytes()
+        .expect("DUCCFFT scratch size");
+    let rustfft_scratch_bytes = rustfft.scratch.len() * std::mem::size_of::<Complex32>();
+    let rustfft_adapter_bytes =
+        (rustfft.transform.len() + rustfft.scratch.len() + rustfft.twiddles.len())
+            * std::mem::size_of::<Complex32>();
     let bins = ducc.spectrum_len();
     let input: Vec<_> = (0..n).map(real_value).collect();
     let spectrum: Vec<_> = (0..bins).map(|k| spectrum_value(k, n)).collect();
@@ -296,7 +331,7 @@ fn benchmark(n: usize, process_sample: &str) {
     compare(ducc_output.iter().copied(), rust_output.iter().copied(), n);
     for (mode, pair, first, ducc_ns, rust_ns, ducc_checksum, rust_checksum) in rows {
         println!(
-            "{process_sample},{mode},{n},{repeats},{pair},{first},{ducc_plan_ns:.3},{ducc_workspace_ns:.3},{rustfft_setup_ns:.3},{ducc_ns:.3},{rust_ns:.3},{ducc_checksum:.12e},{rust_checksum:.12e}"
+            "{process_sample},{mode},{n},{repeats},{pair},{first},{ducc_plan_ns:.3},{ducc_workspace_ns:.3},{ducc_scratch_bytes},{rustfft_setup_ns:.3},{rustfft_scratch_bytes},{rustfft_adapter_bytes},{ducc_ns:.3},{rust_ns:.3},{ducc_checksum:.12e},{rust_checksum:.12e}"
         );
     }
 }
@@ -313,6 +348,13 @@ fn benchmark_batch32(n: usize, process_sample: &str) {
     let mut ducc_workspace = ducc.workspace().expect("DUCCFFT workspace");
     let rustfft_setup_ns = median_creation_ns(|| RustFftRealPlan::new(n), 20);
     let mut rustfft = RustFftRealPlan::new(n);
+    let ducc_scratch_bytes = ducc_workspace
+        .scratch_bytes()
+        .expect("DUCCFFT scratch size");
+    let rustfft_scratch_bytes = rustfft.scratch.len() * std::mem::size_of::<Complex32>();
+    let rustfft_adapter_bytes =
+        (rustfft.transform.len() + rustfft.scratch.len() + rustfft.twiddles.len())
+            * std::mem::size_of::<Complex32>();
     let bins = ducc.spectrum_len();
     let input: Vec<_> = (0..ROWS)
         .flat_map(|row| (0..n).map(move |index| real_value(row * n + index)))
@@ -478,7 +520,7 @@ fn benchmark_batch32(n: usize, process_sample: &str) {
     compare(ducc_output.iter().copied(), rust_output.iter().copied(), n);
     for (mode, pair, first, ducc_ns, rust_ns, ducc_checksum, rust_checksum) in rows {
         println!(
-            "{process_sample},{mode},{n},{repeats},{pair},{first},{ducc_plan_ns:.3},{ducc_workspace_ns:.3},{rustfft_setup_ns:.3},{ducc_ns:.3},{rust_ns:.3},{ducc_checksum:.12e},{rust_checksum:.12e}"
+            "{process_sample},{mode},{n},{repeats},{pair},{first},{ducc_plan_ns:.3},{ducc_workspace_ns:.3},{ducc_scratch_bytes},{rustfft_setup_ns:.3},{rustfft_scratch_bytes},{rustfft_adapter_bytes},{ducc_ns:.3},{rust_ns:.3},{ducc_checksum:.12e},{rust_checksum:.12e}"
         );
     }
 }
@@ -495,7 +537,7 @@ fn main() {
         lengths
     };
     println!(
-        "process_sample,mode,n,repeats,pair,first,duccfft_plan_ns,duccfft_workspace_ns,rustfft_setup_ns,duccfft_ns,rustfft_ns,duccfft_checksum,rustfft_checksum"
+        "process_sample,mode,n,repeats,pair,first,duccfft_plan_ns,duccfft_workspace_ns,duccfft_scratch_bytes,rustfft_setup_ns,rustfft_scratch_bytes,rustfft_adapter_bytes,duccfft_ns,rustfft_ns,duccfft_checksum,rustfft_checksum"
     );
     for n in lengths {
         benchmark(n, &process_sample);

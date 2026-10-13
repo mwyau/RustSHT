@@ -1151,6 +1151,29 @@ fn main() {
                 }
             }
         }
+        Some("bench-native-c2c") => {
+            println!(
+                "mode,n,plan_ns,workspace_ns,workspace_bytes,public_operation_ns,batch_operation_ns,batch_count,checksum"
+            );
+            let n = args
+                .next()
+                .expect("length is required")
+                .parse()
+                .expect("length must be an integer");
+            let row_counts: Vec<usize> = args
+                .map(|value| value.parse().expect("row count must be an integer"))
+                .collect();
+            let row_counts = if row_counts.is_empty() {
+                vec![1, BATCH_COUNT]
+            } else {
+                row_counts
+            };
+            for mode in [Mode::ComplexForward, Mode::ComplexInverse] {
+                for &rows in &row_counts {
+                    benchmark_native_complex(mode, n, rows);
+                }
+            }
+        }
         Some("bench-native-batch-api") => {
             println!(
                 "process_sample,mode,n,rows,pair,first,single_ns_per_transform,batch_api_ns_per_transform,single_checksum,batch_checksum"
@@ -1220,7 +1243,7 @@ fn main() {
         }
         _ => {
             eprintln!(
-                "usage: rustfft-bench dump-all | dump-native-all | dump MODE N | dump-native MODE N | bench [N ...] | bench-scalar [N ...] | bench-sht | bench-real-multipass [N ...] | bench-native [N ...] | bench-native-real N [BATCH ...] | bench-native-batch-api N [BATCH ...] | bench-profile-real-inverse N normal|high [ITERATIONS] | bench-profile-complex N forward|inverse [ITERATIONS]"
+                "usage: rustfft-bench dump-all | dump-native-all | dump MODE N | dump-native MODE N | bench [N ...] | bench-scalar [N ...] | bench-sht | bench-real-multipass [N ...] | bench-native [N ...] | bench-native-real N [BATCH ...] | bench-native-c2c N [BATCH ...] | bench-native-batch-api N [BATCH ...] | bench-profile-real-inverse N normal|high [ITERATIONS] | bench-profile-complex N forward|inverse [ITERATIONS]"
             );
             eprintln!("no benchmark was run; use `bench` to start the workload");
         }

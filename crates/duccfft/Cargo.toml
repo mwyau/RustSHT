@@ -46,3 +46,8 @@ harness = false
 [[bench]]
 name = "across_row_prototype"
 harness = false
+
+[[bench]]
+name = "rader_real_prototype"
+path = "benches/prototypes/rader_real.rs"
+harness = false
