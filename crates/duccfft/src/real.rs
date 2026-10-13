@@ -477,8 +477,10 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
             return Ok(());
         }
 
+        let defer_inverse_normalization = inverse_normalization_is_safe(spectrum, self.len);
         RealInverseExecutor {
             total_len: self.len,
+            defer_inverse_normalization,
             roots: &self.roots,
             bluestein_plans: &self.bluestein,
             bluestein_buffer: &mut workspace.bluestein_buffer,
@@ -499,6 +501,12 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
             &self.factors,
             &mut workspace.scratch,
         );
+        if defer_inverse_normalization {
+            let normalization = scalar::<T>(1.0 / self.len as f64);
+            for value in output {
+                *value = *value * normalization;
+            }
+        }
         Ok(())
     }
 }
@@ -658,6 +666,7 @@ impl<T: Float + FromPrimitive> RealForwardExecutor<'_, T> {
 
 struct RealInverseExecutor<'a, T> {
     total_len: usize,
+    defer_inverse_normalization: bool,
     roots: &'a [Complex<T>],
     bluestein_plans: &'a [Option<BluesteinPlan<T>>],
     bluestein_buffer: &'a mut [Complex<T>],
@@ -685,7 +694,11 @@ impl<T: Float + FromPrimitive> RealInverseExecutor<'_, T> {
         let radix = factors[0];
         let child_len = len / radix;
         let child_bins = child_len / 2 + 1;
-        let radix_scale = scalar::<T>(1.0 / radix as f64);
+        let radix_scale = if self.defer_inverse_normalization {
+            T::one()
+        } else {
+            scalar::<T>(1.0 / radix as f64)
+        };
         let radix_value = scalar::<T>(radix as f64);
         let root_stride = self.total_len / len;
         // The half-spectrum limits `frequency` further, so the branch and
@@ -701,10 +714,13 @@ impl<T: Float + FromPrimitive> RealInverseExecutor<'_, T> {
                 for branch_frequency in 0..radix {
                     let full_frequency = frequency + branch_frequency * child_len;
                     let source = full_spectrum_value(spectrum, full_frequency, len);
-                    max_component = max_component.max(source.re.abs()).max(source.im.abs());
+                    if !self.defer_inverse_normalization {
+                        max_component = max_component.max(source.re.abs()).max(source.im.abs());
+                    }
                     self.radix_input[branch_frequency] = source;
                 }
-                let prescale = max_component > overflow_threshold;
+                let prescale =
+                    !self.defer_inverse_normalization && max_component > overflow_threshold;
                 if prescale {
                     for value in &mut self.radix_input[..radix] {
                         *value = *value * radix_scale;
@@ -787,14 +803,17 @@ impl<T: Float + FromPrimitive> RealInverseExecutor<'_, T> {
                         let full_frequency = frequency + branch_frequency * child_len;
                         let source = full_spectrum_value(spectrum, full_frequency, len);
                         *slot = source;
-                        max_component = max_component.max(source.re.abs()).max(source.im.abs());
-                        all_finite &= source.re.is_finite() && source.im.is_finite();
+                        if !self.defer_inverse_normalization {
+                            max_component = max_component.max(source.re.abs()).max(source.im.abs());
+                            all_finite &= source.re.is_finite() && source.im.is_finite();
+                        }
                     }
                     // Four-radix headroom bounds the radix sum and its complex
                     // root multiplication. The unscaled butterfly also avoids
                     // losing small terms before cancellation. Groups without
                     // this bound keep the residual-corrected path.
-                    let fast_path = all_finite && max_component <= overflow_threshold;
+                    let fast_path = self.defer_inverse_normalization
+                        || (all_finite && max_component <= overflow_threshold);
                     if fast_path {
                         small_radix_dft_all(&sources, radix, true, &mut transformed);
                         for branch in 0..radix {
@@ -832,10 +851,13 @@ impl<T: Float + FromPrimitive> RealInverseExecutor<'_, T> {
                         let full_frequency = frequency + branch_frequency * child_len;
                         let source = full_spectrum_value(spectrum, full_frequency, len);
                         self.radix_input[branch_frequency] = source;
-                        max_component = max_component.max(source.re.abs()).max(source.im.abs());
-                        all_finite &= source.re.is_finite() && source.im.is_finite();
+                        if !self.defer_inverse_normalization {
+                            max_component = max_component.max(source.re.abs()).max(source.im.abs());
+                            all_finite &= source.re.is_finite() && source.im.is_finite();
+                        }
                     }
-                    let fast_path = all_finite && max_component <= overflow_threshold;
+                    let fast_path = self.defer_inverse_normalization
+                        || (all_finite && max_component <= overflow_threshold);
                     if fast_path {
                         let first = self.radix_input[0];
                         for branch_frequency in 1..=(radix - 1) / 2 {
@@ -1086,6 +1108,27 @@ fn complex_prescale_residual<T: Float>(
 
 fn scalar<T: FromPrimitive>(value: f64) -> T {
     T::from_f64(value).expect("f32 and f64 represent positive radix scales")
+}
+
+fn inverse_normalization_is_safe<T: Float + FromPrimitive>(
+    spectrum: &[Complex<T>],
+    len: usize,
+) -> bool {
+    let nyquist = len / 2;
+    let mut maximum = T::zero();
+    for (index, value) in spectrum.iter().enumerate() {
+        if !value.re.is_finite() {
+            return false;
+        }
+        maximum = maximum.max(value.re.abs());
+        if index != 0 && index != nyquist {
+            if !value.im.is_finite() {
+                return false;
+            }
+            maximum = maximum.max(value.im.abs());
+        }
+    }
+    maximum <= T::max_value() / scalar::<T>(4.0 * len as f64)
 }
 
 fn prescale_residual<T: Float>(original: T, reconstructed: T) -> T {

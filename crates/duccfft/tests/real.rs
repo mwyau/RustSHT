@@ -493,24 +493,28 @@ fn real_complexify_inverse_preserves_roundable_subnormal_dc() {
     let plan64 = RealFftPlan::<f64>::new(n).unwrap();
     let mut workspace64 = plan64.workspace().unwrap();
     let tiny64 = f64::from_bits(1);
-    let mut spectrum64 = vec![Complex::new(0.0, 0.0); plan64.spectrum_len()];
-    spectrum64[0].re = 540.0 * tiny64;
-    let mut output64 = vec![0.0; n];
-    plan64
-        .inverse(&spectrum64, &mut output64, &mut workspace64)
-        .unwrap();
-    assert_eq!(output64, vec![tiny64; n]);
+    for dc_units in [540.0, 514.0] {
+        let mut spectrum64 = vec![Complex::new(0.0, 0.0); plan64.spectrum_len()];
+        spectrum64[0].re = dc_units * tiny64;
+        let mut output64 = vec![0.0; n];
+        plan64
+            .inverse(&spectrum64, &mut output64, &mut workspace64)
+            .unwrap();
+        assert_eq!(output64, vec![tiny64; n], "f64 DC units: {dc_units}");
+    }
 
     let plan32 = RealFftPlan::<f32>::new(n).unwrap();
     let mut workspace32 = plan32.workspace().unwrap();
     let tiny32 = f32::from_bits(1);
-    let mut spectrum32 = vec![Complex::new(0.0, 0.0); plan32.spectrum_len()];
-    spectrum32[0].re = 540.0 * tiny32;
-    let mut output32 = vec![0.0; n];
-    plan32
-        .inverse(&spectrum32, &mut output32, &mut workspace32)
-        .unwrap();
-    assert_eq!(output32, vec![tiny32; n]);
+    for dc_units in [540.0_f32, 514.0] {
+        let mut spectrum32 = vec![Complex::new(0.0, 0.0); plan32.spectrum_len()];
+        spectrum32[0].re = dc_units * tiny32;
+        let mut output32 = vec![0.0; n];
+        plan32
+            .inverse(&spectrum32, &mut output32, &mut workspace32)
+            .unwrap();
+        assert_eq!(output32, vec![tiny32; n], "f32 DC units: {dc_units}");
+    }
 }
 
 #[test]

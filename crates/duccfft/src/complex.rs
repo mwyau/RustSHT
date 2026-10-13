@@ -80,6 +80,7 @@ struct PassExecution<'a, T> {
     roots: &'a [Complex<T>],
     total_len: usize,
     direction: Direction,
+    defer_inverse_normalization: bool,
     inverse_output_scale: T,
     radix_input: &'a mut [Complex<T>],
     radix_output: &'a mut [Complex<T>],
@@ -246,6 +247,8 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
         check_len("values", self.data.len, values.len())?;
         check_len("workspace", self.data.len, workspace.len)?;
 
+        let defer_inverse_normalization =
+            direction == Direction::Inverse && inverse_normalization_is_safe(values, self.data.len);
         let mut current_is_values = true;
         for (stage, pass) in self.data.passes.iter().enumerate() {
             let blue = self.data.bluestein[stage].as_ref();
@@ -253,10 +256,15 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
                 roots: &self.data.roots,
                 total_len: self.data.len,
                 direction,
+                defer_inverse_normalization,
                 inverse_output_scale: if direction == Direction::Inverse
                     && stage + 1 == self.data.passes.len()
                 {
-                    inverse_output_scale
+                    if defer_inverse_normalization {
+                        inverse_output_scale * inverse_scale::<T>(self.data.len)
+                    } else {
+                        inverse_output_scale
+                    }
                 } else {
                     T::one()
                 },
@@ -539,7 +547,7 @@ fn execute_first_pass_in_place_inner<const R: usize, T: Float + FromPrimitive>(
     }
     let root_stride = execution.total_len / radix;
     let inverse = execution.direction == Direction::Inverse;
-    let stage_scale = if inverse {
+    let stage_scale = if inverse && !execution.defer_inverse_normalization {
         inverse_scale::<T>(radix)
     } else {
         T::one()
@@ -554,12 +562,13 @@ fn execute_first_pass_in_place_inner<const R: usize, T: Float + FromPrimitive>(
         for (branch, slot) in execution.radix_input.iter_mut().enumerate().take(radix) {
             let source_index = inner + pass.ido * branch;
             let value = data[source_index];
-            if inverse {
+            if inverse && !execution.defer_inverse_normalization {
                 max_component = max_component.max(value.re.abs()).max(value.im.abs());
             }
             *slot = value;
         }
-        let prescale = inverse && max_component > overflow_threshold;
+        let prescale =
+            inverse && !execution.defer_inverse_normalization && max_component > overflow_threshold;
         if prescale {
             for value in &mut execution.radix_input[..radix] {
                 *value = *value * stage_scale;
@@ -652,7 +661,7 @@ fn execute_pass_inner<const R: usize, T: Float + FromPrimitive>(
     }
     let radix_root_stride = execution.total_len / radix;
     let inverse = execution.direction == Direction::Inverse;
-    let stage_scale = if inverse {
+    let stage_scale = if inverse && !execution.defer_inverse_normalization {
         inverse_scale::<T>(radix)
     } else {
         T::one()
@@ -672,12 +681,14 @@ fn execute_pass_inner<const R: usize, T: Float + FromPrimitive>(
             for (branch, slot) in execution.radix_input.iter_mut().enumerate().take(radix) {
                 let source_index = inner + pass.ido * (branch + radix * outer);
                 let value = input[source_index];
-                if inverse {
+                if inverse && !execution.defer_inverse_normalization {
                     max_component = max_component.max(value.re.abs()).max(value.im.abs());
                 }
                 *slot = value;
             }
-            let prescale = inverse && max_component > overflow_threshold;
+            let prescale = inverse
+                && !execution.defer_inverse_normalization
+                && max_component > overflow_threshold;
             if prescale {
                 for value in &mut execution.radix_input[..radix] {
                     *value = *value * stage_scale;
@@ -743,7 +754,7 @@ fn execute_first_pass_direct_radix<const R: usize, T: Float + FromPrimitive>(
     let mut transformed = [zero; 8];
     let mut correction = [zero; 8];
     let inverse = execution.direction == Direction::Inverse;
-    let stage_scale = if inverse {
+    let stage_scale = if inverse && !execution.defer_inverse_normalization {
         inverse_scale::<T>(radix)
     } else {
         T::one()
@@ -757,12 +768,13 @@ fn execute_first_pass_direct_radix<const R: usize, T: Float + FromPrimitive>(
         let mut max_component = T::zero();
         for (branch, slot) in inputs.iter_mut().enumerate().take(radix) {
             let value = data[inner + pass.ido * branch];
-            if inverse {
+            if inverse && !execution.defer_inverse_normalization {
                 max_component = max_component.max(value.re.abs()).max(value.im.abs());
             }
             *slot = value;
         }
-        let prescale = inverse && max_component > overflow_threshold;
+        let prescale =
+            inverse && !execution.defer_inverse_normalization && max_component > overflow_threshold;
         if prescale {
             for value in &mut inputs[..radix] {
                 *value = *value * stage_scale;
@@ -836,7 +848,7 @@ fn execute_direct_radix_pass<const R: usize, T: Float + FromPrimitive>(
     let mut transformed = [zero; 8];
     let mut correction = [zero; 8];
     let inverse = execution.direction == Direction::Inverse;
-    let stage_scale = if inverse {
+    let stage_scale = if inverse && !execution.defer_inverse_normalization {
         inverse_scale::<T>(radix)
     } else {
         T::one()
@@ -852,12 +864,14 @@ fn execute_direct_radix_pass<const R: usize, T: Float + FromPrimitive>(
             let mut max_component = T::zero();
             for (branch, slot) in inputs.iter_mut().enumerate().take(radix) {
                 let value = input[inner + pass.ido * (branch + radix * outer)];
-                if inverse {
+                if inverse && !execution.defer_inverse_normalization {
                     max_component = max_component.max(value.re.abs()).max(value.im.abs());
                 }
                 *slot = value;
             }
-            let prescale = inverse && max_component > overflow_threshold;
+            let prescale = inverse
+                && !execution.defer_inverse_normalization
+                && max_component > overflow_threshold;
             if prescale {
                 for value in &mut inputs[..radix] {
                     *value = *value * stage_scale;
@@ -962,6 +976,20 @@ fn prescale_residual<T: Float>(original: T, scaled: T, radix: T) -> T {
     } else {
         T::zero()
     }
+}
+
+fn inverse_normalization_is_safe<T: Float + FromPrimitive>(
+    values: &[Complex<T>],
+    len: usize,
+) -> bool {
+    let mut maximum = T::zero();
+    for value in values {
+        if !value.re.is_finite() || !value.im.is_finite() {
+            return false;
+        }
+        maximum = maximum.max(value.re.abs()).max(value.im.abs());
+    }
+    maximum <= T::max_value() / scalar::<T>(4.0 * len as f64)
 }
 
 fn radix_transform<T: Float + FromPrimitive>(
