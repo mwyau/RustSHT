@@ -14,7 +14,8 @@ request the optional vector pass and vectorization-specific real complexify
 selection; the reference report records this flag. The binary converts DUCC's
 FFTPACK real packing to and from the public nonnegative
 complex spectrum before comparisons. C2C, R2C, and C2R comparisons use an
-unnormalized forward transform and an inverse scaled by `1/n`. `reference/build-f32.sh` builds `ducc_fft_f32.cpp` against the same pinned
+unnormalized forward transform and an inverse scaled by `1/n`. Use `dump MODE N` on the C++ binary and `dump-native MODE N` in the Rust
+benchmark harness to compare a focused length outside the default dump set. `reference/build-f32.sh` builds `ducc_fft_f32.cpp` against the same pinned
 revision. Its portable default is `-O3 -DNDEBUG`; set
 `CXXFLAGS='-O3 -DNDEBUG -march=native'` for a separately labelled native
 build. The f32 harness uses the same f32-rounded real and Hermitian-spectrum

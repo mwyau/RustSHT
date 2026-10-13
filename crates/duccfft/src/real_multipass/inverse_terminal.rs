@@ -27,6 +27,22 @@ pub(super) fn execute<T: Float + FromPrimitive>(
                 second[k] = (src[0] - src[1]) * scale;
             }
         }
+        3 => {
+            let (branch0, tail) = output.split_at_mut(pass.l1);
+            let (branch1, branch2) = tail.split_at_mut(pass.l1);
+            let two = scalar::<T>(2.0);
+            let taur = scalar::<T>(-0.5);
+            let taui = scalar::<T>(0.866_025_403_784_438_6);
+            let (groups, _) = input.as_chunks::<3>();
+            for (k, src) in groups.iter().enumerate() {
+                let tr2 = two * src[1];
+                let cr2 = src[0] + taur * tr2;
+                let ci3 = two * taui * src[2];
+                branch0[k] = (src[0] + tr2) * scale;
+                branch1[k] = (cr2 - ci3) * scale;
+                branch2[k] = (cr2 + ci3) * scale;
+            }
+        }
         4 => {
             let (branch0, tail) = output.split_at_mut(pass.l1);
             let (branch1, tail) = tail.split_at_mut(pass.l1);
@@ -44,6 +60,33 @@ pub(super) fn execute<T: Float + FromPrimitive>(
                 branch3[k] = (tr1 + tr4) * scale;
             }
         }
-        _ => unreachable!("real multipass plan contains only radix 2 and 4"),
+        5 => {
+            let (branch0, tail) = output.split_at_mut(pass.l1);
+            let (branch1, tail) = tail.split_at_mut(pass.l1);
+            let (branch2, tail) = tail.split_at_mut(pass.l1);
+            let (branch3, branch4) = tail.split_at_mut(pass.l1);
+            let two = scalar::<T>(2.0);
+            let tr11 = scalar::<T>(0.309_016_994_374_947_45);
+            let ti11 = scalar::<T>(0.951_056_516_295_153_5);
+            let tr12 = scalar::<T>(-0.809_016_994_374_947_5);
+            let ti12 = scalar::<T>(0.587_785_252_292_473_1);
+            let (groups, _) = input.as_chunks::<5>();
+            for (k, src) in groups.iter().enumerate() {
+                let ti5 = two * src[2];
+                let ti4 = two * src[4];
+                let tr2 = two * src[1];
+                let tr3 = two * src[3];
+                let cr2 = src[0] + tr11 * tr2 + tr12 * tr3;
+                let cr3 = src[0] + tr12 * tr2 + tr11 * tr3;
+                let ci5 = ti11 * ti5 + ti12 * ti4;
+                let ci4 = ti12 * ti5 - ti11 * ti4;
+                branch0[k] = (src[0] + tr2 + tr3) * scale;
+                branch1[k] = (cr2 - ci5) * scale;
+                branch2[k] = (cr3 - ci4) * scale;
+                branch3[k] = (cr3 + ci4) * scale;
+                branch4[k] = (cr2 + ci5) * scale;
+            }
+        }
+        _ => unreachable!("real multipass plan contains only radices 2 through 5"),
     }
 }

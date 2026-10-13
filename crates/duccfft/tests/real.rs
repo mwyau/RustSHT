@@ -48,7 +48,7 @@ fn assert_f64_close(actual: &[f64], expected: &[f64], n: usize) {
         let tolerance = 3.0e-12 * (n as f64).max(expected.abs()).max(1.0);
         assert!(
             (actual - expected).abs() <= tolerance,
-            "mismatch at {index}: actual={actual}, expected={expected}, tolerance={tolerance}"
+            "n={n}, mismatch at {index}: actual={actual}, expected={expected}, tolerance={tolerance}"
         );
     }
 }
@@ -62,7 +62,7 @@ fn assert_complex_f64_close(actual: &[Complex<f64>], expected: &[Complex<f64>], 
                 .max(1.0);
         assert!(
             (actual - expected).norm() <= tolerance,
-            "mismatch at {index}: actual={actual}, expected={expected}, tolerance={tolerance}"
+            "n={n}, mismatch at {index}: actual={actual}, expected={expected}, tolerance={tolerance}"
         );
     }
 }
@@ -240,6 +240,68 @@ fn f32_real_transforms_match_independent_dfts_for_lengths_one_through_sixty_four
         plan.inverse(&independent_spectrum, &mut actual_samples, &mut workspace)
             .unwrap();
         assert_f32_close(&actual_samples, &expected_samples, n);
+    }
+}
+
+#[test]
+fn f64_real_radix3_and_radix5_multipasses_match_independent_dfts() {
+    for n in [75, 125, 225] {
+        let plan = RealFftPlan::<f64>::new(n).unwrap();
+        let mut workspace = plan.workspace().unwrap();
+        let input: Vec<_> = (0..n).map(|index| real_signal(index + 19, n + 5)).collect();
+        let expected_spectrum = direct_r2c_f64(&input);
+        let mut spectrum = vec![Complex::new(0.0, 0.0); plan.spectrum_len()];
+        plan.forward(&input, &mut spectrum, &mut workspace).unwrap();
+        assert_complex_f64_close(&spectrum, &expected_spectrum, n);
+
+        let independent_spectrum: Vec<_> = (0..plan.spectrum_len())
+            .map(|index| {
+                Complex::new(
+                    real_signal(index + 31, n + 7),
+                    0.2 * real_signal(index + 13, n + 11),
+                )
+            })
+            .collect();
+        let expected_samples = direct_c2r_f64(&independent_spectrum, n);
+        let mut actual_samples = vec![0.0; n];
+        plan.inverse(&independent_spectrum, &mut actual_samples, &mut workspace)
+            .unwrap();
+        assert_f64_close(&actual_samples, &expected_samples, n);
+    }
+}
+
+#[test]
+fn f32_real_radix3_and_radix5_multipasses_match_f64_references() {
+    for n in [75, 125, 225] {
+        let plan = RealFftPlan::<f32>::new(n).unwrap();
+        let mut workspace = plan.workspace().unwrap();
+        let input32: Vec<_> = (0..n)
+            .map(|index| real_signal(index + 19, n + 5) as f32)
+            .collect();
+        let input64: Vec<_> = input32.iter().map(|&value| value as f64).collect();
+        let expected_spectrum = direct_r2c_f64(&input64);
+        let mut spectrum = vec![Complex::new(0.0, 0.0); plan.spectrum_len()];
+        plan.forward(&input32, &mut spectrum, &mut workspace)
+            .unwrap();
+        report_f32_spectrum_metrics("radix3_5_r2c", n, &spectrum, &expected_spectrum);
+
+        let spectrum32: Vec<_> = (0..plan.spectrum_len())
+            .map(|index| {
+                Complex::new(
+                    real_signal(index + 31, n + 7) as f32,
+                    (0.2 * real_signal(index + 13, n + 11)) as f32,
+                )
+            })
+            .collect();
+        let spectrum64: Vec<_> = spectrum32
+            .iter()
+            .map(|value| Complex::new(value.re as f64, value.im as f64))
+            .collect();
+        let expected_samples = direct_c2r_f64(&spectrum64, n);
+        let mut actual_samples = vec![0.0; n];
+        plan.inverse(&spectrum32, &mut actual_samples, &mut workspace)
+            .unwrap();
+        report_f32_real_metrics("radix3_5_c2r", &actual_samples, &expected_samples);
     }
 }
 
