@@ -1750,3 +1750,39 @@ A temporary GL cutoff count measured inactive degree-lanes inside mixed blocks a
 The rebuilt Python plan comparison used Python `3.11.15`, NumPy `2.4.6`, and `ducc0==0.41.0` from source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`, with matching inputs and explicit one/eight-thread settings. Three process medians were collected per cell, each with five timed calls. At T511, Rust/DUCC analysis medians were GL `114.767/25.167` ms (1T) and `33.390/3.630` ms (8T), CC `142.243/55.614` and `50.530/8.051`, and F1 `143.861/56.738` and `50.199/7.767`. Relative L2 coefficient errors were `4.115e-14`, `4.328e-14` and `4.313e-14` for GL/CC/F1. Python input copies were `0.07–0.23 ms`, small beside the transform. These are Python-plan comparisons, not the native timing acceptance table.
 
 The focused mixed-block test compares compacted E/B outputs against an all-active reference with excluded Fourier inputs zeroed; it checks a block containing both active and excluded rings. The all-grid scalar-conversion test covers T63/T127/T255 and checks the general recurrence and analysis adjoint. A T511 GL test compares one- and eight-thread output. Release DUCC checks passed for T511 all-grid spin 1/2 and T1023 all-grid exact spin analysis: spin-1 T511 maximum synthesis sample errors were `4.885e-15` (GL), `4.441e-15` (CC) and `4.219e-15` (F1), with maximum analysis coefficient errors `4.934e-18`, `4.216e-18` and `4.318e-18`; at T1023 they were `1.205e-14/1.296e-14/1.193e-14` and `8.784e-18/8.824e-18/8.538e-18`. The full test suites passed: 108 Rust and 10 f32 tests with all features, 103 Rust and 10 f32 tests without default features, and 8 Python tests. Formatting and Clippy with warnings denied passed. Sol's strictly read-only review found no correctness, indexing, cutoff, scratch-ownership or race blocker. It cautioned against attributing all measured gain to the 5–7% inactive degree-lanes; per-path timing is still needed. Retain this whole-transform improvement and continue profiling spin-0/1 paths. No FFT code changed.
+
+### Paired analysis normal-range status handoff (2026-10-13)
+
+The paired recurrence already determines whether every lane in a latitude block is in its ordinary floating-point range before each visitor call. Scalar and spin-1 analysis now pass that status to the f64 paired accumulator. The SIMD reducer still requires the existing `products_safe` bound; a false status or unsafe Fourier product uses the binary-scaled fallback. This removes the per-degree scan of the exponent array. The older visitor adapts the new status callback and ignores the status for synthesis; f32 declines the f64 paired-analysis path as before. No workspace memory changes.
+
+Native timings used `examples/m1b_bench.rs`, reused plans and workspaces, f64, `phi0=0.37`, full `mmax`, and `nphi=2*lmax+3`, with one warm-up and five timed samples per process. Three process runs were pinned to CPUs 0–7 on an AMD Ryzen 9 5950X with Linux `7.0.14-20-pve`, `rustc 1.99.0 (b940084d7 2026-09-28)`, Cargo's default release profile (`opt-level=3`, 16 codegen units, LTO disabled) and runtime AVX2/FMA dispatch; `target-cpu=native` was not enabled. The parent source is `b795fe0`; the candidate removes only the exponent scan and passes the recurrence status. Table entries are one/eight-thread medians in milliseconds, with parent followed by candidate:
+
+| Operation | Bandlimit | GL parent | GL candidate | GL reduction |
+| --- | ---: | ---: | ---: | ---: |
+| Scalar analysis | T63 | `0.187/0.118` | `0.175/0.115` | `6.4%/2.5%` |
+| Scalar analysis | T127 | `1.156/0.618` | `1.105/0.600` | `4.4%/2.9%` |
+| Scalar analysis | T255 | `10.447/3.506` | `9.607/3.203` | `8.0%/8.6%` |
+| Scalar analysis | T511 | `63.795/15.726` | `59.722/14.948` | `6.4%/4.9%` |
+| Scalar analysis | T1023 | `391.024/107.120` | `359.586/102.318` | `8.0%/4.5%` |
+| Spin-1 STANDARD analysis | T63 | `0.486/0.230` | `0.441/0.234` | `9.3%/-1.7%` |
+| Spin-1 STANDARD analysis | T127 | `3.737/1.787` | `3.301/1.782` | `11.7%/0.3%` |
+| Spin-1 STANDARD analysis | T255 | `20.338/6.583` | `17.052/6.153` | `16.2%/6.5%` |
+| Spin-1 STANDARD analysis | T511 | `113.449/31.355` | `92.162/28.520` | `18.8%/9.0%` |
+| Spin-1 STANDARD analysis | T1023 | `800.241/208.272` | `638.046/181.977` | `20.3%/12.6%` |
+
+Each T63 result used seven alternating parent/candidate process runs for scalar analysis and three runs for spin-1. T127–T1023 results used three runs per source. T63 scalar timing ranges overlap at both thread counts. T63 spin-1 and T127 scalar/spin-1 eight-thread ranges overlap; those small changes are inconclusive. The GL ranges at T255 and above do not overlap. T511 CC/F1 results are also parent/candidate medians from three process runs:
+
+| Operation | Grid | Parent 1T/8T (ms) | Candidate 1T/8T (ms) | Reduction 1T/8T |
+| --- | --- | ---: | ---: | ---: |
+| Scalar analysis | CC | `71.732/22.937` | `67.977/22.464` | `5.2%/2.1%` |
+| Scalar analysis | F1 | `73.184/23.597` | `70.007/23.159` | `4.3%/1.9%` |
+| Spin-1 STANDARD analysis | CC | `138.022/46.495` | `115.238/43.106` | `16.5%/7.3%` |
+| Spin-1 STANDARD analysis | F1 | `138.408/47.278` | `116.869/43.543` | `15.6%/7.9%` |
+
+The CC/F1 spin-1 ranges do not overlap at either thread count. Scalar one-thread ranges are separate; scalar eight-thread ranges overlap. A T511 GL synthesis control compared scalar STANDARD, spin-1 STANDARD, spin-1 GRAD_ONLY and scalar DERIV1. Parent/candidate medians were `65.995/22.791` to `65.957/22.825`, `88.589/31.734` to `89.287/31.980`, `89.350/32.035` to `90.200/32.689`, and `90.558/32.868` to `90.582/33.210` ms, respectively. Seven alternating process runs for spin-1 STANDARD and three runs for the other controls show overlapping ranges; the synthesis visitor wrapper has no measured material effect.
+
+Temporary counters weighted each recurrence visit by its one- or two-degree contribution and lane count. At T63/T127/T255/T511/T1023 GL, normal-range work was 100/84.5/75.0/84.0/90.6% for scalar analysis and 44.7/84.2/90.5/95.6/96.7% for spin-1 analysis. At T511 CC and F1, the fractions were 84.5% for scalar and 96.1% for spin-1. No measured callback had zero exponents with a false normal-range status. These counts describe recurrence work, not elapsed time; the diagnostic code was removed after measurement.
+
+Callgrind 3.26.0 counted 12 T127 GL analysis transforms across the one-thread and one-worker pools for both builds. Scalar instruction references fell from `267,336,575` to `248,350,091` (`-7.1%`); spin-1 references fell from `821,843,278` to `744,793,486` (`-9.4%`). These simulated instruction references are not cycle counts. `perf stat` remains unavailable because `perf_event_paranoid=4`.
+
+The extreme-finite-input reducer test, scaled-lane fallback test, paired recurrence transition reference, spin-1 STANDARD general-path comparison and analysis adjoint tests passed. Release DUCC 0.41.0 references from source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf` passed for scalar T511/T1023/T2047 on GL/CC/F1 and spin-1/2 T511/T1023 on GL/CC/F1. Maximum spin-1 analysis coefficient error was `8.824e-18` at T1023; maximum spin-2 analysis error was `2.558e-17` at T511 and `8.491e-18` at T1023. Full checks passed: `cargo fmt --all -- --check`, workspace Clippy with all targets/features and warnings denied, 108 Rust and 10 f32 tests with all features, 103 Rust and 10 f32 tests without default features, and 8 Python tests. Sol's read-only review found no correctness blocker and confirmed the status invariant, f32 fallback, scaled path and synthesis adapter. No FFT code changed.

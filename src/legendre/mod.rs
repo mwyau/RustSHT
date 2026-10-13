@@ -241,6 +241,30 @@ pub(crate) trait ShtScalar:
     {
         Ok(false)
     }
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Analysis needs the paired recurrence state and per-lane exponent scratch."
+    )]
+    fn for_each_y_lm_paired_status_dispatched<F>(
+        _arch: Arch,
+        _m: usize,
+        _lmax: usize,
+        _sin_theta: &[Self],
+        _cos_theta: &[Self],
+        _sectoral_norm: Self,
+        _coefficient_a: &[Self],
+        _coefficient_b: &[Self],
+        _previous: &mut [Self],
+        _current: &mut [Self],
+        _next: &mut [Self],
+        _exponents: &mut [i64],
+        _visit: F,
+    ) -> Result<bool, ShtError>
+    where
+        F: FnMut(usize, usize, &[Self], &[i64], bool) -> Result<(), ShtError>,
+    {
+        Ok(false)
+    }
     fn multiply_complex_scaled(value: Complex<Self>, factor: Self, exponent: i64) -> Complex<Self>;
     fn scalar_analysis_products_safe(
         _same_real: &[Self],
@@ -258,6 +282,7 @@ pub(crate) trait ShtScalar:
     fn accumulate_scalar_analysis_pair(
         _arch: Arch,
         _products_safe: bool,
+        _normal_range: bool,
         same_real: &[Self],
         same_imag: &[Self],
         opposite_real: &[Self],
@@ -484,6 +509,42 @@ impl ShtScalar for f64 {
         Ok(true)
     }
 
+    fn for_each_y_lm_paired_status_dispatched<F>(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        sectoral_norm: Self,
+        coefficient_a: &[Self],
+        coefficient_b: &[Self],
+        previous: &mut [Self],
+        current: &mut [Self],
+        next: &mut [Self],
+        exponents: &mut [i64],
+        visit: F,
+    ) -> Result<bool, ShtError>
+    where
+        F: FnMut(usize, usize, &[Self], &[i64], bool) -> Result<(), ShtError>,
+    {
+        scalar_paired::for_each_y_lm_paired_status_dispatched(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            previous,
+            current,
+            next,
+            exponents,
+            visit,
+        )?;
+        Ok(true)
+    }
+
     fn synthesize_paired_scalar_block_dispatched(
         arch: Arch,
         m: usize,
@@ -649,6 +710,7 @@ impl ShtScalar for f64 {
     fn accumulate_scalar_analysis_pair(
         arch: Arch,
         products_safe: bool,
+        normal_range: bool,
         same_real: &[Self],
         same_imag: &[Self],
         opposite_real: &[Self],
@@ -660,6 +722,7 @@ impl ShtScalar for f64 {
         scalar_paired::accumulate_analysis_pair_dispatched(
             arch,
             products_safe,
+            normal_range,
             same_real,
             same_imag,
             opposite_real,

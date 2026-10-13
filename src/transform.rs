@@ -935,7 +935,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     );
                     // Paired degrees l=m+2k use north+south for the even term;
                     // the intervening odd term uses north-south and cos(theta).
-                    paired_used = T::for_each_y_lm_paired_dispatched(
+                    paired_used = T::for_each_y_lm_paired_status_dispatched(
                         arch,
                         m,
                         lmax,
@@ -948,7 +948,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         &mut recurrence.current,
                         &mut recurrence.next,
                         &mut recurrence.exponents,
-                        |l, ring_start, current, exponents| {
+                        |l, ring_start, current, exponents, normal_range| {
                             let offset = l - m;
                             let mut even_coefficient = coefficients[offset];
                             let mut odd_coefficient = if l < lmax {
@@ -960,6 +960,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             let (same_sum, opposite_sum) = T::accumulate_scalar_analysis_pair(
                                 arch,
                                 product_range_safe,
+                                normal_range,
                                 &same_real[ring_start..lane_end],
                                 &same_imag[ring_start..lane_end],
                                 &opposite_real[ring_start..lane_end],
