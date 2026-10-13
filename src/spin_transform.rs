@@ -947,7 +947,19 @@ impl<T: ShtScalar> ShtPlan<T> {
 
         let fourier_scale = T::from_usize(nphi).expect("longitude count converts");
         let nyquist_scale = fourier_scale * T::from_f64(2.0).expect("two is representable");
+        let maximum_ring_order = (spin == 1).then(|| {
+            ring_order_limits[ring_start..ring_end]
+                .iter()
+                .copied()
+                .max()
+                .unwrap_or(0)
+        });
         for m in 0..=mmax {
+            // Synthesis cleared these spectra, and the polar cutoff excludes this
+            // order from every ring in the segment.
+            if maximum_ring_order.is_some_and(|limit| m > limit) {
+                continue;
+            }
             let phase = longitude_phase::<T>(m, phi0, false);
             let mut fast_scalar_order = fast_scalar;
             if fast_scalar_order && spin == 1 {
