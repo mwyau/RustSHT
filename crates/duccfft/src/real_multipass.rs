@@ -10,7 +10,7 @@ use num_complex::Complex;
 use num_traits::{Float, FromPrimitive};
 
 use crate::FftError;
-use crate::complex::{check_vec_len, try_vec};
+use crate::complex::{BluesteinPlan, ComplexFftWorkspace, Direction, check_vec_len, try_vec};
 use crate::simd::{
     RealRadix2ForwardInteriorKernel, RealRadix2InteriorKernel, RealRadix4ForwardInteriorKernel,
     RealRadix4InteriorKernel,
@@ -24,6 +24,7 @@ struct Pass<T> {
     ido: usize,
     twiddles: Vec<T>,
     prime_roots: Vec<Complex<T>>,
+    bluestein_stage: Option<usize>,
 }
 
 pub(crate) struct RealMultipassPlan<T> {
@@ -38,6 +39,32 @@ pub(crate) struct RealMultipassPlan<T> {
 pub(crate) struct RealMultipassWorkspace<T> {
     first: Vec<T>,
     second: Vec<T>,
+}
+
+pub(crate) struct MultipassBluestein<'a, T> {
+    plans: &'a [Option<BluesteinPlan<T>>],
+    buffer: &'a mut [Complex<T>],
+    workspaces: &'a mut [Option<ComplexFftWorkspace<T>>],
+    radix_input: &'a mut [Complex<T>],
+    radix_output: &'a mut [Complex<T>],
+}
+
+impl<'a, T> MultipassBluestein<'a, T> {
+    pub(crate) fn new(
+        plans: &'a [Option<BluesteinPlan<T>>],
+        buffer: &'a mut [Complex<T>],
+        workspaces: &'a mut [Option<ComplexFftWorkspace<T>>],
+        radix_input: &'a mut [Complex<T>],
+        radix_output: &'a mut [Complex<T>],
+    ) -> Self {
+        Self {
+            plans,
+            buffer,
+            workspaces,
+            radix_input,
+            radix_output,
+        }
+    }
 }
 
 impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
@@ -59,12 +86,20 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
             .try_reserve_exact(factors.len())
             .map_err(|_| FftError::AllocationFailed)?;
         let mut l1 = 1usize;
-        for &radix in factors {
+        for (stage, &radix) in factors.iter().enumerate() {
             let pass_len = l1.checked_mul(radix).ok_or(FftError::AllocationFailed)?;
             let ido = len / pass_len;
-            if radix > 5 && (radix >= 135 || ido != 1) {
-                return Ok(None);
-            }
+            let bluestein_stage = if radix >= 135 {
+                if ido != 1 {
+                    return Ok(None);
+                }
+                Some(stage)
+            } else {
+                if radix > 5 && ido != 1 {
+                    return Ok(None);
+                }
+                None
+            };
             debug_assert!(!matches!(radix, 3 | 5) || ido % 2 == 1);
             let twiddle_len = (radix - 1)
                 .checked_mul(ido.saturating_sub(1))
@@ -81,10 +116,10 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                 }
             }
             let mut prime_roots = try_vec(
-                if radix > 5 { radix } else { 0 },
+                if radix > 5 && radix < 135 { radix } else { 0 },
                 Complex::new(T::zero(), T::zero()),
             )?;
-            if radix > 5 {
+            if radix > 5 && radix < 135 {
                 let root_stride = len / radix;
                 for (phase, root) in prime_roots.iter_mut().enumerate() {
                     *root = roots[phase * root_stride];
@@ -96,6 +131,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                 ido,
                 twiddles,
                 prime_roots,
+                bluestein_stage,
             });
             l1 = pass_len;
         }
@@ -123,6 +159,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         input: &[T],
         spectrum: &mut [Complex<T>],
         workspace: &mut RealMultipassWorkspace<T>,
+        bluestein: &mut MultipassBluestein<'_, T>,
     ) {
         let mut passes = self.passes.iter().rev();
         let Some(first_pass) = passes.next() else {
@@ -134,6 +171,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
             &mut workspace.second,
             self.radix2_forward_interior_kernel,
             self.radix4_forward_interior_kernel,
+            bluestein,
         );
         let mut current_is_first = false;
         for pass in passes {
@@ -144,6 +182,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                     &mut workspace.second,
                     self.radix2_forward_interior_kernel,
                     self.radix4_forward_interior_kernel,
+                    bluestein,
                 );
             } else {
                 execute_forward_pass(
@@ -152,6 +191,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                     &mut workspace.first,
                     self.radix2_forward_interior_kernel,
                     self.radix4_forward_interior_kernel,
+                    bluestein,
                 );
             }
             current_is_first = !current_is_first;
@@ -169,6 +209,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         spectrum: &[Complex<T>],
         output: &mut [T],
         workspace: &mut RealMultipassWorkspace<T>,
+        bluestein: &mut MultipassBluestein<'_, T>,
     ) -> bool {
         // Packing already reads every component used by the transform. Fold
         // the overflow guard into that pass so ordinary inputs do not require
@@ -189,7 +230,11 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                 } else {
                     &workspace.second
                 };
-                inverse_terminal::execute(pass, input, output, scale);
+                if pass.bluestein_stage.is_some() {
+                    bluestein.inverse(pass, input, output, scale);
+                } else {
+                    inverse_terminal::execute(pass, input, output, scale);
+                }
             } else if current_is_first {
                 execute_inverse_pass(
                     pass,
@@ -197,6 +242,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                     &mut workspace.second,
                     self.radix2_interior_kernel,
                     self.radix4_interior_kernel,
+                    bluestein,
                 );
             } else {
                 execute_inverse_pass(
@@ -205,6 +251,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                     &mut workspace.first,
                     self.radix2_interior_kernel,
                     self.radix4_interior_kernel,
+                    bluestein,
                 );
             }
             if index != last_pass {
@@ -250,7 +297,12 @@ fn execute_forward_pass<T: Float + FromPrimitive>(
     output: &mut [T],
     radix2_forward_interior_kernel: Option<RealRadix2ForwardInteriorKernel<T>>,
     radix4_forward_interior_kernel: Option<RealRadix4ForwardInteriorKernel<T>>,
+    bluestein: &mut MultipassBluestein<'_, T>,
 ) {
+    if pass.bluestein_stage.is_some() {
+        bluestein.forward(pass, input, output);
+        return;
+    }
     match pass.radix {
         2 => forward_radix2(pass, input, output, radix2_forward_interior_kernel),
         4 => forward_radix4(pass, input, output, radix4_forward_interior_kernel),
@@ -266,13 +318,101 @@ fn execute_inverse_pass<T: Float + FromPrimitive>(
     output: &mut [T],
     radix2_interior_kernel: Option<RealRadix2InteriorKernel<T>>,
     radix4_interior_kernel: Option<RealRadix4InteriorKernel<T>>,
+    bluestein: &mut MultipassBluestein<'_, T>,
 ) {
+    if pass.bluestein_stage.is_some() {
+        bluestein.inverse(pass, input, output, T::one());
+        return;
+    }
     match pass.radix {
         2 => inverse_radix2(pass, input, output, radix2_interior_kernel),
         4 => inverse_radix4(pass, input, output, radix4_interior_kernel),
         3 => inverse_radix3(pass, input, output),
         5 => inverse_radix5(pass, input, output),
         _ => inverse_general_prime(pass, input, output, T::one()),
+    }
+}
+
+impl<T: Float + FromPrimitive> MultipassBluestein<'_, T> {
+    fn forward(&mut self, pass: &Pass<T>, input: &[T], output: &mut [T]) {
+        let stage = pass
+            .bluestein_stage
+            .expect("Bluestein pass has a plan stage");
+        let radix = pass.radix;
+        let half = radix / 2;
+        debug_assert!(radix >= 135 && !radix.is_multiple_of(2));
+        debug_assert_eq!(pass.ido, 1);
+        debug_assert!(self.radix_input.len() >= radix);
+        debug_assert!(self.radix_output.len() >= radix);
+        let zero = T::zero();
+        let plan = self.plans[stage]
+            .as_ref()
+            .expect("real Bluestein stage has a precomputed plan");
+        let convolution_workspace = self.workspaces[stage]
+            .as_mut()
+            .expect("real Bluestein stage has a workspace");
+
+        for group in 0..pass.l1 {
+            for branch in 0..radix {
+                self.radix_input[branch] = Complex::new(input[branch * pass.l1 + group], zero);
+            }
+            plan.execute(
+                &self.radix_input[..radix],
+                &mut self.radix_output[..radix],
+                Direction::Forward,
+                self.buffer,
+                convolution_workspace,
+            );
+            let output_start = group * radix;
+            output[output_start] = self.radix_output[0].re;
+            for frequency in 1..=half {
+                let value = self.radix_output[frequency];
+                output[output_start + 2 * frequency - 1] = value.re;
+                output[output_start + 2 * frequency] = value.im;
+            }
+        }
+    }
+
+    fn inverse(&mut self, pass: &Pass<T>, input: &[T], output: &mut [T], scale: T) {
+        let stage = pass
+            .bluestein_stage
+            .expect("Bluestein pass has a plan stage");
+        let radix = pass.radix;
+        let half = radix / 2;
+        debug_assert!(radix >= 135 && !radix.is_multiple_of(2));
+        debug_assert_eq!(pass.ido, 1);
+        debug_assert!(self.radix_input.len() >= radix);
+        debug_assert!(self.radix_output.len() >= radix);
+        let zero = T::zero();
+        let plan = self.plans[stage]
+            .as_ref()
+            .expect("real Bluestein stage has a precomputed plan");
+        let convolution_workspace = self.workspaces[stage]
+            .as_mut()
+            .expect("real Bluestein stage has a workspace");
+
+        for group in 0..pass.l1 {
+            let input_start = group * radix;
+            self.radix_input[0] = Complex::new(input[input_start], zero);
+            for frequency in 1..=half {
+                let value = Complex::new(
+                    input[input_start + 2 * frequency - 1],
+                    input[input_start + 2 * frequency],
+                );
+                self.radix_input[frequency] = value;
+                self.radix_input[radix - frequency] = value.conj();
+            }
+            plan.execute(
+                &self.radix_input[..radix],
+                &mut self.radix_output[..radix],
+                Direction::Inverse,
+                self.buffer,
+                convolution_workspace,
+            );
+            for sample in 0..radix {
+                output[sample * pass.l1 + group] = self.radix_output[sample].re * scale;
+            }
+        }
     }
 }
 

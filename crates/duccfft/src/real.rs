@@ -8,7 +8,8 @@
 // c1ed01b8fda69d2a378190f0915f1a19762dddbf. The implementation recursively
 // combines real half-spectra and uses the public Complex layout internally.
 // Radices 2, 3, 4, and 5 use fixed butterflies derived from rfftp2/3/4/5.
-// General odd primes with ido=1 use a symmetric DFT pass in the multipass plan.
+// General odd primes and Bluestein factors with ido=1 use the DUCC-style
+// multipass schedule; Bluestein reuses the existing nested complex plan.
 
 use num_complex::Complex;
 use num_traits::{Float, FromPrimitive};
@@ -18,7 +19,7 @@ use crate::complex::{
     BluesteinPlan, ComplexFftPlan, ComplexFftWorkspace, Direction, check_batch_rows, check_len,
     check_vec_len, checked_batch_len, try_vec, unity_root,
 };
-use crate::real_multipass::{RealMultipassPlan, RealMultipassWorkspace};
+use crate::real_multipass::{MultipassBluestein, RealMultipassPlan, RealMultipassWorkspace};
 use crate::simd::{
     RealRadix2ForwardInteriorKernel, RealRadix2InteriorKernel, RealRadix4ForwardInteriorKernel,
     RealRadix4InteriorKernel, SimdScalar,
@@ -388,6 +389,13 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
         if let Some(multipass) = self.multipass.as_ref()
             && forward_multipass_is_safe(input, self.len)
         {
+            let mut bluestein = MultipassBluestein::new(
+                &self.bluestein,
+                &mut workspace.bluestein_buffer,
+                &mut workspace.bluestein_workspaces,
+                &mut workspace.radix_input,
+                &mut workspace.radix_output,
+            );
             multipass.forward(
                 input,
                 spectrum,
@@ -395,6 +403,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                     .multipass_workspace
                     .as_mut()
                     .expect("multipass plan has a multipass workspace"),
+                &mut bluestein,
             );
             return Ok(());
         }
@@ -618,17 +627,25 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
             return Ok(());
         }
 
-        if let Some(multipass) = self.multipass.as_ref()
-            && multipass.inverse_if_safe(
+        if let Some(multipass) = self.multipass.as_ref() {
+            let mut bluestein = MultipassBluestein::new(
+                &self.bluestein,
+                &mut workspace.bluestein_buffer,
+                &mut workspace.bluestein_workspaces,
+                &mut workspace.radix_input,
+                &mut workspace.radix_output,
+            );
+            if multipass.inverse_if_safe(
                 spectrum,
                 output,
                 workspace
                     .multipass_workspace
                     .as_mut()
                     .expect("multipass plan has a multipass workspace"),
-            )
-        {
-            return Ok(());
+                &mut bluestein,
+            ) {
+                return Ok(());
+            }
         }
         // Multipass eligibility was checked while packing. If that check
         // failed, retain the residual-corrected recursive path without
