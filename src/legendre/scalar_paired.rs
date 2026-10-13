@@ -822,7 +822,7 @@ impl WithSimd for StagedSynthesisPairTransition<'_> {
             std::mem::swap(&mut previous, &mut current);
             std::mem::swap(&mut current, &mut next);
             if normal_range {
-                if scalar::pair_lanes_need_scaling(previous, current) {
+                if scalar::pair_lanes_need_scaling(simd, previous, current) {
                     normal_range = match scalar::normalize_pair_lanes(previous, current, exponents)
                     {
                         Ok(normal_range) => normal_range,
@@ -1745,7 +1745,7 @@ where
             std::mem::swap(&mut previous, &mut current);
             std::mem::swap(&mut current, &mut next);
             if normal_range {
-                if scalar::pair_lanes_need_scaling(previous, current) {
+                if scalar::pair_lanes_need_scaling(simd, previous, current) {
                     normal_range = scalar::normalize_pair_lanes(previous, current, exponents)?;
                 }
             } else {
