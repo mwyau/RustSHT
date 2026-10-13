@@ -7,6 +7,7 @@
 
 mod complex;
 mod real;
+mod real_multipass;
 mod simd;
 
 pub use complex::{ComplexFftPlan, ComplexFftWorkspace, FftError};

@@ -218,7 +218,7 @@ fn f32_real_transforms_match_independent_dfts_for_lengths_one_through_sixty_four
 #[test]
 fn f32_large_smooth_prime_bluestein_and_sht_lengths_match_f64_references() {
     println!("precision,operation,n,max_abs,rms,relative_l2,scaled_max,nonfinite");
-    for n in [1024, 137, 1025, 4097] {
+    for n in [1024, 2048, 4096, 137, 1025, 4097] {
         let plan = RealFftPlan::<f32>::new(n).unwrap();
         let mut workspace = plan.workspace().unwrap();
         let input32: Vec<_> = (0..n)
@@ -947,6 +947,74 @@ fn real_inverse_fast_and_correction_paths_cover_finite_extremes() {
 }
 
 #[test]
+fn real_radix_multipass_fast_paths_and_extreme_fallbacks_are_checked() {
+    let n = 64;
+    let plan64 = RealFftPlan::<f64>::new(n).unwrap();
+    let mut workspace64 = plan64.workspace().unwrap();
+    let mut impulse64 = vec![0.0; n];
+    impulse64[0] = f64::MAX;
+    let mut spectrum64 = vec![Complex::new(0.0, 0.0); plan64.spectrum_len()];
+    plan64
+        .forward(&impulse64, &mut spectrum64, &mut workspace64)
+        .unwrap();
+    assert_eq!(
+        spectrum64,
+        vec![Complex::new(f64::MAX, 0.0); plan64.spectrum_len()]
+    );
+
+    spectrum64.fill(Complex::new(0.0, 0.0));
+    spectrum64[0].re = f64::MAX;
+    spectrum64[n / 2].re = f64::MAX;
+    let mut output64 = vec![0.0; n];
+    plan64
+        .inverse(&spectrum64, &mut output64, &mut workspace64)
+        .unwrap();
+    assert!(output64.iter().all(|value| value.is_finite()));
+    assert_eq!(
+        output64,
+        (0..n)
+            .map(|index| if index.is_multiple_of(2) {
+                f64::MAX / (n / 2) as f64
+            } else {
+                0.0
+            })
+            .collect::<Vec<_>>()
+    );
+
+    let plan32 = RealFftPlan::<f32>::new(n).unwrap();
+    let mut workspace32 = plan32.workspace().unwrap();
+    let mut impulse32 = vec![0.0; n];
+    impulse32[0] = f32::MAX;
+    let mut spectrum32 = vec![Complex::new(0.0, 0.0); plan32.spectrum_len()];
+    plan32
+        .forward(&impulse32, &mut spectrum32, &mut workspace32)
+        .unwrap();
+    assert_eq!(
+        spectrum32,
+        vec![Complex::new(f32::MAX, 0.0); plan32.spectrum_len()]
+    );
+
+    spectrum32.fill(Complex::new(0.0, 0.0));
+    spectrum32[0].re = f32::MAX;
+    spectrum32[n / 2].re = f32::MAX;
+    let mut output32 = vec![0.0; n];
+    plan32
+        .inverse(&spectrum32, &mut output32, &mut workspace32)
+        .unwrap();
+    assert!(output32.iter().all(|value| value.is_finite()));
+    assert_eq!(
+        output32,
+        (0..n)
+            .map(|index| if index.is_multiple_of(2) {
+                f32::MAX / (n / 2) as f32
+            } else {
+                0.0
+            })
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
 fn invalid_real_lengths_buffers_and_workspaces_return_errors() {
     assert!(matches!(
         RealFftPlan::<f64>::new(0),
@@ -999,7 +1067,7 @@ fn real_workspace_reports_reusable_scratch_bytes() {
     let workspace = plan.workspace().unwrap();
     assert_eq!(
         workspace.scratch_bytes(),
-        Some(22 * std::mem::size_of::<Complex<f64>>())
+        Some(22 * std::mem::size_of::<Complex<f64>>() + 2 * 8 * std::mem::size_of::<f64>())
     );
 
     let blue_plan = RealFftPlan::<f64>::new(137).unwrap();
