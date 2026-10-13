@@ -306,12 +306,15 @@ complementary-output reuse than DUCC.
 The large-length balanced packet grouping used by DUCC above 10,000 is not
 implemented.
 
-M4 later added a targeted f64 AVX2 radix-eight pass for the scalar terminal
-stage at length 4,096. Seven paired public-call samples showed 38.63% forward
-and 29.73% inverse median latency reductions relative to the preceding M4
-build; see [`m4-c2c-ido1.md`](m4-c2c-ido1.md). The 2,048-point control changed
-by less than 0.6%. This bounded result does not update the cross-library timing
-matrix or resolve the gaps at other lengths.
+M4 added a targeted f64 AVX2 radix-eight pass for the scalar terminal stage
+when the final pass has `ido=1`. In a seven-pair public-call sweep over lengths
+64–4,096, all 70 samples at the five eligible lengths favored the kernel. At
+4,096, paired median latency fell by 39.80% forward and 29.77% inverse. The
+256- and 2,048-point controls, which end in radix four, had mixed outcomes; at
+2,048 the ratios of medians were 0.998× forward and 1.005× inverse, while the
+medians of paired reductions were 0.72% and −0.52%. The timing records and
+method are in [`m4-c2c-ido1.md`](m4-c2c-ido1.md). These shared-host measurements
+do not update the cross-library timing matrix or resolve the remaining gaps.
 
 ## Reviewer conclusions
 
