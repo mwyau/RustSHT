@@ -246,7 +246,7 @@ fn f32_real_transforms_match_independent_dfts_for_lengths_one_through_sixty_four
 #[test]
 fn f32_large_smooth_prime_bluestein_and_sht_lengths_match_f64_references() {
     println!("precision,operation,n,max_abs,rms,relative_l2,scaled_max,nonfinite");
-    for n in [1024, 2048, 4096, 131, 137, 241, 1025, 2049, 4097] {
+    for n in [128, 512, 1024, 2048, 4096, 131, 137, 241, 1025, 2049, 4097] {
         let plan = RealFftPlan::<f32>::new(n).unwrap();
         let mut workspace = plan.workspace().unwrap();
         let input32: Vec<_> = (0..n)
