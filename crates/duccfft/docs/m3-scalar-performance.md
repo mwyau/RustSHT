@@ -66,9 +66,9 @@ packing or unpacking.
 | 4,096 | 155.719 / 9.498 / 11.326 / 12.092 (16.40 / 13.75 / 12.88) | 122.245 / 7.809 / 11.687 / 10.600 (15.65 / 10.46 / 11.53) |
 
 The scalar RustFFT control narrows the C2C ratio: at lengths 64–4,096,
-DUCCFFT is 1.5–2.0× slower than scalar RustFFT. The real ratio remains
-8.3–10.7× for R2C and 7.6–9.1× for C2R. The real execution structure is a
-larger remaining scalar gap than fixed-radix C2C.
+DUCCFFT is 1.5–2.0× slower than scalar RustFFT. The real ratio is 6.9–10.7×
+for R2C and 7.6–9.3× for C2R. The real execution structure is a larger
+remaining scalar gap than fixed-radix C2C.
 
 ## General-prime and Bluestein results
 
@@ -136,21 +136,21 @@ independent butterflies. The large pass symbol also contains cold generic
 radix branches and bounds-check failure blocks. The inspection did not show
 that those branches execute in the smooth cases, and it did not establish a
 register-spill cost. RustFFT's default planner has runtime SIMD kernels; the
-Rust scalar control does not. The real executor still uses a recursive pass tree. For N=1,024 its factor
-with debug line information measured 44.0 million instruction references for
-100 normal C2R operations at N=1,024. Recursive execution accounts for 41.1
-million inclusive references (93.4%); `small_radix_dft_all` accounts for 7.20
-million (16.4%). The root multiplication and output-scale expression accounts
-for 2.46 million references (5.6%). These inclusive costs overlap.
-
-million instruction references, 31.6% above the normal case. The recursive
-function accounts for 55.1 million inclusive references (95.0%), and the
-small-radix kernel for 8.68 million (15.0%). Source-line counts show the
-additional prescale, residual construction, correction transforms, and root
-products inside the recursive function. These operations are compiled into
-share. Across two uninstrumented process runs, the high-range C2R input was
-14.8%, 7.1%, and 12.2% slower than the normal input at lengths 1,024, 2,048,
-and 4,096, respectively.
+Rust scalar control does not. The real executor still uses a recursive pass tree. At N=1,024 its factor
+tree is `[4, 4, 4, 4, 4]` and executes 1,365 recursion calls per transform.
+warm-up and 100 timed normal C2R operations (103 root recursion calls). It
+records 44.0 million instruction references. Recursive execution accounts
+for 41.1 million inclusive references (93.4%); `small_radix_dft_all` accounts
+for 7.20 million (16.4%). The root multiplication and output-scale expression
+accounts for 2.46 million references (5.6%). These inclusive costs overlap. For high-range spectra made from `MAX/8` components, the matching 103-call
+profile records 57.9 million instruction references, 31.6% above the normal
+case. The recursive function accounts for 55.1 million inclusive references
+(95.0%), and the small-radix kernel for 8.68 million (15.0%). Source-line
+counts show the additional prescale, residual construction, correction
+transforms, and root products inside the recursive function. These operations
+separate wall-time share. Across two uninstrumented process runs, the
+high-range C2R input was 14.8%, 7.1%, and 12.2% slower than the normal input
+at lengths 1,024, 2,048, and 4,096, respectively.
 
 ## Inverse residual correction
 
@@ -234,5 +234,8 @@ data. The reviewer identified the real multipass gap as the next scalar
 priority. The review also confirmed that default RustFFT runtime SIMD,
 portable DUCC, and native-target DUCC require separate labels and that the
 shared-host results remain provisional. The review caught and this branch fixed an overstatement of f32 prime-test
-coverage in `m3-prime-bluestein.md`. The R3B review of this checkpoint is
-pending.
+coverage in `m3-prime-bluestein.md`. R3B found no numerical, aliasing,
+workspace-ownership, or checked-sizing defect. It supports the C2C multipass
+decision and in-place first pass. It considers recursive real execution an
+interim correctness implementation and agrees that a real multipass
+corrections are included above.
