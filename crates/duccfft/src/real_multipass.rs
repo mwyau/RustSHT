@@ -11,6 +11,7 @@ use num_traits::{Float, FromPrimitive};
 
 use crate::FftError;
 use crate::complex::{check_vec_len, try_vec};
+use crate::simd::RealRadix4InteriorKernel;
 
 struct Pass<T> {
     radix: usize,
@@ -22,6 +23,7 @@ struct Pass<T> {
 pub(crate) struct RealMultipassPlan<T> {
     len: usize,
     passes: Vec<Pass<T>>,
+    radix4_interior_kernel: Option<RealRadix4InteriorKernel<T>>,
 }
 
 pub(crate) struct RealMultipassWorkspace<T> {
@@ -34,6 +36,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         len: usize,
         factors: &[usize],
         roots: &[Complex<T>],
+        radix4_interior_kernel: Option<RealRadix4InteriorKernel<T>>,
     ) -> Result<Option<Self>, FftError> {
         if len <= 1 || factors.iter().any(|&radix| !matches!(radix, 2 | 4)) {
             return Ok(None);
@@ -70,7 +73,11 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
             l1 = pass_len;
         }
         debug_assert_eq!(l1, len);
-        Ok(Some(Self { len, passes }))
+        Ok(Some(Self {
+            len,
+            passes,
+            radix4_interior_kernel,
+        }))
     }
 
     pub(crate) fn try_workspace(&self) -> Result<RealMultipassWorkspace<T>, FftError> {
@@ -119,9 +126,19 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         let mut current_is_first = true;
         for pass in &self.passes {
             if current_is_first {
-                execute_inverse_pass(pass, &workspace.first, &mut workspace.second);
+                execute_inverse_pass(
+                    pass,
+                    &workspace.first,
+                    &mut workspace.second,
+                    self.radix4_interior_kernel,
+                );
             } else {
-                execute_inverse_pass(pass, &workspace.second, &mut workspace.first);
+                execute_inverse_pass(
+                    pass,
+                    &workspace.second,
+                    &mut workspace.first,
+                    self.radix4_interior_kernel,
+                );
             }
             current_is_first = !current_is_first;
         }
@@ -174,10 +191,15 @@ fn execute_forward_pass<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], o
     }
 }
 
-fn execute_inverse_pass<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output: &mut [T]) {
+fn execute_inverse_pass<T: Float + FromPrimitive>(
+    pass: &Pass<T>,
+    input: &[T],
+    output: &mut [T],
+    radix4_interior_kernel: Option<RealRadix4InteriorKernel<T>>,
+) {
     match pass.radix {
         2 => inverse_radix2(pass, input, output),
-        4 => inverse_radix4(pass, input, output),
+        4 => inverse_radix4(pass, input, output, radix4_interior_kernel),
         _ => unreachable!("real multipass plan contains only radix 2 and 4"),
     }
 }
@@ -369,7 +391,12 @@ fn forward_radix4<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output:
     }
 }
 
-fn inverse_radix4<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output: &mut [T]) {
+fn inverse_radix4<T: Float + FromPrimitive>(
+    pass: &Pass<T>,
+    input: &[T],
+    output: &mut [T],
+    radix4_interior_kernel: Option<RealRadix4InteriorKernel<T>>,
+) {
     let l1 = pass.l1;
     let ido = pass.ido;
     if ido == 1 {
@@ -434,7 +461,25 @@ fn inverse_radix4<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output:
         if ido <= 2 {
             continue;
         }
-        for i in (2..ido).step_by(2) {
+        let scalar_start = if ido >= 16
+            && let Some(kernel) = radix4_interior_kernel
+        {
+            // SAFETY: plan construction installs this kernel only after AVX2
+            // runtime detection. The current input block and four output
+            // branches each have exactly `ido` scalar values, and the pass
+            // supplies the complete radix-four twiddle table.
+            unsafe {
+                kernel(
+                    input_block,
+                    [&mut *output0, &mut *output1, &mut *output2, &mut *output3],
+                    ido,
+                    &pass.twiddles,
+                )
+            }
+        } else {
+            2
+        };
+        for i in (scalar_start..ido).step_by(2) {
             let ic = ido - i;
             let (tr2, tr1) = (
                 input0[i - 1] + input3[ic - 1],
