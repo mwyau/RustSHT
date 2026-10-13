@@ -18,6 +18,7 @@ Copyright for original Rust code: **Albert M. W. Yau** and contributors. License
 | D14 | **Rust 1.99.0 stable toolchain**, approved 2026-10-12 | Use the pinned stable toolchain for development, CI, benchmarks and builds. Avoid nightly-only features without a demonstrated need; preserve runtime CPU dispatch and a portable fallback. |
 | D15 | **Long autonomous implementation sessions**, approved 2026-10-11 | Work on a new feature branch through as many independently verified milestones as possible, preserving GL-first ordering. |
 | D22 | **Scalar and low-spin performance priority**, approved 2026-10-12 | Optimize scalar and spin-1 transforms first, then spin 2. Preserve spin-3/4 support and regression coverage without expanding those implementations; do not add spin 5+ without new authorization. |
+| D23 | **Bounded scalar GL Legendre table**, approved 2026-10-13 | Use a north-hemisphere, triangular f64 table for scalar GL plans from T111 through T255 when `mmax >= 0.75*lmax`, `ntheta == lmax+1`, and the table fits within 34 MiB. Keep recurrence for f32, spin, CC/F1, lower truncations and larger tables. Reusable-plan measurements and Torch-harmonics storage comparisons are recorded in [05](05-validation-and-milestones.md). |
 
 ### D11 rationale
 
@@ -37,7 +38,7 @@ Scalar transforms support atmospheric scalar fields. Spin 1 supports horizontal 
 - Implement **f64/complex128** first, with a direct `num-complex` dependency for the public `Complex64` alias; design for f32/complex64. Both precisions are in the eventual feature matrix.
 - Reusable plans and scratch; implement a scalar reference and `pulp` SIMD recurrence over latitude lanes during GL M1, with optional Rayon for coarse independent work and runtime dispatch on x86-64 and AArch64.
 - Python bindings via a separate optional layer; keep spharmgrid decoupled.
-- Avoid large precomputed dense harmonic matrices and hidden high-bandlimit caps.
+- Avoid unbounded dense harmonic matrices. A symmetry-reduced scalar GL table is permitted only within the measured 34 MiB cap and bandlimits in D23; recurrence remains the general method.
 
 ## Selected implementation defaults (2026-10-11)
 
