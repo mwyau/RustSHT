@@ -1539,12 +1539,12 @@ At T127, a temporary diagnostic counted 48 mixed active/inactive latitude blocks
 | --- | ---: | ---: | ---: |
 | GL STANDARD | `3.321/2.075` | `3.322/2.091` | `+0.1%/+0.8%` |
 | GL GRAD_ONLY | `3.498/2.259` | `3.419/2.218` | `-2.3%/-1.7%` |
-| GL DERIV1 control | `3.565/2.330` | `3.431/2.210` | `-3.0%/+1.1%` |
+| GL DERIV1 | `3.565/2.330` | `3.431/2.210` | `-3.0%/+1.1%` |
 | CC STANDARD | `4.239/2.431` | `4.213/2.398` | `-0.5%/-1.2%` |
 | CC GRAD_ONLY | `4.325/2.444` | `4.253/2.443` | `-1.6%/-0.2%` |
-| CC DERIV1 control | `4.416/2.468` | `4.209/2.441` | `-4.7%/-1.2%` |
+| CC DERIV1 | `4.416/2.468` | `4.209/2.441` | `-4.7%/-1.2%` |
 | F1 STANDARD | `3.827/2.321` | `3.788/2.316` | `-1.3%/-0.6%` |
 | F1 GRAD_ONLY | `3.955/2.406` | `3.914/2.414` | `-1.6%/+0.1%` |
-| F1 DERIV1 control | `3.965/2.583` | `3.892/2.394` | `-2.0%/-8.6%` |
+| F1 DERIV1 | `3.965/2.583` | `3.892/2.394` | `-2.0%/-8.6%` |
 
-The per-process timing ranges overlap in every grid, mode and thread comparison; the apparent DERIV1 changes are noise in an unaffected scalar path. The guarded branch adds checks without a reproducible whole-transform gain and was rejected. Its temporary extreme-coefficient comparison produced finite, closely matching spectra on GL/CC/F1, but selected the highest mixed order, likely the sectoral order with one degree pair. It did not establish a multi-degree transition handoff. Sol's second read-only review found no safety issue in the guarded branch and noted this test-coverage limit. No source change or regression test from either prototype was retained.
+The per-process timing ranges overlap in every grid, mode and thread comparison. DERIV1 uses the spin-1 scalar-conversion synthesis path at T127 and exercised the mixed-block eligibility trial; its overlapping ranges also show no resolved gain. The guarded branch adds checks without a reproducible whole-transform gain and was rejected. Its temporary extreme-coefficient comparison produced finite, closely matching spectra on GL/CC/F1, but selected the highest mixed order, likely the sectoral order with one degree pair. It did not establish a multi-degree transition handoff. Sol's second read-only review found no safety issue in the guarded branch and noted this test-coverage limit. No source change or regression test from either prototype was retained.
