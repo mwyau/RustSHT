@@ -197,11 +197,12 @@ Times are per transform within the batch.
 
 Forward execution improves by about 5–12% through length 1,024 in both call
 counts. At 2,048 and 4,096 the single-call result is neutral within the
-observed variation; the sequential-batch result improves by 8–11%. Inverse
-execution improves by about 4–9% through length 1,024 and is effectively
-unchanged at 2,048 and 4,096. Keep the fixed-radix dispatch as a small
-reduction in pass overhead. Execution is still 2.03–4.16× slower than RustFFT
-across these cases.
+observed variation; the sequential-batch result improves by 8–11%. For one
+inverse transform, execution improves by about 4–9% at lengths 128 through
+1,024; length 64 changes by 0.32% (311 ns to 310 ns). In the sequential batch,
+length 64 improves by 4.4%. Inverse execution is effectively unchanged at
+2,048 and 4,096. Keep the fixed-radix dispatch as a small reduction in pass
+overhead. Execution is still 2.03–4.16× slower than RustFFT across these cases.
 
 ### Generated code and decision
 
