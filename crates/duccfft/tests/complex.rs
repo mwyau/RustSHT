@@ -231,6 +231,25 @@ fn f32_large_smooth_prime_bluestein_and_sht_lengths_match_f64_references() {
 }
 
 #[test]
+fn f64_large_smooth_multipass_matches_independent_dfts() {
+    let n = 1024;
+    let input = random_signal_f64(n, 0x8f3c_71a2_d905_b64e);
+    let expected_forward = direct_dft_f64(&input, true);
+    let plan = ComplexFftPlan::<f64>::new(n).unwrap();
+    let mut workspace = plan.workspace().unwrap();
+    let mut actual_forward = input;
+    plan.forward(&mut actual_forward, &mut workspace).unwrap();
+    assert_f64_close(&actual_forward, &expected_forward, n);
+
+    let spectrum = random_signal_f64(n, 0x6c21_4b7e_a930_d58f);
+    let expected_inverse =
+        normalized_direct_inverse(direct_dft_f64(&spectrum, false), 1.0 / n as f64);
+    let mut actual_inverse = spectrum;
+    plan.inverse(&mut actual_inverse, &mut workspace).unwrap();
+    assert_f64_close(&actual_inverse, &expected_inverse, n);
+}
+
+#[test]
 fn fixed_radices_match_analytic_impulses_constants_and_fourier_modes() {
     for n in [7, 8, 11, 16] {
         let plan = ComplexFftPlan::<f64>::new(n).unwrap();

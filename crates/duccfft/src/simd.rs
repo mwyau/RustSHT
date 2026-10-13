@@ -70,9 +70,16 @@ mod x86 {
     };
 
     static AVX2_AVAILABLE: OnceLock<bool> = OnceLock::new();
+    static AVX2_FMA_AVAILABLE: OnceLock<bool> = OnceLock::new();
 
     pub(super) fn available() -> bool {
         *AVX2_AVAILABLE.get_or_init(|| std::is_x86_feature_detected!("avx2"))
+    }
+
+    fn avx2_fma_available() -> bool {
+        *AVX2_FMA_AVAILABLE.get_or_init(|| {
+            std::is_x86_feature_detected!("avx2") && std::is_x86_feature_detected!("fma")
+        })
     }
 
     impl SimdScalar for f64 {
@@ -99,8 +106,15 @@ mod x86 {
         }
 
         unsafe fn avx2_first_pass(data: &mut [Complex<Self>], pass: &SimdPass<'_, Self>) {
-            // SAFETY: the caller upholds the trait's AVX2 and layout contract.
-            unsafe { f64_kernel::first_pass(data, pass) }
+            if avx2_fma_available() {
+                // SAFETY: runtime dispatch checked both AVX2 and FMA, and the
+                // caller upholds the trait's layout contract.
+                unsafe { f64_kernel::first_pass_fma(data, pass) }
+            } else {
+                // SAFETY: the caller upholds the trait's AVX2 and layout
+                // contract.
+                unsafe { f64_kernel::first_pass(data, pass) }
+            }
         }
 
         unsafe fn avx2_pass(
@@ -108,8 +122,15 @@ mod x86 {
             output: &mut [Complex<Self>],
             pass: &SimdPass<'_, Self>,
         ) {
-            // SAFETY: the caller upholds the trait's AVX2 and layout contract.
-            unsafe { f64_kernel::pass(input, output, pass) }
+            if avx2_fma_available() {
+                // SAFETY: runtime dispatch checked both AVX2 and FMA, and the
+                // caller upholds the trait's layout contract.
+                unsafe { f64_kernel::pass_fma(input, output, pass) }
+            } else {
+                // SAFETY: the caller upholds the trait's AVX2 and layout
+                // contract.
+                unsafe { f64_kernel::pass(input, output, pass) }
+            }
         }
     }
 
@@ -185,6 +206,20 @@ mod x86 {
             let real = _mm256_movedup_pd(right);
             let imaginary = _mm256_permute_pd(right, 0b1111);
             _mm256_addsub_pd(_mm256_mul_pd(left, real), _mm256_mul_pd(swapped, imaginary))
+        }
+
+        #[inline]
+        #[target_feature(enable = "avx2,fma")]
+        unsafe fn complex_mul_fma(left: V, right: V, inverse: bool) -> V {
+            let right = if inverse {
+                right
+            } else {
+                _mm256_mul_pd(right, _mm256_setr_pd(1.0, -1.0, 1.0, -1.0))
+            };
+            let swapped = _mm256_permute_pd(left, 0b0101);
+            let real = _mm256_movedup_pd(right);
+            let imaginary = _mm256_permute_pd(right, 0b1111);
+            _mm256_fmaddsub_pd(left, real, _mm256_mul_pd(swapped, imaginary))
         }
 
         #[inline]
@@ -383,6 +418,103 @@ mod x86 {
                         if branch != 0 && pass.ido > 1 {
                             value = unsafe {
                                 complex_mul(
+                                    value,
+                                    load(pass.twiddles.as_ptr(), branch * pass.ido + inner),
+                                    pass.inverse,
+                                )
+                            };
+                        }
+                        if pass.inverse {
+                            value = _mm256_mul_pd(value, _mm256_set1_pd(pass.inverse_scale));
+                        }
+                        unsafe {
+                            store(
+                                output_ptr,
+                                inner + pass.ido * (outer + pass.l1 * branch),
+                                value,
+                            )
+                        };
+                    }
+                }
+            }
+        }
+
+        #[target_feature(enable = "avx2,fma")]
+        pub(super) unsafe fn first_pass_fma(data: &mut [Complex<f64>], pass: &SimdPass<'_, f64>) {
+            match pass.radix {
+                2 => unsafe { first_pass_fixed_fma::<2>(data, pass) },
+                4 => unsafe { first_pass_fixed_fma::<4>(data, pass) },
+                8 => unsafe { first_pass_fixed_fma::<8>(data, pass) },
+                _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
+            }
+        }
+
+        #[target_feature(enable = "avx2,fma")]
+        unsafe fn first_pass_fixed_fma<const RADIX: usize>(
+            data: &mut [Complex<f64>],
+            pass: &SimdPass<'_, f64>,
+        ) {
+            let data_ptr = data.as_mut_ptr();
+            for inner in (0..pass.ido).step_by(2) {
+                let mut input = [_mm256_setzero_pd(); 8];
+                for (branch, slot) in input.iter_mut().enumerate().take(RADIX) {
+                    *slot = unsafe { load(data_ptr, inner + pass.ido * branch) };
+                }
+                let transformed = unsafe { transform::<RADIX>(&input, pass.inverse) };
+                for (branch, &result) in transformed.iter().enumerate().take(RADIX) {
+                    let mut value = result;
+                    if branch != 0 && pass.ido > 1 {
+                        value = unsafe {
+                            complex_mul_fma(
+                                value,
+                                load(pass.twiddles.as_ptr(), branch * pass.ido + inner),
+                                pass.inverse,
+                            )
+                        };
+                    }
+                    if pass.inverse {
+                        value = _mm256_mul_pd(value, _mm256_set1_pd(pass.inverse_scale));
+                    }
+                    unsafe { store(data_ptr, inner + pass.ido * branch, value) };
+                }
+            }
+        }
+
+        #[target_feature(enable = "avx2,fma")]
+        pub(super) unsafe fn pass_fma(
+            input: &[Complex<f64>],
+            output: &mut [Complex<f64>],
+            pass: &SimdPass<'_, f64>,
+        ) {
+            match pass.radix {
+                2 => unsafe { pass_fixed_fma::<2>(input, output, pass) },
+                4 => unsafe { pass_fixed_fma::<4>(input, output, pass) },
+                8 => unsafe { pass_fixed_fma::<8>(input, output, pass) },
+                _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
+            }
+        }
+
+        #[target_feature(enable = "avx2,fma")]
+        unsafe fn pass_fixed_fma<const RADIX: usize>(
+            input: &[Complex<f64>],
+            output: &mut [Complex<f64>],
+            pass: &SimdPass<'_, f64>,
+        ) {
+            let input_ptr = input.as_ptr();
+            let output_ptr = output.as_mut_ptr();
+            for outer in 0..pass.l1 {
+                for inner in (0..pass.ido).step_by(2) {
+                    let mut values = [_mm256_setzero_pd(); 8];
+                    for (branch, slot) in values.iter_mut().enumerate().take(RADIX) {
+                        *slot =
+                            unsafe { load(input_ptr, inner + pass.ido * (branch + RADIX * outer)) };
+                    }
+                    let transformed = unsafe { transform::<RADIX>(&values, pass.inverse) };
+                    for (branch, &result) in transformed.iter().enumerate().take(RADIX) {
+                        let mut value = result;
+                        if branch != 0 && pass.ido > 1 {
+                            value = unsafe {
+                                complex_mul_fma(
                                     value,
                                     load(pass.twiddles.as_ptr(), branch * pass.ido + inner),
                                     pass.inverse,
