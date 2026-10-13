@@ -28,10 +28,22 @@ if operation not in {"both", "synthesis", "analysis"}:
 backend = sys.argv[8] if len(sys.argv) > 8 else "both"
 if backend not in {"both", "rust", "ducc"}:
     raise SystemExit("backend must be 'both', 'rust' or 'ducc'")
+mode = sys.argv[9] if len(sys.argv) > 9 else "STANDARD"
+if mode not in {"STANDARD", "GRAD_ONLY", "DERIV1"}:
+    raise SystemExit("mode must be STANDARD, GRAD_ONLY or DERIV1")
+if mode == "GRAD_ONLY" and spin == 0:
+    raise SystemExit("GRAD_ONLY requires a nonzero spin")
+if mode == "DERIV1" and spin != 1:
+    raise SystemExit("DERIV1 uses spin=1 in DUCC's synthesis API")
+if mode != "STANDARD" and operation != "synthesis":
+    raise SystemExit("GRAD_ONLY and DERIV1 support synthesis benchmarking only")
 phi0 = 0.37
 ntheta = lmax + (2 if geometry == "CC" else 1)
 nphi = 2 * lmax + 3
-ncomp = 1 if spin == 0 else 2
+ncomp = 1 if spin == 0 or mode != "STANDARD" else 2
+map_components = 1 if mode == "STANDARD" and spin == 0 else 2
+plan_spin = 0 if mode == "DERIV1" else spin
+ducc_spin = 1 if mode == "DERIV1" else spin
 nalm = sum(lmax - m + 1 for m in range(lmax + 1))
 
 alm = np.zeros((ncomp, nalm), dtype=np.complex128)
@@ -56,16 +68,20 @@ for m in range(lmax + 1):
 rings = np.arange(ntheta, dtype=np.float64)[:, None]
 longitudes = np.arange(nphi, dtype=np.float64)[None, :]
 base_map = np.sin(0.019 * rings + 0.037 * longitudes) + 0.3 * np.cos(0.071 * rings - 0.013 * longitudes)
-map_in = np.ascontiguousarray(np.broadcast_to(base_map, (ncomp, ntheta, nphi)).copy())
+map_in = np.ascontiguousarray(np.broadcast_to(base_map, (map_components, ntheta, nphi)).copy())
 
-plan = rustsht.ShtPlan(geometry, ntheta, nphi, lmax, lmax, spin=spin, phi0=phi0)
+plan = rustsht.ShtPlan(geometry, ntheta, nphi, lmax, lmax, spin=plan_spin, phi0=phi0)
 
 def ducc_synth():
-    return ducc_sht.synthesis_2d(alm=alm_ducc, spin=spin, lmax=lmax, mmax=lmax, geometry=geometry, ntheta=ntheta, nphi=nphi, phi0=phi0, nthreads=threads)
+    return ducc_sht.synthesis_2d(alm=alm_ducc, spin=ducc_spin, lmax=lmax, mmax=lmax, geometry=geometry, ntheta=ntheta, nphi=nphi, phi0=phi0, mode=mode, nthreads=threads)
 def rust_plan_synth():
+    if mode == "GRAD_ONLY":
+        return plan.synthesis_gradient(alm)
+    if mode == "DERIV1":
+        return plan.synthesis_deriv1(alm)
     return plan.synthesis(alm)
 def rust_proc_synth():
-    return rustsht.synthesis_2d(alm, spin=spin, lmax=lmax, geometry=geometry, ntheta=ntheta, nphi=nphi, mmax=lmax, phi0=phi0)
+    return rustsht.synthesis_2d(alm, spin=ducc_spin, lmax=lmax, geometry=geometry, ntheta=ntheta, nphi=nphi, mmax=lmax, phi0=phi0, mode=mode)
 def ducc_analysis():
     return ducc_sht.analysis_2d(map=map_in, spin=spin, lmax=lmax, mmax=lmax, geometry=geometry, phi0=phi0, nthreads=threads)
 def rust_plan_analysis():
@@ -103,11 +119,11 @@ def report(name, fn):
     ms = time_runs(fn)
     print(f"{name}_run_medians_ms=" + ",".join(f"{x:.3f}" for x in ms) + f"; median={np.median(ms):.3f}; spread={max(ms)-min(ms):.3f}")
 
-print(f"T{lmax} {geometry} {ntheta}x{nphi} spin={spin} threads={threads} runs={runs} scope={scope} operation={operation} backend={backend} python={sys.version.split()[0]} numpy={np.__version__} ducc={ducc0.__version__}")
-print("plan_construction_ms=" + ",".join(f"{x:.3f}" for x in time_runs(lambda: rustsht.ShtPlan(geometry, ntheta, nphi, lmax, lmax, spin=spin, phi0=phi0))))
+print(f"T{lmax} {geometry} {ntheta}x{nphi} spin={spin} mode={mode} threads={threads} runs={runs} scope={scope} operation={operation} backend={backend} python={sys.version.split()[0]} numpy={np.__version__} ducc={ducc0.__version__}")
+print("plan_construction_ms=" + ",".join(f"{x:.3f}" for x in time_runs(lambda: rustsht.ShtPlan(geometry, ntheta, nphi, lmax, lmax, spin=plan_spin, phi0=phi0))))
 print("numpy_alm_copy_ms=" + ",".join(f"{x:.3f}" for x in time_runs(lambda: np.array(alm, copy=True))))
 print("numpy_map_copy_ms=" + ",".join(f"{x:.3f}" for x in time_runs(lambda: np.array(map_in, copy=True))))
-print("numpy_output_allocation_ms=" + ",".join(f"{x:.3f}" for x in time_runs(lambda: np.empty((ncomp, ntheta, nphi), dtype=np.float64))))
+print("numpy_output_allocation_ms=" + ",".join(f"{x:.3f}" for x in time_runs(lambda: np.empty((map_components, ntheta, nphi), dtype=np.float64))))
 if operation in {"both", "synthesis"}:
     if backend == "both":
         print("synthesis_error=" + errors(rust_plan_synth(), ducc_synth()))
@@ -117,7 +133,7 @@ if operation in {"both", "synthesis"}:
             report("synthesis_rust_procedural", rust_proc_synth)
     if backend in {"both", "ducc"}:
         report("synthesis_ducc", ducc_synth)
-if operation in {"both", "analysis"}:
+if operation in {"both", "analysis"} and mode == "STANDARD":
     if backend == "both":
         print("analysis_error=" + errors(rust_plan_analysis(), to_rust_layout(ducc_analysis())))
     if backend in {"both", "rust"}:
