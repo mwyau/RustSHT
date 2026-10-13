@@ -300,49 +300,62 @@ DUCC comparisons. The reviewer also noted that fallback scratch is duplicated
 in the current workspace. The review did not run builds or tests. See
 [`review-log.md`](review-log.md).
 
-## First and final pass buffer experiment
+## Real multipass buffer experiment
 
-At source revision `90821180d8889c60ca736a2b30fa0628c8ea02ed`, R2C executes
-the first reverse-order pass from the caller's input, removing the initial
-workspace copy. C2R writes its final unnormalized pass to the caller's output,
-then scales that output in place. This changes the final pass destination but
-does not remove the normalization loop. The workspace size is unchanged.
+The current R2C path at source revision `9b10ef8` executes the first
+reverse-order pass from the caller's input, removing the initial workspace
+copy. The workspace size and butterfly operations are unchanged. The C2R path
+uses its final workspace buffer and applies inverse normalization while
+writing the caller's output.
 
-The comparison uses six process samples from the earlier production build at
-`de5f87f796722bfff1e83c7a620f91b5ab28c35d` and 12 process samples from the
-buffer experiment. Each process is pinned to CPU 30 and reports the median of
-one warm-up and seven timed samples. Plan and workspace construction use 20
-repetitions. Both builds use Rust 1.99.0, `opt-level=3`, no custom `RUSTFLAGS`,
-no LTO, and no target CPU setting. The host ran the Legendre workload; the
-one-minute load average was 3.28 after the buffer experiment, so the comparison
-remains provisional. Raw measurements are in
-[`m4-real-copy-elimination-process-samples.csv`](../benches/results/m4-real-copy-elimination-process-samples.csv).
+A temporary revision, `90821180d8889c60ca736a2b30fa0628c8ea02ed`, also wrote
+the final unnormalized C2R pass directly to the caller's output before scaling
+that output in place. The initial 12-process comparison used the combined
+prototype harness for the old results and the native-only harness for the new
+results. Its raw records are retained in
+[`m4-real-copy-elimination-process-samples.csv`](../benches/results/m4-real-copy-elimination-process-samples.csv),
+but the different harness modes do not support attribution of small timing
+changes.
 
-Each cell gives the earlier production median followed by the buffer
-experiment median in microseconds per transform. Single calls and batches of
-32 are separate measurements.
+The controlled comparison below uses `bench-native-real` for both source
+revisions: baseline `6105973ef8573a9035ef8b9500e81f6f80df6ff6` and candidate
+`90821180d8889c60ca736a2b30fa0628c8ea02ed`. It contains six process samples
+per revision and length, with the run order alternated. Each process is pinned
+to CPU 30, warms the plan once, and reports the median of seven timed samples.
+Plan construction and workspace allocation use 20 repetitions. Both builds
+use Rust 1.99.0, `opt-level=3`, no custom `RUSTFLAGS`, no LTO, and no target
+CPU setting. The Legendre workload was active; the one-minute load average
+was 3.52 after the run. Treat small differences as provisional. Raw samples
+are in
+[`m4-real-buffer-paired-process-samples.csv`](../benches/results/m4-real-buffer-paired-process-samples.csv).
+
+Each cell gives baseline / candidate medians in microseconds per transform.
+Single calls and sequential batches of 32 are reported separately.
 
 | N | Operation | Single | Batch of 32 |
 |---:|---|---:|---:|
-| 64 | R2C | 0.245 / 0.235 | 0.209 / 0.205 |
-| 64 | C2R | 0.260 / 0.276 | 0.220 / 0.236 |
-| 128 | R2C | 0.491 / 0.591 | 0.471 / 0.473 |
-| 128 | C2R | 0.516 / 0.531 | 0.495 / 0.507 |
-| 256 | R2C | 1.012 / 1.252 | 0.987 / 1.010 |
-| 256 | C2R | 1.082 / 1.122 | 1.050 / 1.071 |
-| 512 | R2C | 2.234 / 2.269 | 2.224 / 2.234 |
-| 512 | C2R | 2.385 / 2.450 | 2.376 / 2.373 |
-| 1,024 | R2C | 4.729 / 4.834 | 4.714 / 4.704 |
-| 1,024 | C2R | 5.064 / 5.145 | 5.057 / 5.053 |
-| 2,048 | R2C | 10.680 / 10.796 | 10.661 / 10.684 |
-| 2,048 | C2R | 11.291 / 11.482 | 11.332 / 11.335 |
-| 4,096 | R2C | 23.099 / 22.537 | 23.555 / 22.676 |
-| 4,096 | C2R | 24.767 / 24.462 | 24.987 / 24.251 |
+| 64 | R2C | 0.236 / 0.261 | 0.209 / 0.209 |
+| 64 | C2R | 0.261 / 0.286 | 0.220 / 0.240 |
+| 128 | R2C | 0.506 / 0.490 | 0.472 / 0.473 |
+| 128 | C2R | 0.526 / 0.541 | 0.495 / 0.505 |
+| 256 | R2C | 1.002 / 1.027 | 0.984 / 1.006 |
+| 256 | C2R | 1.082 / 1.122 | 1.053 / 1.071 |
+| 512 | R2C | 2.320 / 2.264 | 2.231 / 2.256 |
+| 512 | C2R | 2.385 / 2.440 | 2.364 / 2.373 |
+| 1,024 | R2C | 4.749 / 4.800 | 4.707 / 4.699 |
+| 1,024 | C2R | 5.074 / 5.149 | 5.060 / 5.083 |
+| 2,048 | R2C | 10.720 / 10.830 | 10.658 / 10.630 |
+| 2,048 | C2R | 11.267 / 11.442 | 11.325 / 11.344 |
+| 4,096 | R2C | 22.973 / 22.547 | 23.137 / 22.763 |
+| 4,096 | C2R | 24.055 / 24.552 | 24.300 / 24.265 |
 
-At 4,096, the buffer experiment is 2.4–3.7% faster for R2C and 1.2–3.0%
-faster for C2R. Batch timings are within 2.3% at every smaller length; the
-single-call results below 512 show two timing clusters and do not support a
-stable difference. The measured gain is limited to the largest tested length.
-The code keeps the direct pass boundaries, while the report treats smaller
-lengths as ties or regressions and does not count this result as broad scalar
-performance improvement.
+The R2C input-copy removal improves the 4,096 median by 1.9% for one call
+and 1.6% for batches of 32. At smaller lengths, batch results range from 2.2%
+slower to 0.3% faster. The direct C2R output path is 9.6% slower at length 64
+for a single call and 9.1% slower for batches; at length 4,096 it is 2.1%
+slower for a single call and 0.1% faster for batches. It showed no consistent
+gain, so revision `9b10ef8` restored the previous C2R destination. For R2C,
+the clearest repeatable gain is at length 4,096; smaller-size results vary by
+call count and direction. The input path is retained as a measured buffer
+traffic reduction, but this experiment does not establish a general speedup.
+Neither change closes the remaining smooth-radix gap to RustFFT or DUCC.
