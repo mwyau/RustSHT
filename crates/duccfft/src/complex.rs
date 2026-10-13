@@ -556,6 +556,9 @@ fn execute_first_pass_in_place_inner<const R: usize, T: Float + FromPrimitive>(
     let combined_scale = stage_scale * output_scale;
     let radix_value = scalar::<T>(radix as f64);
     let overflow_threshold = T::max_value() / scalar::<T>(4.0 * radix as f64);
+    // When ido is one every stage twiddle is exactly unity. DUCC's cfftp
+    // passes use a separate no-twiddle loop for this case.
+    let has_stage_twiddles = pass.ido > 1;
 
     for inner in 0..pass.ido {
         let mut max_component = T::zero();
@@ -579,12 +582,16 @@ fn execute_first_pass_in_place_inner<const R: usize, T: Float + FromPrimitive>(
         if prescale {
             for (branch, &transformed) in execution.radix_output.iter().enumerate().take(radix) {
                 let index = inner + pass.ido * branch;
-                let twiddle = directed_root(
-                    &pass.twiddles,
-                    branch * pass.ido + inner,
-                    execution.direction,
-                );
-                backup[index] = transformed * twiddle;
+                backup[index] = if branch != 0 && has_stage_twiddles {
+                    transformed
+                        * directed_root(
+                            &pass.twiddles,
+                            branch * pass.ido + inner,
+                            execution.direction,
+                        )
+                } else {
+                    transformed
+                };
             }
             for (branch, slot) in execution.radix_input.iter_mut().enumerate().take(radix) {
                 let index = inner + pass.ido * branch;
@@ -598,23 +605,32 @@ fn execute_first_pass_in_place_inner<const R: usize, T: Float + FromPrimitive>(
             execution.transform::<R>(radix, root_stride);
             for (branch, &correction) in execution.radix_output.iter().enumerate().take(radix) {
                 let index = inner + pass.ido * branch;
-                let twiddle = directed_root(
-                    &pass.twiddles,
-                    branch * pass.ido + inner,
-                    execution.direction,
-                );
-                backup[index] = (backup[index] + correction * twiddle * stage_scale) * output_scale;
+                let correction = if branch != 0 && has_stage_twiddles {
+                    correction
+                        * directed_root(
+                            &pass.twiddles,
+                            branch * pass.ido + inner,
+                            execution.direction,
+                        )
+                } else {
+                    correction
+                };
+                backup[index] = (backup[index] + correction * stage_scale) * output_scale;
                 data[index] = backup[index];
             }
         } else {
             for (branch, &transformed) in execution.radix_output.iter().enumerate().take(radix) {
                 let index = inner + pass.ido * branch;
-                let twiddle = directed_root(
-                    &pass.twiddles,
-                    branch * pass.ido + inner,
-                    execution.direction,
-                );
-                let mut value = transformed * twiddle;
+                let mut value = if branch != 0 && has_stage_twiddles {
+                    transformed
+                        * directed_root(
+                            &pass.twiddles,
+                            branch * pass.ido + inner,
+                            execution.direction,
+                        )
+                } else {
+                    transformed
+                };
                 if inverse {
                     value = value * combined_scale;
                 }
@@ -670,6 +686,7 @@ fn execute_pass_inner<const R: usize, T: Float + FromPrimitive>(
     let combined_scale = stage_scale * output_scale;
     let radix_value = scalar::<T>(radix as f64);
     let overflow_threshold = T::max_value() / scalar::<T>(4.0 * radix as f64);
+    let has_stage_twiddles = pass.ido > 1;
 
     // This l1/ido pass order matches cfft_multipass in pinned DUCC. The input
     // and output layouts place each radix's butterfly values contiguously in
@@ -699,12 +716,16 @@ fn execute_pass_inner<const R: usize, T: Float + FromPrimitive>(
 
             for (branch, &transformed) in execution.radix_output.iter().enumerate().take(radix) {
                 let destination_index = inner + pass.ido * (outer + pass.l1 * branch);
-                let twiddle = directed_root(
-                    &pass.twiddles,
-                    branch * pass.ido + inner,
-                    execution.direction,
-                );
-                let mut value = transformed * twiddle;
+                let mut value = if branch != 0 && has_stage_twiddles {
+                    transformed
+                        * directed_root(
+                            &pass.twiddles,
+                            branch * pass.ido + inner,
+                            execution.direction,
+                        )
+                } else {
+                    transformed
+                };
                 if inverse && !prescale {
                     value = value * combined_scale;
                 }
@@ -727,14 +748,18 @@ fn execute_pass_inner<const R: usize, T: Float + FromPrimitive>(
                 execution.transform::<R>(radix, radix_root_stride);
                 for (branch, &correction) in execution.radix_output.iter().enumerate().take(radix) {
                     let destination_index = inner + pass.ido * (outer + pass.l1 * branch);
-                    let twiddle = directed_root(
-                        &pass.twiddles,
-                        branch * pass.ido + inner,
-                        execution.direction,
-                    );
-                    output[destination_index] = (output[destination_index]
-                        + correction * twiddle * stage_scale)
-                        * output_scale;
+                    let correction = if branch != 0 && has_stage_twiddles {
+                        correction
+                            * directed_root(
+                                &pass.twiddles,
+                                branch * pass.ido + inner,
+                                execution.direction,
+                            )
+                    } else {
+                        correction
+                    };
+                    output[destination_index] =
+                        (output[destination_index] + correction * stage_scale) * output_scale;
                 }
             }
         }
@@ -809,7 +834,7 @@ fn execute_first_pass_direct_radix<const R: usize, T: Float + FromPrimitive>(
         for branch in 0..radix {
             let index = inner + pass.ido * branch;
             let mut value = transformed[branch];
-            if branch != 0 {
+            if branch != 0 && pass.ido > 1 {
                 let twiddle = directed_root(
                     &pass.twiddles,
                     branch * pass.ido + inner,
@@ -818,7 +843,7 @@ fn execute_first_pass_direct_radix<const R: usize, T: Float + FromPrimitive>(
                 value = value * twiddle;
             }
             if prescale {
-                if branch != 0 {
+                if branch != 0 && pass.ido > 1 {
                     let twiddle = directed_root(
                         &pass.twiddles,
                         branch * pass.ido + inner,
@@ -906,7 +931,7 @@ fn execute_direct_radix_pass<const R: usize, T: Float + FromPrimitive>(
             for branch in 0..radix {
                 let destination_index = inner + pass.ido * (outer + pass.l1 * branch);
                 let mut value = transformed[branch];
-                if branch != 0 {
+                if branch != 0 && pass.ido > 1 {
                     let twiddle = directed_root(
                         &pass.twiddles,
                         branch * pass.ido + inner,
@@ -915,7 +940,7 @@ fn execute_direct_radix_pass<const R: usize, T: Float + FromPrimitive>(
                     value = value * twiddle;
                 }
                 if prescale {
-                    if branch != 0 {
+                    if branch != 0 && pass.ido > 1 {
                         let twiddle = directed_root(
                             &pass.twiddles,
                             branch * pass.ido + inner,
