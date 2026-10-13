@@ -703,7 +703,11 @@ impl<T: ShtScalar> ShtPlan<T> {
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
         let phi0 = self.grid.phi0();
-        let allow_fast_scalar = !derivative_norm;
+        let allow_fast_scalar = !derivative_norm
+            || (recurrence_spin == 1
+                && self.harmonics.spin() == 0
+                && T::supports_paired_scalar()
+                && self.harmonics.lmax() >= SPIN1_FAST_MIN_LMAX);
         self.prepare_spin_latitudes(workspace, recurrence_spin);
         workspace
             .spectra
@@ -856,7 +860,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         };
         let fast_scalar_enabled = allow_fast_scalar
             && matches!(spin, 1 | 2)
-            && !derivative_norm
+            && (!derivative_norm || (spin == 1 && self.harmonics.spin() == 0))
             && (spin == 1 || b_alm.is_some())
             && self.harmonics.lmax() >= fast_scalar_min_lmax
             && T::supports_paired_scalar()
@@ -938,7 +942,53 @@ impl<T: ShtScalar> ShtPlan<T> {
         let nyquist_scale = fourier_scale * T::from_f64(2.0).expect("two is representable");
         for m in 0..=mmax {
             let phase = longitude_phase::<T>(m, phi0, false);
-            if fast_scalar {
+            let mut fast_scalar_order = fast_scalar;
+            if fast_scalar_order && spin == 1 {
+                let coefficient_start = self
+                    .harmonics
+                    .index(m, m)
+                    .expect("every packed order starts at its diagonal degree");
+                let coefficient_count = lmax - m + 1;
+                let coefficient_slice = if derivative_norm {
+                    let scaled = &mut recurrence.fast_spin_first[..coefficient_count];
+                    for (offset, coefficient) in scaled.iter_mut().enumerate() {
+                        let degree = m + offset;
+                        let degree = T::from_usize(degree).expect("degree converts");
+                        let scale = if degree == T::zero() {
+                            T::zero()
+                        } else {
+                            (degree * (degree + T::one())).sqrt()
+                        };
+                        *coefficient = e_alm[coefficient_start + offset] * scale;
+                        if !coefficient.re.is_finite() || !coefficient.im.is_finite() {
+                            fast_scalar_order = false;
+                            break;
+                        }
+                    }
+                    fast_scalar_order.then_some(&scaled[..])
+                } else {
+                    Some(&e_alm[coefficient_start..coefficient_start + coefficient_count])
+                };
+                if let Some(e_coefficients) = coefficient_slice {
+                    spin1_to_scalar(
+                        m,
+                        lmax,
+                        e_coefficients,
+                        b_alm.map(|values| {
+                            &values[coefficient_start..coefficient_start + coefficient_count]
+                        }),
+                        &mut recurrence.fast_scalar_first[..lmax + 2],
+                        &mut recurrence.fast_scalar_second[..lmax + 2],
+                    );
+                    if derivative_norm {
+                        fast_scalar_order = recurrence.fast_scalar_first[..lmax + 2]
+                            .iter()
+                            .chain(&recurrence.fast_scalar_second[..lmax + 2])
+                            .all(|value| value.re.is_finite() && value.im.is_finite());
+                    }
+                }
+            }
+            if fast_scalar_order {
                 if spin == 2 {
                     self.synthesize_spin2_scalar_order(
                         m,
@@ -955,24 +1005,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         recurrence,
                     )?;
                 } else {
-                    let coefficient_start = self
-                        .harmonics
-                        .index(m, m)
-                        .expect("every packed order starts at its diagonal degree");
-                    let coefficient_count = lmax - m + 1;
                     let scalar_lmax = lmax + 1;
-                    let scalar_coefficient_count = scalar_lmax + 1;
-                    let b_coefficients = b_alm.map(|values| {
-                        &values[coefficient_start..coefficient_start + coefficient_count]
-                    });
-                    spin1_to_scalar(
-                        m,
-                        lmax,
-                        &e_alm[coefficient_start..coefficient_start + coefficient_count],
-                        b_coefficients,
-                        &mut recurrence.fast_scalar_first[..scalar_coefficient_count],
-                        &mut recurrence.fast_scalar_second[..scalar_coefficient_count],
-                    );
                     T::fill_epsilon(m, scalar_lmax, &mut recurrence.epsilon);
                     let paired_factors_ready = T::fill_paired_scalar_factors(
                         m,
