@@ -1663,3 +1663,9 @@ A candidate moved `fill_spin_factors()` after the partial paired-scalar analysis
 | GL T511 control | `90.707/24.339` | `91.155/25.474` | `+0.5%/+4.7%` |
 
 Process ranges overlapped in most comparisons, and the candidate was slower in both thread counts for CC T1023 and all F1 bandlimits. The T511 GL control showed no improvement. The focused spin-1 fast-versus-general analysis and adjoint regression passed with the candidate, but the whole-transform measurements do not support retaining it. The source uses the previous factor order.
+
+### Paired scalar analysis FMA accumulation (2026-10-13, rejected)
+
+
+
+The accumulator and scaled fallback remain unchanged. No additional dispatch parameter or duplicated reducer was added to distinguish scalar analysis from spin-conversion analysis. Reconsider this only with a quieter, paired whole-transform comparison that includes DUCC, adjoint checks and high-band validation; do not infer a speedup from instruction reduction alone. No FFT code changed.
