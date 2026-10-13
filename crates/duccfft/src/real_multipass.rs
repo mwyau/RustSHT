@@ -185,6 +185,16 @@ fn execute_inverse_pass<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], o
 fn forward_radix2<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output: &mut [T]) {
     let l1 = pass.l1;
     let ido = pass.ido;
+    if ido == 1 {
+        let (pairs, _) = output.as_chunks_mut::<2>();
+        for (k, dst) in pairs.iter_mut().enumerate() {
+            let x0 = input[k];
+            let x1 = input[l1 + k];
+            dst[0] = x0 + x1;
+            dst[1] = x0 - x1;
+        }
+        return;
+    }
     for k in 0..l1 {
         let x0 = input[index(0, k, 0, ido, l1)];
         let x1 = input[index(0, k, 1, ido, l1)];
@@ -222,6 +232,15 @@ fn forward_radix2<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output:
 fn inverse_radix2<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output: &mut [T]) {
     let l1 = pass.l1;
     let ido = pass.ido;
+    if ido == 1 {
+        let (first, second) = output.split_at_mut(l1);
+        let (pairs, _) = input.as_chunks::<2>();
+        for (k, src) in pairs.iter().enumerate() {
+            first[k] = src[0] + src[1];
+            second[k] = src[0] - src[1];
+        }
+        return;
+    }
     for k in 0..l1 {
         let x0 = input[index(0, 0, k, ido, 2)];
         let x1 = input[index(ido - 1, 1, k, ido, 2)];
@@ -261,6 +280,22 @@ fn inverse_radix2<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output:
 fn forward_radix4<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output: &mut [T]) {
     let l1 = pass.l1;
     let ido = pass.ido;
+    if ido == 1 {
+        let (groups, _) = output.as_chunks_mut::<4>();
+        for (k, dst) in groups.iter_mut().enumerate() {
+            let x0 = input[k];
+            let x1 = input[l1 + k];
+            let x2 = input[2 * l1 + k];
+            let x3 = input[3 * l1 + k];
+            let tr1 = x3 + x1;
+            let tr2 = x0 + x2;
+            dst[0] = tr2 + tr1;
+            dst[1] = x0 - x2;
+            dst[2] = x3 - x1;
+            dst[3] = tr2 - tr1;
+        }
+        return;
+    }
     let hsqt2 = scalar::<T>(std::f64::consts::FRAC_1_SQRT_2);
     for k in 0..l1 {
         let x3 = input[index(0, k, 3, ido, l1)];
@@ -337,6 +372,24 @@ fn forward_radix4<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output:
 fn inverse_radix4<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output: &mut [T]) {
     let l1 = pass.l1;
     let ido = pass.ido;
+    if ido == 1 {
+        let (branch0, tail) = output.split_at_mut(l1);
+        let (branch1, tail) = tail.split_at_mut(l1);
+        let (branch2, branch3) = tail.split_at_mut(l1);
+        let two = scalar::<T>(2.0);
+        let (groups, _) = input.as_chunks::<4>();
+        for (k, src) in groups.iter().enumerate() {
+            let tr2 = src[0] + src[3];
+            let tr1 = src[0] - src[3];
+            let tr3 = two * src[1];
+            let tr4 = two * src[2];
+            branch0[k] = tr2 + tr3;
+            branch1[k] = tr1 - tr4;
+            branch2[k] = tr2 - tr3;
+            branch3[k] = tr1 + tr4;
+        }
+        return;
+    }
     let sqrt2 = scalar::<T>(std::f64::consts::SQRT_2);
     for k in 0..l1 {
         let x0 = input[index(0, 0, k, ido, 4)];

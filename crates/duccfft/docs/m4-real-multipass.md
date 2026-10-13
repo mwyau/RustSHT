@@ -319,3 +319,48 @@ gain, so revision `9b10ef8` restored the previous C2R destination. For R2C,
 the clearest repeatable gain is at length 4,096; smaller-size results vary by
 call count and direction. The input path is retained as a measured buffer
 traffic reduction, but this experiment does not establish a general speedup. Neither change closes the remaining smooth-radix gap to RustFFT or DUCC.
+
+## `ido == 1` pass loops
+
+The radix-2 and radix-4 pass functions now use a dedicated loop when `ido == 1`. Forward passes read separated branch planes and write contiguous butterfly
+groups. Inverse passes read contiguous groups and write separated output
+planes. The specialization uses safe slice chunking; other `ido` values keep
+the general pass loops. The paired native-only comparison used baseline `06813e9c7f758098751f8556fac0faad684a1a0d`
+and the candidate source recorded in this commit. Six processes per revision and length
+ran in alternating order, pinned to one CPU core. Each process warmed the plan once
+and reported the median of seven execution samples. The machine was an x86-64 CPU with Rust 1.99.0, `opt-level=3`, no custom `RUSTFLAGS`, no LTO,
+and no target CPU setting. The shared Legendre workload was active, so these
+results remain provisional. The harness includes the public operation's
+packing and output conversion. Batch timings below are per transform for a
+sequential batch of 32. Plan and workspace times remain in the raw data but
+are not affected by the pass-loop change. Each cell gives baseline / candidate time in microseconds and candidate speed
+change relative to baseline. Negative percentages are regressions.
+
+| N | Operation | Single | Batch of 32 |
+|---:|---|---:|---:|
+| 64 | R2C | 0.231 / 0.240 (-3.7%) | 0.212 / 0.199 (+6.5%) |
+| 64 | C2R | 0.261 / 0.271 (-3.7%) | 0.237 / 0.236 (+0.2%) |
+| 128 | R2C | 0.501 / 0.486 (+3.1%) | 0.486 / 0.455 (+6.8%) |
+| 128 | C2R | 0.541 / 0.521 (+3.8%) | 0.531 / 0.498 (+6.6%) |
+| 256 | R2C | 1.042 / 0.982 (+6.1%) | 1.041 / 0.967 (+7.7%) |
+| 256 | C2R | 1.102 / 1.042 (+5.8%) | 1.078 / 1.026 (+5.0%) |
+| 512 | R2C | 2.400 / 2.204 (+8.9%) | 2.253 / 2.128 (+5.9%) |
+| 512 | C2R | 2.400 / 2.274 (+5.5%) | 2.366 / 2.251 (+5.1%) |
+| 1,024 | R2C | 4.989 / 4.819 (+3.5%) | 4.798 / 4.541 (+5.7%) |
+| 1,024 | C2R | 5.074 / 4.844 (+4.8%) | 5.072 / 4.846 (+4.7%) |
+| 2,048 | R2C | 11.085 / 10.704 (+3.6%) | 10.942 / 10.322 (+6.0%) |
+| 2,048 | C2R | 11.336 / 10.886 (+4.1%) | 11.388 / 10.980 (+3.7%) |
+| 4,096 | R2C | 23.319 / 21.901 (+6.5%) | 23.522 / 22.070 (+6.6%) |
+| 4,096 | C2R | 24.391 / 23.308 (+4.6%) | 24.485 / 23.436 (+4.5%) |
+
+The candidate reduces median time at lengths 128–4,096 for both transform
+directions and call counts. At length 64, single-call speed declines about
+3.7%; the batch results are flat or faster. This pattern supports retaining the
+specialization for now while treating the smallest-size effects as noise or
+branch overhead. It does not resolve the overall gap to RustFFT. Release disassembly of `execute_forward_pass::<f64>` in the candidate shows
+the `ido == 1` radix-4 loop using two-lane SSE2 `addpd` and `subpd` operations;
+the corresponding baseline loop uses scalar `addsd` and `subsd`. This confirms
+vectorization for that forward pass on the tested x86-64 compiler target. It
+does not establish the cause of the full-call timing changes or claim that
+inverse passes use packed operations. The full per-process records are in
+[`m4-real-ido1-paired-process-samples.csv`](../benches/results/m4-real-ido1-paired-process-samples.csv).
