@@ -12,6 +12,8 @@ use num_traits::{Float, FromPrimitive};
 pub(crate) type RealRadix4InteriorKernel<T> = unsafe fn(&[T], [&mut [T]; 4], usize, &[T]) -> usize;
 pub(crate) type RealRadix2InteriorKernel<T> =
     unsafe fn([&[T]; 2], [&mut [T]; 2], usize, &[T]) -> usize;
+pub(crate) type RealRadix2ForwardInteriorKernel<T> =
+    unsafe fn([&[T]; 2], [&mut [T]; 2], usize, &[T]) -> usize;
 pub(crate) type RealRadix4ForwardInteriorKernel<T> =
     unsafe fn([&[T]; 4], [&mut [T]; 4], usize, &[T]) -> usize;
 
@@ -45,6 +47,11 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
         None
     }
 
+    /// Returns the forward radix-two interior kernel when AVX2 is available.
+    fn real_radix2_forward_interior_kernel() -> Option<RealRadix2ForwardInteriorKernel<Self>> {
+        None
+    }
+
     /// Executes the first fixed-radix pass over contiguous complex values.
     ///
     /// # Safety
@@ -73,8 +80,8 @@ mod x86 {
     use std::sync::OnceLock;
 
     use super::{
-        Complex, RealRadix2InteriorKernel, RealRadix4ForwardInteriorKernel,
-        RealRadix4InteriorKernel, SimdPass, SimdScalar,
+        Complex, RealRadix2ForwardInteriorKernel, RealRadix2InteriorKernel,
+        RealRadix4ForwardInteriorKernel, RealRadix4InteriorKernel, SimdPass, SimdScalar,
     };
 
     static AVX2_AVAILABLE: OnceLock<bool> = OnceLock::new();
@@ -109,6 +116,14 @@ mod x86 {
         fn real_radix2_interior_kernel() -> Option<RealRadix2InteriorKernel<Self>> {
             if available() {
                 Some(f64_real_kernel::inverse_radix2_interior)
+            } else {
+                None
+            }
+        }
+
+        fn real_radix2_forward_interior_kernel() -> Option<RealRadix2ForwardInteriorKernel<Self>> {
+            if available() {
+                Some(f64_real_kernel::forward_radix2_interior)
             } else {
                 None
             }
@@ -155,6 +170,14 @@ mod x86 {
         fn real_radix2_interior_kernel() -> Option<RealRadix2InteriorKernel<Self>> {
             if available() {
                 Some(f32_real_kernel::inverse_radix2_interior)
+            } else {
+                None
+            }
+        }
+
+        fn real_radix2_forward_interior_kernel() -> Option<RealRadix2ForwardInteriorKernel<Self>> {
+            if available() {
+                Some(f32_real_kernel::forward_radix2_interior)
             } else {
                 None
             }
@@ -721,6 +744,45 @@ mod x86 {
         }
 
         #[target_feature(enable = "avx2")]
+        pub(super) unsafe fn forward_radix2_interior(
+            input: [&[f64]; 2],
+            output: [&mut [f64]; 2],
+            ido: usize,
+            twiddles: &[f64],
+        ) -> usize {
+            debug_assert!(ido > 2);
+            debug_assert!(ido.is_multiple_of(2));
+            debug_assert!(input.iter().all(|branch| branch.len() == ido));
+            debug_assert!(output.iter().all(|branch| branch.len() == ido));
+            debug_assert!(twiddles.len() >= ido - 1);
+
+            let input0 = input[0].as_ptr();
+            let input1 = input[1].as_ptr();
+            let twiddle = twiddles.as_ptr();
+            let output0 = output[0].as_mut_ptr();
+            let output1 = output[1].as_mut_ptr();
+
+            let mut i = 2;
+            while i + 2 < ido {
+                let x0 = unsafe { _mm256_loadu_pd(input0.add(i - 1)) };
+                let x1 = unsafe { _mm256_loadu_pd(input1.add(i - 1)) };
+                let roots = unsafe { _mm256_loadu_pd(twiddle.add(i - 2)) };
+                let twiddled = unsafe { multiply_pm(roots, x1) };
+                let sum = _mm256_add_pd(x0, twiddled);
+                let difference = _mm256_sub_pd(x0, twiddled);
+                let reverse_imaginary = _mm256_sub_pd(twiddled, x0);
+                let branch1 = _mm256_blend_pd(difference, reverse_imaginary, 0b1010);
+                let branch1 = _mm256_permute4x64_pd(branch1, 0b0100_1110);
+                unsafe {
+                    _mm256_storeu_pd(output0.add(i - 1), sum);
+                    _mm256_storeu_pd(output1.add(ido - i - 3), branch1);
+                }
+                i += 4;
+            }
+            i
+        }
+
+        #[target_feature(enable = "avx2")]
         pub(super) unsafe fn inverse_radix2_interior(
             input: [&[f64]; 2],
             output: [&mut [f64]; 2],
@@ -993,6 +1055,45 @@ mod x86 {
         #[target_feature(enable = "avx2")]
         unsafe fn pack(real: V, imag: V) -> V {
             _mm256_blend_ps(real, imag, 0b1010_1010)
+        }
+
+        #[target_feature(enable = "avx2")]
+        pub(super) unsafe fn forward_radix2_interior(
+            input: [&[f32]; 2],
+            output: [&mut [f32]; 2],
+            ido: usize,
+            twiddles: &[f32],
+        ) -> usize {
+            debug_assert!(ido > 2);
+            debug_assert!(ido.is_multiple_of(2));
+            debug_assert!(input.iter().all(|branch| branch.len() == ido));
+            debug_assert!(output.iter().all(|branch| branch.len() == ido));
+            debug_assert!(twiddles.len() >= ido - 1);
+
+            let input0 = input[0].as_ptr();
+            let input1 = input[1].as_ptr();
+            let twiddle = twiddles.as_ptr();
+            let output0 = output[0].as_mut_ptr();
+            let output1 = output[1].as_mut_ptr();
+
+            let mut i = 2;
+            while i + 6 < ido {
+                let x0 = unsafe { _mm256_loadu_ps(input0.add(i - 1)) };
+                let x1 = unsafe { _mm256_loadu_ps(input1.add(i - 1)) };
+                let roots = unsafe { _mm256_loadu_ps(twiddle.add(i - 2)) };
+                let twiddled = unsafe { multiply_pm(roots, x1) };
+                let sum = _mm256_add_ps(x0, twiddled);
+                let difference = _mm256_sub_ps(x0, twiddled);
+                let reverse_imaginary = _mm256_sub_ps(twiddled, x0);
+                let branch1 = _mm256_blend_ps(difference, reverse_imaginary, 0b1010_1010);
+                let branch1 = unsafe { reverse_complex_order(branch1) };
+                unsafe {
+                    _mm256_storeu_ps(output0.add(i - 1), sum);
+                    _mm256_storeu_ps(output1.add(ido - i - 7), branch1);
+                }
+                i += 8;
+            }
+            i
         }
 
         #[target_feature(enable = "avx2")]
@@ -1661,6 +1762,142 @@ mod tests {
                     } else {
                         assert!(
                             (actual[branch][index] - expected[branch][index]).abs() < 3.0e-12,
+                            "ido={ido}, branch={branch}, index={index}: {} != {}",
+                            actual[branch][index],
+                            expected[branch][index]
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn f64_real_forward_radix2_interior_matches_scalar_equations() {
+        let Some(kernel) = <f64 as SimdScalar>::real_radix2_forward_interior_kernel() else {
+            return;
+        };
+        for ido in [4, 6, 8, 10, 12, 14, 16, 18, 20, 32, 64] {
+            let inputs: [Vec<f64>; 2] = std::array::from_fn(|branch| {
+                (0..ido)
+                    .map(|index| {
+                        let x = (branch * ido + index) as f64;
+                        (x * 0.37).sin() + 0.25 * (x * 0.19).cos()
+                    })
+                    .collect()
+            });
+            let twiddles: Vec<_> = (0..ido - 1)
+                .map(|index| {
+                    let x = index as f64;
+                    (x * 0.23).cos() + 0.5 * (x * 0.41).sin()
+                })
+                .collect();
+            let sentinel = f64::NAN;
+            let mut actual0 = vec![sentinel; ido];
+            let mut actual1 = vec![sentinel; ido];
+            let start = unsafe {
+                kernel(
+                    [&inputs[0], &inputs[1]],
+                    [&mut actual0, &mut actual1],
+                    ido,
+                    &twiddles,
+                )
+            };
+            let expected_start = 2 + 4 * ((ido - 2) / 4);
+            assert_eq!(start, expected_start, "ido={ido}");
+            let actual = [actual0, actual1];
+            let mut expected = [vec![sentinel; ido], vec![sentinel; ido]];
+
+            for i in (2..start).step_by(2) {
+                let ic = ido - i;
+                let (twiddled_re, twiddled_im) = (
+                    twiddles[i - 2] * inputs[1][i - 1] + twiddles[i - 1] * inputs[1][i],
+                    twiddles[i - 2] * inputs[1][i] - twiddles[i - 1] * inputs[1][i - 1],
+                );
+                expected[0][i - 1] = inputs[0][i - 1] + twiddled_re;
+                expected[0][i] = twiddled_im + inputs[0][i];
+                expected[1][ic - 1] = inputs[0][i - 1] - twiddled_re;
+                expected[1][ic] = twiddled_im - inputs[0][i];
+            }
+
+            for branch in 0..2 {
+                for index in 0..ido {
+                    if expected[branch][index].is_nan() {
+                        assert!(
+                            actual[branch][index].is_nan(),
+                            "ido={ido}, branch={branch}, untouched index={index} was overwritten"
+                        );
+                    } else {
+                        assert!(
+                            (actual[branch][index] - expected[branch][index]).abs() < 3.0e-12,
+                            "ido={ido}, branch={branch}, index={index}: {} != {}",
+                            actual[branch][index],
+                            expected[branch][index]
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn f32_real_forward_radix2_interior_matches_scalar_equations() {
+        let Some(kernel) = <f32 as SimdScalar>::real_radix2_forward_interior_kernel() else {
+            return;
+        };
+        for ido in [4, 6, 8, 10, 12, 14, 16, 18, 24, 32, 64] {
+            let inputs: [Vec<f32>; 2] = std::array::from_fn(|branch| {
+                (0..ido)
+                    .map(|index| {
+                        let x = (branch * ido + index) as f32;
+                        (x * 0.37).sin() + 0.25 * (x * 0.19).cos()
+                    })
+                    .collect()
+            });
+            let twiddles: Vec<_> = (0..ido - 1)
+                .map(|index| {
+                    let x = index as f32;
+                    (x * 0.23).cos() + 0.5 * (x * 0.41).sin()
+                })
+                .collect();
+            let sentinel = f32::NAN;
+            let mut actual0 = vec![sentinel; ido];
+            let mut actual1 = vec![sentinel; ido];
+            let start = unsafe {
+                kernel(
+                    [&inputs[0], &inputs[1]],
+                    [&mut actual0, &mut actual1],
+                    ido,
+                    &twiddles,
+                )
+            };
+            let expected_start = 2 + 8 * ((ido - 2) / 8);
+            assert_eq!(start, expected_start, "ido={ido}");
+            let actual = [actual0, actual1];
+            let mut expected = [vec![sentinel; ido], vec![sentinel; ido]];
+
+            for i in (2..start).step_by(2) {
+                let ic = ido - i;
+                let (twiddled_re, twiddled_im) = (
+                    twiddles[i - 2] * inputs[1][i - 1] + twiddles[i - 1] * inputs[1][i],
+                    twiddles[i - 2] * inputs[1][i] - twiddles[i - 1] * inputs[1][i - 1],
+                );
+                expected[0][i - 1] = inputs[0][i - 1] + twiddled_re;
+                expected[0][i] = twiddled_im + inputs[0][i];
+                expected[1][ic - 1] = inputs[0][i - 1] - twiddled_re;
+                expected[1][ic] = twiddled_im - inputs[0][i];
+            }
+
+            for branch in 0..2 {
+                for index in 0..ido {
+                    if expected[branch][index].is_nan() {
+                        assert!(
+                            actual[branch][index].is_nan(),
+                            "ido={ido}, branch={branch}, untouched index={index} was overwritten"
+                        );
+                    } else {
+                        assert!(
+                            (actual[branch][index] - expected[branch][index]).abs() < 2.0e-5,
                             "ido={ido}, branch={branch}, index={index}: {} != {}",
                             actual[branch][index],
                             expected[branch][index]

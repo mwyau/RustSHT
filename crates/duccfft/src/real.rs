@@ -19,7 +19,8 @@ use crate::complex::{
 };
 use crate::real_multipass::{RealMultipassPlan, RealMultipassWorkspace};
 use crate::simd::{
-    RealRadix2InteriorKernel, RealRadix4ForwardInteriorKernel, RealRadix4InteriorKernel, SimdScalar,
+    RealRadix2ForwardInteriorKernel, RealRadix2InteriorKernel, RealRadix4ForwardInteriorKernel,
+    RealRadix4InteriorKernel, SimdScalar,
 };
 
 /// An immutable one-dimensional real FFT plan.
@@ -107,6 +108,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
     fn try_new(
         len: usize,
         real_radix2_interior_kernel: Option<RealRadix2InteriorKernel<T>>,
+        real_radix2_forward_interior_kernel: Option<RealRadix2ForwardInteriorKernel<T>>,
         real_radix4_forward_interior_kernel: Option<RealRadix4ForwardInteriorKernel<T>>,
         real_radix4_interior_kernel: Option<RealRadix4InteriorKernel<T>>,
     ) -> Result<Self, FftError> {
@@ -152,6 +154,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                 &factors,
                 &roots,
                 real_radix2_interior_kernel,
+                real_radix2_forward_interior_kernel,
                 real_radix4_forward_interior_kernel,
                 real_radix4_interior_kernel,
             )?
@@ -673,6 +676,7 @@ macro_rules! implement_public_api {
                 Self::try_new(
                     len,
                     <$scalar as SimdScalar>::real_radix2_interior_kernel(),
+                    <$scalar as SimdScalar>::real_radix2_forward_interior_kernel(),
                     <$scalar as SimdScalar>::real_radix4_forward_interior_kernel(),
                     <$scalar as SimdScalar>::real_radix4_interior_kernel(),
                 )
