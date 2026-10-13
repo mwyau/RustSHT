@@ -228,6 +228,38 @@ pub(crate) trait ShtScalar:
     }
     #[expect(
         clippy::too_many_arguments,
+        reason = "The prepared dual-channel block receives both spectra and worker scratch explicitly."
+    )]
+    fn synthesize_prepared_scalar_pair_block_dispatched(
+        _arch: Arch,
+        _m: usize,
+        _lmax: usize,
+        _sin_theta: &[Self],
+        _cos_theta: &[Self],
+        _sectoral_norm: Self,
+        _coefficient_a: &[Self],
+        _coefficient_b: &[Self],
+        _first_even: &[Complex<Self>],
+        _first_odd: &[Complex<Self>],
+        _second_even: &[Complex<Self>],
+        _second_odd: &[Complex<Self>],
+        _ring_order_limits: &[usize],
+        _spectrum_len: usize,
+        _first_spectra: &mut [Complex<Self>],
+        _second_spectra: &mut [Complex<Self>],
+        _previous: &mut [Self],
+        _current: &mut [Self],
+        _next: &mut [Self],
+        _exponents: &mut [i64],
+        _first_sum_re: &mut [Self],
+        _first_sum_im: &mut [Self],
+        _second_sum_re: &mut [Self],
+        _second_sum_im: &mut [Self],
+    ) -> Result<bool, ShtError> {
+        Ok(false)
+    }
+    #[expect(
+        clippy::too_many_arguments,
         reason = "The transition kernel receives paired coefficients and caller-owned recurrence and sum scratch."
     )]
     fn try_synthesize_paired_scalar_transition_dispatched(
@@ -725,6 +757,60 @@ impl ShtScalar for f64 {
             coefficient_b,
             first_coefficients,
             second_coefficients,
+            ring_order_limits,
+            spectrum_len,
+            first_spectra,
+            second_spectra,
+            previous,
+            current,
+            next,
+            exponents,
+            first_sum_re,
+            first_sum_im,
+            second_sum_re,
+            second_sum_im,
+        )
+    }
+
+    fn synthesize_prepared_scalar_pair_block_dispatched(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        sectoral_norm: Self,
+        coefficient_a: &[Self],
+        coefficient_b: &[Self],
+        first_even: &[Complex<Self>],
+        first_odd: &[Complex<Self>],
+        second_even: &[Complex<Self>],
+        second_odd: &[Complex<Self>],
+        ring_order_limits: &[usize],
+        spectrum_len: usize,
+        first_spectra: &mut [Complex<Self>],
+        second_spectra: &mut [Complex<Self>],
+        previous: &mut [Self],
+        current: &mut [Self],
+        next: &mut [Self],
+        exponents: &mut [i64],
+        first_sum_re: &mut [Self],
+        first_sum_im: &mut [Self],
+        second_sum_re: &mut [Self],
+        second_sum_im: &mut [Self],
+    ) -> Result<bool, ShtError> {
+        scalar_paired::synthesize_prepared_order_pair_block_dispatched(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            first_even,
+            first_odd,
+            second_even,
+            second_odd,
             ring_order_limits,
             spectrum_len,
             first_spectra,

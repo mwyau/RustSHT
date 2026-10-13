@@ -2266,3 +2266,22 @@ The largest effect is not explained by skipped lane count alone. Temporary T511 
 ### Spin-1 transition threshold at T63 (screened, 2026-10-13)
 
 A temporary path counter tested the existing scaled-to-normal transition with its `lmax` gate lowered from 191 to 63. It counted zero transition-helper calls for STANDARD, GRAD_ONLY or DERIV1 synthesis on GL, CC and F1 at T63. The safe-lane split was also ineligible: every endpoint in the scalar-conversion fast segments had `sin(theta) >= 0.01`. The counter and test were removed, and the threshold remains 191. Three alternating native process pairs showed overlapping, noisy whole-transform timings; because the candidate did not enter the transition path, those timings provide no evidence of a speed change. The earlier T127 all-grid/mode screen is recorded with the spin-1 safe-lane transition split and likewise does not support lowering the gate. No source change was retained and no FFT code changed.
+
+### Spin-1 paired-channel synthesis recurrence (2026-10-13)
+
+The earlier paired scalar-conversion path advanced and accumulated the Q and U channels in separate SIMD calls. This candidate prepares both channels' even/odd degree coefficients once per order, advances their common scalar recurrence once per latitude block, and keeps four real/imaginary SIMD accumulators live together. It is selected only for f64 spin-1 synthesis when every lane has `sin(theta) >= 0.01`, no ring is excluded by the order cutoff, and the existing paired coefficient preparation succeeds. Other cases retain the established scalar-conversion or scaled recurrence path. The path serves STANDARD and GRAD_ONLY synthesis; DERIV1 is scalar synthesis and is not affected. It adds two complex coefficient scratch arrays per worker (16,416 bytes at T511; 131,328 bytes for eight workers) and no map or spectrum allocation.
+
+Native matched comparisons used the release `m1b_bench` executable, reusable plans/workspaces, `phi0=0.37`, `nphi=2*lmax+3`, one warm-up and five timed samples per process, pinned to CPUs 0–7 on the Ryzen 9 5950X / Linux `7.0.14-20-pve`. Rust was `1.99.0 (b940084d7 2026-09-28)`, release `opt-level=3`, 16 codegen units, LTO off, runtime AVX2/FMA dispatch and no `target-cpu=native`. The baseline executable came from `a67ee09`; the candidate was built from the then-current worktree. Each value below is the median of three alternating baseline/candidate process pairs, milliseconds at one/eight threads:
+
+| Grid / bandlimit | Operation | Baseline 1T/8T | Candidate 1T/8T | Change 1T/8T |
+| --- | --- | ---: | ---: | ---: |
+| GL T511 | Spin-1 STANDARD synthesis | `62.192/21.549` | `59.033/20.757` | `-5.1%/-3.7%` |
+| GL T511 | Spin-1 GRAD_ONLY synthesis | `64.176/21.726` | `59.958/21.536` | `-6.6%/-0.9%` |
+| CC T511 | Spin-1 STANDARD synthesis | `65.100/26.013` | `61.487/25.570` | `-5.6%/-1.7%` |
+| CC T511 | Spin-1 GRAD_ONLY synthesis | `66.443/26.389` | `62.990/26.000` | `-5.2%/-1.5%` |
+| F1 T511 | Spin-1 STANDARD synthesis | `58.601/20.190` | `54.333/19.829` | `-7.3%/-1.8%` |
+| F1 T511 | Spin-1 GRAD_ONLY synthesis | `58.333/22.257` | `54.891/19.645` | `-5.9%/-11.7%` |
+
+The one-thread result improved in every valid GL/CC/F1 case. Eight-thread changes were smaller, with the F1 GRAD_ONLY series showing substantial process variability; only its median is reported and no precise scaling claim is made. The native harness rejects spin-1 DERIV1, correctly, because DERIV1 is a scalar derivative operation; it was mistakenly included in one screening loop and its panics are excluded. Plan construction and workspace-allocation samples overlapped between baseline and candidate (plan about `0.13–0.17 ms`, workspace about `7.4–8.3 ms`); they do not explain the execution change.
+
+On final source, `cargo test -p rustsht --lib spin1_scalar_` passed seven focused tests, including comparison to the general channel recurrence and all-grid scalar-conversion coverage. `cargo test --release -p rustsht --lib m3_spin_t511_all_grids_matches_ducc_and_roundtrips -- --ignored` passed the opt-in T511 GL/CC/F1 spin-1/2 DUCC and roundtrip check with the candidate active. Existing focused adjoint checks are unchanged by this synthesis-only path. The DUCC test emits no aggregate error statistic, so this entry records fixture/test acceptance rather than inventing a measured max error. Keep this result as a bounded f64 spin-1 synthesis optimization; analysis, f32, DERIV1, and spin 2 are unchanged. No FFT code changed.

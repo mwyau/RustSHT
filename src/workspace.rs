@@ -61,6 +61,8 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     pub(crate) fast_scalar_second: Vec<Complex<T>>,
     pub(crate) fast_spin_first: Vec<Complex<T>>,
     pub(crate) fast_spin_second: Vec<Complex<T>>,
+    pub(crate) fast_spin_pair_first: Vec<Complex<T>>,
+    pub(crate) fast_spin_pair_second: Vec<Complex<T>>,
 }
 
 impl<T: ShtScalar> RecurrenceWorkspace<T> {
@@ -68,6 +70,7 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
         recurrence_factor_count: usize,
         spin_recurrence_factor_count: usize,
         spin_fast_coefficient_count: usize,
+        spin_pair_fast_coefficient_count: usize,
         recurrence_scratch_len: usize,
     ) -> Result<Self, ShtError> {
         Ok(Self {
@@ -163,6 +166,14 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
                 spin_fast_coefficient_count,
                 "spin fast B coefficients",
             )?,
+            fast_spin_pair_first: allocate_complex(
+                spin_pair_fast_coefficient_count,
+                "spin paired fast first channel coefficients",
+            )?,
+            fast_spin_pair_second: allocate_complex(
+                spin_pair_fast_coefficient_count,
+                "spin paired fast second channel coefficients",
+            )?,
         })
     }
 }
@@ -178,6 +189,7 @@ impl<T: ShtScalar> ShtWorkspace<T> {
         recurrence_factor_count: usize,
         spin_recurrence_factor_count: usize,
         spin_fast_coefficient_count: usize,
+        spin_pair_fast_coefficient_count: usize,
         fft: &RealFftPlan<T>,
         cc_resampling: Option<&CCResamplingPlan<T>>,
     ) -> Result<Self, ShtError> {
@@ -239,6 +251,7 @@ impl<T: ShtScalar> ShtWorkspace<T> {
                 recurrence_factor_count,
                 spin_recurrence_factor_count,
                 spin_fast_coefficient_count,
+                spin_pair_fast_coefficient_count,
                 recurrence_scratch_len,
             )?);
         }
