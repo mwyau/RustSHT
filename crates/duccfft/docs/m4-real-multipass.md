@@ -325,6 +325,14 @@ profile itself was collected from source `cc849b5`; its counts are not timing
 measurements. The extreme-value fallback retains the correction path and has
 not been optimized by this change.
 
+The same optimized f64 binary was inspected with `objdump`. In the general
+`ido > 1` radix-4 inverse loop, the default x86-64 build uses scalar
+`movsd`/`addsd`/`subsd` operations and emits multiple slice-index bounds
+branches in the loop. The inverse normalization copy uses paired SSE2
+`movupd`/`mulpd` operations. This identifies the general pass loop and its
+indexing as scalar optimization targets; the disassembly does not measure
+their separate runtime costs.
+
 ## R6 production review
 
 The read-only reviewer accepted the production radix-2/radix-4 path with no
@@ -452,3 +460,47 @@ vectorization for that forward pass on the tested x86-64 compiler target. It
 does not establish the cause of the full-call timing changes or claim that
 inverse passes use packed operations. The full per-process records are in
 [`m4-real-ido1-paired-process-samples.csv`](../benches/results/m4-real-ido1-paired-process-samples.csv).
+
+## C2R packed-spectrum input
+
+`pack_spectrum` previously zero-filled its length-`N` destination before
+copying the real spectrum into it. For the even lengths accepted by
+`RealMultipassPlan`, the DC value, every interior real/imaginary pair, and the
+Nyquist value assign all `N` destination elements. The redundant fill is
+removed, and a debug assertion checks that the spectrum contains `N/2 + 1`
+bins. This changes only the ordinary packed-real inverse path; high-range
+spectra still use the residual-corrected fallback.
+
+The paired comparison used baseline source
+`cc849b59f64429fa717b2244d8393892ced91b52` and candidate source
+`74f61eee647deed1a37f6507bcb5d5285f26caae`. The baseline executable was copied
+before rebuilding the candidate. Six processes per revision and length ran in
+alternating order, pinned to CPU 30 of an AMD Ryzen 9 5950X. Both binaries used
+Rust 1.99.0, Cargo's `bench` profile with `opt-level=3` and debug information,
+no custom `RUSTFLAGS`, no LTO, and no target CPU setting. Plans were constructed
+before timing; each process discarded one warm-up execution and reported the
+median of seven timed samples. `bench-native-real N 1 32` used deterministic
+spectrum inputs. Public-operation timings include packing and normalization;
+batch figures are per transform for 32 sequential transforms. Plan and
+workspace measurements are retained in the raw CSV. The Legendre workload
+was active on the shared host, so the results are provisional.
+
+Each timing cell gives baseline / candidate microseconds per transform and
+candidate speed change, calculated as `(baseline / candidate) - 1`.
+
+| N | Single C2R | Batch of 32 C2R |
+|---:|---:|---:|
+| 64 | 0.246 / 0.221 (+11.1%) | 0.213 / 0.197 (+8.2%) |
+| 128 | 0.506 / 0.476 (+6.4%) | 0.480 / 0.451 (+6.2%) |
+| 256 | 1.017 / 0.997 (+2.1%) | 0.985 / 0.964 (+2.2%) |
+| 512 | 2.244 / 2.204 (+1.8%) | 2.238 / 2.180 (+2.6%) |
+| 1,024 | 4.794 / 4.674 (+2.6%) | 4.765 / 4.662 (+2.2%) |
+| 2,048 | 10.786 / 10.495 (+2.8%) | 10.802 / 10.527 (+2.6%) |
+| 4,096 | 22.948 / 22.593 (+1.6%) | 23.211 / 22.820 (+1.7%) |
+
+The six-process medians improve at every tested length. The relative gain is
+largest at lengths 64 and 128, where the absolute change is tens of
+nanoseconds. R2C timings serve as a paired control, and all baseline/candidate
+checksums match. Keep the small-size gains provisional while the shared host is
+active. Raw process samples are in
+[`m4-real-pack-paired-process-samples.csv`](../benches/results/m4-real-pack-paired-process-samples.csv).
