@@ -1925,3 +1925,20 @@ The native measurements used `examples/m1b_bench.rs`, f64, full `mmax`, `phi0=0.
 | T208 F1 DERIV1 | `13.314/8.753` | `11.387/7.518` | `14.5%/14.1%` |
 
 The three T208 process ranges were separate for every grid/mode/thread result. T191 GL is within measurement noise; CC/F1 improve in all modes. A separate T127 screen lowering the gate all the way to 127 was rejected: it slowed all nine GL/CC/F1 mode medians at one and eight threads by 12.7–35.9%, so T127 remains on the previous fallback. Focused tests compare T190 (below gate), T191 and T208 (inside the newly enabled interval), and T224 across GL/CC/F1. STANDARD E-only, B-only, mixed and GRAD_ONLY spectra are checked against the general recurrence; DERIV1 also checks even/odd longitude, analytic low-degree fields and the synthesis-adjoint identity. Direct Python-plan comparisons with `ducc0==0.41.0`, T191/T208 GL/CC/F1, all three modes and one/eight threads had maximum relative-L2 errors `2.868e-14` and `3.223e-14`, respectively; maximum absolute errors were `2.998e-13` and `4.547e-13` (DERIV1). The full Rust suite, focused expanded tests, Python suite, formatting and whitespace checks passed. Sol's strictly read-only review found no correctness blocker and recommended screening an interior band; T208 was then measured and showed gains across all grids and modes. Existing T511/T1023 spin-1 validation remains on the previously enabled path. No FFT code changed.
+
+### Scalar synthesis continuation at T1023 (2026-10-13)
+
+Enabled the existing paired scalar scaled-to-normal continuation for f64 synthesis from T1023. It runs after the register-resident kernel declines and only for fully active latitude blocks. Orders whose transformed paired coefficients are non-finite use the unpaired binary-scaled recurrence. This fallback is needed because a finite input such as `f64::MAX` can overflow during the paired coefficient transformation even when the final scaled contribution is finite. The T1023 block regression checks that continuation declines for this case and that both `f64::MAX` and the smallest subnormal produce the same spectra as the unpaired scaled reference. The change adds no workspace allocation.
+
+Release measurements used `examples/m1b_bench.rs`, f64 scalar synthesis, full order range, `phi0=0.37`, `nphi=2*lmax+3`, reused plans and workspaces, one warm-up and five timed calls per process. Three alternating baseline/candidate process runs used CPUs 0–7 on an AMD Ryzen 9 5950X / Linux `7.0.14-20-pve`, `rustc 1.99.0 (b940084d7 2026-09-28)`, release `opt-level=3`, 16 codegen units, LTO off, and runtime AVX2/FMA dispatch without `target-cpu=native`. The baseline is `e0eb143`; values are medians of process medians in milliseconds, one/eight threads:
+
+| Grid / bandlimit | Baseline | T1023 continuation | Reduction |
+| --- | ---: | ---: | ---: |
+| GL T511 control | `65.914/22.902` | `65.582/22.584` | `0.5%/1.4%` |
+| GL T1023 | `529.510/142.537` | `440.693/129.575` | `16.8%/9.1%` |
+| CC T1023 | `524.844/195.016` | `439.239/165.807` | `16.3%/15.0%` |
+| F1 T1023 | `527.728/141.923` | `438.364/129.918` | `16.9%/8.5%` |
+
+The GL T511 source paths are unchanged and the process ranges overlap. T1023 candidate ranges were GL `440.493–441.737/129.187–130.807`, CC `436.825–443.176/165.415–166.786`, and F1 `437.857–442.034/129.231–130.446` ms; baseline ranges were GL `527.476–531.335/142.312–144.478`, CC `524.760–526.426/194.752–199.503`, and F1 `523.564–528.863/141.559–144.496` ms. The coefficient safety check is included in candidate timings.
+
+The focused T1023 extreme-coefficient test and the release scalar GL/CC/F1 DUCC `0.41.0` and analytic checks through T2047 pass. At T1023, the largest selected DUCC sample error was `1.257e-14`; the largest analytic map error was `4.132e-12`. These comparisons cover the normal-coefficient path; the `f64::MAX` and subnormal cases are checked against the scaled scalar reference. Sol's strictly read-only review found no numerical, workspace, or benchmark blocker. No FFT code changed.
