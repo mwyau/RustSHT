@@ -15,16 +15,10 @@ use rustfft::{Fft, FftPlanner};
 const LENGTHS: &[usize] = &[256, 1024];
 const ROW_COUNTS: &[usize] = &[2, 3, 4, 8, 16, 32];
 const PAIRS: usize = 7;
-const OPERATIONS_PER_SAMPLE: usize = 16;
 
-fn input_value(row: usize, index: usize, len: usize) -> Complex64 {
-    let x = index as f64;
-    let r = row as f64;
-    let phase = x / len as f64 * std::f64::consts::TAU;
-    Complex64::new(
-        (phase * 17.0 + r * 0.31).sin() + (phase * 13.0 - r).cos() * 0.2,
-        (phase * 11.0 - r * 0.23).cos() - (phase * 19.0 + r).sin() * 0.3,
-    )
+fn input_value(row: usize, index: usize, _len: usize) -> Complex64 {
+    let x = (index + 1 + 3 * row) as f64;
+    Complex64::new((0.173 * x).sin(), (0.113 * (x + 1.0)).cos())
 }
 
 fn source(len: usize, rows: usize) -> Vec<Complex64> {
@@ -109,12 +103,9 @@ where
 {
     work.copy_from_slice(source);
     let start = Instant::now();
-    for _ in 0..OPERATIONS_PER_SAMPLE {
-        operation(work);
-        black_box(&*work);
-    }
-    let ns_per_transform =
-        start.elapsed().as_nanos() as f64 / OPERATIONS_PER_SAMPLE as f64 / rows as f64;
+    operation(work);
+    black_box(&*work);
+    let ns_per_transform = start.elapsed().as_nanos() as f64 / rows as f64;
     (ns_per_transform, black_box(checksum(work)))
 }
 
@@ -234,7 +225,7 @@ fn main() {
                             }
                         };
                         println!(
-                            "{process_sample},{len},{rows},{direction},{pair},{implementation},{name},{OPERATIONS_PER_SAMPLE},{timing:.3},{checksum_value:.17e},{scratch_bytes}"
+                            "{process_sample},{len},{rows},{direction},{pair},{implementation},{name},1,{timing:.3},{checksum_value:.17e},{scratch_bytes}"
                         );
                     }
                 }
