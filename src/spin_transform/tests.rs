@@ -965,7 +965,7 @@ fn spin1_scalar_fast_analysis_honors_the_polar_order_cutoff() {
         spectrum_len,
         nphi as f64,
         longitude_phase::<f64>(m, plan.grid.phi0(), true),
-        plan.grid.ring_weights(),
+        Some(plan.grid.ring_weights()),
         true,
         m,
         0,
@@ -995,7 +995,7 @@ fn spin1_scalar_fast_analysis_honors_the_polar_order_cutoff() {
         spectrum_len,
         nphi as f64,
         longitude_phase::<f64>(m, plan.grid.phi0(), true),
-        plan.grid.ring_weights(),
+        Some(plan.grid.ring_weights()),
         true,
         m,
         0,
@@ -1015,6 +1015,98 @@ fn spin1_scalar_fast_analysis_honors_the_polar_order_cutoff() {
             .chain(&b_coefficients)
             .any(|value| *value != Complex64::new(0.0, 0.0))
     );
+}
+
+#[test]
+fn spin1_standard_analysis_scalar_conversion_matches_general_and_adjoint_on_all_grids() {
+    for lmax in [63, 127] {
+        for kind in [
+            GridKind::GaussLegendre,
+            GridKind::ClenshawCurtis,
+            GridKind::Fejer1,
+        ] {
+            let minimum_ntheta = lmax + usize::from(kind == GridKind::ClenshawCurtis) + 1;
+            let ntheta_values = if kind == GridKind::ClenshawCurtis {
+                vec![minimum_ntheta, 2 * lmax + 2]
+            } else {
+                vec![minimum_ntheta]
+            };
+            for ntheta in ntheta_values {
+                for nphi in [2 * lmax + 2, 2 * lmax + 3] {
+                    let make_plan = || {
+                        ShtPlan::new(
+                            GridSpec::new(kind, ntheta, nphi, 0.37).unwrap(),
+                            HarmonicSpec::new(lmax, lmax, 1).unwrap(),
+                        )
+                        .unwrap()
+                    };
+                    let fast_plan = make_plan();
+                    let mut general_plan = make_plan();
+                    general_plan.spin_fast_coefficient_count = 0;
+                    let (first, second) = arbitrary_maps(&fast_plan);
+                    let mut fast_workspace = fast_plan.workspace().unwrap();
+                    let mut general_workspace = general_plan.workspace().unwrap();
+                    let mut fast_e = vec![Complex64::new(0.0, 0.0); fast_plan.harmonics().nalm()];
+                    let mut fast_b = fast_e.clone();
+                    let mut general_e = fast_e.clone();
+                    let mut general_b = fast_e.clone();
+                    fast_plan
+                        .analysis_spin_into(
+                            &first,
+                            &second,
+                            &mut fast_e,
+                            &mut fast_b,
+                            &mut fast_workspace,
+                        )
+                        .unwrap();
+                    general_plan
+                        .analysis_spin_into(
+                            &first,
+                            &second,
+                            &mut general_e,
+                            &mut general_b,
+                            &mut general_workspace,
+                        )
+                        .unwrap();
+                    for (channel, actual, expected) in
+                        [("E", &fast_e, &general_e), ("B", &fast_b, &general_b)]
+                    {
+                        for (index, (&actual, &expected)) in actual.iter().zip(expected).enumerate()
+                        {
+                            let error = (actual - expected).norm();
+                            assert!(
+                                error <= 3e-10 * expected.norm().max(1.0),
+                                "{kind:?} T{lmax} {ntheta}x{nphi} spin-1 {channel}[{index}] error={error:.3e}"
+                            );
+                        }
+                    }
+
+                    let (e, b) = coefficients(&fast_plan);
+                    let mut adjoint_first = vec![0.0; fast_plan.sample_count];
+                    let mut adjoint_second = vec![0.0; fast_plan.sample_count];
+                    fast_plan
+                        .adjoint_analysis_spin_into(
+                            &e,
+                            &b,
+                            &mut adjoint_first,
+                            &mut adjoint_second,
+                            &mut fast_workspace,
+                        )
+                        .unwrap();
+                    let left = spin_harmonic_inner_product(
+                        fast_plan.harmonics(),
+                        &fast_e,
+                        &fast_b,
+                        &e,
+                        &b,
+                    );
+                    let right =
+                        spin_map_inner_product(&first, &second, &adjoint_first, &adjoint_second);
+                    assert_close(left, right, 3e-9 * left.abs().max(right.abs()).max(1.0));
+                }
+            }
+        }
+    }
 }
 
 #[test]

@@ -514,6 +514,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             analysis_ntheta,
             analysis_ring_weights,
             analysis_normalize_fourier,
+            analysis_spectra_preweighted,
         ) = if let Some(resampling) = self
             .cc_resampling
             .as_ref()
@@ -559,6 +560,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 resampling.prepared_ntheta(),
                 None,
                 false,
+                true,
             )
         } else {
             self.prepare_spin_latitudes(workspace, recurrence_spin);
@@ -568,6 +570,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 ntheta,
                 ring_weights,
                 normalize_fourier,
+                false,
             )
         };
         let theta_sin = &workspace.theta_sin[..analysis_ntheta];
@@ -589,6 +592,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     self.grid.phi0(),
                     analysis_ring_weights,
                     analysis_normalize_fourier,
+                    analysis_spectra_preweighted,
                     recurrence_spin,
                     derivative_norm,
                     theta_sin,
@@ -610,6 +614,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     self.grid.phi0(),
                     analysis_ring_weights,
                     analysis_normalize_fourier,
+                    analysis_spectra_preweighted,
                     recurrence_spin,
                     derivative_norm,
                     theta_sin,
@@ -633,6 +638,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             self.grid.phi0(),
             analysis_ring_weights,
             analysis_normalize_fourier,
+            analysis_spectra_preweighted,
             recurrence_spin,
             derivative_norm,
             theta_sin,
@@ -1638,6 +1644,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         phi0: f64,
         ring_weights: Option<&[f64]>,
         normalize_fourier: bool,
+        spectra_preweighted: bool,
         recurrence_spin: usize,
         derivative_norm: bool,
         theta_sin: &[T],
@@ -1662,12 +1669,15 @@ impl<T: ShtScalar> ShtPlan<T> {
             2 => SPIN2_FAST_MIN_LMAX,
             _ => usize::MAX,
         };
-        let fast_scalar_enabled = self.grid.kind() == crate::grid::GridKind::GaussLegendre
-            && matches!(recurrence_spin, 1 | 2)
+        let fast_scalar_domain = match recurrence_spin {
+            1 => ring_weights.is_some() || spectra_preweighted,
+            2 => self.grid.kind() == crate::grid::GridKind::GaussLegendre && ring_weights.is_some(),
+            _ => false,
+        };
+        let fast_scalar_enabled = fast_scalar_domain
             && self.harmonics.spin() == recurrence_spin
             && !derivative_norm
             && (recurrence_spin == 1 || b_alm.is_some())
-            && ring_weights.is_some()
             && lmax >= fast_scalar_min_lmax
             && T::supports_paired_scalar()
             && recurrence.fast_scalar_first.len() >= fast_scalar_coefficient_count
@@ -1738,7 +1748,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         spectrum_len,
                         longitude_count,
                         phase,
-                        ring_weights.expect("the fast analysis path uses exact ring weights"),
+                        ring_weights,
                         normalize_fourier,
                         m,
                         fast_start,
@@ -1912,7 +1922,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         spectrum_len: usize,
         longitude_count: T,
         phase: Complex<T>,
-        ring_weights: &[f64],
+        ring_weights: Option<&[f64]>,
         normalize_fourier: bool,
         m: usize,
         ring_start: usize,
@@ -1955,9 +1965,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                 let ring = block_start + lane;
                 if m <= ring_order_limits[ring] {
                     let spectrum_start = ring * spectrum_len;
-                    let mut scale = T::from_f64(ring_weights[ring])
-                        .expect("ring weight is representable")
-                        / theta_sin[ring];
+                    let ring_weight = ring_weights.map_or(T::one(), |weights| {
+                        T::from_f64(weights[ring]).expect("ring weight is representable")
+                    });
+                    let mut scale = ring_weight / theta_sin[ring];
                     if normalize_fourier {
                         scale /= longitude_count;
                     }
@@ -2331,6 +2342,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         phi0: f64,
         ring_weights: Option<&[f64]>,
         normalize_fourier: bool,
+        spectra_preweighted: bool,
         recurrence_spin: usize,
         derivative_norm: bool,
         theta_sin: &[T],
@@ -2353,6 +2365,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 phi0,
                 ring_weights,
                 normalize_fourier,
+                spectra_preweighted,
                 recurrence_spin,
                 derivative_norm,
                 theta_sin,
@@ -2397,6 +2410,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     phi0,
                     ring_weights,
                     normalize_fourier,
+                    spectra_preweighted,
                     recurrence_spin,
                     derivative_norm,
                     theta_sin,
@@ -2419,6 +2433,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     phi0,
                     ring_weights,
                     normalize_fourier,
+                    spectra_preweighted,
                     recurrence_spin,
                     derivative_norm,
                     theta_sin,
