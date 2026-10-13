@@ -12,6 +12,9 @@ The operations are:
 - `RealFftPlan<T>::forward` from `&[T]` to the ordinary half-spectrum
   `&mut [Complex<T>]` of length `n / 2 + 1`.
 - `RealFftPlan<T>::inverse` from that half-spectrum to `&mut [T]`.
+- `forward_batch` and `inverse_batch` on complex and real plans for flat
+  row-major buffers. Each batch reuses one caller-owned workspace and preserves
+  output row order; the current implementation is serial.
 
 Forward transforms compute the unnormalized negative-exponent DFT. Inverse
 transforms include a `1/n` scale. The real inverse ignores imaginary parts at
@@ -19,6 +22,11 @@ DC and, for even `n`, Nyquist. Length one is valid; zero is rejected. The
 inverse API is always normalized and has no scale option. Operations report
 invalid lengths, allocation failures, and mismatched buffers through
 `FftError`.
+
+The batch methods validate all row lengths before execution and allocate no
+batch scratch. They expose the contiguous longitude-row layout used by
+RustSHT. The methods do not yet vectorize across independent transforms; see
+`m4-batch-api.md` for measurements and the current performance limit.
 
 Plans own factorization, roots, fixed-radix data, prime chirps, and Bluestein
 kernel spectra. Workspaces own output and radix scratch plus reusable nested

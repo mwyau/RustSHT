@@ -299,8 +299,10 @@ and the bounded complexify result. M4 implemented and measured the production
 radix-2/radix-4 path; the current results and remaining RustFFT/DUCC gap are in
 [`m4-real-multipass.md`](m4-real-multipass.md). The M4 C2C AVX2 implementation
 is reported in [`m4-c2c-avx2.md`](m4-c2c-avx2.md). Remaining work includes
-other real pass families, real-kernel SIMD, and a transform-batch API.
-General-prime kernels also use less complementary-output reuse than DUCC.
+other real pass families, real-kernel SIMD, and across-row SIMD. The serial
+contiguous batch API and its no-gain measurement are in
+[`m4-batch-api.md`](m4-batch-api.md). General-prime kernels also use less
+complementary-output reuse than DUCC.
 The large-length balanced packet grouping used by DUCC above 10,000 is not
 implemented.
 
