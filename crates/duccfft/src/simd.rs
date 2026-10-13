@@ -22,6 +22,15 @@ pub(crate) type RealRadix4ForwardInteriorKernel<T> =
 /// low-`ido` pointer returned separately may use its own narrower contract.
 pub(crate) type ComplexPassKernel<T> =
     unsafe fn(&[Complex<T>], &mut [Complex<T>], &SimdPass<'_, T>);
+pub(crate) type FirstPassKernel<T> = unsafe fn(&mut [Complex<T>], &SimdPass<'_, T>);
+
+#[derive(Clone, Copy)]
+pub(crate) struct SimdKernels<T> {
+    pub(crate) complex_lanes: usize,
+    pub(crate) first_pass: FirstPassKernel<T>,
+    pub(crate) pass: ComplexPassKernel<T>,
+    pub(crate) ido1_radix8_pass: Option<ComplexPassKernel<T>>,
+}
 
 pub(crate) struct SimdPass<'a, T> {
     pub(crate) radix: usize,
@@ -73,8 +82,8 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
     ///
     /// # Safety
     ///
-    /// The caller must confirm AVX2 support and ensure the radix is 2, 4, or
-    /// 8, `ido` is a positive multiple of the scalar's vector width, and the
+    /// The caller must confirm AVX2 support and ensure the radix is 2, 4, 7,
+    /// or 8, `ido` is a positive multiple of the scalar's vector width, and the
     /// data and twiddle slices match the pass dimensions.
     unsafe fn avx2_first_pass(data: &mut [Complex<Self>], pass: &SimdPass<'_, Self>);
 
@@ -82,14 +91,25 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
     ///
     /// # Safety
     ///
-    /// The caller must confirm AVX2 support and ensure the radix is 2, 4, or
-    /// 8, `ido` is a positive multiple of the scalar's vector width, the
+    /// The caller must confirm AVX2 support and ensure the radix is 2, 4, 7,
+    /// or 8, `ido` is a positive multiple of the scalar's vector width, the
     /// slices are disjoint, and the slices match the pass dimensions.
     unsafe fn avx2_pass(
         input: &[Complex<Self>],
         output: &mut [Complex<Self>],
         pass: &SimdPass<'_, Self>,
     );
+}
+
+impl<T: SimdScalar> SimdKernels<T> {
+    pub(crate) fn runtime() -> Option<Self> {
+        T::avx2_available().then_some(Self {
+            complex_lanes: T::AVX2_COMPLEX_LANES,
+            first_pass: T::avx2_first_pass,
+            pass: T::avx2_pass,
+            ido1_radix8_pass: T::avx2_ido1_radix8_pass_kernel(),
+        })
+    }
 }
 
 #[cfg(target_arch = "x86_64")]
@@ -330,6 +350,84 @@ mod x86 {
 
         #[inline]
         #[target_feature(enable = "avx2")]
+        unsafe fn radix7(input: &[V; 8], inverse: bool) -> [V; 8] {
+            let mut output = [_mm256_setzero_pd(); 8];
+            let p1 = _mm256_add_pd(input[1], input[6]);
+            let p2 = _mm256_add_pd(input[2], input[5]);
+            let p3 = _mm256_add_pd(input[3], input[4]);
+            let d1 = _mm256_sub_pd(input[1], input[6]);
+            let d2 = _mm256_sub_pd(input[2], input[5]);
+            let d3 = _mm256_sub_pd(input[3], input[4]);
+            let c1 = _mm256_set1_pd(0.623_489_801_858_733_5);
+            let c2 = _mm256_set1_pd(-0.222_520_933_956_314_4);
+            let c3 = _mm256_set1_pd(-0.900_968_867_902_419_1);
+            let s1 = _mm256_set1_pd(0.781_831_482_468_029_8);
+            let s2 = _mm256_set1_pd(0.974_927_912_181_823_6);
+            let s3 = _mm256_set1_pd(0.433_883_739_117_558_1);
+
+            output[0] = _mm256_add_pd(_mm256_add_pd(input[0], p1), _mm256_add_pd(p2, p3));
+
+            let base1 = _mm256_add_pd(
+                _mm256_add_pd(
+                    _mm256_add_pd(input[0], _mm256_mul_pd(p1, c1)),
+                    _mm256_mul_pd(p2, c2),
+                ),
+                _mm256_mul_pd(p3, c3),
+            );
+            let turn1 = unsafe {
+                rotate_quarter(
+                    _mm256_add_pd(
+                        _mm256_add_pd(_mm256_mul_pd(d1, s1), _mm256_mul_pd(d2, s2)),
+                        _mm256_mul_pd(d3, s3),
+                    ),
+                    inverse,
+                )
+            };
+            output[1] = _mm256_add_pd(base1, turn1);
+            output[6] = _mm256_sub_pd(base1, turn1);
+
+            let base2 = _mm256_add_pd(
+                _mm256_add_pd(
+                    _mm256_add_pd(input[0], _mm256_mul_pd(p1, c2)),
+                    _mm256_mul_pd(p2, c3),
+                ),
+                _mm256_mul_pd(p3, c1),
+            );
+            let turn2 = unsafe {
+                rotate_quarter(
+                    _mm256_sub_pd(
+                        _mm256_sub_pd(_mm256_mul_pd(d1, s2), _mm256_mul_pd(d2, s3)),
+                        _mm256_mul_pd(d3, s1),
+                    ),
+                    inverse,
+                )
+            };
+            output[2] = _mm256_add_pd(base2, turn2);
+            output[5] = _mm256_sub_pd(base2, turn2);
+
+            let base3 = _mm256_add_pd(
+                _mm256_add_pd(
+                    _mm256_add_pd(input[0], _mm256_mul_pd(p1, c3)),
+                    _mm256_mul_pd(p2, c1),
+                ),
+                _mm256_mul_pd(p3, c2),
+            );
+            let turn3 = unsafe {
+                rotate_quarter(
+                    _mm256_add_pd(
+                        _mm256_sub_pd(_mm256_mul_pd(d1, s3), _mm256_mul_pd(d2, s1)),
+                        _mm256_mul_pd(d3, s2),
+                    ),
+                    inverse,
+                )
+            };
+            output[3] = _mm256_add_pd(base3, turn3);
+            output[4] = _mm256_sub_pd(base3, turn3);
+            output
+        }
+
+        #[inline]
+        #[target_feature(enable = "avx2")]
         unsafe fn radix8(input: &[V; 8], inverse: bool) -> [V; 8] {
             let mut output = [_mm256_setzero_pd(); 8];
             let mut a1 = _mm256_add_pd(input[1], input[5]);
@@ -370,8 +468,9 @@ mod x86 {
             match RADIX {
                 2 => unsafe { radix2(input) },
                 4 => unsafe { radix4(input, inverse) },
+                7 => unsafe { radix7(input, inverse) },
                 8 => unsafe { radix8(input, inverse) },
-                _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
+                _ => unreachable!("AVX2 kernel supports radices 2, 4, 7, and 8"),
             }
         }
 
@@ -380,8 +479,9 @@ mod x86 {
             match pass.radix {
                 2 => unsafe { first_pass_fixed::<2>(data, pass) },
                 4 => unsafe { first_pass_fixed::<4>(data, pass) },
+                7 => unsafe { first_pass_fixed::<7>(data, pass) },
                 8 => unsafe { first_pass_fixed::<8>(data, pass) },
-                _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
+                _ => unreachable!("AVX2 kernel supports radices 2, 4, 7, and 8"),
             }
         }
 
@@ -425,8 +525,9 @@ mod x86 {
             match pass.radix {
                 2 => unsafe { pass_fixed::<2>(input, output, pass) },
                 4 => unsafe { pass_fixed::<4>(input, output, pass) },
+                7 => unsafe { pass_fixed::<7>(input, output, pass) },
                 8 => unsafe { pass_fixed::<8>(input, output, pass) },
-                _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
+                _ => unreachable!("AVX2 kernel supports radices 2, 4, 7, and 8"),
             }
         }
 
@@ -634,6 +735,84 @@ mod x86 {
 
         #[inline]
         #[target_feature(enable = "avx2")]
+        unsafe fn radix7(input: &[V; 8], inverse: bool) -> [V; 8] {
+            let mut output = [_mm256_setzero_ps(); 8];
+            let p1 = _mm256_add_ps(input[1], input[6]);
+            let p2 = _mm256_add_ps(input[2], input[5]);
+            let p3 = _mm256_add_ps(input[3], input[4]);
+            let d1 = _mm256_sub_ps(input[1], input[6]);
+            let d2 = _mm256_sub_ps(input[2], input[5]);
+            let d3 = _mm256_sub_ps(input[3], input[4]);
+            let c1 = _mm256_set1_ps(0.623_489_8);
+            let c2 = _mm256_set1_ps(-0.222_520_93);
+            let c3 = _mm256_set1_ps(-0.900_968_85);
+            let s1 = _mm256_set1_ps(0.781_831_5);
+            let s2 = _mm256_set1_ps(0.974_927_9);
+            let s3 = _mm256_set1_ps(0.433_883_73);
+
+            output[0] = _mm256_add_ps(_mm256_add_ps(input[0], p1), _mm256_add_ps(p2, p3));
+
+            let base1 = _mm256_add_ps(
+                _mm256_add_ps(
+                    _mm256_add_ps(input[0], _mm256_mul_ps(p1, c1)),
+                    _mm256_mul_ps(p2, c2),
+                ),
+                _mm256_mul_ps(p3, c3),
+            );
+            let turn1 = unsafe {
+                rotate_quarter(
+                    _mm256_add_ps(
+                        _mm256_add_ps(_mm256_mul_ps(d1, s1), _mm256_mul_ps(d2, s2)),
+                        _mm256_mul_ps(d3, s3),
+                    ),
+                    inverse,
+                )
+            };
+            output[1] = _mm256_add_ps(base1, turn1);
+            output[6] = _mm256_sub_ps(base1, turn1);
+
+            let base2 = _mm256_add_ps(
+                _mm256_add_ps(
+                    _mm256_add_ps(input[0], _mm256_mul_ps(p1, c2)),
+                    _mm256_mul_ps(p2, c3),
+                ),
+                _mm256_mul_ps(p3, c1),
+            );
+            let turn2 = unsafe {
+                rotate_quarter(
+                    _mm256_sub_ps(
+                        _mm256_sub_ps(_mm256_mul_ps(d1, s2), _mm256_mul_ps(d2, s3)),
+                        _mm256_mul_ps(d3, s1),
+                    ),
+                    inverse,
+                )
+            };
+            output[2] = _mm256_add_ps(base2, turn2);
+            output[5] = _mm256_sub_ps(base2, turn2);
+
+            let base3 = _mm256_add_ps(
+                _mm256_add_ps(
+                    _mm256_add_ps(input[0], _mm256_mul_ps(p1, c3)),
+                    _mm256_mul_ps(p2, c1),
+                ),
+                _mm256_mul_ps(p3, c2),
+            );
+            let turn3 = unsafe {
+                rotate_quarter(
+                    _mm256_add_ps(
+                        _mm256_sub_ps(_mm256_mul_ps(d1, s3), _mm256_mul_ps(d2, s1)),
+                        _mm256_mul_ps(d3, s2),
+                    ),
+                    inverse,
+                )
+            };
+            output[3] = _mm256_add_ps(base3, turn3);
+            output[4] = _mm256_sub_ps(base3, turn3);
+            output
+        }
+
+        #[inline]
+        #[target_feature(enable = "avx2")]
         unsafe fn radix8(input: &[V; 8], inverse: bool) -> [V; 8] {
             let mut output = [_mm256_setzero_ps(); 8];
             let mut a1 = _mm256_add_ps(input[1], input[5]);
@@ -674,8 +853,9 @@ mod x86 {
             match RADIX {
                 2 => unsafe { radix2(input) },
                 4 => unsafe { radix4(input, inverse) },
+                7 => unsafe { radix7(input, inverse) },
                 8 => unsafe { radix8(input, inverse) },
-                _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
+                _ => unreachable!("AVX2 kernel supports radices 2, 4, 7, and 8"),
             }
         }
 
@@ -684,8 +864,9 @@ mod x86 {
             match pass.radix {
                 2 => unsafe { first_pass_fixed::<2>(data, pass) },
                 4 => unsafe { first_pass_fixed::<4>(data, pass) },
+                7 => unsafe { first_pass_fixed::<7>(data, pass) },
                 8 => unsafe { first_pass_fixed::<8>(data, pass) },
-                _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
+                _ => unreachable!("AVX2 kernel supports radices 2, 4, 7, and 8"),
             }
         }
 
@@ -729,8 +910,9 @@ mod x86 {
             match pass.radix {
                 2 => unsafe { pass_fixed::<2>(input, output, pass) },
                 4 => unsafe { pass_fixed::<4>(input, output, pass) },
+                7 => unsafe { pass_fixed::<7>(input, output, pass) },
                 8 => unsafe { pass_fixed::<8>(input, output, pass) },
-                _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
+                _ => unreachable!("AVX2 kernel supports radices 2, 4, 7, and 8"),
             }
         }
 
@@ -1441,7 +1623,7 @@ mod tests {
             return;
         }
         let ido = 4;
-        for radix in [2, 4, 8] {
+        for radix in [2, 4, 7, 8] {
             let len = radix * ido;
             for inverse in [false, true] {
                 let mut actual: Vec<_> = (0..len).map(signal).collect();
@@ -1492,7 +1674,7 @@ mod tests {
         }
         let l1 = 3;
         let ido = 4;
-        for radix in [2, 4, 8] {
+        for radix in [2, 4, 7, 8] {
             let len = radix * l1 * ido;
             for inverse in [false, true] {
                 let input: Vec<_> = (0..len).map(signal).collect();
@@ -2110,7 +2292,7 @@ mod tests {
         }
         let ido = 4;
         let l1 = 3;
-        for radix in [2, 4, 8] {
+        for radix in [2, 4, 7, 8] {
             let len = radix * l1 * ido;
             for inverse in [false, true] {
                 let first_len = radix * ido;
