@@ -245,8 +245,8 @@ mod x86 {
 
         #[inline]
         #[target_feature(enable = "avx2")]
-        unsafe fn transform(input: &[V; 8], radix: usize, inverse: bool) -> [V; 8] {
-            match radix {
+        unsafe fn transform<const RADIX: usize>(input: &[V; 8], inverse: bool) -> [V; 8] {
+            match RADIX {
                 2 => unsafe { radix2(input) },
                 4 => unsafe { radix4(input, inverse) },
                 8 => unsafe { radix8(input, inverse) },
@@ -256,15 +256,28 @@ mod x86 {
 
         #[target_feature(enable = "avx2")]
         pub(super) unsafe fn first_pass(data: &mut [Complex<f64>], pass: &SimdPass<'_, f64>) {
+            match pass.radix {
+                2 => unsafe { first_pass_fixed::<2>(data, pass) },
+                4 => unsafe { first_pass_fixed::<4>(data, pass) },
+                8 => unsafe { first_pass_fixed::<8>(data, pass) },
+                _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
+            }
+        }
+
+        #[target_feature(enable = "avx2")]
+        unsafe fn first_pass_fixed<const RADIX: usize>(
+            data: &mut [Complex<f64>],
+            pass: &SimdPass<'_, f64>,
+        ) {
             let data_ptr = data.as_mut_ptr();
             for inner in (0..pass.ido).step_by(2) {
                 let mut input = [_mm256_setzero_pd(); 8];
-                for (branch, slot) in input.iter_mut().enumerate().take(pass.radix) {
+                for (branch, slot) in input.iter_mut().enumerate().take(RADIX) {
                     *slot = unsafe { load(data_ptr, inner + pass.ido * branch) };
                 }
-                let transformed = unsafe { transform(&input, pass.radix, pass.inverse) };
-                for (branch, &value) in transformed.iter().enumerate().take(pass.radix) {
-                    let mut value = value;
+                let transformed = unsafe { transform::<RADIX>(&input, pass.inverse) };
+                for (branch, &result) in transformed.iter().enumerate().take(RADIX) {
+                    let mut value = result;
                     if branch != 0 && pass.ido > 1 {
                         value = unsafe {
                             complex_mul(
@@ -288,19 +301,32 @@ mod x86 {
             output: &mut [Complex<f64>],
             pass: &SimdPass<'_, f64>,
         ) {
+            match pass.radix {
+                2 => unsafe { pass_fixed::<2>(input, output, pass) },
+                4 => unsafe { pass_fixed::<4>(input, output, pass) },
+                8 => unsafe { pass_fixed::<8>(input, output, pass) },
+                _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
+            }
+        }
+
+        #[target_feature(enable = "avx2")]
+        unsafe fn pass_fixed<const RADIX: usize>(
+            input: &[Complex<f64>],
+            output: &mut [Complex<f64>],
+            pass: &SimdPass<'_, f64>,
+        ) {
             let input_ptr = input.as_ptr();
             let output_ptr = output.as_mut_ptr();
             for outer in 0..pass.l1 {
                 for inner in (0..pass.ido).step_by(2) {
                     let mut values = [_mm256_setzero_pd(); 8];
-                    for (branch, slot) in values.iter_mut().enumerate().take(pass.radix) {
-                        *slot = unsafe {
-                            load(input_ptr, inner + pass.ido * (branch + pass.radix * outer))
-                        };
+                    for (branch, slot) in values.iter_mut().enumerate().take(RADIX) {
+                        *slot =
+                            unsafe { load(input_ptr, inner + pass.ido * (branch + RADIX * outer)) };
                     }
-                    let transformed = unsafe { transform(&values, pass.radix, pass.inverse) };
-                    for (branch, &value) in transformed.iter().enumerate().take(pass.radix) {
-                        let mut value = value;
+                    let transformed = unsafe { transform::<RADIX>(&values, pass.inverse) };
+                    for (branch, &result) in transformed.iter().enumerate().take(RADIX) {
+                        let mut value = result;
                         if branch != 0 && pass.ido > 1 {
                             value = unsafe {
                                 complex_mul(
@@ -476,8 +502,8 @@ mod x86 {
 
         #[inline]
         #[target_feature(enable = "avx2")]
-        unsafe fn transform(input: &[V; 8], radix: usize, inverse: bool) -> [V; 8] {
-            match radix {
+        unsafe fn transform<const RADIX: usize>(input: &[V; 8], inverse: bool) -> [V; 8] {
+            match RADIX {
                 2 => unsafe { radix2(input) },
                 4 => unsafe { radix4(input, inverse) },
                 8 => unsafe { radix8(input, inverse) },
@@ -487,15 +513,28 @@ mod x86 {
 
         #[target_feature(enable = "avx2")]
         pub(super) unsafe fn first_pass(data: &mut [Complex<f32>], pass: &SimdPass<'_, f32>) {
+            match pass.radix {
+                2 => unsafe { first_pass_fixed::<2>(data, pass) },
+                4 => unsafe { first_pass_fixed::<4>(data, pass) },
+                8 => unsafe { first_pass_fixed::<8>(data, pass) },
+                _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
+            }
+        }
+
+        #[target_feature(enable = "avx2")]
+        unsafe fn first_pass_fixed<const RADIX: usize>(
+            data: &mut [Complex<f32>],
+            pass: &SimdPass<'_, f32>,
+        ) {
             let data_ptr = data.as_mut_ptr();
             for inner in (0..pass.ido).step_by(4) {
                 let mut input = [_mm256_setzero_ps(); 8];
-                for (branch, slot) in input.iter_mut().enumerate().take(pass.radix) {
+                for (branch, slot) in input.iter_mut().enumerate().take(RADIX) {
                     *slot = unsafe { load(data_ptr, inner + pass.ido * branch) };
                 }
-                let transformed = unsafe { transform(&input, pass.radix, pass.inverse) };
-                for (branch, &value) in transformed.iter().enumerate().take(pass.radix) {
-                    let mut value = value;
+                let transformed = unsafe { transform::<RADIX>(&input, pass.inverse) };
+                for (branch, &result) in transformed.iter().enumerate().take(RADIX) {
+                    let mut value = result;
                     if branch != 0 && pass.ido > 1 {
                         value = unsafe {
                             complex_mul(
@@ -519,19 +558,32 @@ mod x86 {
             output: &mut [Complex<f32>],
             pass: &SimdPass<'_, f32>,
         ) {
+            match pass.radix {
+                2 => unsafe { pass_fixed::<2>(input, output, pass) },
+                4 => unsafe { pass_fixed::<4>(input, output, pass) },
+                8 => unsafe { pass_fixed::<8>(input, output, pass) },
+                _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
+            }
+        }
+
+        #[target_feature(enable = "avx2")]
+        unsafe fn pass_fixed<const RADIX: usize>(
+            input: &[Complex<f32>],
+            output: &mut [Complex<f32>],
+            pass: &SimdPass<'_, f32>,
+        ) {
             let input_ptr = input.as_ptr();
             let output_ptr = output.as_mut_ptr();
             for outer in 0..pass.l1 {
                 for inner in (0..pass.ido).step_by(4) {
                     let mut values = [_mm256_setzero_ps(); 8];
-                    for (branch, slot) in values.iter_mut().enumerate().take(pass.radix) {
-                        *slot = unsafe {
-                            load(input_ptr, inner + pass.ido * (branch + pass.radix * outer))
-                        };
+                    for (branch, slot) in values.iter_mut().enumerate().take(RADIX) {
+                        *slot =
+                            unsafe { load(input_ptr, inner + pass.ido * (branch + RADIX * outer)) };
                     }
-                    let transformed = unsafe { transform(&values, pass.radix, pass.inverse) };
-                    for (branch, &value) in transformed.iter().enumerate().take(pass.radix) {
-                        let mut value = value;
+                    let transformed = unsafe { transform::<RADIX>(&values, pass.inverse) };
+                    for (branch, &result) in transformed.iter().enumerate().take(RADIX) {
+                        let mut value = result;
                         if branch != 0 && pass.ido > 1 {
                             value = unsafe {
                                 complex_mul(
