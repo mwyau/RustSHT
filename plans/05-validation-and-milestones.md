@@ -2157,3 +2157,11 @@ A candidate moved `fill_spin_factors()` after the partial paired-scalar analysis
 | GL T511 control | `90.707/24.339` | `91.155/25.474` | `+0.5%/+4.7%` |
 
 Process ranges overlapped in most comparisons, and the candidate was slower in both thread counts for CC T1023 and all F1 bandlimits. The T511 GL control showed no improvement. The focused spin-1 fast-versus-general analysis and adjoint regression passed with the candidate, but the whole-transform measurements do not support retaining it. The source uses the previous factor order.
+
+### Paired scalar analysis FMA accumulation (2026-10-13, rejected)
+
+Callgrind attributed a large share of scalar and spin-1 analysis instructions to `accumulate_scalar_analysis_pair()`. Two local AVX2/FMA variants replaced the packed multiply/add accumulation with fused multiply-adds. One also precomputed `basis*cos(theta)`; the other kept the original multiplication order for the opposite-parity term. Neither source change was retained.
+
+The precomputed-product variant reduced Callgrind instructions for GL T127 spin-1 analysis from `679,269,937` to `658,287,072` (`-3.1%`) and improved scalar GL analysis at T511/T1023, but regressed spin-1 one-thread analysis by `3.4–9.0%` at the measured T511/T1023 grids. Its spin-1 eight-thread results were mixed. The order-preserving FMA variant reduced scalar GL T127 instructions from `248,121,377` to `244,318,326` (`-1.5%`). Its scalar T511/T1023 elapsed times appeared `7–9%` lower across two process pairs, but the host load average was `7–14` on a 16-core CPU, and the spin-1 results included large outliers and mixed changes. Those timings do not establish a reproducible whole-transform gain or a safe scalar-only specialization. Callgrind counts describe executed instructions and are not cycle or elapsed-time measurements.
+
+The accumulator and scaled fallback remain unchanged. No additional dispatch parameter or duplicated reducer was added to distinguish scalar analysis from spin-conversion analysis. Reconsider this only with a quieter, paired whole-transform comparison that includes DUCC, adjoint checks and high-band validation; do not infer a speedup from instruction reduction alone. No FFT code changed.
