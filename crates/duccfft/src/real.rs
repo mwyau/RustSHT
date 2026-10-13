@@ -14,8 +14,8 @@ use num_traits::{Float, FromPrimitive};
 
 use crate::FftError;
 use crate::complex::{
-    BluesteinPlan, ComplexFftPlan, ComplexFftWorkspace, Direction, check_len, check_vec_len,
-    try_vec, unity_root,
+    BluesteinPlan, ComplexFftPlan, ComplexFftWorkspace, Direction, check_batch_rows, check_len,
+    check_vec_len, checked_batch_len, try_vec, unity_root,
 };
 use crate::real_multipass::{RealMultipassPlan, RealMultipassWorkspace};
 use crate::simd::{RealRadix4ForwardInteriorKernel, RealRadix4InteriorKernel, SimdScalar};
@@ -249,7 +249,50 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
         check_len("input", self.len, input.len())?;
         check_len("spectrum", self.spectrum_len(), spectrum.len())?;
         check_len("workspace", self.len, workspace.len)?;
+        self.forward_unchecked(input, spectrum, workspace)
+    }
 
+    /// Computes real-to-complex transforms for contiguous row-major input.
+    ///
+    /// The input length determines the row count and must be a multiple of
+    /// the plan length. The output contains one `spectrum_len()` row per
+    /// input row. Rows execute in order with one reusable workspace; this
+    /// method does not allocate scratch or create threads. Empty batches are
+    /// accepted when both data buffers are empty.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FftError::BatchBufferLength`] for an incomplete input row,
+    /// [`FftError::BatchLengthOverflow`] if the required output length
+    /// overflows, or [`FftError::BufferLength`] if the output or workspace
+    /// length does not match the batch.
+    pub fn forward_batch(
+        &self,
+        input: &[T],
+        spectrum: &mut [Complex<T>],
+        workspace: &mut RealFftWorkspace<T>,
+    ) -> Result<(), FftError> {
+        let rows = check_batch_rows("input", self.len, input.len())?;
+        let required_spectrum = checked_batch_len("spectrum", rows, self.spectrum_len())?;
+        check_len("spectrum", required_spectrum, spectrum.len())?;
+        check_len("workspace", self.len, workspace.len)?;
+
+        let spectrum_len = self.spectrum_len();
+        for (input_row, spectrum_row) in input
+            .chunks_exact(self.len)
+            .zip(spectrum.chunks_exact_mut(spectrum_len))
+        {
+            self.forward_unchecked(input_row, spectrum_row, workspace)?;
+        }
+        Ok(())
+    }
+
+    fn forward_unchecked(
+        &self,
+        input: &[T],
+        spectrum: &mut [Complex<T>],
+        workspace: &mut RealFftWorkspace<T>,
+    ) -> Result<(), FftError> {
         if let Some(complexify) = self.complexify.as_ref() {
             let complex_len = self.len / 2;
             let values = &mut workspace.scratch[..complex_len];
@@ -391,7 +434,51 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
         check_len("spectrum", self.spectrum_len(), spectrum.len())?;
         check_len("output", self.len, output.len())?;
         check_len("workspace", self.len, workspace.len)?;
+        self.inverse_unchecked(spectrum, output, workspace)
+    }
 
+    /// Computes normalized complex-to-real transforms for contiguous
+    /// row-major spectra.
+    ///
+    /// The spectrum length determines the row count and must be a multiple
+    /// of `spectrum_len()`. The output contains one `len()` row per spectrum
+    /// row. Rows execute in order with one reusable workspace; this method
+    /// does not allocate scratch or create threads. Empty batches are
+    /// accepted when both data buffers are empty.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FftError::BatchBufferLength`] for an incomplete spectrum
+    /// row, [`FftError::BatchLengthOverflow`] if the required output length
+    /// overflows, or [`FftError::BufferLength`] if the output or workspace
+    /// length does not match the batch.
+    pub fn inverse_batch(
+        &self,
+        spectrum: &[Complex<T>],
+        output: &mut [T],
+        workspace: &mut RealFftWorkspace<T>,
+    ) -> Result<(), FftError> {
+        let rows = check_batch_rows("spectrum", self.spectrum_len(), spectrum.len())?;
+        let required_output = checked_batch_len("output", rows, self.len)?;
+        check_len("output", required_output, output.len())?;
+        check_len("workspace", self.len, workspace.len)?;
+
+        let spectrum_len = self.spectrum_len();
+        for (spectrum_row, output_row) in spectrum
+            .chunks_exact(spectrum_len)
+            .zip(output.chunks_exact_mut(self.len))
+        {
+            self.inverse_unchecked(spectrum_row, output_row, workspace)?;
+        }
+        Ok(())
+    }
+
+    fn inverse_unchecked(
+        &self,
+        spectrum: &[Complex<T>],
+        output: &mut [T],
+        workspace: &mut RealFftWorkspace<T>,
+    ) -> Result<(), FftError> {
         if let Some(complexify) = self.complexify.as_ref() {
             let complex_len = self.len / 2;
             let (maximum, all_finite) = spectrum.iter().enumerate().fold(

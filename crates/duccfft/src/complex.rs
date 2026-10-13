@@ -32,6 +32,24 @@ pub enum FftError {
         /// The length supplied by the caller.
         actual: usize,
     },
+    /// A flat batch buffer does not contain an integral number of rows.
+    BatchBufferLength {
+        /// The name of the buffer with an invalid length.
+        buffer: &'static str,
+        /// The required length of each row.
+        row_len: usize,
+        /// The length supplied by the caller.
+        actual: usize,
+    },
+    /// A requested flat batch length exceeds the addressable slice size.
+    BatchLengthOverflow {
+        /// The name of the buffer whose required length overflowed.
+        buffer: &'static str,
+        /// The number of rows in the batch.
+        rows: usize,
+        /// The length required for each row.
+        row_len: usize,
+    },
 }
 
 impl fmt::Display for FftError {
@@ -46,6 +64,22 @@ impl fmt::Display for FftError {
             } => write!(
                 f,
                 "{buffer} length is {actual}; the plan requires {expected}"
+            ),
+            Self::BatchBufferLength {
+                buffer,
+                row_len,
+                actual,
+            } => write!(
+                f,
+                "{buffer} length is {actual}; batch rows must be a multiple of {row_len}"
+            ),
+            Self::BatchLengthOverflow {
+                buffer,
+                rows,
+                row_len,
+            } => write!(
+                f,
+                "{buffer} length overflows for {rows} batch rows of length {row_len}"
             ),
         }
     }
@@ -269,12 +303,26 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
     where
         T: SimdScalar,
     {
+        check_len("values", self.data.len, values.len())?;
+        check_len("workspace", self.data.len, workspace.len)?;
+        self.execute_avx2_unchecked(values, workspace, direction);
+        Ok(())
+    }
+
+    fn execute_avx2_unchecked(
+        &self,
+        values: &mut [Complex<T>],
+        workspace: &mut ComplexFftWorkspace<T>,
+        direction: Direction,
+    ) where
+        T: SimdScalar,
+    {
         let kernels = T::avx2_available().then_some(SimdKernels {
             complex_lanes: T::AVX2_COMPLEX_LANES,
             first_pass: T::avx2_first_pass,
             pass: T::avx2_pass,
         });
-        self.execute_with_simd(values, workspace, direction, T::one(), kernels)
+        self.execute_with_simd_unchecked(values, workspace, direction, T::one(), kernels);
     }
 
     fn execute_with_simd(
@@ -288,6 +336,18 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
         check_len("values", self.data.len, values.len())?;
         check_len("workspace", self.data.len, workspace.len)?;
 
+        self.execute_with_simd_unchecked(values, workspace, direction, inverse_output_scale, simd);
+        Ok(())
+    }
+
+    fn execute_with_simd_unchecked(
+        &self,
+        values: &mut [Complex<T>],
+        workspace: &mut ComplexFftWorkspace<T>,
+        direction: Direction,
+        inverse_output_scale: T,
+        simd: Option<SimdKernels<T>>,
+    ) {
         let defer_inverse_normalization =
             direction == Direction::Inverse && inverse_normalization_is_safe(values, self.data.len);
         let mut current_is_values = true;
@@ -330,7 +390,6 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
         if !current_is_values {
             values.copy_from_slice(&workspace.output);
         }
-        Ok(())
     }
 }
 
@@ -383,6 +442,31 @@ macro_rules! implement_public_api {
                 self.execute_avx2(values, workspace, Direction::Forward)
             }
 
+            /// Executes forward transforms for contiguous, row-major complex
+            /// data using one reusable workspace.
+            ///
+            /// The buffer length must be an integer multiple of the plan
+            /// length. A zero-length batch is a no-op. Rows execute in order;
+            /// this method does not create threads or allocate scratch.
+            ///
+            /// # Errors
+            ///
+            /// Returns [`FftError::BatchBufferLength`] if `values` does not
+            /// contain complete rows, or [`FftError::BufferLength`] if the
+            /// workspace belongs to a different plan length.
+            pub fn forward_batch(
+                &self,
+                values: &mut [Complex<$scalar>],
+                workspace: &mut ComplexFftWorkspace<$scalar>,
+            ) -> Result<(), FftError> {
+                check_batch_rows("values", self.data.len, values.len())?;
+                check_len("workspace", self.data.len, workspace.len)?;
+                for row in values.chunks_exact_mut(self.data.len) {
+                    self.execute_avx2_unchecked(row, workspace, Direction::Forward);
+                }
+                Ok(())
+            }
+
             /// Executes an inverse complex transform in place and scales the
             /// result by `1/n`.
             ///
@@ -396,6 +480,31 @@ macro_rules! implement_public_api {
                 workspace: &mut ComplexFftWorkspace<$scalar>,
             ) -> Result<(), FftError> {
                 self.execute_avx2(values, workspace, Direction::Inverse)
+            }
+
+            /// Executes normalized inverse transforms for contiguous,
+            /// row-major complex data using one reusable workspace.
+            ///
+            /// The buffer length must be an integer multiple of the plan
+            /// length. A zero-length batch is a no-op. Rows execute in order;
+            /// this method does not create threads or allocate scratch.
+            ///
+            /// # Errors
+            ///
+            /// Returns [`FftError::BatchBufferLength`] if `values` does not
+            /// contain complete rows, or [`FftError::BufferLength`] if the
+            /// workspace belongs to a different plan length.
+            pub fn inverse_batch(
+                &self,
+                values: &mut [Complex<$scalar>],
+                workspace: &mut ComplexFftWorkspace<$scalar>,
+            ) -> Result<(), FftError> {
+                check_batch_rows("values", self.data.len, values.len())?;
+                check_len("workspace", self.data.len, workspace.len)?;
+                for row in values.chunks_exact_mut(self.data.len) {
+                    self.execute_avx2_unchecked(row, workspace, Direction::Inverse);
+                }
+                Ok(())
             }
         }
     };
@@ -1597,4 +1706,34 @@ pub(crate) fn check_len(
             actual,
         })
     }
+}
+
+pub(crate) fn check_batch_rows(
+    buffer: &'static str,
+    row_len: usize,
+    actual: usize,
+) -> Result<usize, FftError> {
+    debug_assert!(row_len > 0);
+    if actual.is_multiple_of(row_len) {
+        Ok(actual / row_len)
+    } else {
+        Err(FftError::BatchBufferLength {
+            buffer,
+            row_len,
+            actual,
+        })
+    }
+}
+
+pub(crate) fn checked_batch_len(
+    buffer: &'static str,
+    rows: usize,
+    row_len: usize,
+) -> Result<usize, FftError> {
+    rows.checked_mul(row_len)
+        .ok_or(FftError::BatchLengthOverflow {
+            buffer,
+            rows,
+            row_len,
+        })
 }
