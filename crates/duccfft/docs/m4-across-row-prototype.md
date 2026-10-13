@@ -106,14 +106,15 @@ Across the six row counts, prototype-to-reference timing ratios span:
 | 256 | Forward | 1.19–1.86× | 3.53–5.18× | 0.88–1.63× | 1.56–2.40× |
 | 256 | Inverse | 0.85–1.31× | 2.79–4.07× | 0.80–1.50× | 1.55–2.36× |
 | 1,024 | Forward | 1.47–2.12× | 3.72–5.24× | 1.21–2.42× | 1.55–1.89× |
-| 1,024 | Inverse | 1.10–1.58× | 3.33–4.63× | 1.13–2.19× | 1.48–1.79× |
+| 1,024 | Inverse | 1.10–1.58× | 3.33–4.63× | 1.13–2.19× | 1.48–1.76× |
 
 At N=256, the median inverse time improves over the serial DUCCFFT batch path
 for four and eight rows. The other N=256 cases and every N=1,024 case are
-slower. The geometric mean of paired ratios across all row counts is 34.3%
-slower for forward and 10.6% slower for inverse. The prototype is 2.79–5.24×
-slower than RustFFT and 1.48–2.40× slower than native-target DUCC across the
-reported medians. The complete 32-row public-operation times, in microseconds per batch call,
+slower. For each direction, the geometric mean across 504 paired Across-row
+runtime AVX2/serial DUCCFFT elapsed-time ratios is 1.5195× for forward and
+1.1185× for inverse, or 52.0% and 11.8% more elapsed time. The prototype is
+2.79–5.24× slower than RustFFT and 1.48–2.40× slower than native-target DUCC
+across the reported medians. The complete 32-row public-operation times, in microseconds per batch call,
 are:
 
 | N | Direction | DUCCFFT | RustFFT | DUCC portable | DUCC native | Across-row AVX2 |
@@ -126,10 +127,12 @@ are:
 ## Setup and scratch
 
 Rust plan and workspace times are medians across six processes of means over 20
-operations. C++ DUCC plan and buffer allocation times use its 20-repetition
-setup measurements. Workspace sizes are reusable bytes; plan tables are
-excluded. RustFFT plan setup constructs both directions with one planner, and
-its workspace size is the larger of the forward and inverse scratch lengths.
+operations. C++ DUCC plan and buffer allocation medians pool the six row counts
+and both directions (72 process/configuration records per length and build),
+with each record based on its 20-repetition setup measurement. Workspace sizes
+are reusable bytes; plan tables are excluded. RustFFT plan setup constructs
+both directions with one planner, and its workspace size is the larger of the
+forward and inverse scratch lengths.
 
 | N | Implementation | Plan time | Workspace allocation, 2 rows | Scratch, 2 rows | Workspace allocation, 32 rows | Scratch, 32 rows |
 |---:|---|---:|---:|---:|---:|---:|
@@ -166,7 +169,8 @@ in the listed cases.
 | 1,024 | 32 | Forward | 3,749 | 3,039 | 1,317 |
 | 1,024 | 32 | Inverse | 3,732 | 3,244 | 1,222 |
 
-For 32 rows, the two layout conversions account for 57–63% of measured time. At N=1,024, 32 rows, the AVX2 butterfly stages take about 3.0–3.2 µs per
+For 32 rows, the two layout conversions account for about 56–63% of measured
+time. At N=1,024, 32 rows, the AVX2 butterfly stages take about 3.0–3.2 µs per
 transform, while packing and unpacking take 5.0–5.1 µs. This measured data
 movement explains why the faster vectorized stages do not produce a faster
 whole operation. The release binary contains a separate `stage_avx2` symbol. Its inner loop
