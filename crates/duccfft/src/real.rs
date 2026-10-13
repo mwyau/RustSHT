@@ -9,7 +9,8 @@
 // combines real half-spectra and uses the public Complex layout internally.
 // Radices 2, 3, 4, and 5 use fixed butterflies derived from rfftp2/3/4/5.
 // General odd primes and Bluestein factors with ido=1 use the DUCC-style
-// multipass schedule; Bluestein reuses the existing nested complex plan.
+// multipass schedule. Selected f64 terminal primes use a bounded Rader plan;
+// both convolution routes reuse nested complex plans and caller-owned scratch.
 
 use num_complex::Complex;
 use num_traits::{Float, FromPrimitive};
@@ -19,8 +20,9 @@ use crate::complex::{
     BluesteinPlan, ComplexFftPlan, ComplexFftWorkspace, Direction, check_batch_rows, check_len,
     check_vec_len, checked_batch_len, try_vec, unity_root,
 };
+use crate::rader::{RaderPrimePlan, RaderPrimeWorkspace, RaderRuntimeExecutor};
 use crate::real_multipass::{
-    MultipassBluestein, RealMultipassKernels, RealMultipassPlan, RealMultipassWorkspace,
+    MultipassTransforms, RealMultipassKernels, RealMultipassPlan, RealMultipassWorkspace,
 };
 use crate::simd::{
     RealGeneralPrimeIdo1Kernel, RealRadix2ForwardInteriorKernel, RealRadix2InteriorKernel,
@@ -39,6 +41,7 @@ pub struct RealFftPlan<T> {
     roots: Vec<Complex<T>>,
     scratch_len: usize,
     bluestein: Vec<Option<BluesteinPlan<T>>>,
+    rader: Option<RaderPrimePlan<T>>,
     complexify: Option<ComplexFftPlan<T>>,
     multipass: Option<RealMultipassPlan<T>>,
 }
@@ -55,6 +58,7 @@ pub struct RealFftWorkspace<T> {
     radix_saved: Vec<Complex<T>>,
     bluestein_buffer: Vec<Complex<T>>,
     bluestein_workspaces: Vec<Option<ComplexFftWorkspace<T>>>,
+    rader_workspace: Option<RaderPrimeWorkspace<T>>,
     complexify_workspace: Option<ComplexFftWorkspace<T>>,
     multipass_workspace: Option<RealMultipassWorkspace<T>>,
 }
@@ -71,7 +75,7 @@ impl<T> RealFftWorkspace<T> {
     }
 
     /// Returns the byte size of all reusable scratch buffers in this
-    /// workspace, including nested Bluestein and complexify workspaces.
+    /// workspace, including nested Bluestein, Rader, and complexify workspaces.
     ///
     /// The count includes initialized buffer elements and excludes allocator
     /// metadata and the plan's precomputed tables. Returns `None` only if the
@@ -93,11 +97,16 @@ impl<T> RealFftWorkspace<T> {
                     .as_ref()
                     .map_or(Some(0), RealMultipassWorkspace::scratch_bytes)?,
             )?;
+        let rader_bytes = self
+            .rader_workspace
+            .as_ref()
+            .map_or(Some(0), RaderPrimeWorkspace::scratch_bytes)?
+            .checked_add(local_bytes)?;
         let blue_bytes = self
             .bluestein_workspaces
             .iter()
             .flatten()
-            .try_fold(local_bytes, |total, workspace| {
+            .try_fold(rader_bytes, |total, workspace| {
                 total.checked_add(workspace.scratch_bytes()?)
             })?;
         if let Some(workspace) = self.complexify_workspace.as_ref() {
@@ -116,6 +125,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
         real_radix4_forward_interior_kernel: Option<RealRadix4ForwardInteriorKernel<T>>,
         real_radix4_interior_kernel: Option<RealRadix4InteriorKernel<T>>,
         real_general_prime_ido1_kernel: Option<RealGeneralPrimeIdo1Kernel<T>>,
+        rader_executor: Option<RaderRuntimeExecutor<T>>,
     ) -> Result<Self, FftError> {
         if len == 0 {
             return Err(FftError::InvalidLength);
@@ -143,6 +153,13 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                 None
             });
         }
+        let rader = if matches!(len, 257 | 723) {
+            rader_executor
+                .map(|execute| RaderPrimePlan::try_new(if len == 257 { 257 } else { 241 }, execute))
+                .transpose()?
+        } else {
+            None
+        };
         let scratch_len = if use_complexify {
             len
         } else {
@@ -165,6 +182,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                     radix4_interior: real_radix4_interior_kernel,
                     prime_ido1: real_general_prime_ido1_kernel,
                 },
+                rader.as_ref().map(RaderPrimePlan::radix),
             )?
         };
 
@@ -174,6 +192,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
             roots,
             scratch_len,
             bluestein,
+            rader,
             complexify,
             multipass,
         })
@@ -204,6 +223,11 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
             .as_ref()
             .map(ComplexFftPlan::try_workspace)
             .transpose()?;
+        let rader_workspace = self
+            .rader
+            .as_ref()
+            .map(RaderPrimePlan::workspace)
+            .transpose()?;
         let multipass_workspace = self
             .multipass
             .as_ref()
@@ -217,6 +241,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
             radix_saved: try_vec(max_radix, zero)?,
             bluestein_buffer: try_vec(bluestein_buffer_len, zero)?,
             bluestein_workspaces,
+            rader_workspace,
             complexify_workspace,
             multipass_workspace,
         })
@@ -393,12 +418,17 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
         }
 
         if let Some(multipass) = self.multipass.as_ref()
-            && forward_multipass_is_safe(input, self.len)
+            && self.rader.as_ref().map_or_else(
+                || forward_multipass_is_safe(input, self.len),
+                |rader| rader_forward_is_safe(rader, input, self.len),
+            )
         {
-            let mut bluestein = MultipassBluestein::new(
+            let mut transforms = MultipassTransforms::new(
                 &self.bluestein,
                 &mut workspace.bluestein_buffer,
                 &mut workspace.bluestein_workspaces,
+                self.rader.as_ref(),
+                workspace.rader_workspace.as_mut(),
                 &mut workspace.radix_input,
                 &mut workspace.radix_output,
             );
@@ -409,7 +439,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                     .multipass_workspace
                     .as_mut()
                     .expect("multipass plan has a multipass workspace"),
-                &mut bluestein,
+                &mut transforms,
             );
             return Ok(());
         }
@@ -634,22 +664,32 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
         }
 
         if let Some(multipass) = self.multipass.as_ref() {
-            let mut bluestein = MultipassBluestein::new(
+            let rader_dc_only = self.rader.is_some() && rader_inverse_dc_only(spectrum);
+            let rader_is_safe = self
+                .rader
+                .as_ref()
+                .is_none_or(|rader| rader_inverse_is_safe(rader, spectrum, self.len));
+            let mut transforms = MultipassTransforms::new(
                 &self.bluestein,
                 &mut workspace.bluestein_buffer,
                 &mut workspace.bluestein_workspaces,
+                self.rader.as_ref(),
+                workspace.rader_workspace.as_mut(),
                 &mut workspace.radix_input,
                 &mut workspace.radix_output,
             );
-            if multipass.inverse_if_safe(
-                spectrum,
-                output,
-                workspace
-                    .multipass_workspace
-                    .as_mut()
-                    .expect("multipass plan has a multipass workspace"),
-                &mut bluestein,
-            ) {
+            if rader_is_safe
+                && multipass.inverse_if_safe(
+                    spectrum,
+                    output,
+                    workspace
+                        .multipass_workspace
+                        .as_mut()
+                        .expect("multipass plan has a multipass workspace"),
+                    rader_dc_only,
+                    &mut transforms,
+                )
+            {
                 return Ok(());
             }
         }
@@ -693,7 +733,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
 }
 
 macro_rules! implement_public_api {
-    ($scalar:ty) => {
+    ($scalar:ty, $rader_executor:expr) => {
         impl RealFftPlan<$scalar> {
             /// Constructs a plan for a positive transform length.
             ///
@@ -710,14 +750,15 @@ macro_rules! implement_public_api {
                     <$scalar as SimdScalar>::real_radix4_forward_interior_kernel(),
                     <$scalar as SimdScalar>::real_radix4_interior_kernel(),
                     <$scalar as SimdScalar>::real_general_prime_ido1_kernel(),
+                    $rader_executor,
                 )
             }
         }
     };
 }
 
-implement_public_api!(f32);
-implement_public_api!(f64);
+implement_public_api!(f32, None);
+implement_public_api!(f64, Some(ComplexFftPlan::<f64>::execute_runtime));
 
 #[derive(Clone, Copy)]
 struct Layout {
@@ -1342,6 +1383,47 @@ fn forward_multipass_is_safe<T: Float + FromPrimitive>(input: &[T], len: usize) 
     maximum <= T::max_value() / scalar::<T>(4.0 * len as f64)
 }
 
+fn rader_forward_is_safe<T: Float + FromPrimitive>(
+    rader: &RaderPrimePlan<T>,
+    input: &[T],
+    len: usize,
+) -> bool {
+    // With only x[0] nonzero, Rader's permuted convolution input is all zero
+    // and the prime output is exactly the repeated x[0].
+    let sparse_impulse = input[0].is_finite() && input[1..].iter().all(|&value| value == T::zero());
+    sparse_impulse
+        || (forward_multipass_is_safe(input, len)
+            && rader.is_safe_components(input.iter().copied(), len, 1))
+}
+
+fn rader_inverse_is_safe<T: Float + FromPrimitive>(
+    rader: &RaderPrimePlan<T>,
+    spectrum: &[Complex<T>],
+    len: usize,
+) -> bool {
+    let rader_growth = len / rader.radix();
+    let ordinary_bound = rader.is_safe_components(
+        spectrum.iter().enumerate().flat_map(|(index, value)| {
+            if index == 0 || (len.is_multiple_of(2) && index == len / 2) {
+                [value.re, T::zero()]
+            } else {
+                [value.re, value.im]
+            }
+        }),
+        len,
+        rader_growth,
+    );
+    ordinary_bound || rader_inverse_dc_only(spectrum)
+}
+
+fn rader_inverse_dc_only<T: Float>(spectrum: &[Complex<T>]) -> bool {
+    // A DC-only spectrum likewise leaves the Rader convolution input zero.
+    spectrum[0].re.is_finite()
+        && spectrum[1..]
+            .iter()
+            .all(|value| value.re == T::zero() && value.im == T::zero())
+}
+
 fn prescale_residual<T: Float>(original: T, reconstructed: T) -> T {
     if reconstructed.is_finite() {
         original - reconstructed
@@ -1413,5 +1495,115 @@ fn small_radix_dft_all<T: Float + FromPrimitive>(
             frequency
         };
         *value = forward[forward_frequency];
+    }
+}
+
+#[cfg(test)]
+mod rader_fallback_tests {
+    use super::RealFftPlan;
+    use crate::Complex;
+    use crate::complex::ComplexFftPlan;
+
+    fn make_plan(len: usize, rader_enabled: bool) -> RealFftPlan<f64> {
+        RealFftPlan::try_new(
+            len,
+            None,
+            None,
+            None,
+            None,
+            None,
+            rader_enabled.then_some(ComplexFftPlan::<f64>::execute_runtime),
+        )
+        .unwrap()
+    }
+
+    fn assert_same_complex_bits(left: &[Complex<f64>], right: &[Complex<f64>]) {
+        for (left, right) in left.iter().zip(right) {
+            assert_eq!(left.re.to_bits(), right.re.to_bits());
+            assert_eq!(left.im.to_bits(), right.im.to_bits());
+        }
+    }
+
+    fn assert_same_real_bits(left: &[f64], right: &[f64]) {
+        for (left, right) in left.iter().zip(right) {
+            assert_eq!(left.to_bits(), right.to_bits());
+        }
+    }
+
+    #[test]
+    fn unsafe_rader_inputs_match_the_existing_fallback_route() {
+        for len in [257, 723] {
+            let selected = make_plan(len, true);
+            let fallback = make_plan(len, false);
+            let mut selected_workspace = selected.workspace().unwrap();
+            let mut fallback_workspace = fallback.workspace().unwrap();
+
+            let high = f64::MAX / (2.0 * len as f64);
+            let high_input = vec![high; len];
+            let mut selected_spectrum = vec![Complex::new(0.0, 0.0); selected.spectrum_len()];
+            let mut fallback_spectrum = selected_spectrum.clone();
+            selected
+                .forward(&high_input, &mut selected_spectrum, &mut selected_workspace)
+                .unwrap();
+            fallback
+                .forward(&high_input, &mut fallback_spectrum, &mut fallback_workspace)
+                .unwrap();
+            assert_same_complex_bits(&selected_spectrum, &fallback_spectrum);
+
+            let mut nonfinite_input = vec![0.0; len];
+            nonfinite_input[len / 2] = f64::INFINITY;
+            selected
+                .forward(
+                    &nonfinite_input,
+                    &mut selected_spectrum,
+                    &mut selected_workspace,
+                )
+                .unwrap();
+            fallback
+                .forward(
+                    &nonfinite_input,
+                    &mut fallback_spectrum,
+                    &mut fallback_workspace,
+                )
+                .unwrap();
+            assert_same_complex_bits(&selected_spectrum, &fallback_spectrum);
+
+            let high_spectrum = vec![Complex::new(high, -high); selected.spectrum_len()];
+            let mut selected_output = vec![0.0; len];
+            let mut fallback_output = vec![0.0; len];
+            selected
+                .inverse(
+                    &high_spectrum,
+                    &mut selected_output,
+                    &mut selected_workspace,
+                )
+                .unwrap();
+            fallback
+                .inverse(
+                    &high_spectrum,
+                    &mut fallback_output,
+                    &mut fallback_workspace,
+                )
+                .unwrap();
+            assert_same_real_bits(&selected_output, &fallback_output);
+
+            let mut nonfinite_spectrum = vec![Complex::new(0.0, 0.0); selected.spectrum_len()];
+            nonfinite_spectrum[1].re = f64::NAN;
+            selected
+                .inverse(
+                    &nonfinite_spectrum,
+                    &mut selected_output,
+                    &mut selected_workspace,
+                )
+                .unwrap();
+            fallback
+                .inverse(
+                    &nonfinite_spectrum,
+                    &mut fallback_output,
+                    &mut fallback_workspace,
+                )
+                .unwrap();
+            assert_same_real_bits(&selected_output, &fallback_output);
+        }
     }
 }
