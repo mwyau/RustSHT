@@ -334,7 +334,7 @@ results remain provisional. The harness includes the public operation's
 packing and output conversion. Batch timings below are per transform for a
 sequential batch of 32. Plan and workspace times remain in the raw data but
 are not affected by the pass-loop change. Each cell gives baseline / candidate time in microseconds and candidate speed
-change relative to baseline. Negative percentages are regressions.
+change relative to baseline, calculated as `(baseline time / candidate time) - 1`. Negative percentages are regressions.
 
 | N | Operation | Single | Batch of 32 |
 |---:|---|---:|---:|
