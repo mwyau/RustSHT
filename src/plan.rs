@@ -158,6 +158,12 @@ impl<T: ShtScalar> ShtPlan<T> {
                 .ok_or(ShtError::IntegerOverflow {
                     quantity: "analysis order count",
                 })?;
+        let spin_pair_fast_coefficient_count =
+            if self.harmonics.spin() == 1 && T::supports_paired_scalar() {
+                self.spin_fast_coefficient_count
+            } else {
+                0
+            };
         ShtWorkspace::<T>::new(
             self.spectrum_count,
             self.grid.nphi(),
@@ -166,6 +172,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             self.recurrence_factor_count,
             self.spin_recurrence_factor_count,
             self.spin_fast_coefficient_count,
+            spin_pair_fast_coefficient_count,
             &self.fft,
             self.cc_resampling.as_ref(),
         )
