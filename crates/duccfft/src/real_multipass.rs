@@ -25,6 +25,7 @@ struct Pass<T> {
     ido: usize,
     twiddles: Vec<T>,
     prime_roots: Vec<Complex<T>>,
+    prime_phase_indices: Vec<u8>,
     bluestein_stage: Option<usize>,
 }
 
@@ -126,12 +127,33 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                     *root = roots[phase * root_stride];
                 }
             }
+            let prime_phase_count = if radix > 5 && radix < 135 {
+                radix.checked_mul(radix).ok_or(FftError::AllocationFailed)?
+            } else {
+                0
+            };
+            check_vec_len::<u8>(prime_phase_count)?;
+            let mut prime_phase_indices = try_vec(prime_phase_count, 0_u8)?;
+            if prime_phase_count != 0 {
+                for left in 0..radix {
+                    let mut phase = 0;
+                    for right in 0..radix {
+                        // General real radices are below 135, so phases fit in u8.
+                        prime_phase_indices[left * radix + right] = phase as u8;
+                        phase += left;
+                        if phase >= radix {
+                            phase -= radix;
+                        }
+                    }
+                }
+            }
             passes.push(Pass {
                 radix,
                 l1,
                 ido,
                 twiddles,
                 prime_roots,
+                prime_phase_indices,
                 bluestein_stage,
             });
             l1 = pass_len;
@@ -437,13 +459,9 @@ fn forward_general_prime<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], 
             for frequency in 1..=half {
                 let mut sum_re = input0;
                 let mut sum_im = T::zero();
-                let mut phase = 0;
-                for branch in 1..=half {
-                    phase += frequency;
-                    if phase >= radix {
-                        phase -= radix;
-                    }
-                    let root = pass.prime_roots[phase];
+                let phases = &pass.prime_phase_indices[frequency * radix..(frequency + 1) * radix];
+                for (branch, &phase) in phases.iter().enumerate().take(half + 1).skip(1) {
+                    let root = pass.prime_roots[usize::from(phase)];
                     let left = input[branch * l1 + group];
                     let right = input[(radix - branch) * l1 + group];
                     sum_re = sum_re + (left + right) * root.re;
@@ -462,16 +480,12 @@ fn forward_general_prime<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], 
         for frequency in 0..=half {
             let mut sum_re = T::zero();
             let mut sum_im = T::zero();
-            let mut phase = 0;
-            for branch in 0..radix {
-                let root = pass.prime_roots[phase];
+            let phases = &pass.prime_phase_indices[frequency * radix..(frequency + 1) * radix];
+            for (branch, &phase) in phases.iter().enumerate() {
+                let root = pass.prime_roots[usize::from(phase)];
                 let value = input[index(0, group, branch, ido, l1)];
                 sum_re = sum_re + value * root.re;
                 sum_im = sum_im - value * root.im;
-                phase += frequency;
-                if phase >= radix {
-                    phase -= radix;
-                }
             }
             if frequency == 0 {
                 output[index(0, 0, group, ido, radix)] = sum_re;
@@ -510,9 +524,14 @@ fn forward_general_prime<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], 
             for frequency in 1..=half {
                 let mut positive = Complex::new(T::zero(), T::zero());
                 let mut negative = Complex::new(T::zero(), T::zero());
-                let mut positive_phase = 0;
-                let mut negative_phase = 0;
-                for branch in 0..radix {
+                let positive_phases =
+                    &pass.prime_phase_indices[frequency * radix..(frequency + 1) * radix];
+                let negative_frequency = radix - frequency;
+                let negative_phases = &pass.prime_phase_indices
+                    [negative_frequency * radix..(negative_frequency + 1) * radix];
+                for (branch, (&positive_phase, &negative_phase)) in
+                    positive_phases.iter().zip(negative_phases).enumerate()
+                {
                     let (value_re, value_im) = if branch == 0 {
                         (
                             input[index(i - 1, group, branch, ido, l1)],
@@ -527,16 +546,10 @@ fn forward_general_prime<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], 
                         )
                     };
                     let value = Complex::new(value_re, value_im);
-                    positive = positive + value * pass.prime_roots[positive_phase].conj();
-                    negative = negative + value * pass.prime_roots[negative_phase].conj();
-                    positive_phase += frequency;
-                    if positive_phase >= radix {
-                        positive_phase -= radix;
-                    }
-                    negative_phase += radix - frequency;
-                    if negative_phase >= radix {
-                        negative_phase -= radix;
-                    }
+                    positive =
+                        positive + value * pass.prime_roots[usize::from(positive_phase)].conj();
+                    negative =
+                        negative + value * pass.prime_roots[usize::from(negative_phase)].conj();
                 }
                 output[index(i - 1, 2 * frequency, group, ido, radix)] = positive.re;
                 output[index(i, 2 * frequency, group, ido, radix)] = positive.im;
@@ -577,13 +590,9 @@ fn inverse_general_prime<T: Float + FromPrimitive>(
                 let mirror = radix - sample;
                 let mut positive = dc;
                 let mut negative = dc;
-                let mut phase = 0;
-                for frequency in 1..=half {
-                    phase += sample;
-                    if phase >= radix {
-                        phase -= radix;
-                    }
-                    let root = pass.prime_roots[phase];
+                let phases = &pass.prime_phase_indices[sample * radix..(sample + 1) * radix];
+                for (frequency, &phase) in phases.iter().enumerate().take(half + 1).skip(1) {
+                    let root = pass.prime_roots[usize::from(phase)];
                     let re = input[input_start + 2 * frequency - 1];
                     let im = input[input_start + 2 * frequency];
                     let cosine_product = re * root.re;
@@ -602,13 +611,9 @@ fn inverse_general_prime<T: Float + FromPrimitive>(
         // The real DC lane is a Hermitian length-radix spectrum.
         for sample in 0..radix {
             let mut value = input[index(0, 0, group, ido, radix)];
-            let mut phase = 0;
-            for frequency in 1..=half {
-                phase += sample;
-                if phase >= radix {
-                    phase -= radix;
-                }
-                let root = pass.prime_roots[phase];
+            let phases = &pass.prime_phase_indices[sample * radix..(sample + 1) * radix];
+            for (frequency, &phase) in phases.iter().enumerate().take(half + 1).skip(1) {
+                let root = pass.prime_roots[usize::from(phase)];
                 let re = input[index(ido - 1, 2 * frequency - 1, group, ido, radix)];
                 let im = input[index(0, 2 * frequency, group, ido, radix)];
                 value = value + two * (re * root.re - im * root.im);
@@ -623,12 +628,8 @@ fn inverse_general_prime<T: Float + FromPrimitive>(
                     input[index(i - 1, 0, group, ido, radix)],
                     input[index(i, 0, group, ido, radix)],
                 );
-                let mut phase = 0;
-                for frequency in 1..radix {
-                    phase += sample;
-                    if phase >= radix {
-                        phase -= radix;
-                    }
+                let phases = &pass.prime_phase_indices[sample * radix..(sample + 1) * radix];
+                for (frequency, &phase) in phases.iter().enumerate().skip(1) {
                     let (re, im) = if frequency <= half {
                         (
                             input[index(i - 1, 2 * frequency, group, ido, radix)],
@@ -641,7 +642,7 @@ fn inverse_general_prime<T: Float + FromPrimitive>(
                             -input[index(ic, 2 * mirrored - 1, group, ido, radix)],
                         )
                     };
-                    value = value + Complex::new(re, im) * pass.prime_roots[phase];
+                    value = value + Complex::new(re, im) * pass.prime_roots[usize::from(phase)];
                 }
                 let (twiddle_re, twiddle_im) = if sample == 0 {
                     (T::one(), T::zero())
