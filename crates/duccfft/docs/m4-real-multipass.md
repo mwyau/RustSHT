@@ -926,10 +926,12 @@ error was `1.819e-12` and maximum scaled error was `6.821e-13`. The record is
 The kernel cuts most of the previous R2C gap. DUCCFFT is 1.29–1.62× slower
 than RustFFT for single transforms and 1.33–1.58× slower for batches of 32.
 C2R is 1.47–1.88× and 1.48–1.92× slower, respectively. The AVX2 path covers
-the f64 radix-four interior pass; radix-two, small-`ido`, f32, and
-generic-prime execution need separate optimization. These measurements
-support keeping this kernel during M4 and do not establish performance
-completion.
+the f64 radix-four interior pass. A separate f64 AVX2 kernel now covers the
+inverse radix-two interior pass; its paired timings and no-radix-two controls
+are in [`m4-real-radix2-avx2.md`](m4-real-radix2-avx2.md). Small-`ido`, f32,
+and generic-prime execution need separate optimization. These measurements
+support keeping the radix-four kernel during M4 and do not establish
+performance completion.
 
 ## Compiler-flag controls
 
