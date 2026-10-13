@@ -93,25 +93,37 @@ with `-C opt-level=3 -C embed-bitcode=no -C strip=debuginfo`; there were no
 custom `RUSTFLAGS`, LTO, or `target-cpu` settings. Runtime dispatch selected
 AVX2 on an x86-64 CPU; each process was pinned to logical one CPU core. The
 host also ran other workloads, so the timing evidence remains provisional. The harness warmed each plan, restored identical finite input before every
-timed public transform, and collected seven interleaved process pairs. Each
-process timed 5,000 transforms per sample. Therefore, the public-operation
-time includes the input reset and transform, while plan and workspace setup
-remain outside the wall-time interval. The 2,048-point control does not use
-the new kernel; its final radix is four.
+timed public transform, and collected seven interleaved process pairs for
+each length and direction. Each process timed 5,000 transforms per sample. Therefore, the public-operation time includes the input reset and transform,
+while plan and workspace setup remain outside the wall-time interval. The
+factorization column shows whether the final low-`ido` radix-eight kernel can
+run; the final factor must be eight, with `ido=1` and even `l1 >= 2`.
 
-| Length | Direction | Baseline median (ns) | Candidate median (ns) | Ratio | Paired latency reduction | Candidate wins |
-| ---: | --- | ---: | ---: | ---: | ---: | ---: |
-| 2,048 | Forward | 8,386.238 | 8,366.115 | 1.002× | 0.24% | 5/7 |
-| 2,048 | Inverse | 11,330.355 | 11,265.181 | 1.006× | 0.58% | 5/7 |
-| 4,096 | Forward | 18,513.281 | 11,342.774 | 1.632× | 38.63% | 7/7 |
-| 4,096 | Inverse | 24,599.210 | 17,296.023 | 1.422× | 29.73% | 7/7 |
+| Length | Pass factorization | Direction | Baseline median (ns) | Candidate median (ns) | Ratio | Paired latency reduction | Candidate wins |
+| ---: | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| 64 | `[8,8]` | Forward | 238.685 | 122.445 | 1.949× | 51.42% | 7/7 |
+| 64 | `[8,8]` | Inverse | 303.130 | 193.506 | 1.567× | 33.77% | 7/7 |
+| 128 | `[2,8,8]` | Forward | 426.289 | 224.461 | 1.899× | 46.59% | 7/7 |
+| 128 | `[2,8,8]` | Inverse | 597.882 | 394.814 | 1.514× | 33.95% | 7/7 |
+| 256 | `[8,8,4]` | Forward | 836.746 | 819.732 | 1.021× | 0.32% | 4/7 |
+| 256 | `[8,8,4]` | Inverse | 1,137.168 | 1,123.823 | 1.012× | 1.09% | 5/7 |
+| 512 | `[8,8,8]` | Forward | 1,712.639 | 885.433 | 1.934× | 48.98% | 7/7 |
+| 512 | `[8,8,8]` | Inverse | 2,460.427 | 1,645.587 | 1.495× | 33.73% | 7/7 |
+| 1,024 | `[2,8,8,8]` | Forward | 3,908.541 | 2,250.462 | 1.737× | 42.12% | 7/7 |
+| 1,024 | `[2,8,8,8]` | Inverse | 5,419.239 | 3,721.103 | 1.456× | 31.23% | 7/7 |
+| 2,048 | `[8,8,8,4]` | Forward | 8,393.888 | 8,412.987 | 0.998× | 0.72% | 4/7 |
+| 2,048 | `[8,8,8,4]` | Inverse | 11,388.895 | 11,337.344 | 1.005× | −0.52% | 2/7 |
+| 4,096 | `[8,8,8,8]` | Forward | 18,575.360 | 11,145.883 | 1.667× | 39.80% | 7/7 |
+| 4,096 | `[8,8,8,8]` | Inverse | 24,411.266 | 17,209.056 | 1.419× | 29.77% | 7/7 |
 
 The ratio is the ratio of the two median times. The latency reduction is the
 median of the seven paired percentage reductions, so it need not equal the
-percentage calculated from the two medians. All 56 raw rows and displayed
+percentage calculated from the two medians. All 196 raw rows and displayed
 checksums are recorded in
 [`m4-c2c-ido1-process-samples.csv`](../benches/results/m4-c2c-ido1-process-samples.csv);
-each baseline/candidate pair has a matching checksum.
+each baseline/candidate pair has a matching checksum. The kernel is eligible
+for lengths 64, 128, 512, 1,024, and 4,096; it is not selected at 256 or 2,048. Both noneligible controls show mixed, sub-1.1% paired outcomes. The eligible
+lengths favor the candidate in all 70 paired forward and inverse samples.
 
 ### Instruction profile
 
@@ -144,10 +156,13 @@ outputs against RustFFT. A maximum-finite DC spectrum test confirms that a
 4,096-point inverse remains finite and correctly scaled through the scalar
 residual path. The existing high-range and subnormal tests remain unchanged. `cargo fmt --all -- --check`, `cargo test --all-features`, and
 `cargo clippy --all-targets --all-features -- -D warnings` pass for the
-standalone crate. R32's read-only review accepted the kernel. It verified the lane mapping,
-bounds, disjoint buffers, one-time inverse scaling, runtime AVX2 dispatch,
-f32 fallback, and high-range scalar fallback. It reproduced the candidate
-found no actionable implementation or reporting issue. The targeted kernel is
-retained. These results address the scalar terminal-pass cost for a 4,096-point
-C2C transform; they do not resolve other smooth lengths or the remaining
-complex/real gaps.
+standalone crate. R32's read-only review accepted the kernel and verified the expanded sweep. It confirmed the lane mapping, bounds, disjoint buffers, one-time inverse
+scaling, runtime AVX2 dispatch, f32 fallback, and high-range scalar fallback. It reproduced all 196 timing records, table statistics, factorization labels,
+implementation issue. All 70 paired samples at the five eligible lengths
+favor the candidate. At 4,096, the ratios of medians are 1.667× forward and
+1.419× inverse, while the medians of paired latency reductions are 39.80% and
+29.77%. At the ineligible 2,048 control, the ratios are 0.998× forward and
+1.005× inverse, while the paired reductions are 0.72% and −0.52%; the control
+results are mixed and small. The targeted kernel reduces scalar terminal-pass
+cost at the eligible lengths but does not resolve the remaining complex/real
+gaps.
