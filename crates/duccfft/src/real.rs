@@ -17,6 +17,7 @@ use crate::complex::{
     BluesteinPlan, ComplexFftPlan, ComplexFftWorkspace, Direction, check_len, check_vec_len,
     try_vec, unity_root,
 };
+use crate::real_multipass::{RealMultipassPlan, RealMultipassWorkspace};
 
 /// An immutable one-dimensional real FFT plan.
 ///
@@ -31,6 +32,7 @@ pub struct RealFftPlan<T> {
     scratch_len: usize,
     bluestein: Vec<Option<BluesteinPlan<T>>>,
     complexify: Option<ComplexFftPlan<T>>,
+    multipass: Option<RealMultipassPlan<T>>,
 }
 
 /// Reusable scratch for a [`RealFftPlan`].
@@ -46,6 +48,7 @@ pub struct RealFftWorkspace<T> {
     bluestein_buffer: Vec<Complex<T>>,
     bluestein_workspaces: Vec<Option<ComplexFftWorkspace<T>>>,
     complexify_workspace: Option<ComplexFftWorkspace<T>>,
+    multipass_workspace: Option<RealMultipassWorkspace<T>>,
 }
 
 impl<T> RealFftWorkspace<T> {
@@ -75,7 +78,13 @@ impl<T> RealFftWorkspace<T> {
         ]
         .into_iter()
         .try_fold(0usize, usize::checked_add)?;
-        let local_bytes = local_elements.checked_mul(std::mem::size_of::<Complex<T>>())?;
+        let local_bytes = local_elements
+            .checked_mul(std::mem::size_of::<Complex<T>>())?
+            .checked_add(
+                self.multipass_workspace
+                    .as_ref()
+                    .map_or(Some(0), RealMultipassWorkspace::scratch_bytes)?,
+            )?;
         let blue_bytes = self
             .bluestein_workspaces
             .iter()
@@ -127,6 +136,11 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
         for (index, root) in roots.iter_mut().enumerate() {
             *root = unity_root(index, len);
         }
+        let multipass = if use_complexify {
+            None
+        } else {
+            RealMultipassPlan::try_new(len, &factors, &roots)?
+        };
 
         Ok(Self {
             len,
@@ -135,6 +149,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
             scratch_len,
             bluestein,
             complexify,
+            multipass,
         })
     }
 
@@ -163,6 +178,11 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
             .as_ref()
             .map(ComplexFftPlan::try_workspace)
             .transpose()?;
+        let multipass_workspace = self
+            .multipass
+            .as_ref()
+            .map(RealMultipassPlan::try_workspace)
+            .transpose()?;
         Ok(RealFftWorkspace {
             len: self.len,
             scratch: try_vec(self.scratch_len, zero)?,
@@ -172,6 +192,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
             bluestein_buffer: try_vec(bluestein_buffer_len, zero)?,
             bluestein_workspaces,
             complexify_workspace,
+            multipass_workspace,
         })
     }
 
@@ -299,6 +320,20 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                 }
                 spectrum[complex_len] = Complex::new(values[0].re - values[0].im, T::zero());
             }
+            return Ok(());
+        }
+
+        if let Some(multipass) = self.multipass.as_ref()
+            && forward_multipass_is_safe(input, self.len)
+        {
+            multipass.forward(
+                input,
+                spectrum,
+                workspace
+                    .multipass_workspace
+                    .as_mut()
+                    .expect("multipass plan has a multipass workspace"),
+            );
             return Ok(());
         }
 
@@ -478,6 +513,17 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
         }
 
         let defer_inverse_normalization = inverse_normalization_is_safe(spectrum, self.len);
+        if defer_inverse_normalization && let Some(multipass) = self.multipass.as_ref() {
+            multipass.inverse(
+                spectrum,
+                output,
+                workspace
+                    .multipass_workspace
+                    .as_mut()
+                    .expect("multipass plan has a multipass workspace"),
+            );
+            return Ok(());
+        }
         RealInverseExecutor {
             total_len: self.len,
             defer_inverse_normalization,
@@ -1127,6 +1173,17 @@ fn inverse_normalization_is_safe<T: Float + FromPrimitive>(
             }
             maximum = maximum.max(value.im.abs());
         }
+    }
+    maximum <= T::max_value() / scalar::<T>(4.0 * len as f64)
+}
+
+fn forward_multipass_is_safe<T: Float + FromPrimitive>(input: &[T], len: usize) -> bool {
+    let mut maximum = T::zero();
+    for &value in input {
+        if !value.is_finite() {
+            return false;
+        }
+        maximum = maximum.max(value.abs());
     }
     maximum <= T::max_value() / scalar::<T>(4.0 * len as f64)
 }
