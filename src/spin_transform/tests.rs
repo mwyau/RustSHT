@@ -391,9 +391,10 @@ fn spin1_scalar_fast_synthesis_matches_general_channel_cases() {
     }
     let zero = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
     let cases = [
-        ("E-only", mixed_e.as_slice(), zero.as_slice()),
-        ("B-only", zero.as_slice(), mixed_b.as_slice()),
-        ("mixed E/B", mixed_e.as_slice(), mixed_b.as_slice()),
+        ("E-only", mixed_e.as_slice(), Some(zero.as_slice())),
+        ("B-only", zero.as_slice(), Some(mixed_b.as_slice())),
+        ("mixed E/B", mixed_e.as_slice(), Some(mixed_b.as_slice())),
+        ("GRAD_ONLY", mixed_e.as_slice(), None),
     ];
     let mut workspace = plan.workspace().unwrap();
     plan.prepare_spin_latitudes(&mut workspace, 1);
@@ -403,7 +404,7 @@ fn spin1_scalar_fast_synthesis_matches_general_channel_cases() {
         workspace.spin_spectra.fill(Complex64::new(0.0, 0.0));
         plan.synthesize_spin_ring_group(
             e_alm,
-            Some(b_alm),
+            b_alm,
             1,
             false,
             true,
@@ -428,7 +429,7 @@ fn spin1_scalar_fast_synthesis_matches_general_channel_cases() {
         workspace.spin_spectra.fill(Complex64::new(0.0, 0.0));
         plan.synthesize_spin_ring_group(
             e_alm,
-            Some(b_alm),
+            b_alm,
             1,
             false,
             false,
@@ -458,6 +459,148 @@ fn spin1_scalar_fast_synthesis_matches_general_channel_cases() {
                 error <= 3e-11,
                 "{name} index={index} fast={fast:?} general={general:?} discrepancy={error:.3e}"
             );
+        }
+    }
+}
+
+#[test]
+fn spin1_t63_t127_scalar_conversion_matches_general_on_all_grids() {
+    for lmax in [63, 127] {
+        for grid_kind in [
+            GridKind::GaussLegendre,
+            GridKind::ClenshawCurtis,
+            GridKind::Fejer1,
+        ] {
+            let ntheta = lmax + usize::from(grid_kind == GridKind::ClenshawCurtis) + 1;
+            let nphi = 2 * lmax + 3;
+            let plan = ShtPlan::new(
+                GridSpec::new(grid_kind, ntheta, nphi, 0.37).unwrap(),
+                HarmonicSpec::new(lmax, lmax, 1).unwrap(),
+            )
+            .unwrap();
+            let (mut e_alm, mut b_alm) = coefficients(&plan);
+            for value in e_alm.iter_mut().chain(&mut b_alm) {
+                *value *= 1e-5;
+            }
+            let zero = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+            let cases = [
+                ("E-only", e_alm.as_slice(), Some(zero.as_slice())),
+                ("B-only", zero.as_slice(), Some(b_alm.as_slice())),
+                ("mixed E/B", e_alm.as_slice(), Some(b_alm.as_slice())),
+                ("GRAD_ONLY", e_alm.as_slice(), None),
+            ];
+            let mut workspace = plan.workspace().unwrap();
+            plan.prepare_spin_latitudes(&mut workspace, 1);
+            let spectrum_len = plan.fft.spectrum_len();
+            for (name, e_coefficients, b_coefficients) in cases {
+                let mut fast_first = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
+                let mut fast_second = fast_first.clone();
+                plan.synthesize_spin_ring_group(
+                    e_coefficients,
+                    b_coefficients,
+                    1,
+                    false,
+                    true,
+                    nphi,
+                    spectrum_len,
+                    plan.grid.phi0(),
+                    0,
+                    ntheta,
+                    &mut fast_first,
+                    &mut fast_second,
+                    &workspace.theta_sin[..ntheta],
+                    &workspace.theta_cos[..ntheta],
+                    &workspace.ring_order_limits[..ntheta],
+                    pulp::Arch::new(),
+                    &mut workspace.recurrence_workers[0],
+                )
+                .unwrap();
+                let mut general_first = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
+                let mut general_second = general_first.clone();
+                plan.synthesize_spin_ring_group(
+                    e_coefficients,
+                    b_coefficients,
+                    1,
+                    false,
+                    false,
+                    nphi,
+                    spectrum_len,
+                    plan.grid.phi0(),
+                    0,
+                    ntheta,
+                    &mut general_first,
+                    &mut general_second,
+                    &workspace.theta_sin[..ntheta],
+                    &workspace.theta_cos[..ntheta],
+                    &workspace.ring_order_limits[..ntheta],
+                    pulp::Arch::new(),
+                    &mut workspace.recurrence_workers[0],
+                )
+                .unwrap();
+                for (index, (actual, expected)) in fast_first
+                    .iter()
+                    .zip(&general_first)
+                    .chain(fast_second.iter().zip(&general_second))
+                    .enumerate()
+                {
+                    let error = (*actual - *expected).norm();
+                    assert!(
+                        error <= 3e-11,
+                        "{name}, {grid_kind:?}, lmax={lmax}, index={index}, error={error:.3e}"
+                    );
+                }
+            }
+
+            let mut standard_first = vec![0.0; plan.sample_count];
+            let mut standard_second = vec![0.0; plan.sample_count];
+            let mut gradient_first = vec![0.0; plan.sample_count];
+            let mut gradient_second = vec![0.0; plan.sample_count];
+            plan.synthesis_spin_into(
+                &e_alm,
+                &zero,
+                &mut standard_first,
+                &mut standard_second,
+                &mut workspace,
+            )
+            .unwrap();
+            plan.synthesis_gradient_into(
+                &e_alm,
+                &mut gradient_first,
+                &mut gradient_second,
+                &mut workspace,
+            )
+            .unwrap();
+            for (index, (standard, gradient)) in standard_first
+                .iter()
+                .chain(&standard_second)
+                .zip(gradient_first.iter().chain(&gradient_second))
+                .enumerate()
+            {
+                assert_close(*gradient, *standard, 5e-13);
+                assert!(gradient.is_finite(), "non-finite output at index={index}");
+            }
+
+            if lmax == 63 && grid_kind == GridKind::GaussLegendre {
+                let (map_first, map_second) = arbitrary_maps(&plan);
+                let mut gradient_adjoint = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+                plan.adjoint_synthesis_gradient_into(
+                    &map_first,
+                    &map_second,
+                    &mut gradient_adjoint,
+                    &mut workspace,
+                )
+                .unwrap();
+                assert_close(
+                    spin_map_inner_product(
+                        &gradient_first,
+                        &gradient_second,
+                        &map_first,
+                        &map_second,
+                    ),
+                    harmonic_inner_product(plan.harmonics(), &e_alm, &gradient_adjoint),
+                    2e-10,
+                );
+            }
         }
     }
 }

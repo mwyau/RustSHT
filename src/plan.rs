@@ -5,7 +5,7 @@ use crate::error::ShtError;
 use crate::fft::RealFftPlan;
 use crate::grid::GridSpec;
 use crate::harmonics::HarmonicSpec;
-use crate::legendre::{ShtScalar, fill_spin2_factors};
+use crate::legendre::{SPIN1_FAST_MIN_LMAX, ShtScalar, fill_spin2_factors};
 use crate::meridional::CCResamplingPlan;
 use crate::workspace::ShtWorkspace;
 
@@ -67,14 +67,12 @@ impl<T: ShtScalar> ShtPlan<T> {
                     quantity: "spin recurrence factor count",
                 })?;
         let spin_fast_coefficient_count = match (harmonics.spin(), T::supports_paired_scalar()) {
-            (1, true) if harmonics.lmax() >= 500 => {
-                harmonics
-                    .lmax()
-                    .checked_add(2)
-                    .ok_or(ShtError::IntegerOverflow {
-                        quantity: "spin-1 fast scalar coefficient count",
-                    })?
-            }
+            (1, true) if harmonics.lmax() >= SPIN1_FAST_MIN_LMAX => harmonics
+                .lmax()
+                .checked_add(2)
+                .ok_or(ShtError::IntegerOverflow {
+                    quantity: "spin-1 fast scalar coefficient count",
+                })?,
             (2, true) if harmonics.lmax() >= 500 => {
                 harmonics
                     .lmax()

@@ -8,8 +8,8 @@ use rayon::prelude::*;
 
 use crate::error::ShtError;
 use crate::legendre::{
-    LATITUDE_BLOCK_SIZE, ShtScalar, longitude_phase, scalar_to_spin1, scalar_to_spin2,
-    sin_cos_from_f64, spin1_to_scalar, spin2_to_scalar,
+    LATITUDE_BLOCK_SIZE, SPIN1_FAST_MIN_LMAX, ShtScalar, longitude_phase, scalar_to_spin1,
+    scalar_to_spin2, sin_cos_from_f64, spin1_to_scalar, spin2_to_scalar,
 };
 use crate::plan::ShtPlan;
 #[cfg(feature = "parallel")]
@@ -17,7 +17,7 @@ use crate::transform::weighted_order_midpoint;
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 const MAX_SUPPORTED_SPIN: usize = 4;
-const SPIN_FAST_LMAX: usize = 500;
+const SPIN2_FAST_MIN_LMAX: usize = 500;
 const SPIN1_FAST_MIN_SIN_THETA: f64 = 0.0001;
 const SPIN2_FAST_MIN_SIN_THETA: f64 = 0.01;
 
@@ -703,7 +703,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
         let phi0 = self.grid.phi0();
-        let allow_fast_scalar = !derivative_norm && b_alm.is_some();
+        let allow_fast_scalar = !derivative_norm;
         self.prepare_spin_latitudes(workspace, recurrence_spin);
         workspace
             .spectra
@@ -849,11 +849,16 @@ impl<T: ShtScalar> ShtPlan<T> {
             2 => self.harmonics.lmax() + 5,
             _ => 0,
         };
+        let fast_scalar_min_lmax = match spin {
+            1 => SPIN1_FAST_MIN_LMAX,
+            2 => SPIN2_FAST_MIN_LMAX,
+            _ => usize::MAX,
+        };
         let fast_scalar_enabled = allow_fast_scalar
             && matches!(spin, 1 | 2)
             && !derivative_norm
-            && b_alm.is_some()
-            && self.harmonics.lmax() >= SPIN_FAST_LMAX
+            && (spin == 1 || b_alm.is_some())
+            && self.harmonics.lmax() >= fast_scalar_min_lmax
             && T::supports_paired_scalar()
             && recurrence.fast_scalar_first.len() >= fast_scalar_coefficient_count
             && (spin != 2 || self.spin2_fast_f1.len() > self.harmonics.lmax());
@@ -957,12 +962,14 @@ impl<T: ShtScalar> ShtPlan<T> {
                     let coefficient_count = lmax - m + 1;
                     let scalar_lmax = lmax + 1;
                     let scalar_coefficient_count = scalar_lmax + 1;
-                    let b_coefficients = b_alm.expect("the scalar conversion requires E and B");
+                    let b_coefficients = b_alm.map(|values| {
+                        &values[coefficient_start..coefficient_start + coefficient_count]
+                    });
                     spin1_to_scalar(
                         m,
                         lmax,
                         &e_alm[coefficient_start..coefficient_start + coefficient_count],
-                        &b_coefficients[coefficient_start..coefficient_start + coefficient_count],
+                        b_coefficients,
                         &mut recurrence.fast_scalar_first[..scalar_coefficient_count],
                         &mut recurrence.fast_scalar_second[..scalar_coefficient_count],
                     );
@@ -1534,13 +1541,18 @@ impl<T: ShtScalar> ShtPlan<T> {
             2 => lmax + 5,
             _ => 0,
         };
+        let fast_scalar_min_lmax = match recurrence_spin {
+            1 => SPIN1_FAST_MIN_LMAX,
+            2 => SPIN2_FAST_MIN_LMAX,
+            _ => usize::MAX,
+        };
         let fast_scalar_enabled = self.grid.kind() == crate::grid::GridKind::GaussLegendre
             && matches!(recurrence_spin, 1 | 2)
             && self.harmonics.spin() == recurrence_spin
             && !derivative_norm
-            && b_alm.is_some()
+            && (recurrence_spin == 1 || b_alm.is_some())
             && ring_weights.is_some()
-            && lmax >= SPIN_FAST_LMAX
+            && lmax >= fast_scalar_min_lmax
             && T::supports_paired_scalar()
             && recurrence.fast_scalar_first.len() >= fast_scalar_coefficient_count
             && (recurrence_spin != 2 || self.spin2_fast_f1.len() > lmax)
