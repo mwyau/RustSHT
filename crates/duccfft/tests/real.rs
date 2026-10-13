@@ -951,9 +951,21 @@ fn real_radix_multipass_fast_paths_and_extreme_fallbacks_are_checked() {
     let n = 64;
     let plan64 = RealFftPlan::<f64>::new(n).unwrap();
     let mut workspace64 = plan64.workspace().unwrap();
+    let bounded64 = f64::MAX / (4.0 * n as f64);
+    let bounded_input64 = vec![bounded64; n];
+    let mut spectrum64 = vec![Complex::new(0.0, 0.0); plan64.spectrum_len()];
+    plan64
+        .forward(&bounded_input64, &mut spectrum64, &mut workspace64)
+        .unwrap();
+    assert!(
+        spectrum64
+            .iter()
+            .all(|value| value.re.is_finite() && value.im.is_finite())
+    );
+    assert_eq!(spectrum64[0].re, bounded64 * n as f64);
+
     let mut impulse64 = vec![0.0; n];
     impulse64[0] = f64::MAX;
-    let mut spectrum64 = vec![Complex::new(0.0, 0.0); plan64.spectrum_len()];
     plan64
         .forward(&impulse64, &mut spectrum64, &mut workspace64)
         .unwrap();
@@ -983,9 +995,21 @@ fn real_radix_multipass_fast_paths_and_extreme_fallbacks_are_checked() {
 
     let plan32 = RealFftPlan::<f32>::new(n).unwrap();
     let mut workspace32 = plan32.workspace().unwrap();
+    let bounded32 = f32::MAX / (4.0 * n as f32);
+    let bounded_input32 = vec![bounded32; n];
+    let mut spectrum32 = vec![Complex::new(0.0, 0.0); plan32.spectrum_len()];
+    plan32
+        .forward(&bounded_input32, &mut spectrum32, &mut workspace32)
+        .unwrap();
+    assert!(
+        spectrum32
+            .iter()
+            .all(|value| value.re.is_finite() && value.im.is_finite())
+    );
+    assert_eq!(spectrum32[0].re, bounded32 * n as f32);
+
     let mut impulse32 = vec![0.0; n];
     impulse32[0] = f32::MAX;
-    let mut spectrum32 = vec![Complex::new(0.0, 0.0); plan32.spectrum_len()];
     plan32
         .forward(&impulse32, &mut spectrum32, &mut workspace32)
         .unwrap();

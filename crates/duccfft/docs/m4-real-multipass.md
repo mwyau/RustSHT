@@ -99,22 +99,107 @@ plan at these examples, but its workspace needs about 1.5× as many bytes at
 
 The bounded comparison supports DUCC's packed-real multipass structure over
 recursive child transforms for smooth radix-2/radix-4 lengths. Production
-migration will retain the existing public API and numerical fallback. The
-ordinary inverse path may use the multipass executor only when
+migration retains the existing public API and numerical fallback. The
+ordinary inverse path uses the multipass executor only when
 `inverse_normalization_is_safe` accepts the spectrum. High-range or nonfinite
-inputs will continue through the residual-corrected recursive executor. The
-reviewer confirmed that the current bound conservatively covers radix-2/4
+inputs continue through the residual-corrected recursive executor. The
+reviewer confirmed that the inverse bound conservatively covers radix-2/4
 intermediate growth and specifically checked the `N=64`, DC=Nyquist=`MAX`
 case that overflows in the unscaled prototype. The prototype uses f64 and supports only powers of two. It does not implement
 radix-3/5, general-prime, Bluestein, or DUCC's conditional real complexify
 passes. It therefore does not replace the production fallback by itself. The
-production migration must add f32 and extreme-value coverage, preserve the
-current conditional complexify planner thresholds, and keep unsupported
-factorizations on their validated path until their pass implementations are
-available. A first production step will specialize radix-2/radix-4 lengths;
-later work will port the remaining pass families before removing recursion. The initial length-16 inverse check caught a negative radix-4 inverse twiddle
+production path preserves the conditional complexify planner thresholds and
+keeps unsupported factorizations on their validated path until their pass
+implementations are available. The first production step now specializes
+radix-2/radix-4 lengths; the remaining pass families still need to be ported
+before removing recursion. The initial length-16 inverse check caught a negative radix-4 inverse twiddle
 sign in the prototype. Correcting it to match pinned `rfftp4` made the
 independent DUCCFFT and RustFFT comparisons pass for lengths 1 through 4,096. No timing sample was retained from the failing version.
+
+## Production radix-2/radix-4 path
+
+The scalar production path was added at source revision
+`eb8085bf45c94d85c3ac083d436ca4586dd17b59`. It uses the
+same packed passes as the reviewed prototype for plans containing only radix
+2 and radix 4, while preserving DUCC's conditional complexify selection. It
+uses stage twiddles derived from the plan's root table and two reusable
+caller-owned real buffers. Other factorisations continue through the recursive
+executor. Forward multipass eligibility requires finite inputs with maximum absolute
+sample at most `MAX/(4*N)`. Larger or nonfinite inputs use the existing
+recursive path. Inverse multipass eligibility uses the existing
+`inverse_normalization_is_safe` check, which requires finite relevant spectrum
+components and a maximum at most `MAX/(4*N)`; imaginary DC and even Nyquist
+values remain ignored. Ineligible inverse inputs continue through the
+residual-corrected executor. The guard bounds are conservative headroom checks;
+they do not claim bitwise equivalence between pass orders. Tests cover f32 and
+f64 through length 4,096, direct f64 references, cancellation, subnormals,
+maximum-finite impulses, and the reviewed N=64 maximum-finite DC/Nyquist case. The integrated measurements use the Rust benchmark binary built from source
+revision `de5f87f796722bfff1e83c7a620f91b5ab28c35d`. Six processes were pinned
+to logical one CPU core. Each process reports a median of seven executions after one
+warm-up; plan and workspace allocation medians use 20 repetitions. Host-load variation was reviewed locally; exact transient load measurements remain untracked. Rust used rustc 1.99.0, Cargo
+1.99.0, `opt-level=3`, no custom `RUSTFLAGS`, no LTO, and no target CPU flag. RustFFT 6.4.1 used its default runtime dispatch. Direct DUCC controls are from
+the six-process pinned runs described above, using the pinned reference and
+portable and `-march=native` builds. Raw Rust samples are in
+[`m4-real-production-process-samples.csv`](../benches/results/m4-real-production-process-samples.csv). Each cell gives `DUCCFFT production / RustFFT adapter / DUCC portable / DUCC
+native`, in microseconds per transform.
+
+### One transform
+
+| N | R2C | C2R |
+|---:|---|---|
+| 64 | 0.245 / 0.146 / 0.131 / 0.131 | 0.260 / 0.111 / 0.150 / 0.150 |
+| 128 | 0.491 / 0.270 / 0.251 / 0.260 | 0.516 / 0.206 / 0.281 / 0.251 |
+| 256 | 1.012 / 0.511 / 0.471 / 0.501 | 1.082 / 0.396 / 0.511 / 0.481 |
+| 512 | 2.234 / 1.012 / 1.042 / 1.117 | 2.385 / 0.787 / 1.113 / 0.982 |
+| 1,024 | 4.729 / 2.124 / 2.154 / 2.414 | 5.065 / 1.708 / 2.250 / 2.059 |
+| 2,048 | 10.680 / 4.479 / 4.824 / 5.290 | 11.291 / 3.617 / 5.230 / 4.563 |
+| 4,096 | 23.099 / 9.638 / 11.322 / 12.083 | 24.767 / 7.850 / 11.777 / 10.636 |
+
+### Sequential batch of 32
+
+| N | R2C | C2R |
+|---:|---|---|
+| 64 | 0.209 / 0.123 / 0.122 / 0.120 | 0.220 / 0.094 / 0.120 / 0.123 |
+| 128 | 0.471 / 0.251 / 0.241 / 0.250 | 0.495 / 0.189 / 0.254 / 0.231 |
+| 256 | 0.987 / 0.491 / 0.469 / 0.495 | 1.050 / 0.378 / 0.498 / 0.473 |
+| 512 | 2.224 / 1.015 / 1.069 / 1.149 | 2.376 / 0.784 / 1.123 / 0.982 |
+| 1,024 | 4.714 / 2.202 / 2.273 / 2.473 | 5.057 / 1.738 / 2.307 / 2.076 |
+| 2,048 | 10.661 / 4.682 / 5.089 / 5.595 | 11.332 / 3.676 / 5.307 / 4.635 |
+| 4,096 | 23.555 / 10.266 / 11.652 / 12.625 | 24.987 / 8.119 / 12.169 / 10.985 |
+
+Against the earlier recursive measurements at source revision `3c97509b`,
+the production path is 5.90–7.90× faster for R2C and 4.78–6.46× faster for
+C2R across the two call counts and tested lengths. In a paired run, the
+production implementation is 1.13–1.36× slower than the no-guard prototype
+for R2C and 1.15–1.30× slower for C2R. That difference includes the
+production eligibility scan and dispatch. Production remains 1.69–2.40×
+slower than RustFFT for R2C and 2.33–3.16× slower for C2R. Across single and
+batch calls, it is 1.72–2.21× slower than portable DUCC for R2C and
+1.73–2.25× slower for C2R. The inverse
+timing is now close to forward timing for the same length, unlike the earlier
+SHT prime-size results. These comparisons show that multipass removed most
+of the recursive slowdown; they leave scalar kernel and dispatch overhead to
+address before SIMD work is complete. Plan and workspace medians for selected lengths follow. Scratch counts
+include the recursive fallback buffers and the two real multipass buffers in
+production; all counts exclude allocator metadata and transform arguments.
+
+| N | Plan construction, µs (prototype / production / RustFFT) | Workspace allocation, µs (prototype / production / RustFFT) | Scratch bytes (prototype / production / RustFFT) |
+|---:|---:|---:|---:|
+| 64 | 0.469 / 1.121 / 0.997 | 0.085 / 0.129 / 0.018 | 1,024 / 2,048 / 512 |
+| 128 | 0.906 / 2.243 / 1.925 | 0.074 / 0.165 / 0.026 | 2,048 / 4,128 / 2,048 |
+| 256 | 1.797 / 4.241 / 3.742 | 0.065 / 0.180 / 0.050 | 4,096 / 7,232 / 4,096 |
+| 512 | 3.769 / 8.380 / 7.212 | 0.097 / 0.250 / 0.079 | 8,192 / 15,456 / 8,192 |
+| 1,024 | 7.420 / 16.571 / 17.214 | 0.157 / 0.343 / 0.137 | 16,384 / 27,776 / 16,384 |
+| 2,048 | 14.859 / 33.226 / 31.274 | 0.286 / 0.621 / 0.287 | 32,768 / 60,576 / 32,768 |
+| 4,096 | 29.795 / 65.419 / 61.328 | 0.578 / 0.991 / 0.508 | 65,536 / 109,760 / 65,536 |
+
+The production guard preserves the reviewed extreme-value behavior, but the
+current staged migration duplicates scratch for the recursive fallback. At
+4,096, production workspace scratch is 109,760 bytes compared with 65,536
+bytes for the prototype and RustFFT adapter. Production plan construction is
+also slower than the prototype because it retains the full root table and
+builds pass-local twiddles. Porting the other pass families is necessary
+before the recursive fallback and its storage can be removed.
 
 ## R5 review
 
