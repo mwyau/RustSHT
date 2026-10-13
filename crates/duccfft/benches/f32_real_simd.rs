@@ -115,6 +115,19 @@ fn measure(mut operation: impl FnMut(), repeats: usize) -> f64 {
     elapsed.as_nanos() as f64 / repeats as f64
 }
 
+fn median_creation_ns<T>(mut create: impl FnMut() -> T, repetitions: usize) -> f64 {
+    let mut samples = Vec::with_capacity(repetitions);
+    for _ in 0..repetitions {
+        let start = Instant::now();
+        let value = create();
+        black_box(&value);
+        samples.push(start.elapsed().as_nanos() as f64);
+        drop(value);
+    }
+    samples.sort_by(f64::total_cmp);
+    samples[samples.len() / 2]
+}
+
 fn checksum_complex(values: &[Complex32]) -> f64 {
     values.iter().fold(0.0, |sum, value| {
         sum + value.re as f64 * 0.73 + value.im as f64 * 0.41
@@ -149,15 +162,15 @@ fn compare(expected: impl Iterator<Item = f32>, actual: impl Iterator<Item = f32
 }
 
 fn benchmark(n: usize, process_sample: &str) {
-    let plan_start = Instant::now();
+    let ducc_plan_ns = median_creation_ns(
+        || RealFftPlan::<f32>::new(n).expect("DUCCFFT f32 real plan"),
+        20,
+    );
     let ducc = RealFftPlan::<f32>::new(n).expect("DUCCFFT f32 real plan");
-    let ducc_plan_ns = plan_start.elapsed().as_nanos() as f64;
-    let workspace_start = Instant::now();
+    let ducc_workspace_ns = median_creation_ns(|| ducc.workspace().expect("DUCCFFT workspace"), 20);
     let mut ducc_workspace = ducc.workspace().expect("DUCCFFT workspace");
-    let ducc_workspace_ns = workspace_start.elapsed().as_nanos() as f64;
-    let rust_plan_start = Instant::now();
+    let rustfft_setup_ns = median_creation_ns(|| RustFftRealPlan::new(n), 20);
     let mut rustfft = RustFftRealPlan::new(n);
-    let rustfft_plan_ns = rust_plan_start.elapsed().as_nanos() as f64;
     let bins = ducc.spectrum_len();
     let input: Vec<_> = (0..n).map(real_value).collect();
     let spectrum: Vec<_> = (0..bins).map(|k| spectrum_value(k, n)).collect();
@@ -166,6 +179,13 @@ fn benchmark(n: usize, process_sample: &str) {
     let mut ducc_output = vec![0.0; n];
     let mut rust_output = vec![0.0; n];
     let repeats = (262_144 / n).max(16);
+
+    ducc.forward(&input, &mut ducc_spectrum, &mut ducc_workspace)
+        .expect("DUCCFFT R2C warm-up");
+    rustfft.forward(&input, &mut rust_spectrum);
+    ducc.inverse(&spectrum, &mut ducc_output, &mut ducc_workspace)
+        .expect("DUCCFFT C2R warm-up");
+    rustfft.inverse(&spectrum, &mut rust_output);
 
     let mut rows = Vec::with_capacity(SAMPLE_COUNT * 2);
     for pair in 0..SAMPLE_COUNT {
@@ -262,7 +282,7 @@ fn benchmark(n: usize, process_sample: &str) {
     compare(ducc_output.iter().copied(), rust_output.iter().copied(), n);
     for (mode, pair, first, ducc_ns, rust_ns, ducc_checksum, rust_checksum) in rows {
         println!(
-            "{process_sample},{mode},{n},{repeats},{pair},{first},{ducc_plan_ns:.3},{ducc_workspace_ns:.3},{rustfft_plan_ns:.3},{ducc_ns:.3},{rust_ns:.3},{ducc_checksum:.12e},{rust_checksum:.12e}"
+            "{process_sample},{mode},{n},{repeats},{pair},{first},{ducc_plan_ns:.3},{ducc_workspace_ns:.3},{rustfft_setup_ns:.3},{ducc_ns:.3},{rust_ns:.3},{ducc_checksum:.12e},{rust_checksum:.12e}"
         );
     }
 }
@@ -279,7 +299,7 @@ fn main() {
         lengths
     };
     println!(
-        "process_sample,mode,n,repeats,pair,first,duccfft_plan_ns,duccfft_workspace_ns,rustfft_plan_ns,duccfft_ns,rustfft_ns,duccfft_checksum,rustfft_checksum"
+        "process_sample,mode,n,repeats,pair,first,duccfft_plan_ns,duccfft_workspace_ns,rustfft_setup_ns,duccfft_ns,rustfft_ns,duccfft_checksum,rustfft_checksum"
     );
     for n in lengths {
         benchmark(n, &process_sample);
