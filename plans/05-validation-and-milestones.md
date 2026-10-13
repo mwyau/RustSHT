@@ -1412,3 +1412,18 @@ Lowered `SPIN1_TRANSITION_MIN_LMAX` from 255 to 224. This enables the existing g
 | F1 DERIV1 | `15.811/9.375 → 13.307/7.672` | `15.8%/18.2%` | `26.517/12.605 → 21.570/9.986` | `18.7%/20.8%` |
 
 At T224 GL, baseline and candidate process-median ranges did not overlap in any mode or thread count; for STANDARD they were `14.345–14.654/8.393–8.528` and `13.930–14.180/7.824–8.090` ms. T223 GL controls for STANDARD, GRAD_ONLY and DERIV1 changed by at most 0.7%, within run variability. The T224 gain is smaller on GL than CC/F1, while T254 shows clear whole-transform reductions on all grids and modes. The candidate passed all-grid T224 spin-1 STANDARD and GRAD_ONLY spectrum comparisons against the general recurrence, and DERIV1 comparisons against the general recurrence with analytic `Y10`/`Y11`, zero-monopole and synthesis-adjoint checks for even and odd `nphi`. Against installed DUCC `0.41.0` from source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`, T224 synthesis relative-L2 errors across GL/CC/F1, STANDARD/GRAD_ONLY/DERIV1 and one/eight threads were `2.35e-14–3.37e-14`; the largest absolute error was `6.564e-13` in DERIV1. Focused Rust tests passed. Sol's strictly read-only review found no correctness or cutoff blocker; it recommended retaining the gate and treating the smaller GL gain cautiously. No FFT code changed.
+
+### Scalar analysis active-pair compaction crossover (2026-10-13)
+
+Lowered the scalar f64 analysis active-pair compaction gate from T255 to T127. The path packs only north/south ring pairs admitted by their separate polar order limits, retaining the existing parity, equatorial singleton and worker-scratch behavior. No additional workspace memory is used. T63 remains on the uncompressed path. A T191 GL/CC/F1 regression checks selected coefficients against DUCC 0.41.0 and verifies the analysis-adjoint identity. Native f64 results use reused plans/workspaces, `examples/m1b_bench.rs`, `phi0=0.37`, full `mmax`, one warm-up and five timed calls per process, and pinned 8 pinned CPU cores on the x86-64 CPU / Linux. Builds used `rustc 1.99.0 (b940084d7 2026-09-28)`, release `opt-level=3`, 16 codegen units, LTO off, and runtime AVX2/FMA dispatch without `target-cpu=native`. Parent and candidate processes were alternated. T127 used seven process runs; T191 used three. Values are medians of process medians in milliseconds, one/eight threads:
+
+| Grid / bandlimit | Parent | Compacted | Reduction |
+| --- | ---: | ---: | ---: |
+| GL T127 | `1.110/0.592` | `1.054/0.533` | `5.0%/10.0%` |
+| CC T127 | `1.554/1.017` | `1.502/0.951` | `3.3%/6.5%` |
+| F1 T127 | `1.563/1.035` | `1.508/0.974` | `3.5%/5.9%` |
+| GL T191 | `4.013/1.456` | `2.909/1.011` | `27.5%/30.6%` |
+| CC T191 | `4.984/2.511` | `3.825/2.098` | `23.3%/16.4%` |
+| F1 T191 | `4.947/2.649` | `3.779/2.076` | `23.6%/21.6%` |
+
+T127 median gains were consistent across seven runs, though their timing ranges overlap; T191 ranges are clearly separated. T63 was below the gate, and T255 remained on its prior code path. Focused and full Rust tests passed. DUCC Python comparisons at T127/T191 across GL/CC/F1 and one/eight threads, including full-array inputs, had maximum relative-L2 error `1.85e-14` and maximum absolute error `8.85e-15`. The independent read-only Sol review found no actionable correctness, indexing, cutoff or ownership issue; it noted that the small embedded coefficient fixture is sparse, while full-array comparisons and mixed/equatorial tests provide broader coverage. No FFT code changed.

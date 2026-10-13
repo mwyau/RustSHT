@@ -835,6 +835,80 @@ fn t255_analysis_matches_ducc_0410_coefficients() {
 }
 
 #[test]
+#[allow(clippy::excessive_precision)]
+fn t191_analysis_compaction_matches_ducc_all_grids() {
+    // Reference: ducc0==0.41.0, T191, nphi=385, phi0=0.37, one thread.
+    let references = [
+        (
+            GridKind::GaussLegendre,
+            [
+                Complex64::new(-1.101_262_571_078_748_08e-4, 0.0),
+                Complex64::new(1.845_452_940_566_445_29e-4, 0.0),
+                Complex64::new(-1.080_429_232_554_343_58e-8, 0.0),
+                Complex64::new(-6.990_743_748_790_974_32e-5, 1.820_040_638_319_435_70e-5),
+                Complex64::new(-1.647_871_086_006_443_26e-4, -1.574_360_945_669_752_92e-4),
+                Complex64::new(1.763_932_922_834_878_08e-4, -4.649_072_237_886_739_25e-4),
+            ],
+        ),
+        (
+            GridKind::ClenshawCurtis,
+            [
+                Complex64::new(-1.253_917_058_211_111_45e-4, 0.0),
+                Complex64::new(1.627_367_181_468_490_85e-4, 0.0),
+                Complex64::new(-7.442_831_898_843_664_73e-6, 0.0),
+                Complex64::new(-9.377_048_021_241_667_09e-5, 1.910_311_040_542_690_34e-5),
+                Complex64::new(-1.484_896_390_713_879_52e-4, -1.468_151_142_568_995_24e-4),
+                Complex64::new(1.931_827_497_450_281_54e-4, -5.084_929_619_890_495_46e-4),
+            ],
+        ),
+        (
+            GridKind::Fejer1,
+            [
+                Complex64::new(-1.142_513_565_486_694_15e-4, 0.0),
+                Complex64::new(1.754_341_756_180_375_02e-4, 0.0),
+                Complex64::new(-6.610_233_887_425_625_58e-8, 0.0),
+                Complex64::new(-9.750_456_225_752_872_35e-5, 2.472_513_103_221_867_65e-5),
+                Complex64::new(-1.628_661_903_813_164_06e-4, -1.556_001_811_173_575_36e-4),
+                Complex64::new(1.761_913_095_214_543_59e-4, -4.643_748_404_299_327_15e-4),
+            ],
+        ),
+    ];
+    let sampled_modes = [(0, 0), (1, 0), (191, 0), (64, 32), (150, 98), (191, 190)];
+
+    for (kind, expected) in references {
+        let lmax = 191;
+        let ntheta = lmax + usize::from(kind == GridKind::ClenshawCurtis) + 1;
+        let plan = ShtPlan::new(
+            GridSpec::new(kind, ntheta, 2 * lmax + 3, 0.37).unwrap(),
+            HarmonicSpec::scalar(lmax, lmax).unwrap(),
+        )
+        .unwrap();
+        let map = arbitrary_map(&plan);
+        let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        let mut workspace = plan.workspace().unwrap();
+        plan.analysis_into(&map, &mut alm, &mut workspace).unwrap();
+
+        for (&(l, m), &reference) in sampled_modes.iter().zip(&expected) {
+            let index = plan.harmonics().index(l, m).unwrap();
+            assert!(
+                (alm[index] - reference).norm() < 2e-13,
+                "{kind:?} T191 (l={l}, m={m}): actual={:?}, expected={reference:?}",
+                alm[index]
+            );
+        }
+
+        let mut adjoint_map = vec![0.0; plan.sample_count];
+        plan.adjoint_analysis_into(&alm, &mut adjoint_map, &mut workspace)
+            .unwrap();
+        assert_close(
+            harmonic_inner_product(plan.harmonics(), &alm, &alm),
+            map_inner_product(&map, &adjoint_map),
+            3e-10,
+        );
+    }
+}
+
+#[test]
 fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
     let m = 3;
     let latitude_count = 129;
