@@ -411,48 +411,60 @@ fn forward_radix3<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output:
     let ido = pass.ido;
     let taur = scalar::<T>(-0.5);
     let taui = scalar::<T>(0.866_025_403_784_438_6);
+    let input_branch_len = ido * l1;
+    let output_block_len = 3 * ido;
+    let (input0, tail) = input.split_at(input_branch_len);
+    let (input1, input2) = tail.split_at(input_branch_len);
 
-    for k in 0..l1 {
-        let x0 = input[index(0, k, 0, ido, l1)];
-        let x1 = input[index(0, k, 1, ido, l1)];
-        let x2 = input[index(0, k, 2, ido, l1)];
+    for (((input0, input1), input2), output_block) in input0
+        .chunks_exact(ido)
+        .zip(input1.chunks_exact(ido))
+        .zip(input2.chunks_exact(ido))
+        .zip(output.chunks_exact_mut(output_block_len))
+    {
+        let (output0, tail) = output_block.split_at_mut(ido);
+        let (output1, output2) = tail.split_at_mut(ido);
+        let x0 = input0[0];
+        let x1 = input1[0];
+        let x2 = input2[0];
         let cr2 = x1 + x2;
-        output[index(0, 0, k, ido, 3)] = x0 + cr2;
-        output[index(0, 2, k, ido, 3)] = taui * (x2 - x1);
-        output[index(ido - 1, 1, k, ido, 3)] = x0 + taur * cr2;
+        output0[0] = x0 + cr2;
+        output2[0] = taui * (x2 - x1);
+        output1[ido - 1] = x0 + taur * cr2;
     }
     if ido == 1 {
         return;
     }
 
-    for k in 0..l1 {
+    let (twiddle1, tail) = pass.twiddles.split_at(ido - 1);
+    let twiddle2 = &tail[..ido - 1];
+    for (((input0, input1), input2), output_block) in input0
+        .chunks_exact(ido)
+        .zip(input1.chunks_exact(ido))
+        .zip(input2.chunks_exact(ido))
+        .zip(output.chunks_exact_mut(output_block_len))
+    {
+        let (output0, tail) = output_block.split_at_mut(ido);
+        let (output1, output2) = tail.split_at_mut(ido);
         for i in (2..ido).step_by(2) {
             let ic = ido - i;
-            let (dr2, di2) = multiply_pm(
-                twiddle(pass, 1, i - 2),
-                twiddle(pass, 1, i - 1),
-                input[index(i - 1, k, 1, ido, l1)],
-                input[index(i, k, 1, ido, l1)],
-            );
-            let (dr3, di3) = multiply_pm(
-                twiddle(pass, 2, i - 2),
-                twiddle(pass, 2, i - 1),
-                input[index(i - 1, k, 2, ido, l1)],
-                input[index(i, k, 2, ido, l1)],
-            );
+            let (dr2, di2) =
+                multiply_pm(twiddle1[i - 2], twiddle1[i - 1], input1[i - 1], input1[i]);
+            let (dr3, di3) =
+                multiply_pm(twiddle2[i - 2], twiddle2[i - 1], input2[i - 1], input2[i]);
             let (dr2, di2, dr3, di3) = (dr2 + dr3, di2 + di3, di2 - di3, dr3 - dr2);
-            let x0r = input[index(i - 1, k, 0, ido, l1)];
-            let x0i = input[index(i, k, 0, ido, l1)];
-            output[index(i - 1, 0, k, ido, 3)] = x0r + dr2;
-            output[index(i, 0, k, ido, 3)] = x0i + di2;
+            let x0r = input0[i - 1];
+            let x0i = input0[i];
+            output0[i - 1] = x0r + dr2;
+            output0[i] = x0i + di2;
             let tr2 = x0r + taur * dr2;
             let ti2 = x0i + taur * di2;
             let tr3 = taui * dr3;
             let ti3 = taui * di3;
-            output[index(i - 1, 2, k, ido, 3)] = tr2 + tr3;
-            output[index(ic - 1, 1, k, ido, 3)] = tr2 - tr3;
-            output[index(i, 2, k, ido, 3)] = ti3 + ti2;
-            output[index(ic, 1, k, ido, 3)] = ti3 - ti2;
+            output2[i - 1] = tr2 + tr3;
+            output1[ic - 1] = tr2 - tr3;
+            output2[i] = ti3 + ti2;
+            output1[ic] = ti3 - ti2;
         }
     }
 }
@@ -463,44 +475,61 @@ fn inverse_radix3<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output:
     let two = scalar::<T>(2.0);
     let taur = scalar::<T>(-0.5);
     let taui = scalar::<T>(0.866_025_403_784_438_6);
+    let input_block_len = 3 * ido;
+    let output_branch_len = ido * l1;
+    let (output0, tail) = output.split_at_mut(output_branch_len);
+    let (output1, output2) = tail.split_at_mut(output_branch_len);
 
-    for k in 0..l1 {
-        let dc = input[index(0, 0, k, ido, 3)];
-        let tr2 = two * input[index(ido - 1, 1, k, ido, 3)];
+    for (input_block, ((output0, output1), output2)) in input.chunks_exact(input_block_len).zip(
+        output0
+            .chunks_exact_mut(ido)
+            .zip(output1.chunks_exact_mut(ido))
+            .zip(output2.chunks_exact_mut(ido)),
+    ) {
+        let (input0, tail) = input_block.split_at(ido);
+        let (input1, input2) = tail.split_at(ido);
+        let dc = input0[0];
+        let tr2 = two * input1[ido - 1];
         let cr2 = dc + taur * tr2;
-        output[index(0, k, 0, ido, l1)] = dc + tr2;
-        let ci3 = two * taui * input[index(0, 2, k, ido, 3)];
-        output[index(0, k, 2, ido, l1)] = cr2 + ci3;
-        output[index(0, k, 1, ido, l1)] = cr2 - ci3;
+        output0[0] = dc + tr2;
+        let ci3 = two * taui * input2[0];
+        output2[0] = cr2 + ci3;
+        output1[0] = cr2 - ci3;
     }
     if ido == 1 {
         return;
     }
 
-    for k in 0..l1 {
+    let (twiddle1, tail) = pass.twiddles.split_at(ido - 1);
+    let twiddle2 = &tail[..ido - 1];
+    for (input_block, ((output0, output1), output2)) in input.chunks_exact(input_block_len).zip(
+        output0
+            .chunks_exact_mut(ido)
+            .zip(output1.chunks_exact_mut(ido))
+            .zip(output2.chunks_exact_mut(ido)),
+    ) {
+        let (input0, tail) = input_block.split_at(ido);
+        let (input1, input2) = tail.split_at(ido);
         for i in (2..ido).step_by(2) {
             let ic = ido - i;
-            let tr2 = input[index(i - 1, 2, k, ido, 3)] + input[index(ic - 1, 1, k, ido, 3)];
-            let ti2 = input[index(i, 2, k, ido, 3)] - input[index(ic, 1, k, ido, 3)];
-            let cr2 = input[index(i - 1, 0, k, ido, 3)] + taur * tr2;
-            let ci2 = input[index(i, 0, k, ido, 3)] + taur * ti2;
-            output[index(i - 1, k, 0, ido, l1)] = input[index(i - 1, 0, k, ido, 3)] + tr2;
-            output[index(i, k, 0, ido, l1)] = input[index(i, 0, k, ido, 3)] + ti2;
-            let cr3 =
-                taui * (input[index(i - 1, 2, k, ido, 3)] - input[index(ic - 1, 1, k, ido, 3)]);
-            let ci3 = taui * (input[index(i, 2, k, ido, 3)] + input[index(ic, 1, k, ido, 3)]);
+            let tr2 = input2[i - 1] + input1[ic - 1];
+            let ti2 = input2[i] - input1[ic];
+            let cr2 = input0[i - 1] + taur * tr2;
+            let ci2 = input0[i] + taur * ti2;
+            output0[i - 1] = input0[i - 1] + tr2;
+            output0[i] = input0[i] + ti2;
+            let cr3 = taui * (input2[i - 1] - input1[ic - 1]);
+            let ci3 = taui * (input2[i] + input1[ic]);
             let dr3 = cr2 + ci3;
             let dr2 = cr2 - ci3;
             let di2 = ci2 + cr3;
             let di3 = ci2 - cr3;
-            let (re2, im2) =
-                multiply_pm(twiddle(pass, 1, i - 2), twiddle(pass, 1, i - 1), di2, dr2);
-            let (re3, im3) =
-                multiply_pm(twiddle(pass, 2, i - 2), twiddle(pass, 2, i - 1), di3, dr3);
-            output[index(i - 1, k, 1, ido, l1)] = im2;
-            output[index(i, k, 1, ido, l1)] = re2;
-            output[index(i - 1, k, 2, ido, l1)] = im3;
-            output[index(i, k, 2, ido, l1)] = re3;
+            let (re2, im2) = multiply_pm(twiddle1[i - 2], twiddle1[i - 1], di2, dr2);
+            let (re3, im3) = multiply_pm(twiddle2[i - 2], twiddle2[i - 1], di3, dr3);
+            output1[i - 1] = im2;
+            output1[i] = re2;
+            output2[i - 1] = im3;
+            output2[i] = re3;
         }
     }
 }
@@ -754,58 +783,80 @@ fn forward_radix5<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output:
     let ti11 = scalar::<T>(0.951_056_516_295_153_5);
     let tr12 = scalar::<T>(-0.809_016_994_374_947_5);
     let ti12 = scalar::<T>(0.587_785_252_292_473_1);
+    let input_branch_len = ido * l1;
+    let output_block_len = 5 * ido;
+    let (input0, tail) = input.split_at(input_branch_len);
+    let (input1, tail) = tail.split_at(input_branch_len);
+    let (input2, tail) = tail.split_at(input_branch_len);
+    let (input3, input4) = tail.split_at(input_branch_len);
 
-    for k in 0..l1 {
-        let x0 = input[index(0, k, 0, ido, l1)];
-        let x1 = input[index(0, k, 1, ido, l1)];
-        let x2 = input[index(0, k, 2, ido, l1)];
-        let x3 = input[index(0, k, 3, ido, l1)];
-        let x4 = input[index(0, k, 4, ido, l1)];
+    for ((((input0, input1), input2), input3), (input4, output_block)) in input0
+        .chunks_exact(ido)
+        .zip(input1.chunks_exact(ido))
+        .zip(input2.chunks_exact(ido))
+        .zip(input3.chunks_exact(ido))
+        .zip(
+            input4
+                .chunks_exact(ido)
+                .zip(output.chunks_exact_mut(output_block_len)),
+        )
+    {
+        let (output0, tail) = output_block.split_at_mut(ido);
+        let (output1, tail) = tail.split_at_mut(ido);
+        let (output2, tail) = tail.split_at_mut(ido);
+        let (output3, output4) = tail.split_at_mut(ido);
+        let x0 = input0[0];
+        let x1 = input1[0];
+        let x2 = input2[0];
+        let x3 = input3[0];
+        let x4 = input4[0];
         let (cr2, ci5) = (x4 + x1, x4 - x1);
         let (cr3, ci4) = (x3 + x2, x3 - x2);
-        output[index(0, 0, k, ido, 5)] = x0 + cr2 + cr3;
-        output[index(ido - 1, 1, k, ido, 5)] = x0 + tr11 * cr2 + tr12 * cr3;
-        output[index(0, 2, k, ido, 5)] = ti11 * ci5 + ti12 * ci4;
-        output[index(ido - 1, 3, k, ido, 5)] = x0 + tr12 * cr2 + tr11 * cr3;
-        output[index(0, 4, k, ido, 5)] = ti12 * ci5 - ti11 * ci4;
+        output0[0] = x0 + cr2 + cr3;
+        output1[ido - 1] = x0 + tr11 * cr2 + tr12 * cr3;
+        output2[0] = ti11 * ci5 + ti12 * ci4;
+        output3[ido - 1] = x0 + tr12 * cr2 + tr11 * cr3;
+        output4[0] = ti12 * ci5 - ti11 * ci4;
     }
     if ido == 1 {
         return;
     }
 
-    for k in 0..l1 {
+    let (twiddle1, tail) = pass.twiddles.split_at(ido - 1);
+    let (twiddle2, tail) = tail.split_at(ido - 1);
+    let (twiddle3, tail) = tail.split_at(ido - 1);
+    let twiddle4 = &tail[..ido - 1];
+    for ((((input0, input1), input2), input3), (input4, output_block)) in input0
+        .chunks_exact(ido)
+        .zip(input1.chunks_exact(ido))
+        .zip(input2.chunks_exact(ido))
+        .zip(input3.chunks_exact(ido))
+        .zip(
+            input4
+                .chunks_exact(ido)
+                .zip(output.chunks_exact_mut(output_block_len)),
+        )
+    {
+        let (output0, tail) = output_block.split_at_mut(ido);
+        let (output1, tail) = tail.split_at_mut(ido);
+        let (output2, tail) = tail.split_at_mut(ido);
+        let (output3, output4) = tail.split_at_mut(ido);
         for i in (2..ido).step_by(2) {
             let ic = ido - i;
-            let (dr2, di2) = multiply_pm(
-                twiddle(pass, 1, i - 2),
-                twiddle(pass, 1, i - 1),
-                input[index(i - 1, k, 1, ido, l1)],
-                input[index(i, k, 1, ido, l1)],
-            );
-            let (dr3, di3) = multiply_pm(
-                twiddle(pass, 2, i - 2),
-                twiddle(pass, 2, i - 1),
-                input[index(i - 1, k, 2, ido, l1)],
-                input[index(i, k, 2, ido, l1)],
-            );
-            let (dr4, di4) = multiply_pm(
-                twiddle(pass, 3, i - 2),
-                twiddle(pass, 3, i - 1),
-                input[index(i - 1, k, 3, ido, l1)],
-                input[index(i, k, 3, ido, l1)],
-            );
-            let (dr5, di5) = multiply_pm(
-                twiddle(pass, 4, i - 2),
-                twiddle(pass, 4, i - 1),
-                input[index(i - 1, k, 4, ido, l1)],
-                input[index(i, k, 4, ido, l1)],
-            );
+            let (dr2, di2) =
+                multiply_pm(twiddle1[i - 2], twiddle1[i - 1], input1[i - 1], input1[i]);
+            let (dr3, di3) =
+                multiply_pm(twiddle2[i - 2], twiddle2[i - 1], input2[i - 1], input2[i]);
+            let (dr4, di4) =
+                multiply_pm(twiddle3[i - 2], twiddle3[i - 1], input3[i - 1], input3[i]);
+            let (dr5, di5) =
+                multiply_pm(twiddle4[i - 2], twiddle4[i - 1], input4[i - 1], input4[i]);
             let (dr2, di2, dr5, di5) = (dr2 + dr5, di2 + di5, di2 - di5, dr5 - dr2);
             let (dr3, di3, dr4, di4) = (dr3 + dr4, di3 + di4, di3 - di4, dr4 - dr3);
-            let x0r = input[index(i - 1, k, 0, ido, l1)];
-            let x0i = input[index(i, k, 0, ido, l1)];
-            output[index(i - 1, 0, k, ido, 5)] = x0r + dr2 + dr3;
-            output[index(i, 0, k, ido, 5)] = x0i + di2 + di3;
+            let x0r = input0[i - 1];
+            let x0i = input0[i];
+            output0[i - 1] = x0r + dr2 + dr3;
+            output0[i] = x0i + di2 + di3;
             let tr2 = x0r + tr11 * dr2 + tr12 * dr3;
             let ti2 = x0i + tr11 * di2 + tr12 * di3;
             let tr3 = x0r + tr12 * dr2 + tr11 * dr3;
@@ -814,14 +865,14 @@ fn forward_radix5<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output:
             let ti5 = ti11 * di5 + ti12 * di4;
             let tr4 = ti12 * dr5 - ti11 * dr4;
             let ti4 = ti12 * di5 - ti11 * di4;
-            output[index(i - 1, 2, k, ido, 5)] = tr2 + tr5;
-            output[index(ic - 1, 1, k, ido, 5)] = tr2 - tr5;
-            output[index(i, 2, k, ido, 5)] = ti5 + ti2;
-            output[index(ic, 1, k, ido, 5)] = ti5 - ti2;
-            output[index(i - 1, 4, k, ido, 5)] = tr3 + tr4;
-            output[index(ic - 1, 3, k, ido, 5)] = tr3 - tr4;
-            output[index(i, 4, k, ido, 5)] = ti4 + ti3;
-            output[index(ic, 3, k, ido, 5)] = ti4 - ti3;
+            output2[i - 1] = tr2 + tr5;
+            output1[ic - 1] = tr2 - tr5;
+            output2[i] = ti5 + ti2;
+            output1[ic] = ti5 - ti2;
+            output4[i - 1] = tr3 + tr4;
+            output3[ic - 1] = tr3 - tr4;
+            output4[i] = ti4 + ti3;
+            output3[ic] = ti4 - ti3;
         }
     }
 }
@@ -834,41 +885,77 @@ fn inverse_radix5<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output:
     let ti11 = scalar::<T>(0.951_056_516_295_153_5);
     let tr12 = scalar::<T>(-0.809_016_994_374_947_5);
     let ti12 = scalar::<T>(0.587_785_252_292_473_1);
+    let input_block_len = 5 * ido;
+    let output_branch_len = ido * l1;
+    let (output0, tail) = output.split_at_mut(output_branch_len);
+    let (output1, tail) = tail.split_at_mut(output_branch_len);
+    let (output2, tail) = tail.split_at_mut(output_branch_len);
+    let (output3, output4) = tail.split_at_mut(output_branch_len);
 
-    for k in 0..l1 {
-        let dc = input[index(0, 0, k, ido, 5)];
-        let ti5 = two * input[index(0, 2, k, ido, 5)];
-        let ti4 = two * input[index(0, 4, k, ido, 5)];
-        let tr2 = two * input[index(ido - 1, 1, k, ido, 5)];
-        let tr3 = two * input[index(ido - 1, 3, k, ido, 5)];
-        output[index(0, k, 0, ido, l1)] = dc + tr2 + tr3;
+    for (input_block, ((((output0, output1), output2), output3), output4)) in
+        input.chunks_exact(input_block_len).zip(
+            output0
+                .chunks_exact_mut(ido)
+                .zip(output1.chunks_exact_mut(ido))
+                .zip(output2.chunks_exact_mut(ido))
+                .zip(output3.chunks_exact_mut(ido))
+                .zip(output4.chunks_exact_mut(ido)),
+        )
+    {
+        let (input0, tail) = input_block.split_at(ido);
+        let (input1, tail) = tail.split_at(ido);
+        let (input2, tail) = tail.split_at(ido);
+        let (input3, input4) = tail.split_at(ido);
+        let dc = input0[0];
+        let ti5 = two * input2[0];
+        let ti4 = two * input4[0];
+        let tr2 = two * input1[ido - 1];
+        let tr3 = two * input3[ido - 1];
+        output0[0] = dc + tr2 + tr3;
         let cr2 = dc + tr11 * tr2 + tr12 * tr3;
         let cr3 = dc + tr12 * tr2 + tr11 * tr3;
         let (ci5, ci4) = multiply_pm(ti5, ti4, ti11, ti12);
-        output[index(0, k, 4, ido, l1)] = cr2 + ci5;
-        output[index(0, k, 1, ido, l1)] = cr2 - ci5;
-        output[index(0, k, 3, ido, l1)] = cr3 + ci4;
-        output[index(0, k, 2, ido, l1)] = cr3 - ci4;
+        output4[0] = cr2 + ci5;
+        output1[0] = cr2 - ci5;
+        output3[0] = cr3 + ci4;
+        output2[0] = cr3 - ci4;
     }
     if ido == 1 {
         return;
     }
 
-    for k in 0..l1 {
+    let (twiddle1, tail) = pass.twiddles.split_at(ido - 1);
+    let (twiddle2, tail) = tail.split_at(ido - 1);
+    let (twiddle3, tail) = tail.split_at(ido - 1);
+    let twiddle4 = &tail[..ido - 1];
+    for (input_block, ((((output0, output1), output2), output3), output4)) in
+        input.chunks_exact(input_block_len).zip(
+            output0
+                .chunks_exact_mut(ido)
+                .zip(output1.chunks_exact_mut(ido))
+                .zip(output2.chunks_exact_mut(ido))
+                .zip(output3.chunks_exact_mut(ido))
+                .zip(output4.chunks_exact_mut(ido)),
+        )
+    {
+        let (input0, tail) = input_block.split_at(ido);
+        let (input1, tail) = tail.split_at(ido);
+        let (input2, tail) = tail.split_at(ido);
+        let (input3, input4) = tail.split_at(ido);
         for i in (2..ido).step_by(2) {
             let ic = ido - i;
-            let tr2 = input[index(i - 1, 2, k, ido, 5)] + input[index(ic - 1, 1, k, ido, 5)];
-            let tr5 = input[index(i - 1, 2, k, ido, 5)] - input[index(ic - 1, 1, k, ido, 5)];
-            let ti5 = input[index(i, 2, k, ido, 5)] + input[index(ic, 1, k, ido, 5)];
-            let ti2 = input[index(i, 2, k, ido, 5)] - input[index(ic, 1, k, ido, 5)];
-            let tr3 = input[index(i - 1, 4, k, ido, 5)] + input[index(ic - 1, 3, k, ido, 5)];
-            let tr4 = input[index(i - 1, 4, k, ido, 5)] - input[index(ic - 1, 3, k, ido, 5)];
-            let ti4 = input[index(i, 4, k, ido, 5)] + input[index(ic, 3, k, ido, 5)];
-            let ti3 = input[index(i, 4, k, ido, 5)] - input[index(ic, 3, k, ido, 5)];
-            let x0r = input[index(i - 1, 0, k, ido, 5)];
-            let x0i = input[index(i, 0, k, ido, 5)];
-            output[index(i - 1, k, 0, ido, l1)] = x0r + tr2 + tr3;
-            output[index(i, k, 0, ido, l1)] = x0i + ti2 + ti3;
+            let tr2 = input2[i - 1] + input1[ic - 1];
+            let tr5 = input2[i - 1] - input1[ic - 1];
+            let ti5 = input2[i] + input1[ic];
+            let ti2 = input2[i] - input1[ic];
+            let tr3 = input4[i - 1] + input3[ic - 1];
+            let tr4 = input4[i - 1] - input3[ic - 1];
+            let ti4 = input4[i] + input3[ic];
+            let ti3 = input4[i] - input3[ic];
+            let x0r = input0[i - 1];
+            let x0i = input0[i];
+            output0[i - 1] = x0r + tr2 + tr3;
+            output0[i] = x0i + ti2 + ti3;
             let cr2 = x0r + tr11 * tr2 + tr12 * tr3;
             let ci2 = x0i + tr11 * ti2 + tr12 * ti3;
             let cr3 = x0r + tr12 * tr2 + tr11 * tr3;
@@ -879,16 +966,18 @@ fn inverse_radix5<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output:
             let (di3, di4) = (ci3 + cr4, ci3 - cr4);
             let (dr5, dr2) = (cr2 + ci5, cr2 - ci5);
             let (di2, di5) = (ci2 + cr5, ci2 - cr5);
-            for (branch, dr, di) in [(1, dr2, di2), (2, dr3, di3), (3, dr4, di4), (4, dr5, di5)] {
-                let (imag, real) = multiply_pm(
-                    twiddle(pass, branch, i - 2),
-                    twiddle(pass, branch, i - 1),
-                    di,
-                    dr,
-                );
-                output[index(i - 1, k, branch, ido, l1)] = real;
-                output[index(i, k, branch, ido, l1)] = imag;
-            }
+            let (im2, re2) = multiply_pm(twiddle1[i - 2], twiddle1[i - 1], di2, dr2);
+            let (im3, re3) = multiply_pm(twiddle2[i - 2], twiddle2[i - 1], di3, dr3);
+            let (im4, re4) = multiply_pm(twiddle3[i - 2], twiddle3[i - 1], di4, dr4);
+            let (im5, re5) = multiply_pm(twiddle4[i - 2], twiddle4[i - 1], di5, dr5);
+            output1[i - 1] = re2;
+            output1[i] = im2;
+            output2[i - 1] = re3;
+            output2[i] = im3;
+            output3[i - 1] = re4;
+            output3[i] = im4;
+            output4[i - 1] = re5;
+            output4[i] = im5;
         }
     }
 }
