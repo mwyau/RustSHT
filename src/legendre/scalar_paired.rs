@@ -1686,6 +1686,265 @@ impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
     }
 }
 
+#[cfg(feature = "parallel")]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The symmetry experiment writes both hemispheres for two scalar channels."
+)]
+pub(crate) fn synthesize_hemisphere_pair_block_dispatched(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[f64],
+    cos_theta: &[f64],
+    sectoral_norm: f64,
+    coefficient_a: &[f64],
+    coefficient_b: &[f64],
+    first_even: &[Complex64],
+    first_odd: &[Complex64],
+    second_even: &[Complex64],
+    second_odd: &[Complex64],
+    spectrum_len: usize,
+    north_first: &mut [Complex64],
+    south_first: &mut [Complex64],
+    north_second: &mut [Complex64],
+    south_second: &mut [Complex64],
+    current: &mut [f64],
+    sums: &mut [&mut [f64]; 8],
+) -> Result<bool, ShtError> {
+    let lane_count = sin_theta.len();
+    debug_assert_eq!(lane_count, cos_theta.len());
+    debug_assert!(lane_count <= LATITUDE_BLOCK_SIZE);
+    debug_assert_eq!(north_first.len(), lane_count * spectrum_len);
+    debug_assert_eq!(south_first.len(), north_first.len());
+    debug_assert_eq!(north_second.len(), north_first.len());
+    debug_assert_eq!(south_second.len(), north_first.len());
+    debug_assert!(current.len() >= lane_count);
+    debug_assert!(sums.iter().all(|values| values.len() >= lane_count));
+    if sin_theta
+        .iter()
+        .any(|&sine| !sine.is_finite() || sine < 0.01)
+        || cos_theta
+            .iter()
+            .any(|&cosine| !cosine.is_finite() || cosine.abs() > 1.0)
+    {
+        return Ok(false);
+    }
+    let pair_count = (lmax - m + 2) / 2;
+    if coefficient_a[..pair_count]
+        .iter()
+        .chain(&coefficient_b[..pair_count])
+        .any(|&value| !scalar_value_in_normal_range(value))
+    {
+        return Ok(false);
+    }
+    for coefficients in [first_even, first_odd, second_even, second_odd] {
+        if coefficients[..pair_count]
+            .iter()
+            .flat_map(|coefficient| [coefficient.re, coefficient.im])
+            .any(|value| !scalar_value_in_normal_range(value))
+        {
+            return Ok(false);
+        }
+    }
+    for lane in 0..lane_count {
+        let (value, exponent) = scalar::sectoral_value(sin_theta[lane], m, sectoral_norm)?;
+        if exponent != 0 || !scalar_value_in_normal_range(value) {
+            return Ok(false);
+        }
+        current[lane] = value;
+    }
+
+    let completed = arch.dispatch(FusedHemispherePairBlock {
+        pair_count,
+        cos_theta,
+        coefficient_a: &coefficient_a[..pair_count],
+        coefficient_b: &coefficient_b[..pair_count],
+        first_even: &first_even[..pair_count],
+        first_odd: &first_odd[..pair_count],
+        second_even: &second_even[..pair_count],
+        second_odd: &second_odd[..pair_count],
+        current: &current[..lane_count],
+        sums: sums.each_mut().map(|values| &mut values[..lane_count]),
+    });
+    if !completed {
+        return Ok(false);
+    }
+
+    for lane in 0..lane_count {
+        let inverse_sine = sin_theta[lane].recip();
+        let first_north =
+            Complex64::new(sums[0][lane] + sums[2][lane], sums[1][lane] + sums[3][lane])
+                * inverse_sine;
+        let first_south =
+            Complex64::new(sums[0][lane] - sums[2][lane], sums[1][lane] - sums[3][lane])
+                * inverse_sine;
+        let second_north =
+            Complex64::new(sums[4][lane] + sums[6][lane], sums[5][lane] + sums[7][lane])
+                * inverse_sine;
+        let second_south =
+            Complex64::new(sums[4][lane] - sums[6][lane], sums[5][lane] - sums[7][lane])
+                * inverse_sine;
+        if [
+            first_north.re,
+            first_north.im,
+            first_south.re,
+            first_south.im,
+            second_north.re,
+            second_north.im,
+            second_south.re,
+            second_south.im,
+        ]
+        .iter()
+        .any(|value| !value.is_finite())
+        {
+            return Ok(false);
+        }
+        sums[0][lane] = first_north.re;
+        sums[1][lane] = first_north.im;
+        sums[2][lane] = first_south.re;
+        sums[3][lane] = first_south.im;
+        sums[4][lane] = second_north.re;
+        sums[5][lane] = second_north.im;
+        sums[6][lane] = second_south.re;
+        sums[7][lane] = second_south.im;
+    }
+    for lane in 0..lane_count {
+        north_first[lane * spectrum_len + m] += Complex64::new(sums[0][lane], sums[1][lane]);
+        south_first[(lane_count - 1 - lane) * spectrum_len + m] +=
+            Complex64::new(sums[2][lane], sums[3][lane]);
+        north_second[lane * spectrum_len + m] += Complex64::new(sums[4][lane], sums[5][lane]);
+        south_second[(lane_count - 1 - lane) * spectrum_len + m] +=
+            Complex64::new(sums[6][lane], sums[7][lane]);
+    }
+    Ok(true)
+}
+
+#[cfg(feature = "parallel")]
+struct FusedHemispherePairBlock<'a> {
+    pair_count: usize,
+    cos_theta: &'a [f64],
+    coefficient_a: &'a [f64],
+    coefficient_b: &'a [f64],
+    first_even: &'a [Complex64],
+    first_odd: &'a [Complex64],
+    second_even: &'a [Complex64],
+    second_odd: &'a [Complex64],
+    current: &'a [f64],
+    sums: [&'a mut [f64]; 8],
+}
+
+#[cfg(feature = "parallel")]
+impl WithSimd for FusedHemispherePairBlock<'_> {
+    type Output = bool;
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> bool {
+        let (cos_vectors, cos_tail) = S::as_simd_f64s(self.cos_theta);
+        let (current_vectors, current_tail) = S::as_simd_f64s(self.current);
+        let [sum0, sum1, sum2, sum3, sum4, sum5, sum6, sum7] = self.sums;
+        let (vector0, tail0) = S::as_mut_simd_f64s(sum0);
+        let (vector1, tail1) = S::as_mut_simd_f64s(sum1);
+        let (vector2, tail2) = S::as_mut_simd_f64s(sum2);
+        let (vector3, tail3) = S::as_mut_simd_f64s(sum3);
+        let (vector4, tail4) = S::as_mut_simd_f64s(sum4);
+        let (vector5, tail5) = S::as_mut_simd_f64s(sum5);
+        let (vector6, tail6) = S::as_mut_simd_f64s(sum6);
+        let (vector7, tail7) = S::as_mut_simd_f64s(sum7);
+        let vector_sums = [
+            vector0, vector1, vector2, vector3, vector4, vector5, vector6, vector7,
+        ];
+        let tail_sums = [tail0, tail1, tail2, tail3, tail4, tail5, tail6, tail7];
+        for lane_block in 0..cos_vectors.len() {
+            let cosine = cos_vectors[lane_block];
+            let mut previous = simd.splat_f64s(0.0);
+            let mut basis = current_vectors[lane_block];
+            let mut sums = [simd.splat_f64s(0.0); 8];
+            for pair in 0..self.pair_count {
+                let first_even = self.first_even[pair];
+                let first_odd = self.first_odd[pair];
+                let second_even = self.second_even[pair];
+                let second_odd = self.second_odd[pair];
+                sums[0] = simd.mul_add_f64s(basis, simd.splat_f64s(first_even.re), sums[0]);
+                sums[1] = simd.mul_add_f64s(basis, simd.splat_f64s(first_even.im), sums[1]);
+                sums[2] = simd.mul_add_f64s(
+                    basis,
+                    simd.mul_f64s(cosine, simd.splat_f64s(first_odd.re)),
+                    sums[2],
+                );
+                sums[3] = simd.mul_add_f64s(
+                    basis,
+                    simd.mul_f64s(cosine, simd.splat_f64s(first_odd.im)),
+                    sums[3],
+                );
+                sums[4] = simd.mul_add_f64s(basis, simd.splat_f64s(second_even.re), sums[4]);
+                sums[5] = simd.mul_add_f64s(basis, simd.splat_f64s(second_even.im), sums[5]);
+                sums[6] = simd.mul_add_f64s(
+                    basis,
+                    simd.mul_f64s(cosine, simd.splat_f64s(second_odd.re)),
+                    sums[6],
+                );
+                sums[7] = simd.mul_add_f64s(
+                    basis,
+                    simd.mul_f64s(cosine, simd.splat_f64s(second_odd.im)),
+                    sums[7],
+                );
+                if pair + 1 < self.pair_count {
+                    let cosine_squared = simd.mul_f64s(cosine, cosine);
+                    let leading = simd.mul_add_f64s(
+                        simd.splat_f64s(self.coefficient_a[pair]),
+                        cosine_squared,
+                        simd.splat_f64s(self.coefficient_b[pair]),
+                    );
+                    let next = simd.mul_add_f64s(leading, basis, previous);
+                    if !simd_values_in_normal_range(simd, next) {
+                        return false;
+                    }
+                    previous = basis;
+                    basis = next;
+                }
+            }
+            for sum in 0..8 {
+                vector_sums[sum][lane_block] = sums[sum];
+            }
+        }
+        for lane in 0..cos_tail.len() {
+            let cosine = cos_tail[lane];
+            let mut previous = 0.0;
+            let mut basis = current_tail[lane];
+            let mut sums = [0.0; 8];
+            for pair in 0..self.pair_count {
+                let first_even = self.first_even[pair];
+                let first_odd = self.first_odd[pair];
+                let second_even = self.second_even[pair];
+                let second_odd = self.second_odd[pair];
+                sums[0] = basis.mul_add(first_even.re, sums[0]);
+                sums[1] = basis.mul_add(first_even.im, sums[1]);
+                sums[2] = basis.mul_add(cosine * first_odd.re, sums[2]);
+                sums[3] = basis.mul_add(cosine * first_odd.im, sums[3]);
+                sums[4] = basis.mul_add(second_even.re, sums[4]);
+                sums[5] = basis.mul_add(second_even.im, sums[5]);
+                sums[6] = basis.mul_add(cosine * second_odd.re, sums[6]);
+                sums[7] = basis.mul_add(cosine * second_odd.im, sums[7]);
+                if pair + 1 < self.pair_count {
+                    let leading =
+                        self.coefficient_a[pair].mul_add(cosine * cosine, self.coefficient_b[pair]);
+                    let next = leading.mul_add(basis, previous);
+                    if !scalar_value_in_normal_range(next) {
+                        return false;
+                    }
+                    previous = basis;
+                    basis = next;
+                }
+            }
+            for sum in 0..8 {
+                tail_sums[sum][lane] = sums[sum];
+            }
+        }
+        true
+    }
+}
+
 struct FusedSynthesisPairBlock<'a> {
     m: usize,
     lmax: usize,

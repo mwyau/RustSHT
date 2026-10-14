@@ -294,6 +294,34 @@ pub(crate) trait ShtScalar:
     ) -> Result<bool, ShtError> {
         Ok(false)
     }
+    #[cfg(feature = "parallel")]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "North/south paired synthesis writes both hemispheres for two scalar channels."
+    )]
+    fn synthesize_hemisphere_pair_block_dispatched(
+        _arch: Arch,
+        _m: usize,
+        _lmax: usize,
+        _sin_theta: &[Self],
+        _cos_theta: &[Self],
+        _sectoral_norm: Self,
+        _coefficient_a: &[Self],
+        _coefficient_b: &[Self],
+        _first_even: &[Complex<Self>],
+        _first_odd: &[Complex<Self>],
+        _second_even: &[Complex<Self>],
+        _second_odd: &[Complex<Self>],
+        _spectrum_len: usize,
+        _north_first: &mut [Complex<Self>],
+        _south_first: &mut [Complex<Self>],
+        _north_second: &mut [Complex<Self>],
+        _south_second: &mut [Complex<Self>],
+        _current: &mut [Self],
+        _sums: &mut [&mut [Self]; 8],
+    ) -> Result<bool, ShtError> {
+        Ok(false)
+    }
     #[expect(
         clippy::too_many_arguments,
         reason = "The transition kernel receives paired coefficients and caller-owned recurrence and sum scratch."
@@ -601,6 +629,51 @@ impl ShtScalar for f64 {
             coefficient_odd,
         );
         true
+    }
+
+    #[cfg(feature = "parallel")]
+    fn synthesize_hemisphere_pair_block_dispatched(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        sectoral_norm: Self,
+        coefficient_a: &[Self],
+        coefficient_b: &[Self],
+        first_even: &[Complex<Self>],
+        first_odd: &[Complex<Self>],
+        second_even: &[Complex<Self>],
+        second_odd: &[Complex<Self>],
+        spectrum_len: usize,
+        north_first: &mut [Complex<Self>],
+        south_first: &mut [Complex<Self>],
+        north_second: &mut [Complex<Self>],
+        south_second: &mut [Complex<Self>],
+        current: &mut [Self],
+        sums: &mut [&mut [Self]; 8],
+    ) -> Result<bool, ShtError> {
+        scalar_paired::synthesize_hemisphere_pair_block_dispatched(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            first_even,
+            first_odd,
+            second_even,
+            second_odd,
+            spectrum_len,
+            north_first,
+            south_first,
+            north_second,
+            south_second,
+            current,
+            sums,
+        )
     }
 
     fn for_each_y_lm_paired_dispatched<F>(

@@ -92,6 +92,360 @@ fn map_inner_product(left: &[f64], right: &[f64]) -> f64 {
     left.iter().zip(right).map(|(x, y)| x * y).sum()
 }
 
+#[cfg(feature = "parallel")]
+#[test]
+#[expect(
+    clippy::excessive_precision,
+    reason = "The literals retain the printed DUCC 0.41.0 high-bandlimit samples."
+)]
+fn spin1_hemisphere_pair_synthesis_matches_general_recurrence() {
+    for (lmax, nphi, threads, sparse_high_mode) in [
+        (319, 638, 4, false),
+        (320, 643, 4, false),
+        (321, 642, 4, false),
+        (511, 1025, 8, true),
+    ] {
+        let plan = make_plan(1, lmax, lmax, lmax + 1, nphi);
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(threads)
+            .build()
+            .unwrap();
+        assert!(pool.install(|| hemisphere::is_beneficial(&plan)));
+
+        let (mut e, mut b) = coefficients(&plan);
+        if sparse_high_mode {
+            e.fill(Complex64::new(0.0, 0.0));
+            b.fill(Complex64::new(0.0, 0.0));
+            let high_mode = plan.harmonics().index(lmax, lmax).unwrap();
+            e[high_mode] = Complex64::new(1.0, 0.0);
+        } else {
+            for value in e.iter_mut().chain(&mut b) {
+                *value *= 1e-5;
+            }
+        }
+
+        let variants = if sparse_high_mode {
+            vec![(e, b)]
+        } else {
+            let zero = vec![Complex64::new(0.0, 0.0); e.len()];
+            let mixed = (e.clone(), b.clone());
+            vec![(e.clone(), zero.clone()), (zero, b.clone()), mixed]
+        };
+
+        for (variant_index, (e, b)) in variants.into_iter().enumerate() {
+            let mut general_workspace = pool.install(|| plan.workspace()).unwrap();
+            let mut paired_workspace = pool.install(|| plan.workspace()).unwrap();
+            let mut general_first = vec![0.0; plan.sample_count];
+            let mut general_second = vec![0.0; plan.sample_count];
+            let mut paired_first = vec![0.0; plan.sample_count];
+            let mut paired_second = vec![0.0; plan.sample_count];
+            pool.install(|| {
+                plan.synthesis_spin_core_with_hemisphere(
+                    &e,
+                    Some(&b),
+                    &mut general_first,
+                    &mut general_second,
+                    1,
+                    false,
+                    &mut general_workspace,
+                    false,
+                )
+            })
+            .unwrap();
+            pool.install(|| {
+                plan.synthesis_spin_core_with_hemisphere(
+                    &e,
+                    Some(&b),
+                    &mut paired_first,
+                    &mut paired_second,
+                    1,
+                    false,
+                    &mut paired_workspace,
+                    true,
+                )
+            })
+            .unwrap();
+
+            for (component, paired, general) in [
+                ("first", &paired_first, &general_first),
+                ("second", &paired_second, &general_second),
+            ] {
+                let reference_norm = general
+                    .iter()
+                    .map(|value| value * value)
+                    .sum::<f64>()
+                    .sqrt();
+                let difference_norm = paired
+                    .iter()
+                    .zip(general)
+                    .map(|(actual, expected)| (actual - expected).powi(2))
+                    .sum::<f64>()
+                    .sqrt();
+                let relative_error = difference_norm / reference_norm.max(1.0);
+                assert!(
+                    relative_error <= 8e-13,
+                    "T{lmax} q{threads} {component} relative L2 error={relative_error:.3e}"
+                );
+            }
+
+            if sparse_high_mode {
+                // Static samples from ducc0==0.41.0, GL T511, phi0=0.37.
+                let expected_first = [
+                    0.007_309_641_843_778_069_5,
+                    -0.007_352_834_967_383_475_3,
+                    -0.007_957_060_609_725_711,
+                    -0.004_764_733_847_941_087,
+                    -0.007_265_830_721_471_665,
+                ];
+                let expected_second = [
+                    1.543_633_476_857_506,
+                    -1.521_639_561_779_953_4,
+                    -1.153_537_148_741_637_9,
+                    2.377_782_452_739_180_7,
+                    -1.565_496_884_380_256_1,
+                ];
+                let middle_ring = plan.grid.ntheta() / 2;
+                for (slot, longitude) in [0, 1, 17, nphi / 2, nphi - 1].into_iter().enumerate() {
+                    let index = middle_ring * nphi + longitude;
+                    assert_close(paired_first[index], expected_first[slot], 8e-11);
+                    assert_close(paired_second[index], expected_second[slot], 8e-11);
+                }
+            }
+
+            if lmax == 319 && variant_index == 2 {
+                let (map_first, map_second) = arbitrary_maps(&plan);
+                let mut adjoint_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+                let mut adjoint_b = adjoint_e.clone();
+                plan.adjoint_synthesis_spin_into(
+                    &map_first,
+                    &map_second,
+                    &mut adjoint_e,
+                    &mut adjoint_b,
+                    &mut paired_workspace,
+                )
+                .unwrap();
+                let left =
+                    spin_map_inner_product(&paired_first, &paired_second, &map_first, &map_second);
+                let right =
+                    spin_harmonic_inner_product(plan.harmonics(), &e, &b, &adjoint_e, &adjoint_b);
+                let relative_error = (left - right).abs() / left.abs().max(right.abs()).max(1.0);
+                assert!(
+                    relative_error <= 2e-11,
+                    "T{lmax} q{threads} paired synthesis adjoint error={relative_error:.3e}"
+                );
+            }
+        }
+
+        if lmax == 319 {
+            let mut large_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+            let large_b = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+            let large_mode = plan.harmonics().index(lmax, 0).unwrap();
+            large_e[large_mode] = Complex64::new(1e300, 0.0);
+            let mut general_workspace = pool.install(|| plan.workspace()).unwrap();
+            let mut paired_workspace = pool.install(|| plan.workspace()).unwrap();
+            let mut general_first = vec![0.0; plan.sample_count];
+            let mut general_second = vec![0.0; plan.sample_count];
+            let mut paired_first = vec![0.0; plan.sample_count];
+            let mut paired_second = vec![0.0; plan.sample_count];
+            pool.install(|| {
+                plan.synthesis_spin_core_with_hemisphere(
+                    &large_e,
+                    Some(&large_b),
+                    &mut general_first,
+                    &mut general_second,
+                    1,
+                    false,
+                    &mut general_workspace,
+                    false,
+                )
+            })
+            .unwrap();
+            pool.install(|| {
+                plan.synthesis_spin_core_with_hemisphere(
+                    &large_e,
+                    Some(&large_b),
+                    &mut paired_first,
+                    &mut paired_second,
+                    1,
+                    false,
+                    &mut paired_workspace,
+                    true,
+                )
+            })
+            .unwrap();
+            assert!(paired_first.iter().all(|value| value.is_finite()));
+            assert!(paired_second.iter().all(|value| value.is_finite()));
+            for (component, paired, general) in [
+                ("first", &paired_first, &general_first),
+                ("second", &paired_second, &general_second),
+            ] {
+                let scale = general.iter().map(|value| value.abs()).fold(1.0, f64::max);
+                let error = paired
+                    .iter()
+                    .zip(general)
+                    .map(|(actual, expected)| (actual - expected).abs())
+                    .fold(0.0, f64::max);
+                assert!(
+                    error <= 3e-12 * scale,
+                    "T{lmax} q{threads} extreme finite {component} error={error:.3e}, scale={scale:.3e}"
+                );
+            }
+        }
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn spin1_hemisphere_pair_selector_matches_measured_domain() {
+    let eligible = make_plan(1, 319, 319, 320, 643);
+    for (threads, expected) in [(1, false), (4, true), (8, true), (16, false)] {
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(threads)
+            .build()
+            .unwrap();
+        assert_eq!(
+            pool.install(|| hemisphere::is_beneficial(&eligible)),
+            expected,
+            "T319 at {threads} threads"
+        );
+    }
+
+    let t511 = make_plan(1, 511, 511, 512, 1025);
+    let equatorial = make_plan(1, 320, 320, 321, 643);
+    let partial_group = make_plan(1, 321, 321, 322, 642);
+    let t720 = make_plan(1, 720, 720, 721, 1443);
+    let reduced = make_plan(1, 319, 255, 320, 643);
+    let cc = make_cc_plan(1, 319, 319, 321, 643);
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    eight_threads.install(|| {
+        assert!(hemisphere::is_beneficial(&t511));
+        assert!(hemisphere::is_beneficial(&equatorial));
+        assert!(hemisphere::is_beneficial(&partial_group));
+        assert!(!hemisphere::is_beneficial(&t720));
+        assert!(!hemisphere::is_beneficial(&reduced));
+        assert!(!hemisphere::is_beneficial(&cc));
+    });
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+#[ignore = "paired spin-1 strategy benchmark; run in release mode on an idle pinned host"]
+fn benchmark_spin1_hemisphere_pair_dispatch() {
+    use std::hint::black_box;
+    use std::time::Instant;
+
+    for (lmax, threads) in [
+        (319, 1),
+        (319, 2),
+        (319, 4),
+        (319, 8),
+        (511, 1),
+        (511, 2),
+        (511, 4),
+        (511, 8),
+        (511, 16),
+        (720, 8),
+    ] {
+        let ntheta = lmax + 1;
+        let nphi = 2 * lmax + 3;
+        let plan = make_plan(1, lmax, lmax, ntheta, nphi);
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(threads)
+            .build()
+            .unwrap();
+        let (mut e, mut b) = coefficients(&plan);
+        for value in e.iter_mut().chain(&mut b) {
+            *value *= 1e-5;
+        }
+        let mut baseline_workspace = pool.install(|| plan.workspace()).unwrap();
+        let mut selected_workspace = pool.install(|| plan.workspace()).unwrap();
+        let mut baseline_first = vec![0.0; plan.sample_count];
+        let mut baseline_second = vec![0.0; plan.sample_count];
+        let mut selected_first = vec![0.0; plan.sample_count];
+        let mut selected_second = vec![0.0; plan.sample_count];
+        let mut run = |selected: bool| {
+            let start = Instant::now();
+            if selected {
+                pool.install(|| {
+                    plan.synthesis_spin_core_with_hemisphere(
+                        &e,
+                        Some(&b),
+                        &mut selected_first,
+                        &mut selected_second,
+                        1,
+                        false,
+                        &mut selected_workspace,
+                        true,
+                    )
+                })
+                .unwrap();
+                black_box((selected_first[0], selected_second[0]));
+            } else {
+                pool.install(|| {
+                    plan.synthesis_spin_core_with_hemisphere(
+                        &e,
+                        Some(&b),
+                        &mut baseline_first,
+                        &mut baseline_second,
+                        1,
+                        false,
+                        &mut baseline_workspace,
+                        false,
+                    )
+                })
+                .unwrap();
+                black_box((baseline_first[0], baseline_second[0]));
+            }
+            start.elapsed()
+        };
+
+        run(false);
+        run(true);
+        let mut baseline = Vec::with_capacity(7);
+        let mut selected = Vec::with_capacity(7);
+        for sample in 0_usize..7 {
+            if sample.is_multiple_of(2) {
+                baseline.push(run(false));
+                selected.push(run(true));
+            } else {
+                selected.push(run(true));
+                baseline.push(run(false));
+            }
+        }
+        let relative_l2 = |actual: &[f64], expected: &[f64]| {
+            let difference = actual
+                .iter()
+                .zip(expected)
+                .map(|(actual, expected)| (actual - expected).powi(2))
+                .sum::<f64>()
+                .sqrt();
+            let norm = expected
+                .iter()
+                .map(|value| value * value)
+                .sum::<f64>()
+                .sqrt();
+            difference / norm.max(1.0)
+        };
+        let error_first = relative_l2(&selected_first, &baseline_first);
+        let error_second = relative_l2(&selected_second, &baseline_second);
+        let as_ms = |values: &[std::time::Duration]| {
+            values
+                .iter()
+                .map(|duration| duration.as_secs_f64() * 1000.0)
+                .collect::<Vec<_>>()
+        };
+        eprintln!(
+            "T{lmax} GL {ntheta}x{nphi} spin-1 synthesis q{threads}; baseline_ms={:?}; selected_ms={:?}; relative_l2=[{error_first:.3e},{error_second:.3e}]; selector={}",
+            as_ms(&baseline),
+            as_ms(&selected),
+            pool.install(|| hemisphere::is_beneficial(&plan))
+        );
+    }
+}
+
 fn harmonic_inner_product(spec: &HarmonicSpec, left: &[Complex64], right: &[Complex64]) -> f64 {
     let mut result = 0.0;
     for m in 0..=spec.mmax() {
