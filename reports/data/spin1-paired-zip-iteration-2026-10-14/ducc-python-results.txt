@@ -1,0 +1,8 @@
+Installed ducc0==0.41.0; Python 3.11.15; NumPy 2.4.6. Rust extension rebuilt from the candidate. GL f64 spin-1 STANDARD synthesis, phi0=0.37, full mmax, exact dimensions, plan methods, two process groups with five timed calls each; RustSHT and DUCC used matching deterministic coefficients. Runs pinned to CPU 0 (q1) or CPUs 0-7 (q8), with matching RAYON_NUM_THREADS.
+
+T511 q1: Rust plan medians 52.664, 52.749 ms; DUCC 18.556, 18.827 ms; max abs/RMS/relative-L2 error 3.257e-14 / 8.152e-16 / 6.697e-14.
+T511 q8: Rust 18.752, 18.130 ms; DUCC 2.531, 2.561 ms; same errors.
+T720 q1: Rust 123.340, 123.091 ms; DUCC 52.084, 52.457 ms; max abs/RMS/relative-L2 error 7.446e-14 / 1.564e-15 / 9.123e-14.
+T720 q8: Rust 48.271, 47.769 ms; DUCC 6.340, 6.318 ms; same errors.
+
+Callgrind 3.26.0, q1 T511, with one process per binary and five timed synthesis calls: baseline 7,070,776,643 instruction references; candidate 6,399,845,770. These are simulator references, not cycles. Callgrind emitted a brk segment overflow warning but completed both runs. Hardware counters were unavailable because perf_event_paranoid=4.
