@@ -63,7 +63,7 @@ The measured medians cross after the first call: two or more repeated transforms
 
 ## Numerical validation
 
-The focused q8 T127 test compares the cached grouped transform with the uncached transform executed in the same pool. Maximum absolute differences were `5.463e-19` and `9.216e-19` for the two output components. The cache stores the output of the existing coefficient conversion without changing its arithmetic. Release DUCC-reference checks passed:
+The focused q8 T127 test compares the cached grouped transform with the uncached transform executed in the same pool. Maximum absolute differences were `5.463e-19` and `9.216e-19` for the two output components. The cache stores the output of the existing coefficient conversion without changing its arithmetic. Sol High's read-only review found no correctness, allocation, or thread-safety blocker. It recommended checking each cached order row directly because the end-to-end control uses a different ring-group size and an absolute tolerance of `2e-13` for `1e-6` inputs. The focused test now recomputes both rows with `spin1_to_scalar` for every order and compares them exactly with the cached layout. The end-to-end comparison remains as a separate check of grouped synthesis behavior. Release DUCC-reference checks passed:
 
 - `m3_spin_t511_all_grids_matches_ducc_and_roundtrips`: spin 1 and 2 on GL, CC and F1. Spin-1 synthesis maximum absolute sample errors were `4.885e-15`, `4.441e-15` and `4.219e-15`; selected analysis coefficient errors were `4.970e-18`, `4.216e-18` and `4.318e-18`.
 - `m3_spin_t1023_sparse_synthesis_matches_ducc`: spin 1 GL/CC/F1 maximum absolute sample errors were `3.893e-15`, `3.150e-15` and `3.567e-15`.
