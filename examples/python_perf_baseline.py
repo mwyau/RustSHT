@@ -89,8 +89,9 @@ def rust_plan_analysis():
 def rust_proc_analysis():
     return rustsht.analysis_2d(map_in, spin=spin, lmax=lmax, geometry=geometry, mmax=lmax, phi0=phi0)
 
-def time_runs(fn, count=runs):
+def time_runs(fn, count=runs, include_samples=False):
     run_medians = []
+    run_samples = []
     for _ in range(count):
         fn()
         samples = []
@@ -99,6 +100,9 @@ def time_runs(fn, count=runs):
             result = fn()
             samples.append((time.perf_counter() - start) * 1000.0)
         run_medians.append(float(np.median(samples)))
+        run_samples.append(samples)
+    if include_samples:
+        return run_medians, run_samples
     return run_medians
 
 def to_rust_layout(ducc):
@@ -116,7 +120,12 @@ def errors(actual, expected):
     return f"max_abs={np.max(np.abs(diff)):.3e} rms={np.sqrt(np.mean(np.abs(diff) ** 2)):.3e} rel_l2={np.linalg.norm(diff) / max(np.linalg.norm(expected), 1e-300):.3e}"
 
 def report(name, fn):
-    ms = time_runs(fn)
+    if os.environ.get("RUSTSHT_PERF_RAW") == "1":
+        ms, samples = time_runs(fn, include_samples=True)
+        raw_text = ";".join(",".join(f"{x:.3f}" for x in group) for group in samples)
+        print(f"{name}_raw_samples_ms=" + raw_text)
+    else:
+        ms = time_runs(fn)
     print(f"{name}_run_medians_ms=" + ",".join(f"{x:.3f}" for x in ms) + f"; median={np.median(ms):.3f}; spread={max(ms)-min(ms):.3f}")
 
 print(f"T{lmax} {geometry} {ntheta}x{nphi} spin={spin} mode={mode} threads={threads} runs={runs} scope={scope} operation={operation} backend={backend} python={sys.version.split()[0]} numpy={np.__version__} ducc={ducc0.__version__}")
