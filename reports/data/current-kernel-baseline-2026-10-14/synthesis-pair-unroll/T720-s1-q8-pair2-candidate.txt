@@ -1,0 +1,8 @@
+spin-1 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=8 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.092
+plan_construction_samples_ms=[0.142,0.092,0.089,0.099,0.088]
+workspace_allocation_ms=7.473
+workspace_allocation_samples_ms=[7.494,7.697,7.377,7.292,7.473]
+synthesis_rayon_ms=41.075
+synthesis_rayon_samples_ms=[41.638,41.075,44.090,40.651,38.757]
+synthesis_first_call_rayon_ms=53.878

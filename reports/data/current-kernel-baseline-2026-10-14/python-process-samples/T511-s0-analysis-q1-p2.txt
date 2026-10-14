@@ -1,0 +1,8 @@
+T511 GL 512x1025 spin=0 mode=STANDARD threads=1 runs=3 scope=plan operation=analysis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.036,0.036,0.035
+numpy_alm_copy_ms=0.053,0.053,0.037
+numpy_map_copy_ms=0.076,0.072,0.074
+numpy_output_allocation_ms=0.001,0.001,0.001
+analysis_error=max_abs=1.229e-14 rms=1.780e-16 rel_l2=3.486e-14
+analysis_rust_plan_run_medians_ms=22.751,22.466,22.638; median=22.638; spread=0.285
+analysis_ducc_run_medians_ms=6.406,6.397,6.369; median=6.397; spread=0.037

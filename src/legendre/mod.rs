@@ -450,6 +450,49 @@ pub(crate) trait ShtScalar:
     }
     #[expect(
         clippy::too_many_arguments,
+        reason = "Spin-1 scalar conversion accumulates the Q and U parity channels over shared recurrence lanes."
+    )]
+    fn accumulate_scalar_analysis_pair_channels(
+        arch: Arch,
+        products_safe: [bool; 2],
+        normal_range: bool,
+        same_real: [&[Self]; 2],
+        same_imag: [&[Self]; 2],
+        opposite_real: [&[Self]; 2],
+        opposite_imag: [&[Self]; 2],
+        basis: &[Self],
+        exponents: &[i64],
+        cos_theta: &[Self],
+    ) -> [(Complex<Self>, Complex<Self>); 2] {
+        [
+            Self::accumulate_scalar_analysis_pair(
+                arch,
+                products_safe[0],
+                normal_range,
+                same_real[0],
+                same_imag[0],
+                opposite_real[0],
+                opposite_imag[0],
+                basis,
+                exponents,
+                cos_theta,
+            ),
+            Self::accumulate_scalar_analysis_pair(
+                arch,
+                products_safe[1],
+                normal_range,
+                same_real[1],
+                same_imag[1],
+                opposite_real[1],
+                opposite_imag[1],
+                basis,
+                exponents,
+                cos_theta,
+            ),
+        ]
+    }
+    #[expect(
+        clippy::too_many_arguments,
         reason = "Spin analysis accumulation receives lane spectra, two scaled bases and cutoff metadata."
     )]
     fn accumulate_spin_analysis_block(
@@ -1065,6 +1108,32 @@ impl ShtScalar for f64 {
         cos_theta: &[Self],
     ) -> (Complex<Self>, Complex<Self>) {
         scalar_paired::accumulate_analysis_pair_dispatched(
+            arch,
+            products_safe,
+            normal_range,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            basis,
+            exponents,
+            cos_theta,
+        )
+    }
+
+    fn accumulate_scalar_analysis_pair_channels(
+        arch: Arch,
+        products_safe: [bool; 2],
+        normal_range: bool,
+        same_real: [&[Self]; 2],
+        same_imag: [&[Self]; 2],
+        opposite_real: [&[Self]; 2],
+        opposite_imag: [&[Self]; 2],
+        basis: &[Self],
+        exponents: &[i64],
+        cos_theta: &[Self],
+    ) -> [(Complex<Self>, Complex<Self>); 2] {
+        scalar_paired::accumulate_analysis_pair_channels_dispatched(
             arch,
             products_safe,
             normal_range,

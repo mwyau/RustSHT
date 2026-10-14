@@ -1117,6 +1117,52 @@ pub(crate) fn accumulate_analysis_pair_dispatched(
     (same, opposite)
 }
 
+/// Accumulates both spin-1 scalar-conversion channels in one SIMD pass when
+/// their recurrence and products are in the normal range.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The two analysis channels share the same basis, exponent and latitude vectors."
+)]
+pub(crate) fn accumulate_analysis_pair_channels_dispatched(
+    arch: Arch,
+    products_safe: [bool; 2],
+    normal_range: bool,
+    same_real: [&[f64]; 2],
+    same_imag: [&[f64]; 2],
+    opposite_real: [&[f64]; 2],
+    opposite_imag: [&[f64]; 2],
+    basis: &[f64],
+    exponents: &[i64],
+    cos_theta: &[f64],
+) -> [(Complex64, Complex64); 2] {
+    if products_safe == [true, true] && normal_range {
+        debug_assert!(exponents.iter().all(|&exponent| exponent == 0));
+        return arch.dispatch(AnalysisPairChannelsAccumulation {
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            basis,
+            cos_theta,
+        });
+    }
+
+    std::array::from_fn(|channel| {
+        accumulate_analysis_pair_dispatched(
+            arch,
+            products_safe[channel],
+            normal_range,
+            same_real[channel],
+            same_imag[channel],
+            opposite_real[channel],
+            opposite_imag[channel],
+            basis,
+            exponents,
+            cos_theta,
+        )
+    })
+}
+
 /// Checks once per latitude block whether Fourier values can multiply the
 /// largest unscaled recurrence lane and reduce across the block safely.
 pub(crate) fn analysis_products_safe(
@@ -1151,6 +1197,153 @@ struct AnalysisPairAccumulation<'a> {
     opposite_imag: &'a [f64],
     basis: &'a [f64],
     cos_theta: &'a [f64],
+}
+
+struct AnalysisPairChannelsAccumulation<'a> {
+    same_real: [&'a [f64]; 2],
+    same_imag: [&'a [f64]; 2],
+    opposite_real: [&'a [f64]; 2],
+    opposite_imag: [&'a [f64]; 2],
+    basis: &'a [f64],
+    cos_theta: &'a [f64],
+}
+
+impl WithSimd for AnalysisPairChannelsAccumulation<'_> {
+    type Output = [(Complex64, Complex64); 2];
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let (same_real_0, same_real_tail_0) = S::as_simd_f64s(self.same_real[0]);
+        let (same_imag_0, same_imag_tail_0) = S::as_simd_f64s(self.same_imag[0]);
+        let (opposite_real_0, opposite_real_tail_0) = S::as_simd_f64s(self.opposite_real[0]);
+        let (opposite_imag_0, opposite_imag_tail_0) = S::as_simd_f64s(self.opposite_imag[0]);
+        let (same_real_1, same_real_tail_1) = S::as_simd_f64s(self.same_real[1]);
+        let (same_imag_1, same_imag_tail_1) = S::as_simd_f64s(self.same_imag[1]);
+        let (opposite_real_1, opposite_real_tail_1) = S::as_simd_f64s(self.opposite_real[1]);
+        let (opposite_imag_1, opposite_imag_tail_1) = S::as_simd_f64s(self.opposite_imag[1]);
+        let (basis_vectors, basis_tail) = S::as_simd_f64s(self.basis);
+        let (cosine_vectors, cosine_tail) = S::as_simd_f64s(self.cos_theta);
+        for vectors in [
+            same_real_0,
+            same_imag_0,
+            opposite_real_0,
+            opposite_imag_0,
+            same_real_1,
+            same_imag_1,
+            opposite_real_1,
+            opposite_imag_1,
+            cosine_vectors,
+        ] {
+            debug_assert_eq!(vectors.len(), basis_vectors.len());
+        }
+
+        let channel_0 = same_real_0
+            .iter()
+            .zip(same_imag_0)
+            .zip(opposite_real_0)
+            .zip(opposite_imag_0);
+        let channel_1 = same_real_1
+            .iter()
+            .zip(same_imag_1)
+            .zip(opposite_real_1)
+            .zip(opposite_imag_1);
+        let vectors = basis_vectors
+            .iter()
+            .zip(cosine_vectors)
+            .zip(channel_0)
+            .zip(channel_1);
+
+        let zeros = simd.splat_f64s(0.0);
+        let mut sums_0 = [zeros; 4];
+        let mut sums_1 = [zeros; 4];
+        for (
+            ((basis, cosine), (((same_real, same_imag), opposite_real), opposite_imag)),
+            (((same_real_1, same_imag_1), opposite_real_1), opposite_imag_1),
+        ) in vectors
+        {
+            let basis = *basis;
+            let cosine = *cosine;
+            sums_0[0] = simd.add_f64s(sums_0[0], simd.mul_f64s(*same_real, basis));
+            sums_0[1] = simd.add_f64s(sums_0[1], simd.mul_f64s(*same_imag, basis));
+            sums_0[2] = simd.add_f64s(
+                sums_0[2],
+                simd.mul_f64s(simd.mul_f64s(*opposite_real, basis), cosine),
+            );
+            sums_0[3] = simd.add_f64s(
+                sums_0[3],
+                simd.mul_f64s(simd.mul_f64s(*opposite_imag, basis), cosine),
+            );
+            sums_1[0] = simd.add_f64s(sums_1[0], simd.mul_f64s(*same_real_1, basis));
+            sums_1[1] = simd.add_f64s(sums_1[1], simd.mul_f64s(*same_imag_1, basis));
+            sums_1[2] = simd.add_f64s(
+                sums_1[2],
+                simd.mul_f64s(simd.mul_f64s(*opposite_real_1, basis), cosine),
+            );
+            sums_1[3] = simd.add_f64s(
+                sums_1[3],
+                simd.mul_f64s(simd.mul_f64s(*opposite_imag_1, basis), cosine),
+            );
+        }
+
+        let mut results = [
+            (
+                Complex64::new(
+                    simd.reduce_sum_f64s(sums_0[0]),
+                    simd.reduce_sum_f64s(sums_0[1]),
+                ),
+                Complex64::new(
+                    simd.reduce_sum_f64s(sums_0[2]),
+                    simd.reduce_sum_f64s(sums_0[3]),
+                ),
+            ),
+            (
+                Complex64::new(
+                    simd.reduce_sum_f64s(sums_1[0]),
+                    simd.reduce_sum_f64s(sums_1[1]),
+                ),
+                Complex64::new(
+                    simd.reduce_sum_f64s(sums_1[2]),
+                    simd.reduce_sum_f64s(sums_1[3]),
+                ),
+            ),
+        ];
+
+        debug_assert_eq!(basis_tail.len(), same_real_tail_0.len());
+        debug_assert_eq!(basis_tail.len(), same_imag_tail_0.len());
+        debug_assert_eq!(basis_tail.len(), opposite_real_tail_0.len());
+        debug_assert_eq!(basis_tail.len(), opposite_imag_tail_0.len());
+        debug_assert_eq!(basis_tail.len(), same_real_tail_1.len());
+        debug_assert_eq!(basis_tail.len(), same_imag_tail_1.len());
+        debug_assert_eq!(basis_tail.len(), opposite_real_tail_1.len());
+        debug_assert_eq!(basis_tail.len(), opposite_imag_tail_1.len());
+        debug_assert_eq!(basis_tail.len(), cosine_tail.len());
+        for lane in 0..basis_tail.len() {
+            for (channel, same_real, same_imag, opposite_real, opposite_imag) in [
+                (
+                    0,
+                    same_real_tail_0,
+                    same_imag_tail_0,
+                    opposite_real_tail_0,
+                    opposite_imag_tail_0,
+                ),
+                (
+                    1,
+                    same_real_tail_1,
+                    same_imag_tail_1,
+                    opposite_real_tail_1,
+                    opposite_imag_tail_1,
+                ),
+            ] {
+                results[channel].0.re += same_real[lane] * basis_tail[lane];
+                results[channel].0.im += same_imag[lane] * basis_tail[lane];
+                results[channel].1.re +=
+                    (opposite_real[lane] * basis_tail[lane]) * cosine_tail[lane];
+                results[channel].1.im +=
+                    (opposite_imag[lane] * basis_tail[lane]) * cosine_tail[lane];
+            }
+        }
+        results
+    }
 }
 
 impl WithSimd for AnalysisPairAccumulation<'_> {
@@ -2388,6 +2581,125 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn dual_analysis_accumulation_matches_independent_channels_and_scaled_fallback() {
+        for lane_count in [1, 3, 4, 5, 7, 8, 9, 31, 32, 33] {
+            let basis: Vec<_> = (0..lane_count)
+                .map(|lane| 0.2 + 0.01 * lane as f64)
+                .collect();
+            let cosine: Vec<_> = (0..lane_count)
+                .map(|lane| -0.8 + 0.02 * lane as f64)
+                .collect();
+            let exponents = vec![0; lane_count];
+            let same_real: [Vec<f64>; 2] = std::array::from_fn(|channel| {
+                (0..lane_count)
+                    .map(|lane| (lane + channel + 1) as f64 * 1.0e-3)
+                    .collect::<Vec<_>>()
+            });
+            let same_imag: [Vec<f64>; 2] = std::array::from_fn(|channel| {
+                (0..lane_count)
+                    .map(|lane| -((lane + channel + 2) as f64) * 1.1e-3)
+                    .collect::<Vec<_>>()
+            });
+            let opposite_real: [Vec<f64>; 2] = std::array::from_fn(|channel| {
+                (0..lane_count)
+                    .map(|lane| (lane + channel + 3) as f64 * 0.9e-3)
+                    .collect::<Vec<_>>()
+            });
+            let opposite_imag: [Vec<f64>; 2] = std::array::from_fn(|channel| {
+                (0..lane_count)
+                    .map(|lane| -((lane + channel + 4) as f64) * 0.7e-3)
+                    .collect::<Vec<_>>()
+            });
+            let actual = accumulate_analysis_pair_channels_dispatched(
+                Arch::new(),
+                [true, true],
+                true,
+                [&same_real[0], &same_real[1]],
+                [&same_imag[0], &same_imag[1]],
+                [&opposite_real[0], &opposite_real[1]],
+                [&opposite_imag[0], &opposite_imag[1]],
+                &basis,
+                &exponents,
+                &cosine,
+            );
+            for channel in 0..2 {
+                let expected = accumulate_analysis_pair_dispatched(
+                    Arch::new(),
+                    true,
+                    true,
+                    &same_real[channel],
+                    &same_imag[channel],
+                    &opposite_real[channel],
+                    &opposite_imag[channel],
+                    &basis,
+                    &exponents,
+                    &cosine,
+                );
+                for (actual, expected) in [
+                    (actual[channel].0, expected.0),
+                    (actual[channel].1, expected.1),
+                ] {
+                    let error = (actual - expected).norm();
+                    assert!(error <= 2.0e-14, "lanes={lane_count}, error={error:.3e}");
+                }
+            }
+        }
+
+        let basis = [0.5, 0.25, 0.125, 0.75, 0.4];
+        let cosine = [-0.7, -0.2, 0.1, 0.5, 0.9];
+        let exponents = [0, -100, 0, -20, 0];
+        let same_real = [[0.25; 5], [f64::MAX / 8.0; 5]];
+        let same_imag = [[-0.5; 5], [0.0; 5]];
+        let opposite_real = [[0.75; 5], [f64::MAX / 8.0; 5]];
+        let opposite_imag = [[-0.125; 5], [0.0; 5]];
+        let products_safe = [
+            analysis_products_safe(
+                &same_real[0],
+                &same_imag[0],
+                &opposite_real[0],
+                &opposite_imag[0],
+                &cosine,
+            ),
+            analysis_products_safe(
+                &same_real[1],
+                &same_imag[1],
+                &opposite_real[1],
+                &opposite_imag[1],
+                &cosine,
+            ),
+        ];
+        assert!(products_safe[0]);
+        assert!(!products_safe[1]);
+        let actual = accumulate_analysis_pair_channels_dispatched(
+            Arch::new(),
+            products_safe,
+            false,
+            [&same_real[0], &same_real[1]],
+            [&same_imag[0], &same_imag[1]],
+            [&opposite_real[0], &opposite_real[1]],
+            [&opposite_imag[0], &opposite_imag[1]],
+            &basis,
+            &exponents,
+            &cosine,
+        );
+        for channel in 0..2 {
+            let expected = accumulate_analysis_pair_dispatched(
+                Arch::new(),
+                products_safe[channel],
+                false,
+                &same_real[channel],
+                &same_imag[channel],
+                &opposite_real[channel],
+                &opposite_imag[channel],
+                &basis,
+                &exponents,
+                &cosine,
+            );
+            assert_eq!(actual[channel], expected);
+        }
+    }
 
     #[test]
     fn synthesis_coefficient_preparation_matches_degree_transform_at_boundaries() {
