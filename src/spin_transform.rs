@@ -20,6 +20,9 @@ const MAX_SUPPORTED_SPIN: usize = 4;
 const SPIN2_FAST_MIN_LMAX: usize = 500;
 const SPIN1_TRANSITION_MIN_LMAX: usize = 191;
 const SPIN1_TABLE_SYNTH_MIN_LMAX: usize = 127;
+// Current q1 synthesis measurements retain the low T127 point and the
+// T175–T191 range; T144 and T159 tables were slower than recurrence.
+const SPIN1_TABLE_SYNTH_HIGH_BAND_MIN_LMAX: usize = 175;
 const SPIN1_TABLE_SYNTH_MAX_LMAX: usize = 191;
 const SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MIN_LMAX: usize = 85;
 const SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MAX_LMAX: usize = 224;
@@ -34,6 +37,12 @@ const SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_BYTES: usize = 17 * 1024 * 1024;
 #[inline]
 pub(crate) fn single_threaded_execution() -> bool {
     current_execution_thread_count() == 1
+}
+
+#[inline]
+fn spin1_synthesis_table_band_is_beneficial(lmax: usize) -> bool {
+    lmax == SPIN1_TABLE_SYNTH_MIN_LMAX
+        || (SPIN1_TABLE_SYNTH_HIGH_BAND_MIN_LMAX..=SPIN1_TABLE_SYNTH_MAX_LMAX).contains(&lmax)
 }
 
 #[allow(private_bounds)]
@@ -767,8 +776,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 && self.harmonics.spin() == 0
                 && T::supports_paired_scalar()
                 && self.harmonics.lmax() >= SPIN1_FAST_MIN_LMAX);
-        let can_use_spin1_table = self.harmonics.lmax() >= SPIN1_TABLE_SYNTH_MIN_LMAX
-            && self.harmonics.lmax() <= SPIN1_TABLE_SYNTH_MAX_LMAX
+        let can_use_spin1_table = spin1_synthesis_table_band_is_beneficial(self.harmonics.lmax())
             && recurrence_spin == 1
             && self.harmonics.spin() == 1
             && b_alm.is_some()

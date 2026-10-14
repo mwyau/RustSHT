@@ -469,7 +469,16 @@ fn spin1_scalar_fast_synthesis_matches_general_channel_cases() {
 
 #[test]
 fn spin1_gl_table_synthesis_matches_recurrence_and_adjoint() {
-    for (lmax, nphi) in [(72, 147), (127, 257), (128, 258), (191, 385), (255, 513)] {
+    for (lmax, nphi) in [
+        (72, 147),
+        (127, 257),
+        (128, 258),
+        (144, 291),
+        (159, 321),
+        (175, 353),
+        (191, 385),
+        (255, 513),
+    ] {
         let build_plan = || make_plan(1, lmax, lmax, lmax + 1, nphi);
         let plan = build_plan();
         let recurrence_plan = build_plan();
@@ -528,9 +537,7 @@ fn spin1_gl_table_synthesis_matches_recurrence_and_adjoint() {
             &mut table_workspace,
         )
         .unwrap();
-        if lmax > SPIN1_TABLE_SYNTH_MAX_LMAX
-            || (SPIN1_TABLE_SYNTH_MIN_LMAX..=SPIN1_TABLE_SYNTH_MAX_LMAX).contains(&lmax)
-        {
+        if lmax > SPIN1_TABLE_SYNTH_MAX_LMAX || spin1_synthesis_table_band_is_beneficial(lmax) {
             assert!(
                 plan.spin1_scalar_legendre_table
                     .get()
