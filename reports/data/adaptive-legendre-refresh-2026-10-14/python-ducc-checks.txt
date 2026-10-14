@@ -1,0 +1,40 @@
+T127 GL 128x257 spin=1 mode=STANDARD threads=1 runs=2 scope=plan operation=synthesis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.018,0.019
+numpy_alm_copy_ms=0.006,0.006
+numpy_map_copy_ms=0.047,0.014
+numpy_output_allocation_ms=0.001,0.000
+synthesis_error=max_abs=1.757e-15 rms=1.323e-16 rel_l2=4.344e-14
+synthesis_rust_plan_run_medians_ms=2.672,2.679; median=2.675; spread=0.007
+synthesis_ducc_run_medians_ms=1.513,1.515; median=1.514; spread=0.002
+T144 GL 145x291 spin=1 mode=STANDARD threads=1 runs=2 scope=plan operation=synthesis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.015,0.015
+numpy_alm_copy_ms=0.008,0.008
+numpy_map_copy_ms=0.018,0.017
+numpy_output_allocation_ms=0.001,0.000
+synthesis_error=max_abs=1.312e-15 rms=5.811e-17 rel_l2=1.685e-14
+synthesis_rust_plan_run_medians_ms=3.301,3.297; median=3.299; spread=0.004
+synthesis_ducc_run_medians_ms=2.379,2.362; median=2.370; spread=0.018
+T159 GL 160x321 spin=1 mode=STANDARD threads=1 runs=2 scope=plan operation=synthesis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.021,0.023
+numpy_alm_copy_ms=0.011,0.011
+numpy_map_copy_ms=0.021,0.021
+numpy_output_allocation_ms=0.001,0.000
+synthesis_error=max_abs=1.356e-15 rms=7.239e-17 rel_l2=1.902e-14
+synthesis_rust_plan_run_medians_ms=5.060,5.054; median=5.057; spread=0.006
+synthesis_ducc_run_medians_ms=3.379,3.583; median=3.481; spread=0.204
+T175 GL 176x353 spin=1 mode=STANDARD threads=1 runs=2 scope=plan operation=synthesis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.026,0.027
+numpy_alm_copy_ms=0.016,0.013
+numpy_map_copy_ms=0.027,0.025
+numpy_output_allocation_ms=0.001,0.000
+synthesis_error=max_abs=1.695e-15 rms=1.133e-16 rel_l2=2.707e-14
+synthesis_rust_plan_run_medians_ms=6.548,6.557; median=6.553; spread=0.009
+synthesis_ducc_run_medians_ms=2.914,2.912; median=2.913; spread=0.002
+T191 GL 192x385 spin=1 mode=STANDARD threads=1 runs=2 scope=plan operation=synthesis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.014,0.014
+numpy_alm_copy_ms=0.016,0.015
+numpy_map_copy_ms=0.035,0.030
+numpy_output_allocation_ms=0.001,0.000
+synthesis_error=max_abs=2.733e-15 rms=1.954e-16 rel_l2=4.278e-14
+synthesis_rust_plan_run_medians_ms=7.938,7.923; median=7.931; spread=0.014
+synthesis_ducc_run_medians_ms=1.991,1.970; median=1.980; spread=0.021
