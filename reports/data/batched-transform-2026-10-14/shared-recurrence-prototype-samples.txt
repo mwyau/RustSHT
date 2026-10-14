@@ -1,0 +1,41 @@
+Temporary test-only scalar two-field synthesis prototype.
+Source baseline: RustSHT 5813be9 (production code unchanged; ignored test experiment only).
+CPU: AMD Ryzen 9 5950X, pinned to CPUs 0-7; Rust 1.99.0 release profile; GL f64 T511,
+ntheta=512, nphi=1025, mmax=511, phi0=0.37; 7 interleaved warm samples per method.
+Each sample measures two ordinary scalar synthesis calls versus one paired-recurrence
+prototype call, reusing a workspace allocated for the active 1- or 8-thread pool.
+Command: taskset -c 0-7 cargo test --release -p rustsht --lib
+         benchmark_shared_scalar_synthesis_pair_experiment -- --ignored --nocapture
+Each process also compares both full output maps with ordinary synthesis before timing.
+
+   Compiling rustsht v0.1.0-dev.0 (/home/albert/RustSHT)
+    Finished `release` profile [optimized] target(s) in 11.32s
+     Running unittests src/lib.rs (target/release/deps/rustsht-159837ac1c3bd1f7)
+
+running 1 test
+batch_pair lmax=511 ntheta=512 nphi=1025 mmax=511 threads=1 fields=2 reference_samples_ms=[85.09185, 85.151622, 85.332109, 85.345705, 85.379027, 85.440612, 85.588679] paired_samples_ms=[94.231695, 94.292948, 94.378399, 94.445133, 94.522387, 94.524632, 96.26659599999999] errors_rel_l2=0.000e0,0.000e0
+batch_pair lmax=511 ntheta=512 nphi=1025 mmax=511 threads=8 fields=2 reference_samples_ms=[23.756289, 23.971101, 24.132312, 24.165173000000003, 25.419316000000002, 25.479729, 25.545051] paired_samples_ms=[22.531762, 23.223392999999998, 23.801634, 23.971201, 24.033838, 24.306597, 27.634935] errors_rel_l2=0.000e0,0.000e0
+test transform::tests::benchmark_shared_scalar_synthesis_pair_experiment ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 150 filtered out; finished in 1.85s
+
+    Finished `release` profile [optimized] target(s) in 0.01s
+     Running unittests src/lib.rs (target/release/deps/rustsht-159837ac1c3bd1f7)
+
+running 1 test
+batch_pair lmax=511 ntheta=512 nphi=1025 mmax=511 threads=1 fields=2 reference_samples_ms=[84.75294699999999, 84.844047, 85.80917000000001, 86.616519, 86.681329, 86.710785, 87.21681000000001] paired_samples_ms=[93.816238, 94.141155, 95.05824799999999, 95.26720900000001, 95.365452, 95.475217, 96.66822599999999] errors_rel_l2=0.000e0,0.000e0
+batch_pair lmax=511 ntheta=512 nphi=1025 mmax=511 threads=8 fields=2 reference_samples_ms=[24.667752, 24.670467000000002, 24.706464, 24.808324, 25.098656000000002, 25.354906, 25.506489000000002] paired_samples_ms=[22.680279000000002, 23.086257, 23.140529, 23.398722, 23.841138, 24.149954, 28.063405] errors_rel_l2=0.000e0,0.000e0
+test transform::tests::benchmark_shared_scalar_synthesis_pair_experiment ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 150 filtered out; finished in 1.88s
+
+    Finished `release` profile [optimized] target(s) in 0.01s
+     Running unittests src/lib.rs (target/release/deps/rustsht-159837ac1c3bd1f7)
+
+running 1 test
+batch_pair lmax=511 ntheta=512 nphi=1025 mmax=511 threads=1 fields=2 reference_samples_ms=[85.73655500000001, 86.382321, 86.423017, 87.186724, 87.779741, 88.136007, 88.68835899999999] paired_samples_ms=[95.094806, 95.29985, 95.329335, 95.351096, 95.772112, 96.049741, 96.94644600000001] errors_rel_l2=0.000e0,0.000e0
+batch_pair lmax=511 ntheta=512 nphi=1025 mmax=511 threads=8 fields=2 reference_samples_ms=[22.676582, 24.194678, 24.540725, 25.339076, 26.053671, 26.497, 26.934797] paired_samples_ms=[22.872368, 22.912272, 23.066119999999998, 23.194179, 24.177436, 24.247858, 24.73085] errors_rel_l2=0.000e0,0.000e0
+test transform::tests::benchmark_shared_scalar_synthesis_pair_experiment ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 150 filtered out; finished in 1.88s
+
