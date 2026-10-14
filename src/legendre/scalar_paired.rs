@@ -229,6 +229,178 @@ pub(crate) fn synthesize_order_block_precomputed_dispatched(
     Ok(true)
 }
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The partitioned block receives existing worker-owned compaction and recurrence scratch explicitly."
+)]
+pub(crate) fn synthesize_order_block_partitioned_dispatched(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[f64],
+    cos_theta: &[f64],
+    sectoral_norm: f64,
+    coefficient_a: &[f64],
+    coefficient_b: &[f64],
+    coefficient_even: &[Complex64],
+    coefficient_odd: &[Complex64],
+    ring_order_limits: &[usize],
+    spectrum_len: usize,
+    spectra: &mut [Complex64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    next: &mut [f64],
+    exponents: &mut [i64],
+    compact_theta_sin: &mut [f64],
+    compact_theta_cos: &mut [f64],
+    compact_ring_indices: &mut [usize],
+) -> Result<bool, ShtError> {
+    debug_assert_eq!(sin_theta.len(), cos_theta.len());
+    debug_assert_eq!(sin_theta.len(), ring_order_limits.len());
+    debug_assert!(sin_theta.len() <= LATITUDE_BLOCK_SIZE);
+    debug_assert_eq!(spectra.len(), sin_theta.len() * spectrum_len);
+    debug_assert!(previous.len() >= sin_theta.len());
+    debug_assert!(current.len() >= sin_theta.len());
+    debug_assert!(next.len() >= sin_theta.len());
+    debug_assert!(exponents.len() >= sin_theta.len());
+    debug_assert!(compact_theta_sin.len() >= sin_theta.len());
+    debug_assert!(compact_theta_cos.len() >= sin_theta.len());
+    debug_assert!(compact_ring_indices.len() >= sin_theta.len());
+    let pair_count = (lmax - m + 2) / 2;
+    debug_assert!(coefficient_a.len() >= pair_count);
+    debug_assert!(coefficient_b.len() >= pair_count);
+    debug_assert!(coefficient_even.len() >= pair_count);
+    debug_assert!(coefficient_odd.len() >= pair_count);
+
+    if sin_theta.is_empty() || ring_order_limits.iter().any(|&limit| m > limit) {
+        return Ok(false);
+    }
+
+    for ring in 0..sin_theta.len() {
+        let (value, exponent) = scalar::sectoral_value(sin_theta[ring], m, sectoral_norm)?;
+        previous[ring] = 0.0;
+        current[ring] = value;
+        exponents[ring] = exponent;
+    }
+    let all_normal = scalar::normalize_pair_lanes(
+        &mut previous[..sin_theta.len()],
+        &mut current[..sin_theta.len()],
+        &mut exponents[..sin_theta.len()],
+    )?;
+    if all_normal {
+        arch.dispatch(FusedSynthesisBlock {
+            m,
+            lmax,
+            cos_theta,
+            coefficient_a,
+            coefficient_b,
+            coefficient_even,
+            coefficient_odd,
+            current: &current[..sin_theta.len()],
+            sum_re: &mut previous[..sin_theta.len()],
+            sum_im: &mut next[..sin_theta.len()],
+        });
+        for ring in 0..sin_theta.len() {
+            spectra[ring * spectrum_len + m] += Complex64::new(previous[ring], next[ring]);
+        }
+        return Ok(true);
+    }
+
+    let mut normal_lanes = [false; LATITUDE_BLOCK_SIZE];
+    let mut normal_count = 0;
+    for ring in 0..sin_theta.len() {
+        let value = current[ring];
+        let magnitude = value.abs();
+        let normal = exponents[ring] == 0
+            && (value == 0.0
+                || (value.is_finite() && (scalar::SMALL..=scalar::BIG).contains(&magnitude)));
+        normal_lanes[ring] = normal;
+        normal_count += usize::from(normal);
+    }
+
+    // Keep short SIMD batches on the established scaled path; splitting is
+    // useful when it can supply at least one full AVX2 f64 vector.
+    if normal_count < 4 || normal_count == sin_theta.len() {
+        return Ok(false);
+    }
+
+    let mut compact_count = 0;
+    for ring in 0..sin_theta.len() {
+        if normal_lanes[ring] {
+            compact_theta_sin[compact_count] = sin_theta[ring];
+            compact_theta_cos[compact_count] = cos_theta[ring];
+            compact_ring_indices[compact_count] = ring;
+            current[compact_count] = current[ring];
+            compact_count += 1;
+        }
+    }
+    debug_assert_eq!(compact_count, normal_count);
+    arch.dispatch(FusedSynthesisBlock {
+        m,
+        lmax,
+        cos_theta: &compact_theta_cos[..normal_count],
+        coefficient_a,
+        coefficient_b,
+        coefficient_even,
+        coefficient_odd,
+        current: &current[..normal_count],
+        sum_re: &mut previous[..normal_count],
+        sum_im: &mut next[..normal_count],
+    });
+    for compact_ring in 0..normal_count {
+        let ring = compact_ring_indices[compact_ring];
+        spectra[ring * spectrum_len + m] +=
+            Complex64::new(previous[compact_ring], next[compact_ring]);
+    }
+
+    let mut scaled_count = 0;
+    for ring in 0..sin_theta.len() {
+        if !normal_lanes[ring] {
+            compact_theta_sin[scaled_count] = sin_theta[ring];
+            compact_theta_cos[scaled_count] = cos_theta[ring];
+            compact_ring_indices[scaled_count] = ring;
+            scaled_count += 1;
+        }
+    }
+    debug_assert!(scaled_count > 0);
+    for_each_y_lm_paired_dispatched(
+        arch,
+        m,
+        lmax,
+        &compact_theta_sin[..scaled_count],
+        &compact_theta_cos[..scaled_count],
+        sectoral_norm,
+        coefficient_a,
+        coefficient_b,
+        previous,
+        current,
+        next,
+        exponents,
+        |l, local_ring_start, basis, lane_exponents| {
+            let pair_index = (l - m) / 2;
+            let lane_end = local_ring_start + basis.len();
+            for (lane, &value) in basis.iter().enumerate() {
+                let compact_ring = local_ring_start + lane;
+                let ring = compact_ring_indices[compact_ring];
+                let contribution = scalar::multiply_complex_scaled(
+                    coefficient_even[pair_index],
+                    value,
+                    lane_exponents[lane],
+                ) + scalar::multiply_complex_scaled_product(
+                    coefficient_odd[pair_index],
+                    value,
+                    compact_theta_cos[compact_ring],
+                    lane_exponents[lane],
+                );
+                spectra[ring * spectrum_len + m] += contribution;
+            }
+            debug_assert!(lane_end <= scaled_count);
+            Ok(())
+        },
+    )?;
+    Ok(true)
+}
+
 /// Tries to synthesize two scalar coefficient rows with one shared recurrence.
 ///
 /// Spin-2 scalar conversion produces two rows evaluated at the same latitude
@@ -1964,6 +2136,132 @@ mod tests {
                     assert_eq!(coefficient_odd[pair], expected_odd);
                 }
             }
+        }
+    }
+
+    #[test]
+    fn partitioned_synthesis_matches_scaled_reference_for_mixed_initial_lanes() {
+        let m = 32;
+        let lmax = 63;
+        let sine: [f64; 7] = [0.99, 0.95, 0.90, 0.85, 0.80, 1.0e-10, 3.0e-10];
+        let sin_theta = sine.to_vec();
+        let cos_theta: Vec<_> = sine
+            .iter()
+            .map(|value| (1.0 - value * value).sqrt())
+            .collect();
+        let ring_order_limits = vec![lmax; sine.len()];
+        let sectoral_norm = scalar::sectoral_normalizations(lmax).unwrap()[m];
+        assert_eq!(
+            scalar::sectoral_value(sine[0], m, sectoral_norm).unwrap().1,
+            0
+        );
+        assert_ne!(
+            scalar::sectoral_value(sine[5], m, sectoral_norm).unwrap().1,
+            0
+        );
+        let mut epsilon = vec![0.0; lmax + 4];
+        scalar::fill_epsilon(m, lmax, &mut epsilon);
+        let factor_count = lmax / 2 + 2;
+        let mut alpha = vec![0.0; factor_count];
+        let mut coefficient_a = vec![0.0; factor_count];
+        let mut coefficient_b = vec![0.0; factor_count];
+        fill_factors(
+            m,
+            lmax,
+            &epsilon,
+            &mut alpha,
+            &mut coefficient_a,
+            &mut coefficient_b,
+        );
+        let coefficients: Vec<_> = (m..=lmax)
+            .map(|degree| {
+                Complex64::new((0.31 * degree as f64).sin(), (0.17 * degree as f64).cos())
+            })
+            .collect();
+        let pair_count = (lmax - m + 2) / 2;
+        let mut coefficient_even = vec![Complex64::new(0.0, 0.0); pair_count];
+        let mut coefficient_odd = vec![Complex64::new(0.0, 0.0); pair_count];
+        prepare_synthesis_coefficients(
+            m,
+            lmax,
+            &epsilon,
+            &alpha,
+            &coefficients,
+            &mut coefficient_even,
+            &mut coefficient_odd,
+        );
+
+        let mut actual = vec![Complex64::new(0.0, 0.0); sine.len() * (lmax + 1)];
+        let mut previous = vec![0.0; sine.len()];
+        let mut current = vec![0.0; sine.len()];
+        let mut next = vec![0.0; sine.len()];
+        let mut exponents = vec![0; sine.len()];
+        let mut compact_theta_sin = vec![0.0; sine.len()];
+        let mut compact_theta_cos = vec![0.0; sine.len()];
+        let mut compact_ring_indices = vec![0; sine.len()];
+        let used = synthesize_order_block_partitioned_dispatched(
+            Arch::new(),
+            m,
+            lmax,
+            &sin_theta,
+            &cos_theta,
+            sectoral_norm,
+            &coefficient_a,
+            &coefficient_b,
+            &coefficient_even,
+            &coefficient_odd,
+            &ring_order_limits,
+            lmax + 1,
+            &mut actual,
+            &mut previous,
+            &mut current,
+            &mut next,
+            &mut exponents,
+            &mut compact_theta_sin,
+            &mut compact_theta_cos,
+            &mut compact_ring_indices,
+        )
+        .unwrap();
+        assert!(used);
+
+        let mut expected = vec![Complex64::new(0.0, 0.0); actual.len()];
+        for_each_y_lm_paired_dispatched(
+            Arch::new(),
+            m,
+            lmax,
+            &sin_theta,
+            &cos_theta,
+            sectoral_norm,
+            &coefficient_a,
+            &coefficient_b,
+            &mut previous,
+            &mut current,
+            &mut next,
+            &mut exponents,
+            |l, local_ring_start, basis, lane_exponents| {
+                let pair = (l - m) / 2;
+                for (lane, &value) in basis.iter().enumerate() {
+                    let ring = local_ring_start + lane;
+                    expected[ring * (lmax + 1) + m] += scalar::multiply_complex_scaled(
+                        coefficient_even[pair],
+                        value,
+                        lane_exponents[lane],
+                    ) + scalar::multiply_complex_scaled_product(
+                        coefficient_odd[pair],
+                        value,
+                        cos_theta[ring],
+                        lane_exponents[lane],
+                    );
+                }
+                Ok(())
+            },
+        )
+        .unwrap();
+
+        for ring in 0..sine.len() {
+            let difference =
+                (actual[ring * (lmax + 1) + m] - expected[ring * (lmax + 1) + m]).norm();
+            assert!(difference < 3.0e-11, "ring={ring} error={difference:.3e}");
         }
     }
 

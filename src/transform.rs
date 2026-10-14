@@ -520,7 +520,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     }
                     let spectrum_start = block_start * spectrum_len;
                     let spectrum_end = block_end * spectrum_len;
-                    let fused = T::synthesize_paired_scalar_block_prepared_dispatched(
+                    let fused = T::synthesize_paired_scalar_block_partitioned_dispatched(
                         arch,
                         m,
                         lmax,
@@ -538,6 +538,9 @@ impl<T: ShtScalar> ShtPlan<T> {
                         &mut recurrence.current[..block_len],
                         &mut recurrence.next[..block_len],
                         &mut recurrence.exponents[..block_len],
+                        &mut recurrence.compact_theta_sin[..block_len],
+                        &mut recurrence.compact_theta_cos[..block_len],
+                        &mut recurrence.compact_ring_indices[..block_len],
                     )?;
                     if !fused {
                         let transition =
