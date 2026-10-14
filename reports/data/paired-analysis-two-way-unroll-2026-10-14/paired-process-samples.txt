@@ -1,0 +1,61 @@
+Source baseline: e642b6c (current production source before the reducer change).
+Candidate: same source plus two-way independent partial sums in f64 AnalysisPairAccumulation.
+CPU: AMD Ryzen 9 5950X; Linux 7.0.14-20-pve.
+Rust: 1.99.0 (b940084d7 2026-09-28), LLVM 23.1.1; release opt-level=3, 16 codegen units, LTO off, portable Pulp runtime dispatch, no target-cpu=native.
+Native command template: taskset -c <affinity> <binary>/m1b_bench <spin> <lmax> <threads> analysis GL STANDARD <ntheta> <nphi> <mmax> requested-only
+Each listed process median summarizes five warm executions with a reused plan/workspace.
+
+T511 spin-1 STANDARD analysis; GL 512x1025, mmax=511, phi0=0.37, f64. q1 pinned to CPU 0; q8 pinned to CPUs 0-7. Ten paired processes per pool:
+q1 pair 1 baseline=40.084 candidate=39.070 ms
+q1 pair 2 baseline=39.621 candidate=38.917 ms
+q1 pair 3 baseline=39.289 candidate=38.717 ms
+q1 pair 4 baseline=39.549 candidate=40.275 ms
+q1 pair 5 baseline=39.581 candidate=39.182 ms
+q1 pair 6 baseline=39.741 candidate=39.086 ms
+q1 pair 7 baseline=39.535 candidate=41.092 ms
+q1 pair 8 baseline=39.810 candidate=39.002 ms
+q1 pair 9 baseline=39.763 candidate=40.204 ms
+q1 pair 10 baseline=39.967 candidate=39.117 ms
+q8 pair 1 baseline=12.641 candidate=12.561 ms
+q8 pair 2 baseline=12.514 candidate=12.158 ms
+q8 pair 3 baseline=12.808 candidate=12.657 ms
+q8 pair 4 baseline=12.239 candidate=15.061 ms
+q8 pair 5 baseline=12.541 candidate=12.599 ms
+q8 pair 6 baseline=12.311 candidate=12.615 ms
+q8 pair 7 baseline=12.522 candidate=12.695 ms
+q8 pair 8 baseline=12.342 candidate=12.156 ms
+q8 pair 9 baseline=12.211 candidate=12.414 ms
+q8 pair 10 baseline=12.252 candidate=12.364 ms
+
+T720 spin-1 STANDARD analysis; GL 721x1443, mmax=720, f64. Five paired processes per pool:
+q1 pair 1 baseline=105.154 candidate=102.002 ms
+q1 pair 2 baseline=103.774 candidate=102.431 ms
+q1 pair 3 baseline=104.572 candidate=101.916 ms
+q1 pair 4 baseline=104.216 candidate=102.464 ms
+q1 pair 5 baseline=103.774 candidate=102.073 ms
+q8 pair 1 baseline=33.923 candidate=34.215 ms
+q8 pair 2 baseline=34.088 candidate=33.690 ms
+q8 pair 3 baseline=33.965 candidate=34.155 ms
+q8 pair 4 baseline=34.083 candidate=33.926 ms
+q8 pair 5 baseline=34.466 candidate=33.693 ms
+
+T511 scalar analysis; GL 512x1025, mmax=511, f64:
+q1 pair 1 baseline=24.496 candidate=24.182 ms
+q1 pair 2 baseline=24.290 candidate=23.803 ms
+q1 pair 3 baseline=26.815 candidate=23.804 ms
+q1 pair 4 baseline=24.031 candidate=23.474 ms
+q1 pair 5 baseline=23.963 candidate=23.589 ms
+q8 pairs 1-5 baseline/candidate=7.170/7.908, 15.335/14.839, 11.213/9.616, 11.165/9.722, 10.098/11.119 ms
+q8 pairs 6-15 baseline/candidate=7.378/7.079, 6.995/7.888, 8.542/8.236, 7.338/7.522, 8.798/8.780, 8.572/7.052, 7.778/7.057, 7.091/7.340, 7.005/7.031, 7.200/7.425 ms
+The q8 scalar samples had high run-to-run variability and showed no repeatable change.
+
+Callgrind 3.26.0, q1 T511 spin-1 analysis, requested-only:
+Baseline: 4,361,787,064 Ir.
+Candidate: 4,285,708,451 Ir (-1.74%).
+Callgrind counts are simulated instruction references, not cycles.
+
+Python plan comparison commands, candidate extension, one process and five timed calls per setting:
+RAYON_NUM_THREADS=1 taskset -c 0 uv run python examples/python_perf_baseline.py 511 1 1 GL 1 plan analysis both STANDARD 1025
+Rust plan=40.412 ms; DUCC0.41.0=13.677 ms; max_abs=1.411e-14; RMS=1.910e-16; rel_L2=3.740e-14.
+RAYON_NUM_THREADS=8 taskset -c 0-7 uv run python examples/python_perf_baseline.py 511 1 8 GL 1 plan analysis both STANDARD 1025
+Rust plan=18.284 ms; DUCC0.41.0=3.245 ms; max_abs=1.411e-14; RMS=1.910e-16; rel_L2=3.740e-14.

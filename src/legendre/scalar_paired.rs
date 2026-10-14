@@ -1172,38 +1172,84 @@ impl WithSimd for AnalysisPairAccumulation<'_> {
         debug_assert_eq!(opposite_imag_vectors.len(), basis_vectors.len());
         debug_assert_eq!(cosine_vectors.len(), basis_vectors.len());
 
-        let mut same_re = simd.splat_f64s(0.0);
-        let mut same_im = simd.splat_f64s(0.0);
-        let mut opposite_re = simd.splat_f64s(0.0);
-        let mut opposite_im = simd.splat_f64s(0.0);
-        for index in 0..basis_vectors.len() {
-            same_re = simd.add_f64s(
-                same_re,
-                simd.mul_f64s(same_real_vectors[index], basis_vectors[index]),
+        let zeros = simd.splat_f64s(0.0);
+        let mut same_re_even = zeros;
+        let mut same_im_even = zeros;
+        let mut opposite_re_even = zeros;
+        let mut opposite_im_even = zeros;
+        let mut same_re_odd = zeros;
+        let mut same_im_odd = zeros;
+        let mut opposite_re_odd = zeros;
+        let mut opposite_im_odd = zeros;
+        let (same_real_pairs, same_real_remainder) = same_real_vectors.as_chunks::<2>();
+        let (same_imag_pairs, same_imag_remainder) = same_imag_vectors.as_chunks::<2>();
+        let (opposite_real_pairs, opposite_real_remainder) = opposite_real_vectors.as_chunks::<2>();
+        let (opposite_imag_pairs, opposite_imag_remainder) = opposite_imag_vectors.as_chunks::<2>();
+        let (basis_pairs, basis_remainder) = basis_vectors.as_chunks::<2>();
+        let (cosine_pairs, cosine_remainder) = cosine_vectors.as_chunks::<2>();
+        debug_assert_eq!(same_real_pairs.len(), basis_pairs.len());
+        debug_assert_eq!(same_imag_pairs.len(), basis_pairs.len());
+        debug_assert_eq!(opposite_real_pairs.len(), basis_pairs.len());
+        debug_assert_eq!(opposite_imag_pairs.len(), basis_pairs.len());
+        debug_assert_eq!(cosine_pairs.len(), basis_pairs.len());
+        debug_assert_eq!(same_real_remainder.len(), basis_remainder.len());
+        debug_assert_eq!(same_imag_remainder.len(), basis_remainder.len());
+        debug_assert_eq!(opposite_real_remainder.len(), basis_remainder.len());
+        debug_assert_eq!(opposite_imag_remainder.len(), basis_remainder.len());
+        debug_assert_eq!(cosine_remainder.len(), basis_remainder.len());
+        let vector_pairs = same_real_pairs
+            .iter()
+            .zip(same_imag_pairs)
+            .zip(opposite_real_pairs)
+            .zip(opposite_imag_pairs)
+            .zip(basis_pairs)
+            .zip(cosine_pairs);
+        for (((((same_real, same_imag), opposite_real), opposite_imag), basis), cosine) in
+            vector_pairs
+        {
+            same_re_even = simd.add_f64s(same_re_even, simd.mul_f64s(same_real[0], basis[0]));
+            same_im_even = simd.add_f64s(same_im_even, simd.mul_f64s(same_imag[0], basis[0]));
+            opposite_re_even = simd.add_f64s(
+                opposite_re_even,
+                simd.mul_f64s(simd.mul_f64s(opposite_real[0], basis[0]), cosine[0]),
             );
-            same_im = simd.add_f64s(
-                same_im,
-                simd.mul_f64s(same_imag_vectors[index], basis_vectors[index]),
+            opposite_im_even = simd.add_f64s(
+                opposite_im_even,
+                simd.mul_f64s(simd.mul_f64s(opposite_imag[0], basis[0]), cosine[0]),
             );
-            opposite_re = simd.add_f64s(
-                opposite_re,
-                simd.mul_f64s(
-                    simd.mul_f64s(opposite_real_vectors[index], basis_vectors[index]),
-                    cosine_vectors[index],
-                ),
+            same_re_odd = simd.add_f64s(same_re_odd, simd.mul_f64s(same_real[1], basis[1]));
+            same_im_odd = simd.add_f64s(same_im_odd, simd.mul_f64s(same_imag[1], basis[1]));
+            opposite_re_odd = simd.add_f64s(
+                opposite_re_odd,
+                simd.mul_f64s(simd.mul_f64s(opposite_real[1], basis[1]), cosine[1]),
             );
-            opposite_im = simd.add_f64s(
-                opposite_im,
-                simd.mul_f64s(
-                    simd.mul_f64s(opposite_imag_vectors[index], basis_vectors[index]),
-                    cosine_vectors[index],
-                ),
+            opposite_im_odd = simd.add_f64s(
+                opposite_im_odd,
+                simd.mul_f64s(simd.mul_f64s(opposite_imag[1], basis[1]), cosine[1]),
             );
         }
-        let mut same_re = simd.reduce_sum_f64s(same_re);
-        let mut same_im = simd.reduce_sum_f64s(same_im);
-        let mut opposite_re = simd.reduce_sum_f64s(opposite_re);
-        let mut opposite_im = simd.reduce_sum_f64s(opposite_im);
+        if !basis_remainder.is_empty() {
+            let basis = basis_remainder[0];
+            let cosine = cosine_remainder[0];
+            same_re_even =
+                simd.add_f64s(same_re_even, simd.mul_f64s(same_real_remainder[0], basis));
+            same_im_even =
+                simd.add_f64s(same_im_even, simd.mul_f64s(same_imag_remainder[0], basis));
+            opposite_re_even = simd.add_f64s(
+                opposite_re_even,
+                simd.mul_f64s(simd.mul_f64s(opposite_real_remainder[0], basis), cosine),
+            );
+            opposite_im_even = simd.add_f64s(
+                opposite_im_even,
+                simd.mul_f64s(simd.mul_f64s(opposite_imag_remainder[0], basis), cosine),
+            );
+        }
+        let mut same_re = simd.reduce_sum_f64s(simd.add_f64s(same_re_even, same_re_odd));
+        let mut same_im = simd.reduce_sum_f64s(simd.add_f64s(same_im_even, same_im_odd));
+        let mut opposite_re =
+            simd.reduce_sum_f64s(simd.add_f64s(opposite_re_even, opposite_re_odd));
+        let mut opposite_im =
+            simd.reduce_sum_f64s(simd.add_f64s(opposite_im_even, opposite_im_odd));
         for lane in 0..basis_tail.len() {
             same_re += same_real_tail[lane] * basis_tail[lane];
             same_im += same_imag_tail[lane] * basis_tail[lane];
