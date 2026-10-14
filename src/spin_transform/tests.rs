@@ -2122,7 +2122,7 @@ fn spin1_gl_paired_analysis_falls_back_for_extreme_inputs() {
 
 #[test]
 fn spin1_standard_analysis_scalar_conversion_matches_general_and_adjoint_on_all_grids() {
-    for lmax in [14, 15, 31, 47, 63, 72, 127, 191, 255] {
+    for lmax in [14, 15, 31, 47, 63, 72, 127, 159, 191, 255] {
         for kind in [
             GridKind::GaussLegendre,
             GridKind::ClenshawCurtis,
@@ -2136,6 +2136,7 @@ fn spin1_standard_analysis_scalar_conversion_matches_general_and_adjoint_on_all_
                     63 => Some(96),
                     85 => Some(128),
                     127 => Some(256),
+                    159 => Some(320),
                     _ => None,
                 };
                 atmospheric_ntheta
@@ -2180,7 +2181,7 @@ fn spin1_standard_analysis_scalar_conversion_matches_general_and_adjoint_on_all_
                                 .is_some_and(Option::is_some)
                         );
                     }
-                    if kind == GridKind::GaussLegendre && lmax == 255 {
+                    if kind == GridKind::GaussLegendre && matches!(lmax, 159 | 255) {
                         assert_eq!(
                             fast_plan
                                 .spin1_scalar_legendre_table
@@ -2344,7 +2345,7 @@ fn spin1_max_band_analysis_uses_recurrence_for_one_and_eight_but_table_for_four(
 
 #[cfg(feature = "parallel")]
 #[test]
-fn spin1_single_thread_t72_analysis_uses_table_after_recurrence_update() {
+fn spin1_analysis_table_selection_tracks_thread_pool_and_bandlimit() {
     let plan = make_plan(1, 72, 72, 73, 147);
     let one_thread = rayon::ThreadPoolBuilder::new()
         .num_threads(1)
@@ -2376,12 +2377,31 @@ fn spin1_single_thread_t72_analysis_uses_table_after_recurrence_update() {
     assert!(!one_thread.install(|| reduced_atmospheric_t127.allow_spin1_analysis_table()));
     let atmospheric_t191 = make_plan(1, 191, 191, 384, 768);
     assert!(!one_thread.install(|| atmospheric_t191.allow_spin1_analysis_table()));
+    let atmospheric_t159 = make_plan(1, 159, 159, 320, 640);
+    assert!(!one_thread.install(|| atmospheric_t159.allow_spin1_analysis_table()));
+    let t159_zero_maps = vec![0.0; atmospheric_t159.sample_count];
+    let mut t159_one_workspace = one_thread.install(|| atmospheric_t159.workspace()).unwrap();
+    let mut t159_one_e = vec![Complex64::new(0.0, 0.0); atmospheric_t159.harmonics().nalm()];
+    let mut t159_one_b = t159_one_e.clone();
+    one_thread
+        .install(|| {
+            atmospheric_t159.analysis_spin_into(
+                &t159_zero_maps,
+                &t159_zero_maps,
+                &mut t159_one_e,
+                &mut t159_one_b,
+                &mut t159_one_workspace,
+            )
+        })
+        .unwrap();
+    assert!(atmospheric_t159.spin1_scalar_legendre_table.get().is_none());
 
     let eight_threads = rayon::ThreadPoolBuilder::new()
         .num_threads(8)
         .build()
         .unwrap();
     assert!(!eight_threads.install(|| atmospheric_t191.allow_spin1_analysis_table()));
+    assert!(eight_threads.install(|| atmospheric_t159.allow_spin1_analysis_table()));
     assert!(eight_threads.install(|| atmospheric_t63.allow_spin1_analysis_table()));
     let mut eight_workspace = eight_threads.install(|| plan.workspace()).unwrap();
     assert!(eight_threads.install(|| plan.allow_spin1_analysis_table()));
@@ -2402,7 +2422,80 @@ fn spin1_single_thread_t72_analysis_uses_table_after_recurrence_update() {
         assert!(pool.install(|| atmospheric_t63.allow_spin1_analysis_table()));
         assert!(pool.install(|| atmospheric_t85.allow_spin1_analysis_table()));
         assert!(!pool.install(|| atmospheric_t191.allow_spin1_analysis_table()));
+        assert!(pool.install(|| atmospheric_t159.allow_spin1_analysis_table()));
     }
+
+    let mut t159_general = make_plan(1, 159, 159, 320, 640);
+    t159_general.spin_fast_coefficient_count = 0;
+    assert!(t159_general.spin1_scalar_legendre_table.set(None).is_ok());
+    let (t159_first, t159_second) = arbitrary_maps(&atmospheric_t159);
+    let mut t159_workspace = eight_threads
+        .install(|| atmospheric_t159.workspace())
+        .unwrap();
+    let mut t159_general_workspace = eight_threads.install(|| t159_general.workspace()).unwrap();
+    let mut t159_e = vec![Complex64::new(0.0, 0.0); atmospheric_t159.harmonics().nalm()];
+    let mut t159_b = t159_e.clone();
+    let mut t159_general_e = t159_e.clone();
+    let mut t159_general_b = t159_b.clone();
+    eight_threads
+        .install(|| {
+            atmospheric_t159.analysis_spin_into(
+                &t159_first,
+                &t159_second,
+                &mut t159_e,
+                &mut t159_b,
+                &mut t159_workspace,
+            )
+        })
+        .unwrap();
+    eight_threads
+        .install(|| {
+            t159_general.analysis_spin_into(
+                &t159_first,
+                &t159_second,
+                &mut t159_general_e,
+                &mut t159_general_b,
+                &mut t159_general_workspace,
+            )
+        })
+        .unwrap();
+    for (actual, expected) in t159_e
+        .iter()
+        .zip(&t159_general_e)
+        .chain(t159_b.iter().zip(&t159_general_b))
+    {
+        assert!((*actual - *expected).norm() <= 3e-10 * expected.norm().max(1.0));
+    }
+    assert!(
+        atmospheric_t159
+            .spin1_scalar_legendre_table
+            .get()
+            .is_some_and(Option::is_some)
+    );
+
+    let (test_e, test_b) = coefficients(&atmospheric_t159);
+    let mut adjoint_first = vec![0.0; atmospheric_t159.sample_count];
+    let mut adjoint_second = vec![0.0; atmospheric_t159.sample_count];
+    eight_threads
+        .install(|| {
+            atmospheric_t159.adjoint_analysis_spin_into(
+                &test_e,
+                &test_b,
+                &mut adjoint_first,
+                &mut adjoint_second,
+                &mut t159_workspace,
+            )
+        })
+        .unwrap();
+    let left = spin_harmonic_inner_product(
+        atmospheric_t159.harmonics(),
+        &t159_e,
+        &t159_b,
+        &test_e,
+        &test_b,
+    );
+    let right = spin_map_inner_product(&t159_first, &t159_second, &adjoint_first, &adjoint_second);
+    assert_close(left, right, 3e-9 * left.abs().max(right.abs()).max(1.0));
 }
 
 #[cfg(feature = "parallel")]

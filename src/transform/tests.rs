@@ -754,6 +754,7 @@ fn precomputed_scalar_gl_matches_recurrence_for_all_four_operators() {
         (127, 127, 128, 257),
         (127, 127, 256, 512),
         (128, 128, 129, 258),
+        (159, 159, 320, 640),
         (255, 255, 256, 513),
     ] {
         let table_plan = make_plan(lmax, mmax, ntheta, nphi, 0.37);
@@ -1220,6 +1221,25 @@ fn scalar_strategy_bounds_oversampled_tables_by_operation_and_truncation() {
             .install(|| reduced_t127.scalar_legendre_strategy(LegendreOperation::Analysis)),
         LegendreStrategy::Recurrence
     );
+
+    let t159 = make_plan(159, 159, 320, 640, 0.37);
+    for pool in [&one_thread, &two_threads, &four_threads, &eight_threads] {
+        assert_eq!(
+            pool.install(|| t159.scalar_legendre_strategy(LegendreOperation::Analysis)),
+            LegendreStrategy::CompactTable
+        );
+    }
+    assert_eq!(
+        sixteen_threads.install(|| t159.scalar_legendre_strategy(LegendreOperation::Analysis)),
+        LegendreStrategy::Recurrence
+    );
+    let mut t159_slow_workspace = sixteen_threads.install(|| t159.workspace()).unwrap();
+    let t159_map = vec![0.0; t159.sample_count];
+    let mut t159_alm = vec![Complex64::new(0.0, 0.0); t159.harmonics().nalm()];
+    sixteen_threads
+        .install(|| t159.analysis_into(&t159_map, &mut t159_alm, &mut t159_slow_workspace))
+        .unwrap();
+    assert!(t159.scalar_legendre_table.get().is_none());
 
     let t191 = make_plan(191, 191, 384, 768, 0.37);
     assert_eq!(

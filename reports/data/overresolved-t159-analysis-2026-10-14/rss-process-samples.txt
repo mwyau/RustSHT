@@ -1,0 +1,21 @@
+Host: AMD Ryzen 9 5950X; Linux 7.0.14-20-pve
+Command form: taskset -c 0-7 /usr/bin/time -v <m1b_bench> <spin> 159 8 analysis GL STANDARD 320 640 159 requested-only
+Each process used the benchmark's reused plan/workspace, one warm-up, five warm timed calls, and a first-call measurement. Maximum RSS is one fresh-process sample per strategy; allocator and worker variation are included.
+
+Scalar recurrence binary: /tmp/rustsht-m1b-t159-recurrence (source selector ceiling T127)
+Scalar recurrence maximum RSS: 14504 KiB
+Scalar recurrence first call: 0.989 ms
+
+Scalar table binary: target/release/examples/m1b_bench (temporary selector ceiling T191)
+Scalar table maximum RSS: 30848 KiB
+Scalar table first call: 16.495 ms
+
+Spin-1 recurrence binary: /tmp/rustsht-m1b-t159-recurrence (source selector ceiling T127)
+Spin-1 recurrence maximum RSS: 14912 KiB
+Spin-1 recurrence first call: 1.751 ms
+
+Spin-1 table binary: target/release/examples/m1b_bench (temporary selector ceiling T191)
+Spin-1 table maximum RSS: 31148 KiB
+Spin-1 table first call: 16.465 ms
+
+The one-process RSS deltas were 16344 KiB (scalar) and 16236 KiB (spin 1). The estimated retained table payloads are 16486400 bytes (scalar) and 16691200 bytes (spin 1); the RSS deltas are not used as payload estimates.

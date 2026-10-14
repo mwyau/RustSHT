@@ -1,5 +1,7 @@
 # Over-resolved GL Legendre strategy follow-up
 
+> Follow-up: the original T127 analysis ceiling described below was extended to T159 for measured thread-count regions. The additional process-paired comparison, numerical validation and retained-memory decision are recorded in [the T159 analysis report](t159-overresolved-analysis-2026-10-14.md). The synthesis policy was not extended by that analysis result.
+
 ## Scope and decision
 
 This follow-up measures the compact north-hemisphere table against the current DUCC-derived recurrence on atmospheric over-resolved Gaussian grids. It follows the initial selector audit in [adaptive-legendre-strategy-2026-10-14.md](adaptive-legendre-strategy-2026-10-14.md) and the earlier exact-grid table study in [legendre-precomputation-2026-10-13.md](legendre-precomputation-2026-10-13.md). The source baseline is RustSHT `7a93bdb`; the recurrence arithmetic did not change during this selector experiment. The benchmark-only force control was removed before production changes.

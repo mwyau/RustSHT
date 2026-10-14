@@ -268,6 +268,51 @@ def test_overresolved_gl_plan_matches_ducc(spin: int) -> None:
     )
 
 
+@pytest.mark.parametrize("spin", [0, 1])
+def test_t159_overresolved_analysis_matches_ducc(spin: int) -> None:
+    lmax = mmax = 159
+    ntheta, nphi = 320, 640
+    phi0 = 0.37
+    components = 1 if spin == 0 else 2
+    plan = ShtPlan("GL", ntheta, nphi, lmax, mmax, spin=spin, phi0=phi0)
+    input_map = np.random.default_rng(263 + spin).normal(
+        size=(components, ntheta, nphi)
+    )
+    actual_alm = plan.analysis(input_map)
+    expected_alm = ducc_sht.analysis_2d(
+        map=input_map,
+        spin=spin,
+        lmax=lmax,
+        mmax=mmax,
+        geometry="GL",
+        phi0=phi0,
+        nthreads=1,
+    )
+    np.testing.assert_allclose(
+        actual_alm,
+        from_ducc_layout(expected_alm, lmax, mmax),
+        rtol=2e-12,
+        atol=2e-12,
+    )
+
+    alm = random_alm(components, lmax, mmax, spin, seed=163 + spin)
+    actual_adjoint = plan.adjoint_analysis(alm)
+    expected_adjoint = ducc_sht.adjoint_analysis_2d(
+        alm=to_ducc_layout(alm, lmax, mmax),
+        spin=spin,
+        lmax=lmax,
+        mmax=mmax,
+        geometry="GL",
+        ntheta=ntheta,
+        nphi=nphi,
+        phi0=phi0,
+        nthreads=1,
+    )
+    np.testing.assert_allclose(
+        actual_adjoint, expected_adjoint, rtol=2e-12, atol=2e-12
+    )
+
+
 
 def test_spin_plan_matches_ducc_and_derivative_mode() -> None:
     lmax = mmax = 4
