@@ -16,6 +16,9 @@ use crate::plan::{ShtPlan, current_execution_thread_count};
 use crate::transform::{active_ring_weighted_order_midpoint, weighted_order_midpoint};
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
+#[cfg(feature = "parallel")]
+mod hemisphere;
+
 const MAX_SUPPORTED_SPIN: usize = 4;
 const SPIN2_FAST_MIN_LMAX: usize = 500;
 const SPIN1_TRANSITION_MIN_LMAX: usize = 191;
@@ -763,6 +766,36 @@ impl<T: ShtScalar> ShtPlan<T> {
         derivative_norm: bool,
         workspace: &mut ShtWorkspace<T>,
     ) -> Result<(), ShtError> {
+        self.synthesis_spin_core_with_hemisphere(
+            e_alm,
+            b_alm,
+            first_component,
+            second_component,
+            recurrence_spin,
+            derivative_norm,
+            workspace,
+            true,
+        )
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The shared transform core receives channels, outputs, recurrence mode and strategy control."
+    )]
+    fn synthesis_spin_core_with_hemisphere(
+        &self,
+        e_alm: &[Complex<T>],
+        b_alm: Option<&[Complex<T>]>,
+        first_component: &mut [T],
+        second_component: &mut [T],
+        recurrence_spin: usize,
+        derivative_norm: bool,
+        workspace: &mut ShtWorkspace<T>,
+        allow_hemisphere: bool,
+    ) -> Result<(), ShtError> {
+        #[cfg(not(feature = "parallel"))]
+        let _ = allow_hemisphere;
+
         if !matches!(recurrence_spin, 1..=MAX_SUPPORTED_SPIN) {
             return Err(ShtError::UnsupportedSpin {
                 spin: recurrence_spin,
@@ -789,6 +822,23 @@ impl<T: ShtScalar> ShtPlan<T> {
         )?;
         self.check_synthesis_longitude()?;
         self.check_workspace(workspace)?;
+
+        #[cfg(feature = "parallel")]
+        if allow_hemisphere
+            && recurrence_spin == 1
+            && !derivative_norm
+            && let Some(b_alm) = b_alm
+            && hemisphere::is_beneficial(self)
+        {
+            return hemisphere::synthesize(
+                self,
+                e_alm,
+                b_alm,
+                first_component,
+                second_component,
+                workspace,
+            );
+        }
 
         let ntheta = self.grid.ntheta();
         let nphi = self.grid.nphi();
