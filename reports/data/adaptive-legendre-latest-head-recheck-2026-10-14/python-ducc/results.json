@@ -1,0 +1,67 @@
+[
+  {
+    "lmax": 127,
+    "mmax": 127,
+    "name": "scalar_t127_synth_q1",
+    "nphi": 257,
+    "ntheta": 128,
+    "operation": "synthesis",
+    "returncode": 0,
+    "spin": 0,
+    "stderr": "",
+    "stdout": "T127 GL 128x257 spin=0 mode=STANDARD threads=1 runs=2 scope=plan operation=synthesis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0\nplan_construction_ms=0.020,0.019\nnumpy_alm_copy_ms=0.003,0.003\nnumpy_map_copy_ms=0.006,0.006\nnumpy_output_allocation_ms=0.000,0.000\nsynthesis_error=max_abs=5.412e-16 rms=3.800e-17 rel_l2=1.283e-14\nsynthesis_rust_plan_raw_samples_ms=0.856,0.853,0.844,0.846,0.849;0.857,0.852,0.852,0.853,0.853\nsynthesis_rust_plan_run_medians_ms=0.849,0.853; median=0.851; spread=0.003\nsynthesis_ducc_raw_samples_ms=0.713,0.710,0.705,0.699,0.699;0.708,0.703,0.733,0.713,0.702\nsynthesis_ducc_run_medians_ms=0.705,0.708; median=0.706; spread=0.003\n",
+    "threads": 1
+  },
+  {
+    "lmax": 159,
+    "mmax": 159,
+    "name": "spin1_t159_synth_q1",
+    "nphi": 321,
+    "ntheta": 160,
+    "operation": "synthesis",
+    "returncode": 0,
+    "spin": 1,
+    "stderr": "",
+    "stdout": "T159 GL 160x321 spin=1 mode=STANDARD threads=1 runs=2 scope=plan operation=synthesis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0\nplan_construction_ms=0.021,0.022\nnumpy_alm_copy_ms=0.011,0.011\nnumpy_map_copy_ms=0.021,0.021\nnumpy_output_allocation_ms=0.001,0.000\nsynthesis_error=max_abs=2.921e-15 rms=1.983e-16 rel_l2=5.210e-14\nsynthesis_rust_plan_raw_samples_ms=4.968,5.181,4.906,4.901,4.958;4.935,4.911,4.923,4.920,4.920\nsynthesis_rust_plan_run_medians_ms=4.958,4.920; median=4.939; spread=0.039\nsynthesis_ducc_raw_samples_ms=3.616,3.396,3.220,3.609,3.179;3.611,3.171,3.616,3.174,3.587\nsynthesis_ducc_run_medians_ms=3.396,3.587; median=3.492; spread=0.191\n",
+    "threads": 1
+  },
+  {
+    "lmax": 255,
+    "mmax": 255,
+    "name": "spin1_t255_analysis_q2",
+    "nphi": 513,
+    "ntheta": 256,
+    "operation": "analysis",
+    "returncode": 0,
+    "spin": 1,
+    "stderr": "",
+    "stdout": "T255 GL 256x513 spin=1 mode=STANDARD threads=2 runs=2 scope=plan operation=analysis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0\nplan_construction_ms=0.017,0.017\nnumpy_alm_copy_ms=0.036,0.027\nnumpy_map_copy_ms=0.055,0.054\nnumpy_output_allocation_ms=0.001,0.000\nanalysis_error=max_abs=8.238e-15 rms=2.090e-16 rel_l2=2.048e-14\nanalysis_rust_plan_raw_samples_ms=9.803,6.782,9.211,6.811,9.195;9.131,6.782,7.112,4.925,4.894\nanalysis_rust_plan_run_medians_ms=9.195,6.782; median=7.988; spread=2.413\nanalysis_ducc_raw_samples_ms=1.572,1.671,1.782,1.667,1.655;1.670,1.650,1.665,1.666,1.661\nanalysis_ducc_run_medians_ms=1.667,1.665; median=1.666; spread=0.002\n",
+    "threads": 2
+  },
+  {
+    "lmax": 255,
+    "mmax": 255,
+    "name": "spin1_t255_analysis_q4",
+    "nphi": 513,
+    "ntheta": 256,
+    "operation": "analysis",
+    "returncode": 0,
+    "spin": 1,
+    "stderr": "",
+    "stdout": "T255 GL 256x513 spin=1 mode=STANDARD threads=4 runs=2 scope=plan operation=analysis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0\nplan_construction_ms=0.017,0.019\nnumpy_alm_copy_ms=0.044,0.031\nnumpy_map_copy_ms=0.087,0.068\nnumpy_output_allocation_ms=0.001,0.000\nanalysis_error=max_abs=8.238e-15 rms=2.090e-16 rel_l2=2.048e-14\nanalysis_rust_plan_raw_samples_ms=5.008,3.993,3.997,5.070,4.927;4.991,5.074,4.955,4.999,8.015\nanalysis_rust_plan_run_medians_ms=4.927,4.999; median=4.963; spread=0.071\nanalysis_ducc_raw_samples_ms=3.994,3.999,3.209,1.084,0.925;0.836,0.822,0.831,0.842,0.829\nanalysis_ducc_run_medians_ms=3.209,0.831; median=2.020; spread=2.377\n",
+    "threads": 4
+  },
+  {
+    "lmax": 255,
+    "mmax": 255,
+    "name": "spin1_t255_analysis_q8",
+    "nphi": 513,
+    "ntheta": 256,
+    "operation": "analysis",
+    "returncode": 0,
+    "spin": 1,
+    "stderr": "",
+    "stdout": "T255 GL 256x513 spin=1 mode=STANDARD threads=8 runs=2 scope=plan operation=analysis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0\nplan_construction_ms=0.017,0.017\nnumpy_alm_copy_ms=0.027,0.026\nnumpy_map_copy_ms=0.052,0.052\nnumpy_output_allocation_ms=0.001,0.000\nanalysis_error=max_abs=8.238e-15 rms=2.090e-16 rel_l2=2.048e-14\nanalysis_rust_plan_raw_samples_ms=8.002,10.015,8.003,8.011,9.988;12.987,4.639,2.684,2.445,2.534\nanalysis_rust_plan_run_medians_ms=8.011,2.684; median=5.348; spread=5.327\nanalysis_ducc_raw_samples_ms=0.587,0.593,0.504,0.506,0.492;0.488,0.508,0.519,0.505,0.489\nanalysis_ducc_run_medians_ms=0.506,0.505; median=0.505; spread=0.001\n",
+    "threads": 8
+  }
+]

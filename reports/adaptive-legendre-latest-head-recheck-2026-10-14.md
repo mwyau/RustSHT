@@ -56,3 +56,11 @@ Before any selector or table-construction production change:
    variation after first-use cost and retained memory are included. Otherwise
    keep the selector and record the evidence. The first implementation will be benchmark-only. No production selector,
 public API, FFT code or table budget changes until these comparisons finish.
+
+## Outcome
+
+The same-binary comparison and policy decisions are complete. The accepted
+selector changes are recorded in commit `08e84e8`; results, DUCC errors,
+post-change timings, test outcomes and raw samples are in the [latest-head
+results report](adaptive-legendre-latest-head-results-2026-10-14.md). No
+autotuner or public control was added.

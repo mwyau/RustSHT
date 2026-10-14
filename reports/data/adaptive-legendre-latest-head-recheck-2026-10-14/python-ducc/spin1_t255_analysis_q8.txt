@@ -1,0 +1,13 @@
+COMMAND: taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" uv run python examples/python_perf_baseline.py 255 1 8 GL 2 plan analysis both STANDARD 513 256
+T255 GL 256x513 spin=1 mode=STANDARD threads=8 runs=2 scope=plan operation=analysis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.017,0.017
+numpy_alm_copy_ms=0.027,0.026
+numpy_map_copy_ms=0.052,0.052
+numpy_output_allocation_ms=0.001,0.000
+analysis_error=max_abs=8.238e-15 rms=2.090e-16 rel_l2=2.048e-14
+analysis_rust_plan_raw_samples_ms=8.002,10.015,8.003,8.011,9.988;12.987,4.639,2.684,2.445,2.534
+analysis_rust_plan_run_medians_ms=8.011,2.684; median=5.348; spread=5.327
+analysis_ducc_raw_samples_ms=0.587,0.593,0.504,0.506,0.492;0.488,0.508,0.519,0.505,0.489
+analysis_ducc_run_medians_ms=0.506,0.505; median=0.505; spread=0.001
+
+STDERR:
