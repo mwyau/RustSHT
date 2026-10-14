@@ -38,3 +38,29 @@ At T511, spin-1 was slower in four of five paired processes; the remaining pair 
 ## Interpretation
 
 Smaller groups help scalar T511 scheduling but duplicate per-order setup across more groups and are substantially slower for spin-1. A single `ShtWorkspace` currently serves all supported operators for a plan, so adopting this policy would regress the main spin-1 path. A scalar-only schedule would require an operation-specific worker sizing design and separate evidence for scalar analysis, DERIV1, and other grids. That complexity is not justified by the current scalar-only result. The prototype was removed. No new correctness test was needed for this rejected scheduling-only change; existing baseline numerical paths remain unchanged. The benchmark output exercised both candidate transform paths but was not compared against DUCC. No FFT code changed.
+
+## Spin-1 q8 64-ring group control
+
+The coefficient-cache path copies each prepared E/B scalar row into the
+private recurrence scratch for every latitude group. At T511 q8, the current
+32-ring groups create 16 groups for eight workers. A temporary spin-1-only
+schedule used one 64-ring group per worker, halving those row copies and
+scheduled groups while leaving the scalar schedule unchanged. Five alternating release-process pairs used the f64 GL T511 grid `512x1025`,
+full `mmax`, `phi0=0.37`, reused plan/workspace and `m1b_bench` with one warm-up
+and five timed samples. The baseline was the source at `fbbe483`; the
+candidate changed only the q8 spin-1 group size. Processes were pinned to
+8 pinned CPU cores on the x86-64 CPU, Linux, using Rust 1.99.0 / LLVM
+23.1.1, release `opt-level=3`, 16 codegen units, LTO off and Pulp AVX2/FMA
+runtime dispatch without `target-cpu=native`. Baseline q8 spin-1 synthesis process medians were `20.048, 20.068, 18.407,
+20.100, 19.943 ms` (median `19.943 ms`). Candidate medians were `23.014,
+22.771, 22.873, 22.818, 22.702 ms` (median `22.818 ms`), a `14.4%`
+increase using the unpaired medians. All five paired process medians favored
+the 32-ring baseline. First-call medians increased from `25.335 ms` to
+`28.742 ms`. The q8 scalar control was measured only on baseline; the
+operation-specific candidate condition does not apply to scalar synthesis. The T511 q8 DUCC release regression passed under the candidate, with spin-1
+GL analysis coefficient max absolute error `4.970e-18` and
+synthesis-analysis coefficient max absolute error `1.255e-14`. The scheduling
+change preserves coefficient arithmetic and output ownership. The candidate
+was reverted: halving cached row copies did not repay the loss in group
+parallelism. Raw within-process samples are in
+[`ring64-process-samples.txt`](data/spin1-ring64-synthesis-2026-10-14/ring64-process-samples.txt).
