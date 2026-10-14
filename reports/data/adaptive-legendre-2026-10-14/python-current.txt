@@ -1,0 +1,132 @@
+T127 GL 128x257 spin=0 mode=STANDARD threads=1 runs=2 scope=plan operation=both backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.021,0.027
+numpy_alm_copy_ms=0.004,0.003
+numpy_map_copy_ms=0.006,0.006
+numpy_output_allocation_ms=0.000,0.000
+synthesis_error=max_abs=5.412e-16 rms=3.170e-17 rel_l2=1.070e-14
+synthesis_rust_plan_run_medians_ms=0.984,1.023; median=1.004; spread=0.039
+synthesis_ducc_run_medians_ms=0.782,0.738; median=0.760; spread=0.043
+analysis_error=max_abs=6.101e-15 rms=2.333e-16 rel_l2=1.114e-14
+analysis_rust_plan_run_medians_ms=0.667,0.653; median=0.660; spread=0.014
+analysis_ducc_run_medians_ms=0.731,0.701; median=0.716; spread=0.030
+T127 GL 128x257 spin=0 mode=STANDARD threads=8 runs=2 scope=plan operation=both backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.021,0.021
+numpy_alm_copy_ms=0.003,0.003
+numpy_map_copy_ms=0.006,0.006
+numpy_output_allocation_ms=0.000,0.000
+synthesis_error=max_abs=5.412e-16 rms=3.170e-17 rel_l2=1.070e-14
+synthesis_rust_plan_run_medians_ms=1.026,1.246; median=1.136; spread=0.220
+synthesis_ducc_run_medians_ms=2.001,1.998; median=2.000; spread=0.003
+analysis_error=max_abs=6.101e-15 rms=2.333e-16 rel_l2=1.114e-14
+analysis_rust_plan_run_medians_ms=0.656,0.672; median=0.664; spread=0.016
+analysis_ducc_run_medians_ms=0.160,0.180; median=0.170; spread=0.019
+T127 GL 128x257 spin=1 mode=STANDARD threads=1 runs=2 scope=plan operation=both backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.019,0.019
+numpy_alm_copy_ms=0.007,0.008
+numpy_map_copy_ms=0.054,0.014
+numpy_output_allocation_ms=0.001,0.000
+synthesis_error=max_abs=1.757e-15 rms=1.323e-16 rel_l2=4.344e-14
+synthesis_rust_plan_run_medians_ms=5.709,2.787; median=4.248; spread=2.922
+synthesis_ducc_run_medians_ms=1.600,1.578; median=1.589; spread=0.023
+analysis_error=max_abs=6.999e-15 rms=2.202e-16 rel_l2=1.052e-14
+analysis_rust_plan_run_medians_ms=1.170,1.171; median=1.170; spread=0.001
+analysis_ducc_run_medians_ms=1.397,1.401; median=1.399; spread=0.004
+T127 GL 128x257 spin=1 mode=STANDARD threads=8 runs=2 scope=plan operation=both backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.020,0.019
+numpy_alm_copy_ms=0.007,0.007
+numpy_map_copy_ms=0.060,0.014
+numpy_output_allocation_ms=0.001,0.000
+synthesis_error=max_abs=7.182e-16 rms=4.529e-17 rel_l2=1.487e-14
+synthesis_rust_plan_run_medians_ms=2.370,5.015; median=3.692; spread=2.645
+synthesis_ducc_run_medians_ms=1.988,1.998; median=1.993; spread=0.010
+analysis_error=max_abs=6.999e-15 rms=2.202e-16 rel_l2=1.052e-14
+analysis_rust_plan_run_medians_ms=3.997,1.166; median=2.582; spread=2.831
+analysis_ducc_run_medians_ms=2.467,3.354; median=2.910; spread=0.888
+T127 GL 128x257 spin=0 mode=STANDARD threads=1 runs=2 scope=plan operation=both backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.021,0.021
+numpy_alm_copy_ms=0.003,0.003
+numpy_map_copy_ms=0.006,0.006
+numpy_output_allocation_ms=0.000,0.000
+synthesis_error=max_abs=5.412e-16 rms=3.170e-17 rel_l2=1.070e-14
+synthesis_rust_plan_run_medians_ms=0.958,0.945; median=0.952; spread=0.013
+synthesis_ducc_run_medians_ms=0.763,0.753; median=0.758; spread=0.010
+analysis_error=max_abs=6.101e-15 rms=2.333e-16 rel_l2=1.114e-14
+analysis_rust_plan_run_medians_ms=0.637,0.641; median=0.639; spread=0.003
+analysis_ducc_run_medians_ms=0.691,0.690; median=0.691; spread=0.001
+T127 GL 128x257 spin=0 mode=STANDARD threads=8 runs=2 scope=plan operation=both backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.020,0.020
+numpy_alm_copy_ms=0.003,0.003
+numpy_map_copy_ms=0.007,0.006
+numpy_output_allocation_ms=0.000,0.000
+synthesis_error=max_abs=5.412e-16 rms=3.170e-17 rel_l2=1.070e-14
+synthesis_rust_plan_run_medians_ms=0.979,0.972; median=0.975; spread=0.008
+synthesis_ducc_run_medians_ms=1.998,1.999; median=1.999; spread=0.001
+analysis_error=max_abs=6.101e-15 rms=2.333e-16 rel_l2=1.114e-14
+analysis_rust_plan_run_medians_ms=3.989,0.358; median=2.173; spread=3.631
+analysis_ducc_run_medians_ms=0.162,0.150; median=0.156; spread=0.012
+T127 GL 128x257 spin=1 mode=STANDARD threads=1 runs=2 scope=plan operation=both backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.019,0.019
+numpy_alm_copy_ms=0.007,0.006
+numpy_map_copy_ms=0.052,0.014
+numpy_output_allocation_ms=0.001,0.000
+synthesis_error=max_abs=1.757e-15 rms=1.323e-16 rel_l2=4.344e-14
+synthesis_rust_plan_run_medians_ms=2.565,2.547; median=2.556; spread=0.018
+synthesis_ducc_run_medians_ms=4.606,1.585; median=3.095; spread=3.021
+analysis_error=max_abs=6.999e-15 rms=2.202e-16 rel_l2=1.052e-14
+analysis_rust_plan_run_medians_ms=1.182,1.176; median=1.179; spread=0.007
+analysis_ducc_run_medians_ms=1.405,1.419; median=1.412; spread=0.014
+T127 GL 128x257 spin=1 mode=STANDARD threads=8 runs=2 scope=plan operation=both backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.019,0.019
+numpy_alm_copy_ms=0.007,0.006
+numpy_map_copy_ms=0.051,0.014
+numpy_output_allocation_ms=0.001,0.000
+synthesis_error=max_abs=7.182e-16 rms=4.529e-17 rel_l2=1.487e-14
+synthesis_rust_plan_run_medians_ms=5.998,4.762; median=5.380; spread=1.235
+synthesis_ducc_run_medians_ms=1.996,0.315; median=1.156; spread=1.681
+analysis_error=max_abs=6.999e-15 rms=2.202e-16 rel_l2=1.052e-14
+analysis_rust_plan_run_medians_ms=5.010,0.889; median=2.950; spread=4.121
+analysis_ducc_run_medians_ms=3.007,2.997; median=3.002; spread=0.010
+T127 GL 128x257 spin=0 mode=STANDARD threads=1 runs=2 scope=plan operation=both backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.021,0.019
+numpy_alm_copy_ms=0.003,0.003
+numpy_map_copy_ms=0.006,0.006
+numpy_output_allocation_ms=0.000,0.000
+synthesis_error=max_abs=5.412e-16 rms=3.170e-17 rel_l2=1.070e-14
+synthesis_rust_plan_run_medians_ms=0.981,0.963; median=0.972; spread=0.018
+synthesis_ducc_run_medians_ms=0.766,0.791; median=0.778; spread=0.025
+analysis_error=max_abs=6.101e-15 rms=2.333e-16 rel_l2=1.114e-14
+analysis_rust_plan_run_medians_ms=0.640,0.640; median=0.640; spread=0.000
+analysis_ducc_run_medians_ms=0.702,0.690; median=0.696; spread=0.012
+T127 GL 128x257 spin=0 mode=STANDARD threads=8 runs=2 scope=plan operation=both backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.021,0.019
+numpy_alm_copy_ms=0.003,0.003
+numpy_map_copy_ms=0.007,0.006
+numpy_output_allocation_ms=0.000,0.000
+synthesis_error=max_abs=5.412e-16 rms=3.170e-17 rel_l2=1.070e-14
+synthesis_rust_plan_run_medians_ms=6.986,5.000; median=5.993; spread=1.986
+synthesis_ducc_run_medians_ms=0.201,0.190; median=0.195; spread=0.010
+analysis_error=max_abs=6.101e-15 rms=2.333e-16 rel_l2=1.114e-14
+analysis_rust_plan_run_medians_ms=0.348,0.294; median=0.321; spread=0.053
+analysis_ducc_run_medians_ms=0.159,0.141; median=0.150; spread=0.018
+T127 GL 128x257 spin=1 mode=STANDARD threads=1 runs=2 scope=plan operation=both backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.019,0.020
+numpy_alm_copy_ms=0.007,0.006
+numpy_map_copy_ms=0.049,0.014
+numpy_output_allocation_ms=0.001,0.000
+synthesis_error=max_abs=1.757e-15 rms=1.323e-16 rel_l2=4.344e-14
+synthesis_rust_plan_run_medians_ms=4.113,2.611; median=3.362; spread=1.502
+synthesis_ducc_run_medians_ms=1.615,1.608; median=1.611; spread=0.007
+analysis_error=max_abs=6.999e-15 rms=2.202e-16 rel_l2=1.052e-14
+analysis_rust_plan_run_medians_ms=1.179,1.189; median=1.184; spread=0.010
+analysis_ducc_run_medians_ms=1.419,1.435; median=1.427; spread=0.016
+T127 GL 128x257 spin=1 mode=STANDARD threads=8 runs=2 scope=plan operation=both backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.018,0.019
+numpy_alm_copy_ms=0.007,0.006
+numpy_map_copy_ms=0.055,0.014
+numpy_output_allocation_ms=0.001,0.000
+synthesis_error=max_abs=7.182e-16 rms=4.529e-17 rel_l2=1.487e-14
+synthesis_rust_plan_run_medians_ms=7.978,4.999; median=6.488; spread=2.979
+synthesis_ducc_run_medians_ms=0.357,0.268; median=0.312; spread=0.089
+analysis_error=max_abs=6.999e-15 rms=2.202e-16 rel_l2=1.052e-14
+analysis_rust_plan_run_medians_ms=6.014,5.000; median=5.507; spread=1.014
+analysis_ducc_run_medians_ms=0.291,0.318; median=0.305; spread=0.027
