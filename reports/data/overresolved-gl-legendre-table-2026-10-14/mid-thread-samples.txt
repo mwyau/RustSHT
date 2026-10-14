@@ -1,0 +1,2159 @@
+CASE lmax=63 grid=96x192 spin=0 operation=synthesis threads=2 pair=1 method=table process_seconds=0.0063
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.047,0.044,0.043,0.043,0.043]
+workspace_allocation_ms=0.076
+workspace_allocation_samples_ms=[0.152,0.206,0.075,0.076,0.021]
+synthesis_rayon_ms=0.111
+synthesis_rayon_samples_ms=[0.109,0.111,0.110,0.111,0.117]
+scalar_synthesis_first_call_rayon_ms=0.924
+
+CASE lmax=63 grid=96x192 spin=0 operation=synthesis threads=2 pair=1 method=recurrence process_seconds=0.0047
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.046,0.043,0.042,0.043,0.048]
+workspace_allocation_ms=0.073
+workspace_allocation_samples_ms=[0.145,0.073,0.024,0.183,0.021]
+synthesis_rayon_ms=0.140
+synthesis_rayon_samples_ms=[0.138,0.138,0.140,0.141,0.181]
+scalar_synthesis_first_call_rayon_ms=0.237
+
+CASE lmax=63 grid=96x192 spin=0 operation=synthesis threads=2 pair=2 method=recurrence process_seconds=0.0047
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.042
+plan_construction_samples_ms=[0.046,0.044,0.042,0.042,0.042]
+workspace_allocation_ms=0.022
+workspace_allocation_samples_ms=[0.140,0.090,0.022,0.021,0.021]
+synthesis_rayon_ms=0.221
+synthesis_rayon_samples_ms=[0.241,0.219,0.221,0.221,0.229]
+scalar_synthesis_first_call_rayon_ms=0.221
+
+CASE lmax=63 grid=96x192 spin=0 operation=synthesis threads=2 pair=2 method=table process_seconds=0.0059
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.042
+plan_construction_samples_ms=[0.046,0.043,0.042,0.042,0.042]
+workspace_allocation_ms=0.029
+workspace_allocation_samples_ms=[0.170,0.079,0.023,0.021,0.029]
+synthesis_rayon_ms=0.160
+synthesis_rayon_samples_ms=[0.164,0.158,0.158,0.160,0.162]
+scalar_synthesis_first_call_rayon_ms=0.872
+
+CASE lmax=63 grid=96x192 spin=0 operation=synthesis threads=2 pair=3 method=table process_seconds=0.0058
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.057,0.051,0.043,0.043,0.043]
+workspace_allocation_ms=0.069
+workspace_allocation_samples_ms=[0.151,0.165,0.069,0.023,0.022]
+synthesis_rayon_ms=0.111
+synthesis_rayon_samples_ms=[0.110,0.111,0.111,0.111,0.110]
+scalar_synthesis_first_call_rayon_ms=0.849
+
+CASE lmax=63 grid=96x192 spin=0 operation=synthesis threads=2 pair=3 method=recurrence process_seconds=0.0055
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.056,0.043,0.043,0.042,0.042]
+workspace_allocation_ms=0.068
+workspace_allocation_samples_ms=[0.167,0.136,0.068,0.068,0.021]
+synthesis_rayon_ms=0.224
+synthesis_rayon_samples_ms=[0.226,0.224,0.224,0.227,0.223]
+scalar_synthesis_first_call_rayon_ms=0.272
+
+CASE lmax=63 grid=96x192 spin=0 operation=synthesis threads=4 pair=1 method=table process_seconds=0.0058
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.046,0.043,0.043,0.043,0.042]
+workspace_allocation_ms=0.141
+workspace_allocation_samples_ms=[0.141,0.167,0.069,0.021,0.159]
+synthesis_rayon_ms=0.090
+synthesis_rayon_samples_ms=[0.092,0.090,0.095,0.088,0.088]
+scalar_synthesis_first_call_rayon_ms=0.810
+
+CASE lmax=63 grid=96x192 spin=0 operation=synthesis threads=4 pair=1 method=recurrence process_seconds=0.0042
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.042
+plan_construction_samples_ms=[0.046,0.043,0.042,0.042,0.042]
+workspace_allocation_ms=0.096
+workspace_allocation_samples_ms=[0.184,0.096,0.024,0.212,0.023]
+synthesis_rayon_ms=0.116
+synthesis_rayon_samples_ms=[0.117,0.115,0.116,0.118,0.114]
+scalar_synthesis_first_call_rayon_ms=0.178
+
+CASE lmax=63 grid=96x192 spin=0 operation=synthesis threads=4 pair=2 method=recurrence process_seconds=0.0042
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.047,0.044,0.043,0.043,0.043]
+workspace_allocation_ms=0.078
+workspace_allocation_samples_ms=[0.140,0.078,0.022,0.173,0.022]
+synthesis_rayon_ms=0.112
+synthesis_rayon_samples_ms=[0.113,0.112,0.112,0.110,0.114]
+scalar_synthesis_first_call_rayon_ms=0.164
+
+CASE lmax=63 grid=96x192 spin=0 operation=synthesis threads=4 pair=2 method=table process_seconds=0.0056
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.053
+plan_construction_samples_ms=[0.057,0.054,0.053,0.053,0.049]
+workspace_allocation_ms=0.106
+workspace_allocation_samples_ms=[0.215,0.106,0.024,0.197,0.023]
+synthesis_rayon_ms=0.085
+synthesis_rayon_samples_ms=[0.083,0.083,0.085,0.085,0.085]
+scalar_synthesis_first_call_rayon_ms=0.860
+
+CASE lmax=63 grid=96x192 spin=0 operation=synthesis threads=4 pair=3 method=table process_seconds=0.0057
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.046,0.043,0.043,0.042,0.042]
+workspace_allocation_ms=0.183
+workspace_allocation_samples_ms=[0.183,0.083,0.021,0.195,0.236]
+synthesis_rayon_ms=0.088
+synthesis_rayon_samples_ms=[0.088,0.086,0.088,0.090,0.094]
+scalar_synthesis_first_call_rayon_ms=0.886
+
+CASE lmax=63 grid=96x192 spin=0 operation=synthesis threads=4 pair=3 method=recurrence process_seconds=0.0041
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.046,0.043,0.043,0.043,0.042]
+workspace_allocation_ms=0.025
+workspace_allocation_samples_ms=[0.174,0.082,0.024,0.025,0.022]
+synthesis_rayon_ms=0.114
+synthesis_rayon_samples_ms=[0.113,0.114,0.116,0.114,0.111]
+scalar_synthesis_first_call_rayon_ms=0.161
+
+CASE lmax=63 grid=96x192 spin=0 operation=synthesis threads=16 pair=1 method=table process_seconds=0.0067
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.046,0.043,0.044,0.043,0.043]
+workspace_allocation_ms=0.039
+workspace_allocation_samples_ms=[0.195,0.039,0.324,0.036,0.039]
+synthesis_rayon_ms=0.093
+synthesis_rayon_samples_ms=[0.093,0.158,0.100,0.093,0.087]
+scalar_synthesis_first_call_rayon_ms=0.944
+
+CASE lmax=63 grid=96x192 spin=0 operation=synthesis threads=16 pair=1 method=recurrence process_seconds=0.0052
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.042
+plan_construction_samples_ms=[0.045,0.042,0.041,0.041,0.050]
+workspace_allocation_ms=0.071
+workspace_allocation_samples_ms=[0.182,0.037,0.340,0.068,0.071]
+synthesis_rayon_ms=0.134
+synthesis_rayon_samples_ms=[0.137,0.153,0.134,0.125,0.133]
+scalar_synthesis_first_call_rayon_ms=0.185
+
+CASE lmax=63 grid=96x192 spin=0 operation=synthesis threads=16 pair=2 method=recurrence process_seconds=0.0051
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.042
+plan_construction_samples_ms=[0.046,0.056,0.042,0.042,0.042]
+workspace_allocation_ms=0.069
+workspace_allocation_samples_ms=[0.182,0.037,0.340,0.065,0.069]
+synthesis_rayon_ms=0.137
+synthesis_rayon_samples_ms=[0.158,0.153,0.123,0.137,0.116]
+scalar_synthesis_first_call_rayon_ms=0.183
+
+CASE lmax=63 grid=96x192 spin=0 operation=synthesis threads=16 pair=2 method=table process_seconds=0.0068
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.047,0.044,0.043,0.043,0.043]
+workspace_allocation_ms=0.070
+workspace_allocation_samples_ms=[0.189,0.043,0.042,0.366,0.070]
+synthesis_rayon_ms=0.115
+synthesis_rayon_samples_ms=[0.098,0.115,0.119,0.443,0.099]
+scalar_synthesis_first_call_rayon_ms=0.916
+
+CASE lmax=63 grid=96x192 spin=0 operation=synthesis threads=16 pair=3 method=table process_seconds=0.0066
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.054
+plan_construction_samples_ms=[0.058,0.055,0.054,0.054,0.054]
+workspace_allocation_ms=0.067
+workspace_allocation_samples_ms=[0.213,0.037,0.040,0.324,0.067]
+synthesis_rayon_ms=0.102
+synthesis_rayon_samples_ms=[0.100,0.110,0.102,0.114,0.092]
+scalar_synthesis_first_call_rayon_ms=0.919
+
+CASE lmax=63 grid=96x192 spin=0 operation=synthesis threads=16 pair=3 method=recurrence process_seconds=0.0055
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.044
+plan_construction_samples_ms=[0.047,0.044,0.043,0.049,0.043]
+workspace_allocation_ms=0.041
+workspace_allocation_samples_ms=[0.181,0.039,0.041,0.035,0.339]
+synthesis_rayon_ms=0.139
+synthesis_rayon_samples_ms=[0.147,0.138,0.139,0.158,0.133]
+scalar_synthesis_first_call_rayon_ms=0.179
+
+CASE lmax=63 grid=96x192 spin=0 operation=analysis threads=2 pair=1 method=table process_seconds=0.0063
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.046,0.044,0.043,0.043,0.043]
+workspace_allocation_ms=0.076
+workspace_allocation_samples_ms=[0.144,0.076,0.182,0.024,0.023]
+analysis_rayon_ms=0.137
+analysis_rayon_samples_ms=[0.136,0.137,0.138,0.137,0.137]
+scalar_analysis_first_call_rayon_ms=0.880
+
+CASE lmax=63 grid=96x192 spin=0 operation=analysis threads=2 pair=1 method=recurrence process_seconds=0.0049
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.046,0.043,0.043,0.043,0.043]
+workspace_allocation_ms=0.070
+workspace_allocation_samples_ms=[0.155,0.165,0.070,0.022,0.021]
+analysis_rayon_ms=0.142
+analysis_rayon_samples_ms=[0.142,0.131,0.159,0.150,0.131]
+scalar_analysis_first_call_rayon_ms=0.162
+
+CASE lmax=63 grid=96x192 spin=0 operation=analysis threads=2 pair=2 method=recurrence process_seconds=0.0049
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.044
+plan_construction_samples_ms=[0.046,0.044,0.050,0.043,0.043]
+workspace_allocation_ms=0.024
+workspace_allocation_samples_ms=[0.155,0.082,0.024,0.019,0.020]
+analysis_rayon_ms=0.133
+analysis_rayon_samples_ms=[0.138,0.133,0.132,0.131,0.133]
+scalar_analysis_first_call_rayon_ms=0.171
+
+CASE lmax=63 grid=96x192 spin=0 operation=analysis threads=2 pair=2 method=table process_seconds=0.0062
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.054
+plan_construction_samples_ms=[0.058,0.055,0.054,0.045,0.043]
+workspace_allocation_ms=0.070
+workspace_allocation_samples_ms=[0.150,0.170,0.070,0.022,0.021]
+analysis_rayon_ms=0.101
+analysis_rayon_samples_ms=[0.107,0.101,0.100,0.100,0.101]
+scalar_analysis_first_call_rayon_ms=0.850
+
+CASE lmax=63 grid=96x192 spin=0 operation=analysis threads=2 pair=3 method=table process_seconds=0.0060
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.046,0.044,0.043,0.043,0.043]
+workspace_allocation_ms=0.069
+workspace_allocation_samples_ms=[0.145,0.163,0.069,0.023,0.021]
+analysis_rayon_ms=0.101
+analysis_rayon_samples_ms=[0.117,0.107,0.101,0.100,0.100]
+scalar_analysis_first_call_rayon_ms=0.798
+
+CASE lmax=63 grid=96x192 spin=0 operation=analysis threads=2 pair=3 method=recurrence process_seconds=0.0050
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.046,0.043,0.043,0.043,0.043]
+workspace_allocation_ms=0.067
+workspace_allocation_samples_ms=[0.156,0.162,0.067,0.024,0.021]
+analysis_rayon_ms=0.168
+analysis_rayon_samples_ms=[0.169,0.176,0.167,0.167,0.168]
+scalar_analysis_first_call_rayon_ms=0.183
+
+CASE lmax=63 grid=96x192 spin=0 operation=analysis threads=4 pair=1 method=table process_seconds=0.0064
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.054,0.044,0.043,0.043,0.043]
+workspace_allocation_ms=0.140
+workspace_allocation_samples_ms=[0.140,0.184,0.072,0.020,0.179]
+analysis_rayon_ms=0.115
+analysis_rayon_samples_ms=[0.125,0.110,0.107,0.133,0.115]
+scalar_analysis_first_call_rayon_ms=0.890
+
+CASE lmax=63 grid=96x192 spin=0 operation=analysis threads=4 pair=1 method=recurrence process_seconds=0.0048
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.053
+plan_construction_samples_ms=[0.058,0.054,0.053,0.053,0.046]
+workspace_allocation_ms=0.024
+workspace_allocation_samples_ms=[0.205,0.076,0.022,0.024,0.022]
+analysis_rayon_ms=0.108
+analysis_rayon_samples_ms=[0.109,0.108,0.108,0.107,0.107]
+scalar_analysis_first_call_rayon_ms=0.124
+
+CASE lmax=63 grid=96x192 spin=0 operation=analysis threads=4 pair=2 method=recurrence process_seconds=0.0048
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.047,0.044,0.043,0.043,0.043]
+workspace_allocation_ms=0.147
+workspace_allocation_samples_ms=[0.147,0.181,0.074,0.021,0.196]
+analysis_rayon_ms=0.124
+analysis_rayon_samples_ms=[0.147,0.130,0.120,0.124,0.108]
+scalar_analysis_first_call_rayon_ms=0.158
+
+CASE lmax=63 grid=96x192 spin=0 operation=analysis threads=4 pair=2 method=table process_seconds=0.0060
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.051,0.043,0.043,0.043,0.042]
+workspace_allocation_ms=0.081
+workspace_allocation_samples_ms=[0.144,0.174,0.081,0.028,0.019]
+analysis_rayon_ms=0.095
+analysis_rayon_samples_ms=[0.092,0.089,0.110,0.095,0.109]
+scalar_analysis_first_call_rayon_ms=0.849
+
+CASE lmax=63 grid=96x192 spin=0 operation=analysis threads=4 pair=3 method=table process_seconds=0.0062
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.051,0.043,0.043,0.043,0.042]
+workspace_allocation_ms=0.166
+workspace_allocation_samples_ms=[0.138,0.168,0.177,0.166,0.075]
+analysis_rayon_ms=0.123
+analysis_rayon_samples_ms=[0.107,0.096,0.123,0.151,0.140]
+scalar_analysis_first_call_rayon_ms=0.832
+
+CASE lmax=63 grid=96x192 spin=0 operation=analysis threads=4 pair=3 method=recurrence process_seconds=0.0046
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.046,0.043,0.043,0.043,0.042]
+workspace_allocation_ms=0.179
+workspace_allocation_samples_ms=[0.194,0.091,0.025,0.179,0.215]
+analysis_rayon_ms=0.112
+analysis_rayon_samples_ms=[0.120,0.110,0.112,0.112,0.110]
+scalar_analysis_first_call_rayon_ms=0.123
+
+CASE lmax=63 grid=96x192 spin=0 operation=analysis threads=16 pair=1 method=table process_seconds=0.0070
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.050,0.044,0.043,0.043,0.043]
+workspace_allocation_ms=0.043
+workspace_allocation_samples_ms=[0.215,0.041,0.043,0.043,0.038]
+analysis_rayon_ms=0.129
+analysis_rayon_samples_ms=[0.123,0.100,0.171,0.136,0.129]
+scalar_analysis_first_call_rayon_ms=0.920
+
+CASE lmax=63 grid=96x192 spin=0 operation=analysis threads=16 pair=1 method=recurrence process_seconds=0.0055
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.042
+plan_construction_samples_ms=[0.046,0.043,0.042,0.042,0.042]
+workspace_allocation_ms=0.043
+workspace_allocation_samples_ms=[0.229,0.042,0.045,0.043,0.038]
+analysis_rayon_ms=0.125
+analysis_rayon_samples_ms=[0.116,0.152,0.120,0.150,0.125]
+scalar_analysis_first_call_rayon_ms=0.139
+
+CASE lmax=63 grid=96x192 spin=0 operation=analysis threads=16 pair=2 method=recurrence process_seconds=0.0057
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.054
+plan_construction_samples_ms=[0.047,0.074,0.056,0.054,0.054]
+workspace_allocation_ms=0.077
+workspace_allocation_samples_ms=[0.226,0.077,0.100,0.075,0.070]
+analysis_rayon_ms=0.117
+analysis_rayon_samples_ms=[0.112,0.121,0.130,0.114,0.117]
+scalar_analysis_first_call_rayon_ms=0.161
+
+CASE lmax=63 grid=96x192 spin=0 operation=analysis threads=16 pair=2 method=table process_seconds=0.0072
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.048,0.044,0.043,0.043,0.043]
+workspace_allocation_ms=0.228
+workspace_allocation_samples_ms=[0.228,0.045,0.386,0.036,0.358]
+analysis_rayon_ms=0.121
+analysis_rayon_samples_ms=[0.174,0.121,0.115,0.098,0.122]
+scalar_analysis_first_call_rayon_ms=0.941
+
+CASE lmax=63 grid=96x192 spin=0 operation=analysis threads=16 pair=3 method=table process_seconds=0.0071
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.054
+plan_construction_samples_ms=[0.062,0.060,0.054,0.054,0.054]
+workspace_allocation_ms=0.042
+workspace_allocation_samples_ms=[0.198,0.037,0.042,0.039,0.413]
+analysis_rayon_ms=0.133
+analysis_rayon_samples_ms=[0.129,0.133,0.165,0.138,0.108]
+scalar_analysis_first_call_rayon_ms=0.884
+
+CASE lmax=63 grid=96x192 spin=0 operation=analysis threads=16 pair=3 method=recurrence process_seconds=0.0052
+spin-0 T63 mmax=63; GL 96x192; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.047,0.044,0.043,0.043,0.043]
+workspace_allocation_ms=0.040
+workspace_allocation_samples_ms=[0.170,0.040,0.333,0.036,0.039]
+analysis_rayon_ms=0.135
+analysis_rayon_samples_ms=[0.138,0.123,0.142,0.124,0.135]
+scalar_analysis_first_call_rayon_ms=0.164
+
+CASE lmax=63 grid=96x192 spin=1 operation=analysis threads=2 pair=1 method=table process_seconds=0.0075
+spin-1 T63 mmax=63; GL 96x192; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.047
+plan_construction_samples_ms=[0.057,0.044,0.047,0.047,0.047]
+workspace_allocation_ms=0.021
+workspace_allocation_samples_ms=[0.140,0.081,0.021,0.020,0.020]
+analysis_rayon_ms=0.294
+analysis_rayon_samples_ms=[0.350,0.280,0.279,0.300,0.294]
+analysis_first_call_rayon_ms=1.111
+
+CASE lmax=63 grid=96x192 spin=1 operation=analysis threads=2 pair=1 method=recurrence process_seconds=0.0058
+spin-1 T63 mmax=63; GL 96x192; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.044
+plan_construction_samples_ms=[0.050,0.044,0.043,0.043,0.048]
+workspace_allocation_ms=0.079
+workspace_allocation_samples_ms=[0.152,0.186,0.079,0.077,0.025]
+analysis_rayon_ms=0.242
+analysis_rayon_samples_ms=[0.248,0.244,0.242,0.242,0.239]
+analysis_first_call_rayon_ms=0.282
+
+CASE lmax=63 grid=96x192 spin=1 operation=analysis threads=2 pair=2 method=recurrence process_seconds=0.0059
+spin-1 T63 mmax=63; GL 96x192; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.051
+plan_construction_samples_ms=[0.057,0.054,0.051,0.042,0.042]
+workspace_allocation_ms=0.070
+workspace_allocation_samples_ms=[0.144,0.070,0.163,0.022,0.024]
+analysis_rayon_ms=0.247
+analysis_rayon_samples_ms=[0.251,0.246,0.245,0.247,0.252]
+analysis_first_call_rayon_ms=0.300
+
+CASE lmax=63 grid=96x192 spin=1 operation=analysis threads=2 pair=2 method=table process_seconds=0.0070
+spin-1 T63 mmax=63; GL 96x192; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.054
+plan_construction_samples_ms=[0.058,0.055,0.054,0.054,0.050]
+workspace_allocation_ms=0.078
+workspace_allocation_samples_ms=[0.145,0.176,0.078,0.074,0.023]
+analysis_rayon_ms=0.199
+analysis_rayon_samples_ms=[0.202,0.199,0.197,0.199,0.207]
+analysis_first_call_rayon_ms=1.000
+
+CASE lmax=63 grid=96x192 spin=1 operation=analysis threads=2 pair=3 method=table process_seconds=0.0071
+spin-1 T63 mmax=63; GL 96x192; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.053
+plan_construction_samples_ms=[0.058,0.054,0.053,0.053,0.045]
+workspace_allocation_ms=0.076
+workspace_allocation_samples_ms=[0.172,0.076,0.161,0.023,0.027]
+analysis_rayon_ms=0.199
+analysis_rayon_samples_ms=[0.201,0.199,0.198,0.216,0.198]
+analysis_first_call_rayon_ms=0.995
+
+CASE lmax=63 grid=96x192 spin=1 operation=analysis threads=2 pair=3 method=recurrence process_seconds=0.0059
+spin-1 T63 mmax=63; GL 96x192; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.053
+plan_construction_samples_ms=[0.058,0.054,0.053,0.046,0.042]
+workspace_allocation_ms=0.087
+workspace_allocation_samples_ms=[0.145,0.197,0.087,0.076,0.022]
+analysis_rayon_ms=0.244
+analysis_rayon_samples_ms=[0.245,0.243,0.242,0.266,0.244]
+analysis_first_call_rayon_ms=0.275
+
+CASE lmax=63 grid=96x192 spin=1 operation=analysis threads=4 pair=1 method=table process_seconds=0.0069
+spin-1 T63 mmax=63; GL 96x192; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.053
+plan_construction_samples_ms=[0.057,0.054,0.053,0.045,0.042]
+workspace_allocation_ms=0.180
+workspace_allocation_samples_ms=[0.180,0.091,0.026,0.223,0.210]
+analysis_rayon_ms=0.183
+analysis_rayon_samples_ms=[0.186,0.187,0.173,0.183,0.159]
+analysis_first_call_rayon_ms=0.949
+
+CASE lmax=63 grid=96x192 spin=1 operation=analysis threads=4 pair=1 method=recurrence process_seconds=0.0053
+spin-1 T63 mmax=63; GL 96x192; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.053
+plan_construction_samples_ms=[0.058,0.054,0.053,0.053,0.053]
+workspace_allocation_ms=0.175
+workspace_allocation_samples_ms=[0.193,0.090,0.025,0.184,0.175]
+analysis_rayon_ms=0.196
+analysis_rayon_samples_ms=[0.196,0.201,0.197,0.194,0.192]
+analysis_first_call_rayon_ms=0.220
+
+CASE lmax=63 grid=96x192 spin=1 operation=analysis threads=4 pair=2 method=recurrence process_seconds=0.0052
+spin-1 T63 mmax=63; GL 96x192; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.046,0.044,0.043,0.043,0.043]
+workspace_allocation_ms=0.087
+workspace_allocation_samples_ms=[0.181,0.087,0.026,0.232,0.030]
+analysis_rayon_ms=0.200
+analysis_rayon_samples_ms=[0.220,0.203,0.200,0.198,0.197]
+analysis_first_call_rayon_ms=0.218
+
+CASE lmax=63 grid=96x192 spin=1 operation=analysis threads=4 pair=2 method=table process_seconds=0.0064
+spin-1 T63 mmax=63; GL 96x192; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.046,0.077,0.043,0.043,0.042]
+workspace_allocation_ms=0.178
+workspace_allocation_samples_ms=[0.232,0.093,0.026,0.193,0.178]
+analysis_rayon_ms=0.169
+analysis_rayon_samples_ms=[0.191,0.163,0.169,0.159,0.175]
+analysis_first_call_rayon_ms=0.982
+
+CASE lmax=63 grid=96x192 spin=1 operation=analysis threads=4 pair=3 method=table process_seconds=0.0071
+spin-1 T63 mmax=63; GL 96x192; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.053
+plan_construction_samples_ms=[0.065,0.055,0.053,0.053,0.053]
+workspace_allocation_ms=0.087
+workspace_allocation_samples_ms=[0.186,0.087,0.027,0.168,0.026]
+analysis_rayon_ms=0.190
+analysis_rayon_samples_ms=[0.210,0.202,0.188,0.190,0.162]
+analysis_first_call_rayon_ms=1.091
+
+CASE lmax=63 grid=96x192 spin=1 operation=analysis threads=4 pair=3 method=recurrence process_seconds=0.0057
+spin-1 T63 mmax=63; GL 96x192; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.049
+plan_construction_samples_ms=[0.057,0.054,0.049,0.042,0.042]
+workspace_allocation_ms=0.095
+workspace_allocation_samples_ms=[0.181,0.095,0.029,0.176,0.024]
+analysis_rayon_ms=0.201
+analysis_rayon_samples_ms=[0.201,0.197,0.223,0.197,0.267]
+analysis_first_call_rayon_ms=0.247
+
+CASE lmax=63 grid=96x192 spin=1 operation=analysis threads=16 pair=1 method=table process_seconds=0.0080
+spin-1 T63 mmax=63; GL 96x192; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.051,0.044,0.043,0.043,0.043]
+workspace_allocation_ms=0.077
+workspace_allocation_samples_ms=[0.211,0.039,0.051,0.424,0.077]
+analysis_rayon_ms=0.182
+analysis_rayon_samples_ms=[0.193,0.199,0.179,0.182,0.158]
+analysis_first_call_rayon_ms=1.007
+
+CASE lmax=63 grid=96x192 spin=1 operation=analysis threads=16 pair=1 method=recurrence process_seconds=0.0061
+spin-1 T63 mmax=63; GL 96x192; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.047,0.044,0.043,0.043,0.043]
+workspace_allocation_ms=0.042
+workspace_allocation_samples_ms=[0.190,0.038,0.043,0.041,0.042]
+analysis_rayon_ms=0.228
+analysis_rayon_samples_ms=[0.227,0.228,0.207,0.236,0.469]
+analysis_first_call_rayon_ms=0.196
+
+CASE lmax=63 grid=96x192 spin=1 operation=analysis threads=16 pair=2 method=recurrence process_seconds=0.0062
+spin-1 T63 mmax=63; GL 96x192; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.054
+plan_construction_samples_ms=[0.059,0.059,0.054,0.053,0.053]
+workspace_allocation_ms=0.043
+workspace_allocation_samples_ms=[0.222,0.042,0.048,0.043,0.042]
+analysis_rayon_ms=0.199
+analysis_rayon_samples_ms=[0.221,0.193,0.199,0.171,0.215]
+analysis_first_call_rayon_ms=0.212
+
+CASE lmax=63 grid=96x192 spin=1 operation=analysis threads=16 pair=2 method=table process_seconds=0.0077
+spin-1 T63 mmax=63; GL 96x192; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.053
+plan_construction_samples_ms=[0.059,0.054,0.053,0.053,0.053]
+workspace_allocation_ms=0.044
+workspace_allocation_samples_ms=[0.198,0.043,0.044,0.041,0.410]
+analysis_rayon_ms=0.185
+analysis_rayon_samples_ms=[0.192,0.175,0.201,0.185,0.174]
+analysis_first_call_rayon_ms=1.005
+
+CASE lmax=63 grid=96x192 spin=1 operation=analysis threads=16 pair=3 method=table process_seconds=0.0078
+spin-1 T63 mmax=63; GL 96x192; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.050,0.044,0.043,0.043,0.043]
+workspace_allocation_ms=0.052
+workspace_allocation_samples_ms=[0.225,0.046,0.052,0.042,0.446]
+analysis_rayon_ms=0.172
+analysis_rayon_samples_ms=[0.169,0.201,0.172,0.181,0.161]
+analysis_first_call_rayon_ms=1.029
+
+CASE lmax=63 grid=96x192 spin=1 operation=analysis threads=16 pair=3 method=recurrence process_seconds=0.0059
+spin-1 T63 mmax=63; GL 96x192; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.043
+plan_construction_samples_ms=[0.047,0.044,0.043,0.043,0.043]
+workspace_allocation_ms=0.042
+workspace_allocation_samples_ms=[0.188,0.039,0.042,0.046,0.042]
+analysis_rayon_ms=0.212
+analysis_rayon_samples_ms=[0.253,0.212,0.189,0.214,0.174]
+analysis_first_call_rayon_ms=0.224
+
+CASE lmax=85 grid=128x256 spin=0 operation=synthesis threads=2 pair=1 method=table process_seconds=0.0103
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.009,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.223
+workspace_allocation_samples_ms=[0.271,0.214,0.223,0.210,0.230]
+synthesis_rayon_ms=0.251
+synthesis_rayon_samples_ms=[0.253,0.251,0.249,0.254,0.232]
+scalar_synthesis_first_call_rayon_ms=2.288
+
+CASE lmax=85 grid=128x256 spin=0 operation=synthesis threads=2 pair=1 method=recurrence process_seconds=0.0083
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.012
+plan_construction_samples_ms=[0.012,0.011,0.012,0.012,0.012]
+workspace_allocation_ms=0.216
+workspace_allocation_samples_ms=[0.281,0.215,0.222,0.216,0.212]
+synthesis_rayon_ms=0.480
+synthesis_rayon_samples_ms=[0.480,0.478,0.480,0.888,0.466]
+scalar_synthesis_first_call_rayon_ms=0.440
+
+CASE lmax=85 grid=128x256 spin=0 operation=synthesis threads=2 pair=2 method=recurrence process_seconds=0.0083
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.010
+plan_construction_samples_ms=[0.013,0.010,0.010,0.007,0.006]
+workspace_allocation_ms=0.258
+workspace_allocation_samples_ms=[0.276,0.339,0.258,0.222,0.233]
+synthesis_rayon_ms=0.487
+synthesis_rayon_samples_ms=[0.503,0.551,0.487,0.467,0.471]
+scalar_synthesis_first_call_rayon_ms=0.653
+
+CASE lmax=85 grid=128x256 spin=0 operation=synthesis threads=2 pair=2 method=table process_seconds=0.0105
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.008
+plan_construction_samples_ms=[0.016,0.009,0.008,0.008,0.008]
+workspace_allocation_ms=0.220
+workspace_allocation_samples_ms=[0.334,0.379,0.220,0.199,0.215]
+synthesis_rayon_ms=0.235
+synthesis_rayon_samples_ms=[0.246,0.253,0.235,0.232,0.233]
+scalar_synthesis_first_call_rayon_ms=2.149
+
+CASE lmax=85 grid=128x256 spin=0 operation=synthesis threads=2 pair=3 method=table process_seconds=0.0104
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.277
+workspace_allocation_samples_ms=[0.293,0.373,0.210,0.214,0.277]
+synthesis_rayon_ms=0.249
+synthesis_rayon_samples_ms=[0.246,0.250,0.249,0.247,0.249]
+scalar_synthesis_first_call_rayon_ms=2.097
+
+CASE lmax=85 grid=128x256 spin=0 operation=synthesis threads=2 pair=3 method=recurrence process_seconds=0.0074
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.008
+plan_construction_samples_ms=[0.017,0.010,0.008,0.008,0.008]
+workspace_allocation_ms=0.202
+workspace_allocation_samples_ms=[0.270,0.320,0.202,0.191,0.190]
+synthesis_rayon_ms=0.406
+synthesis_rayon_samples_ms=[0.283,0.406,0.443,0.460,0.294]
+scalar_synthesis_first_call_rayon_ms=0.380
+
+CASE lmax=85 grid=128x256 spin=0 operation=synthesis threads=4 pair=1 method=table process_seconds=0.0092
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.225
+workspace_allocation_samples_ms=[0.365,0.235,0.225,0.185,0.189]
+synthesis_rayon_ms=0.170
+synthesis_rayon_samples_ms=[0.168,0.170,0.200,0.167,0.177]
+scalar_synthesis_first_call_rayon_ms=1.993
+
+CASE lmax=85 grid=128x256 spin=0 operation=synthesis threads=4 pair=1 method=recurrence process_seconds=0.0068
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.008
+plan_construction_samples_ms=[0.016,0.009,0.008,0.008,0.008]
+workspace_allocation_ms=0.239
+workspace_allocation_samples_ms=[0.299,0.239,0.250,0.224,0.234]
+synthesis_rayon_ms=0.252
+synthesis_rayon_samples_ms=[0.260,0.264,0.252,0.250,0.236]
+scalar_synthesis_first_call_rayon_ms=0.388
+
+CASE lmax=85 grid=128x256 spin=0 operation=synthesis threads=4 pair=2 method=recurrence process_seconds=0.0062
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.216
+workspace_allocation_samples_ms=[0.411,0.255,0.216,0.210,0.207]
+synthesis_rayon_ms=0.178
+synthesis_rayon_samples_ms=[0.182,0.178,0.178,0.177,0.179]
+scalar_synthesis_first_call_rayon_ms=0.293
+
+CASE lmax=85 grid=128x256 spin=0 operation=synthesis threads=4 pair=2 method=table process_seconds=0.0094
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.200
+workspace_allocation_samples_ms=[0.310,0.201,0.200,0.198,0.200]
+synthesis_rayon_ms=0.160
+synthesis_rayon_samples_ms=[0.195,0.200,0.159,0.160,0.157]
+scalar_synthesis_first_call_rayon_ms=2.026
+
+CASE lmax=85 grid=128x256 spin=0 operation=synthesis threads=4 pair=3 method=table process_seconds=0.0104
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.008
+plan_construction_samples_ms=[0.012,0.009,0.008,0.008,0.008]
+workspace_allocation_ms=0.216
+workspace_allocation_samples_ms=[0.355,0.260,0.215,0.209,0.216]
+synthesis_rayon_ms=0.160
+synthesis_rayon_samples_ms=[0.656,0.163,0.156,0.156,0.160]
+scalar_synthesis_first_call_rayon_ms=2.093
+
+CASE lmax=85 grid=128x256 spin=0 operation=synthesis threads=4 pair=3 method=recurrence process_seconds=0.0063
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.009,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.242
+workspace_allocation_samples_ms=[0.319,0.296,0.241,0.242,0.235]
+synthesis_rayon_ms=0.233
+synthesis_rayon_samples_ms=[0.241,0.238,0.233,0.224,0.229]
+scalar_synthesis_first_call_rayon_ms=0.288
+
+CASE lmax=85 grid=128x256 spin=0 operation=synthesis threads=16 pair=1 method=table process_seconds=0.0119
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.007
+plan_construction_samples_ms=[0.012,0.008,0.007,0.006,0.006]
+workspace_allocation_ms=0.424
+workspace_allocation_samples_ms=[0.650,0.428,0.424,0.375,0.353]
+synthesis_rayon_ms=0.161
+synthesis_rayon_samples_ms=[0.173,0.158,0.189,0.161,0.158]
+scalar_synthesis_first_call_rayon_ms=2.087
+
+CASE lmax=85 grid=128x256 spin=0 operation=synthesis threads=16 pair=1 method=recurrence process_seconds=0.0070
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.008
+plan_construction_samples_ms=[0.016,0.009,0.008,0.008,0.008]
+workspace_allocation_ms=0.250
+workspace_allocation_samples_ms=[0.332,0.262,0.238,0.246,0.250]
+synthesis_rayon_ms=0.192
+synthesis_rayon_samples_ms=[0.197,0.163,0.192,0.168,0.210]
+scalar_synthesis_first_call_rayon_ms=0.307
+
+CASE lmax=85 grid=128x256 spin=0 operation=synthesis threads=16 pair=2 method=recurrence process_seconds=0.0068
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.237
+workspace_allocation_samples_ms=[0.318,0.237,0.232,0.243,0.228]
+synthesis_rayon_ms=0.180
+synthesis_rayon_samples_ms=[0.211,0.185,0.166,0.172,0.180]
+scalar_synthesis_first_call_rayon_ms=0.303
+
+CASE lmax=85 grid=128x256 spin=0 operation=synthesis threads=16 pair=2 method=table process_seconds=0.0111
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.007
+plan_construction_samples_ms=[0.011,0.007,0.007,0.006,0.006]
+workspace_allocation_ms=0.356
+workspace_allocation_samples_ms=[0.492,0.356,0.350,0.351,0.386]
+synthesis_rayon_ms=0.146
+synthesis_rayon_samples_ms=[0.152,0.152,0.146,0.137,0.132]
+scalar_synthesis_first_call_rayon_ms=2.120
+
+CASE lmax=85 grid=128x256 spin=0 operation=synthesis threads=16 pair=3 method=table process_seconds=0.0113
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.401
+workspace_allocation_samples_ms=[0.505,0.391,0.416,0.401,0.355]
+synthesis_rayon_ms=0.151
+synthesis_rayon_samples_ms=[0.158,0.151,0.151,0.161,0.151]
+scalar_synthesis_first_call_rayon_ms=2.044
+
+CASE lmax=85 grid=128x256 spin=0 operation=synthesis threads=16 pair=3 method=recurrence process_seconds=0.0072
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.007
+plan_construction_samples_ms=[0.010,0.007,0.006,0.007,0.009]
+workspace_allocation_ms=0.282
+workspace_allocation_samples_ms=[0.416,0.280,0.284,0.282,0.279]
+synthesis_rayon_ms=0.174
+synthesis_rayon_samples_ms=[0.200,0.182,0.164,0.173,0.174]
+scalar_synthesis_first_call_rayon_ms=0.312
+
+CASE lmax=85 grid=128x256 spin=0 operation=analysis threads=2 pair=1 method=table process_seconds=0.0105
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.248
+workspace_allocation_samples_ms=[0.268,0.211,0.206,0.332,0.248]
+analysis_rayon_ms=0.230
+analysis_rayon_samples_ms=[0.232,0.230,0.237,0.228,0.192]
+scalar_analysis_first_call_rayon_ms=1.964
+
+CASE lmax=85 grid=128x256 spin=0 operation=analysis threads=2 pair=1 method=recurrence process_seconds=0.0077
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.008
+plan_construction_samples_ms=[0.012,0.009,0.008,0.008,0.008]
+workspace_allocation_ms=0.272
+workspace_allocation_samples_ms=[0.272,0.203,0.340,0.259,0.273]
+analysis_rayon_ms=0.285
+analysis_rayon_samples_ms=[0.255,0.274,0.286,0.295,0.285]
+scalar_analysis_first_call_rayon_ms=0.354
+
+CASE lmax=85 grid=128x256 spin=0 operation=analysis threads=2 pair=2 method=recurrence process_seconds=0.0076
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.226
+workspace_allocation_samples_ms=[0.285,0.224,0.219,0.226,0.236]
+analysis_rayon_ms=0.333
+analysis_rayon_samples_ms=[0.449,0.339,0.333,0.317,0.332]
+scalar_analysis_first_call_rayon_ms=0.358
+
+CASE lmax=85 grid=128x256 spin=0 operation=analysis threads=2 pair=2 method=table process_seconds=0.0105
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.010
+plan_construction_samples_ms=[0.010,0.009,0.010,0.010,0.009]
+workspace_allocation_ms=0.207
+workspace_allocation_samples_ms=[0.287,0.242,0.203,0.187,0.207]
+analysis_rayon_ms=0.228
+analysis_rayon_samples_ms=[0.229,0.227,0.235,0.228,0.211]
+scalar_analysis_first_call_rayon_ms=1.997
+
+CASE lmax=85 grid=128x256 spin=0 operation=analysis threads=2 pair=3 method=table process_seconds=0.0112
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.008
+plan_construction_samples_ms=[0.012,0.009,0.008,0.008,0.008]
+workspace_allocation_ms=0.279
+workspace_allocation_samples_ms=[0.370,0.352,0.279,0.223,0.229]
+analysis_rayon_ms=0.236
+analysis_rayon_samples_ms=[0.236,0.237,0.231,0.268,0.194]
+scalar_analysis_first_call_rayon_ms=2.048
+
+CASE lmax=85 grid=128x256 spin=0 operation=analysis threads=2 pair=3 method=recurrence process_seconds=0.0080
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.008
+plan_construction_samples_ms=[0.014,0.009,0.008,0.008,0.008]
+workspace_allocation_ms=0.277
+workspace_allocation_samples_ms=[0.277,0.359,0.278,0.216,0.216]
+analysis_rayon_ms=0.316
+analysis_rayon_samples_ms=[0.333,0.316,0.321,0.316,0.316]
+scalar_analysis_first_call_rayon_ms=0.347
+
+CASE lmax=85 grid=128x256 spin=0 operation=analysis threads=4 pair=1 method=table process_seconds=0.0106
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.008
+plan_construction_samples_ms=[0.012,0.009,0.008,0.008,0.008]
+workspace_allocation_ms=0.221
+workspace_allocation_samples_ms=[0.338,0.243,0.221,0.220,0.200]
+analysis_rayon_ms=0.182
+analysis_rayon_samples_ms=[0.204,0.191,0.164,0.182,0.165]
+scalar_analysis_first_call_rayon_ms=1.922
+
+CASE lmax=85 grid=128x256 spin=0 operation=analysis threads=4 pair=1 method=recurrence process_seconds=0.0069
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.258
+workspace_allocation_samples_ms=[0.341,0.214,0.400,0.258,0.244]
+analysis_rayon_ms=0.224
+analysis_rayon_samples_ms=[0.224,0.218,0.233,0.242,0.213]
+scalar_analysis_first_call_rayon_ms=0.204
+
+CASE lmax=85 grid=128x256 spin=0 operation=analysis threads=4 pair=2 method=recurrence process_seconds=0.0063
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.208
+workspace_allocation_samples_ms=[0.278,0.206,0.202,0.208,0.217]
+analysis_rayon_ms=0.199
+analysis_rayon_samples_ms=[0.199,0.194,0.200,0.202,0.199]
+scalar_analysis_first_call_rayon_ms=0.210
+
+CASE lmax=85 grid=128x256 spin=0 operation=analysis threads=4 pair=2 method=table process_seconds=0.0104
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.262
+workspace_allocation_samples_ms=[0.351,0.338,0.257,0.262,0.255]
+analysis_rayon_ms=0.185
+analysis_rayon_samples_ms=[0.184,0.185,0.204,0.192,0.167]
+scalar_analysis_first_call_rayon_ms=1.922
+
+CASE lmax=85 grid=128x256 spin=0 operation=analysis threads=4 pair=3 method=table process_seconds=0.0100
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.007
+plan_construction_samples_ms=[0.010,0.007,0.007,0.006,0.006]
+workspace_allocation_ms=0.210
+workspace_allocation_samples_ms=[0.299,0.216,0.207,0.203,0.210]
+analysis_rayon_ms=0.190
+analysis_rayon_samples_ms=[0.190,0.190,0.191,0.188,0.189]
+scalar_analysis_first_call_rayon_ms=2.153
+
+CASE lmax=85 grid=128x256 spin=0 operation=analysis threads=4 pair=3 method=recurrence process_seconds=0.0068
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.208
+workspace_allocation_samples_ms=[0.340,0.226,0.208,0.207,0.192]
+analysis_rayon_ms=0.206
+analysis_rayon_samples_ms=[0.254,0.208,0.204,0.206,0.206]
+scalar_analysis_first_call_rayon_ms=0.275
+
+CASE lmax=85 grid=128x256 spin=0 operation=analysis threads=16 pair=1 method=table process_seconds=0.0114
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.237
+workspace_allocation_samples_ms=[0.322,0.260,0.237,0.234,0.231]
+analysis_rayon_ms=0.185
+analysis_rayon_samples_ms=[0.210,0.185,0.179,0.172,0.191]
+scalar_analysis_first_call_rayon_ms=1.988
+
+CASE lmax=85 grid=128x256 spin=0 operation=analysis threads=16 pair=1 method=recurrence process_seconds=0.0085
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.007
+plan_construction_samples_ms=[0.011,0.007,0.007,0.006,0.006]
+workspace_allocation_ms=0.374
+workspace_allocation_samples_ms=[0.509,0.369,0.373,0.406,0.374]
+analysis_rayon_ms=0.201
+analysis_rayon_samples_ms=[0.221,0.211,0.184,0.180,0.201]
+scalar_analysis_first_call_rayon_ms=0.208
+
+CASE lmax=85 grid=128x256 spin=0 operation=analysis threads=16 pair=2 method=recurrence process_seconds=0.0078
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.008
+plan_construction_samples_ms=[0.012,0.009,0.008,0.008,0.008]
+workspace_allocation_ms=0.288
+workspace_allocation_samples_ms=[0.375,0.285,0.284,0.288,0.303]
+analysis_rayon_ms=0.212
+analysis_rayon_samples_ms=[0.219,0.227,0.209,0.212,0.200]
+scalar_analysis_first_call_rayon_ms=0.233
+
+CASE lmax=85 grid=128x256 spin=0 operation=analysis threads=16 pair=2 method=table process_seconds=0.0111
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.255
+workspace_allocation_samples_ms=[0.318,0.251,0.255,0.259,0.232]
+analysis_rayon_ms=0.183
+analysis_rayon_samples_ms=[0.200,0.183,0.215,0.181,0.157]
+scalar_analysis_first_call_rayon_ms=2.011
+
+CASE lmax=85 grid=128x256 spin=0 operation=analysis threads=16 pair=3 method=table process_seconds=0.0109
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.235
+workspace_allocation_samples_ms=[0.340,0.238,0.234,0.232,0.235]
+analysis_rayon_ms=0.189
+analysis_rayon_samples_ms=[0.207,0.189,0.180,0.191,0.180]
+scalar_analysis_first_call_rayon_ms=1.961
+
+CASE lmax=85 grid=128x256 spin=0 operation=analysis threads=16 pair=3 method=recurrence process_seconds=0.0073
+spin-0 T85 mmax=85; GL 128x256; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.240
+workspace_allocation_samples_ms=[0.371,0.240,0.254,0.236,0.238]
+analysis_rayon_ms=0.184
+analysis_rayon_samples_ms=[0.215,0.201,0.181,0.178,0.184]
+scalar_analysis_first_call_rayon_ms=0.198
+
+CASE lmax=85 grid=128x256 spin=1 operation=analysis threads=2 pair=1 method=table process_seconds=0.0115
+spin-1 T85 mmax=85; GL 128x256; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.217
+workspace_allocation_samples_ms=[0.285,0.217,0.203,0.230,0.213]
+analysis_rayon_ms=0.353
+analysis_rayon_samples_ms=[0.404,0.345,0.359,0.341,0.353]
+analysis_first_call_rayon_ms=2.283
+
+CASE lmax=85 grid=128x256 spin=1 operation=analysis threads=2 pair=1 method=recurrence process_seconds=0.0085
+spin-1 T85 mmax=85; GL 128x256; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.008
+plan_construction_samples_ms=[0.012,0.009,0.008,0.008,0.008]
+workspace_allocation_ms=0.282
+workspace_allocation_samples_ms=[0.282,0.213,0.379,0.210,0.299]
+analysis_rayon_ms=0.432
+analysis_rayon_samples_ms=[0.432,0.438,0.431,0.443,0.428]
+analysis_first_call_rayon_ms=0.467
+
+CASE lmax=85 grid=128x256 spin=1 operation=analysis threads=2 pair=2 method=recurrence process_seconds=0.0081
+spin-1 T85 mmax=85; GL 128x256; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.248
+workspace_allocation_samples_ms=[0.262,0.326,0.248,0.204,0.210]
+analysis_rayon_ms=0.436
+analysis_rayon_samples_ms=[0.439,0.434,0.431,0.484,0.436]
+analysis_first_call_rayon_ms=0.456
+
+CASE lmax=85 grid=128x256 spin=1 operation=analysis threads=2 pair=2 method=table process_seconds=0.0117
+spin-1 T85 mmax=85; GL 128x256; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.009,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.187
+workspace_allocation_samples_ms=[0.273,0.187,0.187,0.195,0.183]
+analysis_rayon_ms=0.378
+analysis_rayon_samples_ms=[0.396,0.391,0.378,0.358,0.353]
+analysis_first_call_rayon_ms=2.247
+
+CASE lmax=85 grid=128x256 spin=1 operation=analysis threads=2 pair=3 method=table process_seconds=0.0113
+spin-1 T85 mmax=85; GL 128x256; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.009,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.193
+workspace_allocation_samples_ms=[0.268,0.181,0.185,0.193,0.193]
+analysis_rayon_ms=0.353
+analysis_rayon_samples_ms=[0.379,0.374,0.353,0.348,0.348]
+analysis_first_call_rayon_ms=2.186
+
+CASE lmax=85 grid=128x256 spin=1 operation=analysis threads=2 pair=3 method=recurrence process_seconds=0.0077
+spin-1 T85 mmax=85; GL 128x256; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.192
+workspace_allocation_samples_ms=[0.263,0.192,0.187,0.204,0.191]
+analysis_rayon_ms=0.436
+analysis_rayon_samples_ms=[0.437,0.445,0.433,0.436,0.433]
+analysis_first_call_rayon_ms=0.455
+
+CASE lmax=85 grid=128x256 spin=1 operation=analysis threads=4 pair=1 method=table process_seconds=0.0108
+spin-1 T85 mmax=85; GL 128x256; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.009,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.227
+workspace_allocation_samples_ms=[0.335,0.251,0.214,0.227,0.198]
+analysis_rayon_ms=0.288
+analysis_rayon_samples_ms=[0.309,0.372,0.288,0.282,0.281]
+analysis_first_call_rayon_ms=2.061
+
+CASE lmax=85 grid=128x256 spin=1 operation=analysis threads=4 pair=1 method=recurrence process_seconds=0.0073
+spin-1 T85 mmax=85; GL 128x256; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.205
+workspace_allocation_samples_ms=[0.278,0.203,0.205,0.204,0.206]
+analysis_rayon_ms=0.343
+analysis_rayon_samples_ms=[0.343,0.387,0.343,0.341,0.360]
+analysis_first_call_rayon_ms=0.386
+
+CASE lmax=85 grid=128x256 spin=1 operation=analysis threads=4 pair=2 method=recurrence process_seconds=0.0077
+spin-1 T85 mmax=85; GL 128x256; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.013,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.213
+workspace_allocation_samples_ms=[0.385,0.213,0.197,0.205,0.227]
+analysis_rayon_ms=0.355
+analysis_rayon_samples_ms=[0.350,0.344,0.360,0.363,0.355]
+analysis_first_call_rayon_ms=0.418
+
+CASE lmax=85 grid=128x256 spin=1 operation=analysis threads=4 pair=2 method=table process_seconds=0.0107
+spin-1 T85 mmax=85; GL 128x256; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.206
+workspace_allocation_samples_ms=[0.273,0.201,0.206,0.200,0.207]
+analysis_rayon_ms=0.305
+analysis_rayon_samples_ms=[0.353,0.305,0.311,0.305,0.282]
+analysis_first_call_rayon_ms=2.220
+
+CASE lmax=85 grid=128x256 spin=1 operation=analysis threads=4 pair=3 method=table process_seconds=0.0108
+spin-1 T85 mmax=85; GL 128x256; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.207
+workspace_allocation_samples_ms=[0.293,0.205,0.213,0.204,0.207]
+analysis_rayon_ms=0.311
+analysis_rayon_samples_ms=[0.324,0.311,0.311,0.316,0.289]
+analysis_first_call_rayon_ms=2.175
+
+CASE lmax=85 grid=128x256 spin=1 operation=analysis threads=4 pair=3 method=recurrence process_seconds=0.0074
+spin-1 T85 mmax=85; GL 128x256; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.006
+plan_construction_samples_ms=[0.010,0.007,0.006,0.006,0.006]
+workspace_allocation_ms=0.215
+workspace_allocation_samples_ms=[0.310,0.215,0.219,0.208,0.208]
+analysis_rayon_ms=0.346
+analysis_rayon_samples_ms=[0.348,0.346,0.350,0.337,0.338]
+analysis_first_call_rayon_ms=0.368
+
+CASE lmax=85 grid=128x256 spin=1 operation=analysis threads=16 pair=1 method=table process_seconds=0.0137
+spin-1 T85 mmax=85; GL 128x256; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.008
+plan_construction_samples_ms=[0.013,0.009,0.008,0.008,0.008]
+workspace_allocation_ms=0.382
+workspace_allocation_samples_ms=[0.551,0.377,0.382,0.382,0.409]
+analysis_rayon_ms=0.278
+analysis_rayon_samples_ms=[0.333,0.278,0.302,0.241,0.267]
+analysis_first_call_rayon_ms=2.158
+
+CASE lmax=85 grid=128x256 spin=1 operation=analysis threads=16 pair=1 method=recurrence process_seconds=0.0087
+spin-1 T85 mmax=85; GL 128x256; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.008
+plan_construction_samples_ms=[0.013,0.009,0.008,0.008,0.008]
+workspace_allocation_ms=0.245
+workspace_allocation_samples_ms=[0.385,0.245,0.240,0.249,0.229]
+analysis_rayon_ms=0.333
+analysis_rayon_samples_ms=[0.343,0.338,0.309,0.323,0.333]
+analysis_first_call_rayon_ms=0.370
+
+CASE lmax=85 grid=128x256 spin=1 operation=analysis threads=16 pair=2 method=recurrence process_seconds=0.0084
+spin-1 T85 mmax=85; GL 128x256; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.008
+plan_construction_samples_ms=[0.012,0.009,0.008,0.008,0.008]
+workspace_allocation_ms=0.237
+workspace_allocation_samples_ms=[0.328,0.245,0.237,0.227,0.220]
+analysis_rayon_ms=0.316
+analysis_rayon_samples_ms=[0.321,0.308,0.339,0.316,0.300]
+analysis_first_call_rayon_ms=0.342
+
+CASE lmax=85 grid=128x256 spin=1 operation=analysis threads=16 pair=2 method=table process_seconds=0.0118
+spin-1 T85 mmax=85; GL 128x256; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.008
+plan_construction_samples_ms=[0.012,0.009,0.008,0.008,0.008]
+workspace_allocation_ms=0.229
+workspace_allocation_samples_ms=[0.330,0.229,0.215,0.217,0.233]
+analysis_rayon_ms=0.258
+analysis_rayon_samples_ms=[0.258,0.298,0.327,0.255,0.243]
+analysis_first_call_rayon_ms=2.170
+
+CASE lmax=85 grid=128x256 spin=1 operation=analysis threads=16 pair=3 method=table process_seconds=0.0126
+spin-1 T85 mmax=85; GL 128x256; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.008
+plan_construction_samples_ms=[0.019,0.010,0.008,0.008,0.008]
+workspace_allocation_ms=0.292
+workspace_allocation_samples_ms=[0.388,0.297,0.287,0.292,0.290]
+analysis_rayon_ms=0.292
+analysis_rayon_samples_ms=[0.329,0.292,0.307,0.291,0.254]
+analysis_first_call_rayon_ms=2.211
+
+CASE lmax=85 grid=128x256 spin=1 operation=analysis threads=16 pair=3 method=recurrence process_seconds=0.0098
+spin-1 T85 mmax=85; GL 128x256; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.007
+plan_construction_samples_ms=[0.010,0.007,0.007,0.006,0.006]
+workspace_allocation_ms=0.447
+workspace_allocation_samples_ms=[0.553,0.447,0.415,0.447,0.533]
+analysis_rayon_ms=0.326
+analysis_rayon_samples_ms=[0.330,0.352,0.326,0.314,0.304]
+analysis_first_call_rayon_ms=0.361
+
+CASE lmax=127 grid=256x512 spin=0 operation=synthesis threads=2 pair=1 method=table process_seconds=0.0348
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.017,0.014,0.013,0.012,0.013]
+workspace_allocation_ms=0.943
+workspace_allocation_samples_ms=[0.943,0.890,0.973,1.005,0.818]
+synthesis_rayon_ms=1.104
+synthesis_rayon_samples_ms=[0.919,1.133,1.104,1.148,0.911]
+scalar_synthesis_first_call_rayon_ms=9.070
+
+CASE lmax=127 grid=256x512 spin=0 operation=synthesis threads=2 pair=1 method=recurrence process_seconds=0.0209
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.016,0.013,0.012,0.020,0.012]
+workspace_allocation_ms=0.894
+workspace_allocation_samples_ms=[1.007,0.940,0.830,0.885,0.894]
+synthesis_rayon_ms=1.514
+synthesis_rayon_samples_ms=[1.509,1.559,1.679,1.514,1.474]
+scalar_synthesis_first_call_rayon_ms=1.315
+
+CASE lmax=127 grid=256x512 spin=0 operation=synthesis threads=2 pair=2 method=recurrence process_seconds=0.0215
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.017,0.014,0.013,0.012,0.012]
+workspace_allocation_ms=0.892
+workspace_allocation_samples_ms=[0.921,0.892,0.891,0.855,0.907]
+synthesis_rayon_ms=1.501
+synthesis_rayon_samples_ms=[1.501,1.487,1.547,1.659,1.492]
+scalar_synthesis_first_call_rayon_ms=1.955
+
+CASE lmax=127 grid=256x512 spin=0 operation=synthesis threads=2 pair=2 method=table process_seconds=0.0341
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.016,0.014,0.013,0.012,0.012]
+workspace_allocation_ms=0.904
+workspace_allocation_samples_ms=[0.904,0.864,0.955,0.912,0.883]
+synthesis_rayon_ms=0.918
+synthesis_rayon_samples_ms=[0.977,0.925,0.902,0.902,0.918]
+scalar_synthesis_first_call_rayon_ms=9.031
+
+CASE lmax=127 grid=256x512 spin=0 operation=synthesis threads=2 pair=3 method=table process_seconds=0.0414
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.018
+plan_construction_samples_ms=[0.025,0.019,0.018,0.018,0.018]
+workspace_allocation_ms=0.894
+workspace_allocation_samples_ms=[1.326,0.951,0.894,0.868,0.834]
+synthesis_rayon_ms=1.582
+synthesis_rayon_samples_ms=[1.582,1.625,1.820,1.535,1.531]
+scalar_synthesis_first_call_rayon_ms=9.880
+
+CASE lmax=127 grid=256x512 spin=0 operation=synthesis threads=2 pair=3 method=recurrence process_seconds=0.0182
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.016,0.014,0.013,0.012,0.012]
+workspace_allocation_ms=0.841
+workspace_allocation_samples_ms=[0.929,0.841,0.865,0.815,0.815]
+synthesis_rayon_ms=1.086
+synthesis_rayon_samples_ms=[0.851,0.907,1.197,1.195,1.086]
+scalar_synthesis_first_call_rayon_ms=1.317
+
+CASE lmax=127 grid=256x512 spin=0 operation=synthesis threads=4 pair=1 method=table process_seconds=0.0330
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.015,0.014,0.013,0.013,0.012]
+workspace_allocation_ms=0.969
+workspace_allocation_samples_ms=[1.146,0.918,0.969,0.970,0.968]
+synthesis_rayon_ms=0.806
+synthesis_rayon_samples_ms=[0.876,0.862,0.806,0.644,0.633]
+scalar_synthesis_first_call_rayon_ms=8.930
+
+CASE lmax=127 grid=256x512 spin=0 operation=synthesis threads=4 pair=1 method=recurrence process_seconds=0.0174
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.015,0.013,0.012,0.017,0.012]
+workspace_allocation_ms=1.046
+workspace_allocation_samples_ms=[0.856,1.046,1.074,1.304,0.964]
+synthesis_rayon_ms=0.732
+synthesis_rayon_samples_ms=[0.795,0.732,0.814,0.717,0.719]
+scalar_synthesis_first_call_rayon_ms=1.220
+
+CASE lmax=127 grid=256x512 spin=0 operation=synthesis threads=4 pair=2 method=recurrence process_seconds=0.0176
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.016
+plan_construction_samples_ms=[0.018,0.017,0.016,0.015,0.015]
+workspace_allocation_ms=0.956
+workspace_allocation_samples_ms=[0.860,1.231,0.917,1.107,0.956]
+synthesis_rayon_ms=0.754
+synthesis_rayon_samples_ms=[0.768,0.746,0.745,0.786,0.754]
+scalar_synthesis_first_call_rayon_ms=1.179
+
+CASE lmax=127 grid=256x512 spin=0 operation=synthesis threads=4 pair=2 method=table process_seconds=0.0330
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.012
+plan_construction_samples_ms=[0.015,0.013,0.012,0.012,0.012]
+workspace_allocation_ms=1.023
+workspace_allocation_samples_ms=[1.255,1.023,1.191,0.939,0.928]
+synthesis_rayon_ms=0.605
+synthesis_rayon_samples_ms=[0.628,0.607,0.605,0.599,0.597]
+scalar_synthesis_first_call_rayon_ms=9.166
+
+CASE lmax=127 grid=256x512 spin=0 operation=synthesis threads=4 pair=3 method=table process_seconds=0.0336
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.015
+plan_construction_samples_ms=[0.018,0.017,0.015,0.015,0.015]
+workspace_allocation_ms=0.946
+workspace_allocation_samples_ms=[1.092,0.929,0.943,0.946,0.957]
+synthesis_rayon_ms=0.597
+synthesis_rayon_samples_ms=[0.662,0.612,0.594,0.595,0.597]
+scalar_synthesis_first_call_rayon_ms=9.446
+
+CASE lmax=127 grid=256x512 spin=0 operation=synthesis threads=4 pair=3 method=recurrence process_seconds=0.0186
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.015,0.014,0.013,0.012,0.012]
+workspace_allocation_ms=1.008
+workspace_allocation_samples_ms=[1.058,0.960,0.990,1.008,1.031]
+synthesis_rayon_ms=0.780
+synthesis_rayon_samples_ms=[1.020,0.838,0.780,0.737,0.736]
+scalar_synthesis_first_call_rayon_ms=1.281
+
+CASE lmax=127 grid=256x512 spin=0 operation=synthesis threads=16 pair=1 method=table process_seconds=0.0347
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.015
+plan_construction_samples_ms=[0.023,0.020,0.015,0.015,0.015]
+workspace_allocation_ms=1.084
+workspace_allocation_samples_ms=[1.008,1.071,1.084,1.139,1.250]
+synthesis_rayon_ms=0.483
+synthesis_rayon_samples_ms=[0.503,0.444,0.483,0.587,0.477]
+scalar_synthesis_first_call_rayon_ms=8.996
+
+CASE lmax=127 grid=256x512 spin=0 operation=synthesis threads=16 pair=1 method=recurrence process_seconds=0.0185
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.012
+plan_construction_samples_ms=[0.017,0.014,0.012,0.012,0.012]
+workspace_allocation_ms=1.140
+workspace_allocation_samples_ms=[1.414,1.158,1.117,1.058,1.140]
+synthesis_rayon_ms=0.650
+synthesis_rayon_samples_ms=[0.650,0.632,0.657,0.654,0.589]
+scalar_synthesis_first_call_rayon_ms=1.024
+
+CASE lmax=127 grid=256x512 spin=0 operation=synthesis threads=16 pair=2 method=recurrence process_seconds=0.0172
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.012
+plan_construction_samples_ms=[0.016,0.013,0.012,0.012,0.012]
+workspace_allocation_ms=0.980
+workspace_allocation_samples_ms=[0.972,0.980,1.119,1.050,0.955]
+synthesis_rayon_ms=0.634
+synthesis_rayon_samples_ms=[0.643,0.660,0.634,0.590,0.617]
+scalar_synthesis_first_call_rayon_ms=1.065
+
+CASE lmax=127 grid=256x512 spin=0 operation=synthesis threads=16 pair=2 method=table process_seconds=0.0315
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.017,0.014,0.012,0.013,0.012]
+workspace_allocation_ms=1.078
+workspace_allocation_samples_ms=[1.380,1.280,0.968,1.078,1.021]
+synthesis_rayon_ms=0.451
+synthesis_rayon_samples_ms=[0.665,0.479,0.451,0.430,0.439]
+scalar_synthesis_first_call_rayon_ms=8.353
+
+CASE lmax=127 grid=256x512 spin=0 operation=synthesis threads=16 pair=3 method=table process_seconds=0.0333
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.012
+plan_construction_samples_ms=[0.017,0.014,0.012,0.012,0.012]
+workspace_allocation_ms=1.122
+workspace_allocation_samples_ms=[1.363,1.122,1.082,1.037,1.139]
+synthesis_rayon_ms=0.461
+synthesis_rayon_samples_ms=[0.519,0.463,0.432,0.461,0.430]
+scalar_synthesis_first_call_rayon_ms=9.124
+
+CASE lmax=127 grid=256x512 spin=0 operation=synthesis threads=16 pair=3 method=recurrence process_seconds=0.0175
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.012
+plan_construction_samples_ms=[0.017,0.014,0.012,0.012,0.012]
+workspace_allocation_ms=1.096
+workspace_allocation_samples_ms=[1.016,1.026,1.096,1.189,1.119]
+synthesis_rayon_ms=0.615
+synthesis_rayon_samples_ms=[0.662,0.615,0.649,0.585,0.574]
+scalar_synthesis_first_call_rayon_ms=0.938
+
+CASE lmax=127 grid=256x512 spin=0 operation=analysis threads=2 pair=1 method=table process_seconds=0.0354
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.018
+plan_construction_samples_ms=[0.022,0.019,0.018,0.018,0.013]
+workspace_allocation_ms=0.925
+workspace_allocation_samples_ms=[0.872,0.916,0.925,0.926,0.936]
+analysis_rayon_ms=0.753
+analysis_rayon_samples_ms=[0.808,0.752,0.753,0.751,0.758]
+scalar_analysis_first_call_rayon_ms=8.663
+
+CASE lmax=127 grid=256x512 spin=0 operation=analysis threads=2 pair=1 method=recurrence process_seconds=0.0191
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.014
+plan_construction_samples_ms=[0.019,0.014,0.013,0.013,0.017]
+workspace_allocation_ms=0.778
+workspace_allocation_samples_ms=[0.843,0.780,0.778,0.763,0.759]
+analysis_rayon_ms=0.952
+analysis_rayon_samples_ms=[0.952,0.937,0.956,0.936,0.959]
+scalar_analysis_first_call_rayon_ms=0.974
+
+CASE lmax=127 grid=256x512 spin=0 operation=analysis threads=2 pair=2 method=recurrence process_seconds=0.0192
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.017,0.014,0.013,0.012,0.012]
+workspace_allocation_ms=0.868
+workspace_allocation_samples_ms=[0.831,0.802,0.868,0.868,0.887]
+analysis_rayon_ms=0.937
+analysis_rayon_samples_ms=[0.940,0.937,0.937,0.936,0.957]
+scalar_analysis_first_call_rayon_ms=0.963
+
+CASE lmax=127 grid=256x512 spin=0 operation=analysis threads=2 pair=2 method=table process_seconds=0.0362
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.015
+plan_construction_samples_ms=[0.020,0.017,0.015,0.015,0.015]
+workspace_allocation_ms=0.867
+workspace_allocation_samples_ms=[0.829,0.787,0.867,0.933,0.889]
+analysis_rayon_ms=1.170
+analysis_rayon_samples_ms=[0.941,1.171,1.165,1.170,1.176]
+scalar_analysis_first_call_rayon_ms=8.455
+
+CASE lmax=127 grid=256x512 spin=0 operation=analysis threads=2 pair=3 method=table process_seconds=0.0338
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.012
+plan_construction_samples_ms=[0.022,0.014,0.012,0.012,0.012]
+workspace_allocation_ms=0.835
+workspace_allocation_samples_ms=[0.835,0.760,0.755,0.836,0.835]
+analysis_rayon_ms=0.757
+analysis_rayon_samples_ms=[0.803,0.757,0.754,0.750,0.764]
+scalar_analysis_first_call_rayon_ms=8.572
+
+CASE lmax=127 grid=256x512 spin=0 operation=analysis threads=2 pair=3 method=recurrence process_seconds=0.0192
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.018
+plan_construction_samples_ms=[0.019,0.025,0.018,0.013,0.012]
+workspace_allocation_ms=0.810
+workspace_allocation_samples_ms=[0.810,0.787,0.815,0.808,0.826]
+analysis_rayon_ms=0.935
+analysis_rayon_samples_ms=[0.941,0.948,0.935,0.934,0.935]
+scalar_analysis_first_call_rayon_ms=1.081
+
+CASE lmax=127 grid=256x512 spin=0 operation=analysis threads=4 pair=1 method=table process_seconds=0.0327
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.012
+plan_construction_samples_ms=[0.015,0.013,0.012,0.012,0.012]
+workspace_allocation_ms=0.862
+workspace_allocation_samples_ms=[0.906,0.838,0.862,0.854,0.864]
+analysis_rayon_ms=0.562
+analysis_rayon_samples_ms=[0.708,0.562,0.587,0.556,0.556]
+scalar_analysis_first_call_rayon_ms=8.364
+
+CASE lmax=127 grid=256x512 spin=0 operation=analysis threads=4 pair=1 method=recurrence process_seconds=0.0192
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.016
+plan_construction_samples_ms=[0.018,0.017,0.016,0.014,0.012]
+workspace_allocation_ms=0.976
+workspace_allocation_samples_ms=[1.045,0.990,0.976,0.932,0.959]
+analysis_rayon_ms=0.776
+analysis_rayon_samples_ms=[0.750,0.741,0.776,0.780,0.801]
+scalar_analysis_first_call_rayon_ms=0.914
+
+CASE lmax=127 grid=256x512 spin=0 operation=analysis threads=4 pair=2 method=recurrence process_seconds=0.0183
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.015,0.014,0.013,0.012,0.012]
+workspace_allocation_ms=0.890
+workspace_allocation_samples_ms=[0.806,0.982,0.890,0.905,0.887]
+analysis_rayon_ms=0.745
+analysis_rayon_samples_ms=[0.745,0.746,0.745,0.740,0.766]
+scalar_analysis_first_call_rayon_ms=0.800
+
+CASE lmax=127 grid=256x512 spin=0 operation=analysis threads=4 pair=2 method=table process_seconds=0.0337
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.015,0.014,0.013,0.012,0.012]
+workspace_allocation_ms=0.888
+workspace_allocation_samples_ms=[1.107,0.865,0.867,0.888,0.980]
+analysis_rayon_ms=0.571
+analysis_rayon_samples_ms=[0.630,0.565,0.571,0.574,0.561]
+scalar_analysis_first_call_rayon_ms=8.097
+
+CASE lmax=127 grid=256x512 spin=0 operation=analysis threads=4 pair=3 method=table process_seconds=0.0362
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.012
+plan_construction_samples_ms=[0.015,0.013,0.012,0.012,0.012]
+workspace_allocation_ms=0.861
+workspace_allocation_samples_ms=[0.898,0.803,0.813,0.861,0.870]
+analysis_rayon_ms=0.626
+analysis_rayon_samples_ms=[0.798,0.626,0.629,0.608,0.589]
+scalar_analysis_first_call_rayon_ms=10.490
+
+CASE lmax=127 grid=256x512 spin=0 operation=analysis threads=4 pair=3 method=recurrence process_seconds=0.0195
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.015,0.014,0.012,0.013,0.012]
+workspace_allocation_ms=0.925
+workspace_allocation_samples_ms=[1.285,0.962,0.925,0.922,0.906]
+analysis_rayon_ms=0.763
+analysis_rayon_samples_ms=[0.763,0.763,0.753,0.768,0.762]
+scalar_analysis_first_call_rayon_ms=0.775
+
+CASE lmax=127 grid=256x512 spin=0 operation=analysis threads=16 pair=1 method=table process_seconds=0.0355
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.016,0.013,0.012,0.017,0.012]
+workspace_allocation_ms=1.075
+workspace_allocation_samples_ms=[1.398,1.063,1.084,1.075,1.061]
+analysis_rayon_ms=0.499
+analysis_rayon_samples_ms=[0.649,0.576,0.482,0.472,0.499]
+scalar_analysis_first_call_rayon_ms=8.311
+
+CASE lmax=127 grid=256x512 spin=0 operation=analysis threads=16 pair=1 method=recurrence process_seconds=0.0195
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.023,0.014,0.013,0.012,0.012]
+workspace_allocation_ms=1.092
+workspace_allocation_samples_ms=[1.465,1.103,1.092,1.046,1.008]
+analysis_rayon_ms=0.552
+analysis_rayon_samples_ms=[0.547,0.646,0.540,0.552,0.656]
+scalar_analysis_first_call_rayon_ms=0.570
+
+CASE lmax=127 grid=256x512 spin=0 operation=analysis threads=16 pair=2 method=recurrence process_seconds=0.0195
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.012
+plan_construction_samples_ms=[0.018,0.014,0.012,0.012,0.012]
+workspace_allocation_ms=1.116
+workspace_allocation_samples_ms=[1.452,1.116,1.053,1.191,1.029]
+analysis_rayon_ms=0.540
+analysis_rayon_samples_ms=[0.540,0.584,0.583,0.540,0.531]
+scalar_analysis_first_call_rayon_ms=0.652
+
+CASE lmax=127 grid=256x512 spin=0 operation=analysis threads=16 pair=2 method=table process_seconds=0.0346
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.016,0.014,0.013,0.012,0.012]
+workspace_allocation_ms=0.981
+workspace_allocation_samples_ms=[0.955,0.980,0.993,0.981,0.987]
+analysis_rayon_ms=0.568
+analysis_rayon_samples_ms=[0.632,0.583,0.467,0.568,0.527]
+scalar_analysis_first_call_rayon_ms=8.694
+
+CASE lmax=127 grid=256x512 spin=0 operation=analysis threads=16 pair=3 method=table process_seconds=0.0356
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.012
+plan_construction_samples_ms=[0.017,0.014,0.012,0.012,0.012]
+workspace_allocation_ms=1.090
+workspace_allocation_samples_ms=[1.505,1.099,1.090,1.062,1.066]
+analysis_rayon_ms=0.540
+analysis_rayon_samples_ms=[0.731,0.509,0.540,0.575,0.494]
+scalar_analysis_first_call_rayon_ms=8.708
+
+CASE lmax=127 grid=256x512 spin=0 operation=analysis threads=16 pair=3 method=recurrence process_seconds=0.0204
+spin-0 T127 mmax=127; GL 256x512; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.012
+plan_construction_samples_ms=[0.017,0.014,0.012,0.012,0.012]
+workspace_allocation_ms=1.142
+workspace_allocation_samples_ms=[1.484,1.077,1.212,1.142,1.137]
+analysis_rayon_ms=0.608
+analysis_rayon_samples_ms=[0.650,0.608,0.617,0.537,0.577]
+scalar_analysis_first_call_rayon_ms=0.652
+
+CASE lmax=127 grid=256x512 spin=1 operation=analysis threads=2 pair=1 method=table process_seconds=0.0394
+spin-1 T127 mmax=127; GL 256x512; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.012
+plan_construction_samples_ms=[0.016,0.014,0.012,0.012,0.012]
+workspace_allocation_ms=0.875
+workspace_allocation_samples_ms=[0.839,0.904,0.873,0.875,1.306]
+analysis_rayon_ms=1.310
+analysis_rayon_samples_ms=[1.396,1.342,1.299,1.300,1.310]
+analysis_first_call_rayon_ms=9.595
+
+CASE lmax=127 grid=256x512 spin=1 operation=analysis threads=2 pair=1 method=recurrence process_seconds=0.0280
+spin-1 T127 mmax=127; GL 256x512; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.016
+plan_construction_samples_ms=[0.020,0.017,0.016,0.015,0.015]
+workspace_allocation_ms=0.946
+workspace_allocation_samples_ms=[1.238,1.142,0.946,0.860,0.861]
+analysis_rayon_ms=1.919
+analysis_rayon_samples_ms=[1.687,1.701,2.516,1.963,1.919]
+analysis_first_call_rayon_ms=2.310
+
+CASE lmax=127 grid=256x512 spin=1 operation=analysis threads=2 pair=2 method=recurrence process_seconds=0.0249
+spin-1 T127 mmax=127; GL 256x512; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.015
+plan_construction_samples_ms=[0.020,0.017,0.015,0.015,0.015]
+workspace_allocation_ms=0.906
+workspace_allocation_samples_ms=[0.829,0.908,0.959,0.828,0.906]
+analysis_rayon_ms=1.687
+analysis_rayon_samples_ms=[1.706,1.687,1.690,1.681,1.665]
+analysis_first_call_rayon_ms=1.774
+
+CASE lmax=127 grid=256x512 spin=1 operation=analysis threads=2 pair=2 method=table process_seconds=0.0384
+spin-1 T127 mmax=127; GL 256x512; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.016,0.014,0.013,0.012,0.012]
+workspace_allocation_ms=0.809
+workspace_allocation_samples_ms=[0.809,0.809,0.797,0.919,0.835]
+analysis_rayon_ms=1.318
+analysis_rayon_samples_ms=[1.398,1.317,1.324,1.318,1.311]
+analysis_first_call_rayon_ms=9.219
+
+CASE lmax=127 grid=256x512 spin=1 operation=analysis threads=2 pair=3 method=table process_seconds=0.0392
+spin-1 T127 mmax=127; GL 256x512; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.012
+plan_construction_samples_ms=[0.016,0.014,0.012,0.012,0.012]
+workspace_allocation_ms=0.816
+workspace_allocation_samples_ms=[0.884,0.786,0.816,0.814,0.829]
+analysis_rayon_ms=1.390
+analysis_rayon_samples_ms=[1.390,1.329,1.316,1.402,1.899]
+analysis_first_call_rayon_ms=9.334
+
+CASE lmax=127 grid=256x512 spin=1 operation=analysis threads=2 pair=3 method=recurrence process_seconds=0.0253
+spin-1 T127 mmax=127; GL 256x512; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.012
+plan_construction_samples_ms=[0.016,0.014,0.012,0.012,0.012]
+workspace_allocation_ms=0.833
+workspace_allocation_samples_ms=[0.846,0.833,0.833,0.822,0.822]
+analysis_rayon_ms=1.684
+analysis_rayon_samples_ms=[1.750,1.684,1.675,1.682,1.688]
+analysis_first_call_rayon_ms=2.230
+
+CASE lmax=127 grid=256x512 spin=1 operation=analysis threads=4 pair=1 method=table process_seconds=0.0355
+spin-1 T127 mmax=127; GL 256x512; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.015,0.014,0.013,0.012,0.012]
+workspace_allocation_ms=0.915
+workspace_allocation_samples_ms=[0.884,0.936,0.915,0.825,0.922]
+analysis_rayon_ms=0.982
+analysis_rayon_samples_ms=[1.012,0.975,0.962,0.984,0.982]
+analysis_first_call_rayon_ms=8.867
+
+CASE lmax=127 grid=256x512 spin=1 operation=analysis threads=4 pair=1 method=recurrence process_seconds=0.0238
+spin-1 T127 mmax=127; GL 256x512; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.015,0.014,0.013,0.012,0.012]
+workspace_allocation_ms=0.947
+workspace_allocation_samples_ms=[0.936,1.013,0.947,0.969,0.910]
+analysis_rayon_ms=1.367
+analysis_rayon_samples_ms=[1.367,1.311,1.379,1.414,1.347]
+analysis_first_call_rayon_ms=1.671
+
+CASE lmax=127 grid=256x512 spin=1 operation=analysis threads=4 pair=2 method=recurrence process_seconds=0.0236
+spin-1 T127 mmax=127; GL 256x512; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.015
+plan_construction_samples_ms=[0.018,0.017,0.015,0.015,0.015]
+workspace_allocation_ms=0.945
+workspace_allocation_samples_ms=[0.888,0.971,0.997,0.945,0.927]
+analysis_rayon_ms=1.373
+analysis_rayon_samples_ms=[1.388,1.325,1.373,1.445,1.366]
+analysis_first_call_rayon_ms=1.526
+
+CASE lmax=127 grid=256x512 spin=1 operation=analysis threads=4 pair=2 method=table process_seconds=0.0372
+spin-1 T127 mmax=127; GL 256x512; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.012
+plan_construction_samples_ms=[0.015,0.014,0.012,0.012,0.012]
+workspace_allocation_ms=0.947
+workspace_allocation_samples_ms=[0.954,0.869,0.892,0.947,0.948]
+analysis_rayon_ms=0.977
+analysis_rayon_samples_ms=[1.149,0.977,0.977,0.979,0.976]
+analysis_first_call_rayon_ms=9.389
+
+CASE lmax=127 grid=256x512 spin=1 operation=analysis threads=4 pair=3 method=table process_seconds=0.0371
+spin-1 T127 mmax=127; GL 256x512; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.015
+plan_construction_samples_ms=[0.018,0.017,0.015,0.012,0.012]
+workspace_allocation_ms=0.875
+workspace_allocation_samples_ms=[0.868,0.902,0.875,0.861,0.896]
+analysis_rayon_ms=0.965
+analysis_rayon_samples_ms=[1.053,0.965,0.980,0.962,0.957]
+analysis_first_call_rayon_ms=9.027
+
+CASE lmax=127 grid=256x512 spin=1 operation=analysis threads=4 pair=3 method=recurrence process_seconds=0.0234
+spin-1 T127 mmax=127; GL 256x512; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.012
+plan_construction_samples_ms=[0.015,0.013,0.012,0.012,0.012]
+workspace_allocation_ms=0.909
+workspace_allocation_samples_ms=[1.004,0.909,0.936,0.909,0.905]
+analysis_rayon_ms=1.333
+analysis_rayon_samples_ms=[1.333,1.357,1.302,1.328,1.333]
+analysis_first_call_rayon_ms=1.627
+
+CASE lmax=127 grid=256x512 spin=1 operation=analysis threads=16 pair=1 method=table process_seconds=0.0392
+spin-1 T127 mmax=127; GL 256x512; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.016
+plan_construction_samples_ms=[0.023,0.017,0.013,0.013,0.016]
+workspace_allocation_ms=1.127
+workspace_allocation_samples_ms=[1.453,1.010,1.127,1.162,1.080]
+analysis_rayon_ms=0.829
+analysis_rayon_samples_ms=[0.947,0.816,0.858,0.829,0.806]
+analysis_first_call_rayon_ms=8.938
+
+CASE lmax=127 grid=256x512 spin=1 operation=analysis threads=16 pair=1 method=recurrence process_seconds=0.0241
+spin-1 T127 mmax=127; GL 256x512; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.018,0.014,0.013,0.012,0.012]
+workspace_allocation_ms=1.181
+workspace_allocation_samples_ms=[1.016,1.181,1.329,1.152,1.242]
+analysis_rayon_ms=0.997
+analysis_rayon_samples_ms=[0.995,0.964,1.219,0.997,1.009]
+analysis_first_call_rayon_ms=1.085
+
+CASE lmax=127 grid=256x512 spin=1 operation=analysis threads=16 pair=2 method=recurrence process_seconds=0.0227
+spin-1 T127 mmax=127; GL 256x512; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.015
+plan_construction_samples_ms=[0.020,0.017,0.015,0.015,0.015]
+workspace_allocation_ms=1.120
+workspace_allocation_samples_ms=[1.124,1.073,1.120,1.155,1.107]
+analysis_rayon_ms=1.000
+analysis_rayon_samples_ms=[1.036,1.000,1.020,0.979,0.966]
+analysis_first_call_rayon_ms=0.997
+
+CASE lmax=127 grid=256x512 spin=1 operation=analysis threads=16 pair=2 method=table process_seconds=0.0390
+spin-1 T127 mmax=127; GL 256x512; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.015
+plan_construction_samples_ms=[0.021,0.017,0.015,0.015,0.015]
+workspace_allocation_ms=1.054
+workspace_allocation_samples_ms=[1.054,1.079,1.038,1.064,1.045]
+analysis_rayon_ms=0.892
+analysis_rayon_samples_ms=[1.099,0.892,0.850,0.926,0.881]
+analysis_first_call_rayon_ms=8.853
+
+CASE lmax=127 grid=256x512 spin=1 operation=analysis threads=16 pair=3 method=table process_seconds=0.0396
+spin-1 T127 mmax=127; GL 256x512; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.012
+plan_construction_samples_ms=[0.017,0.014,0.012,0.012,0.012]
+workspace_allocation_ms=1.151
+workspace_allocation_samples_ms=[1.479,1.123,1.085,1.196,1.151]
+analysis_rayon_ms=0.896
+analysis_rayon_samples_ms=[0.825,0.870,0.896,0.962,0.971]
+analysis_first_call_rayon_ms=8.943
+
+CASE lmax=127 grid=256x512 spin=1 operation=analysis threads=16 pair=3 method=recurrence process_seconds=0.0230
+spin-1 T127 mmax=127; GL 256x512; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.012
+plan_construction_samples_ms=[0.017,0.014,0.012,0.012,0.012]
+workspace_allocation_ms=1.043
+workspace_allocation_samples_ms=[1.428,1.008,1.043,1.029,1.070]
+analysis_rayon_ms=0.983
+analysis_rayon_samples_ms=[1.026,0.959,0.983,1.058,0.959]
+analysis_first_call_rayon_ms=0.988
+
+CASE lmax=191 grid=384x768 spin=0 operation=synthesis threads=2 pair=1 method=table process_seconds=0.0948
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.018
+plan_construction_samples_ms=[0.023,0.019,0.018,0.018,0.018]
+workspace_allocation_ms=1.929
+workspace_allocation_samples_ms=[2.143,2.074,1.929,1.868,1.829]
+synthesis_rayon_ms=2.850
+synthesis_rayon_samples_ms=[2.892,2.796,2.781,2.853,2.850]
+scalar_synthesis_first_call_rayon_ms=29.527
+
+CASE lmax=191 grid=384x768 spin=0 operation=synthesis threads=2 pair=1 method=recurrence process_seconds=0.0446
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.019,0.019,0.019,0.018]
+workspace_allocation_ms=1.941
+workspace_allocation_samples_ms=[1.923,1.941,1.957,1.959,1.807]
+synthesis_rayon_ms=3.223
+synthesis_rayon_samples_ms=[3.562,3.223,3.202,3.273,3.199]
+scalar_synthesis_first_call_rayon_ms=4.502
+
+CASE lmax=191 grid=384x768 spin=0 operation=synthesis threads=2 pair=2 method=recurrence process_seconds=0.0449
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=2.102
+workspace_allocation_samples_ms=[2.051,2.102,2.263,2.105,1.945]
+synthesis_rayon_ms=3.202
+synthesis_rayon_samples_ms=[3.513,3.207,3.184,3.202,3.185]
+scalar_synthesis_first_call_rayon_ms=4.309
+
+CASE lmax=191 grid=384x768 spin=0 operation=synthesis threads=2 pair=2 method=table process_seconds=0.0982
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.019,0.019,0.019,0.019]
+workspace_allocation_ms=2.002
+workspace_allocation_samples_ms=[2.095,1.922,1.968,2.070,2.002]
+synthesis_rayon_ms=2.845
+synthesis_rayon_samples_ms=[4.724,3.227,2.832,2.845,2.809]
+scalar_synthesis_first_call_rayon_ms=28.708
+
+CASE lmax=191 grid=384x768 spin=0 operation=synthesis threads=2 pair=3 method=table process_seconds=0.0943
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=1.801
+workspace_allocation_samples_ms=[1.906,1.801,1.789,1.762,1.888]
+synthesis_rayon_ms=2.958
+synthesis_rayon_samples_ms=[3.039,2.958,2.836,3.141,2.903]
+scalar_synthesis_first_call_rayon_ms=29.291
+
+CASE lmax=191 grid=384x768 spin=0 operation=synthesis threads=2 pair=3 method=recurrence process_seconds=0.0509
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=2 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=2.142
+workspace_allocation_samples_ms=[2.339,2.142,2.153,2.072,1.955]
+synthesis_rayon_ms=5.073
+synthesis_rayon_samples_ms=[3.484,3.220,5.082,5.093,5.073]
+scalar_synthesis_first_call_rayon_ms=4.125
+
+CASE lmax=191 grid=384x768 spin=0 operation=synthesis threads=4 pair=1 method=table process_seconds=0.0887
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=2.066
+workspace_allocation_samples_ms=[2.134,2.066,2.196,2.024,1.936]
+synthesis_rayon_ms=1.799
+synthesis_rayon_samples_ms=[1.969,1.791,1.799,1.824,1.796]
+scalar_synthesis_first_call_rayon_ms=28.657
+
+CASE lmax=191 grid=384x768 spin=0 operation=synthesis threads=4 pair=1 method=recurrence process_seconds=0.0431
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.024,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=2.085
+workspace_allocation_samples_ms=[2.059,2.148,2.085,1.968,2.137]
+synthesis_rayon_ms=2.874
+synthesis_rayon_samples_ms=[2.873,3.104,2.868,2.874,2.888]
+scalar_synthesis_first_call_rayon_ms=3.685
+
+CASE lmax=191 grid=384x768 spin=0 operation=synthesis threads=4 pair=2 method=recurrence process_seconds=0.0422
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=2.153
+workspace_allocation_samples_ms=[2.189,2.153,2.125,2.194,2.113]
+synthesis_rayon_ms=2.805
+synthesis_rayon_samples_ms=[2.823,2.805,2.506,2.562,2.824]
+scalar_synthesis_first_call_rayon_ms=3.655
+
+CASE lmax=191 grid=384x768 spin=0 operation=synthesis threads=4 pair=2 method=table process_seconds=0.0887
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.024,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=2.059
+workspace_allocation_samples_ms=[2.500,1.951,2.145,2.009,2.059]
+synthesis_rayon_ms=1.796
+synthesis_rayon_samples_ms=[1.960,1.763,1.796,1.813,1.785]
+scalar_synthesis_first_call_rayon_ms=28.893
+
+CASE lmax=191 grid=384x768 spin=0 operation=synthesis threads=4 pair=3 method=table process_seconds=0.0879
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=2.089
+workspace_allocation_samples_ms=[2.149,2.054,2.022,2.089,2.346]
+synthesis_rayon_ms=1.811
+synthesis_rayon_samples_ms=[1.941,1.811,1.782,1.814,1.807]
+scalar_synthesis_first_call_rayon_ms=28.334
+
+CASE lmax=191 grid=384x768 spin=0 operation=synthesis threads=4 pair=3 method=recurrence process_seconds=0.0422
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=4 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=2.074
+workspace_allocation_samples_ms=[2.074,1.958,2.399,2.053,2.128]
+synthesis_rayon_ms=2.819
+synthesis_rayon_samples_ms=[2.825,2.608,2.697,2.819,2.828]
+scalar_synthesis_first_call_rayon_ms=3.606
+
+CASE lmax=191 grid=384x768 spin=0 operation=synthesis threads=16 pair=1 method=table process_seconds=0.0884
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.025
+plan_construction_samples_ms=[0.035,0.028,0.025,0.019,0.019]
+workspace_allocation_ms=2.411
+workspace_allocation_samples_ms=[2.827,2.332,2.352,2.411,2.483]
+synthesis_rayon_ms=1.205
+synthesis_rayon_samples_ms=[1.382,1.161,1.205,1.223,1.156]
+scalar_synthesis_first_call_rayon_ms=27.806
+
+CASE lmax=191 grid=384x768 spin=0 operation=synthesis threads=16 pair=1 method=recurrence process_seconds=0.0376
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.020
+plan_construction_samples_ms=[0.024,0.021,0.020,0.019,0.019]
+workspace_allocation_ms=2.297
+workspace_allocation_samples_ms=[2.297,3.086,2.394,2.258,2.047]
+synthesis_rayon_ms=1.711
+synthesis_rayon_samples_ms=[1.660,1.711,1.648,1.787,1.766]
+scalar_synthesis_first_call_rayon_ms=2.532
+
+CASE lmax=191 grid=384x768 spin=0 operation=synthesis threads=16 pair=2 method=recurrence process_seconds=0.0366
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.026
+plan_construction_samples_ms=[0.031,0.026,0.026,0.025,0.025]
+workspace_allocation_ms=2.105
+workspace_allocation_samples_ms=[2.012,2.105,1.893,2.105,2.360]
+synthesis_rayon_ms=1.705
+synthesis_rayon_samples_ms=[1.393,1.705,2.090,1.737,1.462]
+scalar_synthesis_first_call_rayon_ms=2.506
+
+CASE lmax=191 grid=384x768 spin=0 operation=synthesis threads=16 pair=2 method=table process_seconds=0.0874
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.024,0.021,0.019,0.019,0.019]
+workspace_allocation_ms=2.223
+workspace_allocation_samples_ms=[2.074,2.116,2.223,2.466,2.414]
+synthesis_rayon_ms=1.132
+synthesis_rayon_samples_ms=[1.200,1.132,1.105,1.161,1.041]
+scalar_synthesis_first_call_rayon_ms=28.612
+
+CASE lmax=191 grid=384x768 spin=0 operation=synthesis threads=16 pair=3 method=table process_seconds=0.0853
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.020
+plan_construction_samples_ms=[0.025,0.021,0.020,0.019,0.019]
+workspace_allocation_ms=2.035
+workspace_allocation_samples_ms=[2.280,2.033,2.007,2.147,2.035]
+synthesis_rayon_ms=1.250
+synthesis_rayon_samples_ms=[1.278,1.275,1.250,1.151,1.119]
+scalar_synthesis_first_call_rayon_ms=28.058
+
+CASE lmax=191 grid=384x768 spin=0 operation=synthesis threads=16 pair=3 method=recurrence process_seconds=0.0337
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=16 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.028
+plan_construction_samples_ms=[0.033,0.029,0.028,0.028,0.027]
+workspace_allocation_ms=1.980
+workspace_allocation_samples_ms=[1.957,2.028,1.987,1.980,1.950]
+synthesis_rayon_ms=1.536
+synthesis_rayon_samples_ms=[1.562,1.372,1.378,1.536,1.537]
+scalar_synthesis_first_call_rayon_ms=2.426
+
+CASE lmax=191 grid=384x768 spin=0 operation=analysis threads=2 pair=1 method=table process_seconds=0.0962
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.018
+plan_construction_samples_ms=[0.023,0.020,0.018,0.018,0.018]
+workspace_allocation_ms=2.076
+workspace_allocation_samples_ms=[2.215,2.160,2.076,2.043,2.026]
+analysis_rayon_ms=2.407
+analysis_rayon_samples_ms=[3.204,2.407,2.282,2.382,2.407]
+scalar_analysis_first_call_rayon_ms=27.801
+
+CASE lmax=191 grid=384x768 spin=0 operation=analysis threads=2 pair=1 method=recurrence process_seconds=0.0483
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=1.941
+workspace_allocation_samples_ms=[4.096,1.988,1.823,1.818,1.941]
+analysis_rayon_ms=2.519
+analysis_rayon_samples_ms=[3.638,2.494,2.511,2.519,2.624]
+scalar_analysis_first_call_rayon_ms=2.756
+
+CASE lmax=191 grid=384x768 spin=0 operation=analysis threads=2 pair=2 method=recurrence process_seconds=0.0474
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=1.958
+workspace_allocation_samples_ms=[1.947,2.087,2.020,1.919,1.958]
+analysis_rayon_ms=2.869
+analysis_rayon_samples_ms=[2.833,3.152,4.050,2.869,2.759]
+scalar_analysis_first_call_rayon_ms=2.682
+
+CASE lmax=191 grid=384x768 spin=0 operation=analysis threads=2 pair=2 method=table process_seconds=0.1047
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=1.876
+workspace_allocation_samples_ms=[1.945,1.898,1.807,1.871,1.876]
+analysis_rayon_ms=3.858
+analysis_rayon_samples_ms=[2.587,3.998,3.858,3.940,3.825]
+scalar_analysis_first_call_rayon_ms=28.529
+
+CASE lmax=191 grid=384x768 spin=0 operation=analysis threads=2 pair=3 method=table process_seconds=0.1096
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=1.971
+workspace_allocation_samples_ms=[2.583,1.971,1.936,1.990,1.885]
+analysis_rayon_ms=4.033
+analysis_rayon_samples_ms=[4.033,4.470,4.997,3.998,3.945]
+scalar_analysis_first_call_rayon_ms=29.882
+
+CASE lmax=191 grid=384x768 spin=0 operation=analysis threads=2 pair=3 method=recurrence process_seconds=0.0521
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.020
+plan_construction_samples_ms=[0.024,0.020,0.024,0.019,0.019]
+workspace_allocation_ms=1.917
+workspace_allocation_samples_ms=[2.055,1.928,1.917,1.860,1.888]
+analysis_rayon_ms=2.580
+analysis_rayon_samples_ms=[2.580,2.563,2.577,5.623,3.706]
+scalar_analysis_first_call_rayon_ms=3.647
+
+CASE lmax=191 grid=384x768 spin=0 operation=analysis threads=4 pair=1 method=table process_seconds=0.0950
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.024,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=2.063
+workspace_allocation_samples_ms=[2.382,2.063,1.930,1.970,2.163]
+analysis_rayon_ms=1.854
+analysis_rayon_samples_ms=[2.003,1.854,1.853,1.700,2.344]
+scalar_analysis_first_call_rayon_ms=28.378
+
+CASE lmax=191 grid=384x768 spin=0 operation=analysis threads=4 pair=1 method=recurrence process_seconds=0.0400
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=2.160
+workspace_allocation_samples_ms=[2.207,2.206,1.929,2.160,1.934]
+analysis_rayon_ms=1.735
+analysis_rayon_samples_ms=[1.673,1.735,1.678,1.868,1.782]
+scalar_analysis_first_call_rayon_ms=1.860
+
+CASE lmax=191 grid=384x768 spin=0 operation=analysis threads=4 pair=2 method=recurrence process_seconds=0.0410
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.029,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=2.172
+workspace_allocation_samples_ms=[2.224,2.172,2.109,2.039,2.301]
+analysis_rayon_ms=1.669
+analysis_rayon_samples_ms=[1.906,1.669,1.648,1.618,1.683]
+scalar_analysis_first_call_rayon_ms=3.259
+
+CASE lmax=191 grid=384x768 spin=0 operation=analysis threads=4 pair=2 method=table process_seconds=0.0965
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.024
+plan_construction_samples_ms=[0.033,0.025,0.024,0.024,0.022]
+workspace_allocation_ms=2.023
+workspace_allocation_samples_ms=[2.021,2.348,2.023,2.016,2.145]
+analysis_rayon_ms=1.773
+analysis_rayon_samples_ms=[2.456,2.050,1.773,1.609,1.622]
+scalar_analysis_first_call_rayon_ms=29.244
+
+CASE lmax=191 grid=384x768 spin=0 operation=analysis threads=4 pair=3 method=table process_seconds=0.0979
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.025,0.019,0.019,0.019]
+workspace_allocation_ms=2.205
+workspace_allocation_samples_ms=[2.271,2.205,2.153,2.272,2.167]
+analysis_rayon_ms=1.751
+analysis_rayon_samples_ms=[1.889,1.939,1.751,1.614,1.742]
+scalar_analysis_first_call_rayon_ms=28.391
+
+CASE lmax=191 grid=384x768 spin=0 operation=analysis threads=4 pair=3 method=recurrence process_seconds=0.0393
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.020
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.054]
+workspace_allocation_ms=2.026
+workspace_allocation_samples_ms=[2.146,2.275,1.993,2.026,1.886]
+analysis_rayon_ms=1.673
+analysis_rayon_samples_ms=[1.878,1.626,1.673,1.666,2.198]
+scalar_analysis_first_call_rayon_ms=1.834
+
+CASE lmax=191 grid=384x768 spin=0 operation=analysis threads=16 pair=1 method=table process_seconds=0.0926
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.026,0.021,0.019,0.019,0.019]
+workspace_allocation_ms=2.116
+workspace_allocation_samples_ms=[2.427,2.052,2.245,2.080,2.116]
+analysis_rayon_ms=1.548
+analysis_rayon_samples_ms=[2.014,1.589,1.548,1.320,1.403]
+scalar_analysis_first_call_rayon_ms=27.141
+
+CASE lmax=191 grid=384x768 spin=0 operation=analysis threads=16 pair=1 method=recurrence process_seconds=0.0412
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.024,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=2.346
+workspace_allocation_samples_ms=[2.117,2.193,2.410,2.469,2.346]
+analysis_rayon_ms=1.510
+analysis_rayon_samples_ms=[1.532,1.411,1.256,1.726,1.510]
+scalar_analysis_first_call_rayon_ms=1.688
+
+CASE lmax=191 grid=384x768 spin=0 operation=analysis threads=16 pair=2 method=recurrence process_seconds=0.0387
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=2.391
+workspace_allocation_samples_ms=[2.685,2.391,2.383,2.305,2.484]
+analysis_rayon_ms=1.269
+analysis_rayon_samples_ms=[1.141,1.450,1.288,1.269,1.244]
+scalar_analysis_first_call_rayon_ms=1.266
+
+CASE lmax=191 grid=384x768 spin=0 operation=analysis threads=16 pair=2 method=table process_seconds=0.0922
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.024,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=2.072
+workspace_allocation_samples_ms=[2.134,2.072,2.012,2.044,2.083]
+analysis_rayon_ms=1.491
+analysis_rayon_samples_ms=[1.491,1.386,1.173,1.630,1.544]
+scalar_analysis_first_call_rayon_ms=27.144
+
+CASE lmax=191 grid=384x768 spin=0 operation=analysis threads=16 pair=3 method=table process_seconds=0.0951
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.024,0.019,0.019,0.018,0.018]
+workspace_allocation_ms=2.180
+workspace_allocation_samples_ms=[2.180,2.229,2.210,2.126,2.119]
+analysis_rayon_ms=1.519
+analysis_rayon_samples_ms=[1.519,1.505,1.714,1.546,1.471]
+scalar_analysis_first_call_rayon_ms=27.761
+
+CASE lmax=191 grid=384x768 spin=0 operation=analysis threads=16 pair=3 method=recurrence process_seconds=0.0405
+spin-0 T191 mmax=191; GL 384x768; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.020
+plan_construction_samples_ms=[0.024,0.020,0.020,0.020,0.020]
+workspace_allocation_ms=2.224
+workspace_allocation_samples_ms=[2.836,2.224,2.207,2.290,2.106]
+analysis_rayon_ms=1.243
+analysis_rayon_samples_ms=[1.439,1.209,1.427,1.243,1.230]
+scalar_analysis_first_call_rayon_ms=2.005
+
+CASE lmax=191 grid=384x768 spin=1 operation=analysis threads=2 pair=1 method=table process_seconds=0.1181
+spin-1 T191 mmax=191; GL 384x768; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.024,0.019,0.019,0.019]
+workspace_allocation_ms=2.042
+workspace_allocation_samples_ms=[2.042,2.021,2.141,2.013,2.063]
+analysis_rayon_ms=5.139
+analysis_rayon_samples_ms=[5.129,5.573,5.599,5.139,4.856]
+analysis_first_call_rayon_ms=31.856
+
+CASE lmax=191 grid=384x768 spin=1 operation=analysis threads=2 pair=1 method=recurrence process_seconds=0.0604
+spin-1 T191 mmax=191; GL 384x768; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=1.933
+workspace_allocation_samples_ms=[1.922,2.094,1.957,1.894,1.933]
+analysis_rayon_ms=4.757
+analysis_rayon_samples_ms=[4.812,4.481,4.757,4.810,4.535]
+analysis_first_call_rayon_ms=4.786
+
+CASE lmax=191 grid=384x768 spin=1 operation=analysis threads=2 pair=2 method=recurrence process_seconds=0.0594
+spin-1 T191 mmax=191; GL 384x768; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=2.059
+workspace_allocation_samples_ms=[2.181,2.076,2.059,1.991,1.959]
+analysis_rayon_ms=4.567
+analysis_rayon_samples_ms=[4.567,4.792,4.378,4.552,4.796]
+analysis_first_call_rayon_ms=4.718
+
+CASE lmax=191 grid=384x768 spin=1 operation=analysis threads=2 pair=2 method=table process_seconds=0.1165
+spin-1 T191 mmax=191; GL 384x768; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.024
+plan_construction_samples_ms=[0.029,0.025,0.024,0.024,0.023]
+workspace_allocation_ms=2.009
+workspace_allocation_samples_ms=[2.054,1.968,2.020,2.009,1.984]
+analysis_rayon_ms=4.925
+analysis_rayon_samples_ms=[4.925,5.127,5.178,4.734,4.877]
+analysis_first_call_rayon_ms=32.220
+
+CASE lmax=191 grid=384x768 spin=1 operation=analysis threads=2 pair=3 method=table process_seconds=0.1176
+spin-1 T191 mmax=191; GL 384x768; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.020
+plan_construction_samples_ms=[0.024,0.025,0.020,0.019,0.019]
+workspace_allocation_ms=2.011
+workspace_allocation_samples_ms=[2.053,1.993,2.034,1.996,2.011]
+analysis_rayon_ms=5.014
+analysis_rayon_samples_ms=[5.023,5.014,5.265,4.923,4.890]
+analysis_first_call_rayon_ms=31.684
+
+CASE lmax=191 grid=384x768 spin=1 operation=analysis threads=2 pair=3 method=recurrence process_seconds=0.0634
+spin-1 T191 mmax=191; GL 384x768; f64; STANDARD; requested=2 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.029
+plan_construction_samples_ms=[0.041,0.031,0.029,0.028,0.028]
+workspace_allocation_ms=1.955
+workspace_allocation_samples_ms=[2.174,2.083,1.912,1.917,1.955]
+analysis_rayon_ms=4.851
+analysis_rayon_samples_ms=[4.884,4.577,4.851,4.699,4.881]
+analysis_first_call_rayon_ms=5.415
+
+CASE lmax=191 grid=384x768 spin=1 operation=analysis threads=4 pair=1 method=table process_seconds=0.1052
+spin-1 T191 mmax=191; GL 384x768; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.024,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=2.057
+workspace_allocation_samples_ms=[2.270,2.057,2.122,1.996,1.972]
+analysis_rayon_ms=3.316
+analysis_rayon_samples_ms=[3.391,3.316,3.806,3.280,3.302]
+analysis_first_call_rayon_ms=29.758
+
+CASE lmax=191 grid=384x768 spin=1 operation=analysis threads=4 pair=1 method=recurrence process_seconds=0.0502
+spin-1 T191 mmax=191; GL 384x768; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=1.975
+workspace_allocation_samples_ms=[1.954,1.853,1.975,2.223,2.089]
+analysis_rayon_ms=3.206
+analysis_rayon_samples_ms=[3.079,3.149,3.954,3.302,3.206]
+analysis_first_call_rayon_ms=3.199
+
+CASE lmax=191 grid=384x768 spin=1 operation=analysis threads=4 pair=2 method=recurrence process_seconds=0.0500
+spin-1 T191 mmax=191; GL 384x768; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.023
+plan_construction_samples_ms=[0.029,0.024,0.023,0.023,0.023]
+workspace_allocation_ms=1.825
+workspace_allocation_samples_ms=[1.932,1.970,1.778,1.808,1.825]
+analysis_rayon_ms=3.102
+analysis_rayon_samples_ms=[3.194,3.102,3.063,3.078,3.255]
+analysis_first_call_rayon_ms=3.203
+
+CASE lmax=191 grid=384x768 spin=1 operation=analysis threads=4 pair=2 method=table process_seconds=0.1044
+spin-1 T191 mmax=191; GL 384x768; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.029,0.023,0.019,0.019,0.019]
+workspace_allocation_ms=2.126
+workspace_allocation_samples_ms=[2.321,2.105,2.114,2.126,2.146]
+analysis_rayon_ms=3.365
+analysis_rayon_samples_ms=[3.367,3.365,3.225,3.269,3.587]
+analysis_first_call_rayon_ms=29.056
+
+CASE lmax=191 grid=384x768 spin=1 operation=analysis threads=4 pair=3 method=table process_seconds=0.1037
+spin-1 T191 mmax=191; GL 384x768; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=1.949
+workspace_allocation_samples_ms=[2.406,1.933,1.949,1.919,2.215]
+analysis_rayon_ms=3.347
+analysis_rayon_samples_ms=[3.265,3.347,3.413,3.290,3.621]
+analysis_first_call_rayon_ms=29.418
+
+CASE lmax=191 grid=384x768 spin=1 operation=analysis threads=4 pair=3 method=recurrence process_seconds=0.0493
+spin-1 T191 mmax=191; GL 384x768; f64; STANDARD; requested=4 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.023
+plan_construction_samples_ms=[0.028,0.024,0.023,0.023,0.023]
+workspace_allocation_ms=2.016
+workspace_allocation_samples_ms=[2.185,2.016,2.240,1.843,1.938]
+analysis_rayon_ms=3.180
+analysis_rayon_samples_ms=[2.970,2.997,3.180,3.245,3.218]
+analysis_first_call_rayon_ms=3.275
+
+CASE lmax=191 grid=384x768 spin=1 operation=analysis threads=16 pair=1 method=table process_seconds=0.1024
+spin-1 T191 mmax=191; GL 384x768; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=2.187
+workspace_allocation_samples_ms=[2.150,2.187,2.322,2.315,2.084]
+analysis_rayon_ms=2.598
+analysis_rayon_samples_ms=[2.752,2.598,2.501,2.714,2.129]
+analysis_first_call_rayon_ms=29.117
+
+CASE lmax=191 grid=384x768 spin=1 operation=analysis threads=16 pair=1 method=recurrence process_seconds=0.0458
+spin-1 T191 mmax=191; GL 384x768; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.026
+plan_construction_samples_ms=[0.038,0.029,0.026,0.025,0.025]
+workspace_allocation_ms=2.290
+workspace_allocation_samples_ms=[2.242,2.250,2.329,2.290,2.332]
+analysis_rayon_ms=2.293
+analysis_rayon_samples_ms=[2.273,2.299,2.293,2.174,2.311]
+analysis_first_call_rayon_ms=2.199
+
+CASE lmax=191 grid=384x768 spin=1 operation=analysis threads=16 pair=2 method=recurrence process_seconds=0.0457
+spin-1 T191 mmax=191; GL 384x768; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.025
+plan_construction_samples_ms=[0.030,0.026,0.025,0.024,0.024]
+workspace_allocation_ms=2.104
+workspace_allocation_samples_ms=[2.088,2.111,2.104,2.067,2.285]
+analysis_rayon_ms=2.205
+analysis_rayon_samples_ms=[2.142,2.141,2.205,2.273,2.226]
+analysis_first_call_rayon_ms=2.125
+
+CASE lmax=191 grid=384x768 spin=1 operation=analysis threads=16 pair=2 method=table process_seconds=0.1040
+spin-1 T191 mmax=191; GL 384x768; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.020
+plan_construction_samples_ms=[0.025,0.021,0.020,0.020,0.020]
+workspace_allocation_ms=2.486
+workspace_allocation_samples_ms=[2.784,2.345,2.508,2.486,2.326]
+analysis_rayon_ms=2.601
+analysis_rayon_samples_ms=[2.619,2.875,2.242,2.601,2.210]
+analysis_first_call_rayon_ms=29.221
+
+CASE lmax=191 grid=384x768 spin=1 operation=analysis threads=16 pair=3 method=table process_seconds=0.1012
+spin-1 T191 mmax=191; GL 384x768; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.024
+plan_construction_samples_ms=[0.031,0.025,0.024,0.024,0.024]
+workspace_allocation_ms=2.236
+workspace_allocation_samples_ms=[2.130,2.293,2.290,2.215,2.236]
+analysis_rayon_ms=2.208
+analysis_rayon_samples_ms=[2.208,2.196,2.447,2.077,2.407]
+analysis_first_call_rayon_ms=28.587
+
+CASE lmax=191 grid=384x768 spin=1 operation=analysis threads=16 pair=3 method=recurrence process_seconds=0.0472
+spin-1 T191 mmax=191; GL 384x768; f64; STANDARD; requested=16 threads; analysis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.023,0.020,0.019,0.019,0.019]
+workspace_allocation_ms=2.330
+workspace_allocation_samples_ms=[2.830,2.330,2.305,2.304,2.472]
+analysis_rayon_ms=2.298
+analysis_rayon_samples_ms=[2.028,2.436,2.298,2.135,2.383]
+analysis_first_call_rayon_ms=2.677
