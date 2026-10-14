@@ -1,0 +1,21 @@
+Temporary two-leaves-per-worker analysis scheduling candidate; baseline commit 803ccb1. Each process used examples/m1b_bench, f64 GL spin-1 STANDARD analysis, five timed samples after one warm-up; plans and workspaces reused. Fields: case | pair | baseline samples ms | candidate samples ms | baseline/candidate first-call ms | baseline/candidate workspace allocation ms. T511 q8 (512x1025)
+pair1: baseline=[11.882,12.497,12.122,12.094,12.890]; candidate=[11.762,12.663,12.492,13.330,12.567]; first=13.049/13.232; workspace=3.704/4.047
+pair2: baseline=[12.320,12.103,12.032,12.027,12.095]; candidate=[12.747,12.746,12.509,12.541,12.301]; first=13.220/13.296; workspace=3.679/3.864
+pair3: baseline=[12.316,12.419,11.909,12.642,12.207]; candidate=[12.626,12.258,13.681,12.785,12.517]; first=12.823/12.919; workspace=3.958/4.069
+pair4: baseline=[12.090,12.770,12.563,12.040,11.975]; candidate=[12.476,13.193,12.424,12.322,12.901]; first=14.300/12.700; workspace=3.983/3.857
+pair5: baseline=[12.094,12.299,12.254,12.664,12.063]; candidate=[12.000,12.130,12.543,11.839,12.672]; first=13.507/13.581; workspace=4.009/4.041
+
+T511 q16 (512x1025)
+pair1: baseline=[13.571,13.135,13.037,13.163,13.420]; candidate=[12.349,12.752,12.703,13.540,13.556]; first=12.459/11.402; workspace=4.069/4.003
+pair2: baseline=[13.409,13.957,14.110,13.379,14.053]; candidate=[13.723,15.632,13.923,13.223,13.194]; first=12.853/13.493; workspace=4.310/4.173
+pair3: baseline=[12.658,12.649,12.737,12.646,12.325]; candidate=[12.404,12.432,14.570,14.035,13.814]; first=11.924/12.512; workspace=4.530/4.269
+
+T720 q8 (721x1443)
+pair1: baseline=[34.718,41.691,36.230,33.603,34.362]; candidate=[37.580,38.606,38.053,38.254,39.002]; first=46.998/39.948; workspace=8.417/7.861
+pair2: baseline=[33.997,34.006,35.174,34.486,34.498]; candidate=[38.468,38.714,37.711,37.388,38.501]; first=35.768/39.626; workspace=7.524/7.836
+pair3: baseline=[33.901,33.974,34.193,34.155,33.677]; candidate=[38.403,38.981,38.060,37.908,38.673]; first=34.914/37.942; workspace=7.475/7.306
+
+T511 q4 control (512x1025)
+pair1: baseline=[16.465,16.214,16.221,16.107,17.218]; candidate=[16.542,15.896,15.555,16.889,17.047]; first=17.262/17.237; workspace=3.951/4.084
+pair2: baseline=[15.988,16.281,15.915,15.859,16.133]; candidate=[17.334,15.971,15.495,15.844,16.602]; first=17.178/16.715; workspace=3.512/3.914
+pair3: baseline=[16.207,15.714,15.783,15.806,15.662]; candidate=[15.962,15.734,16.053,15.860,16.016]; first=16.860/17.209; workspace=3.781/3.660
