@@ -489,3 +489,74 @@ def test_readonly_input_can_be_shared_by_concurrent_calls() -> None:
     for output in outputs:
         np.testing.assert_array_equal(output, expected)
 
+
+@pytest.mark.parametrize("kind", ["GL", "CC", "F1"])
+@pytest.mark.parametrize("spin", [0, 1])
+def test_plan_preallocated_standard_outputs(kind: str, spin: int) -> None:
+    lmax = mmax = 3
+    ntheta = 5 if kind != "CC" else 6
+    nphi = 9
+    plan = ShtPlan(kind, ntheta, nphi, lmax, mmax, spin=spin, phi0=0.23)
+    alm = random_alm(1 if spin == 0 else 2, lmax, mmax, spin, seed=73 + spin)
+    expected_map = plan.synthesis(alm)
+    output_map = np.full(plan.map_shape, np.nan, dtype=np.float64)
+    assert plan.synthesis_into(alm, output_map) is None
+    np.testing.assert_array_equal(output_map, expected_map)
+
+    expected_alm = plan.analysis(expected_map)
+    output_alm = np.full(plan.alm_shape, np.nan + 1j * np.nan, dtype=np.complex128)
+    assert plan.analysis_into(expected_map, output_alm) is None
+    np.testing.assert_array_equal(output_alm, expected_alm)
+
+
+def test_plan_preallocated_output_validation_and_overlap() -> None:
+    plan = ShtPlan("GL", 5, 9, 3, 3)
+    alm = random_alm(1, 3, 3, 0, seed=79)
+    map_values = np.random.default_rng(83).normal(size=plan.map_shape)
+
+    with pytest.raises(ValueError, match="out shape"):
+        plan.synthesis_into(alm, np.empty((1, 5, 8), dtype=np.float64))
+    with pytest.raises(ValueError, match="C-contiguous"):
+        plan.synthesis_into(alm, np.empty((1, 5, 18), dtype=np.float64)[:, :, ::2])
+    readonly_map = np.empty(plan.map_shape, dtype=np.float64)
+    readonly_map.setflags(write=False)
+    with pytest.raises(ValueError, match="writable"):
+        plan.synthesis_into(alm, readonly_map)
+    with pytest.raises(TypeError):
+        plan.synthesis_into(alm, np.empty(plan.map_shape, dtype=np.float32))
+
+    with pytest.raises(ValueError, match="out shape"):
+        plan.analysis_into(map_values, np.empty((1, plan.nalm - 1), dtype=np.complex128))
+    with pytest.raises(ValueError, match="C-contiguous"):
+        plan.analysis_into(
+            map_values, np.empty((1, plan.nalm * 2), dtype=np.complex128)[:, ::2]
+        )
+    readonly_alm = np.empty(plan.alm_shape, dtype=np.complex128)
+    readonly_alm.setflags(write=False)
+    with pytest.raises(ValueError, match="writable"):
+        plan.analysis_into(map_values, readonly_alm)
+    with pytest.raises(TypeError):
+        plan.analysis_into(map_values, np.empty(plan.alm_shape, dtype=np.complex64))
+
+    byte_count = max(alm.nbytes, map_values.nbytes) + 32
+    shared = np.zeros(byte_count, dtype=np.uint8)
+    aliased_alm = np.ndarray(alm.shape, dtype=np.complex128, buffer=shared, offset=0)
+    aliased_alm[:] = alm
+    overlapping_map = np.ndarray(
+        plan.map_shape, dtype=np.float64, buffer=shared, offset=np.dtype(np.float64).itemsize
+    )
+    with pytest.raises(ValueError, match="must not overlap"):
+        plan.synthesis_into(aliased_alm, overlapping_map)
+
+    shared = np.zeros(byte_count, dtype=np.uint8)
+    aliased_map = np.ndarray(plan.map_shape, dtype=np.float64, buffer=shared, offset=0)
+    aliased_map[:] = map_values
+    overlapping_alm = np.ndarray(
+        plan.alm_shape,
+        dtype=np.complex128,
+        buffer=shared,
+        offset=np.dtype(np.float64).itemsize,
+    )
+    with pytest.raises(ValueError, match="must not overlap"):
+        plan.analysis_into(aliased_map, overlapping_alm)
+

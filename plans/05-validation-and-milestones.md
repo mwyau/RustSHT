@@ -2474,6 +2474,27 @@ The rebuilt Python plan was compared against installed `ducc0==0.41.0` on the sa
 
 After the parity fix, `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, `cargo test --workspace --all-features` (131 Rust and 10 f32 passed; 8 ignored), `cargo test -p rustsht --no-default-features` (121 Rust and 10 f32 passed; 7 ignored), and `uv run pytest python/tests` (9 passed) succeeded. The opt-in release `m3_spin_t511_all_grids_matches_ducc_and_roundtrips` check also passed for spins 1/2 on GL/CC/F1. The focused table tests cover concurrent first use, GL T72/T127 selection, T255 recurrence fallback, fast/general and adjoint equivalence, finite `1e150` fallback, parity cancellation, and asymmetric polar cutoffs. No FFT, public API or Torch implementation changed.
 
+### Python caller-provided plan outputs (2026-10-14)
+
+`PythonShtPlan.synthesis_into(alm, out)` and `analysis_into(map, out)` now write scalar and spin STANDARD results into caller-owned NumPy arrays. They validate exact shape, dtype, C-contiguity and writeability, reject overlapping buffers, and call the existing Rust plan kernels while the GIL is released. Input/output NumPy owners remain alive for the call; callers must not access either buffer through another alias until return. Allocating methods call the same dispatch helpers and continue transferring their owned result vectors to NumPy without a final data copy. This API avoids allocating a fresh result array for repeated plan calls; it does not change the numerical kernels.
+
+Focused tests compare allocating and caller-output methods exactly for scalar and spin-1 GL, CC and F1 plans with nonzero `phi0`, and check shape, layout, dtype, read-only and overlap errors. `cargo check -p rustsht-python`, `cargo fmt --all -- --check`, workspace Clippy with warnings denied, `cargo test --workspace --all-features` (131 Rust tests and 10 f32 tests passed; 8 ignored), and `uv run pytest python/tests` (16 passed) succeeded. The release extension also passed T511/T720 scalar and spin-1 equality checks against allocating plan methods at one and eight threads.
+
+The release comparison used Python 3.11.15, NumPy 2.4.6, Rust 1.99.0, the Ryzen 9 5950X, T511/T720 GL f64, `phi0=0.37`, identical deterministic inputs, warm reused plans, and one/eight Rayon threads. One-thread runs were pinned to CPU 30; eight-thread runs to CPUs 0–7. Each cell used three process runs with one warm-up and seven alternating timed pairs; values below are medians of process medians in milliseconds. The process-to-process variation was several percent for some spin cases.
+
+| Bandlimit | Operation | Threads | Allocating | Caller output |
+| --- | --- | ---: | ---: | ---: |
+| T511 | Scalar synthesis | 1 / 8 | `54.659 / 14.736` | `54.647 / 14.452` |
+| T511 | Scalar analysis | 1 / 8 | `24.857 / 7.466` | `24.586 / 7.446` |
+| T511 | Spin-1 synthesis | 1 / 8 | `61.236 / 22.657` | `60.750 / 21.314` |
+| T511 | Spin-1 analysis | 1 / 8 | `68.109 / 17.661` | `67.990 / 17.433` |
+| T720 | Scalar synthesis | 1 / 8 | `135.636 / 40.820` | `135.435 / 39.488` |
+| T720 | Scalar analysis | 1 / 8 | `65.853 / 20.337` | `65.803 / 20.183` |
+| T720 | Spin-1 synthesis | 1 / 8 | `141.547 / 54.725` | `139.814 / 53.367` |
+| T720 | Spin-1 analysis | 1 / 8 | `177.731 / 44.647` | `177.100 / 44.408` |
+
+The timing changes range from negligible to a few percent and do not establish a whole-transform speedup: allocating methods already transfer their Rust-owned vector without copying its contents. Caller-provided output avoids repeated result allocation and supports buffer reuse. It avoids approximately 7.94 MiB per scalar map result or 15.88 MiB per spin-1 map result at T720, and 3.97 MiB or 7.94 MiB per scalar or spin coefficient result, respectively. No separate peak-RSS measurement was collected. These timings are RustSHT API comparisons, not DUCC parity measurements; numerical agreement with DUCC is covered by the existing core tests and the new methods are exactly equal to the allocating methods.
+
 ### Python plan workspace reuse (2026-10-14)
 
 `PythonShtPlan` lazily creates and reuses one `ShtWorkspace`. The workspace lock is acquired after releasing the GIL and held through the Rust operation, so concurrent calls through one plan serialize without holding the GIL. Separate plan instances have independent workspaces. A poisoned lock discards the scratch and retries initialization. Procedural functions remain one-shot and create a plan and workspace per call. No numerical kernel or public method signature changed; each live plan now retains its workspace memory.

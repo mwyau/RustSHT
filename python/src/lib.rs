@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 use numpy::ndarray::{ArrayD, IxDyn};
-use numpy::{Complex64, Element, IntoPyArray, PyArrayDyn, PyReadonlyArrayDyn};
+use numpy::{
+    Complex64, Element, IntoPyArray, PyArrayDyn, PyArrayMethods, PyReadonlyArrayDyn,
+    PyUntypedArrayMethods,
+};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use rustsht::{GridKind, GridSpec, HarmonicSpec, ShtError, ShtPlan};
@@ -13,7 +16,8 @@ use std::sync::{Mutex, MutexGuard};
 /// Standard scalar arrays have shapes `(1, nalm)` and `(1, ntheta, nphi)`.
 /// Standard spin arrays have shapes `(2, nalm)` and `(2, ntheta, nphi)`,
 /// where the coefficient components are E and B. Methods accept C-contiguous
-/// `complex128` or `float64` arrays and return newly allocated NumPy arrays.
+/// `complex128` or `float64` arrays. Allocating methods return new NumPy arrays;
+/// `synthesis_into` and `analysis_into` write into caller-provided arrays.
 /// Input storage is borrowed during each numerical call; do not modify it
 /// through another alias until the method returns.
 /// Calls through one plan share a workspace and run one at a time. Separate
@@ -92,33 +96,49 @@ impl PythonShtPlan {
         let coefficients = read_array(&alm, &[alm_shape.0, alm_shape.1], "alm")?;
         let plan = &self.plan;
         let workspaces = &self.workspace;
+        let component_count = self.component_count();
         let output = py
             .detach(move || {
                 let mut workspace_guard = lock_workspace(workspaces, plan)?;
                 let workspace = workspace_guard.as_mut().expect("workspace was initialized");
-                let sample_count = plan.grid().ntheta() * plan.grid().nphi();
-                if plan.harmonics().spin() == 0 {
-                    let mut map = vec![0.0; sample_count];
-                    plan.synthesis_into(coefficients, &mut map, workspace)?;
-                    Ok(map)
-                } else {
-                    let nalm = plan.harmonics().nalm();
-                    let mut first = vec![0.0; sample_count];
-                    let mut second = vec![0.0; sample_count];
-                    plan.synthesis_spin_into(
-                        &coefficients[..nalm],
-                        &coefficients[nalm..],
-                        &mut first,
-                        &mut second,
-                        workspace,
-                    )?;
-                    first.extend(second);
-                    Ok(first)
-                }
+                let mut map =
+                    vec![0.0; plan.grid().ntheta() * plan.grid().nphi() * component_count];
+                run_synthesis(plan, coefficients, &mut map, workspace)?;
+                Ok(map)
             })
             .map_err(to_python_error)?;
         let (ncomp, ntheta, nphi) = self.map_shape();
         output_array(py, &[ncomp, ntheta, nphi], output)
+    }
+
+    /// Overwrite a C-contiguous `float64` output with shape
+    /// `(ncomp, ntheta, nphi)`. The output must be writable and must not
+    /// overlap the `complex128` coefficient input. The caller must not access
+    /// or mutate either array through another alias until this method returns.
+    fn synthesis_into<'py>(
+        &self,
+        py: Python<'py>,
+        alm: PyReadonlyArrayDyn<'py, Complex64>,
+        out: Bound<'py, PyArrayDyn<f64>>,
+    ) -> PyResult<()> {
+        let alm_shape = self.alm_shape();
+        let map_shape = self.map_shape();
+        validate_input_array(&alm, &[alm_shape.0, alm_shape.1], "alm")?;
+        validate_output_array(&out, &[map_shape.0, map_shape.1, map_shape.2], "out")?;
+        ensure_disjoint_arrays(alm.data(), alm.len(), out.data(), out.len(), "alm", "out")?;
+        let coefficients = alm.as_slice().map_err(|_| contiguous_error("alm"))?;
+        let mut output = out.try_readwrite().map_err(|_| {
+            PyValueError::new_err("out must be writable and not currently borrowed")
+        })?;
+        let output = output.as_slice_mut().map_err(|_| contiguous_error("out"))?;
+        let plan = &self.plan;
+        let workspaces = &self.workspace;
+        py.detach(move || {
+            let mut workspace_guard = lock_workspace(workspaces, plan)?;
+            let workspace = workspace_guard.as_mut().expect("workspace was initialized");
+            run_synthesis(plan, coefficients, output, workspace)
+        })
+        .map_err(to_python_error)
     }
 
     /// Analyze a scalar map or a spin map pair into packed coefficients.
@@ -131,24 +151,15 @@ impl PythonShtPlan {
         let samples = read_array(&map, &[map_shape.0, map_shape.1, map_shape.2], "map")?;
         let plan = &self.plan;
         let workspaces = &self.workspace;
+        let component_count = self.component_count();
         let output = py
             .detach(move || {
                 let mut workspace_guard = lock_workspace(workspaces, plan)?;
                 let workspace = workspace_guard.as_mut().expect("workspace was initialized");
-                let nalm = plan.harmonics().nalm();
-                if plan.harmonics().spin() == 0 {
-                    let mut alm = vec![Complex64::new(0.0, 0.0); nalm];
-                    plan.analysis_into(samples, &mut alm, workspace)?;
-                    Ok(alm)
-                } else {
-                    let sample_count = plan.grid().ntheta() * plan.grid().nphi();
-                    let (first, second) = samples.split_at(sample_count);
-                    let mut e_alm = vec![Complex64::new(0.0, 0.0); nalm];
-                    let mut b_alm = vec![Complex64::new(0.0, 0.0); nalm];
-                    plan.analysis_spin_into(first, second, &mut e_alm, &mut b_alm, workspace)?;
-                    e_alm.extend(b_alm);
-                    Ok(e_alm)
-                }
+                let mut alm =
+                    vec![Complex64::new(0.0, 0.0); component_count * plan.harmonics().nalm()];
+                run_analysis(plan, samples, &mut alm, workspace)?;
+                Ok(alm)
             })
             .map_err(to_python_error)?;
         output_array(
@@ -156,6 +167,36 @@ impl PythonShtPlan {
             &[self.component_count(), self.plan.harmonics().nalm()],
             output,
         )
+    }
+
+    /// Overwrite a writable C-contiguous `complex128` output with shape
+    /// `(ncomp, nalm)` from a `float64` map. The arrays must not overlap. The
+    /// caller must not access or mutate either array through another alias
+    /// until this method returns.
+    fn analysis_into<'py>(
+        &self,
+        py: Python<'py>,
+        map: PyReadonlyArrayDyn<'py, f64>,
+        out: Bound<'py, PyArrayDyn<Complex64>>,
+    ) -> PyResult<()> {
+        let map_shape = self.map_shape();
+        let alm_shape = self.alm_shape();
+        validate_input_array(&map, &[map_shape.0, map_shape.1, map_shape.2], "map")?;
+        validate_output_array(&out, &[alm_shape.0, alm_shape.1], "out")?;
+        ensure_disjoint_arrays(map.data(), map.len(), out.data(), out.len(), "map", "out")?;
+        let samples = map.as_slice().map_err(|_| contiguous_error("map"))?;
+        let mut output = out.try_readwrite().map_err(|_| {
+            PyValueError::new_err("out must be writable and not currently borrowed")
+        })?;
+        let output = output.as_slice_mut().map_err(|_| contiguous_error("out"))?;
+        let plan = &self.plan;
+        let workspaces = &self.workspace;
+        py.detach(move || {
+            let mut workspace_guard = lock_workspace(workspaces, plan)?;
+            let workspace = workspace_guard.as_mut().expect("workspace was initialized");
+            run_analysis(plan, samples, output, workspace)
+        })
+        .map_err(to_python_error)
     }
 
     /// Apply the adjoint of standard scalar or spin synthesis.
@@ -384,6 +425,45 @@ impl PythonShtPlan {
         } else {
             Ok(())
         }
+    }
+}
+
+fn run_synthesis(
+    plan: &ShtPlan,
+    coefficients: &[Complex64],
+    output: &mut [f64],
+    workspace: &mut rustsht::ShtWorkspace,
+) -> Result<(), ShtError> {
+    if plan.harmonics().spin() == 0 {
+        plan.synthesis_into(coefficients, output, workspace)
+    } else {
+        let nalm = plan.harmonics().nalm();
+        let sample_count = plan.grid().ntheta() * plan.grid().nphi();
+        let (first, second) = output.split_at_mut(sample_count);
+        plan.synthesis_spin_into(
+            &coefficients[..nalm],
+            &coefficients[nalm..],
+            first,
+            second,
+            workspace,
+        )
+    }
+}
+
+fn run_analysis(
+    plan: &ShtPlan,
+    samples: &[f64],
+    output: &mut [Complex64],
+    workspace: &mut rustsht::ShtWorkspace,
+) -> Result<(), ShtError> {
+    let nalm = plan.harmonics().nalm();
+    if plan.harmonics().spin() == 0 {
+        plan.analysis_into(samples, output, workspace)
+    } else {
+        let sample_count = plan.grid().ntheta() * plan.grid().nphi();
+        let (first, second) = samples.split_at(sample_count);
+        let (e_alm, b_alm) = output.split_at_mut(nalm);
+        plan.analysis_spin_into(first, second, e_alm, b_alm, workspace)
     }
 }
 
@@ -628,22 +708,78 @@ fn read_array<'py, T: Element + Copy>(
     expected_shape: &[usize],
     name: &str,
 ) -> PyResult<&'py [T]> {
-    let actual_shape = array.as_array().shape().to_vec();
-    if actual_shape != expected_shape {
+    validate_input_array(array, expected_shape, name)?;
+    array.as_slice().map_err(|_| contiguous_error(name))
+}
+
+fn validate_input_array<T: Element>(
+    array: &PyReadonlyArrayDyn<'_, T>,
+    expected_shape: &[usize],
+    name: &str,
+) -> PyResult<()> {
+    if array.shape() != expected_shape {
         return Err(PyValueError::new_err(format!(
-            "{name} shape must be {expected_shape:?}; got {actual_shape:?}"
+            "{name} shape must be {expected_shape:?}; got {:?}",
+            array.shape()
         )));
     }
-    if !array.as_array().is_standard_layout() {
+    if !array.is_c_contiguous() {
+        return Err(contiguous_error(name));
+    }
+    Ok(())
+}
+
+fn validate_output_array<T: Element>(
+    array: &Bound<'_, PyArrayDyn<T>>,
+    expected_shape: &[usize],
+    name: &str,
+) -> PyResult<()> {
+    if array.shape() != expected_shape {
         return Err(PyValueError::new_err(format!(
-            "{name} must be C-contiguous; noncontiguous inputs are not supported"
+            "{name} shape must be {expected_shape:?}; got {:?}",
+            array.shape()
         )));
     }
-    array.as_slice().map_err(|_| {
-        PyValueError::new_err(format!(
-            "{name} must be C-contiguous; noncontiguous inputs are not supported"
-        ))
-    })
+    if !array.is_c_contiguous() {
+        return Err(contiguous_error(name));
+    }
+    Ok(())
+}
+
+fn contiguous_error(name: &str) -> PyErr {
+    PyValueError::new_err(format!(
+        "{name} must be C-contiguous; noncontiguous arrays are not supported"
+    ))
+}
+
+fn ensure_disjoint_arrays<T: Element, U: Element>(
+    input: *mut T,
+    input_len: usize,
+    output: *mut U,
+    output_len: usize,
+    input_name: &str,
+    output_name: &str,
+) -> PyResult<()> {
+    let input_start = input.cast::<u8>().addr();
+    let output_start = output.cast::<u8>().addr();
+    let input_bytes = input_len
+        .checked_mul(std::mem::size_of::<T>())
+        .ok_or_else(|| PyValueError::new_err("input byte length overflows usize"))?;
+    let output_bytes = output_len
+        .checked_mul(std::mem::size_of::<U>())
+        .ok_or_else(|| PyValueError::new_err("output byte length overflows usize"))?;
+    let input_end = input_start
+        .checked_add(input_bytes)
+        .ok_or_else(|| PyValueError::new_err("input address range overflows usize"))?;
+    let output_end = output_start
+        .checked_add(output_bytes)
+        .ok_or_else(|| PyValueError::new_err("output address range overflows usize"))?;
+    if input_start < output_end && output_start < input_end {
+        return Err(PyValueError::new_err(format!(
+            "{input_name} and {output_name} arrays must not overlap"
+        )));
+    }
+    Ok(())
 }
 
 fn output_array<'py, T: Element>(
