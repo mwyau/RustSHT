@@ -182,6 +182,36 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
 
 #[allow(private_bounds)]
 impl<T: ShtScalar> ShtWorkspace<T> {
+    #[cfg(feature = "parallel")]
+    pub(crate) fn ensure_recurrence_worker_count(
+        &mut self,
+        worker_count: usize,
+        recurrence_factor_count: usize,
+        spin_recurrence_factor_count: usize,
+        spin_fast_coefficient_count: usize,
+        spin_pair_fast_coefficient_count: usize,
+        recurrence_scratch_len: usize,
+    ) -> Result<(), ShtError> {
+        if worker_count <= self.recurrence_workers.len() {
+            return Ok(());
+        }
+        self.recurrence_workers
+            .try_reserve_exact(worker_count - self.recurrence_workers.len())
+            .map_err(|_| ShtError::AllocationFailed {
+                array: "recurrence worker scratch",
+            })?;
+        while self.recurrence_workers.len() < worker_count {
+            self.recurrence_workers.push(RecurrenceWorkspace::new(
+                recurrence_factor_count,
+                spin_recurrence_factor_count,
+                spin_fast_coefficient_count,
+                spin_pair_fast_coefficient_count,
+                recurrence_scratch_len,
+            )?);
+        }
+        Ok(())
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
         spectrum_count: usize,

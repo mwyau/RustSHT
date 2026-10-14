@@ -1241,6 +1241,121 @@ fn workspace_ring_groups_add_parallelism_for_underfilled_synthesis() {
 
 #[cfg(feature = "parallel")]
 #[test]
+fn fine_synthesis_groups_follow_the_measured_spin_and_grid_policy() {
+    let four_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(4)
+        .build()
+        .unwrap();
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+
+    let scalar_t511 = make_plan(511, 511, 512, 1025, 0.37);
+    let scalar_t511_workspace = four_threads.install(|| scalar_t511.workspace()).unwrap();
+    assert_eq!(
+        four_threads.install(|| scalar_t511.fine_synthesis_ring_group_size()),
+        Some(32)
+    );
+    assert_eq!(scalar_t511_workspace.ring_group_size, 64);
+    assert_eq!(scalar_t511_workspace.recurrence_workers.len(), 8);
+
+    let scalar_t720 = make_plan(720, 720, 721, 1443, 0.37);
+    let scalar_t720_workspace = four_threads.install(|| scalar_t720.workspace()).unwrap();
+    assert_eq!(
+        four_threads.install(|| scalar_t720.fine_synthesis_ring_group_size()),
+        Some(32)
+    );
+    assert_eq!(scalar_t720_workspace.ring_group_size, 192);
+    assert_eq!(scalar_t720_workspace.recurrence_workers.len(), 4);
+
+    let spin1_t720: ShtPlan<f64> = ShtPlan::new(
+        GridSpec::new(GridKind::GaussLegendre, 721, 1443, 0.37).unwrap(),
+        HarmonicSpec::new(720, 720, 1).unwrap(),
+    )
+    .unwrap();
+    let spin1_four_threads = four_threads.install(|| spin1_t720.workspace()).unwrap();
+    assert_eq!(
+        four_threads.install(|| spin1_t720.fine_synthesis_ring_group_size()),
+        None
+    );
+    assert_eq!(spin1_four_threads.ring_group_size, 192);
+    let spin1_eight_threads = eight_threads.install(|| spin1_t720.workspace()).unwrap();
+    assert_eq!(
+        eight_threads.install(|| spin1_t720.fine_synthesis_ring_group_size()),
+        Some(32)
+    );
+    assert_eq!(spin1_eight_threads.ring_group_size, 64);
+    assert_eq!(spin1_eight_threads.recurrence_workers.len(), 12);
+
+    let reduced_order = make_plan(720, 360, 721, 1443, 0.37);
+    let reduced_workspace = eight_threads.install(|| reduced_order.workspace()).unwrap();
+    assert_eq!(
+        eight_threads.install(|| reduced_order.fine_synthesis_ring_group_size()),
+        None
+    );
+    assert_eq!(reduced_workspace.ring_group_size, 64);
+
+    let cc_plan = make_cc_plan(720, 720, 722, 1443, 0.37);
+    let cc_workspace = eight_threads.install(|| cc_plan.workspace()).unwrap();
+    assert_eq!(
+        eight_threads.install(|| cc_plan.fine_synthesis_ring_group_size()),
+        None
+    );
+    assert_eq!(cc_workspace.ring_group_size, 64);
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn fine_scalar_synthesis_groups_preserve_high_band_adjoint_identities() {
+    let plan = make_plan(511, 511, 512, 1025, 0.37);
+    let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+    for (l, m, value) in [
+        (0, 0, Complex64::new(0.7, 0.0)),
+        (37, 11, Complex64::new(-0.23, 0.17)),
+        (511, 511, Complex64::new(0.31, -0.19)),
+    ] {
+        alm[plan.harmonics.index(l, m).unwrap()] = value;
+    }
+    let input = arbitrary_map(&plan);
+    let four_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(4)
+        .build()
+        .unwrap();
+    let mut workspace = four_threads.install(|| plan.workspace()).unwrap();
+    let mut synthesized = vec![0.0; plan.sample_count];
+    four_threads
+        .install(|| plan.synthesis_into(&alm, &mut synthesized, &mut workspace))
+        .unwrap();
+    assert_eq!(workspace.recurrence_workers.len(), 16);
+
+    let mut synthesis_adjoint = vec![Complex64::new(0.0, 0.0); alm.len()];
+    four_threads
+        .install(|| plan.adjoint_synthesis_into(&input, &mut synthesis_adjoint, &mut workspace))
+        .unwrap();
+    assert_close(
+        map_inner_product(&synthesized, &input),
+        harmonic_inner_product(plan.harmonics(), &alm, &synthesis_adjoint),
+        2e-10,
+    );
+
+    let mut analyzed = vec![Complex64::new(0.0, 0.0); alm.len()];
+    four_threads
+        .install(|| plan.analysis_into(&input, &mut analyzed, &mut workspace))
+        .unwrap();
+    let mut analysis_adjoint = vec![0.0; plan.sample_count];
+    four_threads
+        .install(|| plan.adjoint_analysis_into(&alm, &mut analysis_adjoint, &mut workspace))
+        .unwrap();
+    assert_close(
+        harmonic_inner_product(plan.harmonics(), &analyzed, &alm),
+        map_inner_product(&input, &analysis_adjoint),
+        2e-10,
+    );
+}
+
+#[cfg(feature = "parallel")]
+#[test]
 fn synthesis_workspace_from_larger_pool_is_safe_in_smaller_pool() {
     let plan = make_plan(3, 2, 128, 9, 0.41);
     let input = coefficients(plan.harmonics());

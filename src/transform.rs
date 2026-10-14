@@ -272,10 +272,21 @@ impl<T: ShtScalar> ShtPlan<T> {
         let arch = pulp::Arch::new();
         #[cfg(feature = "parallel")]
         {
-            let group_ring_count = workspace.ring_group_size.min(ntheta);
+            let group_ring_count = self
+                .fine_synthesis_ring_group_size()
+                .unwrap_or(workspace.ring_group_size)
+                .min(ntheta);
             let parallel_groups = ntheta.div_ceil(group_ring_count);
             let use_parallel = rayon::current_num_threads() > 1 && parallel_groups > 1;
             if use_parallel {
+                workspace.ensure_recurrence_worker_count(
+                    parallel_groups,
+                    self.recurrence_factor_count,
+                    self.spin_recurrence_factor_count,
+                    self.spin_fast_coefficient_count,
+                    0,
+                    workspace.theta_sin.len().min(LATITUDE_BLOCK_SIZE),
+                )?;
                 let spectrum_group_len = group_ring_count.checked_mul(spectrum_len).ok_or(
                     ShtError::IntegerOverflow {
                         quantity: "parallel Fourier spectrum group size",
