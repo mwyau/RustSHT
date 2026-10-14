@@ -4,9 +4,9 @@ Updated 2026-10-14. Branch: `main`. The scalar recurrence baseline is commit `7c
 
 ## Findings
 
-The compact Legendre table is useful for repeated scalar GL transforms from T72 through T255 and for spin-1 STANDARD exact GL analysis at T72 and T127. It stores triangular harmonic support on the northern hemisphere with contiguous latitude lanes. The scalar table cap is 34 MiB; the lazy spin-1 analysis table is at most 4.1 MiB under its current bandlimit gate. At T72 scalar, the table reduced native synthesis by 12%/33% and analysis by 42%/41% at one/eight threads. The spin-1 analysis table reduced steady-state analysis by 36%/31% at T72 and 47%/46% at T127. Plan reuse determines whether first-call table construction repays its cost.
+The compact Legendre table benefits repeated scalar GL synthesis through T255, with a mixed result for scalar analysis at T255 and only a clear single-thread analysis gain at T72. It stores triangular harmonic support on the northern hemisphere with contiguous latitude lanes. The scalar table cap is 34 MiB; the lazy spin-1 analysis table is at most 4.1 MiB under its current bandlimit gate. The spin-1 analysis table reduced steady-state analysis by about 32–36% at T72 and 46–47% at T127. Plan reuse determines whether first-call table construction repays its cost.
 
-Torch-harmonics PR #322 stores complete order-degree-latitude tensors. Its folded CC/F1 projection is assembled in bounded blocks, but the final cached tensor is still full-sized. With identical full GL dimensions, the Rust layout uses one quarter of a dense scalar table's float64 payload. The memory advantage is an exact shape calculation; Torch-harmonics was not installed here, so no direct Torch execution timing was measured.
+Torch-harmonics PR #322 stores complete order-degree-latitude tensors. Its folded CC/F1 projection is assembled in bounded blocks, but the final cached tensor is still full-sized. With identical full GL dimensions, the Rust layout uses one quarter of a dense scalar table's float64 payload. A later direct screening run measured its CPU and RTX 5070 paths; the conditions and limitations are recorded below.
 
 Temporary compact-table runs at T360, T511 and T720 reduced synthesis time. Analysis gains were smaller or reversed at eight threads. At T720 the table occupied 716.9 MiB, added about 679 ms of plan construction, improved one-thread synthesis by 25%, and slowed eight-thread analysis by 37%. Production scalar transforms therefore use recurrence above T255. Spin-1 precomputation is limited to STANDARD exact GL analysis through T127; spin synthesis, f32, CC and F1 continue to use recurrence.
 
@@ -42,7 +42,7 @@ After the parity correction, rebuilt Python-plan comparisons against `ducc0==0.4
 
 The Python wrapper allocates a workspace for each plan method call. At eight threads the T127 process ranges were 3.853–4.005 ms for RustSHT and 2.413–2.997 ms for DUCC; this interface-level comparison does not match the reusable native workspace result. The Python runs also reported map-input copy times from 0.004 to 0.052 ms and plan construction from 0.018 to 0.029 ms. The spin table is lazy, so ordinary plan construction does not include its setup.
 
-The experiment does not establish that Rust beats Torch-harmonics execution. PyTorch and torch-harmonics were unavailable, so there is no direct GPU timing, allocation or OOM reproduction. The existing source and shape comparison remains the basis for Torch memory estimates: its serial final tables are dense, while Rust stores one quarter of a same-shape scalar GL float64 table through triangular support and north/south symmetry. This spin-1 experiment adds only a small table for a measured repeated-analysis workload; it does not add a Torch-like dense or blocked matrix implementation.
+At the time of this spin-1 compact-table experiment, PyTorch was unavailable, so it did not include Torch runtime measurements. A separate follow-up below measures Torch-harmonics directly. This spin-1 experiment adds only a small table for a measured repeated-analysis workload; it does not add a Torch-like dense or blocked matrix implementation.
 
 ## Software and benchmark conditions
 
@@ -74,7 +74,7 @@ The local DUCC source build came from the pinned source revision. The source CMa
 
 These runs used two process medians of five calls and were pinned to CPUs 0–7. T127 source-build eight-thread measurements varied sharply between processes and are not used for a ratio claim. The source build is a compiler-configuration check; the installed DUCC wheel remains the primary Python comparison.
 
-The machine's RTX 5070 has 12,227 MiB of memory, but neither PyTorch nor torch-harmonics was installed. No GPU table construction, device memory measurement or Torch execution benchmark was performed.
+The machine's RTX 5070 has 12,227 MiB of memory. Direct Torch allocation and execution measurements are recorded in the follow-up section below.
 
 ## Torch-harmonics storage and Rust table layout
 
@@ -84,7 +84,7 @@ The regular Legendre cache inherits the cache helper's default 20-entry limit; `
 
 The folded CC/F1 projection combines native quadrature, complementary-grid quadrature, meridional interpolation and its adjoint into analysis weights. It is not the synthesis basis table. In the serial path, it allocates the complete `(m,l,k)` output, then computes it in order and degree blocks. The block rule limits the real Legendre basis intermediate to at most `2^20` float64 values (8 MiB); the final projection is still full-sized. The vector projection has two rows. The block limit bounds construction scratch, not the cached projection or registered module buffer ([`sht.py`, `_precompute_folded_projection`](https://github.com/NVIDIA/torch-harmonics/blob/37751d3e90b8f12fe9439c52847f4c5d70d5a627/torch_harmonics/sht.py#L2405-L2563)).
 
-At full GL dimensions `(721,721,721)`, the dense float64 Torch scalar table is 2.79 GiB and the two-row vector table is 5.59 GiB. On the reported 12,227 MiB RTX 5070, those payloads alone occupy about 23% and 47% of device memory. These figures exclude inputs, FFT workspaces, converted buffers, model activations, and any other live tensors. A cached host copy and a device module buffer may also coexist; peak residency depends on construction and transfer order. The environment had no PyTorch installation, so no Torch allocation, OOM reproduction, or runtime comparison was measured.
+At full GL dimensions `(721,721,721)`, the dense float64 Torch scalar table is 2.79 GiB and the two-row vector table is 5.59 GiB. On the reported 12,227 MiB RTX 5070, those payloads alone occupy about 23% and 47% of device memory. These figures exclude inputs, FFT workspaces, converted buffers, model activations, and any other live tensors. A cached host copy and a device module buffer may also coexist; peak residency depends on construction and transfer order. The direct follow-up confirms the table sizes and records measured peak allocations; it did not reproduce an out-of-memory failure because the GPU was otherwise available.
 
 For full triangular support and a GL grid with `ntheta=lmax+1`, Rust's table payload is
 
@@ -105,11 +105,11 @@ The dense scalar Torch payload is `8*(lmax+1)^3` bytes; the vector payload is tw
 
 Rust stores only `m <= l <= lmax` and northern latitude rows. Within each `(m,l)` row, latitude is contiguous. The reflected southern basis is `(-1)^(l+m)` times the northern value. Scalar synthesis and analysis use the table for GL; `S`, `A`, `S*` and `A*` retain their separate FFT and quadrature conventions. The table uses existing order-major workspace scratch and allocates no second full map or spectrum per transform. The current plan gate requires f64 scalar GL, exact GL sampling, `72 <= lmax <= 255`, `mmax >= ceil(3*lmax/4)`, and a table no larger than 34 MiB.
 
-The compact Rust table was compared with Rust's recurrence kernels, not with Torch-harmonics execution. The Torch implementation is organized around cached tensor contractions, while Rust's recurrence keeps degree-dependent basis values in bounded latitude scratch. At T127 and T255, a compact Rust GL table measurably reduces scalar transform time when the plan is reused. At T720, a 716.9 MiB temporary table improved synthesis but slowed eight-thread analysis and added 679 ms of setup; it was not enabled in production. The table requires about four times less payload than the full Torch scalar table at the same GL shape, but its measured high-band results do not establish that a compact table beats Torch's GPU contractions.
+The compact Rust table was first compared with Rust's recurrence kernels. The direct Torch follow-up below adds same-machine CPU comparisons and separate GPU screening timings. The Torch implementation is organized around cached tensor contractions, while Rust's recurrence keeps degree-dependent basis values in bounded latitude scratch. At T127 and T255, a compact Rust GL table measurably reduces scalar synthesis time when the plan is reused; scalar analysis benefits most at T127 and is mixed at T255. At T720, a 716.9 MiB temporary table improved synthesis but slowed eight-thread analysis and added 679 ms of setup; it was not enabled in production. The table requires about four times less payload than the full Torch scalar table at the same GL shape.
 
 A memory-bounded blocked Rust transform could generate a basis tile, contract it into the output, and discard the tile. That would cap resident basis storage, but it would either regenerate basis values for each transform or require a bounded tile cache. No timing here shows that this would outperform the recurrence kernel or Torch-harmonics' full contraction on its target GPU. The existing compact table already tests the persistent-table option at small GL bands. No second dense or blocked precomputation path was added. The CC/F1 folded projection is a different analysis operator from a GL basis table; Rust continues to use its exact resampling and recurrence path.
 
-These results do not justify another table implementation. The current Rust table already tests triangular storage, north/south symmetry, contiguous latitude rows, bounded plan memory and setup amortization against the recurrence implementation. It improves repeated scalar GL transforms through T255 under a 34 MiB cap. Larger tables consume increasing memory and lose analysis throughput at eight threads. Torch-harmonics' blocked construction limits temporary basis storage but still materializes its full final projection. A streamed CPU tile could lower resident memory further, but it would recompute basis values or need a cache; neither option has measured an end-to-end advantage over recurrence or the existing compact table. The available machine did not have PyTorch installed, so this comparison establishes storage and Rust-side crossover behavior, not Torch GPU execution speed.
+These results do not justify another table implementation. The current Rust table already tests triangular storage, north/south symmetry, contiguous latitude rows, bounded plan memory and setup amortization against the recurrence implementation. It improves repeated scalar GL synthesis through T255 under a 34 MiB cap, while its analysis benefit is band- and thread-dependent. Larger tables consume increasing memory and lose analysis throughput at eight threads. Torch-harmonics' blocked construction limits temporary basis storage but still materializes its full final projection. A streamed CPU tile could lower resident memory further, but it would recompute basis values or need a cache; neither option has measured an end-to-end advantage over recurrence or the existing compact table. The direct Torch results below favor retaining the measured compact small-band table and recurrence at larger bands; they do not support adding a second dense or blocked Rust method.
 
 ## Native recurrence and table results
 
@@ -352,3 +352,108 @@ A second candidate reused the scalar recurrence's order factors in the spin-1 sc
 | T511 | `65.860 [65.425–66.209]` | `64.752 [64.562–65.808]` | `16.856 [16.796–17.337]` | `17.640 [16.315–20.247]` |
 
 All baseline and candidate process ranges overlap. The candidate's apparent T511 one-thread reduction is `1.7%`, smaller than the spread; eight-thread times are noisy, with no clear gain. The candidate passed the all-grid scalar/spin recurrence comparison, exact-analysis and adjoint checks, the small DUCC fixture, and the ignored release T511 GL/CC/F1 DUCC test. It used no extra memory but was reverted because fewer helper instructions did not produce a repeatable whole-transform speedup. This result reinforces that arithmetic instruction reductions in the coefficient-conversion tail are not a measured bottleneck at present.
+
+## Direct Torch-harmonics runtime and memory screen
+
+This follow-up directly ran the Torch-harmonics PR #322 source at commit [`37751d3e90b8f12fe9439c52847f4c5d70d5a627`](https://github.com/NVIDIA/torch-harmonics/tree/37751d3e90b8f12fe9439c52847f4c5d70d5a627), based on `97f7d2756d2d2d3b974d8ee31ca04e032fdf1d05`. The temporary environment used Python `3.11.15`, PyTorch `2.14.1+cu130`, CUDA runtime `13.0`, driver `595.104.02`, an NVIDIA GeForce RTX 5070 with `12,227 MiB`, and the AMD Ryzen 9 5950X described above. Optional attention/disco package imports were stubbed only in the temporary environment; the measured SHT calls used Torch-harmonics' PyTorch modules. Neither that checkout nor its dependencies were changed in this repository.
+
+Torch modules were `RealSHT`, `InverseRealSHT`, `RealVectorSHT` and `InverseRealVectorSHT`, using f64, `norm="ortho"`, `csphase=True`, full truncation `lmax=mmax=T+1`, and `nphi=2*T+3`. GL and folded CC/F1 analysis were measured. Torch CPU used `torch.set_num_threads(1 or 8)`; CPU affinity was not pinned. GPU input tensors were created on the device, so timed calls exclude host input transfers. Each case had three warmups, five repeated event-timed groups and five synchronized single-call timings in one process. CUDA rows report the median event time; CPU table rows use the median synchronized single-call time because repeated event groups were noisier. These are screening measurements from one process per case, not process-level confidence intervals.
+
+The Rust comparator was the release `m1b_bench` built from current commit `476bf1c26fa2018df52a03af61af18f1d56376e5`, with one temporary environment gate to force scalar recurrence instead of an eligible compact table. No numerical implementation source differed from the committed tree. Rust used the same Ryzen CPU, CPUs 0–7, one warmup, five timed samples and reused native plans/workspaces. GL scalar table/recurrence timings were collected in three process runs; the newly collected CC/F1 timings below use one process per configuration and are screening values. Torch CPU timings use five host-synchronized samples from one process. All values are milliseconds and listed as one-thread/eight-thread.
+
+The committed Torch screening harness is [`torch_harmonics_bench.py`](torch_harmonics_bench.py). From a checkout with the pinned PR revision installed into the active Python environment, run one configuration per process, for example:
+
+```sh
+python reports/torch_harmonics_bench.py 720 0 synthesis GL cuda 1
+python reports/torch_harmonics_bench.py 720 1 analysis CC cuda 8
+python reports/torch_harmonics_bench.py 255 0 analysis GL cpu 8
+```
+
+Arguments are bandlimit, spin, operation, grid, device and Torch CPU thread count. The script reports plan construction, transfer, table bytes, device peaks, process peak RSS, event samples and synchronized samples as JSON. If source checkout lacks optional attention/disco extensions, the script stubs only their availability checks as unavailable; the SHT modules do not use those optional kernels. For Rust recurrence, build the release `m1b_bench` from the stated commit and apply the one-line temporary gate recorded here: in `ScalarTable::new`, add `|| std::env::var_os("RUSTSHT_BENCH_DISABLE_LEGENDRE_TABLE").is_some()` to the existing early-return eligibility condition. Then run, for example:
+
+```sh
+RUSTSHT_BENCH_DISABLE_LEGENDRE_TABLE=1 taskset -c 0-7 target/release/examples/m1b_bench 0 127 1 synthesis GL STANDARD
+RUSTSHT_BENCH_DISABLE_LEGENDRE_TABLE=1 taskset -c 0-7 target/release/examples/m1b_bench 1 720 8 analysis F1 STANDARD
+```
+
+The temporary gate was used only in `/tmp`; it was not part of the committed implementation. The Rust harness reports five-sample medians and separately times plan/workspace construction.
+
+### Same-CPU GL execution
+
+| Spin | Bandlimit | Operation | Rust recurrence | Rust compact table | Torch CPU dense table |
+| ---: | ---: | --- | ---: | ---: | ---: |
+| 0 | T127 | Synthesis | `1.757 / 0.609` | `0.918 / 0.364` | `1.60 / 0.486` |
+| 0 | T127 | Analysis | `0.769 / 0.450` | `0.608 / 0.342` | `1.316 / 0.424` |
+| 0 | T255 | Synthesis | `12.111 / 3.363` | `6.015 / 1.535` | `15.4 / 7.5` |
+| 0 | T255 | Analysis | `4.110 / 1.565` | `4.260 / 1.430` | `15.03 / 6.47` |
+| 1 | T127 | Synthesis | `2.934 / 0.926` | n/a | `9.15 / 1.58` |
+| 1 | T127 | Analysis | `2.014 / 0.940` | n/a | `8.47 / 1.27` |
+| 1 | T255 | Synthesis | `12.223 / 4.379` | n/a | `62.6 / 30.5` |
+| 1 | T255 | Analysis | `11.142 / 3.687` | n/a | `58.6 / 28.9` |
+
+Rust compact tables are triangular in `(m,l)` and store the northern latitude half contiguously. The scalar tables were 4.03 MiB at T127 and 32.13 MiB at T255. Rust's eligible spin-1 analysis table is only enabled at T72/T127; the Rust rows shown for spin 1 therefore use recurrence. At T255 Torch's CPU vector table was about 5.1–7.8 times slower than Rust recurrence depending on operation and thread count. Torch's dense scalar table was slower than Rust's T255 compact table for both operations and thread counts; one-thread scalar analysis was also slightly slower than Rust recurrence. At T127 Torch scalar synthesis was close to Rust recurrence, but its 16 MiB table and roughly 36–48 ms setup were not competitive with Rust's compact table for repeated calls. Torch CPU vector timings were substantially slower than Rust recurrence at both bands. These CPU timings support keeping the existing compact-table gates and recurrence implementation; they do not motivate another CPU matrix path.
+
+The latest scalar table-versus-recurrence rerun also shows the small-band boundary. At T72, table/recurrent scalar timings were synthesis `0.219/0.209 ms` (1T) and `0.092/0.117 ms` (8T), analysis `0.122/0.174 ms` and `0.083/0.099 ms`. The one-thread synthesis difference favors recurrence; the eight-thread synthesis and analysis ranges overlap. Table plan setup was `0.462 ms` versus `0.027 ms` for recurrence, for a `0.762 MiB` table. At T127, table/recurrent synthesis was `0.918/1.757 ms` and `0.364/0.609 ms`; analysis was `0.608/0.769 ms` and `0.342/0.450 ms`. At T255, synthesis was `6.015/12.111 ms` and `1.535/3.363 ms`; analysis was `4.260/4.110 ms` and `1.430/1.565 ms`. The T255 table improved synthesis by about 50–54%, while its analysis change was `-3.6%` at 1T and `+8.6%` at 8T. T127/T255 figures are medians across three process runs; ranges are shown here:
+
+| Band | Operation | Table 1T | Recurrence 1T | Table 8T | Recurrence 8T |
+| --- | --- | ---: | ---: | ---: | ---: |
+| T72 | Synthesis | `0.219 [0.186–0.303]` | `0.209 [0.177–0.218]` | `0.092 [0.092–0.109]` | `0.117 [0.108–0.120]` |
+| T72 | Analysis | `0.122 [0.122–0.134]` | `0.174 [0.163–0.179]` | `0.083 [0.080–0.090]` | `0.099 [0.084–0.103]` |
+| T127 | Synthesis | `0.918 [0.901–0.961]` | `1.757 [1.689–1.765]` | `0.364 [0.335–0.364]` | `0.609 [0.482–0.627]` |
+| T127 | Analysis | `0.608 [0.603–0.617]` | `0.769 [0.755–0.781]` | `0.342 [0.337–0.351]` | `0.450 [0.436–0.461]` |
+| T255 | Synthesis | `6.015 [5.946–6.039]` | `12.111 [12.038–12.117]` | `1.535 [1.519–1.550]` | `3.363 [3.356–3.376]` |
+| T255 | Analysis | `4.260 [4.226–4.503]` | `4.110 [4.080–4.209]` | `1.430 [1.336–1.449]` | `1.565 [1.519–1.597]` |
+
+Setup was `2.336 ms` at T127 and `30.876 ms` at T255, against recurrence setup of `0.018/0.017 ms`. The table remains a repeated-workload specialization, not a universal replacement for recurrence.
+
+For spin-1 exact GL analysis, the compact table at T72 measured `0.298/0.124 ms` versus recurrence `0.436/0.195 ms`; at T127 it measured `1.085/0.506 ms` versus recurrence `2.037/0.940 ms` (1T/8T). It used `0.783/4.094 MiB`; first-call medians including lazy creation were `1.228/1.036 ms` at T72 and `5.481/4.731 ms` at T127. Estimated amortization is about 6/13 total calls at T72 and 4/9 at T127 for 1T/8T. The table path remains narrowly scoped to exact f64 GL analysis.
+
+### Torch GPU execution and dense-table cost
+
+The following Torch GL CUDA medians include the PyTorch transform call with input already on the GPU. They are not a same-hardware comparison with the Rust CPU timings above. They show the GPU execution and storage tradeoff of Torch's tensor-contraction approach.
+
+| Bandlimit | Torch scalar table | Torch two-row vector table | Scalar synthesis / analysis | Vector synthesis / analysis |
+| --- | ---: | ---: | ---: | ---: |
+| T72 | 2.97 MiB | 5.93 MiB | `0.309 / 0.243 ms` | `0.662 / 0.594 ms` |
+| T127 | 16 MiB | 32 MiB | `0.333 / 0.247 ms` | `0.672 / 0.609 ms` |
+| T255 | 128 MiB | 256 MiB | `0.647 / 0.477 ms` | `1.964 / 1.779 ms` |
+| T511 | 1 GiB | 2 GiB | `3.634 / 3.516 ms` | `13.859 / 13.766 ms` |
+| T720 | 2.79 GiB | 5.59 GiB | `9.894 / 9.840 ms` | `38.54 / 38.43 ms` |
+
+At T720 GL, the scalar table plan took `2.1–2.19 s` to build and `0.38–0.44 s` to transfer; the vector plans took `9.69–12.70 s` to build and `0.777–1.145 s` to transfer. Measured CUDA peak allocation during a transform was about `3.09 GB` scalar and `6.15–6.23 GB` vector. The corresponding host process peak RSS was about `9.7 GiB` scalar and `30.2 GB` (`28.8 GiB`) for the GL vector construction run. With the GPU otherwise idle, these runs completed; the vector table consumes nearly half the GPU's available memory before another model or application allocates its own tensors. A single-GPU run cannot reproduce the user's OOM condition when other allocations are absent.
+
+At T720, plan construction plus transfer is equivalent to about 252–267 scalar GL GPU calls at the measured per-call latency, or 272–360 vector calls. For folded CC/F1 analysis, the corresponding ratios are about 1,880–1,960 scalar calls and 940–950 vector calls. These ratios show the table setup burden relative to Torch's resident-GPU transform time; they are not CPU-versus-GPU break-even points. On the same CPU at T127, Torch scalar synthesis saves only about `0.12–0.16 ms` per call against Rust recurrence while taking roughly `36–48 ms` to build its 16 MiB table, so that comparison needs hundreds of repeated calls to amortize setup. Rust's compact scalar table is already faster than Torch CPU in that case. At T255, the Torch CPU scalar and vector tables are slower per call than Rust recurrence or the compact scalar table, so setup cannot produce a CPU crossover.
+
+The next table places the Torch T511/T720 GPU event times beside current Rust native CPU times. It is a cross-device context comparison only. Rust figures are three process medians; Torch CUDA figures are single-process medians.
+
+| Band | Spin | Rust CPU synthesis 1T / 8T | Rust CPU analysis 1T / 8T | Torch GPU synthesis / analysis |
+| --- | ---: | ---: | ---: | ---: |
+| T511 | 0 | `56.573 / 15.329 ms` | `23.931 / 7.529 ms` | `3.634 / 3.516 ms` |
+| T511 | 1 | `59.296 / 21.268 ms` | `65.377 / 16.903 ms` | `13.859 / 13.766 ms` |
+| T720 | 0 | `140.244 / 40.942 ms` | `64.521 / 20.338 ms` | `9.894 / 9.840 ms` |
+| T720 | 1 | `134.985 / 52.561 ms` | `176.547 / 45.471 ms` | `38.54 / 38.43 ms` |
+
+### Folded CC/F1 projection
+
+PR #322's `_precompute_folded_projection` was measured for exact CC/F1 analysis. It constructs the final projection in bounded order/degree blocks; the temporary real Legendre basis is capped at `2^20` float64 values (8 MiB). The cached result is still a full dense table. The following CC/F1 rows report Torch GPU timing alongside Rust native CPU timing only to show scale; these devices are not comparable for a language-speed claim.
+
+| Grid / band | Spin | Dense projection | Torch build | Host-to-device | Torch GPU analysis | Rust CPU analysis 1T / 8T |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| CC T127 | 0 | 16.125 MiB | 128.6 ms | not recorded | 0.240 ms | `1.168 / 0.775 ms` |
+| CC T127 | 1 | 32.26 MiB | 235 ms | not recorded | 0.598 ms | `3.728 / 1.811 ms` |
+| F1 T127 | 0 | 16 MiB | 130.5 ms | not recorded | 0.246 ms | `1.166 / 0.780 ms` |
+| F1 T127 | 1 | 32 MiB | 209 ms | not recorded | 0.592 ms | `3.729 / 1.930 ms` |
+| CC T720 | 0 | 2.80 GiB | 18.796 s | 0.399 s | 9.877 ms | `87.540 / 45.598 ms` |
+| CC T720 | 1 | 5.59 GiB | 35.70 s | 0.802 s | 38.72 ms | `251.959 / 99.791 ms` |
+| F1 T720 | 0 | 2.79 GiB | 18.141 s | 0.423 s | 9.80 ms | `88.894 / 46.155 ms` |
+| F1 T720 | 1 | 5.59 GiB | 35.598 s | 0.769 s | 38.43 ms | `249.488 / 102.786 ms` |
+
+The T720 CC payloads are the exact byte counts `3,002,601,616` and `6,005,203,232` (about 2.80 and 5.59 GiB); the table above uses MiB for readability in the smaller rows and GiB-equivalent units for the larger ones. F1 payloads are `2,998,442,888` and `5,996,885,776` bytes. The CC/F1 construction runs reached peak process RSS of about 6.7 GiB scalar and 12.0 GiB vector on this machine. The folded basis block cap therefore bounds construction scratch, but does not bound the final projection or make the plan's resident memory small. CC/F1 also show that table setup can take tens of seconds at T720 before the first transform.
+
+### Result and limits
+
+The direct CPU screen did not find a Torch dense-table crossover over the current Rust kernels at T127/T255: Torch CPU scalar and vector tables were generally slower than Rust's compact scalar table or recurrence, and their setup and memory costs were higher. Torch's GPU path has much lower transform latency on this RTX 5070 at high bands, but that result combines a different processor, data residency and execution backend; it is not evidence that a dense CPU precompute beats Rust recurrence. The 5.59 GiB vector table and multi-second construction make a Torch-like table unsuitable as an assumed default for a GPU shared with a 12 GB model.
+
+No second dense or blocked Rust implementation was added. The current triangular, hemispheric, contiguous Rust table is the relevant CPU table experiment and already uses about one quarter of Torch's scalar GL payload. A bounded CPU basis tile would reduce persistent memory only by recalculating it on each call or by retaining a cache; no measurement here shows that either design improves whole-transform time over Rust's recurrence or its current compact table. The folded CC/F1 projection is a distinct operator; its bounded construction blocks do not establish an advantage for adding that representation to the Rust core.
+
+Torch outputs were timed but not numerically compared against Rust or DUCC in this screening run. No production numerical code changed. Existing Rust compact-table versus recurrence and DUCC comparisons, adjoint tests, and high-bandlimit regression results remain the correctness evidence for Rust. CUDA samples were one process per configuration; CPU Torch samples were also single-process screens. GPU/CPU comparisons above must not be interpreted as controlled compiler or language comparisons. No OOM was reproduced, and Torch's temporary setup, device transfer, and resident memory can vary with its cache state and other live allocations.
