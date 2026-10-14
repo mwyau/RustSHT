@@ -74,10 +74,10 @@ pub(crate) fn select_scalar_legendre_strategy(
     }
     // Same-source measurements on a Ryzen 9 5950X show no repeatable T63
     // exact-grid analysis gain at eight threads, and regressions for T255
-    // full-band analysis at one and sixteen threads. T86 single-thread
-    // synthesis is near-neutral; recurrence avoids its table cold-start cost.
+    // full-band analysis at one and sixteen threads. T86 and T127 single-thread
+    // synthesis do not repay table setup; T127 recurrence is slightly faster.
     let measured_regression = match operation {
-        LegendreOperation::Synthesis => thread_count == 1 && lmax < 127,
+        LegendreOperation::Synthesis => thread_count == 1 && lmax <= 127,
         LegendreOperation::Analysis => {
             (thread_count >= 8 && lmax == MIN_PRECOMPUTED_LMAX && ntheta == lmax + 1)
                 || (thread_count == 1 && lmax == MAX_PRECOMPUTED_LMAX && mmax >= 192)

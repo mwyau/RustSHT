@@ -24,8 +24,9 @@ const MAX_SUPPORTED_SPIN: usize = 4;
 const SPIN2_FAST_MIN_LMAX: usize = 500;
 const SPIN1_TRANSITION_MIN_LMAX: usize = 191;
 const SPIN1_TABLE_SYNTH_MIN_LMAX: usize = 127;
-// Current q1 synthesis measurements retain the low T127 point and the
-// T175–T191 range; T144 and T159 tables were slower than recurrence.
+const SPIN1_TABLE_SYNTH_MID_BAND_LMAX: usize = 159;
+// Current q1 synthesis measurements retain T127, T159, and T175–T191. T144
+// remains a measured regression, so the unmeasured gap stays on recurrence.
 const SPIN1_TABLE_SYNTH_HIGH_BAND_MIN_LMAX: usize = 175;
 const SPIN1_TABLE_SYNTH_MAX_LMAX: usize = 191;
 const SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MIN_LMAX: usize = 63;
@@ -46,6 +47,7 @@ pub(crate) fn single_threaded_execution() -> bool {
 #[inline]
 fn spin1_synthesis_table_band_is_beneficial(lmax: usize) -> bool {
     lmax == SPIN1_TABLE_SYNTH_MIN_LMAX
+        || lmax == SPIN1_TABLE_SYNTH_MID_BAND_LMAX
         || (SPIN1_TABLE_SYNTH_HIGH_BAND_MIN_LMAX..=SPIN1_TABLE_SYNTH_MAX_LMAX).contains(&lmax)
 }
 
@@ -88,10 +90,10 @@ impl<T: ShtScalar> ShtPlan<T> {
             return false;
         }
         // Same-source Ryzen 9 5950X measurements show no repeatable warm
-        // advantage for the 34 MiB table at full-mmax T255 with eight or more
+        // advantage for the 34 MiB table at full-mmax T255 with two or more
         // workers; keep the paired recurrence for that memory-heavy case.
         let high_band_full_mmax_multicore_regression =
-            self.harmonics.lmax() == 255 && self.harmonics.mmax() == 255 && thread_count >= 8;
+            self.harmonics.lmax() == 255 && self.harmonics.mmax() == 255 && thread_count >= 2;
         !high_band_full_mmax_multicore_regression
             && (thread_count != 1
                 || (SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MIN_LMAX
