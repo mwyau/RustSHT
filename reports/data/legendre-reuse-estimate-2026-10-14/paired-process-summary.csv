@@ -1,0 +1,5 @@
+case,spin,lmax,ntheta,nphi,threads,operation,pairs,recurrence_first_median_ms,recurrence_first_range_ms,recurrence_warm_median_ms,recurrence_warm_range_ms,table_first_median_ms,table_first_range_ms,table_warm_median_ms,table_warm_range_ms,total_use_crossover,minimum_profitable_calls,selector_minimum_calls
+scalar_t127_synth_q8,scalar,127,128,257,8,synthesis,3,0.468,0.421–0.518,0.370,0.369–0.391,4.344,4.230–4.514,0.324,0.313–0.329,85.3,86,90
+scalar_t85_atmos_synth_q8,scalar,85,128,256,8,synthesis,5,0.162,0.156–0.192,0.165,0.159–0.182,2.069,1.916–2.137,0.136,0.129–0.170,66.8,67,70
+spin1_t159_synth_q1,spin-1,159,160,321,1,synthesis,5,5.456,5.313–8.688,5.064,5.042–5.124,12.611,12.389–12.797,4.824,4.803–4.869,30.8,31,32
+spin1_t159_atmos_analysis_q4,spin-1,159,320,640,4,analysis,5,2.495,2.406–3.090,2.529,2.175–3.311,17.551,17.428–19.830,1.928,1.850–2.739,26.1,27,30
