@@ -283,6 +283,9 @@ pub(super) fn normalize_pair_lanes(
     debug_assert_eq!(previous.len(), exponents.len());
     let mut normal_range = true;
     for ring in 0..previous.len() {
+        if exponents[ring] == 0 && pair_is_in_normal_range(previous[ring], current[ring]) {
+            continue;
+        }
         let mut previous_value = ScaledValue {
             mantissa: previous[ring],
             exponent: exponents[ring],
@@ -1934,6 +1937,23 @@ mod tests {
             assert_eq!(current[lane], expected[lane].1);
             assert_eq!(exponents[lane], expected[lane].2);
         }
+    }
+
+    #[test]
+    fn normalize_pair_lanes_preserves_ordinary_lanes_in_mixed_blocks() {
+        let mut previous = [0.25, -BIG * 1.5, SMALL / 4.0, 0.0, 1.0];
+        let mut current = [-0.5, BIG / 2.0, SMALL / 8.0, 0.0, f64::MIN_POSITIVE];
+        let mut exponents = [0, 0, -7, 0, 0];
+        let original = (previous, current, exponents);
+
+        assert!(!normalize_pair_lanes(&mut previous, &mut current, &mut exponents).unwrap());
+        for lane in [0, 3, 4] {
+            assert_eq!(previous[lane].to_bits(), original.0[lane].to_bits());
+            assert_eq!(current[lane].to_bits(), original.1[lane].to_bits());
+            assert_eq!(exponents[lane], original.2[lane]);
+        }
+        assert_eq!(exponents[1], 800);
+        assert_eq!(exponents[2], -807);
     }
 
     #[test]

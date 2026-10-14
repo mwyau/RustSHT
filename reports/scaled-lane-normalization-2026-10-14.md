@@ -1,0 +1,40 @@
+# Skip redundant normalization for ordinary recurrence lanes
+
+## Result
+
+The scalar paired recurrence may leave some lanes on its scaled path after another lane requires binary scaling. `normalize_pair_lanes` previously rebuilt `ScaledValue` pairs and ran normalization for every lane at every subsequent degree. It now skips that work when a lane has exponent zero and both recurrence values already satisfy the normal-range bounds. Scaled, subnormal, zero-adjacent and out-of-range lanes keep the existing normalization path. The recurrence, accumulation order, polar cutoff and numerical fallback are unchanged. The check adds no allocation or retained plan/workspace memory.
+
+This is accepted for a repeatable f64 scalar-analysis gain at T511. The other measured whole-transform changes are smaller or too variable to claim as general wins.
+
+## Native performance
+
+The baseline was `ce83364` before the local patch; the candidate is that source plus the change in `src/legendre/scalar.rs`. Both used the same release example binary configuration, built with `CARGO_PROFILE_RELEASE_DEBUG=1 cargo build --release --example m1b_bench`. The build used rustc `1.99.0 (b940084d7 2026-09-28)`, LLVM `23.1.1`, `opt-level=3`, 16 codegen units and LTO disabled. Pulp runtime dispatch selected AVX2/FMA on the AMD Ryzen 9 5950X. No `target-cpu=native` flag was used. Linux was `7.0.14-20-pve`; runs were pinned to CPUs 0–7.
+
+`m1b_bench` used f64 GL, `ntheta=lmax+1`, `nphi=2*lmax+3`, full `mmax`, `phi0=0.37`, a reused plan/workspace, one warm-up and five timed samples in each process. Five alternating baseline/candidate process pairs were collected per T511 workload; spin-1 analysis received eight additional pairs. Three pairs were collected for T720 scalar and spin-1 analysis. Each table cell shows the median of process medians and the median paired percentage change. Pair ranges show the minimum and maximum per-pair percentage changes; wide ranges indicate shared-host variability.
+
+| Workload | Threads | Baseline ms | Candidate ms | Paired change (range) |
+| --- | ---: | ---: | ---: | ---: |
+| T511 scalar analysis | 1 | 24.261 | 23.538 | -3.33% (-5.70% to -1.66%) |
+| T511 scalar analysis | 8 | 7.711 | 7.425 | -3.32% (-23.04% to -2.78%) |
+| T511 scalar synthesis | 1 | 45.038 | 44.134 | -1.62% (-3.58% to -1.05%) |
+| T511 scalar synthesis | 8 | 12.604 | 12.425 | -1.09% (-7.64% to +3.51%) |
+| T511 spin-1 STANDARD analysis | 1 | 38.855 | 37.921 | -2.37% (-4.37% to +1.58%) |
+| T511 spin-1 STANDARD analysis | 8 | 12.535 | 12.438 | -1.05% (-21.11% to +22.41%) |
+| T720 scalar analysis | 1 | 63.389 | 65.049 | -1.10% (-1.35% to +2.64%) |
+| T720 scalar analysis | 8 | 20.228 | 19.879 | -4.61% (-4.84% to +2.97%) |
+| T720 spin-1 STANDARD analysis | 1 | 106.903 | 107.959 | -0.22% (-2.76% to +4.14%) |
+| T720 spin-1 STANDARD analysis | 8 | 34.970 | 34.899 | -2.05% (-9.57% to +1.33%) |
+
+The T511 scalar-analysis reduction is consistent at one thread and the paired eight-thread median is similar, though one noisy baseline pair widens the q8 range. Scalar synthesis and spin-1 analysis are directionally favorable at T511, but q8 ranges cross zero. T720 changes are within observed variability. The candidate is retained for its scalar-analysis benefit; no broader gain is claimed.
+
+Callgrind 3.26.0 on one T511 scalar GL analysis recorded `6,121,804,256` instruction references before and `5,917,466,747` after the change, a `3.34%` decrease. `callgrind_annotate --inclusive=yes --show=Ir` attributed `473,788,198` references (7.74%) to `normalize_pair_lanes` before and `269,449,895` (4.55%) after. These are simulated instruction references, not cycles. `perf_event_paranoid=4` prevented hardware-counter collection. The raw profiles remain outside the repository; the paired wall-time samples are committed under [`data/scaled-lane-normalization-2026-10-14`](data/scaled-lane-normalization-2026-10-14/).
+
+## DUCC and numerical validation
+
+The rebuilt Python extension was measured against installed `ducc0==0.41.0` (DUCC source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`) using T511 GL `512x1025`, f64 STANDARD operations, `phi0=0.37`, identical generated data, reused plan methods, three within-process run medians, and affinity on CPUs 0 or 0–7. The scalar analysis took `23.058 ms` in RustSHT versus `6.470 ms` in DUCC at one thread (3.57x); at eight threads the medians were `7.344 ms` versus `1.074 ms` (6.84x), with a wide RustSHT process spread due to one outlier. Spin-1 analysis took `38.719/12.881 ms` at one thread and `12.485/1.889 ms` at eight threads, RustSHT/DUCC. The q8 Rust value also had a wide process spread. These Python timings are contextual comparisons; the paired native measurements determine acceptance. Scalar coefficient relative-L2 error against DUCC was `3.484e-14` (maximum absolute `1.238e-14`); spin-1 coefficient relative-L2 error was `3.740e-14` (maximum absolute `1.401e-14`). Raw output and commands are in [`ducc-plan-comparison.txt`](data/scaled-lane-normalization-2026-10-14/ducc-plan-comparison.txt).
+
+Focused release regressions passed for ordinary-lane preservation and extreme finite reducer inputs, where direct intermediate products can overflow and must retain the established scaled fallback. The T255 scalar DUCC coefficient/adjoint check passed. The opt-in scalar T511/T1023/T2047 GL/CC/F1 DUCC and analytic check passed; at T2047 the largest reported DUCC middle-row error was `2.083e-13`, maximum analytic-map error `9.958e-12`, and maximum analysis-coefficient error `4.175e-14`. The opt-in spin-1/2 T511 all-grid DUCC and roundtrip check passed. The shared spin-3/4 T511 GL/CC/F1 DUCC and analytic regression passed.
+
+Full local checks passed: formatting; workspace Clippy with all targets/features and warnings denied; all-feature workspace tests (143 passed, 8 ignored, plus 10 f32 integration tests); no-default-feature Rust tests (128 passed, 7 ignored, plus 10 f32 integration tests); and 16 Python tests. No FFT code or public API changed.
+
+Reproduce the native benchmark with `CARGO_PROFILE_RELEASE_DEBUG=1 cargo build --release --example m1b_bench` and `taskset -c 0-7 target/release/examples/m1b_bench 0 511 8 analysis GL STANDARD`. The benchmark reports separate one-thread and Rayon timings. Python comparisons used `uv run --with maturin maturin develop --release --manifest-path python/Cargo.toml`, then `RAYON_NUM_THREADS=<threads> uv run python examples/python_perf_baseline.py 511 <spin> <threads> GL 3 plan analysis both STANDARD 1025` under matching `taskset` affinity.
