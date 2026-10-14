@@ -836,10 +836,30 @@ impl<T: ShtScalar> ShtPlan<T> {
 
         #[cfg(feature = "parallel")]
         {
-            let group_ring_count = workspace.ring_group_size.min(ntheta);
+            let group_size = if !derivative_norm && b_alm.is_some() {
+                self.fine_synthesis_ring_group_size()
+                    .unwrap_or(workspace.ring_group_size)
+            } else {
+                workspace.ring_group_size
+            };
+            let group_ring_count = group_size.min(ntheta);
             let group_count = ntheta.div_ceil(group_ring_count);
             let use_parallel = rayon::current_num_threads() > 1 && group_count > 1;
             if use_parallel {
+                let spin_pair_fast_coefficient_count =
+                    if self.harmonics.spin() == 1 && T::supports_paired_scalar() {
+                        self.spin_fast_coefficient_count
+                    } else {
+                        0
+                    };
+                workspace.ensure_recurrence_worker_count(
+                    group_count,
+                    self.recurrence_factor_count,
+                    self.spin_recurrence_factor_count,
+                    self.spin_fast_coefficient_count,
+                    spin_pair_fast_coefficient_count,
+                    workspace.theta_sin.len().min(LATITUDE_BLOCK_SIZE),
+                )?;
                 let use_spin1_coefficient_cache = recurrence_spin == 1
                     && self.harmonics.spin() == 1
                     && b_alm.is_some()

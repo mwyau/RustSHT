@@ -1,0 +1,19 @@
+T720 scalar DERIV1 synthesis q4, process medians (baseline -> candidate):
+70.162, 69.521, 70.886 -> 71.343, 70.779, 71.134 ms
+median 70.162 -> 71.134 ms (+1.4%, within variability)
+
+T720 spin-1 GRAD_ONLY synthesis q8, process medians (baseline -> candidate):
+50.590, 50.934, 50.955 -> 51.190, 50.861, 48.959 ms
+median 50.934 -> 50.861 ms (flat)
+
+T720 spin-1 STANDARD synthesis q4, process medians (baseline -> candidate):
+63.717, 68.208, 63.690 -> 66.008, 65.366, 65.539 ms
+median 63.717 -> 65.539 ms (no consistent material effect; policy excludes this case)
+
+T720 q16 workspace allocation median: 7.561 ms baseline, 7.552 ms candidate. One /usr/bin/time -v q16 process pair: peak RSS 63,196 KiB baseline,
+64,028 KiB candidate (+832 KiB). This is a single measurement. T720 scalar group timer probe, q8: central/equatorial 64-ring groups about
+4.3-6.2 ms; polar groups about 14-20 ms. Temporary instrumentation was
+removed before the candidate timing runs. Python-plan current-candidate context versus installed ducc0==0.41.0:
+T511 scalar q4 synthesis: 15.522 / 2.211 ms, relative-L2 map error 6.632e-14. T720 scalar q8 synthesis: 30.468 / 2.865 ms, relative-L2 map error 8.545e-14. T720 spin-1 q8 synthesis: 42.749 / 6.292 ms, relative-L2 map error 9.123e-14. Source baseline: 8d5db59. DUCC source: c1ed01b8fda69d2a378190f0915f1a19762dddbf. Rust: 1.99.0 / LLVM 23.1.1, release opt-level 3, 16 codegen units, LTO off;
+runtime Pulp AVX2/FMA dispatch, no target-cpu=native. Host: x86-64 CPU, Linux Reused native plan/workspace,
+one warm-up, five timed calls per process, paired pinned process runs.

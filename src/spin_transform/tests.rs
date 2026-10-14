@@ -2153,6 +2153,123 @@ fn spin1_table_synthesis_skips_table_build_for_extreme_finite_coefficients() {
     assert_eq!(table_second, recurrence_second);
 }
 
+#[cfg(feature = "parallel")]
+#[test]
+fn spin1_fine_synthesis_groups_preserve_t720_adjoint_identities() {
+    let plan = make_plan(1, 720, 720, 721, 1443);
+    let mut e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+    let mut b = e.clone();
+    for (l, m, e_value, b_value) in [
+        (1, 0, Complex64::new(0.31, 0.0), Complex64::new(-0.17, 0.0)),
+        (
+            91,
+            27,
+            Complex64::new(-0.23, 0.19),
+            Complex64::new(0.13, 0.29),
+        ),
+        (
+            720,
+            720,
+            Complex64::new(0.41, -0.11),
+            Complex64::new(-0.37, 0.21),
+        ),
+    ] {
+        let index = plan.harmonics.index(l, m).unwrap();
+        e[index] = e_value;
+        b[index] = b_value;
+    }
+    let (input_first, input_second) = arbitrary_maps(&plan);
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let mut workspace = eight_threads.install(|| plan.workspace()).unwrap();
+    assert_eq!(workspace.ring_group_size, 64);
+    assert_eq!(workspace.recurrence_workers.len(), 12);
+
+    let mut synthesized_first = vec![0.0; plan.sample_count];
+    let mut synthesized_second = vec![0.0; plan.sample_count];
+    eight_threads
+        .install(|| {
+            plan.synthesis_spin_into(
+                &e,
+                &b,
+                &mut synthesized_first,
+                &mut synthesized_second,
+                &mut workspace,
+            )
+        })
+        .unwrap();
+    assert_eq!(workspace.recurrence_workers.len(), 23);
+
+    let mut synthesis_adjoint_e = vec![Complex64::new(0.0, 0.0); e.len()];
+    let mut synthesis_adjoint_b = vec![Complex64::new(0.0, 0.0); b.len()];
+    eight_threads
+        .install(|| {
+            plan.adjoint_synthesis_spin_into(
+                &input_first,
+                &input_second,
+                &mut synthesis_adjoint_e,
+                &mut synthesis_adjoint_b,
+                &mut workspace,
+            )
+        })
+        .unwrap();
+    assert_close(
+        spin_map_inner_product(
+            &synthesized_first,
+            &synthesized_second,
+            &input_first,
+            &input_second,
+        ),
+        spin_harmonic_inner_product(
+            plan.harmonics(),
+            &e,
+            &b,
+            &synthesis_adjoint_e,
+            &synthesis_adjoint_b,
+        ),
+        2e-9,
+    );
+
+    let mut analyzed_e = vec![Complex64::new(0.0, 0.0); e.len()];
+    let mut analyzed_b = vec![Complex64::new(0.0, 0.0); b.len()];
+    eight_threads
+        .install(|| {
+            plan.analysis_spin_into(
+                &input_first,
+                &input_second,
+                &mut analyzed_e,
+                &mut analyzed_b,
+                &mut workspace,
+            )
+        })
+        .unwrap();
+    let mut analysis_adjoint_first = vec![0.0; plan.sample_count];
+    let mut analysis_adjoint_second = vec![0.0; plan.sample_count];
+    eight_threads
+        .install(|| {
+            plan.adjoint_analysis_spin_into(
+                &e,
+                &b,
+                &mut analysis_adjoint_first,
+                &mut analysis_adjoint_second,
+                &mut workspace,
+            )
+        })
+        .unwrap();
+    assert_close(
+        spin_harmonic_inner_product(plan.harmonics(), &analyzed_e, &analyzed_b, &e, &b),
+        spin_map_inner_product(
+            &input_first,
+            &input_second,
+            &analysis_adjoint_first,
+            &analysis_adjoint_second,
+        ),
+        2e-9,
+    );
+}
+
 #[test]
 fn spin1_scalar_table_analysis_preserves_small_reflected_differences() {
     let plan = make_plan(1, 72, 72, 73, 147);

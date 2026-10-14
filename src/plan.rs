@@ -192,6 +192,26 @@ impl<T: ShtScalar> ShtPlan<T> {
         )
     }
 
+    #[cfg(feature = "parallel")]
+    pub(crate) fn fine_synthesis_ring_group_size(&self) -> Option<usize> {
+        let lmax = self.harmonics.lmax();
+        if !T::supports_precomputed_scalar()
+            || self.grid.kind() != crate::grid::GridKind::GaussLegendre
+            || self.grid.ntheta() != lmax + 1
+            || self.harmonics.mmax() != lmax
+            || !(511..=720).contains(&lmax)
+        {
+            return None;
+        }
+
+        let thread_count = current_execution_thread_count();
+        match self.harmonics.spin() {
+            0 if thread_count >= 4 => Some(32),
+            1 if thread_count >= 8 && lmax >= 640 => Some(32),
+            _ => None,
+        }
+    }
+
     /// Returns the grid used by this plan.
     #[must_use]
     pub const fn grid(&self) -> &GridSpec {
