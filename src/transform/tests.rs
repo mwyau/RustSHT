@@ -1128,6 +1128,10 @@ fn scalar_strategy_selects_against_the_executing_pool() {
     let t127_plan = make_plan(127, 127, 128, 257, 0.37);
     assert_eq!(
         one_thread.install(|| t127_plan.scalar_legendre_strategy(LegendreOperation::Synthesis)),
+        LegendreStrategy::Recurrence
+    );
+    assert_eq!(
+        eight_threads.install(|| t127_plan.scalar_legendre_strategy(LegendreOperation::Synthesis)),
         LegendreStrategy::CompactTable
     );
 

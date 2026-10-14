@@ -2272,7 +2272,7 @@ fn concurrent_spin1_analysis_initializes_the_reusable_table_safely() {
 
 #[cfg(feature = "parallel")]
 #[test]
-fn spin1_max_band_analysis_uses_recurrence_for_one_and_eight_but_table_for_four() {
+fn spin1_max_band_analysis_uses_recurrence_for_one_two_four_eight_and_sixteen_threads() {
     let plan = make_plan(1, 255, 255, 256, 513);
     let (first, second) = arbitrary_maps(&plan);
     let one_thread = rayon::ThreadPoolBuilder::new()
@@ -2283,8 +2283,16 @@ fn spin1_max_band_analysis_uses_recurrence_for_one_and_eight_but_table_for_four(
         .num_threads(4)
         .build()
         .unwrap();
+    let two_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(2)
+        .build()
+        .unwrap();
     let eight_threads = rayon::ThreadPoolBuilder::new()
         .num_threads(8)
+        .build()
+        .unwrap();
+    let sixteen_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(16)
         .build()
         .unwrap();
     let mut one_workspace = one_thread.install(|| plan.workspace()).unwrap();
@@ -2297,11 +2305,22 @@ fn spin1_max_band_analysis_uses_recurrence_for_one_and_eight_but_table_for_four(
         .unwrap();
     assert!(plan.spin1_scalar_legendre_table.get().is_none());
 
+    let mut two_workspace = two_threads.install(|| plan.workspace()).unwrap();
+    let mut two_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut two_b = two_e.clone();
+    two_threads
+        .install(|| {
+            assert!(!plan.allow_spin1_analysis_table());
+            plan.analysis_spin_into(&first, &second, &mut two_e, &mut two_b, &mut two_workspace)
+        })
+        .unwrap();
+
     let mut four_workspace = four_threads.install(|| plan.workspace()).unwrap();
     let mut four_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
     let mut four_b = four_e.clone();
     four_threads
         .install(|| {
+            assert!(!plan.allow_spin1_analysis_table());
             plan.analysis_spin_into(
                 &first,
                 &second,
@@ -2311,11 +2330,7 @@ fn spin1_max_band_analysis_uses_recurrence_for_one_and_eight_but_table_for_four(
             )
         })
         .unwrap();
-    assert!(
-        plan.spin1_scalar_legendre_table
-            .get()
-            .is_some_and(Option::is_some)
-    );
+    assert!(plan.spin1_scalar_legendre_table.get().is_none());
 
     let mut eight_workspace = eight_threads.install(|| plan.workspace()).unwrap();
     let mut eight_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
@@ -2332,12 +2347,34 @@ fn spin1_max_band_analysis_uses_recurrence_for_one_and_eight_but_table_for_four(
             )
         })
         .unwrap();
+    assert!(plan.spin1_scalar_legendre_table.get().is_none());
+
+    let mut sixteen_workspace = sixteen_threads.install(|| plan.workspace()).unwrap();
+    let mut sixteen_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut sixteen_b = sixteen_e.clone();
+    sixteen_threads
+        .install(|| {
+            assert!(!plan.allow_spin1_analysis_table());
+            plan.analysis_spin_into(
+                &first,
+                &second,
+                &mut sixteen_e,
+                &mut sixteen_b,
+                &mut sixteen_workspace,
+            )
+        })
+        .unwrap();
+    assert!(plan.spin1_scalar_legendre_table.get().is_none());
     for (&one, &other) in one_e
         .iter()
         .zip(&four_e)
         .chain(one_b.iter().zip(&four_b))
+        .chain(one_e.iter().zip(&two_e))
+        .chain(one_b.iter().zip(&two_b))
         .chain(one_e.iter().zip(&eight_e))
         .chain(one_b.iter().zip(&eight_b))
+        .chain(one_e.iter().zip(&sixteen_e))
+        .chain(one_b.iter().zip(&sixteen_b))
     {
         assert!((one - other).norm() <= 2e-10 * one.norm().max(other.norm()).max(1.0));
     }
@@ -3462,7 +3499,8 @@ fn scalar_legendre_table_is_materialized_only_for_standard_scalar_operations() {
         .unwrap();
     assert!(derivative_plan.scalar_legendre_table.get().is_none());
 
-    let standard_plan = make_plan(0, 127, 127, 128, 257);
+    // T159 retains the measured one-thread scalar synthesis table path.
+    let standard_plan = make_plan(0, 159, 159, 160, 321);
     assert!(standard_plan.scalar_legendre_table.get().is_none());
     let standard_alm = vec![Complex64::new(0.0, 0.0); standard_plan.harmonics().nalm()];
     let mut standard_map = vec![0.0; standard_plan.sample_count];
