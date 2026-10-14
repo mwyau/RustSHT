@@ -4,7 +4,21 @@
 use super::*;
 use num_complex::Complex64;
 
+use crate::plan::LegendreReuseEstimate;
 use crate::{GridKind, GridSpec, HarmonicSpec};
+
+fn in_single_thread_pool<T: Send>(operation: impl FnOnce() -> T + Send) -> T {
+    #[cfg(feature = "parallel")]
+    {
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(1)
+            .build()
+            .unwrap();
+        pool.install(operation)
+    }
+    #[cfg(not(feature = "parallel"))]
+    operation()
+}
 
 fn make_plan(spin: usize, lmax: usize, mmax: usize, ntheta: usize, nphi: usize) -> ShtPlan {
     ShtPlan::new(
@@ -28,6 +42,121 @@ fn make_f1_plan(spin: usize, lmax: usize, mmax: usize, ntheta: usize, nphi: usiz
         HarmonicSpec::new(lmax, mmax, spin).unwrap(),
     )
     .unwrap()
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn spin1_reuse_estimate_gates_analysis_table_by_executing_pool() {
+    let four_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(4)
+        .build()
+        .unwrap();
+    let make = |analysis_calls| -> ShtPlan {
+        ShtPlan::new_with_legendre_reuse_estimate(
+            GridSpec::new(GridKind::GaussLegendre, 320, 640, 0.37).unwrap(),
+            HarmonicSpec::new(159, 159, 1).unwrap(),
+            LegendreReuseEstimate::new(None, Some(analysis_calls)),
+        )
+        .unwrap()
+    };
+    let before = make(29);
+    let at_break_even = make(30);
+    assert!(!four_threads.install(|| before.allow_spin1_analysis_table()));
+    assert!(four_threads.install(|| at_break_even.allow_spin1_analysis_table()));
+
+    let sixteen_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(16)
+        .build()
+        .unwrap();
+    let q16_before = make(124);
+    let q16_at_break_even = make(125);
+    assert!(!sixteen_threads.install(|| q16_before.allow_spin1_analysis_table()));
+    assert!(sixteen_threads.install(|| q16_at_break_even.allow_spin1_analysis_table()));
+}
+
+#[test]
+fn spin1_reuse_estimate_keeps_short_synthesis_on_recurrence() {
+    let make = |synthesis_calls| -> ShtPlan {
+        ShtPlan::new_with_legendre_reuse_estimate(
+            GridSpec::new(GridKind::GaussLegendre, 160, 321, 0.37).unwrap(),
+            HarmonicSpec::new(159, 159, 1).unwrap(),
+            LegendreReuseEstimate::new(Some(synthesis_calls), None),
+        )
+        .unwrap()
+    };
+    let short = make(31);
+    let at_break_even = make(32);
+    let (mut e, mut b) = coefficients(&short);
+    for value in e.iter_mut().chain(&mut b) {
+        *value *= 1e-5;
+    }
+    let mut short_first = vec![0.0; short.sample_count];
+    let mut short_second = vec![0.0; short.sample_count];
+    let mut short_workspace = in_single_thread_pool(|| short.workspace()).unwrap();
+    in_single_thread_pool(|| {
+        short.synthesis_spin_into(
+            &e,
+            &b,
+            &mut short_first,
+            &mut short_second,
+            &mut short_workspace,
+        )
+    })
+    .unwrap();
+    assert!(short.spin1_scalar_legendre_table.get().is_none());
+
+    let mut table_first = vec![0.0; at_break_even.sample_count];
+    let mut table_second = vec![0.0; at_break_even.sample_count];
+    let mut table_workspace = in_single_thread_pool(|| at_break_even.workspace()).unwrap();
+    in_single_thread_pool(|| {
+        at_break_even.synthesis_spin_into(
+            &e,
+            &b,
+            &mut table_first,
+            &mut table_second,
+            &mut table_workspace,
+        )
+    })
+    .unwrap();
+    assert!(
+        at_break_even
+            .spin1_scalar_legendre_table
+            .get()
+            .is_some_and(Option::is_some)
+    );
+    for (actual, expected) in table_first.iter().zip(&short_first) {
+        assert!((actual - expected).abs() <= 3e-11);
+    }
+    for (actual, expected) in table_second.iter().zip(&short_second) {
+        assert!((actual - expected).abs() <= 3e-11);
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn spin1_adjoint_synthesis_does_not_build_analysis_table() {
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(4)
+        .build()
+        .unwrap();
+    let plan = ShtPlan::new_with_legendre_reuse_estimate(
+        GridSpec::new(GridKind::GaussLegendre, 320, 640, 0.37).unwrap(),
+        HarmonicSpec::new(159, 159, 1).unwrap(),
+        LegendreReuseEstimate::new(None, Some(100)),
+    )
+    .unwrap();
+    let first = vec![0.0; plan.sample_count];
+    let second = vec![0.0; plan.sample_count];
+    let mut e_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+    let mut b_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+    let mut workspace = pool.install(|| plan.workspace()).unwrap();
+
+    pool.install(|| {
+        plan.adjoint_synthesis_spin_into(&first, &second, &mut e_alm, &mut b_alm, &mut workspace)
+    })
+    .unwrap();
+
+    assert!(plan.spin1_scalar_legendre_table.get().is_none());
 }
 
 fn coefficients(plan: &ShtPlan) -> (Vec<Complex64>, Vec<Complex64>) {

@@ -1,7 +1,7 @@
 use std::hint::black_box;
 use std::time::{Duration, Instant};
 
-use rustsht::{Complex64, GridKind, GridSpec, HarmonicSpec, ShtPlan};
+use rustsht::{Complex64, GridKind, GridSpec, HarmonicSpec, LegendreReuseEstimate, ShtPlan};
 
 fn median(mut durations: Vec<Duration>) -> Duration {
     durations.sort_unstable();
@@ -80,6 +80,21 @@ fn main() {
     let requested_only = arguments
         .next()
         .is_some_and(|value| value == "requested-only");
+    let reuse_estimate = std::env::var("RUSTSHT_LEGENDRE_REUSE_ESTIMATE")
+        .ok()
+        .map(|value| {
+            let (coefficient_to_map, map_to_coefficient) = value
+                .split_once(',')
+                .expect("reuse estimate must be coefficient_to_map,map_to_coefficient");
+            let parse = |value: &str| {
+                if value == "-" {
+                    None
+                } else {
+                    Some(value.parse().expect("reuse count must be an integer or -"))
+                }
+            };
+            LegendreReuseEstimate::new(parse(coefficient_to_map), parse(map_to_coefficient))
+        });
     let ntheta = requested_ntheta.unwrap_or(
         lmax + if grid_kind == GridKind::ClenshawCurtis {
             2
@@ -98,11 +113,13 @@ fn main() {
         .build()
         .unwrap();
     let make_plan = || {
-        ShtPlan::new(
-            GridSpec::new(grid_kind, ntheta, nphi, 0.37).unwrap(),
-            HarmonicSpec::new(lmax, mmax, plan_spin).unwrap(),
-        )
-        .unwrap()
+        let grid = GridSpec::new(grid_kind, ntheta, nphi, 0.37).unwrap();
+        let harmonics = HarmonicSpec::new(lmax, mmax, plan_spin).unwrap();
+        if let Some(estimate) = reuse_estimate {
+            ShtPlan::new_with_legendre_reuse_estimate(grid, harmonics, estimate).unwrap()
+        } else {
+            ShtPlan::new(grid, harmonics).unwrap()
+        }
     };
     let plan_construction = measure(|| drop(black_box(make_plan())));
     let plan = make_plan();
@@ -453,7 +470,7 @@ fn main() {
     });
 
     println!(
-        "spin-{spin} T{lmax} mmax={mmax}; {geometry} {ntheta}x{nphi}; f64; {mode}; requested={rayon_threads} threads; {operation}; requested_only={requested_only}; strategy=automatic; 5 samples, median"
+        "spin-{spin} T{lmax} mmax={mmax}; {geometry} {ntheta}x{nphi}; f64; {mode}; requested={rayon_threads} threads; {operation}; requested_only={requested_only}; reuse_estimate={reuse_estimate:?}; strategy=automatic; 5 samples, median"
     );
     println!(
         "plan_construction_ms={:.3}",

@@ -7,11 +7,68 @@ use crate::grid::GridSpec;
 use crate::harmonics::HarmonicSpec;
 use crate::legendre::{
     LegendreOperation, LegendreStrategy, SPIN1_FAST_MIN_LMAX, ScalarLegendreTable, ShtScalar,
-    fill_spin2_factors, select_scalar_legendre_strategy,
+    fill_spin2_factors, measured_table_break_even_calls, select_scalar_legendre_strategy,
 };
 use crate::meridional::CCResamplingPlan;
 use crate::workspace::ShtWorkspace;
 use std::sync::OnceLock;
+
+/// Expected STANDARD transform uses grouped by execution direction.
+///
+/// The counts are calls that can use the compact table in the corresponding
+/// execution direction for the plan's spin, grid, mode, and operation. Scalar
+/// coefficient-to-map calls include synthesis and adjoint analysis; scalar
+/// map-to-coefficient calls include analysis and adjoint synthesis. For
+/// spin-1, STANDARD analysis can use the map-to-coefficient table, but
+/// adjoint synthesis currently cannot and must not contribute to that count.
+/// `None` leaves the corresponding strategy on the existing automatic
+/// steady-state policy. Finite counts affect only table choices with measured
+/// cold-to-warm break-even data. An unmeasured cold cell uses recurrence.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct LegendreReuseEstimate {
+    coefficient_to_map_calls: Option<usize>,
+    map_to_coefficient_calls: Option<usize>,
+}
+
+impl LegendreReuseEstimate {
+    /// Creates estimates of STANDARD calls through each execution direction.
+    ///
+    /// Counts include only STANDARD calls that can execute a compact table
+    /// for this plan's spin, grid, mode, and operation. Scalar estimates may
+    /// include both each operation and its adjoint. Spin-1 adjoint synthesis
+    /// cannot use the map-to-coefficient table and must not be counted there.
+    /// Counts include the first call. Use `None` when eligible reuse is
+    /// unknown. `Some(0)` keeps a fresh plan on recurrence for that direction.
+    #[must_use]
+    pub const fn new(
+        coefficient_to_map_calls: Option<usize>,
+        map_to_coefficient_calls: Option<usize>,
+    ) -> Self {
+        Self {
+            coefficient_to_map_calls,
+            map_to_coefficient_calls,
+        }
+    }
+
+    /// Returns the coefficient-to-map execution estimate, if supplied.
+    #[must_use]
+    pub const fn coefficient_to_map_calls(self) -> Option<usize> {
+        self.coefficient_to_map_calls
+    }
+
+    /// Returns the map-to-coefficient execution estimate, if supplied.
+    #[must_use]
+    pub const fn map_to_coefficient_calls(self) -> Option<usize> {
+        self.map_to_coefficient_calls
+    }
+
+    pub(crate) const fn calls_for(self, operation: LegendreOperation) -> Option<usize> {
+        match operation {
+            LegendreOperation::Synthesis => self.coefficient_to_map_calls,
+            LegendreOperation::Analysis => self.map_to_coefficient_calls,
+        }
+    }
+}
 
 pub(crate) fn current_execution_thread_count() -> usize {
     #[cfg(feature = "parallel")]
@@ -39,6 +96,7 @@ pub struct ShtPlan<T: ShtScalar = f64> {
     pub(crate) spin_fast_coefficient_count: usize,
     pub(crate) spin2_fast_f1: Vec<T>,
     pub(crate) spin2_fast_f2: Vec<T>,
+    legendre_reuse_estimate: LegendreReuseEstimate,
     pub(crate) scalar_legendre_table: OnceLock<Option<ScalarLegendreTable<T>>>,
     pub(crate) spin1_scalar_legendre_table: OnceLock<Option<ScalarLegendreTable<T>>>,
 }
@@ -55,6 +113,26 @@ impl<T: ShtScalar> ShtPlan<T> {
     /// Returns an error if checked sample or spectrum sizes overflow, or if
     /// FFT plans, normalization factors, or their storage cannot be created.
     pub fn new(grid: GridSpec, harmonics: HarmonicSpec) -> Result<Self, ShtError> {
+        Self::new_with_legendre_reuse_estimate(grid, harmonics, LegendreReuseEstimate::default())
+    }
+
+    /// Constructs a plan with an estimate of its STANDARD transform reuse.
+    ///
+    /// The estimate changes only compact-table selection. The selected table
+    /// remains lazy, the executing Rayon pool is checked for each operation,
+    /// and unmeasured cold break-even cells retain recurrence. If another
+    /// eligible operation has already initialized the shared table, a
+    /// positive estimate can use it where the existing operation policy
+    /// selects it. This does not measure calls or change numerical behavior.
+    ///
+    /// # Errors
+    ///
+    /// Returns the same errors as [`Self::new`].
+    pub fn new_with_legendre_reuse_estimate(
+        grid: GridSpec,
+        harmonics: HarmonicSpec,
+        legendre_reuse_estimate: LegendreReuseEstimate,
+    ) -> Result<Self, ShtError> {
         let sample_count =
             grid.ntheta()
                 .checked_mul(grid.nphi())
@@ -143,6 +221,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             spin_fast_coefficient_count,
             spin2_fast_f1,
             spin2_fast_f2,
+            legendre_reuse_estimate,
             scalar_legendre_table: OnceLock::new(),
             spin1_scalar_legendre_table: OnceLock::new(),
         })
@@ -184,13 +263,51 @@ impl<T: ShtScalar> ShtPlan<T> {
         if !ScalarLegendreTable::<T>::supports_grid_and_bandlimit(&self.grid, &self.harmonics) {
             return LegendreStrategy::Recurrence;
         }
-        select_scalar_legendre_strategy(
+        let strategy = select_scalar_legendre_strategy(
             self.harmonics.lmax(),
             self.harmonics.mmax(),
             self.grid.ntheta(),
             operation,
             current_execution_thread_count(),
+        );
+        if strategy == LegendreStrategy::CompactTable
+            && !self.legendre_reuse_allows_table(
+                operation,
+                self.scalar_legendre_table
+                    .get()
+                    .is_some_and(Option::is_some),
+            )
+        {
+            LegendreStrategy::Recurrence
+        } else {
+            strategy
+        }
+    }
+
+    pub(crate) fn legendre_reuse_allows_table(
+        &self,
+        operation: LegendreOperation,
+        table_is_initialized: bool,
+    ) -> bool {
+        let Some(expected_calls) = self.legendre_reuse_estimate.calls_for(operation) else {
+            return true;
+        };
+        if expected_calls == 0 {
+            return false;
+        }
+        if table_is_initialized {
+            return true;
+        }
+        measured_table_break_even_calls(
+            self.harmonics.lmax(),
+            self.harmonics.mmax(),
+            self.grid.ntheta(),
+            self.grid.nphi(),
+            self.harmonics.spin(),
+            operation,
+            current_execution_thread_count(),
         )
+        .is_some_and(|minimum_calls| expected_calls >= minimum_calls)
     }
 
     #[cfg(feature = "parallel")]
