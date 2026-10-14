@@ -408,6 +408,7 @@ fn spin1_scalar_fast_synthesis_matches_general_channel_cases() {
             1,
             false,
             true,
+            false,
             nphi,
             plan.fft.spectrum_len(),
             plan.grid.phi0(),
@@ -431,6 +432,7 @@ fn spin1_scalar_fast_synthesis_matches_general_channel_cases() {
             e_alm,
             b_alm,
             1,
+            false,
             false,
             false,
             nphi,
@@ -460,6 +462,120 @@ fn spin1_scalar_fast_synthesis_matches_general_channel_cases() {
                 "{name} index={index} fast={fast:?} general={general:?} discrepancy={error:.3e}"
             );
         }
+    }
+}
+
+#[test]
+fn spin1_gl_table_synthesis_matches_recurrence_and_adjoint() {
+    for (lmax, nphi) in [(72, 147), (127, 257), (128, 258), (191, 385)] {
+        let build_plan = || make_plan(1, lmax, lmax, lmax + 1, nphi);
+        let plan = build_plan();
+        let recurrence_plan = build_plan();
+        assert!(
+            recurrence_plan
+                .spin1_scalar_legendre_table
+                .set(None)
+                .is_ok()
+        );
+        let (mut e, mut b) = coefficients(&plan);
+        for value in e.iter_mut().chain(&mut b) {
+            *value *= 1e-5;
+        }
+        let mut table_workspace = plan.workspace().unwrap();
+        let mut recurrence_workspace = recurrence_plan.workspace().unwrap();
+        let mut table_first = vec![0.0; plan.sample_count];
+        let mut table_second = vec![0.0; plan.sample_count];
+        let mut recurrence_first = vec![0.0; plan.sample_count];
+        let mut recurrence_second = vec![0.0; plan.sample_count];
+        #[cfg(feature = "parallel")]
+        let single_thread_pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(1)
+            .build()
+            .unwrap();
+        #[cfg(feature = "parallel")]
+        single_thread_pool
+            .install(|| {
+                plan.synthesis_spin_into(
+                    &e,
+                    &b,
+                    &mut table_first,
+                    &mut table_second,
+                    &mut table_workspace,
+                )
+            })
+            .unwrap();
+        #[cfg(not(feature = "parallel"))]
+        plan.synthesis_spin_into(
+            &e,
+            &b,
+            &mut table_first,
+            &mut table_second,
+            &mut table_workspace,
+        )
+        .unwrap();
+        if lmax >= SPIN1_TABLE_SYNTH_MIN_LMAX {
+            assert!(
+                plan.spin1_scalar_legendre_table
+                    .get()
+                    .is_some_and(Option::is_some)
+            );
+        } else {
+            assert!(plan.spin1_scalar_legendre_table.get().is_none());
+        }
+        #[cfg(feature = "parallel")]
+        single_thread_pool
+            .install(|| {
+                recurrence_plan.synthesis_spin_into(
+                    &e,
+                    &b,
+                    &mut recurrence_first,
+                    &mut recurrence_second,
+                    &mut recurrence_workspace,
+                )
+            })
+            .unwrap();
+        #[cfg(not(feature = "parallel"))]
+        recurrence_plan
+            .synthesis_spin_into(
+                &e,
+                &b,
+                &mut recurrence_first,
+                &mut recurrence_second,
+                &mut recurrence_workspace,
+            )
+            .unwrap();
+
+        for (index, (&table, &recurrence)) in table_first
+            .iter()
+            .chain(&table_second)
+            .zip(recurrence_first.iter().chain(&recurrence_second))
+            .enumerate()
+        {
+            let error = (table - recurrence).abs();
+            assert!(
+                error <= 3e-11,
+                "T{lmax} spin-1 synthesis sample {index}: table={table:.17e}, recurrence={recurrence:.17e}, error={error:.3e}"
+            );
+        }
+
+        let (map_first, map_second) = arbitrary_maps(&plan);
+        let mut adjoint_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        let mut adjoint_b = adjoint_e.clone();
+        plan.adjoint_synthesis_spin_into(
+            &map_first,
+            &map_second,
+            &mut adjoint_e,
+            &mut adjoint_b,
+            &mut table_workspace,
+        )
+        .unwrap();
+        let lhs = spin_map_inner_product(&table_first, &table_second, &map_first, &map_second);
+        let rhs = spin_harmonic_inner_product(plan.harmonics(), &e, &b, &adjoint_e, &adjoint_b);
+        let error = (lhs - rhs).abs() / lhs.abs().max(rhs.abs()).max(1.0);
+        assert!(
+            error <= 2e-11,
+            "T{lmax} spin-1 synthesis adjoint error={error:.3e}"
+        );
     }
 }
 
@@ -588,6 +704,8 @@ fn spin1_scalar_transition_splits_polar_lanes_and_matches_general() {
                     m,
                     scalar_lmax,
                     spectrum_len,
+                    0,
+                    false,
                     &workspace.theta_sin[..block_len],
                     &workspace.theta_cos[..block_len],
                     &workspace.ring_order_limits[..block_len],
@@ -608,6 +726,7 @@ fn spin1_scalar_transition_splits_polar_lanes_and_matches_general() {
                 1,
                 derivative_norm,
                 true,
+                false,
                 nphi,
                 spectrum_len,
                 plan.grid.phi0(),
@@ -630,6 +749,7 @@ fn spin1_scalar_transition_splits_polar_lanes_and_matches_general() {
                 (mode == "STANDARD").then_some(b_alm.as_slice()),
                 1,
                 derivative_norm,
+                false,
                 false,
                 nphi,
                 spectrum_len,
@@ -811,6 +931,7 @@ fn spin1_scalar_transition_preserves_the_sine_cutoff_boundary() {
             1,
             false,
             true,
+            false,
             nphi,
             spectrum_len,
             plan.grid.phi0(),
@@ -832,6 +953,7 @@ fn spin1_scalar_transition_preserves_the_sine_cutoff_boundary() {
             &e_alm,
             Some(&b_alm),
             1,
+            false,
             false,
             false,
             nphi,
@@ -903,6 +1025,7 @@ fn spin1_scalar_conversion_matches_general_on_all_grids() {
                     1,
                     false,
                     true,
+                    false,
                     nphi,
                     spectrum_len,
                     plan.grid.phi0(),
@@ -923,6 +1046,7 @@ fn spin1_scalar_conversion_matches_general_on_all_grids() {
                     e_coefficients,
                     b_coefficients,
                     1,
+                    false,
                     false,
                     false,
                     nphi,
@@ -1073,6 +1197,8 @@ fn spin1_scalar_synthesis_compacts_mixed_high_order_cutoff_blocks() {
             m,
             lmax + 1,
             spectrum_len,
+            block_start,
+            false,
             &actual_workspace.theta_sin[block_start..block_end],
             &actual_workspace.theta_cos[block_start..block_end],
             &limits[block_start..block_end],
@@ -1098,6 +1224,8 @@ fn spin1_scalar_synthesis_compacts_mixed_high_order_cutoff_blocks() {
             m,
             lmax + 1,
             spectrum_len,
+            block_start,
+            false,
             &reference_workspace.theta_sin[block_start..block_end],
             &reference_workspace.theta_cos[block_start..block_end],
             &all_active_limits[block_start..block_end],
@@ -1132,6 +1260,8 @@ fn spin1_scalar_synthesis_compacts_mixed_high_order_cutoff_blocks() {
         m,
         lmax + 1,
         spectrum_len,
+        boundary_ring,
+        false,
         &[reference_workspace.theta_sin[boundary_ring]],
         &[reference_workspace.theta_cos[boundary_ring]],
         &[lmax],
@@ -1267,6 +1397,7 @@ fn spin1_synthesis_skips_high_orders_in_a_clenshaw_curtis_pole_segment() {
         &e_alm,
         Some(&b_alm),
         1,
+        false,
         false,
         false,
         nphi,

@@ -19,9 +19,22 @@ use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 const MAX_SUPPORTED_SPIN: usize = 4;
 const SPIN2_FAST_MIN_LMAX: usize = 500;
 const SPIN1_TRANSITION_MIN_LMAX: usize = 191;
+const SPIN1_TABLE_SYNTH_MIN_LMAX: usize = 127;
 const SPIN1_FAST_MIN_SIN_THETA: f64 = 0.0001;
 const SPIN1_PAIR_MIN_SIN_THETA: f64 = 0.01;
 const SPIN2_FAST_MIN_SIN_THETA: f64 = 0.01;
+
+#[inline]
+fn single_threaded_execution() -> bool {
+    #[cfg(feature = "parallel")]
+    {
+        rayon::current_num_threads() == 1
+    }
+    #[cfg(not(feature = "parallel"))]
+    {
+        true
+    }
+}
 
 #[allow(private_bounds)]
 impl<T: ShtScalar> ShtPlan<T> {
@@ -390,6 +403,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             spin,
             false,
             false,
+            false,
             1,
             self.fft.spectrum_len(),
             self.grid.phi0(),
@@ -731,6 +745,27 @@ impl<T: ShtScalar> ShtPlan<T> {
                 && self.harmonics.spin() == 0
                 && T::supports_paired_scalar()
                 && self.harmonics.lmax() >= SPIN1_FAST_MIN_LMAX);
+        let can_use_spin1_table = self.harmonics.lmax() >= SPIN1_TABLE_SYNTH_MIN_LMAX
+            && recurrence_spin == 1
+            && self.harmonics.spin() == 1
+            && b_alm.is_some()
+            && !derivative_norm
+            && self.grid.kind() == crate::grid::GridKind::GaussLegendre
+            && single_threaded_execution()
+            && self
+                .grid
+                .theta()
+                .iter()
+                .all(|&theta| theta.sin() >= SPIN1_PAIR_MIN_SIN_THETA);
+        if can_use_spin1_table {
+            self.spin1_scalar_legendre_table.get_or_init(|| {
+                crate::legendre::ScalarLegendreTable::build_if_beneficial(
+                    &self.grid,
+                    &self.harmonics,
+                    &self.sectoral_norms,
+                )
+            });
+        }
         self.prepare_spin_latitudes(workspace, recurrence_spin);
         workspace
             .spectra
@@ -766,6 +801,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             recurrence_spin,
                             derivative_norm,
                             allow_fast_scalar,
+                            can_use_spin1_table,
                             nphi,
                             spectrum_len,
                             phi0,
@@ -787,6 +823,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     recurrence_spin,
                     derivative_norm,
                     allow_fast_scalar,
+                    can_use_spin1_table,
                     nphi,
                     spectrum_len,
                     phi0,
@@ -809,6 +846,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             recurrence_spin,
             derivative_norm,
             allow_fast_scalar,
+            can_use_spin1_table,
             nphi,
             spectrum_len,
             phi0,
@@ -854,6 +892,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         spin: usize,
         derivative_norm: bool,
         allow_fast_scalar: bool,
+        allow_spin1_table: bool,
         nphi: usize,
         spectrum_len: usize,
         phi0: f64,
@@ -913,6 +952,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 spin,
                 derivative_norm,
                 segment_fast,
+                allow_spin1_table,
                 nphi,
                 spectrum_len,
                 phi0,
@@ -942,6 +982,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         spin: usize,
         derivative_norm: bool,
         fast_scalar: bool,
+        allow_spin1_table: bool,
         nphi: usize,
         spectrum_len: usize,
         phi0: f64,
@@ -1062,6 +1103,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                             m,
                             scalar_lmax,
                             spectrum_len,
+                            ring_start + block_start,
+                            allow_spin1_table,
                             &theta_sin[block_start..block_end],
                             &theta_cos[block_start..block_end],
                             &ring_order_limits[ring_start + block_start..ring_start + block_end],
@@ -1162,6 +1205,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         m: usize,
         scalar_lmax: usize,
         spectrum_len: usize,
+        global_ring_start: usize,
+        allow_table: bool,
         theta_sin: &[T],
         theta_cos: &[T],
         ring_order_limits: &[usize],
@@ -1181,9 +1226,51 @@ impl<T: ShtScalar> ShtPlan<T> {
             return Ok(());
         }
 
+        let pair_min_sine = T::from_f64(SPIN1_PAIR_MIN_SIN_THETA)
+            .expect("spin-1 paired scalar sine limit converts");
+        if allow_table
+            && self.harmonics.lmax() >= SPIN1_TABLE_SYNTH_MIN_LMAX
+            && let Some(table) = self
+                .spin1_scalar_legendre_table
+                .get()
+                .and_then(Option::as_ref)
+            && theta_sin.iter().all(|&sine| sine >= pair_min_sine)
+            && (m..=scalar_lmax).all(|degree| {
+                let first = recurrence.fast_scalar_first[degree];
+                let second = recurrence.fast_scalar_second[degree];
+                table.input_is_safe(first.re)
+                    && table.input_is_safe(first.im)
+                    && table.input_is_safe(second.re)
+                    && table.input_is_safe(second.im)
+            })
+        {
+            let ntheta = self.grid.ntheta();
+            for degree in m..=scalar_lmax {
+                let basis_lanes = table.degree_lanes(m, degree - m);
+                let first_coefficient = recurrence.fast_scalar_first[degree];
+                let second_coefficient = recurrence.fast_scalar_second[degree];
+                let reflected_odd = !(degree + m).is_multiple_of(2);
+                for lane in 0..block_len {
+                    if m > ring_order_limits[lane] {
+                        continue;
+                    }
+                    let global_ring = global_ring_start + lane;
+                    let mirrored_ring = ntheta - 1 - global_ring;
+                    let north_ring = global_ring.min(mirrored_ring);
+                    let mut basis = basis_lanes[north_ring];
+                    if global_ring > mirrored_ring && reflected_odd {
+                        basis = -basis;
+                    }
+                    let weighted_basis = basis / theta_sin[lane];
+                    let spectrum_index = lane * spectrum_len + m;
+                    q_spectra[spectrum_index] += first_coefficient * weighted_basis;
+                    u_spectra[spectrum_index] += second_coefficient * weighted_basis;
+                }
+            }
+            return Ok(());
+        }
+
         if !has_excluded_ring {
-            let pair_min_sine = T::from_f64(SPIN1_PAIR_MIN_SIN_THETA)
-                .expect("spin-1 paired scalar sine limit converts");
             let paired_channels_eligible = T::supports_paired_scalar()
                 && recurrence.fast_spin_first.len() >= (scalar_lmax - m + 2) / 2
                 && recurrence.fast_spin_pair_first.len() >= (scalar_lmax - m + 2) / 2
