@@ -881,13 +881,18 @@ fn precomputed_scalar_table_supports_spin1_scalar_degree_extension() {
     let high_band_grid = GridSpec::new(GridKind::GaussLegendre, 256, 513, 0.37).unwrap();
     let high_band_harmonics = HarmonicSpec::new(255, 255, 1).unwrap();
     let high_band_plan: ShtPlan<f64> = ShtPlan::new(high_band_grid, high_band_harmonics).unwrap();
+    let high_band_table = crate::legendre::ScalarLegendreTable::build_if_beneficial(
+        &high_band_plan.grid,
+        &high_band_plan.harmonics,
+        &high_band_plan.sectoral_norms,
+    )
+    .expect("the bounded T255 spin-1 scalar table is eligible");
+    assert_eq!(high_band_table.degree_lanes(0, 256).len(), 128);
     assert!(
-        crate::legendre::ScalarLegendreTable::build_if_beneficial(
-            &high_band_plan.grid,
-            &high_band_plan.harmonics,
-            &high_band_plan.sectoral_norms,
-        )
-        .is_none()
+        high_band_table
+            .degree_lanes(0, 256)
+            .iter()
+            .all(|&value| value == 0.0)
     );
 }
 

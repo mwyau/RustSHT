@@ -1506,7 +1506,7 @@ fn spin1_standard_analysis_scalar_conversion_matches_general_and_adjoint_on_all_
                             fast_plan
                                 .spin1_scalar_legendre_table
                                 .get()
-                                .is_some_and(Option::is_none)
+                                .is_some_and(Option::is_some)
                         );
                     }
                     general_plan
@@ -3630,6 +3630,39 @@ fn spin_t255_gl_matches_ducc_samples_and_coefficients() {
             &mut workspace,
         )
         .unwrap();
+        if spin == 1 {
+            assert!(
+                plan.spin1_scalar_legendre_table
+                    .get()
+                    .is_some_and(Option::is_some)
+            );
+            let general_plan = make_plan(1, 255, 255, 256, 513);
+            assert!(general_plan.spin1_scalar_legendre_table.set(None).is_ok());
+            let mut general_workspace = general_plan.workspace().unwrap();
+            let mut general_e = vec![Complex64::new(0.0, 0.0); general_plan.harmonics.nalm()];
+            let mut general_b = vec![Complex64::new(0.0, 0.0); general_plan.harmonics.nalm()];
+            general_plan
+                .analysis_spin_into(
+                    &map_first,
+                    &map_second,
+                    &mut general_e,
+                    &mut general_b,
+                    &mut general_workspace,
+                )
+                .unwrap();
+            for (table_channel, recurrence_channel, channel) in [
+                (&recovered_e, &general_e, "E"),
+                (&recovered_b, &general_b, "B"),
+            ] {
+                for (&table, &recurrence) in table_channel.iter().zip(recurrence_channel) {
+                    let error = (table - recurrence).norm();
+                    assert!(
+                        error <= 3e-10 * recurrence.norm().max(1.0),
+                        "T255 spin-1 {channel} table/recurrence error={error:.3e}"
+                    );
+                }
+            }
+        }
         let coefficients = [(spin, 0), (255, 0), (128, 1), (255, 128), (255, 255)];
         let (expected_e, expected_b) = if spin == 1 {
             (
