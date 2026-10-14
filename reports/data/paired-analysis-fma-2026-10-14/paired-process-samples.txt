@@ -1,0 +1,51 @@
+Experiment: temporary Pulp FMA in f64 paired normal-range analysis accumulator
+Workload: m1b_bench, f64 GL T511, ntheta=512, nphi=1025, mmax=511,
+          STANDARD analysis, reused plan/workspace, requested-only mode
+Threads: q8; five timed samples per process, five alternating process pairs
+Pair medians are milliseconds. Each bracket contains that process's five
+individual timed samples in milliseconds.
+
+pair 1
+  baseline scalar median=7.536 samples=[9.089,7.536,7.283,9.394,6.914]
+  FMA      scalar median=7.043 samples=[7.227,6.821,6.864,7.212,7.043]
+  baseline spin1  median=11.907 samples=[12.671,12.430,11.907,11.794,11.887]
+  FMA      spin1  median=14.923 samples=[14.923,12.398,14.407,15.024,15.133]
+
+pair 2
+  baseline scalar median=7.265 samples=[7.089,6.931,7.364,7.542,7.265]
+  FMA      scalar median=7.169 samples=[7.169,6.785,7.289,7.018,7.251]
+  baseline spin1  median=12.000 samples=[12.310,12.000,11.830,12.013,11.983]
+  FMA      spin1  median=12.301 samples=[12.301,12.079,11.996,12.941,16.124]
+
+pair 3
+  baseline scalar median=7.266 samples=[7.333,7.266,8.647,7.130,7.129]
+  FMA      scalar median=7.051 samples=[7.729,7.028,7.051,6.859,7.342]
+  baseline spin1  median=12.193 samples=[12.308,12.193,11.848,12.071,12.200]
+  FMA      spin1  median=12.375 samples=[13.091,12.223,12.375,12.108,12.913]
+
+pair 4
+  baseline scalar median=7.162 samples=[6.839,7.162,7.222,7.392,7.037]
+  FMA      scalar median=8.429 samples=[8.429,8.941,7.338,9.076,7.178]
+  baseline spin1  median=12.128 samples=[11.909,12.328,12.014,12.128,12.985]
+  FMA      spin1  median=12.320 samples=[12.206,12.396,12.332,12.003,12.320]
+
+pair 5
+  baseline scalar median=7.261 samples=[7.174,7.273,7.429,7.261,6.953]
+  FMA      scalar median=7.182 samples=[7.548,6.861,7.182,6.860,8.431]
+  baseline spin1  median=11.955 samples=[11.955,11.853,12.672,11.893,15.162]
+  FMA      spin1  median=12.341 samples=[12.599,12.341,12.088,12.510,12.103]
+
+Unpaired three-process q1 screening medians (ms), with process medians shown:
+  scalar baseline [23.704,23.670,23.809] -> FMA [23.341,23.107,23.365]
+  spin1  baseline [38.319,38.086,38.658] -> FMA [38.897,38.666,38.644]
+
+Callgrind 3.26.0, T511 q8 spin1 analysis:
+  baseline instruction references: 5,045,565,736; instrumented median: 2020.900 ms
+  FMA      instruction references: 4,862,893,298; instrumented median: 2077.121 ms
+Callgrind instruction references are simulated counts, not CPU cycles. Its
+instrumented times are not native latency estimates.
+
+Environment: AMD Ryzen 9 5950X, Linux 7.0.14-20-pve, Rust 1.99.0,
+LLVM 23.1.1, release opt-level=3, 16 codegen units, LTO off, Pulp AVX2/FMA
+runtime dispatch, no target-cpu=native. q8 was pinned to CPUs 0-7. The host
+was shared. FMA source was reverted after these measurements.

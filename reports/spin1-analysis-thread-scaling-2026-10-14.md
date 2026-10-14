@@ -97,3 +97,39 @@ This run is a timing profile, not a numerical validation. Existing spin-1
 analytic, DUCC, adjoint, grid and high-band tests remain the correctness
 evidence. No production kernel, numerical tolerance, public API or FFT code
 changed in this profile.
+
+## Paired analysis FMA experiment
+
+A temporary candidate changed only the normal-range `AnalysisPairAccumulation`
+reducer in `src/legendre/scalar_paired.rs` to use Pulp `mul_add_f64s` and scalar
+`mul_add` tails. It left the recurrence, scaled/mixed fallback, cutoff behavior
+and reduction boundaries unchanged. For cosine-weighted terms it retained the
+existing product order by forming `opposite * basis` before the FMA. The source
+change was reverted after benchmarking.
+
+AVX2 disassembly contained `vfmadd231pd` and no YMM stack spills in the
+candidate loop. The ordinary vector arithmetic sequence fell from 20
+multiply/add instructions to 12. That did not translate into a whole-transform
+gain. Five alternating q8 process pairs at T511 gave scalar medians of
+`7.266 -> 7.169 ms` (1.34% lower, with a large candidate outlier) and spin-1
+medians of `12.000 -> 12.341 ms` (2.84% higher). Every paired spin-1 process
+median favored the baseline; the four pairs without the largest candidate
+outlier were about 1.5–3.2% slower with FMA. Independent three-process q1
+screen medians were `23.704 -> 23.341 ms` for scalar and `38.319 -> 38.666 ms`
+for spin 1. The q1 screen is small and not treated as a reliable scalar gain.
+
+Callgrind T511 q8 spin-1 analysis instruction references fell from
+`5,045,565,736` to `4,862,893,298` (3.62%), while instrumented whole-operation
+medians rose from `2020.900 ms` to `2077.121 ms` (2.8%). Callgrind references
+are not cycles or native elapsed time. The lower reference count therefore
+does not override the slower paired native timings. Focused paired-analysis
+tests (7 passed) and the DUCC 0.41.0 numerical checks (7 Rust tests and 2 f32
+tests passed) passed on the candidate, including extreme finite fallback
+coverage. No high-band release suite was run specifically for this rejected
+candidate. Exact five-sample process inputs are in
+[`paired-process-samples.txt`](data/paired-analysis-fma-2026-10-14/paired-process-samples.txt).
+
+The experiment does not justify changing the reducer. The current AVX2
+multiply/add sequence remains in production; a future accumulation change
+needs to improve measured wall time, not only reduce simulated instruction
+references.
