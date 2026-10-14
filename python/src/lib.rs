@@ -6,6 +6,7 @@ use numpy::{Complex64, Element, IntoPyArray, PyArrayDyn, PyReadonlyArrayDyn};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use rustsht::{GridKind, GridSpec, HarmonicSpec, ShtError, ShtPlan};
+use std::sync::{Mutex, MutexGuard};
 
 /// Reusable spherical transform plan for GL, CC and F1 grids.
 ///
@@ -15,11 +16,14 @@ use rustsht::{GridKind, GridSpec, HarmonicSpec, ShtError, ShtPlan};
 /// `complex128` or `float64` arrays and return newly allocated NumPy arrays.
 /// Input storage is borrowed during each numerical call; do not modify it
 /// through another alias until the method returns.
+/// Calls through one plan share a workspace and run one at a time. Separate
+/// plan instances use independent workspaces.
 /// Map rings run north to south; longitude samples run eastward from `phi0`
 /// in radians.
 #[pyclass(name = "ShtPlan", module = "rustsht._rustsht")]
 struct PythonShtPlan {
     plan: ShtPlan,
+    workspace: Mutex<Option<rustsht::ShtWorkspace>>,
 }
 
 #[pymethods]
@@ -50,7 +54,10 @@ impl PythonShtPlan {
                 ShtPlan::new(grid, harmonics)
             })
             .map_err(to_python_error)?;
-        Ok(Self { plan })
+        Ok(Self {
+            plan,
+            workspace: Mutex::new(None),
+        })
     }
 
     /// Number of packed nonnegative-order harmonic coefficients.
@@ -84,13 +91,15 @@ impl PythonShtPlan {
         let alm_shape = self.alm_shape();
         let coefficients = read_array(&alm, &[alm_shape.0, alm_shape.1], "alm")?;
         let plan = &self.plan;
+        let workspaces = &self.workspace;
         let output = py
             .detach(move || {
-                let mut workspace = plan.workspace()?;
+                let mut workspace_guard = lock_workspace(workspaces, plan)?;
+                let workspace = workspace_guard.as_mut().expect("workspace was initialized");
                 let sample_count = plan.grid().ntheta() * plan.grid().nphi();
                 if plan.harmonics().spin() == 0 {
                     let mut map = vec![0.0; sample_count];
-                    plan.synthesis_into(coefficients, &mut map, &mut workspace)?;
+                    plan.synthesis_into(coefficients, &mut map, workspace)?;
                     Ok(map)
                 } else {
                     let nalm = plan.harmonics().nalm();
@@ -101,7 +110,7 @@ impl PythonShtPlan {
                         &coefficients[nalm..],
                         &mut first,
                         &mut second,
-                        &mut workspace,
+                        workspace,
                     )?;
                     first.extend(second);
                     Ok(first)
@@ -121,20 +130,22 @@ impl PythonShtPlan {
         let map_shape = self.map_shape();
         let samples = read_array(&map, &[map_shape.0, map_shape.1, map_shape.2], "map")?;
         let plan = &self.plan;
+        let workspaces = &self.workspace;
         let output = py
             .detach(move || {
-                let mut workspace = plan.workspace()?;
+                let mut workspace_guard = lock_workspace(workspaces, plan)?;
+                let workspace = workspace_guard.as_mut().expect("workspace was initialized");
                 let nalm = plan.harmonics().nalm();
                 if plan.harmonics().spin() == 0 {
                     let mut alm = vec![Complex64::new(0.0, 0.0); nalm];
-                    plan.analysis_into(samples, &mut alm, &mut workspace)?;
+                    plan.analysis_into(samples, &mut alm, workspace)?;
                     Ok(alm)
                 } else {
                     let sample_count = plan.grid().ntheta() * plan.grid().nphi();
                     let (first, second) = samples.split_at(sample_count);
                     let mut e_alm = vec![Complex64::new(0.0, 0.0); nalm];
                     let mut b_alm = vec![Complex64::new(0.0, 0.0); nalm];
-                    plan.analysis_spin_into(first, second, &mut e_alm, &mut b_alm, &mut workspace)?;
+                    plan.analysis_spin_into(first, second, &mut e_alm, &mut b_alm, workspace)?;
                     e_alm.extend(b_alm);
                     Ok(e_alm)
                 }
@@ -156,13 +167,15 @@ impl PythonShtPlan {
         let map_shape = self.map_shape();
         let samples = read_array(&map, &[map_shape.0, map_shape.1, map_shape.2], "map")?;
         let plan = &self.plan;
+        let workspaces = &self.workspace;
         let output = py
             .detach(move || {
-                let mut workspace = plan.workspace()?;
+                let mut workspace_guard = lock_workspace(workspaces, plan)?;
+                let workspace = workspace_guard.as_mut().expect("workspace was initialized");
                 let nalm = plan.harmonics().nalm();
                 if plan.harmonics().spin() == 0 {
                     let mut alm = vec![Complex64::new(0.0, 0.0); nalm];
-                    plan.adjoint_synthesis_into(samples, &mut alm, &mut workspace)?;
+                    plan.adjoint_synthesis_into(samples, &mut alm, workspace)?;
                     Ok(alm)
                 } else {
                     let sample_count = plan.grid().ntheta() * plan.grid().nphi();
@@ -170,11 +183,7 @@ impl PythonShtPlan {
                     let mut e_alm = vec![Complex64::new(0.0, 0.0); nalm];
                     let mut b_alm = vec![Complex64::new(0.0, 0.0); nalm];
                     plan.adjoint_synthesis_spin_into(
-                        first,
-                        second,
-                        &mut e_alm,
-                        &mut b_alm,
-                        &mut workspace,
+                        first, second, &mut e_alm, &mut b_alm, workspace,
                     )?;
                     e_alm.extend(b_alm);
                     Ok(e_alm)
@@ -197,13 +206,15 @@ impl PythonShtPlan {
         let alm_shape = self.alm_shape();
         let coefficients = read_array(&alm, &[alm_shape.0, alm_shape.1], "alm")?;
         let plan = &self.plan;
+        let workspaces = &self.workspace;
         let output = py
             .detach(move || {
-                let mut workspace = plan.workspace()?;
+                let mut workspace_guard = lock_workspace(workspaces, plan)?;
+                let workspace = workspace_guard.as_mut().expect("workspace was initialized");
                 let sample_count = plan.grid().ntheta() * plan.grid().nphi();
                 if plan.harmonics().spin() == 0 {
                     let mut map = vec![0.0; sample_count];
-                    plan.adjoint_analysis_into(coefficients, &mut map, &mut workspace)?;
+                    plan.adjoint_analysis_into(coefficients, &mut map, workspace)?;
                     Ok(map)
                 } else {
                     let nalm = plan.harmonics().nalm();
@@ -214,7 +225,7 @@ impl PythonShtPlan {
                         &coefficients[nalm..],
                         &mut first,
                         &mut second,
-                        &mut workspace,
+                        workspace,
                     )?;
                     first.extend(second);
                     Ok(first)
@@ -237,13 +248,15 @@ impl PythonShtPlan {
         self.require_gradient_plan()?;
         let e_alm = read_array(&e_alm, &[1, self.plan.harmonics().nalm()], "e_alm")?;
         let plan = &self.plan;
+        let workspaces = &self.workspace;
         let output = py
             .detach(move || {
-                let mut workspace = plan.workspace()?;
+                let mut workspace_guard = lock_workspace(workspaces, plan)?;
+                let workspace = workspace_guard.as_mut().expect("workspace was initialized");
                 let sample_count = plan.grid().ntheta() * plan.grid().nphi();
                 let mut first = vec![0.0; sample_count];
                 let mut second = vec![0.0; sample_count];
-                plan.synthesis_gradient_into(e_alm, &mut first, &mut second, &mut workspace)?;
+                plan.synthesis_gradient_into(e_alm, &mut first, &mut second, workspace)?;
                 first.extend(second);
                 Ok(first)
             })
@@ -265,13 +278,15 @@ impl PythonShtPlan {
         let map_shape = self.map_shape();
         let samples = read_array(&map, &[map_shape.0, map_shape.1, map_shape.2], "map")?;
         let plan = &self.plan;
+        let workspaces = &self.workspace;
         let output = py
             .detach(move || {
-                let mut workspace = plan.workspace()?;
+                let mut workspace_guard = lock_workspace(workspaces, plan)?;
+                let workspace = workspace_guard.as_mut().expect("workspace was initialized");
                 let sample_count = plan.grid().ntheta() * plan.grid().nphi();
                 let (first, second) = samples.split_at(sample_count);
                 let mut e_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
-                plan.adjoint_synthesis_gradient_into(first, second, &mut e_alm, &mut workspace)?;
+                plan.adjoint_synthesis_gradient_into(first, second, &mut e_alm, workspace)?;
                 Ok(e_alm)
             })
             .map_err(to_python_error)?;
@@ -290,13 +305,15 @@ impl PythonShtPlan {
         self.require_scalar_plan()?;
         let alm = read_array(&alm, &[1, self.plan.harmonics().nalm()], "alm")?;
         let plan = &self.plan;
+        let workspaces = &self.workspace;
         let output = py
             .detach(move || {
-                let mut workspace = plan.workspace()?;
+                let mut workspace_guard = lock_workspace(workspaces, plan)?;
+                let workspace = workspace_guard.as_mut().expect("workspace was initialized");
                 let sample_count = plan.grid().ntheta() * plan.grid().nphi();
                 let mut theta = vec![0.0; sample_count];
                 let mut phi = vec![0.0; sample_count];
-                plan.synthesis_deriv1_into(alm, &mut theta, &mut phi, &mut workspace)?;
+                plan.synthesis_deriv1_into(alm, &mut theta, &mut phi, workspace)?;
                 theta.extend(phi);
                 Ok(theta)
             })
@@ -324,13 +341,15 @@ impl PythonShtPlan {
             "map",
         )?;
         let plan = &self.plan;
+        let workspaces = &self.workspace;
         let output = py
             .detach(move || {
-                let mut workspace = plan.workspace()?;
+                let mut workspace_guard = lock_workspace(workspaces, plan)?;
+                let workspace = workspace_guard.as_mut().expect("workspace was initialized");
                 let sample_count = plan.grid().ntheta() * plan.grid().nphi();
                 let (theta, phi) = samples.split_at(sample_count);
                 let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
-                plan.adjoint_synthesis_deriv1_into(theta, phi, &mut alm, &mut workspace)?;
+                plan.adjoint_synthesis_deriv1_into(theta, phi, &mut alm, workspace)?;
                 Ok(alm)
             })
             .map_err(to_python_error)?;
@@ -558,6 +577,25 @@ fn get_gridweights<'py>(
         })
         .map_err(to_python_error)?;
     output_array(py, &[ntheta], weights)
+}
+
+fn lock_workspace<'a>(
+    workspaces: &'a Mutex<Option<rustsht::ShtWorkspace>>,
+    plan: &ShtPlan,
+) -> Result<MutexGuard<'a, Option<rustsht::ShtWorkspace>>, ShtError> {
+    let mut workspace = match workspaces.lock() {
+        Ok(workspace) => workspace,
+        Err(poisoned) => {
+            let mut workspace = poisoned.into_inner();
+            *workspace = None;
+            workspaces.clear_poison();
+            workspace
+        }
+    };
+    if workspace.is_none() {
+        *workspace = Some(plan.workspace()?);
+    }
+    Ok(workspace)
 }
 
 fn map_dimensions<T: Element>(
