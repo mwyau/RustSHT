@@ -20,6 +20,7 @@ const MAX_SUPPORTED_SPIN: usize = 4;
 const SPIN2_FAST_MIN_LMAX: usize = 500;
 const SPIN1_TRANSITION_MIN_LMAX: usize = 191;
 const SPIN1_TABLE_SYNTH_MIN_LMAX: usize = 127;
+const SPIN1_TABLE_SYNTH_MAX_LMAX: usize = 191;
 const SPIN1_FAST_MIN_SIN_THETA: f64 = 0.0001;
 const SPIN1_PAIR_MIN_SIN_THETA: f64 = 0.01;
 const SPIN2_FAST_MIN_SIN_THETA: f64 = 0.01;
@@ -746,6 +747,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 && T::supports_paired_scalar()
                 && self.harmonics.lmax() >= SPIN1_FAST_MIN_LMAX);
         let can_use_spin1_table = self.harmonics.lmax() >= SPIN1_TABLE_SYNTH_MIN_LMAX
+            && self.harmonics.lmax() <= SPIN1_TABLE_SYNTH_MAX_LMAX
             && recurrence_spin == 1
             && self.harmonics.spin() == 1
             && b_alm.is_some()

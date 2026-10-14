@@ -467,7 +467,7 @@ fn spin1_scalar_fast_synthesis_matches_general_channel_cases() {
 
 #[test]
 fn spin1_gl_table_synthesis_matches_recurrence_and_adjoint() {
-    for (lmax, nphi) in [(72, 147), (127, 257), (128, 258), (191, 385)] {
+    for (lmax, nphi) in [(72, 147), (127, 257), (128, 258), (191, 385), (255, 513)] {
         let build_plan = || make_plan(1, lmax, lmax, lmax + 1, nphi);
         let plan = build_plan();
         let recurrence_plan = build_plan();
@@ -477,6 +477,19 @@ fn spin1_gl_table_synthesis_matches_recurrence_and_adjoint() {
                 .set(None)
                 .is_ok()
         );
+        if lmax > SPIN1_TABLE_SYNTH_MAX_LMAX {
+            let cached_table = crate::legendre::ScalarLegendreTable::build_if_beneficial(
+                &plan.grid,
+                &plan.harmonics,
+                &plan.sectoral_norms,
+            )
+            .expect("T255 spin-1 table fits the analysis memory cap");
+            assert!(
+                plan.spin1_scalar_legendre_table
+                    .set(Some(cached_table))
+                    .is_ok()
+            );
+        }
         let (mut e, mut b) = coefficients(&plan);
         for value in e.iter_mut().chain(&mut b) {
             *value *= 1e-5;
@@ -513,7 +526,9 @@ fn spin1_gl_table_synthesis_matches_recurrence_and_adjoint() {
             &mut table_workspace,
         )
         .unwrap();
-        if lmax >= SPIN1_TABLE_SYNTH_MIN_LMAX {
+        if lmax > SPIN1_TABLE_SYNTH_MAX_LMAX
+            || (SPIN1_TABLE_SYNTH_MIN_LMAX..=SPIN1_TABLE_SYNTH_MAX_LMAX).contains(&lmax)
+        {
             assert!(
                 plan.spin1_scalar_legendre_table
                     .get()
