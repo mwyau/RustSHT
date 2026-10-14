@@ -11,7 +11,9 @@ mod spin_fast;
 
 pub(crate) const SPIN1_FAST_MIN_LMAX: usize = 15;
 
-pub(crate) use scalar_table::ScalarLegendreTable;
+pub(crate) use scalar_table::{
+    LegendreOperation, LegendreStrategy, ScalarLegendreTable, select_scalar_legendre_strategy,
+};
 pub(crate) use spin_fast::{
     fill_spin2_factors, scalar_to_spin1, scalar_to_spin2, spin1_to_scalar, spin2_to_scalar,
 };

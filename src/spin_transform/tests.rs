@@ -1801,11 +1801,12 @@ fn spin1_standard_analysis_scalar_conversion_matches_general_and_adjoint_on_all_
                         );
                     }
                     if kind == GridKind::GaussLegendre && lmax == 255 {
-                        assert!(
+                        assert_eq!(
                             fast_plan
                                 .spin1_scalar_legendre_table
                                 .get()
-                                .is_some_and(Option::is_some)
+                                .is_some_and(Option::is_some),
+                            fast_plan.allow_spin1_analysis_table()
                         );
                     }
                     general_plan
@@ -1862,6 +1863,7 @@ fn spin1_standard_analysis_scalar_conversion_matches_general_and_adjoint_on_all_
 fn concurrent_spin1_analysis_initializes_the_reusable_table_safely() {
     let plan = make_plan(1, 72, 72, 73, 147);
     let (first, second) = arbitrary_maps(&plan);
+    let table_expected = plan.allow_spin1_analysis_table();
     assert!(plan.spin1_scalar_legendre_table.get().is_none());
 
     let run_analysis = || {
@@ -1879,11 +1881,181 @@ fn concurrent_spin1_analysis_initializes_the_reusable_table_safely() {
     });
     assert_eq!(left.0, right.0);
     assert_eq!(left.1, right.1);
+    assert_eq!(
+        plan.spin1_scalar_legendre_table
+            .get()
+            .is_some_and(Option::is_some),
+        table_expected
+    );
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn spin1_max_band_analysis_uses_recurrence_for_one_and_eight_but_table_for_four() {
+    let plan = make_plan(1, 255, 255, 256, 513);
+    let (first, second) = arbitrary_maps(&plan);
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let four_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(4)
+        .build()
+        .unwrap();
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let mut one_workspace = one_thread.install(|| plan.workspace()).unwrap();
+    let mut one_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut one_b = one_e.clone();
+    one_thread
+        .install(|| {
+            plan.analysis_spin_into(&first, &second, &mut one_e, &mut one_b, &mut one_workspace)
+        })
+        .unwrap();
+    assert!(plan.spin1_scalar_legendre_table.get().is_none());
+
+    let mut four_workspace = four_threads.install(|| plan.workspace()).unwrap();
+    let mut four_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut four_b = four_e.clone();
+    four_threads
+        .install(|| {
+            plan.analysis_spin_into(
+                &first,
+                &second,
+                &mut four_e,
+                &mut four_b,
+                &mut four_workspace,
+            )
+        })
+        .unwrap();
     assert!(
         plan.spin1_scalar_legendre_table
             .get()
             .is_some_and(Option::is_some)
     );
+
+    let mut eight_workspace = eight_threads.install(|| plan.workspace()).unwrap();
+    let mut eight_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut eight_b = eight_e.clone();
+    eight_threads
+        .install(|| {
+            assert!(!plan.allow_spin1_analysis_table());
+            plan.analysis_spin_into(
+                &first,
+                &second,
+                &mut eight_e,
+                &mut eight_b,
+                &mut eight_workspace,
+            )
+        })
+        .unwrap();
+    for (&one, &other) in one_e
+        .iter()
+        .zip(&four_e)
+        .chain(one_b.iter().zip(&four_b))
+        .chain(one_e.iter().zip(&eight_e))
+        .chain(one_b.iter().zip(&eight_b))
+    {
+        assert!((one - other).norm() <= 2e-10 * one.norm().max(other.norm()).max(1.0));
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn spin1_single_thread_t72_analysis_keeps_recurrence_after_no_table_win() {
+    let plan = make_plan(1, 72, 72, 73, 147);
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    assert!(!one_thread.install(|| plan.allow_spin1_analysis_table()));
+
+    let mut workspace = one_thread.install(|| plan.workspace()).unwrap();
+    let maps = vec![0.0; plan.sample_count];
+    let mut e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut b = e.clone();
+    one_thread
+        .install(|| plan.analysis_spin_into(&maps, &maps, &mut e, &mut b, &mut workspace))
+        .unwrap();
+    assert!(plan.spin1_scalar_legendre_table.get().is_none());
+
+    let t85 = make_plan(1, 85, 85, 86, 173);
+    assert!(one_thread.install(|| t85.allow_spin1_analysis_table()));
+
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let mut eight_workspace = eight_threads.install(|| plan.workspace()).unwrap();
+    assert!(eight_threads.install(|| plan.allow_spin1_analysis_table()));
+    eight_threads
+        .install(|| plan.analysis_spin_into(&maps, &maps, &mut e, &mut b, &mut eight_workspace))
+        .unwrap();
+    assert!(
+        plan.spin1_scalar_legendre_table
+            .get()
+            .is_some_and(Option::is_some)
+    );
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn spin1_single_thread_analysis_table_remains_selected_through_t224() {
+    let table_plan = make_plan(1, 224, 224, 225, 451);
+    let mut general_plan = make_plan(1, 224, 224, 225, 451);
+    general_plan.spin_fast_coefficient_count = 0;
+    let (first, second) = arbitrary_maps(&table_plan);
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    assert!(one_thread.install(|| table_plan.allow_spin1_analysis_table()));
+
+    let mut table_workspace = one_thread.install(|| table_plan.workspace()).unwrap();
+    let mut general_workspace = one_thread.install(|| general_plan.workspace()).unwrap();
+    let mut table_e = vec![Complex64::new(0.0, 0.0); table_plan.harmonics().nalm()];
+    let mut table_b = table_e.clone();
+    let mut general_e = table_e.clone();
+    let mut general_b = table_e.clone();
+    one_thread
+        .install(|| {
+            table_plan.analysis_spin_into(
+                &first,
+                &second,
+                &mut table_e,
+                &mut table_b,
+                &mut table_workspace,
+            )
+        })
+        .unwrap();
+    general_plan
+        .analysis_spin_into(
+            &first,
+            &second,
+            &mut general_e,
+            &mut general_b,
+            &mut general_workspace,
+        )
+        .unwrap();
+
+    assert!(
+        table_plan
+            .spin1_scalar_legendre_table
+            .get()
+            .is_some_and(Option::is_some)
+    );
+    for (table, general) in [(&table_e, &general_e), (&table_b, &general_b)] {
+        for (&actual, &expected) in table.iter().zip(general) {
+            assert!(
+                (actual - expected).norm() <= 3e-10 * actual.norm().max(expected.norm()).max(1.0)
+            );
+        }
+    }
+
+    let next_plan = make_plan(1, 225, 225, 226, 453);
+    assert!(!one_thread.install(|| next_plan.allow_spin1_analysis_table()));
 }
 
 #[test]
@@ -1959,6 +2131,13 @@ fn spin1_scalar_table_analysis_preserves_small_reflected_differences() {
 #[test]
 fn spin1_scalar_table_analysis_falls_back_for_extreme_finite_inputs() {
     let table_plan = make_plan(1, 72, 72, 73, 147);
+    table_plan.spin1_scalar_legendre_table.get_or_init(|| {
+        crate::legendre::ScalarLegendreTable::build_if_beneficial(
+            &table_plan.grid,
+            &table_plan.harmonics,
+            &table_plan.sectoral_norms,
+        )
+    });
     let mut general_plan = make_plan(1, 72, 72, 73, 147);
     general_plan.spin_fast_coefficient_count = 0;
 
@@ -2025,6 +2204,46 @@ fn spin1_scalar_table_analysis_falls_back_for_extreme_finite_inputs() {
         maximum_error <= 3.0e-10 * maximum_scale,
         "extreme spin-1 table fallback error={maximum_error:.3e}, scale={maximum_scale:.3e}"
     );
+
+    let unsafe_first_call_plan = make_plan(1, 72, 72, 73, 147);
+    let mut unsafe_first_call_workspace = unsafe_first_call_plan.workspace().unwrap();
+    let mut unsafe_first_call_e =
+        vec![Complex64::new(0.0, 0.0); unsafe_first_call_plan.harmonics().nalm()];
+    let mut unsafe_first_call_b = unsafe_first_call_e.clone();
+    unsafe_first_call_plan
+        .analysis_spin_into(
+            &first,
+            &second,
+            &mut unsafe_first_call_e,
+            &mut unsafe_first_call_b,
+            &mut unsafe_first_call_workspace,
+        )
+        .unwrap();
+    assert!(
+        unsafe_first_call_plan
+            .spin1_scalar_legendre_table
+            .get()
+            .is_none()
+    );
+    let mut unsafe_error: f64 = 0.0;
+    let mut unsafe_scale: f64 = 1.0;
+    for (actual, expected) in [
+        (&unsafe_first_call_e, &general_e),
+        (&unsafe_first_call_b, &general_b),
+    ] {
+        for (&actual, &expected) in actual.iter().zip(expected) {
+            assert!(actual.re.is_finite() && actual.im.is_finite());
+            unsafe_error = unsafe_error
+                .max((actual.re - expected.re).abs())
+                .max((actual.im - expected.im).abs());
+            unsafe_scale = unsafe_scale
+                .max(actual.re.abs())
+                .max(actual.im.abs())
+                .max(expected.re.abs())
+                .max(expected.im.abs());
+        }
+    }
+    assert!(unsafe_error <= 3.0e-10 * unsafe_scale);
 }
 
 #[test]
@@ -2533,6 +2752,35 @@ fn derivative_adjoint_matches_ducc_and_inner_product() {
         ),
         harmonic_inner_product(plan.harmonics(), &alm, &adjoint),
         2e-12,
+    );
+}
+
+#[test]
+fn scalar_legendre_table_is_materialized_only_for_standard_scalar_operations() {
+    let derivative_plan = make_plan(0, 127, 127, 128, 257);
+    assert!(derivative_plan.scalar_legendre_table.get().is_none());
+    let alm = vec![Complex64::new(0.0, 0.0); derivative_plan.harmonics().nalm()];
+    let mut first = vec![0.0; derivative_plan.sample_count];
+    let mut second = vec![0.0; derivative_plan.sample_count];
+    let mut derivative_workspace = derivative_plan.workspace().unwrap();
+    derivative_plan
+        .synthesis_deriv1_into(&alm, &mut first, &mut second, &mut derivative_workspace)
+        .unwrap();
+    assert!(derivative_plan.scalar_legendre_table.get().is_none());
+
+    let standard_plan = make_plan(0, 127, 127, 128, 257);
+    assert!(standard_plan.scalar_legendre_table.get().is_none());
+    let standard_alm = vec![Complex64::new(0.0, 0.0); standard_plan.harmonics().nalm()];
+    let mut standard_map = vec![0.0; standard_plan.sample_count];
+    let mut standard_workspace = standard_plan.workspace().unwrap();
+    standard_plan
+        .synthesis_into(&standard_alm, &mut standard_map, &mut standard_workspace)
+        .unwrap();
+    assert!(
+        standard_plan
+            .scalar_legendre_table
+            .get()
+            .is_some_and(Option::is_some)
     );
 }
 
@@ -3930,10 +4178,11 @@ fn spin_t255_gl_matches_ducc_samples_and_coefficients() {
         )
         .unwrap();
         if spin == 1 {
-            assert!(
+            assert_eq!(
                 plan.spin1_scalar_legendre_table
                     .get()
-                    .is_some_and(Option::is_some)
+                    .is_some_and(Option::is_some),
+                plan.allow_spin1_analysis_table()
             );
             let general_plan = make_plan(1, 255, 255, 256, 513);
             assert!(general_plan.spin1_scalar_legendre_table.set(None).is_ok());

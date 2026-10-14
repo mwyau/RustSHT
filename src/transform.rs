@@ -8,7 +8,10 @@ use rayon::prelude::*;
 
 use crate::error::ShtError;
 use crate::grid::GridKind;
-use crate::legendre::{LATITUDE_BLOCK_SIZE, ShtScalar, longitude_phase, sin_cos_from_f64};
+use crate::legendre::{
+    LATITUDE_BLOCK_SIZE, LegendreOperation, LegendreStrategy, ShtScalar, longitude_phase,
+    sin_cos_from_f64,
+};
 use crate::plan::ShtPlan;
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
@@ -259,7 +262,9 @@ impl<T: ShtScalar> ShtPlan<T> {
             );
         }
         workspace.spectra.fill(Complex::new(T::zero(), T::zero()));
-        if let Some(table) = self.scalar_legendre_table.as_ref()
+        if self.scalar_legendre_strategy(LegendreOperation::Synthesis)
+            == LegendreStrategy::CompactTable
+            && let Some(table) = self.get_safe_scalar_legendre_table_for_synthesis(alm)
             && self.synthesize_scalar_table(alm, map, workspace, table)?
         {
             return Ok(());
@@ -922,7 +927,10 @@ impl<T: ShtScalar> ShtPlan<T> {
         let ntheta = self.grid.ntheta();
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
-        let scalar_table = self.scalar_legendre_table.as_ref();
+        let scalar_table_selected = self.scalar_legendre_strategy(LegendreOperation::Analysis)
+            == LegendreStrategy::CompactTable;
+        let scalar_table_input_limit = scalar_table_selected
+            .then(crate::legendre::ScalarLegendreTable::<T>::input_scale_limit);
         let mut scalar_table_inputs_safe = true;
         let spectra = &mut workspace.spectra;
         for ring in 0..ntheta {
@@ -1006,7 +1014,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 longitude_phase::<T>(m, self.grid.phi0(), true)
             };
             for ring in 0..analysis_ntheta {
-                let mut weighted = if scalar_table.is_some() && m > ring_order_limits[ring] {
+                let mut weighted = if scalar_table_selected && m > ring_order_limits[ring] {
                     Complex::new(T::zero(), T::zero())
                 } else {
                     analysis_spectra[ring * spectrum_len + m] * phase
@@ -1016,14 +1024,24 @@ impl<T: ShtScalar> ShtPlan<T> {
                         T::from_f64(ring_weights[ring]).expect("ring weight is representable");
                     weighted *= weight / longitude_count;
                 }
-                if let Some(table) = scalar_table {
+                if let Some(input_limit) = scalar_table_input_limit {
                     scalar_table_inputs_safe &=
-                        table.input_is_safe(weighted.re) && table.input_is_safe(weighted.im);
+                        crate::legendre::ScalarLegendreTable::<T>::input_value_is_safe(
+                            weighted.re,
+                            input_limit,
+                        ) && crate::legendre::ScalarLegendreTable::<T>::input_value_is_safe(
+                            weighted.im,
+                            input_limit,
+                        );
                 }
                 order_spectra[m * analysis_ntheta + ring] = weighted;
             }
         }
-        let scalar_table = scalar_table.filter(|_| scalar_table_inputs_safe);
+        let scalar_table = if scalar_table_selected && scalar_table_inputs_safe {
+            self.get_scalar_legendre_table()
+        } else {
+            None
+        };
 
         alm.fill(Complex::new(T::zero(), T::zero()));
         let lmax = self.harmonics.lmax();
