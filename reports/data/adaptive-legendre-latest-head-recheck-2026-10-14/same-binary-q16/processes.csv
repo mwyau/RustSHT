@@ -1,0 +1,16 @@
+case,strategy,pair,order,spin,lmax,ntheta,nphi,mmax,threads,operation,warm_median_ms,warm_samples_ms,first_call_ms,plan_construction_ms,workspace_allocation_ms,max_rss_kib,returncode
+spin1_analysis,auto,1,"auto,recurrence,table",1,255,256,513,255,16,analysis,2.496,"[2.247,2.584,2.496,2.447,2.706]",2.327,0.016,1.140,14392,0
+spin1_analysis,recurrence,1,"auto,recurrence,table",1,255,256,513,255,16,analysis,2.366,"[2.393,2.360,2.366,2.343,2.571]",2.356,0.017,1.106,14432,0
+spin1_analysis,table,1,"auto,recurrence,table",1,255,256,513,255,16,analysis,2.949,"[2.977,2.585,2.973,2.785,2.949]",33.145,0.017,1.229,48780,0
+spin1_analysis,recurrence,2,"recurrence,table,auto",1,255,256,513,255,16,analysis,2.603,"[2.303,2.603,2.688,2.706,2.428]",2.198,0.017,1.119,15016,0
+spin1_analysis,table,2,"recurrence,table,auto",1,255,256,513,255,16,analysis,2.720,"[2.720,2.488,3.043,2.636,2.970]",33.815,0.016,1.350,49464,0
+spin1_analysis,auto,2,"recurrence,table,auto",1,255,256,513,255,16,analysis,2.447,"[2.447,2.295,2.571,2.396,2.740]",2.214,0.016,1.325,15288,0
+spin1_analysis,table,3,"table,auto,recurrence",1,255,256,513,255,16,analysis,2.599,"[2.549,2.571,2.807,2.599,2.600]",33.707,0.017,1.213,48892,0
+spin1_analysis,auto,3,"table,auto,recurrence",1,255,256,513,255,16,analysis,2.529,"[2.529,2.713,2.499,2.425,2.646]",2.141,0.017,1.251,15456,0
+spin1_analysis,recurrence,3,"table,auto,recurrence",1,255,256,513,255,16,analysis,2.382,"[2.382,2.352,2.412,2.326,2.388]",2.202,0.017,1.141,14556,0
+spin1_analysis,auto,4,"auto,recurrence,table",1,255,256,513,255,16,analysis,2.447,"[2.758,2.447,2.354,2.494,2.201]",2.564,0.017,1.422,14692,0
+spin1_analysis,recurrence,4,"auto,recurrence,table",1,255,256,513,255,16,analysis,2.493,"[2.630,2.359,2.548,2.493,2.370]",2.177,0.018,1.115,14548,0
+spin1_analysis,table,4,"auto,recurrence,table",1,255,256,513,255,16,analysis,2.885,"[2.924,2.885,2.572,2.940,2.494]",33.888,0.017,1.254,49496,0
+spin1_analysis,recurrence,5,"recurrence,table,auto",1,255,256,513,255,16,analysis,2.646,"[2.419,2.360,2.661,2.646,2.813]",2.315,0.017,1.296,14712,0
+spin1_analysis,table,5,"recurrence,table,auto",1,255,256,513,255,16,analysis,2.663,"[2.626,2.663,2.688,2.548,2.868]",33.062,0.017,1.191,49616,0
+spin1_analysis,auto,5,"recurrence,table,auto",1,255,256,513,255,16,analysis,2.413,"[2.376,2.606,2.540,2.413,2.413]",2.207,0.016,1.299,15224,0

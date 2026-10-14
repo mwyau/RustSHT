@@ -1,0 +1,13 @@
+COMMAND: taskset -c 0-3 uv run python examples/python_perf_baseline.py 255 1 4 GL 2 plan analysis both STANDARD 513 256
+T255 GL 256x513 spin=1 mode=STANDARD threads=4 runs=2 scope=plan operation=analysis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.017,0.019
+numpy_alm_copy_ms=0.044,0.031
+numpy_map_copy_ms=0.087,0.068
+numpy_output_allocation_ms=0.001,0.000
+analysis_error=max_abs=8.238e-15 rms=2.090e-16 rel_l2=2.048e-14
+analysis_rust_plan_raw_samples_ms=5.008,3.993,3.997,5.070,4.927;4.991,5.074,4.955,4.999,8.015
+analysis_rust_plan_run_medians_ms=4.927,4.999; median=4.963; spread=0.071
+analysis_ducc_raw_samples_ms=3.994,3.999,3.209,1.084,0.925;0.836,0.822,0.831,0.842,0.829
+analysis_ducc_run_medians_ms=3.209,0.831; median=2.020; spread=2.377
+
+STDERR:
