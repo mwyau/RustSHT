@@ -202,6 +202,34 @@ pub(crate) trait ShtScalar:
     }
     #[expect(
         clippy::too_many_arguments,
+        reason = "The scalar lane split uses existing recurrence and compaction scratch."
+    )]
+    fn synthesize_paired_scalar_block_partitioned_dispatched(
+        _arch: Arch,
+        _m: usize,
+        _lmax: usize,
+        _sin_theta: &[Self],
+        _cos_theta: &[Self],
+        _sectoral_norm: Self,
+        _coefficient_a: &[Self],
+        _coefficient_b: &[Self],
+        _coefficient_even: &[Complex<Self>],
+        _coefficient_odd: &[Complex<Self>],
+        _ring_order_limits: &[usize],
+        _spectrum_len: usize,
+        _spectra: &mut [Complex<Self>],
+        _previous: &mut [Self],
+        _current: &mut [Self],
+        _next: &mut [Self],
+        _exponents: &mut [i64],
+        _compact_theta_sin: &mut [Self],
+        _compact_theta_cos: &mut [Self],
+        _compact_ring_indices: &mut [usize],
+    ) -> Result<bool, ShtError> {
+        Ok(false)
+    }
+    #[expect(
+        clippy::too_many_arguments,
         reason = "The dual-channel scalar block receives two spectra and worker scratch explicitly."
     )]
     fn synthesize_paired_scalar_pair_block_dispatched(
@@ -725,6 +753,52 @@ impl ShtScalar for f64 {
             current,
             next,
             exponents,
+        )
+    }
+
+    fn synthesize_paired_scalar_block_partitioned_dispatched(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        sectoral_norm: Self,
+        coefficient_a: &[Self],
+        coefficient_b: &[Self],
+        coefficient_even: &[Complex<Self>],
+        coefficient_odd: &[Complex<Self>],
+        ring_order_limits: &[usize],
+        spectrum_len: usize,
+        spectra: &mut [Complex<Self>],
+        previous: &mut [Self],
+        current: &mut [Self],
+        next: &mut [Self],
+        exponents: &mut [i64],
+        compact_theta_sin: &mut [Self],
+        compact_theta_cos: &mut [Self],
+        compact_ring_indices: &mut [usize],
+    ) -> Result<bool, ShtError> {
+        scalar_paired::synthesize_order_block_partitioned_dispatched(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            coefficient_even,
+            coefficient_odd,
+            ring_order_limits,
+            spectrum_len,
+            spectra,
+            previous,
+            current,
+            next,
+            exponents,
+            compact_theta_sin,
+            compact_theta_cos,
+            compact_ring_indices,
         )
     }
 
