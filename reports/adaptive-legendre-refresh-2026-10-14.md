@@ -137,8 +137,44 @@ Spin-1 T511 DUCC synthesis errors remained at most `4.885e-15`; T2047 spin-1
 DUCC middle-ring error was `2.137e-13` and analytic map error was
 `1.344e-11`.
 
+## Spin-1 synthesis table range preflight
+
+A read-only review of the selector at `2d18ff8` found that q1 spin-1
+synthesis materialized its table before the per-order converted coefficients
+were checked. Extreme inputs fell back to recurrence correctly, but a first
+call could still allocate and retain a 4–14 MiB table. The code now checks
+each raw E/B real and imaginary component against one quarter of the table
+input limit before first construction. The spin-1 coefficient conversion
+forms each scalar component from at most three input components with factors
+no larger than one; the remaining order-level check still decides whether a
+converted order may use direct table multiplication. Once a table exists, the
+raw coefficient scan is skipped and the order-level checks remain active.
+
+The focused T127 test uses one finite `1e150` E coefficient. It confirms that
+the first synthesis leaves the table uninitialized, produces finite maps, and
+matches a separate recurrence-only plan exactly. Three alternating native
+process pairs measured normal f64 GL STANDARD synthesis before and after the
+preflight at T127 (`128x257`), T175 (`176x353`) and T191 (`192x385`), full
+`mmax`, `phi0=0.37`, q1, with one warm-up and five timed transforms per
+process. Warm medians changed from `2.651` to `2.659 ms` at T127, `6.587` to
+`6.595 ms` at T175, and `7.905` to `7.841 ms` at T191. Fresh-plan first-call
+medians changed from `6.552` to `6.545 ms`, `16.566` to `16.465 ms`, and
+`20.736` to `20.674 ms`, respectively. These differences are below the
+process variation; the added scan did not produce a measured transform
+regression. Avoided table payloads are `4.094`, `10.576` and `13.711 MiB` at
+those bands. Raw process outputs are in
+[`spin1-table-safety-processes.txt`](data/adaptive-legendre-refresh-2026-10-14/spin1-table-safety-processes.txt).
+
+The review found no other selector, numerical, race, or workspace issue.
+Focused recurrence/table equivalence and the unsafe-input regression passed.
+After the fix, the full all-feature suite passed (145 Rust and 10 f32 tests;
+8 ignored), and the full no-default-feature suite passed (129 Rust and 10 f32
+tests; 7 ignored). The T2047 sparse synthesis release regression passed for
+spins 1–4 on GL, CC and F1. Formatting and workspace Clippy passed. The review
+and its disposition are recorded in the validation notes.
+
 Full checks passed: fmt, workspace Clippy with warnings denied, all-feature
-tests (144 Rust and 10 f32 passed; 8 ignored), no-default-feature tests (128
+tests (145 Rust and 10 f32 passed; 8 ignored), no-default-feature tests (129
 Rust and 10 f32 passed; 7 ignored), and Python tests (16 passed). The
 T511/T2047 opt-in release tests above were run separately. The scalar and
 spin-1 table-versus-recurrence policy remains internal; no FFT code changed.

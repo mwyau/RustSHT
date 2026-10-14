@@ -45,6 +45,29 @@ fn spin1_synthesis_table_band_is_beneficial(lmax: usize) -> bool {
         || (SPIN1_TABLE_SYNTH_HIGH_BAND_MIN_LMAX..=SPIN1_TABLE_SYNTH_MAX_LMAX).contains(&lmax)
 }
 
+fn spin1_synthesis_coefficients_safe_for_table<T: ShtScalar>(
+    e_alm: &[Complex<T>],
+    b_alm: &[Complex<T>],
+) -> bool {
+    if !T::supports_precomputed_scalar() {
+        return false;
+    }
+
+    // Each converted scalar component sums at most three E/B components, with
+    // factors whose magnitudes are at most one. Leave a factor-four margin
+    // before building a direct-multiply table; the order kernel still checks
+    // the converted values before using the table.
+    let safe_input_limit = crate::legendre::ScalarLegendreTable::<T>::input_scale_limit()
+        / T::from_f64(4.0).expect("four is representable");
+    e_alm.iter().chain(b_alm).all(|value| {
+        crate::legendre::ScalarLegendreTable::<T>::input_value_is_safe(value.re, safe_input_limit)
+            && crate::legendre::ScalarLegendreTable::<T>::input_value_is_safe(
+                value.im,
+                safe_input_limit,
+            )
+    })
+}
+
 #[allow(private_bounds)]
 impl<T: ShtScalar> ShtPlan<T> {
     fn allow_spin1_analysis_table(&self) -> bool {
@@ -779,7 +802,12 @@ impl<T: ShtScalar> ShtPlan<T> {
         let can_use_spin1_table = spin1_synthesis_table_band_is_beneficial(self.harmonics.lmax())
             && recurrence_spin == 1
             && self.harmonics.spin() == 1
-            && b_alm.is_some()
+            && b_alm.is_some_and(|b_coefficients| {
+                self.spin1_scalar_legendre_table
+                    .get()
+                    .is_some_and(Option::is_some)
+                    || spin1_synthesis_coefficients_safe_for_table(e_alm, b_coefficients)
+            })
             && !derivative_norm
             && self.grid.kind() == crate::grid::GridKind::GaussLegendre
             && single_threaded_execution()
