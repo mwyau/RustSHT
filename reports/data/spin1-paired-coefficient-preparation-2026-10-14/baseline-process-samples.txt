@@ -1,0 +1,51 @@
+Source commit: 726750e
+CPU: AMD Ryzen 9 5950X, Linux 7.0.14-20-pve
+Rust 1.99.0 (b940084d7 2026-09-28), release opt-level=3, 16 codegen units,
+LTO off, portable Pulp AVX2/FMA dispatch. Native GL f64, full mmax,
+phi0=0.37, reused plan/workspace, one warm-up and five timed calls per
+process, requested-only m1b_bench. q1 pinned to CPU 0; q8 pinned to CPUs 0-7.
+
+T511 q8, exact grid 512x1025; synthesis Rayon medians and samples (ms):
+  process 1 median=19.119 samples=[20.279,19.119,17.731,18.345,20.272]
+    first_call=24.141 workspace=3.985 plan=0.034
+  process 2 median=20.259 samples=[21.048,18.071,20.259,21.007,18.006]
+    first_call=27.406 workspace=4.138 plan=0.035
+  process 3 median=18.269 samples=[19.177,18.269,17.724,20.109,18.214]
+    first_call=26.343 workspace=3.862 plan=0.033
+  process 4 median=19.189 samples=[18.134,21.143,19.189,21.265,16.583]
+    first_call=26.438 workspace=3.926 plan=0.034
+  process 5 median=18.351 samples=[20.499,18.131,18.351,17.851,20.096]
+    first_call=25.066 workspace=4.077 plan=0.034
+  process-median median=19.119 ms; range=18.269-20.259 ms.
+
+T720 q8, exact grid 721x1443:
+  process 1 median=47.889 samples=[45.249,45.506,48.201,47.889,48.648]
+    first_call=56.302 workspace=8.074 plan=0.115
+  process 2 median=47.162 samples=[47.604,47.000,48.019,47.162,44.220]
+    first_call=59.866 workspace=7.611 plan=0.084
+  process 3 median=46.784 samples=[46.784,44.983,48.331,44.076,47.667]
+    first_call=56.994 workspace=7.857 plan=0.085
+  process 4 median=48.210 samples=[48.443,46.607,48.210,48.049,48.667]
+    first_call=57.527 workspace=7.841 plan=0.086
+  process 5 median=46.342 samples=[47.603,45.487,46.903,46.342,44.577]
+    first_call=55.785 workspace=7.297 plan=0.087
+  process-median median=47.162 ms; range=46.342-48.210 ms.
+
+q1 control (cache is not selected):
+  T511 medians=[57.241,57.207,57.506] ms; process ranges were 57.217-57.416,
+    57.066-57.754 and 57.371-58.101 ms.
+  T720 medians=[132.853,133.285,133.151] ms; process ranges were
+    132.505-138.148, 133.067-133.699 and 132.797-135.666 ms.
+
+Callgrind 3.26.0, same source built with CARGO_PROFILE_RELEASE_DEBUG=1,
+T511 q8 spin-1 synthesis benchmark, collected 8,116,852,263 instruction
+references across the benchmark's five timed calls. The scalar paired
+prepare_synthesis_coefficients function had 670,656 self references
+(0.0083% of total). The AVX2 FusedPreparedSynthesisPairBlock accounted for
+1,457,064,728 self references (17.95%). Callgrind elapsed time is not used as
+latency evidence; perf_event_paranoid=4 blocked hardware counters. Only the
+process medians above are native timing measurements.
+
+The source-level cached-row copies move up to 134,479,872 bytes per T511
+q8 transform (16 groups) and 199,895,808 bytes per T720 q8 transform (12
+groups), counting two Complex<f64> rows copied per order per latitude group.
