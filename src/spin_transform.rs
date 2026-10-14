@@ -11,7 +11,7 @@ use crate::legendre::{
     LATITUDE_BLOCK_SIZE, SPIN1_FAST_MIN_LMAX, ShtScalar, longitude_phase, scalar_to_spin1,
     scalar_to_spin2, sin_cos_from_f64, spin1_to_scalar, spin2_to_scalar,
 };
-use crate::plan::ShtPlan;
+use crate::plan::{ShtPlan, current_execution_thread_count};
 #[cfg(feature = "parallel")]
 use crate::transform::{active_ring_weighted_order_midpoint, weighted_order_midpoint};
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
@@ -21,24 +21,33 @@ const SPIN2_FAST_MIN_LMAX: usize = 500;
 const SPIN1_TRANSITION_MIN_LMAX: usize = 191;
 const SPIN1_TABLE_SYNTH_MIN_LMAX: usize = 127;
 const SPIN1_TABLE_SYNTH_MAX_LMAX: usize = 191;
+const SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MIN_LMAX: usize = 85;
+const SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MAX_LMAX: usize = 224;
 const SPIN1_FAST_MIN_SIN_THETA: f64 = 0.0001;
 const SPIN1_PAIR_MIN_SIN_THETA: f64 = 0.01;
 const SPIN2_FAST_MIN_SIN_THETA: f64 = 0.01;
 
 #[inline]
-fn single_threaded_execution() -> bool {
-    #[cfg(feature = "parallel")]
-    {
-        rayon::current_num_threads() == 1
-    }
-    #[cfg(not(feature = "parallel"))]
-    {
-        true
-    }
+pub(crate) fn single_threaded_execution() -> bool {
+    current_execution_thread_count() == 1
 }
 
 #[allow(private_bounds)]
 impl<T: ShtScalar> ShtPlan<T> {
+    fn allow_spin1_analysis_table(&self) -> bool {
+        let thread_count = current_execution_thread_count();
+        // Same-source Ryzen 9 5950X measurements show no repeatable warm
+        // advantage for the 34 MiB table at full-mmax T255 with eight or more
+        // workers; keep the paired recurrence for that memory-heavy case.
+        let high_band_full_mmax_multicore_regression =
+            self.harmonics.lmax() == 255 && self.harmonics.mmax() == 255 && thread_count >= 8;
+        !high_band_full_mmax_multicore_regression
+            && (thread_count != 1
+                || (SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MIN_LMAX
+                    ..=SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MAX_LMAX)
+                    .contains(&self.harmonics.lmax()))
+    }
+
     /// Synthesizes two real map components for a spin-1 through spin-4 field.
     ///
     /// `e_alm` and `b_alm` are packed coefficient channels. The output slices
@@ -504,6 +513,13 @@ impl<T: ShtScalar> ShtPlan<T> {
             && !derivative_norm
             && ring_weights.is_some()
             && self.grid.kind() == crate::grid::GridKind::GaussLegendre
+            && self.allow_spin1_analysis_table()
+            && (self.spin1_scalar_legendre_table.get().is_some()
+                || (crate::legendre::ScalarLegendreTable::<T>::real_input_values_are_safe(
+                    first_component,
+                ) && crate::legendre::ScalarLegendreTable::<T>::real_input_values_are_safe(
+                    second_component,
+                )))
         {
             self.spin1_scalar_legendre_table.get_or_init(|| {
                 crate::legendre::ScalarLegendreTable::build_if_beneficial(
@@ -1990,10 +2006,11 @@ impl<T: ShtScalar> ShtPlan<T> {
             });
             let phase = longitude_phase::<T>(m, phi0, true);
             if recurrence_spin == 1 && fast_range == Some((0, theta_sin.len())) {
-                if let Some(table) = self
-                    .spin1_scalar_legendre_table
-                    .get()
-                    .and_then(Option::as_ref)
+                if self.allow_spin1_analysis_table()
+                    && let Some(table) = self
+                        .spin1_scalar_legendre_table
+                        .get()
+                        .and_then(Option::as_ref)
                 {
                     let used_table = self.analyze_spin_scalar_table_order(
                         q_spectra,

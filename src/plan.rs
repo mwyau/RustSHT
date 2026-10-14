@@ -5,10 +5,24 @@ use crate::error::ShtError;
 use crate::fft::RealFftPlan;
 use crate::grid::GridSpec;
 use crate::harmonics::HarmonicSpec;
-use crate::legendre::{SPIN1_FAST_MIN_LMAX, ScalarLegendreTable, ShtScalar, fill_spin2_factors};
+use crate::legendre::{
+    LegendreOperation, LegendreStrategy, SPIN1_FAST_MIN_LMAX, ScalarLegendreTable, ShtScalar,
+    fill_spin2_factors, select_scalar_legendre_strategy,
+};
 use crate::meridional::CCResamplingPlan;
 use crate::workspace::ShtWorkspace;
 use std::sync::OnceLock;
+
+pub(crate) fn current_execution_thread_count() -> usize {
+    #[cfg(feature = "parallel")]
+    {
+        rayon::current_num_threads()
+    }
+    #[cfg(not(feature = "parallel"))]
+    {
+        1
+    }
+}
 
 /// Reusable grid, harmonic and Fourier metadata for spherical transforms.
 #[allow(private_bounds)]
@@ -25,7 +39,7 @@ pub struct ShtPlan<T: ShtScalar = f64> {
     pub(crate) spin_fast_coefficient_count: usize,
     pub(crate) spin2_fast_f1: Vec<T>,
     pub(crate) spin2_fast_f2: Vec<T>,
-    pub(crate) scalar_legendre_table: Option<ScalarLegendreTable<T>>,
+    pub(crate) scalar_legendre_table: OnceLock<Option<ScalarLegendreTable<T>>>,
     pub(crate) spin1_scalar_legendre_table: OnceLock<Option<ScalarLegendreTable<T>>>,
 }
 
@@ -109,11 +123,6 @@ impl<T: ShtScalar> ShtPlan<T> {
             fill_spin2_factors(harmonics.lmax(), &mut spin2_fast_f1, &mut spin2_fast_f2);
         }
         let sectoral_norms = T::sectoral_normalizations(harmonics.mmax())?;
-        let scalar_legendre_table = if harmonics.spin() == 1 {
-            None
-        } else {
-            ScalarLegendreTable::build_if_beneficial(&grid, &harmonics, &sectoral_norms)
-        };
         let cc_resampling = match grid.kind() {
             crate::grid::GridKind::ClenshawCurtis | crate::grid::GridKind::Fejer1 => Some(
                 CCResamplingPlan::<T>::new(grid.kind(), grid.ntheta(), harmonics.lmax())?,
@@ -134,9 +143,53 @@ impl<T: ShtScalar> ShtPlan<T> {
             spin_fast_coefficient_count,
             spin2_fast_f1,
             spin2_fast_f2,
-            scalar_legendre_table,
+            scalar_legendre_table: OnceLock::new(),
             spin1_scalar_legendre_table: OnceLock::new(),
         })
+    }
+
+    pub(crate) fn get_scalar_legendre_table(&self) -> Option<&ScalarLegendreTable<T>> {
+        self.scalar_legendre_table
+            .get_or_init(|| {
+                if self.harmonics.spin() == 0 {
+                    ScalarLegendreTable::build_if_beneficial(
+                        &self.grid,
+                        &self.harmonics,
+                        &self.sectoral_norms,
+                    )
+                } else {
+                    None
+                }
+            })
+            .as_ref()
+    }
+
+    pub(crate) fn get_safe_scalar_legendre_table_for_synthesis(
+        &self,
+        coefficients: &[num_complex::Complex<T>],
+    ) -> Option<&ScalarLegendreTable<T>> {
+        if let Some(table) = self.scalar_legendre_table.get() {
+            return table.as_ref();
+        }
+        if !ScalarLegendreTable::<T>::input_values_are_safe(coefficients) {
+            return None;
+        }
+        self.get_scalar_legendre_table()
+    }
+
+    pub(crate) fn scalar_legendre_strategy(
+        &self,
+        operation: LegendreOperation,
+    ) -> LegendreStrategy {
+        if !ScalarLegendreTable::<T>::supports_grid_and_bandlimit(&self.grid, &self.harmonics) {
+            return LegendreStrategy::Recurrence;
+        }
+        select_scalar_legendre_strategy(
+            self.harmonics.lmax(),
+            self.harmonics.mmax(),
+            operation,
+            current_execution_thread_count(),
+        )
     }
 
     /// Returns the grid used by this plan.

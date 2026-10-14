@@ -8,7 +8,12 @@ fn median(mut durations: Vec<Duration>) -> Duration {
     durations[durations.len() / 2]
 }
 
-fn measure(mut operation: impl FnMut()) -> Duration {
+struct Measurement {
+    median: Duration,
+    samples: Vec<Duration>,
+}
+
+fn measure(mut operation: impl FnMut()) -> Measurement {
     operation();
     let mut durations = Vec::with_capacity(5);
     for _ in 0..5 {
@@ -16,7 +21,19 @@ fn measure(mut operation: impl FnMut()) -> Duration {
         operation();
         durations.push(start.elapsed());
     }
-    median(durations)
+    Measurement {
+        median: median(durations.clone()),
+        samples: durations,
+    }
+}
+
+fn sample_milliseconds(measurement: &Measurement) -> String {
+    measurement
+        .samples
+        .iter()
+        .map(|sample| format!("{:.3}", sample.as_secs_f64() * 1000.0))
+        .collect::<Vec<_>>()
+        .join(",")
 }
 
 fn main() {
@@ -50,13 +67,27 @@ fn main() {
     assert!(mode != "GRAD_ONLY" || spin > 0);
     assert!(mode != "DERIV1" || spin == 0);
     assert!(mode == "STANDARD" || operation == "synthesis");
-    let ntheta = lmax
-        + if grid_kind == GridKind::ClenshawCurtis {
+    let requested_ntheta = arguments
+        .next()
+        .map(|value| value.parse().expect("latitude count must be an integer"));
+    let requested_nphi = arguments
+        .next()
+        .map(|value| value.parse().expect("longitude count must be an integer"));
+    let mmax = arguments
+        .next()
+        .map(|value| value.parse().expect("mmax must be an integer"))
+        .unwrap_or(lmax);
+    let requested_only = arguments
+        .next()
+        .is_some_and(|value| value == "requested-only");
+    let ntheta = requested_ntheta.unwrap_or(
+        lmax + if grid_kind == GridKind::ClenshawCurtis {
             2
         } else {
             1
-        };
-    let nphi = 2 * lmax + 3;
+        },
+    );
+    let nphi = requested_nphi.unwrap_or(2 * lmax + 3);
     let plan_spin = if mode == "DERIV1" { 0 } else { spin };
     let one_thread_pool = rayon::ThreadPoolBuilder::new()
         .num_threads(1)
@@ -69,7 +100,7 @@ fn main() {
     let make_plan = || {
         ShtPlan::new(
             GridSpec::new(grid_kind, ntheta, nphi, 0.37).unwrap(),
-            HarmonicSpec::new(lmax, lmax, plan_spin).unwrap(),
+            HarmonicSpec::new(lmax, mmax, plan_spin).unwrap(),
         )
         .unwrap()
     };
@@ -82,7 +113,7 @@ fn main() {
     let mut e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
     let mut b = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
     let coefficient_spin = if mode == "DERIV1" { 1 } else { plan_spin };
-    for m in 0..=lmax {
+    for m in 0..=mmax {
         for l in m.max(coefficient_spin)..=lmax {
             let index = plan.harmonics().index(l, m).unwrap();
             let e_im = if m == 0 {
@@ -105,7 +136,94 @@ fn main() {
     let mut analyzed_e = vec![Complex64::new(0.0, 0.0); e.len()];
     let mut analyzed_b = vec![Complex64::new(0.0, 0.0); b.len()];
 
-    let synthesis_one_thread = (operation != "analysis").then(|| {
+    let first_synthesis_one_thread = (!requested_only
+        && operation != "analysis"
+        && spin == 1
+        && mode == "STANDARD"
+        && grid_kind == GridKind::GaussLegendre)
+        .then(|| {
+            let cold_plan = make_plan();
+            let mut cold_workspace = one_thread_pool.install(|| cold_plan.workspace()).unwrap();
+            let mut cold_first = vec![0.0; sample_count];
+            let mut cold_second = vec![0.0; sample_count];
+            let start = Instant::now();
+            one_thread_pool.install(|| {
+                cold_plan
+                    .synthesis_spin_into(
+                        black_box(&e),
+                        black_box(&b),
+                        black_box(&mut cold_first),
+                        black_box(&mut cold_second),
+                        &mut cold_workspace,
+                    )
+                    .unwrap();
+                black_box(cold_first[0]);
+            });
+            start.elapsed()
+        });
+    let first_synthesis_rayon = (operation != "analysis"
+        && spin == 1
+        && mode == "STANDARD"
+        && grid_kind == GridKind::GaussLegendre
+        && rayon_threads > 1)
+        .then(|| {
+            let cold_plan = make_plan();
+            let mut cold_workspace = rayon_pool.install(|| cold_plan.workspace()).unwrap();
+            let mut cold_first = vec![0.0; sample_count];
+            let mut cold_second = vec![0.0; sample_count];
+            let start = Instant::now();
+            rayon_pool.install(|| {
+                cold_plan
+                    .synthesis_spin_into(
+                        black_box(&e),
+                        black_box(&b),
+                        black_box(&mut cold_first),
+                        black_box(&mut cold_second),
+                        &mut cold_workspace,
+                    )
+                    .unwrap();
+                black_box(cold_first[0]);
+            });
+            start.elapsed()
+        });
+    let first_scalar_synthesis_one_thread = (!requested_only
+        && operation != "analysis"
+        && spin == 0
+        && mode == "STANDARD"
+        && grid_kind == GridKind::GaussLegendre)
+        .then(|| {
+            let cold_plan = make_plan();
+            let mut cold_workspace = one_thread_pool.install(|| cold_plan.workspace()).unwrap();
+            let mut cold_map = vec![0.0; sample_count];
+            let start = Instant::now();
+            one_thread_pool.install(|| {
+                cold_plan
+                    .synthesis_into(black_box(&e), black_box(&mut cold_map), &mut cold_workspace)
+                    .unwrap();
+                black_box(cold_map[0]);
+            });
+            start.elapsed()
+        });
+    let first_scalar_synthesis_rayon = (operation != "analysis"
+        && spin == 0
+        && mode == "STANDARD"
+        && grid_kind == GridKind::GaussLegendre
+        && rayon_threads > 1)
+        .then(|| {
+            let cold_plan = make_plan();
+            let mut cold_workspace = rayon_pool.install(|| cold_plan.workspace()).unwrap();
+            let mut cold_map = vec![0.0; sample_count];
+            let start = Instant::now();
+            rayon_pool.install(|| {
+                cold_plan
+                    .synthesis_into(black_box(&e), black_box(&mut cold_map), &mut cold_workspace)
+                    .unwrap();
+                black_box(cold_map[0]);
+            });
+            start.elapsed()
+        });
+
+    let synthesis_one_thread = (!requested_only && operation != "analysis").then(|| {
         measure(|| {
             one_thread_pool.install(|| {
                 match mode.as_str() {
@@ -193,21 +311,71 @@ fn main() {
             }
         }
     }
-    let first_analysis_one_thread = (operation != "synthesis"
+    let first_scalar_analysis_one_thread = (!requested_only
+        && operation != "synthesis"
+        && spin == 0
+        && mode == "STANDARD"
+        && grid_kind == GridKind::GaussLegendre)
+        .then(|| {
+            let cold_plan = make_plan();
+            let mut cold_workspace = one_thread_pool.install(|| cold_plan.workspace()).unwrap();
+            let mut cold_alm = vec![Complex64::new(0.0, 0.0); cold_plan.harmonics().nalm()];
+            let start = Instant::now();
+            one_thread_pool.install(|| {
+                cold_plan
+                    .analysis_into(
+                        black_box(&first),
+                        black_box(&mut cold_alm),
+                        &mut cold_workspace,
+                    )
+                    .unwrap();
+                black_box(cold_alm[0]);
+            });
+            start.elapsed()
+        });
+    let first_scalar_analysis_rayon = (operation != "synthesis"
+        && spin == 0
+        && mode == "STANDARD"
+        && grid_kind == GridKind::GaussLegendre
+        && rayon_threads > 1)
+        .then(|| {
+            let cold_plan = make_plan();
+            let mut cold_workspace = rayon_pool.install(|| cold_plan.workspace()).unwrap();
+            let mut cold_alm = vec![Complex64::new(0.0, 0.0); cold_plan.harmonics().nalm()];
+            let start = Instant::now();
+            rayon_pool.install(|| {
+                cold_plan
+                    .analysis_into(
+                        black_box(&first),
+                        black_box(&mut cold_alm),
+                        &mut cold_workspace,
+                    )
+                    .unwrap();
+                black_box(cold_alm[0]);
+            });
+            start.elapsed()
+        });
+    let first_analysis_one_thread = (!requested_only
+        && operation != "synthesis"
         && spin == 1
         && grid_kind == GridKind::GaussLegendre)
         .then(|| {
+            let cold_plan = make_plan();
+            let mut cold_workspace = one_thread_pool.install(|| cold_plan.workspace()).unwrap();
+            let mut cold_e = vec![Complex64::new(0.0, 0.0); cold_plan.harmonics().nalm()];
+            let mut cold_b = vec![Complex64::new(0.0, 0.0); cold_plan.harmonics().nalm()];
             let start = Instant::now();
             one_thread_pool.install(|| {
-                plan.analysis_spin_into(
-                    black_box(&first),
-                    black_box(&second),
-                    black_box(&mut analyzed_e),
-                    black_box(&mut analyzed_b),
-                    &mut workspace,
-                )
-                .unwrap();
-                black_box(analyzed_e[0]);
+                cold_plan
+                    .analysis_spin_into(
+                        black_box(&first),
+                        black_box(&second),
+                        black_box(&mut cold_e),
+                        black_box(&mut cold_b),
+                        &mut cold_workspace,
+                    )
+                    .unwrap();
+                black_box(cold_e[0]);
             });
             start.elapsed()
         });
@@ -235,7 +403,7 @@ fn main() {
             });
             start.elapsed()
         });
-    let analysis_one_thread = (operation != "synthesis").then(|| {
+    let analysis_one_thread = (!requested_only && operation != "synthesis").then(|| {
         measure(|| {
             one_thread_pool.install(|| {
                 if spin == 0 {
@@ -285,33 +453,99 @@ fn main() {
     });
 
     println!(
-        "spin-{spin} T{lmax}; {geometry} {ntheta}x{nphi}; f64; {mode}; 1 vs {rayon_threads} threads; {operation}; 5 samples, median"
+        "spin-{spin} T{lmax} mmax={mmax}; {geometry} {ntheta}x{nphi}; f64; {mode}; requested={rayon_threads} threads; {operation}; requested_only={requested_only}; strategy=automatic; 5 samples, median"
     );
     println!(
         "plan_construction_ms={:.3}",
-        plan_construction.as_secs_f64() * 1000.0
+        plan_construction.median.as_secs_f64() * 1000.0
+    );
+    println!(
+        "plan_construction_samples_ms=[{}]",
+        sample_milliseconds(&plan_construction)
     );
     println!(
         "workspace_allocation_ms={:.3}",
-        workspace_allocation.as_secs_f64() * 1000.0
+        workspace_allocation.median.as_secs_f64() * 1000.0
+    );
+    println!(
+        "workspace_allocation_samples_ms=[{}]",
+        sample_milliseconds(&workspace_allocation)
     );
     if let Some(elapsed) = synthesis_one_thread {
         println!(
             "synthesis_one_thread_ms={:.3}",
-            elapsed.as_secs_f64() * 1000.0
+            elapsed.median.as_secs_f64() * 1000.0
+        );
+        println!(
+            "synthesis_one_thread_samples_ms=[{}]",
+            sample_milliseconds(&elapsed)
         );
     }
     if let Some(elapsed) = synthesis_rayon {
-        println!("synthesis_rayon_ms={:.3}", elapsed.as_secs_f64() * 1000.0);
+        println!(
+            "synthesis_rayon_ms={:.3}",
+            elapsed.median.as_secs_f64() * 1000.0
+        );
+        println!(
+            "synthesis_rayon_samples_ms=[{}]",
+            sample_milliseconds(&elapsed)
+        );
     }
     if let Some(elapsed) = analysis_one_thread {
         println!(
             "analysis_one_thread_ms={:.3}",
-            elapsed.as_secs_f64() * 1000.0
+            elapsed.median.as_secs_f64() * 1000.0
+        );
+        println!(
+            "analysis_one_thread_samples_ms=[{}]",
+            sample_milliseconds(&elapsed)
         );
     }
     if let Some(elapsed) = analysis_rayon {
-        println!("analysis_rayon_ms={:.3}", elapsed.as_secs_f64() * 1000.0);
+        println!(
+            "analysis_rayon_ms={:.3}",
+            elapsed.median.as_secs_f64() * 1000.0
+        );
+        println!(
+            "analysis_rayon_samples_ms=[{}]",
+            sample_milliseconds(&elapsed)
+        );
+    }
+    if let Some(elapsed) = first_synthesis_one_thread {
+        println!(
+            "synthesis_first_call_one_thread_ms={:.3}",
+            elapsed.as_secs_f64() * 1000.0
+        );
+    }
+    if let Some(elapsed) = first_synthesis_rayon {
+        println!(
+            "synthesis_first_call_rayon_ms={:.3}",
+            elapsed.as_secs_f64() * 1000.0
+        );
+    }
+    if let Some(elapsed) = first_scalar_synthesis_one_thread {
+        println!(
+            "scalar_synthesis_first_call_one_thread_ms={:.3}",
+            elapsed.as_secs_f64() * 1000.0
+        );
+    }
+    if let Some(elapsed) = first_scalar_synthesis_rayon {
+        println!(
+            "scalar_synthesis_first_call_rayon_ms={:.3}",
+            elapsed.as_secs_f64() * 1000.0
+        );
+    }
+    if let Some(elapsed) = first_scalar_analysis_one_thread {
+        println!(
+            "scalar_analysis_first_call_one_thread_ms={:.3}",
+            elapsed.as_secs_f64() * 1000.0
+        );
+    }
+    if let Some(elapsed) = first_scalar_analysis_rayon {
+        println!(
+            "scalar_analysis_first_call_rayon_ms={:.3}",
+            elapsed.as_secs_f64() * 1000.0
+        );
     }
     if let Some(elapsed) = first_analysis_one_thread {
         println!(

@@ -31,6 +31,44 @@ const MAX_TABLE_BYTES: usize = 34 * 1024 * 1024;
 // scales use the binary-scaled recurrence instead.
 const TABLE_INPUT_SCALE_LIMIT: f64 = 1.0e100;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum LegendreStrategy {
+    Recurrence,
+    CompactTable,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum LegendreOperation {
+    Synthesis,
+    Analysis,
+}
+
+pub(crate) fn select_scalar_legendre_strategy(
+    lmax: usize,
+    mmax: usize,
+    operation: LegendreOperation,
+    thread_count: usize,
+) -> LegendreStrategy {
+    // Same-source measurements on Ryzen 9 5950X show that table construction
+    // is not repaid at small single-thread synthesis bands, or by T255 full-
+    // band analysis at one and sixteen threads. T86 synthesis is near-neutral;
+    // the table remains disabled there to avoid paying its cold-start cost.
+    let measured_regression = match operation {
+        LegendreOperation::Synthesis => thread_count == 1 && lmax < 127,
+        LegendreOperation::Analysis => {
+            (thread_count == 1 && lmax == MAX_PRECOMPUTED_LMAX && mmax >= 192)
+                || (thread_count >= 16
+                    && lmax == MAX_PRECOMPUTED_LMAX
+                    && mmax == MAX_PRECOMPUTED_LMAX)
+        }
+    };
+    if measured_regression {
+        LegendreStrategy::Recurrence
+    } else {
+        LegendreStrategy::CompactTable
+    }
+}
+
 /// North-hemisphere scalar basis for the measured small-band GL specialization.
 /// Values are contiguous in north latitude for each `(m, l)` pair.
 pub(crate) struct ScalarLegendreTable<T> {
@@ -40,7 +78,71 @@ pub(crate) struct ScalarLegendreTable<T> {
     input_scale_limit: T,
 }
 
+fn supported_layout<T: ShtScalar>(
+    grid: &GridSpec,
+    harmonics: &HarmonicSpec,
+) -> Option<(usize, usize, usize)> {
+    let lmax = harmonics.lmax();
+    let mmax = harmonics.mmax();
+    let table_lmax = match harmonics.spin() {
+        0 => lmax,
+        1 => lmax.checked_add(1)?,
+        _ => return None,
+    };
+    let maximum_table_lmax = match harmonics.spin() {
+        0 => MAX_PRECOMPUTED_LMAX,
+        1 => MAX_PRECOMPUTED_LMAX + 1,
+        _ => unreachable!(),
+    };
+    if !T::supports_precomputed_scalar()
+        || grid.kind() != GridKind::GaussLegendre
+        || grid.ntheta() != lmax + 1
+        || lmax < MIN_PRECOMPUTED_LMAX
+        || !(MIN_PRECOMPUTED_LMAX..=maximum_table_lmax).contains(&table_lmax)
+        || mmax < lmax - lmax / 4
+        || mmax > (grid.nphi() - 1) / 2
+    {
+        return None;
+    }
+
+    let north_ring_count = grid.ntheta().div_ceil(2);
+    let mut element_count = 0_usize;
+    for m in 0..=mmax {
+        element_count =
+            element_count.checked_add((table_lmax - m + 1).checked_mul(north_ring_count)?)?;
+    }
+    let table_bytes = element_count.checked_mul(std::mem::size_of::<T>())?;
+    (table_bytes <= MAX_TABLE_BYTES).then_some((table_lmax, north_ring_count, element_count))
+}
+
 impl<T: ShtScalar> ScalarLegendreTable<T> {
+    pub(crate) fn supports_grid_and_bandlimit(grid: &GridSpec, harmonics: &HarmonicSpec) -> bool {
+        supported_layout::<T>(grid, harmonics).is_some()
+    }
+
+    pub(crate) fn input_scale_limit() -> T {
+        T::from_f64(TABLE_INPUT_SCALE_LIMIT)
+            .expect("the f64 precomputation input limit is representable")
+    }
+
+    pub(crate) fn input_value_is_safe(value: T, limit: T) -> bool {
+        value.is_finite() && value.abs() <= limit
+    }
+
+    pub(crate) fn input_values_are_safe(values: &[num_complex::Complex<T>]) -> bool {
+        let limit = Self::input_scale_limit();
+        values.iter().all(|value| {
+            Self::input_value_is_safe(value.re, limit) && Self::input_value_is_safe(value.im, limit)
+        })
+    }
+
+    pub(crate) fn real_input_values_are_safe(values: &[T]) -> bool {
+        let limit = Self::input_scale_limit();
+        values
+            .iter()
+            .all(|&value| Self::input_value_is_safe(value, limit))
+    }
+
     pub(crate) fn build_if_beneficial(
         grid: &GridSpec,
         harmonics: &HarmonicSpec,
@@ -48,42 +150,9 @@ impl<T: ShtScalar> ScalarLegendreTable<T> {
     ) -> Option<Self> {
         let lmax = harmonics.lmax();
         let mmax = harmonics.mmax();
-        let table_lmax = match harmonics.spin() {
-            0 => lmax,
-            1 => lmax.checked_add(1)?,
-            _ => return None,
-        };
-        let maximum_table_lmax = match harmonics.spin() {
-            0 => MAX_PRECOMPUTED_LMAX,
-            // Spin 1 uses one additional scalar degree. The table-byte cap
-            // below keeps this extension within the same bounded footprint.
-            1 => MAX_PRECOMPUTED_LMAX + 1,
-            _ => unreachable!(),
-        };
-        if !T::supports_precomputed_scalar()
-            || grid.kind() != GridKind::GaussLegendre
-            || grid.ntheta() != lmax + 1
-            || lmax < MIN_PRECOMPUTED_LMAX
-            || !(MIN_PRECOMPUTED_LMAX..=maximum_table_lmax).contains(&table_lmax)
-            || mmax < lmax - lmax / 4
-            || mmax > (grid.nphi() - 1) / 2
-        {
-            return None;
-        }
-
-        let north_ring_count = grid.ntheta().div_ceil(2);
+        let (table_lmax, north_ring_count, element_count) = supported_layout::<T>(grid, harmonics)?;
         let order_count = mmax.checked_add(1)?;
-        let mut element_count = 0_usize;
-        for m in 0..=mmax {
-            element_count =
-                element_count.checked_add((table_lmax - m + 1).checked_mul(north_ring_count)?)?;
-        }
-        let table_bytes = element_count.checked_mul(std::mem::size_of::<T>())?;
-        if table_bytes > MAX_TABLE_BYTES {
-            return None;
-        }
-        let input_scale_limit = T::from_f64(TABLE_INPUT_SCALE_LIMIT)
-            .expect("the f64 precomputation input limit is representable");
+        let input_scale_limit = Self::input_scale_limit();
 
         let mut values = Vec::new();
         values.try_reserve_exact(element_count).ok()?;
@@ -175,7 +244,7 @@ impl<T: ShtScalar> ScalarLegendreTable<T> {
 
     #[inline]
     pub(crate) fn input_is_safe(&self, value: T) -> bool {
-        value.is_finite() && value.abs() <= self.input_scale_limit
+        Self::input_value_is_safe(value, self.input_scale_limit)
     }
 
     pub(crate) fn north_ring_count(&self) -> usize {

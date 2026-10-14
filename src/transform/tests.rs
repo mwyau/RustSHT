@@ -753,12 +753,16 @@ fn precomputed_scalar_gl_matches_recurrence_for_all_four_operators() {
         (128, 128, 258),
         (255, 255, 513),
     ] {
-        let mut plan = make_plan(lmax, mmax, lmax + 1, nphi, 0.37);
-        let table = plan
-            .scalar_legendre_table
-            .take()
-            .expect("measured GL scalar bandlimits use the bounded table");
-        let mut input_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        let table_plan = make_plan(lmax, mmax, lmax + 1, nphi, 0.37);
+        assert!(table_plan.get_scalar_legendre_table().is_some());
+        let recurrence_plan = make_plan(lmax, mmax, lmax + 1, nphi, 0.37);
+        assert!(recurrence_plan.scalar_legendre_table.set(None).is_ok());
+        #[cfg(feature = "parallel")]
+        let table_pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(8)
+            .build()
+            .unwrap();
+        let mut input_alm = vec![Complex64::new(0.0, 0.0); table_plan.harmonics().nalm()];
         for m in 0..=mmax {
             for l in m..=lmax {
                 let im = if m == 0 {
@@ -766,39 +770,75 @@ fn precomputed_scalar_gl_matches_recurrence_for_all_four_operators() {
                 } else {
                     ((l * 13 + m * 5) % 23) as f64 - 11.0
                 };
-                input_alm[plan.harmonics().index(l, m).unwrap()] =
+                input_alm[table_plan.harmonics().index(l, m).unwrap()] =
                     Complex64::new(((l * 7 + m * 11) % 19) as f64 * 1e-5, im * 1e-5);
             }
         }
-        let input_map = arbitrary_map(&plan);
-        let mut workspace = plan.workspace().unwrap();
-        let mut recurrence_map = vec![0.0; plan.sample_count];
+        let input_map = arbitrary_map(&table_plan);
+        let mut recurrence_workspace = recurrence_plan.workspace().unwrap();
+        #[cfg(feature = "parallel")]
+        let mut table_workspace = table_pool.install(|| table_plan.workspace()).unwrap();
+        #[cfg(not(feature = "parallel"))]
+        let mut table_workspace = table_plan.workspace().unwrap();
+        let mut recurrence_map = vec![0.0; table_plan.sample_count];
         let mut recurrence_alm = vec![Complex64::new(0.0, 0.0); input_alm.len()];
         let mut recurrence_s_adjoint = recurrence_alm.clone();
-        let mut recurrence_a_adjoint = vec![0.0; plan.sample_count];
+        let mut recurrence_a_adjoint = vec![0.0; table_plan.sample_count];
 
-        plan.synthesis_into(&input_alm, &mut recurrence_map, &mut workspace)
+        recurrence_plan
+            .synthesis_into(&input_alm, &mut recurrence_map, &mut recurrence_workspace)
             .unwrap();
-        plan.analysis_into(&input_map, &mut recurrence_alm, &mut workspace)
+        recurrence_plan
+            .analysis_into(&input_map, &mut recurrence_alm, &mut recurrence_workspace)
             .unwrap();
-        plan.adjoint_synthesis_into(&input_map, &mut recurrence_s_adjoint, &mut workspace)
+        recurrence_plan
+            .adjoint_synthesis_into(
+                &input_map,
+                &mut recurrence_s_adjoint,
+                &mut recurrence_workspace,
+            )
             .unwrap();
-        plan.adjoint_analysis_into(&input_alm, &mut recurrence_a_adjoint, &mut workspace)
+        recurrence_plan
+            .adjoint_analysis_into(
+                &input_alm,
+                &mut recurrence_a_adjoint,
+                &mut recurrence_workspace,
+            )
             .unwrap();
 
-        plan.scalar_legendre_table = Some(table);
-        let mut table_map = vec![0.0; plan.sample_count];
+        let mut table_map = vec![0.0; table_plan.sample_count];
         let mut table_alm = vec![Complex64::new(0.0, 0.0); input_alm.len()];
         let mut table_s_adjoint = table_alm.clone();
-        let mut table_a_adjoint = vec![0.0; plan.sample_count];
-        plan.synthesis_into(&input_alm, &mut table_map, &mut workspace)
-            .unwrap();
-        plan.analysis_into(&input_map, &mut table_alm, &mut workspace)
-            .unwrap();
-        plan.adjoint_synthesis_into(&input_map, &mut table_s_adjoint, &mut workspace)
-            .unwrap();
-        plan.adjoint_analysis_into(&input_alm, &mut table_a_adjoint, &mut workspace)
-            .unwrap();
+        let mut table_a_adjoint = vec![0.0; table_plan.sample_count];
+        let mut run_table_operators = || {
+            #[cfg(feature = "parallel")]
+            {
+                assert_eq!(
+                    table_plan.scalar_legendre_strategy(LegendreOperation::Synthesis),
+                    LegendreStrategy::CompactTable
+                );
+                assert_eq!(
+                    table_plan.scalar_legendre_strategy(LegendreOperation::Analysis),
+                    LegendreStrategy::CompactTable
+                );
+            }
+            table_plan
+                .synthesis_into(&input_alm, &mut table_map, &mut table_workspace)
+                .unwrap();
+            table_plan
+                .analysis_into(&input_map, &mut table_alm, &mut table_workspace)
+                .unwrap();
+            table_plan
+                .adjoint_synthesis_into(&input_map, &mut table_s_adjoint, &mut table_workspace)
+                .unwrap();
+            table_plan
+                .adjoint_analysis_into(&input_alm, &mut table_a_adjoint, &mut table_workspace)
+                .unwrap();
+        };
+        #[cfg(feature = "parallel")]
+        table_pool.install(&mut run_table_operators);
+        #[cfg(not(feature = "parallel"))]
+        run_table_operators();
 
         assert!(relative_l2_real(&table_map, &recurrence_map) < 2e-12);
         assert!(relative_l2_complex(&table_alm, &recurrence_alm) < 2e-12);
@@ -807,11 +847,11 @@ fn precomputed_scalar_gl_matches_recurrence_for_all_four_operators() {
         if lmax == 72 {
             assert_close(
                 map_inner_product(&table_map, &input_map),
-                harmonic_inner_product(&plan.harmonics, &input_alm, &table_s_adjoint),
+                harmonic_inner_product(&table_plan.harmonics, &input_alm, &table_s_adjoint),
                 2e-12,
             );
             assert_close(
-                harmonic_inner_product(&plan.harmonics, &table_alm, &input_alm),
+                harmonic_inner_product(&table_plan.harmonics, &table_alm, &input_alm),
                 map_inner_product(&input_map, &table_a_adjoint),
                 2e-12,
             );
@@ -823,8 +863,7 @@ fn precomputed_scalar_gl_matches_recurrence_for_all_four_operators() {
 fn precomputed_scalar_synthesis_applies_asymmetric_mirrored_cutoffs() {
     let plan = make_plan(127, 127, 128, 257, 0.37);
     let table = plan
-        .scalar_legendre_table
-        .as_ref()
+        .get_scalar_legendre_table()
         .expect("the T127 GL scalar table is eligible");
     let north_ring = 20;
     let south_ring = plan.grid.ntheta() - 1 - north_ring;
@@ -861,7 +900,7 @@ fn precomputed_scalar_table_supports_spin1_scalar_degree_extension() {
     let grid = GridSpec::new(GridKind::GaussLegendre, 128, 257, 0.37).unwrap();
     let harmonics = HarmonicSpec::new(127, 127, 1).unwrap();
     let plan: ShtPlan<f64> = ShtPlan::new(grid, harmonics).unwrap();
-    assert!(plan.scalar_legendre_table.is_none());
+    assert!(plan.scalar_legendre_table.get().is_none());
     assert!(plan.spin1_scalar_legendre_table.get().is_none());
     let table = crate::legendre::ScalarLegendreTable::build_if_beneficial(
         &plan.grid,
@@ -900,67 +939,65 @@ fn precomputed_scalar_table_supports_spin1_scalar_degree_extension() {
 fn precomputed_scalar_table_respects_bandlimit_and_grid_bounds() {
     assert!(
         make_plan(71, 71, 72, 145, 0.37)
-            .scalar_legendre_table
+            .get_scalar_legendre_table()
             .is_none()
     );
     assert!(
         make_plan(72, 72, 73, 147, 0.37)
-            .scalar_legendre_table
+            .get_scalar_legendre_table()
             .is_some()
     );
     assert!(
         make_plan(127, 127, 128, 257, 0.37)
-            .scalar_legendre_table
+            .get_scalar_legendre_table()
             .is_some()
     );
     assert!(
         make_plan(255, 255, 256, 513, 0.37)
-            .scalar_legendre_table
+            .get_scalar_legendre_table()
             .is_some()
     );
     assert!(
         make_plan(360, 360, 361, 723, 0.37)
-            .scalar_legendre_table
+            .get_scalar_legendre_table()
             .is_none()
     );
     assert!(
         make_plan(720, 720, 721, 1443, 0.37)
-            .scalar_legendre_table
+            .get_scalar_legendre_table()
             .is_none()
     );
 
     let cc_plan = make_cc_plan(127, 127, 129, 257, 0.37);
-    assert!(cc_plan.scalar_legendre_table.is_none());
+    assert!(cc_plan.get_scalar_legendre_table().is_none());
     let f1_plan = make_f1_plan(127, 127, 128, 257, 0.37);
-    assert!(f1_plan.scalar_legendre_table.is_none());
+    assert!(f1_plan.get_scalar_legendre_table().is_none());
 
     let f32_grid = GridSpec::new(GridKind::GaussLegendre, 128, 257, 0.37).unwrap();
     let f32_harmonics = HarmonicSpec::scalar(127, 127).unwrap();
     let f32_plan: ShtPlan<f32> = ShtPlan::new(f32_grid, f32_harmonics).unwrap();
-    assert!(f32_plan.scalar_legendre_table.is_none());
+    assert!(f32_plan.get_scalar_legendre_table().is_none());
 }
 
 #[test]
 fn precomputed_scalar_table_uses_scaled_recurrence_for_extreme_inputs() {
-    let mut plan = make_plan(255, 255, 256, 513, 0.37);
-    let table = plan
-        .scalar_legendre_table
-        .take()
-        .expect("the bounded T255 GL scalar table is eligible");
+    let plan = make_plan(255, 255, 256, 513, 0.37);
+    assert!(plan.get_scalar_legendre_table().is_some());
+    let recurrence_plan = make_plan(255, 255, 256, 513, 0.37);
+    assert!(recurrence_plan.scalar_legendre_table.set(None).is_ok());
     let mut workspace = plan.workspace().unwrap();
+    let mut recurrence_workspace = recurrence_plan.workspace().unwrap();
     let mut input_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
     input_alm[plan.harmonics().index(220, 200).unwrap()] = Complex64::new(1.0e300, -2.0e299);
     let mut recurrence_map = vec![0.0; plan.sample_count];
-    plan.synthesis_into(&input_alm, &mut recurrence_map, &mut workspace)
+    recurrence_plan
+        .synthesis_into(&input_alm, &mut recurrence_map, &mut recurrence_workspace)
         .unwrap();
-
-    plan.scalar_legendre_table = Some(table);
     let mut fallback_map = vec![0.0; plan.sample_count];
     plan.synthesis_into(&input_alm, &mut fallback_map, &mut workspace)
         .unwrap();
     assert_eq!(fallback_map, recurrence_map);
 
-    let table = plan.scalar_legendre_table.take().unwrap();
     let ring = plan.grid.ntheta() / 2;
     let order = 200;
     let mut input_map = vec![0.0; plan.sample_count];
@@ -969,14 +1006,132 @@ fn precomputed_scalar_table_uses_scaled_recurrence_for_extreme_inputs() {
         input_map[ring * plan.grid.nphi() + longitude] = 1.0e300 * (order as f64 * phi).cos();
     }
     let mut recurrence_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
-    plan.analysis_into(&input_map, &mut recurrence_alm, &mut workspace)
+    recurrence_plan
+        .analysis_into(&input_map, &mut recurrence_alm, &mut recurrence_workspace)
         .unwrap();
-
-    plan.scalar_legendre_table = Some(table);
     let mut fallback_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
     plan.analysis_into(&input_map, &mut fallback_alm, &mut workspace)
         .unwrap();
     assert_eq!(fallback_alm, recurrence_alm);
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn scalar_table_initializes_safely_for_concurrent_cross_pool_operations() {
+    let plan = std::sync::Arc::new(make_plan(127, 127, 128, 257, 0.37));
+    assert!(plan.scalar_legendre_table.get().is_none());
+    let input_map = arbitrary_map(&plan);
+    let pool_one = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let pool_four = rayon::ThreadPoolBuilder::new()
+        .num_threads(4)
+        .build()
+        .unwrap();
+    let mut workspace_one = pool_one.install(|| plan.workspace()).unwrap();
+    let mut workspace_four = pool_four.install(|| plan.workspace()).unwrap();
+    let mut alm_one = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut alm_four = alm_one.clone();
+
+    std::thread::scope(|scope| {
+        let plan_one = &plan;
+        let map_one = &input_map;
+        let handle_one = scope.spawn(|| {
+            pool_one.install(|| plan_one.analysis_into(map_one, &mut alm_one, &mut workspace_one))
+        });
+        let plan_four = &plan;
+        let map_four = &input_map;
+        let handle_four = scope.spawn(|| {
+            pool_four
+                .install(|| plan_four.analysis_into(map_four, &mut alm_four, &mut workspace_four))
+        });
+        handle_one.join().unwrap().unwrap();
+        handle_four.join().unwrap().unwrap();
+    });
+
+    assert_eq!(alm_one, alm_four);
+    assert!(
+        plan.scalar_legendre_table
+            .get()
+            .is_some_and(Option::is_some)
+    );
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn scalar_strategy_selects_against_the_executing_pool() {
+    let small_plan = make_plan(72, 72, 73, 147, 0.37);
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    assert_eq!(
+        one_thread
+            .install(|| { small_plan.scalar_legendre_strategy(LegendreOperation::Synthesis) }),
+        LegendreStrategy::Recurrence
+    );
+    let mut one_thread_workspace = one_thread.install(|| small_plan.workspace()).unwrap();
+    let alm = vec![Complex64::new(0.0, 0.0); small_plan.harmonics().nalm()];
+    let mut map = vec![0.0; small_plan.sample_count];
+    one_thread
+        .install(|| small_plan.synthesis_into(&alm, &mut map, &mut one_thread_workspace))
+        .unwrap();
+    assert!(small_plan.scalar_legendre_table.get().is_none());
+
+    assert_eq!(
+        eight_threads
+            .install(|| { small_plan.scalar_legendre_strategy(LegendreOperation::Synthesis) }),
+        LegendreStrategy::CompactTable
+    );
+    let mut eight_thread_workspace = eight_threads.install(|| small_plan.workspace()).unwrap();
+    eight_threads
+        .install(|| small_plan.synthesis_into(&alm, &mut map, &mut eight_thread_workspace))
+        .unwrap();
+    assert!(
+        small_plan
+            .scalar_legendre_table
+            .get()
+            .is_some_and(Option::is_some)
+    );
+
+    let t86_plan = make_plan(86, 86, 87, 175, 0.37);
+    assert_eq!(
+        one_thread.install(|| t86_plan.scalar_legendre_strategy(LegendreOperation::Synthesis)),
+        LegendreStrategy::Recurrence
+    );
+    let t127_plan = make_plan(127, 127, 128, 257, 0.37);
+    assert_eq!(
+        one_thread.install(|| t127_plan.scalar_legendre_strategy(LegendreOperation::Synthesis)),
+        LegendreStrategy::CompactTable
+    );
+
+    let large_plan = make_plan(255, 255, 256, 513, 0.37);
+    assert_eq!(
+        one_thread.install(|| { large_plan.scalar_legendre_strategy(LegendreOperation::Analysis) }),
+        LegendreStrategy::Recurrence
+    );
+    let input_map = arbitrary_map(&large_plan);
+    let mut coefficients = vec![Complex64::new(0.0, 0.0); large_plan.harmonics().nalm()];
+    let mut large_workspace = one_thread.install(|| large_plan.workspace()).unwrap();
+    one_thread
+        .install(|| large_plan.analysis_into(&input_map, &mut coefficients, &mut large_workspace))
+        .unwrap();
+    assert!(large_plan.scalar_legendre_table.get().is_none());
+
+    let sixteen_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(16)
+        .build()
+        .unwrap();
+    assert_eq!(
+        sixteen_threads
+            .install(|| large_plan.scalar_legendre_strategy(LegendreOperation::Analysis)),
+        LegendreStrategy::Recurrence
+    );
 }
 
 #[test]
