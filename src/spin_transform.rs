@@ -2560,30 +2560,19 @@ impl<T: ShtScalar> ShtPlan<T> {
                 let lane_end = local_ring_start + basis.len();
                 let lanes = local_ring_start..lane_end;
                 let cosine = &block_cosine[lanes.clone()];
-                let (q_even, q_odd) = T::accumulate_scalar_analysis_pair(
-                    arch,
-                    q_products_safe,
-                    normal_range,
-                    &q_even_real[lanes.clone()],
-                    &q_even_imag[lanes.clone()],
-                    &q_odd_real[lanes.clone()],
-                    &q_odd_imag[lanes.clone()],
-                    basis,
-                    exponents,
-                    cosine,
-                );
-                let (u_even, u_odd) = T::accumulate_scalar_analysis_pair(
-                    arch,
-                    u_products_safe,
-                    normal_range,
-                    &u_even_real[lanes.clone()],
-                    &u_even_imag[lanes.clone()],
-                    &u_odd_real[lanes.clone()],
-                    &u_odd_imag[lanes],
-                    basis,
-                    exponents,
-                    cosine,
-                );
+                let [(q_even, q_odd), (u_even, u_odd)] =
+                    T::accumulate_scalar_analysis_pair_channels(
+                        arch,
+                        [q_products_safe, u_products_safe],
+                        normal_range,
+                        [&q_even_real[lanes.clone()], &u_even_real[lanes.clone()]],
+                        [&q_even_imag[lanes.clone()], &u_even_imag[lanes.clone()]],
+                        [&q_odd_real[lanes.clone()], &u_odd_real[lanes.clone()]],
+                        [&q_odd_imag[lanes.clone()], &u_odd_imag[lanes]],
+                        basis,
+                        exponents,
+                        cosine,
+                    );
                 first_even += q_even;
                 second_even += u_even;
                 if l < scalar_lmax {

@@ -1,0 +1,21 @@
+==2892835== Callgrind, a call-graph generating cache profiler
+==2892835== Copyright (C) 2002-2017, and GNU GPL'd, by Josef Weidendorfer et al.
+==2892835== Using Valgrind-3.26.0 and LibVEX; rerun with -h for copyright info
+==2892835== Command: target/release/examples/m1b_bench 0 511 1 synthesis GL STANDARD 512 1025 511 requested-only
+==2892835== 
+==2892835== For interactive control, run 'callgrind_control -h'.
+==2892835== brk segment overflow in thread #1: can't grow to 0x4aff000
+==2892835== (see section Limitations in user manual)
+==2892835== NOTE: further instances of this message will not be shown
+spin-0 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=1 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=1.517
+plan_construction_samples_ms=[2.224,1.434,1.517,1.529,1.417]
+workspace_allocation_ms=6.097
+workspace_allocation_samples_ms=[7.009,6.231,6.086,6.097,6.095]
+synthesis_rayon_ms=3159.682
+synthesis_rayon_samples_ms=[3159.682,3158.780,3158.719,3160.169,3160.801]
+==2892835== 
+==2892835== Events    : Ir
+==2892835== Collected : 5506566784
+==2892835== 
+==2892835== I   refs:      5,506,566,784

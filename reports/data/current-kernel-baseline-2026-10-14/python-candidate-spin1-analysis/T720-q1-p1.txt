@@ -1,0 +1,8 @@
+T720 GL 721x1443 spin=1 mode=STANDARD threads=1 runs=3 scope=plan operation=analysis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.094,0.088,0.085
+numpy_alm_copy_ms=0.229,0.137,0.138
+numpy_map_copy_ms=1.123,1.111,0.994
+numpy_output_allocation_ms=0.001,0.001,0.001
+analysis_error=max_abs=1.391e-14 rms=2.200e-16 rel_l2=6.061e-14
+analysis_rust_plan_run_medians_ms=98.748,98.359,98.581; median=98.581; spread=0.390
+analysis_ducc_run_medians_ms=30.619,30.058,30.360; median=30.360; spread=0.562
