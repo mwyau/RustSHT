@@ -2074,3 +2074,8 @@ Thin LTO with the default 16 codegen units improved T511 q1 scalar analysis by a
 A temporary q8 synthesis path read cached spin-1 scalar coefficient rows directly for fully active paired blocks at T640 and above. At T720, ten alternating native GL process pairs gave a median paired change of `-0.42%`; the candidate was faster in six pairs, with paired changes from `-3.96%` to `+6.19%`. At T511, where direct reads were disabled, five pairs showed no repeatable shared-path effect. The direct-read path passed exact block comparison and T511 all-grid DUCC/round-trip checks, but the whole-transform gain was within process variability, so the source prototype was removed. Full conditions, errors and raw samples are in [`the experiment report`](../reports/spin1-paired-coefficient-preparation-2026-10-14.md) and [`its data`](../reports/data/spin1-paired-coefficient-preparation-2026-10-14/final-alternating-process-samples.txt).
 
 ### Spin-1 paired synthesis coefficient iteration (2026-10-14)
+
+
+### Scalar paired synthesis iterator experiment (2026-10-14)
+
+A temporary zipped traversal removed four coefficient-slice bounds checks from the scalar AVX2 pair loop. Five paired processes improved q1 synthesis by 4.57% at T511 and 3.67% at T720. q8 T511 was flat; ten paired T720 q8 runs were 3.39% slower at the median and favored the candidate in only two pairs. The iterator change was removed rather than add a thread-count-specific duplicate kernel. DUCC synthesis, scalar adjoints and release T511/T1023/T2047 GL/CC/F1 tests passed. The report includes raw timings, assembly evidence and the rejection rationale: [`scalar paired synthesis iterator experiment`](../reports/scalar-paired-zip-iteration-2026-10-14.md).

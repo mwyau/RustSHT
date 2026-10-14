@@ -1,0 +1,35 @@
+spin-0 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=1 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.034
+plan_construction_samples_ms=[0.042,0.036,0.034,0.034,0.034]
+workspace_allocation_ms=2.985
+workspace_allocation_samples_ms=[3.111,2.985,2.970,2.964,3.024]
+synthesis_rayon_ms=43.286
+synthesis_rayon_samples_ms=[43.350,42.975,43.346,43.286,43.106]
+spin-0 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=1 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.034
+plan_construction_samples_ms=[0.042,0.036,0.034,0.034,0.034]
+workspace_allocation_ms=3.057
+workspace_allocation_samples_ms=[3.173,3.042,3.057,3.101,3.025]
+synthesis_rayon_ms=43.460
+synthesis_rayon_samples_ms=[45.769,43.538,43.460,43.412,43.361]
+spin-0 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=1 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.034
+plan_construction_samples_ms=[0.042,0.035,0.034,0.034,0.034]
+workspace_allocation_ms=3.055
+workspace_allocation_samples_ms=[3.166,3.066,3.055,3.039,2.996]
+synthesis_rayon_ms=43.367
+synthesis_rayon_samples_ms=[43.433,43.360,43.367,43.462,43.360]
+spin-0 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=1 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.034
+plan_construction_samples_ms=[0.041,0.035,0.034,0.034,0.034]
+workspace_allocation_ms=3.031
+workspace_allocation_samples_ms=[3.174,3.031,3.019,3.064,3.023]
+synthesis_rayon_ms=43.466
+synthesis_rayon_samples_ms=[43.541,43.404,43.424,43.466,43.539]
+spin-0 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=1 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.034
+plan_construction_samples_ms=[0.042,0.036,0.034,0.034,0.034]
+workspace_allocation_ms=3.047
+workspace_allocation_samples_ms=[3.129,3.016,3.049,3.047,3.004]
+synthesis_rayon_ms=43.417
+synthesis_rayon_samples_ms=[43.428,43.292,43.448,43.417,43.391]

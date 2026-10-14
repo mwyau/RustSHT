@@ -1,0 +1,40 @@
+spin-0 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=8 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.087
+plan_construction_samples_ms=[0.100,0.087,0.085,0.084,0.090]
+workspace_allocation_ms=7.550
+workspace_allocation_samples_ms=[8.022,7.550,7.589,7.252,7.020]
+synthesis_rayon_ms=31.040
+synthesis_rayon_samples_ms=[31.040,34.661,30.283,34.871,30.690]
+scalar_synthesis_first_call_rayon_ms=37.372
+spin-0 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=8 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.085
+plan_construction_samples_ms=[0.101,0.088,0.085,0.084,0.084]
+workspace_allocation_ms=7.587
+workspace_allocation_samples_ms=[7.952,7.386,7.792,7.587,6.996]
+synthesis_rayon_ms=34.685
+synthesis_rayon_samples_ms=[35.597,34.685,35.768,30.291,30.356]
+scalar_synthesis_first_call_rayon_ms=33.662
+spin-0 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=8 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.085
+plan_construction_samples_ms=[0.099,0.087,0.085,0.084,0.084]
+workspace_allocation_ms=7.633
+workspace_allocation_samples_ms=[7.633,7.566,7.479,7.894,7.882]
+synthesis_rayon_ms=35.212
+synthesis_rayon_samples_ms=[35.212,34.644,35.421,36.676,34.707]
+scalar_synthesis_first_call_rayon_ms=34.146
+spin-0 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=8 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.086
+plan_construction_samples_ms=[0.107,0.088,0.086,0.085,0.084]
+workspace_allocation_ms=8.052
+workspace_allocation_samples_ms=[7.890,7.726,8.313,8.052,8.391]
+synthesis_rayon_ms=35.709
+synthesis_rayon_samples_ms=[35.709,30.836,35.909,34.928,35.923]
+scalar_synthesis_first_call_rayon_ms=39.489
+spin-0 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=8 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.087
+plan_construction_samples_ms=[0.113,0.095,0.087,0.086,0.086]
+workspace_allocation_ms=7.854
+workspace_allocation_samples_ms=[7.665,8.061,8.150,7.319,7.854]
+synthesis_rayon_ms=35.767
+synthesis_rayon_samples_ms=[36.609,35.767,37.085,35.155,35.418]
+scalar_synthesis_first_call_rayon_ms=33.513

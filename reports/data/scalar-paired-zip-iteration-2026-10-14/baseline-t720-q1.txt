@@ -1,0 +1,35 @@
+spin-0 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=1 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.087
+plan_construction_samples_ms=[0.099,0.087,0.085,0.088,0.084]
+workspace_allocation_ms=6.295
+workspace_allocation_samples_ms=[6.834,6.375,6.295,6.132,6.162]
+synthesis_rayon_ms=105.051
+synthesis_rayon_samples_ms=[105.051,105.008,105.083,105.064,104.979]
+spin-0 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=1 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.086
+plan_construction_samples_ms=[0.104,0.089,0.086,0.085,0.085]
+workspace_allocation_ms=6.241
+workspace_allocation_samples_ms=[6.318,6.162,6.241,6.239,6.317]
+synthesis_rayon_ms=104.995
+synthesis_rayon_samples_ms=[105.230,104.995,105.105,104.951,104.751]
+spin-0 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=1 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.085
+plan_construction_samples_ms=[0.099,0.086,0.085,0.084,0.083]
+workspace_allocation_ms=6.180
+workspace_allocation_samples_ms=[6.319,6.346,6.129,6.107,6.180]
+synthesis_rayon_ms=105.044
+synthesis_rayon_samples_ms=[105.044,105.262,105.118,104.999,105.037]
+spin-0 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=1 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.086
+plan_construction_samples_ms=[0.098,0.086,0.089,0.084,0.084]
+workspace_allocation_ms=6.233
+workspace_allocation_samples_ms=[6.274,6.233,6.190,6.317,6.106]
+synthesis_rayon_ms=105.363
+synthesis_rayon_samples_ms=[105.527,104.924,105.363,105.151,105.510]
+spin-0 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=1 threads; synthesis; requested_only=true; strategy=automatic; 5 samples, median
+plan_construction_ms=0.093
+plan_construction_samples_ms=[0.107,0.093,0.090,0.089,0.094]
+workspace_allocation_ms=6.139
+workspace_allocation_samples_ms=[6.244,6.202,6.092,6.018,6.139]
+synthesis_rayon_ms=105.121
+synthesis_rayon_samples_ms=[105.193,105.022,105.121,104.864,105.187]
