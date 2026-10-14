@@ -1,0 +1,125 @@
+DUCC 0.41.0 T511 spin-1 STANDARD GL analysis thread scaling.
+Grid: 512x1025, phi0=0.37, f64, mmax=511. Python plan benchmark, DUCC operation timed; 2 outer runs x 5 samples per process.
+Processes pinned to CPUs 0..q-1; DUCC nthreads=q. Three process runs in rotated thread-count order.
+Command: RAYON_NUM_THREADS=q taskset -c <0-(q-1)> uv run python examples/python_perf_baseline.py 511 1 q GL 2 plan analysis ducc STANDARD 1025
+
+PROCESS=1 THREADS=8 EXIT=0
+T511 GL 512x1025 spin=1 mode=STANDARD threads=8 runs=2 scope=plan operation=analysis backend=ducc python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.036,0.036
+numpy_alm_copy_ms=0.111,0.104
+numpy_map_copy_ms=0.317,0.156
+numpy_output_allocation_ms=0.001,0.001
+analysis_ducc_run_medians_ms=1.971,1.909; median=1.940; spread=0.062
+
+PROCESS=1 THREADS=1 EXIT=0
+T511 GL 512x1025 spin=1 mode=STANDARD threads=1 runs=2 scope=plan operation=analysis backend=ducc python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.038,0.037
+numpy_alm_copy_ms=0.108,0.110
+numpy_map_copy_ms=0.225,0.171
+numpy_output_allocation_ms=0.002,0.001
+analysis_ducc_run_medians_ms=13.255,13.212; median=13.233; spread=0.043
+
+PROCESS=1 THREADS=16 EXIT=0
+T511 GL 512x1025 spin=1 mode=STANDARD threads=16 runs=2 scope=plan operation=analysis backend=ducc python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.036,0.038
+numpy_alm_copy_ms=0.116,0.107
+numpy_map_copy_ms=0.201,0.145
+numpy_output_allocation_ms=0.001,0.001
+analysis_ducc_run_medians_ms=1.582,1.419; median=1.500; spread=0.163
+
+PROCESS=1 THREADS=4 EXIT=0
+T511 GL 512x1025 spin=1 mode=STANDARD threads=4 runs=2 scope=plan operation=analysis backend=ducc python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.039,0.039
+numpy_alm_copy_ms=0.120,0.108
+numpy_map_copy_ms=0.229,0.141
+numpy_output_allocation_ms=0.001,0.001
+analysis_ducc_run_medians_ms=3.612,3.479; median=3.545; spread=0.132
+
+PROCESS=1 THREADS=2 EXIT=0
+T511 GL 512x1025 spin=1 mode=STANDARD threads=2 runs=2 scope=plan operation=analysis backend=ducc python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.036,0.036
+numpy_alm_copy_ms=0.116,0.070
+numpy_map_copy_ms=0.204,0.134
+numpy_output_allocation_ms=0.001,0.001
+analysis_ducc_run_medians_ms=6.588,6.611; median=6.599; spread=0.023
+
+PROCESS=2 THREADS=2 EXIT=0
+T511 GL 512x1025 spin=1 mode=STANDARD threads=2 runs=2 scope=plan operation=analysis backend=ducc python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.037,0.038
+numpy_alm_copy_ms=0.112,0.106
+numpy_map_copy_ms=0.178,0.151
+numpy_output_allocation_ms=0.001,0.001
+analysis_ducc_run_medians_ms=6.625,6.704; median=6.665; spread=0.078
+
+PROCESS=2 THREADS=16 EXIT=0
+T511 GL 512x1025 spin=1 mode=STANDARD threads=16 runs=2 scope=plan operation=analysis backend=ducc python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.037,0.036
+numpy_alm_copy_ms=0.129,0.091
+numpy_map_copy_ms=0.217,0.166
+numpy_output_allocation_ms=0.001,0.001
+analysis_ducc_run_medians_ms=1.591,1.378; median=1.484; spread=0.214
+
+PROCESS=2 THREADS=4 EXIT=0
+T511 GL 512x1025 spin=1 mode=STANDARD threads=4 runs=2 scope=plan operation=analysis backend=ducc python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.036,0.038
+numpy_alm_copy_ms=0.107,0.106
+numpy_map_copy_ms=0.282,0.177
+numpy_output_allocation_ms=0.001,0.001
+analysis_ducc_run_medians_ms=3.461,3.390; median=3.426; spread=0.070
+
+PROCESS=2 THREADS=1 EXIT=0
+T511 GL 512x1025 spin=1 mode=STANDARD threads=1 runs=2 scope=plan operation=analysis backend=ducc python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.037,0.036
+numpy_alm_copy_ms=0.117,0.105
+numpy_map_copy_ms=0.183,0.144
+numpy_output_allocation_ms=0.001,0.001
+analysis_ducc_run_medians_ms=13.263,12.848; median=13.056; spread=0.415
+
+PROCESS=2 THREADS=8 EXIT=0
+T511 GL 512x1025 spin=1 mode=STANDARD threads=8 runs=2 scope=plan operation=analysis backend=ducc python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.040,0.038
+numpy_alm_copy_ms=0.108,0.100
+numpy_map_copy_ms=0.179,0.151
+numpy_output_allocation_ms=0.001,0.001
+analysis_ducc_run_medians_ms=1.972,1.915; median=1.943; spread=0.057
+
+PROCESS=3 THREADS=4 EXIT=0
+T511 GL 512x1025 spin=1 mode=STANDARD threads=4 runs=2 scope=plan operation=analysis backend=ducc python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.036,0.036
+numpy_alm_copy_ms=0.108,0.122
+numpy_map_copy_ms=0.181,0.140
+numpy_output_allocation_ms=0.001,0.001
+analysis_ducc_run_medians_ms=3.439,3.408; median=3.423; spread=0.031
+
+PROCESS=3 THREADS=8 EXIT=0
+T511 GL 512x1025 spin=1 mode=STANDARD threads=8 runs=2 scope=plan operation=analysis backend=ducc python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.036,0.037
+numpy_alm_copy_ms=0.128,0.090
+numpy_map_copy_ms=0.219,0.140
+numpy_output_allocation_ms=0.001,0.001
+analysis_ducc_run_medians_ms=1.978,1.995; median=1.986; spread=0.017
+
+PROCESS=3 THREADS=2 EXIT=0
+T511 GL 512x1025 spin=1 mode=STANDARD threads=2 runs=2 scope=plan operation=analysis backend=ducc python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.036,0.036
+numpy_alm_copy_ms=0.121,0.110
+numpy_map_copy_ms=0.239,0.168
+numpy_output_allocation_ms=0.001,0.001
+analysis_ducc_run_medians_ms=6.601,6.576; median=6.589; spread=0.025
+
+PROCESS=3 THREADS=16 EXIT=0
+T511 GL 512x1025 spin=1 mode=STANDARD threads=16 runs=2 scope=plan operation=analysis backend=ducc python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.037,0.037
+numpy_alm_copy_ms=0.115,0.083
+numpy_map_copy_ms=0.231,0.170
+numpy_output_allocation_ms=0.001,0.001
+analysis_ducc_run_medians_ms=1.614,1.509; median=1.561; spread=0.106
+
+PROCESS=3 THREADS=1 EXIT=0
+T511 GL 512x1025 spin=1 mode=STANDARD threads=1 runs=2 scope=plan operation=analysis backend=ducc python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.037,0.037
+numpy_alm_copy_ms=0.115,0.105
+numpy_map_copy_ms=0.188,0.137
+numpy_output_allocation_ms=0.001,0.001
+analysis_ducc_run_medians_ms=12.999,12.908; median=12.953; spread=0.092
+
