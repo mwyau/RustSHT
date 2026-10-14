@@ -48,11 +48,21 @@ impl<T: ShtScalar> ScalarLegendreTable<T> {
     ) -> Option<Self> {
         let lmax = harmonics.lmax();
         let mmax = harmonics.mmax();
+        let table_lmax = match harmonics.spin() {
+            0 => lmax,
+            1 => lmax.checked_add(1)?,
+            _ => return None,
+        };
+        let maximum_table_lmax = match harmonics.spin() {
+            0 => MAX_PRECOMPUTED_LMAX,
+            1 => 128,
+            _ => unreachable!(),
+        };
         if !T::supports_precomputed_scalar()
-            || harmonics.spin() != 0
             || grid.kind() != GridKind::GaussLegendre
             || grid.ntheta() != lmax + 1
-            || !(MIN_PRECOMPUTED_LMAX..=MAX_PRECOMPUTED_LMAX).contains(&lmax)
+            || lmax < MIN_PRECOMPUTED_LMAX
+            || !(MIN_PRECOMPUTED_LMAX..=maximum_table_lmax).contains(&table_lmax)
             || mmax < lmax - lmax / 4
             || mmax > (grid.nphi() - 1) / 2
         {
@@ -64,7 +74,7 @@ impl<T: ShtScalar> ScalarLegendreTable<T> {
         let mut element_count = 0_usize;
         for m in 0..=mmax {
             element_count =
-                element_count.checked_add((lmax - m + 1).checked_mul(north_ring_count)?)?;
+                element_count.checked_add((table_lmax - m + 1).checked_mul(north_ring_count)?)?;
         }
         let table_bytes = element_count.checked_mul(std::mem::size_of::<T>())?;
         if table_bytes > MAX_TABLE_BYTES {
@@ -81,7 +91,7 @@ impl<T: ShtScalar> ScalarLegendreTable<T> {
         let mut offset = 0;
         for m in 0..=mmax {
             order_offsets.push(offset);
-            offset += (lmax - m + 1) * north_ring_count;
+            offset += (table_lmax - m + 1) * north_ring_count;
         }
         order_offsets.push(offset);
 
@@ -94,14 +104,15 @@ impl<T: ShtScalar> ScalarLegendreTable<T> {
             let (north_sin, north_cos) = sin_cos_from_f64::<T>(grid.theta()[north_ring]);
             let (south_sin, south_cos) = sin_cos_from_f64::<T>(grid.theta()[south_ring]);
             paired_order_limits.push(
-                T::polar_order_limit(lmax, 0, north_sin, north_cos)
-                    .max(T::polar_order_limit(lmax, 0, south_sin, south_cos)),
+                T::polar_order_limit(lmax, harmonics.spin(), north_sin, north_cos).max(
+                    T::polar_order_limit(lmax, harmonics.spin(), south_sin, south_cos),
+                ),
             );
         }
 
-        let mut epsilon = vec![T::zero(); lmax + 1];
+        let mut epsilon = vec![T::zero(); table_lmax + 1];
         for m in 0..=mmax {
-            T::fill_epsilon(m, lmax, &mut epsilon);
+            T::fill_epsilon(m, table_lmax, &mut epsilon);
             let order_offset = order_offsets[m];
             let phase = if m.is_multiple_of(2) {
                 T::one()
@@ -118,7 +129,7 @@ impl<T: ShtScalar> ScalarLegendreTable<T> {
                 }
                 let mut previous = T::zero();
                 let mut current = sectoral_norms[m] * phase * sin_theta.powi(m as i32);
-                for degree_offset in 0..=(lmax - m) {
+                for degree_offset in 0..=(table_lmax - m) {
                     let l = m + degree_offset;
                     let exact_equatorial_zero = south_ring == north_ring
                         && grid.theta()[north_ring] == std::f64::consts::FRAC_PI_2
@@ -130,7 +141,7 @@ impl<T: ShtScalar> ScalarLegendreTable<T> {
                     }
                     let basis_offset = order_offset + degree_offset * north_ring_count;
                     values[basis_offset + north_ring] = current;
-                    if degree_offset < lmax - m {
+                    if degree_offset < table_lmax - m {
                         let next = (cos_theta * current - epsilon[l] * previous) / epsilon[l + 1];
                         previous = current;
                         current = next;
@@ -150,6 +161,10 @@ impl<T: ShtScalar> ScalarLegendreTable<T> {
     #[inline]
     pub(crate) fn input_is_safe(&self, value: T) -> bool {
         value.is_finite() && value.abs() <= self.input_scale_limit
+    }
+
+    pub(crate) fn north_ring_count(&self) -> usize {
+        self.north_ring_count
     }
 
     #[inline]

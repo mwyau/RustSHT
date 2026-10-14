@@ -1453,7 +1453,7 @@ fn spin1_scalar_fast_analysis_honors_the_polar_order_cutoff() {
 
 #[test]
 fn spin1_standard_analysis_scalar_conversion_matches_general_and_adjoint_on_all_grids() {
-    for lmax in [14, 15, 31, 47, 63, 127, 191, 255] {
+    for lmax in [14, 15, 31, 47, 63, 72, 127, 191, 255] {
         for kind in [
             GridKind::GaussLegendre,
             GridKind::ClenshawCurtis,
@@ -1493,6 +1493,22 @@ fn spin1_standard_analysis_scalar_conversion_matches_general_and_adjoint_on_all_
                             &mut fast_workspace,
                         )
                         .unwrap();
+                    if kind == GridKind::GaussLegendre && lmax == 127 {
+                        assert!(
+                            fast_plan
+                                .spin1_scalar_legendre_table
+                                .get()
+                                .is_some_and(Option::is_some)
+                        );
+                    }
+                    if kind == GridKind::GaussLegendre && lmax == 255 {
+                        assert!(
+                            fast_plan
+                                .spin1_scalar_legendre_table
+                                .get()
+                                .is_some_and(Option::is_none)
+                        );
+                    }
                     general_plan
                         .analysis_spin_into(
                             &first,
@@ -1541,6 +1557,175 @@ fn spin1_standard_analysis_scalar_conversion_matches_general_and_adjoint_on_all_
             }
         }
     }
+}
+
+#[test]
+fn concurrent_spin1_analysis_initializes_the_reusable_table_safely() {
+    let plan = make_plan(1, 72, 72, 73, 147);
+    let (first, second) = arbitrary_maps(&plan);
+    assert!(plan.spin1_scalar_legendre_table.get().is_none());
+
+    let run_analysis = || {
+        let mut workspace = plan.workspace().unwrap();
+        let mut e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        let mut b = e.clone();
+        plan.analysis_spin_into(&first, &second, &mut e, &mut b, &mut workspace)
+            .unwrap();
+        (e, b)
+    };
+    let (left, right) = std::thread::scope(|scope| {
+        let left = scope.spawn(run_analysis);
+        let right = scope.spawn(run_analysis);
+        (left.join().unwrap(), right.join().unwrap())
+    });
+    assert_eq!(left.0, right.0);
+    assert_eq!(left.1, right.1);
+    assert!(
+        plan.spin1_scalar_legendre_table
+            .get()
+            .is_some_and(Option::is_some)
+    );
+}
+
+#[test]
+fn spin1_scalar_table_analysis_preserves_small_reflected_differences() {
+    let plan = make_plan(1, 72, 72, 73, 147);
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_spin_latitudes(&mut workspace, 1);
+    let table = crate::legendre::ScalarLegendreTable::build_if_beneficial(
+        &plan.grid,
+        &plan.harmonics,
+        &plan.sectoral_norms,
+    )
+    .unwrap();
+
+    let north_ring = 12;
+    let south_ring = plan.grid.ntheta() - 1 - north_ring;
+    let spectrum_len = plan.fft.spectrum_len();
+    let phase = longitude_phase::<f64>(0, plan.grid.phi0(), true);
+    let north_scale = plan.grid.ring_weights()[north_ring] / workspace.theta_sin[north_ring];
+    let south_scale = plan.grid.ring_weights()[south_ring] / workspace.theta_sin[south_ring];
+    let south_spectrum = 1.0 / south_scale;
+    let south_weighted = (Complex64::new(south_spectrum, 0.0) * phase * south_scale).re;
+    let mut north_spectrum = 1.0 / north_scale;
+    let mut reflected_values = None;
+    for _ in 0..128 {
+        north_spectrum = f64::from_bits(north_spectrum.to_bits() + 1);
+        let north_weighted = (Complex64::new(north_spectrum, 0.0) * phase * north_scale).re;
+        if north_weighted > south_weighted
+            && north_weighted + south_weighted == 2.0 * south_weighted
+        {
+            reflected_values = Some((north_spectrum, north_weighted));
+            break;
+        }
+    }
+    let (north_spectrum, north_weighted) =
+        reflected_values.expect("adjacent north values expose parity cancellation");
+    let mut q_spectra = vec![Complex64::new(0.0, 0.0); plan.grid.ntheta() * spectrum_len];
+    let u_spectra = q_spectra.clone();
+    q_spectra[north_ring * spectrum_len] = Complex64::new(north_spectrum, 0.0);
+    q_spectra[south_ring * spectrum_len] = Complex64::new(south_spectrum, 0.0);
+    let mut e_coefficients = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut b_coefficients = e_coefficients.clone();
+    let used_table = plan
+        .analyze_spin_scalar_table_order(
+            &q_spectra,
+            &u_spectra,
+            spectrum_len,
+            plan.grid.nphi() as f64,
+            phase,
+            plan.grid.ring_weights(),
+            false,
+            0,
+            &workspace.theta_sin,
+            &workspace.ring_order_limits,
+            pulp::Arch::new(),
+            &mut e_coefficients,
+            Some(&mut b_coefficients),
+            &table,
+            &mut workspace.recurrence_workers[0],
+        )
+        .unwrap();
+
+    assert!(used_table);
+    let expected = table.degree_lanes(0, 1)[north_ring] * (north_weighted - south_weighted);
+    let actual = workspace.recurrence_workers[0].fast_scalar_first[1].re;
+    assert!(expected != 0.0);
+    assert!(
+        (actual - expected).abs() <= expected.abs() * 1.0e-10,
+        "odd reflected contribution lost: actual={actual:.3e}, expected={expected:.3e}"
+    );
+}
+
+#[test]
+fn spin1_scalar_table_analysis_falls_back_for_extreme_finite_inputs() {
+    let table_plan = make_plan(1, 72, 72, 73, 147);
+    let mut general_plan = make_plan(1, 72, 72, 73, 147);
+    general_plan.spin_fast_coefficient_count = 0;
+
+    let mut first = vec![0.0; table_plan.sample_count];
+    let mut second = vec![0.0; table_plan.sample_count];
+    for ring in 0..table_plan.grid.ntheta() {
+        for longitude in 0..table_plan.grid.nphi() {
+            let theta = table_plan.grid.theta()[ring];
+            let phi = table_plan.grid.longitude(longitude).unwrap();
+            let index = ring * table_plan.grid.nphi() + longitude;
+            first[index] = 1.0e150 * (theta * 0.7 + phi * 1.3).sin();
+            second[index] = 1.0e150 * (theta * 1.1 - phi * 0.9).cos();
+        }
+    }
+
+    let mut table_e = vec![Complex64::new(0.0, 0.0); table_plan.harmonics().nalm()];
+    let mut table_b = table_e.clone();
+    let mut general_e = table_e.clone();
+    let mut general_b = table_e.clone();
+    let mut table_workspace = table_plan.workspace().unwrap();
+    let mut general_workspace = general_plan.workspace().unwrap();
+    table_plan
+        .analysis_spin_into(
+            &first,
+            &second,
+            &mut table_e,
+            &mut table_b,
+            &mut table_workspace,
+        )
+        .unwrap();
+    general_plan
+        .analysis_spin_into(
+            &first,
+            &second,
+            &mut general_e,
+            &mut general_b,
+            &mut general_workspace,
+        )
+        .unwrap();
+
+    assert!(
+        table_plan
+            .spin1_scalar_legendre_table
+            .get()
+            .is_some_and(Option::is_some)
+    );
+    let mut maximum_scale: f64 = 1.0;
+    let mut maximum_error: f64 = 0.0;
+    for (actual, expected) in [(&table_e, &general_e), (&table_b, &general_b)] {
+        for (&actual, &expected) in actual.iter().zip(expected) {
+            assert!(actual.re.is_finite() && actual.im.is_finite());
+            assert!(expected.re.is_finite() && expected.im.is_finite());
+            maximum_scale = maximum_scale
+                .max(actual.re.abs())
+                .max(actual.im.abs())
+                .max(expected.re.abs())
+                .max(expected.im.abs());
+            maximum_error = maximum_error
+                .max((actual.re - expected.re).abs())
+                .max((actual.im - expected.im).abs());
+        }
+    }
+    assert!(
+        maximum_error <= 3.0e-10 * maximum_scale,
+        "extreme spin-1 table fallback error={maximum_error:.3e}, scale={maximum_scale:.3e}"
+    );
 }
 
 #[test]

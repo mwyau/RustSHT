@@ -193,6 +193,48 @@ fn main() {
             }
         }
     }
+    let first_analysis_one_thread = (operation != "synthesis"
+        && spin == 1
+        && grid_kind == GridKind::GaussLegendre)
+        .then(|| {
+            let start = Instant::now();
+            one_thread_pool.install(|| {
+                plan.analysis_spin_into(
+                    black_box(&first),
+                    black_box(&second),
+                    black_box(&mut analyzed_e),
+                    black_box(&mut analyzed_b),
+                    &mut workspace,
+                )
+                .unwrap();
+                black_box(analyzed_e[0]);
+            });
+            start.elapsed()
+        });
+    let first_analysis_rayon = (operation != "synthesis"
+        && spin == 1
+        && grid_kind == GridKind::GaussLegendre
+        && rayon_threads > 1)
+        .then(|| {
+            let cold_plan = make_plan();
+            let mut cold_workspace = rayon_pool.install(|| cold_plan.workspace()).unwrap();
+            let mut cold_e = vec![Complex64::new(0.0, 0.0); cold_plan.harmonics().nalm()];
+            let mut cold_b = vec![Complex64::new(0.0, 0.0); cold_plan.harmonics().nalm()];
+            let start = Instant::now();
+            rayon_pool.install(|| {
+                cold_plan
+                    .analysis_spin_into(
+                        black_box(&first),
+                        black_box(&second),
+                        black_box(&mut cold_e),
+                        black_box(&mut cold_b),
+                        &mut cold_workspace,
+                    )
+                    .unwrap();
+                black_box(cold_e[0]);
+            });
+            start.elapsed()
+        });
     let analysis_one_thread = (operation != "synthesis").then(|| {
         measure(|| {
             one_thread_pool.install(|| {
@@ -270,5 +312,17 @@ fn main() {
     }
     if let Some(elapsed) = analysis_rayon {
         println!("analysis_rayon_ms={:.3}", elapsed.as_secs_f64() * 1000.0);
+    }
+    if let Some(elapsed) = first_analysis_one_thread {
+        println!(
+            "analysis_first_call_one_thread_ms={:.3}",
+            elapsed.as_secs_f64() * 1000.0
+        );
+    }
+    if let Some(elapsed) = first_analysis_rayon {
+        println!(
+            "analysis_first_call_rayon_ms={:.3}",
+            elapsed.as_secs_f64() * 1000.0
+        );
     }
 }
