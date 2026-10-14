@@ -2552,3 +2552,31 @@ For T191 eight-thread synthesis, 11 process runs per variant measured medians of
 A follow-up compared T255 table synthesis with the recurrence at commit `0f760cf`, using the same release benchmark, affinity and five-sample process procedure. Across three alternating process pairs, recurrence/table medians were `11.945/12.265 ms` at one thread (`+2.7%`) and `4.387/4.447 ms` at eight threads (`+1.4%`). One-thread process ranges were narrowly separated (`11.878–12.056` and `12.106–12.298 ms`); the eight-thread ranges overlapped. The 32.375 MiB table therefore had no measured whole-transform benefit at T255. Synthesis eligibility is capped at T191; the independent T255 exact-analysis table path is unchanged.
 
 The strictly read-only Sol review found no numerical, indexing, safety or performance-justification blocker. It identified that cached table availability could bypass the intended current-operation gate and requested an eligible odd-latitude/even-longitude test plus first-call timing; the operation gate was passed explicitly and the T128 case and amortization measurements were added. Full all-feature tests passed (132 Rust and 10 f32; 8 ignored), no-default tests passed (122 Rust and 10 f32; 7 ignored), Python tests passed (16), and formatting and workspace Clippy passed. Warm synthesis improves at one thread on T127/T191 but not at eight threads; the specialization is limited to repeated, single-threaded GL wind transforms through T191. DUCC remains about `1.6x` and `3.4x` faster than the warmed Python-plan method at T127 and T191 respectively. No FFT, analysis, adjoint, GRAD_ONLY, DERIV1, CC/F1, f32 or spin-2 algorithm changed.
+
+### North/south paired spin-1 GL analysis (2026-10-13)
+
+The spin-1 STANDARD exact-analysis scalar-conversion path now processes mirrored GL rings as one parity pair. It applies each ring's Fourier phase and its own quadrature, sine and longitude normalization before forming even/odd inputs for the scalar recurrence. The equatorial ring is processed once. Each ring's order cutoff is applied independently; inactive members contribute zero, and mixed active pairs remain valid. Partially active 64-pair blocks are compacted into the current worker's `RecurrenceWorkspace`; no workspace field, heap allocation or full-sized table was added. The original general spin recurrence remains the fallback when a paired block cannot use the normal-range scalar reducer. CC/F1 and other spin modes keep their existing paths. No FFT implementation changed.
+
+Native f64 GL spin-1 STANDARD analysis was measured with `examples/m1b_bench.rs`, reusing a plan and workspace, `phi0=0.37`, full `mmax`, deterministic inputs, one warm-up and five timed calls per process. Three process runs were collected for each revision; the baseline was `39d52239317380c41dd64fe046d7be091555f01a`, and the candidate was based on that source plus the paired path. Rust was `1.99.0 (b940084d7 2026-09-28)` / LLVM `23.1.1`, release `opt-level=3`, 16 codegen units, LTO disabled, portable Pulp AVX2/FMA runtime dispatch, without `target-cpu=native`. Measurements ran on an AMD Ryzen 9 5950X under Linux `7.0.14-20-pve`, pinned to CPUs 0–7. Values are medians and ranges of process medians in milliseconds:
+
+| Bandlimit | Threads | Baseline | Paired path | Change |
+| --- | ---: | ---: | ---: | ---: |
+| T511 | 1 | `63.769 [63.616–63.860]` | `39.104 [38.479–39.343]` | `-38.7%` |
+| T511 | 8 | `17.293 [16.966–17.328]` | `13.596 [12.411–15.001]` | `-21.4%` |
+| T720 | 1 | `171.492 [168.778–173.569]` | `103.966 [103.732–104.239]` | `-39.4%` |
+| T720 | 8 | `43.739 [43.395–43.918]` | `35.095 [34.407–39.763]` | `-19.8%` |
+
+These are whole analysis times, including longitude FFT and surrounding transform work. The measurement confirms a net gain but does not isolate the Legendre-stage contribution. No hardware instruction counters were collected. The implementation reuses existing worker scratch; peak RSS was not measured separately.
+
+The rebuilt Python plan was compared with installed `ducc0==0.41.0` from source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`, using matching f64 GL inputs, full bandlimits, `phi0=0.37`, and explicit one/eight thread settings. These are steady-state plan-method timings, with three process runs and five timed calls after warm-up; values are median milliseconds:
+
+| Bandlimit | Threads | RustSHT | DUCC0 | Ratio |
+| --- | ---: | ---: | ---: | ---: |
+| T511 | 1 | `38.869` | `12.850` | `3.02x` |
+| T511 | 8 | `12.546` | `1.989` | `6.31x` |
+| T720 | 1 | `106.661` | `30.701` | `3.47x` |
+| T720 | 8 | `37.025` | `4.461` | `8.30x` |
+
+Maximum absolute / RMS / relative-L2 coefficient errors against DUCC were `1.401e-14 / 1.910e-16 / 3.740e-14` at T511 and `1.391e-14 / 2.200e-16 / 6.061e-14` at T720. The paired path also passed the full-latitude recurrence comparison, asymmetric cutoff and equatorial cases, an adjoint identity, and an extreme finite-input case that must select the existing fallback. The opt-in release T511 all-grid spin test and T1023 exact-analysis spin test passed; CC/F1 continue through their existing paths. The read-only Sol review of the focused diff found no actionable mathematical, cutoff, scratch-ownership, thread-safety or benchmark issue.
+
+`cargo fmt --all -- --check`, workspace Clippy with warnings denied, `cargo test --workspace --all-features` (134 Rust tests and 10 f32 tests passed; 8 ignored), `cargo test -p rustsht --no-default-features` (124 Rust tests and 10 f32 tests passed; 7 ignored), and `uv run pytest python/tests` (16 passed) passed. The one/eight-thread native gains justify retaining the paired GL analysis path. DUCC remains substantially faster, particularly at eight threads; further work should target the remaining recurrence and multicore gap rather than attribute this gain to binding or FFT changes.
