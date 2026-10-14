@@ -1,6 +1,6 @@
 # Legendre precomputation and recurrence at T72–T720
 
-Updated 2026-10-14. Branch: `main`. The scalar recurrence baseline is commit `7c7e963884add727a02b0a76e297f9fc04681271`. The bounded scalar GL table was added in `d251af6`; its T72 gate expansion is `d7f3dea`. The spin-1 analysis table began in `a151ab1` with recurrence baseline `552fd83`, and was later extended through T255 in the update recorded below and in [the milestone log](../plans/05-validation-and-milestones.md#t255-spin-1-gl-analysis-table). DUCC comparisons use `ducc0==0.41.0` and source revision [`c1ed01b8fda69d2a378190f0915f1a19762dddbf`](https://github.com/mreineck/ducc/tree/c1ed01b8fda69d2a378190f0915f1a19762dddbf).
+Updated 2026-10-14. Branch: `main`. The latest accepted performance implementation is commit `0b9c5091af34079f91f7c8296d5ee4e61f80cfa0`, based on recurrence baseline `41b3a94`; it extends spin-1 exact GL analysis through T255. The scalar recurrence baseline is commit `7c7e963884add727a02b0a76e297f9fc04681271`. The bounded scalar GL table was added in `d251af6`; its T72 gate expansion is `d7f3dea`. The spin-1 analysis table began in `a151ab1` with recurrence baseline `552fd83`, and was later extended through T255 in the update recorded below and in [the milestone log](../plans/05-validation-and-milestones.md#t255-spin-1-gl-analysis-table). DUCC comparisons use `ducc0==0.41.0` and source revision [`c1ed01b8fda69d2a378190f0915f1a19762dddbf`](https://github.com/mreineck/ducc/tree/c1ed01b8fda69d2a378190f0915f1a19762dddbf).
 
 ## Findings
 
@@ -149,7 +149,7 @@ The temporary high-band Python comparison against the installed DUCC wheel measu
 
 ## GL Python-plan comparison against DUCC
 
-The table entries below report `Rust / DUCC` milliseconds. Each row separates synthesis and analysis, one and eight threads. At T72/T127/T255 the Rust GL scalar rows use the compact table. Spin 1 and the other bandlimits use recurrence. The newly measured T72 Python run is a correctness cross-check; process-level Rust timings at eight threads had substantial scheduling variation and are not used to accept the native kernel.
+The table entries below report `Rust / DUCC` milliseconds. Each row separates synthesis and analysis, one and eight threads. At T72/T127/T255 the Rust GL scalar rows use the compact table. This spin-1 comparison was captured before the T255 table extension: its T72/T127 rows use the then-eligible compact table, while T255 and higher use recurrence. The newly measured T72 Python run is a correctness cross-check; process-level Rust timings at eight threads had substantial scheduling variation and are not used to accept the native kernel.
 
 | Bandlimit | Spin | S 1T R/D | A 1T R/D | S 8T R/D | A 8T R/D | Max relative-L2 S/A | Max 8T process range |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
