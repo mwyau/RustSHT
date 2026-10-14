@@ -2409,6 +2409,79 @@ mod tests {
     }
 
     #[test]
+    fn staged_synthesis_transition_falls_back_on_degree_pair_cancellation() {
+        let m = 2048;
+        let lmax = m + 1;
+        let sin_theta = [(3.0_f64).sqrt() * 0.5];
+        let cos_theta = [0.5];
+        let sectoral_norm = sectoral_normalizations(m).unwrap()[m];
+        let mut epsilon = vec![0.0; lmax + 4];
+        fill_epsilon(m, lmax, &mut epsilon);
+        let factor_count = lmax / 2 + 2;
+        let mut alpha = vec![0.0; factor_count];
+        let mut coefficient_a = vec![0.0; factor_count];
+        let mut coefficient_b = vec![0.0; factor_count];
+        super::super::scalar_paired::fill_factors(
+            m,
+            lmax,
+            &epsilon,
+            &mut alpha,
+            &mut coefficient_a,
+            &mut coefficient_b,
+        );
+        let first_coefficients = [
+            Complex64::new(1.0, 0.0),
+            Complex64::new(-2.0 / alpha[0], 0.0),
+        ];
+        let second_coefficients = [Complex64::new(0.0, 0.0); 2];
+        let mut previous = [0.0];
+        let mut current = [0.0];
+        let mut next = [0.0];
+        let mut exponents = [0];
+        let mut first_sum_re = [0.0];
+        let mut first_sum_im = [0.0];
+        let mut second_sum_re = [0.0];
+        let mut second_sum_im = [0.0];
+
+        for arch in [Arch::Scalar, Arch::new()] {
+            assert!(
+                !super::super::scalar_paired::try_synthesize_order_pair_transition_dispatched(
+                    arch,
+                    m,
+                    lmax,
+                    &sin_theta,
+                    &cos_theta,
+                    sectoral_norm,
+                    &epsilon,
+                    &alpha,
+                    &coefficient_a,
+                    &coefficient_b,
+                    &first_coefficients,
+                    &second_coefficients,
+                    &mut previous,
+                    &mut current,
+                    &mut next,
+                    &mut exponents,
+                    &mut first_sum_re,
+                    &mut first_sum_im,
+                    &mut second_sum_re,
+                    &mut second_sum_im,
+                )
+                .unwrap(),
+                "the scaled path must handle a cancelled paired coefficient"
+            );
+            let even = first_coefficients[0] * epsilon[m + 1] * alpha[0];
+            let odd = first_coefficients[1] * alpha[0];
+            assert_eq!(even.re, 1.0);
+            assert_eq!(odd.re, -2.0);
+            assert_eq!(odd.re * cos_theta[0], -1.0);
+            let reference = multiply_complex_scaled(even, current[0], exponents[0])
+                + multiply_complex_scaled_product(odd, current[0], cos_theta[0], exponents[0]);
+            assert_eq!(reference, Complex64::new(0.0, 0.0));
+        }
+    }
+
+    #[test]
     fn paired_synthesis_transition_rejects_prefix_underflow_revived_by_spin_weight() {
         let m = 102;
         let lmax = 511;
