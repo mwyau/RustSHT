@@ -1,0 +1,50 @@
+Temporary test-only scalar north/south paired synthesis prototype.
+RustSHT production baseline: acced0f (production transform code unchanged).
+CPU: AMD Ryzen 9 5950X, taskset CPUs 0-7; Rust 1.99.0 release profile; f64 GL T511,
+ntheta=512, nphi=1025, mmax=511, phi0=0.37. Seven interleaved warm samples per method.
+The test checks full map output against the ordinary reused-plan synthesis for q=1 and q=8.
+The block pair kernel is used only when every paired ring is cutoff-active and sin(theta)>=0.01;
+other blocks use the existing recurrence separately for each hemisphere.
+Command: taskset -c 0-7 cargo test --release -p rustsht --lib
+         benchmark_scalar_hemisphere_paired_synthesis_experiment -- --ignored --nocapture
+
+    Finished `release` profile [optimized] target(s) in 0.01s
+     Running unittests src/lib.rs (target/release/deps/rustsht-159837ac1c3bd1f7)
+
+running 1 test
+hemisphere_pair T511 GL 512x1025 mmax=511 threads=1 paired_samples_ms=[46.403224, 46.420556000000005, 46.455180999999996, 46.456072, 46.702661, 46.74481, 46.944331] recurrence_samples_ms=[43.043389000000005, 43.109190999999996, 43.159425, 43.166388, 43.293254000000005, 43.362843999999996, 44.332299] relative_l2=1.274e-14 block_len=64 eligible_pairs=64/256 estimated_degree_work_saved_pct=14.1
+hemisphere_pair T511 GL 512x1025 mmax=511 threads=8 paired_samples_ms=[12.239844999999999, 12.479833, 12.488088, 12.525658, 12.572424999999999, 12.653015, 13.01548] recurrence_samples_ms=[10.950445, 11.53889, 11.984991, 12.116916999999999, 12.2692, 12.356623, 12.386659] relative_l2=1.936e-14 block_len=32 eligible_pairs=96/256 estimated_degree_work_saved_pct=21.2
+test transform::tests::benchmark_scalar_hemisphere_paired_synthesis_experiment ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 150 filtered out; finished in 0.93s
+
+    Finished `release` profile [optimized] target(s) in 0.01s
+     Running unittests src/lib.rs (target/release/deps/rustsht-159837ac1c3bd1f7)
+
+running 1 test
+hemisphere_pair T511 GL 512x1025 mmax=511 threads=1 paired_samples_ms=[45.241872, 45.433619, 45.520982000000004, 45.644341, 45.712227, 45.723088000000004, 45.767601] recurrence_samples_ms=[41.088329, 41.170542, 41.192634, 41.360366, 41.370555, 41.392626, 42.230286] relative_l2=1.274e-14 block_len=64 eligible_pairs=64/256 estimated_degree_work_saved_pct=14.1
+hemisphere_pair T511 GL 512x1025 mmax=511 threads=8 paired_samples_ms=[12.472849, 12.490502000000001, 12.563969, 12.605115999999999, 12.676238, 12.885086000000001, 12.886228] recurrence_samples_ms=[10.851932, 11.505589, 11.720407999999999, 11.86594, 12.157161, 12.35993, 12.407998] relative_l2=1.936e-14 block_len=32 eligible_pairs=96/256 estimated_degree_work_saved_pct=21.2
+test transform::tests::benchmark_scalar_hemisphere_paired_synthesis_experiment ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 150 filtered out; finished in 0.91s
+
+    Finished `release` profile [optimized] target(s) in 0.01s
+     Running unittests src/lib.rs (target/release/deps/rustsht-159837ac1c3bd1f7)
+
+running 1 test
+hemisphere_pair T511 GL 512x1025 mmax=511 threads=1 paired_samples_ms=[45.534526, 45.557137999999995, 45.679377, 45.740951, 45.792377, 46.271949, 47.348814000000004] recurrence_samples_ms=[41.202723, 41.338776, 41.411030000000004, 41.852291, 41.956405000000004, 42.131632, 46.157136] relative_l2=1.274e-14 block_len=64 eligible_pairs=64/256 estimated_degree_work_saved_pct=14.1
+hemisphere_pair T511 GL 512x1025 mmax=511 threads=8 paired_samples_ms=[12.436001000000001, 12.541036, 12.728446, 12.889335, 12.890697, 13.025949, 13.333662] recurrence_samples_ms=[11.384333, 11.930439, 12.007944, 12.197326, 12.278428, 12.543521, 12.804998] relative_l2=1.936e-14 block_len=32 eligible_pairs=96/256 estimated_degree_work_saved_pct=21.2
+test transform::tests::benchmark_scalar_hemisphere_paired_synthesis_experiment ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 150 filtered out; finished in 0.92s
+
+Correctness control used over-resolved odd GL latitude count, even longitude count,
+nonzero phi0, the equatorial singleton and allowed Nyquist-order synthesis:
+RUSTSHT_HEMISPHERE_NTHETA=513 RUSTSHT_HEMISPHERE_NPHI=1022 taskset -c 0-7 cargo test
+  --release -p rustsht --lib benchmark_scalar_hemisphere_paired_synthesis_experiment
+  -- --ignored --nocapture
+relative-L2 error was 1.309e-14 at both q=1 and q=8. This configuration has a q=8
+pair block of 64 lanes rather than 32, so its timing is not used as a matched performance
+comparison. One process reported candidate/reference medians 46.744/42.072 ms at q=1
+and 25.986/13.582 ms at q=8.
+
