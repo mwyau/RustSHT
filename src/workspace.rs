@@ -20,6 +20,8 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
     pub(crate) spin_spectra: Vec<Complex<T>>,
     pub(crate) prepared_spectra: Vec<Complex<T>>,
     pub(crate) prepared_spin_spectra: Vec<Complex<T>>,
+    #[cfg(feature = "parallel")]
+    pub(crate) spin1_scalar_coefficients: Vec<Complex<T>>,
     pub(crate) cc_profile: Vec<Complex<T>>,
     pub(crate) cc_fft_scratch: Vec<Complex<T>>,
     pub(crate) row: Vec<T>,
@@ -267,6 +269,8 @@ impl<T: ShtScalar> ShtWorkspace<T> {
                 prepared_spectrum_count,
                 "prepared spin CC Fourier spectrum",
             )?,
+            #[cfg(feature = "parallel")]
+            spin1_scalar_coefficients: Vec::new(),
             cc_profile: allocate_complex(
                 cc_resampling.map_or(0, CCResamplingPlan::workspace_profile_len),
                 "CC meridional profile",

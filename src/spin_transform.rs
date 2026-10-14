@@ -26,6 +26,10 @@ const SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MAX_LMAX: usize = 224;
 const SPIN1_FAST_MIN_SIN_THETA: f64 = 0.0001;
 const SPIN1_PAIR_MIN_SIN_THETA: f64 = 0.01;
 const SPIN2_FAST_MIN_SIN_THETA: f64 = 0.01;
+#[cfg(feature = "parallel")]
+const SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_LMAX: usize = 720;
+#[cfg(feature = "parallel")]
+const SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_BYTES: usize = 17 * 1024 * 1024;
 
 #[inline]
 pub(crate) fn single_threaded_execution() -> bool {
@@ -414,6 +418,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             false,
             false,
             false,
+            None,
             1,
             self.fft.spectrum_len(),
             self.grid.phi0(),
@@ -799,6 +804,27 @@ impl<T: ShtScalar> ShtPlan<T> {
             let group_count = ntheta.div_ceil(group_ring_count);
             let use_parallel = rayon::current_num_threads() > 1 && group_count > 1;
             if use_parallel {
+                let use_spin1_coefficient_cache = recurrence_spin == 1
+                    && self.harmonics.spin() == 1
+                    && b_alm.is_some()
+                    && !derivative_norm
+                    && self.grid.kind() == crate::grid::GridKind::GaussLegendre
+                    && allow_fast_scalar
+                    && self.harmonics.lmax() >= SPIN1_FAST_MIN_LMAX
+                    && self.harmonics.lmax() <= SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_LMAX
+                    && T::supports_paired_scalar()
+                    && current_execution_thread_count() >= 8
+                    && workspace.ring_group_size < ntheta;
+                let spin1_coefficients = use_spin1_coefficient_cache
+                    .then(|| {
+                        self.prepare_spin1_scalar_coefficients(
+                            e_alm,
+                            b_alm.expect("the cache requires both spin-1 channels"),
+                            &mut workspace.spin1_scalar_coefficients,
+                        )
+                    })
+                    .filter(|prepared| *prepared)
+                    .map(|_| workspace.spin1_scalar_coefficients.as_slice());
                 let group_spectrum_len = group_ring_count.checked_mul(spectrum_len).ok_or(
                     ShtError::IntegerOverflow {
                         quantity: "spin Fourier spectrum group size",
@@ -820,6 +846,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             derivative_norm,
                             allow_fast_scalar,
                             can_use_spin1_table,
+                            spin1_coefficients,
                             nphi,
                             spectrum_len,
                             phi0,
@@ -842,6 +869,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     derivative_norm,
                     allow_fast_scalar,
                     can_use_spin1_table,
+                    None,
                     nphi,
                     spectrum_len,
                     phi0,
@@ -865,6 +893,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             derivative_norm,
             allow_fast_scalar,
             can_use_spin1_table,
+            None,
             nphi,
             spectrum_len,
             phi0,
@@ -899,9 +928,70 @@ impl<T: ShtScalar> ShtPlan<T> {
         Ok(())
     }
 
+    #[cfg(feature = "parallel")]
+    fn prepare_spin1_scalar_coefficients(
+        &self,
+        e_alm: &[Complex<T>],
+        b_alm: &[Complex<T>],
+        coefficients: &mut Vec<Complex<T>>,
+    ) -> bool {
+        let row_len = match self.harmonics.lmax().checked_add(2) {
+            Some(value) => value,
+            None => return false,
+        };
+        let row_stride = match row_len.checked_mul(2) {
+            Some(value) => value,
+            None => return false,
+        };
+        let order_count = match self.harmonics.mmax().checked_add(1) {
+            Some(value) => value,
+            None => return false,
+        };
+        let coefficient_count = match row_stride.checked_mul(order_count) {
+            Some(value) => value,
+            None => return false,
+        };
+        let Some(byte_count) = coefficient_count.checked_mul(std::mem::size_of::<Complex<T>>())
+        else {
+            return false;
+        };
+        if byte_count > SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_BYTES {
+            return false;
+        }
+        if coefficients.capacity() < coefficient_count
+            && coefficients
+                .try_reserve_exact(coefficient_count.saturating_sub(coefficients.len()))
+                .is_err()
+        {
+            return false;
+        }
+        coefficients.resize(coefficient_count, Complex::new(T::zero(), T::zero()));
+
+        coefficients
+            .par_chunks_mut(row_stride)
+            .enumerate()
+            .for_each(|(m, order_coefficients)| {
+                let coefficient_start = self
+                    .harmonics
+                    .index(m, m)
+                    .expect("every supported order starts at its diagonal");
+                let coefficient_len = self.harmonics.lmax() - m + 1;
+                let (first, second) = order_coefficients.split_at_mut(row_len);
+                spin1_to_scalar(
+                    m,
+                    self.harmonics.lmax(),
+                    &e_alm[coefficient_start..coefficient_start + coefficient_len],
+                    Some(&b_alm[coefficient_start..coefficient_start + coefficient_len]),
+                    first,
+                    second,
+                );
+            });
+        true
+    }
+
     #[expect(
         clippy::too_many_arguments,
-        reason = "Each ring group receives plan inputs and its own caller-owned recurrence workspace."
+        reason = "Each ring group receives plan inputs, optional prepared coefficients and worker scratch."
     )]
     fn synthesize_spin_ring_group(
         &self,
@@ -911,6 +1001,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         derivative_norm: bool,
         allow_fast_scalar: bool,
         allow_spin1_table: bool,
+        spin1_scalar_coefficients: Option<&[Complex<T>]>,
         nphi: usize,
         spectrum_len: usize,
         phi0: f64,
@@ -971,6 +1062,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 derivative_norm,
                 segment_fast,
                 allow_spin1_table,
+                spin1_scalar_coefficients,
                 nphi,
                 spectrum_len,
                 phi0,
@@ -991,7 +1083,7 @@ impl<T: ShtScalar> ShtPlan<T> {
 
     #[expect(
         clippy::too_many_arguments,
-        reason = "Each latitude segment receives plan inputs and its caller-owned recurrence workspace."
+        reason = "Each latitude segment receives transform inputs, optional coefficients and worker scratch."
     )]
     fn synthesize_spin_ring_group_mode(
         &self,
@@ -1001,6 +1093,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         derivative_norm: bool,
         fast_scalar: bool,
         allow_spin1_table: bool,
+        spin1_scalar_coefficients: Option<&[Complex<T>]>,
         nphi: usize,
         spectrum_len: usize,
         phi0: f64,
@@ -1064,16 +1157,27 @@ impl<T: ShtScalar> ShtPlan<T> {
                     Some(&e_alm[coefficient_start..coefficient_start + coefficient_count])
                 };
                 if let Some(e_coefficients) = coefficient_slice {
-                    spin1_to_scalar(
-                        m,
-                        lmax,
-                        e_coefficients,
-                        b_alm.map(|values| {
-                            &values[coefficient_start..coefficient_start + coefficient_count]
-                        }),
-                        &mut recurrence.fast_scalar_first[..lmax + 2],
-                        &mut recurrence.fast_scalar_second[..lmax + 2],
-                    );
+                    if let Some(coefficients) = spin1_scalar_coefficients {
+                        let row_len = lmax + 2;
+                        let row_stride = row_len * 2;
+                        let row_start = m * row_stride;
+                        recurrence.fast_scalar_first[..row_len]
+                            .copy_from_slice(&coefficients[row_start..row_start + row_len]);
+                        recurrence.fast_scalar_second[..row_len].copy_from_slice(
+                            &coefficients[row_start + row_len..row_start + row_stride],
+                        );
+                    } else {
+                        spin1_to_scalar(
+                            m,
+                            lmax,
+                            e_coefficients,
+                            b_alm.map(|values| {
+                                &values[coefficient_start..coefficient_start + coefficient_count]
+                            }),
+                            &mut recurrence.fast_scalar_first[..lmax + 2],
+                            &mut recurrence.fast_scalar_second[..lmax + 2],
+                        );
+                    }
                     if derivative_norm {
                         fast_scalar_order = recurrence.fast_scalar_first[..lmax + 2]
                             .iter()

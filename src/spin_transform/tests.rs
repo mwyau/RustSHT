@@ -409,6 +409,7 @@ fn spin1_scalar_fast_synthesis_matches_general_channel_cases() {
             false,
             true,
             false,
+            None,
             nphi,
             plan.fft.spectrum_len(),
             plan.grid.phi0(),
@@ -435,6 +436,7 @@ fn spin1_scalar_fast_synthesis_matches_general_channel_cases() {
             false,
             false,
             false,
+            None,
             nphi,
             plan.fft.spectrum_len(),
             plan.grid.phi0(),
@@ -742,6 +744,7 @@ fn spin1_scalar_transition_splits_polar_lanes_and_matches_general() {
                 derivative_norm,
                 true,
                 false,
+                None,
                 nphi,
                 spectrum_len,
                 plan.grid.phi0(),
@@ -766,6 +769,7 @@ fn spin1_scalar_transition_splits_polar_lanes_and_matches_general() {
                 derivative_norm,
                 false,
                 false,
+                None,
                 nphi,
                 spectrum_len,
                 plan.grid.phi0(),
@@ -947,6 +951,7 @@ fn spin1_scalar_transition_preserves_the_sine_cutoff_boundary() {
             false,
             true,
             false,
+            None,
             nphi,
             spectrum_len,
             plan.grid.phi0(),
@@ -971,6 +976,7 @@ fn spin1_scalar_transition_preserves_the_sine_cutoff_boundary() {
             false,
             false,
             false,
+            None,
             nphi,
             spectrum_len,
             plan.grid.phi0(),
@@ -1041,6 +1047,7 @@ fn spin1_scalar_conversion_matches_general_on_all_grids() {
                     false,
                     true,
                     false,
+                    None,
                     nphi,
                     spectrum_len,
                     plan.grid.phi0(),
@@ -1064,6 +1071,7 @@ fn spin1_scalar_conversion_matches_general_on_all_grids() {
                     false,
                     false,
                     false,
+                    None,
                     nphi,
                     spectrum_len,
                     plan.grid.phi0(),
@@ -1415,6 +1423,7 @@ fn spin1_synthesis_skips_high_orders_in_a_clenshaw_curtis_pole_segment() {
         false,
         false,
         false,
+        None,
         nphi,
         spectrum_len,
         plan.grid.phi0(),
@@ -3850,6 +3859,76 @@ fn t63_scalar_and_spin1_synthesis_match_one_and_eight_threads() {
             assert_close(eight, one, 3e-14);
         }
     }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn spin1_parallel_coefficient_cache_matches_uncached_synthesis() {
+    let plan = make_plan(1, 127, 127, 128, 257);
+    let (mut e_alm, mut b_alm) = coefficients(&plan);
+    for value in e_alm.iter_mut().chain(&mut b_alm) {
+        *value *= 1e-6;
+    }
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let mut cached_workspace = pool.install(|| plan.workspace()).unwrap();
+    let mut uncached_workspace = pool.install(|| plan.workspace()).unwrap();
+    assert!(cached_workspace.ring_group_size < plan.grid.ntheta());
+    uncached_workspace.ring_group_size = plan.grid.ntheta();
+
+    let mut cached_first = vec![0.0; plan.sample_count];
+    let mut cached_second = vec![0.0; plan.sample_count];
+    let mut uncached_first = vec![0.0; plan.sample_count];
+    let mut uncached_second = vec![0.0; plan.sample_count];
+    pool.install(|| {
+        plan.synthesis_spin_into(
+            &e_alm,
+            &b_alm,
+            &mut cached_first,
+            &mut cached_second,
+            &mut cached_workspace,
+        )
+    })
+    .unwrap();
+    pool.install(|| {
+        plan.synthesis_spin_into(
+            &e_alm,
+            &b_alm,
+            &mut uncached_first,
+            &mut uncached_second,
+            &mut uncached_workspace,
+        )
+    })
+    .unwrap();
+
+    let expected_cache_len = 2 * (plan.harmonics.mmax() + 1) * (plan.harmonics.lmax() + 2);
+    assert_eq!(
+        cached_workspace.spin1_scalar_coefficients.len(),
+        expected_cache_len
+    );
+    let first_max_error = cached_first
+        .iter()
+        .zip(&uncached_first)
+        .map(|(&cached, &uncached)| (cached - uncached).abs())
+        .fold(0.0_f64, f64::max);
+    let second_max_error = cached_second
+        .iter()
+        .zip(&uncached_second)
+        .map(|(&cached, &uncached)| (cached - uncached).abs())
+        .fold(0.0_f64, f64::max);
+    assert!(
+        first_max_error <= 2e-13,
+        "first component error={first_max_error:.3e}"
+    );
+    assert!(
+        second_max_error <= 2e-13,
+        "second component error={second_max_error:.3e}"
+    );
+    eprintln!(
+        "T127 GL spin-1 parallel conversion cache: max absolute component errors {first_max_error:.3e}, {second_max_error:.3e}"
+    );
 }
 
 #[cfg(feature = "parallel")]
