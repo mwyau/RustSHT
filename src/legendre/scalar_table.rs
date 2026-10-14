@@ -55,7 +55,9 @@ impl<T: ShtScalar> ScalarLegendreTable<T> {
         };
         let maximum_table_lmax = match harmonics.spin() {
             0 => MAX_PRECOMPUTED_LMAX,
-            1 => 128,
+            // Spin 1 uses one additional scalar degree. The table-byte cap
+            // below keeps this extension within the same bounded footprint.
+            1 => MAX_PRECOMPUTED_LMAX + 1,
             _ => unreachable!(),
         };
         if !T::supports_precomputed_scalar()
@@ -134,13 +136,26 @@ impl<T: ShtScalar> ScalarLegendreTable<T> {
                     let exact_equatorial_zero = south_ring == north_ring
                         && grid.theta()[north_ring] == std::f64::consts::FRAC_PI_2
                         && !(l + m).is_multiple_of(2);
-                    if sin_theta != T::zero() && current == T::zero() && !exact_equatorial_zero {
+                    // Spin-1 conversion includes degree `ntheta`; on GL this
+                    // is the root degree of the quadrature, so its m=0 basis
+                    // is exactly zero on every sampled ring.
+                    let exact_gl_null_degree =
+                        harmonics.spin() == 1 && m == 0 && l == grid.ntheta();
+                    if sin_theta != T::zero()
+                        && current == T::zero()
+                        && !exact_equatorial_zero
+                        && !exact_gl_null_degree
+                    {
                         // A contributing recurrence lane became unrepresentable
                         // in the table. Retain the scaled implementation.
                         return None;
                     }
                     let basis_offset = order_offset + degree_offset * north_ring_count;
-                    values[basis_offset + north_ring] = current;
+                    values[basis_offset + north_ring] = if exact_gl_null_degree {
+                        T::zero()
+                    } else {
+                        current
+                    };
                     if degree_offset < table_lmax - m {
                         let next = (cos_theta * current - epsilon[l] * previous) / epsilon[l + 1];
                         previous = current;
