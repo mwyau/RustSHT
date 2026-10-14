@@ -2075,6 +2075,85 @@ fn spin1_single_thread_analysis_table_remains_selected_through_t224() {
 }
 
 #[test]
+fn spin1_table_synthesis_skips_table_build_for_extreme_finite_coefficients() {
+    let plan = make_plan(1, 127, 127, 128, 257);
+    let recurrence_plan = make_plan(1, 127, 127, 128, 257);
+    assert!(
+        recurrence_plan
+            .spin1_scalar_legendre_table
+            .set(None)
+            .is_ok()
+    );
+    let mut e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let b = e.clone();
+    let index = plan.harmonics().index(127, 1).unwrap();
+    e[index] = Complex64::new(1.0e150, -0.75e150);
+
+    let mut table_workspace = plan.workspace().unwrap();
+    let mut recurrence_workspace = recurrence_plan.workspace().unwrap();
+    let mut table_first = vec![0.0; plan.sample_count];
+    let mut table_second = vec![0.0; plan.sample_count];
+    let mut recurrence_first = vec![0.0; plan.sample_count];
+    let mut recurrence_second = vec![0.0; plan.sample_count];
+    #[cfg(feature = "parallel")]
+    let one_thread_pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+
+    #[cfg(feature = "parallel")]
+    {
+        one_thread_pool
+            .install(|| {
+                plan.synthesis_spin_into(
+                    &e,
+                    &b,
+                    &mut table_first,
+                    &mut table_second,
+                    &mut table_workspace,
+                )
+            })
+            .unwrap();
+        one_thread_pool
+            .install(|| {
+                recurrence_plan.synthesis_spin_into(
+                    &e,
+                    &b,
+                    &mut recurrence_first,
+                    &mut recurrence_second,
+                    &mut recurrence_workspace,
+                )
+            })
+            .unwrap();
+    }
+    #[cfg(not(feature = "parallel"))]
+    {
+        plan.synthesis_spin_into(
+            &e,
+            &b,
+            &mut table_first,
+            &mut table_second,
+            &mut table_workspace,
+        )
+        .unwrap();
+        recurrence_plan
+            .synthesis_spin_into(
+                &e,
+                &b,
+                &mut recurrence_first,
+                &mut recurrence_second,
+                &mut recurrence_workspace,
+            )
+            .unwrap();
+    }
+    assert!(plan.spin1_scalar_legendre_table.get().is_none());
+    assert!(table_first.iter().all(|value| value.is_finite()));
+    assert!(table_second.iter().all(|value| value.is_finite()));
+    assert_eq!(table_first, recurrence_first);
+    assert_eq!(table_second, recurrence_second);
+}
+
+#[test]
 fn spin1_scalar_table_analysis_preserves_small_reflected_differences() {
     let plan = make_plan(1, 72, 72, 73, 147);
     let mut workspace = plan.workspace().unwrap();
