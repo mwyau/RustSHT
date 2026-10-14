@@ -2034,7 +2034,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         continue;
                     }
                 }
-                if self.grid.kind() == crate::grid::GridKind::GaussLegendre
+                let paired_order = self.grid.kind() == crate::grid::GridKind::GaussLegendre
                     && ring_weights.is_some()
                     && self.analyze_spin_scalar_gl_paired_order(
                         q_spectra,
@@ -2052,8 +2052,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                         e_coefficients,
                         b_coefficients.as_deref_mut(),
                         recurrence,
-                    )?
-                {
+                    )?;
+                if paired_order {
                     coefficient_start += coefficient_count;
                     continue;
                 }
