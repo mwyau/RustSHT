@@ -2017,6 +2017,29 @@ impl<T: ShtScalar> ShtPlan<T> {
                         continue;
                     }
                 }
+                if self.grid.kind() == crate::grid::GridKind::GaussLegendre
+                    && ring_weights.is_some()
+                    && self.analyze_spin_scalar_gl_paired_order(
+                        q_spectra,
+                        u_spectra,
+                        spectrum_len,
+                        longitude_count,
+                        phase,
+                        ring_weights.expect("GL spin analysis has ring weights"),
+                        normalize_fourier,
+                        m,
+                        theta_sin,
+                        theta_cos,
+                        ring_order_limits,
+                        arch,
+                        e_coefficients,
+                        b_coefficients.as_deref_mut(),
+                        recurrence,
+                    )?
+                {
+                    coefficient_start += coefficient_count;
+                    continue;
+                }
                 self.analyze_spin_scalar_fast_order(
                     q_spectra,
                     u_spectra,
@@ -2236,6 +2259,385 @@ impl<T: ShtScalar> ShtPlan<T> {
             debug_assert_eq!(coefficient_start, b_alm.len());
         }
         Ok(())
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The paired scalar reducer receives the parity spectra and recurrence block explicitly."
+    )]
+    fn accumulate_spin_scalar_analysis_pair_block(
+        arch: pulp::Arch,
+        m: usize,
+        scalar_lmax: usize,
+        sectoral_norm: T,
+        block_sine: &[T],
+        block_cosine: &[T],
+        q_products_safe: bool,
+        u_products_safe: bool,
+        q_even_real: &[T],
+        q_even_imag: &[T],
+        q_odd_real: &[T],
+        q_odd_imag: &[T],
+        u_even_real: &[T],
+        u_even_imag: &[T],
+        u_odd_real: &[T],
+        u_odd_imag: &[T],
+        coefficient_a: &[T],
+        coefficient_b: &[T],
+        previous: &mut [T],
+        current: &mut [T],
+        next: &mut [T],
+        exponents: &mut [i64],
+        scalar_first: &mut [Complex<T>],
+        scalar_second: &mut [Complex<T>],
+    ) -> Result<bool, ShtError> {
+        let paired_used = T::for_each_y_lm_paired_status_dispatched(
+            arch,
+            m,
+            scalar_lmax,
+            block_sine,
+            block_cosine,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            previous,
+            current,
+            next,
+            exponents,
+            |l, local_ring_start, basis, exponents, normal_range| {
+                let mut first_even = scalar_first[l];
+                let mut second_even = scalar_second[l];
+                let mut first_odd = if l < scalar_lmax {
+                    scalar_first[l + 1]
+                } else {
+                    Complex::new(T::zero(), T::zero())
+                };
+                let mut second_odd = if l < scalar_lmax {
+                    scalar_second[l + 1]
+                } else {
+                    Complex::new(T::zero(), T::zero())
+                };
+                let lane_end = local_ring_start + basis.len();
+                let lanes = local_ring_start..lane_end;
+                let cosine = &block_cosine[lanes.clone()];
+                let (q_even, q_odd) = T::accumulate_scalar_analysis_pair(
+                    arch,
+                    q_products_safe,
+                    normal_range,
+                    &q_even_real[lanes.clone()],
+                    &q_even_imag[lanes.clone()],
+                    &q_odd_real[lanes.clone()],
+                    &q_odd_imag[lanes.clone()],
+                    basis,
+                    exponents,
+                    cosine,
+                );
+                let (u_even, u_odd) = T::accumulate_scalar_analysis_pair(
+                    arch,
+                    u_products_safe,
+                    normal_range,
+                    &u_even_real[lanes.clone()],
+                    &u_even_imag[lanes.clone()],
+                    &u_odd_real[lanes.clone()],
+                    &u_odd_imag[lanes],
+                    basis,
+                    exponents,
+                    cosine,
+                );
+                first_even += q_even;
+                second_even += u_even;
+                if l < scalar_lmax {
+                    first_odd += q_odd;
+                    second_odd += u_odd;
+                }
+                scalar_first[l] = first_even;
+                scalar_second[l] = second_even;
+                if l < scalar_lmax {
+                    scalar_first[l + 1] = first_odd;
+                    scalar_second[l + 1] = second_odd;
+                }
+                Ok(())
+            },
+        )?;
+        Ok(paired_used)
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The GL paired analysis path receives its mirrored Fourier data and worker scratch explicitly."
+    )]
+    fn analyze_spin_scalar_gl_paired_order(
+        &self,
+        q_spectra: &[Complex<T>],
+        u_spectra: &[Complex<T>],
+        spectrum_len: usize,
+        longitude_count: T,
+        phase: Complex<T>,
+        ring_weights: &[f64],
+        normalize_fourier: bool,
+        m: usize,
+        theta_sin: &[T],
+        theta_cos: &[T],
+        ring_order_limits: &[usize],
+        arch: pulp::Arch,
+        e_coefficients: &mut [Complex<T>],
+        mut b_coefficients: Option<&mut [Complex<T>]>,
+        recurrence: &mut RecurrenceWorkspace<T>,
+    ) -> Result<bool, ShtError> {
+        if !T::supports_paired_scalar() {
+            return Ok(false);
+        }
+        debug_assert_eq!(theta_sin.len(), theta_cos.len());
+        debug_assert_eq!(theta_sin.len(), ring_order_limits.len());
+        debug_assert_eq!(ring_weights.len(), theta_sin.len());
+
+        let scalar_lmax = self.harmonics.lmax() + 1;
+        let scalar_coefficient_count = scalar_lmax + 1;
+        recurrence.fast_scalar_first[..scalar_coefficient_count]
+            .fill(Complex::new(T::zero(), T::zero()));
+        recurrence.fast_scalar_second[..scalar_coefficient_count]
+            .fill(Complex::new(T::zero(), T::zero()));
+        T::fill_epsilon(m, scalar_lmax, &mut recurrence.epsilon);
+        let paired_factors_ready = T::fill_paired_scalar_factors(
+            m,
+            scalar_lmax,
+            &recurrence.epsilon,
+            &mut recurrence.spin_alpha,
+            &mut recurrence.spin_coefficient_a,
+            &mut recurrence.spin_coefficient_b,
+        );
+        debug_assert!(paired_factors_ready);
+
+        let ntheta = theta_sin.len();
+        let pair_count = ntheta.div_ceil(2);
+        let compaction_enabled = self.harmonics.lmax() >= 127;
+        for block_start in (0..pair_count).step_by(LATITUDE_BLOCK_SIZE) {
+            let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(pair_count);
+            let block_len = block_end - block_start;
+            let mut active_lanes = 0;
+            for lane in 0..block_len {
+                let north_ring = block_start + lane;
+                let south_ring = ntheta - 1 - north_ring;
+                let north_active = m <= ring_order_limits[north_ring];
+                let south_active = south_ring != north_ring && m <= ring_order_limits[south_ring];
+                if north_active || south_active {
+                    active_lanes += 1;
+                }
+
+                let weighted = |ring: usize, spectrum: Complex<T>| {
+                    let mut scale = T::from_f64(ring_weights[ring])
+                        .expect("GL ring weight is representable")
+                        / theta_sin[ring];
+                    if normalize_fourier {
+                        scale /= longitude_count;
+                    }
+                    spectrum * phase * scale
+                };
+                let north_spectrum_start = north_ring * spectrum_len + m;
+                let south_spectrum_start = south_ring * spectrum_len + m;
+                let north_q = if north_active {
+                    weighted(north_ring, q_spectra[north_spectrum_start])
+                } else {
+                    Complex::new(T::zero(), T::zero())
+                };
+                let south_q = if south_active {
+                    weighted(south_ring, q_spectra[south_spectrum_start])
+                } else {
+                    Complex::new(T::zero(), T::zero())
+                };
+                let north_u = if north_active {
+                    weighted(north_ring, u_spectra[north_spectrum_start])
+                } else {
+                    Complex::new(T::zero(), T::zero())
+                };
+                let south_u = if south_active {
+                    weighted(south_ring, u_spectra[south_spectrum_start])
+                } else {
+                    Complex::new(T::zero(), T::zero())
+                };
+
+                recurrence.analysis_same_real[lane] = north_q.re;
+                recurrence.analysis_same_imag[lane] = north_q.im;
+                recurrence.analysis_opposite_real[lane] = south_q.re;
+                recurrence.analysis_opposite_imag[lane] = south_q.im;
+                recurrence.spin_previous_plus[lane] = north_u.re;
+                recurrence.spin_current_plus[lane] = north_u.im;
+                recurrence.spin_previous_minus[lane] = south_u.re;
+                recurrence.spin_current_minus[lane] = south_u.im;
+            }
+            if active_lanes == 0 {
+                continue;
+            }
+
+            // Check each reflected input before forming its sum and difference.
+            // This keeps very large finite values on the established recurrence
+            // path instead of overflowing an intermediate parity combination.
+            let all_cosines = &theta_cos[block_start..block_end];
+            let q_inputs_safe = T::scalar_analysis_products_safe(
+                &recurrence.analysis_same_real[..block_len],
+                &recurrence.analysis_same_imag[..block_len],
+                &recurrence.analysis_opposite_real[..block_len],
+                &recurrence.analysis_opposite_imag[..block_len],
+                all_cosines,
+            );
+            let u_inputs_safe = T::scalar_analysis_products_safe(
+                &recurrence.spin_previous_plus[..block_len],
+                &recurrence.spin_current_plus[..block_len],
+                &recurrence.spin_previous_minus[..block_len],
+                &recurrence.spin_current_minus[..block_len],
+                all_cosines,
+            );
+            if !q_inputs_safe || !u_inputs_safe {
+                return Ok(false);
+            }
+
+            let compact = compaction_enabled && active_lanes < block_len;
+            let mut compact_len = 0;
+            for lane in 0..block_len {
+                let north_ring = block_start + lane;
+                let south_ring = ntheta - 1 - north_ring;
+                let active = m <= ring_order_limits[north_ring]
+                    || (south_ring != north_ring && m <= ring_order_limits[south_ring]);
+                if compact && !active {
+                    continue;
+                }
+                let output_lane = if compact { compact_len } else { lane };
+                let north_q_re = recurrence.analysis_same_real[lane];
+                let north_q_im = recurrence.analysis_same_imag[lane];
+                let south_q_re = recurrence.analysis_opposite_real[lane];
+                let south_q_im = recurrence.analysis_opposite_imag[lane];
+                let north_u_re = recurrence.spin_previous_plus[lane];
+                let north_u_im = recurrence.spin_current_plus[lane];
+                let south_u_re = recurrence.spin_previous_minus[lane];
+                let south_u_im = recurrence.spin_current_minus[lane];
+
+                recurrence.analysis_same_real[output_lane] = north_q_re + south_q_re;
+                recurrence.analysis_same_imag[output_lane] = north_q_im + south_q_im;
+                recurrence.analysis_opposite_real[output_lane] = north_q_re - south_q_re;
+                recurrence.analysis_opposite_imag[output_lane] = north_q_im - south_q_im;
+                recurrence.spin_previous_plus[output_lane] = north_u_re + south_u_re;
+                recurrence.spin_current_plus[output_lane] = north_u_im + south_u_im;
+                recurrence.spin_previous_minus[output_lane] = north_u_re - south_u_re;
+                recurrence.spin_current_minus[output_lane] = north_u_im - south_u_im;
+                if compact {
+                    recurrence.compact_theta_sin[output_lane] = theta_sin[north_ring];
+                    recurrence.compact_theta_cos[output_lane] = theta_cos[north_ring];
+                }
+                compact_len += 1;
+            }
+
+            let lane_count = if compact { compact_len } else { block_len };
+            let block_sine = if compact {
+                &recurrence.compact_theta_sin[..lane_count]
+            } else {
+                &theta_sin[block_start..block_end]
+            };
+            let block_cosine = if compact {
+                &recurrence.compact_theta_cos[..lane_count]
+            } else {
+                &theta_cos[block_start..block_end]
+            };
+            let q_products_safe = T::scalar_analysis_products_safe(
+                &recurrence.analysis_same_real[..lane_count],
+                &recurrence.analysis_same_imag[..lane_count],
+                &recurrence.analysis_opposite_real[..lane_count],
+                &recurrence.analysis_opposite_imag[..lane_count],
+                block_cosine,
+            );
+            let u_products_safe = T::scalar_analysis_products_safe(
+                &recurrence.spin_previous_plus[..lane_count],
+                &recurrence.spin_current_plus[..lane_count],
+                &recurrence.spin_previous_minus[..lane_count],
+                &recurrence.spin_current_minus[..lane_count],
+                block_cosine,
+            );
+            if !q_products_safe || !u_products_safe {
+                return Ok(false);
+            }
+            let paired_used = Self::accumulate_spin_scalar_analysis_pair_block(
+                arch,
+                m,
+                scalar_lmax,
+                self.sectoral_norms[m],
+                block_sine,
+                block_cosine,
+                q_products_safe,
+                u_products_safe,
+                &recurrence.analysis_same_real[..lane_count],
+                &recurrence.analysis_same_imag[..lane_count],
+                &recurrence.analysis_opposite_real[..lane_count],
+                &recurrence.analysis_opposite_imag[..lane_count],
+                &recurrence.spin_previous_plus[..lane_count],
+                &recurrence.spin_current_plus[..lane_count],
+                &recurrence.spin_previous_minus[..lane_count],
+                &recurrence.spin_current_minus[..lane_count],
+                &recurrence.spin_coefficient_a,
+                &recurrence.spin_coefficient_b,
+                &mut recurrence.previous,
+                &mut recurrence.current,
+                &mut recurrence.next,
+                &mut recurrence.exponents,
+                &mut recurrence.fast_scalar_first[..scalar_coefficient_count],
+                &mut recurrence.fast_scalar_second[..scalar_coefficient_count],
+            )?;
+            if !paired_used {
+                return Ok(false);
+            }
+        }
+
+        let mut previous_even_first = Complex::new(T::zero(), T::zero());
+        let mut previous_even_second = Complex::new(T::zero(), T::zero());
+        for (pair_index, l) in (m..=scalar_lmax).step_by(2).enumerate() {
+            let even_first = recurrence.fast_scalar_first[l];
+            let even_second = recurrence.fast_scalar_second[l];
+            let odd_first = if l < scalar_lmax {
+                recurrence.fast_scalar_first[l + 1]
+            } else {
+                Complex::new(T::zero(), T::zero())
+            };
+            let odd_second = if l < scalar_lmax {
+                recurrence.fast_scalar_second[l + 1]
+            } else {
+                Complex::new(T::zero(), T::zero())
+            };
+            let previous_factor = if pair_index == 0 {
+                T::zero()
+            } else {
+                recurrence.spin_alpha[pair_index - 1] * recurrence.epsilon[l]
+            };
+            recurrence.fast_scalar_first[l] = even_first
+                * (recurrence.spin_alpha[pair_index] * recurrence.epsilon[l + 1])
+                + previous_even_first * previous_factor;
+            recurrence.fast_scalar_second[l] = even_second
+                * (recurrence.spin_alpha[pair_index] * recurrence.epsilon[l + 1])
+                + previous_even_second * previous_factor;
+            if l < scalar_lmax {
+                recurrence.fast_scalar_first[l + 1] = odd_first * recurrence.spin_alpha[pair_index];
+                recurrence.fast_scalar_second[l + 1] =
+                    odd_second * recurrence.spin_alpha[pair_index];
+            }
+            previous_even_first = even_first;
+            previous_even_second = even_second;
+        }
+
+        let coefficient_count = self.harmonics.lmax() - m + 1;
+        let fast_e = &mut recurrence.fast_spin_first[..coefficient_count];
+        let fast_b = &mut recurrence.fast_spin_second[..coefficient_count];
+        scalar_to_spin1(
+            m,
+            self.harmonics.lmax(),
+            &recurrence.fast_scalar_first[..scalar_coefficient_count],
+            &recurrence.fast_scalar_second[..scalar_coefficient_count],
+            fast_e,
+            fast_b,
+        );
+        for index in 0..coefficient_count {
+            e_coefficients[index] += fast_e[index];
+            if let Some(b_coefficients) = b_coefficients.as_deref_mut() {
+                b_coefficients[index] += fast_b[index];
+            }
+        }
+        Ok(true)
     }
 
     #[expect(
@@ -2559,73 +2961,31 @@ impl<T: ShtScalar> ShtPlan<T> {
                 T::scalar_analysis_products_safe(q_real, q_imag, q_real, q_imag, block_cosine);
             let u_products_safe =
                 T::scalar_analysis_products_safe(u_real, u_imag, u_real, u_imag, block_cosine);
-            let paired_used = T::for_each_y_lm_paired_status_dispatched(
+            let paired_used = Self::accumulate_spin_scalar_analysis_pair_block(
                 arch,
                 m,
                 scalar_lmax,
+                self.sectoral_norms[m],
                 block_sine,
                 block_cosine,
-                self.sectoral_norms[m],
+                q_products_safe,
+                u_products_safe,
+                q_real,
+                q_imag,
+                q_real,
+                q_imag,
+                u_real,
+                u_imag,
+                u_real,
+                u_imag,
                 &recurrence.spin_coefficient_a,
                 &recurrence.spin_coefficient_b,
                 &mut recurrence.previous,
                 &mut recurrence.current,
                 &mut recurrence.next,
                 &mut recurrence.exponents,
-                |l, local_ring_start, basis, exponents, normal_range| {
-                    let mut first_even = recurrence.fast_scalar_first[l];
-                    let mut second_even = recurrence.fast_scalar_second[l];
-                    let mut first_odd = if l < scalar_lmax {
-                        recurrence.fast_scalar_first[l + 1]
-                    } else {
-                        Complex::new(T::zero(), T::zero())
-                    };
-                    let mut second_odd = if l < scalar_lmax {
-                        recurrence.fast_scalar_second[l + 1]
-                    } else {
-                        Complex::new(T::zero(), T::zero())
-                    };
-                    let lane_end = local_ring_start + basis.len();
-                    let lanes = local_ring_start..lane_end;
-                    let cosine = &block_cosine[lanes.clone()];
-                    let (q_even, q_odd) = T::accumulate_scalar_analysis_pair(
-                        arch,
-                        q_products_safe,
-                        normal_range,
-                        &q_real[lanes.clone()],
-                        &q_imag[lanes.clone()],
-                        &q_real[lanes.clone()],
-                        &q_imag[lanes.clone()],
-                        basis,
-                        exponents,
-                        cosine,
-                    );
-                    let (u_even, u_odd) = T::accumulate_scalar_analysis_pair(
-                        arch,
-                        u_products_safe,
-                        normal_range,
-                        &u_real[lanes.clone()],
-                        &u_imag[lanes.clone()],
-                        &u_real[lanes.clone()],
-                        &u_imag[lanes],
-                        basis,
-                        exponents,
-                        cosine,
-                    );
-                    first_even += q_even;
-                    second_even += u_even;
-                    if l < scalar_lmax {
-                        first_odd += q_odd;
-                        second_odd += u_odd;
-                    }
-                    recurrence.fast_scalar_first[l] = first_even;
-                    recurrence.fast_scalar_second[l] = second_even;
-                    if l < scalar_lmax {
-                        recurrence.fast_scalar_first[l + 1] = first_odd;
-                        recurrence.fast_scalar_second[l + 1] = second_odd;
-                    }
-                    Ok(())
-                },
+                &mut recurrence.fast_scalar_first[..scalar_coefficient_count],
+                &mut recurrence.fast_scalar_second[..scalar_coefficient_count],
             )?;
             debug_assert!(paired_used);
         }

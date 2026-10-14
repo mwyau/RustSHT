@@ -1598,6 +1598,159 @@ fn spin1_scalar_fast_analysis_honors_the_polar_order_cutoff() {
 }
 
 #[test]
+fn spin1_gl_paired_analysis_matches_full_latitude_recurrence() {
+    let lmax = 511;
+    // The odd latitude count includes one equatorial singleton.
+    let ntheta = lmax + 2;
+    let nphi = 2 * lmax + 3;
+    let plan = make_plan(1, lmax, lmax, ntheta, nphi);
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_spin_latitudes(&mut workspace, 1);
+    let spectrum_len = plan.fft.spectrum_len();
+
+    for m in [0, 17, 450] {
+        let mut ring_order_limits = workspace.ring_order_limits.clone();
+        if m == 17 {
+            // An asymmetric cutoff must retain whichever reflected lane is active.
+            ring_order_limits[ntheta / 4] = m - 1;
+            ring_order_limits[ntheta - 1 - ntheta / 3] = m - 1;
+        }
+        let mut q_spectra = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
+        let mut u_spectra = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
+        for ring in 0..ntheta {
+            let reflected = ntheta - 1 - ring;
+            // Similar reflected values exercise the subtraction used for odd
+            // scalar parity, while the small offset remains representable.
+            let offset = (ring as f64 - reflected as f64) * 1.0e-8;
+            q_spectra[ring * spectrum_len + m] = Complex64::new(0.2 + offset, 0.1 - offset);
+            u_spectra[ring * spectrum_len + m] = Complex64::new(-0.3 + offset, 0.07 + offset);
+        }
+
+        let mut paired_e = vec![Complex64::new(0.0, 0.0); lmax - m + 1];
+        let mut paired_b = paired_e.clone();
+        let used = plan
+            .analyze_spin_scalar_gl_paired_order(
+                &q_spectra,
+                &u_spectra,
+                spectrum_len,
+                nphi as f64,
+                longitude_phase::<f64>(m, plan.grid.phi0(), true),
+                plan.grid.ring_weights(),
+                true,
+                m,
+                &workspace.theta_sin,
+                &workspace.theta_cos,
+                &ring_order_limits,
+                pulp::Arch::new(),
+                &mut paired_e,
+                Some(&mut paired_b),
+                &mut workspace.recurrence_workers[0],
+            )
+            .unwrap();
+        assert!(used);
+
+        let mut full_e = vec![Complex64::new(0.0, 0.0); lmax - m + 1];
+        let mut full_b = full_e.clone();
+        plan.analyze_spin_scalar_fast_order(
+            &q_spectra,
+            &u_spectra,
+            spectrum_len,
+            nphi as f64,
+            longitude_phase::<f64>(m, plan.grid.phi0(), true),
+            Some(plan.grid.ring_weights()),
+            true,
+            m,
+            0,
+            ntheta,
+            &workspace.theta_sin,
+            &workspace.theta_cos,
+            &ring_order_limits,
+            pulp::Arch::new(),
+            &mut full_e,
+            Some(&mut full_b),
+            &mut workspace.recurrence_workers[0],
+        )
+        .unwrap();
+
+        for (paired, full) in paired_e
+            .iter()
+            .chain(&paired_b)
+            .zip(full_e.iter().chain(&full_b))
+        {
+            let scale = full.norm().max(1.0);
+            assert!((paired - full).norm() <= 2.0e-11 * scale);
+        }
+    }
+}
+
+#[test]
+fn spin1_gl_paired_analysis_falls_back_for_extreme_inputs() {
+    let lmax = 511;
+    let ntheta = lmax + 1;
+    let nphi = 2 * lmax + 3;
+    let plan = make_plan(1, lmax, lmax, ntheta, nphi);
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_spin_latitudes(&mut workspace, 1);
+    let spectrum_len = plan.fft.spectrum_len();
+    let mut q_spectra = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
+    let u_spectra = q_spectra.clone();
+    for ring in 0..ntheta {
+        q_spectra[ring * spectrum_len] = Complex64::new(1.0e300, -1.0e300);
+    }
+    let mut paired_e = vec![Complex64::new(0.0, 0.0); lmax + 1];
+    let mut paired_b = paired_e.clone();
+    let used = plan
+        .analyze_spin_scalar_gl_paired_order(
+            &q_spectra,
+            &u_spectra,
+            spectrum_len,
+            nphi as f64,
+            longitude_phase::<f64>(0, plan.grid.phi0(), true),
+            plan.grid.ring_weights(),
+            true,
+            0,
+            &workspace.theta_sin,
+            &workspace.theta_cos,
+            &workspace.ring_order_limits,
+            pulp::Arch::new(),
+            &mut paired_e,
+            Some(&mut paired_b),
+            &mut workspace.recurrence_workers[0],
+        )
+        .unwrap();
+    assert!(!used);
+
+    let mut full_e = vec![Complex64::new(0.0, 0.0); lmax + 1];
+    let mut full_b = full_e.clone();
+    plan.analyze_spin_scalar_fast_order(
+        &q_spectra,
+        &u_spectra,
+        spectrum_len,
+        nphi as f64,
+        longitude_phase::<f64>(0, plan.grid.phi0(), true),
+        Some(plan.grid.ring_weights()),
+        true,
+        0,
+        0,
+        ntheta,
+        &workspace.theta_sin,
+        &workspace.theta_cos,
+        &workspace.ring_order_limits,
+        pulp::Arch::new(),
+        &mut full_e,
+        Some(&mut full_b),
+        &mut workspace.recurrence_workers[0],
+    )
+    .unwrap();
+    assert!(
+        full_e
+            .iter()
+            .chain(&full_b)
+            .all(|value| value.re.is_finite() && value.im.is_finite())
+    );
+}
+
+#[test]
 fn spin1_standard_analysis_scalar_conversion_matches_general_and_adjoint_on_all_grids() {
     for lmax in [14, 15, 31, 47, 63, 72, 127, 191, 255] {
         for kind in [
