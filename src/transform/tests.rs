@@ -857,11 +857,38 @@ fn precomputed_scalar_synthesis_applies_asymmetric_mirrored_cutoffs() {
 }
 
 #[test]
-fn precomputed_scalar_table_is_not_allocated_for_spin_plans() {
+fn precomputed_scalar_table_supports_spin1_scalar_degree_extension() {
     let grid = GridSpec::new(GridKind::GaussLegendre, 128, 257, 0.37).unwrap();
     let harmonics = HarmonicSpec::new(127, 127, 1).unwrap();
     let plan: ShtPlan<f64> = ShtPlan::new(grid, harmonics).unwrap();
     assert!(plan.scalar_legendre_table.is_none());
+    assert!(plan.spin1_scalar_legendre_table.get().is_none());
+    let table = crate::legendre::ScalarLegendreTable::build_if_beneficial(
+        &plan.grid,
+        &plan.harmonics,
+        &plan.sectoral_norms,
+    )
+    .unwrap();
+    assert_eq!(table.north_ring_count(), 64);
+    assert_eq!(table.degree_lanes(0, 128).len(), 64);
+    assert!(
+        table
+            .degree_lanes(0, 128)
+            .iter()
+            .all(|value| value.is_finite())
+    );
+
+    let high_band_grid = GridSpec::new(GridKind::GaussLegendre, 256, 513, 0.37).unwrap();
+    let high_band_harmonics = HarmonicSpec::new(255, 255, 1).unwrap();
+    let high_band_plan: ShtPlan<f64> = ShtPlan::new(high_band_grid, high_band_harmonics).unwrap();
+    assert!(
+        crate::legendre::ScalarLegendreTable::build_if_beneficial(
+            &high_band_plan.grid,
+            &high_band_plan.harmonics,
+            &high_band_plan.sectoral_norms,
+        )
+        .is_none()
+    );
 }
 
 #[test]

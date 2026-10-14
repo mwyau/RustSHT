@@ -485,6 +485,19 @@ impl<T: ShtScalar> ShtPlan<T> {
             check_len("B coefficient output", self.harmonics.nalm(), b_alm.len())?;
         }
         self.check_workspace(workspace)?;
+        if recurrence_spin == 1
+            && !derivative_norm
+            && ring_weights.is_some()
+            && self.grid.kind() == crate::grid::GridKind::GaussLegendre
+        {
+            self.spin1_scalar_legendre_table.get_or_init(|| {
+                crate::legendre::ScalarLegendreTable::build_if_beneficial(
+                    &self.grid,
+                    &self.harmonics,
+                    &self.sectoral_norms,
+                )
+            });
+        }
 
         let ntheta = self.grid.ntheta();
         let nphi = self.grid.nphi();
@@ -1888,6 +1901,33 @@ impl<T: ShtScalar> ShtPlan<T> {
             });
             let phase = longitude_phase::<T>(m, phi0, true);
             if recurrence_spin == 1 && fast_range == Some((0, theta_sin.len())) {
+                if let Some(table) = self
+                    .spin1_scalar_legendre_table
+                    .get()
+                    .and_then(Option::as_ref)
+                {
+                    let used_table = self.analyze_spin_scalar_table_order(
+                        q_spectra,
+                        u_spectra,
+                        spectrum_len,
+                        longitude_count,
+                        phase,
+                        ring_weights.expect("the spin scalar table requires exact GL weights"),
+                        normalize_fourier,
+                        m,
+                        theta_sin,
+                        ring_order_limits,
+                        arch,
+                        e_coefficients,
+                        b_coefficients.as_deref_mut(),
+                        table,
+                        recurrence,
+                    )?;
+                    if used_table {
+                        coefficient_start += coefficient_count;
+                        continue;
+                    }
+                }
                 self.analyze_spin_scalar_fast_order(
                     q_spectra,
                     u_spectra,
@@ -2107,6 +2147,206 @@ impl<T: ShtScalar> ShtPlan<T> {
             debug_assert_eq!(coefficient_start, b_alm.len());
         }
         Ok(())
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The bounded spin-1 table projection receives order geometry and worker-owned scratch."
+    )]
+    fn analyze_spin_scalar_table_order(
+        &self,
+        q_spectra: &[Complex<T>],
+        u_spectra: &[Complex<T>],
+        spectrum_len: usize,
+        longitude_count: T,
+        phase: Complex<T>,
+        ring_weights: &[f64],
+        normalize_fourier: bool,
+        m: usize,
+        theta_sin: &[T],
+        ring_order_limits: &[usize],
+        arch: pulp::Arch,
+        e_coefficients: &mut [Complex<T>],
+        mut b_coefficients: Option<&mut [Complex<T>]>,
+        table: &crate::legendre::ScalarLegendreTable<T>,
+        recurrence: &mut RecurrenceWorkspace<T>,
+    ) -> Result<bool, ShtError> {
+        if !T::supports_precomputed_scalar() || !T::supports_paired_scalar() {
+            return Ok(false);
+        }
+        let lmax = self.harmonics.lmax();
+        let scalar_lmax = lmax + 1;
+        let scalar_coefficient_count = scalar_lmax + 1;
+        recurrence.fast_scalar_first[..scalar_coefficient_count]
+            .fill(Complex::new(T::zero(), T::zero()));
+        recurrence.fast_scalar_second[..scalar_coefficient_count]
+            .fill(Complex::new(T::zero(), T::zero()));
+
+        let ntheta = theta_sin.len();
+        let north_ring_count = table.north_ring_count();
+        let unit_cosine = [T::one(); LATITUDE_BLOCK_SIZE];
+        let weighted_north_q = &mut recurrence.weighted_spin_q_spectrum;
+        let weighted_south_q = &mut recurrence.weighted_spin_u_spectrum;
+        let weighted_north_u_real = &mut recurrence.analysis_same_real;
+        let weighted_north_u_imag = &mut recurrence.analysis_same_imag;
+        let weighted_south_u_real = &mut recurrence.analysis_opposite_real;
+        let weighted_south_u_imag = &mut recurrence.analysis_opposite_imag;
+        let q_real = &mut recurrence.previous;
+        let q_imag = &mut recurrence.current;
+        let u_real = &mut recurrence.spin_previous_plus;
+        let u_imag = &mut recurrence.spin_previous_minus;
+        let exponents = &mut recurrence.exponents;
+
+        for block_start in (0..north_ring_count).step_by(LATITUDE_BLOCK_SIZE) {
+            let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(north_ring_count);
+            let block_len = block_end - block_start;
+            let mut active = false;
+            exponents[..block_len].fill(0);
+            for (lane, north_ring) in (block_start..block_end).enumerate() {
+                let south_ring = ntheta - 1 - north_ring;
+                let north_active = m <= ring_order_limits[north_ring];
+                let south_active = south_ring != north_ring && m <= ring_order_limits[south_ring];
+                active |= north_active || south_active;
+
+                let weighted = |ring: usize, spectrum: Complex<T>| {
+                    let mut scale = T::from_f64(ring_weights[ring])
+                        .expect("ring weight is representable")
+                        / theta_sin[ring];
+                    if normalize_fourier {
+                        scale /= longitude_count;
+                    }
+                    spectrum * phase * scale
+                };
+                let spectrum_start = north_ring * spectrum_len;
+                let north_q = if north_active {
+                    weighted(north_ring, q_spectra[spectrum_start + m])
+                } else {
+                    Complex::new(T::zero(), T::zero())
+                };
+                let north_u = if north_active {
+                    weighted(north_ring, u_spectra[spectrum_start + m])
+                } else {
+                    Complex::new(T::zero(), T::zero())
+                };
+                let south_spectrum_start = south_ring * spectrum_len;
+                let south_q = if south_active {
+                    weighted(south_ring, q_spectra[south_spectrum_start + m])
+                } else {
+                    Complex::new(T::zero(), T::zero())
+                };
+                let south_u = if south_active {
+                    weighted(south_ring, u_spectra[south_spectrum_start + m])
+                } else {
+                    Complex::new(T::zero(), T::zero())
+                };
+                if !table.input_is_safe(north_q.re)
+                    || !table.input_is_safe(north_q.im)
+                    || !table.input_is_safe(south_q.re)
+                    || !table.input_is_safe(south_q.im)
+                    || !table.input_is_safe(north_u.re)
+                    || !table.input_is_safe(north_u.im)
+                    || !table.input_is_safe(south_u.re)
+                    || !table.input_is_safe(south_u.im)
+                {
+                    return Ok(false);
+                }
+                weighted_north_q[lane] = north_q;
+                weighted_south_q[lane] = south_q;
+                weighted_north_u_real[lane] = north_u.re;
+                weighted_north_u_imag[lane] = north_u.im;
+                weighted_south_u_real[lane] = south_u.re;
+                weighted_south_u_imag[lane] = south_u.im;
+            }
+            if !active {
+                continue;
+            }
+
+            for lane in 0..block_len {
+                let north_q = weighted_north_q[lane];
+                let south_q = weighted_south_q[lane];
+                weighted_north_q[lane] = north_q + south_q;
+                weighted_south_q[lane] = north_q - south_q;
+                let north_u =
+                    Complex::new(weighted_north_u_real[lane], weighted_north_u_imag[lane]);
+                let south_u =
+                    Complex::new(weighted_south_u_real[lane], weighted_south_u_imag[lane]);
+                weighted_north_u_real[lane] = north_u.re + south_u.re;
+                weighted_north_u_imag[lane] = north_u.im + south_u.im;
+                weighted_south_u_real[lane] = north_u.re - south_u.re;
+                weighted_south_u_imag[lane] = north_u.im - south_u.im;
+                q_real[lane] = weighted_north_q[lane].re;
+                q_imag[lane] = weighted_north_q[lane].im;
+                u_real[lane] = weighted_north_u_real[lane];
+                u_imag[lane] = weighted_north_u_imag[lane];
+            }
+            let products_safe = T::scalar_analysis_products_safe(
+                &q_real[..block_len],
+                &q_imag[..block_len],
+                &u_real[..block_len],
+                &u_imag[..block_len],
+                &unit_cosine[..block_len],
+            );
+            if !products_safe {
+                return Ok(false);
+            }
+
+            for degree_offset in 0..(scalar_lmax - m + 1) {
+                let (q_sums, u_real_sums, u_imag_sums) = if degree_offset.is_multiple_of(2) {
+                    (
+                        &weighted_north_q[..],
+                        &weighted_north_u_real[..],
+                        &weighted_north_u_imag[..],
+                    )
+                } else {
+                    (
+                        &weighted_south_q[..],
+                        &weighted_south_u_real[..],
+                        &weighted_south_u_imag[..],
+                    )
+                };
+                for lane in 0..block_len {
+                    q_real[lane] = q_sums[lane].re;
+                    q_imag[lane] = q_sums[lane].im;
+                    u_real[lane] = u_real_sums[lane];
+                    u_imag[lane] = u_imag_sums[lane];
+                }
+                let basis = &table.degree_lanes(m, degree_offset)[block_start..block_end];
+                let (q_sum, u_sum) = T::accumulate_scalar_analysis_pair(
+                    arch,
+                    true,
+                    true,
+                    &q_real[..block_len],
+                    &q_imag[..block_len],
+                    &u_real[..block_len],
+                    &u_imag[..block_len],
+                    basis,
+                    &exponents[..block_len],
+                    &unit_cosine[..block_len],
+                );
+                let degree = m + degree_offset;
+                recurrence.fast_scalar_first[degree] += q_sum;
+                recurrence.fast_scalar_second[degree] += u_sum;
+            }
+        }
+
+        let coefficient_count = lmax - m + 1;
+        let fast_e = &mut recurrence.fast_spin_first[..coefficient_count];
+        let fast_b = &mut recurrence.fast_spin_second[..coefficient_count];
+        scalar_to_spin1(
+            m,
+            lmax,
+            &recurrence.fast_scalar_first[..scalar_coefficient_count],
+            &recurrence.fast_scalar_second[..scalar_coefficient_count],
+            fast_e,
+            fast_b,
+        );
+        for index in 0..coefficient_count {
+            e_coefficients[index] += fast_e[index];
+            if let Some(b_coefficients) = b_coefficients.as_deref_mut() {
+                b_coefficients[index] += fast_b[index];
+            }
+        }
+        Ok(true)
     }
 
     #[expect(
