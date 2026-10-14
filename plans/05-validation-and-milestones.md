@@ -2064,3 +2064,7 @@ A lazy q8 GL scratch transpose of the two spin-1 Fourier spectra into order-majo
 ### Spin-1 q8 64-ring synthesis schedule control (2026-10-14)
 
 A spin-1-only T511 q8 schedule reduced the cached coefficient-row copies by grouping 64 rather than 32 latitude rings, with eight rather than sixteen groups. Five paired processes were consistently slower; the median rose from `19.943` to `22.818 ms` (`+14.4%`). First-call time also increased. The candidate passed the q8 T511 DUCC/round-trip regression but was reverted because the reduced scheduling granularity outweighed the saved copies. See [`the group-size report`](../reports/latitude-group-size-16-2026-10-14.md#spin-1-q8-64-ring-group-control) and [`raw samples`](../reports/data/spin1-ring64-synthesis-2026-10-14/ring64-process-samples.txt).
+
+### Release LTO and codegen-unit screen (2026-10-14)
+
+Thin LTO with the default 16 codegen units improved T511 q1 scalar analysis by a repeatable 5.3%, but the confirming q8 spin-1 synthesis median was 6.1% slower and q8 analysis was flat. At T720 q8, spin-1 synthesis was unchanged. One codegen unit without LTO slowed q8 spin-1 synthesis by 23%; combining one codegen unit with thin LTO also regressed it. The repository release profile was left unchanged. The thin-LTO build passed scalar T511/T1023/T2047 GL/CC/F1 DUCC/analytic tests and spin-1/2 T511 all-grid DUCC checks. See [`the compiler-profile report`](../reports/release-profile-screen-2026-10-14.md) and [`raw process samples`](../reports/data/release-profile-screen-2026-10-14/process-samples.txt).

@@ -1,0 +1,91 @@
+Release profile comparison, same source and benchmark binary inputs. Baseline: opt-level=3, 16 codegen units, LTO off. Candidate: opt-level=3, 16 codegen units, thin LTO. All runs: f64 GL T511, ntheta=512, nphi=1025, full mmax=511,
+phi0=0.37, reused plan/workspace, requested-only; one warm-up and five timed
+transforms per process. Values are milliseconds.
+q1 pinned to one CPU core; q8 8 pinned CPU cores. Each pair is baseline then LTO. The host was shared.
+
+q1 scalar analysis, five process pairs
+ pair1 baseline median=23.914 samples=[23.532,23.767,25.910,24.310,23.914]
+       thinLTO median=22.400 samples=[22.373,22.645,22.400,22.410,22.344]
+ pair2 baseline median=23.647 samples=[23.809,23.584,23.981,23.642,23.647]
+       thinLTO median=22.653 samples=[22.406,30.649,24.548,22.653,22.637]
+ pair3 baseline median=23.714 samples=[23.647,24.179,23.714,23.635,24.940]
+       thinLTO median=22.460 samples=[22.460,22.650,22.453,22.451,22.517]
+ pair4 baseline median=24.182 samples=[29.720,24.131,24.286,24.182,24.106]
+       thinLTO median=22.571 samples=[22.541,22.571,23.542,23.365,22.504]
+ pair5 baseline median=23.691 samples=[23.680,23.672,23.866,23.691,23.823]
+       thinLTO median=22.428 samples=[22.428,22.428,22.397,22.645,22.453]
+
+q8 spin-1 synthesis, five process pairs
+ pair1 baseline median=18.453 samples=[18.192,20.475,18.618,18.453,18.033]
+       thinLTO median=18.249 samples=[17.874,17.738,20.349,20.402,18.249]
+       first_call baseline=24.487 thinLTO=23.760
+ pair2 baseline median=18.488 samples=[20.807,17.636,18.656,18.410,18.488]
+       thinLTO median=18.031 samples=[20.087,19.819,17.851,17.369,18.031]
+       first_call baseline=24.496 thinLTO=26.106
+ pair3 baseline median=19.111 samples=[20.325,19.111,18.789,20.532,17.531]
+       thinLTO median=20.092 samples=[20.223,18.118,18.074,20.190,20.092]
+       first_call baseline=24.272 thinLTO=25.828
+ pair4 baseline median=20.379 samples=[20.379,18.469,20.662,18.281,20.543]
+       thinLTO median=19.900 samples=[18.003,19.900,20.516,21.958,18.631]
+       first_call baseline=23.742 thinLTO=24.481
+ pair5 baseline median=18.756 samples=[18.687,18.695,19.573,21.108,18.756]
+       thinLTO median=20.861 samples=[20.358,21.087,21.015,19.039,20.861]
+       first_call baseline=26.114 thinLTO=26.225
+
+Initial q8 spin-1 synthesis screen, five process medians (before the
+confirmation run above; the conflicting result is why no profile change was
+accepted):
+  baseline=[18.700,20.668,20.851,20.448,20.129]
+  thinLTO=[19.667,18.855,20.506,19.841,19.839]
+
+q8 spin-1 analysis, five process pairs
+ pair1 baseline median=12.830 samples=[13.375,12.830,13.084,12.653,12.528]
+       thinLTO median=13.049 samples=[13.049,12.355,12.342,13.969,15.012]
+       first_call baseline=13.525 thinLTO=13.939
+ pair2 baseline median=12.666 samples=[12.398,12.451,14.791,12.666,15.340]
+       thinLTO median=12.487 samples=[14.202,13.406,12.487,11.834,12.398]
+       first_call baseline=13.342 thinLTO=13.598
+ pair3 baseline median=12.289 samples=[12.311,11.957,15.361,12.289,12.152]
+       thinLTO median=12.384 samples=[12.384,12.743,15.176,12.254,12.141]
+       first_call baseline=12.838 thinLTO=12.749
+ pair4 baseline median=12.586 samples=[12.421,14.897,12.586,14.657,11.913]
+       thinLTO median=12.622 samples=[13.038,12.622,12.303,16.235,12.256]
+       first_call baseline=16.215 thinLTO=13.295
+ pair5 baseline median=12.165 samples=[12.182,12.079,12.165,11.761,12.320]
+       thinLTO median=12.818 samples=[12.818,16.871,12.517,12.376,13.281]
+       first_call baseline=13.514 thinLTO=13.369
+
+Additional process-median screens
+  Thin LTO T720 q8 spin1 synthesis baseline=[47.293,44.202,46.875,46.897,45.034]
+    candidate=[46.114,46.706,46.881,47.419,47.078]
+  Thin LTO T720 q8 spin1 analysis baseline=[34.075,34.656,42.515,34.018,34.096]
+    candidate=[34.961,36.470,33.692,33.486,33.592]
+  Thin LTO q1 spin1 synthesis baseline=[58.444,60.552,62.106,57.718,57.288]
+    candidate=[60.887,57.902,56.197,56.205,56.253]
+  Thin LTO q1 spin1 analysis baseline=[37.692,37.834,38.852,39.267,38.523]
+    candidate=[38.091,39.442,38.600,39.013,38.899]
+  Thin LTO q8 scalar synthesis baseline=[12.700,13.009,12.886]
+    candidate=[12.639,12.774,12.385]
+
+Separate q8 scalar analysis, three-process screen, default -> thin LTO:
+  baseline=[7.463,7.477,7.217], candidate=[7.191,7.053,7.113]
+
+Separate codegen-units=1, LTO off, T511 process-median screens:
+  q8 spin1 synthesis baseline=[18.323,18.800,20.123]
+    candidate=[23.147,23.320,22.931]
+  q8 spin1 analysis baseline=[12.386,12.017,12.266]
+    candidate=[12.448,14.633,13.055]
+  q1 scalar analysis baseline=[23.964,23.678,23.693]
+    candidate=[23.361,23.360,23.343]
+  q8 scalar analysis baseline=[7.463,7.477,7.217]
+    candidate=[7.191,7.053,7.113]
+
+Separate codegen-units=1 plus thin LTO, three-process T511 screen:
+  q8 spin1 synthesis baseline=[19.931,18.788,19.084]
+    candidate=[20.234,20.400,20.473]
+  q8 spin1 analysis baseline=[12.291,12.464,12.154]
+    candidate=[12.135,12.078,12.372]
+  q1 scalar analysis baseline=[23.704,23.670,23.809]
+    candidate=[23.341,23.360,23.343]
+  q8 scalar synthesis baseline=[11.949,12.088,12.260]
+    candidate=[12.134,11.992,12.399]
