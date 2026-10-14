@@ -82,6 +82,10 @@ The measured medians cross after the first call: two or more repeated transforms
 
 The focused q8 T127 test compares the cached grouped transform with the uncached transform executed in the same pool. Maximum absolute differences were `5.463e-19` and `9.216e-19` for the two output components. The cache stores the output of the existing coefficient conversion without changing its arithmetic.
 
+Sol High's read-only review found no correctness, allocation, or thread-safety blocker. It recommended checking each cached order row directly because the end-to-end control uses a different ring-group size and an absolute tolerance of `2e-13` for `1e-6` inputs. The focused test now recomputes both rows with `spin1_to_scalar` for every order and compares them exactly with the cached layout. The end-to-end comparison remains as a separate check of grouped synthesis behavior.
+
+Callgrind 3.26.0 profiled the post-cache T511 q8 synthesis and analysis in separate runs. The benchmark used f64 GL `512x1025`, reused plan/workspace, and five timed calls plus a first-call measurement. It recorded `8.121 billion` instruction references for synthesis and `5.046 billion` for analysis. Exclusive cost in the AVX2 fused paired scalar synthesis block was `2.296 billion` references (28.3% of synthesis); the paired analysis accumulation vectorizer used `1.236 billion` references (24.5% of analysis). These are simulated instruction counts, not cycles or native elapsed time. Callgrind reported instrumented transform medians of `4.782 s` synthesis and `2.131 s` analysis. Native timings are reported separately in the benchmark tables above; the instrumented wall times are not used as latency estimates.
+
 Release DUCC-reference checks passed:
 
 - `m3_spin_t511_all_grids_matches_ducc_and_roundtrips`: spin 1 and 2 on GL, CC and F1. Spin-1 synthesis maximum absolute sample errors were `4.885e-15`, `4.441e-15` and `4.219e-15`; selected analysis coefficient errors were `4.970e-18`, `4.216e-18` and `4.318e-18`.

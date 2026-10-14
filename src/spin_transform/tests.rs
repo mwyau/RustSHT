@@ -3908,6 +3908,37 @@ fn spin1_parallel_coefficient_cache_matches_uncached_synthesis() {
         cached_workspace.spin1_scalar_coefficients.len(),
         expected_cache_len
     );
+    let row_len = plan.harmonics.lmax() + 2;
+    let row_stride = 2 * row_len;
+    for m in 0..=plan.harmonics.mmax() {
+        let coefficient_start = plan.harmonics.index(m, m).unwrap();
+        let coefficient_len = plan.harmonics.lmax() - m + 1;
+        let e_order = &e_alm[coefficient_start..coefficient_start + coefficient_len];
+        let b_order = &b_alm[coefficient_start..coefficient_start + coefficient_len];
+        let mut expected_first = vec![Complex64::new(0.0, 0.0); row_len];
+        let mut expected_second = vec![Complex64::new(0.0, 0.0); row_len];
+        spin1_to_scalar(
+            m,
+            plan.harmonics.lmax(),
+            e_order,
+            Some(b_order),
+            &mut expected_first,
+            &mut expected_second,
+        );
+
+        let row_start = m * row_stride;
+        assert_eq!(
+            &cached_workspace.spin1_scalar_coefficients[row_start..row_start + row_len],
+            expected_first.as_slice(),
+            "first cached scalar coefficient row differs at m={m}"
+        );
+        assert_eq!(
+            &cached_workspace.spin1_scalar_coefficients
+                [row_start + row_len..row_start + row_stride],
+            expected_second.as_slice(),
+            "second cached scalar coefficient row differs at m={m}"
+        );
+    }
     let first_max_error = cached_first
         .iter()
         .zip(&uncached_first)
