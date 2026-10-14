@@ -1,6 +1,6 @@
 # Scope and decisions
 
-Updated 2026-10-12 (America/New_York). Implementation status and validation evidence are recorded in [05](05-validation-and-milestones.md).
+Updated 2026-10-14 (America/New_York). Implementation status and validation evidence are recorded in [05](05-validation-and-milestones.md).
 
 ## Objective
 
@@ -18,7 +18,7 @@ Copyright for original Rust code: **Albert M. W. Yau** and contributors. License
 | D14 | **Rust 1.99.0 stable toolchain**, approved 2026-10-12 | Use the pinned stable toolchain for development, CI, benchmarks and builds. Avoid nightly-only features without a demonstrated need; preserve runtime CPU dispatch and a portable fallback. |
 | D15 | **Long autonomous implementation sessions**, approved 2026-10-11 | Work on a new feature branch through as many independently verified milestones as possible, preserving GL-first ordering. |
 | D22 | **Scalar and low-spin performance priority**, approved 2026-10-12 | Optimize scalar and spin-1 transforms first, then spin 2. Preserve spin-3/4 support and regression coverage without expanding those implementations; do not add spin 5+ without new authorization. |
-| D23 | **Bounded GL Legendre tables**, approved 2026-10-13 | Use a north-hemisphere, triangular f64 table for scalar GL plans from T72 through T255, and for spin-1 STANDARD exact GL analysis through T255, when `mmax >= 0.75*lmax`, `ntheta == lmax+1`, and each table fits within 34 MiB. Spin-1 conversion stores through degree `lmax+1`. Keep recurrence for f32, spin synthesis, other spins, CC/F1, lower truncations and larger tables. Reusable-plan measurements and Torch-harmonics storage comparisons are recorded in [05](05-validation-and-milestones.md). The T72 scalar gate expansion is commit `d7f3dea`; the T255 spin-1 extension is recorded in [05](05-validation-and-milestones.md). |
+| D23 | **Bounded GL Legendre tables**, approved 2026-10-13 and updated 2026-10-14 | Use a lazy north-hemisphere, triangular f64 table for scalar GL and spin-1 STANDARD analysis where the operation- and executing-pool-specific policy selects it. Layout eligibility covers `63 <= lmax <= 255`, `lmax+1 <= ntheta <= 2*(lmax+1)`, near-full `mmax`, and a maximum 34 MiB payload; spin-1 conversion extends the table through `lmax+1`. Over-resolved automatic use requires full `mmax`; scalar and spin-1 analysis are limited to T127, scalar T63 analysis uses recurrence at q4+, and scalar synthesis uses tables only in measured multi-thread cases. Spin-1 synthesis remains on its measured exact-GL policy. Keep recurrence for f32, unsupported spins, CC/F1, unsafe coefficients and layouts outside these bounds. Reusable-plan measurements and Torch-harmonics storage comparisons are recorded in [05](05-validation-and-milestones.md) and [the over-resolved selector report](../reports/overresolved-gl-legendre-table-2026-10-14.md). |
 
 ### D11 rationale
 
