@@ -1,0 +1,10 @@
+T720 GL 721x1443 spin=1 mode=STANDARD threads=8 runs=1 scope=plan operation=synthesis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.088
+numpy_alm_copy_ms=0.218
+numpy_map_copy_ms=1.220
+numpy_output_allocation_ms=0.001
+synthesis_error=max_abs=7.446e-14 rms=1.564e-15 rel_l2=9.123e-14
+synthesis_rust_plan_raw_samples_ms=44.015,42.764,42.548,42.023,44.289
+synthesis_rust_plan_run_medians_ms=42.764; median=42.764; spread=0.000
+synthesis_ducc_raw_samples_ms=6.405,6.387,6.342,6.465,6.277
+synthesis_ducc_run_medians_ms=6.387; median=6.387; spread=0.000

@@ -1,0 +1,10 @@
+T511 GL 512x1025 spin=1 mode=STANDARD threads=1 runs=1 scope=plan operation=synthesis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.037
+numpy_alm_copy_ms=0.116
+numpy_map_copy_ms=0.229
+numpy_output_allocation_ms=0.001
+synthesis_error=max_abs=3.257e-14 rms=8.152e-16 rel_l2=6.697e-14
+synthesis_rust_plan_raw_samples_ms=47.889,51.837,48.724,49.723,48.530
+synthesis_rust_plan_run_medians_ms=48.724; median=48.724; spread=0.000
+synthesis_ducc_raw_samples_ms=23.083,22.276,19.959,23.920,19.861
+synthesis_ducc_run_medians_ms=22.276; median=22.276; spread=0.000

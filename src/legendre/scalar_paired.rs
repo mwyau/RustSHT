@@ -916,50 +916,38 @@ impl WithSimd for StagedSynthesisPairTransition<'_> {
                 Complex64::new(0.0, 0.0)
             };
             for lane in 0..current.len() {
-                let first_even_term =
-                    scalar::multiply_complex_scaled(first_even, current[lane], exponents[lane]);
-                let first_odd_term = scalar::multiply_complex_scaled_product(
-                    first_odd,
-                    current[lane],
-                    cos_theta[lane],
-                    exponents[lane],
+                let cosine = cos_theta[lane];
+                let first_odd_factor = Complex64::new(first_odd.re * cosine, first_odd.im * cosine);
+                let second_odd_factor =
+                    Complex64::new(second_odd.re * cosine, second_odd.im * cosine);
+                let first_factor = Complex64::new(
+                    first_odd.re.mul_add(cosine, first_even.re),
+                    first_odd.im.mul_add(cosine, first_even.im),
                 );
-                let second_even_term =
-                    scalar::multiply_complex_scaled(second_even, current[lane], exponents[lane]);
-                let second_odd_term = scalar::multiply_complex_scaled_product(
-                    second_odd,
-                    current[lane],
-                    cos_theta[lane],
-                    exponents[lane],
+                let second_factor = Complex64::new(
+                    second_odd.re.mul_add(cosine, second_even.re),
+                    second_odd.im.mul_add(cosine, second_even.im),
                 );
-                if !complex_scaled_product_is_normal_or_zero(
-                    first_even_term,
-                    first_even,
-                    current[lane],
-                    1.0,
-                ) || !complex_scaled_product_is_normal_or_zero(
-                    first_odd_term,
-                    first_odd,
-                    current[lane],
-                    cos_theta[lane],
-                ) || !complex_scaled_product_is_normal_or_zero(
-                    second_even_term,
-                    second_even,
-                    current[lane],
-                    1.0,
-                ) || !complex_scaled_product_is_normal_or_zero(
-                    second_odd_term,
-                    second_odd,
-                    current[lane],
-                    cos_theta[lane],
-                ) {
+                if !complex_sum_is_normal_or_zero(first_factor, first_even, first_odd_factor)
+                    || !complex_sum_is_normal_or_zero(second_factor, second_even, second_odd_factor)
+                {
                     return false;
                 }
-                let first = first_even_term + first_odd_term;
-                let second = second_even_term + second_odd_term;
-                if !complex_sum_is_normal_or_zero(first, first_even_term, first_odd_term)
-                    || !complex_sum_is_normal_or_zero(second, second_even_term, second_odd_term)
-                {
+                let first =
+                    scalar::multiply_complex_scaled(first_factor, current[lane], exponents[lane]);
+                let second =
+                    scalar::multiply_complex_scaled(second_factor, current[lane], exponents[lane]);
+                if !complex_scaled_product_is_normal_or_zero(
+                    first,
+                    first_factor,
+                    current[lane],
+                    1.0,
+                ) || !complex_scaled_product_is_normal_or_zero(
+                    second,
+                    second_factor,
+                    current[lane],
+                    1.0,
+                ) {
                     return false;
                 }
                 let first_sum = Complex64::new(first_sum_re[lane], first_sum_im[lane]);
