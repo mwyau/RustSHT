@@ -93,6 +93,74 @@ pub(crate) fn select_scalar_legendre_strategy(
     }
 }
 
+/// Returns a conservative minimum total-use count for selected table paths.
+///
+/// This lookup intentionally covers only full-order GL cells with paired
+/// cold and warm measurements. A finite caller estimate outside that matrix
+/// keeps the recurrence rather than extrapolating setup costs.
+pub(crate) fn measured_table_break_even_calls(
+    lmax: usize,
+    mmax: usize,
+    ntheta: usize,
+    nphi: usize,
+    spin: usize,
+    operation: LegendreOperation,
+    thread_count: usize,
+) -> Option<usize> {
+    if mmax != lmax {
+        return None;
+    }
+
+    match (spin, lmax, ntheta, nphi, operation, thread_count) {
+        // Latest same-binary measurements, after the paired spin-1 kernels.
+        (0, 127, 128, 257, LegendreOperation::Synthesis, 8) => Some(90),
+        (0, 127, 128, 257, LegendreOperation::Analysis, 8) => Some(30),
+        (1, 127, 128, 257, LegendreOperation::Synthesis, 1) => Some(14),
+        (1, 159, 160, 321, LegendreOperation::Synthesis, 1) => Some(32),
+        (1, 191, 192, 385, LegendreOperation::Synthesis, 1) => Some(49),
+        (1, 72, 73, 147, LegendreOperation::Analysis, 1) => Some(17),
+        (1, 72, 73, 147, LegendreOperation::Analysis, 8) => Some(30),
+        (1, 85, 86, 173, LegendreOperation::Analysis, 1) => Some(20),
+        (1, 85, 86, 173, LegendreOperation::Analysis, 8) => Some(25),
+        (1, 127, 128, 257, LegendreOperation::Analysis, 1) => Some(21),
+        (1, 127, 128, 257, LegendreOperation::Analysis, 8) => Some(23),
+        (1, 159, 160, 321, LegendreOperation::Analysis, 1 | 8) => Some(30),
+        (1, 191, 192, 385, LegendreOperation::Analysis, 1) => Some(54),
+        (1, 191, 192, 385, LegendreOperation::Analysis, 8) => Some(70),
+
+        // Full-order atmospheric GL grids. These counts come from the paired
+        // first-call and steady-state measurements in the over-resolved study.
+        (0, 63, 96, 192, LegendreOperation::Synthesis, 8) => Some(40),
+        (0, 63, 96, 192, LegendreOperation::Analysis, 1) => Some(21),
+        (0, 63, 96, 192, LegendreOperation::Analysis, 8) => Some(90),
+        (1, 63, 96, 192, LegendreOperation::Analysis, 1) => Some(17),
+        (1, 63, 96, 192, LegendreOperation::Analysis, 8) => Some(57),
+        (0, 85, 128, 256, LegendreOperation::Synthesis, 8) => Some(70),
+        (0, 85, 128, 256, LegendreOperation::Analysis, 1) => Some(46),
+        (0, 85, 128, 256, LegendreOperation::Analysis, 8) => Some(66),
+        (1, 85, 128, 256, LegendreOperation::Analysis, 1) => Some(19),
+        (1, 85, 128, 256, LegendreOperation::Analysis, 8) => Some(40),
+        (0, 127, 256, 512, LegendreOperation::Synthesis, 8) => Some(62),
+        (0, 127, 256, 512, LegendreOperation::Analysis, 8) => Some(107),
+        (1, 127, 256, 512, LegendreOperation::Analysis, 1) => Some(49),
+        (1, 127, 256, 512, LegendreOperation::Analysis, 8) => Some(45),
+        (0, 191, 384, 768, LegendreOperation::Synthesis, 8) => Some(74),
+
+        // The T159 over-resolved analysis table uses the same storage for
+        // scalar and spin-1 projection. Its q1/q16 scalar and q1 spin-1 cells
+        // remain on recurrence because their measured policy is not a table.
+        (0, 159, 320, 640, LegendreOperation::Analysis, 1) => Some(109),
+        (0, 159, 320, 640, LegendreOperation::Analysis, 2) => Some(50),
+        (0, 159, 320, 640, LegendreOperation::Analysis, 4) => Some(72),
+        (0, 159, 320, 640, LegendreOperation::Analysis, 8) => Some(158),
+        (1, 159, 320, 640, LegendreOperation::Analysis, 2) => Some(31),
+        (1, 159, 320, 640, LegendreOperation::Analysis, 4) => Some(30),
+        (1, 159, 320, 640, LegendreOperation::Analysis, 8) => Some(64),
+        (1, 159, 320, 640, LegendreOperation::Analysis, 16) => Some(125),
+        _ => None,
+    }
+}
+
 /// North-hemisphere scalar basis for the measured small-band GL specialization.
 /// Values are contiguous in north latitude for each `(m, l)` pair.
 pub(crate) struct ScalarLegendreTable<T> {

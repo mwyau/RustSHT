@@ -8,9 +8,9 @@ use rayon::prelude::*;
 
 use crate::error::ShtError;
 use crate::legendre::{
-    LATITUDE_BLOCK_SIZE, MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX, SPIN1_FAST_MIN_LMAX, ShtScalar,
-    longitude_phase, scalar_to_spin1, scalar_to_spin2, sin_cos_from_f64, spin1_to_scalar,
-    spin2_to_scalar,
+    LATITUDE_BLOCK_SIZE, LegendreOperation, MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX,
+    SPIN1_FAST_MIN_LMAX, ShtScalar, longitude_phase, scalar_to_spin1, scalar_to_spin2,
+    sin_cos_from_f64, spin1_to_scalar, spin2_to_scalar,
 };
 use crate::plan::{ShtPlan, current_execution_thread_count};
 #[cfg(feature = "parallel")]
@@ -99,6 +99,12 @@ impl<T: ShtScalar> ShtPlan<T> {
                 || (SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MIN_LMAX
                     ..=SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MAX_LMAX)
                     .contains(&self.harmonics.lmax()))
+            && self.legendre_reuse_allows_table(
+                LegendreOperation::Analysis,
+                self.spin1_scalar_legendre_table
+                    .get()
+                    .is_some_and(Option::is_some),
+            )
     }
 
     /// Synthesizes two real map components for a spin-1 through spin-4 field.
@@ -876,6 +882,12 @@ impl<T: ShtScalar> ShtPlan<T> {
             && self.grid.kind() == crate::grid::GridKind::GaussLegendre
             && self.grid.ntheta() == self.harmonics.lmax() + 1
             && single_threaded_execution()
+            && self.legendre_reuse_allows_table(
+                LegendreOperation::Synthesis,
+                self.spin1_scalar_legendre_table
+                    .get()
+                    .is_some_and(Option::is_some),
+            )
             && self
                 .grid
                 .theta()

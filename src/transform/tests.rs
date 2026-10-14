@@ -7,6 +7,8 @@ use std::f64::consts::{PI, TAU};
 use super::*;
 use crate::grid::{GridKind, GridSpec};
 use crate::harmonics::HarmonicSpec;
+#[cfg(feature = "parallel")]
+use crate::plan::LegendreReuseEstimate;
 
 fn make_plan(lmax: usize, mmax: usize, ntheta: usize, nphi: usize, phi0: f64) -> ShtPlan {
     ShtPlan::new(
@@ -1156,6 +1158,168 @@ fn scalar_strategy_selects_against_the_executing_pool() {
         sixteen_threads
             .install(|| large_plan.scalar_legendre_strategy(LegendreOperation::Analysis)),
         LegendreStrategy::Recurrence
+    );
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn scalar_reuse_estimate_gates_tables_at_measured_break_even() {
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let make = |synthesis_calls, analysis_calls| -> ShtPlan {
+        ShtPlan::new_with_legendre_reuse_estimate(
+            GridSpec::new(GridKind::GaussLegendre, 128, 257, 0.37).unwrap(),
+            HarmonicSpec::scalar(127, 127).unwrap(),
+            LegendreReuseEstimate::new(synthesis_calls, analysis_calls),
+        )
+        .unwrap()
+    };
+
+    let short = make(Some(89), Some(29));
+    let break_even = make(Some(90), Some(30));
+    assert_eq!(
+        eight_threads.install(|| short.scalar_legendre_strategy(LegendreOperation::Synthesis)),
+        LegendreStrategy::Recurrence
+    );
+    assert_eq!(
+        eight_threads.install(|| break_even.scalar_legendre_strategy(LegendreOperation::Synthesis)),
+        LegendreStrategy::CompactTable
+    );
+    assert_eq!(
+        eight_threads.install(|| short.scalar_legendre_strategy(LegendreOperation::Analysis)),
+        LegendreStrategy::Recurrence
+    );
+    assert_eq!(
+        eight_threads.install(|| break_even.scalar_legendre_strategy(LegendreOperation::Analysis)),
+        LegendreStrategy::CompactTable
+    );
+
+    // The executing pool still controls the measured eligibility.
+    assert_eq!(
+        one_thread.install(|| break_even.scalar_legendre_strategy(LegendreOperation::Synthesis)),
+        LegendreStrategy::Recurrence
+    );
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn scalar_reuse_estimate_uses_conservative_atmospheric_break_even() {
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let make = |calls| -> ShtPlan {
+        ShtPlan::new_with_legendre_reuse_estimate(
+            GridSpec::new(GridKind::GaussLegendre, 128, 256, 0.37).unwrap(),
+            HarmonicSpec::scalar(85, 85).unwrap(),
+            LegendreReuseEstimate::new(Some(calls), None),
+        )
+        .unwrap()
+    };
+    let before = make(69);
+    let at_break_even = make(70);
+    assert_eq!(
+        pool.install(|| before.scalar_legendre_strategy(LegendreOperation::Synthesis)),
+        LegendreStrategy::Recurrence
+    );
+    assert_eq!(
+        pool.install(|| at_break_even.scalar_legendre_strategy(LegendreOperation::Synthesis)),
+        LegendreStrategy::CompactTable
+    );
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn scalar_reuse_estimate_counts_adjoint_calls_by_execution_direction() {
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let grid = GridSpec::new(GridKind::GaussLegendre, 128, 257, 0.37).unwrap();
+    let harmonics = HarmonicSpec::scalar(127, 127).unwrap();
+
+    let synthesis_adjoint = ShtPlan::new_with_legendre_reuse_estimate(
+        grid.clone(),
+        harmonics.clone(),
+        LegendreReuseEstimate::new(Some(0), Some(30)),
+    )
+    .unwrap();
+    let map = vec![0.0; synthesis_adjoint.sample_count];
+    let mut alm = vec![Complex64::new(0.0, 0.0); harmonics.nalm()];
+    let mut workspace = pool.install(|| synthesis_adjoint.workspace()).unwrap();
+    pool.install(|| synthesis_adjoint.adjoint_synthesis_into(&map, &mut alm, &mut workspace))
+        .unwrap();
+    assert!(synthesis_adjoint.scalar_legendre_table.get().is_some());
+
+    let analysis_adjoint = ShtPlan::new_with_legendre_reuse_estimate(
+        grid.clone(),
+        harmonics.clone(),
+        LegendreReuseEstimate::new(Some(90), Some(1)),
+    )
+    .unwrap();
+    let mut output = vec![0.0; analysis_adjoint.sample_count];
+    let workspace = &mut pool.install(|| analysis_adjoint.workspace()).unwrap();
+    pool.install(|| analysis_adjoint.adjoint_analysis_into(&alm, &mut output, workspace))
+        .unwrap();
+    assert!(analysis_adjoint.scalar_legendre_table.get().is_some());
+    let mut adjoint_coefficients = vec![Complex64::new(0.0, 0.0); harmonics.nalm()];
+    let workspace = &mut pool.install(|| analysis_adjoint.workspace()).unwrap();
+    pool.install(|| {
+        analysis_adjoint.adjoint_synthesis_into(&map, &mut adjoint_coefficients, workspace)
+    })
+    .unwrap();
+    assert_eq!(
+        pool.install(|| analysis_adjoint.scalar_legendre_strategy(LegendreOperation::Analysis)),
+        LegendreStrategy::CompactTable
+    );
+
+    let disabled_after_warm = ShtPlan::new_with_legendre_reuse_estimate(
+        grid,
+        harmonics,
+        LegendreReuseEstimate::new(Some(90), Some(0)),
+    )
+    .unwrap();
+    let mut synthesis_output = vec![0.0; disabled_after_warm.sample_count];
+    let mut workspace = pool.install(|| disabled_after_warm.workspace()).unwrap();
+    pool.install(|| {
+        disabled_after_warm.synthesis_into(&alm, &mut synthesis_output, &mut workspace)
+    })
+    .unwrap();
+    assert!(disabled_after_warm.scalar_legendre_table.get().is_some());
+    assert_eq!(
+        pool.install(|| disabled_after_warm.scalar_legendre_strategy(LegendreOperation::Analysis)),
+        LegendreStrategy::Recurrence
+    );
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn scalar_reuse_estimate_uses_conservative_overresolved_break_even() {
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let make = |calls| -> ShtPlan {
+        ShtPlan::new_with_legendre_reuse_estimate(
+            GridSpec::new(GridKind::GaussLegendre, 320, 640, 0.37).unwrap(),
+            HarmonicSpec::scalar(159, 159).unwrap(),
+            LegendreReuseEstimate::new(None, Some(calls)),
+        )
+        .unwrap()
+    };
+    assert_eq!(
+        pool.install(|| make(157).scalar_legendre_strategy(LegendreOperation::Analysis)),
+        LegendreStrategy::Recurrence
+    );
+    assert_eq!(
+        pool.install(|| make(158).scalar_legendre_strategy(LegendreOperation::Analysis)),
+        LegendreStrategy::CompactTable
     );
 }
 

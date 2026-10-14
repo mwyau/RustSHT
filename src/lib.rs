@@ -21,7 +21,7 @@ mod workspace;
 pub use error::ShtError;
 pub use grid::{GridKind, GridSpec};
 pub use harmonics::HarmonicSpec;
-pub use plan::ShtPlan;
+pub use plan::{LegendreReuseEstimate, ShtPlan};
 pub use workspace::ShtWorkspace;
 
 /// Complex double-precision harmonic coefficient.
