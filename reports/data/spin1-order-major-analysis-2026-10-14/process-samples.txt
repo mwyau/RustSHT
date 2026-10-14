@@ -1,0 +1,40 @@
+Temporary spin-1 GL STANDARD analysis order-major Fourier-layout prototype. Baseline source: main commit 2e1fa65. Candidate: that source plus an uncommitted temporary scratch transpose. Workload: f64, phi0=0.37, full mmax, reused plan/workspace, requested-only. Each process runs one warm-up followed by five timed analysis calls. All times below are milliseconds. Pair order is baseline, then candidate. CPU: x86-64 CPU; Linux
+Compiler: Rust 1.99.0 / LLVM 23.1.1; release opt-level=3, 16 codegen units,
+LTO off, portable Pulp runtime AVX2/FMA dispatch, no target-cpu=native. Affinity: q8 8 pinned CPU cores. The host was shared. T511, GL 512x1025, mmax=511, q8, five alternating process pairs
+  pair 1 baseline warm=[12.621,14.950,15.286,13.678,16.761] median=14.950
+         candidate warm=[15.723,15.569,12.654,16.292,13.360] median=15.569
+         baseline first_call=13.234 candidate first_call=17.717
+  pair 2 baseline warm=[12.411,12.158,12.249,12.305,12.771] median=12.305
+         candidate warm=[12.549,12.841,14.460,13.270,12.922] median=12.922
+         baseline first_call=13.411 candidate first_call=16.433
+  pair 3 baseline warm=[12.671,16.317,12.435,13.335,12.674] median=12.674
+         candidate warm=[12.234,13.024,12.986,12.784,16.243] median=12.986
+         baseline first_call=13.365 candidate first_call=19.490
+  pair 4 baseline warm=[13.856,15.354,12.563,12.165,12.236] median=12.563
+         candidate warm=[13.214,13.570,16.719,12.943,12.978] median=13.214
+         baseline first_call=12.797 candidate first_call=18.512
+  pair 5 baseline warm=[12.221,12.410,12.092,11.796,12.003] median=12.092
+         candidate warm=[12.557,13.022,12.563,13.237,12.429] median=12.563
+         baseline first_call=16.459 candidate first_call=16.780
+
+T720, GL 721x1443, mmax=720, q8, three alternating process pairs
+  pair 1 baseline warm=[33.574,33.024,35.577,33.848,34.261] median=33.848
+         candidate warm=[35.355,35.590,34.598,35.082,34.599] median=35.082
+         baseline first_call=34.926 candidate first_call=42.848
+  pair 2 baseline warm=[33.817,34.149,33.792,33.384,34.495] median=33.817
+         candidate warm=[34.972,39.460,35.892,35.340,35.828] median=35.828
+         baseline first_call=35.216 candidate first_call=42.436
+  pair 3 baseline warm=[34.325,35.908,35.106,35.349,34.636] median=35.106
+         candidate warm=[34.904,34.175,35.790,34.881,35.327] median=34.904
+         baseline first_call=36.626 candidate first_call=42.676
+
+Fresh q1 baseline control, T511 GL 512x1025, three separate processes:
+  run 1 warm=[38.067,40.289,38.599,41.509,42.712] median=40.289
+  run 2 warm=[38.853,39.133,41.453,39.570,39.895] median=39.570
+  run 3 warm=[40.252,40.631,39.282,39.150,39.246] median=39.282
+The q8-only candidate selector leaves q1 on baseline, so no q1 paired
+comparison was performed. Scratch payload was 2*(mmax+1)*ntheta Complex<f64>: 8,388,608 bytes (8 MiB)
+at T511 and 16,634,912 bytes (15.864 MiB) at T720. It was allocated lazily
+on first eligible analysis and retained in the workspace. The candidate
+reused the existing spin1_scalar_coefficients Vec, which is also scratch for
+the separate synthesis conversion cache; each operation overwrites it fully.

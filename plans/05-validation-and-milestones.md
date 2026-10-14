@@ -2055,3 +2055,8 @@ Commit `c6b238d` adds lazy per-workspace coefficient scratch for f64 spin-1 GL S
 
 
 ### Paired analysis FMA experiment (2026-10-14)
+
+
+### Spin-1 order-major analysis layout experiment (2026-10-14)
+
+A lazy q8 GL scratch transpose of the two spin-1 Fourier spectra into order-major latitude rows passed the T511 eight-thread DUCC/round-trip regression, but made warm q8 analysis 3.4% slower at T511 and 3.6% slower at T720. First-call medians increased 32.6% and 21.2%, respectively; the retained scratch used 8 MiB and 15.864 MiB. The transpose was removed. The scalar path's order-major layout remains in place because it reuses existing workspace storage and had measured whole-transform gains. See [`the spin-1 layout report`](../reports/spin1-analysis-thread-scaling-2026-10-14.md#spin-1-order-major-analysis-layout-experiment) and [`raw samples`](../reports/data/spin1-order-major-analysis-2026-10-14/process-samples.txt).
