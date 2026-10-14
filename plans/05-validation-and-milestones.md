@@ -2037,3 +2037,8 @@ The T511 q1/q2/q4/q8/q16 native and installed DUCC 0.41.0 measurements, raw samp
 A prototype cached `(ring_weight / sin(theta)) / nphi` once per GL spin-1 plan and reused it across orders in the paired STANDARD analysis path. The arithmetic retained the previous conversion and division order. Paired native process measurements at T255/T511/T720 showed no repeatable q8 improvement; q1 was 1.3% slower at T511 and 1.6% slower at T720. The additional plan vector used 5.6 KiB at T720 and added several microseconds to plan construction. Focused recurrence, extreme-input fallback, static T255 DUCC and opt-in T511 all-grid spin tests passed, but there was no whole-transform gain, so the production prototype was removed. The detailed table and raw samples are in [`the experiment report`](../reports/spin-analysis-ring-scale-hoist-2026-10-14.md).
 
 ### Scalar paired-recurrence lane normalization fast path (2026-10-14)
+
+
+### Opposite-parity cosine hoist experiment (2026-10-14)
+
+A temporary scalar and spin-1 analysis path preweighted odd-parity Fourier components by the fixed north-ring cosine once per ring pair, with a range guard against subnormal products. At T511, scalar analysis was 1.26% slower at one thread and flat at eight; spin-1 changes were also flat. T720 results were within run variation. Focused DUCC, recurrence-equivalence, adjoint and scaled-lane tests passed, but the block preparation and guard overhead removed the expected benefit, so the prototype was reverted. No source, workspace or API change remains. Raw paired runs and profile context are in [`the experiment report`](../reports/opposite-cosine-hoist-2026-10-14.md) and [`its data directory`](../reports/data/opposite-cosine-hoist-2026-10-14/).
