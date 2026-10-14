@@ -1,0 +1,42 @@
+Temporary T511 q8 spin-1 synthesis schedule comparison.
+Baseline source: fbbe483, 32-ring groups, 16 groups.
+Candidate: same source with a spin-1-only 64-ring q8 schedule, 8 groups.
+Workload: f64 GL 512x1025, full mmax=511, phi0=0.37, STANDARD synthesis,
+          reused plan/workspace, requested-only m1b_bench.
+Five alternating baseline/candidate process pairs; each process had one warm
+call and five timed calls. Values are milliseconds.
+
+CPU: AMD Ryzen 9 5950X, Linux 7.0.14-20-pve; affinity CPUs 0-7.
+Rust 1.99.0 / LLVM 23.1.1, release opt-level=3, 16 codegen units,
+LTO off, Pulp runtime AVX2/FMA dispatch, no target-cpu=native.
+
+pair 1
+  baseline median=20.048 warm=[18.095,20.889,20.048,20.136,18.103]
+  candidate median=23.014 warm=[23.892,22.612,23.731,22.913,23.014]
+  baseline first_call=27.007 candidate first_call=29.111
+pair 2
+  baseline median=20.068 warm=[20.694,20.068,20.215,18.237,18.724]
+  candidate median=22.771 warm=[22.605,26.512,22.771,22.894,22.564]
+  baseline first_call=25.335 candidate first_call=28.629
+pair 3
+  baseline median=18.407 warm=[18.341,18.490,18.407,17.633,20.304]
+  candidate median=22.873 warm=[23.143,22.873,22.239,22.938,22.272]
+  baseline first_call=24.129 candidate first_call=28.742
+pair 4
+  baseline median=20.100 warm=[20.739,20.100,18.274,25.082,19.641]
+  candidate median=22.818 warm=[23.261,23.395,22.818,22.546,22.553]
+  baseline first_call=26.001 candidate first_call=28.603
+pair 5
+  baseline median=19.943 warm=[20.119,20.286,18.744,19.943,17.510]
+  candidate median=22.702 warm=[22.969,22.702,22.415,22.191,22.756]
+  baseline first_call=26.756 candidate first_call=28.841
+
+Fresh baseline q8 scalar T511 synthesis control process medians:
+  11.209, 12.143, 11.989, 12.157, 12.331 ms
+The temporary selector was spin-1-specific; scalar synthesis did not use it.
+
+Candidate T511 spin-1 DUCC check:
+  RAYON_NUM_THREADS=8 cargo test --release -p rustsht --all-features \
+    m3_spin_t511_all_grids_matches_ducc_and_roundtrips -- --ignored --nocapture
+  Passed; spin-1 GL analysis coefficient maximum absolute error 4.970e-18;
+  synthesis-analysis coefficient maximum absolute error 1.255e-14.
