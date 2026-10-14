@@ -26,7 +26,7 @@ use super::{ShtScalar, sin_cos_from_f64};
 
 const MIN_PRECOMPUTED_LMAX: usize = 63;
 const MAX_PRECOMPUTED_LMAX: usize = 255;
-pub(crate) const MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX: usize = 127;
+pub(crate) const MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX: usize = 159;
 const MAX_TABLE_BYTES: usize = 34 * 1024 * 1024;
 // Keep direct table products far from overflow; larger and non-finite input
 // scales use the binary-scaled recurrence instead.
@@ -54,14 +54,16 @@ pub(crate) fn select_scalar_legendre_strategy(
     let oversampled = ntheta > lmax + 1;
     if oversampled {
         // Over-resolved GL tables use more latitude storage. Paired runs on
-        // atmospheric grids show analysis gains through T127, while T191
-        // analysis regresses; reduced-mmax cases are mixed. Scalar T63
-        // analysis is neutral/slower at q4+, while spin-1 still benefits.
+        // atmospheric grids show scalar and spin-1 analysis gains at T159,
+        // while T191 analysis regresses; scalar q16 T159 was noisy and
+        // reduced-mmax cases are mixed.
+        // Scalar T63 analysis is neutral/slower at q4+, while spin-1 still benefits.
         // Synthesis has selected multicore wins, though the T85 q8 gain is
         // within noise.
         if mmax != lmax
             || (operation == LegendreOperation::Analysis
                 && lmax > MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX)
+            || (operation == LegendreOperation::Analysis && lmax == 159 && thread_count >= 16)
             || (operation == LegendreOperation::Synthesis && thread_count == 1)
             || (operation == LegendreOperation::Analysis
                 && lmax == MIN_PRECOMPUTED_LMAX

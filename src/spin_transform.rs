@@ -76,13 +76,17 @@ fn spin1_synthesis_coefficients_safe_for_table<T: ShtScalar>(
 impl<T: ShtScalar> ShtPlan<T> {
     fn allow_spin1_analysis_table(&self) -> bool {
         let lmax = self.harmonics.lmax();
+        let thread_count = current_execution_thread_count();
         let oversampled = self.grid.ntheta() > lmax + 1;
+        // At over-resolved T159, the one-thread table run has no stable warm
+        // advantage and its first use retains roughly 16 MiB of basis values.
         if oversampled
-            && (lmax > MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX || self.harmonics.mmax() != lmax)
+            && (lmax > MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX
+                || self.harmonics.mmax() != lmax
+                || (lmax == 159 && thread_count == 1))
         {
             return false;
         }
-        let thread_count = current_execution_thread_count();
         // Same-source x86-64 CPU measurements show no repeatable warm
         // advantage for the 34 MiB table at full-mmax T255 with eight or more
         // workers; keep the paired recurrence for that memory-heavy case.

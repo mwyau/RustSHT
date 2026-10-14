@@ -30,6 +30,7 @@ if backend not in {"both", "rust", "ducc"}:
     raise SystemExit("backend must be 'both', 'rust' or 'ducc'")
 mode = sys.argv[9] if len(sys.argv) > 9 else "STANDARD"
 nphi = int(sys.argv[10]) if len(sys.argv) > 10 else 2 * lmax + 3
+ntheta = int(sys.argv[11]) if len(sys.argv) > 11 else lmax + (2 if geometry == "CC" else 1)
 if mode not in {"STANDARD", "GRAD_ONLY", "DERIV1"}:
     raise SystemExit("mode must be STANDARD, GRAD_ONLY or DERIV1")
 if mode == "GRAD_ONLY" and spin == 0:
@@ -39,7 +40,6 @@ if mode == "DERIV1" and spin != 1:
 if mode != "STANDARD" and operation != "synthesis":
     raise SystemExit("GRAD_ONLY and DERIV1 support synthesis benchmarking only")
 phi0 = 0.37
-ntheta = lmax + (2 if geometry == "CC" else 1)
 ncomp = 1 if spin == 0 or mode != "STANDARD" else 2
 map_components = 1 if mode == "STANDARD" and spin == 0 else 2
 plan_spin = 0 if mode == "DERIV1" else spin
