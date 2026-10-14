@@ -2042,3 +2042,5 @@ A prototype cached `(ring_weight / sin(theta)) / nphi` once per GL spin-1 plan a
 ### Opposite-parity cosine hoist experiment (2026-10-14)
 
 A temporary scalar and spin-1 analysis path preweighted odd-parity Fourier components by the fixed north-ring cosine once per ring pair, with a range guard against subnormal products. At T511, scalar analysis was 1.26% slower at one thread and flat at eight; spin-1 changes were also flat. T720 results were within run variation. Focused DUCC, recurrence-equivalence, adjoint and scaled-lane tests passed, but the block preparation and guard overhead removed the expected benefit, so the prototype was reverted. No source, workspace or API change remains. Raw paired runs and profile context are in [`the experiment report`](../reports/opposite-cosine-hoist-2026-10-14.md) and [`its data directory`](../reports/data/opposite-cosine-hoist-2026-10-14/).
+
+### Paired recurrence range-check fusion experiment (2026-10-14)

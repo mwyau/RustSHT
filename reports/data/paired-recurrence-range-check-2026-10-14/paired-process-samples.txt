@@ -1,0 +1,12 @@
+Source baseline: 3b8e6159d7ffcd405377037ddfe12645f8e930d6
+Candidate: baseline plus temporary fused normal-range predicate in ForEachPairedYlm; removed after measurement. Command per process: taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" target/release/examples/m1b_bench 1 511 8 analysis GL STANDARD
+Workload: f64 GL T511, 512x1025, mmax=511, phi0=0.37, STANDARD analysis, reusable plan/workspace; five warm timed transforms per process. Each value is the five-sample median in ms. Q1 and q8 are measured in each process by m1b_bench. Pair 1 baseline q1=39.844 q8=13.005; candidate q1=39.284 q8=12.645
+Pair 2 baseline q1=39.777 q8=12.726; candidate q1=39.991 q8=12.567
+Pair 3 baseline q1=39.707 q8=12.888; candidate q1=39.567 q8=13.103
+Pair 4 baseline q1=39.674 q8=12.559; candidate q1=39.376 q8=12.451
+Pair 5 baseline q1=39.335 q8=13.023; candidate q1=39.423 q8=12.633
+
+Python DUCC comparison, candidate extension, one process per configuration:
+RAYON_NUM_THREADS=1 taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" uv run python examples/python_perf_baseline.py 511 1 1 GL 1 plan analysis both STANDARD 1025
+Rust plan 40.143 ms; DUCC 13.218 ms; max_abs=1.401e-14 rms=1.910e-16 rel_l2=3.740e-14. RAYON_NUM_THREADS=8 taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" uv run python examples/python_perf_baseline.py 511 1 8 GL 1 plan analysis both STANDARD 1025
+Rust plan 15.338 ms; DUCC 1.992 ms; max_abs=1.401e-14 rms=1.910e-16 rel_l2=3.740e-14.
