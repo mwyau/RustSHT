@@ -133,3 +133,64 @@ The experiment does not justify changing the reducer. The current AVX2
 multiply/add sequence remains in production; a future accumulation change
 needs to improve measured wall time, not only reduce simulated instruction
 references.
+
+## Spin-1 order-major analysis layout experiment
+
+A separate prototype copied the GL spin-1 Fourier orders from ring-major rows
+into two compact order-major planes in the workspace's existing
+`spin1_scalar_coefficients` scratch. The paired scalar-conversion analysis
+then read contiguous latitude rows. Ring-major spectra remained intact for
+the scaled/general fallback. This tested whether strided access to fixed `m`
+was limiting the q8 analysis kernel; it changed no recurrence, accumulation,
+quadrature or FFT arithmetic.
+
+The candidate ran only for f64-compatible spin-1 GL STANDARD analysis at eight
+or more executing Rayon threads, with all rings inside the existing fast
+latitude range and a transposed payload under 17 MiB. It allocated scratch on
+first eligible execution and reused it afterward. T511 used 8 MiB and T720
+used 15.864 MiB. The source was a temporary prototype on `2e1fa65`; the
+production implementation was restored after measurement.
+
+The release `m1b_bench` comparison used exact GL grids `512x1025` at T511 and
+`721x1443` at T720, full `mmax`, f64 STANDARD analysis, `phi0=0.37`, reused
+plans/workspaces, one warm-up and five samples per process. Five alternating
+process pairs ran at T511; three ran at T720, pinned to CPUs 0–7 on the AMD
+Ryzen 9 5950X under Linux `7.0.14-20-pve`. Rust 1.99.0 / LLVM 23.1.1 used
+release `opt-level=3`, 16 codegen units, LTO off and portable Pulp runtime
+dispatch (AVX2/FMA), without `target-cpu=native`. Commands were:
+
+```sh
+taskset -c 0-7 /tmp/rustsht-order-major-analysis-base 1 511 8 analysis GL STANDARD 512 1025 511 requested-only
+taskset -c 0-7 target/release/examples/m1b_bench 1 511 8 analysis GL STANDARD 512 1025 511 requested-only
+```
+
+The baseline binary was built from the same production source before the
+temporary layout edit. Each table entry is the median of process medians in
+milliseconds. The pair-specific values all include a transform warm-up and
+five timed transforms:
+
+| Grid | Baseline q8 process medians | Order-major q8 process medians | Median change |
+| --- | --- | --- | ---: |
+| T511 | `14.950, 12.305, 12.674, 12.563, 12.092` | `15.569, 12.922, 12.986, 13.214, 12.563` | `+3.4%` slower |
+| T720 | `33.848, 33.817, 35.106` | `35.082, 35.828, 34.904` | `+3.6%` slower |
+
+All five T511 paired process medians favored ring-major input; at T720 two of
+three pairs favored ring-major. Candidate warm medians increased from
+`12.563` to `12.986 ms` at T511 and from `33.848` to `35.082 ms` at T720.
+The first-call medians increased from `13.365` to `17.717 ms` at T511 and
+from `35.216` to `42.676 ms` at T720, including lazy scratch allocation and
+the transpose. Workspace construction did not allocate this scratch. The
+measured q1 control had baseline medians `39.570 ms` at T511; the candidate
+selector excludes q1, so this was not a paired comparison. Exact individual
+samples are in
+[`the layout experiment data`](data/spin1-order-major-analysis-2026-10-14/process-samples.txt).
+
+The q8 release DUCC T511 test passed with `RAYON_NUM_THREADS=8`; spin-1 GL
+analysis coefficient maximum absolute error was `4.970e-18`, and the
+synthesis-analysis coefficient maximum absolute error was `1.255e-14`. The
+test also covered spin 1/2 on CC and F1 and their existing DUCC checks. The
+candidate's repeated warm regressions and 8–16 MiB lazy scratch do not justify
+keeping the transpose. RustSHT continues to read ring-major input in this
+path. The scalar order-major layout remains separate because its measured
+whole-transform result was positive and it reused already allocated
+workspace storage.
