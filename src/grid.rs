@@ -59,6 +59,33 @@ pub struct GridSpec {
 }
 
 impl GridSpec {
+    /// Suggests the smallest longitude count that exactly samples orders
+    /// through `mmax` and has no prime factors greater than seven.
+    ///
+    /// This is an optional grid-sizing suggestion based on common efficient
+    /// RustFFT lengths. It does not change the longitude count supplied to
+    /// [`GridSpec::new`], and it does not add oversampling for nonlinear
+    /// products or other application-specific requirements.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ShtError::IntegerOverflow`] if the sampling limit or a
+    /// suitable longitude count cannot be represented as `usize`.
+    pub fn fft_friendly_nphi(mmax: usize) -> Result<usize, ShtError> {
+        let minimum = mmax
+            .checked_mul(2)
+            .and_then(|value| value.checked_add(1))
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "minimum longitude count",
+            })?;
+        let upper_bound = minimum.checked_next_power_of_two().unwrap_or(usize::MAX);
+        let mut best = minimum.checked_next_power_of_two();
+        find_fft_friendly_nphi(0, 1, minimum, upper_bound, &mut best);
+        best.ok_or(ShtError::IntegerOverflow {
+            quantity: "FFT-friendly longitude count",
+        })
+    }
+
     /// Constructs a grid of the selected kind.
     ///
     /// # Errors
@@ -134,6 +161,39 @@ impl GridSpec {
     #[must_use]
     pub fn longitude(&self, j: usize) -> Option<f64> {
         (j < self.nphi).then(|| self.phi0 + TAU * (j as f64) / (self.nphi as f64))
+    }
+}
+
+fn find_fft_friendly_nphi(
+    factor_index: usize,
+    current: usize,
+    minimum: usize,
+    upper_bound: usize,
+    best: &mut Option<usize>,
+) {
+    const FACTORS: [usize; 4] = [2, 3, 5, 7];
+
+    if current > upper_bound || best.is_some_and(|value| current >= value) {
+        return;
+    }
+    if factor_index == FACTORS.len() {
+        if current >= minimum {
+            *best = Some(current);
+        }
+        return;
+    }
+
+    let factor = FACTORS[factor_index];
+    let mut candidate = current;
+    loop {
+        find_fft_friendly_nphi(factor_index + 1, candidate, minimum, upper_bound, best);
+        let Some(next) = candidate.checked_mul(factor) else {
+            break;
+        };
+        if next > upper_bound {
+            break;
+        }
+        candidate = next;
     }
 }
 
@@ -565,12 +625,47 @@ fn bogaert_gl_root(ntheta: usize, root0: usize) -> (f64, f64) {
 mod tests {
     use super::*;
 
+    fn is_fft_friendly(mut value: usize) -> bool {
+        for factor in [2, 3, 5, 7] {
+            while value.is_multiple_of(factor) {
+                value /= factor;
+            }
+        }
+        value == 1
+    }
+
     fn close(actual: f64, expected: f64, tolerance: f64) {
         assert!(
             (actual - expected).abs() <= tolerance,
             "actual={actual:.17e}, expected={expected:.17e}, error={:.3e}",
             (actual - expected).abs()
         );
+    }
+
+    #[test]
+    fn fft_friendly_nphi_is_minimal_and_sampling_safe() {
+        for mmax in 0..=1024 {
+            let minimum = 2 * mmax + 1;
+            let actual = GridSpec::fft_friendly_nphi(mmax).unwrap();
+            assert!(actual >= minimum);
+            assert!(is_fft_friendly(actual));
+            assert!((minimum..actual).all(|candidate| !is_fft_friendly(candidate)));
+        }
+
+        for (mmax, expected) in [
+            (63, 128),
+            (72, 147),
+            (127, 256),
+            (255, 512),
+            (511, 1024),
+            (720, 1458),
+            (1023, 2048),
+        ] {
+            assert_eq!(GridSpec::fft_friendly_nphi(mmax), Ok(expected));
+        }
+
+        let error = GridSpec::fft_friendly_nphi(usize::MAX / 2).unwrap_err();
+        assert!(matches!(error, ShtError::IntegerOverflow { .. }));
     }
 
     #[test]
