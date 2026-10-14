@@ -187,6 +187,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         select_scalar_legendre_strategy(
             self.harmonics.lmax(),
             self.harmonics.mmax(),
+            self.grid.ntheta(),
             operation,
             current_execution_thread_count(),
         )

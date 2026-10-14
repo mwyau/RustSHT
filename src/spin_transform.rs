@@ -8,8 +8,9 @@ use rayon::prelude::*;
 
 use crate::error::ShtError;
 use crate::legendre::{
-    LATITUDE_BLOCK_SIZE, SPIN1_FAST_MIN_LMAX, ShtScalar, longitude_phase, scalar_to_spin1,
-    scalar_to_spin2, sin_cos_from_f64, spin1_to_scalar, spin2_to_scalar,
+    LATITUDE_BLOCK_SIZE, MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX, SPIN1_FAST_MIN_LMAX, ShtScalar,
+    longitude_phase, scalar_to_spin1, scalar_to_spin2, sin_cos_from_f64, spin1_to_scalar,
+    spin2_to_scalar,
 };
 use crate::plan::{ShtPlan, current_execution_thread_count};
 #[cfg(feature = "parallel")]
@@ -27,7 +28,7 @@ const SPIN1_TABLE_SYNTH_MIN_LMAX: usize = 127;
 // T175–T191 range; T144 and T159 tables were slower than recurrence.
 const SPIN1_TABLE_SYNTH_HIGH_BAND_MIN_LMAX: usize = 175;
 const SPIN1_TABLE_SYNTH_MAX_LMAX: usize = 191;
-const SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MIN_LMAX: usize = 85;
+const SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MIN_LMAX: usize = 63;
 const SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MAX_LMAX: usize = 224;
 const SPIN1_FAST_MIN_SIN_THETA: f64 = 0.0001;
 const SPIN1_PAIR_MIN_SIN_THETA: f64 = 0.01;
@@ -74,6 +75,13 @@ fn spin1_synthesis_coefficients_safe_for_table<T: ShtScalar>(
 #[allow(private_bounds)]
 impl<T: ShtScalar> ShtPlan<T> {
     fn allow_spin1_analysis_table(&self) -> bool {
+        let lmax = self.harmonics.lmax();
+        let oversampled = self.grid.ntheta() > lmax + 1;
+        if oversampled
+            && (lmax > MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX || self.harmonics.mmax() != lmax)
+        {
+            return false;
+        }
         let thread_count = current_execution_thread_count();
         // Same-source Ryzen 9 5950X measurements show no repeatable warm
         // advantage for the 34 MiB table at full-mmax T255 with eight or more
@@ -860,6 +868,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             })
             && !derivative_norm
             && self.grid.kind() == crate::grid::GridKind::GaussLegendre
+            && self.grid.ntheta() == self.harmonics.lmax() + 1
             && single_threaded_execution()
             && self
                 .grid

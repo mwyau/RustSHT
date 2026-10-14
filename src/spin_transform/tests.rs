@@ -2131,6 +2131,15 @@ fn spin1_standard_analysis_scalar_conversion_matches_general_and_adjoint_on_all_
             let minimum_ntheta = lmax + usize::from(kind == GridKind::ClenshawCurtis) + 1;
             let ntheta_values = if kind == GridKind::ClenshawCurtis {
                 vec![minimum_ntheta, 2 * lmax + 2]
+            } else if kind == GridKind::GaussLegendre {
+                let atmospheric_ntheta = match lmax {
+                    63 => Some(96),
+                    85 => Some(128),
+                    127 => Some(256),
+                    _ => None,
+                };
+                atmospheric_ntheta
+                    .map_or_else(|| vec![minimum_ntheta], |value| vec![minimum_ntheta, value])
             } else {
                 vec![minimum_ntheta]
             };
@@ -2146,6 +2155,7 @@ fn spin1_standard_analysis_scalar_conversion_matches_general_and_adjoint_on_all_
                     let fast_plan = make_plan();
                     let mut general_plan = make_plan();
                     general_plan.spin_fast_coefficient_count = 0;
+                    assert!(general_plan.spin1_scalar_legendre_table.set(None).is_ok());
                     let (first, second) = arbitrary_maps(&fast_plan);
                     let mut fast_workspace = fast_plan.workspace().unwrap();
                     let mut general_workspace = general_plan.workspace().unwrap();
@@ -2162,7 +2172,7 @@ fn spin1_standard_analysis_scalar_conversion_matches_general_and_adjoint_on_all_
                             &mut fast_workspace,
                         )
                         .unwrap();
-                    if kind == GridKind::GaussLegendre && lmax == 127 {
+                    if kind == GridKind::GaussLegendre && matches!(lmax, 63 | 72 | 85 | 127) {
                         assert!(
                             fast_plan
                                 .spin1_scalar_legendre_table
@@ -2334,13 +2344,13 @@ fn spin1_max_band_analysis_uses_recurrence_for_one_and_eight_but_table_for_four(
 
 #[cfg(feature = "parallel")]
 #[test]
-fn spin1_single_thread_t72_analysis_keeps_recurrence_after_no_table_win() {
+fn spin1_single_thread_t72_analysis_uses_table_after_recurrence_update() {
     let plan = make_plan(1, 72, 72, 73, 147);
     let one_thread = rayon::ThreadPoolBuilder::new()
         .num_threads(1)
         .build()
         .unwrap();
-    assert!(!one_thread.install(|| plan.allow_spin1_analysis_table()));
+    assert!(one_thread.install(|| plan.allow_spin1_analysis_table()));
 
     let mut workspace = one_thread.install(|| plan.workspace()).unwrap();
     let maps = vec![0.0; plan.sample_count];
@@ -2349,15 +2359,30 @@ fn spin1_single_thread_t72_analysis_keeps_recurrence_after_no_table_win() {
     one_thread
         .install(|| plan.analysis_spin_into(&maps, &maps, &mut e, &mut b, &mut workspace))
         .unwrap();
-    assert!(plan.spin1_scalar_legendre_table.get().is_none());
+    assert!(
+        plan.spin1_scalar_legendre_table
+            .get()
+            .is_some_and(Option::is_some)
+    );
 
     let t85 = make_plan(1, 85, 85, 86, 173);
     assert!(one_thread.install(|| t85.allow_spin1_analysis_table()));
+
+    let atmospheric_t85 = make_plan(1, 85, 85, 128, 256);
+    assert!(one_thread.install(|| atmospheric_t85.allow_spin1_analysis_table()));
+    let atmospheric_t63 = make_plan(1, 63, 63, 96, 192);
+    assert!(one_thread.install(|| atmospheric_t63.allow_spin1_analysis_table()));
+    let reduced_atmospheric_t127 = make_plan(1, 127, 96, 256, 512);
+    assert!(!one_thread.install(|| reduced_atmospheric_t127.allow_spin1_analysis_table()));
+    let atmospheric_t191 = make_plan(1, 191, 191, 384, 768);
+    assert!(!one_thread.install(|| atmospheric_t191.allow_spin1_analysis_table()));
 
     let eight_threads = rayon::ThreadPoolBuilder::new()
         .num_threads(8)
         .build()
         .unwrap();
+    assert!(!eight_threads.install(|| atmospheric_t191.allow_spin1_analysis_table()));
+    assert!(eight_threads.install(|| atmospheric_t63.allow_spin1_analysis_table()));
     let mut eight_workspace = eight_threads.install(|| plan.workspace()).unwrap();
     assert!(eight_threads.install(|| plan.allow_spin1_analysis_table()));
     eight_threads
@@ -2368,6 +2393,16 @@ fn spin1_single_thread_t72_analysis_keeps_recurrence_after_no_table_win() {
             .get()
             .is_some_and(Option::is_some)
     );
+
+    for thread_count in [2, 4, 16] {
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(thread_count)
+            .build()
+            .unwrap();
+        assert!(pool.install(|| atmospheric_t63.allow_spin1_analysis_table()));
+        assert!(pool.install(|| atmospheric_t85.allow_spin1_analysis_table()));
+        assert!(!pool.install(|| atmospheric_t191.allow_spin1_analysis_table()));
+    }
 }
 
 #[cfg(feature = "parallel")]

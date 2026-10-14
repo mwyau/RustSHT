@@ -196,6 +196,79 @@ def test_scalar_plan_matches_ducc(kind: str) -> None:
     )
 
 
+@pytest.mark.parametrize("spin", [0, 1])
+def test_overresolved_gl_plan_matches_ducc(spin: int) -> None:
+    lmax = mmax = 63
+    ntheta, nphi = 96, 192
+    phi0 = 0.37
+    components = 1 if spin == 0 else 2
+    plan = ShtPlan("GL", ntheta, nphi, lmax, mmax, spin=spin, phi0=phi0)
+    alm = random_alm(components, lmax, mmax, spin, seed=163 + spin)
+    ducc_alm = to_ducc_layout(alm, lmax, mmax)
+    expected_map = ducc_sht.synthesis_2d(
+        alm=ducc_alm,
+        spin=spin,
+        lmax=lmax,
+        mmax=mmax,
+        geometry="GL",
+        ntheta=ntheta,
+        nphi=nphi,
+        phi0=phi0,
+        nthreads=1,
+    )
+    actual_map = plan.synthesis(alm)
+    np.testing.assert_allclose(actual_map, expected_map, rtol=2e-12, atol=2e-12)
+
+    actual_alm = plan.analysis(actual_map)
+    expected_alm = ducc_sht.analysis_2d(
+        map=actual_map,
+        spin=spin,
+        lmax=lmax,
+        mmax=mmax,
+        geometry="GL",
+        phi0=phi0,
+        nthreads=1,
+    )
+    np.testing.assert_allclose(
+        actual_alm, from_ducc_layout(expected_alm, lmax, mmax), rtol=2e-12, atol=2e-12
+    )
+
+    input_map = np.random.default_rng(263 + spin).normal(size=actual_map.shape)
+    expected_analysis_adjoint = ducc_sht.adjoint_analysis_2d(
+        alm=ducc_alm,
+        spin=spin,
+        lmax=lmax,
+        mmax=mmax,
+        geometry="GL",
+        ntheta=ntheta,
+        nphi=nphi,
+        phi0=phi0,
+        nthreads=1,
+    )
+    np.testing.assert_allclose(
+        plan.adjoint_analysis(alm),
+        expected_analysis_adjoint,
+        rtol=2e-12,
+        atol=2e-12,
+    )
+    expected_synthesis_adjoint = ducc_sht.adjoint_synthesis_2d(
+        map=input_map,
+        spin=spin,
+        lmax=lmax,
+        mmax=mmax,
+        geometry="GL",
+        phi0=phi0,
+        nthreads=1,
+    )
+    np.testing.assert_allclose(
+        plan.adjoint_synthesis(input_map),
+        from_ducc_layout(expected_synthesis_adjoint, lmax, mmax),
+        rtol=2e-12,
+        atol=2e-12,
+    )
+
+
+
 def test_spin_plan_matches_ducc_and_derivative_mode() -> None:
     lmax = mmax = 4
     ntheta, nphi = 6, 11

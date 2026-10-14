@@ -746,20 +746,29 @@ fn t255_mixed_synthesis_matches_ducc_0410_samples() {
 
 #[test]
 fn precomputed_scalar_gl_matches_recurrence_for_all_four_operators() {
-    for (lmax, mmax, nphi) in [
-        (72, 72, 147),
-        (127, 96, 256),
-        (127, 127, 257),
-        (128, 128, 258),
-        (255, 255, 513),
+    for (lmax, mmax, ntheta, nphi) in [
+        (63, 63, 96, 192),
+        (72, 72, 73, 147),
+        (85, 85, 128, 256),
+        (127, 96, 128, 256),
+        (127, 127, 128, 257),
+        (127, 127, 256, 512),
+        (128, 128, 129, 258),
+        (255, 255, 256, 513),
     ] {
-        let table_plan = make_plan(lmax, mmax, lmax + 1, nphi, 0.37);
+        let table_plan = make_plan(lmax, mmax, ntheta, nphi, 0.37);
         assert!(table_plan.get_scalar_legendre_table().is_some());
-        let recurrence_plan = make_plan(lmax, mmax, lmax + 1, nphi, 0.37);
+        let recurrence_plan = make_plan(lmax, mmax, ntheta, nphi, 0.37);
         assert!(recurrence_plan.scalar_legendre_table.set(None).is_ok());
         #[cfg(feature = "parallel")]
+        let table_threads = if lmax == 63 && ntheta > lmax + 1 {
+            2
+        } else {
+            8
+        };
+        #[cfg(feature = "parallel")]
         let table_pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(8)
+            .num_threads(table_threads)
             .build()
             .unwrap();
         let mut input_alm = vec![Complex64::new(0.0, 0.0); table_plan.harmonics().nalm()];
@@ -844,7 +853,7 @@ fn precomputed_scalar_gl_matches_recurrence_for_all_four_operators() {
         assert!(relative_l2_complex(&table_alm, &recurrence_alm) < 2e-12);
         assert!(relative_l2_complex(&table_s_adjoint, &recurrence_s_adjoint) < 2e-12);
         assert!(relative_l2_real(&table_a_adjoint, &recurrence_a_adjoint) < 2e-12);
-        if lmax == 72 {
+        if lmax == 72 || ntheta > lmax + 1 {
             assert_close(
                 map_inner_product(&table_map, &input_map),
                 harmonic_inner_product(&table_plan.harmonics, &input_alm, &table_s_adjoint),
@@ -938,9 +947,20 @@ fn precomputed_scalar_table_supports_spin1_scalar_degree_extension() {
 #[test]
 fn precomputed_scalar_table_respects_bandlimit_and_grid_bounds() {
     assert!(
-        make_plan(71, 71, 72, 145, 0.37)
+        make_plan(62, 62, 63, 127, 0.37)
             .get_scalar_legendre_table()
             .is_none()
+    );
+    assert!(
+        make_plan(63, 63, 64, 129, 0.37)
+            .get_scalar_legendre_table()
+            .is_some()
+    );
+    assert!(
+        make_plan(63, 63, 129, 129, 0.37)
+            .get_scalar_legendre_table()
+            .is_none(),
+        "unmeasured latitude oversampling must stay on recurrence"
     );
     assert!(
         make_plan(72, 72, 73, 147, 0.37)
@@ -1131,6 +1151,96 @@ fn scalar_strategy_selects_against_the_executing_pool() {
         sixteen_threads
             .install(|| large_plan.scalar_legendre_strategy(LegendreOperation::Analysis)),
         LegendreStrategy::Recurrence
+    );
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn scalar_strategy_bounds_oversampled_tables_by_operation_and_truncation() {
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let two_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(2)
+        .build()
+        .unwrap();
+    let four_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(4)
+        .build()
+        .unwrap();
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let sixteen_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(16)
+        .build()
+        .unwrap();
+
+    let exact_t63 = make_plan(63, 63, 64, 128, 0.37);
+    assert_eq!(
+        eight_threads.install(|| exact_t63.scalar_legendre_strategy(LegendreOperation::Analysis)),
+        LegendreStrategy::Recurrence
+    );
+
+    let t63 = make_plan(63, 63, 96, 192, 0.37);
+    assert_eq!(
+        one_thread.install(|| t63.scalar_legendre_strategy(LegendreOperation::Synthesis)),
+        LegendreStrategy::Recurrence
+    );
+    assert_eq!(
+        one_thread.install(|| t63.scalar_legendre_strategy(LegendreOperation::Analysis)),
+        LegendreStrategy::CompactTable
+    );
+    assert_eq!(
+        two_threads.install(|| t63.scalar_legendre_strategy(LegendreOperation::Analysis)),
+        LegendreStrategy::CompactTable
+    );
+    assert_eq!(
+        four_threads.install(|| t63.scalar_legendre_strategy(LegendreOperation::Analysis)),
+        LegendreStrategy::Recurrence
+    );
+    assert_eq!(
+        eight_threads.install(|| t63.scalar_legendre_strategy(LegendreOperation::Synthesis)),
+        LegendreStrategy::CompactTable
+    );
+    assert_eq!(
+        eight_threads.install(|| t63.scalar_legendre_strategy(LegendreOperation::Analysis)),
+        LegendreStrategy::Recurrence
+    );
+    assert_eq!(
+        sixteen_threads.install(|| t63.scalar_legendre_strategy(LegendreOperation::Analysis)),
+        LegendreStrategy::Recurrence
+    );
+
+    let reduced_t127 = make_plan(127, 96, 256, 512, 0.37);
+    assert_eq!(
+        eight_threads
+            .install(|| reduced_t127.scalar_legendre_strategy(LegendreOperation::Analysis)),
+        LegendreStrategy::Recurrence
+    );
+
+    let t191 = make_plan(191, 191, 384, 768, 0.37);
+    assert_eq!(
+        one_thread.install(|| t191.scalar_legendre_strategy(LegendreOperation::Analysis)),
+        LegendreStrategy::Recurrence
+    );
+    assert_eq!(
+        eight_threads.install(|| t191.scalar_legendre_strategy(LegendreOperation::Analysis)),
+        LegendreStrategy::Recurrence
+    );
+    assert_eq!(
+        eight_threads.install(|| t191.scalar_legendre_strategy(LegendreOperation::Synthesis)),
+        LegendreStrategy::CompactTable
+    );
+
+    let t255 = make_plan(255, 255, 512, 1024, 0.37);
+    assert!(
+        !crate::legendre::ScalarLegendreTable::<f64>::supports_grid_and_bandlimit(
+            &t255.grid,
+            &t255.harmonics
+        )
     );
 }
 

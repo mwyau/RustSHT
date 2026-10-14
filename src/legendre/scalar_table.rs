@@ -24,8 +24,9 @@ use crate::harmonics::HarmonicSpec;
 
 use super::{ShtScalar, sin_cos_from_f64};
 
-const MIN_PRECOMPUTED_LMAX: usize = 72;
+const MIN_PRECOMPUTED_LMAX: usize = 63;
 const MAX_PRECOMPUTED_LMAX: usize = 255;
+pub(crate) const MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX: usize = 127;
 const MAX_TABLE_BYTES: usize = 34 * 1024 * 1024;
 // Keep direct table products far from overflow; larger and non-finite input
 // scales use the binary-scaled recurrence instead.
@@ -46,17 +47,38 @@ pub(crate) enum LegendreOperation {
 pub(crate) fn select_scalar_legendre_strategy(
     lmax: usize,
     mmax: usize,
+    ntheta: usize,
     operation: LegendreOperation,
     thread_count: usize,
 ) -> LegendreStrategy {
-    // Same-source measurements on Ryzen 9 5950X show that table construction
-    // is not repaid at small single-thread synthesis bands, or by T255 full-
-    // band analysis at one and sixteen threads. T86 synthesis is near-neutral;
-    // the table remains disabled there to avoid paying its cold-start cost.
+    let oversampled = ntheta > lmax + 1;
+    if oversampled {
+        // Over-resolved GL tables use more latitude storage. Paired runs on
+        // atmospheric grids show analysis gains through T127, while T191
+        // analysis regresses; reduced-mmax cases are mixed. Scalar T63
+        // analysis is neutral/slower at q4+, while spin-1 still benefits.
+        // Synthesis has selected multicore wins, though the T85 q8 gain is
+        // within noise.
+        if mmax != lmax
+            || (operation == LegendreOperation::Analysis
+                && lmax > MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX)
+            || (operation == LegendreOperation::Synthesis && thread_count == 1)
+            || (operation == LegendreOperation::Analysis
+                && lmax == MIN_PRECOMPUTED_LMAX
+                && thread_count >= 4)
+        {
+            return LegendreStrategy::Recurrence;
+        }
+    }
+    // Same-source measurements on a Ryzen 9 5950X show no repeatable T63
+    // exact-grid analysis gain at eight threads, and regressions for T255
+    // full-band analysis at one and sixteen threads. T86 single-thread
+    // synthesis is near-neutral; recurrence avoids its table cold-start cost.
     let measured_regression = match operation {
         LegendreOperation::Synthesis => thread_count == 1 && lmax < 127,
         LegendreOperation::Analysis => {
-            (thread_count == 1 && lmax == MAX_PRECOMPUTED_LMAX && mmax >= 192)
+            (thread_count >= 8 && lmax == MIN_PRECOMPUTED_LMAX && ntheta == lmax + 1)
+                || (thread_count == 1 && lmax == MAX_PRECOMPUTED_LMAX && mmax >= 192)
                 || (thread_count >= 16
                     && lmax == MAX_PRECOMPUTED_LMAX
                     && mmax == MAX_PRECOMPUTED_LMAX)
@@ -94,9 +116,15 @@ fn supported_layout<T: ShtScalar>(
         1 => MAX_PRECOMPUTED_LMAX + 1,
         _ => unreachable!(),
     };
+    let minimum_ntheta = lmax.checked_add(1)?;
+    // The over-resolved measurements used at most twice the minimum GL
+    // latitude count. Keep larger layouts on recurrence rather than allowing
+    // the payload limit alone to admit unmeasured sampling ratios.
+    let maximum_measured_ntheta = minimum_ntheta.checked_mul(2)?;
     if !T::supports_precomputed_scalar()
         || grid.kind() != GridKind::GaussLegendre
-        || grid.ntheta() != lmax + 1
+        || grid.ntheta() < minimum_ntheta
+        || grid.ntheta() > maximum_measured_ntheta
         || lmax < MIN_PRECOMPUTED_LMAX
         || !(MIN_PRECOMPUTED_LMAX..=maximum_table_lmax).contains(&table_lmax)
         || mmax < lmax - lmax / 4
