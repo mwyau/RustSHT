@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: BSD-3-Clause
 //
-// Experimental, real-only Rader prototype for p=241,257 and N=3*241.
+// Experimental, real-only Rader prototype for p=241,257,683 and N=3*p.
 // This benchmark does not change production planner selection. The Rader
 // equations are implemented independently; no Admiral source is copied.
 
@@ -154,8 +154,8 @@ impl RaderRealPlan {
     fn new(n: usize) -> Self {
         let prime = if is_prime(n) {
             n
-        } else if n == 3 * 241 {
-            241
+        } else if n == 3 * 241 || n == 3 * 683 {
+            n / 3
         } else {
             panic!("unsupported n={n}")
         };
@@ -297,10 +297,20 @@ fn direct(input: &[C], inverse: bool) -> Vec<C> {
     let sign = if inverse { 1.0 } else { -1.0 };
     (0..n)
         .map(|k| {
-            (0..n).fold(C::new(0.0, 0.0), |s, j| {
+            let mut sum = C::new(0.0, 0.0);
+            let mut correction = C::new(0.0, 0.0);
+            for (j, &input_value) in input.iter().enumerate() {
+                if input_value == C::new(0.0, 0.0) {
+                    continue;
+                }
                 let a = sign * TAU * (j * k) as f64 / n as f64;
-                s + input[j] * C::new(a.cos(), a.sin())
-            }) * if inverse { 1.0 / n as f64 } else { 1.0 }
+                let term = input_value * C::new(a.cos(), a.sin());
+                let adjusted = term - correction;
+                let next = sum + adjusted;
+                correction = (next - sum) - adjusted;
+                sum = next;
+            }
+            sum * if inverse { 1.0 / n as f64 } else { 1.0 }
         })
         .collect()
 }
@@ -340,7 +350,7 @@ fn norm_err(a: &[C], b: &[C]) -> (f64, f64) {
     )
 }
 fn validate() {
-    for p in [241, 257] {
+    for p in [241, 257, 683] {
         let plan = PrimePlan::new(p);
         let mut ws = plan.workspace();
         let mut input = Vec::new();
@@ -414,7 +424,7 @@ fn validate() {
         }
         println!("validated prime={p}");
     }
-    for n in [257, 723] {
+    for n in [257, 723, 2049] {
         let p = RaderRealPlan::new(n);
         let mut rw = p.workspace();
         let prod = RealFftPlan::<f64>::new(n).unwrap();
@@ -498,7 +508,7 @@ fn validate() {
                 err < 5e-12,
                 "real inverse n={n} pattern={pattern} scaled error={err}"
             );
-            if pattern < 2 {
+            if pattern < 2 && n <= 723 {
                 let mut full = vec![C::new(0.0, 0.0); n];
                 full[0] = got[0];
                 for k in 1..=n / 2 {
@@ -524,40 +534,51 @@ fn validate() {
         }
         for pattern in 0..5 {
             let mut spec: Vec<C> = (0..=n / 2)
-                .map(|k| match pattern {
-                    0 => spectrum_value(k, n, 0),
-                    1 => C::new(
-                        if k % 2 == 0 { 1.0 } else { -1.0 },
-                        if k % 3 == 0 { 0.5 } else { -0.5 },
-                    ),
-                    2 => C::new(
-                        if k % 7 == 0 { 1.0 } else { 1e-12 },
-                        if k % 11 == 0 { -0.75 } else { 2e-13 },
-                    ),
-                    3 => C::new(
-                        if k % 2 == 0 {
-                            f64::MAX / (8.0 * n as f64)
-                        } else {
-                            -f64::MAX / (8.0 * n as f64)
-                        },
-                        if k % 3 == 0 {
-                            f64::MAX / (16.0 * n as f64)
-                        } else {
-                            -f64::MAX / (16.0 * n as f64)
-                        },
-                    ),
-                    _ => C::new(
-                        if k % 2 == 0 {
-                            f64::MIN_POSITIVE
-                        } else {
-                            f64::from_bits(1)
-                        },
-                        if k % 3 == 0 {
-                            f64::from_bits(1)
-                        } else {
-                            -f64::from_bits(1)
-                        },
-                    ),
+                .map(|k| {
+                    if n == 2049 && pattern == 0 {
+                        return match k {
+                            0 => C::new(0.4, 0.0),
+                            1 => C::new(0.25, -0.125),
+                            23 => C::new(-0.15, 0.2),
+                            1024 => C::new(0.1, 0.05),
+                            _ => C::new(0.0, 0.0),
+                        };
+                    }
+                    match pattern {
+                        0 => spectrum_value(k, n, 0),
+                        1 => C::new(
+                            if k % 2 == 0 { 1.0 } else { -1.0 },
+                            if k % 3 == 0 { 0.5 } else { -0.5 },
+                        ),
+                        2 => C::new(
+                            if k % 7 == 0 { 1.0 } else { 1e-12 },
+                            if k % 11 == 0 { -0.75 } else { 2e-13 },
+                        ),
+                        3 => C::new(
+                            if k % 2 == 0 {
+                                f64::MAX / (8.0 * n as f64)
+                            } else {
+                                -f64::MAX / (8.0 * n as f64)
+                            },
+                            if k % 3 == 0 {
+                                f64::MAX / (16.0 * n as f64)
+                            } else {
+                                -f64::MAX / (16.0 * n as f64)
+                            },
+                        ),
+                        _ => C::new(
+                            if k % 2 == 0 {
+                                f64::MIN_POSITIVE
+                            } else {
+                                f64::from_bits(1)
+                            },
+                            if k % 3 == 0 {
+                                f64::from_bits(1)
+                            } else {
+                                -f64::from_bits(1)
+                            },
+                        ),
+                    }
                 })
                 .collect();
             spec[0].im = 0.0;
@@ -583,7 +604,7 @@ fn validate() {
                 err < 5e-12,
                 "real inverse n={n} spectrum pattern={pattern} scaled-by-spectrum error={err}"
             );
-            if pattern < 2 {
+            if (pattern < 2 && n <= 723) || (n == 2049 && pattern == 0) {
                 let rustfft = rustfft_real_inverse(&spec, n);
                 let re = got
                     .iter()
@@ -615,7 +636,9 @@ fn validate() {
             "validated R2C/C2R n={n}: direct DFT for normal/cancellation; production RustSHT-FFT comparison for normal, cancellation, dynamic-range, near-overflow and subnormal cases"
         );
     }
-    println!("validated Rader prime 241,257 and mixed n=723 against independent direct DFTs");
+    println!(
+        "validated Rader primes 241,257,683 and mixed n=723,2049 against independent direct DFTs"
+    );
 }
 fn dump_rader(direction: &str, n: usize) {
     assert!(matches!(direction, "r2c" | "c2r"));

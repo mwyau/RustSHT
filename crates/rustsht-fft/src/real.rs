@@ -161,12 +161,15 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                 None
             });
         }
-        let rader = if matches!(len, 257 | 723 | 4097) {
-            rader_executor
-                .map(|execute| RaderPrimePlan::try_new(if len == 257 { 257 } else { 241 }, execute))
-                .transpose()?
-        } else {
-            None
+        let rader_radix = match len {
+            257 => Some(257),
+            723 | 4097 => Some(241),
+            2049 => Some(683),
+            _ => None,
+        };
+        let rader = match (rader_radix, rader_executor) {
+            (Some(radix), Some(execute)) => Some(RaderPrimePlan::try_new(radix, execute)?),
+            _ => None,
         };
         let scratch_len = if use_complexify {
             len

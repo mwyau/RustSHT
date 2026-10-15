@@ -52,7 +52,7 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
         radix: usize,
         execute: RaderRuntimeExecutor<T>,
     ) -> Result<Self, FftError> {
-        if !matches!(radix, 241 | 257) {
+        if !matches!(radix, 241 | 257 | 683) {
             return Err(FftError::InvalidLength);
         }
         let convolution_len = radix - 1;
@@ -111,13 +111,12 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
 
     pub(crate) fn workspace(&self) -> Result<RaderPrimeWorkspace<T>, FftError> {
         Ok(RaderPrimeWorkspace {
-            // The 241-point pass in the 723-point plan shares its parent's
-            // Bluestein buffer. Keep the 257-point pass's owned buffer: paired
-            // measurements showed an inverse latency regression when shared.
-            convolution: if self.radix == 257 {
-                try_vec(self.convolution_len, Complex::new(T::zero(), T::zero()))?
-            } else {
+            // The 241-point pass shares its parent's Bluestein buffer. Other
+            // selected primes use an owned convolution buffer.
+            convolution: if self.radix == 241 {
                 Vec::new()
+            } else {
+                try_vec(self.convolution_len, Complex::new(T::zero(), T::zero()))?
             },
             fft: self.convolution.try_workspace()?,
         })
@@ -438,6 +437,7 @@ fn primitive_root(prime: usize) -> usize {
     let factors: &[usize] = match prime {
         241 => &[2, 3, 5],
         257 => &[2],
+        683 => &[2, 11, 31],
         _ => unreachable!("Rader plans are restricted to the selected primes"),
     };
     'candidate: for candidate in 2..prime {
@@ -494,7 +494,7 @@ mod tests {
             ComplexFftPlan::<f64>::execute_runtime,
             ComplexFftPlan::<f64>::execute,
         ] {
-            for radix in [241, 257] {
+            for radix in [241, 257, 683] {
                 let plan = RaderPrimePlan::<f64>::try_new(radix, execute).unwrap();
                 let mut workspace = plan.workspace().unwrap();
                 let input: Vec<_> = (0..radix)
@@ -535,5 +535,16 @@ mod tests {
         let prime241 =
             RaderPrimePlan::<f64>::try_new(241, ComplexFftPlan::<f64>::execute_runtime).unwrap();
         assert!(!prime241.is_safe_components([1.0, 1.0e-12], 723, 3));
+
+        let prime683 =
+            RaderPrimePlan::<f64>::try_new(683, ComplexFftPlan::<f64>::execute_runtime).unwrap();
+        assert!(prime683.is_safe_components([1.0, -1.0, 0.5], 2049, 3));
+        assert!(prime683.is_safe_components([1.0, 1.0e-8], 2049, 3));
+        assert!(!prime683.is_safe_components([1.0, 1.0e-12], 2049, 3));
+        assert!(!prime683.is_safe_components([f64::MAX], 2049, 3));
+        assert!(!prime683.is_safe_components([f64::MIN_POSITIVE], 2049, 3));
+        assert!(!prime683.is_safe_components([f64::from_bits(1)], 2049, 3));
+        assert!(!prime683.is_safe_components([f64::NAN], 2049, 3));
+        assert!(!prime683.is_safe_components([f64::INFINITY], 2049, 3));
     }
 }

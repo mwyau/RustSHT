@@ -449,4 +449,104 @@ mod m0_diagnostics_tests {
                 .any(|route| route == "real-inverse n=4097 route=recursive")
         );
     }
+
+    #[test]
+    fn m8_real_2049_uses_rader_683_and_preserves_bluestein_fallback() {
+        let n = 2049;
+        let plan = RealFftPlan::<f64>::new(n).expect("N=2049 Rader plan");
+        let report = plan.m0_plan_report();
+        assert!(
+            report.iter().any(|line| {
+                line.contains("Rader radix=683") && line.contains("convolution=682")
+            })
+        );
+        assert!(
+            report
+                .iter()
+                .any(|line| line.contains("radix=683 fallback=Bluestein conv=1372"))
+        );
+        assert!(
+            report
+                .iter()
+                .any(|line| line.contains("radix=683 l1=3 ido=1 route=Rader"))
+        );
+
+        let mut workspace = plan.workspace().expect("N=2049 Rader workspace");
+        let input = vec![0.25; n];
+        let mut spectrum = vec![Complex::new(0.0, 0.0); plan.spectrum_len()];
+        m0_clear_routes();
+        plan.forward(&input, &mut spectrum, &mut workspace)
+            .expect("ordinary Rader forward");
+        assert!(
+            m0_route_snapshot()
+                .iter()
+                .any(|route| route == "real-forward:Rader radix=683")
+        );
+
+        let mut output = vec![0.0; n];
+        m0_clear_routes();
+        plan.inverse(&spectrum, &mut output, &mut workspace)
+            .expect("ordinary Rader inverse");
+        for (index, &value) in output.iter().enumerate() {
+            assert!(
+                (value - 0.25).abs() <= 2.0e-12,
+                "index={index}, value={value}"
+            );
+        }
+
+        let dense_spectrum: Vec<_> = (0..plan.spectrum_len())
+            .map(|index| {
+                Complex::new(
+                    0.01 * ((index % 17) + 1) as f64,
+                    0.02 * ((index % 13) as f64 - 6.0),
+                )
+            })
+            .collect();
+        m0_clear_routes();
+        plan.inverse(&dense_spectrum, &mut output, &mut workspace)
+            .expect("ordinary Rader inverse");
+        assert!(
+            m0_route_snapshot()
+                .iter()
+                .any(|route| route == "real-inverse:Rader radix=683")
+        );
+
+        let high = f64::MAX / (2.0 * n as f64);
+        let high_input = vec![high; n];
+        m0_clear_routes();
+        plan.forward(&high_input, &mut spectrum, &mut workspace)
+            .expect("high-amplitude Bluestein fallback forward");
+        assert!(
+            m0_route_snapshot()
+                .iter()
+                .any(|route| { route == "real-forward n=2049 route=recursive-safety-fallback" })
+        );
+        assert!(
+            spectrum
+                .iter()
+                .all(|value| value.re.is_finite() && value.im.is_finite())
+        );
+
+        let tiny = vec![f64::from_bits(1); n];
+        m0_clear_routes();
+        plan.forward(&tiny, &mut spectrum, &mut workspace)
+            .expect("subnormal Bluestein fallback forward");
+        assert!(
+            m0_route_snapshot()
+                .iter()
+                .any(|route| { route == "real-forward n=2049 route=recursive-safety-fallback" })
+        );
+
+        let mut high_spectrum = vec![Complex::new(high, -high); plan.spectrum_len()];
+        high_spectrum[0].im = 0.0;
+        m0_clear_routes();
+        plan.inverse(&high_spectrum, &mut output, &mut workspace)
+            .expect("high-amplitude Bluestein fallback inverse");
+        assert!(output.iter().all(|value| value.is_finite()));
+        assert!(
+            m0_route_snapshot()
+                .iter()
+                .any(|route| { route == "real-inverse n=2049 route=recursive-safety-fallback" })
+        );
+    }
 }

@@ -1,0 +1,25 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M8 Rader-683 acceptance against immediately preceding M7 source",
+    "baseline_commit": "d9666bf",
+    "candidate_source": "working tree based on M7; Rader-683 selected for f64 real N=2049",
+    "candidate_binary_sha256": "162c081879b49e38a7221d9038ffb5fc82847320bc4cb3f3b2ba43fe2b270156",
+    "baseline_binary_sha256": "028a36f5cd4a32f8c5d180341623b27c0ece10e709e44ac85bee81714a268401",
+    "workload": "real N=2049; rows=[1, 32, 1024]; R2C and C2R",
+    "timing": "seven warmed samples per cell; plan and workspace setup reported separately",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target with runtime AVX2",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "acceptance_gate": "At N=2049 and 1024 rows both directions need at least 5% improvement with paired 95% intervals above parity; no stable regression above 5% at rows 1/32 or N=241/257/723 controls."
+  },
+  "a": {
+    "label": "M8 Rader-683 candidate",
+    "command": ["/home/albert/RustSHT/crates/rustsht-fft/target/release/deps/rustfft-721ac07477409fe7", "bench-native-real", "2049", "1", "32", "1024"]
+  },
+  "b": {
+    "label": "M7 baseline",
+    "command": ["/home/albert/rustsht-fft-m7-rustfft-bench", "bench-native-real", "2049", "1", "32", "1024"]
+  }
+}
