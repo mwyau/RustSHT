@@ -1,0 +1,36 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "2049",
+      "1",
+      "32",
+      "1024"
+    ],
+    "label": "M8 Rader-683 candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "2049",
+      "1",
+      "32",
+      "1024"
+    ],
+    "label": "M7 baseline"
+  },
+  "metadata": {
+    "acceptance_gate": "At N=2049 and 1024 rows both directions need at least 5% improvement with paired 95% intervals above parity; no stable regression above 5% at rows 1/32 or N=241/257/723 controls.",
+    "baseline_binary_sha256": "028a36f5cd4a32f8c5d180341623b27c0ece10e709e44ac85bee81714a268401",
+    "baseline_commit": "d9666bf",
+    "candidate_binary_sha256": "162c081879b49e38a7221d9038ffb5fc82847320bc4cb3f3b2ba43fe2b270156",
+    "candidate_source": "working tree based on M7; Rader-683 selected for f64 real N=2049",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target with runtime AVX2",
+    "purpose": "M8 Rader-683 acceptance against immediately preceding M7 source",
+    "timing": "seven warmed samples per cell; plan and workspace setup reported separately",
+    "workload": "real N=2049; rows=[1, 32, 1024]; R2C and C2R"
+  },
+  "pairs": 6
+}

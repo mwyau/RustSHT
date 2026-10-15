@@ -1,0 +1,28 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "M8 RustSHT-FFT candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-sht-targets"
+    ],
+    "label": "DUCC c1ed01b8 portable"
+  },
+  "metadata": {
+    "acceptance_pairs": 6,
+    "candidate_binary_sha256": "162c081879b49e38a7221d9038ffb5fc82847320bc4cb3f3b2ba43fe2b270156",
+    "candidate_source": "M8 working tree based on M7 commit d9666bf; Rader-683 selected for f64 real N=2049",
+    "compiler": "Rust 1.99.0 / LLVM 23.1.1; Cargo bench profile; portable target with runtime AVX2 dispatch for RustSHT-FFT",
+    "purpose": "M8 exact SHT-row cross-library comparison after the N=2049 Rader-683 route change",
+    "reference": "DUCC c1ed01b8 portable",
+    "reference_build": "g++ 15.2.0; -O3 -DNDEBUG; scalar planner",
+    "timing": "seven warmed samples per operation per process; six alternating process pairs",
+    "workload": "all exact complex and real SHT target lengths and row counts; one transform thread"
+  },
+  "pairs": 6
+}

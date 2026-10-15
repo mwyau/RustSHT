@@ -1,0 +1,31 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench",
+      "rader",
+      "2049",
+      "1024",
+      "c2r"
+    ],
+    "label": "Rader-683 prototype"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "2049",
+      "1024"
+    ],
+    "label": "M7 production plan"
+  },
+  "metadata": {
+    "baseline_commit": "d9666bf",
+    "candidate": "independent Rader real prototype, N=2049, radix=683",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target with runtime AVX2",
+    "purpose": "M8 benchmark-only Rader-683 screen against the accepted M7 public real plan",
+    "timing": "seven samples, ten batches per sample; paired process screen",
+    "workload": "C2R, 1024 rows"
+  },
+  "pairs": 2
+}
