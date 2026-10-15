@@ -1588,7 +1588,13 @@ impl<T: ShtScalar> ShtPlan<T> {
     ) -> Result<(), ShtError> {
         #[cfg(all(test, feature = "parallel"))]
         recurrence.record_active_worker();
-        self.analyze_symmetric_order_group(
+        #[cfg(all(test, feature = "parallel"))]
+        let profile_started = recurrence
+            .analysis_leaf_profile_enabled()
+            .then(std::time::Instant::now);
+        #[cfg(all(test, feature = "parallel"))]
+        recurrence.reset_analysis_leaf_block_counts();
+        let result = self.analyze_symmetric_order_group(
             spectra,
             latitude_count,
             theta_sin,
@@ -1599,7 +1605,19 @@ impl<T: ShtScalar> ShtPlan<T> {
             m_end,
             alm,
             recurrence,
-        )
+        );
+        #[cfg(all(test, feature = "parallel"))]
+        if let Some(started) = profile_started {
+            recurrence.record_analysis_leaf(
+                false,
+                self.harmonics.lmax(),
+                m_start,
+                m_end,
+                ring_order_limits,
+                started,
+            );
+        }
+        result
     }
 
     #[expect(
@@ -1634,6 +1652,8 @@ impl<T: ShtScalar> ShtPlan<T> {
             minimum_block_limit = minimum_block_limit.min(block_limit);
         }
         let mut coefficient_start = 0;
+        #[cfg(all(test, feature = "parallel"))]
+        let profiling = recurrence.analysis_leaf_profile_enabled();
 
         for m in m_start..m_end {
             let coefficient_count = lmax - m + 1;
@@ -1680,6 +1700,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                 if lane_count == 0 {
                     continue;
                 }
+                #[cfg(all(test, feature = "parallel"))]
+                let (mut block_saw_normal, mut block_saw_scaled) = (false, false);
                 let compact_mixed_block = compact_candidate && lane_count < block_len;
                 let pair_sin = if compact_mixed_block {
                     &recurrence.compact_theta_sin[..lane_count]
@@ -1742,6 +1764,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                         false
                     };
                     if fused_block {
+                        #[cfg(all(test, feature = "parallel"))]
+                        {
+                            block_saw_normal = true;
+                        }
                         for (coefficient, contribution) in coefficients
                             .iter_mut()
                             .zip(&recurrence.fast_scalar_first[..staged_count])
@@ -1763,6 +1789,14 @@ impl<T: ShtScalar> ShtPlan<T> {
                             &mut recurrence.next,
                             &mut recurrence.exponents,
                             |l, ring_start, current, exponents, normal_range| {
+                                #[cfg(all(test, feature = "parallel"))]
+                                if profiling {
+                                    if normal_range {
+                                        block_saw_normal = true;
+                                    } else {
+                                        block_saw_scaled = true;
+                                    }
+                                }
                                 let offset = l - m;
                                 let mut even_coefficient = coefficients[offset];
                                 let mut odd_coefficient = if l < lmax {
@@ -1810,6 +1844,14 @@ impl<T: ShtScalar> ShtPlan<T> {
                         &mut recurrence.next,
                         &mut recurrence.exponents,
                         |l, ring_start, current, exponents| {
+                            #[cfg(all(test, feature = "parallel"))]
+                            if profiling {
+                                if exponents.iter().any(|&exponent| exponent != 0) {
+                                    block_saw_scaled = true;
+                                } else {
+                                    block_saw_normal = true;
+                                }
+                            }
                             let coefficient = &mut coefficients[l - m];
                             let paired_spectra = if (l + m).is_multiple_of(2) {
                                 same_parity_spectrum
@@ -1827,6 +1869,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                             Ok(())
                         },
                     )?;
+                }
+                #[cfg(all(test, feature = "parallel"))]
+                if profiling {
+                    recurrence.record_analysis_leaf_block(block_saw_normal, block_saw_scaled);
                 }
             }
             if paired_used {

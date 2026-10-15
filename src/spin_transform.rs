@@ -2199,6 +2199,12 @@ impl<T: ShtScalar> ShtPlan<T> {
     ) -> Result<(), ShtError> {
         #[cfg(all(test, feature = "parallel"))]
         recurrence.record_active_worker();
+        #[cfg(all(test, feature = "parallel"))]
+        let profile_started = recurrence
+            .analysis_leaf_profile_enabled()
+            .then(std::time::Instant::now);
+        #[cfg(all(test, feature = "parallel"))]
+        recurrence.reset_analysis_leaf_block_counts();
         let lmax = self.harmonics.lmax();
         let longitude_count = T::from_usize(nphi).expect("longitude count converts");
         let fast_scalar_coefficient_count = match recurrence_spin {
@@ -2524,6 +2530,10 @@ impl<T: ShtScalar> ShtPlan<T> {
         if let Some(b_alm) = b_alm {
             debug_assert_eq!(coefficient_start, b_alm.len());
         }
+        #[cfg(all(test, feature = "parallel"))]
+        if let Some(started) = profile_started {
+            recurrence.record_analysis_leaf(true, lmax, m_start, m_end, ring_order_limits, started);
+        }
         Ok(())
     }
 
@@ -2554,9 +2564,12 @@ impl<T: ShtScalar> ShtPlan<T> {
         current: &mut [T],
         next: &mut [T],
         exponents: &mut [i64],
+        #[cfg(all(test, feature = "parallel"))] profile_range_status: Option<&mut (bool, bool)>,
         scalar_first: &mut [Complex<T>],
         scalar_second: &mut [Complex<T>],
     ) -> Result<bool, ShtError> {
+        #[cfg(all(test, feature = "parallel"))]
+        let mut profile_range_status = profile_range_status;
         let paired_used = T::for_each_y_lm_paired_status_dispatched(
             arch,
             m,
@@ -2571,6 +2584,14 @@ impl<T: ShtScalar> ShtPlan<T> {
             next,
             exponents,
             |l, local_ring_start, basis, exponents, normal_range| {
+                #[cfg(all(test, feature = "parallel"))]
+                if let Some((normal, scaled)) = profile_range_status.as_deref_mut() {
+                    if normal_range {
+                        *normal = true;
+                    } else {
+                        *scaled = true;
+                    }
+                }
                 let mut first_even = scalar_first[l];
                 let mut second_even = scalar_second[l];
                 let mut first_odd = if l < scalar_lmax {
@@ -2724,6 +2745,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         let scalar_coefficient_count = scalar_lmax + 1;
         let fused_analysis_enabled =
             self.harmonics.lmax() >= SPIN1_FUSED_ANALYSIS_MIN_LMAX && single_threaded_execution();
+        #[cfg(all(test, feature = "parallel"))]
+        let profiling = recurrence.analysis_leaf_profile_enabled();
         recurrence.fast_scalar_first[..scalar_coefficient_count]
             .fill(Complex::new(T::zero(), T::zero()));
         recurrence.fast_scalar_second[..scalar_coefficient_count]
@@ -2885,6 +2908,8 @@ impl<T: ShtScalar> ShtPlan<T> {
             if !q_products_safe || !u_products_safe {
                 return Ok(false);
             }
+            #[cfg(all(test, feature = "parallel"))]
+            let mut block_range_status = (false, false);
             let fused_block = fused_analysis_enabled
                 && Self::try_fused_spin_scalar_analysis_pair_block(
                     arch,
@@ -2921,7 +2946,13 @@ impl<T: ShtScalar> ShtPlan<T> {
                     &mut recurrence.next,
                     &mut recurrence.exponents,
                 )?;
+            #[cfg(all(test, feature = "parallel"))]
+            if fused_block {
+                block_range_status.0 = true;
+            }
             if !fused_block {
+                #[cfg(all(test, feature = "parallel"))]
+                let profile_range_status = profiling.then_some(&mut block_range_status);
                 let paired_used = Self::accumulate_spin_scalar_analysis_pair_block(
                     arch,
                     m,
@@ -2945,12 +2976,23 @@ impl<T: ShtScalar> ShtPlan<T> {
                     &mut recurrence.current,
                     &mut recurrence.next,
                     &mut recurrence.exponents,
+                    #[cfg(all(test, feature = "parallel"))]
+                    profile_range_status,
                     &mut recurrence.fast_scalar_first[..scalar_coefficient_count],
                     &mut recurrence.fast_scalar_second[..scalar_coefficient_count],
                 )?;
                 if !paired_used {
+                    #[cfg(all(test, feature = "parallel"))]
+                    if profiling {
+                        recurrence
+                            .record_analysis_leaf_block(block_range_status.0, block_range_status.1);
+                    }
                     return Ok(false);
                 }
+            }
+            #[cfg(all(test, feature = "parallel"))]
+            if profiling {
+                recurrence.record_analysis_leaf_block(block_range_status.0, block_range_status.1);
             }
         }
 
@@ -3380,6 +3422,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                     &mut recurrence.current,
                     &mut recurrence.next,
                     &mut recurrence.exponents,
+                    #[cfg(all(test, feature = "parallel"))]
+                    None,
                     &mut recurrence.fast_scalar_first[..scalar_coefficient_count],
                     &mut recurrence.fast_scalar_second[..scalar_coefficient_count],
                 )?;

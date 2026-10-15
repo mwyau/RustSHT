@@ -14,6 +14,8 @@ use crate::meridional::CCResamplingPlan;
 use std::collections::BTreeSet;
 #[cfg(all(test, feature = "parallel"))]
 use std::sync::{Arc, Mutex};
+#[cfg(all(test, feature = "parallel"))]
+use std::time::Instant;
 
 /// Mutable scratch for one transform execution.
 ///
@@ -75,6 +77,31 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     pub(crate) fast_spin_pair_second: Vec<Complex<T>>,
     #[cfg(all(test, feature = "parallel"))]
     worker_probe: Option<Arc<Mutex<BTreeSet<usize>>>>,
+    #[cfg(all(test, feature = "parallel"))]
+    analysis_leaf_probe: Option<Arc<Mutex<Vec<AnalysisLeafObservation>>>>,
+    #[cfg(all(test, feature = "parallel"))]
+    profile_normal_blocks: usize,
+    #[cfg(all(test, feature = "parallel"))]
+    profile_scaled_blocks: usize,
+    #[cfg(all(test, feature = "parallel"))]
+    profile_mixed_blocks: usize,
+}
+
+#[cfg(all(test, feature = "parallel"))]
+#[derive(Clone, Debug)]
+pub(crate) struct AnalysisLeafObservation {
+    pub(crate) spin: bool,
+    pub(crate) m_start: usize,
+    pub(crate) m_end: usize,
+    pub(crate) active_ring_order_pairs: u128,
+    pub(crate) estimated_work: u128,
+    pub(crate) elapsed_ns: u128,
+    pub(crate) started: Instant,
+    pub(crate) finished: Instant,
+    pub(crate) worker: Option<usize>,
+    pub(crate) normal_blocks: usize,
+    pub(crate) scaled_blocks: usize,
+    pub(crate) mixed_blocks: usize,
 }
 
 impl<T: ShtScalar> RecurrenceWorkspace<T> {
@@ -188,6 +215,14 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
             )?,
             #[cfg(all(test, feature = "parallel"))]
             worker_probe: None,
+            #[cfg(all(test, feature = "parallel"))]
+            analysis_leaf_probe: None,
+            #[cfg(all(test, feature = "parallel"))]
+            profile_normal_blocks: 0,
+            #[cfg(all(test, feature = "parallel"))]
+            profile_scaled_blocks: 0,
+            #[cfg(all(test, feature = "parallel"))]
+            profile_mixed_blocks: 0,
         })
     }
 
@@ -202,6 +237,76 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
                 .expect("worker probe is not poisoned")
                 .insert(index);
         }
+    }
+
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn analysis_leaf_profile_enabled(&self) -> bool {
+        self.analysis_leaf_probe.is_some()
+    }
+
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn reset_analysis_leaf_block_counts(&mut self) {
+        self.profile_normal_blocks = 0;
+        self.profile_scaled_blocks = 0;
+        self.profile_mixed_blocks = 0;
+    }
+
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn record_analysis_leaf_block(&mut self, normal: bool, scaled: bool) {
+        if self.analysis_leaf_probe.is_none() {
+            return;
+        }
+        match (normal, scaled) {
+            (true, false) => self.profile_normal_blocks += 1,
+            (false, true) => self.profile_scaled_blocks += 1,
+            (true, true) => self.profile_mixed_blocks += 1,
+            (false, false) => {}
+        }
+    }
+
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn record_analysis_leaf(
+        &mut self,
+        spin: bool,
+        lmax: usize,
+        m_start: usize,
+        m_end: usize,
+        ring_order_limits: &[usize],
+        started: Instant,
+    ) {
+        let Some(probe) = &self.analysis_leaf_probe else {
+            return;
+        };
+        let finished = Instant::now();
+        let mut active_ring_order_pairs = 0_u128;
+        let mut estimated_work = 0_u128;
+        for m in m_start..m_end {
+            let active_rings = ring_order_limits
+                .iter()
+                .filter(|&&limit| m <= limit)
+                .count() as u128;
+            active_ring_order_pairs += active_rings;
+            estimated_work += active_rings * (lmax - m + 1) as u128;
+        }
+        let observation = AnalysisLeafObservation {
+            spin,
+            m_start,
+            m_end,
+            active_ring_order_pairs,
+            estimated_work,
+            elapsed_ns: finished.duration_since(started).as_nanos(),
+            started,
+            finished,
+            worker: rayon::current_thread_index(),
+            normal_blocks: self.profile_normal_blocks,
+            scaled_blocks: self.profile_scaled_blocks,
+            mixed_blocks: self.profile_mixed_blocks,
+        };
+        probe
+            .lock()
+            .expect("analysis leaf profile is not poisoned")
+            .push(observation);
+        self.reset_analysis_leaf_block_counts();
     }
 }
 
@@ -277,6 +382,15 @@ impl<T: ShtScalar> ShtWorkspace<T> {
         let probe = Arc::new(Mutex::new(BTreeSet::new()));
         for recurrence in &mut self.recurrence_workers {
             recurrence.worker_probe = Some(Arc::clone(&probe));
+        }
+        probe
+    }
+
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn observe_analysis_leaves(&mut self) -> Arc<Mutex<Vec<AnalysisLeafObservation>>> {
+        let probe = Arc::new(Mutex::new(Vec::new()));
+        for recurrence in &mut self.recurrence_workers {
+            recurrence.analysis_leaf_probe = Some(Arc::clone(&probe));
         }
         probe
     }

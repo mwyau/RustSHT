@@ -2834,6 +2834,8 @@ fn spin1_fused_analysis_stages_both_channels_before_a_late_scaled_fallback() {
         &mut expected_recurrence.current,
         &mut expected_recurrence.next,
         &mut expected_recurrence.exponents,
+        #[cfg(all(test, feature = "parallel"))]
+        None,
         &mut expected_recurrence.fast_scalar_first[..=scalar_lmax],
         &mut expected_recurrence.fast_scalar_second[..=scalar_lmax],
     )
@@ -2863,6 +2865,8 @@ fn spin1_fused_analysis_stages_both_channels_before_a_late_scaled_fallback() {
         &mut recurrence.current,
         &mut recurrence.next,
         &mut recurrence.exponents,
+        #[cfg(all(test, feature = "parallel"))]
+        None,
         &mut recurrence.fast_scalar_first[..=scalar_lmax],
         &mut recurrence.fast_scalar_second[..=scalar_lmax],
     )
