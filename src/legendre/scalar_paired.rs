@@ -68,7 +68,7 @@ pub(crate) fn prepare_synthesis_coefficients(
     coefficients: &[Complex64],
     coefficient_even: &mut [Complex64],
     coefficient_odd: &mut [Complex64],
-) {
+) -> bool {
     debug_assert!(m <= lmax);
     debug_assert!(epsilon.len() > lmax + 2);
     let pair_count = (lmax - m + 2) / 2;
@@ -85,15 +85,24 @@ pub(crate) fn prepare_synthesis_coefficients(
         } else {
             Complex64::new(0.0, 0.0)
         };
-        coefficient_even[pair] = (coefficients[offset] * epsilon[degree + 1]
-            + next_even * epsilon[degree + 2])
+        let even = (coefficients[offset] * epsilon[degree + 1] + next_even * epsilon[degree + 2])
             * alpha[pair];
-        coefficient_odd[pair] = if degree < lmax {
+        let odd = if degree < lmax {
             coefficients[offset + 1] * alpha[pair]
         } else {
             Complex64::new(0.0, 0.0)
         };
+        if !even.re.is_finite()
+            || !even.im.is_finite()
+            || !odd.re.is_finite()
+            || !odd.im.is_finite()
+        {
+            return false;
+        }
+        coefficient_even[pair] = even;
+        coefficient_odd[pair] = odd;
     }
+    true
 }
 
 /// Tries a register-resident scalar synthesis block for ordinary recurrence values.
@@ -129,7 +138,7 @@ pub(crate) fn synthesize_order_block_dispatched(
     let pair_count = (lmax - m + 2) / 2;
     let mut coefficient_even = vec![Complex64::new(0.0, 0.0); pair_count];
     let mut coefficient_odd = vec![Complex64::new(0.0, 0.0); pair_count];
-    prepare_synthesis_coefficients(
+    if !prepare_synthesis_coefficients(
         m,
         lmax,
         epsilon,
@@ -137,7 +146,9 @@ pub(crate) fn synthesize_order_block_dispatched(
         coefficients,
         &mut coefficient_even,
         &mut coefficient_odd,
-    );
+    ) {
+        return Ok(false);
+    }
     synthesize_order_block_precomputed_dispatched(
         arch,
         m,
@@ -2725,7 +2736,7 @@ mod tests {
                 let mut coefficient_even = vec![Complex64::new(0.0, 0.0); pair_count];
                 let mut coefficient_odd = vec![Complex64::new(0.0, 0.0); pair_count];
 
-                prepare_synthesis_coefficients(
+                assert!(prepare_synthesis_coefficients(
                     m,
                     lmax,
                     &epsilon,
@@ -2733,7 +2744,7 @@ mod tests {
                     &coefficients,
                     &mut coefficient_even,
                     &mut coefficient_odd,
-                );
+                ));
 
                 for pair in 0..pair_count {
                     let degree = m + 2 * pair;
@@ -2756,6 +2767,55 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn synthesis_coefficient_preparation_rejects_nonfinite_transformed_pairs() {
+        let (m, lmax) = (0, 1);
+        let mut epsilon = vec![0.0; lmax + 4];
+        scalar::fill_epsilon(m, lmax, &mut epsilon);
+        let factor_count = lmax / 2 + 2;
+        let mut alpha = vec![0.0; factor_count];
+        let mut coefficient_a = vec![0.0; factor_count];
+        let mut coefficient_b = vec![0.0; factor_count];
+        fill_factors(
+            m,
+            lmax,
+            &epsilon,
+            &mut alpha,
+            &mut coefficient_a,
+            &mut coefficient_b,
+        );
+
+        for input in [1.0, f64::from_bits(1)] {
+            let coefficients = [Complex64::new(0.0, 0.0), Complex64::new(input, 0.0)];
+            let mut even = [Complex64::new(0.0, 0.0)];
+            let mut odd = [Complex64::new(0.0, 0.0)];
+            assert!(prepare_synthesis_coefficients(
+                m,
+                lmax,
+                &epsilon,
+                &alpha,
+                &coefficients,
+                &mut even,
+                &mut odd,
+            ));
+            assert!(even[0].re.is_finite() && odd[0].re.is_finite());
+        }
+
+        let coefficients = [Complex64::new(0.0, 0.0), Complex64::new(1.1e308, 0.0)];
+        let mut even = [Complex64::new(0.0, 0.0)];
+        let mut odd = [Complex64::new(0.0, 0.0)];
+        assert!(!prepare_synthesis_coefficients(
+            m,
+            lmax,
+            &epsilon,
+            &alpha,
+            &coefficients,
+            &mut even,
+            &mut odd,
+        ));
+        assert_eq!(coefficients[1], Complex64::new(1.1e308, 0.0));
     }
 
     #[test]
@@ -2800,7 +2860,7 @@ mod tests {
         let pair_count = (lmax - m + 2) / 2;
         let mut coefficient_even = vec![Complex64::new(0.0, 0.0); pair_count];
         let mut coefficient_odd = vec![Complex64::new(0.0, 0.0); pair_count];
-        prepare_synthesis_coefficients(
+        assert!(prepare_synthesis_coefficients(
             m,
             lmax,
             &epsilon,
@@ -2808,7 +2868,7 @@ mod tests {
             &coefficients,
             &mut coefficient_even,
             &mut coefficient_odd,
-        );
+        ));
 
         let mut actual = vec![Complex64::new(0.0, 0.0); sine.len() * (lmax + 1)];
         let mut previous = vec![0.0; sine.len()];

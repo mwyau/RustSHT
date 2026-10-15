@@ -275,6 +275,27 @@ fn scalar_synthesis_matches_independent_low_degree_harmonics() {
 }
 
 #[test]
+fn scalar_t1_synthesis_keeps_extreme_finite_harmonic_values_finite() {
+    let plan = make_plan(1, 0, 2, 1, 0.0);
+    let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    alm[plan.harmonics().index(1, 0).unwrap()] = Complex64::new(1.1e308, 0.0);
+    let original = alm.clone();
+    let mut map = vec![0.0; plan.sample_count];
+    let mut workspace = plan.workspace().unwrap();
+
+    plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
+
+    let expected = 1.1e308 / (4.0 * PI).sqrt();
+    assert!(map.iter().all(|value| value.is_finite()), "map={map:?}");
+    assert!((map[0] - expected).abs() / expected < 2e-14, "map={map:?}");
+    assert!((map[1] + expected).abs() / expected < 2e-14, "map={map:?}");
+    assert_eq!(
+        alm, original,
+        "fallback must preserve the input coefficients"
+    );
+}
+
+#[test]
 fn scalar_synthesis_compacts_mixed_high_order_cutoff_blocks() {
     let lmax = 255;
     let ntheta = lmax + 1;
