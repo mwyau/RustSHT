@@ -8,7 +8,7 @@ The q8, eight-field T511 GL f64 `parallel-one` control was screened for scalar a
 
 The current runs used the AMD Ryzen 9 5950X, eight threads pinned to CPU IDs `0-7`, Rust `1.99.0` (`b940084d7`), LLVM `23.1.1`, Cargo's release profile and runtime Pulp dispatch. Host load averages were `1.65, 1.96, 2.23` before and `1.64, 1.95, 2.21` after collection. The process list showed no CPU-intensive competing job during collection. The workspace RSS increase was `66.7–66.9 MiB` across runs, compared with `65.1–65.2 MiB` in the earlier study; process RSS includes allocator and runtime effects. Full warm samples are in [`native-batch-samples.txt`](data/workspace-capacity-control-2026-10-15/native-batch-samples.txt).
 
-The control test and these timings do not replace the paired benchmark protocol in `plans/05-validation-and-milestones.md`. The capacity change leaves explicit capacity-1 batching available, but full performance acceptance remains outstanding.
+The later same-host paired parent/candidate screen is in [`the paired capacity comparison`](workspace-capacity-paired-2026-10-15.md). Its result supports the q8 independent-field spin-1 synthesis case, while scalar synthesis changes by about 2% and other cells are variable or near baseline. These controls do not establish broad performance acceptance.
 
 ## Command
 
