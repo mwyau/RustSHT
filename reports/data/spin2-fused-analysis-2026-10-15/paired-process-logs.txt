@@ -1,0 +1,239 @@
+### T511 q1 pair=1 variant=baseline
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 511 1 analysis GL STANDARD 512 1025 511 requested-only
+spin-2 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=1 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.037
+plan_construction_samples_ms=[0.044,0.039,0.037,0.037,0.036]
+workspace_allocation_ms=2.972
+workspace_allocation_samples_ms=[3.135,2.999,2.962,2.972,2.962]
+analysis_rayon_ms=127.305
+analysis_rayon_samples_ms=[134.273,127.539,127.283,127.305,126.840]
+
+### T511 q1 pair=1 variant=candidate
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 511 1 analysis GL STANDARD 512 1025 511 requested-only
+spin-2 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=1 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.037
+plan_construction_samples_ms=[0.043,0.043,0.037,0.037,0.037]
+workspace_allocation_ms=3.007
+workspace_allocation_samples_ms=[3.106,3.005,3.007,3.002,3.032]
+analysis_rayon_ms=117.930
+analysis_rayon_samples_ms=[117.654,117.823,117.993,117.930,117.977]
+
+### T511 q1 pair=2 variant=candidate
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 511 1 analysis GL STANDARD 512 1025 511 requested-only
+spin-2 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=1 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.040
+plan_construction_samples_ms=[0.043,0.041,0.039,0.040,0.038]
+workspace_allocation_ms=3.062
+workspace_allocation_samples_ms=[3.419,3.148,3.059,3.062,3.008]
+analysis_rayon_ms=117.800
+analysis_rayon_samples_ms=[117.805,117.735,117.969,117.800,117.602]
+
+### T511 q1 pair=2 variant=baseline
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 511 1 analysis GL STANDARD 512 1025 511 requested-only
+spin-2 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=1 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.037
+plan_construction_samples_ms=[0.043,0.038,0.037,0.037,0.037]
+workspace_allocation_ms=3.000
+workspace_allocation_samples_ms=[3.087,3.004,2.988,3.000,2.957]
+analysis_rayon_ms=127.330
+analysis_rayon_samples_ms=[127.330,127.281,127.374,127.410,126.794]
+
+### T511 q1 pair=3 variant=baseline
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 511 1 analysis GL STANDARD 512 1025 511 requested-only
+spin-2 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=1 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.037
+plan_construction_samples_ms=[0.043,0.038,0.037,0.037,0.036]
+workspace_allocation_ms=3.003
+workspace_allocation_samples_ms=[3.093,3.003,3.000,3.019,2.995]
+analysis_rayon_ms=127.065
+analysis_rayon_samples_ms=[127.065,126.553,126.826,127.329,128.097]
+
+### T511 q1 pair=3 variant=candidate
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 511 1 analysis GL STANDARD 512 1025 511 requested-only
+spin-2 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=1 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.041
+plan_construction_samples_ms=[0.043,0.041,0.044,0.037,0.037]
+workspace_allocation_ms=3.058
+workspace_allocation_samples_ms=[3.252,3.058,3.009,3.038,3.091]
+analysis_rayon_ms=118.607
+analysis_rayon_samples_ms=[119.090,118.468,118.627,118.607,118.547]
+
+### T511 q8 pair=1 variant=baseline
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 511 8 analysis GL STANDARD 512 1025 511 requested-only
+spin-2 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.038
+plan_construction_samples_ms=[0.047,0.038,0.037,0.043,0.038]
+workspace_allocation_ms=3.970
+workspace_allocation_samples_ms=[3.617,3.892,4.008,4.062,3.970]
+analysis_rayon_ms=39.041
+analysis_rayon_samples_ms=[38.487,39.199,39.353,39.041,38.974]
+
+### T511 q8 pair=1 variant=candidate
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 511 8 analysis GL STANDARD 512 1025 511 requested-only
+spin-2 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.037
+plan_construction_samples_ms=[0.043,0.040,0.037,0.037,0.037]
+workspace_allocation_ms=3.967
+workspace_allocation_samples_ms=[3.812,4.617,4.181,3.967,3.564]
+analysis_rayon_ms=38.529
+analysis_rayon_samples_ms=[37.882,38.569,38.555,38.529,38.004]
+
+### T511 q8 pair=2 variant=candidate
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 511 8 analysis GL STANDARD 512 1025 511 requested-only
+spin-2 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.041
+plan_construction_samples_ms=[0.044,0.041,0.044,0.036,0.036]
+workspace_allocation_ms=4.084
+workspace_allocation_samples_ms=[4.162,4.084,3.986,4.094,3.829]
+analysis_rayon_ms=38.508
+analysis_rayon_samples_ms=[39.368,38.508,38.270,38.521,38.172]
+
+### T511 q8 pair=2 variant=baseline
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 511 8 analysis GL STANDARD 512 1025 511 requested-only
+spin-2 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.037
+plan_construction_samples_ms=[0.043,0.039,0.037,0.037,0.037]
+workspace_allocation_ms=4.222
+workspace_allocation_samples_ms=[4.243,4.350,4.003,4.018,4.222]
+analysis_rayon_ms=39.861
+analysis_rayon_samples_ms=[39.861,39.979,38.244,39.254,40.275]
+
+### T511 q8 pair=3 variant=baseline
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 511 8 analysis GL STANDARD 512 1025 511 requested-only
+spin-2 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.037
+plan_construction_samples_ms=[0.044,0.039,0.037,0.037,0.037]
+workspace_allocation_ms=3.931
+workspace_allocation_samples_ms=[4.429,4.366,3.897,3.931,3.905]
+analysis_rayon_ms=39.417
+analysis_rayon_samples_ms=[44.420,38.329,39.417,39.083,40.968]
+
+### T511 q8 pair=3 variant=candidate
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 511 8 analysis GL STANDARD 512 1025 511 requested-only
+spin-2 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.048
+plan_construction_samples_ms=[0.055,0.051,0.048,0.047,0.047]
+workspace_allocation_ms=4.088
+workspace_allocation_samples_ms=[4.047,4.062,4.119,4.088,4.290]
+analysis_rayon_ms=38.398
+analysis_rayon_samples_ms=[38.256,39.412,38.268,38.398,38.994]
+
+### T720 q1 pair=1 variant=baseline
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 720 1 analysis GL STANDARD 721 1443 720 requested-only
+spin-2 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=1 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.092
+plan_construction_samples_ms=[0.106,0.092,0.090,0.093,0.086]
+workspace_allocation_ms=6.172
+workspace_allocation_samples_ms=[6.361,6.252,6.172,6.089,6.149]
+analysis_rayon_ms=298.978
+analysis_rayon_samples_ms=[299.390,298.987,298.525,297.847,298.978]
+
+### T720 q1 pair=1 variant=candidate
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 720 1 analysis GL STANDARD 721 1443 720 requested-only
+spin-2 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=1 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.088
+plan_construction_samples_ms=[0.103,0.090,0.088,0.087,0.086]
+workspace_allocation_ms=6.257
+workspace_allocation_samples_ms=[6.682,6.434,6.257,6.213,6.135]
+analysis_rayon_ms=270.707
+analysis_rayon_samples_ms=[271.498,270.707,270.639,270.688,270.731]
+
+### T720 q1 pair=2 variant=candidate
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 720 1 analysis GL STANDARD 721 1443 720 requested-only
+spin-2 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=1 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.088
+plan_construction_samples_ms=[0.105,0.090,0.088,0.088,0.087]
+workspace_allocation_ms=6.406
+workspace_allocation_samples_ms=[6.612,6.438,6.406,6.324,6.206]
+analysis_rayon_ms=271.846
+analysis_rayon_samples_ms=[271.317,271.094,271.985,272.166,271.846]
+
+### T720 q1 pair=2 variant=baseline
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 720 1 analysis GL STANDARD 721 1443 720 requested-only
+spin-2 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=1 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.090
+plan_construction_samples_ms=[0.103,0.096,0.090,0.088,0.087]
+workspace_allocation_ms=6.440
+workspace_allocation_samples_ms=[6.643,6.549,6.440,6.267,6.214]
+analysis_rayon_ms=298.693
+analysis_rayon_samples_ms=[298.906,299.113,297.677,298.391,298.693]
+
+### T720 q1 pair=3 variant=baseline
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 720 1 analysis GL STANDARD 721 1443 720 requested-only
+spin-2 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=1 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.090
+plan_construction_samples_ms=[0.102,0.090,0.088,0.087,0.092]
+workspace_allocation_ms=6.403
+workspace_allocation_samples_ms=[6.644,6.524,6.403,6.334,6.252]
+analysis_rayon_ms=297.755
+analysis_rayon_samples_ms=[298.030,297.779,297.755,297.481,297.093]
+
+### T720 q1 pair=3 variant=candidate
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 720 1 analysis GL STANDARD 721 1443 720 requested-only
+spin-2 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=1 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.110
+plan_construction_samples_ms=[0.127,0.113,0.110,0.109,0.109]
+workspace_allocation_ms=6.423
+workspace_allocation_samples_ms=[6.652,6.423,6.461,6.198,6.115]
+analysis_rayon_ms=274.460
+analysis_rayon_samples_ms=[273.639,273.550,275.025,274.834,274.460]
+
+### T720 q8 pair=1 variant=baseline
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 720 8 analysis GL STANDARD 721 1443 720 requested-only
+spin-2 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.089
+plan_construction_samples_ms=[0.101,0.096,0.089,0.087,0.087]
+workspace_allocation_ms=7.757
+workspace_allocation_samples_ms=[7.682,7.914,7.757,7.924,7.645]
+analysis_rayon_ms=83.220
+analysis_rayon_samples_ms=[84.331,83.220,83.143,84.486,82.813]
+
+### T720 q8 pair=1 variant=candidate
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 720 8 analysis GL STANDARD 721 1443 720 requested-only
+spin-2 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.090
+plan_construction_samples_ms=[0.105,0.092,0.090,0.089,0.089]
+workspace_allocation_ms=7.362
+workspace_allocation_samples_ms=[8.589,8.253,7.213,7.362,7.357]
+analysis_rayon_ms=80.461
+analysis_rayon_samples_ms=[80.461,81.108,80.464,80.061,79.670]
+
+### T720 q8 pair=2 variant=candidate
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 720 8 analysis GL STANDARD 721 1443 720 requested-only
+spin-2 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.089
+plan_construction_samples_ms=[0.104,0.092,0.089,0.088,0.088]
+workspace_allocation_ms=7.660
+workspace_allocation_samples_ms=[7.622,8.033,7.937,7.660,7.284]
+analysis_rayon_ms=81.288
+analysis_rayon_samples_ms=[81.404,80.655,81.288,81.588,80.918]
+
+### T720 q8 pair=2 variant=baseline
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 720 8 analysis GL STANDARD 721 1443 720 requested-only
+spin-2 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.089
+plan_construction_samples_ms=[0.102,0.091,0.089,0.088,0.087]
+workspace_allocation_ms=7.533
+workspace_allocation_samples_ms=[7.748,8.061,7.361,7.186,7.533]
+analysis_rayon_ms=83.770
+analysis_rayon_samples_ms=[83.660,84.115,83.793,83.770,83.315]
+
+### T720 q8 pair=3 variant=baseline
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 720 8 analysis GL STANDARD 721 1443 720 requested-only
+spin-2 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.091
+plan_construction_samples_ms=[0.102,0.091,0.089,0.088,0.093]
+workspace_allocation_ms=7.591
+workspace_allocation_samples_ms=[8.060,8.043,7.591,7.224,7.130]
+analysis_rayon_ms=83.921
+analysis_rayon_samples_ms=[83.576,84.895,83.704,84.969,83.921]
+
+### T720 q8 pair=3 variant=candidate
+$ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" <local-home-path> 2 720 8 analysis GL STANDARD 721 1443 720 requested-only
+spin-2 T720 mmax=720; GL 721x1443; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.087
+plan_construction_samples_ms=[0.111,0.089,0.087,0.086,0.086]
+workspace_allocation_ms=7.428
+workspace_allocation_samples_ms=[7.428,7.535,7.239,7.424,7.618]
+analysis_rayon_ms=80.577
+analysis_rayon_samples_ms=[82.384,80.131,82.306,80.577,80.305]

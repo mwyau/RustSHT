@@ -3367,75 +3367,109 @@ impl<T: ShtScalar> ShtPlan<T> {
                 T::scalar_analysis_products_safe(q_real, q_imag, q_real, q_imag, block_cosine);
             let u_products_safe =
                 T::scalar_analysis_products_safe(u_real, u_imag, u_real, u_imag, block_cosine);
-            let paired_used = T::for_each_y_lm_paired_status_dispatched(
-                arch,
-                m,
-                scalar_lmax,
-                &theta_sin[block_start..block_end],
-                &theta_cos[block_start..block_end],
-                self.sectoral_norms[m],
-                &recurrence.spin_coefficient_a,
-                &recurrence.spin_coefficient_b,
-                &mut recurrence.previous,
-                &mut recurrence.current,
-                &mut recurrence.next,
-                &mut recurrence.exponents,
-                |l, local_ring_start, basis, exponents, normal_range| {
-                    let mut first_even = recurrence.fast_scalar_first[l];
-                    let mut second_even = recurrence.fast_scalar_second[l];
-                    let mut first_odd = if l < scalar_lmax {
-                        recurrence.fast_scalar_first[l + 1]
-                    } else {
-                        Complex::new(T::zero(), T::zero())
-                    };
-                    let mut second_odd = if l < scalar_lmax {
-                        recurrence.fast_scalar_second[l + 1]
-                    } else {
-                        Complex::new(T::zero(), T::zero())
-                    };
-                    let lane_end = local_ring_start + basis.len();
-                    let lanes = local_ring_start..lane_end;
-                    let cosine = &block_cosine[local_ring_start..local_ring_start + basis.len()];
-                    let (q_even, q_odd) = T::accumulate_scalar_analysis_pair(
-                        arch,
-                        q_products_safe,
-                        normal_range,
-                        &q_real[lanes.clone()],
-                        &q_imag[lanes.clone()],
-                        &q_real[lanes.clone()],
-                        &q_imag[lanes.clone()],
-                        basis,
-                        exponents,
-                        cosine,
-                    );
-                    let (u_even, u_odd) = T::accumulate_scalar_analysis_pair(
-                        arch,
-                        u_products_safe,
-                        normal_range,
-                        &u_real[lanes.clone()],
-                        &u_imag[lanes.clone()],
-                        &u_real[lanes.clone()],
-                        &u_imag[lanes],
-                        basis,
-                        exponents,
-                        cosine,
-                    );
-                    first_even += q_even;
-                    second_even += u_even;
-                    if l < scalar_lmax {
-                        first_odd += q_odd;
-                        second_odd += u_odd;
-                    }
-                    recurrence.fast_scalar_first[l] = first_even;
-                    recurrence.fast_scalar_second[l] = second_even;
-                    if l < scalar_lmax {
-                        recurrence.fast_scalar_first[l + 1] = first_odd;
-                        recurrence.fast_scalar_second[l + 1] = second_odd;
-                    }
-                    Ok(())
-                },
-            )?;
-            debug_assert!(paired_used);
+            let fused_count = scalar_lmax - m + 1;
+            let fused_block = if q_products_safe && u_products_safe {
+                T::fused_scalar_analysis_pair_channels_block(
+                    arch,
+                    m,
+                    scalar_lmax,
+                    &theta_sin[block_start..block_end],
+                    block_cosine,
+                    self.sectoral_norms[m],
+                    &recurrence.spin_coefficient_a,
+                    &recurrence.spin_coefficient_b,
+                    [q_real, u_real],
+                    [q_imag, u_imag],
+                    [q_real, u_real],
+                    [q_imag, u_imag],
+                    &mut recurrence.fast_spin_first[..fused_count],
+                    &mut recurrence.fast_spin_second[..fused_count],
+                    &mut recurrence.previous,
+                    &mut recurrence.current,
+                    &mut recurrence.next,
+                    &mut recurrence.exponents,
+                )?
+            } else {
+                false
+            };
+            if fused_block {
+                for offset in 0..fused_count {
+                    let degree = m + offset;
+                    recurrence.fast_scalar_first[degree] += recurrence.fast_spin_first[offset];
+                    recurrence.fast_scalar_second[degree] += recurrence.fast_spin_second[offset];
+                }
+            } else {
+                let paired_used = T::for_each_y_lm_paired_status_dispatched(
+                    arch,
+                    m,
+                    scalar_lmax,
+                    &theta_sin[block_start..block_end],
+                    &theta_cos[block_start..block_end],
+                    self.sectoral_norms[m],
+                    &recurrence.spin_coefficient_a,
+                    &recurrence.spin_coefficient_b,
+                    &mut recurrence.previous,
+                    &mut recurrence.current,
+                    &mut recurrence.next,
+                    &mut recurrence.exponents,
+                    |l, local_ring_start, basis, exponents, normal_range| {
+                        let mut first_even = recurrence.fast_scalar_first[l];
+                        let mut second_even = recurrence.fast_scalar_second[l];
+                        let mut first_odd = if l < scalar_lmax {
+                            recurrence.fast_scalar_first[l + 1]
+                        } else {
+                            Complex::new(T::zero(), T::zero())
+                        };
+                        let mut second_odd = if l < scalar_lmax {
+                            recurrence.fast_scalar_second[l + 1]
+                        } else {
+                            Complex::new(T::zero(), T::zero())
+                        };
+                        let lane_end = local_ring_start + basis.len();
+                        let lanes = local_ring_start..lane_end;
+                        let cosine =
+                            &block_cosine[local_ring_start..local_ring_start + basis.len()];
+                        let (q_even, q_odd) = T::accumulate_scalar_analysis_pair(
+                            arch,
+                            q_products_safe,
+                            normal_range,
+                            &q_real[lanes.clone()],
+                            &q_imag[lanes.clone()],
+                            &q_real[lanes.clone()],
+                            &q_imag[lanes.clone()],
+                            basis,
+                            exponents,
+                            cosine,
+                        );
+                        let (u_even, u_odd) = T::accumulate_scalar_analysis_pair(
+                            arch,
+                            u_products_safe,
+                            normal_range,
+                            &u_real[lanes.clone()],
+                            &u_imag[lanes.clone()],
+                            &u_real[lanes.clone()],
+                            &u_imag[lanes],
+                            basis,
+                            exponents,
+                            cosine,
+                        );
+                        first_even += q_even;
+                        second_even += u_even;
+                        if l < scalar_lmax {
+                            first_odd += q_odd;
+                            second_odd += u_odd;
+                        }
+                        recurrence.fast_scalar_first[l] = first_even;
+                        recurrence.fast_scalar_second[l] = second_even;
+                        if l < scalar_lmax {
+                            recurrence.fast_scalar_first[l + 1] = first_odd;
+                            recurrence.fast_scalar_second[l + 1] = second_odd;
+                        }
+                        Ok(())
+                    },
+                )?;
+                debug_assert!(paired_used);
+            }
         }
 
         let mut previous_even_first = Complex::new(T::zero(), T::zero());
