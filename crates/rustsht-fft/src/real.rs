@@ -226,6 +226,12 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                 bluestein_workspaces.push(None);
             }
         }
+        if let Some(rader) = self.rader.as_ref()
+            && rader.radix() == 241
+        {
+            // The Rader pass and unsafe Bluestein fallback run sequentially.
+            bluestein_buffer_len = bluestein_buffer_len.max(rader.convolution_len());
+        }
         let complexify_workspace = self
             .complexify
             .as_ref()

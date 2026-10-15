@@ -14,7 +14,7 @@ use crate::FftError;
 use crate::complex::{
     BluesteinPlan, ComplexFftWorkspace, Direction, check_vec_len, radix11, try_vec,
 };
-use crate::rader::{RaderPrimePlan, RaderPrimeWorkspace};
+use crate::rader::{RaderPrimeExecutionWorkspace, RaderPrimePlan, RaderPrimeWorkspace};
 use crate::simd::{
     RealGeneralPrimeIdo1Kernel, RealGeneralPrimeIdo1Params, RealRadix2ForwardInteriorKernel,
     RealRadix2InteriorKernel, RealRadix4ForwardInteriorKernel, RealRadix4InteriorKernel,
@@ -532,15 +532,32 @@ impl<T: Float + FromPrimitive> MultipassTransforms<'_, T> {
             let radix = pass.radix;
             debug_assert_eq!(rader.radix(), radix);
             debug_assert_eq!(pass.ido, 1);
-            for group in 0..pass.l1 {
-                rader.execute_real_forward(
-                    input,
-                    pass.l1,
-                    group,
-                    output,
-                    group * radix,
-                    rader_workspace,
-                );
+            if radix == 241 {
+                debug_assert!(self.buffer.len() >= rader.convolution_len());
+                let buffer = &mut self.buffer[..rader.convolution_len()];
+                let mut execution_workspace =
+                    RaderPrimeExecutionWorkspace::new(buffer, rader_workspace);
+                for group in 0..pass.l1 {
+                    rader.execute_real_forward_shared(
+                        input,
+                        pass.l1,
+                        group,
+                        output,
+                        group * radix,
+                        &mut execution_workspace,
+                    );
+                }
+            } else {
+                for group in 0..pass.l1 {
+                    rader.execute_real_forward(
+                        input,
+                        pass.l1,
+                        group,
+                        output,
+                        group * radix,
+                        rader_workspace,
+                    );
+                }
             }
             return;
         }
@@ -596,8 +613,32 @@ impl<T: Float + FromPrimitive> MultipassTransforms<'_, T> {
             let radix = pass.radix;
             debug_assert_eq!(rader.radix(), radix);
             debug_assert_eq!(pass.ido, 1);
-            for group in 0..pass.l1 {
-                rader.execute_real_inverse(input, output, pass.l1, group, scale, rader_workspace);
+            if radix == 241 {
+                debug_assert!(self.buffer.len() >= rader.convolution_len());
+                let buffer = &mut self.buffer[..rader.convolution_len()];
+                let mut execution_workspace =
+                    RaderPrimeExecutionWorkspace::new(buffer, rader_workspace);
+                for group in 0..pass.l1 {
+                    rader.execute_real_inverse_shared(
+                        input,
+                        output,
+                        pass.l1,
+                        group,
+                        scale,
+                        &mut execution_workspace,
+                    );
+                }
+            } else {
+                for group in 0..pass.l1 {
+                    rader.execute_real_inverse(
+                        input,
+                        output,
+                        pass.l1,
+                        group,
+                        scale,
+                        rader_workspace,
+                    );
+                }
             }
             return;
         }

@@ -24,6 +24,10 @@ name = "rustfft"
 harness = false
 
 [[bench]]
+name = "workspace_memory"
+harness = false
+
+[[bench]]
 name = "multipass_prototype"
 harness = false
 
