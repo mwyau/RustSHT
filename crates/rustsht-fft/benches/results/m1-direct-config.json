@@ -1,0 +1,76 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native",
+      "13",
+      "17",
+      "19",
+      "31",
+      "41",
+      "73",
+      "103",
+      "109",
+      "146",
+      "722",
+      "1442",
+      "256",
+      "512",
+      "1024",
+      "1452"
+    ],
+    "label": "M1 paired-output candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native",
+      "13",
+      "17",
+      "19",
+      "31",
+      "41",
+      "73",
+      "103",
+      "109",
+      "146",
+      "722",
+      "1442",
+      "256",
+      "512",
+      "1024",
+      "1452"
+    ],
+    "label": "M0 b508712 baseline"
+  },
+  "metadata": {
+    "candidate": "M1 paired-output kernel, working tree built with cargo bench --bench rustfft",
+    "command": "bench-native 13 17 19 31 41 73 103 109 146 722 1442 256 512 1024 1452",
+    "control_lengths": [
+      256,
+      512,
+      1024,
+      1452
+    ],
+    "reference": "immediately preceding accepted M0 commit b508712",
+    "rows": [
+      1,
+      32
+    ],
+    "target_lengths": [
+      13,
+      17,
+      19,
+      31,
+      41,
+      73,
+      103,
+      109,
+      146,
+      722,
+      1442
+    ],
+    "timing": "seven timed samples per operation per process; 20 plan/workspace setup repetitions"
+  },
+  "pairs": 6
+}

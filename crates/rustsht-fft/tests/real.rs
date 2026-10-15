@@ -687,65 +687,138 @@ fn terminal_real_prime_inverse_covers_cancellation_and_finite_extremes() {
 
 #[test]
 fn real_complexify_planner_path_matches_f64_and_f32_direct_dfts() {
-    let n = 1026;
+    for n in [1026, 1442] {
+        let plan64 = RealFftPlan::<f64>::new(n).unwrap();
+        let mut workspace64 = plan64.workspace().unwrap();
+        let input64: Vec<_> = (0..n).map(|index| real_signal(index + 19, n + 7)).collect();
+        let expected_spectrum64 = direct_r2c_f64(&input64);
+        let mut actual_spectrum64 = vec![Complex::new(0.0, 0.0); plan64.spectrum_len()];
+        plan64
+            .forward(&input64, &mut actual_spectrum64, &mut workspace64)
+            .unwrap();
+        assert_complex_f64_close(&actual_spectrum64, &expected_spectrum64, n);
+
+        let independent_spectrum64: Vec<_> = (0..plan64.spectrum_len())
+            .map(|index| {
+                Complex::new(
+                    real_signal(index + 23, n + 3),
+                    0.2 * real_signal(index + 11, n + 9),
+                )
+            })
+            .collect();
+        let expected_samples64 = direct_c2r_f64(&independent_spectrum64, n);
+        let mut actual_samples64 = vec![0.0; n];
+        plan64
+            .inverse(
+                &independent_spectrum64,
+                &mut actual_samples64,
+                &mut workspace64,
+            )
+            .unwrap();
+        assert_f64_close(&actual_samples64, &expected_samples64, n);
+
+        let plan32 = RealFftPlan::<f32>::new(n).unwrap();
+        let mut workspace32 = plan32.workspace().unwrap();
+        let input32: Vec<_> = input64.iter().map(|&value| value as f32).collect();
+        let input32_f64: Vec<_> = input32.iter().map(|&value| value as f64).collect();
+        let expected_spectrum32 = direct_r2c_f64(&input32_f64);
+        let mut actual_spectrum32 = vec![Complex::new(0.0, 0.0); plan32.spectrum_len()];
+        plan32
+            .forward(&input32, &mut actual_spectrum32, &mut workspace32)
+            .unwrap();
+        assert_complex_f32_close(&actual_spectrum32, &expected_spectrum32, n);
+
+        let independent_spectrum32: Vec<_> = independent_spectrum64
+            .iter()
+            .map(|value| Complex::new(value.re as f32, value.im as f32))
+            .collect();
+        let independent_spectrum32_f64: Vec<_> = independent_spectrum32
+            .iter()
+            .map(|value| Complex::new(value.re as f64, value.im as f64))
+            .collect();
+        let expected_samples32 = direct_c2r_f64(&independent_spectrum32_f64, n);
+        let mut actual_samples32 = vec![0.0; n];
+        plan32
+            .inverse(
+                &independent_spectrum32,
+                &mut actual_samples32,
+                &mut workspace32,
+            )
+            .unwrap();
+        assert_f32_close(&actual_samples32, &expected_samples32, n);
+    }
+}
+
+#[test]
+fn real_complexify_inverse_recovers_high_dynamic_n1442_spectra() {
+    let n = 1442;
+    let bins = n / 2 + 1;
+
+    let amplitude64 = f64::MAX / 4.01;
+    assert_ne!(
+        amplitude64 / 2.0 - ((amplitude64 / 2.0) * (1.0 / 7.0)) * 7.0,
+        0.0,
+        "f64 fixture must have a nonzero radix-7 prescale residual"
+    );
+    assert_ne!(
+        amplitude64 / 14.0 - ((amplitude64 / 14.0) * (1.0 / 103.0)) * 103.0,
+        0.0,
+        "f64 fixture must have a nonzero radix-103 prescale residual"
+    );
+    let mut spectrum64 = vec![Complex::new(0.0, 0.0); bins];
+    spectrum64[0].re = amplitude64;
+    spectrum64[1] = Complex::new(-amplitude64 * 0.5, amplitude64 * 0.25);
+    spectrum64[n / 2].re = -amplitude64 * 0.25;
+    let expected64 = direct_c2r_f64(&spectrum64, n);
     let plan64 = RealFftPlan::<f64>::new(n).unwrap();
     let mut workspace64 = plan64.workspace().unwrap();
-    let input64: Vec<_> = (0..n).map(|index| real_signal(index + 19, n + 7)).collect();
-    let expected_spectrum64 = direct_r2c_f64(&input64);
-    let mut actual_spectrum64 = vec![Complex::new(0.0, 0.0); plan64.spectrum_len()];
+    let mut actual64 = vec![0.0; n];
     plan64
-        .forward(&input64, &mut actual_spectrum64, &mut workspace64)
+        .inverse(&spectrum64, &mut actual64, &mut workspace64)
         .unwrap();
-    assert_complex_f64_close(&actual_spectrum64, &expected_spectrum64, n);
+    let tolerance64 = 5.0e-10 * amplitude64 / n as f64;
+    assert!(actual64.iter().all(|value| value.is_finite()));
+    for (index, (&actual, &expected)) in actual64.iter().zip(&expected64).enumerate() {
+        assert!(
+            (actual - expected).abs() <= tolerance64,
+            "f64 index={index}, actual={actual}, expected={expected}, tolerance={tolerance64}"
+        );
+    }
 
-    let independent_spectrum64: Vec<_> = (0..plan64.spectrum_len())
-        .map(|index| {
-            Complex::new(
-                real_signal(index + 23, n + 3),
-                0.2 * real_signal(index + 11, n + 9),
-            )
-        })
-        .collect();
-    let expected_samples64 = direct_c2r_f64(&independent_spectrum64, n);
-    let mut actual_samples64 = vec![0.0; n];
-    plan64
-        .inverse(
-            &independent_spectrum64,
-            &mut actual_samples64,
-            &mut workspace64,
-        )
-        .unwrap();
-    assert_f64_close(&actual_samples64, &expected_samples64, n);
-
-    let plan32 = RealFftPlan::<f32>::new(n).unwrap();
-    let mut workspace32 = plan32.workspace().unwrap();
-    let input32: Vec<_> = input64.iter().map(|&value| value as f32).collect();
-    let input32_f64: Vec<_> = input32.iter().map(|&value| value as f64).collect();
-    let expected_spectrum32 = direct_r2c_f64(&input32_f64);
-    let mut actual_spectrum32 = vec![Complex::new(0.0, 0.0); plan32.spectrum_len()];
-    plan32
-        .forward(&input32, &mut actual_spectrum32, &mut workspace32)
-        .unwrap();
-    assert_complex_f32_close(&actual_spectrum32, &expected_spectrum32, n);
-
-    let independent_spectrum32: Vec<_> = independent_spectrum64
-        .iter()
-        .map(|value| Complex::new(value.re as f32, value.im as f32))
-        .collect();
-    let independent_spectrum32_f64: Vec<_> = independent_spectrum32
+    let amplitude32 = f32::MAX / 4.65;
+    assert_ne!(
+        amplitude32 / 2.0 - ((amplitude32 / 2.0) * (1.0_f32 / 7.0)) * 7.0,
+        0.0,
+        "f32 fixture must have a nonzero radix-7 prescale residual"
+    );
+    assert_ne!(
+        amplitude32 / 14.0 - ((amplitude32 / 14.0) * (1.0_f32 / 103.0)) * 103.0,
+        0.0,
+        "f32 fixture must have a nonzero radix-103 prescale residual"
+    );
+    let mut spectrum32 = vec![Complex::new(0.0_f32, 0.0_f32); bins];
+    spectrum32[0].re = amplitude32;
+    spectrum32[1] = Complex::new(-amplitude32 * 0.5, amplitude32 * 0.25);
+    spectrum32[n / 2].re = -amplitude32 * 0.25;
+    let spectrum32_f64: Vec<_> = spectrum32
         .iter()
         .map(|value| Complex::new(value.re as f64, value.im as f64))
         .collect();
-    let expected_samples32 = direct_c2r_f64(&independent_spectrum32_f64, n);
-    let mut actual_samples32 = vec![0.0; n];
+    let expected32 = direct_c2r_f64(&spectrum32_f64, n);
+    let plan32 = RealFftPlan::<f32>::new(n).unwrap();
+    let mut workspace32 = plan32.workspace().unwrap();
+    let mut actual32 = vec![0.0; n];
     plan32
-        .inverse(
-            &independent_spectrum32,
-            &mut actual_samples32,
-            &mut workspace32,
-        )
+        .inverse(&spectrum32, &mut actual32, &mut workspace32)
         .unwrap();
-    assert_f32_close(&actual_samples32, &expected_samples32, n);
+    let tolerance32 = 1.0e-4 * amplitude32 as f64 / n as f64;
+    assert!(actual32.iter().all(|value| value.is_finite()));
+    for (index, (&actual, &expected)) in actual32.iter().zip(&expected32).enumerate() {
+        assert!(
+            (actual as f64 - expected).abs() <= tolerance32,
+            "f32 index={index}, actual={actual}, expected={expected}, tolerance={tolerance32}"
+        );
+    }
 }
 
 #[test]

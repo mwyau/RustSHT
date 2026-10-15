@@ -43,7 +43,11 @@ samples; the median is reported. Plan construction and scratch allocation use
 20 repetitions. Record the DUCC commit, C++ compiler and flags, rustc version
 and profile, CPU, ISA path, process affinity, thread count, and input formula
 with each result. A measurement made while another compute-heavy process is
-active is provisional. Use repeated process-level runs for comparisons. The paired M4 measurement for fusing real inverse eligibility with packed
+active is provisional. Use repeated process-level runs for comparisons. `cargo bench --bench rustfft -- bench-native-first-call MODE N` reports the
+first public operation after plan, workspace, and input construction, followed
+by the median of seven warmed calls. It uses one row and excludes process
+startup, plan construction, and input allocation. Pair candidate and baseline
+processes externally when comparing the values. The paired M4 measurement for fusing real inverse eligibility with packed
 spectrum conversion is in
 [`docs/m4-real-inverse-pack.md`](../docs/m4-real-inverse-pack.md). `bench-profile-complex N forward|inverse [ITERATIONS]` runs repeated public
 f64 C2C operations with the same input restored before each transform. Its

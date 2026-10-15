@@ -1,0 +1,30 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "1442",
+      "1",
+      "32",
+      "721"
+    ],
+    "label": "M1 paired-output candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "1442",
+      "1",
+      "32",
+      "721"
+    ],
+    "label": "M0 b508712 baseline"
+  },
+  "metadata": {
+    "candidate": "M1 paired-output kernel; six alternating process pairs vs immediate M0 predecessor b508712",
+    "timing": "seven timed samples per operation per process; 20 plan/workspace setup repetitions",
+    "workload": "real C2C-complexified N=1442; forward and inverse; rows 1, 32, and 721"
+  },
+  "pairs": 6
+}

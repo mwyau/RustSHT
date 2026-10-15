@@ -1,0 +1,53 @@
+{
+  "baseline": {
+    "binary_sha256": "df159a8041548495d01b5c36cffcfec7fb18c65de76fd2eb076f572f89fab345",
+    "revision": "b508712"
+  },
+  "benchmark_source_sha256": "299e955810e80712b74de7f6d8e06fcd4bc065ea86a278e88c33a0e48063c75d",
+  "candidate": {
+    "binary_sha256": "9af81cabd28ea7d51f87d5a37b0976d344fec9c4e8813d3f7ad5c8e130e2d1c9",
+    "revision": "working tree, M1 paired-output kernel"
+  },
+  "commands": "taskset -c \"${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}\" <bench-binary> bench-native-first-call <mode> <n>",
+  "pairs": 6,
+  "results": {
+    "paired_samples": "m1-first-call-paired.jsonl",
+    "summary": "m1-first-call-summary.csv"
+  },
+  "rustc": "rustc 1.99.0 (b940084d7 2026-09-28)\nbinary: rustc\ncommit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4\ncommit-date: 2026-09-28\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.0\nLLVM version: 23.1.1",
+  "timing": "Plan/workspace and input creation precede first_call_ns; first_call_ns measures the first public operation on a fresh plan/workspace. warm_call_median_ns is the median of seven timed calls after one untimed warm-up. Six process pairs alternate candidate-first and baseline-first order. One thread.",
+  "workloads": [
+    {
+      "mode": "c2c_forward",
+      "n": 146
+    },
+    {
+      "mode": "c2c_inverse",
+      "n": 146
+    },
+    {
+      "mode": "c2c_forward",
+      "n": 722
+    },
+    {
+      "mode": "c2c_inverse",
+      "n": 722
+    },
+    {
+      "mode": "c2c_forward",
+      "n": 1442
+    },
+    {
+      "mode": "c2c_inverse",
+      "n": 1442
+    },
+    {
+      "mode": "r2c",
+      "n": 1442
+    },
+    {
+      "mode": "c2r",
+      "n": 1442
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "M1 paired-output candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "M0 b508712 baseline"
+  },
+  "metadata": {
+    "candidate": "M1 paired-output kernel; six alternating process pairs vs immediate M0 predecessor b508712",
+    "timing": "seven timed samples per operation per process; 20 plan/workspace setup repetitions",
+    "workload": "exact SHT-shaped C2C and real row counts defined by the M0 bench-native-sht harness"
+  },
+  "pairs": 6
+}
