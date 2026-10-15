@@ -15,8 +15,8 @@ use crate::legendre::{
 use crate::plan::{ShtPlan, current_execution_thread_count};
 #[cfg(feature = "parallel")]
 use crate::transform::{
-    active_ring_weighted_order_midpoint_from_prefix, build_active_ring_order_work_prefix,
-    weighted_order_midpoint,
+    active_ring_weighted_order_midpoint_from_prefix_for_capacity,
+    build_active_ring_order_work_prefix, weighted_order_midpoint_for_capacity,
 };
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
@@ -3740,15 +3740,25 @@ impl<T: ShtScalar> ShtPlan<T> {
                     .expect("each analysis group has at least one recurrence workspace"),
             );
         }
+        let left_worker_count = recurrence.len().div_ceil(2);
+        let right_worker_count = recurrence.len() - left_worker_count;
         let m_mid = if self.harmonics.lmax() >= 255 {
-            active_ring_weighted_order_midpoint_from_prefix(
+            active_ring_weighted_order_midpoint_from_prefix_for_capacity(
                 self.harmonics.lmax(),
                 m_start,
                 m_end,
                 order_work_prefix.expect("large parallel analyses build an order-work prefix"),
-            )
+                left_worker_count,
+                right_worker_count,
+            )?
         } else {
-            weighted_order_midpoint(self.harmonics.lmax(), m_start, m_end)
+            weighted_order_midpoint_for_capacity(
+                self.harmonics.lmax(),
+                m_start,
+                m_end,
+                left_worker_count,
+                right_worker_count,
+            )?
         };
         let coefficient_start = self
             .harmonics
@@ -3766,7 +3776,6 @@ impl<T: ShtScalar> ShtPlan<T> {
         } else {
             (None, None)
         };
-        let left_worker_count = recurrence.len().div_ceil(2);
         let (left_recurrence, right_recurrence) = recurrence.split_at_mut(left_worker_count);
         let (left_result, right_result) = rayon::join(
             || {

@@ -316,6 +316,147 @@ fn active_ring_order_work_prefix_checks_length_and_arithmetic() {
 
 #[cfg(feature = "parallel")]
 #[test]
+fn capacity_target_work_uses_checked_quotient_and_remainder() {
+    for (total, left, right, whole, fractional_numerator, denominator) in [
+        (1, 1, 2, 0, 1, 3),
+        (5, 1, 2, 1, 2, 3),
+        (5, 2, 1, 3, 1, 3),
+        (1_000, 2, 1, 666, 2, 3),
+        (u128::MAX, 8, 8, u128::MAX / 2, 8, 16),
+    ] {
+        assert_eq!(
+            capacity_target_left_work(total, left, right).unwrap(),
+            CapacityWorkTarget {
+                whole,
+                fractional_numerator,
+                denominator,
+            }
+        );
+    }
+    #[cfg(target_pointer_width = "64")]
+    {
+        assert_eq!(
+            capacity_target_left_work((usize::MAX as u128) * 2 - 1, usize::MAX, usize::MAX),
+            Err(ShtError::IntegerOverflow {
+                quantity: "analysis order work capacity target",
+            })
+        );
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn active_order_capacity_splits_follow_work_and_preserve_equal_splits() {
+    let lmax = 511;
+    let mmax = 31;
+    let order_count = mmax + 1;
+    let cutoff_sets = [
+        vec![lmax; 9],
+        vec![0; 9],
+        vec![0, 1, 3, 7, 9, 15, 31, 80, lmax],
+    ];
+    let intervals = [
+        (0, 32),
+        (0, 16),
+        (1, 32),
+        (2, 32),
+        (8, 29),
+        (17, 24),
+        (23, 32),
+    ];
+
+    for ring_order_limits in cutoff_sets {
+        let mut prefix = vec![0_u128; order_count + 1];
+        build_active_ring_order_work_prefix(lmax, mmax, &ring_order_limits, &mut prefix).unwrap();
+        for worker_count in [2_usize, 3, 4, 5, 6, 8, 16] {
+            let left_capacity = worker_count.div_ceil(2);
+            let right_capacity = worker_count - left_capacity;
+            for (m_start, m_end) in intervals {
+                let midpoint = active_ring_weighted_order_midpoint_from_prefix_for_capacity(
+                    lmax,
+                    m_start,
+                    m_end,
+                    &prefix,
+                    left_capacity,
+                    right_capacity,
+                )
+                .unwrap();
+                if left_capacity == right_capacity {
+                    assert_eq!(
+                        midpoint,
+                        active_ring_weighted_order_midpoint_from_prefix(
+                            lmax, m_start, m_end, &prefix
+                        ),
+                        "equal capacities changed the old split: q={worker_count}, interval={m_start}..{m_end}, limits={ring_order_limits:?}"
+                    );
+                    continue;
+                }
+
+                let active_work = prefix[m_end] - prefix[m_start];
+                let (total_work, target_work, active_prefix) = if active_work == 0 {
+                    let total = (m_start..m_end)
+                        .map(|m| (lmax - m + 1) as u128)
+                        .sum::<u128>();
+                    (
+                        total,
+                        capacity_target_left_work(total, left_capacity, right_capacity).unwrap(),
+                        false,
+                    )
+                } else {
+                    (
+                        active_work,
+                        capacity_target_left_work(active_work, left_capacity, right_capacity)
+                            .unwrap(),
+                        true,
+                    )
+                };
+                let work_before = |mid: usize| {
+                    if active_prefix {
+                        prefix[mid] - prefix[m_start]
+                    } else {
+                        (m_start..mid).map(|m| (lmax - m + 1) as u128).sum::<u128>()
+                    }
+                };
+                let difference = capacity_work_distance(work_before(midpoint), target_work);
+                for candidate in (m_start + 1)..m_end {
+                    assert!(
+                        difference <= capacity_work_distance(work_before(candidate), target_work),
+                        "q={worker_count}, interval={m_start}..{m_end}, midpoint={midpoint}, candidate={candidate}, total={total_work}, target={target_work:?}, limits={ring_order_limits:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    for worker_count in [3_usize, 5, 7, 9, 17] {
+        let left_capacity = worker_count.div_ceil(2);
+        let right_capacity = worker_count - left_capacity;
+        let midpoint =
+            weighted_order_midpoint_for_capacity(31, 0, 32, left_capacity, right_capacity).unwrap();
+        let total_work = (0..32).map(|m| (31 - m + 1) as u128).sum::<u128>();
+        let target = capacity_target_left_work(total_work, left_capacity, right_capacity).unwrap();
+        let left_work = (0..midpoint).map(|m| (31 - m + 1) as u128).sum::<u128>();
+        let difference = capacity_work_distance(left_work, target);
+        for candidate in 1..32 {
+            let candidate_work = (0..candidate).map(|m| (31 - m + 1) as u128).sum::<u128>();
+            assert!(difference <= capacity_work_distance(candidate_work, target));
+        }
+    }
+
+    assert_eq!(
+        weighted_order_midpoint_for_capacity(5, 0, 5, 2, 1).unwrap(),
+        3
+    );
+    let prefix = [0, 6, 11, 15, 18, 20];
+    assert_eq!(
+        active_ring_weighted_order_midpoint_from_prefix_for_capacity(5, 0, 5, &prefix, 2, 1)
+            .unwrap(),
+        3
+    );
+}
+
+#[cfg(feature = "parallel")]
+#[test]
 fn scalar_active_ring_schedule_matches_one_and_eight_threads() {
     let one_thread = rayon::ThreadPoolBuilder::new()
         .num_threads(1)
@@ -342,6 +483,75 @@ fn scalar_active_ring_schedule_matches_one_and_eight_threads() {
 
         for (&one, &eight) in one_alm.iter().zip(&eight_alm) {
             assert!((one - eight).norm() < 2e-13);
+        }
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn analysis_capacity_splits_match_q1_across_pool_sizes() {
+    let lmax = 511;
+    let mmax = 15;
+    let ntheta = lmax + 1;
+    let nphi = 2 * mmax + 5;
+    let scalar_plan = make_plan(lmax, mmax, ntheta, nphi, 0.37);
+    let spin_plan = ShtPlan::new(
+        GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, 0.37).unwrap(),
+        HarmonicSpec::new(lmax, mmax, 1).unwrap(),
+    )
+    .unwrap();
+    let scalar_input = arbitrary_map(&scalar_plan);
+    let spin_first = arbitrary_map(&spin_plan);
+    let spin_second = (0..spin_plan.sample_count)
+        .map(|index| (0.013 * index as f64).cos() - 0.2 * (0.021 * index as f64).sin())
+        .collect::<Vec<_>>();
+    let mut scalar_reference = None;
+    let mut spin_e_reference = None;
+    let mut spin_b_reference = None;
+
+    for thread_count in [1, 2, 3, 4, 5, 6, 8, 16] {
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(thread_count)
+            .build()
+            .unwrap();
+        let mut scalar_workspace = pool.install(|| scalar_plan.workspace()).unwrap();
+        let mut spin_workspace = pool.install(|| spin_plan.workspace()).unwrap();
+        let mut scalar_alm = vec![Complex64::new(0.0, 0.0); scalar_plan.harmonics().nalm()];
+        let mut spin_e = vec![Complex64::new(0.0, 0.0); spin_plan.harmonics().nalm()];
+        let mut spin_b = spin_e.clone();
+
+        pool.install(|| {
+            scalar_plan.analysis_into(&scalar_input, &mut scalar_alm, &mut scalar_workspace)
+        })
+        .unwrap();
+        pool.install(|| {
+            spin_plan.analysis_spin_into(
+                &spin_first,
+                &spin_second,
+                &mut spin_e,
+                &mut spin_b,
+                &mut spin_workspace,
+            )
+        })
+        .unwrap();
+
+        if thread_count == 1 {
+            scalar_reference = Some(scalar_alm);
+            spin_e_reference = Some(spin_e);
+            spin_b_reference = Some(spin_b);
+        } else {
+            assert!(
+                relative_l2_complex(&scalar_alm, scalar_reference.as_ref().unwrap()) <= 3e-10,
+                "scalar q{thread_count} differs from q1"
+            );
+            assert!(
+                relative_l2_complex(&spin_e, spin_e_reference.as_ref().unwrap()) <= 3e-10,
+                "spin E q{thread_count} differs from q1"
+            );
+            assert!(
+                relative_l2_complex(&spin_b, spin_b_reference.as_ref().unwrap()) <= 3e-10,
+                "spin B q{thread_count} differs from q1"
+            );
         }
     }
 }
