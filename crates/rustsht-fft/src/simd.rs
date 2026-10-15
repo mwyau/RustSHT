@@ -29,7 +29,6 @@ pub(crate) type RealGeneralPrimeIdo1Kernel<T> =
     for<'a> unsafe fn(&[T], &mut [T], RealGeneralPrimeIdo1Params<'a, T>);
 pub(crate) struct ComplexGeneralPrimeIdo1Params<'a, T> {
     pub(crate) l1: usize,
-    pub(crate) radix: usize,
     pub(crate) roots: &'a [Complex<T>],
     pub(crate) root_stride: usize,
     pub(crate) phase_indices: &'a [u8],
@@ -574,32 +573,38 @@ mod x86 {
         ) {
             let ComplexGeneralPrimeIdo1Params {
                 l1,
-                radix,
                 roots,
                 root_stride,
                 phase_indices,
                 inverse,
                 scale,
             } = params;
-            let half = radix / 2;
-            debug_assert_eq!(radix, 31);
+            const RADIX: usize = 31;
+            const HALF: usize = RADIX / 2;
             debug_assert!(l1 > 0);
             debug_assert!(root_stride > 0);
-            debug_assert!(input.len() >= radix * l1);
-            debug_assert!(output.len() >= radix * l1);
-            debug_assert!(phase_indices.len() >= half * radix);
-            debug_assert!(roots.len() > (radix - 1) * root_stride);
+            debug_assert!(input.len() >= RADIX * l1);
+            debug_assert!(output.len() >= RADIX * l1);
+            debug_assert!(phase_indices.len() >= HALF * RADIX);
+            debug_assert!(roots.len() > (RADIX - 1) * root_stride);
 
             let output_ptr = output.as_mut_ptr();
-            let imaginary_signs = _mm256_setr_pd(-1.0, 1.0, -1.0, 1.0);
             let output_scale = _mm256_set1_pd(scale);
 
             for outer in 0..l1 {
-                let input_zero = input[radix * outer];
+                let input_zero = input[RADIX * outer];
+                let mut pair_inputs = [Complex::new(0.0, 0.0); HALF];
+                let mut imaginary_differences = [Complex::new(0.0, 0.0); HALF];
                 let mut dc = input_zero;
-                for branch in 1..=half {
-                    let pair =
-                        input[radix * outer + branch] + input[radix * outer + (radix - branch)];
+                for branch_index in 0..HALF {
+                    let branch = branch_index + 1;
+                    let left = input[RADIX * outer + branch];
+                    let right = input[RADIX * outer + (RADIX - branch)];
+                    let pair = left + right;
+                    let difference = left - right;
+                    pair_inputs[branch_index] = pair;
+                    imaginary_differences[branch_index] =
+                        Complex::new(-difference.im, difference.re);
                     dc += pair;
                 }
                 if inverse {
@@ -608,31 +613,32 @@ mod x86 {
                 output[outer] = dc;
 
                 let mut frequency = 1;
-                while frequency < half {
+                while frequency < HALF {
                     let initial =
                         _mm256_setr_pd(input_zero.re, input_zero.im, input_zero.re, input_zero.im);
                     let mut positive = initial;
                     let mut negative = initial;
 
-                    for branch in 1..=half {
-                        let left = input[radix * outer + branch];
-                        let right = input[radix * outer + (radix - branch)];
-                        let pair = left + right;
-                        let difference = left - right;
-                        let pair = _mm256_setr_pd(pair.re, pair.im, pair.re, pair.im);
-                        let difference = _mm256_setr_pd(
-                            difference.re,
-                            difference.im,
-                            difference.re,
-                            difference.im,
+                    for branch_index in 0..HALF {
+                        let pair_value = pair_inputs[branch_index];
+                        let imaginary_difference_value = imaginary_differences[branch_index];
+                        let pair = _mm256_setr_pd(
+                            pair_value.re,
+                            pair_value.im,
+                            pair_value.re,
+                            pair_value.im,
                         );
-                        let imaginary_difference =
-                            _mm256_mul_pd(_mm256_permute_pd(difference, 0b0101), imaginary_signs);
+                        let imaginary_difference = _mm256_setr_pd(
+                            imaginary_difference_value.re,
+                            imaginary_difference_value.im,
+                            imaginary_difference_value.re,
+                            imaginary_difference_value.im,
+                        );
 
                         let phase_first =
-                            usize::from(phase_indices[(branch - 1) * radix + frequency]);
+                            usize::from(phase_indices[branch_index * RADIX + frequency]);
                         let phase_second =
-                            usize::from(phase_indices[(branch - 1) * radix + frequency + 1]);
+                            usize::from(phase_indices[branch_index * RADIX + frequency + 1]);
                         let root_first = roots[phase_first * root_stride];
                         let root_second = roots[phase_second * root_stride];
                         let sign = if inverse { 1.0 } else { -1.0 };
@@ -671,13 +677,13 @@ mod x86 {
                         );
                         _mm_storeu_pd(
                             output_ptr
-                                .add((radix - frequency) * l1 + outer)
+                                .add((RADIX - frequency) * l1 + outer)
                                 .cast::<f64>(),
                             _mm256_castpd256_pd128(negative),
                         );
                         _mm_storeu_pd(
                             output_ptr
-                                .add((radix - frequency - 1) * l1 + outer)
+                                .add((RADIX - frequency - 1) * l1 + outer)
                                 .cast::<f64>(),
                             _mm256_extractf128_pd(negative, 1),
                         );
@@ -685,19 +691,16 @@ mod x86 {
                     frequency += 2;
                 }
 
-                if frequency <= half {
+                if frequency <= HALF {
                     let mut positive = input_zero;
                     let mut negative = input_zero;
-                    for branch in 1..=half {
-                        let left = input[radix * outer + branch];
-                        let right = input[radix * outer + (radix - branch)];
-                        let pair = left + right;
-                        let difference = left - right;
-                        let phase = usize::from(phase_indices[(branch - 1) * radix + frequency]);
+                    for branch_index in 0..HALF {
+                        let pair = pair_inputs[branch_index];
+                        let phase = usize::from(phase_indices[branch_index * RADIX + frequency]);
                         let root = roots[phase * root_stride];
                         let root_im = if inverse { root.im } else { -root.im };
                         let cosine = pair * root.re;
-                        let sine = Complex::new(-difference.im, difference.re) * root_im;
+                        let sine = imaginary_differences[branch_index] * root_im;
                         positive = positive + cosine + sine;
                         negative = negative + cosine - sine;
                     }
@@ -706,7 +709,7 @@ mod x86 {
                         negative *= scale;
                     }
                     output[frequency * l1 + outer] = positive;
-                    output[(radix - frequency) * l1 + outer] = negative;
+                    output[(RADIX - frequency) * l1 + outer] = negative;
                 }
             }
         }
@@ -1894,7 +1897,6 @@ mod tests {
                         output,
                         ComplexGeneralPrimeIdo1Params {
                             l1,
-                            radix,
                             roots: &roots,
                             root_stride: l1,
                             phase_indices: &phase_indices,

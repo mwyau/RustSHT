@@ -638,7 +638,6 @@ fn execute_682_general_prime_ido1<T: Float + FromPrimitive>(
     };
     let params = ComplexGeneralPrimeIdo1Params {
         l1: pass.l1,
-        radix: pass.radix,
         roots: execution.roots,
         root_stride: execution.total_len / pass.radix,
         phase_indices: execution.prime_phase_indices,
