@@ -1572,21 +1572,15 @@ fn fine_synthesis_groups_follow_the_measured_spin_and_grid_policy() {
 
     let scalar_t511 = make_plan(511, 511, 512, 1025, 0.37);
     let scalar_t511_workspace = four_threads.install(|| scalar_t511.workspace()).unwrap();
-    assert_eq!(
-        four_threads.install(|| scalar_t511.fine_synthesis_ring_group_size()),
-        Some(32)
-    );
+    assert_eq!(scalar_t511.fine_synthesis_ring_group_size(4), Some(32));
     assert_eq!(scalar_t511_workspace.ring_group_size, 64);
-    assert_eq!(scalar_t511_workspace.recurrence_workers.len(), 8);
+    assert_eq!(scalar_t511_workspace.recurrence_workers.len(), 16);
 
     let scalar_t720 = make_plan(720, 720, 721, 1443, 0.37);
     let scalar_t720_workspace = four_threads.install(|| scalar_t720.workspace()).unwrap();
-    assert_eq!(
-        four_threads.install(|| scalar_t720.fine_synthesis_ring_group_size()),
-        Some(32)
-    );
+    assert_eq!(scalar_t720.fine_synthesis_ring_group_size(4), Some(32));
     assert_eq!(scalar_t720_workspace.ring_group_size, 192);
-    assert_eq!(scalar_t720_workspace.recurrence_workers.len(), 4);
+    assert_eq!(scalar_t720_workspace.recurrence_workers.len(), 23);
 
     let spin1_t720: ShtPlan<f64> = ShtPlan::new(
         GridSpec::new(GridKind::GaussLegendre, 721, 1443, 0.37).unwrap(),
@@ -1594,33 +1588,21 @@ fn fine_synthesis_groups_follow_the_measured_spin_and_grid_policy() {
     )
     .unwrap();
     let spin1_four_threads = four_threads.install(|| spin1_t720.workspace()).unwrap();
-    assert_eq!(
-        four_threads.install(|| spin1_t720.fine_synthesis_ring_group_size()),
-        None
-    );
+    assert_eq!(spin1_t720.fine_synthesis_ring_group_size(4), None);
     assert_eq!(spin1_four_threads.ring_group_size, 192);
     let spin1_eight_threads = eight_threads.install(|| spin1_t720.workspace()).unwrap();
-    assert_eq!(
-        eight_threads.install(|| spin1_t720.fine_synthesis_ring_group_size()),
-        Some(32)
-    );
+    assert_eq!(spin1_t720.fine_synthesis_ring_group_size(8), Some(32));
     assert_eq!(spin1_eight_threads.ring_group_size, 64);
-    assert_eq!(spin1_eight_threads.recurrence_workers.len(), 12);
+    assert_eq!(spin1_eight_threads.recurrence_workers.len(), 23);
 
     let reduced_order = make_plan(720, 360, 721, 1443, 0.37);
     let reduced_workspace = eight_threads.install(|| reduced_order.workspace()).unwrap();
-    assert_eq!(
-        eight_threads.install(|| reduced_order.fine_synthesis_ring_group_size()),
-        None
-    );
+    assert_eq!(reduced_order.fine_synthesis_ring_group_size(8), None);
     assert_eq!(reduced_workspace.ring_group_size, 64);
 
     let cc_plan = make_cc_plan(720, 720, 722, 1443, 0.37);
     let cc_workspace = eight_threads.install(|| cc_plan.workspace()).unwrap();
-    assert_eq!(
-        eight_threads.install(|| cc_plan.fine_synthesis_ring_group_size()),
-        None
-    );
+    assert_eq!(cc_plan.fine_synthesis_ring_group_size(8), None);
     assert_eq!(cc_workspace.ring_group_size, 64);
 }
 
@@ -1706,6 +1688,213 @@ fn synthesis_workspace_from_larger_pool_is_safe_in_smaller_pool() {
 
     for (&shared, &single) in shared_output.iter().zip(&single_output) {
         assert!((shared - single).abs() < 2e-14);
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn t1023_workspace_pool_migration_records_active_synthesis_workers() {
+    let plan = ShtPlan::new_with_legendre_reuse_estimate(
+        GridSpec::new(GridKind::GaussLegendre, 1024, 2048, 0.23).unwrap(),
+        HarmonicSpec::scalar(1023, 1023).unwrap(),
+        LegendreReuseEstimate::new(Some(0), Some(0)),
+    )
+    .unwrap();
+    assert_eq!(
+        plan.scalar_legendre_strategy(LegendreOperation::Synthesis),
+        LegendreStrategy::Recurrence
+    );
+    let one = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let three = rayon::ThreadPoolBuilder::new()
+        .num_threads(3)
+        .build()
+        .unwrap();
+    let eight = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let sixteen = rayon::ThreadPoolBuilder::new()
+        .num_threads(16)
+        .build()
+        .unwrap();
+    let migrations = [
+        ("q1->q8", &one, &eight, 1, 1),
+        ("q8->q1", &eight, &one, 1, 1),
+        ("q1->q16", &one, &sixteen, 1, 1),
+        ("q16->q8", &sixteen, &eight, 2, 8),
+        ("q3->q8", &three, &eight, 2, 4),
+    ];
+    let coefficients = coefficients(plan.harmonics());
+    let mut output = vec![0.0; plan.sample_count];
+
+    for (label, source, destination, minimum_active, maximum_active) in migrations {
+        let mut workspace = source.install(|| plan.workspace()).unwrap();
+        let probe = workspace.observe_active_workers();
+        destination
+            .install(|| plan.synthesis_into(&coefficients, &mut output, &mut workspace))
+            .unwrap();
+        let active = probe.lock().expect("worker probe is not poisoned").len();
+        eprintln!(
+            "T1023 recurrence synthesis {label}: {} active Rayon workers; {} recurrence scratch slots",
+            active,
+            workspace.recurrence_workers.len()
+        );
+        assert!(
+            (minimum_active..=maximum_active).contains(&active),
+            "{label} observed {active} active workers"
+        );
+    }
+
+    let mut adapted = one.install(|| plan.workspace()).unwrap();
+    one.install(|| plan.prepare_workspace(&mut adapted, 8))
+        .unwrap();
+    assert_eq!(adapted.execution_capacity(), 8);
+    assert_eq!(adapted.allocated_worker_count(), 8);
+    let probe = adapted.observe_active_workers();
+    let mut adapted_output = vec![0.0; plan.sample_count];
+    eight
+        .install(|| plan.synthesis_into(&coefficients, &mut adapted_output, &mut adapted))
+        .unwrap();
+    let active = probe.lock().expect("worker probe is not poisoned").len();
+    eprintln!(
+        "T1023 recurrence synthesis q1->q8 after explicit preparation: {active} active Rayon workers; {} recurrence scratch slots",
+        adapted.allocated_worker_count()
+    );
+    assert!((2..=8).contains(&active));
+
+    let mut fresh = eight.install(|| plan.workspace()).unwrap();
+    let mut fresh_output = vec![0.0; plan.sample_count];
+    eight
+        .install(|| plan.synthesis_into(&coefficients, &mut fresh_output, &mut fresh))
+        .unwrap();
+    assert!(relative_l2_real(&adapted_output, &fresh_output) <= 1e-13);
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn prepared_workspace_matches_fresh_workspace_for_scalar_operations_all_grids() {
+    let one = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let eight = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+
+    for kind in [
+        GridKind::GaussLegendre,
+        GridKind::ClenshawCurtis,
+        GridKind::Fejer1,
+    ] {
+        let plan = ShtPlan::new(
+            GridSpec::new(kind, 260, 17, 0.37).unwrap(),
+            HarmonicSpec::scalar(7, 5).unwrap(),
+        )
+        .unwrap();
+        let input_alm = coefficients(plan.harmonics());
+        let input_map = arbitrary_map(&plan);
+        let mut adapted = one.install(|| plan.workspace()).unwrap();
+        assert_eq!(adapted.execution_capacity(), 1);
+        assert!(matches!(
+            plan.prepare_workspace(
+                &mut adapted,
+                ShtWorkspace::<f64>::MAX_EXECUTION_CAPACITY + 1,
+            ),
+            Err(ShtError::InvalidExecutionCapacity { .. })
+        ));
+        assert_eq!(adapted.execution_capacity(), 1);
+        one.install(|| plan.prepare_workspace(&mut adapted, 4))
+            .unwrap();
+        assert_eq!(adapted.execution_capacity(), 4);
+        let allocated_after_prepare = adapted.allocated_worker_count();
+        assert!(allocated_after_prepare > 1);
+        let mut fresh = eight.install(|| plan.workspace()).unwrap();
+        eight
+            .install(|| plan.prepare_workspace(&mut fresh, 4))
+            .unwrap();
+        assert_eq!(fresh.execution_capacity(), 4);
+        let probe = adapted.observe_active_workers();
+
+        let mut adapted_synthesis = vec![0.0; plan.sample_count];
+        let mut fresh_synthesis = vec![0.0; plan.sample_count];
+        eight
+            .install(|| plan.synthesis_into(&input_alm, &mut adapted_synthesis, &mut adapted))
+            .unwrap();
+        let active_workers = probe.lock().expect("worker probe is not poisoned").len();
+        assert!((1..=4).contains(&active_workers));
+        eight
+            .install(|| plan.synthesis_into(&input_alm, &mut fresh_synthesis, &mut fresh))
+            .unwrap();
+        assert!(relative_l2_real(&adapted_synthesis, &fresh_synthesis) <= 1e-13);
+
+        let mut adapted_synthesis_adjoint = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        let mut fresh_synthesis_adjoint = adapted_synthesis_adjoint.clone();
+        eight
+            .install(|| {
+                plan.adjoint_synthesis_into(
+                    &input_map,
+                    &mut adapted_synthesis_adjoint,
+                    &mut adapted,
+                )
+            })
+            .unwrap();
+        eight
+            .install(|| {
+                plan.adjoint_synthesis_into(&input_map, &mut fresh_synthesis_adjoint, &mut fresh)
+            })
+            .unwrap();
+        assert!(relative_l2_complex(&adapted_synthesis_adjoint, &fresh_synthesis_adjoint) <= 1e-13);
+        assert_close(
+            map_inner_product(&adapted_synthesis, &input_map),
+            harmonic_inner_product(plan.harmonics(), &input_alm, &adapted_synthesis_adjoint),
+            2e-10,
+        );
+
+        let mut adapted_analysis = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        let mut fresh_analysis = adapted_analysis.clone();
+        probe.lock().expect("worker probe is not poisoned").clear();
+        eight
+            .install(|| plan.analysis_into(&input_map, &mut adapted_analysis, &mut adapted))
+            .unwrap();
+        let active_analysis_workers = probe.lock().expect("worker probe is not poisoned").len();
+        assert!((1..=4).contains(&active_analysis_workers));
+        eight
+            .install(|| plan.analysis_into(&input_map, &mut fresh_analysis, &mut fresh))
+            .unwrap();
+        assert!(relative_l2_complex(&adapted_analysis, &fresh_analysis) <= 1e-13);
+
+        let mut adapted_analysis_adjoint = vec![0.0; plan.sample_count];
+        let mut fresh_analysis_adjoint = vec![0.0; plan.sample_count];
+        eight
+            .install(|| {
+                plan.adjoint_analysis_into(&input_alm, &mut adapted_analysis_adjoint, &mut adapted)
+            })
+            .unwrap();
+        eight
+            .install(|| {
+                plan.adjoint_analysis_into(&input_alm, &mut fresh_analysis_adjoint, &mut fresh)
+            })
+            .unwrap();
+        assert!(relative_l2_real(&adapted_analysis_adjoint, &fresh_analysis_adjoint) <= 1e-13);
+        assert_close(
+            harmonic_inner_product(plan.harmonics(), &adapted_analysis, &input_alm),
+            map_inner_product(&input_map, &adapted_analysis_adjoint),
+            2e-10,
+        );
+
+        eight
+            .install(|| plan.prepare_workspace(&mut adapted, 1))
+            .unwrap();
+        assert_eq!(adapted.execution_capacity(), 1);
+        assert_eq!(adapted.allocated_worker_count(), allocated_after_prepare);
+        let mut serial_synthesis = vec![0.0; plan.sample_count];
+        one.install(|| plan.synthesis_into(&input_alm, &mut serial_synthesis, &mut adapted))
+            .unwrap();
+        assert!(relative_l2_real(&serial_synthesis, &fresh_synthesis) <= 1e-13);
     }
 }
 

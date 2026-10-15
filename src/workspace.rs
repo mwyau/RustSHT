@@ -10,6 +10,11 @@ use crate::fft::{RealFftPlan, RealFftWorkspace};
 use crate::legendre::{LATITUDE_BLOCK_SIZE, ShtScalar};
 use crate::meridional::CCResamplingPlan;
 
+#[cfg(all(test, feature = "parallel"))]
+use std::collections::BTreeSet;
+#[cfg(all(test, feature = "parallel"))]
+use std::sync::{Arc, Mutex};
+
 /// Mutable scratch for one transform execution.
 ///
 /// Create a workspace with [`crate::ShtPlan::workspace`]. Use a separate workspace
@@ -30,6 +35,7 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
     pub(crate) ring_order_limits: Vec<usize>,
     pub(crate) recurrence_workers: Vec<RecurrenceWorkspace<T>>,
     pub(crate) ring_group_size: usize,
+    pub(crate) execution_capacity: usize,
     pub(crate) fft: RealFftWorkspace<T>,
 }
 
@@ -65,6 +71,8 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     pub(crate) fast_spin_second: Vec<Complex<T>>,
     pub(crate) fast_spin_pair_first: Vec<Complex<T>>,
     pub(crate) fast_spin_pair_second: Vec<Complex<T>>,
+    #[cfg(all(test, feature = "parallel"))]
+    worker_probe: Option<Arc<Mutex<BTreeSet<usize>>>>,
 }
 
 impl<T: ShtScalar> RecurrenceWorkspace<T> {
@@ -176,12 +184,101 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
                 spin_pair_fast_coefficient_count,
                 "spin paired fast second channel coefficients",
             )?,
+            #[cfg(all(test, feature = "parallel"))]
+            worker_probe: None,
         })
+    }
+
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn record_active_worker(&self) {
+        let Some(probe) = &self.worker_probe else {
+            return;
+        };
+        if let Some(index) = rayon::current_thread_index() {
+            probe
+                .lock()
+                .expect("worker probe is not poisoned")
+                .insert(index);
+        }
     }
 }
 
 #[allow(private_bounds)]
 impl<T: ShtScalar> ShtWorkspace<T> {
+    /// Maximum execution capacity accepted by this build.
+    ///
+    /// Builds with the `parallel` feature accept capacities through 64. Builds
+    /// without it accept only 1.
+    pub const MAX_EXECUTION_CAPACITY: usize = if cfg!(feature = "parallel") { 64 } else { 1 };
+
+    /// Returns the requested maximum number of Rayon workers for transforms
+    /// that use this workspace.
+    ///
+    /// The executing pool may have fewer threads. Increasing this value
+    /// requires [`crate::ShtPlan::prepare_workspace`]; changing Rayon pools
+    /// does not change it.
+    #[must_use]
+    pub const fn execution_capacity(&self) -> usize {
+        self.execution_capacity
+    }
+
+    /// Returns the number of recurrence scratch slots currently allocated.
+    ///
+    /// The slot count can exceed the execution capacity because synthesis
+    /// groups may be overpartitioned for load balancing. Reducing execution
+    /// capacity retains allocated scratch.
+    #[must_use]
+    pub fn allocated_worker_count(&self) -> usize {
+        self.recurrence_workers.len()
+    }
+
+    pub(crate) fn ring_group_size_for_capacity(
+        ntheta: usize,
+        execution_capacity: usize,
+    ) -> Result<usize, ShtError> {
+        let ring_block_count = ntheta.div_ceil(LATITUDE_BLOCK_SIZE);
+        let worker_limit = execution_capacity.min(ring_block_count).max(1);
+        let blocks_per_group = ring_block_count.div_ceil(worker_limit);
+        let mut ring_group_size =
+            blocks_per_group
+                .checked_mul(LATITUDE_BLOCK_SIZE)
+                .ok_or(ShtError::IntegerOverflow {
+                    quantity: "parallel latitude group size",
+                })?;
+        let existing_ring_worker_count = ntheta.div_ceil(ring_group_size);
+        // Increase synthesis granularity when block grouping leaves workers
+        // idle. Keep multi-block groups aligned to recurrence block boundaries.
+        if execution_capacity > 1
+            && ntheta >= 64
+            && (ring_block_count <= 9 || existing_ring_worker_count < worker_limit)
+        {
+            let candidate_blocks_per_group = blocks_per_group.div_ceil(2);
+            ring_group_size = if blocks_per_group == 1 {
+                if ntheta < 256 {
+                    LATITUDE_BLOCK_SIZE / 4
+                } else {
+                    LATITUDE_BLOCK_SIZE / 2
+                }
+            } else {
+                candidate_blocks_per_group
+                    .checked_mul(LATITUDE_BLOCK_SIZE)
+                    .ok_or(ShtError::IntegerOverflow {
+                        quantity: "parallel latitude group size",
+                    })?
+            };
+        }
+        Ok(ring_group_size)
+    }
+
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn observe_active_workers(&mut self) -> Arc<Mutex<BTreeSet<usize>>> {
+        let probe = Arc::new(Mutex::new(BTreeSet::new()));
+        for recurrence in &mut self.recurrence_workers {
+            recurrence.worker_probe = Some(Arc::clone(&probe));
+        }
+        probe
+    }
+
     #[cfg(feature = "parallel")]
     pub(crate) fn ensure_recurrence_worker_count(
         &mut self,
@@ -222,6 +319,7 @@ impl<T: ShtScalar> ShtWorkspace<T> {
         spin_recurrence_factor_count: usize,
         spin_fast_coefficient_count: usize,
         spin_pair_fast_coefficient_count: usize,
+        execution_capacity: usize,
         fft: &RealFftPlan<T>,
         cc_resampling: Option<&CCResamplingPlan<T>>,
     ) -> Result<Self, ShtError> {
@@ -234,43 +332,9 @@ impl<T: ShtScalar> ShtWorkspace<T> {
                     quantity: "prepared CC Fourier spectrum count",
                 })?;
         let recurrence_scratch_len = latitude_count.min(LATITUDE_BLOCK_SIZE);
-        let ring_block_count = ntheta.div_ceil(LATITUDE_BLOCK_SIZE);
-        #[cfg(feature = "parallel")]
-        let available_workers = rayon::current_num_threads();
-        #[cfg(not(feature = "parallel"))]
-        let available_workers = 1;
-        let worker_limit = available_workers.min(ring_block_count).max(1);
-        let blocks_per_group = ring_block_count.div_ceil(worker_limit);
-        let mut ring_group_size =
-            blocks_per_group
-                .checked_mul(LATITUDE_BLOCK_SIZE)
-                .ok_or(ShtError::IntegerOverflow {
-                    quantity: "parallel latitude group size",
-                })?;
-        let existing_ring_worker_count = ntheta.div_ceil(ring_group_size);
-        // Increase synthesis granularity when block grouping leaves workers
-        // idle. Keep multi-block groups aligned to recurrence block boundaries.
-        if available_workers > 1
-            && ntheta >= 64
-            && (ring_block_count <= 9 || existing_ring_worker_count < worker_limit)
-        {
-            let candidate_blocks_per_group = blocks_per_group.div_ceil(2);
-            ring_group_size = if blocks_per_group == 1 {
-                if ntheta < 256 {
-                    LATITUDE_BLOCK_SIZE / 4
-                } else {
-                    LATITUDE_BLOCK_SIZE / 2
-                }
-            } else {
-                candidate_blocks_per_group
-                    .checked_mul(LATITUDE_BLOCK_SIZE)
-                    .ok_or(ShtError::IntegerOverflow {
-                        quantity: "parallel latitude group size",
-                    })?
-            };
-        }
+        let ring_group_size = Self::ring_group_size_for_capacity(ntheta, execution_capacity)?;
         let ring_worker_count = ntheta.div_ceil(ring_group_size);
-        let analysis_worker_count = available_workers.min(analysis_order_count).max(1);
+        let analysis_worker_count = execution_capacity.min(analysis_order_count).max(1);
         let worker_count = ring_worker_count.max(analysis_worker_count);
         let mut recurrence_workers = Vec::new();
         recurrence_workers
@@ -315,6 +379,7 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             ring_order_limits: allocate_usizes(latitude_count, "latitude order limits")?,
             recurrence_workers,
             ring_group_size,
+            execution_capacity,
             fft: fft.workspace()?,
         })
     }

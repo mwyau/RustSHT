@@ -256,26 +256,37 @@ impl<T: ShtScalar> ShtPlan<T> {
         self.get_scalar_legendre_table()
     }
 
+    #[cfg(all(test, feature = "parallel"))]
     pub(crate) fn scalar_legendre_strategy(
         &self,
         operation: LegendreOperation,
     ) -> LegendreStrategy {
+        self.scalar_legendre_strategy_with_capacity(operation, current_execution_thread_count())
+    }
+
+    pub(crate) fn scalar_legendre_strategy_with_capacity(
+        &self,
+        operation: LegendreOperation,
+        execution_capacity: usize,
+    ) -> LegendreStrategy {
         if !ScalarLegendreTable::<T>::supports_grid_and_bandlimit(&self.grid, &self.harmonics) {
             return LegendreStrategy::Recurrence;
         }
+        let execution_threads = current_execution_thread_count().min(execution_capacity);
         let strategy = select_scalar_legendre_strategy(
             self.harmonics.lmax(),
             self.harmonics.mmax(),
             self.grid.ntheta(),
             operation,
-            current_execution_thread_count(),
+            execution_threads,
         );
         if strategy == LegendreStrategy::CompactTable
-            && !self.legendre_reuse_allows_table(
+            && !self.legendre_reuse_allows_table_at_thread_count(
                 operation,
                 self.scalar_legendre_table
                     .get()
                     .is_some_and(Option::is_some),
+                execution_threads,
             )
         {
             LegendreStrategy::Recurrence
@@ -288,6 +299,19 @@ impl<T: ShtScalar> ShtPlan<T> {
         &self,
         operation: LegendreOperation,
         table_is_initialized: bool,
+    ) -> bool {
+        self.legendre_reuse_allows_table_at_thread_count(
+            operation,
+            table_is_initialized,
+            current_execution_thread_count(),
+        )
+    }
+
+    fn legendre_reuse_allows_table_at_thread_count(
+        &self,
+        operation: LegendreOperation,
+        table_is_initialized: bool,
+        execution_threads: usize,
     ) -> bool {
         let Some(expected_calls) = self.legendre_reuse_estimate.calls_for(operation) else {
             return true;
@@ -305,13 +329,16 @@ impl<T: ShtScalar> ShtPlan<T> {
             self.grid.nphi(),
             self.harmonics.spin(),
             operation,
-            current_execution_thread_count(),
+            execution_threads,
         )
         .is_some_and(|minimum_calls| expected_calls >= minimum_calls)
     }
 
     #[cfg(feature = "parallel")]
-    pub(crate) fn fine_synthesis_ring_group_size(&self) -> Option<usize> {
+    pub(crate) fn fine_synthesis_ring_group_size(
+        &self,
+        execution_capacity: usize,
+    ) -> Option<usize> {
         let lmax = self.harmonics.lmax();
         if !T::supports_precomputed_scalar()
             || self.grid.kind() != crate::grid::GridKind::GaussLegendre
@@ -322,10 +349,9 @@ impl<T: ShtScalar> ShtPlan<T> {
             return None;
         }
 
-        let thread_count = current_execution_thread_count();
         match self.harmonics.spin() {
-            0 if thread_count >= 4 => Some(32),
-            1 if thread_count >= 8 && lmax >= 640 => Some(32),
+            0 if execution_capacity >= 4 => Some(32),
+            1 if execution_capacity >= 8 && lmax >= 640 => Some(32),
             _ => None,
         }
     }
@@ -344,9 +370,10 @@ impl<T: ShtScalar> ShtPlan<T> {
 
     /// Creates mutable scratch sized for this plan.
     ///
-    /// With the `parallel` feature, worker scratch uses the thread count of the
-    /// active Rayon pool. Create the workspace inside a custom pool when that
-    /// pool will execute the transform.
+    /// With the `parallel` feature, the initial execution capacity is the
+    /// active Rayon pool size, capped at 64. Use
+    /// [`Self::prepare_workspace`] to select a different capacity before
+    /// execution in another pool.
     ///
     /// # Errors
     ///
@@ -365,7 +392,9 @@ impl<T: ShtScalar> ShtPlan<T> {
             } else {
                 0
             };
-        ShtWorkspace::<T>::new(
+        let execution_capacity =
+            current_execution_thread_count().min(ShtWorkspace::<T>::MAX_EXECUTION_CAPACITY);
+        let mut workspace = ShtWorkspace::<T>::new(
             self.spectrum_count,
             self.grid.nphi(),
             self.grid.ntheta(),
@@ -374,8 +403,106 @@ impl<T: ShtScalar> ShtPlan<T> {
             self.spin_recurrence_factor_count,
             self.spin_fast_coefficient_count,
             spin_pair_fast_coefficient_count,
+            execution_capacity,
             &self.fft,
             self.cc_resampling.as_ref(),
-        )
+        )?;
+        self.prepare_workspace(&mut workspace, execution_capacity)?;
+        Ok(workspace)
+    }
+
+    /// Reserves recurrence scratch and sets the maximum concurrency for a
+    /// workspace.
+    ///
+    /// `execution_capacity` is a workspace budget, independent of the Rayon
+    /// pool that runs an operation. A transform uses at most the smaller of
+    /// this value and the current pool size. Calling this method with a larger
+    /// value opts the workspace into that capacity; a pool change alone does
+    /// not increase it. Reducing the value keeps allocated scratch for later
+    /// reuse. A capacity of one preserves a serial workspace for batching
+    /// independent fields.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the requested capacity is outside the build's
+    /// supported range, the workspace is incompatible with this plan, checked
+    /// sizing overflows, or scratch allocation fails. On allocation failure,
+    /// the prior execution capacity remains active.
+    pub fn prepare_workspace(
+        &self,
+        workspace: &mut ShtWorkspace<T>,
+        execution_capacity: usize,
+    ) -> Result<(), ShtError> {
+        let maximum = ShtWorkspace::<T>::MAX_EXECUTION_CAPACITY;
+        if !(1..=maximum).contains(&execution_capacity) {
+            return Err(ShtError::InvalidExecutionCapacity {
+                requested: execution_capacity,
+                maximum,
+            });
+        }
+        self.check_workspace(workspace)?;
+        let ring_group_size = ShtWorkspace::<T>::ring_group_size_for_capacity(
+            self.grid.ntheta(),
+            execution_capacity,
+        )?;
+        let analysis_order_count =
+            self.harmonics
+                .mmax()
+                .checked_add(1)
+                .ok_or(ShtError::IntegerOverflow {
+                    quantity: "analysis order count",
+                })?;
+        #[cfg_attr(not(feature = "parallel"), allow(unused_mut))]
+        let mut required_worker_count = self
+            .grid
+            .ntheta()
+            .div_ceil(ring_group_size)
+            .max(execution_capacity.min(analysis_order_count).max(1));
+
+        #[cfg(feature = "parallel")]
+        {
+            if let Some(fine_group_size) = self.fine_synthesis_ring_group_size(execution_capacity) {
+                required_worker_count = required_worker_count.max(
+                    self.grid
+                        .ntheta()
+                        .div_ceil(fine_group_size.min(self.grid.ntheta())),
+                );
+            }
+            if let Some(hemisphere_workers) = crate::spin_transform::spin1_hemisphere_worker_count(
+                self,
+                execution_capacity.min(8),
+            ) {
+                required_worker_count = required_worker_count.max(hemisphere_workers);
+            }
+            let spin_pair_fast_coefficient_count =
+                if self.harmonics.spin() == 1 && T::supports_paired_scalar() {
+                    self.spin_fast_coefficient_count
+                } else {
+                    0
+                };
+            workspace.ensure_recurrence_worker_count(
+                required_worker_count,
+                self.recurrence_factor_count,
+                self.spin_recurrence_factor_count,
+                self.spin_fast_coefficient_count,
+                spin_pair_fast_coefficient_count,
+                workspace
+                    .theta_sin
+                    .len()
+                    .min(crate::legendre::LATITUDE_BLOCK_SIZE),
+            )?;
+        }
+
+        if workspace.recurrence_workers.len() < required_worker_count {
+            return Err(ShtError::BufferLength {
+                buffer: "workspace recurrence worker groups",
+                expected: required_worker_count,
+                actual: workspace.recurrence_workers.len(),
+            });
+        }
+
+        workspace.ring_group_size = ring_group_size;
+        workspace.execution_capacity = execution_capacity;
+        Ok(())
     }
 }
