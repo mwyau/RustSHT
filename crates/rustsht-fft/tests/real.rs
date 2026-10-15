@@ -1855,3 +1855,163 @@ fn f32_real_complexify_batch_matches_independent_row_calls() {
     }
     assert_eq!(batch_output, row_output);
 }
+
+#[test]
+fn real_radix11_required_lengths_match_independent_f64_and_f32_dfts() {
+    for n in [11, 22, 121, 242, 363, 726, 1023, 1441] {
+        let input64: Vec<_> = (0..n)
+            .map(|index| {
+                real_signal(index + 37, n + 13) + if index.is_multiple_of(2) { 32.0 } else { -32.0 }
+            })
+            .collect();
+        let expected_spectrum64 = direct_r2c_f64(&input64);
+        let plan64 = RealFftPlan::<f64>::new(n).unwrap();
+        let mut workspace64 = plan64.workspace().unwrap();
+        let mut actual_spectrum64 = vec![Complex::new(0.0, 0.0); plan64.spectrum_len()];
+        plan64
+            .forward(&input64, &mut actual_spectrum64, &mut workspace64)
+            .unwrap();
+        assert_complex_f64_close(&actual_spectrum64, &expected_spectrum64, n);
+
+        let mut independent_spectrum64: Vec<_> = (0..plan64.spectrum_len())
+            .map(|frequency| {
+                Complex::new(
+                    0.3 * real_signal(frequency + 19, n + 7)
+                        + if frequency.is_multiple_of(2) {
+                            0.125
+                        } else {
+                            -0.125
+                        },
+                    0.4 * real_signal(frequency + 11, n + 17) - 0.0625,
+                )
+            })
+            .collect();
+        independent_spectrum64[0].im = 91.0;
+        if n.is_multiple_of(2) {
+            independent_spectrum64[n / 2].im = -43.0;
+        }
+        let expected_output64 = direct_c2r_f64(&independent_spectrum64, n);
+        let mut actual_output64 = vec![0.0; n];
+        plan64
+            .inverse(
+                &independent_spectrum64,
+                &mut actual_output64,
+                &mut workspace64,
+            )
+            .unwrap();
+        assert_f64_close(&actual_output64, &expected_output64, n);
+
+        let input32: Vec<_> = input64.iter().map(|&value| value as f32).collect();
+        let input32_as_f64: Vec<_> = input32.iter().map(|&value| value as f64).collect();
+        let expected_spectrum32 = direct_r2c_f64(&input32_as_f64);
+        let plan32 = RealFftPlan::<f32>::new(n).unwrap();
+        let mut workspace32 = plan32.workspace().unwrap();
+        let mut actual_spectrum32 = vec![Complex::new(0.0, 0.0); plan32.spectrum_len()];
+        plan32
+            .forward(&input32, &mut actual_spectrum32, &mut workspace32)
+            .unwrap();
+        assert_complex_f32_close(&actual_spectrum32, &expected_spectrum32, n);
+
+        let independent_spectrum32: Vec<_> = independent_spectrum64
+            .iter()
+            .map(|value| Complex::new(value.re as f32, value.im as f32))
+            .collect();
+        let independent_spectrum32_as_f64: Vec<_> = independent_spectrum32
+            .iter()
+            .map(|value| Complex::new(value.re as f64, value.im as f64))
+            .collect();
+        let expected_output32 = direct_c2r_f64(&independent_spectrum32_as_f64, n);
+        let mut actual_output32 = vec![0.0; n];
+        plan32
+            .inverse(
+                &independent_spectrum32,
+                &mut actual_output32,
+                &mut workspace32,
+            )
+            .unwrap();
+        assert_f32_close(&actual_output32, &expected_output32, n);
+    }
+}
+
+#[test]
+fn real_radix11_fixed_terminal_inverse_preserves_cancellation_and_extremes() {
+    const N: usize = 22;
+
+    let plan64 = RealFftPlan::<f64>::new(N).unwrap();
+    let mut workspace64 = plan64.workspace().unwrap();
+    let cancellation64: Vec<_> = (0..plan64.spectrum_len())
+        .map(|frequency| {
+            Complex::new(
+                if frequency.is_multiple_of(2) {
+                    1.0
+                } else {
+                    -1.0 + f64::EPSILON
+                },
+                (frequency as f64 - 2.0) * 0.125,
+            )
+        })
+        .collect();
+    let expected64 = direct_c2r_f64(&cancellation64, N);
+    let mut actual64 = [0.0; N];
+    plan64
+        .inverse(&cancellation64, &mut actual64, &mut workspace64)
+        .unwrap();
+    assert_f64_close(&actual64, &expected64, N);
+
+    let mut dc_spectrum64 = vec![Complex::new(0.0, 0.0); plan64.spectrum_len()];
+    for amplitude in [f64::MIN_POSITIVE, f64::from_bits(1)] {
+        dc_spectrum64.fill(Complex::new(0.0, 0.0));
+        dc_spectrum64[0].re = amplitude * N as f64;
+        plan64
+            .inverse(&dc_spectrum64, &mut actual64, &mut workspace64)
+            .unwrap();
+        assert_eq!(actual64, [amplitude; N]);
+    }
+    dc_spectrum64.fill(Complex::new(0.0, 0.0));
+    dc_spectrum64[0].re = f64::MAX;
+    let expected64 = direct_c2r_f64(&dc_spectrum64, N);
+    plan64
+        .inverse(&dc_spectrum64, &mut actual64, &mut workspace64)
+        .unwrap();
+    assert!(actual64.iter().all(|value| value.is_finite()));
+    assert_f64_close(&actual64, &expected64, N);
+
+    let plan32 = RealFftPlan::<f32>::new(N).unwrap();
+    let mut workspace32 = plan32.workspace().unwrap();
+    let cancellation32: Vec<_> = cancellation64
+        .iter()
+        .map(|value| Complex::new(value.re as f32, value.im as f32))
+        .collect();
+    let cancellation32_as_f64: Vec<_> = cancellation32
+        .iter()
+        .map(|value| Complex::new(value.re as f64, value.im as f64))
+        .collect();
+    let expected32 = direct_c2r_f64(&cancellation32_as_f64, N);
+    let mut actual32 = [0.0; N];
+    plan32
+        .inverse(&cancellation32, &mut actual32, &mut workspace32)
+        .unwrap();
+    assert_f32_close(&actual32, &expected32, N);
+
+    let mut dc_spectrum32 = vec![Complex::new(0.0, 0.0); plan32.spectrum_len()];
+    for amplitude in [f32::MIN_POSITIVE, f32::from_bits(1)] {
+        dc_spectrum32.fill(Complex::new(0.0, 0.0));
+        dc_spectrum32[0].re = amplitude * N as f32;
+        plan32
+            .inverse(&dc_spectrum32, &mut actual32, &mut workspace32)
+            .unwrap();
+        assert_eq!(actual32, [amplitude; N]);
+    }
+    dc_spectrum32.fill(Complex::new(0.0, 0.0));
+    dc_spectrum32[0].re = f32::MAX;
+    let max_spectrum32_as_f64: Vec<_> = dc_spectrum32
+        .iter()
+        .map(|value| Complex::new(value.re as f64, value.im as f64))
+        .collect();
+    let expected32 = direct_c2r_f64(&max_spectrum32_as_f64, N);
+    plan32
+        .inverse(&dc_spectrum32, &mut actual32, &mut workspace32)
+        .unwrap();
+    assert!(actual32.iter().all(|value| value.is_finite()));
+    assert_f32_close(&actual32, &expected32, N);
+}

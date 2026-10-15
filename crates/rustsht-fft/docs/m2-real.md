@@ -76,4 +76,5 @@ benchmark executable at length 4,097 and batch count one measured peak RSS of
 2,492 KiB for RustSHT-FFT and 4,256 KiB for RustFFT; it includes the process
 runtime, plans, and buffers. RustSHT-FFT is slower than both references at every measured length. The generic
 large-radix combine is especially costly for C2R at lengths 2,049 and 4,097. These results establish the M2 baseline; they do not indicate performance
-parity.
+parity. The follow-up native radix-11 pass, DUCC comparison, and paired timing results
+are recorded in [M2 native real radix-11](m2-real-radix11.md).

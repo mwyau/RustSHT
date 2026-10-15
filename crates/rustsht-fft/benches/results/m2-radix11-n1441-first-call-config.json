@@ -1,0 +1,29 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-first-call-set",
+      "1441"
+    ],
+    "label": "candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-first-call-set",
+      "1441"
+    ],
+    "label": "m1-generic"
+  },
+  "metadata": {
+    "baseline_binary_sha256": "53b02cead892e7a0f13becfe4de96b4440d00af1d4630fbf24c3936c7a7c5e67",
+    "baseline_commit": "15023973f1880775b28bac5ffd9fb18a7ff49c76",
+    "benchmark": "bench-native-first-call-set 1441",
+    "candidate_binary_sha256": "40dc7292e95d22f8f222f4d2c2e777ea4f416b121cbf7d3412c35a8ea7a0ee17",
+    "candidate_commit": "uncommitted M2 radix-11 candidate",
+    "compiler": "Rust 1.99.0 stable, Cargo bench profile",
+    "purpose": "Isolated repeat of N=1441 first-call and warmed-call timings",
+    "thread_count": 1
+  },
+  "pairs": 12
+}

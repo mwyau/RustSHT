@@ -1309,6 +1309,18 @@ fn main() {
             println!("mode,n,first_call_ns,warm_call_median_ns,workspace_bytes,checksum");
             benchmark_native_first_call(mode, n);
         }
+        Some("bench-native-first-call-set") => {
+            let sizes: Vec<usize> = args
+                .map(|value| value.parse().expect("length must be an integer"))
+                .collect();
+            assert!(!sizes.is_empty(), "at least one length is required");
+            println!("mode,n,first_call_ns,warm_call_median_ns,workspace_bytes,checksum");
+            for n in sizes {
+                for mode in [Mode::RealForward, Mode::RealInverse] {
+                    benchmark_native_first_call(mode, n);
+                }
+            }
+        }
         Some("bench-native-real") => {
             println!(
                 "mode,n,plan_ns,workspace_ns,workspace_bytes,public_operation_ns,batch_operation_ns,batch_count,checksum"

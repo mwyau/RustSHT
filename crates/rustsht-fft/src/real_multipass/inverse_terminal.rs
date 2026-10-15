@@ -6,6 +6,7 @@
 // Terminal real inverse radix equations are adapted from DUCC fft1d_impl.h
 // at c1ed01b8fda69d2a378190f0915f1a19762dddbf.
 
+use num_complex::Complex;
 use num_traits::{Float, FromPrimitive};
 
 use super::{Pass, scalar};
@@ -18,6 +19,13 @@ pub(super) fn execute<T: Float + FromPrimitive>(
     scale: T,
 ) {
     debug_assert_eq!(pass.ido, 1);
+    #[cfg(test)]
+    if pass.fixed_radix11() {
+        crate::m0_record_route(format!(
+            "real-inverse-terminal:fixed-radix11 l1={}",
+            pass.l1
+        ));
+    }
     match pass.radix {
         2 => {
             let (first, second) = output.split_at_mut(pass.l1);
@@ -85,6 +93,24 @@ pub(super) fn execute<T: Float + FromPrimitive>(
                 branch2[k] = (cr3 - ci4) * scale;
                 branch3[k] = (cr3 + ci4) * scale;
                 branch4[k] = (cr2 + ci5) * scale;
+            }
+        }
+        11 if pass.fixed_radix11() => {
+            let (cosines, sines) = super::radix11_coefficients();
+            for group in 0..pass.l1 {
+                let input_start = group * 11;
+                let mut spectrum = [Complex::new(T::zero(), T::zero()); 6];
+                spectrum[0].re = input[input_start];
+                for frequency in 1..=5 {
+                    spectrum[frequency] = Complex::new(
+                        input[input_start + 2 * frequency - 1],
+                        input[input_start + 2 * frequency],
+                    );
+                }
+                let samples = super::radix11_real_inverse(&spectrum, &cosines, &sines);
+                for (branch, sample) in samples.into_iter().enumerate() {
+                    output[branch * pass.l1 + group] = sample * scale;
+                }
             }
         }
         _ => super::inverse_general_prime(pass, input, output, scale),
