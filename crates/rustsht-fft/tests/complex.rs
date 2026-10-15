@@ -407,6 +407,34 @@ fn f64_4096_smooth_transform_matches_rustfft_forward_and_inverse() {
 }
 
 #[test]
+fn f64_682_radix31_transform_matches_rustfft_forward_and_inverse() {
+    use rustfft::FftPlanner;
+
+    let n = 682;
+    let input = random_signal_f64(n, 0x42b9_7da1_53e8_c60f);
+    let mut expected_forward = input.clone();
+    FftPlanner::<f64>::new()
+        .plan_fft_forward(n)
+        .process(&mut expected_forward);
+
+    let plan = ComplexFftPlan::<f64>::new(n).unwrap();
+    let mut workspace = plan.workspace().unwrap();
+    let mut actual_forward = input;
+    plan.forward(&mut actual_forward, &mut workspace).unwrap();
+    assert_f64_close(&actual_forward, &expected_forward, n);
+
+    let spectrum = random_signal_f64(n, 0x18a5_f934_6c02_b7d1);
+    let mut expected_inverse = spectrum.clone();
+    FftPlanner::<f64>::new()
+        .plan_fft_inverse(n)
+        .process(&mut expected_inverse);
+    let expected_inverse = normalized_direct_inverse(expected_inverse, 1.0 / n as f64);
+    let mut actual_inverse = spectrum;
+    plan.inverse(&mut actual_inverse, &mut workspace).unwrap();
+    assert_f64_close(&actual_inverse, &expected_inverse, n);
+}
+
+#[test]
 fn fixed_radices_match_analytic_impulses_constants_and_fourier_modes() {
     for n in [7, 8, 11, 16] {
         let plan = ComplexFftPlan::<f64>::new(n).unwrap();

@@ -27,6 +27,17 @@ pub(crate) struct RealGeneralPrimeIdo1Params<'a, T> {
 }
 pub(crate) type RealGeneralPrimeIdo1Kernel<T> =
     for<'a> unsafe fn(&[T], &mut [T], RealGeneralPrimeIdo1Params<'a, T>);
+pub(crate) struct ComplexGeneralPrimeIdo1Params<'a, T> {
+    pub(crate) l1: usize,
+    pub(crate) radix: usize,
+    pub(crate) roots: &'a [Complex<T>],
+    pub(crate) root_stride: usize,
+    pub(crate) phase_indices: &'a [u8],
+    pub(crate) inverse: bool,
+    pub(crate) scale: T,
+}
+pub(crate) type ComplexGeneralPrimeIdo1Kernel<T> =
+    for<'a> unsafe fn(&[Complex<T>], &mut [Complex<T>], ComplexGeneralPrimeIdo1Params<'a, T>);
 /// A fixed-radix AVX2 complex pass function pointer.
 ///
 /// The ordinary pass pointer follows `avx2_pass`'s vector-width contract. A
@@ -65,6 +76,14 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
     /// The kernel operates on two adjacent outer groups and leaves an odd
     /// final group untouched for the scalar caller.
     fn avx2_ido1_radix4_pass_kernel() -> Option<ComplexPassKernel<Self>> {
+        None
+    }
+
+    /// Returns the f64 radix-31 general-prime kernel for `ido == 1`.
+    ///
+    /// The caller must check the returned kernel's radix, pass layout, input
+    /// safety range, and runtime AVX2 availability before calling it.
+    fn avx2_general_prime_ido1_kernel() -> Option<ComplexGeneralPrimeIdo1Kernel<Self>> {
         None
     }
 
@@ -121,9 +140,9 @@ mod x86 {
     use std::sync::OnceLock;
 
     use super::{
-        Complex, ComplexPassKernel, RealGeneralPrimeIdo1Kernel, RealRadix2ForwardInteriorKernel,
-        RealRadix2InteriorKernel, RealRadix4ForwardInteriorKernel, RealRadix4InteriorKernel,
-        SimdPass, SimdScalar,
+        Complex, ComplexGeneralPrimeIdo1Kernel, ComplexPassKernel, RealGeneralPrimeIdo1Kernel,
+        RealRadix2ForwardInteriorKernel, RealRadix2InteriorKernel, RealRadix4ForwardInteriorKernel,
+        RealRadix4InteriorKernel, SimdPass, SimdScalar,
     };
 
     static AVX2_AVAILABLE: OnceLock<bool> = OnceLock::new();
@@ -145,6 +164,14 @@ mod x86 {
 
         fn avx2_ido1_radix4_pass_kernel() -> Option<ComplexPassKernel<Self>> {
             Some(f64_kernel::pass_ido1_radix4)
+        }
+
+        fn avx2_general_prime_ido1_kernel() -> Option<ComplexGeneralPrimeIdo1Kernel<Self>> {
+            if available() {
+                Some(f64_kernel::general_prime_ido1_radix31)
+            } else {
+                None
+            }
         }
 
         fn real_radix4_interior_kernel() -> Option<RealRadix4InteriorKernel<Self>> {
@@ -259,7 +286,7 @@ mod x86 {
     pub(super) mod f64_kernel {
         use std::arch::x86_64::*;
 
-        use super::super::SimdPass;
+        use super::super::{ComplexGeneralPrimeIdo1Params, SimdPass};
         use num_complex::Complex;
 
         type V = __m256d;
@@ -527,6 +554,161 @@ mod x86 {
             // SAFETY: this function has the same target-feature and slice
             // contract as the fixed radix-four helper.
             unsafe { pass_ido1_fixed::<4>(input, output, pass) }
+        }
+
+        /// Executes a radix-31 general-prime pass with `ido == 1`, processing
+        /// pairs of output frequencies in AVX2 lanes.
+        ///
+        /// # Safety
+        ///
+        /// The caller must have detected AVX2 and provide disjoint input and
+        /// output slices of at least `31 * l1` complex values, `l1 > 0`, a
+        /// radix-31 phase table with at least 465 entries, and a roots slice
+        /// containing every indexed root. The inverse input must be in the
+        /// deferred-normalization safety range.
+        #[target_feature(enable = "avx2")]
+        pub(super) unsafe fn general_prime_ido1_radix31(
+            input: &[Complex<f64>],
+            output: &mut [Complex<f64>],
+            params: ComplexGeneralPrimeIdo1Params<'_, f64>,
+        ) {
+            let ComplexGeneralPrimeIdo1Params {
+                l1,
+                radix,
+                roots,
+                root_stride,
+                phase_indices,
+                inverse,
+                scale,
+            } = params;
+            let half = radix / 2;
+            debug_assert_eq!(radix, 31);
+            debug_assert!(l1 > 0);
+            debug_assert!(root_stride > 0);
+            debug_assert!(input.len() >= radix * l1);
+            debug_assert!(output.len() >= radix * l1);
+            debug_assert!(phase_indices.len() >= half * radix);
+            debug_assert!(roots.len() > (radix - 1) * root_stride);
+
+            let output_ptr = output.as_mut_ptr();
+            let imaginary_signs = _mm256_setr_pd(-1.0, 1.0, -1.0, 1.0);
+            let output_scale = _mm256_set1_pd(scale);
+
+            for outer in 0..l1 {
+                let input_zero = input[radix * outer];
+                let mut dc = input_zero;
+                for branch in 1..=half {
+                    let pair =
+                        input[radix * outer + branch] + input[radix * outer + (radix - branch)];
+                    dc += pair;
+                }
+                if inverse {
+                    dc *= scale;
+                }
+                output[outer] = dc;
+
+                let mut frequency = 1;
+                while frequency < half {
+                    let initial =
+                        _mm256_setr_pd(input_zero.re, input_zero.im, input_zero.re, input_zero.im);
+                    let mut positive = initial;
+                    let mut negative = initial;
+
+                    for branch in 1..=half {
+                        let left = input[radix * outer + branch];
+                        let right = input[radix * outer + (radix - branch)];
+                        let pair = left + right;
+                        let difference = left - right;
+                        let pair = _mm256_setr_pd(pair.re, pair.im, pair.re, pair.im);
+                        let difference = _mm256_setr_pd(
+                            difference.re,
+                            difference.im,
+                            difference.re,
+                            difference.im,
+                        );
+                        let imaginary_difference =
+                            _mm256_mul_pd(_mm256_permute_pd(difference, 0b0101), imaginary_signs);
+
+                        let phase_first =
+                            usize::from(phase_indices[(branch - 1) * radix + frequency]);
+                        let phase_second =
+                            usize::from(phase_indices[(branch - 1) * radix + frequency + 1]);
+                        let root_first = roots[phase_first * root_stride];
+                        let root_second = roots[phase_second * root_stride];
+                        let sign = if inverse { 1.0 } else { -1.0 };
+                        let cosine = _mm256_setr_pd(
+                            root_first.re,
+                            root_first.re,
+                            root_second.re,
+                            root_second.re,
+                        );
+                        let sine = _mm256_setr_pd(
+                            root_first.im * sign,
+                            root_first.im * sign,
+                            root_second.im * sign,
+                            root_second.im * sign,
+                        );
+                        let cosine_term = _mm256_mul_pd(pair, cosine);
+                        let sine_term = _mm256_mul_pd(imaginary_difference, sine);
+                        positive = _mm256_add_pd(_mm256_add_pd(positive, cosine_term), sine_term);
+                        negative = _mm256_sub_pd(_mm256_add_pd(negative, cosine_term), sine_term);
+                    }
+
+                    if inverse {
+                        positive = _mm256_mul_pd(positive, output_scale);
+                        negative = _mm256_mul_pd(negative, output_scale);
+                    }
+                    // SAFETY: `frequency` and `outer` stay within the
+                    // validated radix-by-l1 output layout.
+                    unsafe {
+                        _mm_storeu_pd(
+                            output_ptr.add(frequency * l1 + outer).cast::<f64>(),
+                            _mm256_castpd256_pd128(positive),
+                        );
+                        _mm_storeu_pd(
+                            output_ptr.add((frequency + 1) * l1 + outer).cast::<f64>(),
+                            _mm256_extractf128_pd(positive, 1),
+                        );
+                        _mm_storeu_pd(
+                            output_ptr
+                                .add((radix - frequency) * l1 + outer)
+                                .cast::<f64>(),
+                            _mm256_castpd256_pd128(negative),
+                        );
+                        _mm_storeu_pd(
+                            output_ptr
+                                .add((radix - frequency - 1) * l1 + outer)
+                                .cast::<f64>(),
+                            _mm256_extractf128_pd(negative, 1),
+                        );
+                    }
+                    frequency += 2;
+                }
+
+                if frequency <= half {
+                    let mut positive = input_zero;
+                    let mut negative = input_zero;
+                    for branch in 1..=half {
+                        let left = input[radix * outer + branch];
+                        let right = input[radix * outer + (radix - branch)];
+                        let pair = left + right;
+                        let difference = left - right;
+                        let phase = usize::from(phase_indices[(branch - 1) * radix + frequency]);
+                        let root = roots[phase * root_stride];
+                        let root_im = if inverse { root.im } else { -root.im };
+                        let cosine = pair * root.re;
+                        let sine = Complex::new(-difference.im, difference.re) * root_im;
+                        positive = positive + cosine + sine;
+                        negative = negative + cosine - sine;
+                    }
+                    if inverse {
+                        positive *= scale;
+                        negative *= scale;
+                    }
+                    output[frequency * l1 + outer] = positive;
+                    output[(radix - frequency) * l1 + outer] = negative;
+                }
+            }
         }
 
         #[target_feature(enable = "avx2")]
@@ -1651,7 +1833,7 @@ impl SimdScalar for f32 {
 mod tests {
     use num_complex::Complex;
 
-    use super::{RealGeneralPrimeIdo1Params, SimdPass, SimdScalar};
+    use super::{ComplexGeneralPrimeIdo1Params, RealGeneralPrimeIdo1Params, SimdPass, SimdScalar};
 
     fn root(index: usize, len: usize, inverse: bool) -> Complex<f64> {
         let sign = if inverse { 1.0 } else { -1.0 };
@@ -1673,6 +1855,76 @@ mod tests {
             (actual.im - expected.im).abs() < 2.0e-12,
             "{context}: {actual} != {expected}"
         );
+    }
+
+    #[test]
+    fn f64_complex_general_prime_radix31_ido1_matches_direct_dfts() {
+        if !<f64 as SimdScalar>::avx2_available() {
+            return;
+        }
+        let Some(kernel) = <f64 as SimdScalar>::avx2_general_prime_ido1_kernel() else {
+            panic!("AVX2 complex general-prime kernel should be available");
+        };
+        let radix = 31;
+        let half = radix / 2;
+
+        for l1 in [1, 2, 3, 22, 23] {
+            let len = radix * l1;
+            let roots: Vec<_> = (0..len).map(|index| root(index, len, true)).collect();
+            let mut phase_indices = vec![0_u8; half * radix];
+            for branch in 1..=half {
+                for frequency in 0..radix {
+                    phase_indices[(branch - 1) * radix + frequency] =
+                        ((branch * frequency) % radix) as u8;
+                }
+            }
+            let original: Vec<_> = (0..len).map(|index| signal(index + l1 * 7)).collect();
+
+            for inverse in [false, true] {
+                let scale = if inverse { 0.25 } else { 1.0 };
+                let mut storage = vec![Complex::new(-91.0, 37.0); len + 2];
+                let (start_guard, tail) = storage.split_at_mut(1);
+                let (output, end_guard) = tail.split_at_mut(len);
+                // SAFETY: the test checked runtime AVX2, supplies disjoint
+                // exact-sized slices, and constructs a complete radix-31
+                // phase table and root array.
+                unsafe {
+                    kernel(
+                        &original,
+                        output,
+                        ComplexGeneralPrimeIdo1Params {
+                            l1,
+                            radix,
+                            roots: &roots,
+                            root_stride: l1,
+                            phase_indices: &phase_indices,
+                            inverse,
+                            scale,
+                        },
+                    )
+                }
+                assert_eq!(start_guard[0], Complex::new(-91.0, 37.0));
+                assert_eq!(end_guard[0], Complex::new(-91.0, 37.0));
+
+                for group in 0..l1 {
+                    for frequency in 0..radix {
+                        let sign = if inverse { 1.0 } else { -1.0 };
+                        let mut expected = Complex::new(0.0, 0.0);
+                        for sample in 0..radix {
+                            let phase = sample * frequency % radix;
+                            let angle = sign * std::f64::consts::TAU * phase as f64 / radix as f64;
+                            expected += original[radix * group + sample]
+                                * Complex::new(angle.cos(), angle.sin());
+                        }
+                        expected *= scale;
+                        let context = format!(
+                            "radix={radix}, l1={l1}, inverse={inverse}, frequency={frequency}, group={group}"
+                        );
+                        assert_close(output[frequency * l1 + group], expected, &context);
+                    }
+                }
+            }
+        }
     }
 
     #[test]
