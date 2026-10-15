@@ -1,0 +1,33 @@
+{
+  "pairs": 2,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M7 N=4097 Rader-241 route screen against immediately preceding M6 source",
+    "baseline_commit": "2375e0d",
+    "candidate_source": "uncommitted opt/fft-kernel-performance route candidate",
+    "workload": "real N=723; rows=[361]; R2C and C2R",
+    "timing": "seven warmed timed samples; plan and workspace setup reported separately",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target with runtime AVX2",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "screen_pairs": 2
+  },
+  "a": {
+    "label": "M7 candidate Rader-241",
+    "command": [
+      "/home/albert/RustSHT/crates/rustsht-fft/target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-real",
+      "723",
+      "361"
+    ]
+  },
+  "b": {
+    "label": "M6 baseline",
+    "command": [
+      "/home/albert/rustsht-fft-m6f-rustfft-bench",
+      "bench-native-real",
+      "723",
+      "361"
+    ]
+  }
+}

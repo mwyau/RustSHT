@@ -1,0 +1,36 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M7 N=4097 Rader-241 acceptance campaign against immediately preceding M6 source",
+    "baseline_commit": "2375e0d",
+    "candidate_source": "uncommitted opt/fft-kernel-performance Rader-241 route candidate",
+    "candidate_binary_sha256": "028a36f5cd4a32f8c5d180341623b27c0ece10e709e44ac85bee81714a268401",
+    "baseline_binary_sha256": "4fd81a13a3564d47fbf7c982b78e53d74aa1ecd9ef8c9ed1ef50e64600393192",
+    "workload": "real N=241; rows=[120]; R2C and C2R",
+    "timing": "seven warmed timed samples; plan and workspace setup reported separately",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target with runtime AVX2",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "acceptance_pairs": 6,
+    "acceptance_gate": "At N=4097 with 2048 rows both directions need >=5% improvement and paired 95% interval above parity; no stable >5% regression at rows 1/32 or N=241/257/723 controls."
+  },
+  "a": {
+    "label": "M7 candidate Rader-241",
+    "command": [
+      "/home/albert/RustSHT/crates/rustsht-fft/target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-real",
+      "241",
+      "120"
+    ]
+  },
+  "b": {
+    "label": "M6 baseline",
+    "command": [
+      "/home/albert/rustsht-fft-m6f-rustfft-bench",
+      "bench-native-real",
+      "241",
+      "120"
+    ]
+  }
+}

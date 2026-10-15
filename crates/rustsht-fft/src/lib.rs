@@ -349,4 +349,104 @@ mod m0_diagnostics_tests {
             route == "c2c-avx2:first-prefix n=12 radix=4 ido=3 vector_ido=0 scalar_tail=3"
         }));
     }
+
+    #[test]
+    fn m7_real_4097_uses_rader_and_preserves_bluestein_fallback() {
+        let n = 4097;
+        let plan = RealFftPlan::<f64>::new(n).expect("N=4097 Rader plan");
+        let report = plan.m0_plan_report();
+        assert!(
+            report.iter().any(|line| {
+                line.contains("Rader radix=241") && line.contains("convolution=240")
+            })
+        );
+        assert!(
+            report
+                .iter()
+                .any(|line| { line.contains("radix=241 fallback=Bluestein conv=484") })
+        );
+        assert!(
+            report
+                .iter()
+                .any(|line| { line.contains("radix=241 l1=17 ido=1 route=Rader") })
+        );
+
+        let mut workspace = plan.workspace().expect("N=4097 Rader workspace");
+        let input = real_input(n, 1.0);
+        let mut spectrum = vec![Complex::new(0.0, 0.0); plan.spectrum_len()];
+        m0_clear_routes();
+        plan.forward(&input, &mut spectrum, &mut workspace)
+            .expect("ordinary Rader forward");
+        let ordinary_forward_routes = m0_route_snapshot();
+        assert!(
+            ordinary_forward_routes
+                .iter()
+                .any(|route| route == "real-forward:Rader radix=241")
+        );
+        if <f64 as crate::simd::SimdScalar>::avx2_available() {
+            assert!(ordinary_forward_routes.iter().any(|route| {
+                route == "c2c-avx2:first-prefix n=240 radix=2 ido=120 vector_ido=120 scalar_tail=0"
+            }));
+            assert!(ordinary_forward_routes.iter().any(|route| {
+                route
+                    == "c2c-avx2:pass-prefix n=240 radix=8 l1=2 ido=15 vector_ido=14 scalar_tail=1"
+            }));
+        }
+
+        m0_clear_routes();
+        plan.inverse(&spectrum, &mut vec![0.0; n], &mut workspace)
+            .expect("ordinary Rader inverse");
+        assert!(
+            m0_route_snapshot()
+                .iter()
+                .any(|route| route == "real-inverse:Rader radix=241")
+        );
+
+        let high = f64::MAX / (2.0 * n as f64);
+        let high_input = vec![high; n];
+        m0_clear_routes();
+        plan.forward(&high_input, &mut spectrum, &mut workspace)
+            .expect("high-amplitude Bluestein fallback forward");
+        let high_forward_routes = m0_route_snapshot();
+        assert!(
+            high_forward_routes
+                .iter()
+                .any(|route| route == "real-forward n=4097 route=recursive-safety-fallback")
+        );
+
+        let tiny = vec![f64::from_bits(1); n];
+        m0_clear_routes();
+        plan.forward(&tiny, &mut spectrum, &mut workspace)
+            .expect("subnormal Bluestein fallback forward");
+        let fallback_routes = m0_route_snapshot();
+        assert!(
+            fallback_routes
+                .iter()
+                .any(|route| route == "real-forward n=4097 route=recursive-safety-fallback")
+        );
+        assert!(
+            fallback_routes
+                .iter()
+                .any(|route| route == "real-forward n=4097 route=recursive")
+        );
+
+        let mut high_spectrum = vec![Complex::new(high, -high); plan.spectrum_len()];
+        high_spectrum[0].im = 0.0;
+        let mut output = vec![0.0; n];
+        m0_clear_routes();
+        plan.inverse(&high_spectrum, &mut output, &mut workspace)
+            .expect("high-amplitude Bluestein fallback inverse");
+        assert!(output.iter().all(|value| value.is_finite()));
+        let high_inverse_routes = m0_route_snapshot();
+        assert!(
+            high_inverse_routes
+                .iter()
+                .any(|route| route == "real-inverse n=4097 route=recursive-safety-fallback")
+        );
+        assert!(
+            high_inverse_routes
+                .iter()
+                .any(|route| route == "real-inverse n=4097 route=recursive")
+        );
+    }
 }
