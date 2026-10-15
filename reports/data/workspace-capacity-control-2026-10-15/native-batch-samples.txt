@@ -1,0 +1,1 @@
+Rust 1.99.0 (b940084d7), LLVM 23.1.1; x86-64 CPU. Release profile; taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}"; q8, 8 fields, GL 512x1025, T511, mmax=511, f64. Schedule: parallel-one (one-thread workspaces). Five warm batch samples per process. Load-average telemetry was retained only in local diagnostics.

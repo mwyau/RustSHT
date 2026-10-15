@@ -48,6 +48,8 @@ pub enum ShtError {
     NonRealFftEdge { index: usize },
     /// A checked size or offset calculation overflowed `usize`.
     IntegerOverflow { quantity: &'static str },
+    /// The requested workspace execution capacity is outside this build's limit.
+    InvalidExecutionCapacity { requested: usize, maximum: usize },
 }
 
 impl Display for ShtError {
@@ -122,6 +124,10 @@ impl Display for ShtError {
             Self::IntegerOverflow { quantity } => {
                 write!(f, "{quantity} does not fit in usize")
             }
+            Self::InvalidExecutionCapacity { requested, maximum } => write!(
+                f,
+                "workspace execution capacity must be between 1 and {maximum}, received {requested}"
+            ),
         }
     }
 }

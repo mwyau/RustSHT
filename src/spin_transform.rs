@@ -39,6 +39,32 @@ const SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_LMAX: usize = 720;
 #[cfg(feature = "parallel")]
 const SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_BYTES: usize = 17 * 1024 * 1024;
 
+#[cfg(feature = "parallel")]
+pub(crate) fn spin1_hemisphere_worker_count<T: ShtScalar>(
+    plan: &ShtPlan<T>,
+    execution_capacity: usize,
+) -> Option<usize> {
+    let lmax = plan.harmonics.lmax();
+    let thread_count = execution_capacity;
+    if plan.harmonics.spin() != 1
+        || !T::supports_paired_scalar()
+        || !(319..=511).contains(&lmax)
+        || plan.harmonics.mmax() != lmax
+        || plan.grid.kind() != crate::grid::GridKind::GaussLegendre
+        || plan.grid.ntheta() != lmax + 1
+        || !(4..=8).contains(&thread_count)
+    {
+        return None;
+    }
+    let hemisphere_ring_count = plan.grid.ntheta() / 2;
+    let rings_per_group = hemisphere_ring_count
+        .div_ceil(thread_count.saturating_mul(2))
+        .max(1);
+    let full_group_count = hemisphere_ring_count / rings_per_group;
+    let first_group_count = usize::from(!hemisphere_ring_count.is_multiple_of(rings_per_group));
+    Some(full_group_count + first_group_count)
+}
+
 #[inline]
 pub(crate) fn single_threaded_execution() -> bool {
     current_execution_thread_count() == 1
@@ -687,6 +713,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         #[cfg(feature = "parallel")]
         {
             let worker_count = rayon::current_num_threads()
+                .min(workspace.execution_capacity)
                 .min(workspace.recurrence_workers.len())
                 .min(order_count);
             let use_parallel = rayon::current_num_threads() > 1 && worker_count > 1;
@@ -848,7 +875,10 @@ impl<T: ShtScalar> ShtPlan<T> {
             && recurrence_spin == 1
             && !derivative_norm
             && let Some(b_alm) = b_alm
-            && hemisphere::is_beneficial(self)
+            && hemisphere::is_beneficial(
+                self,
+                current_execution_thread_count().min(workspace.execution_capacity),
+            )
         {
             return hemisphere::synthesize(
                 self,
@@ -913,30 +943,19 @@ impl<T: ShtScalar> ShtPlan<T> {
 
         #[cfg(feature = "parallel")]
         {
+            let execution_threads =
+                current_execution_thread_count().min(workspace.execution_capacity);
             let group_size = if !derivative_norm && b_alm.is_some() {
-                self.fine_synthesis_ring_group_size()
+                self.fine_synthesis_ring_group_size(execution_threads)
                     .unwrap_or(workspace.ring_group_size)
             } else {
                 workspace.ring_group_size
             };
             let group_ring_count = group_size.min(ntheta);
             let group_count = ntheta.div_ceil(group_ring_count);
-            let use_parallel = rayon::current_num_threads() > 1 && group_count > 1;
+            let use_parallel = execution_threads > 1 && group_count > 1;
             if use_parallel {
-                let spin_pair_fast_coefficient_count =
-                    if self.harmonics.spin() == 1 && T::supports_paired_scalar() {
-                        self.spin_fast_coefficient_count
-                    } else {
-                        0
-                    };
-                workspace.ensure_recurrence_worker_count(
-                    group_count,
-                    self.recurrence_factor_count,
-                    self.spin_recurrence_factor_count,
-                    self.spin_fast_coefficient_count,
-                    spin_pair_fast_coefficient_count,
-                    workspace.theta_sin.len().min(LATITUDE_BLOCK_SIZE),
-                )?;
+                debug_assert!(group_count <= workspace.recurrence_workers.len());
                 let use_spin1_coefficient_cache = recurrence_spin == 1
                     && self.harmonics.spin() == 1
                     && b_alm.is_some()
@@ -946,7 +965,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     && self.harmonics.lmax() >= SPIN1_FAST_MIN_LMAX
                     && self.harmonics.lmax() <= SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_LMAX
                     && T::supports_paired_scalar()
-                    && current_execution_thread_count() >= 8
+                    && execution_threads >= 8
                     && workspace.ring_group_size < ntheta;
                 let spin1_coefficients = use_spin1_coefficient_cache
                     .then(|| {
@@ -954,6 +973,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             e_alm,
                             b_alm.expect("the cache requires both spin-1 channels"),
                             &mut workspace.spin1_scalar_coefficients,
+                            execution_threads,
                         )
                     })
                     .filter(|prepared| *prepared)
@@ -969,6 +989,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     .zip(workspace.spin_spectra.par_chunks_mut(group_spectrum_len))
                     .zip(workspace.recurrence_workers[..group_count].par_iter_mut())
                     .enumerate()
+                    .with_min_len(group_count.div_ceil(execution_threads))
                     .try_for_each(|(group_index, ((q_spectra, u_spectra), recurrence))| {
                         let ring_start = group_index * group_ring_count;
                         let ring_end = (ring_start + q_spectra.len() / spectrum_len).min(ntheta);
@@ -1067,6 +1088,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         e_alm: &[Complex<T>],
         b_alm: &[Complex<T>],
         coefficients: &mut Vec<Complex<T>>,
+        execution_capacity: usize,
     ) -> bool {
         let row_len = match self.harmonics.lmax().checked_add(2) {
             Some(value) => value,
@@ -1100,9 +1122,14 @@ impl<T: ShtScalar> ShtPlan<T> {
         }
         coefficients.resize(coefficient_count, Complex::new(T::zero(), T::zero()));
 
+        let worker_count = current_execution_thread_count()
+            .min(execution_capacity)
+            .min(order_count)
+            .max(1);
         coefficients
             .par_chunks_mut(row_stride)
             .enumerate()
+            .with_min_len(order_count.div_ceil(worker_count))
             .for_each(|(m, order_coefficients)| {
                 let coefficient_start = self
                     .harmonics
@@ -1148,6 +1175,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         arch: pulp::Arch,
         recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<(), ShtError> {
+        #[cfg(all(test, feature = "parallel"))]
+        recurrence.record_active_worker();
         debug_assert_eq!(ring_end - ring_start, theta_sin.len());
         debug_assert_eq!(theta_cos.len(), theta_sin.len());
         debug_assert_eq!(q_spectra.len(), theta_sin.len() * spectrum_len);
@@ -2151,6 +2180,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         mut b_alm: Option<&mut [Complex<T>]>,
         recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<(), ShtError> {
+        #[cfg(all(test, feature = "parallel"))]
+        recurrence.record_active_worker();
         let lmax = self.harmonics.lmax();
         let longitude_count = T::from_usize(nphi).expect("longitude count converts");
         let fast_scalar_coefficient_count = match recurrence_spin {

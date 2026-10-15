@@ -8,20 +8,13 @@ use super::{
     SPIN1_PAIR_MIN_SIN_THETA, ShtPlan, ShtScalar, ShtWorkspace, longitude_phase, spin1_to_scalar,
 };
 use crate::error::ShtError;
-use crate::grid::GridKind;
 use crate::legendre::LATITUDE_BLOCK_SIZE;
 use crate::plan::current_execution_thread_count;
 use crate::workspace::RecurrenceWorkspace;
 
 /// Selects paired scalar synthesis only in the measured full-band GL window.
-pub(super) fn is_beneficial<T: ShtScalar>(plan: &ShtPlan<T>) -> bool {
-    let lmax = plan.harmonics.lmax();
-    T::supports_paired_scalar()
-        && (319..=511).contains(&lmax)
-        && plan.harmonics.mmax() == lmax
-        && plan.grid.kind() == GridKind::GaussLegendre
-        && plan.grid.ntheta() == lmax + 1
-        && matches!(current_execution_thread_count(), 4..=8)
+pub(super) fn is_beneficial<T: ShtScalar>(plan: &ShtPlan<T>, execution_capacity: usize) -> bool {
+    super::spin1_hemisphere_worker_count(plan, execution_capacity).is_some()
 }
 
 #[expect(
@@ -47,6 +40,8 @@ fn synthesize_group<T: ShtScalar>(
     arch: pulp::Arch,
     recurrence: &mut RecurrenceWorkspace<T>,
 ) -> Result<(), ShtError> {
+    #[cfg(all(test, feature = "parallel"))]
+    recurrence.record_active_worker();
     let lmax = plan.harmonics.lmax();
     let mmax = plan.harmonics.mmax();
     let ntheta = plan.grid.ntheta();
@@ -284,27 +279,14 @@ pub(super) fn synthesize<T: ShtScalar>(
         )?;
     }
 
-    let thread_count = current_execution_thread_count();
+    let thread_count = current_execution_thread_count().min(workspace.execution_capacity);
     let target_group_size = half.div_ceil(2 * thread_count).max(1);
     let full_group_count = half / target_group_size;
     let first_group_len = half % target_group_size;
     let group_count = full_group_count + usize::from(first_group_len > 0);
     // General polar/scaled fallback kernels retain their 64-lane workspace
     // contract even when a scheduling group is smaller.
-    let scratch_len = LATITUDE_BLOCK_SIZE;
-    let pair_coefficients = if plan.harmonics.spin() == 1 && T::supports_paired_scalar() {
-        plan.spin_fast_coefficient_count
-    } else {
-        0
-    };
-    workspace.ensure_recurrence_worker_count(
-        group_count.max(1),
-        plan.recurrence_factor_count,
-        plan.spin_recurrence_factor_count,
-        plan.spin_fast_coefficient_count,
-        pair_coefficients,
-        scratch_len,
-    )?;
+    debug_assert!(group_count.max(1) <= workspace.recurrence_workers.len());
 
     let coefficient_cache = (thread_count >= 8
         && plan.harmonics.lmax() <= super::SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_LMAX
@@ -312,6 +294,7 @@ pub(super) fn synthesize<T: ShtScalar>(
             e_alm,
             b_alm,
             &mut workspace.spin1_scalar_coefficients,
+            thread_count,
         ))
     .then_some(workspace.spin1_scalar_coefficients.as_slice());
 
@@ -374,6 +357,7 @@ pub(super) fn synthesize<T: ShtScalar>(
                     .par_iter_mut(),
             )
             .enumerate()
+            .with_min_len(full_group_count.div_ceil(thread_count))
             .try_for_each(|(group_index, item)| {
                 let ((((north_q, south_q), north_u), south_u), recurrence) = item;
                 let ring_start = first_group_len + group_index * target_group_size;
