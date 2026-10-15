@@ -161,7 +161,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                 None
             });
         }
-        let rader = if matches!(len, 257 | 723) {
+        let rader = if matches!(len, 257 | 723 | 4097) {
             rader_executor
                 .map(|execute| RaderPrimePlan::try_new(if len == 257 { 257 } else { 241 }, execute))
                 .transpose()?
@@ -298,6 +298,15 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                     .as_ref()
                     .is_some_and(|plan| plan.radix() == radix && ido == 1)
                 {
+                    if let Some(blue) = self.bluestein[stage].as_ref() {
+                        report.push(format!(
+                            "real n={} stage={} radix={} fallback=Bluestein conv={}",
+                            self.len,
+                            stage,
+                            radix,
+                            blue.convolution_len()
+                        ));
+                    }
                     "Rader"
                 } else if let Some(blue) = self.bluestein[stage].as_ref() {
                     report.push(format!(

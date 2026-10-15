@@ -1693,6 +1693,56 @@ fn real_workspace_reports_reusable_scratch_bytes() {
 }
 
 #[test]
+fn rader_4097_matches_independent_real_transform_references() {
+    let n = 4097;
+    let plan = RealFftPlan::<f64>::new(n).unwrap();
+    let mut workspace = plan.workspace().unwrap();
+
+    let input: Vec<_> = (0..n).map(|index| real_signal(index + 13, n + 7)).collect();
+    let expected_spectrum = direct_r2c_f64(&input);
+    let mut spectrum = vec![Complex::new(0.0, 0.0); plan.spectrum_len()];
+    plan.forward(&input, &mut spectrum, &mut workspace).unwrap();
+    assert_complex_f64_close(&spectrum, &expected_spectrum, n);
+    assert_complex_f64_close(&spectrum, &rustfft_r2c_f64(&input), n);
+
+    let high = f64::MAX / (2.0 * n as f64);
+    let high_input = vec![high; n];
+    plan.forward(&high_input, &mut spectrum, &mut workspace)
+        .unwrap();
+    assert!(
+        spectrum
+            .iter()
+            .all(|value| value.re.is_finite() && value.im.is_finite())
+    );
+    assert!((spectrum[0].re / f64::MAX - 0.5).abs() <= 2.0e-15);
+
+    let mut high_spectrum = vec![Complex::new(high, -high); plan.spectrum_len()];
+    high_spectrum[0].im = 0.0;
+    let mut high_samples = vec![0.0; n];
+    plan.inverse(&high_spectrum, &mut high_samples, &mut workspace)
+        .unwrap();
+    assert!(high_samples.iter().all(|value| value.is_finite()));
+
+    plan.forward(&input, &mut spectrum, &mut workspace).unwrap();
+    assert_complex_f64_close(&spectrum, &expected_spectrum, n);
+
+    let independent_spectrum: Vec<_> = (0..plan.spectrum_len())
+        .map(|index| {
+            Complex::new(
+                real_signal(index + 17, n + 2),
+                real_signal(index + 9, n + 11) * 0.3,
+            )
+        })
+        .collect();
+    let expected_samples = direct_c2r_f64(&independent_spectrum, n);
+    let mut samples = vec![0.0; n];
+    plan.inverse(&independent_spectrum, &mut samples, &mut workspace)
+        .unwrap();
+    assert_f64_close(&samples, &expected_samples, n);
+    assert_f64_close(&samples, &rustfft_c2r_f64(&independent_spectrum, n), n);
+}
+
+#[test]
 fn rader_and_fallback_reuse_workspace_buffer_across_routes() {
     for (n, workspace_bytes) in [(257, 46_032), (723, 53_536)] {
         let plan = RealFftPlan::<f64>::new(n).unwrap();
@@ -1781,6 +1831,45 @@ fn shared_real_plans_execute_concurrently_with_separate_workspaces() {
             }
         });
     }
+}
+
+#[test]
+fn rader_4097_plan_executes_concurrently_with_separate_workspaces() {
+    let n = 4097;
+    let plan = RealFftPlan::<f64>::new(n).unwrap();
+    std::thread::scope(|scope| {
+        for row in 0..4 {
+            let plan = &plan;
+            scope.spawn(move || {
+                let mut workspace = plan.workspace().unwrap();
+                let impulse_index = row * 7 + 1;
+                let mut input = vec![0.0; n];
+                input[impulse_index] = 1.0;
+                let mut spectrum = vec![Complex::new(0.0, 0.0); plan.spectrum_len()];
+                plan.forward(&input, &mut spectrum, &mut workspace).unwrap();
+                for (frequency, actual) in spectrum.iter().enumerate() {
+                    let phase =
+                        std::f64::consts::TAU * (frequency * impulse_index) as f64 / n as f64;
+                    let expected = Complex::new(phase.cos(), -phase.sin());
+                    assert!(
+                        (*actual - expected).norm() <= 2.0e-9,
+                        "row={row}, frequency={frequency}, actual={actual}, expected={expected}"
+                    );
+                }
+
+                let mut samples = vec![0.0; n];
+                plan.inverse(&spectrum, &mut samples, &mut workspace)
+                    .unwrap();
+                for (index, &actual) in samples.iter().enumerate() {
+                    let expected = f64::from(index == impulse_index);
+                    assert!(
+                        (actual - expected).abs() <= 2.0e-9,
+                        "row={row}, sample={index}, actual={actual}, expected={expected}"
+                    );
+                }
+            });
+        }
+    });
 }
 
 #[test]

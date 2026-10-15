@@ -1,0 +1,30 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-first-call-set",
+      "4097"
+    ],
+    "label": "M7 candidate Rader-241"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-first-call-set",
+      "4097"
+    ],
+    "label": "M6 baseline"
+  },
+  "metadata": {
+    "acceptance_pairs": 6,
+    "baseline_binary_sha256": "4fd81a13a3564d47fbf7c982b78e53d74aa1ecd9ef8c9ed1ef50e64600393192",
+    "baseline_commit": "2375e0d",
+    "candidate_binary_sha256": "028a36f5cd4a32f8c5d180341623b27c0ece10e709e44ac85bee81714a268401",
+    "candidate_source": "uncommitted opt/fft-kernel-performance Rader-241 route candidate",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target with runtime AVX2",
+    "purpose": "M7 N=4097 first-call and warmed-call comparison against immediately preceding M6 source",
+    "timing": "first public operation after plan/workspace/input setup; then median of seven warmed calls",
+    "workload": "real N=4097; one row; R2C and C2R"
+  },
+  "pairs": 6
+}

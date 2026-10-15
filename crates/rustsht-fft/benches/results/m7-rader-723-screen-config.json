@@ -1,0 +1,30 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "723",
+      "361"
+    ],
+    "label": "M7 candidate Rader-241"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "723",
+      "361"
+    ],
+    "label": "M6 baseline"
+  },
+  "metadata": {
+    "baseline_commit": "2375e0d",
+    "candidate_source": "uncommitted opt/fft-kernel-performance route candidate",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target with runtime AVX2",
+    "purpose": "M7 N=4097 Rader-241 route screen against immediately preceding M6 source",
+    "screen_pairs": 2,
+    "timing": "seven warmed timed samples; plan and workspace setup reported separately",
+    "workload": "real N=723; rows=[361]; R2C and C2R"
+  },
+  "pairs": 2
+}
