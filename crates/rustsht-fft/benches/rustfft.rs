@@ -877,6 +877,7 @@ fn benchmark_native_complex(mode: Mode, n: usize, rows: usize) {
 }
 
 fn benchmark_native_real(mode: Mode, n: usize, rows: usize) {
+    let rows = if n > 10000 { rows.min(4) } else { rows };
     let start = Instant::now();
     for _ in 0..20 {
         black_box(RealFftPlan::<f64>::new(n).expect("native real plan").len());

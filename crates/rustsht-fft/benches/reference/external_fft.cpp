@@ -327,9 +327,10 @@ const std::vector<std::pair<std::size_t, std::size_t>> complex_sht_rows{
 
 void run_lengths(const std::vector<std::size_t>& lengths) {
   for (const auto n : lengths) {
+    const auto batch_rows = n > 10000 ? std::size_t{4} : batch_count;
     for (const auto mode : {Mode::c2c_forward, Mode::c2c_inverse, Mode::r2c, Mode::c2r}) {
       benchmark(mode, n, 1);
-      benchmark(mode, n, batch_count);
+      benchmark(mode, n, batch_rows);
     }
   }
 }
