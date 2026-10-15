@@ -266,6 +266,45 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
         })
     }
 
+    #[cfg(test)]
+    pub(crate) fn m0_pass_report(&self) -> Vec<String> {
+        self.data
+            .passes
+            .iter()
+            .enumerate()
+            .map(|(stage, pass)| {
+                let route = if let Some(blue) = self.data.bluestein[stage].as_ref() {
+                    format!("bluestein conv={}", blue.convolution_len)
+                } else if matches!(pass.radix, 2 | 3 | 4 | 5 | 7 | 8 | 11) {
+                    String::from("fixed butterfly")
+                } else if pass.radix.is_multiple_of(2) {
+                    String::from("direct even radix")
+                } else {
+                    String::from("general prime")
+                };
+                format!(
+                    "n={} stage={} radix={} l1={} ido={} route={}",
+                    self.data.len, stage, pass.radix, pass.l1, pass.ido, route
+                )
+            })
+            .collect()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn m0_retained_plan_bytes(&self) -> usize {
+        let mut bytes = self.data.roots.capacity() * std::mem::size_of::<Complex<T>>();
+        bytes += self.data.passes.capacity() * std::mem::size_of::<ComplexPass<T>>();
+        bytes += self.data.bluestein.capacity() * std::mem::size_of::<Option<BluesteinPlan<T>>>();
+        for pass in &self.data.passes {
+            bytes += pass.twiddles.capacity() * std::mem::size_of::<Complex<T>>();
+            bytes += pass.prime_phase_indices.capacity() * std::mem::size_of::<u8>();
+        }
+        for blue in self.data.bluestein.iter().flatten() {
+            bytes += blue.m0_retained_plan_bytes();
+        }
+        bytes
+    }
+
     pub(crate) fn try_workspace(&self) -> Result<ComplexFftWorkspace<T>, FftError> {
         let zero = Complex::new(T::zero(), T::zero());
         let mut bluestein_buffer_len = 0;
@@ -379,9 +418,37 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
     ) {
         let defer_inverse_normalization =
             direction == Direction::Inverse && inverse_normalization_is_safe(values, self.data.len);
+        #[cfg(test)]
+        crate::m0_record_route(format!(
+            "c2c n={} normalization={}",
+            self.data.len,
+            if defer_inverse_normalization {
+                "deferred"
+            } else if direction == Direction::Inverse {
+                "guarded"
+            } else {
+                "forward"
+            }
+        ));
         let mut current_is_values = true;
         for (stage, pass) in self.data.passes.iter().enumerate() {
             let blue = self.data.bluestein[stage].as_ref();
+            #[cfg(test)]
+            {
+                let route = if let Some(blue) = blue {
+                    format!("bluestein conv={}", blue.convolution_len)
+                } else if matches!(pass.radix, 2 | 3 | 4 | 5 | 7 | 8 | 11) {
+                    String::from("fixed")
+                } else if pass.radix.is_multiple_of(2) {
+                    String::from("direct-even")
+                } else {
+                    String::from("general-prime")
+                };
+                crate::m0_record_route(format!(
+                    "c2c n={} stage={} radix={} l1={} ido={} route={}",
+                    self.data.len, stage, pass.radix, pass.l1, pass.ido, route
+                ));
+            }
             let mut execution = PassExecution {
                 roots: &self.data.roots,
                 total_len: self.data.len,
@@ -603,6 +670,13 @@ impl<T: Float + FromPrimitive> BluesteinPlan<T> {
 
     pub(crate) fn convolution_len(&self) -> usize {
         self.convolution_len
+    }
+
+    #[cfg(test)]
+    pub(crate) fn m0_retained_plan_bytes(&self) -> usize {
+        self.chirp.capacity() * std::mem::size_of::<Complex<T>>()
+            + self.kernel_spectrum.capacity() * std::mem::size_of::<Complex<T>>()
+            + self.convolution.m0_retained_plan_bytes()
     }
 
     pub(crate) fn convolution_workspace(&self) -> Result<ComplexFftWorkspace<T>, FftError> {
@@ -980,8 +1054,19 @@ fn execute_first_pass_direct_radix<const R: usize, T: Float + FromPrimitive>(
         // SAFETY: plan construction validates pass dimensions, runtime
         // dispatch checked AVX2, and the kernel width divides `ido`.
         unsafe { (kernels.first_pass)(data, &simd_pass) };
+        #[cfg(test)]
+        crate::m0_record_route(format!(
+            "c2c-avx2:first n={} radix={} ido={}",
+            execution.total_len, radix, pass.ido
+        ));
         return;
     }
+
+    #[cfg(test)]
+    crate::m0_record_route(format!(
+        "c2c-scalar:first n={} radix={} ido={}",
+        execution.total_len, radix, pass.ido
+    ));
 
     let zero = Complex::new(T::zero(), T::zero());
     let mut inputs = [zero; 8];
@@ -1102,6 +1187,11 @@ fn execute_direct_radix_pass<const R: usize, T: Float + FromPrimitive>(
         // selected only for radix eight, ido one, even l1, and disjoint
         // plan-owned input/output buffers.
         unsafe { kernel(input, output, &simd_pass) };
+        #[cfg(test)]
+        crate::m0_record_route(format!(
+            "c2c-avx2:ido1-radix8 n={} radix={} l1={}",
+            execution.total_len, pass.radix, pass.l1
+        ));
         return;
     }
     if let Some(kernels) = execution.simd
@@ -1125,8 +1215,19 @@ fn execute_direct_radix_pass<const R: usize, T: Float + FromPrimitive>(
         // SAFETY: plan construction validates pass dimensions, runtime
         // dispatch checked AVX2, and the kernel width divides `ido`.
         unsafe { (kernels.pass)(input, output, &simd_pass) };
+        #[cfg(test)]
+        crate::m0_record_route(format!(
+            "c2c-avx2:pass n={} radix={} l1={} ido={}",
+            execution.total_len, radix, pass.l1, pass.ido
+        ));
         return;
     }
+
+    #[cfg(test)]
+    crate::m0_record_route(format!(
+        "c2c-scalar:pass n={} radix={} l1={} ido={}",
+        execution.total_len, radix, pass.l1, pass.ido
+    ));
 
     let zero = Complex::new(T::zero(), T::zero());
     let mut inputs = [zero; 8];

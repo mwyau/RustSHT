@@ -1,0 +1,5 @@
+Backend: Admiral
+Revision: ce67bc00ff9e6de96bf5b75f7a789581105ddb58
+Compiler: g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0
+Flags: CMake Release, ADM_TARGET_ARCH=native, ADM_USE_FAST_MATH=OFF, ADM_ENABLE_THREADS=OFF; harness -O3 -DNDEBUG
+Planning: admiral::effort::estimate with ADM_PIN_PLAN_ESTIMATE=ON

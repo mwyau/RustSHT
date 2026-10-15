@@ -20,6 +20,27 @@ const BENCHMARK_LENGTHS: &[usize] = &[
     10001, 10008,
 ];
 const SHT_WORKLOADS: &[(usize, usize)] = &[(257, 128), (1025, 512), (2049, 1024), (4097, 2048)];
+const REAL_SHT_ROWS: &[(usize, usize)] = &[
+    (257, 128),
+    (723, 361),
+    (1025, 512),
+    (1443, 721),
+    (2049, 1024),
+    (4097, 2048),
+];
+const COMPLEX_SHT_ROWS: &[(usize, usize)] = &[
+    (146, 73),
+    (150, 73),
+    (300, 73),
+    (256, 128),
+    (512, 256),
+    (722, 361),
+    (726, 361),
+    (1024, 512),
+    (1442, 721),
+    (1452, 721),
+    (2904, 721),
+];
 
 #[derive(Clone, Copy)]
 enum Mode {
@@ -414,8 +435,8 @@ fn dump_all() {
     }
 }
 
-fn dump_native_all() {
-    for &n in BENCHMARK_LENGTHS {
+fn dump_native_lengths(lengths: &[usize]) {
+    for &n in lengths {
         for mode in [
             Mode::ComplexForward,
             Mode::ComplexInverse,
@@ -438,6 +459,10 @@ fn dump_native_all() {
             }
         }
     }
+}
+
+fn dump_native_all() {
+    dump_native_lengths(BENCHMARK_LENGTHS);
 }
 
 fn benchmark(mode: Mode, n: usize, rows: usize, scalar: bool) {
@@ -646,6 +671,34 @@ fn benchmark_sht_workloads() {
         ] {
             benchmark(mode, n, rows, false);
         }
+    }
+}
+
+fn benchmark_sht_target_workloads() {
+    println!(
+        "mode,n,plan_ns,scratch_ns,scratch_bytes,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum"
+    );
+    for &(n, rows) in COMPLEX_SHT_ROWS {
+        benchmark(Mode::ComplexForward, n, rows, false);
+        benchmark(Mode::ComplexInverse, n, rows, false);
+    }
+    for &(n, rows) in REAL_SHT_ROWS {
+        benchmark(Mode::RealForward, n, rows, false);
+        benchmark(Mode::RealInverse, n, rows, false);
+    }
+}
+
+fn benchmark_native_sht_workloads() {
+    println!(
+        "mode,n,plan_ns,workspace_ns,workspace_bytes,public_operation_ns,batch_operation_ns,batch_count,checksum"
+    );
+    for &(n, rows) in COMPLEX_SHT_ROWS {
+        benchmark_native_complex(Mode::ComplexForward, n, rows);
+        benchmark_native_complex(Mode::ComplexInverse, n, rows);
+    }
+    for &(n, rows) in REAL_SHT_ROWS {
+        benchmark_native_real(Mode::RealForward, n, rows);
+        benchmark_native_real(Mode::RealInverse, n, rows);
     }
 }
 
@@ -1037,6 +1090,13 @@ fn main() {
     match args.next().as_deref() {
         Some("dump-all") => dump_all(),
         Some("dump-native-all") => dump_native_all(),
+        Some("dump-native-lengths") => {
+            let lengths = args
+                .map(|value| value.parse().expect("length must be an integer"))
+                .collect::<Vec<usize>>();
+            assert!(!lengths.is_empty(), "at least one length is required");
+            dump_native_lengths(&lengths);
+        }
         Some("dump-native") => {
             let mode = Mode::parse(&args.next().expect("mode is required"));
             let n = args.next().expect("length is required").parse().unwrap();
@@ -1092,6 +1152,12 @@ fn main() {
         }
         Some("bench-sht") => {
             benchmark_sht_workloads();
+        }
+        Some("bench-sht-targets") => {
+            benchmark_sht_target_workloads();
+        }
+        Some("bench-native-sht") => {
+            benchmark_native_sht_workloads();
         }
         Some("bench-real-multipass") => {
             let lengths: Vec<String> = args.collect();
@@ -1243,7 +1309,7 @@ fn main() {
         }
         _ => {
             eprintln!(
-                "usage: rustfft-bench dump-all | dump-native-all | dump MODE N | dump-native MODE N | bench [N ...] | bench-scalar [N ...] | bench-sht | bench-real-multipass [N ...] | bench-native [N ...] | bench-native-real N [BATCH ...] | bench-native-c2c N [BATCH ...] | bench-native-batch-api N [BATCH ...] | bench-profile-real-inverse N normal|high [ITERATIONS] | bench-profile-complex N forward|inverse [ITERATIONS]"
+                "usage: rustfft-bench dump-all | dump-native-all | dump-native-lengths N ... | dump MODE N | dump-native MODE N | bench [N ...] | bench-scalar [N ...] | bench-sht | bench-sht-targets | bench-native-sht | bench-real-multipass [N ...] | bench-native [N ...] | bench-native-real N [BATCH ...] | bench-native-c2c N [BATCH ...] | bench-native-batch-api N [BATCH ...] | bench-profile-real-inverse N normal|high [ITERATIONS] | bench-profile-complex N forward|inverse [ITERATIONS]"
             );
             eprintln!("no benchmark was run; use `bench` to start the workload");
         }
