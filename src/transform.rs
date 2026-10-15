@@ -24,12 +24,14 @@ pub(crate) fn weighted_order_midpoint(lmax: usize, m_start: usize, m_end: usize)
     debug_assert!(m_end - 1 <= lmax);
     debug_assert!(m_end - m_start > 1);
 
-    let total_work = (m_start..m_end).map(|m| lmax - m + 1).sum::<usize>();
-    let mut left_work = 0;
+    let total_work = (m_start..m_end)
+        .map(|m| (lmax - m + 1) as u128)
+        .sum::<u128>();
+    let mut left_work = 0_u128;
     let mut best_mid = m_start + 1;
-    let mut best_difference = usize::MAX;
+    let mut best_difference = u128::MAX;
     for m in m_start..(m_end - 1) {
-        left_work += lmax - m + 1;
+        left_work += (lmax - m + 1) as u128;
         let right_work = total_work - left_work;
         let difference = left_work.abs_diff(right_work);
         if difference < best_difference {
@@ -38,6 +40,108 @@ pub(crate) fn weighted_order_midpoint(lmax: usize, m_start: usize, m_end: usize)
         }
     }
     best_mid
+}
+
+#[cfg(feature = "parallel")]
+pub(crate) fn weighted_order_midpoint_for_capacity(
+    lmax: usize,
+    m_start: usize,
+    m_end: usize,
+    left_capacity: usize,
+    right_capacity: usize,
+) -> Result<usize, ShtError> {
+    debug_assert!(m_start < m_end);
+    debug_assert!(m_end - 1 <= lmax);
+    debug_assert!(m_end - m_start > 1);
+    debug_assert!(left_capacity > 0 && right_capacity > 0);
+
+    if left_capacity == right_capacity {
+        return Ok(weighted_order_midpoint(lmax, m_start, m_end));
+    }
+
+    let total_work = (m_start..m_end).try_fold(0_u128, |total, m| {
+        total
+            .checked_add((lmax as u128) - (m as u128) + 1)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "analysis order work",
+            })
+    })?;
+    let target_left_work = capacity_target_left_work(total_work, left_capacity, right_capacity)?;
+    let mut left_work = 0_u128;
+    let mut best_mid = m_start + 1;
+    let mut best_difference = (u128::MAX, u128::MAX);
+    for m in m_start..(m_end - 1) {
+        left_work = left_work
+            .checked_add((lmax as u128) - (m as u128) + 1)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "analysis order work",
+            })?;
+        let difference = capacity_work_distance(left_work, target_left_work);
+        if difference < best_difference {
+            best_difference = difference;
+            best_mid = m + 1;
+        }
+    }
+    Ok(best_mid)
+}
+
+#[cfg(feature = "parallel")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct CapacityWorkTarget {
+    whole: u128,
+    fractional_numerator: u128,
+    denominator: u128,
+}
+
+#[cfg(feature = "parallel")]
+fn capacity_target_left_work(
+    total_work: u128,
+    left_capacity: usize,
+    right_capacity: usize,
+) -> Result<CapacityWorkTarget, ShtError> {
+    debug_assert!(left_capacity > 0 && right_capacity > 0);
+    let left_capacity = left_capacity as u128;
+    let capacity_sum =
+        left_capacity
+            .checked_add(right_capacity as u128)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "analysis order work capacity sum",
+            })?;
+    let whole_share = (total_work / capacity_sum)
+        .checked_mul(left_capacity)
+        .ok_or(ShtError::IntegerOverflow {
+            quantity: "analysis order work capacity target",
+        })?;
+    let fractional_product = (total_work % capacity_sum)
+        .checked_mul(left_capacity)
+        .ok_or(ShtError::IntegerOverflow {
+            quantity: "analysis order work capacity target",
+        })?;
+    let fractional_share = fractional_product / capacity_sum;
+    let whole = whole_share
+        .checked_add(fractional_share)
+        .ok_or(ShtError::IntegerOverflow {
+            quantity: "analysis order work capacity target",
+        })?;
+    Ok(CapacityWorkTarget {
+        whole,
+        fractional_numerator: fractional_product % capacity_sum,
+        denominator: capacity_sum,
+    })
+}
+
+#[cfg(feature = "parallel")]
+fn capacity_work_distance(work: u128, target: CapacityWorkTarget) -> (u128, u128) {
+    if work <= target.whole {
+        (target.whole - work, target.fractional_numerator)
+    } else if target.fractional_numerator == 0 {
+        (work - target.whole, 0)
+    } else {
+        (
+            work - target.whole - 1,
+            target.denominator - target.fractional_numerator,
+        )
+    }
 }
 
 #[cfg(all(feature = "parallel", test))]
@@ -177,6 +281,52 @@ pub(crate) fn active_ring_weighted_order_midpoint_from_prefix(
         }
     }
     best_mid
+}
+
+#[cfg(feature = "parallel")]
+pub(crate) fn active_ring_weighted_order_midpoint_from_prefix_for_capacity(
+    lmax: usize,
+    m_start: usize,
+    m_end: usize,
+    prefix: &[u128],
+    left_capacity: usize,
+    right_capacity: usize,
+) -> Result<usize, ShtError> {
+    debug_assert!(m_start < m_end);
+    debug_assert!(m_end - 1 <= lmax);
+    debug_assert!(m_end - m_start > 1);
+    debug_assert!(m_end < prefix.len());
+    debug_assert!(left_capacity > 0 && right_capacity > 0);
+
+    if left_capacity == right_capacity {
+        return Ok(active_ring_weighted_order_midpoint_from_prefix(
+            lmax, m_start, m_end, prefix,
+        ));
+    }
+
+    let total_work = prefix[m_end] - prefix[m_start];
+    if total_work == 0 {
+        return weighted_order_midpoint_for_capacity(
+            lmax,
+            m_start,
+            m_end,
+            left_capacity,
+            right_capacity,
+        );
+    }
+
+    let target_left_work = capacity_target_left_work(total_work, left_capacity, right_capacity)?;
+    let mut best_mid = m_start + 1;
+    let mut best_difference = (u128::MAX, u128::MAX);
+    for m_mid in (m_start + 1)..m_end {
+        let left_work = prefix[m_mid] - prefix[m_start];
+        let difference = capacity_work_distance(left_work, target_left_work);
+        if difference < best_difference {
+            best_difference = difference;
+            best_mid = m_mid;
+        }
+    }
+    Ok(best_mid)
 }
 
 fn accumulate_precomputed_synthesis_order<T: ShtScalar>(
@@ -1351,15 +1501,25 @@ impl<T: ShtScalar> ShtPlan<T> {
             );
         }
 
+        let left_worker_count = recurrence.len().div_ceil(2);
+        let right_worker_count = recurrence.len() - left_worker_count;
         let m_mid = if self.harmonics.lmax() >= 511 {
-            active_ring_weighted_order_midpoint_from_prefix(
+            active_ring_weighted_order_midpoint_from_prefix_for_capacity(
                 self.harmonics.lmax(),
                 m_start,
                 m_end,
                 order_work_prefix.expect("large parallel analyses build an order-work prefix"),
-            )
+                left_worker_count,
+                right_worker_count,
+            )?
         } else {
-            weighted_order_midpoint(self.harmonics.lmax(), m_start, m_end)
+            weighted_order_midpoint_for_capacity(
+                self.harmonics.lmax(),
+                m_start,
+                m_end,
+                left_worker_count,
+                right_worker_count,
+            )?
         };
         let coefficient_start = self
             .harmonics
@@ -1371,7 +1531,6 @@ impl<T: ShtScalar> ShtPlan<T> {
             .expect("the end of an order group starts the next order");
         let coefficient_split = coefficient_mid - coefficient_start;
         let (left_alm, right_alm) = alm.split_at_mut(coefficient_split);
-        let left_worker_count = recurrence.len().div_ceil(2);
         let (left_recurrence, right_recurrence) = recurrence.split_at_mut(left_worker_count);
 
         let (left_result, right_result) = rayon::join(

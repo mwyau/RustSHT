@@ -2878,6 +2878,7 @@ fn spin1_fused_analysis_stages_both_channels_before_a_late_scaled_fallback() {
     );
 }
 
+#[cfg(feature = "parallel")]
 #[test]
 fn spin1_fused_analysis_falls_back_when_only_q_products_are_unsafe() {
     let lmax = 511;
@@ -7896,6 +7897,78 @@ fn m3_spin_three_and_four_t1023_exact_analysis_matches_ducc() {
             );
         }
     }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+#[ignore = "M3 selected T2047 spin-1 exact analysis and adjoint check; release mode only"]
+fn m3_spin1_t2047_low_order_analysis_matches_q1_and_adjoint() {
+    let degree = 2047;
+    let mmax = 2;
+    let ntheta = degree + 1;
+    let nphi = 7;
+    let plan = make_plan(1, degree, mmax, ntheta, nphi);
+    let mut first = vec![0.0; plan.sample_count];
+    let mut second = vec![0.0; plan.sample_count];
+    for ring in 0..ntheta {
+        for longitude in 0..nphi {
+            let index = ring * nphi + longitude;
+            first[index] = (0.17 * ring as f64 + 0.23 * longitude as f64).sin()
+                + 0.2 * (0.11 * ring as f64 - 0.31 * longitude as f64).cos();
+            second[index] = (0.19 * ring as f64 - 0.13 * longitude as f64).cos()
+                - 0.15 * (0.29 * ring as f64 + 0.07 * longitude as f64).sin();
+        }
+    }
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let five_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(5)
+        .build()
+        .unwrap();
+    let mut one_workspace = one_thread.install(|| plan.workspace()).unwrap();
+    let mut five_workspace = five_threads.install(|| plan.workspace()).unwrap();
+    let mut one_e = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut one_b = one_e.clone();
+    let mut five_e = one_e.clone();
+    let mut five_b = one_e.clone();
+    one_thread
+        .install(|| {
+            plan.analysis_spin_into(&first, &second, &mut one_e, &mut one_b, &mut one_workspace)
+        })
+        .unwrap();
+    five_threads
+        .install(|| {
+            plan.analysis_spin_into(
+                &first,
+                &second,
+                &mut five_e,
+                &mut five_b,
+                &mut five_workspace,
+            )
+        })
+        .unwrap();
+    assert!(relative_l2_complex(&five_e, &one_e) <= 3e-10);
+    assert!(relative_l2_complex(&five_b, &one_b) <= 3e-10);
+
+    let (e, b) = coefficients(&plan);
+    let mut adjoint_first = vec![0.0; plan.sample_count];
+    let mut adjoint_second = vec![0.0; plan.sample_count];
+    five_threads
+        .install(|| {
+            plan.adjoint_analysis_spin_into(
+                &e,
+                &b,
+                &mut adjoint_first,
+                &mut adjoint_second,
+                &mut five_workspace,
+            )
+        })
+        .unwrap();
+    let left = spin_harmonic_inner_product(plan.harmonics(), &five_e, &five_b, &e, &b);
+    let right = spin_map_inner_product(&first, &second, &adjoint_first, &adjoint_second);
+    assert_close(left, right, 3e-8);
 }
 
 #[test]
