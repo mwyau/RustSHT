@@ -1,0 +1,37 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "baseline_commit": "fcce532",
+    "candidate_source": "M12 f64 AVX2 radix11-ido31 N=682 pass",
+    "candidate_binary_sha256": "69ce17d85fc9762da1513749f6d7d03e0a456e453fe344b5a94d7c2912cd4eff",
+    "baseline_binary_sha256": "54c97e86891dfb6f76ba7f1e3483ad35edb9dbe9ce700f0780373c1998e29926",
+    "timing": "seven warmed samples per cell; six alternating process pairs",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target with runtime AVX2",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "workload": "real N=2049 target; rows=[1,32,1024]; R2C and C2R"
+  },
+  "a": {
+    "label": "M12 radix11-ido31",
+    "command": [
+      "/home/albert/rustsht-fft-m12-rustfft-final-bench",
+      "bench-native-real",
+      "2049",
+      "1",
+      "32",
+      "1024"
+    ]
+  },
+  "b": {
+    "label": "M11 baseline",
+    "command": [
+      "/home/albert/rustsht-fft-m11-rustfft-bench",
+      "bench-native-real",
+      "2049",
+      "1",
+      "32",
+      "1024"
+    ]
+  }
+}

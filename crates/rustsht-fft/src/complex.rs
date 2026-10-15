@@ -410,7 +410,14 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
             && self.data.len == 682
             && let Some(kernel) = T::avx2_general_prime_ido1_kernel()
         {
-            self.execute_682_with_simd_unchecked(values, workspace, direction, kernels, kernel);
+            self.execute_682_with_simd_unchecked(
+                values,
+                workspace,
+                direction,
+                kernels,
+                kernel,
+                T::avx2_ido31_radix11_kernel(),
+            );
         } else {
             self.execute_with_simd_unchecked(values, workspace, direction, T::one(), kernels);
         }
@@ -519,6 +526,7 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
         direction: Direction,
         simd: Option<SimdKernels<T>>,
         general_prime_ido1: ComplexGeneralPrimeIdo1Kernel<T>,
+        radix11_ido31: Option<ComplexPassKernel<T>>,
     ) {
         debug_assert_eq!(self.data.len, 682);
         let defer_inverse_normalization =
@@ -583,7 +591,13 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
             if stage == 0 {
                 execute_first_pass_in_place(values, &mut workspace.output, pass, &mut execution);
             } else if current_is_values {
-                if !execute_682_general_prime_ido1(
+                if !execute_682_radix11_ido31(
+                    values,
+                    &mut workspace.output,
+                    pass,
+                    &mut execution,
+                    radix11_ido31,
+                ) && !execute_682_general_prime_ido1(
                     values,
                     &mut workspace.output,
                     pass,
@@ -594,7 +608,13 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
                 }
                 current_is_values = false;
             } else {
-                if !execute_682_general_prime_ido1(
+                if !execute_682_radix11_ido31(
+                    &workspace.output,
+                    values,
+                    pass,
+                    &mut execution,
+                    radix11_ido31,
+                ) && !execute_682_general_prime_ido1(
                     &workspace.output,
                     values,
                     pass,
@@ -611,6 +631,82 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
             values.copy_from_slice(&workspace.output);
         }
     }
+}
+
+fn execute_682_radix11_ido31<T: Float + FromPrimitive>(
+    input: &[Complex<T>],
+    output: &mut [Complex<T>],
+    pass: &ComplexPass<T>,
+    execution: &mut PassExecution<'_, T>,
+    kernel: Option<ComplexPassKernel<T>>,
+) -> bool {
+    let Some(kernel) = kernel else {
+        return false;
+    };
+    let inverse = execution.direction == Direction::Inverse;
+    if execution.blue_plan.is_some()
+        || pass.radix != 11
+        || pass.l1 != 2
+        || pass.ido != 31
+        || (inverse && !execution.defer_inverse_normalization)
+    {
+        return false;
+    }
+
+    let simd_pass = SimdPass {
+        radix: pass.radix,
+        l1: pass.l1,
+        ido: pass.ido,
+        twiddles: &pass.twiddles,
+        inverse,
+        inverse_scale: if inverse {
+            execution.inverse_output_scale
+        } else {
+            T::one()
+        },
+    };
+    // SAFETY: this helper is called only from the N=682 runtime-AVX2 path.
+    // The exact pass dimensions and twiddle table are validated by the plan,
+    // the slices are disjoint, and unsafe inverse inputs fall back above.
+    unsafe { kernel(input, output, &simd_pass) };
+
+    let inner = pass.ido - 1;
+    let radix_root_stride = execution.total_len / pass.radix;
+    let output_scale = execution.inverse_output_scale;
+    for outer in 0..pass.l1 {
+        for (branch, slot) in execution
+            .radix_input
+            .iter_mut()
+            .enumerate()
+            .take(pass.radix)
+        {
+            let source_index = inner + pass.ido * (branch + pass.radix * outer);
+            *slot = input[source_index];
+        }
+        execution.transform::<11>(11, radix_root_stride);
+        for (branch, &transformed) in execution.radix_output.iter().enumerate().take(pass.radix) {
+            let destination_index = inner + pass.ido * (outer + pass.l1 * branch);
+            let mut value = if branch != 0 {
+                transformed
+                    * directed_root(
+                        &pass.twiddles,
+                        branch * pass.ido + inner,
+                        execution.direction,
+                    )
+            } else {
+                transformed
+            };
+            if inverse {
+                value = value * output_scale;
+            }
+            output[destination_index] = value;
+        }
+    }
+    #[cfg(test)]
+    crate::m0_record_route(String::from(
+        "c2c-avx2:radix11-ido31 n=682 l1=2 ido=31 vector_ido=30 scalar_tail=1",
+    ));
+    true
 }
 
 fn execute_682_general_prime_ido1<T: Float + FromPrimitive>(
