@@ -1472,6 +1472,43 @@ fn radix_general_prime_precomputed_phases<T: Float + FromPrimitive>(
     let half = (radix - 1) / 2;
     debug_assert!(!radix.is_multiple_of(2));
     debug_assert_eq!(phase_indices.len(), half * radix);
+    let mut dc = input[0];
+    for branch in 1..=half {
+        let pair = input[branch] + input[radix - branch];
+        dc = dc + pair;
+    }
+    output[0] = dc;
+
+    for frequency in 1..=half {
+        let mut positive = input[0];
+        let mut negative = input[0];
+        for branch in 1..=half {
+            let opposite = radix - branch;
+            let phase = usize::from(phase_indices[(branch - 1) * radix + frequency]);
+            let root = directed_root(roots, phase * root_stride, direction);
+            let pair = input[branch] + input[opposite];
+            let difference = input[branch] - input[opposite];
+            let cosine = pair * root.re;
+            let sine = imaginary(difference) * root.im;
+            positive = positive + cosine + sine;
+            negative = negative + cosine - sine;
+        }
+        output[frequency] = positive;
+        output[radix - frequency] = negative;
+    }
+}
+
+#[cfg(test)]
+fn radix_general_prime_precomputed_phases_reference<T: Float + FromPrimitive>(
+    input: &[Complex<T>],
+    output: &mut [Complex<T>],
+    roots: &[Complex<T>],
+    root_stride: usize,
+    direction: Direction,
+    phase_indices: &[u8],
+) {
+    let radix = input.len();
+    let half = (radix - 1) / 2;
     for (frequency, result) in output.iter_mut().enumerate() {
         let mut sum = input[0];
         for branch in 1..=half {
@@ -1934,4 +1971,109 @@ pub(crate) fn checked_batch_len(
             rows,
             row_len,
         })
+}
+
+#[cfg(test)]
+mod prime_kernel_tests {
+    use super::*;
+
+    fn check_against_reference<T: Float + FromPrimitive + std::fmt::Debug>(radix: usize) {
+        let roots: Vec<_> = (0..radix).map(|index| unity_root(index, radix)).collect();
+        let half = (radix - 1) / 2;
+        let phase_indices: Vec<_> = (1..=half)
+            .flat_map(|branch| (0..radix).map(move |frequency| (branch, frequency)))
+            .map(|(branch, frequency)| {
+                u8::try_from(bounded_product_mod(branch, frequency, radix)).unwrap()
+            })
+            .collect();
+        let zero = Complex::new(T::zero(), T::zero());
+        let normal = T::from_f64(0.75).unwrap();
+        let large = T::from_f64(1024.0).unwrap();
+        let near_limit = T::max_value() / T::from_usize(radix * 64).unwrap();
+
+        let mut general = Vec::with_capacity(radix);
+        for index in 0..radix {
+            let phase = T::from_usize(index + 1).unwrap() * T::from_f64(0.173).unwrap();
+            general.push(Complex::new(
+                phase.sin() * normal,
+                (phase * T::from_f64(0.61).unwrap()).cos(),
+            ));
+        }
+
+        let mut cancellation = vec![zero; radix];
+        cancellation[0] = Complex::new(normal, -normal);
+        for branch in 1..=half {
+            let small = T::from_usize(branch).unwrap() * normal;
+            cancellation[branch] = Complex::new(large + small, large - small);
+            cancellation[radix - branch] = Complex::new(-large + small, -large - small);
+        }
+
+        let mut sparse = vec![zero; radix];
+        sparse[0] = Complex::new(normal, -normal);
+        sparse[2] = Complex::new(-normal * large, normal);
+        sparse[radix - 1] = Complex::new(normal, normal * large);
+
+        let mut near_overflow = Vec::with_capacity(radix);
+        for index in 0..radix {
+            let sign = if index.is_multiple_of(2) {
+                T::one()
+            } else {
+                -T::one()
+            };
+            near_overflow.push(Complex::new(
+                near_limit * sign,
+                near_limit / T::from_f64(2.0).unwrap(),
+            ));
+        }
+
+        for input in [general, cancellation, sparse, near_overflow] {
+            for direction in [Direction::Forward, Direction::Inverse] {
+                let mut expected = vec![zero; radix];
+                let mut actual = vec![zero; radix];
+                radix_general_prime_precomputed_phases_reference(
+                    &input,
+                    &mut expected,
+                    &roots,
+                    1,
+                    direction,
+                    &phase_indices,
+                );
+                radix_general_prime_precomputed_phases(
+                    &input,
+                    &mut actual,
+                    &roots,
+                    1,
+                    direction,
+                    &phase_indices,
+                );
+
+                let tolerance_scale = T::epsilon() * T::from_usize(radix * 64).unwrap();
+                for (index, (&actual, &expected)) in actual.iter().zip(&expected).enumerate() {
+                    assert!(actual.re.is_finite() && actual.im.is_finite());
+                    assert!(expected.re.is_finite() && expected.im.is_finite());
+                    let scale = actual
+                        .re
+                        .abs()
+                        .max(actual.im.abs())
+                        .max(expected.re.abs())
+                        .max(expected.im.abs());
+                    let tolerance = scale * tolerance_scale;
+                    assert!(
+                        (actual.re - expected.re).abs() <= tolerance
+                            && (actual.im - expected.im).abs() <= tolerance,
+                        "radix={radix}, index={index}, forward={}, actual={actual:?}, expected={expected:?}, tolerance={tolerance:?}",
+                        direction == Direction::Forward
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn paired_prime_kernel_matches_previous_arithmetic_for_stress_inputs() {
+        for radix in [13, 17, 19, 31, 41, 73, 103, 109] {
+            check_against_reference::<f64>(radix);
+            check_against_reference::<f32>(radix);
+        }
+    }
 }

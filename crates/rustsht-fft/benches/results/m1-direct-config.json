@@ -1,0 +1,79 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "candidate": "M1 paired-output kernel, working tree built with cargo bench --bench rustfft",
+    "reference": "immediately preceding accepted M0 commit b508712",
+    "command": "bench-native 13 17 19 31 41 73 103 109 146 722 1442 256 512 1024 1452",
+    "target_lengths": [
+      13,
+      17,
+      19,
+      31,
+      41,
+      73,
+      103,
+      109,
+      146,
+      722,
+      1442
+    ],
+    "control_lengths": [
+      256,
+      512,
+      1024,
+      1452
+    ],
+    "rows": [
+      1,
+      32
+    ],
+    "timing": "seven timed samples per operation per process; 20 plan/workspace setup repetitions",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30"
+  },
+  "a": {
+    "label": "M1 paired-output candidate",
+    "command": [
+      "/home/albert/RustSHT/crates/rustsht-fft/target/m1/rustfft-m1-candidate",
+      "bench-native",
+      "13",
+      "17",
+      "19",
+      "31",
+      "41",
+      "73",
+      "103",
+      "109",
+      "146",
+      "722",
+      "1442",
+      "256",
+      "512",
+      "1024",
+      "1452"
+    ]
+  },
+  "b": {
+    "label": "M0 b508712 baseline",
+    "command": [
+      "/home/albert/RustSHT/crates/rustsht-fft/target/m1/rustfft-m0-baseline",
+      "bench-native",
+      "13",
+      "17",
+      "19",
+      "31",
+      "41",
+      "73",
+      "103",
+      "109",
+      "146",
+      "722",
+      "1442",
+      "256",
+      "512",
+      "1024",
+      "1452"
+    ]
+  }
+}

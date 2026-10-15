@@ -867,6 +867,114 @@ fn benchmark_native_real(mode: Mode, n: usize, rows: usize) {
     );
 }
 
+fn benchmark_native_first_call(mode: Mode, n: usize) {
+    let (first_call_ns, warm_call_ns, workspace_bytes, checksum) = match mode {
+        Mode::ComplexForward | Mode::ComplexInverse => {
+            let plan = ComplexFftPlan::<f64>::new(n).expect("native FFT plan");
+            let mut workspace = plan.workspace().expect("native FFT workspace");
+            let workspace_bytes = workspace
+                .scratch_bytes()
+                .expect("native complex workspace byte count");
+            let forward = matches!(mode, Mode::ComplexForward);
+            let mut data: Vec<_> = (0..n)
+                .map(|index| {
+                    if forward {
+                        complex_value(index, 0)
+                    } else {
+                        spectrum_value(index, n, 0)
+                    }
+                })
+                .collect();
+            let start = Instant::now();
+            if forward {
+                plan.forward(&mut data, &mut workspace)
+                    .expect("native first forward FFT");
+            } else {
+                plan.inverse(&mut data, &mut workspace)
+                    .expect("native first inverse FFT");
+            }
+            let first_call_ns = start.elapsed().as_nanos() as f64;
+            let checksum = data[0].re + data[0].im;
+            let warm_call_ns = measure(|| {
+                for (index, value) in data.iter_mut().enumerate() {
+                    *value = if forward {
+                        complex_value(index, 0)
+                    } else {
+                        spectrum_value(index, n, 0)
+                    };
+                }
+                let start = Instant::now();
+                if forward {
+                    plan.forward(&mut data, &mut workspace)
+                        .expect("native warm forward FFT");
+                } else {
+                    plan.inverse(&mut data, &mut workspace)
+                        .expect("native warm inverse FFT");
+                }
+                let elapsed = start.elapsed();
+                black_box(data.as_slice());
+                elapsed
+            })
+            .as_nanos() as f64;
+            (first_call_ns, warm_call_ns, workspace_bytes, checksum)
+        }
+        Mode::RealForward | Mode::RealInverse => {
+            let plan = RealFftPlan::<f64>::new(n).expect("native real plan");
+            let mut workspace = plan.workspace().expect("native real workspace");
+            let workspace_bytes = workspace
+                .scratch_bytes()
+                .expect("native real workspace byte count");
+            let bins = plan.spectrum_len();
+            if matches!(mode, Mode::RealForward) {
+                let input: Vec<_> = (0..n).map(|index| real_value(index, 0)).collect();
+                let mut spectrum = vec![Complex64::new(0.0, 0.0); bins];
+                let start = Instant::now();
+                plan.forward(&input, &mut spectrum, &mut workspace)
+                    .expect("native first real forward FFT");
+                let first_call_ns = start.elapsed().as_nanos() as f64;
+                let checksum = spectrum[0].re + spectrum[0].im;
+                let warm_call_ns = measure(|| {
+                    let start = Instant::now();
+                    plan.forward(&input, &mut spectrum, &mut workspace)
+                        .expect("native warm real forward FFT");
+                    let elapsed = start.elapsed();
+                    black_box(spectrum.as_slice());
+                    elapsed
+                })
+                .as_nanos() as f64;
+                (first_call_ns, warm_call_ns, workspace_bytes, checksum)
+            } else {
+                let spectrum: Vec<_> = (0..bins).map(|index| spectrum_value(index, n, 0)).collect();
+                let mut output = vec![0.0; n];
+                let start = Instant::now();
+                plan.inverse(&spectrum, &mut output, &mut workspace)
+                    .expect("native first real inverse FFT");
+                let first_call_ns = start.elapsed().as_nanos() as f64;
+                let checksum = output[0];
+                let warm_call_ns = measure(|| {
+                    let start = Instant::now();
+                    plan.inverse(&spectrum, &mut output, &mut workspace)
+                        .expect("native warm real inverse FFT");
+                    let elapsed = start.elapsed();
+                    black_box(output.as_slice());
+                    elapsed
+                })
+                .as_nanos() as f64;
+                (first_call_ns, warm_call_ns, workspace_bytes, checksum)
+            }
+        }
+    };
+    println!(
+        "{},{},{:.3},{:.3},{},{}",
+        mode.name(),
+        n,
+        first_call_ns,
+        warm_call_ns,
+        workspace_bytes,
+        checksum
+    );
+}
+
 fn benchmark_batch_api_sample(
     process_sample: &str,
     mode: &'static str,
@@ -1193,6 +1301,13 @@ fn main() {
                     benchmark_native_real(mode, n, BATCH_COUNT);
                 }
             }
+        }
+        Some("bench-native-first-call") => {
+            let mode = Mode::parse(&args.next().expect("mode is required"));
+            let n = args.next().expect("length is required").parse().unwrap();
+            assert!(args.next().is_none(), "unexpected extra arguments");
+            println!("mode,n,first_call_ns,warm_call_median_ns,workspace_bytes,checksum");
+            benchmark_native_first_call(mode, n);
         }
         Some("bench-native-real") => {
             println!(

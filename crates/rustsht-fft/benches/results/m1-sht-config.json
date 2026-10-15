@@ -1,0 +1,25 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "candidate": "M1 paired-output kernel; six alternating process pairs vs immediate M0 predecessor b508712",
+    "workload": "exact SHT-shaped C2C and real row counts defined by the M0 bench-native-sht harness",
+    "timing": "seven timed samples per operation per process; 20 plan/workspace setup repetitions",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30"
+  },
+  "a": {
+    "label": "M1 paired-output candidate",
+    "command": [
+      "/home/albert/RustSHT/crates/rustsht-fft/target/m1/rustfft-m1-candidate",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "M0 b508712 baseline",
+    "command": [
+      "/home/albert/RustSHT/crates/rustsht-fft/target/m1/rustfft-m0-baseline",
+      "bench-native-sht"
+    ]
+  }
+}
