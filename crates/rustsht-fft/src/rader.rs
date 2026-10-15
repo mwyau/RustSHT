@@ -33,6 +33,20 @@ pub(crate) struct RaderPrimeWorkspace<T> {
     fft: ComplexFftWorkspace<T>,
 }
 
+pub(crate) struct RaderPrimeExecutionWorkspace<'a, T> {
+    buffer: &'a mut [Complex<T>],
+    workspace: &'a mut RaderPrimeWorkspace<T>,
+}
+
+impl<'a, T> RaderPrimeExecutionWorkspace<'a, T> {
+    pub(crate) fn new(
+        buffer: &'a mut [Complex<T>],
+        workspace: &'a mut RaderPrimeWorkspace<T>,
+    ) -> Self {
+        Self { buffer, workspace }
+    }
+}
+
 impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
     pub(crate) fn try_new(
         radix: usize,
@@ -97,13 +111,24 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
 
     pub(crate) fn workspace(&self) -> Result<RaderPrimeWorkspace<T>, FftError> {
         Ok(RaderPrimeWorkspace {
-            convolution: try_vec(self.convolution_len, Complex::new(T::zero(), T::zero()))?,
+            // The 241-point pass in the 723-point plan shares its parent's
+            // Bluestein buffer. Keep the 257-point pass's owned buffer: paired
+            // measurements showed an inverse latency regression when shared.
+            convolution: if self.radix == 257 {
+                try_vec(self.convolution_len, Complex::new(T::zero(), T::zero()))?
+            } else {
+                Vec::new()
+            },
             fft: self.convolution.try_workspace()?,
         })
     }
 
     pub(crate) fn radix(&self) -> usize {
         self.radix
+    }
+
+    pub(crate) fn convolution_len(&self) -> usize {
+        self.convolution_len
     }
 
     #[cfg(test)]
@@ -175,23 +200,23 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
         input: &[Complex<T>],
         output: &mut [Complex<T>],
         direction: Direction,
-        workspace: &mut RaderPrimeWorkspace<T>,
+        workspace: &mut RaderPrimeExecutionWorkspace<'_, T>,
     ) {
         debug_assert_eq!(input.len(), self.radix);
         debug_assert_eq!(output.len(), self.radix);
-        debug_assert_eq!(workspace.convolution.len(), self.convolution_len);
+        debug_assert_eq!(workspace.buffer.len(), self.convolution_len);
 
         let mut sum = input[0];
         for (index, &power) in self.powers.iter().enumerate() {
             let value = input[power];
-            workspace.convolution[index] = value;
+            workspace.buffer[index] = value;
             sum = sum + value;
         }
-        self.execute_convolution(direction, workspace);
+        self.execute_convolution_shared(direction, workspace);
 
         output[0] = sum;
         for (index, &power) in self.inverse_powers.iter().enumerate() {
-            output[power] = input[0] + workspace.convolution[index];
+            output[power] = input[0] + workspace.buffer[index];
         }
     }
 
@@ -221,6 +246,39 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
         for (index, &frequency) in self.inverse_powers.iter().enumerate() {
             if frequency <= half {
                 let value = Complex::new(input[group], T::zero()) + workspace.convolution[index];
+                output[output_start + 2 * frequency - 1] = value.re;
+                output[output_start + 2 * frequency] = value.im;
+            }
+        }
+    }
+
+    pub(crate) fn execute_real_forward_shared(
+        &self,
+        input: &[T],
+        input_l1: usize,
+        group: usize,
+        output: &mut [T],
+        output_start: usize,
+        workspace: &mut RaderPrimeExecutionWorkspace<'_, T>,
+    ) {
+        debug_assert_eq!(self.radix, 241);
+        debug_assert_eq!(input.len() % input_l1, 0);
+        debug_assert!(group < input_l1);
+        debug_assert_eq!(workspace.buffer.len(), self.convolution_len);
+
+        let mut sum = input[group];
+        for (index, &power) in self.powers.iter().enumerate() {
+            let value = input[power * input_l1 + group];
+            workspace.buffer[index] = Complex::new(value, T::zero());
+            sum = sum + value;
+        }
+        self.execute_convolution_shared(Direction::Forward, workspace);
+
+        let half = self.radix / 2;
+        output[output_start] = sum;
+        for (index, &frequency) in self.inverse_powers.iter().enumerate() {
+            if frequency <= half {
+                let value = Complex::new(input[group], T::zero()) + workspace.buffer[index];
                 output[output_start + 2 * frequency - 1] = value.re;
                 output[output_start + 2 * frequency] = value.im;
             }
@@ -269,7 +327,51 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
         }
     }
 
+    pub(crate) fn execute_real_inverse_shared(
+        &self,
+        input: &[T],
+        output: &mut [T],
+        output_l1: usize,
+        group: usize,
+        scale: T,
+        workspace: &mut RaderPrimeExecutionWorkspace<'_, T>,
+    ) {
+        debug_assert_eq!(self.radix, 241);
+        debug_assert!(group < output_l1);
+        debug_assert_eq!(workspace.buffer.len(), self.convolution_len);
+
+        let half = self.radix / 2;
+        let input_start = group * self.radix;
+        let dc = input[input_start];
+        let mut sum = Complex::new(dc, T::zero());
+        for (index, &frequency) in self.powers.iter().enumerate() {
+            let value = if frequency <= half {
+                Complex::new(
+                    input[input_start + 2 * frequency - 1],
+                    input[input_start + 2 * frequency],
+                )
+            } else {
+                let positive_frequency = self.radix - frequency;
+                Complex::new(
+                    input[input_start + 2 * positive_frequency - 1],
+                    -input[input_start + 2 * positive_frequency],
+                )
+            };
+            workspace.buffer[index] = value;
+            sum = sum + value;
+        }
+        self.execute_convolution_shared(Direction::Inverse, workspace);
+
+        output[group] = sum.re * scale;
+        for (index, &sample) in self.inverse_powers.iter().enumerate() {
+            debug_assert_ne!(sample, 0);
+            output[sample * output_l1 + group] =
+                (Complex::new(dc, T::zero()) + workspace.buffer[index]).re * scale;
+        }
+    }
+
     fn execute_convolution(&self, direction: Direction, workspace: &mut RaderPrimeWorkspace<T>) {
+        debug_assert_eq!(workspace.convolution.len(), self.convolution_len);
         (self.execute)(
             &self.convolution,
             &mut workspace.convolution,
@@ -288,6 +390,35 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
             &self.convolution,
             &mut workspace.convolution,
             &mut workspace.fft,
+            Direction::Inverse,
+        )
+        .expect("Rader convolution workspace matches its plan");
+    }
+
+    fn execute_convolution_shared(
+        &self,
+        direction: Direction,
+        workspace: &mut RaderPrimeExecutionWorkspace<'_, T>,
+    ) {
+        debug_assert_eq!(workspace.buffer.len(), self.convolution_len);
+        (self.execute)(
+            &self.convolution,
+            workspace.buffer,
+            &mut workspace.workspace.fft,
+            Direction::Forward,
+        )
+        .expect("Rader convolution workspace matches its plan");
+        let kernel = match direction {
+            Direction::Forward => &self.forward_kernel,
+            Direction::Inverse => &self.inverse_kernel,
+        };
+        for (value, &coefficient) in workspace.buffer.iter_mut().zip(kernel) {
+            *value = *value * coefficient;
+        }
+        (self.execute)(
+            &self.convolution,
+            workspace.buffer,
+            &mut workspace.workspace.fft,
             Direction::Inverse,
         )
         .expect("Rader convolution workspace matches its plan");
@@ -334,6 +465,7 @@ fn modular_power(mut base: usize, mut exponent: usize, modulus: usize) -> usize 
 
 #[cfg(test)]
 mod tests {
+    use super::RaderPrimeExecutionWorkspace;
     use super::RaderPrimePlan;
     use crate::Complex;
     use crate::complex::{ComplexFftPlan, Direction};
@@ -373,6 +505,8 @@ mod tests {
                         )
                     })
                     .collect();
+                let mut buffer = vec![Complex::new(0.0, 0.0); plan.convolution_len()];
+                let mut workspace = RaderPrimeExecutionWorkspace::new(&mut buffer, &mut workspace);
                 for direction in [Direction::Forward, Direction::Inverse] {
                     let mut actual = vec![Complex::new(0.0, 0.0); radix];
                     plan.execute(&input, &mut actual, direction, &mut workspace);

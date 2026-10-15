@@ -1693,23 +1693,94 @@ fn real_workspace_reports_reusable_scratch_bytes() {
 }
 
 #[test]
+fn rader_and_fallback_reuse_workspace_buffer_across_routes() {
+    for (n, workspace_bytes) in [(257, 46_032), (723, 53_536)] {
+        let plan = RealFftPlan::<f64>::new(n).unwrap();
+        let mut workspace = plan.workspace().unwrap();
+        assert_eq!(workspace.scratch_bytes(), Some(workspace_bytes));
+
+        let input: Vec<_> = (0..n).map(|index| real_signal(index + 5, n + 7)).collect();
+        let expected_spectrum = direct_r2c_f64(&input);
+        let mut spectrum = vec![Complex::new(0.0, 0.0); plan.spectrum_len()];
+        plan.forward(&input, &mut spectrum, &mut workspace).unwrap();
+        assert_complex_f64_close(&spectrum, &expected_spectrum, n);
+
+        let short_input = vec![0.0; n - 1];
+        assert_eq!(
+            plan.forward(&short_input, &mut spectrum, &mut workspace),
+            Err(FftError::BufferLength {
+                buffer: "input",
+                expected: n,
+                actual: n - 1,
+            })
+        );
+
+        let high = f64::MAX / (2.0 * n as f64);
+        let high_input = vec![high; n];
+        plan.forward(&high_input, &mut spectrum, &mut workspace)
+            .unwrap();
+        assert!(
+            spectrum
+                .iter()
+                .all(|value| value.re.is_finite() && value.im.is_finite())
+        );
+        assert!((spectrum[0].re / f64::MAX - 0.5).abs() <= 2.0e-15);
+        assert!(spectrum[0].im.abs() / f64::MAX <= 2.0e-15);
+
+        plan.forward(&input, &mut spectrum, &mut workspace).unwrap();
+        assert_complex_f64_close(&spectrum, &expected_spectrum, n);
+
+        let independent_spectrum: Vec<_> = (0..plan.spectrum_len())
+            .map(|index| {
+                Complex::new(
+                    real_signal(index + 17, n + 2),
+                    real_signal(index + 9, n + 11) * 0.3,
+                )
+            })
+            .collect();
+        let expected_samples = direct_c2r_f64(&independent_spectrum, n);
+        let mut samples = vec![0.0; n];
+        plan.inverse(&independent_spectrum, &mut samples, &mut workspace)
+            .unwrap();
+        assert_f64_close(&samples, &expected_samples, n);
+
+        let high_spectrum = vec![Complex::new(high, -high); plan.spectrum_len()];
+        plan.inverse(&high_spectrum, &mut samples, &mut workspace)
+            .unwrap();
+        assert!(samples.iter().all(|value| value.is_finite()));
+
+        plan.inverse(&independent_spectrum, &mut samples, &mut workspace)
+            .unwrap();
+        assert_f64_close(&samples, &expected_samples, n);
+
+        let empty_spectrum: [Complex<f64>; 0] = [];
+        let mut empty_real: [f64; 0] = [];
+        plan.forward_batch(&[], &mut [], &mut workspace).unwrap();
+        plan.inverse_batch(&empty_spectrum, &mut empty_real, &mut workspace)
+            .unwrap();
+    }
+}
+
+#[test]
 fn shared_real_plans_execute_concurrently_with_separate_workspaces() {
-    let plan = RealFftPlan::<f64>::new(45).unwrap();
-    std::thread::scope(|scope| {
-        for row in 0..4 {
-            let plan = &plan;
-            scope.spawn(move || {
-                let mut workspace = plan.workspace().unwrap();
-                let input: Vec<_> = (0..plan.len())
-                    .map(|index| real_signal(index + row, plan.len()))
-                    .collect();
-                let expected = direct_r2c_f64(&input);
-                let mut spectrum = vec![Complex::new(0.0, 0.0); plan.spectrum_len()];
-                plan.forward(&input, &mut spectrum, &mut workspace).unwrap();
-                assert_complex_f64_close(&spectrum, &expected, plan.len());
-            });
-        }
-    });
+    for n in [45, 257, 723] {
+        let plan = RealFftPlan::<f64>::new(n).unwrap();
+        std::thread::scope(|scope| {
+            for row in 0..4 {
+                let plan = &plan;
+                scope.spawn(move || {
+                    let mut workspace = plan.workspace().unwrap();
+                    let input: Vec<_> = (0..plan.len())
+                        .map(|index| real_signal(index + row, plan.len()))
+                        .collect();
+                    let expected = direct_r2c_f64(&input);
+                    let mut spectrum = vec![Complex::new(0.0, 0.0); plan.spectrum_len()];
+                    plan.forward(&input, &mut spectrum, &mut workspace).unwrap();
+                    assert_complex_f64_close(&spectrum, &expected, plan.len());
+                });
+            }
+        });
+    }
 }
 
 #[test]
