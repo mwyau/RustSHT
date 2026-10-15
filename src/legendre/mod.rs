@@ -475,6 +475,32 @@ pub(crate) trait ShtScalar:
     }
     #[expect(
         clippy::too_many_arguments,
+        reason = "The fused spin-2 analysis block shares recurrence state across two scalar-conversion channels."
+    )]
+    fn fused_scalar_analysis_pair_channels_block(
+        _arch: Arch,
+        _m: usize,
+        _lmax: usize,
+        _sin_theta: &[Self],
+        _cos_theta: &[Self],
+        _sectoral_norm: Self,
+        _coefficient_a: &[Self],
+        _coefficient_b: &[Self],
+        _same_real: [&[Self]; 2],
+        _same_imag: [&[Self]; 2],
+        _opposite_real: [&[Self]; 2],
+        _opposite_imag: [&[Self]; 2],
+        _staged_first: &mut [Complex<Self>],
+        _staged_second: &mut [Complex<Self>],
+        _previous: &mut [Self],
+        _current: &mut [Self],
+        _next: &mut [Self],
+        _exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        Ok(false)
+    }
+    #[expect(
+        clippy::too_many_arguments,
         reason = "Spin-1 scalar conversion accumulates the Q and U parity channels over shared recurrence lanes."
     )]
     fn accumulate_scalar_analysis_pair_channels(
@@ -1178,6 +1204,48 @@ impl ShtScalar for f64 {
             opposite_real,
             opposite_imag,
             staged_coefficients,
+            previous,
+            current,
+            next,
+            exponents,
+        )
+    }
+
+    fn fused_scalar_analysis_pair_channels_block(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        sectoral_norm: Self,
+        coefficient_a: &[Self],
+        coefficient_b: &[Self],
+        same_real: [&[Self]; 2],
+        same_imag: [&[Self]; 2],
+        opposite_real: [&[Self]; 2],
+        opposite_imag: [&[Self]; 2],
+        staged_first: &mut [Complex<Self>],
+        staged_second: &mut [Complex<Self>],
+        previous: &mut [Self],
+        current: &mut [Self],
+        next: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        scalar_paired::fused_scalar_analysis_pair_channels_block_dispatched(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            staged_first,
+            staged_second,
             previous,
             current,
             next,
