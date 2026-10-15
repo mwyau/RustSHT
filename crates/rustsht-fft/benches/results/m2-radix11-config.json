@@ -1,0 +1,76 @@
+{
+  "pairs": 8,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "Native real radix-11 specialization versus the generic real-prime path at M1 commit 1502397",
+    "baseline_commit": "15023973f1880775b28bac5ffd9fb18a7ff49c76",
+    "candidate_commit": "uncommitted M2 radix-11 candidate",
+    "acceptance_gate": "For each mixed target length 121, 242, 363, 726, 1023, and 1441, both R2C/C2R and rows 1/32 require median baseline-to-candidate speedup >=1.10x and 95% paired-bootstrap lower bound >1.05x. N=11, N=22, and controls 513, 1025, 1443, and 1452 require median speedup >=0.95x in both directions and row counts.",
+    "benchmark": "bench-native, one transform and 32 sequential rows",
+    "lengths": [
+      11,
+      22,
+      121,
+      242,
+      363,
+      726,
+      1023,
+      1441,
+      513,
+      1025,
+      1443,
+      1452
+    ],
+    "operations": [
+      "c2c_forward",
+      "c2c_inverse",
+      "r2c",
+      "c2r"
+    ],
+    "compiler": "Rust 1.99.0 stable, Cargo bench profile",
+    "cpu": "AMD Ryzen 9 5950X",
+    "thread_count": 1,
+    "affinity": "logical CPU 30",
+    "candidate_binary_sha256": "40dc7292e95d22f8f222f4d2c2e777ea4f416b121cbf7d3412c35a8ea7a0ee17",
+    "baseline_binary_sha256": "53b02cead892e7a0f13becfe4de96b4440d00af1d4630fbf24c3936c7a7c5e67"
+  },
+  "a": {
+    "label": "candidate",
+    "command": [
+      "/home/albert/RustSHT/crates/rustsht-fft/target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native",
+      "11",
+      "22",
+      "121",
+      "242",
+      "363",
+      "726",
+      "1023",
+      "1441",
+      "513",
+      "1025",
+      "1443",
+      "1452"
+    ]
+  },
+  "b": {
+    "label": "m1-generic",
+    "command": [
+      "/tmp/rustsht-fft-m2-baseline/crates/rustsht-fft/target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native",
+      "11",
+      "22",
+      "121",
+      "242",
+      "363",
+      "726",
+      "1023",
+      "1441",
+      "513",
+      "1025",
+      "1443",
+      "1452"
+    ]
+  }
+}

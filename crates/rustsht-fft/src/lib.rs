@@ -47,9 +47,9 @@ mod m0_diagnostics_tests {
     use super::{Complex, ComplexFftPlan, RealFftPlan, m0_clear_routes, m0_route_snapshot};
 
     const LENGTHS: &[usize] = &[
-        19, 41, 73, 98, 103, 109, 113, 131, 137, 146, 147, 150, 240, 241, 256, 257, 300, 484, 512,
-        513, 525, 683, 722, 723, 726, 1023, 1024, 1025, 1372, 1441, 1442, 1443, 1452, 2047, 2048,
-        2049, 2904, 4096, 4097, 12769, 18769,
+        11, 19, 22, 41, 73, 98, 103, 109, 113, 121, 131, 137, 146, 147, 150, 240, 241, 242, 256,
+        257, 300, 363, 484, 512, 513, 525, 683, 722, 723, 726, 1023, 1024, 1025, 1372, 1441, 1442,
+        1443, 1452, 2047, 2048, 2049, 2904, 4096, 4097, 12769, 18769,
     ];
 
     fn complex_input(n: usize) -> Vec<Complex<f64>> {
@@ -170,5 +170,82 @@ mod m0_diagnostics_tests {
                 .expect("tiny real inverse");
             print_events("real", n, "inverse-subnormal-fallback");
         }
+    }
+
+    #[test]
+    fn real_radix11_plan_and_execution_routes_cover_terminal_and_interior_layouts() {
+        let layouts = [
+            (22, 2, 1),
+            (121, 1, 11),
+            (242, 2, 11),
+            (363, 3, 11),
+            (726, 6, 11),
+            (1023, 3, 31),
+            (1441, 1, 131),
+        ];
+
+        let single_prime_report = RealFftPlan::<f64>::new(11)
+            .expect("standalone radix-11 plan")
+            .m0_plan_report();
+        assert!(single_prime_report.iter().any(|line| {
+            line.contains("real n=11 stage=")
+                && line.contains("radix=11")
+                && line.contains("route=general prime")
+        }));
+
+        for (n, l1, ido) in layouts {
+            let plan = RealFftPlan::<f64>::new(n).expect("radix-11 plan");
+            let report = plan.m0_plan_report();
+            assert!(
+                report.iter().any(|line| {
+                    line.contains(&format!("radix=11 l1={l1} ido={ido} route=fixed real pass"))
+                }),
+                "n={n} did not report fixed radix-11 pass: {report:?}"
+            );
+        }
+
+        for n in [513, 1025, 1443, 1452] {
+            let plan = RealFftPlan::<f64>::new(n).expect("control plan");
+            let report = plan.m0_plan_report();
+            assert!(
+                !report.iter().any(|line| {
+                    line.contains(&format!("real n={n} stage=")) && line.contains("radix=11")
+                }),
+                "n={n} unexpectedly uses a native real radix-11 pass: {report:?}"
+            );
+        }
+        assert!(
+            RealFftPlan::<f64>::new(1452)
+                .unwrap()
+                .m0_plan_report()
+                .iter()
+                .any(|line| line.contains("real n=1452 route=complexify c2c-n=726"))
+        );
+
+        let n = 726;
+        let plan = RealFftPlan::<f64>::new(n).expect("mixed terminal/interior plan");
+        let mut workspace = plan.workspace().expect("radix-11 workspace");
+        let input = real_input(n, 1.0);
+        let mut spectrum = vec![Complex::new(0.0, 0.0); plan.spectrum_len()];
+        m0_clear_routes();
+        plan.forward(&input, &mut spectrum, &mut workspace)
+            .expect("radix-11 forward");
+        let forward_routes = m0_route_snapshot();
+        assert!(forward_routes.iter().any(|route| {
+            route.contains("real-forward-pass radix=11") && route.contains("fixed-radix11")
+        }));
+
+        m0_clear_routes();
+        plan.inverse(&spectrum, &mut vec![0.0; n], &mut workspace)
+            .expect("radix-11 inverse");
+        let inverse_routes = m0_route_snapshot();
+        assert!(inverse_routes.iter().any(|route| {
+            route.contains("real-inverse-pass radix=11") && route.contains("fixed-radix11")
+        }));
+        assert!(
+            inverse_routes
+                .iter()
+                .any(|route| route.contains("real-inverse-terminal:fixed-radix11"))
+        );
     }
 }

@@ -65,6 +65,14 @@ by the median of seven warmed calls. It uses one row and excludes process
 startup, plan construction, and input allocation. Pair candidate and baseline
 processes externally when comparing the values.
 
+`cargo bench --bench rustfft -- bench-native-first-call-set N ...` reports the
+same first-call and warmed-call measurements for R2C and C2R at each listed
+length. It uses one row per operation.
+
+The M2 native real radix-11 implementation, validation, and paired results are
+documented in [`docs/m2-real-radix11.md`](../docs/m2-real-radix11.md).
+`summarize_first_call.py` summarizes the paired first-call captures.
+
 The paired M4 measurement for fusing real inverse eligibility with packed
 spectrum conversion is in
 [`docs/m4-real-inverse-pack.md`](../docs/m4-real-inverse-pack.md).

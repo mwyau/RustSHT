@@ -299,6 +299,8 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                     continue;
                 } else if matches!(radix, 2..=5) {
                     "fixed real radix"
+                } else if radix == 11 && self.len > 11 {
+                    "fixed real radix-11"
                 } else {
                     "general prime"
                 };

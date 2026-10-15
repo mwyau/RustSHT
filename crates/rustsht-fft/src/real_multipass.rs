@@ -3,15 +3,17 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: BSD-3-Clause
 //
-// Scalar real radix-2/3/4/5 pass equations and the general-prime packed layout
-// are adapted from DUCC fft1d_impl.h at
+// Scalar real radix-2/3/4/5/11 pass equations and the general-prime packed
+// layout are adapted from DUCC fft1d_impl.h at
 // c1ed01b8fda69d2a378190f0915f1a19762dddbf.
 
 use num_complex::Complex;
 use num_traits::{Float, FromPrimitive};
 
 use crate::FftError;
-use crate::complex::{BluesteinPlan, ComplexFftWorkspace, Direction, check_vec_len, try_vec};
+use crate::complex::{
+    BluesteinPlan, ComplexFftWorkspace, Direction, check_vec_len, radix11, try_vec,
+};
 use crate::rader::{RaderPrimePlan, RaderPrimeWorkspace};
 use crate::simd::{
     RealGeneralPrimeIdo1Kernel, RealGeneralPrimeIdo1Params, RealRadix2ForwardInteriorKernel,
@@ -32,6 +34,12 @@ struct Pass<T> {
     prime_ido1_kernel: Option<RealGeneralPrimeIdo1Kernel<T>>,
     bluestein_stage: Option<usize>,
     rader_stage: bool,
+}
+
+impl<T> Pass<T> {
+    fn fixed_radix11(&self) -> bool {
+        self.radix == 11 && self.prime_roots.is_empty()
+    }
 }
 
 pub(crate) struct RealMultipassKernels<T> {
@@ -140,17 +148,25 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                     twiddles[offset + 1] = root.im;
                 }
             }
+            // The fixed pass saves work once it is part of a mixed transform.
+            // For the standalone length 11, paired timings show a larger
+            // terminal-real call cost than the generic pass.
+            let fixed_radix11 = radix == 11 && len > 11;
             let mut prime_roots = try_vec(
-                if radix > 5 && radix < 135 { radix } else { 0 },
+                if radix > 5 && radix < 135 && !fixed_radix11 {
+                    radix
+                } else {
+                    0
+                },
                 Complex::new(T::zero(), T::zero()),
             )?;
-            if radix > 5 && radix < 135 {
+            if radix > 5 && radix < 135 && !fixed_radix11 {
                 let root_stride = len / radix;
                 for (phase, root) in prime_roots.iter_mut().enumerate() {
                     *root = roots[phase * root_stride];
                 }
             }
-            let prime_phase_count = if radix > 5 && radix < 135 {
+            let prime_phase_count = if radix > 5 && radix < 135 && !fixed_radix11 {
                 radix.checked_mul(radix).ok_or(FftError::AllocationFailed)?
             } else {
                 0
@@ -237,6 +253,7 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
                 } else {
                     match pass.radix {
                         2..=5 => String::from("fixed real pass"),
+                        11 if pass.fixed_radix11() => String::from("fixed real pass"),
                         _ => String::from("general prime"),
                     }
                 };
@@ -444,6 +461,8 @@ fn execute_forward_pass<T: Float + FromPrimitive>(
             "Rader"
         } else if pass.bluestein_stage.is_some() {
             "Bluestein"
+        } else if pass.fixed_radix11() {
+            "fixed-radix11"
         } else {
             "multipass"
         }
@@ -457,6 +476,7 @@ fn execute_forward_pass<T: Float + FromPrimitive>(
         4 => forward_radix4(pass, input, output, radix4_forward_interior_kernel),
         3 => forward_radix3(pass, input, output),
         5 => forward_radix5(pass, input, output),
+        11 if pass.fixed_radix11() => forward_radix11(pass, input, output),
         _ => forward_general_prime(pass, input, output),
     }
 }
@@ -479,6 +499,8 @@ fn execute_inverse_pass<T: Float + FromPrimitive>(
             "Rader"
         } else if pass.bluestein_stage.is_some() {
             "Bluestein"
+        } else if pass.fixed_radix11() {
+            "fixed-radix11"
         } else {
             "multipass"
         }
@@ -492,6 +514,7 @@ fn execute_inverse_pass<T: Float + FromPrimitive>(
         4 => inverse_radix4(pass, input, output, radix4_interior_kernel),
         3 => inverse_radix3(pass, input, output),
         5 => inverse_radix5(pass, input, output),
+        11 if pass.fixed_radix11() => inverse_radix11(pass, input, output, T::one()),
         _ => inverse_general_prime(pass, input, output, T::one()),
     }
 }
@@ -910,6 +933,283 @@ fn inverse_general_prime<T: Float + FromPrimitive>(
                 let result = value * Complex::new(twiddle_re, twiddle_im);
                 output[index(i - 1, group, sample, ido, l1)] = result.re * scale;
                 output[index(i, group, sample, ido, l1)] = result.im * scale;
+            }
+        }
+    }
+}
+
+const RADIX11_COSINES: [[f64; 5]; 5] = [
+    [
+        0.841_253_532_831_181_2,
+        0.415_415_013_001_886_4,
+        -0.142_314_838_273_285_14,
+        -0.654_860_733_945_285_1,
+        -0.959_492_973_614_497_4,
+    ],
+    [
+        0.415_415_013_001_886_4,
+        -0.654_860_733_945_285_1,
+        -0.959_492_973_614_497_4,
+        -0.142_314_838_273_285_14,
+        0.841_253_532_831_181_2,
+    ],
+    [
+        -0.142_314_838_273_285_14,
+        -0.959_492_973_614_497_4,
+        0.415_415_013_001_886_4,
+        0.841_253_532_831_181_2,
+        -0.654_860_733_945_285_1,
+    ],
+    [
+        -0.654_860_733_945_285_1,
+        -0.142_314_838_273_285_14,
+        0.841_253_532_831_181_2,
+        -0.959_492_973_614_497_4,
+        0.415_415_013_001_886_4,
+    ],
+    [
+        -0.959_492_973_614_497_4,
+        0.841_253_532_831_181_2,
+        -0.654_860_733_945_285_1,
+        0.415_415_013_001_886_4,
+        -0.142_314_838_273_285_14,
+    ],
+];
+
+const RADIX11_SINES: [[f64; 5]; 5] = [
+    [
+        0.540_640_817_455_597_6,
+        0.909_631_995_354_518_4,
+        0.989_821_441_880_932_7,
+        0.755_749_574_354_258_3,
+        0.281_732_556_841_429_7,
+    ],
+    [
+        0.909_631_995_354_518_4,
+        0.755_749_574_354_258_3,
+        -0.281_732_556_841_429_7,
+        -0.989_821_441_880_932_7,
+        -0.540_640_817_455_597_6,
+    ],
+    [
+        0.989_821_441_880_932_7,
+        -0.281_732_556_841_429_7,
+        -0.909_631_995_354_518_4,
+        0.540_640_817_455_597_6,
+        0.755_749_574_354_258_3,
+    ],
+    [
+        0.755_749_574_354_258_3,
+        -0.989_821_441_880_932_7,
+        0.540_640_817_455_597_6,
+        0.281_732_556_841_429_7,
+        -0.909_631_995_354_518_4,
+    ],
+    [
+        0.281_732_556_841_429_7,
+        -0.540_640_817_455_597_6,
+        0.755_749_574_354_258_3,
+        -0.909_631_995_354_518_4,
+        0.989_821_441_880_932_7,
+    ],
+];
+
+fn radix11_coefficients<T: Float + FromPrimitive>() -> ([[T; 5]; 5], [[T; 5]; 5]) {
+    let cosines = core::array::from_fn(|row| {
+        core::array::from_fn(|column| scalar::<T>(RADIX11_COSINES[row][column]))
+    });
+    let sines = core::array::from_fn(|row| {
+        core::array::from_fn(|column| scalar::<T>(RADIX11_SINES[row][column]))
+    });
+    (cosines, sines)
+}
+
+fn radix11_real_forward<T: Float>(
+    input: &[T; 11],
+    cosines: &[[T; 5]; 5],
+    sines: &[[T; 5]; 5],
+) -> [Complex<T>; 6] {
+    let zero = T::zero();
+    let mut output = [Complex::new(zero, zero); 6];
+    let mut dc = input[0];
+    let mut pair_sums = [zero; 5];
+    let mut pair_differences = [zero; 5];
+    for pair in 0..5 {
+        let left = input[pair + 1];
+        let right = input[10 - pair];
+        dc = dc + left + right;
+        pair_sums[pair] = left + right;
+        pair_differences[pair] = left - right;
+    }
+    output[0] = Complex::new(dc, zero);
+
+    for frequency in 1..=5 {
+        let mut real = input[0];
+        let mut imaginary = zero;
+        for pair in 0..5 {
+            real = real + pair_sums[pair] * cosines[frequency - 1][pair];
+            imaginary = imaginary - pair_differences[pair] * sines[frequency - 1][pair];
+        }
+        output[frequency] = Complex::new(real, imaginary);
+    }
+    output
+}
+
+pub(super) fn radix11_real_inverse<T: Float + FromPrimitive>(
+    input: &[Complex<T>; 6],
+    cosines: &[[T; 5]; 5],
+    sines: &[[T; 5]; 5],
+) -> [T; 11] {
+    let two = scalar::<T>(2.0);
+    let dc = input[0].re;
+    let mut output = [T::zero(); 11];
+    let mut zero_frequency = dc;
+    for bin in input.iter().skip(1) {
+        zero_frequency = zero_frequency + two * bin.re;
+    }
+    output[0] = zero_frequency;
+
+    for sample in 1..=5 {
+        let mut positive = dc;
+        let mut negative = dc;
+        for frequency in 1..=5 {
+            let real = input[frequency].re;
+            let imaginary = input[frequency].im;
+            let cosine = cosines[frequency - 1][sample - 1];
+            let sine = sines[frequency - 1][sample - 1];
+            positive = positive + two * (real * cosine - imaginary * sine);
+            negative = negative + two * (real * cosine + imaginary * sine);
+        }
+        output[sample] = positive;
+        output[11 - sample] = negative;
+    }
+    output
+}
+
+fn forward_radix11<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], output: &mut [T]) {
+    debug_assert_eq!(pass.radix, 11);
+    let l1 = pass.l1;
+    let ido = pass.ido;
+    let (cosines, sines) = radix11_coefficients();
+
+    if ido == 1 {
+        for group in 0..l1 {
+            let values = core::array::from_fn(|branch| input[branch * l1 + group]);
+            let bins = radix11_real_forward(&values, &cosines, &sines);
+            let output_start = group * 11;
+            output[output_start] = bins[0].re;
+            for frequency in 1..=5 {
+                output[output_start + 2 * frequency - 1] = bins[frequency].re;
+                output[output_start + 2 * frequency] = bins[frequency].im;
+            }
+        }
+        return;
+    }
+
+    for group in 0..l1 {
+        let real_values = core::array::from_fn(|branch| input[index(0, group, branch, ido, l1)]);
+        let real_bins = radix11_real_forward(&real_values, &cosines, &sines);
+        output[index(0, 0, group, ido, 11)] = real_bins[0].re;
+        for frequency in 1..=5 {
+            output[index(ido - 1, 2 * frequency - 1, group, ido, 11)] = real_bins[frequency].re;
+            output[index(0, 2 * frequency, group, ido, 11)] = real_bins[frequency].im;
+        }
+
+        for i in (2..ido).step_by(2) {
+            let ic = ido - i;
+            let zero = Complex::new(T::zero(), T::zero());
+            let mut lane_input = [zero; 11];
+            let mut lane_output = [zero; 11];
+            for branch in 0..11 {
+                let mut value = Complex::new(
+                    input[index(i - 1, group, branch, ido, l1)],
+                    input[index(i, group, branch, ido, l1)],
+                );
+                if branch != 0 {
+                    let (real, imaginary) = multiply_pm(
+                        twiddle(pass, branch, i - 2),
+                        twiddle(pass, branch, i - 1),
+                        value.re,
+                        value.im,
+                    );
+                    value = Complex::new(real, imaginary);
+                }
+                lane_input[branch] = value;
+            }
+            radix11(&lane_input, &mut lane_output, Direction::Forward);
+            output[index(i - 1, 0, group, ido, 11)] = lane_output[0].re;
+            output[index(i, 0, group, ido, 11)] = lane_output[0].im;
+            for frequency in 1..=5 {
+                let positive = lane_output[frequency];
+                let negative = lane_output[11 - frequency];
+                output[index(i - 1, 2 * frequency, group, ido, 11)] = positive.re;
+                output[index(i, 2 * frequency, group, ido, 11)] = positive.im;
+                output[index(ic - 1, 2 * frequency - 1, group, ido, 11)] = negative.re;
+                output[index(ic, 2 * frequency - 1, group, ido, 11)] = -negative.im;
+            }
+        }
+    }
+}
+
+fn inverse_radix11<T: Float + FromPrimitive>(
+    pass: &Pass<T>,
+    input: &[T],
+    output: &mut [T],
+    scale: T,
+) {
+    debug_assert_eq!(pass.radix, 11);
+    debug_assert_ne!(pass.ido, 1);
+    let l1 = pass.l1;
+    let ido = pass.ido;
+    let (cosines, sines) = radix11_coefficients();
+
+    for group in 0..l1 {
+        let mut real_spectrum = [Complex::new(T::zero(), T::zero()); 6];
+        real_spectrum[0] = Complex::new(input[index(0, 0, group, ido, 11)], T::zero());
+        for frequency in 1..=5 {
+            real_spectrum[frequency] = Complex::new(
+                input[index(ido - 1, 2 * frequency - 1, group, ido, 11)],
+                input[index(0, 2 * frequency, group, ido, 11)],
+            );
+        }
+        let real_values = radix11_real_inverse(&real_spectrum, &cosines, &sines);
+        for (branch, value) in real_values.into_iter().enumerate() {
+            output[index(0, group, branch, ido, l1)] = value * scale;
+        }
+
+        for i in (2..ido).step_by(2) {
+            let ic = ido - i;
+            let zero = Complex::new(T::zero(), T::zero());
+            let mut lane_input = [zero; 11];
+            let mut lane_output = [zero; 11];
+            lane_input[0] = Complex::new(
+                input[index(i - 1, 0, group, ido, 11)],
+                input[index(i, 0, group, ido, 11)],
+            );
+            for frequency in 1..11 {
+                lane_input[frequency] = if frequency <= 5 {
+                    Complex::new(
+                        input[index(i - 1, 2 * frequency, group, ido, 11)],
+                        input[index(i, 2 * frequency, group, ido, 11)],
+                    )
+                } else {
+                    let mirrored = 11 - frequency;
+                    Complex::new(
+                        input[index(ic - 1, 2 * mirrored - 1, group, ido, 11)],
+                        -input[index(ic, 2 * mirrored - 1, group, ido, 11)],
+                    )
+                };
+            }
+            radix11(&lane_input, &mut lane_output, Direction::Inverse);
+            for branch in 0..11 {
+                let value = if branch == 0 {
+                    lane_output[branch]
+                } else {
+                    lane_output[branch]
+                        * Complex::new(twiddle(pass, branch, i - 2), twiddle(pass, branch, i - 1))
+                };
+                output[index(i - 1, group, branch, ido, l1)] = value.re * scale;
+                output[index(i, group, branch, ido, l1)] = value.im * scale;
             }
         }
     }

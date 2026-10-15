@@ -1,0 +1,37 @@
+{
+  "pairs": 12,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "Isolated repeat of the N=1441 real radix-11 warmed comparison after first-call variation",
+    "baseline_commit": "15023973f1880775b28bac5ffd9fb18a7ff49c76",
+    "candidate_commit": "uncommitted M2 radix-11 candidate",
+    "benchmark": "bench-native-real 1441 1 32",
+    "compiler": "Rust 1.99.0 stable, Cargo bench profile",
+    "cpu": "AMD Ryzen 9 5950X",
+    "thread_count": 1,
+    "affinity": "logical CPU 30",
+    "candidate_binary_sha256": "40dc7292e95d22f8f222f4d2c2e777ea4f416b121cbf7d3412c35a8ea7a0ee17",
+    "baseline_binary_sha256": "53b02cead892e7a0f13becfe4de96b4440d00af1d4630fbf24c3936c7a7c5e67"
+  },
+  "a": {
+    "label": "candidate",
+    "command": [
+      "/home/albert/RustSHT/crates/rustsht-fft/target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-real",
+      "1441",
+      "1",
+      "32"
+    ]
+  },
+  "b": {
+    "label": "m1-generic",
+    "command": [
+      "/tmp/rustsht-fft-m2-baseline/crates/rustsht-fft/target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-real",
+      "1441",
+      "1",
+      "32"
+    ]
+  }
+}

@@ -1649,7 +1649,7 @@ fn radix8<T: Float + FromPrimitive>(
     output[7] = a4 - a6 - a7;
 }
 
-fn radix11<T: Float + FromPrimitive>(
+pub(crate) fn radix11<T: Float + FromPrimitive>(
     input: &[Complex<T>],
     output: &mut [Complex<T>],
     direction: Direction,

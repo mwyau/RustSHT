@@ -1,0 +1,9 @@
+Comparison: RustSHT-FFT f64 C2C forward/inverse and R2C/C2R.
+Lengths: 11, 22, 121, 242, 363, 726, 1023, 1441, 513, 1025, 1443, 1452.
+Reference: DUCC revision c1ed01b8fda69d2a378190f0915f1a19762dddbf.
+Reference build: g++ 15.2.0, -std=c++20 -O3 -DNDEBUG -march=native -pthread.
+DUCC planner: vectorize=off.
+Rust build: rustc 1.99.0, optimized bench profile, portable target.
+Comparison tolerances: atol=2e-11, rtol=2e-11.
+
+Result: compared 29345 output records (58690 scalar components); max_abs=1.705e-13; worst_abs=(('c2c_forward', 1025, 28), 'imag'); max_scaled=1.137e-13; worst_scaled=(('r2c', 1452, 686), 'imag').
