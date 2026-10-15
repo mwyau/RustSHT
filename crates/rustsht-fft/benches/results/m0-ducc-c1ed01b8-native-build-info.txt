@@ -1,0 +1,4 @@
+DUCC revision: c1ed01b8fda69d2a378190f0915f1a19762dddbf
+C++ compiler command: g++
+C++ compiler version: g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0
+C++ flags: -std=c++20 -O3 -DNDEBUG -march=native -pthread

@@ -89,7 +89,84 @@ def main() -> None:
     )
     parser.add_argument("--rtol", type=float, default=2e-11)
     parser.add_argument("--atol", type=float, default=2e-11)
+    parser.add_argument(
+        "--external",
+        action="append",
+        default=[],
+        metavar="LABEL=PATH",
+        help="compare output with an external_fft.cpp binary exposing dump MODE N",
+    )
+    parser.add_argument(
+        "--lengths",
+        type=int,
+        nargs="+",
+        help="compare f64 C2C/R2C/C2R results for these lengths",
+    )
     args = parser.parse_args()
+
+    if args.lengths:
+        modes = ("c2c_forward", "c2c_inverse", "r2c", "c2r")
+        expected_parts = []
+        for n in args.lengths:
+            for mode in modes:
+                expected_parts.append(
+                    subprocess.run(
+                        [str(args.ducc), "dump", mode, str(n)],
+                        check=True,
+                        text=True,
+                        capture_output=True,
+                    ).stdout
+                )
+        actual_output = subprocess.run(
+            [
+                "cargo",
+                "bench",
+                "--manifest-path",
+                str(args.manifest),
+                "--bench",
+                "rustfft",
+                "--",
+                "dump-native-lengths",
+                *(str(n) for n in args.lengths),
+            ],
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+        compare_records(
+            "RustSHT-FFT f64 C2C/R2C/C2R",
+            parse_records("".join(expected_parts)),
+            parse_records(actual_output.stdout),
+            rtol=args.rtol,
+            atol=args.atol,
+        )
+        native_records = parse_records(actual_output.stdout)
+        for specification in args.external:
+            label, separator, executable = specification.partition("=")
+            if not separator or not label or not executable:
+                raise SystemExit("--external must use LABEL=PATH")
+            external_parts = []
+            for n in args.lengths:
+                for mode in modes:
+                    external_parts.append(
+                        subprocess.run(
+                            [executable, "dump", mode, str(n)],
+                            check=True,
+                            text=True,
+                            capture_output=True,
+                        ).stdout
+                    )
+            compare_records(
+                f"RustSHT-FFT versus {label} f64 C2C/R2C/C2R",
+                native_records,
+                parse_records("".join(external_parts)),
+                rtol=args.rtol,
+                atol=args.atol,
+            )
+        print(
+            f"DUCC vectorize={'on' if os.environ.get('RUSTSHT_FFT_DUCC_VECTORIZE') == '1' else 'off'}"
+        )
+        return
 
     ducc = subprocess.run(
         [str(args.ducc), "dump-all"], check=True, text=True, capture_output=True

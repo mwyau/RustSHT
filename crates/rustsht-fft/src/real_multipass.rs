@@ -224,6 +224,62 @@ impl<T: Float + FromPrimitive> RealMultipassPlan<T> {
         }))
     }
 
+    #[cfg(test)]
+    pub(crate) fn m0_pass_report(&self) -> Vec<String> {
+        self.passes
+            .iter()
+            .enumerate()
+            .map(|(stage, pass)| {
+                let route = if pass.rader_stage {
+                    String::from("Rader")
+                } else if let Some(blue_stage) = pass.bluestein_stage {
+                    format!("Bluestein-stage={blue_stage}")
+                } else {
+                    match pass.radix {
+                        2..=5 => String::from("fixed real pass"),
+                        _ => String::from("general prime"),
+                    }
+                };
+                let simd = if pass.prime_ido1_kernel.is_some() {
+                    String::from("AVX2-prime-ido1-installed")
+                } else if pass.radix == 2
+                    && pass.ido >= 16
+                    && pass.ido.is_multiple_of(2)
+                    && self.radix2_forward_interior_kernel.is_some()
+                    && self.radix2_interior_kernel.is_some()
+                {
+                    String::from("AVX2-radix2-forward+inverse-enabled")
+                } else if pass.radix == 4
+                    && pass.ido >= 16
+                    && pass.ido.is_multiple_of(2)
+                    && self.radix4_forward_interior_kernel.is_some()
+                    && self.radix4_interior_kernel.is_some()
+                {
+                    String::from("AVX2-radix4-forward+inverse-enabled")
+                } else {
+                    String::from("scalar-conditions")
+                };
+                format!(
+                    "real n={} stage={} radix={} l1={} ido={} route={} simd={}",
+                    self.len, stage, pass.radix, pass.l1, pass.ido, route, simd
+                )
+            })
+            .collect()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn m0_retained_plan_bytes(&self) -> usize {
+        let mut bytes = self.passes.capacity() * std::mem::size_of::<Pass<T>>();
+        for pass in &self.passes {
+            bytes += pass.twiddles.capacity() * std::mem::size_of::<T>();
+            bytes += pass.prime_roots.capacity() * std::mem::size_of::<Complex<T>>();
+            bytes += pass.prime_phase_indices.capacity() * std::mem::size_of::<u8>();
+            bytes += (pass.prime_cosines.capacity() + pass.prime_sines.capacity())
+                * std::mem::size_of::<T>();
+        }
+        bytes
+    }
+
     pub(crate) fn try_workspace(&self) -> Result<RealMultipassWorkspace<T>, FftError> {
         check_vec_len::<T>(self.len)?;
         Ok(RealMultipassWorkspace {
@@ -378,6 +434,20 @@ fn execute_forward_pass<T: Float + FromPrimitive>(
     radix4_forward_interior_kernel: Option<RealRadix4ForwardInteriorKernel<T>>,
     transforms: &mut MultipassTransforms<'_, T>,
 ) {
+    #[cfg(test)]
+    crate::m0_record_route(format!(
+        "real-forward-pass radix={} l1={} ido={} route={}",
+        pass.radix,
+        pass.l1,
+        pass.ido,
+        if pass.rader_stage {
+            "Rader"
+        } else if pass.bluestein_stage.is_some() {
+            "Bluestein"
+        } else {
+            "multipass"
+        }
+    ));
     if pass.bluestein_stage.is_some() || pass.rader_stage {
         transforms.forward(pass, input, output);
         return;
@@ -399,6 +469,20 @@ fn execute_inverse_pass<T: Float + FromPrimitive>(
     radix4_interior_kernel: Option<RealRadix4InteriorKernel<T>>,
     transforms: &mut MultipassTransforms<'_, T>,
 ) {
+    #[cfg(test)]
+    crate::m0_record_route(format!(
+        "real-inverse-pass radix={} l1={} ido={} route={}",
+        pass.radix,
+        pass.l1,
+        pass.ido,
+        if pass.rader_stage {
+            "Rader"
+        } else if pass.bluestein_stage.is_some() {
+            "Bluestein"
+        } else {
+            "multipass"
+        }
+    ));
     if pass.bluestein_stage.is_some() || pass.rader_stage {
         transforms.inverse(pass, input, output, T::one());
         return;
@@ -415,6 +499,8 @@ fn execute_inverse_pass<T: Float + FromPrimitive>(
 impl<T: Float + FromPrimitive> MultipassTransforms<'_, T> {
     fn forward(&mut self, pass: &Pass<T>, input: &[T], output: &mut [T]) {
         if pass.rader_stage {
+            #[cfg(test)]
+            crate::m0_record_route(format!("real-forward:Rader radix={}", pass.radix));
             let rader = self.rader.expect("Rader pass has a precomputed plan");
             let rader_workspace = self
                 .rader_workspace
@@ -448,6 +534,8 @@ impl<T: Float + FromPrimitive> MultipassTransforms<'_, T> {
         let stage = pass
             .bluestein_stage
             .expect("Bluestein pass has a plan stage");
+        #[cfg(test)]
+        crate::m0_record_route(format!("real-forward:Bluestein radix={}", pass.radix));
         let radix = pass.radix;
         let half = radix / 2;
         debug_assert!(radix >= 135 && !radix.is_multiple_of(2));
@@ -485,6 +573,8 @@ impl<T: Float + FromPrimitive> MultipassTransforms<'_, T> {
 
     fn inverse(&mut self, pass: &Pass<T>, input: &[T], output: &mut [T], scale: T) {
         if pass.rader_stage {
+            #[cfg(test)]
+            crate::m0_record_route(format!("real-inverse:Rader radix={}", pass.radix));
             let rader = self.rader.expect("Rader pass has a precomputed plan");
             let rader_workspace = self
                 .rader_workspace
@@ -520,6 +610,8 @@ impl<T: Float + FromPrimitive> MultipassTransforms<'_, T> {
         let stage = pass
             .bluestein_stage
             .expect("Bluestein pass has a plan stage");
+        #[cfg(test)]
+        crate::m0_record_route(format!("real-inverse:Bluestein radix={}", pass.radix));
         let radix = pass.radix;
         let half = radix / 2;
         debug_assert!(radix >= 135 && !radix.is_multiple_of(2));
@@ -568,6 +660,8 @@ fn forward_general_prime<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], 
 
     if ido == 1 {
         if let Some(kernel) = pass.prime_ido1_kernel {
+            #[cfg(test)]
+            crate::m0_record_route(format!("real-avx2:prime-forward radix={} l1={}", radix, l1));
             // SAFETY: the plan installs this kernel only after runtime AVX2
             // detection and allocates coefficient tables with `half * half`
             // entries. The multipass buffers are disjoint and contain the
@@ -716,6 +810,8 @@ fn inverse_general_prime<T: Float + FromPrimitive>(
 
     if ido == 1 {
         if let Some(kernel) = pass.prime_ido1_kernel {
+            #[cfg(test)]
+            crate::m0_record_route(format!("real-avx2:prime-inverse radix={} l1={}", radix, l1));
             // SAFETY: the plan installs this kernel only after runtime AVX2
             // detection and allocates coefficient tables with `half * half`
             // entries. The multipass buffers are disjoint and contain the
@@ -861,6 +957,8 @@ fn forward_radix2<T: Float + FromPrimitive>(
             && ido.is_multiple_of(2)
             && let Some(kernel) = radix2_forward_interior_kernel
         {
+            #[cfg(test)]
+            crate::m0_record_route(format!("real-avx2:radix2-forward l1={} ido={}", l1, ido));
             // SAFETY: plan construction installs this kernel only after AVX2
             // runtime detection. Each branch slice has exactly `ido` values,
             // and the pass owns the complete radix-two twiddle table.
@@ -938,6 +1036,8 @@ fn inverse_radix2<T: Float + FromPrimitive>(
             && ido.is_multiple_of(2)
             && let Some(kernel) = radix2_interior_kernel
         {
+            #[cfg(test)]
+            crate::m0_record_route(format!("real-avx2:radix2-inverse l1={} ido={}", l1, ido));
             // SAFETY: plan construction installs this kernel only after AVX2
             // runtime detection. Each branch slice has exactly `ido` values,
             // and the pass owns the complete radix-two twiddle table.
@@ -1167,6 +1267,8 @@ fn forward_radix4<T: Float + FromPrimitive>(
             && ido.is_multiple_of(2)
             && let Some(kernel) = radix4_forward_interior_kernel
         {
+            #[cfg(test)]
+            crate::m0_record_route(format!("real-avx2:radix4-forward l1={} ido={}", l1, ido));
             // SAFETY: plan construction installs this kernel only after AVX2
             // runtime detection. Each input and output branch has exactly
             // `ido` scalars, and the pass owns all three twiddle branches.
@@ -1291,6 +1393,8 @@ fn inverse_radix4<T: Float + FromPrimitive>(
             && ido.is_multiple_of(2)
             && let Some(kernel) = radix4_interior_kernel
         {
+            #[cfg(test)]
+            crate::m0_record_route(format!("real-avx2:radix4-inverse l1={} ido={}", l1, ido));
             // SAFETY: plan construction installs this kernel only after AVX2
             // runtime detection. The current input block and four output
             // branches each have exactly `ido` scalar values, and the pass

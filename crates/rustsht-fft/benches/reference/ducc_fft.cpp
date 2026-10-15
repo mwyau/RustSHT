@@ -31,6 +31,12 @@ const std::vector<std::size_t> benchmark_lengths{
 };
 const std::vector<std::pair<std::size_t, std::size_t>> sht_workloads{
     {257, 128}, {1025, 512}, {2049, 1024}, {4097, 2048}};
+const std::vector<std::pair<std::size_t, std::size_t>> real_sht_target_rows{
+    {257, 128}, {723, 361}, {1025, 512}, {1443, 721}, {2049, 1024}, {4097, 2048}};
+const std::vector<std::pair<std::size_t, std::size_t>> complex_sht_target_rows{
+    {146, 73},  {150, 73},  {300, 73}, {256, 128}, {512, 256},
+    {722, 361}, {726, 361}, {1024, 512}, {1442, 721}, {1452, 721},
+    {2904, 721}};
 
 double real_value(std::size_t i, std::size_t row = 0) {
   const double x = static_cast<double>(i + 1 + 3 * row);
@@ -355,6 +361,7 @@ void usage(const char* program) {
             << " dump-all\n  " << program
             << " bench [length ...]\n  " << program
             << " bench-sht\n  " << program
+            << " bench-sht-targets\n  " << program
             << " bench-one <mode> <length> [rows]\n";
 }
 
@@ -395,6 +402,18 @@ int main(int argc, char** argv) {
         for (const auto mode : {Mode::c2c_forward, Mode::c2c_inverse,
                                 Mode::r2c, Mode::c2r})
           benchmark(mode, n, rows);
+      return 0;
+    }
+    if (command == "bench-sht-targets" && argc == 2) {
+      std::cout << "mode,n,plan_ns,scratch_ns,kernel_scratch_bytes,fft_ns,pack_ns,call_ns,batch_ns,batch_count,checksum\n";
+      for (const auto [n, rows] : complex_sht_target_rows) {
+        benchmark(Mode::c2c_forward, n, rows);
+        benchmark(Mode::c2c_inverse, n, rows);
+      }
+      for (const auto [n, rows] : real_sht_target_rows) {
+        benchmark(Mode::r2c, n, rows);
+        benchmark(Mode::c2r, n, rows);
+      }
       return 0;
     }
     if (command == "bench") {

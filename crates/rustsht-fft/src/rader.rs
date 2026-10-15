@@ -106,6 +106,23 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
         self.radix
     }
 
+    #[cfg(test)]
+    pub(crate) fn m0_pass_report(&self) -> String {
+        format!(
+            "Rader radix={} convolution={} algorithm=complex-convolution",
+            self.radix, self.convolution_len
+        )
+    }
+
+    #[cfg(test)]
+    pub(crate) fn m0_retained_plan_bytes(&self) -> usize {
+        self.powers.capacity() * std::mem::size_of::<usize>()
+            + self.inverse_powers.capacity() * std::mem::size_of::<usize>()
+            + (self.forward_kernel.capacity() + self.inverse_kernel.capacity())
+                * std::mem::size_of::<Complex<T>>()
+            + self.convolution.m0_retained_plan_bytes()
+    }
+
     pub(crate) fn is_safe_components(
         &self,
         components: impl IntoIterator<Item = T>,

@@ -1,0 +1,4 @@
+Backend: Admiral
+Revision: ce67bc00ff9e6de96bf5b75f7a789581105ddb58
+Compiler: g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0
+Planning: admiral::effort::estimate with ADM_PIN_PLAN_ESTIMATE=ON

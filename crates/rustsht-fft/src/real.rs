@@ -257,6 +257,84 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
         self.len / 2 + 1
     }
 
+    #[cfg(test)]
+    pub(crate) fn m0_plan_report(&self) -> Vec<String> {
+        let mut report = vec![format!(
+            "real n={} factors={:?} complexify={} rader={}",
+            self.len,
+            self.factors,
+            self.complexify.is_some(),
+            self.rader
+                .as_ref()
+                .map_or_else(|| String::from("none"), |plan| plan.m0_pass_report())
+        )];
+        if let Some(complexify) = self.complexify.as_ref() {
+            report.push(format!(
+                "real n={} route=complexify c2c-n={}",
+                self.len,
+                self.len / 2
+            ));
+            report.extend(complexify.m0_pass_report());
+        } else {
+            let mut l1 = 1usize;
+            for (stage, &radix) in self.factors.iter().enumerate() {
+                let ido = self.len / (l1 * radix);
+                let route = if self
+                    .rader
+                    .as_ref()
+                    .is_some_and(|plan| plan.radix() == radix && ido == 1)
+                {
+                    "Rader"
+                } else if let Some(blue) = self.bluestein[stage].as_ref() {
+                    report.push(format!(
+                        "real n={} stage={} radix={} l1={} ido={} route=Bluestein conv={}",
+                        self.len,
+                        stage,
+                        radix,
+                        l1,
+                        ido,
+                        blue.convolution_len()
+                    ));
+                    l1 *= radix;
+                    continue;
+                } else if matches!(radix, 2..=5) {
+                    "fixed real radix"
+                } else {
+                    "general prime"
+                };
+                report.push(format!(
+                    "real n={} stage={} radix={} l1={} ido={} route={}",
+                    self.len, stage, radix, l1, ido, route
+                ));
+                l1 *= radix;
+            }
+            if let Some(multipass) = self.multipass.as_ref() {
+                report.extend(multipass.m0_pass_report());
+            }
+        }
+        report
+    }
+
+    #[cfg(test)]
+    pub(crate) fn m0_retained_plan_bytes(&self) -> usize {
+        let mut bytes = self.factors.capacity() * std::mem::size_of::<usize>()
+            + self.roots.capacity() * std::mem::size_of::<Complex<T>>()
+            + self.bluestein.capacity() * std::mem::size_of::<Option<BluesteinPlan<T>>>();
+        for blue in self.bluestein.iter().flatten() {
+            bytes += blue.m0_retained_plan_bytes();
+        }
+        if let Some(complexify) = self.complexify.as_ref() {
+            bytes += complexify.m0_retained_plan_bytes();
+        }
+        if let Some(rader) = self.rader.as_ref() {
+            bytes += rader.m0_retained_plan_bytes();
+        }
+        if let Some(multipass) = self.multipass.as_ref() {
+            bytes += multipass.m0_retained_plan_bytes();
+        }
+        bytes
+    }
+
     /// Returns `true` if the plan length is zero. Plans reject zero lengths.
     pub fn is_empty(&self) -> bool {
         false
@@ -334,6 +412,8 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
         workspace: &mut RealFftWorkspace<T>,
     ) -> Result<(), FftError> {
         if let Some(complexify) = self.complexify.as_ref() {
+            #[cfg(test)]
+            crate::m0_record_route(format!("real-forward:complexify n={}", self.len));
             let complex_len = self.len / 2;
             let values = &mut workspace.scratch[..complex_len];
             let (input_pairs, remainder) = input.as_chunks::<2>();
@@ -360,6 +440,11 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                         )
                     });
             let scaled = all_finite && maximum > T::max_value() / scalar::<T>(8.0);
+            #[cfg(test)]
+            crate::m0_record_route(format!(
+                "real-forward:complexify-scale n={} scaled={}",
+                self.len, scaled
+            ));
             if scaled {
                 // The postprocessing equations average pairs of complex FFT
                 // bins. Scale large finite values by an exact power of two so
@@ -417,32 +502,46 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
             return Ok(());
         }
 
-        if let Some(multipass) = self.multipass.as_ref()
-            && self.rader.as_ref().map_or_else(
+        if let Some(multipass) = self.multipass.as_ref() {
+            let safe = self.rader.as_ref().map_or_else(
                 || forward_multipass_is_safe(input, self.len),
                 |rader| rader_forward_is_safe(rader, input, self.len),
-            )
-        {
-            let mut transforms = MultipassTransforms::new(
-                &self.bluestein,
-                &mut workspace.bluestein_buffer,
-                &mut workspace.bluestein_workspaces,
-                self.rader.as_ref(),
-                workspace.rader_workspace.as_mut(),
-                &mut workspace.radix_input,
-                &mut workspace.radix_output,
             );
-            multipass.forward(
-                input,
-                spectrum,
-                workspace
-                    .multipass_workspace
-                    .as_mut()
-                    .expect("multipass plan has a multipass workspace"),
-                &mut transforms,
-            );
-            return Ok(());
+            #[cfg(test)]
+            crate::m0_record_route(format!(
+                "real-forward n={} route={}",
+                self.len,
+                if safe {
+                    "multipass"
+                } else {
+                    "recursive-safety-fallback"
+                }
+            ));
+            if safe {
+                let mut transforms = MultipassTransforms::new(
+                    &self.bluestein,
+                    &mut workspace.bluestein_buffer,
+                    &mut workspace.bluestein_workspaces,
+                    self.rader.as_ref(),
+                    workspace.rader_workspace.as_mut(),
+                    &mut workspace.radix_input,
+                    &mut workspace.radix_output,
+                );
+                multipass.forward(
+                    input,
+                    spectrum,
+                    workspace
+                        .multipass_workspace
+                        .as_mut()
+                        .expect("multipass plan has a multipass workspace"),
+                    &mut transforms,
+                );
+                return Ok(());
+            }
         }
+
+        #[cfg(test)]
+        crate::m0_record_route(format!("real-forward n={} route=recursive", self.len));
 
         RealForwardExecutor {
             total_len: self.len,
@@ -533,6 +632,8 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
         workspace: &mut RealFftWorkspace<T>,
     ) -> Result<(), FftError> {
         if let Some(complexify) = self.complexify.as_ref() {
+            #[cfg(test)]
+            crate::m0_record_route(format!("real-inverse:complexify n={}", self.len));
             let complex_len = self.len / 2;
             let (maximum, all_finite) = spectrum.iter().enumerate().fold(
                 (T::zero(), true),
@@ -550,6 +651,11 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                 },
             );
             let scaled = all_finite && maximum > T::max_value() / scalar::<T>(8.0);
+            #[cfg(test)]
+            crate::m0_record_route(format!(
+                "real-inverse:complexify-scale n={} scaled={}",
+                self.len, scaled
+            ));
             if scaled {
                 // Keep the packed sums below overflow by scaling every
                 // spectrum component by 1/8. The inverse FFT is linear, so
@@ -678,7 +784,7 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                 &mut workspace.radix_input,
                 &mut workspace.radix_output,
             );
-            if rader_is_safe
+            let accepted = rader_is_safe
                 && multipass.inverse_if_safe(
                     spectrum,
                     output,
@@ -688,11 +794,23 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
                         .expect("multipass plan has a multipass workspace"),
                     rader_dc_only,
                     &mut transforms,
-                )
-            {
+                );
+            #[cfg(test)]
+            crate::m0_record_route(format!(
+                "real-inverse n={} route={}",
+                self.len,
+                if accepted {
+                    "multipass"
+                } else {
+                    "recursive-safety-fallback"
+                }
+            ));
+            if accepted {
                 return Ok(());
             }
         }
+        #[cfg(test)]
+        crate::m0_record_route(format!("real-inverse n={} route=recursive", self.len));
         // Multipass eligibility was checked while packing. If that check
         // failed, retain the residual-corrected recursive path without
         // rescanning the spectrum. Plans without a multipass path still need

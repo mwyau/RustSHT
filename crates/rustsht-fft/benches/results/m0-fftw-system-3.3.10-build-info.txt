@@ -1,0 +1,6 @@
+Backend: FFTW system package
+Version: 3.3.10
+Library: /usr/lib/x86_64-linux-gnu/libfftw3.so.3
+Compiler: g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0
+Build flags: package build configuration not recorded; harness -O3 -DNDEBUG
+Planning: FFTW_ESTIMATE | FFTW_PRESERVE_INPUT

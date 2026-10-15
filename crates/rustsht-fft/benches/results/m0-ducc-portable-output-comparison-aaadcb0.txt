@@ -1,0 +1,2 @@
+RustSHT-FFT f64 C2C/R2C/C2R: compared 92684 output records (185368 scalar components); max_abs=9.095e-13; worst_abs=(('c2c_forward', 1442, 1416), 'imag'); max_scaled=1.245e-13; worst_scaled=(('c2c_forward', 2049, 1676), 'imag')
+DUCC vectorize=off
