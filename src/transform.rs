@@ -16,6 +16,7 @@ use crate::plan::ShtPlan;
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 const SCALAR_TRANSITION_MIN_LMAX: usize = 1023;
+const FUSED_SCALAR_ANALYSIS_MIN_LMAX: usize = 255;
 
 #[cfg(feature = "parallel")]
 pub(crate) fn weighted_order_midpoint(lmax: usize, m_start: usize, m_end: usize) -> usize {
@@ -1438,7 +1439,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                     // the intervening odd term uses north-south and cos(theta).
                     let staged_count = coefficient_count;
                     // Commit scratch coefficients only when every recurrence lane stays normal.
-                    let fused_block = if product_range_safe
+                    let fused_block = if lmax >= FUSED_SCALAR_ANALYSIS_MIN_LMAX
+                        && product_range_safe
                         && recurrence.fast_scalar_first.len() >= staged_count
                     {
                         T::fused_scalar_analysis_pair_block(
