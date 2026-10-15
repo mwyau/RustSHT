@@ -1,0 +1,43 @@
+p=241 complex inverse cancellation diagnostic
+
+The diagnostic program is
+`crates/rustsht-fft/examples/p241_cancellation_diagnostic.rs`. It uses the public
+`ComplexFftPlan<f64>` inverse with N=241 and Cargo's default dev profile with
+runtime dispatch. The host CPU was an AMD Ryzen 9 5950X. The Rust compiler was
+rustc 1.99.0 (`b940084d7 2026-09-28`). No environment overrides or custom
+RUSTFLAGS were set.
+
+The input has delta = f64::from_bits(1) and A = f64::MAX / 4.01. Its only
+nonzero real components are:
+
+| Index | Value | f64 bits |
+| ---: | --- | ---: |
+| 0 | 26 delta | `000000000000001a` |
+| 1 | A | `7fcfeb9231cba69f` |
+| 2 | 26 delta | `000000000000001a` |
+| 240 | -A | `ffcfeb9231cba69f` |
+
+All imaginary components and unlisted values are zero. At output index zero,
+every inverse-DFT phase is one. The exact normalized sum is 52 delta / 241,
+which is about 0.2158 delta and rounds to positive zero in f64. The expected
+`x[0]` bit pattern is `0000000000000000`.
+
+| Convolution length | Source revision | Observed x[0].re | Observed x[0].im | Real bits | Imaginary bits |
+| ---: | --- | ---: | ---: | ---: | ---: |
+| 484 | M4 baseline `0cddc591e1a52f22ac0a62836f529c11789b0c45` | `1.41983238253445280e289` | `2.12974857380167855e289` | `7bf74f9ed072bb8e` | `7c017bb71c560ca9` |
+| 512 | M5 `91729ad2adfc718a12cd1856442571c9945941c4` | `2.06521073823193000e289` | `7.48638892609074788e289` | `7c00f416690d9faa` | `7c1eba689e68b166` |
+
+Reproduction commands, run from the M5 repository root:
+
+```sh
+git worktree add --detach ../RustSHT-m4-p241-diag 0cddc591e1a52f22ac0a62836f529c11789b0c45
+mkdir -p ../RustSHT-m4-p241-diag/crates/rustsht-fft/examples
+cp crates/rustsht-fft/examples/p241_cancellation_diagnostic.rs ../RustSHT-m4-p241-diag/crates/rustsht-fft/examples/
+(cd ../RustSHT-m4-p241-diag/crates/rustsht-fft && cargo run --example p241_cancellation_diagnostic)
+git worktree add --detach ../RustSHT-m5-p241-diag 91729ad2adfc718a12cd1856442571c9945941c4
+(cd ../RustSHT-m5-p241-diag/crates/rustsht-fft && cargo run --example p241_cancellation_diagnostic)
+```
+
+Both builds print the input bits, expected output, observed `x[0]`, and output
+bits. The case fails at both convolution lengths; it is recorded as an existing
+p=241 Bluestein numerical limitation, not as evidence for selecting either pad.
