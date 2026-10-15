@@ -1,0 +1,59 @@
+### T127 q8 pair=1 variant=baseline recurrence=forced, candidate-gated
+spin-0 T127 mmax=127; GL 128x257; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=Some(LegendreReuseEstimate { coefficient_to_map_calls: None, map_to_coefficient_calls: Some(0) }); strategy=automatic; 5 samples, median
+plan_construction_ms=0.019
+plan_construction_samples_ms=[0.025,0.019,0.017,0.017,0.020]
+workspace_allocation_ms=0.204
+workspace_allocation_samples_ms=[0.299,0.210,0.200,0.196,0.204]
+analysis_rayon_ms=0.382
+analysis_rayon_samples_ms=[0.458,0.389,0.370,0.382,0.381]
+scalar_analysis_first_call_rayon_ms=0.434
+
+### T127 q8 pair=1 variant=candidate recurrence=forced, candidate-gated
+spin-0 T127 mmax=127; GL 128x257; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=Some(LegendreReuseEstimate { coefficient_to_map_calls: None, map_to_coefficient_calls: Some(0) }); strategy=automatic; 5 samples, median
+plan_construction_ms=0.017
+plan_construction_samples_ms=[0.025,0.019,0.017,0.017,0.017]
+workspace_allocation_ms=0.201
+workspace_allocation_samples_ms=[0.332,0.203,0.198,0.200,0.201]
+analysis_rayon_ms=0.398
+analysis_rayon_samples_ms=[0.451,0.415,0.368,0.370,0.398]
+scalar_analysis_first_call_rayon_ms=0.421
+
+### T127 q8 pair=2 variant=candidate recurrence=forced, candidate-gated
+spin-0 T127 mmax=127; GL 128x257; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=Some(LegendreReuseEstimate { coefficient_to_map_calls: None, map_to_coefficient_calls: Some(0) }); strategy=automatic; 5 samples, median
+plan_construction_ms=0.017
+plan_construction_samples_ms=[0.025,0.018,0.017,0.017,0.017]
+workspace_allocation_ms=0.293
+workspace_allocation_samples_ms=[0.391,0.301,0.293,0.288,0.289]
+analysis_rayon_ms=0.383
+analysis_rayon_samples_ms=[0.383,0.386,0.385,0.379,0.380]
+scalar_analysis_first_call_rayon_ms=0.422
+
+### T127 q8 pair=2 variant=baseline recurrence=forced, candidate-gated
+spin-0 T127 mmax=127; GL 128x257; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=Some(LegendreReuseEstimate { coefficient_to_map_calls: None, map_to_coefficient_calls: Some(0) }); strategy=automatic; 5 samples, median
+plan_construction_ms=0.017
+plan_construction_samples_ms=[0.025,0.019,0.017,0.017,0.017]
+workspace_allocation_ms=0.315
+workspace_allocation_samples_ms=[0.476,0.326,0.315,0.299,0.280]
+analysis_rayon_ms=0.386
+analysis_rayon_samples_ms=[0.386,0.386,0.449,0.386,0.411]
+scalar_analysis_first_call_rayon_ms=0.424
+
+### T127 q8 pair=3 variant=baseline recurrence=forced, candidate-gated
+spin-0 T127 mmax=127; GL 128x257; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=Some(LegendreReuseEstimate { coefficient_to_map_calls: None, map_to_coefficient_calls: Some(0) }); strategy=automatic; 5 samples, median
+plan_construction_ms=0.017
+plan_construction_samples_ms=[0.025,0.019,0.017,0.017,0.017]
+workspace_allocation_ms=0.332
+workspace_allocation_samples_ms=[0.438,0.325,0.323,0.332,0.358]
+analysis_rayon_ms=0.411
+analysis_rayon_samples_ms=[0.386,0.440,0.423,0.411,0.400]
+scalar_analysis_first_call_rayon_ms=0.427
+
+### T127 q8 pair=3 variant=candidate recurrence=forced, candidate-gated
+spin-0 T127 mmax=127; GL 128x257; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=Some(LegendreReuseEstimate { coefficient_to_map_calls: None, map_to_coefficient_calls: Some(0) }); strategy=automatic; 5 samples, median
+plan_construction_ms=0.017
+plan_construction_samples_ms=[0.025,0.019,0.017,0.017,0.017]
+workspace_allocation_ms=0.292
+workspace_allocation_samples_ms=[0.419,0.284,0.292,0.298,0.289]
+analysis_rayon_ms=0.389
+analysis_rayon_samples_ms=[0.417,0.389,0.389,0.384,0.387]
+scalar_analysis_first_call_rayon_ms=0.472
