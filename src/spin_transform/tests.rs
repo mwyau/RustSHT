@@ -1936,6 +1936,259 @@ fn spin1_synthesis_skips_high_orders_in_a_clenshaw_curtis_pole_segment() {
 }
 
 #[test]
+fn spin1_paired_coefficient_overflow_falls_back_without_partial_commit() {
+    let (lmax, m, nphi) = (15, 1, 3);
+    let plan = make_plan(1, lmax, m, lmax + 1, nphi);
+    let mut e_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut b_alm = e_alm.clone();
+    let magnitude = 1.40e308;
+    e_alm[plan.harmonics().index(1, m).unwrap()] = Complex64::new(0.0, -magnitude);
+    e_alm[plan.harmonics().index(3, m).unwrap()] = Complex64::new(0.0, magnitude);
+    b_alm[plan.harmonics().index(2, m).unwrap()] = Complex64::new(magnitude, 0.0);
+
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_spin_latitudes(&mut workspace, 1);
+    let spectrum_len = plan.fft.spectrum_len();
+    let coefficient_start = plan.harmonics().index(m, m).unwrap();
+    let coefficient_count = lmax - m + 1;
+    let recurrence = &mut workspace.recurrence_workers[0];
+    spin1_to_scalar(
+        m,
+        lmax,
+        &e_alm[coefficient_start..coefficient_start + coefficient_count],
+        Some(&b_alm[coefficient_start..coefficient_start + coefficient_count]),
+        &mut recurrence.fast_scalar_first[..lmax + 2],
+        &mut recurrence.fast_scalar_second[..lmax + 2],
+    );
+    assert!(
+        recurrence.fast_scalar_first[..lmax + 2]
+            .iter()
+            .chain(&recurrence.fast_scalar_second[..lmax + 2])
+            .all(|value| value.re.is_finite() && value.im.is_finite())
+    );
+    let scalar_lmax = lmax + 1;
+    <f64 as crate::legendre::ShtScalar>::fill_epsilon(m, scalar_lmax, &mut recurrence.epsilon);
+    <f64 as crate::legendre::ShtScalar>::fill_paired_scalar_factors(
+        m,
+        scalar_lmax,
+        &recurrence.epsilon,
+        &mut recurrence.spin_alpha,
+        &mut recurrence.spin_coefficient_a,
+        &mut recurrence.spin_coefficient_b,
+    );
+    let pair_count = (scalar_lmax - m + 2) / 2;
+    let prepared_first =
+        <f64 as crate::legendre::ShtScalar>::prepare_paired_scalar_synthesis_coefficients(
+            m,
+            scalar_lmax,
+            &recurrence.epsilon,
+            &recurrence.spin_alpha,
+            &recurrence.fast_scalar_first[m..=scalar_lmax],
+            &mut recurrence.fast_spin_first[..pair_count],
+            &mut recurrence.fast_spin_second[..pair_count],
+        );
+    let prepared_second =
+        <f64 as crate::legendre::ShtScalar>::prepare_paired_scalar_synthesis_coefficients(
+            m,
+            scalar_lmax,
+            &recurrence.epsilon,
+            &recurrence.spin_alpha,
+            &recurrence.fast_scalar_second[m..=scalar_lmax],
+            &mut recurrence.fast_spin_pair_first[..pair_count],
+            &mut recurrence.fast_spin_pair_second[..pair_count],
+        );
+    assert!(!prepared_first && prepared_second);
+
+    // A synthetic near-pole lane selects separate channel preparation while
+    // keeping m=1 active, so a failed channel must leave both spectra untouched.
+    let theta_sin = [0.005_f64];
+    let theta_cos = [(1.0_f64 - theta_sin[0].powi(2)).sqrt()];
+    let ring_order_limits = [m];
+    let mut fast_first = vec![Complex64::new(0.0, 0.0); spectrum_len];
+    let mut fast_second = fast_first.clone();
+    plan.synthesize_spin_ring_group_mode(
+        &e_alm,
+        Some(&b_alm),
+        1,
+        false,
+        true,
+        false,
+        None,
+        nphi,
+        spectrum_len,
+        plan.grid.phi0(),
+        0,
+        1,
+        &mut fast_first,
+        &mut fast_second,
+        &theta_sin,
+        &theta_cos,
+        &ring_order_limits,
+        pulp::Arch::new(),
+        &mut workspace.recurrence_workers[0],
+    )
+    .unwrap();
+
+    let mut general_first = vec![Complex64::new(0.0, 0.0); spectrum_len];
+    let mut general_second = general_first.clone();
+    plan.synthesize_spin_ring_group_mode(
+        &e_alm,
+        Some(&b_alm),
+        1,
+        false,
+        false,
+        false,
+        None,
+        nphi,
+        spectrum_len,
+        plan.grid.phi0(),
+        0,
+        1,
+        &mut general_first,
+        &mut general_second,
+        &theta_sin,
+        &theta_cos,
+        &ring_order_limits,
+        pulp::Arch::new(),
+        &mut workspace.recurrence_workers[0],
+    )
+    .unwrap();
+
+    let compare = |fast: f64, general: f64| {
+        if general.is_finite() {
+            assert!(fast.is_finite());
+            let scale = general.abs().max(1.0);
+            assert!((fast / scale - general / scale).abs() < 2e-12);
+        } else if general.is_infinite() {
+            assert!(fast.is_infinite());
+            assert_eq!(fast.is_sign_positive(), general.is_sign_positive());
+        } else {
+            assert!(fast.is_nan());
+        }
+    };
+    for (fast, general) in fast_first
+        .iter()
+        .chain(&fast_second)
+        .zip(general_first.iter().chain(&general_second))
+    {
+        compare(fast.re, general.re);
+        compare(fast.im, general.im);
+    }
+}
+
+#[test]
+fn spin1_nonfinite_scalar_conversion_falls_back_to_general_recurrence() {
+    let magnitude = 1.44e308;
+    let plan = make_plan(1, 15, 1, 16, 3);
+    let mut e_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut b_alm = e_alm.clone();
+    e_alm[plan.harmonics().index(2, 1).unwrap()] = Complex64::new(magnitude, 0.0);
+    b_alm[plan.harmonics().index(1, 1).unwrap()] = Complex64::new(0.0, -magnitude);
+
+    let coefficient_start = plan.harmonics().index(1, 1).unwrap();
+    let coefficient_count = plan.harmonics().lmax() - 1 + 1;
+    let mut scalar_first = vec![Complex64::new(0.0, 0.0); plan.harmonics().lmax() + 2];
+    let mut scalar_second = scalar_first.clone();
+    spin1_to_scalar(
+        1,
+        plan.harmonics().lmax(),
+        &e_alm[coefficient_start..coefficient_start + coefficient_count],
+        Some(&b_alm[coefficient_start..coefficient_start + coefficient_count]),
+        &mut scalar_first,
+        &mut scalar_second,
+    );
+    assert!(!scalar_first[1].re.is_finite());
+
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_spin_latitudes(&mut workspace, 1);
+    let spectrum_len = plan.fft.spectrum_len();
+    let mut fast_first = vec![Complex64::new(0.0, 0.0); 16 * spectrum_len];
+    let mut fast_second = fast_first.clone();
+    plan.synthesize_spin_ring_group_mode(
+        &e_alm,
+        Some(&b_alm),
+        1,
+        false,
+        true,
+        false,
+        None,
+        3,
+        spectrum_len,
+        plan.grid.phi0(),
+        0,
+        16,
+        &mut fast_first,
+        &mut fast_second,
+        &workspace.theta_sin[..16],
+        &workspace.theta_cos[..16],
+        &workspace.ring_order_limits,
+        pulp::Arch::new(),
+        &mut workspace.recurrence_workers[0],
+    )
+    .unwrap();
+
+    let mut general_first = vec![Complex64::new(0.0, 0.0); 16 * spectrum_len];
+    let mut general_second = general_first.clone();
+    plan.synthesize_spin_ring_group_mode(
+        &e_alm,
+        Some(&b_alm),
+        1,
+        false,
+        false,
+        false,
+        None,
+        3,
+        spectrum_len,
+        plan.grid.phi0(),
+        0,
+        16,
+        &mut general_first,
+        &mut general_second,
+        &workspace.theta_sin[..16],
+        &workspace.theta_cos[..16],
+        &workspace.ring_order_limits,
+        pulp::Arch::new(),
+        &mut workspace.recurrence_workers[0],
+    )
+    .unwrap();
+    for (fast, general) in fast_first
+        .iter()
+        .chain(&fast_second)
+        .zip(general_first.iter().chain(&general_second))
+    {
+        let compare = |actual: f64, expected: f64| {
+            if expected.is_finite() {
+                assert!(actual.is_finite());
+                assert!((actual / magnitude - expected / magnitude).abs() < 2e-12);
+            } else if expected.is_infinite() {
+                assert!(actual.is_infinite());
+                assert_eq!(actual.is_sign_positive(), expected.is_sign_positive());
+            } else {
+                assert!(actual.is_nan());
+            }
+        };
+        compare(fast.re, general.re);
+        compare(fast.im, general.im);
+    }
+}
+
+#[test]
+fn spin1_public_synthesis_keeps_large_finite_coefficients_finite() {
+    let magnitude = 1.0e307;
+    let plan = make_plan(1, 15, 1, 16, 3);
+    let mut e_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut b_alm = e_alm.clone();
+    e_alm[plan.harmonics().index(2, 1).unwrap()] = Complex64::new(magnitude, 0.0);
+    b_alm[plan.harmonics().index(1, 1).unwrap()] = Complex64::new(0.0, -magnitude);
+    let mut first = vec![0.0; plan.sample_count];
+    let mut second = first.clone();
+    let mut workspace = plan.workspace().unwrap();
+    plan.synthesis_spin_into(&e_alm, &b_alm, &mut first, &mut second, &mut workspace)
+        .unwrap();
+    assert!(first.iter().chain(&second).all(|value| value.is_finite()));
+}
+
+#[test]
 fn spin1_scalar_fast_analysis_honors_the_polar_order_cutoff() {
     let lmax = 511;
     let ntheta = lmax + 1;

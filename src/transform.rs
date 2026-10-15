@@ -17,40 +17,6 @@ use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 const SCALAR_TRANSITION_MIN_LMAX: usize = 1023;
 
-fn paired_scalar_coefficients_are_finite<T: ShtScalar>(
-    m: usize,
-    lmax: usize,
-    epsilon: &[T],
-    alpha: &[T],
-    coefficients: &[Complex<T>],
-) -> bool {
-    let pair_count = (lmax - m + 2) / 2;
-    for (pair, &pair_alpha) in alpha.iter().take(pair_count).enumerate() {
-        let l = m + 2 * pair;
-        let offset = l - m;
-        let next_even = if l + 2 <= lmax {
-            coefficients[offset + 2]
-        } else {
-            Complex::new(T::zero(), T::zero())
-        };
-        let even =
-            (coefficients[offset] * epsilon[l + 1] + next_even * epsilon[l + 2]) * pair_alpha;
-        let odd = if l < lmax {
-            coefficients[offset + 1] * pair_alpha
-        } else {
-            Complex::new(T::zero(), T::zero())
-        };
-        if !even.re.is_finite()
-            || !even.im.is_finite()
-            || !odd.re.is_finite()
-            || !odd.im.is_finite()
-        {
-            return false;
-        }
-    }
-    true
-}
-
 #[cfg(feature = "parallel")]
 pub(crate) fn weighted_order_midpoint(lmax: usize, m_start: usize, m_end: usize) -> usize {
     debug_assert!(m_start < m_end);
@@ -495,17 +461,8 @@ impl<T: ShtScalar> ShtPlan<T> {
             // Extreme finite coefficients can overflow DUCC's paired-degree
             // coefficient transform even when the final scaled contribution
             // is representable. Keep those orders on the unpaired scaled path.
-            let paired_coefficients_finite = !transition_enabled
-                || paired_scalar_coefficients_are_finite(
-                    m,
-                    lmax,
-                    &recurrence.epsilon,
-                    &recurrence.spin_alpha,
-                    &alm[coefficient_start..],
-                );
             let coefficient_pair_count = (lmax - m + 2) / 2;
             let coefficients_prepared = paired_factors_ready
-                && paired_coefficients_finite
                 && recurrence.fast_spin_first.len() >= coefficient_pair_count
                 && recurrence.fast_spin_second.len() >= coefficient_pair_count
                 && T::prepare_paired_scalar_synthesis_coefficients(
@@ -522,10 +479,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             } else {
                 longitude_phase::<T>(m, phi0, false)
             };
-            let paired_used = if paired_factors_ready
-                && paired_coefficients_finite
-                && coefficients_prepared
-            {
+            let paired_used = if paired_factors_ready && coefficients_prepared {
                 for block_start in (0..theta_sin.len()).step_by(LATITUDE_BLOCK_SIZE) {
                     let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(theta_sin.len());
                     let block_len = block_end - block_start;
