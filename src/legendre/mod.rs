@@ -671,8 +671,7 @@ impl ShtScalar for f64 {
             coefficients,
             coefficient_even,
             coefficient_odd,
-        );
-        true
+        )
     }
 
     #[cfg(feature = "parallel")]
