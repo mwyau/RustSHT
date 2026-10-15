@@ -22,6 +22,7 @@ mod hemisphere;
 
 const MAX_SUPPORTED_SPIN: usize = 4;
 const SPIN2_FAST_MIN_LMAX: usize = 500;
+const SPIN1_FUSED_ANALYSIS_MIN_LMAX: usize = 255;
 const SPIN1_TRANSITION_MIN_LMAX: usize = 191;
 const SPIN1_TABLE_SYNTH_MIN_LMAX: usize = 127;
 const SPIN1_TABLE_SYNTH_MID_BAND_LMAX: usize = 159;
@@ -2602,6 +2603,80 @@ impl<T: ShtScalar> ShtPlan<T> {
 
     #[expect(
         clippy::too_many_arguments,
+        reason = "The fused spin-1 analysis block shares recurrence lanes across Q and U and stages both coefficient rows."
+    )]
+    fn try_fused_spin_scalar_analysis_pair_block(
+        arch: pulp::Arch,
+        m: usize,
+        scalar_lmax: usize,
+        sectoral_norm: T,
+        sin_theta: &[T],
+        cos_theta: &[T],
+        products_safe: [bool; 2],
+        same_real: [&[T]; 2],
+        same_imag: [&[T]; 2],
+        opposite_real: [&[T]; 2],
+        opposite_imag: [&[T]; 2],
+        coefficient_a: &[T],
+        coefficient_b: &[T],
+        scalar_first: &mut [Complex<T>],
+        scalar_second: &mut [Complex<T>],
+        staged_first: &mut [Complex<T>],
+        staged_second: &mut [Complex<T>],
+        previous: &mut [T],
+        current: &mut [T],
+        next: &mut [T],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        if !T::supports_paired_scalar() || !products_safe[0] || !products_safe[1] || m > scalar_lmax
+        {
+            return Ok(false);
+        }
+
+        let staged_count = scalar_lmax - m + 1;
+        if scalar_first.len() < scalar_lmax + 1
+            || scalar_second.len() < scalar_lmax + 1
+            || staged_first.len() < staged_count
+            || staged_second.len() < staged_count
+            || previous.len() < sin_theta.len()
+            || current.len() < sin_theta.len()
+            || next.len() < sin_theta.len()
+            || exponents.len() < sin_theta.len()
+        {
+            return Ok(false);
+        }
+
+        let fused = T::fused_scalar_analysis_pair_channels_block(
+            arch,
+            m,
+            scalar_lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            &mut staged_first[..staged_count],
+            &mut staged_second[..staged_count],
+            previous,
+            current,
+            next,
+            exponents,
+        )?;
+        if fused {
+            for offset in 0..staged_count {
+                scalar_first[m + offset] += staged_first[offset];
+                scalar_second[m + offset] += staged_second[offset];
+            }
+        }
+        Ok(fused)
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
         reason = "The GL paired analysis path receives its mirrored Fourier data and worker scratch explicitly."
     )]
     fn analyze_spin_scalar_gl_paired_order(
@@ -2631,6 +2706,8 @@ impl<T: ShtScalar> ShtPlan<T> {
 
         let scalar_lmax = self.harmonics.lmax() + 1;
         let scalar_coefficient_count = scalar_lmax + 1;
+        let fused_analysis_enabled =
+            self.harmonics.lmax() >= SPIN1_FUSED_ANALYSIS_MIN_LMAX && single_threaded_execution();
         recurrence.fast_scalar_first[..scalar_coefficient_count]
             .fill(Complex::new(T::zero(), T::zero()));
         recurrence.fast_scalar_second[..scalar_coefficient_count]
@@ -2792,34 +2869,72 @@ impl<T: ShtScalar> ShtPlan<T> {
             if !q_products_safe || !u_products_safe {
                 return Ok(false);
             }
-            let paired_used = Self::accumulate_spin_scalar_analysis_pair_block(
-                arch,
-                m,
-                scalar_lmax,
-                self.sectoral_norms[m],
-                block_sine,
-                block_cosine,
-                q_products_safe,
-                u_products_safe,
-                &recurrence.analysis_same_real[..lane_count],
-                &recurrence.analysis_same_imag[..lane_count],
-                &recurrence.analysis_opposite_real[..lane_count],
-                &recurrence.analysis_opposite_imag[..lane_count],
-                &recurrence.spin_previous_plus[..lane_count],
-                &recurrence.spin_current_plus[..lane_count],
-                &recurrence.spin_previous_minus[..lane_count],
-                &recurrence.spin_current_minus[..lane_count],
-                &recurrence.spin_coefficient_a,
-                &recurrence.spin_coefficient_b,
-                &mut recurrence.previous,
-                &mut recurrence.current,
-                &mut recurrence.next,
-                &mut recurrence.exponents,
-                &mut recurrence.fast_scalar_first[..scalar_coefficient_count],
-                &mut recurrence.fast_scalar_second[..scalar_coefficient_count],
-            )?;
-            if !paired_used {
-                return Ok(false);
+            let fused_block = fused_analysis_enabled
+                && Self::try_fused_spin_scalar_analysis_pair_block(
+                    arch,
+                    m,
+                    scalar_lmax,
+                    self.sectoral_norms[m],
+                    block_sine,
+                    block_cosine,
+                    [q_products_safe, u_products_safe],
+                    [
+                        &recurrence.analysis_same_real[..lane_count],
+                        &recurrence.spin_previous_plus[..lane_count],
+                    ],
+                    [
+                        &recurrence.analysis_same_imag[..lane_count],
+                        &recurrence.spin_current_plus[..lane_count],
+                    ],
+                    [
+                        &recurrence.analysis_opposite_real[..lane_count],
+                        &recurrence.spin_previous_minus[..lane_count],
+                    ],
+                    [
+                        &recurrence.analysis_opposite_imag[..lane_count],
+                        &recurrence.spin_current_minus[..lane_count],
+                    ],
+                    &recurrence.spin_coefficient_a,
+                    &recurrence.spin_coefficient_b,
+                    &mut recurrence.fast_scalar_first[..scalar_coefficient_count],
+                    &mut recurrence.fast_scalar_second[..scalar_coefficient_count],
+                    &mut recurrence.fast_spin_first,
+                    &mut recurrence.fast_spin_second,
+                    &mut recurrence.previous,
+                    &mut recurrence.current,
+                    &mut recurrence.next,
+                    &mut recurrence.exponents,
+                )?;
+            if !fused_block {
+                let paired_used = Self::accumulate_spin_scalar_analysis_pair_block(
+                    arch,
+                    m,
+                    scalar_lmax,
+                    self.sectoral_norms[m],
+                    block_sine,
+                    block_cosine,
+                    q_products_safe,
+                    u_products_safe,
+                    &recurrence.analysis_same_real[..lane_count],
+                    &recurrence.analysis_same_imag[..lane_count],
+                    &recurrence.analysis_opposite_real[..lane_count],
+                    &recurrence.analysis_opposite_imag[..lane_count],
+                    &recurrence.spin_previous_plus[..lane_count],
+                    &recurrence.spin_current_plus[..lane_count],
+                    &recurrence.spin_previous_minus[..lane_count],
+                    &recurrence.spin_current_minus[..lane_count],
+                    &recurrence.spin_coefficient_a,
+                    &recurrence.spin_coefficient_b,
+                    &mut recurrence.previous,
+                    &mut recurrence.current,
+                    &mut recurrence.next,
+                    &mut recurrence.exponents,
+                    &mut recurrence.fast_scalar_first[..scalar_coefficient_count],
+                    &mut recurrence.fast_scalar_second[..scalar_coefficient_count],
+                )?;
+                if !paired_used {
+                    return Ok(false);
+                }
             }
         }
 
@@ -3104,6 +3219,8 @@ impl<T: ShtScalar> ShtPlan<T> {
     ) -> Result<(), ShtError> {
         let scalar_lmax = self.harmonics.lmax() + 1;
         let scalar_coefficient_count = scalar_lmax + 1;
+        let fused_analysis_enabled =
+            self.harmonics.lmax() >= SPIN1_FUSED_ANALYSIS_MIN_LMAX && single_threaded_execution();
         recurrence.fast_scalar_first[..scalar_coefficient_count]
             .fill(Complex::new(T::zero(), T::zero()));
         recurrence.fast_scalar_second[..scalar_coefficient_count]
@@ -3199,33 +3316,59 @@ impl<T: ShtScalar> ShtPlan<T> {
                 T::scalar_analysis_products_safe(q_real, q_imag, q_real, q_imag, block_cosine);
             let u_products_safe =
                 T::scalar_analysis_products_safe(u_real, u_imag, u_real, u_imag, block_cosine);
-            let paired_used = Self::accumulate_spin_scalar_analysis_pair_block(
-                arch,
-                m,
-                scalar_lmax,
-                self.sectoral_norms[m],
-                block_sine,
-                block_cosine,
-                q_products_safe,
-                u_products_safe,
-                q_real,
-                q_imag,
-                q_real,
-                q_imag,
-                u_real,
-                u_imag,
-                u_real,
-                u_imag,
-                &recurrence.spin_coefficient_a,
-                &recurrence.spin_coefficient_b,
-                &mut recurrence.previous,
-                &mut recurrence.current,
-                &mut recurrence.next,
-                &mut recurrence.exponents,
-                &mut recurrence.fast_scalar_first[..scalar_coefficient_count],
-                &mut recurrence.fast_scalar_second[..scalar_coefficient_count],
-            )?;
-            debug_assert!(paired_used);
+            let fused_block = fused_analysis_enabled
+                && Self::try_fused_spin_scalar_analysis_pair_block(
+                    arch,
+                    m,
+                    scalar_lmax,
+                    self.sectoral_norms[m],
+                    block_sine,
+                    block_cosine,
+                    [q_products_safe, u_products_safe],
+                    [q_real, u_real],
+                    [q_imag, u_imag],
+                    [q_real, u_real],
+                    [q_imag, u_imag],
+                    &recurrence.spin_coefficient_a,
+                    &recurrence.spin_coefficient_b,
+                    &mut recurrence.fast_scalar_first[..scalar_coefficient_count],
+                    &mut recurrence.fast_scalar_second[..scalar_coefficient_count],
+                    &mut recurrence.fast_spin_first,
+                    &mut recurrence.fast_spin_second,
+                    &mut recurrence.previous,
+                    &mut recurrence.current,
+                    &mut recurrence.next,
+                    &mut recurrence.exponents,
+                )?;
+            if !fused_block {
+                let paired_used = Self::accumulate_spin_scalar_analysis_pair_block(
+                    arch,
+                    m,
+                    scalar_lmax,
+                    self.sectoral_norms[m],
+                    block_sine,
+                    block_cosine,
+                    q_products_safe,
+                    u_products_safe,
+                    q_real,
+                    q_imag,
+                    q_real,
+                    q_imag,
+                    u_real,
+                    u_imag,
+                    u_real,
+                    u_imag,
+                    &recurrence.spin_coefficient_a,
+                    &recurrence.spin_coefficient_b,
+                    &mut recurrence.previous,
+                    &mut recurrence.current,
+                    &mut recurrence.next,
+                    &mut recurrence.exponents,
+                    &mut recurrence.fast_scalar_first[..scalar_coefficient_count],
+                    &mut recurrence.fast_scalar_second[..scalar_coefficient_count],
+                )?;
+                debug_assert!(paired_used);
+            }
         }
 
         let mut previous_even_first = Complex::new(T::zero(), T::zero());
