@@ -2269,6 +2269,59 @@ fn t191_analysis_compaction_matches_ducc_all_grids() {
 }
 
 #[test]
+fn scalar_t511_gl_analysis_matches_ducc_and_analytic_sectoral_field() {
+    // DUCC 0.41.0 references use a_(511,511)=1, phi0=0.37 and nthreads=1.
+    let degree = 511;
+    let nphi = 2 * degree + 3;
+    let plan = make_plan(degree, degree, degree + 1, nphi, 0.37);
+    let sectoral_index = plan.harmonics().index(degree, degree).unwrap();
+    let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    alm[sectoral_index] = Complex64::new(1.0, 0.0);
+    let mut workspace = plan.workspace().unwrap();
+    let mut map = vec![0.0; plan.sample_count];
+    plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
+
+    let ducc_values = [
+        -2.3872256264278287,
+        2.4013318896018663,
+        2.5986634372168815,
+        1.5560946744052795,
+        2.3729175336200483,
+    ];
+    let middle_ring = plan.grid.ntheta() / 2;
+    for (longitude, expected) in [0, 1, 17, nphi / 2, nphi - 1].into_iter().zip(ducc_values) {
+        let actual = map[middle_ring * nphi + longitude];
+        assert!((actual - expected).abs() <= 5.0e-11);
+    }
+
+    let mut sectoral_norm = 1.0 / (4.0 * std::f64::consts::PI).sqrt();
+    for l in 1..=degree {
+        sectoral_norm *= ((2 * l + 1) as f64 / (2 * l) as f64).sqrt();
+    }
+    let sign = if degree.is_multiple_of(2) { 1.0 } else { -1.0 };
+    for (ring, &theta) in plan.grid.theta().iter().enumerate() {
+        let amplitude = 2.0 * sign * sectoral_norm * theta.sin().powi(degree as i32);
+        for longitude in 0..nphi {
+            let phi = plan.grid.longitude(longitude).unwrap();
+            let expected = amplitude * (degree as f64 * phi).cos();
+            let actual = map[ring * nphi + longitude];
+            assert!((actual - expected).abs() <= 5.0e-10);
+        }
+    }
+
+    let mut recovered = vec![Complex64::new(0.0, 0.0); alm.len()];
+    plan.analysis_into(&map, &mut recovered, &mut workspace)
+        .unwrap();
+    for (index, actual) in recovered.iter().enumerate() {
+        let expected = if index == sectoral_index { 1.0 } else { 0.0 };
+        assert!(
+            (*actual - Complex64::new(expected, 0.0)).norm() <= 2.0e-7,
+            "coefficient {index}: actual={actual:?}, expected={expected}"
+        );
+    }
+}
+
+#[test]
 fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
     let m = 3;
     let latitude_count = 129;
