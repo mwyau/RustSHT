@@ -2164,3 +2164,6 @@ The f64 real N=2049 plan now uses Rader-683 for its terminal `l1=3`, `ido=1` pas
 
 
 ### Radix-31 input-pair reuse in the N=682 convolution (M10, 2026-10-15)
+
+
+### Radix-31 twiddle precomputation in the N=682 convolution (M11, 2026-10-15)

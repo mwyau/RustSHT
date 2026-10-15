@@ -1,0 +1,30 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "241",
+      "120"
+    ],
+    "label": "M11 precomputed twiddles"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "241",
+      "120"
+    ],
+    "label": "M10 baseline"
+  },
+  "metadata": {
+    "baseline_binary_sha256": "4a807ddf1d03beb9d039eecb500355d70a94e48e2388acff46500178abbe7887",
+    "baseline_commit": "b6b963d",
+    "candidate_binary_sha256": "54c97e86891dfb6f76ba7f1e3483ad35edb9dbe9ce700f0780373c1998e29926",
+    "candidate_source": "M11 precomputed radix-31 phase/root twiddle vectors based on M10",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target with runtime AVX2",
+    "timing": "seven warmed samples per cell; six alternating process pairs",
+    "workload": "real N=241 control; rows=[120]"
+  },
+  "pairs": 6
+}
