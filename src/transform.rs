@@ -1145,6 +1145,10 @@ impl<T: ShtScalar> ShtPlan<T> {
         let ntheta = self.grid.ntheta();
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
+        #[cfg(all(test, feature = "parallel"))]
+        let mut phase_started = std::time::Instant::now();
+        #[cfg(all(test, feature = "parallel"))]
+        let phase_probe = workspace.analysis_phase_probe();
         let scalar_table_selected = self.scalar_legendre_strategy_with_capacity(
             LegendreOperation::Analysis,
             workspace.execution_capacity,
@@ -1152,6 +1156,15 @@ impl<T: ShtScalar> ShtPlan<T> {
         let scalar_table_input_limit = scalar_table_selected
             .then(crate::legendre::ScalarLegendreTable::<T>::input_scale_limit);
         let mut scalar_table_inputs_safe = true;
+        #[cfg(all(test, feature = "parallel"))]
+        {
+            crate::workspace::record_analysis_phase(
+                &phase_probe,
+                "strategy selection",
+                phase_started,
+            );
+            phase_started = std::time::Instant::now();
+        }
         let spectra = &mut workspace.spectra;
         for ring in 0..ntheta {
             let input_start = ring * nphi;
@@ -1161,6 +1174,11 @@ impl<T: ShtScalar> ShtPlan<T> {
                 &mut spectra[spectrum_start..spectrum_start + spectrum_len],
                 &mut workspace.fft,
             )?;
+        }
+        #[cfg(all(test, feature = "parallel"))]
+        {
+            crate::workspace::record_analysis_phase(&phase_probe, "forward FFT", phase_started);
+            phase_started = std::time::Instant::now();
         }
 
         let (analysis_spectra, analysis_ntheta, analysis_ring_weights) = if let Some(resampling) =
@@ -1208,6 +1226,15 @@ impl<T: ShtScalar> ShtPlan<T> {
             }
             (workspace.spectra.as_slice(), ntheta, ring_weights)
         };
+        #[cfg(all(test, feature = "parallel"))]
+        {
+            crate::workspace::record_analysis_phase(
+                &phase_probe,
+                "resampling and latitude setup",
+                phase_started,
+            );
+            phase_started = std::time::Instant::now();
+        }
         let theta_sin = &workspace.theta_sin[..analysis_ntheta];
         let theta_cos = &workspace.theta_cos[..analysis_ntheta];
         let ring_order_limits = &workspace.ring_order_limits[..analysis_ntheta];
@@ -1257,17 +1284,53 @@ impl<T: ShtScalar> ShtPlan<T> {
                 order_spectra[m * analysis_ntheta + ring] = weighted;
             }
         }
+        #[cfg(all(test, feature = "parallel"))]
+        {
+            crate::workspace::record_analysis_phase(
+                &phase_probe,
+                "order spectrum preparation",
+                phase_started,
+            );
+            phase_started = std::time::Instant::now();
+        }
         let scalar_table = if scalar_table_selected && scalar_table_inputs_safe {
             self.get_scalar_legendre_table()
         } else {
             None
         };
+        #[cfg(all(test, feature = "parallel"))]
+        {
+            crate::workspace::record_analysis_phase(
+                &phase_probe,
+                "Legendre table retrieval",
+                phase_started,
+            );
+            phase_started = std::time::Instant::now();
+        }
 
         alm.fill(Complex::new(T::zero(), T::zero()));
+        #[cfg(all(test, feature = "parallel"))]
+        {
+            crate::workspace::record_analysis_phase(
+                &phase_probe,
+                "coefficient initialization",
+                phase_started,
+            );
+            phase_started = std::time::Instant::now();
+        }
         let lmax = self.harmonics.lmax();
         let mmax = self.harmonics.mmax();
         if let Some(table) = scalar_table {
             self.analyze_scalar_table(order_spectra, alm, table, workspace.execution_capacity);
+            #[cfg(all(test, feature = "parallel"))]
+            {
+                crate::workspace::record_analysis_phase(
+                    &phase_probe,
+                    "Legendre recurrence and accumulation",
+                    phase_started,
+                );
+                phase_started = std::time::Instant::now();
+            }
             for l in 0..=lmax {
                 let index = self
                     .harmonics
@@ -1275,6 +1338,12 @@ impl<T: ShtScalar> ShtPlan<T> {
                     .expect("order zero contains every degree");
                 alm[index].im = T::zero();
             }
+            #[cfg(all(test, feature = "parallel"))]
+            crate::workspace::record_analysis_phase(
+                &phase_probe,
+                "coefficient cleanup",
+                phase_started,
+            );
             return Ok(());
         }
         let arch = pulp::Arch::new();
@@ -1288,6 +1357,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                 .min(order_count);
             let use_parallel = rayon::current_num_threads() > 1 && worker_count > 1;
             if use_parallel {
+                #[cfg(all(test, feature = "parallel"))]
+                let prefix_started = std::time::Instant::now();
                 let order_work_prefix = if self.harmonics.lmax() >= 511 {
                     let prefix = &mut workspace.order_work_prefix[..=order_count];
                     build_active_ring_order_work_prefix(
@@ -1300,6 +1371,15 @@ impl<T: ShtScalar> ShtPlan<T> {
                 } else {
                     None
                 };
+                #[cfg(all(test, feature = "parallel"))]
+                {
+                    crate::workspace::record_analysis_phase(
+                        &phase_probe,
+                        "order work prefix",
+                        prefix_started,
+                    );
+                    phase_started = std::time::Instant::now();
+                }
                 self.analyze_order_groups_parallel(
                     order_spectra,
                     analysis_ntheta,
@@ -1313,7 +1393,25 @@ impl<T: ShtScalar> ShtPlan<T> {
                     alm,
                     &mut workspace.recurrence_workers[..worker_count],
                 )?;
+                #[cfg(all(test, feature = "parallel"))]
+                {
+                    crate::workspace::record_analysis_phase(
+                        &phase_probe,
+                        "Legendre recurrence and accumulation",
+                        phase_started,
+                    );
+                    phase_started = std::time::Instant::now();
+                }
             } else {
+                #[cfg(all(test, feature = "parallel"))]
+                {
+                    crate::workspace::record_analysis_phase(
+                        &phase_probe,
+                        "order work prefix",
+                        phase_started,
+                    );
+                    phase_started = std::time::Instant::now();
+                }
                 self.analyze_order_group(
                     order_spectra,
                     analysis_ntheta,
@@ -1326,6 +1424,15 @@ impl<T: ShtScalar> ShtPlan<T> {
                     alm,
                     &mut workspace.recurrence_workers[0],
                 )?;
+                #[cfg(all(test, feature = "parallel"))]
+                {
+                    crate::workspace::record_analysis_phase(
+                        &phase_probe,
+                        "Legendre recurrence and accumulation",
+                        phase_started,
+                    );
+                    phase_started = std::time::Instant::now();
+                }
             }
         }
         #[cfg(not(feature = "parallel"))]
@@ -1351,6 +1458,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                 .expect("order zero contains every degree");
             alm[index].im = T::zero();
         }
+        #[cfg(all(test, feature = "parallel"))]
+        crate::workspace::record_analysis_phase(&phase_probe, "coefficient cleanup", phase_started);
         Ok(())
     }
 
