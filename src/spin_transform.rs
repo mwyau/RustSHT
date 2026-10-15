@@ -14,7 +14,10 @@ use crate::legendre::{
 };
 use crate::plan::{ShtPlan, current_execution_thread_count};
 #[cfg(feature = "parallel")]
-use crate::transform::{active_ring_weighted_order_midpoint, weighted_order_midpoint};
+use crate::transform::{
+    active_ring_weighted_order_midpoint_from_prefix, build_active_ring_order_work_prefix,
+    weighted_order_midpoint,
+};
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 #[cfg(feature = "parallel")]
@@ -719,6 +722,18 @@ impl<T: ShtScalar> ShtPlan<T> {
                 .min(order_count);
             let use_parallel = rayon::current_num_threads() > 1 && worker_count > 1;
             if use_parallel {
+                let order_work_prefix = if self.harmonics.lmax() >= 255 {
+                    let prefix = &mut workspace.order_work_prefix[..=order_count];
+                    build_active_ring_order_work_prefix(
+                        self.harmonics.lmax(),
+                        self.harmonics.mmax(),
+                        ring_order_limits,
+                        prefix,
+                    )?;
+                    Some(&prefix[..])
+                } else {
+                    None
+                };
                 self.analyze_spin_order_groups_parallel(
                     q_spectra,
                     u_spectra,
@@ -733,6 +748,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     theta_sin,
                     theta_cos,
                     ring_order_limits,
+                    order_work_prefix,
                     arch,
                     0,
                     order_count,
@@ -3690,6 +3706,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         theta_sin: &[T],
         theta_cos: &[T],
         ring_order_limits: &[usize],
+        order_work_prefix: Option<&[u128]>,
         arch: pulp::Arch,
         m_start: usize,
         m_end: usize,
@@ -3724,11 +3741,11 @@ impl<T: ShtScalar> ShtPlan<T> {
             );
         }
         let m_mid = if self.harmonics.lmax() >= 255 {
-            active_ring_weighted_order_midpoint(
+            active_ring_weighted_order_midpoint_from_prefix(
                 self.harmonics.lmax(),
                 m_start,
                 m_end,
-                ring_order_limits,
+                order_work_prefix.expect("large parallel analyses build an order-work prefix"),
             )
         } else {
             weighted_order_midpoint(self.harmonics.lmax(), m_start, m_end)
@@ -3767,6 +3784,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     theta_sin,
                     theta_cos,
                     ring_order_limits,
+                    order_work_prefix,
                     arch,
                     m_start,
                     m_mid,
@@ -3790,6 +3808,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     theta_sin,
                     theta_cos,
                     ring_order_limits,
+                    order_work_prefix,
                     arch,
                     m_mid,
                     m_end,
