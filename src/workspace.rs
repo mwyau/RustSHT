@@ -41,6 +41,8 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
     pub(crate) ring_group_size: usize,
     pub(crate) execution_capacity: usize,
     pub(crate) fft: RealFftWorkspace<T>,
+    #[cfg(all(test, feature = "parallel"))]
+    analysis_phase_probe: Option<AnalysisPhaseProbe>,
 }
 
 pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
@@ -102,6 +104,35 @@ pub(crate) struct AnalysisLeafObservation {
     pub(crate) normal_blocks: usize,
     pub(crate) scaled_blocks: usize,
     pub(crate) mixed_blocks: usize,
+}
+
+#[cfg(all(test, feature = "parallel"))]
+#[derive(Clone, Debug)]
+pub(crate) struct AnalysisPhaseObservation {
+    pub(crate) phase: &'static str,
+    pub(crate) elapsed_ns: u128,
+}
+
+#[cfg(all(test, feature = "parallel"))]
+pub(crate) type AnalysisPhaseProbe = Arc<Mutex<Vec<AnalysisPhaseObservation>>>;
+
+#[cfg(all(test, feature = "parallel"))]
+pub(crate) fn record_analysis_phase(
+    probe: &Option<AnalysisPhaseProbe>,
+    phase: &'static str,
+    started: Instant,
+) {
+    let Some(probe) = probe else {
+        return;
+    };
+    let observation = AnalysisPhaseObservation {
+        phase,
+        elapsed_ns: started.elapsed().as_nanos(),
+    };
+    probe
+        .lock()
+        .expect("analysis phase profile is not poisoned")
+        .push(observation);
 }
 
 impl<T: ShtScalar> RecurrenceWorkspace<T> {
@@ -395,6 +426,18 @@ impl<T: ShtScalar> ShtWorkspace<T> {
         probe
     }
 
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn observe_analysis_phases(&mut self) -> Arc<Mutex<Vec<AnalysisPhaseObservation>>> {
+        let probe = Arc::new(Mutex::new(Vec::new()));
+        self.analysis_phase_probe = Some(Arc::clone(&probe));
+        probe
+    }
+
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn analysis_phase_probe(&self) -> Option<AnalysisPhaseProbe> {
+        self.analysis_phase_probe.clone()
+    }
+
     #[cfg(feature = "parallel")]
     pub(crate) fn ensure_recurrence_worker_count(
         &mut self,
@@ -506,6 +549,8 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             ring_group_size,
             execution_capacity,
             fft: fft.workspace()?,
+            #[cfg(all(test, feature = "parallel"))]
+            analysis_phase_probe: None,
         })
     }
 }

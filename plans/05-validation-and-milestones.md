@@ -2841,4 +2841,10 @@ All q3–q8 samples reached q concurrent leaf intervals and recorded every worke
 
 No scheduling change follows from this profile. The earlier two-leaf-per-worker spin-1 experiment regressed T511 q8 and T720 q8, as recorded in [`the overpartition report`](../reports/spin1-analysis-leaf-overpartition-2026-10-14.md). A dynamic queue would need a new paired benchmark against the current scheduler and that rejected candidate. The profile, raw data, method, and validation are in [`the leaf-profile report`](../reports/analysis-leaf-imbalance-2026-10-15.md) and [`its data`](../reports/data/analysis-leaf-profile-2026-10-15/).
 
-The next analysis investigation should time whole-call stages before changing the order scheduler again. The current profile locates a long interval before the first order leaf but does not attribute it to Fourier transforms, spectral weighting, or geometry preparation.
+### Current-source analysis phase profile (E, 2026-10-15)
+
+A test-only release profile split scalar and spin-1 GL STANDARD analysis into forward longitude FFTs, latitude setup, scalar order-spectrum preparation, coefficient initialization, order-work prefix construction, and recurrence with accumulation. At q6 T1023, serial row FFTs took 39.6 ms of 75.5 ms scalar analysis and 79.7 ms of 139.1 ms spin-1 analysis. Recurrence and accumulation took 33.9 ms and 52.3 ms. At q1, recurrence and accumulation remained the larger phase: 128.0 ms of 171.2 ms for scalar and 190.5 ms of 269.5 ms for spin 1.
+
+The profile times RustFFT calls at the SHT row boundary and does not change their implementation. It covers GL scalar and spin-1 STANDARD at T511/T1023 and q1/q6, with five successive samples per case in one unpinned process. The raw timing, phase definitions, ranges, and limitations are in [`the analysis phase report`](../reports/analysis-phase-profile-2026-10-15.md) and [`its data`](../reports/data/analysis-phase-profile-2026-10-15/).
+
+The next experiment will schedule independent longitude rows across the prepared workspace capacity, using private FFT scratch for each worker. It will compare q1/q6 outputs and whole-call performance at T511/T1023 and measure the added workspace memory before any scheduling policy is accepted.
