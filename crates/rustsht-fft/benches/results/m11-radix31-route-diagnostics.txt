@@ -1,0 +1,33 @@
+STAGE,c2c,682,n=682 stage=0 radix=2 l1=1 ido=341 route=fixed butterfly
+STAGE,c2c,682,n=682 stage=1 radix=11 l1=2 ido=31 route=fixed butterfly
+STAGE,c2c,682,n=682 stage=2 radix=31 l1=22 ido=1 route=general prime
+PLAN,c2c,682,28961,11904,-
+EXEC,c2c,682,forward,c2c n=682 normalization=forward
+EXEC,c2c,682,forward,c2c n=682 stage=0 radix=2 l1=1 ido=341 route=fixed
+EXEC,c2c,682,forward,c2c-avx2:first-prefix n=682 radix=2 ido=341 vector_ido=340 scalar_tail=1
+EXEC,c2c,682,forward,c2c n=682 stage=1 radix=11 l1=2 ido=31 route=fixed
+EXEC,c2c,682,forward,c2c n=682 stage=2 radix=31 l1=22 ido=1 route=general-prime
+EXEC,c2c,682,forward,c2c-avx2:general-prime-ido1 n=682 radix=31 l1=22 vector_frequencies=14 scalar_tail=1
+EXEC,c2c,682,inverse,c2c n=682 normalization=deferred
+EXEC,c2c,682,inverse,c2c n=682 stage=0 radix=2 l1=1 ido=341 route=fixed
+EXEC,c2c,682,inverse,c2c-avx2:first-prefix n=682 radix=2 ido=341 vector_ido=340 scalar_tail=1
+EXEC,c2c,682,inverse,c2c n=682 stage=1 radix=11 l1=2 ido=31 route=fixed
+EXEC,c2c,682,inverse,c2c n=682 stage=2 radix=31 l1=22 ido=1 route=general-prime
+EXEC,c2c,682,inverse,c2c-avx2:general-prime-ido1 n=682 radix=31 l1=22 vector_frequencies=14 scalar_tail=1
+STAGE,r2c-c2r,682,real n=682 factors=[2; 11; 31] complexify=false rader=none
+STAGE,r2c-c2r,682,real n=682 stage=0 radix=2 l1=1 ido=341 route=fixed real radix
+STAGE,r2c-c2r,682,real n=682 stage=1 radix=11 l1=2 ido=31 route=fixed real radix-11
+STAGE,r2c-c2r,682,real n=682 stage=2 radix=31 l1=22 ido=1 route=general prime
+STAGE,r2c-c2r,682,real n=682 stage=0 radix=2 l1=1 ido=341 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,682,real n=682 stage=1 radix=11 l1=2 ido=31 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,682,real n=682 stage=2 radix=31 l1=22 ido=1 route=general prime simd=AVX2-prime-ido1-installed
+EXEC,real,682,forward,real-forward n=682 route=multipass
+EXEC,real,682,forward,real-forward-pass radix=31 l1=22 ido=1 route=multipass
+EXEC,real,682,forward,real-avx2:prime-forward radix=31 l1=22
+EXEC,real,682,forward,real-forward-pass radix=11 l1=2 ido=31 route=fixed-radix11
+EXEC,real,682,forward,real-forward-pass radix=2 l1=1 ido=341 route=multipass
+EXEC,real,682,inverse,real-inverse-pass radix=2 l1=1 ido=341 route=multipass
+EXEC,real,682,inverse,real-inverse-pass radix=11 l1=2 ido=31 route=fixed-radix11
+EXEC,real,682,inverse,real-avx2:prime-inverse radix=31 l1=22
+EXEC,real,682,inverse,real-inverse n=682 route=multipass
+PLAN,real,2049,190721,159856,-

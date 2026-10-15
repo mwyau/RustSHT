@@ -1,0 +1,33 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "baseline_commit": "b6b963d",
+    "candidate_source": "M11 precomputed radix-31 phase/root twiddle vectors based on M10",
+    "candidate_binary_sha256": "54c97e86891dfb6f76ba7f1e3483ad35edb9dbe9ce700f0780373c1998e29926",
+    "baseline_binary_sha256": "4a807ddf1d03beb9d039eecb500355d70a94e48e2388acff46500178abbe7887",
+    "timing": "seven warmed samples per cell; six alternating process pairs",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target with runtime AVX2",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "workload": "real N=241 control; rows=[120]"
+  },
+  "a": {
+    "label": "M11 precomputed twiddles",
+    "command": [
+      "/home/albert/RustSHT/crates/rustsht-fft/target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-real",
+      "241",
+      "120"
+    ]
+  },
+  "b": {
+    "label": "M10 baseline",
+    "command": [
+      "/home/albert/rustsht-fft-m10-rustfft-bench",
+      "bench-native-real",
+      "241",
+      "120"
+    ]
+  }
+}

@@ -581,6 +581,7 @@ mod x86 {
             } = params;
             const RADIX: usize = 31;
             const HALF: usize = RADIX / 2;
+            const PAIR_COUNT: usize = HALF / 2;
             debug_assert!(l1 > 0);
             debug_assert!(root_stride > 0);
             debug_assert!(input.len() >= RADIX * l1);
@@ -590,6 +591,33 @@ mod x86 {
 
             let output_ptr = output.as_mut_ptr();
             let output_scale = _mm256_set1_pd(scale);
+            let mut cosine_twiddles = [[[0.0; 4]; PAIR_COUNT]; HALF];
+            let mut sine_twiddles = [[[0.0; 4]; PAIR_COUNT]; HALF];
+            let mut tail_cosines = [0.0; HALF];
+            let mut tail_sines = [0.0; HALF];
+            let sign = if inverse { 1.0 } else { -1.0 };
+            for branch_index in 0..HALF {
+                for pair_index in 0..PAIR_COUNT {
+                    let frequency = 1 + 2 * pair_index;
+                    let phase_first = usize::from(phase_indices[branch_index * RADIX + frequency]);
+                    let phase_second =
+                        usize::from(phase_indices[branch_index * RADIX + frequency + 1]);
+                    let root_first = roots[phase_first * root_stride];
+                    let root_second = roots[phase_second * root_stride];
+                    cosine_twiddles[branch_index][pair_index] =
+                        [root_first.re, root_first.re, root_second.re, root_second.re];
+                    sine_twiddles[branch_index][pair_index] = [
+                        root_first.im * sign,
+                        root_first.im * sign,
+                        root_second.im * sign,
+                        root_second.im * sign,
+                    ];
+                }
+                let phase = usize::from(phase_indices[branch_index * RADIX + HALF]);
+                let root = roots[phase * root_stride];
+                tail_cosines[branch_index] = root.re;
+                tail_sines[branch_index] = root.im * sign;
+            }
 
             for outer in 0..l1 {
                 let input_zero = input[RADIX * outer];
@@ -612,8 +640,8 @@ mod x86 {
                 }
                 output[outer] = dc;
 
-                let mut frequency = 1;
-                while frequency < HALF {
+                for pair_index in 0..PAIR_COUNT {
+                    let frequency = 1 + 2 * pair_index;
                     let initial =
                         _mm256_setr_pd(input_zero.re, input_zero.im, input_zero.re, input_zero.im);
                     let mut positive = initial;
@@ -634,26 +662,16 @@ mod x86 {
                             imaginary_difference_value.re,
                             imaginary_difference_value.im,
                         );
-
-                        let phase_first =
-                            usize::from(phase_indices[branch_index * RADIX + frequency]);
-                        let phase_second =
-                            usize::from(phase_indices[branch_index * RADIX + frequency + 1]);
-                        let root_first = roots[phase_first * root_stride];
-                        let root_second = roots[phase_second * root_stride];
-                        let sign = if inverse { 1.0 } else { -1.0 };
-                        let cosine = _mm256_setr_pd(
-                            root_first.re,
-                            root_first.re,
-                            root_second.re,
-                            root_second.re,
-                        );
-                        let sine = _mm256_setr_pd(
-                            root_first.im * sign,
-                            root_first.im * sign,
-                            root_second.im * sign,
-                            root_second.im * sign,
-                        );
+                        // SAFETY: each twiddle entry is a fully initialized
+                        // four-element array of f64 values.
+                        let cosine = unsafe {
+                            _mm256_loadu_pd(cosine_twiddles[branch_index][pair_index].as_ptr())
+                        };
+                        // SAFETY: each twiddle entry is a fully initialized
+                        // four-element array of f64 values.
+                        let sine = unsafe {
+                            _mm256_loadu_pd(sine_twiddles[branch_index][pair_index].as_ptr())
+                        };
                         let cosine_term = _mm256_mul_pd(pair, cosine);
                         let sine_term = _mm256_mul_pd(imaginary_difference, sine);
                         positive = _mm256_add_pd(_mm256_add_pd(positive, cosine_term), sine_term);
@@ -688,29 +706,23 @@ mod x86 {
                             _mm256_extractf128_pd(negative, 1),
                         );
                     }
-                    frequency += 2;
                 }
 
-                if frequency <= HALF {
-                    let mut positive = input_zero;
-                    let mut negative = input_zero;
-                    for branch_index in 0..HALF {
-                        let pair = pair_inputs[branch_index];
-                        let phase = usize::from(phase_indices[branch_index * RADIX + frequency]);
-                        let root = roots[phase * root_stride];
-                        let root_im = if inverse { root.im } else { -root.im };
-                        let cosine = pair * root.re;
-                        let sine = imaginary_differences[branch_index] * root_im;
-                        positive = positive + cosine + sine;
-                        negative = negative + cosine - sine;
-                    }
-                    if inverse {
-                        positive *= scale;
-                        negative *= scale;
-                    }
-                    output[frequency * l1 + outer] = positive;
-                    output[(RADIX - frequency) * l1 + outer] = negative;
+                let mut positive = input_zero;
+                let mut negative = input_zero;
+                for branch_index in 0..HALF {
+                    let pair = pair_inputs[branch_index];
+                    let cosine = pair * tail_cosines[branch_index];
+                    let sine = imaginary_differences[branch_index] * tail_sines[branch_index];
+                    positive = positive + cosine + sine;
+                    negative = negative + cosine - sine;
                 }
+                if inverse {
+                    positive *= scale;
+                    negative *= scale;
+                }
+                output[HALF * l1 + outer] = positive;
+                output[(RADIX - HALF) * l1 + outer] = negative;
             }
         }
 
