@@ -3676,6 +3676,62 @@ fn spin2_scalar_fast_analysis_honors_the_polar_order_cutoff() {
 }
 
 #[test]
+fn spin2_scalar_fast_analysis_uses_scaled_path_for_unsafe_channel_products() {
+    let ntheta = 512;
+    let nphi = 3;
+    let fast_plan = make_plan(2, 511, 0, ntheta, nphi);
+    let mut general_plan = make_plan(2, 511, 0, ntheta, nphi);
+    general_plan.spin_fast_coefficient_count = 0;
+    let q_map = vec![1.0e300; fast_plan.sample_count];
+    let u_map = vec![1.0; fast_plan.sample_count];
+    let mut fast_e = vec![Complex64::new(0.0, 0.0); fast_plan.harmonics.nalm()];
+    let mut fast_b = vec![Complex64::new(0.0, 0.0); fast_plan.harmonics.nalm()];
+    let mut general_e = vec![Complex64::new(0.0, 0.0); general_plan.harmonics.nalm()];
+    let mut general_b = vec![Complex64::new(0.0, 0.0); general_plan.harmonics.nalm()];
+    let mut fast_workspace = fast_plan.workspace().unwrap();
+    let mut general_workspace = general_plan.workspace().unwrap();
+
+    fast_plan
+        .analysis_spin_into(
+            &q_map,
+            &u_map,
+            &mut fast_e,
+            &mut fast_b,
+            &mut fast_workspace,
+        )
+        .unwrap();
+    general_plan
+        .analysis_spin_into(
+            &q_map,
+            &u_map,
+            &mut general_e,
+            &mut general_b,
+            &mut general_workspace,
+        )
+        .unwrap();
+
+    for (actual, expected) in [(&fast_e, &general_e), (&fast_b, &general_b)] {
+        let mut error = 0.0_f64;
+        let mut scale = 1.0_f64;
+        for (&actual, &expected) in actual.iter().zip(expected) {
+            assert!(actual.re.is_finite() && actual.im.is_finite());
+            error = error
+                .max((actual.re - expected.re).abs())
+                .max((actual.im - expected.im).abs());
+            scale = scale
+                .max(actual.re.abs())
+                .max(actual.im.abs())
+                .max(expected.re.abs())
+                .max(expected.im.abs());
+        }
+        assert!(
+            error <= 5.0e-10 * scale,
+            "error={error:.3e}, scale={scale:.3e}"
+        );
+    }
+}
+
+#[test]
 #[expect(
     clippy::excessive_precision,
     reason = "These decimal fixtures retain the printed DUCC reference values."
