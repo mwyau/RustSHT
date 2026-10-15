@@ -1,0 +1,18 @@
+     Running unittests src/lib.rs (target/debug/deps/rustsht_fft-4e944aea39d47bb4)
+
+RADER_ROUTE,n=257,direction=r2c,class=ordinary,route=Rader
+RADER_ROUTE,n=257,direction=r2c,class=sparse,route=Rader
+RADER_ROUTE,n=257,direction=r2c,class=cancellation,route=Rader
+RADER_ROUTE,n=257,direction=r2c,class=broad-dynamic,route=Bluestein fallback
+RADER_ROUTE,n=257,direction=c2r,class=ordinary,route=Rader
+RADER_ROUTE,n=257,direction=c2r,class=sparse,route=Rader
+RADER_ROUTE,n=257,direction=c2r,class=cancellation,route=Rader
+RADER_ROUTE,n=257,direction=c2r,class=broad-dynamic,route=Bluestein fallback
+RADER_ROUTE,n=723,direction=r2c,class=ordinary,route=Rader
+RADER_ROUTE,n=723,direction=r2c,class=sparse,route=Rader
+RADER_ROUTE,n=723,direction=r2c,class=cancellation,route=Rader
+RADER_ROUTE,n=723,direction=r2c,class=broad-dynamic,route=Bluestein fallback
+RADER_ROUTE,n=723,direction=c2r,class=ordinary,route=Rader
+RADER_ROUTE,n=723,direction=c2r,class=sparse,route=Rader
+RADER_ROUTE,n=723,direction=c2r,class=cancellation,route=Rader
+RADER_ROUTE,n=723,direction=c2r,class=broad-dynamic,route=Bluestein fallback

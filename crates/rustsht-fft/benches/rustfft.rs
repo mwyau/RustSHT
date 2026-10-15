@@ -286,6 +286,98 @@ fn spectrum_value(index: usize, n: usize, row: usize) -> Complex64 {
     Complex64::new(0.3 * (0.19 * x).sin(), 0.2 * (0.07 * (x + 1.0)).cos())
 }
 
+#[derive(Clone, Copy)]
+enum RaderInputClass {
+    Ordinary,
+    Sparse,
+    Cancellation,
+    BroadDynamic,
+}
+
+impl RaderInputClass {
+    const ALL: [Self; 4] = [
+        Self::Ordinary,
+        Self::Sparse,
+        Self::Cancellation,
+        Self::BroadDynamic,
+    ];
+
+    fn name(self) -> &'static str {
+        match self {
+            Self::Ordinary => "ordinary",
+            Self::Sparse => "sparse",
+            Self::Cancellation => "cancellation",
+            Self::BroadDynamic => "broad_dynamic",
+        }
+    }
+
+    fn real_value(self, index: usize, n: usize, row: usize) -> f64 {
+        match self {
+            Self::Ordinary => real_value(index, row),
+            Self::Sparse => {
+                if index == n / 3 {
+                    -0.75
+                } else {
+                    0.0
+                }
+            }
+            Self::Cancellation => {
+                let sign = if index.is_multiple_of(2) { 1.0 } else { -1.0 };
+                sign + if index.is_multiple_of(7) {
+                    1.0e-12
+                } else {
+                    0.0
+                }
+            }
+            Self::BroadDynamic => {
+                if index == n / 2 {
+                    1.0e-300
+                } else {
+                    real_value(index, row)
+                }
+            }
+        }
+    }
+
+    fn spectrum_value(self, index: usize, n: usize, row: usize) -> Complex64 {
+        match self {
+            Self::Ordinary => spectrum_value(index, n, row),
+            Self::Sparse => match index {
+                0 => Complex64::new(0.75, 0.0),
+                value if value == n / 7 => Complex64::new(-0.375, 0.125),
+                value if value == n / 3 => Complex64::new(0.125, -0.25),
+                _ => Complex64::new(0.0, 0.0),
+            },
+            Self::Cancellation => {
+                if index == 0 {
+                    return Complex64::new(1.0, 0.0);
+                }
+                let sign = if index.is_multiple_of(2) { 1.0 } else { -1.0 };
+                Complex64::new(
+                    sign + if index.is_multiple_of(7) {
+                        1.0e-12
+                    } else {
+                        0.0
+                    },
+                    -sign
+                        + if index.is_multiple_of(11) {
+                            1.0e-12
+                        } else {
+                            0.0
+                        },
+                )
+            }
+            Self::BroadDynamic => {
+                if index == n / 5 {
+                    Complex64::new(1.0e-300, -1.0e-300)
+                } else {
+                    spectrum_value(index, n, row)
+                }
+            }
+        }
+    }
+}
+
 fn median_duration(mut durations: Vec<Duration>) -> Duration {
     durations.sort_unstable();
     durations[durations.len() / 2]
@@ -867,6 +959,86 @@ fn benchmark_native_real(mode: Mode, n: usize, rows: usize) {
     );
 }
 
+fn benchmark_native_rader(mode: Mode, n: usize, rows: usize, class: RaderInputClass) {
+    let start = Instant::now();
+    for _ in 0..20 {
+        black_box(RealFftPlan::<f64>::new(n).expect("native Rader plan").len());
+    }
+    let plan_ns = start.elapsed().as_nanos() as f64 / 20.0;
+    let plan = RealFftPlan::<f64>::new(n).expect("native Rader plan");
+    let start = Instant::now();
+    for _ in 0..20 {
+        black_box(plan.workspace().expect("native Rader workspace").len());
+    }
+    let workspace_ns = start.elapsed().as_nanos() as f64 / 20.0;
+    let mut workspace = plan.workspace().expect("native Rader workspace");
+    let workspace_bytes = workspace
+        .scratch_bytes()
+        .expect("native Rader workspace byte count");
+    let bins = plan.spectrum_len();
+    let (operation_ns, checksum) = match mode {
+        Mode::RealForward => {
+            let input: Vec<_> = (0..rows)
+                .flat_map(|row| (0..n).map(move |index| class.real_value(index, n, row)))
+                .collect();
+            let mut spectrum = vec![Complex64::new(0.0, 0.0); rows * bins];
+            let operation_ns = measure(|| {
+                let start = Instant::now();
+                for row in 0..rows {
+                    plan.forward(
+                        &input[row * n..(row + 1) * n],
+                        &mut spectrum[row * bins..(row + 1) * bins],
+                        &mut workspace,
+                    )
+                    .expect("native Rader forward transform");
+                }
+                let elapsed = start.elapsed();
+                black_box(spectrum.as_slice());
+                elapsed
+            })
+            .as_nanos() as f64
+                / rows as f64;
+            black_box(spectrum.as_slice());
+            (operation_ns, spectrum[0].re + spectrum[0].im)
+        }
+        Mode::RealInverse => {
+            let input: Vec<_> = (0..rows)
+                .flat_map(|row| (0..bins).map(move |index| class.spectrum_value(index, n, row)))
+                .collect();
+            let mut output = vec![0.0; rows * n];
+            let operation_ns = measure(|| {
+                let start = Instant::now();
+                for row in 0..rows {
+                    plan.inverse(
+                        &input[row * bins..(row + 1) * bins],
+                        &mut output[row * n..(row + 1) * n],
+                        &mut workspace,
+                    )
+                    .expect("native Rader inverse transform");
+                }
+                let elapsed = start.elapsed();
+                black_box(output.as_slice());
+                elapsed
+            })
+            .as_nanos() as f64
+                / rows as f64;
+            black_box(output.as_slice());
+            (operation_ns, output[0])
+        }
+        Mode::ComplexForward | Mode::ComplexInverse => unreachable!("real mode required"),
+    };
+    let mode_name = match mode {
+        Mode::RealForward => "r2c",
+        Mode::RealInverse => "c2r",
+        Mode::ComplexForward | Mode::ComplexInverse => unreachable!("real mode required"),
+    };
+    println!(
+        "{mode_name}_{},{n},{plan_ns:.9},{workspace_ns:.9},{workspace_bytes},{operation_ns:.9},{:.9},{rows},{checksum}",
+        class.name(),
+        operation_ns * rows as f64,
+    );
+}
+
 fn benchmark_native_first_call(mode: Mode, n: usize) {
     let (first_call_ns, warm_call_ns, workspace_bytes, checksum) = match mode {
         Mode::ComplexForward | Mode::ComplexInverse => {
@@ -1344,6 +1516,28 @@ fn main() {
                 }
             }
         }
+        Some("bench-native-rader") => {
+            println!(
+                "mode,n,plan_ns,workspace_ns,workspace_bytes,public_operation_ns,batch_operation_ns,batch_count,checksum"
+            );
+            let sizes: Vec<usize> = args
+                .map(|value| value.parse().expect("length must be an integer"))
+                .collect();
+            let sizes = if sizes.is_empty() {
+                vec![241, 257, 723]
+            } else {
+                sizes
+            };
+            for n in sizes {
+                for mode in [Mode::RealForward, Mode::RealInverse] {
+                    for class in RaderInputClass::ALL {
+                        for rows in [1, BATCH_COUNT] {
+                            benchmark_native_rader(mode, n, rows, class);
+                        }
+                    }
+                }
+            }
+        }
         Some("bench-native-c2c") => {
             println!(
                 "mode,n,plan_ns,workspace_ns,workspace_bytes,public_operation_ns,batch_operation_ns,batch_count,checksum"
@@ -1436,7 +1630,7 @@ fn main() {
         }
         _ => {
             eprintln!(
-                "usage: rustfft-bench dump-all | dump-native-all | dump-native-lengths N ... | dump MODE N | dump-native MODE N | bench [N ...] | bench-scalar [N ...] | bench-sht | bench-sht-targets | bench-native-sht | bench-real-multipass [N ...] | bench-native [N ...] | bench-native-real N [BATCH ...] | bench-native-c2c N [BATCH ...] | bench-native-batch-api N [BATCH ...] | bench-profile-real-inverse N normal|high [ITERATIONS] | bench-profile-complex N forward|inverse [ITERATIONS]"
+                "usage: rustfft-bench dump-all | dump-native-all | dump-native-lengths N ... | dump MODE N | dump-native MODE N | bench [N ...] | bench-scalar [N ...] | bench-sht | bench-sht-targets | bench-native-sht | bench-real-multipass [N ...] | bench-native [N ...] | bench-native-real N [BATCH ...] | bench-native-rader [N ...] | bench-native-c2c N [BATCH ...] | bench-native-batch-api N [BATCH ...] | bench-profile-real-inverse N normal|high [ITERATIONS] | bench-profile-complex N forward|inverse [ITERATIONS]"
             );
             eprintln!("no benchmark was run; use `bench` to start the workload");
         }

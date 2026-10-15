@@ -515,6 +515,40 @@ fn selected_rader_real_routes_match_direct_and_rustfft_and_keep_extreme_fallback
         assert_f64_close(&samples, &expected_samples, n);
         assert_f64_close(&samples, &rustfft_c2r_f64(&input_spectrum, n), n);
 
+        let mut sparse_spectrum = vec![Complex::new(0.0, 0.0); plan.spectrum_len()];
+        sparse_spectrum[0] = Complex::new(0.75, 0.0);
+        sparse_spectrum[n / 7] = Complex::new(-0.375, 0.125);
+        sparse_spectrum[n / 3] = Complex::new(0.125, -0.25);
+        let expected_sparse = direct_c2r_f64(&sparse_spectrum, n);
+        plan.inverse(&sparse_spectrum, &mut samples, &mut workspace)
+            .unwrap();
+        assert_f64_close(&samples, &expected_sparse, n);
+        assert_f64_close(&samples, &rustfft_c2r_f64(&sparse_spectrum, n), n);
+
+        let mut cancellation_spectrum = vec![Complex::new(0.0, 0.0); plan.spectrum_len()];
+        cancellation_spectrum[0] = Complex::new(1.0, 0.0);
+        for (index, value) in cancellation_spectrum.iter_mut().enumerate().skip(1) {
+            let sign = if index.is_multiple_of(2) { 1.0 } else { -1.0 };
+            *value = Complex::new(
+                sign + if index.is_multiple_of(7) {
+                    1.0e-12
+                } else {
+                    0.0
+                },
+                -sign
+                    + if index.is_multiple_of(11) {
+                        1.0e-12
+                    } else {
+                        0.0
+                    },
+            );
+        }
+        let expected_cancellation_spectrum = direct_c2r_f64(&cancellation_spectrum, n);
+        plan.inverse(&cancellation_spectrum, &mut samples, &mut workspace)
+            .unwrap();
+        assert_f64_close(&samples, &expected_cancellation_spectrum, n);
+        assert_f64_close(&samples, &rustfft_c2r_f64(&cancellation_spectrum, n), n);
+
         let cancellation: Vec<_> = (0..n)
             .map(|index| {
                 let sign = if index.is_multiple_of(2) { 1.0 } else { -1.0 };
@@ -530,6 +564,19 @@ fn selected_rader_real_routes_match_direct_and_rustfft_and_keep_extreme_fallback
             .unwrap();
         assert_complex_f64_close(&spectrum, &expected_cancellation, n);
         assert_complex_f64_close(&spectrum, &rustfft_r2c_f64(&cancellation), n);
+
+        let mut broad_dynamic_input: Vec<_> = (0..n)
+            .map(|index| {
+                let x = (index + 1) as f64;
+                (0.173 * x).sin() + 0.25 * (0.113 * (x + 1.0)).cos()
+            })
+            .collect();
+        broad_dynamic_input[n / 2] = 1.0e-300;
+        let expected_broad_dynamic = direct_r2c_f64(&broad_dynamic_input);
+        plan.forward(&broad_dynamic_input, &mut spectrum, &mut workspace)
+            .unwrap();
+        assert_complex_f64_close(&spectrum, &expected_broad_dynamic, n);
+        assert_complex_f64_close(&spectrum, &rustfft_r2c_f64(&broad_dynamic_input), n);
 
         let dynamic_spectrum: Vec<_> = (0..plan.spectrum_len())
             .map(|index| {
@@ -552,6 +599,23 @@ fn selected_rader_real_routes_match_direct_and_rustfft_and_keep_extreme_fallback
             .unwrap();
         assert_f64_close(&samples, &expected_dynamic, n);
         assert_f64_close(&samples, &rustfft_c2r_f64(&dynamic_spectrum, n), n);
+
+        let mut broad_dynamic_spectrum: Vec<_> = (0..plan.spectrum_len())
+            .map(|index| {
+                if index == 0 {
+                    Complex::new(0.4, 0.0)
+                } else {
+                    let x = (index + 1) as f64;
+                    Complex::new(0.3 * (0.19 * x).sin(), 0.2 * (0.07 * (x + 1.0)).cos())
+                }
+            })
+            .collect();
+        broad_dynamic_spectrum[n / 5] = Complex::new(1.0e-300, -1.0e-300);
+        let expected_broad_dynamic = direct_c2r_f64(&broad_dynamic_spectrum, n);
+        plan.inverse(&broad_dynamic_spectrum, &mut samples, &mut workspace)
+            .unwrap();
+        assert_f64_close(&samples, &expected_broad_dynamic, n);
+        assert_f64_close(&samples, &rustfft_c2r_f64(&broad_dynamic_spectrum, n), n);
 
         let mut maximum_impulse = vec![0.0; n];
         let maximum_amplitude = if n == 241 {

@@ -169,6 +169,7 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
         minimum_nonzero.is_none_or(|minimum| minimum >= subnormal_bound.max(relative_bound))
     }
 
+    #[cfg(test)]
     pub(crate) fn execute(
         &self,
         input: &[Complex<T>],
@@ -186,6 +187,89 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
             workspace.convolution[index] = value;
             sum = sum + value;
         }
+        self.execute_convolution(direction, workspace);
+
+        output[0] = sum;
+        for (index, &power) in self.inverse_powers.iter().enumerate() {
+            output[power] = input[0] + workspace.convolution[index];
+        }
+    }
+
+    pub(crate) fn execute_real_forward(
+        &self,
+        input: &[T],
+        input_l1: usize,
+        group: usize,
+        output: &mut [T],
+        output_start: usize,
+        workspace: &mut RaderPrimeWorkspace<T>,
+    ) {
+        debug_assert_eq!(input.len() % input_l1, 0);
+        debug_assert!(group < input_l1);
+        debug_assert_eq!(workspace.convolution.len(), self.convolution_len);
+
+        let mut sum = input[group];
+        for (index, &power) in self.powers.iter().enumerate() {
+            let value = input[power * input_l1 + group];
+            workspace.convolution[index] = Complex::new(value, T::zero());
+            sum = sum + value;
+        }
+        self.execute_convolution(Direction::Forward, workspace);
+
+        let half = self.radix / 2;
+        output[output_start] = sum;
+        for (index, &frequency) in self.inverse_powers.iter().enumerate() {
+            if frequency <= half {
+                let value = Complex::new(input[group], T::zero()) + workspace.convolution[index];
+                output[output_start + 2 * frequency - 1] = value.re;
+                output[output_start + 2 * frequency] = value.im;
+            }
+        }
+    }
+
+    pub(crate) fn execute_real_inverse(
+        &self,
+        input: &[T],
+        output: &mut [T],
+        output_l1: usize,
+        group: usize,
+        scale: T,
+        workspace: &mut RaderPrimeWorkspace<T>,
+    ) {
+        debug_assert!(group < output_l1);
+        debug_assert_eq!(workspace.convolution.len(), self.convolution_len);
+
+        let half = self.radix / 2;
+        let input_start = group * self.radix;
+        let dc = input[input_start];
+        let mut sum = Complex::new(dc, T::zero());
+        for (index, &frequency) in self.powers.iter().enumerate() {
+            let value = if frequency <= half {
+                Complex::new(
+                    input[input_start + 2 * frequency - 1],
+                    input[input_start + 2 * frequency],
+                )
+            } else {
+                let positive_frequency = self.radix - frequency;
+                Complex::new(
+                    input[input_start + 2 * positive_frequency - 1],
+                    -input[input_start + 2 * positive_frequency],
+                )
+            };
+            workspace.convolution[index] = value;
+            sum = sum + value;
+        }
+        self.execute_convolution(Direction::Inverse, workspace);
+
+        output[group] = sum.re * scale;
+        for (index, &sample) in self.inverse_powers.iter().enumerate() {
+            debug_assert_ne!(sample, 0);
+            output[sample * output_l1 + group] =
+                (Complex::new(dc, T::zero()) + workspace.convolution[index]).re * scale;
+        }
+    }
+
+    fn execute_convolution(&self, direction: Direction, workspace: &mut RaderPrimeWorkspace<T>) {
         (self.execute)(
             &self.convolution,
             &mut workspace.convolution,
@@ -207,11 +291,6 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
             Direction::Inverse,
         )
         .expect("Rader convolution workspace matches its plan");
-
-        output[0] = sum;
-        for (index, &power) in self.inverse_powers.iter().enumerate() {
-            output[power] = input[0] + workspace.convolution[index];
-        }
     }
 }
 
