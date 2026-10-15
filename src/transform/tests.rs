@@ -556,6 +556,124 @@ fn analysis_capacity_splits_match_q1_across_pool_sizes() {
     }
 }
 
+#[cfg(feature = "parallel")]
+#[test]
+#[ignore = "M5 per-leaf scheduling profile; run this diagnostic in release mode"]
+fn m5_analysis_leaf_imbalance_profile() {
+    for (spin, lmax, thread_count) in [
+        (0, 511, 3),
+        (0, 511, 5),
+        (0, 511, 6),
+        (0, 511, 8),
+        (0, 511, 16),
+        (0, 1023, 3),
+        (0, 1023, 5),
+        (0, 1023, 6),
+        (0, 1023, 8),
+        (0, 1023, 16),
+        (1, 511, 3),
+        (1, 511, 5),
+        (1, 511, 6),
+        (1, 511, 8),
+        (1, 511, 16),
+        (1, 1023, 3),
+        (1, 1023, 5),
+        (1, 1023, 6),
+        (1, 1023, 8),
+        (1, 1023, 16),
+    ] {
+        let ntheta = lmax + 1;
+        let nphi = 2 * lmax + 3;
+        let plan = ShtPlan::new(
+            GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, 0.37).unwrap(),
+            HarmonicSpec::new(lmax, lmax, spin).unwrap(),
+        )
+        .unwrap();
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(thread_count)
+            .build()
+            .unwrap();
+        let root_worker = pool.install(rayon::current_thread_index).unwrap();
+        let mut workspace = pool.install(|| plan.workspace()).unwrap();
+        let scratch_slots = workspace.allocated_worker_count();
+        let profile = workspace.observe_analysis_leaves();
+        let sample_count = plan.sample_count;
+        let mut first = vec![0.0; sample_count];
+        let mut second = vec![0.0; sample_count];
+        for index in 0..sample_count {
+            first[index] = (index as f64 * 0.000173).sin() + 0.2 * (index as f64 * 0.000071).cos();
+            second[index] =
+                (index as f64 * 0.000119).cos() - 0.15 * (index as f64 * 0.000097).sin();
+        }
+        let mut scalar_output = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        let mut spin_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        let mut spin_b = spin_e.clone();
+
+        for sample in 0..5 {
+            profile
+                .lock()
+                .expect("analysis leaf profile is not poisoned")
+                .clear();
+            let started = std::time::Instant::now();
+            pool.install(|| {
+                if spin == 0 {
+                    plan.analysis_into(&first, &mut scalar_output, &mut workspace)
+                        .unwrap();
+                } else {
+                    plan.analysis_spin_into(
+                        &first,
+                        &second,
+                        &mut spin_e,
+                        &mut spin_b,
+                        &mut workspace,
+                    )
+                    .unwrap();
+                }
+            });
+            let wall_ns = started.elapsed().as_nanos();
+            let mut leaves = profile
+                .lock()
+                .expect("analysis leaf profile is not poisoned")
+                .clone();
+            assert!(!leaves.is_empty(), "no analysis leaves were recorded");
+            leaves.sort_by_key(|leaf| leaf.m_start);
+            let worker_ids = leaves
+                .iter()
+                .filter_map(|leaf| leaf.worker)
+                .collect::<std::collections::BTreeSet<_>>();
+            let leaf_time_ns = leaves.iter().map(|leaf| leaf.elapsed_ns).sum::<u128>();
+            let leaf_capacity_fraction =
+                leaf_time_ns as f64 / (thread_count as f64 * wall_ns as f64);
+            eprintln!(
+                "LEAF_PROFILE spin={spin} T{lmax} q{thread_count} sample={} root_worker={root_worker} scratch_slots={scratch_slots} workers={worker_ids:?} wall_ms={:.3} summed_leaf_ms={:.3} leaf_capacity_fraction={:.3}",
+                sample + 1,
+                wall_ns as f64 / 1e6,
+                leaf_time_ns as f64 / 1e6,
+                leaf_capacity_fraction,
+            );
+            for leaf in leaves {
+                eprintln!(
+                    "LEAF spin={} T{lmax} q{thread_count} sample={} worker={:?} m={}..{} orders={} active_ring_order_pairs={} estimated_work={} start_ms={:.3} end_ms={:.3} elapsed_ms={:.3} normal_blocks={} scaled_blocks={} mixed_blocks={}",
+                    if leaf.spin { 1 } else { 0 },
+                    sample + 1,
+                    leaf.worker,
+                    leaf.m_start,
+                    leaf.m_end,
+                    leaf.m_end - leaf.m_start,
+                    leaf.active_ring_order_pairs,
+                    leaf.estimated_work,
+                    leaf.started.duration_since(started).as_secs_f64() * 1e3,
+                    leaf.finished.duration_since(started).as_secs_f64() * 1e3,
+                    leaf.elapsed_ns as f64 / 1e6,
+                    leaf.normal_blocks,
+                    leaf.scaled_blocks,
+                    leaf.mixed_blocks,
+                );
+            }
+        }
+    }
+}
+
 #[test]
 fn scalar_synthesis_matches_independent_low_degree_harmonics() {
     let plan = make_plan(3, 2, 5, 9, 0.23);
