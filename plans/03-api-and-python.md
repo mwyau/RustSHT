@@ -15,8 +15,8 @@ GL, CC and F1 use one public plan and operation family. Grid-specific code const
 | `HarmonicSpec` | Inclusive `lmax`, `mmax` and nonnegative spin; validate spin bounds, real `m=0` and `l<spin` coefficient behavior. Mode is not plan state. Implemented with order-major packed `m >= 0` coefficients. |
 | `ShtPlan` | Implemented for GL, CC and F1 scalar and spin-1 through spin-4 STANDARD synthesis, analysis and both adjoints, plus gradient and derivative synthesis and their synthesis adjoints; immutable FFT, quadrature, normalization and resampling metadata. Construct with `Result`. |
 | `LegendreReuseEstimate` | Optional expected table-eligible STANDARD coefficient-to-map and map-to-coefficient execution counts for `ShtPlan::new_with_legendre_reuse_estimate`; `None` retains the existing automatic policy. |
-| `ShtWorkspace` | Caller-owned longitude and meridional FFT, Fourier and scalar/spin recurrence scratch; use a separate workspace for each concurrent execution. Worker scratch is sized from the active Rayon pool when the workspace is created. |
-| `ShtError` | Structured invalid grid, undersampling, spin/mode, shape, overflow, unsupported configuration and allocation errors. |
+| `ShtWorkspace` | Caller-owned longitude and meridional FFT, Fourier and scalar/spin recurrence scratch; use a separate workspace for each concurrent execution. Its execution capacity is independent of the active Rayon pool, and its allocated worker count is inspectable. |
+| `ShtError` | Structured invalid grid, undersampling, spin/mode, shape, overflow, execution-capacity, unsupported configuration and allocation errors. |
 
 The Rust precision API uses `ShtPlan<T = f64>` and `ShtWorkspace<T = f64>`, with implementations restricted to `f32` and `f64`; the default preserves existing `ShtPlan` call sites. `Complex32` and `Complex64` are the matching packed coefficient aliases. `GridSpec` and `HarmonicSpec` are precision-independent. `GridSpec` stores angular coordinates and quadrature weights as `f64`; plan construction converts the numerical metadata to the selected execution precision. The f32 recurrence uses scalar latitude-lane loops. The f64 recurrence uses runtime-dispatched `pulp` SIMD. The Python API accepts `float64` maps and `complex128` coefficients; f32 bindings have not been implemented.
 
@@ -40,6 +40,22 @@ let mut work = plan.workspace()?;
 plan.synthesis_into(&alm, &mut map, &mut work)?;
 plan.analysis_into(&map, &mut recovered, &mut work)?;
 ```
+
+### Workspace execution capacity
+
+`ShtPlan::workspace()` requests the number of threads in the active Rayon pool as its initial execution capacity. Parallel builds cap this request at 64; builds without the `parallel` feature use capacity 1. `ShtPlan::prepare_workspace(&mut workspace, capacity)` explicitly changes the capacity and reserves the recurrence scratch required by that plan. The supported range is `1..=64` with `parallel` and `1` without it. A transform uses at most the smaller of the workspace capacity and the active pool size. The workspace retains allocated scratch when its capacity is reduced, and a pool change alone does not increase capacity or allocate recurrence workers.
+
+Keep capacity 1 when an outer Rayon pool schedules independent fields and each transform has its own workspace. To move an existing workspace from q1 to q8 for one transform at a time, prepare it before executing in the destination pool:
+
+```rust
+let mut work = plan.workspace()?;
+plan.prepare_workspace(&mut work, 8)?;
+plan.synthesis_into(&alm, &mut map, &mut work)?;
+```
+
+Run the prepared workspace from a Rayon pool with eight threads when that execution capacity is available.
+
+`workspace.execution_capacity()` returns the requested execution limit. `workspace.allocated_worker_count()` returns the current number of recurrence scratch slots, which can be larger than the execution limit because some synthesis schedulers overpartition groups for load balancing. These accessors distinguish requested concurrency from allocated scratch; the active Rayon pool supplies the third limit on actual workers.
 
 The Rust API uses separate methods for STANDARD `S`, `A`, `S*` and `A*`. `synthesis_gradient_into`, `adjoint_synthesis_gradient_into`, `synthesis_deriv1_into` and `adjoint_synthesis_deriv1_into` cover the supported synthesis-only modes. DERIV1 uses a spin-1 computation with scalar coefficients. Operations accept contiguous slices and return errors for invalid sizes, nonreal `m=0` coefficients, nonzero `l<spin` coefficients, spin above 4 and unsupported exact-analysis sampling.
 

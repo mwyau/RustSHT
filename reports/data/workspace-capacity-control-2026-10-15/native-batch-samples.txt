@@ -1,0 +1,28 @@
+Rust 1.99.0 (b940084d7), LLVM 23.1.1; AMD Ryzen 9 5950X.
+Release profile; taskset -c 0-7; q8, 8 fields, GL 512x1025, T511, mmax=511, f64.
+Schedule: parallel-one (one-thread workspaces). Five warm batch samples per process.
+Host load averages before/after: 1.65, 1.96, 2.23 / 1.64, 1.95, 2.21.
+
+scalar synthesis
+process 1: median=47.007 ms; samples=[46.874,46.972,47.007,47.104,51.324]; workspace_rss_delta=66808 KiB; peak_rss=234940 KiB
+process 2: median=49.416 ms; samples=[46.791,47.329,49.416,52.678,61.351]; workspace_rss_delta=66800 KiB; peak_rss=234812 KiB
+process 3: median=49.300 ms; samples=[47.464,48.247,49.300,49.624,70.100]; workspace_rss_delta=66716 KiB; peak_rss=234812 KiB
+checksum=7.97049875893458548e-1
+
+scalar analysis
+process 1: median=27.504 ms; samples=[27.202,27.260,27.504,28.335,29.944]; workspace_rss_delta=66780 KiB; peak_rss=202172 KiB
+process 2: median=27.533 ms; samples=[26.976,27.228,27.533,29.986,39.871]; workspace_rss_delta=66780 KiB; peak_rss=202080 KiB
+process 3: median=28.253 ms; samples=[27.487,27.846,28.253,28.268,33.104]; workspace_rss_delta=66780 KiB; peak_rss=202104 KiB
+checksum=-1.36622208825416216e1
+
+spin-1 synthesis
+process 1: median=60.203 ms; samples=[57.240,57.529,60.203,60.981,61.018]; workspace_rss_delta=66908 KiB; peak_rss=267812 KiB
+process 2: median=57.729 ms; samples=[57.446,57.469,57.729,60.527,80.561]; workspace_rss_delta=66844 KiB; peak_rss=267804 KiB
+process 3: median=60.353 ms; samples=[57.582,58.241,60.353,64.232,65.665]; workspace_rss_delta=66916 KiB; peak_rss=267756 KiB
+checksum=1.25506572363226372e1
+
+spin-1 analysis
+process 1: median=44.619 ms; samples=[40.459,42.617,44.619,45.559,48.936]; workspace_rss_delta=66972 KiB; peak_rss=202252 KiB
+process 2: median=42.966 ms; samples=[40.527,40.669,42.966,48.914,51.376]; workspace_rss_delta=66928 KiB; peak_rss=202228 KiB
+process 3: median=41.724 ms; samples=[40.543,41.534,41.724,47.062,59.297]; workspace_rss_delta=66844 KiB; peak_rss=202164 KiB
+checksum=-3.07098176851864979e0

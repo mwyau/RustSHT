@@ -228,8 +228,10 @@ impl<T: ShtScalar> ShtPlan<T> {
             );
         }
         workspace.spectra.fill(Complex::new(T::zero(), T::zero()));
-        if self.scalar_legendre_strategy(LegendreOperation::Synthesis)
-            == LegendreStrategy::CompactTable
+        if self.scalar_legendre_strategy_with_capacity(
+            LegendreOperation::Synthesis,
+            workspace.execution_capacity,
+        ) == LegendreStrategy::CompactTable
             && let Some(table) = self.get_safe_scalar_legendre_table_for_synthesis(alm)
             && self.synthesize_scalar_table(alm, map, workspace, table)?
         {
@@ -238,21 +240,14 @@ impl<T: ShtScalar> ShtPlan<T> {
         let arch = pulp::Arch::new();
         #[cfg(feature = "parallel")]
         {
+            let execution_threads = rayon::current_num_threads().min(workspace.execution_capacity);
             let group_ring_count = self
-                .fine_synthesis_ring_group_size()
+                .fine_synthesis_ring_group_size(execution_threads)
                 .unwrap_or(workspace.ring_group_size)
                 .min(ntheta);
             let parallel_groups = ntheta.div_ceil(group_ring_count);
-            let use_parallel = rayon::current_num_threads() > 1 && parallel_groups > 1;
+            let use_parallel = execution_threads > 1 && parallel_groups > 1;
             if use_parallel {
-                workspace.ensure_recurrence_worker_count(
-                    parallel_groups,
-                    self.recurrence_factor_count,
-                    self.spin_recurrence_factor_count,
-                    self.spin_fast_coefficient_count,
-                    0,
-                    workspace.theta_sin.len().min(LATITUDE_BLOCK_SIZE),
-                )?;
                 let spectrum_group_len = group_ring_count.checked_mul(spectrum_len).ok_or(
                     ShtError::IntegerOverflow {
                         quantity: "parallel Fourier spectrum group size",
@@ -264,6 +259,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     .par_chunks_mut(spectrum_group_len)
                     .zip(workspace.recurrence_workers[..parallel_groups].par_iter_mut())
                     .enumerate()
+                    .with_min_len(parallel_groups.div_ceil(execution_threads))
                     .map(|(group_index, (group_spectra, recurrence))| {
                         let ring_start = group_index * group_ring_count;
                         let ring_end =
@@ -349,10 +345,13 @@ impl<T: ShtScalar> ShtPlan<T> {
         order_spectra.fill(Complex::new(T::zero(), T::zero()));
 
         #[cfg(feature = "parallel")]
-        let all_inputs_safe = if rayon::current_num_threads() > 1 && order_count > 1 {
+        let execution_threads = rayon::current_num_threads().min(workspace.execution_capacity);
+        #[cfg(feature = "parallel")]
+        let all_inputs_safe = if execution_threads > 1 && order_count > 1 {
             order_spectra
                 .par_chunks_mut(ntheta)
                 .enumerate()
+                .with_min_len(order_count.div_ceil(execution_threads))
                 .all(|(m, order_row)| {
                     accumulate_precomputed_synthesis_order(
                         self,
@@ -434,6 +433,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         arch: pulp::Arch,
         recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<(), ShtError> {
+        #[cfg(all(test, feature = "parallel"))]
+        recurrence.record_active_worker();
         let lmax = self.harmonics.lmax();
         let mmax = self.harmonics.mmax();
         debug_assert_eq!(spectra.len(), theta_sin.len() * spectrum_len);
@@ -892,8 +893,10 @@ impl<T: ShtScalar> ShtPlan<T> {
         let ntheta = self.grid.ntheta();
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
-        let scalar_table_selected = self.scalar_legendre_strategy(LegendreOperation::Analysis)
-            == LegendreStrategy::CompactTable;
+        let scalar_table_selected = self.scalar_legendre_strategy_with_capacity(
+            LegendreOperation::Analysis,
+            workspace.execution_capacity,
+        ) == LegendreStrategy::CompactTable;
         let scalar_table_input_limit = scalar_table_selected
             .then(crate::legendre::ScalarLegendreTable::<T>::input_scale_limit);
         let mut scalar_table_inputs_safe = true;
@@ -1012,7 +1015,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let lmax = self.harmonics.lmax();
         let mmax = self.harmonics.mmax();
         if let Some(table) = scalar_table {
-            self.analyze_scalar_table(order_spectra, alm, table);
+            self.analyze_scalar_table(order_spectra, alm, table, workspace.execution_capacity);
             for l in 0..=lmax {
                 let index = self
                     .harmonics
@@ -1028,6 +1031,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         {
             let order_count = mmax + 1;
             let worker_count = rayon::current_num_threads()
+                .min(workspace.execution_capacity)
                 .min(workspace.recurrence_workers.len())
                 .min(order_count);
             let use_parallel = rayon::current_num_threads() > 1 && worker_count > 1;
@@ -1090,11 +1094,17 @@ impl<T: ShtScalar> ShtPlan<T> {
         order_spectra: &[Complex<T>],
         alm: &mut [Complex<T>],
         table: &crate::legendre::ScalarLegendreTable<T>,
+        execution_capacity: usize,
     ) {
         let order_count = self.harmonics.mmax() + 1;
+        #[cfg(not(feature = "parallel"))]
+        let _ = execution_capacity;
         #[cfg(feature = "parallel")]
         {
-            let workers = rayon::current_num_threads().min(order_count).max(1);
+            let workers = rayon::current_num_threads()
+                .min(execution_capacity)
+                .min(order_count)
+                .max(1);
             self.analyze_scalar_table_groups(order_spectra, table, 0, order_count, alm, workers);
         }
         #[cfg(not(feature = "parallel"))]
@@ -1299,6 +1309,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         alm: &mut [Complex<T>],
         recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<(), ShtError> {
+        #[cfg(all(test, feature = "parallel"))]
+        recurrence.record_active_worker();
         self.analyze_symmetric_order_group(
             spectra,
             latitude_count,
