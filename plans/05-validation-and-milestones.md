@@ -2167,3 +2167,6 @@ The f64 real N=2049 plan now uses Rader-683 for its terminal `l1=3`, `ido=1` pas
 
 
 ### Radix-31 twiddle precomputation in the N=682 convolution (M11, 2026-10-15)
+
+
+### AVX2 radix-11 pass in the N=682 convolution (M12, 2026-10-15)

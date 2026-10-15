@@ -86,6 +86,15 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
         None
     }
 
+    /// Returns the f64 radix-eleven kernel for the N=682 `ido == 31` pass.
+    ///
+    /// The caller must check runtime AVX2 availability and provide the
+    /// `radix == 11`, `l1 == 2`, `ido == 31` layout. The kernel processes
+    /// inner indices 0 through 29 in pairs; the caller handles index 30.
+    fn avx2_ido31_radix11_kernel() -> Option<ComplexPassKernel<Self>> {
+        None
+    }
+
     /// Returns the inverse radix-four interior kernel when AVX2 is available.
     fn real_radix4_interior_kernel() -> Option<RealRadix4InteriorKernel<Self>> {
         None
@@ -168,6 +177,14 @@ mod x86 {
         fn avx2_general_prime_ido1_kernel() -> Option<ComplexGeneralPrimeIdo1Kernel<Self>> {
             if available() {
                 Some(f64_kernel::general_prime_ido1_radix31)
+            } else {
+                None
+            }
+        }
+
+        fn avx2_ido31_radix11_kernel() -> Option<ComplexPassKernel<Self>> {
+            if available() {
+                Some(f64_kernel::pass_ido31_radix11)
             } else {
                 None
             }
@@ -724,6 +741,259 @@ mod x86 {
                 output[HALF * l1 + outer] = positive;
                 output[(RADIX - HALF) * l1 + outer] = negative;
             }
+        }
+
+        /// Executes the N=682 radix-eleven pass over pairs of inner values.
+        ///
+        /// # Safety
+        ///
+        /// The caller must have detected AVX2 and provide disjoint slices of
+        /// at least `11 * 2 * 31` complex values, with `radix == 11`,
+        /// `l1 == 2`, and `ido == 31`. The twiddle slice must contain at least
+        /// `11 * 31` complex values. The caller handles the scalar inner
+        /// index 30 after this function returns.
+        #[target_feature(enable = "avx2")]
+        pub(super) unsafe fn pass_ido31_radix11(
+            input: &[Complex<f64>],
+            output: &mut [Complex<f64>],
+            pass: &SimdPass<'_, f64>,
+        ) {
+            const RADIX: usize = 11;
+            const IDO: usize = 31;
+            debug_assert_eq!(pass.radix, RADIX);
+            debug_assert_eq!(pass.l1, 2);
+            debug_assert_eq!(pass.ido, IDO);
+            debug_assert!(input.len() >= RADIX * pass.l1 * IDO);
+            debug_assert!(output.len() >= RADIX * pass.l1 * IDO);
+            debug_assert!(pass.twiddles.len() >= RADIX * IDO);
+
+            let input_ptr = input.as_ptr();
+            let output_ptr = output.as_mut_ptr();
+            let scale = _mm256_set1_pd(if pass.inverse {
+                pass.inverse_scale
+            } else {
+                1.0
+            });
+            for outer in 0..pass.l1 {
+                for inner in (0..IDO - 1).step_by(2) {
+                    let mut values = [_mm256_setzero_pd(); RADIX];
+                    for (branch, slot) in values.iter_mut().enumerate() {
+                        let index = inner + IDO * (branch + RADIX * outer);
+                        *slot = unsafe { load(input_ptr, index) };
+                    }
+                    let transformed = unsafe { radix11_fixed(&values, pass.inverse) };
+                    for (branch, &result) in transformed.iter().enumerate() {
+                        let mut value = result;
+                        if branch != 0 {
+                            let twiddle =
+                                unsafe { load(pass.twiddles.as_ptr(), branch * IDO + inner) };
+                            value = unsafe { complex_mul(value, twiddle, pass.inverse) };
+                        }
+                        if pass.inverse {
+                            value = _mm256_mul_pd(value, scale);
+                        }
+                        let index = inner + IDO * (outer + pass.l1 * branch);
+                        unsafe { store(output_ptr, index, value) };
+                    }
+                }
+            }
+        }
+
+        // Keep the paired equations and constants aligned with the scalar
+        // `complex::radix11` reference implementation.
+        #[inline]
+        #[target_feature(enable = "avx2")]
+        unsafe fn radix11_fixed(input: &[V; 11], inverse: bool) -> [V; 11] {
+            let p1 = _mm256_add_pd(input[1], input[10]);
+            let p2 = _mm256_add_pd(input[2], input[9]);
+            let p3 = _mm256_add_pd(input[3], input[8]);
+            let p4 = _mm256_add_pd(input[4], input[7]);
+            let p5 = _mm256_add_pd(input[5], input[6]);
+            let d1 = _mm256_sub_pd(input[1], input[10]);
+            let d2 = _mm256_sub_pd(input[2], input[9]);
+            let d3 = _mm256_sub_pd(input[3], input[8]);
+            let d4 = _mm256_sub_pd(input[4], input[7]);
+            let d5 = _mm256_sub_pd(input[5], input[6]);
+
+            let c1 = _mm256_set1_pd(0.841_253_532_831_181_2);
+            let c2 = _mm256_set1_pd(0.415_415_013_001_886_4);
+            let c3 = _mm256_set1_pd(-0.142_314_838_273_285_14);
+            let c4 = _mm256_set1_pd(-0.654_860_733_945_285_1);
+            let c5 = _mm256_set1_pd(-0.959_492_973_614_497_4);
+            let s1 = _mm256_set1_pd(0.540_640_817_455_597_6);
+            let s2 = _mm256_set1_pd(0.909_631_995_354_518_4);
+            let s3 = _mm256_set1_pd(0.989_821_441_880_932_7);
+            let s4 = _mm256_set1_pd(0.755_749_574_354_258_3);
+            let s5 = _mm256_set1_pd(0.281_732_556_841_429_7);
+            let ns1 = _mm256_set1_pd(-0.540_640_817_455_597_6);
+            let ns2 = _mm256_set1_pd(-0.909_631_995_354_518_4);
+            let ns3 = _mm256_set1_pd(-0.989_821_441_880_932_7);
+            let ns5 = _mm256_set1_pd(-0.281_732_556_841_429_7);
+
+            let mut output = [_mm256_setzero_pd(); 11];
+            output[0] = _mm256_add_pd(
+                _mm256_add_pd(
+                    _mm256_add_pd(_mm256_add_pd(_mm256_add_pd(input[0], p1), p2), p3),
+                    p4,
+                ),
+                p5,
+            );
+
+            let base1 = _mm256_add_pd(
+                _mm256_add_pd(
+                    _mm256_add_pd(
+                        _mm256_add_pd(
+                            _mm256_add_pd(input[0], _mm256_mul_pd(p1, c1)),
+                            _mm256_mul_pd(p2, c2),
+                        ),
+                        _mm256_mul_pd(p3, c3),
+                    ),
+                    _mm256_mul_pd(p4, c4),
+                ),
+                _mm256_mul_pd(p5, c5),
+            );
+            let turn1 = unsafe {
+                rotate_quarter(
+                    _mm256_add_pd(
+                        _mm256_add_pd(
+                            _mm256_add_pd(
+                                _mm256_add_pd(_mm256_mul_pd(d1, s1), _mm256_mul_pd(d2, s2)),
+                                _mm256_mul_pd(d3, s3),
+                            ),
+                            _mm256_mul_pd(d4, s4),
+                        ),
+                        _mm256_mul_pd(d5, s5),
+                    ),
+                    inverse,
+                )
+            };
+            output[1] = _mm256_add_pd(base1, turn1);
+            output[10] = _mm256_sub_pd(base1, turn1);
+
+            let base2 = _mm256_add_pd(
+                _mm256_add_pd(
+                    _mm256_add_pd(
+                        _mm256_add_pd(
+                            _mm256_add_pd(input[0], _mm256_mul_pd(p1, c2)),
+                            _mm256_mul_pd(p2, c4),
+                        ),
+                        _mm256_mul_pd(p3, c5),
+                    ),
+                    _mm256_mul_pd(p4, c3),
+                ),
+                _mm256_mul_pd(p5, c1),
+            );
+            let turn2 = unsafe {
+                rotate_quarter(
+                    _mm256_add_pd(
+                        _mm256_add_pd(
+                            _mm256_add_pd(
+                                _mm256_add_pd(_mm256_mul_pd(d1, s2), _mm256_mul_pd(d2, s4)),
+                                _mm256_mul_pd(d3, ns5),
+                            ),
+                            _mm256_mul_pd(d4, ns3),
+                        ),
+                        _mm256_mul_pd(d5, ns1),
+                    ),
+                    inverse,
+                )
+            };
+            output[2] = _mm256_add_pd(base2, turn2);
+            output[9] = _mm256_sub_pd(base2, turn2);
+
+            let base3 = _mm256_add_pd(
+                _mm256_add_pd(
+                    _mm256_add_pd(
+                        _mm256_add_pd(
+                            _mm256_add_pd(input[0], _mm256_mul_pd(p1, c3)),
+                            _mm256_mul_pd(p2, c5),
+                        ),
+                        _mm256_mul_pd(p3, c2),
+                    ),
+                    _mm256_mul_pd(p4, c1),
+                ),
+                _mm256_mul_pd(p5, c4),
+            );
+            let turn3 = unsafe {
+                rotate_quarter(
+                    _mm256_add_pd(
+                        _mm256_add_pd(
+                            _mm256_add_pd(
+                                _mm256_add_pd(_mm256_mul_pd(d1, s3), _mm256_mul_pd(d2, ns5)),
+                                _mm256_mul_pd(d3, ns2),
+                            ),
+                            _mm256_mul_pd(d4, s1),
+                        ),
+                        _mm256_mul_pd(d5, s4),
+                    ),
+                    inverse,
+                )
+            };
+            output[3] = _mm256_add_pd(base3, turn3);
+            output[8] = _mm256_sub_pd(base3, turn3);
+
+            let base4 = _mm256_add_pd(
+                _mm256_add_pd(
+                    _mm256_add_pd(
+                        _mm256_add_pd(
+                            _mm256_add_pd(input[0], _mm256_mul_pd(p1, c4)),
+                            _mm256_mul_pd(p2, c3),
+                        ),
+                        _mm256_mul_pd(p3, c1),
+                    ),
+                    _mm256_mul_pd(p4, c5),
+                ),
+                _mm256_mul_pd(p5, c2),
+            );
+            let turn4 = unsafe {
+                rotate_quarter(
+                    _mm256_add_pd(
+                        _mm256_add_pd(
+                            _mm256_add_pd(
+                                _mm256_add_pd(_mm256_mul_pd(d1, s4), _mm256_mul_pd(d2, ns3)),
+                                _mm256_mul_pd(d3, s1),
+                            ),
+                            _mm256_mul_pd(d4, s5),
+                        ),
+                        _mm256_mul_pd(d5, ns2),
+                    ),
+                    inverse,
+                )
+            };
+            output[4] = _mm256_add_pd(base4, turn4);
+            output[7] = _mm256_sub_pd(base4, turn4);
+
+            let base5 = _mm256_add_pd(
+                _mm256_add_pd(
+                    _mm256_add_pd(
+                        _mm256_add_pd(
+                            _mm256_add_pd(input[0], _mm256_mul_pd(p1, c5)),
+                            _mm256_mul_pd(p2, c1),
+                        ),
+                        _mm256_mul_pd(p3, c4),
+                    ),
+                    _mm256_mul_pd(p4, c2),
+                ),
+                _mm256_mul_pd(p5, c3),
+            );
+            let turn5 = unsafe {
+                rotate_quarter(
+                    _mm256_add_pd(
+                        _mm256_add_pd(
+                            _mm256_add_pd(
+                                _mm256_add_pd(_mm256_mul_pd(d1, s5), _mm256_mul_pd(d2, ns1)),
+                                _mm256_mul_pd(d3, s4),
+                            ),
+                            _mm256_mul_pd(d4, ns2),
+                        ),
+                        _mm256_mul_pd(d5, s3),
+                    ),
+                    inverse,
+                )
+            };
+            output[5] = _mm256_add_pd(base5, turn5);
+            output[6] = _mm256_sub_pd(base5, turn5);
+            output
         }
 
         #[target_feature(enable = "avx2")]
@@ -1936,6 +2206,79 @@ mod tests {
                         );
                         assert_close(output[frequency * l1 + group], expected, &context);
                     }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn f64_complex_radix11_ido31_matches_direct_pass_and_preserves_scalar_tail() {
+        if !<f64 as SimdScalar>::avx2_available() {
+            return;
+        }
+        let Some(kernel) = <f64 as SimdScalar>::avx2_ido31_radix11_kernel() else {
+            panic!("AVX2 N=682 radix-eleven kernel should be available");
+        };
+
+        let radix = 11;
+        let l1 = 2;
+        let ido = 31;
+        let total_len = radix * l1 * ido;
+        let twiddles: Vec<_> = (0..radix * ido)
+            .map(|index| root(index, total_len, true))
+            .collect();
+        let original: Vec<_> = (0..total_len).map(|index| signal(index + 13)).collect();
+        let marker = Complex::new(-91.0, 37.0);
+
+        for inverse in [false, true] {
+            let mut storage = vec![marker; total_len + 2];
+            let (start_guard, tail) = storage.split_at_mut(1);
+            let (output, end_guard) = tail.split_at_mut(total_len);
+            // SAFETY: runtime AVX2 is available, the buffers are disjoint,
+            // and the pass and twiddle dimensions match the kernel contract.
+            unsafe {
+                kernel(
+                    &original,
+                    output,
+                    &SimdPass {
+                        radix,
+                        l1,
+                        ido,
+                        twiddles: &twiddles,
+                        inverse,
+                        inverse_scale: 1.0,
+                    },
+                )
+            }
+            assert_eq!(start_guard[0], marker);
+            assert_eq!(end_guard[0], marker);
+
+            for outer in 0..l1 {
+                for frequency in 0..radix {
+                    for inner in (0..ido - 1).step_by(2) {
+                        for lane in 0..2 {
+                            let mut expected = Complex::new(0.0, 0.0);
+                            for sample in 0..radix {
+                                expected += original[inner + lane + ido * (sample + radix * outer)]
+                                    * root(sample * frequency % radix, radix, inverse);
+                            }
+                            if frequency != 0 {
+                                expected *=
+                                    root(frequency * ido + inner + lane, total_len, inverse);
+                            }
+                            let output_index = inner + lane + ido * (outer + l1 * frequency);
+                            assert_close(
+                                output[output_index],
+                                expected,
+                                &format!(
+                                    "radix={radix}, l1={l1}, ido={ido}, inverse={inverse}, outer={outer}, frequency={frequency}, inner={}",
+                                    inner + lane
+                                ),
+                            );
+                        }
+                    }
+                    let scalar_tail = ido - 1 + ido * (outer + l1 * frequency);
+                    assert_eq!(output[scalar_tail], marker);
                 }
             }
         }

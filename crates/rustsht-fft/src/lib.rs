@@ -552,7 +552,7 @@ mod m0_diagnostics_tests {
     }
 
     #[test]
-    fn m9_c2c_682_selects_avx2_radix31_and_guards_unsafe_inverse_inputs() {
+    fn m12_c2c_682_selects_avx2_radix31_and_radix11_and_guards_unsafe_inverse_inputs() {
         let n = 682;
         let plan = ComplexFftPlan::<f64>::new(n).expect("N=682 complex plan");
         let mut workspace = plan.workspace().expect("N=682 complex workspace");
@@ -564,6 +564,8 @@ mod m0_diagnostics_tests {
             .collect();
         let expected_route =
             "c2c-avx2:general-prime-ido1 n=682 radix=31 l1=22 vector_frequencies=14 scalar_tail=1";
+        let expected_radix11_route =
+            "c2c-avx2:radix11-ido31 n=682 l1=2 ido=31 vector_ido=30 scalar_tail=1";
 
         let has_avx2 = <f64 as SimdScalar>::avx2_available();
         let mut values = input;
@@ -576,6 +578,12 @@ mod m0_diagnostics_tests {
                 .any(|route| route == expected_route),
             has_avx2
         );
+        assert_eq!(
+            m0_route_snapshot()
+                .iter()
+                .any(|route| route == expected_radix11_route),
+            has_avx2
+        );
 
         m0_clear_routes();
         plan.inverse(&mut values, &mut workspace)
@@ -584,6 +592,12 @@ mod m0_diagnostics_tests {
             m0_route_snapshot()
                 .iter()
                 .any(|route| route == expected_route),
+            has_avx2
+        );
+        assert_eq!(
+            m0_route_snapshot()
+                .iter()
+                .any(|route| route == expected_radix11_route),
             has_avx2
         );
 
@@ -601,6 +615,11 @@ mod m0_diagnostics_tests {
             !m0_route_snapshot()
                 .iter()
                 .any(|route| route == expected_route)
+        );
+        assert!(
+            !m0_route_snapshot()
+                .iter()
+                .any(|route| route == expected_radix11_route)
         );
     }
 }

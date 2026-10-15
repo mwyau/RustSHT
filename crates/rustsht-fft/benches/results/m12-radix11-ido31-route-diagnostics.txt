@@ -1,0 +1,1779 @@
+RECORD,kind,n,plan_heap_payload_bytes,workspace_bytes,route
+STAGE,c2c,11,n=11 stage=0 radix=11 l1=1 ido=1 route=fixed butterfly
+PLAN,c2c,11,592,528,-
+EXEC,c2c,11,forward,c2c n=11 normalization=forward
+EXEC,c2c,11,forward,c2c n=11 stage=0 radix=11 l1=1 ido=1 route=fixed
+EXEC,c2c,11,inverse,c2c n=11 normalization=deferred
+EXEC,c2c,11,inverse,c2c n=11 stage=0 radix=11 l1=1 ido=1 route=fixed
+STAGE,r2c-c2r,11,real n=11 factors=[11] complexify=false rader=none
+STAGE,r2c-c2r,11,real n=11 stage=0 radix=11 l1=1 ido=1 route=general prime
+STAGE,r2c-c2r,11,real n=11 stage=0 radix=11 l1=1 ido=1 route=general prime simd=scalar-conditions
+PLAN,real,11,1329,880,-
+EXEC,real,11,forward,real-forward n=11 route=multipass
+EXEC,real,11,forward,real-forward-pass radix=11 l1=1 ido=1 route=multipass
+EXEC,real,11,inverse,real-inverse n=11 route=multipass
+STAGE,c2c,19,n=19 stage=0 radix=19 l1=1 ido=1 route=general prime
+PLAN,c2c,19,1019,912,-
+EXEC,c2c,19,forward,c2c n=19 normalization=forward
+EXEC,c2c,19,forward,c2c n=19 stage=0 radix=19 l1=1 ido=1 route=general-prime
+EXEC,c2c,19,inverse,c2c n=19 normalization=deferred
+EXEC,c2c,19,inverse,c2c n=19 stage=0 radix=19 l1=1 ido=1 route=general-prime
+STAGE,r2c-c2r,19,real n=19 factors=[19] complexify=false rader=none
+STAGE,r2c-c2r,19,real n=19 stage=0 radix=19 l1=1 ido=1 route=general prime
+STAGE,r2c-c2r,19,real n=19 stage=0 radix=19 l1=1 ido=1 route=general prime simd=AVX2-prime-ido1-installed
+PLAN,real,19,3121,1520,-
+EXEC,real,19,forward,real-forward n=19 route=multipass
+EXEC,real,19,forward,real-forward-pass radix=19 l1=1 ido=1 route=multipass
+EXEC,real,19,forward,real-avx2:prime-forward radix=19 l1=1
+EXEC,real,19,inverse,real-avx2:prime-inverse radix=19 l1=1
+EXEC,real,19,inverse,real-inverse n=19 route=multipass
+STAGE,c2c,22,n=22 stage=0 radix=2 l1=1 ido=11 route=fixed butterfly
+STAGE,c2c,22,n=22 stage=1 radix=11 l1=2 ido=1 route=fixed butterfly
+PLAN,c2c,22,1360,704,-
+EXEC,c2c,22,forward,c2c n=22 normalization=forward
+EXEC,c2c,22,forward,c2c n=22 stage=0 radix=2 l1=1 ido=11 route=fixed
+EXEC,c2c,22,forward,c2c-avx2:first-prefix n=22 radix=2 ido=11 vector_ido=10 scalar_tail=1
+EXEC,c2c,22,forward,c2c n=22 stage=1 radix=11 l1=2 ido=1 route=fixed
+EXEC,c2c,22,inverse,c2c n=22 normalization=deferred
+EXEC,c2c,22,inverse,c2c n=22 stage=0 radix=2 l1=1 ido=11 route=fixed
+EXEC,c2c,22,inverse,c2c-avx2:first-prefix n=22 radix=2 ido=11 vector_ido=10 scalar_tail=1
+EXEC,c2c,22,inverse,c2c n=22 stage=1 radix=11 l1=2 ido=1 route=fixed
+STAGE,r2c-c2r,22,real n=22 factors=[2; 11] complexify=false rader=none
+STAGE,r2c-c2r,22,real n=22 stage=0 radix=2 l1=1 ido=11 route=fixed real radix
+STAGE,r2c-c2r,22,real n=22 stage=1 radix=11 l1=2 ido=1 route=fixed real radix-11
+STAGE,r2c-c2r,22,real n=22 stage=0 radix=2 l1=1 ido=11 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,22,real n=22 stage=1 radix=11 l1=2 ido=1 route=fixed real pass simd=scalar-conditions
+PLAN,real,22,1632,1248,-
+EXEC,real,22,forward,real-forward n=22 route=multipass
+EXEC,real,22,forward,real-forward-pass radix=11 l1=2 ido=1 route=fixed-radix11
+EXEC,real,22,forward,real-forward-pass radix=2 l1=1 ido=11 route=multipass
+EXEC,real,22,inverse,real-inverse-pass radix=2 l1=1 ido=11 route=multipass
+EXEC,real,22,inverse,real-inverse-terminal:fixed-radix11 l1=2
+EXEC,real,22,inverse,real-inverse n=22 route=multipass
+STAGE,c2c,41,n=41 stage=0 radix=41 l1=1 ido=1 route=general prime
+PLAN,c2c,41,2372,1968,-
+EXEC,c2c,41,forward,c2c n=41 normalization=forward
+EXEC,c2c,41,forward,c2c n=41 stage=0 radix=41 l1=1 ido=1 route=general-prime
+EXEC,c2c,41,inverse,c2c n=41 normalization=deferred
+EXEC,c2c,41,inverse,c2c n=41 stage=0 radix=41 l1=1 ido=1 route=general-prime
+STAGE,r2c-c2r,41,real n=41 factors=[41] complexify=false rader=none
+STAGE,r2c-c2r,41,real n=41 stage=0 radix=41 l1=1 ido=1 route=general prime
+STAGE,r2c-c2r,41,real n=41 stage=0 radix=41 l1=1 ido=1 route=general prime simd=AVX2-prime-ido1-installed
+PLAN,real,41,10249,3280,-
+EXEC,real,41,forward,real-forward n=41 route=multipass
+EXEC,real,41,forward,real-forward-pass radix=41 l1=1 ido=1 route=multipass
+EXEC,real,41,forward,real-avx2:prime-forward radix=41 l1=1
+EXEC,real,41,inverse,real-avx2:prime-inverse radix=41 l1=1
+EXEC,real,41,inverse,real-inverse n=41 route=multipass
+STAGE,c2c,73,n=73 stage=0 radix=73 l1=1 ido=1 route=general prime
+PLAN,c2c,73,5204,3504,-
+EXEC,c2c,73,forward,c2c n=73 normalization=forward
+EXEC,c2c,73,forward,c2c n=73 stage=0 radix=73 l1=1 ido=1 route=general-prime
+EXEC,c2c,73,inverse,c2c n=73 normalization=deferred
+EXEC,c2c,73,inverse,c2c n=73 stage=0 radix=73 l1=1 ido=1 route=general-prime
+STAGE,r2c-c2r,73,real n=73 factors=[73] complexify=false rader=none
+STAGE,r2c-c2r,73,real n=73 stage=0 radix=73 l1=1 ido=1 route=general prime
+STAGE,r2c-c2r,73,real n=73 stage=0 radix=73 l1=1 ido=1 route=general prime simd=AVX2-prime-ido1-installed
+PLAN,real,73,29257,5840,-
+EXEC,real,73,forward,real-forward n=73 route=multipass
+EXEC,real,73,forward,real-forward-pass radix=73 l1=1 ido=1 route=multipass
+EXEC,real,73,forward,real-avx2:prime-forward radix=73 l1=1
+EXEC,real,73,inverse,real-avx2:prime-inverse radix=73 l1=1
+EXEC,real,73,inverse,real-inverse n=73 route=multipass
+STAGE,c2c,98,n=98 stage=0 radix=2 l1=1 ido=49 route=fixed butterfly
+STAGE,c2c,98,n=98 stage=1 radix=7 l1=2 ido=7 route=fixed butterfly
+STAGE,c2c,98,n=98 stage=2 radix=7 l1=14 ido=1 route=fixed butterfly
+PLAN,c2c,98,4752,1792,-
+EXEC,c2c,98,forward,c2c n=98 normalization=forward
+EXEC,c2c,98,forward,c2c n=98 stage=0 radix=2 l1=1 ido=49 route=fixed
+EXEC,c2c,98,forward,c2c-avx2:first-prefix n=98 radix=2 ido=49 vector_ido=48 scalar_tail=1
+EXEC,c2c,98,forward,c2c n=98 stage=1 radix=7 l1=2 ido=7 route=fixed
+EXEC,c2c,98,forward,c2c-scalar:pass n=98 radix=7 l1=2 ido=7
+EXEC,c2c,98,forward,c2c n=98 stage=2 radix=7 l1=14 ido=1 route=fixed
+EXEC,c2c,98,forward,c2c-scalar:pass n=98 radix=7 l1=14 ido=1
+EXEC,c2c,98,inverse,c2c n=98 normalization=deferred
+EXEC,c2c,98,inverse,c2c n=98 stage=0 radix=2 l1=1 ido=49 route=fixed
+EXEC,c2c,98,inverse,c2c-avx2:first-prefix n=98 radix=2 ido=49 vector_ido=48 scalar_tail=1
+EXEC,c2c,98,inverse,c2c n=98 stage=1 radix=7 l1=2 ido=7 route=fixed
+EXEC,c2c,98,inverse,c2c-scalar:pass n=98 radix=7 l1=2 ido=7
+EXEC,c2c,98,inverse,c2c n=98 stage=2 radix=7 l1=14 ido=1 route=fixed
+EXEC,c2c,98,inverse,c2c-scalar:pass n=98 radix=7 l1=14 ido=1
+STAGE,r2c-c2r,98,real n=98 factors=[2; 7; 7] complexify=false rader=none
+STAGE,r2c-c2r,98,real n=98 stage=0 radix=2 l1=1 ido=49 route=fixed real radix
+STAGE,r2c-c2r,98,real n=98 stage=1 radix=7 l1=2 ido=7 route=general prime
+STAGE,r2c-c2r,98,real n=98 stage=2 radix=7 l1=14 ido=1 route=general prime
+STAGE,r2c-c2r,98,real n=98 stage=0 radix=2 l1=1 ido=49 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,98,real n=98 stage=1 radix=7 l1=2 ido=7 route=general prime simd=scalar-conditions
+STAGE,r2c-c2r,98,real n=98 stage=2 radix=7 l1=14 ido=1 route=general prime simd=scalar-conditions
+PLAN,real,98,4106,3264,-
+EXEC,real,98,forward,real-forward n=98 route=multipass
+EXEC,real,98,forward,real-forward-pass radix=7 l1=14 ido=1 route=multipass
+EXEC,real,98,forward,real-forward-pass radix=7 l1=2 ido=7 route=multipass
+EXEC,real,98,forward,real-forward-pass radix=2 l1=1 ido=49 route=multipass
+EXEC,real,98,inverse,real-inverse-pass radix=2 l1=1 ido=49 route=multipass
+EXEC,real,98,inverse,real-inverse-pass radix=7 l1=2 ido=7 route=multipass
+EXEC,real,98,inverse,real-inverse n=98 route=multipass
+STAGE,c2c,103,n=103 stage=0 radix=103 l1=1 ido=1 route=general prime
+PLAN,c2c,103,8789,4944,-
+EXEC,c2c,103,forward,c2c n=103 normalization=forward
+EXEC,c2c,103,forward,c2c n=103 stage=0 radix=103 l1=1 ido=1 route=general-prime
+EXEC,c2c,103,inverse,c2c n=103 normalization=deferred
+EXEC,c2c,103,inverse,c2c n=103 stage=0 radix=103 l1=1 ido=1 route=general-prime
+STAGE,r2c-c2r,103,real n=103 factors=[103] complexify=false rader=none
+STAGE,r2c-c2r,103,real n=103 stage=0 radix=103 l1=1 ido=1 route=general prime
+STAGE,r2c-c2r,103,real n=103 stage=0 radix=103 l1=1 ido=1 route=general prime simd=AVX2-prime-ido1-installed
+PLAN,real,103,56377,8240,-
+EXEC,real,103,forward,real-forward n=103 route=multipass
+EXEC,real,103,forward,real-forward-pass radix=103 l1=1 ido=1 route=multipass
+EXEC,real,103,forward,real-avx2:prime-forward radix=103 l1=1
+EXEC,real,103,inverse,real-avx2:prime-inverse radix=103 l1=1
+EXEC,real,103,inverse,real-inverse n=103 route=multipass
+STAGE,c2c,109,n=109 stage=0 radix=109 l1=1 ido=1 route=general prime
+PLAN,c2c,109,9614,5232,-
+EXEC,c2c,109,forward,c2c n=109 normalization=forward
+EXEC,c2c,109,forward,c2c n=109 stage=0 radix=109 l1=1 ido=1 route=general-prime
+EXEC,c2c,109,inverse,c2c n=109 normalization=deferred
+EXEC,c2c,109,inverse,c2c n=109 stage=0 radix=109 l1=1 ido=1 route=general-prime
+STAGE,r2c-c2r,109,real n=109 factors=[109] complexify=false rader=none
+STAGE,r2c-c2r,109,real n=109 stage=0 radix=109 l1=1 ido=1 route=general prime
+STAGE,r2c-c2r,109,real n=109 stage=0 radix=109 l1=1 ido=1 route=general prime simd=AVX2-prime-ido1-installed
+PLAN,real,109,62881,8720,-
+EXEC,real,109,forward,real-forward n=109 route=multipass
+EXEC,real,109,forward,real-forward-pass radix=109 l1=1 ido=1 route=multipass
+EXEC,real,109,forward,real-avx2:prime-forward radix=109 l1=1
+EXEC,real,109,inverse,real-avx2:prime-inverse radix=109 l1=1
+EXEC,real,109,inverse,real-inverse n=109 route=multipass
+STAGE,c2c,113,n=113 stage=0 radix=113 l1=1 ido=1 route=bluestein conv=225
+PLAN,c2c,113,19104,12784,-
+EXEC,c2c,113,forward,c2c n=113 normalization=forward
+EXEC,c2c,113,forward,c2c n=113 stage=0 radix=113 l1=1 ido=1 route=bluestein conv=225
+EXEC,c2c,113,forward,c2c n=225 normalization=forward
+EXEC,c2c,113,forward,c2c n=225 stage=0 radix=3 l1=1 ido=75 route=fixed
+EXEC,c2c,113,forward,c2c-scalar:first n=225 radix=3 ido=75
+EXEC,c2c,113,forward,c2c n=225 stage=1 radix=3 l1=3 ido=25 route=fixed
+EXEC,c2c,113,forward,c2c-scalar:pass n=225 radix=3 l1=3 ido=25
+EXEC,c2c,113,forward,c2c n=225 stage=2 radix=5 l1=9 ido=5 route=fixed
+EXEC,c2c,113,forward,c2c-scalar:pass n=225 radix=5 l1=9 ido=5
+EXEC,c2c,113,forward,c2c n=225 stage=3 radix=5 l1=45 ido=1 route=fixed
+EXEC,c2c,113,forward,c2c-scalar:pass n=225 radix=5 l1=45 ido=1
+EXEC,c2c,113,forward,c2c n=225 normalization=deferred
+EXEC,c2c,113,inverse,c2c n=113 normalization=deferred
+EXEC,c2c,113,inverse,c2c n=113 stage=0 radix=113 l1=1 ido=1 route=bluestein conv=225
+EXEC,c2c,113,inverse,c2c n=225 normalization=forward
+EXEC,c2c,113,inverse,c2c n=225 stage=0 radix=3 l1=1 ido=75 route=fixed
+EXEC,c2c,113,inverse,c2c-scalar:first n=225 radix=3 ido=75
+EXEC,c2c,113,inverse,c2c n=225 stage=1 radix=3 l1=3 ido=25 route=fixed
+EXEC,c2c,113,inverse,c2c-scalar:pass n=225 radix=3 l1=3 ido=25
+EXEC,c2c,113,inverse,c2c n=225 stage=2 radix=5 l1=9 ido=5 route=fixed
+EXEC,c2c,113,inverse,c2c-scalar:pass n=225 radix=5 l1=9 ido=5
+EXEC,c2c,113,inverse,c2c n=225 stage=3 radix=5 l1=45 ido=1 route=fixed
+EXEC,c2c,113,inverse,c2c-scalar:pass n=225 radix=5 l1=45 ido=1
+EXEC,c2c,113,inverse,c2c n=225 normalization=deferred
+STAGE,r2c-c2r,113,real n=113 factors=[113] complexify=false rader=none
+STAGE,r2c-c2r,113,real n=113 stage=0 radix=113 l1=1 ido=1 route=general prime
+STAGE,r2c-c2r,113,real n=113 stage=0 radix=113 l1=1 ido=1 route=general prime simd=AVX2-prime-ido1-installed
+PLAN,real,113,67417,9040,-
+EXEC,real,113,forward,real-forward n=113 route=multipass
+EXEC,real,113,forward,real-forward-pass radix=113 l1=1 ido=1 route=multipass
+EXEC,real,113,forward,real-avx2:prime-forward radix=113 l1=1
+EXEC,real,113,inverse,real-avx2:prime-inverse radix=113 l1=1
+EXEC,real,113,inverse,real-inverse n=113 route=multipass
+STAGE,c2c,121,n=121 stage=0 radix=11 l1=1 ido=11 route=fixed butterfly
+STAGE,c2c,121,n=121 stage=1 radix=11 l1=11 ido=1 route=fixed butterfly
+PLAN,c2c,121,4528,2288,-
+EXEC,c2c,121,forward,c2c n=121 normalization=forward
+EXEC,c2c,121,forward,c2c n=121 stage=0 radix=11 l1=1 ido=11 route=fixed
+EXEC,c2c,121,forward,c2c n=121 stage=1 radix=11 l1=11 ido=1 route=fixed
+EXEC,c2c,121,inverse,c2c n=121 normalization=deferred
+EXEC,c2c,121,inverse,c2c n=121 stage=0 radix=11 l1=1 ido=11 route=fixed
+EXEC,c2c,121,inverse,c2c n=121 stage=1 radix=11 l1=11 ido=1 route=fixed
+STAGE,r2c-c2r,121,real n=121 factors=[11; 11] complexify=false rader=none
+STAGE,r2c-c2r,121,real n=121 stage=0 radix=11 l1=1 ido=11 route=fixed real radix-11
+STAGE,r2c-c2r,121,real n=121 stage=1 radix=11 l1=11 ido=1 route=fixed real radix-11
+STAGE,r2c-c2r,121,real n=121 stage=0 radix=11 l1=1 ido=11 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,121,real n=121 stage=1 radix=11 l1=11 ido=1 route=fixed real pass simd=scalar-conditions
+PLAN,real,121,3936,3696,-
+EXEC,real,121,forward,real-forward n=121 route=multipass
+EXEC,real,121,forward,real-forward-pass radix=11 l1=11 ido=1 route=fixed-radix11
+EXEC,real,121,forward,real-forward-pass radix=11 l1=1 ido=11 route=fixed-radix11
+EXEC,real,121,inverse,real-inverse-pass radix=11 l1=1 ido=11 route=fixed-radix11
+EXEC,real,121,inverse,real-inverse-terminal:fixed-radix11 l1=11
+EXEC,real,121,inverse,real-inverse n=121 route=multipass
+STAGE,c2c,131,n=131 stage=0 radix=131 l1=1 ido=1 route=bluestein conv=264
+PLAN,c2c,131,20624,15088,-
+EXEC,c2c,131,forward,c2c n=131 normalization=forward
+EXEC,c2c,131,forward,c2c n=131 stage=0 radix=131 l1=1 ido=1 route=bluestein conv=264
+EXEC,c2c,131,forward,c2c n=264 normalization=forward
+EXEC,c2c,131,forward,c2c n=264 stage=0 radix=8 l1=1 ido=33 route=fixed
+EXEC,c2c,131,forward,c2c-scalar:first n=264 radix=8 ido=33
+EXEC,c2c,131,forward,c2c n=264 stage=1 radix=3 l1=8 ido=11 route=fixed
+EXEC,c2c,131,forward,c2c-scalar:pass n=264 radix=3 l1=8 ido=11
+EXEC,c2c,131,forward,c2c n=264 stage=2 radix=11 l1=24 ido=1 route=fixed
+EXEC,c2c,131,forward,c2c n=264 normalization=deferred
+EXEC,c2c,131,inverse,c2c n=131 normalization=deferred
+EXEC,c2c,131,inverse,c2c n=131 stage=0 radix=131 l1=1 ido=1 route=bluestein conv=264
+EXEC,c2c,131,inverse,c2c n=264 normalization=forward
+EXEC,c2c,131,inverse,c2c n=264 stage=0 radix=8 l1=1 ido=33 route=fixed
+EXEC,c2c,131,inverse,c2c-scalar:first n=264 radix=8 ido=33
+EXEC,c2c,131,inverse,c2c n=264 stage=1 radix=3 l1=8 ido=11 route=fixed
+EXEC,c2c,131,inverse,c2c-scalar:pass n=264 radix=3 l1=8 ido=11
+EXEC,c2c,131,inverse,c2c n=264 stage=2 radix=11 l1=24 ido=1 route=fixed
+EXEC,c2c,131,inverse,c2c n=264 normalization=deferred
+STAGE,r2c-c2r,131,real n=131 factors=[131] complexify=false rader=none
+STAGE,r2c-c2r,131,real n=131 stage=0 radix=131 l1=1 ido=1 route=general prime
+STAGE,r2c-c2r,131,real n=131 stage=0 radix=131 l1=1 ido=1 route=general prime simd=AVX2-prime-ido1-installed
+PLAN,real,131,89809,10480,-
+EXEC,real,131,forward,real-forward n=131 route=multipass
+EXEC,real,131,forward,real-forward-pass radix=131 l1=1 ido=1 route=multipass
+EXEC,real,131,forward,real-avx2:prime-forward radix=131 l1=1
+EXEC,real,131,inverse,real-avx2:prime-inverse radix=131 l1=1
+EXEC,real,131,inverse,real-inverse n=131 route=multipass
+STAGE,c2c,137,n=137 stage=0 radix=137 l1=1 ido=1 route=bluestein conv=275
+PLAN,c2c,137,21792,15728,-
+EXEC,c2c,137,forward,c2c n=137 normalization=forward
+EXEC,c2c,137,forward,c2c n=137 stage=0 radix=137 l1=1 ido=1 route=bluestein conv=275
+EXEC,c2c,137,forward,c2c n=275 normalization=forward
+EXEC,c2c,137,forward,c2c n=275 stage=0 radix=5 l1=1 ido=55 route=fixed
+EXEC,c2c,137,forward,c2c-scalar:first n=275 radix=5 ido=55
+EXEC,c2c,137,forward,c2c n=275 stage=1 radix=5 l1=5 ido=11 route=fixed
+EXEC,c2c,137,forward,c2c-scalar:pass n=275 radix=5 l1=5 ido=11
+EXEC,c2c,137,forward,c2c n=275 stage=2 radix=11 l1=25 ido=1 route=fixed
+EXEC,c2c,137,forward,c2c n=275 normalization=deferred
+EXEC,c2c,137,inverse,c2c n=137 normalization=deferred
+EXEC,c2c,137,inverse,c2c n=137 stage=0 radix=137 l1=1 ido=1 route=bluestein conv=275
+EXEC,c2c,137,inverse,c2c n=275 normalization=forward
+EXEC,c2c,137,inverse,c2c n=275 stage=0 radix=5 l1=1 ido=55 route=fixed
+EXEC,c2c,137,inverse,c2c-scalar:first n=275 radix=5 ido=55
+EXEC,c2c,137,inverse,c2c n=275 stage=1 radix=5 l1=5 ido=11 route=fixed
+EXEC,c2c,137,inverse,c2c-scalar:pass n=275 radix=5 l1=5 ido=11
+EXEC,c2c,137,inverse,c2c n=275 stage=2 radix=11 l1=25 ido=1 route=fixed
+EXEC,c2c,137,inverse,c2c n=275 normalization=deferred
+STAGE,r2c-c2r,137,real n=137 factors=[137] complexify=false rader=none
+STAGE,r2c-c2r,137,real n=137 stage=0 radix=137 l1=1 ido=1 route=Bluestein conv=275
+STAGE,r2c-c2r,137,real n=137 stage=0 radix=137 l1=1 ido=1 route=Bluestein-stage=0 simd=scalar-conditions
+PLAN,real,137,20216,20112,-
+EXEC,real,137,forward,real-forward n=137 route=multipass
+EXEC,real,137,forward,real-forward-pass radix=137 l1=1 ido=1 route=Bluestein
+EXEC,real,137,forward,real-forward:Bluestein radix=137
+EXEC,real,137,forward,c2c n=275 normalization=forward
+EXEC,real,137,forward,c2c n=275 stage=0 radix=5 l1=1 ido=55 route=fixed
+EXEC,real,137,forward,c2c-scalar:first n=275 radix=5 ido=55
+EXEC,real,137,forward,c2c n=275 stage=1 radix=5 l1=5 ido=11 route=fixed
+EXEC,real,137,forward,c2c-scalar:pass n=275 radix=5 l1=5 ido=11
+EXEC,real,137,forward,c2c n=275 stage=2 radix=11 l1=25 ido=1 route=fixed
+EXEC,real,137,forward,c2c n=275 normalization=deferred
+EXEC,real,137,inverse,real-inverse:Bluestein radix=137
+EXEC,real,137,inverse,c2c n=275 normalization=forward
+EXEC,real,137,inverse,c2c n=275 stage=0 radix=5 l1=1 ido=55 route=fixed
+EXEC,real,137,inverse,c2c-scalar:first n=275 radix=5 ido=55
+EXEC,real,137,inverse,c2c n=275 stage=1 radix=5 l1=5 ido=11 route=fixed
+EXEC,real,137,inverse,c2c-scalar:pass n=275 radix=5 l1=5 ido=11
+EXEC,real,137,inverse,c2c n=275 stage=2 radix=11 l1=25 ido=1 route=fixed
+EXEC,real,137,inverse,c2c n=275 normalization=deferred
+EXEC,real,137,inverse,real-inverse n=137 route=multipass
+STAGE,c2c,146,n=146 stage=0 radix=2 l1=1 ido=73 route=fixed butterfly
+STAGE,c2c,146,n=146 stage=1 radix=73 l1=2 ido=1 route=general prime
+PLAN,c2c,146,8948,4672,-
+EXEC,c2c,146,forward,c2c n=146 normalization=forward
+EXEC,c2c,146,forward,c2c n=146 stage=0 radix=2 l1=1 ido=73 route=fixed
+EXEC,c2c,146,forward,c2c-avx2:first-prefix n=146 radix=2 ido=73 vector_ido=72 scalar_tail=1
+EXEC,c2c,146,forward,c2c n=146 stage=1 radix=73 l1=2 ido=1 route=general-prime
+EXEC,c2c,146,inverse,c2c n=146 normalization=deferred
+EXEC,c2c,146,inverse,c2c n=146 stage=0 radix=2 l1=1 ido=73 route=fixed
+EXEC,c2c,146,inverse,c2c-avx2:first-prefix n=146 radix=2 ido=73 vector_ido=72 scalar_tail=1
+EXEC,c2c,146,inverse,c2c n=146 stage=1 radix=73 l1=2 ido=1 route=general-prime
+STAGE,r2c-c2r,146,real n=146 factors=[2; 73] complexify=false rader=none
+STAGE,r2c-c2r,146,real n=146 stage=0 radix=2 l1=1 ido=73 route=fixed real radix
+STAGE,r2c-c2r,146,real n=146 stage=1 radix=73 l1=2 ido=1 route=general prime
+STAGE,r2c-c2r,146,real n=146 stage=0 radix=2 l1=1 ido=73 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,146,real n=146 stage=1 radix=73 l1=2 ido=1 route=general prime simd=AVX2-prime-ido1-installed
+PLAN,real,146,31345,8192,-
+EXEC,real,146,forward,real-forward n=146 route=multipass
+EXEC,real,146,forward,real-forward-pass radix=73 l1=2 ido=1 route=multipass
+EXEC,real,146,forward,real-avx2:prime-forward radix=73 l1=2
+EXEC,real,146,forward,real-forward-pass radix=2 l1=1 ido=73 route=multipass
+EXEC,real,146,inverse,real-inverse-pass radix=2 l1=1 ido=73 route=multipass
+EXEC,real,146,inverse,real-avx2:prime-inverse radix=73 l1=2
+EXEC,real,146,inverse,real-inverse n=146 route=multipass
+STAGE,c2c,147,n=147 stage=0 radix=3 l1=1 ido=49 route=fixed butterfly
+STAGE,c2c,147,n=147 stage=1 radix=7 l1=3 ido=7 route=fixed butterfly
+STAGE,c2c,147,n=147 stage=2 radix=7 l1=21 ido=1 route=fixed butterfly
+PLAN,c2c,147,6320,2576,-
+EXEC,c2c,147,forward,c2c n=147 normalization=forward
+EXEC,c2c,147,forward,c2c n=147 stage=0 radix=3 l1=1 ido=49 route=fixed
+EXEC,c2c,147,forward,c2c-scalar:first n=147 radix=3 ido=49
+EXEC,c2c,147,forward,c2c n=147 stage=1 radix=7 l1=3 ido=7 route=fixed
+EXEC,c2c,147,forward,c2c-scalar:pass n=147 radix=7 l1=3 ido=7
+EXEC,c2c,147,forward,c2c n=147 stage=2 radix=7 l1=21 ido=1 route=fixed
+EXEC,c2c,147,forward,c2c-scalar:pass n=147 radix=7 l1=21 ido=1
+EXEC,c2c,147,inverse,c2c n=147 normalization=deferred
+EXEC,c2c,147,inverse,c2c n=147 stage=0 radix=3 l1=1 ido=49 route=fixed
+EXEC,c2c,147,inverse,c2c-scalar:first n=147 radix=3 ido=49
+EXEC,c2c,147,inverse,c2c n=147 stage=1 radix=7 l1=3 ido=7 route=fixed
+EXEC,c2c,147,inverse,c2c-scalar:pass n=147 radix=7 l1=3 ido=7
+EXEC,c2c,147,inverse,c2c n=147 stage=2 radix=7 l1=21 ido=1 route=fixed
+EXEC,c2c,147,inverse,c2c-scalar:pass n=147 radix=7 l1=21 ido=1
+STAGE,r2c-c2r,147,real n=147 factors=[3; 7; 7] complexify=false rader=none
+STAGE,r2c-c2r,147,real n=147 stage=0 radix=3 l1=1 ido=49 route=fixed real radix
+STAGE,r2c-c2r,147,real n=147 stage=1 radix=7 l1=3 ido=7 route=general prime
+STAGE,r2c-c2r,147,real n=147 stage=2 radix=7 l1=21 ido=1 route=general prime
+STAGE,r2c-c2r,147,real n=147 stage=0 radix=3 l1=1 ido=49 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,147,real n=147 stage=1 radix=7 l1=3 ido=7 route=general prime simd=scalar-conditions
+STAGE,r2c-c2r,147,real n=147 stage=2 radix=7 l1=21 ido=1 route=general prime simd=scalar-conditions
+PLAN,real,147,5274,4448,-
+EXEC,real,147,forward,real-forward n=147 route=multipass
+EXEC,real,147,forward,real-forward-pass radix=7 l1=21 ido=1 route=multipass
+EXEC,real,147,forward,real-forward-pass radix=7 l1=3 ido=7 route=multipass
+EXEC,real,147,forward,real-forward-pass radix=3 l1=1 ido=49 route=multipass
+EXEC,real,147,inverse,real-inverse-pass radix=3 l1=1 ido=49 route=multipass
+EXEC,real,147,inverse,real-inverse-pass radix=7 l1=3 ido=7 route=multipass
+EXEC,real,147,inverse,real-inverse n=147 route=multipass
+STAGE,c2c,150,n=150 stage=0 radix=2 l1=1 ido=75 route=fixed butterfly
+STAGE,c2c,150,n=150 stage=1 radix=3 l1=2 ido=25 route=fixed butterfly
+STAGE,c2c,150,n=150 stage=2 radix=5 l1=6 ido=5 route=fixed butterfly
+STAGE,c2c,150,n=150 stage=3 radix=5 l1=30 ido=1 route=fixed butterfly
+PLAN,c2c,150,7440,2560,-
+EXEC,c2c,150,forward,c2c n=150 normalization=forward
+EXEC,c2c,150,forward,c2c n=150 stage=0 radix=2 l1=1 ido=75 route=fixed
+EXEC,c2c,150,forward,c2c-avx2:first-prefix n=150 radix=2 ido=75 vector_ido=74 scalar_tail=1
+EXEC,c2c,150,forward,c2c n=150 stage=1 radix=3 l1=2 ido=25 route=fixed
+EXEC,c2c,150,forward,c2c-scalar:pass n=150 radix=3 l1=2 ido=25
+EXEC,c2c,150,forward,c2c n=150 stage=2 radix=5 l1=6 ido=5 route=fixed
+EXEC,c2c,150,forward,c2c-scalar:pass n=150 radix=5 l1=6 ido=5
+EXEC,c2c,150,forward,c2c n=150 stage=3 radix=5 l1=30 ido=1 route=fixed
+EXEC,c2c,150,forward,c2c-scalar:pass n=150 radix=5 l1=30 ido=1
+EXEC,c2c,150,inverse,c2c n=150 normalization=deferred
+EXEC,c2c,150,inverse,c2c n=150 stage=0 radix=2 l1=1 ido=75 route=fixed
+EXEC,c2c,150,inverse,c2c-avx2:first-prefix n=150 radix=2 ido=75 vector_ido=74 scalar_tail=1
+EXEC,c2c,150,inverse,c2c n=150 stage=1 radix=3 l1=2 ido=25 route=fixed
+EXEC,c2c,150,inverse,c2c-scalar:pass n=150 radix=3 l1=2 ido=25
+EXEC,c2c,150,inverse,c2c n=150 stage=2 radix=5 l1=6 ido=5 route=fixed
+EXEC,c2c,150,inverse,c2c-scalar:pass n=150 radix=5 l1=6 ido=5
+EXEC,c2c,150,inverse,c2c n=150 stage=3 radix=5 l1=30 ido=1 route=fixed
+EXEC,c2c,150,inverse,c2c-scalar:pass n=150 radix=5 l1=30 ido=1
+STAGE,r2c-c2r,150,real n=150 factors=[2; 3; 5; 5] complexify=false rader=none
+STAGE,r2c-c2r,150,real n=150 stage=0 radix=2 l1=1 ido=75 route=fixed real radix
+STAGE,r2c-c2r,150,real n=150 stage=1 radix=3 l1=2 ido=25 route=fixed real radix
+STAGE,r2c-c2r,150,real n=150 stage=2 radix=5 l1=6 ido=5 route=fixed real radix
+STAGE,r2c-c2r,150,real n=150 stage=3 radix=5 l1=30 ido=1 route=fixed real radix
+STAGE,r2c-c2r,150,real n=150 stage=0 radix=2 l1=1 ido=75 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,150,real n=150 stage=1 radix=3 l1=2 ido=25 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,150,real n=150 stage=2 radix=5 l1=6 ido=5 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,150,real n=150 stage=3 radix=5 l1=30 ido=1 route=fixed real pass simd=scalar-conditions
+PLAN,real,150,5392,4800,-
+EXEC,real,150,forward,real-forward n=150 route=multipass
+EXEC,real,150,forward,real-forward-pass radix=5 l1=30 ido=1 route=multipass
+EXEC,real,150,forward,real-forward-pass radix=5 l1=6 ido=5 route=multipass
+EXEC,real,150,forward,real-forward-pass radix=3 l1=2 ido=25 route=multipass
+EXEC,real,150,forward,real-forward-pass radix=2 l1=1 ido=75 route=multipass
+EXEC,real,150,inverse,real-inverse-pass radix=2 l1=1 ido=75 route=multipass
+EXEC,real,150,inverse,real-inverse-pass radix=3 l1=2 ido=25 route=multipass
+EXEC,real,150,inverse,real-inverse-pass radix=5 l1=6 ido=5 route=multipass
+EXEC,real,150,inverse,real-inverse n=150 route=multipass
+STAGE,c2c,240,n=240 stage=0 radix=2 l1=1 ido=120 route=fixed butterfly
+STAGE,c2c,240,n=240 stage=1 radix=8 l1=2 ido=15 route=fixed butterfly
+STAGE,c2c,240,n=240 stage=2 radix=3 l1=16 ido=5 route=fixed butterfly
+STAGE,c2c,240,n=240 stage=3 radix=5 l1=48 ido=1 route=fixed butterfly
+PLAN,c2c,240,10880,4096,-
+EXEC,c2c,240,forward,c2c n=240 normalization=forward
+EXEC,c2c,240,forward,c2c n=240 stage=0 radix=2 l1=1 ido=120 route=fixed
+EXEC,c2c,240,forward,c2c-avx2:first-prefix n=240 radix=2 ido=120 vector_ido=120 scalar_tail=0
+EXEC,c2c,240,forward,c2c n=240 stage=1 radix=8 l1=2 ido=15 route=fixed
+EXEC,c2c,240,forward,c2c-avx2:pass-prefix n=240 radix=8 l1=2 ido=15 vector_ido=14 scalar_tail=1
+EXEC,c2c,240,forward,c2c n=240 stage=2 radix=3 l1=16 ido=5 route=fixed
+EXEC,c2c,240,forward,c2c-scalar:pass n=240 radix=3 l1=16 ido=5
+EXEC,c2c,240,forward,c2c n=240 stage=3 radix=5 l1=48 ido=1 route=fixed
+EXEC,c2c,240,forward,c2c-scalar:pass n=240 radix=5 l1=48 ido=1
+EXEC,c2c,240,inverse,c2c n=240 normalization=deferred
+EXEC,c2c,240,inverse,c2c n=240 stage=0 radix=2 l1=1 ido=120 route=fixed
+EXEC,c2c,240,inverse,c2c-avx2:first-prefix n=240 radix=2 ido=120 vector_ido=120 scalar_tail=0
+EXEC,c2c,240,inverse,c2c n=240 stage=1 radix=8 l1=2 ido=15 route=fixed
+EXEC,c2c,240,inverse,c2c-avx2:pass-prefix n=240 radix=8 l1=2 ido=15 vector_ido=14 scalar_tail=1
+EXEC,c2c,240,inverse,c2c n=240 stage=2 radix=3 l1=16 ido=5 route=fixed
+EXEC,c2c,240,inverse,c2c-scalar:pass n=240 radix=3 l1=16 ido=5
+EXEC,c2c,240,inverse,c2c n=240 stage=3 radix=5 l1=48 ido=1 route=fixed
+EXEC,c2c,240,inverse,c2c-scalar:pass n=240 radix=5 l1=48 ido=1
+STAGE,r2c-c2r,240,real n=240 factors=[4; 4; 3; 5] complexify=false rader=none
+STAGE,r2c-c2r,240,real n=240 stage=0 radix=4 l1=1 ido=60 route=fixed real radix
+STAGE,r2c-c2r,240,real n=240 stage=1 radix=4 l1=4 ido=15 route=fixed real radix
+STAGE,r2c-c2r,240,real n=240 stage=2 radix=3 l1=16 ido=5 route=fixed real radix
+STAGE,r2c-c2r,240,real n=240 stage=3 radix=5 l1=48 ido=1 route=fixed real radix
+STAGE,r2c-c2r,240,real n=240 stage=0 radix=4 l1=1 ido=60 route=fixed real pass simd=AVX2-radix4-forward+inverse-enabled
+STAGE,r2c-c2r,240,real n=240 stage=1 radix=4 l1=4 ido=15 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,240,real n=240 stage=2 radix=3 l1=16 ido=5 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,240,real n=240 stage=3 radix=5 l1=48 ido=1 route=fixed real pass simd=scalar-conditions
+PLAN,real,240,7544,6800,-
+EXEC,real,240,forward,real-forward n=240 route=multipass
+EXEC,real,240,forward,real-forward-pass radix=5 l1=48 ido=1 route=multipass
+EXEC,real,240,forward,real-forward-pass radix=3 l1=16 ido=5 route=multipass
+EXEC,real,240,forward,real-forward-pass radix=4 l1=4 ido=15 route=multipass
+EXEC,real,240,forward,real-forward-pass radix=4 l1=1 ido=60 route=multipass
+EXEC,real,240,forward,real-avx2:radix4-forward l1=1 ido=60
+EXEC,real,240,inverse,real-inverse-pass radix=4 l1=1 ido=60 route=multipass
+EXEC,real,240,inverse,real-avx2:radix4-inverse l1=1 ido=60
+EXEC,real,240,inverse,real-inverse-pass radix=4 l1=4 ido=15 route=multipass
+EXEC,real,240,inverse,real-inverse-pass radix=3 l1=16 ido=5 route=multipass
+EXEC,real,240,inverse,real-inverse n=240 route=multipass
+STAGE,c2c,241,n=241 stage=0 radix=241 l1=1 ido=1 route=bluestein conv=512
+PLAN,c2c,241,38256,28208,-
+EXEC,c2c,241,forward,c2c n=241 normalization=forward
+EXEC,c2c,241,forward,c2c n=241 stage=0 radix=241 l1=1 ido=1 route=bluestein conv=512
+EXEC,c2c,241,forward,c2c n=512 normalization=forward
+EXEC,c2c,241,forward,c2c n=512 stage=0 radix=8 l1=1 ido=64 route=fixed
+EXEC,c2c,241,forward,c2c-scalar:first n=512 radix=8 ido=64
+EXEC,c2c,241,forward,c2c n=512 stage=1 radix=8 l1=8 ido=8 route=fixed
+EXEC,c2c,241,forward,c2c-scalar:pass n=512 radix=8 l1=8 ido=8
+EXEC,c2c,241,forward,c2c n=512 stage=2 radix=8 l1=64 ido=1 route=fixed
+EXEC,c2c,241,forward,c2c-scalar:pass n=512 radix=8 l1=64 ido=1
+EXEC,c2c,241,forward,c2c n=512 normalization=deferred
+EXEC,c2c,241,inverse,c2c n=241 normalization=deferred
+EXEC,c2c,241,inverse,c2c n=241 stage=0 radix=241 l1=1 ido=1 route=bluestein conv=512
+EXEC,c2c,241,inverse,c2c n=512 normalization=forward
+EXEC,c2c,241,inverse,c2c n=512 stage=0 radix=8 l1=1 ido=64 route=fixed
+EXEC,c2c,241,inverse,c2c-scalar:first n=512 radix=8 ido=64
+EXEC,c2c,241,inverse,c2c n=512 stage=1 radix=8 l1=8 ido=8 route=fixed
+EXEC,c2c,241,inverse,c2c-scalar:pass n=512 radix=8 l1=8 ido=8
+EXEC,c2c,241,inverse,c2c n=512 stage=2 radix=8 l1=64 ido=1 route=fixed
+EXEC,c2c,241,inverse,c2c-scalar:pass n=512 radix=8 l1=64 ido=1
+EXEC,c2c,241,inverse,c2c n=512 normalization=deferred
+STAGE,r2c-c2r,241,real n=241 factors=[241] complexify=false rader=none
+STAGE,r2c-c2r,241,real n=241 stage=0 radix=241 l1=1 ido=1 route=Bluestein conv=484
+STAGE,r2c-c2r,241,real n=241 stage=0 radix=241 l1=1 ido=1 route=Bluestein-stage=0 simd=scalar-conditions
+PLAN,real,241,34632,35120,-
+EXEC,real,241,forward,real-forward n=241 route=multipass
+EXEC,real,241,forward,real-forward-pass radix=241 l1=1 ido=1 route=Bluestein
+EXEC,real,241,forward,real-forward:Bluestein radix=241
+EXEC,real,241,forward,c2c n=484 normalization=forward
+EXEC,real,241,forward,c2c n=484 stage=0 radix=4 l1=1 ido=121 route=fixed
+EXEC,real,241,forward,c2c-scalar:first n=484 radix=4 ido=121
+EXEC,real,241,forward,c2c n=484 stage=1 radix=11 l1=4 ido=11 route=fixed
+EXEC,real,241,forward,c2c n=484 stage=2 radix=11 l1=44 ido=1 route=fixed
+EXEC,real,241,forward,c2c n=484 normalization=deferred
+EXEC,real,241,inverse,real-inverse:Bluestein radix=241
+EXEC,real,241,inverse,c2c n=484 normalization=forward
+EXEC,real,241,inverse,c2c n=484 stage=0 radix=4 l1=1 ido=121 route=fixed
+EXEC,real,241,inverse,c2c-scalar:first n=484 radix=4 ido=121
+EXEC,real,241,inverse,c2c n=484 stage=1 radix=11 l1=4 ido=11 route=fixed
+EXEC,real,241,inverse,c2c n=484 stage=2 radix=11 l1=44 ido=1 route=fixed
+EXEC,real,241,inverse,c2c n=484 normalization=deferred
+EXEC,real,241,inverse,real-inverse n=241 route=multipass
+STAGE,c2c,242,n=242 stage=0 radix=2 l1=1 ido=121 route=fixed butterfly
+STAGE,c2c,242,n=242 stage=1 radix=11 l1=2 ido=11 route=fixed butterfly
+STAGE,c2c,242,n=242 stage=2 radix=11 l1=22 ido=1 route=fixed butterfly
+PLAN,c2c,242,10576,4224,-
+EXEC,c2c,242,forward,c2c n=242 normalization=forward
+EXEC,c2c,242,forward,c2c n=242 stage=0 radix=2 l1=1 ido=121 route=fixed
+EXEC,c2c,242,forward,c2c-avx2:first-prefix n=242 radix=2 ido=121 vector_ido=120 scalar_tail=1
+EXEC,c2c,242,forward,c2c n=242 stage=1 radix=11 l1=2 ido=11 route=fixed
+EXEC,c2c,242,forward,c2c n=242 stage=2 radix=11 l1=22 ido=1 route=fixed
+EXEC,c2c,242,inverse,c2c n=242 normalization=deferred
+EXEC,c2c,242,inverse,c2c n=242 stage=0 radix=2 l1=1 ido=121 route=fixed
+EXEC,c2c,242,inverse,c2c-avx2:first-prefix n=242 radix=2 ido=121 vector_ido=120 scalar_tail=1
+EXEC,c2c,242,inverse,c2c n=242 stage=1 radix=11 l1=2 ido=11 route=fixed
+EXEC,c2c,242,inverse,c2c n=242 stage=2 radix=11 l1=22 ido=1 route=fixed
+STAGE,r2c-c2r,242,real n=242 factors=[2; 11; 11] complexify=false rader=none
+STAGE,r2c-c2r,242,real n=242 stage=0 radix=2 l1=1 ido=121 route=fixed real radix
+STAGE,r2c-c2r,242,real n=242 stage=1 radix=11 l1=2 ido=11 route=fixed real radix-11
+STAGE,r2c-c2r,242,real n=242 stage=2 radix=11 l1=22 ido=1 route=fixed real radix-11
+STAGE,r2c-c2r,242,real n=242 stage=0 radix=2 l1=1 ido=121 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,242,real n=242 stage=1 radix=11 l1=2 ido=11 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,242,real n=242 stage=2 radix=11 l1=22 ido=1 route=fixed real pass simd=scalar-conditions
+PLAN,real,242,7176,7584,-
+EXEC,real,242,forward,real-forward n=242 route=multipass
+EXEC,real,242,forward,real-forward-pass radix=11 l1=22 ido=1 route=fixed-radix11
+EXEC,real,242,forward,real-forward-pass radix=11 l1=2 ido=11 route=fixed-radix11
+EXEC,real,242,forward,real-forward-pass radix=2 l1=1 ido=121 route=multipass
+EXEC,real,242,inverse,real-inverse-pass radix=2 l1=1 ido=121 route=multipass
+EXEC,real,242,inverse,real-inverse-pass radix=11 l1=2 ido=11 route=fixed-radix11
+EXEC,real,242,inverse,real-inverse-terminal:fixed-radix11 l1=22
+EXEC,real,242,inverse,real-inverse n=242 route=multipass
+STAGE,c2c,256,n=256 stage=0 radix=8 l1=1 ido=32 route=fixed butterfly
+STAGE,c2c,256,n=256 stage=1 radix=8 l1=8 ido=4 route=fixed butterfly
+STAGE,c2c,256,n=256 stage=2 radix=4 l1=64 ido=1 route=fixed butterfly
+PLAN,c2c,256,9488,4352,-
+EXEC,c2c,256,forward,c2c n=256 normalization=forward
+EXEC,c2c,256,forward,c2c n=256 stage=0 radix=8 l1=1 ido=32 route=fixed
+EXEC,c2c,256,forward,c2c-avx2:first-prefix n=256 radix=8 ido=32 vector_ido=32 scalar_tail=0
+EXEC,c2c,256,forward,c2c n=256 stage=1 radix=8 l1=8 ido=4 route=fixed
+EXEC,c2c,256,forward,c2c-avx2:pass-prefix n=256 radix=8 l1=8 ido=4 vector_ido=4 scalar_tail=0
+EXEC,c2c,256,forward,c2c n=256 stage=2 radix=4 l1=64 ido=1 route=fixed
+EXEC,c2c,256,forward,c2c-avx2:ido1-pair n=256 radix=4 l1=64 vector_l1=64 scalar_tail=0
+EXEC,c2c,256,inverse,c2c n=256 normalization=deferred
+EXEC,c2c,256,inverse,c2c n=256 stage=0 radix=8 l1=1 ido=32 route=fixed
+EXEC,c2c,256,inverse,c2c-avx2:first-prefix n=256 radix=8 ido=32 vector_ido=32 scalar_tail=0
+EXEC,c2c,256,inverse,c2c n=256 stage=1 radix=8 l1=8 ido=4 route=fixed
+EXEC,c2c,256,inverse,c2c-avx2:pass-prefix n=256 radix=8 l1=8 ido=4 vector_ido=4 scalar_tail=0
+EXEC,c2c,256,inverse,c2c n=256 stage=2 radix=4 l1=64 ido=1 route=fixed
+EXEC,c2c,256,inverse,c2c-avx2:ido1-pair n=256 radix=4 l1=64 vector_l1=64 scalar_tail=0
+STAGE,r2c-c2r,256,real n=256 factors=[4; 4; 4; 4] complexify=false rader=none
+STAGE,r2c-c2r,256,real n=256 stage=0 radix=4 l1=1 ido=64 route=fixed real radix
+STAGE,r2c-c2r,256,real n=256 stage=1 radix=4 l1=4 ido=16 route=fixed real radix
+STAGE,r2c-c2r,256,real n=256 stage=2 radix=4 l1=16 ido=4 route=fixed real radix
+STAGE,r2c-c2r,256,real n=256 stage=3 radix=4 l1=64 ido=1 route=fixed real radix
+STAGE,r2c-c2r,256,real n=256 stage=0 radix=4 l1=1 ido=64 route=fixed real pass simd=AVX2-radix4-forward+inverse-enabled
+STAGE,r2c-c2r,256,real n=256 stage=1 radix=4 l1=4 ido=16 route=fixed real pass simd=AVX2-radix4-forward+inverse-enabled
+STAGE,r2c-c2r,256,real n=256 stage=2 radix=4 l1=16 ido=4 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,256,real n=256 stage=3 radix=4 l1=64 ido=1 route=fixed real pass simd=scalar-conditions
+PLAN,real,256,7928,7232,-
+EXEC,real,256,forward,real-forward n=256 route=multipass
+EXEC,real,256,forward,real-forward-pass radix=4 l1=64 ido=1 route=multipass
+EXEC,real,256,forward,real-forward-pass radix=4 l1=16 ido=4 route=multipass
+EXEC,real,256,forward,real-forward-pass radix=4 l1=4 ido=16 route=multipass
+EXEC,real,256,forward,real-avx2:radix4-forward l1=4 ido=16
+EXEC,real,256,forward,real-forward-pass radix=4 l1=1 ido=64 route=multipass
+EXEC,real,256,forward,real-avx2:radix4-forward l1=1 ido=64
+EXEC,real,256,inverse,real-inverse-pass radix=4 l1=1 ido=64 route=multipass
+EXEC,real,256,inverse,real-avx2:radix4-inverse l1=1 ido=64
+EXEC,real,256,inverse,real-inverse-pass radix=4 l1=4 ido=16 route=multipass
+EXEC,real,256,inverse,real-avx2:radix4-inverse l1=4 ido=16
+EXEC,real,256,inverse,real-inverse-pass radix=4 l1=16 ido=4 route=multipass
+EXEC,real,256,inverse,real-inverse n=256 route=multipass
+STAGE,c2c,257,n=257 stage=0 radix=257 l1=1 ido=1 route=bluestein conv=525
+PLAN,c2c,257,42208,29360,-
+EXEC,c2c,257,forward,c2c n=257 normalization=forward
+EXEC,c2c,257,forward,c2c n=257 stage=0 radix=257 l1=1 ido=1 route=bluestein conv=525
+EXEC,c2c,257,forward,c2c n=525 normalization=forward
+EXEC,c2c,257,forward,c2c n=525 stage=0 radix=3 l1=1 ido=175 route=fixed
+EXEC,c2c,257,forward,c2c-scalar:first n=525 radix=3 ido=175
+EXEC,c2c,257,forward,c2c n=525 stage=1 radix=5 l1=3 ido=35 route=fixed
+EXEC,c2c,257,forward,c2c-scalar:pass n=525 radix=5 l1=3 ido=35
+EXEC,c2c,257,forward,c2c n=525 stage=2 radix=5 l1=15 ido=7 route=fixed
+EXEC,c2c,257,forward,c2c-scalar:pass n=525 radix=5 l1=15 ido=7
+EXEC,c2c,257,forward,c2c n=525 stage=3 radix=7 l1=75 ido=1 route=fixed
+EXEC,c2c,257,forward,c2c-scalar:pass n=525 radix=7 l1=75 ido=1
+EXEC,c2c,257,forward,c2c n=525 normalization=deferred
+EXEC,c2c,257,inverse,c2c n=257 normalization=deferred
+EXEC,c2c,257,inverse,c2c n=257 stage=0 radix=257 l1=1 ido=1 route=bluestein conv=525
+EXEC,c2c,257,inverse,c2c n=525 normalization=forward
+EXEC,c2c,257,inverse,c2c n=525 stage=0 radix=3 l1=1 ido=175 route=fixed
+EXEC,c2c,257,inverse,c2c-scalar:first n=525 radix=3 ido=175
+EXEC,c2c,257,inverse,c2c n=525 stage=1 radix=5 l1=3 ido=35 route=fixed
+EXEC,c2c,257,inverse,c2c-scalar:pass n=525 radix=5 l1=3 ido=35
+EXEC,c2c,257,inverse,c2c n=525 stage=2 radix=5 l1=15 ido=7 route=fixed
+EXEC,c2c,257,inverse,c2c-scalar:pass n=525 radix=5 l1=15 ido=7
+EXEC,c2c,257,inverse,c2c n=525 stage=3 radix=7 l1=75 ido=1 route=fixed
+EXEC,c2c,257,inverse,c2c-scalar:pass n=525 radix=7 l1=75 ido=1
+EXEC,c2c,257,inverse,c2c n=525 normalization=deferred
+STAGE,r2c-c2r,257,real n=257 factors=[257] complexify=false rader=Rader radix=257 convolution=256 algorithm=complex-convolution
+STAGE,r2c-c2r,257,real n=257 stage=0 radix=257 fallback=Bluestein conv=525
+STAGE,r2c-c2r,257,real n=257 stage=0 radix=257 l1=1 ido=1 route=Rader
+STAGE,r2c-c2r,257,real n=257 stage=0 radix=257 l1=1 ido=1 route=Rader simd=scalar-conditions
+PLAN,real,257,60488,46032,-
+EXEC,real,257,forward,real-forward n=257 route=multipass
+EXEC,real,257,forward,real-forward-pass radix=257 l1=1 ido=1 route=Rader
+EXEC,real,257,forward,real-forward:Rader radix=257
+EXEC,real,257,forward,c2c n=256 normalization=forward
+EXEC,real,257,forward,c2c n=256 stage=0 radix=8 l1=1 ido=32 route=fixed
+EXEC,real,257,forward,c2c-avx2:first-prefix n=256 radix=8 ido=32 vector_ido=32 scalar_tail=0
+EXEC,real,257,forward,c2c n=256 stage=1 radix=8 l1=8 ido=4 route=fixed
+EXEC,real,257,forward,c2c-avx2:pass-prefix n=256 radix=8 l1=8 ido=4 vector_ido=4 scalar_tail=0
+EXEC,real,257,forward,c2c n=256 stage=2 radix=4 l1=64 ido=1 route=fixed
+EXEC,real,257,forward,c2c-avx2:ido1-pair n=256 radix=4 l1=64 vector_l1=64 scalar_tail=0
+EXEC,real,257,forward,c2c n=256 normalization=deferred
+EXEC,real,257,inverse,real-inverse:Rader radix=257
+EXEC,real,257,inverse,c2c n=256 normalization=forward
+EXEC,real,257,inverse,c2c n=256 stage=0 radix=8 l1=1 ido=32 route=fixed
+EXEC,real,257,inverse,c2c-avx2:first-prefix n=256 radix=8 ido=32 vector_ido=32 scalar_tail=0
+EXEC,real,257,inverse,c2c n=256 stage=1 radix=8 l1=8 ido=4 route=fixed
+EXEC,real,257,inverse,c2c-avx2:pass-prefix n=256 radix=8 l1=8 ido=4 vector_ido=4 scalar_tail=0
+EXEC,real,257,inverse,c2c n=256 stage=2 radix=4 l1=64 ido=1 route=fixed
+EXEC,real,257,inverse,c2c-avx2:ido1-pair n=256 radix=4 l1=64 vector_l1=64 scalar_tail=0
+EXEC,real,257,inverse,c2c n=256 normalization=deferred
+EXEC,real,257,inverse,real-inverse n=257 route=multipass
+STAGE,c2c,300,n=300 stage=0 radix=4 l1=1 ido=75 route=fixed butterfly
+STAGE,c2c,300,n=300 stage=1 radix=3 l1=4 ido=25 route=fixed butterfly
+STAGE,c2c,300,n=300 stage=2 radix=5 l1=12 ido=5 route=fixed butterfly
+STAGE,c2c,300,n=300 stage=3 radix=5 l1=60 ido=1 route=fixed butterfly
+PLAN,c2c,300,12240,4960,-
+EXEC,c2c,300,forward,c2c n=300 normalization=forward
+EXEC,c2c,300,forward,c2c n=300 stage=0 radix=4 l1=1 ido=75 route=fixed
+EXEC,c2c,300,forward,c2c-avx2:first-prefix n=300 radix=4 ido=75 vector_ido=74 scalar_tail=1
+EXEC,c2c,300,forward,c2c n=300 stage=1 radix=3 l1=4 ido=25 route=fixed
+EXEC,c2c,300,forward,c2c-scalar:pass n=300 radix=3 l1=4 ido=25
+EXEC,c2c,300,forward,c2c n=300 stage=2 radix=5 l1=12 ido=5 route=fixed
+EXEC,c2c,300,forward,c2c-scalar:pass n=300 radix=5 l1=12 ido=5
+EXEC,c2c,300,forward,c2c n=300 stage=3 radix=5 l1=60 ido=1 route=fixed
+EXEC,c2c,300,forward,c2c-scalar:pass n=300 radix=5 l1=60 ido=1
+EXEC,c2c,300,inverse,c2c n=300 normalization=deferred
+EXEC,c2c,300,inverse,c2c n=300 stage=0 radix=4 l1=1 ido=75 route=fixed
+EXEC,c2c,300,inverse,c2c-avx2:first-prefix n=300 radix=4 ido=75 vector_ido=74 scalar_tail=1
+EXEC,c2c,300,inverse,c2c n=300 stage=1 radix=3 l1=4 ido=25 route=fixed
+EXEC,c2c,300,inverse,c2c-scalar:pass n=300 radix=3 l1=4 ido=25
+EXEC,c2c,300,inverse,c2c n=300 stage=2 radix=5 l1=12 ido=5 route=fixed
+EXEC,c2c,300,inverse,c2c-scalar:pass n=300 radix=5 l1=12 ido=5
+EXEC,c2c,300,inverse,c2c n=300 stage=3 radix=5 l1=60 ido=1 route=fixed
+EXEC,c2c,300,inverse,c2c-scalar:pass n=300 radix=5 l1=60 ido=1
+STAGE,r2c-c2r,300,real n=300 factors=[4; 3; 5; 5] complexify=false rader=none
+STAGE,r2c-c2r,300,real n=300 stage=0 radix=4 l1=1 ido=75 route=fixed real radix
+STAGE,r2c-c2r,300,real n=300 stage=1 radix=3 l1=4 ido=25 route=fixed real radix
+STAGE,r2c-c2r,300,real n=300 stage=2 radix=5 l1=12 ido=5 route=fixed real radix
+STAGE,r2c-c2r,300,real n=300 stage=3 radix=5 l1=60 ido=1 route=fixed real radix
+STAGE,r2c-c2r,300,real n=300 stage=0 radix=4 l1=1 ido=75 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,300,real n=300 stage=1 radix=3 l1=4 ido=25 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,300,real n=300 stage=2 radix=5 l1=12 ido=5 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,300,real n=300 stage=3 radix=5 l1=60 ido=1 route=fixed real pass simd=scalar-conditions
+PLAN,real,300,8976,8416,-
+EXEC,real,300,forward,real-forward n=300 route=multipass
+EXEC,real,300,forward,real-forward-pass radix=5 l1=60 ido=1 route=multipass
+EXEC,real,300,forward,real-forward-pass radix=5 l1=12 ido=5 route=multipass
+EXEC,real,300,forward,real-forward-pass radix=3 l1=4 ido=25 route=multipass
+EXEC,real,300,forward,real-forward-pass radix=4 l1=1 ido=75 route=multipass
+EXEC,real,300,inverse,real-inverse-pass radix=4 l1=1 ido=75 route=multipass
+EXEC,real,300,inverse,real-inverse-pass radix=3 l1=4 ido=25 route=multipass
+EXEC,real,300,inverse,real-inverse-pass radix=5 l1=12 ido=5 route=multipass
+EXEC,real,300,inverse,real-inverse n=300 route=multipass
+STAGE,c2c,363,n=363 stage=0 radix=3 l1=1 ido=121 route=fixed butterfly
+STAGE,c2c,363,n=363 stage=1 radix=11 l1=3 ido=11 route=fixed butterfly
+STAGE,c2c,363,n=363 stage=2 radix=11 l1=33 ido=1 route=fixed butterfly
+PLAN,c2c,363,14448,6160,-
+EXEC,c2c,363,forward,c2c n=363 normalization=forward
+EXEC,c2c,363,forward,c2c n=363 stage=0 radix=3 l1=1 ido=121 route=fixed
+EXEC,c2c,363,forward,c2c-scalar:first n=363 radix=3 ido=121
+EXEC,c2c,363,forward,c2c n=363 stage=1 radix=11 l1=3 ido=11 route=fixed
+EXEC,c2c,363,forward,c2c n=363 stage=2 radix=11 l1=33 ido=1 route=fixed
+EXEC,c2c,363,inverse,c2c n=363 normalization=deferred
+EXEC,c2c,363,inverse,c2c n=363 stage=0 radix=3 l1=1 ido=121 route=fixed
+EXEC,c2c,363,inverse,c2c-scalar:first n=363 radix=3 ido=121
+EXEC,c2c,363,inverse,c2c n=363 stage=1 radix=11 l1=3 ido=11 route=fixed
+EXEC,c2c,363,inverse,c2c n=363 stage=2 radix=11 l1=33 ido=1 route=fixed
+STAGE,r2c-c2r,363,real n=363 factors=[3; 11; 11] complexify=false rader=none
+STAGE,r2c-c2r,363,real n=363 stage=0 radix=3 l1=1 ido=121 route=fixed real radix
+STAGE,r2c-c2r,363,real n=363 stage=1 radix=11 l1=3 ido=11 route=fixed real radix-11
+STAGE,r2c-c2r,363,real n=363 stage=2 radix=11 l1=33 ido=1 route=fixed real radix-11
+STAGE,r2c-c2r,363,real n=363 stage=0 radix=3 l1=1 ido=121 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,363,real n=363 stage=1 radix=11 l1=3 ido=11 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,363,real n=363 stage=2 radix=11 l1=33 ido=1 route=fixed real pass simd=scalar-conditions
+PLAN,real,363,10072,10496,-
+EXEC,real,363,forward,real-forward n=363 route=multipass
+EXEC,real,363,forward,real-forward-pass radix=11 l1=33 ido=1 route=fixed-radix11
+EXEC,real,363,forward,real-forward-pass radix=11 l1=3 ido=11 route=fixed-radix11
+EXEC,real,363,forward,real-forward-pass radix=3 l1=1 ido=121 route=multipass
+EXEC,real,363,inverse,real-inverse-pass radix=3 l1=1 ido=121 route=multipass
+EXEC,real,363,inverse,real-inverse-pass radix=11 l1=3 ido=11 route=fixed-radix11
+EXEC,real,363,inverse,real-inverse-terminal:fixed-radix11 l1=33
+EXEC,real,363,inverse,real-inverse n=363 route=multipass
+STAGE,c2c,484,n=484 stage=0 radix=4 l1=1 ido=121 route=fixed butterfly
+STAGE,c2c,484,n=484 stage=1 radix=11 l1=4 ido=11 route=fixed butterfly
+STAGE,c2c,484,n=484 stage=2 radix=11 l1=44 ido=1 route=fixed butterfly
+PLAN,c2c,484,18320,8096,-
+EXEC,c2c,484,forward,c2c n=484 normalization=forward
+EXEC,c2c,484,forward,c2c n=484 stage=0 radix=4 l1=1 ido=121 route=fixed
+EXEC,c2c,484,forward,c2c-avx2:first-prefix n=484 radix=4 ido=121 vector_ido=120 scalar_tail=1
+EXEC,c2c,484,forward,c2c n=484 stage=1 radix=11 l1=4 ido=11 route=fixed
+EXEC,c2c,484,forward,c2c n=484 stage=2 radix=11 l1=44 ido=1 route=fixed
+EXEC,c2c,484,inverse,c2c n=484 normalization=deferred
+EXEC,c2c,484,inverse,c2c n=484 stage=0 radix=4 l1=1 ido=121 route=fixed
+EXEC,c2c,484,inverse,c2c-avx2:first-prefix n=484 radix=4 ido=121 vector_ido=120 scalar_tail=1
+EXEC,c2c,484,inverse,c2c n=484 stage=1 radix=11 l1=4 ido=11 route=fixed
+EXEC,c2c,484,inverse,c2c n=484 stage=2 radix=11 l1=44 ido=1 route=fixed
+STAGE,r2c-c2r,484,real n=484 factors=[4; 11; 11] complexify=false rader=none
+STAGE,r2c-c2r,484,real n=484 stage=0 radix=4 l1=1 ido=121 route=fixed real radix
+STAGE,r2c-c2r,484,real n=484 stage=1 radix=11 l1=4 ido=11 route=fixed real radix-11
+STAGE,r2c-c2r,484,real n=484 stage=2 radix=11 l1=44 ido=1 route=fixed real radix-11
+STAGE,r2c-c2r,484,real n=484 stage=0 radix=4 l1=1 ido=121 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,484,real n=484 stage=1 radix=11 l1=4 ido=11 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,484,real n=484 stage=2 radix=11 l1=44 ido=1 route=fixed real pass simd=scalar-conditions
+PLAN,real,484,12968,13408,-
+EXEC,real,484,forward,real-forward n=484 route=multipass
+EXEC,real,484,forward,real-forward-pass radix=11 l1=44 ido=1 route=fixed-radix11
+EXEC,real,484,forward,real-forward-pass radix=11 l1=4 ido=11 route=fixed-radix11
+EXEC,real,484,forward,real-forward-pass radix=4 l1=1 ido=121 route=multipass
+EXEC,real,484,inverse,real-inverse-pass radix=4 l1=1 ido=121 route=multipass
+EXEC,real,484,inverse,real-inverse-pass radix=11 l1=4 ido=11 route=fixed-radix11
+EXEC,real,484,inverse,real-inverse-terminal:fixed-radix11 l1=44
+EXEC,real,484,inverse,real-inverse n=484 route=multipass
+STAGE,c2c,512,n=512 stage=0 radix=8 l1=1 ido=64 route=fixed butterfly
+STAGE,c2c,512,n=512 stage=1 radix=8 l1=8 ido=8 route=fixed butterfly
+STAGE,c2c,512,n=512 stage=2 radix=8 l1=64 ido=1 route=fixed butterfly
+PLAN,c2c,512,18256,8448,-
+EXEC,c2c,512,forward,c2c n=512 normalization=forward
+EXEC,c2c,512,forward,c2c n=512 stage=0 radix=8 l1=1 ido=64 route=fixed
+EXEC,c2c,512,forward,c2c-avx2:first-prefix n=512 radix=8 ido=64 vector_ido=64 scalar_tail=0
+EXEC,c2c,512,forward,c2c n=512 stage=1 radix=8 l1=8 ido=8 route=fixed
+EXEC,c2c,512,forward,c2c-avx2:pass-prefix n=512 radix=8 l1=8 ido=8 vector_ido=8 scalar_tail=0
+EXEC,c2c,512,forward,c2c n=512 stage=2 radix=8 l1=64 ido=1 route=fixed
+EXEC,c2c,512,forward,c2c-avx2:ido1-pair n=512 radix=8 l1=64 vector_l1=64 scalar_tail=0
+EXEC,c2c,512,inverse,c2c n=512 normalization=deferred
+EXEC,c2c,512,inverse,c2c n=512 stage=0 radix=8 l1=1 ido=64 route=fixed
+EXEC,c2c,512,inverse,c2c-avx2:first-prefix n=512 radix=8 ido=64 vector_ido=64 scalar_tail=0
+EXEC,c2c,512,inverse,c2c n=512 stage=1 radix=8 l1=8 ido=8 route=fixed
+EXEC,c2c,512,inverse,c2c-avx2:pass-prefix n=512 radix=8 l1=8 ido=8 vector_ido=8 scalar_tail=0
+EXEC,c2c,512,inverse,c2c n=512 stage=2 radix=8 l1=64 ido=1 route=fixed
+EXEC,c2c,512,inverse,c2c-avx2:ido1-pair n=512 radix=8 l1=64 vector_l1=64 scalar_tail=0
+STAGE,r2c-c2r,512,real n=512 factors=[2; 4; 4; 4; 4] complexify=false rader=none
+STAGE,r2c-c2r,512,real n=512 stage=0 radix=2 l1=1 ido=256 route=fixed real radix
+STAGE,r2c-c2r,512,real n=512 stage=1 radix=4 l1=2 ido=64 route=fixed real radix
+STAGE,r2c-c2r,512,real n=512 stage=2 radix=4 l1=8 ido=16 route=fixed real radix
+STAGE,r2c-c2r,512,real n=512 stage=3 radix=4 l1=32 ido=4 route=fixed real radix
+STAGE,r2c-c2r,512,real n=512 stage=4 radix=4 l1=128 ido=1 route=fixed real radix
+STAGE,r2c-c2r,512,real n=512 stage=0 radix=2 l1=1 ido=256 route=fixed real pass simd=AVX2-radix2-forward+inverse-enabled
+STAGE,r2c-c2r,512,real n=512 stage=1 radix=4 l1=2 ido=64 route=fixed real pass simd=AVX2-radix4-forward+inverse-enabled
+STAGE,r2c-c2r,512,real n=512 stage=2 radix=4 l1=8 ido=16 route=fixed real pass simd=AVX2-radix4-forward+inverse-enabled
+STAGE,r2c-c2r,512,real n=512 stage=3 radix=4 l1=32 ido=4 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,512,real n=512 stage=4 radix=4 l1=128 ido=1 route=fixed real pass simd=scalar-conditions
+PLAN,real,512,14408,15456,-
+EXEC,real,512,forward,real-forward n=512 route=multipass
+EXEC,real,512,forward,real-forward-pass radix=4 l1=128 ido=1 route=multipass
+EXEC,real,512,forward,real-forward-pass radix=4 l1=32 ido=4 route=multipass
+EXEC,real,512,forward,real-forward-pass radix=4 l1=8 ido=16 route=multipass
+EXEC,real,512,forward,real-avx2:radix4-forward l1=8 ido=16
+EXEC,real,512,forward,real-forward-pass radix=4 l1=2 ido=64 route=multipass
+EXEC,real,512,forward,real-avx2:radix4-forward l1=2 ido=64
+EXEC,real,512,forward,real-forward-pass radix=2 l1=1 ido=256 route=multipass
+EXEC,real,512,forward,real-avx2:radix2-forward l1=1 ido=256
+EXEC,real,512,inverse,real-inverse-pass radix=2 l1=1 ido=256 route=multipass
+EXEC,real,512,inverse,real-avx2:radix2-inverse l1=1 ido=256
+EXEC,real,512,inverse,real-inverse-pass radix=4 l1=2 ido=64 route=multipass
+EXEC,real,512,inverse,real-avx2:radix4-inverse l1=2 ido=64
+EXEC,real,512,inverse,real-inverse-pass radix=4 l1=8 ido=16 route=multipass
+EXEC,real,512,inverse,real-avx2:radix4-inverse l1=8 ido=16
+EXEC,real,512,inverse,real-inverse-pass radix=4 l1=32 ido=4 route=multipass
+EXEC,real,512,inverse,real-inverse n=512 route=multipass
+STAGE,c2c,513,n=513 stage=0 radix=3 l1=1 ido=171 route=fixed butterfly
+STAGE,c2c,513,n=513 stage=1 radix=3 l1=3 ido=57 route=fixed butterfly
+STAGE,c2c,513,n=513 stage=2 radix=3 l1=9 ido=19 route=fixed butterfly
+STAGE,c2c,513,n=513 stage=3 radix=19 l1=27 ido=1 route=general prime
+PLAN,c2c,513,21499,8816,-
+EXEC,c2c,513,forward,c2c n=513 normalization=forward
+EXEC,c2c,513,forward,c2c n=513 stage=0 radix=3 l1=1 ido=171 route=fixed
+EXEC,c2c,513,forward,c2c-scalar:first n=513 radix=3 ido=171
+EXEC,c2c,513,forward,c2c n=513 stage=1 radix=3 l1=3 ido=57 route=fixed
+EXEC,c2c,513,forward,c2c-scalar:pass n=513 radix=3 l1=3 ido=57
+EXEC,c2c,513,forward,c2c n=513 stage=2 radix=3 l1=9 ido=19 route=fixed
+EXEC,c2c,513,forward,c2c-scalar:pass n=513 radix=3 l1=9 ido=19
+EXEC,c2c,513,forward,c2c n=513 stage=3 radix=19 l1=27 ido=1 route=general-prime
+EXEC,c2c,513,inverse,c2c n=513 normalization=deferred
+EXEC,c2c,513,inverse,c2c n=513 stage=0 radix=3 l1=1 ido=171 route=fixed
+EXEC,c2c,513,inverse,c2c-scalar:first n=513 radix=3 ido=171
+EXEC,c2c,513,inverse,c2c n=513 stage=1 radix=3 l1=3 ido=57 route=fixed
+EXEC,c2c,513,inverse,c2c-scalar:pass n=513 radix=3 l1=3 ido=57
+EXEC,c2c,513,inverse,c2c n=513 stage=2 radix=3 l1=9 ido=19 route=fixed
+EXEC,c2c,513,inverse,c2c-scalar:pass n=513 radix=3 l1=9 ido=19
+EXEC,c2c,513,inverse,c2c n=513 stage=3 radix=19 l1=27 ido=1 route=general-prime
+STAGE,r2c-c2r,513,real n=513 factors=[3; 3; 3; 19] complexify=false rader=none
+STAGE,r2c-c2r,513,real n=513 stage=0 radix=3 l1=1 ido=171 route=fixed real radix
+STAGE,r2c-c2r,513,real n=513 stage=1 radix=3 l1=3 ido=57 route=fixed real radix
+STAGE,r2c-c2r,513,real n=513 stage=2 radix=3 l1=9 ido=19 route=fixed real radix
+STAGE,r2c-c2r,513,real n=513 stage=3 radix=19 l1=27 ido=1 route=general prime
+STAGE,r2c-c2r,513,real n=513 stage=0 radix=3 l1=1 ido=171 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,513,real n=513 stage=1 radix=3 l1=3 ido=57 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,513,real n=513 stage=2 radix=3 l1=9 ido=19 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,513,real n=513 stage=3 radix=19 l1=27 ido=1 route=general prime simd=AVX2-prime-ido1-installed
+PLAN,real,513,15961,15424,-
+EXEC,real,513,forward,real-forward n=513 route=multipass
+EXEC,real,513,forward,real-forward-pass radix=19 l1=27 ido=1 route=multipass
+EXEC,real,513,forward,real-avx2:prime-forward radix=19 l1=27
+EXEC,real,513,forward,real-forward-pass radix=3 l1=9 ido=19 route=multipass
+EXEC,real,513,forward,real-forward-pass radix=3 l1=3 ido=57 route=multipass
+EXEC,real,513,forward,real-forward-pass radix=3 l1=1 ido=171 route=multipass
+EXEC,real,513,inverse,real-inverse-pass radix=3 l1=1 ido=171 route=multipass
+EXEC,real,513,inverse,real-inverse-pass radix=3 l1=3 ido=57 route=multipass
+EXEC,real,513,inverse,real-inverse-pass radix=3 l1=9 ido=19 route=multipass
+EXEC,real,513,inverse,real-avx2:prime-inverse radix=19 l1=27
+EXEC,real,513,inverse,real-inverse n=513 route=multipass
+STAGE,c2c,525,n=525 stage=0 radix=3 l1=1 ido=175 route=fixed butterfly
+STAGE,c2c,525,n=525 stage=1 radix=5 l1=3 ido=35 route=fixed butterfly
+STAGE,c2c,525,n=525 stage=2 radix=5 l1=15 ido=7 route=fixed butterfly
+STAGE,c2c,525,n=525 stage=3 radix=7 l1=75 ido=1 route=fixed butterfly
+PLAN,c2c,525,21232,8624,-
+EXEC,c2c,525,forward,c2c n=525 normalization=forward
+EXEC,c2c,525,forward,c2c n=525 stage=0 radix=3 l1=1 ido=175 route=fixed
+EXEC,c2c,525,forward,c2c-scalar:first n=525 radix=3 ido=175
+EXEC,c2c,525,forward,c2c n=525 stage=1 radix=5 l1=3 ido=35 route=fixed
+EXEC,c2c,525,forward,c2c-scalar:pass n=525 radix=5 l1=3 ido=35
+EXEC,c2c,525,forward,c2c n=525 stage=2 radix=5 l1=15 ido=7 route=fixed
+EXEC,c2c,525,forward,c2c-scalar:pass n=525 radix=5 l1=15 ido=7
+EXEC,c2c,525,forward,c2c n=525 stage=3 radix=7 l1=75 ido=1 route=fixed
+EXEC,c2c,525,forward,c2c-scalar:pass n=525 radix=7 l1=75 ido=1
+EXEC,c2c,525,inverse,c2c n=525 normalization=deferred
+EXEC,c2c,525,inverse,c2c n=525 stage=0 radix=3 l1=1 ido=175 route=fixed
+EXEC,c2c,525,inverse,c2c-scalar:first n=525 radix=3 ido=175
+EXEC,c2c,525,inverse,c2c n=525 stage=1 radix=5 l1=3 ido=35 route=fixed
+EXEC,c2c,525,inverse,c2c-scalar:pass n=525 radix=5 l1=3 ido=35
+EXEC,c2c,525,inverse,c2c n=525 stage=2 radix=5 l1=15 ido=7 route=fixed
+EXEC,c2c,525,inverse,c2c-scalar:pass n=525 radix=5 l1=15 ido=7
+EXEC,c2c,525,inverse,c2c n=525 stage=3 radix=7 l1=75 ido=1 route=fixed
+EXEC,c2c,525,inverse,c2c-scalar:pass n=525 radix=7 l1=75 ido=1
+STAGE,r2c-c2r,525,real n=525 factors=[3; 5; 5; 7] complexify=false rader=none
+STAGE,r2c-c2r,525,real n=525 stage=0 radix=3 l1=1 ido=175 route=fixed real radix
+STAGE,r2c-c2r,525,real n=525 stage=1 radix=5 l1=3 ido=35 route=fixed real radix
+STAGE,r2c-c2r,525,real n=525 stage=2 radix=5 l1=15 ido=7 route=fixed real radix
+STAGE,r2c-c2r,525,real n=525 stage=3 radix=7 l1=75 ido=1 route=general prime
+STAGE,r2c-c2r,525,real n=525 stage=0 radix=3 l1=1 ido=175 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,525,real n=525 stage=1 radix=5 l1=3 ido=35 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,525,real n=525 stage=2 radix=5 l1=15 ido=7 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,525,real n=525 stage=3 radix=7 l1=75 ido=1 route=general prime simd=scalar-conditions
+PLAN,real,525,14513,14832,-
+EXEC,real,525,forward,real-forward n=525 route=multipass
+EXEC,real,525,forward,real-forward-pass radix=7 l1=75 ido=1 route=multipass
+EXEC,real,525,forward,real-forward-pass radix=5 l1=15 ido=7 route=multipass
+EXEC,real,525,forward,real-forward-pass radix=5 l1=3 ido=35 route=multipass
+EXEC,real,525,forward,real-forward-pass radix=3 l1=1 ido=175 route=multipass
+EXEC,real,525,inverse,real-inverse-pass radix=3 l1=1 ido=175 route=multipass
+EXEC,real,525,inverse,real-inverse-pass radix=5 l1=3 ido=35 route=multipass
+EXEC,real,525,inverse,real-inverse-pass radix=5 l1=15 ido=7 route=multipass
+EXEC,real,525,inverse,real-inverse n=525 route=multipass
+STAGE,c2c,682,n=682 stage=0 radix=2 l1=1 ido=341 route=fixed butterfly
+STAGE,c2c,682,n=682 stage=1 radix=11 l1=2 ido=31 route=fixed butterfly
+STAGE,c2c,682,n=682 stage=2 radix=31 l1=22 ido=1 route=general prime
+PLAN,c2c,682,28961,11904,-
+EXEC,c2c,682,forward,c2c n=682 normalization=forward
+EXEC,c2c,682,forward,c2c n=682 stage=0 radix=2 l1=1 ido=341 route=fixed
+EXEC,c2c,682,forward,c2c-avx2:first-prefix n=682 radix=2 ido=341 vector_ido=340 scalar_tail=1
+EXEC,c2c,682,forward,c2c n=682 stage=1 radix=11 l1=2 ido=31 route=fixed
+EXEC,c2c,682,forward,c2c-avx2:radix11-ido31 n=682 l1=2 ido=31 vector_ido=30 scalar_tail=1
+EXEC,c2c,682,forward,c2c n=682 stage=2 radix=31 l1=22 ido=1 route=general-prime
+EXEC,c2c,682,forward,c2c-avx2:general-prime-ido1 n=682 radix=31 l1=22 vector_frequencies=14 scalar_tail=1
+EXEC,c2c,682,inverse,c2c n=682 normalization=deferred
+EXEC,c2c,682,inverse,c2c n=682 stage=0 radix=2 l1=1 ido=341 route=fixed
+EXEC,c2c,682,inverse,c2c-avx2:first-prefix n=682 radix=2 ido=341 vector_ido=340 scalar_tail=1
+EXEC,c2c,682,inverse,c2c n=682 stage=1 radix=11 l1=2 ido=31 route=fixed
+EXEC,c2c,682,inverse,c2c-avx2:radix11-ido31 n=682 l1=2 ido=31 vector_ido=30 scalar_tail=1
+EXEC,c2c,682,inverse,c2c n=682 stage=2 radix=31 l1=22 ido=1 route=general-prime
+EXEC,c2c,682,inverse,c2c-avx2:general-prime-ido1 n=682 radix=31 l1=22 vector_frequencies=14 scalar_tail=1
+STAGE,r2c-c2r,682,real n=682 factors=[2; 11; 31] complexify=false rader=none
+STAGE,r2c-c2r,682,real n=682 stage=0 radix=2 l1=1 ido=341 route=fixed real radix
+STAGE,r2c-c2r,682,real n=682 stage=1 radix=11 l1=2 ido=31 route=fixed real radix-11
+STAGE,r2c-c2r,682,real n=682 stage=2 radix=31 l1=22 ido=1 route=general prime
+STAGE,r2c-c2r,682,real n=682 stage=0 radix=2 l1=1 ido=341 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,682,real n=682 stage=1 radix=11 l1=2 ido=31 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,682,real n=682 stage=2 radix=31 l1=22 ido=1 route=general prime simd=AVX2-prime-ido1-installed
+PLAN,real,682,22633,21184,-
+EXEC,real,682,forward,real-forward n=682 route=multipass
+EXEC,real,682,forward,real-forward-pass radix=31 l1=22 ido=1 route=multipass
+EXEC,real,682,forward,real-avx2:prime-forward radix=31 l1=22
+EXEC,real,682,forward,real-forward-pass radix=11 l1=2 ido=31 route=fixed-radix11
+EXEC,real,682,forward,real-forward-pass radix=2 l1=1 ido=341 route=multipass
+EXEC,real,682,inverse,real-inverse-pass radix=2 l1=1 ido=341 route=multipass
+EXEC,real,682,inverse,real-inverse-pass radix=11 l1=2 ido=31 route=fixed-radix11
+EXEC,real,682,inverse,real-avx2:prime-inverse radix=31 l1=22
+EXEC,real,682,inverse,real-inverse n=682 route=multipass
+STAGE,c2c,683,n=683 stage=0 radix=683 l1=1 ido=1 route=bluestein conv=1372
+PLAN,c2c,683,106224,76912,-
+EXEC,c2c,683,forward,c2c n=683 normalization=forward
+EXEC,c2c,683,forward,c2c n=683 stage=0 radix=683 l1=1 ido=1 route=bluestein conv=1372
+EXEC,c2c,683,forward,c2c n=1372 normalization=forward
+EXEC,c2c,683,forward,c2c n=1372 stage=0 radix=4 l1=1 ido=343 route=fixed
+EXEC,c2c,683,forward,c2c-scalar:first n=1372 radix=4 ido=343
+EXEC,c2c,683,forward,c2c n=1372 stage=1 radix=7 l1=4 ido=49 route=fixed
+EXEC,c2c,683,forward,c2c-scalar:pass n=1372 radix=7 l1=4 ido=49
+EXEC,c2c,683,forward,c2c n=1372 stage=2 radix=7 l1=28 ido=7 route=fixed
+EXEC,c2c,683,forward,c2c-scalar:pass n=1372 radix=7 l1=28 ido=7
+EXEC,c2c,683,forward,c2c n=1372 stage=3 radix=7 l1=196 ido=1 route=fixed
+EXEC,c2c,683,forward,c2c-scalar:pass n=1372 radix=7 l1=196 ido=1
+EXEC,c2c,683,forward,c2c n=1372 normalization=deferred
+EXEC,c2c,683,inverse,c2c n=683 normalization=deferred
+EXEC,c2c,683,inverse,c2c n=683 stage=0 radix=683 l1=1 ido=1 route=bluestein conv=1372
+EXEC,c2c,683,inverse,c2c n=1372 normalization=forward
+EXEC,c2c,683,inverse,c2c n=1372 stage=0 radix=4 l1=1 ido=343 route=fixed
+EXEC,c2c,683,inverse,c2c-scalar:first n=1372 radix=4 ido=343
+EXEC,c2c,683,inverse,c2c n=1372 stage=1 radix=7 l1=4 ido=49 route=fixed
+EXEC,c2c,683,inverse,c2c-scalar:pass n=1372 radix=7 l1=4 ido=49
+EXEC,c2c,683,inverse,c2c n=1372 stage=2 radix=7 l1=28 ido=7 route=fixed
+EXEC,c2c,683,inverse,c2c-scalar:pass n=1372 radix=7 l1=28 ido=7
+EXEC,c2c,683,inverse,c2c n=1372 stage=3 radix=7 l1=196 ido=1 route=fixed
+EXEC,c2c,683,inverse,c2c-scalar:pass n=1372 radix=7 l1=196 ido=1
+EXEC,c2c,683,inverse,c2c n=1372 normalization=deferred
+STAGE,r2c-c2r,683,real n=683 factors=[683] complexify=false rader=none
+STAGE,r2c-c2r,683,real n=683 stage=0 radix=683 l1=1 ido=1 route=Bluestein conv=1372
+STAGE,r2c-c2r,683,real n=683 stage=0 radix=683 l1=1 ido=1 route=Bluestein-stage=0 simd=scalar-conditions
+PLAN,real,683,95912,98768,-
+EXEC,real,683,forward,real-forward n=683 route=multipass
+EXEC,real,683,forward,real-forward-pass radix=683 l1=1 ido=1 route=Bluestein
+EXEC,real,683,forward,real-forward:Bluestein radix=683
+EXEC,real,683,forward,c2c n=1372 normalization=forward
+EXEC,real,683,forward,c2c n=1372 stage=0 radix=4 l1=1 ido=343 route=fixed
+EXEC,real,683,forward,c2c-scalar:first n=1372 radix=4 ido=343
+EXEC,real,683,forward,c2c n=1372 stage=1 radix=7 l1=4 ido=49 route=fixed
+EXEC,real,683,forward,c2c-scalar:pass n=1372 radix=7 l1=4 ido=49
+EXEC,real,683,forward,c2c n=1372 stage=2 radix=7 l1=28 ido=7 route=fixed
+EXEC,real,683,forward,c2c-scalar:pass n=1372 radix=7 l1=28 ido=7
+EXEC,real,683,forward,c2c n=1372 stage=3 radix=7 l1=196 ido=1 route=fixed
+EXEC,real,683,forward,c2c-scalar:pass n=1372 radix=7 l1=196 ido=1
+EXEC,real,683,forward,c2c n=1372 normalization=deferred
+EXEC,real,683,inverse,real-inverse:Bluestein radix=683
+EXEC,real,683,inverse,c2c n=1372 normalization=forward
+EXEC,real,683,inverse,c2c n=1372 stage=0 radix=4 l1=1 ido=343 route=fixed
+EXEC,real,683,inverse,c2c-scalar:first n=1372 radix=4 ido=343
+EXEC,real,683,inverse,c2c n=1372 stage=1 radix=7 l1=4 ido=49 route=fixed
+EXEC,real,683,inverse,c2c-scalar:pass n=1372 radix=7 l1=4 ido=49
+EXEC,real,683,inverse,c2c n=1372 stage=2 radix=7 l1=28 ido=7 route=fixed
+EXEC,real,683,inverse,c2c-scalar:pass n=1372 radix=7 l1=28 ido=7
+EXEC,real,683,inverse,c2c n=1372 stage=3 radix=7 l1=196 ido=1 route=fixed
+EXEC,real,683,inverse,c2c-scalar:pass n=1372 radix=7 l1=196 ido=1
+EXEC,real,683,inverse,c2c n=1372 normalization=deferred
+EXEC,real,683,inverse,real-inverse n=683 route=multipass
+STAGE,c2c,722,n=722 stage=0 radix=2 l1=1 ido=361 route=fixed butterfly
+STAGE,c2c,722,n=722 stage=1 radix=19 l1=2 ido=19 route=general prime
+STAGE,c2c,722,n=722 stage=2 radix=19 l1=38 ido=1 route=general prime
+PLAN,c2c,722,30246,12160,-
+EXEC,c2c,722,forward,c2c n=722 normalization=forward
+EXEC,c2c,722,forward,c2c n=722 stage=0 radix=2 l1=1 ido=361 route=fixed
+EXEC,c2c,722,forward,c2c-avx2:first-prefix n=722 radix=2 ido=361 vector_ido=360 scalar_tail=1
+EXEC,c2c,722,forward,c2c n=722 stage=1 radix=19 l1=2 ido=19 route=general-prime
+EXEC,c2c,722,forward,c2c n=722 stage=2 radix=19 l1=38 ido=1 route=general-prime
+EXEC,c2c,722,inverse,c2c n=722 normalization=deferred
+EXEC,c2c,722,inverse,c2c n=722 stage=0 radix=2 l1=1 ido=361 route=fixed
+EXEC,c2c,722,inverse,c2c-avx2:first-prefix n=722 radix=2 ido=361 vector_ido=360 scalar_tail=1
+EXEC,c2c,722,inverse,c2c n=722 stage=1 radix=19 l1=2 ido=19 route=general-prime
+EXEC,c2c,722,inverse,c2c n=722 stage=2 radix=19 l1=38 ido=1 route=general-prime
+STAGE,r2c-c2r,722,real n=722 factors=[2; 19; 19] complexify=false rader=none
+STAGE,r2c-c2r,722,real n=722 stage=0 radix=2 l1=1 ido=361 route=fixed real radix
+STAGE,r2c-c2r,722,real n=722 stage=1 radix=19 l1=2 ido=19 route=general prime
+STAGE,r2c-c2r,722,real n=722 stage=2 radix=19 l1=38 ido=1 route=general prime
+STAGE,r2c-c2r,722,real n=722 stage=0 radix=2 l1=1 ido=361 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,722,real n=722 stage=1 radix=19 l1=2 ido=19 route=general prime simd=scalar-conditions
+STAGE,r2c-c2r,722,real n=722 stage=2 radix=19 l1=38 ido=1 route=general prime simd=AVX2-prime-ido1-installed
+PLAN,real,722,21194,21600,-
+EXEC,real,722,forward,real-forward n=722 route=multipass
+EXEC,real,722,forward,real-forward-pass radix=19 l1=38 ido=1 route=multipass
+EXEC,real,722,forward,real-avx2:prime-forward radix=19 l1=38
+EXEC,real,722,forward,real-forward-pass radix=19 l1=2 ido=19 route=multipass
+EXEC,real,722,forward,real-forward-pass radix=2 l1=1 ido=361 route=multipass
+EXEC,real,722,inverse,real-inverse-pass radix=2 l1=1 ido=361 route=multipass
+EXEC,real,722,inverse,real-inverse-pass radix=19 l1=2 ido=19 route=multipass
+EXEC,real,722,inverse,real-avx2:prime-inverse radix=19 l1=38
+EXEC,real,722,inverse,real-inverse n=722 route=multipass
+STAGE,c2c,723,n=723 stage=0 radix=3 l1=1 ido=241 route=fixed butterfly
+STAGE,c2c,723,n=723 stage=1 radix=241 l1=3 ido=1 route=bluestein conv=512
+PLAN,c2c,723,57776,35920,-
+EXEC,c2c,723,forward,c2c n=723 normalization=forward
+EXEC,c2c,723,forward,c2c n=723 stage=0 radix=3 l1=1 ido=241 route=fixed
+EXEC,c2c,723,forward,c2c-scalar:first n=723 radix=3 ido=241
+EXEC,c2c,723,forward,c2c n=723 stage=1 radix=241 l1=3 ido=1 route=bluestein conv=512
+EXEC,c2c,723,forward,c2c n=512 normalization=forward
+EXEC,c2c,723,forward,c2c n=512 stage=0 radix=8 l1=1 ido=64 route=fixed
+EXEC,c2c,723,forward,c2c-scalar:first n=512 radix=8 ido=64
+EXEC,c2c,723,forward,c2c n=512 stage=1 radix=8 l1=8 ido=8 route=fixed
+EXEC,c2c,723,forward,c2c-scalar:pass n=512 radix=8 l1=8 ido=8
+EXEC,c2c,723,forward,c2c n=512 stage=2 radix=8 l1=64 ido=1 route=fixed
+EXEC,c2c,723,forward,c2c-scalar:pass n=512 radix=8 l1=64 ido=1
+EXEC,c2c,723,forward,c2c n=512 normalization=deferred
+EXEC,c2c,723,inverse,c2c n=723 normalization=deferred
+EXEC,c2c,723,inverse,c2c n=723 stage=0 radix=3 l1=1 ido=241 route=fixed
+EXEC,c2c,723,inverse,c2c-scalar:first n=723 radix=3 ido=241
+EXEC,c2c,723,inverse,c2c n=723 stage=1 radix=241 l1=3 ido=1 route=bluestein conv=512
+EXEC,c2c,723,inverse,c2c n=512 normalization=forward
+EXEC,c2c,723,inverse,c2c n=512 stage=0 radix=8 l1=1 ido=64 route=fixed
+EXEC,c2c,723,inverse,c2c-scalar:first n=512 radix=8 ido=64
+EXEC,c2c,723,inverse,c2c n=512 stage=1 radix=8 l1=8 ido=8 route=fixed
+EXEC,c2c,723,inverse,c2c-scalar:pass n=512 radix=8 l1=8 ido=8
+EXEC,c2c,723,inverse,c2c n=512 stage=2 radix=8 l1=64 ido=1 route=fixed
+EXEC,c2c,723,inverse,c2c-scalar:pass n=512 radix=8 l1=64 ido=1
+EXEC,c2c,723,inverse,c2c n=512 normalization=deferred
+STAGE,r2c-c2r,723,real n=723 factors=[3; 241] complexify=false rader=Rader radix=241 convolution=240 algorithm=complex-convolution
+STAGE,r2c-c2r,723,real n=723 stage=0 radix=3 l1=1 ido=241 route=fixed real radix
+STAGE,r2c-c2r,723,real n=723 stage=1 radix=241 fallback=Bluestein conv=512
+STAGE,r2c-c2r,723,real n=723 stage=1 radix=241 l1=3 ido=1 route=Rader
+STAGE,r2c-c2r,723,real n=723 stage=0 radix=3 l1=1 ido=241 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,723,real n=723 stage=1 radix=241 l1=3 ido=1 route=Rader simd=scalar-conditions
+PLAN,real,723,69312,53536,-
+EXEC,real,723,forward,real-forward n=723 route=multipass
+EXEC,real,723,forward,real-forward-pass radix=241 l1=3 ido=1 route=Rader
+EXEC,real,723,forward,real-forward:Rader radix=241
+EXEC,real,723,forward,c2c n=240 normalization=forward
+EXEC,real,723,forward,c2c n=240 stage=0 radix=2 l1=1 ido=120 route=fixed
+EXEC,real,723,forward,c2c-avx2:first-prefix n=240 radix=2 ido=120 vector_ido=120 scalar_tail=0
+EXEC,real,723,forward,c2c n=240 stage=1 radix=8 l1=2 ido=15 route=fixed
+EXEC,real,723,forward,c2c-avx2:pass-prefix n=240 radix=8 l1=2 ido=15 vector_ido=14 scalar_tail=1
+EXEC,real,723,forward,c2c n=240 stage=2 radix=3 l1=16 ido=5 route=fixed
+EXEC,real,723,forward,c2c-scalar:pass n=240 radix=3 l1=16 ido=5
+EXEC,real,723,forward,c2c n=240 stage=3 radix=5 l1=48 ido=1 route=fixed
+EXEC,real,723,forward,c2c-scalar:pass n=240 radix=5 l1=48 ido=1
+EXEC,real,723,forward,c2c n=240 normalization=deferred
+EXEC,real,723,forward,real-forward-pass radix=3 l1=1 ido=241 route=multipass
+EXEC,real,723,inverse,real-inverse-pass radix=3 l1=1 ido=241 route=multipass
+EXEC,real,723,inverse,real-inverse:Rader radix=241
+EXEC,real,723,inverse,c2c n=240 normalization=forward
+EXEC,real,723,inverse,c2c n=240 stage=0 radix=2 l1=1 ido=120 route=fixed
+EXEC,real,723,inverse,c2c-avx2:first-prefix n=240 radix=2 ido=120 vector_ido=120 scalar_tail=0
+EXEC,real,723,inverse,c2c n=240 stage=1 radix=8 l1=2 ido=15 route=fixed
+EXEC,real,723,inverse,c2c-avx2:pass-prefix n=240 radix=8 l1=2 ido=15 vector_ido=14 scalar_tail=1
+EXEC,real,723,inverse,c2c n=240 stage=2 radix=3 l1=16 ido=5 route=fixed
+EXEC,real,723,inverse,c2c-scalar:pass n=240 radix=3 l1=16 ido=5
+EXEC,real,723,inverse,c2c n=240 stage=3 radix=5 l1=48 ido=1 route=fixed
+EXEC,real,723,inverse,c2c-scalar:pass n=240 radix=5 l1=48 ido=1
+EXEC,real,723,inverse,c2c n=240 normalization=deferred
+EXEC,real,723,inverse,real-inverse n=723 route=multipass
+STAGE,c2c,726,n=726 stage=0 radix=2 l1=1 ido=363 route=fixed butterfly
+STAGE,c2c,726,n=726 stage=1 radix=3 l1=2 ido=121 route=fixed butterfly
+STAGE,c2c,726,n=726 stage=2 radix=11 l1=6 ido=11 route=fixed butterfly
+STAGE,c2c,726,n=726 stage=3 radix=11 l1=66 ido=1 route=fixed butterfly
+PLAN,c2c,726,32112,11968,-
+EXEC,c2c,726,forward,c2c n=726 normalization=forward
+EXEC,c2c,726,forward,c2c n=726 stage=0 radix=2 l1=1 ido=363 route=fixed
+EXEC,c2c,726,forward,c2c-avx2:first-prefix n=726 radix=2 ido=363 vector_ido=362 scalar_tail=1
+EXEC,c2c,726,forward,c2c n=726 stage=1 radix=3 l1=2 ido=121 route=fixed
+EXEC,c2c,726,forward,c2c-scalar:pass n=726 radix=3 l1=2 ido=121
+EXEC,c2c,726,forward,c2c n=726 stage=2 radix=11 l1=6 ido=11 route=fixed
+EXEC,c2c,726,forward,c2c n=726 stage=3 radix=11 l1=66 ido=1 route=fixed
+EXEC,c2c,726,inverse,c2c n=726 normalization=deferred
+EXEC,c2c,726,inverse,c2c n=726 stage=0 radix=2 l1=1 ido=363 route=fixed
+EXEC,c2c,726,inverse,c2c-avx2:first-prefix n=726 radix=2 ido=363 vector_ido=362 scalar_tail=1
+EXEC,c2c,726,inverse,c2c n=726 stage=1 radix=3 l1=2 ido=121 route=fixed
+EXEC,c2c,726,inverse,c2c-scalar:pass n=726 radix=3 l1=2 ido=121
+EXEC,c2c,726,inverse,c2c n=726 stage=2 radix=11 l1=6 ido=11 route=fixed
+EXEC,c2c,726,inverse,c2c n=726 stage=3 radix=11 l1=66 ido=1 route=fixed
+STAGE,r2c-c2r,726,real n=726 factors=[2; 3; 11; 11] complexify=false rader=none
+STAGE,r2c-c2r,726,real n=726 stage=0 radix=2 l1=1 ido=363 route=fixed real radix
+STAGE,r2c-c2r,726,real n=726 stage=1 radix=3 l1=2 ido=121 route=fixed real radix
+STAGE,r2c-c2r,726,real n=726 stage=2 radix=11 l1=6 ido=11 route=fixed real radix-11
+STAGE,r2c-c2r,726,real n=726 stage=3 radix=11 l1=66 ido=1 route=fixed real radix-11
+STAGE,r2c-c2r,726,real n=726 stage=0 radix=2 l1=1 ido=363 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,726,real n=726 stage=1 radix=3 l1=2 ido=121 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,726,real n=726 stage=2 radix=11 l1=6 ido=11 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,726,real n=726 stage=3 radix=11 l1=66 ido=1 route=fixed real pass simd=scalar-conditions
+PLAN,real,726,19120,22128,-
+EXEC,real,726,forward,real-forward n=726 route=multipass
+EXEC,real,726,forward,real-forward-pass radix=11 l1=66 ido=1 route=fixed-radix11
+EXEC,real,726,forward,real-forward-pass radix=11 l1=6 ido=11 route=fixed-radix11
+EXEC,real,726,forward,real-forward-pass radix=3 l1=2 ido=121 route=multipass
+EXEC,real,726,forward,real-forward-pass radix=2 l1=1 ido=363 route=multipass
+EXEC,real,726,inverse,real-inverse-pass radix=2 l1=1 ido=363 route=multipass
+EXEC,real,726,inverse,real-inverse-pass radix=3 l1=2 ido=121 route=multipass
+EXEC,real,726,inverse,real-inverse-pass radix=11 l1=6 ido=11 route=fixed-radix11
+EXEC,real,726,inverse,real-inverse-terminal:fixed-radix11 l1=66
+EXEC,real,726,inverse,real-inverse n=726 route=multipass
+STAGE,c2c,1023,n=1023 stage=0 radix=3 l1=1 ido=341 route=fixed butterfly
+STAGE,c2c,1023,n=1023 stage=1 radix=11 l1=3 ido=31 route=fixed butterfly
+STAGE,c2c,1023,n=1023 stage=2 radix=31 l1=33 ido=1 route=general prime
+PLAN,c2c,1023,39873,17360,-
+EXEC,c2c,1023,forward,c2c n=1023 normalization=forward
+EXEC,c2c,1023,forward,c2c n=1023 stage=0 radix=3 l1=1 ido=341 route=fixed
+EXEC,c2c,1023,forward,c2c-scalar:first n=1023 radix=3 ido=341
+EXEC,c2c,1023,forward,c2c n=1023 stage=1 radix=11 l1=3 ido=31 route=fixed
+EXEC,c2c,1023,forward,c2c n=1023 stage=2 radix=31 l1=33 ido=1 route=general-prime
+EXEC,c2c,1023,inverse,c2c n=1023 normalization=deferred
+EXEC,c2c,1023,inverse,c2c n=1023 stage=0 radix=3 l1=1 ido=341 route=fixed
+EXEC,c2c,1023,inverse,c2c-scalar:first n=1023 radix=3 ido=341
+EXEC,c2c,1023,inverse,c2c n=1023 stage=1 radix=11 l1=3 ido=31 route=fixed
+EXEC,c2c,1023,inverse,c2c n=1023 stage=2 radix=31 l1=33 ido=1 route=general-prime
+STAGE,r2c-c2r,1023,real n=1023 factors=[3; 11; 31] complexify=false rader=none
+STAGE,r2c-c2r,1023,real n=1023 stage=0 radix=3 l1=1 ido=341 route=fixed real radix
+STAGE,r2c-c2r,1023,real n=1023 stage=1 radix=11 l1=3 ido=31 route=fixed real radix-11
+STAGE,r2c-c2r,1023,real n=1023 stage=2 radix=31 l1=33 ido=1 route=general prime
+STAGE,r2c-c2r,1023,real n=1023 stage=0 radix=3 l1=1 ido=341 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,1023,real n=1023 stage=1 radix=11 l1=3 ido=31 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,1023,real n=1023 stage=2 radix=31 l1=33 ido=1 route=general prime simd=AVX2-prime-ido1-installed
+PLAN,real,1023,30809,29376,-
+EXEC,real,1023,forward,real-forward n=1023 route=multipass
+EXEC,real,1023,forward,real-forward-pass radix=31 l1=33 ido=1 route=multipass
+EXEC,real,1023,forward,real-avx2:prime-forward radix=31 l1=33
+EXEC,real,1023,forward,real-forward-pass radix=11 l1=3 ido=31 route=fixed-radix11
+EXEC,real,1023,forward,real-forward-pass radix=3 l1=1 ido=341 route=multipass
+EXEC,real,1023,inverse,real-inverse-pass radix=3 l1=1 ido=341 route=multipass
+EXEC,real,1023,inverse,real-inverse-pass radix=11 l1=3 ido=31 route=fixed-radix11
+EXEC,real,1023,inverse,real-avx2:prime-inverse radix=31 l1=33
+EXEC,real,1023,inverse,real-inverse n=1023 route=multipass
+STAGE,c2c,1024,n=1024 stage=0 radix=2 l1=1 ido=512 route=fixed butterfly
+STAGE,c2c,1024,n=1024 stage=1 radix=8 l1=2 ido=64 route=fixed butterfly
+STAGE,c2c,1024,n=1024 stage=2 radix=8 l1=16 ido=8 route=fixed butterfly
+STAGE,c2c,1024,n=1024 stage=3 radix=8 l1=128 ido=1 route=fixed butterfly
+PLAN,c2c,1024,43072,16640,-
+EXEC,c2c,1024,forward,c2c n=1024 normalization=forward
+EXEC,c2c,1024,forward,c2c n=1024 stage=0 radix=2 l1=1 ido=512 route=fixed
+EXEC,c2c,1024,forward,c2c-avx2:first-prefix n=1024 radix=2 ido=512 vector_ido=512 scalar_tail=0
+EXEC,c2c,1024,forward,c2c n=1024 stage=1 radix=8 l1=2 ido=64 route=fixed
+EXEC,c2c,1024,forward,c2c-avx2:pass-prefix n=1024 radix=8 l1=2 ido=64 vector_ido=64 scalar_tail=0
+EXEC,c2c,1024,forward,c2c n=1024 stage=2 radix=8 l1=16 ido=8 route=fixed
+EXEC,c2c,1024,forward,c2c-avx2:pass-prefix n=1024 radix=8 l1=16 ido=8 vector_ido=8 scalar_tail=0
+EXEC,c2c,1024,forward,c2c n=1024 stage=3 radix=8 l1=128 ido=1 route=fixed
+EXEC,c2c,1024,forward,c2c-avx2:ido1-pair n=1024 radix=8 l1=128 vector_l1=128 scalar_tail=0
+EXEC,c2c,1024,inverse,c2c n=1024 normalization=deferred
+EXEC,c2c,1024,inverse,c2c n=1024 stage=0 radix=2 l1=1 ido=512 route=fixed
+EXEC,c2c,1024,inverse,c2c-avx2:first-prefix n=1024 radix=2 ido=512 vector_ido=512 scalar_tail=0
+EXEC,c2c,1024,inverse,c2c n=1024 stage=1 radix=8 l1=2 ido=64 route=fixed
+EXEC,c2c,1024,inverse,c2c-avx2:pass-prefix n=1024 radix=8 l1=2 ido=64 vector_ido=64 scalar_tail=0
+EXEC,c2c,1024,inverse,c2c n=1024 stage=2 radix=8 l1=16 ido=8 route=fixed
+EXEC,c2c,1024,inverse,c2c-avx2:pass-prefix n=1024 radix=8 l1=16 ido=8 vector_ido=8 scalar_tail=0
+EXEC,c2c,1024,inverse,c2c n=1024 stage=3 radix=8 l1=128 ido=1 route=fixed
+EXEC,c2c,1024,inverse,c2c-avx2:ido1-pair n=1024 radix=8 l1=128 vector_l1=128 scalar_tail=0
+STAGE,r2c-c2r,1024,real n=1024 factors=[4; 4; 4; 4; 4] complexify=false rader=none
+STAGE,r2c-c2r,1024,real n=1024 stage=0 radix=4 l1=1 ido=256 route=fixed real radix
+STAGE,r2c-c2r,1024,real n=1024 stage=1 radix=4 l1=4 ido=64 route=fixed real radix
+STAGE,r2c-c2r,1024,real n=1024 stage=2 radix=4 l1=16 ido=16 route=fixed real radix
+STAGE,r2c-c2r,1024,real n=1024 stage=3 radix=4 l1=64 ido=4 route=fixed real radix
+STAGE,r2c-c2r,1024,real n=1024 stage=4 radix=4 l1=256 ido=1 route=fixed real radix
+STAGE,r2c-c2r,1024,real n=1024 stage=0 radix=4 l1=1 ido=256 route=fixed real pass simd=AVX2-radix4-forward+inverse-enabled
+STAGE,r2c-c2r,1024,real n=1024 stage=1 radix=4 l1=4 ido=64 route=fixed real pass simd=AVX2-radix4-forward+inverse-enabled
+STAGE,r2c-c2r,1024,real n=1024 stage=2 radix=4 l1=16 ido=16 route=fixed real pass simd=AVX2-radix4-forward+inverse-enabled
+STAGE,r2c-c2r,1024,real n=1024 stage=3 radix=4 l1=64 ido=4 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,1024,real n=1024 stage=4 radix=4 l1=256 ido=1 route=fixed real pass simd=scalar-conditions
+PLAN,real,1024,26680,27776,-
+EXEC,real,1024,forward,real-forward n=1024 route=multipass
+EXEC,real,1024,forward,real-forward-pass radix=4 l1=256 ido=1 route=multipass
+EXEC,real,1024,forward,real-forward-pass radix=4 l1=64 ido=4 route=multipass
+EXEC,real,1024,forward,real-forward-pass radix=4 l1=16 ido=16 route=multipass
+EXEC,real,1024,forward,real-avx2:radix4-forward l1=16 ido=16
+EXEC,real,1024,forward,real-forward-pass radix=4 l1=4 ido=64 route=multipass
+EXEC,real,1024,forward,real-avx2:radix4-forward l1=4 ido=64
+EXEC,real,1024,forward,real-forward-pass radix=4 l1=1 ido=256 route=multipass
+EXEC,real,1024,forward,real-avx2:radix4-forward l1=1 ido=256
+EXEC,real,1024,inverse,real-inverse-pass radix=4 l1=1 ido=256 route=multipass
+EXEC,real,1024,inverse,real-avx2:radix4-inverse l1=1 ido=256
+EXEC,real,1024,inverse,real-inverse-pass radix=4 l1=4 ido=64 route=multipass
+EXEC,real,1024,inverse,real-avx2:radix4-inverse l1=4 ido=64
+EXEC,real,1024,inverse,real-inverse-pass radix=4 l1=16 ido=16 route=multipass
+EXEC,real,1024,inverse,real-avx2:radix4-inverse l1=16 ido=16
+EXEC,real,1024,inverse,real-inverse-pass radix=4 l1=64 ido=4 route=multipass
+EXEC,real,1024,inverse,real-inverse n=1024 route=multipass
+STAGE,c2c,1025,n=1025 stage=0 radix=5 l1=1 ido=205 route=fixed butterfly
+STAGE,c2c,1025,n=1025 stage=1 radix=5 l1=5 ido=41 route=fixed butterfly
+STAGE,c2c,1025,n=1025 stage=2 radix=41 l1=25 ido=1 route=general prime
+PLAN,c2c,1025,38276,17712,-
+EXEC,c2c,1025,forward,c2c n=1025 normalization=forward
+EXEC,c2c,1025,forward,c2c n=1025 stage=0 radix=5 l1=1 ido=205 route=fixed
+EXEC,c2c,1025,forward,c2c-scalar:first n=1025 radix=5 ido=205
+EXEC,c2c,1025,forward,c2c n=1025 stage=1 radix=5 l1=5 ido=41 route=fixed
+EXEC,c2c,1025,forward,c2c-scalar:pass n=1025 radix=5 l1=5 ido=41
+EXEC,c2c,1025,forward,c2c n=1025 stage=2 radix=41 l1=25 ido=1 route=general-prime
+EXEC,c2c,1025,inverse,c2c n=1025 normalization=deferred
+EXEC,c2c,1025,inverse,c2c n=1025 stage=0 radix=5 l1=1 ido=205 route=fixed
+EXEC,c2c,1025,inverse,c2c-scalar:first n=1025 radix=5 ido=205
+EXEC,c2c,1025,inverse,c2c n=1025 stage=1 radix=5 l1=5 ido=41 route=fixed
+EXEC,c2c,1025,inverse,c2c-scalar:pass n=1025 radix=5 l1=5 ido=41
+EXEC,c2c,1025,inverse,c2c n=1025 stage=2 radix=41 l1=25 ido=1 route=general-prime
+STAGE,r2c-c2r,1025,real n=1025 factors=[5; 5; 41] complexify=false rader=none
+STAGE,r2c-c2r,1025,real n=1025 stage=0 radix=5 l1=1 ido=205 route=fixed real radix
+STAGE,r2c-c2r,1025,real n=1025 stage=1 radix=5 l1=5 ido=41 route=fixed real radix
+STAGE,r2c-c2r,1025,real n=1025 stage=2 radix=41 l1=25 ido=1 route=general prime
+STAGE,r2c-c2r,1025,real n=1025 stage=0 radix=5 l1=1 ido=205 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,1025,real n=1025 stage=1 radix=5 l1=5 ido=41 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,1025,real n=1025 stage=2 radix=41 l1=25 ido=1 route=general prime simd=AVX2-prime-ido1-installed
+PLAN,real,1025,34489,28944,-
+EXEC,real,1025,forward,real-forward n=1025 route=multipass
+EXEC,real,1025,forward,real-forward-pass radix=41 l1=25 ido=1 route=multipass
+EXEC,real,1025,forward,real-avx2:prime-forward radix=41 l1=25
+EXEC,real,1025,forward,real-forward-pass radix=5 l1=5 ido=41 route=multipass
+EXEC,real,1025,forward,real-forward-pass radix=5 l1=1 ido=205 route=multipass
+EXEC,real,1025,inverse,real-inverse-pass radix=5 l1=1 ido=205 route=multipass
+EXEC,real,1025,inverse,real-inverse-pass radix=5 l1=5 ido=41 route=multipass
+EXEC,real,1025,inverse,real-avx2:prime-inverse radix=41 l1=25
+EXEC,real,1025,inverse,real-inverse n=1025 route=multipass
+STAGE,c2c,1372,n=1372 stage=0 radix=4 l1=1 ido=343 route=fixed butterfly
+STAGE,c2c,1372,n=1372 stage=1 radix=7 l1=4 ido=49 route=fixed butterfly
+STAGE,c2c,1372,n=1372 stage=2 radix=7 l1=28 ido=7 route=fixed butterfly
+STAGE,c2c,1372,n=1372 stage=3 radix=7 l1=196 ido=1 route=fixed butterfly
+PLAN,c2c,1372,51248,22176,-
+EXEC,c2c,1372,forward,c2c n=1372 normalization=forward
+EXEC,c2c,1372,forward,c2c n=1372 stage=0 radix=4 l1=1 ido=343 route=fixed
+EXEC,c2c,1372,forward,c2c-avx2:first-prefix n=1372 radix=4 ido=343 vector_ido=342 scalar_tail=1
+EXEC,c2c,1372,forward,c2c n=1372 stage=1 radix=7 l1=4 ido=49 route=fixed
+EXEC,c2c,1372,forward,c2c-scalar:pass n=1372 radix=7 l1=4 ido=49
+EXEC,c2c,1372,forward,c2c n=1372 stage=2 radix=7 l1=28 ido=7 route=fixed
+EXEC,c2c,1372,forward,c2c-scalar:pass n=1372 radix=7 l1=28 ido=7
+EXEC,c2c,1372,forward,c2c n=1372 stage=3 radix=7 l1=196 ido=1 route=fixed
+EXEC,c2c,1372,forward,c2c-scalar:pass n=1372 radix=7 l1=196 ido=1
+EXEC,c2c,1372,inverse,c2c n=1372 normalization=deferred
+EXEC,c2c,1372,inverse,c2c n=1372 stage=0 radix=4 l1=1 ido=343 route=fixed
+EXEC,c2c,1372,inverse,c2c-avx2:first-prefix n=1372 radix=4 ido=343 vector_ido=342 scalar_tail=1
+EXEC,c2c,1372,inverse,c2c n=1372 stage=1 radix=7 l1=4 ido=49 route=fixed
+EXEC,c2c,1372,inverse,c2c-scalar:pass n=1372 radix=7 l1=4 ido=49
+EXEC,c2c,1372,inverse,c2c n=1372 stage=2 radix=7 l1=28 ido=7 route=fixed
+EXEC,c2c,1372,inverse,c2c-scalar:pass n=1372 radix=7 l1=28 ido=7
+EXEC,c2c,1372,inverse,c2c n=1372 stage=3 radix=7 l1=196 ido=1 route=fixed
+EXEC,c2c,1372,inverse,c2c-scalar:pass n=1372 radix=7 l1=196 ido=1
+STAGE,r2c-c2r,1372,real n=1372 factors=[4; 7; 7; 7] complexify=true rader=none
+STAGE,r2c-c2r,1372,real n=1372 route=complexify c2c-n=686
+STAGE,r2c-c2r,1372,n=686 stage=0 radix=2 l1=1 ido=343 route=fixed butterfly
+STAGE,r2c-c2r,1372,n=686 stage=1 radix=7 l1=2 ido=49 route=fixed butterfly
+STAGE,r2c-c2r,1372,n=686 stage=2 radix=7 l1=14 ido=7 route=fixed butterfly
+STAGE,r2c-c2r,1372,n=686 stage=3 radix=7 l1=98 ido=1 route=fixed butterfly
+PLAN,real,1372,52432,33200,-
+EXEC,real,1372,forward,real-forward:complexify n=1372
+EXEC,real,1372,forward,c2c n=686 normalization=forward
+EXEC,real,1372,forward,c2c n=686 stage=0 radix=2 l1=1 ido=343 route=fixed
+EXEC,real,1372,forward,c2c-scalar:first n=686 radix=2 ido=343
+EXEC,real,1372,forward,c2c n=686 stage=1 radix=7 l1=2 ido=49 route=fixed
+EXEC,real,1372,forward,c2c-scalar:pass n=686 radix=7 l1=2 ido=49
+EXEC,real,1372,forward,c2c n=686 stage=2 radix=7 l1=14 ido=7 route=fixed
+EXEC,real,1372,forward,c2c-scalar:pass n=686 radix=7 l1=14 ido=7
+EXEC,real,1372,forward,c2c n=686 stage=3 radix=7 l1=98 ido=1 route=fixed
+EXEC,real,1372,forward,c2c-scalar:pass n=686 radix=7 l1=98 ido=1
+EXEC,real,1372,forward,real-forward:complexify-scale n=1372 scaled=false
+EXEC,real,1372,inverse,real-inverse:complexify n=1372
+EXEC,real,1372,inverse,real-inverse:complexify-scale n=1372 scaled=false
+EXEC,real,1372,inverse,c2c n=686 normalization=deferred
+EXEC,real,1372,inverse,c2c n=686 stage=0 radix=2 l1=1 ido=343 route=fixed
+EXEC,real,1372,inverse,c2c-scalar:first n=686 radix=2 ido=343
+EXEC,real,1372,inverse,c2c n=686 stage=1 radix=7 l1=2 ido=49 route=fixed
+EXEC,real,1372,inverse,c2c-scalar:pass n=686 radix=7 l1=2 ido=49
+EXEC,real,1372,inverse,c2c n=686 stage=2 radix=7 l1=14 ido=7 route=fixed
+EXEC,real,1372,inverse,c2c-scalar:pass n=686 radix=7 l1=14 ido=7
+EXEC,real,1372,inverse,c2c n=686 stage=3 radix=7 l1=98 ido=1 route=fixed
+EXEC,real,1372,inverse,c2c-scalar:pass n=686 radix=7 l1=98 ido=1
+STAGE,c2c,1441,n=1441 stage=0 radix=11 l1=1 ido=131 route=fixed butterfly
+STAGE,c2c,1441,n=1441 stage=1 radix=131 l1=11 ido=1 route=bluestein conv=264
+PLAN,c2c,1441,64880,36048,-
+EXEC,c2c,1441,forward,c2c n=1441 normalization=forward
+EXEC,c2c,1441,forward,c2c n=1441 stage=0 radix=11 l1=1 ido=131 route=fixed
+EXEC,c2c,1441,forward,c2c n=1441 stage=1 radix=131 l1=11 ido=1 route=bluestein conv=264
+EXEC,c2c,1441,forward,c2c n=264 normalization=forward
+EXEC,c2c,1441,forward,c2c n=264 stage=0 radix=8 l1=1 ido=33 route=fixed
+EXEC,c2c,1441,forward,c2c-scalar:first n=264 radix=8 ido=33
+EXEC,c2c,1441,forward,c2c n=264 stage=1 radix=3 l1=8 ido=11 route=fixed
+EXEC,c2c,1441,forward,c2c-scalar:pass n=264 radix=3 l1=8 ido=11
+EXEC,c2c,1441,forward,c2c n=264 stage=2 radix=11 l1=24 ido=1 route=fixed
+EXEC,c2c,1441,forward,c2c n=264 normalization=deferred
+EXEC,c2c,1441,inverse,c2c n=1441 normalization=deferred
+EXEC,c2c,1441,inverse,c2c n=1441 stage=0 radix=11 l1=1 ido=131 route=fixed
+EXEC,c2c,1441,inverse,c2c n=1441 stage=1 radix=131 l1=11 ido=1 route=bluestein conv=264
+EXEC,c2c,1441,inverse,c2c n=264 normalization=forward
+EXEC,c2c,1441,inverse,c2c n=264 stage=0 radix=8 l1=1 ido=33 route=fixed
+EXEC,c2c,1441,inverse,c2c-scalar:first n=264 radix=8 ido=33
+EXEC,c2c,1441,inverse,c2c n=264 stage=1 radix=3 l1=8 ido=11 route=fixed
+EXEC,c2c,1441,inverse,c2c-scalar:pass n=264 radix=3 l1=8 ido=11
+EXEC,c2c,1441,inverse,c2c n=264 stage=2 radix=11 l1=24 ido=1 route=fixed
+EXEC,c2c,1441,inverse,c2c n=264 normalization=deferred
+STAGE,r2c-c2r,1441,real n=1441 factors=[11; 131] complexify=false rader=none
+STAGE,r2c-c2r,1441,real n=1441 stage=0 radix=11 l1=1 ido=131 route=fixed real radix-11
+STAGE,r2c-c2r,1441,real n=1441 stage=1 radix=131 l1=11 ido=1 route=general prime
+STAGE,r2c-c2r,1441,real n=1441 stage=0 radix=11 l1=1 ido=131 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,1441,real n=1441 stage=1 radix=131 l1=11 ido=1 route=general prime simd=AVX2-prime-ido1-installed
+PLAN,real,1441,121513,43056,-
+EXEC,real,1441,forward,real-forward n=1441 route=multipass
+EXEC,real,1441,forward,real-forward-pass radix=131 l1=11 ido=1 route=multipass
+EXEC,real,1441,forward,real-avx2:prime-forward radix=131 l1=11
+EXEC,real,1441,forward,real-forward-pass radix=11 l1=1 ido=131 route=fixed-radix11
+EXEC,real,1441,inverse,real-inverse-pass radix=11 l1=1 ido=131 route=fixed-radix11
+EXEC,real,1441,inverse,real-avx2:prime-inverse radix=131 l1=11
+EXEC,real,1441,inverse,real-inverse n=1441 route=multipass
+STAGE,c2c,1442,n=1442 stage=0 radix=2 l1=1 ido=721 route=fixed butterfly
+STAGE,c2c,1442,n=1442 stage=1 radix=7 l1=2 ido=103 route=fixed butterfly
+STAGE,c2c,1442,n=1442 stage=2 radix=103 l1=14 ido=1 route=general prime
+PLAN,c2c,1442,65301,26368,-
+EXEC,c2c,1442,forward,c2c n=1442 normalization=forward
+EXEC,c2c,1442,forward,c2c n=1442 stage=0 radix=2 l1=1 ido=721 route=fixed
+EXEC,c2c,1442,forward,c2c-avx2:first-prefix n=1442 radix=2 ido=721 vector_ido=720 scalar_tail=1
+EXEC,c2c,1442,forward,c2c n=1442 stage=1 radix=7 l1=2 ido=103 route=fixed
+EXEC,c2c,1442,forward,c2c-scalar:pass n=1442 radix=7 l1=2 ido=103
+EXEC,c2c,1442,forward,c2c n=1442 stage=2 radix=103 l1=14 ido=1 route=general-prime
+EXEC,c2c,1442,inverse,c2c n=1442 normalization=deferred
+EXEC,c2c,1442,inverse,c2c n=1442 stage=0 radix=2 l1=1 ido=721 route=fixed
+EXEC,c2c,1442,inverse,c2c-avx2:first-prefix n=1442 radix=2 ido=721 vector_ido=720 scalar_tail=1
+EXEC,c2c,1442,inverse,c2c n=1442 stage=1 radix=7 l1=2 ido=103 route=fixed
+EXEC,c2c,1442,inverse,c2c-scalar:pass n=1442 radix=7 l1=2 ido=103
+EXEC,c2c,1442,inverse,c2c n=1442 stage=2 radix=103 l1=14 ido=1 route=general-prime
+STAGE,r2c-c2r,1442,real n=1442 factors=[2; 7; 103] complexify=true rader=none
+STAGE,r2c-c2r,1442,real n=1442 route=complexify c2c-n=721
+STAGE,r2c-c2r,1442,n=721 stage=0 radix=7 l1=1 ido=103 route=fixed butterfly
+STAGE,r2c-c2r,1442,n=721 stage=1 radix=103 l1=7 ido=1 route=general prime
+PLAN,real,1442,54541,37952,-
+EXEC,real,1442,forward,real-forward:complexify n=1442
+EXEC,real,1442,forward,c2c n=721 normalization=forward
+EXEC,real,1442,forward,c2c n=721 stage=0 radix=7 l1=1 ido=103 route=fixed
+EXEC,real,1442,forward,c2c-scalar:first n=721 radix=7 ido=103
+EXEC,real,1442,forward,c2c n=721 stage=1 radix=103 l1=7 ido=1 route=general-prime
+EXEC,real,1442,forward,real-forward:complexify-scale n=1442 scaled=false
+EXEC,real,1442,inverse,real-inverse:complexify n=1442
+EXEC,real,1442,inverse,real-inverse:complexify-scale n=1442 scaled=false
+EXEC,real,1442,inverse,c2c n=721 normalization=deferred
+EXEC,real,1442,inverse,c2c n=721 stage=0 radix=7 l1=1 ido=103 route=fixed
+EXEC,real,1442,inverse,c2c-scalar:first n=721 radix=7 ido=103
+EXEC,real,1442,inverse,c2c n=721 stage=1 radix=103 l1=7 ido=1 route=general-prime
+STAGE,c2c,1443,n=1443 stage=0 radix=3 l1=1 ido=481 route=fixed butterfly
+STAGE,c2c,1443,n=1443 stage=1 radix=13 l1=3 ido=37 route=general prime
+STAGE,c2c,1443,n=1443 stage=2 radix=37 l1=39 ido=1 route=general prime
+PLAN,c2c,1443,55928,24272,-
+EXEC,c2c,1443,forward,c2c n=1443 normalization=forward
+EXEC,c2c,1443,forward,c2c n=1443 stage=0 radix=3 l1=1 ido=481 route=fixed
+EXEC,c2c,1443,forward,c2c-scalar:first n=1443 radix=3 ido=481
+EXEC,c2c,1443,forward,c2c n=1443 stage=1 radix=13 l1=3 ido=37 route=general-prime
+EXEC,c2c,1443,forward,c2c n=1443 stage=2 radix=37 l1=39 ido=1 route=general-prime
+EXEC,c2c,1443,inverse,c2c n=1443 normalization=deferred
+EXEC,c2c,1443,inverse,c2c n=1443 stage=0 radix=3 l1=1 ido=481 route=fixed
+EXEC,c2c,1443,inverse,c2c-scalar:first n=1443 radix=3 ido=481
+EXEC,c2c,1443,inverse,c2c n=1443 stage=1 radix=13 l1=3 ido=37 route=general-prime
+EXEC,c2c,1443,inverse,c2c n=1443 stage=2 radix=37 l1=39 ido=1 route=general-prime
+STAGE,r2c-c2r,1443,real n=1443 factors=[3; 13; 37] complexify=false rader=none
+STAGE,r2c-c2r,1443,real n=1443 stage=0 radix=3 l1=1 ido=481 route=fixed real radix
+STAGE,r2c-c2r,1443,real n=1443 stage=1 radix=13 l1=3 ido=37 route=general prime
+STAGE,r2c-c2r,1443,real n=1443 stage=2 radix=37 l1=39 ido=1 route=general prime
+STAGE,r2c-c2r,1443,real n=1443 stage=0 radix=3 l1=1 ido=481 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,1443,real n=1443 stage=1 radix=13 l1=3 ido=37 route=general prime simd=scalar-conditions
+STAGE,r2c-c2r,1443,real n=1443 stage=2 radix=37 l1=39 ido=1 route=general prime simd=AVX2-prime-ido1-installed
+PLAN,real,1443,43290,40976,-
+EXEC,real,1443,forward,real-forward n=1443 route=multipass
+EXEC,real,1443,forward,real-forward-pass radix=37 l1=39 ido=1 route=multipass
+EXEC,real,1443,forward,real-avx2:prime-forward radix=37 l1=39
+EXEC,real,1443,forward,real-forward-pass radix=13 l1=3 ido=37 route=multipass
+EXEC,real,1443,forward,real-forward-pass radix=3 l1=1 ido=481 route=multipass
+EXEC,real,1443,inverse,real-inverse-pass radix=3 l1=1 ido=481 route=multipass
+EXEC,real,1443,inverse,real-inverse-pass radix=13 l1=3 ido=37 route=multipass
+EXEC,real,1443,inverse,real-avx2:prime-inverse radix=37 l1=39
+EXEC,real,1443,inverse,real-inverse n=1443 route=multipass
+STAGE,c2c,1452,n=1452 stage=0 radix=4 l1=1 ido=363 route=fixed butterfly
+STAGE,c2c,1452,n=1452 stage=1 radix=3 l1=4 ido=121 route=fixed butterfly
+STAGE,c2c,1452,n=1452 stage=2 radix=11 l1=12 ido=11 route=fixed butterfly
+STAGE,c2c,1452,n=1452 stage=3 radix=11 l1=132 ido=1 route=fixed butterfly
+PLAN,c2c,1452,55344,23584,-
+EXEC,c2c,1452,forward,c2c n=1452 normalization=forward
+EXEC,c2c,1452,forward,c2c n=1452 stage=0 radix=4 l1=1 ido=363 route=fixed
+EXEC,c2c,1452,forward,c2c-avx2:first-prefix n=1452 radix=4 ido=363 vector_ido=362 scalar_tail=1
+EXEC,c2c,1452,forward,c2c n=1452 stage=1 radix=3 l1=4 ido=121 route=fixed
+EXEC,c2c,1452,forward,c2c-scalar:pass n=1452 radix=3 l1=4 ido=121
+EXEC,c2c,1452,forward,c2c n=1452 stage=2 radix=11 l1=12 ido=11 route=fixed
+EXEC,c2c,1452,forward,c2c n=1452 stage=3 radix=11 l1=132 ido=1 route=fixed
+EXEC,c2c,1452,inverse,c2c n=1452 normalization=deferred
+EXEC,c2c,1452,inverse,c2c n=1452 stage=0 radix=4 l1=1 ido=363 route=fixed
+EXEC,c2c,1452,inverse,c2c-avx2:first-prefix n=1452 radix=4 ido=363 vector_ido=362 scalar_tail=1
+EXEC,c2c,1452,inverse,c2c n=1452 stage=1 radix=3 l1=4 ido=121 route=fixed
+EXEC,c2c,1452,inverse,c2c-scalar:pass n=1452 radix=3 l1=4 ido=121
+EXEC,c2c,1452,inverse,c2c n=1452 stage=2 radix=11 l1=12 ido=11 route=fixed
+EXEC,c2c,1452,inverse,c2c n=1452 stage=3 radix=11 l1=132 ido=1 route=fixed
+STAGE,r2c-c2r,1452,real n=1452 factors=[4; 3; 11; 11] complexify=true rader=none
+STAGE,r2c-c2r,1452,real n=1452 route=complexify c2c-n=726
+STAGE,r2c-c2r,1452,n=726 stage=0 radix=2 l1=1 ido=363 route=fixed butterfly
+STAGE,r2c-c2r,1452,n=726 stage=1 radix=3 l1=2 ido=121 route=fixed butterfly
+STAGE,r2c-c2r,1452,n=726 stage=2 radix=11 l1=6 ido=11 route=fixed butterfly
+STAGE,r2c-c2r,1452,n=726 stage=3 radix=11 l1=66 ido=1 route=fixed butterfly
+PLAN,real,1452,56528,35248,-
+EXEC,real,1452,forward,real-forward:complexify n=1452
+EXEC,real,1452,forward,c2c n=726 normalization=forward
+EXEC,real,1452,forward,c2c n=726 stage=0 radix=2 l1=1 ido=363 route=fixed
+EXEC,real,1452,forward,c2c-scalar:first n=726 radix=2 ido=363
+EXEC,real,1452,forward,c2c n=726 stage=1 radix=3 l1=2 ido=121 route=fixed
+EXEC,real,1452,forward,c2c-scalar:pass n=726 radix=3 l1=2 ido=121
+EXEC,real,1452,forward,c2c n=726 stage=2 radix=11 l1=6 ido=11 route=fixed
+EXEC,real,1452,forward,c2c n=726 stage=3 radix=11 l1=66 ido=1 route=fixed
+EXEC,real,1452,forward,real-forward:complexify-scale n=1452 scaled=false
+EXEC,real,1452,inverse,real-inverse:complexify n=1452
+EXEC,real,1452,inverse,real-inverse:complexify-scale n=1452 scaled=false
+EXEC,real,1452,inverse,c2c n=726 normalization=deferred
+EXEC,real,1452,inverse,c2c n=726 stage=0 radix=2 l1=1 ido=363 route=fixed
+EXEC,real,1452,inverse,c2c-scalar:first n=726 radix=2 ido=363
+EXEC,real,1452,inverse,c2c n=726 stage=1 radix=3 l1=2 ido=121 route=fixed
+EXEC,real,1452,inverse,c2c-scalar:pass n=726 radix=3 l1=2 ido=121
+EXEC,real,1452,inverse,c2c n=726 stage=2 radix=11 l1=6 ido=11 route=fixed
+EXEC,real,1452,inverse,c2c n=726 stage=3 radix=11 l1=66 ido=1 route=fixed
+STAGE,c2c,2047,n=2047 stage=0 radix=23 l1=1 ido=89 route=general prime
+STAGE,c2c,2047,n=2047 stage=1 radix=89 l1=23 ido=1 route=general prime
+PLAN,c2c,2047,71577,35600,-
+EXEC,c2c,2047,forward,c2c n=2047 normalization=forward
+EXEC,c2c,2047,forward,c2c n=2047 stage=0 radix=23 l1=1 ido=89 route=general-prime
+EXEC,c2c,2047,forward,c2c n=2047 stage=1 radix=89 l1=23 ido=1 route=general-prime
+EXEC,c2c,2047,inverse,c2c n=2047 normalization=deferred
+EXEC,c2c,2047,inverse,c2c n=2047 stage=0 radix=23 l1=1 ido=89 route=general-prime
+EXEC,c2c,2047,inverse,c2c n=2047 stage=1 radix=89 l1=23 ido=1 route=general-prime
+STAGE,r2c-c2r,2047,real n=2047 factors=[23; 89] complexify=false rader=none
+STAGE,r2c-c2r,2047,real n=2047 stage=0 radix=23 l1=1 ido=89 route=general prime
+STAGE,r2c-c2r,2047,real n=2047 stage=1 radix=89 l1=23 ido=1 route=general prime
+STAGE,r2c-c2r,2047,real n=2047 stage=0 radix=23 l1=1 ido=89 route=general prime simd=scalar-conditions
+STAGE,r2c-c2r,2047,real n=2047 stage=1 radix=89 l1=23 ido=1 route=general prime simd=AVX2-prime-ido1-installed
+PLAN,real,2047,90658,55008,-
+EXEC,real,2047,forward,real-forward n=2047 route=multipass
+EXEC,real,2047,forward,real-forward-pass radix=89 l1=23 ido=1 route=multipass
+EXEC,real,2047,forward,real-avx2:prime-forward radix=89 l1=23
+EXEC,real,2047,forward,real-forward-pass radix=23 l1=1 ido=89 route=multipass
+EXEC,real,2047,inverse,real-inverse-pass radix=23 l1=1 ido=89 route=multipass
+EXEC,real,2047,inverse,real-avx2:prime-inverse radix=89 l1=23
+EXEC,real,2047,inverse,real-inverse n=2047 route=multipass
+STAGE,c2c,2048,n=2048 stage=0 radix=8 l1=1 ido=256 route=fixed butterfly
+STAGE,c2c,2048,n=2048 stage=1 radix=8 l1=8 ido=32 route=fixed butterfly
+STAGE,c2c,2048,n=2048 stage=2 radix=8 l1=64 ido=4 route=fixed butterfly
+STAGE,c2c,2048,n=2048 stage=3 radix=4 l1=512 ido=1 route=fixed butterfly
+PLAN,c2c,2048,71168,33024,-
+EXEC,c2c,2048,forward,c2c n=2048 normalization=forward
+EXEC,c2c,2048,forward,c2c n=2048 stage=0 radix=8 l1=1 ido=256 route=fixed
+EXEC,c2c,2048,forward,c2c-avx2:first-prefix n=2048 radix=8 ido=256 vector_ido=256 scalar_tail=0
+EXEC,c2c,2048,forward,c2c n=2048 stage=1 radix=8 l1=8 ido=32 route=fixed
+EXEC,c2c,2048,forward,c2c-avx2:pass-prefix n=2048 radix=8 l1=8 ido=32 vector_ido=32 scalar_tail=0
+EXEC,c2c,2048,forward,c2c n=2048 stage=2 radix=8 l1=64 ido=4 route=fixed
+EXEC,c2c,2048,forward,c2c-avx2:pass-prefix n=2048 radix=8 l1=64 ido=4 vector_ido=4 scalar_tail=0
+EXEC,c2c,2048,forward,c2c n=2048 stage=3 radix=4 l1=512 ido=1 route=fixed
+EXEC,c2c,2048,forward,c2c-avx2:ido1-pair n=2048 radix=4 l1=512 vector_l1=512 scalar_tail=0
+EXEC,c2c,2048,inverse,c2c n=2048 normalization=deferred
+EXEC,c2c,2048,inverse,c2c n=2048 stage=0 radix=8 l1=1 ido=256 route=fixed
+EXEC,c2c,2048,inverse,c2c-avx2:first-prefix n=2048 radix=8 ido=256 vector_ido=256 scalar_tail=0
+EXEC,c2c,2048,inverse,c2c n=2048 stage=1 radix=8 l1=8 ido=32 route=fixed
+EXEC,c2c,2048,inverse,c2c-avx2:pass-prefix n=2048 radix=8 l1=8 ido=32 vector_ido=32 scalar_tail=0
+EXEC,c2c,2048,inverse,c2c n=2048 stage=2 radix=8 l1=64 ido=4 route=fixed
+EXEC,c2c,2048,inverse,c2c-avx2:pass-prefix n=2048 radix=8 l1=64 ido=4 vector_ido=4 scalar_tail=0
+EXEC,c2c,2048,inverse,c2c n=2048 stage=3 radix=4 l1=512 ido=1 route=fixed
+EXEC,c2c,2048,inverse,c2c-avx2:ido1-pair n=2048 radix=4 l1=512 vector_l1=512 scalar_tail=0
+STAGE,r2c-c2r,2048,real n=2048 factors=[2; 4; 4; 4; 4; 4] complexify=false rader=none
+STAGE,r2c-c2r,2048,real n=2048 stage=0 radix=2 l1=1 ido=1024 route=fixed real radix
+STAGE,r2c-c2r,2048,real n=2048 stage=1 radix=4 l1=2 ido=256 route=fixed real radix
+STAGE,r2c-c2r,2048,real n=2048 stage=2 radix=4 l1=8 ido=64 route=fixed real radix
+STAGE,r2c-c2r,2048,real n=2048 stage=3 radix=4 l1=32 ido=16 route=fixed real radix
+STAGE,r2c-c2r,2048,real n=2048 stage=4 radix=4 l1=128 ido=4 route=fixed real radix
+STAGE,r2c-c2r,2048,real n=2048 stage=5 radix=4 l1=512 ido=1 route=fixed real radix
+STAGE,r2c-c2r,2048,real n=2048 stage=0 radix=2 l1=1 ido=1024 route=fixed real pass simd=AVX2-radix2-forward+inverse-enabled
+STAGE,r2c-c2r,2048,real n=2048 stage=1 radix=4 l1=2 ido=256 route=fixed real pass simd=AVX2-radix4-forward+inverse-enabled
+STAGE,r2c-c2r,2048,real n=2048 stage=2 radix=4 l1=8 ido=64 route=fixed real pass simd=AVX2-radix4-forward+inverse-enabled
+STAGE,r2c-c2r,2048,real n=2048 stage=3 radix=4 l1=32 ido=16 route=fixed real pass simd=AVX2-radix4-forward+inverse-enabled
+STAGE,r2c-c2r,2048,real n=2048 stage=4 radix=4 l1=128 ido=4 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,2048,real n=2048 stage=5 radix=4 l1=512 ido=1 route=fixed real pass simd=scalar-conditions
+PLAN,real,2048,51592,60576,-
+EXEC,real,2048,forward,real-forward n=2048 route=multipass
+EXEC,real,2048,forward,real-forward-pass radix=4 l1=512 ido=1 route=multipass
+EXEC,real,2048,forward,real-forward-pass radix=4 l1=128 ido=4 route=multipass
+EXEC,real,2048,forward,real-forward-pass radix=4 l1=32 ido=16 route=multipass
+EXEC,real,2048,forward,real-avx2:radix4-forward l1=32 ido=16
+EXEC,real,2048,forward,real-forward-pass radix=4 l1=8 ido=64 route=multipass
+EXEC,real,2048,forward,real-avx2:radix4-forward l1=8 ido=64
+EXEC,real,2048,forward,real-forward-pass radix=4 l1=2 ido=256 route=multipass
+EXEC,real,2048,forward,real-avx2:radix4-forward l1=2 ido=256
+EXEC,real,2048,forward,real-forward-pass radix=2 l1=1 ido=1024 route=multipass
+EXEC,real,2048,forward,real-avx2:radix2-forward l1=1 ido=1024
+EXEC,real,2048,inverse,real-inverse-pass radix=2 l1=1 ido=1024 route=multipass
+EXEC,real,2048,inverse,real-avx2:radix2-inverse l1=1 ido=1024
+EXEC,real,2048,inverse,real-inverse-pass radix=4 l1=2 ido=256 route=multipass
+EXEC,real,2048,inverse,real-avx2:radix4-inverse l1=2 ido=256
+EXEC,real,2048,inverse,real-inverse-pass radix=4 l1=8 ido=64 route=multipass
+EXEC,real,2048,inverse,real-avx2:radix4-inverse l1=8 ido=64
+EXEC,real,2048,inverse,real-inverse-pass radix=4 l1=32 ido=16 route=multipass
+EXEC,real,2048,inverse,real-avx2:radix4-inverse l1=32 ido=16
+EXEC,real,2048,inverse,real-inverse-pass radix=4 l1=128 ido=4 route=multipass
+EXEC,real,2048,inverse,real-inverse n=2048 route=multipass
+STAGE,c2c,2049,n=2049 stage=0 radix=3 l1=1 ido=683 route=fixed butterfly
+STAGE,c2c,2049,n=2049 stage=1 radix=683 l1=3 ido=1 route=bluestein conv=1372
+PLAN,c2c,2049,161104,98768,-
+EXEC,c2c,2049,forward,c2c n=2049 normalization=forward
+EXEC,c2c,2049,forward,c2c n=2049 stage=0 radix=3 l1=1 ido=683 route=fixed
+EXEC,c2c,2049,forward,c2c-scalar:first n=2049 radix=3 ido=683
+EXEC,c2c,2049,forward,c2c n=2049 stage=1 radix=683 l1=3 ido=1 route=bluestein conv=1372
+EXEC,c2c,2049,forward,c2c n=1372 normalization=forward
+EXEC,c2c,2049,forward,c2c n=1372 stage=0 radix=4 l1=1 ido=343 route=fixed
+EXEC,c2c,2049,forward,c2c-scalar:first n=1372 radix=4 ido=343
+EXEC,c2c,2049,forward,c2c n=1372 stage=1 radix=7 l1=4 ido=49 route=fixed
+EXEC,c2c,2049,forward,c2c-scalar:pass n=1372 radix=7 l1=4 ido=49
+EXEC,c2c,2049,forward,c2c n=1372 stage=2 radix=7 l1=28 ido=7 route=fixed
+EXEC,c2c,2049,forward,c2c-scalar:pass n=1372 radix=7 l1=28 ido=7
+EXEC,c2c,2049,forward,c2c n=1372 stage=3 radix=7 l1=196 ido=1 route=fixed
+EXEC,c2c,2049,forward,c2c-scalar:pass n=1372 radix=7 l1=196 ido=1
+EXEC,c2c,2049,forward,c2c n=1372 normalization=deferred
+EXEC,c2c,2049,inverse,c2c n=2049 normalization=deferred
+EXEC,c2c,2049,inverse,c2c n=2049 stage=0 radix=3 l1=1 ido=683 route=fixed
+EXEC,c2c,2049,inverse,c2c-scalar:first n=2049 radix=3 ido=683
+EXEC,c2c,2049,inverse,c2c n=2049 stage=1 radix=683 l1=3 ido=1 route=bluestein conv=1372
+EXEC,c2c,2049,inverse,c2c n=1372 normalization=forward
+EXEC,c2c,2049,inverse,c2c n=1372 stage=0 radix=4 l1=1 ido=343 route=fixed
+EXEC,c2c,2049,inverse,c2c-scalar:first n=1372 radix=4 ido=343
+EXEC,c2c,2049,inverse,c2c n=1372 stage=1 radix=7 l1=4 ido=49 route=fixed
+EXEC,c2c,2049,inverse,c2c-scalar:pass n=1372 radix=7 l1=4 ido=49
+EXEC,c2c,2049,inverse,c2c n=1372 stage=2 radix=7 l1=28 ido=7 route=fixed
+EXEC,c2c,2049,inverse,c2c-scalar:pass n=1372 radix=7 l1=28 ido=7
+EXEC,c2c,2049,inverse,c2c n=1372 stage=3 radix=7 l1=196 ido=1 route=fixed
+EXEC,c2c,2049,inverse,c2c-scalar:pass n=1372 radix=7 l1=196 ido=1
+EXEC,c2c,2049,inverse,c2c n=1372 normalization=deferred
+STAGE,r2c-c2r,2049,real n=2049 factors=[3; 683] complexify=false rader=Rader radix=683 convolution=682 algorithm=complex-convolution
+STAGE,r2c-c2r,2049,real n=2049 stage=0 radix=3 l1=1 ido=683 route=fixed real radix
+STAGE,r2c-c2r,2049,real n=2049 stage=1 radix=683 fallback=Bluestein conv=1372
+STAGE,r2c-c2r,2049,real n=2049 stage=1 radix=683 l1=3 ido=1 route=Rader
+STAGE,r2c-c2r,2049,real n=2049 stage=0 radix=3 l1=1 ido=683 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,2049,real n=2049 stage=1 radix=683 l1=3 ido=1 route=Rader simd=scalar-conditions
+PLAN,real,2049,190721,159856,-
+EXEC,real,2049,forward,real-forward n=2049 route=multipass
+EXEC,real,2049,forward,real-forward-pass radix=683 l1=3 ido=1 route=Rader
+EXEC,real,2049,forward,real-forward:Rader radix=683
+EXEC,real,2049,forward,c2c n=682 normalization=forward
+EXEC,real,2049,forward,c2c n=682 stage=0 radix=2 l1=1 ido=341 route=fixed
+EXEC,real,2049,forward,c2c-avx2:first-prefix n=682 radix=2 ido=341 vector_ido=340 scalar_tail=1
+EXEC,real,2049,forward,c2c n=682 stage=1 radix=11 l1=2 ido=31 route=fixed
+EXEC,real,2049,forward,c2c-avx2:radix11-ido31 n=682 l1=2 ido=31 vector_ido=30 scalar_tail=1
+EXEC,real,2049,forward,c2c n=682 stage=2 radix=31 l1=22 ido=1 route=general-prime
+EXEC,real,2049,forward,c2c-avx2:general-prime-ido1 n=682 radix=31 l1=22 vector_frequencies=14 scalar_tail=1
+EXEC,real,2049,forward,c2c n=682 normalization=deferred
+EXEC,real,2049,forward,real-forward-pass radix=3 l1=1 ido=683 route=multipass
+EXEC,real,2049,inverse,real-inverse-pass radix=3 l1=1 ido=683 route=multipass
+EXEC,real,2049,inverse,real-inverse:Rader radix=683
+EXEC,real,2049,inverse,c2c n=682 normalization=forward
+EXEC,real,2049,inverse,c2c n=682 stage=0 radix=2 l1=1 ido=341 route=fixed
+EXEC,real,2049,inverse,c2c-avx2:first-prefix n=682 radix=2 ido=341 vector_ido=340 scalar_tail=1
+EXEC,real,2049,inverse,c2c n=682 stage=1 radix=11 l1=2 ido=31 route=fixed
+EXEC,real,2049,inverse,c2c-avx2:radix11-ido31 n=682 l1=2 ido=31 vector_ido=30 scalar_tail=1
+EXEC,real,2049,inverse,c2c n=682 stage=2 radix=31 l1=22 ido=1 route=general-prime
+EXEC,real,2049,inverse,c2c-avx2:general-prime-ido1 n=682 radix=31 l1=22 vector_frequencies=14 scalar_tail=1
+EXEC,real,2049,inverse,c2c n=682 normalization=deferred
+EXEC,real,2049,inverse,real-inverse n=2049 route=multipass
+STAGE,c2c,2904,n=2904 stage=0 radix=8 l1=1 ido=363 route=fixed butterfly
+STAGE,c2c,2904,n=2904 stage=1 radix=3 l1=8 ido=121 route=fixed butterfly
+STAGE,c2c,2904,n=2904 stage=2 radix=11 l1=24 ido=11 route=fixed butterfly
+STAGE,c2c,2904,n=2904 stage=3 radix=11 l1=264 ido=1 route=fixed butterfly
+PLAN,c2c,2904,101808,46816,-
+EXEC,c2c,2904,forward,c2c n=2904 normalization=forward
+EXEC,c2c,2904,forward,c2c n=2904 stage=0 radix=8 l1=1 ido=363 route=fixed
+EXEC,c2c,2904,forward,c2c-avx2:first-prefix n=2904 radix=8 ido=363 vector_ido=362 scalar_tail=1
+EXEC,c2c,2904,forward,c2c n=2904 stage=1 radix=3 l1=8 ido=121 route=fixed
+EXEC,c2c,2904,forward,c2c-scalar:pass n=2904 radix=3 l1=8 ido=121
+EXEC,c2c,2904,forward,c2c n=2904 stage=2 radix=11 l1=24 ido=11 route=fixed
+EXEC,c2c,2904,forward,c2c n=2904 stage=3 radix=11 l1=264 ido=1 route=fixed
+EXEC,c2c,2904,inverse,c2c n=2904 normalization=deferred
+EXEC,c2c,2904,inverse,c2c n=2904 stage=0 radix=8 l1=1 ido=363 route=fixed
+EXEC,c2c,2904,inverse,c2c-avx2:first-prefix n=2904 radix=8 ido=363 vector_ido=362 scalar_tail=1
+EXEC,c2c,2904,inverse,c2c n=2904 stage=1 radix=3 l1=8 ido=121 route=fixed
+EXEC,c2c,2904,inverse,c2c-scalar:pass n=2904 radix=3 l1=8 ido=121
+EXEC,c2c,2904,inverse,c2c n=2904 stage=2 radix=11 l1=24 ido=11 route=fixed
+EXEC,c2c,2904,inverse,c2c n=2904 stage=3 radix=11 l1=264 ido=1 route=fixed
+STAGE,r2c-c2r,2904,real n=2904 factors=[2; 4; 3; 11; 11] complexify=true rader=none
+STAGE,r2c-c2r,2904,real n=2904 route=complexify c2c-n=1452
+STAGE,r2c-c2r,2904,n=1452 stage=0 radix=4 l1=1 ido=363 route=fixed butterfly
+STAGE,r2c-c2r,2904,n=1452 stage=1 radix=3 l1=4 ido=121 route=fixed butterfly
+STAGE,r2c-c2r,2904,n=1452 stage=2 radix=11 l1=12 ido=11 route=fixed butterfly
+STAGE,r2c-c2r,2904,n=1452 stage=3 radix=11 l1=132 ido=1 route=fixed butterfly
+PLAN,real,2904,103160,70096,-
+EXEC,real,2904,forward,real-forward:complexify n=2904
+EXEC,real,2904,forward,c2c n=1452 normalization=forward
+EXEC,real,2904,forward,c2c n=1452 stage=0 radix=4 l1=1 ido=363 route=fixed
+EXEC,real,2904,forward,c2c-scalar:first n=1452 radix=4 ido=363
+EXEC,real,2904,forward,c2c n=1452 stage=1 radix=3 l1=4 ido=121 route=fixed
+EXEC,real,2904,forward,c2c-scalar:pass n=1452 radix=3 l1=4 ido=121
+EXEC,real,2904,forward,c2c n=1452 stage=2 radix=11 l1=12 ido=11 route=fixed
+EXEC,real,2904,forward,c2c n=1452 stage=3 radix=11 l1=132 ido=1 route=fixed
+EXEC,real,2904,forward,real-forward:complexify-scale n=2904 scaled=false
+EXEC,real,2904,inverse,real-inverse:complexify n=2904
+EXEC,real,2904,inverse,real-inverse:complexify-scale n=2904 scaled=false
+EXEC,real,2904,inverse,c2c n=1452 normalization=deferred
+EXEC,real,2904,inverse,c2c n=1452 stage=0 radix=4 l1=1 ido=363 route=fixed
+EXEC,real,2904,inverse,c2c-scalar:first n=1452 radix=4 ido=363
+EXEC,real,2904,inverse,c2c n=1452 stage=1 radix=3 l1=4 ido=121 route=fixed
+EXEC,real,2904,inverse,c2c-scalar:pass n=1452 radix=3 l1=4 ido=121
+EXEC,real,2904,inverse,c2c n=1452 stage=2 radix=11 l1=12 ido=11 route=fixed
+EXEC,real,2904,inverse,c2c n=1452 stage=3 radix=11 l1=132 ido=1 route=fixed
+STAGE,c2c,4096,n=4096 stage=0 radix=8 l1=1 ido=512 route=fixed butterfly
+STAGE,c2c,4096,n=4096 stage=1 radix=8 l1=8 ido=64 route=fixed butterfly
+STAGE,c2c,4096,n=4096 stage=2 radix=8 l1=64 ido=8 route=fixed butterfly
+STAGE,c2c,4096,n=4096 stage=3 radix=8 l1=512 ido=1 route=fixed butterfly
+PLAN,c2c,4096,141376,65792,-
+EXEC,c2c,4096,forward,c2c n=4096 normalization=forward
+EXEC,c2c,4096,forward,c2c n=4096 stage=0 radix=8 l1=1 ido=512 route=fixed
+EXEC,c2c,4096,forward,c2c-avx2:first-prefix n=4096 radix=8 ido=512 vector_ido=512 scalar_tail=0
+EXEC,c2c,4096,forward,c2c n=4096 stage=1 radix=8 l1=8 ido=64 route=fixed
+EXEC,c2c,4096,forward,c2c-avx2:pass-prefix n=4096 radix=8 l1=8 ido=64 vector_ido=64 scalar_tail=0
+EXEC,c2c,4096,forward,c2c n=4096 stage=2 radix=8 l1=64 ido=8 route=fixed
+EXEC,c2c,4096,forward,c2c-avx2:pass-prefix n=4096 radix=8 l1=64 ido=8 vector_ido=8 scalar_tail=0
+EXEC,c2c,4096,forward,c2c n=4096 stage=3 radix=8 l1=512 ido=1 route=fixed
+EXEC,c2c,4096,forward,c2c-avx2:ido1-pair n=4096 radix=8 l1=512 vector_l1=512 scalar_tail=0
+EXEC,c2c,4096,inverse,c2c n=4096 normalization=deferred
+EXEC,c2c,4096,inverse,c2c n=4096 stage=0 radix=8 l1=1 ido=512 route=fixed
+EXEC,c2c,4096,inverse,c2c-avx2:first-prefix n=4096 radix=8 ido=512 vector_ido=512 scalar_tail=0
+EXEC,c2c,4096,inverse,c2c n=4096 stage=1 radix=8 l1=8 ido=64 route=fixed
+EXEC,c2c,4096,inverse,c2c-avx2:pass-prefix n=4096 radix=8 l1=8 ido=64 vector_ido=64 scalar_tail=0
+EXEC,c2c,4096,inverse,c2c n=4096 stage=2 radix=8 l1=64 ido=8 route=fixed
+EXEC,c2c,4096,inverse,c2c-avx2:pass-prefix n=4096 radix=8 l1=64 ido=8 vector_ido=8 scalar_tail=0
+EXEC,c2c,4096,inverse,c2c n=4096 stage=3 radix=8 l1=512 ido=1 route=fixed
+EXEC,c2c,4096,inverse,c2c-avx2:ido1-pair n=4096 radix=8 l1=512 vector_l1=512 scalar_tail=0
+STAGE,r2c-c2r,4096,real n=4096 factors=[4; 4; 4; 4; 4; 4] complexify=false rader=none
+STAGE,r2c-c2r,4096,real n=4096 stage=0 radix=4 l1=1 ido=1024 route=fixed real radix
+STAGE,r2c-c2r,4096,real n=4096 stage=1 radix=4 l1=4 ido=256 route=fixed real radix
+STAGE,r2c-c2r,4096,real n=4096 stage=2 radix=4 l1=16 ido=64 route=fixed real radix
+STAGE,r2c-c2r,4096,real n=4096 stage=3 radix=4 l1=64 ido=16 route=fixed real radix
+STAGE,r2c-c2r,4096,real n=4096 stage=4 radix=4 l1=256 ido=4 route=fixed real radix
+STAGE,r2c-c2r,4096,real n=4096 stage=5 radix=4 l1=1024 ido=1 route=fixed real radix
+STAGE,r2c-c2r,4096,real n=4096 stage=0 radix=4 l1=1 ido=1024 route=fixed real pass simd=AVX2-radix4-forward+inverse-enabled
+STAGE,r2c-c2r,4096,real n=4096 stage=1 radix=4 l1=4 ido=256 route=fixed real pass simd=AVX2-radix4-forward+inverse-enabled
+STAGE,r2c-c2r,4096,real n=4096 stage=2 radix=4 l1=16 ido=64 route=fixed real pass simd=AVX2-radix4-forward+inverse-enabled
+STAGE,r2c-c2r,4096,real n=4096 stage=3 radix=4 l1=64 ido=16 route=fixed real pass simd=AVX2-radix4-forward+inverse-enabled
+STAGE,r2c-c2r,4096,real n=4096 stage=4 radix=4 l1=256 ido=4 route=fixed real pass simd=scalar-conditions
+STAGE,r2c-c2r,4096,real n=4096 stage=5 radix=4 l1=1024 ido=1 route=fixed real pass simd=scalar-conditions
+PLAN,real,4096,100728,109760,-
+EXEC,real,4096,forward,real-forward n=4096 route=multipass
+EXEC,real,4096,forward,real-forward-pass radix=4 l1=1024 ido=1 route=multipass
+EXEC,real,4096,forward,real-forward-pass radix=4 l1=256 ido=4 route=multipass
+EXEC,real,4096,forward,real-forward-pass radix=4 l1=64 ido=16 route=multipass
+EXEC,real,4096,forward,real-avx2:radix4-forward l1=64 ido=16
+EXEC,real,4096,forward,real-forward-pass radix=4 l1=16 ido=64 route=multipass
+EXEC,real,4096,forward,real-avx2:radix4-forward l1=16 ido=64
+EXEC,real,4096,forward,real-forward-pass radix=4 l1=4 ido=256 route=multipass
+EXEC,real,4096,forward,real-avx2:radix4-forward l1=4 ido=256
+EXEC,real,4096,forward,real-forward-pass radix=4 l1=1 ido=1024 route=multipass
+EXEC,real,4096,forward,real-avx2:radix4-forward l1=1 ido=1024
+EXEC,real,4096,inverse,real-inverse-pass radix=4 l1=1 ido=1024 route=multipass
+EXEC,real,4096,inverse,real-avx2:radix4-inverse l1=1 ido=1024
+EXEC,real,4096,inverse,real-inverse-pass radix=4 l1=4 ido=256 route=multipass
+EXEC,real,4096,inverse,real-avx2:radix4-inverse l1=4 ido=256
+EXEC,real,4096,inverse,real-inverse-pass radix=4 l1=16 ido=64 route=multipass
+EXEC,real,4096,inverse,real-avx2:radix4-inverse l1=16 ido=64
+EXEC,real,4096,inverse,real-inverse-pass radix=4 l1=64 ido=16 route=multipass
+EXEC,real,4096,inverse,real-avx2:radix4-inverse l1=64 ido=16
+EXEC,real,4096,inverse,real-inverse-pass radix=4 l1=256 ido=4 route=multipass
+EXEC,real,4096,inverse,real-inverse n=4096 route=multipass
+STAGE,c2c,4097,n=4097 stage=0 radix=17 l1=1 ido=241 route=general prime
+STAGE,c2c,4097,n=4097 stage=1 radix=241 l1=17 ido=1 route=bluestein conv=512
+PLAN,c2c,4097,165880,89904,-
+EXEC,c2c,4097,forward,c2c n=4097 normalization=forward
+EXEC,c2c,4097,forward,c2c n=4097 stage=0 radix=17 l1=1 ido=241 route=general-prime
+EXEC,c2c,4097,forward,c2c n=4097 stage=1 radix=241 l1=17 ido=1 route=bluestein conv=512
+EXEC,c2c,4097,forward,c2c n=512 normalization=forward
+EXEC,c2c,4097,forward,c2c n=512 stage=0 radix=8 l1=1 ido=64 route=fixed
+EXEC,c2c,4097,forward,c2c-scalar:first n=512 radix=8 ido=64
+EXEC,c2c,4097,forward,c2c n=512 stage=1 radix=8 l1=8 ido=8 route=fixed
+EXEC,c2c,4097,forward,c2c-scalar:pass n=512 radix=8 l1=8 ido=8
+EXEC,c2c,4097,forward,c2c n=512 stage=2 radix=8 l1=64 ido=1 route=fixed
+EXEC,c2c,4097,forward,c2c-scalar:pass n=512 radix=8 l1=64 ido=1
+EXEC,c2c,4097,forward,c2c n=512 normalization=deferred
+EXEC,c2c,4097,inverse,c2c n=4097 normalization=deferred
+EXEC,c2c,4097,inverse,c2c n=4097 stage=0 radix=17 l1=1 ido=241 route=general-prime
+EXEC,c2c,4097,inverse,c2c n=4097 stage=1 radix=241 l1=17 ido=1 route=bluestein conv=512
+EXEC,c2c,4097,inverse,c2c n=512 normalization=forward
+EXEC,c2c,4097,inverse,c2c n=512 stage=0 radix=8 l1=1 ido=64 route=fixed
+EXEC,c2c,4097,inverse,c2c-scalar:first n=512 radix=8 ido=64
+EXEC,c2c,4097,inverse,c2c n=512 stage=1 radix=8 l1=8 ido=8 route=fixed
+EXEC,c2c,4097,inverse,c2c-scalar:pass n=512 radix=8 l1=8 ido=8
+EXEC,c2c,4097,inverse,c2c n=512 stage=2 radix=8 l1=64 ido=1 route=fixed
+EXEC,c2c,4097,inverse,c2c-scalar:pass n=512 radix=8 l1=64 ido=1
+EXEC,c2c,4097,inverse,c2c n=512 normalization=deferred
+STAGE,r2c-c2r,4097,real n=4097 factors=[17; 241] complexify=false rader=Rader radix=241 convolution=240 algorithm=complex-convolution
+STAGE,r2c-c2r,4097,real n=4097 stage=0 radix=17 l1=1 ido=241 route=general prime
+STAGE,r2c-c2r,4097,real n=4097 stage=1 radix=241 fallback=Bluestein conv=484
+STAGE,r2c-c2r,4097,real n=4097 stage=1 radix=241 l1=17 ido=1 route=Rader
+STAGE,r2c-c2r,4097,real n=4097 stage=0 radix=17 l1=1 ido=241 route=general prime simd=scalar-conditions
+STAGE,r2c-c2r,4097,real n=4097 stage=1 radix=241 l1=17 ido=1 route=Rader simd=scalar-conditions
+PLAN,real,4097,150353,133824,-
+EXEC,real,4097,forward,real-forward n=4097 route=multipass
+EXEC,real,4097,forward,real-forward-pass radix=241 l1=17 ido=1 route=Rader
+EXEC,real,4097,forward,real-forward:Rader radix=241
+EXEC,real,4097,forward,c2c n=240 normalization=forward
+EXEC,real,4097,forward,c2c n=240 stage=0 radix=2 l1=1 ido=120 route=fixed
+EXEC,real,4097,forward,c2c-avx2:first-prefix n=240 radix=2 ido=120 vector_ido=120 scalar_tail=0
+EXEC,real,4097,forward,c2c n=240 stage=1 radix=8 l1=2 ido=15 route=fixed
+EXEC,real,4097,forward,c2c-avx2:pass-prefix n=240 radix=8 l1=2 ido=15 vector_ido=14 scalar_tail=1
+EXEC,real,4097,forward,c2c n=240 stage=2 radix=3 l1=16 ido=5 route=fixed
+EXEC,real,4097,forward,c2c-scalar:pass n=240 radix=3 l1=16 ido=5
+EXEC,real,4097,forward,c2c n=240 stage=3 radix=5 l1=48 ido=1 route=fixed
+EXEC,real,4097,forward,c2c-scalar:pass n=240 radix=5 l1=48 ido=1
+EXEC,real,4097,forward,c2c n=240 normalization=deferred
+EXEC,real,4097,forward,real-forward-pass radix=17 l1=1 ido=241 route=multipass
+EXEC,real,4097,inverse,real-inverse-pass radix=17 l1=1 ido=241 route=multipass
+EXEC,real,4097,inverse,real-inverse:Rader radix=241
+EXEC,real,4097,inverse,c2c n=240 normalization=forward
+EXEC,real,4097,inverse,c2c n=240 stage=0 radix=2 l1=1 ido=120 route=fixed
+EXEC,real,4097,inverse,c2c-avx2:first-prefix n=240 radix=2 ido=120 vector_ido=120 scalar_tail=0
+EXEC,real,4097,inverse,c2c n=240 stage=1 radix=8 l1=2 ido=15 route=fixed
+EXEC,real,4097,inverse,c2c-avx2:pass-prefix n=240 radix=8 l1=2 ido=15 vector_ido=14 scalar_tail=1
+EXEC,real,4097,inverse,c2c n=240 stage=2 radix=3 l1=16 ido=5 route=fixed
+EXEC,real,4097,inverse,c2c-scalar:pass n=240 radix=3 l1=16 ido=5
+EXEC,real,4097,inverse,c2c n=240 stage=3 radix=5 l1=48 ido=1 route=fixed
+EXEC,real,4097,inverse,c2c-scalar:pass n=240 radix=5 l1=48 ido=1
+EXEC,real,4097,inverse,c2c n=240 normalization=deferred
+EXEC,real,4097,inverse,real-inverse n=4097 route=multipass
+STAGE,c2c,12769,n=12769 stage=0 radix=113 l1=1 ido=113 route=bluestein conv=225
+STAGE,c2c,12769,n=12769 stage=1 radix=113 l1=113 ido=1 route=bluestein conv=225
+PLAN,c2c,12769,441392,219040,-
+EXEC,c2c,12769,forward,c2c n=12769 normalization=forward
+EXEC,c2c,12769,forward,c2c n=12769 stage=0 radix=113 l1=1 ido=113 route=bluestein conv=225
+EXEC,c2c,12769,forward,c2c n=225 normalization=forward
+EXEC,c2c,12769,forward,c2c n=225 stage=0 radix=3 l1=1 ido=75 route=fixed
+EXEC,c2c,12769,forward,c2c-scalar:first n=225 radix=3 ido=75
+EXEC,c2c,12769,forward,c2c n=225 stage=1 radix=3 l1=3 ido=25 route=fixed
+EXEC,c2c,12769,forward,c2c-scalar:pass n=225 radix=3 l1=3 ido=25
+EXEC,c2c,12769,forward,c2c n=225 stage=2 radix=5 l1=9 ido=5 route=fixed
+EXEC,c2c,12769,forward,c2c-scalar:pass n=225 radix=5 l1=9 ido=5
+EXEC,c2c,12769,forward,c2c n=225 stage=3 radix=5 l1=45 ido=1 route=fixed
+EXEC,c2c,12769,forward,c2c-scalar:pass n=225 radix=5 l1=45 ido=1
+EXEC,c2c,12769,forward,c2c n=225 normalization=deferred
+EXEC,c2c,12769,forward,c2c n=12769 stage=1 radix=113 l1=113 ido=1 route=bluestein conv=225
+EXEC,c2c,12769,inverse,c2c n=12769 normalization=deferred
+EXEC,c2c,12769,inverse,c2c n=12769 stage=0 radix=113 l1=1 ido=113 route=bluestein conv=225
+EXEC,c2c,12769,inverse,c2c n=225 normalization=forward
+EXEC,c2c,12769,inverse,c2c n=225 stage=0 radix=3 l1=1 ido=75 route=fixed
+EXEC,c2c,12769,inverse,c2c-scalar:first n=225 radix=3 ido=75
+EXEC,c2c,12769,inverse,c2c n=225 stage=1 radix=3 l1=3 ido=25 route=fixed
+EXEC,c2c,12769,inverse,c2c-scalar:pass n=225 radix=3 l1=3 ido=25
+EXEC,c2c,12769,inverse,c2c n=225 stage=2 radix=5 l1=9 ido=5 route=fixed
+EXEC,c2c,12769,inverse,c2c-scalar:pass n=225 radix=5 l1=9 ido=5
+EXEC,c2c,12769,inverse,c2c n=225 stage=3 radix=5 l1=45 ido=1 route=fixed
+EXEC,c2c,12769,inverse,c2c-scalar:pass n=225 radix=5 l1=45 ido=1
+EXEC,c2c,12769,inverse,c2c n=225 normalization=deferred
+EXEC,c2c,12769,inverse,c2c n=12769 stage=1 radix=113 l1=113 ido=1 route=bluestein conv=225
+STAGE,r2c-c2r,12769,real n=12769 factors=[113; 113] complexify=false rader=none
+STAGE,r2c-c2r,12769,real n=12769 stage=0 radix=113 l1=1 ido=113 route=general prime
+STAGE,r2c-c2r,12769,real n=12769 stage=1 radix=113 l1=113 ido=1 route=general prime
+STAGE,r2c-c2r,12769,real n=12769 stage=0 radix=113 l1=1 ido=113 route=general prime simd=scalar-conditions
+STAGE,r2c-c2r,12769,real n=12769 stage=1 radix=113 l1=113 ido=1 route=general prime simd=AVX2-prime-ido1-installed
+PLAN,real,12769,385186,314592,-
+EXEC,real,12769,forward,real-forward n=12769 route=multipass
+EXEC,real,12769,forward,real-forward-pass radix=113 l1=113 ido=1 route=multipass
+EXEC,real,12769,forward,real-avx2:prime-forward radix=113 l1=113
+EXEC,real,12769,forward,real-forward-pass radix=113 l1=1 ido=113 route=multipass
+EXEC,real,12769,inverse,real-inverse-pass radix=113 l1=1 ido=113 route=multipass
+EXEC,real,12769,inverse,real-avx2:prime-inverse radix=113 l1=113
+EXEC,real,12769,inverse,real-inverse n=12769 route=multipass
+STAGE,c2c,18769,n=18769 stage=0 radix=137 l1=1 ido=137 route=bluestein conv=275
+STAGE,c2c,18769,n=18769 stage=1 radix=137 l1=137 ido=1 route=bluestein conv=275
+PLAN,c2c,18769,637616,318592,-
+EXEC,c2c,18769,forward,c2c n=18769 normalization=forward
+EXEC,c2c,18769,forward,c2c n=18769 stage=0 radix=137 l1=1 ido=137 route=bluestein conv=275
+EXEC,c2c,18769,forward,c2c n=275 normalization=forward
+EXEC,c2c,18769,forward,c2c n=275 stage=0 radix=5 l1=1 ido=55 route=fixed
+EXEC,c2c,18769,forward,c2c-scalar:first n=275 radix=5 ido=55
+EXEC,c2c,18769,forward,c2c n=275 stage=1 radix=5 l1=5 ido=11 route=fixed
+EXEC,c2c,18769,forward,c2c-scalar:pass n=275 radix=5 l1=5 ido=11
+EXEC,c2c,18769,forward,c2c n=275 stage=2 radix=11 l1=25 ido=1 route=fixed
+EXEC,c2c,18769,forward,c2c n=275 normalization=deferred
+EXEC,c2c,18769,forward,c2c n=18769 stage=1 radix=137 l1=137 ido=1 route=bluestein conv=275
+EXEC,c2c,18769,inverse,c2c n=18769 normalization=deferred
+EXEC,c2c,18769,inverse,c2c n=18769 stage=0 radix=137 l1=1 ido=137 route=bluestein conv=275
+EXEC,c2c,18769,inverse,c2c n=275 normalization=forward
+EXEC,c2c,18769,inverse,c2c n=275 stage=0 radix=5 l1=1 ido=55 route=fixed
+EXEC,c2c,18769,inverse,c2c-scalar:first n=275 radix=5 ido=55
+EXEC,c2c,18769,inverse,c2c n=275 stage=1 radix=5 l1=5 ido=11 route=fixed
+EXEC,c2c,18769,inverse,c2c-scalar:pass n=275 radix=5 l1=5 ido=11
+EXEC,c2c,18769,inverse,c2c n=275 stage=2 radix=11 l1=25 ido=1 route=fixed
+EXEC,c2c,18769,inverse,c2c n=275 normalization=deferred
+EXEC,c2c,18769,inverse,c2c n=18769 stage=1 radix=137 l1=137 ido=1 route=bluestein conv=275
+STAGE,r2c-c2r,18769,real n=18769 factors=[137; 137] complexify=false rader=none
+STAGE,r2c-c2r,18769,real n=18769 stage=0 radix=137 l1=1 ido=137 route=Bluestein conv=275
+STAGE,r2c-c2r,18769,real n=18769 stage=1 radix=137 l1=137 ido=1 route=Bluestein conv=275
+PLAN,real,18769,335488,173920,-
+EXEC,real,18769,forward,real-forward n=18769 route=recursive
+EXEC,real,18769,forward,c2c n=275 normalization=forward
+EXEC,real,18769,forward,c2c n=275 stage=0 radix=5 l1=1 ido=55 route=fixed
+EXEC,real,18769,forward,c2c-scalar:first n=275 radix=5 ido=55
+EXEC,real,18769,forward,c2c n=275 stage=1 radix=5 l1=5 ido=11 route=fixed
+EXEC,real,18769,forward,c2c-scalar:pass n=275 radix=5 l1=5 ido=11
+EXEC,real,18769,forward,c2c n=275 stage=2 radix=11 l1=25 ido=1 route=fixed
+EXEC,real,18769,forward,c2c n=275 normalization=deferred
+EXEC,real,18769,inverse,real-inverse n=18769 route=recursive
+EXEC,real,18769,inverse,c2c n=275 normalization=forward
+EXEC,real,18769,inverse,c2c n=275 stage=0 radix=5 l1=1 ido=55 route=fixed
+EXEC,real,18769,inverse,c2c-scalar:first n=275 radix=5 ido=55
+EXEC,real,18769,inverse,c2c n=275 stage=1 radix=5 l1=5 ido=11 route=fixed
+EXEC,real,18769,inverse,c2c-scalar:pass n=275 radix=5 l1=5 ido=11
+EXEC,real,18769,inverse,c2c n=275 stage=2 radix=11 l1=25 ido=1 route=fixed
+EXEC,real,18769,inverse,c2c n=275 normalization=deferred
+EXEC,real,257,forward-subnormal-fallback,real-forward n=257 route=recursive-safety-fallback
+EXEC,real,257,forward-subnormal-fallback,real-forward n=257 route=recursive
+EXEC,real,257,forward-subnormal-fallback,c2c n=525 normalization=forward
+EXEC,real,257,forward-subnormal-fallback,c2c n=525 stage=0 radix=3 l1=1 ido=175 route=fixed
+EXEC,real,257,forward-subnormal-fallback,c2c-scalar:first n=525 radix=3 ido=175
+EXEC,real,257,forward-subnormal-fallback,c2c n=525 stage=1 radix=5 l1=3 ido=35 route=fixed
+EXEC,real,257,forward-subnormal-fallback,c2c-scalar:pass n=525 radix=5 l1=3 ido=35
+EXEC,real,257,forward-subnormal-fallback,c2c n=525 stage=2 radix=5 l1=15 ido=7 route=fixed
+EXEC,real,257,forward-subnormal-fallback,c2c-scalar:pass n=525 radix=5 l1=15 ido=7
+EXEC,real,257,forward-subnormal-fallback,c2c n=525 stage=3 radix=7 l1=75 ido=1 route=fixed
+EXEC,real,257,forward-subnormal-fallback,c2c-scalar:pass n=525 radix=7 l1=75 ido=1
+EXEC,real,257,forward-subnormal-fallback,c2c n=525 normalization=deferred
+EXEC,real,257,inverse-subnormal-fallback,real-inverse n=257 route=recursive-safety-fallback
+EXEC,real,257,inverse-subnormal-fallback,real-inverse n=257 route=recursive
+EXEC,real,257,inverse-subnormal-fallback,c2c n=525 normalization=forward
+EXEC,real,257,inverse-subnormal-fallback,c2c n=525 stage=0 radix=3 l1=1 ido=175 route=fixed
+EXEC,real,257,inverse-subnormal-fallback,c2c-scalar:first n=525 radix=3 ido=175
+EXEC,real,257,inverse-subnormal-fallback,c2c n=525 stage=1 radix=5 l1=3 ido=35 route=fixed
+EXEC,real,257,inverse-subnormal-fallback,c2c-scalar:pass n=525 radix=5 l1=3 ido=35
+EXEC,real,257,inverse-subnormal-fallback,c2c n=525 stage=2 radix=5 l1=15 ido=7 route=fixed
+EXEC,real,257,inverse-subnormal-fallback,c2c-scalar:pass n=525 radix=5 l1=15 ido=7
+EXEC,real,257,inverse-subnormal-fallback,c2c n=525 stage=3 radix=7 l1=75 ido=1 route=fixed
+EXEC,real,257,inverse-subnormal-fallback,c2c-scalar:pass n=525 radix=7 l1=75 ido=1
+EXEC,real,257,inverse-subnormal-fallback,c2c n=525 normalization=deferred
+EXEC,real,723,forward-subnormal-fallback,real-forward n=723 route=recursive-safety-fallback
+EXEC,real,723,forward-subnormal-fallback,real-forward n=723 route=recursive
+EXEC,real,723,forward-subnormal-fallback,c2c n=512 normalization=forward
+EXEC,real,723,forward-subnormal-fallback,c2c n=512 stage=0 radix=8 l1=1 ido=64 route=fixed
+EXEC,real,723,forward-subnormal-fallback,c2c-scalar:first n=512 radix=8 ido=64
+EXEC,real,723,forward-subnormal-fallback,c2c n=512 stage=1 radix=8 l1=8 ido=8 route=fixed
+EXEC,real,723,forward-subnormal-fallback,c2c-scalar:pass n=512 radix=8 l1=8 ido=8
+EXEC,real,723,forward-subnormal-fallback,c2c n=512 stage=2 radix=8 l1=64 ido=1 route=fixed
+EXEC,real,723,forward-subnormal-fallback,c2c-scalar:pass n=512 radix=8 l1=64 ido=1
+EXEC,real,723,forward-subnormal-fallback,c2c n=512 normalization=deferred
+EXEC,real,723,inverse-subnormal-fallback,real-inverse n=723 route=recursive-safety-fallback
+EXEC,real,723,inverse-subnormal-fallback,real-inverse n=723 route=recursive
+EXEC,real,723,inverse-subnormal-fallback,c2c n=512 normalization=forward
+EXEC,real,723,inverse-subnormal-fallback,c2c n=512 stage=0 radix=8 l1=1 ido=64 route=fixed
+EXEC,real,723,inverse-subnormal-fallback,c2c-scalar:first n=512 radix=8 ido=64
+EXEC,real,723,inverse-subnormal-fallback,c2c n=512 stage=1 radix=8 l1=8 ido=8 route=fixed
+EXEC,real,723,inverse-subnormal-fallback,c2c-scalar:pass n=512 radix=8 l1=8 ido=8
+EXEC,real,723,inverse-subnormal-fallback,c2c n=512 stage=2 radix=8 l1=64 ido=1 route=fixed
+EXEC,real,723,inverse-subnormal-fallback,c2c-scalar:pass n=512 radix=8 l1=64 ido=1
+EXEC,real,723,inverse-subnormal-fallback,c2c n=512 normalization=deferred
