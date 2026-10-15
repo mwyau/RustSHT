@@ -1,7 +1,9 @@
 # M0 current-head FFT baseline
 
 Date: 2026-10-15. Source baseline: `aaadcb0aba9299049cf68eeca0f0dcd851c799b2`. The benchmark and diagnostic changes in this report do not select a new FFT
-route or change a numerical kernel.
+route or change a numerical kernel. The candidate source predates M1–M5. The updated comparison at the accepted
+M5 source is in
+[`m5-current-head-cross-library.md`](m5-current-head-cross-library.md).
 
 ## Method
 

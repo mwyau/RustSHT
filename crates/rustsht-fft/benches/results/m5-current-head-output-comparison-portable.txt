@@ -1,0 +1,4 @@
+RustSHT-FFT f64 C2C/R2C/C2R: compared 232604 output records (465208 scalar components); max_abs=1.819e-12; worst_abs=(('r2c', 12769, 351), 'real'); max_scaled=9.113e-13; worst_scaled=(('r2c', 18769, 7977), 'real')
+RustSHT-FFT versus FFTW-system-3.3.10 f64 C2C/R2C/C2R: compared 232604 output records (465208 scalar components); max_abs=3.638e-12; worst_abs=(('c2c_forward', 18769, 18252), 'imag'); max_scaled=9.353e-13; worst_scaled=(('c2c_forward', 18769, 14354), 'real')
+RustSHT-FFT versus Admiral-ce67bc00 f64 C2C/R2C/C2R: compared 232604 output records (465208 scalar components); max_abs=5.457e-12; worst_abs=(('c2c_forward', 12769, 12417), 'real'); max_scaled=1.549e-12; worst_scaled=(('r2c', 18769, 7500), 'real')
+DUCC vectorize=off
