@@ -55,8 +55,16 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
     /// when `radix == 8`, `ido == 1`, and `l1 >= 2` is even. Its input and
     /// output must be disjoint and each contain at least `8 * l1` complex
     /// values. This contract is separate from the ordinary pass kernel's
-    /// vector-width divisibility requirement.
+    /// vector-prefix contract.
     fn avx2_ido1_radix8_pass_kernel() -> Option<ComplexPassKernel<Self>> {
+        None
+    }
+
+    /// Returns the f64 radix-four pass kernel for `ido == 1`, if supported.
+    ///
+    /// The kernel operates on two adjacent outer groups and leaves an odd
+    /// final group untouched for the scalar caller.
+    fn avx2_ido1_radix4_pass_kernel() -> Option<ComplexPassKernel<Self>> {
         None
     }
 
@@ -90,7 +98,7 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
     /// # Safety
     ///
     /// The caller must confirm AVX2 support and ensure the radix is 2, 4, or
-    /// 8, `ido` is a positive multiple of the scalar's vector width, and the
+    /// 8, `ido` is at least the scalar's vector width, and the
     /// data and twiddle slices match the pass dimensions.
     unsafe fn avx2_first_pass(data: &mut [Complex<Self>], pass: &SimdPass<'_, Self>);
 
@@ -99,7 +107,7 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
     /// # Safety
     ///
     /// The caller must confirm AVX2 support and ensure the radix is 2, 4, or
-    /// 8, `ido` is a positive multiple of the scalar's vector width, the
+    /// 8, `ido` is at least the scalar's vector width, the
     /// slices are disjoint, and the slices match the pass dimensions.
     unsafe fn avx2_pass(
         input: &[Complex<Self>],
@@ -133,6 +141,10 @@ mod x86 {
 
         fn avx2_ido1_radix8_pass_kernel() -> Option<ComplexPassKernel<Self>> {
             Some(f64_kernel::pass_ido1_radix8)
+        }
+
+        fn avx2_ido1_radix4_pass_kernel() -> Option<ComplexPassKernel<Self>> {
+            Some(f64_kernel::pass_ido1_radix4)
         }
 
         fn real_radix4_interior_kernel() -> Option<RealRadix4InteriorKernel<Self>> {
@@ -416,7 +428,8 @@ mod x86 {
             pass: &SimdPass<'_, f64>,
         ) {
             let data_ptr = data.as_mut_ptr();
-            for inner in (0..pass.ido).step_by(2) {
+            let vector_ido = pass.ido - pass.ido % 2;
+            for inner in (0..vector_ido).step_by(2) {
                 let mut input = [_mm256_setzero_pd(); 8];
                 for (branch, slot) in input.iter_mut().enumerate().take(RADIX) {
                     *slot = unsafe { load(data_ptr, inner + pass.ido * branch) };
@@ -503,6 +516,63 @@ mod x86 {
         }
 
         #[target_feature(enable = "avx2")]
+        pub(super) unsafe fn pass_ido1_radix4(
+            input: &[Complex<f64>],
+            output: &mut [Complex<f64>],
+            pass: &SimdPass<'_, f64>,
+        ) {
+            debug_assert_eq!(pass.radix, 4);
+            debug_assert_eq!(pass.ido, 1);
+            debug_assert!(pass.l1 >= 2);
+            // SAFETY: this function has the same target-feature and slice
+            // contract as the fixed radix-four helper.
+            unsafe { pass_ido1_fixed::<4>(input, output, pass) }
+        }
+
+        #[target_feature(enable = "avx2")]
+        unsafe fn pass_ido1_fixed<const RADIX: usize>(
+            input: &[Complex<f64>],
+            output: &mut [Complex<f64>],
+            pass: &SimdPass<'_, f64>,
+        ) {
+            debug_assert_eq!(pass.radix, RADIX);
+            debug_assert_eq!(pass.ido, 1);
+            debug_assert!(pass.l1 >= 2);
+            debug_assert!(input.len() >= RADIX * pass.l1);
+            debug_assert!(output.len() >= RADIX * pass.l1);
+
+            let input_ptr = input.as_ptr();
+            let output_ptr = output.as_mut_ptr();
+            let vector_l1 = pass.l1 - pass.l1 % 2;
+            let scale = _mm256_set1_pd(if pass.inverse {
+                pass.inverse_scale
+            } else {
+                1.0
+            });
+            for outer in (0..vector_l1).step_by(2) {
+                let first_base = RADIX * outer;
+                let second_base = first_base + RADIX;
+                let mut values = [_mm256_setzero_pd(); 8];
+                for pair in 0..RADIX / 2 {
+                    let first = unsafe { load(input_ptr, first_base + 2 * pair) };
+                    let second = unsafe { load(input_ptr, second_base + 2 * pair) };
+                    values[2 * pair] = _mm256_permute2f128_pd::<0x20>(first, second);
+                    values[2 * pair + 1] = _mm256_permute2f128_pd::<0x31>(first, second);
+                }
+
+                let transformed = unsafe { transform::<RADIX>(&values, pass.inverse) };
+                for (branch, &result) in transformed.iter().enumerate().take(RADIX) {
+                    let value = if pass.inverse {
+                        _mm256_mul_pd(result, scale)
+                    } else {
+                        result
+                    };
+                    unsafe { store(output_ptr, branch * pass.l1 + outer, value) };
+                }
+            }
+        }
+
+        #[target_feature(enable = "avx2")]
         unsafe fn pass_fixed<const RADIX: usize>(
             input: &[Complex<f64>],
             output: &mut [Complex<f64>],
@@ -510,8 +580,9 @@ mod x86 {
         ) {
             let input_ptr = input.as_ptr();
             let output_ptr = output.as_mut_ptr();
+            let vector_ido = pass.ido - pass.ido % 2;
             for outer in 0..pass.l1 {
-                for inner in (0..pass.ido).step_by(2) {
+                for inner in (0..vector_ido).step_by(2) {
                     let mut values = [_mm256_setzero_pd(); 8];
                     for (branch, slot) in values.iter_mut().enumerate().take(RADIX) {
                         *slot =
@@ -720,7 +791,8 @@ mod x86 {
             pass: &SimdPass<'_, f32>,
         ) {
             let data_ptr = data.as_mut_ptr();
-            for inner in (0..pass.ido).step_by(4) {
+            let vector_ido = pass.ido - pass.ido % 4;
+            for inner in (0..vector_ido).step_by(4) {
                 let mut input = [_mm256_setzero_ps(); 8];
                 for (branch, slot) in input.iter_mut().enumerate().take(RADIX) {
                     *slot = unsafe { load(data_ptr, inner + pass.ido * branch) };
@@ -767,8 +839,9 @@ mod x86 {
         ) {
             let input_ptr = input.as_ptr();
             let output_ptr = output.as_mut_ptr();
+            let vector_ido = pass.ido - pass.ido % 4;
             for outer in 0..pass.l1 {
-                for inner in (0..pass.ido).step_by(4) {
+                for inner in (0..vector_ido).step_by(4) {
                     let mut values = [_mm256_setzero_ps(); 8];
                     for (branch, slot) in values.iter_mut().enumerate().take(RADIX) {
                         *slot =
@@ -1766,45 +1839,56 @@ mod tests {
         if !<f64 as SimdScalar>::avx2_available() {
             return;
         }
-        let ido = 4;
         for radix in [2, 4, 8] {
-            let len = radix * ido;
-            for inverse in [false, true] {
-                let mut actual: Vec<_> = (0..len).map(signal).collect();
-                let original = actual.clone();
-                let mut twiddles = vec![Complex::new(0.0, 0.0); radix * ido];
-                for branch in 0..radix {
-                    for inner in 0..ido {
-                        twiddles[branch * ido + inner] = root(branch * inner, len, true);
-                    }
-                }
-                let pass = SimdPass {
-                    radix,
-                    l1: 1,
-                    ido,
-                    twiddles: &twiddles,
-                    inverse,
-                    inverse_scale: 1.0,
-                };
-                unsafe {
-                    <f64 as SimdScalar>::avx2_first_pass(&mut actual, &pass);
-                }
-
-                for inner in 0..ido {
-                    for frequency in 0..radix {
-                        let mut expected = Complex::new(0.0, 0.0);
-                        for branch in 0..radix {
-                            expected += original[inner + ido * branch]
-                                * root(branch * frequency * ido, len, inverse);
+            for ido in [3, 4, 5] {
+                let len = radix * ido;
+                let vector_ido = ido - ido % 2;
+                for inverse in [false, true] {
+                    let mut actual: Vec<_> = (0..len).map(signal).collect();
+                    let original = actual.clone();
+                    let mut twiddles = vec![Complex::new(0.0, 0.0); radix * ido];
+                    for branch in 0..radix {
+                        for inner in 0..ido {
+                            twiddles[branch * ido + inner] = root(branch * inner, len, true);
                         }
-                        expected *= root(frequency * inner, len, inverse);
-                        assert_close(
-                            actual[inner + ido * frequency],
-                            expected,
-                            &format!(
-                                "radix {radix}, inverse {inverse}, inner {inner}, frequency {frequency}"
-                            ),
-                        );
+                    }
+                    let pass = SimdPass {
+                        radix,
+                        l1: 1,
+                        ido,
+                        twiddles: &twiddles,
+                        inverse,
+                        inverse_scale: 1.0,
+                    };
+                    unsafe {
+                        <f64 as SimdScalar>::avx2_first_pass(&mut actual, &pass);
+                    }
+
+                    for inner in 0..vector_ido {
+                        for frequency in 0..radix {
+                            let mut expected = Complex::new(0.0, 0.0);
+                            for branch in 0..radix {
+                                expected += original[inner + ido * branch]
+                                    * root(branch * frequency * ido, len, inverse);
+                            }
+                            expected *= root(frequency * inner, len, inverse);
+                            assert_close(
+                                actual[inner + ido * frequency],
+                                expected,
+                                &format!(
+                                    "radix {radix}, inverse {inverse}, inner {inner}, frequency {frequency}"
+                                ),
+                            );
+                        }
+                    }
+                    for inner in vector_ido..ido {
+                        for frequency in 0..radix {
+                            assert_eq!(
+                                actual[inner + ido * frequency],
+                                original[inner + ido * frequency],
+                                "first-pass tail changed: radix={radix}, ido={ido}, inner={inner}, frequency={frequency}"
+                            );
+                        }
                     }
                 }
             }
@@ -1816,48 +1900,121 @@ mod tests {
         if !<f64 as SimdScalar>::avx2_available() {
             return;
         }
-        let l1 = 3;
-        let ido = 4;
         for radix in [2, 4, 8] {
-            let len = radix * l1 * ido;
-            for inverse in [false, true] {
-                let input: Vec<_> = (0..len).map(signal).collect();
-                let mut actual = vec![Complex::new(0.0, 0.0); len];
-                let mut twiddles = vec![Complex::new(0.0, 0.0); radix * ido];
-                for branch in 0..radix {
-                    for inner in 0..ido {
-                        twiddles[branch * ido + inner] = root(branch * l1 * inner, len, true);
+            for ido in [3, 4, 5] {
+                let l1 = 3;
+                let len = radix * l1 * ido;
+                let vector_ido = ido - ido % 2;
+                for inverse in [false, true] {
+                    let input: Vec<_> = (0..len).map(signal).collect();
+                    let mut actual = vec![Complex::new(f64::NAN, f64::NAN); len];
+                    let mut twiddles = vec![Complex::new(0.0, 0.0); radix * ido];
+                    for branch in 0..radix {
+                        for inner in 0..ido {
+                            twiddles[branch * ido + inner] = root(branch * l1 * inner, len, true);
+                        }
+                    }
+                    let pass = SimdPass {
+                        radix,
+                        l1,
+                        ido,
+                        twiddles: &twiddles,
+                        inverse,
+                        inverse_scale: 1.0,
+                    };
+                    unsafe {
+                        <f64 as SimdScalar>::avx2_pass(&input, &mut actual, &pass);
+                    }
+
+                    for outer in 0..l1 {
+                        for inner in 0..vector_ido {
+                            for frequency in 0..radix {
+                                let mut expected = Complex::new(0.0, 0.0);
+                                for branch in 0..radix {
+                                    expected += input[inner + ido * (branch + radix * outer)]
+                                        * root(branch * frequency * l1 * ido, len, inverse);
+                                }
+                                expected *= root(frequency * l1 * inner, len, inverse);
+                                let output_index = inner + ido * (outer + l1 * frequency);
+                                assert_close(
+                                    actual[output_index],
+                                    expected,
+                                    &format!(
+                                        "radix {radix}, inverse {inverse}, outer {outer}, inner {inner}, frequency {frequency}"
+                                    ),
+                                );
+                            }
+                        }
+                    }
+                    for outer in 0..l1 {
+                        for inner in vector_ido..ido {
+                            for frequency in 0..radix {
+                                let output_index = inner + ido * (outer + l1 * frequency);
+                                assert!(
+                                    actual[output_index].re.is_nan()
+                                        && actual[output_index].im.is_nan()
+                                );
+                            }
+                        }
                     }
                 }
-                let pass = SimdPass {
-                    radix,
-                    l1,
-                    ido,
-                    twiddles: &twiddles,
-                    inverse,
-                    inverse_scale: 1.0,
-                };
-                unsafe {
-                    <f64 as SimdScalar>::avx2_pass(&input, &mut actual, &pass);
-                }
+            }
+        }
+    }
 
-                for outer in 0..l1 {
-                    for inner in 0..ido {
+    #[test]
+    fn f64_ido1_radix4_pass_matches_scalar_equations_and_preserves_odd_tail() {
+        let Some(kernel) = <f64 as SimdScalar>::avx2_ido1_radix4_pass_kernel() else {
+            return;
+        };
+        if !<f64 as SimdScalar>::avx2_available() {
+            return;
+        }
+
+        for radix in [4] {
+            for l1 in [2, 3, 8, 9] {
+                let len = radix * l1;
+                let vector_l1 = l1 - l1 % 2;
+                let input: Vec<_> = (0..len).map(signal).collect();
+                for inverse in [false, true] {
+                    let inverse_scale = if inverse { 1.0 / len as f64 } else { 1.0 };
+                    let twiddles = vec![Complex::new(1.0, 0.0); radix];
+                    let pass = SimdPass {
+                        radix,
+                        l1,
+                        ido: 1,
+                        twiddles: &twiddles,
+                        inverse,
+                        inverse_scale,
+                    };
+                    let mut actual = vec![Complex::new(f64::NAN, f64::NAN); len];
+                    // SAFETY: the kernel is returned only for x86 AVX2 builds,
+                    // runtime support is checked above, and the disjoint slices
+                    // have the dimensions required for this pass.
+                    unsafe { kernel(&input, &mut actual, &pass) };
+
+                    for outer in 0..vector_l1 {
                         for frequency in 0..radix {
                             let mut expected = Complex::new(0.0, 0.0);
                             for branch in 0..radix {
-                                expected += input[inner + ido * (branch + radix * outer)]
-                                    * root(branch * frequency * l1 * ido, len, inverse);
+                                expected += input[branch + radix * outer]
+                                    * root(branch * frequency * l1, len, inverse);
                             }
-                            expected *= root(frequency * l1 * inner, len, inverse);
-                            let output_index = inner + ido * (outer + l1 * frequency);
+                            expected *= inverse_scale;
+                            let output_index = outer + l1 * frequency;
                             assert_close(
                                 actual[output_index],
                                 expected,
                                 &format!(
-                                    "radix {radix}, inverse {inverse}, outer {outer}, inner {inner}, frequency {frequency}"
+                                    "radix={radix}, l1={l1}, inverse={inverse}, outer={outer}, frequency={frequency}"
                                 ),
                             );
+                        }
+                    }
+                    if vector_l1 < l1 {
+                        for frequency in 0..radix {
+                            assert!(actual[l1 * frequency + vector_l1].re.is_nan());
+                            assert!(actual[l1 * frequency + vector_l1].im.is_nan());
                         }
                     }
                 }
@@ -1890,26 +2047,20 @@ mod tests {
                     inverse_scale,
                 };
                 let mut actual = vec![Complex::new(f64::NAN, f64::NAN); len];
-                // SAFETY: the kernel is returned only for x86 AVX2 builds,
-                // runtime support is checked above, and the disjoint slices
-                // have the dimensions required for this pass.
+                // SAFETY: runtime AVX2 support and the even l1 contract are
+                // checked above; input and output are disjoint.
                 unsafe { kernel(&input, &mut actual, &pass) };
 
                 for outer in 0..l1 {
                     for frequency in 0..radix {
-                        let mut expected = Complex::new(0.0, 0.0);
-                        for branch in 0..radix {
-                            expected += input[branch + radix * outer]
-                                * root(branch * frequency * l1, len, inverse);
-                        }
-                        expected *= inverse_scale;
-                        let output_index = outer + l1 * frequency;
+                        let expected = (0..radix).fold(Complex::new(0.0, 0.0), |sum, branch| {
+                            sum + input[branch + radix * outer]
+                                * root(branch * frequency * l1, len, inverse)
+                        }) * inverse_scale;
                         assert_close(
-                            actual[output_index],
+                            actual[outer + l1 * frequency],
                             expected,
-                            &format!(
-                                "l1 {l1}, inverse {inverse}, outer {outer}, frequency {frequency}"
-                            ),
+                            &format!("l1={l1}, inverse={inverse}, frequency={frequency}"),
                         );
                     }
                 }
@@ -2434,84 +2585,105 @@ mod tests {
         if !<f32 as SimdScalar>::avx2_available() {
             return;
         }
-        let ido = 4;
-        let l1 = 3;
-        for radix in [2, 4, 8] {
-            let len = radix * l1 * ido;
-            for inverse in [false, true] {
-                let first_len = radix * ido;
-                let mut first_actual: Vec<_> = (0..first_len).map(signal32).collect();
-                let first_original = first_actual.clone();
-                let mut first_twiddles = vec![Complex::new(0.0, 0.0); radix * ido];
-                for branch in 0..radix {
-                    for inner in 0..ido {
-                        first_twiddles[branch * ido + inner] =
-                            root32(branch * inner, first_len, true);
-                    }
-                }
-                let first_pass = SimdPass {
-                    radix,
-                    l1: 1,
-                    ido,
-                    twiddles: &first_twiddles,
-                    inverse,
-                    inverse_scale: 1.0,
-                };
-                unsafe {
-                    <f32 as SimdScalar>::avx2_first_pass(&mut first_actual, &first_pass);
-                }
-                for inner in 0..ido {
-                    for frequency in 0..radix {
-                        let mut expected = Complex::new(0.0, 0.0);
-                        for branch in 0..radix {
-                            expected += first_original[inner + ido * branch]
-                                * root32(branch * frequency * ido, first_len, inverse);
+        for ido in [4, 5, 7] {
+            let l1 = 3;
+            let vector_ido = ido - ido % 4;
+            for radix in [2, 4, 8] {
+                let len = radix * l1 * ido;
+                for inverse in [false, true] {
+                    let first_len = radix * ido;
+                    let mut first_actual: Vec<_> = (0..first_len).map(signal32).collect();
+                    let first_original = first_actual.clone();
+                    let mut first_twiddles = vec![Complex::new(0.0, 0.0); radix * ido];
+                    for branch in 0..radix {
+                        for inner in 0..ido {
+                            first_twiddles[branch * ido + inner] =
+                                root32(branch * inner, first_len, true);
                         }
-                        expected *= root32(frequency * inner, first_len, inverse);
-                        assert_close32(
-                            first_actual[inner + ido * frequency],
-                            expected,
-                            &format!("first pass radix {radix}, inverse {inverse}"),
-                        );
                     }
-                }
-
-                let input: Vec<_> = (0..len).map(signal32).collect();
-                let mut actual = vec![Complex::new(0.0, 0.0); len];
-                let mut twiddles = vec![Complex::new(0.0, 0.0); radix * ido];
-                for branch in 0..radix {
-                    for inner in 0..ido {
-                        twiddles[branch * ido + inner] = root32(branch * l1 * inner, len, true);
+                    let first_pass = SimdPass {
+                        radix,
+                        l1: 1,
+                        ido,
+                        twiddles: &first_twiddles,
+                        inverse,
+                        inverse_scale: 1.0,
+                    };
+                    unsafe {
+                        <f32 as SimdScalar>::avx2_first_pass(&mut first_actual, &first_pass);
                     }
-                }
-                let pass = SimdPass {
-                    radix,
-                    l1,
-                    ido,
-                    twiddles: &twiddles,
-                    inverse,
-                    inverse_scale: 1.0,
-                };
-                unsafe {
-                    <f32 as SimdScalar>::avx2_pass(&input, &mut actual, &pass);
-                }
-                for outer in 0..l1 {
-                    for inner in 0..ido {
+                    for inner in 0..vector_ido {
                         for frequency in 0..radix {
                             let mut expected = Complex::new(0.0, 0.0);
                             for branch in 0..radix {
-                                expected += input[inner + ido * (branch + radix * outer)]
-                                    * root32(branch * frequency * l1 * ido, len, inverse);
+                                expected += first_original[inner + ido * branch]
+                                    * root32(branch * frequency * ido, first_len, inverse);
                             }
-                            expected *= root32(frequency * l1 * inner, len, inverse);
-                            let output_index = inner + ido * (outer + l1 * frequency);
+                            expected *= root32(frequency * inner, first_len, inverse);
                             assert_close32(
-                                actual[output_index],
+                                first_actual[inner + ido * frequency],
                                 expected,
-                                &format!(
-                                    "out pass radix {radix}, inverse {inverse}, outer {outer}, inner {inner}, frequency {frequency}"
-                                ),
+                                &format!("first pass radix {radix}, inverse {inverse}"),
                             );
+                        }
+                    }
+                    for inner in vector_ido..ido {
+                        for frequency in 0..radix {
+                            assert_eq!(
+                                first_actual[inner + ido * frequency],
+                                first_original[inner + ido * frequency]
+                            );
+                        }
+                    }
+
+                    let input: Vec<_> = (0..len).map(signal32).collect();
+                    let mut actual = vec![Complex::new(f32::NAN, f32::NAN); len];
+                    let mut twiddles = vec![Complex::new(0.0, 0.0); radix * ido];
+                    for branch in 0..radix {
+                        for inner in 0..ido {
+                            twiddles[branch * ido + inner] = root32(branch * l1 * inner, len, true);
+                        }
+                    }
+                    let pass = SimdPass {
+                        radix,
+                        l1,
+                        ido,
+                        twiddles: &twiddles,
+                        inverse,
+                        inverse_scale: 1.0,
+                    };
+                    unsafe {
+                        <f32 as SimdScalar>::avx2_pass(&input, &mut actual, &pass);
+                    }
+                    for outer in 0..l1 {
+                        for inner in 0..vector_ido {
+                            for frequency in 0..radix {
+                                let mut expected = Complex::new(0.0, 0.0);
+                                for branch in 0..radix {
+                                    expected += input[inner + ido * (branch + radix * outer)]
+                                        * root32(branch * frequency * l1 * ido, len, inverse);
+                                }
+                                expected *= root32(frequency * l1 * inner, len, inverse);
+                                let output_index = inner + ido * (outer + l1 * frequency);
+                                assert_close32(
+                                    actual[output_index],
+                                    expected,
+                                    &format!(
+                                        "out pass radix {radix}, inverse {inverse}, outer {outer}, inner {inner}, frequency {frequency}"
+                                    ),
+                                );
+                            }
+                        }
+                    }
+                    for outer in 0..l1 {
+                        for inner in vector_ido..ido {
+                            for frequency in 0..radix {
+                                let output_index = inner + ido * (outer + l1 * frequency);
+                                assert!(
+                                    actual[output_index].re.is_nan()
+                                        && actual[output_index].im.is_nan()
+                                );
+                            }
                         }
                     }
                 }

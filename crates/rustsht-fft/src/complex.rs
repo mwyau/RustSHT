@@ -135,6 +135,7 @@ struct SimdKernels<T> {
     first_pass: FirstPassKernel<T>,
     pass: ComplexPassKernel<T>,
     ido1_radix8_pass: Option<ComplexPassKernel<T>>,
+    ido1_radix4_pass: Option<ComplexPassKernel<T>>,
 }
 
 /// Mutable scratch for repeated execution of a [`ComplexFftPlan`].
@@ -389,6 +390,7 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
             first_pass: T::avx2_first_pass,
             pass: T::avx2_pass,
             ido1_radix8_pass: T::avx2_ido1_radix8_pass_kernel(),
+            ido1_radix4_pass: T::avx2_ido1_radix4_pass_kernel(),
         });
         self.execute_with_simd_unchecked(values, workspace, direction, T::one(), kernels);
     }
@@ -1032,12 +1034,13 @@ fn execute_first_pass_direct_radix<const R: usize, T: Float + FromPrimitive>(
     debug_assert!(matches!(radix, 2 | 3 | 4 | 5 | 7 | 8));
     debug_assert_eq!(pass.l1, 1);
     let inverse = execution.direction == Direction::Inverse;
+    let mut scalar_start = 0;
     if let Some(kernels) = execution.simd
         && matches!(R, 2 | 4 | 8)
         && (!inverse || execution.defer_inverse_normalization)
         && pass.ido >= kernels.complex_lanes
-        && pass.ido.is_multiple_of(kernels.complex_lanes)
     {
+        let vector_ido = pass.ido - pass.ido % kernels.complex_lanes;
         let inverse_scale = if inverse {
             execution.inverse_output_scale
         } else {
@@ -1052,21 +1055,29 @@ fn execute_first_pass_direct_radix<const R: usize, T: Float + FromPrimitive>(
             inverse_scale,
         };
         // SAFETY: plan construction validates pass dimensions, runtime
-        // dispatch checked AVX2, and the kernel width divides `ido`.
+        // dispatch checked AVX2, and the kernel processes only the complete
+        // vector prefix. The scalar loop below handles any remaining values.
         unsafe { (kernels.first_pass)(data, &simd_pass) };
+        scalar_start = vector_ido;
         #[cfg(test)]
         crate::m0_record_route(format!(
-            "c2c-avx2:first n={} radix={} ido={}",
+            "c2c-avx2:first-prefix n={} radix={} ido={} vector_ido={} scalar_tail={}",
+            execution.total_len,
+            radix,
+            pass.ido,
+            vector_ido,
+            pass.ido - vector_ido
+        ));
+        if scalar_start == pass.ido {
+            return;
+        }
+    } else {
+        #[cfg(test)]
+        crate::m0_record_route(format!(
+            "c2c-scalar:first n={} radix={} ido={}",
             execution.total_len, radix, pass.ido
         ));
-        return;
     }
-
-    #[cfg(test)]
-    crate::m0_record_route(format!(
-        "c2c-scalar:first n={} radix={} ido={}",
-        execution.total_len, radix, pass.ido
-    ));
 
     let zero = Complex::new(T::zero(), T::zero());
     let mut inputs = [zero; 8];
@@ -1082,7 +1093,7 @@ fn execute_first_pass_direct_radix<const R: usize, T: Float + FromPrimitive>(
     let radix_value = scalar::<T>(radix as f64);
     let overflow_threshold = T::max_value() / scalar::<T>(4.0 * radix as f64);
 
-    for inner in 0..pass.ido {
+    for inner in scalar_start..pass.ido {
         let mut max_component = T::zero();
         for (branch, slot) in inputs.iter_mut().enumerate().take(radix) {
             let value = data[inner + pass.ido * branch];
@@ -1162,15 +1173,20 @@ fn execute_direct_radix_pass<const R: usize, T: Float + FromPrimitive>(
     let radix = R;
     debug_assert!(matches!(radix, 2 | 3 | 4 | 5 | 7 | 8));
     let inverse = execution.direction == Direction::Inverse;
+    let mut scalar_outer_start = 0;
+    let mut scalar_inner_start = 0;
     if let Some(kernels) = execution.simd
-        && matches!(R, 2 | 4 | 8)
+        && matches!(R, 4 | 8)
         && (!inverse || execution.defer_inverse_normalization)
-        && pass.radix == 8
         && pass.ido == 1
         && pass.l1 >= 2
-        && pass.l1.is_multiple_of(2)
-        && let Some(kernel) = kernels.ido1_radix8_pass
+        && let Some(kernel) = match pass.radix {
+            4 => kernels.ido1_radix4_pass,
+            8 if pass.l1.is_multiple_of(2) => kernels.ido1_radix8_pass,
+            _ => None,
+        }
     {
+        let vector_l1 = pass.l1 - pass.l1 % 2;
         let simd_pass = SimdPass {
             radix: pass.radix,
             l1: pass.l1,
@@ -1183,23 +1199,30 @@ fn execute_direct_radix_pass<const R: usize, T: Float + FromPrimitive>(
                 T::one()
             },
         };
-        // SAFETY: runtime dispatch checked AVX2; this alternate kernel is
-        // selected only for radix eight, ido one, even l1, and disjoint
-        // plan-owned input/output buffers.
+        // SAFETY: runtime dispatch checked AVX2; this kernel accepts radix
+        // 2/4/8, ido one, and disjoint plan-owned input/output buffers. It
+        // writes only the complete two-group prefix.
         unsafe { kernel(input, output, &simd_pass) };
+        scalar_outer_start = vector_l1;
         #[cfg(test)]
         crate::m0_record_route(format!(
-            "c2c-avx2:ido1-radix8 n={} radix={} l1={}",
-            execution.total_len, pass.radix, pass.l1
+            "c2c-avx2:ido1-pair n={} radix={} l1={} vector_l1={} scalar_tail={}",
+            execution.total_len,
+            pass.radix,
+            pass.l1,
+            vector_l1,
+            pass.l1 - vector_l1
         ));
-        return;
+        if scalar_outer_start == pass.l1 {
+            return;
+        }
     }
     if let Some(kernels) = execution.simd
         && matches!(R, 2 | 4 | 8)
         && (!inverse || execution.defer_inverse_normalization)
         && pass.ido >= kernels.complex_lanes
-        && pass.ido.is_multiple_of(kernels.complex_lanes)
     {
+        let vector_ido = pass.ido - pass.ido % kernels.complex_lanes;
         let simd_pass = SimdPass {
             radix,
             l1: pass.l1,
@@ -1213,21 +1236,32 @@ fn execute_direct_radix_pass<const R: usize, T: Float + FromPrimitive>(
             },
         };
         // SAFETY: plan construction validates pass dimensions, runtime
-        // dispatch checked AVX2, and the kernel width divides `ido`.
+        // dispatch checked AVX2, and the kernel processes only the complete
+        // vector prefix. The scalar loop below handles any remaining values.
         unsafe { (kernels.pass)(input, output, &simd_pass) };
+        scalar_inner_start = vector_ido;
         #[cfg(test)]
         crate::m0_record_route(format!(
-            "c2c-avx2:pass n={} radix={} l1={} ido={}",
-            execution.total_len, radix, pass.l1, pass.ido
+            "c2c-avx2:pass-prefix n={} radix={} l1={} ido={} vector_ido={} scalar_tail={}",
+            execution.total_len,
+            radix,
+            pass.l1,
+            pass.ido,
+            vector_ido,
+            pass.ido - vector_ido
         ));
-        return;
+        if scalar_inner_start == pass.ido {
+            return;
+        }
     }
 
-    #[cfg(test)]
-    crate::m0_record_route(format!(
-        "c2c-scalar:pass n={} radix={} l1={} ido={}",
-        execution.total_len, radix, pass.l1, pass.ido
-    ));
+    if scalar_outer_start == 0 && scalar_inner_start == 0 {
+        #[cfg(test)]
+        crate::m0_record_route(format!(
+            "c2c-scalar:pass n={} radix={} l1={} ido={}",
+            execution.total_len, radix, pass.l1, pass.ido
+        ));
+    }
 
     let zero = Complex::new(T::zero(), T::zero());
     let mut inputs = [zero; 8];
@@ -1244,8 +1278,8 @@ fn execute_direct_radix_pass<const R: usize, T: Float + FromPrimitive>(
     let overflow_threshold = T::max_value() / scalar::<T>(4.0 * radix as f64);
     let root_stride = execution.total_len / radix;
 
-    for outer in 0..pass.l1 {
-        for inner in 0..pass.ido {
+    for outer in scalar_outer_start..pass.l1 {
+        for inner in scalar_inner_start..pass.ido {
             let mut max_component = T::zero();
             for (branch, slot) in inputs.iter_mut().enumerate().take(radix) {
                 let value = input[inner + pass.ido * (branch + radix * outer)];

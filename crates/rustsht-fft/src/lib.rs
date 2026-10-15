@@ -248,4 +248,105 @@ mod m0_diagnostics_tests {
                 .any(|route| route.contains("real-inverse-terminal:fixed-radix11"))
         );
     }
+
+    #[test]
+    fn m3_complex_simd_dispatch_covers_vector_tails_and_paired_groups() {
+        use crate::simd::SimdScalar;
+
+        if !<f64 as SimdScalar>::avx2_available() {
+            return;
+        }
+
+        for (n, radix, ido, vector_ido) in [
+            (150, 2, 75, 74),
+            (300, 4, 75, 74),
+            (726, 2, 363, 362),
+            (1452, 4, 363, 362),
+            (2904, 8, 363, 362),
+            (484, 4, 121, 120),
+            (1372, 4, 343, 342),
+        ] {
+            let plan = ComplexFftPlan::<f64>::new(n).expect("M3 route plan");
+            let mut workspace = plan.workspace().expect("M3 route workspace");
+            let mut values = complex_input(n);
+            m0_clear_routes();
+            plan.forward(&mut values, &mut workspace)
+                .expect("M3 route forward");
+            let event = format!(
+                "c2c-avx2:first-prefix n={n} radix={radix} ido={ido} vector_ido={vector_ido} scalar_tail=1"
+            );
+            assert!(
+                m0_route_snapshot().iter().any(|route| route == &event),
+                "missing reachable SIMD prefix route for N={n}: {:?}",
+                m0_route_snapshot()
+            );
+        }
+
+        let plan = ComplexFftPlan::<f64>::new(240).expect("nested M3 plan");
+        let mut workspace = plan.workspace().expect("nested M3 workspace");
+        let mut values = complex_input(240);
+        m0_clear_routes();
+        plan.forward(&mut values, &mut workspace)
+            .expect("nested M3 forward");
+        assert!(m0_route_snapshot().iter().any(|route| {
+            route == "c2c-avx2:pass-prefix n=240 radix=8 l1=2 ido=15 vector_ido=14 scalar_tail=1"
+        }));
+
+        for (n, radix, l1) in [(256, 4, 64), (512, 8, 64), (1024, 8, 128)] {
+            let plan = ComplexFftPlan::<f64>::new(n).expect("M3 low-ido plan");
+            let mut workspace = plan.workspace().expect("M3 low-ido workspace");
+            let mut values = complex_input(n);
+            m0_clear_routes();
+            plan.forward(&mut values, &mut workspace)
+                .expect("M3 low-ido forward");
+            let vector_l1 = l1 - l1 % 2;
+            let event = format!(
+                "c2c-avx2:ido1-pair n={n} radix={radix} l1={l1} vector_l1={vector_l1} scalar_tail=0"
+            );
+            assert!(
+                m0_route_snapshot().iter().any(|route| route == &event),
+                "missing ido=1 SIMD route for N={n}: {:?}",
+                m0_route_snapshot()
+            );
+        }
+
+        let plan = ComplexFftPlan::<f64>::new(300).expect("guarded inverse plan");
+        let mut workspace = plan.workspace().expect("guarded inverse workspace");
+        let mut values = vec![Complex::new(f64::MAX / 16.0, 0.0); 300];
+        m0_clear_routes();
+        plan.inverse(&mut values, &mut workspace)
+            .expect("guarded inverse");
+        assert!(
+            values
+                .iter()
+                .all(|value| value.re.is_finite() && value.im.is_finite())
+        );
+        let routes = m0_route_snapshot();
+        assert!(
+            routes
+                .iter()
+                .any(|route| route.contains("normalization=guarded"))
+        );
+        assert!(!routes.iter().any(|route| route.contains("c2c-avx2:")));
+    }
+
+    #[test]
+    fn m3_f32_dispatch_keeps_below_lane_ido_on_scalar_path() {
+        let plan = ComplexFftPlan::<f32>::new(12).expect("short f32 plan");
+        let mut workspace = plan.workspace().expect("short f32 workspace");
+        let mut values = vec![Complex::new(0.25, -0.5); 12];
+        m0_clear_routes();
+        plan.forward(&mut values, &mut workspace)
+            .expect("short f32 forward");
+
+        let routes = m0_route_snapshot();
+        assert!(
+            routes
+                .iter()
+                .any(|route| { route == "c2c-scalar:first n=12 radix=4 ido=3" })
+        );
+        assert!(!routes.iter().any(|route| {
+            route == "c2c-avx2:first-prefix n=12 radix=4 ido=3 vector_ido=0 scalar_tail=3"
+        }));
+    }
 }

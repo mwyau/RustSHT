@@ -687,7 +687,7 @@ fn terminal_real_prime_inverse_covers_cancellation_and_finite_extremes() {
 
 #[test]
 fn real_complexify_planner_path_matches_f64_and_f32_direct_dfts() {
-    for n in [1026, 1442] {
+    for n in [1026, 1442, 1452] {
         let plan64 = RealFftPlan::<f64>::new(n).unwrap();
         let mut workspace64 = plan64.workspace().unwrap();
         let input64: Vec<_> = (0..n).map(|index| real_signal(index + 19, n + 7)).collect();
