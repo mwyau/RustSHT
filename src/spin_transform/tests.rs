@@ -2737,6 +2737,255 @@ fn spin1_gl_paired_analysis_falls_back_for_extreme_inputs() {
 }
 
 #[test]
+fn spin1_fused_analysis_stages_both_channels_before_a_late_scaled_fallback() {
+    let plan = make_plan(1, 63, 63, 64, 129);
+    let mut workspace = plan.workspace().unwrap();
+    let recurrence = &mut workspace.recurrence_workers[0];
+    let m = 0;
+    let scalar_lmax = 8;
+    let sin_theta = [0.35_f64, 0.6, 0.9];
+    let cos_theta = sin_theta.map(|sine| (1.0 - sine * sine).sqrt());
+    let q_same_real = [0.2, -0.3, 0.4];
+    let q_same_imag = [-0.1, 0.05, 0.15];
+    let q_opposite_real = [0.07, 0.13, -0.11];
+    let q_opposite_imag = [0.09, -0.08, 0.04];
+    let u_same_real = [-0.3, 0.1, 0.2];
+    let u_same_imag = [0.04, 0.12, -0.07];
+    let u_opposite_real = [0.14, -0.09, 0.03];
+    let u_opposite_imag = [-0.05, 0.02, 0.11];
+    let mut coefficient_a = vec![0.0; scalar_lmax + 1];
+    let mut coefficient_b = vec![0.0; scalar_lmax + 1];
+    coefficient_b[0] = 1.0;
+    coefficient_a[1] = 1.0e300;
+    let initial = Complex64::new(0.25, -0.125);
+    recurrence.fast_scalar_first[..=scalar_lmax].fill(initial);
+    recurrence.fast_scalar_second[..=scalar_lmax].fill(initial);
+
+    let fused = ShtPlan::<f64>::try_fused_spin_scalar_analysis_pair_block(
+        pulp::Arch::new(),
+        m,
+        scalar_lmax,
+        plan.sectoral_norms[m],
+        &sin_theta,
+        &cos_theta,
+        [true, true],
+        [&q_same_real, &u_same_real],
+        [&q_same_imag, &u_same_imag],
+        [&q_opposite_real, &u_opposite_real],
+        [&q_opposite_imag, &u_opposite_imag],
+        &coefficient_a,
+        &coefficient_b,
+        &mut recurrence.fast_scalar_first[..=scalar_lmax],
+        &mut recurrence.fast_scalar_second[..=scalar_lmax],
+        &mut recurrence.fast_spin_first,
+        &mut recurrence.fast_spin_second,
+        &mut recurrence.previous,
+        &mut recurrence.current,
+        &mut recurrence.next,
+        &mut recurrence.exponents,
+    )
+    .unwrap();
+    assert!(!fused, "the second recurrence pair enters the scaled range");
+    assert!(
+        recurrence.fast_spin_first[..=scalar_lmax]
+            .iter()
+            .any(|value| *value != Complex64::new(0.0, 0.0))
+    );
+    assert!(
+        recurrence.fast_spin_second[..=scalar_lmax]
+            .iter()
+            .any(|value| *value != Complex64::new(0.0, 0.0))
+    );
+    assert!(
+        recurrence.fast_scalar_first[..=scalar_lmax]
+            .iter()
+            .all(|value| *value == initial)
+    );
+    assert!(
+        recurrence.fast_scalar_second[..=scalar_lmax]
+            .iter()
+            .all(|value| *value == initial)
+    );
+
+    let mut expected_workspace = plan.workspace().unwrap();
+    let expected_recurrence = &mut expected_workspace.recurrence_workers[0];
+    expected_recurrence.fast_scalar_first[..=scalar_lmax].fill(initial);
+    expected_recurrence.fast_scalar_second[..=scalar_lmax].fill(initial);
+    let fallback_used = ShtPlan::<f64>::accumulate_spin_scalar_analysis_pair_block(
+        pulp::Arch::new(),
+        m,
+        scalar_lmax,
+        plan.sectoral_norms[m],
+        &sin_theta,
+        &cos_theta,
+        true,
+        true,
+        &q_same_real,
+        &q_same_imag,
+        &q_opposite_real,
+        &q_opposite_imag,
+        &u_same_real,
+        &u_same_imag,
+        &u_opposite_real,
+        &u_opposite_imag,
+        &coefficient_a,
+        &coefficient_b,
+        &mut expected_recurrence.previous,
+        &mut expected_recurrence.current,
+        &mut expected_recurrence.next,
+        &mut expected_recurrence.exponents,
+        &mut expected_recurrence.fast_scalar_first[..=scalar_lmax],
+        &mut expected_recurrence.fast_scalar_second[..=scalar_lmax],
+    )
+    .unwrap();
+    assert!(fallback_used);
+
+    let fallback_used = ShtPlan::<f64>::accumulate_spin_scalar_analysis_pair_block(
+        pulp::Arch::new(),
+        m,
+        scalar_lmax,
+        plan.sectoral_norms[m],
+        &sin_theta,
+        &cos_theta,
+        true,
+        true,
+        &q_same_real,
+        &q_same_imag,
+        &q_opposite_real,
+        &q_opposite_imag,
+        &u_same_real,
+        &u_same_imag,
+        &u_opposite_real,
+        &u_opposite_imag,
+        &coefficient_a,
+        &coefficient_b,
+        &mut recurrence.previous,
+        &mut recurrence.current,
+        &mut recurrence.next,
+        &mut recurrence.exponents,
+        &mut recurrence.fast_scalar_first[..=scalar_lmax],
+        &mut recurrence.fast_scalar_second[..=scalar_lmax],
+    )
+    .unwrap();
+    assert!(fallback_used);
+    assert_eq!(
+        &recurrence.fast_scalar_first[..=scalar_lmax],
+        &expected_recurrence.fast_scalar_first[..=scalar_lmax]
+    );
+    assert_eq!(
+        &recurrence.fast_scalar_second[..=scalar_lmax],
+        &expected_recurrence.fast_scalar_second[..=scalar_lmax]
+    );
+}
+
+#[test]
+fn spin1_fused_analysis_falls_back_when_only_q_products_are_unsafe() {
+    let lmax = 511;
+    let ntheta = lmax + 1;
+    let nphi = 2 * lmax + 3;
+    let fast_plan = make_plan(1, lmax, lmax, ntheta, nphi);
+    let mut general_plan = make_plan(1, lmax, lmax, ntheta, nphi);
+    general_plan.spin_fast_coefficient_count = 0;
+    assert!(general_plan.spin1_scalar_legendre_table.set(None).is_ok());
+    let mut fast_workspace = fast_plan.workspace().unwrap();
+    let mut general_workspace = general_plan.workspace().unwrap();
+    fast_plan.prepare_spin_latitudes(&mut fast_workspace, 1);
+    general_plan.prepare_spin_latitudes(&mut general_workspace, 1);
+
+    let spectrum_len = fast_plan.fft.spectrum_len();
+    let mut q_spectra = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
+    let mut u_spectra = q_spectra.clone();
+    let m = 17;
+    for ring in 0..ntheta {
+        let index = ring * spectrum_len + m;
+        if ring == ntheta / 2 {
+            q_spectra[index] = Complex64::new(1.0e187, -0.5e187);
+        }
+        u_spectra[index] = Complex64::new((ring as f64 * 0.17).sin(), 0.25);
+    }
+    let coefficient_count = lmax - m + 1;
+    let mut fast_e = vec![Complex64::new(0.0, 0.0); coefficient_count];
+    let mut fast_b = fast_e.clone();
+    let mut general_e = fast_e.clone();
+    let mut general_b = fast_e.clone();
+    in_single_thread_pool(|| {
+        fast_plan
+            .analyze_spin_order_group(
+                &q_spectra,
+                &u_spectra,
+                nphi,
+                spectrum_len,
+                fast_plan.grid.phi0(),
+                Some(fast_plan.grid.ring_weights()),
+                true,
+                false,
+                1,
+                false,
+                &fast_workspace.theta_sin,
+                &fast_workspace.theta_cos,
+                &fast_workspace.ring_order_limits,
+                pulp::Arch::new(),
+                m,
+                m + 1,
+                &mut fast_e,
+                Some(&mut fast_b),
+                &mut fast_workspace.recurrence_workers[0],
+            )
+            .unwrap();
+    });
+    general_plan
+        .analyze_spin_order_group(
+            &q_spectra,
+            &u_spectra,
+            nphi,
+            spectrum_len,
+            general_plan.grid.phi0(),
+            Some(general_plan.grid.ring_weights()),
+            true,
+            false,
+            1,
+            false,
+            &general_workspace.theta_sin,
+            &general_workspace.theta_cos,
+            &general_workspace.ring_order_limits,
+            pulp::Arch::new(),
+            m,
+            m + 1,
+            &mut general_e,
+            Some(&mut general_b),
+            &mut general_workspace.recurrence_workers[0],
+        )
+        .unwrap();
+
+    let fast = fast_e.iter().chain(&fast_b).copied().collect::<Vec<_>>();
+    let general = general_e
+        .iter()
+        .chain(&general_b)
+        .copied()
+        .collect::<Vec<_>>();
+    assert!(
+        fast.iter()
+            .all(|value| value.re.is_finite() && value.im.is_finite())
+    );
+    assert!(
+        general
+            .iter()
+            .all(|value| value.re.is_finite() && value.im.is_finite())
+    );
+    let scale = general
+        .iter()
+        .map(|value| value.norm())
+        .fold(0.0_f64, f64::max);
+    let fast = fast.iter().map(|value| *value / scale).collect::<Vec<_>>();
+    let general = general
+        .iter()
+        .map(|value| *value / scale)
+        .collect::<Vec<_>>();
+    let error = relative_l2_complex(&fast, &general);
+    assert!(error <= 3e-10, "one-channel unsafe fallback L2={error:.3e}");
+}
+
+#[test]
 fn spin1_standard_analysis_scalar_conversion_matches_general_and_adjoint_on_all_grids() {
     for lmax in [14, 15, 31, 47, 63, 72, 127, 159, 191, 255] {
         for kind in [
