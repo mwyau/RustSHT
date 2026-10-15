@@ -450,6 +450,31 @@ pub(crate) trait ShtScalar:
     }
     #[expect(
         clippy::too_many_arguments,
+        reason = "The fused f64 scalar analysis block receives parity spectra and worker-owned recurrence scratch explicitly."
+    )]
+    fn fused_scalar_analysis_pair_block(
+        _arch: Arch,
+        _m: usize,
+        _lmax: usize,
+        _sin_theta: &[Self],
+        _cos_theta: &[Self],
+        _sectoral_norm: Self,
+        _coefficient_a: &[Self],
+        _coefficient_b: &[Self],
+        _same_real: &[Self],
+        _same_imag: &[Self],
+        _opposite_real: &[Self],
+        _opposite_imag: &[Self],
+        _staged_coefficients: &mut [Complex<Self>],
+        _previous: &mut [Self],
+        _current: &mut [Self],
+        _next: &mut [Self],
+        _exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        Ok(false)
+    }
+    #[expect(
+        clippy::too_many_arguments,
         reason = "Spin-1 scalar conversion accumulates the Q and U parity channels over shared recurrence lanes."
     )]
     fn accumulate_scalar_analysis_pair_channels(
@@ -1117,6 +1142,46 @@ impl ShtScalar for f64 {
             basis,
             exponents,
             cos_theta,
+        )
+    }
+
+    fn fused_scalar_analysis_pair_block(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        sectoral_norm: Self,
+        coefficient_a: &[Self],
+        coefficient_b: &[Self],
+        same_real: &[Self],
+        same_imag: &[Self],
+        opposite_real: &[Self],
+        opposite_imag: &[Self],
+        staged_coefficients: &mut [Complex<Self>],
+        previous: &mut [Self],
+        current: &mut [Self],
+        next: &mut [Self],
+        exponents: &mut [i64],
+    ) -> Result<bool, ShtError> {
+        scalar_paired::fused_scalar_analysis_pair_block_dispatched(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            staged_coefficients,
+            previous,
+            current,
+            next,
+            exponents,
         )
     }
 

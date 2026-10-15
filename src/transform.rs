@@ -1436,51 +1436,87 @@ impl<T: ShtScalar> ShtPlan<T> {
                     );
                     // Paired degrees l=m+2k use north+south for the even term;
                     // the intervening odd term uses north-south and cos(theta).
-                    paired_used = T::for_each_y_lm_paired_status_dispatched(
-                        arch,
-                        m,
-                        lmax,
-                        pair_sin,
-                        pair_cos,
-                        self.sectoral_norms[m],
-                        &recurrence.spin_coefficient_a,
-                        &recurrence.spin_coefficient_b,
-                        &mut recurrence.previous,
-                        &mut recurrence.current,
-                        &mut recurrence.next,
-                        &mut recurrence.exponents,
-                        |l, ring_start, current, exponents, normal_range| {
-                            let offset = l - m;
-                            let mut even_coefficient = coefficients[offset];
-                            let mut odd_coefficient = if l < lmax {
-                                coefficients[offset + 1]
-                            } else {
-                                Complex::new(T::zero(), T::zero())
-                            };
-                            let lane_end = ring_start + current.len();
-                            let (same_sum, opposite_sum) = T::accumulate_scalar_analysis_pair(
-                                arch,
-                                product_range_safe,
-                                normal_range,
-                                &same_real[ring_start..lane_end],
-                                &same_imag[ring_start..lane_end],
-                                &opposite_real[ring_start..lane_end],
-                                &opposite_imag[ring_start..lane_end],
-                                current,
-                                exponents,
-                                &pair_cos[ring_start..lane_end],
-                            );
-                            even_coefficient += same_sum;
-                            if l < lmax {
-                                odd_coefficient += opposite_sum;
-                            }
-                            coefficients[offset] = even_coefficient;
-                            if l < lmax {
-                                coefficients[offset + 1] = odd_coefficient;
-                            }
-                            Ok(())
-                        },
-                    )?;
+                    let staged_count = coefficient_count;
+                    // Commit scratch coefficients only when every recurrence lane stays normal.
+                    let fused_block = if product_range_safe
+                        && recurrence.fast_scalar_first.len() >= staged_count
+                    {
+                        T::fused_scalar_analysis_pair_block(
+                            arch,
+                            m,
+                            lmax,
+                            pair_sin,
+                            pair_cos,
+                            self.sectoral_norms[m],
+                            &recurrence.spin_coefficient_a,
+                            &recurrence.spin_coefficient_b,
+                            same_real,
+                            same_imag,
+                            opposite_real,
+                            opposite_imag,
+                            &mut recurrence.fast_scalar_first[..staged_count],
+                            &mut recurrence.previous,
+                            &mut recurrence.current,
+                            &mut recurrence.next,
+                            &mut recurrence.exponents,
+                        )?
+                    } else {
+                        false
+                    };
+                    if fused_block {
+                        for (coefficient, contribution) in coefficients
+                            .iter_mut()
+                            .zip(&recurrence.fast_scalar_first[..staged_count])
+                        {
+                            *coefficient += *contribution;
+                        }
+                    } else {
+                        paired_used = T::for_each_y_lm_paired_status_dispatched(
+                            arch,
+                            m,
+                            lmax,
+                            pair_sin,
+                            pair_cos,
+                            self.sectoral_norms[m],
+                            &recurrence.spin_coefficient_a,
+                            &recurrence.spin_coefficient_b,
+                            &mut recurrence.previous,
+                            &mut recurrence.current,
+                            &mut recurrence.next,
+                            &mut recurrence.exponents,
+                            |l, ring_start, current, exponents, normal_range| {
+                                let offset = l - m;
+                                let mut even_coefficient = coefficients[offset];
+                                let mut odd_coefficient = if l < lmax {
+                                    coefficients[offset + 1]
+                                } else {
+                                    Complex::new(T::zero(), T::zero())
+                                };
+                                let lane_end = ring_start + current.len();
+                                let (same_sum, opposite_sum) = T::accumulate_scalar_analysis_pair(
+                                    arch,
+                                    product_range_safe,
+                                    normal_range,
+                                    &same_real[ring_start..lane_end],
+                                    &same_imag[ring_start..lane_end],
+                                    &opposite_real[ring_start..lane_end],
+                                    &opposite_imag[ring_start..lane_end],
+                                    current,
+                                    exponents,
+                                    &pair_cos[ring_start..lane_end],
+                                );
+                                even_coefficient += same_sum;
+                                if l < lmax {
+                                    odd_coefficient += opposite_sum;
+                                }
+                                coefficients[offset] = even_coefficient;
+                                if l < lmax {
+                                    coefficients[offset + 1] = odd_coefficient;
+                                }
+                                Ok(())
+                            },
+                        )?;
+                    }
                 }
                 if !paired_used {
                     T::for_each_y_lm_dispatched(

@@ -1189,6 +1189,176 @@ pub(crate) fn analysis_products_safe(
             .all(|value| value.is_finite() && value.abs() <= 1.0)
 }
 
+/// Computes a normal-range scalar analysis block while advancing its recurrence.
+///
+/// Returns `false` for an empty block or when the recurrence requires binary
+/// scaling. In either case, staged coefficients may be partial and must be
+/// discarded by the caller.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The fused scalar analysis block receives parity spectra and worker-owned recurrence scratch explicitly."
+)]
+pub(crate) fn fused_scalar_analysis_pair_block_dispatched(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[f64],
+    cos_theta: &[f64],
+    sectoral_norm: f64,
+    coefficient_a: &[f64],
+    coefficient_b: &[f64],
+    same_real: &[f64],
+    same_imag: &[f64],
+    opposite_real: &[f64],
+    opposite_imag: &[f64],
+    staged_coefficients: &mut [Complex64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    next: &mut [f64],
+    exponents: &mut [i64],
+) -> Result<bool, ShtError> {
+    debug_assert!(m <= lmax);
+    let coefficient_count = lmax - m + 1;
+    debug_assert!(sin_theta.len() <= LATITUDE_BLOCK_SIZE);
+    debug_assert_eq!(sin_theta.len(), cos_theta.len());
+    debug_assert_eq!(sin_theta.len(), same_real.len());
+    debug_assert_eq!(sin_theta.len(), same_imag.len());
+    debug_assert_eq!(sin_theta.len(), opposite_real.len());
+    debug_assert_eq!(sin_theta.len(), opposite_imag.len());
+    debug_assert!(staged_coefficients.len() >= coefficient_count);
+    debug_assert!(previous.len() >= sin_theta.len());
+    debug_assert!(current.len() >= sin_theta.len());
+    debug_assert!(next.len() >= sin_theta.len());
+    debug_assert!(exponents.len() >= sin_theta.len());
+
+    if sin_theta.is_empty() {
+        return Ok(false);
+    }
+
+    for lane in 0..sin_theta.len() {
+        let (value, exponent) = scalar::sectoral_value(sin_theta[lane], m, sectoral_norm)?;
+        previous[lane] = 0.0;
+        current[lane] = value;
+        exponents[lane] = exponent;
+    }
+    if !scalar::normalize_pair_lanes(
+        &mut previous[..sin_theta.len()],
+        &mut current[..sin_theta.len()],
+        &mut exponents[..sin_theta.len()],
+    )? {
+        return Ok(false);
+    }
+
+    staged_coefficients[..coefficient_count].fill(Complex64::new(0.0, 0.0));
+    Ok(arch.dispatch(FusedScalarAnalysisPair {
+        m,
+        lmax,
+        cos_theta,
+        coefficient_a,
+        coefficient_b,
+        same_real,
+        same_imag,
+        opposite_real,
+        opposite_imag,
+        staged_coefficients: &mut staged_coefficients[..coefficient_count],
+        previous: &mut previous[..sin_theta.len()],
+        current: &mut current[..sin_theta.len()],
+        next: &mut next[..sin_theta.len()],
+    }))
+}
+
+struct FusedScalarAnalysisPair<'a> {
+    m: usize,
+    lmax: usize,
+    cos_theta: &'a [f64],
+    coefficient_a: &'a [f64],
+    coefficient_b: &'a [f64],
+    same_real: &'a [f64],
+    same_imag: &'a [f64],
+    opposite_real: &'a [f64],
+    opposite_imag: &'a [f64],
+    staged_coefficients: &'a mut [Complex64],
+    previous: &'a mut [f64],
+    current: &'a mut [f64],
+    next: &'a mut [f64],
+}
+
+impl WithSimd for FusedScalarAnalysisPair<'_> {
+    type Output = bool;
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let FusedScalarAnalysisPair {
+            m,
+            lmax,
+            cos_theta,
+            coefficient_a,
+            coefficient_b,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            staged_coefficients,
+            previous,
+            current,
+            next,
+        } = self;
+        let mut previous = previous;
+        let mut current = current;
+        let mut next = next;
+
+        for (pair_index, l) in (m..=lmax).step_by(2).enumerate() {
+            let offset = l - m;
+            let (same_sum, opposite_sum) = AnalysisPairAccumulation {
+                same_real,
+                same_imag,
+                opposite_real,
+                opposite_imag,
+                basis: current,
+                cos_theta,
+            }
+            .with_simd(simd);
+            staged_coefficients[offset] = same_sum;
+            if l < lmax {
+                staged_coefficients[offset + 1] = opposite_sum;
+            }
+
+            if l + 2 > lmax {
+                break;
+            }
+
+            let (current_vectors, current_tail) = S::as_simd_f64s(current);
+            let (previous_vectors, previous_tail) = S::as_simd_f64s(previous);
+            let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
+            let (next_vectors, next_tail) = S::as_mut_simd_f64s(next);
+            let a = simd.splat_f64s(coefficient_a[pair_index]);
+            let b = simd.splat_f64s(coefficient_b[pair_index]);
+            debug_assert_eq!(current_vectors.len(), previous_vectors.len());
+            debug_assert_eq!(current_vectors.len(), cosine_vectors.len());
+            debug_assert_eq!(current_vectors.len(), next_vectors.len());
+            for index in 0..current_vectors.len() {
+                let cosine_squared = simd.mul_f64s(cosine_vectors[index], cosine_vectors[index]);
+                let leading = simd.mul_add_f64s(a, cosine_squared, b);
+                next_vectors[index] =
+                    simd.mul_add_f64s(leading, current_vectors[index], previous_vectors[index]);
+            }
+            for index in 0..current_tail.len() {
+                let cosine_squared = cosine_tail[index] * cosine_tail[index];
+                let leading =
+                    coefficient_a[pair_index].mul_add(cosine_squared, coefficient_b[pair_index]);
+                next_tail[index] = leading.mul_add(current_tail[index], previous_tail[index]);
+            }
+
+            std::mem::swap(&mut previous, &mut current);
+            std::mem::swap(&mut current, &mut next);
+            if scalar::pair_lanes_need_scaling(simd, previous, current) {
+                return false;
+            }
+        }
+        true
+    }
+}
+
 struct AnalysisPairAccumulation<'a> {
     same_real: &'a [f64],
     same_imag: &'a [f64],
@@ -2580,6 +2750,165 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn fused_scalar_analysis_block_matches_paired_reference_with_simd_tails() {
+        let m = 2;
+        let lmax = 20;
+        let lane_count = 17;
+        let angles: Vec<_> = (0..lane_count)
+            .map(|lane| 0.04 + lane as f64 * 0.075)
+            .collect();
+        let sin_theta: Vec<_> = angles.iter().map(|angle| angle.sin()).collect();
+        let cos_theta: Vec<_> = angles.iter().map(|angle| angle.cos()).collect();
+        let same_real: Vec<_> = (0..lane_count)
+            .map(|lane| (lane + 1) as f64 * 0.0013)
+            .collect();
+        let same_imag: Vec<_> = (0..lane_count)
+            .map(|lane| -((lane + 2) as f64) * 0.0009)
+            .collect();
+        let opposite_real: Vec<_> = (0..lane_count)
+            .map(|lane| (lane + 3) as f64 * 0.0011)
+            .collect();
+        let opposite_imag: Vec<_> = (0..lane_count)
+            .map(|lane| -((lane + 4) as f64) * 0.0007)
+            .collect();
+        let mut epsilon = vec![0.0; lmax + 4];
+        scalar::fill_epsilon(m, lmax + 3, &mut epsilon);
+        let mut alpha = vec![0.0; lmax / 2 + 2];
+        let mut coefficient_a = vec![0.0; lmax / 2 + 2];
+        let mut coefficient_b = vec![0.0; lmax / 2 + 2];
+        fill_factors(
+            m,
+            lmax,
+            &epsilon,
+            &mut alpha,
+            &mut coefficient_a,
+            &mut coefficient_b,
+        );
+        let sectoral_norm = scalar::sectoral_normalizations(m).unwrap()[m];
+        let coefficient_count = lmax - m + 1;
+        let mut staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
+        let mut previous = vec![0.0; lane_count];
+        let mut current = vec![0.0; lane_count];
+        let mut next = vec![0.0; lane_count];
+        let mut exponents = vec![0; lane_count];
+        let arch = Arch::new();
+
+        let fused = fused_scalar_analysis_pair_block_dispatched(
+            arch,
+            m,
+            lmax,
+            &sin_theta,
+            &cos_theta,
+            sectoral_norm,
+            &coefficient_a,
+            &coefficient_b,
+            &same_real,
+            &same_imag,
+            &opposite_real,
+            &opposite_imag,
+            &mut staged,
+            &mut previous,
+            &mut current,
+            &mut next,
+            &mut exponents,
+        )
+        .unwrap();
+        assert!(fused);
+
+        let mut reference = vec![Complex64::new(0.0, 0.0); coefficient_count];
+        for_each_y_lm_paired_status_dispatched(
+            arch,
+            m,
+            lmax,
+            &sin_theta,
+            &cos_theta,
+            sectoral_norm,
+            &coefficient_a,
+            &coefficient_b,
+            &mut previous,
+            &mut current,
+            &mut next,
+            &mut exponents,
+            |l, ring_start, basis, lane_exponents, normal_range| {
+                let lane_end = ring_start + basis.len();
+                let (same, opposite) = accumulate_analysis_pair_dispatched(
+                    arch,
+                    true,
+                    normal_range,
+                    &same_real[ring_start..lane_end],
+                    &same_imag[ring_start..lane_end],
+                    &opposite_real[ring_start..lane_end],
+                    &opposite_imag[ring_start..lane_end],
+                    basis,
+                    lane_exponents,
+                    &cos_theta[ring_start..lane_end],
+                );
+                let offset = l - m;
+                reference[offset] += same;
+                if l < lmax {
+                    reference[offset + 1] += opposite;
+                }
+                Ok(())
+            },
+        )
+        .unwrap();
+
+        for (actual, expected) in staged.iter().zip(reference) {
+            assert!((*actual - expected).norm() <= 2.0e-14);
+        }
+    }
+
+    #[test]
+    fn fused_scalar_analysis_block_rejects_scaled_sectoral_lanes() {
+        let m = 40;
+        let lmax = 80;
+        let sin_theta = [1.0e-6, 0.4];
+        let cos_theta = [1.0, 0.916515138991168];
+        let spectra = [0.25, -0.5];
+        let mut epsilon = vec![0.0; lmax + 4];
+        scalar::fill_epsilon(m, lmax + 3, &mut epsilon);
+        let mut alpha = vec![0.0; lmax / 2 + 2];
+        let mut coefficient_a = vec![0.0; lmax / 2 + 2];
+        let mut coefficient_b = vec![0.0; lmax / 2 + 2];
+        fill_factors(
+            m,
+            lmax,
+            &epsilon,
+            &mut alpha,
+            &mut coefficient_a,
+            &mut coefficient_b,
+        );
+        let sectoral_norm = scalar::sectoral_normalizations(m).unwrap()[m];
+        let mut staged = vec![Complex64::new(0.0, 0.0); lmax - m + 1];
+        let mut previous = [0.0; 2];
+        let mut current = [0.0; 2];
+        let mut next = [0.0; 2];
+        let mut exponents = [0; 2];
+
+        let fused = fused_scalar_analysis_pair_block_dispatched(
+            Arch::new(),
+            m,
+            lmax,
+            &sin_theta,
+            &cos_theta,
+            sectoral_norm,
+            &coefficient_a,
+            &coefficient_b,
+            &spectra,
+            &spectra,
+            &spectra,
+            &spectra,
+            &mut staged,
+            &mut previous,
+            &mut current,
+            &mut next,
+            &mut exponents,
+        )
+        .unwrap();
+        assert!(!fused);
+    }
 
     #[test]
     fn dual_analysis_accumulation_matches_independent_channels_and_scaled_fallback() {
