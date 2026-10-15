@@ -150,6 +150,14 @@ fn assert_f32_close_at_scale(actual: &[Complex<f32>], expected: &[Complex<f64>],
     }
 }
 
+fn unaligned_offset<T>(storage: &[T]) -> usize {
+    (1..=4)
+        .find(|&offset| {
+            !(storage.as_ptr() as usize + offset * std::mem::size_of::<T>()).is_multiple_of(32)
+        })
+        .expect("slack must contain a 32-byte-unaligned slice")
+}
+
 fn report_f32_complex_metrics(label: &str, actual: &[Complex<f32>], expected: &[Complex<f64>]) {
     let mut max_absolute = 0.0_f64;
     let mut max_expected = 0.0_f64;
@@ -234,7 +242,9 @@ fn f32_mixed_radix_matches_direct_dft_for_lengths_one_through_sixty_four() {
 #[test]
 fn f32_large_smooth_prime_bluestein_and_sht_lengths_match_f64_references() {
     println!("precision,operation,n,max_abs,rms,relative_l2,scaled_max,nonfinite");
-    for n in [1024, 127, 137, 4097] {
+    for n in [
+        150, 240, 256, 300, 484, 512, 726, 1024, 1372, 1452, 2904, 127, 137, 4097,
+    ] {
         let original32: Vec<_> = (0..n).map(|index| signal_f32(index, n)).collect();
         let original64: Vec<_> = original32
             .iter()
@@ -281,7 +291,9 @@ fn f64_large_smooth_multipass_matches_independent_dfts() {
 
 #[test]
 fn f64_sht_meridional_complex_lengths_match_independent_dfts() {
-    for n in [146, 722, 1442, 1452] {
+    for n in [
+        146, 150, 240, 256, 300, 484, 512, 722, 726, 1024, 1372, 1442, 1452, 2904,
+    ] {
         let input = random_signal_f64(n, 0x1b73_5a94_c6d8_e20f ^ n as u64);
         let expected_forward = direct_dft_f64(&input, true);
         let plan = ComplexFftPlan::<f64>::new(n).unwrap();
@@ -296,6 +308,73 @@ fn f64_sht_meridional_complex_lengths_match_independent_dfts() {
         let mut actual_inverse = spectrum;
         plan.inverse(&mut actual_inverse, &mut workspace).unwrap();
         assert_f64_close(&actual_inverse, &expected_inverse, n);
+    }
+}
+
+#[test]
+fn m3_vector_prefix_handles_unaligned_f32_and_f64_slices() {
+    for n in [300, 2904] {
+        let plan64 = ComplexFftPlan::<f64>::new(n).unwrap();
+        let mut workspace64 = plan64.workspace().unwrap();
+        let input64: Vec<_> = (0..n).map(|index| signal_f64(index, n)).collect();
+        let expected_forward64 = direct_dft_f64(&input64, true);
+        let mut storage64 = vec![Complex::new(-7.0, 9.0); n + 5];
+        let offset64 = unaligned_offset(&storage64);
+        storage64[offset64..offset64 + n].copy_from_slice(&input64);
+        let forward64 = &mut storage64[offset64..offset64 + n];
+        assert_ne!((forward64.as_ptr() as usize) % 32, 0);
+        plan64.forward(forward64, &mut workspace64).unwrap();
+        assert_f64_close(forward64, &expected_forward64, n);
+        assert_eq!(storage64[offset64 - 1], Complex::new(-7.0, 9.0));
+        assert_eq!(storage64[offset64 + n], Complex::new(-7.0, 9.0));
+
+        let spectrum64: Vec<_> = (0..n).map(|index| signal_f64(index + 17, n + 3)).collect();
+        let expected_inverse64 =
+            normalized_direct_inverse(direct_dft_f64(&spectrum64, false), 1.0 / n as f64);
+        storage64[offset64..offset64 + n].copy_from_slice(&spectrum64);
+        let inverse64 = &mut storage64[offset64..offset64 + n];
+        plan64.inverse(inverse64, &mut workspace64).unwrap();
+        assert_f64_close(inverse64, &expected_inverse64, n);
+        assert_eq!(storage64[offset64 - 1], Complex::new(-7.0, 9.0));
+        assert_eq!(storage64[offset64 + n], Complex::new(-7.0, 9.0));
+
+        let plan32 = ComplexFftPlan::<f32>::new(n).unwrap();
+        let mut workspace32 = plan32.workspace().unwrap();
+        let input32: Vec<_> = input64
+            .iter()
+            .map(|value| Complex::new(value.re as f32, value.im as f32))
+            .collect();
+        let input32_as64: Vec<_> = input32
+            .iter()
+            .map(|value| Complex::new(value.re as f64, value.im as f64))
+            .collect();
+        let expected_forward32 = direct_dft_f64(&input32_as64, true);
+        let mut storage32 = vec![Complex::new(-7.0_f32, 9.0_f32); n + 5];
+        let offset32 = unaligned_offset(&storage32);
+        storage32[offset32..offset32 + n].copy_from_slice(&input32);
+        let forward32 = &mut storage32[offset32..offset32 + n];
+        assert_ne!((forward32.as_ptr() as usize) % 32, 0);
+        plan32.forward(forward32, &mut workspace32).unwrap();
+        assert_f32_close_at_scale(forward32, &expected_forward32, n as f64);
+        assert_eq!(storage32[offset32 - 1], Complex::new(-7.0, 9.0));
+        assert_eq!(storage32[offset32 + n], Complex::new(-7.0, 9.0));
+
+        let spectrum32: Vec<_> = spectrum64
+            .iter()
+            .map(|value| Complex::new(value.re as f32, value.im as f32))
+            .collect();
+        let spectrum32_as64: Vec<_> = spectrum32
+            .iter()
+            .map(|value| Complex::new(value.re as f64, value.im as f64))
+            .collect();
+        let expected_inverse32 =
+            normalized_direct_inverse(direct_dft_f64(&spectrum32_as64, false), 1.0 / n as f64);
+        storage32[offset32..offset32 + n].copy_from_slice(&spectrum32);
+        let inverse32 = &mut storage32[offset32..offset32 + n];
+        plan32.inverse(inverse32, &mut workspace32).unwrap();
+        assert_f32_close_at_scale(inverse32, &expected_inverse32, n as f64);
+        assert_eq!(storage32[offset32 - 1], Complex::new(-7.0, 9.0));
+        assert_eq!(storage32[offset32 + n], Complex::new(-7.0, 9.0));
     }
 }
 
