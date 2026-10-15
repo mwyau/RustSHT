@@ -133,8 +133,66 @@ selected M6 executable SHA-256 is
 Per-process order, load average, commands and hashes are recorded in the raw
 JSONL captures.
 
-M6 latency is compared with the immediately preceding accepted M5 source.
-The cross-library RustFFT, DUCC, FFTW and Admiral measurements remain in the
-[M5 comparison report](m5-current-head-cross-library.md); this workspace
-change was not independently benchmarked against those libraries. These
-standalone FFT results do not establish a whole-SHT speedup.
+## N=723 cross-library comparison
+
+The final M6 candidate was compared with RustFFT 6.4.1, DUCC revision
+`c1ed01b8fda69d2a378190f0915f1a19762dddbf` in portable and native builds,
+system FFTW 3.3.10, and Admiral revision
+`ce67bc00ff9e6de96bf5b75f7a789581105ddb58`. Each backend ran the public real
+transform at N=723 with 361 sequential rows and one execution thread. Twelve
+alternating process pairs were collected per backend and direction; each
+process reports the median of seven warmed samples. Ratios are
+`reference time / M6 time`, so values above one favor M6. Intervals are 95%
+bootstrap intervals over the paired ratios.
+
+| Reference | Operation | M6 (µs) | Reference (µs) | Reference/M6 | 95% interval |
+|---|---|---:|---:|---:|---:|
+| RustFFT 6.4.1 | R2C | 11.127 | 4.705 | 0.424 | 0.417–0.428 |
+| RustFFT 6.4.1 | C2R | 11.769 | 4.744 | 0.403 | 0.402–0.404 |
+| DUCC portable | R2C | 11.111 | 16.596 | 1.488 | 1.483–1.507 |
+| DUCC portable | C2R | 11.738 | 16.806 | 1.424 | 1.416–1.436 |
+| DUCC native | R2C | 11.121 | 11.655 | 1.048 | 1.041–1.052 |
+| DUCC native | C2R | 11.862 | 11.609 | 0.983 | 0.968–0.987 |
+| FFTW system 3.3.10 | R2C | 11.138 | 8.875 | 0.794 | 0.793–0.798 |
+| FFTW system 3.3.10 | C2R | 11.754 | 8.990 | 0.765 | 0.760–0.766 |
+| Admiral | R2C | 11.103 | 10.618 | 0.954 | 0.942–0.969 |
+| Admiral | C2R | 11.756 | 10.655 | 0.903 | 0.894–0.913 |
+
+M6 is faster than portable DUCC in both directions and close to native DUCC:
+the R2C median favors M6 by 4.8%, while the C2R median favors native DUCC by
+1.7%. M6 remains slower than RustFFT, FFTW and Admiral at this length. The
+native-DUCC R2C paired range is wider than its bootstrap interval
+(`0.966–1.121`), so its small median advantage should be treated as
+load-sensitive. The broader cross-library matrix for lengths unaffected by
+this workspace change remains in the [M5 comparison report](m5-current-head-cross-library.md).
+
+The 12-pair raw captures and summary are
+[`RustFFT R2C`](../benches/results/m6-final-crosslib-n723-rustfft-6.4.1-r2c-12-pairs.jsonl),
+[`RustFFT C2R`](../benches/results/m6-final-crosslib-n723-rustfft-6.4.1-c2r-12-pairs.jsonl),
+[`DUCC portable R2C`](../benches/results/m6-final-crosslib-n723-ducc-c1ed01b8-portable-r2c-12-pairs.jsonl),
+[`DUCC portable C2R`](../benches/results/m6-final-crosslib-n723-ducc-c1ed01b8-portable-c2r-12-pairs.jsonl),
+[`DUCC native R2C`](../benches/results/m6-final-crosslib-n723-ducc-c1ed01b8-native-r2c-12-pairs.jsonl),
+[`DUCC native C2R`](../benches/results/m6-final-crosslib-n723-ducc-c1ed01b8-native-c2r-12-pairs.jsonl),
+[`FFTW`](../benches/results/m6-final-crosslib-n723-fftw-system-3.3.10-12-pairs.jsonl),
+[`Admiral`](../benches/results/m6-final-crosslib-n723-admiral-ce67bc00-12-pairs.jsonl), and
+the [summary CSV](../benches/results/m6-final-crosslib-n723-summary.csv).
+The merged captures preserve both original six-pair rounds and identify their
+source files and pair numbers. The processes recorded one-minute load averages
+from 0.71 to 2.76 on the 32-logical-CPU host.
+
+## Full-output comparison
+
+At N=723, the final M6 candidate was also compared across all C2C, R2C and C2R
+output records against RustFFT, portable and native DUCC, FFTW and Admiral.
+Each comparison covered 2,531 complex output records (5,062 scalar
+components) at `atol=rtol=2e-11`. Maximum scaled differences were `6.523e-14`
+against RustFFT, `4.508e-14` against portable DUCC, `4.574e-14` against native
+DUCC, `5.546e-14` against FFTW and `7.422e-14` against Admiral. The comparison
+commands and full results are in
+[`m6-final-n723-output-comparison.txt`](../benches/results/m6-final-n723-output-comparison.txt).
+
+The M6-to-M5 timing comparison establishes the source-relative change; this
+focused cross-library campaign checks the final N=723 candidate. M6 changes
+only the real radix-241 route, so the M5 cross-library table remains the
+measured context for other lengths. These standalone FFT results do not
+establish a whole-SHT speedup.

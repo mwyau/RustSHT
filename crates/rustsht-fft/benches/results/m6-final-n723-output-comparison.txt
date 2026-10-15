@@ -1,0 +1,15 @@
+M6 final N=723 numerical output comparison
+Candidate source: 2375e0dac3ea4eb9d5dd92b63f03e7e1696ed198
+Candidate benchmark executable SHA-256: 4fd81a13a3564d47fbf7c982b78e53d74aa1ecd9ef8c9ed1ef50e64600393192
+The comparison checks every C2C, R2C and C2R output record at N=723. It uses compare.py defaults atol=rtol=2e-11. DUCC source revision is c1ed01b8fda69d2a378190f0915f1a19762dddbf; FFTW is the system 3.3.10 package; Admiral source revision is ce67bc00ff9e6de96bf5b75f7a789581105ddb58.
+
+$ python3 crates/rustsht-fft/benches/reference/compare.py --manifest crates/rustsht-fft/Cargo.toml --ducc /home/albert/rustsht-fft-m0-ducc-portable/rustsht-fft-reference --lengths 723 --external rustfft=crates/rustsht-fft/target/release/deps/rustfft-721ac07477409fe7 --external fftw=/home/albert/rustsht-fft-m0-external/fftw-system --external admiral=/home/albert/rustsht-fft-m0-external/admiral
+RustSHT-FFT f64 C2C/R2C/C2R: compared 2531 output records (5062 scalar components); max_abs=1.137e-13; worst_abs=(('c2c_forward', 723, 13), 'imag'); max_scaled=4.508e-14; worst_scaled=(('c2c_forward', 723, 614), 'imag')
+RustSHT-FFT versus rustfft f64 C2C/R2C/C2R: compared 2531 output records (5062 scalar components); max_abs=2.700e-13; worst_abs=(('c2c_forward', 723, 710), 'real'); max_scaled=6.523e-14; worst_scaled=(('c2c_forward', 723, 532), 'imag')
+RustSHT-FFT versus fftw f64 C2C/R2C/C2R: compared 2531 output records (5062 scalar components); max_abs=1.705e-13; worst_abs=(('c2c_forward', 723, 703), 'imag'); max_scaled=5.546e-14; worst_scaled=(('c2c_forward', 723, 720), 'imag')
+RustSHT-FFT versus admiral f64 C2C/R2C/C2R: compared 2531 output records (5062 scalar components); max_abs=1.137e-13; worst_abs=(('c2c_forward', 723, 710), 'imag'); max_scaled=7.422e-14; worst_scaled=(('c2c_forward', 723, 48), 'real')
+DUCC vectorize=off
+
+$ python3 crates/rustsht-fft/benches/reference/compare.py --manifest crates/rustsht-fft/Cargo.toml --ducc /home/albert/rustsht-fft-m0-ducc-native/rustsht-fft-reference --lengths 723
+RustSHT-FFT f64 C2C/R2C/C2R: compared 2531 output records (5062 scalar components); max_abs=1.705e-13; worst_abs=(('c2c_forward', 723, 20), 'imag'); max_scaled=4.574e-14; worst_scaled=(('c2c_forward', 723, 614), 'imag')
+DUCC vectorize=off
