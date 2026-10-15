@@ -1,0 +1,7 @@
+Measured M241 Bluestein selection and retained payloads
+C2C p=241, M484: plan 37,872 B; workspace 27,408 B.
+C2C p=241, M512: plan 38,256 B; workspace 28,208 B.
+Real N=723 f64 Rader route, M484 fallback: plan 68,928 B; workspace 56,576 B.
+Real N=723 f64 Rader route, M512 fallback: plan 69,312 B; workspace 57,376 B.
+Real N=241 f64 remains M484; a blanket M512 selection failed its maximum-DC inverse test.
+Real N=723 f32 remains M484 because the f32 real constructor has no Rader executor.

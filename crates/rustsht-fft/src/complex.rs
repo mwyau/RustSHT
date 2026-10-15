@@ -16,6 +16,8 @@ use num_traits::{Float, FromPrimitive};
 
 use crate::simd::{ComplexPassKernel, SimdPass, SimdScalar};
 
+pub(crate) const P241_BLUESTEIN_CONVOLUTION_LEN: usize = 512;
+
 /// Errors returned by FFT plan construction and execution.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum FftError {
@@ -250,7 +252,15 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
             .map_err(|_| FftError::AllocationFailed)?;
         for &radix in &factors {
             bluestein.push(if enable_bluestein && radix >= 110 {
-                Some(BluesteinPlan::try_new(radix)?)
+                let plan = if radix == 241 {
+                    BluesteinPlan::try_new_with_convolution_len(
+                        radix,
+                        P241_BLUESTEIN_CONVOLUTION_LEN,
+                    )?
+                } else {
+                    BluesteinPlan::try_new(radix)?
+                };
+                Some(plan)
             } else {
                 None
             });
@@ -632,9 +642,32 @@ pub(crate) struct BluesteinPlan<T> {
 
 impl<T: Float + FromPrimitive> BluesteinPlan<T> {
     pub(crate) fn try_new(len: usize) -> Result<Self, FftError> {
+        Self::try_new_with_pad(len, None)
+    }
+
+    pub(crate) fn try_new_with_convolution_len(
+        len: usize,
+        convolution_len: usize,
+    ) -> Result<Self, FftError> {
+        Self::try_new_with_pad(len, Some(convolution_len))
+    }
+
+    fn try_new_with_pad(len: usize, selected_len: Option<usize>) -> Result<Self, FftError> {
         let twice_len = len.checked_mul(2).ok_or(FftError::AllocationFailed)?;
-        let convolution_len =
-            good_size_complex(twice_len.checked_sub(1).ok_or(FftError::AllocationFailed)?)?;
+        let minimum = twice_len.checked_sub(1).ok_or(FftError::AllocationFailed)?;
+        let convolution_len = if let Some(convolution_len) = selected_len {
+            let factors = factorize(convolution_len)?;
+            if convolution_len < minimum
+                || factors
+                    .iter()
+                    .any(|&factor| !matches!(factor, 2 | 3 | 4 | 5 | 7 | 8 | 11))
+            {
+                return Err(FftError::InvalidLength);
+            }
+            convolution_len
+        } else {
+            good_size_complex(minimum)?
+        };
         let convolution = ComplexFftPlan::try_new_with_bluestein(convolution_len, false)?;
         let convolution_scale = T::from_usize(convolution_len).ok_or(FftError::AllocationFailed)?;
         let zero = Complex::new(T::zero(), T::zero());
@@ -2108,6 +2141,22 @@ mod prime_kernel_tests {
         for radix in [13, 17, 19, 31, 41, 73, 103, 109] {
             check_against_reference::<f64>(radix);
             check_against_reference::<f32>(radix);
+        }
+    }
+
+    #[test]
+    fn p241_bluestein_plan_uses_the_benchmarked_convolution_length() {
+        for convolution in [
+            ComplexFftPlan::<f64>::new(241).unwrap().data.bluestein[0]
+                .as_ref()
+                .unwrap()
+                .convolution_len(),
+            ComplexFftPlan::<f32>::new(241).unwrap().data.bluestein[0]
+                .as_ref()
+                .unwrap()
+                .convolution_len(),
+        ] {
+            assert_eq!(convolution, P241_BLUESTEIN_CONVOLUTION_LEN);
         }
     }
 }
