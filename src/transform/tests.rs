@@ -230,6 +230,92 @@ fn active_ring_weighted_order_midpoint_balances_active_work() {
 
 #[cfg(feature = "parallel")]
 #[test]
+fn active_ring_order_work_prefix_matches_ring_scan_for_every_subinterval() {
+    for lmax in 0..=16 {
+        let mut mmax_values = vec![0, lmax / 2, lmax];
+        mmax_values.sort_unstable();
+        mmax_values.dedup();
+        for mmax in mmax_values {
+            let order_count = mmax + 1;
+            let ring_count = 1 + (lmax % 7);
+            let cutoff_sets = [
+                Vec::new(),
+                vec![0; ring_count],
+                vec![lmax; ring_count],
+                (0..ring_count).map(|ring| ring % (lmax + 1)).collect(),
+                (0..ring_count)
+                    .map(|ring| (ring * 7 + 3) % (lmax + 2))
+                    .collect(),
+            ];
+
+            for ring_order_limits in cutoff_sets {
+                let mut prefix = vec![0_u128; order_count + 1];
+                build_active_ring_order_work_prefix(lmax, mmax, &ring_order_limits, &mut prefix)
+                    .unwrap();
+
+                let reference_work = |start: usize, end: usize| {
+                    (start..end)
+                        .map(|m| {
+                            let active_rings = ring_order_limits
+                                .iter()
+                                .filter(|&&limit| m <= limit)
+                                .count() as u128;
+                            (lmax - m + 1) as u128 * active_rings
+                        })
+                        .sum::<u128>()
+                };
+
+                assert_eq!(prefix[0], 0);
+                assert_eq!(prefix[order_count], reference_work(0, order_count));
+                for m_start in 0..order_count {
+                    for m_end in (m_start + 1)..=order_count {
+                        assert_eq!(
+                            prefix[m_end] - prefix[m_start],
+                            reference_work(m_start, m_end),
+                            "lmax={lmax}, mmax={mmax}, m_start={m_start}, m_end={m_end}, limits={ring_order_limits:?}"
+                        );
+                        if m_end - m_start > 1 {
+                            assert_eq!(
+                                active_ring_weighted_order_midpoint_from_prefix(
+                                    lmax, m_start, m_end, &prefix
+                                ),
+                                active_ring_weighted_order_midpoint(
+                                    lmax,
+                                    m_start,
+                                    m_end,
+                                    &ring_order_limits,
+                                ),
+                                "lmax={lmax}, mmax={mmax}, m_start={m_start}, m_end={m_end}, limits={ring_order_limits:?}"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn active_ring_order_work_prefix_checks_length_and_arithmetic() {
+    assert_eq!(
+        build_active_ring_order_work_prefix(4, 4, &[], &mut [0; 5]),
+        Err(ShtError::BufferLength {
+            buffer: "analysis order work prefix",
+            expected: 6,
+            actual: 5,
+        })
+    );
+    assert_eq!(
+        build_active_ring_order_work_prefix(usize::MAX, usize::MAX, &[], &mut []),
+        Err(ShtError::IntegerOverflow {
+            quantity: "analysis order work prefix length",
+        })
+    );
+}
+
+#[cfg(feature = "parallel")]
+#[test]
 fn scalar_active_ring_schedule_matches_one_and_eight_threads() {
     let one_thread = rayon::ThreadPoolBuilder::new()
         .num_threads(1)
