@@ -500,6 +500,39 @@ fn general_prime_and_bluestein_paths_match_direct_dfts() {
 }
 
 #[test]
+fn p241_bluestein_pad_matches_f64_reference_for_f32() {
+    let n = 241;
+    let input32: Vec<_> = (0..n).map(|index| signal_f32(index + 5, n + 2)).collect();
+    let input64: Vec<_> = input32
+        .iter()
+        .map(|value| Complex::new(value.re as f64, value.im as f64))
+        .collect();
+    let expected_forward: Vec<_> = direct_dft_f64(&input64, true)
+        .into_iter()
+        .map(|value| Complex::new(value.re as f32, value.im as f32))
+        .collect();
+    let plan = ComplexFftPlan::<f32>::new(n).unwrap();
+    let mut workspace = plan.workspace().unwrap();
+    let mut actual_forward = input32;
+    plan.forward(&mut actual_forward, &mut workspace).unwrap();
+    assert_f32_close(&actual_forward, &expected_forward, n);
+
+    let spectrum32: Vec<_> = (0..n).map(|index| signal_f32(index + 19, n + 7)).collect();
+    let spectrum64: Vec<_> = spectrum32
+        .iter()
+        .map(|value| Complex::new(value.re as f64, value.im as f64))
+        .collect();
+    let expected_inverse: Vec<_> =
+        normalized_direct_inverse(direct_dft_f64(&spectrum64, false), 1.0 / n as f64)
+            .into_iter()
+            .map(|value| Complex::new(value.re as f32, value.im as f32))
+            .collect();
+    let mut actual_inverse = spectrum32;
+    plan.inverse(&mut actual_inverse, &mut workspace).unwrap();
+    assert_f32_close(&actual_inverse, &expected_inverse, n);
+}
+
+#[test]
 fn direct_general_primes_preserve_analytic_modes_extremes_and_subnormals() {
     for n in [13, 17, 19, 31, 41, 73, 103, 109] {
         let plan = ComplexFftPlan::<f64>::new(n).unwrap();
@@ -686,118 +719,129 @@ fn general_prime_inverse_recovers_roundable_subnormal_residuals() {
 
 #[test]
 fn general_prime_inverse_keeps_maximum_finite_dc_spectra_finite() {
-    let n = 103;
+    for n in [103, 241] {
+        let plan64 = ComplexFftPlan::<f64>::new(n).unwrap();
+        let mut workspace64 = plan64.workspace().unwrap();
+        let mut spectrum64 = vec![Complex::new(0.0, 0.0); n];
+        spectrum64[0] = Complex::new(f64::MAX, 0.0);
+        plan64.inverse(&mut spectrum64, &mut workspace64).unwrap();
+        let expected64 = f64::MAX / n as f64;
+        for (index, value) in spectrum64.iter().enumerate() {
+            assert!(
+                value.re.is_finite() && value.im.is_finite(),
+                "n={n}, index={index}"
+            );
+            assert!(
+                (value.re - expected64).abs() <= 2.0e-12 * expected64,
+                "n={n}, index={index}, actual={}, expected={expected64}",
+                value.re
+            );
+            assert!(
+                value.im.abs() <= 2.0e-12 * expected64,
+                "n={n}, index={index}"
+            );
+        }
 
-    let plan64 = ComplexFftPlan::<f64>::new(n).unwrap();
-    let mut workspace64 = plan64.workspace().unwrap();
-    let mut spectrum64 = vec![Complex::new(0.0, 0.0); n];
-    spectrum64[0] = Complex::new(f64::MAX, 0.0);
-    plan64.inverse(&mut spectrum64, &mut workspace64).unwrap();
-    let expected64 = f64::MAX / n as f64;
-    for (index, value) in spectrum64.iter().enumerate() {
-        assert!(
-            value.re.is_finite() && value.im.is_finite(),
-            "index={index}"
-        );
-        assert!(
-            (value.re - expected64).abs() <= 2.0e-12 * expected64,
-            "index={index}, actual={}, expected={expected64}",
-            value.re
-        );
-        assert!(value.im.abs() <= 2.0e-12 * expected64, "index={index}");
-    }
-
-    let plan32 = ComplexFftPlan::<f32>::new(n).unwrap();
-    let mut workspace32 = plan32.workspace().unwrap();
-    let mut spectrum32 = vec![Complex::new(0.0, 0.0); n];
-    spectrum32[0] = Complex::new(f32::MAX, 0.0);
-    plan32.inverse(&mut spectrum32, &mut workspace32).unwrap();
-    let expected32 = f32::MAX / n as f32;
-    for (index, value) in spectrum32.iter().enumerate() {
-        assert!(
-            value.re.is_finite() && value.im.is_finite(),
-            "index={index}"
-        );
-        assert!(
-            (value.re - expected32).abs() <= 4.0e-6 * expected32,
-            "index={index}, actual={}, expected={expected32}",
-            value.re
-        );
-        assert!(value.im.abs() <= 4.0e-6 * expected32, "index={index}");
+        let plan32 = ComplexFftPlan::<f32>::new(n).unwrap();
+        let mut workspace32 = plan32.workspace().unwrap();
+        let mut spectrum32 = vec![Complex::new(0.0, 0.0); n];
+        spectrum32[0] = Complex::new(f32::MAX, 0.0);
+        plan32.inverse(&mut spectrum32, &mut workspace32).unwrap();
+        let expected32 = f32::MAX / n as f32;
+        for (index, value) in spectrum32.iter().enumerate() {
+            assert!(
+                value.re.is_finite() && value.im.is_finite(),
+                "n={n}, index={index}"
+            );
+            assert!(
+                (value.re - expected32).abs() <= 4.0e-6 * expected32,
+                "n={n}, index={index}, actual={}, expected={expected32}",
+                value.re
+            );
+            assert!(
+                value.im.abs() <= 4.0e-6 * expected32,
+                "n={n}, index={index}"
+            );
+        }
     }
 }
 
 #[test]
 fn bluestein_handles_representable_high_amplitude_impulses() {
-    let plan64 = ComplexFftPlan::<f64>::new(113).unwrap();
-    let mut workspace64 = plan64.workspace().unwrap();
-    let amplitude64 = f64::MAX / 4.0;
-    let mut impulse64 = vec![Complex::new(0.0, 0.0); plan64.len()];
-    impulse64[0] = Complex::new(amplitude64, 0.0);
-    plan64.forward(&mut impulse64, &mut workspace64).unwrap();
-    assert!(
-        impulse64
-            .iter()
-            .all(|value| value.re.is_finite() && value.im.is_finite())
-    );
-    assert_f64_close(
-        &impulse64,
-        &vec![Complex::new(amplitude64, 0.0); plan64.len()],
-        plan64.len(),
-    );
+    for n in [113, 241] {
+        let plan64 = ComplexFftPlan::<f64>::new(n).unwrap();
+        let mut workspace64 = plan64.workspace().unwrap();
+        let amplitude64 = f64::MAX / 4.0;
+        let mut impulse64 = vec![Complex::new(0.0, 0.0); plan64.len()];
+        impulse64[0] = Complex::new(amplitude64, 0.0);
+        plan64.forward(&mut impulse64, &mut workspace64).unwrap();
+        assert!(
+            impulse64
+                .iter()
+                .all(|value| value.re.is_finite() && value.im.is_finite()),
+            "f64 n={n}"
+        );
+        assert_f64_close(
+            &impulse64,
+            &vec![Complex::new(amplitude64, 0.0); plan64.len()],
+            plan64.len(),
+        );
 
-    let plan32 = ComplexFftPlan::<f32>::new(113).unwrap();
-    let mut workspace32 = plan32.workspace().unwrap();
-    let amplitude32 = f32::MAX / 4.0;
-    let mut impulse32 = vec![Complex::new(0.0, 0.0); plan32.len()];
-    impulse32[0] = Complex::new(amplitude32, 0.0);
-    plan32.forward(&mut impulse32, &mut workspace32).unwrap();
-    assert!(
-        impulse32
-            .iter()
-            .all(|value| value.re.is_finite() && value.im.is_finite())
-    );
-    assert_f32_close(
-        &impulse32,
-        &vec![Complex::new(amplitude32, 0.0); plan32.len()],
-        plan32.len(),
-    );
+        let plan32 = ComplexFftPlan::<f32>::new(n).unwrap();
+        let mut workspace32 = plan32.workspace().unwrap();
+        let amplitude32 = f32::MAX / 4.0;
+        let mut impulse32 = vec![Complex::new(0.0, 0.0); plan32.len()];
+        impulse32[0] = Complex::new(amplitude32, 0.0);
+        plan32.forward(&mut impulse32, &mut workspace32).unwrap();
+        assert!(
+            impulse32
+                .iter()
+                .all(|value| value.re.is_finite() && value.im.is_finite()),
+            "f32 n={n}"
+        );
+        assert_f32_close(
+            &impulse32,
+            &vec![Complex::new(amplitude32, 0.0); plan32.len()],
+            plan32.len(),
+        );
+    }
 }
 
 #[test]
 fn bluestein_preserves_subnormal_impulses_and_constant_inverse_spectra() {
-    let n = 113;
-    let tiny64 = f64::from_bits(1);
-    let plan64 = ComplexFftPlan::<f64>::new(n).unwrap();
-    let mut workspace64 = plan64.workspace().unwrap();
-    let mut impulse64 = vec![Complex::new(0.0, 0.0); n];
-    impulse64[0] = Complex::new(tiny64, 0.0);
-    plan64.forward(&mut impulse64, &mut workspace64).unwrap();
-    assert_eq!(impulse64, vec![Complex::new(tiny64, 0.0); n]);
+    for n in [113, 241] {
+        let tiny64 = f64::from_bits(1);
+        let plan64 = ComplexFftPlan::<f64>::new(n).unwrap();
+        let mut workspace64 = plan64.workspace().unwrap();
+        let mut impulse64 = vec![Complex::new(0.0, 0.0); n];
+        impulse64[0] = Complex::new(tiny64, 0.0);
+        plan64.forward(&mut impulse64, &mut workspace64).unwrap();
+        assert_eq!(impulse64, vec![Complex::new(tiny64, 0.0); n], "f64 n={n}");
 
-    let mut constant_spectrum64 = vec![Complex::new(tiny64, 0.0); n];
-    plan64
-        .inverse(&mut constant_spectrum64, &mut workspace64)
-        .unwrap();
-    let mut expected64 = vec![Complex::new(0.0, 0.0); n];
-    expected64[0] = Complex::new(tiny64, 0.0);
-    assert_eq!(constant_spectrum64, expected64);
+        let mut constant_spectrum64 = vec![Complex::new(tiny64, 0.0); n];
+        plan64
+            .inverse(&mut constant_spectrum64, &mut workspace64)
+            .unwrap();
+        let mut expected64 = vec![Complex::new(0.0, 0.0); n];
+        expected64[0] = Complex::new(tiny64, 0.0);
+        assert_eq!(constant_spectrum64, expected64, "f64 n={n}");
 
-    let tiny32 = f32::from_bits(1);
-    let plan32 = ComplexFftPlan::<f32>::new(n).unwrap();
-    let mut workspace32 = plan32.workspace().unwrap();
-    let mut impulse32 = vec![Complex::new(0.0, 0.0); n];
-    impulse32[0] = Complex::new(tiny32, 0.0);
-    plan32.forward(&mut impulse32, &mut workspace32).unwrap();
-    assert_eq!(impulse32, vec![Complex::new(tiny32, 0.0); n]);
+        let tiny32 = f32::from_bits(1);
+        let plan32 = ComplexFftPlan::<f32>::new(n).unwrap();
+        let mut workspace32 = plan32.workspace().unwrap();
+        let mut impulse32 = vec![Complex::new(0.0, 0.0); n];
+        impulse32[0] = Complex::new(tiny32, 0.0);
+        plan32.forward(&mut impulse32, &mut workspace32).unwrap();
+        assert_eq!(impulse32, vec![Complex::new(tiny32, 0.0); n], "f32 n={n}");
 
-    let mut constant_spectrum32 = vec![Complex::new(tiny32, 0.0); n];
-    plan32
-        .inverse(&mut constant_spectrum32, &mut workspace32)
-        .unwrap();
-    let mut expected32 = vec![Complex::new(0.0, 0.0); n];
-    expected32[0] = Complex::new(tiny32, 0.0);
-    assert_eq!(constant_spectrum32, expected32);
+        let mut constant_spectrum32 = vec![Complex::new(tiny32, 0.0); n];
+        plan32
+            .inverse(&mut constant_spectrum32, &mut workspace32)
+            .unwrap();
+        let mut expected32 = vec![Complex::new(0.0, 0.0); n];
+        expected32[0] = Complex::new(tiny32, 0.0);
+        assert_eq!(constant_spectrum32, expected32, "f32 n={n}");
+    }
 }
 
 #[test]

@@ -17,8 +17,8 @@ use num_traits::{Float, FromPrimitive};
 
 use crate::FftError;
 use crate::complex::{
-    BluesteinPlan, ComplexFftPlan, ComplexFftWorkspace, Direction, check_batch_rows, check_len,
-    check_vec_len, checked_batch_len, try_vec, unity_root,
+    BluesteinPlan, ComplexFftPlan, ComplexFftWorkspace, Direction, P241_BLUESTEIN_CONVOLUTION_LEN,
+    check_batch_rows, check_len, check_vec_len, checked_batch_len, try_vec, unity_root,
 };
 use crate::rader::{RaderPrimePlan, RaderPrimeWorkspace, RaderRuntimeExecutor};
 use crate::real_multipass::{
@@ -148,7 +148,15 @@ impl<T: Float + FromPrimitive> RealFftPlan<T> {
             .map_err(|_| crate::FftError::AllocationFailed)?;
         for &radix in &factors {
             bluestein.push(if !use_complexify && radix >= 135 {
-                Some(BluesteinPlan::try_new(radix)?)
+                let plan = if len == 723 && radix == 241 && rader_executor.is_some() {
+                    BluesteinPlan::try_new_with_convolution_len(
+                        radix,
+                        P241_BLUESTEIN_CONVOLUTION_LEN,
+                    )?
+                } else {
+                    BluesteinPlan::try_new(radix)?
+                };
+                Some(plan)
             } else {
                 None
             });
@@ -1621,20 +1629,24 @@ fn small_radix_dft_all<T: Float + FromPrimitive>(
 #[cfg(test)]
 mod rader_fallback_tests {
     use super::RealFftPlan;
-    use crate::complex::ComplexFftPlan;
+    use crate::complex::{ComplexFftPlan, P241_BLUESTEIN_CONVOLUTION_LEN};
     use crate::{Complex, m0_clear_routes, m0_route_snapshot};
 
     fn make_plan(len: usize, rader_enabled: bool) -> RealFftPlan<f64> {
-        RealFftPlan::try_new(
+        let mut plan = RealFftPlan::try_new(
             len,
             None,
             None,
             None,
             None,
             None,
-            rader_enabled.then_some(ComplexFftPlan::<f64>::execute_runtime),
+            Some(ComplexFftPlan::<f64>::execute_runtime),
         )
-        .unwrap()
+        .unwrap();
+        if !rader_enabled {
+            plan.rader = None;
+        }
+        plan
     }
 
     fn assert_same_complex_bits(left: &[Complex<f64>], right: &[Complex<f64>]) {
@@ -1648,6 +1660,33 @@ mod rader_fallback_tests {
         for (left, right) in left.iter().zip(right) {
             assert_eq!(left.to_bits(), right.to_bits());
         }
+    }
+
+    #[test]
+    fn p241_real_pad_change_is_scoped_to_the_f64_rader_fallback() {
+        let ordinary_prime = RealFftPlan::<f64>::new(241).unwrap();
+        assert_eq!(
+            ordinary_prime.bluestein[0]
+                .as_ref()
+                .unwrap()
+                .convolution_len(),
+            484
+        );
+
+        let rader_fallback = RealFftPlan::<f64>::new(723).unwrap();
+        assert_eq!(
+            rader_fallback.bluestein[1]
+                .as_ref()
+                .unwrap()
+                .convolution_len(),
+            P241_BLUESTEIN_CONVOLUTION_LEN
+        );
+
+        let f32_prime = RealFftPlan::<f32>::new(723).unwrap();
+        assert_eq!(
+            f32_prime.bluestein[1].as_ref().unwrap().convolution_len(),
+            484
+        );
     }
 
     #[test]
@@ -1771,7 +1810,7 @@ mod rader_fallback_tests {
                     .any(|event| event.contains("real-forward:Rader"));
                 assert_eq!(used_rader, selected, "n={len} class={class}: {events:?}");
                 if !selected {
-                    let convolution_len = if len == 257 { 525 } else { 484 };
+                    let convolution_len = if len == 257 { 525 } else { 512 };
                     assert!(
                         events
                             .iter()
@@ -1838,7 +1877,7 @@ mod rader_fallback_tests {
                     .any(|event| event.contains("real-inverse:Rader"));
                 assert_eq!(used_rader, selected, "n={len} class={class}: {events:?}");
                 if !selected {
-                    let convolution_len = if len == 257 { 525 } else { 484 };
+                    let convolution_len = if len == 257 { 525 } else { 512 };
                     assert!(
                         events
                             .iter()
