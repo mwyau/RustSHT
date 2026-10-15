@@ -40,7 +40,7 @@ pub(crate) fn weighted_order_midpoint(lmax: usize, m_start: usize, m_end: usize)
     best_mid
 }
 
-#[cfg(feature = "parallel")]
+#[cfg(all(feature = "parallel", test))]
 pub(crate) fn active_ring_weighted_order_midpoint(
     lmax: usize,
     m_start: usize,
@@ -73,6 +73,107 @@ pub(crate) fn active_ring_weighted_order_midpoint(
         if difference < best_difference {
             best_difference = difference;
             best_mid = m + 1;
+        }
+    }
+    best_mid
+}
+
+#[cfg(feature = "parallel")]
+pub(crate) fn build_active_ring_order_work_prefix(
+    lmax: usize,
+    mmax: usize,
+    ring_order_limits: &[usize],
+    prefix: &mut [u128],
+) -> Result<(), ShtError> {
+    if mmax > lmax {
+        return Err(ShtError::InvalidHarmonicBounds { lmax, mmax });
+    }
+    let order_count = mmax.checked_add(1).ok_or(ShtError::IntegerOverflow {
+        quantity: "analysis order work prefix length",
+    })?;
+    let prefix_len = order_count
+        .checked_add(1)
+        .ok_or(ShtError::IntegerOverflow {
+            quantity: "analysis order work prefix length",
+        })?;
+    if prefix.len() != prefix_len {
+        return Err(ShtError::BufferLength {
+            buffer: "analysis order work prefix",
+            expected: prefix_len,
+            actual: prefix.len(),
+        });
+    }
+
+    prefix.fill(0);
+    for &limit in ring_order_limits {
+        let bucket = limit.min(mmax);
+        prefix[bucket] = prefix[bucket]
+            .checked_add(1)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "analysis order work prefix",
+            })?;
+    }
+
+    let mut active_rings = 0_u128;
+    for m in (0..order_count).rev() {
+        active_rings = active_rings
+            .checked_add(prefix[m])
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "analysis order work prefix",
+            })?;
+        let degree_count = (lmax as u128)
+            .checked_sub(m as u128)
+            .and_then(|count| count.checked_add(1))
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "analysis order work prefix",
+            })?;
+        prefix[m] = degree_count
+            .checked_mul(active_rings)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "analysis order work prefix",
+            })?;
+    }
+
+    let mut total_work = 0_u128;
+    for order_work in prefix.iter_mut().take(order_count) {
+        let work = *order_work;
+        *order_work = total_work;
+        total_work = total_work
+            .checked_add(work)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "analysis order work prefix",
+            })?;
+    }
+    prefix[order_count] = total_work;
+    Ok(())
+}
+
+#[cfg(feature = "parallel")]
+pub(crate) fn active_ring_weighted_order_midpoint_from_prefix(
+    lmax: usize,
+    m_start: usize,
+    m_end: usize,
+    prefix: &[u128],
+) -> usize {
+    debug_assert!(m_start < m_end);
+    debug_assert!(m_end - 1 <= lmax);
+    debug_assert!(m_end - m_start > 1);
+    debug_assert!(m_end < prefix.len());
+
+    let total_work = prefix[m_end] - prefix[m_start];
+    if total_work == 0 {
+        return weighted_order_midpoint(lmax, m_start, m_end);
+    }
+
+    let mut best_mid = m_start + 1;
+    let mut best_difference = u128::MAX;
+    for m_mid in (m_start + 1)..m_end {
+        let left_work = prefix[m_mid] - prefix[m_start];
+        let right_work = prefix[m_end] - prefix[m_mid];
+        let difference = left_work.abs_diff(right_work);
+        if difference < best_difference {
+            best_difference = difference;
+            best_mid = m_mid;
         }
     }
     best_mid
@@ -1037,12 +1138,25 @@ impl<T: ShtScalar> ShtPlan<T> {
                 .min(order_count);
             let use_parallel = rayon::current_num_threads() > 1 && worker_count > 1;
             if use_parallel {
+                let order_work_prefix = if self.harmonics.lmax() >= 511 {
+                    let prefix = &mut workspace.order_work_prefix[..=order_count];
+                    build_active_ring_order_work_prefix(
+                        self.harmonics.lmax(),
+                        mmax,
+                        ring_order_limits,
+                        prefix,
+                    )?;
+                    Some(&prefix[..])
+                } else {
+                    None
+                };
                 self.analyze_order_groups_parallel(
                     order_spectra,
                     analysis_ntheta,
                     theta_sin,
                     theta_cos,
                     ring_order_limits,
+                    order_work_prefix,
                     arch,
                     0,
                     order_count,
@@ -1212,6 +1326,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         theta_sin: &[T],
         theta_cos: &[T],
         ring_order_limits: &[usize],
+        order_work_prefix: Option<&[u128]>,
         arch: pulp::Arch,
         m_start: usize,
         m_end: usize,
@@ -1237,11 +1352,11 @@ impl<T: ShtScalar> ShtPlan<T> {
         }
 
         let m_mid = if self.harmonics.lmax() >= 511 {
-            active_ring_weighted_order_midpoint(
+            active_ring_weighted_order_midpoint_from_prefix(
                 self.harmonics.lmax(),
                 m_start,
                 m_end,
-                ring_order_limits,
+                order_work_prefix.expect("large parallel analyses build an order-work prefix"),
             )
         } else {
             weighted_order_midpoint(self.harmonics.lmax(), m_start, m_end)
@@ -1267,6 +1382,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     theta_sin,
                     theta_cos,
                     ring_order_limits,
+                    order_work_prefix,
                     arch,
                     m_start,
                     m_mid,
@@ -1281,6 +1397,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     theta_sin,
                     theta_cos,
                     ring_order_limits,
+                    order_work_prefix,
                     arch,
                     m_mid,
                     m_end,

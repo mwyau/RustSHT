@@ -33,6 +33,8 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
     pub(crate) theta_sin: Vec<T>,
     pub(crate) theta_cos: Vec<T>,
     pub(crate) ring_order_limits: Vec<usize>,
+    #[cfg(feature = "parallel")]
+    pub(crate) order_work_prefix: Vec<u128>,
     pub(crate) recurrence_workers: Vec<RecurrenceWorkspace<T>>,
     pub(crate) ring_group_size: usize,
     pub(crate) execution_capacity: usize,
@@ -335,6 +337,13 @@ impl<T: ShtScalar> ShtWorkspace<T> {
         let ring_group_size = Self::ring_group_size_for_capacity(ntheta, execution_capacity)?;
         let ring_worker_count = ntheta.div_ceil(ring_group_size);
         let analysis_worker_count = execution_capacity.min(analysis_order_count).max(1);
+        #[cfg(feature = "parallel")]
+        let order_work_prefix_len =
+            analysis_order_count
+                .checked_add(1)
+                .ok_or(ShtError::IntegerOverflow {
+                    quantity: "analysis order work prefix length",
+                })?;
         let worker_count = ring_worker_count.max(analysis_worker_count);
         let mut recurrence_workers = Vec::new();
         recurrence_workers
@@ -377,6 +386,8 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             theta_sin: allocate_real(latitude_count, "latitude sine values")?,
             theta_cos: allocate_real(latitude_count, "latitude cosine values")?,
             ring_order_limits: allocate_usizes(latitude_count, "latitude order limits")?,
+            #[cfg(feature = "parallel")]
+            order_work_prefix: allocate_u128(order_work_prefix_len, "analysis order work prefix")?,
             recurrence_workers,
             ring_group_size,
             execution_capacity,
@@ -418,6 +429,16 @@ fn allocate_exponents(len: usize) -> Result<Vec<i64>, ShtError> {
 }
 
 fn allocate_usizes(len: usize, array: &'static str) -> Result<Vec<usize>, ShtError> {
+    let mut values = Vec::new();
+    values
+        .try_reserve_exact(len)
+        .map_err(|_| ShtError::AllocationFailed { array })?;
+    values.resize(len, 0);
+    Ok(values)
+}
+
+#[cfg(feature = "parallel")]
+fn allocate_u128(len: usize, array: &'static str) -> Result<Vec<u128>, ShtError> {
     let mut values = Vec::new();
     values
         .try_reserve_exact(len)
