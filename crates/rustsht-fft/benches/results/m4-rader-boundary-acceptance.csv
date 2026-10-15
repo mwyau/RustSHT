@@ -1,0 +1,2 @@
+source_summary,primary_cells,pair_count,pair_level_primary_speedups,primary_aggregate_median,bootstrap_95_low,bootstrap_95_high,max_target_cell_slowdown_pct,max_control_or_fallback_slowdown_pct,workspace_bytes_match,gate_pass
+m4-rader-boundary-six-pairs-summary.csv,24,6,1.040345;1.057115;1.055390;1.059820;1.034915;1.031490,1.0478675,1.0332024999999998,1.0584675000000001,0.6916861772268357,0.9034430949773409,True,True

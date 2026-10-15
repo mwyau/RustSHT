@@ -69,6 +69,16 @@ processes externally when comparing the values.
 same first-call and warmed-call measurements for R2C and C2R at each listed
 length. It uses one row per operation.
 
+`cargo bench --bench rustfft -- bench-native-rader [N ...]` measures real R2C
+and C2R at N=241, 257 and 723 for ordinary, sparse, cancellation-heavy and
+broad-dynamic-range inputs. It reports one transform and 32 sequential rows
+per reused plan and workspace. Use `benches/paired_processes.py` and
+`benches/summarize_pairs.py` for source-to-source comparisons; the M4 boundary
+experiment and route evidence are in
+[`docs/m4-rader-boundary.md`](../docs/m4-rader-boundary.md).
+`benches/summarize_rader_boundary.py` derives the predeclared six-pair gate
+from the per-cell summary CSV.
+
 The M2 native real radix-11 implementation, validation, and paired results are
 documented in [`docs/m2-real-radix11.md`](../docs/m2-real-radix11.md).
 `summarize_first_call.py` summarizes the paired first-call captures.

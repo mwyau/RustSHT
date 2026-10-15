@@ -1621,8 +1621,8 @@ fn small_radix_dft_all<T: Float + FromPrimitive>(
 #[cfg(test)]
 mod rader_fallback_tests {
     use super::RealFftPlan;
-    use crate::Complex;
     use crate::complex::ComplexFftPlan;
+    use crate::{Complex, m0_clear_routes, m0_route_snapshot};
 
     fn make_plan(len: usize, rader_enabled: bool) -> RealFftPlan<f64> {
         RealFftPlan::try_new(
@@ -1724,6 +1724,137 @@ mod rader_fallback_tests {
                 )
                 .unwrap();
             assert_same_real_bits(&selected_output, &fallback_output);
+        }
+    }
+
+    #[test]
+    fn rader_input_classes_select_and_report_the_expected_route() {
+        for len in [257, 723] {
+            let plan = make_plan(len, true);
+            let mut workspace = plan.workspace().unwrap();
+            let mut spectrum = vec![Complex::new(0.0, 0.0); plan.spectrum_len()];
+            let mut samples = vec![0.0; len];
+            let classes = ["ordinary", "sparse", "cancellation", "broad-dynamic"];
+
+            for class in classes {
+                let mut input: Vec<_> = (0..len)
+                    .map(|index| {
+                        let x = (index + 1) as f64;
+                        (0.173 * x).sin() + 0.25 * (0.113 * (x + 1.0)).cos()
+                    })
+                    .collect();
+                match class {
+                    "sparse" => {
+                        input.fill(0.0);
+                        input[len / 3] = -0.75;
+                    }
+                    "cancellation" => {
+                        for (index, value) in input.iter_mut().enumerate() {
+                            *value = if index.is_multiple_of(2) { 1.0 } else { -1.0 }
+                                + if index.is_multiple_of(7) {
+                                    1.0e-12
+                                } else {
+                                    0.0
+                                };
+                        }
+                    }
+                    "broad-dynamic" => input[len / 2] = 1.0e-300,
+                    "ordinary" => {}
+                    _ => unreachable!(),
+                }
+                m0_clear_routes();
+                plan.forward(&input, &mut spectrum, &mut workspace).unwrap();
+                let events = m0_route_snapshot();
+                let selected = class != "broad-dynamic";
+                let used_rader = events
+                    .iter()
+                    .any(|event| event.contains("real-forward:Rader"));
+                assert_eq!(used_rader, selected, "n={len} class={class}: {events:?}");
+                if !selected {
+                    let convolution_len = if len == 257 { 525 } else { 484 };
+                    assert!(
+                        events
+                            .iter()
+                            .any(|event| event.contains(&format!("c2c n={convolution_len}"))),
+                        "n={len} class={class}: {events:?}"
+                    );
+                }
+                println!(
+                    "RADER_ROUTE,n={len},direction=r2c,class={class},route={}",
+                    if used_rader {
+                        "Rader"
+                    } else {
+                        "Bluestein fallback"
+                    }
+                );
+            }
+
+            for class in classes {
+                let mut input: Vec<_> = (0..plan.spectrum_len())
+                    .map(|index| {
+                        if index == 0 {
+                            Complex::new(0.4, 0.0)
+                        } else {
+                            let x = (index + 1) as f64;
+                            Complex::new(0.3 * (0.19 * x).sin(), 0.2 * (0.07 * x).cos())
+                        }
+                    })
+                    .collect();
+                match class {
+                    "sparse" => {
+                        input.fill(Complex::new(0.0, 0.0));
+                        input[0].re = 0.75;
+                        input[len / 7] = Complex::new(-0.375, 0.125);
+                        input[len / 3] = Complex::new(0.125, -0.25);
+                    }
+                    "cancellation" => {
+                        for (index, value) in input.iter_mut().enumerate().skip(1) {
+                            let sign = if index.is_multiple_of(2) { 1.0 } else { -1.0 };
+                            *value = Complex::new(
+                                sign + if index.is_multiple_of(7) {
+                                    1.0e-12
+                                } else {
+                                    0.0
+                                },
+                                -sign
+                                    + if index.is_multiple_of(11) {
+                                        1.0e-12
+                                    } else {
+                                        0.0
+                                    },
+                            );
+                        }
+                    }
+                    "broad-dynamic" => input[len / 5] = Complex::new(1.0e-300, -1.0e-300),
+                    "ordinary" => {}
+                    _ => unreachable!(),
+                }
+                m0_clear_routes();
+                plan.inverse(&input, &mut samples, &mut workspace).unwrap();
+                let events = m0_route_snapshot();
+                let selected = class != "broad-dynamic";
+                let used_rader = events
+                    .iter()
+                    .any(|event| event.contains("real-inverse:Rader"));
+                assert_eq!(used_rader, selected, "n={len} class={class}: {events:?}");
+                if !selected {
+                    let convolution_len = if len == 257 { 525 } else { 484 };
+                    assert!(
+                        events
+                            .iter()
+                            .any(|event| event.contains(&format!("c2c n={convolution_len}"))),
+                        "n={len} class={class}: {events:?}"
+                    );
+                }
+                println!(
+                    "RADER_ROUTE,n={len},direction=c2r,class={class},route={}",
+                    if used_rader {
+                        "Rader"
+                    } else {
+                        "Bluestein fallback"
+                    }
+                );
+            }
         }
     }
 }

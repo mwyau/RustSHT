@@ -530,27 +530,17 @@ impl<T: Float + FromPrimitive> MultipassTransforms<'_, T> {
                 .as_mut()
                 .expect("Rader pass has a reusable workspace");
             let radix = pass.radix;
-            let half = radix / 2;
             debug_assert_eq!(rader.radix(), radix);
             debug_assert_eq!(pass.ido, 1);
             for group in 0..pass.l1 {
-                for branch in 0..radix {
-                    self.radix_input[branch] =
-                        Complex::new(input[branch * pass.l1 + group], T::zero());
-                }
-                rader.execute(
-                    &self.radix_input[..radix],
-                    &mut self.radix_output[..radix],
-                    Direction::Forward,
+                rader.execute_real_forward(
+                    input,
+                    pass.l1,
+                    group,
+                    output,
+                    group * radix,
                     rader_workspace,
                 );
-                let output_start = group * radix;
-                output[output_start] = self.radix_output[0].re;
-                for frequency in 1..=half {
-                    let value = self.radix_output[frequency];
-                    output[output_start + 2 * frequency - 1] = value.re;
-                    output[output_start + 2 * frequency] = value.im;
-                }
             }
             return;
         }
@@ -604,29 +594,10 @@ impl<T: Float + FromPrimitive> MultipassTransforms<'_, T> {
                 .as_mut()
                 .expect("Rader pass has a reusable workspace");
             let radix = pass.radix;
-            let half = radix / 2;
             debug_assert_eq!(rader.radix(), radix);
             debug_assert_eq!(pass.ido, 1);
             for group in 0..pass.l1 {
-                let input_start = group * radix;
-                self.radix_input[0] = Complex::new(input[input_start], T::zero());
-                for frequency in 1..=half {
-                    let value = Complex::new(
-                        input[input_start + 2 * frequency - 1],
-                        input[input_start + 2 * frequency],
-                    );
-                    self.radix_input[frequency] = value;
-                    self.radix_input[radix - frequency] = value.conj();
-                }
-                rader.execute(
-                    &self.radix_input[..radix],
-                    &mut self.radix_output[..radix],
-                    Direction::Inverse,
-                    rader_workspace,
-                );
-                for sample in 0..radix {
-                    output[sample * pass.l1 + group] = self.radix_output[sample].re * scale;
-                }
+                rader.execute_real_inverse(input, output, pass.l1, group, scale, rader_workspace);
             }
             return;
         }
