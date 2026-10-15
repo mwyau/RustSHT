@@ -1,0 +1,36 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "2049",
+      "1",
+      "32",
+      "1024"
+    ],
+    "label": "M9 AVX2 radix-31 candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "2049",
+      "1",
+      "32",
+      "1024"
+    ],
+    "label": "M8 baseline"
+  },
+  "metadata": {
+    "acceptance_gate": "At N=2049 and 1024 rows, both directions must improve by at least 5% with paired 95% intervals above parity; no stable regression above 5% at rows 1/32 or measured controls.",
+    "baseline_binary_sha256": "162c081879b49e38a7221d9038ffb5fc82847320bc4cb3f3b2ba43fe2b270156",
+    "baseline_commit": "9acd992",
+    "candidate_binary_sha256": "509de8e5c52b7c97ef1a331a12cf5bc85aa23e7263fa9293675a2a594f1ef4e6",
+    "candidate_source": "working tree based on M8; final f64 AVX2 radix-31 general-prime ido=1 pass",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target with runtime AVX2",
+    "purpose": "M9 acceptance for f64 real N=2049 after AVX2 radix-31 ido=1 kernel",
+    "timing": "seven warmed samples per cell; six alternating process pairs",
+    "workload": "real N=2049; rows=[1, 32, 1024]; R2C and C2R"
+  },
+  "pairs": 6
+}

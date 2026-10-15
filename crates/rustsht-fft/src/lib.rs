@@ -45,11 +45,12 @@ pub use real::{RealFftPlan, RealFftWorkspace};
 #[cfg(test)]
 mod m0_diagnostics_tests {
     use super::{Complex, ComplexFftPlan, RealFftPlan, m0_clear_routes, m0_route_snapshot};
+    use crate::simd::SimdScalar;
 
     const LENGTHS: &[usize] = &[
         11, 19, 22, 41, 73, 98, 103, 109, 113, 121, 131, 137, 146, 147, 150, 240, 241, 242, 256,
-        257, 300, 363, 484, 512, 513, 525, 683, 722, 723, 726, 1023, 1024, 1025, 1372, 1441, 1442,
-        1443, 1452, 2047, 2048, 2049, 2904, 4096, 4097, 12769, 18769,
+        257, 300, 363, 484, 512, 513, 525, 682, 683, 722, 723, 726, 1023, 1024, 1025, 1372, 1441,
+        1442, 1443, 1452, 2047, 2048, 2049, 2904, 4096, 4097, 12769, 18769,
     ];
 
     fn complex_input(n: usize) -> Vec<Complex<f64>> {
@@ -547,6 +548,59 @@ mod m0_diagnostics_tests {
             m0_route_snapshot()
                 .iter()
                 .any(|route| { route == "real-inverse n=2049 route=recursive-safety-fallback" })
+        );
+    }
+
+    #[test]
+    fn m9_c2c_682_selects_avx2_radix31_and_guards_unsafe_inverse_inputs() {
+        let n = 682;
+        let plan = ComplexFftPlan::<f64>::new(n).expect("N=682 complex plan");
+        let mut workspace = plan.workspace().expect("N=682 complex workspace");
+        let input: Vec<_> = (0..n)
+            .map(|index| {
+                let x = (index + 1) as f64;
+                Complex::new((0.173 * x).sin(), (0.113 * (x + 1.0)).cos())
+            })
+            .collect();
+        let expected_route =
+            "c2c-avx2:general-prime-ido1 n=682 radix=31 l1=22 vector_frequencies=14 scalar_tail=1";
+
+        let has_avx2 = <f64 as SimdScalar>::avx2_available();
+        let mut values = input;
+        m0_clear_routes();
+        plan.forward(&mut values, &mut workspace)
+            .expect("ordinary N=682 forward");
+        assert_eq!(
+            m0_route_snapshot()
+                .iter()
+                .any(|route| route == expected_route),
+            has_avx2
+        );
+
+        m0_clear_routes();
+        plan.inverse(&mut values, &mut workspace)
+            .expect("ordinary N=682 inverse");
+        assert_eq!(
+            m0_route_snapshot()
+                .iter()
+                .any(|route| route == expected_route),
+            has_avx2
+        );
+
+        let high = f64::MAX / (2.0 * n as f64);
+        let mut high_values = vec![Complex::new(high, -high); n];
+        m0_clear_routes();
+        plan.inverse(&mut high_values, &mut workspace)
+            .expect("guarded high-amplitude N=682 inverse");
+        assert!(
+            high_values
+                .iter()
+                .all(|value| value.re.is_finite() && value.im.is_finite())
+        );
+        assert!(
+            !m0_route_snapshot()
+                .iter()
+                .any(|route| route == expected_route)
         );
     }
 }

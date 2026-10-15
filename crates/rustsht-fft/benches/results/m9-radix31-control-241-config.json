@@ -1,0 +1,31 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "241",
+      "120"
+    ],
+    "label": "M9 AVX2 radix-31 candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "241",
+      "120"
+    ],
+    "label": "M8 baseline"
+  },
+  "metadata": {
+    "baseline_binary_sha256": "162c081879b49e38a7221d9038ffb5fc82847320bc4cb3f3b2ba43fe2b270156",
+    "baseline_commit": "9acd992",
+    "candidate_binary_sha256": "509de8e5c52b7c97ef1a331a12cf5bc85aa23e7263fa9293675a2a594f1ef4e6",
+    "candidate_source": "working tree based on M8; final f64 AVX2 radix-31 general-prime ido=1 pass",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target with runtime AVX2",
+    "purpose": "M9 real N=241 control",
+    "timing": "seven warmed samples per cell; six alternating process pairs",
+    "workload": "real N=241; 120 rows; R2C and C2R"
+  },
+  "pairs": 6
+}
