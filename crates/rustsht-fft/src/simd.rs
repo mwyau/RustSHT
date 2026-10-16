@@ -32,6 +32,8 @@ pub(crate) struct ComplexGeneralPrimeIdo1Params<'a, T> {
     pub(crate) roots: &'a [Complex<T>],
     pub(crate) root_stride: usize,
     pub(crate) phase_indices: &'a [u8],
+    pub(crate) root_pairs: &'a [[T; 4]],
+    pub(crate) tail_roots: &'a [Complex<T>],
     pub(crate) inverse: bool,
     pub(crate) scale: T,
 }
@@ -767,6 +769,7 @@ mod x86 {
                 phase_indices,
                 inverse,
                 scale,
+                ..
             } = params;
             const RADIX: usize = 31;
             const HALF: usize = RADIX / 2;
@@ -1044,9 +1047,9 @@ mod x86 {
         ///
         /// The caller must have detected AVX2 and provide disjoint input and
         /// output slices of at least `103 * l1` complex values, `l1 > 0`, a
-        /// radix-103 phase table with at least 5,253 entries, and a roots
-        /// slice containing every indexed root. The inverse input must be in
-        /// the deferred-normalization safety range.
+        /// cached radix-103 frequency-pair and tail-root tables with their
+        /// exact expected lengths. The inverse input must be in the
+        /// deferred-normalization safety range.
         #[target_feature(enable = "avx2")]
         pub(super) unsafe fn general_prime_ido1_radix103(
             input: &[Complex<f64>],
@@ -1055,25 +1058,29 @@ mod x86 {
         ) {
             let ComplexGeneralPrimeIdo1Params {
                 l1,
-                roots,
-                root_stride,
-                phase_indices,
+                root_pairs,
+                tail_roots,
                 inverse,
                 scale,
+                ..
             } = params;
             const RADIX: usize = 103;
             const HALF: usize = RADIX / 2;
             const PAIR_COUNT: usize = HALF / 2;
             debug_assert!(l1 > 0);
-            debug_assert!(root_stride > 0);
             debug_assert!(input.len() >= RADIX * l1);
             debug_assert!(output.len() >= RADIX * l1);
-            debug_assert!(phase_indices.len() >= HALF * RADIX);
-            debug_assert!(roots.len() > (RADIX - 1) * root_stride);
+            debug_assert_eq!(root_pairs.len(), PAIR_COUNT * HALF);
+            debug_assert_eq!(tail_roots.len(), HALF);
 
             let output_ptr = output.as_mut_ptr();
             let output_scale = _mm256_set1_pd(scale);
             let sign = if inverse { 1.0 } else { -1.0 };
+            let imaginary_sign = if inverse {
+                _mm256_setzero_pd()
+            } else {
+                _mm256_setr_pd(0.0, -0.0, 0.0, -0.0)
+            };
 
             for outer in 0..l1 {
                 let input_zero = input[RADIX * outer];
@@ -1118,24 +1125,17 @@ mod x86 {
                     let mut negative = initial;
 
                     for branch_index in 0..HALF {
-                        let phase_first =
-                            usize::from(phase_indices[branch_index * RADIX + frequency]);
-                        let phase_second =
-                            usize::from(phase_indices[branch_index * RADIX + frequency + 1]);
-                        let root_first = roots[phase_first * root_stride];
-                        let root_second = roots[phase_second * root_stride];
-                        let cosine = _mm256_setr_pd(
-                            root_first.re,
-                            root_first.re,
-                            root_second.re,
-                            root_second.re,
-                        );
-                        let sine = _mm256_setr_pd(
-                            root_first.im * sign,
-                            root_first.im * sign,
-                            root_second.im * sign,
-                            root_second.im * sign,
-                        );
+                        let roots = unsafe {
+                            _mm256_loadu_pd(
+                                root_pairs
+                                    .as_ptr()
+                                    .add(pair_index * HALF + branch_index)
+                                    .cast::<f64>(),
+                            )
+                        };
+                        let roots = _mm256_xor_pd(roots, imaginary_sign);
+                        let cosine = _mm256_movedup_pd(roots);
+                        let sine = _mm256_permute_pd(roots, 0b1111);
                         let pair_value = pair_inputs[branch_index];
                         let difference_value = imaginary_differences[branch_index];
                         let pair = _mm256_setr_pd(
@@ -1189,8 +1189,7 @@ mod x86 {
                 let mut positive = input_zero;
                 let mut negative = input_zero;
                 for branch_index in 0..HALF {
-                    let phase = usize::from(phase_indices[branch_index * RADIX + HALF]);
-                    let root = roots[phase * root_stride];
+                    let root = tail_roots[branch_index];
                     let pair = pair_inputs[branch_index];
                     let difference = imaginary_differences[branch_index];
                     let cosine = pair * root.re;
@@ -2841,6 +2840,8 @@ mod tests {
                             roots: &roots,
                             root_stride: l1,
                             phase_indices: &phase_indices,
+                            root_pairs: &[],
+                            tail_roots: &[],
                             inverse,
                             scale,
                         },
@@ -2891,6 +2892,26 @@ mod tests {
                         ((branch * frequency) % radix) as u8;
                 }
             }
+            let pair_count = half / 2;
+            let mut root_pairs = vec![[0.0; 4]; pair_count * half];
+            for pair_index in 0..pair_count {
+                let frequency = 1 + 2 * pair_index;
+                for branch_index in 0..half {
+                    let phase_offset = branch_index * radix;
+                    let first_phase = usize::from(phase_indices[phase_offset + frequency]);
+                    let second_phase = usize::from(phase_indices[phase_offset + frequency + 1]);
+                    let first_root = roots[first_phase * l1];
+                    let second_root = roots[second_phase * l1];
+                    root_pairs[pair_index * half + branch_index] =
+                        [first_root.re, first_root.im, second_root.re, second_root.im];
+                }
+            }
+            let tail_roots: Vec<_> = (0..half)
+                .map(|branch_index| {
+                    let phase = usize::from(phase_indices[branch_index * radix + half]);
+                    roots[phase * l1]
+                })
+                .collect();
             let original: Vec<_> = (0..len).map(|index| signal(index + l1 * 7)).collect();
 
             for inverse in [false, true] {
@@ -2911,6 +2932,8 @@ mod tests {
                             roots: &roots,
                             root_stride: l1,
                             phase_indices: &phase_indices,
+                            root_pairs: &root_pairs,
+                            tail_roots: &tail_roots,
                             inverse,
                             scale,
                         },

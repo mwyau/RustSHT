@@ -795,8 +795,13 @@ mod m0_diagnostics_tests {
         let n = 1442;
         let plan = ComplexFftPlan::<f64>::new(n).expect("N=1442 complex plan");
         let mut workspace = plan.workspace().expect("N=1442 complex workspace");
-        let expected_route = "c2c-avx2:general-prime-ido1 n=1442 radix=103 l1=14 vector_frequencies=50 scalar_tail=1";
+        let expected_route = "c2c-avx2:general-prime-ido1 n=1442 radix=103 l1=14 vector_frequencies=50 scalar_tail=1 roots=plan-cache";
         let has_avx2 = <f64 as SimdScalar>::avx2_available();
+        let uncached_plan = ComplexFftPlan::<f64>::try_new(n).expect("uncached N=1442 plan");
+        let cache_bytes = plan.m0_retained_plan_bytes() - uncached_plan.m0_retained_plan_bytes();
+        let expected_cache_bytes =
+            25 * 51 * std::mem::size_of::<[f64; 4]>() + 51 * std::mem::size_of::<Complex<f64>>();
+        assert_eq!(cache_bytes, expected_cache_bytes);
         let mut values = complex_input(n);
 
         m0_clear_routes();

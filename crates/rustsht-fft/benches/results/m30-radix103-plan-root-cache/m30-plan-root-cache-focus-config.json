@@ -1,0 +1,39 @@
+{
+  "pairs": 3,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "Focused N=1442 complex-operation pilot for plan-lifetime radix-103 root-pair reuse",
+    "candidate_source_base": "RustSHT-FFT M29 source with M30 radix-103 plan-cache changes",
+    "candidate_source_patch_sha256": "5c16ac99dd4b3bdd2d18fd8f93b17b3be57ed6645bf14171c67cfea0d5d83f57",
+    "candidate_binary_sha256": "748ef9c234af450b8f0193918164eb972e07703ff6b3b842da94798f6b04698b",
+    "reference_source": "RustSHT-FFT M29 commit d7c4bb3 source",
+    "reference_binary_sha256": "744f83c3140aa87614aed132f3d2d6c90c1e58ddf954d4396f1376cfbdda3c24",
+    "workload": "C2C forward and normalized inverse, one transform and 721-row batch",
+    "timing": "Three alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "dispatch_note": "Only public f64 ComplexFftPlan::new(1442) builds the cached root table; internal plans, f32, unsafe inverse inputs, and non-AVX2 execution use existing paths.",
+    "runner": "benches/results/m24-radix103/run_m24_clean_capture.py records process IDs, uptime, affinity, and load averages, and fsyncs each process record."
+  },
+  "a": {
+    "label": "RustSHT-FFT M30 plan-root-cache candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-m30-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-c2c",
+      "1442",
+      "1",
+      "721"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M29 baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-m29-radix3-bench-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-c2c",
+      "1442",
+      "1",
+      "721"
+    ]
+  }
+}
