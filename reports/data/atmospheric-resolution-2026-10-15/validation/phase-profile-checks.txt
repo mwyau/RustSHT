@@ -1,0 +1,13 @@
+Current-source validation for the synthesis phase diagnostic
+Source HEAD before this checkpoint: 8332b40afad09f210a173ce02e90393c34c84988
+Tracked source diff SHA-256: fd908f17c332b28ba9b87a4c97164619803c829f12c0db09a7f48ec498dd7572
+Release test binary SHA-256: ae71f120b36838a938959df1402c07f12297c53961db06ceb786bb70dcef614c
+Compiler: rustc 1.99.0 (b940084d7 2026-09-28), LLVM 23.1.1
+
+Checks:
+cargo fmt --all -- --check: passed
+cargo clippy --workspace --all-targets --all-features -- -D warnings: passed
+cargo test --workspace --all-features: 187 unit tests and 11 f32 integration tests passed; 13 ignored; 0 failed
+uv run --locked pytest python/tests: 20 passed
+
+The 13 ignored Rust tests include the analysis phase, analysis leaf, and synthesis phase diagnostics, along with the repository's release-only high-bandlimit checks. The synthesis diagnostic itself ran in release mode and passed five samples at each q1/q8 case for scalar and spin 1 at T720, T1023, T1279, and T2047.
