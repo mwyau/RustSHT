@@ -1,0 +1,9 @@
+Five additional alternating release-process pairs; scalar f64 GL STANDARD analysis at T1023 q8.
+Each process runs one warmup and five timed calls; taskset pins CPUs 0-7.
+utc_start=2026-10-16T02:57:40Z
+loadavg_start=2.11 2.22 3.07 2/2700 2220313
+baseline_commit=26449b5
+baseline_binary_sha256=6b465745d6361ea975ba3b1ba9ce569ec5031aa16bd8330d500d5065975da4f6
+candidate_binary_sha256=044bbbf0a64079bd746dd12d278bbb06d0fd1f9b91044a7e06b18db2dc3224dd
+loadavg_end=2.59 2.32 3.10 1/2694 2220452
+utc_end=2026-10-16T02:57:44Z

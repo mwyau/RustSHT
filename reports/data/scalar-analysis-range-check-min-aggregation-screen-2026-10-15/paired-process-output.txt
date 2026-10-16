@@ -1,0 +1,10 @@
+Five alternating release-process pairs; scalar f64 GL STANDARD analysis.
+Each process runs one warmup and five timed calls.
+utc_start=2026-10-16T02:56:48Z
+loadavg_start=2.01 2.18 3.11 1/2677 2219087
+affinity_allowed=pid 3399307's current affinity list: 0-31
+baseline_commit=26449b5
+baseline_binary_sha256=6b465745d6361ea975ba3b1ba9ce569ec5031aa16bd8330d500d5065975da4f6
+candidate_binary_sha256=044bbbf0a64079bd746dd12d278bbb06d0fd1f9b91044a7e06b18db2dc3224dd
+loadavg_end=2.63 2.31 3.13 1/2671 2219621
+utc_end=2026-10-16T02:57:04Z
