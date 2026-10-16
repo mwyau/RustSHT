@@ -1,0 +1,5 @@
+lmax	threads	baseline_median_ms	candidate_median_ms	paired_change_median_pct	paired_change_min_pct	paired_change_max_pct	candidate_faster_pairs	baseline_median_rss_kib	candidate_median_rss_kib
+511	1	18.856	18.597	-1.04	-3.45	-0.54	5	28364	28348
+511	8	3.504	3.772	6.10	-1.25	26.48	1	40776	40604
+1023	1	148.527	146.096	-1.86	-2.48	-0.91	5	102432	102520
+1023	8	25.244	26.255	4.00	-0.97	30.24	1	145696	145624
