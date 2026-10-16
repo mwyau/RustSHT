@@ -1,0 +1,7 @@
+T1023 GL 1024x2049 spin=1 mode=STANDARD threads=8 runs=2 scope=plan operation=analysis backend=ducc python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.105,0.110
+numpy_alm_copy_ms=1.325,1.055
+numpy_map_copy_ms=97.239,97.340
+numpy_output_allocation_ms=0.010,0.009
+analysis_ducc_raw_samples_ms=37.127,43.246,36.649,37.082,36.808;37.630,36.948,36.794,37.098,36.588
+analysis_ducc_run_medians_ms=37.082,36.948; median=37.015; spread=0.134

@@ -1,0 +1,8 @@
+spin-1 T1023 mmax=1023; GL 1024x2049; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.097
+plan_construction_samples_ms=[0.111,0.105,0.097,0.095,0.095]
+workspace_allocation_ms=15.658
+workspace_allocation_samples_ms=[15.484,14.894,16.023,16.200,15.658]
+analysis_rayon_ms=43.742
+analysis_rayon_samples_ms=[43.742,44.124,43.102,46.162,43.020]
+analysis_first_call_rayon_ms=45.570
