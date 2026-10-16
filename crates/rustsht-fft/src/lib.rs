@@ -332,6 +332,83 @@ mod m0_diagnostics_tests {
     }
 
     #[test]
+    fn m20_complex_radix11_simd_covers_sht_targets_and_guards_unsafe_inverse() {
+        use crate::simd::SimdScalar;
+
+        if !<f64 as SimdScalar>::avx2_available() {
+            return;
+        }
+
+        for (n, l1) in [(726, 6), (1452, 12), (2904, 24)] {
+            let plan = ComplexFftPlan::<f64>::new(n).expect("radix-eleven target plan");
+            let mut workspace = plan.workspace().expect("radix-eleven target workspace");
+            let mut values = complex_input(n);
+            m0_clear_routes();
+            plan.forward(&mut values, &mut workspace)
+                .expect("radix-eleven target forward");
+            let event =
+                format!("c2c-avx2:radix11-pass n={n} l1={l1} ido=11 vector_ido=10 scalar_tail=1");
+            assert!(
+                m0_route_snapshot().iter().any(|route| route == &event),
+                "N={n} did not select its radix-eleven AVX2 pass: {:?}",
+                m0_route_snapshot()
+            );
+        }
+
+        let n = 726;
+        let plan = ComplexFftPlan::<f64>::new(n).expect("guarded inverse plan");
+        let mut workspace = plan.workspace().expect("guarded inverse workspace");
+        let mut values = vec![Complex::new(f64::MAX / 16.0, 0.0); n];
+        m0_clear_routes();
+        plan.inverse(&mut values, &mut workspace)
+            .expect("guarded inverse transform");
+        assert!(
+            values
+                .iter()
+                .all(|value| value.re.is_finite() && value.im.is_finite())
+        );
+        assert!(
+            m0_route_snapshot()
+                .iter()
+                .all(|route| !route.starts_with("c2c-avx2:radix11-pass")),
+            "unsafe inverse inputs must use the scalar range-safe pass: {:?}",
+            m0_route_snapshot()
+        );
+    }
+
+    #[test]
+    fn m20_f32_radix11_pass_keeps_the_scalar_fallback() {
+        use crate::simd::SimdScalar;
+
+        if !<f32 as SimdScalar>::avx2_available() {
+            return;
+        }
+
+        let plan = ComplexFftPlan::<f32>::new(726).expect("f32 radix-eleven plan");
+        let mut workspace = plan.workspace().expect("f32 radix-eleven workspace");
+        let mut values: Vec<_> = (0..726)
+            .map(|index| {
+                let x = (index + 1) as f32;
+                Complex::new((0.173 * x).sin(), (0.113 * (x + 1.0)).cos())
+            })
+            .collect();
+        m0_clear_routes();
+        plan.forward(&mut values, &mut workspace)
+            .expect("f32 radix-eleven forward");
+        assert!(
+            m0_route_snapshot()
+                .iter()
+                .all(|route| !route.starts_with("c2c-avx2:radix11-pass")),
+            "f32 radix-eleven must stay on its scalar route"
+        );
+        assert!(
+            values
+                .iter()
+                .all(|value| value.re.is_finite() && value.im.is_finite())
+        );
+    }
+
+    #[test]
     fn m3_f32_dispatch_keeps_below_lane_ido_on_scalar_path() {
         let plan = ComplexFftPlan::<f32>::new(12).expect("short f32 plan");
         let mut workspace = plan.workspace().expect("short f32 workspace");
@@ -565,7 +642,7 @@ mod m0_diagnostics_tests {
         let expected_route =
             "c2c-avx2:general-prime-ido1 n=682 radix=31 l1=22 vector_frequencies=14 scalar_tail=1";
         let expected_radix11_route =
-            "c2c-avx2:radix11-ido31 n=682 l1=2 ido=31 vector_ido=30 scalar_tail=1";
+            "c2c-avx2:radix11-pass n=682 l1=2 ido=31 vector_ido=30 scalar_tail=1";
 
         let has_avx2 = <f64 as SimdScalar>::avx2_available();
         let mut values = input;
