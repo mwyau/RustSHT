@@ -200,7 +200,7 @@ pub(crate) fn accumulate_analysis_dispatched(
         && plus.iter().all(|&value| is_normal_or_zero(value))
         && minus.iter().all(|&value| is_normal_or_zero(value));
     if vectorizable {
-        return arch.dispatch(SpinAnalysisAccumulation32 {
+        let simd_sums = arch.dispatch(SpinAnalysisAccumulation32 {
             q_real,
             q_imag,
             u_real,
@@ -210,8 +210,21 @@ pub(crate) fn accumulate_analysis_dispatched(
             alpha_norm,
             include_b,
         });
+        if [
+            simd_sums.0.re,
+            simd_sums.0.im,
+            simd_sums.1.re,
+            simd_sums.1.im,
+        ]
+        .into_iter()
+        .all(f32::is_finite)
+        {
+            return simd_sums;
+        }
     }
 
+    // SIMD lane partials can overflow even when each input and basis value is
+    // finite. Recompute nonfinite results in the scalar accumulation order.
     let mut e_sum = Complex32::new(0.0, 0.0);
     let mut b_sum = Complex32::new(0.0, 0.0);
     for lane in 0..plus.len() {
@@ -798,6 +811,37 @@ mod tests {
                 assert!((e_only.0 - expected.0).norm() < 1.0e-4);
                 assert_eq!(e_only.1, Complex32::new(0.0, 0.0));
             }
+        }
+    }
+
+    #[test]
+    fn f32_spin_analysis_falls_back_when_simd_lane_partials_can_overflow() {
+        let mut lanes = AnalysisLanes32::new(16);
+        for lane in 0..lanes.q_real.len() {
+            lanes.q_real[lane] = if lane.is_multiple_of(2) {
+                f32::MAX
+            } else {
+                -f32::MAX
+            };
+            lanes.q_imag[lane] = 0.0;
+            lanes.u_real[lane] = 0.0;
+            lanes.u_imag[lane] = 0.0;
+            lanes.plus[lane] = 0.5;
+            lanes.minus[lane] = 0.5;
+        }
+
+        assert!(analysis_inputs_vectorizable(
+            4,
+            &lanes.q_real,
+            &lanes.q_imag,
+            &lanes.u_real,
+            &lanes.u_imag,
+            &lanes.limits,
+        ));
+        let expected = lanes.scalar_reference(4, 1.0, false);
+        assert_eq!(expected.0, Complex32::new(0.0, 0.0));
+        for arch in [Arch::Scalar, Arch::new()] {
+            assert_eq!(lanes.accumulate(arch, 4, 1.0, false), expected);
         }
     }
 
