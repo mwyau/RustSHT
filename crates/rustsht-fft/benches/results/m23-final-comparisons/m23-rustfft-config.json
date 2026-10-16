@@ -1,0 +1,28 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT c48e653"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-sht-targets"
+    ],
+    "label": "RustFFT 6.4.1"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "b88e1fa3b418ea1fdba8343dd53101cd2a09dc4b228ba066fa282bae52f89ec8",
+    "candidate_source": "RustSHT-FFT c48e653978079da8d126757a9362c27b4b64e2c7",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable target; runtime SIMD dispatch",
+    "purpose": "Final six-pair comparison of the final M21-source executable with RustFFT 6.4.1.",
+    "reference": "RustFFT 6.4.1",
+    "reference_binary_sha256": "b88e1fa3b418ea1fdba8343dd53101cd2a09dc4b228ba066fa282bae52f89ec8",
+    "reference_build": "RustFFT 6.4.1 adapter in the same Rust 1.99.0 benchmark executable",
+    "timing": "six alternating process pairs; seven warmed samples per operation",
+    "workload": "all current exact C2C and real SHT target lengths, single transform plus scalar/spin row batches; one transform thread"
+  },
+  "pairs": 6
+}

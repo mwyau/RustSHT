@@ -1,9 +1,9 @@
 # M20 radix-eleven mixed-pass optimization
 
 Date: 2026-10-16. Baseline source: session-start revision
-`cd5748bb0bf5a93d43143a0bb0b9119e4d672983`. The M20 candidate is currently
-uncommitted and has benchmark executable SHA-256
-`c760c0309e641c564cdfe5c7e68e4df27eeb0739cfa0efc307ff9d4973cf5da3`.
+`cd5748bb0bf5a93d43143a0bb0b9119e4d672983`. The M20 candidate is commit
+`343e5adc08e44cc5472032138dfb263bb34b4786`; its benchmark executable SHA-256
+is `c760c0309e641c564cdfe5c7e68e4df27eeb0739cfa0efc307ff9d4973cf5da3`.
 
 ## Result
 

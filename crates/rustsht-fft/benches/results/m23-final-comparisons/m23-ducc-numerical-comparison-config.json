@@ -1,0 +1,49 @@
+{
+  "additional_references": [
+    {
+      "binary": "<local-home-path>",
+      "name": "FFTW 3.3.10"
+    },
+    {
+      "binary": "<local-home-path>",
+      "name": "Admiral ce67bc00"
+    }
+  ],
+  "candidate_binary_sha256": "b88e1fa3b418ea1fdba8343dd53101cd2a09dc4b228ba066fa282bae52f89ec8",
+  "candidate_source": "RustSHT-FFT c48e653978079da8d126757a9362c27b4b64e2c7",
+  "comparison": "benches/reference/compare.py; each reference's full deterministic output is compared elementwise and componentwise",
+  "ducc_references": [
+    {
+      "binary": "<local-home-path>",
+      "name": "DUCC c1ed01b8 native",
+      "revision": "c1ed01b8fda69d2a378190f0915f1a19762dddbf",
+      "vectorization": true
+    },
+    {
+      "binary": "<local-home-path>",
+      "name": "DUCC c1ed01b8 portable",
+      "revision": "c1ed01b8fda69d2a378190f0915f1a19762dddbf",
+      "vectorization": false
+    },
+    {
+      "binary": "<local-home-path>",
+      "name": "DUCC c1ed01b8 native scalar-planner route",
+      "revision": "c1ed01b8fda69d2a378190f0915f1a19762dddbf",
+      "vectorization": false
+    }
+  ],
+  "lengths": [
+    1443,
+    4097
+  ],
+  "modes": [
+    "c2c_forward",
+    "c2c_inverse",
+    "r2c",
+    "c2r"
+  ],
+  "tolerances": {
+    "atol": 2e-11,
+    "rtol": 2e-11
+  }
+}
