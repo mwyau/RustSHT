@@ -1,0 +1,30 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M30 plan-root-cache candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M29 baseline"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "1170d4ff79fe99557cc9e3c04c586bf6d76dd2a108ad4793f23038419112c00d",
+    "candidate_source_base": "RustSHT-FFT M29 source plus M30 plan-level radix-103 root-pair cache",
+    "candidate_source_patch_sha256": "9c00c19810d24eb6be1cec86a0109d0b89c1a36ff25eb482c996655266effe3e",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "dispatch_note": "Only public f64 ComplexFftPlan::new(1442) builds the radix-103 root-pair table. The table adds 41,616 retained plan bytes, no workspace bytes, and about 2 microseconds of plan-construction time. f32, internal plans, unsafe inverse inputs, and non-AVX2 execution use existing routes.",
+    "purpose": "Full 34-cell SHT FFT-target comparison for the plan-level N=1442 radix-103 root-pair cache",
+    "reference_binary_sha256": "744f83c3140aa87614aed132f3d2d6c90c1e58ddf954d4396f1376cfbdda3c24",
+    "reference_source": "RustSHT-FFT M29 source commit d7c4bb3",
+    "runner": "Load-average telemetry was retained only in local diagnostics.",
+    "timing": "Six alternating process pairs; seven warmed samples per operation",
+    "workload": "All 34 current C2C and real SHT-target operation/length cells, including one-transform and scalar/spin-1 row batches; one transform thread"
+  },
+  "pairs": 6
+}

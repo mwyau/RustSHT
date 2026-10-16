@@ -110,6 +110,7 @@ struct ComplexPlanData<T> {
     roots: Vec<Complex<T>>,
     max_radix: usize,
     bluestein: Vec<Option<BluesteinPlan<T>>>,
+    radix103_root_pairs: Option<Radix103RootPairs<T>>,
 }
 
 struct ComplexPass<T> {
@@ -118,6 +119,55 @@ struct ComplexPass<T> {
     ido: usize,
     twiddles: Vec<Complex<T>>,
     prime_phase_indices: Vec<u8>,
+}
+
+struct Radix103RootPairs<T> {
+    frequency_pairs: Vec<[T; 4]>,
+    tail_roots: Vec<Complex<T>>,
+}
+
+impl<T: Float + FromPrimitive> Radix103RootPairs<T> {
+    fn try_new(
+        roots: &[Complex<T>],
+        phase_indices: &[u8],
+        root_stride: usize,
+    ) -> Result<Self, FftError> {
+        const RADIX: usize = 103;
+        const HALF: usize = RADIX / 2;
+        const PAIR_COUNT: usize = HALF / 2;
+        let pair_count = HALF
+            .checked_mul(PAIR_COUNT)
+            .ok_or(FftError::AllocationFailed)?;
+        let mut frequency_pairs = try_vec(pair_count, [T::zero(); 4])?;
+        let mut tail_roots = try_vec(HALF, Complex::new(T::zero(), T::zero()))?;
+
+        for pair_index in 0..PAIR_COUNT {
+            let frequency = 1 + 2 * pair_index;
+            for branch_index in 0..HALF {
+                let phase_offset = branch_index
+                    .checked_mul(RADIX)
+                    .ok_or(FftError::AllocationFailed)?;
+                let first_phase = usize::from(phase_indices[phase_offset + frequency]);
+                let second_phase = usize::from(phase_indices[phase_offset + frequency + 1]);
+                let first_root = roots[first_phase * root_stride];
+                let second_root = roots[second_phase * root_stride];
+                frequency_pairs[pair_index * HALF + branch_index] =
+                    [first_root.re, first_root.im, second_root.re, second_root.im];
+            }
+        }
+        for (branch_index, root) in tail_roots.iter_mut().enumerate() {
+            let phase_offset = branch_index
+                .checked_mul(RADIX)
+                .ok_or(FftError::AllocationFailed)?;
+            let phase = usize::from(phase_indices[phase_offset + HALF]);
+            *root = roots[phase * root_stride];
+        }
+
+        Ok(Self {
+            frequency_pairs,
+            tail_roots,
+        })
+    }
 }
 
 struct PassExecution<'a, T> {
@@ -133,6 +183,7 @@ struct PassExecution<'a, T> {
     blue_buffer: &'a mut [Complex<T>],
     blue_workspace: Option<&'a mut ComplexFftWorkspace<T>>,
     simd: Option<SimdKernels<T>>,
+    radix103_root_pairs: Option<&'a Radix103RootPairs<T>>,
 }
 
 type FirstPassKernel<T> = unsafe fn(&mut [Complex<T>], &SimdPass<'_, T>);
@@ -198,10 +249,18 @@ impl<T> ComplexFftWorkspace<T> {
 
 impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
     pub(crate) fn try_new(len: usize) -> Result<Self, FftError> {
-        Self::try_new_with_bluestein(len, true)
+        Self::try_new_with_bluestein_and_root_cache(len, true, false)
     }
 
     fn try_new_with_bluestein(len: usize, enable_bluestein: bool) -> Result<Self, FftError> {
+        Self::try_new_with_bluestein_and_root_cache(len, enable_bluestein, false)
+    }
+
+    fn try_new_with_bluestein_and_root_cache(
+        len: usize,
+        enable_bluestein: bool,
+        enable_radix103_root_cache: bool,
+    ) -> Result<Self, FftError> {
         if len == 0 {
             return Err(FftError::InvalidLength);
         }
@@ -272,6 +331,17 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
                 None
             });
         }
+        let radix103_root_pairs = if enable_radix103_root_cache && len == 1442 {
+            let pass = passes
+                .iter()
+                .find(|pass| pass.radix == 103 && pass.l1 == 14 && pass.ido == 1);
+            pass.map(|pass| {
+                Radix103RootPairs::try_new(&roots, &pass.prime_phase_indices, len / pass.radix)
+            })
+            .transpose()?
+        } else {
+            None
+        };
         Ok(Self {
             data: ComplexPlanData {
                 len,
@@ -279,6 +349,7 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
                 roots,
                 max_radix,
                 bluestein,
+                radix103_root_pairs,
             },
         })
     }
@@ -315,6 +386,10 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
         for pass in &self.data.passes {
             bytes += pass.twiddles.capacity() * std::mem::size_of::<Complex<T>>();
             bytes += pass.prime_phase_indices.capacity() * std::mem::size_of::<u8>();
+        }
+        if let Some(root_pairs) = &self.data.radix103_root_pairs {
+            bytes += root_pairs.frequency_pairs.capacity() * std::mem::size_of::<[T; 4]>();
+            bytes += root_pairs.tail_roots.capacity() * std::mem::size_of::<Complex<T>>();
         }
         for blue in self.data.bluestein.iter().flatten() {
             bytes += blue.m0_retained_plan_bytes();
@@ -534,6 +609,7 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
                 blue_buffer: &mut workspace.bluestein_buffer,
                 blue_workspace: workspace.bluestein_workspaces[stage].as_mut(),
                 simd,
+                radix103_root_pairs: self.data.radix103_root_pairs.as_ref(),
             };
             if stage == 0 {
                 execute_first_pass_in_place(values, &mut workspace.output, pass, &mut execution);
@@ -630,6 +706,7 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
                 blue_buffer: &mut workspace.bluestein_buffer,
                 blue_workspace: workspace.bluestein_workspaces[stage].as_mut(),
                 simd,
+                radix103_root_pairs: self.data.radix103_root_pairs.as_ref(),
             };
 
             if stage == 0 {
@@ -826,6 +903,8 @@ fn execute_682_general_prime_ido1<T: Float + FromPrimitive>(
         roots: execution.roots,
         root_stride: execution.total_len / pass.radix,
         phase_indices: execution.prime_phase_indices,
+        root_pairs: &[],
+        tail_roots: &[],
         inverse,
         scale,
     };
@@ -857,6 +936,7 @@ fn execute_1442_general_prime_ido1<T: Float + FromPrimitive>(
         || pass.radix != 103
         || pass.l1 != 14
         || pass.ido != 1
+        || execution.radix103_root_pairs.is_none()
         || execution.prime_phase_indices.len() < 51 * 103
         || (inverse && !execution.defer_inverse_normalization)
     {
@@ -868,6 +948,14 @@ fn execute_1442_general_prime_ido1<T: Float + FromPrimitive>(
         roots: execution.roots,
         root_stride: execution.total_len / pass.radix,
         phase_indices: execution.prime_phase_indices,
+        root_pairs: &execution
+            .radix103_root_pairs
+            .expect("validated radix-103 root cache")
+            .frequency_pairs,
+        tail_roots: &execution
+            .radix103_root_pairs
+            .expect("validated radix-103 root cache")
+            .tail_roots,
         inverse,
         scale: if inverse {
             execution.inverse_output_scale
@@ -881,13 +969,13 @@ fn execute_1442_general_prime_ido1<T: Float + FromPrimitive>(
     unsafe { kernel(input, output, params) };
     #[cfg(test)]
     crate::m0_record_route(String::from(
-        "c2c-avx2:general-prime-ido1 n=1442 radix=103 l1=14 vector_frequencies=50 scalar_tail=1",
+        "c2c-avx2:general-prime-ido1 n=1442 radix=103 l1=14 vector_frequencies=50 scalar_tail=1 roots=plan-cache",
     ));
     true
 }
 
 macro_rules! implement_public_api {
-    ($scalar:ty) => {
+    ($scalar:ty, $enable_radix103_root_cache:expr) => {
         impl ComplexFftPlan<$scalar> {
             /// Constructs a plan for a positive transform length.
             ///
@@ -897,7 +985,7 @@ macro_rules! implement_public_api {
             /// [`FftError::AllocationFailed`] if plan storage cannot be
             /// reserved.
             pub fn new(len: usize) -> Result<Self, FftError> {
-                Self::try_new(len)
+                Self::try_new_with_bluestein_and_root_cache(len, true, $enable_radix103_root_cache)
             }
 
             /// Returns the transform length.
@@ -1005,8 +1093,8 @@ macro_rules! implement_public_api {
     };
 }
 
-implement_public_api!(f32);
-implement_public_api!(f64);
+implement_public_api!(f32, false);
+implement_public_api!(f64, true);
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub(crate) enum Direction {

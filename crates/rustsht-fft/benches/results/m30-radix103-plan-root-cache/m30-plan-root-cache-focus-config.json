@@ -1,0 +1,36 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-c2c",
+      "1442",
+      "1",
+      "721"
+    ],
+    "label": "RustSHT-FFT M30 plan-root-cache candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-c2c",
+      "1442",
+      "1",
+      "721"
+    ],
+    "label": "RustSHT-FFT M29 baseline"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "748ef9c234af450b8f0193918164eb972e07703ff6b3b842da94798f6b04698b",
+    "candidate_source_base": "RustSHT-FFT M29 source with M30 radix-103 plan-cache changes",
+    "candidate_source_patch_sha256": "5c16ac99dd4b3bdd2d18fd8f93b17b3be57ed6645bf14171c67cfea0d5d83f57",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "dispatch_note": "Only public f64 ComplexFftPlan::new(1442) builds the cached root table; internal plans, f32, unsafe inverse inputs, and non-AVX2 execution use existing paths.",
+    "purpose": "Focused N=1442 complex-operation pilot for plan-lifetime radix-103 root-pair reuse",
+    "reference_binary_sha256": "744f83c3140aa87614aed132f3d2d6c90c1e58ddf954d4396f1376cfbdda3c24",
+    "reference_source": "RustSHT-FFT M29 commit d7c4bb3 source",
+    "runner": "Load-average telemetry was retained only in local diagnostics.",
+    "timing": "Three alternating process pairs; seven warmed samples per operation",
+    "workload": "C2C forward and normalized inverse, one transform and 721-row batch"
+  },
+  "pairs": 3
+}
