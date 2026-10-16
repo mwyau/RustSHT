@@ -1,0 +1,286 @@
+diff --git a/src/legendre/scalar_paired.rs b/src/legendre/scalar_paired.rs
+index da36f73..5624375 100644
+--- a/src/legendre/scalar_paired.rs
++++ b/src/legendre/scalar_paired.rs
+@@ -1309,15 +1309,31 @@ impl WithSimd for FusedScalarAnalysisPair<'_> {
+ 
+         for (pair_index, l) in (m..=lmax).step_by(2).enumerate() {
+             let offset = l - m;
+-            let (same_sum, opposite_sum) = AnalysisPairAccumulation {
+-                same_real,
+-                same_imag,
+-                opposite_real,
+-                opposite_imag,
+-                basis: current,
+-                cos_theta,
+-            }
+-            .with_simd(simd);
++            let (same_sum, opposite_sum) = if l + 2 <= lmax {
++                AnalysisPairAccumulationAndRecurrence {
++                    same_real,
++                    same_imag,
++                    opposite_real,
++                    opposite_imag,
++                    basis: current,
++                    cos_theta,
++                    previous,
++                    next,
++                    coefficient_a: coefficient_a[pair_index],
++                    coefficient_b: coefficient_b[pair_index],
++                }
++                .with_simd(simd)
++            } else {
++                AnalysisPairAccumulation {
++                    same_real,
++                    same_imag,
++                    opposite_real,
++                    opposite_imag,
++                    basis: current,
++                    cos_theta,
++                }
++                .with_simd(simd)
++            };
+             staged_coefficients[offset] = same_sum;
+             if l < lmax {
+                 staged_coefficients[offset + 1] = opposite_sum;
+@@ -1327,28 +1343,6 @@ impl WithSimd for FusedScalarAnalysisPair<'_> {
+                 break;
+             }
+ 
+-            let (current_vectors, current_tail) = S::as_simd_f64s(current);
+-            let (previous_vectors, previous_tail) = S::as_simd_f64s(previous);
+-            let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
+-            let (next_vectors, next_tail) = S::as_mut_simd_f64s(next);
+-            let a = simd.splat_f64s(coefficient_a[pair_index]);
+-            let b = simd.splat_f64s(coefficient_b[pair_index]);
+-            debug_assert_eq!(current_vectors.len(), previous_vectors.len());
+-            debug_assert_eq!(current_vectors.len(), cosine_vectors.len());
+-            debug_assert_eq!(current_vectors.len(), next_vectors.len());
+-            for index in 0..current_vectors.len() {
+-                let cosine_squared = simd.mul_f64s(cosine_vectors[index], cosine_vectors[index]);
+-                let leading = simd.mul_add_f64s(a, cosine_squared, b);
+-                next_vectors[index] =
+-                    simd.mul_add_f64s(leading, current_vectors[index], previous_vectors[index]);
+-            }
+-            for index in 0..current_tail.len() {
+-                let cosine_squared = cosine_tail[index] * cosine_tail[index];
+-                let leading =
+-                    coefficient_a[pair_index].mul_add(cosine_squared, coefficient_b[pair_index]);
+-                next_tail[index] = leading.mul_add(current_tail[index], previous_tail[index]);
+-            }
+-
+             std::mem::swap(&mut previous, &mut current);
+             std::mem::swap(&mut current, &mut next);
+             if scalar::pair_lanes_need_scaling(simd, previous, current) {
+@@ -1547,6 +1541,202 @@ struct AnalysisPairAccumulation<'a> {
+     cos_theta: &'a [f64],
+ }
+ 
++/// Accumulates one scalar analysis pair and advances the recurrence for the
++/// next pair using the same latitude vectors.
++struct AnalysisPairAccumulationAndRecurrence<'a> {
++    same_real: &'a [f64],
++    same_imag: &'a [f64],
++    opposite_real: &'a [f64],
++    opposite_imag: &'a [f64],
++    basis: &'a [f64],
++    cos_theta: &'a [f64],
++    previous: &'a [f64],
++    next: &'a mut [f64],
++    coefficient_a: f64,
++    coefficient_b: f64,
++}
++
++impl WithSimd for AnalysisPairAccumulationAndRecurrence<'_> {
++    type Output = (Complex64, Complex64);
++
++    #[inline(always)]
++    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
++        let AnalysisPairAccumulationAndRecurrence {
++            same_real,
++            same_imag,
++            opposite_real,
++            opposite_imag,
++            basis,
++            cos_theta,
++            previous,
++            next,
++            coefficient_a,
++            coefficient_b,
++        } = self;
++        let (same_real_vectors, same_real_tail) = S::as_simd_f64s(same_real);
++        let (same_imag_vectors, same_imag_tail) = S::as_simd_f64s(same_imag);
++        let (opposite_real_vectors, opposite_real_tail) = S::as_simd_f64s(opposite_real);
++        let (opposite_imag_vectors, opposite_imag_tail) = S::as_simd_f64s(opposite_imag);
++        let (basis_vectors, basis_tail) = S::as_simd_f64s(basis);
++        let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
++        let (previous_vectors, previous_tail) = S::as_simd_f64s(previous);
++        let (next_vectors, next_tail) = S::as_mut_simd_f64s(next);
++        debug_assert_eq!(same_real_vectors.len(), basis_vectors.len());
++        debug_assert_eq!(same_imag_vectors.len(), basis_vectors.len());
++        debug_assert_eq!(opposite_real_vectors.len(), basis_vectors.len());
++        debug_assert_eq!(opposite_imag_vectors.len(), basis_vectors.len());
++        debug_assert_eq!(cosine_vectors.len(), basis_vectors.len());
++        debug_assert_eq!(previous_vectors.len(), basis_vectors.len());
++        debug_assert_eq!(next_vectors.len(), basis_vectors.len());
++
++        let zeros = simd.splat_f64s(0.0);
++        let mut same_re_even = zeros;
++        let mut same_im_even = zeros;
++        let mut opposite_re_even = zeros;
++        let mut opposite_im_even = zeros;
++        let mut same_re_odd = zeros;
++        let mut same_im_odd = zeros;
++        let mut opposite_re_odd = zeros;
++        let mut opposite_im_odd = zeros;
++        let (same_real_pairs, same_real_remainder) = same_real_vectors.as_chunks::<2>();
++        let (same_imag_pairs, same_imag_remainder) = same_imag_vectors.as_chunks::<2>();
++        let (opposite_real_pairs, opposite_real_remainder) = opposite_real_vectors.as_chunks::<2>();
++        let (opposite_imag_pairs, opposite_imag_remainder) = opposite_imag_vectors.as_chunks::<2>();
++        let (basis_pairs, basis_remainder) = basis_vectors.as_chunks::<2>();
++        let (cosine_pairs, cosine_remainder) = cosine_vectors.as_chunks::<2>();
++        let (previous_pairs, previous_remainder) = previous_vectors.as_chunks::<2>();
++        let (next_pairs, next_remainder) = next_vectors.as_chunks_mut::<2>();
++        debug_assert_eq!(same_real_pairs.len(), basis_pairs.len());
++        debug_assert_eq!(same_imag_pairs.len(), basis_pairs.len());
++        debug_assert_eq!(opposite_real_pairs.len(), basis_pairs.len());
++        debug_assert_eq!(opposite_imag_pairs.len(), basis_pairs.len());
++        debug_assert_eq!(cosine_pairs.len(), basis_pairs.len());
++        debug_assert_eq!(previous_pairs.len(), basis_pairs.len());
++        debug_assert_eq!(next_pairs.len(), basis_pairs.len());
++        debug_assert_eq!(same_real_remainder.len(), basis_remainder.len());
++        debug_assert_eq!(same_imag_remainder.len(), basis_remainder.len());
++        debug_assert_eq!(opposite_real_remainder.len(), basis_remainder.len());
++        debug_assert_eq!(opposite_imag_remainder.len(), basis_remainder.len());
++        debug_assert_eq!(cosine_remainder.len(), basis_remainder.len());
++        debug_assert_eq!(previous_remainder.len(), basis_remainder.len());
++        debug_assert_eq!(next_remainder.len(), basis_remainder.len());
++
++        let coefficient_a_vectors = simd.splat_f64s(coefficient_a);
++        let coefficient_b_vectors = simd.splat_f64s(coefficient_b);
++        for pair in 0..basis_pairs.len() {
++            let basis = basis_pairs[pair];
++            let cosine = cosine_pairs[pair];
++            same_re_even = simd.add_f64s(
++                same_re_even,
++                simd.mul_f64s(same_real_pairs[pair][0], basis[0]),
++            );
++            same_im_even = simd.add_f64s(
++                same_im_even,
++                simd.mul_f64s(same_imag_pairs[pair][0], basis[0]),
++            );
++            opposite_re_even = simd.add_f64s(
++                opposite_re_even,
++                simd.mul_f64s(
++                    simd.mul_f64s(opposite_real_pairs[pair][0], basis[0]),
++                    cosine[0],
++                ),
++            );
++            opposite_im_even = simd.add_f64s(
++                opposite_im_even,
++                simd.mul_f64s(
++                    simd.mul_f64s(opposite_imag_pairs[pair][0], basis[0]),
++                    cosine[0],
++                ),
++            );
++            same_re_odd = simd.add_f64s(
++                same_re_odd,
++                simd.mul_f64s(same_real_pairs[pair][1], basis[1]),
++            );
++            same_im_odd = simd.add_f64s(
++                same_im_odd,
++                simd.mul_f64s(same_imag_pairs[pair][1], basis[1]),
++            );
++            opposite_re_odd = simd.add_f64s(
++                opposite_re_odd,
++                simd.mul_f64s(
++                    simd.mul_f64s(opposite_real_pairs[pair][1], basis[1]),
++                    cosine[1],
++                ),
++            );
++            opposite_im_odd = simd.add_f64s(
++                opposite_im_odd,
++                simd.mul_f64s(
++                    simd.mul_f64s(opposite_imag_pairs[pair][1], basis[1]),
++                    cosine[1],
++                ),
++            );
++
++            let cosine_squared_0 = simd.mul_f64s(cosine[0], cosine[0]);
++            let leading_0 = simd.mul_add_f64s(
++                coefficient_a_vectors,
++                cosine_squared_0,
++                coefficient_b_vectors,
++            );
++            next_pairs[pair][0] = simd.mul_add_f64s(leading_0, basis[0], previous_pairs[pair][0]);
++            let cosine_squared_1 = simd.mul_f64s(cosine[1], cosine[1]);
++            let leading_1 = simd.mul_add_f64s(
++                coefficient_a_vectors,
++                cosine_squared_1,
++                coefficient_b_vectors,
++            );
++            next_pairs[pair][1] = simd.mul_add_f64s(leading_1, basis[1], previous_pairs[pair][1]);
++        }
++        if !basis_remainder.is_empty() {
++            let basis = basis_remainder[0];
++            let cosine = cosine_remainder[0];
++            same_re_even =
++                simd.add_f64s(same_re_even, simd.mul_f64s(same_real_remainder[0], basis));
++            same_im_even =
++                simd.add_f64s(same_im_even, simd.mul_f64s(same_imag_remainder[0], basis));
++            opposite_re_even = simd.add_f64s(
++                opposite_re_even,
++                simd.mul_f64s(simd.mul_f64s(opposite_real_remainder[0], basis), cosine),
++            );
++            opposite_im_even = simd.add_f64s(
++                opposite_im_even,
++                simd.mul_f64s(simd.mul_f64s(opposite_imag_remainder[0], basis), cosine),
++            );
++
++            let cosine_squared = simd.mul_f64s(cosine, cosine);
++            let leading =
++                simd.mul_add_f64s(coefficient_a_vectors, cosine_squared, coefficient_b_vectors);
++            next_remainder[0] = simd.mul_add_f64s(leading, basis, previous_remainder[0]);
++        }
++
++        let mut same_re = simd.reduce_sum_f64s(simd.add_f64s(same_re_even, same_re_odd));
++        let mut same_im = simd.reduce_sum_f64s(simd.add_f64s(same_im_even, same_im_odd));
++        let mut opposite_re =
++            simd.reduce_sum_f64s(simd.add_f64s(opposite_re_even, opposite_re_odd));
++        let mut opposite_im =
++            simd.reduce_sum_f64s(simd.add_f64s(opposite_im_even, opposite_im_odd));
++        debug_assert_eq!(basis_tail.len(), same_real_tail.len());
++        debug_assert_eq!(basis_tail.len(), same_imag_tail.len());
++        debug_assert_eq!(basis_tail.len(), opposite_real_tail.len());
++        debug_assert_eq!(basis_tail.len(), opposite_imag_tail.len());
++        debug_assert_eq!(basis_tail.len(), cosine_tail.len());
++        debug_assert_eq!(basis_tail.len(), previous_tail.len());
++        debug_assert_eq!(basis_tail.len(), next_tail.len());
++        for lane in 0..basis_tail.len() {
++            let cosine = cosine_tail[lane];
++            same_re += same_real_tail[lane] * basis_tail[lane];
++            same_im += same_imag_tail[lane] * basis_tail[lane];
++            opposite_re += (opposite_real_tail[lane] * basis_tail[lane]) * cosine;
++            opposite_im += (opposite_imag_tail[lane] * basis_tail[lane]) * cosine;
++            let leading = coefficient_a.mul_add(cosine * cosine, coefficient_b);
++            next_tail[lane] = leading.mul_add(basis_tail[lane], previous_tail[lane]);
++        }
++        (
++            Complex64::new(same_re, same_im),
++            Complex64::new(opposite_re, opposite_im),
++        )
++    }
++}
++
+ struct AnalysisPairChannelsAccumulation<'a> {
+     same_real: [&'a [f64]; 2],
+     same_imag: [&'a [f64]; 2],
+@@ -2934,7 +3124,7 @@ mod tests {
+     fn fused_scalar_analysis_block_matches_paired_reference_with_simd_tails() {
+         let m = 2;
+         let lmax = 20;
+-        let lane_count = 17;
++        let lane_count = 21;
+         let angles: Vec<_> = (0..lane_count)
+             .map(|lane| 0.04 + lane as f64 * 0.075)
+             .collect();

@@ -2934,7 +2934,7 @@ mod tests {
     fn fused_scalar_analysis_block_matches_paired_reference_with_simd_tails() {
         let m = 2;
         let lmax = 20;
-        let lane_count = 17;
+        let lane_count = 21;
         let angles: Vec<_> = (0..lane_count)
             .map(|lane| 0.04 + lane as f64 * 0.075)
             .collect();
