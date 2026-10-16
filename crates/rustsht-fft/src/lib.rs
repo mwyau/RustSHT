@@ -699,4 +699,78 @@ mod m0_diagnostics_tests {
                 .any(|route| route == expected_radix11_route)
         );
     }
+
+    #[test]
+    fn m24_c2c_1442_selects_avx2_radix103_and_guards_unsafe_inverse_inputs() {
+        let n = 1442;
+        let plan = ComplexFftPlan::<f64>::new(n).expect("N=1442 complex plan");
+        let mut workspace = plan.workspace().expect("N=1442 complex workspace");
+        let expected_route = "c2c-avx2:general-prime-ido1 n=1442 radix=103 l1=14 vector_frequencies=50 scalar_tail=1";
+        let has_avx2 = <f64 as SimdScalar>::avx2_available();
+        let mut values = complex_input(n);
+
+        m0_clear_routes();
+        plan.forward(&mut values, &mut workspace)
+            .expect("ordinary N=1442 forward");
+        assert_eq!(
+            m0_route_snapshot()
+                .iter()
+                .any(|route| route == expected_route),
+            has_avx2
+        );
+
+        m0_clear_routes();
+        plan.inverse(&mut values, &mut workspace)
+            .expect("ordinary N=1442 inverse");
+        assert_eq!(
+            m0_route_snapshot()
+                .iter()
+                .any(|route| route == expected_route),
+            has_avx2
+        );
+
+        let high = f64::MAX / (2.0 * n as f64);
+        let mut high_values = vec![Complex::new(high, -high); n];
+        m0_clear_routes();
+        plan.inverse(&mut high_values, &mut workspace)
+            .expect("guarded high-amplitude N=1442 inverse");
+        assert!(
+            high_values
+                .iter()
+                .all(|value| value.re.is_finite() && value.im.is_finite())
+        );
+        assert!(
+            !m0_route_snapshot()
+                .iter()
+                .any(|route| route == expected_route),
+            "unsafe inverse inputs must use the scalar range-safe pass"
+        );
+
+        let plan32 = ComplexFftPlan::<f32>::new(n).expect("N=1442 f32 complex plan");
+        let mut workspace32 = plan32.workspace().expect("N=1442 f32 complex workspace");
+        let mut values32: Vec<_> = (0..n)
+            .map(|index| {
+                let x = (index + 1) as f32;
+                Complex::new((0.173 * x).sin(), (0.113 * (x + 1.0)).cos())
+            })
+            .collect();
+        m0_clear_routes();
+        plan32
+            .forward(&mut values32, &mut workspace32)
+            .expect("N=1442 f32 scalar general-prime fallback");
+        let routes = m0_route_snapshot();
+        assert!(
+            plan32
+                .m0_pass_report()
+                .iter()
+                .any(|route| route == "n=1442 stage=2 radix=103 l1=14 ido=1 route=general prime"),
+            "f32 N=1442 must retain its validated general-prime pass"
+        );
+        assert!(
+            !routes
+                .iter()
+                .any(|route| route.starts_with("c2c-avx2:general-prime-ido1 n=1442")),
+            "f32 must not select the f64 radix-103 kernel: {routes:?}"
+        );
+    }
 }
