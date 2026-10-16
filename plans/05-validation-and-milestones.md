@@ -2173,3 +2173,6 @@ The f64 real N=2049 plan now uses Rader-683 for its terminal `l1=3`, `ido=1` pas
 
 
 ### Radix-31 twiddle initialization experiment (M13, 2026-10-15)
+
+
+### Paired-frequency radix-31 accumulation (M16, 2026-10-15)

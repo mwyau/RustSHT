@@ -1,0 +1,30 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "257",
+      "128"
+    ],
+    "label": "M16 two output-pair accumulation"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "257",
+      "128"
+    ],
+    "label": "M12 baseline"
+  },
+  "metadata": {
+    "baseline_binary_sha256": "69ce17d85fc9762da1513749f6d7d03e0a456e453fe344b5a94d7c2912cd4eff",
+    "baseline_commit": "af0f93b",
+    "candidate_binary_sha256": "669e93520be31092ddf6c62d19b26f69a2e38a1d29005e35d27e36c448ac8bfd",
+    "candidate_source": "M16 AVX2 radix31 accumulates two adjacent output-frequency pairs per branch pass",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target with runtime AVX2 dispatch",
+    "timing": "six alternating process pairs; seven warmed samples per cell",
+    "workload": "control-257"
+  },
+  "pairs": 6
+}
