@@ -1,0 +1,31 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "Final six-pair comparison of the final M21-source executable with RustFFT 6.4.1.",
+    "candidate_source": "RustSHT-FFT c48e653978079da8d126757a9362c27b4b64e2c7",
+    "candidate_binary_sha256": "b88e1fa3b418ea1fdba8343dd53101cd2a09dc4b228ba066fa282bae52f89ec8",
+    "workload": "all current exact C2C and real SHT target lengths, single transform plus scalar/spin row batches; one transform thread",
+    "timing": "six alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable target; runtime SIMD dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "reference": "RustFFT 6.4.1",
+    "reference_binary_sha256": "b88e1fa3b418ea1fdba8343dd53101cd2a09dc4b228ba066fa282bae52f89ec8",
+    "reference_build": "RustFFT 6.4.1 adapter in the same Rust 1.99.0 benchmark executable"
+  },
+  "a": {
+    "label": "RustSHT-FFT c48e653",
+    "command": [
+      "/dev/shm/rustsht-fft-m21-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "RustFFT 6.4.1",
+    "command": [
+      "/dev/shm/rustsht-fft-m21-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-sht-targets"
+    ]
+  }
+}

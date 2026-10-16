@@ -1,0 +1,12 @@
+M23 numerical comparison for f64 C2C, R2C and C2R at N=1443 and N=4097.
+Each comparison covered 19,391 complex output records (38,782 scalar components) against the reference output. Tolerances were rtol=2e-11 and atol=2e-11. See m23-ducc-numerical-comparison-config.json for source and reference builds.
+
+RustSHT-FFT f64 versus pinned native DUCC with vectorization enabled: max_abs=4.547e-13; max_scaled=2.255e-13.
+RustSHT-FFT f64 versus pinned portable DUCC with vectorization disabled: max_abs=4.547e-13; max_scaled=2.631e-13.
+RustSHT-FFT f64 versus pinned native DUCC with vectorization disabled: max_abs=4.547e-13; max_scaled=2.255e-13.
+RustSHT-FFT f64 versus FFTW 3.3.10: max_abs=4.547e-13; max_scaled=2.160e-13.
+RustSHT-FFT f64 versus Admiral ce67bc00: max_abs=1.137e-12; max_scaled=2.579e-13.
+
+Command: env RUSTSHT_FFT_DUCC_VECTORIZE=1 CARGO_TARGET_DIR=/dev/shm/rustsht-fft-m21-target TMPDIR=/dev/shm/rustsht-fft-m21-tmp python3 benches/reference/compare.py --ducc /home/albert/rustsht-fft-m0-ducc-native/rustsht-fft-reference --lengths 1443 4097 --external "DUCC portable=/home/albert/rustsht-fft-m0-ducc-portable/rustsht-fft-reference" --external "FFTW 3.3.10=/home/albert/rustsht-fft-m0-external/fftw-system" --external "Admiral ce67bc00=/home/albert/rustsht-fft-m0-external/admiral"
+
+Command: env RUSTSHT_FFT_DUCC_VECTORIZE=0 CARGO_TARGET_DIR=/dev/shm/rustsht-fft-m21-target TMPDIR=/dev/shm/rustsht-fft-m21-tmp python3 benches/reference/compare.py --ducc /home/albert/rustsht-fft-m0-ducc-portable/rustsht-fft-reference --lengths 1443 4097 --external "DUCC native scalar=/home/albert/rustsht-fft-m0-ducc-native/rustsht-fft-reference"

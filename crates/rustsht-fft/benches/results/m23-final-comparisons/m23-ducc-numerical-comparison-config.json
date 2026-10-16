@@ -1,0 +1,43 @@
+{
+  "candidate_source": "RustSHT-FFT c48e653978079da8d126757a9362c27b4b64e2c7",
+  "candidate_binary_sha256": "b88e1fa3b418ea1fdba8343dd53101cd2a09dc4b228ba066fa282bae52f89ec8",
+  "lengths": [1443, 4097],
+  "modes": ["c2c_forward", "c2c_inverse", "r2c", "c2r"],
+  "comparison": "benches/reference/compare.py; each reference's full deterministic output is compared elementwise and componentwise",
+  "tolerances": {"rtol": 2e-11, "atol": 2e-11},
+  "ducc_references": [
+    {
+      "name": "DUCC c1ed01b8 native",
+      "revision": "c1ed01b8fda69d2a378190f0915f1a19762dddbf",
+      "binary": "/home/albert/rustsht-fft-m0-ducc-native/rustsht-fft-reference",
+      "vectorization": true
+    },
+    {
+      "name": "DUCC c1ed01b8 portable",
+      "revision": "c1ed01b8fda69d2a378190f0915f1a19762dddbf",
+      "binary": "/home/albert/rustsht-fft-m0-ducc-portable/rustsht-fft-reference",
+      "vectorization": false
+    },
+    {
+      "name": "DUCC c1ed01b8 native scalar-planner route",
+      "revision": "c1ed01b8fda69d2a378190f0915f1a19762dddbf",
+      "binary": "/home/albert/rustsht-fft-m0-ducc-native/rustsht-fft-reference",
+      "vectorization": false
+    }
+  ],
+  "additional_references": [
+    {
+      "name": "FFTW 3.3.10",
+      "binary": "/home/albert/rustsht-fft-m0-external/fftw-system"
+    },
+    {
+      "name": "Admiral ce67bc00",
+      "binary": "/home/albert/rustsht-fft-m0-external/admiral"
+    }
+  ],
+  "environment": {
+    "compiler": "Rust 1.99.0 stable",
+    "target_directory": "/dev/shm/rustsht-fft-m21-target",
+    "cpu_model": "AMD Ryzen 9 5950X"
+  }
+}

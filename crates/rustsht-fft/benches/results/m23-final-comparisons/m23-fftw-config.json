@@ -1,0 +1,32 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "Final six-pair comparison of the final M21-source executable with system FFTW 3.3.10.",
+    "candidate_source": "RustSHT-FFT c48e653978079da8d126757a9362c27b4b64e2c7",
+    "candidate_binary_sha256": "b88e1fa3b418ea1fdba8343dd53101cd2a09dc4b228ba066fa282bae52f89ec8",
+    "workload": "all current exact C2C and real SHT target lengths, single transform plus scalar/spin row batches; one transform thread",
+    "timing": "six alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable target; runtime SIMD dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "reference": "system FFTW 3.3.10",
+    "reference_binary_sha256": "78f56cad4aaae732d03f52c525296c61f70c7c49f98efd638ad9b7385a6cf9fa",
+    "reference_build": "system FFTW 3.3.10; harness g++ 15.2.0 -O3 -DNDEBUG; FFTW_ESTIMATE | FFTW_PRESERVE_INPUT",
+    "host_condition": "A separate f32 SHT benchmark ran on CPUs 0-7 during this capture; this process remained pinned to CPU 30. See per-process load_average_before in the raw records and the M23 report for interpretation."
+  },
+  "a": {
+    "label": "RustSHT-FFT c48e653",
+    "command": [
+      "/dev/shm/rustsht-fft-m21-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "system FFTW 3.3.10",
+    "command": [
+      "/home/albert/rustsht-fft-m0-external/fftw-system",
+      "--sht"
+    ]
+  }
+}
