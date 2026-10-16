@@ -1,0 +1,58 @@
+diff --git a/examples/m4_f32_bench.rs b/examples/m4_f32_bench.rs
+index 2bafefb..afff0f0 100644
+--- a/examples/m4_f32_bench.rs
++++ b/examples/m4_f32_bench.rs
+@@ -10 +10 @@ use rustsht::{Complex32, GridKind, GridSpec, HarmonicSpec, ShtPlan};
+-fn median(mut durations: Vec<Duration>) -> Duration {
++fn median(mut durations: [Duration; 5]) -> Duration {
+@@ -15 +15 @@ fn median(mut durations: Vec<Duration>) -> Duration {
+-fn measure(mut operation: impl FnMut()) -> Duration {
++fn measure(mut operation: impl FnMut()) -> [Duration; 5] {
+@@ -17,2 +17,2 @@ fn measure(mut operation: impl FnMut()) -> Duration {
+-    let mut durations = Vec::with_capacity(5);
+-    for _ in 0..5 {
++    let mut durations = [Duration::ZERO; 5];
++    for duration in &mut durations {
+@@ -21 +21 @@ fn measure(mut operation: impl FnMut()) -> Duration {
+-        durations.push(start.elapsed());
++        *duration = start.elapsed();
+@@ -23 +23,9 @@ fn measure(mut operation: impl FnMut()) -> Duration {
+-    median(durations)
++    durations
++}
++
++fn print_samples(label: &str, durations: &[Duration; 5]) {
++    print!("{label}_samples_ms:");
++    for duration in durations {
++        print!(" {:.3}", duration.as_secs_f64() * 1000.0);
++    }
++    println!();
+@@ -80 +88 @@ fn main() {
+-    let synthesis_one_thread = measure(|| {
++    let synthesis_one_thread_samples = measure(|| {
+@@ -93 +101 @@ fn main() {
+-    let synthesis_rayon = measure(|| {
++    let synthesis_rayon_samples = measure(|| {
+@@ -106 +114 @@ fn main() {
+-    let analysis_one_thread = measure(|| {
++    let analysis_one_thread_samples = measure(|| {
+@@ -119 +127 @@ fn main() {
+-    let analysis_rayon = measure(|| {
++    let analysis_rayon_samples = measure(|| {
+@@ -151,0 +160,4 @@ fn main() {
++    print_samples("synthesis_one_thread", &synthesis_one_thread_samples);
++    print_samples("synthesis_rayon", &synthesis_rayon_samples);
++    print_samples("analysis_one_thread", &analysis_one_thread_samples);
++    print_samples("analysis_rayon", &analysis_rayon_samples);
+@@ -154 +166 @@ fn main() {
+-        synthesis_one_thread.as_secs_f64() * 1000.0
++        median(synthesis_one_thread_samples).as_secs_f64() * 1000.0
+@@ -158 +170 @@ fn main() {
+-        synthesis_rayon.as_secs_f64() * 1000.0
++        median(synthesis_rayon_samples).as_secs_f64() * 1000.0
+@@ -162 +174 @@ fn main() {
+-        analysis_one_thread.as_secs_f64() * 1000.0
++        median(analysis_one_thread_samples).as_secs_f64() * 1000.0
+@@ -166 +178 @@ fn main() {
+-        analysis_rayon.as_secs_f64() * 1000.0
++        median(analysis_rayon_samples).as_secs_f64() * 1000.0
