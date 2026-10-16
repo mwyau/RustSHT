@@ -153,10 +153,15 @@ pub(crate) fn analysis_inputs_vectorizable(
     debug_assert_eq!(q_real.len(), u_imag.len());
     debug_assert_eq!(q_real.len(), ring_order_limits.len());
     ring_order_limits.iter().all(|&limit| m <= limit)
-        && q_real.iter().all(|value| value.is_normal())
-        && q_imag.iter().all(|value| value.is_normal())
-        && u_real.iter().all(|value| value.is_normal())
-        && u_imag.iter().all(|value| value.is_normal())
+        && q_real.iter().all(|&value| is_normal_or_zero(value))
+        && q_imag.iter().all(|&value| is_normal_or_zero(value))
+        && u_real.iter().all(|&value| is_normal_or_zero(value))
+        && u_imag.iter().all(|&value| is_normal_or_zero(value))
+}
+
+#[inline]
+fn is_normal_or_zero(value: f32) -> bool {
+    value == 0.0 || value.is_normal()
 }
 
 #[expect(
@@ -192,8 +197,8 @@ pub(crate) fn accumulate_analysis_dispatched(
         && alpha_norm.is_normal()
         && plus_exponents.iter().all(|&exponent| exponent == 0)
         && minus_exponents.iter().all(|&exponent| exponent == 0)
-        && plus.iter().all(|value| value.is_normal())
-        && minus.iter().all(|value| value.is_normal());
+        && plus.iter().all(|&value| is_normal_or_zero(value))
+        && minus.iter().all(|&value| is_normal_or_zero(value));
     if vectorizable {
         return arch.dispatch(SpinAnalysisAccumulation32 {
             q_real,
@@ -797,7 +802,7 @@ mod tests {
     }
 
     #[test]
-    fn f32_spin_analysis_scaled_and_inactive_lanes_use_scalar_accumulation() {
+    fn f32_spin_analysis_zero_inputs_use_simd_and_scaled_lanes_use_scalar_accumulation() {
         let mut lanes = AnalysisLanes32::new(64);
         lanes.plus_exponents[11] = -800;
         lanes.limits[7] = 3;
@@ -817,6 +822,29 @@ mod tests {
 
         lanes.limits.fill(64);
         lanes.q_real[4] = 0.0;
+        lanes.u_imag[9] = -0.0;
+        lanes.plus[12] = 0.0;
+        lanes.minus[17] = -0.0;
+        assert!(lanes.plus.iter().all(|&value| is_normal_or_zero(value)));
+        assert!(lanes.minus.iter().all(|&value| is_normal_or_zero(value)));
+        let zero_expected = lanes.scalar_reference(4, 0.75, true);
+        assert!(analysis_inputs_vectorizable(
+            4,
+            &lanes.q_real,
+            &lanes.q_imag,
+            &lanes.u_real,
+            &lanes.u_imag,
+            &lanes.limits,
+        ));
+        for arch in [Arch::Scalar, Arch::new()] {
+            let actual = lanes.accumulate(arch, 4, 0.75, true);
+            assert!((actual.0 - zero_expected.0).norm() < 1.0e-4);
+            assert!((actual.1 - zero_expected.1).norm() < 1.0e-4);
+        }
+
+        lanes.q_real[4] = f32::from_bits(1);
+        lanes.plus[4] = f32::from_bits(1);
+        assert!(!lanes.plus.iter().all(|&value| is_normal_or_zero(value)));
         assert!(!analysis_inputs_vectorizable(
             4,
             &lanes.q_real,
