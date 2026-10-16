@@ -1,0 +1,47 @@
+Started: 2026-10-15T23:28:45-04:00
+Load before:  23:28:45 up 10 days, 11:17, 10 users,  load average: 0.98, 3.69, 3.67
+
+THREADS=1 ORDER=baseline
+spin-0 T1023 mmax=1023; GL 1024x2049; f64; STANDARD; requested=1 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.096
+plan_construction_samples_ms=[0.115,0.101,0.096,0.094,0.093]
+workspace_allocation_ms=13.380
+workspace_allocation_samples_ms=[13.593,13.436,13.287,13.380,13.173]
+analysis_rayon_ms=150.763
+analysis_rayon_samples_ms=[151.176,150.845,150.763,150.674,150.700]
+elapsed_s=1.07 max_rss_kb=101396
+
+THREADS=1 ORDER=candidate
+spin-0 T1023 mmax=1023; GL 1024x2049; f64; STANDARD; requested=1 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.098
+plan_construction_samples_ms=[0.118,0.102,0.098,0.096,0.096]
+workspace_allocation_ms=13.994
+workspace_allocation_samples_ms=[14.021,13.654,13.542,14.095,13.994]
+analysis_rayon_ms=144.729
+analysis_rayon_samples_ms=[144.440,145.870,144.729,145.179,144.525]
+elapsed_s=1.03 max_rss_kb=101464
+
+THREADS=8 ORDER=baseline
+spin-0 T1023 mmax=1023; GL 1024x2049; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.098
+plan_construction_samples_ms=[0.119,0.103,0.098,0.097,0.097]
+workspace_allocation_ms=15.693
+workspace_allocation_samples_ms=[15.052,16.322,15.693,16.061,14.695]
+analysis_rayon_ms=25.019
+analysis_rayon_samples_ms=[24.503,27.653,24.203,33.693,25.019]
+scalar_analysis_first_call_rayon_ms=24.581
+elapsed_s=0.38 max_rss_kb=144672
+
+THREADS=8 ORDER=candidate
+spin-0 T1023 mmax=1023; GL 1024x2049; f64; STANDARD; requested=8 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.099
+plan_construction_samples_ms=[0.121,0.110,0.099,0.098,0.097]
+workspace_allocation_ms=15.678
+workspace_allocation_samples_ms=[15.612,16.399,15.656,15.678,19.335]
+analysis_rayon_ms=25.005
+analysis_rayon_samples_ms=[23.776,23.868,25.005,27.847,29.544]
+scalar_analysis_first_call_rayon_ms=23.566
+elapsed_s=0.38 max_rss_kb=144772
+
+Load after:  23:28:48 up 10 days, 11:17, 10 users,  load average: 1.62, 3.78, 3.70
+Finished: 2026-10-15T23:28:48-04:00

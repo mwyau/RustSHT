@@ -1335,6 +1335,7 @@ impl WithSimd for FusedScalarAnalysisPair<'_> {
             let b = simd.splat_f64s(coefficient_b[pair_index]);
             let big = simd.splat_f64s(scalar::BIG);
             let zeros = simd.splat_f64s(0.0);
+            let mut all_vectors_in_range = simd.equal_f64s(zeros, zeros);
             debug_assert_eq!(current_vectors.len(), previous_vectors.len());
             debug_assert_eq!(current_vectors.len(), cosine_vectors.len());
             debug_assert_eq!(current_vectors.len(), next_vectors.len());
@@ -1348,13 +1349,13 @@ impl WithSimd for FusedScalarAnalysisPair<'_> {
                 next_vectors[index] = next_value;
 
                 let magnitude = simd.abs_f64s(next_value);
-                let below_upper_bound = simd.less_than_or_equal_f64s(magnitude, big);
                 let is_zero = simd.equal_f64s(magnitude, zeros);
-                let lower_check = simd.select_f64s(is_zero, big, magnitude);
-                let in_range = simd.select_f64s(below_upper_bound, lower_check, zeros);
-                if simd.reduce_min_f64s(in_range) < scalar::SMALL {
-                    return false;
-                }
+                let above_lower_bound =
+                    simd.greater_than_or_equal_f64s(magnitude, simd.splat_f64s(scalar::SMALL));
+                let below_upper_bound = simd.less_than_or_equal_f64s(magnitude, big);
+                let in_range =
+                    simd.and_m64s(simd.or_m64s(is_zero, above_lower_bound), below_upper_bound);
+                all_vectors_in_range = simd.and_m64s(all_vectors_in_range, in_range);
             }
             for index in 0..current_tail.len() {
                 let cosine_squared = cosine_tail[index] * cosine_tail[index];
@@ -1369,6 +1370,11 @@ impl WithSimd for FusedScalarAnalysisPair<'_> {
                 {
                     return false;
                 }
+            }
+            if simd.reduce_min_f64s(simd.select_f64s(all_vectors_in_range, big, zeros))
+                < scalar::SMALL
+            {
+                return false;
             }
 
             std::mem::swap(&mut previous, &mut current);

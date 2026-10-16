@@ -1,0 +1,2 @@
+Candidate change relative to baseline d188b772587ed377fbe5b9772ab31c79b324b4bb.
+In FusedScalarAnalysisPair::with_simd, combine the per-lane recurrence range predicates across SIMD vector groups with mask AND operations and perform one horizontal reduction after each recurrence update. Keep scalar-tail validation and fallback behavior unchanged.
