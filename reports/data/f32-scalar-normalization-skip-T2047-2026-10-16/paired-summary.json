@@ -1,0 +1,145 @@
+{
+  "interpretation": {
+    "spin_0": "single-pair diagnostic observations; candidate scalar process overlapped an unrelated benchmark with unknown CPU placement",
+    "spin_1": "unaffected-path control variation; the selector changes only the scalar f32 recurrence"
+  },
+  "method": "arithmetic median of raw warm samples; change is candidate / baseline - 1",
+  "paired_rows": [
+    {
+      "baseline_ms": 30182.639499999997,
+      "baseline_samples_ms": [
+        30166.75,
+        30198.529
+      ],
+      "candidate_ms": 29968.930500000002,
+      "candidate_samples_ms": [
+        29433.197,
+        30504.664
+      ],
+      "change_percent": -0.7080527201737796,
+      "operation": "synthesis",
+      "pair": 1,
+      "spin": 0,
+      "threads": 1
+    },
+    {
+      "baseline_ms": 5381.0475,
+      "baseline_samples_ms": [
+        5358.119,
+        5403.976
+      ],
+      "candidate_ms": 5392.851000000001,
+      "candidate_samples_ms": [
+        5414.09,
+        5371.612
+      ],
+      "change_percent": 0.21935320214141463,
+      "operation": "synthesis",
+      "pair": 1,
+      "spin": 0,
+      "threads": 8
+    },
+    {
+      "baseline_ms": 14568.5645,
+      "baseline_samples_ms": [
+        14546.43,
+        14590.699
+      ],
+      "candidate_ms": 14115.710500000001,
+      "candidate_samples_ms": [
+        14386.968,
+        13844.453
+      ],
+      "change_percent": -3.1084325432337523,
+      "operation": "analysis",
+      "pair": 1,
+      "spin": 0,
+      "threads": 1
+    },
+    {
+      "baseline_ms": 2666.3379999999997,
+      "baseline_samples_ms": [
+        2654.834,
+        2677.842
+      ],
+      "candidate_ms": 2606.8955,
+      "candidate_samples_ms": [
+        2612.145,
+        2601.646
+      ],
+      "change_percent": -2.2293685196700386,
+      "operation": "analysis",
+      "pair": 1,
+      "spin": 0,
+      "threads": 8
+    },
+    {
+      "baseline_ms": 62398.648499999996,
+      "baseline_samples_ms": [
+        61691.488,
+        63105.809
+      ],
+      "candidate_ms": 61044.844,
+      "candidate_samples_ms": [
+        61569.522,
+        60520.166
+      ],
+      "change_percent": -2.169605484323911,
+      "operation": "synthesis",
+      "pair": 1,
+      "spin": 1,
+      "threads": 1
+    },
+    {
+      "baseline_ms": 8731.077000000001,
+      "baseline_samples_ms": [
+        8742.474,
+        8719.68
+      ],
+      "candidate_ms": 9245.186,
+      "candidate_samples_ms": [
+        9920.05,
+        8570.322
+      ],
+      "change_percent": 5.888265559907424,
+      "operation": "synthesis",
+      "pair": 1,
+      "spin": 1,
+      "threads": 8
+    },
+    {
+      "baseline_ms": 51695.003,
+      "baseline_samples_ms": [
+        51374.577,
+        52015.429
+      ],
+      "candidate_ms": 49120.768500000006,
+      "candidate_samples_ms": [
+        49436.722,
+        48804.815
+      ],
+      "change_percent": -4.9796582853472104,
+      "operation": "analysis",
+      "pair": 1,
+      "spin": 1,
+      "threads": 1
+    },
+    {
+      "baseline_ms": 10277.382,
+      "baseline_samples_ms": [
+        10277.987,
+        10276.777
+      ],
+      "candidate_ms": 9607.876499999998,
+      "candidate_samples_ms": [
+        9602.007,
+        9613.746
+      ],
+      "change_percent": -6.514358423185995,
+      "operation": "analysis",
+      "pair": 1,
+      "spin": 1,
+      "threads": 8
+    }
+  ]
+}
