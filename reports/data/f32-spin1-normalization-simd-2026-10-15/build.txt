@@ -1,0 +1,9 @@
+Baseline source: commit 82605f6
+Candidate source: baseline plus candidate.patch (removed after the screen)
+Benchmark target: cargo build --release --example m4_f32_bench
+Compiler: rustc 1.99.0 (b940084d7 2026-09-28), LLVM 23.1.1
+Host dispatch: portable Pulp runtime selection; x86-64 CPU selected AVX2/FMA
+Build flags: Cargo release profile; no target-cpu=native or global AVX flags
+Baseline binary SHA-256: d4ddd83bb31100b95835535e744a4d1ab87410684be840362d3435c5d377f58f
+Candidate binary SHA-256: 340c391abaf2672466d03cd7f45fa67900795e6bdea2fea6954e8b754b7fc271
+The baseline was built from a detached worktree and copied before the candidate rebuild. The candidate was rebuilt after touching its edited source file so Cargo could not reuse the baseline artifact from the shared target directory.
