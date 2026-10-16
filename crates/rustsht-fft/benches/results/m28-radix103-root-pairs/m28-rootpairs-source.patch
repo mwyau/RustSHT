@@ -1,0 +1,102 @@
+diff --git a/crates/rustsht-fft/src/simd.rs b/crates/rustsht-fft/src/simd.rs
+index 94b07c8..571bfe2 100644
+--- a/crates/rustsht-fft/src/simd.rs
++++ b/crates/rustsht-fft/src/simd.rs
+@@ -1011,6 +1011,47 @@ mod x86 {
+             let output_ptr = output.as_mut_ptr();
+             let output_scale = _mm256_set1_pd(scale);
+             let sign = if inverse { 1.0 } else { -1.0 };
++            let imaginary_sign = if inverse {
++                _mm256_setzero_pd()
++            } else {
++                _mm256_setr_pd(0.0, -0.0, 0.0, -0.0)
++            };
++
++            // Roots do not depend on the outer group. Cache each adjacent
++            // frequency pair once per call instead of repeating phase-table
++            // and root-table lookups for every outer group.
++            let mut root_pairs =
++                std::mem::MaybeUninit::<[[Complex<f64>; 2]; HALF * PAIR_COUNT]>::uninit();
++            let root_pairs_ptr = root_pairs.as_mut_ptr().cast::<Complex<f64>>();
++            let mut tail_roots = std::mem::MaybeUninit::<[Complex<f64>; HALF]>::uninit();
++            let tail_roots_ptr = tail_roots.as_mut_ptr().cast::<Complex<f64>>();
++            for pair_index in 0..PAIR_COUNT {
++                let frequency = 1 + 2 * pair_index;
++                for branch_index in 0..HALF {
++                    let phase_first = usize::from(phase_indices[branch_index * RADIX + frequency]);
++                    let phase_second =
++                        usize::from(phase_indices[branch_index * RADIX + frequency + 1]);
++                    let root_first = roots[phase_first * root_stride];
++                    let root_second = roots[phase_second * root_stride];
++                    let root_index = 2 * (pair_index * HALF + branch_index);
++                    // SAFETY: the nested loops write both entries of every
++                    // root pair exactly once before the array is read.
++                    unsafe {
++                        root_pairs_ptr.add(root_index).write(root_first);
++                        root_pairs_ptr.add(root_index + 1).write(root_second);
++                    }
++                }
++            }
++            for branch_index in 0..HALF {
++                let phase = usize::from(phase_indices[branch_index * RADIX + HALF]);
++                let root = roots[phase * root_stride];
++                // SAFETY: this loop initializes every tail root before use.
++                unsafe { tail_roots_ptr.add(branch_index).write(root) };
++            }
++            // SAFETY: the preceding loops initialized every array element.
++            let root_pairs = unsafe { root_pairs.assume_init_ref() };
++            // SAFETY: the preceding loop initialized every array element.
++            let tail_roots = unsafe { tail_roots.assume_init_ref() };
+ 
+             for outer in 0..l1 {
+                 let input_zero = input[RADIX * outer];
+@@ -1055,24 +1096,21 @@ mod x86 {
+                     let mut negative = initial;
+ 
+                     for branch_index in 0..HALF {
+-                        let phase_first =
+-                            usize::from(phase_indices[branch_index * RADIX + frequency]);
+-                        let phase_second =
+-                            usize::from(phase_indices[branch_index * RADIX + frequency + 1]);
+-                        let root_first = roots[phase_first * root_stride];
+-                        let root_second = roots[phase_second * root_stride];
+-                        let cosine = _mm256_setr_pd(
+-                            root_first.re,
+-                            root_first.re,
+-                            root_second.re,
+-                            root_second.re,
+-                        );
+-                        let sine = _mm256_setr_pd(
+-                            root_first.im * sign,
+-                            root_first.im * sign,
+-                            root_second.im * sign,
+-                            root_second.im * sign,
+-                        );
++                        let root_index = 2 * (pair_index * HALF + branch_index);
++                        // SAFETY: each pair contains two adjacent initialized
++                        // Complex<f64> values and the index is in range.
++                        let roots = unsafe {
++                            _mm256_loadu_pd(
++                                root_pairs
++                                    .as_ptr()
++                                    .cast::<Complex<f64>>()
++                                    .add(root_index)
++                                    .cast::<f64>(),
++                            )
++                        };
++                        let roots = _mm256_xor_pd(roots, imaginary_sign);
++                        let cosine = _mm256_movedup_pd(roots);
++                        let sine = _mm256_permute_pd(roots, 0b1111);
+                         let pair_value = pair_inputs[branch_index];
+                         let difference_value = imaginary_differences[branch_index];
+                         let pair = _mm256_setr_pd(
+@@ -1126,8 +1164,7 @@ mod x86 {
+                 let mut positive = input_zero;
+                 let mut negative = input_zero;
+                 for branch_index in 0..HALF {
+-                    let phase = usize::from(phase_indices[branch_index * RADIX + HALF]);
+-                    let root = roots[phase * root_stride];
++                    let root = tail_roots[branch_index];
+                     let pair = pair_inputs[branch_index];
+                     let difference = imaginary_differences[branch_index];
+                     let cosine = pair * root.re;
