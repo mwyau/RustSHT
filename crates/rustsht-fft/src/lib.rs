@@ -332,7 +332,7 @@ mod m0_diagnostics_tests {
     }
 
     #[test]
-    fn m20_complex_radix11_simd_covers_sht_targets_and_guards_unsafe_inverse() {
+    fn m25_complex_radix11_simd_covers_sht_targets_and_guards_unsafe_inverse() {
         use crate::simd::SimdScalar;
 
         if !<f64 as SimdScalar>::avx2_available() {
@@ -353,7 +353,46 @@ mod m0_diagnostics_tests {
                 "N={n} did not select its radix-eleven AVX2 pass: {:?}",
                 m0_route_snapshot()
             );
+            let final_l1 = l1 * 11;
+            let terminal_event = format!(
+                "c2c-avx2:radix11-ido1 n={n} l1={final_l1} vector_l1={final_l1} scalar_l1_tail=0"
+            );
+            assert!(
+                m0_route_snapshot()
+                    .iter()
+                    .any(|route| route == &terminal_event),
+                "N={n} did not select its terminal radix-eleven AVX2 pass: {:?}",
+                m0_route_snapshot()
+            );
+
+            m0_clear_routes();
+            plan.inverse(&mut values, &mut workspace)
+                .expect("radix-eleven target inverse");
+            assert!(
+                m0_route_snapshot()
+                    .iter()
+                    .any(|route| route == &terminal_event),
+                "N={n} inverse did not select its terminal radix-eleven AVX2 pass: {:?}",
+                m0_route_snapshot()
+            );
         }
+
+        let odd_l1_plan = ComplexFftPlan::<f64>::new(33).expect("odd-l1 radix-eleven plan");
+        let mut odd_l1_workspace = odd_l1_plan
+            .workspace()
+            .expect("odd-l1 radix-eleven workspace");
+        let mut odd_l1_values = complex_input(33);
+        m0_clear_routes();
+        odd_l1_plan
+            .forward(&mut odd_l1_values, &mut odd_l1_workspace)
+            .expect("odd-l1 radix-eleven forward");
+        assert!(
+            m0_route_snapshot().iter().any(|route| {
+                route == "c2c-avx2:radix11-ido1 n=33 l1=3 vector_l1=2 scalar_l1_tail=1"
+            }),
+            "odd-l1 transform did not use the AVX2 prefix and scalar tail: {:?}",
+            m0_route_snapshot()
+        );
 
         let n = 726;
         let plan = ComplexFftPlan::<f64>::new(n).expect("guarded inverse plan");
@@ -368,9 +407,10 @@ mod m0_diagnostics_tests {
                 .all(|value| value.re.is_finite() && value.im.is_finite())
         );
         assert!(
-            m0_route_snapshot()
-                .iter()
-                .all(|route| !route.starts_with("c2c-avx2:radix11-pass")),
+            m0_route_snapshot().iter().all(|route| {
+                !route.starts_with("c2c-avx2:radix11-pass")
+                    && !route.starts_with("c2c-avx2:radix11-ido1")
+            }),
             "unsafe inverse inputs must use the scalar range-safe pass: {:?}",
             m0_route_snapshot()
         );
@@ -396,9 +436,10 @@ mod m0_diagnostics_tests {
         plan.forward(&mut values, &mut workspace)
             .expect("f32 radix-eleven forward");
         assert!(
-            m0_route_snapshot()
-                .iter()
-                .all(|route| !route.starts_with("c2c-avx2:radix11-pass")),
+            m0_route_snapshot().iter().all(|route| {
+                !route.starts_with("c2c-avx2:radix11-pass")
+                    && !route.starts_with("c2c-avx2:radix11-ido1")
+            }),
             "f32 radix-eleven must stay on its scalar route"
         );
         assert!(

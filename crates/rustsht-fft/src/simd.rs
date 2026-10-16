@@ -542,7 +542,9 @@ mod x86 {
         ///
         /// The caller must have detected AVX2, provide disjoint input and
         /// output slices, and validate the dimensions and safety range for the
-        /// selected pass. Radix-eleven passes require `ido >= 2`.
+        /// selected pass. Radix-eleven passes with `ido >= 2` process an even
+        /// inner prefix. Passes with `ido == 1` require `l1 >= 2` and process
+        /// an even outer prefix; the caller handles either scalar tail.
         #[target_feature(enable = "avx2")]
         pub(super) unsafe fn pass_with_radix11(
             input: &[Complex<f64>],
@@ -550,7 +552,11 @@ mod x86 {
             pass: &SimdPass<'_, f64>,
         ) {
             if pass.radix == 11 {
-                unsafe { pass_radix11(input, output, pass) };
+                if pass.ido == 1 {
+                    unsafe { pass_ido1_radix11(input, output, pass) };
+                } else {
+                    unsafe { pass_radix11(input, output, pass) };
+                }
             } else {
                 unsafe { self::pass(input, output, pass) };
             }
@@ -1520,6 +1526,63 @@ mod x86 {
                             )
                         };
                     }
+                }
+            }
+        }
+
+        /// Executes a radix-eleven `ido == 1` pass across pairs of outer groups.
+        ///
+        /// # Safety
+        ///
+        /// The caller must have detected AVX2 and provide disjoint input and
+        /// output slices of at least `11 * l1` complex values, with `radix ==
+        /// 11`, `ido == 1` and `l1 >= 2`. This function writes the largest even
+        /// prefix of outer groups; the caller handles an odd final group.
+        #[target_feature(enable = "avx2")]
+        pub(super) unsafe fn pass_ido1_radix11(
+            input: &[Complex<f64>],
+            output: &mut [Complex<f64>],
+            pass: &SimdPass<'_, f64>,
+        ) {
+            const RADIX: usize = 11;
+            debug_assert_eq!(pass.radix, RADIX);
+            debug_assert_eq!(pass.ido, 1);
+            debug_assert!(pass.l1 >= 2);
+            debug_assert!(input.len() >= RADIX * pass.l1);
+            debug_assert!(output.len() >= RADIX * pass.l1);
+
+            let input_ptr = input.as_ptr();
+            let output_ptr = output.as_mut_ptr();
+            let vector_l1 = pass.l1 - pass.l1 % 2;
+            let scale = _mm256_set1_pd(if pass.inverse {
+                pass.inverse_scale
+            } else {
+                1.0
+            });
+
+            for outer in (0..vector_l1).step_by(2) {
+                let first_base = RADIX * outer;
+                let second_base = first_base + RADIX;
+                let mut values = [_mm256_setzero_pd(); RADIX];
+                for pair in 0..RADIX / 2 {
+                    let first = unsafe { load(input_ptr, first_base + 2 * pair) };
+                    let second = unsafe { load(input_ptr, second_base + 2 * pair) };
+                    values[2 * pair] = _mm256_permute2f128_pd::<0x20>(first, second);
+                    values[2 * pair + 1] = _mm256_permute2f128_pd::<0x31>(first, second);
+                }
+                let first_last = input[first_base + RADIX - 1];
+                let second_last = input[second_base + RADIX - 1];
+                values[RADIX - 1] =
+                    _mm256_setr_pd(first_last.re, first_last.im, second_last.re, second_last.im);
+
+                let transformed = unsafe { radix11_fixed(&values, pass.inverse) };
+                for (branch, &result) in transformed.iter().enumerate() {
+                    let value = if pass.inverse {
+                        _mm256_mul_pd(result, scale)
+                    } else {
+                        result
+                    };
+                    unsafe { store(output_ptr, branch * pass.l1 + outer, value) };
                 }
             }
         }
@@ -2801,6 +2864,76 @@ mod tests {
                             let scalar_tail = inner + ido * (outer + l1 * frequency);
                             assert_eq!(output[scalar_tail], marker);
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn f64_complex_radix11_ido1_pass_matches_direct_dfts_and_guards_odd_l1_tail() {
+        if !<f64 as SimdScalar>::avx2_available() {
+            return;
+        }
+        let Some(kernel) = <f64 as SimdScalar>::avx2_radix11_dispatch_kernel() else {
+            panic!("AVX2 radix-eleven kernel should be available");
+        };
+        let radix = 11;
+        let marker = Complex::new(-91.0, 37.0);
+
+        for l1 in [2, 3, 6, 7, 12, 13, 24, 25] {
+            let total_len = radix * l1;
+            let twiddles = vec![Complex::new(1.0, 0.0); radix];
+            let original: Vec<_> = (0..total_len)
+                .map(|index| signal(index + l1 * 17))
+                .collect();
+            let vector_l1 = l1 - l1 % 2;
+
+            for inverse in [false, true] {
+                let scale = if inverse { 0.25 } else { 1.0 };
+                let mut storage = vec![marker; total_len + 2];
+                let (start_guard, tail) = storage.split_at_mut(1);
+                let (output, end_guard) = tail.split_at_mut(total_len);
+                // SAFETY: AVX2 is available, the input and output are
+                // disjoint, and the pass dimensions satisfy the ido-one
+                // radix-eleven kernel contract.
+                unsafe {
+                    kernel(
+                        &original,
+                        output,
+                        &SimdPass {
+                            radix,
+                            l1,
+                            ido: 1,
+                            twiddles: &twiddles,
+                            inverse,
+                            inverse_scale: scale,
+                        },
+                    )
+                }
+                assert_eq!(start_guard[0], marker);
+                assert_eq!(end_guard[0], marker);
+
+                for outer in 0..l1 {
+                    for frequency in 0..radix {
+                        let output_index = frequency * l1 + outer;
+                        if outer >= vector_l1 {
+                            assert_eq!(output[output_index], marker);
+                            continue;
+                        }
+                        let mut expected = Complex::new(0.0, 0.0);
+                        for sample in 0..radix {
+                            expected += original[radix * outer + sample]
+                                * root(sample * frequency % radix, radix, inverse);
+                        }
+                        expected *= scale;
+                        assert_close(
+                            output[output_index],
+                            expected,
+                            &format!(
+                                "radix={radix}, l1={l1}, inverse={inverse}, outer={outer}, frequency={frequency}"
+                            ),
+                        );
                     }
                 }
             }

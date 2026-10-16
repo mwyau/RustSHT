@@ -19,6 +19,8 @@ use crate::simd::{
     SimdScalar,
 };
 
+mod radix11_ido1;
+
 pub(crate) const P241_BLUESTEIN_CONVOLUTION_LEN: usize = 512;
 
 /// Errors returned by FFT plan construction and execution.
@@ -1332,7 +1334,13 @@ fn execute_pass_radix11<T: Float + FromPrimitive>(
     pass: &ComplexPass<T>,
     execution: &mut PassExecution<'_, T>,
 ) {
-    if let Some(kernels) = execution.simd
+    if pass.ido == 1 {
+        if let Some(kernels) = execution.simd
+            && radix11_ido1::execute_avx2(input, output, pass, execution, kernels.radix11_pass)
+        {
+            return;
+        }
+    } else if let Some(kernels) = execution.simd
         && execute_radix11_avx2(input, output, pass, execution, kernels.radix11_pass)
     {
         return;
