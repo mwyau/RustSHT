@@ -636,20 +636,49 @@ impl<T: ShtScalar> ShtPlan<T> {
         let ntheta = self.grid.ntheta();
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
-        for ring in 0..ntheta {
-            let input_start = ring * nphi;
-            let spectrum_start = ring * spectrum_len;
-            let end = spectrum_start + spectrum_len;
-            self.fft.forward(
-                &first_component[input_start..input_start + nphi],
-                &mut workspace.spectra[spectrum_start..end],
+        #[cfg(feature = "parallel")]
+        let parallel_fft = self.analysis_fft_parallelism_supported()
+            && workspace
+                .execution_capacity
+                .min(rayon::current_num_threads())
+                > 1;
+        #[cfg(not(feature = "parallel"))]
+        let parallel_fft = false;
+        if parallel_fft {
+            self.forward_analysis_rows(
+                first_component,
+                &mut workspace.spectra,
                 &mut workspace.fft,
+                #[cfg(feature = "parallel")]
+                &mut workspace.fft_worker_workspaces,
+                #[cfg(feature = "parallel")]
+                workspace.execution_capacity,
             )?;
-            self.fft.forward(
-                &second_component[input_start..input_start + nphi],
-                &mut workspace.spin_spectra[spectrum_start..end],
+            self.forward_analysis_rows(
+                second_component,
+                &mut workspace.spin_spectra,
                 &mut workspace.fft,
+                #[cfg(feature = "parallel")]
+                &mut workspace.fft_worker_workspaces,
+                #[cfg(feature = "parallel")]
+                workspace.execution_capacity,
             )?;
+        } else {
+            for ring in 0..ntheta {
+                let input_start = ring * nphi;
+                let spectrum_start = ring * spectrum_len;
+                let end = spectrum_start + spectrum_len;
+                self.fft.forward(
+                    &first_component[input_start..input_start + nphi],
+                    &mut workspace.spectra[spectrum_start..end],
+                    &mut workspace.fft,
+                )?;
+                self.fft.forward(
+                    &second_component[input_start..input_start + nphi],
+                    &mut workspace.spin_spectra[spectrum_start..end],
+                    &mut workspace.fft,
+                )?;
+            }
         }
         #[cfg(all(test, feature = "parallel"))]
         {

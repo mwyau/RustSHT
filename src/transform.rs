@@ -7,6 +7,7 @@ use num_complex::Complex;
 use rayon::prelude::*;
 
 use crate::error::ShtError;
+use crate::fft::RealFftWorkspace;
 use crate::grid::GridKind;
 use crate::legendre::{
     LATITUDE_BLOCK_SIZE, LegendreOperation, LegendreStrategy, ShtScalar, longitude_phase,
@@ -444,6 +445,65 @@ fn prepare_symmetric_analysis_pair_block<T: ShtScalar>(
 
 #[allow(private_bounds)]
 impl<T: ShtScalar> ShtPlan<T> {
+    pub(crate) fn forward_analysis_rows(
+        &self,
+        input: &[T],
+        output: &mut [Complex<T>],
+        serial_workspace: &mut RealFftWorkspace<T>,
+        #[cfg(feature = "parallel")] worker_workspaces: &mut [RealFftWorkspace<T>],
+        #[cfg(feature = "parallel")] execution_capacity: usize,
+    ) -> Result<(), ShtError> {
+        let ntheta = self.grid.ntheta();
+        let nphi = self.grid.nphi();
+        let spectrum_len = self.fft.spectrum_len();
+
+        #[cfg(feature = "parallel")]
+        {
+            let worker_count = execution_capacity
+                .min(rayon::current_num_threads())
+                .min(worker_workspaces.len())
+                .min(ntheta);
+            if worker_count > 1 {
+                let rings_per_group = ntheta.div_ceil(worker_count);
+                let output_chunk_len =
+                    rings_per_group
+                        .checked_mul(spectrum_len)
+                        .ok_or(ShtError::IntegerOverflow {
+                            quantity: "analysis FFT output chunk length",
+                        })?;
+                output
+                    .par_chunks_mut(output_chunk_len)
+                    .zip(worker_workspaces[..worker_count].par_iter_mut())
+                    .enumerate()
+                    .try_for_each(|(group, (spectra, fft_workspace))| {
+                        let first_ring = group * rings_per_group;
+                        for (offset, spectrum) in spectra.chunks_mut(spectrum_len).enumerate() {
+                            let ring = first_ring + offset;
+                            let input_start = ring * nphi;
+                            self.fft.forward(
+                                &input[input_start..input_start + nphi],
+                                spectrum,
+                                fft_workspace,
+                            )?;
+                        }
+                        Ok(())
+                    })?;
+                return Ok(());
+            }
+        }
+
+        for ring in 0..ntheta {
+            let input_start = ring * nphi;
+            let spectrum_start = ring * spectrum_len;
+            self.fft.forward(
+                &input[input_start..input_start + nphi],
+                &mut output[spectrum_start..spectrum_start + spectrum_len],
+                serial_workspace,
+            )?;
+        }
+        Ok(())
+    }
+
     /// Synthesizes one real scalar field into north-to-south row-major samples.
     ///
     /// For even longitude counts, the Nyquist order is allowed and its
@@ -1165,15 +1225,34 @@ impl<T: ShtScalar> ShtPlan<T> {
             );
             phase_started = std::time::Instant::now();
         }
-        let spectra = &mut workspace.spectra;
-        for ring in 0..ntheta {
-            let input_start = ring * nphi;
-            let spectrum_start = ring * spectrum_len;
-            self.fft.forward(
-                &map[input_start..input_start + nphi],
-                &mut spectra[spectrum_start..spectrum_start + spectrum_len],
+        #[cfg(feature = "parallel")]
+        let parallel_fft = self.analysis_fft_parallelism_supported()
+            && workspace
+                .execution_capacity
+                .min(rayon::current_num_threads())
+                > 1;
+        #[cfg(not(feature = "parallel"))]
+        let parallel_fft = false;
+        if parallel_fft {
+            self.forward_analysis_rows(
+                map,
+                &mut workspace.spectra,
                 &mut workspace.fft,
+                #[cfg(feature = "parallel")]
+                &mut workspace.fft_worker_workspaces,
+                #[cfg(feature = "parallel")]
+                workspace.execution_capacity,
             )?;
+        } else {
+            for ring in 0..ntheta {
+                let input_start = ring * nphi;
+                let spectrum_start = ring * spectrum_len;
+                self.fft.forward(
+                    &map[input_start..input_start + nphi],
+                    &mut workspace.spectra[spectrum_start..spectrum_start + spectrum_len],
+                    &mut workspace.fft,
+                )?;
+            }
         }
         #[cfg(all(test, feature = "parallel"))]
         {

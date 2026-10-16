@@ -41,6 +41,8 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
     pub(crate) ring_group_size: usize,
     pub(crate) execution_capacity: usize,
     pub(crate) fft: RealFftWorkspace<T>,
+    #[cfg(feature = "parallel")]
+    pub(crate) fft_worker_workspaces: Vec<RealFftWorkspace<T>>,
     #[cfg(all(test, feature = "parallel"))]
     analysis_phase_probe: Option<AnalysisPhaseProbe>,
 }
@@ -468,6 +470,26 @@ impl<T: ShtScalar> ShtWorkspace<T> {
         Ok(())
     }
 
+    #[cfg(feature = "parallel")]
+    pub(crate) fn ensure_fft_worker_count(
+        &mut self,
+        worker_count: usize,
+        fft: &RealFftPlan<T>,
+    ) -> Result<(), ShtError> {
+        if worker_count <= self.fft_worker_workspaces.len() {
+            return Ok(());
+        }
+        self.fft_worker_workspaces
+            .try_reserve_exact(worker_count - self.fft_worker_workspaces.len())
+            .map_err(|_| ShtError::AllocationFailed {
+                array: "FFT worker scratch slots",
+            })?;
+        while self.fft_worker_workspaces.len() < worker_count {
+            self.fft_worker_workspaces.push(fft.workspace()?);
+        }
+        Ok(())
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
         spectrum_count: usize,
@@ -549,6 +571,8 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             ring_group_size,
             execution_capacity,
             fft: fft.workspace()?,
+            #[cfg(feature = "parallel")]
+            fft_worker_workspaces: Vec::new(),
             #[cfg(all(test, feature = "parallel"))]
             analysis_phase_probe: None,
         })

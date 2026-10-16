@@ -489,6 +489,44 @@ fn scalar_active_ring_schedule_matches_one_and_eight_threads() {
 
 #[cfg(feature = "parallel")]
 #[test]
+fn analysis_fft_workspace_respects_shape_threshold_and_pool_migration() {
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let four_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(4)
+        .build()
+        .unwrap();
+
+    let small_plan = make_plan(63, 63, 64, 129, 0.37);
+    let small_workspace = four_threads.install(|| small_plan.workspace()).unwrap();
+    assert!(small_workspace.fft_worker_workspaces.is_empty());
+
+    let plan = make_plan(127, 127, 128, 257, 0.37);
+    let mut adapted_workspace = one_thread.install(|| plan.workspace()).unwrap();
+    assert!(adapted_workspace.fft_worker_workspaces.is_empty());
+    one_thread
+        .install(|| plan.prepare_workspace(&mut adapted_workspace, 4))
+        .unwrap();
+    assert_eq!(adapted_workspace.execution_capacity(), 4);
+    assert_eq!(adapted_workspace.fft_worker_workspaces.len(), 4);
+
+    let input = arbitrary_map(&plan);
+    let mut reference_workspace = one_thread.install(|| plan.workspace()).unwrap();
+    let mut reference = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut adapted = reference.clone();
+    one_thread
+        .install(|| plan.analysis_into(&input, &mut reference, &mut reference_workspace))
+        .unwrap();
+    four_threads
+        .install(|| plan.analysis_into(&input, &mut adapted, &mut adapted_workspace))
+        .unwrap();
+    assert!(relative_l2_complex(&adapted, &reference) <= 3e-10);
+}
+
+#[cfg(feature = "parallel")]
+#[test]
 fn analysis_capacity_splits_match_q1_across_pool_sizes() {
     let lmax = 511;
     let mmax = 15;
