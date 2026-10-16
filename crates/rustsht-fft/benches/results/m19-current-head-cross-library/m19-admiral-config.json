@@ -1,0 +1,28 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT cd5748b"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "--sht"
+    ],
+    "label": "Admiral ce67bc00"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "a97674f383732a07ee860887f5407c12659874ee70eb8d9ab0aa058d968dca17",
+    "candidate_source": "RustSHT-FFT cd5748b; production and benchmark source unchanged from 3c02794",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target; runtime AVX2 dispatch",
+    "purpose": "M19 current-head cross-library SHT-target comparison",
+    "reference": "Admiral ce67bc00",
+    "reference_binary_sha256": "da072d28a6b32eb06cba338068b0d1d36af9daa6d446f861ad57f7d64395a163",
+    "reference_build": "Admiral ce67bc00; g++ 15.2.0 Release; ADM_TARGET_ARCH=native; threads disabled; estimate planning",
+    "timing": "seven warmed samples per operation per process; six alternating process pairs",
+    "workload": "all exact complex and real SHT target lengths and row counts; one transform thread"
+  },
+  "pairs": 6
+}
