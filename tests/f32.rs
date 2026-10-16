@@ -108,6 +108,33 @@ fn assert_coefficients_close(actual: &[Complex32], expected: &[Complex32], toler
     }
 }
 
+fn dump_f32_values_if_requested(label: &str, values: &[f32]) {
+    let Some(directory) = std::env::var_os("RUSTSHT_F32_DUMP_DIR") else {
+        return;
+    };
+    let directory = std::path::PathBuf::from(directory);
+    std::fs::create_dir_all(&directory).unwrap();
+    let mut bytes = Vec::with_capacity(std::mem::size_of_val(values));
+    for value in values {
+        bytes.extend_from_slice(&value.to_le_bytes());
+    }
+    std::fs::write(directory.join(label), bytes).unwrap();
+}
+
+fn dump_complex32_values_if_requested(label: &str, values: &[Complex32]) {
+    let Some(directory) = std::env::var_os("RUSTSHT_F32_DUMP_DIR") else {
+        return;
+    };
+    let directory = std::path::PathBuf::from(directory);
+    std::fs::create_dir_all(&directory).unwrap();
+    let mut bytes = Vec::with_capacity(std::mem::size_of_val(values));
+    for value in values {
+        bytes.extend_from_slice(&value.re.to_le_bytes());
+        bytes.extend_from_slice(&value.im.to_le_bytes());
+    }
+    std::fs::write(directory.join(label), bytes).unwrap();
+}
+
 #[test]
 fn f32_scalar_synthesis_and_analysis_match_ducc_0410_on_all_grids() {
     // References are from ducc0 0.41.0, using complex64 coefficients and
@@ -859,6 +886,10 @@ fn f32_t1023_scalar_and_spin1_standard_match_ducc_0410() {
             .unwrap();
         }
         for (channel, values) in synthesized.iter().enumerate() {
+            dump_f32_values_if_requested(
+                &format!("spin{spin}-synthesis-channel{channel}.f32"),
+                values,
+            );
             let sample_values: Vec<_> = MAP_SAMPLES
                 .iter()
                 .map(|&(ring, longitude)| values[ring * NPHI + longitude])
@@ -904,6 +935,10 @@ fn f32_t1023_scalar_and_spin1_standard_match_ducc_0410() {
             .unwrap();
         }
         for (channel, values) in analyzed.iter().enumerate() {
+            dump_complex32_values_if_requested(
+                &format!("spin{spin}-analysis-channel{channel}.c32"),
+                values,
+            );
             let norm = values
                 .iter()
                 .map(|value| f64::from(value.re).powi(2) + f64::from(value.im).powi(2))
