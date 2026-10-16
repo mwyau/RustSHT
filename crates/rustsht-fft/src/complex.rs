@@ -419,8 +419,27 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
                 kernel,
                 T::avx2_ido31_radix11_kernel(),
             );
+        } else if avx2_available
+            && self.data.len == 1442
+            && let Some(kernel) = T::avx2_general_prime_radix103_ido1_kernel()
+        {
+            self.execute_with_simd_unchecked::<true>(
+                values,
+                workspace,
+                direction,
+                T::one(),
+                kernels,
+                Some(kernel),
+            );
         } else {
-            self.execute_with_simd_unchecked(values, workspace, direction, T::one(), kernels);
+            self.execute_with_simd_unchecked::<false>(
+                values,
+                workspace,
+                direction,
+                T::one(),
+                kernels,
+                None,
+            );
         }
     }
 
@@ -435,17 +454,25 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
         check_len("values", self.data.len, values.len())?;
         check_len("workspace", self.data.len, workspace.len)?;
 
-        self.execute_with_simd_unchecked(values, workspace, direction, inverse_output_scale, simd);
+        self.execute_with_simd_unchecked::<false>(
+            values,
+            workspace,
+            direction,
+            inverse_output_scale,
+            simd,
+            None,
+        );
         Ok(())
     }
 
-    fn execute_with_simd_unchecked(
+    fn execute_with_simd_unchecked<const ENABLE_RADIX103: bool>(
         &self,
         values: &mut [Complex<T>],
         workspace: &mut ComplexFftWorkspace<T>,
         direction: Direction,
         inverse_output_scale: T,
         simd: Option<SimdKernels<T>>,
+        radix103_kernel: Option<ComplexGeneralPrimeIdo1Kernel<T>>,
     ) {
         let defer_inverse_normalization =
             direction == Direction::Inverse && inverse_normalization_is_safe(values, self.data.len);
@@ -507,10 +534,22 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
             if stage == 0 {
                 execute_first_pass_in_place(values, &mut workspace.output, pass, &mut execution);
             } else if current_is_values {
-                execute_pass(values, &mut workspace.output, pass, &mut execution);
+                execute_pass::<ENABLE_RADIX103, T>(
+                    values,
+                    &mut workspace.output,
+                    pass,
+                    &mut execution,
+                    radix103_kernel,
+                );
                 current_is_values = false;
             } else {
-                execute_pass(&workspace.output, values, pass, &mut execution);
+                execute_pass::<ENABLE_RADIX103, T>(
+                    &workspace.output,
+                    values,
+                    pass,
+                    &mut execution,
+                    radix103_kernel,
+                );
                 current_is_values = true;
             }
         }
@@ -605,7 +644,13 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
                     &mut execution,
                     general_prime_ido1,
                 ) {
-                    execute_pass(values, &mut workspace.output, pass, &mut execution);
+                    execute_pass::<false, T>(
+                        values,
+                        &mut workspace.output,
+                        pass,
+                        &mut execution,
+                        None,
+                    );
                 }
                 current_is_values = false;
             } else {
@@ -622,7 +667,7 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
                     &mut execution,
                     general_prime_ido1,
                 ) {
-                    execute_pass(&workspace.output, values, pass, &mut execution);
+                    execute_pass::<false, T>(&workspace.output, values, pass, &mut execution, None);
                 }
                 current_is_values = true;
             }
@@ -769,6 +814,51 @@ fn execute_682_general_prime_ido1<T: Float + FromPrimitive>(
     crate::m0_record_route(format!(
         "c2c-avx2:general-prime-ido1 n=682 radix=31 l1={} vector_frequencies=14 scalar_tail=1",
         pass.l1
+    ));
+    true
+}
+
+fn execute_1442_general_prime_ido1<T: Float + FromPrimitive>(
+    input: &[Complex<T>],
+    output: &mut [Complex<T>],
+    pass: &ComplexPass<T>,
+    execution: &mut PassExecution<'_, T>,
+    kernel: Option<ComplexGeneralPrimeIdo1Kernel<T>>,
+) -> bool {
+    let Some(kernel) = kernel else {
+        return false;
+    };
+    let inverse = execution.direction == Direction::Inverse;
+    if execution.total_len != 1442
+        || execution.blue_plan.is_some()
+        || pass.radix != 103
+        || pass.l1 != 14
+        || pass.ido != 1
+        || execution.prime_phase_indices.len() < 51 * 103
+        || (inverse && !execution.defer_inverse_normalization)
+    {
+        return false;
+    }
+
+    let params = ComplexGeneralPrimeIdo1Params {
+        l1: pass.l1,
+        roots: execution.roots,
+        root_stride: execution.total_len / pass.radix,
+        phase_indices: execution.prime_phase_indices,
+        inverse,
+        scale: if inverse {
+            execution.inverse_output_scale
+        } else {
+            T::one()
+        },
+    };
+    // SAFETY: runtime dispatch checked AVX2, the 1442 plan validates the
+    // radix, layout, roots and phase table, the buffers are disjoint, and an
+    // inverse reaches this kernel only after the range-safety check.
+    unsafe { kernel(input, output, params) };
+    #[cfg(test)]
+    crate::m0_record_route(String::from(
+        "c2c-avx2:general-prime-ido1 n=1442 radix=103 l1=14 vector_frequencies=50 scalar_tail=1",
     ));
     true
 }
@@ -1203,12 +1293,21 @@ fn execute_first_pass_in_place_inner<const R: usize, T: Float + FromPrimitive>(
     }
 }
 
-fn execute_pass<T: Float + FromPrimitive>(
+fn execute_pass<const ENABLE_RADIX103: bool, T: Float + FromPrimitive>(
     input: &[Complex<T>],
     output: &mut [Complex<T>],
     pass: &ComplexPass<T>,
     execution: &mut PassExecution<'_, T>,
+    radix103_kernel: Option<ComplexGeneralPrimeIdo1Kernel<T>>,
 ) {
+    if ENABLE_RADIX103
+        && pass.radix == 103
+        && pass.l1 == 14
+        && pass.ido == 1
+        && execute_1442_general_prime_ido1(input, output, pass, execution, radix103_kernel)
+    {
+        return;
+    }
     if execution.blue_plan.is_some() {
         execute_pass_inner::<0, T>(input, output, pass, execution);
         return;
