@@ -1,0 +1,15 @@
+T1023 GL 1024x2048 spin=0 mode=STANDARD threads=8 runs=2 scope=plan operation=both backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.053,0.053
+numpy_alm_copy_ms=0.208,0.153
+numpy_map_copy_ms=1.153,0.998
+numpy_output_allocation_ms=0.001,0.001
+synthesis_error=max_abs=1.555e-13 rms=2.717e-15 rel_l2=1.148e-13
+synthesis_rust_plan_raw_samples_ms=74.612,78.008,75.832,92.633,78.465;78.217,77.113,76.998,75.019,75.086
+synthesis_rust_plan_run_medians_ms=78.008,76.998; median=77.503; spread=1.010
+synthesis_ducc_raw_samples_ms=9.207,8.878,8.794,8.821,8.753;8.919,8.928,8.799,9.206,9.309
+synthesis_ducc_run_medians_ms=8.821,8.928; median=8.874; spread=0.107
+analysis_error=max_abs=1.037e-14 rms=1.250e-16 rel_l2=4.893e-14
+analysis_rust_plan_raw_samples_ms=39.647,21.179,22.904,21.463,21.829;20.091,20.532,21.072,20.831,21.132
+analysis_rust_plan_run_medians_ms=21.829,20.831; median=21.330; spread=0.998
+analysis_ducc_raw_samples_ms=8.938,9.116,8.932,8.998,9.034;8.924,8.997,9.078,9.022,8.988
+analysis_ducc_run_medians_ms=8.998,8.997; median=8.997; spread=0.001

@@ -1,0 +1,15 @@
+T720 GL 721x1458 spin=0 mode=STANDARD threads=8 runs=2 scope=plan operation=both backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.040,0.039
+numpy_alm_copy_ms=0.113,0.101
+numpy_map_copy_ms=0.232,0.138
+numpy_output_allocation_ms=0.001,0.001
+synthesis_error=max_abs=7.805e-14 rms=1.327e-15 rel_l2=7.969e-14
+synthesis_rust_plan_raw_samples_ms=45.276,37.555,37.771,37.300,37.473;37.148,37.555,37.194,37.977,37.238
+synthesis_rust_plan_run_medians_ms=37.555,37.238; median=37.397; spread=0.316
+synthesis_ducc_raw_samples_ms=3.608,3.491,3.562,3.517,3.586;3.507,3.506,3.526,3.530,3.598
+synthesis_ducc_run_medians_ms=3.562,3.526; median=3.544; spread=0.036
+analysis_error=max_abs=6.953e-15 rms=1.327e-16 rel_l2=3.658e-14
+analysis_rust_plan_raw_samples_ms=17.102,17.548,15.516,7.639,7.343;7.730,8.234,7.514,7.609,7.677
+analysis_rust_plan_run_medians_ms=15.516,7.677; median=11.596; spread=7.839
+analysis_ducc_raw_samples_ms=3.758,3.705,3.727,3.647,3.570;5.548,3.803,3.634,3.629,3.616
+analysis_ducc_run_medians_ms=3.705,3.634; median=3.670; spread=0.072

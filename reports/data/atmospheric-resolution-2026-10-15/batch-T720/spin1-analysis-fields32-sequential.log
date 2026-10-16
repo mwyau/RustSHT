@@ -1,0 +1,10 @@
+spin=1 T720 GL 721x1458 mmax=720 f64 operation=analysis threads=8 fields=32 schedule=sequential workspace=one-pool-sized-workspace reps=5
+plan_construction_ms=0.085
+workspace_allocation_ms=7.831
+rss_before_workspaces_kib=2804 rss_after_workspaces_kib=21844 workspace_rss_delta_kib=19040 peak_rss_kib=21844
+rss_after_warm_kib=1068732 peak_rss_after_warm_kib=1068732
+first_batch_ms=607.102
+warm_batch_samples_ms=[639.665,716.354,746.608,819.877,822.285]
+warm_batch_median_ms=746.608
+warm_per_field_median_ms=23.332 fields_per_second=42.860
+output_checksum=2.60961828881055347e0

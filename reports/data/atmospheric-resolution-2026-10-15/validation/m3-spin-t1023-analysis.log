@@ -1,0 +1,14 @@
+    Finished `release` profile [optimized] target(s) in 0.01s
+     Running unittests src/lib.rs (target/release/deps/rustsht-159837ac1c3bd1f7)
+
+running 1 test
+test spin_transform::tests::m3_spin_t1023_exact_analysis_matches_ducc ... M3 spin 1 T1023 GaussLegendre: DUCC synthesis samples max abs=1.205e-14, RMS=4.048e-15; DUCC analysis coefficients max abs=8.803e-18, RMS=4.424e-18; synthesis-analysis coefficient max abs=1.166e-14, RMS=1.140e-17
+M3 spin 2 T1023 GaussLegendre: DUCC synthesis samples max abs=1.299e-14, RMS=7.321e-15; DUCC analysis coefficients max abs=8.664e-18, RMS=4.339e-18; synthesis-analysis coefficient max abs=1.177e-14, RMS=1.151e-17
+M3 spin 1 T1023 ClenshawCurtis: DUCC synthesis samples max abs=1.296e-14, RMS=4.224e-15; DUCC analysis coefficients max abs=8.824e-18, RMS=4.429e-18; synthesis-analysis coefficient max abs=1.221e-14, RMS=1.194e-17
+M3 spin 2 T1023 ClenshawCurtis: DUCC synthesis samples max abs=1.343e-14, RMS=7.587e-15; DUCC analysis coefficients max abs=8.491e-18, RMS=4.356e-18; synthesis-analysis coefficient max abs=3.197e-14, RMS=3.122e-17
+M3 spin 1 T1023 Fejer1: DUCC synthesis samples max abs=1.193e-14, RMS=3.912e-15; DUCC analysis coefficients max abs=8.538e-18, RMS=4.287e-18; synthesis-analysis coefficient max abs=7.328e-15, RMS=7.181e-18
+M3 spin 2 T1023 Fejer1: DUCC synthesis samples max abs=1.260e-14, RMS=7.239e-15; DUCC analysis coefficients max abs=8.223e-18, RMS=4.250e-18; synthesis-analysis coefficient max abs=2.665e-14, RMS=2.602e-17
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 198 filtered out; finished in 9.82s
+
