@@ -1,0 +1,35 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "2049",
+      "1",
+      "32",
+      "1024"
+    ],
+    "label": "M18 four-pair accumulation"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "2049",
+      "1",
+      "32",
+      "1024"
+    ],
+    "label": "M17 three-pair accumulation"
+  },
+  "metadata": {
+    "acceptance_gate": "At target row counts, no median slowdown above 5%; require gains with 95% paired intervals above parity on at least one representative target per direction, and no stable control slowdown above 5%.",
+    "baseline_binary_sha256": "9527a7b7d241fb5fc157851a81f3c2ff79dec101e5fb22f391b24ab45c824ffc",
+    "baseline_commit": "f3f03a39a5f12468ea26dddb82b4aa1219b998a3",
+    "candidate_binary_sha256": "a97674f383732a07ee860887f5407c12659874ee70eb8d9ab0aa058d968dca17",
+    "candidate_source": "M18 AVX2 radix31 accumulates four pairs then a three-pair tail",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target with runtime AVX2 dispatch",
+    "timing": "six alternating process pairs; seven warmed samples per cell",
+    "workload": "real N=2049; rows=[1, 32, 1024]; R2C and C2R"
+  },
+  "pairs": 6
+}
