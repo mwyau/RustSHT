@@ -1,0 +1,12 @@
+==3310863== Callgrind, a call-graph generating cache profiler
+==3310863== Copyright (C) 2002-2017, and GNU GPL'd, by Josef Weidendorfer et al.
+==3310863== Using Valgrind-3.26.0 and LibVEX; rerun with -h for copyright info
+==3310863== Command: target/release/deps/f32-a2c2d3b3817972ed f32_spin1_gl_t511_analysis_matches_ducc_0410 --exact
+==3310863== Parent PID: 3310847
+==3310863==
+==3310863== For interactive control, run 'callgrind_control -h'.
+==3310863==
+==3310863== Events    : Ir
+==3310863== Collected : 9446137137
+==3310863==
+==3310863== I   refs:      9,446,137,137

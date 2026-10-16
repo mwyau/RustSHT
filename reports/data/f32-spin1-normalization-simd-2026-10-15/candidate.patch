@@ -1,0 +1,204 @@
+diff --git a/src/legendre/spin_f32.rs b/src/legendre/spin_f32.rs
+index 9c20615..3f1fce4 100644
+--- a/src/legendre/spin_f32.rs
++++ b/src/legendre/spin_f32.rs
+@@ -524,2 +524,2 @@ where
+-            normalize_pair_lanes(current_plus, next_plus, exponent_plus)?;
+-            normalize_pair_lanes(current_minus, next_minus, exponent_minus)?;
++            normalize_pair_lanes(simd, current_plus, next_plus, exponent_plus)?;
++            normalize_pair_lanes(simd, current_minus, next_minus, exponent_minus)?;
+@@ -577 +577,55 @@ fn recurrence_step<S: Simd>(
+-fn normalize_pair_lanes(
++fn normalize_pair_lanes<S: Simd>(
++    simd: S,
++    previous: &mut [f32],
++    current: &mut [f32],
++    exponents: &mut [i64],
++) -> Result<(), ShtError> {
++    debug_assert!(previous.iter().all(|value| value.is_finite()));
++    debug_assert!(current.iter().all(|value| value.is_finite()));
++
++    if !S::IS_SCALAR && pairs_within_scale_range(simd, previous, current) {
++        return Ok(());
++    }
++
++    normalize_pair_lanes_scalar(previous, current, exponents)
++}
++
++fn pairs_within_scale_range<S: Simd>(simd: S, previous: &[f32], current: &[f32]) -> bool {
++    debug_assert_eq!(previous.len(), current.len());
++
++    let (previous_vectors, previous_tail) = S::as_simd_f32s(previous);
++    let (current_vectors, current_tail) = S::as_simd_f32s(current);
++    debug_assert_eq!(previous_vectors.len(), current_vectors.len());
++    debug_assert_eq!(previous_tail.len(), current_tail.len());
++
++    let zero = simd.splat_f32s(0.0);
++    let largest = simd.splat_f32s(f32::MAX);
++    for index in 0..previous_vectors.len() {
++        let maximum = simd.max_f32s(
++            simd.abs_f32s(previous_vectors[index]),
++            simd.abs_f32s(current_vectors[index]),
++        );
++        if simd.reduce_max_f32s(maximum) > BIG {
++            return false;
++        }
++
++        let nonzero = simd.greater_than_f32s(maximum, zero);
++        let positive = simd.select_f32s(nonzero, maximum, largest);
++        if simd.reduce_min_f32s(positive) < SMALL {
++            return false;
++        }
++    }
++
++    for lane in 0..previous_tail.len() {
++        let previous_bits = previous_tail[lane].to_bits() & 0x7fff_ffff;
++        let current_bits = current_tail[lane].to_bits() & 0x7fff_ffff;
++        let maximum_bits = previous_bits.max(current_bits);
++        if maximum_bits > BIG.to_bits() || (maximum_bits != 0 && maximum_bits < SMALL.to_bits()) {
++            return false;
++        }
++    }
++
++    true
++}
++
++fn normalize_pair_lanes_scalar(
+@@ -585 +638,0 @@ fn normalize_pair_lanes(
+-        debug_assert!(previous_bits < 0x7f80_0000 && current_bits < 0x7f80_0000);
+@@ -684,0 +738,27 @@ mod tests {
++    struct NormalizePairLanes<'a> {
++        previous: &'a mut [f32],
++        current: &'a mut [f32],
++        exponents: &'a mut [i64],
++    }
++
++    impl WithSimd for NormalizePairLanes<'_> {
++        type Output = Result<(), ShtError>;
++
++        fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
++            normalize_pair_lanes(simd, self.previous, self.current, self.exponents)
++        }
++    }
++
++    struct PairsWithinScaleRange<'a> {
++        previous: &'a [f32],
++        current: &'a [f32],
++    }
++
++    impl WithSimd for PairsWithinScaleRange<'_> {
++        type Output = bool;
++
++        fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
++            pairs_within_scale_range(simd, self.previous, self.current)
++        }
++    }
++
+@@ -776 +856 @@ mod tests {
+-        for count in [64, 61] {
++        for count in [64_usize, 61] {
+@@ -874,3 +953,0 @@ mod tests {
+-        let mut actual_previous = initial_previous;
+-        let mut actual_current = initial_current;
+-        let mut actual_exponents = [0; 8];
+@@ -880,7 +956,0 @@ mod tests {
+-
+-        normalize_pair_lanes(
+-            &mut actual_previous,
+-            &mut actual_current,
+-            &mut actual_exponents,
+-        )
+-        .unwrap();
+@@ -893,10 +963,22 @@ mod tests {
+-        for lane in 0..initial_previous.len() {
+-            assert_eq!(
+-                actual_previous[lane].to_bits(),
+-                expected_previous[lane].to_bits()
+-            );
+-            assert_eq!(
+-                actual_current[lane].to_bits(),
+-                expected_current[lane].to_bits()
+-            );
+-            assert_eq!(actual_exponents[lane], expected_exponents[lane]);
++        for arch in [Arch::Scalar, Arch::new()] {
++            let mut actual_previous = initial_previous;
++            let mut actual_current = initial_current;
++            let mut actual_exponents = [0; 8];
++            arch.dispatch(NormalizePairLanes {
++                previous: &mut actual_previous,
++                current: &mut actual_current,
++                exponents: &mut actual_exponents,
++            })
++            .unwrap();
++
++            for lane in 0..initial_previous.len() {
++                assert_eq!(
++                    actual_previous[lane].to_bits(),
++                    expected_previous[lane].to_bits()
++                );
++                assert_eq!(
++                    actual_current[lane].to_bits(),
++                    expected_current[lane].to_bits()
++                );
++                assert_eq!(actual_exponents[lane], expected_exponents[lane]);
++            }
+@@ -905,0 +988,59 @@ mod tests {
++    #[test]
++    fn f32_spin_pair_simd_range_check_accepts_normal_zero_and_tailed_blocks() {
++        for count in [64_usize, 61] {
++            let previous = (0..count)
++                .map(|lane| {
++                    if lane.is_multiple_of(5) {
++                        0.0
++                    } else {
++                        0.125 + lane as f32 * 0.001
++                    }
++                })
++                .collect::<Vec<_>>();
++            let current = (0..count)
++                .map(|lane| {
++                    if lane.is_multiple_of(7) {
++                        -0.0
++                    } else {
++                        -0.25 + lane as f32 * 0.002
++                    }
++                })
++                .collect::<Vec<_>>();
++            assert!(Arch::new().dispatch(PairsWithinScaleRange {
++                previous: &previous,
++                current: &current,
++            }));
++
++            let mut actual_previous = previous.clone();
++            let mut actual_current = current.clone();
++            let mut exponents = vec![0; count];
++            exponents[3] = -80;
++            Arch::new()
++                .dispatch(NormalizePairLanes {
++                    previous: &mut actual_previous,
++                    current: &mut actual_current,
++                    exponents: &mut exponents,
++                })
++                .unwrap();
++            assert_eq!(actual_previous, previous);
++            assert_eq!(actual_current, current);
++            assert_eq!(exponents[3], -80);
++        }
++
++        let mut previous = vec![0.25; 61];
++        let mut current = vec![0.5; 61];
++        previous[60] = f32::from_bits(1);
++        current[60] = f32::from_bits(2);
++        assert!(!Arch::new().dispatch(PairsWithinScaleRange {
++            previous: &previous,
++            current: &current,
++        }));
++
++        previous[60] = f32::from_bits(BIG.to_bits() + 1);
++        current[60] = 0.5;
++        assert!(!Arch::new().dispatch(PairsWithinScaleRange {
++            previous: &previous,
++            current: &current,
++        }));
++    }
++
