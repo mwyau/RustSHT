@@ -707,10 +707,11 @@ mod x86 {
                 }
                 output[outer] = dc;
 
-                for pair_index in (0..PAIR_COUNT - 2).step_by(3) {
+                for pair_index in (0..PAIR_COUNT - 3).step_by(4) {
                     let frequency = 1 + 2 * pair_index;
                     let second_frequency = frequency + 2;
                     let third_frequency = frequency + 4;
+                    let fourth_frequency = frequency + 6;
                     let initial =
                         _mm256_setr_pd(input_zero.re, input_zero.im, input_zero.re, input_zero.im);
                     let mut positive = initial;
@@ -719,6 +720,8 @@ mod x86 {
                     let mut second_negative = initial;
                     let mut third_positive = initial;
                     let mut third_negative = initial;
+                    let mut fourth_positive = initial;
+                    let mut fourth_negative = initial;
 
                     for branch_index in 0..HALF {
                         let pair_value = pair_inputs[branch_index];
@@ -765,6 +768,16 @@ mod x86 {
                             cosine_twiddles,
                             sine_twiddles
                         );
+                        radix31_accumulate_pair!(
+                            pair_index + 3,
+                            fourth_positive,
+                            fourth_negative,
+                            branch_index,
+                            pair,
+                            imaginary_difference,
+                            cosine_twiddles,
+                            sine_twiddles
+                        );
                     }
 
                     if inverse {
@@ -774,6 +787,8 @@ mod x86 {
                         second_negative = _mm256_mul_pd(second_negative, output_scale);
                         third_positive = _mm256_mul_pd(third_positive, output_scale);
                         third_negative = _mm256_mul_pd(third_negative, output_scale);
+                        fourth_positive = _mm256_mul_pd(fourth_positive, output_scale);
+                        fourth_negative = _mm256_mul_pd(fourth_negative, output_scale);
                     }
                     radix31_store_pair!(frequency, positive, negative, output_ptr, l1, outer);
                     radix31_store_pair!(
@@ -792,14 +807,28 @@ mod x86 {
                         l1,
                         outer
                     );
+                    radix31_store_pair!(
+                        fourth_frequency,
+                        fourth_positive,
+                        fourth_negative,
+                        output_ptr,
+                        l1,
+                        outer
+                    );
                 }
 
-                let pair_index = PAIR_COUNT - 1;
+                let pair_index = PAIR_COUNT - 3;
                 let frequency = 1 + 2 * pair_index;
+                let second_frequency = frequency + 2;
+                let third_frequency = frequency + 4;
                 let initial =
                     _mm256_setr_pd(input_zero.re, input_zero.im, input_zero.re, input_zero.im);
                 let mut positive = initial;
                 let mut negative = initial;
+                let mut second_positive = initial;
+                let mut second_negative = initial;
+                let mut third_positive = initial;
+                let mut third_negative = initial;
                 for branch_index in 0..HALF {
                     let pair_value = pair_inputs[branch_index];
                     let imaginary_difference_value = imaginary_differences[branch_index];
@@ -821,12 +850,52 @@ mod x86 {
                         cosine_twiddles,
                         sine_twiddles
                     );
+                    radix31_accumulate_pair!(
+                        pair_index + 1,
+                        second_positive,
+                        second_negative,
+                        branch_index,
+                        pair,
+                        imaginary_difference,
+                        cosine_twiddles,
+                        sine_twiddles
+                    );
+                    radix31_accumulate_pair!(
+                        pair_index + 2,
+                        third_positive,
+                        third_negative,
+                        branch_index,
+                        pair,
+                        imaginary_difference,
+                        cosine_twiddles,
+                        sine_twiddles
+                    );
                 }
                 if inverse {
                     positive = _mm256_mul_pd(positive, output_scale);
                     negative = _mm256_mul_pd(negative, output_scale);
+                    second_positive = _mm256_mul_pd(second_positive, output_scale);
+                    second_negative = _mm256_mul_pd(second_negative, output_scale);
+                    third_positive = _mm256_mul_pd(third_positive, output_scale);
+                    third_negative = _mm256_mul_pd(third_negative, output_scale);
                 }
                 radix31_store_pair!(frequency, positive, negative, output_ptr, l1, outer);
+                radix31_store_pair!(
+                    second_frequency,
+                    second_positive,
+                    second_negative,
+                    output_ptr,
+                    l1,
+                    outer
+                );
+                radix31_store_pair!(
+                    third_frequency,
+                    third_positive,
+                    third_negative,
+                    output_ptr,
+                    l1,
+                    outer
+                );
 
                 let mut positive = input_zero;
                 let mut negative = input_zero;

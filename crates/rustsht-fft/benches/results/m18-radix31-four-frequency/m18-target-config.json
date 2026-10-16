@@ -1,0 +1,38 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "baseline_commit": "f3f03a39a5f12468ea26dddb82b4aa1219b998a3",
+    "candidate_source": "M18 AVX2 radix31 accumulates four pairs then a three-pair tail",
+    "candidate_binary_sha256": "a97674f383732a07ee860887f5407c12659874ee70eb8d9ab0aa058d968dca17",
+    "baseline_binary_sha256": "9527a7b7d241fb5fc157851a81f3c2ff79dec101e5fb22f391b24ab45c824ffc",
+    "timing": "six alternating process pairs; seven warmed samples per cell",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target with runtime AVX2 dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "workload": "real N=2049; rows=[1, 32, 1024]; R2C and C2R",
+    "acceptance_gate": "At target row counts, no median slowdown above 5%; require gains with 95% paired intervals above parity on at least one representative target per direction, and no stable control slowdown above 5%."
+  },
+  "a": {
+    "label": "M18 four-pair accumulation",
+    "command": [
+      "/dev/shm/rustsht-fft-m18-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-real",
+      "2049",
+      "1",
+      "32",
+      "1024"
+    ]
+  },
+  "b": {
+    "label": "M17 three-pair accumulation",
+    "command": [
+      "/dev/shm/rustsht-fft-m17-baseline-rustfft",
+      "bench-native-real",
+      "2049",
+      "1",
+      "32",
+      "1024"
+    ]
+  }
+}
