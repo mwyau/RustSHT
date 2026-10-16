@@ -1,0 +1,32 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M24 radix-103 AVX2 candidate versus the preserved M21 executable across the full SHT target matrix",
+    "candidate_source_base": "RustSHT-FFT c48e653978079da8d126757a9362c27b4b64e2c7 plus the M24 source patch identified by SHA-256",
+    "candidate_patch_sha256": "99451991924431e1b45b016b597495fd64773b6354de591cfcd052d8f10bf69d",
+    "candidate_binary_sha256": "8b1218744f8a892527473a3fe795fa68b3ef83a8c62ef322412e810c6759497c",
+    "reference_source": "RustSHT-FFT M21 c48e653978079da8d126757a9362c27b4b64e2c7",
+    "reference_binary_sha256": "b88e1fa3b418ea1fdba8343dd53101cd2a09dc4b228ba066fa282bae52f89ec8",
+    "workload": "all 34 current exact C2C and real SHT target operation/length cells; single transform and scalar/spin row batches; one transform thread",
+    "timing": "six alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable target; runtime SIMD dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "host_condition": "A separate f32 SHT benchmark is active on CPUs 0-7; this capture remains pinned to CPU 30. Interpret paired process loads from the raw records."
+  },
+  "a": {
+    "label": "RustSHT-FFT M24 radix-103 AVX2 candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-m21-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M21 c48e653 baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-m21-prer103-baseline",
+      "bench-native-sht"
+    ]
+  }
+}

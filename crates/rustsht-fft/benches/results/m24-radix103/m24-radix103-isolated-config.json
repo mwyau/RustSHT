@@ -1,0 +1,33 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M24 isolated N=1442 radix-103 AVX2 path versus the preserved M21 binary across the full SHT target matrix",
+    "candidate_source_base": "RustSHT-FFT c48e653978079da8d126757a9362c27b4b64e2c7 plus the M24 source patch identified by SHA-256",
+    "candidate_patch_sha256": "3bdd875b1b5424915dee98d005ce6cb72688045424ddd4fe049ee23ac185da7c",
+    "candidate_binary_sha256": "93270eb9d66ed546e95cb8ead1e36bcbeb4d5296ea8145b25f0c2ca96ac4eec8",
+    "reference_source": "RustSHT-FFT M21 c48e653978079da8d126757a9362c27b4b64e2c7",
+    "reference_binary_sha256": "b88e1fa3b418ea1fdba8343dd53101cd2a09dc4b228ba066fa282bae52f89ec8",
+    "workload": "all 34 current exact C2C and real SHT target operation/length cells; single transform and scalar/spin row batches; one transform thread",
+    "timing": "six alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable target; runtime SIMD dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "host_condition": "A separate SHT benchmark workload started during the capture, before pair 2. The per-process one-minute load rose from 2.80 at pair 1 to 18.53 at pair 3 and remained above 11 through pair 6. Preserve this six-pair result as contaminated diagnostic evidence; do not use it as the acceptance matrix.",
+    "dispatch_note": "The M24 general-prime kernel pointer is supplied only for N=1442 using a const-specialized execution path; all other plans retain the original shared SIMD-kernel bundle and scalar/AVX2 dispatch."
+  },
+  "a": {
+    "label": "RustSHT-FFT M24 N=1442 isolated radix-103 AVX2 candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-m24-isolated-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M21 c48e653 baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-m21-prer103-baseline",
+      "bench-native-sht"
+    ]
+  }
+}

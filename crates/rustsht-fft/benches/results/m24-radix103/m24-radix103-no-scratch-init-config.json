@@ -1,0 +1,34 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M24 radix-103 AVX2 candidate with direct scratch initialization versus the preserved M21 source across the full SHT target matrix",
+    "candidate_source_base": "RustSHT-FFT M21 c48e653978079da8d126757a9362c27b4b64e2c7 plus the M24 source patch identified by SHA-256",
+    "candidate_patch_sha256": "1f9d4a3655867915c740bd41baf4a09760c5f62f70cc7eb1fae7b0480bcf1531",
+    "candidate_binary_sha256": "3e9b409212cfea38c207ab3aeb88f00a172771f29ef1a7a4513f933505b69f37",
+    "reference_source": "RustSHT-FFT M21 c48e653978079da8d126757a9362c27b4b64e2c7",
+    "reference_binary_sha256": "b88e1fa3b418ea1fdba8343dd53101cd2a09dc4b228ba066fa282bae52f89ec8",
+    "workload": "all 34 current exact C2C and real SHT target operation/length cells; single transforms and scalar/spin row batches; one transform thread",
+    "timing": "six alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable target; runtime SIMD dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "host_condition": "Diagnostic capture only. A separate SHT test process appeared early in the capture, reached about 20 CPU equivalents, overlapped subsequent pairs, and exited before the capture ended. Per-process one-minute load averages ranged from 0.40 to 10.94. Do not use these paired ratios as acceptance evidence.",
+    "capture_note": "The one-off runner used subprocess.run, which does not expose child PIDs; raw process records therefore contain pid=null.",
+    "dispatch_note": "The M24 kernel is enabled only for N=1442 through a const-specialized execution path; all other plans retain the M21 SIMD bundle and scalar/AVX2 dispatch. Scratch arrays are initialized per outer group without zero-fill or copy calls."
+  },
+  "a": {
+    "label": "RustSHT-FFT M24 N=1442 radix-103 AVX2 candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-m24-isolated-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M21 c48e653 baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-m21-prer103-baseline",
+      "bench-native-sht"
+    ]
+  }
+}
