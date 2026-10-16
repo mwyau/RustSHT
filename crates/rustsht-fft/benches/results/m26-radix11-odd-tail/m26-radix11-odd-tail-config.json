@@ -1,0 +1,30 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M26 radix-11 odd-ido-tail AVX2 candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M25 e6b0101 baseline"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "a8970590f0e93d874f1ad3a848f6beea2016ea90645bce9667f1a97c05a116c2",
+    "candidate_source_patch_sha256": "472a8bf1bc4ac082908e8c930c27073a0a40cc108655fd77faa0225197cd1f24",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "dispatch_note": "The f64 AVX2 radix-11 pass computes odd final inner values across adjacent outer-group pairs when l1 >= 2. A final odd outer group uses the scalar path. N=682's dedicated ido=31 kernel and inverse safety fallback remain unchanged; f32 and CPUs without AVX2 retain scalar processing.",
+    "purpose": "Full SHT FFT-target comparison of AVX2 vectorization for the final odd ido value in radix-11 passes against M25.",
+    "reference_binary_sha256": "ec3f0c4837c5b8212dc65377d90057fdd8bb740d6747b0ad8279fe88121479cd",
+    "reference_source": "RustSHT-FFT M25 source commit e6b0101",
+    "runner": "Load-average telemetry was retained only in local diagnostics.",
+    "screening_capture": "m26-radix11-odd-tail-focus-six-pairs.jsonl screens N=726 before this full-matrix comparison.",
+    "timing": "Six alternating process pairs; seven warmed samples per operation",
+    "workload": "All current exact C2C and real SHT target operation/length cells; one-transform and scalar/spin-1 row batches; one transform thread"
+  },
+  "pairs": 6
+}

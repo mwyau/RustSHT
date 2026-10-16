@@ -353,6 +353,14 @@ mod m0_diagnostics_tests {
                 "N={n} did not select its radix-eleven AVX2 pass: {:?}",
                 m0_route_snapshot()
             );
+            let tail_event = format!(
+                "c2c-avx2:radix11-odd-ido-tail n={n} l1={l1} ido=11 vector_l1={l1} scalar_l1_tail=0"
+            );
+            assert!(
+                m0_route_snapshot().iter().any(|route| route == &tail_event),
+                "N={n} did not vectorize its radix-eleven odd-ido tail: {:?}",
+                m0_route_snapshot()
+            );
             let final_l1 = l1 * 11;
             let terminal_event = format!(
                 "c2c-avx2:radix11-ido1 n={n} l1={final_l1} vector_l1={final_l1} scalar_l1_tail=0"

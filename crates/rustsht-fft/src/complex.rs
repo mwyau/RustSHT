@@ -691,7 +691,7 @@ fn execute_682_radix11_ido31<T: Float + FromPrimitive>(
     if pass.radix != 11 || pass.l1 != 2 || pass.ido != 31 {
         return false;
     }
-    execute_radix11_avx2(input, output, pass, execution, kernel)
+    execute_radix11_avx2(input, output, pass, execution, kernel, false)
 }
 
 fn execute_radix11_avx2<T: Float + FromPrimitive>(
@@ -700,6 +700,7 @@ fn execute_radix11_avx2<T: Float + FromPrimitive>(
     pass: &ComplexPass<T>,
     execution: &mut PassExecution<'_, T>,
     kernel: Option<ComplexPassKernel<T>>,
+    kernel_processes_odd_ido_tail: bool,
 ) -> bool {
     let Some(kernel) = kernel else {
         return false;
@@ -731,9 +732,16 @@ fn execute_radix11_avx2<T: Float + FromPrimitive>(
     // inverse inputs fall back to the scalar path above.
     unsafe { kernel(input, output, &simd_pass) };
 
+    let scalar_tail_outer_start =
+        if kernel_processes_odd_ido_tail && !pass.ido.is_multiple_of(2) && pass.l1 >= 2 {
+            pass.l1 - pass.l1 % 2
+        } else {
+            0
+        };
+
     let radix_root_stride = execution.total_len / pass.radix;
     let output_scale = execution.inverse_output_scale;
-    for outer in 0..pass.l1 {
+    for outer in scalar_tail_outer_start..pass.l1 {
         for inner in vector_ido..pass.ido {
             for (branch, slot) in execution
                 .radix_input
@@ -764,6 +772,17 @@ fn execute_radix11_avx2<T: Float + FromPrimitive>(
                 output[destination_index] = value;
             }
         }
+    }
+    #[cfg(test)]
+    if scalar_tail_outer_start > 0 {
+        crate::m0_record_route(format!(
+            "c2c-avx2:radix11-odd-ido-tail n={} l1={} ido={} vector_l1={} scalar_l1_tail={}",
+            execution.total_len,
+            pass.l1,
+            pass.ido,
+            scalar_tail_outer_start,
+            pass.l1 - scalar_tail_outer_start
+        ));
     }
     #[cfg(test)]
     crate::m0_record_route(format!(
@@ -1341,7 +1360,7 @@ fn execute_pass_radix11<T: Float + FromPrimitive>(
             return;
         }
     } else if let Some(kernels) = execution.simd
-        && execute_radix11_avx2(input, output, pass, execution, kernels.radix11_pass)
+        && execute_radix11_avx2(input, output, pass, execution, kernels.radix11_pass, true)
     {
         return;
     }

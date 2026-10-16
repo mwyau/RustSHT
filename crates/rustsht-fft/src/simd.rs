@@ -94,8 +94,10 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
         None
     }
 
-    /// Returns an f64 AVX2 pass dispatcher with radix-eleven support. The
-    /// caller must check runtime AVX2 support and validate pass dimensions.
+    /// Returns an f64 AVX2 pass dispatcher with radix-eleven support. For odd
+    /// `ido >= 3`, the dispatcher pairs final inner values across adjacent
+    /// outer groups when `l1 >= 2`; the caller handles a remaining odd group.
+    /// The caller must check runtime AVX2 support and validate pass dimensions.
     fn avx2_radix11_dispatch_kernel() -> Option<ComplexPassKernel<Self>> {
         None
     }
@@ -331,6 +333,8 @@ mod x86 {
 
         type V = __m256d;
 
+        mod radix11_odd_ido_tail;
+
         #[inline]
         #[target_feature(enable = "avx2")]
         unsafe fn load(values: *const Complex<f64>, index: usize) -> V {
@@ -542,9 +546,10 @@ mod x86 {
         ///
         /// The caller must have detected AVX2, provide disjoint input and
         /// output slices, and validate the dimensions and safety range for the
-        /// selected pass. Radix-eleven passes with `ido >= 2` process an even
-        /// inner prefix. Passes with `ido == 1` require `l1 >= 2` and process
-        /// an even outer prefix; the caller handles either scalar tail.
+        /// selected pass. Radix-eleven passes with odd `ido >= 3` process the
+        /// final inner value across adjacent outer groups; the caller handles
+        /// a remaining odd group. Passes with `ido == 1` require `l1 >= 2` and
+        /// process an even outer prefix.
         #[target_feature(enable = "avx2")]
         pub(super) unsafe fn pass_with_radix11(
             input: &[Complex<f64>],
@@ -556,6 +561,9 @@ mod x86 {
                     unsafe { pass_ido1_radix11(input, output, pass) };
                 } else {
                     unsafe { pass_radix11(input, output, pass) };
+                    if !pass.ido.is_multiple_of(2) && pass.l1 >= 2 {
+                        unsafe { radix11_odd_ido_tail::execute(input, output, pass) };
+                    }
                 }
             } else {
                 unsafe { self::pass(input, output, pass) };
@@ -2798,7 +2806,16 @@ mod tests {
         let radix = 11;
         let marker = Complex::new(-91.0, 37.0);
 
-        for (l1, ido) in [(1, 2), (2, 3), (2, 31), (6, 11), (12, 11), (24, 11)] {
+        for (l1, ido) in [
+            (1, 2),
+            (1, 3),
+            (2, 3),
+            (2, 31),
+            (3, 11),
+            (6, 11),
+            (12, 11),
+            (24, 11),
+        ] {
             let total_len = radix * l1 * ido;
             let twiddles: Vec<_> = (0..radix)
                 .flat_map(|branch| {
@@ -2809,6 +2826,11 @@ mod tests {
                 .map(|index| signal(index + l1 * 7 + ido * 13))
                 .collect();
             let vector_ido = ido - ido % 2;
+            let vector_tail_l1 = if !ido.is_multiple_of(2) && l1 >= 2 {
+                l1 - l1 % 2
+            } else {
+                0
+            };
 
             for inverse in [false, true] {
                 let scale = if inverse { 0.25 } else { 1.0 };
@@ -2861,8 +2883,27 @@ mod tests {
                             }
                         }
                         for inner in vector_ido..ido {
-                            let scalar_tail = inner + ido * (outer + l1 * frequency);
-                            assert_eq!(output[scalar_tail], marker);
+                            let tail_index = inner + ido * (outer + l1 * frequency);
+                            if outer >= vector_tail_l1 {
+                                assert_eq!(output[tail_index], marker);
+                                continue;
+                            }
+                            let mut expected = Complex::new(0.0, 0.0);
+                            for sample in 0..radix {
+                                expected += original[inner + ido * (sample + radix * outer)]
+                                    * root(sample * frequency % radix, radix, inverse);
+                            }
+                            if frequency != 0 {
+                                expected *= root(frequency * l1 * inner, total_len, inverse);
+                            }
+                            expected *= scale;
+                            assert_close(
+                                output[tail_index],
+                                expected,
+                                &format!(
+                                    "radix={radix}, l1={l1}, ido={ido}, inverse={inverse}, outer={outer}, frequency={frequency}, inner={inner}"
+                                ),
+                            );
                         }
                     }
                 }

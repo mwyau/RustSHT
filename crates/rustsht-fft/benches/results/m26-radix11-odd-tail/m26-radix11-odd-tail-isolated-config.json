@@ -1,0 +1,33 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M26 isolated radix-11 odd-ido-tail AVX2 candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M25 e6b0101 baseline"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "76f2404f5c454e32985520030bd12626c8f1979f96f12a2633515b0a3e9ca71b",
+    "candidate_source_patch_sha256": "a33e4fbf0c830b93540c324ec2f27e85c4a8b6e7ad901d4fe7c4d4c3100ca087",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "dispatch_note": "The f64 AVX2 radix-11 dispatcher computes odd final inner values across adjacent outer-group pairs when l1 >= 2. The final odd outer group uses the scalar path. N=682's dedicated ido=31 kernel and inverse safety fallback remain unchanged; f32 and CPUs without AVX2 retain scalar processing.",
+    "final_tested_source_patch": "m26-radix11-odd-tail-tested-source.patch",
+    "final_tested_source_patch_sha256": "89c8352d07daafe09108173cb6d621578707c42f76b1a00a3314d60c28b84796",
+    "layout_note": "The tail helper is in src/simd/x86/f64_kernel/radix11_odd_ido_tail.rs and is out of line; SimdKernels remains unchanged.",
+    "previous_captures": "The initial in-module variant is recorded in m26-radix11-odd-tail-six-pairs.jsonl; the dispatch-refined variant is recorded in m26-radix11-odd-tail-refined-six-pairs.jsonl. Both remain diagnostic. This capture uses the separately isolated helper source patch.",
+    "purpose": "Full SHT FFT-target comparison of the isolated AVX2 radix-11 odd-ido-tail helper against M25.",
+    "reference_binary_sha256": "ec3f0c4837c5b8212dc65377d90057fdd8bb740d6747b0ad8279fe88121479cd",
+    "reference_source": "RustSHT-FFT M25 source commit e6b0101",
+    "runner": "Load-average telemetry was retained only in local diagnostics.",
+    "timing": "Six alternating process pairs; seven warmed samples per operation",
+    "workload": "All current exact C2C and real SHT target operation/length cells; one-transform and scalar/spin-1 row batches; one transform thread"
+  },
+  "pairs": 6
+}

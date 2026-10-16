@@ -1,0 +1,305 @@
+diff --git a/crates/rustsht-fft/src/complex.rs b/crates/rustsht-fft/src/complex.rs
+index 320bab4..f6c6d6f 100644
+--- a/crates/rustsht-fft/src/complex.rs
++++ b/crates/rustsht-fft/src/complex.rs
+@@ -691,7 +691,7 @@ fn execute_682_radix11_ido31<T: Float + FromPrimitive>(
+     if pass.radix != 11 || pass.l1 != 2 || pass.ido != 31 {
+         return false;
+     }
+-    execute_radix11_avx2(input, output, pass, execution, kernel)
++    execute_radix11_avx2(input, output, pass, execution, kernel, false)
+ }
+ 
+ fn execute_radix11_avx2<T: Float + FromPrimitive>(
+@@ -700,6 +700,7 @@ fn execute_radix11_avx2<T: Float + FromPrimitive>(
+     pass: &ComplexPass<T>,
+     execution: &mut PassExecution<'_, T>,
++    kernel_processes_odd_ido_tail: bool,
+ ) -> bool {
+     let Some(kernel) = kernel else {
+         return false;
+@@ -731,9 +732,16 @@ fn execute_radix11_avx2<T: Float + FromPrimitive>(
+     // inverse inputs fall back to the scalar path above.
+     unsafe { kernel(input, output, &simd_pass) };
+ 
++    let scalar_tail_outer_start =
++        if kernel_processes_odd_ido_tail && !pass.ido.is_multiple_of(2) && pass.l1 >= 2 {
++            pass.l1 - pass.l1 % 2
++        } else {
++            0
++        };
++
+     let radix_root_stride = execution.total_len / pass.radix;
+     let output_scale = execution.inverse_output_scale;
+-    for outer in 0..pass.l1 {
++    for outer in scalar_tail_outer_start..pass.l1 {
+         for inner in vector_ido..pass.ido {
+             for (branch, slot) in execution
+                 .radix_input
+@@ -766,6 +774,17 @@ fn execute_radix11_avx2<T: Float + FromPrimitive>(
+         }
+     }
+     #[cfg(test)]
++    if scalar_tail_outer_start > 0 {
++        crate::m0_record_route(format!(
++            "c2c-avx2:radix11-odd-ido-tail n={} l1={} ido={} vector_l1={} scalar_l1_tail={}",
++            execution.total_len,
++            pass.l1,
++            pass.ido,
++            scalar_tail_outer_start,
++            pass.l1 - scalar_tail_outer_start
++        ));
++    }
++    #[cfg(test)]
+     crate::m0_record_route(format!(
+         "c2c-avx2:radix11-pass n={} l1={} ido={} vector_ido={} scalar_tail={}",
+         execution.total_len,
+@@ -1341,7 +1360,7 @@ fn execute_pass_radix11<T: Float + FromPrimitive>(
+             return;
+         }
+     } else if let Some(kernels) = execution.simd
+-        && execute_radix11_avx2(input, output, pass, execution, kernels.radix11_pass)
++        && execute_radix11_avx2(input, output, pass, execution, kernels.radix11_pass, true)
+     {
+         return;
+     }
+diff --git a/crates/rustsht-fft/src/lib.rs b/crates/rustsht-fft/src/lib.rs
+index a9d966e..d26cacd 100644
+--- a/crates/rustsht-fft/src/lib.rs
++++ b/crates/rustsht-fft/src/lib.rs
+@@ -353,6 +353,14 @@ mod m0_diagnostics_tests {
+                 "N={n} did not select its radix-eleven AVX2 pass: {:?}",
+                 m0_route_snapshot()
+             );
++            let tail_event = format!(
++                "c2c-avx2:radix11-odd-ido-tail n={n} l1={l1} ido=11 vector_l1={l1} scalar_l1_tail=0"
++            );
++            assert!(
++                m0_route_snapshot().iter().any(|route| route == &tail_event),
++                "N={n} did not vectorize its radix-eleven odd-ido tail: {:?}",
++                m0_route_snapshot()
++            );
+             let final_l1 = l1 * 11;
+             let terminal_event = format!(
+                 "c2c-avx2:radix11-ido1 n={n} l1={final_l1} vector_l1={final_l1} scalar_l1_tail=0"
+diff --git a/crates/rustsht-fft/src/simd.rs b/crates/rustsht-fft/src/simd.rs
+index 3c98b6d..94b07c8 100644
+--- a/crates/rustsht-fft/src/simd.rs
++++ b/crates/rustsht-fft/src/simd.rs
+@@ -94,8 +94,10 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
+         None
+     }
+ 
+-    /// Returns an f64 AVX2 pass dispatcher with radix-eleven support. The
+-    /// caller must check runtime AVX2 support and validate pass dimensions.
++    /// Returns an f64 AVX2 pass dispatcher with radix-eleven support. For odd
++    /// `ido >= 3`, the dispatcher pairs final inner values across adjacent
++    /// outer groups when `l1 >= 2`; the caller handles a remaining odd group.
++    /// The caller must check runtime AVX2 support and validate pass dimensions.
+     fn avx2_radix11_dispatch_kernel() -> Option<ComplexPassKernel<Self>> {
+         None
+     }
+@@ -331,6 +333,8 @@ mod x86 {
+ 
+         type V = __m256d;
+ 
++        mod radix11_odd_ido_tail;
++
+         #[inline]
+         #[target_feature(enable = "avx2")]
+         unsafe fn load(values: *const Complex<f64>, index: usize) -> V {
+@@ -542,9 +546,10 @@ mod x86 {
+         ///
+         /// The caller must have detected AVX2, provide disjoint input and
+         /// output slices, and validate the dimensions and safety range for the
+-        /// selected pass. Radix-eleven passes with `ido >= 2` process an even
+-        /// inner prefix. Passes with `ido == 1` require `l1 >= 2` and process
+-        /// an even outer prefix; the caller handles either scalar tail.
++        /// selected pass. Radix-eleven passes with odd `ido >= 3` process the
++        /// final inner value across adjacent outer groups; the caller handles
++        /// a remaining odd group. Passes with `ido == 1` require `l1 >= 2` and
++        /// process an even outer prefix.
+         #[target_feature(enable = "avx2")]
+         pub(super) unsafe fn pass_with_radix11(
+             input: &[Complex<f64>],
+@@ -556,6 +561,9 @@ mod x86 {
+                     unsafe { pass_ido1_radix11(input, output, pass) };
+                 } else {
+                     unsafe { pass_radix11(input, output, pass) };
++                    if !pass.ido.is_multiple_of(2) && pass.l1 >= 2 {
++                        unsafe { radix11_odd_ido_tail::execute(input, output, pass) };
++                    }
+                 }
+             } else {
+                 unsafe { self::pass(input, output, pass) };
+@@ -2798,7 +2806,16 @@ mod tests {
+         let radix = 11;
+         let marker = Complex::new(-91.0, 37.0);
+ 
+-        for (l1, ido) in [(1, 2), (2, 3), (2, 31), (6, 11), (12, 11), (24, 11)] {
++        for (l1, ido) in [
++            (1, 2),
++            (1, 3),
++            (2, 3),
++            (2, 31),
++            (3, 11),
++            (6, 11),
++            (12, 11),
++            (24, 11),
++        ] {
+             let total_len = radix * l1 * ido;
+             let twiddles: Vec<_> = (0..radix)
+                 .flat_map(|branch| {
+@@ -2809,6 +2826,11 @@ mod tests {
+                 .map(|index| signal(index + l1 * 7 + ido * 13))
+                 .collect();
+             let vector_ido = ido - ido % 2;
++            let vector_tail_l1 = if !ido.is_multiple_of(2) && l1 >= 2 {
++                l1 - l1 % 2
++            } else {
++                0
++            };
+ 
+             for inverse in [false, true] {
+                 let scale = if inverse { 0.25 } else { 1.0 };
+@@ -2861,8 +2883,27 @@ mod tests {
+                             }
+                         }
+                         for inner in vector_ido..ido {
+-                            let scalar_tail = inner + ido * (outer + l1 * frequency);
+-                            assert_eq!(output[scalar_tail], marker);
++                            let tail_index = inner + ido * (outer + l1 * frequency);
++                            if outer >= vector_tail_l1 {
++                                assert_eq!(output[tail_index], marker);
++                                continue;
++                            }
++                            let mut expected = Complex::new(0.0, 0.0);
++                            for sample in 0..radix {
++                                expected += original[inner + ido * (sample + radix * outer)]
++                                    * root(sample * frequency % radix, radix, inverse);
++                            }
++                            if frequency != 0 {
++                                expected *= root(frequency * l1 * inner, total_len, inverse);
++                            }
++                            expected *= scale;
++                            assert_close(
++                                output[tail_index],
++                                expected,
++                                &format!(
++                                    "radix={radix}, l1={l1}, ido={ido}, inverse={inverse}, outer={outer}, frequency={frequency}, inner={inner}"
++                                ),
++                            );
+                         }
+                     }
+                 }
+diff --git a/crates/rustsht-fft/src/simd/x86/f64_kernel/radix11_odd_ido_tail.rs b/crates/rustsht-fft/src/simd/x86/f64_kernel/radix11_odd_ido_tail.rs
+new file mode 100644
+index 0000000..259061c
+--- /dev/null
++++ b/crates/rustsht-fft/src/simd/x86/f64_kernel/radix11_odd_ido_tail.rs
+@@ -0,0 +1,92 @@
++// SPDX-FileCopyrightText: 2026 Albert M. W. Yau
++// SPDX-FileCopyrightText: 2010-2026 Max-Planck-Society (DUCC FFT pass equations)
++// SPDX-License-Identifier: BSD-3-Clause
++//
++// This AVX2 tail kernel uses the radix-eleven equations in DUCC
++// fft1d_impl.h at c1ed01b8fda69d2a378190f0915f1a19762dddbf.
++
++use std::arch::x86_64::*;
++
++use num_complex::Complex;
++
++use crate::simd::SimdPass;
++
++const RADIX: usize = 11;
++
++/// Executes the odd final `ido` value for pairs of outer groups.
++///
++/// # Safety
++///
++/// The caller must have detected AVX2 and provide disjoint radix-11 buffers
++/// with odd `ido >= 3`, `l1 >= 2`, and lengths of at least `11 * l1 * ido`
++/// complex values. The twiddle slice must contain at least `11 * ido`
++/// complex values. This function writes the final inner value for the largest
++/// even prefix of outer groups.
++#[target_feature(enable = "avx2")]
++#[inline(never)]
++pub(super) unsafe fn execute(
++    input: &[Complex<f64>],
++    output: &mut [Complex<f64>],
++    pass: &SimdPass<'_, f64>,
++) {
++    debug_assert_eq!(pass.radix, RADIX);
++    debug_assert!(pass.ido >= 3 && !pass.ido.is_multiple_of(2));
++    debug_assert!(pass.l1 >= 2);
++    debug_assert!(input.len() >= RADIX * pass.l1 * pass.ido);
++    debug_assert!(output.len() >= RADIX * pass.l1 * pass.ido);
++    debug_assert!(pass.twiddles.len() >= RADIX * pass.ido);
++
++    let input_ptr = input.as_ptr();
++    let output_ptr = output.as_mut_ptr();
++    let inner = pass.ido - 1;
++    let vector_l1 = pass.l1 - pass.l1 % 2;
++    let scale = _mm256_set1_pd(if pass.inverse {
++        pass.inverse_scale
++    } else {
++        1.0
++    });
++
++    for outer in (0..vector_l1).step_by(2) {
++        let mut values = [_mm256_setzero_pd(); RADIX];
++        for (branch, slot) in values.iter_mut().enumerate() {
++            let first_index = inner + pass.ido * (branch + RADIX * outer);
++            let second_index = first_index + pass.ido * RADIX;
++            // SAFETY: both indices are the final inner value for two adjacent
++            // outer groups within the validated input slice.
++            let first = unsafe { *input_ptr.add(first_index) };
++            // SAFETY: the paired outer index is within the even prefix.
++            let second = unsafe { *input_ptr.add(second_index) };
++            *slot = _mm256_setr_pd(first.re, first.im, second.re, second.im);
++        }
++
++        // SAFETY: AVX2 was checked by the caller, and each vector lane holds
++        // one independent radix-eleven input group.
++        let transformed = unsafe { super::radix11_fixed(&values, pass.inverse) };
++        for (branch, &result) in transformed.iter().enumerate() {
++            let mut value = result;
++            if branch != 0 {
++                let twiddle = pass.twiddles[branch * pass.ido + inner];
++                let twiddle = _mm256_setr_pd(twiddle.re, twiddle.im, twiddle.re, twiddle.im);
++                // SAFETY: the AVX2 caller guarantees the target feature.
++                value = unsafe { super::complex_mul(value, twiddle, pass.inverse) };
++            }
++            if pass.inverse {
++                value = _mm256_mul_pd(value, scale);
++            }
++            let first_index = inner + pass.ido * (outer + pass.l1 * branch);
++            // SAFETY: the two halves are the final inner value for adjacent
++            // outer groups; validated dimensions keep both destinations in
++            // the output slice.
++            unsafe {
++                _mm_storeu_pd(
++                    output_ptr.add(first_index).cast::<f64>(),
++                    _mm256_castpd256_pd128(value),
++                );
++                _mm_storeu_pd(
++                    output_ptr.add(first_index + pass.ido).cast::<f64>(),
++                    _mm256_extractf128_pd(value, 1),
++                );
++            }
++        }
++    }
++}
+diff --git a/crates/rustsht-fft/tests/complex.rs b/crates/rustsht-fft/tests/complex.rs
+index f3e6ac4..f3d1c24 100644
+--- a/crates/rustsht-fft/tests/complex.rs
++++ b/crates/rustsht-fft/tests/complex.rs
+@@ -292,7 +292,7 @@ fn f64_large_smooth_multipass_matches_independent_dfts() {
+ #[test]
+ fn f64_sht_meridional_complex_lengths_match_independent_dfts() {
+     for n in [
+-        146, 150, 240, 256, 300, 484, 512, 722, 726, 1024, 1372, 1442, 1452, 2904,
++        146, 150, 240, 256, 300, 363, 484, 512, 722, 726, 1024, 1372, 1442, 1452, 2904,
+     ] {
+         let input = random_signal_f64(n, 0x1b73_5a94_c6d8_e20f ^ n as u64);
+         let expected_forward = direct_dft_f64(&input, true);

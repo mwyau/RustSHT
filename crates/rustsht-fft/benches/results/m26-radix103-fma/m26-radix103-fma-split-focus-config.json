@@ -1,0 +1,31 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-c2c",
+      "1442",
+      "721"
+    ],
+    "label": "RustSHT-FFT M26 split-accumulator FMA candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-c2c",
+      "1442",
+      "721"
+    ],
+    "label": "RustSHT-FFT M25 e6b0101 baseline"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "c7fd30f3949a56ab96d2d1d560ee159211da332bd730e9880d07adee67a08708",
+    "candidate_source_patch_sha256": "282e614865d78c253b4f87f02cb0863eac9bce62552c63e29b28920ba4965e2c",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 and FMA dispatch",
+    "purpose": "Target-only screen of split cosine/sine FMA accumulators for the N=1442 radix-103 pass against M25 before a full-matrix capture.",
+    "reference_binary_sha256": "ec3f0c4837c5b8212dc65377d90057fdd8bb740d6747b0ad8279fe88121479cd",
+    "runner": "Load-average telemetry was retained only in local diagnostics.",
+    "timing": "Six alternating process pairs; seven warmed samples per operation; one transform thread",
+    "workload": "C2C forward and inverse at N=1442 with 721 rows"
+  },
+  "pairs": 6
+}
