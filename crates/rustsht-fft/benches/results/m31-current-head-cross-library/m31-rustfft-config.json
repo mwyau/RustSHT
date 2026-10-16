@@ -1,0 +1,30 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "Current M30-head RustFFT comparison for all 34 exact C2C and real SHT target operation/length/row cells",
+    "candidate_source": "RustSHT-FFT commit cc6a626aede65c7bfdc9ebb0ab91cca5972fab94",
+    "candidate_binary_sha256": "1170d4ff79fe99557cc9e3c04c586bf6d76dd2a108ad4793f23038419112c00d",
+    "reference": "RustFFT 6.4.1 in the same benchmark executable",
+    "timing": "Six alternating process pairs; seven warmed samples per operation; one transform thread",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "frequency_context": "amd-pstate-epp driver; performance governor and energy preference; boost enabled; max 5.086 GHz",
+    "load_context": "Load average at capture start: 0.81 / 0.84 / 1.09"
+  },
+  "a": {
+    "label": "RustSHT-FFT M30 current head",
+    "command": [
+      "/dev/shm/rustsht-fft-current-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "RustFFT 6.4.1",
+    "command": [
+      "/dev/shm/rustsht-fft-current-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-sht-targets"
+    ]
+  }
+}
