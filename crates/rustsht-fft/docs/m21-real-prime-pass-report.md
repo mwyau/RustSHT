@@ -53,15 +53,17 @@ bootstrap intervals over the six paired process ratios.
 
 N=1,443 improved by 21.8–22.7% in both directions. N=4,097 improved by
 12.8% for R2C and 15.3% for C2R. N=723 remained at parity. N=2,049 R2C
-improved by 1.7%; C2R was 2.8% slower. The latter remains inside the 5%
-median regression limit used in the M7 Rader acceptance test and is reported
+improved by 1.7%; C2R was 2.9% slower. The paired M21/M20 elapsed-time ratio
+was 1.029 (95% interval 1.018–1.035). The median remains inside the 5%
+regression limit used in the M7 Rader acceptance test; the result is reported
 as a control regression.
 
-A separate six-pair N=2,049 run measured R2C at 1.1% faster and C2R at 3.8%
-slower. The C2R M20/M21 speedup interval was 0.947–0.980, which corresponds
-to a 2.0–5.6% slowdown. The interval includes slowdowns above 5%; the target
-matrix and the isolated follow-up therefore agree on the direction of this
-control result, while the follow-up leaves its upper bound uncertain.
+A separate six-pair N=2,049 run measured R2C at 1.1% faster and C2R at 4.0%
+slower. The paired M21/M20 elapsed-time ratio for C2R was 1.040 (95% interval
+1.021–1.056), corresponding to a 2.1–5.6% slowdown. The interval includes
+slowdowns above 5%; the target matrix and the isolated follow-up therefore
+agree on the direction of this control result, while the follow-up leaves its
+upper bound uncertain.
 
 N=2,049 workspace size was 159,856 bytes in both builds. All 34 target
 operation/length workspace counts matched. Plan and workspace construction
