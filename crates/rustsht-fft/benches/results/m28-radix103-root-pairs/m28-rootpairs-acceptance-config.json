@@ -1,0 +1,30 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M28 radix-103 root-pair candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M26 5d92648 baseline"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "10ff1e563216f90b8ea42767ce2dca0d4423c92eb9f19fc2badc33d8f0188593",
+    "candidate_source_base": "RustSHT-FFT M26 commit 5d9264871972756a6cd7323e99e5a938b7e3040a plus the M28 source change",
+    "candidate_source_patch_sha256": "3448916d40950667cb424e8c009d5df7fbfc73c52b4ba59d0e38fb854cff4c14",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "dispatch_note": "The f64 N=1442 radix-103 AVX2 pass precomputes its 25 adjacent-frequency root pairs once per call; unsafe inverse input, f32, and non-AVX2 dispatch remain unchanged.",
+    "purpose": "Full 34-cell SHT FFT-target comparison of N=1442 radix-103 per-transform root-pair precomputation against M26",
+    "reference_binary_sha256": "76f2404f5c454e32985520030bd12626c8f1979f96f12a2633515b0a3e9ca71b",
+    "reference_source": "RustSHT-FFT M26 commit 5d9264871972756a6cd7323e99e5a938b7e3040a",
+    "runner": "Load-average telemetry was retained only in local diagnostics.",
+    "timing": "Six alternating process pairs; seven warmed samples per operation",
+    "workload": "All 34 current C2C and real SHT-target operation/length cells; one-transform and scalar/spin-1 row batches; one transform thread"
+  },
+  "pairs": 6
+}
