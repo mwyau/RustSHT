@@ -69,7 +69,7 @@ The q1 changes at T720–T1279 were consistent across the two fresh-process pair
 
 ## Phase, scheduling, and memory results
 
-The analysis phase timer includes row-FFT scheduling, latitude preparation, order-spectrum preparation, coefficient initialization and cleanup, order-work setup, and Legendre recurrence with coefficient accumulation. The final phase combines recurrence and accumulation, so this run does not separate those two costs. Percentages below are medians from the q8 profile. The diagnostic grids are `721×1443` (T720), `1024×2049` (T1023), `1280×2561` (T1279), and `2048×4099` (T2047); these differ from the native matrix grids shown above. All q1 samples and raw phase records are in [`profiles/phase-profile.log`](data/atmospheric-resolution-2026-10-15/profiles/phase-profile.log).
+The analysis phase timer includes row-FFT scheduling, latitude preparation, order-spectrum preparation, coefficient initialization and cleanup, order-work setup, and Legendre recurrence with coefficient accumulation. The final phase combines recurrence and accumulation, so this run does not separate those two costs. Percentages below are medians from the q8 profile. The diagnostic grids are `721×1443` (T720), `1024×2049` (T1023), `1280×2561` (T1279), and `2048×4097` (T2047); these differ from the native matrix grids shown above. All q1 samples and raw phase records are in [`profiles/phase-profile.log`](data/atmospheric-resolution-2026-10-15/profiles/phase-profile.log).
 
 | Truncation | Diagnostic grid | Spin | Row-FFT stage | Recurrence + accumulation | Whole analysis |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -79,10 +79,10 @@ The analysis phase timer includes row-FFT scheduling, latitude preparation, orde
 | T1023 | 1024×2049 | 1 | 24% | 74% | 41.1 ms |
 | T1279 | 1280×2561 | 0 | 12% | 77% | 42.9 ms |
 | T1279 | 1280×2561 | 1 | 13% | 85% | 74.0 ms |
-| T2047 | 2048×4099 | 0 | 7% | 82% | 234 ms |
-| T2047 | 2048×4099 | 1 | 9% | 90% | 390 ms |
+| T2047 | 2048×4097 | 0 | 7% | 82% | 234 ms |
+| T2047 | 2048×4097 | 1 | 9% | 90% | 390 ms |
 
-The row-FFT stage already parallelizes latitude groups across q>1 workspaces. A previous alternating comparison measured q6 whole-analysis reductions of 36.1% for scalar T1023 and 43.9% for spin 1 when row FFTs were parallelized; q1 differences were within measurement spread. See [`row-fft-parallelism-2026-10-15.md`](row-fft-parallelism-2026-10-15.md). Current q8 analysis profiles place the largest share in recurrence and accumulation, especially at T1279 and T2047. The forward-FFT percentage falls as truncation grows. The synthesis profile uses the same FFT-friendly longitude counts as the native matrix. Its test-only timers record latitude and spectrum setup, Legendre work with coefficient conversion and spectral accumulation, and inverse FFT plus output copy. The setup phase remains below 1.1% of q8 wall time. The q8 phase shares below are medians from five samples; q1 timings and each sample are in [`synthesis-phase-profile.log`](data/atmospheric-resolution-2026-10-15/profiles/synthesis-phase-profile.log). Absolute times are specific to the test diagnostic and are not the native benchmark medians.
+The row-FFT stage already parallelizes latitude groups across q>1 workspaces. A previous alternating comparison measured q6 whole-analysis reductions of 36.1% for scalar T1023 and 43.9% for spin 1 when row FFTs were parallelized; q1 differences were within measurement spread. See [`row-fft-parallelism-2026-10-15.md`](row-fft-parallelism-2026-10-15.md). Current q8 analysis profiles place the largest share in recurrence and accumulation, especially at T1279 and T2047. The forward-FFT percentage falls as truncation grows. The synthesis profile uses the same FFT-friendly longitude counts as the native matrix. Its test-only timers record latitude and spectrum setup, Legendre work with coefficient conversion and spectral accumulation, and inverse FFT plus output copy. The setup phase remains below 2.1% of q8 wall time. The q8 phase shares below are medians from five samples; q1 timings and each sample are in [`synthesis-phase-profile.log`](data/atmospheric-resolution-2026-10-15/profiles/synthesis-phase-profile.log). Absolute times are specific to the test diagnostic and are not the native benchmark medians.
 
 | Truncation | Grid | Spin | Legendre + accumulation | Inverse FFT + writeback | Whole synthesis |
 | --- | ---: | ---: | ---: | ---: | ---: |
