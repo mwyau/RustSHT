@@ -602,7 +602,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         #[cfg(all(test, feature = "parallel"))]
         let mut phase_started = std::time::Instant::now();
         #[cfg(all(test, feature = "parallel"))]
-        let phase_probe = workspace.analysis_phase_probe();
+        let phase_probe = workspace.transform_phase_probe();
         if recurrence_spin == 1
             && !derivative_norm
             && ring_weights.is_some()
@@ -625,7 +625,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         }
         #[cfg(all(test, feature = "parallel"))]
         {
-            crate::workspace::record_analysis_phase(
+            crate::workspace::record_transform_phase(
                 &phase_probe,
                 "strategy selection and table setup",
                 phase_started,
@@ -682,7 +682,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         }
         #[cfg(all(test, feature = "parallel"))]
         {
-            crate::workspace::record_analysis_phase(&phase_probe, "forward FFT", phase_started);
+            crate::workspace::record_transform_phase(&phase_probe, "forward FFT", phase_started);
             phase_started = std::time::Instant::now();
         }
 
@@ -692,7 +692,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         }
         #[cfg(all(test, feature = "parallel"))]
         {
-            crate::workspace::record_analysis_phase(
+            crate::workspace::record_transform_phase(
                 &phase_probe,
                 "coefficient initialization",
                 phase_started,
@@ -766,7 +766,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         };
         #[cfg(all(test, feature = "parallel"))]
         {
-            crate::workspace::record_analysis_phase(
+            crate::workspace::record_transform_phase(
                 &phase_probe,
                 "resampling and latitude setup",
                 phase_started,
@@ -803,7 +803,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 };
                 #[cfg(all(test, feature = "parallel"))]
                 {
-                    crate::workspace::record_analysis_phase(
+                    crate::workspace::record_transform_phase(
                         &phase_probe,
                         "order work prefix",
                         prefix_started,
@@ -834,7 +834,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 )?;
                 #[cfg(all(test, feature = "parallel"))]
                 {
-                    crate::workspace::record_analysis_phase(
+                    crate::workspace::record_transform_phase(
                         &phase_probe,
                         "Legendre recurrence and accumulation",
                         phase_started,
@@ -844,7 +844,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             } else {
                 #[cfg(all(test, feature = "parallel"))]
                 {
-                    crate::workspace::record_analysis_phase(
+                    crate::workspace::record_transform_phase(
                         &phase_probe,
                         "order work prefix",
                         phase_started,
@@ -874,7 +874,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 )?;
                 #[cfg(all(test, feature = "parallel"))]
                 {
-                    crate::workspace::record_analysis_phase(
+                    crate::workspace::record_transform_phase(
                         &phase_probe,
                         "Legendre recurrence and accumulation",
                         phase_started,
@@ -917,7 +917,11 @@ impl<T: ShtScalar> ShtPlan<T> {
             }
         }
         #[cfg(all(test, feature = "parallel"))]
-        crate::workspace::record_analysis_phase(&phase_probe, "coefficient cleanup", phase_started);
+        crate::workspace::record_transform_phase(
+            &phase_probe,
+            "coefficient cleanup",
+            phase_started,
+        );
         Ok(())
     }
 
@@ -1012,6 +1016,11 @@ impl<T: ShtScalar> ShtPlan<T> {
             );
         }
 
+        #[cfg(all(test, feature = "parallel"))]
+        let phase_probe = workspace.transform_phase_probe();
+        #[cfg(all(test, feature = "parallel"))]
+        let mut phase_started = std::time::Instant::now();
+
         let ntheta = self.grid.ntheta();
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
@@ -1061,6 +1070,15 @@ impl<T: ShtScalar> ShtPlan<T> {
         workspace
             .spin_spectra
             .fill(Complex::<T>::new(T::zero(), T::zero()));
+        #[cfg(all(test, feature = "parallel"))]
+        {
+            crate::workspace::record_transform_phase(
+                &phase_probe,
+                "latitude and spin-spectrum setup",
+                phase_started,
+            );
+            phase_started = std::time::Instant::now();
+        }
         let arch = pulp::Arch::new();
 
         #[cfg(feature = "parallel")]
@@ -1184,6 +1202,16 @@ impl<T: ShtScalar> ShtPlan<T> {
             &mut workspace.recurrence_workers[0],
         )?;
 
+        #[cfg(all(test, feature = "parallel"))]
+        {
+            crate::workspace::record_transform_phase(
+                &phase_probe,
+                "spin coefficient preparation, Legendre recurrence, and spectral accumulation",
+                phase_started,
+            );
+            phase_started = std::time::Instant::now();
+        }
+
         for ring in 0..ntheta {
             let spectrum_start = ring * spectrum_len;
             let spectrum_end = spectrum_start + spectrum_len;
@@ -1201,6 +1229,12 @@ impl<T: ShtScalar> ShtPlan<T> {
             )?;
             second_component[output_start..output_start + nphi].copy_from_slice(&workspace.row);
         }
+        #[cfg(all(test, feature = "parallel"))]
+        crate::workspace::record_transform_phase(
+            &phase_probe,
+            "two inverse longitude FFTs and map writeback",
+            phase_started,
+        );
         Ok(())
     }
 

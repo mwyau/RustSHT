@@ -6,7 +6,7 @@ RustSHT completed a rectangular Gauss–Legendre benchmark matrix from T42 throu
 
 Matched Python plan-method and DUCC 0.41.0 comparisons agree to relative L2 errors between `3.7e-14` and `3.6e-13` for T720, T1023, T1279, and T2047. DUCC ran faster in every measured case. The largest persistent gap appeared in scalar synthesis at q8, where the Python plan method was 7.4–17.3 times the DUCC time. Those figures describe Python call timings; the native reused-workspace matrix is reported separately.
 
-High-resolution analysis profiles identify Legendre recurrence and coefficient accumulation as the largest measured phase. At q8, this phase accounted for 68–90% of analysis time from T720 through T2047. The forward-FFT stage already schedules latitude rows across the worker pool; it accounted for 7–24% at q8. The order-work estimate balanced T1279 and T2047 leaves within 1%, while measured slowest-to-fastest leaf times differed by 1.6–2.5×.
+High-resolution analysis profiles identify Legendre recurrence and coefficient accumulation as the largest measured phase. At q8, this phase accounted for 68–90% of analysis time from T720 through T2047. The forward-FFT stage already schedules latitude rows across the worker pool; it accounted for 7–24% at q8. Matrix-matched synthesis profiles show that Legendre recurrence and coefficient accumulation also dominate synthesis, accounting for 84–97% at q8; inverse FFTs accounted for 3–15%. The order-work estimate balanced T1279 and T2047 analysis leaves within 1%, while measured slowest-to-fastest leaf times differed by 1.6–2.5×.
 
 The T720 field-reuse baseline reached most of its field-level throughput with eight independent transforms. Thirty-two one-thread workspaces used about 520 MiB before field arrays and increased peak process RSS to 1.5–2.0 GiB, with little additional synthesis throughput over eight fields. No dense-matrix or butterfly candidate was implemented. Dense Legendre storage estimates exceed RustSHT's current table cap by more than an order of magnitude at T720 and reach 16 GiB at T2047; the butterfly crossover remains unmeasured.
 
@@ -87,20 +87,35 @@ At T720, FFT-friendly `nphi=1458` was faster than minimum-even `nphi=1442` in bo
 
 ## Phase, scheduling, and memory results
 
-The analysis phase timer includes row-FFT scheduling, latitude preparation, order-spectrum preparation, coefficient initialization and cleanup, order-work setup, and Legendre recurrence with coefficient accumulation. The final phase combines recurrence and accumulation, so this run does not separate those two costs. Percentages below are medians from the q8 profile; all q1 and raw samples are in [`profiles/phase-profile.log`](data/atmospheric-resolution-2026-10-15/profiles/phase-profile.log).
+The analysis phase timer includes row-FFT scheduling, latitude preparation, order-spectrum preparation, coefficient initialization and cleanup, order-work setup, and Legendre recurrence with coefficient accumulation. The final phase combines recurrence and accumulation, so this run does not separate those two costs. Percentages below are medians from the q8 profile. The diagnostic grids are `721×1443` (T720), `1024×2049` (T1023), `1280×2561` (T1279), and `2048×4099` (T2047); these differ from the native matrix grids shown above. All q1 samples and raw phase records are in [`profiles/phase-profile.log`](data/atmospheric-resolution-2026-10-15/profiles/phase-profile.log).
 
-| Truncation | Spin | Row-FFT stage | Recurrence + accumulation | Whole analysis |
-| --- | ---: | ---: | ---: | ---: |
-| T720 | 0 | 20% | 70% | 8.62 ms |
-| T720 | 1 | 20% | 78% | 15.1 ms |
-| T1023 | 0 | 23% | 68% | 23.7 ms |
-| T1023 | 1 | 24% | 74% | 41.1 ms |
-| T1279 | 0 | 12% | 77% | 42.9 ms |
-| T1279 | 1 | 13% | 85% | 74.0 ms |
-| T2047 | 0 | 7% | 82% | 234 ms |
-| T2047 | 1 | 9% | 90% | 390 ms |
+| Truncation | Diagnostic grid | Spin | Row-FFT stage | Recurrence + accumulation | Whole analysis |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| T720 | 721×1443 | 0 | 20% | 70% | 8.62 ms |
+| T720 | 721×1443 | 1 | 20% | 78% | 15.1 ms |
+| T1023 | 1024×2049 | 0 | 23% | 68% | 23.7 ms |
+| T1023 | 1024×2049 | 1 | 24% | 74% | 41.1 ms |
+| T1279 | 1280×2561 | 0 | 12% | 77% | 42.9 ms |
+| T1279 | 1280×2561 | 1 | 13% | 85% | 74.0 ms |
+| T2047 | 2048×4099 | 0 | 7% | 82% | 234 ms |
+| T2047 | 2048×4099 | 1 | 9% | 90% | 390 ms |
 
 The row-FFT stage already parallelizes latitude groups across q>1 workspaces. A previous alternating comparison measured q6 whole-analysis reductions of 36.1% for scalar T1023 and 43.9% for spin 1 when row FFTs were parallelized; q1 differences were within measurement spread. See [`row-fft-parallelism-2026-10-15.md`](row-fft-parallelism-2026-10-15.md). Current q8 analysis profiles place the largest share in recurrence and accumulation, especially at T1279 and T2047. The forward-FFT percentage falls as truncation grows.
+
+The synthesis profile uses the same FFT-friendly longitude counts as the native matrix. Its test-only timers record latitude and spectrum setup, Legendre work with coefficient conversion and spectral accumulation, and inverse FFT plus output copy. The setup phase remains below 1.1% of q8 wall time. The q8 phase shares below are medians from five samples; q1 timings and each sample are in [`synthesis-phase-profile.log`](data/atmospheric-resolution-2026-10-15/profiles/synthesis-phase-profile.log). Absolute times are specific to the test diagnostic and are not the native benchmark medians.
+
+| Truncation | Grid | Spin | Legendre + accumulation | Inverse FFT + writeback | Whole synthesis |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| T720 | 721×1458 | 0 | 92.6% | 6.7% | 33.7 ms |
+| T720 | 721×1458 | 1 | 83.6% | 14.5% | 40.3 ms |
+| T1023 | 1024×2048 | 0 | 91.5% | 7.4% | 67.7 ms |
+| T1023 | 1024×2048 | 1 | 85.1% | 12.8% | 73.9 ms |
+| T1279 | 1280×2560 | 0 | 96.6% | 2.9% | 275 ms |
+| T1279 | 1280×2560 | 1 | 93.4% | 5.6% | 286 ms |
+| T2047 | 2048×4096 | 0 | 96.8% | 2.7% | 752 ms |
+| T2047 | 2048×4096 | 1 | 94.7% | 4.2% | 989 ms |
+
+The matrix-matched profile does not identify a dominant inverse-FFT bottleneck. Spin-1 inverse FFTs reach 14.5% at T720 and 12.8% at T1023; they account for 5.6% at T1279 and 4.2% at T2047. The scalar inverse FFT phase is at most 7.4%. A separate odd-longitude diagnostic showed higher FFT shares because odd counts use the full-complex fallback; its raw log is preserved in [`synthesis-phase-profile-odd-longitudes.log`](data/atmospheric-resolution-2026-10-15/profiles/synthesis-phase-profile-odd-longitudes.log) and is excluded from the matrix-matched conclusions.
 
 The leaf profile recorded worker assignment, start and finish offsets, recurrence block counts, estimated work, and whole-call time. At q8, T1279 and T2047 leaf work estimates differ by at most 1.0%, but elapsed leaf times differ by 1.6–2.5×. Leaf capacity fractions were 0.59–0.72. The estimate omits order-dependent costs; the profile does not establish that creating more leaves would help. A previous overpartition candidate regressed T511 by 3.19% and T720 by 11.55%.
 
@@ -141,7 +156,7 @@ The T720 f64 batch study reused one immutable plan. A single field used one q8 w
 | Spin-1 synthesis | 24.8 / 69.3 / 70.2 | 130 / 519 MiB | 2.01 GiB |
 | Spin-1 analysis | 53.0 / 78.0 / 85.6 | 130 / 519 MiB | 1.51 GiB |
 
-Field-level parallelism reduced q8 per-field synthesis latency by about 2.7–2.8× at eight fields. Thirty-two fields added little synthesis throughput. Analysis gained 1.5–1.6× at eight fields; moving from eight to 32 fields added up to 10% throughput in this screen. The additional 8-workspace allocation took 48–54 ms; 32-workspace allocation took 190–199 ms. A simple warm-batch calculation indicates that workspace setup is repaid within one eight-field batch for scalar and spin-1 synthesis and spin-1 analysis, and in about 1.4 batches for scalar analysis. This is caller-level concurrency using the current recurrence, not dense matrix-matrix Legendre multiplication. The raw process logs and checksums are in [`batch-T720`](data/atmospheric-resolution-2026-10-15/batch-T720/).
+With eight independent one-thread transforms, aggregate synthesis throughput rose 2.7–2.8× over one q8 transform. Thirty-two fields added little synthesis throughput. Analysis throughput rose 1.5–1.7× at eight fields; moving from eight to 32 fields added up to 10% in this screen. The additional 8-workspace allocation took 48–54 ms; 32-workspace allocation took 190–199 ms. A simple warm-batch calculation indicates that workspace setup is repaid within one eight-field batch for scalar and spin-1 synthesis and spin-1 analysis, and in about 1.4 batches for scalar analysis. These measurements report aggregate batch throughput; they do not measure individual per-field completion latency. This is caller-level concurrency using the current recurrence, not dense matrix-matrix Legendre multiplication. The raw process logs and checksums are in [`batch-T720`](data/atmospheric-resolution-2026-10-15/batch-T720/).
 
 ## ecTrans algorithms and licensing
 
@@ -149,15 +164,15 @@ The read-only ecTrans study used upstream revision [`7de2ee295a0df06299a9cc78595
 
 ecTrans stores per-order Legendre matrices with symmetric and antisymmetric latitude components. It packs fields as matrix columns so one basis block serves multiple vertical levels. Its fast path applies butterfly factors selected from an interpolative-decomposition residual criterion; setup still generates dense matrices before compression. The studied source uses a `1e-7` factorization precision. That setting is not evidence that a RustSHT implementation would meet f64 or f32 transform tolerances.
 
-The dense north-hemisphere table payload estimate for an uncapped f64 RustSHT-style layout is about 0.70 GiB at T720, 2.00 GiB at T1023, 3.91 GiB at T1279, and 16.0 GiB at T2047. These are formula estimates, not ecTrans measurements. RustSHT's compact-table cap is 34 MiB and its current degree limit is T255. Batched dense multiplication therefore falls outside the current memory policy at all primary targets.
+The dense north-hemisphere table payload estimate for an uncapped f64 RustSHT-style layout is about 0.70 GiB at T720, 2.00 GiB at T1023, 3.91 GiB at T1279, and 16.0 GiB at T2047. These are formula estimates, not ecTrans measurements. RustSHT's compact-table cap is 34 MiB and its current degree limit is T255. A dense high-bandlimit matrix candidate was not built because its storage exceeds that cap at every primary target; preprocessing time and matrix-method amortization therefore remain unmeasured. Batched dense multiplication falls outside the current memory policy.
 
 Butterfly compression could reduce repeated Legendre work when a plan serves many fields or timesteps. Its crossover, accuracy, preprocessing time, and storage for RustSHT's scalar and spin-weighted kernels have not been measured. The published methods include Wedi, Hamrud, and Mozdzynski's [fast SHT for global NWP and climate models (2013)](https://journals.ametsoc.org/doi/10.1175/MWR-D-13-00016.1), [O’Neil, Woolfe, and Rokhlin (2010)](https://www.sciencedirect.com/science/article/pii/S1063520309000888), [Cheng et al. (2005)](https://epubs.siam.org/doi/10.1137/030602678), [Li and Yang (2017)](https://epubs.siam.org/doi/abs/10.1137/16M1074941), and [Bremer, Chen, and Yang (2021)](https://epubs.siam.org/doi/abs/10.1137/20M1333845). The 2021 IDBF paper reports `O(N² log³N)` complexity including precomputation; that is a published algorithmic result, not a RustSHT benchmark.
 
 ## Recommendation
 
-Keep the current row-parallel FFT and recurrence paths. The high-bandlimit analysis profile places most q8 time in Legendre recurrence and coefficient accumulation, while the row FFT stage is already parallel and becomes a smaller fraction at T1279 and T2047. The T720 field-reuse baseline favors eight one-thread workspaces when memory allows; 32 fields do not improve synthesis throughput enough to offset their larger memory use.
+Keep the current RustFFT backend and focus further optimization on Legendre recurrence and coefficient accumulation. Both analysis and matrix-matched synthesis profiles show that Legendre work dominates at the primary high-bandlimit targets; the synthesis inverse FFT stage is at most 15% on the tested even grids. The analysis row FFT already scales across latitude groups. The T720 field-reuse baseline favors eight one-thread workspaces when memory allows; 32 fields do not improve synthesis throughput enough to offset their larger memory use.
 
-Do not promote dense Legendre matrices under the current memory cap. Do not add a butterfly execution path based only on asymptotic complexity or ecTrans's compression setting. A future private prototype should first state an error target, derive its factors independently from the published mathematics, measure setup and storage, and compare complete transforms on single-field and multi-field workloads. High-resolution synthesis phase timing remains useful before choosing the next kernel experiment.
+Do not promote dense Legendre matrices under the current memory cap. Do not add a butterfly execution path based only on asymptotic complexity or ecTrans's compression setting. A future private prototype should first state an error target, derive its factors independently from the published mathematics, measure setup and storage, and compare complete transforms on single-field and multi-field workloads. Any recurrence change should use alternating whole-transform process pairs and report the same numerical checks, even-grid lengths, and field reuse patterns measured here.
 
 ## Validation
 
@@ -165,7 +180,7 @@ The following checks passed on this branch:
 
 - `cargo fmt --all -- --check`
 - `cargo clippy --workspace --all-targets --all-features -- -D warnings`
-- `cargo test --workspace --all-features`: 187 Rust tests and 11 f32 integration tests passed; 12 tests were ignored.
+- `cargo test --workspace --all-features`: 187 Rust tests and 11 f32 integration tests passed; 13 tests were ignored, including the new synthesis phase diagnostic.
 - Release high-bandlimit scalar GL/CC/F1 comparison and analytic test through T2047.
 - Release spin-1 exact analysis at T1023, T2047 low-order analysis and adjoint, and sparse synthesis at T2047 across GL/CC/F1.
 - Release f32 integration suite: 11 passed.

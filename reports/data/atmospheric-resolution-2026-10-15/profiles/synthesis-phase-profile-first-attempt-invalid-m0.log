@@ -1,0 +1,179 @@
+   Compiling rustsht v0.1.0-dev.0 (/home/albert/RustSHT-sht-performance)
+    Finished `release` profile [optimized] target(s) in 11.12s
+     Running unittests src/lib.rs (target/release/deps/rustsht-159837ac1c3bd1f7)
+
+running 1 test
+test transform::tests::m5_synthesis_phase_profile ... SYNTHESIS_PHASE_PROFILE spin=0 T720 grid=721x1443 q1 sample=1 wall_ms=96.237 phase_sum_ms=96.211 unmeasured_ms=0.026
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q1 sample=1 name="latitude setup and spectrum clear" elapsed_ms=0.170
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q1 sample=1 name="Legendre recurrence and spectral accumulation" elapsed_ms=85.517
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q1 sample=1 name="inverse longitude FFT and map writeback" elapsed_ms=10.524
+SYNTHESIS_PHASE_PROFILE spin=0 T720 grid=721x1443 q1 sample=2 wall_ms=96.696 phase_sum_ms=96.662 unmeasured_ms=0.034
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q1 sample=2 name="latitude setup and spectrum clear" elapsed_ms=0.145
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q1 sample=2 name="Legendre recurrence and spectral accumulation" elapsed_ms=85.841
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q1 sample=2 name="inverse longitude FFT and map writeback" elapsed_ms=10.676
+SYNTHESIS_PHASE_PROFILE spin=0 T720 grid=721x1443 q1 sample=3 wall_ms=96.362 phase_sum_ms=96.328 unmeasured_ms=0.033
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q1 sample=3 name="latitude setup and spectrum clear" elapsed_ms=0.191
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q1 sample=3 name="Legendre recurrence and spectral accumulation" elapsed_ms=85.621
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q1 sample=3 name="inverse longitude FFT and map writeback" elapsed_ms=10.517
+SYNTHESIS_PHASE_PROFILE spin=0 T720 grid=721x1443 q1 sample=4 wall_ms=96.617 phase_sum_ms=96.585 unmeasured_ms=0.033
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q1 sample=4 name="latitude setup and spectrum clear" elapsed_ms=0.163
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q1 sample=4 name="Legendre recurrence and spectral accumulation" elapsed_ms=86.043
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q1 sample=4 name="inverse longitude FFT and map writeback" elapsed_ms=10.378
+SYNTHESIS_PHASE_PROFILE spin=0 T720 grid=721x1443 q1 sample=5 wall_ms=96.157 phase_sum_ms=96.123 unmeasured_ms=0.034
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q1 sample=5 name="latitude setup and spectrum clear" elapsed_ms=0.153
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q1 sample=5 name="Legendre recurrence and spectral accumulation" elapsed_ms=85.562
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q1 sample=5 name="inverse longitude FFT and map writeback" elapsed_ms=10.408
+SYNTHESIS_PHASE_PROFILE spin=0 T720 grid=721x1443 q8 sample=1 wall_ms=42.536 phase_sum_ms=42.521 unmeasured_ms=0.015
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q8 sample=1 name="latitude setup and spectrum clear" elapsed_ms=0.143
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q8 sample=1 name="Legendre recurrence and spectral accumulation" elapsed_ms=31.195
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q8 sample=1 name="inverse longitude FFT and map writeback" elapsed_ms=11.182
+SYNTHESIS_PHASE_PROFILE spin=0 T720 grid=721x1443 q8 sample=2 wall_ms=45.091 phase_sum_ms=45.065 unmeasured_ms=0.026
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q8 sample=2 name="latitude setup and spectrum clear" elapsed_ms=0.156
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q8 sample=2 name="Legendre recurrence and spectral accumulation" elapsed_ms=33.377
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q8 sample=2 name="inverse longitude FFT and map writeback" elapsed_ms=11.533
+SYNTHESIS_PHASE_PROFILE spin=0 T720 grid=721x1443 q8 sample=3 wall_ms=42.778 phase_sum_ms=42.753 unmeasured_ms=0.025
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q8 sample=3 name="latitude setup and spectrum clear" elapsed_ms=0.243
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q8 sample=3 name="Legendre recurrence and spectral accumulation" elapsed_ms=31.137
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q8 sample=3 name="inverse longitude FFT and map writeback" elapsed_ms=11.373
+SYNTHESIS_PHASE_PROFILE spin=0 T720 grid=721x1443 q8 sample=4 wall_ms=43.013 phase_sum_ms=42.989 unmeasured_ms=0.024
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q8 sample=4 name="latitude setup and spectrum clear" elapsed_ms=0.165
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q8 sample=4 name="Legendre recurrence and spectral accumulation" elapsed_ms=31.563
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q8 sample=4 name="inverse longitude FFT and map writeback" elapsed_ms=11.261
+SYNTHESIS_PHASE_PROFILE spin=0 T720 grid=721x1443 q8 sample=5 wall_ms=42.551 phase_sum_ms=42.524 unmeasured_ms=0.027
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q8 sample=5 name="latitude setup and spectrum clear" elapsed_ms=0.157
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q8 sample=5 name="Legendre recurrence and spectral accumulation" elapsed_ms=31.100
+SYNTHESIS_PHASE spin=0 T720 grid=721x1443 q8 sample=5 name="inverse longitude FFT and map writeback" elapsed_ms=11.267
+SYNTHESIS_PHASE_PROFILE spin=0 T1023 grid=1024x2049 q1 sample=1 wall_ms=305.084 phase_sum_ms=305.053 unmeasured_ms=0.032
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q1 sample=1 name="latitude setup and spectrum clear" elapsed_ms=0.690
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q1 sample=1 name="Legendre recurrence and spectral accumulation" elapsed_ms=266.091
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q1 sample=1 name="inverse longitude FFT and map writeback" elapsed_ms=38.272
+SYNTHESIS_PHASE_PROFILE spin=0 T1023 grid=1024x2049 q1 sample=2 wall_ms=305.268 phase_sum_ms=305.226 unmeasured_ms=0.042
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q1 sample=2 name="latitude setup and spectrum clear" elapsed_ms=0.651
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q1 sample=2 name="Legendre recurrence and spectral accumulation" elapsed_ms=266.092
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q1 sample=2 name="inverse longitude FFT and map writeback" elapsed_ms=38.483
+SYNTHESIS_PHASE_PROFILE spin=0 T1023 grid=1024x2049 q1 sample=3 wall_ms=305.633 phase_sum_ms=305.600 unmeasured_ms=0.032
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q1 sample=3 name="latitude setup and spectrum clear" elapsed_ms=0.745
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q1 sample=3 name="Legendre recurrence and spectral accumulation" elapsed_ms=266.604
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q1 sample=3 name="inverse longitude FFT and map writeback" elapsed_ms=38.252
+SYNTHESIS_PHASE_PROFILE spin=0 T1023 grid=1024x2049 q1 sample=4 wall_ms=306.133 phase_sum_ms=306.099 unmeasured_ms=0.034
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q1 sample=4 name="latitude setup and spectrum clear" elapsed_ms=0.763
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q1 sample=4 name="Legendre recurrence and spectral accumulation" elapsed_ms=266.967
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q1 sample=4 name="inverse longitude FFT and map writeback" elapsed_ms=38.369
+SYNTHESIS_PHASE_PROFILE spin=0 T1023 grid=1024x2049 q1 sample=5 wall_ms=306.979 phase_sum_ms=306.928 unmeasured_ms=0.051
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q1 sample=5 name="latitude setup and spectrum clear" elapsed_ms=1.068
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q1 sample=5 name="Legendre recurrence and spectral accumulation" elapsed_ms=267.392
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q1 sample=5 name="inverse longitude FFT and map writeback" elapsed_ms=38.468
+SYNTHESIS_PHASE_PROFILE spin=0 T1023 grid=1024x2049 q8 sample=1 wall_ms=111.093 phase_sum_ms=111.072 unmeasured_ms=0.021
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q8 sample=1 name="latitude setup and spectrum clear" elapsed_ms=0.650
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q8 sample=1 name="Legendre recurrence and spectral accumulation" elapsed_ms=70.043
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q8 sample=1 name="inverse longitude FFT and map writeback" elapsed_ms=40.379
+SYNTHESIS_PHASE_PROFILE spin=0 T1023 grid=1024x2049 q8 sample=2 wall_ms=111.394 phase_sum_ms=111.364 unmeasured_ms=0.030
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q8 sample=2 name="latitude setup and spectrum clear" elapsed_ms=0.877
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q8 sample=2 name="Legendre recurrence and spectral accumulation" elapsed_ms=71.049
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q8 sample=2 name="inverse longitude FFT and map writeback" elapsed_ms=39.438
+SYNTHESIS_PHASE_PROFILE spin=0 T1023 grid=1024x2049 q8 sample=3 wall_ms=103.591 phase_sum_ms=103.565 unmeasured_ms=0.026
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q8 sample=3 name="latitude setup and spectrum clear" elapsed_ms=0.713
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q8 sample=3 name="Legendre recurrence and spectral accumulation" elapsed_ms=63.300
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q8 sample=3 name="inverse longitude FFT and map writeback" elapsed_ms=39.553
+SYNTHESIS_PHASE_PROFILE spin=0 T1023 grid=1024x2049 q8 sample=4 wall_ms=102.248 phase_sum_ms=102.219 unmeasured_ms=0.029
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q8 sample=4 name="latitude setup and spectrum clear" elapsed_ms=0.672
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q8 sample=4 name="Legendre recurrence and spectral accumulation" elapsed_ms=62.158
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q8 sample=4 name="inverse longitude FFT and map writeback" elapsed_ms=39.389
+SYNTHESIS_PHASE_PROFILE spin=0 T1023 grid=1024x2049 q8 sample=5 wall_ms=109.506 phase_sum_ms=109.480 unmeasured_ms=0.027
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q8 sample=5 name="latitude setup and spectrum clear" elapsed_ms=0.683
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q8 sample=5 name="Legendre recurrence and spectral accumulation" elapsed_ms=69.087
+SYNTHESIS_PHASE spin=0 T1023 grid=1024x2049 q8 sample=5 name="inverse longitude FFT and map writeback" elapsed_ms=39.710
+SYNTHESIS_PHASE_PROFILE spin=0 T1279 grid=1280x2561 q1 sample=1 wall_ms=622.257 phase_sum_ms=622.221 unmeasured_ms=0.036
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q1 sample=1 name="latitude setup and spectrum clear" elapsed_ms=1.554
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q1 sample=1 name="Legendre recurrence and spectral accumulation" elapsed_ms=585.490
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q1 sample=1 name="inverse longitude FFT and map writeback" elapsed_ms=35.176
+SYNTHESIS_PHASE_PROFILE spin=0 T1279 grid=1280x2561 q1 sample=2 wall_ms=618.774 phase_sum_ms=618.734 unmeasured_ms=0.041
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q1 sample=2 name="latitude setup and spectrum clear" elapsed_ms=1.597
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q1 sample=2 name="Legendre recurrence and spectral accumulation" elapsed_ms=582.163
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q1 sample=2 name="inverse longitude FFT and map writeback" elapsed_ms=34.974
+SYNTHESIS_PHASE_PROFILE spin=0 T1279 grid=1280x2561 q1 sample=3 wall_ms=618.107 phase_sum_ms=618.069 unmeasured_ms=0.038
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q1 sample=3 name="latitude setup and spectrum clear" elapsed_ms=1.543
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q1 sample=3 name="Legendre recurrence and spectral accumulation" elapsed_ms=581.584
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q1 sample=3 name="inverse longitude FFT and map writeback" elapsed_ms=34.942
+SYNTHESIS_PHASE_PROFILE spin=0 T1279 grid=1280x2561 q1 sample=4 wall_ms=618.530 phase_sum_ms=618.492 unmeasured_ms=0.038
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q1 sample=4 name="latitude setup and spectrum clear" elapsed_ms=1.458
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q1 sample=4 name="Legendre recurrence and spectral accumulation" elapsed_ms=581.868
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q1 sample=4 name="inverse longitude FFT and map writeback" elapsed_ms=35.165
+SYNTHESIS_PHASE_PROFILE spin=0 T1279 grid=1280x2561 q1 sample=5 wall_ms=617.426 phase_sum_ms=617.386 unmeasured_ms=0.039
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q1 sample=5 name="latitude setup and spectrum clear" elapsed_ms=1.448
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q1 sample=5 name="Legendre recurrence and spectral accumulation" elapsed_ms=581.044
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q1 sample=5 name="inverse longitude FFT and map writeback" elapsed_ms=34.894
+SYNTHESIS_PHASE_PROFILE spin=0 T1279 grid=1280x2561 q8 sample=1 wall_ms=304.875 phase_sum_ms=304.841 unmeasured_ms=0.034
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q8 sample=1 name="latitude setup and spectrum clear" elapsed_ms=1.456
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q8 sample=1 name="Legendre recurrence and spectral accumulation" elapsed_ms=268.251
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q8 sample=1 name="inverse longitude FFT and map writeback" elapsed_ms=35.134
+SYNTHESIS_PHASE_PROFILE spin=0 T1279 grid=1280x2561 q8 sample=2 wall_ms=305.266 phase_sum_ms=305.239 unmeasured_ms=0.028
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q8 sample=2 name="latitude setup and spectrum clear" elapsed_ms=1.517
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q8 sample=2 name="Legendre recurrence and spectral accumulation" elapsed_ms=267.786
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q8 sample=2 name="inverse longitude FFT and map writeback" elapsed_ms=35.936
+SYNTHESIS_PHASE_PROFILE spin=0 T1279 grid=1280x2561 q8 sample=3 wall_ms=305.750 phase_sum_ms=305.711 unmeasured_ms=0.039
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q8 sample=3 name="latitude setup and spectrum clear" elapsed_ms=1.450
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q8 sample=3 name="Legendre recurrence and spectral accumulation" elapsed_ms=269.233
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q8 sample=3 name="inverse longitude FFT and map writeback" elapsed_ms=35.027
+SYNTHESIS_PHASE_PROFILE spin=0 T1279 grid=1280x2561 q8 sample=4 wall_ms=305.094 phase_sum_ms=305.023 unmeasured_ms=0.071
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q8 sample=4 name="latitude setup and spectrum clear" elapsed_ms=1.565
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q8 sample=4 name="Legendre recurrence and spectral accumulation" elapsed_ms=268.179
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q8 sample=4 name="inverse longitude FFT and map writeback" elapsed_ms=35.278
+SYNTHESIS_PHASE_PROFILE spin=0 T1279 grid=1280x2561 q8 sample=5 wall_ms=304.856 phase_sum_ms=304.829 unmeasured_ms=0.027
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q8 sample=5 name="latitude setup and spectrum clear" elapsed_ms=1.479
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q8 sample=5 name="Legendre recurrence and spectral accumulation" elapsed_ms=268.135
+SYNTHESIS_PHASE spin=0 T1279 grid=1280x2561 q8 sample=5 name="inverse longitude FFT and map writeback" elapsed_ms=35.214
+SYNTHESIS_PHASE_PROFILE spin=0 T2047 grid=2048x4097 q1 sample=1 wall_ms=3232.478 phase_sum_ms=3232.449 unmeasured_ms=0.029
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q1 sample=1 name="latitude setup and spectrum clear" elapsed_ms=3.858
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q1 sample=1 name="Legendre recurrence and spectral accumulation" elapsed_ms=3110.008
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q1 sample=1 name="inverse longitude FFT and map writeback" elapsed_ms=118.583
+SYNTHESIS_PHASE_PROFILE spin=0 T2047 grid=2048x4097 q1 sample=2 wall_ms=3236.601 phase_sum_ms=3236.560 unmeasured_ms=0.041
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q1 sample=2 name="latitude setup and spectrum clear" elapsed_ms=3.825
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q1 sample=2 name="Legendre recurrence and spectral accumulation" elapsed_ms=3113.050
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q1 sample=2 name="inverse longitude FFT and map writeback" elapsed_ms=119.685
+SYNTHESIS_PHASE_PROFILE spin=0 T2047 grid=2048x4097 q1 sample=3 wall_ms=3235.667 phase_sum_ms=3235.628 unmeasured_ms=0.039
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q1 sample=3 name="latitude setup and spectrum clear" elapsed_ms=4.085
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q1 sample=3 name="Legendre recurrence and spectral accumulation" elapsed_ms=3112.459
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q1 sample=3 name="inverse longitude FFT and map writeback" elapsed_ms=119.084
+SYNTHESIS_PHASE_PROFILE spin=0 T2047 grid=2048x4097 q1 sample=4 wall_ms=3233.489 phase_sum_ms=3233.061 unmeasured_ms=0.427
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q1 sample=4 name="latitude setup and spectrum clear" elapsed_ms=4.425
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q1 sample=4 name="Legendre recurrence and spectral accumulation" elapsed_ms=3110.011
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q1 sample=4 name="inverse longitude FFT and map writeback" elapsed_ms=118.626
+SYNTHESIS_PHASE_PROFILE spin=0 T2047 grid=2048x4097 q1 sample=5 wall_ms=3233.516 phase_sum_ms=3233.485 unmeasured_ms=0.031
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q1 sample=5 name="latitude setup and spectrum clear" elapsed_ms=3.834
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q1 sample=5 name="Legendre recurrence and spectral accumulation" elapsed_ms=3110.913
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q1 sample=5 name="inverse longitude FFT and map writeback" elapsed_ms=118.738
+SYNTHESIS_PHASE_PROFILE spin=0 T2047 grid=2048x4097 q8 sample=1 wall_ms=860.679 phase_sum_ms=860.653 unmeasured_ms=0.026
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q8 sample=1 name="latitude setup and spectrum clear" elapsed_ms=3.825
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q8 sample=1 name="Legendre recurrence and spectral accumulation" elapsed_ms=738.294
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q8 sample=1 name="inverse longitude FFT and map writeback" elapsed_ms=118.535
+SYNTHESIS_PHASE_PROFILE spin=0 T2047 grid=2048x4097 q8 sample=2 wall_ms=912.300 phase_sum_ms=912.267 unmeasured_ms=0.033
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q8 sample=2 name="latitude setup and spectrum clear" elapsed_ms=4.028
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q8 sample=2 name="Legendre recurrence and spectral accumulation" elapsed_ms=788.398
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q8 sample=2 name="inverse longitude FFT and map writeback" elapsed_ms=119.842
+SYNTHESIS_PHASE_PROFILE spin=0 T2047 grid=2048x4097 q8 sample=3 wall_ms=912.615 phase_sum_ms=912.584 unmeasured_ms=0.031
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q8 sample=3 name="latitude setup and spectrum clear" elapsed_ms=3.861
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q8 sample=3 name="Legendre recurrence and spectral accumulation" elapsed_ms=788.966
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q8 sample=3 name="inverse longitude FFT and map writeback" elapsed_ms=119.756
+SYNTHESIS_PHASE_PROFILE spin=0 T2047 grid=2048x4097 q8 sample=4 wall_ms=877.552 phase_sum_ms=877.519 unmeasured_ms=0.034
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q8 sample=4 name="latitude setup and spectrum clear" elapsed_ms=3.977
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q8 sample=4 name="Legendre recurrence and spectral accumulation" elapsed_ms=754.983
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q8 sample=4 name="inverse longitude FFT and map writeback" elapsed_ms=118.559
+SYNTHESIS_PHASE_PROFILE spin=0 T2047 grid=2048x4097 q8 sample=5 wall_ms=864.253 phase_sum_ms=864.220 unmeasured_ms=0.033
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q8 sample=5 name="latitude setup and spectrum clear" elapsed_ms=3.987
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q8 sample=5 name="Legendre recurrence and spectral accumulation" elapsed_ms=741.406
+SYNTHESIS_PHASE spin=0 T2047 grid=2048x4097 q8 sample=5 name="inverse longitude FFT and map writeback" elapsed_ms=118.826
+
+thread '<unnamed>' (3444557) panicked at src/transform/tests.rs:888:18:
+called `Result::unwrap()` on an `Err` value: NonRealMZero { degree: 1 }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    transform::tests::m5_synthesis_phase_profile
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 199 filtered out; finished in 34.08s
+
+error: test failed, to rerun pass `--lib`
