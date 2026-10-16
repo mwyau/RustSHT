@@ -1,0 +1,10 @@
+spin-1 T511; GL 512x1025; f32; 1 vs 8 threads; one warmup, 5 samples, median
+synthesis_one_thread_samples_ms: 1042.975 1048.762 1026.626 1026.133 1019.576
+synthesis_rayon_samples_ms: 150.927 150.543 150.042 150.684 150.569
+analysis_one_thread_samples_ms: 857.410 847.199 848.686 849.217 851.056
+analysis_rayon_samples_ms: 160.404 159.929 163.150 163.413 162.423
+synthesis_one_thread_ms=1026.626
+synthesis_rayon_ms=150.569
+analysis_one_thread_ms=849.217
+analysis_rayon_ms=162.423
+estimated_core_numeric_arrays_MiB=12.13

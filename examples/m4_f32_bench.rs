@@ -7,20 +7,28 @@ use std::time::{Duration, Instant};
 
 use rustsht::{Complex32, GridKind, GridSpec, HarmonicSpec, ShtPlan};
 
-fn median(mut durations: Vec<Duration>) -> Duration {
+fn median(mut durations: [Duration; 5]) -> Duration {
     durations.sort_unstable();
     durations[durations.len() / 2]
 }
 
-fn measure(mut operation: impl FnMut()) -> Duration {
+fn measure(mut operation: impl FnMut()) -> [Duration; 5] {
     operation();
-    let mut durations = Vec::with_capacity(5);
-    for _ in 0..5 {
+    let mut durations = [Duration::ZERO; 5];
+    for duration in &mut durations {
         let start = Instant::now();
         operation();
-        durations.push(start.elapsed());
+        *duration = start.elapsed();
     }
-    median(durations)
+    durations
+}
+
+fn print_samples(label: &str, durations: &[Duration; 5]) {
+    print!("{label}_samples_ms:");
+    for duration in durations {
+        print!(" {:.3}", duration.as_secs_f64() * 1000.0);
+    }
+    println!();
 }
 
 fn main() {
@@ -77,7 +85,7 @@ fn main() {
     let mut analyzed_e = vec![Complex32::new(0.0, 0.0); e.len()];
     let mut analyzed_b = vec![Complex32::new(0.0, 0.0); b.len()];
 
-    let synthesis_one_thread = measure(|| {
+    let synthesis_one_thread_samples = measure(|| {
         one_thread_pool.install(|| {
             plan.synthesis_spin_into(
                 black_box(&e),
@@ -90,7 +98,7 @@ fn main() {
             black_box(first[0]);
         });
     });
-    let synthesis_rayon = measure(|| {
+    let synthesis_rayon_samples = measure(|| {
         rayon_pool.install(|| {
             plan.synthesis_spin_into(
                 black_box(&e),
@@ -103,7 +111,7 @@ fn main() {
             black_box(first[0]);
         });
     });
-    let analysis_one_thread = measure(|| {
+    let analysis_one_thread_samples = measure(|| {
         one_thread_pool.install(|| {
             plan.analysis_spin_into(
                 black_box(&first),
@@ -116,7 +124,7 @@ fn main() {
             black_box(analyzed_e[0]);
         });
     });
-    let analysis_rayon = measure(|| {
+    let analysis_rayon_samples = measure(|| {
         rayon_pool.install(|| {
             plan.analysis_spin_into(
                 black_box(&first),
@@ -149,21 +157,25 @@ fn main() {
     println!(
         "spin-1 T{lmax}; GL {ntheta}x{nphi}; f32; 1 vs {rayon_threads} threads; one warmup, 5 samples, median"
     );
+    print_samples("synthesis_one_thread", &synthesis_one_thread_samples);
+    print_samples("synthesis_rayon", &synthesis_rayon_samples);
+    print_samples("analysis_one_thread", &analysis_one_thread_samples);
+    print_samples("analysis_rayon", &analysis_rayon_samples);
     println!(
         "synthesis_one_thread_ms={:.3}",
-        synthesis_one_thread.as_secs_f64() * 1000.0
+        median(synthesis_one_thread_samples).as_secs_f64() * 1000.0
     );
     println!(
         "synthesis_rayon_ms={:.3}",
-        synthesis_rayon.as_secs_f64() * 1000.0
+        median(synthesis_rayon_samples).as_secs_f64() * 1000.0
     );
     println!(
         "analysis_one_thread_ms={:.3}",
-        analysis_one_thread.as_secs_f64() * 1000.0
+        median(analysis_one_thread_samples).as_secs_f64() * 1000.0
     );
     println!(
         "analysis_rayon_ms={:.3}",
-        analysis_rayon.as_secs_f64() * 1000.0
+        median(analysis_rayon_samples).as_secs_f64() * 1000.0
     );
     println!(
         "estimated_core_numeric_arrays_MiB={:.2}",
