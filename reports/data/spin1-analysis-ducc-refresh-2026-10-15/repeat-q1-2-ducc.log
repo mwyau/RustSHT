@@ -1,0 +1,7 @@
+T511 GL 512x1025 spin=1 mode=STANDARD threads=1 runs=2 scope=plan operation=analysis backend=ducc python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.052,0.052
+numpy_alm_copy_ms=0.154,0.127
+numpy_map_copy_ms=0.625,0.347
+numpy_output_allocation_ms=0.002,0.002
+analysis_ducc_raw_samples_ms=42.917,40.845,38.866,38.792,37.074;25.832,25.738,25.867,25.886,25.872
+analysis_ducc_run_medians_ms=38.866,25.867; median=32.366; spread=12.998
