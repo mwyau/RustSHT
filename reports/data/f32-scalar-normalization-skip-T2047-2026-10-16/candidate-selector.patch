@@ -1,0 +1,11 @@
+diff --git a/src/legendre/scalar_f32.rs b/src/legendre/scalar_f32.rs
+index 5b6ec5d..5d71ee0 100644
+--- a/src/legendre/scalar_f32.rs
++++ b/src/legendre/scalar_f32.rs
+@@ -35,0 +36 @@ const NORMAL_RANGE_SKIP_LMAX_T1279: usize = 1279;
++const NORMAL_RANGE_SKIP_LMAX_T2047: usize = 2047;
+@@ -105 +106,3 @@ where
+-        NORMAL_RANGE_SKIP_LMAX_T1023 | NORMAL_RANGE_SKIP_LMAX_T1279
++        NORMAL_RANGE_SKIP_LMAX_T1023
++            | NORMAL_RANGE_SKIP_LMAX_T1279
++            | NORMAL_RANGE_SKIP_LMAX_T2047

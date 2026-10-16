@@ -7,16 +7,35 @@ use std::time::{Duration, Instant};
 use rustsht::{Complex32, GridKind, GridSpec, HarmonicSpec, ShtPlan};
 
 fn median(mut durations: Vec<Duration>) -> Duration {
+    assert!(!durations.is_empty());
     durations.sort_unstable();
-    durations[durations.len() / 2]
+    let middle = durations.len() / 2;
+    if durations.len() % 2 == 1 {
+        durations[middle]
+    } else {
+        durations[middle - 1] + (durations[middle] - durations[middle - 1]) / 2
+    }
+}
+
+fn warm_sample_count() -> usize {
+    let count = std::env::var("RUSTSHT_M1_SAMPLES")
+        .map(|value| {
+            value
+                .parse::<usize>()
+                .expect("RUSTSHT_M1_SAMPLES must be an integer")
+        })
+        .unwrap_or(5);
+    assert!(count > 0, "RUSTSHT_M1_SAMPLES must be positive");
+    count
 }
 
 fn measure(mut operation: impl FnMut()) -> (Duration, Vec<Duration>) {
     let start = Instant::now();
     operation();
     let first = start.elapsed();
-    let mut samples = Vec::with_capacity(5);
-    for _ in 0..5 {
+    let sample_count = warm_sample_count();
+    let mut samples = Vec::with_capacity(sample_count);
+    for _ in 0..sample_count {
         let start = Instant::now();
         operation();
         samples.push(start.elapsed());
@@ -107,6 +126,7 @@ fn main() {
     let mut e = vec![Complex32::new(0.0, 0.0); nalm];
     let mut b = vec![Complex32::new(0.0, 0.0); nalm];
     let first_count = if spin == 0 { 1 } else { 2 };
+    let warm_samples = warm_sample_count();
     for m in 0..=lmax {
         for l in m.max(spin)..=lmax {
             let index = plan.harmonics().index(l, m).unwrap();
@@ -221,7 +241,7 @@ fn main() {
     });
 
     println!(
-        "spin={spin} T{lmax}; GL {ntheta}x{nphi}; f32; {first_count} map component(s); q1 vs q{threads}; one warmup and five samples per operation"
+        "spin={spin} T{lmax}; GL {ntheta}x{nphi}; f32; {first_count} map component(s); q1 vs q{threads}; one warmup and {warm_samples} warm sample(s) per operation"
     );
     println!("plan_construction_ms={plan_ms:.3}");
     println!("workspace_allocation_ms={workspace_ms:.3}");

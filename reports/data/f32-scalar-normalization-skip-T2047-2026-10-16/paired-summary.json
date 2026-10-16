@@ -1,0 +1,291 @@
+{
+  "method": "arithmetic median of raw warm samples; change is candidate / baseline - 1",
+  "interpretation": {
+    "spin_0": "single-pair diagnostic observations; candidate scalar process overlapped an unrelated benchmark with unknown CPU placement",
+    "spin_1": "unaffected-path control variation; the selector changes only the scalar f32 recurrence"
+  },
+  "processes": [
+    {
+      "pair": 1,
+      "spin": 0,
+      "strategy": "baseline",
+      "log": "pair-1-baseline-spin0.log",
+      "measurements": {
+        "synthesis_q1": {
+          "samples_ms": [
+            30166.75,
+            30198.529
+          ],
+          "median_ms": 30182.639499999997
+        },
+        "synthesis_q8": {
+          "samples_ms": [
+            5358.119,
+            5403.976
+          ],
+          "median_ms": 5381.0475
+        },
+        "analysis_q1": {
+          "samples_ms": [
+            14546.43,
+            14590.699
+          ],
+          "median_ms": 14568.5645
+        },
+        "analysis_q8": {
+          "samples_ms": [
+            2654.834,
+            2677.842
+          ],
+          "median_ms": 2666.3379999999997
+        }
+      }
+    },
+    {
+      "pair": 1,
+      "spin": 0,
+      "strategy": "candidate",
+      "log": "pair-1-candidate-spin0.log",
+      "measurements": {
+        "synthesis_q1": {
+          "samples_ms": [
+            29433.197,
+            30504.664
+          ],
+          "median_ms": 29968.930500000002
+        },
+        "synthesis_q8": {
+          "samples_ms": [
+            5414.09,
+            5371.612
+          ],
+          "median_ms": 5392.851000000001
+        },
+        "analysis_q1": {
+          "samples_ms": [
+            14386.968,
+            13844.453
+          ],
+          "median_ms": 14115.710500000001
+        },
+        "analysis_q8": {
+          "samples_ms": [
+            2612.145,
+            2601.646
+          ],
+          "median_ms": 2606.8955
+        }
+      }
+    },
+    {
+      "pair": 1,
+      "spin": 1,
+      "strategy": "baseline",
+      "log": "pair-1-baseline-spin1.log",
+      "measurements": {
+        "synthesis_q1": {
+          "samples_ms": [
+            61691.488,
+            63105.809
+          ],
+          "median_ms": 62398.648499999996
+        },
+        "synthesis_q8": {
+          "samples_ms": [
+            8742.474,
+            8719.68
+          ],
+          "median_ms": 8731.077000000001
+        },
+        "analysis_q1": {
+          "samples_ms": [
+            51374.577,
+            52015.429
+          ],
+          "median_ms": 51695.003
+        },
+        "analysis_q8": {
+          "samples_ms": [
+            10277.987,
+            10276.777
+          ],
+          "median_ms": 10277.382
+        }
+      }
+    },
+    {
+      "pair": 1,
+      "spin": 1,
+      "strategy": "candidate",
+      "log": "pair-1-candidate-spin1.log",
+      "measurements": {
+        "synthesis_q1": {
+          "samples_ms": [
+            61569.522,
+            60520.166
+          ],
+          "median_ms": 61044.844
+        },
+        "synthesis_q8": {
+          "samples_ms": [
+            9920.05,
+            8570.322
+          ],
+          "median_ms": 9245.186
+        },
+        "analysis_q1": {
+          "samples_ms": [
+            49436.722,
+            48804.815
+          ],
+          "median_ms": 49120.768500000006
+        },
+        "analysis_q8": {
+          "samples_ms": [
+            9602.007,
+            9613.746
+          ],
+          "median_ms": 9607.876499999998
+        }
+      }
+    }
+  ],
+  "paired_rows": [
+    {
+      "pair": 1,
+      "spin": 0,
+      "operation": "synthesis",
+      "threads": 1,
+      "baseline_ms": 30182.639499999997,
+      "candidate_ms": 29968.930500000002,
+      "change_percent": -0.7080527201737796,
+      "baseline_samples_ms": [
+        30166.75,
+        30198.529
+      ],
+      "candidate_samples_ms": [
+        29433.197,
+        30504.664
+      ]
+    },
+    {
+      "pair": 1,
+      "spin": 0,
+      "operation": "synthesis",
+      "threads": 8,
+      "baseline_ms": 5381.0475,
+      "candidate_ms": 5392.851000000001,
+      "change_percent": 0.21935320214141463,
+      "baseline_samples_ms": [
+        5358.119,
+        5403.976
+      ],
+      "candidate_samples_ms": [
+        5414.09,
+        5371.612
+      ]
+    },
+    {
+      "pair": 1,
+      "spin": 0,
+      "operation": "analysis",
+      "threads": 1,
+      "baseline_ms": 14568.5645,
+      "candidate_ms": 14115.710500000001,
+      "change_percent": -3.1084325432337523,
+      "baseline_samples_ms": [
+        14546.43,
+        14590.699
+      ],
+      "candidate_samples_ms": [
+        14386.968,
+        13844.453
+      ]
+    },
+    {
+      "pair": 1,
+      "spin": 0,
+      "operation": "analysis",
+      "threads": 8,
+      "baseline_ms": 2666.3379999999997,
+      "candidate_ms": 2606.8955,
+      "change_percent": -2.2293685196700386,
+      "baseline_samples_ms": [
+        2654.834,
+        2677.842
+      ],
+      "candidate_samples_ms": [
+        2612.145,
+        2601.646
+      ]
+    },
+    {
+      "pair": 1,
+      "spin": 1,
+      "operation": "synthesis",
+      "threads": 1,
+      "baseline_ms": 62398.648499999996,
+      "candidate_ms": 61044.844,
+      "change_percent": -2.169605484323911,
+      "baseline_samples_ms": [
+        61691.488,
+        63105.809
+      ],
+      "candidate_samples_ms": [
+        61569.522,
+        60520.166
+      ]
+    },
+    {
+      "pair": 1,
+      "spin": 1,
+      "operation": "synthesis",
+      "threads": 8,
+      "baseline_ms": 8731.077000000001,
+      "candidate_ms": 9245.186,
+      "change_percent": 5.888265559907424,
+      "baseline_samples_ms": [
+        8742.474,
+        8719.68
+      ],
+      "candidate_samples_ms": [
+        9920.05,
+        8570.322
+      ]
+    },
+    {
+      "pair": 1,
+      "spin": 1,
+      "operation": "analysis",
+      "threads": 1,
+      "baseline_ms": 51695.003,
+      "candidate_ms": 49120.768500000006,
+      "change_percent": -4.9796582853472104,
+      "baseline_samples_ms": [
+        51374.577,
+        52015.429
+      ],
+      "candidate_samples_ms": [
+        49436.722,
+        48804.815
+      ]
+    },
+    {
+      "pair": 1,
+      "spin": 1,
+      "operation": "analysis",
+      "threads": 8,
+      "baseline_ms": 10277.382,
+      "candidate_ms": 9607.876499999998,
+      "change_percent": -6.514358423185995,
+      "baseline_samples_ms": [
+        10277.987,
+        10276.777
+      ],
+      "candidate_samples_ms": [
+        9602.007,
+        9613.746
+      ]
+    }
+  ]
+}
