@@ -1,0 +1,34 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "Full SHT FFT-target comparison of the radix-11 odd-ido-tail kernel after removing a SIMD bundle field that affected unrelated code layout.",
+    "candidate_source_patch_sha256": "82b8caf8704bf31c06c69dccf6a86b52bd4912b3bb40f056d1974b866316b643",
+    "candidate_binary_sha256": "76f96edfde60c12bd0671e39146895ec831b4a7eba3ef3c898123bdb974c0337",
+    "reference_source": "RustSHT-FFT M25 source commit e6b0101",
+    "reference_binary_sha256": "ec3f0c4837c5b8212dc65377d90057fdd8bb740d6747b0ad8279fe88121479cd",
+    "workload": "All current exact C2C and real SHT target operation/length cells; one-transform and scalar/spin-1 row batches; one transform thread",
+    "timing": "Six alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "dispatch_note": "The f64 AVX2 radix-11 dispatcher processes odd final inner values across adjacent outer-group pairs when l1 >= 2. A final odd outer group uses the scalar path. N=682's dedicated ido=31 kernel and inverse safety fallback remain unchanged; f32 and CPUs without AVX2 retain scalar processing.",
+    "layout_note": "The odd-tail kernel is called from the existing radix-11 dispatcher. The generic SimdKernels bundle is unchanged.",
+    "previous_capture": "m26-radix11-odd-tail-six-pairs.jsonl measured an earlier dispatch layout; its large non-target slowdowns are retained as diagnostic and are not the result for this source patch.",
+    "runner": "../m24-radix103/run_m24_clean_capture.py records process IDs, uptime, and load averages before, during, and after each run, and fsyncs every JSONL record."
+  },
+  "a": {
+    "label": "RustSHT-FFT M26 refined radix-11 odd-ido-tail AVX2 candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-m26-isolated-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M25 e6b0101 baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-m25-isolated-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  }
+}

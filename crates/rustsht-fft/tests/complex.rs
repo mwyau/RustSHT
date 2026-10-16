@@ -292,7 +292,7 @@ fn f64_large_smooth_multipass_matches_independent_dfts() {
 #[test]
 fn f64_sht_meridional_complex_lengths_match_independent_dfts() {
     for n in [
-        146, 150, 240, 256, 300, 484, 512, 722, 726, 1024, 1372, 1442, 1452, 2904,
+        146, 150, 240, 256, 300, 363, 484, 512, 722, 726, 1024, 1372, 1442, 1452, 2904,
     ] {
         let input = random_signal_f64(n, 0x1b73_5a94_c6d8_e20f ^ n as u64);
         let expected_forward = direct_dft_f64(&input, true);

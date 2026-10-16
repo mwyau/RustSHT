@@ -1,0 +1,33 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "Measure FMA accumulation in the N=1442 radix-103 AVX2 pass against the M25 source over all SHT FFT target cells.",
+    "candidate_source_base": "RustSHT-FFT M25 source commit e6b0101 plus the M26 source patch identified by SHA-256",
+    "candidate_source_patch_sha256": "c9a233632a6450ac597820a1a6dc132591095c83a19aa14eddd390f77dd37d7e",
+    "candidate_binary_sha256": "4821fd487d527188b1c2cf63742f374ec1a4e97a129137c5ad4731317af70022",
+    "reference_source": "RustSHT-FFT M25 source commit e6b0101",
+    "reference_binary_sha256": "ec3f0c4837c5b8212dc65377d90057fdd8bb740d6747b0ad8279fe88121479cd",
+    "workload": "All current exact C2C and real SHT target operation/length cells; one-transform and scalar/spin-1 row batches; one transform thread",
+    "timing": "Six alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 and FMA dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "dispatch_note": "The N=1442 radix-103 pass uses AVX2/FMA paired-frequency accumulation when runtime FMA detection succeeds, otherwise the existing AVX2 kernel. The N=1442 inverse safety check and scalar fallback are unchanged. Other lengths use unchanged dispatch.",
+    "runner": "../m24-radix103/run_m24_clean_capture.py records process IDs, uptime, and load averages before, during, and after each run, and fsyncs every JSONL record."
+  },
+  "a": {
+    "label": "RustSHT-FFT M26 N=1442 radix-103 AVX2/FMA candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-m26-isolated-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M25 e6b0101 baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-m25-isolated-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  }
+}

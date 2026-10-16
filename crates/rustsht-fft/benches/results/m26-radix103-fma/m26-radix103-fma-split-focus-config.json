@@ -1,0 +1,34 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "Target-only screen of split cosine/sine FMA accumulators for the N=1442 radix-103 pass against M25 before a full-matrix capture.",
+    "candidate_source_patch_sha256": "282e614865d78c253b4f87f02cb0863eac9bce62552c63e29b28920ba4965e2c",
+    "candidate_binary_sha256": "c7fd30f3949a56ab96d2d1d560ee159211da332bd730e9880d07adee67a08708",
+    "reference_binary_sha256": "ec3f0c4837c5b8212dc65377d90057fdd8bb740d6747b0ad8279fe88121479cd",
+    "workload": "C2C forward and inverse at N=1442 with 721 rows",
+    "timing": "Six alternating process pairs; seven warmed samples per operation; one transform thread",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 and FMA dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "runner": "../m24-radix103/run_m24_clean_capture.py records process IDs, uptime, and load averages before, during, and after each process."
+  },
+  "a": {
+    "label": "RustSHT-FFT M26 split-accumulator FMA candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-m26-isolated-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-c2c",
+      "1442",
+      "721"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M25 e6b0101 baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-m25-isolated-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-c2c",
+      "1442",
+      "721"
+    ]
+  }
+}
