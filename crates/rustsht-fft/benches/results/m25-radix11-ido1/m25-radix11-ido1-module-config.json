@@ -1,0 +1,37 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "Module-isolated M25 AVX2 radix-11 ido=1 candidate against M24 across the complete 34-cell SHT target matrix; replacement for diagnostic captures with the helper in complex.rs.",
+    "candidate_source_base": "M24 source commit 9a85e38, plus the M25 source patch identified by SHA-256",
+    "candidate_patch_sha256": "a08d995064fc04c24a55de912118ec5dadbdd0a814ffed58211cb74d24e818de",
+    "candidate_binary_sha256": "ec3f0c4837c5b8212dc65377d90057fdd8bb740d6747b0ad8279fe88121479cd",
+    "reference_source": "RustSHT-FFT M24 source commit 9a85e38",
+    "reference_binary_sha256": "3e9b409212cfea38c207ab3aeb88f00a172771f29ef1a7a4513f933505b69f37",
+    "workload": "All current exact C2C and real SHT target operation/length cells; scalar and spin-1 row batches; one transform thread",
+    "timing": "Six alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime SIMD dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "pre_capture_host_condition": "No SHT or FFT benchmark process observed at 2026-10-16T06:59:35Z. The prior separate ignored DUCC SHT test had terminated. System load averages at final pre-capture check were 1.65, 3.13, and 2.91.",
+    "dispatch_note": "The candidate applies an AVX2 f64 radix-11 kernel to ido=1 passes with l1>=2, vectorizing pairs of outer groups. Odd outer tails and unsafe inverse inputs use the scalar path. f32 and CPUs without AVX2 retain the general scalar pass.",
+    "runner": "../m24-radix103/run_m24_clean_capture.py records process IDs, uptime, and load averages before, during, and after each run, and fsyncs every JSONL record.",
+    "code_layout_note": "The ido=1 helper is an out-of-line cold function in src/complex/radix11_ido1.rs. It appears after the main complex FFT code in the linked executable. The N=682 execute_first_pass_in_place symbol shifts by 0x210 bytes from M24, compared with a 0xb00 shift when the helper was in complex.rs.",
+    "captured_environment_patch_sha256": "bee851151a515c5c0527395e4675e1e0568c4fc43e56c316a63a9528d6c982a1",
+    "patch_hash_correction": "The raw capture environment record retains the first digest, which omitted the new untracked src/complex/radix11_ido1.rs file because git diff does not include untracked paths. The corrected staged-patch digest includes all four M25 source files; the measured executable hash is unchanged."
+  },
+  "a": {
+    "label": "RustSHT-FFT M25 radix-11 ido=1 AVX2 module-isolated candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-m25-isolated-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M24 baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-m24-isolated-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  }
+}

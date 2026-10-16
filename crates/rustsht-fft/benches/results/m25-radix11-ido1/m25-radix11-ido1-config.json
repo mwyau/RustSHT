@@ -1,0 +1,34 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M25 AVX2 radix-11 ido=1 candidate against the M24 binary across the complete 34-cell SHT target matrix",
+    "candidate_source_base": "M24 source commit 9a85e38, plus the M25 source patch identified by SHA-256",
+    "candidate_patch_sha256": "427be7a4bb4d492ee65a87402e6e8899fa526ad70077e931cd5a1bcdda770f38",
+    "candidate_binary_sha256": "ae2d434c3022a0d274745a25ad9ffe0227bcb95b21d6eb2d7b4b4a0c59ad46fb",
+    "reference_source": "RustSHT-FFT M24 source commit 9a85e38",
+    "reference_binary_sha256": "3e9b409212cfea38c207ab3aeb88f00a172771f29ef1a7a4513f933505b69f37",
+    "workload": "All current exact C2C and real SHT target operation/length cells; scalar and spin-1 row batches; one transform thread",
+    "timing": "Six alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime SIMD dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "pre_capture_host_condition": "No SHT or FFT benchmark process observed. One-minute load average was below 1 at the final pre-capture check.",
+    "dispatch_note": "The candidate applies an AVX2 f64 radix-11 kernel to ido=1 passes with l1>=2, vectorizing pairs of outer groups. Odd outer tails and unsafe inverse inputs use the scalar path. f32 and CPUs without AVX2 retain the general scalar pass.",
+    "runner": "../m24-radix103/run_m24_clean_capture.py records process IDs, uptime, and load averages before, during, and after each run, and fsyncs every JSONL record."
+  },
+  "a": {
+    "label": "RustSHT-FFT M25 radix-11 ido=1 AVX2 candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-m25-isolated-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M24 baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-m24-isolated-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  }
+}
