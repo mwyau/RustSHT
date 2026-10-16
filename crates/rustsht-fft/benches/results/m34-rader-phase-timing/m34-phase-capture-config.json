@@ -1,0 +1,615 @@
+{
+  "benchmark_source_sha256": "f76fbffb6dfad72955a8b7bcac80b38b66644a217f986b557648af37a849229a",
+  "binary_sha256": "b04b5a83a62f59bf083f80d993952f9c6f90a511a7b04ff21667904bbd295015",
+  "iterations_per_phase_sample": 256,
+  "process_results": [
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "723",
+        "r2c",
+        "256"
+      ],
+      "direction": "r2c",
+      "elapsed_seconds": 0.027726,
+      "exit_code": 0,
+      "file": "m34-phase-sample-01-n723-r2c.csv",
+      "load_after": [
+        0.62060546875,
+        0.5361328125,
+        0.73486328125
+      ],
+      "load_before": [
+        0.62060546875,
+        0.5361328125,
+        0.73486328125
+      ],
+      "n": 723,
+      "sample": 1
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "723",
+        "c2r",
+        "256"
+      ],
+      "direction": "c2r",
+      "elapsed_seconds": 0.029304,
+      "exit_code": 0,
+      "file": "m34-phase-sample-01-n723-c2r.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.62060546875,
+        0.5361328125,
+        0.73486328125
+      ],
+      "n": 723,
+      "sample": 1
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "4097",
+        "r2c",
+        "256"
+      ],
+      "direction": "r2c",
+      "elapsed_seconds": 0.126028,
+      "exit_code": 0,
+      "file": "m34-phase-sample-01-n4097-r2c.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 4097,
+      "sample": 1
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "4097",
+        "c2r",
+        "256"
+      ],
+      "direction": "c2r",
+      "elapsed_seconds": 0.131395,
+      "exit_code": 0,
+      "file": "m34-phase-sample-01-n4097-c2r.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 4097,
+      "sample": 1
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "4097",
+        "c2r",
+        "256"
+      ],
+      "direction": "c2r",
+      "elapsed_seconds": 0.131138,
+      "exit_code": 0,
+      "file": "m34-phase-sample-02-n4097-c2r.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 4097,
+      "sample": 2
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "4097",
+        "r2c",
+        "256"
+      ],
+      "direction": "r2c",
+      "elapsed_seconds": 0.126984,
+      "exit_code": 0,
+      "file": "m34-phase-sample-02-n4097-r2c.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 4097,
+      "sample": 2
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "723",
+        "c2r",
+        "256"
+      ],
+      "direction": "c2r",
+      "elapsed_seconds": 0.028805,
+      "exit_code": 0,
+      "file": "m34-phase-sample-02-n723-c2r.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 723,
+      "sample": 2
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "723",
+        "r2c",
+        "256"
+      ],
+      "direction": "r2c",
+      "elapsed_seconds": 0.027692,
+      "exit_code": 0,
+      "file": "m34-phase-sample-02-n723-r2c.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 723,
+      "sample": 2
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "723",
+        "r2c",
+        "256"
+      ],
+      "direction": "r2c",
+      "elapsed_seconds": 0.027661,
+      "exit_code": 0,
+      "file": "m34-phase-sample-03-n723-r2c.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 723,
+      "sample": 3
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "723",
+        "c2r",
+        "256"
+      ],
+      "direction": "c2r",
+      "elapsed_seconds": 0.028885,
+      "exit_code": 0,
+      "file": "m34-phase-sample-03-n723-c2r.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 723,
+      "sample": 3
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "4097",
+        "r2c",
+        "256"
+      ],
+      "direction": "r2c",
+      "elapsed_seconds": 0.126024,
+      "exit_code": 0,
+      "file": "m34-phase-sample-03-n4097-r2c.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 4097,
+      "sample": 3
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "4097",
+        "c2r",
+        "256"
+      ],
+      "direction": "c2r",
+      "elapsed_seconds": 0.131248,
+      "exit_code": 0,
+      "file": "m34-phase-sample-03-n4097-c2r.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 4097,
+      "sample": 3
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "4097",
+        "c2r",
+        "256"
+      ],
+      "direction": "c2r",
+      "elapsed_seconds": 0.131165,
+      "exit_code": 0,
+      "file": "m34-phase-sample-04-n4097-c2r.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 4097,
+      "sample": 4
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "4097",
+        "r2c",
+        "256"
+      ],
+      "direction": "r2c",
+      "elapsed_seconds": 0.126223,
+      "exit_code": 0,
+      "file": "m34-phase-sample-04-n4097-r2c.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 4097,
+      "sample": 4
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "723",
+        "c2r",
+        "256"
+      ],
+      "direction": "c2r",
+      "elapsed_seconds": 0.028998,
+      "exit_code": 0,
+      "file": "m34-phase-sample-04-n723-c2r.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 723,
+      "sample": 4
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "723",
+        "r2c",
+        "256"
+      ],
+      "direction": "r2c",
+      "elapsed_seconds": 0.027963,
+      "exit_code": 0,
+      "file": "m34-phase-sample-04-n723-r2c.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 723,
+      "sample": 4
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "723",
+        "r2c",
+        "256"
+      ],
+      "direction": "r2c",
+      "elapsed_seconds": 0.027822,
+      "exit_code": 0,
+      "file": "m34-phase-sample-05-n723-r2c.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 723,
+      "sample": 5
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "723",
+        "c2r",
+        "256"
+      ],
+      "direction": "c2r",
+      "elapsed_seconds": 0.028949,
+      "exit_code": 0,
+      "file": "m34-phase-sample-05-n723-c2r.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 723,
+      "sample": 5
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "4097",
+        "r2c",
+        "256"
+      ],
+      "direction": "r2c",
+      "elapsed_seconds": 0.126521,
+      "exit_code": 0,
+      "file": "m34-phase-sample-05-n4097-r2c.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 4097,
+      "sample": 5
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "4097",
+        "c2r",
+        "256"
+      ],
+      "direction": "c2r",
+      "elapsed_seconds": 0.132033,
+      "exit_code": 0,
+      "file": "m34-phase-sample-05-n4097-c2r.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 4097,
+      "sample": 5
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "4097",
+        "c2r",
+        "256"
+      ],
+      "direction": "c2r",
+      "elapsed_seconds": 0.1329,
+      "exit_code": 0,
+      "file": "m34-phase-sample-06-n4097-c2r.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 4097,
+      "sample": 6
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "4097",
+        "r2c",
+        "256"
+      ],
+      "direction": "r2c",
+      "elapsed_seconds": 0.126194,
+      "exit_code": 0,
+      "file": "m34-phase-sample-06-n4097-r2c.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 4097,
+      "sample": 6
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "723",
+        "c2r",
+        "256"
+      ],
+      "direction": "c2r",
+      "elapsed_seconds": 0.028957,
+      "exit_code": 0,
+      "file": "m34-phase-sample-06-n723-c2r.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 723,
+      "sample": 6
+    },
+    {
+      "command": [
+        "<benchmark-binary>",
+        "profile-phases",
+        "723",
+        "r2c",
+        "256"
+      ],
+      "direction": "r2c",
+      "elapsed_seconds": 0.027694,
+      "exit_code": 0,
+      "file": "m34-phase-sample-06-n723-r2c.csv",
+      "load_after": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "load_before": [
+        0.6513671875,
+        0.5439453125,
+        0.736328125
+      ],
+      "n": 723,
+      "sample": 6
+    }
+  ],
+  "purpose": "Fresh-process elapsed-time attribution for the production-like radix-241 real multipass stage at N=723 and N=4097; six process samples per cell, seven warmed timing samples per phase.",
+  "rustc": "rustc 1.99.0 (b940084d7 2026-09-28)\nbinary: rustc\ncommit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4\ncommit-date: 2026-09-28\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.0\nLLVM version: 23.1.1\n",
+  "source_head": "3c8240456c96f3376e89549f51159b2ce4105b46",
+  "target_flags": "stable portable x86_64 defaults; runtime AVX2 dispatch",
+  "timed_samples_per_process": 7,
+  "transform_threads": 1,
+  "warmup_samples": 3,
+  "working_tree_note": "Only benches/prototypes/rader_real.rs was modified for this diagnostic; production FFT code was unchanged."
+}

@@ -796,6 +796,525 @@ fn benchmark(mode: &str, n: usize, rows: usize, dir: &str) {
         );
     }
 }
+
+fn median_f64(mut values: Vec<f64>) -> f64 {
+    values.sort_by(f64::total_cmp);
+    values[values.len() / 2]
+}
+
+fn time_phase(iterations: usize, mut operation: impl FnMut(bool)) -> f64 {
+    for _ in 0..3 {
+        operation(false);
+        operation(true);
+    }
+    let mut samples = Vec::with_capacity(7);
+    for _ in 0..7 {
+        operation(false);
+        let start = Instant::now();
+        for _ in 0..iterations {
+            operation(true);
+        }
+        samples.push(start.elapsed().as_nanos() as f64 / iterations as f64);
+    }
+    median_f64(samples)
+}
+
+fn gather_forward(
+    plan: &PrimePlan,
+    input: &[f64],
+    groups: usize,
+    group: usize,
+    buffer: &mut [C],
+) -> f64 {
+    let mut sum = input[group];
+    for (index, &power) in plan.gpow.iter().enumerate() {
+        let value = input[power * groups + group];
+        buffer[index] = C::new(value, 0.0);
+        sum += value;
+    }
+    sum
+}
+
+fn scatter_forward(
+    plan: &PrimePlan,
+    dc: f64,
+    sum: f64,
+    group: usize,
+    output: &mut [f64],
+    buffer: &[C],
+) {
+    let half = plan.p / 2;
+    let output_start = group * plan.p;
+    output[output_start] = sum;
+    for (index, &frequency) in plan.ginvpow.iter().enumerate() {
+        if frequency <= half {
+            let value = C::new(dc, 0.0) + buffer[index];
+            output[output_start + 2 * frequency - 1] = value.re;
+            output[output_start + 2 * frequency] = value.im;
+        }
+    }
+}
+
+fn gather_inverse(
+    plan: &PrimePlan,
+    spectrum: &[f64],
+    group: usize,
+    buffer: &mut [C],
+) -> (f64, f64) {
+    let half = plan.p / 2;
+    let start = group * plan.p;
+    let dc = spectrum[start];
+    let mut sum = C::new(dc, 0.0);
+    for (index, &frequency) in plan.gpow.iter().enumerate() {
+        let value = if frequency <= half {
+            C::new(
+                spectrum[start + 2 * frequency - 1],
+                spectrum[start + 2 * frequency],
+            )
+        } else {
+            let positive_frequency = plan.p - frequency;
+            C::new(
+                spectrum[start + 2 * positive_frequency - 1],
+                -spectrum[start + 2 * positive_frequency],
+            )
+        };
+        buffer[index] = value;
+        sum += value;
+    }
+    (dc, sum.re)
+}
+
+#[derive(Clone, Copy)]
+struct InverseScatter {
+    dc: f64,
+    group: usize,
+    groups: usize,
+    scale: f64,
+}
+
+fn scatter_inverse(
+    plan: &PrimePlan,
+    scatter: InverseScatter,
+    sum: f64,
+    output: &mut [f64],
+    buffer: &[C],
+) {
+    output[scatter.group] = sum * scatter.scale;
+    for (index, &sample) in plan.ginvpow.iter().enumerate() {
+        output[sample * scatter.groups + scatter.group] =
+            (scatter.dc + buffer[index].re) * scatter.scale;
+    }
+}
+
+fn pack_odd_spectrum(spectrum: &[C], packed: &mut [f64]) -> bool {
+    let len = packed.len();
+    let mut maximum = 0.0_f64;
+    let mut finite = true;
+    packed[0] = spectrum[0].re;
+    finite &= spectrum[0].re.is_finite();
+    maximum = maximum.max(spectrum[0].re.abs());
+    for (frequency, &value) in spectrum.iter().enumerate().skip(1) {
+        packed[2 * frequency - 1] = value.re;
+        packed[2 * frequency] = value.im;
+        finite &= value.re.is_finite() && value.im.is_finite();
+        maximum = maximum.max(value.re.abs()).max(value.im.abs());
+    }
+    finite && maximum <= f64::MAX / (4.0 * len as f64)
+}
+
+fn unpack_odd_spectrum(packed: &[f64], spectrum: &mut [C]) {
+    spectrum[0] = C::new(packed[0], 0.0);
+    for frequency in 1..=packed.len() / 2 {
+        spectrum[frequency] = C::new(packed[2 * frequency - 1], packed[2 * frequency]);
+    }
+}
+
+fn validate_profile_pass(
+    plan: &PrimePlan,
+    input: &[f64],
+    spectrum: &[f64],
+    groups: usize,
+    n: usize,
+) {
+    let prime = plan.p;
+    let mut workspace = plan.workspace();
+    let mut buffer = vec![C::new(0.0, 0.0); prime - 1];
+    let mut forward_output = vec![0.0; n];
+    for group in 0..groups {
+        let sum = gather_forward(plan, input, groups, group, &mut buffer);
+        plan.inner
+            .forward(&mut buffer, &mut workspace.inner)
+            .unwrap();
+        for (value, &coefficient) in buffer.iter_mut().zip(&plan.kernel_fwd) {
+            *value *= coefficient;
+        }
+        plan.inner
+            .inverse(&mut buffer, &mut workspace.inner)
+            .unwrap();
+        scatter_forward(plan, input[group], sum, group, &mut forward_output, &buffer);
+
+        let branch: Vec<_> = (0..prime)
+            .map(|sample| C::new(input[sample * groups + group], 0.0))
+            .collect();
+        let expected = direct(&branch, false);
+        let mut max_error = 0.0_f64;
+        let mut scale = 0.0_f64;
+        for frequency in 0..=prime / 2 {
+            let actual = if frequency == 0 {
+                C::new(forward_output[group * prime], 0.0)
+            } else {
+                C::new(
+                    forward_output[group * prime + 2 * frequency - 1],
+                    forward_output[group * prime + 2 * frequency],
+                )
+            };
+            max_error = max_error.max((actual - expected[frequency]).norm());
+            scale = scale.max(expected[frequency].norm());
+        }
+        assert!(
+            max_error <= 5e-11 * scale.max(1.0),
+            "Rader forward pass mismatch n={n} group={group} max_error={max_error:e} scale={scale:e}"
+        );
+    }
+
+    let mut inverse_output = vec![0.0; n];
+    for group in 0..groups {
+        let (dc, sum) = gather_inverse(plan, spectrum, group, &mut buffer);
+        plan.inner
+            .forward(&mut buffer, &mut workspace.inner)
+            .unwrap();
+        for (value, &coefficient) in buffer.iter_mut().zip(&plan.kernel_inv) {
+            *value *= coefficient;
+        }
+        plan.inner
+            .inverse(&mut buffer, &mut workspace.inner)
+            .unwrap();
+        scatter_inverse(
+            plan,
+            InverseScatter {
+                dc,
+                group,
+                groups,
+                scale: 1.0 / n as f64,
+            },
+            sum,
+            &mut inverse_output,
+            &buffer,
+        );
+
+        let start = group * prime;
+        let mut branch = vec![C::new(0.0, 0.0); prime];
+        branch[0] = C::new(spectrum[start], 0.0);
+        for frequency in 1..=prime / 2 {
+            let value = C::new(
+                spectrum[start + 2 * frequency - 1],
+                spectrum[start + 2 * frequency],
+            );
+            branch[frequency] = value;
+            branch[prime - frequency] = value.conj();
+        }
+        let expected = direct(&branch, true);
+        let mut max_error = 0.0_f64;
+        let mut scale = 0.0_f64;
+        let mut max_sample = 0;
+        for sample in 0..prime {
+            let actual = inverse_output[sample * groups + group];
+            let value = expected[sample].re / groups as f64;
+            let error = (actual - value).abs();
+            if error > max_error {
+                max_error = error;
+                max_sample = sample;
+            }
+            scale = scale.max(value.abs());
+        }
+        assert!(
+            max_error <= 5e-11 * scale.max(1.0),
+            "Rader inverse pass mismatch n={n} group={group} sample={max_sample} actual={} expected={} max_error={max_error:e} scale={scale:e}",
+            inverse_output[max_sample * groups + group],
+            expected[max_sample].re / groups as f64
+        );
+    }
+}
+
+fn profile_phases(n: usize, direction: &str, iterations: usize) {
+    assert!(matches!(n, 723 | 4097), "profile supports N=723 or N=4097");
+    assert!(matches!(direction, "r2c" | "c2r"));
+    assert!(iterations > 0);
+    let prime = 241;
+    let groups = n / prime;
+    assert_eq!(groups * prime, n);
+    let plan = PrimePlan::new(prime);
+    let mut workspace = plan.workspace();
+    let input: Vec<_> = (0..n).map(|index| real_value(index, 0)).collect();
+    let packed: Vec<_> = (0..n)
+        .map(|index| 0.2 * (0.031 * (index + 3) as f64).sin())
+        .collect();
+    let mut output = vec![0.0; n];
+    let mut spectrum = vec![C::new(0.0, 0.0); n / 2 + 1];
+    let mut buffer = vec![C::new(0.0, 0.0); prime - 1];
+    let group = 0;
+    let mut sum = 0.0;
+    let mut dc = 0.0;
+
+    validate_profile_pass(&plan, &input, &packed, groups, n);
+    eprintln!("validated radix-241 pass phases against direct DFT for N={n}");
+
+    println!("n,direction,groups,phase,ns_per_phase_call,ns_per_transform_equivalent");
+    let report_group = |phase: &str, ns_per_group: f64| {
+        println!(
+            "{n},{direction},{groups},{phase},{ns_per_group:.3},{:.3}",
+            ns_per_group * groups as f64
+        );
+    };
+    let report_boundary = |phase: &str, ns_per_transform: f64| {
+        println!("{n},{direction},{groups},{phase},{ns_per_transform:.3},{ns_per_transform:.3}");
+    };
+
+    if direction == "r2c" {
+        let gather_ns = time_phase(iterations, |timed| {
+            if timed {
+                sum = gather_forward(&plan, &input, groups, group, &mut buffer);
+                black_box(sum);
+            }
+        });
+        report_group("rader_gather_input_permutation", gather_ns);
+
+        let forward_ns = time_phase(iterations, |timed| {
+            if timed {
+                plan.inner
+                    .forward(&mut buffer, &mut workspace.inner)
+                    .unwrap();
+            } else {
+                gather_forward(&plan, &input, groups, group, &mut buffer);
+            }
+        });
+        report_group("inner_forward_fft", forward_ns);
+
+        let product_ns = time_phase(iterations, |timed| {
+            if timed {
+                for (value, &coefficient) in buffer.iter_mut().zip(&plan.kernel_fwd) {
+                    *value *= coefficient;
+                }
+                black_box(buffer.as_slice());
+            } else {
+                gather_forward(&plan, &input, groups, group, &mut buffer);
+                plan.inner
+                    .forward(&mut buffer, &mut workspace.inner)
+                    .unwrap();
+            }
+        });
+        report_group("pointwise_convolution", product_ns);
+
+        let inverse_ns = time_phase(iterations, |timed| {
+            if timed {
+                plan.inner
+                    .inverse(&mut buffer, &mut workspace.inner)
+                    .unwrap();
+            } else {
+                gather_forward(&plan, &input, groups, group, &mut buffer);
+                plan.inner
+                    .forward(&mut buffer, &mut workspace.inner)
+                    .unwrap();
+                for (value, &coefficient) in buffer.iter_mut().zip(&plan.kernel_fwd) {
+                    *value *= coefficient;
+                }
+            }
+        });
+        report_group("inner_inverse_fft", inverse_ns);
+
+        let scatter_ns = time_phase(iterations, |timed| {
+            if timed {
+                scatter_forward(&plan, input[group], sum, group, &mut output, &buffer);
+            } else {
+                sum = gather_forward(&plan, &input, groups, group, &mut buffer);
+                plan.inner
+                    .forward(&mut buffer, &mut workspace.inner)
+                    .unwrap();
+                for (value, &coefficient) in buffer.iter_mut().zip(&plan.kernel_fwd) {
+                    *value *= coefficient;
+                }
+                plan.inner
+                    .inverse(&mut buffer, &mut workspace.inner)
+                    .unwrap();
+            }
+        });
+        report_group("rader_scatter_and_output_write", scatter_ns);
+
+        let pass_ns = time_phase(iterations, |timed| {
+            if timed {
+                for current_group in 0..groups {
+                    let sum = gather_forward(&plan, &input, groups, current_group, &mut buffer);
+                    plan.inner
+                        .forward(&mut buffer, &mut workspace.inner)
+                        .unwrap();
+                    for (value, &coefficient) in buffer.iter_mut().zip(&plan.kernel_fwd) {
+                        *value *= coefficient;
+                    }
+                    plan.inner
+                        .inverse(&mut buffer, &mut workspace.inner)
+                        .unwrap();
+                    output[current_group * prime] = sum;
+                    let half = prime / 2;
+                    let output_start = current_group * prime;
+                    for (index, &frequency) in plan.ginvpow.iter().enumerate() {
+                        if frequency <= half {
+                            let value = C::new(input[current_group], 0.0) + buffer[index];
+                            output[output_start + 2 * frequency - 1] = value.re;
+                            output[output_start + 2 * frequency] = value.im;
+                        }
+                    }
+                }
+                black_box(output.as_slice());
+            }
+        });
+        report_group("complete_rader_pass", pass_ns / groups as f64);
+
+        let unpack_ns = time_phase(iterations, |timed| {
+            if timed {
+                unpack_odd_spectrum(&output, &mut spectrum);
+            } else {
+                output.fill(0.125);
+            }
+        });
+        report_boundary("public_output_spectrum_reconstruction", unpack_ns);
+        report_boundary("public_real_input_packing", 0.0);
+        black_box(spectrum.as_slice());
+    } else {
+        let pack_input: Vec<_> = (0..=n / 2)
+            .map(|frequency| {
+                C::new(
+                    0.2 * (0.031 * (frequency + 3) as f64).sin(),
+                    if frequency == 0 {
+                        0.0
+                    } else {
+                        0.17 * (0.019 * (frequency + 5) as f64).cos()
+                    },
+                )
+            })
+            .collect();
+        let mut public_packed = vec![0.0; n];
+        let public_pack_ns = time_phase(iterations, |timed| {
+            if timed {
+                black_box(pack_odd_spectrum(&pack_input, &mut public_packed));
+                black_box(public_packed.as_slice());
+            }
+        });
+        report_boundary("public_input_spectrum_pack_and_safety_scan", public_pack_ns);
+
+        let gather_ns = time_phase(iterations, |timed| {
+            if timed {
+                (dc, sum) = gather_inverse(&plan, &packed, group, &mut buffer);
+                black_box((dc, sum));
+            }
+        });
+        report_group("rader_gather_and_hermitian_permutation", gather_ns);
+
+        let forward_ns = time_phase(iterations, |timed| {
+            if timed {
+                plan.inner
+                    .forward(&mut buffer, &mut workspace.inner)
+                    .unwrap();
+            } else {
+                gather_inverse(&plan, &packed, group, &mut buffer);
+            }
+        });
+        report_group("inner_forward_fft", forward_ns);
+
+        let product_ns = time_phase(iterations, |timed| {
+            if timed {
+                for (value, &coefficient) in buffer.iter_mut().zip(&plan.kernel_inv) {
+                    *value *= coefficient;
+                }
+                black_box(buffer.as_slice());
+            } else {
+                gather_inverse(&plan, &packed, group, &mut buffer);
+                plan.inner
+                    .forward(&mut buffer, &mut workspace.inner)
+                    .unwrap();
+            }
+        });
+        report_group("pointwise_convolution", product_ns);
+
+        let inverse_ns = time_phase(iterations, |timed| {
+            if timed {
+                plan.inner
+                    .inverse(&mut buffer, &mut workspace.inner)
+                    .unwrap();
+            } else {
+                gather_inverse(&plan, &packed, group, &mut buffer);
+                plan.inner
+                    .forward(&mut buffer, &mut workspace.inner)
+                    .unwrap();
+                for (value, &coefficient) in buffer.iter_mut().zip(&plan.kernel_inv) {
+                    *value *= coefficient;
+                }
+            }
+        });
+        report_group("inner_inverse_fft", inverse_ns);
+
+        let scatter_ns = time_phase(iterations, |timed| {
+            if timed {
+                scatter_inverse(
+                    &plan,
+                    InverseScatter {
+                        dc,
+                        group,
+                        groups,
+                        scale: 1.0 / n as f64,
+                    },
+                    sum,
+                    &mut output,
+                    &buffer,
+                );
+            } else {
+                (dc, sum) = gather_inverse(&plan, &packed, group, &mut buffer);
+                plan.inner
+                    .forward(&mut buffer, &mut workspace.inner)
+                    .unwrap();
+                for (value, &coefficient) in buffer.iter_mut().zip(&plan.kernel_inv) {
+                    *value *= coefficient;
+                }
+                plan.inner
+                    .inverse(&mut buffer, &mut workspace.inner)
+                    .unwrap();
+            }
+        });
+        report_group("rader_scatter_scale_and_output_write", scatter_ns);
+
+        let pass_ns = time_phase(iterations, |timed| {
+            if timed {
+                for current_group in 0..groups {
+                    let (dc, sum) = gather_inverse(&plan, &packed, current_group, &mut buffer);
+                    plan.inner
+                        .forward(&mut buffer, &mut workspace.inner)
+                        .unwrap();
+                    for (value, &coefficient) in buffer.iter_mut().zip(&plan.kernel_inv) {
+                        *value *= coefficient;
+                    }
+                    plan.inner
+                        .inverse(&mut buffer, &mut workspace.inner)
+                        .unwrap();
+                    scatter_inverse(
+                        &plan,
+                        InverseScatter {
+                            dc,
+                            group: current_group,
+                            groups,
+                            scale: 1.0 / n as f64,
+                        },
+                        sum,
+                        &mut output,
+                        &buffer,
+                    );
+                }
+                black_box(output.as_slice());
+            }
+        });
+        report_group("complete_rader_pass", pass_ns / groups as f64);
+        black_box(output.as_slice());
+    }
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     match args.get(1).map(String::as_str).unwrap_or("validate") {
@@ -808,6 +1327,14 @@ fn main() {
             let dir = &args[5];
             benchmark(mode, n, rows, dir);
         }
-        _ => panic!("use validate, dump r2c|c2r N, or bench MODE N ROWS r2c|c2r"),
+        "profile-phases" => {
+            let n = args[2].parse().unwrap();
+            let direction = &args[3];
+            let iterations = args.get(4).map_or(256, |value| value.parse().unwrap());
+            profile_phases(n, direction, iterations);
+        }
+        _ => panic!(
+            "use validate, dump r2c|c2r N, bench MODE N ROWS r2c|c2r, or profile-phases N r2c|c2r [ITERATIONS]"
+        ),
     }
 }

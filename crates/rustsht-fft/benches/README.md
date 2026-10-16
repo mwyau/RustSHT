@@ -56,7 +56,9 @@ per reused plan and workspace. Use `benches/paired_processes.py` and
 `benches/summarize_pairs.py` for source-to-source comparisons; the M4 boundary
 experiment and route evidence are in
 [`docs/m4-rader-boundary.md`](../docs/m4-rader-boundary.md). `benches/summarize_rader_boundary.py` derives the predeclared six-pair gate
-from the per-cell summary CSV. The M2 native real radix-11 implementation, validation, and paired results are
+from the per-cell summary CSV. `cargo bench --bench rader_real_prototype -- profile-phases N r2c|c2r
+[ITERATIONS]` measures the Rader radix-241 pass phases at N=723 or N=4097. Each invocation validates the modeled pass against direct DFTs before timing. The phase method and captures are documented in
+[`docs/m34-rader-phase-and-radix5.md`](../docs/m34-rader-phase-and-radix5.md). The M2 native real radix-11 implementation, validation, and paired results are
 documented in [`docs/m2-real-radix11.md`](../docs/m2-real-radix11.md). `summarize_first_call.py` summarizes the paired first-call captures. The paired M4 measurement for fusing real inverse eligibility with packed
 spectrum conversion is in
 [`docs/m4-real-inverse-pack.md`](../docs/m4-real-inverse-pack.md). `bench-profile-complex N forward|inverse [ITERATIONS]` runs repeated public

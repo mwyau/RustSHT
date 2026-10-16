@@ -1,0 +1,28 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-c2c",
+      "722",
+      "361"
+    ],
+    "label": "RustSHT-FFT M34 radix5 candidate3"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-c2c",
+      "722",
+      "361"
+    ],
+    "label": "RustSHT-FFT M32 accepted baseline"
+  },
+  "metadata": {
+    "baseline_binary_sha256": "a1036e527f31637d8f0fd9212d1401c2d568155cd1e8dc0faff785aa05333a8c",
+    "candidate_binary_sha256": "f0ea34e9e857c7f924f3bb4d4fed91605f8ae6533e9fdfd776e1058f9588e202",
+    "purpose": "Focused follow-up for the N=722 C2C inverse delta in the complete candidate3 matrix",
+    "timing": "six alternating process pairs; one CPU core affinity",
+    "workload": "bench-native-c2c 722 361; seven warmed samples; 361-row workload; one transform thread"
+  },
+  "pairs": 6
+}

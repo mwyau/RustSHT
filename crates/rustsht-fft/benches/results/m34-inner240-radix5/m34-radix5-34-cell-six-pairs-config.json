@@ -1,0 +1,35 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M34 radix5 candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M32 accepted baseline"
+  },
+  "metadata": {
+    "avx2_runtime": "supported on one CPU core host",
+    "baseline_binary_sha256": "a1036e527f31637d8f0fd9212d1401c2d568155cd1e8dc0faff785aa05333a8c",
+    "baseline_source_commit": "234ab2d30b8d542457398e2f7be17e7e7b9aa25e",
+    "candidate_binary_sha256": "990059bddd390c5b39d47f265b2a4665362317744bfe93673f3ddec7ebbcdcb9",
+    "candidate_source_commit": "3c8240456c96f3376e89549f51159b2ce4105b46 plus uncommitted M34 production diff",
+    "candidate_source_diff_sha256": "15d478d512ea54853278aad044480a23c80e5b1c9219b527703730a01d4e4583",
+    "candidate_source_files_sha256": {
+      "src/complex.rs": "72a71cfc7fadb97121bb4c3e6003fdcf67281081c1ecf6d34f23f5ec0f20c307",
+      "src/lib.rs": "f8e72f12ad80eacddbc9d26be8e4e42d7edc5dd652ad2bdfe99974f710fda97c",
+      "src/simd.rs": "1037066fb4c1da9563b839ac8fcec699f6e2c4334d78783fc4872f3d07d7dd82"
+    },
+    "cargo_profile": "optimized bench profile; portable x86_64 target; runtime AVX2",
+    "compiler": "rustc 1.99.0 (b940084d7 2026-09-28)",
+    "purpose": "M34 phase-guided AVX2 radix-five pass for repeated N=240 inner transforms",
+    "timing": "six alternating process pairs; one CPU core affinity; identical commands and workload",
+    "workload": "bench-native-sht; established 34-cell C2C and real matrix; seven warmed samples; one transform thread"
+  },
+  "pairs": 6
+}
