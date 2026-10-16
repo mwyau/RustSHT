@@ -411,7 +411,12 @@ impl<T: ShtScalar> ShtPlan<T> {
         Ok(workspace)
     }
 
-    /// Reserves recurrence scratch and sets the maximum concurrency for a
+    #[cfg(feature = "parallel")]
+    pub(crate) fn analysis_fft_parallelism_supported(&self) -> bool {
+        self.grid.ntheta() >= 128 && self.grid.nphi() >= 257
+    }
+
+    /// Reserves execution scratch and sets the maximum concurrency for a
     /// workspace.
     ///
     /// `execution_capacity` is a workspace budget, independent of the Rayon
@@ -420,7 +425,8 @@ impl<T: ShtScalar> ShtPlan<T> {
     /// value opts the workspace into that capacity; a pool change alone does
     /// not increase it. Reducing the value keeps allocated scratch for later
     /// reuse. A capacity of one preserves a serial workspace for batching
-    /// independent fields.
+    /// independent fields. Parallel builds reserve recurrence scratch for
+    /// transform groups and one row-FFT workspace per requested worker.
     ///
     /// # Errors
     ///
@@ -491,6 +497,12 @@ impl<T: ShtScalar> ShtPlan<T> {
                     .len()
                     .min(crate::legendre::LATITUDE_BLOCK_SIZE),
             )?;
+            if self.analysis_fft_parallelism_supported() {
+                let fft_worker_count = execution_capacity.min(self.grid.ntheta());
+                if fft_worker_count > 1 {
+                    workspace.ensure_fft_worker_count(fft_worker_count, &self.fft)?;
+                }
+            }
         }
 
         if workspace.recurrence_workers.len() < required_worker_count {

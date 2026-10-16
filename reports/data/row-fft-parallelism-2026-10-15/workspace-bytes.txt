@@ -1,0 +1,11 @@
+Root SHT row-FFT workspace payload at f64 GL q6
+Temporary diagnostic measured the Vec capacities in the six per-worker root
+RealFftWorkspace values. The diagnostic test was removed after measurement;
+the root FFT implementation was unchanged.
+
+T127: 6 workers, 8,224 bytes/worker, 49,344 bytes total
+T511: 6 workers, 32,800 bytes/worker, 196,800 bytes total
+T1023: 6 workers, 65,568 bytes/worker, 393,408 bytes total
+
+The q1 workspace has no row-FFT worker slots. Peak RSS comparisons are in
+paired.log, q1-control.log and t127-paired.log.
