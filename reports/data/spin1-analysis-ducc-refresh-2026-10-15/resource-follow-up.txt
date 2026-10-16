@@ -1,0 +1,14 @@
+utc=2026-10-16T01:54:59Z
+[cpu.max]
+max 100000
+[cpu.stat]
+usage_usec 1107089218608
+user_usec 1065679676211
+system_usec 41409542397
+nice_usec 27534856000
+core_sched.force_idle_usec 0
+nr_periods 0
+nr_throttled 0
+throttled_usec 0
+nr_bursts 0
+burst_usec 0

@@ -14,8 +14,10 @@ closer to a separate earlier Python-plan comparison, which measured
 The earlier RustSHT values came from different source revisions. The current
 screen used the same DUCC package version and benchmark script, but its host
 load average rose from `3.44` before the run to `5.55` afterward. CPU affinity
-was fixed; other processes could use those CPUs. The spread across these
-sessions prevents this screen from establishing an updated RustSHT/DUCC gap.
+was fixed, but the CPUs were not isolated. A follow-up cgroup check found no
+CPU quota (`cpu.max=max 100000`); that check occurred after the timed run. The
+spread across these sessions prevents this screen from establishing an
+updated RustSHT/DUCC gap.
 
 ## Workload and method
 
@@ -38,8 +40,9 @@ The host was an AMD Ryzen 9 5950X running Linux `7.0.14-20-pve`. Rust was
 `1.99.0` with LLVM `23.1.1`; the release build used portable Pulp runtime
 dispatch and no `target-cpu=native`. Python was `3.11.15` with NumPy `2.4.6`.
 
-Raw inner samples, process timings, load snapshots, command lines and binary
-hashes are in [`the benchmark data`](data/spin1-analysis-ducc-refresh-2026-10-15/).
+Raw inner samples, process timings, load snapshots, command lines, binary
+hashes and the follow-up CPU-quota check are in
+[`the benchmark data`](data/spin1-analysis-ducc-refresh-2026-10-15/).
 The `preliminary-*` files record an earlier run whose native q1 arguments were
 incorrect; the table above uses the corrected q1 and q8 runs. This screen is a
 timing comparison, not a numerical validation. Existing spin-1 analytic,
