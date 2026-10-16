@@ -1531,27 +1531,46 @@ impl WithSimd for FusedScalarAnalysisPairChannels<'_> {
             let (next_vectors, next_tail) = S::as_mut_simd_f64s(next);
             let a = simd.splat_f64s(coefficient_a[pair_index]);
             let b = simd.splat_f64s(coefficient_b[pair_index]);
+            let big = simd.splat_f64s(scalar::BIG);
+            let zeros = simd.splat_f64s(0.0);
             debug_assert_eq!(current_vectors.len(), previous_vectors.len());
             debug_assert_eq!(current_vectors.len(), cosine_vectors.len());
             debug_assert_eq!(current_vectors.len(), next_vectors.len());
+            // The previous/current pair is normal on entry. Check each new
+            // next value before it becomes current on the following iteration.
             for index in 0..current_vectors.len() {
                 let cosine_squared = simd.mul_f64s(cosine_vectors[index], cosine_vectors[index]);
                 let leading = simd.mul_add_f64s(a, cosine_squared, b);
-                next_vectors[index] =
+                let next_value =
                     simd.mul_add_f64s(leading, current_vectors[index], previous_vectors[index]);
+                next_vectors[index] = next_value;
+
+                let magnitude = simd.abs_f64s(next_value);
+                let below_upper_bound = simd.less_than_or_equal_f64s(magnitude, big);
+                let is_zero = simd.equal_f64s(magnitude, zeros);
+                let lower_check = simd.select_f64s(is_zero, big, magnitude);
+                let in_range = simd.select_f64s(below_upper_bound, lower_check, zeros);
+                if simd.reduce_min_f64s(in_range) < scalar::SMALL {
+                    return false;
+                }
             }
             for index in 0..current_tail.len() {
                 let cosine_squared = cosine_tail[index] * cosine_tail[index];
                 let leading =
                     coefficient_a[pair_index].mul_add(cosine_squared, coefficient_b[pair_index]);
-                next_tail[index] = leading.mul_add(current_tail[index], previous_tail[index]);
+                let next_value = leading.mul_add(current_tail[index], previous_tail[index]);
+                next_tail[index] = next_value;
+                let magnitude = next_value.abs();
+                if !next_value.is_finite()
+                    || magnitude > scalar::BIG
+                    || (magnitude != 0.0 && magnitude < scalar::SMALL)
+                {
+                    return false;
+                }
             }
 
             std::mem::swap(&mut previous, &mut current);
             std::mem::swap(&mut current, &mut next);
-            if scalar::pair_lanes_need_scaling(simd, previous, current) {
-                return false;
-            }
         }
         true
     }
@@ -3191,6 +3210,63 @@ mod tests {
             for (actual, expected) in staged.iter().zip(&reference[channel]) {
                 assert!((*actual - *expected).norm() <= 2.0e-14);
             }
+        }
+    }
+
+    #[test]
+    fn fused_two_channel_analysis_block_declines_on_late_range_failure() {
+        let m = 0;
+        let lmax = 2;
+        let lane_count = 17;
+        let sin_theta = vec![1.0; lane_count];
+        let same_real = [vec![1.0; lane_count], vec![1.0; lane_count]];
+        let same_imag = [vec![0.0; lane_count], vec![0.0; lane_count]];
+        let opposite_real = [vec![0.0; lane_count], vec![0.0; lane_count]];
+        let opposite_imag = [vec![0.0; lane_count], vec![0.0; lane_count]];
+        let sectoral_norm = scalar::sectoral_normalizations(m).unwrap()[m];
+        let mut coefficient_a = vec![0.0; lmax / 2 + 2];
+        let coefficient_b = vec![0.0; lmax / 2 + 2];
+        coefficient_a[0] = f64::MAX;
+        let mut first_vector_fails = vec![0.0; lane_count];
+        first_vector_fails[0] = 1.0;
+        let mut later_vector_fails = vec![0.0; lane_count];
+        later_vector_fails[8] = 1.0;
+        let mut scalar_tail_fails = vec![0.0; lane_count];
+        scalar_tail_fails[lane_count - 1] = 1.0;
+
+        for cos_theta in [first_vector_fails, later_vector_fails, scalar_tail_fails] {
+            let coefficient_count = lmax - m + 1;
+            let mut staged_first = vec![Complex64::new(0.0, 0.0); coefficient_count];
+            let mut staged_second = vec![Complex64::new(0.0, 0.0); coefficient_count];
+            let mut previous = vec![0.0; lane_count];
+            let mut current = vec![0.0; lane_count];
+            let mut next = vec![0.0; lane_count];
+            let mut exponents = vec![0; lane_count];
+
+            let fused = fused_scalar_analysis_pair_channels_block_dispatched(
+                Arch::new(),
+                m,
+                lmax,
+                &sin_theta,
+                &cos_theta,
+                sectoral_norm,
+                &coefficient_a,
+                &coefficient_b,
+                [&same_real[0], &same_real[1]],
+                [&same_imag[0], &same_imag[1]],
+                [&opposite_real[0], &opposite_real[1]],
+                [&opposite_imag[0], &opposite_imag[1]],
+                &mut staged_first,
+                &mut staged_second,
+                &mut previous,
+                &mut current,
+                &mut next,
+                &mut exponents,
+            )
+            .unwrap();
+            assert!(!fused);
+            assert_ne!(staged_first[0], Complex64::new(0.0, 0.0));
+            assert_ne!(staged_second[0], Complex64::new(0.0, 0.0));
         }
     }
 

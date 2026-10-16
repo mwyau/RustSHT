@@ -1,0 +1,14 @@
+utc_recorded=2026-10-16T03:11:25Z
+branch_head=541ac1b
+candidate_source_binary_sha256=55a338a2dff439323240fe7c72525cc685f41eb4415905366bacca6a318f124b
+cpu=x86-64 one CPU core-Core Processor
+DUCC_source_revision=c1ed01b8fda69d2a378190f0915f1a19762dddbf
+[ducc0] 0.41.0
+[python] Python 3.11.15
+rustc 1.99.0 (b940084d7 2026-09-28)
+binary: rustc
+commit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4
+commit-date: 2026-09-28
+host: x86_64-unknown-linux-gnu
+release: 1.99.0
+LLVM version: 23.1.1

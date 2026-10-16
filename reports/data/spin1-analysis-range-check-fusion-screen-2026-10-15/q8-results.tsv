@@ -1,0 +1,7 @@
+sample_set	pairs	lmax	baseline_median_ms	candidate_median_ms	paired_change_median_pct	paired_change_min_pct	paired_change_max_pct	candidate_faster_pairs	baseline_median_rss_kib	candidate_median_rss_kib
+initial_5	5	511	6.011	5.938	-1.22	-2.31	4.53	3	43232	43196
+repeat_5	5	511	5.901	5.900	0.19	-1.56	0.66	2	43072	43012
+pooled_10	10	511	5.952	5.908	-0.11	-2.31	4.53	5	43194	43194
+initial_5	5	1023	43.152	42.533	-1.08	-16.49	0.36	4	154376	154428
+repeat_5	5	1023	43.091	42.680	-0.07	-3.96	1.65	3	154496	154432
+pooled_10	10	1023	43.121	42.632	-0.88	-16.49	1.65	7	154436	154430
