@@ -29,6 +29,9 @@ const BIG: f32 = f32::from_bits(167_u32 << 23);
 const SMALL: f32 = f32::from_bits(87_u32 << 23);
 const SCALE_UP: f32 = f32::from_bits(207_u32 << 23);
 const SCALE_DOWN: f32 = f32::from_bits(47_u32 << 23);
+// T1023 q1 improved in paired measurements; T720 regressed with the skip
+// enabled. Use the skip only at the measured T1023 truncation.
+const NORMAL_RANGE_SKIP_LMAX: usize = 1023;
 
 #[derive(Clone, Copy)]
 struct ScaledValue {
@@ -91,6 +94,60 @@ pub(crate) fn for_each_y_lm_dispatched<F>(
     current: &mut [f32],
     next: &mut [f32],
     exponents: &mut [i64],
+    visit: F,
+) -> Result<(), ShtError>
+where
+    F: FnMut(usize, usize, &[f32], &[i64]) -> Result<(), ShtError>,
+{
+    if lmax == NORMAL_RANGE_SKIP_LMAX {
+        for_each_y_lm_dispatched_impl::<F, true>(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            epsilon,
+            previous,
+            current,
+            next,
+            exponents,
+            visit,
+        )
+    } else {
+        for_each_y_lm_dispatched_impl::<F, false>(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            epsilon,
+            previous,
+            current,
+            next,
+            exponents,
+            visit,
+        )
+    }
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The recurrence receives grid lanes and caller-owned recurrence scratch explicitly."
+)]
+fn for_each_y_lm_dispatched_impl<F, const ALLOW_NORMAL_RANGE_SKIP: bool>(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[f32],
+    cos_theta: &[f32],
+    sectoral_norm: f32,
+    epsilon: &[f32],
+    previous: &mut [f32],
+    current: &mut [f32],
+    next: &mut [f32],
+    exponents: &mut [i64],
     mut visit: F,
 ) -> Result<(), ShtError>
 where
@@ -107,7 +164,7 @@ where
     for ring_start in (0..sin_theta.len()).step_by(LATITUDE_BLOCK_SIZE) {
         let ring_end = (ring_start + LATITUDE_BLOCK_SIZE).min(sin_theta.len());
         let block_len = ring_end - ring_start;
-        arch.dispatch(ForEachYlm32 {
+        arch.dispatch(ForEachYlm32::<_, ALLOW_NORMAL_RANGE_SKIP> {
             ring_start,
             m,
             lmax,
@@ -125,7 +182,7 @@ where
     Ok(())
 }
 
-struct ForEachYlm32<'a, F> {
+struct ForEachYlm32<'a, F, const ALLOW_NORMAL_RANGE_SKIP: bool> {
     ring_start: usize,
     m: usize,
     lmax: usize,
@@ -140,7 +197,8 @@ struct ForEachYlm32<'a, F> {
     visit: F,
 }
 
-impl<F> WithSimd for ForEachYlm32<'_, F>
+impl<F, const ALLOW_NORMAL_RANGE_SKIP: bool> WithSimd
+    for ForEachYlm32<'_, F, ALLOW_NORMAL_RANGE_SKIP>
 where
     F: FnMut(usize, usize, &[f32], &[i64]) -> Result<(), ShtError>,
 {
@@ -173,6 +231,7 @@ where
         let mut previous = previous;
         let mut current = current;
         let mut next = next;
+        let mut normal_range = false;
         for lane in 0..sin_theta.len() {
             let sectoral = scaled_power(sin_theta[lane], m)?;
             let value = normalize_value(
@@ -214,7 +273,17 @@ where
                     / epsilon[l + 1];
             }
 
-            normalize_pair_lanes(current, next, exponents)?;
+            if ALLOW_NORMAL_RANGE_SKIP {
+                if normal_range {
+                    if pair_lanes_need_scaling(simd, current, next) {
+                        normal_range = normalize_pair_lanes_with_state(current, next, exponents)?;
+                    }
+                } else {
+                    normal_range = normalize_pair_lanes_with_state(current, next, exponents)?;
+                }
+            } else {
+                normalize_pair_lanes(current, next, exponents)?;
+            }
             std::mem::swap(&mut previous, &mut current);
             std::mem::swap(&mut current, &mut next);
         }
@@ -431,6 +500,87 @@ fn normalize_pair_lanes(
     Ok(())
 }
 
+#[inline(always)]
+fn normalize_pair_lanes_with_state(
+    previous: &mut [f32],
+    current: &mut [f32],
+    exponents: &mut [i64],
+) -> Result<bool, ShtError> {
+    let mut normal_range = true;
+    for lane in 0..previous.len() {
+        let previous_bits = previous[lane].to_bits() & 0x7fff_ffff;
+        let current_bits = current[lane].to_bits() & 0x7fff_ffff;
+        debug_assert!(previous_bits < 0x7f80_0000 && current_bits < 0x7f80_0000);
+        let mut maximum_bits = previous_bits.max(current_bits);
+        let mut maximum = f32::from_bits(maximum_bits);
+        while maximum_bits > BIG.to_bits() {
+            previous[lane] *= SCALE_DOWN;
+            current[lane] *= SCALE_DOWN;
+            exponents[lane] = exponents[lane]
+                .checked_add(80)
+                .ok_or(ShtError::IntegerOverflow {
+                    quantity: "scalar recurrence scale",
+                })?;
+            maximum *= SCALE_DOWN;
+            maximum_bits = maximum.to_bits() & 0x7fff_ffff;
+        }
+        while maximum_bits != 0 && maximum_bits < SMALL.to_bits() {
+            previous[lane] *= SCALE_UP;
+            current[lane] *= SCALE_UP;
+            exponents[lane] = exponents[lane]
+                .checked_sub(80)
+                .ok_or(ShtError::IntegerOverflow {
+                    quantity: "scalar recurrence scale",
+                })?;
+            maximum *= SCALE_UP;
+            maximum_bits = maximum.to_bits() & 0x7fff_ffff;
+        }
+        normal_range &= exponents[lane] == 0
+            && maximum_bits <= BIG.to_bits()
+            && (maximum_bits == 0 || maximum_bits >= SMALL.to_bits());
+    }
+    Ok(normal_range)
+}
+
+#[inline(always)]
+fn pair_is_in_normal_range(previous: f32, current: f32) -> bool {
+    let maximum = previous.abs().max(current.abs());
+    maximum <= BIG && (maximum == 0.0 || maximum >= SMALL)
+}
+
+#[inline(always)]
+fn pair_lanes_need_scaling<S: Simd>(simd: S, previous: &[f32], current: &[f32]) -> bool {
+    debug_assert_eq!(previous.len(), current.len());
+    let (previous_vectors, previous_tail) = S::as_simd_f32s(previous);
+    let (current_vectors, current_tail) = S::as_simd_f32s(current);
+    debug_assert_eq!(previous_vectors.len(), current_vectors.len());
+    debug_assert_eq!(previous_tail.len(), current_tail.len());
+
+    let big = simd.splat_f32s(BIG);
+    let zeros = simd.splat_f32s(0.0);
+    for index in 0..previous_vectors.len() {
+        let previous = simd.abs_f32s(previous_vectors[index]);
+        let current = simd.abs_f32s(current_vectors[index]);
+        let previous_ordered = simd.equal_f32s(previous, previous);
+        let current_ordered = simd.equal_f32s(current, current);
+        let maximum = simd.max_f32s(previous, current);
+        let maximum = simd.select_f32s(current_ordered, maximum, previous);
+        let maximum = simd.select_f32s(previous_ordered, maximum, current);
+        let below_upper_bound = simd.less_than_or_equal_f32s(maximum, big);
+        let is_zero = simd.equal_f32s(maximum, zeros);
+        let lower_check = simd.select_f32s(is_zero, big, maximum);
+        let in_range = simd.select_f32s(below_upper_bound, lower_check, zeros);
+        if simd.reduce_min_f32s(in_range) < SMALL {
+            return true;
+        }
+    }
+
+    previous_tail
+        .iter()
+        .zip(current_tail)
+        .any(|(&previous, &current)| !pair_is_in_normal_range(previous, current))
+}
+
 pub(crate) fn scale_binary(mut value: f32, mut exponent: i64) -> f32 {
     if value == 0.0 || !value.is_finite() || exponent == 0 {
         return value;
@@ -492,6 +642,19 @@ fn scale_normal_binary(value: f32, exponent: i64) -> Option<f32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    struct PairRangeCheck<'a> {
+        previous: &'a [f32],
+        current: &'a [f32],
+    }
+
+    impl WithSimd for PairRangeCheck<'_> {
+        type Output = bool;
+
+        fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+            pair_lanes_need_scaling(simd, self.previous, self.current)
+        }
+    }
 
     fn reference_multiply_component_scaled(value: f32, factor: f32, exponent: i64) -> f32 {
         if value == 0.0 || factor == 0.0 || !value.is_finite() || !factor.is_finite() {
@@ -608,6 +771,78 @@ mod tests {
             );
             assert_eq!(actual_exponents[lane], expected_exponents[lane]);
         }
+    }
+
+    #[test]
+    fn f32_normal_range_check_covers_simd_lanes_and_tail() {
+        for (previous_value, current_value) in [
+            (0.0, 0.0),
+            (0.0, SMALL / 2.0),
+            (BIG, SMALL / 2.0),
+            (BIG * 2.0, 0.0),
+            (SMALL, BIG),
+            (f32::NAN, BIG),
+            (BIG, f32::NAN),
+            (f32::NAN, SMALL / 2.0),
+            (f32::NAN, f32::NAN),
+            (f32::INFINITY, f32::NAN),
+        ] {
+            let previous = [previous_value; 17];
+            let current = [current_value; 17];
+            let expected = !pair_is_in_normal_range(previous_value, current_value);
+            for arch in [Arch::Scalar, Arch::new()] {
+                let actual = arch.dispatch(PairRangeCheck {
+                    previous: &previous,
+                    current: &current,
+                });
+                assert_eq!(actual, expected, "{previous_value:?}, {current_value:?}");
+            }
+        }
+
+        let mut previous = vec![0.25_f32; 17];
+        let mut current = vec![0.5_f32; 17];
+        let mut exponents = vec![0_i64; 17];
+        previous[0] = 0.0;
+        current[0] = -0.0;
+        previous[1] = SMALL;
+        current[1] = 0.0;
+        previous[2] = BIG;
+
+        for arch in [Arch::Scalar, Arch::new()] {
+            let needs_scaling = |previous: &[f32], current: &[f32]| {
+                arch.dispatch(PairRangeCheck { previous, current })
+            };
+            assert!(!needs_scaling(&previous, &current));
+
+            let mut normal_previous = previous.clone();
+            let mut normal_current = current.clone();
+            let mut normal_exponents = exponents.clone();
+            assert!(
+                normalize_pair_lanes_with_state(
+                    &mut normal_previous,
+                    &mut normal_current,
+                    &mut normal_exponents,
+                )
+                .unwrap()
+            );
+            assert_eq!(normal_previous, previous);
+            assert_eq!(normal_current, current);
+
+            let mut below = current.clone();
+            below[3] = f32::from_bits(SMALL.to_bits() - 1);
+            let mut below_previous = previous.clone();
+            below_previous[3] = 0.0;
+            assert!(needs_scaling(&below_previous, &below));
+
+            let mut above = current.clone();
+            above[16] = f32::from_bits(BIG.to_bits() + 1);
+            assert!(needs_scaling(&previous, &above));
+        }
+
+        exponents[8] = 1;
+        assert!(
+            !normalize_pair_lanes_with_state(&mut previous, &mut current, &mut exponents).unwrap()
+        );
     }
 
     #[test]
