@@ -1,0 +1,23 @@
+    Finished `bench` profile [optimized] target(s) in 0.00s
+     Running benches/prototypes/rader_real.rs (target/release/deps/rader_real_prototype-87f4bde33875d71b)
+validated radix-241 pass phases against direct DFT for N=723
+n,direction,groups,phase,ns_per_phase_call,ns_per_transform_equivalent
+723,r2c,3,rader_gather_input_permutation,161.625,484.875
+723,r2c,3,inner_forward_fft,926.750,2780.250
+723,r2c,3,pointwise_convolution,122.750,368.250
+723,r2c,3,inner_inverse_fft,1304.875,3914.625
+723,r2c,3,rader_scatter_and_output_write,110.250,330.750
+723,r2c,3,complete_rader_pass,2742.292,8226.875
+723,r2c,3,public_output_spectrum_reconstruction,85.125,85.125
+723,r2c,3,public_real_input_packing,0.000,0.000
+    Finished `bench` profile [optimized] target(s) in 0.00s
+     Running benches/prototypes/rader_real.rs (target/release/deps/rader_real_prototype-87f4bde33875d71b)
+validated radix-241 pass phases against direct DFT for N=4097
+n,direction,groups,phase,ns_per_phase_call,ns_per_transform_equivalent
+4097,c2r,17,public_input_spectrum_pack_and_safety_scan,3154.750,3154.750
+4097,c2r,17,rader_gather_and_hermitian_permutation,230.500,3918.500
+4097,c2r,17,inner_forward_fft,924.250,15712.250
+4097,c2r,17,pointwise_convolution,121.500,2065.500
+4097,c2r,17,inner_inverse_fft,1302.500,22142.500
+4097,c2r,17,rader_scatter_scale_and_output_write,134.000,2278.000
+4097,c2r,17,complete_rader_pass,2786.669,47373.375

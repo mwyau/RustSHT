@@ -1,0 +1,9 @@
+Command pattern: TMPDIR=/dev/shm/rustsht-goal-tmp taskset -c 30 valgrind --tool=callgrind --callgrind-out-file=PROFILE --quiet BINARY bench-profile-complex 722 inverse 20
+
+M32 binary SHA-256: a1036e527f31637d8f0fd9212d1401c2d568155cd1e8dc0faff785aa05333a8c
+M32 instruction references: 6,414,452
+
+Radix-five candidate 3 binary SHA-256: f0ea34e9e857c7f924f3bb4d4fed91605f8ae6533e9fdfd776e1058f9588e202
+Candidate instruction references: 6,414,818
+
+Each profile contains 20 repeated inverse transforms after setup and warm-up. Callgrind instruction references are not elapsed-cycle measurements.

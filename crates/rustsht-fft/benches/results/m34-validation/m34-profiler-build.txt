@@ -1,0 +1,3 @@
+   Compiling rustsht-fft v0.1.0-dev.0 (/home/albert/RustSHT/crates/rustsht-fft)
+    Finished `bench` profile [optimized] target(s) in 3.54s
+  Executable benches/prototypes/rader_real.rs (target/release/deps/rader_real_prototype-87f4bde33875d71b)

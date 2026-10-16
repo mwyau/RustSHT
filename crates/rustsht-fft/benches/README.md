@@ -79,6 +79,12 @@ experiment and route evidence are in
 `benches/summarize_rader_boundary.py` derives the predeclared six-pair gate
 from the per-cell summary CSV.
 
+`cargo bench --bench rader_real_prototype -- profile-phases N r2c|c2r
+[ITERATIONS]` measures the Rader radix-241 pass phases at N=723 or N=4097.
+Each invocation validates the modeled pass against direct DFTs before timing.
+The phase method and captures are documented in
+[`docs/m34-rader-phase-and-radix5.md`](../docs/m34-rader-phase-and-radix5.md).
+
 The M2 native real radix-11 implementation, validation, and paired results are
 documented in [`docs/m2-real-radix11.md`](../docs/m2-real-radix11.md).
 `summarize_first_call.py` summarizes the paired first-call captures.

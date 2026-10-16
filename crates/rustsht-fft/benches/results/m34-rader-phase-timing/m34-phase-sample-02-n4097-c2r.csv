@@ -1,0 +1,8 @@
+n,direction,groups,phase,ns_per_phase_call,ns_per_transform_equivalent
+4097,c2r,17,public_input_spectrum_pack_and_safety_scan,3172.332,3172.332
+4097,c2r,17,rader_gather_and_hermitian_permutation,231.062,3928.062
+4097,c2r,17,inner_forward_fft,919.516,15631.766
+4097,c2r,17,pointwise_convolution,109.699,1864.887
+4097,c2r,17,inner_inverse_fft,1319.879,22437.941
+4097,c2r,17,rader_scatter_scale_and_output_write,129.270,2197.582
+4097,c2r,17,complete_rader_pass,2794.137,47500.328

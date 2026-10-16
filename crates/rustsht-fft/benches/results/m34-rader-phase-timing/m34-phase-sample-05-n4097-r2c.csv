@@ -1,0 +1,9 @@
+n,direction,groups,phase,ns_per_phase_call,ns_per_transform_equivalent
+4097,r2c,17,rader_gather_input_permutation,159.051,2703.863
+4097,r2c,17,inner_forward_fft,922.961,15690.336
+4097,r2c,17,pointwise_convolution,109.777,1866.215
+4097,r2c,17,inner_inverse_fft,1312.289,22308.914
+4097,r2c,17,rader_scatter_and_output_write,106.531,1811.031
+4097,r2c,17,complete_rader_pass,2807.298,47724.070
+4097,r2c,17,public_output_spectrum_reconstruction,585.992,585.992
+4097,r2c,17,public_real_input_packing,0.000,0.000
