@@ -1,0 +1,55 @@
+diff --git a/src/legendre/scalar_paired.rs b/src/legendre/scalar_paired.rs
+index 9084857..d72abb4 100644
+--- a/src/legendre/scalar_paired.rs
++++ b/src/legendre/scalar_paired.rs
+@@ -1754,41 +1754,44 @@ impl WithSimd for AnalysisPairAccumulation<'_> {
+         for (((((same_real, same_imag), opposite_real), opposite_imag), basis), cosine) in
+             vector_pairs
+         {
++            let basis_cosine_0 = simd.mul_f64s(basis[0], cosine[0]);
++            let basis_cosine_1 = simd.mul_f64s(basis[1], cosine[1]);
+             same_re_even = simd.add_f64s(same_re_even, simd.mul_f64s(same_real[0], basis[0]));
+             same_im_even = simd.add_f64s(same_im_even, simd.mul_f64s(same_imag[0], basis[0]));
+             opposite_re_even = simd.add_f64s(
+                 opposite_re_even,
+-                simd.mul_f64s(simd.mul_f64s(opposite_real[0], basis[0]), cosine[0]),
++                simd.mul_f64s(opposite_real[0], basis_cosine_0),
+             );
+             opposite_im_even = simd.add_f64s(
+                 opposite_im_even,
+-                simd.mul_f64s(simd.mul_f64s(opposite_imag[0], basis[0]), cosine[0]),
++                simd.mul_f64s(opposite_imag[0], basis_cosine_0),
+             );
+             same_re_odd = simd.add_f64s(same_re_odd, simd.mul_f64s(same_real[1], basis[1]));
+             same_im_odd = simd.add_f64s(same_im_odd, simd.mul_f64s(same_imag[1], basis[1]));
+             opposite_re_odd = simd.add_f64s(
+                 opposite_re_odd,
+-                simd.mul_f64s(simd.mul_f64s(opposite_real[1], basis[1]), cosine[1]),
++                simd.mul_f64s(opposite_real[1], basis_cosine_1),
+             );
+             opposite_im_odd = simd.add_f64s(
+                 opposite_im_odd,
+-                simd.mul_f64s(simd.mul_f64s(opposite_imag[1], basis[1]), cosine[1]),
++                simd.mul_f64s(opposite_imag[1], basis_cosine_1),
+             );
+         }
+         if !basis_remainder.is_empty() {
+             let basis = basis_remainder[0];
+             let cosine = cosine_remainder[0];
++            let basis_cosine = simd.mul_f64s(basis, cosine);
+             same_re_even =
+                 simd.add_f64s(same_re_even, simd.mul_f64s(same_real_remainder[0], basis));
+             same_im_even =
+                 simd.add_f64s(same_im_even, simd.mul_f64s(same_imag_remainder[0], basis));
+             opposite_re_even = simd.add_f64s(
+                 opposite_re_even,
+-                simd.mul_f64s(simd.mul_f64s(opposite_real_remainder[0], basis), cosine),
++                simd.mul_f64s(opposite_real_remainder[0], basis_cosine),
+             );
+             opposite_im_even = simd.add_f64s(
+                 opposite_im_even,
+-                simd.mul_f64s(simd.mul_f64s(opposite_imag_remainder[0], basis), cosine),
++                simd.mul_f64s(opposite_imag_remainder[0], basis_cosine),
+             );
+         }
+         let mut same_re = simd.reduce_sum_f64s(simd.add_f64s(same_re_even, same_re_odd));
