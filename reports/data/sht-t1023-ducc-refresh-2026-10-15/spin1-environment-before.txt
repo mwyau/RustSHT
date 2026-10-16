@@ -1,0 +1,7 @@
+utc=2026-10-16T02:05:27Z
+loadavg=3.53 4.06 4.23 1/2818 2125237
+cpu.max=max 100000
+Cpus_allowed_list=0-31
+q1_affinity=CPU 0
+q8_affinity=CPUs 8-15
+m1b_sha256=690fc10f9abf1c6a5b396e0d7ff27647daf8e51d90b8620537645123efe7f1c8  target/release/examples/m1b_bench
