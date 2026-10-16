@@ -1,0 +1,29 @@
+{
+  "analysis_input_sha256": "efcd24335e563bc0042cfcaca3ec8fcf07352b310f17000ac8ced803a87a41bb",
+  "candidate_vs_ducc": {
+    "analysis": {
+      "elements": 819840,
+      "max_absolute": 1.3343029109436991e-08,
+      "relative_l2": 2.0458189942790466e-05,
+      "rms_absolute": 1.7590639713161687e-09
+    },
+    "synthesis": {
+      "elements": 3276800,
+      "max_absolute": 4.844367504119873e-05,
+      "relative_l2": 3.771560312266455e-05,
+      "rms_absolute": 1.1151934955852906e-06
+    }
+  },
+  "ducc0": "0.41.0",
+  "ducc_source_revision": "c1ed01b8fda69d2a378190f0915f1a19762dddbf",
+  "grid": {
+    "dtype": "float32 / complex64",
+    "geometry": "GL",
+    "lmax": 1279,
+    "mmax": 1279,
+    "nphi": 2560,
+    "ntheta": 1280,
+    "nthreads": 1,
+    "phi0": 0.37
+  }
+}

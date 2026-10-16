@@ -42,6 +42,33 @@ fn rss_kib() -> u64 {
         .unwrap_or(0)
 }
 
+fn dump_f32_if_requested(label: &str, values: &[f32]) {
+    let Some(directory) = std::env::var_os("RUSTSHT_F32_DUMP_DIR") else {
+        return;
+    };
+    let directory = std::path::PathBuf::from(directory);
+    std::fs::create_dir_all(&directory).unwrap();
+    let mut bytes = Vec::with_capacity(std::mem::size_of_val(values));
+    for value in values {
+        bytes.extend_from_slice(&value.to_le_bytes());
+    }
+    std::fs::write(directory.join(label), bytes).unwrap();
+}
+
+fn dump_complex32_if_requested(label: &str, values: &[Complex32]) {
+    let Some(directory) = std::env::var_os("RUSTSHT_F32_DUMP_DIR") else {
+        return;
+    };
+    let directory = std::path::PathBuf::from(directory);
+    std::fs::create_dir_all(&directory).unwrap();
+    let mut bytes = Vec::with_capacity(std::mem::size_of_val(values));
+    for value in values {
+        bytes.extend_from_slice(&value.re.to_le_bytes());
+        bytes.extend_from_slice(&value.im.to_le_bytes());
+    }
+    std::fs::write(directory.join(label), bytes).unwrap();
+}
+
 fn main() {
     let mut args = std::env::args().skip(1);
     let spin: usize = args.next().unwrap_or_else(|| "1".into()).parse().unwrap();
@@ -235,4 +262,13 @@ fn main() {
         median(analysis_qn.clone()).as_secs_f64() * 1000.0
     );
     println!("peak_rss_kib={}", rss_kib());
+
+    if std::env::var_os("RUSTSHT_F32_DUMP_DIR").is_some() {
+        dump_f32_if_requested(&format!("spin{spin}-synthesis-channel0.f32"), &first);
+        dump_complex32_if_requested(&format!("spin{spin}-analysis-channel0.c32"), &analyzed_e);
+        if spin == 1 {
+            dump_f32_if_requested("spin1-synthesis-channel1.f32", &second);
+            dump_complex32_if_requested("spin1-analysis-channel1.c32", &analyzed_b);
+        }
+    }
 }

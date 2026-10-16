@@ -29,9 +29,10 @@ const BIG: f32 = f32::from_bits(167_u32 << 23);
 const SMALL: f32 = f32::from_bits(87_u32 << 23);
 const SCALE_UP: f32 = f32::from_bits(207_u32 << 23);
 const SCALE_DOWN: f32 = f32::from_bits(47_u32 << 23);
-// T1023 q1 improved in paired measurements; T720 regressed with the skip
-// enabled. Use the skip only at the measured T1023 truncation.
-const NORMAL_RANGE_SKIP_LMAX: usize = 1023;
+// Paired screens support the skip at T1023 and T1279. Keep other truncations
+// on the original normalizer; an exact-match selector avoids T720 overhead.
+const NORMAL_RANGE_SKIP_LMAX_T1023: usize = 1023;
+const NORMAL_RANGE_SKIP_LMAX_T1279: usize = 1279;
 
 #[derive(Clone, Copy)]
 struct ScaledValue {
@@ -99,7 +100,10 @@ pub(crate) fn for_each_y_lm_dispatched<F>(
 where
     F: FnMut(usize, usize, &[f32], &[i64]) -> Result<(), ShtError>,
 {
-    if lmax == NORMAL_RANGE_SKIP_LMAX {
+    if matches!(
+        lmax,
+        NORMAL_RANGE_SKIP_LMAX_T1023 | NORMAL_RANGE_SKIP_LMAX_T1279
+    ) {
         for_each_y_lm_dispatched_impl::<F, true>(
             arch,
             m,
