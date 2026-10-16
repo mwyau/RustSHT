@@ -1,0 +1,39 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M22 f32 real-prime pass performance versus M20 baseline and RustFFT",
+    "baseline_source": "RustSHT-FFT 343e5adc08e44cc5472032138dfb263bb34b4786",
+    "candidate_source": "RustSHT-FFT M21 commit c48e653978079da8d126757a9362c27b4b64e2c7",
+    "baseline_binary_sha256": "ba7e69930fbd9548ac37ac2f0ea34d6b47397fb728a6ab57472c912649429700",
+    "candidate_binary_sha256": "be67528525fd0068a9f4dfa99288d261730d9aa045ec3d1dedd9394f8f47abaa",
+    "workload": "f32 R2C/C2R at N=723, 1025, 1443, 2049 and 4097; one transform and 32 sequential rows",
+    "timing": "six alternating process pairs; seven within-process samples per operation; each process also compares with RustFFT 6.4.1",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target; runtime SIMD dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "cpu_frequency_policy_observed_2026_10_16": "amd-pstate-epp; performance governor; performance EPP; 1.746–5.086 GHz policy range; host context, not per-sample"
+  },
+  "a": {
+    "label": "RustSHT-FFT M20 f32 343e5ad",
+    "command": [
+      "/dev/shm/rustsht-fft-m20-final-target/release/deps/f32_real_simd-794654b4f7f0fd5c",
+      "723",
+      "1025",
+      "1443",
+      "2049",
+      "4097"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M21 f32 c48e653",
+    "command": [
+      "/dev/shm/rustsht-fft-m21-target/release/deps/f32_real_simd-794654b4f7f0fd5c",
+      "723",
+      "1025",
+      "1443",
+      "2049",
+      "4097"
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "source_revision": "c48e653978079da8d126757a9362c27b4b64e2c7",
+  "binary": "/dev/shm/rustsht-fft-m21-target/release/deps/rustfft-721ac07477409fe7",
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "compiler": "Rust 1.99.0 stable, optimized bench profile, portable target, runtime SIMD dispatch",
+  "cpu_model": "AMD Ryzen 9 5950X",
+  "cpu_frequency_policy_observed_2026_10_16": "amd-pstate-epp; performance governor and EPP; 1.746–5.086 GHz policy range; host context, not per-sample",
+  "method": "single-process, one-row directional screen; each direction has seven warmed samples; selected cases require a paired SHT-row follow-up",
+  "truncations": [
+    {"t": 42, "minimum_odd": 85, "minimum_even": 86, "sampled": 87, "fft_friendly": 90},
+    {"t": 72, "minimum_odd": 145, "minimum_even": 146, "sampled": 147, "fft_friendly": 147},
+    {"t": 85, "minimum_odd": 171, "minimum_even": 172, "sampled": 173, "fft_friendly": 175},
+    {"t": 159, "minimum_odd": 319, "minimum_even": 320, "sampled": 321, "fft_friendly": 320},
+    {"t": 255, "minimum_odd": 511, "minimum_even": 512, "sampled": 513, "fft_friendly": 512},
+    {"t": 340, "minimum_odd": 681, "minimum_even": 682, "sampled": 683, "fft_friendly": 686},
+    {"t": 360, "minimum_odd": 721, "minimum_even": 722, "sampled": 723, "fft_friendly": 729},
+    {"t": 511, "minimum_odd": 1023, "minimum_even": 1024, "sampled": 1025, "fft_friendly": 1024},
+    {"t": 639, "minimum_odd": 1279, "minimum_even": 1280, "sampled": 1281, "fft_friendly": 1280},
+    {"t": 720, "minimum_odd": 1441, "minimum_even": 1442, "sampled": 1443, "fft_friendly": 1458},
+    {"t": 799, "minimum_odd": 1599, "minimum_even": 1600, "sampled": 1601, "fft_friendly": 1600},
+    {"t": 1023, "minimum_odd": 2047, "minimum_even": 2048, "sampled": 2049, "fft_friendly": 2048},
+    {"t": 1279, "minimum_odd": 2559, "minimum_even": 2560, "sampled": 2561, "fft_friendly": 2560},
+    {"t": 2047, "minimum_odd": 4095, "minimum_even": 4096, "sampled": 4097, "fft_friendly": 4096},
+    {"t": 4095, "minimum_odd": 8191, "minimum_even": 8192, "sampled": 8193, "fft_friendly": 8192}
+  ]
+}
