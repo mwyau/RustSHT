@@ -1,0 +1,27 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M30 current head"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-sht-targets"
+    ],
+    "label": "RustFFT 6.4.1"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "1170d4ff79fe99557cc9e3c04c586bf6d76dd2a108ad4793f23038419112c00d",
+    "candidate_source": "RustSHT-FFT commit cc6a626aede65c7bfdc9ebb0ab91cca5972fab94",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "frequency_context": "amd-pstate-epp driver; performance governor and energy preference; boost enabled; max CPU-frequency telemetry omitted",
+    "load_context": "Load-average telemetry was retained only in local diagnostics.",
+    "purpose": "Current M30-head RustFFT comparison for all 34 exact C2C and real SHT target operation/length/row cells",
+    "reference": "RustFFT 6.4.1 in the same benchmark executable",
+    "timing": "Six alternating process pairs; seven warmed samples per operation; one transform thread"
+  },
+  "pairs": 6
+}
