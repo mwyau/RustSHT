@@ -1,0 +1,37 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "baseline_commit": "af0f93b",
+    "candidate_source": "M13 fixed-size MaybeUninit twiddle tables read in place",
+    "candidate_binary_sha256": "99cad798e8a8545285c6ae1420d3121d4963919cbb6a40214d0c25a33051caba",
+    "baseline_binary_sha256": "69ce17d85fc9762da1513749f6d7d03e0a456e453fe344b5a94d7c2912cd4eff",
+    "timing": "six alternating process pairs; seven warmed samples per cell",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target with runtime AVX2",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "workload": "target"
+  },
+  "a": {
+    "label": "M13b no-zero twiddles",
+    "command": [
+      "/home/albert/rustsht-fft-m13b-radix31-screen-bench",
+      "bench-native-real",
+      "2049",
+      "1",
+      "32",
+      "1024"
+    ]
+  },
+  "b": {
+    "label": "M12 baseline",
+    "command": [
+      "/home/albert/rustsht-fft-m12-rustfft-final-bench",
+      "bench-native-real",
+      "2049",
+      "1",
+      "32",
+      "1024"
+    ]
+  }
+}
