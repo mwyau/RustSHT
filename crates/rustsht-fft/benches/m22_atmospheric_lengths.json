@@ -1,0 +1,113 @@
+{
+  "binary": "<scratch-path>",
+  "compiler": "Rust 1.99.0 stable, optimized bench profile, portable target, runtime SIMD dispatch",
+  "method": "single-process, one-row directional screen; each direction has seven warmed samples; selected cases require a paired SHT-row follow-up",
+  "source_revision": "c48e653978079da8d126757a9362c27b4b64e2c7",
+  "truncations": [
+    {
+      "fft_friendly": 90,
+      "minimum_even": 86,
+      "minimum_odd": 85,
+      "sampled": 87,
+      "t": 42
+    },
+    {
+      "fft_friendly": 147,
+      "minimum_even": 146,
+      "minimum_odd": 145,
+      "sampled": 147,
+      "t": 72
+    },
+    {
+      "fft_friendly": 175,
+      "minimum_even": 172,
+      "minimum_odd": 171,
+      "sampled": 173,
+      "t": 85
+    },
+    {
+      "fft_friendly": 320,
+      "minimum_even": 320,
+      "minimum_odd": 319,
+      "sampled": 321,
+      "t": 159
+    },
+    {
+      "fft_friendly": 512,
+      "minimum_even": 512,
+      "minimum_odd": 511,
+      "sampled": 513,
+      "t": 255
+    },
+    {
+      "fft_friendly": 686,
+      "minimum_even": 682,
+      "minimum_odd": 681,
+      "sampled": 683,
+      "t": 340
+    },
+    {
+      "fft_friendly": 729,
+      "minimum_even": 722,
+      "minimum_odd": 721,
+      "sampled": 723,
+      "t": 360
+    },
+    {
+      "fft_friendly": 1024,
+      "minimum_even": 1024,
+      "minimum_odd": 1023,
+      "sampled": 1025,
+      "t": 511
+    },
+    {
+      "fft_friendly": 1280,
+      "minimum_even": 1280,
+      "minimum_odd": 1279,
+      "sampled": 1281,
+      "t": 639
+    },
+    {
+      "fft_friendly": 1458,
+      "minimum_even": 1442,
+      "minimum_odd": 1441,
+      "sampled": 1443,
+      "t": 720
+    },
+    {
+      "fft_friendly": 1600,
+      "minimum_even": 1600,
+      "minimum_odd": 1599,
+      "sampled": 1601,
+      "t": 799
+    },
+    {
+      "fft_friendly": 2048,
+      "minimum_even": 2048,
+      "minimum_odd": 2047,
+      "sampled": 2049,
+      "t": 1023
+    },
+    {
+      "fft_friendly": 2560,
+      "minimum_even": 2560,
+      "minimum_odd": 2559,
+      "sampled": 2561,
+      "t": 1279
+    },
+    {
+      "fft_friendly": 4096,
+      "minimum_even": 4096,
+      "minimum_odd": 4095,
+      "sampled": 4097,
+      "t": 2047
+    },
+    {
+      "fft_friendly": 8192,
+      "minimum_even": 8192,
+      "minimum_odd": 8191,
+      "sampled": 8193,
+      "t": 4095
+    }
+  ]
+}
