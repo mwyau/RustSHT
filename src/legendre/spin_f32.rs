@@ -19,6 +19,7 @@
 
 use std::f32::consts::PI;
 
+use num_complex::Complex32;
 use pulp::{Arch, Simd, WithSimd};
 
 use crate::error::ShtError;
@@ -137,6 +138,204 @@ pub(crate) fn fill_spin_factors(
         minus_sign,
         prefactor,
     })
+}
+
+pub(crate) fn analysis_inputs_vectorizable(
+    m: usize,
+    q_real: &[f32],
+    q_imag: &[f32],
+    u_real: &[f32],
+    u_imag: &[f32],
+    ring_order_limits: &[usize],
+) -> bool {
+    debug_assert_eq!(q_real.len(), q_imag.len());
+    debug_assert_eq!(q_real.len(), u_real.len());
+    debug_assert_eq!(q_real.len(), u_imag.len());
+    debug_assert_eq!(q_real.len(), ring_order_limits.len());
+    ring_order_limits.iter().all(|&limit| m <= limit)
+        && q_real.iter().all(|value| value.is_normal())
+        && q_imag.iter().all(|value| value.is_normal())
+        && u_real.iter().all(|value| value.is_normal())
+        && u_imag.iter().all(|value| value.is_normal())
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Spin analysis accumulation receives lane spectra, two scaled bases and cutoff metadata."
+)]
+pub(crate) fn accumulate_analysis_dispatched(
+    arch: Arch,
+    vectorizable_inputs: bool,
+    m: usize,
+    q_real: &[f32],
+    q_imag: &[f32],
+    u_real: &[f32],
+    u_imag: &[f32],
+    plus: &[f32],
+    plus_exponents: &[i64],
+    minus: &[f32],
+    minus_exponents: &[i64],
+    alpha_norm: f32,
+    ring_order_limits: &[usize],
+    include_b: bool,
+) -> (Complex32, Complex32) {
+    debug_assert_eq!(q_real.len(), plus.len());
+    debug_assert_eq!(q_imag.len(), plus.len());
+    debug_assert_eq!(u_real.len(), plus.len());
+    debug_assert_eq!(u_imag.len(), plus.len());
+    debug_assert_eq!(plus_exponents.len(), plus.len());
+    debug_assert_eq!(minus.len(), plus.len());
+    debug_assert_eq!(minus_exponents.len(), plus.len());
+    debug_assert_eq!(ring_order_limits.len(), plus.len());
+
+    let vectorizable = vectorizable_inputs
+        && alpha_norm.is_normal()
+        && plus_exponents.iter().all(|&exponent| exponent == 0)
+        && minus_exponents.iter().all(|&exponent| exponent == 0)
+        && plus.iter().all(|value| value.is_normal())
+        && minus.iter().all(|value| value.is_normal());
+    if vectorizable {
+        return arch.dispatch(SpinAnalysisAccumulation32 {
+            q_real,
+            q_imag,
+            u_real,
+            u_imag,
+            plus,
+            minus,
+            alpha_norm,
+            include_b,
+        });
+    }
+
+    let mut e_sum = Complex32::new(0.0, 0.0);
+    let mut b_sum = Complex32::new(0.0, 0.0);
+    for lane in 0..plus.len() {
+        if m > ring_order_limits[lane] {
+            continue;
+        }
+        let plus_value = scaled_basis_value(plus[lane], plus_exponents[lane], alpha_norm);
+        let minus_value = scaled_basis_value(minus[lane], minus_exponents[lane], alpha_norm);
+        let even_basis = plus_value + minus_value;
+        let odd_basis = plus_value - minus_value;
+        e_sum.re += q_real[lane] * even_basis + u_imag[lane] * odd_basis;
+        e_sum.im += q_imag[lane] * even_basis - u_real[lane] * odd_basis;
+        if include_b {
+            b_sum.re += u_real[lane] * even_basis - q_imag[lane] * odd_basis;
+            b_sum.im += u_imag[lane] * even_basis + q_real[lane] * odd_basis;
+        }
+    }
+    (e_sum, b_sum)
+}
+
+struct SpinAnalysisAccumulation32<'a> {
+    q_real: &'a [f32],
+    q_imag: &'a [f32],
+    u_real: &'a [f32],
+    u_imag: &'a [f32],
+    plus: &'a [f32],
+    minus: &'a [f32],
+    alpha_norm: f32,
+    include_b: bool,
+}
+
+impl WithSimd for SpinAnalysisAccumulation32<'_> {
+    type Output = (Complex32, Complex32);
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let Self {
+            q_real,
+            q_imag,
+            u_real,
+            u_imag,
+            plus,
+            minus,
+            alpha_norm,
+            include_b,
+        } = self;
+        let (q_real_vectors, q_real_tail) = S::as_simd_f32s(q_real);
+        let (q_imag_vectors, q_imag_tail) = S::as_simd_f32s(q_imag);
+        let (u_real_vectors, u_real_tail) = S::as_simd_f32s(u_real);
+        let (u_imag_vectors, u_imag_tail) = S::as_simd_f32s(u_imag);
+        let (plus_vectors, plus_tail) = S::as_simd_f32s(plus);
+        let (minus_vectors, minus_tail) = S::as_simd_f32s(minus);
+        let vector_count = plus_vectors.len();
+        debug_assert_eq!(q_real_vectors.len(), vector_count);
+        debug_assert_eq!(q_imag_vectors.len(), vector_count);
+        debug_assert_eq!(u_real_vectors.len(), vector_count);
+        debug_assert_eq!(u_imag_vectors.len(), vector_count);
+        debug_assert_eq!(minus_vectors.len(), vector_count);
+
+        let alpha = simd.splat_f32s(alpha_norm);
+        let mut e_real_sum = simd.splat_f32s(0.0);
+        let mut e_imag_sum = simd.splat_f32s(0.0);
+        let mut b_real_sum = simd.splat_f32s(0.0);
+        let mut b_imag_sum = simd.splat_f32s(0.0);
+        for index in 0..vector_count {
+            let plus_value = simd.mul_f32s(plus_vectors[index], alpha);
+            let minus_value = simd.mul_f32s(minus_vectors[index], alpha);
+            let even_basis = simd.add_f32s(plus_value, minus_value);
+            let odd_basis = simd.sub_f32s(plus_value, minus_value);
+            e_real_sum = simd.add_f32s(
+                e_real_sum,
+                simd.add_f32s(
+                    simd.mul_f32s(q_real_vectors[index], even_basis),
+                    simd.mul_f32s(u_imag_vectors[index], odd_basis),
+                ),
+            );
+            e_imag_sum = simd.add_f32s(
+                e_imag_sum,
+                simd.sub_f32s(
+                    simd.mul_f32s(q_imag_vectors[index], even_basis),
+                    simd.mul_f32s(u_real_vectors[index], odd_basis),
+                ),
+            );
+            if include_b {
+                b_real_sum = simd.add_f32s(
+                    b_real_sum,
+                    simd.sub_f32s(
+                        simd.mul_f32s(u_real_vectors[index], even_basis),
+                        simd.mul_f32s(q_imag_vectors[index], odd_basis),
+                    ),
+                );
+                b_imag_sum = simd.add_f32s(
+                    b_imag_sum,
+                    simd.add_f32s(
+                        simd.mul_f32s(u_imag_vectors[index], even_basis),
+                        simd.mul_f32s(q_real_vectors[index], odd_basis),
+                    ),
+                );
+            }
+        }
+
+        let mut e_real_tail_sum = 0.0_f32;
+        let mut e_imag_tail_sum = 0.0_f32;
+        let mut b_real_tail_sum = 0.0_f32;
+        let mut b_imag_tail_sum = 0.0_f32;
+        for lane in 0..plus_tail.len() {
+            let plus_value = plus_tail[lane] * alpha_norm;
+            let minus_value = minus_tail[lane] * alpha_norm;
+            let even_basis = plus_value + minus_value;
+            let odd_basis = plus_value - minus_value;
+            e_real_tail_sum += q_real_tail[lane] * even_basis + u_imag_tail[lane] * odd_basis;
+            e_imag_tail_sum += q_imag_tail[lane] * even_basis - u_real_tail[lane] * odd_basis;
+            if include_b {
+                b_real_tail_sum += u_real_tail[lane] * even_basis - q_imag_tail[lane] * odd_basis;
+                b_imag_tail_sum += u_imag_tail[lane] * even_basis + q_real_tail[lane] * odd_basis;
+            }
+        }
+
+        (
+            Complex32::new(
+                simd.reduce_sum_f32s(e_real_sum) + e_real_tail_sum,
+                simd.reduce_sum_f32s(e_imag_sum) + e_imag_tail_sum,
+            ),
+            Complex32::new(
+                simd.reduce_sum_f32s(b_real_sum) + b_real_tail_sum,
+                simd.reduce_sum_f32s(b_imag_sum) + b_imag_tail_sum,
+            ),
+        )
+    }
 }
 
 const fn parity_sign(value: usize) -> f32 {
@@ -482,6 +681,151 @@ pub(crate) fn spin_normalization(spin: usize, degree: usize, derivative: bool) -
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    struct AnalysisLanes32 {
+        q_real: Vec<f32>,
+        q_imag: Vec<f32>,
+        u_real: Vec<f32>,
+        u_imag: Vec<f32>,
+        plus: Vec<f32>,
+        plus_exponents: Vec<i64>,
+        minus: Vec<f32>,
+        minus_exponents: Vec<i64>,
+        limits: Vec<usize>,
+    }
+
+    impl AnalysisLanes32 {
+        fn new(count: usize) -> Self {
+            Self {
+                q_real: (0..count).map(|lane| 0.25 + lane as f32 * 0.007).collect(),
+                q_imag: (0..count).map(|lane| -0.4 + lane as f32 * 0.003).collect(),
+                u_real: (0..count).map(|lane| 0.15 - lane as f32 * 0.002).collect(),
+                u_imag: (0..count).map(|lane| 0.55 + lane as f32 * 0.004).collect(),
+                plus: (0..count).map(|lane| 0.31 + lane as f32 * 0.001).collect(),
+                plus_exponents: vec![0; count],
+                minus: (0..count).map(|lane| -0.17 + lane as f32 * 0.002).collect(),
+                minus_exponents: vec![0; count],
+                limits: vec![64; count],
+            }
+        }
+
+        fn accumulate(
+            &self,
+            arch: Arch,
+            m: usize,
+            alpha_norm: f32,
+            include_b: bool,
+        ) -> (Complex32, Complex32) {
+            let vectorizable_inputs = analysis_inputs_vectorizable(
+                m,
+                &self.q_real,
+                &self.q_imag,
+                &self.u_real,
+                &self.u_imag,
+                &self.limits,
+            );
+            accumulate_analysis_dispatched(
+                arch,
+                vectorizable_inputs,
+                m,
+                &self.q_real,
+                &self.q_imag,
+                &self.u_real,
+                &self.u_imag,
+                &self.plus,
+                &self.plus_exponents,
+                &self.minus,
+                &self.minus_exponents,
+                alpha_norm,
+                &self.limits,
+                include_b,
+            )
+        }
+
+        fn scalar_reference(
+            &self,
+            m: usize,
+            alpha_norm: f32,
+            include_b: bool,
+        ) -> (Complex32, Complex32) {
+            let mut e_sum = Complex32::new(0.0, 0.0);
+            let mut b_sum = Complex32::new(0.0, 0.0);
+            for lane in 0..self.plus.len() {
+                if m > self.limits[lane] {
+                    continue;
+                }
+                let plus_value =
+                    scaled_basis_value(self.plus[lane], self.plus_exponents[lane], alpha_norm);
+                let minus_value =
+                    scaled_basis_value(self.minus[lane], self.minus_exponents[lane], alpha_norm);
+                let even_basis = plus_value + minus_value;
+                let odd_basis = plus_value - minus_value;
+                e_sum.re += self.q_real[lane] * even_basis + self.u_imag[lane] * odd_basis;
+                e_sum.im += self.q_imag[lane] * even_basis - self.u_real[lane] * odd_basis;
+                if include_b {
+                    b_sum.re += self.u_real[lane] * even_basis - self.q_imag[lane] * odd_basis;
+                    b_sum.im += self.u_imag[lane] * even_basis + self.q_real[lane] * odd_basis;
+                }
+            }
+            (e_sum, b_sum)
+        }
+    }
+
+    #[test]
+    fn f32_spin_analysis_simd_accumulation_matches_scalar_blocks_and_tails() {
+        for count in [64, 61] {
+            let lanes = AnalysisLanes32::new(count);
+            let expected = lanes.scalar_reference(4, 0.75, true);
+            assert!(analysis_inputs_vectorizable(
+                4,
+                &lanes.q_real,
+                &lanes.q_imag,
+                &lanes.u_real,
+                &lanes.u_imag,
+                &lanes.limits,
+            ));
+            for arch in [Arch::Scalar, Arch::new()] {
+                let actual = lanes.accumulate(arch, 4, 0.75, true);
+                assert!((actual.0 - expected.0).norm() < 1.0e-4);
+                assert!((actual.1 - expected.1).norm() < 1.0e-4);
+
+                let e_only = lanes.accumulate(arch, 4, 0.75, false);
+                assert!((e_only.0 - expected.0).norm() < 1.0e-4);
+                assert_eq!(e_only.1, Complex32::new(0.0, 0.0));
+            }
+        }
+    }
+
+    #[test]
+    fn f32_spin_analysis_scaled_and_inactive_lanes_use_scalar_accumulation() {
+        let mut lanes = AnalysisLanes32::new(64);
+        lanes.plus_exponents[11] = -800;
+        lanes.limits[7] = 3;
+        let expected = lanes.scalar_reference(4, 0.75, true);
+        assert!(!analysis_inputs_vectorizable(
+            4,
+            &lanes.q_real,
+            &lanes.q_imag,
+            &lanes.u_real,
+            &lanes.u_imag,
+            &lanes.limits,
+        ));
+        for arch in [Arch::Scalar, Arch::new()] {
+            let actual = lanes.accumulate(arch, 4, 0.75, true);
+            assert_eq!(actual, expected);
+        }
+
+        lanes.limits.fill(64);
+        lanes.q_real[4] = 0.0;
+        assert!(!analysis_inputs_vectorizable(
+            4,
+            &lanes.q_real,
+            &lanes.q_imag,
+            &lanes.u_real,
+            &lanes.u_imag,
+            &lanes.limits,
+        ));
+    }
 
     fn reference_normalize_pair_lanes(
         previous: &mut [f32],

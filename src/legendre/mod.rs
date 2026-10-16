@@ -94,6 +94,10 @@ pub(crate) trait ShtScalar:
         false
     }
 
+    fn supports_spin_analysis_simd() -> bool {
+        false
+    }
+
     fn spin_analysis_inputs_vectorizable(
         _m: usize,
         _q_real: &[Self],
@@ -634,6 +638,10 @@ impl ShtScalar for f64 {
     }
 
     fn supports_precomputed_scalar() -> bool {
+        true
+    }
+
+    fn supports_spin_analysis_simd() -> bool {
         true
     }
 
@@ -1385,6 +1393,55 @@ impl ShtScalar for f64 {
 
 impl ShtScalar for f32 {
     type SpinInitial = spin_f32::SpinInitial32;
+
+    fn supports_spin_analysis_simd() -> bool {
+        true
+    }
+
+    fn spin_analysis_inputs_vectorizable(
+        m: usize,
+        q_real: &[Self],
+        q_imag: &[Self],
+        u_real: &[Self],
+        u_imag: &[Self],
+        ring_order_limits: &[usize],
+    ) -> bool {
+        spin_f32::analysis_inputs_vectorizable(m, q_real, q_imag, u_real, u_imag, ring_order_limits)
+    }
+
+    fn accumulate_spin_analysis_block(
+        arch: Arch,
+        vectorizable_inputs: bool,
+        m: usize,
+        q_real: &[Self],
+        q_imag: &[Self],
+        u_real: &[Self],
+        u_imag: &[Self],
+        plus: &[Self],
+        plus_exponents: &[i64],
+        minus: &[Self],
+        minus_exponents: &[i64],
+        alpha_norm: Self,
+        ring_order_limits: &[usize],
+        include_b: bool,
+    ) -> (Complex<Self>, Complex<Self>) {
+        spin_f32::accumulate_analysis_dispatched(
+            arch,
+            vectorizable_inputs,
+            m,
+            q_real,
+            q_imag,
+            u_real,
+            u_imag,
+            plus,
+            plus_exponents,
+            minus,
+            minus_exponents,
+            alpha_norm,
+            ring_order_limits,
+            include_b,
+        )
+    }
 
     fn sectoral_normalizations(mmax: usize) -> Result<Vec<Self>, ShtError> {
         scalar_f32::sectoral_normalizations(mmax)

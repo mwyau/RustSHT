@@ -2525,7 +2525,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     }
                     let weighted_q_spectrum = &recurrence.weighted_spin_q_spectrum[..block_len];
                     let weighted_u_spectrum = &recurrence.weighted_spin_u_spectrum[..block_len];
-                    if T::supports_paired_scalar() {
+                    if T::supports_spin_analysis_simd() {
                         for lane in 0..block_len {
                             recurrence.analysis_same_real[lane] = weighted_q_spectrum[lane].re;
                             recurrence.analysis_same_imag[lane] = weighted_q_spectrum[lane].im;
@@ -2568,7 +2568,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             let mut b_coefficient = b_coefficients
                                 .as_deref_mut()
                                 .map(|values| &mut values[degree - m]);
-                            if T::supports_paired_scalar() {
+                            if T::supports_spin_analysis_simd() {
                                 let lane_end = ring_start + plus.len();
                                 let (e_contribution, b_contribution) =
                                     T::accumulate_spin_analysis_block(

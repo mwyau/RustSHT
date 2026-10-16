@@ -584,6 +584,102 @@ fn f32_t127_sectoral_synthesis_remains_finite_and_matches_analytic_values() {
 }
 
 #[test]
+#[expect(
+    clippy::excessive_precision,
+    reason = "The literals retain printed DUCC 0.41.0 float32 analysis references."
+)]
+fn f32_spin1_gl_t511_analysis_matches_ducc_0410() {
+    // DUCC 0.41.0, source revision c1ed01b8fda69d2a378190f0915f1a19762dddbf;
+    // GL 512x1025, T511, phi0=0.37, nthreads=1. The maps use integer-derived
+    // float32 values so this test can reproduce the DUCC inputs exactly.
+    let lmax = 511;
+    let ntheta = lmax + 1;
+    let nphi = 2 * lmax + 3;
+    let plan = ShtPlan::<f32>::new(
+        GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, 0.37).unwrap(),
+        HarmonicSpec::new(lmax, lmax, 1).unwrap(),
+    )
+    .unwrap();
+    let mut first = Vec::with_capacity(ntheta * nphi);
+    let mut second = Vec::with_capacity(ntheta * nphi);
+    for ring in 0..ntheta {
+        for longitude in 0..nphi {
+            first.push((((ring * 31 + longitude * 17) % 101) as i32 - 50) as f32 / 101.0);
+            second.push((((ring * 19 + longitude * 23 + 7) % 97) as i32 - 48) as f32 / 97.0);
+        }
+    }
+
+    let mut workspace = plan.workspace().unwrap();
+    let mut analyzed_e = vec![Complex32::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut analyzed_b = vec![Complex32::new(0.0, 0.0); plan.harmonics().nalm()];
+    plan.analysis_spin_into(
+        &first,
+        &second,
+        &mut analyzed_e,
+        &mut analyzed_b,
+        &mut workspace,
+    )
+    .unwrap();
+
+    for (degree, order, expected_e, expected_b) in [
+        (
+            1,
+            0,
+            Complex32::new(-4.1415304963e-8, 0.0),
+            Complex32::new(1.8658342427e-8, 0.0),
+        ),
+        (
+            1,
+            1,
+            Complex32::new(-6.5692361773e-8, -2.7879175946e-7),
+            Complex32::new(-6.5725276954e-7, -5.0758973202e-7),
+        ),
+        (
+            2,
+            1,
+            Complex32::new(-7.4319234500e-7, 8.8196873094e-7),
+            Complex32::new(3.8780314071e-7, -9.5410712220e-8),
+        ),
+        (
+            37,
+            2,
+            Complex32::new(2.1354905755e-7, 2.4964915610e-6),
+            Complex32::new(-2.1649178006e-9, 3.7691387433e-7),
+        ),
+        (
+            127,
+            31,
+            Complex32::new(-3.8519733607e-6, 2.3106015306e-6),
+            Complex32::new(1.9163400793e-5, 9.2727168521e-6),
+        ),
+        (
+            255,
+            128,
+            Complex32::new(-1.4265302525e-5, 1.9322160369e-5),
+            Complex32::new(3.0104571124e-5, 1.7585711248e-5),
+        ),
+        (
+            511,
+            511,
+            Complex32::new(7.2307525443e-6, 6.4677387854e-6),
+            Complex32::new(-1.6438199964e-5, -2.2784601242e-5),
+        ),
+    ] {
+        let index = plan.harmonics().index(degree, order).unwrap();
+        assert!(
+            (analyzed_e[index] - expected_e).norm() <= 3.0e-7,
+            "E_{{{degree},{order}}}: actual={:?}, DUCC={expected_e:?}",
+            analyzed_e[index]
+        );
+        assert!(
+            (analyzed_b[index] - expected_b).norm() <= 3.0e-7,
+            "B_{{{degree},{order}}}: actual={:?}, DUCC={expected_b:?}",
+            analyzed_b[index]
+        );
+    }
+}
+
+#[test]
 fn f32_t127_spin1_gl_sparse_synthesis_matches_ducc_0410() {
     // Reference: ducc0 0.41.0, GL 128x257, spin=1, a_127,127=1, phi0=0.19.
     let lmax = 127;
