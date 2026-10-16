@@ -1,0 +1,12 @@
+source_commit=7ac443a40b034d5c52526d23ef30f6cef4b13d19
+measurement_head=7b956f9d236dfa2e13b857a405b1c7ed87d2cddd (documentation commits after source build)
+binary_sha256=690fc10f9abf1c6a5b396e0d7ff27647daf8e51d90b8620537645123efe7f1c8
+RustSHT_build=cargo build --release --example m1b_bench
+RustSHT_q1_args=SPIN 1023 1 analysis GL STANDARD 1024 2049 1023 requested-only
+RustSHT_q8_args=SPIN 1023 8 analysis GL STANDARD 1024 2049 1023 requested-only
+DUCC_command=uv run python examples/python_perf_baseline.py 1023 SPIN THREADS GL 2 plan analysis ducc STANDARD 2049 1024
+DUCC_version=0.41.0
+DUCC_source_revision=c1ed01b8fda69d2a378190f0915f1a19762dddbf
+comparison=RustSHT native reused plan/workspace; DUCC Python analysis_2d operation; exact GL grid and deterministic map input are shared
+pairing=5 alternating fresh-process pairs per spin and thread count; each process warms once and preserves inner samples
+affinity=q1 one CPU core; q8 8 pinned CPU cores
