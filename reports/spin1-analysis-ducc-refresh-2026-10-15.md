@@ -8,8 +8,10 @@ comparison is too variable to update the measured gap. The DUCC medians differ f
 [thread-scaling report](spin1-analysis-thread-scaling-2026-10-14.md). They are
 closer to a separate earlier Python-plan comparison, which measured
 `27.862/4.147 ms` ([milestone record](../plans/05-validation-and-milestones.md#comparative-spin-1-analysis-profile-and-polar-cutoff-2026-10-12)). The earlier RustSHT values came from different source revisions. Load-average telemetry was retained only in local diagnostics. CPU affinity
-was fixed; other processes could use those CPUs. The spread across these
-sessions prevents this screen from establishing an updated RustSHT/DUCC gap.
+was fixed, but the CPUs were not isolated. A follow-up cgroup check found no
+CPU quota (`cpu.max=max 100000`); that check occurred after the timed run. The
+spread across these sessions prevents this screen from establishing an
+updated RustSHT/DUCC gap.
 
 ## Workload and method
 
@@ -29,8 +31,9 @@ RustSHT and DUCC at each thread count. q1 was pinned to one CPU core; q8 was pin
 
 The host was an x86-64 CPU running Linux. Rust was
 `1.99.0` with LLVM `23.1.1`; the release build used portable Pulp runtime
-dispatch and no `target-cpu=native`. Python was `3.11.15` with NumPy `2.4.6`. Raw inner samples, process timings, load snapshots, command lines and binary
-hashes are in [`the benchmark data`](data/spin1-analysis-ducc-refresh-2026-10-15/). The `preliminary-*` files record an earlier run whose native q1 arguments were
+dispatch and no `target-cpu=native`. Python was `3.11.15` with NumPy `2.4.6`. Raw inner samples, process timings, load snapshots, command lines, binary
+hashes and the follow-up CPU-quota check are in
+[`the benchmark data`](data/spin1-analysis-ducc-refresh-2026-10-15/). The `preliminary-*` files record an earlier run whose native q1 arguments were
 incorrect; the table above uses the corrected q1 and q8 runs. This screen is a
 timing comparison, not a numerical validation. Existing spin-1 analytic,
 DUCC, adjoint and high-bandlimit tests provide the numerical checks. No source
