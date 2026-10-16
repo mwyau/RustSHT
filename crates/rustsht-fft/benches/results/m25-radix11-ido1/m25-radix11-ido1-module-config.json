@@ -1,0 +1,34 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M25 radix-11 ido=1 AVX2 module-isolated candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M24 baseline"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "ec3f0c4837c5b8212dc65377d90057fdd8bb740d6747b0ad8279fe88121479cd",
+    "candidate_patch_sha256": "a08d995064fc04c24a55de912118ec5dadbdd0a814ffed58211cb74d24e818de",
+    "candidate_source_base": "M24 source commit 9a85e38, plus the M25 source patch identified by SHA-256",
+    "captured_environment_patch_sha256": "bee851151a515c5c0527395e4675e1e0568c4fc43e56c316a63a9528d6c982a1",
+    "code_layout_note": "The ido=1 helper is an out-of-line cold function in src/complex/radix11_ido1.rs. It appears after the main complex FFT code in the linked executable. The N=682 execute_first_pass_in_place symbol shifts by 0x210 bytes from M24, compared with a 0xb00 shift when the helper was in complex.rs.",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime SIMD dispatch",
+    "dispatch_note": "The candidate applies an AVX2 f64 radix-11 kernel to ido=1 passes with l1>=2, vectorizing pairs of outer groups. Odd outer tails and unsafe inverse inputs use the scalar path. f32 and CPUs without AVX2 retain the general scalar pass.",
+    "patch_hash_correction": "The raw capture environment record retains the first digest, which omitted the new untracked src/complex/radix11_ido1.rs file because git diff does not include untracked paths. The corrected staged-patch digest includes all four M25 source files; the measured executable hash is unchanged.",
+    "pre_capture_host_condition": "No SHT or FFT benchmark process observed at 2026-10-16T06:59:35Z. The prior separate ignored DUCC SHT test had terminated. Load-average telemetry was retained only in local diagnostics.",
+    "purpose": "Module-isolated M25 AVX2 radix-11 ido=1 candidate against M24 across the complete 34-cell SHT target matrix; replacement for diagnostic captures with the helper in complex.rs.",
+    "reference_binary_sha256": "3e9b409212cfea38c207ab3aeb88f00a172771f29ef1a7a4513f933505b69f37",
+    "reference_source": "RustSHT-FFT M24 source commit 9a85e38",
+    "runner": "Load-average telemetry was retained only in local diagnostics.",
+    "timing": "Six alternating process pairs; seven warmed samples per operation",
+    "workload": "All current exact C2C and real SHT target operation/length cells; scalar and spin-1 row batches; one transform thread"
+  },
+  "pairs": 6
+}

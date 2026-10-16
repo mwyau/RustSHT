@@ -1,0 +1,32 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M25 radix-11 ido=1 AVX2 candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M24 baseline"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "e2c0f58a31bb829ba797c2cbdc2ddb715a3464b08b2e95cdac8c7eae95e44b07",
+    "candidate_patch_sha256": "1d3081bf2e7ebe47d329dfea56060fc4be21e38a8aa9a3f695cff1b699a9bd6f",
+    "candidate_source_base": "M24 source commit 9a85e38, plus the M25 source patch identified by SHA-256",
+    "code_layout_note": "The ido=1 helper is out of line from execute_radix11_avx2. The latter has the same 0x0b7c-byte symbol size as M24, avoiding growth in the common ido>=2 function.",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime SIMD dispatch",
+    "dispatch_note": "The candidate applies an AVX2 f64 radix-11 kernel to ido=1 passes with l1>=2, vectorizing pairs of outer groups. Odd outer tails and unsafe inverse inputs use the scalar path. f32 and CPUs without AVX2 retain the general scalar pass.",
+    "pre_capture_host_condition": "No SHT or FFT benchmark process observed at 2026-10-16T06:42:47Z; the separate M1 SHT baseline/candidate process had terminated. Load-average telemetry was retained only in local diagnostics.",
+    "purpose": "Refactored M25 AVX2 radix-11 ido=1 candidate against the M24 binary across the complete 34-cell SHT target matrix; replacement for the diagnostic first capture",
+    "reference_binary_sha256": "3e9b409212cfea38c207ab3aeb88f00a172771f29ef1a7a4513f933505b69f37",
+    "reference_source": "RustSHT-FFT M24 source commit 9a85e38",
+    "runner": "Load-average telemetry was retained only in local diagnostics.",
+    "timing": "Six alternating process pairs; seven warmed samples per operation",
+    "workload": "All current exact C2C and real SHT target operation/length cells; scalar and spin-1 row batches; one transform thread"
+  },
+  "pairs": 6
+}

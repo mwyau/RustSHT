@@ -1,0 +1,31 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M25 radix-11 ido=1 AVX2 candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M24 baseline"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "ae2d434c3022a0d274745a25ad9ffe0227bcb95b21d6eb2d7b4b4a0c59ad46fb",
+    "candidate_patch_sha256": "427be7a4bb4d492ee65a87402e6e8899fa526ad70077e931cd5a1bcdda770f38",
+    "candidate_source_base": "M24 source commit 9a85e38, plus the M25 source patch identified by SHA-256",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime SIMD dispatch",
+    "dispatch_note": "The candidate applies an AVX2 f64 radix-11 kernel to ido=1 passes with l1>=2, vectorizing pairs of outer groups. Odd outer tails and unsafe inverse inputs use the scalar path. f32 and CPUs without AVX2 retain the general scalar pass.",
+    "pre_capture_host_condition": "No SHT or FFT benchmark process observed. Load-average telemetry was retained only in local diagnostics.",
+    "purpose": "M25 AVX2 radix-11 ido=1 candidate against the M24 binary across the complete 34-cell SHT target matrix",
+    "reference_binary_sha256": "3e9b409212cfea38c207ab3aeb88f00a172771f29ef1a7a4513f933505b69f37",
+    "reference_source": "RustSHT-FFT M24 source commit 9a85e38",
+    "runner": "Load-average telemetry was retained only in local diagnostics.",
+    "timing": "Six alternating process pairs; seven warmed samples per operation",
+    "workload": "All current exact C2C and real SHT target operation/length cells; scalar and spin-1 row batches; one transform thread"
+  },
+  "pairs": 6
+}
