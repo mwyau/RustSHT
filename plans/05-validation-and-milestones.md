@@ -2952,3 +2952,7 @@ The order-owned scalar GL T511/T1023 prototype was tested and removed. Five alte
 Candidate correctness checks covered high-order coefficient placement, q5 remainder partitions, odd/even longitude counts and the scaled fallback destination. The all-feature and no-default-feature suites and workspace Clippy passed with the prototype present. No order-owned synthesis code or candidate-specific test remains in the source tree. f32, CC/F1 and other q>1 performance coverage remains outstanding.
 
 The opt-in T1023 GL spin-2 synthesis comparison passed for q1 and q8 with the polar-threshold case enabled. This check compares thread counts; it does not add a DUCC reference or a performance result.
+
+### Current f32 spin-1 GL T511 screen (M4, 2026-10-15)
+
+Five release processes using `examples/m4_f32_bench.rs` measured median q1/q8 times of 993.391/146.682 ms for synthesis and 1014.694/179.030 ms for analysis. Median process peak RSS was 15,312 KiB. Compared with the two-run averages recorded on 2026-10-12, current times are lower by 15.0%–39.8%; the runs were not paired and do not isolate the effect of a source change. This screen did not rerun DUCC and does not change the performance-acceptance status. See [the report](../reports/f32-spin1-current-screen-2026-10-15.md) and [raw process data](../reports/data/f32-rowfft-check-2026-10-15/).
