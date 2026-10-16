@@ -1,0 +1,40 @@
+PROCESS run=1 binary=target/release/examples/m4_f32_bench
+spin-1 T511; GL 512x1025; f32; 1 vs 8 threads; one warmup, 5 samples, median
+synthesis_one_thread_ms=993.391
+synthesis_rayon_ms=149.518
+analysis_one_thread_ms=1014.694
+analysis_rayon_ms=178.580
+estimated_core_numeric_arrays_MiB=12.13
+max_rss_kib=15060
+PROCESS run=2 binary=target/release/examples/m4_f32_bench
+spin-1 T511; GL 512x1025; f32; 1 vs 8 threads; one warmup, 5 samples, median
+synthesis_one_thread_ms=992.854
+synthesis_rayon_ms=145.928
+analysis_one_thread_ms=1009.091
+analysis_rayon_ms=178.196
+estimated_core_numeric_arrays_MiB=12.13
+max_rss_kib=15312
+PROCESS run=3 binary=target/release/examples/m4_f32_bench
+spin-1 T511; GL 512x1025; f32; 1 vs 8 threads; one warmup, 5 samples, median
+synthesis_one_thread_ms=997.773
+synthesis_rayon_ms=146.766
+analysis_one_thread_ms=1015.275
+analysis_rayon_ms=179.030
+estimated_core_numeric_arrays_MiB=12.13
+max_rss_kib=15576
+PROCESS run=4 binary=target/release/examples/m4_f32_bench
+spin-1 T511; GL 512x1025; f32; 1 vs 8 threads; one warmup, 5 samples, median
+synthesis_one_thread_ms=1007.420
+synthesis_rayon_ms=146.682
+analysis_one_thread_ms=1016.913
+analysis_rayon_ms=180.697
+estimated_core_numeric_arrays_MiB=12.13
+max_rss_kib=15516
+PROCESS run=5 binary=target/release/examples/m4_f32_bench
+spin-1 T511; GL 512x1025; f32; 1 vs 8 threads; one warmup, 5 samples, median
+synthesis_one_thread_ms=987.991
+synthesis_rayon_ms=145.053
+analysis_one_thread_ms=1010.129
+analysis_rayon_ms=179.257
+estimated_core_numeric_arrays_MiB=12.13
+max_rss_kib=15052
