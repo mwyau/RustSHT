@@ -78,6 +78,15 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
         None
     }
 
+    /// Returns the f64 radix-three pass kernel when AVX2 is available.
+    ///
+    /// The caller must confirm AVX2 support, `radix == 3`, and an `ido` of at
+    /// least two. The kernel processes complete pairs of inner values; the
+    /// caller handles an odd final inner value.
+    fn avx2_radix3_pass_kernel() -> Option<ComplexPassKernel<Self>> {
+        None
+    }
+
     /// Returns the f64 radix-31 general-prime kernel for `ido == 1`.
     ///
     /// The caller must check the returned kernel's radix, pass layout, input
@@ -185,6 +194,14 @@ mod x86 {
 
         fn avx2_ido1_radix4_pass_kernel() -> Option<ComplexPassKernel<Self>> {
             Some(f64_kernel::pass_ido1_radix4)
+        }
+
+        fn avx2_radix3_pass_kernel() -> Option<ComplexPassKernel<Self>> {
+            if available() {
+                Some(f64_kernel::pass_radix3)
+            } else {
+                None
+            }
         }
 
         fn avx2_general_prime_ido1_kernel() -> Option<ComplexGeneralPrimeIdo1Kernel<Self>> {
@@ -422,6 +439,27 @@ mod x86 {
 
         #[inline]
         #[target_feature(enable = "avx2")]
+        unsafe fn radix3(input: &[V; 8], inverse: bool) -> [V; 8] {
+            let mut output = [_mm256_setzero_pd(); 8];
+            let pair = _mm256_add_pd(input[1], input[2]);
+            let difference = _mm256_sub_pd(input[1], input[2]);
+            let base = _mm256_sub_pd(input[0], _mm256_mul_pd(pair, _mm256_set1_pd(0.5)));
+            // SAFETY: the helper uses AVX2 intrinsics and is called only from
+            // AVX2-targeted functions after runtime feature dispatch.
+            let turn = unsafe {
+                _mm256_mul_pd(
+                    rotate_quarter(difference, inverse),
+                    _mm256_set1_pd(0.866_025_403_784_438_6),
+                )
+            };
+            output[0] = _mm256_add_pd(input[0], pair);
+            output[1] = _mm256_add_pd(base, turn);
+            output[2] = _mm256_sub_pd(base, turn);
+            output
+        }
+
+        #[inline]
+        #[target_feature(enable = "avx2")]
         unsafe fn radix4(input: &[V; 8], inverse: bool) -> [V; 8] {
             let mut output = [_mm256_setzero_pd(); 8];
             let even_sum = _mm256_add_pd(input[0], input[2]);
@@ -477,9 +515,10 @@ mod x86 {
         unsafe fn transform<const RADIX: usize>(input: &[V; 8], inverse: bool) -> [V; 8] {
             match RADIX {
                 2 => unsafe { radix2(input) },
+                3 => unsafe { radix3(input, inverse) },
                 4 => unsafe { radix4(input, inverse) },
                 8 => unsafe { radix8(input, inverse) },
-                _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
+                _ => unreachable!("AVX2 kernel supports radices 2, 3, 4, and 8"),
             }
         }
 
@@ -533,10 +572,34 @@ mod x86 {
         ) {
             match pass.radix {
                 2 => unsafe { pass_fixed::<2>(input, output, pass) },
+                3 => unsafe { pass_fixed::<3>(input, output, pass) },
                 4 => unsafe { pass_fixed::<4>(input, output, pass) },
                 8 => unsafe { pass_fixed::<8>(input, output, pass) },
-                _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
+                _ => unreachable!("AVX2 kernel supports radices 2, 3, 4, and 8"),
             }
+        }
+
+        /// Executes a radix-three pass over complete pairs of inner values.
+        ///
+        /// # Safety
+        ///
+        /// The caller must have detected AVX2 and provide disjoint slices for
+        /// a radix-three pass with `ido >= 2`. The slices and twiddle table
+        /// must match the pass dimensions. An odd final inner value is left
+        /// untouched for the caller to handle.
+        #[target_feature(enable = "avx2")]
+        pub(super) unsafe fn pass_radix3(
+            input: &[Complex<f64>],
+            output: &mut [Complex<f64>],
+            pass: &SimdPass<'_, f64>,
+        ) {
+            debug_assert_eq!(pass.radix, 3);
+            debug_assert!(pass.ido >= 2);
+            debug_assert!(input.len() >= 3 * pass.l1 * pass.ido);
+            debug_assert!(output.len() >= 3 * pass.l1 * pass.ido);
+            // SAFETY: this wrapper narrows the shared fixed-pass kernel to
+            // radix three and inherits the caller's AVX2 and slice contract.
+            unsafe { pass_fixed::<3>(input, output, pass) };
         }
 
         /// Dispatches radix-eleven passes to the mixed-inner kernel and the
@@ -2653,6 +2716,89 @@ mod tests {
             (actual.im - expected.im).abs() < 2.0e-12,
             "{context}: {actual} != {expected}"
         );
+    }
+
+    #[test]
+    fn f64_complex_radix3_pass_matches_direct_dfts_and_preserves_odd_ido_tail() {
+        if !<f64 as SimdScalar>::avx2_available() {
+            return;
+        }
+        let Some(kernel) = <f64 as SimdScalar>::avx2_radix3_pass_kernel() else {
+            panic!("AVX2 radix-three kernel should be available");
+        };
+
+        let radix = 3;
+        let marker = Complex::new(-91.0, 37.0);
+        for (l1, ido) in [(1, 2), (2, 3), (8, 121)] {
+            let total_len = radix * l1 * ido;
+            let twiddles: Vec<_> = (0..radix)
+                .flat_map(|branch| {
+                    (0..ido).map(move |inner| root(branch * l1 * inner, total_len, true))
+                })
+                .collect();
+            let original: Vec<_> = (0..total_len)
+                .map(|index| signal(index + l1 * 7 + ido * 13))
+                .collect();
+            let vector_ido = ido - ido % 2;
+
+            for inverse in [false, true] {
+                let scale = if inverse { 0.25 } else { 1.0 };
+                let mut storage = vec![marker; total_len + 2];
+                let (start_guard, tail) = storage.split_at_mut(1);
+                let (output, end_guard) = tail.split_at_mut(total_len);
+                // SAFETY: runtime AVX2 is available, the buffers are disjoint,
+                // and the pass dimensions match the radix-three contract.
+                unsafe {
+                    kernel(
+                        &original,
+                        output,
+                        &SimdPass {
+                            radix,
+                            l1,
+                            ido,
+                            twiddles: &twiddles,
+                            inverse,
+                            inverse_scale: scale,
+                        },
+                    )
+                }
+                assert_eq!(start_guard[0], marker);
+                assert_eq!(end_guard[0], marker);
+
+                for outer in 0..l1 {
+                    for frequency in 0..radix {
+                        for inner in (0..vector_ido).step_by(2) {
+                            for lane in 0..2 {
+                                let inner_index = inner + lane;
+                                let mut expected = Complex::new(0.0, 0.0);
+                                for sample in 0..radix {
+                                    expected += original
+                                        [inner_index + ido * (sample + radix * outer)]
+                                        * root(sample * frequency % radix, radix, inverse);
+                                }
+                                if frequency != 0 && ido > 1 {
+                                    expected *=
+                                        root(frequency * l1 * inner_index, total_len, inverse);
+                                }
+                                expected *= scale;
+                                let output_index = inner_index + ido * (outer + l1 * frequency);
+                                assert_close(
+                                    output[output_index],
+                                    expected,
+                                    &format!(
+                                        "radix={radix}, l1={l1}, ido={ido}, inverse={inverse}, outer={outer}, frequency={frequency}, inner={inner_index}"
+                                    ),
+                                );
+                            }
+                        }
+                        if vector_ido < ido {
+                            let tail_index = ido - 1 + ido * (outer + l1 * frequency);
+                            assert_eq!(output[tail_index], marker);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     #[test]
