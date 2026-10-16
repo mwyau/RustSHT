@@ -143,7 +143,7 @@ The f32 screen used `nphi=1024` at T511 and `nphi=2048` at T1023. Values are q1/
 | T1023 | 0 | 4,064/675 | 2,058/367 |
 | T1023 | 1 | 8,353/1,155 | 6,872/1,287 |
 
-The first T1023 screen overlapped unrelated Cargo/rustc activity. A repeat on CPUs 0–7 was within 4.6% for every operation, spin, and thread count. The f32 path was slower than f64 on these screens. Existing f32 tests pass scalar synthesis and analysis references, spin-1 T511 analysis, spin synthesis references, analytic fields, and adjoint identities. At the time of the screen, T1023 lacked same-grid f32 numerical references; a follow-up sampled DUCC comparison for scalar and spin-1 synthesis and analysis is recorded in the [T1023 f32 validation report](f32-t1023-ducc-validation-2026-10-16.md). It checks selected values and complete-output sums and norms, not a full-array relative-L2 error.
+The first T1023 screen overlapped unrelated Cargo/rustc activity. A repeat on CPUs 0–7 was within 4.6% for every operation, spin, and thread count. The f32 path was slower than f64 on these screens. Existing f32 tests pass scalar synthesis and analysis references, spin-1 T511 analysis, spin synthesis references, analytic fields, and adjoint identities. A follow-up DUCC comparison for scalar and spin-1 T1023 synthesis and analysis reports full-array relative-L2 errors from `1.67e-5` to `4.87e-5`; the [validation report](f32-t1023-ducc-validation-2026-10-16.md) documents its grid, limits and raw summary data. RustSHT has not set a T1023 f32 acceptance threshold, so these results characterize the current implementation without declaring that threshold closed.
 
 ## Independent-field reuse
 

@@ -1,10 +1,15 @@
-RustSHT implementation source before this validation increment: eafc46c7bf70f23a19bea0986d3f69d511b131b4
+RustSHT implementation source: eafc46c7bf70f23a19bea0986d3f69d511b131b4
+Validation test/report base: 8d031988c652413361294ecf5a0ccaf44725063c
 Branch: opt/sht-kernel-performance
 DUCC package: ducc0 0.41.0
 DUCC source revision: c1ed01b8fda69d2a378190f0915f1a19762dddbf
 Reference command: uv run --locked python reports/data/f32-t1023-validation-2026-10-16/generate-ducc-reference.py
 Rust comparison: cargo test -p rustsht --test f32 --all-features --release f32_t1023_scalar_and_spin1_standard_match_ducc_0410 -- --ignored
 Rust comparison result: 1 passed
+Full-array Rust output: RUSTSHT_F32_DUMP_DIR=target/f32-t1023-full-output-8d03198 TMPDIR=target/rustsht-doc-tmp cargo test -p rustsht --test f32 --all-features --release f32_t1023_scalar_and_spin1_standard_match_ducc_0410 -- --ignored
+Full-array comparison: TMPDIR=target/rustsht-doc-tmp uv run --locked python reports/data/f32-t1023-validation-2026-10-16/compare-full-output.py target/f32-t1023-full-output-8d03198 > reports/data/f32-t1023-validation-2026-10-16/full-output-comparison.json
+Full-array result: six output arrays compared; relative-L2 1.67e-5 to 4.87e-5; full metrics in full-output-comparison.json
+Generated Rust arrays: target/f32-t1023-full-output-8d03198 (ignored; not committed)
 Full checks: cargo fmt --all -- --check; cargo clippy --workspace --all-targets --all-features -- -D warnings
 Full all-feature tests: TMPDIR=target/rustsht-doc-tmp cargo test --workspace --all-features (187 unit, 11 f32 passed; 13 unit and 1 f32 ignored)
 No-default tests: TMPDIR=target/rustsht-doc-tmp cargo test -p rustsht --no-default-features (149 unit, 11 f32 passed; 7 unit and 1 f32 ignored)
@@ -19,3 +24,5 @@ SHA-256:
 5bc1f196d825558b577dc7e1ef18dac1df4cab5723c37e0b052b03bf4af99e19  generate-ducc-reference.py
 b6bee60278d0713aab9c858f78a08756366593c4db7860221b23eb8bbd50c971  ducc-reference.json
 4ac4b131c3e7963605bd923586193c10ea4d669df73e3edcf0cb31103d403e32  rustsht-output.txt
+a7ccf2f36a8906daad74061f6b9047d9c78ee11c1b20b3566311e7d75ee65d4c  compare-full-output.py
+d3c39055e18e4573299f34278d4a5e772f10101a9c68bbb5d7bfb3c4e5f2dfd5  full-output-comparison.json
