@@ -1,0 +1,13 @@
+utc_recorded=2026-10-16T03:01:27Z
+baseline_commit=387ef37
+candidate_source=uncommitted per-latitude-block cosine-squared precompute in fused f64 scalar analysis
+baseline_binary_sha256=6b465745d6361ea975ba3b1ba9ce569ec5031aa16bd8330d500d5065975da4f6
+candidate_binary_sha256=34d0c36702eba92a7baf6a6c32aa1205b8ec55307d71f1d436ec1af6898e1fb8
+cpu=x86-64 one CPU core-Core Processor
+rustc 1.99.0 (b940084d7 2026-09-28)
+binary: rustc
+commit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4
+commit-date: 2026-09-28
+host: x86_64-unknown-linux-gnu
+release: 1.99.0
+LLVM version: 23.1.1

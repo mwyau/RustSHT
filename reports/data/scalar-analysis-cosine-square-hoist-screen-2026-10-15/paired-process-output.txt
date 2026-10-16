@@ -1,0 +1,6 @@
+Five alternating release-process pairs; scalar f64 GL STANDARD analysis. Each process runs one warmup and five timed calls.
+utc_start=2026-10-16T03:00:59Z
+baseline_commit=387ef37
+baseline_binary_sha256=6b465745d6361ea975ba3b1ba9ce569ec5031aa16bd8330d500d5065975da4f6
+candidate_binary_sha256=34d0c36702eba92a7baf6a6c32aa1205b8ec55307d71f1d436ec1af6898e1fb8
+utc_end=2026-10-16T03:01:16Z
