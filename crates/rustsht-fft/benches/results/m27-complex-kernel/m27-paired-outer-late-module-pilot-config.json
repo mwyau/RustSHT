@@ -1,0 +1,29 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M27 late-module paired-outer candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M26 5d92648 baseline"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "79f1ca5f02e09e21e3a542cf1a5983374cd0eebbe7c9fe3a7461a522fb6da47d",
+    "candidate_source_patch_sha256": "5a193878e98ee18fbe3571aede093a541b8b454689f56715d176a151da62ce3f",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "dispatch_note": "The f64 N=1442 radix-103 AVX2 pass uses an out-of-line paired-outer kernel for even groups and a scalar tail for odd groups.",
+    "purpose": "Full SHT FFT-target layout pilot with the paired-outer helper module declared after the existing f64 complex kernels",
+    "reference_binary_sha256": "76f2404f5c454e32985520030bd12626c8f1979f96f12a2633515b0a3e9ca71b",
+    "reference_source": "RustSHT-FFT M26 commit 5d9264871972756a6cd7323e99e5a938b7e3040a",
+    "runner": "Load-average telemetry was retained only in local diagnostics.",
+    "timing": "Three alternating process pairs; seven warmed samples per operation",
+    "workload": "All current exact C2C and real SHT target operation/length cells; one-transform and scalar/spin-1 row batches; one transform thread"
+  },
+  "pairs": 3
+}

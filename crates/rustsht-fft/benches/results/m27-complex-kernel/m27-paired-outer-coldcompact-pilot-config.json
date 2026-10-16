@@ -1,0 +1,29 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M27 cold compact paired-outer candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M26 5d92648 baseline"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "79c220b6572c82f4976cc9a08572fbe29614b8225b5fe9f913958649878cda19",
+    "candidate_source_patch_sha256": "1b4f7c02269775fee988dd6e51b37fa464b4c09d6d06b56b6a25c586f849eeab",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "dispatch_note": "The f64 N=1442 radix-103 AVX2 pass uses the compact paired-outer kernel; dispatch and helper are marked cold for code placement.",
+    "purpose": "Full SHT FFT-target pilot for the compact paired-outer kernel with cold code placement",
+    "reference_binary_sha256": "76f2404f5c454e32985520030bd12626c8f1979f96f12a2633515b0a3e9ca71b",
+    "reference_source": "RustSHT-FFT M26 commit 5d9264871972756a6cd7323e99e5a938b7e3040a",
+    "runner": "Load-average telemetry was retained only in local diagnostics.",
+    "timing": "Three alternating process pairs; seven warmed samples per operation",
+    "workload": "All current exact C2C and real SHT target operation/length cells; one-transform and scalar/spin-1 row batches; one transform thread"
+  },
+  "pairs": 3
+}

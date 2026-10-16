@@ -1,0 +1,30 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M27 isolated paired-outer AVX2 candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M26 5d92648 baseline"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "6ecb6c06cf87ea1a715fef0ed0a436af4e81a0991b9424c1511b927a7e7e40cb",
+    "candidate_source_base": "RustSHT-FFT M26 commit 5d9264871972756a6cd7323e99e5a938b7e3040a plus the isolated paired-outer source patch",
+    "candidate_source_patch_sha256": "cf3a1cf25d33502832c86464bb703aa060edbe89e36e8f513c22451f34173aaa",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "dispatch_note": "The f64 N=1442 radix-103 AVX2 pass uses an out-of-line paired-outer kernel for even l1; singleton and odd l1 use the original frequency-paired kernel. Unsafe inverse input, f32, and non-AVX2 dispatch remain unchanged.",
+    "purpose": "Full SHT FFT-target comparison after isolating the N=1442 paired-outer AVX2 radix-103 kernel",
+    "reference_binary_sha256": "76f2404f5c454e32985520030bd12626c8f1979f96f12a2633515b0a3e9ca71b",
+    "reference_source": "RustSHT-FFT M26 commit 5d9264871972756a6cd7323e99e5a938b7e3040a",
+    "runner": "Load-average telemetry was retained only in local diagnostics.",
+    "timing": "Six alternating process pairs; seven warmed samples per operation",
+    "workload": "All current exact C2C and real SHT target operation/length cells; one-transform and scalar/spin-1 row batches; one transform thread"
+  },
+  "pairs": 6
+}

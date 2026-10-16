@@ -1,0 +1,33 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-c2c",
+      "1442",
+      "721"
+    ],
+    "label": "RustSHT-FFT M27 Rader-103 candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-c2c",
+      "1442",
+      "721"
+    ],
+    "label": "RustSHT-FFT M26 5d92648 baseline"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "e19aa9384d89a83cf6639307f71e3127b959d36d604b6d8a5e88d5e44af88df0",
+    "candidate_source_base": "RustSHT-FFT M26 commit 5d9264871972756a6cd7323e99e5a938b7e3040a plus the current Rader-103 source diff",
+    "candidate_source_patch_sha256": "a224cad7a26f0f2dd13fec6f66e562f044cf30d61e619e9cd78577eca835dcf0",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "purpose": "Focused pilot for the bounded Rader-103 N=1442 complex pass against the committed M26 AVX2 baseline",
+    "reference_binary_sha256": "76f2404f5c454e32985520030bd12626c8f1979f96f12a2633515b0a3e9ca71b",
+    "reference_source": "RustSHT-FFT M26 commit 5d9264871972756a6cd7323e99e5a938b7e3040a",
+    "runner": "Load-average telemetry was retained only in local diagnostics.",
+    "timing": "Three alternating process pairs; seven warmed samples per operation",
+    "workload": "N=1442 C2C forward and inverse over 721 rows; one transform thread"
+  },
+  "pairs": 3
+}

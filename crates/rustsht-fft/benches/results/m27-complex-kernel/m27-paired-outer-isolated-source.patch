@@ -1,0 +1,242 @@
+diff --git a/crates/rustsht-fft/src/complex.rs b/crates/rustsht-fft/src/complex.rs
+index f6c6d6f..412b687 100644
+--- a/crates/rustsht-fft/src/complex.rs
++++ b/crates/rustsht-fft/src/complex.rs
+@@ -879,7 +879,7 @@ fn execute_1442_general_prime_ido1<T: Float + FromPrimitive>(
+     unsafe { kernel(input, output, params) };
+     #[cfg(test)]
+     crate::m0_record_route(String::from(
+-        "c2c-avx2:general-prime-ido1 n=1442 radix=103 l1=14 vector_frequencies=50 scalar_tail=1",
++        "c2c-avx2:general-prime-ido1-paired-outer n=1442 radix=103 l1=14 vector_groups=7 scalar_group_tail=0",
+     ));
+     true
+ }
+diff --git a/crates/rustsht-fft/src/lib.rs b/crates/rustsht-fft/src/lib.rs
+index d26cacd..53471df 100644
+--- a/crates/rustsht-fft/src/lib.rs
++++ b/crates/rustsht-fft/src/lib.rs
+@@ -750,11 +750,11 @@ mod m0_diagnostics_tests {
+     }
+ 
+     #[test]
+-    fn m24_c2c_1442_selects_avx2_radix103_and_guards_unsafe_inverse_inputs() {
++    fn m27_c2c_1442_selects_paired_outer_avx2_and_guards_unsafe_inverse_inputs() {
+         let n = 1442;
+         let plan = ComplexFftPlan::<f64>::new(n).expect("N=1442 complex plan");
+         let mut workspace = plan.workspace().expect("N=1442 complex workspace");
+-        let expected_route = "c2c-avx2:general-prime-ido1 n=1442 radix=103 l1=14 vector_frequencies=50 scalar_tail=1";
++        let expected_route = "c2c-avx2:general-prime-ido1-paired-outer n=1442 radix=103 l1=14 vector_groups=7 scalar_group_tail=0";
+         let has_avx2 = <f64 as SimdScalar>::avx2_available();
+         let mut values = complex_input(n);
+ 
+@@ -818,7 +818,7 @@ mod m0_diagnostics_tests {
+         assert!(
+             !routes
+                 .iter()
+-                .any(|route| route.starts_with("c2c-avx2:general-prime-ido1 n=1442")),
++                .any(|route| route.starts_with("c2c-avx2:general-prime-ido1")),
+             "f32 must not select the f64 radix-103 kernel: {routes:?}"
+         );
+     }
+diff --git a/crates/rustsht-fft/src/simd.rs b/crates/rustsht-fft/src/simd.rs
+index 94b07c8..2296427 100644
+--- a/crates/rustsht-fft/src/simd.rs
++++ b/crates/rustsht-fft/src/simd.rs
+@@ -333,6 +333,7 @@ mod x86 {
+ 
+         type V = __m256d;
+ 
++        mod radix103_paired_outer;
+         mod radix11_odd_ido_tail;
+ 
+         #[inline]
+@@ -989,6 +990,26 @@ mod x86 {
+             input: &[Complex<f64>],
+             output: &mut [Complex<f64>],
+             params: ComplexGeneralPrimeIdo1Params<'_, f64>,
++        ) {
++            if params.l1 >= 2 && params.l1.is_multiple_of(2) {
++                // SAFETY: this wrapper has the same AVX2 precondition as the
++                // grouped helper, and it receives the caller's validated
++                // slices and tables unchanged.
++                unsafe { radix103_paired_outer::execute(input, output, params) };
++            } else {
++                // SAFETY: the original frequency-paired kernel retains its
++                // existing validation contract for odd and singleton groups.
++                unsafe { general_prime_ido1_radix103_frequency_pairs(input, output, params) };
++            }
++        }
++
++        /// Executes the original radix-103 kernel, pairing adjacent output
++        /// frequencies for singleton and odd outer group counts.
++        #[target_feature(enable = "avx2")]
++        unsafe fn general_prime_ido1_radix103_frequency_pairs(
++            input: &[Complex<f64>],
++            output: &mut [Complex<f64>],
++            params: ComplexGeneralPrimeIdo1Params<'_, f64>,
+         ) {
+             let ComplexGeneralPrimeIdo1Params {
+                 l1,
+diff --git a/crates/rustsht-fft/src/simd/x86/f64_kernel/radix103_paired_outer.rs b/crates/rustsht-fft/src/simd/x86/f64_kernel/radix103_paired_outer.rs
+new file mode 100644
+index 0000000..c796856
+--- /dev/null
++++ b/crates/rustsht-fft/src/simd/x86/f64_kernel/radix103_paired_outer.rs
+@@ -0,0 +1,157 @@
++// SPDX-FileCopyrightText: 2026 Albert M. W. Yau
++// SPDX-FileCopyrightText: 2010-2026 Max-Planck-Society (DUCC FFT pass equations)
++// SPDX-License-Identifier: BSD-3-Clause
++//
++// This AVX2 kernel evaluates radix-103 direct sums while pairing adjacent
++// outer groups in vector lanes.
++
++use std::arch::x86_64::*;
++
++use num_complex::Complex;
++
++use crate::simd::ComplexGeneralPrimeIdo1Params;
++
++const RADIX: usize = 103;
++const HALF: usize = RADIX / 2;
++
++/// Executes a radix-103 `ido == 1` pass over adjacent outer groups.
++///
++/// A frequency's coefficient is shared across both complex values in each
++/// vector, and the output group pair is contiguous in the pass layout.
++///
++/// # Safety
++///
++/// The caller must have detected AVX2 and provide disjoint input and output
++/// slices, an even positive `l1`, a complete radix-103 phase table and every
++/// root indexed by the parameters. Inverse input must be in the deferred
++/// normalization safety range.
++#[target_feature(enable = "avx2")]
++#[inline(never)]
++pub(super) unsafe fn execute(
++    input: &[Complex<f64>],
++    output: &mut [Complex<f64>],
++    params: ComplexGeneralPrimeIdo1Params<'_, f64>,
++) {
++    let ComplexGeneralPrimeIdo1Params {
++        l1,
++        roots,
++        root_stride,
++        phase_indices,
++        inverse,
++        scale,
++    } = params;
++    debug_assert!(l1 >= 2 && l1.is_multiple_of(2));
++    debug_assert!(input.len() >= RADIX * l1);
++    debug_assert!(output.len() >= RADIX * l1);
++    debug_assert!(phase_indices.len() >= HALF * RADIX);
++    debug_assert!(roots.len() > (RADIX - 1) * root_stride);
++
++    let output_ptr = output.as_mut_ptr();
++    let output_scale = _mm256_set1_pd(scale);
++    let sign = if inverse { 1.0 } else { -1.0 };
++
++    for outer in (0..l1).step_by(2) {
++        let input_zero_first = input[RADIX * outer];
++        let input_zero_second = input[RADIX * (outer + 1)];
++        let initial = _mm256_setr_pd(
++            input_zero_first.re,
++            input_zero_first.im,
++            input_zero_second.re,
++            input_zero_second.im,
++        );
++        let mut dc = initial;
++        let mut pair_inputs = [_mm256_setzero_pd(); HALF];
++        let mut imaginary_differences = [_mm256_setzero_pd(); HALF];
++        for branch_index in 0..HALF {
++            let branch = branch_index + 1;
++            let left_first = input[RADIX * outer + branch];
++            let right_first = input[RADIX * outer + (RADIX - branch)];
++            let left_second = input[RADIX * (outer + 1) + branch];
++            let right_second = input[RADIX * (outer + 1) + (RADIX - branch)];
++            let pair_first = left_first + right_first;
++            let pair_second = left_second + right_second;
++            let difference_first = left_first - right_first;
++            let difference_second = left_second - right_second;
++            pair_inputs[branch_index] =
++                _mm256_setr_pd(pair_first.re, pair_first.im, pair_second.re, pair_second.im);
++            imaginary_differences[branch_index] = _mm256_setr_pd(
++                -difference_first.im,
++                difference_first.re,
++                -difference_second.im,
++                difference_second.re,
++            );
++            dc = _mm256_add_pd(dc, pair_inputs[branch_index]);
++        }
++        let dc = if inverse {
++            _mm256_mul_pd(dc, output_scale)
++        } else {
++            dc
++        };
++        // SAFETY: `outer` and `outer + 1` are a complete in-bounds pair, and
++        // the output slice is disjoint from the input.
++        unsafe {
++            _mm256_storeu_pd(output_ptr.add(outer).cast::<f64>(), dc);
++        }
++
++        for frequency in 1..HALF {
++            let mut positive = initial;
++            let mut negative = initial;
++            for branch_index in 0..HALF {
++                let phase = usize::from(phase_indices[branch_index * RADIX + frequency]);
++                let root = roots[phase * root_stride];
++                let cosine = _mm256_set1_pd(root.re);
++                let sine = _mm256_set1_pd(root.im * sign);
++                let pair = pair_inputs[branch_index];
++                let difference = imaginary_differences[branch_index];
++                let cosine_term = _mm256_mul_pd(pair, cosine);
++                let sine_term = _mm256_mul_pd(difference, sine);
++                positive = _mm256_add_pd(positive, _mm256_add_pd(cosine_term, sine_term));
++                negative = _mm256_sub_pd(_mm256_add_pd(negative, cosine_term), sine_term);
++            }
++            if inverse {
++                positive = _mm256_mul_pd(positive, output_scale);
++                negative = _mm256_mul_pd(negative, output_scale);
++            }
++            // SAFETY: both frequencies are in 1..RADIX, and each store covers
++            // the adjacent outer pair initialized above.
++            unsafe {
++                _mm256_storeu_pd(
++                    output_ptr.add(frequency * l1 + outer).cast::<f64>(),
++                    positive,
++                );
++                _mm256_storeu_pd(
++                    output_ptr
++                        .add((RADIX - frequency) * l1 + outer)
++                        .cast::<f64>(),
++                    negative,
++                );
++            }
++        }
++
++        let mut positive = initial;
++        let mut negative = initial;
++        for branch_index in 0..HALF {
++            let phase = usize::from(phase_indices[branch_index * RADIX + HALF]);
++            let root = roots[phase * root_stride];
++            let cosine = _mm256_set1_pd(root.re);
++            let sine = _mm256_set1_pd(root.im * sign);
++            let cosine_term = _mm256_mul_pd(pair_inputs[branch_index], cosine);
++            let sine_term = _mm256_mul_pd(imaginary_differences[branch_index], sine);
++            positive = _mm256_add_pd(positive, _mm256_add_pd(cosine_term, sine_term));
++            negative = _mm256_sub_pd(_mm256_add_pd(negative, cosine_term), sine_term);
++        }
++        if inverse {
++            positive = _mm256_mul_pd(positive, output_scale);
++            negative = _mm256_mul_pd(negative, output_scale);
++        }
++        // SAFETY: the final two frequencies and both outer values are in
++        // bounds; the output slice is disjoint from the input.
++        unsafe {
++            _mm256_storeu_pd(output_ptr.add(HALF * l1 + outer).cast::<f64>(), positive);
++            _mm256_storeu_pd(
++                output_ptr.add((RADIX - HALF) * l1 + outer).cast::<f64>(),
++                negative,
++            );
++        }
++    }
++}

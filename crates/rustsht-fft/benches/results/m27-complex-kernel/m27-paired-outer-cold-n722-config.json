@@ -1,0 +1,32 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-c2c",
+      "722",
+      "361"
+    ],
+    "label": "RustSHT-FFT M27 paired-outer cold-code candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-c2c",
+      "722",
+      "361"
+    ],
+    "label": "RustSHT-FFT M26 5d92648 baseline"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "3340bc3f1a7131c7acca804d0e0ce459098b8c3cde23172f6adad2e178fecfd6",
+    "candidate_source_patch_sha256": "7a600f2cb16c10610a56129f83a3086aefafa8729df4df9c08a80b80f14f0f5a",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "purpose": "Check the prior N=722 control regression after isolating the N=1442 paired-outer AVX2 helper as cold code",
+    "reference_binary_sha256": "76f2404f5c454e32985520030bd12626c8f1979f96f12a2633515b0a3e9ca71b",
+    "reference_source": "RustSHT-FFT M26 commit 5d9264871972756a6cd7323e99e5a938b7e3040a",
+    "runner": "Load-average telemetry was retained only in local diagnostics.",
+    "timing": "Three alternating process pairs; seven warmed samples per operation",
+    "workload": "N=722 C2C inverse at 361 rows; one transform thread"
+  },
+  "pairs": 3
+}
