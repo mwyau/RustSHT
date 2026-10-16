@@ -2898,3 +2898,7 @@ Two follow-up five-pair screens used q1 on CPU 0 and q8 on CPUs 8–15. Their pa
 ### f64 scalar T511 DUCC timing refresh (M4, 2026-10-15)
 
 Five alternating native/Python process pairs measured scalar GL STANDARD analysis at q1/q8. RustSHT/DUCC paired median ratios were 1.65x and 2.17x; all pairs favored DUCC. One DUCC q1 result and one RustSHT q8 result widened the paired ranges. The CPU set was not isolated, and DUCC medians were higher than an earlier Python-plan comparison. Treat these as current shared-host observations; the earlier gap figures remain separate. See [the comparison report](../reports/scalar-analysis-ducc-refresh-2026-10-15.md) and [raw data](../reports/data/scalar-analysis-ducc-refresh-2026-10-15/).
+
+### f64 T1023 scalar and spin-1 DUCC timing refresh (M4, 2026-10-15)
+
+Five alternating pairs measured GL STANDARD analysis at q1/q8. Spin-1 RustSHT/DUCC ratios were 0.97x and 1.14x, with narrow ranges. Scalar ratios were 1.32x and 2.13x; the scalar screen coincided with rising host load and remains provisional. q1 used CPU 0 and q8 used CPUs 8–15; the CPUs were not isolated. See [the report](../reports/t1023-analysis-ducc-refresh-2026-10-15.md) and [raw data](../reports/data/sht-t1023-ducc-refresh-2026-10-15/).
