@@ -1,0 +1,29 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "723",
+      "361"
+    ],
+    "label": "M32 radix19-id1 with cold annotations"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "723",
+      "361"
+    ],
+    "label": "M32 radix19-id1 before cold annotations"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "a1036e527f31637d8f0fd9212d1401c2d568155cd1e8dc0faff785aa05333a8c",
+    "candidate_parent_commit": "8a96f1bbdb302116439ba9928a30f18b254a1827",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2",
+    "purpose": "Cold-annotation layout screen at N=723",
+    "reference_binary_sha256": "dd30ebd03b4ec67a3c90d006a56828c87de987f53772d031d894616c28cd25a6",
+    "workload": "bench-native-real 723 361; seven warmed samples; six alternating process pairs"
+  },
+  "pairs": 6
+}

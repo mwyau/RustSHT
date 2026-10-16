@@ -1,0 +1,28 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M32 final candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-sht-targets"
+    ],
+    "label": "RustFFT 6.4.1"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "81b4cf008fa6fb274eed87aeaa97ed37008a92851124ad569d7ff0505d4ec0a4",
+    "candidate_source_commit": "8a96f1b",
+    "candidate_source_diff_sha256": "7038e89902c8136048538458313e82bf9ad4a3213792e276b8dfcf403a13ac03",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable target; runtime SIMD dispatch",
+    "purpose": "M32 final current-source comparison with RustFFT 6.4.1 over all 34 exact C2C and real SHT operation/length/row cells",
+    "reference": "RustFFT 6.4.1 in the same executable",
+    "reference_binary_sha256": "81b4cf008fa6fb274eed87aeaa97ed37008a92851124ad569d7ff0505d4ec0a4",
+    "timing": "six alternating process pairs; seven warmed samples per operation",
+    "workload": "all exact C2C and real operations at scalar/spin-1 SHT row counts; one transform thread"
+  },
+  "pairs": 6
+}

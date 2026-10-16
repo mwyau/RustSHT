@@ -1,0 +1,26 @@
+{
+  "Admiral": "ce67bc00ff9e6de96bf5b75f7a789581105ddb58",
+  "Admiral_binary_sha256": "da072d28a6b32eb06cba338068b0d1d36af9daa6d446f861ad57f7d64395a163",
+  "DUCC": "c1ed01b8fda69d2a378190f0915f1a19762dddbf",
+  "DUCC_native_binary_sha256": "e5dc858e614114b314d515151b3d061281636f6366f6cb6000eb92e2f2264544",
+  "DUCC_portable_binary_sha256": "4265b0590ee3235e87fb4a9aa7f776ea5c33a1c3b91d7adef34310b65d827843",
+  "FFTW": "system version 3.3.10",
+  "FFTW_binary_sha256": "78f56cad4aaae732d03f52c525296c61f70c7c49f98efd638ad9b7385a6cf9fa",
+  "candidate_binary_sha256": "81b4cf008fa6fb274eed87aeaa97ed37008a92851124ad569d7ff0505d4ec0a4",
+  "candidate_source_commit": "8a96f1b",
+  "candidate_source_diff_sha256": "7038e89902c8136048538458313e82bf9ad4a3213792e276b8dfcf403a13ac03",
+  "comparison": "benches/reference/compare.py; independent output comparisons at all four operations; two exact DUCC planner configurations plus FFTW and Admiral",
+  "lengths": [
+    722
+  ],
+  "operations": [
+    "c2c_forward",
+    "c2c_inverse",
+    "r2c",
+    "c2r"
+  ],
+  "tolerance": {
+    "atol": 2e-11,
+    "rtol": 2e-11
+  }
+}

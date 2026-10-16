@@ -1,0 +1,32 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "723",
+      "361"
+    ],
+    "label": "RustSHT-FFT M32 route-first dispatch candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "723",
+      "361"
+    ],
+    "label": "RustSHT-FFT M30 baseline"
+  },
+  "metadata": {
+    "baseline_binary_sha256": "1170d4ff79fe99557cc9e3c04c586bf6d76dd2a108ad4793f23038419112c00d",
+    "baseline_source_commit": "cc6a626aede65c7bfdc9ebb0ab91cca5972fab94",
+    "candidate_binary_sha256": "pending",
+    "candidate_source_commit": "8a96f1b",
+    "candidate_source_diff_sha256": "pending",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable target; runtime SIMD dispatch",
+    "purpose": "Dispatch-order experiment: N=722 route first in AVX2 length checks; paired N=723 real controls with 361 rows",
+    "timing": "six alternating process pairs; seven warmed samples per operation",
+    "workload": "all exact C2C and real operations at scalar/spin-1 SHT row counts; one transform thread"
+  },
+  "pairs": 6
+}

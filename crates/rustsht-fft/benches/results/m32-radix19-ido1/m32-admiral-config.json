@@ -1,0 +1,29 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M32 radix-19 candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "--sht"
+    ],
+    "label": "Admiral ce67bc00"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "46a68c9b76f1dbaea435640d2599c7f755f3a6aa34f18d2c35693f5289370ed3",
+    "candidate_source_commit": "8a96f1b",
+    "candidate_source_diff_sha256": "e47282203e1b6a0e4e7cebf1fc7a55ea62f48652fc83798510fcd87622cbf538",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "purpose": "M32 current radix-19 candidate comparison against Admiral ce67bc00 across all 34 exact C2C and real SHT operation/length/row cells",
+    "reference": "Admiral ce67bc00",
+    "reference_binary_sha256": "da072d28a6b32eb06cba338068b0d1d36af9daa6d446f861ad57f7d64395a163",
+    "reference_build": "Admiral ce67bc00; g++ 15.2.0 Release; ADM_TARGET_ARCH=native; threads disabled; estimate planning",
+    "timing": "six alternating process pairs; seven warmed samples per operation",
+    "workload": "all exact C2C and real operations at scalar/spin-1 SHT row counts; one transform thread"
+  },
+  "pairs": 6
+}

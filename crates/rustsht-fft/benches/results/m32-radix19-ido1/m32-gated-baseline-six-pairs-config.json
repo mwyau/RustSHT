@@ -1,0 +1,28 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M32 gated candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M30 baseline"
+  },
+  "metadata": {
+    "baseline_binary_sha256": "1170d4ff79fe99557cc9e3c04c586bf6d76dd2a108ad4793f23038419112c00d",
+    "baseline_source_commit": "cc6a626aede65c7bfdc9ebb0ab91cca5972fab94",
+    "candidate_binary_sha256": "e7e7d5210be3c7ec2182baf91a3591ffa7a76b189fc0fdfdc11de39a814620e4",
+    "candidate_source_commit": "8a96f1b",
+    "candidate_source_diff_sha256": "f9c884791a2277d474eb92c3b699967262f5c57004efaa6e3eb7a5a0092d161b",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable target; runtime SIMD dispatch",
+    "purpose": "M32 final radix-19 ido=1 candidate after restricting kernel discovery to N=722, compared with M30 over all 34 exact C2C and real SHT operation/length/row cells",
+    "timing": "six alternating process pairs; seven warmed samples per operation",
+    "workload": "all exact C2C and real operations at scalar/spin-1 SHT row counts; one transform thread"
+  },
+  "pairs": 6
+}

@@ -1,0 +1,8 @@
+DUCC planner vectorization: off
+Command: python3 benches/reference/compare.py --ducc <local-home-path> --lengths 722 --external FFTW 3.3.10=<local-home-path> --external Admiral ce67bc00=<local-home-path>
+Exit code: 0
+
+RustSHT-FFT f64 C2C/R2C/C2R: compared 2528 output records (5056 scalar components); max_abs=1.137e-13; worst_abs=(('c2c_forward', 722, 702), 'imag'); max_scaled=3.908e-14; worst_scaled=(('c2c_forward', 722, 246), 'imag')
+RustSHT-FFT versus FFTW 3.3.10 f64 C2C/R2C/C2R: compared 2528 output records (5056 scalar components); max_abs=1.705e-13; worst_abs=(('c2c_forward', 722, 702), 'imag'); max_scaled=3.336e-14; worst_scaled=(('c2c_forward', 722, 210), 'imag')
+RustSHT-FFT versus Admiral ce67bc00 f64 C2C/R2C/C2R: compared 2528 output records (5056 scalar components); max_abs=1.279e-13; worst_abs=(('c2c_forward', 722, 709), 'real'); max_scaled=6.553e-14; worst_scaled=(('c2c_forward', 722, 697), 'real')
+DUCC vectorize=off

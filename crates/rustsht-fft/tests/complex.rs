@@ -644,6 +644,33 @@ fn direct_general_primes_preserve_analytic_modes_extremes_and_subnormals() {
 }
 
 #[test]
+fn n722_full_radix19_passes_match_independent_direct_dfts() {
+    let n = 722;
+    let plan = ComplexFftPlan::<f64>::new(n).unwrap();
+    let mut workspace = plan.workspace().unwrap();
+    let original: Vec<_> = (0..n)
+        .map(|index| {
+            let x = index as f64;
+            Complex::new((x * 0.173).sin(), (x * 0.071 + 0.2).cos())
+        })
+        .collect();
+
+    for forward in [true, false] {
+        let mut values = original.clone();
+        let mut expected = direct_dft_f64(&original, forward);
+        if !forward {
+            expected = normalized_direct_inverse(expected, 1.0 / n as f64);
+        }
+        if forward {
+            plan.forward(&mut values, &mut workspace).unwrap();
+        } else {
+            plan.inverse(&mut values, &mut workspace).unwrap();
+        }
+        assert_f64_close(&values, &expected, n);
+    }
+}
+
+#[test]
 fn inverse_prescaling_preserves_high_dynamic_direct_and_mixed_primes() {
     let amplitude64 = f64::MAX / 4.01;
     assert_ne!(

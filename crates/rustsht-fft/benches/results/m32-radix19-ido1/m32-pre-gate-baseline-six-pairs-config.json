@@ -1,0 +1,28 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M32 radix-19 candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M30 baseline"
+  },
+  "metadata": {
+    "baseline_binary_sha256": "1170d4ff79fe99557cc9e3c04c586bf6d76dd2a108ad4793f23038419112c00d",
+    "baseline_source_commit": "cc6a626aede65c7bfdc9ebb0ab91cca5972fab94",
+    "candidate_binary_sha256": "46a68c9b76f1dbaea435640d2599c7f755f3a6aa34f18d2c35693f5289370ed3",
+    "candidate_source_commit": "8a96f1b",
+    "candidate_source_diff_sha256": "e47282203e1b6a0e4e7cebf1fc7a55ea62f48652fc83798510fcd87622cbf538",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable target; runtime SIMD dispatch",
+    "purpose": "M32 radix-19 ido=1 AVX2 candidate against the M30 baseline across all 34 exact C2C and real SHT operation/length/row cells",
+    "timing": "six alternating process pairs; seven warmed samples per operation",
+    "workload": "all exact C2C and real operations at scalar/spin-1 SHT row counts; one transform thread"
+  },
+  "pairs": 6
+}

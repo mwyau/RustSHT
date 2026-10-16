@@ -510,6 +510,11 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
                 kernels,
                 Some(kernel),
             );
+        } else if avx2_available
+            && self.data.len == 722
+            && let Some(kernel) = T::avx2_general_prime_radix19_ido1_kernel()
+        {
+            self.execute_722_with_simd_unchecked(values, workspace, direction, kernels, kernel);
         } else {
             self.execute_with_simd_unchecked::<false>(
                 values,
@@ -551,7 +556,7 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
         direction: Direction,
         inverse_output_scale: T,
         simd: Option<SimdKernels<T>>,
-        radix103_kernel: Option<ComplexGeneralPrimeIdo1Kernel<T>>,
+        specialized_general_prime_kernel: Option<ComplexGeneralPrimeIdo1Kernel<T>>,
     ) {
         let defer_inverse_normalization =
             direction == Direction::Inverse && inverse_normalization_is_safe(values, self.data.len);
@@ -619,7 +624,7 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
                     &mut workspace.output,
                     pass,
                     &mut execution,
-                    radix103_kernel,
+                    specialized_general_prime_kernel,
                 );
                 current_is_values = false;
             } else {
@@ -628,8 +633,118 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
                     values,
                     pass,
                     &mut execution,
-                    radix103_kernel,
+                    specialized_general_prime_kernel,
                 );
+                current_is_values = true;
+            }
+        }
+
+        if !current_is_values {
+            values.copy_from_slice(&workspace.output);
+        }
+    }
+
+    #[cold]
+    #[inline(never)]
+    fn execute_722_with_simd_unchecked(
+        &self,
+        values: &mut [Complex<T>],
+        workspace: &mut ComplexFftWorkspace<T>,
+        direction: Direction,
+        simd: Option<SimdKernels<T>>,
+        kernel_ido1: ComplexGeneralPrimeIdo1Kernel<T>,
+    ) where
+        T: SimdScalar,
+    {
+        let defer_inverse_normalization =
+            direction == Direction::Inverse && inverse_normalization_is_safe(values, self.data.len);
+        #[cfg(test)]
+        crate::m0_record_route(format!(
+            "c2c n={} normalization={}",
+            self.data.len,
+            if defer_inverse_normalization {
+                "deferred"
+            } else if direction == Direction::Inverse {
+                "guarded"
+            } else {
+                "forward"
+            }
+        ));
+        let mut current_is_values = true;
+        for (stage, pass) in self.data.passes.iter().enumerate() {
+            let blue = self.data.bluestein[stage].as_ref();
+            #[cfg(test)]
+            crate::m0_record_route(format!(
+                "c2c n={} stage={} radix={} l1={} ido={} route={}",
+                self.data.len,
+                stage,
+                pass.radix,
+                pass.l1,
+                pass.ido,
+                if blue.is_some() {
+                    "bluestein"
+                } else if matches!(pass.radix, 2 | 3 | 4 | 5 | 7 | 8 | 11) {
+                    "fixed"
+                } else if pass.radix.is_multiple_of(2) {
+                    "direct-even"
+                } else {
+                    "general-prime"
+                }
+            ));
+            let mut execution = PassExecution {
+                roots: &self.data.roots,
+                total_len: self.data.len,
+                direction,
+                defer_inverse_normalization,
+                inverse_output_scale: if direction == Direction::Inverse
+                    && stage + 1 == self.data.passes.len()
+                {
+                    if defer_inverse_normalization {
+                        inverse_scale::<T>(self.data.len)
+                    } else {
+                        T::one()
+                    }
+                } else {
+                    T::one()
+                },
+                radix_input: &mut workspace.radix_input,
+                radix_output: &mut workspace.radix_output,
+                blue_plan: blue,
+                prime_phase_indices: &pass.prime_phase_indices,
+                blue_buffer: &mut workspace.bluestein_buffer,
+                blue_workspace: workspace.bluestein_workspaces[stage].as_mut(),
+                simd,
+                radix103_root_pairs: self.data.radix103_root_pairs.as_ref(),
+            };
+            if stage == 0 {
+                execute_first_pass_in_place(values, &mut workspace.output, pass, &mut execution);
+            } else if current_is_values {
+                if !execute_722_general_prime_radix19_ido1(
+                    values,
+                    &mut workspace.output,
+                    pass,
+                    &mut execution,
+                    Some(kernel_ido1),
+                ) {
+                    execute_pass::<false, T>(
+                        values,
+                        &mut workspace.output,
+                        pass,
+                        &mut execution,
+                        None,
+                    );
+                }
+                current_is_values = false;
+            } else {
+                if !execute_722_general_prime_radix19_ido1(
+                    &workspace.output,
+                    values,
+                    pass,
+                    &mut execution,
+                    Some(kernel_ido1),
+                ) {
+                    execute_pass::<false, T>(&workspace.output, values, pass, &mut execution, None);
+                }
                 current_is_values = true;
             }
         }
@@ -1434,6 +1549,79 @@ fn execute_pass<const ENABLE_RADIX103: bool, T: Float + FromPrimitive>(
         11 => execute_pass_radix11(input, output, pass, execution),
         _ => execute_pass_inner::<0, T>(input, output, pass, execution),
     }
+}
+
+#[cold]
+#[inline(never)]
+fn execute_722_general_prime_radix19_ido1<T: Float + FromPrimitive>(
+    input: &[Complex<T>],
+    output: &mut [Complex<T>],
+    pass: &ComplexPass<T>,
+    execution: &mut PassExecution<'_, T>,
+    kernel: Option<ComplexGeneralPrimeIdo1Kernel<T>>,
+) -> bool {
+    let Some(kernel) = kernel else {
+        return false;
+    };
+    let inverse = execution.direction == Direction::Inverse;
+    if execution.total_len != 722
+        || execution.blue_plan.is_some()
+        || pass.radix != 19
+        || pass.l1 != 38
+        || pass.ido != 1
+        || execution.prime_phase_indices.len() < 9 * 19
+        || (inverse && !execution.defer_inverse_normalization)
+    {
+        return false;
+    }
+
+    let params = ComplexGeneralPrimeIdo1Params {
+        l1: pass.l1,
+        roots: execution.roots,
+        root_stride: execution.total_len / pass.radix,
+        phase_indices: execution.prime_phase_indices,
+        root_pairs: &[],
+        tail_roots: &[],
+        inverse,
+        scale: if inverse {
+            execution.inverse_output_scale
+        } else {
+            T::one()
+        },
+    };
+    // SAFETY: this route requires the N=722 radix-19 layout, runtime AVX2
+    // dispatch, disjoint buffers, and range-safe inverse inputs.
+    unsafe { kernel(input, output, params) };
+
+    let vector_l1 = pass.l1 - pass.l1 % 2;
+    let output_scale = execution.inverse_output_scale;
+    for outer in vector_l1..pass.l1 {
+        for (branch, slot) in execution
+            .radix_input
+            .iter_mut()
+            .enumerate()
+            .take(pass.radix)
+        {
+            *slot = input[branch + pass.radix * outer];
+        }
+        execution.transform::<0>(pass.radix, execution.total_len / pass.radix);
+        for (branch, &transformed) in execution.radix_output.iter().enumerate().take(pass.radix) {
+            let mut value = transformed;
+            if inverse {
+                value = value * output_scale;
+            }
+            output[outer + pass.l1 * branch] = value;
+        }
+    }
+
+    #[cfg(test)]
+    crate::m0_record_route(format!(
+        "c2c-avx2:general-prime-ido1 n=722 radix=19 l1={} vector_l1={} scalar_l1_tail={}",
+        pass.l1,
+        vector_l1,
+        pass.l1 - vector_l1
+    ));
+    true
 }
 
 #[inline(never)]

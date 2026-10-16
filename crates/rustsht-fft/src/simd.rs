@@ -39,6 +39,7 @@ pub(crate) struct ComplexGeneralPrimeIdo1Params<'a, T> {
 }
 pub(crate) type ComplexGeneralPrimeIdo1Kernel<T> =
     for<'a> unsafe fn(&[Complex<T>], &mut [Complex<T>], ComplexGeneralPrimeIdo1Params<'a, T>);
+
 /// A fixed-radix AVX2 complex pass function pointer.
 ///
 /// The ordinary pass pointer follows `avx2_pass`'s vector-width contract. A
@@ -102,6 +103,14 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
     /// The caller must check the selected plan dimensions, input safety range,
     /// and runtime AVX2 availability before calling it.
     fn avx2_general_prime_radix103_ido1_kernel() -> Option<ComplexGeneralPrimeIdo1Kernel<Self>> {
+        None
+    }
+
+    /// Returns the f64 radix-19 general-prime kernel for an `ido == 1` pass.
+    ///
+    /// The caller must check the selected plan dimensions, input safety range,
+    /// and runtime AVX2 availability before calling it.
+    fn avx2_general_prime_radix19_ido1_kernel() -> Option<ComplexGeneralPrimeIdo1Kernel<Self>> {
         None
     }
 
@@ -218,6 +227,14 @@ mod x86 {
         {
             if available() {
                 Some(f64_kernel::general_prime_ido1_radix103)
+            } else {
+                None
+            }
+        }
+
+        fn avx2_general_prime_radix19_ido1_kernel() -> Option<ComplexGeneralPrimeIdo1Kernel<Self>> {
+            if available() {
+                Some(f64_kernel::general_prime_ido1_radix19)
             } else {
                 None
             }
@@ -353,6 +370,18 @@ mod x86 {
         type V = __m256d;
 
         mod radix11_odd_ido_tail;
+        mod radix19_ido1;
+
+        #[cold]
+        #[target_feature(enable = "avx2")]
+        pub(super) unsafe fn general_prime_ido1_radix19(
+            input: &[Complex<f64>],
+            output: &mut [Complex<f64>],
+            params: ComplexGeneralPrimeIdo1Params<'_, f64>,
+        ) {
+            // SAFETY: the caller validates the radix-19 pass and AVX2 support.
+            unsafe { radix19_ido1::execute(input, output, params) }
+        }
 
         #[inline]
         #[target_feature(enable = "avx2")]
@@ -2865,6 +2894,139 @@ mod tests {
                             "radix={radix}, l1={l1}, inverse={inverse}, frequency={frequency}, group={group}"
                         );
                         assert_close(output[frequency * l1 + group], expected, &context);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn f64_complex_general_prime_radix19_ido1_matches_direct_dfts_and_guards_odd_tail() {
+        if !<f64 as SimdScalar>::avx2_available() {
+            return;
+        }
+        let Some(kernel) = <f64 as SimdScalar>::avx2_general_prime_radix19_ido1_kernel() else {
+            panic!("AVX2 radix-19 general-prime kernel should be available");
+        };
+        let radix = 19;
+        let half = radix / 2;
+        let marker = Complex::new(-91.0, 37.0);
+
+        for l1 in [2, 3, 38, 39] {
+            let len = radix * l1;
+            let roots: Vec<_> = (0..len).map(|index| root(index, len, true)).collect();
+            let mut phase_indices = vec![0_u8; half * radix];
+            for branch in 1..=half {
+                for frequency in 0..radix {
+                    phase_indices[(branch - 1) * radix + frequency] =
+                        ((branch * frequency) % radix) as u8;
+                }
+            }
+            let original: Vec<_> = (0..len).map(|index| signal(index + l1 * 7)).collect();
+            let vector_l1 = l1 - l1 % 2;
+
+            for inverse in [false, true] {
+                let scale = if inverse { 0.25 } else { 1.0 };
+                let mut storage = vec![marker; len + 2];
+                let (start_guard, tail) = storage.split_at_mut(1);
+                let (output, end_guard) = tail.split_at_mut(len);
+                // SAFETY: the test checked runtime AVX2, supplies disjoint
+                // exact-sized buffers, and constructs a full radix-19 phase
+                // table and root array.
+                unsafe {
+                    kernel(
+                        &original,
+                        output,
+                        ComplexGeneralPrimeIdo1Params {
+                            l1,
+                            roots: &roots,
+                            root_stride: l1,
+                            phase_indices: &phase_indices,
+                            root_pairs: &[],
+                            tail_roots: &[],
+                            inverse,
+                            scale,
+                        },
+                    )
+                }
+                assert_eq!(start_guard[0], marker);
+                assert_eq!(end_guard[0], marker);
+
+                for group in 0..vector_l1 {
+                    for frequency in 0..radix {
+                        let mut expected = Complex::new(0.0, 0.0);
+                        for sample in 0..radix {
+                            expected += original[radix * group + sample]
+                                * root(sample * frequency % radix, radix, inverse);
+                        }
+                        expected *= scale;
+                        let context = format!(
+                            "radix={radix}, l1={l1}, inverse={inverse}, frequency={frequency}, group={group}"
+                        );
+                        assert_close(output[frequency * l1 + group], expected, &context);
+                    }
+                }
+                if vector_l1 < l1 {
+                    for frequency in 0..radix {
+                        assert_eq!(output[frequency * l1 + vector_l1], marker);
+                    }
+                }
+            }
+
+            let impulse = Complex::new(f64::MAX / 64.0, -f64::MAX / 128.0);
+            let mut extreme = vec![Complex::new(0.0, 0.0); len];
+            for group in 0..l1 {
+                extreme[radix * group + 7] = impulse;
+            }
+            for inverse in [false, true] {
+                let scale = if inverse { 0.25 } else { 1.0 };
+                let mut storage = vec![marker; len + 2];
+                let (start_guard, tail) = storage.split_at_mut(1);
+                let (output, end_guard) = tail.split_at_mut(len);
+                // SAFETY: runtime AVX2 is available, the buffers are disjoint,
+                // and the test supplies exact-sized buffers and a complete
+                // radix-19 phase table and root array.
+                unsafe {
+                    kernel(
+                        &extreme,
+                        output,
+                        ComplexGeneralPrimeIdo1Params {
+                            l1,
+                            roots: &roots,
+                            root_stride: l1,
+                            phase_indices: &phase_indices,
+                            root_pairs: &[],
+                            tail_roots: &[],
+                            inverse,
+                            scale,
+                        },
+                    )
+                }
+                assert_eq!(start_guard[0], marker);
+                assert_eq!(end_guard[0], marker);
+
+                for group in 0..vector_l1 {
+                    for frequency in 0..radix {
+                        let mut expected = Complex::new(0.0, 0.0);
+                        for sample in 0..radix {
+                            expected += extreme[radix * group + sample]
+                                * root(sample * frequency % radix, radix, inverse);
+                        }
+                        expected *= scale;
+                        let actual = output[frequency * l1 + group];
+                        let error = (actual.re - expected.re)
+                            .abs()
+                            .max((actual.im - expected.im).abs());
+                        let tolerance = impulse.re * 4.0e-14;
+                        let context = format!(
+                            "extreme radix={radix}, l1={l1}, inverse={inverse}, frequency={frequency}, group={group}"
+                        );
+                        assert!(error <= tolerance, "{context}: {actual} != {expected}");
+                    }
+                }
+                if vector_l1 < l1 {
+                    for frequency in 0..radix {
+                        assert_eq!(output[frequency * l1 + vector_l1], marker);
                     }
                 }
             }
