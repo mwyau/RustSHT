@@ -1,0 +1,32 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M21 real-prime pass reuse candidate versus pushed M20 source",
+    "baseline_source": "RustSHT-FFT 343e5adc08e44cc5472032138dfb263bb34b4786",
+    "candidate_source": "M21 experimental pass reuse based on 343e5ad",
+    "baseline_binary_sha256": "c760c0309e641c564cdfe5c7e68e4df27eeb0739cfa0efc307ff9d4973cf5da3",
+    "candidate_binary_sha256": "b88e1fa3b418ea1fdba8343dd53101cd2a09dc4b228ba066fa282bae52f89ec8",
+    "reference": "RustSHT-FFT M20 candidate",
+    "workload": "all exact complex and real SHT target lengths and row counts; one transform thread",
+    "timing": "seven warmed samples per operation per process; six alternating process pairs",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target; runtime AVX2 dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "cpu_frequency_policy_observed_2026_10_16": "amd-pstate-epp; performance governor; performance EPP; 1.746–5.086 GHz policy range; host context, not per-sample"
+  },
+  "a": {
+    "label": "RustSHT-FFT M20 343e5ad",
+    "command": [
+      "/dev/shm/rustsht-fft-m20-final-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M21 prime-pass reuse candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-m21-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  }
+}
