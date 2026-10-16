@@ -1,0 +1,11 @@
+This preliminary screen used the pre-instrumentation m4_f32_bench binary. It reported only the median of five calls per operation; retain these process medians as diagnostic data, but exclude them from final acceptance results. The later instrumented screen preserves all five inner timings. Baseline commit: ea22382
+Candidate binary SHA-256: 566c9c9b2158dec76582601ae1e0a852e06ead8a6ea42afcea732450f4384dd2
+Baseline binary SHA-256: 3a950676ca776da55afec24e26ff1f2cbdbfb5969bc8aaf5bf3833c049eec559
+
+First five-pair process-median summary:
+synthesis q1: baseline 1025.800 ms, candidate 1038.028 ms, paired median +1.64%, range -1.45% to +2.22%
+synthesis q8: baseline 169.378 ms, candidate 200.985 ms, paired median +3.71%, range -17.29% to +34.02%
+analysis q1: baseline 861.757 ms, candidate 869.872 ms, paired median +1.04%, range -3.21% to +6.25%
+analysis q8: baseline 179.641 ms, candidate 187.223 ms, paired median -0.34%, range -19.23% to +33.10%
+combined q1: baseline 1886.964 ms, candidate 1907.900 ms, paired median +1.44%, range -2.26% to +2.62%
+combined q8: baseline 371.412 ms, candidate 388.208 ms, paired median +10.98%, range -14.47% to +25.10%

@@ -1,0 +1,198 @@
+diff --git a/src/legendre/spin_f32.rs b/src/legendre/spin_f32.rs
+index 58a1eb5..a6d2679 100644
+--- a/src/legendre/spin_f32.rs
++++ b/src/legendre/spin_f32.rs
+@@ -529,2 +529,8 @@ where
+-            normalize_pair_lanes(current_plus, next_plus, exponent_plus)?;
+-            normalize_pair_lanes(current_minus, next_minus, exponent_minus)?;
++            normalize_spin_pair_lanes(
++                current_plus,
++                next_plus,
++                exponent_plus,
++                current_minus,
++                next_minus,
++                exponent_minus,
++            )?;
+@@ -582,4 +588,7 @@ fn recurrence_step<S: Simd>(
+-fn normalize_pair_lanes(
+-    previous: &mut [f32],
+-    current: &mut [f32],
+-    exponents: &mut [i64],
++fn normalize_spin_pair_lanes(
++    previous_plus: &mut [f32],
++    current_plus: &mut [f32],
++    exponents_plus: &mut [i64],
++    previous_minus: &mut [f32],
++    current_minus: &mut [f32],
++    exponents_minus: &mut [i64],
+@@ -587,28 +596,49 @@ fn normalize_pair_lanes(
+-    for lane in 0..previous.len() {
+-        let previous_bits = previous[lane].to_bits() & 0x7fff_ffff;
+-        let current_bits = current[lane].to_bits() & 0x7fff_ffff;
+-        debug_assert!(previous_bits < 0x7f80_0000 && current_bits < 0x7f80_0000);
+-        let mut maximum_bits = previous_bits.max(current_bits);
+-        let mut maximum = f32::from_bits(maximum_bits);
+-        while maximum_bits > BIG.to_bits() {
+-            previous[lane] *= SCALE_DOWN;
+-            current[lane] *= SCALE_DOWN;
+-            exponents[lane] = exponents[lane]
+-                .checked_add(80)
+-                .ok_or(ShtError::IntegerOverflow {
+-                    quantity: "spin recurrence exponent",
+-                })?;
+-            maximum *= SCALE_DOWN;
+-            maximum_bits = maximum.to_bits() & 0x7fff_ffff;
+-        }
+-        while maximum_bits != 0 && maximum_bits < SMALL.to_bits() {
+-            previous[lane] *= SCALE_UP;
+-            current[lane] *= SCALE_UP;
+-            exponents[lane] = exponents[lane]
+-                .checked_sub(80)
+-                .ok_or(ShtError::IntegerOverflow {
+-                    quantity: "spin recurrence exponent",
+-                })?;
+-            maximum *= SCALE_UP;
+-            maximum_bits = maximum.to_bits() & 0x7fff_ffff;
+-        }
++    debug_assert_eq!(previous_plus.len(), current_plus.len());
++    debug_assert_eq!(previous_plus.len(), exponents_plus.len());
++    debug_assert_eq!(previous_plus.len(), previous_minus.len());
++    debug_assert_eq!(previous_plus.len(), current_minus.len());
++    debug_assert_eq!(previous_plus.len(), exponents_minus.len());
++
++    for lane in 0..previous_plus.len() {
++        normalize_pair_lane(
++            &mut previous_plus[lane],
++            &mut current_plus[lane],
++            &mut exponents_plus[lane],
++        )?;
++        normalize_pair_lane(
++            &mut previous_minus[lane],
++            &mut current_minus[lane],
++            &mut exponents_minus[lane],
++        )?;
++    }
++    Ok(())
++}
++
++#[inline(always)]
++fn normalize_pair_lane(
++    previous: &mut f32,
++    current: &mut f32,
++    exponent: &mut i64,
++) -> Result<(), ShtError> {
++    let previous_bits = previous.to_bits() & 0x7fff_ffff;
++    let current_bits = current.to_bits() & 0x7fff_ffff;
++    debug_assert!(previous_bits < 0x7f80_0000 && current_bits < 0x7f80_0000);
++    let mut maximum_bits = previous_bits.max(current_bits);
++    let mut maximum = f32::from_bits(maximum_bits);
++    while maximum_bits > BIG.to_bits() {
++        *previous *= SCALE_DOWN;
++        *current *= SCALE_DOWN;
++        *exponent = exponent.checked_add(80).ok_or(ShtError::IntegerOverflow {
++            quantity: "spin recurrence exponent",
++        })?;
++        maximum *= SCALE_DOWN;
++        maximum_bits = maximum.to_bits() & 0x7fff_ffff;
++    }
++    while maximum_bits != 0 && maximum_bits < SMALL.to_bits() {
++        *previous *= SCALE_UP;
++        *current *= SCALE_UP;
++        *exponent = exponent.checked_sub(80).ok_or(ShtError::IntegerOverflow {
++            quantity: "spin recurrence exponent",
++        })?;
++        maximum *= SCALE_UP;
++        maximum_bits = maximum.to_bits() & 0x7fff_ffff;
+@@ -909,6 +939,8 @@ mod tests {
+-        normalize_pair_lanes(
+-            &mut actual_previous,
+-            &mut actual_current,
+-            &mut actual_exponents,
+-        )
+-        .unwrap();
++        for lane in 0..initial_previous.len() {
++            normalize_pair_lane(
++                &mut actual_previous[lane],
++                &mut actual_current[lane],
++                &mut actual_exponents[lane],
++            )
++            .unwrap();
++        }
+@@ -933,0 +966,77 @@ mod tests {
++    #[test]
++    fn f32_spin_pair_interleaved_normalization_matches_two_pass_reference() {
++        let initial_previous_plus = [
++            0.0,
++            f32::from_bits(1),
++            f32::from_bits(SMALL.to_bits() - 1),
++            -f32::from_bits(BIG.to_bits() + 1),
++            f32::MAX,
++            f32::MIN_POSITIVE,
++            -0.5,
++            0.0,
++        ];
++        let initial_current_plus = [
++            -0.0,
++            0.0,
++            0.0,
++            BIG,
++            f32::MIN_POSITIVE,
++            -f32::from_bits(1),
++            0.25,
++            SMALL,
++        ];
++        let mut actual_previous_plus = initial_previous_plus;
++        let mut actual_current_plus = initial_current_plus;
++        let mut actual_exponents_plus = [0; 8];
++        let mut actual_previous_minus = initial_current_plus;
++        let mut actual_current_minus = initial_previous_plus;
++        let mut actual_exponents_minus = [0; 8];
++        let mut expected_previous_plus = initial_previous_plus;
++        let mut expected_current_plus = initial_current_plus;
++        let mut expected_exponents_plus = [0; 8];
++        let mut expected_previous_minus = initial_current_plus;
++        let mut expected_current_minus = initial_previous_plus;
++        let mut expected_exponents_minus = [0; 8];
++
++        reference_normalize_pair_lanes(
++            &mut expected_previous_plus,
++            &mut expected_current_plus,
++            &mut expected_exponents_plus,
++        );
++        reference_normalize_pair_lanes(
++            &mut expected_previous_minus,
++            &mut expected_current_minus,
++            &mut expected_exponents_minus,
++        );
++        normalize_spin_pair_lanes(
++            &mut actual_previous_plus,
++            &mut actual_current_plus,
++            &mut actual_exponents_plus,
++            &mut actual_previous_minus,
++            &mut actual_current_minus,
++            &mut actual_exponents_minus,
++        )
++        .unwrap();
++
++        for lane in 0..initial_previous_plus.len() {
++            assert_eq!(
++                actual_previous_plus[lane].to_bits(),
++                expected_previous_plus[lane].to_bits()
++            );
++            assert_eq!(
++                actual_current_plus[lane].to_bits(),
++                expected_current_plus[lane].to_bits()
++            );
++            assert_eq!(actual_exponents_plus[lane], expected_exponents_plus[lane]);
++            assert_eq!(
++                actual_previous_minus[lane].to_bits(),
++                expected_previous_minus[lane].to_bits()
++            );
++            assert_eq!(
++                actual_current_minus[lane].to_bits(),
++                expected_current_minus[lane].to_bits()
++            );
++            assert_eq!(actual_exponents_minus[lane], expected_exponents_minus[lane]);
++        }
++    }
++

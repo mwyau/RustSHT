@@ -1,0 +1,14 @@
+cargo fmt --all -- --check
+PASS; run against the candidate kernel and retained benchmark instrumentation.
+
+cargo test -p rustsht --all-features f32_spin_pair_interleaved_normalization_matches_two_pass_reference
+PASS; 1 focused unit test compared both recurrence sequences bitwise with the two-pass scalar reference across zeros, subnormals and values requiring scaling.
+
+cargo test --workspace --all-features --release f32_spin1_gl_t511_analysis_matches_ducc_0410
+PASS; the T511 f32 GL spin-1 analysis coefficient comparison against DUCC 0.41.0 passed.
+
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+PASS after removal of the candidate kernel; checks the retained benchmark example.
+
+cargo build --release --example m4_f32_bench
+PASS for baseline commit ea22382 and the candidate source patch, with the same instrumented benchmark example. The full workspace test suite was not run with the rejected candidate.
