@@ -1,0 +1,11 @@
+source_commit=7ac443a40b034d5c52526d23ef30f6cef4b13d19
+binary_sha256=690fc10f9abf1c6a5b396e0d7ff27647daf8e51d90b8620537645123efe7f1c8
+RustSHT_build=cargo build --release --example m1b_bench
+RustSHT_q1_args=0 511 1 analysis GL STANDARD 512 1025 511 requested-only
+RustSHT_q8_args=0 511 8 analysis GL STANDARD 512 1025 511 requested-only
+DUCC_command=uv run python examples/python_perf_baseline.py 511 0 THREADS GL 2 plan analysis ducc STANDARD 1025 512
+DUCC_version=0.41.0
+DUCC_source_revision=c1ed01b8fda69d2a378190f0915f1a19762dddbf
+comparison=RustSHT native reused plan/workspace; DUCC Python analysis_2d operation; exact GL grid and deterministic map input are shared
+pairing=5 alternating fresh-process pairs at q1 and q8; each process warms once and preserves inner samples
+affinity=q1 one CPU core; q8 8 pinned CPU cores

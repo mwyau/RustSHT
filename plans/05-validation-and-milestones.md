@@ -2271,3 +2271,7 @@ An interleaved plus/minus lane-normalization loop passed a bitwise comparison wi
 ### f64 spin-1 T511 DUCC timing refresh (M4, 2026-10-15)
 
 Two follow-up five-pair screens used q1 on one CPU core and q8 on 8 pinned CPU cores. Their paired RustSHT/DUCC ratios were 1.30/1.77x and 1.31/1.82x at q1/q8; the second screen ranges were 1.29–1.33x and 1.73–1.89x. The first corrected screen on 8 pinned CPU cores had wide q8 variation (2.02–4.15x). Load-average telemetry was retained only in local diagnostics. DUCC's timings remain different from the October 14 thread-scaling report and closer to a separate October 12 comparison. These measurements describe the recorded affinities and native/Python call boundaries; they do not replace the earlier gap table. See [the comparison report](../reports/spin1-analysis-ducc-refresh-2026-10-15.md) and [raw data](../reports/data/spin1-analysis-ducc-refresh-2026-10-15/).
+
+### f64 scalar T511 DUCC timing refresh (M4, 2026-10-15)
+
+Five alternating native/Python process pairs measured scalar GL STANDARD analysis at q1/q8. RustSHT/DUCC paired median ratios were 1.65x and 2.17x; all pairs favored DUCC. One DUCC q1 result and one RustSHT q8 result widened the paired ranges. The CPU set was not isolated, and DUCC medians were higher than an earlier Python-plan comparison. Treat these as current shared-host observations; the earlier gap figures remain separate. See [the comparison report](../reports/scalar-analysis-ducc-refresh-2026-10-15.md) and [raw data](../reports/data/scalar-analysis-ducc-refresh-2026-10-15/).
