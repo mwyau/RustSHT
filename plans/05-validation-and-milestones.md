@@ -2267,3 +2267,7 @@ A prototype combined f64 scalar analysis accumulation and recurrence updates in 
 ### f32 spin-1 interleaved recurrence normalization (M4, 2026-10-15)
 
 An interleaved plus/minus lane-normalization loop passed a bitwise comparison with the two-pass scalar reference and the release T511 DUCC analysis check. One five-pair instrumented whole-transform screen did not show an analysis gain beyond measurement variability; summed synthesis-plus-analysis time increased by 0.39% at q1 and 0.98% at q8. The kernel change was removed. `examples/m4_f32_bench.rs` now records each inner call time as well as the median; the same instrumentation was used for both binaries. See [the screen report](../reports/f32-spin1-normalize-interleave-screen-2026-10-15.md) and [its raw data](../reports/data/f32-spin1-normalize-interleave-2026-10-15/).
+
+### f64 spin-1 T511 DUCC timing refresh (M4, 2026-10-15)
+
+Five process pairs measured current native RustSHT and DUCC 0.41.0 GL STANDARD analysis at q1 and q8. The q1 paired median ratio was 1.28x, while q8 was 3.07x with RustSHT process medians from 8.394 to 18.434 ms. DUCC's q1 and q8 medians were roughly twice those in the October 14 report, and host load increased during the screen. The timing refresh is inconclusive; the recorded ratios do not replace the earlier gap measurements. See [the comparison report](../reports/spin1-analysis-ducc-refresh-2026-10-15.md) and [raw data](../reports/data/spin1-analysis-ducc-refresh-2026-10-15/).
