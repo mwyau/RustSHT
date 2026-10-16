@@ -1,0 +1,8 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.01s
+     Running tests/f32.rs (target/debug/deps/f32-c26c37d96ae61e0e)
+
+running 1 test
+test f32_t1023_scalar_and_spin1_standard_match_ducc_0410 has been running for over 60 seconds
+test f32_t1023_scalar_and_spin1_standard_match_ducc_0410 ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 209.20s
