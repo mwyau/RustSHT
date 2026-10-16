@@ -1,0 +1,11 @@
+PASS m32-accepted-rustfft-six-pairs.jsonl: 12 processes, 34 rows per process, exit status 0
+PASS m32-accepted-ducc-native-six-pairs.jsonl: 12 processes, 34 rows per process, exit status 0
+PASS m32-accepted-ducc-portable-six-pairs.jsonl: 12 processes, 34 rows per process, exit status 0
+PASS m32-accepted-fftw-six-pairs.jsonl: 12 processes, 34 rows per process, exit status 0
+PASS m32-accepted-admiral-six-pairs.jsonl: 12 processes, 34 rows per process, exit status 0
+PASS m33-rader-only-pack-v3-34-cell-six-pairs.jsonl: 12 processes, 34 rows per process, exit status 0
+PASS m33-rustfft-six-pairs.jsonl: 12 processes, 34 rows per process, exit status 0
+PASS m33-ducc-native-six-pairs.jsonl: 12 processes, 34 rows per process, exit status 0
+PASS m33-ducc-portable-six-pairs.jsonl: 12 processes, 34 rows per process, exit status 0
+PASS m33-fftw-six-pairs.jsonl: 12 processes, 34 rows per process, exit status 0
+PASS m33-admiral-six-pairs.jsonl: 12 processes, 34 rows per process, exit status 0

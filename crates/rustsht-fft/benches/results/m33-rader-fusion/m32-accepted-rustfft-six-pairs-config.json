@@ -1,0 +1,28 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT accepted M32 source"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-sht-targets"
+    ],
+    "label": "RustFFT 6.4.1"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "a1036e527f31637d8f0fd9212d1401c2d568155cd1e8dc0faff785aa05333a8c",
+    "candidate_source_commit": "234ab2d30b8d542457398e2f7be17e7e7b9aa25e",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2",
+    "purpose": "M32 accepted source cross-library comparison (rustfft); established 34-cell workload",
+    "reference": "RustFFT 6.4.1 in the same executable",
+    "reference_binary_sha256": "81b4cf008fa6fb274eed87aeaa97ed37008a92851124ad569d7ff0505d4ec0a4",
+    "reference_build": null,
+    "timing": "six alternating process pairs; one CPU core affinity; identical commands and row counts",
+    "workload": "bench-native-sht vs established 34-cell C2C and real operation/length/row matrix; seven warmed samples; one transform thread"
+  },
+  "pairs": 6
+}

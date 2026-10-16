@@ -1,0 +1,28 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT accepted M32 source"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "--sht"
+    ],
+    "label": "system FFTW 3.3.10"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "a1036e527f31637d8f0fd9212d1401c2d568155cd1e8dc0faff785aa05333a8c",
+    "candidate_source_commit": "234ab2d30b8d542457398e2f7be17e7e7b9aa25e",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2",
+    "purpose": "M32 accepted source cross-library comparison (fftw); established 34-cell workload",
+    "reference": "system FFTW 3.3.10",
+    "reference_binary_sha256": "78f56cad4aaae732d03f52c525296c61f70c7c49f98efd638ad9b7385a6cf9fa",
+    "reference_build": "system FFTW 3.3.10; g++ 15.2.0 harness -O3 -DNDEBUG; FFTW_ESTIMATE | FFTW_PRESERVE_INPUT",
+    "timing": "six alternating process pairs; one CPU core affinity; identical commands and row counts",
+    "workload": "bench-native-sht vs established 34-cell C2C and real operation/length/row matrix; seven warmed samples; one transform thread"
+  },
+  "pairs": 6
+}

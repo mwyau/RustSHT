@@ -1,0 +1,31 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT accepted M32 source"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-sht-targets"
+    ],
+    "env": {
+      "RUSTSHT_FFT_DUCC_VECTORIZE": "0"
+    },
+    "label": "DUCC c1ed01b8 portable"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "a1036e527f31637d8f0fd9212d1401c2d568155cd1e8dc0faff785aa05333a8c",
+    "candidate_source_commit": "234ab2d30b8d542457398e2f7be17e7e7b9aa25e",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2",
+    "purpose": "M32 accepted source cross-library comparison (ducc-portable); established 34-cell workload",
+    "reference": "DUCC c1ed01b8 portable",
+    "reference_binary_sha256": "4265b0590ee3235e87fb4a9aa7f776ea5c33a1c3b91d7adef34310b65d827843",
+    "reference_build": "DUCC c1ed01b8; g++ 15.2.0; -O3 -DNDEBUG -pthread; planner vectorization disabled",
+    "timing": "six alternating process pairs; one CPU core affinity; identical commands and row counts",
+    "workload": "bench-native-sht vs established 34-cell C2C and real operation/length/row matrix; seven warmed samples; one transform thread"
+  },
+  "pairs": 6
+}

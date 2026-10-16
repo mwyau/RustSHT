@@ -1,0 +1,28 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT accepted M32 source"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "--sht"
+    ],
+    "label": "Admiral ce67bc00"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "a1036e527f31637d8f0fd9212d1401c2d568155cd1e8dc0faff785aa05333a8c",
+    "candidate_source_commit": "234ab2d30b8d542457398e2f7be17e7e7b9aa25e",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2",
+    "purpose": "M32 accepted source cross-library comparison (admiral); established 34-cell workload",
+    "reference": "Admiral ce67bc00",
+    "reference_binary_sha256": "da072d28a6b32eb06cba338068b0d1d36af9daa6d446f861ad57f7d64395a163",
+    "reference_build": "Admiral ce67bc00; g++ 15.2.0 Release; ADM_TARGET_ARCH=native; threads disabled; estimate planning",
+    "timing": "six alternating process pairs; one CPU core affinity; identical commands and row counts",
+    "workload": "bench-native-sht vs established 34-cell C2C and real operation/length/row matrix; seven warmed samples; one transform thread"
+  },
+  "pairs": 6
+}

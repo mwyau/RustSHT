@@ -1,0 +1,36 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M33 Rader-fusion candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-sht-targets"
+    ],
+    "env": {
+      "RUSTSHT_FFT_DUCC_VECTORIZE": "1"
+    },
+    "label": "DUCC c1ed01b8 native"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "a4cc85160daf38e66b31e6a268770b9dbc84e3b6631d846c917c413432b32226",
+    "candidate_source_commit": "234ab2d30b8d542457398e2f7be17e7e7b9aa25e plus uncommitted M33 diff",
+    "candidate_source_diff_sha256": "8845bead2e211dffc709f2cb13c908f4332754329bec60b45b10d59f666f7ee0",
+    "candidate_source_files_sha256": {
+      "src/rader.rs": "64e579fe4c1f576787c25fb11c58b2000e6a03fc851ceec7a1334bd48b4da91b",
+      "src/real.rs": "742e63740d14cf8183b9730836d81606fde19fbdc1b8e3ed67a22947a1cbc88d",
+      "src/real_multipass.rs": "f125a49c60a3b79c3bbef960a4a2aa1c25e9dde1265743ede530e088770e320b"
+    },
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2",
+    "purpose": "M33 candidate cross-library comparison over the established 34-cell matrix",
+    "reference": "DUCC c1ed01b8 native",
+    "reference_build": "DUCC c1ed01b8; g++ 15.2.0; -O3 -DNDEBUG -march=native; planner vectorization enabled",
+    "timing": "six alternating process pairs; one CPU core affinity; same rows and modes",
+    "workload": "bench-native-sht vs established 34-cell reference matrix; seven warmed samples; one transform thread"
+  },
+  "pairs": 6
+}

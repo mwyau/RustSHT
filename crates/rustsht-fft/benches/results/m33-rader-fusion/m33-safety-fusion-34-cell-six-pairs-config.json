@@ -1,0 +1,34 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M33 Rader safety-fusion candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M32 accepted baseline"
+  },
+  "metadata": {
+    "baseline_binary_sha256": "a1036e527f31637d8f0fd9212d1401c2d568155cd1e8dc0faff785aa05333a8c",
+    "baseline_source_commit": "234ab2d30b8d542457398e2f7be17e7e7b9aa25e",
+    "candidate_binary_sha256": "cce95321f2f845e4004d3959d0dfec27cf59d671adb1637c1478ff8d2c749c67",
+    "candidate_source_commit": "234ab2d30b8d542457398e2f7be17e7e7b9aa25e plus uncommitted M33 diff",
+    "candidate_source_diff_sha256": "ddd5ab761c03e86a7aa2e8399fc1e76335cb3d49f783606079da6985ed675e47",
+    "candidate_source_files_sha256": {
+      "src/rader.rs": "87b952729940cac11b3c0f19893f593dd7af82579aade866e3711eecc0ab9ea6",
+      "src/real.rs": "742e63740d14cf8183b9730836d81606fde19fbdc1b8e3ed67a22947a1cbc88d",
+      "src/real_multipass.rs": "62a49029548eaef705bc793649e8b271ab4b6ec7b639b6fc1486d04110f39742"
+    },
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "implementation": "Fuse real Rader safety-bound collection into existing forward scan and inverse spectrum packing; preserve DC-only check",
+    "purpose": "M33 safety-bound fusion candidate against the full established 34-cell C2C and real workload matrix",
+    "timing": "six alternating process pairs; same CPU affinity and row counts",
+    "workload": "bench-native-sht; established 34-cell matrix, seven warmed samples per operation, one transform thread"
+  },
+  "pairs": 6
+}
