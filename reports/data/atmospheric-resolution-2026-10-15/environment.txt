@@ -1,0 +1,16 @@
+Local date: 2026-10-15 America/New_York
+Source revision: 2756ba4a1d9bcf6b7b1a1293a185e98e8e6c74b2
+Branch: opt/sht-kernel-performance
+CPU: AMD Ryzen 9 5950X 16-Core Processor; 16 physical cores, 32 logical CPUs; one socket; AVX2/FMA; no AVX-512
+Kernel: Linux 7.0.14-20-pve, x86_64
+Compiler: rustc 1.99.0 (b940084d7 2026-09-28), LLVM 23.1.1; cargo 1.99.0
+Build: cargo build --release --example m1b_bench --example m4_f32_bench; default release profile (opt-level=3, codegen-units=16); no RUSTFLAGS, CARGO_ENCODED_RUSTFLAGS, target-cpu=native, or LTO override
+SIMD: Pulp runtime dispatch enabled. The benchmark does not report the selected implementation; prior Callgrind on this host identified x86-v3/V3 for the same release kernel. No AVX-512 path is available on this CPU.
+Native benchmark binary SHA-256: m1b_bench 34274c791ae73ef1c909639aebfa74747141173bb31390a27b490c289601861b
+f32 benchmark binary SHA-256: m4_f32_bench 9414df02f0fc4febe481c414654acfdc5a0b3bb8fe7334b39428d107eba14d69
+CPU affinity: benchmark processes pinned to CPUs 8-15; benchmark internally reports q1 and q8 pool timings from one reused plan/workspace
+CPU quota: cgroup cpu.max = max 100000
+DUCC comparison: ducc0 0.41.0; upstream DUCC revision c1ed01b8fda69d2a378190f0915f1a19762dddbf; Python 3.11.15; NumPy 2.4.6
+Native method: m1b_bench, GL f64 STANDARD, full mmax, ntheta=lmax+1, phi0=0.37, deterministic coefficients and maps, one warmup and five timed samples per q1/q8 and synthesis/analysis; plan/workspace setup printed separately. /usr/bin/time records process peak RSS and elapsed/user/system time.
+Sampling: small/medium truncations use the helper-selected 2/3/5/7-smooth longitude count. T511-T2047 include every distinct count among minimum odd (2*mmax+1), existing benchmark count (2*lmax+3), minimum even (2*mmax+2), and GridSpec::fft_friendly_nphi(mmax).
+Host is shared; CPUs are not isolated. Host load and process snapshots are retained before and after the matrix.

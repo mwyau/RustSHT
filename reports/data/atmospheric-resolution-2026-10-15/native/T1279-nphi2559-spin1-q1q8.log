@@ -1,0 +1,17 @@
+spin-1 T1279 mmax=1279; GL 1280x2559; f64; STANDARD; requested=8 threads; both; requested_only=false; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.171
+plan_construction_samples_ms=[0.187,0.186,0.171,0.169,0.168]
+workspace_allocation_ms=23.633
+workspace_allocation_samples_ms=[23.694,23.850,22.699,23.633,23.047]
+synthesis_one_thread_ms=691.783
+synthesis_one_thread_samples_ms=[691.783,692.591,690.314,690.402,693.366]
+synthesis_rayon_ms=354.231
+synthesis_rayon_samples_ms=[355.360,354.231,353.092,354.550,354.107]
+analysis_one_thread_ms=415.859
+analysis_one_thread_samples_ms=[417.193,415.120,415.859,417.398,415.146]
+analysis_rayon_ms=73.271
+analysis_rayon_samples_ms=[72.824,72.876,73.271,73.669,73.312]
+synthesis_first_call_one_thread_ms=706.957
+synthesis_first_call_rayon_ms=369.186
+analysis_first_call_one_thread_ms=418.593
+analysis_first_call_rayon_ms=77.425
