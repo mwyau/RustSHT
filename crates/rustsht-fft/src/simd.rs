@@ -572,6 +572,56 @@ mod x86 {
             unsafe { pass_ido1_fixed::<4>(input, output, pass) }
         }
 
+        macro_rules! radix31_accumulate_pair {
+            ($pair_index:expr, $positive:ident, $negative:ident, $branch_index:ident, $pair:ident, $difference:ident, $cosine_twiddles:ident, $sine_twiddles:ident) => {{
+                // SAFETY: each twiddle entry is a fully initialized
+                // four-element array of f64 values.
+                let cosine = unsafe {
+                    _mm256_loadu_pd($cosine_twiddles[$branch_index][($pair_index)].as_ptr())
+                };
+                // SAFETY: each twiddle entry is a fully initialized
+                // four-element array of f64 values.
+                let sine = unsafe {
+                    _mm256_loadu_pd($sine_twiddles[$branch_index][($pair_index)].as_ptr())
+                };
+                let cosine_term = _mm256_mul_pd($pair, cosine);
+                let sine_term = _mm256_mul_pd($difference, sine);
+                $positive = _mm256_add_pd(_mm256_add_pd($positive, cosine_term), sine_term);
+                $negative = _mm256_sub_pd(_mm256_add_pd($negative, cosine_term), sine_term);
+            }};
+        }
+
+        macro_rules! radix31_store_pair {
+            ($frequency:expr, $positive:ident, $negative:ident, $output_ptr:ident, $l1:ident, $outer:ident) => {{
+                // SAFETY: the frequency and outer index stay within the
+                // validated radix-by-l1 output layout.
+                unsafe {
+                    _mm_storeu_pd(
+                        $output_ptr.add(($frequency) * $l1 + $outer).cast::<f64>(),
+                        _mm256_castpd256_pd128($positive),
+                    );
+                    _mm_storeu_pd(
+                        $output_ptr
+                            .add((($frequency) + 1) * $l1 + $outer)
+                            .cast::<f64>(),
+                        _mm256_extractf128_pd($positive, 1),
+                    );
+                    _mm_storeu_pd(
+                        $output_ptr
+                            .add((RADIX - ($frequency)) * $l1 + $outer)
+                            .cast::<f64>(),
+                        _mm256_castpd256_pd128($negative),
+                    );
+                    _mm_storeu_pd(
+                        $output_ptr
+                            .add((RADIX - ($frequency) - 1) * $l1 + $outer)
+                            .cast::<f64>(),
+                        _mm256_extractf128_pd($negative, 1),
+                    );
+                }
+            }};
+        }
+
         /// Executes a radix-31 general-prime pass with `ido == 1`, processing
         /// pairs of output frequencies in AVX2 lanes.
         ///
@@ -657,12 +707,15 @@ mod x86 {
                 }
                 output[outer] = dc;
 
-                for pair_index in 0..PAIR_COUNT {
+                for pair_index in (0..PAIR_COUNT - 1).step_by(2) {
                     let frequency = 1 + 2 * pair_index;
+                    let second_frequency = frequency + 2;
                     let initial =
                         _mm256_setr_pd(input_zero.re, input_zero.im, input_zero.re, input_zero.im);
                     let mut positive = initial;
                     let mut negative = initial;
+                    let mut second_positive = initial;
+                    let mut second_negative = initial;
 
                     for branch_index in 0..HALF {
                         let pair_value = pair_inputs[branch_index];
@@ -679,51 +732,78 @@ mod x86 {
                             imaginary_difference_value.re,
                             imaginary_difference_value.im,
                         );
-                        // SAFETY: each twiddle entry is a fully initialized
-                        // four-element array of f64 values.
-                        let cosine = unsafe {
-                            _mm256_loadu_pd(cosine_twiddles[branch_index][pair_index].as_ptr())
-                        };
-                        // SAFETY: each twiddle entry is a fully initialized
-                        // four-element array of f64 values.
-                        let sine = unsafe {
-                            _mm256_loadu_pd(sine_twiddles[branch_index][pair_index].as_ptr())
-                        };
-                        let cosine_term = _mm256_mul_pd(pair, cosine);
-                        let sine_term = _mm256_mul_pd(imaginary_difference, sine);
-                        positive = _mm256_add_pd(_mm256_add_pd(positive, cosine_term), sine_term);
-                        negative = _mm256_sub_pd(_mm256_add_pd(negative, cosine_term), sine_term);
+                        radix31_accumulate_pair!(
+                            pair_index,
+                            positive,
+                            negative,
+                            branch_index,
+                            pair,
+                            imaginary_difference,
+                            cosine_twiddles,
+                            sine_twiddles
+                        );
+                        radix31_accumulate_pair!(
+                            pair_index + 1,
+                            second_positive,
+                            second_negative,
+                            branch_index,
+                            pair,
+                            imaginary_difference,
+                            cosine_twiddles,
+                            sine_twiddles
+                        );
                     }
 
                     if inverse {
                         positive = _mm256_mul_pd(positive, output_scale);
                         negative = _mm256_mul_pd(negative, output_scale);
+                        second_positive = _mm256_mul_pd(second_positive, output_scale);
+                        second_negative = _mm256_mul_pd(second_negative, output_scale);
                     }
-                    // SAFETY: `frequency` and `outer` stay within the
-                    // validated radix-by-l1 output layout.
-                    unsafe {
-                        _mm_storeu_pd(
-                            output_ptr.add(frequency * l1 + outer).cast::<f64>(),
-                            _mm256_castpd256_pd128(positive),
-                        );
-                        _mm_storeu_pd(
-                            output_ptr.add((frequency + 1) * l1 + outer).cast::<f64>(),
-                            _mm256_extractf128_pd(positive, 1),
-                        );
-                        _mm_storeu_pd(
-                            output_ptr
-                                .add((RADIX - frequency) * l1 + outer)
-                                .cast::<f64>(),
-                            _mm256_castpd256_pd128(negative),
-                        );
-                        _mm_storeu_pd(
-                            output_ptr
-                                .add((RADIX - frequency - 1) * l1 + outer)
-                                .cast::<f64>(),
-                            _mm256_extractf128_pd(negative, 1),
-                        );
-                    }
+                    radix31_store_pair!(frequency, positive, negative, output_ptr, l1, outer);
+                    radix31_store_pair!(
+                        second_frequency,
+                        second_positive,
+                        second_negative,
+                        output_ptr,
+                        l1,
+                        outer
+                    );
                 }
+
+                let pair_index = PAIR_COUNT - 1;
+                let frequency = 1 + 2 * pair_index;
+                let initial =
+                    _mm256_setr_pd(input_zero.re, input_zero.im, input_zero.re, input_zero.im);
+                let mut positive = initial;
+                let mut negative = initial;
+                for branch_index in 0..HALF {
+                    let pair_value = pair_inputs[branch_index];
+                    let imaginary_difference_value = imaginary_differences[branch_index];
+                    let pair =
+                        _mm256_setr_pd(pair_value.re, pair_value.im, pair_value.re, pair_value.im);
+                    let imaginary_difference = _mm256_setr_pd(
+                        imaginary_difference_value.re,
+                        imaginary_difference_value.im,
+                        imaginary_difference_value.re,
+                        imaginary_difference_value.im,
+                    );
+                    radix31_accumulate_pair!(
+                        pair_index,
+                        positive,
+                        negative,
+                        branch_index,
+                        pair,
+                        imaginary_difference,
+                        cosine_twiddles,
+                        sine_twiddles
+                    );
+                }
+                if inverse {
+                    positive = _mm256_mul_pd(positive, output_scale);
+                    negative = _mm256_mul_pd(negative, output_scale);
+                }
+                radix31_store_pair!(frequency, positive, negative, output_ptr, l1, outer);
 
                 let mut positive = input_zero;
                 let mut negative = input_zero;

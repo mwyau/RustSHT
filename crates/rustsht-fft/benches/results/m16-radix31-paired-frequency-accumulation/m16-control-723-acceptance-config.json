@@ -1,0 +1,33 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "baseline_commit": "af0f93b",
+    "candidate_source": "M16 AVX2 radix31 accumulates two adjacent output-frequency pairs per branch pass",
+    "candidate_binary_sha256": "669e93520be31092ddf6c62d19b26f69a2e38a1d29005e35d27e36c448ac8bfd",
+    "baseline_binary_sha256": "69ce17d85fc9762da1513749f6d7d03e0a456e453fe344b5a94d7c2912cd4eff",
+    "timing": "six alternating process pairs; seven warmed samples per cell",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target with runtime AVX2 dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "workload": "control-723"
+  },
+  "a": {
+    "label": "M16 two output-pair accumulation",
+    "command": [
+      "/home/albert/rustsht-fft-m16-pairfreq-radix31-bench",
+      "bench-native-real",
+      "723",
+      "361"
+    ]
+  },
+  "b": {
+    "label": "M12 baseline",
+    "command": [
+      "/home/albert/rustsht-fft-m12-rustfft-final-bench",
+      "bench-native-real",
+      "723",
+      "361"
+    ]
+  }
+}
