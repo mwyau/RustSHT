@@ -766,8 +766,12 @@ fn forward_general_prime<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], 
         }
 
         // Each remaining pair is a complex inner-frequency lane. Apply its
-        // pass twiddle, transform the lane across the prime radix, then place
-        // both members of the conjugate-frequency pair in DUCC's real layout.
+        // pass twiddle once, transform the lane across the prime radix, then
+        // place both members of the conjugate-frequency pair in DUCC's real
+        // layout. The twiddled branch values are shared by every output
+        // frequency of this lane.
+        let zero = Complex::new(T::zero(), T::zero());
+        let mut values = [zero; 135];
         for i in (2..ido).step_by(2) {
             let ic = ido - i;
             let mut dc = Complex::new(T::zero(), T::zero());
@@ -785,8 +789,8 @@ fn forward_general_prime<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], 
                         input[index(i, group, branch, ido, l1)],
                     )
                 };
-                dc.re = dc.re + value_re;
-                dc.im = dc.im + value_im;
+                values[branch] = Complex::new(value_re, value_im);
+                dc = dc + values[branch];
             }
             output[index(i - 1, 0, group, ido, radix)] = dc.re;
             output[index(i, 0, group, ido, radix)] = dc.im;
@@ -802,20 +806,7 @@ fn forward_general_prime<T: Float + FromPrimitive>(pass: &Pass<T>, input: &[T], 
                 for (branch, (&positive_phase, &negative_phase)) in
                     positive_phases.iter().zip(negative_phases).enumerate()
                 {
-                    let (value_re, value_im) = if branch == 0 {
-                        (
-                            input[index(i - 1, group, branch, ido, l1)],
-                            input[index(i, group, branch, ido, l1)],
-                        )
-                    } else {
-                        multiply_pm(
-                            twiddle(pass, branch, i - 2),
-                            twiddle(pass, branch, i - 1),
-                            input[index(i - 1, group, branch, ido, l1)],
-                            input[index(i, group, branch, ido, l1)],
-                        )
-                    };
-                    let value = Complex::new(value_re, value_im);
+                    let value = values[branch];
                     positive =
                         positive + value * pass.prime_roots[usize::from(positive_phase)].conj();
                     negative =
@@ -914,28 +905,34 @@ fn inverse_general_prime<T: Float + FromPrimitive>(
             output[index(0, group, sample, ido, l1)] = value * scale;
         }
 
+        let zero = Complex::new(T::zero(), T::zero());
+        let mut values = [zero; 135];
         for i in (2..ido).step_by(2) {
             let ic = ido - i;
+            values[0] = Complex::new(
+                input[index(i - 1, 0, group, ido, radix)],
+                input[index(i, 0, group, ido, radix)],
+            );
+            for frequency in 1..radix {
+                let (re, im) = if frequency <= half {
+                    (
+                        input[index(i - 1, 2 * frequency, group, ido, radix)],
+                        input[index(i, 2 * frequency, group, ido, radix)],
+                    )
+                } else {
+                    let mirrored = radix - frequency;
+                    (
+                        input[index(ic - 1, 2 * mirrored - 1, group, ido, radix)],
+                        -input[index(ic, 2 * mirrored - 1, group, ido, radix)],
+                    )
+                };
+                values[frequency] = Complex::new(re, im);
+            }
             for sample in 0..radix {
-                let mut value = Complex::new(
-                    input[index(i - 1, 0, group, ido, radix)],
-                    input[index(i, 0, group, ido, radix)],
-                );
+                let mut value = values[0];
                 let phases = &pass.prime_phase_indices[sample * radix..(sample + 1) * radix];
                 for (frequency, &phase) in phases.iter().enumerate().skip(1) {
-                    let (re, im) = if frequency <= half {
-                        (
-                            input[index(i - 1, 2 * frequency, group, ido, radix)],
-                            input[index(i, 2 * frequency, group, ido, radix)],
-                        )
-                    } else {
-                        let mirrored = radix - frequency;
-                        (
-                            input[index(ic - 1, 2 * mirrored - 1, group, ido, radix)],
-                            -input[index(ic, 2 * mirrored - 1, group, ido, radix)],
-                        )
-                    };
-                    value = value + Complex::new(re, im) * pass.prime_roots[usize::from(phase)];
+                    value = value + values[frequency] * pass.prime_roots[usize::from(phase)];
                 }
                 let (twiddle_re, twiddle_im) = if sample == 0 {
                     (T::one(), T::zero())

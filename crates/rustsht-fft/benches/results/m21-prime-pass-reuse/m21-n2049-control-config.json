@@ -1,0 +1,31 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "2049",
+      "1024"
+    ],
+    "label": "RustSHT-FFT M20 343e5ad"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-real",
+      "2049",
+      "1024"
+    ],
+    "label": "RustSHT-FFT M21 prime-pass reuse candidate"
+  },
+  "metadata": {
+    "baseline_binary_sha256": "c760c0309e641c564cdfe5c7e68e4df27eeb0739cfa0efc307ff9d4973cf5da3",
+    "baseline_source": "RustSHT-FFT 343e5adc08e44cc5472032138dfb263bb34b4786",
+    "candidate_binary_sha256": "b88e1fa3b418ea1fdba8343dd53101cd2a09dc4b228ba066fa282bae52f89ec8",
+    "candidate_source": "M21 experimental pass reuse based on 343e5ad",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target; runtime AVX2 dispatch",
+    "purpose": "M21 targeted confirmation for the N=2049 real-transform control",
+    "timing": "seven warmed samples per operation per process; six alternating process pairs",
+    "workload": "complete public R2C and C2R N=2049; 1024 rows"
+  },
+  "pairs": 6
+}
