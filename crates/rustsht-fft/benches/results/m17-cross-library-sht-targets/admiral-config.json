@@ -1,0 +1,31 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M17 current-source cross-library comparison on exact SHT target rows",
+    "candidate_source": "RustSHT-FFT M17 commit f3f03a39a5f12468ea26dddb82b4aa1219b998a3",
+    "candidate_binary_sha256": "9527a7b7d241fb5fc157851a81f3c2ff79dec101e5fb22f391b24ab45c824ffc",
+    "reference": "Admiral ce67bc00ff9e6de96bf5b75f7a789581105ddb58",
+    "reference_build": "CMake Release; ADM_TARGET_ARCH=native; fast math and threads disabled; estimate planning",
+    "reference_binary_sha256": "da072d28a6b32eb06cba338068b0d1d36af9daa6d446f861ad57f7d64395a163",
+    "workload": "all exact complex and real SHT target lengths and row counts; one transform thread",
+    "timing": "seven warmed samples per operation per process; six alternating process pairs",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target; RustSHT runtime AVX2 dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30"
+  },
+  "a": {
+    "label": "RustSHT-FFT M17",
+    "command": [
+      "/dev/shm/rustsht-fft-m17-candidate-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "Admiral ce67bc00",
+    "command": [
+      "/home/albert/rustsht-fft-m0-external/admiral",
+      "--sht"
+    ]
+  }
+}

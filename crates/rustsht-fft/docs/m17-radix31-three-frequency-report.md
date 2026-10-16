@@ -70,5 +70,5 @@ M16 baseline binary SHA-256 is
 `669e93520be31092ddf6c62d19b26f69a2e38a1d29005e35d27e36c448ac8bfd`.
 Six-pair raw samples, configurations and summaries are in
 [`the M17 result directory`](../benches/results/m17-radix31-three-frequency/).
-This checkpoint compares M17 with M16 only; cross-library measurements are
-still outstanding.
+The current-source cross-library measurements are documented in
+[`m17-cross-library-report.md`](m17-cross-library-report.md).
