@@ -1,0 +1,34 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M19 current-head cross-library SHT-target comparison",
+    "candidate_source": "RustSHT-FFT cd5748b; production and benchmark source unchanged from 3c02794",
+    "candidate_binary_sha256": "a97674f383732a07ee860887f5407c12659874ee70eb8d9ab0aa058d968dca17",
+    "reference": "DUCC c1ed01b8 portable",
+    "reference_binary_sha256": "4265b0590ee3235e87fb4a9aa7f776ea5c33a1c3b91d7adef34310b65d827843",
+    "reference_build": "DUCC c1ed01b8; g++ 15.2.0; -O3 -DNDEBUG -pthread; planner vectorization disabled",
+    "workload": "all exact complex and real SHT target lengths and row counts; one transform thread",
+    "timing": "seven warmed samples per operation per process; six alternating process pairs",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target; runtime AVX2 dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30"
+  },
+  "a": {
+    "label": "RustSHT-FFT cd5748b",
+    "command": [
+      "/dev/shm/rustsht-fft-m18-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "DUCC c1ed01b8 portable",
+    "command": [
+      "/home/albert/rustsht-fft-m0-ducc-portable/rustsht-fft-reference",
+      "bench-sht-targets"
+    ],
+    "env": {
+      "RUSTSHT_FFT_DUCC_VECTORIZE": "0"
+    }
+  }
+}
