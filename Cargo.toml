@@ -45,3 +45,7 @@ required-features = ["parallel"]
 [[example]]
 name = "m5_batch_bench"
 required-features = ["parallel"]
+
+[[example]]
+name = "m1_f32_atmospheric_bench"
+required-features = ["parallel"]
