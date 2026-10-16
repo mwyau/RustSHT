@@ -680,6 +680,257 @@ fn f32_spin1_gl_t511_analysis_matches_ducc_0410() {
 }
 
 #[test]
+#[ignore = "opt-in T1023 float32 comparison with pinned DUCC 0.41.0 references"]
+fn f32_t1023_scalar_and_spin1_standard_match_ducc_0410() {
+    // References use ducc0 0.41.0, source revision
+    // c1ed01b8fda69d2a378190f0915f1a19762dddbf; GL 1024x2048, T1023,
+    // phi0=0.37 and one thread. Coefficients and maps are integer-derived
+    // float32 data. Each reference list samples low, interior, and high modes
+    // or map locations; the norm checks summarize each complete output.
+    const LMAX: usize = 1023;
+    const NTHETA: usize = 1024;
+    const NPHI: usize = 2048;
+    const MAP_SAMPLES: [(usize, usize); 8] = [
+        (0, 0),
+        (0, 1024),
+        (1, 17),
+        (256, 512),
+        (511, 1023),
+        (512, 2047),
+        (768, 1536),
+        (1023, 2047),
+    ];
+    const MODES: [(usize, usize); 9] = [
+        (0, 0),
+        (1, 0),
+        (10, 3),
+        (127, 31),
+        (255, 128),
+        (511, 511),
+        (768, 256),
+        (1023, 0),
+        (1023, 1023),
+    ];
+
+    let map_references: [&[f32]; 3] = [
+        &[
+            1.1315778829e-3,
+            -1.5352696646e-3,
+            6.0789741838e-5,
+            2.5286411983e-4,
+            1.7753457651e-3,
+            -2.3867719574e-4,
+            -1.0628581367e-4,
+            1.0019000911e-4,
+        ],
+        &[
+            -3.5967044532e-3,
+            7.0341935498e-5,
+            8.1140798284e-4,
+            -5.1888008602e-4,
+            1.1374865659e-2,
+            -9.6744799521e-4,
+            3.1909118406e-3,
+            -1.8767867004e-3,
+        ],
+        &[
+            1.8319659866e-3,
+            -6.1526696663e-4,
+            -9.2882903118e-5,
+            3.5935156047e-3,
+            1.3914688025e-3,
+            -7.2534872743e-5,
+            2.3917802610e-3,
+            -1.6525488172e-4,
+        ],
+    ];
+    let synthesis_summaries = [
+        (-27.746290588336873, 34.257397046978667),
+        (21.468572933348803, 34.60022747539621),
+        (8.913643312434536, 35.894971665146329),
+    ];
+    let analysis_references: [&[(f32, f32)]; 3] = [
+        &[
+            (4.2506933084e-8, 0.0),
+            (1.4741371501e-7, 0.0),
+            (-3.0149262642e-8, 5.9778152206e-8),
+            (1.1575857570e-5, 2.4828126698e-5),
+            (-9.5067234724e-6, 3.6764027755e-5),
+            (-5.4067922974e-6, 1.6819647499e-5),
+            (-1.2161126506e-4, 5.1680044635e-6),
+            (6.1143623498e-8, 0.0),
+            (-6.0687580117e-7, 1.1554671801e-5),
+        ],
+        &[
+            (0.0, 0.0),
+            (-2.2209016848e-9, 0.0),
+            (1.4273031645e-8, -2.2388675802e-8),
+            (-2.7598152883e-6, 2.9184459436e-6),
+            (3.5847053368e-5, -1.7552314603e-5),
+            (1.5192587455e-7, -1.6998694718e-6),
+            (-3.2935098716e-5, 6.6336870077e-5),
+            (1.8010721803e-8, 0.0),
+            (-3.3452406001e-7, -1.0171541476e-7),
+        ],
+        &[
+            (0.0, 0.0),
+            (4.8385973006e-10, 0.0),
+            (3.6272190584e-8, 1.5514958207e-8),
+            (-6.8880772233e-6, 3.2650930279e-6),
+            (-8.4354587671e-7, -2.3016666091e-5),
+            (-1.6868942112e-5, -5.2256500567e-6),
+            (4.1011022404e-5, -3.1521907658e-5),
+            (-2.3272916039e-8, 0.0),
+            (-1.1554560842e-5, -5.3992459925e-7),
+        ],
+    ];
+    let analysis_summaries = [
+        (
+            -0.025685433394838343,
+            -0.0082301038139130193,
+            0.58785513939825618,
+        ),
+        (
+            0.033319506386021006,
+            0.037885718480225997,
+            0.66365857567241482,
+        ),
+        (
+            0.022237754278367595,
+            -0.02380523870864007,
+            0.49323440525918222,
+        ),
+    ];
+
+    for spin in 0..=1 {
+        let channel_count = if spin == 0 { 1 } else { 2 };
+        let plan = ShtPlan::<f32>::new(
+            GridSpec::new(GridKind::GaussLegendre, NTHETA, NPHI, 0.37).unwrap(),
+            HarmonicSpec::new(LMAX, LMAX, spin).unwrap(),
+        )
+        .unwrap();
+        let mut workspace = plan.workspace().unwrap();
+        plan.prepare_workspace(&mut workspace, 1).unwrap();
+
+        let mut coefficients =
+            vec![vec![Complex32::new(0.0, 0.0); plan.harmonics().nalm()]; channel_count];
+        for m in 0..=LMAX {
+            for l in m.max(spin)..=LMAX {
+                let index = plan.harmonics().index(l, m).unwrap();
+                for (channel, channel_coefficients) in coefficients.iter_mut().enumerate() {
+                    let (real, imaginary) = if channel == 0 {
+                        (
+                            ((l * 7 + m * 11) % 19) as i32 - 9,
+                            if m == 0 {
+                                0
+                            } else {
+                                ((l * 13 + m * 5) % 23) as i32 - 11
+                            },
+                        )
+                    } else {
+                        (
+                            ((l * 3 + m * 7) % 17) as i32 - 8,
+                            if m == 0 {
+                                0
+                            } else {
+                                ((l * 5 + m * 17) % 29) as i32 - 14
+                            },
+                        )
+                    };
+                    channel_coefficients[index] =
+                        Complex32::new(real as f32 * 1.0e-5, imaginary as f32 * 1.0e-5);
+                }
+            }
+        }
+
+        let mut synthesized = vec![vec![0.0_f32; NTHETA * NPHI]; channel_count];
+        if spin == 0 {
+            plan.synthesis_into(&coefficients[0], &mut synthesized[0], &mut workspace)
+                .unwrap();
+        } else {
+            let (first_output, second_output) = synthesized.split_at_mut(1);
+            plan.synthesis_spin_into(
+                &coefficients[0],
+                &coefficients[1],
+                &mut first_output[0],
+                &mut second_output[0],
+                &mut workspace,
+            )
+            .unwrap();
+        }
+        for (channel, values) in synthesized.iter().enumerate() {
+            let sample_values: Vec<_> = MAP_SAMPLES
+                .iter()
+                .map(|&(ring, longitude)| values[ring * NPHI + longitude])
+                .collect();
+            let norm = values
+                .iter()
+                .map(|&value| f64::from(value).powi(2))
+                .sum::<f64>()
+                .sqrt();
+            let sum = values.iter().map(|&value| f64::from(value)).sum::<f64>();
+            assert_values_close(&sample_values, map_references[spin + channel], 2.5e-5);
+            assert_close(sum, synthesis_summaries[spin + channel].0, 1.0e-3);
+            assert_close(norm, synthesis_summaries[spin + channel].1, 3.0e-4);
+        }
+
+        let mut input_maps = vec![vec![0.0_f32; NTHETA * NPHI]; channel_count];
+        for (ring, row) in input_maps[0].chunks_mut(NPHI).enumerate() {
+            for (longitude, value) in row.iter_mut().enumerate() {
+                *value = (((ring * 31 + longitude * 17) % 101) as i32 - 50) as f32 / 101.0;
+            }
+        }
+        if spin == 1 {
+            for (ring, row) in input_maps[1].chunks_mut(NPHI).enumerate() {
+                for (longitude, value) in row.iter_mut().enumerate() {
+                    *value = (((ring * 19 + longitude * 23 + 7) % 97) as i32 - 48) as f32 / 97.0;
+                }
+            }
+        }
+        let mut analyzed =
+            vec![vec![Complex32::new(0.0, 0.0); plan.harmonics().nalm()]; channel_count];
+        if spin == 0 {
+            plan.analysis_into(&input_maps[0], &mut analyzed[0], &mut workspace)
+                .unwrap();
+        } else {
+            let (first_coefficients, second_coefficients) = analyzed.split_at_mut(1);
+            plan.analysis_spin_into(
+                &input_maps[0],
+                &input_maps[1],
+                &mut first_coefficients[0],
+                &mut second_coefficients[0],
+                &mut workspace,
+            )
+            .unwrap();
+        }
+        for (channel, values) in analyzed.iter().enumerate() {
+            let norm = values
+                .iter()
+                .map(|value| f64::from(value.re).powi(2) + f64::from(value.im).powi(2))
+                .sum::<f64>()
+                .sqrt();
+            let sum_real = values.iter().map(|value| f64::from(value.re)).sum::<f64>();
+            let sum_imag = values.iter().map(|value| f64::from(value.im)).sum::<f64>();
+            for (mode_index, &(degree, order)) in MODES.iter().enumerate() {
+                let index = plan.harmonics().index(degree, order).unwrap();
+                let expected = Complex32::new(
+                    analysis_references[spin + channel][mode_index].0,
+                    analysis_references[spin + channel][mode_index].1,
+                );
+                assert!(
+                    (values[index] - expected).norm() <= 2.0e-6,
+                    "spin={spin}, channel={channel}, mode=({degree},{order}), actual={:?}, DUCC={expected:?}",
+                    values[index]
+                );
+            }
+            assert_close(sum_real, analysis_summaries[spin + channel].0, 1.0e-3);
+            assert_close(sum_imag, analysis_summaries[spin + channel].1, 1.0e-3);
+            assert_close(norm, analysis_summaries[spin + channel].2, 3.0e-4);
+        }
+    }
+}
+
+#[test]
 fn f32_t127_spin1_gl_sparse_synthesis_matches_ducc_0410() {
     // Reference: ducc0 0.41.0, GL 128x257, spin=1, a_127,127=1, phi0=0.19.
     let lmax = 127;

@@ -1,0 +1,21 @@
+RustSHT implementation source before this validation increment: eafc46c7bf70f23a19bea0986d3f69d511b131b4
+Branch: opt/sht-kernel-performance
+DUCC package: ducc0 0.41.0
+DUCC source revision: c1ed01b8fda69d2a378190f0915f1a19762dddbf
+Reference command: uv run --locked python reports/data/f32-t1023-validation-2026-10-16/generate-ducc-reference.py
+Rust comparison: cargo test -p rustsht --test f32 --all-features --release f32_t1023_scalar_and_spin1_standard_match_ducc_0410 -- --ignored
+Rust comparison result: 1 passed
+Full checks: cargo fmt --all -- --check; cargo clippy --workspace --all-targets --all-features -- -D warnings
+Full all-feature tests: TMPDIR=target/rustsht-doc-tmp cargo test --workspace --all-features (187 unit, 11 f32 passed; 13 unit and 1 f32 ignored)
+No-default tests: TMPDIR=target/rustsht-doc-tmp cargo test -p rustsht --no-default-features (149 unit, 11 f32 passed; 7 unit and 1 f32 ignored)
+Python tests not run: no binding changes
+Grid: GL 1024x2048, T1023, full mmax, phi0=0.37
+Precision: float32 maps and complex64 coefficients
+Execution: 1 Rust workspace worker; 1 DUCC thread
+This is numerical validation, not a timing benchmark.
+The shared /tmp filesystem was full; the passing test commands used a workspace-local TMPDIR.
+
+SHA-256:
+5bc1f196d825558b577dc7e1ef18dac1df4cab5723c37e0b052b03bf4af99e19  generate-ducc-reference.py
+b6bee60278d0713aab9c858f78a08756366593c4db7860221b23eb8bbd50c971  ducc-reference.json
+4ac4b131c3e7963605bd923586193c10ea4d669df73e3edcf0cb31103d403e32  rustsht-output.txt
