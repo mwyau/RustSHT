@@ -1,0 +1,318 @@
+diff --git a/crates/rustsht-fft/src/complex.rs b/crates/rustsht-fft/src/complex.rs
+index f6c6d6f..bc03995 100644
+--- a/crates/rustsht-fft/src/complex.rs
++++ b/crates/rustsht-fft/src/complex.rs
+@@ -141,6 +141,7 @@ struct SimdKernels<T> {
+     complex_lanes: usize,
+     first_pass: FirstPassKernel<T>,
+     pass: ComplexPassKernel<T>,
++    radix3_pass: Option<ComplexPassKernel<T>>,
+     ido1_radix8_pass: Option<ComplexPassKernel<T>>,
+     ido1_radix4_pass: Option<ComplexPassKernel<T>>,
+     radix11_pass: Option<ComplexPassKernel<T>>,
+@@ -405,6 +406,7 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
+             complex_lanes: T::AVX2_COMPLEX_LANES,
+             first_pass: T::avx2_first_pass,
+             pass: T::avx2_pass,
++            radix3_pass: T::avx2_radix3_pass_kernel(),
+             ido1_radix8_pass: T::avx2_ido1_radix8_pass_kernel(),
+             ido1_radix4_pass: T::avx2_ido1_radix4_pass_kernel(),
+             radix11_pass: T::avx2_radix11_dispatch_kernel(),
+@@ -1620,6 +1622,42 @@ fn execute_direct_radix_pass<const R: usize, T: Float + FromPrimitive>(
+     let inverse = execution.direction == Direction::Inverse;
+     let mut scalar_outer_start = 0;
+     let mut scalar_inner_start = 0;
++    if R == 3
++        && (!inverse || execution.defer_inverse_normalization)
++        && let Some(kernels) = execution.simd
++        && let Some(kernel) = kernels.radix3_pass
++        && pass.ido >= kernels.complex_lanes
++    {
++        let vector_ido = pass.ido - pass.ido % kernels.complex_lanes;
++        let simd_pass = SimdPass {
++            radix: pass.radix,
++            l1: pass.l1,
++            ido: pass.ido,
++            twiddles: &pass.twiddles,
++            inverse,
++            inverse_scale: if inverse {
++                execution.inverse_output_scale
++            } else {
++                T::one()
++            },
++        };
++        // SAFETY: runtime dispatch checked AVX2; the radix-three kernel
++        // accepts this pass layout and writes only its complete inner prefix.
++        unsafe { kernel(input, output, &simd_pass) };
++        scalar_inner_start = vector_ido;
++        #[cfg(test)]
++        crate::m0_record_route(format!(
++            "c2c-avx2:radix3-pass-prefix n={} l1={} ido={} vector_ido={} scalar_tail={}",
++            execution.total_len,
++            pass.l1,
++            pass.ido,
++            vector_ido,
++            pass.ido - vector_ido
++        ));
++        if scalar_inner_start == pass.ido {
++            return;
++        }
++    }
+     if let Some(kernels) = execution.simd
+         && matches!(R, 4 | 8)
+         && (!inverse || execution.defer_inverse_normalization)
+diff --git a/crates/rustsht-fft/src/lib.rs b/crates/rustsht-fft/src/lib.rs
+index d26cacd..4fdd8a1 100644
+--- a/crates/rustsht-fft/src/lib.rs
++++ b/crates/rustsht-fft/src/lib.rs
+@@ -331,6 +331,47 @@ mod m0_diagnostics_tests {
+         assert!(!routes.iter().any(|route| route.contains("c2c-avx2:")));
+     }
+ 
++    #[test]
++    fn m29_c2c_radix3_avx2_pass_selects_safe_layout_and_keeps_unsafe_inverse_scalar() {
++        use crate::simd::SimdScalar;
++
++        if !<f64 as SimdScalar>::avx2_available() {
++            return;
++        }
++
++        let n = 2904;
++        let plan = ComplexFftPlan::<f64>::new(n).expect("radix-three plan");
++        let expected =
++            "c2c-avx2:radix3-pass-prefix n=2904 l1=8 ido=121 vector_ido=120 scalar_tail=1";
++        let mut workspace = plan.workspace().expect("radix-three workspace");
++        let mut values = complex_input(n);
++        m0_clear_routes();
++        plan.forward(&mut values, &mut workspace)
++            .expect("safe radix-three forward");
++        assert!(m0_route_snapshot().iter().any(|route| route == expected));
++
++        let mut values = complex_input(n);
++        m0_clear_routes();
++        plan.inverse(&mut values, &mut workspace)
++            .expect("safe radix-three inverse");
++        assert!(m0_route_snapshot().iter().any(|route| route == expected));
++
++        let mut unsafe_values = vec![Complex::new(1.0e305, -0.5e305); n];
++        m0_clear_routes();
++        plan.inverse(&mut unsafe_values, &mut workspace)
++            .expect("guarded radix-three inverse");
++        assert!(
++            m0_route_snapshot()
++                .iter()
++                .all(|route| !route.starts_with("c2c-avx2:radix3-pass-prefix"))
++        );
++        assert!(
++            unsafe_values
++                .iter()
++                .all(|value| value.re.is_finite() && value.im.is_finite())
++        );
++    }
++
+     #[test]
+     fn m25_complex_radix11_simd_covers_sht_targets_and_guards_unsafe_inverse() {
+         use crate::simd::SimdScalar;
+diff --git a/crates/rustsht-fft/src/simd.rs b/crates/rustsht-fft/src/simd.rs
+index 94b07c8..4a633b4 100644
+--- a/crates/rustsht-fft/src/simd.rs
++++ b/crates/rustsht-fft/src/simd.rs
+@@ -78,6 +78,15 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
+         None
+     }
+ 
++    /// Returns the f64 radix-three pass kernel when AVX2 is available.
++    ///
++    /// The caller must confirm AVX2 support, `radix == 3`, and an `ido` of at
++    /// least two. The kernel processes complete pairs of inner values; the
++    /// caller handles an odd final inner value.
++    fn avx2_radix3_pass_kernel() -> Option<ComplexPassKernel<Self>> {
++        None
++    }
++
+     /// Returns the f64 radix-31 general-prime kernel for `ido == 1`.
+     ///
+     /// The caller must check the returned kernel's radix, pass layout, input
+@@ -187,6 +196,14 @@ mod x86 {
+             Some(f64_kernel::pass_ido1_radix4)
+         }
+ 
++        fn avx2_radix3_pass_kernel() -> Option<ComplexPassKernel<Self>> {
++            if available() {
++                Some(f64_kernel::pass_radix3)
++            } else {
++                None
++            }
++        }
++
+         fn avx2_general_prime_ido1_kernel() -> Option<ComplexGeneralPrimeIdo1Kernel<Self>> {
+             if available() {
+                 Some(f64_kernel::general_prime_ido1_radix31)
+@@ -420,6 +437,27 @@ mod x86 {
+             output
+         }
+ 
++        #[inline]
++        #[target_feature(enable = "avx2")]
++        unsafe fn radix3(input: &[V; 8], inverse: bool) -> [V; 8] {
++            let mut output = [_mm256_setzero_pd(); 8];
++            let pair = _mm256_add_pd(input[1], input[2]);
++            let difference = _mm256_sub_pd(input[1], input[2]);
++            let base = _mm256_sub_pd(input[0], _mm256_mul_pd(pair, _mm256_set1_pd(0.5)));
++            // SAFETY: the helper uses AVX2 intrinsics and is called only from
++            // AVX2-targeted functions after runtime feature dispatch.
++            let turn = unsafe {
++                _mm256_mul_pd(
++                    rotate_quarter(difference, inverse),
++                    _mm256_set1_pd(0.866_025_403_784_438_6),
++                )
++            };
++            output[0] = _mm256_add_pd(input[0], pair);
++            output[1] = _mm256_add_pd(base, turn);
++            output[2] = _mm256_sub_pd(base, turn);
++            output
++        }
++
+         #[inline]
+         #[target_feature(enable = "avx2")]
+         unsafe fn radix4(input: &[V; 8], inverse: bool) -> [V; 8] {
+@@ -477,9 +515,10 @@ mod x86 {
+         unsafe fn transform<const RADIX: usize>(input: &[V; 8], inverse: bool) -> [V; 8] {
+             match RADIX {
+                 2 => unsafe { radix2(input) },
++                3 => unsafe { radix3(input, inverse) },
+                 4 => unsafe { radix4(input, inverse) },
+                 8 => unsafe { radix8(input, inverse) },
+-                _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
++                _ => unreachable!("AVX2 kernel supports radices 2, 3, 4, and 8"),
+             }
+         }
+ 
+@@ -533,12 +572,36 @@ mod x86 {
+         ) {
+             match pass.radix {
+                 2 => unsafe { pass_fixed::<2>(input, output, pass) },
++                3 => unsafe { pass_fixed::<3>(input, output, pass) },
+                 4 => unsafe { pass_fixed::<4>(input, output, pass) },
+                 8 => unsafe { pass_fixed::<8>(input, output, pass) },
+-                _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
++                _ => unreachable!("AVX2 kernel supports radices 2, 3, 4, and 8"),
+             }
+         }
+ 
++        /// Executes a radix-three pass over complete pairs of inner values.
++        ///
++        /// # Safety
++        ///
++        /// The caller must have detected AVX2 and provide disjoint slices for
++        /// a radix-three pass with `ido >= 2`. The slices and twiddle table
++        /// must match the pass dimensions. An odd final inner value is left
++        /// untouched for the caller to handle.
++        #[target_feature(enable = "avx2")]
++        pub(super) unsafe fn pass_radix3(
++            input: &[Complex<f64>],
++            output: &mut [Complex<f64>],
++            pass: &SimdPass<'_, f64>,
++        ) {
++            debug_assert_eq!(pass.radix, 3);
++            debug_assert!(pass.ido >= 2);
++            debug_assert!(input.len() >= 3 * pass.l1 * pass.ido);
++            debug_assert!(output.len() >= 3 * pass.l1 * pass.ido);
++            // SAFETY: this wrapper narrows the shared fixed-pass kernel to
++            // radix three and inherits the caller's AVX2 and slice contract.
++            unsafe { pass_fixed::<3>(input, output, pass) };
++        }
++
+         /// Dispatches radix-eleven passes to the mixed-inner kernel and the
+         /// remaining supported radices to the existing AVX2 pass.
+         ///
+@@ -2655,6 +2718,89 @@ mod tests {
+         );
+     }
+ 
++    #[test]
++    fn f64_complex_radix3_pass_matches_direct_dfts_and_preserves_odd_ido_tail() {
++        if !<f64 as SimdScalar>::avx2_available() {
++            return;
++        }
++        let Some(kernel) = <f64 as SimdScalar>::avx2_radix3_pass_kernel() else {
++            panic!("AVX2 radix-three kernel should be available");
++        };
++
++        let radix = 3;
++        let marker = Complex::new(-91.0, 37.0);
++        for (l1, ido) in [(1, 2), (2, 3), (8, 121)] {
++            let total_len = radix * l1 * ido;
++            let twiddles: Vec<_> = (0..radix)
++                .flat_map(|branch| {
++                    (0..ido).map(move |inner| root(branch * l1 * inner, total_len, true))
++                })
++                .collect();
++            let original: Vec<_> = (0..total_len)
++                .map(|index| signal(index + l1 * 7 + ido * 13))
++                .collect();
++            let vector_ido = ido - ido % 2;
++
++            for inverse in [false, true] {
++                let scale = if inverse { 0.25 } else { 1.0 };
++                let mut storage = vec![marker; total_len + 2];
++                let (start_guard, tail) = storage.split_at_mut(1);
++                let (output, end_guard) = tail.split_at_mut(total_len);
++                // SAFETY: runtime AVX2 is available, the buffers are disjoint,
++                // and the pass dimensions match the radix-three contract.
++                unsafe {
++                    kernel(
++                        &original,
++                        output,
++                        &SimdPass {
++                            radix,
++                            l1,
++                            ido,
++                            twiddles: &twiddles,
++                            inverse,
++                            inverse_scale: scale,
++                        },
++                    )
++                }
++                assert_eq!(start_guard[0], marker);
++                assert_eq!(end_guard[0], marker);
++
++                for outer in 0..l1 {
++                    for frequency in 0..radix {
++                        for inner in (0..vector_ido).step_by(2) {
++                            for lane in 0..2 {
++                                let inner_index = inner + lane;
++                                let mut expected = Complex::new(0.0, 0.0);
++                                for sample in 0..radix {
++                                    expected += original
++                                        [inner_index + ido * (sample + radix * outer)]
++                                        * root(sample * frequency % radix, radix, inverse);
++                                }
++                                if frequency != 0 && ido > 1 {
++                                    expected *=
++                                        root(frequency * l1 * inner_index, total_len, inverse);
++                                }
++                                expected *= scale;
++                                let output_index = inner_index + ido * (outer + l1 * frequency);
++                                assert_close(
++                                    output[output_index],
++                                    expected,
++                                    &format!(
++                                        "radix={radix}, l1={l1}, ido={ido}, inverse={inverse}, outer={outer}, frequency={frequency}, inner={inner_index}"
++                                    ),
++                                );
++                            }
++                        }
++                        if vector_ido < ido {
++                            let tail_index = ido - 1 + ido * (outer + l1 * frequency);
++                            assert_eq!(output[tail_index], marker);
++                        }
++                    }
++                }
++            }
++        }
++    }
++
+     #[test]
+     fn f64_complex_general_prime_radix31_ido1_matches_direct_dfts() {
+         if !<f64 as SimdScalar>::avx2_available() {

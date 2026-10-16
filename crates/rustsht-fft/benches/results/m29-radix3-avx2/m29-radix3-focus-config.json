@@ -1,0 +1,31 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-c2c",
+      "2904",
+      "1",
+      "721"
+    ],
+    "label": "RustSHT-FFT M29 radix-three AVX2 candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-c2c",
+      "2904",
+      "1",
+      "721"
+    ],
+    "label": "RustSHT-FFT M28 M26-source baseline 49e1b68"
+  },
+  "metadata": {
+    "candidate_source_base": "RustSHT-FFT M28 commit 49e1b68 plus the M29 radix-three pass change",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "purpose": "N=2904 radix-three AVX2 pilot against M26",
+    "reference_source": "RustSHT-FFT M28 commit 49e1b68",
+    "timing": "Three alternating process pairs",
+    "workload": "C2C forward and inverse; one transform and 721-row batch"
+  },
+  "pairs": 3
+}

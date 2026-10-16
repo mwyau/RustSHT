@@ -332,6 +332,47 @@ mod m0_diagnostics_tests {
     }
 
     #[test]
+    fn m29_c2c_radix3_avx2_pass_selects_safe_layout_and_keeps_unsafe_inverse_scalar() {
+        use crate::simd::SimdScalar;
+
+        if !<f64 as SimdScalar>::avx2_available() {
+            return;
+        }
+
+        let n = 2904;
+        let plan = ComplexFftPlan::<f64>::new(n).expect("radix-three plan");
+        let expected =
+            "c2c-avx2:radix3-pass-prefix n=2904 l1=8 ido=121 vector_ido=120 scalar_tail=1";
+        let mut workspace = plan.workspace().expect("radix-three workspace");
+        let mut values = complex_input(n);
+        m0_clear_routes();
+        plan.forward(&mut values, &mut workspace)
+            .expect("safe radix-three forward");
+        assert!(m0_route_snapshot().iter().any(|route| route == expected));
+
+        let mut values = complex_input(n);
+        m0_clear_routes();
+        plan.inverse(&mut values, &mut workspace)
+            .expect("safe radix-three inverse");
+        assert!(m0_route_snapshot().iter().any(|route| route == expected));
+
+        let mut unsafe_values = vec![Complex::new(1.0e305, -0.5e305); n];
+        m0_clear_routes();
+        plan.inverse(&mut unsafe_values, &mut workspace)
+            .expect("guarded radix-three inverse");
+        assert!(
+            m0_route_snapshot()
+                .iter()
+                .all(|route| !route.starts_with("c2c-avx2:radix3-pass-prefix"))
+        );
+        assert!(
+            unsafe_values
+                .iter()
+                .all(|value| value.re.is_finite() && value.im.is_finite())
+        );
+    }
+
+    #[test]
     fn m25_complex_radix11_simd_covers_sht_targets_and_guards_unsafe_inverse() {
         use crate::simd::SimdScalar;
 

@@ -1,0 +1,28 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M29 radix-three AVX2 candidate"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M28 M26-source baseline 49e1b68"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "744f83c3140aa87614aed132f3d2d6c90c1e58ddf954d4396f1376cfbdda3c24",
+    "candidate_source_base": "RustSHT-FFT M28 commit 49e1b68 plus the M29 radix-three pass change",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "purpose": "Full 34-cell C2C and real SHT workload comparison for the M29 radix-three AVX2 pass",
+    "reference_binary_sha256": "76f2404f5c454e32985520030bd12626c8f1979f96f12a2633515b0a3e9ca71b",
+    "reference_source": "RustSHT-FFT M28 commit 49e1b68",
+    "runner": "benches/results/m24-radix103/run_m24_clean_capture.py records per-process load, uptime, affinity and executable hashes.",
+    "timing": "Six alternating process pairs; seven warmed samples per operation",
+    "workload": "All current C2C and real SHT operation/length cells, including scalar and spin-1 row counts; one transform thread"
+  },
+  "pairs": 6
+}

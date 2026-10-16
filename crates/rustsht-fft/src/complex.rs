@@ -141,6 +141,7 @@ struct SimdKernels<T> {
     complex_lanes: usize,
     first_pass: FirstPassKernel<T>,
     pass: ComplexPassKernel<T>,
+    radix3_pass: Option<ComplexPassKernel<T>>,
     ido1_radix8_pass: Option<ComplexPassKernel<T>>,
     ido1_radix4_pass: Option<ComplexPassKernel<T>>,
     radix11_pass: Option<ComplexPassKernel<T>>,
@@ -405,6 +406,7 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
             complex_lanes: T::AVX2_COMPLEX_LANES,
             first_pass: T::avx2_first_pass,
             pass: T::avx2_pass,
+            radix3_pass: T::avx2_radix3_pass_kernel(),
             ido1_radix8_pass: T::avx2_ido1_radix8_pass_kernel(),
             ido1_radix4_pass: T::avx2_ido1_radix4_pass_kernel(),
             radix11_pass: T::avx2_radix11_dispatch_kernel(),
@@ -1620,6 +1622,42 @@ fn execute_direct_radix_pass<const R: usize, T: Float + FromPrimitive>(
     let inverse = execution.direction == Direction::Inverse;
     let mut scalar_outer_start = 0;
     let mut scalar_inner_start = 0;
+    if R == 3
+        && (!inverse || execution.defer_inverse_normalization)
+        && let Some(kernels) = execution.simd
+        && let Some(kernel) = kernels.radix3_pass
+        && pass.ido >= kernels.complex_lanes
+    {
+        let vector_ido = pass.ido - pass.ido % kernels.complex_lanes;
+        let simd_pass = SimdPass {
+            radix: pass.radix,
+            l1: pass.l1,
+            ido: pass.ido,
+            twiddles: &pass.twiddles,
+            inverse,
+            inverse_scale: if inverse {
+                execution.inverse_output_scale
+            } else {
+                T::one()
+            },
+        };
+        // SAFETY: runtime dispatch checked AVX2; the radix-three kernel
+        // accepts this pass layout and writes only its complete inner prefix.
+        unsafe { kernel(input, output, &simd_pass) };
+        scalar_inner_start = vector_ido;
+        #[cfg(test)]
+        crate::m0_record_route(format!(
+            "c2c-avx2:radix3-pass-prefix n={} l1={} ido={} vector_ido={} scalar_tail={}",
+            execution.total_len,
+            pass.l1,
+            pass.ido,
+            vector_ido,
+            pass.ido - vector_ido
+        ));
+        if scalar_inner_start == pass.ido {
+            return;
+        }
+    }
     if let Some(kernels) = execution.simd
         && matches!(R, 4 | 8)
         && (!inverse || execution.defer_inverse_normalization)
