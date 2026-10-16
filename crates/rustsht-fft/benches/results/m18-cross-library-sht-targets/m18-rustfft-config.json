@@ -1,0 +1,27 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-sht"
+    ],
+    "label": "RustSHT-FFT M18"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-sht-targets"
+    ],
+    "label": "RustFFT 6.4.1"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "a97674f383732a07ee860887f5407c12659874ee70eb8d9ab0aa058d968dca17",
+    "candidate_source": "RustSHT-FFT M18 commit 3c02794",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target; RustSHT runtime AVX2 dispatch",
+    "purpose": "M18 current-source cross-library comparison on exact SHT target rows",
+    "reference": "RustFFT 6.4.1, benchmark adapter in the same Rust 1.99.0 build",
+    "reference_binary_sha256": "9527a7b7d241fb5fc157851a81f3c2ff79dec101e5fb22f391b24ab45c824ffc",
+    "timing": "seven warmed samples per operation per process; six alternating process pairs",
+    "workload": "all exact complex and real SHT target lengths and row counts; one transform thread"
+  },
+  "pairs": 6
+}

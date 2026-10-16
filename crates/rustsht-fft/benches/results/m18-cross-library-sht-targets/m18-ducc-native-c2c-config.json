@@ -1,0 +1,34 @@
+{
+  "a": {
+    "command": [
+      "<benchmark-binary>",
+      "bench-native-c2c",
+      "682",
+      "32"
+    ],
+    "label": "RustSHT-FFT M18"
+  },
+  "b": {
+    "command": [
+      "<benchmark-binary>",
+      "bench",
+      "682"
+    ],
+    "label": "DUCC c1ed01b8 native"
+  },
+  "env": {
+    "RUSTSHT_FFT_DUCC_VECTORIZE": "1"
+  },
+  "metadata": {
+    "candidate_binary_sha256": "a97674f383732a07ee860887f5407c12659874ee70eb8d9ab0aa058d968dca17",
+    "candidate_source": "RustSHT-FFT M18 commit 3c02794",
+    "compiler": "Rust 1.99.0 stable; Cargo bench profile; portable target; RustSHT runtime AVX2 dispatch",
+    "purpose": "M18 current-source cross-library comparison for C2C N=682 convolution length, 32 rows",
+    "reference": "DUCC c1ed01b8fda69d2a378190f0915f1a19762dddbf native build",
+    "reference_binary_sha256": "e5dc858e614114b314d515151b3d061281636f6366f6cb6000eb92e2f2264544",
+    "reference_build": "g++ 15.2.0; -O3 -DNDEBUG -march=native; vectorize planner enabled",
+    "timing": "seven warmed samples per operation per process; six alternating process pairs",
+    "workload": "C2C forward and inverse; N=682; 32 rows; one transform thread"
+  },
+  "pairs": 6
+}
