@@ -7,13 +7,15 @@ paired median ratio of `1.28x`. At q8, the medians were `15.376 ms` and
 RustSHT's q8 process medians ranged from `8.394` to `18.434 ms`, so the q8
 comparison is too variable to update the measured gap.
 
-The DUCC medians are about twice the earlier q1/q8 values of `13.056/1.943
-ms` in the [thread-scaling report](spin1-analysis-thread-scaling-2026-10-14.md).
-The earlier RustSHT values came from a different source revision. The current
+The DUCC medians differ from the `13.056/1.943 ms` q1/q8 values in the
+[thread-scaling report](spin1-analysis-thread-scaling-2026-10-14.md). They are
+closer to a separate earlier Python-plan comparison, which measured
+`27.862/4.147 ms` ([milestone record](../plans/05-validation-and-milestones.md#comparative-spin-1-analysis-profile-and-polar-cutoff-2026-10-12)).
+The earlier RustSHT values came from different source revisions. The current
 screen used the same DUCC package version and benchmark script, but its host
 load average rose from `3.44` before the run to `5.55` afterward. CPU affinity
-was fixed; other processes could use those CPUs. The screen therefore does
-not establish an updated RustSHT/DUCC gap.
+was fixed; other processes could use those CPUs. The spread across these
+sessions prevents this screen from establishing an updated RustSHT/DUCC gap.
 
 ## Workload and method
 
