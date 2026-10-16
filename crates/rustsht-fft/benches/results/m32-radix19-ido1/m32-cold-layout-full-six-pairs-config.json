@@ -1,0 +1,39 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M32 cold/no-inline code-layout acceptance screen against the complete 34-cell workload",
+    "candidate_parent_commit": "8a96f1bbdb302116439ba9928a30f18b254a1827",
+    "candidate_source_commit": "uncommitted M32 dedicated radix19-id1 plus cold/no-inline annotations",
+    "candidate_source_files_sha256": {
+      "src/complex.rs": "c3ffa936ba3d3461ff735774cae5032c67ee79f35e8acfb0fa84adc09b56cf5b",
+      "src/lib.rs": "03dfcf6e23d09cadeadbb0c2b8bef4a110aaea01bf66aa406b5e4597b37646e1",
+      "src/simd.rs": "d8bf1f4fad36f0ea3a105209bc7466c928f66161688479af61dd0296237e2a73",
+      "src/simd/x86/f64_kernel/radix19_ido1.rs": "887345c0dddf1ba9eaa0ea2ee173a9895f363b3a5d521fe4976c835a80a09a12",
+      "tests/complex.rs": "f3b68bc5e045994551d2df23611e7f62fb9fd5c5125e539ac2c1e4e45b0e6d64"
+    },
+    "candidate_binary_sha256": "a1036e527f31637d8f0fd9212d1401c2d568155cd1e8dc0faff785aa05333a8c",
+    "baseline_source_commit": "cc6a626aede65c7bfdc9ebb0ab91cca5972fab94",
+    "baseline_binary_sha256": "1170d4ff79fe99557cc9e3c04c586bf6d76dd2a108ad4793f23038419112c00d",
+    "workload": "bench-native-sht; complete established 34-cell C2C and real workload matrix; seven warmed samples per operation; one transform thread",
+    "timing": "six alternating process pairs; same rows and CPU affinity as the established matrix",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "implementation": "AVX2 radix-19 kernel only for N=722 pass (l1, ido)=(38,1); (2,19) remains scalar; cold/no-inline isolation attributes"
+  },
+  "a": {
+    "label": "RustSHT-FFT M32 cold/no-inline radix19-id1 candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-current-target/m32-dedicated-cold-candidate",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M30 baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-current-target/m30-baseline-rustfft",
+      "bench-native-sht"
+    ]
+  }
+}

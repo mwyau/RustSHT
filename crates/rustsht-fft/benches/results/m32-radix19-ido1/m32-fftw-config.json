@@ -1,0 +1,32 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M32 current radix-19 candidate comparison against system FFTW 3.3.10 across all 34 exact C2C and real SHT operation/length/row cells",
+    "candidate_source_commit": "8a96f1b",
+    "candidate_source_diff_sha256": "e47282203e1b6a0e4e7cebf1fc7a55ea62f48652fc83798510fcd87622cbf538",
+    "candidate_binary_sha256": "46a68c9b76f1dbaea435640d2599c7f755f3a6aa34f18d2c35693f5289370ed3",
+    "reference": "system FFTW 3.3.10",
+    "reference_binary_sha256": "78f56cad4aaae732d03f52c525296c61f70c7c49f98efd638ad9b7385a6cf9fa",
+    "reference_build": "system FFTW 3.3.10; g++ 15.2.0 harness -O3 -DNDEBUG; FFTW_ESTIMATE | FFTW_PRESERVE_INPUT",
+    "workload": "all exact C2C and real operations at scalar/spin-1 SHT row counts; one transform thread",
+    "timing": "six alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30"
+  },
+  "a": {
+    "label": "RustSHT-FFT M32 radix-19 candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-current-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "system FFTW 3.3.10",
+    "command": [
+      "/home/albert/rustsht-fft-m0-external/fftw-system",
+      "--sht"
+    ]
+  }
+}

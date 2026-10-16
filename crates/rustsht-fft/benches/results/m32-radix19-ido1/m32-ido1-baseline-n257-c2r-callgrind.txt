@@ -1,0 +1,13 @@
+==3570821== Callgrind, a call-graph generating cache profiler
+==3570821== Copyright (C) 2002-2017, and GNU GPL'd, by Josef Weidendorfer et al.
+==3570821== Using Valgrind-3.26.0 and LibVEX; rerun with -h for copyright info
+==3570821== Command: /dev/shm/rustsht-fft-current-target/m32-ido1-only-baseline bench-profile-real-inverse 257 normal 100
+==3570821== 
+==3570821== For interactive control, run 'callgrind_control -h'.
+mode,n,input,operation_ns,checksum
+c2r_profile,257,normal,126434.780,0.400000000
+==3570821== 
+==3570821== Events    : Ir
+==3570821== Collected : 6374534
+==3570821== 
+==3570821== I   refs:      6,374,534

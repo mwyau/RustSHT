@@ -1,0 +1,35 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "Dedicated N=722 execution loop candidate with an unchanged generic executor; paired N=723 real controls, 361 rows",
+    "candidate_source_commit": "8a96f1b",
+    "candidate_source_diff_sha256": "pending",
+    "candidate_binary_sha256": "pending",
+    "baseline_source_commit": "cc6a626aede65c7bfdc9ebb0ab91cca5972fab94",
+    "baseline_binary_sha256": "1170d4ff79fe99557cc9e3c04c586bf6d76dd2a108ad4793f23038419112c00d",
+    "workload": "all exact C2C and real operations at scalar/spin-1 SHT row counts; one transform thread",
+    "timing": "six alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable target; runtime SIMD dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30"
+  },
+  "a": {
+    "label": "RustSHT-FFT M32 route-first dispatch candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-current-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-real",
+      "723",
+      "361"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M30 baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-current-target/m30-baseline-rustfft",
+      "bench-native-real",
+      "723",
+      "361"
+    ]
+  }
+}

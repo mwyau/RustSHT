@@ -1,0 +1,33 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "Shared stage-loop architecture screen at N=722",
+    "candidate_parent_commit": "8a96f1bbdb302116439ba9928a30f18b254a1827",
+    "candidate_source_commit": "uncommitted M32 shared-loop candidate",
+    "candidate_binary_sha256": "9b2aaa3367d4ddfd6adebcd877d2c8bdc854090122bb38350eb58415937fe560",
+    "reference_binary_sha256": "dd30ebd03b4ec67a3c90d006a56828c87de987f53772d031d894616c28cd25a6",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "workload": "bench-native-c2c 722 361; seven warmed samples; six alternating process pairs"
+  },
+  "a": {
+    "label": "M32 radix19-id1 shared stage loop",
+    "command": [
+      "/dev/shm/rustsht-fft-current-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-c2c",
+      "722",
+      "361"
+    ]
+  },
+  "b": {
+    "label": "M32 radix19-id1 dedicated executor",
+    "command": [
+      "/dev/shm/rustsht-fft-current-target/m32-icache-layout-baseline",
+      "bench-native-c2c",
+      "722",
+      "361"
+    ]
+  }
+}

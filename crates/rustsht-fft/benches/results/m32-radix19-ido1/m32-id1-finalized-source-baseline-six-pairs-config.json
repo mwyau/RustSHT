@@ -1,0 +1,42 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M32 final accepted radix-19 ido=1 kernel candidate against M30 across the 34-cell atmospheric FFT matrix",
+    "candidate_parent_commit": "8a96f1bbdb302116439ba9928a30f18b254a1827",
+    "candidate_source_commit": "uncommitted M32 changes based on 8a96f1b",
+    "candidate_source_snapshot_sha256": "940d7a193434a5bf087c6f13e49c13338d8acc30870f3ed8464cecf3da121e66",
+    "candidate_runtime_source_snapshot_sha256": "f884a231c5049c60f6992f66a7155f533874eb63bdbb95c67060ba94f7d0fa58",
+    "candidate_source_diff_sha256": "1e0f07292adfa666d9d2b4b1e9ff48006505fbdec948dfe0acec2eb84b03eba5",
+    "candidate_source_files_sha256": {
+      "src/complex.rs": "19a1b6cd8ac80d4370841af0cf29090170a1213042348b56c3d2e6d8c64ea72e",
+      "src/lib.rs": "03dfcf6e23d09cadeadbb0c2b8bef4a110aaea01bf66aa406b5e4597b37646e1",
+      "src/simd.rs": "afd8251e116f4031e4a7e3cd5cb09c83abd7743816f8f0f80205da05587a05b7",
+      "src/simd/x86/f64_kernel/radix19_ido1.rs": "10639fe72095740d85e24df4c4f9d7315e8018803aaed912edf5e5134960dad0",
+      "tests/complex.rs": "f3b68bc5e045994551d2df23611e7f62fb9fd5c5125e539ac2c1e4e45b0e6d64"
+    },
+    "candidate_binary_sha256": "dd30ebd03b4ec67a3c90d006a56828c87de987f53772d031d894616c28cd25a6",
+    "baseline_source_commit": "cc6a626aede65c7bfdc9ebb0ab91cca5972fab94",
+    "baseline_binary_sha256": "1170d4ff79fe99557cc9e3c04c586bf6d76dd2a108ad4793f23038419112c00d",
+    "workload": "all exact C2C and real operations at scalar/spin-1 SHT row counts; one transform thread",
+    "timing": "six alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "implementation": "AVX2 radix-19 kernel only for N=722 pass (l1, ido)=(38,1); the (2,19) pass uses the scalar reference path."
+  },
+  "a": {
+    "label": "RustSHT-FFT M32 finalized ido=1 candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-current-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M30 baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-current-target/m30-baseline-rustfft",
+      "bench-native-sht"
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M32 final current-source comparison with RustFFT 6.4.1 over all 34 exact C2C and real SHT operation/length/row cells",
+    "candidate_source_commit": "8a96f1b",
+    "candidate_source_diff_sha256": "7038e89902c8136048538458313e82bf9ad4a3213792e276b8dfcf403a13ac03",
+    "candidate_binary_sha256": "81b4cf008fa6fb274eed87aeaa97ed37008a92851124ad569d7ff0505d4ec0a4",
+    "reference": "RustFFT 6.4.1 in the same executable",
+    "reference_binary_sha256": "81b4cf008fa6fb274eed87aeaa97ed37008a92851124ad569d7ff0505d4ec0a4",
+    "workload": "all exact C2C and real operations at scalar/spin-1 SHT row counts; one transform thread",
+    "timing": "six alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable target; runtime SIMD dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30"
+  },
+  "a": {
+    "label": "RustSHT-FFT M32 final candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-current-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "RustFFT 6.4.1",
+    "command": [
+      "/dev/shm/rustsht-fft-current-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-sht-targets"
+    ]
+  }
+}

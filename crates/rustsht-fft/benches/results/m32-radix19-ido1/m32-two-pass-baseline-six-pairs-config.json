@@ -1,0 +1,42 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M32 two-pass radix-19 AVX2 candidate compared with M30 across all 34 exact C2C and real SHT operation/length/row cells",
+    "candidate_source_commit": "uncommitted M32 changes based on 8a96f1b",
+    "candidate_binary_sha256": "61570401926db1aa425f3fc0eae24c05d46adaa9a91a4b20b1e1fca0b5bbbc5e",
+    "baseline_source_commit": "cc6a626aede65c7bfdc9ebb0ab91cca5972fab94",
+    "baseline_binary_sha256": "1170d4ff79fe99557cc9e3c04c586bf6d76dd2a108ad4793f23038419112c00d",
+    "workload": "all exact C2C and real operations at scalar/spin-1 SHT row counts; one transform thread",
+    "timing": "six alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable target; runtime SIMD dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "candidate_source_snapshot_sha256": "5b141d9a4f8cfc9c46241a10ac062efca07c3185141f187c3c6ad1559bee0d53",
+    "candidate_source_diff_sha256": "630a084b4b4e9a7ffe9f2e5636d1da09ce666f15121b26c984ede82b5a3c1f68",
+    "candidate_source_files_sha256": {
+      "src/complex.rs": "10b66e45c6bbabf2d52b76c156079db0c2af351018c5ffdf260a300b06f72052",
+      "src/lib.rs": "4db2c955ecbbba2543056bc2a53f6264670fc13baaafec8a07998c509e4e1c99",
+      "src/simd.rs": "73add859b9fd2f3281e6e9337786d2436bb4fea4fea6654cc249a5a543eb0299",
+      "src/simd/x86/f64_kernel/radix19_ido1.rs": "10639fe72095740d85e24df4c4f9d7315e8018803aaed912edf5e5134960dad0",
+      "src/simd/x86/f64_kernel/radix19_ido19.rs": "e0d09a37fda88eb7f4a4ea8f0de2b49c96e68f7e29b0e6b956d1890cf01bf40e",
+      "tests/complex.rs": "f3b68bc5e045994551d2df23611e7f62fb9fd5c5125e539ac2c1e4e45b0e6d64"
+    },
+    "rustc_verbose": "rustc 1.99.0 (b940084d7 2026-09-28); binary: rustc; commit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4; commit-date: 2026-09-28; host: x86_64-unknown-linux-gnu; release: 1.99.0; LLVM version: 23.1.1",
+    "source_note": "Both N=722 radix-19 passes use AVX2: (l1, ido)=(2, 19) vectorizes adjacent inner-frequency lanes; (38, 1) vectorizes adjacent outer groups."
+  },
+  "a": {
+    "label": "RustSHT-FFT M32 two-pass radix-19 candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-current-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M30 baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-current-target/m30-baseline-rustfft",
+      "bench-native-sht"
+    ]
+  }
+}

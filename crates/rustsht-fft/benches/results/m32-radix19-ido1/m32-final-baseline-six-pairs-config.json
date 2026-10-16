@@ -1,0 +1,31 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M32 final radix-19 ido=1 execution candidate after moving dispatch out of the generic SIMD context, compared with M30 across all 34 exact C2C and real SHT operation/length/row cells",
+    "candidate_source_commit": "8a96f1b",
+    "candidate_source_diff_sha256": "7038e89902c8136048538458313e82bf9ad4a3213792e276b8dfcf403a13ac03",
+    "candidate_binary_sha256": "81b4cf008fa6fb274eed87aeaa97ed37008a92851124ad569d7ff0505d4ec0a4",
+    "baseline_source_commit": "cc6a626aede65c7bfdc9ebb0ab91cca5972fab94",
+    "baseline_binary_sha256": "1170d4ff79fe99557cc9e3c04c586bf6d76dd2a108ad4793f23038419112c00d",
+    "workload": "all exact C2C and real operations at scalar/spin-1 SHT row counts; one transform thread",
+    "timing": "six alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable target; runtime SIMD dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30"
+  },
+  "a": {
+    "label": "RustSHT-FFT M32 final candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-current-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M30 baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-current-target/m30-baseline-rustfft",
+      "bench-native-sht"
+    ]
+  }
+}

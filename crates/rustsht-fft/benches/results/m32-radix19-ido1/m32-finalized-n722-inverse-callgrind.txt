@@ -1,0 +1,13 @@
+==3568272== Callgrind, a call-graph generating cache profiler
+==3568272== Copyright (C) 2002-2017, and GNU GPL'd, by Josef Weidendorfer et al.
+==3568272== Using Valgrind-3.26.0 and LibVEX; rerun with -h for copyright info
+==3568272== Command: /dev/shm/rustsht-fft-current-target/release/deps/rustfft-721ac07477409fe7 bench-profile-complex 722 inverse 20
+==3568272== 
+==3568272== For interactive control, run 'callgrind_control -h'.
+mode,n,direction,operation_ns,checksum
+c2c_profile,722,inverse,622222.050,0.136466274
+==3568272== 
+==3568272== Events    : Ir
+==3568272== Collected : 6410722
+==3568272== 
+==3568272== I   refs:      6,410,722

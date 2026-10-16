@@ -1,0 +1,43 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "candidate_parent_commit": "8a96f1bbdb302116439ba9928a30f18b254a1827",
+    "candidate_source_snapshot_sha256": "ed3fd94653da40c07a397bdce653570b24c566ec5ead884bd0ed797e3c68a6e2",
+    "candidate_source_diff_sha256": "9cf2191671773f2e2fd46594a6db84fa9518de8a8a20fdcf96716227723726b4",
+    "candidate_source_files_sha256": {
+      "src/complex.rs": "a1932ce583a3db06888b05221ad6e596be3953648d7c92abbd9f1104c60c73a0",
+      "src/lib.rs": "4db2c955ecbbba2543056bc2a53f6264670fc13baaafec8a07998c509e4e1c99",
+      "src/simd.rs": "73add859b9fd2f3281e6e9337786d2436bb4fea4fea6654cc249a5a543eb0299",
+      "src/simd/x86/f64_kernel/radix19_ido1.rs": "10639fe72095740d85e24df4c4f9d7315e8018803aaed912edf5e5134960dad0",
+      "src/simd/x86/f64_kernel/radix19_ido19.rs": "e0d09a37fda88eb7f4a4ea8f0de2b49c96e68f7e29b0e6b956d1890cf01bf40e",
+      "tests/complex.rs": "f3b68bc5e045994551d2df23611e7f62fb9fd5c5125e539ac2c1e4e45b0e6d64"
+    },
+    "candidate_binary_sha256": "619e49ae2421560f84f1ba66d954cec806b08789a080f37973948c1e05f02f40",
+    "comparison_binary_sha256": "753de520e252431541b43f6fe4700f7b3bda616324ba12380cf7e0710f1ffbe4",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "timing": "six alternating process pairs; seven warmed samples per operation",
+    "purpose": "N=722 target after moving ido=19 kernel lookup into the dedicated executor",
+    "workload": "C2C forward/inverse at N=722, 361 rows"
+  },
+  "a": {
+    "label": "RustSHT-FFT M32 ido19 dispatch-local candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-current-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-c2c",
+      "722",
+      "361"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M32 ido=1-only baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-current-target/m32-ido1-only-baseline",
+      "bench-native-c2c",
+      "722",
+      "361"
+    ]
+  }
+}

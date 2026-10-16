@@ -1,0 +1,28 @@
+==3572651== Callgrind, a call-graph generating cache profiler
+==3572651== Copyright (C) 2002-2017, and GNU GPL'd, by Josef Weidendorfer et al.
+==3572651== Using Valgrind-3.26.0 and LibVEX; rerun with -h for copyright info
+==3572651== Command: /dev/shm/rustsht-fft-current-target/m30-baseline-rustfft bench-profile-real-inverse 723 normal 100
+==3572651== 
+--3572651-- warning: L3 cache found, using its data for the LL simulation.
+==3572651== For interactive control, run 'callgrind_control -h'.
+mode,n,input,operation_ns,checksum
+c2r_profile,723,normal,1627176.430,0.400000000
+==3572651== 
+==3572651== Events    : Ir Dr Dw I1mr D1mr D1mw ILmr DLmr DLmw
+==3572651== Collected : 25661989 3795620 2231593 3300 65489 54182 2888 2858 3811
+==3572651== 
+==3572651== I   refs:      25,661,989
+==3572651== I1  misses:         3,300
+==3572651== LLi misses:         2,888
+==3572651== I1  miss rate:       0.01%
+==3572651== LLi miss rate:       0.01%
+==3572651== 
+==3572651== D   refs:       6,027,213  (3,795,620 rd + 2,231,593 wr)
+==3572651== D1  misses:       119,671  (   65,489 rd +    54,182 wr)
+==3572651== LLd misses:         6,669  (    2,858 rd +     3,811 wr)
+==3572651== D1  miss rate:        2.0% (      1.7%   +       2.4%  )
+==3572651== LLd miss rate:        0.1% (      0.1%   +       0.2%  )
+==3572651== 
+==3572651== LL refs:          122,971  (   68,789 rd +    54,182 wr)
+==3572651== LL misses:          9,557  (    5,746 rd +     3,811 wr)
+==3572651== LL miss rate:         0.0% (      0.0%   +       0.2%  )
