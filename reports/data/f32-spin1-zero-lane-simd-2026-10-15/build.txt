@@ -1,0 +1,8 @@
+baseline_commit=ed9a4af4537781d3446cbd79bd19984a78263069
+candidate_source=src/legendre/spin_f32.rs patch saved in candidate.patch
+baseline_command=cargo build --release --example m4_f32_bench
+candidate_command=cargo build --release --example m4_f32_bench
+features=default (parallel)
+baseline_binary_sha256=d4ddd83bb31100b95835535e744a4d1ab87410684be840362d3435c5d377f58f
+candidate_binary_sha256=3a950676ca776da55afec24e26ff1f2cbdbfb5969bc8aaf5bf3833c049eec559
+candidate_patch_sha256=488d63992e858feaac50e240ceb3a0d991de657701939151ad67b2475bb4f5a4
