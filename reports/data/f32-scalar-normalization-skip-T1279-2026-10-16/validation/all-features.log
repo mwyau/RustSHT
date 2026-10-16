@@ -1,0 +1,241 @@
+   Compiling rustsht v0.1.0-dev.0 (/home/albert/RustSHT-sht-performance)
+   Compiling rustsht-python v0.1.0-dev.0 (/home/albert/RustSHT-sht-performance/python)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.53s
+     Running unittests src/lib.rs (target/debug/deps/rustsht-b689933cd12d9627)
+
+running 201 tests
+test fft::tests::real_fft_validates_shapes_and_spectrum_edges ... ok
+test fft::tests::real_fft_preserves_phase_for_positive_modes ... ok
+test grid::tests::gauss_legendre_moments_are_exact_for_small_rules ... ok
+test fft::tests::inverse_matches_direct_hermitian_sum_for_arbitrary_spectra ... ok
+test harmonics::tests::constructor_rejects_invalid_bounds_and_overflow ... ok
+test grid::tests::small_rules_match_closed_form ... ok
+test grid::tests::clenshaw_curtis_nodes_and_weights_match_ducc_0410 ... ok
+test grid::tests::grid_rejects_invalid_shapes_and_longitude_origin ... ok
+test harmonics::tests::packed_length_matches_triangular_and_rectangular_cases ... ok
+test grid::tests::longitude_samples_follow_phi0_and_eastward_order ... ok
+test harmonics::tests::coefficient_validation_checks_length_reality_and_spin_floor ... ok
+test harmonics::tests::packed_offsets_follow_order_major_layout ... ok
+test grid::tests::fejer1_nodes_and_weights_match_ducc_0410 ... ok
+test legendre::scalar::tests::binary_scaling_matches_power_of_two_products ... ok
+test legendre::scalar::tests::cached_epsilon_values_match_recurrence_definition ... ok
+test legendre::scalar::tests::complex_product_keeps_fallback_when_first_product_underflows ... ok
+test legendre::scalar::tests::fused_paired_synthesis_declines_inactive_and_scaled_blocks ... ok
+test grid::tests::both_quadrature_algorithms_are_symmetric_and_normalized ... ok
+test legendre::scalar::tests::lane_rescaling_matches_scalar_for_large_and_small_values ... ok
+test legendre::scalar::tests::normal_complex_products_skip_identity_binary_scaling ... ok
+test legendre::scalar::tests::normalize_pair_lanes_preserves_ordinary_lanes_in_mixed_blocks ... ok
+test fft::tests::inverse_reconstruction_matches_real_samples_and_fft_scaling ... ok
+test legendre::scalar::tests::paired_analysis_mixed_lanes_keep_subnormal_basis_on_scaled_path ... ok
+test legendre::scalar::tests::paired_analysis_scaled_lanes_use_the_general_multiply_path ... ok
+test legendre::scalar::tests::paired_range_guard_matches_scalar_reference_on_vectors_and_tails ... ok
+test legendre::scalar::tests::paired_analysis_simd_accumulation_matches_scaled_lane_reference ... ok
+test legendre::scalar::tests::ducc_paired_recurrence_scaled_to_normal_transition_matches_reference ... ok
+test legendre::scalar::tests::paired_analysis_mixed_normal_and_scaled_lanes_match_lane_reference ... ok
+test fft::tests::real_fft_modes_match_full_complex_rustfft ... ok
+test grid::tests::selected_nodes_and_weights_match_pinned_ducc ... ok
+test legendre::scalar::tests::polar_order_cutoff_matches_ducc_bounds ... ok
+test legendre::scalar::tests::paired_analysis_extreme_finite_products_use_scaled_fallback ... ok
+test legendre::scalar::tests::scalar_normalized_recurrence_matches_closed_forms ... ok
+test legendre::scalar::tests::scaled_complex_multiply_avoids_intermediate_overflow ... ok
+test fft::tests::f32_real_fft_matches_full_complex_rustfft ... ok
+test legendre::scalar::tests::scaled_sectoral_values_remain_finite_at_high_order ... ok
+test legendre::scalar_f32::tests::f32_binary_scaling_matches_staged_products ... ok
+test legendre::scalar::tests::staged_synthesis_transition_falls_back_on_degree_pair_cancellation ... ok
+test legendre::scalar_f32::tests::f32_pair_normalization_matches_float_magnitude_reference ... ok
+test legendre::scalar_f32::tests::f32_normal_range_check_covers_simd_lanes_and_tail ... ok
+test legendre::scalar::tests::paired_synthesis_transition_rejects_prefix_underflow_revived_by_spin_weight ... ok
+test legendre::scalar::tests::scaled_multiply_matches_split_reference ... ok
+test legendre::scalar_paired::tests::fused_scalar_analysis_block_declines_on_late_recurrence_range_failure ... ok
+test legendre::scalar_paired::tests::fused_scalar_analysis_block_rejects_scaled_sectoral_lanes ... ok
+test legendre::scalar_paired::tests::dual_analysis_accumulation_matches_independent_channels_and_scaled_fallback ... ok
+test legendre::scalar_paired::tests::fused_synthesis_continuation_declines_on_late_tail_range_failure ... ok
+test legendre::scalar_paired::tests::fused_scalar_analysis_block_matches_paired_reference_with_simd_tails ... ok
+test legendre::scalar_paired::tests::fused_two_channel_analysis_block_declines_on_late_range_failure ... ok
+test legendre::scalar_f32::tests::f32_scaled_complex_multiply_matches_split_reference ... ok
+test legendre::scalar_paired::tests::fused_two_channel_analysis_block_rejects_scaled_sectoral_lanes ... ok
+test legendre::scalar::tests::scaled_to_normal_transition_matches_scalar_reference ... ok
+test legendre::scalar_paired::tests::fused_two_channel_analysis_block_matches_paired_reference_with_simd_tails ... ok
+test legendre::scalar_paired::tests::synthesis_coefficient_preparation_rejects_nonfinite_transformed_pairs ... ok
+test legendre::scalar_paired::tests::partitioned_synthesis_matches_scaled_reference_for_mixed_initial_lanes ... ok
+test legendre::scalar_paired::tests::synthesis_coefficient_preparation_matches_degree_transform_at_boundaries ... ok
+test legendre::spin::tests::low_degree_spin_bases_match_closed_forms ... ok
+test legendre::spin::tests::scaled_spin_basis_matches_binary_scaling_reference ... ok
+test legendre::spin::tests::spin_analysis_scaled_and_inactive_lanes_use_scalar_accumulation ... ok
+test legendre::spin_f32::tests::f32_spin_analysis_falls_back_when_simd_lane_partials_can_overflow ... ok
+test legendre::spin::tests::spin_analysis_simd_accumulation_matches_scalar_blocks_and_tails ... ok
+test legendre::spin_f32::tests::f32_spin_analysis_zero_inputs_use_simd_and_scaled_lanes_use_scalar_accumulation ... ok
+test legendre::spin_f32::tests::f32_spin_pair_normalization_matches_float_magnitude_reference ... ok
+test legendre::spin_f32::tests::f32_spin_analysis_simd_accumulation_matches_scalar_blocks_and_tails ... ok
+test legendre::scalar::tests::high_order_near_polar_recurrence_matches_scalar_across_tail_lanes ... ok
+test spin_transform::tests::benchmark_spin1_hemisphere_pair_dispatch ... ignored, paired spin-1 strategy benchmark; run in release mode on an idle pinned host
+test spin_transform::tests::m3_spin1_t2047_low_order_analysis_matches_q1_and_adjoint ... ignored, M3 selected T2047 spin-1 exact analysis and adjoint check; release mode only
+test spin_transform::tests::m3_spin_t1023_exact_analysis_matches_ducc ... ignored, M3 exact T1023 spin analysis check; run this check in release mode
+test spin_transform::tests::m3_spin_t1023_sparse_synthesis_matches_ducc ... ignored, M3 sparse T1023 synthesis check; run this check in release mode
+test spin_transform::tests::m3_spin_t2047_sparse_synthesis_matches_ducc_and_sectoral_formula ... ignored, M3 sparse T2047 synthesis check; run this check in release mode
+test spin_transform::tests::m3_spin_t511_all_grids_matches_ducc_and_roundtrips ... ignored, M3 high-bandlimit spin check; run this check in release mode
+test spin_transform::tests::m3_spin_three_and_four_t1023_exact_analysis_matches_ducc ... ignored, M3 high-spin exact-analysis T1023 check; run this check in release mode
+test spin_transform::tests::m3_spin_three_and_four_t511_all_grids_match_ducc_and_analytic_fields ... ignored, M3 high-spin all-grid check; run this check in release mode
+test spin_transform::tests::m4_spin2_t1023_synthesis_matches_one_and_eight_threads ... ignored, M4 T1023 spin-2 thread and polar-threshold check; run in release mode
+test legendre::spin_fast::tests::spin1_e_only_conversion_matches_zero_b_at_low_degree_boundaries ... ok
+test legendre::spin_fast::tests::spin1_scalar_conversion_matches_the_spin_recurrence ... ok
+test grid::tests::fft_friendly_nphi_is_minimal_and_sampling_safe ... ok
+test spin_transform::tests::derivative_adjoint_matches_ducc_and_inner_product ... ok
+test spin_transform::tests::clenshaw_curtis_oversampled_spin_analysis_and_adjoint_match_ducc ... ok
+test spin_transform::tests::clenshaw_curtis_gradient_modes_match_ducc_and_adjoint_identities ... ok
+test legendre::scalar::tests::fused_paired_synthesis_matches_scaled_reference_at_high_order ... ok
+test spin_transform::tests::fejer1_spin_analysis_accepts_minimum_even_longitudes ... ok
+test spin_transform::tests::clenshaw_curtis_spin_analysis_accepts_minimum_even_longitudes ... ok
+test spin_transform::tests::fejer1_oversampled_spin_analysis_matches_ducc ... ok
+test spin_transform::tests::clenshaw_curtis_spin_operations_match_ducc_and_adjoint_identities ... ok
+test spin_transform::tests::fejer1_spin_operations_match_ducc_and_adjoint_identities ... ok
+test spin_transform::tests::spin1_paired_coefficient_overflow_falls_back_without_partial_commit ... ok
+test spin_transform::tests::spin1_nonfinite_scalar_conversion_falls_back_to_general_recurrence ... ok
+test legendre::spin_fast::tests::spin2_scalar_conversion_matches_the_spin_recurrence_and_adjoint ... ok
+test spin_transform::tests::spin1_public_synthesis_keeps_large_finite_coefficients_finite ... ok
+test legendre::scalar_f32::tests::runtime_simd_recurrence_matches_scalar_fallback_across_blocks_and_tails ... ok
+test spin_transform::tests::spin1_fused_analysis_stages_both_channels_before_a_late_scaled_fallback ... ok
+test legendre::scalar::tests::dispatched_recurrence_matches_scalar_blocks_and_tails ... ok
+test legendre::scalar::tests::paired_synthesis_transition_matches_scaled_reference_with_tail ... ok
+test legendre::scalar::tests::ducc_paired_degree_recurrence_preserves_coefficient_transform_and_adjoint ... ok
+test spin_transform::tests::spin1_reuse_estimate_gates_analysis_table_by_executing_pool ... ok
+test legendre::scalar::tests::fused_paired_synthesis_matches_scaled_reference_with_vector_tails ... ok
+test legendre::spin_f32::tests::runtime_simd_recurrence_matches_scalar_fallback_across_blocks_and_tails ... ok
+test spin_transform::tests::spin1_scalar_table_analysis_preserves_small_reflected_differences ... ok
+test spin_transform::tests::concurrent_spin1_analysis_initializes_the_reusable_table_safely ... ok
+test spin_transform::tests::spin_adjoint_analysis_rejects_even_longitude_nyquist_order ... ok
+test spin_transform::tests::spin_adjoint_operators_match_ducc_and_inner_products ... ok
+test spin_transform::tests::spin_analysis_accepts_minimum_odd_even_longitudes_and_rectangular_layouts ... ok
+test spin_transform::tests::spin_gradient_and_derivative_modes_match_their_definitions ... ok
+test spin_transform::tests::spin_one_gl_matches_ducc_0410_and_weighted_analysis ... ok
+test spin_transform::tests::spin_operations_reject_unsupported_spin_and_invalid_coefficients ... ok
+test spin_transform::tests::spin_synthesis_adjoints_accept_even_longitude_nyquist_order ... ok
+test spin_transform::tests::spin1_synthesis_skips_high_orders_in_a_clenshaw_curtis_pole_segment ... ok
+test spin_transform::tests::spin1_gl_paired_analysis_falls_back_for_extreme_inputs ... ok
+test spin_transform::tests::spin_three_and_four_match_ducc_analytic_fields_and_adjoint_identities ... ok
+test spin_transform::tests::spin_two_gl_matches_ducc_0410_and_weighted_analysis ... ok
+test spin_transform::tests::prepared_workspace_matches_fresh_workspace_for_spin1_operations_all_grids ... ok
+test spin_transform::tests::spin_transform_matches_between_one_and_two_rayon_threads ... ok
+test spin_transform::tests::spin2_scalar_fast_analysis_uses_scaled_path_for_unsafe_channel_products ... ok
+test spin_transform::tests::spin2_scalar_fast_analysis_honors_the_polar_order_cutoff ... ok
+test spin_transform::tests::spin1_scalar_fast_analysis_honors_the_polar_order_cutoff ... ok
+test transform::tests::active_ring_weighted_order_midpoint_balances_active_work ... ok
+test transform::tests::active_ring_order_work_prefix_checks_length_and_arithmetic ... ok
+test transform::tests::active_order_capacity_splits_follow_work_and_preserve_equal_splits ... ok
+test transform::tests::capacity_target_work_uses_checked_quotient_and_remainder ... ok
+test transform::tests::clenshaw_curtis_analysis_matches_ducc_without_initial_resampling ... ok
+test spin_transform::tests::spin1_hemisphere_pair_selector_matches_measured_domain ... ok
+test transform::tests::clenshaw_curtis_deriv1_and_adjoint_match_ducc ... ok
+test transform::tests::clenshaw_curtis_minimum_even_longitude_count_matches_ducc ... ok
+test transform::tests::clenshaw_curtis_scalar_operations_match_ducc_and_adjoint_identities ... ok
+test spin_transform::tests::spin1_scalar_synthesis_compacts_mixed_high_order_cutoff_blocks ... ok
+test transform::tests::active_ring_order_work_prefix_matches_ring_scan_for_every_subinterval ... ok
+test transform::tests::fejer1_analysis_accepts_minimum_even_longitudes ... ok
+test transform::tests::fejer1_scalar_operations_match_ducc_and_adjoint_identities ... ok
+test transform::tests::fejer1_oversampled_analysis_matches_ducc ... ok
+test spin_transform::tests::spin2_scalar_fast_synthesis_honors_full_and_mixed_polar_blocks ... ok
+test transform::tests::m3_scalar_t511_t1023_t2047_all_grids_matches_ducc_and_closed_form ... ignored, M3 high-bandlimit acceptance; run this check in release mode
+test transform::tests::m5_analysis_leaf_imbalance_profile ... ignored, M5 per-leaf scheduling profile; run this diagnostic in release mode
+test transform::tests::m5_analysis_phase_profile ... ignored, M5 current-source analysis phase profile; run this diagnostic in release mode
+test transform::tests::m5_synthesis_phase_profile ... ignored, M5 current-source synthesis phase profile; run this diagnostic in release mode
+test transform::tests::operations_reject_undersampling_buffers_and_unimplemented_spin ... ok
+test spin_transform::tests::spin1_gl_paired_analysis_matches_full_latitude_recurrence ... ok
+test spin_transform::tests::spin1_fused_analysis_falls_back_when_only_q_products_are_unsafe ... ok
+test spin_transform::tests::spin1_parallel_coefficient_cache_matches_uncached_synthesis ... ok
+test transform::tests::precomputed_scalar_synthesis_applies_asymmetric_mirrored_cutoffs ... ok
+test spin_transform::tests::spin1_table_synthesis_skips_table_build_for_extreme_finite_coefficients ... ok
+test transform::tests::rayon_groups_match_one_thread_for_synthesis_and_analysis ... ok
+test transform::tests::prepared_workspace_matches_fresh_workspace_for_scalar_operations_all_grids ... ok
+test transform::tests::fine_synthesis_groups_follow_the_measured_spin_and_grid_policy ... ok
+test transform::tests::scalar_adjoint_operators_match_ducc_and_inner_products ... ok
+test transform::tests::scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes ... ok
+test transform::tests::scalar_analysis_matches_ducc_0410_reference ... ok
+test transform::tests::scalar_analysis_recovers_closed_form_fields_at_minimum_sampling ... ok
+test spin_transform::tests::spin1_adjoint_synthesis_does_not_build_analysis_table ... ok
+test transform::tests::scalar_reuse_estimate_uses_conservative_atmospheric_break_even ... ok
+test transform::tests::scalar_reuse_estimate_gates_tables_at_measured_break_even ... ok
+test transform::tests::scalar_reuse_estimate_uses_conservative_overresolved_break_even ... ok
+test transform::tests::analysis_fft_workspace_respects_shape_threshold_and_pool_migration ... ok
+test transform::tests::scalar_synthesis_adjoint_accepts_even_longitude_nyquist_order ... ok
+test transform::tests::precomputed_scalar_table_supports_spin1_scalar_degree_extension ... ok
+test transform::tests::scalar_synthesis_matches_ducc_0410_reference ... ok
+test transform::tests::scalar_synthesis_matches_independent_low_degree_harmonics ... ok
+test transform::tests::scalar_strategy_bounds_oversampled_tables_by_operation_and_truncation ... ok
+test transform::tests::scalar_t1_synthesis_keeps_extreme_finite_harmonic_values_finite ... ok
+test transform::tests::precomputed_scalar_table_respects_bandlimit_and_grid_bounds ... ok
+test spin_transform::tests::scalar_legendre_table_is_materialized_only_for_standard_scalar_operations ... ok
+test transform::tests::synthesis_combines_the_even_longitude_nyquist_mode ... ok
+test transform::tests::synthesis_workspace_from_larger_pool_is_safe_in_smaller_pool ... ok
+test spin_transform::tests::spin1_reuse_estimate_keeps_short_synthesis_on_recurrence ... ok
+test transform::tests::scalar_table_initializes_safely_for_concurrent_cross_pool_operations ... ok
+test transform::tests::fejer1_t255_sectoral_analysis_matches_closed_form ... ok
+test spin_transform::tests::spin1_scalar_table_analysis_falls_back_for_extreme_finite_inputs ... ok
+test transform::tests::scalar_reuse_estimate_counts_adjoint_calls_by_execution_direction ... ok
+test transform::tests::weighted_order_midpoint_minimizes_coefficient_work ... ok
+test transform::tests::scalar_strategy_selects_against_the_executing_pool ... ok
+test transform::tests::t255_mixed_synthesis_matches_ducc_0410_samples ... ok
+test transform::tests::scalar_synthesis_compacts_mixed_high_order_cutoff_blocks ... ok
+test transform::tests::clenshaw_curtis_t255_sectoral_analysis_matches_closed_form ... ok
+test transform::tests::workspace_ring_groups_add_parallelism_for_underfilled_synthesis ... ok
+test spin_transform::tests::spin1_scalar_transition_preserves_the_sine_cutoff_boundary ... ok
+test transform::tests::workspace_sizes_analysis_scratch_for_order_parallelism ... ok
+test transform::tests::t255_sectoral_synthesis_matches_ducc_0410_samples ... ok
+test transform::tests::precomputed_scalar_table_uses_scaled_recurrence_for_extreme_inputs ... ok
+test spin_transform::tests::t63_scalar_and_spin1_synthesis_match_one_and_eight_threads ... ok
+test spin_transform::tests::spin1_analysis_table_selection_tracks_thread_pool_and_bandlimit ... ok
+test transform::tests::scalar_t1023_transition_fallback_matches_scaled_reference_for_extreme_coefficients ... ok
+test transform::tests::t191_analysis_compaction_matches_ducc_all_grids ... ok
+test transform::tests::analysis_capacity_splits_match_q1_across_pool_sizes ... ok
+test spin_transform::tests::spin1_max_band_analysis_uses_recurrence_for_one_two_four_eight_and_sixteen_threads ... ok
+test transform::tests::scalar_t511_gl_analysis_matches_ducc_and_analytic_sectoral_field ... ok
+test spin_transform::tests::spin1_single_thread_analysis_table_remains_selected_through_t224 ... ok
+test transform::tests::t255_analysis_matches_ducc_0410_coefficients ... ok
+test transform::tests::fine_scalar_synthesis_groups_preserve_high_band_adjoint_identities ... ok
+test transform::tests::precomputed_scalar_gl_matches_recurrence_for_all_four_operators ... ok
+test spin_transform::tests::spin1_compacted_analysis_matches_between_one_and_eight_rayon_threads ... ok
+test spin_transform::tests::spin_t255_gl_matches_ducc_samples_and_coefficients ... ok
+test spin_transform::tests::spin1_gl_table_synthesis_matches_recurrence_and_adjoint ... ok
+test spin_transform::tests::spin1_scalar_fast_synthesis_matches_general_channel_cases ... ok
+test spin_transform::tests::spin1_synthesis_skips_fully_excluded_high_order_segments_for_all_modes ... ok
+test spin_transform::tests::spin1_fine_synthesis_groups_preserve_t720_adjoint_identities ... ok
+test spin_transform::tests::spin1_hemisphere_pair_synthesis_matches_general_recurrence ... ok
+test spin_transform::tests::spin1_scalar_transition_splits_polar_lanes_and_matches_general ... ok
+test transform::tests::scalar_active_ring_schedule_matches_one_and_eight_threads ... ok
+test spin_transform::tests::deriv1_scalar_conversion_matches_general_recurrence_and_analytic_fields ... ok
+test spin_transform::tests::spin1_standard_analysis_scalar_conversion_matches_general_and_adjoint_on_all_grids ... ok
+test spin_transform::tests::spin1_scalar_conversion_matches_general_on_all_grids has been running for over 60 seconds
+test transform::tests::t1023_workspace_pool_migration_records_active_synthesis_workers has been running for over 60 seconds
+test transform::tests::t1023_workspace_pool_migration_records_active_synthesis_workers ... ok
+test spin_transform::tests::spin1_scalar_conversion_matches_general_on_all_grids ... ok
+
+test result: ok. 188 passed; 0 failed; 13 ignored; 0 measured; 0 filtered out; finished in 67.38s
+
+     Running tests/f32.rs (target/debug/deps/f32-c26c37d96ae61e0e)
+
+running 12 tests
+test f32_t1023_scalar_and_spin1_standard_match_ducc_0410 ... ignored, opt-in T1023 float32 comparison with pinned DUCC 0.41.0 references
+test f32_cc_scalar_synthesis_is_constant_at_the_south_pole ... ok
+test f32_spin_one_gl_synthesis_matches_ducc_0410 ... ok
+test f32_derivative_synthesis_matches_analytic_harmonic_and_adjoint_identity ... ok
+test f32_rectangular_even_analysis_and_even_nyquist_synthesis_are_supported ... ok
+test f32_scalar_synthesis_and_analysis_match_ducc_0410_on_all_grids ... ok
+test f32_longitude_phase_handles_large_finite_phi0_for_scalar_and_spin ... ok
+test f32_scalar_analytic_field_and_adjoint_identities_hold_on_all_grids ... ok
+test f32_spin_1_through_4_operations_and_adjoint_identities_hold_on_all_grids ... ok
+test f32_t127_sectoral_synthesis_remains_finite_and_matches_analytic_values ... ok
+test f32_t127_spin1_gl_sparse_synthesis_matches_ducc_0410 ... ok
+test f32_spin1_gl_t511_analysis_matches_ducc_0410 ... ok
+
+test result: ok. 11 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.59s
+
+     Running unittests src/lib.rs (target/debug/deps/_rustsht-2dcf5c67b0ee93e0)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests rustsht
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

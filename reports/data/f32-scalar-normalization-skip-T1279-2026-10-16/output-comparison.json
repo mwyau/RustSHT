@@ -1,0 +1,14 @@
+{
+  "spin0-synthesis-channel0.f32": {
+    "elements": 3276800,
+    "bitwise_identical": true,
+    "relative_l2_difference": 0.0,
+    "max_absolute_difference": 0.0
+  },
+  "spin0-analysis-channel0.c32": {
+    "elements": 819840,
+    "bitwise_identical": true,
+    "relative_l2_difference": 0.0,
+    "max_absolute_difference": 0.0
+  }
+}
