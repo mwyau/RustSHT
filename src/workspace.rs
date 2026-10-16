@@ -44,7 +44,7 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
     #[cfg(feature = "parallel")]
     pub(crate) fft_worker_workspaces: Vec<RealFftWorkspace<T>>,
     #[cfg(all(test, feature = "parallel"))]
-    analysis_phase_probe: Option<AnalysisPhaseProbe>,
+    transform_phase_probe: Option<TransformPhaseProbe>,
 }
 
 pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
@@ -110,30 +110,30 @@ pub(crate) struct AnalysisLeafObservation {
 
 #[cfg(all(test, feature = "parallel"))]
 #[derive(Clone, Debug)]
-pub(crate) struct AnalysisPhaseObservation {
+pub(crate) struct TransformPhaseObservation {
     pub(crate) phase: &'static str,
     pub(crate) elapsed_ns: u128,
 }
 
 #[cfg(all(test, feature = "parallel"))]
-pub(crate) type AnalysisPhaseProbe = Arc<Mutex<Vec<AnalysisPhaseObservation>>>;
+pub(crate) type TransformPhaseProbe = Arc<Mutex<Vec<TransformPhaseObservation>>>;
 
 #[cfg(all(test, feature = "parallel"))]
-pub(crate) fn record_analysis_phase(
-    probe: &Option<AnalysisPhaseProbe>,
+pub(crate) fn record_transform_phase(
+    probe: &Option<TransformPhaseProbe>,
     phase: &'static str,
     started: Instant,
 ) {
     let Some(probe) = probe else {
         return;
     };
-    let observation = AnalysisPhaseObservation {
+    let observation = TransformPhaseObservation {
         phase,
         elapsed_ns: started.elapsed().as_nanos(),
     };
     probe
         .lock()
-        .expect("analysis phase profile is not poisoned")
+        .expect("transform phase profile is not poisoned")
         .push(observation);
 }
 
@@ -429,15 +429,17 @@ impl<T: ShtScalar> ShtWorkspace<T> {
     }
 
     #[cfg(all(test, feature = "parallel"))]
-    pub(crate) fn observe_analysis_phases(&mut self) -> Arc<Mutex<Vec<AnalysisPhaseObservation>>> {
+    pub(crate) fn observe_transform_phases(
+        &mut self,
+    ) -> Arc<Mutex<Vec<TransformPhaseObservation>>> {
         let probe = Arc::new(Mutex::new(Vec::new()));
-        self.analysis_phase_probe = Some(Arc::clone(&probe));
+        self.transform_phase_probe = Some(Arc::clone(&probe));
         probe
     }
 
     #[cfg(all(test, feature = "parallel"))]
-    pub(crate) fn analysis_phase_probe(&self) -> Option<AnalysisPhaseProbe> {
-        self.analysis_phase_probe.clone()
+    pub(crate) fn transform_phase_probe(&self) -> Option<TransformPhaseProbe> {
+        self.transform_phase_probe.clone()
     }
 
     #[cfg(feature = "parallel")]
@@ -574,7 +576,7 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             #[cfg(feature = "parallel")]
             fft_worker_workspaces: Vec::new(),
             #[cfg(all(test, feature = "parallel"))]
-            analysis_phase_probe: None,
+            transform_phase_probe: None,
         })
     }
 }

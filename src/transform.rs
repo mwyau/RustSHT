@@ -525,6 +525,11 @@ impl<T: ShtScalar> ShtPlan<T> {
         check_len("map output", self.sample_count, map.len())?;
         self.check_workspace(workspace)?;
 
+        #[cfg(all(test, feature = "parallel"))]
+        let phase_probe = workspace.transform_phase_probe();
+        #[cfg(all(test, feature = "parallel"))]
+        let mut phase_started = std::time::Instant::now();
+
         let ntheta = self.grid.ntheta();
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
@@ -540,6 +545,15 @@ impl<T: ShtScalar> ShtPlan<T> {
             );
         }
         workspace.spectra.fill(Complex::new(T::zero(), T::zero()));
+        #[cfg(all(test, feature = "parallel"))]
+        {
+            crate::workspace::record_transform_phase(
+                &phase_probe,
+                "latitude setup and spectrum clear",
+                phase_started,
+            );
+            phase_started = std::time::Instant::now();
+        }
         if self.scalar_legendre_strategy_with_capacity(
             LegendreOperation::Synthesis,
             workspace.execution_capacity,
@@ -624,6 +638,16 @@ impl<T: ShtScalar> ShtPlan<T> {
             )?;
         }
 
+        #[cfg(all(test, feature = "parallel"))]
+        {
+            crate::workspace::record_transform_phase(
+                &phase_probe,
+                "Legendre recurrence and spectral accumulation",
+                phase_started,
+            );
+            phase_started = std::time::Instant::now();
+        }
+
         for ring in 0..ntheta {
             let start = ring * spectrum_len;
             let ring_spectrum = &workspace.spectra[start..start + spectrum_len];
@@ -632,6 +656,12 @@ impl<T: ShtScalar> ShtPlan<T> {
             let output_start = ring * nphi;
             map[output_start..output_start + nphi].copy_from_slice(&workspace.row);
         }
+        #[cfg(all(test, feature = "parallel"))]
+        crate::workspace::record_transform_phase(
+            &phase_probe,
+            "inverse longitude FFT and map writeback",
+            phase_started,
+        );
         Ok(())
     }
 
@@ -1208,7 +1238,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         #[cfg(all(test, feature = "parallel"))]
         let mut phase_started = std::time::Instant::now();
         #[cfg(all(test, feature = "parallel"))]
-        let phase_probe = workspace.analysis_phase_probe();
+        let phase_probe = workspace.transform_phase_probe();
         let scalar_table_selected = self.scalar_legendre_strategy_with_capacity(
             LegendreOperation::Analysis,
             workspace.execution_capacity,
@@ -1218,7 +1248,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let mut scalar_table_inputs_safe = true;
         #[cfg(all(test, feature = "parallel"))]
         {
-            crate::workspace::record_analysis_phase(
+            crate::workspace::record_transform_phase(
                 &phase_probe,
                 "strategy selection",
                 phase_started,
@@ -1256,7 +1286,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         }
         #[cfg(all(test, feature = "parallel"))]
         {
-            crate::workspace::record_analysis_phase(&phase_probe, "forward FFT", phase_started);
+            crate::workspace::record_transform_phase(&phase_probe, "forward FFT", phase_started);
             phase_started = std::time::Instant::now();
         }
 
@@ -1307,7 +1337,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         };
         #[cfg(all(test, feature = "parallel"))]
         {
-            crate::workspace::record_analysis_phase(
+            crate::workspace::record_transform_phase(
                 &phase_probe,
                 "resampling and latitude setup",
                 phase_started,
@@ -1365,7 +1395,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         }
         #[cfg(all(test, feature = "parallel"))]
         {
-            crate::workspace::record_analysis_phase(
+            crate::workspace::record_transform_phase(
                 &phase_probe,
                 "order spectrum preparation",
                 phase_started,
@@ -1379,7 +1409,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         };
         #[cfg(all(test, feature = "parallel"))]
         {
-            crate::workspace::record_analysis_phase(
+            crate::workspace::record_transform_phase(
                 &phase_probe,
                 "Legendre table retrieval",
                 phase_started,
@@ -1390,7 +1420,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         alm.fill(Complex::new(T::zero(), T::zero()));
         #[cfg(all(test, feature = "parallel"))]
         {
-            crate::workspace::record_analysis_phase(
+            crate::workspace::record_transform_phase(
                 &phase_probe,
                 "coefficient initialization",
                 phase_started,
@@ -1403,7 +1433,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             self.analyze_scalar_table(order_spectra, alm, table, workspace.execution_capacity);
             #[cfg(all(test, feature = "parallel"))]
             {
-                crate::workspace::record_analysis_phase(
+                crate::workspace::record_transform_phase(
                     &phase_probe,
                     "Legendre recurrence and accumulation",
                     phase_started,
@@ -1418,7 +1448,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 alm[index].im = T::zero();
             }
             #[cfg(all(test, feature = "parallel"))]
-            crate::workspace::record_analysis_phase(
+            crate::workspace::record_transform_phase(
                 &phase_probe,
                 "coefficient cleanup",
                 phase_started,
@@ -1452,7 +1482,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 };
                 #[cfg(all(test, feature = "parallel"))]
                 {
-                    crate::workspace::record_analysis_phase(
+                    crate::workspace::record_transform_phase(
                         &phase_probe,
                         "order work prefix",
                         prefix_started,
@@ -1474,7 +1504,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 )?;
                 #[cfg(all(test, feature = "parallel"))]
                 {
-                    crate::workspace::record_analysis_phase(
+                    crate::workspace::record_transform_phase(
                         &phase_probe,
                         "Legendre recurrence and accumulation",
                         phase_started,
@@ -1484,7 +1514,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             } else {
                 #[cfg(all(test, feature = "parallel"))]
                 {
-                    crate::workspace::record_analysis_phase(
+                    crate::workspace::record_transform_phase(
                         &phase_probe,
                         "order work prefix",
                         phase_started,
@@ -1505,7 +1535,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 )?;
                 #[cfg(all(test, feature = "parallel"))]
                 {
-                    crate::workspace::record_analysis_phase(
+                    crate::workspace::record_transform_phase(
                         &phase_probe,
                         "Legendre recurrence and accumulation",
                         phase_started,
@@ -1538,7 +1568,11 @@ impl<T: ShtScalar> ShtPlan<T> {
             alm[index].im = T::zero();
         }
         #[cfg(all(test, feature = "parallel"))]
-        crate::workspace::record_analysis_phase(&phase_probe, "coefficient cleanup", phase_started);
+        crate::workspace::record_transform_phase(
+            &phase_probe,
+            "coefficient cleanup",
+            phase_started,
+        );
         Ok(())
     }
 

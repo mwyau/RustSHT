@@ -1,0 +1,44 @@
+Measurement: ignored high-resolution synthesis phase diagnostic
+Source HEAD: 8332b40afad09f210a173ce02e90393c34c84988
+Tracked worktree diff SHA-256: b44e6ab74230c43c53441489e2b183df0f485d08c1a4ad7d197ca0a79e48235e  -
+Branch: opt/sht-kernel-performance
+Working tree status:
+ M reports/atmospheric-resolution-performance-ectrans-2026-10-16.md
+ M reports/data/atmospheric-resolution-2026-10-15/extension-results-2026-10-16.md
+ M src/spin_transform.rs
+ M src/transform.rs
+ M src/transform/tests.rs
+ M src/workspace.rs
+?? reports/data/atmospheric-resolution-2026-10-15/profiles/synthesis-phase-profile-first-attempt-invalid-m0-metadata.txt
+?? reports/data/atmospheric-resolution-2026-10-15/profiles/synthesis-phase-profile-first-attempt-invalid-m0.log
+?? reports/data/atmospheric-resolution-2026-10-15/profiles/synthesis-phase-profile-metadata.txt
+?? reports/data/atmospheric-resolution-2026-10-15/run-synthesis-phase-profile.sh
+Test binary SHA-256 (after cargo rebuilt the current diagnostic sources):
+1af9e844f799d31c733de351a1faf0d8dacf0b7787d81b38f85fbde77f3797f2  target/release/deps/rustsht-159837ac1c3bd1f7
+Compiler:
+rustc 1.99.0 (b940084d7 2026-09-28)
+binary: rustc
+commit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4
+commit-date: 2026-09-28
+host: x86_64-unknown-linux-gnu
+release: 1.99.0
+LLVM version: 23.1.1
+cargo 1.99.0 (5f94df478 2026-08-27)
+CPU model and topology:
+CPU(s):                                  32
+On-line CPU(s) list:                     0-31
+Model name:                              AMD Ryzen 9 5950X 16-Core Processor
+Thread(s) per core:                      2
+Core(s) per socket:                      16
+Socket(s):                               1
+CPU(s) scaling MHz:                      65%
+Flags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local user_shstk clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm debug_swap
+NUMA node0 CPU(s):                       0-31
+Benchmark affinity: CPUs 8-15 (taskset applied to cargo test process)
+Build: release profile; no RUSTFLAGS or target-cpu override
+DUCC reference in related report: ducc0 0.41.0, revision c1ed01b8fda69d2a378190f0915f1a19762dddbf
+Host load:
+ 00:49:30 up 10 days, 12:38,  9 users,  load average: 2.50, 2.28, 2.59
+Concurrent compute processes:
+3444620  30 99.6 rustfft-721ac07 /dev/shm/rustsht-fft-m18-target/release/deps/rustfft-721ac07477409fe7 bench-native-sht
+3444680  31  0.0 rg              rg cargo|rustc|rustsht|pytest

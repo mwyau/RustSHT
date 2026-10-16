@@ -758,7 +758,7 @@ fn m5_analysis_phase_profile() {
             .build()
             .unwrap();
         let mut workspace = pool.install(|| plan.workspace()).unwrap();
-        let profile = workspace.observe_analysis_phases();
+        let profile = workspace.observe_transform_phases();
         let sample_count = plan.sample_count;
         let mut first = vec![0.0; sample_count];
         let mut second = vec![0.0; sample_count];
@@ -809,6 +809,112 @@ fn m5_analysis_phase_profile() {
             for phase in phases {
                 eprintln!(
                     "PHASE spin={spin} T{lmax} q{thread_count} sample={} name={:?} elapsed_ms={:.3}",
+                    sample + 1,
+                    phase.phase,
+                    phase.elapsed_ns as f64 / 1e6,
+                );
+            }
+        }
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+#[ignore = "M5 current-source synthesis phase profile; run this diagnostic in release mode"]
+fn m5_synthesis_phase_profile() {
+    for (spin, lmax, thread_count) in [
+        (0, 720, 1),
+        (0, 720, 8),
+        (0, 1023, 1),
+        (0, 1023, 8),
+        (0, 1279, 1),
+        (0, 1279, 8),
+        (0, 2047, 1),
+        (0, 2047, 8),
+        (1, 720, 1),
+        (1, 720, 8),
+        (1, 1023, 1),
+        (1, 1023, 8),
+        (1, 1279, 1),
+        (1, 1279, 8),
+        (1, 2047, 1),
+        (1, 2047, 8),
+    ] {
+        let ntheta = lmax + 1;
+        let nphi = GridSpec::fft_friendly_nphi(lmax).unwrap();
+        let plan = ShtPlan::new(
+            GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, 0.37).unwrap(),
+            HarmonicSpec::new(lmax, lmax, spin).unwrap(),
+        )
+        .unwrap();
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(thread_count)
+            .build()
+            .unwrap();
+        let mut workspace = pool.install(|| plan.workspace()).unwrap();
+        let profile = workspace.observe_transform_phases();
+        let sample_count = plan.sample_count;
+        let mut first = vec![0.0; sample_count];
+        let mut second = (spin != 0).then(|| vec![0.0; sample_count]);
+        let mut e_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        let mut b_alm = (spin != 0).then(|| vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()]);
+        for m in 0..=lmax {
+            for degree in m.max(spin)..=lmax {
+                let phase = (degree * 31 + m * 17) as f64 * 0.001_37;
+                let value = Complex64::new(
+                    phase.sin() * 1e-4,
+                    if m == 0 { 0.0 } else { phase.cos() * 1e-4 },
+                );
+                let index = plan.harmonics.index(degree, m).unwrap();
+                e_alm[index] = value;
+                if let Some(b_alm) = &mut b_alm {
+                    b_alm[index] =
+                        Complex64::new(value.im * 0.7, if m == 0 { 0.0 } else { -value.re * 0.7 });
+                }
+            }
+        }
+
+        let mut run = || {
+            if spin == 0 {
+                plan.synthesis_into(&e_alm, &mut first, &mut workspace)
+                    .unwrap();
+            } else {
+                plan.synthesis_spin_into(
+                    &e_alm,
+                    b_alm.as_deref().unwrap(),
+                    &mut first,
+                    second.as_deref_mut().unwrap(),
+                    &mut workspace,
+                )
+                .unwrap();
+            }
+        };
+        pool.install(&mut run);
+
+        for sample in 0..5 {
+            profile
+                .lock()
+                .expect("transform phase profile is not poisoned")
+                .clear();
+            let started = std::time::Instant::now();
+            pool.install(&mut run);
+            let wall_ns = started.elapsed().as_nanos();
+            let phases = profile
+                .lock()
+                .expect("transform phase profile is not poisoned")
+                .clone();
+            assert!(!phases.is_empty(), "no synthesis phases were recorded");
+            let phase_ns = phases.iter().map(|phase| phase.elapsed_ns).sum::<u128>();
+            eprintln!(
+                "SYNTHESIS_PHASE_PROFILE spin={spin} T{lmax} grid={ntheta}x{nphi} q{thread_count} sample={} wall_ms={:.3} phase_sum_ms={:.3} unmeasured_ms={:.3}",
+                sample + 1,
+                wall_ns as f64 / 1e6,
+                phase_ns as f64 / 1e6,
+                (wall_ns.saturating_sub(phase_ns)) as f64 / 1e6,
+            );
+            for phase in phases {
+                eprintln!(
+                    "SYNTHESIS_PHASE spin={spin} T{lmax} grid={ntheta}x{nphi} q{thread_count} sample={} name={:?} elapsed_ms={:.3}",
                     sample + 1,
                     phase.phase,
                     phase.elapsed_ns as f64 / 1e6,
