@@ -1,0 +1,128 @@
+Five alternating release-process pairs for f32 spin-1 T511 GL; one warmup plus five samples per operation.
+utc_start=2026-10-16T02:29:24Z
+affinity=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]
+loadavg_start=(2.521484375, 4.5947265625, 4.697265625)
+baseline_commit=a763ad84aaf60a14933bba2b58fea2876c9684d8
+
+pair=1 role=baseline_a763ad8 returncode=0 wall_seconds=13.067215
+spin-1 T511; GL 512x1025; f32; 1 vs 8 threads; one warmup, 5 samples, median
+synthesis_one_thread_samples_ms: 1013.260 1031.109 1013.658 1006.508 1004.774
+synthesis_rayon_samples_ms: 147.783 150.746 150.769 151.065 160.268
+analysis_one_thread_samples_ms: 843.836 843.297 843.536 847.612 856.686
+analysis_rayon_samples_ms: 164.936 165.842 161.522 161.193 163.290
+synthesis_one_thread_ms=1013.260
+synthesis_rayon_ms=150.769
+analysis_one_thread_ms=843.836
+analysis_rayon_ms=163.290
+estimated_core_numeric_arrays_MiB=12.13
+
+pair=1 role=candidate_worktree returncode=0 wall_seconds=12.968813
+spin-1 T511; GL 512x1025; f32; 1 vs 8 threads; one warmup, 5 samples, median
+synthesis_one_thread_samples_ms: 1001.950 1011.131 1009.773 1008.396 1009.419
+synthesis_rayon_samples_ms: 146.728 151.989 150.916 162.146 153.059
+analysis_one_thread_samples_ms: 829.293 834.269 848.842 830.668 831.077
+analysis_rayon_samples_ms: 161.556 169.324 159.560 159.335 165.302
+synthesis_one_thread_ms=1009.419
+synthesis_rayon_ms=151.989
+analysis_one_thread_ms=831.077
+analysis_rayon_ms=161.556
+estimated_core_numeric_arrays_MiB=12.13
+
+pair=2 role=candidate_worktree returncode=0 wall_seconds=12.895960
+spin-1 T511; GL 512x1025; f32; 1 vs 8 threads; one warmup, 5 samples, median
+synthesis_one_thread_samples_ms: 1014.508 1013.581 1004.271 993.520 992.498
+synthesis_rayon_samples_ms: 152.244 156.217 152.539 154.317 152.863
+analysis_one_thread_samples_ms: 825.191 826.188 830.394 822.721 826.020
+analysis_rayon_samples_ms: 158.084 162.792 157.335 164.005 157.486
+synthesis_one_thread_ms=1004.271
+synthesis_rayon_ms=152.863
+analysis_one_thread_ms=826.020
+analysis_rayon_ms=158.084
+estimated_core_numeric_arrays_MiB=12.13
+
+pair=2 role=baseline_a763ad8 returncode=0 wall_seconds=13.001525
+spin-1 T511; GL 512x1025; f32; 1 vs 8 threads; one warmup, 5 samples, median
+synthesis_one_thread_samples_ms: 993.462 994.151 1020.815 1004.082 1006.617
+synthesis_rayon_samples_ms: 147.390 153.257 149.624 157.134 149.460
+analysis_one_thread_samples_ms: 845.843 841.300 849.113 846.344 839.833
+analysis_rayon_samples_ms: 162.410 159.870 169.576 169.845 165.574
+synthesis_one_thread_ms=1004.082
+synthesis_rayon_ms=149.624
+analysis_one_thread_ms=845.843
+analysis_rayon_ms=165.574
+estimated_core_numeric_arrays_MiB=12.13
+
+pair=3 role=baseline_a763ad8 returncode=0 wall_seconds=13.038227
+spin-1 T511; GL 512x1025; f32; 1 vs 8 threads; one warmup, 5 samples, median
+synthesis_one_thread_samples_ms: 1002.179 1001.097 1003.406 1008.119 1002.890
+synthesis_rayon_samples_ms: 147.005 148.434 148.294 150.890 147.337
+analysis_one_thread_samples_ms: 842.195 844.004 848.086 866.360 854.740
+analysis_rayon_samples_ms: 163.146 162.193 164.460 160.558 166.509
+synthesis_one_thread_ms=1002.890
+synthesis_rayon_ms=148.294
+analysis_one_thread_ms=848.086
+analysis_rayon_ms=163.146
+estimated_core_numeric_arrays_MiB=12.13
+
+pair=3 role=candidate_worktree returncode=0 wall_seconds=12.854712
+spin-1 T511; GL 512x1025; f32; 1 vs 8 threads; one warmup, 5 samples, median
+synthesis_one_thread_samples_ms: 1000.261 1014.490 995.128 992.858 994.490
+synthesis_rayon_samples_ms: 151.104 149.344 148.801 147.764 147.330
+analysis_one_thread_samples_ms: 832.793 824.634 826.559 824.740 825.980
+analysis_rayon_samples_ms: 157.483 164.708 166.921 157.702 158.221
+synthesis_one_thread_ms=995.128
+synthesis_rayon_ms=148.801
+analysis_one_thread_ms=825.980
+analysis_rayon_ms=158.221
+estimated_core_numeric_arrays_MiB=12.13
+
+pair=4 role=candidate_worktree returncode=0 wall_seconds=12.991206
+spin-1 T511; GL 512x1025; f32; 1 vs 8 threads; one warmup, 5 samples, median
+synthesis_one_thread_samples_ms: 1010.942 1016.235 1014.182 1031.062 1015.562
+synthesis_rayon_samples_ms: 149.816 150.073 150.578 149.251 149.119
+analysis_one_thread_samples_ms: 832.459 832.218 828.521 830.203 830.588
+analysis_rayon_samples_ms: 176.864 158.000 164.527 171.113 160.591
+synthesis_one_thread_ms=1015.562
+synthesis_rayon_ms=149.816
+analysis_one_thread_ms=830.588
+analysis_rayon_ms=164.527
+estimated_core_numeric_arrays_MiB=12.13
+
+pair=4 role=baseline_a763ad8 returncode=0 wall_seconds=13.045314
+spin-1 T511; GL 512x1025; f32; 1 vs 8 threads; one warmup, 5 samples, median
+synthesis_one_thread_samples_ms: 1010.027 1017.500 1011.623 1016.795 1013.903
+synthesis_rayon_samples_ms: 151.109 151.580 148.955 147.542 148.033
+analysis_one_thread_samples_ms: 849.568 839.255 837.255 839.399 862.731
+analysis_rayon_samples_ms: 159.803 159.325 161.378 160.073 162.295
+synthesis_one_thread_ms=1013.903
+synthesis_rayon_ms=148.955
+analysis_one_thread_ms=839.399
+analysis_rayon_ms=160.073
+estimated_core_numeric_arrays_MiB=12.13
+
+pair=5 role=baseline_a763ad8 returncode=0 wall_seconds=13.040529
+spin-1 T511; GL 512x1025; f32; 1 vs 8 threads; one warmup, 5 samples, median
+synthesis_one_thread_samples_ms: 1001.442 1008.700 1002.606 997.052 1013.963
+synthesis_rayon_samples_ms: 146.710 157.006 151.880 153.222 152.981
+analysis_one_thread_samples_ms: 864.681 847.934 847.220 839.526 843.641
+analysis_rayon_samples_ms: 160.069 159.892 161.202 164.009 166.741
+synthesis_one_thread_ms=1002.606
+synthesis_rayon_ms=152.981
+analysis_one_thread_ms=847.220
+analysis_rayon_ms=161.202
+estimated_core_numeric_arrays_MiB=12.13
+
+pair=5 role=candidate_worktree returncode=0 wall_seconds=12.884261
+spin-1 T511; GL 512x1025; f32; 1 vs 8 threads; one warmup, 5 samples, median
+synthesis_one_thread_samples_ms: 1001.957 1006.853 999.793 1004.187 1014.330
+synthesis_rayon_samples_ms: 147.034 149.567 151.194 153.958 149.976
+analysis_one_thread_samples_ms: 833.009 829.005 826.387 827.700 824.497
+analysis_rayon_samples_ms: 159.947 156.821 157.561 158.192 157.580
+synthesis_one_thread_ms=1004.187
+synthesis_rayon_ms=149.976
+analysis_one_thread_ms=827.700
+analysis_rayon_ms=157.580
+estimated_core_numeric_arrays_MiB=12.13
+
+loadavg_end=(2.49365234375, 3.9677734375, 4.4560546875)
+utc_end=2026-10-16T02:31:34Z
