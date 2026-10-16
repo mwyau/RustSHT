@@ -1,0 +1,33 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "Full SHT FFT-target comparison of the compact paired-outer AVX2 radix-103 kernel against the committed M26 baseline",
+    "candidate_source_base": "RustSHT-FFT M26 commit 5d9264871972756a6cd7323e99e5a938b7e3040a plus the compact paired-outer source patch",
+    "candidate_source_patch_sha256": "626756dea4582fcc4645aa26b7c100bd2fb2721f9b96a939807a19cc1a5cd917",
+    "candidate_binary_sha256": "e09780d6176db4318cb6e1255524ceedd48b281d78cb0b30c4e0b3fff190f191",
+    "reference_source": "RustSHT-FFT M26 commit 5d9264871972756a6cd7323e99e5a938b7e3040a",
+    "reference_binary_sha256": "76f2404f5c454e32985520030bd12626c8f1979f96f12a2633515b0a3e9ca71b",
+    "workload": "All current exact C2C and real SHT target operation/length cells; one-transform and scalar/spin-1 row batches; one transform thread",
+    "timing": "Six alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "dispatch_note": "The f64 N=1442 radix-103 AVX2 pass uses an out-of-line paired-outer kernel for even groups and a scalar tail for odd groups. Unsafe inverse input, f32, and non-AVX2 dispatch remain unchanged.",
+    "runner": "run_m24_clean_capture.py records process IDs, uptime, and load averages before, during, and after each run, and fsyncs every JSONL record."
+  },
+  "a": {
+    "label": "RustSHT-FFT M27 compact paired-outer AVX2 candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-m27-paired-outer-compact-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M26 5d92648 baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-m26-isolated-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  }
+}

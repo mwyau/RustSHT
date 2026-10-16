@@ -1,0 +1,32 @@
+{
+  "pairs": 3,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "Full SHT FFT-target pilot for the compact paired-outer kernel with cold code placement",
+    "candidate_source_patch_sha256": "1b4f7c02269775fee988dd6e51b37fa464b4c09d6d06b56b6a25c586f849eeab",
+    "candidate_binary_sha256": "79c220b6572c82f4976cc9a08572fbe29614b8225b5fe9f913958649878cda19",
+    "reference_source": "RustSHT-FFT M26 commit 5d9264871972756a6cd7323e99e5a938b7e3040a",
+    "reference_binary_sha256": "76f2404f5c454e32985520030bd12626c8f1979f96f12a2633515b0a3e9ca71b",
+    "workload": "All current exact C2C and real SHT target operation/length cells; one-transform and scalar/spin-1 row batches; one transform thread",
+    "timing": "Three alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "dispatch_note": "The f64 N=1442 radix-103 AVX2 pass uses the compact paired-outer kernel; dispatch and helper are marked cold for code placement.",
+    "runner": "run_m24_clean_capture.py records process IDs, uptime, and load averages before, during, and after each run, and fsyncs every JSONL record."
+  },
+  "a": {
+    "label": "RustSHT-FFT M27 cold compact paired-outer candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-m27-paired-outer-coldcompact-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M26 5d92648 baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-m26-isolated-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  }
+}

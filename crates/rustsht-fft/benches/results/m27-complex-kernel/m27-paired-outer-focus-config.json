@@ -1,0 +1,36 @@
+{
+  "pairs": 3,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "Focused pilot for pairing adjacent outer groups in the N=1442 radix-103 AVX2 pass against the committed M26 baseline",
+    "candidate_source_base": "RustSHT-FFT M26 commit 5d9264871972756a6cd7323e99e5a938b7e3040a plus the paired-outer source diff",
+    "candidate_source_patch_sha256": "29312c8e8061fed04d744c78b96f1be1c7e4efd93b114a8f60ba0e82f625d26b",
+    "candidate_binary_sha256": "8350bafac858c032273f094ac0902e249b14479054b4710096d23c72e2b6f19c",
+    "reference_source": "RustSHT-FFT M26 commit 5d9264871972756a6cd7323e99e5a938b7e3040a",
+    "reference_binary_sha256": "76f2404f5c454e32985520030bd12626c8f1979f96f12a2633515b0a3e9ca71b",
+    "workload": "N=1442 C2C forward and inverse over 721 rows; one transform thread",
+    "timing": "Three alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "runner": "run_m24_clean_capture.py records process IDs, uptime, and load averages before, during, and after each run, and fsyncs every JSONL record."
+  },
+  "a": {
+    "label": "RustSHT-FFT M27 paired-outer AVX2 candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-m27-paired-outer-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-c2c",
+      "1442",
+      "721"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M26 5d92648 baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-m26-isolated-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-c2c",
+      "1442",
+      "721"
+    ]
+  }
+}

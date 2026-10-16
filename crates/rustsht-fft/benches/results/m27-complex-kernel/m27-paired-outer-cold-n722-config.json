@@ -1,0 +1,35 @@
+{
+  "pairs": 3,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "Check the prior N=722 control regression after isolating the N=1442 paired-outer AVX2 helper as cold code",
+    "candidate_source_patch_sha256": "7a600f2cb16c10610a56129f83a3086aefafa8729df4df9c08a80b80f14f0f5a",
+    "candidate_binary_sha256": "3340bc3f1a7131c7acca804d0e0ce459098b8c3cde23172f6adad2e178fecfd6",
+    "reference_source": "RustSHT-FFT M26 commit 5d9264871972756a6cd7323e99e5a938b7e3040a",
+    "reference_binary_sha256": "76f2404f5c454e32985520030bd12626c8f1979f96f12a2633515b0a3e9ca71b",
+    "workload": "N=722 C2C inverse at 361 rows; one transform thread",
+    "timing": "Three alternating process pairs; seven warmed samples per operation",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2 dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "runner": "run_m24_clean_capture.py records process IDs, uptime, and load averages before, during, and after each run, and fsyncs every JSONL record."
+  },
+  "a": {
+    "label": "RustSHT-FFT M27 paired-outer cold-code candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-m27-paired-outer-cold-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-c2c",
+      "722",
+      "361"
+    ]
+  },
+  "b": {
+    "label": "RustSHT-FFT M26 5d92648 baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-m26-isolated-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-c2c",
+      "722",
+      "361"
+    ]
+  }
+}

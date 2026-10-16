@@ -1,0 +1,555 @@
+diff --git a/crates/rustsht-fft/src/complex.rs b/crates/rustsht-fft/src/complex.rs
+index f6c6d6f..91ba4b9 100644
+--- a/crates/rustsht-fft/src/complex.rs
++++ b/crates/rustsht-fft/src/complex.rs
+@@ -14,6 +14,7 @@ use std::fmt;
+ use num_complex::Complex;
+ use num_traits::{Float, FromPrimitive};
+ 
++use crate::rader::{RaderPrimePlan, RaderPrimeWorkspace, RaderRuntimeExecutor};
+ use crate::simd::{
+     ComplexGeneralPrimeIdo1Kernel, ComplexGeneralPrimeIdo1Params, ComplexPassKernel, SimdPass,
+     SimdScalar,
+@@ -110,6 +111,7 @@ struct ComplexPlanData<T> {
+     roots: Vec<Complex<T>>,
+     max_radix: usize,
+     bluestein: Vec<Option<BluesteinPlan<T>>>,
++    radix103_rader: Option<RaderPrimePlan<T>>,
+ }
+ 
+ struct ComplexPass<T> {
+@@ -132,6 +134,8 @@ struct PassExecution<'a, T> {
+     prime_phase_indices: &'a [u8],
+     blue_buffer: &'a mut [Complex<T>],
+     blue_workspace: Option<&'a mut ComplexFftWorkspace<T>>,
++    radix103_rader: Option<&'a RaderPrimePlan<T>>,
++    radix103_rader_workspace: Option<&'a mut RaderPrimeWorkspace<T>>,
+     simd: Option<SimdKernels<T>>,
+ }
+ 
+@@ -157,6 +161,7 @@ pub struct ComplexFftWorkspace<T> {
+     radix_output: Vec<Complex<T>>,
+     bluestein_buffer: Vec<Complex<T>>,
+     bluestein_workspaces: Vec<Option<ComplexFftWorkspace<T>>>,
++    radix103_rader_workspace: Option<RaderPrimeWorkspace<T>>,
+ }
+ 
+ impl<T> ComplexFftWorkspace<T> {
+@@ -192,15 +197,30 @@ impl<T> ComplexFftWorkspace<T> {
+             .try_fold(local_bytes, |total, workspace| {
+                 total.checked_add(workspace.scratch_bytes()?)
+             })
++            .and_then(|total| {
++                total.checked_add(
++                    self.radix103_rader_workspace
++                        .as_ref()
++                        .map_or(Some(0), RaderPrimeWorkspace::scratch_bytes)?,
++                )
++            })
+     }
+ }
+ 
+ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
+     pub(crate) fn try_new(len: usize) -> Result<Self, FftError> {
+-        Self::try_new_with_bluestein(len, true)
++        Self::try_new_with_bluestein_and_rader(len, true, None)
+     }
+ 
+     fn try_new_with_bluestein(len: usize, enable_bluestein: bool) -> Result<Self, FftError> {
++        Self::try_new_with_bluestein_and_rader(len, enable_bluestein, None)
++    }
++
++    fn try_new_with_bluestein_and_rader(
++        len: usize,
++        enable_bluestein: bool,
++        rader_executor: Option<RaderRuntimeExecutor<T>>,
++    ) -> Result<Self, FftError> {
+         if len == 0 {
+             return Err(FftError::InvalidLength);
+         }
+@@ -271,6 +291,13 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
+                 None
+             });
+         }
++        let radix103_rader = if len == 1442 {
++            rader_executor
++                .map(|execute| RaderPrimePlan::try_new(103, execute))
++                .transpose()?
++        } else {
++            None
++        };
+         Ok(Self {
+             data: ComplexPlanData {
+                 len,
+@@ -278,6 +305,7 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
+                 roots,
+                 max_radix,
+                 bluestein,
++                radix103_rader,
+             },
+         })
+     }
+@@ -291,6 +319,15 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
+             .map(|(stage, pass)| {
+                 let route = if let Some(blue) = self.data.bluestein[stage].as_ref() {
+                     format!("bluestein conv={}", blue.convolution_len)
++                } else if pass.radix == 103 && self.data.radix103_rader.is_some() {
++                    format!(
++                        "Rader conv={}",
++                        self.data
++                            .radix103_rader
++                            .as_ref()
++                            .expect("checked Rader plan")
++                            .convolution_len()
++                    )
+                 } else if matches!(pass.radix, 2 | 3 | 4 | 5 | 7 | 8 | 11) {
+                     String::from("fixed butterfly")
+                 } else if pass.radix.is_multiple_of(2) {
+@@ -318,6 +355,9 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
+         for blue in self.data.bluestein.iter().flatten() {
+             bytes += blue.m0_retained_plan_bytes();
+         }
++        if let Some(rader) = &self.data.radix103_rader {
++            bytes += rader.m0_retained_plan_bytes();
++        }
+         bytes
+     }
+ 
+@@ -336,6 +376,12 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
+                 bluestein_workspaces.push(None);
+             }
+         }
++        let radix103_rader_workspace = self
++            .data
++            .radix103_rader
++            .as_ref()
++            .map(RaderPrimePlan::workspace)
++            .transpose()?;
+         Ok(ComplexFftWorkspace {
+             len: self.data.len,
+             output: try_vec(self.data.len, zero)?,
+@@ -343,6 +389,7 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
+             radix_output: try_vec(self.data.max_radix, zero)?,
+             bluestein_buffer: try_vec(bluestein_buffer_len, zero)?,
+             bluestein_workspaces,
++            radix103_rader_workspace,
+         })
+     }
+ 
+@@ -531,6 +578,8 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
+                 prime_phase_indices: &pass.prime_phase_indices,
+                 blue_buffer: &mut workspace.bluestein_buffer,
+                 blue_workspace: workspace.bluestein_workspaces[stage].as_mut(),
++                radix103_rader: self.data.radix103_rader.as_ref(),
++                radix103_rader_workspace: workspace.radix103_rader_workspace.as_mut(),
+                 simd,
+             };
+             if stage == 0 {
+@@ -627,6 +676,8 @@ impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
+                 prime_phase_indices: &pass.prime_phase_indices,
+                 blue_buffer: &mut workspace.bluestein_buffer,
+                 blue_workspace: workspace.bluestein_workspaces[stage].as_mut(),
++                radix103_rader: self.data.radix103_rader.as_ref(),
++                radix103_rader_workspace: workspace.radix103_rader_workspace.as_mut(),
+                 simd,
+             };
+ 
+@@ -884,8 +935,65 @@ fn execute_1442_general_prime_ido1<T: Float + FromPrimitive>(
+     true
+ }
+ 
++fn execute_1442_rader<T: Float + FromPrimitive>(
++    input: &[Complex<T>],
++    output: &mut [Complex<T>],
++    pass: &ComplexPass<T>,
++    execution: &mut PassExecution<'_, T>,
++) -> bool {
++    let (Some(plan), Some(workspace)) = (
++        execution.radix103_rader,
++        execution.radix103_rader_workspace.as_deref_mut(),
++    ) else {
++        return false;
++    };
++    if execution.total_len != 1442
++        || pass.radix != 103
++        || pass.l1 != 14
++        || pass.ido != 1
++        || (execution.direction == Direction::Inverse && !execution.defer_inverse_normalization)
++        || !plan.is_safe_components(
++            input.iter().flat_map(|value| [value.re, value.im]),
++            execution.total_len,
++            1,
++        )
++    {
++        return false;
++    }
++
++    let radix = pass.radix;
++    let direction = execution.direction;
++    let inverse_scale = execution.inverse_output_scale;
++    let radix_input = &mut execution.radix_input[..radix];
++    let radix_output = &mut execution.radix_output[..radix];
++    for outer in 0..pass.l1 {
++        for (branch, value) in radix_input.iter_mut().enumerate() {
++            *value = input[branch + radix * outer];
++        }
++        plan.execute_complex(radix_input, radix_output, direction, workspace);
++        for (frequency, &transformed) in radix_output.iter().enumerate() {
++            let value = if direction == Direction::Inverse {
++                transformed * inverse_scale
++            } else {
++                transformed
++            };
++            output[frequency * pass.l1 + outer] = value;
++        }
++    }
++
++    #[cfg(test)]
++    crate::m0_record_route(format!(
++        "c2c-rader n=1442 radix={} l1={} ido={} convolution={}",
++        pass.radix,
++        pass.l1,
++        pass.ido,
++        plan.convolution_len()
++    ));
++    true
++}
++
+ macro_rules! implement_public_api {
+-    ($scalar:ty) => {
++    ($scalar:ty, $rader_executor:expr) => {
+         impl ComplexFftPlan<$scalar> {
+             /// Constructs a plan for a positive transform length.
+             ///
+@@ -895,7 +1003,7 @@ macro_rules! implement_public_api {
+             /// [`FftError::AllocationFailed`] if plan storage cannot be
+             /// reserved.
+             pub fn new(len: usize) -> Result<Self, FftError> {
+-                Self::try_new(len)
++                Self::try_new_with_bluestein_and_rader(len, true, $rader_executor)
+             }
+ 
+             /// Returns the transform length.
+@@ -1003,8 +1111,8 @@ macro_rules! implement_public_api {
+     };
+ }
+ 
+-implement_public_api!(f32);
+-implement_public_api!(f64);
++implement_public_api!(f32, None);
++implement_public_api!(f64, Some(ComplexFftPlan::<f64>::execute_runtime));
+ 
+ #[derive(Clone, Copy, Eq, PartialEq)]
+ pub(crate) enum Direction {
+@@ -1321,6 +1429,13 @@ fn execute_pass<const ENABLE_RADIX103: bool, T: Float + FromPrimitive>(
+     execution: &mut PassExecution<'_, T>,
+     radix103_kernel: Option<ComplexGeneralPrimeIdo1Kernel<T>>,
+ ) {
++    if pass.radix == 103
++        && pass.l1 == 14
++        && pass.ido == 1
++        && execute_1442_rader(input, output, pass, execution)
++    {
++        return;
++    }
+     if ENABLE_RADIX103
+         && pass.radix == 103
+         && pass.l1 == 14
+diff --git a/crates/rustsht-fft/src/lib.rs b/crates/rustsht-fft/src/lib.rs
+index d26cacd..1ede382 100644
+--- a/crates/rustsht-fft/src/lib.rs
++++ b/crates/rustsht-fft/src/lib.rs
+@@ -750,32 +750,38 @@ mod m0_diagnostics_tests {
+     }
+ 
+     #[test]
+-    fn m24_c2c_1442_selects_avx2_radix103_and_guards_unsafe_inverse_inputs() {
++    fn m27_c2c_1442_selects_rader_and_guards_unsafe_inverse_inputs() {
+         let n = 1442;
+         let plan = ComplexFftPlan::<f64>::new(n).expect("N=1442 complex plan");
+         let mut workspace = plan.workspace().expect("N=1442 complex workspace");
+-        let expected_route = "c2c-avx2:general-prime-ido1 n=1442 radix=103 l1=14 vector_frequencies=50 scalar_tail=1";
+-        let has_avx2 = <f64 as SimdScalar>::avx2_available();
++        let expected_route = "c2c-rader n=1442 radix=103 l1=14 ido=1 convolution=102";
+         let mut values = complex_input(n);
+ 
++        assert!(
++            plan.m0_pass_report()
++                .iter()
++                .any(|route| route == "n=1442 stage=2 radix=103 l1=14 ido=1 route=Rader conv=102"),
++            "f64 N=1442 plan should report its bounded Rader route"
++        );
++
+         m0_clear_routes();
+         plan.forward(&mut values, &mut workspace)
+             .expect("ordinary N=1442 forward");
+-        assert_eq!(
++        assert!(
+             m0_route_snapshot()
+                 .iter()
+                 .any(|route| route == expected_route),
+-            has_avx2
++            "safe N=1442 forward should select Rader"
+         );
+ 
+         m0_clear_routes();
+         plan.inverse(&mut values, &mut workspace)
+             .expect("ordinary N=1442 inverse");
+-        assert_eq!(
++        assert!(
+             m0_route_snapshot()
+                 .iter()
+                 .any(|route| route == expected_route),
+-            has_avx2
++            "safe N=1442 inverse should select Rader"
+         );
+ 
+         let high = f64::MAX / (2.0 * n as f64);
+@@ -792,7 +798,13 @@ mod m0_diagnostics_tests {
+             !m0_route_snapshot()
+                 .iter()
+                 .any(|route| route == expected_route),
+-            "unsafe inverse inputs must use the scalar range-safe pass"
++            "unsafe inverse inputs must use the guarded direct pass"
++        );
++        assert!(
++            !m0_route_snapshot()
++                .iter()
++                .any(|route| { route.starts_with("c2c-avx2:general-prime-ido1 n=1442") }),
++            "unsafe inverse inputs must bypass the AVX2 pass as well"
+         );
+ 
+         let plan32 = ComplexFftPlan::<f32>::new(n).expect("N=1442 f32 complex plan");
+diff --git a/crates/rustsht-fft/src/rader.rs b/crates/rustsht-fft/src/rader.rs
+index eb17ea7..b08be10 100644
+--- a/crates/rustsht-fft/src/rader.rs
++++ b/crates/rustsht-fft/src/rader.rs
+@@ -1,7 +1,7 @@
+ // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
+ // SPDX-License-Identifier: BSD-3-Clause
+ //
+-// Bounded Rader prime passes for the real FFT planner.
++// Bounded Rader prime passes for the complex and real FFT planners.
+ 
+ use num_complex::Complex;
+ use num_traits::{Float, FromPrimitive};
+@@ -17,7 +17,9 @@ pub(crate) struct RaderPrimePlan<T> {
+     forward_kernel: Vec<Complex<T>>,
+     inverse_kernel: Vec<Complex<T>>,
+     kernel_component_max: T,
+-    convolution: ComplexFftPlan<T>,
++    // The recursive plan is indirect so a parent FFT plan can own this Rader
++    // plan without creating an infinitely sized type.
++    convolution: Vec<ComplexFftPlan<T>>,
+     execute: RaderRuntimeExecutor<T>,
+ }
+ 
+@@ -30,7 +32,7 @@ pub(crate) type RaderRuntimeExecutor<T> = fn(
+ 
+ pub(crate) struct RaderPrimeWorkspace<T> {
+     convolution: Vec<Complex<T>>,
+-    fft: ComplexFftWorkspace<T>,
++    fft: Vec<ComplexFftWorkspace<T>>,
+ }
+ 
+ pub(crate) struct RaderPrimeExecutionWorkspace<'a, T> {
+@@ -52,7 +54,7 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
+         radix: usize,
+         execute: RaderRuntimeExecutor<T>,
+     ) -> Result<Self, FftError> {
+-        if !matches!(radix, 241 | 257 | 683) {
++        if !matches!(radix, 103 | 241 | 257 | 683) {
+             return Err(FftError::InvalidLength);
+         }
+         let convolution_len = radix - 1;
+@@ -67,7 +69,11 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
+             inverse_powers[index] = powers[(convolution_len - index) % convolution_len];
+         }
+ 
+-        let convolution = ComplexFftPlan::try_new(convolution_len)?;
++        let mut convolution = Vec::new();
++        convolution
++            .try_reserve_exact(1)
++            .map_err(|_| FftError::AllocationFailed)?;
++        convolution.push(ComplexFftPlan::try_new(convolution_len)?);
+         let zero = Complex::new(T::zero(), T::zero());
+         let mut forward_kernel = try_vec(convolution_len, zero)?;
+         let mut inverse_kernel = try_vec(convolution_len, zero)?;
+@@ -76,15 +82,15 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
+             forward_kernel[index] = root.conj();
+             inverse_kernel[index] = root;
+         }
+-        let mut kernel_workspace = convolution.try_workspace()?;
++        let mut kernel_workspace = convolution[0].try_workspace()?;
+         execute(
+-            &convolution,
++            &convolution[0],
+             &mut forward_kernel,
+             &mut kernel_workspace,
+             Direction::Forward,
+         )?;
+         execute(
+-            &convolution,
++            &convolution[0],
+             &mut inverse_kernel,
+             &mut kernel_workspace,
+             Direction::Forward,
+@@ -110,6 +116,10 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
+     }
+ 
+     pub(crate) fn workspace(&self) -> Result<RaderPrimeWorkspace<T>, FftError> {
++        let mut fft = Vec::new();
++        fft.try_reserve_exact(1)
++            .map_err(|_| FftError::AllocationFailed)?;
++        fft.push(self.convolution[0].try_workspace()?);
+         Ok(RaderPrimeWorkspace {
+             // The 241-point pass shares its parent's Bluestein buffer. Other
+             // selected primes use an owned convolution buffer.
+@@ -118,7 +128,7 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
+             } else {
+                 try_vec(self.convolution_len, Complex::new(T::zero(), T::zero()))?
+             },
+-            fft: self.convolution.try_workspace()?,
++            fft,
+         })
+     }
+ 
+@@ -144,7 +154,8 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
+             + self.inverse_powers.capacity() * std::mem::size_of::<usize>()
+             + (self.forward_kernel.capacity() + self.inverse_kernel.capacity())
+                 * std::mem::size_of::<Complex<T>>()
+-            + self.convolution.m0_retained_plan_bytes()
++            + self.convolution.capacity() * std::mem::size_of::<ComplexFftPlan<T>>()
++            + self.convolution[0].m0_retained_plan_bytes()
+     }
+ 
+     pub(crate) fn is_safe_components(
+@@ -193,6 +204,32 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
+         minimum_nonzero.is_none_or(|minimum| minimum >= subnormal_bound.max(relative_bound))
+     }
+ 
++    pub(crate) fn execute_complex(
++        &self,
++        input: &[Complex<T>],
++        output: &mut [Complex<T>],
++        direction: Direction,
++        workspace: &mut RaderPrimeWorkspace<T>,
++    ) {
++        debug_assert_eq!(self.radix, 103);
++        debug_assert_eq!(input.len(), self.radix);
++        debug_assert_eq!(output.len(), self.radix);
++        debug_assert_eq!(workspace.convolution.len(), self.convolution_len);
++
++        let mut sum = input[0];
++        for (index, &power) in self.powers.iter().enumerate() {
++            let value = input[power];
++            workspace.convolution[index] = value;
++            sum = sum + value;
++        }
++        self.execute_convolution(direction, workspace);
++
++        output[0] = sum;
++        for (index, &power) in self.inverse_powers.iter().enumerate() {
++            output[power] = input[0] + workspace.convolution[index];
++        }
++    }
++
+     #[cfg(test)]
+     pub(crate) fn execute(
+         &self,
+@@ -372,9 +409,9 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
+     fn execute_convolution(&self, direction: Direction, workspace: &mut RaderPrimeWorkspace<T>) {
+         debug_assert_eq!(workspace.convolution.len(), self.convolution_len);
+         (self.execute)(
+-            &self.convolution,
++            &self.convolution[0],
+             &mut workspace.convolution,
+-            &mut workspace.fft,
++            &mut workspace.fft[0],
+             Direction::Forward,
+         )
+         .expect("Rader convolution workspace matches its plan");
+@@ -386,9 +423,9 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
+             *value = *value * coefficient;
+         }
+         (self.execute)(
+-            &self.convolution,
++            &self.convolution[0],
+             &mut workspace.convolution,
+-            &mut workspace.fft,
++            &mut workspace.fft[0],
+             Direction::Inverse,
+         )
+         .expect("Rader convolution workspace matches its plan");
+@@ -401,9 +438,9 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
+     ) {
+         debug_assert_eq!(workspace.buffer.len(), self.convolution_len);
+         (self.execute)(
+-            &self.convolution,
++            &self.convolution[0],
+             workspace.buffer,
+-            &mut workspace.workspace.fft,
++            &mut workspace.workspace.fft[0],
+             Direction::Forward,
+         )
+         .expect("Rader convolution workspace matches its plan");
+@@ -415,9 +452,9 @@ impl<T: Float + FromPrimitive> RaderPrimePlan<T> {
+             *value = *value * coefficient;
+         }
+         (self.execute)(
+-            &self.convolution,
++            &self.convolution[0],
+             workspace.buffer,
+-            &mut workspace.workspace.fft,
++            &mut workspace.workspace.fft[0],
+             Direction::Inverse,
+         )
+         .expect("Rader convolution workspace matches its plan");
+@@ -429,12 +466,13 @@ impl<T> RaderPrimeWorkspace<T> {
+         self.convolution
+             .len()
+             .checked_mul(std::mem::size_of::<Complex<T>>())?
+-            .checked_add(self.fft.scratch_bytes()?)
++            .checked_add(self.fft[0].scratch_bytes()?)
+     }
+ }
+ 
+ fn primitive_root(prime: usize) -> usize {
+     let factors: &[usize] = match prime {
++        103 => &[2, 3, 17],
+         241 => &[2, 3, 5],
+         257 => &[2],
+         683 => &[2, 11, 31],
+@@ -494,7 +532,7 @@ mod tests {
+             ComplexFftPlan::<f64>::execute_runtime,
+             ComplexFftPlan::<f64>::execute,
+         ] {
+-            for radix in [241, 257, 683] {
++            for radix in [103, 241, 257, 683] {
+                 let plan = RaderPrimePlan::<f64>::try_new(radix, execute).unwrap();
+                 let mut workspace = plan.workspace().unwrap();
+                 let input: Vec<_> = (0..radix)
+@@ -515,6 +553,23 @@ mod tests {
+                         assert!((*actual - expected).norm() < 2.0e-10);
+                     }
+                 }
++
++                if radix == 103 {
++                    let mut production_workspace = plan.workspace().unwrap();
++                    for direction in [Direction::Forward, Direction::Inverse] {
++                        let mut actual = vec![Complex::new(0.0, 0.0); radix];
++                        plan.execute_complex(
++                            &input,
++                            &mut actual,
++                            direction,
++                            &mut production_workspace,
++                        );
++                        let expected = direct(&input, direction == Direction::Inverse);
++                        for (actual, expected) in actual.iter().zip(expected) {
++                            assert!((*actual - expected).norm() < 2.0e-10);
++                        }
++                    }
++                }
+             }
+         }
+     }
