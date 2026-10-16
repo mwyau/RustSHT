@@ -1,0 +1,375 @@
+   Compiling rustsht v0.1.0-dev.0 (/home/albert/RustSHT-sht-performance)
+    Finished `release` profile [optimized] target(s) in 11.74s
+     Running unittests src/lib.rs (target/release/deps/rustsht-159837ac1c3bd1f7)
+
+running 1 test
+test transform::tests::m5_analysis_phase_profile ... PHASE_PROFILE spin=0 T511 q1 sample=1 wall_ms=20.711 phase_sum_ms=20.676 unmeasured_ms=0.035
+PHASE spin=0 T511 q1 sample=1 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T511 q1 sample=1 name="forward FFT" elapsed_ms=3.372
+PHASE spin=0 T511 q1 sample=1 name="resampling and latitude setup" elapsed_ms=0.011
+PHASE spin=0 T511 q1 sample=1 name="order spectrum preparation" elapsed_ms=0.373
+PHASE spin=0 T511 q1 sample=1 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T511 q1 sample=1 name="coefficient initialization" elapsed_ms=0.069
+PHASE spin=0 T511 q1 sample=1 name="order work prefix" elapsed_ms=0.000
+PHASE spin=0 T511 q1 sample=1 name="Legendre recurrence and accumulation" elapsed_ms=16.850
+PHASE spin=0 T511 q1 sample=1 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=0 T511 q1 sample=2 wall_ms=21.030 phase_sum_ms=21.007 unmeasured_ms=0.024
+PHASE spin=0 T511 q1 sample=2 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T511 q1 sample=2 name="forward FFT" elapsed_ms=3.534
+PHASE spin=0 T511 q1 sample=2 name="resampling and latitude setup" elapsed_ms=0.012
+PHASE spin=0 T511 q1 sample=2 name="order spectrum preparation" elapsed_ms=0.521
+PHASE spin=0 T511 q1 sample=2 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T511 q1 sample=2 name="coefficient initialization" elapsed_ms=0.106
+PHASE spin=0 T511 q1 sample=2 name="order work prefix" elapsed_ms=0.000
+PHASE spin=0 T511 q1 sample=2 name="Legendre recurrence and accumulation" elapsed_ms=16.833
+PHASE spin=0 T511 q1 sample=2 name="coefficient cleanup" elapsed_ms=0.000
+PHASE_PROFILE spin=0 T511 q1 sample=3 wall_ms=19.883 phase_sum_ms=19.861 unmeasured_ms=0.022
+PHASE spin=0 T511 q1 sample=3 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T511 q1 sample=3 name="forward FFT" elapsed_ms=3.242
+PHASE spin=0 T511 q1 sample=3 name="resampling and latitude setup" elapsed_ms=0.011
+PHASE spin=0 T511 q1 sample=3 name="order spectrum preparation" elapsed_ms=0.370
+PHASE spin=0 T511 q1 sample=3 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T511 q1 sample=3 name="coefficient initialization" elapsed_ms=0.052
+PHASE spin=0 T511 q1 sample=3 name="order work prefix" elapsed_ms=0.000
+PHASE spin=0 T511 q1 sample=3 name="Legendre recurrence and accumulation" elapsed_ms=16.186
+PHASE spin=0 T511 q1 sample=3 name="coefficient cleanup" elapsed_ms=0.000
+PHASE_PROFILE spin=0 T511 q1 sample=4 wall_ms=21.744 phase_sum_ms=21.698 unmeasured_ms=0.045
+PHASE spin=0 T511 q1 sample=4 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T511 q1 sample=4 name="forward FFT" elapsed_ms=3.651
+PHASE spin=0 T511 q1 sample=4 name="resampling and latitude setup" elapsed_ms=0.011
+PHASE spin=0 T511 q1 sample=4 name="order spectrum preparation" elapsed_ms=0.377
+PHASE spin=0 T511 q1 sample=4 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T511 q1 sample=4 name="coefficient initialization" elapsed_ms=0.062
+PHASE spin=0 T511 q1 sample=4 name="order work prefix" elapsed_ms=0.000
+PHASE spin=0 T511 q1 sample=4 name="Legendre recurrence and accumulation" elapsed_ms=17.597
+PHASE spin=0 T511 q1 sample=4 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=0 T511 q1 sample=5 wall_ms=20.020 phase_sum_ms=20.000 unmeasured_ms=0.020
+PHASE spin=0 T511 q1 sample=5 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T511 q1 sample=5 name="forward FFT" elapsed_ms=3.303
+PHASE spin=0 T511 q1 sample=5 name="resampling and latitude setup" elapsed_ms=0.011
+PHASE spin=0 T511 q1 sample=5 name="order spectrum preparation" elapsed_ms=0.371
+PHASE spin=0 T511 q1 sample=5 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T511 q1 sample=5 name="coefficient initialization" elapsed_ms=0.061
+PHASE spin=0 T511 q1 sample=5 name="order work prefix" elapsed_ms=0.000
+PHASE spin=0 T511 q1 sample=5 name="Legendre recurrence and accumulation" elapsed_ms=16.255
+PHASE spin=0 T511 q1 sample=5 name="coefficient cleanup" elapsed_ms=0.000
+PHASE_PROFILE spin=0 T511 q6 sample=1 wall_ms=5.716 phase_sum_ms=5.690 unmeasured_ms=0.027
+PHASE spin=0 T511 q6 sample=1 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T511 q6 sample=1 name="forward FFT" elapsed_ms=0.779
+PHASE spin=0 T511 q6 sample=1 name="resampling and latitude setup" elapsed_ms=0.011
+PHASE spin=0 T511 q6 sample=1 name="order spectrum preparation" elapsed_ms=0.800
+PHASE spin=0 T511 q6 sample=1 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T511 q6 sample=1 name="coefficient initialization" elapsed_ms=0.088
+PHASE spin=0 T511 q6 sample=1 name="order work prefix" elapsed_ms=0.003
+PHASE spin=0 T511 q6 sample=1 name="Legendre recurrence and accumulation" elapsed_ms=4.008
+PHASE spin=0 T511 q6 sample=1 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=0 T511 q6 sample=2 wall_ms=5.500 phase_sum_ms=5.471 unmeasured_ms=0.029
+PHASE spin=0 T511 q6 sample=2 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T511 q6 sample=2 name="forward FFT" elapsed_ms=0.778
+PHASE spin=0 T511 q6 sample=2 name="resampling and latitude setup" elapsed_ms=0.012
+PHASE spin=0 T511 q6 sample=2 name="order spectrum preparation" elapsed_ms=0.651
+PHASE spin=0 T511 q6 sample=2 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T511 q6 sample=2 name="coefficient initialization" elapsed_ms=0.079
+PHASE spin=0 T511 q6 sample=2 name="order work prefix" elapsed_ms=0.003
+PHASE spin=0 T511 q6 sample=2 name="Legendre recurrence and accumulation" elapsed_ms=3.947
+PHASE spin=0 T511 q6 sample=2 name="coefficient cleanup" elapsed_ms=0.000
+PHASE_PROFILE spin=0 T511 q6 sample=3 wall_ms=5.405 phase_sum_ms=5.367 unmeasured_ms=0.038
+PHASE spin=0 T511 q6 sample=3 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T511 q6 sample=3 name="forward FFT" elapsed_ms=0.880
+PHASE spin=0 T511 q6 sample=3 name="resampling and latitude setup" elapsed_ms=0.013
+PHASE spin=0 T511 q6 sample=3 name="order spectrum preparation" elapsed_ms=0.590
+PHASE spin=0 T511 q6 sample=3 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T511 q6 sample=3 name="coefficient initialization" elapsed_ms=0.079
+PHASE spin=0 T511 q6 sample=3 name="order work prefix" elapsed_ms=0.004
+PHASE spin=0 T511 q6 sample=3 name="Legendre recurrence and accumulation" elapsed_ms=3.799
+PHASE spin=0 T511 q6 sample=3 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=0 T511 q6 sample=4 wall_ms=5.942 phase_sum_ms=5.896 unmeasured_ms=0.046
+PHASE spin=0 T511 q6 sample=4 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T511 q6 sample=4 name="forward FFT" elapsed_ms=0.794
+PHASE spin=0 T511 q6 sample=4 name="resampling and latitude setup" elapsed_ms=0.012
+PHASE spin=0 T511 q6 sample=4 name="order spectrum preparation" elapsed_ms=0.774
+PHASE spin=0 T511 q6 sample=4 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T511 q6 sample=4 name="coefficient initialization" elapsed_ms=0.083
+PHASE spin=0 T511 q6 sample=4 name="order work prefix" elapsed_ms=0.003
+PHASE spin=0 T511 q6 sample=4 name="Legendre recurrence and accumulation" elapsed_ms=4.230
+PHASE spin=0 T511 q6 sample=4 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=0 T511 q6 sample=5 wall_ms=6.744 phase_sum_ms=6.715 unmeasured_ms=0.029
+PHASE spin=0 T511 q6 sample=5 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T511 q6 sample=5 name="forward FFT" elapsed_ms=1.030
+PHASE spin=0 T511 q6 sample=5 name="resampling and latitude setup" elapsed_ms=0.012
+PHASE spin=0 T511 q6 sample=5 name="order spectrum preparation" elapsed_ms=0.737
+PHASE spin=0 T511 q6 sample=5 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T511 q6 sample=5 name="coefficient initialization" elapsed_ms=0.081
+PHASE spin=0 T511 q6 sample=5 name="order work prefix" elapsed_ms=0.003
+PHASE spin=0 T511 q6 sample=5 name="Legendre recurrence and accumulation" elapsed_ms=4.852
+PHASE spin=0 T511 q6 sample=5 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=0 T1023 q1 sample=1 wall_ms=155.983 phase_sum_ms=155.942 unmeasured_ms=0.041
+PHASE spin=0 T1023 q1 sample=1 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T1023 q1 sample=1 name="forward FFT" elapsed_ms=37.379
+PHASE spin=0 T1023 q1 sample=1 name="resampling and latitude setup" elapsed_ms=0.020
+PHASE spin=0 T1023 q1 sample=1 name="order spectrum preparation" elapsed_ms=2.193
+PHASE spin=0 T1023 q1 sample=1 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T1023 q1 sample=1 name="coefficient initialization" elapsed_ms=0.502
+PHASE spin=0 T1023 q1 sample=1 name="order work prefix" elapsed_ms=0.001
+PHASE spin=0 T1023 q1 sample=1 name="Legendre recurrence and accumulation" elapsed_ms=115.846
+PHASE spin=0 T1023 q1 sample=1 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=0 T1023 q1 sample=2 wall_ms=154.370 phase_sum_ms=154.345 unmeasured_ms=0.025
+PHASE spin=0 T1023 q1 sample=2 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T1023 q1 sample=2 name="forward FFT" elapsed_ms=35.741
+PHASE spin=0 T1023 q1 sample=2 name="resampling and latitude setup" elapsed_ms=0.020
+PHASE spin=0 T1023 q1 sample=2 name="order spectrum preparation" elapsed_ms=2.062
+PHASE spin=0 T1023 q1 sample=2 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T1023 q1 sample=2 name="coefficient initialization" elapsed_ms=0.451
+PHASE spin=0 T1023 q1 sample=2 name="order work prefix" elapsed_ms=0.001
+PHASE spin=0 T1023 q1 sample=2 name="Legendre recurrence and accumulation" elapsed_ms=116.069
+PHASE spin=0 T1023 q1 sample=2 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=0 T1023 q1 sample=3 wall_ms=154.286 phase_sum_ms=154.262 unmeasured_ms=0.024
+PHASE spin=0 T1023 q1 sample=3 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T1023 q1 sample=3 name="forward FFT" elapsed_ms=35.728
+PHASE spin=0 T1023 q1 sample=3 name="resampling and latitude setup" elapsed_ms=0.020
+PHASE spin=0 T1023 q1 sample=3 name="order spectrum preparation" elapsed_ms=2.027
+PHASE spin=0 T1023 q1 sample=3 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T1023 q1 sample=3 name="coefficient initialization" elapsed_ms=0.455
+PHASE spin=0 T1023 q1 sample=3 name="order work prefix" elapsed_ms=0.000
+PHASE spin=0 T1023 q1 sample=3 name="Legendre recurrence and accumulation" elapsed_ms=116.030
+PHASE spin=0 T1023 q1 sample=3 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=0 T1023 q1 sample=4 wall_ms=154.261 phase_sum_ms=154.236 unmeasured_ms=0.025
+PHASE spin=0 T1023 q1 sample=4 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T1023 q1 sample=4 name="forward FFT" elapsed_ms=35.658
+PHASE spin=0 T1023 q1 sample=4 name="resampling and latitude setup" elapsed_ms=0.025
+PHASE spin=0 T1023 q1 sample=4 name="order spectrum preparation" elapsed_ms=2.064
+PHASE spin=0 T1023 q1 sample=4 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T1023 q1 sample=4 name="coefficient initialization" elapsed_ms=0.449
+PHASE spin=0 T1023 q1 sample=4 name="order work prefix" elapsed_ms=0.000
+PHASE spin=0 T1023 q1 sample=4 name="Legendre recurrence and accumulation" elapsed_ms=116.038
+PHASE spin=0 T1023 q1 sample=4 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=0 T1023 q1 sample=5 wall_ms=154.469 phase_sum_ms=154.440 unmeasured_ms=0.029
+PHASE spin=0 T1023 q1 sample=5 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T1023 q1 sample=5 name="forward FFT" elapsed_ms=35.703
+PHASE spin=0 T1023 q1 sample=5 name="resampling and latitude setup" elapsed_ms=0.020
+PHASE spin=0 T1023 q1 sample=5 name="order spectrum preparation" elapsed_ms=2.099
+PHASE spin=0 T1023 q1 sample=5 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T1023 q1 sample=5 name="coefficient initialization" elapsed_ms=0.524
+PHASE spin=0 T1023 q1 sample=5 name="order work prefix" elapsed_ms=0.001
+PHASE spin=0 T1023 q1 sample=5 name="Legendre recurrence and accumulation" elapsed_ms=116.092
+PHASE spin=0 T1023 q1 sample=5 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=0 T1023 q6 sample=1 wall_ms=38.422 phase_sum_ms=38.367 unmeasured_ms=0.055
+PHASE spin=0 T1023 q6 sample=1 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T1023 q6 sample=1 name="forward FFT" elapsed_ms=6.708
+PHASE spin=0 T1023 q6 sample=1 name="resampling and latitude setup" elapsed_ms=0.021
+PHASE spin=0 T1023 q6 sample=1 name="order spectrum preparation" elapsed_ms=4.536
+PHASE spin=0 T1023 q6 sample=1 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T1023 q6 sample=1 name="coefficient initialization" elapsed_ms=0.473
+PHASE spin=0 T1023 q6 sample=1 name="order work prefix" elapsed_ms=0.006
+PHASE spin=0 T1023 q6 sample=1 name="Legendre recurrence and accumulation" elapsed_ms=26.622
+PHASE spin=0 T1023 q6 sample=1 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=0 T1023 q6 sample=2 wall_ms=33.126 phase_sum_ms=33.084 unmeasured_ms=0.042
+PHASE spin=0 T1023 q6 sample=2 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T1023 q6 sample=2 name="forward FFT" elapsed_ms=7.207
+PHASE spin=0 T1023 q6 sample=2 name="resampling and latitude setup" elapsed_ms=0.022
+PHASE spin=0 T1023 q6 sample=2 name="order spectrum preparation" elapsed_ms=2.050
+PHASE spin=0 T1023 q6 sample=2 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T1023 q6 sample=2 name="coefficient initialization" elapsed_ms=0.346
+PHASE spin=0 T1023 q6 sample=2 name="order work prefix" elapsed_ms=0.006
+PHASE spin=0 T1023 q6 sample=2 name="Legendre recurrence and accumulation" elapsed_ms=23.453
+PHASE spin=0 T1023 q6 sample=2 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=0 T1023 q6 sample=3 wall_ms=33.409 phase_sum_ms=33.376 unmeasured_ms=0.034
+PHASE spin=0 T1023 q6 sample=3 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T1023 q6 sample=3 name="forward FFT" elapsed_ms=7.076
+PHASE spin=0 T1023 q6 sample=3 name="resampling and latitude setup" elapsed_ms=0.023
+PHASE spin=0 T1023 q6 sample=3 name="order spectrum preparation" elapsed_ms=2.125
+PHASE spin=0 T1023 q6 sample=3 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T1023 q6 sample=3 name="coefficient initialization" elapsed_ms=0.459
+PHASE spin=0 T1023 q6 sample=3 name="order work prefix" elapsed_ms=0.006
+PHASE spin=0 T1023 q6 sample=3 name="Legendre recurrence and accumulation" elapsed_ms=23.686
+PHASE spin=0 T1023 q6 sample=3 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=0 T1023 q6 sample=4 wall_ms=38.044 phase_sum_ms=38.017 unmeasured_ms=0.028
+PHASE spin=0 T1023 q6 sample=4 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T1023 q6 sample=4 name="forward FFT" elapsed_ms=7.017
+PHASE spin=0 T1023 q6 sample=4 name="resampling and latitude setup" elapsed_ms=0.021
+PHASE spin=0 T1023 q6 sample=4 name="order spectrum preparation" elapsed_ms=2.212
+PHASE spin=0 T1023 q6 sample=4 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T1023 q6 sample=4 name="coefficient initialization" elapsed_ms=0.345
+PHASE spin=0 T1023 q6 sample=4 name="order work prefix" elapsed_ms=0.006
+PHASE spin=0 T1023 q6 sample=4 name="Legendre recurrence and accumulation" elapsed_ms=28.413
+PHASE spin=0 T1023 q6 sample=4 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=0 T1023 q6 sample=5 wall_ms=33.656 phase_sum_ms=33.632 unmeasured_ms=0.024
+PHASE spin=0 T1023 q6 sample=5 name="strategy selection" elapsed_ms=0.000
+PHASE spin=0 T1023 q6 sample=5 name="forward FFT" elapsed_ms=6.988
+PHASE spin=0 T1023 q6 sample=5 name="resampling and latitude setup" elapsed_ms=0.024
+PHASE spin=0 T1023 q6 sample=5 name="order spectrum preparation" elapsed_ms=1.989
+PHASE spin=0 T1023 q6 sample=5 name="Legendre table retrieval" elapsed_ms=0.000
+PHASE spin=0 T1023 q6 sample=5 name="coefficient initialization" elapsed_ms=0.433
+PHASE spin=0 T1023 q6 sample=5 name="order work prefix" elapsed_ms=0.006
+PHASE spin=0 T1023 q6 sample=5 name="Legendre recurrence and accumulation" elapsed_ms=24.190
+PHASE spin=0 T1023 q6 sample=5 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=1 T511 q1 sample=1 wall_ms=32.755 phase_sum_ms=32.727 unmeasured_ms=0.029
+PHASE spin=1 T511 q1 sample=1 name="strategy selection and table setup" elapsed_ms=0.001
+PHASE spin=1 T511 q1 sample=1 name="forward FFT" elapsed_ms=6.913
+PHASE spin=1 T511 q1 sample=1 name="coefficient initialization" elapsed_ms=0.116
+PHASE spin=1 T511 q1 sample=1 name="resampling and latitude setup" elapsed_ms=0.010
+PHASE spin=1 T511 q1 sample=1 name="order work prefix" elapsed_ms=0.000
+PHASE spin=1 T511 q1 sample=1 name="Legendre recurrence and accumulation" elapsed_ms=25.685
+PHASE spin=1 T511 q1 sample=1 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=1 T511 q1 sample=2 wall_ms=32.417 phase_sum_ms=32.398 unmeasured_ms=0.019
+PHASE spin=1 T511 q1 sample=2 name="strategy selection and table setup" elapsed_ms=0.000
+PHASE spin=1 T511 q1 sample=2 name="forward FFT" elapsed_ms=6.765
+PHASE spin=1 T511 q1 sample=2 name="coefficient initialization" elapsed_ms=0.143
+PHASE spin=1 T511 q1 sample=2 name="resampling and latitude setup" elapsed_ms=0.010
+PHASE spin=1 T511 q1 sample=2 name="order work prefix" elapsed_ms=0.000
+PHASE spin=1 T511 q1 sample=2 name="Legendre recurrence and accumulation" elapsed_ms=25.479
+PHASE spin=1 T511 q1 sample=2 name="coefficient cleanup" elapsed_ms=0.000
+PHASE_PROFILE spin=1 T511 q1 sample=3 wall_ms=32.250 phase_sum_ms=32.229 unmeasured_ms=0.020
+PHASE spin=1 T511 q1 sample=3 name="strategy selection and table setup" elapsed_ms=0.000
+PHASE spin=1 T511 q1 sample=3 name="forward FFT" elapsed_ms=6.518
+PHASE spin=1 T511 q1 sample=3 name="coefficient initialization" elapsed_ms=0.134
+PHASE spin=1 T511 q1 sample=3 name="resampling and latitude setup" elapsed_ms=0.010
+PHASE spin=1 T511 q1 sample=3 name="order work prefix" elapsed_ms=0.000
+PHASE spin=1 T511 q1 sample=3 name="Legendre recurrence and accumulation" elapsed_ms=25.567
+PHASE spin=1 T511 q1 sample=3 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=1 T511 q1 sample=4 wall_ms=32.399 phase_sum_ms=32.378 unmeasured_ms=0.021
+PHASE spin=1 T511 q1 sample=4 name="strategy selection and table setup" elapsed_ms=0.000
+PHASE spin=1 T511 q1 sample=4 name="forward FFT" elapsed_ms=6.576
+PHASE spin=1 T511 q1 sample=4 name="coefficient initialization" elapsed_ms=0.181
+PHASE spin=1 T511 q1 sample=4 name="resampling and latitude setup" elapsed_ms=0.010
+PHASE spin=1 T511 q1 sample=4 name="order work prefix" elapsed_ms=0.000
+PHASE spin=1 T511 q1 sample=4 name="Legendre recurrence and accumulation" elapsed_ms=25.610
+PHASE spin=1 T511 q1 sample=4 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=1 T511 q1 sample=5 wall_ms=32.258 phase_sum_ms=32.238 unmeasured_ms=0.020
+PHASE spin=1 T511 q1 sample=5 name="strategy selection and table setup" elapsed_ms=0.000
+PHASE spin=1 T511 q1 sample=5 name="forward FFT" elapsed_ms=6.532
+PHASE spin=1 T511 q1 sample=5 name="coefficient initialization" elapsed_ms=0.143
+PHASE spin=1 T511 q1 sample=5 name="resampling and latitude setup" elapsed_ms=0.010
+PHASE spin=1 T511 q1 sample=5 name="order work prefix" elapsed_ms=0.000
+PHASE spin=1 T511 q1 sample=5 name="Legendre recurrence and accumulation" elapsed_ms=25.551
+PHASE spin=1 T511 q1 sample=5 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=1 T511 q6 sample=1 wall_ms=9.291 phase_sum_ms=9.248 unmeasured_ms=0.043
+PHASE spin=1 T511 q6 sample=1 name="strategy selection and table setup" elapsed_ms=0.899
+PHASE spin=1 T511 q6 sample=1 name="forward FFT" elapsed_ms=1.653
+PHASE spin=1 T511 q6 sample=1 name="coefficient initialization" elapsed_ms=0.378
+PHASE spin=1 T511 q6 sample=1 name="resampling and latitude setup" elapsed_ms=0.010
+PHASE spin=1 T511 q6 sample=1 name="order work prefix" elapsed_ms=0.003
+PHASE spin=1 T511 q6 sample=1 name="Legendre recurrence and accumulation" elapsed_ms=6.304
+PHASE spin=1 T511 q6 sample=1 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=1 T511 q6 sample=2 wall_ms=8.086 phase_sum_ms=8.065 unmeasured_ms=0.021
+PHASE spin=1 T511 q6 sample=2 name="strategy selection and table setup" elapsed_ms=0.000
+PHASE spin=1 T511 q6 sample=2 name="forward FFT" elapsed_ms=1.668
+PHASE spin=1 T511 q6 sample=2 name="coefficient initialization" elapsed_ms=0.088
+PHASE spin=1 T511 q6 sample=2 name="resampling and latitude setup" elapsed_ms=0.015
+PHASE spin=1 T511 q6 sample=2 name="order work prefix" elapsed_ms=0.003
+PHASE spin=1 T511 q6 sample=2 name="Legendre recurrence and accumulation" elapsed_ms=6.290
+PHASE spin=1 T511 q6 sample=2 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=1 T511 q6 sample=3 wall_ms=7.982 phase_sum_ms=7.963 unmeasured_ms=0.019
+PHASE spin=1 T511 q6 sample=3 name="strategy selection and table setup" elapsed_ms=0.000
+PHASE spin=1 T511 q6 sample=3 name="forward FFT" elapsed_ms=1.557
+PHASE spin=1 T511 q6 sample=3 name="coefficient initialization" elapsed_ms=0.104
+PHASE spin=1 T511 q6 sample=3 name="resampling and latitude setup" elapsed_ms=0.011
+PHASE spin=1 T511 q6 sample=3 name="order work prefix" elapsed_ms=0.003
+PHASE spin=1 T511 q6 sample=3 name="Legendre recurrence and accumulation" elapsed_ms=6.287
+PHASE spin=1 T511 q6 sample=3 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=1 T511 q6 sample=4 wall_ms=7.953 phase_sum_ms=7.935 unmeasured_ms=0.018
+PHASE spin=1 T511 q6 sample=4 name="strategy selection and table setup" elapsed_ms=0.000
+PHASE spin=1 T511 q6 sample=4 name="forward FFT" elapsed_ms=1.532
+PHASE spin=1 T511 q6 sample=4 name="coefficient initialization" elapsed_ms=0.091
+PHASE spin=1 T511 q6 sample=4 name="resampling and latitude setup" elapsed_ms=0.012
+PHASE spin=1 T511 q6 sample=4 name="order work prefix" elapsed_ms=0.003
+PHASE spin=1 T511 q6 sample=4 name="Legendre recurrence and accumulation" elapsed_ms=6.296
+PHASE spin=1 T511 q6 sample=4 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=1 T511 q6 sample=5 wall_ms=8.054 phase_sum_ms=8.035 unmeasured_ms=0.019
+PHASE spin=1 T511 q6 sample=5 name="strategy selection and table setup" elapsed_ms=0.000
+PHASE spin=1 T511 q6 sample=5 name="forward FFT" elapsed_ms=1.570
+PHASE spin=1 T511 q6 sample=5 name="coefficient initialization" elapsed_ms=0.088
+PHASE spin=1 T511 q6 sample=5 name="resampling and latitude setup" elapsed_ms=0.011
+PHASE spin=1 T511 q6 sample=5 name="order work prefix" elapsed_ms=0.003
+PHASE spin=1 T511 q6 sample=5 name="Legendre recurrence and accumulation" elapsed_ms=6.362
+PHASE spin=1 T511 q6 sample=5 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=1 T1023 q1 sample=1 wall_ms=248.423 phase_sum_ms=248.372 unmeasured_ms=0.051
+PHASE spin=1 T1023 q1 sample=1 name="strategy selection and table setup" elapsed_ms=0.000
+PHASE spin=1 T1023 q1 sample=1 name="forward FFT" elapsed_ms=72.056
+PHASE spin=1 T1023 q1 sample=1 name="coefficient initialization" elapsed_ms=0.916
+PHASE spin=1 T1023 q1 sample=1 name="resampling and latitude setup" elapsed_ms=0.020
+PHASE spin=1 T1023 q1 sample=1 name="order work prefix" elapsed_ms=0.001
+PHASE spin=1 T1023 q1 sample=1 name="Legendre recurrence and accumulation" elapsed_ms=175.377
+PHASE spin=1 T1023 q1 sample=1 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=1 T1023 q1 sample=2 wall_ms=247.509 phase_sum_ms=247.104 unmeasured_ms=0.405
+PHASE spin=1 T1023 q1 sample=2 name="strategy selection and table setup" elapsed_ms=0.000
+PHASE spin=1 T1023 q1 sample=2 name="forward FFT" elapsed_ms=72.239
+PHASE spin=1 T1023 q1 sample=2 name="coefficient initialization" elapsed_ms=0.907
+PHASE spin=1 T1023 q1 sample=2 name="resampling and latitude setup" elapsed_ms=0.020
+PHASE spin=1 T1023 q1 sample=2 name="order work prefix" elapsed_ms=0.001
+PHASE spin=1 T1023 q1 sample=2 name="Legendre recurrence and accumulation" elapsed_ms=173.936
+PHASE spin=1 T1023 q1 sample=2 name="coefficient cleanup" elapsed_ms=0.001
+PHASE_PROFILE spin=1 T1023 q1 sample=3 wall_ms=247.167 phase_sum_ms=247.130 unmeasured_ms=0.037
+PHASE spin=1 T1023 q1 sample=3 name="strategy selection and table setup" elapsed_ms=0.000
+PHASE spin=1 T1023 q1 sample=3 name="forward FFT" elapsed_ms=71.496
+PHASE spin=1 T1023 q1 sample=3 name="coefficient initialization" elapsed_ms=0.955
+PHASE spin=1 T1023 q1 sample=3 name="resampling and latitude setup" elapsed_ms=0.020
+PHASE spin=1 T1023 q1 sample=3 name="order work prefix" elapsed_ms=0.001
+PHASE spin=1 T1023 q1 sample=3 name="Legendre recurrence and accumulation" elapsed_ms=174.656
+PHASE spin=1 T1023 q1 sample=3 name="coefficient cleanup" elapsed_ms=0.002
+PHASE_PROFILE spin=1 T1023 q1 sample=4 wall_ms=248.207 phase_sum_ms=248.166 unmeasured_ms=0.040
+PHASE spin=1 T1023 q1 sample=4 name="strategy selection and table setup" elapsed_ms=0.000
+PHASE spin=1 T1023 q1 sample=4 name="forward FFT" elapsed_ms=72.344
+PHASE spin=1 T1023 q1 sample=4 name="coefficient initialization" elapsed_ms=0.891
+PHASE spin=1 T1023 q1 sample=4 name="resampling and latitude setup" elapsed_ms=0.020
+PHASE spin=1 T1023 q1 sample=4 name="order work prefix" elapsed_ms=0.001
+PHASE spin=1 T1023 q1 sample=4 name="Legendre recurrence and accumulation" elapsed_ms=174.910
+PHASE spin=1 T1023 q1 sample=4 name="coefficient cleanup" elapsed_ms=0.002
+PHASE_PROFILE spin=1 T1023 q1 sample=5 wall_ms=247.630 phase_sum_ms=247.595 unmeasured_ms=0.035
+PHASE spin=1 T1023 q1 sample=5 name="strategy selection and table setup" elapsed_ms=0.000
+PHASE spin=1 T1023 q1 sample=5 name="forward FFT" elapsed_ms=72.083
+PHASE spin=1 T1023 q1 sample=5 name="coefficient initialization" elapsed_ms=0.918
+PHASE spin=1 T1023 q1 sample=5 name="resampling and latitude setup" elapsed_ms=0.020
+PHASE spin=1 T1023 q1 sample=5 name="order work prefix" elapsed_ms=0.000
+PHASE spin=1 T1023 q1 sample=5 name="Legendre recurrence and accumulation" elapsed_ms=174.573
+PHASE spin=1 T1023 q1 sample=5 name="coefficient cleanup" elapsed_ms=0.002
+PHASE_PROFILE spin=1 T1023 q6 sample=1 wall_ms=60.547 phase_sum_ms=60.489 unmeasured_ms=0.058
+PHASE spin=1 T1023 q6 sample=1 name="strategy selection and table setup" elapsed_ms=3.089
+PHASE spin=1 T1023 q6 sample=1 name="forward FFT" elapsed_ms=14.098
+PHASE spin=1 T1023 q6 sample=1 name="coefficient initialization" elapsed_ms=1.109
+PHASE spin=1 T1023 q6 sample=1 name="resampling and latitude setup" elapsed_ms=0.021
+PHASE spin=1 T1023 q6 sample=1 name="order work prefix" elapsed_ms=0.006
+PHASE spin=1 T1023 q6 sample=1 name="Legendre recurrence and accumulation" elapsed_ms=42.165
+PHASE spin=1 T1023 q6 sample=1 name="coefficient cleanup" elapsed_ms=0.002
+PHASE_PROFILE spin=1 T1023 q6 sample=2 wall_ms=54.482 phase_sum_ms=54.453 unmeasured_ms=0.029
+PHASE spin=1 T1023 q6 sample=2 name="strategy selection and table setup" elapsed_ms=0.000
+PHASE spin=1 T1023 q6 sample=2 name="forward FFT" elapsed_ms=13.158
+PHASE spin=1 T1023 q6 sample=2 name="coefficient initialization" elapsed_ms=0.934
+PHASE spin=1 T1023 q6 sample=2 name="resampling and latitude setup" elapsed_ms=0.022
+PHASE spin=1 T1023 q6 sample=2 name="order work prefix" elapsed_ms=0.006
+PHASE spin=1 T1023 q6 sample=2 name="Legendre recurrence and accumulation" elapsed_ms=40.331
+PHASE spin=1 T1023 q6 sample=2 name="coefficient cleanup" elapsed_ms=0.002
+PHASE_PROFILE spin=1 T1023 q6 sample=3 wall_ms=54.999 phase_sum_ms=54.966 unmeasured_ms=0.032
+PHASE spin=1 T1023 q6 sample=3 name="strategy selection and table setup" elapsed_ms=0.000
+PHASE spin=1 T1023 q6 sample=3 name="forward FFT" elapsed_ms=13.565
+PHASE spin=1 T1023 q6 sample=3 name="coefficient initialization" elapsed_ms=0.927
+PHASE spin=1 T1023 q6 sample=3 name="resampling and latitude setup" elapsed_ms=0.021
+PHASE spin=1 T1023 q6 sample=3 name="order work prefix" elapsed_ms=0.006
+PHASE spin=1 T1023 q6 sample=3 name="Legendre recurrence and accumulation" elapsed_ms=40.446
+PHASE spin=1 T1023 q6 sample=3 name="coefficient cleanup" elapsed_ms=0.002
+PHASE_PROFILE spin=1 T1023 q6 sample=4 wall_ms=55.720 phase_sum_ms=55.694 unmeasured_ms=0.026
+PHASE spin=1 T1023 q6 sample=4 name="strategy selection and table setup" elapsed_ms=0.000
+PHASE spin=1 T1023 q6 sample=4 name="forward FFT" elapsed_ms=14.122
+PHASE spin=1 T1023 q6 sample=4 name="coefficient initialization" elapsed_ms=0.979
+PHASE spin=1 T1023 q6 sample=4 name="resampling and latitude setup" elapsed_ms=0.022
+PHASE spin=1 T1023 q6 sample=4 name="order work prefix" elapsed_ms=0.006
+PHASE spin=1 T1023 q6 sample=4 name="Legendre recurrence and accumulation" elapsed_ms=40.564
+PHASE spin=1 T1023 q6 sample=4 name="coefficient cleanup" elapsed_ms=0.002
+PHASE_PROFILE spin=1 T1023 q6 sample=5 wall_ms=59.433 phase_sum_ms=59.404 unmeasured_ms=0.029
+PHASE spin=1 T1023 q6 sample=5 name="strategy selection and table setup" elapsed_ms=0.000
+PHASE spin=1 T1023 q6 sample=5 name="forward FFT" elapsed_ms=17.469
+PHASE spin=1 T1023 q6 sample=5 name="coefficient initialization" elapsed_ms=0.993
+PHASE spin=1 T1023 q6 sample=5 name="resampling and latitude setup" elapsed_ms=0.027
+PHASE spin=1 T1023 q6 sample=5 name="order work prefix" elapsed_ms=0.006
+PHASE spin=1 T1023 q6 sample=5 name="Legendre recurrence and accumulation" elapsed_ms=40.907
+PHASE spin=1 T1023 q6 sample=5 name="coefficient cleanup" elapsed_ms=0.002
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 195 filtered out; finished in 3.31s
+
+     Running tests/f32.rs (target/release/deps/f32-a2c2d3b3817972ed)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.00s
+

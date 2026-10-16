@@ -1,0 +1,18 @@
+local_date=2026-10-15
+start_utc=2026-10-16T02:09:21Z
+end_utc=2026-10-16T02:09:36Z
+source_commit=7ac443a40b034d5c52526d23ef30f6cef4b13d19
+measurement_head=3dab856689761bf2f463611bc1b5002671cd53c3 (documentation-only commits after source commit)
+rustc=1.99.0 (b940084d7 2026-09-28)
+llvm=23.1.1
+command=cargo test --release -p rustsht --all-features m5_analysis_phase_profile -- --ignored --test-threads=1 --nocapture
+cpu=AMD Ryzen 9 5950X 16-Core Processor; 16 cores; 32 logical CPUs
+cpu_features=AVX2, FMA
+affinity=inherited CPUs 0-31; no explicit affinity
+rayon_pools=q1 and q6, explicitly constructed by the diagnostic
+simd=Pulp runtime dispatch enabled; selected implementation not recorded
+build=release profile; no target-cpu=native
+cgroup_cpu_max=max 100000
+load_average_start=1.67, 2.64, 3.60
+load_average_end=3.45, 2.98, 3.70
+result=1 ignored diagnostic passed; 195 tests filtered; 11 f32 tests filtered
