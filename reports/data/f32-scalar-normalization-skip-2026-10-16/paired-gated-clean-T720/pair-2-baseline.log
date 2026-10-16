@@ -1,0 +1,16 @@
+spin=0 T720; GL 721x1458; f32; 1 map component(s); q1 vs q8; one warmup and five samples per operation
+plan_construction_ms=0.097
+workspace_allocation_ms=3.950
+synthesis_q1_first_ms=1485.518
+synthesis_q1_samples_ms=1478.987,1484.711,1482.442,1477.209,1478.121
+synthesis_q1_median_ms=1478.987
+synthesis_qn_first_ms=494.553
+synthesis_qn_samples_ms=495.159,500.747,492.996,495.868,495.527
+synthesis_qn_median_ms=495.527
+analysis_q1_first_ms=753.007
+analysis_q1_samples_ms=751.658,752.229,752.097,752.618,750.126
+analysis_q1_median_ms=752.097
+analysis_qn_first_ms=139.797
+analysis_qn_samples_ms=139.794,139.246,140.612,155.189,140.061
+analysis_qn_median_ms=140.061
+peak_rss_kib=27732

@@ -1,0 +1,64 @@
+{
+  "ducc0": "0.41.0",
+  "ducc_source_revision": "c1ed01b8fda69d2a378190f0915f1a19762dddbf",
+  "grid": {
+    "geometry": "GL",
+    "lmax": 1023,
+    "mmax": 1023,
+    "ntheta": 1024,
+    "nphi": 2048,
+    "phi0": 0.37,
+    "dtype": "float32 / complex64",
+    "nthreads": 1
+  },
+  "comparison": {
+    "0": {
+      "synthesis": [
+        {
+          "elements": 2097152,
+          "relative_l2": 4.873145705497731e-05,
+          "rms_absolute": 1.1527862920953056e-06,
+          "max_absolute": 4.754215478897095e-05
+        }
+      ],
+      "analysis": [
+        {
+          "elements": 524800,
+          "relative_l2": 1.6682820198880124e-05,
+          "rms_absolute": 1.3537637333979146e-08,
+          "max_absolute": 1.172399395882079e-06
+        }
+      ]
+    },
+    "1": {
+      "synthesis": [
+        {
+          "elements": 2097152,
+          "relative_l2": 3.8428851213838726e-05,
+          "rms_absolute": 9.181664118856155e-07,
+          "max_absolute": 4.190206527709961e-05
+        },
+        {
+          "elements": 2097152,
+          "relative_l2": 4.1902290916405765e-05,
+          "rms_absolute": 1.0386193945629615e-06,
+          "max_absolute": 4.419498145580292e-05
+        }
+      ],
+      "analysis": [
+        {
+          "elements": 524800,
+          "relative_l2": 2.0679454377960025e-05,
+          "rms_absolute": 1.894466252511944e-08,
+          "max_absolute": 9.89118201250548e-07
+        },
+        {
+          "elements": 524800,
+          "relative_l2": 2.5582451589867145e-05,
+          "rms_absolute": 1.7418013014512363e-08,
+          "max_absolute": 9.157540597658736e-07
+        }
+      ]
+    }
+  }
+}

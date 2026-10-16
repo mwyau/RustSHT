@@ -1,0 +1,38 @@
+{
+  "spin0-analysis-channel0.c32": {
+    "elements": 524800,
+    "bitwise_identical": true,
+    "relative_l2_difference": 0.0,
+    "max_absolute_difference": 0.0
+  },
+  "spin0-synthesis-channel0.f32": {
+    "elements": 2097152,
+    "bitwise_identical": true,
+    "relative_l2_difference": 0.0,
+    "max_absolute_difference": 0.0
+  },
+  "spin1-analysis-channel0.c32": {
+    "elements": 524800,
+    "bitwise_identical": true,
+    "relative_l2_difference": 0.0,
+    "max_absolute_difference": 0.0
+  },
+  "spin1-analysis-channel1.c32": {
+    "elements": 524800,
+    "bitwise_identical": true,
+    "relative_l2_difference": 0.0,
+    "max_absolute_difference": 0.0
+  },
+  "spin1-synthesis-channel0.f32": {
+    "elements": 2097152,
+    "bitwise_identical": true,
+    "relative_l2_difference": 0.0,
+    "max_absolute_difference": 0.0
+  },
+  "spin1-synthesis-channel1.f32": {
+    "elements": 2097152,
+    "bitwise_identical": true,
+    "relative_l2_difference": 0.0,
+    "max_absolute_difference": 0.0
+  }
+}
