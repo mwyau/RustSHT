@@ -29,15 +29,17 @@ governor `performance`, energy preference `performance`, boost enabled, with a
 reported maximum of 5.09 GHz. The policy was not captured inside each process
 record, so this is host context rather than a per-sample frequency measurement.
 
-Current-head comparisons against portable DUCC, FFTW and Admiral have not yet
-been collected. M17 covers those libraries at an earlier source revision, and
-M18 covers them at N=682; neither is substituted for missing current-head
-results. The M19 matrix has 34 direction/length cells per reference. It measures
-1D public FFT operations shaped as serial SHT row batches, not complete SHT
-calls. The benchmark records plan construction, workspace construction and
-bytes, and steady operation time. A separate M19 diagnostic on the exact
-`cd5748b` worktree records retained plan payload, route traces, and one
-first-call observation per direction and target length.
+The M19 matrix has 34 direction/length cells per reference. It measures 1D
+public FFT operations shaped as serial SHT row batches, not complete SHT calls.
+The benchmark records plan construction, workspace construction and bytes,
+and steady operation time. A separate M19 diagnostic on the exact `cd5748b`
+worktree records retained plan payload, route traces, and one first-call
+observation per direction and target length. Portable DUCC, FFTW and Admiral
+were measured in six alternating process pairs after the RustFFT and native
+DUCC captures. No separate SHT benchmark process was active during those
+three captures. Their recorded one-minute load averages ranged from 0.75 to
+3.29, so results with broad intervals remain diagnostic. Native DUCC remains
+provisional because a separate SHT benchmark overlapped that capture.
 
 ## RustFFT comparison at SHT row counts
 
@@ -97,6 +99,41 @@ The DUCC comparisons identify the same complex priorities. The R2C N=723 and
 both N=2,049 operations are at or above parity with native DUCC in this
 diagnostic capture. Native DUCC is faster for N=4,097 in both directions.
 
+## Current-head cross-library matrix
+
+The table gives paired `reference time / RustSHT-FFT time` ratios; values below
+one mean RustSHT-FFT is slower. Each interval is a bootstrap 95% interval over
+six process pairs. RustFFT ratios use M18, which measured the same source and
+executable with tighter intervals. The other ratios use M19 captures.
+
+| Operation | N | RustFFT | DUCC portable | DUCC native* | FFTW | Admiral |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| C2C forward | 726 | 0.244 (0.237–0.252) | 0.551 (0.548–0.560) | 0.395 (0.386–0.397) | 0.374 (0.362–0.378) | 0.342 (0.337–0.347) |
+| C2C inverse | 726 | 0.239 (0.232–0.251) | 0.530 (0.528–0.538) | 0.359 (0.354–0.483) | 0.352 (0.350–0.366) | 0.298 (0.294–0.302) |
+| C2C forward | 1,442 | 0.241 (0.237–0.250) | 0.455 (0.448–0.463) | 0.327 (0.324–0.331) | 0.451 (0.441–0.466) | 0.375 (0.366–0.391) |
+| C2C inverse | 1,442 | 0.221 (0.219–0.224) | 0.413 (0.409–0.415) | 0.267 (0.265–0.275) | 0.412 (0.397–0.422) | 0.333 (0.331–0.342) |
+| C2C forward | 1,452 | 0.255 (0.251–0.257) | 0.581 (0.566–0.585) | 0.263 (0.246–0.277) | 0.458 (0.443–0.481) | 0.272 (0.266–0.277) |
+| C2C inverse | 1,452 | 0.248 (0.246–0.249) | 0.559 (0.557–0.563) | 0.251 (0.242–0.265) | 0.432 (0.424–0.439) | 0.238 (0.236–0.243) |
+| C2C forward | 2,904 | 0.268 (0.260–0.272) | 0.615 (0.610–0.624) | 0.290 (0.269–0.306) | 0.559 (0.541–0.568) | 0.305 (0.299–0.313) |
+| C2C inverse | 2,904 | 0.254 (0.251–0.260) | 0.566 (0.560–0.572) | 0.280 (0.271–0.296) | 0.507 (0.400–0.515) | 0.264 (0.261–0.267) |
+| R2C | 723 | 0.421 (0.408–0.427) | 1.522 (1.491–1.967) | 1.071 (1.047–1.089) | 0.801 (0.412–0.808) | 0.954 (0.947–0.957) |
+| C2R | 723 | 0.402 (0.388–0.407) | 1.435 (1.324–2.068) | 0.997 (0.921–1.203) | 0.761 (0.749–0.770) | 0.901 (0.895–0.907) |
+| R2C | 2,049 | 1.158 (1.151–1.163) | 1.569 (1.561–1.620) | 1.207 (1.183–1.215) | 1.347 (1.060–1.361) | 0.894 (0.881–0.900) |
+| C2R | 2,049 | 1.049 (1.013–1.055) | 1.456 (1.442–1.493) | 1.103 (1.082–1.309) | 1.204 (0.936–1.222) | 0.824 (0.815–0.852) |
+| R2C | 4,097 | 0.595 (0.590–0.601) | 1.019 (1.014–1.033) | 0.726 (0.698–0.767) | 0.621 (0.581–0.631) | 0.613 (0.609–0.627) |
+| C2R | 4,097 | 0.515 (0.511–0.520) | 0.894 (0.884–0.904) | 0.635 (0.623–0.639) | 0.515 (0.442–0.525) | 0.557 (0.543–0.569) |
+
+*Native DUCC results are provisional because a separate SHT benchmark overlapped
+that capture. Portable DUCC is a separate scalar-planner build. All comparisons
+use one transform thread and include public real packing and scaling.
+
+The large complex gaps persist across references. N=1,442 has the highest
+absolute C2C cost; N=726, 1,452 and 2,904 also remain several times slower
+than each library. Real N=723 beats portable DUCC in this capture but trails
+RustFFT, FFTW and Admiral. N=4,097 is near portable-DUCC parity for R2C and
+slower for C2R, while the other references remain faster. N=2,049 remains
+competitive with RustFFT and DUCC but slower than Admiral in this capture.
+
 ## Confirmed routes and priorities
 
 Factorization follows the pinned DUCC order in `src/complex.rs`. At the M19
@@ -135,13 +172,18 @@ The remaining-work ranking is:
   and [summary](../benches/results/m19-current-head-cross-library/m19-rustfft-summary.csv).
 - [M19 native DUCC six-pair raw output](../benches/results/m19-current-head-cross-library/m19-ducc-native-six-pairs.jsonl)
   and [summary](../benches/results/m19-current-head-cross-library/m19-ducc-native-summary.csv).
+- [M19 portable DUCC six-pair raw output](../benches/results/m19-current-head-cross-library/m19-ducc-portable-six-pairs.jsonl)
+  and [summary](../benches/results/m19-current-head-cross-library/m19-ducc-portable-summary.csv).
+- M19 [FFTW raw output](../benches/results/m19-current-head-cross-library/m19-fftw-six-pairs.jsonl)
+  and [summary](../benches/results/m19-current-head-cross-library/m19-fftw-summary.csv),
+  and [Admiral raw output](../benches/results/m19-current-head-cross-library/m19-admiral-six-pairs.jsonl)
+  and [summary](../benches/results/m19-current-head-cross-library/m19-admiral-summary.csv).
 - Per-reference [M19 configurations](../benches/results/m19-current-head-cross-library/)
   record commands, binary hashes, affinity, toolchain and workload.
 
-The M19 portable DUCC, FFTW and Admiral configurations are prepared but have
-not been run. Their prepared configurations make the remaining comparison
-matrix reproducible. No source changes or optimization acceptance are based on
-this provisional baseline.
+The portable DUCC, FFTW and Admiral configurations and raw process records are
+retained alongside the summaries. No source changes or optimization
+acceptance are based on this baseline.
 
 ## Plan, workspace and first-call diagnostics
 
