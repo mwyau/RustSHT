@@ -32,7 +32,7 @@ These native f64 q1/q16 comparisons use full-band GL plans at T1023 (`1024×2048
 
 ## Analysis phase profile
 
-`profiles/phase-profile.log` contains five samples per phase-profile case. The diagnostic grid uses `nphi=2*lmax+3`, which is one longitude larger than the paired even grids at T1023/T1279 and the FFT-friendly T720 grid in the main matrix. q1/q8 wall and phase medians are summarized below in milliseconds. The recurrence timer combines Legendre evaluation and coefficient accumulation; the FFT timer covers serial row FFT calls.
+`profiles/phase-profile.log` contains five samples per phase-profile case. The diagnostic grid uses `nphi=2*lmax+3`, which is one longitude larger than the paired even grids at T1023/T1279 and the FFT-friendly T720 grid in the main matrix. q1/q8 wall and phase medians are summarized below in milliseconds. The recurrence timer combines Legendre evaluation and coefficient accumulation. At q>1, the forward-FFT stage schedules latitude row groups across the worker pool; each worker processes its assigned rows serially. The timer does not isolate individual RustFFT calls.
 
 | Truncation | Spin | Threads | Whole call | Row FFT | Legendre recurrence + accumulation |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -53,7 +53,7 @@ These native f64 q1/q16 comparisons use full-band GL plans at T1023 (`1024×2048
 | T2047 | 1 | 1 | 1,981 | 225 (11%) | 1,753 (89%) |
 | T2047 | 1 | 8 | 390 | 34.0 (9%) | 352 (90%) |
 
-The measurement timer also records order-spectrum preparation and setup phases; their raw samples are retained. The three named phase totals explain the large majority of the call. At q8, the recurrence remains the largest phase for these grids; serial row FFT execution is a secondary cost. This profile does not justify FFT replacement without a grid-length-specific end-to-end comparison.
+The measurement timer also records order-spectrum preparation and setup phases; their raw samples are retained. The three named phase totals explain the large majority of the call. At q8, recurrence and accumulation remain the largest phase for these grids. The row-parallel FFT stage is a secondary cost, so these profiles do not justify FFT replacement without a grid-length-specific end-to-end comparison.
 
 ## Analysis-leaf profile
 

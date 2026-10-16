@@ -1,0 +1,15 @@
+T720 GL 721x1458 spin=0 mode=STANDARD threads=1 runs=2 scope=plan operation=both backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
+plan_construction_ms=0.042,0.041
+numpy_alm_copy_ms=0.109,0.105
+numpy_map_copy_ms=0.177,0.172
+numpy_output_allocation_ms=0.001,0.001
+synthesis_error=max_abs=7.805e-14 rms=1.327e-15 rel_l2=7.969e-14
+synthesis_rust_plan_raw_samples_ms=98.558,101.212,98.502,104.590,99.263;99.666,99.024,99.232,99.553,98.961
+synthesis_rust_plan_run_medians_ms=99.263,99.232; median=99.248; spread=0.031
+synthesis_ducc_raw_samples_ms=30.363,30.097,27.748,30.436,27.444;30.208,27.353,30.311,27.258,30.867
+synthesis_ducc_run_medians_ms=30.097,30.208; median=30.153; spread=0.111
+analysis_error=max_abs=6.953e-15 rms=1.327e-16 rel_l2=3.658e-14
+analysis_rust_plan_raw_samples_ms=41.644,41.850,41.798,42.079,42.837;41.748,41.776,41.864,41.833,41.812
+analysis_rust_plan_run_medians_ms=41.850,41.812; median=41.831; spread=0.039
+analysis_ducc_raw_samples_ms=28.838,28.764,28.633,28.581,28.513;28.535,28.487,28.564,28.834,28.569
+analysis_ducc_run_medians_ms=28.633,28.564; median=28.599; spread=0.069

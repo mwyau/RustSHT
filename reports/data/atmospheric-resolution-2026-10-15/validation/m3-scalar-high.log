@@ -1,0 +1,17 @@
+    Finished `release` profile [optimized] target(s) in 0.01s
+     Running unittests src/lib.rs (target/release/deps/rustsht-159837ac1c3bd1f7)
+
+running 1 test
+test transform::tests::m3_scalar_t511_t1023_t2047_all_grids_matches_ducc_and_closed_form ... M3 scalar T511 GaussLegendre: DUCC middle-row max abs=5.773e-15; analytic map max abs=1.738e-12, RMS=5.489e-14; analysis coefficient max abs=1.288e-14, RMS=3.556e-17
+M3 scalar T511 ClenshawCurtis: DUCC middle-row max abs=4.663e-15; analytic map max abs=1.742e-12, RMS=5.481e-14; analysis coefficient max abs=9.993e-15, RMS=2.760e-17
+M3 scalar T511 Fejer1: DUCC middle-row max abs=4.885e-15; analytic map max abs=1.737e-12, RMS=5.486e-14; analysis coefficient max abs=3.997e-15, RMS=1.110e-17
+M3 scalar T1023 GaussLegendre: DUCC middle-row max abs=1.257e-14; analytic map max abs=4.128e-12, RMS=1.070e-13; analysis coefficient max abs=1.199e-14, RMS=1.658e-17
+M3 scalar T1023 ClenshawCurtis: DUCC middle-row max abs=1.196e-14; analytic map max abs=4.132e-12, RMS=1.069e-13; analysis coefficient max abs=1.221e-14, RMS=1.688e-17
+M3 scalar T1023 Fejer1: DUCC middle-row max abs=1.224e-14; analytic map max abs=4.128e-12, RMS=1.070e-13; analysis coefficient max abs=7.106e-15, RMS=9.848e-18
+M3 scalar T2047 GaussLegendre: DUCC middle-row max abs=2.083e-13; analytic map max abs=9.952e-12, RMS=2.241e-13; analysis coefficient max abs=4.175e-14, RMS=2.883e-17
+M3 scalar T2047 ClenshawCurtis: DUCC middle-row max abs=2.078e-13; analytic map max abs=9.958e-12, RMS=2.240e-13; analysis coefficient max abs=2.842e-14, RMS=1.964e-17
+M3 scalar T2047 Fejer1: DUCC middle-row max abs=2.072e-13; analytic map max abs=9.952e-12, RMS=2.241e-13; analysis coefficient max abs=2.687e-14, RMS=1.856e-17
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 198 filtered out; finished in 7.22s
+

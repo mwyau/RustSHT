@@ -1,0 +1,20 @@
+    Finished `release` profile [optimized] target(s) in 0.01s
+     Running unittests src/lib.rs (target/release/deps/rustsht-159837ac1c3bd1f7)
+
+running 1 test
+test spin_transform::tests::m3_spin_t2047_sparse_synthesis_matches_ducc_and_sectoral_formula ... M3 spin 1 T2047 GaussLegendre: DUCC middle-ring samples max abs=2.137e-13; analytic map max abs=1.344e-11, RMS=5.250e-13
+M3 spin 2 T2047 GaussLegendre: DUCC middle-ring samples max abs=2.085e-13; analytic map max abs=1.236e-11, RMS=3.883e-13
+M3 spin 3 T2047 GaussLegendre: DUCC middle-ring samples max abs=2.169e-13; analytic map max abs=1.218e-11, RMS=4.238e-13
+M3 spin 4 T2047 GaussLegendre: DUCC middle-ring samples max abs=2.096e-13; analytic map max abs=1.013e-11, RMS=2.122e-13
+M3 spin 1 T2047 ClenshawCurtis: DUCC middle-ring samples max abs=2.137e-13; analytic map max abs=1.344e-11, RMS=5.238e-13
+M3 spin 2 T2047 ClenshawCurtis: DUCC middle-ring samples max abs=2.085e-13; analytic map max abs=1.236e-11, RMS=3.877e-13
+M3 spin 3 T2047 ClenshawCurtis: DUCC middle-ring samples max abs=2.169e-13; analytic map max abs=1.218e-11, RMS=4.259e-13
+M3 spin 4 T2047 ClenshawCurtis: DUCC middle-ring samples max abs=2.096e-13; analytic map max abs=1.013e-11, RMS=2.095e-13
+M3 spin 1 T2047 Fejer1: DUCC middle-ring samples max abs=2.137e-13; analytic map max abs=1.344e-11, RMS=5.246e-13
+M3 spin 2 T2047 Fejer1: DUCC middle-ring samples max abs=2.085e-13; analytic map max abs=1.236e-11, RMS=3.880e-13
+M3 spin 3 T2047 Fejer1: DUCC middle-ring samples max abs=2.169e-13; analytic map max abs=1.218e-11, RMS=4.253e-13
+M3 spin 4 T2047 Fejer1: DUCC middle-ring samples max abs=2.096e-13; analytic map max abs=1.013e-11, RMS=2.104e-13
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 198 filtered out; finished in 5.85s
+

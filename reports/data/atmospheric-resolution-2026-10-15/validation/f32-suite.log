@@ -1,0 +1,18 @@
+    Finished `release` profile [optimized] target(s) in 0.01s
+     Running tests/f32.rs (target/release/deps/f32-a2c2d3b3817972ed)
+
+running 11 tests
+test f32_cc_scalar_synthesis_is_constant_at_the_south_pole ... ok
+test f32_derivative_synthesis_matches_analytic_harmonic_and_adjoint_identity ... ok
+test f32_longitude_phase_handles_large_finite_phi0_for_scalar_and_spin ... ok
+test f32_rectangular_even_analysis_and_even_nyquist_synthesis_are_supported ... ok
+test f32_scalar_analytic_field_and_adjoint_identities_hold_on_all_grids ... ok
+test f32_scalar_synthesis_and_analysis_match_ducc_0410_on_all_grids ... ok
+test f32_spin1_gl_t511_analysis_matches_ducc_0410 ... ok
+test f32_spin_1_through_4_operations_and_adjoint_identities_hold_on_all_grids ... ok
+test f32_spin_one_gl_synthesis_matches_ducc_0410 ... ok
+test f32_t127_sectoral_synthesis_remains_finite_and_matches_analytic_values ... ok
+test f32_t127_spin1_gl_sparse_synthesis_matches_ducc_0410 ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
+
