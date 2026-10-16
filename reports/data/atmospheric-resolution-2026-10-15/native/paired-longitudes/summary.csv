@@ -1,0 +1,177 @@
+comparison,pair,lmax,nphi,spin,threads,operation,median_ms,first_call_ms,plan_construction_ms,workspace_allocation_ms,peak_rss_kib,process_wall_seconds,quality
+fft-vs-even,1,720,1442,0,1,synthesis,101.577,,0.045,8.711,82512.0,1.53,screen-paired
+fft-vs-even,1,720,1442,0,8,synthesis,40.873,,0.045,8.711,82512.0,1.53,screen-paired
+fft-vs-even,1,720,1442,0,1,analysis,44.831,,0.045,8.711,82512.0,1.53,screen-paired
+fft-vs-even,1,720,1442,0,8,analysis,11.919,,0.045,8.711,82512.0,1.53,screen-paired
+fft-vs-even,1,720,1442,1,1,synthesis,107.478,113.853,0.062,8.306,114148.0,1.95,screen-paired
+fft-vs-even,1,720,1442,1,8,synthesis,47.418,59.8,0.062,8.306,114148.0,1.95,screen-paired
+fft-vs-even,1,720,1442,1,1,analysis,78.659,77.447,0.062,8.306,114148.0,1.95,screen-paired
+fft-vs-even,1,720,1442,1,8,analysis,21.8,22.938,0.062,8.306,114148.0,1.95,screen-paired
+fft-vs-even,1,720,1458,0,1,synthesis,98.659,,0.039,8.609,81552.0,1.45,screen-paired
+fft-vs-even,1,720,1458,0,8,synthesis,37.46,,0.039,8.609,81552.0,1.45,screen-paired
+fft-vs-even,1,720,1458,0,1,analysis,41.517,,0.039,8.609,81552.0,1.45,screen-paired
+fft-vs-even,1,720,1458,0,8,analysis,9.749,,0.039,8.609,81552.0,1.45,screen-paired
+fft-vs-even,1,720,1458,1,1,synthesis,100.739,107.491,0.039,9.313,117752.0,1.8,screen-paired
+fft-vs-even,1,720,1458,1,8,synthesis,40.511,53.935,0.039,9.313,117752.0,1.8,screen-paired
+fft-vs-even,1,720,1458,1,1,analysis,74.167,71.494,0.039,9.313,117752.0,1.8,screen-paired
+fft-vs-even,1,720,1458,1,8,analysis,17.872,17.583,0.039,9.313,117752.0,1.8,screen-paired
+fft-vs-even,2,720,1442,0,1,synthesis,102.008,,0.046,8.226,80652.0,1.53,screen-paired
+fft-vs-even,2,720,1442,0,8,synthesis,41.056,,0.046,8.226,80652.0,1.53,screen-paired
+fft-vs-even,2,720,1442,0,1,analysis,45.102,,0.046,8.226,80652.0,1.53,screen-paired
+fft-vs-even,2,720,1442,0,8,analysis,11.19,,0.046,8.226,80652.0,1.53,screen-paired
+fft-vs-even,2,720,1442,1,1,synthesis,107.17,113.752,0.044,8.623,114080.0,1.92,screen-paired
+fft-vs-even,2,720,1442,1,8,synthesis,47.137,60.169,0.044,8.623,114080.0,1.92,screen-paired
+fft-vs-even,2,720,1442,1,1,analysis,77.967,77.449,0.044,8.623,114080.0,1.92,screen-paired
+fft-vs-even,2,720,1442,1,8,analysis,17.421,22.196,0.044,8.623,114080.0,1.92,screen-paired
+fft-vs-even,2,720,1458,0,1,synthesis,99.176,,0.044,8.366,81168.0,1.46,screen-paired
+fft-vs-even,2,720,1458,0,8,synthesis,38.368,,0.044,8.366,81168.0,1.46,screen-paired
+fft-vs-even,2,720,1458,0,1,analysis,41.995,,0.044,8.366,81168.0,1.46,screen-paired
+fft-vs-even,2,720,1458,0,8,analysis,10.758,,0.044,8.366,81168.0,1.46,screen-paired
+fft-vs-even,2,720,1458,1,1,synthesis,101.255,108.35,0.061,8.842,114672.0,1.79,screen-paired
+fft-vs-even,2,720,1458,1,8,synthesis,41.66,54.295,0.061,8.842,114672.0,1.79,screen-paired
+fft-vs-even,2,720,1458,1,1,analysis,72.146,72.887,0.061,8.842,114672.0,1.79,screen-paired
+fft-vs-even,2,720,1458,1,8,analysis,15.536,19.176,0.061,8.842,114672.0,1.79,screen-paired
+odd-vs-even,1,1023,2047,0,1,synthesis,337.247,,0.3,15.748,171388.0,4.47,screen-paired
+odd-vs-even,1,1023,2047,0,8,synthesis,95.553,,0.3,15.748,171388.0,4.47,screen-paired
+odd-vs-even,1,1023,2047,0,1,analysis,133.782,,0.3,15.748,171388.0,4.47,screen-paired
+odd-vs-even,1,1023,2047,0,8,analysis,30.811,,0.3,15.748,171388.0,4.47,screen-paired
+odd-vs-even,1,1023,2047,1,1,synthesis,361.911,364.836,0.308,16.498,171820.0,5.6,screen-paired
+odd-vs-even,1,1023,2047,1,8,synthesis,132.334,122.186,0.308,16.498,171820.0,5.6,screen-paired
+odd-vs-even,1,1023,2047,1,1,analysis,218.669,226.479,0.308,16.498,171820.0,5.6,screen-paired
+odd-vs-even,1,1023,2047,1,8,analysis,50.774,55.38,0.308,16.498,171820.0,5.6,screen-paired
+odd-vs-even,1,1023,2048,0,1,synthesis,305.794,,0.055,15.656,169216.0,3.95,screen-paired
+odd-vs-even,1,1023,2048,0,8,synthesis,83.348,,0.055,15.656,169216.0,3.95,screen-paired
+odd-vs-even,1,1023,2048,0,1,analysis,113.81,,0.055,15.656,169216.0,3.95,screen-paired
+odd-vs-even,1,1023,2048,0,8,analysis,27.074,,0.055,15.656,169216.0,3.95,screen-paired
+odd-vs-even,1,1023,2048,1,1,synthesis,292.021,302.334,0.077,15.142,169676.0,4.55,screen-paired
+odd-vs-even,1,1023,2048,1,8,synthesis,88.5,84.953,0.077,15.142,169676.0,4.55,screen-paired
+odd-vs-even,1,1023,2048,1,1,analysis,189.077,189.73,0.077,15.142,169676.0,4.55,screen-paired
+odd-vs-even,1,1023,2048,1,8,analysis,46.914,50.695,0.077,15.142,169676.0,4.55,screen-paired
+odd-vs-even,1,1279,2559,0,1,synthesis,696.561,,0.174,24.74,239556.0,9.78,screen-paired
+odd-vs-even,1,1279,2559,0,8,synthesis,340.608,,0.174,24.74,239556.0,9.78,screen-paired
+odd-vs-even,1,1279,2559,0,1,analysis,251.501,,0.174,24.74,239556.0,9.78,screen-paired
+odd-vs-even,1,1279,2559,0,8,analysis,49.814,,0.174,24.74,239556.0,9.78,screen-paired
+odd-vs-even,1,1279,2559,1,1,synthesis,692.555,714.905,0.174,24.284,239992.0,11.42,screen-paired
+odd-vs-even,1,1279,2559,1,8,synthesis,359.944,370.113,0.174,24.284,239992.0,11.42,screen-paired
+odd-vs-even,1,1279,2559,1,1,analysis,426.291,421.287,0.174,24.284,239992.0,11.42,screen-paired
+odd-vs-even,1,1279,2559,1,8,analysis,83.368,109.02,0.174,24.284,239992.0,11.42,screen-paired
+odd-vs-even,1,1279,2560,0,1,synthesis,646.193,,0.068,23.841,237568.0,9.02,screen-paired
+odd-vs-even,1,1279,2560,0,8,synthesis,306.745,,0.068,23.841,237568.0,9.02,screen-paired
+odd-vs-even,1,1279,2560,0,1,analysis,223.528,,0.068,23.841,237568.0,9.02,screen-paired
+odd-vs-even,1,1279,2560,0,8,analysis,54.185,,0.068,23.841,237568.0,9.02,screen-paired
+odd-vs-even,1,1279,2560,1,1,synthesis,594.478,619.21,0.068,24.579,238108.0,9.74,screen-paired
+odd-vs-even,1,1279,2560,1,8,synthesis,291.193,308.571,0.068,24.579,238108.0,9.74,screen-paired
+odd-vs-even,1,1279,2560,1,1,analysis,368.58,371.884,0.068,24.579,238108.0,9.74,screen-paired
+odd-vs-even,1,1279,2560,1,8,analysis,67.042,84.086,0.068,24.579,238108.0,9.74,screen-paired
+odd-vs-even,1,2047,4095,0,1,synthesis,3428.793,,0.126,62.192,566220.0,40.1,screen-paired
+odd-vs-even,1,2047,4095,0,8,synthesis,834.217,,0.126,62.192,566220.0,40.1,screen-paired
+odd-vs-even,1,2047,4095,0,1,analysis,1104.725,,0.126,62.192,566220.0,40.1,screen-paired
+odd-vs-even,1,2047,4095,0,8,analysis,214.012,,0.126,62.192,566220.0,40.1,screen-paired
+odd-vs-even,1,2047,4095,1,1,synthesis,4644.861,4557.818,0.16,59.655,599652.0,56.81,screen-paired
+odd-vs-even,1,2047,4095,1,8,synthesis,1140.098,1146.242,0.16,59.655,599652.0,56.81,screen-paired
+odd-vs-even,1,2047,4095,1,1,analysis,1813.633,1844.38,0.16,59.655,599652.0,56.81,screen-paired
+odd-vs-even,1,2047,4095,1,8,analysis,357.548,368.133,0.16,59.655,599652.0,56.81,screen-paired
+odd-vs-even,1,2047,4096,0,1,synthesis,3355.976,,0.135,63.767,565204.0,39.43,screen-paired
+odd-vs-even,1,2047,4096,0,8,synthesis,802.573,,0.135,63.767,565204.0,39.43,screen-paired
+odd-vs-even,1,2047,4096,0,1,analysis,1107.536,,0.135,63.767,565204.0,39.43,screen-paired
+odd-vs-even,1,2047,4096,0,8,analysis,217.807,,0.135,63.767,565204.0,39.43,screen-paired
+odd-vs-even,1,2047,4096,1,1,synthesis,4284.603,4510.284,0.11,59.334,598996.0,53.82,possible_smt_overlap_cpu30_vs_cpu14
+odd-vs-even,1,2047,4096,1,8,synthesis,1018.009,1041.139,0.11,59.334,598996.0,53.82,possible_smt_overlap_cpu30_vs_cpu14
+odd-vs-even,1,2047,4096,1,1,analysis,1824.478,1829.972,0.11,59.334,598996.0,53.82,possible_smt_overlap_cpu30_vs_cpu14
+odd-vs-even,1,2047,4096,1,8,analysis,374.557,390.497,0.11,59.334,598996.0,53.82,possible_smt_overlap_cpu30_vs_cpu14
+odd-vs-even,1,720,1441,0,1,synthesis,107.437,,0.053,8.566,81592.0,1.67,screen-paired
+odd-vs-even,1,720,1441,0,8,synthesis,45.979,,0.053,8.566,81592.0,1.67,screen-paired
+odd-vs-even,1,720,1441,0,1,analysis,51.177,,0.053,8.566,81592.0,1.67,screen-paired
+odd-vs-even,1,720,1441,0,8,analysis,14.598,,0.053,8.566,81592.0,1.67,screen-paired
+odd-vs-even,1,720,1441,1,1,synthesis,115.29,124.085,0.068,8.854,114216.0,2.13,screen-paired
+odd-vs-even,1,720,1441,1,8,synthesis,55.761,68.299,0.068,8.854,114216.0,2.13,screen-paired
+odd-vs-even,1,720,1441,1,1,analysis,85.184,85.415,0.068,8.854,114216.0,2.13,screen-paired
+odd-vs-even,1,720,1441,1,8,analysis,21.706,23.004,0.068,8.854,114216.0,2.13,screen-paired
+odd-vs-even,1,720,1442,0,1,synthesis,101.768,,0.045,8.994,82564.0,1.54,screen-paired
+odd-vs-even,1,720,1442,0,8,synthesis,40.902,,0.045,8.994,82564.0,1.54,screen-paired
+odd-vs-even,1,720,1442,0,1,analysis,45.143,,0.045,8.994,82564.0,1.54,screen-paired
+odd-vs-even,1,720,1442,0,8,analysis,10.335,,0.045,8.994,82564.0,1.54,screen-paired
+odd-vs-even,1,720,1442,1,1,synthesis,107.671,116.46,0.045,8.835,114108.0,1.93,screen-paired
+odd-vs-even,1,720,1442,1,8,synthesis,47.182,60.448,0.045,8.835,114108.0,1.93,screen-paired
+odd-vs-even,1,720,1442,1,1,analysis,76.972,81.794,0.045,8.835,114108.0,1.93,screen-paired
+odd-vs-even,1,720,1442,1,8,analysis,18.782,18.379,0.045,8.835,114108.0,1.93,screen-paired
+odd-vs-even,2,1023,2047,0,1,synthesis,334.259,,0.331,17.17,171216.0,4.43,screen-paired
+odd-vs-even,2,1023,2047,0,8,synthesis,94.931,,0.331,17.17,171216.0,4.43,screen-paired
+odd-vs-even,2,1023,2047,0,1,analysis,131.208,,0.331,17.17,171216.0,4.43,screen-paired
+odd-vs-even,2,1023,2047,0,8,analysis,29.408,,0.331,17.17,171216.0,4.43,screen-paired
+odd-vs-even,2,1023,2047,1,1,synthesis,364.089,364.603,0.308,16.939,172004.0,5.6,screen-paired
+odd-vs-even,2,1023,2047,1,8,synthesis,131.738,120.507,0.308,16.939,172004.0,5.6,screen-paired
+odd-vs-even,2,1023,2047,1,1,analysis,218.716,227.812,0.308,16.939,172004.0,5.6,screen-paired
+odd-vs-even,2,1023,2047,1,8,analysis,46.958,53.789,0.308,16.939,172004.0,5.6,screen-paired
+odd-vs-even,2,1023,2048,0,1,synthesis,304.628,,0.055,15.265,169400.0,3.89,screen-paired
+odd-vs-even,2,1023,2048,0,8,synthesis,76.034,,0.055,15.265,169400.0,3.89,screen-paired
+odd-vs-even,2,1023,2048,0,1,analysis,114.08,,0.055,15.265,169400.0,3.89,screen-paired
+odd-vs-even,2,1023,2048,0,8,analysis,25.395,,0.055,15.265,169400.0,3.89,screen-paired
+odd-vs-even,2,1023,2048,1,1,synthesis,292.463,303.593,0.058,14.99,169428.0,4.49,screen-paired
+odd-vs-even,2,1023,2048,1,8,synthesis,73.506,94.653,0.058,14.99,169428.0,4.49,screen-paired
+odd-vs-even,2,1023,2048,1,1,analysis,186.978,187.789,0.058,14.99,169428.0,4.49,screen-paired
+odd-vs-even,2,1023,2048,1,8,analysis,41.476,47.506,0.058,14.99,169428.0,4.49,screen-paired
+odd-vs-even,2,1279,2559,0,1,synthesis,692.155,,0.176,24.533,239112.0,9.68,screen-paired
+odd-vs-even,2,1279,2559,0,8,synthesis,339.268,,0.176,24.533,239112.0,9.68,screen-paired
+odd-vs-even,2,1279,2559,0,1,analysis,250.873,,0.176,24.533,239112.0,9.68,screen-paired
+odd-vs-even,2,1279,2559,0,8,analysis,44.475,,0.176,24.533,239112.0,9.68,screen-paired
+odd-vs-even,2,1279,2559,1,1,synthesis,688.572,711.336,0.177,23.558,239968.0,11.19,screen-paired
+odd-vs-even,2,1279,2559,1,8,synthesis,354.483,368.966,0.177,23.558,239968.0,11.19,screen-paired
+odd-vs-even,2,1279,2559,1,1,analysis,418.189,420.862,0.177,23.558,239968.0,11.19,screen-paired
+odd-vs-even,2,1279,2559,1,8,analysis,73.103,77.342,0.177,23.558,239968.0,11.19,screen-paired
+odd-vs-even,2,1279,2560,0,1,synthesis,642.3,,0.067,23.808,236888.0,8.87,screen-paired
+odd-vs-even,2,1279,2560,0,8,synthesis,303.517,,0.067,23.808,236888.0,8.87,screen-paired
+odd-vs-even,2,1279,2560,0,1,analysis,223.323,,0.067,23.808,236888.0,8.87,screen-paired
+odd-vs-even,2,1279,2560,0,8,analysis,41.094,,0.067,23.808,236888.0,8.87,screen-paired
+odd-vs-even,2,1279,2560,1,1,synthesis,591.188,608.716,0.067,23.803,238472.0,9.64,screen-paired
+odd-vs-even,2,1279,2560,1,8,synthesis,285.467,305.231,0.067,23.803,238472.0,9.64,screen-paired
+odd-vs-even,2,1279,2560,1,1,analysis,369.629,366.594,0.067,23.803,238472.0,9.64,screen-paired
+odd-vs-even,2,1279,2560,1,8,analysis,67.915,71.582,0.067,23.803,238472.0,9.64,screen-paired
+odd-vs-even,2,2047,4095,0,1,synthesis,3476.864,,0.129,60.533,566280.0,40.5,screen-paired
+odd-vs-even,2,2047,4095,0,8,synthesis,834.112,,0.129,60.533,566280.0,40.5,screen-paired
+odd-vs-even,2,2047,4095,0,1,analysis,1103.96,,0.129,60.533,566280.0,40.5,screen-paired
+odd-vs-even,2,2047,4095,0,8,analysis,214.472,,0.129,60.533,566280.0,40.5,screen-paired
+odd-vs-even,2,2047,4095,1,1,synthesis,4781.096,4810.345,0.125,61.66,599712.0,58.83,screen-paired
+odd-vs-even,2,2047,4095,1,8,synthesis,1192.362,1200.67,0.125,61.66,599712.0,58.83,screen-paired
+odd-vs-even,2,2047,4095,1,1,analysis,1878.062,1903.946,0.125,61.66,599712.0,58.83,screen-paired
+odd-vs-even,2,2047,4095,1,8,analysis,367.555,377.914,0.125,61.66,599712.0,58.83,screen-paired
+odd-vs-even,2,2047,4096,0,1,synthesis,3363.105,,0.108,59.895,565020.0,39.64,screen-paired
+odd-vs-even,2,2047,4096,0,8,synthesis,808.707,,0.108,59.895,565020.0,39.64,screen-paired
+odd-vs-even,2,2047,4096,0,1,analysis,1106.599,,0.108,59.895,565020.0,39.64,screen-paired
+odd-vs-even,2,2047,4096,0,8,analysis,222.604,,0.108,59.895,565020.0,39.64,screen-paired
+odd-vs-even,2,2047,4096,1,1,synthesis,4294.418,4324.274,0.108,58.731,598764.0,54.74,screen-paired
+odd-vs-even,2,2047,4096,1,8,synthesis,1069.545,1042.988,0.108,58.731,598764.0,54.74,screen-paired
+odd-vs-even,2,2047,4096,1,1,analysis,1880.026,1894.568,0.108,58.731,598764.0,54.74,screen-paired
+odd-vs-even,2,2047,4096,1,8,analysis,371.439,382.231,0.108,58.731,598764.0,54.74,screen-paired
+odd-vs-even,2,720,1441,0,1,synthesis,106.602,,0.084,8.851,80792.0,1.63,screen-paired
+odd-vs-even,2,720,1441,0,8,synthesis,45.818,,0.084,8.851,80792.0,1.63,screen-paired
+odd-vs-even,2,720,1441,0,1,analysis,49.149,,0.084,8.851,80792.0,1.63,screen-paired
+odd-vs-even,2,720,1441,0,8,analysis,11.44,,0.084,8.851,80792.0,1.63,screen-paired
+odd-vs-even,2,720,1441,1,1,synthesis,114.551,121.54,0.053,9.034,114392.0,2.09,screen-paired
+odd-vs-even,2,720,1441,1,8,synthesis,55.657,68.031,0.053,9.034,114392.0,2.09,screen-paired
+odd-vs-even,2,720,1441,1,1,analysis,84.944,89.04,0.053,9.034,114392.0,2.09,screen-paired
+odd-vs-even,2,720,1441,1,8,analysis,20.294,19.543,0.053,9.034,114392.0,2.09,screen-paired
+odd-vs-even,2,720,1442,0,1,synthesis,101.721,,0.044,8.315,80244.0,1.53,screen-paired
+odd-vs-even,2,720,1442,0,8,synthesis,40.97,,0.044,8.315,80244.0,1.53,screen-paired
+odd-vs-even,2,720,1442,0,1,analysis,44.899,,0.044,8.315,80244.0,1.53,screen-paired
+odd-vs-even,2,720,1442,0,8,analysis,11.851,,0.044,8.315,80244.0,1.53,screen-paired
+odd-vs-even,2,720,1442,1,1,synthesis,107.715,112.369,0.045,8.984,116808.0,1.93,screen-paired
+odd-vs-even,2,720,1442,1,8,synthesis,48.276,59.522,0.045,8.984,116808.0,1.93,screen-paired
+odd-vs-even,2,720,1442,1,1,analysis,77.203,77.679,0.045,8.984,116808.0,1.93,screen-paired
+odd-vs-even,2,720,1442,1,8,analysis,18.208,21.411,0.045,8.984,116808.0,1.93,screen-paired
+odd-vs-even,3,2047,4095,1,1,synthesis,4645.72,4546.869,0.123,60.179,599600.0,56.82,affinity-rerun-no-CPU id
+odd-vs-even,3,2047,4095,1,8,synthesis,1150.201,1186.444,0.123,60.179,599600.0,56.82,affinity-rerun-no-CPU id
+odd-vs-even,3,2047,4095,1,1,analysis,1823.388,1837.258,0.123,60.179,599600.0,56.82,affinity-rerun-no-CPU id
+odd-vs-even,3,2047,4095,1,8,analysis,353.805,369.762,0.123,60.179,599600.0,56.82,affinity-rerun-no-CPU id
+odd-vs-even,3,2047,4096,1,1,synthesis,4364.788,4315.638,0.108,62.054,599448.0,53.9,affinity-rerun-no-CPU id
+odd-vs-even,3,2047,4096,1,8,synthesis,1014.452,1070.037,0.108,62.054,599448.0,53.9,affinity-rerun-no-CPU id
+odd-vs-even,3,2047,4096,1,1,analysis,1821.743,1792.403,0.108,62.054,599448.0,53.9,affinity-rerun-no-CPU id
+odd-vs-even,3,2047,4096,1,8,analysis,354.585,363.963,0.108,62.054,599448.0,53.9,affinity-rerun-no-CPU id
+odd-vs-even,4,2047,4095,1,1,synthesis,4628.081,4574.244,0.122,58.18,601016.0,57.63,affinity-rerun-no-CPU id
+odd-vs-even,4,2047,4095,1,8,synthesis,1136.22,1120.57,0.122,58.18,601016.0,57.63,affinity-rerun-no-CPU id
+odd-vs-even,4,2047,4095,1,1,analysis,1811.141,1880.875,0.122,58.18,601016.0,57.63,affinity-rerun-no-CPU id
+odd-vs-even,4,2047,4095,1,8,analysis,402.311,518.167,0.122,58.18,601016.0,57.63,affinity-rerun-no-CPU id
+odd-vs-even,4,2047,4096,1,1,synthesis,4266.666,4318.113,0.131,58.906,599176.0,54.18,affinity-rerun-no-CPU id
+odd-vs-even,4,2047,4096,1,8,synthesis,1002.938,1116.048,0.131,58.906,599176.0,54.18,affinity-rerun-no-CPU id
+odd-vs-even,4,2047,4096,1,1,analysis,1808.591,1808.809,0.131,58.906,599176.0,54.18,affinity-rerun-no-CPU id
+odd-vs-even,4,2047,4096,1,8,analysis,514.755,366.227,0.131,58.906,599176.0,54.18,affinity-rerun-no-CPU id
