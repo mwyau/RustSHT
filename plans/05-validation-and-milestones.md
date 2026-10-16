@@ -2906,3 +2906,7 @@ Five alternating pairs measured GL STANDARD analysis at q1/q8. Spin-1 RustSHT/DU
 ### Current-source scalar/spin-1 analysis phase profile (M4, 2026-10-15)
 
 The release diagnostic measured T1023 GL STANDARD analysis at q1/q6 with the current parallel row-FFT path. Median recurrence and accumulation times were 116.038/24.190 ms for scalar and 174.656/40.564 ms for spin 1; median forward-FFT times were 35.728/7.017 ms and 72.083/14.098 ms, respectively. Recurrence and accumulation remain the largest measured phase. This unpinned phase profile is diagnostic and does not establish a paired performance change. See [the report](../reports/current-analysis-phase-profile-2026-10-15.md) and [raw data](../reports/data/current-analysis-phase-profile-2026-10-15/).
+
+### f64 scalar T1023 DUCC timing follow-up (M4, 2026-10-15)
+
+Five alternating fresh-process pairs measured GL STANDARD analysis at q1/q8. RustSHT/DUCC paired median ratios were `1.32x` and `1.67x`, with pair ranges `1.31–1.33x` and `1.62–1.77x`. These are lower than the prior provisional q8 ratio of `2.13x`; both implementations ran faster in this collection window. Load averages stayed near 2.6–3.7, but an unrelated unpinned Python process was active, so these remain shared-host observations. See [the report](../reports/t1023-scalar-ducc-followup-2026-10-15.md) and [raw samples](../reports/data/sht-t1023-scalar-ducc-followup-2026-10-15/).
