@@ -1,0 +1,24 @@
+utc=2026-10-16T01:09:08Z
+Linux opencode 7.0.14-20-pve #1 SMP PREEMPT_DYNAMIC PMX 7.0.14-20 (2026-09-24T10:43Z) x86_64 GNU/Linux
+CPU(s):                                  32
+On-line CPU(s) list:                     0-31
+Model name:                              AMD Ryzen 9 5950X 16-Core Processor
+Thread(s) per core:                      2
+Core(s) per socket:                      16
+Socket(s):                               1
+CPU(s) scaling MHz:                      58%
+Flags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local user_shstk clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm debug_swap
+NUMA node0 CPU(s):                       0-31
+rustc 1.99.0 (b940084d7 2026-09-28)
+binary: rustc
+commit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4
+commit-date: 2026-09-28
+host: x86_64-unknown-linux-gnu
+release: 1.99.0
+LLVM version: 23.1.1
+cargo 1.99.0 (5f94df478 2026-08-27)
+82605f6855287fa3ff4218c748b22dfac6b84915
+d4ddd83bb31100b95835535e744a4d1ab87410684be840362d3435c5d377f58f  /home/albert/m4_f32_spin1_normalize_baseline
+340c391abaf2672466d03cd7f45fa67900795e6bdea2fea6954e8b754b7fc271  /home/albert/m4_f32_spin1_normalize_candidate
+1.39 2.54 3.52 2/2710 2026316
+Cpus_allowed_list:	0-31

@@ -1,0 +1,3 @@
+Source commit: 82605f6 perf: vectorize f32 spin analysis accumulation
+Command: TMPDIR=/home/albert/RustSHT-sht-performance/target/valgrind-tmp RAYON_NUM_THREADS=1 taskset -c 0 valgrind --tool=callgrind --callgrind-out-file=callgrind.out --log-file=valgrind.log target/release/deps/f32-a2c2d3b3817972ed f32_spin1_gl_t511_analysis_matches_ducc_0410 --exact
+The raw profile was compressed to callgrind.out.gz for storage. The release test performs one f32 spin-1 GL T511 STANDARD analysis and checks selected coefficients against DUCC 0.41.0. The profile includes plan/workspace and map setup as well as the transform.

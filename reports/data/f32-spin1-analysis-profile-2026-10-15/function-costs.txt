@@ -1,0 +1,13 @@
+Callgrind 3.26.0, event Ir, total 9,446,137,137 instruction references.
+
+Inclusive costs:
+- ShtPlan<f32>::analyze_spin_order_group: 9,361,717,758 (99.11%).
+- for_each_spin_lm_dispatched visitor: 9,313,765,451 (98.60%).
+
+Exclusive and call-site costs from the raw call graph:
+- spin_f32::accumulate_analysis_dispatched: 3,897,567,709 instruction references (41.26% of program total as reported by callgrind_annotate --inclusive=no).
+- spin_f32::normalize_pair_lanes: 2,593,907,388 (27.46%). It was called 1,046,520 times per sign sequence.
+- spin_f32::recurrence_step: 902,100,240 and 901,053,720 references across the two sign sequences, 1,803,153,960 combined (19.09%).
+- RealFftPlan<f32>::forward: 53,443,456 inclusive references (0.57%).
+
+Instruction-reference counts are simulated instruction attribution, not CPU cycles or elapsed time. The normalization SIMD range-check prototype was motivated by the normalization count, but its paired whole-transform measurements regressed severely and the code was removed.
