@@ -1,0 +1,1 @@
+     Running tests/f32.rs (target/release/deps/f32-a2c2d3b3817972ed)

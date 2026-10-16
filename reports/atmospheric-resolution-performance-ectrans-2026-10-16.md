@@ -110,6 +110,10 @@ The q16 screen used the same even grids as the q8 matrix at T1023 and T1279. Con
 
 The first T1023 screen overlapped unrelated Cargo/rustc activity. A repeat on 8 pinned CPU cores was within 4.6% for every operation, spin, and thread count. The f32 path was slower than f64 on these screens. Existing f32 tests pass scalar synthesis and analysis references, spin-1 T511 analysis, spin synthesis references, analytic fields, and adjoint identities. A follow-up DUCC comparison for scalar and spin-1 T1023 synthesis and analysis reports full-array relative-L2 errors from `1.67e-5` to `4.87e-5`; the [validation report](f32-t1023-ducc-validation-2026-10-16.md) documents its grid, limits and raw summary data. RustSHT has not set a T1023 f32 acceptance threshold, so these results characterize the current implementation without declaring that threshold closed.
 
+### T1023 scalar f32 recurrence follow-up
+
+A guarded normalization-skip path reduced scalar f32 T1023 synthesis by 4.39%/2.95% and analysis by 4.49%/1.10% at one/eight threads across three alternating process pairs. The path is enabled only for `lmax=1023`; the T720 control showed no regression, and T1279 and T2047 keep the established path pending measurement. The candidate's six complete scalar and spin-1 f32 output arrays were bitwise identical to the baseline. The full comparison, DUCC errors, intermediate selector regression, and raw pair data are in [the follow-up report](f32-scalar-normalization-skip-2026-10-16.md) and [its data directory](data/f32-scalar-normalization-skip-2026-10-16/).
+
 ## Independent-field reuse
 
 The T720 f64 batch study reused one immutable plan. A single field used one q8 workspace. Field-parallel cases used one-thread workspaces and scheduled independent transforms over an outer q8 pool. Sequential and field-parallel cases used the same field inputs. The table gives throughput in fields/s at 1, 8, and 32 fields. The last column gives process peak RSS for the 32-field parallel case.

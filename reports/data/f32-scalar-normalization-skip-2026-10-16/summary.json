@@ -1,0 +1,85 @@
+{
+  "metrics": {
+    "analysis_q1_median_ms": {
+      "baseline_process_median_ms": 2036.447,
+      "candidate_process_median_ms": 1961.397,
+      "paired_change_median_percent": -3.8290570979365057,
+      "paired_change_range_percent": [
+        -8.120761306334023,
+        -3.2779095515789725
+      ],
+      "paired_changes_percent": [
+        -3.9363949738685733,
+        -8.120761306334023,
+        -3.8290570979365057,
+        -3.2779095515789725,
+        -3.7740319988382676
+      ]
+    },
+    "analysis_qn_median_ms": {
+      "baseline_process_median_ms": 366.509,
+      "candidate_process_median_ms": 362.175,
+      "paired_change_median_percent": -1.0056602736714937,
+      "paired_change_range_percent": [
+        -2.729646847198297,
+        -0.2840971115429136
+      ],
+      "paired_changes_percent": [
+        -1.0056602736714937,
+        -2.729646847198297,
+        -0.2840971115429136,
+        -1.3225113001969824,
+        -0.3361445421531384
+      ]
+    },
+    "synthesis_q1_median_ms": {
+      "baseline_process_median_ms": 4082.189,
+      "candidate_process_median_ms": 3933.751,
+      "paired_change_median_percent": -3.7177847023868393,
+      "paired_change_range_percent": [
+        -7.194056914072322,
+        -2.8147448563169086
+      ],
+      "paired_changes_percent": [
+        -7.194056914072322,
+        -3.7177847023868393,
+        -3.2988110626884226,
+        -2.8147448563169086,
+        -3.895859906767707
+      ]
+    },
+    "synthesis_qn_median_ms": {
+      "baseline_process_median_ms": 682.991,
+      "candidate_process_median_ms": 662.496,
+      "paired_change_median_percent": -2.3789001896224793,
+      "paired_change_range_percent": [
+        -3.535218958174069,
+        -1.3419116298518996
+      ],
+      "paired_changes_percent": [
+        -3.2372315301372967,
+        -2.3789001896224793,
+        -2.3313456583777925,
+        -1.3419116298518996,
+        -3.535218958174069
+      ]
+    }
+  },
+  "pair_count": 5,
+  "process_max_rss_kib": {
+    "baseline": [
+      51568.0,
+      51584.0,
+      51596.0,
+      51380.0,
+      51916.0
+    ],
+    "candidate": [
+      51500.0,
+      51812.0,
+      51652.0,
+      51356.0,
+      51820.0
+    ]
+  }
+}
