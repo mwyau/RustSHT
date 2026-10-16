@@ -1,0 +1,21 @@
+ 23:38:00 up 10 days, 11:26, 10 users,  load average: 0.27, 0.86, 2.17
+    PID PSR %CPU %MEM COMMAND
+3115134  29  2.7  0.4 codex --yolo
+3416904   4  1.7  0.2 codex --yolo
+3072858   0  0.9  0.0 tmux
+ 908272  20  0.5  0.3 /home/albert/.codex2/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+ 909169  15  0.3  0.3 /home/albert/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3311080  22  0.1  0.0 mosh-server new -c 256 -s -l LANG=C.UTF-8
+1987515  23  0.0  0.0 mosh-server new -s
+1575787  21  0.0  0.0 mosh-server new -s -l LANG=en_US.UTF-8
+3069225  17  0.0  0.0 mosh-server new -s
+ 910420   0  0.0  0.0 /usr/bin/containerd
+ 694460  26  0.0  0.0 [codex] <defunct>
+ 452477  16  0.0  0.0 mosh-server new -s -l LANG=en_US.UTF-8
+ 934971   0  0.0  0.0 /home/albert/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+ 912378   8  0.0  0.0 /home/albert/.codex2/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+2412896   2  0.0  0.0 mosh-server new -s -l LANG=en_US.UTF-8
+ 465439  19  0.0  0.0 mosh-server new -s
+ 910770   5  0.0  0.0 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532   9  0.0  0.0 /home/albert/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918  16  0.0  0.0 /home/albert/.codex2/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop

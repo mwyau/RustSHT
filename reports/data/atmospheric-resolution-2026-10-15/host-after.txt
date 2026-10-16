@@ -1,0 +1,33 @@
+ 23:48:57 up 10 days, 11:37,  9 users,  load average: 1.63, 1.65, 1.96
+    PID %CPU     ELAPSED COMMAND
+      1  0.0 10-11:37:36 /sbin/init
+     46  0.0 10-11:37:35 /usr/lib/systemd/systemd-journald
+     88  0.0 10-11:37:35 /usr/lib/systemd/systemd-resolved
+    112  0.0 10-11:37:35 /usr/lib/systemd/systemd-networkd
+    275  0.0 10-11:37:35 /usr/sbin/cron -f -P
+    276  0.0 10-11:37:35 @dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only
+    279  0.0 10-11:37:35 /usr/bin/python3 /usr/bin/networkd-dispatcher --run-startup-triggers
+    284  0.0 10-11:37:35 /usr/lib/systemd/systemd-logind
+    293  0.0 10-11:37:35 /usr/sbin/agetty --noreset --noclear --issue-file=/etc/issue:/etc/issue.d:/run/issue.d:/usr/lib/issue.d --keep-baud 115200,57600,38400,9600 - linux
+    295  0.0 10-11:37:35 /usr/sbin/agetty --noreset --noclear --issue-file=/etc/issue:/etc/issue.d:/run/issue.d:/usr/lib/issue.d - linux
+    532  0.0 10-11:37:34 /usr/lib/systemd/systemd --user
+    535  0.0 10-11:37:34 (sd-pam)
+   1262  0.0 10-11:26:16 /usr/bin/dbus-daemon --session --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only
+   1532  0.0 10-11:25:26 /home/albert/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3522  0.0 10-11:18:12 login -- albert
+   3531  0.0 10-11:18:12 -bash
+   3918  0.0 10-11:13:12 /home/albert/.codex2/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+ 452477  0.0  9-16:12:24 mosh-server new -s -l LANG=en_US.UTF-8
+ 452478  0.0  9-16:12:24 -bash
+ 465439  0.0  9-13:39:55 mosh-server new -s
+ 465440  0.0  9-13:39:55 -bash
+ 694460  0.0  8-11:12:47 [codex] <defunct>
+ 697168  0.0  8-11:01:21 [codex] <defunct>
+ 908272  0.5  6-07:49:46 /home/albert/.codex2/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+ 909169  0.3  6-07:02:07 /home/albert/.codex/packages/app-server-daemon/releases/0.162.1-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+ 909919  0.0  6-06:39:15 mosh-server new -s
+ 909920  0.0  6-06:39:15 -bash
+ 910420  0.0  6-06:38:38 /usr/bin/containerd
+ 910770  0.0  6-06:38:37 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+some avg10=0.00 avg60=0.00 avg300=0.00 total=2521601561
+full avg10=0.00 avg60=0.00 avg300=0.00 total=316160177
