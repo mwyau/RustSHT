@@ -1,0 +1,26 @@
+Baseline d188b77, Callgrind T511 q8, five analysis calls plus setup:
+Auto-annotation:  off
+
+--------------------------------------------------------------------------------
+Ir
+--------------------------------------------------------------------------------
+2,662,738,568 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Ir                      file:function
+--------------------------------------------------------------------------------
+1,145,504,535 (43.02%)  ???:<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::FusedScalarAnalysisPair>> [/home/albert/RustSHT-sht-performance/target/release/examples/m1b_bench]
+
+
+Candidate mask reduction, same command and workload:
+Auto-annotation:  off
+
+--------------------------------------------------------------------------------
+Ir
+--------------------------------------------------------------------------------
+2,577,533,222 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Ir                      file:function
+--------------------------------------------------------------------------------
+1,058,246,294 (41.06%)  ???:<pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::FusedScalarAnalysisPair>> [/home/albert/RustSHT-sht-performance/target/m1b_bench-range-mask-candidate]

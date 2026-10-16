@@ -1,0 +1,36 @@
+Baseline source: d188b772587ed377fbe5b9772ab31c79b324b4bb
+Candidate source: baseline plus candidate.patch in this directory; the screen ran before the candidate commit.
+Baseline benchmark binary SHA-256: 55a338a2dff439323240fe7c72525cc685f41eb4415905366bacca6a318f124b
+Candidate benchmark binary SHA-256: 34274c791ae73ef1c909639aebfa74747141173bb31390a27b490c289601861b
+
+Build commands:
+  cargo build --release --example m1b_bench
+  CARGO_TARGET_DIR=/home/albert/RustSHT-sht-performance/target/range-mask-baseline-target cargo build --release --example m1b_bench --manifest-path /home/albert/rustsht-range-mask-base-d188b77/Cargo.toml
+Rust: rustc 1.99.0 (b940084d7 2026-09-28)
+LLVM: 23.1.1
+CPU: AMD Ryzen 9 5950X, 16 cores, 32 logical CPUs, one socket
+ISA: AVX2 and FMA; Callgrind profile used pulp::x86::v3::V3
+Build: Cargo release defaults, Pulp portable runtime dispatch, no target-cpu=native
+Cgroup CPU limit: max 100000 (unlimited)
+
+Native paired benchmark:
+  q1 affinity: CPU 8
+  q8 affinity: CPUs 8-15
+  Full mmax; GL; phi0=0.37; T511=512x1025; T1023=1024x2049
+  One warm-up and five inner timed analysis calls per process
+  Paired source process order alternated; m1b_bench process median used per pair
+  Load average before: 0.92, 1.42, 2.46
+  Load average after: 1.02, 1.41, 2.44
+
+DUCC comparison:
+  ducc0==0.41.0; source revision c1ed01b8fda69d2a378190f0915f1a19762dddbf
+  Python 3.11.15; NumPy 2.4.6
+  T1023 GL 1024x2049; full mmax; native reused plan/workspace vs Python analysis_2d
+  q1 affinity: CPU 8; q8 affinity: CPUs 8-15
+  Five native/DUCC process pairs per thread count
+  The run script did not capture load averages during this comparison. Afterward, the RSS spot check recorded 0.98, 3.69, 3.67 before and 1.62, 3.78, 3.70 after.
+
+Callgrind comparison:
+  Baseline and candidate each used q8, T511 GL scalar analysis, five timed calls and setup.
+  Command: TMPDIR=target/valgrind-tmp taskset -c 8-15 valgrind --vgdb=no --tool=callgrind ... m1b_bench 0 511 8 analysis GL STANDARD 512 1025 511 requested-only
+  perf hardware counters were unavailable in this environment.
