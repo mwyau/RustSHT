@@ -1,0 +1,39 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M20 control for the existing specialized N=682 radix-eleven route",
+    "baseline_source": "session-start remote head cd5748bb0bf5a93d43143a0bb0b9119e4d672983",
+    "baseline_binary_sha256": "a97674f383732a07ee860887f5407c12659874ee70eb8d9ab0aa058d968dca17",
+    "candidate_source": "uncommitted M20 generalized AVX2 radix-eleven pass retaining the N=682 wrapper",
+    "candidate_binary_sha256": "a951836f4bae4946fd36398458dccc1ec936f3ec56a8a4b4e510ced9774eaa25",
+    "workload": "complex N=682 forward and inverse; rows=[22,44] plus one-row setup/control; one transform thread",
+    "timing": "six alternating process pairs; seven warmed samples per operation per process",
+    "compiler": "Rust 1.99.0 stable; release bench profile; portable target; runtime AVX2 dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "host_condition": "pending; run only when the separate RustSHT SHT benchmark is idle"
+  },
+  "a": {
+    "label": "M20 generalized radix11 pass",
+    "command": [
+      "/dev/shm/rustsht-fft-m20-candidate-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-c2c",
+      "682",
+      "1",
+      "22",
+      "44"
+    ]
+  },
+  "b": {
+    "label": "M18 session-start baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-m18-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-c2c",
+      "682",
+      "1",
+      "22",
+      "44"
+    ]
+  }
+}

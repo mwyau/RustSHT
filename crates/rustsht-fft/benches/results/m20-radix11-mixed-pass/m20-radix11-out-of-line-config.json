@@ -1,0 +1,31 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M20 out-of-line radix-eleven pass candidate six-pair confirmation against session-start M18 source",
+    "baseline_source": "session-start remote head cd5748bb0bf5a93d43143a0bb0b9119e4d672983; production source unchanged",
+    "baseline_binary_sha256": "a97674f383732a07ee860887f5407c12659874ee70eb8d9ab0aa058d968dca17",
+    "candidate_source": "uncommitted M20 out-of-line radix-eleven AVX2 pass; N=682 uses its original specialized kernel; f32 uses scalar fallback",
+    "candidate_binary_sha256": "239dd296b805e8b116776aa96eb8a98f3b5ff503ad2d7071053488d1f04a658e",
+    "workload": "complete native SHT target matrix; public complex and real operations with configured row counts; single-threaded",
+    "timing": "six alternating process pairs; seven warmed samples per operation per process",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable target flags; runtime AVX2 dispatch",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to CPU 30",
+    "host_condition": "No separate FFT comparison or SHT benchmark process was active at start; per-process load is recorded. Mark provisional if activity overlaps."
+  },
+  "a": {
+    "label": "M20 out-of-line radix11 candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-m20-final-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "M18 session-start baseline",
+    "command": [
+      "/dev/shm/rustsht-fft-m18-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  }
+}

@@ -86,11 +86,14 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
         None
     }
 
-    /// Returns the f64 radix-eleven kernel for the N=682 `ido == 31` pass.
-    ///
-    /// The caller must check runtime AVX2 availability and provide the
-    /// `radix == 11`, `l1 == 2`, `ido == 31` layout. The kernel processes
-    /// inner indices 0 through 29 in pairs; the caller handles index 30.
+    /// Returns an f64 AVX2 pass dispatcher with radix-eleven support. The
+    /// caller must check runtime AVX2 support and validate pass dimensions.
+    fn avx2_radix11_dispatch_kernel() -> Option<ComplexPassKernel<Self>> {
+        None
+    }
+
+    /// Returns the specialized f64 radix-eleven kernel for the N=682
+    /// `l1 == 2`, `ido == 31` pass. The caller handles the final inner value.
     fn avx2_ido31_radix11_kernel() -> Option<ComplexPassKernel<Self>> {
         None
     }
@@ -134,8 +137,8 @@ pub(crate) trait SimdScalar: Float + FromPrimitive {
     /// # Safety
     ///
     /// The caller must confirm AVX2 support and ensure the radix is 2, 4, or
-    /// 8, `ido` is at least the scalar's vector width, the
-    /// slices are disjoint, and the slices match the pass dimensions.
+    /// 8, `ido` is at least the scalar's vector width, the slices are disjoint,
+    /// and the slices match the pass dimensions.
     unsafe fn avx2_pass(
         input: &[Complex<Self>],
         output: &mut [Complex<Self>],
@@ -180,6 +183,10 @@ mod x86 {
             } else {
                 None
             }
+        }
+
+        fn avx2_radix11_dispatch_kernel() -> Option<ComplexPassKernel<Self>> {
+            Some(f64_kernel::pass_with_radix11)
         }
 
         fn avx2_ido31_radix11_kernel() -> Option<ComplexPassKernel<Self>> {
@@ -508,6 +515,27 @@ mod x86 {
                 4 => unsafe { pass_fixed::<4>(input, output, pass) },
                 8 => unsafe { pass_fixed::<8>(input, output, pass) },
                 _ => unreachable!("AVX2 kernel supports radices 2, 4, and 8"),
+            }
+        }
+
+        /// Dispatches radix-eleven passes to the mixed-inner kernel and the
+        /// remaining supported radices to the existing AVX2 pass.
+        ///
+        /// # Safety
+        ///
+        /// The caller must have detected AVX2, provide disjoint input and
+        /// output slices, and validate the dimensions and safety range for the
+        /// selected pass. Radix-eleven passes require `ido >= 2`.
+        #[target_feature(enable = "avx2")]
+        pub(super) unsafe fn pass_with_radix11(
+            input: &[Complex<f64>],
+            output: &mut [Complex<f64>],
+            pass: &SimdPass<'_, f64>,
+        ) {
+            if pass.radix == 11 {
+                unsafe { pass_radix11(input, output, pass) };
+            } else {
+                unsafe { self::pass(input, output, pass) };
             }
         }
 
@@ -965,6 +993,61 @@ mod x86 {
                             value = _mm256_mul_pd(value, scale);
                         }
                         let index = inner + IDO * (outer + pass.l1 * branch);
+                        unsafe { store(output_ptr, index, value) };
+                    }
+                }
+            }
+        }
+
+        /// Executes a radix-eleven pass over pairs of inner values.
+        ///
+        /// # Safety
+        ///
+        /// The caller must have detected AVX2 and provide disjoint slices of
+        /// at least `11 * l1 * ido` complex values, with `radix == 11` and
+        /// `ido >= 2`. The twiddle slice must contain at least `11 * ido`
+        /// complex values. The kernel writes the largest even inner prefix;
+        /// the caller handles an odd final inner index.
+        #[target_feature(enable = "avx2")]
+        pub(super) unsafe fn pass_radix11(
+            input: &[Complex<f64>],
+            output: &mut [Complex<f64>],
+            pass: &SimdPass<'_, f64>,
+        ) {
+            const RADIX: usize = 11;
+            debug_assert_eq!(pass.radix, RADIX);
+            debug_assert!(pass.ido >= 2);
+            debug_assert!(input.len() >= RADIX * pass.l1 * pass.ido);
+            debug_assert!(output.len() >= RADIX * pass.l1 * pass.ido);
+            debug_assert!(pass.twiddles.len() >= RADIX * pass.ido);
+
+            let input_ptr = input.as_ptr();
+            let output_ptr = output.as_mut_ptr();
+            let vector_ido = pass.ido - pass.ido % 2;
+            let scale = _mm256_set1_pd(if pass.inverse {
+                pass.inverse_scale
+            } else {
+                1.0
+            });
+            for outer in 0..pass.l1 {
+                for inner in (0..vector_ido).step_by(2) {
+                    let mut values = [_mm256_setzero_pd(); RADIX];
+                    for (branch, slot) in values.iter_mut().enumerate() {
+                        let index = inner + pass.ido * (branch + RADIX * outer);
+                        *slot = unsafe { load(input_ptr, index) };
+                    }
+                    let transformed = unsafe { radix11_fixed(&values, pass.inverse) };
+                    for (branch, &result) in transformed.iter().enumerate() {
+                        let mut value = result;
+                        if branch != 0 {
+                            let twiddle =
+                                unsafe { load(pass.twiddles.as_ptr(), branch * pass.ido + inner) };
+                            value = unsafe { complex_mul(value, twiddle, pass.inverse) };
+                        }
+                        if pass.inverse {
+                            value = _mm256_mul_pd(value, scale);
+                        }
+                        let index = inner + pass.ido * (outer + pass.l1 * branch);
                         unsafe { store(output_ptr, index, value) };
                     }
                 }
@@ -2384,73 +2467,84 @@ mod tests {
     }
 
     #[test]
-    fn f64_complex_radix11_ido31_matches_direct_pass_and_preserves_scalar_tail() {
+    fn f64_complex_radix11_pass_matches_direct_dfts_and_preserves_tails() {
         if !<f64 as SimdScalar>::avx2_available() {
             return;
         }
-        let Some(kernel) = <f64 as SimdScalar>::avx2_ido31_radix11_kernel() else {
-            panic!("AVX2 N=682 radix-eleven kernel should be available");
+        let Some(kernel) = <f64 as SimdScalar>::avx2_radix11_dispatch_kernel() else {
+            panic!("AVX2 radix-eleven kernel should be available");
         };
 
         let radix = 11;
-        let l1 = 2;
-        let ido = 31;
-        let total_len = radix * l1 * ido;
-        let twiddles: Vec<_> = (0..radix * ido)
-            .map(|index| root(index, total_len, true))
-            .collect();
-        let original: Vec<_> = (0..total_len).map(|index| signal(index + 13)).collect();
         let marker = Complex::new(-91.0, 37.0);
 
-        for inverse in [false, true] {
-            let mut storage = vec![marker; total_len + 2];
-            let (start_guard, tail) = storage.split_at_mut(1);
-            let (output, end_guard) = tail.split_at_mut(total_len);
-            // SAFETY: runtime AVX2 is available, the buffers are disjoint,
-            // and the pass and twiddle dimensions match the kernel contract.
-            unsafe {
-                kernel(
-                    &original,
-                    output,
-                    &SimdPass {
-                        radix,
-                        l1,
-                        ido,
-                        twiddles: &twiddles,
-                        inverse,
-                        inverse_scale: 1.0,
-                    },
-                )
-            }
-            assert_eq!(start_guard[0], marker);
-            assert_eq!(end_guard[0], marker);
+        for (l1, ido) in [(1, 2), (2, 3), (2, 31), (6, 11), (12, 11), (24, 11)] {
+            let total_len = radix * l1 * ido;
+            let twiddles: Vec<_> = (0..radix)
+                .flat_map(|branch| {
+                    (0..ido).map(move |inner| root(branch * l1 * inner, total_len, true))
+                })
+                .collect();
+            let original: Vec<_> = (0..total_len)
+                .map(|index| signal(index + l1 * 7 + ido * 13))
+                .collect();
+            let vector_ido = ido - ido % 2;
 
-            for outer in 0..l1 {
-                for frequency in 0..radix {
-                    for inner in (0..ido - 1).step_by(2) {
-                        for lane in 0..2 {
-                            let mut expected = Complex::new(0.0, 0.0);
-                            for sample in 0..radix {
-                                expected += original[inner + lane + ido * (sample + radix * outer)]
-                                    * root(sample * frequency % radix, radix, inverse);
+            for inverse in [false, true] {
+                let scale = if inverse { 0.25 } else { 1.0 };
+                let mut storage = vec![marker; total_len + 2];
+                let (start_guard, tail) = storage.split_at_mut(1);
+                let (output, end_guard) = tail.split_at_mut(total_len);
+                // SAFETY: runtime AVX2 is available, the buffers are disjoint,
+                // and the pass and twiddle dimensions match the kernel contract.
+                unsafe {
+                    kernel(
+                        &original,
+                        output,
+                        &SimdPass {
+                            radix,
+                            l1,
+                            ido,
+                            twiddles: &twiddles,
+                            inverse,
+                            inverse_scale: scale,
+                        },
+                    )
+                }
+                assert_eq!(start_guard[0], marker);
+                assert_eq!(end_guard[0], marker);
+
+                for outer in 0..l1 {
+                    for frequency in 0..radix {
+                        for inner in (0..vector_ido).step_by(2) {
+                            for lane in 0..2 {
+                                let inner_index = inner + lane;
+                                let mut expected = Complex::new(0.0, 0.0);
+                                for sample in 0..radix {
+                                    expected += original
+                                        [inner_index + ido * (sample + radix * outer)]
+                                        * root(sample * frequency % radix, radix, inverse);
+                                }
+                                if frequency != 0 && ido > 1 {
+                                    expected *=
+                                        root(frequency * l1 * inner_index, total_len, inverse);
+                                }
+                                expected *= scale;
+                                let output_index = inner_index + ido * (outer + l1 * frequency);
+                                assert_close(
+                                    output[output_index],
+                                    expected,
+                                    &format!(
+                                        "radix={radix}, l1={l1}, ido={ido}, inverse={inverse}, outer={outer}, frequency={frequency}, inner={inner_index}"
+                                    ),
+                                );
                             }
-                            if frequency != 0 {
-                                expected *=
-                                    root(frequency * ido + inner + lane, total_len, inverse);
-                            }
-                            let output_index = inner + lane + ido * (outer + l1 * frequency);
-                            assert_close(
-                                output[output_index],
-                                expected,
-                                &format!(
-                                    "radix={radix}, l1={l1}, ido={ido}, inverse={inverse}, outer={outer}, frequency={frequency}, inner={}",
-                                    inner + lane
-                                ),
-                            );
+                        }
+                        for inner in vector_ido..ido {
+                            let scalar_tail = inner + ido * (outer + l1 * frequency);
+                            assert_eq!(output[scalar_tail], marker);
                         }
                     }
-                    let scalar_tail = ido - 1 + ido * (outer + l1 * frequency);
-                    assert_eq!(output[scalar_tail], marker);
                 }
             }
         }
