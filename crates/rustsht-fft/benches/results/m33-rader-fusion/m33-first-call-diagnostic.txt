@@ -1,0 +1,41 @@
+M33 first-call diagnostic
+
+Purpose: report first public-operation latency separately from steady-state
+latency. These are two individual processes, not an alternating paired capture;
+plan construction, workspace creation, and input allocation occur before the
+first-call timer. Each warm-call value is the median of seven operations.
+Process affinity: CPU 30. Host: AMD Ryzen 9 5950X. Compiler: stable Rust
+1.99.0, portable x86_64 release benchmark binaries with runtime AVX2.
+
+The candidate is the rejected M33 v3 safety-scan fusion (candidate source diff
+SHA-256 8845bead2e211dffc709f2cb13c908f4332754329bec60b45b10d59f666f7ee0).
+The baseline is the accepted M32 source binary. Their SHA-256 hashes are:
+
+- M33 v3 candidate: a4cc85160daf38e66b31e6a268770b9dbc84e3b6631d846c917c413432b32226
+- M32 accepted source: a1036e527f31637d8f0fd9212d1401c2d568155cd1e8dc0faff785aa05333a8c
+
+M33 command: bench-native-first-call-set 723 2049 4097
+M32 command: bench-native-first-call-set 723 2049 4097
+
+M33 v3 candidate raw output:
+mode,n,first_call_ns,warm_call_median_ns,workspace_bytes,checksum
+r2c,723,20849.000,9177.000,53536,0.7202117992456738
+c2r,723,12133.000,9428.000,53536,0.0005022140208063793
+r2c,2049,32913.000,28564.000,159856,9.094396962221333
+c2r,2049,32582.000,29877.000,159856,0.0001363411803535206
+r2c,4097,79140.000,77747.000,133824,0.7936622083756886
+c2r,4097,86103.000,84660.000,133824,0.00007545109664037858
+
+Accepted M32 source raw output:
+mode,n,first_call_ns,warm_call_median_ns,workspace_bytes,checksum
+r2c,723,18846.000,9969.000,53536,0.7202117992456738
+c2r,723,12694.000,10901.000,53536,0.0005022140208063793
+r2c,2049,39395.000,33664.000,159856,9.094396962221333
+c2r,2049,35477.000,32702.000,159856,0.0001363411803535206
+r2c,4097,88197.000,79842.000,133824,0.7936622083756886
+c2r,4097,108245.000,90772.000,133824,0.00007545109664037858
+
+These six isolated observations are diagnostics and do not substitute for the
+six-pair steady-state captures. Workspace sizes are recorded per operation;
+retained plan payload and plan/workspace construction are reported separately
+in m32-accepted-route-memory-diagnostics.txt and the paired benchmark JSONL.

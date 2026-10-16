@@ -1,0 +1,143 @@
+   Compiling rustsht-fft v0.1.0-dev.0 (/home/albert/RustSHT/crates/rustsht-fft)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.02s
+     Running unittests src/lib.rs (target/debug/deps/rustsht_fft-4e944aea39d47bb4)
+
+running 37 tests
+test m0_diagnostics_tests::m20_f32_radix11_pass_keeps_the_scalar_fallback ... ok
+test m0_diagnostics_tests::m3_f32_dispatch_keeps_below_lane_ido_on_scalar_path ... ok
+test complex::prime_kernel_tests::p241_bluestein_plan_uses_the_benchmarked_convolution_length ... ok
+test simd::tests::f32_real_forward_radix2_interior_matches_scalar_equations ... ok
+test simd::tests::f32_real_inverse_radix2_interior_matches_scalar_equations ... ok
+test simd::tests::f64_ido1_radix8_pass_matches_scalar_equations ... ok
+test simd::tests::f64_real_inverse_radix2_interior_matches_scalar_equations ... ok
+test simd::tests::f64_real_forward_radix4_interior_matches_scalar_equations ... ok
+test simd::tests::f64_first_pass_matches_scalar_pass_equations ... ok
+test simd::tests::f64_real_inverse_radix4_interior_matches_scalar_equations ... ok
+test m0_diagnostics_tests::m12_c2c_682_selects_avx2_radix31_and_radix11_and_guards_unsafe_inverse_inputs ... ok
+test simd::tests::f64_out_of_place_pass_matches_scalar_pass_equations ... ok
+test simd::tests::f64_ido1_radix4_pass_matches_scalar_equations_and_preserves_odd_tail ... ok
+test simd::tests::f32_vector_passes_match_scalar_pass_equations ... ok
+test simd::tests::f64_real_forward_radix2_interior_matches_scalar_equations ... ok
+test real::rader_fallback_tests::p241_real_pad_change_is_scoped_to_the_f64_rader_fallback ... ok
+test rader::tests::rader_bound_rejects_overflow_underflow_dynamic_range_and_nonfinite_inputs ... ok
+test m0_diagnostics_tests::m32_c2c_722_selects_avx2_radix19_ido1_and_guards_unsafe_inverse_inputs ... ok
+test simd::tests::f64_complex_radix11_ido1_pass_matches_direct_dfts_and_guards_odd_l1_tail ... ok
+test m0_diagnostics_tests::real_radix11_plan_and_execution_routes_cover_terminal_and_interior_layouts ... ok
+test m0_diagnostics_tests::m3_complex_simd_dispatch_covers_vector_tails_and_paired_groups ... ok
+test simd::tests::f64_complex_radix3_pass_matches_direct_dfts_and_preserves_odd_ido_tail ... ok
+test m0_diagnostics_tests::m29_c2c_radix3_avx2_pass_selects_safe_layout_and_keeps_unsafe_inverse_scalar ... ok
+test m0_diagnostics_tests::m25_complex_radix11_simd_covers_sht_targets_and_guards_unsafe_inverse ... ok
+test simd::tests::f64_complex_general_prime_radix19_ido1_matches_direct_dfts_and_guards_odd_tail ... ok
+test real::rader_fallback_tests::rader_input_classes_select_and_report_the_expected_route ... ok
+test m0_diagnostics_tests::m24_c2c_1442_selects_avx2_radix103_and_guards_unsafe_inverse_inputs ... ok
+test simd::tests::f64_complex_general_prime_radix31_ido1_matches_direct_dfts ... ok
+test simd::tests::f64_complex_radix11_pass_matches_direct_dfts_and_preserves_tails ... ok
+test real::rader_fallback_tests::unsafe_rader_inputs_match_the_existing_fallback_route ... ok
+test complex::prime_kernel_tests::paired_prime_kernel_matches_previous_arithmetic_for_stress_inputs ... ok
+test m0_diagnostics_tests::m8_real_2049_uses_rader_683_and_preserves_bluestein_fallback ... ok
+test m0_diagnostics_tests::m7_real_4097_uses_rader_and_preserves_bluestein_fallback ... ok
+test simd::tests::f64_complex_general_prime_radix103_ido1_matches_direct_dfts_and_guards ... ok
+test simd::tests::f64_real_general_prime_ido1_matches_direct_dfts_and_preserves_guards ... ok
+test rader::tests::rader_prime_passes_match_unscaled_direct_transforms ... ok
+test m0_diagnostics_tests::m0_route_visibility_and_memory ... ok
+
+test result: ok. 37 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.48s
+
+     Running tests/across_row_prototype.rs (target/debug/deps/across_row_prototype-d9738f32125788f1)
+
+running 2 tests
+test across_row_prototype_checks_batch_and_workspace_shapes ... ok
+test across_row_scalar_and_avx2_prototypes_match_direct_dfts ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.62s
+
+     Running tests/complex.rs (target/debug/deps/complex-bb4981160b053798)
+
+running 32 tests
+test complex_batch_rejects_incomplete_rows_and_accepts_empty_batches ... ok
+test contiguous_complex_batches_match_independent_dfts ... ok
+test normalized_inverse_handles_maximum_finite_constant_spectra ... ok
+test fixed_radices_match_analytic_impulses_constants_and_fourier_modes ... ok
+test workspace_reports_reusable_scratch_bytes ... ok
+test impossible_allocation_size_is_rejected_before_factorization ... ok
+test invalid_lengths_and_buffers_return_errors ... ok
+test normalized_inverse_preserves_small_terms_in_high_dynamic_range_groups ... ok
+test normalized_inverse_preserves_representable_subnormal_results ... ok
+test shared_plan_executes_concurrently_with_separate_workspaces ... ok
+test shared_f32_plan_executes_concurrently_with_separate_workspaces ... ok
+test f64_682_radix31_transform_matches_rustfft_forward_and_inverse ... ok
+test bluestein_handles_representable_high_amplitude_impulses ... ok
+test bluestein_scales_high_amplitude_inputs_before_the_convolution_fft ... ok
+test bluestein_preserves_subnormal_impulses_and_constant_inverse_spectra ... ok
+test general_prime_inverse_recovers_roundable_subnormal_residuals ... ok
+test normalized_inverse_large_finite_spectrum_keeps_scalar_residual_fallback ... ok
+test general_prime_inverse_keeps_maximum_finite_dc_spectra_finite ... ok
+test f32_complex_bluestein_batch_matches_independent_f64_dfts ... ok
+test f64_4096_smooth_transform_matches_rustfft_forward_and_inverse ... ok
+test p241_bluestein_pad_matches_f64_reference_for_f32 ... ok
+test f32_mixed_radix_matches_direct_dft_for_lengths_one_through_sixty_four ... ok
+test direct_general_primes_preserve_analytic_modes_extremes_and_subnormals ... ok
+test f64_mixed_radix_matches_direct_dft_for_lengths_one_through_sixty_four ... ok
+test general_prime_and_bluestein_paths_match_direct_dfts ... ok
+test n722_full_radix19_passes_match_independent_direct_dfts ... ok
+test nonterminal_bluestein_stages_match_rustfft ... ok
+test f64_large_smooth_multipass_matches_independent_dfts ... ok
+test inverse_prescaling_preserves_high_dynamic_direct_and_mixed_primes ... ok
+test m3_vector_prefix_handles_unaligned_f32_and_f64_slices ... ok
+test f64_sht_meridional_complex_lengths_match_independent_dfts ... ok
+test f32_large_smooth_prime_bluestein_and_sht_lengths_match_f64_references ... ok
+
+test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.67s
+
+     Running tests/real.rs (target/debug/deps/real-e9cb3a7fbf61b7fe)
+
+running 40 tests
+test contiguous_real_batches_match_direct_dfts ... ok
+test odd_real_inverse_counts_last_bin_imaginary_value_for_overflow_bound ... ok
+test impossible_real_allocation_size_is_rejected_before_factorization ... ok
+test invalid_real_lengths_buffers_and_workspaces_return_errors ... ok
+test inverse_preserves_small_terms_in_high_dynamic_range_spectra ... ok
+test real_batch_rejects_incomplete_rows_and_wrong_output_lengths ... ok
+test inverse_ignores_imaginary_dc_and_even_nyquist_components ... ok
+test real_inverse_fast_and_correction_paths_cover_finite_extremes ... ok
+test real_radix11_fixed_terminal_inverse_preserves_cancellation_and_extremes ... ok
+test real_transforms_cover_odd_even_and_endpoint_layouts ... ok
+test real_workspace_reports_reusable_scratch_bytes ... ok
+test real_bluestein_preserves_subnormal_impulses_and_constant_inverse_spectra ... ok
+test real_bluestein_handles_representable_high_amplitude_impulses ... ok
+test terminal_real_prime_inverse_covers_cancellation_and_finite_extremes ... ok
+test real_bluestein_scales_high_amplitude_inputs_before_the_convolution_fft ... ok
+test real_complexify_inverse_preserves_roundable_subnormal_dc ... ok
+test f32_real_complexify_batch_matches_independent_row_calls ... ok
+test f32_real_bluestein_batch_matches_independent_f64_dfts ... ok
+test real_complexify_preserves_maximum_finite_transform_results ... ok
+test f32_real_radix3_and_radix5_multipasses_match_f64_references ... ok
+test shared_f32_real_bluestein_plan_executes_concurrently_with_separate_workspaces ... ok
+test real_radix_multipass_fast_paths_and_extreme_fallbacks_are_checked ... ok
+test f32_real_transforms_match_independent_dfts_for_lengths_one_through_sixty_four ... ok
+test rader_2049_plan_executes_concurrently_with_separate_workspaces ... ok
+test f64_real_transforms_match_independent_dfts_for_lengths_one_through_sixty_four ... ok
+test shared_real_plans_execute_concurrently_with_separate_workspaces ... ok
+test rader_4097_plan_executes_concurrently_with_separate_workspaces ... ok
+test rader_and_fallback_reuse_workspace_buffer_across_routes ... ok
+test nonterminal_real_bluestein_stages_match_rustfft ... ok
+test real_complexify_inverse_recovers_high_dynamic_n1442_spectra ... ok
+test selected_rader_real_routes_match_direct_and_rustfft_and_keep_extreme_fallbacks ... ok
+test f64_real_radix3_and_radix5_multipasses_match_independent_dfts ... ok
+test f64_real_radix2_inverse_pass_matches_independent_dfts ... ok
+test rader_2049_matches_independent_real_transform_references ... ok
+test real_radix11_required_lengths_match_independent_f64_and_f32_dfts ... ok
+test real_complexify_planner_path_matches_f64_and_f32_direct_dfts ... ok
+test rader_4097_matches_independent_real_transform_references ... ok
+test real_general_prime_and_bluestein_paths_match_independent_dfts ... ok
+test real_inverse_normalization_fast_path_matches_random_spectra ... ok
+test f32_large_smooth_prime_bluestein_and_sht_lengths_match_f64_references ... ok
+
+test result: ok. 40 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.91s
+
+   Doc-tests rustsht_fft
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

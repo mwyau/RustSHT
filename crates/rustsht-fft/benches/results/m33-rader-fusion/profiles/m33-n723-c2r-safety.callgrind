@@ -1,0 +1,21 @@
+# callgrind format
+version: 1
+creator: callgrind-3.26.0
+pid: 3580810
+cmd:  /dev/shm/rustsht-fft-m33-profile-target/release/deps/rustfft-997559b50f336da1 bench-profile-real-inverse 723 normal 100
+part: 1
+
+
+desc: I1 cache: 
+desc: D1 cache: 
+desc: LL cache: 
+
+desc: Timerange: Basic block 0 - 3712286
+desc: Trigger: Program termination
+
+positions: line
+events: Ir
+summary: 0
+
+
+totals: 0

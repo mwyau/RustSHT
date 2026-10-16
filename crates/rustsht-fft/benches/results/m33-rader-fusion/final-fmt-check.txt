@@ -1,0 +1,2 @@
+Command: cargo fmt --all -- --check
+Result: PASS (exit status 0; no formatting differences)

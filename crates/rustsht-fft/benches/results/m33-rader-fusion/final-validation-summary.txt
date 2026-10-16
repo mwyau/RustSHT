@@ -1,0 +1,22 @@
+Accepted source: M32, commit 234ab2d30b8d542457398e2f7be17e7e7b9aa25e
+Accepted M32 benchmark binary SHA-256: a1036e527f31637d8f0fd9212d1401c2d568155cd1e8dc0faff785aa05333a8c
+Compiler: rustc 1.99.0 (b940084d7 2026-09-28)
+
+PASS: cargo fmt --all -- --check
+PASS: cargo clippy --workspace --all-targets --all-features -- -D warnings
+PASS: cargo test --workspace --all-features
+PASS: cargo test --workspace --all-features --release
+
+Debug and release each passed 111 tests: 37 unit, 2 across-row, 32 complex,
+and 40 real tests. Both runs had zero doctests. See final-workspace-*.txt for
+command output and m32-accepted-*-numerical-comparison.txt for f64 external
+comparisons.
+
+Portable DUCC comparison, native SIMD DUCC comparison, FFTW 3.3.10 comparison,
+and Admiral ce67bc00 comparison passed for C2C forward/inverse and R2C/C2R at
+N=722, 723, 2049, and 4097. The compare.py tolerances were rtol=2e-11 and
+atol=2e-11. The largest absolute difference was 1.137e-12.
+
+The host supports AVX2. Runtime AVX2 dispatch, scalar f32 routes, scalar tails,
+and exceptional-input fallback paths are covered by tests. No non-AVX2 host was
+available for a hardware fallback run.

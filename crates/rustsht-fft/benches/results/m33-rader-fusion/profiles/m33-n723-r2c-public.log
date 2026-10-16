@@ -1,0 +1,12 @@
+==3580734== Callgrind, a call-graph generating cache profiler
+==3580734== Copyright (C) 2002-2017, and GNU GPL'd, by Josef Weidendorfer et al.
+==3580734== Using Valgrind-3.26.0 and LibVEX; rerun with -h for copyright info
+==3580734== Command: /dev/shm/rustsht-fft-m33-profile-target/release/deps/rustfft-997559b50f336da1 bench-native-real 723 1
+==3580734== Parent PID: 908272
+==3580734== 
+==3580734== For interactive control, run 'callgrind_control -h'.
+==3580734== 
+==3580734== Events    : Ir
+==3580734== Collected : 1785544
+==3580734== 
+==3580734== I   refs:      1,785,544

@@ -1,0 +1,1197 @@
+--------------------------------------------------------------------------------
+Profile data file '/dev/shm/m33-n723-c2r.callgrind' (creator: callgrind-3.26.0)
+--------------------------------------------------------------------------------
+I1 cache: 32768 B, 64 B, 8-way associative
+D1 cache: 32768 B, 64 B, 8-way associative
+LL cache: 67108864 B, 64 B, direct-mapped
+Timerange: Basic block 0 - 3712260
+Trigger: Program termination
+Profiled target:  /dev/shm/rustsht-fft-m33-profile-target/release/deps/rustfft-997559b50f336da1 bench-profile-real-inverse 723 normal 100 (PID 3580444, part 1)
+Events recorded:  Ir Dr Dw I1mr D1mr D1mw ILmr DLmr DLmw
+Events shown:     Ir Dr Dw I1mr D1mr D1mw ILmr DLmr DLmw
+Event sort order: Ir Dr Dw I1mr D1mr D1mw ILmr DLmr DLmw
+Thresholds:       0.01 0 0 0 0 0 0 0 0
+Include dirs:     
+User annotated:   
+Auto-annotation:  on
+
+--------------------------------------------------------------------------------
+Ir                  Dr                 Dw                 I1mr           D1mr            D1mw            ILmr           DLmr           DLmw           
+--------------------------------------------------------------------------------
+25,661,043 (100.0%) 3,795,074 (100.0%) 2,231,305 (100.0%) 5,975 (100.0%) 64,877 (100.0%) 52,652 (100.0%) 2,886 (100.0%) 2,861 (100.0%) 3,815 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+Ir                 Dr               Dw               I1mr         D1mr            D1mw            ILmr        DLmr           DLmw            file:function
+--------------------------------------------------------------------------------
+2,694,616 (10.50%) 452,600 (11.93%) 274,040 (12.28%)  23 ( 0.38%)      0               0          13 ( 0.45%)     .              .           src/complex.rs:rustsht_fft::complex::execute_pass_inner::<5, f64> [/dev/shm/rustsht-fft-m33-profile-target/release/deps/rustfft-997559b50f336da1]
+
+--------------------------------------------------------------------------------
+-- Auto-annotated source: src/complex.rs
+--------------------------------------------------------------------------------
+Ir                 Dr               Dw               I1mr         D1mr         D1mw         ILmr        DLmr       DLmw       
+
+-- line 244 ----------------------------------------
+        .                .                .            .            .            .           .          .          .                       .try_fold(local_bytes, |total, workspace| {
+        .                .                .            .            .            .           .          .          .                           total.checked_add(workspace.scratch_bytes()?)
+        .                .                .            .            .            .           .          .          .                       })
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           impl<T: Float + FromPrimitive> ComplexFftPlan<T> {
+        .                .                .            .            .            .           .          .          .               pub(crate) fn try_new(len: usize) -> Result<Self, FftError> {
+        4 ( 0.00%)       0                1 ( 0.00%)   .            .            .           .          .          .                   Self::try_new_with_bluestein_and_root_cache(len, true, false)
+   52,188 ( 0.20%)   8,766 ( 0.23%)   4,523 ( 0.20%)  23 ( 0.38%)  56 ( 0.09%) 112 ( 0.21%)  6 ( 0.21%) 0          103 ( 2.70%)  => src/complex.rs:<rustsht_fft::complex::ComplexFftPlan<f64>>::try_new_with_bluestein_and_root_cache (1x)
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .               fn try_new_with_bluestein(len: usize, enable_bluestein: bool) -> Result<Self, FftError> {
+        4 ( 0.00%)       0                1 ( 0.00%)   1 ( 0.02%)   0            0           1 ( 0.03%) .          .                   Self::try_new_with_bluestein_and_root_cache(len, enable_bluestein, false)
+  103,772 ( 0.40%)  17,745 ( 0.47%)   8,288 ( 0.37%)  58 ( 0.97%)  77 ( 0.12%) 302 ( 0.57%) 58 ( 2.01%) 65 ( 2.27%) 298 ( 7.81%)  => src/complex.rs:<rustsht_fft::complex::ComplexFftPlan<f64>>::try_new_with_bluestein_and_root_cache (1x)
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+       16 ( 0.00%)       0               12 ( 0.00%)   2 ( 0.03%)   0            0           2 ( 0.07%) .          .               fn try_new_with_bluestein_and_root_cache(
+        .                .                .            .            .            .           .          .          .                   len: usize,
+        .                .                .            .            .            .           .          .          .                   enable_bluestein: bool,
+        .                .                .            .            .            .           .          .          .                   enable_radix103_root_cache: bool,
+        .                .                .            .            .            .           .          .          .               ) -> Result<Self, FftError> {
+        4 ( 0.00%)       .                .            .            .            .           .          .          .                   if len == 0 {
+        .                .                .            .            .            .           .          .          .                       return Err(FftError::InvalidLength);
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .                   check_vec_len::<Complex<T>>(len)?;
+        4 ( 0.00%)       0                2 ( 0.00%)   0            0            1 ( 0.00%)  0          0          1 ( 0.03%)          let factors = factorize(len)?;
+      392 ( 0.00%)      78 ( 0.00%)      72 ( 0.00%)   2 ( 0.03%)   2 ( 0.00%)   5 ( 0.01%)  2 ( 0.07%) 0          2 ( 0.05%)  => src/complex.rs:rustsht_fft::complex::factorize (2x)
+        8 ( 0.00%)       0                2 ( 0.00%)   .            .            .           .          .          .                   let mut roots = try_vec(len, Complex::new(T::zero(), T::zero()))?;
+    2,438 ( 0.01%)     106 ( 0.00%)   1,596 ( 0.07%)   2 ( 0.03%)   2 ( 0.00%) 130 ( 0.25%)  0          0          130 ( 3.41%)  => src/complex.rs:rustsht_fft::complex::try_vec::<num_complex::Complex<f64>> (2x)
+        .                .                .            .            .            .           .          .          .                   let max_radix = factors.iter().copied().max().unwrap_or(1);
+        .                .                .            .            .            .           .          .          .                   for (index, root) in roots.iter_mut().enumerate() {
+      756 ( 0.00%)       4 ( 0.00%)     752 ( 0.03%)   0            2 ( 0.00%)   0           0          1 ( 0.03%) .                       *root = unity_root(index, len);
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .                   let mut passes = Vec::new();
+        .                .                .            .            .            .           .          .          .                   passes
+        .                .                .            .            .            .           .          .          .                       .try_reserve_exact(factors.len())
+        .                .                .            .            .            .           .          .          .                       .map_err(|_| FftError::AllocationFailed)?;
+        .                .                .            .            .            .           .          .          .                   let mut l1 = 1_usize;
+        7 ( 0.00%)       7 ( 0.00%)       .            .            .            .           .          .          .                   for &radix in &factors {
+        .                .                .            .            .            .           .          .          .                       let pass_span = l1.checked_mul(radix).ok_or(FftError::AllocationFailed)?;
+       70 ( 0.00%)       .                .            .            .            .           .          .          .                       let ido = len / pass_span;
+        .                .                .            .            .            .           .          .          .                       let twiddle_count = radix.checked_mul(ido).ok_or(FftError::AllocationFailed)?;
+       35 ( 0.00%)       0                7 ( 0.00%)   .            .            .           .          .          .                       let mut twiddles = try_vec(twiddle_count, Complex::new(T::zero(), T::zero()))?;
+    4,050 ( 0.02%)     264 ( 0.01%)   2,164 ( 0.10%)   2 ( 0.03%)   7 ( 0.01%) 242 ( 0.46%)  0          0          237 ( 6.21%)  => src/complex.rs:rustsht_fft::complex::try_vec::<num_complex::Complex<f64>> (7x)
+        .                .                .            .            .            .           .          .          .                       for branch in 0..radix {
+        .                .                .            .            .            .           .          .          .                           for inner in 0..ido {
+        .                .                .            .            .            .           .          .          .                               // The factorization guarantees branch*l1*inner < len.
+        .                .                .            .            .            .           .          .          .                               let root_index = branch * l1 * inner;
+    2,892 ( 0.01%)     964 ( 0.03%)     964 ( 0.04%)   1 ( 0.02%)   0            0           1 ( 0.03%) .          .                               twiddles[branch * ido + inner] = roots[root_index];
+        .                .                .            .            .            .           .          .          .                           }
+        .                .                .            .            .            .           .          .          .                       }
+        .                .                .            .            .            .           .          .          .                       let mut prime_phase_indices = Vec::new();
+       14 ( 0.00%)       .                .            .            .            .           .          .          .                       if (13..110).contains(&radix) && !radix.is_multiple_of(2) {
+        .                .                .            .            .            .           .          .          .                           let phase_count = ((radix - 1) / 2)
+        .                .                .            .            .            .           .          .          .                               .checked_mul(radix)
+        .                .                .            .            .            .           .          .          .                               .ok_or(FftError::AllocationFailed)?;
+        .                .                .            .            .            .           .          .          .                           prime_phase_indices = try_vec(phase_count, 0_u8)?;
+        .                .                .            .            .            .           .          .          .                           for branch in 1..=(radix - 1) / 2 {
+        .                .                .            .            .            .           .          .          .                               for frequency in 0..radix {
+        .                .                .            .            .            .           .          .          .                                   let phase = bounded_product_mod(branch, frequency, radix);
+        .                .                .            .            .            .           .          .          .                                   prime_phase_indices[(branch - 1) * radix + frequency] =
+        .                .                .            .            .            .           .          .          .                                       u8::try_from(phase).map_err(|_| FftError::AllocationFailed)?;
+        .                .                .            .            .            .           .          .          .                               }
+        .                .                .            .            .            .           .          .          .                           }
+        .                .                .            .            .            .           .          .          .                       }
+       28 ( 0.00%)       7 ( 0.00%)      21 ( 0.00%)   1 ( 0.02%)   0            0           1 ( 0.03%) .          .                       passes.push(ComplexPass {
+        .                .                .            .            .            .           .          .          .                           radix,
+        .                .                .            .            .            .           .          .          .                           l1,
+        .                .                .            .            .            .           .          .          .                           ido,
+       21 ( 0.00%)       0               21 ( 0.00%)   .            .            .           .          .          .                           twiddles,
+       21 ( 0.00%)       0               21 ( 0.00%)   .            .            .           .          .          .                           prime_phase_indices,
+        .                .                .            .            .            .           .          .          .                       });
+        .                .                .            .            .            .           .          .          .                       l1 = pass_span;
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .                   let mut bluestein = Vec::new();
+        .                .                .            .            .            .           .          .          .                   bluestein
+        .                .                .            .            .            .           .          .          .                       .try_reserve_exact(factors.len())
+        .                .                .            .            .            .           .          .          .                       .map_err(|_| FftError::AllocationFailed)?;
+        8 ( 0.00%)       4 ( 0.00%)       0            1 ( 0.02%)   0            0           1 ( 0.03%) .          .                   for &radix in &factors {
+        4 ( 0.00%)       .                .            .            .            .           .          .          .                       bluestein.push(if enable_bluestein && radix >= 110 {
+        .                .                .            .            .            .           .          .          .                           let plan = if radix == 241 {
+        .                .                .            .            .            .           .          .          .                               BluesteinPlan::try_new_with_convolution_len(
+        .                .                .            .            .            .           .          .          .                                   radix,
+        .                .                .            .            .            .           .          .          .                                   P241_BLUESTEIN_CONVOLUTION_LEN,
+        .                .                .            .            .            .           .          .          .                               )?
+        .                .                .            .            .            .           .          .          .                           } else {
+        .                .                .            .            .            .           .          .          .                               BluesteinPlan::try_new(radix)?
+        .                .                .            .            .            .           .          .          .                           };
+        .                .                .            .            .            .           .          .          .                           Some(plan)
+        .                .                .            .            .            .           .          .          .                       } else {
+       11 ( 0.00%)       0                7 ( 0.00%)   2 ( 0.03%)   0            1 ( 0.00%)  2 ( 0.07%) 0          1 ( 0.03%)                  None
+        .                .                .            .            .            .           .          .          .                       });
+        .                .                .            .            .            .           .          .          .                   }
+        4 ( 0.00%)       2 ( 0.00%)       .            .            .            .           .          .          .                   let radix103_root_pairs = if enable_radix103_root_cache && len == 1442 {
+        .                .                .            .            .            .           .          .          .                       let pass = passes
+        .                .                .            .            .            .           .          .          .                           .iter()
+        .                .                .            .            .            .           .          .          .                           .find(|pass| pass.radix == 103 && pass.l1 == 14 && pass.ido == 1);
+        .                .                .            .            .            .           .          .          .                       pass.map(|pass| {
+        .                .                .            .            .            .           .          .          .                           Radix103RootPairs::try_new(&roots, &pass.prime_phase_indices, len / pass.radix)
+        .                .                .            .            .            .           .          .          .                       })
+        .                .                .            .            .            .           .          .          .                       .transpose()?
+        .                .                .            .            .            .           .          .          .                   } else {
+        .                .                .            .            .            .           .          .          .                       None
+        .                .                .            .            .            .           .          .          .                   };
+       30 ( 0.00%)      12 ( 0.00%)      18 ( 0.00%)   2 ( 0.03%)   1 ( 0.00%)   2 ( 0.00%)  1 ( 0.03%) 1 ( 0.03%) .                   Ok(Self {
+        .                .                .            .            .            .           .          .          .                       data: ComplexPlanData {
+        .                .                .            .            .            .           .          .          .                           len,
+        8 ( 0.00%)       4 ( 0.00%)       4 ( 0.00%)   2 ( 0.03%)   0            0           1 ( 0.03%) .          .                           passes,
+        .                .                .            .            .            .           .          .          .                           roots,
+        .                .                .            .            .            .           .          .          .                           max_radix,
+       10 ( 0.00%)       6 ( 0.00%)       4 ( 0.00%)   0            0            1 ( 0.00%)  .          .          .                           bluestein,
+        .                .                .            .            .            .           .          .          .                           radix103_root_pairs,
+        .                .                .            .            .            .           .          .          .                       },
+        .                .                .            .            .            .           .          .          .                   })
+       18 ( 0.00%)      14 ( 0.00%)       .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .               #[cfg(test)]
+        .                .                .            .            .            .           .          .          .               pub(crate) fn m0_pass_report(&self) -> Vec<String> {
+        .                .                .            .            .            .           .          .          .                   self.data
+        .                .                .            .            .            .           .          .          .                       .passes
+        .                .                .            .            .            .           .          .          .                       .iter()
+        .                .                .            .            .            .           .          .          .                       .enumerate()
+        .                .                .            .            .            .           .          .          .                       .map(|(stage, pass)| {
+-- line 363 ----------------------------------------
+-- line 392 ----------------------------------------
+        .                .                .            .            .            .           .          .          .                       bytes += root_pairs.tail_roots.capacity() * std::mem::size_of::<Complex<T>>();
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .                   for blue in self.data.bluestein.iter().flatten() {
+        .                .                .            .            .            .           .          .          .                       bytes += blue.m0_retained_plan_bytes();
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .                   bytes
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+       36 ( 0.00%)       0               24 ( 0.00%)   2 ( 0.03%)   0            0           2 ( 0.07%) .          .               pub(crate) fn try_workspace(&self) -> Result<ComplexFftWorkspace<T>, FftError> {
+        .                .                .            .            .            .           .          .          .                   let zero = Complex::new(T::zero(), T::zero());
+        .                .                .            .            .            .           .          .          .                   let mut bluestein_buffer_len = 0;
+        .                .                .            .            .            .           .          .          .                   let mut bluestein_workspaces = Vec::new();
+        .                .                .            .            .            .           .          .          .                   bluestein_workspaces
+        .                .                .            .            .            .           .          .          .                       .try_reserve_exact(self.data.bluestein.len())
+        .                .                .            .            .            .           .          .          .                       .map_err(|_| FftError::AllocationFailed)?;
+        .                .                .            .            .            .           .          .          .                   for plan in &self.data.bluestein {
+       28 ( 0.00%)      14 ( 0.00%)       0            2 ( 0.03%)   7 ( 0.01%)   0           2 ( 0.07%) .          .                       if let Some(plan) = plan {
+        .                .                .            .            .            .           .          .          .                           bluestein_buffer_len = bluestein_buffer_len.max(plan.convolution_len);
+        .                .                .            .            .            .           .          .          .                           bluestein_workspaces.push(Some(plan.convolution.try_workspace()?));
+        .                .                .            .            .            .           .          .          .                       } else {
+        7 ( 0.00%)       0                7 ( 0.00%)   1 ( 0.02%)   0            0           1 ( 0.03%) .          .                           bluestein_workspaces.push(None);
+        .                .                .            .            .            .           .          .          .                       }
+        .                .                .            .            .            .           .          .          .                   }
+       44 ( 0.00%)       4 ( 0.00%)      40 ( 0.00%)   .            .            .           .          .          .                   Ok(ComplexFftWorkspace {
+       12 ( 0.00%)       4 ( 0.00%)       .            .            .            .           .          .          .                       len: self.data.len,
+        .                .                .            .            .            .           .          .          .                       output: try_vec(self.data.len, zero)?,
+        8 ( 0.00%)       4 ( 0.00%)       0            1 ( 0.02%)   0            0           1 ( 0.03%) .          .                       radix_input: try_vec(self.data.max_radix, zero)?,
+        .                .                .            .            .            .           .          .          .                       radix_output: try_vec(self.data.max_radix, zero)?,
+       32 ( 0.00%)       8 ( 0.00%)      12 ( 0.00%)   2 ( 0.03%)   0            0           2 ( 0.07%) .          .                       bluestein_buffer: try_vec(bluestein_buffer_len, zero)?,
+       68 ( 0.00%)      12 ( 0.00%)      24 ( 0.00%)   2 ( 0.03%)   0            0           2 ( 0.07%) .          .           => src/complex.rs:rustsht_fft::complex::try_vec::<num_complex::Complex<f64>> (4x)
+       16 ( 0.00%)       8 ( 0.00%)       8 ( 0.00%)   .            .            .           .          .          .                       bluestein_workspaces,
+        .                .                .            .            .            .           .          .          .                   })
+       36 ( 0.00%)      28 ( 0.00%)       .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .               pub(crate) fn execute(
+        .                .                .            .            .            .           .          .          .                   &self,
+        .                .                .            .            .            .           .          .          .                   values: &mut [Complex<T>],
+        .                .                .            .            .            .           .          .          .                   workspace: &mut ComplexFftWorkspace<T>,
+        .                .                .            .            .            .           .          .          .                   direction: Direction,
+        .                .                .            .            .            .           .          .          .               ) -> Result<(), FftError> {
+        .                .                .            .            .            .           .          .          .                   self.execute_inverse_scaled(values, workspace, direction, T::one())
+-- line 431 ----------------------------------------
+-- line 433 ----------------------------------------
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .               pub(crate) fn execute_inverse_scaled(
+        .                .                .            .            .            .           .          .          .                   &self,
+        .                .                .            .            .            .           .          .          .                   values: &mut [Complex<T>],
+        .                .                .            .            .            .           .          .          .                   workspace: &mut ComplexFftWorkspace<T>,
+        .                .                .            .            .            .           .          .          .                   direction: Direction,
+        .                .                .            .            .            .           .          .          .                   inverse_output_scale: T,
+        .                .                .            .            .            .           .          .          .               ) -> Result<(), FftError> {
+        1 ( 0.00%)       0                1 ( 0.00%)   .            .            .           .          .          .                   self.execute_with_simd(values, workspace, direction, inverse_output_scale, None)
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .               fn execute_avx2(
+        .                .                .            .            .            .           .          .          .                   &self,
+        .                .                .            .            .            .           .          .          .                   values: &mut [Complex<T>],
+        .                .                .            .            .            .           .          .          .                   workspace: &mut ComplexFftWorkspace<T>,
+        .                .                .            .            .            .           .          .          .                   direction: Direction,
+        .                .                .            .            .            .           .          .          .               ) -> Result<(), FftError>
+        .                .                .            .            .            .           .          .          .               where
+        .                .                .            .            .            .           .          .          .                   T: SimdScalar,
+        .                .                .            .            .            .           .          .          .               {
+      620 ( 0.00%)     620 ( 0.02%)       .            .            .            .           .          .          .                   check_len("values", self.data.len, values.len())?;
+      620 ( 0.00%)     620 ( 0.02%)       0            0          206 ( 0.32%)   .           .          .          .                   check_len("workspace", self.data.len, workspace.len)?;
+    5,580 ( 0.02%)       0              620 ( 0.03%)   1 ( 0.02%)   0            0           1 ( 0.03%) .          .                   self.execute_avx2_unchecked(values, workspace, direction);
+15,140,725 (59.00%) 2,638,997 (69.54%) 1,586,580 (71.11%) 1,762 (29.49%) 13,639 (21.02%) 10,213 (19.40%) 134 ( 4.64%) 11 ( 0.38%) 11 ( 0.29%)  => src/complex.rs:<rustsht_fft::complex::ComplexFftPlan<f64>>::execute_avx2_unchecked (620x)
+    1,240 ( 0.00%)     620 ( 0.02%)     620 ( 0.03%)   .            .            .           .          .          .                   Ok(())
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+      620 ( 0.00%)       0                0          104 ( 1.74%)   0            0           1 ( 0.03%) .          .               pub(crate) fn execute_runtime(
+        .                .                .            .            .            .           .          .          .                   &self,
+        .                .                .            .            .            .           .          .          .                   values: &mut [Complex<T>],
+        .                .                .            .            .            .           .          .          .                   workspace: &mut ComplexFftWorkspace<T>,
+        .                .                .            .            .            .           .          .          .                   direction: Direction,
+        .                .                .            .            .            .           .          .          .               ) -> Result<(), FftError>
+        .                .                .            .            .            .           .          .          .               where
+        .                .                .            .            .            .           .          .          .                   T: SimdScalar,
+        .                .                .            .            .            .           .          .          .               {
+        .                .                .            .            .            .           .          .          .                   self.execute_avx2(values, workspace, direction)
+      620 ( 0.00%)     620 ( 0.02%)       .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+    5,580 ( 0.02%)       0            4,340 ( 0.19%)   2 ( 0.03%)   0          206 ( 0.39%)  1 ( 0.03%) .          .               fn execute_avx2_unchecked(
+        .                .                .            .            .            .           .          .          .                   &self,
+        .                .                .            .            .            .           .          .          .                   values: &mut [Complex<T>],
+        .                .                .            .            .            .           .          .          .                   workspace: &mut ComplexFftWorkspace<T>,
+        .                .                .            .            .            .           .          .          .                   direction: Direction,
+        .                .                .            .            .            .           .          .          .               ) where
+        .                .                .            .            .            .           .          .          .                   T: SimdScalar,
+        .                .                .            .            .            .           .          .          .               {
+        .                .                .            .            .            .           .          .          .                   let avx2_available = T::avx2_available();
+-- line 479 ----------------------------------------
+-- line 482 ----------------------------------------
+        .                .                .            .            .            .           .          .          .                       first_pass: T::avx2_first_pass,
+        .                .                .            .            .            .           .          .          .                       pass: T::avx2_pass,
+        .                .                .            .            .            .           .          .          .                       radix3_pass: T::avx2_radix3_pass_kernel(),
+        .                .                .            .            .            .           .          .          .                       ido1_radix8_pass: T::avx2_ido1_radix8_pass_kernel(),
+        .                .                .            .            .            .           .          .          .                       ido1_radix4_pass: T::avx2_ido1_radix4_pass_kernel(),
+        .                .                .            .            .            .           .          .          .                       radix11_pass: T::avx2_radix11_dispatch_kernel(),
+        .                .                .            .            .            .           .          .          .                   });
+        .                .                .            .            .            .           .          .          .                   if avx2_available
+    4,340 ( 0.02%)     620 ( 0.02%)       0            2 ( 0.03%)   0            0           1 ( 0.03%) .          .                       && self.data.len == 682
+        .                .                .            .            .            .           .          .          .                       && let Some(kernel) = T::avx2_general_prime_ido1_kernel()
+        .                .                .            .            .            .           .          .          .                   {
+        .                .                .            .            .            .           .          .          .                       self.execute_682_with_simd_unchecked(
+        .                .                .            .            .            .           .          .          .                           values,
+        .                .                .            .            .            .           .          .          .                           workspace,
+        .                .                .            .            .            .           .          .          .                           direction,
+        .                .                .            .            .            .           .          .          .                           kernels,
+        .                .                .            .            .            .           .          .          .                           kernel,
+-- line 498 ----------------------------------------
+-- line 511 ----------------------------------------
+        .                .                .            .            .            .           .          .          .                           Some(kernel),
+        .                .                .            .            .            .           .          .          .                       );
+        .                .                .            .            .            .           .          .          .                   } else if avx2_available
+        .                .                .            .            .            .           .          .          .                       && self.data.len == 722
+        .                .                .            .            .            .           .          .          .                       && let Some(kernel) = T::avx2_general_prime_radix19_ido1_kernel()
+        .                .                .            .            .            .           .          .          .                   {
+        .                .                .            .            .            .           .          .          .                       self.execute_722_with_simd_unchecked(values, workspace, direction, kernels, kernel);
+        .                .                .            .            .            .           .          .          .                   } else {
+    3,100 ( 0.01%)     620 ( 0.02%)     620 ( 0.03%)   2 ( 0.03%)   0            0           1 ( 0.03%) .          .                       self.execute_with_simd_unchecked::<false>(
+15,106,005 (58.87%) 2,627,837 (69.24%) 1,576,040 (70.63%) 1,750 (29.29%) 13,431 (20.70%) 9,801 (18.61%) 128 ( 4.44%) 11 ( 0.38%) 11 ( 0.29%)  => src/complex.rs:<rustsht_fft::complex::ComplexFftPlan<f64>>::execute_with_simd_unchecked::<false> (620x)
+        .                .                .            .            .            .           .          .          .                           values,
+        .                .                .            .            .            .           .          .          .                           workspace,
+        .                .                .            .            .            .           .          .          .                           direction,
+        .                .                .            .            .            .           .          .          .                           T::one(),
+        .                .                .            .            .            .           .          .          .                           kernels,
+        .                .                .            .            .            .           .          .          .                           None,
+        .                .                .            .            .            .           .          .          .                       );
+        .                .                .            .            .            .           .          .          .                   }
+    4,960 ( 0.02%)   4,340 ( 0.11%)       .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .               fn execute_with_simd(
+        .                .                .            .            .            .           .          .          .                   &self,
+        .                .                .            .            .            .           .          .          .                   values: &mut [Complex<T>],
+        .                .                .            .            .            .           .          .          .                   workspace: &mut ComplexFftWorkspace<T>,
+        .                .                .            .            .            .           .          .          .                   direction: Direction,
+        .                .                .            .            .            .           .          .          .                   inverse_output_scale: T,
+        .                .                .            .            .            .           .          .          .                   simd: Option<SimdKernels<T>>,
+        .                .                .            .            .            .           .          .          .               ) -> Result<(), FftError> {
+        1 ( 0.00%)       1 ( 0.00%)       .            .            .            .           .          .          .                   check_len("values", self.data.len, values.len())?;
+        1 ( 0.00%)       1 ( 0.00%)       .            .            .            .           .          .          .                   check_len("workspace", self.data.len, workspace.len)?;
+        .                .                .            .            .            .           .          .          .           
+        3 ( 0.00%)       0                1 ( 0.00%)   .            .            .           .          .          .                   self.execute_with_simd_unchecked::<false>(
+   76,913 ( 0.30%)  15,263 ( 0.40%)   9,094 ( 0.41%) 146 ( 2.44%) 135 ( 0.21%)  26 ( 0.05%) 146 ( 5.06%) 3 ( 0.10%) 5 ( 0.13%)  => src/complex.rs:<rustsht_fft::complex::ComplexFftPlan<f64>>::execute_with_simd_unchecked::<false> (1x)
+        .                .                .            .            .            .           .          .          .                       values,
+        .                .                .            .            .            .           .          .          .                       workspace,
+        .                .                .            .            .            .           .          .          .                       direction,
+        .                .                .            .            .            .           .          .          .                       inverse_output_scale,
+        .                .                .            .            .            .           .          .          .                       simd,
+        .                .                .            .            .            .           .          .          .                       None,
+        .                .                .            .            .            .           .          .          .                   );
+        .                .                .            .            .            .           .          .          .                   Ok(())
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+    5,589 ( 0.02%)       0            4,347 ( 0.19%)   0            0          206 ( 0.39%)  .          .          .               fn execute_with_simd_unchecked<const ENABLE_RADIX103: bool>(
+        .                .                .            .            .            .           .          .          .                   &self,
+        .                .                .            .            .            .           .          .          .                   values: &mut [Complex<T>],
+        .                .                .            .            .            .           .          .          .                   workspace: &mut ComplexFftWorkspace<T>,
+        .                .                .            .            .            .           .          .          .                   direction: Direction,
+        .                .                .            .            .            .           .          .          .                   inverse_output_scale: T,
+        .                .                .            .            .            .           .          .          .                   simd: Option<SimdKernels<T>>,
+        .                .                .            .            .            .           .          .          .                   specialized_general_prime_kernel: Option<ComplexGeneralPrimeIdo1Kernel<T>>,
+        .                .                .            .            .            .           .          .          .               ) {
+        .                .                .            .            .            .           .          .          .                   let defer_inverse_normalization =
+    1,551 ( 0.01%)     309 ( 0.01%)       .            .            .            .           .          .          .                       direction == Direction::Inverse && inverse_normalization_is_safe(values, self.data.len);
+        .                .                .            .            .            .           .          .          .                   #[cfg(test)]
+        .                .                .            .            .            .           .          .          .                   crate::m0_record_route(format!(
+        .                .                .            .            .            .           .          .          .                       "c2c n={} normalization={}",
+        .                .                .            .            .            .           .          .          .                       self.data.len,
+        .                .                .            .            .            .           .          .          .                       if defer_inverse_normalization {
+        .                .                .            .            .            .           .          .          .                           "deferred"
+        .                .                .            .            .            .           .          .          .                       } else if direction == Direction::Inverse {
+        .                .                .            .            .            .           .          .          .                           "guarded"
+-- line 570 ----------------------------------------
+-- line 586 ----------------------------------------
+        .                .                .            .            .            .           .          .          .                           } else {
+        .                .                .            .            .            .           .          .          .                               String::from("general-prime")
+        .                .                .            .            .            .           .          .          .                           };
+        .                .                .            .            .            .           .          .          .                           crate::m0_record_route(format!(
+        .                .                .            .            .            .           .          .          .                               "c2c n={} stage={} radix={} l1={} ido={} route={}",
+        .                .                .            .            .            .           .          .          .                               self.data.len, stage, pass.radix, pass.l1, pass.ido, route
+        .                .                .            .            .            .           .          .          .                           ));
+        .                .                .            .            .            .           .          .          .                       }
+   90,011 ( 0.35%)  33,520 ( 0.88%)  55,249 ( 2.48%)  15 ( 0.25%)   0          206 ( 0.39%)  8 ( 0.28%) .          .                       let mut execution = PassExecution {
+        .                .                .            .            .            .           .          .          .                           roots: &self.data.roots,
+        .                .                .            .            .            .           .          .          .                           total_len: self.data.len,
+        .                .                .            .            .            .           .          .          .                           direction,
+        .                .                .            .            .            .           .          .          .                           defer_inverse_normalization,
+    4,966 ( 0.02%)       .                .            .            .            .           .          .          .                           inverse_output_scale: if direction == Direction::Inverse
+    3,090 ( 0.01%)     618 ( 0.02%)       .            .            .            .           .          .          .                               && stage + 1 == self.data.passes.len()
+        .                .                .            .            .            .           .          .          .                           {
+        .                .                .            .            .            .           .          .          .                               if defer_inverse_normalization {
+        .                .                .            .            .            .           .          .          .                                   inverse_output_scale * inverse_scale::<T>(self.data.len)
+        .                .                .            .            .            .           .          .          .                               } else {
+        .                .                .            .            .            .           .          .          .                                   inverse_output_scale
+        .                .                .            .            .            .           .          .          .                               }
+        .                .                .            .            .            .           .          .          .                           } else {
+        .                .                .            .            .            .           .          .          .                               T::one()
+-- line 608 ----------------------------------------
+-- line 612 ----------------------------------------
+        .                .                .            .            .            .           .          .          .                           blue_plan: blue,
+        .                .                .            .            .            .           .          .          .                           prime_phase_indices: &pass.prime_phase_indices,
+        .                .                .            .            .            .           .          .          .                           blue_buffer: &mut workspace.bluestein_buffer,
+        .                .                .            .            .            .           .          .          .                           blue_workspace: workspace.bluestein_workspaces[stage].as_mut(),
+        .                .                .            .            .            .           .          .          .                           simd,
+        .                .                .            .            .            .           .          .          .                           radix103_root_pairs: self.data.radix103_root_pairs.as_ref(),
+        .                .                .            .            .            .           .          .          .                       };
+        .                .                .            .            .            .           .          .          .                       if stage == 0 {
+    4,347 ( 0.02%)   1,863 ( 0.05%)   1,242 ( 0.06%)   .            .            .           .          .          .                           execute_first_pass_in_place(values, &mut workspace.output, pass, &mut execution);
+  983,024 ( 3.83%) 135,834 ( 3.58%)  90,796 ( 4.07%)  81 ( 1.36%) 4,158 ( 6.41%) 629 ( 1.19%) 63 ( 2.18%) 3 ( 0.10%) 8 ( 0.21%)  => src/complex.rs:rustsht_fft::complex::execute_first_pass_in_place::<f64> (621x)
+    4,965 ( 0.02%)       0                0            3 ( 0.05%)   0            0           1 ( 0.03%) .          .                       } else if current_is_values {
+    7,446 ( 0.03%)   2,482 ( 0.07%)   1,241 ( 0.06%)   .            .            .           .          .          .                           execute_pass::<ENABLE_RADIX103, T>(
+8,638,010 (33.66%) 1,560,841 (41.13%) 1,088,408 (48.78%) 863 (14.44%) 4,965 ( 7.65%) 8,373 (15.90%) 135 ( 4.68%) 6 ( 0.21%) 8 ( 0.21%)  => /rustc/b940084d7eb6a299eb4bfeb8e34901bc051e7ac4/library/core/src/option.rs:rustsht_fft::complex::execute_pass::<false, f64> (1,241x)
+        .                .                .            .            .            .           .          .          .                               values,
+        .                .                .            .            .            .           .          .          .                               &mut workspace.output,
+        .                .                .            .            .            .           .          .          .                               pass,
+        .                .                .            .            .            .           .          .          .                               &mut execution,
+        .                .                .            .            .            .           .          .          .                               specialized_general_prime_kernel,
+        .                .                .            .            .            .           .          .          .                           );
+        .                .                .            .            .            .           .          .          .                           current_is_values = false;
+        .                .                .            .            .            .           .          .          .                       } else {
+    1,863 ( 0.01%)       0              621 ( 0.03%)   .            .            .           .          .          .                           execute_pass::<ENABLE_RADIX103, T>(
+2,788,695 (10.87%) 632,789 (16.67%) 258,896 (11.60%) 595 ( 9.96%) 1,243 ( 1.92%) 103 ( 0.20%) 48 ( 1.66%) 5 ( 0.17%) .           => /rustc/b940084d7eb6a299eb4bfeb8e34901bc051e7ac4/library/core/src/option.rs:rustsht_fft::complex::execute_pass::<false, f64> (621x)
+        .                .                .            .            .            .           .          .          .                               &workspace.output,
+        .                .                .            .            .            .           .          .          .                               values,
+        .                .                .            .            .            .           .          .          .                               pass,
+        .                .                .            .            .            .           .          .          .                               &mut execution,
+        .                .                .            .            .            .           .          .          .                               specialized_general_prime_kernel,
+        .                .                .            .            .            .           .          .          .                           );
+        .                .                .            .            .            .           .          .          .                           current_is_values = true;
+        .                .                .            .            .            .           .          .          .                       }
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .           
+    1,863 ( 0.01%)     621 ( 0.02%)       .            .            .            .           .          .          .                   if !current_is_values {
+        .                .                .            .            .            .           .          .          .                       values.copy_from_slice(&workspace.output);
+        .                .                .            .            .            .           .          .          .                   }
+    4,968 ( 0.02%)   4,347 ( 0.11%)       .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .               #[cold]
+        .                .                .            .            .            .           .          .          .               #[inline(never)]
+        .                .                .            .            .            .           .          .          .               fn execute_722_with_simd_unchecked(
+        .                .                .            .            .            .           .          .          .                   &self,
+        .                .                .            .            .            .           .          .          .                   values: &mut [Complex<T>],
+        .                .                .            .            .            .           .          .          .                   workspace: &mut ComplexFftWorkspace<T>,
+        .                .                .            .            .            .           .          .          .                   direction: Direction,
+-- line 653 ----------------------------------------
+-- line 1206 ----------------------------------------
+        .                .                .            .            .            .           .          .          .                       }
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .               };
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           implement_public_api!(f32, false);
+        .                .                .            .            .            .           .          .          .           implement_public_api!(f64, true);
+        .                .                .            .            .            .           .          .          .           
+    3,103 ( 0.01%)   2,483 ( 0.07%)     620 ( 0.03%) 107 ( 1.79%)   0            0           3 ( 0.10%) .          .           #[derive(Clone, Copy, Eq, PartialEq)]
+        .                .                .            .            .            .           .          .          .           pub(crate) enum Direction {
+        .                .                .            .            .            .           .          .          .               Forward,
+        .                .                .            .            .            .           .          .          .               Inverse,
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           pub(crate) struct BluesteinPlan<T> {
+        .                .                .            .            .            .           .          .          .               len: usize,
+        .                .                .            .            .            .           .          .          .               convolution_len: usize,
+-- line 1222 ----------------------------------------
+-- line 1231 ----------------------------------------
+        .                .                .            .            .            .           .          .          .               pub(crate) fn try_new(len: usize) -> Result<Self, FftError> {
+        .                .                .            .            .            .           .          .          .                   Self::try_new_with_pad(len, None)
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .               pub(crate) fn try_new_with_convolution_len(
+        .                .                .            .            .            .           .          .          .                   len: usize,
+        .                .                .            .            .            .           .          .          .                   convolution_len: usize,
+        .                .                .            .            .            .           .          .          .               ) -> Result<Self, FftError> {
+        5 ( 0.00%)       0                1 ( 0.00%)   1 ( 0.02%)   0            0           1 ( 0.03%) .          .                   Self::try_new_with_pad(len, Some(convolution_len))
+  262,143 ( 1.02%)  43,507 ( 1.15%)  42,076 ( 1.89%) 294 ( 4.92%) 269 ( 0.41%) 673 ( 1.28%) 284 ( 9.84%) 72 ( 2.52%) 630 (16.51%)  => src/complex.rs:<rustsht_fft::complex::BluesteinPlan<f64>>::try_new_with_pad (1x)
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+        8 ( 0.00%)       0                6 ( 0.00%)   1 ( 0.02%)   0            0           1 ( 0.03%) .          .               fn try_new_with_pad(len: usize, selected_len: Option<usize>) -> Result<Self, FftError> {
+        .                .                .            .            .            .           .          .          .                   let twice_len = len.checked_mul(2).ok_or(FftError::AllocationFailed)?;
+        .                .                .            .            .            .           .          .          .                   let minimum = twice_len.checked_sub(1).ok_or(FftError::AllocationFailed)?;
+        2 ( 0.00%)       0                0            1 ( 0.02%)   0            0           1 ( 0.03%) .          .                   let convolution_len = if let Some(convolution_len) = selected_len {
+        2 ( 0.00%)       0                1 ( 0.00%)   0            0            1 ( 0.00%)  .          .          .                       let factors = factorize(convolution_len)?;
+      307 ( 0.00%)      57 ( 0.00%)      48 ( 0.00%)   9 ( 0.15%)   0            7 ( 0.01%)  9 ( 0.31%) 0          1 ( 0.03%)  => src/complex.rs:rustsht_fft::complex::factorize (1x)
+        2 ( 0.00%)       0                0            1 ( 0.02%)   0            0           1 ( 0.03%) .          .                       if convolution_len < minimum
+        .                .                .            .            .            .           .          .          .                           || factors
+        .                .                .            .            .            .           .          .          .                               .iter()
+        6 ( 0.00%)       .                .            .            .            .           .          .          .                               .any(|&factor| !matches!(factor, 2 | 3 | 4 | 5 | 7 | 8 | 11))
+        .                .                .            .            .            .           .          .          .                       {
+        .                .                .            .            .            .           .          .          .                           return Err(FftError::InvalidLength);
+        .                .                .            .            .            .           .          .          .                       }
+        .                .                .            .            .            .           .          .          .                       convolution_len
+        .                .                .            .            .            .           .          .          .                   } else {
+        .                .                .            .            .            .           .          .          .                       good_size_complex(minimum)?
+        .                .                .            .            .            .           .          .          .                   };
+        7 ( 0.00%)       3 ( 0.00%)       4 ( 0.00%)   1 ( 0.02%)   0            0           1 ( 0.03%) .          .                   let convolution = ComplexFftPlan::try_new_with_bluestein(convolution_len, false)?;
+        .                .                .            .            .            .           .          .          .                   let convolution_scale = T::from_usize(convolution_len).ok_or(FftError::AllocationFailed)?;
+        .                .                .            .            .            .           .          .          .                   let zero = Complex::new(T::zero(), T::zero());
+        .                .                .            .            .            .           .          .          .                   let mut chirp = try_vec(len, zero)?;
+        .                .                .            .            .            .           .          .          .                   let mut kernel = try_vec(convolution_len, zero)?;
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .                   for (index, value) in chirp.iter_mut().enumerate() {
+        .                .                .            .            .            .           .          .          .                       let square = mul_mod(index, index, twice_len);
+      482 ( 0.00%)       0              482 ( 0.02%)   .            .            .           .          .          .                       *value = unity_root(square, twice_len).conj();
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .           
+        4 ( 0.00%)       3 ( 0.00%)       1 ( 0.00%)   1 ( 0.02%)   0            0           1 ( 0.03%) .          .                   kernel[0] = Complex::new(T::one(), T::zero());
+        .                .                .            .            .            .           .          .          .                   for index in 1..len {
+      240 ( 0.00%)     240 ( 0.01%)       .            .            .            .           .          .          .                       let positive_chirp = chirp[index].conj();
+      480 ( 0.00%)       0              480 ( 0.02%)   .            .            .           .          .          .                       kernel[index] = positive_chirp;
+      480 ( 0.00%)       0              480 ( 0.02%)   .            .            .           .          .          .                       kernel[convolution_len - index] = positive_chirp;
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .           
+        8 ( 0.00%)       3 ( 0.00%)       5 ( 0.00%)   2 ( 0.03%)   0            0           2 ( 0.07%) .          .                   let mut kernel_workspace = convolution.try_workspace()?;
+    9,301 ( 0.04%)     207 ( 0.01%)   8,348 ( 0.37%)  18 ( 0.30%)   3 ( 0.00%) 139 ( 0.26%) 18 ( 0.62%) 0          137 ( 3.59%)  => src/complex.rs:<rustsht_fft::complex::ComplexFftPlan<f64>>::try_workspace (1x)
+        .                .                .            .            .            .           .          .          .                   convolution.execute(&mut kernel, &mut kernel_workspace, Direction::Forward)?;
+        .                .                .            .            .            .           .          .          .                   let kernel_spectrum_max = kernel.iter().fold(T::zero(), |maximum, value| {
+        .                .                .            .            .            .           .          .          .                       maximum.max(value.re.abs()).max(value.im.abs())
+        .                .                .            .            .            .           .          .          .                   });
+        .                .                .            .            .            .           .          .          .           
+       16 ( 0.00%)       3 ( 0.00%)      10 ( 0.00%)   1 ( 0.02%)   0            2 ( 0.00%)  1 ( 0.03%) .          .                   Ok(Self {
+        .                .                .            .            .            .           .          .          .                       len,
+        .                .                .            .            .            .           .          .          .                       convolution_len,
+        .                .                .            .            .            .           .          .          .                       convolution_scale,
+        .                .                .            .            .            .           .          .          .                       kernel_spectrum_max,
+        .                .                .            .            .            .           .          .          .                       chirp,
+        .                .                .            .            .            .           .          .          .                       kernel_spectrum: kernel,
+        2 ( 0.00%)       1 ( 0.00%)       1 ( 0.00%)   1 ( 0.02%)   1 ( 0.00%)   0           1 ( 0.03%) .          .                       convolution,
+       30 ( 0.00%)      10 ( 0.00%)       8 ( 0.00%)   0            1 ( 0.00%)   3 ( 0.01%)  .          .          .           => ./string/../sysdeps/x86_64/multiarch/memmove-vec-unaligned-erms.S:__memcpy_avx_unaligned_erms (1x)
+        .                .                .            .            .            .           .          .          .                   })
+       10 ( 0.00%)       7 ( 0.00%)       1 ( 0.00%)   1 ( 0.02%)   1 ( 0.00%)   0           1 ( 0.03%) .          .               }
+      346 ( 0.00%)     108 ( 0.00%)      63 ( 0.00%)  15 ( 0.25%)   6 ( 0.01%)   0           6 ( 0.21%) .          .           => /rustc/b940084d7eb6a299eb4bfeb8e34901bc051e7ac4/library/core/src/ptr/mod.rs:core::ptr::drop_glue::<rustsht_fft::complex::ComplexFftWorkspace<f64>> (1x)
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .               pub(crate) fn convolution_len(&self) -> usize {
+        1 ( 0.00%)       1 ( 0.00%)       0            0            1 ( 0.00%)   .           .          .          .                   self.convolution_len
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .               #[cfg(test)]
+        .                .                .            .            .            .           .          .          .               pub(crate) fn m0_retained_plan_bytes(&self) -> usize {
+        .                .                .            .            .            .           .          .          .                   self.chirp.capacity() * std::mem::size_of::<Complex<T>>()
+        .                .                .            .            .            .           .          .          .                       + self.kernel_spectrum.capacity() * std::mem::size_of::<Complex<T>>()
+        .                .                .            .            .            .           .          .          .                       + self.convolution.m0_retained_plan_bytes()
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .               pub(crate) fn convolution_workspace(&self) -> Result<ComplexFftWorkspace<T>, FftError> {
+        3 ( 0.00%)       0                1 ( 0.00%)   1 ( 0.02%)   0            0           1 ( 0.03%) .          .                   self.convolution.try_workspace()
+    8,938 ( 0.03%)     159 ( 0.00%)   8,330 ( 0.37%)  24 ( 0.40%)   9 ( 0.01%) 136 ( 0.26%) 21 ( 0.73%) 0          131 ( 3.43%)  => src/complex.rs:<rustsht_fft::complex::ComplexFftPlan<f64>>::try_workspace (1x)
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .               pub(crate) fn execute(
+        .                .                .            .            .            .           .          .          .                   &self,
+        .                .                .            .            .            .           .          .          .                   input: &[Complex<T>],
+        .                .                .            .            .            .           .          .          .                   output: &mut [Complex<T>],
+        .                .                .            .            .            .           .          .          .                   direction: Direction,
+        .                .                .            .            .            .           .          .          .                   convolution_buffer: &mut [Complex<T>],
+-- line 1313 ----------------------------------------
+-- line 1384 ----------------------------------------
+        .                .                .            .            .            .           .          .          .                       if scale_kernel {
+        .                .                .            .            .            .           .          .          .                           value = value * self.convolution_scale;
+        .                .                .            .            .            .           .          .          .                       }
+        .                .                .            .            .            .           .          .          .                       output[index] = value / input_scale;
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+    4,347 ( 0.02%)       0            3,726 ( 0.17%)   4 ( 0.07%)   0          103 ( 0.20%)  2 ( 0.07%) .          .           fn execute_first_pass_in_place<T: Float + FromPrimitive>(
+        .                .                .            .            .            .           .          .          .               data: &mut [Complex<T>],
+        .                .                .            .            .            .           .          .          .               backup: &mut [Complex<T>],
+        .                .                .            .            .            .           .          .          .               pass: &ComplexPass<T>,
+        .                .                .            .            .            .           .          .          .               execution: &mut PassExecution<'_, T>,
+        .                .                .            .            .            .           .          .          .           ) {
+      621 ( 0.00%)       .                .            .            .            .           .          .          .               if execution.blue_plan.is_some() {
+        .                .                .            .            .            .           .          .          .                   execute_first_pass_in_place_inner::<0, T>(data, backup, pass, execution);
+        .                .                .            .            .            .           .          .          .                   return;
+        .                .                .            .            .            .           .          .          .               }
+    5,589 ( 0.02%)   1,242 ( 0.03%)   1,242 ( 0.06%)   3 ( 0.05%) 209 ( 0.32%) 105 ( 0.20%)  1 ( 0.03%) 1 ( 0.03%) 2 ( 0.05%)      match pass.radix {
+        .                .                .            .            .            .           .          .          .                   2 => execute_first_pass_in_place_inner::<2, T>(data, backup, pass, execution),
+        .                .                .            .            .            .           .          .          .                   3 => execute_first_pass_in_place_inner::<3, T>(data, backup, pass, execution),
+        .                .                .            .            .            .           .          .          .                   4 => execute_first_pass_in_place_inner::<4, T>(data, backup, pass, execution),
+        .                .                .            .            .            .           .          .          .                   5 => execute_first_pass_in_place_inner::<5, T>(data, backup, pass, execution),
+        .                .                .            .            .            .           .          .          .                   7 => execute_first_pass_in_place_inner::<7, T>(data, backup, pass, execution),
+        .                .                .            .            .            .           .          .          .                   8 => execute_first_pass_in_place_inner::<8, T>(data, backup, pass, execution),
+        .                .                .            .            .            .           .          .          .                   11 => execute_first_pass_in_place_inner::<11, T>(data, backup, pass, execution),
+        .                .                .            .            .            .           .          .          .                   _ => execute_first_pass_in_place_inner::<0, T>(data, backup, pass, execution),
+        .                .                .            .            .            .           .          .          .               }
+    4,968 ( 0.02%)   4,347 ( 0.11%)       0            4 ( 0.07%)   0            0           2 ( 0.07%) .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           fn execute_first_pass_in_place_inner<const R: usize, T: Float + FromPrimitive>(
+        .                .                .            .            .            .           .          .          .               data: &mut [Complex<T>],
+        .                .                .            .            .            .           .          .          .               backup: &mut [Complex<T>],
+        .                .                .            .            .            .           .          .          .               pass: &ComplexPass<T>,
+        .                .                .            .            .            .           .          .          .               execution: &mut PassExecution<'_, T>,
+        .                .                .            .            .            .           .          .          .           ) {
+        .                .                .            .            .            .           .          .          .               debug_assert_eq!(pass.l1, 1);
+-- line 1420 ----------------------------------------
+-- line 1529 ----------------------------------------
+        .                .                .            .            .            .           .          .          .               if ENABLE_RADIX103
+        .                .                .            .            .            .           .          .          .                   && pass.radix == 103
+        .                .                .            .            .            .           .          .          .                   && pass.l1 == 14
+        .                .                .            .            .            .           .          .          .                   && pass.ido == 1
+        .                .                .            .            .            .           .          .          .                   && execute_1442_general_prime_ido1(input, output, pass, execution, radix103_kernel)
+        .                .                .            .            .            .           .          .          .               {
+        .                .                .            .            .            .           .          .          .                   return;
+        .                .                .            .            .            .           .          .          .               }
+    1,862 ( 0.01%)       .                .            .            .            .           .          .          .               if execution.blue_plan.is_some() {
+        .                .                .            .            .            .           .          .          .                   execute_pass_inner::<0, T>(input, output, pass, execution);
+        .                .                .            .            .            .           .          .          .                   return;
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+   13,034 ( 0.05%)   3,724 ( 0.10%)       0            0          106 ( 0.16%)   0           0          1 ( 0.03%) .               match pass.radix {
+        .                .                .            .            .            .           .          .          .                   2 => execute_pass_inner::<2, T>(input, output, pass, execution),
+      620 ( 0.00%)       .                .            .            .            .           .          .          .                   3 => execute_pass_inner::<3, T>(input, output, pass, execution),
+2,758,643 (10.75%) 626,296 (16.50%) 254,820 (11.42%) 588 ( 9.84%) 1,242 ( 1.91%) 103 ( 0.20%) 41 ( 1.42%) 5 ( 0.17%) .           => src/complex.rs:rustsht_fft::complex::execute_pass_inner::<3, f64> (620x)
+        .                .                .            .            .            .           .          .          .                   4 => execute_pass_inner::<4, T>(input, output, pass, execution),
+      620 ( 0.00%)       .                .            .            .            .           .          .          .                   5 => execute_pass_inner::<5, T>(input, output, pass, execution),
+6,309,404 (24.59%) 1,128,780 (29.74%) 886,600 (39.73%) 374 ( 6.26%) 417 ( 0.64%)   0          38 ( 1.32%) 3 ( 0.10%) .           => src/complex.rs:rustsht_fft::complex::execute_pass_inner::<5, f64> (620x)
+        .                .                .            .            .            .           .          .          .                   7 => execute_pass_inner::<7, T>(input, output, pass, execution),
+      622 ( 0.00%)       0                0            1 ( 0.02%)   0            0           1 ( 0.03%) .          .                   8 => execute_pass_inner::<8, T>(input, output, pass, execution),
+2,338,176 ( 9.11%) 432,968 (11.41%) 205,884 ( 9.23%) 494 ( 8.27%) 4,443 ( 6.85%) 8,373 (15.90%) 102 ( 3.53%) 2 ( 0.07%) 8 ( 0.21%)  => src/complex.rs:rustsht_fft::complex::execute_pass_inner::<8, f64> (622x)
+        .                .                .            .            .            .           .          .          .                   11 => execute_pass_radix11(input, output, pass, execution),
+        .                .                .            .            .            .           .          .          .                   _ => execute_pass_inner::<0, T>(input, output, pass, execution),
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           #[cold]
+        .                .                .            .            .            .           .          .          .           #[inline(never)]
+        .                .                .            .            .            .           .          .          .           fn execute_722_general_prime_radix19_ido1<T: Float + FromPrimitive>(
+-- line 1556 ----------------------------------------
+-- line 1640 ----------------------------------------
+        .                .                .            .            .            .           .          .          .               } else if let Some(kernels) = execution.simd
+        .                .                .            .            .            .           .          .          .                   && execute_radix11_avx2(input, output, pass, execution, kernels.radix11_pass, true)
+        .                .                .            .            .            .           .          .          .               {
+        .                .                .            .            .            .           .          .          .                   return;
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .               execute_pass_inner::<11, T>(input, output, pass, execution);
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+   16,758 ( 0.07%)       0           14,274 ( 0.64%)   6 ( 0.10%)   0          207 ( 0.39%)  3 ( 0.10%) 0          1 ( 0.03%)  fn execute_pass_inner<const R: usize, T: Float + FromPrimitive>(
+        .                .                .            .            .            .           .          .          .               input: &[Complex<T>],
+        .                .                .            .            .            .           .          .          .               output: &mut [Complex<T>],
+        .                .                .            .            .            .           .          .          .               pass: &ComplexPass<T>,
+        .                .                .            .            .            .           .          .          .               execution: &mut PassExecution<'_, T>,
+        .                .                .            .            .            .           .          .          .           ) {
+        .                .                .            .            .            .           .          .          .               let radix = if R == 0 { pass.radix } else { R };
+        .                .                .            .            .            .           .          .          .               debug_assert_eq!(radix, pass.radix);
+        .                .                .            .            .            .           .          .          .               if matches!(R, 2 | 3 | 4 | 5 | 7 | 8) {
+-- line 1656 ----------------------------------------
+-- line 1741 ----------------------------------------
+        .                .                .            .            .            .           .          .          .                                   correction
+        .                .                .            .            .            .           .          .          .                               };
+        .                .                .            .            .            .           .          .          .                               output[destination_index] =
+        .                .                .            .            .            .           .          .          .                                   (output[destination_index] + correction * stage_scale) * output_scale;
+        .                .                .            .            .            .           .          .          .                           }
+        .                .                .            .            .            .           .          .          .                       }
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .               }
+   14,896 ( 0.06%)  13,034 ( 0.34%)       0            4 ( 0.07%)   0            0           2 ( 0.07%) .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           fn execute_first_pass_direct_radix<const R: usize, T: Float + FromPrimitive>(
+        .                .                .            .            .            .           .          .          .               data: &mut [Complex<T>],
+        .                .                .            .            .            .           .          .          .               pass: &ComplexPass<T>,
+        .                .                .            .            .            .           .          .          .               execution: &PassExecution<'_, T>,
+        .                .                .            .            .            .           .          .          .           ) {
+        .                .                .            .            .            .           .          .          .               let radix = R;
+        .                .                .            .            .            .           .          .          .               debug_assert!(matches!(radix, 2 | 3 | 4 | 5 | 7 | 8));
+        .                .                .            .            .            .           .          .          .               debug_assert_eq!(pass.l1, 1);
+        .                .                .            .            .            .           .          .          .               let inverse = execution.direction == Direction::Inverse;
+        .                .                .            .            .            .           .          .          .               let mut scalar_start = 0;
+    2,484 ( 0.01%)   1,241 ( 0.03%)       1 ( 0.00%)   .            .            .           .          .          .               if let Some(kernels) = execution.simd
+        .                .                .            .            .            .           .          .          .                   && matches!(R, 2 | 4 | 8)
+    6,200 ( 0.02%)   1,240 ( 0.03%)       0            2 ( 0.03%)   0            0           1 ( 0.03%) .          .                   && (!inverse || execution.defer_inverse_normalization)
+        .                .                .            .            .            .           .          .          .                   && pass.ido >= kernels.complex_lanes
+        .                .                .            .            .            .           .          .          .               {
+    6,200 ( 0.02%)       0                0            2 ( 0.03%)   0            0           1 ( 0.03%) .          .                   let vector_ido = pass.ido - pass.ido % kernels.complex_lanes;
+    2,169 ( 0.01%)     309 ( 0.01%)     620 ( 0.03%)   2 ( 0.03%)   0            0           1 ( 0.03%) .          .                   let inverse_scale = if inverse {
+        .                .                .            .            .            .           .          .          .                       execution.inverse_output_scale
+        .                .                .            .            .            .           .          .          .                   } else {
+        .                .                .            .            .            .           .          .          .                       T::one()
+        .                .                .            .            .            .           .          .          .                   };
+    4,340 ( 0.02%)       0            3,720 ( 0.17%)   2 ( 0.03%)   0          208 ( 0.40%)  1 ( 0.03%) .          .                   let simd_pass = SimdPass {
+        .                .                .            .            .            .           .          .          .                       radix,
+    1,240 ( 0.00%)     620 ( 0.02%)       .            .            .            .           .          .          .                       l1: pass.l1,
+        .                .                .            .            .            .           .          .          .                       ido: pass.ido,
+        .                .                .            .            .            .           .          .          .                       twiddles: &pass.twiddles,
+        .                .                .            .            .            .           .          .          .                       inverse,
+        .                .                .            .            .            .           .          .          .                       inverse_scale,
+        .                .                .            .            .            .           .          .          .                   };
+        .                .                .            .            .            .           .          .          .                   // SAFETY: plan construction validates pass dimensions, runtime
+        .                .                .            .            .            .           .          .          .                   // dispatch checked AVX2, and the kernel processes only the complete
+        .                .                .            .            .            .           .          .          .                   // vector prefix. The scalar loop below handles any remaining values.
+      620 ( 0.00%)       0              620 ( 0.03%)   0            0          104 ( 0.20%)  0          0          1 ( 0.03%)          unsafe { (kernels.first_pass)(data, &simd_pass) };
+  913,760 ( 3.56%) 119,660 ( 3.15%)  78,120 ( 3.50%)  16 ( 0.27%) 3,829 ( 5.90%)   0           8 ( 0.28%) 1 ( 0.03%) .           => /home/albert/RustSHT/crates/rustsht-fft/src/simd.rs:<f64 as rustsht_fft::simd::SimdScalar>::avx2_first_pass (620x)
+        .                .                .            .            .            .           .          .          .                   scalar_start = vector_ido;
+        .                .                .            .            .            .           .          .          .                   #[cfg(test)]
+        .                .                .            .            .            .           .          .          .                   crate::m0_record_route(format!(
+        .                .                .            .            .            .           .          .          .                       "c2c-avx2:first-prefix n={} radix={} ido={} vector_ido={} scalar_tail={}",
+        .                .                .            .            .            .           .          .          .                       execution.total_len,
+        .                .                .            .            .            .           .          .          .                       radix,
+        .                .                .            .            .            .           .          .          .                       pass.ido,
+        .                .                .            .            .            .           .          .          .                       vector_ido,
+        .                .                .            .            .            .           .          .          .                       pass.ido - vector_ido
+        .                .                .            .            .            .           .          .          .                   ));
+    1,240 ( 0.00%)       .                .            .            .            .           .          .          .                   if scalar_start == pass.ido {
+        .                .                .            .            .            .           .          .          .                       return;
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .               } else {
+        .                .                .            .            .            .           .          .          .                   #[cfg(test)]
+        .                .                .            .            .            .           .          .          .                   crate::m0_record_route(format!(
+        .                .                .            .            .            .           .          .          .                       "c2c-scalar:first n={} radix={} ido={}",
+        .                .                .            .            .            .           .          .          .                       execution.total_len, radix, pass.ido
+        .                .                .            .            .            .           .          .          .                   ));
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .               let zero = Complex::new(T::zero(), T::zero());
+        .                .                .            .            .            .           .          .          .               let mut inputs = [zero; 8];
+        .                .                .            .            .            .           .          .          .               let mut transformed = [zero; 8];
+        .                .                .            .            .            .           .          .          .               let mut correction = [zero; 8];
+        5 ( 0.00%)       .                .            .            .            .           .          .          .               let stage_scale = if inverse && !execution.defer_inverse_normalization {
+        .                .                .            .            .            .           .          .          .                   inverse_scale::<T>(radix)
+        .                .                .            .            .            .           .          .          .               } else {
+        .                .                .            .            .            .           .          .          .                   T::one()
+        .                .                .            .            .            .           .          .          .               };
+        .                .                .            .            .            .           .          .          .               let output_scale = execution.inverse_output_scale;
+        .                .                .            .            .            .           .          .          .               let combined_scale = stage_scale * output_scale;
+        .                .                .            .            .            .           .          .          .               let radix_value = scalar::<T>(radix as f64);
+        .                .                .            .            .            .           .          .          .               let overflow_threshold = T::max_value() / scalar::<T>(4.0 * radix as f64);
+        .                .                .            .            .            .           .          .          .           
+        2 ( 0.00%)       1 ( 0.00%)       1 ( 0.00%)   0            0            1 ( 0.00%)  0          0          1 ( 0.03%)      for inner in scalar_start..pass.ido {
+        .                .                .            .            .            .           .          .          .                   let mut max_component = T::zero();
+        .                .                .            .            .            .           .          .          .                   for (branch, slot) in inputs.iter_mut().enumerate().take(radix) {
+    3,840 ( 0.01%)   1,152 ( 0.03%)     384 ( 0.02%)   6 ( 0.10%)  10 ( 0.02%)   0           6 ( 0.21%) .          .                       let value = data[inner + pass.ido * branch];
+      256 ( 0.00%)      64 ( 0.00%)      64 ( 0.00%)   .            .            .           .          .          .                       if inverse && !execution.defer_inverse_normalization {
+        .                .                .            .            .            .           .          .          .                           max_component = max_component.max(value.re.abs()).max(value.im.abs());
+        .                .                .            .            .            .           .          .          .                       }
+        .                .                .            .            .            .           .          .          .                       *slot = value;
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .                   let prescale =
+       64 ( 0.00%)       .                .            .            .            .           .          .          .                       inverse && !execution.defer_inverse_normalization && max_component > overflow_threshold;
+        .                .                .            .            .            .           .          .          .                   if prescale {
+        .                .                .            .            .            .           .          .          .                       for value in &mut inputs[..radix] {
+        .                .                .            .            .            .           .          .          .                           *value = *value * stage_scale;
+        .                .                .            .            .            .           .          .          .                       }
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .                   radix_transform_fixed::<R, T>(
+        .                .                .            .            .            .           .          .          .                       &inputs[..radix],
+        .                .                .            .            .            .           .          .          .                       &mut transformed[..radix],
+-- line 1837 ----------------------------------------
+-- line 1854 ----------------------------------------
+        .                .                .            .            .            .           .          .          .                           &mut correction[..radix],
+        .                .                .            .            .            .           .          .          .                           execution.roots,
+        .                .                .            .            .            .           .          .          .                           execution.total_len / radix,
+        .                .                .            .            .            .           .          .          .                           execution.direction,
+        .                .                .            .            .            .           .          .          .                       );
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .                   for branch in 0..radix {
+      384 ( 0.00%)       .                .            .            .            .           .          .          .                       let index = inner + pass.ido * branch;
+        .                .                .            .            .            .           .          .          .                       let mut value = transformed[branch];
+        .                .                .            .            .            .           .          .          .                       if branch != 0 && pass.ido > 1 {
+        .                .                .            .            .            .           .          .          .                           let twiddle = directed_root(
+        .                .                .            .            .            .           .          .          .                               &pass.twiddles,
+        .                .                .            .            .            .           .          .          .                               branch * pass.ido + inner,
+        .                .                .            .            .            .           .          .          .                               execution.direction,
+        .                .                .            .            .            .           .          .          .                           );
+        .                .                .            .            .            .           .          .          .                           value = value * twiddle;
+-- line 1870 ----------------------------------------
+-- line 1874 ----------------------------------------
+        .                .                .            .            .            .           .          .          .                               let twiddle = directed_root(
+        .                .                .            .            .            .           .          .          .                                   &pass.twiddles,
+        .                .                .            .            .            .           .          .          .                                   branch * pass.ido + inner,
+        .                .                .            .            .            .           .          .          .                                   execution.direction,
+        .                .                .            .            .            .           .          .          .                               );
+        .                .                .            .            .            .           .          .          .                               correction[branch] = correction[branch] * twiddle;
+        .                .                .            .            .            .           .          .          .                           }
+        .                .                .            .            .            .           .          .          .                           value = (value + correction[branch] * stage_scale) * output_scale;
+    1,408 ( 0.01%)       .                .            .            .            .           .          .          .                       } else if inverse {
+        .                .                .            .            .            .           .          .          .                           value = value * combined_scale;
+        .                .                .            .            .            .           .          .          .                       }
+    2,816 ( 0.01%)     448 ( 0.01%)   1,024 ( 0.05%)   4 ( 0.07%)   0            0           4 ( 0.14%) .          .                       data[index] = value;
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           fn execute_direct_radix_pass<const R: usize, T: Float + FromPrimitive>(
+        .                .                .            .            .            .           .          .          .               input: &[Complex<T>],
+        .                .                .            .            .            .           .          .          .               output: &mut [Complex<T>],
+        .                .                .            .            .            .           .          .          .               pass: &ComplexPass<T>,
+-- line 1893 ----------------------------------------
+-- line 1894 ----------------------------------------
+        .                .                .            .            .            .           .          .          .               execution: &PassExecution<'_, T>,
+        .                .                .            .            .            .           .          .          .           ) {
+        .                .                .            .            .            .           .          .          .               let radix = R;
+        .                .                .            .            .            .           .          .          .               debug_assert!(matches!(radix, 2 | 3 | 4 | 5 | 7 | 8));
+        .                .                .            .            .            .           .          .          .               let inverse = execution.direction == Direction::Inverse;
+        .                .                .            .            .            .           .          .          .               let mut scalar_outer_start = 0;
+        .                .                .            .            .            .           .          .          .               let mut scalar_inner_start = 0;
+        .                .                .            .            .            .           .          .          .               if R == 3
+    4,960 ( 0.02%)   1,240 ( 0.03%)     620 ( 0.03%)   .            .            .           .          .          .                   && (!inverse || execution.defer_inverse_normalization)
+      620 ( 0.00%)     620 ( 0.02%)       .            .            .            .           .          .          .                   && let Some(kernels) = execution.simd
+    1,240 ( 0.00%)       .                .            .            .            .           .          .          .                   && let Some(kernel) = kernels.radix3_pass
+    1,860 ( 0.01%)     620 ( 0.02%)       .            .            .            .           .          .          .                   && pass.ido >= kernels.complex_lanes
+        .                .                .            .            .            .           .          .          .               {
+    9,300 ( 0.04%)     620 ( 0.02%)       0          111 ( 1.86%)   0            0           4 ( 0.14%) .          .                   let vector_ido = pass.ido - pass.ido % kernels.complex_lanes;
+    6,200 ( 0.02%)   1,860 ( 0.05%)   3,100 ( 0.14%)   2 ( 0.03%)   0            0           1 ( 0.03%) .          .                   let simd_pass = SimdPass {
+      620 ( 0.00%)     620 ( 0.02%)       .            .            .            .           .          .          .                       radix: pass.radix,
+        .                .                .            .            .            .           .          .          .                       l1: pass.l1,
+        .                .                .            .            .            .           .          .          .                       ido: pass.ido,
+        .                .                .            .            .            .           .          .          .                       twiddles: &pass.twiddles,
+        .                .                .            .            .            .           .          .          .                       inverse,
+    2,789 ( 0.01%)     929 ( 0.02%)     620 ( 0.03%)   .            .            .           .          .          .                       inverse_scale: if inverse {
+        .                .                .            .            .            .           .          .          .                           execution.inverse_output_scale
+        .                .                .            .            .            .           .          .          .                       } else {
+        .                .                .            .            .            .           .          .          .                           T::one()
+        .                .                .            .            .            .           .          .          .                       },
+        .                .                .            .            .            .           .          .          .                   };
+        .                .                .            .            .            .           .          .          .                   // SAFETY: runtime dispatch checked AVX2; the radix-three kernel
+        .                .                .            .            .            .           .          .          .                   // accepts this pass layout and writes only its complete inner prefix.
+      620 ( 0.00%)       0              620 ( 0.03%)   .            .            .           .          .          .                   unsafe { kernel(input, output, &simd_pass) };
+1,003,716 ( 3.91%) 119,660 ( 3.15%)  63,860 ( 2.86%) 222 ( 3.72%) 827 ( 1.27%)   0           9 ( 0.31%) 2 ( 0.07%) .           => /home/albert/RustSHT/crates/rustsht-fft/src/simd.rs:rustsht_fft::simd::x86::f64_kernel::pass_radix3 (620x)
+        .                .                .            .            .            .           .          .          .                   scalar_inner_start = vector_ido;
+        .                .                .            .            .            .           .          .          .                   #[cfg(test)]
+        .                .                .            .            .            .           .          .          .                   crate::m0_record_route(format!(
+        .                .                .            .            .            .           .          .          .                       "c2c-avx2:radix3-pass-prefix n={} l1={} ido={} vector_ido={} scalar_tail={}",
+        .                .                .            .            .            .           .          .          .                       execution.total_len,
+        .                .                .            .            .            .           .          .          .                       pass.l1,
+        .                .                .            .            .            .           .          .          .                       pass.ido,
+        .                .                .            .            .            .           .          .          .                       vector_ido,
+        .                .                .            .            .            .           .          .          .                       pass.ido - vector_ido
+        .                .                .            .            .            .           .          .          .                   ));
+    1,240 ( 0.00%)       .                .            .            .            .           .          .          .                   if scalar_inner_start == pass.ido {
+        .                .                .            .            .            .           .          .          .                       return;
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .               }
+    1,244 ( 0.00%)     622 ( 0.02%)       .            .            .            .           .          .          .               if let Some(kernels) = execution.simd
+        .                .                .            .            .            .           .          .          .                   && matches!(R, 4 | 8)
+    9,920 ( 0.04%)   1,860 ( 0.05%)     620 ( 0.03%)   1 ( 0.02%)   0            0           1 ( 0.03%) .          .                   && (!inverse || execution.defer_inverse_normalization)
+        .                .                .            .            .            .           .          .          .                   && pass.ido == 1
+        .                .                .            .            .            .           .          .          .                   && pass.l1 >= 2
+        .                .                .            .            .            .           .          .          .                   && let Some(kernel) = match pass.radix {
+        .                .                .            .            .            .           .          .          .                       4 => kernels.ido1_radix4_pass,
+        .                .                .            .            .            .           .          .          .                       8 if pass.l1.is_multiple_of(2) => kernels.ido1_radix8_pass,
+        .                .                .            .            .            .           .          .          .                       _ => None,
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .               {
+-- line 1947 ----------------------------------------
+-- line 1971 ----------------------------------------
+        .                .                .            .            .            .           .          .          .                       pass.l1,
+        .                .                .            .            .            .           .          .          .                       vector_l1,
+        .                .                .            .            .            .           .          .          .                       pass.l1 - vector_l1
+        .                .                .            .            .            .           .          .          .                   ));
+        .                .                .            .            .            .           .          .          .                   if scalar_outer_start == pass.l1 {
+        .                .                .            .            .            .           .          .          .                       return;
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .               }
+    1,860 ( 0.01%)     620 ( 0.02%)       0            1 ( 0.02%)   .            .           .          .          .               if let Some(kernels) = execution.simd
+        .                .                .            .            .            .           .          .          .                   && matches!(R, 2 | 4 | 8)
+    1,862 ( 0.01%)       .                .            .            .            .           .          .          .                   && (!inverse || execution.defer_inverse_normalization)
+        .                .                .            .            .            .           .          .          .                   && pass.ido >= kernels.complex_lanes
+        .                .                .            .            .            .           .          .          .               {
+   11,780 ( 0.05%)   3,100 ( 0.08%)       0            2 ( 0.03%)   .            .           .          .          .                   let vector_ido = pass.ido - pass.ido % kernels.complex_lanes;
+    6,200 ( 0.02%)   1,240 ( 0.03%)   3,720 ( 0.17%)   2 ( 0.03%)   0          207 ( 0.39%)  1 ( 0.03%) 0          1 ( 0.03%)          let simd_pass = SimdPass {
+        .                .                .            .            .            .           .          .          .                       radix,
+        .                .                .            .            .            .           .          .          .                       l1: pass.l1,
+        .                .                .            .            .            .           .          .          .                       ido: pass.ido,
+        .                .                .            .            .            .           .          .          .                       twiddles: &pass.twiddles,
+        .                .                .            .            .            .           .          .          .                       inverse,
+    4,029 ( 0.02%)     309 ( 0.01%)   2,480 ( 0.11%)   2 ( 0.03%)   0          208 ( 0.40%)  1 ( 0.03%) 0          2 ( 0.05%)              inverse_scale: if inverse {
+        .                .                .            .            .            .           .          .          .                           execution.inverse_output_scale
+        .                .                .            .            .            .           .          .          .                       } else {
+        .                .                .            .            .            .           .          .          .                           T::one()
+        .                .                .            .            .            .           .          .          .                       },
+        .                .                .            .            .            .           .          .          .                   };
+        .                .                .            .            .            .           .          .          .                   // SAFETY: plan construction validates pass dimensions, runtime
+        .                .                .            .            .            .           .          .          .                   // dispatch checked AVX2, and the kernel processes only the complete
+        .                .                .            .            .            .           .          .          .                   // vector prefix. The scalar loop below handles any remaining values.
+    2,480 ( 0.01%)       0              620 ( 0.03%)   .            .            .           .          .          .                   unsafe { (kernels.pass)(input, output, &simd_pass) };
+1,554,298 ( 6.06%) 280,846 ( 7.40%)  86,180 ( 3.86%) 149 ( 2.49%) 4,434 ( 6.83%) 7,006 (13.31%) 25 ( 0.87%) 2 ( 0.07%) 2 ( 0.05%)  => /home/albert/RustSHT/crates/rustsht-fft/src/simd.rs:<f64 as rustsht_fft::simd::SimdScalar>::avx2_pass (620x)
+        .                .                .            .            .            .           .          .          .                   scalar_inner_start = vector_ido;
+        .                .                .            .            .            .           .          .          .                   #[cfg(test)]
+        .                .                .            .            .            .           .          .          .                   crate::m0_record_route(format!(
+        .                .                .            .            .            .           .          .          .                       "c2c-avx2:pass-prefix n={} radix={} l1={} ido={} vector_ido={} scalar_tail={}",
+        .                .                .            .            .            .           .          .          .                       execution.total_len,
+        .                .                .            .            .            .           .          .          .                       radix,
+        .                .                .            .            .            .           .          .          .                       pass.l1,
+        .                .                .            .            .            .           .          .          .                       pass.ido,
+        .                .                .            .            .            .           .          .          .                       vector_ido,
+        .                .                .            .            .            .           .          .          .                       pass.ido - vector_ido
+        .                .                .            .            .            .           .          .          .                   ));
+    1,240 ( 0.00%)       .                .            .            .            .           .          .          .                   if scalar_inner_start == pass.ido {
+        .                .                .            .            .            .           .          .          .                       return;
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .               if scalar_outer_start == 0 && scalar_inner_start == 0 {
+        .                .                .            .            .            .           .          .          .                   #[cfg(test)]
+        .                .                .            .            .            .           .          .          .                   crate::m0_record_route(format!(
+        .                .                .            .            .            .           .          .          .                       "c2c-scalar:pass n={} radix={} l1={} ido={}",
+-- line 2020 ----------------------------------------
+-- line 2021 ----------------------------------------
+        .                .                .            .            .            .           .          .          .                       execution.total_len, radix, pass.l1, pass.ido
+        .                .                .            .            .            .           .          .          .                   ));
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .               let zero = Complex::new(T::zero(), T::zero());
+        .                .                .            .            .            .           .          .          .               let mut inputs = [zero; 8];
+        .                .                .            .            .            .           .          .          .               let mut transformed = [zero; 8];
+        .                .                .            .            .            .           .          .          .               let mut correction = [zero; 8];
+   17,408 ( 0.07%)   1,240 ( 0.03%)  10,572 ( 0.47%)   7 ( 0.12%)   0          317 ( 0.60%)  4 ( 0.14%) .          .               let stage_scale = if inverse && !execution.defer_inverse_normalization {
+        .                .                .            .            .            .           .          .          .                   inverse_scale::<T>(radix)
+        .                .                .            .            .            .           .          .          .               } else {
+        .                .                .            .            .            .           .          .          .                   T::one()
+        .                .                .            .            .            .           .          .          .               };
+        .                .                .            .            .            .           .          .          .               let output_scale = execution.inverse_output_scale;
+        .                .                .            .            .            .           .          .          .               let combined_scale = stage_scale * output_scale;
+        .                .                .            .            .            .           .          .          .               let radix_value = scalar::<T>(radix as f64);
+        .                .                .            .            .            .           .          .          .               let overflow_threshold = T::max_value() / scalar::<T>(4.0 * radix as f64);
+        .                .                .            .            .            .           .          .          .               let root_stride = execution.total_len / radix;
+        .                .                .            .            .            .           .          .          .           
+    2,484 ( 0.01%)   1,242 ( 0.03%)   1,242 ( 0.06%)   1 ( 0.02%)   1 ( 0.00%)   0           1 ( 0.03%) .          .               for outer in scalar_outer_start..pass.l1 {
+        .                .                .            .            .            .           .          .          .                   for inner in scalar_inner_start..pass.ido {
+        .                .                .            .            .            .           .          .          .                       let mut max_component = T::zero();
+        .                .                .            .            .            .           .          .          .                       for (branch, slot) in inputs.iter_mut().enumerate().take(radix) {
+1,026,536 ( 4.00%) 276,728 ( 7.29%)   2,736 ( 0.12%)   9 ( 0.15%)   0            0           6 ( 0.21%) .          .                           let value = input[inner + pass.ido * (branch + radix * outer)];
+  123,144 ( 0.48%)  39,680 ( 1.05%)  29,760 ( 1.33%)   4 ( 0.07%)   0            0           2 ( 0.07%) .          .                           if inverse && !execution.defer_inverse_normalization {
+        .                .                .            .            .            .           .          .          .                               max_component = max_component.max(value.re.abs()).max(value.im.abs());
+        .                .                .            .            .            .           .          .          .                           }
+        .                .                .            .            .            .           .          .          .                           *slot = value;
+        .                .                .            .            .            .           .          .          .                       }
+        .                .                .            .            .            .           .          .          .                       let prescale = inverse
+        .                .                .            .            .            .           .          .          .                           && !execution.defer_inverse_normalization
+        .                .                .            .            .            .           .          .          .                           && max_component > overflow_threshold;
+        .                .                .            .            .            .           .          .          .                       if prescale {
+-- line 2053 ----------------------------------------
+-- line 2077 ----------------------------------------
+        .                .                .            .            .            .           .          .          .                               &mut correction[..radix],
+        .                .                .            .            .            .           .          .          .                               execution.roots,
+        .                .                .            .            .            .           .          .          .                               root_stride,
+        .                .                .            .            .            .           .          .          .                               execution.direction,
+        .                .                .            .            .            .           .          .          .                           );
+        .                .                .            .            .            .           .          .          .                       }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .                       for branch in 0..radix {
+   12,376 ( 0.05%)   2,608 ( 0.07%)       0            4 ( 0.07%)   0            0           2 ( 0.07%) .          .                           let destination_index = inner + pass.ido * (outer + pass.l1 * branch);
+        .                .                .            .            .            .           .          .          .                           let mut value = transformed[branch];
+  138,880 ( 0.54%)       .                .            .            .            .           .          .          .                           if branch != 0 && pass.ido > 1 {
+        .                .                .            .            .            .           .          .          .                               let twiddle = directed_root(
+        .                .                .            .            .            .           .          .          .                                   &pass.twiddles,
+   14,344 ( 0.06%)       0                0            2 ( 0.03%)   0            0           1 ( 0.03%) .          .                                   branch * pass.ido + inner,
+        .                .                .            .            .            .           .          .          .                                   execution.direction,
+        .                .                .            .            .            .           .          .          .                               );
+        .                .                .            .            .            .           .          .          .                               value = value * twiddle;
+        .                .                .            .            .            .           .          .          .                           }
+  277,760 ( 1.08%)       0                0            5 ( 0.08%)   0            0           3 ( 0.10%) .          .                           if prescale {
+        .                .                .            .            .            .           .          .          .                               if branch != 0 && pass.ido > 1 {
+        .                .                .            .            .            .           .          .          .                                   let twiddle = directed_root(
+        .                .                .            .            .            .           .          .          .                                       &pass.twiddles,
+        .                .                .            .            .            .           .          .          .                                       branch * pass.ido + inner,
+        .                .                .            .            .            .           .          .          .                                       execution.direction,
+        .                .                .            .            .            .           .          .          .                                   );
+        .                .                .            .            .            .           .          .          .                                   correction[branch] = correction[branch] * twiddle;
+        .                .                .            .            .            .           .          .          .                               }
+        .                .                .            .            .            .           .          .          .                               value = (value + correction[branch] * stage_scale) * output_scale;
+  449,790 ( 1.75%)  29,952 ( 0.79%)   5,472 ( 0.25%)  16 ( 0.27%)   0            0          11 ( 0.38%) .          .                           } else if inverse {
+        .                .                .            .            .            .           .          .          .                               value = value * combined_scale;
+        .                .                .            .            .            .           .          .          .                           }
+  898,944 ( 3.50%) 117,328 ( 3.09%) 200,448 ( 8.98%)  16 ( 0.27%)   0           11 ( 0.02%)  9 ( 0.31%) .          .                           output[destination_index] = value;
+        .                .                .            .            .            .           .          .          .                       }
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           impl<T: Float + FromPrimitive> PassExecution<'_, T> {
+        .                .                .            .            .            .           .          .          .               #[inline(always)]
+        .                .                .            .            .            .           .          .          .               fn transform<const R: usize>(&mut self, radix: usize, root_stride: usize) {
+-- line 2116 ----------------------------------------
+-- line 2168 ----------------------------------------
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           fn inverse_normalization_is_safe<T: Float + FromPrimitive>(
+        .                .                .            .            .            .           .          .          .               values: &[Complex<T>],
+        .                .                .            .            .            .           .          .          .               len: usize,
+        .                .                .            .            .            .           .          .          .           ) -> bool {
+        .                .                .            .            .            .           .          .          .               let mut maximum = T::zero();
+        .                .                .            .            .            .           .          .          .               for value in values {
+  444,960 ( 1.73%) 148,320 ( 3.91%)       0            1 ( 0.02%)   0            0           1 ( 0.03%) .          .                   if !value.re.is_finite() || !value.im.is_finite() {
+        .                .                .            .            .            .           .          .          .                       return false;
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .                   maximum = maximum.max(value.re.abs()).max(value.im.abs());
+        .                .                .            .            .            .           .          .          .               }
+    2,472 ( 0.01%)   1,236 ( 0.03%)       0            1 ( 0.02%) 412 ( 0.64%)   0           1 ( 0.03%) .          .               maximum <= T::max_value() / scalar::<T>(4.0 * len as f64)
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           fn radix_transform<T: Float + FromPrimitive>(
+        .                .                .            .            .            .           .          .          .               radix: usize,
+        .                .                .            .            .            .           .          .          .               input: &[Complex<T>],
+        .                .                .            .            .            .           .          .          .               output: &mut [Complex<T>],
+        .                .                .            .            .            .           .          .          .               roots: &[Complex<T>],
+        .                .                .            .            .            .           .          .          .               root_stride: usize,
+-- line 2189 ----------------------------------------
+-- line 2427 ----------------------------------------
+        .                .                .            .            .            .           .          .          .               a7 = rotate_eighth_three(old_a5 - a7, direction);
+        .                .                .            .            .            .           .          .          .               a5 = rotate_eighth(a5, direction);
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .               let a0 = input[0] + input[4];
+        .                .                .            .            .            .           .          .          .               let a4 = input[0] - input[4];
+        .                .                .            .            .            .           .          .          .               let a2 = input[2] + input[6];
+        .                .                .            .            .            .           .          .          .               let mut a6 = input[2] - input[6];
+        .                .                .            .            .            .           .          .          .               output[0] = a0 + a2 + a1;
+    2,736 ( 0.01%)       0            2,736 ( 0.12%)   .            .            .           .          .          .               output[4] = a0 + a2 - a1;
+    2,736 ( 0.01%)       0            2,736 ( 0.12%)   .            .            .           .          .          .               output[2] = a0 - a2 + a3;
+    2,736 ( 0.01%)       0            2,736 ( 0.12%)   .            .            .           .          .          .               output[6] = a0 - a2 - a3;
+        .                .                .            .            .            .           .          .          .               a6 = rotate_quarter(a6, direction);
+    2,736 ( 0.01%)       0            2,736 ( 0.12%)   .            .            .           .          .          .               output[1] = a4 + a6 + a5;
+        .                .                .            .            .            .           .          .          .               output[5] = a4 + a6 - a5;
+        .                .                .            .            .            .           .          .          .               output[3] = a4 - a6 + a7;
+        .                .                .            .            .            .           .          .          .               output[7] = a4 - a6 - a7;
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           pub(crate) fn radix11<T: Float + FromPrimitive>(
+        .                .                .            .            .            .           .          .          .               input: &[Complex<T>],
+        .                .                .            .            .            .           .          .          .               output: &mut [Complex<T>],
+-- line 2447 ----------------------------------------
+-- line 2505 ----------------------------------------
+        .                .                .            .            .            .           .          .          .                   for (branch, &value) in input.iter().enumerate().take(radix) {
+        .                .                .            .            .            .           .          .          .                       let root_index = bounded_product_mod(branch, frequency, radix) * root_stride;
+        .                .                .            .            .            .           .          .          .                       sum = sum + value * directed_root(roots, root_index, direction);
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .                   *result = sum;
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+       27 ( 0.00%)       0               18 ( 0.00%)   1 ( 0.02%)   0            1 ( 0.00%)  1 ( 0.03%) 0          1 ( 0.03%)  fn factorize(len: usize) -> Result<Vec<usize>, FftError> {
+        .                .                .            .            .            .           .          .          .               let mut factors = Vec::new();
+        .                .                .            .            .            .           .          .          .               factors
+        .                .                .            .            .            .           .          .          .                   .try_reserve_exact(usize::BITS as usize)
+        .                .                .            .            .            .           .          .          .                   .map_err(|_| FftError::AllocationFailed)?;
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .               let mut remaining = len;
+       10 ( 0.00%)       .                .            .            .            .           .          .          .               while remaining.is_multiple_of(8) {
+        .                .                .            .            .            .           .          .          .                   factors.push(8);
+       14 ( 0.00%)       .                .            .            .            .           .          .          .                   remaining /= 8;
+        .                .                .            .            .            .           .          .          .               }
+        3 ( 0.00%)       .                .            .            .            .           .          .          .               while remaining.is_multiple_of(4) {
+        .                .                .            .            .            .           .          .          .                   factors.push(4);
+        .                .                .            .            .            .           .          .          .                   remaining /= 4;
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .               if remaining.is_multiple_of(2) {
+        .                .                .            .            .            .           .          .          .                   remaining /= 2;
+        .                .                .            .            .            .           .          .          .                   factors.push(2);
+        .                .                .            .            .            .           .          .          .                   let last = factors.len() - 1;
+        .                .                .            .            .            .           .          .          .                   factors.swap(0, last);
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .               let mut divisor = 3;
+       38 ( 0.00%)       0                0            1 ( 0.02%)   0            0           1 ( 0.03%) .          .               while divisor <= remaining / divisor {
+        3 ( 0.00%)       .                .            .            .            .           .          .          .                   while remaining.is_multiple_of(divisor) {
+        .                .                .            .            .            .           .          .          .                       factors.push(divisor);
+        8 ( 0.00%)       .                .            .            .            .           .          .          .                       remaining /= divisor;
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .                   divisor += 2;
+        .                .                .            .            .            .           .          .          .               }
+        6 ( 0.00%)       0                0            1 ( 0.02%)   0            0           1 ( 0.03%) .          .               if remaining > 1 {
+        .                .                .            .            .            .           .          .          .                   factors.push(remaining);
+        .                .                .            .            .            .           .          .          .               }
+       15 ( 0.00%)       6 ( 0.00%)       9 ( 0.00%)   1 ( 0.02%)   0            5 ( 0.01%)  1 ( 0.03%) .          .               Ok(factors)
+       24 ( 0.00%)      21 ( 0.00%)       .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           fn good_size_complex(minimum: usize) -> Result<usize, FftError> {
+        .                .                .            .            .            .           .          .          .               if minimum <= 12 {
+        .                .                .            .            .            .           .          .          .                   return Ok(minimum);
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .               let n = minimum as u128;
+        .                .                .            .            .            .           .          .          .               let mut best = 2 * n;
+-- line 2555 ----------------------------------------
+-- line 2587 ----------------------------------------
+        .                .                .            .            .            .           .          .          .                       value >>= 1;
+        .                .                .            .            .            .           .          .          .                   } else {
+        .                .                .            .            .            .           .          .          .                       return minimum;
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           pub(crate) fn unity_root<T: Float + FromPrimitive>(index: usize, len: usize) -> Complex<T> {
+    2,649 ( 0.01%)       0                0            2 ( 0.03%)   0            0           2 ( 0.07%) .          .               if index == 0 {
+        .                .                .            .            .            .           .          .          .                   return Complex::new(T::one(), T::zero());
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           
+    5,856 ( 0.02%)       0                0            2 ( 0.03%)   0            0           1 ( 0.03%) .          .               let mut octant_index = index as u128 * 8;
+        .                .                .            .            .            .           .          .          .               let n = len as u128;
+        .                .                .            .            .            .           .          .          .               let eight_n = 8 * n;
+   11,204 ( 0.04%)   1,230 ( 0.03%)       0            1 ( 0.02%)   0            0           1 ( 0.03%) .          .               let (angle_index, cosine_first, real_sign, imag_sign) = if octant_index < 4 * n {
+    5,223 ( 0.02%)     120 ( 0.00%)       .            .            .            .           .          .          .                   if octant_index < 2 * n {
+    2,034 ( 0.01%)       0                0            3 ( 0.05%)   0            0           2 ( 0.07%) .          .                       if octant_index < n {
+        .                .                .            .            .            .           .          .          .                           (octant_index, true, 1.0, 1.0)
+        .                .                .            .            .            .           .          .          .                       } else {
+    1,694 ( 0.01%)     271 ( 0.01%)     207 ( 0.01%)   3 ( 0.05%)   0            0           3 ( 0.10%) .          .                           (2 * n - octant_index, false, 1.0, 1.0)
+        .                .                .            .            .            .           .          .          .                       }
+        .                .                .            .            .            .           .          .          .                   } else {
+    1,038 ( 0.00%)      60 ( 0.00%)       0            4 ( 0.07%)   0            0           3 ( 0.10%) .          .                       octant_index -= 2 * n;
+    2,101 ( 0.01%)       0                0            2 ( 0.03%)   0            0           2 ( 0.07%) .          .                       if octant_index < n {
+        .                .                .            .            .            .           .          .          .                           (octant_index, false, -1.0, 1.0)
+        .                .                .            .            .            .           .          .          .                       } else {
+    1,853 ( 0.01%)     400 ( 0.01%)     213 ( 0.01%)   1 ( 0.02%)   0            0           1 ( 0.03%) .          .                           (2 * n - octant_index, true, -1.0, 1.0)
+        .                .                .            .            .            .           .          .          .                       }
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .               } else {
+    5,982 ( 0.02%)       .                .            .            .            .           .          .          .                   octant_index = eight_n - octant_index;
+    5,231 ( 0.02%)     120 ( 0.00%)       .            .            .            .           .          .          .                   if octant_index < 2 * n {
+    1,944 ( 0.01%)       .                .            .            .            .           .          .          .                       if octant_index < n {
+        .                .                .            .            .            .           .          .          .                           (octant_index, true, 1.0, -1.0)
+        .                .                .            .            .            .           .          .          .                       } else {
+    1,570 ( 0.01%)     388 ( 0.01%)     207 ( 0.01%)   0            2 ( 0.00%)   0           0          1 ( 0.03%) .                           (2 * n - octant_index, false, 1.0, -1.0)
+        .                .                .            .            .            .           .          .          .                       }
+        .                .                .            .            .            .           .          .          .                   } else {
+    1,042 ( 0.00%)      60 ( 0.00%)       .            .            .            .           .          .          .                       octant_index -= 2 * n;
+    2,055 ( 0.01%)       .                .            .            .            .           .          .          .                       if octant_index < n {
+        .                .                .            .            .            .           .          .          .                           (octant_index, false, -1.0, -1.0)
+        .                .                .            .            .            .           .          .          .                       } else {
+    1,497 ( 0.01%)     279 ( 0.01%)     213 ( 0.01%)   0            2 ( 0.00%)   0           0          1 ( 0.03%) .                           (2 * n - octant_index, true, -1.0, -1.0)
+        .                .                .            .            .            .           .          .          .                       }
+        .                .                .            .            .            .           .          .          .                   }
+        .                .                .            .            .            .           .          .          .               };
+   11,124 ( 0.04%)   5,348 ( 0.14%)   1,952 ( 0.09%)   6 ( 0.10%)   3 ( 0.00%)   0           6 ( 0.21%) .          .               let angle = angle_index as f64 * (std::f64::consts::FRAC_PI_4 / len as f64);
+   25,270 ( 0.10%)     722 ( 0.02%)       0            3 ( 0.05%)   .            .           .          .          .           => /rustc/b940084d7eb6a299eb4bfeb8e34901bc051e7ac4/library/core/src/num/uint_macros.rs:__floatuntidf (722x)
+        .                .                .            .            .            .           .          .          .               let (sin, cos) = angle.sin_cos();
+      496 ( 0.00%)       0                0            1 ( 0.02%)   0            0           1 ( 0.03%) .          .               let (real_value, imag_value) = if cosine_first { (cos, sin) } else { (sin, cos) };
+    4,172 ( 0.02%)   2,942 ( 0.08%)       .            .            .            .           .          .          .               let real = real_value * real_sign;
+    1,924 ( 0.01%)       .                .            .            .            .           .          .          .               let imag = imag_value * imag_sign;
+        .                .                .            .            .            .           .          .          .               Complex::new(scalar(real), scalar(imag))
+    2,167 ( 0.01%)   1,445 ( 0.04%)       .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           fn directed_root<T: Float>(roots: &[Complex<T>], index: usize, direction: Direction) -> Complex<T> {
+   50,496 ( 0.20%)  19,840 ( 0.52%)       0          104 ( 1.74%)   0            0           1 ( 0.03%) .          .               match direction {
+   70,760 ( 0.28%)  34,658 ( 0.91%)       0            7 ( 0.12%)   0            0           5 ( 0.17%) .          .                   Direction::Forward => roots[index].conj(),
+   75,396 ( 0.29%)  18,540 ( 0.49%)       0            1 ( 0.02%)   .            .           .          .          .                   Direction::Inverse => roots[index],
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           fn direction_sign<T: Float>(direction: Direction) -> T {
+        .                .                .            .            .            .           .          .          .               match direction {
+        .                .                .            .            .            .           .          .          .                   Direction::Forward => -T::one(),
+        .                .                .            .            .            .           .          .          .                   Direction::Inverse => T::one(),
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           fn inverse_scale<T: Float + FromPrimitive>(radix: usize) -> T {
+        .                .                .            .            .            .           .          .          .               T::from_f64(1.0 / radix as f64).expect("f32 and f64 can represent a positive reciprocal")
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           fn rotate_quarter<T: Float>(value: Complex<T>, direction: Direction) -> Complex<T> {
+    5,660 ( 0.02%)      64 ( 0.00%)       .            .            .            .           .          .          .               match direction {
+        .                .                .            .            .            .           .          .          .                   Direction::Forward => Complex::new(value.im, -value.re),
+        .                .                .            .            .            .           .          .          .                   Direction::Inverse => Complex::new(-value.im, value.re),
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           fn rotate_eighth<T: Float + FromPrimitive>(value: Complex<T>, direction: Direction) -> Complex<T> {
+        .                .                .            .            .            .           .          .          .               let c = scalar::<T>(std::f64::consts::FRAC_1_SQRT_2);
+        .                .                .            .            .            .           .          .          .               let sign = direction_sign::<T>(direction);
+-- line 2669 ----------------------------------------
+-- line 2673 ----------------------------------------
+        .                .                .            .            .            .           .          .          .               )
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           fn rotate_eighth_three<T: Float + FromPrimitive>(
+        .                .                .            .            .            .           .          .          .               value: Complex<T>,
+        .                .                .            .            .            .           .          .          .               direction: Direction,
+        .                .                .            .            .            .           .          .          .           ) -> Complex<T> {
+        .                .                .            .            .            .           .          .          .               let c = scalar::<T>(std::f64::consts::FRAC_1_SQRT_2);
+    4,914 ( 0.02%)       .                .            .            .            .           .          .          .               match direction {
+        .                .                .            .            .            .           .          .          .                   Direction::Forward => Complex::new((value.im - value.re) * c, (-value.re - value.im) * c),
+        .                .                .            .            .            .           .          .          .                   Direction::Inverse => Complex::new((-value.re - value.im) * c, (value.re - value.im) * c),
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           fn imaginary<T: Float>(value: Complex<T>) -> Complex<T> {
+        .                .                .            .            .            .           .          .          .               Complex::new(-value.im, value.re)
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           fn scalar<T: FromPrimitive>(value: f64) -> T {
+        .                .                .            .            .            .           .          .          .               T::from_f64(value).expect("f32 and f64 represent FFT constants")
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           fn mul_mod(left: usize, right: usize, modulus: usize) -> usize {
+    1,687 ( 0.01%)     241 ( 0.01%)     241 ( 0.01%)   1 ( 0.02%)   1 ( 0.00%)   0           1 ( 0.03%) .          .               ((left as u128 * right as u128) % modulus as u128) as usize
+    3,374 ( 0.01%)     241 ( 0.01%)       0            3 ( 0.05%)   0            0           2 ( 0.07%) .          .           => /rustc/b940084d7eb6a299eb4bfeb8e34901bc051e7ac4/library/compiler-builtins/compiler-builtins/src/macros.rs:__umodti3 (241x)
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           fn bounded_product_mod(left: usize, right: usize, modulus: usize) -> usize {
+        .                .                .            .            .            .           .          .          .               debug_assert!(left < modulus && right < modulus);
+        .                .                .            .            .            .           .          .          .               // Non-Bluestein radices are bounded by their planner thresholds, so both
+        .                .                .            .            .            .           .          .          .               // operands and their product fit in usize on supported targets.
+        .                .                .            .            .            .           .          .          .               left * right % modulus
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+       68 ( 0.00%)       0               34 ( 0.00%)   2 ( 0.03%)   0            0           2 ( 0.07%) .          .           pub(crate) fn try_vec<T: Copy>(len: usize, value: T) -> Result<Vec<T>, FftError> {
+        .                .                .            .            .            .           .          .          .               let mut result = Vec::new();
+        .                .                .            .            .            .           .          .          .               result
+        .                .                .            .            .            .           .          .          .                   .try_reserve_exact(len)
+        .                .                .            .            .            .           .          .          .                   .map_err(|_| FftError::AllocationFailed)?;
+        .                .                .            .            .            .           .          .          .               result.resize(len, value);
+       68 ( 0.00%)       0               51 ( 0.00%)   1 ( 0.02%)   0            0           1 ( 0.03%) .          .               Ok(result)
+       68 ( 0.00%)      51 ( 0.00%)       .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           pub(crate) fn check_vec_len<T>(len: usize) -> Result<(), FftError> {
+       18 ( 0.00%)       .                .            .            .            .           .          .          .               if len > isize::MAX as usize / std::mem::size_of::<T>() {
+        .                .                .            .            .            .           .          .          .                   Err(FftError::AllocationFailed)
+        .                .                .            .            .            .           .          .          .               } else {
+        .                .                .            .            .            .           .          .          .                   Ok(())
+        .                .                .            .            .            .           .          .          .               }
+        .                .                .            .            .            .           .          .          .           }
+        .                .                .            .            .            .           .          .          .           
+        .                .                .            .            .            .           .          .          .           pub(crate) fn check_len(
+        .                .                .            .            .            .           .          .          .               buffer: &'static str,
+        .                .                .            .            .            .           .          .          .               expected: usize,
+        .                .                .            .            .            .           .          .          .               actual: usize,
+        .                .                .            .            .            .           .          .          .           ) -> Result<(), FftError> {
+    3,102 ( 0.01%)       0                0            2 ( 0.03%)   0            0           2 ( 0.07%) .          .               if expected == actual {
+        .                .                .            .            .            .           .          .          .                   Ok(())
+        .                .                .            .            .            .           .          .          .               } else {
+        .                .                .            .            .            .           .          .          .                   Err(FftError::BufferLength {
+        .                .                .            .            .            .           .          .          .                       buffer,
+        .                .                .            .            .            .           .          .          .                       expected,
+        .                .                .            .            .            .           .          .          .                       actual,
+        .                .                .            .            .            .           .          .          .                   })
+        .                .                .            .            .            .           .          .          .               }
+-- line 2736 ----------------------------------------
+
+  777,786 ( 3.03%) 311,622 ( 8.21%) 103,287 ( 4.63%)  76 ( 1.27%)   5 ( 0.01%) 105 ( 0.20%) 56 ( 1.94%) 3 ( 0.10%) 2 ( 0.05%)  <counts for unidentified lines in src/complex.rs>
+
+--------------------------------------------------------------------------------
+Ir                 Dr               Dw               I1mr         D1mr         D1mw           ILmr         DLmr       DLmw        
+--------------------------------------------------------------------------------
+4,039,554 (15.74%) 801,760 (21.13%) 375,318 (16.82%) 642 (10.74%) 965 ( 1.49%) 2,103 ( 3.99%) 159 ( 5.51%) 6 ( 0.21%) 11 ( 0.29%)  events annotated
+

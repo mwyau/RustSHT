@@ -1,0 +1,44 @@
+{
+  "pairs": 6,
+  "cpu": "30",
+  "cwd": "/home/albert/RustSHT/crates/rustsht-fft",
+  "metadata": {
+    "purpose": "M33 candidate cross-library comparison over the established 34-cell matrix",
+    "candidate_source_commit": "234ab2d30b8d542457398e2f7be17e7e7b9aa25e plus uncommitted M33 diff",
+    "candidate_source_diff_sha256": "8845bead2e211dffc709f2cb13c908f4332754329bec60b45b10d59f666f7ee0",
+    "candidate_source_files_sha256": {
+      "src/rader.rs": "64e579fe4c1f576787c25fb11c58b2000e6a03fc851ceec7a1334bd48b4da91b",
+      "src/real.rs": "742e63740d14cf8183b9730836d81606fde19fbdc1b8e3ed67a22947a1cbc88d",
+      "src/real_multipass.rs": "f125a49c60a3b79c3bbef960a4a2aa1c25e9dde1265743ede530e088770e320b"
+    },
+    "candidate_binary_sha256": "a4cc85160daf38e66b31e6a268770b9dbc84e3b6631d846c917c413432b32226",
+    "workload": "bench-native-sht vs established 34-cell reference matrix; seven warmed samples; one transform thread",
+    "timing": "six alternating process pairs; CPU 30 affinity; same rows and modes",
+    "compiler": "Rust 1.99.0 stable; optimized bench profile; portable x86_64 target; runtime AVX2",
+    "cpu_model": "AMD Ryzen 9 5950X; process pinned to logical CPU 30",
+    "host_load_average_before": [
+      1.17578125,
+      0.85302734375,
+      0.67724609375
+    ],
+    "reference": "DUCC c1ed01b8 native",
+    "reference_build": "DUCC c1ed01b8; g++ 15.2.0; -O3 -DNDEBUG -march=native; planner vectorization enabled"
+  },
+  "a": {
+    "label": "RustSHT-FFT M33 Rader-fusion candidate",
+    "command": [
+      "/dev/shm/rustsht-fft-m33-v3-target/release/deps/rustfft-721ac07477409fe7",
+      "bench-native-sht"
+    ]
+  },
+  "b": {
+    "label": "DUCC c1ed01b8 native",
+    "command": [
+      "/home/albert/rustsht-fft-m0-ducc-native/rustsht-fft-reference",
+      "bench-sht-targets"
+    ],
+    "env": {
+      "RUSTSHT_FFT_DUCC_VECTORIZE": "1"
+    }
+  }
+}

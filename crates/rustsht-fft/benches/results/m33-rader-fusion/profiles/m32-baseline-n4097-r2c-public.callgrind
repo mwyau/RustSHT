@@ -1,0 +1,356 @@
+# callgrind format
+version: 1
+creator: callgrind-3.26.0
+pid: 3583847
+cmd:  /dev/shm/rustsht-fft-current-target/release/deps/rustfft-721ac07477409fe7 bench-native-real 4097 1
+part: 1
+
+
+desc: I1 cache: 
+desc: D1 cache: 
+desc: LL cache: 
+
+desc: Timerange: Basic block 0 - 17831797
+desc: Trigger: Program termination
+
+positions: line
+events: Ir
+summary: 15797176
+
+
+ob=(1) /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+fl=(1) ???
+fn=(0) 0x0000000000023340
+cob=(7) /dev/shm/rustsht-fft-current-target/release/deps/rustfft-721ac07477409fe7
+cfi=(205) ???
+cfn=(698) (below main)
+calls=1 0 
+0 15797176
+
+ob=(7)
+fl=(205)
+fn=(732) std::rt::lang_start_internal
+cfn=(962) std::rt::lang_start::<()>::{closure#0}
+calls=1 0 
+0 15797176
+
+fn=(1062) rustsht_fft::complex::execute_first_pass_in_place::<f64>
+0 14960
+cfn=(1084) <f64 as rustsht_fft::simd::SimdScalar>::avx2_first_pass
+calls=272 0 
+0 208624
+0 1496
+cfn=(1084)
+calls=356 0 
+0 192304
+0 2720
+
+fn=(1084)
+0 272
+cfn=(1086) rustsht_fft::simd::x86::f64_kernel::first_pass
+calls=628 0 
+0 400656
+
+fn=(1098) rustsht_fft::complex::execute_pass_inner::<5, f64>
+0 2768144
+
+fn=(1090) <f64 as rustsht_fft::simd::SimdScalar>::avx2_pass
+0 272
+cfn=(1092) rustsht_fft::simd::x86::f64_kernel::pass
+calls=628 0 
+0 681632
+
+fn=(1096) rustsht_fft::simd::x86::f64_kernel::pass_radix3
+0 440368
+
+fn=(1154) <rustsht_fft::real_multipass::RealMultipassPlan<f64>>::forward
+0 248
+cfn=(1156) rustsht_fft::real_multipass::execute_forward_pass::<f64>
+calls=8 0 
+0 8009656
+0 136
+cfn=(1156)
+calls=8 0 
+0 6122064
+0 57992
+
+fn=(1160) <rustsht_fft::rader::RaderPrimePlan<f64>>::execute_convolution_shared
+0 3128
+cfn=(1080) <rustsht_fft::complex::ComplexFftPlan<f64>>::execute_runtime
+calls=272 0 
+0 2778752
+0 3536
+cfn=(1080)
+calls=272 0 
+0 3873144
+0 410312
+
+fn=(964) std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>
+cfn=(966) rustfft::main
+calls=1 0 
+0 15797176
+
+fn=(1082) <rustsht_fft::complex::ComplexFftPlan<f64>>::execute_avx2_unchecked
+0 13056
+cfn=(1060) <rustsht_fft::complex::ComplexFftPlan<f64>>::execute_with_simd_unchecked::<false>
+calls=628 0 
+0 6631224
+0 2176
+
+fn=(1150) rustfft::benchmark_native_real::{closure#1}
+cfn=(1152) <rustsht_fft::real::RealFftPlan<f64>>::forward_unchecked
+calls=8 0 
+0 15797176
+
+fn=(730) main
+cfn=(732)
+calls=1 0 
+0 15797176
+
+fn=(962)
+cfn=(964)
+calls=1 0 
+0 15797176
+
+fn=(1060)
+0 1045296
+cfn=(1062)
+calls=670 0 
+0 420104
+0 7344
+cfn=(1064) rustsht_fft::complex::execute_pass::<false, f64>
+calls=670 0 
+0 1213256
+0 55896
+cfn=(1064)
+calls=1298 0 
+0 3777536
+0 3808
+cob=(2) /usr/lib/x86_64-linux-gnu/libc.so.6
+cfi=(244) ./string/../sysdeps/x86_64/multiarch/memmove-vec-unaligned-erms.S
+cfn=(850) __memcpy_avx_unaligned_erms
+calls=628 255 
+0 105808
+0 2176
+
+fn=(1080)
+0 4352
+cfn=(1082)
+calls=628 0 
+0 6646456
+0 1088
+
+fn=(1088) rustsht_fft::complex::execute_pass_inner::<8, f64>
+0 17000
+cfn=(1090)
+calls=272 0 
+0 343808
+0 1904
+cfn=(1090)
+calls=356 0 
+0 338096
+0 302600
+
+fn=(1094) rustsht_fft::complex::execute_pass_inner::<3, f64>
+0 13464
+cfn=(1096)
+calls=272 0 
+0 224536
+0 1904
+cfn=(1096)
+calls=356 0 
+0 215832
+0 754528
+
+fn=(1156)
+0 640
+cfn=(1158) <rustsht_fft::rader::RaderPrimePlan<f64>>::execute_real_forward_shared
+calls=8 0 
+0 470992
+0 1152
+cfn=(1158)
+calls=128 0 
+0 7535872
+0 26592
+cob=(2)
+cfi=(260) ./string/../sysdeps/x86_64/multiarch/memset-vec-unaligned-erms.S
+cfn=(922) __memset_avx2_unaligned_erms
+calls=8 198 
+0 17432
+0 6079040
+
+fn=(1064)
+0 8432
+cfn=(1088)
+calls=628 0 
+0 1003408
+0 272
+cfn=(1098)
+calls=628 0 
+0 2768144
+0 272
+cfn=(1094)
+calls=628 0 
+0 1210264
+
+fn=(1152)
+0 1606712
+cfn=(1154)
+calls=8 0 
+0 14190096
+0 368
+
+fn=(1086)
+0 400656
+
+fn=(1092)
+0 681632
+
+fn=(1014) rustfft::benchmark_native_real
+cfn=(1150)
+calls=1 0 
+0 1974647
+cfn=(1150)
+calls=1 0 
+0 1974647
+cfn=(1150)
+calls=1 0 
+0 1974647
+cfn=(1150)
+calls=1 0 
+0 1974647
+cfn=(1150)
+calls=1 0 
+0 1974647
+cfn=(1150)
+calls=1 0 
+0 1974647
+cfn=(1150)
+calls=1 0 
+0 1974647
+cfn=(1150)
+calls=1 0 
+0 1974647
+
+fn=(698)
+cob=(2)
+cfi=(206) ./csu/../csu/libc-start.c
+cfn=(700) __libc_start_main@@GLIBC_2.34
+calls=1 242 
+0 15797176
+
+fn=(966)
+cfn=(1014)
+calls=1 0 
+0 15797176
+
+fn=(1158)
+0 461312
+cfn=(1160)
+calls=136 0 
+0 7068872
+0 476680
+
+ob=(2)
+fl=(206)
+fn=(700)
+cfi=(208) ./csu/../sysdeps/nptl/libc_start_call_main.h
+cfn=(722) (below main)
+calls=1 30 
+360 15797176
+
+fl=(208)
+fn=(722)
+cob=(7)
+cfi=(205)
+cfn=(730)
+calls=1 0 
+59 15797176
+
+fl=(260)
+fn=(922)
+198 8
++1 16
++5 8
++1 8
++1 8
++1 8
++1 8
++21 8
++1 8
++91 8
++1 8
++1 8
++1 8
++1 8
++1 17288
++5 8
++2 16
+
+fl=(244)
+fn=(850)
+255 272
++1 272
++6 272
++1 272
++2 272
++1 272
++1 272
+386 272
++1 272
++5 272
++1 272
++24 272
++1 272
++4 272
++2 272
++4 272
++1 272
++11 272
++3 272
++2 272
++2 272
++4 272
++1 272
++9 272
++1 272
++2 272
++2 272
++1 272
++1 272
++3 272
++2 272
++2 272
++2 544
++6 272
++1 272
++1 272
++1 272
++1 272
++1 272
++1 272
++1 272
++1 272
++1 272
++1 272
++1 272
+-11 7616
++1 7616
++1 7616
++1 7616
++1 7616
++1 7616
++1 7616
++1 7616
++1 7616
++1 7616
++1 7616
++1 7616
++2 272
++1 272
++1 272
++1 272
++2 272
++4 544
+
+totals: 15797176
