@@ -1,0 +1,11 @@
+source_commit=7ac443a40b034d5c52526d23ef30f6cef4b13d19
+measurement_source=unchanged Rust source; documentation-only commits since the recorded binary
+binary_sha256=690fc10f9abf1c6a5b396e0d7ff27647daf8e51d90b8620537645123efe7f1c8
+RustSHT_build=existing release target/release/examples/m1b_bench
+RustSHT_args=0 1023 THREADS analysis GL STANDARD 1024 2049 1023 requested-only
+DUCC_command=uv run python examples/python_perf_baseline.py 1023 0 THREADS GL 2 plan analysis ducc STANDARD 2049 1024
+DUCC_version=0.41.0
+DUCC_source_revision=c1ed01b8fda69d2a378190f0915f1a19762dddbf
+comparison=RustSHT native reused plan/workspace; DUCC Python analysis_2d; same GL grid and map input
+pairing=5 alternating fresh-process pairs at q1 and q8; one warm-up plus 5 inner calls per process
+affinity=q1 one CPU core; q8 8 pinned CPU cores
