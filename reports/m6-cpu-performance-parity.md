@@ -219,12 +219,13 @@ P01 gain. Several five-sample process records contain high outliers; they are
 included in the reported ranges and summaries. One initial T1023 ordered
 CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
 checks, both sides of that pair were rerun. Preflight records show no compiler
-or benchmark process during accepted runs. This same-source comparison supports the inference that final text layout
-caused the spin-1 shift measured in the default P01 link. It does not establish
-a portable default-link solution. The successful linker command was not
-retained. The ordering was applied at the final link of the local
-`m1b_bench` executable; the RustSHT rlib does not encode it. P01 remains
-unaccepted for downstream builds. Raw output, time/RSS, preflight snapshots,
+or benchmark process during accepted runs. This same-source comparison shows that the spin-1 timing shift tracks final
+text layout. It does not establish a particular instruction-level or
+microarchitectural mechanism, or a portable default-link solution. The
+successful linker command was not retained. The ordering was applied at the
+final link of the local `m1b_bench` executable; the RustSHT rlib does not
+encode it, so P01 remains unaccepted for downstream builds. Raw output,
+time/RSS, preflight snapshots,
 scripts and summary are in
 [`reports/data/m6-p01/link-order/causal-ab/`](data/m6-p01/link-order/causal-ab/).
 
@@ -255,10 +256,9 @@ mechanism for the layout effect. Shelve P01 in its current form. Target the gene
 recurrence and safe fallback behavior. Detailed symbol and disassembly
 evidence is in
 [`reports/data/m6-p01/codegen-diagnosis/`](data/m6-p01/codegen-diagnosis/). The ordered results pass the measured operation gates, but are specific to
-the local benchmark executable. P01 remains unaccepted pending a source-level
-default-link solution and validation of the intended P01-only source. The full
-suites below ran with P01 and P02 together. Do not infer downstream consumer
-performance from the ordered link.
+the local benchmark executable. P01 remains archived, unaccepted and pending
+a portable source-level solution. The full suites below ran with P01 and P02
+together. Do not infer downstream consumer performance from the ordered link.
 
 ## P02: reuse prepared scalar coefficients in visitor fallback
 
