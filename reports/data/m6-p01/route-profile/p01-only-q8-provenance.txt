@@ -1,0 +1,27 @@
+M6 P01-only q8 route profiles
+
+Source snapshot: target/m6-p01-link-order/source
+P01 candidate patch SHA-256: fff74a3059aec58741072b3eb1a96421c006ddcc4ba6847949098d17266faecf
+P02: excluded in the source snapshot. Route-profile source: p01-only-source/src/legendre/route_profile.rs
+Relevant source hashes: p01-only-source-sha256.txt
+Test binary: target/m6-p01-link-order/cargo-target/release/deps/rustsht-159837ac1c3bd1f7
+q1 profile binary hash previously recorded: p01-only-test-binary-sha256.txt
+q8 profile binary hash captured before and after both runs: p01-only-q8-test-binary-sha256.txt
+
+Toolchain: rustc/cargo 1.99.0
+Build: no build ran during q8 profiling. The saved release test binary was
+reused. Its source hashes match the retained P01-only profile snapshot. Invocation (once per T, with T=1023 and T=2047):
+  taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" /usr/bin/time -v -o p01-only-t${T}-q8.time
+  env RUSTSHT_ROUTE_LMAX=${T} RUSTSHT_ROUTE_THREADS=8
+  target/m6-p01-link-order/cargo-target/release/deps/rustsht-159837ac1c3bd1f7
+  legendre::route_profile::m6_scalar_synthesis_routes --ignored --exact --nocapture
+
+Configuration: GL STANDARD f64 scalar synthesis, full mmax, phi0=0.37,
+ntheta=T+1, nphi=2*(T+1), eight Rayon workers. Each test warms once, measures
+one uninstrumented synthesis, enables counters, measures a second synthesis,
+and asserts complete output equality. Affinity: logical 8 pinned CPU cores. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. Both runs exited 0,
+reported no swaps, and retained their complete per-worker counters. The exact
+preflight, stdout, and /usr/bin/time output are in the neighboring files. The original q1 profile's recorded test-binary digest remains in
+p01-only-test-binary-sha256.txt. The q8 runs used the binary whose digest is
+in p01-only-q8-test-binary-sha256.txt. The path was checked before and after
+both q8 runs; no compilation occurred between or during them.

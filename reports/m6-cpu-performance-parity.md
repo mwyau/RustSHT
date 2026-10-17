@@ -10,8 +10,8 @@ The branch contains three production checkpoints: C01 workspace validation
 (`c0e11ad`), C02 FFT range and scaling (`8df2ecf`), and C03 unsafe spin
 conversion fallback (`197c3d3`). C01 and C03 are committed correctness fixes. C02 is committed as a numerical checkpoint, but its per-operation control
 gate remains unresolved; its scalar T255 q1 synthesis and analysis controls
-exceed the predeclared 2% threshold. P01 remains uncommitted and unaccepted;
-it is shelved after its default-link spin-1 control exceeded the guard. The
+exceed the predeclared 2% threshold. P01 remains an uncommitted, unaccepted
+candidate because its default-link spin-1 control exceeds the guard. The
 precomputed-visitor P02 showed no material gain, and the separate P02
 two-chain degree panel regressed the T1023 scalar synthesis target; both remain
 outside production. The isolated M2 general-visitor candidate is also rejected
@@ -148,9 +148,20 @@ and 1.80x slower than SHTns. Its Rust-to-DUCC relative L2 errors were
 4124.493/776.432/498.233 ms for synthesis and 1767.881/496.897/1158.457 ms
 for analysis. Rust was 5.31x slower than DUCC and 8.28x slower than SHTns for
 synthesis, and 3.56x and 1.53x slower for analysis. Rust-to-DUCC errors were
-3.707e-13 and 1.729e-13; SHTns-to-DUCC errors were 3.403e-13 and 1.837e-13. The scalar and spin-1 cells used 1.04 and 1.60 GiB peak RSS. Both are q1
-results and do not establish q8 T2047 parity. Full tables, errors, raw samples,
-and build provenance are in
+3.707e-13 and 1.729e-13; SHTns-to-DUCC errors were 3.403e-13 and 1.837e-13. The q1 scalar and spin-1 cells used 1.04 and 1.60 GiB peak RSS. Matched q8
+T2047 references were then collected with the same source snapshot and
+reference libraries:
+
+| Spin | Synthesis Rust / DUCC / SHTns (ms) | Rust/DUCC | Analysis Rust / DUCC / SHTns (ms) | Rust/DUCC | Peak RSS |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 818.883 / 58.599 / 71.983 | 13.97x | 221.369 / 40.820 / 124.631 | 5.42x | 1016.0 MiB |
+| 1 | 1027.308 / 126.510 / 138.667 | 8.12x | 358.881 / 81.650 / 242.638 | 4.40x | 1640.2 MiB |
+
+These are 15-sample q8 baselines with full-array checks before timing; the Rust
+relative-L2 errors versus DUCC were 3.015e-13/1.747e-13 for spin-0
+synthesis/analysis and 3.707e-13/1.729e-13 for spin-1. The measurement binary
+does not include P01. The scalar and spin-1 q1 cells and q8 extension
+provenance, errors, raw samples, host snapshots and memory records are in
 [`reports/data/m6-current-baseline/`](data/m6-current-baseline/). The q1 route profile reports per-worker CPU timer sums, not transform wall
 time. Fused/visitor/transition sums were 7.421/26.408/0 ms at T511,
 55.352/191.910/13.420 ms at T1023, and 362.784/1505.354/1181.839 ms at
@@ -161,7 +172,9 @@ overhead changed q1 wall time by 0.6% at T1023 and −0.04% at T2047. q8 route
 counts match the q1 totals, but workers are imbalanced at T2047 (maximum to
 minimum active route timer ratio 9.53); q8 timer sums are descriptive. The
 route tables and worker-level evidence are in
-[`reports/data/m6-current-baseline/route-profile/`](data/m6-current-baseline/route-profile/).
+[`reports/data/m6-current-baseline/route-profile/`](data/m6-current-baseline/route-profile/). The matched q8 T2047 reference run confirms that RustSHT remains 13.97x slower
+than DUCC for scalar synthesis and 8.12x slower for spin-1 synthesis under
+eight threads in this baseline.
 
 ## P01: scalar synthesis transition (unaccepted)
 
@@ -178,7 +191,17 @@ sum of the three route timers decreased from 260.682 to 163.448 ms (37.30%). The
 the uninstrumented map bitwise. This single diagnostic profile supports the
 route-level P01 explanation; the paired native benchmark remains the timing
 evidence. See [the P01-only route profile](data/m6-p01/route-profile/p01-only-summary.md)
-and its retained source, binary hash, and raw output. The default-link T511 spin-1 synthesis control has a repeatable greater-than-
+and its retained source, binary hash, and raw output. The P01-only q8 profiles extend that route evidence to T1023 and T2047. The
+total fused, visitor, and transition CPU timers changed from 285.548 to
+196.492 ms at T1023 (−31.2%) and from 3197.412 to 2521.024 ms at T2047
+(−21.1%); committed route-unit counts were unchanged, and each instrumented
+map matched its uninstrumented output bitwise. The maximum-to-minimum active
+worker timer ratio fell from 6.93x to 4.09x at T1023 and from 9.53x to 7.02x
+at T2047, so imbalance remains, especially at T2047. These are single-run
+diagnostic profiles, not acceptance measurements. The P01-only q8 summary,
+exact source and executable hashes, raw logs, PSI snapshots, and time/RSS
+records are in
+[`reports/data/m6-p01/route-profile/p01-only-q8-summary.md`](data/m6-p01/route-profile/p01-only-q8-summary.md). The default-link T511 spin-1 synthesis control has a repeatable greater-than-
 2% screen. Across the initial and confirmation screens (12 paired ratios),
 the median was 1.02073,
 the 95% paired bootstrap interval was 1.01791–1.02761, and 7/12 pairs were
@@ -243,10 +266,14 @@ CPU-pressure validity was assessed under the declared protocol; raw readings rem
 checks, both sides of that pair were rerun. Preflight records show no compiler
 or benchmark process during accepted runs. This same-source comparison shows that the spin-1 timing shift tracks final
 text layout. It does not establish a particular instruction-level or
-microarchitectural mechanism, or a portable default-link solution. The
-successful linker command was not retained. The ordering was applied at the
-final link of the local `m1b_bench` executable; the RustSHT rlib does not
-encode it, so P01 remains unaccepted for downstream builds. Raw output,
+microarchitectural mechanism, or a portable default-link solution. This
+isolates the current regression evidence to executable layout sensitivity;
+the specific hardware effect remains unknown. The q8 route profiles cover
+scalar synthesis and do not narrow the spin-1 cause. P01 remains unaccepted
+until the complete default-link control matrix passes. The successful linker
+command was not retained. The ordering was applied at the final link of the
+local `m1b_bench` executable; the RustSHT rlib does not encode it, so the
+ordered result is not a portable default-link solution. Raw output,
 time/RSS, preflight snapshots,
 scripts and summary are in
 [`reports/data/m6-p01/link-order/causal-ab/`](data/m6-p01/link-order/causal-ab/).
@@ -274,7 +301,9 @@ specific to a local final executable link. The codegen diagnosis below found
 unchanged normalized instructions and function sizes for the spin-1 scalar
 block, safe-lane helper and V3/V4 recurrence kernels across the baseline,
 default P01 and ordered P01 binaries; it did not identify a source-level
-mechanism for the layout effect. Shelve P01 in its current form. The first follow-up general visitor candidate and P02 coefficient reuse are
+mechanism for the layout effect. The original P01 candidate remains preserved
+for review; no additional source-layout or code-sharing variant is selected
+without a new measured hypothesis. The first follow-up general visitor candidate and P02 coefficient reuse are
 screened and rejected below. Route timing identifies scalar synthesis work,
 but does not itself establish a portable source change. Symbol and
 disassembly evidence is in
@@ -309,9 +338,11 @@ acceptance evidence. The full control matrix was not run after the T511
 spin-1 failure. Source snapshots, tests, route profile, raw pairs, preflight
 logs, and binary hashes are retained in
 [`reports/data/m6-p01/shared-step-redesign/`](data/m6-p01/shared-step-redesign/). The ordered results pass the measured operation gates, but are specific to
-the local benchmark executable. P01 remains archived, unaccepted and pending
-a portable source-level solution. The full suites below ran with P01 and P02
-together. Do not infer downstream consumer performance from the ordered link.
+the local benchmark executable. The original P01 candidate remains preserved
+and unaccepted until the full default-link control matrix passes and a
+portable source-level solution removes the spin-1 regression. The full suites
+below ran with P01 and P02 together. Do not infer downstream consumer
+performance from the ordered link.
 
 ## P02: reuse prepared scalar coefficients in visitor fallback
 

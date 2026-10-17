@@ -15,7 +15,9 @@ snapshot, with P02 excluded, is summarized in
 in `p01-only-test.log` and the related `p01-only-*` files. Its exact changed
 source files are retained under `p01-only-source/`. Compare either
 profile with the committed baseline T1023 q1 row in
-[`m6-current-baseline/route-profile/summary.csv`](../../m6-current-baseline/route-profile/summary.csv). Per-worker route timers are CPU-time sums and are not wall time. The profile's measured visitor decrease and transition increase are consistent
+[`m6-current-baseline/route-profile/summary.csv`](../../m6-current-baseline/route-profile/summary.csv). Per-worker route timers are CPU-time sums and are not wall time. Two additional P01-only profiles cover q8 at T1023 and T2047. Their worker
+timers, load balance, instrumentation overhead, executable hash, and raw
+evidence are summarized in [`p01-only-q8-summary.md`](p01-only-q8-summary.md). These single-run diagnostics do not satisfy the P01 acceptance matrix. The profile's measured visitor decrease and transition increase are consistent
 with P01 moving scalar work from the general paired visitor into its scalar
 transition. They support the scalar synthesis target but do not resolve the
 T511 spin-1 default-link regression and do not accept P01.
