@@ -85,3 +85,12 @@ spharmgrid's [`Grid`](https://github.com/mwyau/spharmgrid/blob/main/src/spharmgr
 
 - f32 SIMD support and Python thread configuration.
 - Strided and batched inputs.
+
+
+## Workspace order capacity
+
+In parallel builds, workspace compatibility requires an analysis order prefix
+with at least `mmax+2` entries, including for execution capacity one. `prepare_workspace` and transform execution return `ShtError::BufferLength`
+for a shorter prefix. A larger prefix can serve a reduced-order plan when
+all other workspace dimensions are compatible. Preparation reserves execution
+workers for compatible workspaces; it does not adapt harmonic order capacity. Serial builds allocate no analysis order prefix.
