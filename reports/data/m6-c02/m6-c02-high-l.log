@@ -1,0 +1,15 @@
+    Finished `release` profile [optimized] target(s) in 0.01s
+     Running unittests src/lib.rs (target/release/deps/rustsht-159837ac1c3bd1f7)
+
+running 8 tests
+test spin_transform::tests::m3_spin1_t2047_low_order_analysis_matches_q1_and_adjoint ... ok
+test spin_transform::tests::m3_spin_t1023_exact_analysis_matches_ducc ... ok
+test spin_transform::tests::m3_spin_t1023_sparse_synthesis_matches_ducc ... ok
+test spin_transform::tests::m3_spin_t2047_sparse_synthesis_matches_ducc_and_sectoral_formula ... ok
+test spin_transform::tests::m3_spin_t511_all_grids_matches_ducc_and_roundtrips ... ok
+test spin_transform::tests::m3_spin_three_and_four_t1023_exact_analysis_matches_ducc ... ok
+test spin_transform::tests::m3_spin_three_and_four_t511_all_grids_match_ducc_and_analytic_fields ... ok
+test transform::tests::m3_scalar_t511_t1023_t2047_all_grids_matches_ducc_and_closed_form ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 198 filtered out; finished in 23.33s
+

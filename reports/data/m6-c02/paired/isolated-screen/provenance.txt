@@ -1,0 +1,6 @@
+baseline: 52a0e53c01bd0055f13bedfc3f20d09d128a981f895ab768e1533984b1fb7c53  /home/albert/RustSHT/target/m6-c02-baseline-bench
+isolated: 23eba5f1c74084a738d80ece2f37d1b8920770b148b06a7e47330d160725ee2c  /home/albert/RustSHT/target/m6-c02-isolated-bench
+candidate source patch: 67d96665df7d0fec50ae7dcabdf5dd3bc2c8df5e0c62dc3bf90adbf7dfd08897  /home/albert/RustSHT/reports/data/m6-c02/isolated-candidate.patch
+order: odd pairs baseline then isolated; even pairs isolated then baseline
+first_run_utc=2026-10-17T17:37:22Z
+completed_utc=2026-10-17T17:37:29Z

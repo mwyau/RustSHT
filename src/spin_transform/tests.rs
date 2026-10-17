@@ -1511,11 +1511,10 @@ fn spin1_scalar_transition_splits_polar_lanes_and_matches_general() {
 
             if let Some((m, split_q, split_u, block_q, block_u)) = split_probe {
                 let phase = crate::legendre::longitude_phase::<f64>(m, plan.grid.phi0(), false);
-                let longitude_scale = nphi as f64;
                 for ring in 0..block_len {
                     let index = ring * spectrum_len + m;
-                    let expected_q = general_q[index] / phase / longitude_scale;
-                    let expected_u = general_u[index] / phase / longitude_scale;
+                    let expected_q = general_q[index] / phase;
+                    let expected_u = general_u[index] / phase;
                     if workspace.theta_sin[ring] >= transition_sine
                         && m <= workspace.ring_order_limits[ring]
                     {

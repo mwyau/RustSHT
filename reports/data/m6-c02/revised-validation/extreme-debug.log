@@ -1,0 +1,12 @@
+   Compiling rustsht v0.1.0-dev.0 (/home/albert/RustSHT/target/m6-c02-candidate-worktree)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.91s
+     Running tests/extreme_fft_scaling.rs (target/debug/deps/extreme_fft_scaling-c61b16a998881476)
+
+running 4 tests
+test finite_extreme_f32_scalar_monopole ... ok
+test finite_extreme_scalar_monopole ... ok
+test f32_operator_range_controls ... ok
+test f64_operator_range_controls ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+

@@ -1230,7 +1230,7 @@ fn scalar_t1023_transition_fallback_matches_scaled_reference_for_extreme_coeffic
 
         let phase = crate::legendre::longitude_phase::<f64>(m, plan.grid.phi0(), false);
         for lane in 0..theta_sin.len() {
-            let expected = unscaled_reference[lane] * phase * nphi as f64;
+            let expected = unscaled_reference[lane] * phase;
             let actual = actual_spectra[lane * spectrum_len + m];
             if coefficient == f64::from_bits(1) {
                 assert_eq!(actual, expected, "subnormal input at lane {lane}");

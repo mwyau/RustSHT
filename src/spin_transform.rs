@@ -1215,14 +1215,14 @@ impl<T: ShtScalar> ShtPlan<T> {
         for ring in 0..ntheta {
             let spectrum_start = ring * spectrum_len;
             let spectrum_end = spectrum_start + spectrum_len;
-            self.fft.inverse(
+            self.fft.inverse_series(
                 &workspace.spectra[spectrum_start..spectrum_end],
                 &mut workspace.row,
                 &mut workspace.fft,
             )?;
             let output_start = ring * nphi;
             first_component[output_start..output_start + nphi].copy_from_slice(&workspace.row);
-            self.fft.inverse(
+            self.fft.inverse_series(
                 &workspace.spin_spectra[spectrum_start..spectrum_end],
                 &mut workspace.row,
                 &mut workspace.fft,
@@ -1431,8 +1431,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         debug_assert_eq!(q_spectra.len(), (ring_end - ring_start) * spectrum_len);
         debug_assert_eq!(u_spectra.len(), q_spectra.len());
 
-        let fourier_scale = T::from_usize(nphi).expect("longitude count converts");
-        let nyquist_scale = fourier_scale * T::from_f64(2.0).expect("two is representable");
+        let nyquist_scale = T::from_f64(2.0).expect("two is representable");
         let maximum_ring_order = (spin == 1).then(|| {
             ring_order_limits[ring_start..ring_end]
                 .iter()
@@ -1629,8 +1628,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                     u_spectra[spectrum_index] =
                         Complex::new(nyquist_scale * phased_u.re, T::zero());
                 } else {
-                    q_spectra[spectrum_index] = phased_q * fourier_scale;
-                    u_spectra[spectrum_index] = phased_u * fourier_scale;
+                    q_spectra[spectrum_index] = phased_q;
+                    u_spectra[spectrum_index] = phased_u;
                 }
             }
         }

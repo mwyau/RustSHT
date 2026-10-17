@@ -1,0 +1,19 @@
+   Compiling rustsht v0.1.0-dev.0 (/home/albert/RustSHT)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.24s
+     Running unittests src/lib.rs (target/debug/deps/rustsht-b689933cd12d9627)
+
+running 11 tests
+test fft::tests::half_recombination_preserves_subnormals_and_cancellation ... ok
+test fft::tests::length_two_extreme_finite_f32 ... ok
+test fft::tests::length_two_extreme_finite_forward ... ok
+test fft::tests::length_two_extreme_finite_inverse ... ok
+test fft::tests::real_fft_validates_shapes_and_spectrum_edges ... ok
+test fft::tests::real_fft_preserves_phase_for_positive_modes ... ok
+test fft::tests::inverse_matches_direct_hermitian_sum_for_arbitrary_spectra ... ok
+test fft::tests::inverse_series_matches_direct_sum_and_preserves_tiny_dc ... ok
+test fft::tests::inverse_reconstruction_matches_real_samples_and_fft_scaling ... ok
+test fft::tests::real_fft_modes_match_full_complex_rustfft ... ok
+test fft::tests::f32_real_fft_matches_full_complex_rustfft ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 195 filtered out; finished in 0.00s
+

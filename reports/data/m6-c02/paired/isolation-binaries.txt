@@ -1,0 +1,9 @@
+C02 recombine_half guard-isolation screen
+Baseline binary SHA-256: 52a0e53c01bd0055f13bedfc3f20d09d128a981f895ab768e1533984b1fb7c53
+Candidate binary SHA-256: f5daddcd79bc71a016f53c51989f803541ca41d9dff4e570df130383d9a4a120
+No-guard binary SHA-256: a5a9ab5e05f8ae40cb156c6bde8740e1b2a7fb6eb9040fd69307cf30d60190c7
+Candidate patch SHA-256: 8d4465e96063aae0e2bd4fda5f221005994c1865013a5e12a634b6aa97d273c3
+Saved/restored src/fft.rs SHA-256: 3c99bd7d84267c84167a0574a42979136c9c6228e8563e8430cf95084e0d83ec
+Diagnostic build command: cargo build --release --example m1b_bench
+Rust/Cargo/LLVM: see ../provenance.txt (rustc 1.99.0, cargo 1.99.0, LLVM 23.1.1)
+The no-guard build was compiled from the C02 candidate source with only the recombine_half finite-result branch and exceptional fallback removed; see isolation-no-guard-diff.patch. src/fft.rs was restored from src-fft-before-no-guard.rs immediately after the build and before measurement.

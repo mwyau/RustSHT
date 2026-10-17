@@ -652,7 +652,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             let start = ring * spectrum_len;
             let ring_spectrum = &workspace.spectra[start..start + spectrum_len];
             self.fft
-                .inverse(ring_spectrum, &mut workspace.row, &mut workspace.fft)?;
+                .inverse_series(ring_spectrum, &mut workspace.row, &mut workspace.fft)?;
             let output_start = ring * nphi;
             map[output_start..output_start + nphi].copy_from_slice(&workspace.row);
         }
@@ -746,7 +746,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         }
         for ring in 0..ntheta {
             let spectrum_start = ring * spectrum_len;
-            self.fft.inverse(
+            self.fft.inverse_bounded(
                 &workspace.spectra[spectrum_start..spectrum_start + spectrum_len],
                 &mut workspace.row,
                 &mut workspace.fft,
@@ -782,8 +782,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         debug_assert_eq!(spectra.len(), theta_sin.len() * spectrum_len);
         debug_assert_eq!(theta_sin.len(), theta_cos.len());
 
-        let fourier_scale = T::from_usize(nphi).expect("longitude count converts");
-        let nyquist_scale = fourier_scale * T::from_f64(2.0).expect("two is representable");
+        let nyquist_scale = T::from_f64(2.0).expect("two is representable");
         for m in 0..=mmax {
             T::fill_epsilon(m, lmax, &mut recurrence.epsilon);
             let coefficient_start = self
@@ -1072,7 +1071,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 if nphi.is_multiple_of(2) && m == nphi / 2 {
                     spectra[spectrum_index] = Complex::new(nyquist_scale * phased.re, T::zero());
                 } else {
-                    spectra[spectrum_index] = phased * fourier_scale;
+                    spectra[spectrum_index] = phased;
                 }
             }
         }

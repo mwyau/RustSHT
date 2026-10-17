@@ -1,0 +1,6 @@
+baseline: 52a0e53c01bd0055f13bedfc3f20d09d128a981f895ab768e1533984b1fb7c53  /home/albert/RustSHT/target/m6-c02-baseline-bench
+candidate2: 58060a3a7b92f0330c173ba691626b5f501a72bda2d23dde8dd7ea022c1de4cc  /home/albert/RustSHT/target/m6-c02-candidate2-bench
+candidate source patch: bc70326dfaf8fbfb71c15525918b7f2eb524012ee648bc18e5c926a74f9a9d5c  /home/albert/RustSHT/reports/data/m6-c02/paired/candidate2-source.patch
+order: odd pairs baseline then candidate2; even pairs candidate2 then baseline
+first_run_utc=2026-10-17T17:34:37Z
+completed_utc=2026-10-17T17:34:41Z

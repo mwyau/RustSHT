@@ -1,0 +1,11 @@
+spin-0 T255 mmax=255; GL 256x512; f64; STANDARD; requested=8 threads; both; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
+plan_construction_ms=0.013
+plan_construction_samples_ms=[0.017,0.014,0.013,0.013,0.013]
+workspace_allocation_ms=0.925
+workspace_allocation_samples_ms=[0.986,1.081,0.893,0.925,0.897]
+synthesis_rayon_ms=1.555
+synthesis_rayon_samples_ms=[1.553,1.555,1.578,1.740,1.550]
+analysis_rayon_ms=0.757
+analysis_rayon_samples_ms=[1.100,0.771,0.757,0.734,0.716]
+scalar_synthesis_first_call_rayon_ms=32.792
+scalar_analysis_first_call_rayon_ms=31.572

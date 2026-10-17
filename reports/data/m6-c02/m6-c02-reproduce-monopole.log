@@ -1,0 +1,29 @@
+   Compiling rustsht v0.1.0-dev.0 (/home/albert/RustSHT)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.43s
+     Running tests/extreme_fft_scaling.rs (target/debug/deps/extreme_fft_scaling-c61b16a998881476)
+
+running 2 tests
+test finite_extreme_scalar_monopole ... FAILED
+test finite_extreme_f32_scalar_monopole ... FAILED
+
+failures:
+
+---- finite_extreme_scalar_monopole stdout ----
+
+thread 'finite_extreme_scalar_monopole' (3635632) panicked at tests/extreme_fft_scaling.rs:16:5:
+[NaN, inf, NaN, inf, NaN, inf, NaN, inf]
+
+---- finite_extreme_f32_scalar_monopole stdout ----
+
+thread 'finite_extreme_f32_scalar_monopole' (3635631) panicked at tests/extreme_fft_scaling.rs:29:5:
+[NaN, inf, NaN, inf, NaN, inf, NaN, inf]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    finite_extreme_f32_scalar_monopole
+    finite_extreme_scalar_monopole
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test extreme_fft_scaling`

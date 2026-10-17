@@ -1,0 +1,42 @@
+   Compiling rustsht v0.1.0-dev.0 (/home/albert/RustSHT)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.37s
+     Running unittests src/lib.rs (target/debug/deps/rustsht-b689933cd12d9627)
+
+running 3 tests
+test fft::tests::length_two_extreme_finite_f32 ... FAILED
+test fft::tests::length_two_extreme_finite_inverse ... FAILED
+test fft::tests::length_two_extreme_finite_forward ... FAILED
+
+failures:
+
+---- fft::tests::length_two_extreme_finite_f32 stdout ----
+
+thread 'fft::tests::length_two_extreme_finite_f32' (3635191) panicked at src/fft.rs:294:9:
+assertion `left == right` failed
+  left: [Complex { re: inf, im: 0.0 }, Complex { re: inf, im: 0.0 }]
+ right: [Complex { re: 2e38, im: 0.0 }, Complex { re: 2e38, im: 0.0 }]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- fft::tests::length_two_extreme_finite_inverse stdout ----
+
+thread 'fft::tests::length_two_extreme_finite_inverse' (3635193) panicked at src/fft.rs:284:9:
+assertion `left == right` failed
+  left: [inf, NaN]
+ right: [1e308, 0.0]
+
+---- fft::tests::length_two_extreme_finite_forward stdout ----
+
+thread 'fft::tests::length_two_extreme_finite_forward' (3635192) panicked at src/fft.rs:272:13:
+assertion `left == right` failed
+  left: Complex { re: inf, im: 0.0 }
+ right: Complex { re: 1e308, im: 0.0 }
+
+
+failures:
+    fft::tests::length_two_extreme_finite_f32
+    fft::tests::length_two_extreme_finite_forward
+    fft::tests::length_two_extreme_finite_inverse
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 201 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`

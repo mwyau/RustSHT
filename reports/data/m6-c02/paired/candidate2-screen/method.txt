@@ -1,0 +1,24 @@
+M6 C02 FFT redesign: three-pair diagnostic screen
+Captured: 2026-10-17 UTC
+
+Build and provenance
+- Baseline binary: `target/m6-c02-baseline-bench`, SHA-256 `52a0e53c01bd0055f13bedfc3f20d09d128a981f895ab768e1533984b1fb7c53` (a918e80 plus C01 c0e11ad production code).
+- Candidate2: `target/m6-c02-candidate2-bench`, SHA-256 `58060a3a7b92f0330c173ba691626b5f501a72bda2d23dde8dd7ea022c1de4cc`. Built with `cargo build --release --example m1b_bench` after `cargo fmt --all`. The complete source/test patch against HEAD, including C02 and C03 source changes, is `../candidate2-source.patch`, SHA-256 `bc70326dfaf8fbfb71c15525918b7f2eb524012ee648bc18e5c926a74f9a9d5c`.
+- The host is the AMD Ryzen 9 5950X; compiler is rustc 1.99.0 / LLVM 23.1.1. Additional provenance is in `../provenance.txt`. Each process was pinned to CPU 0.
+- Release checks before the screen: `cargo test --release --lib fft::tests` (12 passed) and `cargo test --release --lib extreme_spin` (2 passed). The new FFT test compares bounded and robust inverse outputs exactly on ordinary inputs. Existing huge and subnormal FFT tests passed.
+
+Measurement
+- Cells: GL STANDARD f64 scalar T255 and spin-1 T511; `ntheta=T+1`, `nphi=2(T+1)`, full `mmax=T`, `phi0=0.37`, both operations, requested-only mode, q1.
+- Three fresh-process baseline/candidate2 pairs per cell, alternating first process: baseline/candidate2, candidate2/baseline, baseline/candidate2. Each operation has one warm-up and all five timed samples retained in raw stdout. `/usr/bin/time` captured elapsed time and peak RSS for every process.
+- Every process has a preflight snapshot in `preflight-processes.log`; 12/12 snapshots exist and no contention flag was raised. Load at snapshots ranged 0.96-1.04 (1 minute), 1.10-1.12 (5 minutes), and 1.88 (15 minutes). No compiler, FFT, benchmark, or other high-CPU process appeared in the snapshots.
+- Scalar T255 pair 3 candidate synthesis showed a wide set of five samples: 8.899, 8.699, 7.987, 5.617, and 5.575 ms. The reported per-process median of 7.987 ms is retained. Its preflight showed no competing workload, so the cause is unknown; this screen does not label it confirmed contamination.
+- `summary.csv` has separate synthesis and analysis rows, paired candidate2/baseline ratios, medians, observed ranges, deterministic 20,000-resample percentile bootstrap intervals (seed 20261017 plus cell/operation offsets; type-7 quantiles), and peak-RSS deltas. The three-pair intervals are diagnostic and sample-size limited.
+
+Results
+- Scalar T255 q1 synthesis: baseline median 5.403 ms, candidate2 5.635 ms; ratio median 1.041397, range 1.033130-1.485401, bootstrap interval 1.033130-1.485401. All three ratios exceed 1.02; the highest comes from the retained pair-3 sample set above.
+- Scalar T255 q1 analysis: 2.984 ms vs 2.985 ms; ratio 1.000335, range 0.997008-1.009149, interval 0.997008-1.009149.
+- Spin-1 T511 q1 synthesis: 42.418 ms vs 43.054 ms; ratio 1.013272, range 1.009689-1.017777, interval 1.009689-1.017777.
+- Spin-1 T511 q1 analysis: 27.639 ms vs 27.609 ms; ratio 0.998915, range 0.996271-1.003063, interval 0.996271-1.003063.
+- Median peak RSS deltas (candidate2 minus baseline) were -276 KiB for scalar T255 and -184 KiB for spin-1 T511. Pair ranges appear in the CSV.
+
+This is a two-cell, three-pair diagnostic screen, not an acceptance decision. Preserve the scalar synthesis result as evidence of a greater-than-2% signal requiring root review; do not infer acceptance from the other operations.
