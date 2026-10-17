@@ -138,8 +138,15 @@ The matched GL STANDARD f64 baseline uses DUCC 0.42.0 at source revision
 synthesis measured 296.372 ms versus 49.555 ms for DUCC and 34.670 ms for the
 documented SHTns adapter. Spin-1 synthesis measured 276.295 ms versus 121.291
 ms for DUCC and 81.186 ms for SHTns. SHTns timings include input preservation
-and E/B potential conversion. Full tables, errors, raw samples, and build
-provenance are in [`reports/data/m6-current-baseline/`](data/m6-current-baseline/). The q1 route profile reports per-worker CPU timer sums, not transform wall
+and E/B potential conversion. An additional matched T2047 scalar q1 run measured
+Rust/DUCC/SHTns synthesis at 3355.273/370.438/269.622 ms and analysis at
+1093.244/243.378/605.659 ms. Rust was 9.06x slower than DUCC and 12.44x
+slower than SHTns for synthesis; for analysis it was 4.49x slower than DUCC
+and 1.80x slower than SHTns. Its Rust-to-DUCC relative L2 errors were
+3.015e-13 for synthesis and 1.747e-13 for analysis; SHTns-to-DUCC errors were
+2.425e-13 and 1.866e-13. The T2047 cell used 1.04 GiB peak RSS. It is a
+single-thread scalar result and does not establish spin-1 or q8 T2047 parity. Full tables, errors, raw samples, and build provenance are in
+[`reports/data/m6-current-baseline/`](data/m6-current-baseline/). The q1 route profile reports per-worker CPU timer sums, not transform wall
 time. Fused/visitor/transition sums were 7.421/26.408/0 ms at T511,
 55.352/191.910/13.420 ms at T1023, and 362.784/1505.354/1181.839 ms at
 T2047. Thus the visitor dominates at T511 and T1023 even though it handles
