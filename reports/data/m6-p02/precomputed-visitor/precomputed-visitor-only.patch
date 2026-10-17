@@ -1,0 +1,58 @@
+--- a/src/transform.rs
++++ b/src/transform.rs
+@@ -948,23 +948,10 @@
+                                     &mut recurrence.exponents[..compact_len],
+                                     |l, ring_start, current, exponents| {
+                                         let pair_index = (l - m) / 2;
+-                                        let coefficient_offset = l - m;
+-                                        let next_even_coefficient = if l + 2 <= lmax {
+-                                            alm[coefficient_start + coefficient_offset + 2]
+-                                        } else {
+-                                            Complex::new(T::zero(), T::zero())
+-                                        };
+-                                        let coefficient_even = (alm
+-                                            [coefficient_start + coefficient_offset]
+-                                            * recurrence.epsilon[l + 1]
+-                                            + next_even_coefficient * recurrence.epsilon[l + 2])
+-                                            * recurrence.spin_alpha[pair_index];
+-                                        let coefficient_odd = if l < lmax {
+-                                            alm[coefficient_start + coefficient_offset + 1]
+-                                                * recurrence.spin_alpha[pair_index]
+-                                        } else {
+-                                            Complex::new(T::zero(), T::zero())
+-                                        };
++                                        let coefficient_even =
++                                            recurrence.fast_spin_first[pair_index];
++                                        let coefficient_odd =
++                                            recurrence.fast_spin_second[pair_index];
+                                         for lane in 0..current.len() {
+                                             let fallback_ring = ring_start + lane;
+                                             let local_ring =
+@@ -1003,23 +990,10 @@
+                                     &mut recurrence.exponents[..block_len],
+                                     |l, ring_start, current, exponents| {
+                                         let pair_index = (l - m) / 2;
+-                                        let coefficient_offset = l - m;
+-                                        let next_even_coefficient = if l + 2 <= lmax {
+-                                            alm[coefficient_start + coefficient_offset + 2]
+-                                        } else {
+-                                            Complex::new(T::zero(), T::zero())
+-                                        };
+-                                        let coefficient_even = (alm
+-                                            [coefficient_start + coefficient_offset]
+-                                            * recurrence.epsilon[l + 1]
+-                                            + next_even_coefficient * recurrence.epsilon[l + 2])
+-                                            * recurrence.spin_alpha[pair_index];
+-                                        let coefficient_odd = if l < lmax {
+-                                            alm[coefficient_start + coefficient_offset + 1]
+-                                                * recurrence.spin_alpha[pair_index]
+-                                        } else {
+-                                            Complex::new(T::zero(), T::zero())
+-                                        };
++                                        let coefficient_even =
++                                            recurrence.fast_spin_first[pair_index];
++                                        let coefficient_odd =
++                                            recurrence.fast_spin_second[pair_index];
+                                         for lane in 0..current.len() {
+                                             let group_ring = block_start + ring_start + lane;
+                                             let global_ring = group_ring_start + group_ring;

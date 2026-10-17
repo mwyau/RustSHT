@@ -1,0 +1,5 @@
+baseline C02-only SHA256: 23eba5f1c74084a738d80ece2f37d1b8920770b148b06a7e47330d160725ee2c  <local-home-path>
+candidate C02+C03 SHA256: 58060a3a7b92f0330c173ba691626b5f501a72bda2d23dde8dd7ea022c1de4cc  <local-home-path>
+order: odd pairs baseline then candidate; even pairs candidate then baseline
+first_run_utc=2026-10-17T19:02:54Z
+resume_utc=2026-10-17T19:03:20Z

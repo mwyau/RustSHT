@@ -1,0 +1,29 @@
+# Concurrent workloads observed after clean per-process preflights
+
+2026-10-17T19:44:15Z: T2047 scalar q1 pair 3 baseline was still running
+(`m6-p01-baseline-bench`, , about 99.8% CPU). A concurrent
+`uv build --wheel --sdist --out-dir <temporary-path> had started;
+its Python `hatchling.build` process () used about 96.7% CPU.
+
+2026-10-17T19:44:24Z: the pair 3 ordered process was running
+(`m6-p01-link-order-bench`, , about 99.7% CPU) while a subsequent
+wheel installation (`pip install --no-cache-dir
+<temporary-path> Python PID
+3739318) used about 85.7% CPU. These are retained raw processes, but both
+members of pair 3 are excluded from acceptance statistics and must be rerun
+after the host is clear. The corresponding runner preflight entries and process-table snapshots are
+in `preflight-processes.log`. These external tasks began after clean
+per-process checks; they were not launched by this measurement runner. The original pair 3 files were moved without modification into `contaminated/`. After two clean checks (19:48:43Z and 19:49:09Z), a fresh alternating pair
+was run into the top-level `t2047-s0-q1-pair3-*` filenames: baseline preflight
+19:49:15Z and ordered preflight 19:49:42Z. Both finished with exit status 0;
+these clean replacement files are used by the acceptance summary. The original
+files remain available under `contaminated/` for audit and are excluded. T2047 scalar q1 pair 1 was also rerun after two clean checks (19:52:31Z and
+19:52:57Z). CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The baseline later showed
+an unusually high 34.34s elapsed time, one synthesis sample at 4012.783ms, and
+analysis samples 2101–2238ms versus approximately 1080–1150ms in the other
+pairs. A 32-way DUCC LTO build was visible by the ordered-side preflight at
+19:36:28Z, which was refused. The first ordered raw process was later run at
+19:41:33Z after clean checks. Because the baseline likely overlapped the build
+and the process pair was far outside comparable timing, both original pair 1
+sides were moved intact to `excluded-suspect/`; the top-level pair 1 now holds
+the clean alternating rerun (baseline preflight 19:53:03Z, ordered 19:53:30Z).

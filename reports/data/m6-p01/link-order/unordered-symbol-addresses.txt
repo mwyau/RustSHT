@@ -1,0 +1,8 @@
+00000000001ee160 0000000000000715 t <pulp::x86::v4::V4>::vectorize::imp::<<pulp::x86::v4::V4 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::FusedSynthesisBlock>>
+00000000001ef9c0 00000000000011f6 t <pulp::x86::v4::V4>::vectorize::imp::<<pulp::x86::v4::V4 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::FusedSynthesisPairBlock>>
+00000000001f8130 000000000000204f t <pulp::x86::v4::V4>::vectorize::imp::<<pulp::x86::v4::V4 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::StagedSynthesisScalarTransition>>
+00000000001fb3d0 00000000000007f3 t <pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::FusedSynthesisBlock>>
+00000000001fc8a0 0000000000001201 t <pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::FusedSynthesisPairBlock>>
+0000000000204fb0 00000000000028aa t <pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::StagedSynthesisScalarTransition>>
+00000000002127f0 0000000000001866 t rustsht::legendre::scalar_paired::try_synthesize_order_scalar_transition_dispatched
+00000000001ec0b0 0000000000000005 T <f64 as rustsht::legendre::ShtScalar>::try_synthesize_scalar_transition_dispatched

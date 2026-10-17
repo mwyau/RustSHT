@@ -1,0 +1,11 @@
+--- candidate/src/legendre/scalar_paired.rs
++++ outlined/src/legendre/scalar_paired.rs
+@@ -756,7 +756,7 @@
+ impl WithSimd for StagedSynthesisScalarTransition<'_> {
+     type Output = bool;
+ 
+-    #[inline(always)]
++    #[inline(never)]
+     fn with_simd<S: Simd>(self, simd: S) -> bool {
+         let StagedSynthesisScalarTransition {
+             m,

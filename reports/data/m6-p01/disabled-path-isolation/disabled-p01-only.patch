@@ -1,0 +1,12 @@
+--- candidate/src/transform.rs
++++ disabled/src/transform.rs
+@@ -789,8 +789,7 @@
+                 .harmonics
+                 .index(m, m)
+                 .expect("every packed order starts at its diagonal degree");
+-            let transition_enabled =
+-                lmax >= SCALAR_TRANSITION_MIN_LMAX && T::supports_paired_scalar();
++            let transition_enabled = false;
+             let paired_factors_ready = T::fill_paired_scalar_factors(
+                 m,
+                 lmax,

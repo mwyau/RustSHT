@@ -1,0 +1,10 @@
+--- reports/data/m6-p01/codegen-wrapper-outline/scalar_paired.before.rs	2026-10-17 14:38:14.017294628 -0400
++++ src/legendre/scalar_paired.rs	2026-10-17 14:38:17.063336720 -0400
+@@ -627,6 +627,7 @@
+     clippy::too_many_arguments,
+     reason = "The transition kernel receives coefficient factors and caller-owned lane scratch explicitly."
+ )]
++#[inline(never)]
+ pub(crate) fn try_synthesize_order_scalar_transition_dispatched(
+     arch: Arch,
+     m: usize,

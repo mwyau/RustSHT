@@ -1,0 +1,1833 @@
+diff --git a/examples/m1b_bench.rs b/examples/m1b_bench.rs
+index 984ffa4..49bf71c 100644
+--- a/examples/m1b_bench.rs
++++ b/examples/m1b_bench.rs
+@@ -112,8 +112,12 @@ fn main() {
+         .num_threads(rayon_threads)
+         .build()
+         .unwrap();
++    let phi0: f64 = std::env::var("RUSTSHT_BENCH_PHI0")
++        .ok()
++        .map(|value| value.parse().expect("phi0 must be a real number"))
++        .unwrap_or(0.37);
+     let make_plan = || {
+-        let grid = GridSpec::new(grid_kind, ntheta, nphi, 0.37).unwrap();
++        let grid = GridSpec::new(grid_kind, ntheta, nphi, phi0).unwrap();
+         let harmonics = HarmonicSpec::new(lmax, mmax, plan_spin).unwrap();
+         if let Some(estimate) = reuse_estimate {
+             ShtPlan::new_with_legendre_reuse_estimate(grid, harmonics, estimate).unwrap()
+@@ -470,7 +474,7 @@ fn main() {
+     });
+ 
+     println!(
+-        "spin-{spin} T{lmax} mmax={mmax}; {geometry} {ntheta}x{nphi}; f64; {mode}; requested={rayon_threads} threads; {operation}; requested_only={requested_only}; reuse_estimate={reuse_estimate:?}; strategy=automatic; 5 samples, median"
++        "spin-{spin} T{lmax} mmax={mmax}; {geometry} {ntheta}x{nphi}; f64; {mode}; requested={rayon_threads} threads; {operation}; requested_only={requested_only}; reuse_estimate={reuse_estimate:?}; phi0={phi0}; strategy=automatic; 5 samples, median"
+     );
+     println!(
+         "plan_construction_ms={:.3}",
+diff --git a/examples/python_perf_baseline.py b/examples/python_perf_baseline.py
+index 89d9e19..f25001b 100644
+--- a/examples/python_perf_baseline.py
++++ b/examples/python_perf_baseline.py
+@@ -20,14 +20,14 @@ spin = int(sys.argv[2]) if len(sys.argv) > 2 else 0
+ geometry = sys.argv[4] if len(sys.argv) > 4 else "GL"
+ runs = int(sys.argv[5]) if len(sys.argv) > 5 else 2
+ scope = sys.argv[6] if len(sys.argv) > 6 else "full"
+-if scope not in {"full", "plan"}:
+-    raise SystemExit("scope must be 'full' or 'plan'")
++if scope not in {"full", "plan", "into"}:
++    raise SystemExit("scope must be 'full', 'plan' or 'into'")
+ operation = sys.argv[7] if len(sys.argv) > 7 else "both"
+ if operation not in {"both", "synthesis", "analysis"}:
+     raise SystemExit("operation must be 'both', 'synthesis' or 'analysis'")
+ backend = sys.argv[8] if len(sys.argv) > 8 else "both"
+-if backend not in {"both", "rust", "ducc"}:
+-    raise SystemExit("backend must be 'both', 'rust' or 'ducc'")
++if backend not in {"both", "rust", "ducc", "shtns", "references", "all"}:
++    raise SystemExit("unknown backend")
+ mode = sys.argv[9] if len(sys.argv) > 9 else "STANDARD"
+ nphi = int(sys.argv[10]) if len(sys.argv) > 10 else 2 * lmax + 3
+ ntheta = int(sys.argv[11]) if len(sys.argv) > 11 else lmax + (2 if geometry == "CC" else 1)
+@@ -39,7 +39,9 @@ if mode == "DERIV1" and spin != 1:
+     raise SystemExit("DERIV1 uses spin=1 in DUCC's synthesis API")
+ if mode != "STANDARD" and operation != "synthesis":
+     raise SystemExit("GRAD_ONLY and DERIV1 support synthesis benchmarking only")
+-phi0 = 0.37
++if scope == "into" and mode != "STANDARD":
++    raise SystemExit("into-buffer timing supports STANDARD only")
++phi0 = float(os.environ.get("RUSTSHT_BENCH_PHI0", "0.37"))
+ ncomp = 1 if spin == 0 or mode != "STANDARD" else 2
+ map_components = 1 if mode == "STANDARD" and spin == 0 else 2
+ plan_spin = 0 if mode == "DERIV1" else spin
+@@ -71,10 +73,18 @@ base_map = np.sin(0.019 * rings + 0.037 * longitudes) + 0.3 * np.cos(0.071 * rin
+ map_in = np.ascontiguousarray(np.broadcast_to(base_map, (map_components, ntheta, nphi)).copy())
+ 
+ plan = rustsht.ShtPlan(geometry, ntheta, nphi, lmax, lmax, spin=plan_spin, phi0=phi0)
++rust_map_out = np.empty_like(map_in)
++ducc_map_out = np.empty_like(map_in)
++rust_alm_out = np.empty_like(alm)
++ducc_alm_out = np.empty_like(alm_ducc)
++
+ 
+ def ducc_synth():
+-    return ducc_sht.synthesis_2d(alm=alm_ducc, spin=ducc_spin, lmax=lmax, mmax=lmax, geometry=geometry, ntheta=ntheta, nphi=nphi, phi0=phi0, mode=mode, nthreads=threads)
++    return ducc_sht.synthesis_2d(alm=alm_ducc, spin=ducc_spin, lmax=lmax, mmax=lmax, geometry=geometry, ntheta=ntheta, nphi=nphi, phi0=phi0, mode=mode, nthreads=threads, map=ducc_map_out if scope == "into" else None)
+ def rust_plan_synth():
++    if scope == "into":
++        plan.synthesis_into(alm, rust_map_out)
++        return rust_map_out
+     if mode == "GRAD_ONLY":
+         return plan.synthesis_gradient(alm)
+     if mode == "DERIV1":
+@@ -83,8 +93,11 @@ def rust_plan_synth():
+ def rust_proc_synth():
+     return rustsht.synthesis_2d(alm, spin=ducc_spin, lmax=lmax, geometry=geometry, ntheta=ntheta, nphi=nphi, mmax=lmax, phi0=phi0, mode=mode)
+ def ducc_analysis():
+-    return ducc_sht.analysis_2d(map=map_in, spin=spin, lmax=lmax, mmax=lmax, geometry=geometry, phi0=phi0, nthreads=threads)
++    return ducc_sht.analysis_2d(map=map_in, spin=spin, lmax=lmax, mmax=lmax, geometry=geometry, phi0=phi0, nthreads=threads, alm=ducc_alm_out if scope == "into" else None)
+ def rust_plan_analysis():
++    if scope == "into":
++        plan.analysis_into(map_in, rust_alm_out)
++        return rust_alm_out
+     return plan.analysis(map_in)
+ def rust_proc_analysis():
+     return rustsht.analysis_2d(map_in, spin=spin, lmax=lmax, geometry=geometry, mmax=lmax, phi0=phi0)
+@@ -128,26 +141,115 @@ def report(name, fn):
+         ms = time_runs(fn)
+     print(f"{name}_run_medians_ms=" + ",".join(f"{x:.3f}" for x in ms) + f"; median={np.median(ms):.3f}; spread={max(ms)-min(ms):.3f}")
+ 
+-print(f"T{lmax} {geometry} {ntheta}x{nphi} spin={spin} mode={mode} threads={threads} runs={runs} scope={scope} operation={operation} backend={backend} python={sys.version.split()[0]} numpy={np.__version__} ducc={ducc0.__version__}")
++
++class ShtnsReference:
++    """SHTns 3.7.5 public C ABI; no numerical implementation is copied.
++
++    Timed calls include preserving the immutable inputs and converting E/B
++    to/from spheroidal/toroidal potentials. Setup and output allocation are
++    excluded. The current adapter supports exact rectangular GL grids.
++    """
++
++    def __init__(self):
++        import ctypes as ct
++
++        if geometry != "GL" or spin not in (0, 1) or mode != "STANDARD":
++            raise SystemExit("SHTns reference supports GL spin-0/1 STANDARD")
++        class Info(ct.Structure):
++            _fields_ = [("nlm", ct.c_uint), ("lmax", ct.c_ushort),
++                        ("mmax", ct.c_ushort), ("mres", ct.c_ushort),
++                        ("nlat_2", ct.c_ushort), ("nlat", ct.c_uint),
++                        ("nphi", ct.c_uint), ("nspat", ct.c_uint)]
++
++        path = os.environ["RUSTSHT_SHTNS_LIB"]
++        lib = ct.CDLL(path)
++        lib.shtns_use_threads.argtypes = [ct.c_int]
++        lib.shtns_use_threads.restype = ct.c_int
++        lib.shtns_create.argtypes = [ct.c_int] * 4
++        lib.shtns_create.restype = ct.c_void_p
++        lib.shtns_set_grid.argtypes = [ct.c_void_p, ct.c_int, ct.c_double, ct.c_int, ct.c_int]
++        lib.shtns_set_grid.restype = ct.c_int
++        for name, arrays in [("SH_to_spat", 2), ("spat_to_SH", 2),
++                             ("SHsphtor_to_spat", 4), ("spat_to_SHsphtor", 4)]:
++            function = getattr(lib, name)
++            function.argtypes = [ct.c_void_p] * (arrays + 1)
++            function.restype = None
++        lib.shtns_use_threads(threads)
++        self.cfg = lib.shtns_create(lmax, lmax, 1, 0)  # orthonormal, Condon–Shortley
++        if not self.cfg:
++            raise RuntimeError("SHTns plan allocation failed")
++        # sht_gauss | SHT_PHI_CONTIGUOUS; no padding or persisted tuning cache.
++        allocated = lib.shtns_set_grid(self.cfg, 512, 1e-30, ntheta, nphi)
++        info = ct.cast(self.cfg, ct.POINTER(Info)).contents
++        if (info.nlm, info.nlat, info.nphi, info.nspat) != (nalm, ntheta, nphi, ntheta * nphi):
++            raise RuntimeError("SHTns changed the requested grid or requires padded storage")
++        if allocated <= 0:
++            raise RuntimeError("SHTns grid allocation failed")
++        self.lib = lib
++        self.ptr = lambda array: ct.c_void_p(array.ctypes.data)
++        self.coefficients = np.empty_like(alm)
++        self.map = np.empty_like(map_in)
++        self.map_work = np.empty_like(map_in)
++        degrees = np.concatenate([np.arange(m, lmax + 1) for m in range(lmax + 1)])
++        orders = np.concatenate([np.full(lmax - m + 1, m) for m in range(lmax + 1)])
++        phase = np.exp(1j * orders * phi0)
++        if spin == 0:
++            self.synth_scale = phase[None, :]
++            self.analysis_scale = phase.conj()[None, :]
++        else:
++            norm = np.sqrt(degrees.astype(float) * (degrees + 1))
++            inverse = np.divide(1.0, norm, out=np.zeros_like(norm), where=norm != 0)
++            self.synth_scale = np.stack((phase * inverse, -phase * inverse))
++            self.analysis_scale = np.stack((phase.conj() * norm, -phase.conj() * norm))
++        print(f"shtns_library={path}; eps=1e-30; flags=512; wrapper=preserve-inputs-and-convert")
++
++    def synthesis(self):
++        np.multiply(alm, self.synth_scale, out=self.coefficients)
++        if spin == 0:
++            self.lib.SH_to_spat(self.cfg, self.ptr(self.coefficients[0]), self.ptr(self.map[0]))
++        else:
++            self.lib.SHsphtor_to_spat(self.cfg, self.ptr(self.coefficients[0]),
++                                     self.ptr(self.coefficients[1]), self.ptr(self.map[0]), self.ptr(self.map[1]))
++        return self.map
++
++    def analysis(self):
++        np.copyto(self.map_work, map_in)
++        if spin == 0:
++            self.lib.spat_to_SH(self.cfg, self.ptr(self.map_work[0]), self.ptr(self.coefficients[0]))
++        else:
++            self.lib.spat_to_SHsphtor(self.cfg, self.ptr(self.map_work[0]), self.ptr(self.map_work[1]),
++                                     self.ptr(self.coefficients[0]), self.ptr(self.coefficients[1]))
++        np.multiply(self.coefficients, self.analysis_scale, out=self.coefficients)
++        return self.coefficients
++
++shtns_reference = ShtnsReference() if backend in {"shtns", "references", "all"} else None
++
++print(f"T{lmax} {geometry} {ntheta}x{nphi} spin={spin} mode={mode} threads={threads} runs={runs} scope={scope} operation={operation} backend={backend} phi0={phi0} python={sys.version.split()[0]} numpy={np.__version__} ducc={ducc0.__version__}")
+ print("plan_construction_ms=" + ",".join(f"{x:.3f}" for x in time_runs(lambda: rustsht.ShtPlan(geometry, ntheta, nphi, lmax, lmax, spin=plan_spin, phi0=phi0))))
+ print("numpy_alm_copy_ms=" + ",".join(f"{x:.3f}" for x in time_runs(lambda: np.array(alm, copy=True))))
+ print("numpy_map_copy_ms=" + ",".join(f"{x:.3f}" for x in time_runs(lambda: np.array(map_in, copy=True))))
+ print("numpy_output_allocation_ms=" + ",".join(f"{x:.3f}" for x in time_runs(lambda: np.empty((map_components, ntheta, nphi), dtype=np.float64))))
+ if operation in {"both", "synthesis"}:
+-    if backend == "both":
++    if backend in {"both", "all"}:
+         print("synthesis_error=" + errors(rust_plan_synth(), ducc_synth()))
+-    if backend in {"both", "rust"}:
++    if backend in {"both", "rust", "all"}:
+         report("synthesis_rust_plan", rust_plan_synth)
+         if scope == "full":
+             report("synthesis_rust_procedural", rust_proc_synth)
+-    if backend in {"both", "ducc"}:
++    if backend in {"both", "ducc", "references", "all"}:
+         report("synthesis_ducc", ducc_synth)
++    if shtns_reference is not None:
++        print("synthesis_shtns_ducc_error=" + errors(shtns_reference.synthesis(), ducc_synth()))
++        report("synthesis_shtns_adapter", shtns_reference.synthesis)
+ if operation in {"both", "analysis"} and mode == "STANDARD":
+-    if backend == "both":
++    if backend in {"both", "all"}:
+         print("analysis_error=" + errors(rust_plan_analysis(), to_rust_layout(ducc_analysis())))
+-    if backend in {"both", "rust"}:
++    if backend in {"both", "rust", "all"}:
+         report("analysis_rust_plan", rust_plan_analysis)
+         if scope == "full":
+             report("analysis_rust_procedural", rust_proc_analysis)
+-    if backend in {"both", "ducc"}:
++    if backend in {"both", "ducc", "references", "all"}:
+         report("analysis_ducc", ducc_analysis)
++    if shtns_reference is not None:
++        print("analysis_shtns_ducc_error=" + errors(shtns_reference.analysis(), to_rust_layout(ducc_analysis())))
++        report("analysis_shtns_adapter", shtns_reference.analysis)
+diff --git a/plans/02-numerics-and-grids.md b/plans/02-numerics-and-grids.md
+index 6c002a8..8836fff 100644
+--- a/plans/02-numerics-and-grids.md
++++ b/plans/02-numerics-and-grids.md
+@@ -68,3 +68,32 @@ DUCC's `sht_inner_loop.h` uses rescaled normalized spin-0 and spin-weighted recu
+ Test sectoral and near-sectoral harmonics, `m=0` and `m=L`, `l=spin`, north/south polar behavior, tiny and dominant coefficients, and mixed-degree stress. Establish explicitly which spin/precision/ring layout combinations are recoverable; do not extrapolate from a low-L roundtrip. Reference: DUCC `sht.cc` (`maximum_safe_l`, `get_gridweights`, `analysis_2d`, `adjoint_analysis_2d`, `resample_*_prepared_CC`), `sht_inner_loop.h`, `python/sht_pymod.cc`. Pinned baseline and sources are in [01](01-ducc-provenance-and-license.md).
++
++
++## Longitude FFT scaling
++
++Let `F` be the unnormalized forward longitude DFT and let `H` evaluate a
++Hermitian Fourier series, so `H(F(x)) = nphi*x`. Recurrence synthesis stores
++Legendre amplitudes multiplied by `exp(i*m*phi0)` and evaluates them with
++`H`. The bounded f64 scalar table path retains `nphi`-scaled spectra and
++`H/nphi`: its coefficient component limit is `1e100` and `lmax<=255`, which
++leave headroom for the longitude scaling and FFT arithmetic at any
++representable grid size. Large inputs decline that table path. For even longitude counts,
++synthesis combines the positive and negative Nyquist contributions into one
++real bin with a factor of two. DC occurs once. The private FFT adapter also
++retains a normalized inverse `H/nphi`.
++
++Analysis and synthesis adjoints retain their forward-DFT scaling. GL
++analysis uses latitude weights divided by `nphi`, and its adjoint is
++synthesis followed by those pixel weights. CC/F1 adjoint analysis projects
++onto the prepared grid, applies the adjoint meridional resampler, then uses
++`H/nphi`; this final inverse remains normalized. Gradient, derivative and
++STANDARD spin synthesis use the same Fourier-series convention as scalar
++synthesis.
++
++Even-length normalized FFT reconstruction retains sum-before-halving in its
++ordinary arithmetic. If reconstruction becomes nonfinite, an exceptional
++path halves finite operands before an overflowing sum. This avoids losing
++smallest-subnormal contributions through unconditional operand halving.
++The FFT engine itself retains its floating-point range limits; these adapter
++checks do not establish overflow-free cancellation for arbitrary spectra.
+diff --git a/reports/m6-cpu-performance-parity.md b/reports/m6-cpu-performance-parity.md
+index b1782c7..a0638d5 100644
+--- a/reports/m6-cpu-performance-parity.md
++++ b/reports/m6-cpu-performance-parity.md
+@@ -38,9 +38,81 @@ comparisons in these suites identify DUCC 0.41.0, pinned source
+ and standalone FFT tests were not run for C01; bindings, numerical kernels,
+ and the standalone workspace did not change.
+ 
++## C02: real FFT range and synthesis normalization
++
++The baseline failed all three length-two extreme FFT tests: f64 forward
++`[1e308,0]`, f64 normalized inverse bins `[1e308,1e308]`, and f32 forward
++`[2e38,0]`. Scalar GL `1×8` monopoles with `a00=1e308` (f64) or `2e38`
++(f32) produced alternating NaNs and infinities, although their constant maps
++are finite.
++
++The candidate retains the ordinary normalized reconstruction arithmetic and
++recomputes nonfinite reconstruction results with overflow-aware half-sums.
++Only an overflowing sum of finite operands is halved before addition. This
++preserves the ordinary path's subnormal behavior. Synthesis now uses an
++unnormalized inverse on Fourier-series amplitudes, eliminating the temporary
++`nphi` multiplication. Recurrence, spin, derivative and hemisphere routes use this convention.
++The bounded f64 scalar table path retains its original scaled spectra and
++normalized inverse; its existing input limit excludes extreme coefficients. CC/F1 adjoint analysis keeps its
++normalized inverse. [The numerical plan](../plans/02-numerics-and-grids.md)
++derives the four operators' scaling.
++
++Targeted debug checks passed: direct complex FFT and Hermitian sums,
++length-two extreme cases, smallest-subnormal f64 DC values at lengths
++1/2/3/4/5/8/31/32/33, extreme monopoles at longitude counts
++1/2/3/8/9/32, and large-range controls for S/A/S*/A* on GL/CC/F1,
++spins 0–4, f64/f32, nonzero `phi0`, and odd/even longitudes. The range
++controls compare scaled complete arrays with ordinary execution at L4;
++independent analytic and DUCC checks are supplied by the existing suite.
++Private pre-FFT tests now compare Fourier-series amplitudes instead of
++`nphi`-scaled DFT bins, with unchanged tolerances.
++
++The first candidate passed full debug/release/serial suites, eight opt-in
++high-L tests, formatting and Clippy, and 111 standalone FFT tests in both
++debug and release. Its six-pair controls failed the predeclared per-operation
++regression gate: scalar T255 q1 synthesis increased by 3.68% (paired-median
++95% bootstrap interval 3.10%–4.39%). Analysis increased by 2.51% at that cell,
++with additional slowdown signals in other analysis controls. These results
++are preserved in `paired/summary.csv`; S+A totals do not replace the separate
++S and A gates.
++
++A diagnostic build without the per-bin exceptional guard improved scalar
++T255 q1 analysis by 4.35% relative to the guarded candidate across three
++rotated triples. It still synthesized 2.55% slower than baseline. This
++isolates a guard cost without establishing that it prevents vectorization:
++both disassemblies use 128-bit packed complex arithmetic. The unsafe
++diagnostic change was removed. The revised candidate uses a row-level
++forward range classification and the original normalized inverse for the
++bounded table path. Its validation and repeated controls are pending. Baseline timing
++artifacts are in [the C02 data directory](data/m6-c02/). The private FFT
++adapter still inherits the FFT engine's range limits; these checks do not
++prove arbitrary large-spectrum cancellation is overflow-free.
++
++## C03: specialized spin fallback
++
++Both reported conversion guard gaps are reproduced before FFT execution.
++The spin-1 hemisphere route at T319 produced infinity where the original
++spin recurrence gave a finite value. The spin-2 scalar route at T500
++produced NaN for finite E/B input with a finite general-reference value.
++The reproducer log is `target/m6-c03-reproduce.log`.
++
++The candidate extracts the existing general-spin order projection into a
++private helper. Spin-1 hemisphere and spin-2 scalar synthesis check converted
++coefficients and paired preparation before committing any order output. A
++failure projects the original E/B coefficients with freshly initialized spin
++factors. Hemisphere fallback covers both hemispheres and both channels.
++Spin-1 paired preparation is performed once per order before its latitude
++blocks. No workspace arrays or public APIs are added.
++
++The two focused release regressions pass. They cover spin-1 T319/T511,
++cached/uncached conversions, 67-lane blocks and both hemispheres, plus spin-2
++T500/T511 E-only, B-only and E+iB input. Broader validation and ordinary-route
++performance controls are pending; paired-preparation failure independent of
++conversion overflow has not yet been reproduced by these fixtures.
++
+ ## Remaining work
+ 
+-C02 FFT extreme-range regressions and scaling; C03 spin fallback regressions;
++C02 full validation and performance controls; C03 spin fallback regressions;
+ matched current-source DUCC/SHTns benchmarks; route accounting; f64 synthesis
+ experiments; f32 widening experiment. The existing review records earlier
+ benchmarks, which are not current campaign baselines.
+diff --git a/src/fft.rs b/src/fft.rs
+index 4d31c0b..17b9230 100644
+--- a/src/fft.rs
++++ b/src/fft.rs
+@@ -113,19 +113,32 @@ impl<T: FftNum + Float> RealFftPlan<T> {
+             Engine::Even {
+                 forward, twiddles, ..
+             } => {
++                let component_bound = T::max_value()
++                    / T::from_f64(8.0).expect("eight is representable")
++                    / T::from_usize(self.n).expect("usize converts to the FFT scalar");
++                let mut bounded_row = true;
+                 for (j, pair) in input.as_chunks::<2>().0.iter().enumerate() {
++                    bounded_row &= pair
++                        .iter()
++                        .all(|&sample| sample.is_finite() && sample.abs() <= component_bound);
+                     workspace.transform[j] = Complex::new(pair[0], pair[1]);
+                 }
+                 forward.process_with_scratch(&mut workspace.transform, &mut workspace.scratch);
+ 
+                 let half = self.transform_len;
+                 let half_scalar = T::from_f64(0.5).expect("half is representable");
+-                for (k, value) in output.iter_mut().enumerate() {
+-                    let z = workspace.transform[k % half];
+-                    let mirror = workspace.transform[(half - (k % half)) % half].conj();
+-                    let difference = z - mirror;
+-                    *value = (z + mirror) * half_scalar
+-                        + Complex::new(T::zero(), -half_scalar) * twiddles[k] * difference;
++                if bounded_row {
++                    for (k, value) in output.iter_mut().enumerate() {
++                        let z = workspace.transform[k % half];
++                        let mirror = workspace.transform[(half - (k % half)) % half].conj();
++                        *value = ordinary_recombine_half(z, mirror, twiddles[k], -half_scalar);
++                    }
++                } else {
++                    for (k, value) in output.iter_mut().enumerate() {
++                        let z = workspace.transform[k % half];
++                        let mirror = workspace.transform[(half - (k % half)) % half].conj();
++                        *value = recombine_half(z, mirror, twiddles[k], -half_scalar);
++                    }
+                 }
+                 output[0].im = T::zero();
+                 output[half].im = T::zero();
+@@ -149,6 +162,37 @@ impl<T: FftNum + Float> RealFftPlan<T> {
+         input: &[Complex<T>],
+         output: &mut [T],
+         workspace: &mut RealFftWorkspace<T>,
++    ) -> Result<(), ShtError> {
++        self.inverse_impl::<true, true>(input, output, workspace)
++    }
++
++    /// Reconstructs a real row using the ordinary half-spectrum expression.
++    /// The caller must establish finite headroom for every intermediate value.
++    pub(crate) fn inverse_bounded(
++        &self,
++        input: &[Complex<T>],
++        output: &mut [T],
++        workspace: &mut RealFftWorkspace<T>,
++    ) -> Result<(), ShtError> {
++        self.inverse_impl::<true, false>(input, output, workspace)
++    }
++
++    /// Evaluates a Hermitian Fourier series without a `1/n` factor.
++    /// DC and even-length Nyquist bins each occur once in the series.
++    pub(crate) fn inverse_series(
++        &self,
++        input: &[Complex<T>],
++        output: &mut [T],
++        workspace: &mut RealFftWorkspace<T>,
++    ) -> Result<(), ShtError> {
++        self.inverse_impl::<false, false>(input, output, workspace)
++    }
++
++    fn inverse_impl<const NORMALIZE: bool, const ROBUST: bool>(
++        &self,
++        input: &[Complex<T>],
++        output: &mut [T],
++        workspace: &mut RealFftWorkspace<T>,
+     ) -> Result<(), ShtError> {
+         check_len("real FFT spectrum", self.spectrum_len(), input.len())?;
+         check_len("real FFT output", self.n, output.len())?;
+@@ -173,17 +217,31 @@ impl<T: FftNum + Float> RealFftPlan<T> {
+                     } else {
+                         input[half - k].conj()
+                     };
+-                    let difference = a - b;
+-                    workspace.transform[k] = (a + b)
+-                        * T::from_f64(0.5).expect("half is representable")
+-                        + Complex::new(T::zero(), T::from_f64(0.5).expect("half is representable"))
+-                            * twiddles[k].conj()
+-                            * difference;
++                    workspace.transform[k] = if NORMALIZE && ROBUST {
++                        recombine_half(
++                            a,
++                            b,
++                            twiddles[k].conj(),
++                            T::from_f64(0.5).expect("half is representable"),
++                        )
++                    } else if NORMALIZE {
++                        ordinary_recombine_half(
++                            a,
++                            b,
++                            twiddles[k].conj(),
++                            T::from_f64(0.5).expect("half is representable"),
++                        )
++                    } else {
++                        (a + b) + Complex::new(T::zero(), T::one()) * twiddles[k].conj() * (a - b)
++                    };
+                 }
+ 
+                 inverse.process_with_scratch(&mut workspace.transform, &mut workspace.scratch);
+-                let scale =
+-                    T::one() / T::from_usize(half).expect("usize converts to the FFT scalar");
++                let scale = if NORMALIZE {
++                    T::one() / T::from_usize(half).expect("usize converts to the FFT scalar")
++                } else {
++                    T::one()
++                };
+                 for (j, pair) in output.as_chunks_mut::<2>().0.iter_mut().enumerate() {
+                     pair[0] = workspace.transform[j].re * scale;
+                     pair[1] = workspace.transform[j].im * scale;
+@@ -206,8 +264,11 @@ impl<T: FftNum + Float> RealFftPlan<T> {
+                 }
+ 
+                 inverse.process_with_scratch(&mut workspace.transform, &mut workspace.scratch);
+-                let scale =
+-                    T::one() / T::from_usize(self.n).expect("usize converts to the FFT scalar");
++                let scale = if NORMALIZE {
++                    T::one() / T::from_usize(self.n).expect("usize converts to the FFT scalar")
++                } else {
++                    T::one()
++                };
+                 for (value, sample) in output.iter_mut().zip(&workspace.transform) {
+                     *value = sample.re * scale;
+                 }
+@@ -231,6 +292,47 @@ impl<T: FftNum + Float> RealFftPlan<T> {
+     }
+ }
+ 
++#[inline]
++fn ordinary_recombine_half<T: FftNum + Float>(
++    a: Complex<T>,
++    b: Complex<T>,
++    twiddle: Complex<T>,
++    signed_half: T,
++) -> Complex<T> {
++    let half = T::from_f64(0.5).expect("half is representable");
++    let difference = a - b;
++    (a + b) * half + Complex::new(T::zero(), signed_half) * twiddle * difference
++}
++
++#[inline]
++fn half_sum<T: FftNum + Float>(a: T, b: T) -> T {
++    let half = T::from_f64(0.5).expect("half is representable");
++    let sum = a + b;
++    if sum.is_infinite() && a.is_finite() && b.is_finite() {
++        a * half + b * half
++    } else {
++        sum * half
++    }
++}
++
++#[inline]
++fn recombine_half<T: FftNum + Float>(
++    a: Complex<T>,
++    b: Complex<T>,
++    twiddle: Complex<T>,
++    signed_half: T,
++) -> Complex<T> {
++    let result = ordinary_recombine_half(a, b, twiddle, signed_half);
++    if result.re.is_finite() && result.im.is_finite() {
++        return result;
++    }
++    // Sum before halving preserves subnormals in the ordinary path. Only an
++    // overflowing finite sum is halved first in the exceptional path.
++    let even = Complex::new(half_sum(a.re, b.re), half_sum(a.im, b.im));
++    let odd = Complex::new(half_sum(a.re, -b.re), half_sum(a.im, -b.im));
++    even + Complex::new(T::zero(), signed_half + signed_half) * twiddle * odd
++}
++
+ fn check_len(buffer: &'static str, expected: usize, actual: usize) -> Result<(), ShtError> {
+     if actual == expected {
+         Ok(())
+@@ -262,6 +364,47 @@ mod tests {
+ 
+     use super::*;
+ 
++    #[test]
++    fn length_two_extreme_finite_forward() {
++        for input in [[1.0e308, 0.0], [0.0, 1.0e308]] {
++            let plan = RealFftPlan::new(2).unwrap();
++            let mut workspace = plan.workspace().unwrap();
++            let mut spectrum = [Complex64::new(0.0, 0.0); 2];
++            plan.forward(&input, &mut spectrum, &mut workspace).unwrap();
++            assert_eq!(spectrum[0], Complex64::new(1.0e308, 0.0));
++            assert_eq!(spectrum[1], Complex64::new(input[0] - input[1], 0.0));
++        }
++    }
++
++    #[test]
++    fn length_two_extreme_finite_inverse() {
++        let plan = RealFftPlan::new(2).unwrap();
++        let mut workspace = plan.workspace().unwrap();
++        let spectrum = [Complex64::new(1.0e308, 0.0); 2];
++        let mut output = [0.0; 2];
++        plan.inverse(&spectrum, &mut output, &mut workspace)
++            .unwrap();
++        assert_eq!(output, [1.0e308, 0.0]);
++    }
++
++    #[test]
++    fn length_two_extreme_finite_f32() {
++        let plan = RealFftPlan::<f32>::new(2).unwrap();
++        let mut workspace = plan.workspace().unwrap();
++        let input = [2.0e38, 0.0];
++        let mut spectrum = [Complex32::new(0.0, 0.0); 2];
++        plan.forward(&input, &mut spectrum, &mut workspace).unwrap();
++        assert_eq!(spectrum, [Complex32::new(2.0e38, 0.0); 2]);
++        let mut output = [0.0; 2];
++        plan.inverse(
++            &[Complex32::new(2.0e38, 0.0); 2],
++            &mut output,
++            &mut workspace,
++        )
++        .unwrap();
++        assert_eq!(output, input);
++    }
++
+     fn close_complex(actual: Complex64, expected: Complex64, tolerance: f64) {
+         let error = (actual - expected).norm();
+         assert!(
+@@ -398,6 +541,26 @@ mod tests {
+         }
+     }
+ 
++    #[test]
++    fn bounded_inverse_matches_robust_inverse_for_ordinary_spectra() {
++        for n in [1, 2, 3, 4, 5, 8, 31, 32, 33] {
++            let plan = RealFftPlan::new(n).unwrap();
++            let mut workspace = plan.workspace().unwrap();
++            for row in sample_rows(n) {
++                let mut spectrum = vec![Complex64::new(0.0, 0.0); plan.spectrum_len()];
++                plan.forward(&row, &mut spectrum, &mut workspace).unwrap();
++
++                let mut robust = vec![0.0; n];
++                let mut bounded = vec![0.0; n];
++                plan.inverse(&spectrum, &mut robust, &mut workspace)
++                    .unwrap();
++                plan.inverse_bounded(&spectrum, &mut bounded, &mut workspace)
++                    .unwrap();
++                assert_eq!(bounded, robust, "n={n}");
++            }
++        }
++    }
++
+     #[test]
+     fn inverse_matches_direct_hermitian_sum_for_arbitrary_spectra() {
+         for n in [1, 2, 3, 4, 5, 6, 7, 8, 31, 32, 33] {
+@@ -437,6 +600,57 @@ mod tests {
+         }
+     }
+ 
++    #[test]
++    fn inverse_series_matches_direct_sum_and_preserves_tiny_dc() {
++        for n in [1, 2, 3, 4, 5, 8, 31, 32, 33] {
++            let plan = RealFftPlan::new(n).unwrap();
++            let mut workspace = plan.workspace().unwrap();
++            let mut spectrum: Vec<_> = (0..plan.spectrum_len())
++                .map(|k| Complex64::new(0.21 * (k + 1) as f64, 0.17 * (k as f64 - 2.0)))
++                .collect();
++            spectrum[0].im = 0.0;
++            if n.is_multiple_of(2) {
++                spectrum[n / 2].im = 0.0;
++            }
++            let mut output = vec![0.0; n];
++            plan.inverse_series(&spectrum, &mut output, &mut workspace)
++                .unwrap();
++            for (j, &actual) in output.iter().enumerate() {
++                let mut expected = spectrum[0].re;
++                for (k, &mode) in spectrum.iter().enumerate().skip(1) {
++                    let angle = 2.0 * PI * (k * j) as f64 / n as f64;
++                    let weight = if 2 * k == n { 1.0 } else { 2.0 };
++                    expected += weight * (mode.re * angle.cos() - mode.im * angle.sin());
++                }
++                assert!((actual - expected).abs() <= 4e-13 * expected.abs().max(1.0));
++            }
++            for dc in [f64::from_bits(1), -f64::from_bits(1), 1.0e308] {
++                spectrum.fill(Complex64::new(0.0, 0.0));
++                spectrum[0].re = dc;
++                plan.inverse_series(&spectrum, &mut output, &mut workspace)
++                    .unwrap();
++                assert!(
++                    output.iter().all(|&value| value == dc),
++                    "n={n}, dc={dc}, {output:?}"
++                );
++            }
++        }
++    }
++
++    #[test]
++    fn half_recombination_preserves_subnormals_and_cancellation() {
++        for a in [f64::from_bits(1), f64::MIN_POSITIVE, 1.0e308, -1.0e308] {
++            assert_eq!(half_sum(a, a), a);
++            assert_eq!(half_sum(a, -a), 0.0);
++            assert_eq!(half_sum(a, 0.0), a * 0.5);
++        }
++        for a in [f32::from_bits(1), f32::MIN_POSITIVE, 2.0e38, -2.0e38] {
++            assert_eq!(half_sum(a, a), a);
++            assert_eq!(half_sum(a, -a), 0.0);
++            assert_eq!(half_sum(a, 0.0), a * 0.5);
++        }
++    }
++
+     #[test]
+     fn real_fft_validates_shapes_and_spectrum_edges() {
+         let plan = RealFftPlan::new(4).unwrap();
+diff --git a/src/legendre/mod.rs b/src/legendre/mod.rs
+index cf8a538..83972c5 100644
+--- a/src/legendre/mod.rs
++++ b/src/legendre/mod.rs
+@@ -1,6 +1,9 @@
+ // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
+ // SPDX-License-Identifier: GPL-2.0-or-later
+ 
++#[cfg(test)]
++mod route_profile;
++
+ mod scalar;
+ mod scalar_f32;
+ mod scalar_paired;
+diff --git a/src/legendre/scalar_paired.rs b/src/legendre/scalar_paired.rs
+index 484d910..2eebba0 100644
+--- a/src/legendre/scalar_paired.rs
++++ b/src/legendre/scalar_paired.rs
+@@ -30,6 +30,8 @@ pub(crate) fn fill_factors(
+     coefficient_a: &mut [f64],
+     coefficient_b: &mut [f64],
+ ) {
++    #[cfg(test)]
++    let profile_started = super::route_profile::start();
+     let factor_count = lmax / 2 + 2;
+     debug_assert!(epsilon.len() >= lmax + 4);
+     debug_assert!(alpha.len() >= factor_count.max(2));
+@@ -56,6 +58,8 @@ pub(crate) fn fill_factors(
+             * (epsilon[degree + 2] * epsilon[degree + 2]
+                 + epsilon[degree + 1] * epsilon[degree + 1]);
+     }
++    #[cfg(test)]
++    super::route_profile::finish(profile_started, super::route_profile::Phase::Factors);
+ }
+ 
+ /// Transforms the scalar harmonic coefficients used by the paired synthesis
+@@ -69,6 +73,8 @@ pub(crate) fn prepare_synthesis_coefficients(
+     coefficient_even: &mut [Complex64],
+     coefficient_odd: &mut [Complex64],
+ ) -> bool {
++    #[cfg(test)]
++    let profile_started = super::route_profile::start();
+     debug_assert!(m <= lmax);
+     debug_assert!(epsilon.len() > lmax + 2);
+     let pair_count = (lmax - m + 2) / 2;
+@@ -97,11 +103,21 @@ pub(crate) fn prepare_synthesis_coefficients(
+             || !odd.re.is_finite()
+             || !odd.im.is_finite()
+         {
++            #[cfg(test)]
++            {
++                super::route_profile::preparation_failure();
++                super::route_profile::finish(
++                    profile_started,
++                    super::route_profile::Phase::Coefficients,
++                );
++            }
+             return false;
+         }
+         coefficient_even[pair] = even;
+         coefficient_odd[pair] = odd;
+     }
++    #[cfg(test)]
++    super::route_profile::finish(profile_started, super::route_profile::Phase::Coefficients);
+     true
+ }
+ 
+@@ -633,6 +649,8 @@ pub(crate) fn try_synthesize_order_pair_transition_dispatched(
+     second_sum_re: &mut [f64],
+     second_sum_im: &mut [f64],
+ ) -> Result<bool, ShtError> {
++    #[cfg(test)]
++    super::route_profile::transition_call();
+     let lane_count = sin_theta.len();
+     debug_assert_eq!(lane_count, cos_theta.len());
+     debug_assert!(lane_count <= LATITUDE_BLOCK_SIZE);
+@@ -670,6 +688,10 @@ pub(crate) fn try_synthesize_order_pair_transition_dispatched(
+         return Ok(false);
+     }
+ 
++    #[cfg(test)]
++    let profile_started = super::route_profile::start();
++    #[cfg(test)]
++    super::route_profile::transition_begin();
+     let completed = arch.dispatch(StagedSynthesisPairTransition {
+         m,
+         lmax,
+@@ -699,8 +721,18 @@ pub(crate) fn try_synthesize_order_pair_transition_dispatched(
+             &second_sum_im[..lane_count],
+         )
+     {
++        #[cfg(test)]
++        {
++            super::route_profile::transition_end(false);
++            super::route_profile::finish(profile_started, super::route_profile::Phase::Transition);
++        }
+         return Ok(false);
+     }
++    #[cfg(test)]
++    {
++        super::route_profile::transition_end(true);
++        super::route_profile::finish(profile_started, super::route_profile::Phase::Transition);
++    }
+     Ok(true)
+ }
+ 
+@@ -873,6 +905,8 @@ impl WithSimd for StagedSynthesisPairTransition<'_> {
+             && lane_values_in_normal_range(previous)
+             && lane_values_in_normal_range(current)
+         {
++            #[cfg(test)]
++            super::route_profile::transition_fused(sin_theta.len(), (lmax - m + 2) / 2);
+             return FusedSynthesisPairBlock {
+                 m,
+                 lmax,
+@@ -898,6 +932,8 @@ impl WithSimd for StagedSynthesisPairTransition<'_> {
+ 
+         let pair_count = (lmax - m + 2) / 2;
+         for pair in 0..pair_count {
++            #[cfg(test)]
++            super::route_profile::transition_prefix(sin_theta.len());
+             let l = m + 2 * pair;
+             let offset = l - m;
+             let next_first_even = if l + 2 <= lmax {
+@@ -1019,6 +1055,8 @@ impl WithSimd for StagedSynthesisPairTransition<'_> {
+                 if !finite_prefix_sums(first_sum_re, first_sum_im, second_sum_re, second_sum_im) {
+                     return false;
+                 }
++                #[cfg(test)]
++                super::route_profile::transition_fused(sin_theta.len(), pair_count - pair - 1);
+                 return FusedSynthesisPairBlock {
+                     m,
+                     lmax,
+@@ -1997,6 +2035,10 @@ impl WithSimd for FusedSynthesisBlock<'_> {
+ 
+     #[inline(always)]
+     fn with_simd<S: Simd>(self, simd: S) {
++        #[cfg(test)]
++        let profile_started = super::route_profile::start();
++        #[cfg(test)]
++        super::route_profile::fused(self.cos_theta.len(), (self.lmax - self.m + 2) / 2);
+         let FusedSynthesisBlock {
+             m,
+             lmax,
+@@ -2081,6 +2123,8 @@ impl WithSimd for FusedSynthesisBlock<'_> {
+             sum_re_tail[lane] = accumulated_re;
+             sum_im_tail[lane] = accumulated_im;
+         }
++        #[cfg(test)]
++        super::route_profile::finish(profile_started, super::route_profile::Phase::Fused);
+     }
+ }
+ 
+@@ -2850,6 +2894,8 @@ pub(crate) fn for_each_y_lm_paired_status_dispatched<F>(
+ where
+     F: FnMut(usize, usize, &[f64], &[i64], bool) -> Result<(), ShtError>,
+ {
++    #[cfg(test)]
++    let profile_started = super::route_profile::start();
+     debug_assert!(m <= lmax);
+     debug_assert_eq!(sin_theta.len(), cos_theta.len());
+     let scratch_len = sin_theta.len().min(LATITUDE_BLOCK_SIZE);
+@@ -2877,6 +2923,8 @@ where
+             visit: &mut visit,
+         })?;
+     }
++    #[cfg(test)]
++    super::route_profile::finish(profile_started, super::route_profile::Phase::Visitor);
+     Ok(())
+ }
+ 
+@@ -2933,6 +2981,8 @@ where
+ 
+         for (pair_index, l) in (m..=lmax).step_by(2).enumerate() {
+             visit(l, ring_start, current, exponents, normal_range)?;
++            #[cfg(test)]
++            super::route_profile::visitor(current.len(), normal_range);
+             if l + 2 > lmax {
+                 break;
+             }
+diff --git a/src/spin_transform.rs b/src/spin_transform.rs
+index b57d13a..736064e 100644
+--- a/src/spin_transform.rs
++++ b/src/spin_transform.rs
+@@ -1215,14 +1215,14 @@ impl<T: ShtScalar> ShtPlan<T> {
+         for ring in 0..ntheta {
+             let spectrum_start = ring * spectrum_len;
+             let spectrum_end = spectrum_start + spectrum_len;
+-            self.fft.inverse(
++            self.fft.inverse_series(
+                 &workspace.spectra[spectrum_start..spectrum_end],
+                 &mut workspace.row,
+                 &mut workspace.fft,
+             )?;
+             let output_start = ring * nphi;
+             first_component[output_start..output_start + nphi].copy_from_slice(&workspace.row);
+-            self.fft.inverse(
++            self.fft.inverse_series(
+                 &workspace.spin_spectra[spectrum_start..spectrum_end],
+                 &mut workspace.row,
+                 &mut workspace.fft,
+@@ -1431,8 +1431,7 @@ impl<T: ShtScalar> ShtPlan<T> {
+         debug_assert_eq!(q_spectra.len(), (ring_end - ring_start) * spectrum_len);
+         debug_assert_eq!(u_spectra.len(), q_spectra.len());
+ 
+-        let fourier_scale = T::from_usize(nphi).expect("longitude count converts");
+-        let nyquist_scale = fourier_scale * T::from_f64(2.0).expect("two is representable");
++        let nyquist_scale = T::from_f64(2.0).expect("two is representable");
+         let maximum_ring_order = (spin == 1).then(|| {
+             ring_order_limits[ring_start..ring_end]
+                 .iter()
+@@ -1557,66 +1556,21 @@ impl<T: ShtScalar> ShtPlan<T> {
+                     }
+                 }
+             } else {
+-                let initial = T::fill_spin_factors(
+-                    spin,
++                self.synthesize_general_spin_order(
+                     m,
+-                    lmax,
+-                    &mut recurrence.spin_alpha,
+-                    &mut recurrence.spin_coefficient_a,
+-                    &mut recurrence.spin_coefficient_b,
+-                )?;
+-                T::for_each_spin_lm_dispatched(
+-                    arch,
+-                    &initial,
+-                    lmax,
++                    e_alm,
++                    b_alm,
++                    spin,
++                    derivative_norm,
++                    spectrum_len,
++                    ring_start,
++                    q_spectra,
++                    u_spectra,
+                     theta_sin,
+                     theta_cos,
+-                    &recurrence.spin_coefficient_a,
+-                    &recurrence.spin_coefficient_b,
+-                    &mut recurrence.spin_previous_plus,
+-                    &mut recurrence.spin_current_plus,
+-                    &mut recurrence.spin_next_plus,
+-                    &mut recurrence.spin_exponents_plus,
+-                    &mut recurrence.spin_previous_minus,
+-                    &mut recurrence.spin_current_minus,
+-                    &mut recurrence.spin_next_minus,
+-                    &mut recurrence.spin_exponents_minus,
+-                    |degree, group_ring_start, plus, plus_exp, minus, minus_exp| {
+-                        let coefficient_index = self
+-                            .harmonics
+-                            .index(degree, m)
+-                            .expect("the recurrence visits degrees in the packed order");
+-                        let e_coefficient = e_alm[coefficient_index];
+-                        let b_coefficient = b_alm
+-                            .map(|values| values[coefficient_index])
+-                            .unwrap_or_else(|| Complex::new(T::zero(), T::zero()));
+-                        let alpha_norm = recurrence.spin_alpha[degree]
+-                            * T::spin_normalization(spin, degree, derivative_norm);
+-                        for lane in 0..plus.len() {
+-                            let group_ring = group_ring_start + lane;
+-                            let global_ring = ring_start + group_ring;
+-                            if m > ring_order_limits[global_ring] {
+-                                continue;
+-                            }
+-                            let plus_value =
+-                                T::scaled_basis_value(plus[lane], plus_exp[lane], alpha_norm);
+-                            let minus_value =
+-                                T::scaled_basis_value(minus[lane], minus_exp[lane], alpha_norm);
+-                            let even_basis = plus_value + minus_value;
+-                            let odd_basis = plus_value - minus_value;
+-                            let q_value = e_coefficient * even_basis
+-                                + Complex::<T>::new(T::zero(), -T::one())
+-                                    * b_coefficient
+-                                    * odd_basis;
+-                            let u_value =
+-                                Complex::<T>::new(T::zero(), T::one()) * e_coefficient * odd_basis
+-                                    + b_coefficient * even_basis;
+-                            let spectrum_index = group_ring * spectrum_len + m;
+-                            q_spectra[spectrum_index] += q_value;
+-                            u_spectra[spectrum_index] += u_value;
+-                        }
+-                        Ok(())
+-                    },
++                    ring_order_limits,
++                    arch,
++                    recurrence,
+                 )?;
+             }
+             for group_ring in 0..ring_end - ring_start {
+@@ -1629,14 +1583,97 @@ impl<T: ShtScalar> ShtPlan<T> {
+                     u_spectra[spectrum_index] =
+                         Complex::new(nyquist_scale * phased_u.re, T::zero());
+                 } else {
+-                    q_spectra[spectrum_index] = phased_q * fourier_scale;
+-                    u_spectra[spectrum_index] = phased_u * fourier_scale;
++                    q_spectra[spectrum_index] = phased_q;
++                    u_spectra[spectrum_index] = phased_u;
+                 }
+             }
+         }
+         Ok(())
+     }
+ 
++    #[expect(
++        clippy::too_many_arguments,
++        reason = "Original-coefficient fallback uses one order and caller-owned scratch."
++    )]
++    fn synthesize_general_spin_order(
++        &self,
++        m: usize,
++        e_alm: &[Complex<T>],
++        b_alm: Option<&[Complex<T>]>,
++        spin: usize,
++        derivative_norm: bool,
++        spectrum_len: usize,
++        ring_start: usize,
++        q_spectra: &mut [Complex<T>],
++        u_spectra: &mut [Complex<T>],
++        theta_sin: &[T],
++        theta_cos: &[T],
++        ring_order_limits: &[usize],
++        arch: pulp::Arch,
++        recurrence: &mut RecurrenceWorkspace<T>,
++    ) -> Result<(), ShtError> {
++        let lmax = self.harmonics.lmax();
++        let initial = T::fill_spin_factors(
++            spin,
++            m,
++            lmax,
++            &mut recurrence.spin_alpha,
++            &mut recurrence.spin_coefficient_a,
++            &mut recurrence.spin_coefficient_b,
++        )?;
++        T::for_each_spin_lm_dispatched(
++            arch,
++            &initial,
++            lmax,
++            theta_sin,
++            theta_cos,
++            &recurrence.spin_coefficient_a,
++            &recurrence.spin_coefficient_b,
++            &mut recurrence.spin_previous_plus,
++            &mut recurrence.spin_current_plus,
++            &mut recurrence.spin_next_plus,
++            &mut recurrence.spin_exponents_plus,
++            &mut recurrence.spin_previous_minus,
++            &mut recurrence.spin_current_minus,
++            &mut recurrence.spin_next_minus,
++            &mut recurrence.spin_exponents_minus,
++            |degree, group_ring_start, plus, plus_exp, minus, minus_exp| {
++                let coefficient_index = self
++                    .harmonics
++                    .index(degree, m)
++                    .expect("the recurrence visits degrees in the packed order");
++                let e_coefficient = e_alm[coefficient_index];
++                let b_coefficient = b_alm
++                    .map(|values| values[coefficient_index])
++                    .unwrap_or_else(|| Complex::new(T::zero(), T::zero()));
++                let alpha_norm = recurrence.spin_alpha[degree]
++                    * T::spin_normalization(spin, degree, derivative_norm);
++                for lane in 0..plus.len() {
++                    let group_ring = group_ring_start + lane;
++                    let global_ring = ring_start + group_ring;
++                    if m > ring_order_limits[global_ring] {
++                        continue;
++                    }
++                    let plus_value = T::scaled_basis_value(plus[lane], plus_exp[lane], alpha_norm);
++                    let minus_value =
++                        T::scaled_basis_value(minus[lane], minus_exp[lane], alpha_norm);
++                    let even_basis = plus_value + minus_value;
++                    let odd_basis = plus_value - minus_value;
++                    let q_value = e_coefficient * even_basis
++                        + Complex::<T>::new(T::zero(), -T::one()) * b_coefficient * odd_basis;
++                    let u_value =
++                        Complex::<T>::new(T::zero(), T::one()) * e_coefficient * odd_basis
++                            + b_coefficient * even_basis;
++                    let spectrum_index = group_ring * spectrum_len + m;
++                    q_spectra[spectrum_index] += q_value;
++                    u_spectra[spectrum_index] += u_value;
++                }
++                Ok(())
++            },
++        )?;
++        Ok(())
++    }
++
+     #[expect(
+         clippy::too_many_arguments,
+         reason = "Spin-1 scalar synthesis uses the plan's recurrence factors and worker scratch."
+@@ -2081,6 +2118,28 @@ impl<T: ShtScalar> ShtPlan<T> {
+             &self.spin2_fast_f1,
+             &self.spin2_fast_f2,
+         );
++        let converted_finite = recurrence.fast_scalar_first[m..=scalar_lmax]
++            .iter()
++            .chain(&recurrence.fast_scalar_second[m..=scalar_lmax])
++            .all(|value| value.re.is_finite() && value.im.is_finite());
++        if !converted_finite {
++            return self.synthesize_general_spin_order(
++                m,
++                e_alm,
++                Some(b_alm),
++                2,
++                false,
++                spectrum_len,
++                ring_start,
++                q_spectra,
++                u_spectra,
++                theta_sin,
++                theta_cos,
++                ring_order_limits,
++                arch,
++                recurrence,
++            );
++        }
+         T::fill_epsilon(m, scalar_lmax, &mut recurrence.epsilon);
+         let paired_factors_ready = T::fill_paired_scalar_factors(
+             m,
+@@ -2091,6 +2150,44 @@ impl<T: ShtScalar> ShtPlan<T> {
+             &mut recurrence.spin_coefficient_b,
+         );
+         debug_assert!(paired_factors_ready);
++        let pair_count = (scalar_lmax - m + 2) / 2;
++        let pairs_finite = paired_factors_ready
++            && T::prepare_paired_scalar_synthesis_coefficients(
++                m,
++                scalar_lmax,
++                &recurrence.epsilon,
++                &recurrence.spin_alpha,
++                &recurrence.fast_scalar_first[m..=scalar_lmax],
++                &mut recurrence.fast_spin_first[..pair_count],
++                &mut recurrence.fast_spin_second[..pair_count],
++            )
++            && T::prepare_paired_scalar_synthesis_coefficients(
++                m,
++                scalar_lmax,
++                &recurrence.epsilon,
++                &recurrence.spin_alpha,
++                &recurrence.fast_scalar_second[m..=scalar_lmax],
++                &mut recurrence.fast_spin_first[..pair_count],
++                &mut recurrence.fast_spin_second[..pair_count],
++            );
++        if !pairs_finite {
++            return self.synthesize_general_spin_order(
++                m,
++                e_alm,
++                Some(b_alm),
++                2,
++                false,
++                spectrum_len,
++                ring_start,
++                q_spectra,
++                u_spectra,
++                theta_sin,
++                theta_cos,
++                ring_order_limits,
++                arch,
++                recurrence,
++            );
++        }
+ 
+         for block_start in (0..theta_sin.len()).step_by(crate::legendre::LATITUDE_BLOCK_SIZE) {
+             let block_end =
+diff --git a/src/spin_transform/hemisphere.rs b/src/spin_transform/hemisphere.rs
+index 6659227..bdb9952 100644
+--- a/src/spin_transform/hemisphere.rs
++++ b/src/spin_transform/hemisphere.rs
+@@ -94,125 +94,168 @@ fn synthesize_group<T: ShtScalar>(
+         );
+         let pair_count = (scalar_lmax - m + 2) / 2;
+ 
+-        for block_start in (0..group_len).step_by(LATITUDE_BLOCK_SIZE) {
+-            let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(group_len);
+-            let block_len = block_end - block_start;
+-            let north_first_ring = ring_start + block_start;
+-            let north_end_ring = ring_start + block_end;
+-            let south_first_ring = ntheta - north_end_ring;
+-            let north_offset = block_start * spectrum_len;
+-            let north_end = block_end * spectrum_len;
+-            let south_offset = (group_len - block_end) * spectrum_len;
+-            let south_end = (group_len - block_start) * spectrum_len;
+-            let all_lanes_safe = (block_start..block_end).all(|lane| {
+-                let north = ring_start + lane;
+-                let south = ntheta - 1 - north;
+-                ring_order_limits[north] >= m
+-                    && ring_order_limits[south] >= m
+-                    && theta_sin[north] >= pair_min_sine
+-                    && theta_sin[south] >= pair_min_sine
+-            });
+-
+-            let first_ready = all_lanes_safe
+-                && factors_ready
+-                && T::prepare_paired_scalar_synthesis_coefficients(
+-                    m,
+-                    scalar_lmax,
+-                    &recurrence.epsilon,
+-                    &recurrence.spin_alpha,
+-                    &recurrence.fast_scalar_first[m..=scalar_lmax],
+-                    &mut recurrence.fast_spin_first[..pair_count],
+-                    &mut recurrence.fast_spin_second[..pair_count],
+-                );
+-            let second_ready = all_lanes_safe
+-                && factors_ready
+-                && T::prepare_paired_scalar_synthesis_coefficients(
+-                    m,
+-                    scalar_lmax,
+-                    &recurrence.epsilon,
+-                    &recurrence.spin_alpha,
+-                    &recurrence.fast_scalar_second[m..=scalar_lmax],
+-                    &mut recurrence.fast_spin_pair_first[..pair_count],
+-                    &mut recurrence.fast_spin_pair_second[..pair_count],
+-                );
+-            let used_pair = if first_ready && second_ready {
+-                let mut sums = [
+-                    &mut recurrence.analysis_same_real[..block_len],
+-                    &mut recurrence.analysis_same_imag[..block_len],
+-                    &mut recurrence.analysis_opposite_real[..block_len],
+-                    &mut recurrence.analysis_opposite_imag[..block_len],
+-                    &mut recurrence.spin_previous_plus[..block_len],
+-                    &mut recurrence.spin_current_plus[..block_len],
+-                    &mut recurrence.spin_next_plus[..block_len],
+-                    &mut recurrence.spin_previous_minus[..block_len],
+-                ];
+-                T::synthesize_hemisphere_pair_block_dispatched(
+-                    arch,
+-                    m,
+-                    scalar_lmax,
+-                    &theta_sin[north_first_ring..north_end_ring],
+-                    &theta_cos[north_first_ring..north_end_ring],
+-                    plan.sectoral_norms[m],
+-                    &recurrence.spin_coefficient_a,
+-                    &recurrence.spin_coefficient_b,
+-                    &recurrence.fast_spin_first[..pair_count],
+-                    &recurrence.fast_spin_second[..pair_count],
+-                    &recurrence.fast_spin_pair_first[..pair_count],
+-                    &recurrence.fast_spin_pair_second[..pair_count],
+-                    spectrum_len,
+-                    &mut north_q[north_offset..north_end],
+-                    &mut south_q[south_offset..south_end],
+-                    &mut north_u[north_offset..north_end],
+-                    &mut south_u[south_offset..south_end],
+-                    &mut recurrence.current[..block_len],
+-                    &mut sums,
+-                )?
+-            } else {
+-                false
+-            };
++        let converted_finite = recurrence.fast_scalar_first[m..=scalar_lmax]
++            .iter()
++            .chain(&recurrence.fast_scalar_second[m..=scalar_lmax])
++            .all(|value| value.re.is_finite() && value.im.is_finite());
++        let first_ready = converted_finite
++            && factors_ready
++            && T::prepare_paired_scalar_synthesis_coefficients(
++                m,
++                scalar_lmax,
++                &recurrence.epsilon,
++                &recurrence.spin_alpha,
++                &recurrence.fast_scalar_first[m..=scalar_lmax],
++                &mut recurrence.fast_spin_first[..pair_count],
++                &mut recurrence.fast_spin_second[..pair_count],
++            );
++        let second_ready = converted_finite
++            && factors_ready
++            && T::prepare_paired_scalar_synthesis_coefficients(
++                m,
++                scalar_lmax,
++                &recurrence.epsilon,
++                &recurrence.spin_alpha,
++                &recurrence.fast_scalar_second[m..=scalar_lmax],
++                &mut recurrence.fast_spin_pair_first[..pair_count],
++                &mut recurrence.fast_spin_pair_second[..pair_count],
++            );
+ 
+-            if !used_pair {
+-                plan.synthesize_spin1_scalar_block(
+-                    m,
+-                    scalar_lmax,
+-                    spectrum_len,
+-                    north_first_ring,
+-                    false,
+-                    &theta_sin[north_first_ring..north_end_ring],
+-                    &theta_cos[north_first_ring..north_end_ring],
+-                    &ring_order_limits[north_first_ring..north_end_ring],
+-                    arch,
+-                    recurrence,
+-                    &mut north_q[north_offset..north_end],
+-                    &mut north_u[north_offset..north_end],
+-                )?;
+-                for lane in 0..block_len {
+-                    let north = north_end_ring - 1 - lane;
++        if !first_ready || !second_ready {
++            // Conversion and paired preparation are checked before either
++            // hemisphere commits this order. The fallback retains original E/B.
++            plan.synthesize_general_spin_order(
++                m,
++                e_alm,
++                Some(b_alm),
++                1,
++                false,
++                spectrum_len,
++                ring_start,
++                north_q,
++                north_u,
++                &theta_sin[ring_start..ring_end],
++                &theta_cos[ring_start..ring_end],
++                ring_order_limits,
++                arch,
++                recurrence,
++            )?;
++            let south_start = ntheta - ring_end;
++            let south_end = ntheta - ring_start;
++            plan.synthesize_general_spin_order(
++                m,
++                e_alm,
++                Some(b_alm),
++                1,
++                false,
++                spectrum_len,
++                south_start,
++                south_q,
++                south_u,
++                &theta_sin[south_start..south_end],
++                &theta_cos[south_start..south_end],
++                ring_order_limits,
++                arch,
++                recurrence,
++            )?;
++        } else {
++            for block_start in (0..group_len).step_by(LATITUDE_BLOCK_SIZE) {
++                let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(group_len);
++                let block_len = block_end - block_start;
++                let north_first_ring = ring_start + block_start;
++                let north_end_ring = ring_start + block_end;
++                let south_first_ring = ntheta - north_end_ring;
++                let north_offset = block_start * spectrum_len;
++                let north_end = block_end * spectrum_len;
++                let south_offset = (group_len - block_end) * spectrum_len;
++                let south_end = (group_len - block_start) * spectrum_len;
++                let all_lanes_safe = (block_start..block_end).all(|lane| {
++                    let north = ring_start + lane;
+                     let south = ntheta - 1 - north;
+-                    south_sin[lane] = theta_sin[south];
+-                    south_cos[lane] = theta_cos[south];
+-                    south_limits[lane] = ring_order_limits[south];
++                    ring_order_limits[north] >= m
++                        && ring_order_limits[south] >= m
++                        && theta_sin[north] >= pair_min_sine
++                        && theta_sin[south] >= pair_min_sine
++                });
++
++                let used_pair = if all_lanes_safe {
++                    let mut sums = [
++                        &mut recurrence.analysis_same_real[..block_len],
++                        &mut recurrence.analysis_same_imag[..block_len],
++                        &mut recurrence.analysis_opposite_real[..block_len],
++                        &mut recurrence.analysis_opposite_imag[..block_len],
++                        &mut recurrence.spin_previous_plus[..block_len],
++                        &mut recurrence.spin_current_plus[..block_len],
++                        &mut recurrence.spin_next_plus[..block_len],
++                        &mut recurrence.spin_previous_minus[..block_len],
++                    ];
++                    T::synthesize_hemisphere_pair_block_dispatched(
++                        arch,
++                        m,
++                        scalar_lmax,
++                        &theta_sin[north_first_ring..north_end_ring],
++                        &theta_cos[north_first_ring..north_end_ring],
++                        plan.sectoral_norms[m],
++                        &recurrence.spin_coefficient_a,
++                        &recurrence.spin_coefficient_b,
++                        &recurrence.fast_spin_first[..pair_count],
++                        &recurrence.fast_spin_second[..pair_count],
++                        &recurrence.fast_spin_pair_first[..pair_count],
++                        &recurrence.fast_spin_pair_second[..pair_count],
++                        spectrum_len,
++                        &mut north_q[north_offset..north_end],
++                        &mut south_q[south_offset..south_end],
++                        &mut north_u[north_offset..north_end],
++                        &mut south_u[south_offset..south_end],
++                        &mut recurrence.current[..block_len],
++                        &mut sums,
++                    )?
++                } else {
++                    false
++                };
++
++                if !used_pair {
++                    plan.synthesize_spin1_scalar_block(
++                        m,
++                        scalar_lmax,
++                        spectrum_len,
++                        north_first_ring,
++                        false,
++                        &theta_sin[north_first_ring..north_end_ring],
++                        &theta_cos[north_first_ring..north_end_ring],
++                        &ring_order_limits[north_first_ring..north_end_ring],
++                        arch,
++                        recurrence,
++                        &mut north_q[north_offset..north_end],
++                        &mut north_u[north_offset..north_end],
++                    )?;
++                    for lane in 0..block_len {
++                        let north = north_end_ring - 1 - lane;
++                        let south = ntheta - 1 - north;
++                        south_sin[lane] = theta_sin[south];
++                        south_cos[lane] = theta_cos[south];
++                        south_limits[lane] = ring_order_limits[south];
++                    }
++                    plan.synthesize_spin1_scalar_block(
++                        m,
++                        scalar_lmax,
++                        spectrum_len,
++                        south_first_ring,
++                        false,
++                        &south_sin[..block_len],
++                        &south_cos[..block_len],
++                        &south_limits[..block_len],
++                        arch,
++                        recurrence,
++                        &mut south_q[south_offset..south_end],
++                        &mut south_u[south_offset..south_end],
++                    )?;
+                 }
+-                plan.synthesize_spin1_scalar_block(
+-                    m,
+-                    scalar_lmax,
+-                    spectrum_len,
+-                    south_first_ring,
+-                    false,
+-                    &south_sin[..block_len],
+-                    &south_cos[..block_len],
+-                    &south_limits[..block_len],
+-                    arch,
+-                    recurrence,
+-                    &mut south_q[south_offset..south_end],
+-                    &mut south_u[south_offset..south_end],
+-                )?;
+             }
+         }
+ 
+         let phase = longitude_phase::<T>(m, plan.grid.phi0(), false);
+-        let scale = T::from_usize(nphi).expect("longitude count converts");
+-        let nyquist_scale = scale * T::from_f64(2.0).expect("two is representable");
++        let nyquist_scale = T::from_f64(2.0).expect("two is representable");
+         for lane in 0..group_len {
+             let north_index = lane * spectrum_len + m;
+             let south_index = (group_len - 1 - lane) * spectrum_len + m;
+@@ -226,7 +269,7 @@ fn synthesize_group<T: ShtScalar>(
+                 spectra[index] = if nphi.is_multiple_of(2) && m == nphi / 2 {
+                     Complex::new(nyquist_scale * value.re, zero)
+                 } else {
+-                    value * scale
++                    value
+                 };
+             }
+         }
+@@ -387,14 +430,14 @@ pub(super) fn synthesize<T: ShtScalar>(
+     for ring in 0..ntheta {
+         let spectrum_start = ring * spectrum_len;
+         let spectrum_end = spectrum_start + spectrum_len;
+-        plan.fft.inverse(
++        plan.fft.inverse_series(
+             &workspace.spectra[spectrum_start..spectrum_end],
+             &mut workspace.row,
+             &mut workspace.fft,
+         )?;
+         let output_start = ring * nphi;
+         first_component[output_start..output_start + nphi].copy_from_slice(&workspace.row);
+-        plan.fft.inverse(
++        plan.fft.inverse_series(
+             &workspace.spin_spectra[spectrum_start..spectrum_end],
+             &mut workspace.row,
+             &mut workspace.fft,
+@@ -403,3 +446,6 @@ pub(super) fn synthesize<T: ShtScalar>(
+     }
+     Ok(())
+ }
++
++#[cfg(test)]
++mod tests;
+diff --git a/src/spin_transform/tests.rs b/src/spin_transform/tests.rs
+index 51fa7f1..22fddd0 100644
+--- a/src/spin_transform/tests.rs
++++ b/src/spin_transform/tests.rs
+@@ -1511,11 +1511,10 @@ fn spin1_scalar_transition_splits_polar_lanes_and_matches_general() {
+ 
+             if let Some((m, split_q, split_u, block_q, block_u)) = split_probe {
+                 let phase = crate::legendre::longitude_phase::<f64>(m, plan.grid.phi0(), false);
+-                let longitude_scale = nphi as f64;
+                 for ring in 0..block_len {
+                     let index = ring * spectrum_len + m;
+-                    let expected_q = general_q[index] / phase / longitude_scale;
+-                    let expected_u = general_u[index] / phase / longitude_scale;
++                    let expected_q = general_q[index] / phase;
++                    let expected_u = general_u[index] / phase;
+                     if workspace.theta_sin[ring] >= transition_sine
+                         && m <= workspace.ring_order_limits[ring]
+                     {
+@@ -8457,3 +8456,75 @@ fn m3_spin_three_and_four_t511_all_grids_match_ducc_and_analytic_fields() {
+         }
+     }
+ }
++
++#[test]
++fn extreme_spin2_scalar_conversion_restores_original_coefficients() {
++    for lmax in [500, 511] {
++        let plan = make_plan(2, lmax, 1, lmax + 1, 2 * (lmax + 1));
++        let mut workspace = plan.workspace().unwrap();
++        plan.prepare_spin_latitudes(&mut workspace, 2);
++        let spectrum_len = plan.fft.spectrum_len();
++        let ring_start = lmax / 3;
++        let ring_end = ring_start + 67;
++        for channels in [0, 1, 2] {
++            let mut e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
++            let mut b = e.clone();
++            let index = plan.harmonics.index(2, 1).unwrap();
++            if channels != 1 {
++                e[index].re = 1.0e308;
++            }
++            if channels != 0 {
++                b[index].im = 1.0e308;
++            }
++            let mut fast_q = vec![Complex64::new(0.0, 0.0); 67 * spectrum_len];
++            let mut fast_u = fast_q.clone();
++            let mut general_q = fast_q.clone();
++            let mut general_u = fast_q.clone();
++            for (fast, q, u) in [
++                (true, &mut fast_q, &mut fast_u),
++                (false, &mut general_q, &mut general_u),
++            ] {
++                plan.synthesize_spin_ring_group_mode(
++                    &e,
++                    Some(&b),
++                    2,
++                    false,
++                    fast,
++                    false,
++                    None,
++                    plan.grid.nphi(),
++                    spectrum_len,
++                    plan.grid.phi0(),
++                    ring_start,
++                    ring_end,
++                    q,
++                    u,
++                    &workspace.theta_sin[ring_start..ring_end],
++                    &workspace.theta_cos[ring_start..ring_end],
++                    &workspace.ring_order_limits,
++                    pulp::Arch::new(),
++                    &mut workspace.recurrence_workers[0],
++                )
++                .unwrap();
++            }
++            let mut finite_count = 0;
++            for (actual, expected) in fast_q
++                .iter()
++                .chain(&fast_u)
++                .zip(general_q.iter().chain(&general_u))
++            {
++                for (actual, expected) in [(actual.re, expected.re), (actual.im, expected.im)] {
++                    if expected.is_finite() {
++                        assert!(
++                            actual.is_finite(),
++                            "L{lmax} channels={channels} actual={actual} expected={expected}"
++                        );
++                        assert!((actual / 1.0e308 - expected / 1.0e308).abs() < 2e-12);
++                        finite_count += usize::from(expected != 0.0);
++                    }
++                }
++            }
++            assert!(finite_count > 67);
++        }
++    }
++}
+diff --git a/src/transform.rs b/src/transform.rs
+index 04ffa40..5573ec0 100644
+--- a/src/transform.rs
++++ b/src/transform.rs
+@@ -652,7 +652,7 @@ impl<T: ShtScalar> ShtPlan<T> {
+             let start = ring * spectrum_len;
+             let ring_spectrum = &workspace.spectra[start..start + spectrum_len];
+             self.fft
+-                .inverse(ring_spectrum, &mut workspace.row, &mut workspace.fft)?;
++                .inverse_series(ring_spectrum, &mut workspace.row, &mut workspace.fft)?;
+             let output_start = ring * nphi;
+             map[output_start..output_start + nphi].copy_from_slice(&workspace.row);
+         }
+@@ -746,7 +746,7 @@ impl<T: ShtScalar> ShtPlan<T> {
+         }
+         for ring in 0..ntheta {
+             let spectrum_start = ring * spectrum_len;
+-            self.fft.inverse(
++            self.fft.inverse_bounded(
+                 &workspace.spectra[spectrum_start..spectrum_start + spectrum_len],
+                 &mut workspace.row,
+                 &mut workspace.fft,
+@@ -782,8 +782,7 @@ impl<T: ShtScalar> ShtPlan<T> {
+         debug_assert_eq!(spectra.len(), theta_sin.len() * spectrum_len);
+         debug_assert_eq!(theta_sin.len(), theta_cos.len());
+ 
+-        let fourier_scale = T::from_usize(nphi).expect("longitude count converts");
+-        let nyquist_scale = fourier_scale * T::from_f64(2.0).expect("two is representable");
++        let nyquist_scale = T::from_f64(2.0).expect("two is representable");
+         for m in 0..=mmax {
+             T::fill_epsilon(m, lmax, &mut recurrence.epsilon);
+             let coefficient_start = self
+@@ -1072,7 +1071,7 @@ impl<T: ShtScalar> ShtPlan<T> {
+                 if nphi.is_multiple_of(2) && m == nphi / 2 {
+                     spectra[spectrum_index] = Complex::new(nyquist_scale * phased.re, T::zero());
+                 } else {
+-                    spectra[spectrum_index] = phased * fourier_scale;
++                    spectra[spectrum_index] = phased;
+                 }
+             }
+         }
+diff --git a/src/transform/tests.rs b/src/transform/tests.rs
+index 7faae81..3e3170d 100644
+--- a/src/transform/tests.rs
++++ b/src/transform/tests.rs
+@@ -1230,7 +1230,7 @@ fn scalar_t1023_transition_fallback_matches_scaled_reference_for_extreme_coeffic
+ 
+         let phase = crate::legendre::longitude_phase::<f64>(m, plan.grid.phi0(), false);
+         for lane in 0..theta_sin.len() {
+-            let expected = unscaled_reference[lane] * phase * nphi as f64;
++            let expected = unscaled_reference[lane] * phase;
+             let actual = actual_spectra[lane * spectrum_len + m];
+             if coefficient == f64::from_bits(1) {
+                 assert_eq!(actual, expected, "subnormal input at lane {lane}");
+diff --git a/tests/extreme_fft_scaling.rs b/tests/extreme_fft_scaling.rs
+new file mode 100644
+index 0000000..fe94979
+--- /dev/null
++++ b/tests/extreme_fft_scaling.rs
+@@ -0,0 +1,242 @@
++// SPDX-FileCopyrightText: 2026 Albert M. W. Yau
++// SPDX-License-Identifier: GPL-2.0-or-later
++
++use rustsht::{Complex32, Complex64, GridKind, GridSpec, HarmonicSpec, ShtPlan};
++
++#[test]
++fn finite_extreme_scalar_monopole() {
++    for nphi in [1, 2, 3, 8, 9, 32] {
++        let plan = ShtPlan::new(
++            GridSpec::new(GridKind::GaussLegendre, 1, nphi, 0.37).unwrap(),
++            HarmonicSpec::scalar(0, 0).unwrap(),
++        )
++        .unwrap();
++        let mut workspace = plan.workspace().unwrap();
++        let mut map = vec![0.0; nphi];
++        plan.synthesis_into(&[Complex64::new(1.0e308, 0.0)], &mut map, &mut workspace)
++            .unwrap();
++        let expected = 1.0e308 / (4.0 * std::f64::consts::PI).sqrt();
++        assert!(
++            map.iter()
++                .all(|&value| (value / expected - 1.0).abs() < 1.0e-14),
++            "nphi={nphi}, {map:?}"
++        );
++    }
++}
++
++#[test]
++fn finite_extreme_f32_scalar_monopole() {
++    for nphi in [1, 2, 3, 8, 9, 32] {
++        let plan = ShtPlan::<f32>::new(
++            GridSpec::new(GridKind::GaussLegendre, 1, nphi, 0.37).unwrap(),
++            HarmonicSpec::scalar(0, 0).unwrap(),
++        )
++        .unwrap();
++        let mut workspace = plan.workspace().unwrap();
++        let mut map = vec![0.0; nphi];
++        plan.synthesis_into(&[Complex32::new(2.0e38, 0.0)], &mut map, &mut workspace)
++            .unwrap();
++        let expected = 2.0e38 / (4.0 * std::f32::consts::PI).sqrt();
++        assert!(
++            map.iter()
++                .all(|&value| (value / expected - 1.0).abs() < 2.0e-6),
++            "nphi={nphi}, {map:?}"
++        );
++    }
++}
++
++macro_rules! range_controls {
++    ($test:ident, $real:ty, $complex:ty, $magnitude:expr, $tolerance:expr) => {
++        #[test]
++        fn $test() {
++            let magnitude: $real = $magnitude;
++            let close = |actual: $real, expected: $real| {
++                let scaled = actual / magnitude;
++                assert!(scaled.is_finite());
++                assert!(
++                    (scaled - expected).abs() <= $tolerance * expected.abs().max(1.0),
++                    "scaled={scaled}, expected={expected}"
++                );
++            };
++            for kind in [
++                GridKind::GaussLegendre,
++                GridKind::ClenshawCurtis,
++                GridKind::Fejer1,
++            ] {
++                for spin in 0..=4 {
++                    let lmax = 4;
++                    let ntheta = if kind == GridKind::ClenshawCurtis {
++                        6
++                    } else {
++                        5
++                    };
++                    for nphi in [9, 10] {
++                        let plan = ShtPlan::<$real>::new(
++                            GridSpec::new(kind, ntheta, nphi, 0.37).unwrap(),
++                            HarmonicSpec::new(lmax, lmax, spin).unwrap(),
++                        )
++                        .unwrap();
++                        let mut workspace = plan.workspace().unwrap();
++                        let mut e = vec![<$complex>::new(0.0, 0.0); plan.harmonics().nalm()];
++                        let mut b = e.clone();
++                        for m in 0..=lmax {
++                            for l in m.max(spin)..=lmax {
++                                let index = plan.harmonics().index(l, m).unwrap();
++                                e[index] = <$complex>::new(
++                                    0.03 * (l + 1) as $real,
++                                    if m == 0 { 0.0 } else { -0.02 * m as $real },
++                                );
++                                b[index] = e[index] * -0.7;
++                            }
++                        }
++                        let huge_e: Vec<_> = e.iter().map(|&value| value * magnitude).collect();
++                        let huge_b: Vec<_> = b.iter().map(|&value| value * magnitude).collect();
++                        let mut first = vec![0.0; ntheta * nphi];
++                        let mut second = first.clone();
++                        let mut huge_first = first.clone();
++                        let mut huge_second = first.clone();
++                        if spin == 0 {
++                            plan.synthesis_into(&e, &mut first, &mut workspace).unwrap();
++                            plan.synthesis_into(&huge_e, &mut huge_first, &mut workspace)
++                                .unwrap();
++                        } else {
++                            plan.synthesis_spin_into(
++                                &e,
++                                &b,
++                                &mut first,
++                                &mut second,
++                                &mut workspace,
++                            )
++                            .unwrap();
++                            plan.synthesis_spin_into(
++                                &huge_e,
++                                &huge_b,
++                                &mut huge_first,
++                                &mut huge_second,
++                                &mut workspace,
++                            )
++                            .unwrap();
++                        }
++                        for (&actual, &expected) in huge_first
++                            .iter()
++                            .chain(&huge_second)
++                            .zip(first.iter().chain(&second))
++                        {
++                            close(actual, expected);
++                        }
++                        for adjoint in [false, true] {
++                            let mut actual_e = e.clone();
++                            let mut actual_b = b.clone();
++                            let mut expected_e = e.clone();
++                            let mut expected_b = b.clone();
++                            if spin == 0 {
++                                if adjoint {
++                                    plan.adjoint_synthesis_into(
++                                        &first,
++                                        &mut expected_e,
++                                        &mut workspace,
++                                    )
++                                    .unwrap();
++                                    plan.adjoint_synthesis_into(
++                                        &huge_first,
++                                        &mut actual_e,
++                                        &mut workspace,
++                                    )
++                                    .unwrap();
++                                } else {
++                                    plan.analysis_into(&first, &mut expected_e, &mut workspace)
++                                        .unwrap();
++                                    plan.analysis_into(&huge_first, &mut actual_e, &mut workspace)
++                                        .unwrap();
++                                }
++                                actual_b.fill(<$complex>::new(0.0, 0.0));
++                                expected_b.fill(<$complex>::new(0.0, 0.0));
++                            } else if adjoint {
++                                plan.adjoint_synthesis_spin_into(
++                                    &first,
++                                    &second,
++                                    &mut expected_e,
++                                    &mut expected_b,
++                                    &mut workspace,
++                                )
++                                .unwrap();
++                                plan.adjoint_synthesis_spin_into(
++                                    &huge_first,
++                                    &huge_second,
++                                    &mut actual_e,
++                                    &mut actual_b,
++                                    &mut workspace,
++                                )
++                                .unwrap();
++                            } else {
++                                plan.analysis_spin_into(
++                                    &first,
++                                    &second,
++                                    &mut expected_e,
++                                    &mut expected_b,
++                                    &mut workspace,
++                                )
++                                .unwrap();
++                                plan.analysis_spin_into(
++                                    &huge_first,
++                                    &huge_second,
++                                    &mut actual_e,
++                                    &mut actual_b,
++                                    &mut workspace,
++                                )
++                                .unwrap();
++                            }
++                            for (&actual, &expected) in actual_e
++                                .iter()
++                                .chain(&actual_b)
++                                .zip(expected_e.iter().chain(&expected_b))
++                            {
++                                close(actual.re, expected.re);
++                                close(actual.im, expected.im);
++                            }
++                        }
++                        if spin == 0 {
++                            plan.adjoint_analysis_into(&e, &mut first, &mut workspace)
++                                .unwrap();
++                            plan.adjoint_analysis_into(&huge_e, &mut huge_first, &mut workspace)
++                                .unwrap();
++                        } else {
++                            plan.adjoint_analysis_spin_into(
++                                &e,
++                                &b,
++                                &mut first,
++                                &mut second,
++                                &mut workspace,
++                            )
++                            .unwrap();
++                            plan.adjoint_analysis_spin_into(
++                                &huge_e,
++                                &huge_b,
++                                &mut huge_first,
++                                &mut huge_second,
++                                &mut workspace,
++                            )
++                            .unwrap();
++                        }
++                        for (&actual, &expected) in huge_first
++                            .iter()
++                            .chain(&huge_second)
++                            .zip(first.iter().chain(&second))
++                        {
++                            close(actual, expected);
++                        }
++                    }
++                }
++            }
++        }
++    };
++}
++
++range_controls!(
++    f64_operator_range_controls,
++    f64,
++    Complex64,
++    1.0e306,
++    2.0e-11
++);
++range_controls!(f32_operator_range_controls, f32, Complex32, 1.0e35, 2.0e-5);

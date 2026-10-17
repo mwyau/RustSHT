@@ -1,0 +1,3 @@
+lmax,spin,threads,operation,n_pairs,baseline_median_ms,candidate_median_ms,median_paired_ratio,bootstrap95_low,bootstrap95_high,paired_ratio_min,paired_ratio_max,baseline_sample_min_ms,baseline_sample_max_ms,candidate_sample_min_ms,candidate_sample_max_ms,median_baseline_rss_kib,median_candidate_rss_kib,median_paired_rss_delta_kib
+511,1,1,synthesis,6,41.985500,42.807000,1.02189094,1.01247039,1.02760836,1.00777605,1.03078247,41.785,43.669,42.700,45.810,27468,27466,-2
+511,1,1,analysis,6,27.862500,27.556000,0.98980668,0.98531550,0.99497959,0.98297003,0.99812477,27.709,28.040,27.402,28.897,27468,27466,-2

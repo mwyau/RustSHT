@@ -1,0 +1,2 @@
+variant,threads,lmax,geometry,ntheta,nphi,mmax,phi0,samples_ms,median_ms,baseline_prior_median_ms,candidate_prior_median_ms,variant_over_baseline,variant_over_candidate
+P01 disabled,1,1023,GL,1024,2048,1023,0.37,299.867;298.590;297.789;297.972;298.385,298.385,296.1525,197.3345,1.00754,1.51208
