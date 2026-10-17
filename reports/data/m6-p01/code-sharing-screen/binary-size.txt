@@ -1,0 +1,16 @@
+`size` totals:
+
+| Binary | Text | Data | BSS | Total |
+| --- | ---: | ---: | ---: | ---: |
+| Code-sharing candidate | 2,659,718 | 101,232 | 2,028 | 2,762,978 |
+| Ordered P01 | 2,657,398 | 101,448 | 4,148 | 2,762,994 |
+| Pre-P01 baseline | 2,630,766 | 100,336 | 3,212 | 2,734,314 |
+
+ELF `.text` section sizes:
+
+| Binary | `.text` bytes |
+| --- | ---: |
+| Code-sharing candidate | `0x214795` |
+| Default-link P01 | `0x2141b5` |
+| Ordered P01 | `0x2141a5` |
+| Pre-P01 baseline | `0x20df05` |

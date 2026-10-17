@@ -285,6 +285,14 @@ instruction references and last-level instruction misses. Its model reported
 more L1 instruction misses and conditional branch mispredicts for the faster
 microarchitectural mechanism. See
 
+A bounded code-sharing screen targeted the added P01 text size by replacing
+the scalar suffix's duplicate SIMD projection loop with one checked helper. Formatting and the release Rust library suite passed (197 tests, 14 ignored),
+but the candidate `.text` was 1,504 bytes larger than default-link P01 and
+26,768 bytes larger than baseline. It failed the size hypothesis and was not
+benchmarked. The source patch, hashes, build log, size comparison, and test
+output are retained in
+[`reports/data/m6-p01/code-sharing-screen/`](data/m6-p01/code-sharing-screen/).
+
 ### P01 shared recurrence-step redesign (rejected)
 
 A bounded source redesign factored the scaled-prefix recurrence update into an

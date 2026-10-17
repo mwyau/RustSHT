@@ -1,0 +1,7 @@
+P01 code-sharing screen provenance
+
+Source snapshot: target/m6-p01-link-order/source, the archived P01-only source used for the route profile and link-order experiment. P01-only scalar_paired.rs SHA-256: 8c92399c89f7b02fd6394ce66ea0905b0c68ecdec212c0470332d6efdaed287b
+P01 candidate patch SHA-256: fff74a3059aec58741072b3eb1a96421c006ddcc4ba6847949098d17266faecf
+Code-sharing scalar_paired.rs SHA-256: c95c88bf6123bb4fa2b070de31ce3f7284c93af44dbc79211e1b01041431765c
+Full source snapshot: source/scalar_paired.rs
+Compiler: rustc 1.99.0, release profile, default target features. Build target: `cargo build --release -p rustsht --example m1b_bench`, with isolated CARGO_TARGET_DIR at target/m6-p01-code-sharing-cargo. Validation: `cargo fmt --all -- --check`; `cargo test --release -p rustsht --lib`. The source and binaries were kept outside the active branch worktree. No benchmark was run because the candidate failed the predeclared code-size hypothesis.
