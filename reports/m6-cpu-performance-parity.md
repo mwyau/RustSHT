@@ -10,12 +10,12 @@ The branch contains three production checkpoints: C01 workspace validation
 (`c0e11ad`), C02 FFT range and scaling (`8df2ecf`), and C03 unsafe spin
 conversion fallback (`197c3d3`). C01 and C03 are committed correctness fixes. C02 is committed as a numerical checkpoint, but its per-operation control
 gate remains unresolved; its scalar T255 q1 synthesis and analysis controls
-exceed the predeclared 2% threshold. P01 remains an uncommitted performance
-candidate with an unresolved spin-1 control. P02 is uncommitted and rejected
-because its isolated comparison showed no material gain. M1 route counters,
-benchmark harness changes, and numerical-plan edits remain uncommitted. The
-campaign report and raw measurements are recorded in a diagnostic evidence
-checkpoint.
+exceed the predeclared 2% threshold. P01 remains uncommitted and unaccepted;
+it is shelved after its default-link spin-1 control exceeded the guard. P02 is
+uncommitted and rejected because its isolated comparison showed no material
+gain. M1 route counters, benchmark harness changes, and numerical-plan edits
+remain uncommitted. The campaign report and raw measurements are recorded in
+a diagnostic evidence checkpoint.
 
 ## C01: workspace order-prefix compatibility
 
@@ -247,11 +247,14 @@ the q1 route profile) and the matched T1023 scalar gap (296.372 ms for Rust,
 keeping the scalar synthesis bottleneck as the next optimization target. P01
 has a material scalar gain, but remains unaccepted because its default-link
 spin-1 control exceeds the 2% guard and the same-source ordering result is
-specific to a local final executable link. The next useful step is to
-establish the actual downstream final-link behavior for the supported Rust
-and Python consumers before relying on executable-specific text ordering;
-if their link cannot carry the favorable layout, P01 needs a default-link
-source solution or must remain shelved. The ordered results pass the measured operation gates, but are specific to
+specific to a local final executable link. The codegen diagnosis below found
+unchanged normalized instructions and function sizes for the spin-1 scalar
+block, safe-lane helper and V3/V4 recurrence kernels across the baseline,
+default P01 and ordered P01 binaries; it did not identify a source-level
+mechanism for the layout effect. Shelve P01 in its current form. Target the general scalar visitor work for M2, while retaining its scaled
+recurrence and safe fallback behavior. Detailed symbol and disassembly
+evidence is in
+[`reports/data/m6-p01/codegen-diagnosis/`](data/m6-p01/codegen-diagnosis/). The ordered results pass the measured operation gates, but are specific to
 the local benchmark executable. P01 remains unaccepted pending a source-level
 default-link solution and validation of the intended P01-only source. The full
 suites below ran with P01 and P02 together. Do not infer downstream consumer
