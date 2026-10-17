@@ -2199,6 +2199,23 @@ impl<T: ShtScalar> ShtPlan<T> {
                 actual: 0,
             });
         }
+        #[cfg(feature = "parallel")]
+        {
+            let expected =
+                self.harmonics
+                    .mmax()
+                    .checked_add(2)
+                    .ok_or(ShtError::IntegerOverflow {
+                        quantity: "analysis order work prefix length",
+                    })?;
+            if workspace.order_work_prefix.len() < expected {
+                return Err(ShtError::BufferLength {
+                    buffer: "workspace analysis order work prefix",
+                    expected,
+                    actual: workspace.order_work_prefix.len(),
+                });
+            }
+        }
         check_len(
             "workspace Fourier spectra",
             self.spectrum_count,

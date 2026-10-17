@@ -3058,3 +3058,16 @@ Complete T1279 scalar synthesis and analysis outputs were bitwise identical to t
 ### T2047 f32 scalar recurrence-skip screen (E, 2026-10-16)
 
 One alternating process pair per spin compared the fallback with an exact T2047 selector on GL `2048×4096`, full T2047, and `phi0=0.37`. Scalar synthesis observations were −0.71%/+0.22% and scalar analysis observations were −3.11%/−2.23% at q1/q8. They are single-pair diagnostic observations, not established gains: a scalar candidate process coincided with a brief RustFFT process whose CPU placement was not captured. The selector changes only scalar f32 recurrence; spin-1 STANDARD uses a separate unchanged recurrence, so its −2.17%/+5.89% synthesis and −4.98%/−6.51% analysis differences are unaffected-path control variation, not selector effects. The q8 spin-1 synthesis control samples were spread by about 15%; another brief RustFFT run was observed on CPU 30 while RustSHT was pinned to CPUs 0–7. No T2047 f32 full-output or DUCC comparison was made. The pair took 18.4 minutes; completing two more pairs at the observed rate would have required about 37 minutes. The scalar observations were mixed and inconclusive, so repeated runs stopped and the T2047 selector was removed. T2047 uses the established normalizer. Raw logs, the selector patch, binary hashes, and a summary script are in [the T2047 screen report](../reports/f32-scalar-normalization-skip-T2047-2026-10-16.md) and [its data directory](../reports/data/f32-scalar-normalization-skip-T2047-2026-10-16/).
+
+
+### M6 C01 workspace compatibility (2026-10-17)
+
+A scalar GL T511 cross-`mmax` reproducer passed workspace preparation and
+panicked in parallel analysis with a two-entry order prefix. The validator
+now requires at least `mmax+2` prefix entries in parallel builds and returns
+`BufferLength` before output mutation. The public regression covers scalar
+T511 and spin-1 T255 at capacities 1/2/3, reverse-order reuse, unchanged
+capacity and allocation, and serial builds. Formatting, workspace Clippy,
+all-feature and no-default suites, and the release regression passed on
+Rust 1.99.0. Python and ignored high-L tests were not run for this capacity
+check. See [the M6 report](../reports/m6-cpu-performance-parity.md).

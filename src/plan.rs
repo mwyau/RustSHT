@@ -434,6 +434,9 @@ impl<T: ShtScalar> ShtPlan<T> {
     /// supported range, the workspace is incompatible with this plan, checked
     /// sizing overflows, or scratch allocation fails. On allocation failure,
     /// the prior execution capacity remains active.
+    /// In parallel builds, a workspace created for a smaller `mmax` is
+    /// incompatible if its analysis order work prefix is too short, including
+    /// when the requested execution capacity is one.
     pub fn prepare_workspace(
         &self,
         workspace: &mut ShtWorkspace<T>,
