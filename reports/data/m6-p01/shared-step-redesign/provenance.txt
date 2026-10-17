@@ -1,0 +1,25 @@
+Experiment: P01 shared transition-step redesign
+Status: rejected; not production code
+Base commit: ed63cdbb89ea1537eab18aad257cb67976c0d841
+P01 source patch SHA-256 (prior experiment): fff74a3059aec58741072b3eb1a96421c006ddcc4ba6847949098d17266faecf
+Pre-P01 benchmark ELF SHA-256: 4fd894d46b7195d8a7a4c24cc52f3f04a85ccd1c213d5a2c896f7c828156ccd0
+Original default-link P01 ELF SHA-256: 3388c0219a9d9ba214241763bd8749a35ef6e60bbe685ec779b842291ff6da2e
+Shared-step P01 ELF SHA-256: 26da3d6644ad668dacabee786479dcbc8ffd1a2a399796804c797a4770b10731
+Candidate source diff SHA-256: d1fe28d07c76a6d1b082ad5b2ba053341dcf8f479094c9b420a76d2f70a14e27
+
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local.
+
+Build command:
+  CARGO_TARGET_DIR=<temporary-path> TMPDIR=<temporary-path>
+  cargo build --release -p rustsht --example m1b_bench
+
+Numerical checks run on the candidate source:
+  cargo fmt --all -- --check
+  git diff --check
+  cargo test --release -p rustsht --features parallel --lib scalar_synthesis_transition_matches_prepared_reference_with_tail -- --nocapture
+  cargo test --release -p rustsht --features parallel --lib transition_ -- --nocapture
+  RUSTSHT_ROUTE_LMAX=1023 RUSTSHT_ROUTE_THREADS=1 cargo test --release -p rustsht --features parallel --lib m6_scalar_synthesis_routes -- --ignored --nocapture
+
+The complete performance control matrix was not run because the clean T511
+spin-1 synthesis screen exceeded the 2% regression guard. No P01 candidate was
+accepted. No full workspace suites were run for this rejected experiment.

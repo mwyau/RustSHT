@@ -1,0 +1,1023 @@
+diff --git a/src/legendre/mod.rs b/src/legendre/mod.rs
+index cf8a538..5f56fbc 100644
+--- a/src/legendre/mod.rs
++++ b/src/legendre/mod.rs
+@@ -1,6 +1,9 @@
+ // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
+ // SPDX-License-Identifier: GPL-2.0-or-later
+ 
++#[cfg(test)]
++mod route_profile;
++
+ mod scalar;
+ mod scalar_f32;
+ mod scalar_paired;
+@@ -355,6 +358,30 @@ pub(crate) trait ShtScalar:
+     ) -> Result<bool, ShtError> {
+         Ok(false)
+     }
++    #[expect(
++        clippy::too_many_arguments,
++        reason = "The scalar transition receives prepared coefficients and caller-owned lane scratch."
++    )]
++    fn try_synthesize_scalar_transition_dispatched(
++        _arch: Arch,
++        _m: usize,
++        _lmax: usize,
++        _sin_theta: &[Self],
++        _cos_theta: &[Self],
++        _sectoral_norm: Self,
++        _coefficient_a: &[Self],
++        _coefficient_b: &[Self],
++        _coefficient_even: &[Complex<Self>],
++        _coefficient_odd: &[Complex<Self>],
++        _previous: &mut [Self],
++        _current: &mut [Self],
++        _next: &mut [Self],
++        _exponents: &mut [i64],
++        _sum_re: &mut [Self],
++        _sum_im: &mut [Self],
++    ) -> Result<bool, ShtError> {
++        Ok(false)
++    }
+     #[expect(
+         clippy::too_many_arguments,
+         reason = "The paired recurrence receives order factors and caller-owned lane scratch explicitly."
+@@ -1133,6 +1160,44 @@ impl ShtScalar for f64 {
+         )
+     }
+ 
++    fn try_synthesize_scalar_transition_dispatched(
++        arch: Arch,
++        m: usize,
++        lmax: usize,
++        sin_theta: &[Self],
++        cos_theta: &[Self],
++        sectoral_norm: Self,
++        coefficient_a: &[Self],
++        coefficient_b: &[Self],
++        coefficient_even: &[Complex<Self>],
++        coefficient_odd: &[Complex<Self>],
++        previous: &mut [Self],
++        current: &mut [Self],
++        next: &mut [Self],
++        exponents: &mut [i64],
++        sum_re: &mut [Self],
++        sum_im: &mut [Self],
++    ) -> Result<bool, ShtError> {
++        scalar_paired::try_synthesize_order_scalar_transition_dispatched(
++            arch,
++            m,
++            lmax,
++            sin_theta,
++            cos_theta,
++            sectoral_norm,
++            coefficient_a,
++            coefficient_b,
++            coefficient_even,
++            coefficient_odd,
++            previous,
++            current,
++            next,
++            exponents,
++            sum_re,
++            sum_im,
++        )
++    }
++
+     fn multiply_complex_scaled(value: Complex<Self>, factor: Self, exponent: i64) -> Complex<Self> {
+         scalar::multiply_complex_scaled(value, factor, exponent)
+     }
+diff --git a/src/legendre/scalar.rs b/src/legendre/scalar.rs
+index e9be7a8..ac5dea3 100644
+--- a/src/legendre/scalar.rs
++++ b/src/legendre/scalar.rs
+@@ -2408,6 +2408,160 @@ mod tests {
+         }
+     }
+ 
++    #[test]
++    fn scalar_synthesis_transition_matches_prepared_reference_with_tail() {
++        let m = 64;
++        let lmax = 511;
++        let lane_count = 63;
++        let sin_theta: Vec<_> = (0..lane_count)
++            .map(|lane| 0.01 + lane as f64 * 0.0001)
++            .collect();
++        let cos_theta: Vec<_> = sin_theta
++            .iter()
++            .map(|sine| (1.0 - sine * sine).sqrt())
++            .collect();
++        let sectoral_norm = sectoral_normalizations(m).unwrap()[m];
++        let mut initial_previous = vec![0.0; lane_count];
++        let mut initial_current = vec![0.0; lane_count];
++        let mut initial_exponents = vec![0; lane_count];
++        for lane in 0..lane_count {
++            let (value, exponent) = sectoral_value(sin_theta[lane], m, sectoral_norm).unwrap();
++            initial_previous[lane] = 0.0;
++            initial_current[lane] = value;
++            initial_exponents[lane] = exponent;
++        }
++        assert!(
++            !normalize_pair_lanes(
++                &mut initial_previous,
++                &mut initial_current,
++                &mut initial_exponents,
++            )
++            .unwrap(),
++            "the fixture must start on the scaled sectoral path"
++        );
++        let mut epsilon = vec![0.0; lmax + 4];
++        fill_epsilon(m, lmax, &mut epsilon);
++        let factor_count = lmax / 2 + 2;
++        let mut alpha = vec![0.0; factor_count];
++        let mut coefficient_a = vec![0.0; factor_count];
++        let mut coefficient_b = vec![0.0; factor_count];
++        super::super::scalar_paired::fill_factors(
++            m,
++            lmax,
++            &epsilon,
++            &mut alpha,
++            &mut coefficient_a,
++            &mut coefficient_b,
++        );
++        let coefficients: Vec<_> = (m..=lmax)
++            .map(|degree| {
++                Complex64::new(
++                    ((degree * 7 + 3) % 19 + 1) as f64 * 1e47,
++                    ((degree * 11 + 5) % 23 + 1) as f64 * 1e47,
++                )
++            })
++            .collect();
++        let pair_count = (lmax - m + 2) / 2;
++        let mut coefficient_even = vec![Complex64::new(0.0, 0.0); pair_count];
++        let mut coefficient_odd = vec![Complex64::new(0.0, 0.0); pair_count];
++        assert!(super::super::scalar_paired::prepare_synthesis_coefficients(
++            m,
++            lmax,
++            &epsilon,
++            &alpha,
++            &coefficients,
++            &mut coefficient_even,
++            &mut coefficient_odd,
++        ));
++
++        for arch in [Arch::Scalar, Arch::new()] {
++            let mut previous = vec![0.0; lane_count];
++            let mut current = vec![0.0; lane_count];
++            let mut next = vec![0.0; lane_count];
++            let mut exponents = vec![0; lane_count];
++            let mut sum_re = vec![0.0; lane_count];
++            let mut sum_im = vec![0.0; lane_count];
++            assert!(
++                super::super::scalar_paired::try_synthesize_order_scalar_transition_dispatched(
++                    arch,
++                    m,
++                    lmax,
++                    &sin_theta,
++                    &cos_theta,
++                    sectoral_norm,
++                    &coefficient_a,
++                    &coefficient_b,
++                    &coefficient_even,
++                    &coefficient_odd,
++                    &mut previous,
++                    &mut current,
++                    &mut next,
++                    &mut exponents,
++                    &mut sum_re,
++                    &mut sum_im,
++                )
++                .unwrap(),
++                "the scalar recurrence should enter the normal suffix"
++            );
++
++            let mut reference_previous = vec![0.0; lane_count];
++            let mut reference_current = vec![0.0; lane_count];
++            let mut reference_next = vec![0.0; lane_count];
++            let mut reference_exponents = vec![0; lane_count];
++            let mut reference = vec![Complex64::new(0.0, 0.0); lane_count];
++            super::super::scalar_paired::for_each_y_lm_paired_dispatched(
++                arch,
++                m,
++                lmax,
++                &sin_theta,
++                &cos_theta,
++                sectoral_norm,
++                &coefficient_a,
++                &coefficient_b,
++                &mut reference_previous,
++                &mut reference_current,
++                &mut reference_next,
++                &mut reference_exponents,
++                |l, ring_start, basis, lane_exponents| {
++                    let pair = (l - m) / 2;
++                    for lane in 0..basis.len() {
++                        let ring = ring_start + lane;
++                        reference[ring] += multiply_complex_scaled(
++                            coefficient_even[pair],
++                            basis[lane],
++                            lane_exponents[lane],
++                        ) + multiply_complex_scaled_product(
++                            coefficient_odd[pair],
++                            basis[lane],
++                            cos_theta[ring],
++                            lane_exponents[lane],
++                        );
++                    }
++                    Ok(())
++                },
++            )
++            .unwrap();
++
++            let reference_scale = reference
++                .iter()
++                .map(|value| value.norm())
++                .fold(0.0, f64::max);
++            assert!(
++                reference_scale.is_finite() && (1e-2..1e2).contains(&reference_scale),
++                "reference scale={reference_scale:e}"
++            );
++            let tolerance = 3e-12 * reference_scale + 16.0 * f64::MIN_POSITIVE;
++            for lane in 0..lane_count {
++                let actual = Complex64::new(sum_re[lane], sum_im[lane]);
++                assert!(
++                    (actual - reference[lane]).norm() <= tolerance,
++                    "arch={arch:?}, lane={lane}, staged={actual:?}, reference={:?}, scale={reference_scale:e}, tolerance={tolerance:e}",
++                    reference[lane],
++                );
++            }
++        }
++    }
++
+     #[test]
+     fn staged_synthesis_transition_falls_back_on_degree_pair_cancellation() {
+         let m = 2048;
+diff --git a/src/legendre/scalar_paired.rs b/src/legendre/scalar_paired.rs
+index 484d910..9467771 100644
+--- a/src/legendre/scalar_paired.rs
++++ b/src/legendre/scalar_paired.rs
+@@ -30,6 +30,8 @@ pub(crate) fn fill_factors(
+     coefficient_a: &mut [f64],
+     coefficient_b: &mut [f64],
+ ) {
++    #[cfg(test)]
++    let profile_started = super::route_profile::start();
+     let factor_count = lmax / 2 + 2;
+     debug_assert!(epsilon.len() >= lmax + 4);
+     debug_assert!(alpha.len() >= factor_count.max(2));
+@@ -56,6 +58,8 @@ pub(crate) fn fill_factors(
+             * (epsilon[degree + 2] * epsilon[degree + 2]
+                 + epsilon[degree + 1] * epsilon[degree + 1]);
+     }
++    #[cfg(test)]
++    super::route_profile::finish(profile_started, super::route_profile::Phase::Factors);
+ }
+ 
+ /// Transforms the scalar harmonic coefficients used by the paired synthesis
+@@ -69,6 +73,8 @@ pub(crate) fn prepare_synthesis_coefficients(
+     coefficient_even: &mut [Complex64],
+     coefficient_odd: &mut [Complex64],
+ ) -> bool {
++    #[cfg(test)]
++    let profile_started = super::route_profile::start();
+     debug_assert!(m <= lmax);
+     debug_assert!(epsilon.len() > lmax + 2);
+     let pair_count = (lmax - m + 2) / 2;
+@@ -97,11 +103,21 @@ pub(crate) fn prepare_synthesis_coefficients(
+             || !odd.re.is_finite()
+             || !odd.im.is_finite()
+         {
++            #[cfg(test)]
++            {
++                super::route_profile::preparation_failure();
++                super::route_profile::finish(
++                    profile_started,
++                    super::route_profile::Phase::Coefficients,
++                );
++            }
+             return false;
+         }
+         coefficient_even[pair] = even;
+         coefficient_odd[pair] = odd;
+     }
++    #[cfg(test)]
++    super::route_profile::finish(profile_started, super::route_profile::Phase::Coefficients);
+     true
+ }
+ 
+@@ -607,6 +623,444 @@ pub(crate) fn synthesize_prepared_order_pair_block_dispatched(
+     Ok(true)
+ }
+ 
++#[expect(
++    clippy::too_many_arguments,
++    reason = "The transition kernel receives coefficient factors and caller-owned lane scratch explicitly."
++)]
++pub(crate) fn try_synthesize_order_scalar_transition_dispatched(
++    arch: Arch,
++    m: usize,
++    lmax: usize,
++    sin_theta: &[f64],
++    cos_theta: &[f64],
++    sectoral_norm: f64,
++    coefficient_a: &[f64],
++    coefficient_b: &[f64],
++    coefficient_even: &[Complex64],
++    coefficient_odd: &[Complex64],
++    previous: &mut [f64],
++    current: &mut [f64],
++    next: &mut [f64],
++    exponents: &mut [i64],
++    sum_re: &mut [f64],
++    sum_im: &mut [f64],
++) -> Result<bool, ShtError> {
++    #[cfg(test)]
++    super::route_profile::transition_call();
++    let lane_count = sin_theta.len();
++    debug_assert_eq!(lane_count, cos_theta.len());
++    debug_assert!(lane_count <= LATITUDE_BLOCK_SIZE);
++    debug_assert!(previous.len() >= lane_count);
++    debug_assert!(current.len() >= lane_count);
++    debug_assert!(next.len() >= lane_count);
++    debug_assert!(exponents.len() >= lane_count);
++    debug_assert!(sum_re.len() >= lane_count);
++    debug_assert!(sum_im.len() >= lane_count);
++
++    if lane_count == 0
++        || sin_theta
++            .iter()
++            .any(|&sine| !sine.is_finite() || sine < 0.01)
++        || cos_theta.iter().any(|&cosine| !cosine.is_finite())
++    {
++        return Ok(false);
++    }
++
++    let pair_count = (lmax - m + 2) / 2;
++    let maximum_sum_bound = 2.0 * scalar::BIG * scalar::BIG * pair_count as f64 * 10_000.0;
++    if !maximum_sum_bound.is_finite()
++        || !prepared_scalar_coefficients_are_safe(coefficient_even, coefficient_odd, pair_count)
++    {
++        return Ok(false);
++    }
++
++    #[cfg(test)]
++    let profile_started = super::route_profile::start();
++    #[cfg(test)]
++    super::route_profile::transition_begin();
++    let completed = arch.dispatch(StagedSynthesisScalarTransition {
++        m,
++        lmax,
++        sin_theta,
++        cos_theta,
++        sectoral_norm,
++        coefficient_a,
++        coefficient_b,
++        coefficient_even,
++        coefficient_odd,
++        previous: &mut previous[..lane_count],
++        current: &mut current[..lane_count],
++        next: &mut next[..lane_count],
++        exponents: &mut exponents[..lane_count],
++        sum_re: &mut sum_re[..lane_count],
++        sum_im: &mut sum_im[..lane_count],
++    });
++    if !completed || !finite_scalar_prefix_sums(&sum_re[..lane_count], &sum_im[..lane_count]) {
++        #[cfg(test)]
++        {
++            super::route_profile::transition_end(false);
++            super::route_profile::finish(profile_started, super::route_profile::Phase::Transition);
++        }
++        return Ok(false);
++    }
++    #[cfg(test)]
++    {
++        super::route_profile::transition_end(true);
++        super::route_profile::finish(profile_started, super::route_profile::Phase::Transition);
++    }
++    Ok(true)
++}
++
++fn prepared_scalar_coefficients_are_safe(
++    coefficient_even: &[Complex64],
++    coefficient_odd: &[Complex64],
++    pair_count: usize,
++) -> bool {
++    coefficient_even.len() >= pair_count
++        && coefficient_odd.len() >= pair_count
++        && coefficient_even
++            .iter()
++            .zip(coefficient_odd)
++            .take(pair_count)
++            .all(|(&even, &odd)| {
++                complex_components_in_normal_range(even) && complex_components_in_normal_range(odd)
++            })
++}
++
++fn finite_scalar_prefix_sums(sum_re: &[f64], sum_im: &[f64]) -> bool {
++    let limit = f64::MAX * 0.5;
++    sum_re
++        .iter()
++        .chain(sum_im)
++        .all(|value| value.is_finite() && value.abs() <= limit)
++}
++
++struct StagedSynthesisScalarTransition<'a> {
++    m: usize,
++    lmax: usize,
++    sin_theta: &'a [f64],
++    cos_theta: &'a [f64],
++    sectoral_norm: f64,
++    coefficient_a: &'a [f64],
++    coefficient_b: &'a [f64],
++    coefficient_even: &'a [Complex64],
++    coefficient_odd: &'a [Complex64],
++    previous: &'a mut [f64],
++    current: &'a mut [f64],
++    next: &'a mut [f64],
++    exponents: &'a mut [i64],
++    sum_re: &'a mut [f64],
++    sum_im: &'a mut [f64],
++}
++
++/// Advances one scaled-prefix recurrence step for scalar and paired transitions.
++///
++/// Keep this shared step out of line to avoid duplicating the SIMD and tail
++/// update in both transition kernels. The normalized suffix remains fused into
++/// its caller.
++#[inline(never)]
++fn advance_transition_recurrence<S: Simd>(
++    simd: &S,
++    cos_theta: &[f64],
++    previous: &[f64],
++    current: &[f64],
++    next: &mut [f64],
++    coefficient_a: f64,
++    coefficient_b: f64,
++) {
++    let (current_vectors, current_tail) = S::as_simd_f64s(current);
++    let (previous_vectors, previous_tail) = S::as_simd_f64s(previous);
++    let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
++    let (next_vectors, next_tail) = S::as_mut_simd_f64s(next);
++    let a = simd.splat_f64s(coefficient_a);
++    let b = simd.splat_f64s(coefficient_b);
++    for index in 0..current_vectors.len() {
++        let cosine_squared = simd.mul_f64s(cosine_vectors[index], cosine_vectors[index]);
++        let leading = simd.mul_add_f64s(a, cosine_squared, b);
++        next_vectors[index] =
++            simd.mul_add_f64s(leading, current_vectors[index], previous_vectors[index]);
++    }
++    for lane in 0..current_tail.len() {
++        let cosine_squared = cosine_tail[lane] * cosine_tail[lane];
++        let leading = coefficient_a.mul_add(cosine_squared, coefficient_b);
++        next_tail[lane] = leading.mul_add(current_tail[lane], previous_tail[lane]);
++    }
++}
++
++impl WithSimd for StagedSynthesisScalarTransition<'_> {
++    type Output = bool;
++
++    #[inline(always)]
++    fn with_simd<S: Simd>(self, simd: S) -> bool {
++        let StagedSynthesisScalarTransition {
++            m,
++            lmax,
++            sin_theta,
++            cos_theta,
++            sectoral_norm,
++            coefficient_a,
++            coefficient_b,
++            coefficient_even,
++            coefficient_odd,
++            previous,
++            current,
++            next,
++            exponents,
++            sum_re,
++            sum_im,
++        } = self;
++        let mut previous = previous;
++        let mut current = current;
++        let mut next = next;
++
++        for lane in 0..sin_theta.len() {
++            let (value, exponent) = match scalar::sectoral_value(sin_theta[lane], m, sectoral_norm)
++            {
++                Ok(value) => value,
++                Err(_) => return false,
++            };
++            previous[lane] = 0.0;
++            current[lane] = value;
++            exponents[lane] = exponent;
++            sum_re[lane] = 0.0;
++            sum_im[lane] = 0.0;
++        }
++
++        let mut normal_range = match scalar::normalize_pair_lanes(previous, current, exponents) {
++            Ok(normal_range) => normal_range,
++            Err(_) => return false,
++        };
++        if normal_range
++            && lane_values_in_normal_range(previous)
++            && lane_values_in_normal_range(current)
++        {
++            #[cfg(test)]
++            super::route_profile::transition_fused(sin_theta.len(), (lmax - m + 2) / 2);
++            return FusedSynthesisScalarSuffix {
++                m,
++                lmax,
++                pair_start: 0,
++                cos_theta,
++                coefficient_a,
++                coefficient_b,
++                coefficient_even,
++                coefficient_odd,
++                previous,
++                current,
++                sum_re,
++                sum_im,
++            }
++            .with_simd(simd);
++        }
++
++        let pair_count = (lmax - m + 2) / 2;
++        for pair in 0..pair_count {
++            #[cfg(test)]
++            super::route_profile::transition_prefix(sin_theta.len());
++            let even = coefficient_even[pair];
++            let odd = coefficient_odd[pair];
++            for lane in 0..current.len() {
++                let odd_factor = Complex64::new(odd.re * cos_theta[lane], odd.im * cos_theta[lane]);
++                let factor = Complex64::new(
++                    odd.re.mul_add(cos_theta[lane], even.re),
++                    odd.im.mul_add(cos_theta[lane], even.im),
++                );
++                if !complex_sum_is_normal_or_zero(factor, even, odd_factor) {
++                    return false;
++                }
++                let contribution =
++                    scalar::multiply_complex_scaled(factor, current[lane], exponents[lane]);
++                if !complex_scaled_product_is_normal_or_zero(
++                    contribution,
++                    factor,
++                    current[lane],
++                    1.0,
++                ) {
++                    return false;
++                }
++                let accumulated = Complex64::new(sum_re[lane], sum_im[lane]);
++                let updated = accumulated + contribution;
++                if !complex_sum_is_normal_or_zero(updated, accumulated, contribution) {
++                    return false;
++                }
++                sum_re[lane] = updated.re;
++                sum_im[lane] = updated.im;
++            }
++
++            if pair + 1 == pair_count {
++                break;
++            }
++
++            advance_transition_recurrence(
++                &simd,
++                cos_theta,
++                previous,
++                current,
++                next,
++                coefficient_a[pair],
++                coefficient_b[pair],
++            );
++            std::mem::swap(&mut previous, &mut current);
++            std::mem::swap(&mut current, &mut next);
++            if normal_range {
++                if scalar::pair_lanes_need_scaling(simd, previous, current) {
++                    normal_range = match scalar::normalize_pair_lanes(previous, current, exponents)
++                    {
++                        Ok(normal_range) => normal_range,
++                        Err(_) => return false,
++                    };
++                }
++            } else {
++                normal_range = match scalar::normalize_pair_lanes(previous, current, exponents) {
++                    Ok(normal_range) => normal_range,
++                    Err(_) => return false,
++                };
++            }
++            if normal_range
++                && lane_values_in_normal_range(previous)
++                && lane_values_in_normal_range(current)
++            {
++                if !finite_scalar_prefix_sums(sum_re, sum_im) {
++                    return false;
++                }
++                #[cfg(test)]
++                super::route_profile::transition_fused(sin_theta.len(), pair_count - pair - 1);
++                return FusedSynthesisScalarSuffix {
++                    m,
++                    lmax,
++                    pair_start: pair + 1,
++                    cos_theta,
++                    coefficient_a,
++                    coefficient_b,
++                    coefficient_even,
++                    coefficient_odd,
++                    previous,
++                    current,
++                    sum_re,
++                    sum_im,
++                }
++                .with_simd(simd);
++            }
++        }
++        false
++    }
++}
++
++struct FusedSynthesisScalarSuffix<'a> {
++    m: usize,
++    lmax: usize,
++    pair_start: usize,
++    cos_theta: &'a [f64],
++    coefficient_a: &'a [f64],
++    coefficient_b: &'a [f64],
++    coefficient_even: &'a [Complex64],
++    coefficient_odd: &'a [Complex64],
++    previous: &'a [f64],
++    current: &'a [f64],
++    sum_re: &'a mut [f64],
++    sum_im: &'a mut [f64],
++}
++
++impl WithSimd for FusedSynthesisScalarSuffix<'_> {
++    type Output = bool;
++
++    #[inline(always)]
++    fn with_simd<S: Simd>(self, simd: S) -> bool {
++        let FusedSynthesisScalarSuffix {
++            m,
++            lmax,
++            pair_start,
++            cos_theta,
++            coefficient_a,
++            coefficient_b,
++            coefficient_even,
++            coefficient_odd,
++            previous: initial_previous,
++            current: initial_current,
++            sum_re,
++            sum_im,
++        } = self;
++        let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
++        let (previous_vectors, previous_tail) = S::as_simd_f64s(initial_previous);
++        let (initial_vectors, initial_tail) = S::as_simd_f64s(initial_current);
++        let (sum_re_vectors, sum_re_tail) = S::as_mut_simd_f64s(sum_re);
++        let (sum_im_vectors, sum_im_tail) = S::as_mut_simd_f64s(sum_im);
++        let pair_count = (lmax - m + 2) / 2;
++        debug_assert!(pair_start <= pair_count);
++        debug_assert_eq!(previous_vectors.len(), initial_vectors.len());
++        debug_assert_eq!(previous_tail.len(), initial_tail.len());
++
++        for lane_block in 0..cosine_vectors.len() {
++            let cosine = cosine_vectors[lane_block];
++            let mut previous = previous_vectors[lane_block];
++            let mut current = initial_vectors[lane_block];
++            if !simd_values_in_normal_range(simd, previous)
++                || !simd_values_in_normal_range(simd, current)
++            {
++                return false;
++            }
++            let mut accumulated_re = sum_re_vectors[lane_block];
++            let mut accumulated_im = sum_im_vectors[lane_block];
++            for pair in pair_start..pair_count {
++                let even = coefficient_even[pair];
++                let odd = coefficient_odd[pair];
++                let coefficient_re =
++                    simd.mul_add_f64s(simd.splat_f64s(odd.re), cosine, simd.splat_f64s(even.re));
++                let coefficient_im =
++                    simd.mul_add_f64s(simd.splat_f64s(odd.im), cosine, simd.splat_f64s(even.im));
++                accumulated_re = simd.mul_add_f64s(current, coefficient_re, accumulated_re);
++                accumulated_im = simd.mul_add_f64s(current, coefficient_im, accumulated_im);
++
++                if pair + 1 < pair_count {
++                    let cosine_squared = simd.mul_f64s(cosine, cosine);
++                    let leading = simd.mul_add_f64s(
++                        simd.splat_f64s(coefficient_a[pair]),
++                        cosine_squared,
++                        simd.splat_f64s(coefficient_b[pair]),
++                    );
++                    let next = simd.mul_add_f64s(leading, current, previous);
++                    if !simd_values_in_normal_range(simd, next) {
++                        return false;
++                    }
++                    previous = current;
++                    current = next;
++                }
++            }
++            sum_re_vectors[lane_block] = accumulated_re;
++            sum_im_vectors[lane_block] = accumulated_im;
++        }
++
++        for lane in 0..cosine_tail.len() {
++            let cosine = cosine_tail[lane];
++            let mut previous = previous_tail[lane];
++            let mut current = initial_tail[lane];
++            if !scalar_value_in_normal_range(previous) || !scalar_value_in_normal_range(current) {
++                return false;
++            }
++            let mut accumulated_re = sum_re_tail[lane];
++            let mut accumulated_im = sum_im_tail[lane];
++            for pair in pair_start..pair_count {
++                let even = coefficient_even[pair];
++                let odd = coefficient_odd[pair];
++                accumulated_re = current.mul_add(odd.re.mul_add(cosine, even.re), accumulated_re);
++                accumulated_im = current.mul_add(odd.im.mul_add(cosine, even.im), accumulated_im);
++                if pair + 1 < pair_count {
++                    let leading = coefficient_a[pair].mul_add(cosine * cosine, coefficient_b[pair]);
++                    let next = leading.mul_add(current, previous);
++                    if !scalar_value_in_normal_range(next) {
++                        return false;
++                    }
++                    previous = current;
++                    current = next;
++                }
++            }
++            sum_re_tail[lane] = accumulated_re;
++            sum_im_tail[lane] = accumulated_im;
++        }
++        true
++    }
++}
++
+ #[expect(
+     clippy::too_many_arguments,
+     reason = "The transition kernel receives coefficient factors and caller-owned lane scratch explicitly."
+@@ -633,6 +1087,8 @@ pub(crate) fn try_synthesize_order_pair_transition_dispatched(
+     second_sum_re: &mut [f64],
+     second_sum_im: &mut [f64],
+ ) -> Result<bool, ShtError> {
++    #[cfg(test)]
++    super::route_profile::transition_call();
+     let lane_count = sin_theta.len();
+     debug_assert_eq!(lane_count, cos_theta.len());
+     debug_assert!(lane_count <= LATITUDE_BLOCK_SIZE);
+@@ -670,6 +1126,10 @@ pub(crate) fn try_synthesize_order_pair_transition_dispatched(
+         return Ok(false);
+     }
+ 
++    #[cfg(test)]
++    let profile_started = super::route_profile::start();
++    #[cfg(test)]
++    super::route_profile::transition_begin();
+     let completed = arch.dispatch(StagedSynthesisPairTransition {
+         m,
+         lmax,
+@@ -699,8 +1159,18 @@ pub(crate) fn try_synthesize_order_pair_transition_dispatched(
+             &second_sum_im[..lane_count],
+         )
+     {
++        #[cfg(test)]
++        {
++            super::route_profile::transition_end(false);
++            super::route_profile::finish(profile_started, super::route_profile::Phase::Transition);
++        }
+         return Ok(false);
+     }
++    #[cfg(test)]
++    {
++        super::route_profile::transition_end(true);
++        super::route_profile::finish(profile_started, super::route_profile::Phase::Transition);
++    }
+     Ok(true)
+ }
+ 
+@@ -873,6 +1343,8 @@ impl WithSimd for StagedSynthesisPairTransition<'_> {
+             && lane_values_in_normal_range(previous)
+             && lane_values_in_normal_range(current)
+         {
++            #[cfg(test)]
++            super::route_profile::transition_fused(sin_theta.len(), (lmax - m + 2) / 2);
+             return FusedSynthesisPairBlock {
+                 m,
+                 lmax,
+@@ -898,6 +1370,8 @@ impl WithSimd for StagedSynthesisPairTransition<'_> {
+ 
+         let pair_count = (lmax - m + 2) / 2;
+         for pair in 0..pair_count {
++            #[cfg(test)]
++            super::route_profile::transition_prefix(sin_theta.len());
+             let l = m + 2 * pair;
+             let offset = l - m;
+             let next_first_even = if l + 2 <= lmax {
+@@ -979,23 +1453,15 @@ impl WithSimd for StagedSynthesisPairTransition<'_> {
+                 break;
+             }
+ 
+-            let (current_vectors, current_tail) = S::as_simd_f64s(current);
+-            let (previous_vectors, previous_tail) = S::as_simd_f64s(previous);
+-            let (cos_vectors, cos_tail) = S::as_simd_f64s(cos_theta);
+-            let (next_vectors, next_tail) = S::as_mut_simd_f64s(next);
+-            let a = simd.splat_f64s(coefficient_a[pair]);
+-            let b = simd.splat_f64s(coefficient_b[pair]);
+-            for index in 0..current_vectors.len() {
+-                let cosine_squared = simd.mul_f64s(cos_vectors[index], cos_vectors[index]);
+-                let leading = simd.mul_add_f64s(a, cosine_squared, b);
+-                next_vectors[index] =
+-                    simd.mul_add_f64s(leading, current_vectors[index], previous_vectors[index]);
+-            }
+-            for index in 0..current_tail.len() {
+-                let cosine_squared = cos_tail[index] * cos_tail[index];
+-                let leading = coefficient_a[pair].mul_add(cosine_squared, coefficient_b[pair]);
+-                next_tail[index] = leading.mul_add(current_tail[index], previous_tail[index]);
+-            }
++            advance_transition_recurrence(
++                &simd,
++                cos_theta,
++                previous,
++                current,
++                next,
++                coefficient_a[pair],
++                coefficient_b[pair],
++            );
+             std::mem::swap(&mut previous, &mut current);
+             std::mem::swap(&mut current, &mut next);
+             if normal_range {
+@@ -1019,6 +1485,8 @@ impl WithSimd for StagedSynthesisPairTransition<'_> {
+                 if !finite_prefix_sums(first_sum_re, first_sum_im, second_sum_re, second_sum_im) {
+                     return false;
+                 }
++                #[cfg(test)]
++                super::route_profile::transition_fused(sin_theta.len(), pair_count - pair - 1);
+                 return FusedSynthesisPairBlock {
+                     m,
+                     lmax,
+@@ -1997,6 +2465,10 @@ impl WithSimd for FusedSynthesisBlock<'_> {
+ 
+     #[inline(always)]
+     fn with_simd<S: Simd>(self, simd: S) {
++        #[cfg(test)]
++        let profile_started = super::route_profile::start();
++        #[cfg(test)]
++        super::route_profile::fused(self.cos_theta.len(), (self.lmax - self.m + 2) / 2);
+         let FusedSynthesisBlock {
+             m,
+             lmax,
+@@ -2081,6 +2553,8 @@ impl WithSimd for FusedSynthesisBlock<'_> {
+             sum_re_tail[lane] = accumulated_re;
+             sum_im_tail[lane] = accumulated_im;
+         }
++        #[cfg(test)]
++        super::route_profile::finish(profile_started, super::route_profile::Phase::Fused);
+     }
+ }
+ 
+@@ -2850,6 +3324,8 @@ pub(crate) fn for_each_y_lm_paired_status_dispatched<F>(
+ where
+     F: FnMut(usize, usize, &[f64], &[i64], bool) -> Result<(), ShtError>,
+ {
++    #[cfg(test)]
++    let profile_started = super::route_profile::start();
+     debug_assert!(m <= lmax);
+     debug_assert_eq!(sin_theta.len(), cos_theta.len());
+     let scratch_len = sin_theta.len().min(LATITUDE_BLOCK_SIZE);
+@@ -2877,6 +3353,8 @@ where
+             visit: &mut visit,
+         })?;
+     }
++    #[cfg(test)]
++    super::route_profile::finish(profile_started, super::route_profile::Phase::Visitor);
+     Ok(())
+ }
+ 
+@@ -2933,6 +3411,8 @@ where
+ 
+         for (pair_index, l) in (m..=lmax).step_by(2).enumerate() {
+             visit(l, ring_start, current, exponents, normal_range)?;
++            #[cfg(test)]
++            super::route_profile::visitor(current.len(), normal_range);
+             if l + 2 > lmax {
+                 break;
+             }
+diff --git a/src/transform.rs b/src/transform.rs
+index 5573ec0..653091a 100644
+--- a/src/transform.rs
++++ b/src/transform.rs
+@@ -791,7 +791,6 @@ impl<T: ShtScalar> ShtPlan<T> {
+                 .expect("every packed order starts at its diagonal degree");
+             let transition_enabled =
+                 lmax >= SCALAR_TRANSITION_MIN_LMAX && T::supports_paired_scalar();
+-            let mut transition_coefficients_ready = false;
+             let paired_factors_ready = T::fill_paired_scalar_factors(
+                 m,
+                 lmax,
+@@ -855,49 +854,72 @@ impl<T: ShtScalar> ShtPlan<T> {
+                         &mut recurrence.compact_ring_indices[..block_len],
+                     )?;
+                     if !fused {
+-                        let transition =
+-                            if transition_enabled && ring_limits.iter().all(|&limit| m <= limit) {
+-                                let coefficient_count = lmax - m + 1;
+-                                if !transition_coefficients_ready {
+-                                    recurrence.fast_scalar_second[..coefficient_count]
+-                                        .fill(Complex::new(T::zero(), T::zero()));
+-                                    transition_coefficients_ready = true;
++                        let compact_mixed_block =
++                            lmax >= 255 && ring_limits.iter().any(|&limit| m > limit);
++                        let transition_count = if transition_enabled && compact_mixed_block {
++                            let mut compact_len = 0;
++                            for (ring, &limit) in ring_limits.iter().enumerate() {
++                                if m <= limit {
++                                    recurrence.compact_theta_sin[compact_len] =
++                                        theta_sin[block_start + ring];
++                                    recurrence.compact_theta_cos[compact_len] =
++                                        theta_cos[block_start + ring];
++                                    recurrence.compact_ring_indices[compact_len] = ring;
++                                    compact_len += 1;
+                                 }
+-                                T::try_synthesize_paired_scalar_transition_dispatched(
+-                                    arch,
+-                                    m,
+-                                    lmax,
+-                                    &theta_sin[block_start..block_end],
+-                                    &theta_cos[block_start..block_end],
+-                                    self.sectoral_norms[m],
+-                                    &recurrence.epsilon,
+-                                    &recurrence.spin_alpha,
+-                                    &recurrence.spin_coefficient_a,
+-                                    &recurrence.spin_coefficient_b,
+-                                    &alm[coefficient_start..coefficient_start + coefficient_count],
+-                                    &recurrence.fast_scalar_second[..coefficient_count],
+-                                    &mut recurrence.previous[..block_len],
+-                                    &mut recurrence.current[..block_len],
+-                                    &mut recurrence.next[..block_len],
+-                                    &mut recurrence.exponents[..block_len],
+-                                    &mut recurrence.analysis_same_real[..block_len],
+-                                    &mut recurrence.analysis_same_imag[..block_len],
+-                                    &mut recurrence.analysis_opposite_real[..block_len],
+-                                    &mut recurrence.analysis_opposite_imag[..block_len],
+-                                )?
+-                            } else {
+-                                false
+-                            };
++                            }
++                            compact_len
++                        } else {
++                            block_len
++                        };
++                        let transition_compacted =
++                            transition_enabled && compact_mixed_block && transition_count > 0;
++                        let transition_sin = if transition_compacted {
++                            &recurrence.compact_theta_sin[..transition_count]
++                        } else {
++                            &theta_sin[block_start..block_end]
++                        };
++                        let transition_cos = if transition_compacted {
++                            &recurrence.compact_theta_cos[..transition_count]
++                        } else {
++                            &theta_cos[block_start..block_end]
++                        };
++                        let transition = if transition_enabled {
++                            T::try_synthesize_scalar_transition_dispatched(
++                                arch,
++                                m,
++                                lmax,
++                                transition_sin,
++                                transition_cos,
++                                self.sectoral_norms[m],
++                                &recurrence.spin_coefficient_a,
++                                &recurrence.spin_coefficient_b,
++                                &recurrence.fast_spin_first[..coefficient_pair_count],
++                                &recurrence.fast_spin_second[..coefficient_pair_count],
++                                &mut recurrence.previous[..transition_count],
++                                &mut recurrence.current[..transition_count],
++                                &mut recurrence.next[..transition_count],
++                                &mut recurrence.exponents[..transition_count],
++                                &mut recurrence.analysis_same_real[..transition_count],
++                                &mut recurrence.analysis_same_imag[..transition_count],
++                            )?
++                        } else {
++                            false
++                        };
+                         if transition {
+-                            for lane in 0..block_len {
+-                                spectra[spectrum_start + lane * spectrum_len + m] += Complex::new(
+-                                    recurrence.analysis_same_real[lane],
+-                                    recurrence.analysis_same_imag[lane],
+-                                );
++                            for lane in 0..transition_count {
++                                let block_ring = if transition_compacted {
++                                    recurrence.compact_ring_indices[lane]
++                                } else {
++                                    lane
++                                };
++                                spectra[spectrum_start + block_ring * spectrum_len + m] +=
++                                    Complex::new(
++                                        recurrence.analysis_same_real[lane],
++                                        recurrence.analysis_same_imag[lane],
++                                    );
+                             }
+                         } else {
+-                            let compact_mixed_block =
+-                                lmax >= 255 && ring_limits.iter().any(|&limit| m > limit);
+                             if compact_mixed_block {
+                                 let mut compact_len = 0;
+                                 for (ring, &limit) in ring_limits.iter().enumerate() {

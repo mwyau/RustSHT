@@ -1,0 +1,4 @@
+comparison,lmax,spin,n_pairs_recorded,n_pairs_included,included_pairs,median_paired_ratio,bootstrap95_low,bootstrap95_high,paired_ratio_min,paired_ratio_max
+T1023 scalar against pre-P01 baseline,1023,0,6,6,1;2;3;4;5;6,0.73058701,0.72670483,0.73164229,0.72625534,0.73176226
+T511 spin-1 against pre-P01 baseline,511,1,6,4,1;2;3;4,1.09995234,1.09419149,1.10290673,1.09419149,1.10290673
+T511 spin-1 redesigned versus original P01,511,1,6,6,1;2;3;4;5;6,1.07780079,1.07426431,1.09261962,1.07299576,1.09481916

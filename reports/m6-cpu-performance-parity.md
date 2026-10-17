@@ -272,7 +272,22 @@ instruction references and last-level instruction misses. Its model reported
 more L1 instruction misses and conditional branch mispredicts for the faster
 microarchitectural mechanism. See
 
-The ordered results pass the measured operation gates, but are specific to
+### P01 shared recurrence-step redesign (rejected)
+
+A bounded source redesign factored the scaled-prefix recurrence update into an
+out-of-line SIMD helper shared by scalar and paired transitions, keeping the
+normalized scalar suffix inline. Six alternating T1023 scalar q1 synthesis
+pairs measured 0.73059 [0.72670, 0.73164] relative to the pre-P01 binary. The CPU-pressure check failed the declared gate; exact transient readings remain local. A direct six-pair comparison with
+the original default-link P01 binary measured 1.07780 [1.07426, 1.09262]. The shared helper replaced the recurrence step in both transition paths. The
+paired transition is used by spin-1 synthesis, so this redesign adds an
+out-of-line call to the spin-1 path at each degree step. The direct source
+comparison and timings isolate that added shared-step cost; it is separate
+from the original P01 final-link layout effect. Reject this redesign and stop
+P01 source-order/layout variants. The T1023 scalar gain remains a screen, not
+acceptance evidence. The full control matrix was not run after the T511
+spin-1 failure. Source snapshots, tests, route profile, raw pairs, preflight
+logs, and binary hashes are retained in
+[`reports/data/m6-p01/shared-step-redesign/`](data/m6-p01/shared-step-redesign/). The ordered results pass the measured operation gates, but are specific to
 the local benchmark executable. P01 remains archived, unaccepted and pending
 a portable source-level solution. The full suites below ran with P01 and P02
 together. Do not infer downstream consumer performance from the ordered link.
