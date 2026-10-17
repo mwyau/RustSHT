@@ -1,0 +1,912 @@
+{
+  "comparison": {
+    "T1023-s0-q1": {
+      "ducc_timing": {
+        "analysis": {
+          "f32_median_ms": 67.2827719245106,
+          "f32_samples_ms": [
+            67.31306877918541,
+            68.39409586973488,
+            67.15755490586162,
+            66.93767895922065,
+            67.2827719245106
+          ],
+          "f64_median_ms": 67.78357992880046,
+          "f64_samples_ms": [
+            67.01252097263932,
+            70.29421301558614,
+            67.78357992880046,
+            66.96808617562056,
+            70.12223801575601
+          ]
+        },
+        "synthesis": {
+          "f32_median_ms": 65.35928999073803,
+          "f32_samples_ms": [
+            65.26898988522589,
+            68.93700384534895,
+            65.35928999073803,
+            65.26954006403685,
+            65.37265586666763
+          ],
+          "f64_median_ms": 71.53692608699203,
+          "f64_samples_ms": [
+            71.53692608699203,
+            72.28557299822569,
+            68.5032729525119,
+            73.15749418921769,
+            67.30740796774626
+          ]
+        }
+      },
+      "geometry": "GL",
+      "nphi": 2048,
+      "ntheta": 1024,
+      "operations": {
+        "analysis": [
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 524800,
+              "max_absolute": 3.839941346661803e-09,
+              "relative_l2": 3.4396562162812186e-08,
+              "rms_absolute": 2.7911838558751552e-11
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 524800,
+              "max_absolute": 4.547473508864641e-13,
+              "relative_l2": 7.766219541179165e-13,
+              "rms_absolute": 6.302067777223674e-16
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 524800,
+              "max_absolute": 1.1714975812647613e-06,
+              "relative_l2": 1.6683164514699677e-05,
+              "rms_absolute": 1.3537901231177058e-08
+            },
+            "channel": 0,
+            "native_f32_vs_ducc_f32": {
+              "elements": 524800,
+              "max_absolute": 1.172399395882079e-06,
+              "relative_l2": 1.668282019888005e-05,
+              "rms_absolute": 1.3537637333979146e-08
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 524800,
+              "max_absolute": 1.449386119673612e-15,
+              "relative_l2": 1.9389556627694443e-14,
+              "rms_absolute": 1.573407746182899e-17
+            }
+          }
+        ],
+        "synthesis": [
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 2097152,
+              "max_absolute": 5.960464477539063e-08,
+              "relative_l2": 3.0604909056740735e-08,
+              "rms_absolute": 7.239865533187655e-10
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 2097152,
+              "max_absolute": 4.656612873077393e-10,
+              "relative_l2": 1.6188275747372043e-11,
+              "rms_absolute": 3.8294817142578933e-13
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 2097152,
+              "max_absolute": 4.754215478897095e-05,
+              "relative_l2": 4.873140436532147e-05,
+              "rms_absolute": 1.1527844080273407e-06
+            },
+            "channel": 0,
+            "native_f32_vs_ducc_f32": {
+              "elements": 2097152,
+              "max_absolute": 4.754215478897095e-05,
+              "relative_l2": 4.873145705497687e-05,
+              "rms_absolute": 1.1527862920953056e-06
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 2097152,
+              "max_absolute": 1.5540346787190629e-13,
+              "relative_l2": 1.1484582112807115e-13,
+              "rms_absolute": 2.7167808276494136e-15
+            }
+          }
+        ]
+      },
+      "phi0": 0.37,
+      "precision": "f32/complex64 inputs and outputs; f64/complex128 bridge",
+      "threads": 1
+    },
+    "T1023-s1-q1": {
+      "ducc_timing": {
+        "analysis": {
+          "f32_median_ms": 136.5742259658873,
+          "f32_samples_ms": [
+            137.74165697395802,
+            141.5686421096325,
+            136.5742259658873,
+            135.67774882540107,
+            136.38343499042094
+          ],
+          "f64_median_ms": 153.0816680751741,
+          "f64_samples_ms": [
+            154.00932496413589,
+            153.7328721024096,
+            153.0816680751741,
+            152.57617202587426,
+            151.78456297144294
+          ]
+        },
+        "synthesis": {
+          "f32_median_ms": 140.7487289980054,
+          "f32_samples_ms": [
+            137.31069094501436,
+            145.29494708403945,
+            140.7487289980054,
+            143.67048116400838,
+            137.41097087040544
+          ],
+          "f64_median_ms": 157.17591997236013,
+          "f64_samples_ms": [
+            156.1697549186647,
+            156.9594508036971,
+            157.35705383121967,
+            157.21662784926593,
+            157.17591997236013
+          ]
+        }
+      },
+      "geometry": "GL",
+      "nphi": 2048,
+      "ntheta": 1024,
+      "operations": {
+        "analysis": [
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 524800,
+              "max_absolute": 3.732559164492739e-09,
+              "relative_l2": 3.311295272934107e-08,
+              "rms_absolute": 3.033511925421914e-11
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 524800,
+              "max_absolute": 3.637978807091713e-12,
+              "relative_l2": 5.492644326674921e-12,
+              "rms_absolute": 5.031868410284365e-15
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 524800,
+              "max_absolute": 9.88936590307222e-07,
+              "relative_l2": 2.0678902035262044e-05,
+              "rms_absolute": 1.894416962546683e-08
+            },
+            "channel": 0,
+            "native_f32_vs_ducc_f32": {
+              "elements": 524800,
+              "max_absolute": 9.89118201250548e-07,
+              "relative_l2": 2.067945437795992e-05,
+              "rms_absolute": 1.894466252511944e-08
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 524800,
+              "max_absolute": 1.3024481302832869e-15,
+              "relative_l2": 1.6510454610774585e-14,
+              "rms_absolute": 1.5125398608134393e-17
+            }
+          },
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 524800,
+              "max_absolute": 1.9199706733309015e-09,
+              "relative_l2": 3.751333314890272e-08,
+              "rms_absolute": 2.5541247394136882e-11
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 524800,
+              "max_absolute": 2.2737367544323206e-13,
+              "relative_l2": 5.28398518363747e-13,
+              "rms_absolute": 3.5976428024611673e-16
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 524800,
+              "max_absolute": 9.157208865142471e-07,
+              "relative_l2": 2.558247228575209e-05,
+              "rms_absolute": 1.741803883188143e-08
+            },
+            "channel": 1,
+            "native_f32_vs_ducc_f32": {
+              "elements": 524800,
+              "max_absolute": 9.157540597658736e-07,
+              "relative_l2": 2.558245158986705e-05,
+              "rms_absolute": 1.7418013014512363e-08
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 524800,
+              "max_absolute": 7.451238096990209e-16,
+              "relative_l2": 1.6399249482623812e-14,
+              "rms_absolute": 1.1165557778025024e-17
+            }
+          }
+        ],
+        "synthesis": [
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 2097152,
+              "max_absolute": 5.960464477539063e-08,
+              "relative_l2": 3.1880279550871336e-08,
+              "rms_absolute": 7.617037970313621e-10
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 2097152,
+              "max_absolute": 2.3283064365386963e-10,
+              "relative_l2": 1.0873258037031573e-11,
+              "rms_absolute": 2.597907562368629e-13
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 2097152,
+              "max_absolute": 4.190206527709961e-05,
+              "relative_l2": 3.842873035826717e-05,
+              "rms_absolute": 9.181651906387002e-07
+            },
+            "channel": 0,
+            "native_f32_vs_ducc_f32": {
+              "elements": 2097152,
+              "max_absolute": 4.190206527709961e-05,
+              "relative_l2": 3.8428851213838245e-05,
+              "rms_absolute": 9.181664118856155e-07
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 2097152,
+              "max_absolute": 1.359190537897348e-13,
+              "relative_l2": 1.1422346037275523e-13,
+              "rms_absolute": 2.7290991381993562e-15
+            }
+          },
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 2097152,
+              "max_absolute": 5.960464477539063e-08,
+              "relative_l2": 3.1501996812104344e-08,
+              "rms_absolute": 7.808304543965236e-10
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 2097152,
+              "max_absolute": 9.313225746154785e-10,
+              "relative_l2": 2.94940274675094e-11,
+              "rms_absolute": 7.310595267204689e-13
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 2097152,
+              "max_absolute": 4.419498145580292e-05,
+              "relative_l2": 4.190214701983835e-05,
+              "rms_absolute": 1.0386171363471067e-06
+            },
+            "channel": 1,
+            "native_f32_vs_ducc_f32": {
+              "elements": 2097152,
+              "max_absolute": 4.419498145580292e-05,
+              "relative_l2": 4.190229091640534e-05,
+              "rms_absolute": 1.0386193945629615e-06
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 2097152,
+              "max_absolute": 1.6110723866091803e-13,
+              "relative_l2": 1.1497215114883797e-13,
+              "rms_absolute": 2.849779891804954e-15
+            }
+          }
+        ]
+      },
+      "phi0": 0.37,
+      "precision": "f32/complex64 inputs and outputs; f64/complex128 bridge",
+      "threads": 1
+    },
+    "T127-s0-q1": {
+      "ducc_timing": {
+        "analysis": {
+          "f32_median_ms": 0.3475579433143139,
+          "f32_samples_ms": [
+            0.3486298955976963,
+            0.3745690919458866,
+            0.34344010055065155,
+            0.3421579021960497,
+            0.3475579433143139
+          ],
+          "f64_median_ms": 0.3450328949838877,
+          "f64_samples_ms": [
+            0.3466659691184759,
+            0.3906800411641598,
+            0.34192693419754505,
+            0.3409460186958313,
+            0.3450328949838877
+          ]
+        },
+        "synthesis": {
+          "f32_median_ms": 0.34268898889422417,
+          "f32_samples_ms": [
+            0.35175587981939316,
+            0.408112071454525,
+            0.3382698632776737,
+            0.3349438775330782,
+            0.34268898889422417
+          ],
+          "f64_median_ms": 0.43368106707930565,
+          "f64_samples_ms": [
+            0.49690110608935356,
+            0.43368106707930565,
+            0.3721150569617748,
+            0.4727449268102646,
+            0.37031108513474464
+          ]
+        }
+      },
+      "geometry": "GL",
+      "nphi": 256,
+      "ntheta": 128,
+      "operations": {
+        "analysis": [
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 8256,
+              "max_absolute": 1.4901161193847656e-08,
+              "relative_l2": 4.138911407885123e-08,
+              "rms_absolute": 2.678646784017351e-10
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 8256,
+              "max_absolute": 0.0,
+              "relative_l2": 0.0,
+              "rms_absolute": 0.0
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 8256,
+              "max_absolute": 3.6336772906899054e-07,
+              "relative_l2": 1.8945458343628046e-06,
+              "rms_absolute": 1.2261237938571117e-08
+            },
+            "channel": 0,
+            "native_f32_vs_ducc_f32": {
+              "elements": 8256,
+              "max_absolute": 3.624117650437127e-07,
+              "relative_l2": 1.893261420883044e-06,
+              "rms_absolute": 1.2252928648559382e-08
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 8256,
+              "max_absolute": 8.827844552194565e-16,
+              "relative_l2": 5.574709561841374e-15,
+              "rms_absolute": 3.6078756914531195e-17
+            }
+          }
+        ],
+        "synthesis": [
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 32768,
+              "max_absolute": 1.862645149230957e-09,
+              "relative_l2": 3.579519919481138e-08,
+              "rms_absolute": 1.0599698287834719e-10
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 32768,
+              "max_absolute": 0.0,
+              "relative_l2": 0.0,
+              "rms_absolute": 0.0
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 32768,
+              "max_absolute": 1.3597309589385986e-07,
+              "relative_l2": 3.6199928838755638e-06,
+              "rms_absolute": 1.0719544742077735e-08
+            },
+            "channel": 0,
+            "native_f32_vs_ducc_f32": {
+              "elements": 32768,
+              "max_absolute": 1.3597309589385986e-07,
+              "relative_l2": 3.620504866738861e-06,
+              "rms_absolute": 1.0721063187331536e-08
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 32768,
+              "max_absolute": 4.649058915617843e-16,
+              "relative_l2": 1.2155260356559314e-14,
+              "rms_absolute": 3.599423818774391e-17
+            }
+          }
+        ]
+      },
+      "phi0": 0.37,
+      "precision": "f32/complex64 inputs and outputs; f64/complex128 bridge",
+      "threads": 1
+    },
+    "T127-s1-q1": {
+      "ducc_timing": {
+        "analysis": {
+          "f32_median_ms": 0.9159038309007883,
+          "f32_samples_ms": [
+            0.9270850569009781,
+            1.0026490781456232,
+            0.9159038309007883,
+            0.9132791310548782,
+            0.9113349951803684
+          ],
+          "f64_median_ms": 0.9180279448628426,
+          "f64_samples_ms": [
+            0.9258228819817305,
+            1.0002339258790016,
+            0.9110548999160528,
+            0.9155839215964079,
+            0.9180279448628426
+          ]
+        },
+        "synthesis": {
+          "f32_median_ms": 0.9552580304443836,
+          "f32_samples_ms": [
+            0.946542015299201,
+            1.0289179626852274,
+            0.9552580304443836,
+            1.0655371006578207,
+            0.9517918806523085
+          ],
+          "f64_median_ms": 1.1564090382307768,
+          "f64_samples_ms": [
+            1.1893210466951132,
+            1.1564090382307768,
+            1.017305999994278,
+            1.2591839767992496,
+            1.0100922081619501
+          ]
+        }
+      },
+      "geometry": "GL",
+      "nphi": 256,
+      "ntheta": 128,
+      "operations": {
+        "analysis": [
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 8256,
+              "max_absolute": 3.754281321679498e-09,
+              "relative_l2": 2.833799086675796e-08,
+              "rms_absolute": 2.0604298172992894e-10
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 8256,
+              "max_absolute": 0.0,
+              "relative_l2": 0.0,
+              "rms_absolute": 0.0
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 8256,
+              "max_absolute": 3.702915610616012e-07,
+              "relative_l2": 2.7775364901883675e-06,
+              "rms_absolute": 2.0195215483678338e-08
+            },
+            "channel": 0,
+            "native_f32_vs_ducc_f32": {
+              "elements": 8256,
+              "max_absolute": 3.6937215370581626e-07,
+              "relative_l2": 2.7768892341775874e-06,
+              "rms_absolute": 2.0190511756246727e-08
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 8256,
+              "max_absolute": 8.404468806123817e-16,
+              "relative_l2": 6.1359073330275255e-15,
+              "rms_absolute": 4.461363019317548e-17
+            }
+          },
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 8256,
+              "max_absolute": 3.839941346661803e-09,
+              "relative_l2": 3.576341647236669e-08,
+              "rms_absolute": 1.9615121166009517e-10
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 8256,
+              "max_absolute": 0.0,
+              "relative_l2": 0.0,
+              "rms_absolute": 0.0
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 8256,
+              "max_absolute": 3.5608347572766197e-07,
+              "relative_l2": 3.40397854629492e-06,
+              "rms_absolute": 1.866976037443764e-08
+            },
+            "channel": 1,
+            "native_f32_vs_ducc_f32": {
+              "elements": 8256,
+              "max_absolute": 3.5546483129404085e-07,
+              "relative_l2": 3.402974587819396e-06,
+              "rms_absolute": 1.8664256787799976e-08
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 8256,
+              "max_absolute": 6.456669266231174e-16,
+              "relative_l2": 7.459718080295895e-15,
+              "rms_absolute": 4.091423281038299e-17
+            }
+          }
+        ],
+        "synthesis": [
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 32768,
+              "max_absolute": 1.862645149230957e-09,
+              "relative_l2": 5.4743471201466605e-08,
+              "rms_absolute": 1.6427274796725846e-10
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 32768,
+              "max_absolute": 0.0,
+              "relative_l2": 0.0,
+              "rms_absolute": 0.0
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 32768,
+              "max_absolute": 2.0023435354232788e-07,
+              "relative_l2": 4.994842863628512e-06,
+              "rms_absolute": 1.4988401995670484e-08
+            },
+            "channel": 0,
+            "native_f32_vs_ducc_f32": {
+              "elements": 32768,
+              "max_absolute": 2.0023435354232788e-07,
+              "relative_l2": 4.996140952537929e-06,
+              "rms_absolute": 1.4992286486268233e-08
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 32768,
+              "max_absolute": 1.695692197767329e-15,
+              "relative_l2": 5.970417576788578e-14,
+              "rms_absolute": 1.7915869801715216e-16
+            }
+          },
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 32768,
+              "max_absolute": 3.725290298461914e-09,
+              "relative_l2": 5.2936858976378684e-08,
+              "rms_absolute": 1.6351679990621298e-10
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 32768,
+              "max_absolute": 0.0,
+              "relative_l2": 0.0,
+              "rms_absolute": 0.0
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 32768,
+              "max_absolute": 1.4211400412023067e-07,
+              "relative_l2": 4.400271277092835e-06,
+              "rms_absolute": 1.3592016689470651e-08
+            },
+            "channel": 1,
+            "native_f32_vs_ducc_f32": {
+              "elements": 32768,
+              "max_absolute": 1.4225952327251434e-07,
+              "relative_l2": 4.400640101439603e-06,
+              "rms_absolute": 1.3593148532810465e-08
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 32768,
+              "max_absolute": 6.255846535241361e-16,
+              "relative_l2": 1.512482950168786e-14,
+              "rms_absolute": 4.671912478752224e-17
+            }
+          }
+        ]
+      },
+      "phi0": 0.37,
+      "precision": "f32/complex64 inputs and outputs; f64/complex128 bridge",
+      "threads": 1
+    },
+    "T511-s0-q1": {
+      "ducc_timing": {
+        "analysis": {
+          "f32_median_ms": 10.452930117025971,
+          "f32_samples_ms": [
+            10.458040051162243,
+            10.7824238948524,
+            10.452930117025971,
+            10.39267610758543,
+            10.383708868175745
+          ],
+          "f64_median_ms": 10.334666119888425,
+          "f64_samples_ms": [
+            10.402685031294823,
+            11.100455885753036,
+            10.328504955396056,
+            10.334666119888425,
+            10.267789009958506
+          ]
+        },
+        "synthesis": {
+          "f32_median_ms": 10.80167992040515,
+          "f32_samples_ms": [
+            11.162473121657968,
+            10.80167992040515,
+            10.258371941745281,
+            11.354797054082155,
+            10.287065990269184
+          ],
+          "f64_median_ms": 11.713186046108603,
+          "f64_samples_ms": [
+            11.773089179769158,
+            11.713186046108603,
+            10.499769123271108,
+            12.127108871936798,
+            10.316621977835894
+          ]
+        }
+      },
+      "geometry": "GL",
+      "nphi": 1024,
+      "ntheta": 512,
+      "operations": {
+        "analysis": [
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 131328,
+              "max_absolute": 3.839941346661803e-09,
+              "relative_l2": 3.43721089468621e-08,
+              "rms_absolute": 5.574232444519272e-11
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 131328,
+              "max_absolute": 9.71445146547012e-17,
+              "relative_l2": 1.6700616032472402e-16,
+              "rms_absolute": 2.708391152084529e-19
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 131328,
+              "max_absolute": 6.352113253915487e-07,
+              "relative_l2": 8.11543870964461e-06,
+              "rms_absolute": 1.3161058490953731e-08
+            },
+            "channel": 0,
+            "native_f32_vs_ducc_f32": {
+              "elements": 131328,
+              "max_absolute": 6.333350019273542e-07,
+              "relative_l2": 8.115015795178687e-06,
+              "rms_absolute": 1.316037500148823e-08
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 131328,
+              "max_absolute": 3.854054319296312e-16,
+              "relative_l2": 7.396553611414537e-15,
+              "rms_absolute": 1.1995222389968453e-17
+            }
+          }
+        ],
+        "synthesis": [
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 524288,
+              "max_absolute": 1.4901161193847656e-08,
+              "relative_l2": 3.204899404942966e-08,
+              "rms_absolute": 3.7911495129452124e-10
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 524288,
+              "max_absolute": 2.9103830456733704e-11,
+              "relative_l2": 4.8103185845456445e-12,
+              "rms_absolute": 5.690236931471212e-14
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 524288,
+              "max_absolute": 4.842877388000488e-06,
+              "relative_l2": 1.4152213564436661e-05,
+              "rms_absolute": 1.674097238993143e-07
+            },
+            "channel": 0,
+            "native_f32_vs_ducc_f32": {
+              "elements": 524288,
+              "max_absolute": 4.842877388000488e-06,
+              "relative_l2": 1.4152341670570054e-05,
+              "rms_absolute": 1.674113176490502e-07
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 524288,
+              "max_absolute": 2.3717139363554907e-14,
+              "relative_l2": 6.113370086174938e-14,
+              "rms_absolute": 7.231646644402076e-16
+            }
+          }
+        ]
+      },
+      "phi0": 0.37,
+      "precision": "f32/complex64 inputs and outputs; f64/complex128 bridge",
+      "threads": 1
+    },
+    "T511-s1-q1": {
+      "ducc_timing": {
+        "analysis": {
+          "f32_median_ms": 21.3487280998379,
+          "f32_samples_ms": [
+            21.376930875703692,
+            22.018525982275605,
+            21.3487280998379,
+            21.335161989554763,
+            21.24546212144196
+          ],
+          "f64_median_ms": 21.281551104038954,
+          "f64_samples_ms": [
+            21.19908411987126,
+            22.88138004951179,
+            21.306216949597,
+            21.106729982420802,
+            21.281551104038954
+          ]
+        },
+        "synthesis": {
+          "f32_median_ms": 23.45423400402069,
+          "f32_samples_ms": [
+            23.589480901136994,
+            23.45423400402069,
+            22.16299995779991,
+            23.67617399431765,
+            22.03229209408164
+          ],
+          "f64_median_ms": 25.165323866531253,
+          "f64_samples_ms": [
+            25.279761059209704,
+            25.165323866531253,
+            22.882541874423623,
+            25.618140818551183,
+            22.516128141433
+          ]
+        }
+      },
+      "geometry": "GL",
+      "nphi": 1024,
+      "ntheta": 512,
+      "operations": {
+        "analysis": [
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 131328,
+              "max_absolute": 7.450580596923828e-09,
+              "relative_l2": 3.501857784733033e-08,
+              "rms_absolute": 6.429774786128648e-11
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 131328,
+              "max_absolute": 1.1102230246251565e-16,
+              "relative_l2": 1.8654744885979665e-16,
+              "rms_absolute": 3.425205014057378e-19
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 131328,
+              "max_absolute": 7.73110076566231e-07,
+              "relative_l2": 1.0395956850620035e-05,
+              "rms_absolute": 1.9088075767253246e-08
+            },
+            "channel": 0,
+            "native_f32_vs_ducc_f32": {
+              "elements": 131328,
+              "max_absolute": 7.732069756724138e-07,
+              "relative_l2": 1.039491596749255e-05,
+              "rms_absolute": 1.9086145897499683e-08
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 131328,
+              "max_absolute": 3.1981545674756363e-16,
+              "relative_l2": 6.826732347419035e-15,
+              "rms_absolute": 1.2534589982295408e-17
+            }
+          },
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 131328,
+              "max_absolute": 3.725290298461914e-09,
+              "relative_l2": 3.7565427081306725e-08,
+              "rms_absolute": 5.0899596789275325e-11
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 131328,
+              "max_absolute": 7.105427357601002e-15,
+              "relative_l2": 1.4477630280973662e-14,
+              "rms_absolute": 1.9616588998524203e-17
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 131328,
+              "max_absolute": 7.4733446702929e-07,
+              "relative_l2": 1.2754047575494397e-05,
+              "rms_absolute": 1.7281221596652336e-08
+            },
+            "channel": 1,
+            "native_f32_vs_ducc_f32": {
+              "elements": 131328,
+              "max_absolute": 7.471635208711234e-07,
+              "relative_l2": 1.2754918365345905e-05,
+              "rms_absolute": 1.7282385755153403e-08
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 131328,
+              "max_absolute": 2.7692111112486035e-16,
+              "relative_l2": 7.392499925658686e-15,
+              "rms_absolute": 1.0016531033141168e-17
+            }
+          }
+        ],
+        "synthesis": [
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 524288,
+              "max_absolute": 1.4901161193847656e-08,
+              "relative_l2": 3.2646175863131695e-08,
+              "rms_absolute": 3.9012780852826096e-10
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 524288,
+              "max_absolute": 2.842170943040401e-14,
+              "relative_l2": 4.0228725492155024e-15,
+              "rms_absolute": 4.8074067159589095e-17
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 524288,
+              "max_absolute": 5.379319190979004e-06,
+              "relative_l2": 1.6388301164464128e-05,
+              "rms_absolute": 1.958435330066139e-07
+            },
+            "channel": 0,
+            "native_f32_vs_ducc_f32": {
+              "elements": 524288,
+              "max_absolute": 5.379319190979004e-06,
+              "relative_l2": 1.6388360266152224e-05,
+              "rms_absolute": 1.958439206726822e-07
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 524288,
+              "max_absolute": 2.5146551507759796e-14,
+              "relative_l2": 6.18154909097075e-14,
+              "rms_absolute": 7.387064902786432e-16
+            }
+          },
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 524288,
+              "max_absolute": 2.9802322387695312e-08,
+              "relative_l2": 3.333550249916891e-08,
+              "rms_absolute": 4.1308466036933595e-10
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 524288,
+              "max_absolute": 1.4551915228366852e-11,
+              "relative_l2": 1.6218343733208394e-12,
+              "rms_absolute": 2.009733919566163e-14
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 524288,
+              "max_absolute": 1.0447576642036438e-05,
+              "relative_l2": 2.003060891523206e-05,
+              "rms_absolute": 2.4821438364425245e-07
+            },
+            "channel": 1,
+            "native_f32_vs_ducc_f32": {
+              "elements": 524288,
+              "max_absolute": 1.0447576642036438e-05,
+              "relative_l2": 2.0030591687439878e-05,
+              "rms_absolute": 2.482137524223381e-07
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 524288,
+              "max_absolute": 2.0899948438568572e-14,
+              "relative_l2": 6.439911208023824e-14,
+              "rms_absolute": 7.980166294686986e-16
+            }
+          }
+        ]
+      },
+      "phi0": 0.37,
+      "precision": "f32/complex64 inputs and outputs; f64/complex128 bridge",
+      "threads": 1
+    }
+  },
+  "ducc0": "0.41.0",
+  "ducc_source_revision": "c1ed01b8fda69d2a378190f0915f1a19762dddbf"
+}

@@ -359,6 +359,27 @@ matrix or current-source DUCC/SHTns timings. No production change was accepted. 
 files, preflight records, hashes, and paired summary are in
 [reports/data/m6-m2-general-visitor](data/m6-m2-general-visitor/).
 
+## M3 f32-to-f64 bridge screen (unaccepted)
+
+A diagnostic GL STANDARD matrix compared native f32 transforms with a bridge
+that widened the same f32-rounded coefficients or maps, ran the f64 plan, and
+downcast outputs. It covered T127/T511/T1023, scalar and spin-1, synthesis and
+analysis, and q1/q8. The screen measured a 3.63x–31.54x improvement over native
+f32 and reduced the largest relative-L2 error versus DUCC f32 from
+`4.873e-5` to `5.474e-8`. The bridge still measured up to 9.17x slower than
+DUCC f32 at T1023 scalar q8 synthesis. The largest bridge temporary payload
+was 48.0 MiB for T1023 spin-1; the 236.7 MiB peak RSS includes all retained
+comparison plans, workspaces and buffers. The matrix preflights recorded ELF hash
+`2d5ddf6febd6ef9fd480a0c2cd97feb1f10f89ee0e003097cfa2b2be0ea6e4fb`, but that
+ELF and its build log were not retained. A separate T127 spin-1 smoke failed
+with `NonRealMZero { degree: 1 }`; a later replay with a different local ELF
+hash failed the same way. Both failed attempts are retained and excluded from
+the successful matrix. Since the successful ELF cannot be tied conclusively
+to the archived source, the table is screening evidence only. It does not
+accept a public f32-to-f64 execution path. Reproduction limits, hashes, raw
+timings, DUCC comparisons, and source are in
+[`reports/data/m6-f32-bridge/`](data/m6-f32-bridge/).
+
 ## Post-C03 regression checks
 
 These checks ran on 2026-10-17 after C03 and before the final P01 link-layout

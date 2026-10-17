@@ -2356,3 +2356,21 @@ ratio of 1.00604 passed. Reject the candidate and retain its complete patch,
 builds, tests, raw samples, and hashes as diagnostic evidence. No production
 source changed. See [the M6 report](../reports/m6-cpu-performance-parity.md)
 and [the screen evidence](../reports/data/m6-m2-general-visitor/).
+
+### M6 f32-to-f64 bridge screen (2026-10-17, unaccepted)
+
+A diagnostic GL STANDARD screen covered scalar and spin-1 synthesis/analysis
+at T127/T511/T1023 and q1/q8. Widening f32 inputs, running the f64 plan and
+downcasting outputs measured 3.63x–31.54x the native f32 throughput; maximum
+relative-L2 error versus DUCC f32 fell from `4.873e-5` to `5.474e-8`. The
+bridge still measured up to 9.17x slower than DUCC f32 at T1023 scalar q8
+synthesis. The 48.0 MiB maximum temporary payload excludes retained comparison
+state; the 236.7 MiB peak RSS is for the entire comparison process. The successful cell preflights record ELF hash
+`2d5ddf6febd6ef9fd480a0c2cd97feb1f10f89ee0e003097cfa2b2be0ea6e4fb`, but the
+ELF and its build log are absent. A separate T127 spin-1 smoke and a later
+replay with a different local ELF failed with `NonRealMZero { degree: 1 }`;
+both are retained and excluded. The successful ELF is not tied conclusively
+to the archived source, so this screen does not validate or accept an f32
+execution-path change. Rebuild in an isolated target directory before using
+these measurements for a decision. See [the M6 report](../reports/m6-cpu-performance-parity.md)
+and [the full source and raw evidence](../reports/data/m6-f32-bridge/).

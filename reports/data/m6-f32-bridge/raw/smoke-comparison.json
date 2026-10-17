@@ -1,0 +1,232 @@
+{
+  "comparison": {
+    "T127-s0-q1": {
+      "geometry": "GL",
+      "nphi": 256,
+      "ntheta": 128,
+      "operations": {
+        "analysis": [
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 8256,
+              "max_absolute": 1.4901161193847656e-08,
+              "relative_l2": 4.138911407885123e-08,
+              "rms_absolute": 2.678646784017351e-10
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 8256,
+              "max_absolute": 0.0,
+              "relative_l2": 0.0,
+              "rms_absolute": 0.0
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 8256,
+              "max_absolute": 3.6336772906899054e-07,
+              "relative_l2": 1.8945458343628046e-06,
+              "rms_absolute": 1.2261237938571117e-08
+            },
+            "channel": 0,
+            "native_f32_vs_ducc_f32": {
+              "elements": 8256,
+              "max_absolute": 3.624117650437127e-07,
+              "relative_l2": 1.893261420883044e-06,
+              "rms_absolute": 1.2252928648559382e-08
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 8256,
+              "max_absolute": 8.827844552194565e-16,
+              "relative_l2": 5.574709561841374e-15,
+              "rms_absolute": 3.6078756914531195e-17
+            }
+          }
+        ],
+        "synthesis": [
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 32768,
+              "max_absolute": 1.862645149230957e-09,
+              "relative_l2": 3.57951991948114e-08,
+              "rms_absolute": 1.0599698287834719e-10
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 32768,
+              "max_absolute": 0.0,
+              "relative_l2": 0.0,
+              "rms_absolute": 0.0
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 32768,
+              "max_absolute": 1.3597309589385986e-07,
+              "relative_l2": 3.619992883875565e-06,
+              "rms_absolute": 1.0719544742077735e-08
+            },
+            "channel": 0,
+            "native_f32_vs_ducc_f32": {
+              "elements": 32768,
+              "max_absolute": 1.3597309589385986e-07,
+              "relative_l2": 3.6205048667388634e-06,
+              "rms_absolute": 1.0721063187331536e-08
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 32768,
+              "max_absolute": 4.649058915617843e-16,
+              "relative_l2": 1.2155260356559314e-14,
+              "rms_absolute": 3.599423818774391e-17
+            }
+          }
+        ]
+      },
+      "phi0": 0.37,
+      "precision": "f32/complex64 inputs and outputs; f64/complex128 bridge",
+      "threads": 1
+    },
+    "T127-s1-q1": {
+      "geometry": "GL",
+      "nphi": 256,
+      "ntheta": 128,
+      "operations": {
+        "analysis": [
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 8256,
+              "max_absolute": 3.754281321679498e-09,
+              "relative_l2": 2.833799086675796e-08,
+              "rms_absolute": 2.0604298172992894e-10
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 8256,
+              "max_absolute": 0.0,
+              "relative_l2": 0.0,
+              "rms_absolute": 0.0
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 8256,
+              "max_absolute": 3.702915610616012e-07,
+              "relative_l2": 2.7775364901883675e-06,
+              "rms_absolute": 2.0195215483678338e-08
+            },
+            "channel": 0,
+            "native_f32_vs_ducc_f32": {
+              "elements": 8256,
+              "max_absolute": 3.6937215370581626e-07,
+              "relative_l2": 2.7768892341775874e-06,
+              "rms_absolute": 2.0190511756246727e-08
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 8256,
+              "max_absolute": 8.404468806123817e-16,
+              "relative_l2": 6.1359073330275255e-15,
+              "rms_absolute": 4.461363019317548e-17
+            }
+          },
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 8256,
+              "max_absolute": 3.839941346661803e-09,
+              "relative_l2": 3.576341647236669e-08,
+              "rms_absolute": 1.9615121166009517e-10
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 8256,
+              "max_absolute": 0.0,
+              "relative_l2": 0.0,
+              "rms_absolute": 0.0
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 8256,
+              "max_absolute": 3.5608347572766197e-07,
+              "relative_l2": 3.40397854629492e-06,
+              "rms_absolute": 1.866976037443764e-08
+            },
+            "channel": 1,
+            "native_f32_vs_ducc_f32": {
+              "elements": 8256,
+              "max_absolute": 3.5546483129404085e-07,
+              "relative_l2": 3.402974587819396e-06,
+              "rms_absolute": 1.8664256787799976e-08
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 8256,
+              "max_absolute": 6.456669266231174e-16,
+              "relative_l2": 7.459718080295895e-15,
+              "rms_absolute": 4.091423281038299e-17
+            }
+          }
+        ],
+        "synthesis": [
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 32768,
+              "max_absolute": 1.862645149230957e-09,
+              "relative_l2": 5.474347120146662e-08,
+              "rms_absolute": 1.6427274796725846e-10
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 32768,
+              "max_absolute": 0.0,
+              "relative_l2": 0.0,
+              "rms_absolute": 0.0
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 32768,
+              "max_absolute": 2.0023435354232788e-07,
+              "relative_l2": 4.994842863628515e-06,
+              "rms_absolute": 1.4988401995670484e-08
+            },
+            "channel": 0,
+            "native_f32_vs_ducc_f32": {
+              "elements": 32768,
+              "max_absolute": 2.0023435354232788e-07,
+              "relative_l2": 4.996140952537931e-06,
+              "rms_absolute": 1.4992286486268233e-08
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 32768,
+              "max_absolute": 1.695692197767329e-15,
+              "relative_l2": 5.970417576788579e-14,
+              "rms_absolute": 1.7915869801715216e-16
+            }
+          },
+          {
+            "bridge_f32_vs_ducc_f32": {
+              "elements": 32768,
+              "max_absolute": 3.725290298461914e-09,
+              "relative_l2": 5.293685897637872e-08,
+              "rms_absolute": 1.6351679990621298e-10
+            },
+            "bridge_f32_vs_ducc_f64_cast_to_f32": {
+              "elements": 32768,
+              "max_absolute": 0.0,
+              "relative_l2": 0.0,
+              "rms_absolute": 0.0
+            },
+            "bridge_f32_vs_native_f32": {
+              "elements": 32768,
+              "max_absolute": 1.4211400412023067e-07,
+              "relative_l2": 4.400271277092838e-06,
+              "rms_absolute": 1.3592016689470651e-08
+            },
+            "channel": 1,
+            "native_f32_vs_ducc_f32": {
+              "elements": 32768,
+              "max_absolute": 1.4225952327251434e-07,
+              "relative_l2": 4.400640101439606e-06,
+              "rms_absolute": 1.3593148532810465e-08
+            },
+            "native_f64_vs_ducc_f64": {
+              "elements": 32768,
+              "max_absolute": 6.255846535241361e-16,
+              "relative_l2": 1.512482950168786e-14,
+              "rms_absolute": 4.671912478752224e-17
+            }
+          }
+        ]
+      },
+      "phi0": 0.37,
+      "precision": "f32/complex64 inputs and outputs; f64/complex128 bridge",
+      "threads": 1
+    }
+  },
+  "ducc0": "0.41.0",
+  "ducc_source_revision": "c1ed01b8fda69d2a378190f0915f1a19762dddbf"
+}
