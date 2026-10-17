@@ -64,10 +64,17 @@ correlation, not a source-level mechanism.
 
 Shelve P01 in its current form. Its scalar gain is material, but the default
 link repeatedly crosses the spin-1 regression guard, and the favorable layout
-is an executable-level result with an unretained link command. The route
-profile still identifies general scalar visitor work as the next M2 target:
-visitor timer sums were `191.910 ms` at T1023 and `1505.354 ms` at T2047 q1. The matched T1023 scalar synthesis took `296.372 ms` in Rust, compared with
-`49.555 ms` for DUCC and `34.670 ms` for the documented SHTns adapter. P02's
-prepared-coefficient reuse did not materially improve the direct comparison,
-so the next M2 step should target the visitor's work itself while retaining
-the scaled recurrence and safe fallback behavior.
+T511 control totals did not explain the shift: the faster ordered link had
+more modeled L1 instruction misses and conditional branch mispredicts than
+the default link. Hardware performance counters are unavailable on this
+host, so the microarchitectural mechanism remains unresolved. The complete
+
+The route profile measured visitor timer sums of `191.910 ms` at T1023 and
+`1505.354 ms` at T2047 q1. Matched T1023 scalar synthesis took `296.372 ms`
+in Rust, compared with `49.555 ms` for DUCC and `34.670 ms` for the documented
+SHTns adapter. P02 coefficient reuse showed no material gain, and the first
+guarded ordinary-product visitor candidate regressed T511 and T1023. These
+measurements retain the visitor and scalar transition as the measured target
+areas, but do not justify another general-visitor variant without a distinct
+source-level hypothesis. P01 remains unaccepted pending a default-link
+spin-1 control solution and its complete control matrix.

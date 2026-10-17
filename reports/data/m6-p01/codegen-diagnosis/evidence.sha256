@@ -3,7 +3,7 @@
 22cb00437aa6cbe33222fc1a8140694c69ef8ff63694fbaa7310f50561b968f2  target/m6-p01-link-order-bench
 f212a9d7eb9f595b11983c44f7695e32c38f44531bbfaa84cb5386816118fad5  reports/data/m6-p01/link-order/causal-ab/method.md
 fa9183dd51369a8666ffd520f8d85c06065c486a7c42fc911214e59f5b34de2f  reports/data/m6-p01/codegen-diagnosis/diagnose.py
-3b81bfd4eb1450c31677ee8d5c879206d340387c7f5c51dada7864e58992b17a  reports/data/m6-p01/codegen-diagnosis/summary.md
+d318718a17f730fa9229da061fbb643b6ea1d37ea6c6bd8864e851c90196235a  reports/data/m6-p01/codegen-diagnosis/summary.md
 df4a3b2c65a7c754365da8c8f74a790c5371f4bb08122fbae1f012e9d79997b1  reports/data/m6-p01/codegen-diagnosis/binary-sections.tsv
 701dfecd9bd400efddea9616e38a18a2d2168733b6ef2c91a0a447a4d812a830  reports/data/m6-p01/codegen-diagnosis/spin1-p01-symbols.tsv
 d2afccdb5204f6fdb88bb669c6f161c67439441a8c3638d6ff1737e845371563  reports/data/m6-p01/codegen-diagnosis/normalized-disassembly.tsv

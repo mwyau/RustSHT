@@ -254,10 +254,18 @@ specific to a local final executable link. The codegen diagnosis below found
 unchanged normalized instructions and function sizes for the spin-1 scalar
 block, safe-lane helper and V3/V4 recurrence kernels across the baseline,
 default P01 and ordered P01 binaries; it did not identify a source-level
-mechanism for the layout effect. Shelve P01 in its current form. Target the general scalar visitor work for M2, while retaining its scaled
-recurrence and safe fallback behavior. Detailed symbol and disassembly
-evidence is in
-[`reports/data/m6-p01/codegen-diagnosis/`](data/m6-p01/codegen-diagnosis/). The ordered results pass the measured operation gates, but are specific to
+mechanism for the layout effect. Shelve P01 in its current form. The first follow-up general visitor candidate and P02 coefficient reuse are
+screened and rejected below. Route timing identifies scalar synthesis work,
+but does not itself establish a portable source change. Symbol and
+disassembly evidence is in
+[`reports/data/m6-p01/codegen-diagnosis/`](data/m6-p01/codegen-diagnosis/).
+
+ordered-link P01 T511 spin-1 executables found nearly identical total dynamic
+instruction references and last-level instruction misses. Its model reported
+more L1 instruction misses and conditional branch mispredicts for the faster
+microarchitectural mechanism. See
+
+The ordered results pass the measured operation gates, but are specific to
 the local benchmark executable. P01 remains archived, unaccepted and pending
 a portable source-level solution. The full suites below ran with P01 and P02
 together. Do not infer downstream consumer performance from the ordered link.
@@ -335,13 +343,17 @@ manually skipped. Full command output is in
 
 ## Other uncommitted work
 
-The current worktree also contains the M1 route-profile test module and
-counters, the extended Rust/Python benchmark harness, numerical-plan updates,
-and the matched DUCC/SHTns baseline campaign. The source changes are visible
-in `examples/m1b_bench.rs`, `examples/python_perf_baseline.py`,
-`plans/02-numerics-and-grids.md`, `src/legendre/`, and `src/transform.rs`;
-these source changes remain uncommitted. Their raw evidence is under
-`reports/data/m6-current-baseline/`. The remaining gates are C02 performance
-resolution, a default-link P01 control solution, and review of the M1 evidence. The ordered P01 matrix is complete; its results do not resolve the default-link
-spin-1 control. The source-order relocation screen did not change the linked
-symbol layout.
+The current worktree contains uncommitted P01/P02 production candidates,
+test-only M1 route counters, the extended Rust/Python benchmark harness, and
+numerical-plan edits. Their source changes are in `examples/m1b_bench.rs`,
+`examples/python_perf_baseline.py`, `plans/02-numerics-and-grids.md`,
+`src/legendre/`, and `src/transform.rs`. P01 is unaccepted; P02 and the
+isolated M2 visitor candidate are rejected. The matched DUCC/SHTns and M1
+route-profile evidence is in `reports/data/m6-current-baseline/`, and the
+rejected M2 candidate is preserved separately under
+`reports/data/m6-m2-general-visitor/`. M1 findings have been reviewed: the
+visitor dominates at T511/T1023, while visitor plus the shared transition
+dominate at T2047. The ordered P01 matrix passes its measured gates but does
+not resolve the default-link spin-1 control; source relocation also left the
+linked symbol layout unchanged. C02's q1 T255 performance gate remains
+unresolved, and P01 still lacks an accepted default-link control solution.
