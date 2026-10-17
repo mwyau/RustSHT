@@ -363,21 +363,23 @@ files, preflight records, hashes, and paired summary are in
 
 A diagnostic GL STANDARD matrix compared native f32 transforms with a bridge
 that widened the same f32-rounded coefficients or maps, ran the f64 plan, and
-downcast outputs. It covered T127/T511/T1023, scalar and spin-1, synthesis and
-analysis, and q1/q8. The screen measured a 3.63x–31.54x improvement over native
-f32 and reduced the largest relative-L2 error versus DUCC f32 from
-`4.873e-5` to `5.474e-8`. The bridge still measured up to 9.17x slower than
-DUCC f32 at T1023 scalar q8 synthesis. The largest bridge temporary payload
-was 48.0 MiB for T1023 spin-1; the 236.7 MiB peak RSS includes all retained
-comparison plans, workspaces and buffers. The matrix preflights recorded ELF hash
-`2d5ddf6febd6ef9fd480a0c2cd97feb1f10f89ee0e003097cfa2b2be0ea6e4fb`, but that
-ELF and its build log were not retained. A separate T127 spin-1 smoke failed
-with `NonRealMZero { degree: 1 }`; a later replay with a different local ELF
-hash failed the same way. Both failed attempts are retained and excluded from
-the successful matrix. Since the successful ELF cannot be tied conclusively
-to the archived source, the table is screening evidence only. It does not
-accept a public f32-to-f64 execution path. Reproduction limits, hashes, raw
-timings, DUCC comparisons, and source are in
+downcast outputs. The source-linked replay covered T127/T511/T1023, scalar and
+spin-1, synthesis and analysis, and q1/q8. It measured a 3.49x–31.74x
+improvement over native f32 and reduced the largest relative-L2 error versus
+DUCC f32 from `4.873e-5` to `5.474e-8`. The bridge remained up to 13.00x slower
+than DUCC f32 at T1023 scalar q8 synthesis; its bridge and DUCC medians were
+86.278 ms and 6.637 ms. The largest bridge temporary payload was 48.0 MiB
+for T1023 spin-1; the 237.6 MiB peak RSS includes all comparison plans,
+workspaces and buffers. A clean build in a detached worktree reproduced the matrix ELF hash
+`2d5ddf6febd6ef9fd480a0c2cd97feb1f10f89ee0e003097cfa2b2be0ea6e4fb` from the
+archived benchmark source. The rebuilt binary passed the T127 spin-1 smoke and
+all 24 matrix cells. Two earlier smoke/replay failures used an unrecorded or
+different ELF hash and are retained but excluded. The initial timing table is
+preserved separately because some DUCC medians differ from the source-linked
+replay. The bridge remains unaccepted: the screen lacks independent paired
+process repetitions, odd-longitude, adjoint, and extreme-value checks, and
+the high-resolution performance gap to DUCC remains large. Build provenance,
+the current table, raw timings, full-array comparisons and source are in
 [`reports/data/m6-f32-bridge/`](data/m6-f32-bridge/).
 
 ## Post-C03 regression checks

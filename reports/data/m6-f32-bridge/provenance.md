@@ -28,19 +28,35 @@ alive for comparison. GNU time RSS is therefore process-wide and cannot be
 interpreted as bridge-only memory. The reported per-call temporary-array size
 is computed from the f64 input/output payload sizes.
 
-## Provenance limitation
+## Source-linked reproduction
 
-All 24 successful matrix preflights record ELF SHA-256
-`2d5ddf6febd6ef9fd480a0c2cd97feb1f10f89ee0e003097cfa2b2be0ea6e4fb`. The
-archived source snapshot is present, but the successful ELF and its build log
-were not retained. A separate low-resolution smoke attempt failed with
-`NonRealMZero { degree: 1 }`; it has no recorded ELF hash and is excluded from
-the matrix. A post-screen replay used a different local ELF hash
-`aaf5808ed463632ac0926360265b3411f557eb2f8226f49510245a42c3bb54b6` and failed
-with the same error. That replay is also excluded. The raw matrix preflights
-and both failed attempts are retained so they are not mistaken for accepted
-measurements. The result is not tied conclusively to the archived source snapshot. Before a
-performance or numerical acceptance decision, build the archived source in a
-clean detached worktree with an isolated `CARGO_TARGET_DIR`, retain the build
-log and ELF hash, then rerun the matrix and investigate any recurrence of the
-spin-1 `m=0` failure. No acceptance is based on this screen.
+The initial 24-cell matrix recorded ELF SHA-256
+`2d5ddf6febd6ef9fd480a0c2cd97feb1f10f89ee0e003097cfa2b2be0ea6e4fb`, but its
+build log and ELF were not retained. A clean detached worktree at revision
+`73493cf410809f8bbe0455f252b201188d0fc6a5` rebuilt the archived benchmark
+source in an isolated `CARGO_TARGET_DIR`. The Rust source at this revision is
+unchanged from the original screen revision
+`490f71b6214f75dca23932b9f1089b816428fc25`; the intervening commit records
+documentation and evidence. Clippy and release build passed, and the rebuilt
+binary reproduced the recorded ELF hash exactly. The source-linked T127 spin-1 q1 synthesis smoke passed. A fresh 24-cell matrix
+then completed with exit status zero for every cell, no refused runs, and the
+same ELF hash in all 24 preflights. Fresh DUCC f32/f64 full-array comparisons
+used `ducc0` 0.41.0 at the pinned source revision. The current timings,
+comparisons, build output, binary hash, matrix status, and per-cell records are
+in [`replay-source-linked/`](replay-source-linked/). The initial-screen raw
+files remain in `raw/`; its q1 DUCC medians differ in some cells from the
+source-linked rerun, so the two timing tables are kept separate. The first smoke attempt has no recorded ELF hash and failed with
+`NonRealMZero { degree: 1 }`. A separate post-screen replay using ELF hash
+`aaf5808ed463632ac0926360265b3411f557eb2f8226f49510245a42c3bb54b6` failed
+with the same error. Both are retained and excluded. The source-linked build
+and fresh matrix passed these cells.
+
+## Limits
+
+This remains a screening experiment. Each Rust cell uses one process with five
+alternating within-process samples, not independent paired processes. The
+matrix covers even-longitude GL STANDARD synthesis and analysis; it does not
+cover odd longitude counts, adjoints, extreme coefficients, or high-L f32
+error envelopes. GNU time RSS includes all comparison plans, workspaces and
+buffers. The f64 bridge remains slower than DUCC f32 by as much as 13.00x at
+T1023 scalar q8 synthesis. No public f32 execution change is accepted.
