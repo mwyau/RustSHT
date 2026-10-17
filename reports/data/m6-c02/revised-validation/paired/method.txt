@@ -1,0 +1,11 @@
+M6 C02 revised-candidate paired process screen
+
+Source and binaries
+- Baseline: target/m6-c02-baseline-bench, SHA-256 52a0e53c01bd0055f13bedfc3f20d09d128a981f895ab768e1533984b1fb7c53. Parent-provided build from integrated a918e80 plus C01 c0e11ad production code.
+- Revised candidate: target/m6-c02-revised-bench. Built from detached c0e11ad plus c02-only-source.patch; SHA-256 is recorded in binary-sha256.txt.
+- C02 source patch SHA-256: 67d96665df7d0fec50ae7dcabdf5dd3bc2c8df5e0c62dc3bf90adbf7dfd08897. This patch contains the staged C02 files only; it excludes the unstaged C03 and P01 changes in the shared worktree.
+- Host/compiler: x86-64 CPU, host topology omitted; rustc 1.99.0, LLVM 23.1.1. q1 uses one CPU core; q8 uses 8 pinned CPU cores. Cells and procedure
+- GL STANDARD f64, scalar and spin-1, T255/T511, q1/q8; ntheta=T+1, nphi=2(T+1), full mmax, phi0=0.37, both operations, requested-only mode.
+- Six fresh-process baseline/candidate pairs per cell; odd pairs run baseline first and even pairs run candidate first. Each operation has one warm-up and five timed samples. `/usr/bin/time` records elapsed time and peak RSS for every process.
+- Before each process, the runner records uptime, CPU pressure, load and process listings. It refuses to start if a compiler/benchmark process is live or another process uses at least 8% CPU. A refused preflight records no measurement; rerunning the script skips complete files and fills missing cells.
+- Summary ratios compare each candidate process median with the paired baseline process median independently for synthesis and analysis. The 95% interval bootstraps the six pair ratios with 20,000 resamples and deterministic seed 20261017 plus cell/operation offsets. The 2% indicator is descriptive; whole synthesis and analysis calls are judged separately. No S+A sum is used as a substitute. Numerical checks precede this screen. Logs are in the sibling revised-validation directory. Raw stdout, time and preflight evidence are kept beside this method.

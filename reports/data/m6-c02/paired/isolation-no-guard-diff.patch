@@ -1,0 +1,16 @@
+--- a/src/fft.rs (C02 candidate source)
++++ b/src/fft.rs (diagnostic build only)
+@@ recombine_half @@
+-    let result = (a + b) * half + Complex::new(T::zero(), signed_half) * twiddle * (a - b);
+-    if result.re.is_finite() && result.im.is_finite() {
+-        return result;
+-    }
+-    // Sum before halving preserves subnormals in the ordinary path. Only an
+-    // overflowing finite sum is halved first in the exceptional path.
+-    let even = Complex::new(half_sum(a.re, b.re), half_sum(a.im, b.im));
+-    let odd = Complex::new(half_sum(a.re, -b.re), half_sum(a.im, -b.im));
+-    even + Complex::new(T::zero(), signed_half + signed_half) * twiddle * odd
++    (a + b) * half + Complex::new(T::zero(), signed_half) * twiddle * (a - b)
+
+This diagnostic edit applied only to src/fft.rs for the no-guard binary build. The exact original src/fft.rs was saved as src-fft-before-no-guard.rs and restored
+before the paired measurement. No inverse_series normalization code was changed.

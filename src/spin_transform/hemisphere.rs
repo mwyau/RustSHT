@@ -211,8 +211,7 @@ fn synthesize_group<T: ShtScalar>(
         }
 
         let phase = longitude_phase::<T>(m, plan.grid.phi0(), false);
-        let scale = T::from_usize(nphi).expect("longitude count converts");
-        let nyquist_scale = scale * T::from_f64(2.0).expect("two is representable");
+        let nyquist_scale = T::from_f64(2.0).expect("two is representable");
         for lane in 0..group_len {
             let north_index = lane * spectrum_len + m;
             let south_index = (group_len - 1 - lane) * spectrum_len + m;
@@ -226,7 +225,7 @@ fn synthesize_group<T: ShtScalar>(
                 spectra[index] = if nphi.is_multiple_of(2) && m == nphi / 2 {
                     Complex::new(nyquist_scale * value.re, zero)
                 } else {
-                    value * scale
+                    value
                 };
             }
         }
@@ -387,14 +386,14 @@ pub(super) fn synthesize<T: ShtScalar>(
     for ring in 0..ntheta {
         let spectrum_start = ring * spectrum_len;
         let spectrum_end = spectrum_start + spectrum_len;
-        plan.fft.inverse(
+        plan.fft.inverse_series(
             &workspace.spectra[spectrum_start..spectrum_end],
             &mut workspace.row,
             &mut workspace.fft,
         )?;
         let output_start = ring * nphi;
         first_component[output_start..output_start + nphi].copy_from_slice(&workspace.row);
-        plan.fft.inverse(
+        plan.fft.inverse_series(
             &workspace.spin_spectra[spectrum_start..spectrum_end],
             &mut workspace.row,
             &mut workspace.fft,

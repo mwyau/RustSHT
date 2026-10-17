@@ -1,0 +1,400 @@
+diff --git a/src/fft.rs b/src/fft.rs
+index 4d31c0b..5b14f83 100644
+--- a/src/fft.rs
++++ b/src/fft.rs
+@@ -123,9 +123,7 @@ impl<T: FftNum + Float> RealFftPlan<T> {
+                 for (k, value) in output.iter_mut().enumerate() {
+                     let z = workspace.transform[k % half];
+                     let mirror = workspace.transform[(half - (k % half)) % half].conj();
+-                    let difference = z - mirror;
+-                    *value = (z + mirror) * half_scalar
+-                        + Complex::new(T::zero(), -half_scalar) * twiddles[k] * difference;
++                    *value = recombine_half(z, mirror, twiddles[k], -half_scalar);
+                 }
+                 output[0].im = T::zero();
+                 output[half].im = T::zero();
+@@ -149,6 +147,26 @@ impl<T: FftNum + Float> RealFftPlan<T> {
+         input: &[Complex<T>],
+         output: &mut [T],
+         workspace: &mut RealFftWorkspace<T>,
++    ) -> Result<(), ShtError> {
++        self.inverse_impl::<true>(input, output, workspace)
++    }
++
++    /// Evaluates a Hermitian Fourier series without a `1/n` factor.
++    /// DC and even-length Nyquist bins each occur once in the series.
++    pub(crate) fn inverse_series(
++        &self,
++        input: &[Complex<T>],
++        output: &mut [T],
++        workspace: &mut RealFftWorkspace<T>,
++    ) -> Result<(), ShtError> {
++        self.inverse_impl::<false>(input, output, workspace)
++    }
++
++    fn inverse_impl<const NORMALIZE: bool>(
++        &self,
++        input: &[Complex<T>],
++        output: &mut [T],
++        workspace: &mut RealFftWorkspace<T>,
+     ) -> Result<(), ShtError> {
+         check_len("real FFT spectrum", self.spectrum_len(), input.len())?;
+         check_len("real FFT output", self.n, output.len())?;
+@@ -173,17 +191,19 @@ impl<T: FftNum + Float> RealFftPlan<T> {
+                     } else {
+                         input[half - k].conj()
+                     };
+-                    let difference = a - b;
+-                    workspace.transform[k] = (a + b)
+-                        * T::from_f64(0.5).expect("half is representable")
+-                        + Complex::new(T::zero(), T::from_f64(0.5).expect("half is representable"))
+-                            * twiddles[k].conj()
+-                            * difference;
++                    workspace.transform[k] = if NORMALIZE {
++                        recombine_half(a, b, twiddles[k].conj(), T::from_f64(0.5).unwrap())
++                    } else {
++                        (a + b) + Complex::new(T::zero(), T::one()) * twiddles[k].conj() * (a - b)
++                    };
+                 }
+ 
+                 inverse.process_with_scratch(&mut workspace.transform, &mut workspace.scratch);
+-                let scale =
+-                    T::one() / T::from_usize(half).expect("usize converts to the FFT scalar");
++                let scale = if NORMALIZE {
++                    T::one() / T::from_usize(half).expect("usize converts to the FFT scalar")
++                } else {
++                    T::one()
++                };
+                 for (j, pair) in output.as_chunks_mut::<2>().0.iter_mut().enumerate() {
+                     pair[0] = workspace.transform[j].re * scale;
+                     pair[1] = workspace.transform[j].im * scale;
+@@ -206,8 +226,11 @@ impl<T: FftNum + Float> RealFftPlan<T> {
+                 }
+ 
+                 inverse.process_with_scratch(&mut workspace.transform, &mut workspace.scratch);
+-                let scale =
+-                    T::one() / T::from_usize(self.n).expect("usize converts to the FFT scalar");
++                let scale = if NORMALIZE {
++                    T::one() / T::from_usize(self.n).expect("usize converts to the FFT scalar")
++                } else {
++                    T::one()
++                };
+                 for (value, sample) in output.iter_mut().zip(&workspace.transform) {
+                     *value = sample.re * scale;
+                 }
+@@ -231,6 +254,36 @@ impl<T: FftNum + Float> RealFftPlan<T> {
+     }
+ }
+ 
++#[inline]
++fn half_sum<T: FftNum + Float>(a: T, b: T) -> T {
++    let half = T::from_f64(0.5).expect("half is representable");
++    let sum = a + b;
++    if sum.is_infinite() && a.is_finite() && b.is_finite() {
++        a * half + b * half
++    } else {
++        sum * half
++    }
++}
++
++#[inline]
++fn recombine_half<T: FftNum + Float>(
++    a: Complex<T>,
++    b: Complex<T>,
++    twiddle: Complex<T>,
++    signed_half: T,
++) -> Complex<T> {
++    let half = T::from_f64(0.5).expect("half is representable");
++    let result = (a + b) * half + Complex::new(T::zero(), signed_half) * twiddle * (a - b);
++    if result.re.is_finite() && result.im.is_finite() {
++        return result;
++    }
++    // Sum before halving preserves subnormals in the ordinary path. Only an
++    // overflowing finite sum is halved first in the exceptional path.
++    let even = Complex::new(half_sum(a.re, b.re), half_sum(a.im, b.im));
++    let odd = Complex::new(half_sum(a.re, -b.re), half_sum(a.im, -b.im));
++    even + Complex::new(T::zero(), signed_half + signed_half) * twiddle * odd
++}
++
+ fn check_len(buffer: &'static str, expected: usize, actual: usize) -> Result<(), ShtError> {
+     if actual == expected {
+         Ok(())
+@@ -262,6 +315,47 @@ mod tests {
+ 
+     use super::*;
+ 
++    #[test]
++    fn length_two_extreme_finite_forward() {
++        for input in [[1.0e308, 0.0], [0.0, 1.0e308]] {
++            let plan = RealFftPlan::new(2).unwrap();
++            let mut workspace = plan.workspace().unwrap();
++            let mut spectrum = [Complex64::new(0.0, 0.0); 2];
++            plan.forward(&input, &mut spectrum, &mut workspace).unwrap();
++            assert_eq!(spectrum[0], Complex64::new(1.0e308, 0.0));
++            assert_eq!(spectrum[1], Complex64::new(input[0] - input[1], 0.0));
++        }
++    }
++
++    #[test]
++    fn length_two_extreme_finite_inverse() {
++        let plan = RealFftPlan::new(2).unwrap();
++        let mut workspace = plan.workspace().unwrap();
++        let spectrum = [Complex64::new(1.0e308, 0.0); 2];
++        let mut output = [0.0; 2];
++        plan.inverse(&spectrum, &mut output, &mut workspace)
++            .unwrap();
++        assert_eq!(output, [1.0e308, 0.0]);
++    }
++
++    #[test]
++    fn length_two_extreme_finite_f32() {
++        let plan = RealFftPlan::<f32>::new(2).unwrap();
++        let mut workspace = plan.workspace().unwrap();
++        let input = [2.0e38, 0.0];
++        let mut spectrum = [Complex32::new(0.0, 0.0); 2];
++        plan.forward(&input, &mut spectrum, &mut workspace).unwrap();
++        assert_eq!(spectrum, [Complex32::new(2.0e38, 0.0); 2]);
++        let mut output = [0.0; 2];
++        plan.inverse(
++            &[Complex32::new(2.0e38, 0.0); 2],
++            &mut output,
++            &mut workspace,
++        )
++        .unwrap();
++        assert_eq!(output, input);
++    }
++
+     fn close_complex(actual: Complex64, expected: Complex64, tolerance: f64) {
+         let error = (actual - expected).norm();
+         assert!(
+@@ -437,6 +531,57 @@ mod tests {
+         }
+     }
+ 
++    #[test]
++    fn inverse_series_matches_direct_sum_and_preserves_tiny_dc() {
++        for n in [1, 2, 3, 4, 5, 8, 31, 32, 33] {
++            let plan = RealFftPlan::new(n).unwrap();
++            let mut workspace = plan.workspace().unwrap();
++            let mut spectrum: Vec<_> = (0..plan.spectrum_len())
++                .map(|k| Complex64::new(0.21 * (k + 1) as f64, 0.17 * (k as f64 - 2.0)))
++                .collect();
++            spectrum[0].im = 0.0;
++            if n.is_multiple_of(2) {
++                spectrum[n / 2].im = 0.0;
++            }
++            let mut output = vec![0.0; n];
++            plan.inverse_series(&spectrum, &mut output, &mut workspace)
++                .unwrap();
++            for (j, &actual) in output.iter().enumerate() {
++                let mut expected = spectrum[0].re;
++                for (k, &mode) in spectrum.iter().enumerate().skip(1) {
++                    let angle = 2.0 * PI * (k * j) as f64 / n as f64;
++                    let weight = if 2 * k == n { 1.0 } else { 2.0 };
++                    expected += weight * (mode.re * angle.cos() - mode.im * angle.sin());
++                }
++                assert!((actual - expected).abs() <= 4e-13 * expected.abs().max(1.0));
++            }
++            for dc in [f64::from_bits(1), -f64::from_bits(1), 1.0e308] {
++                spectrum.fill(Complex64::new(0.0, 0.0));
++                spectrum[0].re = dc;
++                plan.inverse_series(&spectrum, &mut output, &mut workspace)
++                    .unwrap();
++                assert!(
++                    output.iter().all(|&value| value == dc),
++                    "n={n}, dc={dc}, {output:?}"
++                );
++            }
++        }
++    }
++
++    #[test]
++    fn half_recombination_preserves_subnormals_and_cancellation() {
++        for a in [f64::from_bits(1), f64::MIN_POSITIVE, 1.0e308, -1.0e308] {
++            assert_eq!(half_sum(a, a), a);
++            assert_eq!(half_sum(a, -a), 0.0);
++            assert_eq!(half_sum(a, 0.0), a * 0.5);
++        }
++        for a in [f32::from_bits(1), f32::MIN_POSITIVE, 2.0e38, -2.0e38] {
++            assert_eq!(half_sum(a, a), a);
++            assert_eq!(half_sum(a, -a), 0.0);
++            assert_eq!(half_sum(a, 0.0), a * 0.5);
++        }
++    }
++
+     #[test]
+     fn real_fft_validates_shapes_and_spectrum_edges() {
+         let plan = RealFftPlan::new(4).unwrap();
+diff --git a/src/spin_transform.rs b/src/spin_transform.rs
+index b57d13a..eead210 100644
+--- a/src/spin_transform.rs
++++ b/src/spin_transform.rs
+@@ -1215,14 +1215,14 @@ impl<T: ShtScalar> ShtPlan<T> {
+         for ring in 0..ntheta {
+             let spectrum_start = ring * spectrum_len;
+             let spectrum_end = spectrum_start + spectrum_len;
+-            self.fft.inverse(
++            self.fft.inverse_series(
+                 &workspace.spectra[spectrum_start..spectrum_end],
+                 &mut workspace.row,
+                 &mut workspace.fft,
+             )?;
+             let output_start = ring * nphi;
+             first_component[output_start..output_start + nphi].copy_from_slice(&workspace.row);
+-            self.fft.inverse(
++            self.fft.inverse_series(
+                 &workspace.spin_spectra[spectrum_start..spectrum_end],
+                 &mut workspace.row,
+                 &mut workspace.fft,
+@@ -1431,8 +1431,7 @@ impl<T: ShtScalar> ShtPlan<T> {
+         debug_assert_eq!(q_spectra.len(), (ring_end - ring_start) * spectrum_len);
+         debug_assert_eq!(u_spectra.len(), q_spectra.len());
+ 
+-        let fourier_scale = T::from_usize(nphi).expect("longitude count converts");
+-        let nyquist_scale = fourier_scale * T::from_f64(2.0).expect("two is representable");
++        let nyquist_scale = T::from_f64(2.0).expect("two is representable");
+         let maximum_ring_order = (spin == 1).then(|| {
+             ring_order_limits[ring_start..ring_end]
+                 .iter()
+@@ -1629,8 +1628,8 @@ impl<T: ShtScalar> ShtPlan<T> {
+                     u_spectra[spectrum_index] =
+                         Complex::new(nyquist_scale * phased_u.re, T::zero());
+                 } else {
+-                    q_spectra[spectrum_index] = phased_q * fourier_scale;
+-                    u_spectra[spectrum_index] = phased_u * fourier_scale;
++                    q_spectra[spectrum_index] = phased_q;
++                    u_spectra[spectrum_index] = phased_u;
+                 }
+             }
+         }
+diff --git a/src/spin_transform/hemisphere.rs b/src/spin_transform/hemisphere.rs
+index 6659227..eb604da 100644
+--- a/src/spin_transform/hemisphere.rs
++++ b/src/spin_transform/hemisphere.rs
+@@ -211,8 +211,7 @@ fn synthesize_group<T: ShtScalar>(
+         }
+ 
+         let phase = longitude_phase::<T>(m, plan.grid.phi0(), false);
+-        let scale = T::from_usize(nphi).expect("longitude count converts");
+-        let nyquist_scale = scale * T::from_f64(2.0).expect("two is representable");
++        let nyquist_scale = T::from_f64(2.0).expect("two is representable");
+         for lane in 0..group_len {
+             let north_index = lane * spectrum_len + m;
+             let south_index = (group_len - 1 - lane) * spectrum_len + m;
+@@ -226,7 +225,7 @@ fn synthesize_group<T: ShtScalar>(
+                 spectra[index] = if nphi.is_multiple_of(2) && m == nphi / 2 {
+                     Complex::new(nyquist_scale * value.re, zero)
+                 } else {
+-                    value * scale
++                    value
+                 };
+             }
+         }
+@@ -387,14 +386,14 @@ pub(super) fn synthesize<T: ShtScalar>(
+     for ring in 0..ntheta {
+         let spectrum_start = ring * spectrum_len;
+         let spectrum_end = spectrum_start + spectrum_len;
+-        plan.fft.inverse(
++        plan.fft.inverse_series(
+             &workspace.spectra[spectrum_start..spectrum_end],
+             &mut workspace.row,
+             &mut workspace.fft,
+         )?;
+         let output_start = ring * nphi;
+         first_component[output_start..output_start + nphi].copy_from_slice(&workspace.row);
+-        plan.fft.inverse(
++        plan.fft.inverse_series(
+             &workspace.spin_spectra[spectrum_start..spectrum_end],
+             &mut workspace.row,
+             &mut workspace.fft,
+diff --git a/src/spin_transform/tests.rs b/src/spin_transform/tests.rs
+index 51fa7f1..2d3e196 100644
+--- a/src/spin_transform/tests.rs
++++ b/src/spin_transform/tests.rs
+@@ -1511,11 +1511,10 @@ fn spin1_scalar_transition_splits_polar_lanes_and_matches_general() {
+ 
+             if let Some((m, split_q, split_u, block_q, block_u)) = split_probe {
+                 let phase = crate::legendre::longitude_phase::<f64>(m, plan.grid.phi0(), false);
+-                let longitude_scale = nphi as f64;
+                 for ring in 0..block_len {
+                     let index = ring * spectrum_len + m;
+-                    let expected_q = general_q[index] / phase / longitude_scale;
+-                    let expected_u = general_u[index] / phase / longitude_scale;
++                    let expected_q = general_q[index] / phase;
++                    let expected_u = general_u[index] / phase;
+                     if workspace.theta_sin[ring] >= transition_sine
+                         && m <= workspace.ring_order_limits[ring]
+                     {
+diff --git a/src/transform.rs b/src/transform.rs
+index 04ffa40..1f117a0 100644
+--- a/src/transform.rs
++++ b/src/transform.rs
+@@ -339,7 +339,6 @@ fn accumulate_precomputed_synthesis_order<T: ShtScalar>(
+     order_row: &mut [Complex<T>],
+ ) -> bool {
+     let ntheta = order_row.len();
+-    let nphi = plan.grid.nphi();
+     let lmax = plan.harmonics.lmax();
+     for degree_offset in 0..=(lmax - m) {
+         let l = m + degree_offset;
+@@ -371,9 +370,8 @@ fn accumulate_precomputed_synthesis_order<T: ShtScalar>(
+     } else {
+         longitude_phase::<T>(m, plan.grid.phi0(), false)
+     };
+-    let scale = phase * T::from_usize(nphi).expect("longitude count converts");
+     for value in order_row {
+-        *value *= scale;
++        *value *= phase;
+     }
+     true
+ }
+@@ -652,7 +650,7 @@ impl<T: ShtScalar> ShtPlan<T> {
+             let start = ring * spectrum_len;
+             let ring_spectrum = &workspace.spectra[start..start + spectrum_len];
+             self.fft
+-                .inverse(ring_spectrum, &mut workspace.row, &mut workspace.fft)?;
++                .inverse_series(ring_spectrum, &mut workspace.row, &mut workspace.fft)?;
+             let output_start = ring * nphi;
+             map[output_start..output_start + nphi].copy_from_slice(&workspace.row);
+         }
+@@ -746,7 +744,7 @@ impl<T: ShtScalar> ShtPlan<T> {
+         }
+         for ring in 0..ntheta {
+             let spectrum_start = ring * spectrum_len;
+-            self.fft.inverse(
++            self.fft.inverse_series(
+                 &workspace.spectra[spectrum_start..spectrum_start + spectrum_len],
+                 &mut workspace.row,
+                 &mut workspace.fft,
+@@ -782,8 +780,7 @@ impl<T: ShtScalar> ShtPlan<T> {
+         debug_assert_eq!(spectra.len(), theta_sin.len() * spectrum_len);
+         debug_assert_eq!(theta_sin.len(), theta_cos.len());
+ 
+-        let fourier_scale = T::from_usize(nphi).expect("longitude count converts");
+-        let nyquist_scale = fourier_scale * T::from_f64(2.0).expect("two is representable");
++        let nyquist_scale = T::from_f64(2.0).expect("two is representable");
+         for m in 0..=mmax {
+             T::fill_epsilon(m, lmax, &mut recurrence.epsilon);
+             let coefficient_start = self
+@@ -1072,7 +1069,7 @@ impl<T: ShtScalar> ShtPlan<T> {
+                 if nphi.is_multiple_of(2) && m == nphi / 2 {
+                     spectra[spectrum_index] = Complex::new(nyquist_scale * phased.re, T::zero());
+                 } else {
+-                    spectra[spectrum_index] = phased * fourier_scale;
++                    spectra[spectrum_index] = phased;
+                 }
+             }
+         }
+diff --git a/src/transform/tests.rs b/src/transform/tests.rs
+index 7faae81..3e3170d 100644
+--- a/src/transform/tests.rs
++++ b/src/transform/tests.rs
+@@ -1230,7 +1230,7 @@ fn scalar_t1023_transition_fallback_matches_scaled_reference_for_extreme_coeffic
+ 
+         let phase = crate::legendre::longitude_phase::<f64>(m, plan.grid.phi0(), false);
+         for lane in 0..theta_sin.len() {
+-            let expected = unscaled_reference[lane] * phase * nphi as f64;
++            let expected = unscaled_reference[lane] * phase;
+             let actual = actual_spectra[lane * spectrum_len + m];
+             if coefficient == f64::from_bits(1) {
+                 assert_eq!(actual, expected, "subnormal input at lane {lane}");

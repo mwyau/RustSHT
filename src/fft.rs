@@ -113,19 +113,32 @@ impl<T: FftNum + Float> RealFftPlan<T> {
             Engine::Even {
                 forward, twiddles, ..
             } => {
+                let component_bound = T::max_value()
+                    / T::from_f64(8.0).expect("eight is representable")
+                    / T::from_usize(self.n).expect("usize converts to the FFT scalar");
+                let mut bounded_row = true;
                 for (j, pair) in input.as_chunks::<2>().0.iter().enumerate() {
+                    bounded_row &= pair
+                        .iter()
+                        .all(|&sample| sample.is_finite() && sample.abs() <= component_bound);
                     workspace.transform[j] = Complex::new(pair[0], pair[1]);
                 }
                 forward.process_with_scratch(&mut workspace.transform, &mut workspace.scratch);
 
                 let half = self.transform_len;
                 let half_scalar = T::from_f64(0.5).expect("half is representable");
-                for (k, value) in output.iter_mut().enumerate() {
-                    let z = workspace.transform[k % half];
-                    let mirror = workspace.transform[(half - (k % half)) % half].conj();
-                    let difference = z - mirror;
-                    *value = (z + mirror) * half_scalar
-                        + Complex::new(T::zero(), -half_scalar) * twiddles[k] * difference;
+                if bounded_row {
+                    for (k, value) in output.iter_mut().enumerate() {
+                        let z = workspace.transform[k % half];
+                        let mirror = workspace.transform[(half - (k % half)) % half].conj();
+                        *value = ordinary_recombine_half(z, mirror, twiddles[k], -half_scalar);
+                    }
+                } else {
+                    for (k, value) in output.iter_mut().enumerate() {
+                        let z = workspace.transform[k % half];
+                        let mirror = workspace.transform[(half - (k % half)) % half].conj();
+                        *value = recombine_half(z, mirror, twiddles[k], -half_scalar);
+                    }
                 }
                 output[0].im = T::zero();
                 output[half].im = T::zero();
@@ -145,6 +158,37 @@ impl<T: FftNum + Float> RealFftPlan<T> {
 
     /// Reconstructs a real row from its unnormalized nonnegative Fourier modes.
     pub(crate) fn inverse(
+        &self,
+        input: &[Complex<T>],
+        output: &mut [T],
+        workspace: &mut RealFftWorkspace<T>,
+    ) -> Result<(), ShtError> {
+        self.inverse_impl::<true, true>(input, output, workspace)
+    }
+
+    /// Reconstructs a real row using the ordinary half-spectrum expression.
+    /// The caller must establish finite headroom for every intermediate value.
+    pub(crate) fn inverse_bounded(
+        &self,
+        input: &[Complex<T>],
+        output: &mut [T],
+        workspace: &mut RealFftWorkspace<T>,
+    ) -> Result<(), ShtError> {
+        self.inverse_impl::<true, false>(input, output, workspace)
+    }
+
+    /// Evaluates a Hermitian Fourier series without a `1/n` factor.
+    /// DC and even-length Nyquist bins each occur once in the series.
+    pub(crate) fn inverse_series(
+        &self,
+        input: &[Complex<T>],
+        output: &mut [T],
+        workspace: &mut RealFftWorkspace<T>,
+    ) -> Result<(), ShtError> {
+        self.inverse_impl::<false, false>(input, output, workspace)
+    }
+
+    fn inverse_impl<const NORMALIZE: bool, const ROBUST: bool>(
         &self,
         input: &[Complex<T>],
         output: &mut [T],
@@ -173,17 +217,31 @@ impl<T: FftNum + Float> RealFftPlan<T> {
                     } else {
                         input[half - k].conj()
                     };
-                    let difference = a - b;
-                    workspace.transform[k] = (a + b)
-                        * T::from_f64(0.5).expect("half is representable")
-                        + Complex::new(T::zero(), T::from_f64(0.5).expect("half is representable"))
-                            * twiddles[k].conj()
-                            * difference;
+                    workspace.transform[k] = if NORMALIZE && ROBUST {
+                        recombine_half(
+                            a,
+                            b,
+                            twiddles[k].conj(),
+                            T::from_f64(0.5).expect("half is representable"),
+                        )
+                    } else if NORMALIZE {
+                        ordinary_recombine_half(
+                            a,
+                            b,
+                            twiddles[k].conj(),
+                            T::from_f64(0.5).expect("half is representable"),
+                        )
+                    } else {
+                        (a + b) + Complex::new(T::zero(), T::one()) * twiddles[k].conj() * (a - b)
+                    };
                 }
 
                 inverse.process_with_scratch(&mut workspace.transform, &mut workspace.scratch);
-                let scale =
-                    T::one() / T::from_usize(half).expect("usize converts to the FFT scalar");
+                let scale = if NORMALIZE {
+                    T::one() / T::from_usize(half).expect("usize converts to the FFT scalar")
+                } else {
+                    T::one()
+                };
                 for (j, pair) in output.as_chunks_mut::<2>().0.iter_mut().enumerate() {
                     pair[0] = workspace.transform[j].re * scale;
                     pair[1] = workspace.transform[j].im * scale;
@@ -206,8 +264,11 @@ impl<T: FftNum + Float> RealFftPlan<T> {
                 }
 
                 inverse.process_with_scratch(&mut workspace.transform, &mut workspace.scratch);
-                let scale =
-                    T::one() / T::from_usize(self.n).expect("usize converts to the FFT scalar");
+                let scale = if NORMALIZE {
+                    T::one() / T::from_usize(self.n).expect("usize converts to the FFT scalar")
+                } else {
+                    T::one()
+                };
                 for (value, sample) in output.iter_mut().zip(&workspace.transform) {
                     *value = sample.re * scale;
                 }
@@ -229,6 +290,47 @@ impl<T: FftNum + Float> RealFftPlan<T> {
             workspace.scratch.len(),
         )
     }
+}
+
+#[inline]
+fn ordinary_recombine_half<T: FftNum + Float>(
+    a: Complex<T>,
+    b: Complex<T>,
+    twiddle: Complex<T>,
+    signed_half: T,
+) -> Complex<T> {
+    let half = T::from_f64(0.5).expect("half is representable");
+    let difference = a - b;
+    (a + b) * half + Complex::new(T::zero(), signed_half) * twiddle * difference
+}
+
+#[inline]
+fn half_sum<T: FftNum + Float>(a: T, b: T) -> T {
+    let half = T::from_f64(0.5).expect("half is representable");
+    let sum = a + b;
+    if sum.is_infinite() && a.is_finite() && b.is_finite() {
+        a * half + b * half
+    } else {
+        sum * half
+    }
+}
+
+#[inline]
+fn recombine_half<T: FftNum + Float>(
+    a: Complex<T>,
+    b: Complex<T>,
+    twiddle: Complex<T>,
+    signed_half: T,
+) -> Complex<T> {
+    let result = ordinary_recombine_half(a, b, twiddle, signed_half);
+    if result.re.is_finite() && result.im.is_finite() {
+        return result;
+    }
+    // Sum before halving preserves subnormals in the ordinary path. Only an
+    // overflowing finite sum is halved first in the exceptional path.
+    let even = Complex::new(half_sum(a.re, b.re), half_sum(a.im, b.im));
+    let odd = Complex::new(half_sum(a.re, -b.re), half_sum(a.im, -b.im));
+    even + Complex::new(T::zero(), signed_half + signed_half) * twiddle * odd
 }
 
 fn check_len(buffer: &'static str, expected: usize, actual: usize) -> Result<(), ShtError> {
@@ -261,6 +363,47 @@ mod tests {
     use rustfft::FftPlanner;
 
     use super::*;
+
+    #[test]
+    fn length_two_extreme_finite_forward() {
+        for input in [[1.0e308, 0.0], [0.0, 1.0e308]] {
+            let plan = RealFftPlan::new(2).unwrap();
+            let mut workspace = plan.workspace().unwrap();
+            let mut spectrum = [Complex64::new(0.0, 0.0); 2];
+            plan.forward(&input, &mut spectrum, &mut workspace).unwrap();
+            assert_eq!(spectrum[0], Complex64::new(1.0e308, 0.0));
+            assert_eq!(spectrum[1], Complex64::new(input[0] - input[1], 0.0));
+        }
+    }
+
+    #[test]
+    fn length_two_extreme_finite_inverse() {
+        let plan = RealFftPlan::new(2).unwrap();
+        let mut workspace = plan.workspace().unwrap();
+        let spectrum = [Complex64::new(1.0e308, 0.0); 2];
+        let mut output = [0.0; 2];
+        plan.inverse(&spectrum, &mut output, &mut workspace)
+            .unwrap();
+        assert_eq!(output, [1.0e308, 0.0]);
+    }
+
+    #[test]
+    fn length_two_extreme_finite_f32() {
+        let plan = RealFftPlan::<f32>::new(2).unwrap();
+        let mut workspace = plan.workspace().unwrap();
+        let input = [2.0e38, 0.0];
+        let mut spectrum = [Complex32::new(0.0, 0.0); 2];
+        plan.forward(&input, &mut spectrum, &mut workspace).unwrap();
+        assert_eq!(spectrum, [Complex32::new(2.0e38, 0.0); 2]);
+        let mut output = [0.0; 2];
+        plan.inverse(
+            &[Complex32::new(2.0e38, 0.0); 2],
+            &mut output,
+            &mut workspace,
+        )
+        .unwrap();
+        assert_eq!(output, input);
+    }
 
     fn close_complex(actual: Complex64, expected: Complex64, tolerance: f64) {
         let error = (actual - expected).norm();
@@ -399,6 +542,26 @@ mod tests {
     }
 
     #[test]
+    fn bounded_inverse_matches_robust_inverse_for_ordinary_spectra() {
+        for n in [1, 2, 3, 4, 5, 8, 31, 32, 33] {
+            let plan = RealFftPlan::new(n).unwrap();
+            let mut workspace = plan.workspace().unwrap();
+            for row in sample_rows(n) {
+                let mut spectrum = vec![Complex64::new(0.0, 0.0); plan.spectrum_len()];
+                plan.forward(&row, &mut spectrum, &mut workspace).unwrap();
+
+                let mut robust = vec![0.0; n];
+                let mut bounded = vec![0.0; n];
+                plan.inverse(&spectrum, &mut robust, &mut workspace)
+                    .unwrap();
+                plan.inverse_bounded(&spectrum, &mut bounded, &mut workspace)
+                    .unwrap();
+                assert_eq!(bounded, robust, "n={n}");
+            }
+        }
+    }
+
+    #[test]
     fn inverse_matches_direct_hermitian_sum_for_arbitrary_spectra() {
         for n in [1, 2, 3, 4, 5, 6, 7, 8, 31, 32, 33] {
             let plan = RealFftPlan::new(n).unwrap();
@@ -434,6 +597,57 @@ mod tests {
                     "n={n}, j={j}, actual={value:.16e}, expected={expected:.16e}"
                 );
             }
+        }
+    }
+
+    #[test]
+    fn inverse_series_matches_direct_sum_and_preserves_tiny_dc() {
+        for n in [1, 2, 3, 4, 5, 8, 31, 32, 33] {
+            let plan = RealFftPlan::new(n).unwrap();
+            let mut workspace = plan.workspace().unwrap();
+            let mut spectrum: Vec<_> = (0..plan.spectrum_len())
+                .map(|k| Complex64::new(0.21 * (k + 1) as f64, 0.17 * (k as f64 - 2.0)))
+                .collect();
+            spectrum[0].im = 0.0;
+            if n.is_multiple_of(2) {
+                spectrum[n / 2].im = 0.0;
+            }
+            let mut output = vec![0.0; n];
+            plan.inverse_series(&spectrum, &mut output, &mut workspace)
+                .unwrap();
+            for (j, &actual) in output.iter().enumerate() {
+                let mut expected = spectrum[0].re;
+                for (k, &mode) in spectrum.iter().enumerate().skip(1) {
+                    let angle = 2.0 * PI * (k * j) as f64 / n as f64;
+                    let weight = if 2 * k == n { 1.0 } else { 2.0 };
+                    expected += weight * (mode.re * angle.cos() - mode.im * angle.sin());
+                }
+                assert!((actual - expected).abs() <= 4e-13 * expected.abs().max(1.0));
+            }
+            for dc in [f64::from_bits(1), -f64::from_bits(1), 1.0e308] {
+                spectrum.fill(Complex64::new(0.0, 0.0));
+                spectrum[0].re = dc;
+                plan.inverse_series(&spectrum, &mut output, &mut workspace)
+                    .unwrap();
+                assert!(
+                    output.iter().all(|&value| value == dc),
+                    "n={n}, dc={dc}, {output:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn half_recombination_preserves_subnormals_and_cancellation() {
+        for a in [f64::from_bits(1), f64::MIN_POSITIVE, 1.0e308, -1.0e308] {
+            assert_eq!(half_sum(a, a), a);
+            assert_eq!(half_sum(a, -a), 0.0);
+            assert_eq!(half_sum(a, 0.0), a * 0.5);
+        }
+        for a in [f32::from_bits(1), f32::MIN_POSITIVE, 2.0e38, -2.0e38] {
+            assert_eq!(half_sum(a, a), a);
+            assert_eq!(half_sum(a, -a), 0.0);
+            assert_eq!(half_sum(a, 0.0), a * 0.5);
         }
     }
 

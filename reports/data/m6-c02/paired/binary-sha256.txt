@@ -1,0 +1,4 @@
+baseline_sha256=52a0e53c01bd0055f13bedfc3f20d09d128a981f895ab768e1533984b1fb7c53  <local-home-path>
+f5daddcd79bc71a016f53c51989f803541ca41d9dff4e570df130383d9a4a120  <local-home-path>
+order: odd pairs baseline then candidate; even pairs candidate then baseline
+first_run_utc=2026-10-17T17:23:55Z
