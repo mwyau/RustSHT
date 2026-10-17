@@ -1,0 +1,27 @@
+M6 P01-only T1023 route profile
+
+Source snapshot: target/m6-p01-link-order/source
+P01 candidate patch: reports/data/m6-p01/paired/candidate-source.patch
+P01 candidate patch SHA-256: fff74a3059aec58741072b3eb1a96421c006ddcc4ba6847949098d17266faecf
+P02: excluded in the source snapshot, as recorded by the link-order method
+Route-profile source: p01-only-source/src/legendre/route_profile.rs
+Exact changed source files: p01-only-source/
+Relevant source hashes: p01-only-source-sha256.txt
+Test binary: target/m6-p01-link-order/cargo-target/release/deps/rustsht-159837ac1c3bd1f7
+Test binary hash: p01-only-test-binary-sha256.txt
+
+Toolchain: rustc/cargo 1.99.0
+Build command:
+  CARGO_TARGET_DIR=target/m6-p01-link-order/cargo-target TMPDIR=target/tmp
+  RUSTSHT_ROUTE_LMAX=1023 RUSTSHT_ROUTE_THREADS=1
+  cargo test --manifest-path target/m6-p01-link-order/source/Cargo.toml
+    --release -p rustsht --features parallel --lib
+    legendre::route_profile::m6_scalar_synthesis_routes
+    -- --ignored --exact --nocapture
+
+Configuration: GL STANDARD f64 scalar synthesis, T1023, 1024x2048,
+full mmax, phi0=0.37, one Rayon worker. The test warms once, measures one
+uninstrumented synthesis, enables counters, measures a second synthesis, and
+asserts complete output equality. This is one route-profile run, not a paired
+acceptance benchmark. The committed M1 baseline profile has the same case and
+configuration.

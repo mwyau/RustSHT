@@ -158,7 +158,14 @@ measured scalar q1 synthesis ratios of 0.6647 at T1023 and 0.7330 at T2047;
 the T511 scalar control was 0.9880. The large-degree scalar gains align with
 the route profile, which attributes 191.910 ms at T1023 to visitor work and
 1505.354 ms to visitor work at T2047, plus 1181.839 ms in the shared
-two-channel transition at T2047. The default-link T511 spin-1 synthesis control has a repeatable greater-than-
+two-channel transition at T2047. An instrumented P01-only T1023 q1 profile, with P02 excluded, measured visitor
+CPU timers decreasing from 191.910 to 69.752 ms and shared-transition timers
+increasing from 13.420 to 39.293 ms. Fused-route time stayed near 55 ms; the
+sum of the three route timers decreased from 260.682 to 163.448 ms (37.30%). The committed route-unit count was unchanged and the instrumented map matched
+the uninstrumented map bitwise. This single diagnostic profile supports the
+route-level P01 explanation; the paired native benchmark remains the timing
+evidence. See [the P01-only route profile](data/m6-p01/route-profile/p01-only-summary.md)
+and its retained source, binary hash, and raw output. The default-link T511 spin-1 synthesis control has a repeatable greater-than-
 2% screen. Across the initial and confirmation screens (12 paired ratios),
 the median was 1.02073,
 the 95% paired bootstrap interval was 1.01791–1.02761, and 7/12 pairs were

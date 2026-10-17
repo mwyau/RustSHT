@@ -1,0 +1,5 @@
+branch_head=c9a42d17b5b581ae7d634a24824a4bf164657a57
+rustc=rustc 1.99.0 (b940084d7 2026-09-28)
+cargo=cargo 1.99.0 (5f94df478 2026-08-27)
+cpu_some_avg10=<local>
+CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
