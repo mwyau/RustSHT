@@ -1,0 +1,646 @@
+--- a/src/legendre/mod.rs
++++ b/src/legendre/mod.rs
+@@ -2,7 +2,7 @@
+ // SPDX-License-Identifier: GPL-2.0-or-later
+ 
+ #[cfg(test)]
+-mod route_profile;
++pub(crate) mod route_profile;
+ 
+ mod scalar;
+ mod scalar_f32;
+--- a/src/legendre/route_profile.rs
++++ b/src/legendre/route_profile.rs
+@@ -9,7 +9,7 @@
+ use std::time::Instant;
+ 
+ #[derive(Clone, Copy, Debug, Default)]
+-pub(super) struct Counts {
++pub(crate) struct Counts {
+     pub fused_ns: u128,
+     pub visitor_ns: u128,
+     pub transition_ns: u128,
+@@ -26,6 +26,21 @@
+     pub discarded_fused: u64,
+     pub completed_transitions: u64,
+     pub declined_transitions: u64,
++    pub spin1_conversion_ns: u128,
++    pub spin1_cache_copy_ns: u128,
++    pub spin1_general_ns: u128,
++    pub spin1_scalar_visitor_ns: u128,
++    pub spin1_rescale_ns: u128,
++    pub spin1_hemisphere_ns: u128,
++    pub spin1_orders: u64,
++    pub spin1_cached_orders: u64,
++    pub spin1_converted_orders: u64,
++    pub spin1_scalar_blocks: u64,
++    pub spin1_general_degree_lanes: u64,
++    pub spin1_scalar_visitor_degree_lanes: u64,
++    pub spin1_rescale_lanes: u64,
++    pub spin1_hemisphere_pair_lanes: u64,
++    pub spin1_hemisphere_attempts: u64,
+     pending_prefix: u64,
+     pending_fused: u64,
+ }
+@@ -42,19 +57,25 @@
+     });
+ }
+ 
+-pub(super) enum Phase {
++pub(crate) enum Phase {
+     Fused,
+     Visitor,
+     Transition,
+     Coefficients,
+     Factors,
+-}
+-
+-pub(super) fn start() -> Option<Instant> {
++    Spin1Conversion,
++    Spin1CacheCopy,
++    Spin1General,
++    Spin1ScalarVisitor,
++    Spin1Rescale,
++    Spin1Hemisphere,
++}
++
++pub(crate) fn start() -> Option<Instant> {
+     COUNTS.with_borrow(|counts| counts.is_some().then(Instant::now))
+ }
+ 
+-pub(super) fn finish(start: Option<Instant>, phase: Phase) {
++pub(crate) fn finish(start: Option<Instant>, phase: Phase) {
+     if let Some(start) = start {
+         let elapsed = start.elapsed().as_nanos();
+         update(|counts| match phase {
+@@ -63,23 +84,29 @@
+             Phase::Transition => counts.transition_ns += elapsed,
+             Phase::Coefficients => counts.coefficients_ns += elapsed,
+             Phase::Factors => counts.factors_ns += elapsed,
++            Phase::Spin1Conversion => counts.spin1_conversion_ns += elapsed,
++            Phase::Spin1CacheCopy => counts.spin1_cache_copy_ns += elapsed,
++            Phase::Spin1General => counts.spin1_general_ns += elapsed,
++            Phase::Spin1ScalarVisitor => counts.spin1_scalar_visitor_ns += elapsed,
++            Phase::Spin1Rescale => counts.spin1_rescale_ns += elapsed,
++            Phase::Spin1Hemisphere => counts.spin1_hemisphere_ns += elapsed,
+         });
+     }
+ }
+ 
+-pub(super) fn transition_call() {
++pub(crate) fn transition_call() {
+     update(|counts| counts.transition_calls += 1);
+ }
+ 
+-pub(super) fn preparation_failure() {
++pub(crate) fn preparation_failure() {
+     update(|counts| counts.preparation_failures += 1);
+ }
+ 
+-pub(super) fn fused(lanes: usize, pairs: usize) {
++pub(crate) fn fused(lanes: usize, pairs: usize) {
+     update(|counts| counts.fused += (lanes * pairs) as u64);
+ }
+ 
+-pub(super) fn visitor(lanes: usize, normal: bool) {
++pub(crate) fn visitor(lanes: usize, normal: bool) {
+     update(|counts| {
+         if normal {
+             counts.visitor_normal += lanes as u64;
+@@ -89,22 +116,22 @@
+     });
+ }
+ 
+-pub(super) fn transition_begin() {
++pub(crate) fn transition_begin() {
+     update(|counts| {
+         counts.pending_prefix = 0;
+         counts.pending_fused = 0;
+     });
+ }
+ 
+-pub(super) fn transition_prefix(lanes: usize) {
++pub(crate) fn transition_prefix(lanes: usize) {
+     update(|counts| counts.pending_prefix += lanes as u64);
+ }
+ 
+-pub(super) fn transition_fused(lanes: usize, pairs: usize) {
++pub(crate) fn transition_fused(lanes: usize, pairs: usize) {
+     update(|counts| counts.pending_fused += (lanes * pairs) as u64);
+ }
+ 
+-pub(super) fn transition_end(success: bool) {
++pub(crate) fn transition_end(success: bool) {
+     update(|counts| {
+         if success {
+             counts.transition_prefix += counts.pending_prefix;
+@@ -118,6 +145,44 @@
+         counts.pending_prefix = 0;
+         counts.pending_fused = 0;
+     });
++}
++
++pub(crate) fn spin1_order(cached: bool) {
++    update(|counts| {
++        counts.spin1_orders += 1;
++        if cached {
++            counts.spin1_cached_orders += 1;
++        } else {
++            counts.spin1_converted_orders += 1;
++        }
++    });
++}
++
++pub(crate) fn spin1_scalar_block() {
++    update(|counts| counts.spin1_scalar_blocks += 1);
++}
++
++pub(crate) fn spin1_general_degree_lanes(lanes: usize, degrees: usize) {
++    update(|counts| counts.spin1_general_degree_lanes += (lanes * degrees) as u64);
++}
++
++pub(crate) fn spin1_scalar_visitor_degree_lanes(lanes: usize, degrees: usize) {
++    update(|counts| counts.spin1_scalar_visitor_degree_lanes += (lanes * degrees) as u64);
++}
++
++pub(crate) fn spin1_rescale_lanes(lanes: usize) {
++    update(|counts| counts.spin1_rescale_lanes += lanes as u64);
++}
++
++pub(crate) fn spin1_hemisphere_pair_lanes(lanes: usize, pairs: usize) {
++    update(|counts| {
++        counts.spin1_hemisphere_pair_lanes += (lanes * pairs) as u64;
++        counts.spin1_hemisphere_attempts += 1;
++    });
++}
++
++pub(crate) fn spin1_hemisphere_attempt() {
++    update(|counts| counts.spin1_hemisphere_attempts += 1);
+ }
+ 
+ #[cfg(feature = "parallel")]
+@@ -208,3 +273,146 @@
+         enabled.as_secs_f64() * 1000.0
+     );
+ }
++
++#[cfg(feature = "parallel")]
++#[test]
++#[ignore = "opt-in M1 spin-1 synthesis route accounting"]
++fn m6_spin1_synthesis_routes() {
++    use crate::{Complex64, GridKind, GridSpec, HarmonicSpec, ShtPlan};
++    use std::time::Instant;
++
++    let lmax: usize = std::env::var("RUSTSHT_ROUTE_LMAX")
++        .unwrap_or_else(|_| "511".into())
++        .parse()
++        .unwrap();
++    let threads: usize = std::env::var("RUSTSHT_ROUTE_THREADS")
++        .unwrap_or_else(|_| "1".into())
++        .parse()
++        .unwrap();
++    assert!(lmax >= 511, "profile the spin-1 recurrence path");
++    let pool = rayon::ThreadPoolBuilder::new()
++        .num_threads(threads)
++        .build()
++        .unwrap();
++    let plan = ShtPlan::new(
++        GridSpec::new(GridKind::GaussLegendre, lmax + 1, 2 * (lmax + 1), 0.37).unwrap(),
++        HarmonicSpec::new(lmax, lmax, 1).unwrap(),
++    )
++    .unwrap();
++    let mut workspace = pool.install(|| plan.workspace()).unwrap();
++    let mut e_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
++    let mut b_alm = e_alm.clone();
++    for m in 0..=lmax {
++        for l in m..=lmax {
++            if l < 1 {
++                continue;
++            }
++            e_alm[plan.harmonics().index(l, m).unwrap()] = Complex64::new(
++                ((l * 7 + m * 11) % 19) as f64 - 9.0,
++                if m == 0 {
++                    0.0
++                } else {
++                    ((l * 13 + m * 5) % 23) as f64 - 11.0
++                },
++            ) * 1e-5;
++            b_alm[plan.harmonics().index(l, m).unwrap()] = Complex64::new(
++                ((l * 3 + m * 7) % 17) as f64 - 8.0,
++                if m == 0 {
++                    0.0
++                } else {
++                    ((l * 5 + m * 17) % 29) as f64 - 14.0
++                },
++            ) * 1e-5;
++        }
++    }
++
++    let sample_count = (lmax + 1) * 2 * (lmax + 1);
++    let mut q_map = vec![0.0; sample_count];
++    let mut u_map = vec![0.0; sample_count];
++    let synthesize =
++        |q_map: &mut [f64], u_map: &mut [f64], workspace: &mut crate::ShtWorkspace<f64>| {
++            plan.synthesis_spin_into(&e_alm, &b_alm, q_map, u_map, workspace)
++                .unwrap();
++        };
++
++    // One warm-up and one uninstrumented map establish the same-process reference.
++    pool.install(|| synthesize(&mut q_map, &mut u_map, &mut workspace));
++    let disabled_start = Instant::now();
++    pool.install(|| synthesize(&mut q_map, &mut u_map, &mut workspace));
++    let disabled = disabled_start.elapsed();
++    let q_reference = q_map.clone();
++    let u_reference = u_map.clone();
++
++    pool.broadcast(|_| COUNTS.with_borrow_mut(|counts| *counts = Some(Counts::default())));
++    let enabled_start = Instant::now();
++    pool.install(|| synthesize(&mut q_map, &mut u_map, &mut workspace));
++    let enabled = enabled_start.elapsed();
++    assert!(
++        q_map
++            .iter()
++            .zip(&q_reference)
++            .all(|(actual, reference)| actual.to_bits() == reference.to_bits())
++    );
++    assert!(
++        u_map
++            .iter()
++            .zip(&u_reference)
++            .all(|(actual, reference)| actual.to_bits() == reference.to_bits())
++    );
++
++    let workers = pool.broadcast(|_| COUNTS.with_borrow_mut(Option::take));
++    let mut total = Counts::default();
++    macro_rules! sum_field {
++        ($counts:ident, $field:ident) => {
++            total.$field += $counts.$field;
++        };
++    }
++    for (worker, worker_counts) in workers.into_iter().enumerate() {
++        let counts = worker_counts.unwrap_or_default();
++        println!("worker={worker} {counts:?}");
++        sum_field!(counts, fused_ns);
++        sum_field!(counts, visitor_ns);
++        sum_field!(counts, transition_ns);
++        sum_field!(counts, coefficients_ns);
++        sum_field!(counts, factors_ns);
++        sum_field!(counts, transition_calls);
++        sum_field!(counts, preparation_failures);
++        sum_field!(counts, fused);
++        sum_field!(counts, visitor_normal);
++        sum_field!(counts, visitor_scaled);
++        sum_field!(counts, transition_prefix);
++        sum_field!(counts, transition_fused);
++        sum_field!(counts, discarded_prefix);
++        sum_field!(counts, discarded_fused);
++        sum_field!(counts, completed_transitions);
++        sum_field!(counts, declined_transitions);
++        sum_field!(counts, spin1_conversion_ns);
++        sum_field!(counts, spin1_cache_copy_ns);
++        sum_field!(counts, spin1_general_ns);
++        sum_field!(counts, spin1_scalar_visitor_ns);
++        sum_field!(counts, spin1_rescale_ns);
++        sum_field!(counts, spin1_hemisphere_ns);
++        sum_field!(counts, spin1_orders);
++        sum_field!(counts, spin1_cached_orders);
++        sum_field!(counts, spin1_converted_orders);
++        sum_field!(counts, spin1_scalar_blocks);
++        sum_field!(counts, spin1_general_degree_lanes);
++        sum_field!(counts, spin1_scalar_visitor_degree_lanes);
++        sum_field!(counts, spin1_rescale_lanes);
++        sum_field!(counts, spin1_hemisphere_pair_lanes);
++        sum_field!(counts, spin1_hemisphere_attempts);
++    }
++    assert!(total.spin1_orders > 0);
++    let mut hash = 0xcbf29ce484222325_u64;
++    for value in q_map.iter().chain(&u_map) {
++        for byte in value.to_bits().to_le_bytes() {
++            hash ^= u64::from(byte);
++            hash = hash.wrapping_mul(0x100000001b3);
++        }
++    }
++    println!(
++        "M1 spin1 routes L={lmax} q={threads} map_hash_fnv1a64={hash:016x} disabled_ms={:.3} enabled_ms={:.3} {total:?}",
++        disabled.as_secs_f64() * 1000.0,
++        enabled.as_secs_f64() * 1000.0
++    );
++}
+--- a/src/spin_transform.rs
++++ b/src/spin_transform.rs
+@@ -1448,6 +1448,8 @@
+             let phase = longitude_phase::<T>(m, phi0, false);
+             let mut fast_scalar_order = fast_scalar;
+             if fast_scalar_order && spin == 1 {
++                #[cfg(test)]
++                crate::legendre::route_profile::spin1_order(spin1_scalar_coefficients.is_some());
+                 let coefficient_start = self
+                     .harmonics
+                     .index(m, m)
+@@ -1475,6 +1477,8 @@
+                 };
+                 if let Some(e_coefficients) = coefficient_slice {
+                     if let Some(coefficients) = spin1_scalar_coefficients {
++                        #[cfg(test)]
++                        let profile_started = crate::legendre::route_profile::start();
+                         let row_len = lmax + 2;
+                         let row_stride = row_len * 2;
+                         let row_start = m * row_stride;
+@@ -1483,7 +1487,14 @@
+                         recurrence.fast_scalar_second[..row_len].copy_from_slice(
+                             &coefficients[row_start + row_len..row_start + row_stride],
+                         );
++                        #[cfg(test)]
++                        crate::legendre::route_profile::finish(
++                            profile_started,
++                            crate::legendre::route_profile::Phase::Spin1CacheCopy,
++                        );
+                     } else {
++                        #[cfg(test)]
++                        let profile_started = crate::legendre::route_profile::start();
+                         spin1_to_scalar(
+                             m,
+                             lmax,
+@@ -1493,6 +1504,11 @@
+                             }),
+                             &mut recurrence.fast_scalar_first[..lmax + 2],
+                             &mut recurrence.fast_scalar_second[..lmax + 2],
++                        );
++                        #[cfg(test)]
++                        crate::legendre::route_profile::finish(
++                            profile_started,
++                            crate::legendre::route_profile::Phase::Spin1Conversion,
+                         );
+                     }
+                     // The conversion can overflow for finite E/B coefficients
+@@ -1621,6 +1637,17 @@
+             &mut recurrence.spin_coefficient_a,
+             &mut recurrence.spin_coefficient_b,
+         )?;
++        #[cfg(test)]
++        let profile_started = if spin == 1 {
++            crate::legendre::route_profile::start()
++        } else {
++            None
++        };
++        #[cfg(test)]
++        if spin == 1 {
++            let degrees = lmax.saturating_sub(m.max(spin)) + 1;
++            crate::legendre::route_profile::spin1_general_degree_lanes(theta_sin.len(), degrees);
++        }
+         T::for_each_spin_lm_dispatched(
+             arch,
+             &initial,
+@@ -1671,6 +1698,13 @@
+                 Ok(())
+             },
+         )?;
++        #[cfg(test)]
++        if spin == 1 {
++            crate::legendre::route_profile::finish(
++                profile_started,
++                crate::legendre::route_profile::Phase::Spin1General,
++            );
++        }
+         Ok(())
+     }
+ 
+@@ -1694,6 +1728,8 @@
+         u_spectra: &mut [Complex<T>],
+     ) -> Result<(), ShtError> {
+         let block_len = theta_sin.len();
++        #[cfg(test)]
++        crate::legendre::route_profile::spin1_scalar_block();
+         debug_assert_eq!(theta_cos.len(), block_len);
+         debug_assert_eq!(ring_order_limits.len(), block_len);
+         debug_assert_eq!(q_spectra.len(), block_len * spectrum_len);
+@@ -1805,11 +1841,21 @@
+                     &mut recurrence.analysis_opposite_imag[..block_len],
+                 )?;
+                 if fused_pair {
++                    #[cfg(test)]
++                    let profile_started = crate::legendre::route_profile::start();
+                     for (ring, &sin_theta) in theta_sin.iter().enumerate() {
+                         let spectrum_index = ring * spectrum_len + m;
+                         let inverse_sine = sin_theta.recip();
+                         q_spectra[spectrum_index] *= inverse_sine;
+                         u_spectra[spectrum_index] *= inverse_sine;
++                    }
++                    #[cfg(test)]
++                    {
++                        crate::legendre::route_profile::spin1_rescale_lanes(block_len);
++                        crate::legendre::route_profile::finish(
++                            profile_started,
++                            crate::legendre::route_profile::Phase::Spin1Rescale,
++                        );
+                     }
+                     return Ok(());
+                 }
+@@ -1895,11 +1941,21 @@
+             };
+             debug_assert_eq!(fused_first, fused_second);
+             if fused_first && fused_second {
++                #[cfg(test)]
++                let profile_started = crate::legendre::route_profile::start();
+                 for (ring, &sin_theta) in theta_sin.iter().enumerate() {
+                     let spectrum_index = ring * spectrum_len + m;
+                     let inverse_sine = sin_theta.recip();
+                     q_spectra[spectrum_index] *= inverse_sine;
+                     u_spectra[spectrum_index] *= inverse_sine;
++                }
++                #[cfg(test)]
++                {
++                    crate::legendre::route_profile::spin1_rescale_lanes(block_len);
++                    crate::legendre::route_profile::finish(
++                        profile_started,
++                        crate::legendre::route_profile::Phase::Spin1Rescale,
++                    );
+                 }
+                 return Ok(());
+             }
+@@ -2003,6 +2059,12 @@
+             } else {
+                 false
+             };
++        #[cfg(test)]
++        let staged_rescale_started = if staged_pair {
++            crate::legendre::route_profile::start()
++        } else {
++            None
++        };
+         if staged_pair {
+             for (lane, &sin_theta) in fallback_sin.iter().enumerate() {
+                 let inverse_sine = sin_theta.recip();
+@@ -2019,6 +2081,13 @@
+                 }
+             }
+         }
++        #[cfg(test)]
++        if !staged_pair {
++            crate::legendre::route_profile::finish(
++                staged_rescale_started,
++                crate::legendre::route_profile::Phase::Spin1Rescale,
++            );
++        }
+         if staged_pair {
+             for lane in 0..fallback_len {
+                 let local_ring = compact_ring_indices.map_or(lane, |indices| indices[lane]);
+@@ -2033,10 +2102,25 @@
+                     recurrence.analysis_opposite_imag[lane] * inverse_sine,
+                 );
+             }
++            #[cfg(test)]
++            {
++                crate::legendre::route_profile::spin1_rescale_lanes(fallback_len);
++                crate::legendre::route_profile::finish(
++                    staged_rescale_started,
++                    crate::legendre::route_profile::Phase::Spin1Rescale,
++                );
++            }
+             return Ok(());
+         }
+ 
+-        T::for_each_y_lm_dispatched(
++        #[cfg(test)]
++        let profile_started = crate::legendre::route_profile::start();
++        #[cfg(test)]
++        crate::legendre::route_profile::spin1_scalar_visitor_degree_lanes(
++            fallback_len,
++            scalar_lmax - m + 1,
++        );
++        let visitor_result = T::for_each_y_lm_dispatched(
+             arch,
+             m,
+             scalar_lmax,
+@@ -2076,7 +2160,13 @@
+                 }
+                 Ok(())
+             },
+-        )?;
++        );
++        #[cfg(test)]
++        crate::legendre::route_profile::finish(
++            profile_started,
++            crate::legendre::route_profile::Phase::Spin1ScalarVisitor,
++        );
++        visitor_result?;
+         Ok(())
+     }
+ 
+@@ -4228,6 +4318,8 @@
+     if !transitioned {
+         return Ok(None);
+     }
++    #[cfg(test)]
++    let rescale_started = crate::legendre::route_profile::start();
+     for lane in 0..transition_len {
+         let inverse_sine = recurrence.spin_previous_plus[lane].recip();
+         if ![
+@@ -4239,6 +4331,11 @@
+         .into_iter()
+         .all(|value| value.is_finite())
+         {
++            #[cfg(test)]
++            crate::legendre::route_profile::finish(
++                rescale_started,
++                crate::legendre::route_profile::Phase::Spin1Rescale,
++            );
+             return Ok(None);
+         }
+     }
+@@ -4256,6 +4353,14 @@
+             recurrence.analysis_opposite_imag[lane] * inverse_sine,
+         );
+     }
++    #[cfg(test)]
++    {
++        crate::legendre::route_profile::spin1_rescale_lanes(transition_len);
++        crate::legendre::route_profile::finish(
++            rescale_started,
++            crate::legendre::route_profile::Phase::Spin1Rescale,
++        );
++    }
+     Ok(Some(polar_len))
+ }
+ 
+--- a/src/spin_transform/hemisphere.rs
++++ b/src/spin_transform/hemisphere.rs
+@@ -61,6 +61,10 @@
+         let scalar_lmax = lmax + 1;
+         let coefficient_count = lmax - m + 1;
+         if let Some(coefficients) = coefficient_cache {
++            #[cfg(test)]
++            crate::legendre::route_profile::spin1_order(true);
++            #[cfg(test)]
++            let profile_started = crate::legendre::route_profile::start();
+             let row_len = lmax + 2;
+             let row_stride = 2 * row_len;
+             let row_start = m * row_stride;
+@@ -68,11 +72,20 @@
+                 .copy_from_slice(&coefficients[row_start..row_start + row_len]);
+             recurrence.fast_scalar_second[..row_len]
+                 .copy_from_slice(&coefficients[row_start + row_len..row_start + row_stride]);
++            #[cfg(test)]
++            crate::legendre::route_profile::finish(
++                profile_started,
++                crate::legendre::route_profile::Phase::Spin1CacheCopy,
++            );
+         } else {
++            #[cfg(test)]
++            crate::legendre::route_profile::spin1_order(false);
+             let coefficient_start = plan
+                 .harmonics
+                 .index(m, m)
+                 .expect("each order starts at its diagonal degree");
++            #[cfg(test)]
++            let profile_started = crate::legendre::route_profile::start();
+             spin1_to_scalar(
+                 m,
+                 lmax,
+@@ -80,6 +93,11 @@
+                 Some(&b_alm[coefficient_start..coefficient_start + coefficient_count]),
+                 &mut recurrence.fast_scalar_first[..lmax + 2],
+                 &mut recurrence.fast_scalar_second[..lmax + 2],
++            );
++            #[cfg(test)]
++            crate::legendre::route_profile::finish(
++                profile_started,
++                crate::legendre::route_profile::Phase::Spin1Conversion,
+             );
+         }
+ 
+@@ -189,7 +207,9 @@
+                         &mut recurrence.spin_next_plus[..block_len],
+                         &mut recurrence.spin_previous_minus[..block_len],
+                     ];
+-                    T::synthesize_hemisphere_pair_block_dispatched(
++                    #[cfg(test)]
++                    let profile_started = crate::legendre::route_profile::start();
++                    let used_pair = T::synthesize_hemisphere_pair_block_dispatched(
+                         arch,
+                         m,
+                         scalar_lmax,
+@@ -209,7 +229,22 @@
+                         &mut south_u[south_offset..south_end],
+                         &mut recurrence.current[..block_len],
+                         &mut sums,
+-                    )?
++                    )?;
++                    #[cfg(test)]
++                    {
++                        crate::legendre::route_profile::finish(
++                            profile_started,
++                            crate::legendre::route_profile::Phase::Spin1Hemisphere,
++                        );
++                        if used_pair {
++                            crate::legendre::route_profile::spin1_hemisphere_pair_lanes(
++                                block_len, pair_count,
++                            );
++                        } else {
++                            crate::legendre::route_profile::spin1_hemisphere_attempt();
++                        }
++                    }
++                    used_pair
+                 } else {
+                     false
+                 };

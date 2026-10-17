@@ -1,0 +1,37 @@
+M1 spin-1 synthesis route profile provenance
+
+Source reconstruction
+  Base commit: c0e11ad99f033073fb5ac56b170a72e26ede8d4f
+  Applied patch: reports/data/m6-current-baseline/rustsht-working-tree.patch
+  Patch SHA-256: 94faf9984c65013e4b05dbe12a69f2de2913bf2990ce6e97c235621cb31c374f
+  Candidate Rust tree SHA-256: 3b975f3195c9cec15ececcb662bf4b6ee0378c03d100f51b31dc496a8e5d8a05
+  Reconstructed uninstrumented Rust tree SHA-256: 34d2513348a75640fcd06c720be5f1ca5d3c7268a234a07c410c47e9d7fb8b15
+  Test-only profile source diff SHA-256: 058e7242a00f122e80a6612ed4524bbbe947f56719636b8a948ec39274ce2757
+  Production route/profile files are unchanged in the shared worktree. P01 and P02 are excluded. Build and test
+  Rust: rustc 1.99.0 (b940084d7eb6a299eb4bfeb8e34901bc051e7ac4)
+  Build command: see build-retry1.sh
+  Build log/time: build-retry1.log and build-retry1.time
+  Test binary: target/m6-spin1-routes/cargo-target/release/deps/rustsht-159837ac1c3bd1f7
+  Test binary SHA-256: f8f14aa5a4aee7215262e997a33f0ba1050c9dc61ab0026ac5b69d9ae5e4c7f1
+  Exact test: legendre::route_profile::m6_spin1_synthesis_routes
+  The test has one warm-up, a disabled-counter synthesis, then an enabled-counter
+  synthesis. It verifies Q and U bitwise equality between the last two maps. Its FNV-1a map hash is over both maps' f64 bit patterns. Configuration
+  CPU: x86-64 CPU, host topology omitted
+  q1 affinity=pinned
+  q8 8 pinned CPU cores
+  Grid: Gauss-Legendre, STANDARD, f64; ntheta=T+1, nphi=2(T+1), phi0=0.37
+  Harmonics: spin 1, full mmax=lmax=T; deterministic E/B complex coefficients
+  Thread counts: one Rayon worker or eight Rayon workers
+  Test settings: RUSTSHT_ROUTE_LMAX=T and RUSTSHT_ROUTE_THREADS=q
+  Runner: run-profile-cell.sh, invoked with `bash`
+  Each run uses taskset and `/usr/bin/time -v`; preflight refuses if PSI CPU
+  `some avg10` exceeds 0.50 or a matching compiler/benchmark process is active. The CPU-pressure check failed the declared gate; exact transient readings remain local. Two later recovery preflights and the runner preflight were below 0.50. Recovery snapshots and the original refusal are retained separately. Reference
+  DUCC 0.42.0 source revision: 80388904b8cfc32400ba84af8a6a45aabfe60f86
+  Same-source uninstrumented Rust extension SHA-256:
+    a8641456e1fcdf8d37ce3dd583dd1b7cf224306ca792d38c2b75f3bfcac63847
+  Reference artifact: reports/data/m6-current-baseline/
+  DUCC relative-L2 errors: T511 q1 6.699e-14; T511 q8 4.718e-14;
+    T1023 q1/q8 1.216e-13; T2047 q1/q8 3.707e-13. Raw data
+  Each t<T>-q<q>.stdout contains per-worker counters/timer sums, final map hash,
+  and disabled/enabled internal elapsed time. Each t<T>-q<q>.time contains external process wall time and peak RSS. Each t<T>-q<q>.preflight contains PSI, process snapshot, CPU affinity, binary
+  hash, and command. The initial T2047 q8 refusal is t2047-q8-refused-initial.preflight.

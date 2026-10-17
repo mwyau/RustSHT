@@ -15,10 +15,11 @@ candidate because its default-link spin-1 control exceeds the guard. The
 precomputed-visitor P02 showed no material gain, and the separate P02
 two-chain degree panel regressed the T1023 scalar synthesis target; both remain
 outside production. The isolated M2 general-visitor candidate is also rejected
-and remains outside production. M1 route-profile evidence is committed; its test-only
-counters, benchmark harness changes, and numerical-plan edits remain
-uncommitted. The campaign report and raw measurements are recorded in
-diagnostic evidence checkpoints.
+and remains outside production. The scalar M1 route-profile evidence is
+committed; the new spin-1 profile is recorded below. Test-only counters,
+benchmark harness changes, and numerical-plan edits remain uncommitted. The
+campaign report and raw measurements are recorded in diagnostic evidence
+checkpoints.
 
 ## C01: workspace order-prefix compatibility
 
@@ -172,7 +173,15 @@ overhead changed q1 wall time by 0.6% at T1023 and −0.04% at T2047. q8 route
 counts match the q1 totals, but workers are imbalanced at T2047 (maximum to
 minimum active route timer ratio 9.53); q8 timer sums are descriptive. The
 route tables and worker-level evidence are in
-[`reports/data/m6-current-baseline/route-profile/`](data/m6-current-baseline/route-profile/).
+[`reports/data/m6-current-baseline/route-profile/`](data/m6-current-baseline/route-profile/). A separate test-only profile covered spin-1 synthesis at T511, T1023, and
+T2047 with q1 and q8. It verified instrumented outputs against same-process
+uninstrumented outputs bitwise; DUCC relative-L2 errors ranged from
+`4.718e-14` to `3.707e-13`. At T2047, the per-worker CPU timer sums attributed
+about 1.99 s (q1) and 2.05 s (q8) to the scalar visitor, and about 1.39 s and
+1.42 s to the transition route. The q8 T511 profile also exercised the
+hemisphere path; it was absent at T1023 and T2047. These timers are diagnostic
+worker sums, not wall-time components, and do not imply performance acceptance. Per-worker counts, timers, hashes, preflights, raw output, and provenance are
+in [`the spin-1 M1 profile`](data/m6-spin1-routes/summary.md).
 
 ### q8 T2047 scheduling-granularity screen (incomplete)
 
