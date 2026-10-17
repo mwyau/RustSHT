@@ -1,0 +1,1490 @@
+diff -ruN target/m6-p01-decline-diagnostic/baseline-a50f700/src/legendre/mod.rs target/m6-p01-decline-diagnostic/source/src/legendre/mod.rs
+--- target/m6-p01-decline-diagnostic/baseline-a50f700/src/legendre/mod.rs	2026-10-17 16:22:06.000000000 -0400
++++ target/m6-p01-decline-diagnostic/source/src/legendre/mod.rs	2026-10-17 18:52:06.725832981 -0400
+@@ -1,6 +1,9 @@
+ // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
+ // SPDX-License-Identifier: GPL-2.0-or-later
+ 
++#[cfg(test)]
++mod route_profile;
++
+ mod scalar;
+ mod scalar_f32;
+ mod scalar_paired;
+@@ -357,6 +360,31 @@
+     }
+     #[expect(
+         clippy::too_many_arguments,
++        reason = "The scalar transition receives prepared coefficients and caller-owned lane scratch."
++    )]
++    fn try_synthesize_scalar_transition_dispatched(
++        _arch: Arch,
++        _m: usize,
++        _lmax: usize,
++        _sin_theta: &[Self],
++        _cos_theta: &[Self],
++        _sectoral_norm: Self,
++        _coefficient_a: &[Self],
++        _coefficient_b: &[Self],
++        _coefficient_even: &[Complex<Self>],
++        _coefficient_odd: &[Complex<Self>],
++        _previous: &mut [Self],
++        _current: &mut [Self],
++        _next: &mut [Self],
++        _exponents: &mut [i64],
++        _sum_re: &mut [Self],
++        _sum_im: &mut [Self],
++        _failed_lane: &mut usize,
++    ) -> Result<bool, ShtError> {
++        Ok(false)
++    }
++    #[expect(
++        clippy::too_many_arguments,
+         reason = "The paired recurrence receives order factors and caller-owned lane scratch explicitly."
+     )]
+     fn for_each_y_lm_paired_dispatched<F>(
+@@ -1133,6 +1161,46 @@
+         )
+     }
+ 
++    fn try_synthesize_scalar_transition_dispatched(
++        arch: Arch,
++        m: usize,
++        lmax: usize,
++        sin_theta: &[Self],
++        cos_theta: &[Self],
++        sectoral_norm: Self,
++        coefficient_a: &[Self],
++        coefficient_b: &[Self],
++        coefficient_even: &[Complex<Self>],
++        coefficient_odd: &[Complex<Self>],
++        previous: &mut [Self],
++        current: &mut [Self],
++        next: &mut [Self],
++        exponents: &mut [i64],
++        sum_re: &mut [Self],
++        sum_im: &mut [Self],
++        failed_lane: &mut usize,
++    ) -> Result<bool, ShtError> {
++        scalar_paired::try_synthesize_order_scalar_transition_dispatched(
++            arch,
++            m,
++            lmax,
++            sin_theta,
++            cos_theta,
++            sectoral_norm,
++            coefficient_a,
++            coefficient_b,
++            coefficient_even,
++            coefficient_odd,
++            previous,
++            current,
++            next,
++            exponents,
++            sum_re,
++            sum_im,
++            failed_lane,
++        )
++    }
++
+     fn multiply_complex_scaled(value: Complex<Self>, factor: Self, exponent: i64) -> Complex<Self> {
+         scalar::multiply_complex_scaled(value, factor, exponent)
+     }
+diff -ruN target/m6-p01-decline-diagnostic/baseline-a50f700/src/legendre/route_profile.rs target/m6-p01-decline-diagnostic/source/src/legendre/route_profile.rs
+--- target/m6-p01-decline-diagnostic/baseline-a50f700/src/legendre/route_profile.rs	1969-12-31 19:00:00.000000000 -0500
++++ target/m6-p01-decline-diagnostic/source/src/legendre/route_profile.rs	2026-10-17 18:49:10.348765228 -0400
+@@ -0,0 +1,318 @@
++// SPDX-FileCopyrightText: 2026 Albert M. W. Yau
++// SPDX-License-Identifier: GPL-2.0-or-later
++
++//! Test-only per-worker synthesis accounting. One unit is one latitude lane
++//! evaluated at one degree pair. Discarded transition work is recorded apart
++//! from committed projections. No counters are compiled into library builds.
++
++use std::cell::RefCell;
++use std::time::Instant;
++
++#[derive(Clone, Copy, Debug, Default)]
++pub(super) struct Counts {
++    pub fused_ns: u128,
++    pub visitor_ns: u128,
++    pub transition_ns: u128,
++    pub coefficients_ns: u128,
++    pub factors_ns: u128,
++    pub transition_calls: u64,
++    pub preparation_failures: u64,
++    pub fused: u64,
++    pub visitor_normal: u64,
++    pub visitor_scaled: u64,
++    pub transition_prefix: u64,
++    pub transition_fused: u64,
++    pub discarded_prefix: u64,
++    pub discarded_fused: u64,
++    pub completed_transitions: u64,
++    pub declined_transitions: u64,
++    pub reject_empty: u64,
++    pub reject_polar: u64,
++    pub reject_nonfinite_geometry: u64,
++    pub reject_sum_bound: u64,
++    pub reject_coefficients: u64,
++    pub reject_sectoral: u64,
++    pub reject_normalize: u64,
++    pub reject_factor: u64,
++    pub reject_product: u64,
++    pub product_subnormal: u64,
++    pub product_zero_underflow: u64,
++    pub product_mixed: u64,
++    pub product_other: u64,
++    pub reject_accumulation: u64,
++    pub reject_prefix_sum: u64,
++    pub reject_fused_suffix: u64,
++    pub reject_no_normal_suffix: u64,
++    pending_prefix: u64,
++    pending_fused: u64,
++}
++
++thread_local! {
++    static COUNTS: RefCell<Option<Counts>> = const { RefCell::new(None) };
++}
++
++fn update(f: impl FnOnce(&mut Counts)) {
++    COUNTS.with_borrow_mut(|counts| {
++        if let Some(counts) = counts {
++            f(counts);
++        }
++    });
++}
++
++pub(super) enum Phase {
++    Fused,
++    Visitor,
++    Transition,
++    Coefficients,
++    Factors,
++}
++
++pub(super) fn start() -> Option<Instant> {
++    COUNTS.with_borrow(|counts| counts.is_some().then(Instant::now))
++}
++
++pub(super) fn finish(start: Option<Instant>, phase: Phase) {
++    if let Some(start) = start {
++        let elapsed = start.elapsed().as_nanos();
++        update(|counts| match phase {
++            Phase::Fused => counts.fused_ns += elapsed,
++            Phase::Visitor => counts.visitor_ns += elapsed,
++            Phase::Transition => counts.transition_ns += elapsed,
++            Phase::Coefficients => counts.coefficients_ns += elapsed,
++            Phase::Factors => counts.factors_ns += elapsed,
++        });
++    }
++}
++
++pub(super) fn transition_call() {
++    update(|counts| counts.transition_calls += 1);
++}
++
++#[derive(Clone, Copy)]
++pub(super) enum TransitionReject {
++    Empty,
++    Polar,
++    NonfiniteGeometry,
++    SumBound,
++    Coefficients,
++    Sectoral,
++    Normalize,
++    Factor,
++    Product,
++    Accumulation,
++    PrefixSum,
++    FusedSuffix,
++    NoNormalSuffix,
++}
++
++pub(super) fn transition_reject(reason: TransitionReject) {
++    update(|counts| match reason {
++        TransitionReject::Empty => counts.reject_empty += 1,
++        TransitionReject::Polar => counts.reject_polar += 1,
++        TransitionReject::NonfiniteGeometry => counts.reject_nonfinite_geometry += 1,
++        TransitionReject::SumBound => counts.reject_sum_bound += 1,
++        TransitionReject::Coefficients => counts.reject_coefficients += 1,
++        TransitionReject::Sectoral => counts.reject_sectoral += 1,
++        TransitionReject::Normalize => counts.reject_normalize += 1,
++        TransitionReject::Factor => counts.reject_factor += 1,
++        TransitionReject::Product => counts.reject_product += 1,
++        TransitionReject::Accumulation => counts.reject_accumulation += 1,
++        TransitionReject::PrefixSum => counts.reject_prefix_sum += 1,
++        TransitionReject::FusedSuffix => counts.reject_fused_suffix += 1,
++        TransitionReject::NoNormalSuffix => counts.reject_no_normal_suffix += 1,
++    });
++}
++
++pub(super) fn product_reject(subnormal: bool, zero_underflow: bool) {
++    update(|counts| match (subnormal, zero_underflow) {
++        (true, true) => counts.product_mixed += 1,
++        (true, false) => counts.product_subnormal += 1,
++        (false, true) => counts.product_zero_underflow += 1,
++        (false, false) => counts.product_other += 1,
++    });
++}
++
++pub(super) fn preparation_failure() {
++    update(|counts| counts.preparation_failures += 1);
++}
++
++pub(super) fn fused(lanes: usize, pairs: usize) {
++    update(|counts| counts.fused += (lanes * pairs) as u64);
++}
++
++pub(super) fn visitor(lanes: usize, normal: bool) {
++    update(|counts| {
++        if normal {
++            counts.visitor_normal += lanes as u64;
++        } else {
++            counts.visitor_scaled += lanes as u64;
++        }
++    });
++}
++
++pub(super) fn transition_begin() {
++    update(|counts| {
++        counts.pending_prefix = 0;
++        counts.pending_fused = 0;
++    });
++}
++
++pub(super) fn transition_prefix(lanes: usize) {
++    update(|counts| counts.pending_prefix += lanes as u64);
++}
++
++pub(super) fn transition_fused(lanes: usize, pairs: usize) {
++    update(|counts| counts.pending_fused += (lanes * pairs) as u64);
++}
++
++pub(super) fn transition_end(success: bool) {
++    update(|counts| {
++        if success {
++            counts.transition_prefix += counts.pending_prefix;
++            counts.transition_fused += counts.pending_fused;
++            counts.completed_transitions += 1;
++        } else {
++            counts.discarded_prefix += counts.pending_prefix;
++            counts.discarded_fused += counts.pending_fused;
++            counts.declined_transitions += 1;
++        }
++        counts.pending_prefix = 0;
++        counts.pending_fused = 0;
++    });
++}
++
++#[cfg(feature = "parallel")]
++#[test]
++#[ignore = "opt-in M6 scalar synthesis route accounting"]
++fn m6_scalar_synthesis_routes() {
++    use crate::{Complex64, GridKind, GridSpec, HarmonicSpec, ShtPlan};
++    use std::time::Instant;
++
++    let lmax: usize = std::env::var("RUSTSHT_ROUTE_LMAX")
++        .unwrap_or_else(|_| "511".into())
++        .parse()
++        .unwrap();
++    let threads: usize = std::env::var("RUSTSHT_ROUTE_THREADS")
++        .unwrap_or_else(|_| "1".into())
++        .parse()
++        .unwrap();
++    assert!(lmax >= 511, "profile the recurrence path");
++    let pool = rayon::ThreadPoolBuilder::new()
++        .num_threads(threads)
++        .build()
++        .unwrap();
++    let plan = ShtPlan::new(
++        GridSpec::new(GridKind::GaussLegendre, lmax + 1, 2 * (lmax + 1), 0.37).unwrap(),
++        HarmonicSpec::scalar(lmax, lmax).unwrap(),
++    )
++    .unwrap();
++    let mut workspace = pool.install(|| plan.workspace()).unwrap();
++    let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
++    for m in 0..=lmax {
++        for l in m..=lmax {
++            alm[plan.harmonics().index(l, m).unwrap()] = Complex64::new(
++                ((l * 7 + m * 11) % 19) as f64 - 9.0,
++                if m == 0 {
++                    0.0
++                } else {
++                    ((l * 13 + m * 5) % 23) as f64 - 11.0
++                },
++            ) * 1e-5;
++        }
++    }
++    let mut map = vec![0.0; (lmax + 1) * 2 * (lmax + 1)];
++    pool.install(|| plan.synthesis_into(&alm, &mut map, &mut workspace))
++        .unwrap();
++    let start = Instant::now();
++    pool.install(|| plan.synthesis_into(&alm, &mut map, &mut workspace))
++        .unwrap();
++    let disabled = start.elapsed();
++    let reference = map.clone();
++    pool.broadcast(|_| COUNTS.with_borrow_mut(|counts| *counts = Some(Counts::default())));
++    let start = Instant::now();
++    pool.install(|| plan.synthesis_into(&alm, &mut map, &mut workspace))
++        .unwrap();
++    let enabled = start.elapsed();
++    assert_eq!(map, reference, "accounting must preserve every map sample");
++    let workers = pool.broadcast(|_| COUNTS.with_borrow_mut(Option::take));
++    let mut total = Counts::default();
++    for (worker, counts) in workers.into_iter().enumerate() {
++        let counts = counts.unwrap();
++        println!("worker={worker} {counts:?}");
++        total.fused_ns += counts.fused_ns;
++        total.visitor_ns += counts.visitor_ns;
++        total.transition_ns += counts.transition_ns;
++        total.coefficients_ns += counts.coefficients_ns;
++        total.factors_ns += counts.factors_ns;
++        total.transition_calls += counts.transition_calls;
++        total.preparation_failures += counts.preparation_failures;
++        total.fused += counts.fused;
++        total.visitor_normal += counts.visitor_normal;
++        total.visitor_scaled += counts.visitor_scaled;
++        total.transition_prefix += counts.transition_prefix;
++        total.transition_fused += counts.transition_fused;
++        total.discarded_prefix += counts.discarded_prefix;
++        total.discarded_fused += counts.discarded_fused;
++        total.completed_transitions += counts.completed_transitions;
++        total.declined_transitions += counts.declined_transitions;
++        total.reject_empty += counts.reject_empty;
++        total.reject_polar += counts.reject_polar;
++        total.reject_nonfinite_geometry += counts.reject_nonfinite_geometry;
++        total.reject_sum_bound += counts.reject_sum_bound;
++        total.reject_coefficients += counts.reject_coefficients;
++        total.reject_sectoral += counts.reject_sectoral;
++        total.reject_normalize += counts.reject_normalize;
++        total.reject_factor += counts.reject_factor;
++        total.reject_product += counts.reject_product;
++        total.product_subnormal += counts.product_subnormal;
++        total.product_zero_underflow += counts.product_zero_underflow;
++        total.product_mixed += counts.product_mixed;
++        total.product_other += counts.product_other;
++        total.reject_accumulation += counts.reject_accumulation;
++        total.reject_prefix_sum += counts.reject_prefix_sum;
++        total.reject_fused_suffix += counts.reject_fused_suffix;
++        total.reject_no_normal_suffix += counts.reject_no_normal_suffix;
++    }
++    let precheck_rejects = total.reject_empty
++        + total.reject_polar
++        + total.reject_nonfinite_geometry
++        + total.reject_sum_bound
++        + total.reject_coefficients;
++    assert_eq!(
++        total.transition_calls,
++        total.completed_transitions + total.declined_transitions + precheck_rejects,
++        "every transition entry must be classified"
++    );
++    let kernel_rejects = total.reject_sectoral
++        + total.reject_normalize
++        + total.reject_factor
++        + total.reject_product
++        + total.reject_accumulation
++        + total.reject_prefix_sum
++        + total.reject_fused_suffix
++        + total.reject_no_normal_suffix;
++    assert_eq!(
++        total.declined_transitions, kernel_rejects,
++        "every transactional decline must have one reason"
++    );
++    assert_eq!(
++        total.reject_product,
++        total.product_subnormal
++            + total.product_zero_underflow
++            + total.product_mixed
++            + total.product_other,
++        "every product rejection must have one range classification"
++    );
++    let committed = total.fused
++        + total.visitor_normal
++        + total.visitor_scaled
++        + total.transition_prefix
++        + total.transition_fused;
++    let potential = (lmax + 1) * (0..=lmax).map(|m| (lmax - m + 2) / 2).sum::<usize>();
++    assert!(committed > 0 && committed <= potential as u64);
++    println!(
++        "M6 routes L={lmax} q={threads} potential={potential} committed={committed} disabled_ms={:.3} enabled_ms={:.3} {total:?}",
++        disabled.as_secs_f64() * 1000.0,
++        enabled.as_secs_f64() * 1000.0
++    );
++}
+diff -ruN target/m6-p01-decline-diagnostic/baseline-a50f700/src/legendre/scalar.rs target/m6-p01-decline-diagnostic/source/src/legendre/scalar.rs
+--- target/m6-p01-decline-diagnostic/baseline-a50f700/src/legendre/scalar.rs	2026-10-17 16:22:06.000000000 -0400
++++ target/m6-p01-decline-diagnostic/source/src/legendre/scalar.rs	2026-10-17 18:52:17.245015949 -0400
+@@ -2409,6 +2409,162 @@
+     }
+ 
+     #[test]
++    fn scalar_synthesis_transition_matches_prepared_reference_with_tail() {
++        let m = 64;
++        let lmax = 511;
++        let lane_count = 63;
++        let sin_theta: Vec<_> = (0..lane_count)
++            .map(|lane| 0.01 + lane as f64 * 0.0001)
++            .collect();
++        let cos_theta: Vec<_> = sin_theta
++            .iter()
++            .map(|sine| (1.0 - sine * sine).sqrt())
++            .collect();
++        let sectoral_norm = sectoral_normalizations(m).unwrap()[m];
++        let mut initial_previous = vec![0.0; lane_count];
++        let mut initial_current = vec![0.0; lane_count];
++        let mut initial_exponents = vec![0; lane_count];
++        for lane in 0..lane_count {
++            let (value, exponent) = sectoral_value(sin_theta[lane], m, sectoral_norm).unwrap();
++            initial_previous[lane] = 0.0;
++            initial_current[lane] = value;
++            initial_exponents[lane] = exponent;
++        }
++        assert!(
++            !normalize_pair_lanes(
++                &mut initial_previous,
++                &mut initial_current,
++                &mut initial_exponents,
++            )
++            .unwrap(),
++            "the fixture must start on the scaled sectoral path"
++        );
++        let mut epsilon = vec![0.0; lmax + 4];
++        fill_epsilon(m, lmax, &mut epsilon);
++        let factor_count = lmax / 2 + 2;
++        let mut alpha = vec![0.0; factor_count];
++        let mut coefficient_a = vec![0.0; factor_count];
++        let mut coefficient_b = vec![0.0; factor_count];
++        super::super::scalar_paired::fill_factors(
++            m,
++            lmax,
++            &epsilon,
++            &mut alpha,
++            &mut coefficient_a,
++            &mut coefficient_b,
++        );
++        let coefficients: Vec<_> = (m..=lmax)
++            .map(|degree| {
++                Complex64::new(
++                    ((degree * 7 + 3) % 19 + 1) as f64 * 1e47,
++                    ((degree * 11 + 5) % 23 + 1) as f64 * 1e47,
++                )
++            })
++            .collect();
++        let pair_count = (lmax - m + 2) / 2;
++        let mut coefficient_even = vec![Complex64::new(0.0, 0.0); pair_count];
++        let mut coefficient_odd = vec![Complex64::new(0.0, 0.0); pair_count];
++        assert!(super::super::scalar_paired::prepare_synthesis_coefficients(
++            m,
++            lmax,
++            &epsilon,
++            &alpha,
++            &coefficients,
++            &mut coefficient_even,
++            &mut coefficient_odd,
++        ));
++
++        for arch in [Arch::Scalar, Arch::new()] {
++            let mut previous = vec![0.0; lane_count];
++            let mut current = vec![0.0; lane_count];
++            let mut next = vec![0.0; lane_count];
++            let mut exponents = vec![0; lane_count];
++            let mut sum_re = vec![0.0; lane_count];
++            let mut sum_im = vec![0.0; lane_count];
++            let mut failed_lane = usize::MAX;
++            assert!(
++                super::super::scalar_paired::try_synthesize_order_scalar_transition_dispatched(
++                    arch,
++                    m,
++                    lmax,
++                    &sin_theta,
++                    &cos_theta,
++                    sectoral_norm,
++                    &coefficient_a,
++                    &coefficient_b,
++                    &coefficient_even,
++                    &coefficient_odd,
++                    &mut previous,
++                    &mut current,
++                    &mut next,
++                    &mut exponents,
++                    &mut sum_re,
++                    &mut sum_im,
++                    &mut failed_lane,
++                )
++                .unwrap(),
++                "the scalar recurrence should enter the normal suffix"
++            );
++
++            let mut reference_previous = vec![0.0; lane_count];
++            let mut reference_current = vec![0.0; lane_count];
++            let mut reference_next = vec![0.0; lane_count];
++            let mut reference_exponents = vec![0; lane_count];
++            let mut reference = vec![Complex64::new(0.0, 0.0); lane_count];
++            super::super::scalar_paired::for_each_y_lm_paired_dispatched(
++                arch,
++                m,
++                lmax,
++                &sin_theta,
++                &cos_theta,
++                sectoral_norm,
++                &coefficient_a,
++                &coefficient_b,
++                &mut reference_previous,
++                &mut reference_current,
++                &mut reference_next,
++                &mut reference_exponents,
++                |l, ring_start, basis, lane_exponents| {
++                    let pair = (l - m) / 2;
++                    for lane in 0..basis.len() {
++                        let ring = ring_start + lane;
++                        reference[ring] += multiply_complex_scaled(
++                            coefficient_even[pair],
++                            basis[lane],
++                            lane_exponents[lane],
++                        ) + multiply_complex_scaled_product(
++                            coefficient_odd[pair],
++                            basis[lane],
++                            cos_theta[ring],
++                            lane_exponents[lane],
++                        );
++                    }
++                    Ok(())
++                },
++            )
++            .unwrap();
++
++            let reference_scale = reference
++                .iter()
++                .map(|value| value.norm())
++                .fold(0.0, f64::max);
++            assert!(
++                reference_scale.is_finite() && (1e-2..1e2).contains(&reference_scale),
++                "reference scale={reference_scale:e}"
++            );
++            let tolerance = 3e-12 * reference_scale + 16.0 * f64::MIN_POSITIVE;
++            for lane in 0..lane_count {
++                let actual = Complex64::new(sum_re[lane], sum_im[lane]);
++                assert!(
++                    (actual - reference[lane]).norm() <= tolerance,
++                    "arch={arch:?}, lane={lane}, staged={actual:?}, reference={:?}, scale={reference_scale:e}, tolerance={tolerance:e}",
++                    reference[lane],
++                );
++            }
++        }
++    }
++
++    #[test]
+     fn staged_synthesis_transition_falls_back_on_degree_pair_cancellation() {
+         let m = 2048;
+         let lmax = m + 1;
+diff -ruN target/m6-p01-decline-diagnostic/baseline-a50f700/src/legendre/scalar_paired.rs target/m6-p01-decline-diagnostic/source/src/legendre/scalar_paired.rs
+--- target/m6-p01-decline-diagnostic/baseline-a50f700/src/legendre/scalar_paired.rs	2026-10-17 16:22:06.000000000 -0400
++++ target/m6-p01-decline-diagnostic/source/src/legendre/scalar_paired.rs	2026-10-17 18:52:12.429932197 -0400
+@@ -30,6 +30,8 @@
+     coefficient_a: &mut [f64],
+     coefficient_b: &mut [f64],
+ ) {
++    #[cfg(test)]
++    let profile_started = super::route_profile::start();
+     let factor_count = lmax / 2 + 2;
+     debug_assert!(epsilon.len() >= lmax + 4);
+     debug_assert!(alpha.len() >= factor_count.max(2));
+@@ -56,6 +58,8 @@
+             * (epsilon[degree + 2] * epsilon[degree + 2]
+                 + epsilon[degree + 1] * epsilon[degree + 1]);
+     }
++    #[cfg(test)]
++    super::route_profile::finish(profile_started, super::route_profile::Phase::Factors);
+ }
+ 
+ /// Transforms the scalar harmonic coefficients used by the paired synthesis
+@@ -69,6 +73,8 @@
+     coefficient_even: &mut [Complex64],
+     coefficient_odd: &mut [Complex64],
+ ) -> bool {
++    #[cfg(test)]
++    let profile_started = super::route_profile::start();
+     debug_assert!(m <= lmax);
+     debug_assert!(epsilon.len() > lmax + 2);
+     let pair_count = (lmax - m + 2) / 2;
+@@ -97,11 +103,21 @@
+             || !odd.re.is_finite()
+             || !odd.im.is_finite()
+         {
++            #[cfg(test)]
++            {
++                super::route_profile::preparation_failure();
++                super::route_profile::finish(
++                    profile_started,
++                    super::route_profile::Phase::Coefficients,
++                );
++            }
+             return false;
+         }
+         coefficient_even[pair] = even;
+         coefficient_odd[pair] = odd;
+     }
++    #[cfg(test)]
++    super::route_profile::finish(profile_started, super::route_profile::Phase::Coefficients);
+     true
+ }
+ 
+@@ -611,6 +627,518 @@
+     clippy::too_many_arguments,
+     reason = "The transition kernel receives coefficient factors and caller-owned lane scratch explicitly."
+ )]
++pub(crate) fn try_synthesize_order_scalar_transition_dispatched(
++    arch: Arch,
++    m: usize,
++    lmax: usize,
++    sin_theta: &[f64],
++    cos_theta: &[f64],
++    sectoral_norm: f64,
++    coefficient_a: &[f64],
++    coefficient_b: &[f64],
++    coefficient_even: &[Complex64],
++    coefficient_odd: &[Complex64],
++    previous: &mut [f64],
++    current: &mut [f64],
++    next: &mut [f64],
++    exponents: &mut [i64],
++    sum_re: &mut [f64],
++    sum_im: &mut [f64],
++    failed_lane: &mut usize,
++) -> Result<bool, ShtError> {
++    #[cfg(test)]
++    super::route_profile::transition_call();
++    *failed_lane = usize::MAX;
++    let lane_count = sin_theta.len();
++    debug_assert_eq!(lane_count, cos_theta.len());
++    debug_assert!(lane_count <= LATITUDE_BLOCK_SIZE);
++    debug_assert!(previous.len() >= lane_count);
++    debug_assert!(current.len() >= lane_count);
++    debug_assert!(next.len() >= lane_count);
++    debug_assert!(exponents.len() >= lane_count);
++    debug_assert!(sum_re.len() >= lane_count);
++    debug_assert!(sum_im.len() >= lane_count);
++
++    if lane_count == 0 {
++        #[cfg(test)]
++        super::route_profile::transition_reject(super::route_profile::TransitionReject::Empty);
++        return Ok(false);
++    }
++    if sin_theta
++        .iter()
++        .any(|&sine| !sine.is_finite() || sine < 0.01)
++    {
++        #[cfg(test)]
++        super::route_profile::transition_reject(super::route_profile::TransitionReject::Polar);
++        return Ok(false);
++    }
++    if cos_theta.iter().any(|&cosine| !cosine.is_finite()) {
++        #[cfg(test)]
++        super::route_profile::transition_reject(
++            super::route_profile::TransitionReject::NonfiniteGeometry,
++        );
++        return Ok(false);
++    }
++
++    let pair_count = (lmax - m + 2) / 2;
++    let maximum_sum_bound = 2.0 * scalar::BIG * scalar::BIG * pair_count as f64 * 10_000.0;
++    if !maximum_sum_bound.is_finite() {
++        #[cfg(test)]
++        super::route_profile::transition_reject(super::route_profile::TransitionReject::SumBound);
++        return Ok(false);
++    }
++    if !prepared_scalar_coefficients_are_safe(coefficient_even, coefficient_odd, pair_count) {
++        #[cfg(test)]
++        super::route_profile::transition_reject(
++            super::route_profile::TransitionReject::Coefficients,
++        );
++        return Ok(false);
++    }
++
++    #[cfg(test)]
++    let profile_started = super::route_profile::start();
++    #[cfg(test)]
++    super::route_profile::transition_begin();
++    let completed = arch.dispatch(StagedSynthesisScalarTransition {
++        m,
++        lmax,
++        sin_theta,
++        cos_theta,
++        sectoral_norm,
++        coefficient_a,
++        coefficient_b,
++        coefficient_even,
++        coefficient_odd,
++        previous: &mut previous[..lane_count],
++        current: &mut current[..lane_count],
++        next: &mut next[..lane_count],
++        exponents: &mut exponents[..lane_count],
++        sum_re: &mut sum_re[..lane_count],
++        sum_im: &mut sum_im[..lane_count],
++        failed_lane,
++    });
++    if !completed {
++        #[cfg(test)]
++        {
++            super::route_profile::transition_end(false);
++            super::route_profile::finish(profile_started, super::route_profile::Phase::Transition);
++        }
++        return Ok(false);
++    }
++    if !finite_scalar_prefix_sums(&sum_re[..lane_count], &sum_im[..lane_count]) {
++        #[cfg(test)]
++        {
++            super::route_profile::transition_reject(
++                super::route_profile::TransitionReject::PrefixSum,
++            );
++            super::route_profile::transition_end(false);
++            super::route_profile::finish(profile_started, super::route_profile::Phase::Transition);
++        }
++        return Ok(false);
++    }
++    #[cfg(test)]
++    {
++        super::route_profile::transition_end(true);
++        super::route_profile::finish(profile_started, super::route_profile::Phase::Transition);
++    }
++    Ok(true)
++}
++
++fn prepared_scalar_coefficients_are_safe(
++    coefficient_even: &[Complex64],
++    coefficient_odd: &[Complex64],
++    pair_count: usize,
++) -> bool {
++    coefficient_even.len() >= pair_count
++        && coefficient_odd.len() >= pair_count
++        && coefficient_even
++            .iter()
++            .zip(coefficient_odd)
++            .take(pair_count)
++            .all(|(&even, &odd)| {
++                complex_components_in_normal_range(even) && complex_components_in_normal_range(odd)
++            })
++}
++
++fn finite_scalar_prefix_sums(sum_re: &[f64], sum_im: &[f64]) -> bool {
++    let limit = f64::MAX * 0.5;
++    sum_re
++        .iter()
++        .chain(sum_im)
++        .all(|value| value.is_finite() && value.abs() <= limit)
++}
++
++struct StagedSynthesisScalarTransition<'a> {
++    m: usize,
++    lmax: usize,
++    sin_theta: &'a [f64],
++    cos_theta: &'a [f64],
++    sectoral_norm: f64,
++    coefficient_a: &'a [f64],
++    coefficient_b: &'a [f64],
++    coefficient_even: &'a [Complex64],
++    coefficient_odd: &'a [Complex64],
++    previous: &'a mut [f64],
++    current: &'a mut [f64],
++    next: &'a mut [f64],
++    exponents: &'a mut [i64],
++    sum_re: &'a mut [f64],
++    sum_im: &'a mut [f64],
++    failed_lane: &'a mut usize,
++}
++
++impl WithSimd for StagedSynthesisScalarTransition<'_> {
++    type Output = bool;
++
++    #[inline(always)]
++    fn with_simd<S: Simd>(self, simd: S) -> bool {
++        let StagedSynthesisScalarTransition {
++            m,
++            lmax,
++            sin_theta,
++            cos_theta,
++            sectoral_norm,
++            coefficient_a,
++            coefficient_b,
++            coefficient_even,
++            coefficient_odd,
++            previous,
++            current,
++            next,
++            exponents,
++            sum_re,
++            sum_im,
++            failed_lane,
++        } = self;
++        let mut previous = previous;
++        let mut current = current;
++        let mut next = next;
++
++        for lane in 0..sin_theta.len() {
++            let (value, exponent) = match scalar::sectoral_value(sin_theta[lane], m, sectoral_norm)
++            {
++                Ok(value) => value,
++                Err(_) => {
++                    #[cfg(test)]
++                    super::route_profile::transition_reject(
++                        super::route_profile::TransitionReject::Sectoral,
++                    );
++                    return false;
++                }
++            };
++            previous[lane] = 0.0;
++            current[lane] = value;
++            exponents[lane] = exponent;
++            sum_re[lane] = 0.0;
++            sum_im[lane] = 0.0;
++        }
++
++        let mut normal_range = match scalar::normalize_pair_lanes(previous, current, exponents) {
++            Ok(normal_range) => normal_range,
++            Err(_) => {
++                #[cfg(test)]
++                super::route_profile::transition_reject(
++                    super::route_profile::TransitionReject::Normalize,
++                );
++                return false;
++            }
++        };
++        if normal_range
++            && lane_values_in_normal_range(previous)
++            && lane_values_in_normal_range(current)
++        {
++            #[cfg(test)]
++            super::route_profile::transition_fused(sin_theta.len(), (lmax - m + 2) / 2);
++            let completed = FusedSynthesisScalarSuffix {
++                m,
++                lmax,
++                pair_start: 0,
++                cos_theta,
++                coefficient_a,
++                coefficient_b,
++                coefficient_even,
++                coefficient_odd,
++                previous,
++                current,
++                sum_re,
++                sum_im,
++            }
++            .with_simd(simd);
++            if !completed {
++                #[cfg(test)]
++                super::route_profile::transition_reject(
++                    super::route_profile::TransitionReject::FusedSuffix,
++                );
++            }
++            return completed;
++        }
++
++        let pair_count = (lmax - m + 2) / 2;
++        for pair in 0..pair_count {
++            #[cfg(test)]
++            super::route_profile::transition_prefix(sin_theta.len());
++            let even = coefficient_even[pair];
++            let odd = coefficient_odd[pair];
++            for lane in 0..current.len() {
++                let odd_factor = Complex64::new(odd.re * cos_theta[lane], odd.im * cos_theta[lane]);
++                let factor = Complex64::new(
++                    odd.re.mul_add(cos_theta[lane], even.re),
++                    odd.im.mul_add(cos_theta[lane], even.im),
++                );
++                if !complex_sum_is_normal_or_zero(factor, even, odd_factor) {
++                    #[cfg(test)]
++                    super::route_profile::transition_reject(
++                        super::route_profile::TransitionReject::Factor,
++                    );
++                    return false;
++                }
++                let contribution =
++                    scalar::multiply_complex_scaled(factor, current[lane], exponents[lane]);
++                if !complex_scaled_product_is_normal_or_zero(
++                    contribution,
++                    factor,
++                    current[lane],
++                    1.0,
++                ) {
++                    *failed_lane = lane;
++                    #[cfg(test)]
++                    super::route_profile::product_reject(
++                        contribution.re.is_subnormal() || contribution.im.is_subnormal(),
++                        (contribution.re == 0.0 && factor.re != 0.0 && current[lane] != 0.0)
++                            || (contribution.im == 0.0 && factor.im != 0.0 && current[lane] != 0.0),
++                    );
++                    #[cfg(test)]
++                    super::route_profile::transition_reject(
++                        super::route_profile::TransitionReject::Product,
++                    );
++                    return false;
++                }
++                let accumulated = Complex64::new(sum_re[lane], sum_im[lane]);
++                let updated = accumulated + contribution;
++                if !complex_sum_is_normal_or_zero(updated, accumulated, contribution) {
++                    #[cfg(test)]
++                    super::route_profile::transition_reject(
++                        super::route_profile::TransitionReject::Accumulation,
++                    );
++                    return false;
++                }
++                sum_re[lane] = updated.re;
++                sum_im[lane] = updated.im;
++            }
++
++            if pair + 1 == pair_count {
++                break;
++            }
++
++            let (current_vectors, current_tail) = S::as_simd_f64s(current);
++            let (previous_vectors, previous_tail) = S::as_simd_f64s(previous);
++            let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
++            let (next_vectors, next_tail) = S::as_mut_simd_f64s(next);
++            let a = simd.splat_f64s(coefficient_a[pair]);
++            let b = simd.splat_f64s(coefficient_b[pair]);
++            for index in 0..current_vectors.len() {
++                let cosine_squared = simd.mul_f64s(cosine_vectors[index], cosine_vectors[index]);
++                let leading = simd.mul_add_f64s(a, cosine_squared, b);
++                next_vectors[index] =
++                    simd.mul_add_f64s(leading, current_vectors[index], previous_vectors[index]);
++            }
++            for lane in 0..current_tail.len() {
++                let cosine_squared = cosine_tail[lane] * cosine_tail[lane];
++                let leading = coefficient_a[pair].mul_add(cosine_squared, coefficient_b[pair]);
++                next_tail[lane] = leading.mul_add(current_tail[lane], previous_tail[lane]);
++            }
++            std::mem::swap(&mut previous, &mut current);
++            std::mem::swap(&mut current, &mut next);
++            if normal_range {
++                if scalar::pair_lanes_need_scaling(simd, previous, current) {
++                    normal_range = match scalar::normalize_pair_lanes(previous, current, exponents)
++                    {
++                        Ok(normal_range) => normal_range,
++                        Err(_) => {
++                            #[cfg(test)]
++                            super::route_profile::transition_reject(
++                                super::route_profile::TransitionReject::Normalize,
++                            );
++                            return false;
++                        }
++                    };
++                }
++            } else {
++                normal_range = match scalar::normalize_pair_lanes(previous, current, exponents) {
++                    Ok(normal_range) => normal_range,
++                    Err(_) => {
++                        #[cfg(test)]
++                        super::route_profile::transition_reject(
++                            super::route_profile::TransitionReject::Normalize,
++                        );
++                        return false;
++                    }
++                };
++            }
++            if normal_range
++                && lane_values_in_normal_range(previous)
++                && lane_values_in_normal_range(current)
++            {
++                if !finite_scalar_prefix_sums(sum_re, sum_im) {
++                    #[cfg(test)]
++                    super::route_profile::transition_reject(
++                        super::route_profile::TransitionReject::PrefixSum,
++                    );
++                    return false;
++                }
++                #[cfg(test)]
++                super::route_profile::transition_fused(sin_theta.len(), pair_count - pair - 1);
++                let completed = FusedSynthesisScalarSuffix {
++                    m,
++                    lmax,
++                    pair_start: pair + 1,
++                    cos_theta,
++                    coefficient_a,
++                    coefficient_b,
++                    coefficient_even,
++                    coefficient_odd,
++                    previous,
++                    current,
++                    sum_re,
++                    sum_im,
++                }
++                .with_simd(simd);
++                if !completed {
++                    #[cfg(test)]
++                    super::route_profile::transition_reject(
++                        super::route_profile::TransitionReject::FusedSuffix,
++                    );
++                }
++                return completed;
++            }
++        }
++        #[cfg(test)]
++        super::route_profile::transition_reject(
++            super::route_profile::TransitionReject::NoNormalSuffix,
++        );
++        false
++    }
++}
++
++struct FusedSynthesisScalarSuffix<'a> {
++    m: usize,
++    lmax: usize,
++    pair_start: usize,
++    cos_theta: &'a [f64],
++    coefficient_a: &'a [f64],
++    coefficient_b: &'a [f64],
++    coefficient_even: &'a [Complex64],
++    coefficient_odd: &'a [Complex64],
++    previous: &'a [f64],
++    current: &'a [f64],
++    sum_re: &'a mut [f64],
++    sum_im: &'a mut [f64],
++}
++
++impl WithSimd for FusedSynthesisScalarSuffix<'_> {
++    type Output = bool;
++
++    #[inline(always)]
++    fn with_simd<S: Simd>(self, simd: S) -> bool {
++        let FusedSynthesisScalarSuffix {
++            m,
++            lmax,
++            pair_start,
++            cos_theta,
++            coefficient_a,
++            coefficient_b,
++            coefficient_even,
++            coefficient_odd,
++            previous: initial_previous,
++            current: initial_current,
++            sum_re,
++            sum_im,
++        } = self;
++        let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
++        let (previous_vectors, previous_tail) = S::as_simd_f64s(initial_previous);
++        let (initial_vectors, initial_tail) = S::as_simd_f64s(initial_current);
++        let (sum_re_vectors, sum_re_tail) = S::as_mut_simd_f64s(sum_re);
++        let (sum_im_vectors, sum_im_tail) = S::as_mut_simd_f64s(sum_im);
++        let pair_count = (lmax - m + 2) / 2;
++        debug_assert!(pair_start <= pair_count);
++        debug_assert_eq!(previous_vectors.len(), initial_vectors.len());
++        debug_assert_eq!(previous_tail.len(), initial_tail.len());
++
++        for lane_block in 0..cosine_vectors.len() {
++            let cosine = cosine_vectors[lane_block];
++            let mut previous = previous_vectors[lane_block];
++            let mut current = initial_vectors[lane_block];
++            if !simd_values_in_normal_range(simd, previous)
++                || !simd_values_in_normal_range(simd, current)
++            {
++                return false;
++            }
++            let mut accumulated_re = sum_re_vectors[lane_block];
++            let mut accumulated_im = sum_im_vectors[lane_block];
++            for pair in pair_start..pair_count {
++                let even = coefficient_even[pair];
++                let odd = coefficient_odd[pair];
++                let coefficient_re =
++                    simd.mul_add_f64s(simd.splat_f64s(odd.re), cosine, simd.splat_f64s(even.re));
++                let coefficient_im =
++                    simd.mul_add_f64s(simd.splat_f64s(odd.im), cosine, simd.splat_f64s(even.im));
++                accumulated_re = simd.mul_add_f64s(current, coefficient_re, accumulated_re);
++                accumulated_im = simd.mul_add_f64s(current, coefficient_im, accumulated_im);
++
++                if pair + 1 < pair_count {
++                    let cosine_squared = simd.mul_f64s(cosine, cosine);
++                    let leading = simd.mul_add_f64s(
++                        simd.splat_f64s(coefficient_a[pair]),
++                        cosine_squared,
++                        simd.splat_f64s(coefficient_b[pair]),
++                    );
++                    let next = simd.mul_add_f64s(leading, current, previous);
++                    if !simd_values_in_normal_range(simd, next) {
++                        return false;
++                    }
++                    previous = current;
++                    current = next;
++                }
++            }
++            sum_re_vectors[lane_block] = accumulated_re;
++            sum_im_vectors[lane_block] = accumulated_im;
++        }
++
++        for lane in 0..cosine_tail.len() {
++            let cosine = cosine_tail[lane];
++            let mut previous = previous_tail[lane];
++            let mut current = initial_tail[lane];
++            if !scalar_value_in_normal_range(previous) || !scalar_value_in_normal_range(current) {
++                return false;
++            }
++            let mut accumulated_re = sum_re_tail[lane];
++            let mut accumulated_im = sum_im_tail[lane];
++            for pair in pair_start..pair_count {
++                let even = coefficient_even[pair];
++                let odd = coefficient_odd[pair];
++                accumulated_re = current.mul_add(odd.re.mul_add(cosine, even.re), accumulated_re);
++                accumulated_im = current.mul_add(odd.im.mul_add(cosine, even.im), accumulated_im);
++                if pair + 1 < pair_count {
++                    let leading = coefficient_a[pair].mul_add(cosine * cosine, coefficient_b[pair]);
++                    let next = leading.mul_add(current, previous);
++                    if !scalar_value_in_normal_range(next) {
++                        return false;
++                    }
++                    previous = current;
++                    current = next;
++                }
++            }
++            sum_re_tail[lane] = accumulated_re;
++            sum_im_tail[lane] = accumulated_im;
++        }
++        true
++    }
++}
++
++#[expect(
++    clippy::too_many_arguments,
++    reason = "The transition kernel receives coefficient factors and caller-owned lane scratch explicitly."
++)]
+ pub(crate) fn try_synthesize_order_pair_transition_dispatched(
+     arch: Arch,
+     m: usize,
+@@ -633,6 +1161,8 @@
+     second_sum_re: &mut [f64],
+     second_sum_im: &mut [f64],
+ ) -> Result<bool, ShtError> {
++    #[cfg(test)]
++    super::route_profile::transition_call();
+     let lane_count = sin_theta.len();
+     debug_assert_eq!(lane_count, cos_theta.len());
+     debug_assert!(lane_count <= LATITUDE_BLOCK_SIZE);
+@@ -670,6 +1200,10 @@
+         return Ok(false);
+     }
+ 
++    #[cfg(test)]
++    let profile_started = super::route_profile::start();
++    #[cfg(test)]
++    super::route_profile::transition_begin();
+     let completed = arch.dispatch(StagedSynthesisPairTransition {
+         m,
+         lmax,
+@@ -699,8 +1233,18 @@
+             &second_sum_im[..lane_count],
+         )
+     {
++        #[cfg(test)]
++        {
++            super::route_profile::transition_end(false);
++            super::route_profile::finish(profile_started, super::route_profile::Phase::Transition);
++        }
+         return Ok(false);
+     }
++    #[cfg(test)]
++    {
++        super::route_profile::transition_end(true);
++        super::route_profile::finish(profile_started, super::route_profile::Phase::Transition);
++    }
+     Ok(true)
+ }
+ 
+@@ -873,6 +1417,8 @@
+             && lane_values_in_normal_range(previous)
+             && lane_values_in_normal_range(current)
+         {
++            #[cfg(test)]
++            super::route_profile::transition_fused(sin_theta.len(), (lmax - m + 2) / 2);
+             return FusedSynthesisPairBlock {
+                 m,
+                 lmax,
+@@ -898,6 +1444,8 @@
+ 
+         let pair_count = (lmax - m + 2) / 2;
+         for pair in 0..pair_count {
++            #[cfg(test)]
++            super::route_profile::transition_prefix(sin_theta.len());
+             let l = m + 2 * pair;
+             let offset = l - m;
+             let next_first_even = if l + 2 <= lmax {
+@@ -1019,6 +1567,8 @@
+                 if !finite_prefix_sums(first_sum_re, first_sum_im, second_sum_re, second_sum_im) {
+                     return false;
+                 }
++                #[cfg(test)]
++                super::route_profile::transition_fused(sin_theta.len(), pair_count - pair - 1);
+                 return FusedSynthesisPairBlock {
+                     m,
+                     lmax,
+@@ -1997,6 +2547,10 @@
+ 
+     #[inline(always)]
+     fn with_simd<S: Simd>(self, simd: S) {
++        #[cfg(test)]
++        let profile_started = super::route_profile::start();
++        #[cfg(test)]
++        super::route_profile::fused(self.cos_theta.len(), (self.lmax - self.m + 2) / 2);
+         let FusedSynthesisBlock {
+             m,
+             lmax,
+@@ -2081,6 +2635,8 @@
+             sum_re_tail[lane] = accumulated_re;
+             sum_im_tail[lane] = accumulated_im;
+         }
++        #[cfg(test)]
++        super::route_profile::finish(profile_started, super::route_profile::Phase::Fused);
+     }
+ }
+ 
+@@ -2850,6 +3406,8 @@
+ where
+     F: FnMut(usize, usize, &[f64], &[i64], bool) -> Result<(), ShtError>,
+ {
++    #[cfg(test)]
++    let profile_started = super::route_profile::start();
+     debug_assert!(m <= lmax);
+     debug_assert_eq!(sin_theta.len(), cos_theta.len());
+     let scratch_len = sin_theta.len().min(LATITUDE_BLOCK_SIZE);
+@@ -2877,6 +3435,8 @@
+             visit: &mut visit,
+         })?;
+     }
++    #[cfg(test)]
++    super::route_profile::finish(profile_started, super::route_profile::Phase::Visitor);
+     Ok(())
+ }
+ 
+@@ -2933,6 +3493,8 @@
+ 
+         for (pair_index, l) in (m..=lmax).step_by(2).enumerate() {
+             visit(l, ring_start, current, exponents, normal_range)?;
++            #[cfg(test)]
++            super::route_profile::visitor(current.len(), normal_range);
+             if l + 2 > lmax {
+                 break;
+             }
+diff -ruN target/m6-p01-decline-diagnostic/baseline-a50f700/src/transform.rs target/m6-p01-decline-diagnostic/source/src/transform.rs
+--- target/m6-p01-decline-diagnostic/baseline-a50f700/src/transform.rs	2026-10-17 16:22:06.000000000 -0400
++++ target/m6-p01-decline-diagnostic/source/src/transform.rs	2026-10-17 18:52:55.509681482 -0400
+@@ -791,7 +791,6 @@
+                 .expect("every packed order starts at its diagonal degree");
+             let transition_enabled =
+                 lmax >= SCALAR_TRANSITION_MIN_LMAX && T::supports_paired_scalar();
+-            let mut transition_coefficients_ready = false;
+             let paired_factors_ready = T::fill_paired_scalar_factors(
+                 m,
+                 lmax,
+@@ -855,49 +854,181 @@
+                         &mut recurrence.compact_ring_indices[..block_len],
+                     )?;
+                     if !fused {
+-                        let transition =
+-                            if transition_enabled && ring_limits.iter().all(|&limit| m <= limit) {
+-                                let coefficient_count = lmax - m + 1;
+-                                if !transition_coefficients_ready {
+-                                    recurrence.fast_scalar_second[..coefficient_count]
+-                                        .fill(Complex::new(T::zero(), T::zero()));
+-                                    transition_coefficients_ready = true;
++                        let compact_mixed_block =
++                            lmax >= 255 && ring_limits.iter().any(|&limit| m > limit);
++                        let transition_count = if transition_enabled && compact_mixed_block {
++                            let mut compact_len = 0;
++                            for (ring, &limit) in ring_limits.iter().enumerate() {
++                                if m <= limit {
++                                    recurrence.compact_theta_sin[compact_len] =
++                                        theta_sin[block_start + ring];
++                                    recurrence.compact_theta_cos[compact_len] =
++                                        theta_cos[block_start + ring];
++                                    recurrence.compact_ring_indices[compact_len] = ring;
++                                    compact_len += 1;
+                                 }
+-                                T::try_synthesize_paired_scalar_transition_dispatched(
++                            }
++                            compact_len
++                        } else {
++                            block_len
++                        };
++                        let mut transition_compacted =
++                            transition_enabled && compact_mixed_block && transition_count > 0;
++                        let mut transition_lane_count = transition_count;
++                        let mut transition_fallback_count = 0;
++                        let transition = if transition_enabled && transition_count > 0 {
++                            loop {
++                                let transition_sin = if transition_compacted {
++                                    &recurrence.compact_theta_sin[..transition_lane_count]
++                                } else {
++                                    &theta_sin[block_start..block_start + transition_lane_count]
++                                };
++                                let transition_cos = if transition_compacted {
++                                    &recurrence.compact_theta_cos[..transition_lane_count]
++                                } else {
++                                    &theta_cos[block_start..block_start + transition_lane_count]
++                                };
++                                let mut failed_lane = usize::MAX;
++                                let completed = T::try_synthesize_scalar_transition_dispatched(
+                                     arch,
+                                     m,
+                                     lmax,
+-                                    &theta_sin[block_start..block_end],
+-                                    &theta_cos[block_start..block_end],
++                                    transition_sin,
++                                    transition_cos,
+                                     self.sectoral_norms[m],
+-                                    &recurrence.epsilon,
+-                                    &recurrence.spin_alpha,
+                                     &recurrence.spin_coefficient_a,
+                                     &recurrence.spin_coefficient_b,
+-                                    &alm[coefficient_start..coefficient_start + coefficient_count],
+-                                    &recurrence.fast_scalar_second[..coefficient_count],
+-                                    &mut recurrence.previous[..block_len],
+-                                    &mut recurrence.current[..block_len],
+-                                    &mut recurrence.next[..block_len],
+-                                    &mut recurrence.exponents[..block_len],
+-                                    &mut recurrence.analysis_same_real[..block_len],
+-                                    &mut recurrence.analysis_same_imag[..block_len],
+-                                    &mut recurrence.analysis_opposite_real[..block_len],
+-                                    &mut recurrence.analysis_opposite_imag[..block_len],
+-                                )?
+-                            } else {
+-                                false
+-                            };
+-                        if transition {
+-                            for lane in 0..block_len {
+-                                spectra[spectrum_start + lane * spectrum_len + m] += Complex::new(
+-                                    recurrence.analysis_same_real[lane],
+-                                    recurrence.analysis_same_imag[lane],
++                                    &recurrence.fast_spin_first[..coefficient_pair_count],
++                                    &recurrence.fast_spin_second[..coefficient_pair_count],
++                                    &mut recurrence.previous[..transition_lane_count],
++                                    &mut recurrence.current[..transition_lane_count],
++                                    &mut recurrence.next[..transition_lane_count],
++                                    &mut recurrence.exponents[..transition_lane_count],
++                                    &mut recurrence.analysis_same_real[..transition_lane_count],
++                                    &mut recurrence.analysis_same_imag[..transition_lane_count],
++                                    &mut failed_lane,
++                                )?;
++                                if completed {
++                                    break true;
++                                }
++                                if failed_lane >= transition_lane_count {
++                                    break false;
++                                }
++                                if !transition_compacted {
++                                    for lane in 0..transition_lane_count {
++                                        recurrence.compact_theta_sin[lane] =
++                                            theta_sin[block_start + lane];
++                                        recurrence.compact_theta_cos[lane] =
++                                            theta_cos[block_start + lane];
++                                        recurrence.compact_ring_indices[lane] = lane;
++                                    }
++                                    transition_compacted = true;
++                                }
++                                let failed_ring = recurrence.compact_ring_indices[failed_lane];
++                                let fallback_slot = block_len - transition_fallback_count - 1;
++                                recurrence.compact_ring_indices[fallback_slot] = failed_ring;
++                                recurrence.compact_theta_sin.copy_within(
++                                    failed_lane + 1..transition_lane_count,
++                                    failed_lane,
++                                );
++                                recurrence.compact_theta_cos.copy_within(
++                                    failed_lane + 1..transition_lane_count,
++                                    failed_lane,
++                                );
++                                recurrence.compact_ring_indices.copy_within(
++                                    failed_lane + 1..transition_lane_count,
++                                    failed_lane,
+                                 );
++                                transition_lane_count -= 1;
++                                transition_fallback_count += 1;
++                                if transition_lane_count == 0 {
++                                    break true;
++                                }
++                            }
++                        } else {
++                            false
++                        };
++                        if transition {
++                            for lane in 0..transition_lane_count {
++                                let block_ring = if transition_compacted {
++                                    recurrence.compact_ring_indices[lane]
++                                } else {
++                                    lane
++                                };
++                                spectra[spectrum_start + block_ring * spectrum_len + m] +=
++                                    Complex::new(
++                                        recurrence.analysis_same_real[lane],
++                                        recurrence.analysis_same_imag[lane],
++                                    );
++                            }
++                            if transition_fallback_count > 0 {
++                                let fallback_start = block_len - transition_fallback_count;
++                                recurrence
++                                    .compact_ring_indices
++                                    .copy_within(fallback_start..block_len, 0);
++                                for lane in 0..transition_fallback_count {
++                                    let block_ring = recurrence.compact_ring_indices[lane];
++                                    recurrence.compact_theta_sin[lane] =
++                                        theta_sin[block_start + block_ring];
++                                    recurrence.compact_theta_cos[lane] =
++                                        theta_cos[block_start + block_ring];
++                                }
++                                T::for_each_y_lm_paired_dispatched(
++                                    arch,
++                                    m,
++                                    lmax,
++                                    &recurrence.compact_theta_sin[..transition_fallback_count],
++                                    &recurrence.compact_theta_cos[..transition_fallback_count],
++                                    self.sectoral_norms[m],
++                                    &recurrence.spin_coefficient_a,
++                                    &recurrence.spin_coefficient_b,
++                                    &mut recurrence.previous[..transition_fallback_count],
++                                    &mut recurrence.current[..transition_fallback_count],
++                                    &mut recurrence.next[..transition_fallback_count],
++                                    &mut recurrence.exponents[..transition_fallback_count],
++                                    |l, ring_start, current, exponents| {
++                                        let pair_index = (l - m) / 2;
++                                        let coefficient_offset = l - m;
++                                        let next_even_coefficient = if l + 2 <= lmax {
++                                            alm[coefficient_start + coefficient_offset + 2]
++                                        } else {
++                                            Complex::new(T::zero(), T::zero())
++                                        };
++                                        let coefficient_even = (alm
++                                            [coefficient_start + coefficient_offset]
++                                            * recurrence.epsilon[l + 1]
++                                            + next_even_coefficient * recurrence.epsilon[l + 2])
++                                            * recurrence.spin_alpha[pair_index];
++                                        let coefficient_odd = if l < lmax {
++                                            alm[coefficient_start + coefficient_offset + 1]
++                                                * recurrence.spin_alpha[pair_index]
++                                        } else {
++                                            Complex::new(T::zero(), T::zero())
++                                        };
++                                        for lane in 0..current.len() {
++                                            let fallback_ring = ring_start + lane;
++                                            let block_ring =
++                                                recurrence.compact_ring_indices[fallback_ring];
++                                            let contribution = T::multiply_complex_scaled(
++                                                coefficient_even,
++                                                current[lane],
++                                                exponents[lane],
++                                            )
++                                                + T::multiply_complex_scaled_product(
++                                                    coefficient_odd,
++                                                    current[lane],
++                                                    recurrence.compact_theta_cos[fallback_ring],
++                                                    exponents[lane],
++                                                );
++                                            let spectrum_index =
++                                                (block_start + block_ring) * spectrum_len + m;
++                                            spectra[spectrum_index] += contribution;
++                                        }
++                                        Ok(())
++                                    },
++                                )?;
+                             }
+                         } else {
+-                            let compact_mixed_block =
+-                                lmax >= 255 && ring_limits.iter().any(|&limit| m > limit);
+                             if compact_mixed_block {
+                                 let mut compact_len = 0;
+                                 for (ring, &limit) in ring_limits.iter().enumerate() {

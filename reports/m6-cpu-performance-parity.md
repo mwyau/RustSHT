@@ -201,7 +201,13 @@ at T2047, so imbalance remains, especially at T2047. These are single-run
 diagnostic profiles, not acceptance measurements. The P01-only q8 summary,
 exact source and executable hashes, raw logs, PSI snapshots, and time/RSS
 records are in
-[`reports/data/m6-p01/route-profile/p01-only-q8-summary.md`](data/m6-p01/route-profile/p01-only-q8-summary.md). The default-link T511 spin-1 synthesis control has a repeatable greater-than-
+[`reports/data/m6-p01/route-profile/p01-only-q8-summary.md`](data/m6-p01/route-profile/p01-only-q8-summary.md). A separate T2047 q8 lane-retry route-accounting test compared one
+uninstrumented call with one call that collected per-worker route counters. The maps matched bitwise; the times were 512.470 and 512.947 ms (+0.09%). The test counted 1.734 billion
+committed lane-pair units and 67,676 declined transitions. Worker route-timer
+sums ranged from 77.4 to 431.5 ms. This single run measures instrumentation
+overhead and route counts, not candidate-versus-baseline performance. The
+outer launch requested 8 pinned CPU cores; the host CPU model was not recorded. Source, executable hash, raw output, timing, preflight, and limitations are in
+[`the route-accounting diagnostic`](data/m6-p01/decline-diagnostic/summary.md). The default-link T511 spin-1 synthesis control has a repeatable greater-than-
 2% screen. Across the initial and confirmation screens (12 paired ratios),
 the median was 1.02073,
 the 95% paired bootstrap interval was 1.01791–1.02761, and 7/12 pairs were
