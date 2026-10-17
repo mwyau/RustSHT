@@ -2343,3 +2343,16 @@ capacity and allocation, and serial builds. Formatting, workspace Clippy,
 all-feature and no-default suites, and the release regression passed on
 Rust 1.99.0. Python and ignored high-L tests were not run for this capacity
 check. See [the M6 report](../reports/m6-cpu-performance-parity.md).
+
+### M6 guarded scalar visitor screen (2026-10-17)
+
+An isolated general visitor fast path classified ordinary coefficient
+products once per degree-pair/block and retained scaled helpers for unsafe
+inputs. Focused numerical checks passed, including DUCC-backed scalar GL,
+spin-1 GL, CC/F1 scalar, adjoint, and f32 scalar comparisons. Six alternating
+q1 synthesis pairs found candidate/baseline ratios of 1.06980 at T511 and
+1.03446 at T1023; both exceed the 1.02 regression gate. A T511 spin-1 control
+ratio of 1.00604 passed. Reject the candidate and retain its complete patch,
+builds, tests, raw samples, and hashes as diagnostic evidence. No production
+source changed. See [the M6 report](../reports/m6-cpu-performance-parity.md)
+and [the screen evidence](../reports/data/m6-m2-general-visitor/).

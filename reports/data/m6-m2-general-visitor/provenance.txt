@@ -1,0 +1,33 @@
+M2 general scalar visitor screen provenance
+
+Base commit: a50f70051049e37fa71898d5ec0aecc56ff388b3
+Baseline source: git archive of the base commit
+Candidate source: baseline source plus rejected-candidate.patch
+Candidate source diff is limited to:
+  src/legendre/mod.rs
+  src/legendre/scalar_paired.rs
+  src/transform.rs
+
+Toolchain:
+  rustc 1.99.0 (b940084d7 2026-09-28)
+  cargo 1.99.0 (5f94df478 2026-08-27)
+  Edition 2024; Cargo.lock from the base commit
+  RUSTFLAGS empty
+  CARGO_ENCODED_RUSTFLAGS empty
+  Standard cargo release profile; no custom linker flags
+  Build command: cargo build --release --locked -p rustsht --example m1b_bench
+
+The CPU-pressure check failed the declared gate; exact transient readings remain local.
+
+Benchmark:
+  GL STANDARD f64; phi0=0.37; full mmax=lmax
+  T511 grid 512x1024; T1023 grid 1024x2048
+  q1; synthesis only; requested-only Rust Rayon path
+  Fresh process per side; one warmup and five measured synthesis samples
+  Six alternating baseline/candidate process pairs per cell
+  /usr/bin/time -v recorded wall time and peak RSS
+
+The baseline and candidate ELF hashes are in binary-sha256.txt. Source file
+hashes are in candidate-source-sha256.txt. SHA-256 values for the retained
+patch, scripts, raw outputs, preflights, summaries and test/build logs are in
+evidence-sha256.txt.

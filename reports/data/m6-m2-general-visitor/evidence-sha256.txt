@@ -1,0 +1,12 @@
+d1bb31cca6b100c94b587f0fcd7402804b2d5ba9f0819490163b7854a4a606e9  reports/data/m6-m2-general-visitor/binary-sha256.txt
+d8bf524f4cdbe02088eb6bdb72d46a395f86215481a4a9f71acf5ab5e7334828  reports/data/m6-m2-general-visitor/candidate-source-sha256.txt
+2785e22dfccf67f5489a52efd16526f4dd0837a82108e4d36ce29580f9efa586  reports/data/m6-m2-general-visitor/mechanism.md
+4f06bb3517564a1f4e7ae444479f794991e9ea1a11df8b15d2e3efea1dce5e68  reports/data/m6-m2-general-visitor/provenance.txt
+4d068b01f6139900edf0054eb0f92ca1456e013e603c31927a367384aac03f99  reports/data/m6-m2-general-visitor/rejected-candidate.patch
+eef2e67977d658f4609d332e63070dbeb00b593e8845172091e8c0565daddd11  reports/data/m6-m2-general-visitor/run-one.sh
+f6506acb18df7da450ea4ad96e3bc9155c61fc8c929448032c7e833767e15681  reports/data/m6-m2-general-visitor/run-screen.sh
+0abcb33c2984c55bf22584975bde787119b8cee2acf06e304efff9775f6d73e2  reports/data/m6-m2-general-visitor/runner-notes.md
+b27f4b6b850b7dbd9691b52d45858687661a90b1be488170e510948073d648f6  reports/data/m6-m2-general-visitor/screen-pairs.csv
+6ffb2762cf88b6649889707fcd2490e560317a4906fdb84eedea374149208d88  reports/data/m6-m2-general-visitor/screen-summary.csv
+16f8d9dacd5e2306bb710f197b68871fa32ed6f673d75ce7ed53f1373dcf98c9  reports/data/m6-m2-general-visitor/summarize.py
+c49084d56d1d245696228a67566672d3478ce13596fb82bc75734205b9108867  reports/data/m6-m2-general-visitor/summary.md

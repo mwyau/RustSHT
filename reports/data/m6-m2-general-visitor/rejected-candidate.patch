@@ -1,0 +1,380 @@
+--- a/src/legendre/mod.rs
++++ b/src/legendre/mod.rs
+@@ -406,0 +407,15 @@
++    fn paired_synthesis_normal_coefficients_safe(
++        _coefficient_even: Complex<Self>,
++        _coefficient_odd: Complex<Self>,
++        _cos_theta: &[Self],
++    ) -> bool {
++        false
++    }
++    fn paired_synthesis_normal_contribution(
++        _coefficient_even: Complex<Self>,
++        _coefficient_odd: Complex<Self>,
++        _basis: Self,
++        _cos_theta: Self,
++    ) -> Option<Complex<Self>> {
++        None
++    }
+@@ -1139,0 +1155,26 @@
++    fn paired_synthesis_normal_coefficients_safe(
++        coefficient_even: Complex<Self>,
++        coefficient_odd: Complex<Self>,
++        cos_theta: &[Self],
++    ) -> bool {
++        scalar_paired::normal_synthesis_coefficients_safe(
++            coefficient_even,
++            coefficient_odd,
++            cos_theta,
++        )
++    }
++
++    fn paired_synthesis_normal_contribution(
++        coefficient_even: Complex<Self>,
++        coefficient_odd: Complex<Self>,
++        basis: Self,
++        cos_theta: Self,
++    ) -> Option<Complex<Self>> {
++        scalar_paired::normal_synthesis_contribution(
++            coefficient_even,
++            coefficient_odd,
++            basis,
++            cos_theta,
++        )
++    }
++
+--- a/src/legendre/scalar_paired.rs
++++ b/src/legendre/scalar_paired.rs
+@@ -2882,0 +2883,126 @@
++const NORMAL_PRODUCT_MIN_EXPONENT: i32 = -1021;
++const NORMAL_PRODUCT_MAX_EXPONENT: i32 = 1020;
++
++/// Classifies ordinary products once per coefficient pair and latitude block.
++/// A normal paired basis lane lies between the exponents of `SMALL` and `BIG`;
++/// the cosine bounds cover every lane in this block. The conservative product
++/// exponent interval leaves one exponent of headroom at both ends, so each
++/// multiply in `(coefficient * basis) * cosine` remains finite and normal.
++pub(crate) fn normal_synthesis_coefficients_safe(
++    coefficient_even: Complex64,
++    coefficient_odd: Complex64,
++    cos_theta: &[f64],
++) -> bool {
++    if cos_theta.is_empty() {
++        return false;
++    }
++    let basis_min_exponent = normal_binary_exponent(scalar::SMALL).expect("SMALL is normal");
++    let basis_max_exponent = normal_binary_exponent(scalar::BIG).expect("BIG is normal");
++    let mut cosine_min_exponent = i32::MAX;
++    let mut cosine_max_exponent = i32::MIN;
++    let mut has_zero_cosine = false;
++    for &cosine in cos_theta {
++        if cosine == 0.0 {
++            has_zero_cosine = true;
++            continue;
++        }
++        let Some(exponent) = normal_binary_exponent(cosine) else {
++            return false;
++        };
++        cosine_min_exponent = cosine_min_exponent.min(exponent);
++        cosine_max_exponent = cosine_max_exponent.max(exponent);
++    }
++
++    let even_safe = complex_component_product_range_safe(
++        coefficient_even,
++        basis_min_exponent,
++        basis_max_exponent,
++    );
++    if !even_safe {
++        return false;
++    }
++    let odd_is_zero = coefficient_odd.re == 0.0 && coefficient_odd.im == 0.0;
++    if odd_is_zero {
++        return true;
++    }
++    if has_zero_cosine {
++        return false;
++    }
++    complex_component_product_range_safe(coefficient_odd, basis_min_exponent, basis_max_exponent)
++        && complex_component_product_range_safe(
++            coefficient_odd,
++            basis_min_exponent + cosine_min_exponent,
++            basis_max_exponent + cosine_max_exponent,
++        )
++}
++
++/// Computes the same products and grouping as the scaled synthesis visitor
++/// after the block-level exponent guard proves ordinary product headroom.
++pub(crate) fn normal_synthesis_contribution(
++    coefficient_even: Complex64,
++    coefficient_odd: Complex64,
++    basis: f64,
++    cosine: f64,
++) -> Option<Complex64> {
++    let even_re = coefficient_even.re * basis;
++    let even_im = coefficient_even.im * basis;
++    let odd_re_initial = coefficient_odd.re * basis;
++    let odd_im_initial = coefficient_odd.im * basis;
++    let odd_re = odd_re_initial * cosine;
++    let odd_im = odd_im_initial * cosine;
++    if !product_is_normal_or_exact_zero(even_re, coefficient_even.re, basis)
++        || !product_is_normal_or_exact_zero(even_im, coefficient_even.im, basis)
++        || !product_is_normal_or_exact_zero(odd_re_initial, coefficient_odd.re, basis)
++        || !product_is_normal_or_exact_zero(odd_im_initial, coefficient_odd.im, basis)
++        || !product_is_normal_or_exact_zero(odd_re, odd_re_initial, cosine)
++        || !product_is_normal_or_exact_zero(odd_im, odd_im_initial, cosine)
++    {
++        return None;
++    }
++    let real = even_re + odd_re;
++    let imag = even_im + odd_im;
++    (real.is_normal() || real == 0.0)
++        .then_some(())
++        .filter(|()| imag.is_normal() || imag == 0.0)
++        .map(|()| Complex64::new(real, imag))
++}
++
++fn complex_component_product_range_safe(
++    value: Complex64,
++    factor_min_exponent: i32,
++    factor_max_exponent: i32,
++) -> bool {
++    [value.re, value.im].into_iter().all(|component| {
++        component_product_range_safe(component, factor_min_exponent, factor_max_exponent)
++    })
++}
++
++fn component_product_range_safe(
++    value: f64,
++    factor_min_exponent: i32,
++    factor_max_exponent: i32,
++) -> bool {
++    if value == 0.0 {
++        return true;
++    }
++    let Some(exponent) = normal_binary_exponent(value) else {
++        return false;
++    };
++    let min_product_exponent = exponent + factor_min_exponent;
++    let max_product_exponent = exponent + factor_max_exponent;
++    (NORMAL_PRODUCT_MIN_EXPONENT..=NORMAL_PRODUCT_MAX_EXPONENT).contains(&min_product_exponent)
++        && (NORMAL_PRODUCT_MIN_EXPONENT..=NORMAL_PRODUCT_MAX_EXPONENT)
++            .contains(&max_product_exponent)
++}
++
++fn normal_binary_exponent(value: f64) -> Option<i32> {
++    if !value.is_normal() {
++        return None;
++    }
++    Some(((value.to_bits() >> 52) & 0x7ff) as i32 - 1023)
++}
++
++fn product_is_normal_or_exact_zero(product: f64, left: f64, right: f64) -> bool {
++    product.is_normal() || (product == 0.0 && (left == 0.0 || right == 0.0))
++}
++
+@@ -3838 +3964,106 @@
+-}
++
++    #[test]
++    fn normal_synthesis_coefficient_guard_covers_product_exponent_edges() {
++        let cos_theta = [0.5];
++        let even_safe_low = Complex64::new(2.0_f64.powi(-621), 0.0);
++        let even_unsafe_low = Complex64::new(2.0_f64.powi(-622), 0.0);
++        let even_safe_high = Complex64::new(2.0_f64.powi(620), 0.0);
++        let even_unsafe_high = Complex64::new(2.0_f64.powi(621), 0.0);
++
++        assert!(normal_synthesis_coefficients_safe(
++            even_safe_low,
++            Complex64::new(0.0, 0.0),
++            &cos_theta,
++        ));
++        assert!(!normal_synthesis_coefficients_safe(
++            even_unsafe_low,
++            Complex64::new(0.0, 0.0),
++            &cos_theta,
++        ));
++        assert!(normal_synthesis_coefficients_safe(
++            even_safe_high,
++            Complex64::new(0.0, 0.0),
++            &cos_theta,
++        ));
++        assert!(!normal_synthesis_coefficients_safe(
++            even_unsafe_high,
++            Complex64::new(0.0, 0.0),
++            &cos_theta,
++        ));
++
++        let odd_safe_low = Complex64::new(2.0_f64.powi(-620), 0.0);
++        let odd_unsafe_low = Complex64::new(2.0_f64.powi(-621), 0.0);
++        assert!(normal_synthesis_coefficients_safe(
++            Complex64::new(0.0, 0.0),
++            odd_safe_low,
++            &cos_theta,
++        ));
++        assert!(!normal_synthesis_coefficients_safe(
++            Complex64::new(0.0, 0.0),
++            odd_unsafe_low,
++            &cos_theta,
++        ));
++        assert!(!normal_synthesis_coefficients_safe(
++            Complex64::new(0.0, 0.0),
++            even_safe_high,
++            &[0.0],
++        ));
++        assert!(!normal_synthesis_coefficients_safe(
++            Complex64::new(f64::from_bits(1), 0.0),
++            Complex64::new(0.0, 0.0),
++            &cos_theta,
++        ));
++    }
++
++    #[test]
++    fn normal_synthesis_contribution_declines_when_intermediates_are_not_normal() {
++        let even = Complex64::new(0.5, -0.25);
++        let odd = Complex64::new(0.125, 0.75);
++        let contribution = normal_synthesis_contribution(even, odd, 0.5, 0.25).unwrap();
++        let expected = Complex64::new(
++            even.re * 0.5 + (odd.re * 0.5) * 0.25,
++            even.im * 0.5 + (odd.im * 0.5) * 0.25,
++        );
++        assert_eq!(contribution, expected);
++
++        assert_eq!(
++            normal_synthesis_contribution(
++                Complex64::new(2.0_f64.powi(-623), 0.0),
++                Complex64::new(0.0, 0.0),
++                2.0_f64.powi(-400),
++                0.5,
++            ),
++            None,
++        );
++        assert_eq!(
++            normal_synthesis_contribution(
++                Complex64::new(2.0_f64.powi(1023), 0.0),
++                Complex64::new(0.0, 0.0),
++                2.0,
++                0.5,
++            ),
++            None,
++        );
++
++        let smallest_safe_product = 2.0_f64.powi(-1021);
++        let adjacent = f64::from_bits(smallest_safe_product.to_bits() + 1);
++        assert_eq!(
++            normal_synthesis_contribution(
++                Complex64::new(smallest_safe_product, 0.0),
++                Complex64::new(-adjacent, 0.0),
++                1.0,
++                1.0,
++            ),
++            None,
++        );
++        assert_eq!(
++            normal_synthesis_contribution(
++                Complex64::new(1.0, 0.0),
++                Complex64::new(-1.0, 0.0),
++                1.0,
++                1.0,
++            ),
++            Some(Complex64::new(0.0, 0.0)),
++        );
++    }
++}
+--- a/src/transform.rs
++++ b/src/transform.rs
+@@ -914 +914,2 @@
+-                                T::for_each_y_lm_paired_dispatched(
++                                let compact_cosine = &recurrence.compact_theta_cos[..compact_len];
++                                T::for_each_y_lm_paired_status_dispatched(
+@@ -919 +920 @@
+-                                    &recurrence.compact_theta_cos[..compact_len],
++                                    compact_cosine,
+@@ -927 +928 @@
+-                                    |l, ring_start, current, exponents| {
++                                    |l, ring_start, current, exponents, normal_range| {
+@@ -945,0 +947,6 @@
++                                        let normal_coefficients_safe = normal_range
++                                            && T::paired_synthesis_normal_coefficients_safe(
++                                                coefficient_even,
++                                                coefficient_odd,
++                                                compact_cosine,
++                                            );
+@@ -951,6 +958,4 @@
+-                                            let contribution = T::multiply_complex_scaled(
+-                                                coefficient_even,
+-                                                current[lane],
+-                                                exponents[lane],
+-                                            )
+-                                                + T::multiply_complex_scaled_product(
++                                            let cosine = compact_cosine[fallback_ring];
++                                            let contribution = if normal_coefficients_safe {
++                                                T::paired_synthesis_normal_contribution(
++                                                    coefficient_even,
+@@ -959 +964,9 @@
+-                                                    recurrence.compact_theta_cos[fallback_ring],
++                                                    cosine,
++                                                )
++                                            } else {
++                                                None
++                                            }
++                                            .unwrap_or_else(|| {
++                                                T::multiply_complex_scaled(
++                                                    coefficient_even,
++                                                    current[lane],
+@@ -961 +974,7 @@
+-                                                );
++                                                ) + T::multiply_complex_scaled_product(
++                                                    coefficient_odd,
++                                                    current[lane],
++                                                    cosine,
++                                                    exponents[lane],
++                                                )
++                                            });
+@@ -969 +988,2 @@
+-                                T::for_each_y_lm_paired_dispatched(
++                                let block_cosine = &theta_cos[block_start..block_end];
++                                T::for_each_y_lm_paired_status_dispatched(
+@@ -974 +994 @@
+-                                    &theta_cos[block_start..block_end],
++                                    block_cosine,
+@@ -982 +1002 @@
+-                                    |l, ring_start, current, exponents| {
++                                    |l, ring_start, current, exponents, normal_range| {
+@@ -1000,0 +1021,6 @@
++                                        let normal_coefficients_safe = normal_range
++                                            && T::paired_synthesis_normal_coefficients_safe(
++                                                coefficient_even,
++                                                coefficient_odd,
++                                                block_cosine,
++                                            );
+@@ -1007,6 +1033,4 @@
+-                                            let contribution = T::multiply_complex_scaled(
+-                                                coefficient_even,
+-                                                current[lane],
+-                                                exponents[lane],
+-                                            )
+-                                                + T::multiply_complex_scaled_product(
++                                            let cosine = theta_cos[group_ring];
++                                            let contribution = if normal_coefficients_safe {
++                                                T::paired_synthesis_normal_contribution(
++                                                    coefficient_even,
+@@ -1015 +1039,9 @@
+-                                                    theta_cos[group_ring],
++                                                    cosine,
++                                                )
++                                            } else {
++                                                None
++                                            }
++                                            .unwrap_or_else(|| {
++                                                T::multiply_complex_scaled(
++                                                    coefficient_even,
++                                                    current[lane],
+@@ -1017 +1049,7 @@
+-                                                );
++                                                ) + T::multiply_complex_scaled_product(
++                                                    coefficient_odd,
++                                                    current[lane],
++                                                    cosine,
++                                                    exponents[lane],
++                                                )
++                                            });

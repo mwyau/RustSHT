@@ -13,9 +13,11 @@ gate remains unresolved; its scalar T255 q1 synthesis and analysis controls
 exceed the predeclared 2% threshold. P01 remains uncommitted and unaccepted;
 it is shelved after its default-link spin-1 control exceeded the guard. P02 is
 uncommitted and rejected because its isolated comparison showed no material
-gain. M1 route counters, benchmark harness changes, and numerical-plan edits
-remain uncommitted. The campaign report and raw measurements are recorded in
-a diagnostic evidence checkpoint.
+gain. The isolated M2 general-visitor candidate is also rejected and remains
+outside production. M1 route-profile evidence is committed; its test-only
+counters, benchmark harness changes, and numerical-plan edits remain
+uncommitted. The campaign report and raw measurements are recorded in
+diagnostic evidence checkpoints.
 
 ## C01: workspace order-prefix compatibility
 
@@ -277,6 +279,37 @@ binaries, using synthesis-only processes. Median P02/P01 ratios were 1.00188
 spin-1 control, 1.00691 [1.00167, 1.04024] for T1023 scalar, and 0.99539
 [0.98828, 1.00067] for T2047 scalar. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. P02 shows no material improvement at either target
 degree and no greater-than-2% spin-1 regression in this isolated comparison. Reject P02 and retain its files as diagnostic evidence.
+
+## M2: guarded ordinary-product scalar visitor (rejected)
+
+The isolated candidate started from production HEAD a50f700 and used the
+paired visitor's normal-range status to classify ordinary coefficient
+products once per degree-pair/block. It retained the existing scaled helpers
+for unsafe products and scaled visits, and did not change coefficient
+preparation, recurrence updates, or degree accumulation order. This target
+came from the M1 profile: visitor timer sums were 26.408 ms at T511 and
+191.910 ms at T1023 q1. Formatting and focused debug checks passed. The checks cover coefficient
+exponent edges and intermediate fallbacks, pinned DUCC 0.41 scalar synthesis
+at low degree and T255, T511 scalar GL sectoral values checked against DUCC
+and an analytic field, T255 spin-1 GL DUCC values, CC/F1 scalar DUCC and
+adjoint identities, and f32 scalar S/A against DUCC on GL/CC/F1. Six alternating q1 synthesis pairs compared fresh release binaries built
+with Rust 1.99.0, empty Rust flags, GL STANDARD f64, full mmax, phi0=0.37,
+one CPU core, and ntheta/nphi of 512x1024 at T511 and 1024x2048 at T1023. Each
+process warmed once and recorded five samples. Candidate/baseline median
+ratios and paired bootstrap 95% intervals were:
+
+| T | Spin | Ratio | 95% interval | Result |
+|---:|---:|---:|---:|---|
+| 511 | 0 | 1.06980 | [1.06676, 1.07341] | Reject |
+| 511 | 1 | 1.00604 | [0.99565, 1.01099] | Control passes |
+| 1023 | 0 | 1.03446 | [1.02346, 1.03882] | Reject |
+
+Both scalar target intervals exceed the 1.02 gate; all six T511 scalar pairs
+were slower and five of six T1023 scalar pairs were slower by more than 2%. The run preflights observed no competing build or benchmark and refused no
+process. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. This screen rejected the candidate; it did not proceed to the full operation
+matrix or current-source DUCC/SHTns timings. No production change was accepted. The complete patch, focused test log, release build logs, raw stdout/time
+files, preflight records, hashes, and paired summary are in
+[reports/data/m6-m2-general-visitor](data/m6-m2-general-visitor/).
 
 ## Post-C03 regression checks
 
