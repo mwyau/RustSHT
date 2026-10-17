@@ -94,119 +94,163 @@ fn synthesize_group<T: ShtScalar>(
         );
         let pair_count = (scalar_lmax - m + 2) / 2;
 
-        for block_start in (0..group_len).step_by(LATITUDE_BLOCK_SIZE) {
-            let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(group_len);
-            let block_len = block_end - block_start;
-            let north_first_ring = ring_start + block_start;
-            let north_end_ring = ring_start + block_end;
-            let south_first_ring = ntheta - north_end_ring;
-            let north_offset = block_start * spectrum_len;
-            let north_end = block_end * spectrum_len;
-            let south_offset = (group_len - block_end) * spectrum_len;
-            let south_end = (group_len - block_start) * spectrum_len;
-            let all_lanes_safe = (block_start..block_end).all(|lane| {
-                let north = ring_start + lane;
-                let south = ntheta - 1 - north;
-                ring_order_limits[north] >= m
-                    && ring_order_limits[south] >= m
-                    && theta_sin[north] >= pair_min_sine
-                    && theta_sin[south] >= pair_min_sine
-            });
+        let converted_finite = recurrence.fast_scalar_first[m..=scalar_lmax]
+            .iter()
+            .chain(&recurrence.fast_scalar_second[m..=scalar_lmax])
+            .all(|value| value.re.is_finite() && value.im.is_finite());
+        let first_ready = converted_finite
+            && factors_ready
+            && T::prepare_paired_scalar_synthesis_coefficients(
+                m,
+                scalar_lmax,
+                &recurrence.epsilon,
+                &recurrence.spin_alpha,
+                &recurrence.fast_scalar_first[m..=scalar_lmax],
+                &mut recurrence.fast_spin_first[..pair_count],
+                &mut recurrence.fast_spin_second[..pair_count],
+            );
+        let second_ready = converted_finite
+            && factors_ready
+            && T::prepare_paired_scalar_synthesis_coefficients(
+                m,
+                scalar_lmax,
+                &recurrence.epsilon,
+                &recurrence.spin_alpha,
+                &recurrence.fast_scalar_second[m..=scalar_lmax],
+                &mut recurrence.fast_spin_pair_first[..pair_count],
+                &mut recurrence.fast_spin_pair_second[..pair_count],
+            );
 
-            let first_ready = all_lanes_safe
-                && factors_ready
-                && T::prepare_paired_scalar_synthesis_coefficients(
-                    m,
-                    scalar_lmax,
-                    &recurrence.epsilon,
-                    &recurrence.spin_alpha,
-                    &recurrence.fast_scalar_first[m..=scalar_lmax],
-                    &mut recurrence.fast_spin_first[..pair_count],
-                    &mut recurrence.fast_spin_second[..pair_count],
-                );
-            let second_ready = all_lanes_safe
-                && factors_ready
-                && T::prepare_paired_scalar_synthesis_coefficients(
-                    m,
-                    scalar_lmax,
-                    &recurrence.epsilon,
-                    &recurrence.spin_alpha,
-                    &recurrence.fast_scalar_second[m..=scalar_lmax],
-                    &mut recurrence.fast_spin_pair_first[..pair_count],
-                    &mut recurrence.fast_spin_pair_second[..pair_count],
-                );
-            let used_pair = if first_ready && second_ready {
-                let mut sums = [
-                    &mut recurrence.analysis_same_real[..block_len],
-                    &mut recurrence.analysis_same_imag[..block_len],
-                    &mut recurrence.analysis_opposite_real[..block_len],
-                    &mut recurrence.analysis_opposite_imag[..block_len],
-                    &mut recurrence.spin_previous_plus[..block_len],
-                    &mut recurrence.spin_current_plus[..block_len],
-                    &mut recurrence.spin_next_plus[..block_len],
-                    &mut recurrence.spin_previous_minus[..block_len],
-                ];
-                T::synthesize_hemisphere_pair_block_dispatched(
-                    arch,
-                    m,
-                    scalar_lmax,
-                    &theta_sin[north_first_ring..north_end_ring],
-                    &theta_cos[north_first_ring..north_end_ring],
-                    plan.sectoral_norms[m],
-                    &recurrence.spin_coefficient_a,
-                    &recurrence.spin_coefficient_b,
-                    &recurrence.fast_spin_first[..pair_count],
-                    &recurrence.fast_spin_second[..pair_count],
-                    &recurrence.fast_spin_pair_first[..pair_count],
-                    &recurrence.fast_spin_pair_second[..pair_count],
-                    spectrum_len,
-                    &mut north_q[north_offset..north_end],
-                    &mut south_q[south_offset..south_end],
-                    &mut north_u[north_offset..north_end],
-                    &mut south_u[south_offset..south_end],
-                    &mut recurrence.current[..block_len],
-                    &mut sums,
-                )?
-            } else {
-                false
-            };
-
-            if !used_pair {
-                plan.synthesize_spin1_scalar_block(
-                    m,
-                    scalar_lmax,
-                    spectrum_len,
-                    north_first_ring,
-                    false,
-                    &theta_sin[north_first_ring..north_end_ring],
-                    &theta_cos[north_first_ring..north_end_ring],
-                    &ring_order_limits[north_first_ring..north_end_ring],
-                    arch,
-                    recurrence,
-                    &mut north_q[north_offset..north_end],
-                    &mut north_u[north_offset..north_end],
-                )?;
-                for lane in 0..block_len {
-                    let north = north_end_ring - 1 - lane;
+        if !first_ready || !second_ready {
+            // Conversion and paired preparation are checked before either
+            // hemisphere commits this order. The fallback retains original E/B.
+            plan.synthesize_general_spin_order(
+                m,
+                e_alm,
+                Some(b_alm),
+                1,
+                false,
+                spectrum_len,
+                ring_start,
+                north_q,
+                north_u,
+                &theta_sin[ring_start..ring_end],
+                &theta_cos[ring_start..ring_end],
+                ring_order_limits,
+                arch,
+                recurrence,
+            )?;
+            let south_start = ntheta - ring_end;
+            let south_end = ntheta - ring_start;
+            plan.synthesize_general_spin_order(
+                m,
+                e_alm,
+                Some(b_alm),
+                1,
+                false,
+                spectrum_len,
+                south_start,
+                south_q,
+                south_u,
+                &theta_sin[south_start..south_end],
+                &theta_cos[south_start..south_end],
+                ring_order_limits,
+                arch,
+                recurrence,
+            )?;
+        } else {
+            for block_start in (0..group_len).step_by(LATITUDE_BLOCK_SIZE) {
+                let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(group_len);
+                let block_len = block_end - block_start;
+                let north_first_ring = ring_start + block_start;
+                let north_end_ring = ring_start + block_end;
+                let south_first_ring = ntheta - north_end_ring;
+                let north_offset = block_start * spectrum_len;
+                let north_end = block_end * spectrum_len;
+                let south_offset = (group_len - block_end) * spectrum_len;
+                let south_end = (group_len - block_start) * spectrum_len;
+                let all_lanes_safe = (block_start..block_end).all(|lane| {
+                    let north = ring_start + lane;
                     let south = ntheta - 1 - north;
-                    south_sin[lane] = theta_sin[south];
-                    south_cos[lane] = theta_cos[south];
-                    south_limits[lane] = ring_order_limits[south];
+                    ring_order_limits[north] >= m
+                        && ring_order_limits[south] >= m
+                        && theta_sin[north] >= pair_min_sine
+                        && theta_sin[south] >= pair_min_sine
+                });
+
+                let used_pair = if all_lanes_safe {
+                    let mut sums = [
+                        &mut recurrence.analysis_same_real[..block_len],
+                        &mut recurrence.analysis_same_imag[..block_len],
+                        &mut recurrence.analysis_opposite_real[..block_len],
+                        &mut recurrence.analysis_opposite_imag[..block_len],
+                        &mut recurrence.spin_previous_plus[..block_len],
+                        &mut recurrence.spin_current_plus[..block_len],
+                        &mut recurrence.spin_next_plus[..block_len],
+                        &mut recurrence.spin_previous_minus[..block_len],
+                    ];
+                    T::synthesize_hemisphere_pair_block_dispatched(
+                        arch,
+                        m,
+                        scalar_lmax,
+                        &theta_sin[north_first_ring..north_end_ring],
+                        &theta_cos[north_first_ring..north_end_ring],
+                        plan.sectoral_norms[m],
+                        &recurrence.spin_coefficient_a,
+                        &recurrence.spin_coefficient_b,
+                        &recurrence.fast_spin_first[..pair_count],
+                        &recurrence.fast_spin_second[..pair_count],
+                        &recurrence.fast_spin_pair_first[..pair_count],
+                        &recurrence.fast_spin_pair_second[..pair_count],
+                        spectrum_len,
+                        &mut north_q[north_offset..north_end],
+                        &mut south_q[south_offset..south_end],
+                        &mut north_u[north_offset..north_end],
+                        &mut south_u[south_offset..south_end],
+                        &mut recurrence.current[..block_len],
+                        &mut sums,
+                    )?
+                } else {
+                    false
+                };
+
+                if !used_pair {
+                    plan.synthesize_spin1_scalar_block(
+                        m,
+                        scalar_lmax,
+                        spectrum_len,
+                        north_first_ring,
+                        false,
+                        &theta_sin[north_first_ring..north_end_ring],
+                        &theta_cos[north_first_ring..north_end_ring],
+                        &ring_order_limits[north_first_ring..north_end_ring],
+                        arch,
+                        recurrence,
+                        &mut north_q[north_offset..north_end],
+                        &mut north_u[north_offset..north_end],
+                    )?;
+                    for lane in 0..block_len {
+                        let north = north_end_ring - 1 - lane;
+                        let south = ntheta - 1 - north;
+                        south_sin[lane] = theta_sin[south];
+                        south_cos[lane] = theta_cos[south];
+                        south_limits[lane] = ring_order_limits[south];
+                    }
+                    plan.synthesize_spin1_scalar_block(
+                        m,
+                        scalar_lmax,
+                        spectrum_len,
+                        south_first_ring,
+                        false,
+                        &south_sin[..block_len],
+                        &south_cos[..block_len],
+                        &south_limits[..block_len],
+                        arch,
+                        recurrence,
+                        &mut south_q[south_offset..south_end],
+                        &mut south_u[south_offset..south_end],
+                    )?;
                 }
-                plan.synthesize_spin1_scalar_block(
-                    m,
-                    scalar_lmax,
-                    spectrum_len,
-                    south_first_ring,
-                    false,
-                    &south_sin[..block_len],
-                    &south_cos[..block_len],
-                    &south_limits[..block_len],
-                    arch,
-                    recurrence,
-                    &mut south_q[south_offset..south_end],
-                    &mut south_u[south_offset..south_end],
-                )?;
             }
         }
 
@@ -402,3 +446,6 @@ pub(super) fn synthesize<T: ShtScalar>(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;
