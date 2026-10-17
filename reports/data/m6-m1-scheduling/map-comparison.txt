@@ -1,0 +1,2 @@
+baseline_shape=(1, 2048, 4096); candidate_shape=(1, 2048, 4096)
+bitwise_equal=True; max_abs=0.00000000000000000e+00; relative_l2=0.00000000000000000e+00

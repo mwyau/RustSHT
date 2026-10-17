@@ -172,7 +172,25 @@ overhead changed q1 wall time by 0.6% at T1023 and −0.04% at T2047. q8 route
 counts match the q1 totals, but workers are imbalanced at T2047 (maximum to
 minimum active route timer ratio 9.53); q8 timer sums are descriptive. The
 route tables and worker-level evidence are in
-[`reports/data/m6-current-baseline/route-profile/`](data/m6-current-baseline/route-profile/). The matched q8 T2047 reference run confirms that RustSHT remains 13.97x slower
+[`reports/data/m6-current-baseline/route-profile/`](data/m6-current-baseline/route-profile/).
+
+### q8 T2047 scheduling-granularity screen (incomplete)
+
+An isolated candidate changed only the exact full-mmax GL scalar T2047 q8
+scheduling path from eight contiguous 256-ring groups to sixteen independent
+128-ring groups, with separate per-group scratch and Rayon minimum grain one. It left recurrence arithmetic, route selection and guards unchanged. Focused
+maps were bitwise equal to the source-matched baseline; each matched DUCC
+0.42.0 at relative L2 error `3.015e-13`. Four of eight planned alternating
+timed pairs completed. Their exploratory candidate/baseline synthesis ratios
+were `0.83268`, `1.15892`, `0.84561`, and `1.18379`; the median was `1.00226`
+with a four-pair percentile-bootstrap interval of `0.83268–1.18379`. In each
+pair the second process was faster regardless of binary, so the partial sample
+does not identify a scheduling effect. Pair 5 candidate was refused at the
+CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
+eight-pair gate is incomplete and not met by the exploratory point estimate. No controls or route-profile rerun were started; the candidate is unaccepted. This incomplete scheduling experiment is separate from the rejected general
+visitor candidate described under M2. All isolated source, binary hashes, raw outputs, time/RSS and preflight
+records are in
+[`reports/data/m6-m1-scheduling/`](data/m6-m1-scheduling/). The matched q8 T2047 reference run confirms that RustSHT remains 13.97x slower
 than DUCC for scalar synthesis and 8.12x slower for spin-1 synthesis under
 eight threads in this baseline.
 

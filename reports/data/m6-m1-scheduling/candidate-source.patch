@@ -1,0 +1,30 @@
+--- target/m6-m1-scheduling/src/plan.rs	2026-10-17 15:00:53.000000000 -0400
++++ target/m6-m1-scheduling-candidate/src/plan.rs	2026-10-17 19:06:11.994285579 -0400
+@@ -347 +346,0 @@
+-            || !(511..=720).contains(&lmax)
+@@ -348,0 +348,10 @@
++            return None;
++        }
++
++        if lmax == 2047 {
++            return match self.harmonics.spin() {
++                0 if execution_capacity == 8 && self.grid.nphi() == 2 * (lmax + 1) => Some(128),
++                _ => None,
++            };
++        }
++        if !(511..=720).contains(&lmax) {
+--- target/m6-m1-scheduling/src/transform.rs	2026-10-17 15:00:53.000000000 -0400
++++ target/m6-m1-scheduling-candidate/src/transform.rs	2026-10-17 19:05:49.265904879 -0400
+@@ -576,0 +577,9 @@
++                let minimum_groups_per_task = if self.harmonics.lmax() == 2047
++                    && self.harmonics.spin() == 0
++                    && execution_threads == 8
++                    && group_ring_count == 128
++                {
++                    1
++                } else {
++                    parallel_groups.div_ceil(execution_threads)
++                };
+@@ -588 +597 @@
+-                    .with_min_len(parallel_groups.div_ceil(execution_threads))
++                    .with_min_len(minimum_groups_per_task)
