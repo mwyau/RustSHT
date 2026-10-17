@@ -8456,3 +8456,75 @@ fn m3_spin_three_and_four_t511_all_grids_match_ducc_and_analytic_fields() {
         }
     }
 }
+
+#[test]
+fn extreme_spin2_scalar_conversion_restores_original_coefficients() {
+    for lmax in [500, 511] {
+        let plan = make_plan(2, lmax, 1, lmax + 1, 2 * (lmax + 1));
+        let mut workspace = plan.workspace().unwrap();
+        plan.prepare_spin_latitudes(&mut workspace, 2);
+        let spectrum_len = plan.fft.spectrum_len();
+        let ring_start = lmax / 3;
+        let ring_end = ring_start + 67;
+        for channels in [0, 1, 2] {
+            let mut e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+            let mut b = e.clone();
+            let index = plan.harmonics.index(2, 1).unwrap();
+            if channels != 1 {
+                e[index].re = 1.0e308;
+            }
+            if channels != 0 {
+                b[index].im = 1.0e308;
+            }
+            let mut fast_q = vec![Complex64::new(0.0, 0.0); 67 * spectrum_len];
+            let mut fast_u = fast_q.clone();
+            let mut general_q = fast_q.clone();
+            let mut general_u = fast_q.clone();
+            for (fast, q, u) in [
+                (true, &mut fast_q, &mut fast_u),
+                (false, &mut general_q, &mut general_u),
+            ] {
+                plan.synthesize_spin_ring_group_mode(
+                    &e,
+                    Some(&b),
+                    2,
+                    false,
+                    fast,
+                    false,
+                    None,
+                    plan.grid.nphi(),
+                    spectrum_len,
+                    plan.grid.phi0(),
+                    ring_start,
+                    ring_end,
+                    q,
+                    u,
+                    &workspace.theta_sin[ring_start..ring_end],
+                    &workspace.theta_cos[ring_start..ring_end],
+                    &workspace.ring_order_limits,
+                    pulp::Arch::new(),
+                    &mut workspace.recurrence_workers[0],
+                )
+                .unwrap();
+            }
+            let mut finite_count = 0;
+            for (actual, expected) in fast_q
+                .iter()
+                .chain(&fast_u)
+                .zip(general_q.iter().chain(&general_u))
+            {
+                for (actual, expected) in [(actual.re, expected.re), (actual.im, expected.im)] {
+                    if expected.is_finite() {
+                        assert!(
+                            actual.is_finite(),
+                            "L{lmax} channels={channels} actual={actual} expected={expected}"
+                        );
+                        assert!((actual / 1.0e308 - expected / 1.0e308).abs() < 2e-12);
+                        finite_count += usize::from(expected != 0.0);
+                    }
+                }
+            }
+            assert!(finite_count > 67);
+        }
+    }
+}

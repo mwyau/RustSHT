@@ -1,0 +1,10 @@
+   Compiling rustsht v0.1.0-dev.0 (/home/albert/RustSHT/target/m6-c02-candidate-worktree)
+    Finished `release` profile [optimized] target(s) in 10.81s
+     Running unittests src/lib.rs (target/release/deps/rustsht-159837ac1c3bd1f7)
+
+running 2 tests
+test spin_transform::tests::extreme_spin2_scalar_conversion_restores_original_coefficients ... ok
+test spin_transform::hemisphere::tests::extreme_spin1_hemisphere_restores_original_coefficients ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 207 filtered out; finished in 0.02s
+

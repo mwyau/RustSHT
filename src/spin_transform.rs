@@ -1556,66 +1556,21 @@ impl<T: ShtScalar> ShtPlan<T> {
                     }
                 }
             } else {
-                let initial = T::fill_spin_factors(
-                    spin,
+                self.synthesize_general_spin_order(
                     m,
-                    lmax,
-                    &mut recurrence.spin_alpha,
-                    &mut recurrence.spin_coefficient_a,
-                    &mut recurrence.spin_coefficient_b,
-                )?;
-                T::for_each_spin_lm_dispatched(
-                    arch,
-                    &initial,
-                    lmax,
+                    e_alm,
+                    b_alm,
+                    spin,
+                    derivative_norm,
+                    spectrum_len,
+                    ring_start,
+                    q_spectra,
+                    u_spectra,
                     theta_sin,
                     theta_cos,
-                    &recurrence.spin_coefficient_a,
-                    &recurrence.spin_coefficient_b,
-                    &mut recurrence.spin_previous_plus,
-                    &mut recurrence.spin_current_plus,
-                    &mut recurrence.spin_next_plus,
-                    &mut recurrence.spin_exponents_plus,
-                    &mut recurrence.spin_previous_minus,
-                    &mut recurrence.spin_current_minus,
-                    &mut recurrence.spin_next_minus,
-                    &mut recurrence.spin_exponents_minus,
-                    |degree, group_ring_start, plus, plus_exp, minus, minus_exp| {
-                        let coefficient_index = self
-                            .harmonics
-                            .index(degree, m)
-                            .expect("the recurrence visits degrees in the packed order");
-                        let e_coefficient = e_alm[coefficient_index];
-                        let b_coefficient = b_alm
-                            .map(|values| values[coefficient_index])
-                            .unwrap_or_else(|| Complex::new(T::zero(), T::zero()));
-                        let alpha_norm = recurrence.spin_alpha[degree]
-                            * T::spin_normalization(spin, degree, derivative_norm);
-                        for lane in 0..plus.len() {
-                            let group_ring = group_ring_start + lane;
-                            let global_ring = ring_start + group_ring;
-                            if m > ring_order_limits[global_ring] {
-                                continue;
-                            }
-                            let plus_value =
-                                T::scaled_basis_value(plus[lane], plus_exp[lane], alpha_norm);
-                            let minus_value =
-                                T::scaled_basis_value(minus[lane], minus_exp[lane], alpha_norm);
-                            let even_basis = plus_value + minus_value;
-                            let odd_basis = plus_value - minus_value;
-                            let q_value = e_coefficient * even_basis
-                                + Complex::<T>::new(T::zero(), -T::one())
-                                    * b_coefficient
-                                    * odd_basis;
-                            let u_value =
-                                Complex::<T>::new(T::zero(), T::one()) * e_coefficient * odd_basis
-                                    + b_coefficient * even_basis;
-                            let spectrum_index = group_ring * spectrum_len + m;
-                            q_spectra[spectrum_index] += q_value;
-                            u_spectra[spectrum_index] += u_value;
-                        }
-                        Ok(())
-                    },
+                    ring_order_limits,
+                    arch,
+                    recurrence,
                 )?;
             }
             for group_ring in 0..ring_end - ring_start {
@@ -1633,6 +1588,89 @@ impl<T: ShtScalar> ShtPlan<T> {
                 }
             }
         }
+        Ok(())
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Original-coefficient fallback uses one order and caller-owned scratch."
+    )]
+    fn synthesize_general_spin_order(
+        &self,
+        m: usize,
+        e_alm: &[Complex<T>],
+        b_alm: Option<&[Complex<T>]>,
+        spin: usize,
+        derivative_norm: bool,
+        spectrum_len: usize,
+        ring_start: usize,
+        q_spectra: &mut [Complex<T>],
+        u_spectra: &mut [Complex<T>],
+        theta_sin: &[T],
+        theta_cos: &[T],
+        ring_order_limits: &[usize],
+        arch: pulp::Arch,
+        recurrence: &mut RecurrenceWorkspace<T>,
+    ) -> Result<(), ShtError> {
+        let lmax = self.harmonics.lmax();
+        let initial = T::fill_spin_factors(
+            spin,
+            m,
+            lmax,
+            &mut recurrence.spin_alpha,
+            &mut recurrence.spin_coefficient_a,
+            &mut recurrence.spin_coefficient_b,
+        )?;
+        T::for_each_spin_lm_dispatched(
+            arch,
+            &initial,
+            lmax,
+            theta_sin,
+            theta_cos,
+            &recurrence.spin_coefficient_a,
+            &recurrence.spin_coefficient_b,
+            &mut recurrence.spin_previous_plus,
+            &mut recurrence.spin_current_plus,
+            &mut recurrence.spin_next_plus,
+            &mut recurrence.spin_exponents_plus,
+            &mut recurrence.spin_previous_minus,
+            &mut recurrence.spin_current_minus,
+            &mut recurrence.spin_next_minus,
+            &mut recurrence.spin_exponents_minus,
+            |degree, group_ring_start, plus, plus_exp, minus, minus_exp| {
+                let coefficient_index = self
+                    .harmonics
+                    .index(degree, m)
+                    .expect("the recurrence visits degrees in the packed order");
+                let e_coefficient = e_alm[coefficient_index];
+                let b_coefficient = b_alm
+                    .map(|values| values[coefficient_index])
+                    .unwrap_or_else(|| Complex::new(T::zero(), T::zero()));
+                let alpha_norm = recurrence.spin_alpha[degree]
+                    * T::spin_normalization(spin, degree, derivative_norm);
+                for lane in 0..plus.len() {
+                    let group_ring = group_ring_start + lane;
+                    let global_ring = ring_start + group_ring;
+                    if m > ring_order_limits[global_ring] {
+                        continue;
+                    }
+                    let plus_value = T::scaled_basis_value(plus[lane], plus_exp[lane], alpha_norm);
+                    let minus_value =
+                        T::scaled_basis_value(minus[lane], minus_exp[lane], alpha_norm);
+                    let even_basis = plus_value + minus_value;
+                    let odd_basis = plus_value - minus_value;
+                    let q_value = e_coefficient * even_basis
+                        + Complex::<T>::new(T::zero(), -T::one()) * b_coefficient * odd_basis;
+                    let u_value =
+                        Complex::<T>::new(T::zero(), T::one()) * e_coefficient * odd_basis
+                            + b_coefficient * even_basis;
+                    let spectrum_index = group_ring * spectrum_len + m;
+                    q_spectra[spectrum_index] += q_value;
+                    u_spectra[spectrum_index] += u_value;
+                }
+                Ok(())
+            },
+        )?;
         Ok(())
     }
 
@@ -2080,6 +2118,28 @@ impl<T: ShtScalar> ShtPlan<T> {
             &self.spin2_fast_f1,
             &self.spin2_fast_f2,
         );
+        let converted_finite = recurrence.fast_scalar_first[m..=scalar_lmax]
+            .iter()
+            .chain(&recurrence.fast_scalar_second[m..=scalar_lmax])
+            .all(|value| value.re.is_finite() && value.im.is_finite());
+        if !converted_finite {
+            return self.synthesize_general_spin_order(
+                m,
+                e_alm,
+                Some(b_alm),
+                2,
+                false,
+                spectrum_len,
+                ring_start,
+                q_spectra,
+                u_spectra,
+                theta_sin,
+                theta_cos,
+                ring_order_limits,
+                arch,
+                recurrence,
+            );
+        }
         T::fill_epsilon(m, scalar_lmax, &mut recurrence.epsilon);
         let paired_factors_ready = T::fill_paired_scalar_factors(
             m,
@@ -2090,6 +2150,44 @@ impl<T: ShtScalar> ShtPlan<T> {
             &mut recurrence.spin_coefficient_b,
         );
         debug_assert!(paired_factors_ready);
+        let pair_count = (scalar_lmax - m + 2) / 2;
+        let pairs_finite = paired_factors_ready
+            && T::prepare_paired_scalar_synthesis_coefficients(
+                m,
+                scalar_lmax,
+                &recurrence.epsilon,
+                &recurrence.spin_alpha,
+                &recurrence.fast_scalar_first[m..=scalar_lmax],
+                &mut recurrence.fast_spin_first[..pair_count],
+                &mut recurrence.fast_spin_second[..pair_count],
+            )
+            && T::prepare_paired_scalar_synthesis_coefficients(
+                m,
+                scalar_lmax,
+                &recurrence.epsilon,
+                &recurrence.spin_alpha,
+                &recurrence.fast_scalar_second[m..=scalar_lmax],
+                &mut recurrence.fast_spin_first[..pair_count],
+                &mut recurrence.fast_spin_second[..pair_count],
+            );
+        if !pairs_finite {
+            return self.synthesize_general_spin_order(
+                m,
+                e_alm,
+                Some(b_alm),
+                2,
+                false,
+                spectrum_len,
+                ring_start,
+                q_spectra,
+                u_spectra,
+                theta_sin,
+                theta_cos,
+                ring_order_limits,
+                arch,
+                recurrence,
+            );
+        }
 
         for block_start in (0..theta_sin.len()).step_by(crate::legendre::LATITUDE_BLOCK_SIZE) {
             let block_end =

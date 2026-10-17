@@ -1,0 +1,21 @@
+C03 ordinary-route control, run serially against the C02-only candidate.
+
+Baseline: target/m6-c02-revised-bench, C02-only source from c0e11ad plus the
+saved C02 patch. Candidate: the release m1b_bench executable built in
+target/m6-c02-candidate-worktree from the same C01 base plus C02 and C03 only.
+The candidate contains no P01 changes. Binary SHA-256 values and source-patch
+hashes are in binary-sha256.txt and provenance.txt.
+
+Cases are spin 1 and spin 2 at T511, GL STANDARD f64, full mmax=511,
+ntheta=512, nphi=1024, phi0=0.37, both operations, one Rayon thread pinned to
+CPU 0. Each process includes a warm-up followed by five retained samples per
+operation; the harness reports their median. Six fresh-process pairs per case
+alternate baseline-first and candidate-first order. /usr/bin/time records
+elapsed wall time and peak RSS. Raw stdout, .time files, and a process/load/CPU
+pressure preflight snapshot before every process are retained. All samples are
+kept; the summarizer uses per-pair candidate/baseline ratios and a deterministic
+20,000-resample percentile bootstrap for the median.
+
+These controls estimate the ordinary-path effect of C03 relative to C02-only;
+they do not decide acceptance. C02 itself remains performance-unaccepted based
+on the separate per-operation control screen in reports/data/m6-c02/revised-validation/paired/.

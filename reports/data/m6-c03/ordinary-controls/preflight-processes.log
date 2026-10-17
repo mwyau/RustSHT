@@ -1,0 +1,672 @@
+
+--- run=spin1-t511-q1-pair1-baseline affinity=0 ---
+timestamp=2026-10-17T18:57:42Z
+ 14:57:42 up 12 days,  2:46, 10 users,  load average: 0.98, 1.49, 1.76
+some avg10=0.00 avg60=0.00 avg300=0.50 total=2648621561
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329587650
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3876 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1150 Sl+  codex           codex --yolo
+3628822       1   0  0.4  0.0    6787 Ss   tmux: server    tmux
+3628771       1   4  0.1  0.0    6789 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89452 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90249 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424515 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6547 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356926 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683244 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872493 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976870 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180539 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967721 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320482 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683242 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046052 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045318 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+3664438 3628822  11  0.0  0.0    1215 Ss   bash            -bash
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin1-t511-q1-pair1-baseline.time /home/albert/RustSHT/target/m6-c02-revised-bench 1 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin1-t511-q1-pair1-candidate affinity=0 ---
+timestamp=2026-10-17T18:57:43Z
+ 14:57:43 up 12 days,  2:46, 10 users,  load average: 0.98, 1.49, 1.76
+some avg10=0.00 avg60=0.00 avg300=0.50 total=2648710133
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329587731
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3876 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1150 Sl+  codex           codex --yolo
+3628822       1  21  0.4  0.0    6787 Ss   tmux: server    tmux
+3628771       1   4  0.1  0.0    6790 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89452 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90249 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424515 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6547 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356926 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683244 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872494 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976870 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180539 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967721 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320482 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683243 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046053 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045319 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+3664438 3628822  11  0.0  0.0    1216 Ss   bash            -bash
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin1-t511-q1-pair1-candidate.time /home/albert/RustSHT/target/m6-c02-candidate-worktree/target/release/examples/m1b_bench 1 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin1-t511-q1-pair2-candidate affinity=0 ---
+timestamp=2026-10-17T18:57:43Z
+ 14:57:43 up 12 days,  2:46, 10 users,  load average: 0.98, 1.49, 1.76
+some avg10=0.00 avg60=0.00 avg300=0.50 total=2648799797
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329587827
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3877 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1151 Sl+  codex           codex --yolo
+3628822       1  22  0.4  0.0    6788 Ss   tmux: server    tmux
+3628771       1   4  0.1  0.0    6790 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89453 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90249 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424516 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6548 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356927 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683245 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872494 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976871 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180540 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967722 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320483 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683243 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046053 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045319 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+3664438 3628822  11  0.0  0.0    1216 Ss   bash            -bash
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin1-t511-q1-pair2-candidate.time /home/albert/RustSHT/target/m6-c02-candidate-worktree/target/release/examples/m1b_bench 1 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin1-t511-q1-pair2-baseline affinity=0 ---
+timestamp=2026-10-17T18:57:44Z
+ 14:57:44 up 12 days,  2:46, 10 users,  load average: 0.98, 1.49, 1.76
+some avg10=2.17 avg60=0.40 avg300=0.58 total=2648886953
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329587978
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3877 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1151 Sl+  codex           codex --yolo
+3674316 3604645  18  0.6  0.0       1 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628822       1  22  0.4  0.0    6788 Ss   tmux: server    tmux
+3628771       1   4  0.1  0.0    6791 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89453 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90250 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424516 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6548 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356927 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683245 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872495 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976871 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180540 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967722 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320483 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683244 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046054 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045320 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin1-t511-q1-pair2-baseline.time /home/albert/RustSHT/target/m6-c02-revised-bench 1 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin1-t511-q1-pair3-baseline affinity=0 ---
+timestamp=2026-10-17T18:57:44Z
+ 14:57:44 up 12 days,  2:46, 10 users,  load average: 0.98, 1.49, 1.76
+some avg10=2.17 avg60=0.40 avg300=0.58 total=2648978846
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329588037
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3878 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1152 Sl+  codex           codex --yolo
+3674316 3604645   0  0.5  0.0       1 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628822       1  22  0.4  0.0    6789 Ss   tmux: server    tmux
+3628771       1   4  0.1  0.0    6791 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89453 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90250 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424517 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6549 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356928 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683246 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872495 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976872 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180541 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967723 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320484 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683244 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046054 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045320 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin1-t511-q1-pair3-baseline.time /home/albert/RustSHT/target/m6-c02-revised-bench 1 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin1-t511-q1-pair3-candidate affinity=0 ---
+timestamp=2026-10-17T18:57:45Z
+ 14:57:45 up 12 days,  2:46, 10 users,  load average: 0.98, 1.49, 1.76
+some avg10=2.17 avg60=0.40 avg300=0.58 total=2649071003
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329588144
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3878 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1152 Sl+  codex           codex --yolo
+3628822       1  22  0.4  0.0    6789 Ss   tmux: server    tmux
+3674316 3604645   0  0.4  0.0       2 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628771       1   4  0.1  0.0    6792 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89454 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90251 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424517 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6549 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356928 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683246 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872496 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976872 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180541 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967723 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320484 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683245 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046055 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045321 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin1-t511-q1-pair3-candidate.time /home/albert/RustSHT/target/m6-c02-candidate-worktree/target/release/examples/m1b_bench 1 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin1-t511-q1-pair4-candidate affinity=0 ---
+timestamp=2026-10-17T18:57:45Z
+ 14:57:45 up 12 days,  2:46, 10 users,  load average: 0.98, 1.49, 1.76
+some avg10=2.17 avg60=0.40 avg300=0.58 total=2649158773
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329588262
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3879 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1153 Sl+  codex           codex --yolo
+3674316 3604645   0  0.6  0.0       2 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628822       1  22  0.4  0.0    6790 Ss   tmux: server    tmux
+3628771       1   4  0.1  0.0    6792 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89454 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90251 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424518 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6550 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356929 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683247 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872496 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976873 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180542 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967724 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320485 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683245 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046055 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045321 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin1-t511-q1-pair4-candidate.time /home/albert/RustSHT/target/m6-c02-candidate-worktree/target/release/examples/m1b_bench 1 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin1-t511-q1-pair4-baseline affinity=0 ---
+timestamp=2026-10-17T18:57:46Z
+ 14:57:46 up 12 days,  2:46, 10 users,  load average: 0.98, 1.49, 1.76
+some avg10=4.85 avg60=0.94 avg300=0.69 total=2649250525
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329588530
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3879 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1153 Sl+  codex           codex --yolo
+3674316 3604645   0  0.5  0.0       3 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628822       1  22  0.4  0.0    6790 Ss   tmux: server    tmux
+3628771       1   4  0.1  0.0    6793 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89455 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90252 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424518 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6550 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356929 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683247 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872497 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976873 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180542 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967724 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320485 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683246 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046055 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045322 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin1-t511-q1-pair4-baseline.time /home/albert/RustSHT/target/m6-c02-revised-bench 1 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin1-t511-q1-pair5-baseline affinity=0 ---
+timestamp=2026-10-17T18:57:46Z
+ 14:57:46 up 12 days,  2:46, 10 users,  load average: 0.99, 1.48, 1.75
+some avg10=4.85 avg60=0.94 avg300=0.69 total=2649341361
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329588601
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3880 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1154 Sl+  codex           codex --yolo
+3674316 3604645  16  0.5  0.0       3 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628822       1  22  0.4  0.0    6791 Ss   tmux: server    tmux
+3628771       1   4  0.1  0.0    6793 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89455 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90252 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424519 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6551 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356930 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683248 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872497 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976874 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180543 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967725 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320486 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683246 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046056 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045322 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin1-t511-q1-pair5-baseline.time /home/albert/RustSHT/target/m6-c02-revised-bench 1 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin1-t511-q1-pair5-candidate affinity=0 ---
+timestamp=2026-10-17T18:57:47Z
+ 14:57:47 up 12 days,  2:46, 10 users,  load average: 0.99, 1.48, 1.75
+some avg10=4.85 avg60=0.94 avg300=0.69 total=2649427767
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329588720
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3880 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1154 Sl+  codex           codex --yolo
+3628822       1  22  0.4  0.0    6791 Ss   tmux: server    tmux
+3674316 3604645   0  0.4  0.0       4 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628771       1   4  0.1  0.0    6794 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89456 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90253 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424519 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6551 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356930 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683248 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872498 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976874 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180543 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967725 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320486 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683247 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046056 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045323 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin1-t511-q1-pair5-candidate.time /home/albert/RustSHT/target/m6-c02-candidate-worktree/target/release/examples/m1b_bench 1 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin1-t511-q1-pair6-candidate affinity=0 ---
+timestamp=2026-10-17T18:57:47Z
+ 14:57:47 up 12 days,  2:46, 10 users,  load average: 0.99, 1.48, 1.75
+some avg10=4.85 avg60=0.94 avg300=0.69 total=2649517291
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329588817
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3881 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1155 Sl+  codex           codex --yolo
+3674316 3604645  16  0.6  0.0       4 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628822       1  22  0.4  0.0    6792 Ss   tmux: server    tmux
+3628771       1   4  0.1  0.0    6794 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89456 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90253 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424520 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6552 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356931 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683249 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872498 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976875 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180544 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967726 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320487 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683247 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046057 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045323 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin1-t511-q1-pair6-candidate.time /home/albert/RustSHT/target/m6-c02-candidate-worktree/target/release/examples/m1b_bench 1 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin1-t511-q1-pair6-baseline affinity=0 ---
+timestamp=2026-10-17T18:57:48Z
+ 14:57:48 up 12 days,  2:46, 10 users,  load average: 0.99, 1.48, 1.75
+some avg10=7.24 avg60=1.50 avg300=0.81 total=2649606456
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329589110
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3881 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1155 Sl+  codex           codex --yolo
+3674316 3604645   0  0.5  0.0       5 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628822       1  22  0.4  0.0    6792 Ss   tmux: server    tmux
+3628771       1   4  0.1  0.0    6795 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89457 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90254 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424520 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6552 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356931 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683249 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872499 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976875 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180544 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967726 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320487 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683248 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046057 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045324 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin1-t511-q1-pair6-baseline.time /home/albert/RustSHT/target/m6-c02-revised-bench 1 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin2-t511-q1-pair1-baseline affinity=0 ---
+timestamp=2026-10-17T18:57:48Z
+ 14:57:48 up 12 days,  2:46, 10 users,  load average: 0.99, 1.48, 1.75
+some avg10=7.24 avg60=1.50 avg300=0.81 total=2649696318
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329589236
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3882 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1156 Sl+  codex           codex --yolo
+3674316 3604645   0  0.5  0.0       5 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628822       1  21  0.4  0.0    6793 Ss   tmux: server    tmux
+3628771       1   4  0.1  0.0    6795 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89457 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90254 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424521 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6553 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356932 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683250 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872499 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976876 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180545 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967727 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320488 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683248 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046058 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045324 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin2-t511-q1-pair1-baseline.time /home/albert/RustSHT/target/m6-c02-revised-bench 2 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin2-t511-q1-pair1-candidate affinity=0 ---
+timestamp=2026-10-17T18:57:49Z
+ 14:57:49 up 12 days,  2:46, 10 users,  load average: 0.99, 1.48, 1.75
+some avg10=7.24 avg60=1.50 avg300=0.81 total=2649791348
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329589531
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3883 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1157 Sl+  codex           codex --yolo
+3628822       1  21  0.4  0.0    6794 Ss   tmux: server    tmux
+3674316 3604645   0  0.4  0.0       7 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628771       1   4  0.1  0.0    6796 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89459 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90256 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424522 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6554 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356933 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683251 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872500 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976877 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180546 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967728 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320489 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683249 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046059 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045325 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin2-t511-q1-pair1-candidate.time /home/albert/RustSHT/target/m6-c02-candidate-worktree/target/release/examples/m1b_bench 2 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin2-t511-q1-pair2-candidate affinity=0 ---
+timestamp=2026-10-17T18:57:51Z
+ 14:57:51 up 12 days,  2:46, 10 users,  load average: 0.99, 1.48, 1.75
+some avg10=8.28 avg60=1.88 avg300=0.90 total=2649876149
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329589956
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3884 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1158 Sl+  codex           codex --yolo
+3628822       1  21  0.4  0.0    6795 Ss   tmux: server    tmux
+3674316 3604645   0  0.3  0.0       8 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628771       1   4  0.1  0.0    6798 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89460 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90257 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424523 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6555 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356934 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683252 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872501 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976878 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180547 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967729 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320490 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683251 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046060 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045326 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin2-t511-q1-pair2-candidate.time /home/albert/RustSHT/target/m6-c02-candidate-worktree/target/release/examples/m1b_bench 2 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin2-t511-q1-pair2-baseline affinity=0 ---
+timestamp=2026-10-17T18:57:52Z
+ 14:57:52 up 12 days,  2:46, 10 users,  load average: 1.07, 1.49, 1.75
+some avg10=7.68 avg60=1.98 avg300=0.92 total=2649968596
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329590316
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3885 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1159 Sl+  codex           codex --yolo
+3628822       1  21  0.4  0.0    6796 Ss   tmux: server    tmux
+3674316 3604645   0  0.4  0.0       9 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628771       1   4  0.1  0.0    6799 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89461 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90258 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424524 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6556 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356935 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683253 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872503 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976879 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180548 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967730 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320491 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683252 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046061 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045328 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin2-t511-q1-pair2-baseline.time /home/albert/RustSHT/target/m6-c02-revised-bench 2 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin2-t511-q1-pair3-baseline affinity=0 ---
+timestamp=2026-10-17T18:57:53Z
+ 14:57:53 up 12 days,  2:46, 10 users,  load average: 1.07, 1.49, 1.75
+some avg10=7.68 avg60=1.98 avg300=0.92 total=2650066852
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329590644
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3887 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1161 Sl+  codex           codex --yolo
+3628822       1  21  0.4  0.0    6797 Ss   tmux: server    tmux
+3674316 3604645  16  0.3  0.0      10 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628771       1   4  0.1  0.0    6800 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89462 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90259 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424526 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6557 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356936 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683254 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872504 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976881 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180550 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967732 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320492 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683253 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046063 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045329 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin2-t511-q1-pair3-baseline.time /home/albert/RustSHT/target/m6-c02-revised-bench 2 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin2-t511-q1-pair3-candidate affinity=0 ---
+timestamp=2026-10-17T18:57:54Z
+ 14:57:54 up 12 days,  2:46, 10 users,  load average: 1.07, 1.49, 1.75
+some avg10=7.92 avg60=2.21 avg300=0.98 total=2650159540
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329591025
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3888 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1162 Sl+  codex           codex --yolo
+3628822       1  21  0.4  0.0    6799 Ss   tmux: server    tmux
+3674316 3604645   0  0.3  0.0      11 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628771       1   4  0.1  0.0    6801 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89463 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90260 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424527 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6558 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356937 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683256 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872505 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976882 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180551 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967733 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320493 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683254 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046064 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045330 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin2-t511-q1-pair3-candidate.time /home/albert/RustSHT/target/m6-c02-candidate-worktree/target/release/examples/m1b_bench 2 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin2-t511-q1-pair4-candidate affinity=0 ---
+timestamp=2026-10-17T18:57:55Z
+ 14:57:55 up 12 days,  2:46, 10 users,  load average: 1.07, 1.49, 1.75
+some avg10=7.92 avg60=2.21 avg300=0.98 total=2650251580
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329591309
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3889 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1163 Sl+  codex           codex --yolo
+3628822       1  21  0.4  0.0    6800 Ss   tmux: server    tmux
+3674316 3604645  16  0.3  0.0      13 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628771       1   4  0.1  0.0    6802 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89465 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90261 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424528 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6560 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356939 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683257 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872506 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976883 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180552 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967734 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320495 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683255 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046065 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045331 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin2-t511-q1-pair4-candidate.time /home/albert/RustSHT/target/m6-c02-candidate-worktree/target/release/examples/m1b_bench 2 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin2-t511-q1-pair4-baseline affinity=0 ---
+timestamp=2026-10-17T18:57:56Z
+ 14:57:56 up 12 days,  2:46, 10 users,  load average: 1.14, 1.50, 1.75
+some avg10=7.93 avg60=2.40 avg300=1.03 total=2650342550
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329591680
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3890 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1164 Sl+  codex           codex --yolo
+3628822       1  18  0.4  0.0    6801 Ss   tmux: server    tmux
+3674316 3604645   0  0.2  0.0      14 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628771       1   4  0.1  0.0    6803 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89466 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90263 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424529 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6561 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356940 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683258 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872507 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976884 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180553 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967735 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320496 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683256 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046066 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045332 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin2-t511-q1-pair4-baseline.time /home/albert/RustSHT/target/m6-c02-revised-bench 2 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin2-t511-q1-pair5-baseline affinity=0 ---
+timestamp=2026-10-17T18:57:58Z
+ 14:57:58 up 12 days,  2:46, 10 users,  load average: 1.14, 1.50, 1.75
+some avg10=7.40 avg60=2.48 avg300=1.06 total=2650436681
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329592153
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3891 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1165 Sl+  codex           codex --yolo
+3628822       1  23  0.4  0.0    6802 Ss   tmux: server    tmux
+3674316 3604645   0  0.2  0.0      15 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628771       1   4  0.1  0.0    6805 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89467 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90264 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424530 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6562 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356941 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683259 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872509 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976885 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180554 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967736 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320497 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683258 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046067 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045334 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin2-t511-q1-pair5-baseline.time /home/albert/RustSHT/target/m6-c02-revised-bench 2 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin2-t511-q1-pair5-candidate affinity=0 ---
+timestamp=2026-10-17T18:57:59Z
+ 14:57:59 up 12 days,  2:46, 10 users,  load average: 1.14, 1.50, 1.75
+some avg10=7.40 avg60=2.48 avg300=1.06 total=2650531449
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329592431
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3893 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1167 Sl+  codex           codex --yolo
+3628822       1  23  0.4  0.0    6803 Ss   tmux: server    tmux
+3674316 3604645   0  0.2  0.0      16 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628771       1   4  0.1  0.0    6806 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89468 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90265 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424532 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6563 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356942 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683260 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872510 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976887 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180556 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967738 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320498 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683259 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046069 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045335 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin2-t511-q1-pair5-candidate.time /home/albert/RustSHT/target/m6-c02-candidate-worktree/target/release/examples/m1b_bench 2 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin2-t511-q1-pair6-candidate affinity=0 ---
+timestamp=2026-10-17T18:58:00Z
+ 14:58:00 up 12 days,  2:46, 10 users,  load average: 1.14, 1.50, 1.75
+some avg10=7.69 avg60=2.70 avg300=1.11 total=2650621626
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329592886
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3894 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1168 Sl+  codex           codex --yolo
+3628822       1   5  0.4  0.0    6804 Ss   tmux: server    tmux
+3674316 3604645   4  0.2  0.0      17 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628771       1   4  0.1  0.0    6807 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89469 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90266 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424533 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6564 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356943 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683262 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872511 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976888 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180557 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967739 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320499 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683260 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046070 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045336 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin2-t511-q1-pair6-candidate.time /home/albert/RustSHT/target/m6-c02-candidate-worktree/target/release/examples/m1b_bench 2 511 1 both GL STANDARD 512 1024 511 requested-only
+
+--- run=spin2-t511-q1-pair6-baseline affinity=0 ---
+timestamp=2026-10-17T18:58:01Z
+ 14:58:01 up 12 days,  2:46, 10 users,  load average: 1.13, 1.49, 1.75
+some avg10=7.69 avg60=2.70 avg300=1.11 total=2650717083
+full avg10=0.00 avg60=0.00 avg300=0.00 total=329593302
+    PID    PPID PSR %CPU %MEM ELAPSED STAT COMMAND         COMMAND
+3657971 3628823   1  2.7  0.1    3895 Sl+  codex           codex --yolo resume
+3664660 3664438  19  2.5  0.1    1169 Sl+  codex           codex --yolo
+3628822       1   5  0.4  0.0    6806 Ss   tmux: server    tmux
+3674316 3604645   4  0.2  0.0      18 Ss   bash            bash reports/data/m6-c03/ordinary-controls/run-paired.sh
+3628771       1   4  0.1  0.0    6808 S    mosh-server     mosh-server new -c 256 -s -l LANG=C.UTF-8
+3607679    3918  27  0.1  0.1   89470 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+3604645    1532  25  0.1  0.2   90267 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server --listen unix:// --analytics-default-enabled -c features.api_key_model_discovery=true -c features.auth_elicitation=true -c features.code_mode_host=true -c features.mcp_oauth_refresh_coordination=false --managed-daemon
+1575787       1  21  0.0  0.0  424534 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3629294 3604645   4  0.0  0.0    6566 Sl   codex-code-mode /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex-code-mode-host
+1987515       1  23  0.0  0.0  356945 S    mosh-server     mosh-server new -s
+ 910420       1   0  0.0  0.0  683263 Ssl  containerd      /usr/bin/containerd
+ 694460    1532  26  0.0  0.0  872512 Zs   codex           [codex] <defunct>
+ 452477       1  16  0.0  0.0  976889 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+3069225       1   4  0.0  0.0  180558 S    mosh-server     mosh-server new -s
+ 465439       1  19  0.0  0.0  967740 S    mosh-server     mosh-server new -s
+2412896       1   2  0.0  0.0  320501 S    mosh-server     mosh-server new -s -l LANG=en_US.UTF-8
+ 910770       1   5  0.0  0.0  683261 Ssl  dockerd         /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+   1532       1  31  0.0  0.0 1046071 Ssl  codex           /home/albert/.codex/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+   3918       1  17  0.0  0.0 1045337 Ssl  codex           /home/albert/.codex2/packages/app-server-daemon/releases/0.163.0-x86_64-unknown-linux-musl/bin/codex app-server daemon pid-update-loop
+matching compute processes:
+command: taskset -c 0 /usr/bin/time -f 'elapsed_s=%e peak_rss_kib=%M' -o /home/albert/RustSHT/reports/data/m6-c03/ordinary-controls/spin2-t511-q1-pair6-baseline.time /home/albert/RustSHT/target/m6-c02-revised-bench 2 511 1 both GL STANDARD 512 1024 511 requested-only
