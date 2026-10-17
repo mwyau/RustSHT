@@ -1,0 +1,128 @@
+diff --git a/src/legendre/scalar_paired.rs b/src/legendre/scalar_paired.rs
+index 484d910..7938d4f 100644
+--- a/src/legendre/scalar_paired.rs
++++ b/src/legendre/scalar_paired.rs
+@@ -1992,6 +1992,93 @@ struct FusedSynthesisBlock<'a> {
+     sum_im: &'a mut [f64],
+ }
+
++#[expect(
++    clippy::too_many_arguments,
++    reason = "The two-chain panel receives two SIMD latitude vectors and shared recurrence data."
++)]
++#[inline(always)]
++fn fused_scalar_two_vector_chains<S: Simd>(
++    simd: S,
++    pair_count: usize,
++    cosine_0: S::f64s,
++    cosine_1: S::f64s,
++    initial_0: S::f64s,
++    initial_1: S::f64s,
++    coefficient_a: &[f64],
++    coefficient_b: &[f64],
++    coefficient_even: &[Complex64],
++    coefficient_odd: &[Complex64],
++) -> (S::f64s, S::f64s, S::f64s, S::f64s) {
++    let mut previous_0 = simd.splat_f64s(0.0);
++    let mut previous_1 = simd.splat_f64s(0.0);
++    let mut current_0 = initial_0;
++    let mut current_1 = initial_1;
++    let mut accumulated_re_0 = simd.splat_f64s(0.0);
++    let mut accumulated_im_0 = simd.splat_f64s(0.0);
++    let mut accumulated_re_1 = simd.splat_f64s(0.0);
++    let mut accumulated_im_1 = simd.splat_f64s(0.0);
++
++    macro_rules! accumulate_pair {
++        ($pair:expr) => {{
++            let even = coefficient_even[$pair];
++            let odd = coefficient_odd[$pair];
++            let even_re = simd.splat_f64s(even.re);
++            let even_im = simd.splat_f64s(even.im);
++            let odd_re = simd.splat_f64s(odd.re);
++            let odd_im = simd.splat_f64s(odd.im);
++            let coefficient_re_0 = simd.mul_add_f64s(odd_re, cosine_0, even_re);
++            let coefficient_im_0 = simd.mul_add_f64s(odd_im, cosine_0, even_im);
++            let coefficient_re_1 = simd.mul_add_f64s(odd_re, cosine_1, even_re);
++            let coefficient_im_1 = simd.mul_add_f64s(odd_im, cosine_1, even_im);
++            accumulated_re_0 = simd.mul_add_f64s(current_0, coefficient_re_0, accumulated_re_0);
++            accumulated_im_0 = simd.mul_add_f64s(current_0, coefficient_im_0, accumulated_im_0);
++            accumulated_re_1 = simd.mul_add_f64s(current_1, coefficient_re_1, accumulated_re_1);
++            accumulated_im_1 = simd.mul_add_f64s(current_1, coefficient_im_1, accumulated_im_1);
++        }};
++    }
++
++    macro_rules! advance_pair {
++        ($pair:expr) => {{
++            let a = simd.splat_f64s(coefficient_a[$pair]);
++            let b = simd.splat_f64s(coefficient_b[$pair]);
++            let cosine_squared_0 = simd.mul_f64s(cosine_0, cosine_0);
++            let cosine_squared_1 = simd.mul_f64s(cosine_1, cosine_1);
++            let leading_0 = simd.mul_add_f64s(a, cosine_squared_0, b);
++            let leading_1 = simd.mul_add_f64s(a, cosine_squared_1, b);
++            let next_0 = simd.mul_add_f64s(leading_0, current_0, previous_0);
++            let next_1 = simd.mul_add_f64s(leading_1, current_1, previous_1);
++            previous_0 = current_0;
++            previous_1 = current_1;
++            current_0 = next_0;
++            current_1 = next_1;
++        }};
++    }
++
++    // Two paired degrees are accumulated before the loop advances to the next
++    // panel. Both latitude chains reuse each prepared coefficient vector.
++    let mut pair = 0;
++    while pair + 1 < pair_count {
++        accumulate_pair!(pair);
++        advance_pair!(pair);
++        pair += 1;
++        accumulate_pair!(pair);
++        pair += 1;
++        if pair < pair_count {
++            advance_pair!(pair - 1);
++        }
++    }
++    if pair < pair_count {
++        accumulate_pair!(pair);
++    }
++
++    (
++        accumulated_re_0,
++        accumulated_im_0,
++        accumulated_re_1,
++        accumulated_im_1,
++    )
++}
++
+ impl WithSimd for FusedSynthesisBlock<'_> {
+     type Output = ();
+
+@@ -2015,7 +2102,28 @@ impl WithSimd for FusedSynthesisBlock<'_> {
+         let (sum_im_vectors, sum_im_tail) = S::as_mut_simd_f64s(sum_im);
+         let pair_count = (lmax - m + 2) / 2;
+
+-        for lane_block in 0..cosine_vectors.len() {
++        let mut lane_block = 0;
++        while lane_block + 1 < cosine_vectors.len() {
++            let (sum_re_0, sum_im_0, sum_re_1, sum_im_1) = fused_scalar_two_vector_chains(
++                simd,
++                pair_count,
++                cosine_vectors[lane_block],
++                cosine_vectors[lane_block + 1],
++                initial_vectors[lane_block],
++                initial_vectors[lane_block + 1],
++                coefficient_a,
++                coefficient_b,
++                coefficient_even,
++                coefficient_odd,
++            );
++            sum_re_vectors[lane_block] = sum_re_0;
++            sum_im_vectors[lane_block] = sum_im_0;
++            sum_re_vectors[lane_block + 1] = sum_re_1;
++            sum_im_vectors[lane_block + 1] = sum_im_1;
++            lane_block += 2;
++        }
++
++        if lane_block < cosine_vectors.len() {
+             let cosine = cosine_vectors[lane_block];
+             let mut previous = simd.splat_f64s(0.0);
+             let mut current = initial_vectors[lane_block];

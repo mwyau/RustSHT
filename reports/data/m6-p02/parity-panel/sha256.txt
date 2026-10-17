@@ -1,0 +1,12 @@
+3357f41d4e6bc4be780ad112dee216a124e0922adb4af5250ab4aabe19cbb09c  reports/data/m6-p02/parity-panel/README.md
+2bb27d6cfbc524aef86d7beae5707f46a815c5712b34cb48b3ffbed0684f843c  reports/data/m6-p02/parity-panel/candidate-source.patch
+a5868c4b1b342e1ebd8841cb34d0723cdab379dd225f10994797171121878945  reports/data/m6-p02/parity-panel/check-candidate.sh
+952c21ba97663f45f65c00244cdaf51ec224b252d9a7d1e836c6801c16cb2603  reports/data/m6-p02/parity-panel/process-pairs.csv
+2d680cb868a4d04934a24c99bb216e5e72e092cbde2c2d11830b76e387b41480  reports/data/m6-p02/parity-panel/provenance.txt
+b0182ed1b41a4c39bf5560e64b49747d7ffbc11af9994edd52fc8f021e0b1a48  reports/data/m6-p02/parity-panel/run-matrix.sh
+9056cb8317a15a6689ed3b2d1478e4f9f156bcde23ebc71ef522e67a405582f4  reports/data/m6-p02/parity-panel/run-one.sh
+f62de361673a64da0444d17fd7ceb0b3255a9ff0daa1aca48e3114295219cd40  reports/data/m6-p02/parity-panel/source/scalar_paired.rs
+414b9732b2ac92e8d0842d043f3ce99891034bf28efe612b5d27d00ff40d8471  reports/data/m6-p02/parity-panel/summarize.py
+debcf824d5fdd05efcd4e1f0544fa66d28c313a3a8f3619c5aa1da96f659b92b  reports/data/m6-p02/parity-panel/summary.csv
+4fd894d46b7195d8a7a4c24cc52f3f04a85ccd1c213d5a2c896f7c828156ccd0  target/m6-p01-baseline-bench
+b5e538a7b33895f033f6aec7eb92ca56e6cc568684fd12438b0749a28ef8b8fa  target/m6-p02-parity-panel/m1b_bench

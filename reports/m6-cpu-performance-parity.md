@@ -11,10 +11,11 @@ The branch contains three production checkpoints: C01 workspace validation
 conversion fallback (`197c3d3`). C01 and C03 are committed correctness fixes. C02 is committed as a numerical checkpoint, but its per-operation control
 gate remains unresolved; its scalar T255 q1 synthesis and analysis controls
 exceed the predeclared 2% threshold. P01 remains uncommitted and unaccepted;
-it is shelved after its default-link spin-1 control exceeded the guard. P02 is
-uncommitted and rejected because its isolated comparison showed no material
-gain. The isolated M2 general-visitor candidate is also rejected and remains
-outside production. M1 route-profile evidence is committed; its test-only
+it is shelved after its default-link spin-1 control exceeded the guard. The
+precomputed-visitor P02 showed no material gain, and the separate P02
+two-chain degree panel regressed the T1023 scalar synthesis target; both remain
+outside production. The isolated M2 general-visitor candidate is also rejected
+and remains outside production. M1 route-profile evidence is committed; its test-only
 counters, benchmark harness changes, and numerical-plan edits remain
 uncommitted. The campaign report and raw measurements are recorded in
 diagnostic evidence checkpoints.
@@ -310,6 +311,23 @@ spin-1 control, 1.00691 [1.00167, 1.04024] for T1023 scalar, and 0.99539
 [0.98828, 1.00067] for T2047 scalar. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. P02 shows no material improvement at either target
 degree and no greater-than-2% spin-1 regression in this isolated comparison. Reject P02 and retain its files as diagnostic evidence.
 
+## M2 P02 parity panel: two SIMD chains (rejected)
+
+The parity-panel screen targeted the fused ordinary scalar kernel. M1
+attributed 55.352 ms of the T1023 q1 three-route total of 260.682 ms to this
+route, compared with 191.910 ms to the visitor. The candidate interleaved two
+SIMD latitude vectors and unrolled two paired-degree contributions. It used
+the pre-P01 source and changed no transition or visitor code. Six low-pressure T1023 scalar synthesis pairs measured candidate/baseline
+1.03358 [1.02877, 1.03524]. Four T511 scalar control pairs measured
+1.03383 [1.03290, 1.03551]. The runner refused T511 scalar pair 5 at CPU PSI
+CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
+rejected: the primary cell was 3.36% slower and the clean T511 scalar control
+was 3.38% slower. The full control matrix was not run. Formatting, three fused-kernel checks, and three pinned DUCC 0.41 scalar
+synthesis checks passed. The candidate source, raw pairs, process snapshots,
+refusal, tests, and hashes are in
+[`reports/data/m6-p02/parity-panel/`](data/m6-p02/parity-panel/). This is a
+separate P02 experiment from coefficient reuse in the visitor.
+
 ## M2: guarded ordinary-product scalar visitor (rejected)
 
 The isolated candidate started from production HEAD a50f700 and used the
@@ -370,7 +388,8 @@ test-only M1 route counters, the extended Rust/Python benchmark harness, and
 numerical-plan edits. Their source changes are in `examples/m1b_bench.rs`,
 `examples/python_perf_baseline.py`, `plans/02-numerics-and-grids.md`,
 `src/legendre/`, and `src/transform.rs`. P01 is unaccepted; P02 and the
-isolated M2 visitor candidate are rejected. The matched DUCC/SHTns and M1
+isolated M2 visitor candidate are rejected. The separate P02 parity-panel
+screen is rejected and archived. The matched DUCC/SHTns and M1
 route-profile evidence is in `reports/data/m6-current-baseline/`, and the
 rejected M2 candidate is preserved separately under
 `reports/data/m6-m2-general-visitor/`. M1 findings have been reviewed: the

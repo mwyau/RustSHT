@@ -1,0 +1,21 @@
+Experiment: P02 two-chain degree-panel screen
+Status: rejected; no production change
+Base commit: adbaa3f
+Pre-P01 baseline binary SHA-256: 4fd894d46b7195d8a7a4c24cc52f3f04a85ccd1c213d5a2c896f7c828156ccd0
+Candidate binary SHA-256: b5e538a7b33895f033f6aec7eb92ca56e6cc568684fd12438b0749a28ef8b8fa
+Candidate source patch SHA-256: see sha256.txt
+
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local.
+
+Build command:
+  CARGO_TARGET_DIR=<temporary-path>
+  cargo build --release -p rustsht --example m1b_bench
+
+Checks:
+  cargo fmt --all -- --check
+  git diff --check
+  cargo test --release -p rustsht --features parallel --lib fused_paired_synthesis -- --nocapture
+  cargo test --release -p rustsht --features parallel --lib synthesis_matches_ducc_0410 -- --nocapture
+
+The full control matrix was not run because the primary T1023 synthesis cell
+regressed by 3.36% and the clean T511 scalar control cell regressed by 3.38%. No full workspace suite was run for this rejected experiment.
