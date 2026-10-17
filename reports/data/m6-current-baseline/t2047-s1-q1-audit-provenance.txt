@@ -1,0 +1,16 @@
+M1 matched T2047 spin-1 q1 measurement
+
+Repository: <local-home-path>
+Branch: opt/sht-performance-parity
+RustSHT source snapshot: the M1 baseline described in provenance.txt, committed base c0e11ad99f033073fb5ac56b170a72e26ede8d4f plus the retained working-tree patch whose SHA-256 is in binary-sha256.txt. RustSHT Python extension SHA-256: a8641456e1fcdf8d37ce3dd583dd1b7cf224306ca792d38c2b75f3bfcac63847
+DUCC Python extension SHA-256: 1218502fa03116cd14578fe73f716f5a1d88db74d296359cc9e8c27e04047d1e
+SHTns shared library SHA-256: 641195ac574ba02078f3238b357caecf0e268b3f4ef7eba1d87898197fcc888f
+Runner SHA-256: 92de95bc1e447093b89d2e10d824c44813f364d7cf0ad483e96bd22090e0db97
+Python harness SHA-256: 72cd1986a220573c1a445bd6a6aa96b9df272a6bff1dc833843ee3f274c77739
+DUCC: 0.42.0, source revision 80388904b8cfc32400ba84af8a6a45aabfe60f86
+SHTns: 3.7.5, source revision 4e69ceb3fc5f19475d55b03ff0fdec210dc3075e
+CPU: x86-64 CPU, pinned to logical one CPU core
+Compiler: Rust 1.99.0 (b940084d7), release profile
+Python: 3.11.15; NumPy 2.4.6
+CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
+Numerical comparison: Rust versus DUCC synthesis relative L2=3.707e-13 (max absolute=1.498e-12); analysis relative L2=1.729e-13 (max absolute=3.544e-14). SHTns versus DUCC synthesis relative L2=3.403e-13 (max absolute=1.473e-12); analysis relative L2=1.837e-13 (max absolute=5.052e-14). Peak process RSS: 1,677,348 KiB. Swaps: 0. Exit status: 0. Raw samples and /usr/bin/time output are in t2047-s1-q1-audit-q1.stdout and t2047-s1-q1-audit-q1.time. The appended host preflight record is in preflight-processes.log.

@@ -13,5 +13,6 @@ Medians pool the 15 retained raw samples (three groups of five); p10-p90 capture
 | 1023 | 1 | 1 | 276.295 | 121.291 | 2.28x | 81.186 | 184.402 | 83.478 | 2.21x | 168.268 | 443.4 MiB |
 | 1023 | 1 | 8 | 73.649 | 20.269 | 3.63x | 28.568 | 38.713 | 15.208 | 2.55x | 44.055 | 444.3 MiB |
 | 2047 | 0 | 1 | 3355.273 | 370.438 | 9.06x | 269.622 | 1093.244 | 243.378 | 4.49x | 605.659 | 1013.5 MiB |
+| 2047 | 1 | 1 | 4124.493 | 776.432 | 5.31x | 498.233 | 1767.881 | 496.897 | 3.56x | 1158.457 | 1638.0 MiB |
 
-Relative L2 errors were checked in every process before timing. The T2047 result is a three-group, 15-sample q1 scalar measurement; its exact source, package, host, error, and memory details are recorded in `t2047-s0-q1-audit-provenance.txt`. The exact per-process errors, all raw samples, RSS, wall time, and CPU utilization are in the neighboring `*.stdout` and `*.time` files.
+Relative L2 errors were checked in every process before timing. The T2047 scalar and spin-1 results are three-group, 15-sample q1 measurements; their exact source, package, host, error, and memory details are in the corresponding `t2047-*-q1-audit-provenance.txt` files. Per-process errors, all raw samples, RSS, wall time, and CPU utilization are in the neighboring `*.stdout` and `*.time` files.

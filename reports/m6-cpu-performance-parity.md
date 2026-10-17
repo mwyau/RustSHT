@@ -144,8 +144,13 @@ Rust/DUCC/SHTns synthesis at 3355.273/370.438/269.622 ms and analysis at
 slower than SHTns for synthesis; for analysis it was 4.49x slower than DUCC
 and 1.80x slower than SHTns. Its Rust-to-DUCC relative L2 errors were
 3.015e-13 for synthesis and 1.747e-13 for analysis; SHTns-to-DUCC errors were
-2.425e-13 and 1.866e-13. The T2047 cell used 1.04 GiB peak RSS. It is a
-single-thread scalar result and does not establish spin-1 or q8 T2047 parity. Full tables, errors, raw samples, and build provenance are in
+2.425e-13 and 1.866e-13. The matched T2047 spin-1 q1 medians were
+4124.493/776.432/498.233 ms for synthesis and 1767.881/496.897/1158.457 ms
+for analysis. Rust was 5.31x slower than DUCC and 8.28x slower than SHTns for
+synthesis, and 3.56x and 1.53x slower for analysis. Rust-to-DUCC errors were
+3.707e-13 and 1.729e-13; SHTns-to-DUCC errors were 3.403e-13 and 1.837e-13. The scalar and spin-1 cells used 1.04 and 1.60 GiB peak RSS. Both are q1
+results and do not establish q8 T2047 parity. Full tables, errors, raw samples,
+and build provenance are in
 [`reports/data/m6-current-baseline/`](data/m6-current-baseline/). The q1 route profile reports per-worker CPU timer sums, not transform wall
 time. Fused/visitor/transition sums were 7.421/26.408/0 ms at T511,
 55.352/191.910/13.420 ms at T1023, and 362.784/1505.354/1181.839 ms at
