@@ -1,0 +1,8 @@
+00000000001ec0e0 T <f64 as rustsht::legendre::ShtScalar>::synthesize_paired_scalar_block_partitioned_dispatched
+00000000001ec680 t rustsht::legendre::scalar_paired::for_each_y_lm_paired_dispatched::<rustsht::legendre::scalar_paired::synthesize_order_block_partitioned_dispatched::{closure#1}>
+00000000001ed3e0 t <pulp::x86::v4::V4>::vectorize::imp::<<pulp::x86::v4::V4 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::ForEachPairedYlm<&mut rustsht::legendre::scalar_paired::for_each_y_lm_paired_dispatched<rustsht::legendre::scalar_paired::synthesize_order_block_partitioned_dispatched::{closure#1}>::{closure#0}>>>
+00000000001f8130 t <pulp::x86::v4::V4>::vectorize::imp::<<pulp::x86::v4::V4 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::StagedSynthesisScalarTransition>>
+00000000001faa20 t <pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::ForEachPairedYlm<&mut rustsht::legendre::scalar_paired::for_each_y_lm_paired_dispatched<rustsht::legendre::scalar_paired::synthesize_order_block_partitioned_dispatched::{closure#1}>::{closure#0}>>>
+0000000000204fb0 t <pulp::x86::v3::V3>::vectorize::imp::<<pulp::x86::v3::V3 as pulp::Simd>::vectorize::Impl<rustsht::legendre::scalar_paired::StagedSynthesisScalarTransition>>
+00000000002127f0 t rustsht::legendre::scalar_paired::try_synthesize_order_scalar_transition_dispatched
+0000000000214cd0 t <&mut rustsht::legendre::scalar_paired::for_each_y_lm_paired_dispatched<rustsht::legendre::scalar_paired::synthesize_order_block_partitioned_dispatched::{closure#1}>::{closure#0} as core::ops::function::FnMut<(usize, usize, &[f64], &[i64], bool)>>::call_mut

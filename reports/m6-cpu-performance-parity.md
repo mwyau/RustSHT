@@ -226,7 +226,32 @@ retained. The ordering was applied at the final link of the local
 `m1b_bench` executable; the RustSHT rlib does not encode it. P01 remains
 unaccepted for downstream builds. Raw output, time/RSS, preflight snapshots,
 scripts and summary are in
-[`reports/data/m6-p01/link-order/causal-ab/`](data/m6-p01/link-order/causal-ab/). The ordered results pass the measured operation gates, but are specific to
+[`reports/data/m6-p01/link-order/causal-ab/`](data/m6-p01/link-order/causal-ab/).
+
+## P01 source-order relocation screen
+
+An isolated P01-only copy moved the scalar transition implementation to the
+end of `scalar_paired.rs` and used the standard Rust 1.99.0 release link for
+`m1b_bench`; no custom linker flags were set. The candidate ELF
+(`23f2c95f…`) and default P01 comparison ELF (`3388c021…`) are retained under
+`target/`. In `nm -nC` output, the V4 transition, V3 visitor closure, V3
+transition and scalar dispatcher all shifted by the same `-0x36670`; the V3
+visitor-to-transition gap remained `0xA590`, and the preceding hot scalar
+block-to-V4 transition gap remained `0xC050`. Since source relocation did not
+change relative symbol placement, the predeclared screen condition was not
+met and no benchmark was run. The P01 source patch, build log, source hashes
+and symbol listings are in
+[`reports/data/m6-p01/function-layout/`](data/m6-p01/function-layout/). The measured visitor cost (191.910 ms at T1023 and 1505.354 ms at T2047 in
+the q1 route profile) and the matched T1023 scalar gap (296.372 ms for Rust,
+49.555 ms for DUCC and 34.670 ms for the documented SHTns adapter) support
+keeping the scalar synthesis bottleneck as the next optimization target. P01
+has a material scalar gain, but remains unaccepted because its default-link
+spin-1 control exceeds the 2% guard and the same-source ordering result is
+specific to a local final executable link. The next useful step is to
+establish the actual downstream final-link behavior for the supported Rust
+and Python consumers before relying on executable-specific text ordering;
+if their link cannot carry the favorable layout, P01 needs a default-link
+source solution or must remain shelved. The ordered results pass the measured operation gates, but are specific to
 the local benchmark executable. P01 remains unaccepted pending a source-level
 default-link solution and validation of the intended P01-only source. The full
 suites below ran with P01 and P02 together. Do not infer downstream consumer
@@ -282,4 +307,5 @@ in `examples/m1b_bench.rs`, `examples/python_perf_baseline.py`,
 these source changes remain uncommitted. Their raw evidence is under
 `reports/data/m6-current-baseline/`. The remaining gates are C02 performance
 resolution, a default-link P01 control solution, and review of the M1 evidence. The ordered P01 matrix is complete; its results do not resolve the default-link
-spin-1 control.
+spin-1 control. The source-order relocation screen did not change the linked
+symbol layout.
