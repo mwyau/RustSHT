@@ -679,3 +679,17 @@ workspace suite passed: 200 unit tests, 4 FFT-scaling tests, 11 f32 tests and
 1 workspace-compatibility test; 14 opt-in tests were ignored. The source,
 paired raw measurements, and test summary are in
 [`the polar split screen`](data/m6-legendre-redesign/polar-split-screen/). The implementation remains isolated from production routing.
+
+## Tile-128 scalar synthesis screen (promising, unaccepted)
+
+The isolated polar-split candidate was rebuilt with `ACTIVE_TILE_SIZE=128`;
+the rest of the source matched the archived tile-256 candidate. The T511 q1
+Rust median was 32.212 ms versus 40.061 ms for clean baseline source `91c2cb8`
+(ratio 0.8041, −19.59%). Rust timed-sample CV and drift were 0.13% and 0.19%. Relative L2 error against DUCC was `6.632e-14` for both builds. Peak process RSS
+was 99,184 KiB for the candidate and 99,144 KiB for baseline. The CPU-pressure check failed the declared gate; exact transient readings remain local. The screen therefore fails the host gate and does not establish an
+accepted performance comparison. No retry, T1023/T2047 cell, q8 cell, analysis
+cell, or production change followed. This T511 result is a raw positive signal
+for the 128-slot tile; its numerical, performance, and regression controls
+remain incomplete. The source patch, binary hashes, raw processes, and
+stability calculations are in
+[`the tile-128 screen`](data/m6-legendre-redesign/tile128-screen/).
