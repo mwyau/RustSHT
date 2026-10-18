@@ -695,9 +695,10 @@ fn integer_power_f64s<S: Simd>(simd: S, mut base: S::f64s, mut exponent: usize) 
     result
 }
 
-/// Forms sectoral powers with SIMD for lanes whose powers stay in the
-/// ordinary range. Lanes below DUCC's per-order threshold use the checked
-/// scaled scalar path, which also protects subnormal and underflow cases.
+/// Uses DUCC's vector fast route when all lanes stay above its per-order
+/// threshold. If any lane approaches underflow, the vector uses normalized
+/// mantissas and checked SIMD exponent updates; only an incomplete tail uses
+/// the checked scalar route.
 fn initialize_sectoral_batch<S: Simd>(
     simd: S,
     sine: &[f64],
@@ -714,46 +715,143 @@ fn initialize_sectoral_batch<S: Simd>(
         return false;
     }
 
+    let threshold = simd.splat_f64s(lower_limit);
     let (sine_vectors, sine_tail) = S::as_simd_f64s(sine);
     let (value_vectors, value_tail) = S::as_mut_simd_f64s(values);
-    let threshold = simd.splat_f64s(lower_limit);
-    let one = simd.splat_f64s(1.0);
+    let (scale_vectors, scale_tail) = S::as_mut_simd_i64s(scales);
     let factor = simd.splat_f64s(factor_value);
-    let mut has_scaled_lanes = false;
-    for (sine_vector, value_vector) in sine_vectors.iter().zip(value_vectors.iter_mut()) {
-        let normal_range = simd.greater_than_or_equal_f64s(simd.abs_f64s(*sine_vector), threshold);
-        has_scaled_lanes |= mask_any(simd, simd.not_m64s(normal_range));
-        let safe_base = simd.select_f64s(normal_range, *sine_vector, one);
-        let power = integer_power_f64s(simd, safe_base, exponent);
-        *value_vector = simd.select_f64s(
-            normal_range,
-            simd.mul_f64s(power, factor),
-            simd.splat_f64s(0.0),
-        );
-    }
-    for (sine_value, value) in sine_tail.iter().zip(value_tail.iter_mut()) {
-        if sine_value.abs() >= lower_limit {
-            *value = scalar_integer_power(*sine_value, exponent) * factor_value;
+    for index in 0..sine_vectors.len() {
+        let scaled = simd.less_than_f64s(simd.abs_f64s(sine_vectors[index]), threshold);
+        if mask_any(simd, scaled) {
+            let Some((value, scale)) =
+                scaled_integer_power_vector(simd, sine_vectors[index], exponent)
+            else {
+                return false;
+            };
+            value_vectors[index] = simd.mul_f64s(value, factor);
+            scale_vectors[index] = scale;
         } else {
-            *value = 0.0;
-            has_scaled_lanes = true;
+            value_vectors[index] = simd.mul_f64s(
+                integer_power_f64s(simd, sine_vectors[index], exponent),
+                factor,
+            );
+            scale_vectors[index] = simd.splat_i64s(0);
         }
     }
-
-    scales.fill(0);
-    if has_scaled_lanes {
-        for lane in 0..sine.len() {
-            if sine[lane].abs() < lower_limit {
-                let Some((mut value, scale)) = mypow(sine[lane], exponent, lower_limit) else {
-                    return false;
-                };
-                value *= factor_value;
-                values[lane] = value;
-                scales[lane] = scale;
-            }
-        }
+    for ((&sine_value, value), scale) in sine_tail
+        .iter()
+        .zip(value_tail.iter_mut())
+        .zip(scale_tail.iter_mut())
+    {
+        let Some((power, exponent)) = mypow(sine_value, exponent, lower_limit) else {
+            return false;
+        };
+        *value = power * factor_value;
+        *scale = exponent;
     }
     normalize_batch(simd, values, scales, FTOL)
+}
+
+#[inline(always)]
+fn scaled_integer_power_vector<S: Simd>(
+    simd: S,
+    mut base: S::f64s,
+    exponent: usize,
+) -> Option<(S::f64s, S::i64s)> {
+    let mut base_scale = simd.splat_i64s(0);
+    let mut value = simd.splat_f64s(1.0);
+    let mut scale = simd.splat_i64s(0);
+    normalize_vector(simd, &mut base, &mut base_scale, HALF_SCALE)?;
+    let mut power = exponent;
+    while power > 0 {
+        if power & 1 != 0 {
+            value = simd.mul_f64s(value, base);
+            checked_add_scale_vector(simd, &mut scale, base_scale)?;
+            normalize_vector(simd, &mut value, &mut scale, HALF_SCALE)?;
+        }
+        base = simd.mul_f64s(base, base);
+        checked_double_scale_vector(simd, &mut base_scale)?;
+        normalize_vector(simd, &mut base, &mut base_scale, HALF_SCALE)?;
+        power >>= 1;
+    }
+    Some((value, scale))
+}
+
+#[inline(always)]
+fn checked_add_scale_vector<S: Simd>(simd: S, scale: &mut S::i64s, addend: S::i64s) -> Option<()> {
+    let sum = simd.add_i64s(*scale, addend);
+    let overflow_bits = simd.and_i64s(simd.xor_i64s(*scale, sum), simd.xor_i64s(addend, sum));
+    let zero = simd.splat_i64s(0);
+    if mask_any(simd, simd.less_than_i64s(overflow_bits, zero)) {
+        return None;
+    }
+    *scale = sum;
+    Some(())
+}
+
+#[inline(always)]
+fn checked_double_scale_vector<S: Simd>(simd: S, scale: &mut S::i64s) -> Option<()> {
+    let doubled = simd.add_i64s(*scale, *scale);
+    let sign_changed = simd.less_than_i64s(simd.xor_i64s(*scale, doubled), simd.splat_i64s(0));
+    if mask_any(simd, sign_changed) {
+        return None;
+    }
+    *scale = doubled;
+    Some(())
+}
+
+#[inline(always)]
+fn normalize_vector<S: Simd>(
+    simd: S,
+    value: &mut S::f64s,
+    scale: &mut S::i64s,
+    maximum: f64,
+) -> Option<()> {
+    let maximum_vector = simd.splat_f64s(maximum);
+    let minimum_vector = simd.splat_f64s(maximum * SCALE_DOWN);
+    let scale_down = simd.splat_f64s(SCALE_DOWN);
+    let scale_up = simd.splat_f64s(SCALE_UP);
+    let scale_one = simd.splat_i64s(1);
+    let scale_minus_one = simd.splat_i64s(-1);
+    let scale_max = simd.splat_i64s(i64::MAX);
+    let scale_min = simd.splat_i64s(i64::MIN);
+    let zero = simd.splat_f64s(0.0);
+
+    let mut magnitude = simd.abs_f64s(*value);
+    if !mask_all(
+        simd,
+        simd.less_than_or_equal_f64s(magnitude, simd.splat_f64s(f64::MAX)),
+    ) {
+        return None;
+    }
+    loop {
+        let too_large = simd.greater_than_f64s(magnitude, maximum_vector);
+        if !mask_any(simd, too_large) {
+            break;
+        }
+        let overflow = simd.and_m64s(too_large, simd.equal_i64s(*scale, scale_max));
+        if mask_any(simd, overflow) {
+            return None;
+        }
+        *value = simd.select_f64s(too_large, simd.mul_f64s(*value, scale_down), *value);
+        *scale = simd.select_i64s(too_large, simd.add_i64s(*scale, scale_one), *scale);
+        magnitude = simd.abs_f64s(*value);
+    }
+    loop {
+        let nonzero = simd.not_m64s(simd.equal_f64s(magnitude, zero));
+        let too_small = simd.and_m64s(nonzero, simd.less_than_f64s(magnitude, minimum_vector));
+        if !mask_any(simd, too_small) {
+            break;
+        }
+        let overflow = simd.and_m64s(too_small, simd.equal_i64s(*scale, scale_min));
+        if mask_any(simd, overflow) {
+            return None;
+        }
+        *value = simd.select_f64s(too_small, simd.mul_f64s(*value, scale_up), *value);
+        *scale = simd.select_i64s(too_small, simd.add_i64s(*scale, scale_minus_one), *scale);
+        magnitude = simd.abs_f64s(*value);
+    }
+    Some(())
 }
 
 fn scalar_integer_power(mut base: f64, mut exponent: usize) -> f64 {
@@ -1428,6 +1526,9 @@ mod tests {
         sine[0] = lower_limit;
         sine[1] = lower_limit * 0.5;
         sine[2] = 1.0;
+        sine[3] = 0.0;
+        sine[4] = f64::from_bits(1);
+        sine[18] = lower_limit * 0.25;
         let factor = -0.75;
 
         for arch in [Arch::Scalar, Arch::new()] {
@@ -1464,6 +1565,22 @@ mod tests {
             scales: &mut scales,
             exponent: 3,
             lower_limit: power_lower_limit(3),
+            factor: 1.0,
+        }));
+    }
+
+    #[test]
+    fn sectoral_initializer_declines_scale_exponent_overflow() {
+        let mut sine = [0.5; 19];
+        sine[1] = f64::from_bits(1);
+        let mut values = [0.0; 19];
+        let mut scales = [0; 19];
+        assert!(!Arch::new().dispatch(InitializeDispatch {
+            sine: &sine,
+            values: &mut values,
+            scales: &mut scales,
+            exponent: usize::MAX,
+            lower_limit: power_lower_limit(usize::MAX),
             factor: 1.0,
         }));
     }
