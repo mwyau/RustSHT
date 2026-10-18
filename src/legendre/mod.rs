@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 mod scalar;
-pub(crate) mod scalar_ducc;
 mod scalar_f32;
+pub(crate) mod scalar_ordered;
 mod scalar_paired;
 mod scalar_table;
 mod spin;
@@ -12,7 +12,7 @@ mod spin_fast;
 pub(crate) mod synthesis_fast;
 
 pub(crate) const SPIN1_FAST_MIN_LMAX: usize = 15;
-pub(crate) const SCALAR_DUCC_BATCH_SIZE: usize = 256;
+pub(crate) const SCALAR_ORDER_BATCH_SIZE: usize = 256;
 
 pub(crate) use scalar_table::{
     LegendreOperation, LegendreStrategy, MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX, ScalarLegendreTable,
@@ -89,7 +89,7 @@ pub(crate) trait ShtScalar:
     + std::ops::RemAssign
     + std::ops::SubAssign
 {
-    fn supports_scalar_ducc() -> bool {
+    fn supports_scalar_ordered() -> bool {
         false
     }
 
@@ -265,9 +265,9 @@ pub(crate) trait ShtScalar:
     }
     #[expect(
         clippy::too_many_arguments,
-        reason = "The private DUCC route receives one complete scalar GL synthesis and reusable workspace scratch."
+        reason = "The private ordered scalar route receives one complete scalar GL synthesis and reusable workspace scratch."
     )]
-    fn synthesize_scalar_ducc_dispatched(
+    fn synthesize_scalar_ordered_dispatched(
         _arch: Arch,
         _alm: &[Complex<Self>],
         _lmax: usize,
@@ -280,16 +280,16 @@ pub(crate) trait ShtScalar:
         _cos_theta: &[Self],
         _ring_order_limits: &[usize],
         _spectra: &mut [Complex<Self>],
-        _scratch: &mut scalar_ducc::ScalarDuccScratch<'_, Self>,
+        _scratch: &mut scalar_ordered::ScalarOrderedScratch<'_, Self>,
     ) -> bool {
         false
     }
     #[expect(
         clippy::too_many_arguments,
-        reason = "The private order-group DUCC route receives a disjoint output slice and worker scratch."
+        reason = "The private scalar order-range route receives a disjoint output slice and worker scratch."
     )]
     #[cfg(feature = "parallel")]
-    fn synthesize_scalar_ducc_order_range_dispatched(
+    fn synthesize_scalar_ordered_range_dispatched(
         _arch: Arch,
         _alm: &[Complex<Self>],
         _lmax: usize,
@@ -304,7 +304,7 @@ pub(crate) trait ShtScalar:
         _cos_theta: &[Self],
         _ring_order_limits: &[usize],
         _order_spectra: &mut [Complex<Self>],
-        _scratch: &mut scalar_ducc::ScalarDuccScratch<'_, Self>,
+        _scratch: &mut scalar_ordered::ScalarOrderedScratch<'_, Self>,
     ) -> bool {
         false
     }
@@ -706,7 +706,7 @@ pub(crate) trait ShtScalar:
 impl ShtScalar for f64 {
     type SpinInitial = spin::SpinInitial;
 
-    fn supports_scalar_ducc() -> bool {
+    fn supports_scalar_ordered() -> bool {
         true
     }
 
@@ -842,7 +842,7 @@ impl ShtScalar for f64 {
         )
     }
 
-    fn synthesize_scalar_ducc_dispatched(
+    fn synthesize_scalar_ordered_dispatched(
         arch: Arch,
         alm: &[Complex<Self>],
         lmax: usize,
@@ -855,9 +855,9 @@ impl ShtScalar for f64 {
         cos_theta: &[Self],
         ring_order_limits: &[usize],
         spectra: &mut [Complex<Self>],
-        scratch: &mut scalar_ducc::ScalarDuccScratch<'_, Self>,
+        scratch: &mut scalar_ordered::ScalarOrderedScratch<'_, Self>,
     ) -> bool {
-        scalar_ducc::synthesize_dispatched(
+        scalar_ordered::synthesize_dispatched(
             arch,
             alm,
             lmax,
@@ -875,7 +875,7 @@ impl ShtScalar for f64 {
     }
 
     #[cfg(feature = "parallel")]
-    fn synthesize_scalar_ducc_order_range_dispatched(
+    fn synthesize_scalar_ordered_range_dispatched(
         arch: Arch,
         alm: &[Complex<Self>],
         lmax: usize,
@@ -890,9 +890,9 @@ impl ShtScalar for f64 {
         cos_theta: &[Self],
         ring_order_limits: &[usize],
         order_spectra: &mut [Complex<Self>],
-        scratch: &mut scalar_ducc::ScalarDuccScratch<'_, Self>,
+        scratch: &mut scalar_ordered::ScalarOrderedScratch<'_, Self>,
     ) -> bool {
-        scalar_ducc::synthesize_order_range_dispatched(
+        scalar_ordered::synthesize_order_range_dispatched(
             arch,
             alm,
             lmax,

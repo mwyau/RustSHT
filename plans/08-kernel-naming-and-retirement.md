@@ -4,7 +4,7 @@
 
 ## Decisions
 
-1. **Use algorithmic Rust names, not competitor names.** DUCC is a numerical reference and GPL-attributed source, **not** RustSHT's internal subsystem identity. Rename production files, structs, traits, helpers, dispatch functions, constants and private tests containing `ducc` when naming *our implementation*. The immediate target is `src/legendre/scalar_ducc.rs` → an algorithmic name such as `src/legendre/scalar_ordered.rs`, `ScalarDuccScratch` → `ScalarOrderedScratch`, `SCALAR_DUCC_BATCH_SIZE` → `SCALAR_ORDER_BATCH_SIZE`, and `synthesize_scalar_ducc_*` → `synthesize_scalar_ordered_*`. Prefer descriptive, coherent names over mechanical blind replacement. Match actual module semantics; `ordered` is an example, not a mandatory suffix.
+1. **Use algorithmic Rust names, not competitor names.** DUCC is a numerical reference and GPL-attributed source, **not** RustSHT's internal subsystem identity. Rename production files, structs, traits, helpers, dispatch functions, constants and private tests containing `ducc` when naming *our implementation*. Use names such as `src/legendre/scalar_ordered.rs`, `ScalarOrderedScratch`, `SCALAR_ORDER_BATCH_SIZE` and `synthesize_scalar_ordered_*`. Prefer descriptive, coherent names over mechanical blind replacement. Match actual module semantics; `ordered` is an example, not a mandatory suffix.
 2. **Preserve honest provenance and interoperability names.** Do **not** scrub DUCC from copyright/licensing, source-port attributions, pinned upstream comparisons, dependency names, external API names, reference fixtures, or benchmark/report text where it identifies the real library. Rename private test identifiers and outputs if they unnecessarily brand RustSHT's own kernels as DUCC, but keep reference attribution. Do not alter public Rust/Python APIs unnecessarily.
 3. **Production `src/` should contain live, maintainable, necessary implementations only.** Retire abandoned experiments, uncalled alternatives, duplicated numerical kernels that are comprehensively dominated, and stale scratch/dispatch complexity when evidence proves their removal is safe. Do not keep every older candidate as a permanent production fallback.
 4. **Minimal fallback policy:** Target one **small, genuinely robust generic safety fallback per mathematical operation/numerical regime where necessary**, plus any unavoidable portable scalar execution. A safe fallback must handle extreme finite/subnormal coefficients, overflow/underflow, unusual geometry, SIMD-ineligible cases and failed fast-path preflight **as appropriate to the supported operation**. Do not stack the old table, tile, paired, visitor and experimental implementations as interchangeable fallbacks merely because they once existed. If an old path still uniquely implements required f32, CC/F1, spin/adjoint or extreme-value behavior, it is **not dead**; keep it until equivalent tested coverage exists. Efficient small-size specializations may remain if a measured regime justifies them. Avoid excessive defensiveness and duplicate layers.
@@ -17,7 +17,7 @@
 
 Trace production call sites and dispatch precedence in:
 
-- `src/legendre/scalar_ducc.rs` (current new order-major kernel; **retain its live implementation while renaming**)
+- `src/legendre/scalar_ordered.rs` (current order-major kernel; retain its live implementation during the audit)
 - `src/legendre/synthesis_fast.rs` (old tile-128 implementation)
 - `src/legendre/scalar_paired.rs`, `scalar.rs`, `scalar_f32.rs`, `scalar_table.rs`
 - `src/legendre/mod.rs`, `src/transform.rs`, `src/spin_transform.rs`
@@ -27,7 +27,7 @@ Check `#[cfg]` variants, no-default-features, runtimes, PyO3 interfaces and high
 
 ### Phase 2 — Rename first, in a coherent commit
 
-Rename the new **live** scalar source to a neutral algorithm-based name. Update module declarations, trait methods, constants, tests, examples, private logging and documentation pointers. Keep DUCC source attribution and comparative report names where historical. Run `rg -n -i 'ducc' src python` and inspect remaining matches; actual external reference names and license text are allowed, internal algorithm branding is not. Compile/test both serial and parallel. Commit and push this rename separately so source history remains readable.
+The live scalar source is `src/legendre/scalar_ordered.rs`; its internal dispatch and workspace names use the same algorithm-based vocabulary. Keep DUCC source attribution and comparative report names where historical. Run `rg -n -i 'ducc' src python` and inspect remaining matches; actual external reference names and license text are allowed, internal algorithm branding is not. Compile/test both serial and parallel. Keep this rename in its own commit so source history remains readable.
 
 ### Phase 3 — Consolidate to one dependable path and small fallback
 

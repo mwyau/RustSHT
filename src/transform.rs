@@ -40,10 +40,10 @@ struct ScalarSynthesisCoefficientCache<'a, T> {
     half_stride: usize,
 }
 
-fn scalar_ducc_scratch<T: ShtScalar>(
+fn scalar_ordered_scratch<T: ShtScalar>(
     recurrence: &mut RecurrenceWorkspace<T>,
-) -> crate::legendre::scalar_ducc::ScalarDuccScratch<'_, T> {
-    crate::legendre::scalar_ducc::ScalarDuccScratch {
+) -> crate::legendre::scalar_ordered::ScalarOrderedScratch<'_, T> {
+    crate::legendre::scalar_ordered::ScalarOrderedScratch {
         epsilon: &mut recurrence.epsilon,
         alpha: &mut recurrence.spin_alpha,
         coefficient_a: &mut recurrence.spin_coefficient_a,
@@ -57,7 +57,7 @@ fn scalar_ducc_scratch<T: ShtScalar>(
         previous: &mut recurrence.previous,
         current: &mut recurrence.current,
         scale: &mut recurrence.exponents,
-        corfac: &mut recurrence.ducc_corfac,
+        corfac: &mut recurrence.scalar_order_correction,
         sum_even_re: &mut recurrence.analysis_same_real,
         sum_even_im: &mut recurrence.analysis_same_imag,
         sum_odd_re: &mut recurrence.analysis_opposite_real,
@@ -612,7 +612,7 @@ impl<T: ShtScalar> ShtPlan<T> {
     }
 
     #[cfg(feature = "parallel")]
-    fn synthesize_scalar_ducc_parallel(
+    fn synthesize_scalar_ordered_parallel(
         &self,
         alm: &[Complex<T>],
         arch: pulp::Arch,
@@ -678,8 +678,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                     #[cfg(all(test, feature = "parallel"))]
                     let leaf_started = recurrence.scalar_order_leaf_started();
                     let succeeded = {
-                        let mut scratch = scalar_ducc_scratch(recurrence);
-                        T::synthesize_scalar_ducc_order_range_dispatched(
+                        let mut scratch = scalar_ordered_scratch(recurrence);
+                        T::synthesize_scalar_ordered_range_dispatched(
                             arch,
                             alm,
                             lmax,
@@ -716,7 +716,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         #[cfg(all(test, feature = "parallel"))]
         crate::workspace::record_transform_phase(
             &phase_probe,
-            "DUCC active-order recurrence",
+            "ordered scalar recurrence",
             order_started,
         );
         if !succeeded {
@@ -743,7 +743,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         #[cfg(all(test, feature = "parallel"))]
         crate::workspace::record_transform_phase(
             &phase_probe,
-            "DUCC tiled spectrum scatter",
+            "ordered spectrum scatter",
             scatter_started,
         );
         true
@@ -809,14 +809,14 @@ impl<T: ShtScalar> ShtPlan<T> {
         {
             return Ok(());
         }
-        let scalar_ducc_used =
-            if T::supports_scalar_ducc() && self.grid.kind() == GridKind::GaussLegendre {
+        let ordered_scalar_used =
+            if T::supports_scalar_ordered() && self.grid.kind() == GridKind::GaussLegendre {
                 if workspace.execution_capacity == 1 {
                     let recurrence = &mut workspace.recurrence_workers[0];
                     #[cfg(all(test, feature = "parallel"))]
                     recurrence.record_active_worker();
-                    let mut scratch = scalar_ducc_scratch(recurrence);
-                    T::synthesize_scalar_ducc_dispatched(
+                    let mut scratch = scalar_ordered_scratch(recurrence);
+                    T::synthesize_scalar_ordered_dispatched(
                         arch,
                         alm,
                         lmax,
@@ -834,7 +834,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 } else {
                     #[cfg(feature = "parallel")]
                     {
-                        self.synthesize_scalar_ducc_parallel(alm, arch, workspace)
+                        self.synthesize_scalar_ordered_parallel(alm, arch, workspace)
                     }
                     #[cfg(not(feature = "parallel"))]
                     {
@@ -844,7 +844,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             } else {
                 false
             };
-        if !scalar_ducc_used {
+        if !ordered_scalar_used {
             #[cfg(feature = "parallel")]
             {
                 let execution_threads =
@@ -2736,7 +2736,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let latitude_count = self.grid.ntheta().max(prepared_ntheta);
         let recurrence_scratch_len = latitude_count
             .min(LATITUDE_BLOCK_SIZE)
-            .max(crate::legendre::SCALAR_DUCC_BATCH_SIZE);
+            .max(crate::legendre::SCALAR_ORDER_BATCH_SIZE);
         if workspace.ring_group_size == 0 {
             return Err(ShtError::BufferLength {
                 buffer: "workspace latitude group size",
@@ -2892,9 +2892,9 @@ impl<T: ShtScalar> ShtPlan<T> {
                     recurrence.analysis_opposite_imag.len(),
                 ),
                 (
-                    "workspace DUCC scalar scale correction",
+                    "workspace ordered scalar scale correction",
                     recurrence_scratch_len,
-                    recurrence.ducc_corfac.len(),
+                    recurrence.scalar_order_correction.len(),
                 ),
                 (
                     "workspace spin-1 fast scalar first coefficients",

@@ -18,14 +18,14 @@
 use num_complex::Complex64;
 use pulp::{Arch, Simd, WithSimd};
 
-use crate::legendre::{SCALAR_DUCC_BATCH_SIZE, longitude_phase, scalar, scalar_paired};
+use crate::legendre::{SCALAR_ORDER_BATCH_SIZE, longitude_phase, scalar, scalar_paired};
 
 const SCALE_UP: f64 = f64::from_bits(1823_u64 << 52);
 const SCALE_DOWN: f64 = f64::from_bits(223_u64 << 52);
 const HALF_SCALE: f64 = f64::from_bits(1423_u64 << 52);
 const FTOL: f64 = f64::from_bits((1023_u64 - 60) << 52);
 
-pub(crate) struct ScalarDuccScratch<'a, T> {
+pub(crate) struct ScalarOrderedScratch<'a, T> {
     pub(crate) epsilon: &'a mut [T],
     pub(crate) alpha: &'a mut [T],
     pub(crate) coefficient_a: &'a mut [T],
@@ -68,7 +68,7 @@ pub(crate) fn synthesize_dispatched<'a>(
     cos_theta: &'a [f64],
     ring_order_limits: &'a [usize],
     spectra: &'a mut [Complex64],
-    scratch: &'a mut ScalarDuccScratch<'_, f64>,
+    scratch: &'a mut ScalarOrderedScratch<'_, f64>,
 ) -> bool {
     let Some(order_end) = mmax.checked_add(1) else {
         return false;
@@ -113,7 +113,7 @@ pub(crate) fn synthesize_order_range_dispatched<'a>(
     cos_theta: &'a [f64],
     ring_order_limits: &'a [usize],
     spectra: &'a mut [Complex64],
-    scratch: &'a mut ScalarDuccScratch<'_, f64>,
+    scratch: &'a mut ScalarOrderedScratch<'_, f64>,
 ) -> bool {
     synthesize_range_dispatched(
         arch,
@@ -137,7 +137,7 @@ pub(crate) fn synthesize_order_range_dispatched<'a>(
 
 #[expect(
     clippy::too_many_arguments,
-    reason = "Both scalar DUCC layouts share one validated recurrence dispatch."
+    reason = "Both order-major scalar layouts share one validated recurrence dispatch."
 )]
 fn synthesize_range_dispatched<'a>(
     arch: Arch,
@@ -155,7 +155,7 @@ fn synthesize_range_dispatched<'a>(
     ring_order_limits: &'a [usize],
     spectra: &'a mut [Complex64],
     order_major_output: bool,
-    scratch: &'a mut ScalarDuccScratch<'_, f64>,
+    scratch: &'a mut ScalarOrderedScratch<'_, f64>,
 ) -> bool {
     let ntheta = sin_theta.len();
     let Some(order_count) = mmax.checked_add(1) else {
@@ -179,18 +179,18 @@ fn synthesize_range_dispatched<'a>(
         || spectrum_len == 0
         || mmax >= spectrum_len
         || nphi == 0
-        || scratch.packed_sin.len() < SCALAR_DUCC_BATCH_SIZE
-        || scratch.packed_cos.len() < SCALAR_DUCC_BATCH_SIZE
-        || scratch.packed_csq.len() < SCALAR_DUCC_BATCH_SIZE
-        || scratch.packed_north.len() < SCALAR_DUCC_BATCH_SIZE
-        || scratch.previous.len() < SCALAR_DUCC_BATCH_SIZE
-        || scratch.current.len() < SCALAR_DUCC_BATCH_SIZE
-        || scratch.scale.len() < SCALAR_DUCC_BATCH_SIZE
-        || scratch.corfac.len() < SCALAR_DUCC_BATCH_SIZE
-        || scratch.sum_even_re.len() < SCALAR_DUCC_BATCH_SIZE
-        || scratch.sum_even_im.len() < SCALAR_DUCC_BATCH_SIZE
-        || scratch.sum_odd_re.len() < SCALAR_DUCC_BATCH_SIZE
-        || scratch.sum_odd_im.len() < SCALAR_DUCC_BATCH_SIZE
+        || scratch.packed_sin.len() < SCALAR_ORDER_BATCH_SIZE
+        || scratch.packed_cos.len() < SCALAR_ORDER_BATCH_SIZE
+        || scratch.packed_csq.len() < SCALAR_ORDER_BATCH_SIZE
+        || scratch.packed_north.len() < SCALAR_ORDER_BATCH_SIZE
+        || scratch.previous.len() < SCALAR_ORDER_BATCH_SIZE
+        || scratch.current.len() < SCALAR_ORDER_BATCH_SIZE
+        || scratch.scale.len() < SCALAR_ORDER_BATCH_SIZE
+        || scratch.corfac.len() < SCALAR_ORDER_BATCH_SIZE
+        || scratch.sum_even_re.len() < SCALAR_ORDER_BATCH_SIZE
+        || scratch.sum_even_im.len() < SCALAR_ORDER_BATCH_SIZE
+        || scratch.sum_odd_re.len() < SCALAR_ORDER_BATCH_SIZE
+        || scratch.sum_odd_im.len() < SCALAR_ORDER_BATCH_SIZE
     {
         return false;
     }
@@ -211,7 +211,7 @@ fn synthesize_range_dispatched<'a>(
         return false;
     }
     spectra.fill(Complex64::new(0.0, 0.0));
-    let succeeded = arch.dispatch(ScalarDuccSynthesis {
+    let succeeded = arch.dispatch(ScalarOrderedSynthesis {
         alm,
         lmax,
         order_start,
@@ -233,7 +233,7 @@ fn synthesize_range_dispatched<'a>(
     succeeded
 }
 
-struct ScalarDuccSynthesis<'a, 's> {
+struct ScalarOrderedSynthesis<'a, 's> {
     alm: &'a [Complex64],
     lmax: usize,
     order_start: usize,
@@ -247,10 +247,10 @@ struct ScalarDuccSynthesis<'a, 's> {
     cos_theta: &'a [f64],
     ring_order_limits: &'a [usize],
     spectra: &'a mut [Complex64],
-    scratch: &'a mut ScalarDuccScratch<'s, f64>,
+    scratch: &'a mut ScalarOrderedScratch<'s, f64>,
 }
 
-impl WithSimd for ScalarDuccSynthesis<'_, '_> {
+impl WithSimd for ScalarOrderedSynthesis<'_, '_> {
     type Output = bool;
 
     #[inline]
@@ -323,7 +323,7 @@ impl WithSimd for ScalarDuccSynthesis<'_, '_> {
             }
             let mut ring_cursor = first_active_north_ring;
             while ring_cursor < north_count {
-                let active_count = (north_count - ring_cursor).min(SCALAR_DUCC_BATCH_SIZE);
+                let active_count = (north_count - ring_cursor).min(SCALAR_ORDER_BATCH_SIZE);
                 for lane in 0..active_count {
                     let north = ring_cursor + lane;
                     let south = ntheta - 1 - north;
@@ -353,7 +353,7 @@ impl WithSimd for ScalarDuccSynthesis<'_, '_> {
                 else {
                     return false;
                 };
-                if simd_count > SCALAR_DUCC_BATCH_SIZE {
+                if simd_count > SCALAR_ORDER_BATCH_SIZE {
                     return false;
                 }
                 if simd_count > active_count {
@@ -464,7 +464,7 @@ fn is_subnormal(value: f64) -> bool {
 }
 
 fn prepare_order(
-    scratch: &mut ScalarDuccScratch<'_, f64>,
+    scratch: &mut ScalarOrderedScratch<'_, f64>,
     m: usize,
     lmax: usize,
     coefficients: &[Complex64],
@@ -516,7 +516,7 @@ fn prepare_order(
 
 fn synthesize_batch(
     simd: impl Simd,
-    scratch: &mut ScalarDuccScratch<'_, f64>,
+    scratch: &mut ScalarOrderedScratch<'_, f64>,
     m: usize,
     lmax: usize,
     sectoral_norm: f64,

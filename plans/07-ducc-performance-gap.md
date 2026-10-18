@@ -19,7 +19,7 @@ The Rust Legendre call **also applies longitude phase and writes row-major real-
 
 **Later implementation, do not redo:** `9b1651f` added a monotone per-order active polar-ring boundary. `43bec37` added a parallel order-range route with bounded order-major scratch and a tiled transpose/scatter, preserving old-path fallback. Five local T300 GL 301×603 **reduced mmax=150** release samples measured q1/q8 full-call medians ~3.33/2.13 ms (1.56× q8 speedup). This is a **different workload from the full-mmax T300 comparison above** and has **no matched DUCC q8 result**. The q8 implementation uses a recursive weighted order split, **not DUCC's `execDynamic` scheduler**. Do not call q8 parity established.
 
-Evidence: [initial kernel screen](../reports/scalar-ducc-kernel-screen-2026-10-18.md), [current Rust kernel](../src/legendre/scalar_ducc.rs), [Rust driver](../src/transform.rs), [status](../PERFORMANCE_STATUS.md).
+Evidence: [initial kernel screen](../reports/scalar-ducc-kernel-screen-2026-10-18.md), [current Rust kernel](../src/legendre/scalar_ordered.rs), [Rust driver](../src/transform.rs), [status](../PERFORMANCE_STATUS.md).
 
 ## 2. Source-defined differences and actionable implementations
 
@@ -27,7 +27,7 @@ Compare pinned DUCC `80388904b8cfc32400ba84af8a6a45aabfe60f86` (`src/ducc0/sht/s
 
 ### P1 — Compute power thresholds once per order, then vectorize sectoral initialization
 
-- **Confirmed source difference:** DUCC `YlmBase` maintains `powlimit`, and `init_lambda` calls vector `mypow` for an entire SIMD ring vector. In Rust `scalar_ducc.rs`, `synthesize_batch` loops over individual lanes and invokes `mypow(sin_theta, m)`. Rust `mypow` computes `exp(-400 * ln(2) / m)` at every invocation for `m>0`, although the threshold depends only on the order.
+- **Confirmed source difference at this brief's source revision:** DUCC `YlmBase` maintains `powlimit`, and `init_lambda` calls vector `mypow` for an entire SIMD ring vector. In the then-current Rust `scalar_ducc.rs`, `synthesize_batch` looped over individual lanes and invoked `mypow(sin_theta, m)`. Rust `mypow` computed `exp(-400 * ln(2) / m)` at every invocation for `m>0`, although the threshold depends only on the order.
 - **First implement:** Obtain/cache the threshold once per order or per reusable plan, with correct `m=0`, large-order, exact-zero and finite-value treatment. Remove repeated `exp` work from the latitude loop. Keep existing safe arithmetic/fallback.
 - **Then implement:** Port DUCC's vector `mypow`/sectoral `init_lambda` logic using `pulp` masks, including the unscaled fast case and scaled case, without scalar per-lane setup for normal SIMD blocks.
 - **Check:** Crossvalidate normalized recurrence state and full spectra against the current Rust route and pinned DUCC for polar, nonpolar, scalar-tail and multiple `m`; include underflow/overflow/subnormal fallback cases. Measure full Legendre-stage effects, not only timing `exp`.
@@ -69,7 +69,7 @@ Compare pinned DUCC `80388904b8cfc32400ba84af8a6a45aabfe60f86` (`src/ducc0/sht/s
 
 Implementation-first sequence:
 
-1. Re-read **only** current `scalar_ducc.rs`, `transform.rs`, current `PERFORMANCE_STATUS.md`, and the relevant pinned DUCC functions. Inspect the latest commits before editing; skip already completed work.
+1. Re-read **only** current `scalar_ordered.rs`, `transform.rs`, current `PERFORMANCE_STATUS.md`, and the relevant pinned DUCC functions. Inspect the latest commits before editing; skip already completed work.
 2. Choose **one coherent change at a time** (P1 is the first candidate), implement it in production source, check numerics/portable fallback, and commit a substantive working increment.
 3. Use a small, varied correctness screen: one small/medium case with a SIMD tail, one irregular middle bandlimit, and one high-resolution case. Include reduced `mmax`, odd/even `nphi`, nonzero `phi0`, polarized-ring extremes, and q1/q8 at the integrated parallel milestone. Maintain existing regression coverage for T511/T1023/T2047, but never privilege them as performance targets.
 4. For a **major working integrated revision only**, delegate bounded matched benchmarking to at most one Luna benchmark-only subagent. Compare (a) old Rust route, (b) current DUCC-style Rust route, (c) reference DUCC; clearly distinguish Legendre-stage calls, phase/output conversion, plan construction and full synthesis. Report medians, noise limitations, numerical error, memory and regressions. Do not conflate unlike-for-like samples or change gates retroactively.

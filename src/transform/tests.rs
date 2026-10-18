@@ -1494,7 +1494,7 @@ fn t255_reduced_order_synthesis_matches_closed_form_on_odd_and_even_longitudes()
 }
 
 #[test]
-fn ducc_candidate_batches_more_than_256_active_reflected_rings() {
+fn scalar_ordered_batches_more_than_256_active_reflected_rings() {
     let plan = make_plan(510, 0, 601, 5, 0.37);
     let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
     for (degree, value) in [(0, 0.7), (1, -0.2), (2, 0.1)] {
@@ -1517,7 +1517,7 @@ fn ducc_candidate_batches_more_than_256_active_reflected_rings() {
 }
 
 #[test]
-fn scalar_ducc_falls_back_safely_for_subnormal_and_extreme_coefficients() {
+fn scalar_ordered_falls_back_safely_for_subnormal_and_extreme_coefficients() {
     let plan = make_plan(255, 0, 256, 5, 0.37);
     assert!(plan.scalar_legendre_table.set(None).is_ok());
 
@@ -1542,7 +1542,7 @@ fn scalar_ducc_falls_back_safely_for_subnormal_and_extreme_coefficients() {
 
 #[cfg(feature = "parallel")]
 #[test]
-fn scalar_ducc_parallel_orders_match_serial_and_ring_group_synthesis() {
+fn scalar_ordered_parallel_orders_match_serial_and_ring_group_synthesis() {
     let plan = make_plan(300, 150, 301, 603, 0.37);
     assert!(plan.scalar_legendre_table.set(None).is_ok());
     let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
@@ -1579,7 +1579,7 @@ fn scalar_ducc_parallel_orders_match_serial_and_ring_group_synthesis() {
 
     eight_threads.install(|| {
         parallel_workspace.spectra.fill(Complex64::new(0.0, 0.0));
-        assert!(plan.synthesize_scalar_ducc_parallel(
+        assert!(plan.synthesize_scalar_ordered_parallel(
             &alm,
             pulp::Arch::new(),
             &mut parallel_workspace,
@@ -1607,7 +1607,7 @@ fn scalar_ducc_parallel_orders_match_serial_and_ring_group_synthesis() {
     alm[plan.harmonics().index(100, 100).unwrap()] = Complex64::new(f64::from_bits(1), 0.0);
     parallel_workspace.spectra.fill(Complex64::new(3.0, -2.0));
     eight_threads.install(|| {
-        assert!(!plan.synthesize_scalar_ducc_parallel(
+        assert!(!plan.synthesize_scalar_ordered_parallel(
             &alm,
             pulp::Arch::new(),
             &mut parallel_workspace,
@@ -1635,7 +1635,7 @@ fn scalar_ducc_parallel_orders_match_serial_and_ring_group_synthesis() {
 
 #[cfg(feature = "parallel")]
 #[test]
-fn scalar_ducc_parallel_orders_above_t511_match_serial_and_ring_group() {
+fn scalar_ordered_parallel_orders_above_t511_match_serial_and_ring_group() {
     let plan = make_plan(511, 128, 512, 257, 0.23);
     assert!(plan.scalar_legendre_table.set(None).is_ok());
     let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
@@ -4232,8 +4232,8 @@ fn m3_scalar_t511_t1023_t2047_all_grids_matches_ducc_and_closed_form() {
 
 #[cfg(feature = "parallel")]
 #[test]
-#[ignore = "focused single-thread timing screen for the scalar DUCC candidate"]
-fn scalar_ducc_candidate_t255_timing_screen() {
+#[ignore = "focused single-thread timing screen for the ordered scalar candidate"]
+fn scalar_ordered_candidate_t255_timing_screen() {
     use std::hint::black_box;
     use std::time::Instant;
 
@@ -4268,7 +4268,7 @@ fn scalar_ducc_candidate_t255_timing_screen() {
         workspace: &mut crate::workspace::ShtWorkspace,
     ) {
         let recurrence = &mut workspace.recurrence_workers[0];
-        let mut scratch = crate::legendre::scalar_ducc::ScalarDuccScratch {
+        let mut scratch = crate::legendre::scalar_ordered::ScalarOrderedScratch {
             epsilon: &mut recurrence.epsilon,
             alpha: &mut recurrence.spin_alpha,
             coefficient_a: &mut recurrence.spin_coefficient_a,
@@ -4282,14 +4282,14 @@ fn scalar_ducc_candidate_t255_timing_screen() {
             previous: &mut recurrence.previous,
             current: &mut recurrence.current,
             scale: &mut recurrence.exponents,
-            corfac: &mut recurrence.ducc_corfac,
+            corfac: &mut recurrence.scalar_order_correction,
             sum_even_re: &mut recurrence.analysis_same_real,
             sum_even_im: &mut recurrence.analysis_same_imag,
             sum_odd_re: &mut recurrence.analysis_opposite_real,
             sum_odd_im: &mut recurrence.analysis_opposite_imag,
         };
         assert!(
-            <f64 as crate::legendre::ShtScalar>::synthesize_scalar_ducc_dispatched(
+            <f64 as crate::legendre::ShtScalar>::synthesize_scalar_ordered_dispatched(
                 pulp::Arch::new(),
                 alm,
                 plan.harmonics.lmax(),
@@ -4398,7 +4398,7 @@ fn scalar_ducc_candidate_t255_timing_screen() {
         });
         assert!(relative_l2_real(&candidate_map, &reference_map) < 3e-13);
         eprintln!(
-            "SCALAR_DUCC_T{lmax} grid={ntheta}x{nphi} f64 q1 samples=5 legendre_candidate_ms={candidate_legendre_ms:?} legendre_ring_group_ms={reference_legendre_ms:?} full_candidate_ms={candidate_full_ms:?} full_ring_group_ms={reference_full_ms:?}"
+            "SCALAR_ORDERED_T{lmax} grid={ntheta}x{nphi} f64 q1 samples=5 legendre_candidate_ms={candidate_legendre_ms:?} legendre_ring_group_ms={reference_legendre_ms:?} full_candidate_ms={candidate_full_ms:?} full_ring_group_ms={reference_full_ms:?}"
         );
     }
 
@@ -4408,8 +4408,8 @@ fn scalar_ducc_candidate_t255_timing_screen() {
 
 #[cfg(feature = "parallel")]
 #[test]
-#[ignore = "light q1/q4/q8 screen for the DUCC order-parallel route"]
-fn scalar_ducc_parallel_order_timing_screen() {
+#[ignore = "light q1/q4/q8 screen for the ordered scalar parallel route"]
+fn scalar_ordered_parallel_order_timing_screen() {
     use std::hint::black_box;
     use std::time::Instant;
 
@@ -4531,7 +4531,7 @@ fn scalar_ducc_parallel_order_timing_screen() {
             )
             .collect();
         eprintln!(
-            "SCALAR_DUCC_T{lmax} grid={ntheta}x{nphi} f64 full synthesis q1_ms={q1_samples:?} q4_ms={q4_samples:?} q8_ms={q8_samples:?} phases={phases:?} order_work_by_worker={worker_summary:?}"
+            "SCALAR_ORDERED_T{lmax} grid={ntheta}x{nphi} f64 full synthesis q1_ms={q1_samples:?} q4_ms={q4_samples:?} q8_ms={q8_samples:?} phases={phases:?} order_work_by_worker={worker_summary:?}"
         );
     };
 

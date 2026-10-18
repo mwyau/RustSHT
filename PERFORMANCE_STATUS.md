@@ -7,10 +7,10 @@
 ## Current production
 
 - Stable Rust 1.99.0; f64/f32; GL/CC/F1; scalar and spin 1–4 operations, relevant adjoints and derivative modes. Existing numerical and precision support is **combination-specific**, not universal; see [numerical contract](plans/02-numerics-and-grids.md).
-- Scalar synthesis: ring-group-owned workers, DUCC-derived paired-degree recurrence, `pulp` SIMD ordinary suffix, scaled/unsafe fallback. The **integrated tile-128 f64 GL path** at eligible `lmax >= 255` uses a scaled-prefix accumulator, fused normalization and accumulation, SIMD prefix arithmetic, order-level coefficient-safety reuse and checked single-scatter staging. It is **not** DUCC's complete scalar synthesis algorithm. The separate order-major DUCC-style candidate in `src/legendre/scalar_ducc.rs` now dispatches eligible f64 scalar GL through q1 recurrence or weighted order-range parallelism; q>1 output uses bounded order-major workspace scratch and commits to row-major spectra only after all order groups succeed. Unsafe inputs retain the robust ring-group/tile fallback.
+- Scalar synthesis: the private order-major kernel in `src/legendre/scalar_ordered.rs` handles eligible f64 GL transforms with active/reflected ring batches, SIMD recurrence and dynamic order scheduling. The ring-group path remains the robust fallback for declined inputs and other supported regimes. The integrated tile-128 path and transformed coefficient cache are still used by that fallback; neither is the complete DUCC execution algorithm. Parallel output uses bounded order-major workspace scratch and commits to row-major spectra only after all order groups succeed.
 - Scalar GL synthesis can precompute/share transformed coefficients across ring groups when transition, worker and buffer eligibility permit. This generalizes the initially T1023-only cache; only the earlier T1023 q8 screen clearly demonstrated benefit.
 - Spin-1 includes existing restricted hemisphere pairing, scalar conversion and robust extreme-value guards. Scalar/spin analysis, f32 and CC/F1 use their respective established production routes. RustFFT is the root FFT backend; the separate RustSHT-FFT crate is not integrated.
-- Public APIs and existing safe fallbacks should be preserved while implementing a separate DUCC-parity candidate.
+- Public APIs remain unchanged; DUCC-derived source attribution and external comparison references remain explicit.
 
 ## What is known (not an active benchmark queue)
 

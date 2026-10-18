@@ -499,7 +499,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     .theta_sin
                     .len()
                     .min(crate::legendre::LATITUDE_BLOCK_SIZE)
-                    .max(crate::legendre::SCALAR_DUCC_BATCH_SIZE),
+                    .max(crate::legendre::SCALAR_ORDER_BATCH_SIZE),
             )?;
             if self.row_fft_parallelism_supported() {
                 let fft_worker_count = execution_capacity.min(self.grid.ntheta());

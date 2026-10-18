@@ -7,7 +7,7 @@ use rustfft::num_traits::Zero;
 
 use crate::error::ShtError;
 use crate::fft::{RealFftPlan, RealFftWorkspace};
-use crate::legendre::{LATITUDE_BLOCK_SIZE, SCALAR_DUCC_BATCH_SIZE, ShtScalar};
+use crate::legendre::{LATITUDE_BLOCK_SIZE, SCALAR_ORDER_BATCH_SIZE, ShtScalar};
 use crate::meridional::CCResamplingPlan;
 
 #[cfg(all(test, feature = "parallel"))]
@@ -70,7 +70,7 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     pub(crate) analysis_same_imag: Vec<T>,
     pub(crate) analysis_opposite_real: Vec<T>,
     pub(crate) analysis_opposite_imag: Vec<T>,
-    pub(crate) ducc_corfac: Vec<T>,
+    pub(crate) scalar_order_correction: Vec<T>,
     pub(crate) compact_theta_sin: Vec<T>,
     pub(crate) compact_theta_cos: Vec<T>,
     pub(crate) compact_ring_indices: Vec<usize>,
@@ -233,7 +233,10 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
                 recurrence_scratch_len,
                 "opposite-parity analysis imaginary spectrum",
             )?,
-            ducc_corfac: allocate_real(recurrence_scratch_len, "DUCC scalar scale correction")?,
+            scalar_order_correction: allocate_real(
+                recurrence_scratch_len,
+                "ordered scalar scale correction",
+            )?,
             compact_theta_sin: allocate_real(
                 recurrence_scratch_len,
                 "compacted latitude sine values",
@@ -631,7 +634,7 @@ impl<T: ShtScalar> ShtWorkspace<T> {
                 })?;
         let recurrence_scratch_len = latitude_count
             .min(LATITUDE_BLOCK_SIZE)
-            .max(SCALAR_DUCC_BATCH_SIZE);
+            .max(SCALAR_ORDER_BATCH_SIZE);
         let ring_group_size = Self::ring_group_size_for_capacity(ntheta, execution_capacity)?;
         let ring_worker_count = ntheta.div_ceil(ring_group_size);
         let analysis_worker_count = execution_capacity.min(analysis_order_count).max(1);

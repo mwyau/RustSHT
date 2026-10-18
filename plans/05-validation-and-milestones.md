@@ -15,7 +15,7 @@
 
 ### D1 — DUCC scalar synthesis execution port
 
-**Existing implementation:** The order-major active/reflected-ring scalar kernel, currently `src/legendre/scalar_ducc.rs`, has SIMD initialization/scaling and parallel harmonic-order scheduling. Rename its internal file/symbols to neutral algorithm-based names under [the active cleanup brief](08-kernel-naming-and-retirement.md), then continue refining; do not restart or reintroduce superseded prefix experiments.
+**Existing implementation:** The order-major active/reflected-ring scalar kernel in `src/legendre/scalar_ordered.rs` has algorithm-based internal names, SIMD initialization/scaling and parallel harmonic-order scheduling. Continue refining it under [the active cleanup brief](08-kernel-naming-and-retirement.md); do not restart or reintroduce superseded prefix experiments.
 
 Complete and harden the f64 scalar GL Legendre synthesis kernel based on DUCC's pinned `sht_inner_loop.h`, `sht.cc`, associated SIMD and `Ylmgen` structures. Reproduce the **complete pathway**: per-order active-ring gathering; north/south reflection and even/odd parity; `fill_a2m`; `init_lambda`; scaled rescaling and `iter_to_ieee` insignificant-prefix advancement; `calc_alm2map`; unrolled vector `alm2map_kernel`; `extract_a2m`; coefficient transformation and output scatter. Avoid unnecessary allocations, duplicate per-order preparation and callbacks in the hot recurrence loop.
 
