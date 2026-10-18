@@ -89,3 +89,7 @@ build/
 /crates/rustsht-fft/benches/results/**/*host-snapshot*
 /crates/rustsht-fft/benches/results/**/build*.stdout
 /crates/rustsht-fft/benches/results/**/test*.stdout
+
+# Large local M6 code-generation and benchmark binaries.
+/reports/data/m6-legendre-redesign/cpu-isa-asm/rustsht-*.s
+/reports/data/m6-p02/precomputed-visitor/candidate-bench
