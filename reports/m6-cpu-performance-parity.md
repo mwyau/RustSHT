@@ -886,7 +886,9 @@ tiles. The sampled durations also identify scalar accumulation as the larger
 of the three sampled prefix components. Keep the scaled fallback and all
 finite-input contributions unchanged. The candidate remains unaccepted
 because the T511 stability control failed and the regression matrix is
-incomplete.
+incomplete. A repaired telemetry acquisition will use the fixed [cache q1
+protocol](data/m6-legendre-redesign/route-timing/coefficient-safety-cache-screen-v2-protocol.md);
+the prior attempt remains diagnostic and is not reused.
 
 A targeted release test also exercised the transition guard with a prepared
 finite coefficient of `1e300` at T511. The guard declined the ordinary route;
