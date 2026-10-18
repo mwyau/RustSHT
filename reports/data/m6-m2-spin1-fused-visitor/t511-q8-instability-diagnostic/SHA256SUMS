@@ -4,3 +4,6 @@
 c44fbd2e79dc6117820dfc9746650046c0c76f11bdf27be3523e1f4fef9b56a1  reports/data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/q8-calls.csv
 7977fc4ca76b140b86575bae0dffa75976e6137c2bfe01683638f575e7724fc9  reports/data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/q1-calls.csv
 a8641456e1fcdf8d37ce3dd583dd1b7cf224306ca792d38c2b75f3bfcac63847  target/m6-m2-spin1-fused-visitor/baseline-python/rustsht/_rustsht.abi3.so
+8f70ccc2af461eab2296895c3eec2fe53962d59b06c27f8fbab2ad3c2aae114e  reports/data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/exact-harness-commands.txt
+c2e58e14fb8eafd054b7e6c99fe0e6e35ef91250ba2eb3b191c8546a13574a93  reports/data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/exact-harness-stability-summary.md
+72cd1986a220573c1a445bd6a6aa96b9df272a6bff1dc833843ee3f274c77739  target/m6-m2-spin1-fused-visitor/source/examples/python_perf_baseline.py
