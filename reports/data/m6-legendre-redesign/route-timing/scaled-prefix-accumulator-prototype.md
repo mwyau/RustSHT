@@ -76,3 +76,17 @@ The predeclared 3% screen gate passed, so this result authorizes a separate
 six-pair q1 matrix. It does not accept the candidate or authorize q8 or
 scalar/spin-1 regression tests. The earlier tile-128 results remain tied to
 their own source and binary hashes.
+
+### T1023 six-pair q1 matrix
+
+All six new pairs passed the fixed gates. The median paired RustSHT ratio was
+`0.568982` with a 95% bootstrap interval of `0.563779–0.571237`; the candidate
+median was 171.624 ms versus 301.582 ms for the clean baseline. Relative-L2
+error against DUCC remained `1.182e-13`. Exact backend samples, all PSI avg10
+readings, peak RSS, and aggregate placement/frequency review are in the
+[T1023 matrix report](scaled-prefix-accumulator-t1023-q1.md).
+
+This passes the T1023 part of the q1 gate, not the full q1 gate. T2047 q1 is
+the next measurement under the frozen matrix protocol. T511 remains the
+required control before q8 or broader regression work. The candidate remains
+experimental and is not routed in production.

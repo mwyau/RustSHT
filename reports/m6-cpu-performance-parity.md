@@ -940,6 +940,10 @@ Clippy passed. A prospectively frozen T1023 q1 one-pair screen then passed all
 stability, correctness, PSI, placement, and interference checks. The candidate
 Rust median was 172.617 ms versus 301.823 ms for the clean baseline (ratio
 0.5719); the single-pair result is not acceptance evidence. CPU-pressure warnings were reviewed under the declared protocol; exact transient readings remain local.
-The predeclared screen gate authorizes a six-pair q1 matrix. The candidate
-remains isolated, and q8 or scalar/spin-1 regression work remains gated on the
-full q1 and T511 control results.
+The separate six-pair T1023 q1 matrix passed every timing, numerical, PSI,
+placement, and interference gate. Its median paired ratio was `0.568982`
+(95% bootstrap interval `0.563779–0.571237`), with candidate and baseline
+medians of 171.624 ms and 301.582 ms. Full samples and CPU-pressure validity decisions are
+in the [T1023 matrix report](data/m6-legendre-redesign/route-timing/scaled-prefix-accumulator-t1023-q1.md).
+The candidate remains isolated. T2047 q1 and the T511 control remain before
+q8 or broader scalar/spin-1 regression work.
