@@ -42,6 +42,17 @@ Never add temporary GitHub Actions workflows or jobs for lockfile generation, de
 - For benchmark records, identify the CPU model, architecture and supported SIMD sets, compiler and relevant software versions, precision, operation, workload dimensions, thread count, elapsed time and aggregate memory use. Follow the artifact rules below for local placement and host-state diagnostics.
 - Record approved scope changes in [00](plans/00-scope-and-decisions.md), API decisions in [03](plans/03-api-and-python.md), and validation evidence in [05](plans/05-validation-and-milestones.md). Avoid unrequested changes to DUCC or spharmgrid. Numerical transforms are implemented; use [05](plans/05-validation-and-milestones.md) for tested operation limits and validation evidence.
 
+## Performance work
+
+- Read `AGENTS.md` and [`PERFORMANCE_STATUS.md`](PERFORMANCE_STATUS.md) before performance work.
+- Use `PERFORMANCE_STATUS.md` as the index of earlier approaches and their measured outcomes. Consult linked reports selectively; do not load the reports directory wholesale.
+- Inspect current production source before implementing a kernel. Do not repeat a rejected approach without addressing its documented cause.
+- Update `PERFORMANCE_STATUS.md` after meaningful implementation or validation milestones, not after minor timing experiments.
+- Prioritize implementation, integration, and correctness over additional benchmark documents.
+- Keep all historical reports, benchmark artifacts, archived patches, and experimental source evidence.
+- Keep raw process, local environment, host-state, CPU-pressure-stall-information (PSI), and machine-specific captures untracked, as required by the artifact policy below.
+- CPU model, architecture, SIMD features, core counts, memory capacity, compiler versions, and useful numerical and timing results may appear in benchmark summaries.
+
 ## Benchmark evidence and local artifacts
 - Commit reproducible benchmark and test configurations, command templates, sanitized experimental source patches and scripts. Permitted hardware and software evidence includes CPU vendor/model, architecture, supported SIMD instruction sets, physical and logical core counts, total installed RAM, relevant hardware specifications, OS/compiler/Rust/Python/dependency versions, and affinity policy expressed by worker count rather than machine-specific CPU IDs.
 - Retain useful scientific evidence: workload dimensions, precision, spin, thread count, library revisions, elapsed-time samples, numerical errors, aggregate peak RSS, speedups, route counts, bottlenecks, profiling summaries and conclusions. Hardware specifications and scientific performance measurements are explicitly allowed. For host-pressure review, summarize the declared protocol, gate outcome and concise interference conclusion. Keep exact transient telemetry local.
