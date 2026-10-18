@@ -32,9 +32,11 @@ screen only. It cannot accept a production route.
 
 ## Validity and decision rules
 
-- Each Rust variant and DUCC series must have population CV at most 5% and
-  first-three/final-two median drift at most 5%. Every sample is retained. An
-  invalid series stops this screen; no retries or sample removal are allowed.
+- Each Rust variant and the DUCC f32 synthesis series must have population CV
+  at most 5% and first-three/final-two median drift at most 5%. The comparer
+  also times DUCC f64 synthesis and analysis; those timings are diagnostic for
+  this scalar f32 synthesis screen. Every sample is retained. An invalid gated
+  series stops this screen; no retries or sample removal are allowed.
 - Linux CPU PSI `some avg10` above 2.00% at preflight or postflight rejects the
   process. Readings from 0.50% through 2.00% are warnings and are reported
   exactly. Actual worker placement, frequency, involuntary context switches,
