@@ -94,6 +94,8 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     #[cfg(all(test, feature = "parallel"))]
     analysis_leaf_probe: Option<Arc<Mutex<Vec<AnalysisLeafObservation>>>>,
     #[cfg(all(test, feature = "parallel"))]
+    scalar_order_leaf_probe: Option<Arc<Mutex<Vec<ScalarOrderLeafObservation>>>>,
+    #[cfg(all(test, feature = "parallel"))]
     profile_normal_blocks: usize,
     #[cfg(all(test, feature = "parallel"))]
     profile_scaled_blocks: usize,
@@ -116,6 +118,17 @@ pub(crate) struct AnalysisLeafObservation {
     pub(crate) normal_blocks: usize,
     pub(crate) scaled_blocks: usize,
     pub(crate) mixed_blocks: usize,
+}
+
+#[cfg(all(test, feature = "parallel"))]
+#[derive(Clone, Debug)]
+pub(crate) struct ScalarOrderLeafObservation {
+    pub(crate) m_start: usize,
+    pub(crate) m_end: usize,
+    pub(crate) active_ring_order_pairs: u128,
+    pub(crate) estimated_work: u128,
+    pub(crate) elapsed_ns: u128,
+    pub(crate) worker: Option<usize>,
 }
 
 #[cfg(all(test, feature = "parallel"))]
@@ -297,6 +310,8 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
             #[cfg(all(test, feature = "parallel"))]
             analysis_leaf_probe: None,
             #[cfg(all(test, feature = "parallel"))]
+            scalar_order_leaf_probe: None,
+            #[cfg(all(test, feature = "parallel"))]
             profile_normal_blocks: 0,
             #[cfg(all(test, feature = "parallel"))]
             profile_scaled_blocks: 0,
@@ -321,6 +336,49 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
     #[cfg(all(test, feature = "parallel"))]
     pub(crate) fn analysis_leaf_profile_enabled(&self) -> bool {
         self.analysis_leaf_probe.is_some()
+    }
+
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn scalar_order_leaf_started(&self) -> Option<Instant> {
+        self.scalar_order_leaf_probe
+            .as_ref()
+            .map(|_| Instant::now())
+    }
+
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn record_scalar_order_leaf(
+        &self,
+        lmax: usize,
+        m_start: usize,
+        m_end: usize,
+        ring_order_limits: &[usize],
+        started: Option<Instant>,
+    ) {
+        let (Some(probe), Some(started)) = (&self.scalar_order_leaf_probe, started) else {
+            return;
+        };
+        let finished = Instant::now();
+        let mut active_ring_order_pairs = 0_u128;
+        let mut estimated_work = 0_u128;
+        for m in m_start..m_end {
+            let active_rings = ring_order_limits
+                .iter()
+                .filter(|&&limit| m <= limit)
+                .count() as u128;
+            active_ring_order_pairs += active_rings;
+            estimated_work += active_rings * (lmax - m + 1) as u128;
+        }
+        probe
+            .lock()
+            .expect("scalar-order leaf profile is not poisoned")
+            .push(ScalarOrderLeafObservation {
+                m_start,
+                m_end,
+                active_ring_order_pairs,
+                estimated_work,
+                elapsed_ns: finished.duration_since(started).as_nanos(),
+                worker: rayon::current_thread_index(),
+            });
     }
 
     #[cfg(all(test, feature = "parallel"))]
@@ -470,6 +528,17 @@ impl<T: ShtScalar> ShtWorkspace<T> {
         let probe = Arc::new(Mutex::new(Vec::new()));
         for recurrence in &mut self.recurrence_workers {
             recurrence.analysis_leaf_probe = Some(Arc::clone(&probe));
+        }
+        probe
+    }
+
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn observe_scalar_order_leaves(
+        &mut self,
+    ) -> Arc<Mutex<Vec<ScalarOrderLeafObservation>>> {
+        let probe = Arc::new(Mutex::new(Vec::new()));
+        for recurrence in &mut self.recurrence_workers {
+            recurrence.scalar_order_leaf_probe = Some(Arc::clone(&probe));
         }
         probe
     }

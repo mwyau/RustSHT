@@ -637,7 +637,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
         #[cfg(feature = "parallel")]
-        let parallel_fft = self.analysis_fft_parallelism_supported()
+        let parallel_fft = self.row_fft_parallelism_supported()
             && workspace
                 .execution_capacity
                 .min(rayon::current_num_threads())

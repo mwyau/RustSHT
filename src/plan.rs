@@ -412,7 +412,7 @@ impl<T: ShtScalar> ShtPlan<T> {
     }
 
     #[cfg(feature = "parallel")]
-    pub(crate) fn analysis_fft_parallelism_supported(&self) -> bool {
+    pub(crate) fn row_fft_parallelism_supported(&self) -> bool {
         self.grid.ntheta() >= 128 && self.grid.nphi() >= 257
     }
 
@@ -501,7 +501,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     .min(crate::legendre::LATITUDE_BLOCK_SIZE)
                     .max(crate::legendre::SCALAR_DUCC_BATCH_SIZE),
             )?;
-            if self.analysis_fft_parallelism_supported() {
+            if self.row_fft_parallelism_supported() {
                 let fft_worker_count = execution_capacity.min(self.grid.ntheta());
                 if fft_worker_count > 1 {
                     workspace.ensure_fft_worker_count(fft_worker_count, &self.fft)?;

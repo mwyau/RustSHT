@@ -5,6 +5,12 @@ use num_complex::Complex;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
+#[cfg(feature = "parallel")]
+use std::collections::VecDeque;
+#[cfg(feature = "parallel")]
+use std::sync::Mutex;
+#[cfg(feature = "parallel")]
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::error::{ShtError, check_len};
 use crate::fft::RealFftWorkspace;
@@ -544,6 +550,67 @@ impl<T: ShtScalar> ShtPlan<T> {
         Ok(())
     }
 
+    fn inverse_synthesis_rows(
+        &self,
+        spectra: &[Complex<T>],
+        output: &mut [T],
+        serial_workspace: &mut RealFftWorkspace<T>,
+        #[cfg(feature = "parallel")] worker_workspaces: &mut [RealFftWorkspace<T>],
+        #[cfg(feature = "parallel")] execution_capacity: usize,
+    ) -> Result<(), ShtError> {
+        let ntheta = self.grid.ntheta();
+        let nphi = self.grid.nphi();
+        let spectrum_len = self.fft.spectrum_len();
+        debug_assert_eq!(spectra.len(), ntheta * spectrum_len);
+        debug_assert_eq!(output.len(), ntheta * nphi);
+
+        #[cfg(feature = "parallel")]
+        {
+            let worker_count = execution_capacity
+                .min(rayon::current_num_threads())
+                .min(worker_workspaces.len())
+                .min(ntheta);
+            if self.row_fft_parallelism_supported() && worker_count > 1 {
+                let rings_per_group = ntheta.div_ceil(worker_count);
+                let output_chunk_len =
+                    rings_per_group
+                        .checked_mul(nphi)
+                        .ok_or(ShtError::IntegerOverflow {
+                            quantity: "synthesis FFT output chunk length",
+                        })?;
+                output
+                    .par_chunks_mut(output_chunk_len)
+                    .zip(worker_workspaces[..worker_count].par_iter_mut())
+                    .enumerate()
+                    .try_for_each(|(group, (output_rows, fft_workspace))| {
+                        let first_ring = group * rings_per_group;
+                        for (offset, output_row) in output_rows.chunks_mut(nphi).enumerate() {
+                            let ring = first_ring + offset;
+                            let spectrum_start = ring * spectrum_len;
+                            self.fft.inverse_series(
+                                &spectra[spectrum_start..spectrum_start + spectrum_len],
+                                output_row,
+                                fft_workspace,
+                            )?;
+                        }
+                        Ok(())
+                    })?;
+                return Ok(());
+            }
+        }
+
+        for ring in 0..ntheta {
+            let spectrum_start = ring * spectrum_len;
+            let output_start = ring * nphi;
+            self.fft.inverse_series(
+                &spectra[spectrum_start..spectrum_start + spectrum_len],
+                &mut output[output_start..output_start + nphi],
+                serial_workspace,
+            )?;
+        }
+        Ok(())
+    }
+
     #[cfg(feature = "parallel")]
     fn synthesize_scalar_ducc_parallel(
         &self,
@@ -572,45 +639,94 @@ impl<T: ShtScalar> ShtPlan<T> {
             return false;
         }
 
-        let order_work_prefix = if lmax >= 511 {
-            let Some(prefix) = workspace.order_work_prefix.get_mut(..=order_count) else {
-                return false;
-            };
-            if build_active_ring_order_work_prefix(
-                lmax,
-                mmax,
-                &workspace.ring_order_limits[..ntheta],
-                prefix,
-            )
-            .is_err()
-            {
-                return false;
-            }
-            Some(&prefix[..])
-        } else {
-            None
-        };
+        #[cfg(all(test, feature = "parallel"))]
+        let phase_probe = workspace.transform_phase_probe();
         let order_spectra = &mut workspace.spin_spectra[..order_spectrum_len];
         order_spectra.fill(Complex::new(T::zero(), T::zero()));
-        let succeeded = self.synthesize_scalar_ducc_order_groups_parallel(
-            alm,
-            order_spectra,
-            &workspace.theta_sin[..ntheta],
-            &workspace.theta_cos[..ntheta],
-            &workspace.ring_order_limits[..ntheta],
-            ntheta,
-            spectrum_len,
-            arch,
-            order_work_prefix,
-            0,
-            order_count,
-            &mut workspace.recurrence_workers[..worker_count],
+        // Match DUCC's one-order dynamic schedule. The queue owns disjoint
+        // output rows, while each Rayon task reuses one recurrence workspace.
+        let mut order_jobs = VecDeque::new();
+        if order_jobs.try_reserve_exact(order_count).is_err() {
+            return false;
+        }
+        for (order, spectra) in order_spectra.chunks_mut(ntheta).enumerate() {
+            order_jobs.push_back((order, spectra));
+        }
+        if order_jobs.len() != order_count {
+            return false;
+        }
+        let order_jobs = Mutex::new(order_jobs);
+        let failed = AtomicBool::new(false);
+        #[cfg(all(test, feature = "parallel"))]
+        let order_started = std::time::Instant::now();
+        workspace.recurrence_workers[..worker_count]
+            .par_iter_mut()
+            .for_each(|recurrence| {
+                #[cfg(all(test, feature = "parallel"))]
+                recurrence.record_active_worker();
+                loop {
+                    if failed.load(Ordering::Relaxed) {
+                        break;
+                    }
+                    let job = order_jobs
+                        .lock()
+                        .expect("scalar synthesis order queue is not poisoned")
+                        .pop_front();
+                    let Some((order, spectra)) = job else {
+                        break;
+                    };
+                    #[cfg(all(test, feature = "parallel"))]
+                    let leaf_started = recurrence.scalar_order_leaf_started();
+                    let succeeded = {
+                        let mut scratch = scalar_ducc_scratch(recurrence);
+                        T::synthesize_scalar_ducc_order_range_dispatched(
+                            arch,
+                            alm,
+                            lmax,
+                            mmax,
+                            order,
+                            order + 1,
+                            self.grid.nphi(),
+                            spectrum_len,
+                            self.grid.phi0(),
+                            &self.sectoral_norms,
+                            &workspace.theta_sin[..ntheta],
+                            &workspace.theta_cos[..ntheta],
+                            &workspace.ring_order_limits[..ntheta],
+                            spectra,
+                            &mut scratch,
+                        )
+                    };
+                    #[cfg(all(test, feature = "parallel"))]
+                    recurrence.record_scalar_order_leaf(
+                        lmax,
+                        order,
+                        order + 1,
+                        &workspace.ring_order_limits[..ntheta],
+                        leaf_started,
+                    );
+                    if !succeeded {
+                        failed.store(true, Ordering::Relaxed);
+                        break;
+                    }
+                }
+            });
+        drop(order_jobs);
+        let succeeded = !failed.load(Ordering::Relaxed);
+        #[cfg(all(test, feature = "parallel"))]
+        crate::workspace::record_transform_phase(
+            &phase_probe,
+            "DUCC active-order recurrence",
+            order_started,
         );
         if !succeeded {
             return false;
         }
 
+        // Keep row-major spectra uncommitted until every dynamic order succeeds.
         const TRANSPOSE_TILE: usize = 32;
+        #[cfg(all(test, feature = "parallel"))]
+        let scatter_started = std::time::Instant::now();
         for ring_start in (0..ntheta).step_by(TRANSPOSE_TILE) {
             let ring_end = (ring_start + TRANSPOSE_TILE).min(ntheta);
             for order_start in (0..order_count).step_by(TRANSPOSE_TILE) {
@@ -624,136 +740,13 @@ impl<T: ShtScalar> ShtPlan<T> {
                 }
             }
         }
-        true
-    }
-
-    #[cfg(feature = "parallel")]
-    #[expect(
-        clippy::too_many_arguments,
-        reason = "Parallel DUCC order groups split one output layout and worker scratch over validated ranges."
-    )]
-    fn synthesize_scalar_ducc_order_groups_parallel(
-        &self,
-        alm: &[Complex<T>],
-        order_spectra: &mut [Complex<T>],
-        theta_sin: &[T],
-        theta_cos: &[T],
-        ring_order_limits: &[usize],
-        ntheta: usize,
-        spectrum_len: usize,
-        arch: pulp::Arch,
-        order_work_prefix: Option<&[u128]>,
-        m_start: usize,
-        m_end: usize,
-        recurrence: &mut [RecurrenceWorkspace<T>],
-    ) -> bool {
-        let order_count = m_end - m_start;
-        if order_count <= 1 || recurrence.len() <= 1 {
-            let Some(recurrence) = recurrence.first_mut() else {
-                return false;
-            };
-            #[cfg(all(test, feature = "parallel"))]
-            recurrence.record_active_worker();
-            let mut scratch = scalar_ducc_scratch(recurrence);
-            let succeeded = T::synthesize_scalar_ducc_order_range_dispatched(
-                arch,
-                alm,
-                self.harmonics.lmax(),
-                self.harmonics.mmax(),
-                m_start,
-                m_end,
-                self.grid.nphi(),
-                spectrum_len,
-                self.grid.phi0(),
-                &self.sectoral_norms,
-                theta_sin,
-                theta_cos,
-                ring_order_limits,
-                order_spectra,
-                &mut scratch,
-            );
-            return succeeded;
-        }
-
-        let left_worker_count = recurrence.len().div_ceil(2);
-        let right_worker_count = recurrence.len() - left_worker_count;
-        let lmax = self.harmonics.lmax();
-        let m_mid = if lmax >= 511 {
-            let Some(prefix) = order_work_prefix else {
-                return false;
-            };
-            if m_end >= prefix.len() {
-                return false;
-            }
-            let Ok(midpoint) = active_ring_weighted_order_midpoint_from_prefix_for_capacity(
-                lmax,
-                m_start,
-                m_end,
-                prefix,
-                left_worker_count,
-                right_worker_count,
-            ) else {
-                return false;
-            };
-            midpoint
-        } else {
-            let Ok(midpoint) = weighted_order_midpoint_for_capacity(
-                lmax,
-                m_start,
-                m_end,
-                left_worker_count,
-                right_worker_count,
-            ) else {
-                return false;
-            };
-            midpoint
-        };
-        let Some(left_len) = (m_mid - m_start).checked_mul(ntheta) else {
-            return false;
-        };
-        let Some(right_len) = (m_end - m_mid).checked_mul(ntheta) else {
-            return false;
-        };
-        if left_len.checked_add(right_len) != Some(order_spectra.len()) {
-            return false;
-        }
-        let (left_spectra, right_spectra) = order_spectra.split_at_mut(left_len);
-        let (left_recurrence, right_recurrence) = recurrence.split_at_mut(left_worker_count);
-        let (left_succeeded, right_succeeded) = rayon::join(
-            || {
-                self.synthesize_scalar_ducc_order_groups_parallel(
-                    alm,
-                    left_spectra,
-                    theta_sin,
-                    theta_cos,
-                    ring_order_limits,
-                    ntheta,
-                    spectrum_len,
-                    arch,
-                    order_work_prefix,
-                    m_start,
-                    m_mid,
-                    left_recurrence,
-                )
-            },
-            || {
-                self.synthesize_scalar_ducc_order_groups_parallel(
-                    alm,
-                    right_spectra,
-                    theta_sin,
-                    theta_cos,
-                    ring_order_limits,
-                    ntheta,
-                    spectrum_len,
-                    arch,
-                    order_work_prefix,
-                    m_mid,
-                    m_end,
-                    right_recurrence,
-                )
-            },
+        #[cfg(all(test, feature = "parallel"))]
+        crate::workspace::record_transform_phase(
+            &phase_probe,
+            "DUCC tiled spectrum scatter",
+            scatter_started,
         );
-        left_succeeded && right_succeeded
+        true
     }
 
     /// Synthesizes one real scalar field into north-to-south row-major samples.
@@ -952,14 +945,15 @@ impl<T: ShtScalar> ShtPlan<T> {
             phase_started = std::time::Instant::now();
         }
 
-        for ring in 0..ntheta {
-            let start = ring * spectrum_len;
-            let ring_spectrum = &workspace.spectra[start..start + spectrum_len];
-            self.fft
-                .inverse_series(ring_spectrum, &mut workspace.row, &mut workspace.fft)?;
-            let output_start = ring * nphi;
-            map[output_start..output_start + nphi].copy_from_slice(&workspace.row);
-        }
+        self.inverse_synthesis_rows(
+            &workspace.spectra,
+            map,
+            &mut workspace.fft,
+            #[cfg(feature = "parallel")]
+            &mut workspace.fft_worker_workspaces,
+            #[cfg(feature = "parallel")]
+            workspace.execution_capacity,
+        )?;
         #[cfg(all(test, feature = "parallel"))]
         crate::workspace::record_transform_phase(
             &phase_probe,
@@ -1805,7 +1799,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             phase_started = std::time::Instant::now();
         }
         #[cfg(feature = "parallel")]
-        let parallel_fft = self.analysis_fft_parallelism_supported()
+        let parallel_fft = self.row_fft_parallelism_supported()
             && workspace
                 .execution_capacity
                 .min(rayon::current_num_threads())

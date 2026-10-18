@@ -1635,7 +1635,7 @@ fn scalar_ducc_parallel_orders_match_serial_and_ring_group_synthesis() {
 
 #[cfg(feature = "parallel")]
 #[test]
-fn scalar_ducc_parallel_orders_use_active_work_prefix_above_t511() {
+fn scalar_ducc_parallel_orders_above_t511_match_serial_and_ring_group() {
     let plan = make_plan(511, 128, 512, 257, 0.23);
     assert!(plan.scalar_legendre_table.set(None).is_ok());
     let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
@@ -4496,8 +4496,42 @@ fn scalar_ducc_parallel_order_timing_screen() {
         }
         assert!(relative_l2_real(&q1_map, &q8_map) < 4e-13);
         assert!(relative_l2_real(&q1_map, &q4_map) < 4e-13);
+
+        let phase_probe = q8_workspace.observe_transform_phases();
+        let order_leaf_probe = q8_workspace.observe_scalar_order_leaves();
+        eight_threads
+            .install(|| plan.synthesis_into(&alm, &mut q8_map, &mut q8_workspace))
+            .unwrap();
+        assert!(relative_l2_real(&q1_map, &q8_map) < 4e-13);
+        let phases = phase_probe.lock().unwrap().clone();
+        let order_leaves = order_leaf_probe.lock().unwrap().clone();
+        let mut worker_work = std::collections::BTreeMap::<usize, (usize, u128, u128, u128)>::new();
+        for leaf in &order_leaves {
+            debug_assert!(leaf.m_start < leaf.m_end);
+            let work = worker_work
+                .entry(leaf.worker.unwrap_or(usize::MAX))
+                .or_default();
+            work.0 += leaf.m_end - leaf.m_start;
+            work.1 += leaf.active_ring_order_pairs;
+            work.2 += leaf.estimated_work;
+            work.3 += leaf.elapsed_ns;
+        }
+        let worker_summary: Vec<_> = worker_work
+            .into_iter()
+            .map(
+                |(worker, (orders, active_pairs, estimated_work, elapsed_ns))| {
+                    (
+                        worker,
+                        orders,
+                        active_pairs,
+                        estimated_work,
+                        elapsed_ns as f64 * 1e-6,
+                    )
+                },
+            )
+            .collect();
         eprintln!(
-            "SCALAR_DUCC_T{lmax} grid={ntheta}x{nphi} f64 full synthesis q1_ms={q1_samples:?} q4_ms={q4_samples:?} q8_ms={q8_samples:?}"
+            "SCALAR_DUCC_T{lmax} grid={ntheta}x{nphi} f64 full synthesis q1_ms={q1_samples:?} q4_ms={q4_samples:?} q8_ms={q8_samples:?} phases={phases:?} order_work_by_worker={worker_summary:?}"
         );
     };
 
