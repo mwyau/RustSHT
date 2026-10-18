@@ -1100,3 +1100,15 @@ Most safe-prefix work was scaled arithmetic. The next kernel work remains
 on the measured transition and scaled-prefix costs, with the lane accumulator
 rejected. The previously matched T2047 baseline ratios remain 9.06x
 RustSHT/DUCC at q1 and 13.97x at q8; these diagnostics do not refresh them.
+
+## Tile-128 SIMD-prefix correctness
+
+The isolated SIMD-prefix source passed the full release workspace suites with
+and without default features, formatting, Clippy, and the opt-in T511/T1023/
+T2047 GL/CC/F1 analytic and selected DUCC comparisons. Its source hash differs
+from the scalar-prefix candidate that passed six-pair q1 comparisons. The
+SIMD-prefix timing screen remains inconclusive because the DUCC series failed
+its fixed stability limits; these correctness results do not change either
+candidate's performance status. Full test counts, high-bandlimit errors, and
+binary hashes are in the
+[correctness record](data/m6-legendre-redesign/route-timing/simd-prefix-candidate-correctness-v1.md).
