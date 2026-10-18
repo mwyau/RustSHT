@@ -51,6 +51,22 @@ or SHTns mate. The experiment is unaccepted and production routing is
 unchanged. Its source delta, hashes, route counts, and validation results are
 in the [exponent-epoch report](data/m6-legendre-redesign/route-timing/prefix-exponent-epoch-accumulator.md).
 
+The same isolated source passed six-pair q1 comparisons against the clean
+baseline at T1023 and T2047. Candidate/baseline median ratios were 0.594264
+(95% interval 0.591499–0.596868) and 0.414702 (0.410220–0.416014), with
+candidate medians of 179.827 ms and 1408.927 ms. Candidate latency was 3.505×
+and 3.751× DUCC, respectively. The high-resolution numerical checks passed.
+The T511 q1 control is unresolved: pair 4's candidate ran before pair 3's,
+and the pair 3 candidate label had an older warning file with overwritten
+captures. No T511 interval is valid, and the source remains isolated. Exact
+high-resolution pressure readings, timing samples, memory measurements and
+the T511 validity decision are in the
+[q1 results](data/m6-legendre-redesign/route-timing/exponent-epoch-q1-screen-v1-results.md).
+The T2047 profile assigns about half of the full call to the pre-suffix
+transition; scaled-prefix work remains the next measured target. A separate
+[q8 screen protocol](data/m6-legendre-redesign/route-timing/exponent-epoch-q8-screen-v1-protocol.md)
+is frozen before q8 acquisition.
+
 A route decomposition and sampled prefix components are in the
 [T2047 route profile](data/m6-legendre-redesign/route-timing/scaled-prefix-accumulator-route-profile-t2047.md).
 A bounded T511 q8 baseline-versus-baseline diagnostic found one
