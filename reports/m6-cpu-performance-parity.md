@@ -1174,6 +1174,12 @@ existing numerical, CV, drift, CPU-pressure, and interference gates before
 any candidate process runs. It leaves the five measured samples and every
 acceptance threshold unchanged; no v1 result is reclassified. The harness
 patch applies cleanly and its patched script passes Python syntax compilation.
-The v2 baseline controls have not run. The candidate remains isolated until
-both pass. See the [v2 protocol](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-q1-protocol-v2.md)
+See the [v2 protocol](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-q1-protocol-v2.md)
 and [explicit warm-up patch](data/m6-legendre-redesign/route-timing/prefix-fusion-explicit-warmup-v2.patch).
+Both baseline-only T1023 controls subsequently passed. Their RustSHT/DUCC
+median ratios were 6.0033 and 5.9637, with numerical errors below
+`1.2e-13` relative L2; these are baseline controls, not candidate comparisons.
+All CV and drift gates passed, including the second DUCC series at 4.7351%
+drift. The candidate matrix may now proceed under v2. Detailed samples,
+aggregate memory, provenance, and validity review are in the
+[baseline-control report](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-v2-baseline-controls-t1023.md).
