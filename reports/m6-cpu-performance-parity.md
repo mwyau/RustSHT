@@ -698,4 +698,11 @@ binary hashes, raw processes, test summary, and stability calculations are in
 result. Together with the T511 candidate postflight PSI of 0.75, it records
 two host-gate failures; the tile-128 matrix is closed without retries. The
 baseline-only process record and verified binary hashes are in
-[`the T1023 screen`](data/m6-legendre-redesign/tile128-t1023-screen/).
+[`the T1023 screen`](data/m6-legendre-redesign/tile128-t1023-screen/). Disassembly of the tile-128 candidate confirms a four-lane x86-v3 FMA suffix
+with recurrence state and accumulators in YMM registers and no YMM spill in
+the ordinary loop. The degree loop still broadcasts coefficient values for
+each vector block and executes slice-bound checks per pair. These codegen
+features identify possible instruction overhead, but do not attribute the
+tile-size timing difference. The symbol, instruction range, and reproduction
+details are in
+[`the candidate assembly note`](data/m6-legendre-redesign/tile128-screen/assembly.md).
