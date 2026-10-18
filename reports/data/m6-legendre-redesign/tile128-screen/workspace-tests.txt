@@ -1,0 +1,18 @@
+Tile-128 candidate workspace tests
+=================================
+
+Command: cargo test --workspace --all-features
+Worktree: <local-home-path>
+Base commit: 739275d20987fec35506916cb682f961e8a7ffaf
+Candidate source patch SHA-256: bd5ce130e0b619f87660eaa80d04e004605fcabc35e6769d3ca18051d0f0b2c7
+Compiler: rustc 1.99.0 (b940084d7 2026-09-28), LLVM 23.1.1
+
+Results:
+- Rust library unit tests: 200 passed, 14 ignored, 0 failed.
+- extreme_fft_scaling integration tests: 4 passed, 0 failed.
+- f32 integration tests: 11 passed, 1 ignored, 0 failed.
+- workspace_compatibility integration test: 1 passed, 0 failed.
+- Python binding unit tests: 0 tests collected.
+- Doc tests: 0 tests collected. The ignored tests are opt-in high-bandlimit or profiling tests. The complete
+captured test output was returned by the local command session; this file
+records its summary and exact source identity.

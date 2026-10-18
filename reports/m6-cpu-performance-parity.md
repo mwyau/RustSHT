@@ -690,6 +690,8 @@ was 99,184 KiB for the candidate and 99,144 KiB for baseline. The CPU-pressure c
 accepted performance comparison. No retry, T1023/T2047 cell, q8 cell, analysis
 cell, or production change followed. This T511 result is a raw positive signal
 for the 128-slot tile; its numerical, performance, and regression controls
-remain incomplete. The source patch, binary hashes, raw processes, and
-stability calculations are in
+remain incomplete. The candidate workspace suite passed with the 128-slot
+capacity: 200 unit tests, 4 FFT-scaling tests, 11 f32 tests, and 1
+workspace-compatibility test; 14 opt-in tests were ignored. The source patch,
+binary hashes, raw processes, test summary, and stability calculations are in
 [`the tile-128 screen`](data/m6-legendre-redesign/tile128-screen/).
