@@ -1,0 +1,19 @@
+--- a/src/legendre/synthesis_fast.rs
++++ b/src/legendre/synthesis_fast.rs
+@@ -552,13 +552,9 @@
+         for pair in 0..pair_count {
+             #[cfg(test)]
+             update_route_counts(|counts| counts.prefix_pair_lanes += current.len() as u64);
+-            let mut normalize = pair > 0 && !normal_range;
+-            if pair > 0 && normal_range {
+-                normalize = scalar::pair_lanes_need_scaling(simd, previous, current);
+-                if !normalize
+-                    && lane_values_in_normal_range(previous)
+-                    && lane_values_in_normal_range(current)
+-                {
++            let normalize = pair > 0 && scalar::pair_lanes_need_scaling(simd, previous, current);
++            if pair > 0 && normal_range && !normalize {
++                if lane_values_in_normal_range(previous) && lane_values_in_normal_range(current) {
+                     if !materialize_scaled_accumulator(
+                         sum_re,
+                         sum_im,
