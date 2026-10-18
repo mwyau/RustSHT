@@ -728,3 +728,15 @@ preserves every scaled-prefix contribution. The next kernel experiment should
 compare one versus two paired-degree steps per SIMD iteration on this isolated
 candidate. It remains unaccepted until paired whole-transform timing passes
 the stability protocol and the complete regression control matrix.
+
+### Two-pair suffix unroll (unmeasured, unaccepted)
+
+A two-pair SIMD suffix variant and focused odd/even pair-count test were
+prepared in the isolated worktree. The five non-ignored fast-kernel tests
+passed, including the one-lane tail and both pair-count parities. After the
+priority shifted to clean-baseline T1023/T2047 measurements, its release
+extension build was interrupted while `rustsht` and `rustsht-python` were
+compiling. The package extension remained the one-pair tile-128 artifact
+(`5eeff4…`); the unroll variant was not imported or benchmarked. Its complete
+source, patch, hashes, test result, and interrupted-build record are in
+[`the unroll-2 screen`](data/m6-legendre-redesign/unroll2-screen/status.md). This is preserved experimental work with no performance result.

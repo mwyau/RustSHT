@@ -1,0 +1,17 @@
+candidate_head=739275d20987fec35506916cb682f961e8a7ffaf
+source_status:
+ M src/legendre/mod.rs
+ M src/transform.rs
+ M src/workspace.rs
+?? src/legendre/synthesis_fast.rs
+source_hashes:
+27bbd1742f9980168f780c6c5bc2c60a19c3e13d8d97f31d0329f40aa7824bc4  src/legendre/synthesis_fast.rs
+a821bd6790fd83b63eec61074f34bae38c87340684e79aded31224c33527b430  src/legendre/mod.rs
+548c96de91242f61674a9795771f9a07ef753de1d8747a1032e107747c323e34  src/transform.rs
+6958cc0b672a1d3a0446fae04ba8de9ef9d5d011b5b9ea232b91d26f3bd2a819  src/workspace.rs
+07e3ac929c8f1f6b708b36810accef15d5a9e71918f35d541246c6df15da26d1  Cargo.lock
+candidate_package_extension=5eeff4dd2087238f18278928ad2af84437d21b7caa38eb360783f9b627cf8620  python/rustsht/_rustsht.abi3.so
+preserved_onepair_extension=5eeff4dd2087238f18278928ad2af84437d21b7caa38eb360783f9b627cf8620  <local-home-path>
+psi:
+CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
+CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
