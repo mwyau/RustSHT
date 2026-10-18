@@ -1,0 +1,7 @@
+size,version,spin,threads,backend,operation,samples_ms,median_ms,population_cv_pct,first3_median_ms,last2_median_ms,drift_pct_of_median,process_elapsed_s,process_max_rss_kib,relative_l2_vs_ducc
+511,baseline,0,1,rustsht,synthesis,40.372|40.089|40.026|40.228|40.394,40.228,0.3658,40.089,40.311,0.5519,33.55,99304,6.632e-14
+511,candidate,0,1,rustsht,synthesis,118.861|118.984|119.013|118.950|119.088,118.984,0.0627,118.984,119.019,0.0294,34.18,98996,6.632e-14
+511,baseline,0,1,ducc,synthesis,7.608|7.502|7.613|7.548|7.565,7.565,0.5412,7.608,7.556,0.6808,33.55,99304,
+511,candidate,0,1,ducc,synthesis,7.630|7.544|7.532|7.538|7.555,7.544,0.4751,7.544,7.546,0.0331,34.18,98996,
+511,baseline,0,1,shtns_adapter,synthesis,4.669|4.653|4.652|4.693|4.693,4.669,0.3891,4.653,4.693,0.8567,33.55,99304,4.286e-14
+511,candidate,0,1,shtns_adapter,synthesis,4.723|4.657|4.672|4.653|4.650,4.657,0.5797,4.672,4.652,0.4402,34.18,98996,4.286e-14

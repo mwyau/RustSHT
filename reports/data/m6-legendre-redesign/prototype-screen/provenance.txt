@@ -1,0 +1,1 @@
+CPU-frequency telemetry was retained only in local diagnostics. Per process: preflight PSI and competitor check; correctness comparison; one warm-up then five timed Rust/DUCC/SHTns calls; GNU time; postflight PSI; apply CV, drift, and postflight-pressure gates before next process.

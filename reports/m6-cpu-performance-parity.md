@@ -632,3 +632,25 @@ transform latency. This is one diagnostic cell, not a matched acceptance
 matrix or a revalidation of the historical T1023/T2047 baselines. Raw samples,
 host snapshots, refusal, provenance, hashes, and reproduction scripts are in
 [`the clean baseline evidence`](data/m6-legendre-redesign/baseline/summary.md).
+
+## M2 native scalar synthesis prototype (rejected implementation; screen incomplete)
+
+The isolated f64 GL prototype packs active rings into reusable 256-lane tiles,
+keeps the scaled recurrence and its accumulation together until every lane is
+ordinary, then continues with a one-channel SIMD recurrence/accumulator. A tile
+that cannot complete the route stages the robust paired visitor result before
+one scatter. The source snapshot, patch, test code, build provenance and raw
+process records are retained in
+[`the prototype screen`](data/m6-legendre-redesign/prototype-screen/). The single stable T511 q1 full-transform control numerically matched both the
+clean baseline and DUCC (`relative L2 = 6.632e-14`). Its Rust median rose from
+40.228 ms to 118.984 ms (2.96x; +195.8%). DUCC and SHTns timings were unchanged
+within measurement noise. This exceeds the 2% operation regression guard by a
+large margin, so this implementation is rejected as a performance candidate;
+it is not accepted into production. The comparison used clean baseline source
+`91c2cb8` and prototype base `739275d` plus the archived patch. The host and
+timing gates passed for both T511 processes. The CPU-pressure check failed the declared gate; exact transient readings remain local. No retry was made. T1023/T2047 cells and the complete
+control matrix therefore remain unmeasured. This result rejects the current implementation, not the broader recurrence
+and accumulation hypothesis. The next step is to account for fast-route
+success, scaled-prefix length, and fallback work by order and latitude tile,
+then make at most one source change that removes a measured source of duplicate
+work. No further performance claim should be made from this incomplete screen.
