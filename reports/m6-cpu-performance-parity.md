@@ -694,4 +694,8 @@ remain incomplete. The candidate workspace suite passed with the 128-slot
 capacity: 200 unit tests, 4 FFT-scaling tests, 11 f32 tests, and 1
 workspace-compatibility test; 14 opt-in tests were ignored. The source patch,
 binary hashes, raw processes, test summary, and stability calculations are in
-[`the tile-128 screen`](data/m6-legendre-redesign/tile128-screen/).
+[`the tile-128 screen`](data/m6-legendre-redesign/tile128-screen/). A T1023 q1 follow-up stopped after its baseline process. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The candidate was not launched. This cell has no paired timing
+result. Together with the T511 candidate postflight PSI of 0.75, it records
+two host-gate failures; the tile-128 matrix is closed without retries. The
+baseline-only process record and verified binary hashes are in
+[`the T1023 screen`](data/m6-legendre-redesign/tile128-t1023-screen/).
