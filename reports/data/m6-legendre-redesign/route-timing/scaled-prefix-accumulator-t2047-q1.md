@@ -4,7 +4,7 @@
 
 All six fresh-process pairs passed the predeclared timing, numerical, PSI, placement, and interference gates. The T2047 candidate/baseline median paired ratio was `0.407892` with a 95% bootstrap interval of `0.407274–0.408108` (50,000 resamples, seed `20261017`). Candidate RustSHT latency was 1370.613 ms at the median of process medians, versus 3360.075 ms for the clean baseline (59.21% lower).
 
-Together with the T1023 matrix, both high-resolution q1 criteria pass. The T511 control remains required before the q1 gate can authorize q8 and broader regressions. The kernel remains experimental; these results do not route it in production.
+Together with the T1023 matrix, both high-resolution q1 criteria pass. The T511 control later stopped at baseline pair 03 because the DUCC series failed stability; the full q1 gate is unresolved. The kernel remains experimental; these results do not route it in production.
 
 At T2047 the candidate measured 3.666x DUCC and 5.040x SHTns using the median of candidate process medians; RustSHT remains materially slower. RustSHT output relative-L2 error against DUCC was `3.015e-13` and maximum absolute error was `1.110e-12` in every process. SHTns/DUCC relative-L2 error was `2.425e-13`.
 
@@ -82,4 +82,4 @@ DUCC series passed the fixed CV and drift limits, so the measurement is
 preserved. The RustSHT paired comparison uses the Rust medians and includes no
 DUCC timing adjustment.
 
-The T2047 cell passes its fixed q1 timing and numerical criteria. Both T1023 and T2047 candidate/baseline intervals meet the high-resolution portion of protocol v1. The remaining q1 gate is the required six-pair T511 scalar control. These whole-transform data do not break execution into route timings; no route-time percentage is inferred from the earlier, different-source diagnostic. No q8, spin-1, or broader regression measurements are included.
+The T2047 cell passes its fixed q1 timing and numerical criteria. Both T1023 and T2047 candidate/baseline intervals meet the high-resolution portion of protocol v1. The six-pair T511 scalar control stopped at baseline pair 03 because the DUCC series exceeded the fixed CV and drift limits; see the [stopped T511 result](scaled-prefix-accumulator-t511-q1-stopped.md). These whole-transform data do not break execution into route timings; no route-time percentage is inferred from the earlier, different-source diagnostic. No q8, spin-1, or broader regression measurements are included.

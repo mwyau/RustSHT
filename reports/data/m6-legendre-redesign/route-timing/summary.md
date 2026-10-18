@@ -174,5 +174,8 @@ error `1.110e-12`. Full samples and CPU-pressure validity decisions are in the
 
 These timings cover the complete transform and do not give route-resolved
 times for the accumulator source. The earlier prefix component timings above
-belong to a different binary. The new source's six-pair T511 control is next;
-no production route, q8 matrix, or spin-1 regression result is accepted yet.
+belong to a different binary. The accumulator's six-pair T511 control stopped
+at baseline pair 03 because the DUCC series failed the fixed CV and drift
+limits; no candidate mate or retry ran. The complete samples and CPU-pressure validity decisions are in the [stopped T511 record](scaled-prefix-accumulator-t511-q1-stopped.md).
+The control is unresolved, and no production route, q8 matrix, or spin-1
+regression result is accepted.

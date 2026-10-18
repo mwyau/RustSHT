@@ -93,7 +93,9 @@ relative-L2 error `3.015e-13` and maximum absolute error `1.110e-12` against
 DUCC. Full timing samples, resources, and CPU-pressure validity decisions are in the
 [T2047 matrix report](scaled-prefix-accumulator-t2047-q1.md).
 
-The high-resolution part of the q1 gate passes. The six-pair T511 scalar
-control is the next required measurement before q8 or broader scalar/spin-1
-regression work. The candidate remains experimental and is not routed in
-production.
+The high-resolution part of the q1 gate passes. The T511 scalar control stopped
+at baseline pair 03 because the DUCC series failed stability (CV `5.6218%`,
+drift `8.2650%`); RustSHT and SHTns passed in that process. No retry or
+candidate mate ran. The T511 control remains unresolved, so q8 and broader
+scalar/spin-1 regression work are gated. The candidate remains experimental
+and is not routed in production. See the [stopped T511 record](scaled-prefix-accumulator-t511-q1-stopped.md).

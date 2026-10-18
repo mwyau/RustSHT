@@ -33,11 +33,14 @@ so that source was not accepted. A later isolated source added scaled-prefix
 accumulation and passed six-pair q1 comparisons at T1023 and T2047 with ratios
 0.568982 (95% interval 0.563779–0.571237) and 0.407892 (0.407274–0.408108).
 At T2047, its median latency was 1370.613 ms versus 3360.075 ms for the clean
-baseline, and 3.666x the DUCC median. Its T511 q1 control is still required;
-the source remains experimental. The complete matrices and numerical results
+baseline, and 3.666x the DUCC median. Its T511 q1 control stopped at baseline
+pair 03 because the DUCC series failed its stability limits; no candidate mate
+or retry ran. The source remains experimental. The complete matrices and numerical results
 are in the [T1023](data/m6-legendre-redesign/route-timing/scaled-prefix-accumulator-t1023-q1.md)
 and [T2047](data/m6-legendre-redesign/route-timing/scaled-prefix-accumulator-t2047-q1.md)
-reports. A bounded T511 q8 baseline-versus-baseline diagnostic found one
+reports; the stopped control is in the
+[T511 record](data/m6-legendre-redesign/route-timing/scaled-prefix-accumulator-t511-q1-stopped.md).
+A bounded T511 q8 baseline-versus-baseline diagnostic found one
 stable and one unstable process under the one-warm-up protocol; that q8
 stability issue remains unresolved. The earlier paired q1 result is in
 [the v3 comparison](data/m6-legendre-redesign/paired-q1-128/summary.md), and
@@ -955,5 +958,7 @@ its ratio was `0.407892` (95% interval `0.407274–0.408108`), with medians of
 maximum absolute error was `1.110e-12`. Full timing samples, resources and
 CPU-pressure validity decisions are in the [T1023](data/m6-legendre-redesign/route-timing/scaled-prefix-accumulator-t1023-q1.md)
 and [T2047](data/m6-legendre-redesign/route-timing/scaled-prefix-accumulator-t2047-q1.md)
-reports. The candidate remains isolated. Its T511 q1 control must pass before
-q8 or broader scalar/spin-1 regression measurements.
+reports. The candidate remains isolated. Its T511 control stopped because the
+DUCC baseline series exceeded the fixed stability limits, so the full q1 gate
+is unresolved and q8 or broader scalar/spin-1 regression measurements did not
+run.
