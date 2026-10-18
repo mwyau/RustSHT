@@ -18,7 +18,7 @@ run_case() {
     local ntheta=$((lmax + 1))
     local nphi=$((2 * lmax + 3))
 
-    printf '\nvariant=%s T%s q1 cpus=${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}\n' "$variant" "$lmax"
+    printf '\nvariant=%s T%s q1 worker-sized CPU affinity\n' "$variant" "$lmax"
     /usr/bin/time -f 'elapsed_s=%e max_rss_kib=%M' \
         taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" RUSTSHT_CPUSET} "$binary" 1 "$lmax" 1 analysis GL STANDARD \
         "$ntheta" "$nphi" "$lmax" requested-only

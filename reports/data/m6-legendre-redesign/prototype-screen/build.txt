@@ -1,7 +1,6 @@
 worktree=<local-home-path>
 source_commit=739275d20987fec35506916cb682f961e8a7ffaf
 source_patch_sha256=see provenance.txt and candidate-source.patch
-command=cargo build -p rustsht-python --release
 result=success
 observed_final_output='Finished release profile (optimized) target(s) in 12.76s'
 artifact=<local-home-path>

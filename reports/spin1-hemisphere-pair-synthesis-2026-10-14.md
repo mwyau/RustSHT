@@ -28,7 +28,7 @@ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" cargo test --release -p rusts
   benchmark_spin1_hemisphere_pair_dispatch -- --ignored --nocapture
 ```
 
-Each raw process log contains seven timing samples per method and case. [`process-medians.csv`](data/spin1-hemisphere-pairing-2026-10-14/process-medians.csv) contains per-process medians and paired sample changes; [`process-01.log`](data/spin1-hemisphere-pairing-2026-10-14/process-01.log) through [`process-05.log`](data/spin1-hemisphere-pairing-2026-10-14/process-05.log) preserve the raw samples.
+The report retains per-process medians and paired changes. Raw process logs remain local and untracked.
 
 ## Whole-transform results
 

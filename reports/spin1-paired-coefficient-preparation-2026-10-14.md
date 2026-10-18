@@ -25,8 +25,7 @@ The release baseline is source commit `726750e`, Rust `1.99.0`, `opt-level=3`,
 `phi0=0.37`, reused plan/workspace, one warm-up and five timed transforms per
 process. Five fresh q8 processes gave T511 median `19.119 ms` (range
 `18.269–20.259 ms`) and T720 median `47.162 ms` (range `46.342–48.210 ms`). Three q1 process medians were `57.241 ms` at T511 and `133.151 ms` at T720;
-the q1 route does not build or read the parallel coefficient cache. Exact
-samples are in [`baseline-process-samples.txt`](data/spin1-paired-coefficient-preparation-2026-10-14/baseline-process-samples.txt).
+the q1 route does not build or read the parallel coefficient cache. The report retains the numerical baseline summary; raw process samples remain local and untracked.
 
 instruction references across five q8 T511 samples. The AVX2
 `FusedPreparedSynthesisPairBlock` accounted for `1,457,064,728` self

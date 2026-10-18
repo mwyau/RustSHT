@@ -12,7 +12,8 @@ OUT = ROOT / "reports/data/m6-m1-scheduling"
 PYTHON = ROOT / ".venv/bin/python"
 DUCC = ROOT / "target/m6-references/ducc-build"
 TMP = ROOT / "target/tmp"
-CPUS = os.environ["RUSTSHT_CPUSET"]
+
+CPUS = os.environ["RUSTSHT_CPUSET_Q8"]
 THREADS = 8
 L = 2047
 NT = 2048

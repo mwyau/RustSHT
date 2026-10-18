@@ -14,8 +14,7 @@ Five alternating release-process pairs compared the candidate with commit
 `541ac1b` at T511 and T1023, using f64 spin-1 GL STANDARD analysis and the
 reused-plan/workspace native benchmark. Each process ran one warmup and five
 timed calls at full `mmax`. q1 was pinned to one CPU core; q8 used 8 pinned CPU cores. Since the
-first q8 ranges crossed zero, five additional q8 pairs measured both sizes. The shared x86-64 CPU host allowed 32 pinned CPU cores and had no CPU quota; the
-CPUs were not isolated. Rust was `1.99.0`, LLVM `23.1.1`, and Pulp used
+first q8 ranges crossed zero, five additional q8 pairs measured both sizes. The shared x86-64 host had no CPU quota; worker affinity was not isolated. Rust was `1.99.0`, LLVM `23.1.1`, and Pulp used
 portable runtime dispatch (AVX2/FMA on this host) without `target-cpu=native`. Negative paired changes favor the candidate. q1 entries summarize five pairs;
 q8 entries summarize ten pairs. Process medians and paired changes are listed
 separately.
@@ -32,7 +31,7 @@ neutral at T511 and slightly faster at T1023, with ranges that still cross
 zero. The process peak RSS medians are within 52 KiB of baseline across these
 cases; no workspace arrays were added. Initial and repeated samples are in
 [`paired-results.tsv`](data/spin1-analysis-range-check-fusion-screen-2026-10-15/paired-results.tsv)
-and [`q8-results.tsv`](data/spin1-analysis-range-check-fusion-screen-2026-10-15/q8-results.tsv).
+and [`q8-results.tsv`](data/spin1-analysis-range-check-fusion-screen-2026-10-15/q8-results.tsv). The [paired-process provenance](data/spin1-analysis-range-check-fusion-screen-2026-10-15/paired-process-provenance.md) retains binary hashes and source identity.
 
 ## Current T1023 comparison with DUCC
 
@@ -50,8 +49,7 @@ core measurements.
 One DUCC q1 process contained a much slower inner run, widening the q1 ratio
 range. The q8 comparison is narrower. The ratio describes the candidate's
 current timing against this DUCC run; it does not isolate the code change's
-effect on the ratio. Raw commands, logs, process resource data, versions and
-binary hash are in
+effect on the ratio. Numerical results, version information and binary identity are in
 [`the DUCC comparison data`](data/spin1-analysis-range-check-fusion-screen-2026-10-15/ducc-comparison/).
 
 ## Validation

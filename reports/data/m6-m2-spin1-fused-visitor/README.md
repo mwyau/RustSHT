@@ -111,8 +111,7 @@ build or benchmark process. All preflight PSI values met the .50 limit. CPU-pres
 totals for the entire process. The unchanged harness does not expose
 per-call involuntary context-switch deltas. Preflight CPU frequency snapshots
 and the full raw logs are in `t511-q8-instability-diagnostic/`. A
-contemporaneous root-side cgroup check reported unlimited `cpu.max` and zero
-throttling. Thermal measurements were unavailable. The cause of the timing
+a contemporaneous review found no cgroup CPU quota constraint. Detailed cgroup snapshots remain local and untracked. Thermal measurements were unavailable. The cause of the timing
 drift remains unresolved. Under the prospective rule, both exact-harness q1 processes pass the CV and
 drift checks: their first-three/final-two drift is 0.22% and 0.003%. Both q8
 processes fail both checks: drift is 81.1% and 54.2%, alongside CVs of 48.96%

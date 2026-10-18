@@ -1,6 +1,6 @@
 # Additional atmospheric-resolution measurements
 
-This note records f32, q16, analysis- and synthesis-phase, and analysis-leaf measurements added after the initial f64 q1/q8 matrix. Raw outputs and runner scripts remain beside this file.
+This note records f32, q16, analysis- and synthesis-phase, and analysis-leaf measurements added after the initial f64 q1/q8 matrix. Benchmark sample files and runner scripts remain beside this file; raw host and process captures remain local and untracked.
 
 ## Environment and scope
 
@@ -59,7 +59,7 @@ The measurement timer also records order-spectrum preparation and setup phases; 
 | T2047 | 2048×4096 | 0 | 3,128 / 752 | 3.813 / 3.783 | 3,104 / 728 | 20.141 / 20.218 | 96.8% | 2.7% |
 | T2047 | 2048×4096 | 1 | 4,184 / 989 | 7.904 / 8.234 | 4,135 / 936 | 40.680 / 41.106 | 94.7% | 4.2% |
 
-The q8 Legendre phase remains dominant on these matrix-matched grids. The largest FFT share is spin 1 at T720, where the two serial inverse transforms account for 14.5% of diagnostic wall time; at T1279 and T2047 they account for 5.6% and 4.2%. The earlier successful odd-longitude diagnostic is preserved as `profiles/synthesis-phase-profile-odd-longitudes.log`. Its odd counts use the full-complex FFT path, so it is excluded from these conclusions. Run metadata includes the exact diagnostic binary hash, source diff hash, compiler, CPU, affinity, and host load in `profiles/synthesis-phase-profile-metadata.txt`.
+The q8 Legendre phase remains dominant on these matrix-matched grids. The largest FFT share is spin 1 at T720, where the two serial inverse transforms account for 14.5% of diagnostic wall time; at T1279 and T2047 they account for 5.6% and 4.2%. The earlier successful odd-longitude diagnostic is preserved as `profiles/synthesis-phase-profile-odd-longitudes.log`. Its odd counts use the full-complex FFT path, so it is excluded from these conclusions. Sanitized source, binary, compiler, architecture, and SIMD provenance is in `profiles/synthesis-phase-profile-provenance.md`. The exact invalid m=0 attempt is marked and excluded there; raw affinity and host-load captures remain local.
 
 ## Analysis-leaf profile
 
@@ -85,4 +85,4 @@ TMPDIR=target/rustsht-test-tmp taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}
 TMPDIR=target/rustsht-test-tmp taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" cargo test --release --lib m5_analysis_leaf_imbalance_profile -- --ignored --test-threads=1 --nocapture
 ```
 
-The exact raw profile logs are in `profiles/`. These are diagnostic timings from a shared host, not alternating candidate/baseline pairs. The initial synthesis attempt with invalid nonreal `m=0` B coefficients is also retained with an explicit filename and is not used in the report.
+The phase and leaf timing samples are in `profiles/`. They are diagnostic measurements, not alternating candidate/baseline pairs. The initial synthesis attempt with invalid nonreal `m=0` B coefficients is also retained with an explicit filename and is not used in the report.

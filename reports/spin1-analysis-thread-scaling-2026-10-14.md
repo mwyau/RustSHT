@@ -20,12 +20,10 @@ installed `ducc0==0.41.0`, whose pinned source revision is
 input preparation were outside the reported operation samples; those copy
 timings were also recorded separately. Thus the native Rust and Python DUCC
 timings have slightly different call boundaries, although the transform,
-grid, values, and requested thread counts match. Each q value ran in three processes pinned to CPUs `0..q-1`; Rayon and DUCC
+grid, values, and requested thread counts match. Each q value ran in three processes pinned to a CPU set matching the requested thread count; Rayon and DUCC
 were configured with q threads. Rust had one warm-up and five timed calls per
 process. DUCC used two inner timing batches with five samples per batch. The
-table reports the median of the three process medians. Raw samples are in
-[`native-process-samples.txt`](data/spin1-analysis-thread-scaling-2026-10-14/native-process-samples.txt)
-and [`ducc-process-samples.txt`](data/spin1-analysis-thread-scaling-2026-10-14/ducc-process-samples.txt).
+table reports the median of the three process medians. The report retains the numerical medians and ranges; raw process captures remain local and untracked.
 
 | Threads | RustSHT ms (process-median range) | DUCC ms (process-median range) | Ratio | Excess ms |
 | ---: | ---: | ---: | ---: | ---: |
@@ -57,8 +55,7 @@ K=4 and two favored K=0. Process variability overlaps. The temporary control
 also parsed its environment variable inside the recursive midpoint helper,
 so it slightly perturbed both sides. This is insufficient evidence for a
 production scheduling change. Larger K values were slower or tied in the
-initial sweep. The current weighted split remains unchanged. Raw candidate samples are in
-[`scheduling-overhead-paired-samples.txt`](data/spin1-analysis-thread-scaling-2026-10-14/scheduling-overhead-paired-samples.txt). The temporary environment control is absent from production source.
+initial sweep. The current weighted split remains unchanged. The report retains the scheduling comparison summary; raw process captures remain local and untracked. The temporary environment control is absent from production source.
 
 ## Environment and scope
 
@@ -106,8 +103,7 @@ does not override the slower paired native timings. Focused paired-analysis
 tests (7 passed) and the DUCC 0.41.0 numerical checks (7 Rust tests and 2 f32
 tests passed) passed on the candidate, including extreme finite fallback
 coverage. No high-band release suite was run specifically for this rejected
-candidate. Exact five-sample process inputs are in
-[`paired-process-samples.txt`](data/paired-analysis-fma-2026-10-14/paired-process-samples.txt). The experiment does not justify changing the reducer. The current AVX2
+candidate. The report retains the paired numerical summary; raw process captures remain local and untracked. The experiment does not justify changing the reducer. The current AVX2
 multiply/add sequence remains in production; a future accumulation change
 needs to improve measured wall time, not only reduce simulated instruction
 references.

@@ -18,7 +18,7 @@ for pair in 3 4; do
   fi
   for nphi in "$first" "$second"; do
     label="odd-vs-even-pair${pair}-T2047-nphi${nphi}-spin1"
-    taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" RUSTSHT_CPUSET},8-13,15 /usr/bin/time \
+    taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" /usr/bin/time \
       -f 'wall_seconds=%e peak_rss_kib=%M user_seconds=%U system_seconds=%S' \
       -o "$out_dir/${label}.time" \
       "$bin" 1 2047 8 both GL STANDARD 2048 "$nphi" 2047 \

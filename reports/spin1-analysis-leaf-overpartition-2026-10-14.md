@@ -25,7 +25,7 @@ The T511 q8 candidate was slower in four process pairs and faster in one. T511 q
 taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" examples/m1b_bench 1 511 8 analysis GL STANDARD 512 1025 511 requested-only
 ```
 
-For q16, affinity was `0-15`; T720 used `1 720 8 analysis GL STANDARD 721 1443 720 requested-only`. The baseline executable and candidate executable ran in separate processes with identical inputs and release flags.
+For q16, affinity matched the requested worker count; T720 used `1 720 8 analysis GL STANDARD 721 1443 720 requested-only`. The baseline executable and candidate executable ran in separate processes with identical inputs and release flags.
 
 ## Numerical check and disposition
 

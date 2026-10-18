@@ -70,13 +70,13 @@ M10 candidate executable SHA-256 is
 
 - `cargo fmt --all -- --check`
 - `cargo clippy --workspace --all-targets --all-features -- -D warnings`
-- `TMPDIR=<local-path> cargo test --workspace --all-features` (100 tests passed)
+- `cargo test --workspace --all-features` (100 tests passed)
 - `cargo test --release --lib f64_complex_general_prime_radix31_ido1_matches_direct_dfts`
 - `cargo test --release --lib m9_c2c_682_selects_avx2_radix31_and_guards_unsafe_inverse_inputs`
 - `cargo test --release --test complex f64_682_radix31_transform_matches_rustfft_forward_and_inverse`
 - `cargo bench --locked --bench rustfft --no-run`
 
-`/tmp` was a full tmpfs during validation; the complete workspace test passed
-with `<local-path>` as its temporary directory. No M10 cross-library campaign was
+Default temporary storage was exhausted during validation; the complete workspace test passed
+with an isolated temporary directory. No M10 cross-library campaign was
 run. The M8 cross-library measurements are prior context and are not M10
 comparison results.

@@ -19,9 +19,9 @@ for item in "720 1458" "1023 2048" "1279 2560" "2047 4096"; do
     for threads in 1 8; do
       label="T${lmax}-nphi${nphi}-spin${spin}-q${threads}"
       if (( threads == 1 )); then
-        cpus=${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}
+        cpus=${RUSTSHT_CPUSET_Q1:?set RUSTSHT_CPUSET_Q1}
       else
-        cpus=${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}
+        cpus=${RUSTSHT_CPUSET_Q8:?set RUSTSHT_CPUSET_Q8}
       fi
       TMPDIR="$PWD/target/rustsht-python-tmp" taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env \
         RAYON_NUM_THREADS="$threads" RUSTSHT_PERF_RAW=1 \

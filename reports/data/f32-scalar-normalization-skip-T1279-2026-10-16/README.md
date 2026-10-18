@@ -24,7 +24,7 @@ synthesis and analysis on GL `1280×2560`, full mmax, and `phi0=0.37`.
 - `validation/`: final exact-match formatting, Clippy, all-feature, no-default,
   and opt-in T1023 DUCC logs.
 - `validation-array-search-gate/`: earlier equivalent checks for the rejected
-  array-search selector, including the original `/tmp`-full failure.
+  array-search selector, including the original default-temporary-storage failure.
 - `compare-output-arrays.py` and `compare-ducc.py`: reproducible comparisons. The baseline timing executable SHA-256 is
 `785db7f0e599df71f8788d93d1422eb2c17df51635e60ba087537f396831c237`; the
 rejected array-search candidate is

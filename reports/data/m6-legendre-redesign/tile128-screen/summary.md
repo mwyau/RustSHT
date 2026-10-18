@@ -15,4 +15,4 @@ CPU-pressure validity was assessed under the declared protocol; raw readings rem
 
 ## Evidence
 
-`provenance.txt`, `build.log`, and `candidate-source.patch` record source, compiler, CPU/ISA, reference, import, and artifact details. `run-one.sh`, `run-exactly.sh`, and `check-stability.py` preserve the protocol. Each process has `.command`, `.stdout`, `.time`, `.preflight`, `.postflight`, and `.stability` files; the candidate also has a `.postflight-failed` record. No production source or Git changes were made by this screen.
+`provenance.txt`, `candidate-source.patch`, and the summaries record source, compiler/ISA, reference, import, sample, PSI, and RSS details. `run-one.sh`, `run-exactly.sh`, and `check-stability.py` preserve the original protocol. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. Raw stdout, time, preflight, postflight, and command captures are local and untracked. This is a historical v1 result and is not reclassified under protocol v2. No production source or Git changes were made by this screen.

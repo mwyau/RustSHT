@@ -30,7 +30,7 @@ The q8 RustSHT times varied more than DUCC’s. This comparison describes the cu
 
 - `cargo fmt --all -- --check` passed.
 - `cargo clippy --workspace --all-targets --all-features -- -D warnings` passed.
-- `TMPDIR=... cargo test --workspace --all-features` passed: 187 Rust tests and 11 f32 tests; 12 ignored; 0 doctests. A run using the shared `/tmp` completed the Rust and f32 tests but rustdoc could not create its temporary argument file because `/tmp` was full. The passing rerun used a task-local directory on the workspace filesystem.
+- `TMPDIR=... cargo test --workspace --all-features` passed: 187 Rust tests and 11 f32 tests; 12 ignored; 0 doctests. A run using shared temporary storage completed the Rust and f32 tests but rustdoc could not create its temporary argument file because `temporary storage` was full. The passing rerun used a task-local directory on the workspace filesystem.
 - `TMPDIR=... cargo test -p rustsht --no-default-features` passed: 149 Rust tests and 11 f32 tests; 7 ignored; 0 doctests.
 - The release fused-block tests passed for SIMD tails, scaled-sectoral rejection and late range failure.
 - `m3_scalar_t511_t1023_t2047_all_grids_matches_ducc_and_closed_form` passed in release mode for GL, CC and F1. At T2047, the largest analytic map error was `9.958e-12`; the largest selected DUCC sample error was `2.083e-13`. Python tests were not run because this change does not affect bindings. The accepted change is limited to f64 scalar analysis. Spin-1 analysis, other grids and other thread counts were not benchmarked for this increment.

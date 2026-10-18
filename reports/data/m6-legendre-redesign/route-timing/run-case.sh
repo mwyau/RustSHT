@@ -5,6 +5,12 @@ label=$1
 lmax=$2
 report_dir=$(git rev-parse --show-toplevel)/reports/data/m6-legendre-redesign/route-timing
 binary=${RUSTSHT_CANDIDATE_DIR:?set RUSTSHT_CANDIDATE_DIR}/target/release/deps/rustsht-159837ac1c3bd1f7
+cpuset=${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}
+frequency_cpu=${RUSTSHT_CPU_INDEX:-${cpuset%%[-,]*}}
+frequency_khz() {
+    [[ "$frequency_cpu" =~ ^[0-9]+$ ]] || { printf 'unavailable'; return; }
+    cat "/sys/devices/system/cpu/cpu${frequency_cpu}/cpufreq/scaling_cur_freq" 2>/dev/null || printf 'unavailable'
+}
 test_name=legendre::synthesis_fast::tests::m6_fast_route_counts
 source_hash=d94bb0b9b861c1ad0debade62180b2ad35ddbdd3a0c848deb3cd47b390389a85
 binary_hash=cb6eb68e1ef86ab41a4591d81b22d6b67105e7f04b09deb39effd2bd559514f8
@@ -19,7 +25,7 @@ capture_snapshot() {
         cat /proc/pressure/cpu
         printf 'cpu.max='; cat /sys/fs/cgroup/cpu.max 2>/dev/null || echo unavailable
         printf 'cpu.stat:\n'; cat /sys/fs/cgroup/cpu.stat 2>/dev/null || echo unavailable
-        printf 'selected_cpu_frequency_khz='; cat /sys/devices/system/cpu/cpu${RUSTSHT_CPU_INDEX:-${RUSTSHT_CPUSET%%[-,]*}}/cpufreq/scaling_cur_freq 2>/dev/null || echo unavailable
+        printf 'selected_cpu_frequency_khz='; frequency_khz
         printf 'taskset_runner_affinity='; taskset -pc $$
         printf 'top_processes:\n'
         ps -eo pid,ppid,psr,pcpu,pmem,etimes,stat,comm,args --sort=-pcpu | head -25
@@ -44,10 +50,10 @@ fi
     printf 'binary=%s\n' "$binary"
     printf 'binary_sha256='; sha256sum "$binary"
     printf 'source_sha256=%s\n' "$source_hash"
-    printf 'command: taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" RUSTSHT_CPUSET} env RUSTSHT_FAST_ROUTE_LMAX=%s RUSTSHT_FAST_ROUTE_THREADS=1 %s --ignored --exact %s --nocapture\n' "$lmax" "$binary" "$test_name"
+    printf 'command: taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env RUSTSHT_FAST_ROUTE_LMAX=%s RUSTSHT_FAST_ROUTE_THREADS=1 %s --ignored --exact %s --nocapture\n' "$lmax" "$binary" "$test_name"
 } > "$base.command"
 
-taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" RUSTSHT_CPUSET} env RUSTSHT_FAST_ROUTE_LMAX="$lmax" RUSTSHT_FAST_ROUTE_THREADS=1 \
+taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env RUSTSHT_FAST_ROUTE_LMAX="$lmax" RUSTSHT_FAST_ROUTE_THREADS=1 \
     "$binary" --ignored --exact "$test_name" --nocapture > "$base.stdout" 2>&1 &
 pid=$!
 printf 'pid=%s\n' "$pid" >> "$base.command"

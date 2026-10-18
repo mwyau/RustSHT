@@ -44,7 +44,7 @@ therefore repeatable through T1023. Raw five-call samples are in
 [`the T511/T720 CSV`](data/current-kernel-baseline-2026-10-14/stage-factor-process-samples-t511-t720.csv)
 and [`the T1023 CSV`](data/current-kernel-baseline-2026-10-14/stage-factor-process-samples-t1023.csv). Representative commands were `cargo build --release --example m1b_bench`,
 `taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" target/release/examples/m1b_bench 1 511 1 synthesis GL STANDARD 512 1025 511 requested-only`, and the same command with `taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}"` and the thread argument set to `8`. The paired harness alternated archived baseline and candidate binaries and wrote the retained CSV samples. Python comparisons used
-`RUSTSHT_PERF_RAW=1 RAYON_NUM_THREADS=1 taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" uv run python examples/python_perf_baseline.py 511 1 1 GL 1 plan synthesis both STANDARD`; q8 used `RAYON_NUM_THREADS=8`, worker-sized CPU affinity, and the thread argument `8`. Each process used five timed method calls after one warm-up; three fresh processes were recorded per case.
+`RUSTSHT_PERF_RAW=1 RAYON_NUM_THREADS=1 taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" uv run python examples/python_perf_baseline.py 511 1 1 GL 1 plan synthesis both STANDARD`; q8 used `RAYON_NUM_THREADS=8`, affinity sized for the worker count, and the thread argument `8`. Each process used five timed method calls after one warm-up; three fresh processes were recorded per case.
 
 spin-1 synthesis operations before the change and 4.708 billion after it
 (−11.4%). The profile does not report CPU cycles, and its timing is not used as

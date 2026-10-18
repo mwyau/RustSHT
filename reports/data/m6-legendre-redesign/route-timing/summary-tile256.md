@@ -20,7 +20,7 @@ timed synthesis calls; it asserted bitwise map equality after every call. These 
   `--ignored --exact --nocapture`, `RUSTSHT_FAST_ROUTE_THREADS=1`, and
   `RUSTSHT_FAST_ROUTE_LMAX=511` then `2047`; both commands used `taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}"`.
 - The test's GL grid is `(L+1) x 2(L+1)`, full `mmax=L`, `phi0=0.37`.
-- Host: x86-64 CPU, 32 pinned CPU cores visible, cgroup CPU quota unlimited. Both runs recorded actual test affinity pinned per worker count. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. CPU core frequency readings are retained in each pre/post snapshot.
+- Host architecture: x86-64 with portable runtime dispatch. Test affinity matched the requested worker count. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. Selected-core frequency readings remain in local, untracked captures.
 - Five-sample stability gates passed for both cases: CV and first-three versus
   final-two median drift each remained below 5%. No samples were retried or
   removed.

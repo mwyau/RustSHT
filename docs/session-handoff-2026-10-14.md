@@ -234,8 +234,8 @@ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" target/release/examples/m1b_b
 callgrind_annotate --inclusive=yes --show=Ir <temporary-path>
 ```
 
-The fixed `taskset` CPU IDs assume the same Linux host. Use a currently
-available core set on another machine and report it. Benchmark examples are
+Choose an available CPU set sized for the requested worker count on the current host.
+Record the worker count and actual placement in local benchmark diagnostics. Benchmark examples are
 `examples/m1b_bench.rs` and `examples/python_perf_baseline.py`. Important
 design and validation references are:
 

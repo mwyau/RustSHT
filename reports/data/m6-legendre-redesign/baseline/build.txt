@@ -2,7 +2,6 @@
 worktree=<local-home-path>
 source_commit=91c2cb8ff1ce576bd6dfa6764fd7fb516a00295a
 source_status=clean-before-build
-command=cargo build -p rustsht-python --release
 exit_status=0
 observed_result='Finished release profile (optimized) target(s) in 9.67s'
 artifact=<local-home-path>

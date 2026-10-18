@@ -14,7 +14,7 @@ uptime
 run_case() {
     local variant="$1"
     local binary="$2"
-    printf '\nvariant=%s spin=1 T1023 q5 cpus=${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}\n' "$variant"
+    printf '\nvariant=%s spin=1 T1023 q5 worker-sized CPU affinity\n' "$variant"
     /usr/bin/time -f 'elapsed_s=%e max_rss_kib=%M' \
         taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" RUSTSHT_CPUSET} "$binary" 1 1023 5 analysis GL STANDARD 1024 2049 1023 requested-only
 }

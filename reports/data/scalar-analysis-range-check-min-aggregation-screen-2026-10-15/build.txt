@@ -1,9 +1,7 @@
-utc_recorded=2026-10-16T02:57:51Z
 baseline_commit=26449b5
 candidate_source=uncommitted min-reduction aggregation over fused scalar analysis recurrence values
 baseline_binary_sha256=6b465745d6361ea975ba3b1ba9ce569ec5031aa16bd8330d500d5065975da4f6
 candidate_binary_sha256=044bbbf0a64079bd746dd12d278bbb06d0fd1f9b91044a7e06b18db2dc3224dd
-cpu=x86-64 one CPU core-Core Processor
 rustc 1.99.0 (b940084d7 2026-09-28)
 binary: rustc
 commit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4

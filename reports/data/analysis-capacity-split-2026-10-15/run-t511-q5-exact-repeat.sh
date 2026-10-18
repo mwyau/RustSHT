@@ -15,7 +15,7 @@ run_case() {
     local variant="$1"
     local binary="$2"
     local spin="$3"
-    printf '\nvariant=%s spin=%s T511 q5 cpus=${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}\n' "$variant" "$spin"
+    printf '\nvariant=%s spin=%s T511 q5 worker-sized CPU affinity\n' "$variant" "$spin"
     /usr/bin/time -f 'elapsed_s=%e max_rss_kib=%M' \
         taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" RUSTSHT_CPUSET} "$binary" "$spin" 511 5 analysis GL STANDARD 512 1025 511 requested-only
 }

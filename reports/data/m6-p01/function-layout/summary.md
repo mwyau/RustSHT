@@ -24,17 +24,14 @@ CARGO_TARGET_DIR=<local-home-path> cargo build --release --example m1b_bench
 ```
 
 `RUSTFLAGS` and `CARGO_ENCODED_RUSTFLAGS` were empty; no custom linker or
-ordering flag was used. The build log and host preflight are retained as
-[`build.log`](build.log) and [`build-preflight.txt`](build-preflight.txt). The isolated candidate ELF SHA-256 is
+ordering flag was used. The build completed with standard release settings. Raw compiler output and host preflight captures remain local and untracked. The isolated candidate ELF SHA-256 is
 `23f2c95feef63003ff0c288628b4b334258ddaea900012917829a4677370971c`. The default-link P01 comparison ELF SHA-256 is
 `3388c0219a9d9ba214241763bd8749a35ef6e60bbe685ec779b842291ff6da2e`. The ELF is retained under the ignored `target/` tree rather than in this
 report directory.
 
 ## Symbol evidence
 
-The retained files [`default-p01-symbols.txt`](default-p01-symbols.txt) and
-[`candidate-symbols.txt`](candidate-symbols.txt) were produced with `nm -nC`. The default listing was independently regenerated from the comparison ELF as
-[`default-p01-symbols-verified.txt`](default-p01-symbols-verified.txt). Selected addresses are:
+Symbol listings produced with `nm -nC` and an independently regenerated default listing are retained. Selected addresses are:
 
 | Symbol | Default P01 | Relocated source | Relative observation |
 | --- | ---: | ---: | --- |
@@ -49,4 +46,4 @@ hot scalar block-to-V4 transition gap is `0xC050` in both (hot-block starts:
 did not separate the P01 code from these kernels in the linked text. This
 experiment does not explain or resolve the default-link spin-1 shift, and no
 performance inference is drawn from it. [`evidence.sha256`](evidence.sha256)
-records the ELF, source, build-log and symbol-list hashes.
+records the ELF, source, and symbol-list hashes.

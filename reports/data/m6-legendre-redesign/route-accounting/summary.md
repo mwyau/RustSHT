@@ -6,28 +6,18 @@ does not establish production performance.
 
 ## Source and executable
 
-- Worktree: `<local-home-path> HEAD
-  `739275d20987fec35506916cb682f961e8a7ffaf`, plus the pre-existing candidate
-  edits shown in `build-preflight.txt`.
+- Candidate source base: `739275d20987fec35506916cb682f961e8a7ffaf`, plus the candidate edits identified by the retained patch and source hashes.
 - Candidate source fingerprints: `candidate-tracked.patch` has SHA-256
   `737c45bbc946a51e686010ab780968cdaa9c44fa543ee8f505cd4b20baccece0`;
   `candidate-synthesis_fast.rs` has SHA-256
   `0c0ee956205f782626e6ab0ffc6914cfa9f0d1e20caf5075111a53a9c9449b25`.
 - Compiler: rustc 1.99.0, LLVM 23.1.1; Cargo 1.99.0. The filtered release
   test binary was built once with
-  `cargo test --release --lib --features parallel legendre::synthesis_fast::tests::m6_fast_route_counts --no-run`. Build output, elapsed time, and host pre/post state are in `build.*`.
-- Test executable:
-  `<local-home-path>
-  SHA-256 `8567c2467e7473e333eb8ae5f4165844a10907207033a68ac3d529d104a1ccca`. Exact test name: `legendre::synthesis_fast::tests::m6_fast_route_counts`.
+  `cargo test --release --lib --features parallel legendre::synthesis_fast::tests::m6_fast_route_counts --no-run`. The build command and compiler settings are documented here; raw build output and host-state captures remain local and untracked.
+- Test executable SHA-256: `8567c2467e7473e333eb8ae5f4165844a10907207033a68ac3d529d104a1ccca`. Exact test name: `legendre::synthesis_fast::tests::m6_fast_route_counts`.
 - The test synthesizes once without counters, resets the per-worker counters,
   synthesizes again with counters, and asserts bitwise map equality. This is a
-  same-source repeatability check, not an independent DUCC comparison. The host was an x86-64 CPU with visible 32 pinned CPU cores and an unlimited
-cgroup CPU quota. q1 cases requested one CPU core; q8 requested 8 pinned CPU cores. Each raw
-case has pre/post PSI and process snapshots, requested command, observed
-affinity, and worker-thread placement. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. No competing build or benchmark was found before any case. The T2047 q1 command requested one CPU core, but its captured `taskset -pc` result
-reported worker-sized CPU affinity; sampled test threads were on one CPU core. The q1 T511 and
-T1023 captures reported affinity=pinned, and the q8 capture reported 8–15. This
-affinity mismatch is retained and not hidden; no case was rerun.
+  same-source repeatability check, not an independent DUCC comparison. The route diagnostic used q1 and q8 Rayon pools. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. No competing build or benchmark was found before any case. The T2047 q1 affinity capture disagreed with the requested one-core setting; that validity issue is retained in the conclusion and the case was not rerun. Raw placement and pre/post captures are local and untracked.
 
 ## Aggregate route counts
 
@@ -60,14 +50,14 @@ At T2047, q1 and q8 have the same aggregate route-proxy total:
 | 7 | 3,794 | 263,418,792 | 15.188% | 4,811,379 | 258,607,413 | 0 | 0 |
 
 The work-proxy distribution varies across workers; it must not be read as a
-wall-time or CPU-time distribution. Each raw stdout contains the full counter
-struct and the test pass result.
+wall-time or CPU-time distribution. Numerical counters and map-equality results
+are summarized here. Raw process captures and commands remain local and
+untracked.
 
 ## Preserved harness check
 
 An initial exact-name invocation omitted `--ignored`, so Rust's test harness
-reported zero tests run. Its command and snapshots are retained with the
-`.ignored-selection-check` suffix. The four actual cases then used
-`--ignored --exact`; each reported `running 1 test`, passed, and asserted exact
-map equality. All four commands and raw outputs are retained. No route counts
-were taken from the zero-test harness check.
+reported zero tests run. The four actual cases used `--ignored --exact`; each
+reported `running 1 test`, passed, and asserted exact map equality. The zero-test
+attempt is excluded from route counts. Runner source records the command shape;
+raw command and host captures are local and untracked.

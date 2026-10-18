@@ -18,7 +18,7 @@ products and scaled visits. It did not change coefficient preparation,
 recurrence updates, degree accumulation order, or reuse coefficients across
 blocks. The complete source diff is [rejected-candidate.patch](rejected-candidate.patch);
 its SHA-256 is in [evidence-sha256.txt](evidence-sha256.txt). Source file
-hashes are in [candidate-source-sha256.txt](candidate-source-sha256.txt). The candidate and baseline ELF hashes are in [binary-sha256.txt](binary-sha256.txt). The release build logs are retained alongside the raw benchmark output.
+hashes are in [candidate-source-sha256.txt](candidate-source-sha256.txt). The candidate and baseline ELF hashes are in [binary-sha256.txt](binary-sha256.txt). The release compiler configuration and paired numerical results are summarized below; raw build and benchmark logs remain local and untracked.
 
 ## Numerical checks
 
@@ -26,8 +26,7 @@ Formatting passed. Focused debug checks passed for the coefficient exponent
 edges and intermediate product fallbacks; scalar synthesis against pinned
 DUCC 0.41.0 at low degree and T255; T511 scalar GL analytic/DUCC sectoral
 samples; T255 spin-1 GL DUCC samples; CC and F1 scalar DUCC and adjoint
-identities; and f32 scalar S/A against DUCC 0.41.0 on GL, CC and F1. Exact
-commands and output are in [focused-tests.log](focused-tests.log). These checks validate the isolated candidate on the listed cases. The full
+identities; and f32 scalar S/A against DUCC 0.41.0 on GL, CC and F1. The listed focused numerical cases passed; raw test output remains local and untracked. These checks validate the isolated candidate on the listed cases. The full
 workspace suites were not run because the initial performance screen rejected
 the candidate.
 

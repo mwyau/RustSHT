@@ -252,7 +252,7 @@ The scalar eight-thread Python measurements had a `2.930 ms` run-group spread. T
 ## T511 spin-1 analysis profile and worker-granularity screen
 
 
-Temporary timing around the recursive leaves of T511 spin-1 analysis measured eight leaves with estimated degree-lane work between 7.35 and 7.64 million per leaf. Elapsed leaf times ranged from 7.38 to 10.46 ms. All leaves started within 0.35 ms and finished between 7.66 and 10.64 ms, indicating moderate cost spread without a delayed branch. The hooks were removed after profiling. A temporary scheduling candidate allowed recursive analysis to use all 16 recurrence workspaces already present in the T511 workspace, rather than limiting the split to the eight Rayon workers. This doubled the number of order tasks without adding workspaces. Three alternating baseline/candidate process pairs ran release `m1b_bench`, with one warm-up and five timed calls, on the x86-64 CPU, 32 pinned CPU cores. The table reports medians of process medians and min–max ranges, in milliseconds:
+Temporary timing around the recursive leaves of T511 spin-1 analysis measured eight leaves with estimated degree-lane work between 7.35 and 7.64 million per leaf. Elapsed leaf times ranged from 7.38 to 10.46 ms. All leaves started within 0.35 ms and finished between 7.66 and 10.64 ms, indicating moderate cost spread without a delayed branch. The hooks were removed after profiling. A temporary scheduling candidate allowed recursive analysis to use all 16 recurrence workspaces already present in the T511 workspace, rather than limiting the split to the eight Rayon workers. This doubled the number of order tasks without adding workspaces. Three alternating baseline/candidate process pairs ran release `m1b_bench`, with one warm-up and five timed calls, on the x86-64 CPU with affinity matched to the worker count. The table reports medians of process medians and min–max ranges, in milliseconds:
 
 | Analysis | Threads | Current schedule | 2x task candidate | Change |
 | --- | ---: | ---: | ---: | ---: |
@@ -302,7 +302,7 @@ RUSTSHT_BENCH_DISABLE_LEGENDRE_TABLE=1 taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT
 RUSTSHT_BENCH_DISABLE_LEGENDRE_TABLE=1 taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" target/release/examples/m1b_bench 1 720 8 analysis F1 STANDARD
 ```
 
-The temporary gate was used only in `/tmp`; it was not part of the committed implementation. The Rust harness reports five-sample medians and separately times plan/workspace construction.
+The temporary gate was used only in an untracked local file; it was not part of the committed implementation. The Rust harness reports five-sample medians and separately times plan/workspace construction.
 
 ### Same-CPU GL execution
 

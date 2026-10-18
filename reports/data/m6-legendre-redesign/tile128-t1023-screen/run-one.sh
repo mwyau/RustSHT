@@ -15,6 +15,11 @@ ntheta=1024
 nphi=2048
 threads=1
 cpuset=${RUSTSHT_CPUSET_Q1:-${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}}
+frequency_cpu=${RUSTSHT_CPU_INDEX:-${cpuset%%[-,]*}}
+frequency_khz() {
+    [[ "$frequency_cpu" =~ ^[0-9]+$ ]] || { printf 'unavailable'; return; }
+    cat "/sys/devices/system/cpu/cpu${frequency_cpu}/cpufreq/scaling_cur_freq" 2>/dev/null || printf 'unavailable'
+}
 stem="t1023-s0-q1-tile128-${version}"
 pre="$out/$stem.preflight"
 post="$out/$stem.postflight"
@@ -26,7 +31,7 @@ post="$out/$stem.postflight"
   cat /proc/pressure/cpu
   printf 'cpu.max='; cat /sys/fs/cgroup/cpu.max 2>/dev/null || true
   printf 'cpu.stat='; cat /sys/fs/cgroup/cpu.stat 2>/dev/null || true
-  printf 'selected_cpu_frequency_khz='; cat /sys/devices/system/cpu/cpu${RUSTSHT_CPU_INDEX:-${RUSTSHT_CPUSET%%[-,]*}}/cpufreq/scaling_cur_freq 2>/dev/null || echo unavailable
+  printf 'selected_cpu_frequency_khz='; frequency_khz
   printf 'top_processes:\n'
   ps -eo pid,ppid,psr,pcpu,pmem,etimes,stat,comm,args --sort=-pcpu | head -n 25
   printf 'matching_compiler_or_benchmark_processes:\n'
@@ -58,7 +63,7 @@ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" /usr/bin/time -v -o "$out/$st
   uptime
   cat /proc/pressure/cpu
   printf 'cpu.stat='; cat /sys/fs/cgroup/cpu.stat 2>/dev/null || true
-  printf 'selected_cpu_frequency_khz='; cat /sys/devices/system/cpu/cpu${RUSTSHT_CPU_INDEX:-${RUSTSHT_CPUSET%%[-,]*}}/cpufreq/scaling_cur_freq 2>/dev/null || echo unavailable
+  printf 'selected_cpu_frequency_khz='; frequency_khz
   ps -eo pid,ppid,psr,pcpu,pmem,etimes,stat,comm,args --sort=-pcpu | head -n 20
 } > "$post"
 if ! awk '/^some / {for (i=1;i<=NF;i++) if ($i ~ /^avg10=/) {split($i,a,"="); if (a[2]+0 > 0.50) exit 75}}' "$post"; then

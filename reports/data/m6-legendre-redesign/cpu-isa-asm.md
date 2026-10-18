@@ -2,13 +2,13 @@
 
 ## Build provenance
 
-The isolated baseline worktree was clean at `91c2cb8ff1ce576bd6dfa6764fd7fb516a00295a`. The host is an x86-64 CPU (host topology omitted), with AVX2 and FMA available and no AVX-512 feature listed. The process affinity and effective cpuset were CPUs `0-31`; cgroup `cpu.max` was `max 100000` (no quota). The source and machine records are in [`cpu-isa-asm/source.txt`](cpu-isa-asm/source.txt) and [`cpu-isa-asm/host.txt`](cpu-isa-asm/host.txt). Toolchain: `rustc 1.99.0 (b940084d7 2026-09-28)`, LLVM `23.1.1`, Cargo `1.99.0`. The single compile command was:
+The isolated baseline worktree was clean at `91c2cb8ff1ce576bd6dfa6764fd7fb516a00295a`. The host is an x86-64 CPU (host topology omitted), with AVX2 and FMA available and no AVX-512 feature listed. The build used the host target and portable runtime dispatch; exact affinity and cgroup snapshots are local and untracked. Source fingerprints are in [`cpu-isa-asm/source.txt`](cpu-isa-asm/source.txt). Toolchain: `rustc 1.99.0 (b940084d7 2026-09-28)`, LLVM `23.1.1`, Cargo `1.99.0`. The single compile command was:
 
 ```text
 cargo rustc -vv -p rustsht --release --features parallel --lib -- --emit=asm
 ```
 
-It completed successfully in 17.67 seconds. The verbose rustc invocation used the host target `x86_64-unknown-linux-gnu`, `-C opt-level=3`, `-C embed-bitcode=no`, and `-C strip=debuginfo`, with `default` and `parallel` features. `RUSTFLAGS`, encoded target flags, and repository/user Cargo config files were absent. The invocation contains no `-C target-cpu`, `-C target-feature`, or LTO flag; the release compiler command and environment are retained in [`cpu-isa-asm/compile.log`](cpu-isa-asm/compile.log) and [`cpu-isa-asm/cargo-flags.txt`](cpu-isa-asm/cargo-flags.txt). Cargo still requested its standard metadata/link outputs alongside the additional `--emit=asm`; no tests or benchmarks were run.
+It completed successfully in 17.67 seconds. The verbose rustc invocation used the host target `x86_64-unknown-linux-gnu`, `-C opt-level=3`, `-C embed-bitcode=no`, and `-C strip=debuginfo`, with `default` and `parallel` features. `RUSTFLAGS`, encoded target flags, and repository/user Cargo config files were absent. The invocation contains no `-C target-cpu`, `-C target-feature`, or LTO flag; the compiler flags are summarized in [`cpu-isa-asm/cargo-flags.txt`](cpu-isa-asm/cargo-flags.txt); verbose build output remains local and untracked. Cargo still requested its standard metadata/link outputs alongside the additional `--emit=asm`; no tests or benchmarks were run.
 
 ## Emitted kernels
 

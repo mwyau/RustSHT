@@ -27,7 +27,7 @@ cargo fmt --all -- --check
   passed
 ```
 
-The temporary-directory override was required because `/tmp` was a full tmpfs. `/var/tmp` had available space. No files were removed from `/tmp`.
+An isolated temporary-directory override was required because default temporary storage was exhausted. No existing files were removed.
 
 ## Performance screen
 
@@ -40,4 +40,4 @@ Five alternating release-process pairs compared the candidate with baseline comm
 | Synthesis control | 1 | 1004.082 ms | 1004.271 ms | +0.02% | -0.77% to +0.16% |
 | Synthesis control | 8 | 149.624 ms | 149.976 ms | +0.58% | -1.96% to +2.16% |
 
-The process affinity allowed 32 pinned CPU cores. Load-average telemetry was retained only in local diagnostics. These shared-host samples show no repeatable regression; the analysis differences are not claimed as a speedup. RustSHT estimated 12.13 MiB for core numeric arrays in both binaries. Process peak RSS was not collected. This screen did not time DUCC. Load-average telemetry was retained only in local diagnostics. The candidate binary hash was `deaa2f1218ebe6f8ffc2b490b2fcb2c406bec7d3ad499b83e8a01776d8780935`; the baseline binary hash was `5b216a77aa03fa694e39f79e103f448ddfbac6461a4910b89ac73ebd12dc57d9`.
+Process affinity matched the requested worker count. Load-average telemetry was retained only in local diagnostics. These shared-host samples show no repeatable regression; the analysis differences are not claimed as a speedup. RustSHT estimated 12.13 MiB for core numeric arrays in both binaries. Process peak RSS was not collected. This screen did not time DUCC. Load-average telemetry was retained only in local diagnostics. The candidate binary hash was `deaa2f1218ebe6f8ffc2b490b2fcb2c406bec7d3ad499b83e8a01776d8780935`; the baseline binary hash was `5b216a77aa03fa694e39f79e103f448ddfbac6461a4910b89ac73ebd12dc57d9`.

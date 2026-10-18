@@ -45,11 +45,11 @@ run_case() {
     local threads="$4"
     local ntheta=$((lmax + 1))
     local nphi=$((2 * lmax + 3))
-    local cpus=${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}
+    local cpus=${RUSTSHT_CPUSET_Q1:?set RUSTSHT_CPUSET_Q1}
     if ((threads > 1)); then
-        cpus=${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}
+        cpus=${RUSTSHT_CPUSET_Q8:?set RUSTSHT_CPUSET_Q8}
     fi
-    printf '\nvariant=%s spin=0 T%s q%s cpus=%s\n' "$variant" "$lmax" "$threads" "$cpus"
+    printf '\nvariant=%s spin=0 T%s q%s\n' "$variant" "$lmax" "$threads"
     /usr/bin/time -f 'process_elapsed_s=%e peak_rss_kib=%M' \
         taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" "$binary" 0 "$lmax" "$threads" analysis GL STANDARD \
         "$ntheta" "$nphi" "$lmax" requested-only

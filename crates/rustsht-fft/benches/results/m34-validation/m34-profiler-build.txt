@@ -1,1 +1,5 @@
-  Executable benches/prototypes/rader_real.rs (target/release/deps/rader_real_prototype-87f4bde33875d71b)
+Validation build summary
+
+Command template: `cargo bench --bench rader_real_prototype --no-run`
+Result: succeeded with Cargo’s optimized bench profile.
+Raw build output and host-local paths remain local and untracked.

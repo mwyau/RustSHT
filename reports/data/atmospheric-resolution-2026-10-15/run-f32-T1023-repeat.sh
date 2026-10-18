@@ -5,7 +5,7 @@ set -euo pipefail
 
 repo_root=$(git rev-parse --show-toplevel)
 cd "$repo_root"
-out_dir=reports/data/atmospheric-resolution-2026-10-15/native/f32/repeat-CPU worker-placement
+out_dir=reports/data/atmospheric-resolution-2026-10-15/native/f32/repeat-worker-placement
 bin=target/release/examples/m1_f32_atmospheric_bench
 mkdir -p "$out_dir"
 sha256sum "$bin" > "$out_dir/binary.sha256"

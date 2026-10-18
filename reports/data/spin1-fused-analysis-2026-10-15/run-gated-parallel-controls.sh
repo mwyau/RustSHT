@@ -20,7 +20,7 @@ run_case() {
     local ntheta=$((lmax + 1))
     local nphi=$((2 * lmax + 3))
 
-    printf '\nvariant=%s T%s q%s cpus=%s\n' "$variant" "$lmax" "$threads" "$cpus"
+    printf '\nvariant=%s T%s q%s\n' "$variant" "$lmax" "$threads"
     /usr/bin/time -f 'elapsed_s=%e max_rss_kib=%M' \
         taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" "$binary" 1 "$lmax" "$threads" analysis GL STANDARD \
         "$ntheta" "$nphi" "$lmax" requested-only
@@ -29,9 +29,9 @@ run_case() {
 for lmax in 511 1023; do
     for threads in 8 16; do
         if ((threads == 8)); then
-            cpus=${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}
+            cpus=${RUSTSHT_CPUSET_Q8:?set RUSTSHT_CPUSET_Q8}
         else
-            cpus=${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}
+            cpus=${RUSTSHT_CPUSET_Q16:?set RUSTSHT_CPUSET_Q16}
         fi
         for pair in 1 2 3 4 5; do
             printf '\npair=%s T%s q%s\n' "$pair" "$lmax" "$threads"

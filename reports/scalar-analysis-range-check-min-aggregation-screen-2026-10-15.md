@@ -32,9 +32,8 @@ the same CPU affinity. The repeat had a `-4.93%` median paired change and a
 T1023 q8 pairs, the median paired change was `+2.40%` (`-13.76%` to `+17.46%`),
 with four of ten pairs faster. These runs disagree in direction and are too
 variable to establish either a q8 gain or regression at T1023. The candidate was removed. The improvements at q1 and T511 q8 did not provide
-a stable result across the high-band q8 workload. The raw process logs, peak
-RSS files, hashes, CPU affinity, load records and repeat commands are in
-[`the benchmark data`](data/scalar-analysis-range-check-min-aggregation-screen-2026-10-15/). The initial screen summary is in `paired-results.tsv`; the additional and
+a stable result across the high-band q8 workload. Timing samples, summarized
+peak RSS and repeat commands are in [`the benchmark data`](data/scalar-analysis-range-check-min-aggregation-screen-2026-10-15/); its [paired-process provenance](data/scalar-analysis-range-check-min-aggregation-screen-2026-10-15/paired-process-provenance.md) retains binary hashes and source identity. Detailed affinity and host-load captures remain local and untracked. The initial screen summary is in `paired-results.tsv`; the additional and
 pooled T1023 q8 summaries are in `t1023-q8-repeat-results.tsv`.
 
 ## Validation

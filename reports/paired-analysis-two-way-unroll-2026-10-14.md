@@ -6,7 +6,7 @@ The f64 normal-range `AnalysisPairAccumulation` previously processed one latitud
 
 ## Native performance
 
-The baseline is source commit `e642b6c`; the candidate changes only `src/legendre/scalar_paired.rs`. Both builds used Rust `1.99.0 (b940084d7 2026-09-28)`, LLVM `23.1.1`, release `opt-level=3`, 16 codegen units, LTO disabled, portable Pulp runtime dispatch, and no `target-cpu=native`. The machine was an x86-64 CPU on Linux. Native measurements used `m1b_bench`, reused plans and workspaces, and pinned q1 to one CPU core and q8 to 8 pinned CPU cores. Each process warmed the transform and recorded five timed executions. Samples below are medians of process medians; paired changes use adjacent baseline/candidate process pairs. Exact samples and commands are in [`data/paired-analysis-two-way-unroll-2026-10-14`](data/paired-analysis-two-way-unroll-2026-10-14/paired-process-samples.txt).
+The baseline is source commit `e642b6c`; the candidate changes only `src/legendre/scalar_paired.rs`. Both builds used Rust `1.99.0 (b940084d7 2026-09-28)`, LLVM `23.1.1`, release `opt-level=3`, 16 codegen units, LTO disabled, portable Pulp runtime dispatch, and no `target-cpu=native`. The machine was an x86-64 CPU on Linux. Native measurements used `m1b_bench`, reused plans and workspaces, and used affinity sized to the requested worker count. Each process warmed the transform and recorded five timed executions. Samples below are medians of process medians; paired changes use adjacent baseline/candidate process pairs. The report retains paired numerical samples; exact local commands and raw host captures remain untracked.
 
 | Operation / bandlimit | Threads | Baseline | Candidate | Median paired change | Paired range |
 | --- | ---: | ---: | ---: | ---: | ---: |

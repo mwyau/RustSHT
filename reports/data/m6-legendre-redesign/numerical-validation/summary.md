@@ -13,13 +13,9 @@ the frozen release extension SHA-256 was
 | `cargo test --no-default-features` | 177 | 8 | 0 | 6:14.23 | 1.28 GiB |
 
 The totals include the root library, FFT integration, f32 integration, and
-workspace-compatibility test targets. Full output and `/usr/bin/time -v`
-records are in [`all-features.log`](all-features.log),
-[`all-features.time`](all-features.time), [`no-default.log`](no-default.log),
-and [`no-default.time`](no-default.time). Both commands used Rust 1.99.0,
-`TMPDIR=<local-home-path> and `RUST_TEST_THREADS=1`. The
-preflight snapshots record CPU PSI, cgroup quota and throttling, process
-placement, and allowed CPUs. No benchmark ran concurrently with either test
+workspace-compatibility test targets. The test totals, wall times, and peak RSS are summarized above. Raw build/test
+logs, GNU-time files, and host snapshots are local and untracked. Both commands
+used Rust 1.99.0, a local temporary directory, and `RUST_TEST_THREADS=1`. No benchmark ran concurrently with either test
 suite. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The checks cover the candidate's focused tile, polar-lane, mixed-fallback and
 scaled-to-ordinary transition tests, plus workspace compatibility and the
 existing DUCC comparisons. They do not include an external DUCC comparison

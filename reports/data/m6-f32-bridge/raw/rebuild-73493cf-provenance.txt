@@ -3,6 +3,7 @@ source_sha256=eaeb8c3884e8ab490e49514a471fe9913d2d78e4a72e9868ed57ed80ad90cdd7  
 rustc 1.99.0 (b940084d7 2026-09-28)
 cargo 1.99.0 (5f94df478 2026-08-27)
 1.99.0-x86_64-unknown-linux-gnu (overridden by '<local-home-path>')
+Supported SIMD instruction sets: AVX2, FMA
 CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
 CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
 CPU-pressure validity was assessed under the declared protocol; raw readings remain local.

@@ -78,11 +78,11 @@ candidate executable SHA-256 is
 
 - `cargo fmt --all -- --check`
 - `cargo clippy --workspace --all-targets --all-features -- -D warnings`
-- `TMPDIR=<local-path> cargo test --workspace --all-features` (101 tests passed)
-- `TMPDIR=<local-path> cargo test --release --lib f64_complex_radix11_ido31_matches_direct_pass_and_preserves_scalar_tail`
-- `TMPDIR=<local-path> cargo test --release --lib m12_c2c_682_selects_avx2_radix31_and_radix11_and_guards_unsafe_inverse_inputs`
-- `TMPDIR=<local-path> cargo test --release --test complex f64_682_radix31_transform_matches_rustfft_forward_and_inverse`
-- `TMPDIR=<local-path> cargo bench --bench rustfft --no-run`
+- `cargo test --workspace --all-features` (101 tests passed)
+- `cargo test --release --lib f64_complex_radix11_ido31_matches_direct_pass_and_preserves_scalar_tail`
+- `cargo test --release --lib m12_c2c_682_selects_avx2_radix31_and_radix11_and_guards_unsafe_inverse_inputs`
+- `cargo test --release --test complex f64_682_radix31_transform_matches_rustfft_forward_and_inverse`
+- `cargo bench --bench rustfft --no-run`
 
 No new cross-library performance campaign was run. RustFFT 6.4.1 was used for
 the N=682 numerical integration check.

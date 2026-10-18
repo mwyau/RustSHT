@@ -22,8 +22,7 @@ The benchmark used `examples/m1b_bench`, f64 GL spin-1 STANDARD synthesis,
 full `mmax`, `phi0=0.37`, exact GL dimensions, a reused plan and workspace,
 one warm-up and five timed transforms per process. Five fresh-process pairs
 per case alternated baseline/candidate order. q1 used one CPU core; q8 used 8 pinned CPU cores. The table reports the median of the five process medians and the median
-paired candidate reduction. Raw process medians and all within-process samples
-are in [`process-samples.txt`](data/spin1-paired-zip-iteration-2026-10-14/process-samples.txt).
+paired candidate reduction. The report retains process medians and paired changes; raw process samples remain local and untracked.
 
 | Grid | Threads | Baseline | Candidate | Paired reduction | Faster pairs |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -55,8 +54,7 @@ candidate Python-plan timings, not the native before/after measurements above. I
 
 DUCC remains faster, especially at eight threads. The zip change improves
 RustSHT's spin-1 synthesis kernel but does not close the broader parallel
-execution gap. Native and Python-facing samples and comparison details are in
-[`ducc-python-results.txt`](data/spin1-paired-zip-iteration-2026-10-14/ducc-python-results.txt). Validation passed for the focused scalar-versus-general spin-1 synthesis
+execution gap. Native and Python-facing comparison details are summarized in this report; raw samples remain local and untracked. Validation passed for the focused scalar-versus-general spin-1 synthesis
 cases; T511 spin-1/2 DUCC and round-trip tests on GL, CC and F1; T2047 sparse
 spin-1 through spin-4 synthesis on GL, CC and F1; spin adjoint identities;
 and spin-3/4 analytic and adjoint regressions. T511 spin-1 DUCC synthesis

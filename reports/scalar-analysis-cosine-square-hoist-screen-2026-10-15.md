@@ -33,8 +33,7 @@ of five faster). Across all ten q8 pairs, the median paired change was
 with a `-17.39%` to `+30.24%` range. The q8 screens disagree too much to
 establish an improvement. The candidate was removed. The complete medians and paired ranges are in
 [`paired-results.tsv`](data/scalar-analysis-cosine-square-hoist-screen-2026-10-15/paired-results.tsv)
-and [`q8-results.tsv`](data/scalar-analysis-cosine-square-hoist-screen-2026-10-15/q8-results.tsv). Raw samples, process RSS, binary hashes, CPU affinity, load records and run
-scripts are in [`the benchmark data`](data/scalar-analysis-cosine-square-hoist-screen-2026-10-15/).
+and [`q8-results.tsv`](data/scalar-analysis-cosine-square-hoist-screen-2026-10-15/q8-results.tsv). Numerical samples, summarized RSS and run scripts are in the [benchmark data directory](data/scalar-analysis-cosine-square-hoist-screen-2026-10-15/); its [paired-process provenance](data/scalar-analysis-cosine-square-hoist-screen-2026-10-15/paired-process-provenance.md) retains the binary hashes. Raw affinity and load captures remain local and untracked.
 
 ## Validation
 

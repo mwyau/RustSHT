@@ -24,9 +24,8 @@ reused native plan and workspace from source commit `7ac443a40b034d5c52526d23ef3
 `c1ed01b8fda69d2a378190f0915f1a19762dddbf`, through the Python `analysis_2d`
 call. Each process warmed once and recorded five inner samples; each DUCC
 process used two five-sample batches. Five process pairs alternated RustSHT
-and DUCC at each thread count. The initial corrected screen pinned q1 to one CPU core and q8 to 8 pinned CPU cores. Host-load variation was reviewed locally; exact transient load measurements remain untracked. The follow-ups pinned q1
-to one CPU core and q8 to 8 pinned CPU cores. Load-average telemetry was retained only in local diagnostics. The CPUs were not isolated. A cgroup check after
-the screens reported `cpu.max=max 100000`, so no CPU quota applied.
+and DUCC at each thread count. The initial corrected screen pinned q1 to one CPU core and q8 to eight worker cores. Host contention was observed; detailed load readings remain local. The follow-ups used the same requested thread counts. Load-average telemetry was retained only in local diagnostics. The CPUs were not isolated. A cgroup check after
+the benchmark had no observed CPU quota.
 
 | Screen | Threads | RustSHT median (range) | DUCC median (range) | Paired ratio median (range) |
 | --- | ---: | ---: | ---: | ---: |
@@ -39,12 +38,10 @@ the screens reported `cpu.max=max 100000`, so no CPU quota applied.
 
 The host was an x86-64 CPU running Linux. Rust was
 `1.99.0` with LLVM `23.1.1`; release builds used portable Pulp runtime
-dispatch and no `target-cpu=native`. Python was `3.11.15` with NumPy `2.4.6`. Raw inner samples, process timings, load snapshots, command lines, binary
-hashes and the cgroup check are in [`the benchmark data`](data/spin1-analysis-ducc-refresh-2026-10-15/). The `preliminary-*` files record an earlier run whose native q1 arguments were
+dispatch and no `target-cpu=native`. Python was `3.11.15` with NumPy `2.4.6`. Inner timing samples, paired results and binary hashes are in the [benchmark data directory](data/spin1-analysis-ducc-refresh-2026-10-15/). Raw process, load and command captures remain local and untracked. The `preliminary-*` files record an earlier run whose native q1 arguments were
 incorrect. The first corrected q8 screen had wide variation; the two
 follow-ups used a separate CPU set and showed similar paired ratios. No Rust
 source or transform behavior changed during these measurements. Existing
 spin-1 analytic, DUCC, adjoint and high-bandlimit tests remain the numerical
-evidence; this timing study did not rerun them. The follow-up ratios describe these CPU affinities and the native/Python call
-boundaries. A future comparison should record both in the same screen before
+evidence; this timing study did not rerun them. The follow-up ratios describe the requested thread counts and native/Python call boundaries. A future comparison should record both in the same screen before
 revising the earlier thread-scaling report.

@@ -28,7 +28,7 @@ run_case() {
     local lmax=127
     local ntheta=128
     local nphi=257
-    printf '\nvariant=%s spin=%s T127 q6 cpus=${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}\n' "$variant" "$spin"
+    printf '\nvariant=%s spin=%s T127 q6 worker-sized CPU affinity\n' "$variant" "$spin"
     /usr/bin/time -f 'elapsed_s=%e max_rss_kib=%M' \
         taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" RUSTSHT_CPUSET} "$binary" "$spin" "$lmax" 6 analysis GL STANDARD \
         "$ntheta" "$nphi" "$lmax" requested-only

@@ -6,6 +6,13 @@ variant=$2
 lmax=$3
 outdir=$(cd "$(dirname "$0")" && pwd)
 root=$(git rev-parse --show-toplevel)
+cpuset=${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}
+frequency_cpu=${RUSTSHT_CPU_INDEX:-${cpuset%%[-,]*}}
+
+frequency_khz() {
+  [[ "$frequency_cpu" =~ ^[0-9]+$ ]] || { printf 'unavailable'; return; }
+  cat "/sys/devices/system/cpu/cpu${frequency_cpu}/cpufreq/scaling_cur_freq" 2>/dev/null || printf 'unavailable'
+}
 case "$variant" in
   baseline) package=${RUSTSHT_BASELINE_DIR:?set RUSTSHT_BASELINE_DIR}/python ;;
   candidate) package=${RUSTSHT_CANDIDATE_DIR:?set RUSTSHT_CANDIDATE_DIR}/python ;;
@@ -36,13 +43,14 @@ snapshot() {
   local phase=$1
   {
     echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-    echo "label=$label phase=$phase variant=$variant T=$lmax requested_affinity=pinned"
+    echo "label=$label phase=$phase variant=$variant T=$lmax requested_affinity=$cpuset"
+    echo "actual_affinity=$(taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" sh -c 'taskset -pc $$' 2>/dev/null || echo unavailable)"
     echo "uptime=$(cat /proc/uptime)"
     echo "cpu_pressure:"; cat /proc/pressure/cpu
     echo "cgroup_cpu_max=$(cat /sys/fs/cgroup/cpu.max 2>/dev/null || echo unavailable)"
     echo "cgroup_cpu_stat:"; cat /sys/fs/cgroup/cpu.stat 2>/dev/null || true
     echo "cpuset_effective=$(cat /sys/fs/cgroup/cpuset.cpus.effective 2>/dev/null || echo unavailable)"
-    echo "selected_cpu_frequency_khzuency_khz=$(cat /sys/devices/system/cpu/cpu${RUSTSHT_CPU_INDEX:-${RUSTSHT_CPUSET%%[-,]*}}/cpufreq/scaling_cur_freq 2>/dev/null || echo unavailable)"
+    echo "selected_cpu_frequency_khz=$(frequency_khz)"
     echo "shell_allowed_cpus=$(awk '/Cpus_allowed_list/ {print $2}' /proc/self/status)"
     echo "processes_by_cpu:"
     ps -eLo pid,ppid,tid,stat,psr,pcpu,comm,args --sort=-pcpu | head -45
@@ -67,7 +75,7 @@ fi
 
 t0=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 set +e
-taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" RUSTSHT_CPUSET} /usr/bin/time -v -o "$out.time" env \
+taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" /usr/bin/time -v -o "$out.time" env \
   TMPDIR="$root/target/tmp" \
   PYTHONPATH="$package:$root/target/m6-references/ducc-build" \
   RAYON_NUM_THREADS=1 \
@@ -82,13 +90,13 @@ runner_pid=$!
 {
   echo "start_utc=$t0"
   echo "wrapper_pid=$runner_pid"
-  echo "requested_taskset=0"
+  echo "requested_taskset=$cpuset"
   while kill -0 "$runner_pid" 2>/dev/null; do
     echo "sample_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     echo "cpu_pressure:"; cat /proc/pressure/cpu
     echo "cgroup_cpu_max=$(cat /sys/fs/cgroup/cpu.max 2>/dev/null || echo unavailable)"
     echo "cgroup_cpu_stat:"; cat /sys/fs/cgroup/cpu.stat 2>/dev/null || true
-    echo "selected_cpu_frequency_khzuency_khz=$(cat /sys/devices/system/cpu/cpu${RUSTSHT_CPU_INDEX:-${RUSTSHT_CPUSET%%[-,]*}}/cpufreq/scaling_cur_freq 2>/dev/null || echo unavailable)"
+    echo "selected_cpu_frequency_khz=$(frequency_khz)"
     echo "top_processes_by_cpu:"
     ps -eo pid,ppid,psr,pcpu,comm,args --sort=-pcpu | head -25
     echo "top_process_threads:"
@@ -152,9 +160,7 @@ if (( stability_rc != 0 )); then
   echo "FAIL: backend CV/drift stability gate failed; see $out.stability-check-v2" | tee "$out.status"
   exit 24
 fi
-if [[ -s "$out.warnings" ]]; then
-  # Exit 25 pauses the sequence for review; the warning alone does not invalidate the run.
-  echo "REVIEW: PSI warning recorded; this process is not automatically invalid, but manual host/interference review is required before another process; see $out.preflight, $out.postflight, $out.during, and $out.warnings" | tee "$out.status"
-  exit 25
-fi
-echo "PASS: pre/post PSI remained below 0.50, no competing workload was detected, and all backend stability gates passed" | tee "$out.status"
+# Every completed process pauses for review of placement and interference records.
+# PSI warnings do not invalidate the completed sample, but require review before continuation.
+echo "REVIEW: numerical and PSI gates passed; inspect local preflight, during, postflight, and warning records before launching another process" | tee "$out.status"
+exit 25

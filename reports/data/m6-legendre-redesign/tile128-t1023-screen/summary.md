@@ -6,10 +6,10 @@ predeclared limit. No comparison or acceptance result can be calculated.
 
 ## Verified artifacts and configuration
 
-- Baseline source: `<local-home-path> revision
+- Baseline source revision:
   `91c2cb8ff1ce576bd6dfa6764fd7fb516a00295a`; extension SHA-256
   `69d3a2138e8012f331a94c8c09347433e526e5c8362c917cfefcb849c7177036`.
-- Candidate source: `<local-home-path> base revision
+- Candidate source base revision:
   `739275d20987fec35506916cb682f961e8a7ffaf`; active tile size 128. Candidate
   patch SHA-256 `bd5ce130e0b619f87660eaa80d04e004605fcabc35e6769d3ca18051d0f0b2c7`;
   extension SHA-256
@@ -28,8 +28,11 @@ samples were `300.971, 298.175, 296.277, 296.549, 296.407 ms` (median
 `296.549 ms`, CV `0.600%`, first-three/final-two median drift `0.572%`). The
 process stability calculation passes. The harness reported relative L2 error
 `1.182e-13` against DUCC. GNU time recorded 18.89 s elapsed, 99% CPU, 275,928
-KiB peak RSS, and involuntary context-switch detail omitted. The CPU-pressure check failed the declared gate; exact transient readings remain local. The runner therefore stopped before launching the candidate. The full preflight, postflight, command, stdout and GNU time record are retained
-as `t1023-s0-q1-tile128-baseline.*`. No sample was retried or discarded.
+KiB peak RSS, and involuntary context-switch detail omitted. The CPU-pressure check failed the declared gate; exact transient readings remain local. The runner therefore stopped before launching the candidate. The CPU-pressure validity decisions, timing samples, elapsed time,
+and peak RSS are summarized above. Raw process, command, and host captures are
+local and untracked. No sample was retried or discarded. This result remains a
+historical diagnostic under the original 0.50% protocol; protocol v2 does not
+retroactively change its status.
 
 ## Result
 

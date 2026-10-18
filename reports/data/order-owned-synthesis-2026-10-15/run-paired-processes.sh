@@ -7,9 +7,9 @@ candidate=$2
 for degree in 511 1023; do
   for threads in 1 8; do
     if [[ $threads == 1 ]]; then
-      cpus=${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}
+      cpus=${RUSTSHT_CPUSET_Q1:?set RUSTSHT_CPUSET_Q1}
     else
-      cpus=${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}
+      cpus=${RUSTSHT_CPUSET_Q8:?set RUSTSHT_CPUSET_Q8}
     fi
 
     for pair in 1 2 3 4 5; do

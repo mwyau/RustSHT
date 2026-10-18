@@ -47,13 +47,11 @@ passes will replace that path.
 
 ## Initial real timing
 
-`benches/results/m2-real.csv` records two process-level runs. The 5950X host
-has host topology omitted. Rust 1.99.0 used Cargo's optimized bench
+`benches/results/m2-real.csv` records two process-level runs. The x86-64 host CPU model and topology are omitted. Rust 1.99.0 used Cargo's optimized bench
 profile without `target-cpu=native`; the C++ reference used g++ 15.2.0 with
 `-std=c++20 -O3 -DNDEBUG -march=native -pthread`, one thread, and
 `vectorize=false`. Each process used one executing thread and was pinned to
-logical one CPU core. Both runs began with `/proc/loadavg` at `4.22 3.73 3.56`; a
-compute-heavy RustSHT `m1b_bench` process was active on one CPU core at the pre-run
+logical one CPU core. A compute-heavy RustSHT benchmark process was active on one CPU core at the pre-run
 host check. That check does not establish whether it remained active through
 both runs, so the timing results are provisional. Each process reports medians of seven samples. RustSHT-FFT and RustFFT were f64;
 the table gives the mean per-transform whole-call time at batch count one. RustSHT-FFT's C2R includes normalization but uses the public half-spectrum

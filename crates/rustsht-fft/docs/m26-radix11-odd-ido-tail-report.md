@@ -70,8 +70,8 @@ measurement.
 
 `cargo fmt --all -- --check`, all-target/all-feature Clippy with warnings
 denied, and the debug and release all-feature workspace tests passed. The
-release suite used `<local-path>` for its target and temporary directories because
-`/tmp` was full. A non-AVX2 hardware run and a new cross-library performance
+release suite used isolated target and temporary directories because
+Default temporary storage was exhausted. A non-AVX2 hardware run and a new cross-library performance
 campaign were not part of this change. The final configuration, raw process capture, 34-cell summary and paired
 bootstrap summarizer are in
 [`the isolated result directory`](../benches/results/m26-radix11-odd-tail/). The tested source patch and its SHA-256 are recorded there. Earlier in-module

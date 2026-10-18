@@ -34,15 +34,14 @@ References
   SHTns runtime library: target/m6-references/shtns-build/libshtns_omp.so
 
 Host and tools
-  CPU: x86-64 one CPU core-Core Processor; x86_64; host CPU topology omitted;
-       visible/online 32 pinned CPU cores; x86_64 flags include AVX2 and FMA.
-  cgroup 32 pinned CPU cores; cpu.max: max 100000 (unlimited quota).
+  CPU architecture: x86_64; AVX2 and FMA are available; runtime dispatch is used.
+  No no cgroup-related interference was identified in the local review; detailed cgroup state is local.
   rustc: 1.99.0 (b940084d7 2026-09-28), LLVM 23.1.1
   cargo: 1.99.0 (5f94df478 2026-08-27)
   Python: 3.11.15; uv 0.12.23
-  Python executable: <local-home-path>
+  Python executable path omitted.
 CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
-  nr_throttled=0 and throttled_usec=0. No compiler/benchmark process was seen. Per-process gate
+  No competing compiler/benchmark process was seen. Per-process gate
   Before and after every process: require CPU PSI some avg10 <=0.50 and no
   competing compiler/benchmark process. Preserve refusal or failed runs; do not
   retry or delete samples. For each of synthesis_rust_plan, synthesis_ducc and

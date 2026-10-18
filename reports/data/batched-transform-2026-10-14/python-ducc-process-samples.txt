@@ -1,5 +1,4 @@
 CPython plan comparison; rustsht reused plan methods versus installed ducc0==0.41.0; same coefficient/map generator as native harness field 0; GL ntheta=lmax+1, nphi=2*lmax+3, mmax=lmax, phi0=0.37; three within-process runs with five samples each.
-command="taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env RAYON_NUM_THREADS=1 uv run python examples/python_perf_baseline.py 127 0 1 GL 3 plan synthesis both STANDARD 257"
 T127 GL 128x257 spin=0 mode=STANDARD threads=1 runs=3 scope=plan operation=synthesis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
 plan_construction_ms=0.024,0.019,0.018
 numpy_alm_copy_ms=0.003,0.003,0.003
@@ -8,7 +7,6 @@ numpy_output_allocation_ms=0.000,0.000,0.000
 synthesis_error=max_abs=5.412e-16 rms=3.170e-17 rel_l2=1.070e-14
 synthesis_rust_plan_run_medians_ms=0.871,0.871,0.877; median=0.871; spread=0.007
 synthesis_ducc_run_medians_ms=0.710,0.720,0.708; median=0.710; spread=0.012
-command="taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env RAYON_NUM_THREADS=1 uv run python examples/python_perf_baseline.py 127 0 1 GL 3 plan analysis both STANDARD 257"
 T127 GL 128x257 spin=0 mode=STANDARD threads=1 runs=3 scope=plan operation=analysis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
 plan_construction_ms=0.020,0.018,0.018
 numpy_alm_copy_ms=0.003,0.003,0.005
@@ -17,7 +15,6 @@ numpy_output_allocation_ms=0.000,0.000,0.000
 analysis_error=max_abs=6.101e-15 rms=2.333e-16 rel_l2=1.114e-14
 analysis_rust_plan_run_medians_ms=0.620,0.620,0.619; median=0.620; spread=0.002
 analysis_ducc_run_medians_ms=0.673,0.668,0.668; median=0.668; spread=0.005
-command="taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env RAYON_NUM_THREADS=8 uv run python examples/python_perf_baseline.py 127 0 8 GL 3 plan synthesis both STANDARD 257"
 T127 GL 128x257 spin=0 mode=STANDARD threads=8 runs=3 scope=plan operation=synthesis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
 plan_construction_ms=0.020,0.019,0.018
 numpy_alm_copy_ms=0.003,0.003,0.003
@@ -26,7 +23,6 @@ numpy_output_allocation_ms=0.000,0.000,0.000
 synthesis_error=max_abs=5.412e-16 rms=3.170e-17 rel_l2=1.070e-14
 synthesis_rust_plan_run_medians_ms=6.996,6.987,0.321; median=6.987; spread=6.675
 synthesis_ducc_run_medians_ms=0.155,0.143,0.137; median=0.143; spread=0.018
-command="taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env RAYON_NUM_THREADS=8 uv run python examples/python_perf_baseline.py 127 0 8 GL 3 plan analysis both STANDARD 257"
 T127 GL 128x257 spin=0 mode=STANDARD threads=8 runs=3 scope=plan operation=analysis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
 plan_construction_ms=0.020,0.019,0.018
 numpy_alm_copy_ms=0.003,0.003,0.003
@@ -35,7 +31,6 @@ numpy_output_allocation_ms=0.000,0.000,0.000
 analysis_error=max_abs=6.101e-15 rms=2.333e-16 rel_l2=1.114e-14
 analysis_rust_plan_run_medians_ms=0.304,0.284,0.286; median=0.286; spread=0.020
 analysis_ducc_run_medians_ms=0.157,0.149,0.144; median=0.149; spread=0.013
-command="taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env RAYON_NUM_THREADS=1 uv run python examples/python_perf_baseline.py 127 1 1 GL 3 plan synthesis both STANDARD 257"
 T127 GL 128x257 spin=1 mode=STANDARD threads=1 runs=3 scope=plan operation=synthesis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
 plan_construction_ms=0.019,0.019,0.018
 numpy_alm_copy_ms=0.008,0.006,0.006
@@ -44,7 +39,6 @@ numpy_output_allocation_ms=0.001,0.000,0.000
 synthesis_error=max_abs=1.757e-15 rms=1.323e-16 rel_l2=4.344e-14
 synthesis_rust_plan_run_medians_ms=2.618,2.556,2.661; median=2.618; spread=0.105
 synthesis_ducc_run_medians_ms=1.561,1.544,1.538; median=1.544; spread=0.024
-command="taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env RAYON_NUM_THREADS=1 uv run python examples/python_perf_baseline.py 127 1 1 GL 3 plan analysis both STANDARD 257"
 T127 GL 128x257 spin=1 mode=STANDARD threads=1 runs=3 scope=plan operation=analysis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
 plan_construction_ms=0.019,0.018,0.018
 numpy_alm_copy_ms=0.008,0.006,0.006
@@ -53,7 +47,6 @@ numpy_output_allocation_ms=0.000,0.000,0.000
 analysis_error=max_abs=6.999e-15 rms=2.202e-16 rel_l2=1.052e-14
 analysis_rust_plan_run_medians_ms=1.107,1.109,1.111; median=1.109; spread=0.004
 analysis_ducc_run_medians_ms=1.355,1.348,1.348; median=1.348; spread=0.008
-command="taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env RAYON_NUM_THREADS=8 uv run python examples/python_perf_baseline.py 127 1 8 GL 3 plan synthesis both STANDARD 257"
 T127 GL 128x257 spin=1 mode=STANDARD threads=8 runs=3 scope=plan operation=synthesis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
 plan_construction_ms=0.019,0.019,0.018
 numpy_alm_copy_ms=0.007,0.006,0.005
@@ -62,7 +55,6 @@ numpy_output_allocation_ms=0.001,0.000,0.000
 synthesis_error=max_abs=7.182e-16 rms=4.529e-17 rel_l2=1.487e-14
 synthesis_rust_plan_run_medians_ms=3.652,5.001,4.980; median=4.980; spread=1.348
 synthesis_ducc_run_medians_ms=0.263,0.243,0.244; median=0.244; spread=0.019
-command="taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env RAYON_NUM_THREADS=8 uv run python examples/python_perf_baseline.py 127 1 8 GL 3 plan analysis both STANDARD 257"
 T127 GL 128x257 spin=1 mode=STANDARD threads=8 runs=3 scope=plan operation=analysis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
 plan_construction_ms=0.019,0.019,0.018
 numpy_alm_copy_ms=0.008,0.006,0.006
@@ -71,7 +63,6 @@ numpy_output_allocation_ms=0.001,0.000,0.000
 analysis_error=max_abs=6.999e-15 rms=2.202e-16 rel_l2=1.052e-14
 analysis_rust_plan_run_medians_ms=1.179,1.159,1.417; median=1.179; spread=0.258
 analysis_ducc_run_medians_ms=2.003,2.002,2.002; median=2.002; spread=0.001
-command="taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env RAYON_NUM_THREADS=1 uv run python examples/python_perf_baseline.py 511 0 1 GL 3 plan synthesis both STANDARD 1025"
 T511 GL 512x1025 spin=0 mode=STANDARD threads=1 runs=3 scope=plan operation=synthesis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
 plan_construction_ms=0.036,0.036,0.035
 numpy_alm_copy_ms=0.055,0.054,0.054
@@ -80,7 +71,6 @@ numpy_output_allocation_ms=0.001,0.001,0.001
 synthesis_error=max_abs=3.495e-14 rms=7.845e-16 rel_l2=6.632e-14
 synthesis_rust_plan_run_medians_ms=44.396,44.403,44.249; median=44.396; spread=0.154
 synthesis_ducc_run_medians_ms=10.178,10.525,9.098; median=10.178; spread=1.428
-command="taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env RAYON_NUM_THREADS=1 uv run python examples/python_perf_baseline.py 511 0 1 GL 3 plan analysis both STANDARD 1025"
 T511 GL 512x1025 spin=0 mode=STANDARD threads=1 runs=3 scope=plan operation=analysis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
 plan_construction_ms=0.036,0.037,0.035
 numpy_alm_copy_ms=0.056,0.052,0.042
@@ -89,7 +79,6 @@ numpy_output_allocation_ms=0.001,0.001,0.001
 analysis_error=max_abs=1.238e-14 rms=1.779e-16 rel_l2=3.484e-14
 analysis_rust_plan_run_medians_ms=23.957,23.938,24.018; median=23.957; spread=0.080
 analysis_ducc_run_medians_ms=6.487,6.453,6.479; median=6.479; spread=0.034
-command="taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env RAYON_NUM_THREADS=8 uv run python examples/python_perf_baseline.py 511 0 8 GL 3 plan synthesis both STANDARD 1025"
 T511 GL 512x1025 spin=0 mode=STANDARD threads=8 runs=3 scope=plan operation=synthesis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
 plan_construction_ms=0.038,0.036,0.036
 numpy_alm_copy_ms=0.059,0.056,0.060
@@ -98,7 +87,6 @@ numpy_output_allocation_ms=0.001,0.001,0.001
 synthesis_error=max_abs=3.495e-14 rms=7.845e-16 rel_l2=6.632e-14
 synthesis_rust_plan_run_medians_ms=12.417,12.435,12.514; median=12.435; spread=0.097
 synthesis_ducc_run_medians_ms=1.380,1.256,1.462; median=1.380; spread=0.207
-command="taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env RAYON_NUM_THREADS=8 uv run python examples/python_perf_baseline.py 511 0 8 GL 3 plan analysis both STANDARD 1025"
 T511 GL 512x1025 spin=0 mode=STANDARD threads=8 runs=3 scope=plan operation=analysis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
 plan_construction_ms=0.035,0.035,0.035
 numpy_alm_copy_ms=0.055,0.052,0.052
@@ -107,7 +95,6 @@ numpy_output_allocation_ms=0.001,0.001,0.001
 analysis_error=max_abs=1.238e-14 rms=1.779e-16 rel_l2=3.484e-14
 analysis_rust_plan_run_medians_ms=14.973,7.362,7.608; median=7.608; spread=7.611
 analysis_ducc_run_medians_ms=1.065,1.021,1.013; median=1.021; spread=0.052
-command="taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env RAYON_NUM_THREADS=1 uv run python examples/python_perf_baseline.py 511 1 1 GL 3 plan synthesis both STANDARD 1025"
 T511 GL 512x1025 spin=1 mode=STANDARD threads=1 runs=3 scope=plan operation=synthesis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
 plan_construction_ms=0.036,0.035,0.036
 numpy_alm_copy_ms=0.108,0.105,0.069
@@ -116,7 +103,6 @@ numpy_output_allocation_ms=0.001,0.001,0.001
 synthesis_error=max_abs=3.257e-14 rms=8.152e-16 rel_l2=6.697e-14
 synthesis_rust_plan_run_medians_ms=59.166,58.795,59.205; median=59.166; spread=0.410
 synthesis_ducc_run_medians_ms=21.870,22.200,19.759; median=21.870; spread=2.441
-command="taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env RAYON_NUM_THREADS=1 uv run python examples/python_perf_baseline.py 511 1 1 GL 3 plan analysis both STANDARD 1025"
 T511 GL 512x1025 spin=1 mode=STANDARD threads=1 runs=3 scope=plan operation=analysis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
 plan_construction_ms=0.035,0.036,0.035
 numpy_alm_copy_ms=0.112,0.111,0.071
@@ -125,7 +111,6 @@ numpy_output_allocation_ms=0.001,0.001,0.002
 analysis_error=max_abs=1.401e-14 rms=1.910e-16 rel_l2=3.740e-14
 analysis_rust_plan_run_medians_ms=40.387,40.363,40.407; median=40.387; spread=0.045
 analysis_ducc_run_medians_ms=13.114,12.951,12.893; median=12.951; spread=0.221
-command="taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env RAYON_NUM_THREADS=8 uv run python examples/python_perf_baseline.py 511 1 8 GL 3 plan synthesis both STANDARD 1025"
 T511 GL 512x1025 spin=1 mode=STANDARD threads=8 runs=3 scope=plan operation=synthesis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
 plan_construction_ms=0.036,0.036,0.035
 numpy_alm_copy_ms=0.107,0.084,0.084
@@ -134,7 +119,6 @@ numpy_output_allocation_ms=0.001,0.001,0.001
 synthesis_error=max_abs=3.257e-14 rms=8.152e-16 rel_l2=6.697e-14
 synthesis_rust_plan_run_medians_ms=24.052,21.440,24.554; median=24.052; spread=3.114
 synthesis_ducc_run_medians_ms=2.619,2.582,2.647; median=2.619; spread=0.065
-command="taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env RAYON_NUM_THREADS=8 uv run python examples/python_perf_baseline.py 511 1 8 GL 3 plan analysis both STANDARD 1025"
 T511 GL 512x1025 spin=1 mode=STANDARD threads=8 runs=3 scope=plan operation=analysis backend=both python=3.11.15 numpy=2.4.6 ducc=0.41.0
 plan_construction_ms=0.053,0.036,0.035
 numpy_alm_copy_ms=0.108,0.069,0.069

@@ -57,8 +57,8 @@ transforms, all tested `l1` layouts and output guards. The full
 `cargo test --workspace --all-features` run passed 160 unit tests and 10
 integration tests; nine opt-in tests were ignored, and doc tests passed. `cargo clippy --workspace --all-targets --all-features -- -D warnings`,
 `cargo fmt --all -- --check`, `git diff --check` and the release benchmark
-build passed. The test run used `TMPDIR=<local-path>` because the shared `/tmp`
-tmpfs was full. An evidence audit confirmed all 60 benchmark processes exited
+Build passed. Tests used an isolated temporary directory after the default temporary
+storage was exhausted. An evidence audit confirmed all 60 benchmark processes exited
 successfully and that the recorded hashes, alternating order and 18 summary
 rows match the raw captures. Planner dispatch and workspace ownership were
 not changed. Measurements used Rust 1.99.0 stable, the Cargo bench profile, a portable

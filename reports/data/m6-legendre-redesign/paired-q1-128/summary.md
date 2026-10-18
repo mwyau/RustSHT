@@ -28,19 +28,15 @@ runner are in [`protocol-v2.md`](protocol-v2.md),
 [`run-one-v2.sh`](run-one-v2.sh), and
 [`check-stability-v2.py`](check-stability-v2.py). The v1 T511 process above remains diagnostic under its original 0.50% host
 gate and is not reclassified. When this protocol section was first recorded,
-no v2 performance process had started. The planned sequence was six
-alternating T1023 q1 pairs, followed by T2047 q1 only if all T1023 processes
-passed the declared validity rules and snapshots showed no unresolved
-interference.
+no v2 performance process had started. The planned sequence is six alternating T1023 q1 pairs, followed by T2047 q1 only if all T1023 processes pass the declared validity rules and manual review finds no unresolved interference. Raw captures are local and untracked; the committed summary retains the validity decision.
 
 ## First v2 T1023 process: stopped at baseline
 
 The first T1023 q1 process used the frozen clean-baseline extension. CPU-pressure warnings were reviewed under the declared protocol; exact transient readings remain local. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. Snapshots showed the benchmark
 thread pinned to one CPU core, no competing build or benchmark, and no sustained
-external CPU load on one CPU core. Concurrent process-placement details were retained only in local diagnostics. CPU-frequency telemetry was retained only in local diagnostics. The
+external CPU load on one CPU core. Concurrent process placement and CPU-frequency telemetry remain in local diagnostics only. The
 process recorded involuntary context-switch detail omitted, 276,132 kB peak RSS, and
-18.78 s elapsed time. Exact snapshots and GNU time output are in the
-`T1023-p01-baseline.*` evidence files. RustSHT synthesis measured 295.985, 293.720, 293.657, 293.395, and
+18.78 s elapsed time. Raw snapshots and GNU time output remain local and untracked. RustSHT synthesis measured 295.985, 293.720, 293.657, 293.395, and
 293.677 ms (median 293.677 ms, CV 0.3250%, drift 0.0627%). DUCC measured
 49.831, 49.399, 48.647, 46.737, and 47.190 ms (median 48.647 ms, CV
 2.5034%, drift 5.0065%). The DUCC drift exceeds the fixed 5% limit by
@@ -53,4 +49,5 @@ was `8.764e-14`. No candidate process or T2047 process was launched. No samples 
 and no process was retried. Because the baseline DUCC series failed the
 predeclared stability rule, this process yields no paired timing ratio and
 does not establish the T1023 performance result. The q1 cell stopped as
-specified by protocol v2. All raw measurements remain diagnostic evidence.
+specified by protocol v2. The numerical series remains diagnostic evidence;
+detailed host and process captures are local and untracked.

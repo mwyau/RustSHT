@@ -57,7 +57,7 @@ candidate binary SHA-256 was
 `70fa90a93d2903707037f7521acdcfef7de5cd19757cfc0d76093411ad98ef51`. The
 host was an x86-64 CPU; Rust was `1.99.0 (b940084d7 2026-09-28)` and
 LLVM was `23.1.1`. Load-average telemetry was retained only in local diagnostics. Each process used one reused plan and workspace, one first call, two timed
-warm samples per operation at q1 and q8, and worker-sized CPU affinity. The paired
+warm samples per operation at q1 and q8, and CPU affinity sized for the worker count. The paired
 runner was configured for three process pairs but stopped after one completed
 pair per spin. It was interrupted 63.3 seconds into the next candidate scalar
 process; its partial timing record remains in the data directory. Python

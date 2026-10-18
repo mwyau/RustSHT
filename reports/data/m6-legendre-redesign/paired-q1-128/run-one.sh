@@ -6,6 +6,12 @@ variant=$2
 lmax=$3
 outdir=$(cd "$(dirname "$0")" && pwd)
 root=$(git rev-parse --show-toplevel)
+cpuset=${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}
+frequency_cpu=${RUSTSHT_CPU_INDEX:-${cpuset%%[-,]*}}
+frequency_khz() {
+    [[ "$frequency_cpu" =~ ^[0-9]+$ ]] || { printf 'unavailable'; return; }
+    cat "/sys/devices/system/cpu/cpu${frequency_cpu}/cpufreq/scaling_cur_freq" 2>/dev/null || printf 'unavailable'
+}
 case "$variant" in
   baseline) package=${RUSTSHT_BASELINE_DIR:?set RUSTSHT_BASELINE_DIR}/python ;;
   candidate) package=${RUSTSHT_CANDIDATE_DIR:?set RUSTSHT_CANDIDATE_DIR}/python ;;
@@ -24,7 +30,7 @@ snapshot() {
     echo "cgroup_cpu_max=$(cat /sys/fs/cgroup/cpu.max 2>/dev/null || echo unavailable)"
     echo "cgroup_cpu_stat:"; cat /sys/fs/cgroup/cpu.stat 2>/dev/null || true
     echo "cpuset_effective=$(cat /sys/fs/cgroup/cpuset.cpus.effective 2>/dev/null || echo unavailable)"
-    echo "selected_cpu_frequency_khzuency_khz=$(cat /sys/devices/system/cpu/cpu${RUSTSHT_CPU_INDEX:-${RUSTSHT_CPUSET%%[-,]*}}/cpufreq/scaling_cur_freq 2>/dev/null || echo unavailable)"
+    echo "selected_cpu_frequency_khz=$(frequency_khz)"
     echo "shell_allowed_cpus=$(awk '/Cpus_allowed_list/ {print $2}' /proc/self/status)"
     echo "processes:"
     ps -eo pid,ppid,stat,psr,pcpu,comm,args --sort=-pcpu | head -35
@@ -51,7 +57,7 @@ fi
 
 t0=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 set +e
-taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" RUSTSHT_CPUSET} /usr/bin/time -v -o "$out.time" env \
+taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" /usr/bin/time -v -o "$out.time" env \
   TMPDIR="$root/target/tmp" \
   PYTHONPATH="$package:$root/target/m6-references/ducc-build" \
   RAYON_NUM_THREADS=1 \
@@ -76,7 +82,7 @@ runner_pid=$!
       grep -E '^(Name|Cpus_allowed_list|voluntary_ctxt_switches|nonvoluntary_ctxt_switches):' "/proc/$p/status" 2>/dev/null || true
       taskset -pc "$p" 2>&1 || true
     done
-    echo "selected_cpu_frequency_khzuency_khz=$(cat /sys/devices/system/cpu/cpu${RUSTSHT_CPU_INDEX:-${RUSTSHT_CPUSET%%[-,]*}}/cpufreq/scaling_cur_freq 2>/dev/null || echo unavailable)"
+    echo "selected_cpu_frequency_khz=$(frequency_khz)"
     echo "cpu_psi=$(tr '\n' ';' </proc/pressure/cpu)"
     sleep 2
   done

@@ -80,7 +80,7 @@ The suggested sizes changed native peak RSS by less than 1 MiB at the tested fix
 
 ## Reproduction files and checks
 
-Raw process output is committed in [`data/fft-friendly-nphi-2026-10-14/`](data/fft-friendly-nphi-2026-10-14/): native full-order cases, reduced-`mmax` cases, the T720 candidate refinement, and Python/DUCC comparisons. `examples/python_perf_baseline.py` accepts an optional tenth positional argument for `nphi`; omitting it preserves its existing `2*lmax+3` default. The native matrix used:
+Structured per-process timing and memory records are committed in [`data/fft-friendly-nphi-2026-10-14/`](data/fft-friendly-nphi-2026-10-14/): native full-order cases, reduced-`mmax` cases, the T720 candidate refinement, and Python/DUCC comparisons. `examples/python_perf_baseline.py` accepts an optional tenth positional argument for `nphi`; omitting it preserves its existing `2*lmax+3` default. The native matrix used:
 
 ```text
 taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}"     target/release/examples/m1b_bench <spin> <lmax> 1 both GL STANDARD <lmax+1> <nphi> <mmax> requested-only

@@ -1,7 +1,7 @@
 
 pair=1 spin=0 T511 q5
 
-variant=baseline spin=0 T511 q5 
+variant=baseline spin=0 T511 q5
 spin-0 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.034
 plan_construction_samples_ms=[0.042,0.035,0.034,0.034,0.033]
@@ -12,7 +12,7 @@ analysis_rayon_samples_ms=[8.810,8.906,8.678,9.214,9.020]
 scalar_analysis_first_call_rayon_ms=9.109
 elapsed_s=0.11 max_rss_kib=39516
 
-variant=candidate spin=0 T511 q5 
+variant=candidate spin=0 T511 q5
 spin-0 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.043
 plan_construction_samples_ms=[0.043,0.036,0.035,0.060,0.053]
@@ -25,7 +25,7 @@ elapsed_s=0.11 max_rss_kib=38920
 
 pair=2 spin=0 T511 q5
 
-variant=candidate spin=0 T511 q5 
+variant=candidate spin=0 T511 q5
 spin-0 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.035
 plan_construction_samples_ms=[0.042,0.036,0.035,0.034,0.034]
@@ -36,7 +36,7 @@ analysis_rayon_samples_ms=[9.781,10.116,9.269,9.175,7.899]
 scalar_analysis_first_call_rayon_ms=9.190
 elapsed_s=0.11 max_rss_kib=39476
 
-variant=baseline spin=0 T511 q5 
+variant=baseline spin=0 T511 q5
 spin-0 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.048
 plan_construction_samples_ms=[0.066,0.038,0.037,0.048,0.048]
@@ -49,7 +49,7 @@ elapsed_s=0.12 max_rss_kib=39484
 
 pair=3 spin=0 T511 q5
 
-variant=baseline spin=0 T511 q5 
+variant=baseline spin=0 T511 q5
 spin-0 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.041
 plan_construction_samples_ms=[0.042,0.036,0.035,0.050,0.041]
@@ -60,7 +60,7 @@ analysis_rayon_samples_ms=[9.044,9.101,9.079,9.099,10.336]
 scalar_analysis_first_call_rayon_ms=9.344
 elapsed_s=0.12 max_rss_kib=39260
 
-variant=candidate spin=0 T511 q5 
+variant=candidate spin=0 T511 q5
 spin-0 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.036
 plan_construction_samples_ms=[0.042,0.036,0.034,0.034,0.038]
@@ -73,7 +73,7 @@ elapsed_s=0.11 max_rss_kib=39728
 
 pair=4 spin=0 T511 q5
 
-variant=candidate spin=0 T511 q5 
+variant=candidate spin=0 T511 q5
 spin-0 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.035
 plan_construction_samples_ms=[0.042,0.036,0.035,0.034,0.034]
@@ -84,7 +84,7 @@ analysis_rayon_samples_ms=[7.973,7.677,7.662,9.737,9.567]
 scalar_analysis_first_call_rayon_ms=7.820
 elapsed_s=0.11 max_rss_kib=39280
 
-variant=baseline spin=0 T511 q5 
+variant=baseline spin=0 T511 q5
 spin-0 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.034
 plan_construction_samples_ms=[0.042,0.036,0.034,0.034,0.034]
@@ -97,7 +97,7 @@ elapsed_s=0.11 max_rss_kib=39436
 
 pair=5 spin=0 T511 q5
 
-variant=baseline spin=0 T511 q5 
+variant=baseline spin=0 T511 q5
 spin-0 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.042
 plan_construction_samples_ms=[0.052,0.044,0.042,0.042,0.042]
@@ -108,7 +108,7 @@ analysis_rayon_samples_ms=[8.997,8.886,8.746,9.094,8.961]
 scalar_analysis_first_call_rayon_ms=9.445
 elapsed_s=0.11 max_rss_kib=39152
 
-variant=candidate spin=0 T511 q5 
+variant=candidate spin=0 T511 q5
 spin-0 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.035
 plan_construction_samples_ms=[0.042,0.035,0.034,0.034,0.038]
@@ -121,7 +121,7 @@ elapsed_s=0.11 max_rss_kib=39328
 
 pair=1 spin=1 T511 q5
 
-variant=baseline spin=1 T511 q5 
+variant=baseline spin=1 T511 q5
 spin-1 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.034
 plan_construction_samples_ms=[0.056,0.036,0.034,0.034,0.034]
@@ -132,7 +132,7 @@ analysis_rayon_samples_ms=[15.798,15.556,15.761,15.358,15.648]
 analysis_first_call_rayon_ms=16.555
 elapsed_s=0.16 max_rss_kib=40852
 
-variant=candidate spin=1 T511 q5 
+variant=candidate spin=1 T511 q5
 spin-1 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.045
 plan_construction_samples_ms=[0.059,0.045,0.047,0.045,0.043]
@@ -145,7 +145,7 @@ elapsed_s=0.15 max_rss_kib=41032
 
 pair=2 spin=1 T511 q5
 
-variant=candidate spin=1 T511 q5 
+variant=candidate spin=1 T511 q5
 spin-1 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.034
 plan_construction_samples_ms=[0.042,0.036,0.034,0.034,0.034]
@@ -156,7 +156,7 @@ analysis_rayon_samples_ms=[13.561,13.720,13.655,13.687,13.747]
 analysis_first_call_rayon_ms=15.086
 elapsed_s=0.15 max_rss_kib=41060
 
-variant=baseline spin=1 T511 q5 
+variant=baseline spin=1 T511 q5
 spin-1 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.034
 plan_construction_samples_ms=[0.042,0.036,0.034,0.034,0.034]
@@ -169,7 +169,7 @@ elapsed_s=0.16 max_rss_kib=41292
 
 pair=3 spin=1 T511 q5
 
-variant=baseline spin=1 T511 q5 
+variant=baseline spin=1 T511 q5
 spin-1 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.034
 plan_construction_samples_ms=[0.043,0.036,0.034,0.034,0.034]
@@ -180,7 +180,7 @@ analysis_rayon_samples_ms=[15.486,15.403,15.724,15.933,16.177]
 analysis_first_call_rayon_ms=16.234
 elapsed_s=0.16 max_rss_kib=40768
 
-variant=candidate spin=1 T511 q5 
+variant=candidate spin=1 T511 q5
 spin-1 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.045
 plan_construction_samples_ms=[0.053,0.045,0.043,0.050,0.043]
@@ -193,7 +193,7 @@ elapsed_s=0.15 max_rss_kib=41292
 
 pair=4 spin=1 T511 q5
 
-variant=candidate spin=1 T511 q5 
+variant=candidate spin=1 T511 q5
 spin-1 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.034
 plan_construction_samples_ms=[0.042,0.035,0.034,0.033,0.033]
@@ -204,7 +204,7 @@ analysis_rayon_samples_ms=[16.817,13.952,13.353,13.805,14.019]
 analysis_first_call_rayon_ms=14.783
 elapsed_s=0.15 max_rss_kib=40788
 
-variant=baseline spin=1 T511 q5 
+variant=baseline spin=1 T511 q5
 spin-1 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.034
 plan_construction_samples_ms=[0.042,0.036,0.034,0.034,0.034]
@@ -217,7 +217,7 @@ elapsed_s=0.16 max_rss_kib=40764
 
 pair=5 spin=1 T511 q5
 
-variant=baseline spin=1 T511 q5 
+variant=baseline spin=1 T511 q5
 spin-1 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.034
 plan_construction_samples_ms=[0.042,0.036,0.034,0.034,0.034]
@@ -228,7 +228,7 @@ analysis_rayon_samples_ms=[15.733,15.511,15.759,15.516,15.584]
 analysis_first_call_rayon_ms=20.172
 elapsed_s=0.16 max_rss_kib=41084
 
-variant=candidate spin=1 T511 q5 
+variant=candidate spin=1 T511 q5
 spin-1 T511 mmax=511; GL 512x1025; f64; STANDARD; requested=5 threads; analysis; requested_only=true; reuse_estimate=None; strategy=automatic; 5 samples, median
 plan_construction_ms=0.034
 plan_construction_samples_ms=[0.042,0.035,0.034,0.034,0.033]

@@ -16,16 +16,16 @@ run_case() {
     local binary="$2"
     local threads="$3"
     local cpus="$4"
-    printf '\nvariant=%s spin=0 T1023 q%s cpus=%s\n' "$variant" "$threads" "$cpus"
+    printf '\nvariant=%s spin=0 T1023 q%s\n' "$variant" "$threads"
     /usr/bin/time -f 'elapsed_s=%e max_rss_kib=%M' \
         taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" "$binary" 0 1023 "$threads" analysis GL STANDARD 1024 2049 1023 requested-only
 }
 
 for threads in 3 5; do
     if ((threads == 3)); then
-        cpus=${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}
+        cpus=${RUSTSHT_CPUSET_Q3:?set RUSTSHT_CPUSET_Q3}
     else
-        cpus=${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}
+        cpus=${RUSTSHT_CPUSET_Q5:?set RUSTSHT_CPUSET_Q5}
     fi
     for pair in 1 2 3 4 5; do
         printf '\npair=%s spin=0 T1023 q%s\n' "$pair" "$threads"

@@ -27,7 +27,6 @@ fields = [
     "workspace_allocation_ms",
     "peak_rss_kib",
     "process_wall_seconds",
-    "cpu_affinity",
     "quality",
 ]
 rows = []
@@ -44,12 +43,10 @@ for log in sorted(ROOT.glob("*.log")):
         for key, value in metric_pattern.findall(timing_path.read_text())
     )
     quality = "screen-paired"
-    affinity = "worker-sized CPU set"
     if (comparison, pair, lmax, nphi, spin) == ("odd-vs-even", "1", "2047", "4096", "1"):
-        quality = "possible_smt_overlap_cpu30_vs_cpu14"
+        quality = "possible placement overlap"
     if pair in {"3", "4"} and lmax == "2047" and spin == "1":
-        affinity = "worker-sized CPU set"
-        quality = "affinity-rerun-no-CPU id"
+        quality = "worker-sized placement rerun"
     for operation in ("synthesis", "analysis"):
         for threads, suffix in ((1, "one_thread"), (8, "rayon")):
             median_key = f"{operation}_{suffix}_ms"
@@ -71,7 +68,6 @@ for log in sorted(ROOT.glob("*.log")):
                     "workspace_allocation_ms": metrics.get("workspace_allocation_ms", ""),
                     "peak_rss_kib": timing.get("peak_rss_kib", ""),
                     "process_wall_seconds": timing.get("wall_seconds", ""),
-                    "cpu_affinity": affinity,
                     "quality": quality,
                 }
             )

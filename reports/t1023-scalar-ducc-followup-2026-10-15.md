@@ -20,11 +20,9 @@ unchanged from commit `7ac443a40b034d5c52526d23ef30f6cef4b13d19`; the binary
 SHA256 was
 `690fc10f9abf1c6a5b396e0d7ff27647daf8e51d90b8620537645123efe7f1c8`.
 
-q1 was pinned to one CPU core and q8 to 8 pinned CPU cores on an x86-64 CPU with host topology omitted, running Linux. Load-average telemetry was retained only in local diagnostics. A pre-run process snapshot showed an unrelated, unpinned Python
-process using about one CPU on logical one CPU core. Because that process could
-migrate, these remain shared-host observations rather than isolated-core
-measurements. Raw inner samples, elapsed times, affinity commands and load
-snapshots are in [`the benchmark data`](data/sht-t1023-scalar-ducc-followup-2026-10-15/). The timing screen did not change Rust source or rerun numerical tests. Existing
+q1 was pinned to one CPU core and q8 to 8 pinned CPU cores on an x86-64 CPU with host topology omitted, running Linux. Load-average telemetry was retained only in local diagnostics. A preflight review found unrelated CPU activity that could migrate across cores;
+these remain shared-host observations rather than isolated-core measurements. The report data directory retains paired numerical summaries and binary provenance;
+raw host captures remain local and untracked. The timing screen did not change Rust source or rerun numerical tests. Existing
 analytic, DUCC, adjoint and high-bandlimit tests remain the correctness
 evidence. Before the timing refresh, the current-source phase diagnostic
 measured `24.190 ms` in scalar recurrence/accumulation at q6 and `7.017 ms` in

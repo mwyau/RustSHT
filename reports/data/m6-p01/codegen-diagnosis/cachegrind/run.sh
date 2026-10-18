@@ -23,7 +23,7 @@ for index in "${!variants[@]}"; do
 
   some_avg10=$(awk '/some/ {for (i=1; i<=NF; i++) if ($i ~ /^avg10=/) {sub("avg10=", "", $i); print $i}}' /proc/pressure/cpu)
   {
-    printf '\n--- variant=%s timestamp=%s cpu=${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET} ---\n' "$variant" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    printf '\n--- variant=%s timestamp=%s ---\n' "$variant" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     sha256sum "$binary"
     printf 'cpu_some_avg10=%s\n' "$some_avg10"
     cat /proc/pressure/cpu

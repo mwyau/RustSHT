@@ -38,8 +38,7 @@ were checked with identical map samples. RustSHT has not set a T1279 f32
 acceptance threshold; these results characterize accuracy without defining one. The opt-in T1023 scalar and spin-1 DUCC test also passed with the expanded
 selector. Formatting, Clippy, workspace all-feature tests, and no-default tests
 passed. The first all-feature run reached doc tests after 188 unit and 11 f32
-tests passed, then failed because the shared `/tmp` tmpfs was full. The rerun
-with `TMPDIR=target/tmp` passed. Python tests were not run because the bindings
+tests passed, then failed because default temporary storage was exhausted. The rerun with an isolated temporary directory passed. Python tests were not run because the bindings
 did not change.
 
 ## Measurement record

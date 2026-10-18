@@ -11,10 +11,9 @@ phases. No warm-up call was discarded. The current production source includes pa
 longitude rows. The q6 FFT phase therefore covers the Rayon row path and its
 private FFT workspaces. The q1 path retains the serial row loop. This is a
 phase diagnostic, not a paired performance comparison. The run used rustc `1.99.0 (b940084d7 2026-09-28)`, LLVM `23.1.1`, and
-`cargo test --release` on an x86-64 CPU with host topology omitted. The process inherited 32 pinned CPU cores without explicit affinity. Pulp runtime
+`cargo test --release` on an x86-64 CPU with host topology omitted. The process used the available CPU set without explicit affinity. Pulp runtime
 dispatch and the portable fallback were enabled; the diagnostic did not log
-which SIMD implementation it selected. The cgroup reported no CPU quota. Load-average telemetry was retained only in local diagnostics. Raw output and run metadata are in
-[`the profile data`](data/current-analysis-phase-profile-2026-10-15/).
+which SIMD implementation it selected. The cgroup reported no CPU quota. Load-average telemetry was retained only in local diagnostics. The phase timing and methodology are summarized here; raw output and host metadata remain local and untracked.
 
 ## Results
 

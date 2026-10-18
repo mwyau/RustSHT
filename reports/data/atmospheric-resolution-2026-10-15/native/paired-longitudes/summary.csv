@@ -75,10 +75,10 @@ odd-vs-even,1,2047,4096,0,1,synthesis,3355.976,,0.135,63.767,565204.0,39.43,scre
 odd-vs-even,1,2047,4096,0,8,synthesis,802.573,,0.135,63.767,565204.0,39.43,screen-paired
 odd-vs-even,1,2047,4096,0,1,analysis,1107.536,,0.135,63.767,565204.0,39.43,screen-paired
 odd-vs-even,1,2047,4096,0,8,analysis,217.807,,0.135,63.767,565204.0,39.43,screen-paired
-odd-vs-even,1,2047,4096,1,1,synthesis,4284.603,4510.284,0.11,59.334,598996.0,53.82,possible_smt_overlap_cpu30_vs_cpu14
-odd-vs-even,1,2047,4096,1,8,synthesis,1018.009,1041.139,0.11,59.334,598996.0,53.82,possible_smt_overlap_cpu30_vs_cpu14
-odd-vs-even,1,2047,4096,1,1,analysis,1824.478,1829.972,0.11,59.334,598996.0,53.82,possible_smt_overlap_cpu30_vs_cpu14
-odd-vs-even,1,2047,4096,1,8,analysis,374.557,390.497,0.11,59.334,598996.0,53.82,possible_smt_overlap_cpu30_vs_cpu14
+odd-vs-even,1,2047,4096,1,1,synthesis,4284.603,4510.284,0.11,59.334,598996.0,53.82,possible placement overlap
+odd-vs-even,1,2047,4096,1,8,synthesis,1018.009,1041.139,0.11,59.334,598996.0,53.82,possible placement overlap
+odd-vs-even,1,2047,4096,1,1,analysis,1824.478,1829.972,0.11,59.334,598996.0,53.82,possible placement overlap
+odd-vs-even,1,2047,4096,1,8,analysis,374.557,390.497,0.11,59.334,598996.0,53.82,possible placement overlap
 odd-vs-even,1,720,1441,0,1,synthesis,107.437,,0.053,8.566,81592.0,1.67,screen-paired
 odd-vs-even,1,720,1441,0,8,synthesis,45.979,,0.053,8.566,81592.0,1.67,screen-paired
 odd-vs-even,1,720,1441,0,1,analysis,51.177,,0.053,8.566,81592.0,1.67,screen-paired
@@ -159,19 +159,19 @@ odd-vs-even,2,720,1442,1,1,synthesis,107.715,112.369,0.045,8.984,116808.0,1.93,s
 odd-vs-even,2,720,1442,1,8,synthesis,48.276,59.522,0.045,8.984,116808.0,1.93,screen-paired
 odd-vs-even,2,720,1442,1,1,analysis,77.203,77.679,0.045,8.984,116808.0,1.93,screen-paired
 odd-vs-even,2,720,1442,1,8,analysis,18.208,21.411,0.045,8.984,116808.0,1.93,screen-paired
-odd-vs-even,3,2047,4095,1,1,synthesis,4645.72,4546.869,0.123,60.179,599600.0,56.82,affinity-rerun-no-CPU id
-odd-vs-even,3,2047,4095,1,8,synthesis,1150.201,1186.444,0.123,60.179,599600.0,56.82,affinity-rerun-no-CPU id
-odd-vs-even,3,2047,4095,1,1,analysis,1823.388,1837.258,0.123,60.179,599600.0,56.82,affinity-rerun-no-CPU id
-odd-vs-even,3,2047,4095,1,8,analysis,353.805,369.762,0.123,60.179,599600.0,56.82,affinity-rerun-no-CPU id
-odd-vs-even,3,2047,4096,1,1,synthesis,4364.788,4315.638,0.108,62.054,599448.0,53.9,affinity-rerun-no-CPU id
-odd-vs-even,3,2047,4096,1,8,synthesis,1014.452,1070.037,0.108,62.054,599448.0,53.9,affinity-rerun-no-CPU id
-odd-vs-even,3,2047,4096,1,1,analysis,1821.743,1792.403,0.108,62.054,599448.0,53.9,affinity-rerun-no-CPU id
-odd-vs-even,3,2047,4096,1,8,analysis,354.585,363.963,0.108,62.054,599448.0,53.9,affinity-rerun-no-CPU id
-odd-vs-even,4,2047,4095,1,1,synthesis,4628.081,4574.244,0.122,58.18,601016.0,57.63,affinity-rerun-no-CPU id
-odd-vs-even,4,2047,4095,1,8,synthesis,1136.22,1120.57,0.122,58.18,601016.0,57.63,affinity-rerun-no-CPU id
-odd-vs-even,4,2047,4095,1,1,analysis,1811.141,1880.875,0.122,58.18,601016.0,57.63,affinity-rerun-no-CPU id
-odd-vs-even,4,2047,4095,1,8,analysis,402.311,518.167,0.122,58.18,601016.0,57.63,affinity-rerun-no-CPU id
-odd-vs-even,4,2047,4096,1,1,synthesis,4266.666,4318.113,0.131,58.906,599176.0,54.18,affinity-rerun-no-CPU id
-odd-vs-even,4,2047,4096,1,8,synthesis,1002.938,1116.048,0.131,58.906,599176.0,54.18,affinity-rerun-no-CPU id
-odd-vs-even,4,2047,4096,1,1,analysis,1808.591,1808.809,0.131,58.906,599176.0,54.18,affinity-rerun-no-CPU id
-odd-vs-even,4,2047,4096,1,8,analysis,514.755,366.227,0.131,58.906,599176.0,54.18,affinity-rerun-no-CPU id
+odd-vs-even,3,2047,4095,1,1,synthesis,4645.72,4546.869,0.123,60.179,599600.0,56.82,worker-sized placement rerun
+odd-vs-even,3,2047,4095,1,8,synthesis,1150.201,1186.444,0.123,60.179,599600.0,56.82,worker-sized placement rerun
+odd-vs-even,3,2047,4095,1,1,analysis,1823.388,1837.258,0.123,60.179,599600.0,56.82,worker-sized placement rerun
+odd-vs-even,3,2047,4095,1,8,analysis,353.805,369.762,0.123,60.179,599600.0,56.82,worker-sized placement rerun
+odd-vs-even,3,2047,4096,1,1,synthesis,4364.788,4315.638,0.108,62.054,599448.0,53.9,worker-sized placement rerun
+odd-vs-even,3,2047,4096,1,8,synthesis,1014.452,1070.037,0.108,62.054,599448.0,53.9,worker-sized placement rerun
+odd-vs-even,3,2047,4096,1,1,analysis,1821.743,1792.403,0.108,62.054,599448.0,53.9,worker-sized placement rerun
+odd-vs-even,3,2047,4096,1,8,analysis,354.585,363.963,0.108,62.054,599448.0,53.9,worker-sized placement rerun
+odd-vs-even,4,2047,4095,1,1,synthesis,4628.081,4574.244,0.122,58.18,601016.0,57.63,worker-sized placement rerun
+odd-vs-even,4,2047,4095,1,8,synthesis,1136.22,1120.57,0.122,58.18,601016.0,57.63,worker-sized placement rerun
+odd-vs-even,4,2047,4095,1,1,analysis,1811.141,1880.875,0.122,58.18,601016.0,57.63,worker-sized placement rerun
+odd-vs-even,4,2047,4095,1,8,analysis,402.311,518.167,0.122,58.18,601016.0,57.63,worker-sized placement rerun
+odd-vs-even,4,2047,4096,1,1,synthesis,4266.666,4318.113,0.131,58.906,599176.0,54.18,worker-sized placement rerun
+odd-vs-even,4,2047,4096,1,8,synthesis,1002.938,1116.048,0.131,58.906,599176.0,54.18,worker-sized placement rerun
+odd-vs-even,4,2047,4096,1,1,analysis,1808.591,1808.809,0.131,58.906,599176.0,54.18,worker-sized placement rerun
+odd-vs-even,4,2047,4096,1,8,analysis,514.755,366.227,0.131,58.906,599176.0,54.18,worker-sized placement rerun
