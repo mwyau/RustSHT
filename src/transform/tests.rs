@@ -34,6 +34,36 @@ fn make_f1_plan(lmax: usize, mmax: usize, ntheta: usize, nphi: usize, phi0: f64)
     .unwrap()
 }
 
+fn scalar_ring_group_spectra(plan: &ShtPlan, alm: &[Complex64]) -> Vec<Complex64> {
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut workspace, 1).unwrap();
+    for (ring, &theta) in plan.grid.theta().iter().enumerate() {
+        (workspace.theta_sin[ring], workspace.theta_cos[ring]) =
+            crate::legendre::sin_cos_from_f64(theta);
+        workspace.ring_order_limits[ring] = <f64 as crate::legendre::ShtScalar>::polar_order_limit(
+            plan.harmonics.lmax(),
+            0,
+            workspace.theta_sin[ring],
+            workspace.theta_cos[ring],
+        );
+    }
+    plan.synthesize_ring_group(
+        alm,
+        plan.grid.nphi(),
+        plan.fft.spectrum_len(),
+        plan.grid.phi0(),
+        0,
+        &mut workspace.spectra,
+        &workspace.theta_sin[..plan.grid.ntheta()],
+        &workspace.theta_cos[..plan.grid.ntheta()],
+        &workspace.ring_order_limits[..plan.grid.ntheta()],
+        pulp::Arch::new(),
+        &mut workspace.recurrence_workers[0],
+    )
+    .unwrap();
+    workspace.spectra
+}
+
 fn coefficients(spec: &HarmonicSpec) -> Vec<Complex64> {
     let mut alm = vec![Complex64::new(0.0, 0.0); spec.nalm()];
     for (l, m, value) in [
@@ -1404,6 +1434,7 @@ fn t255_sectoral_synthesis_matches_ducc_0410_samples() {
 fn t255_mixed_synthesis_matches_ducc_0410_samples() {
     // Reference: ducc0 0.41.0, GL, T255, phi0=0.37, nthreads=1.
     let plan = make_plan(255, 255, 256, 513, 0.37);
+    assert!(plan.scalar_legendre_table.set(None).is_ok());
     let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
     for m in 0..=255 {
         for l in m..=255 {
@@ -1421,13 +1452,8 @@ fn t255_mixed_synthesis_matches_ducc_0410_samples() {
     let mut workspace = plan.workspace().unwrap();
     plan.prepare_workspace(&mut workspace, 1).unwrap();
     plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
-
-    let mut reference_map = vec![0.0; plan.sample_count];
-    let mut reference_workspace = plan.workspace().unwrap();
-    plan.prepare_workspace(&mut reference_workspace, 2).unwrap();
-    plan.synthesis_into(&alm, &mut reference_map, &mut reference_workspace)
-        .unwrap();
-    assert!(relative_l2_real(&map, &reference_map) < 3e-13);
+    let reference_spectra = scalar_ring_group_spectra(&plan, &alm);
+    assert!(relative_l2_complex(&workspace.spectra, &reference_spectra) < 3e-13);
     for (ring, longitude, reference) in [
         (0, 0, -7.73911562867147081e-5),
         (63, 1, 7.59821699150580896e-4),
@@ -1446,6 +1472,7 @@ fn t255_mixed_synthesis_matches_ducc_0410_samples() {
 fn t255_reduced_order_synthesis_matches_closed_form_on_odd_and_even_longitudes() {
     for nphi in [5, 6] {
         let plan = make_plan(255, 2, 256, nphi, 0.47);
+        assert!(plan.scalar_legendre_table.set(None).is_ok());
         let alm = coefficients(plan.harmonics());
         let expected = analytic_map(&plan, &alm);
         let mut actual = vec![0.0; plan.sample_count];
@@ -1479,14 +1506,34 @@ fn ducc_candidate_batches_more_than_256_active_reflected_rings() {
     assert!(relative_l2_real(&candidate_map, &expected) < 2e-13);
 
     alm[plan.harmonics().index(510, 0).unwrap()] = Complex64::new(1e-4, 0.0);
-    let mut reference_map = vec![0.0; plan.sample_count];
-    let mut reference_workspace = plan.workspace().unwrap();
-    plan.prepare_workspace(&mut reference_workspace, 2).unwrap();
     plan.synthesis_into(&alm, &mut candidate_map, &mut candidate_workspace)
         .unwrap();
-    plan.synthesis_into(&alm, &mut reference_map, &mut reference_workspace)
-        .unwrap();
-    assert!(relative_l2_real(&candidate_map, &reference_map) < 5e-13);
+    let reference_spectra = scalar_ring_group_spectra(&plan, &alm);
+    assert!(relative_l2_complex(&candidate_workspace.spectra, &reference_spectra) < 5e-13);
+}
+
+#[test]
+fn scalar_ducc_falls_back_safely_for_subnormal_and_extreme_coefficients() {
+    let plan = make_plan(255, 0, 256, 5, 0.37);
+    assert!(plan.scalar_legendre_table.set(None).is_ok());
+
+    for (monopole, quadrupole) in [(f64::from_bits(1), 0.0), (0.75 * f64::MAX, 0.75 * f64::MAX)] {
+        let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        alm[plan.harmonics().index(0, 0).unwrap()] = Complex64::new(monopole, 0.0);
+        alm[plan.harmonics().index(2, 0).unwrap()] = Complex64::new(quadrupole, 0.0);
+        let mut map = vec![0.0; plan.sample_count];
+        let mut workspace = plan.workspace().unwrap();
+        plan.prepare_workspace(&mut workspace, 1).unwrap();
+        plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
+
+        assert!(map.iter().all(|value| value.is_finite()));
+        let reference_spectra = scalar_ring_group_spectra(&plan, &alm);
+        if monopole.is_subnormal() {
+            assert_eq!(workspace.spectra, reference_spectra);
+        } else {
+            assert!(relative_l2_complex(&workspace.spectra, &reference_spectra) < 3e-13);
+        }
+    }
 }
 
 #[test]
@@ -4110,6 +4157,7 @@ fn scalar_ducc_candidate_t255_timing_screen() {
 
     fn run_case(lmax: usize, ntheta: usize, nphi: usize) {
         let plan = make_plan(lmax, lmax, ntheta, nphi, 0.37);
+        assert!(plan.scalar_legendre_table.set(None).is_ok());
         let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
         for m in 0..=lmax {
             for l in m..=lmax {
@@ -4127,12 +4175,16 @@ fn scalar_ducc_candidate_t255_timing_screen() {
             .num_threads(1)
             .build()
             .unwrap();
+        let two_threads = rayon::ThreadPoolBuilder::new()
+            .num_threads(2)
+            .build()
+            .unwrap();
         let mut candidate_workspace = one_thread.install(|| plan.workspace()).unwrap();
         one_thread
             .install(|| plan.prepare_workspace(&mut candidate_workspace, 1))
             .unwrap();
-        let mut reference_workspace = one_thread.install(|| plan.workspace()).unwrap();
-        one_thread
+        let mut reference_workspace = two_threads.install(|| plan.workspace()).unwrap();
+        two_threads
             .install(|| plan.prepare_workspace(&mut reference_workspace, 2))
             .unwrap();
         prepare_latitudes(&plan, &mut candidate_workspace);

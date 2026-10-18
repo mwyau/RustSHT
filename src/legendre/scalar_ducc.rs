@@ -108,6 +108,7 @@ pub(crate) fn synthesize_dispatched<'a>(
         let south = ntheta - 1 - north;
         if (sin_theta[north] - sin_theta[south]).abs() > 5.0e-15
             || (cos_theta[north] + cos_theta[south]).abs() > 5.0e-15
+            || (north > 0 && ring_order_limits[north] < ring_order_limits[north - 1])
         {
             return false;
         }
@@ -173,6 +174,7 @@ impl WithSimd for ScalarDuccSynthesis<'_, '_> {
         } = self;
         let ntheta = sin_theta.len();
         let north_count = ntheta.div_ceil(2);
+        let mut first_active_north_ring = 0;
 
         for (m, &sectoral_norm) in sectoral_norms.iter().take(order_count).enumerate() {
             let Some(order_offset) = packed_order_offset(m, lmax) else {
@@ -203,31 +205,32 @@ impl WithSimd for ScalarDuccSynthesis<'_, '_> {
             if !phase.re.is_finite() || !phase.im.is_finite() {
                 return false;
             }
-            let mut ring_cursor = 0;
-            loop {
-                let mut active_count = 0;
-                while ring_cursor < north_count && active_count < SCALAR_DUCC_BATCH_SIZE {
-                    let north = ring_cursor;
-                    ring_cursor += 1;
-                    if m > ring_order_limits[north] {
-                        continue;
-                    }
+            // The polar order limit is monotone from pole to equator. Find
+            // the first eligible north ring by advancing its boundary as the
+            // order increases. Each excluded ring is examined once overall.
+            while first_active_north_ring < north_count
+                && ring_order_limits[first_active_north_ring] < m
+            {
+                first_active_north_ring += 1;
+            }
+            let mut ring_cursor = first_active_north_ring;
+            while ring_cursor < north_count {
+                let active_count = (north_count - ring_cursor).min(SCALAR_DUCC_BATCH_SIZE);
+                for lane in 0..active_count {
+                    let north = ring_cursor + lane;
                     let south = ntheta - 1 - north;
                     let sine = sin_theta[north];
                     let cosine = cos_theta[north];
-                    scratch.packed_sin[active_count] = sine;
-                    scratch.packed_cos[active_count] = cosine;
-                    scratch.packed_csq[active_count] = if cosine.abs() > 0.99 {
+                    scratch.packed_sin[lane] = sine;
+                    scratch.packed_cos[lane] = cosine;
+                    scratch.packed_csq[lane] = if cosine.abs() > 0.99 {
                         (1.0 - sine) * (1.0 + sine)
                     } else {
                         cosine * cosine
                     };
-                    scratch.packed_north[active_count] = north;
-                    debug_assert_eq!(south, ntheta - 1 - scratch.packed_north[active_count]);
-                    active_count += 1;
-                }
-                if active_count == 0 {
-                    break;
+                    scratch.packed_north[lane] = north;
+                    debug_assert!(m <= ring_order_limits[north]);
+                    debug_assert_eq!(south, ntheta - 1 - scratch.packed_north[lane]);
                 }
 
                 if !synthesize_batch(simd, scratch, m, lmax, sectoral_norm, active_count) {
@@ -262,6 +265,7 @@ impl WithSimd for ScalarDuccSynthesis<'_, '_> {
                         scratch_output(spectra, spectrum_len, m, south, south_value);
                     }
                 }
+                ring_cursor += active_count;
             }
         }
         true
