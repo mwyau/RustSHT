@@ -967,3 +967,15 @@ the ordinary SIMD suffix at 543.517 ms. The candidate remains isolated. Its
 T511 control stopped because the DUCC baseline series exceeded the fixed
 stability limits, so the full q1 gate is unresolved and q8 or broader
 scalar/spin-1 regression measurements did not run.
+
+#### SIMD prefix accumulation screen
+
+A tile-128 variant vectorizes coefficient-factor formation and prefix sums
+across ordinary latitude lanes. The one-pair T2047 q1 screen is inconclusive:
+RustSHT passed stability, but DUCC failed with CV `19.812%` and drift
+`25.775%`. The SIMD-prefix Rust median was 1143.564 ms versus 1367.195 ms for
+the scalar-prefix process (ratio `0.836431`), but this single comparison does
+not establish a speedup. Numerical tests passed, and no retry or six-pair
+comparison ran. The [screen report](data/m6-legendre-redesign/route-timing/simd-prefix-screen-t2047-q1.md)
+and [source patch](data/m6-legendre-redesign/route-timing/simd-prefix-accumulator.patch)
+are preserved; the variant remains isolated.

@@ -185,3 +185,13 @@ limits; no candidate mate or retry ran. The complete samples and CPU-pressure va
 The T511 control is unresolved, and no production route, q8 matrix, or spin-1
 regression result is accepted. The next kernel investigation should separate
 exponent rebasing and normalization costs within the pre-suffix transition.
+
+## SIMD prefix accumulation screen
+
+A tile-128 SIMD-prefix variant vectorizes factor formation and accumulation
+across active latitude lanes. Its [v1.2 T2047 q1 screen](simd-prefix-screen-t2047-q1.md)
+was inconclusive: the RustSHT series passed timing stability, but the DUCC
+series failed (CV `19.812%`, drift `25.775%`). The RustSHT process median was
+1143.564 ms versus 1367.195 ms for the scalar-prefix process, but this single
+comparison is descriptive only. No retry or six-pair screen ran. The source
+patch is preserved and remains isolated.
