@@ -329,6 +329,7 @@ pub(super) fn normalize_pair_lanes(
     Ok(normal_range)
 }
 
+#[cfg(test)]
 #[inline(always)]
 pub(super) fn normalize_pair_lane(
     previous: &mut f64,

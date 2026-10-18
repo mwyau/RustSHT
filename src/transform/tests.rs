@@ -1531,6 +1531,23 @@ fn scalar_ordered_falls_back_safely_for_subnormal_and_extreme_coefficients() {
         plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
 
         assert!(map.iter().all(|value| value.is_finite()));
+        if !monopole.is_subnormal() {
+            let coefficient_scale = monopole.abs().max(quadrupole.abs());
+            let scaled_alm = alm
+                .iter()
+                .map(|coefficient| *coefficient / coefficient_scale)
+                .collect::<Vec<_>>();
+            let expected_map = analytic_map(&plan, &scaled_alm);
+            let scaled_error = map
+                .iter()
+                .zip(expected_map)
+                .map(|(&actual, expected)| (actual / coefficient_scale - expected).abs())
+                .fold(0.0_f64, f64::max);
+            assert!(
+                scaled_error < 5e-13,
+                "scaled analytic error={scaled_error:.3e}"
+            );
+        }
         let reference_spectra = scalar_ring_group_spectra(&plan, &alm);
         if monopole.is_subnormal() {
             assert_eq!(workspace.spectra, reference_spectra);

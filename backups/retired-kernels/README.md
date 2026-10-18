@@ -1,0 +1,7 @@
+# Retired kernel source
+
+| Former path and symbols | Status and evidence | Replacement | Archived source |
+|---|---|---|---|
+| `src/legendre/synthesis_fast.rs`, `ScalarSynthesisFastScratch`, `synthesize_order_dispatched` | Retired as a secondary scalar synthesis accelerator. The ordered scalar kernel now handles the normal f64 GL route; after it declines, the ring-group path already has the paired SIMD and normalized scaled scalar recurrences needed for robust completion. The tile layer added no unique operation coverage. Its former fallback comparison remains in `PERFORMANCE_STATUS.md`; those timings compare the complete ordered route with the ring-group route and are not presented as a tile-only benchmark. Removing its nine 128-lane scratch arrays saves about 9 KiB per f64 recurrence worker. Archived source state: `e01996e5`; initially integrated by `5fd41078`; retired 2026-10-18. | `src/legendre/scalar_ordered.rs` for eligible f64 GL synthesis; existing paired recurrence and normalized scalar recurrence for fallback and other supported operations. | [`scalar_synthesis_tiles.rs.txt`](scalar_synthesis_tiles.rs.txt) |
+
+The archived file preserves its GPL notices and tests. It is not a Rust module and is not compiled. The scalar recurrence, paired recurrence, coefficient cache, f32, table, spin, CC/F1 and adjoint implementations remain in production because they provide shared or still-required behavior.

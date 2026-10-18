@@ -18,7 +18,7 @@
 Trace production call sites and dispatch precedence in:
 
 - `src/legendre/scalar_ordered.rs` (current order-major kernel; retain its live implementation during the audit)
-- `src/legendre/synthesis_fast.rs` (old tile-128 implementation)
+- `backups/retired-kernels/scalar_synthesis_tiles.rs.txt` (retired tile-128 implementation; verify it has no production references)
 - `src/legendre/scalar_paired.rs`, `scalar.rs`, `scalar_f32.rs`, `scalar_table.rs`
 - `src/legendre/mod.rs`, `src/transform.rs`, `src/spin_transform.rs`
 - `src/workspace.rs`, `src/plan.rs` and relevant Rust/Python tests
