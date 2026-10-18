@@ -99,7 +99,7 @@ def main() -> None:
         )
     dump_dir = Path(sys.argv[1])
     threads_filter = int(sys.argv[2]) if len(sys.argv) == 3 else None
-    files = sorted(dump_dir.glob("l*-s*-q*-*-*"))
+    files = sorted(dump_dir.glob("[lt]*-s*-q*-*-*"))
     results: dict[str, object] = {
         "ducc0": ducc0.__version__,
         "ducc_source_revision": DUCC_REVISION,
