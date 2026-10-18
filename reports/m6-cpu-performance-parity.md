@@ -1071,3 +1071,19 @@ screen process ran and no retry was made. The pre/post pressure gates passed,
 with a warning-band observation during the run; placement and cgroup checks
 showed no clear competing workload. The candidate remains unmeasured and
 unaccepted. See the [T1023 stop report](data/m6-legendre-redesign/route-timing/scaled-prefix-simd-precheck-t1023-baseline-stop-v1.md).
+
+## Scalar transition route profile
+
+A test-only T2047 q1/q8 profile on a separate scalar transition patch counted
+the paired visitor at 137.9 million lane-pairs, 7.95% of active work, while
+its per-worker phase sums took 1.307 s at q1 and 1.346 s at q8. The visitor
+accounted for 60.0% and 58.0% of summed route time. The q8 worker work ratio
+was 2.41 from maximum to minimum; route-phase time differed by 5.45. These
+are single-process diagnostics, not candidate-versus-baseline measurements.
+The patch is archived but not applied to production. A bounded follow-up
+should resolve visitor time by decline reason before another kernel change.
+The [profile](data/m6-legendre-redesign/route-timing/scalar-transition-q1-q8-route-profile-2026-10-18.md)
+contains the route counts, per-worker results, source and binary hashes, and
+measurement limits. The previously matched T2047 baseline ratios remain
+9.06x RustSHT/DUCC at q1 and 13.97x at q8; this profile does not refresh
+them.
