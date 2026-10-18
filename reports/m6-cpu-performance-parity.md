@@ -956,3 +956,34 @@ not establish a speedup. Numerical tests passed, and no retry or six-pair
 comparison ran. The [screen report](data/m6-legendre-redesign/route-timing/simd-prefix-screen-t2047-q1.md)
 and [source patch](data/m6-legendre-redesign/route-timing/simd-prefix-accumulator.patch)
 are preserved; the variant remains isolated.
+
+### T511 baseline warm-up and stability diagnostic
+
+A predeclared baseline-versus-baseline diagnostic used the same clean baseline
+extension in two fresh T511 q1 processes. Each process recorded four blocks of
+five calls per backend, with one warm-up before each block. Timing samples and
+block calculations are in the [structured result](data/m6-legendre-redesign/paired-q1-128/t511-baseline-convergence-v1-samples.jsonl);
+the fixed method is in the [diagnostic protocol](data/m6-legendre-redesign/paired-q1-128/t511-baseline-convergence-v1-protocol.md).
+
+The existing 5% CV and first-three/final-two drift limits were unchanged.
+Process A failed two RustSHT blocks, including one `58.344 ms` outlier.
+Process B failed two DUCC blocks: the block median rose from `7.650 ms` to
+`9.276 ms` and returned to `7.648 ms`. The other backend blocks passed. The
+per-process medians were similar, but the sample sequences were not stationary;
+repeated warm-up calls did not remove the transient changes. Both processes
+matched the one-core placement. No competing build or benchmark was observed,
+cgroup throttling did not increase, and CPU-pressure gates passed (one
+postflight warning-band result). Frequency and context-switch records were
+reviewed locally; the cause remains unresolved. Both RustSHT outputs retained
+relative-L2 error `6.632e-14` against DUCC.
+
+The baseline itself therefore cannot provide a valid T511 control under this
+short diagnostic. The tile-128 and scaled-prefix accumulator candidates remain
+isolated and unaccepted; q8 and broader scalar/spin-1 regression measurements
+remain gated. The accumulator's six-pair q1 results remain `0.568982` at T1023
+and `0.407892` at T2047, approximately 3.38x and 3.67x DUCC latency. Its
+remaining measured kernel target is the pre-suffix transition: `715.931 ms`
+versus `543.517 ms` in the ordinary suffix at T2047. The next source-level
+diagnosis should separate exponent rebasing and recurrence normalization inside
+that transition. No further T511 acquisition or SIMD redesign is justified
+until the stability cause or measurement environment changes.
