@@ -1043,3 +1043,23 @@ to 499,011 in the instrumented route profile; complete-transform latency and
 memory have not been measured. The candidate is not accepted. Its source
 patch and route evidence are in the
 [candidate report](data/m6-legendre-redesign/route-timing/scaled-prefix-simd-precheck-candidate-v1.md).
+
+### SIMD prefix precheck T2047 baseline stability control
+
+The frozen q1 screen protocol first compared the same clean baseline extension
+in two fresh T2047 processes. Each process ran one warm-up and five timed
+plan-scope GL f64 scalar synthesis calls, with RustSHT and DUCC measured in
+the same process. All four series passed the existing CV and drift limits;
+preflight and postflight pressure checks passed. During-run pressure entered
+the warning band, but placement, context-switch, frequency, process, and
+cgroup records showed no clear interference. The baseline control is valid.
+
+RustSHT medians were 3296.015 and 3297.618 ms; DUCC medians were 372.927 and
+373.517 ms. The maximum relative-L2 error against DUCC was `3.015e-13`, with
+maximum absolute error `1.110e-12`. Peak RSS was 618.6 and 610.7 MiB. The
+[control report](data/m6-legendre-redesign/route-timing/scaled-prefix-simd-precheck-baseline-control-v1.md)
+contains all timing samples and checks. This diagnostic permits the one-pair
+baseline/candidate screen at T1023 and T2047 to proceed. It does not accept
+the candidate; T511, q8, and the complete scalar/spin-1 regression matrix
+remain outstanding. The [fixed protocol](data/m6-legendre-redesign/route-timing/scaled-prefix-simd-precheck-q1-screen-v1-protocol.md)
+defines the next cells and stop conditions.
