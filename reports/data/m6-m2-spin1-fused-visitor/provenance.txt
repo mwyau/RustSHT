@@ -1,0 +1,5 @@
+Baseline reconstruction: c0e11ad99f033073fb5ac56b170a72e26ede8d4f + reports/data/m6-current-baseline/rustsht-working-tree.patch
+Patch SHA-256: 94faf9984c65013e4b05dbe12a69f2de2913bf2990ce6e97c235621cb31c374f
+Uninstrumented source tree SHA-256: 34d2513348a75640fcd06c720be5f1ca5d3c7268a234a07c410c47e9d7fb8b15
+P01/P02: excluded
+Candidate code will be changed only in target/m6-m2-spin1-fused-visitor/source.

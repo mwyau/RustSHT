@@ -1,0 +1,238 @@
+Binary files target/m6-spin1-routes/uninstrumented-source/python/rustsht/__pycache__/__init__.cpython-311.pyc and target/m6-m2-spin1-fused-visitor/source/python/rustsht/__pycache__/__init__.cpython-311.pyc differ
+diff -ruN '--exclude=_rustsht.abi3.so' target/m6-spin1-routes/uninstrumented-source/src/legendre/mod.rs target/m6-m2-spin1-fused-visitor/source/src/legendre/mod.rs
+--- target/m6-spin1-routes/uninstrumented-source/src/legendre/mod.rs	2026-10-17 19:25:00.089276387 -0400
++++ target/m6-m2-spin1-fused-visitor/source/src/legendre/mod.rs	2026-10-17 19:39:30.593861352 -0400
+@@ -597,6 +597,18 @@
+     ) -> Complex<Self> {
+         Self::multiply_complex_scaled(value * additional_factor, factor, exponent)
+     }
++    fn multiply_complex_pair_scaled_product(
++        first: Complex<Self>,
++        second: Complex<Self>,
++        factor: Self,
++        additional_factor: Self,
++        exponent: i64,
++    ) -> (Complex<Self>, Complex<Self>) {
++        (
++            Self::multiply_complex_scaled_product(first, factor, additional_factor, exponent),
++            Self::multiply_complex_scaled_product(second, factor, additional_factor, exponent),
++        )
++    }
+     fn fill_spin_factors(
+         spin: usize,
+         m: usize,
+@@ -1333,6 +1345,22 @@
+         scalar::multiply_complex_scaled_product(value, factor, additional_factor, exponent)
+     }
+ 
++    fn multiply_complex_pair_scaled_product(
++        first: Complex<Self>,
++        second: Complex<Self>,
++        factor: Self,
++        additional_factor: Self,
++        exponent: i64,
++    ) -> (Complex<Self>, Complex<Self>) {
++        scalar::multiply_complex_pair_scaled_product(
++            first,
++            second,
++            factor,
++            additional_factor,
++            exponent,
++        )
++    }
++
+     fn fill_spin_factors(
+         spin: usize,
+         m: usize,
+diff -ruN '--exclude=_rustsht.abi3.so' target/m6-spin1-routes/uninstrumented-source/src/legendre/scalar.rs target/m6-m2-spin1-fused-visitor/source/src/legendre/scalar.rs
+--- target/m6-spin1-routes/uninstrumented-source/src/legendre/scalar.rs	2026-10-17 13:13:36.000000000 -0400
++++ target/m6-m2-spin1-fused-visitor/source/src/legendre/scalar.rs	2026-10-17 19:41:29.347811248 -0400
+@@ -411,6 +411,72 @@
+     )
+ }
+ 
++/// Multiplies two channel values by one shared basis and inverse-sine factor.
++///
++/// The ordinary path shares the factor checks while preserving the individual
++/// left-associated products. If either channel cannot use the same normal-range
++/// path, both values use the established scaled helper.
++pub(crate) fn multiply_complex_pair_scaled_product(
++    first: Complex64,
++    second: Complex64,
++    factor: f64,
++    additional_factor: f64,
++    exponent: i64,
++) -> (Complex64, Complex64) {
++    if let Some(product_pair) =
++        try_multiply_complex_pair_normal_path(first, second, factor, additional_factor, exponent)
++    {
++        return product_pair;
++    }
++
++    (
++        multiply_complex_scaled_product(first, factor, additional_factor, exponent),
++        multiply_complex_scaled_product(second, factor, additional_factor, exponent),
++    )
++}
++
++#[inline(always)]
++fn try_multiply_complex_pair_normal_path(
++    first: Complex64,
++    second: Complex64,
++    factor: f64,
++    additional_factor: f64,
++    exponent: i64,
++) -> Option<(Complex64, Complex64)> {
++    if factor.is_normal()
++        && additional_factor.is_normal()
++        && first.re.is_normal()
++        && first.im.is_normal()
++        && second.re.is_normal()
++        && second.im.is_normal()
++    {
++        let first_product = Complex64::new(
++            (first.re * factor) * additional_factor,
++            (first.im * factor) * additional_factor,
++        );
++        let second_product = Complex64::new(
++            (second.re * factor) * additional_factor,
++            (second.im * factor) * additional_factor,
++        );
++        if first_product.re.is_normal()
++            && first_product.im.is_normal()
++            && second_product.re.is_normal()
++            && second_product.im.is_normal()
++        {
++            if exponent == 0 {
++                return Some((first_product, second_product));
++            }
++            if let (Some(first_scaled), Some(second_scaled)) = (
++                scale_complex_normal_binary(first_product, exponent),
++                scale_complex_normal_binary(second_product, exponent),
++            ) {
++                return Some((first_scaled, second_scaled));
++            }
++        }
++    }
++    None
++}
++
+ fn scale_complex_normal_binary(value: Complex64, exponent: i64) -> Option<Complex64> {
+     if exponent == 0 {
+         return Some(value);
+@@ -2041,6 +2107,97 @@
+     }
+ 
+     #[test]
++    fn paired_complex_products_match_independent_scaled_helpers() {
++        let cases = [
++            (
++                true,
++                Complex64::new(0.75, -1.25),
++                Complex64::new(-2.5, 0.375),
++                1.125,
++                -0.875,
++                0,
++            ),
++            (
++                false,
++                Complex64::new(0.0, -0.0),
++                Complex64::new(2.0, -3.0),
++                0.5,
++                2.0,
++                4,
++            ),
++            (
++                false,
++                Complex64::new(f64::from_bits(1), -2.0e-310),
++                Complex64::new(3.0, -4.0),
++                1.0e200,
++                1.0e100,
++                -16,
++            ),
++            (
++                false,
++                Complex64::new(1.0e308, -8.0e307),
++                Complex64::new(-7.0e307, 6.0e307),
++                2.0,
++                0.5,
++                0,
++            ),
++            (
++                false,
++                Complex64::new(0.75, -1.25),
++                Complex64::new(-2.5, 0.375),
++                1.125,
++                -0.875,
++                1024,
++            ),
++            (
++                false,
++                Complex64::new(0.75, -1.25),
++                Complex64::new(-2.5, 0.375),
++                1.125,
++                -0.875,
++                -1070,
++            ),
++            (
++                false,
++                Complex64::new(f64::INFINITY, 1.0),
++                Complex64::new(f64::NAN, 1.0),
++                1.0,
++                1.0,
++                0,
++            ),
++        ];
++
++        for (expected_fast_path, first, second, factor, additional_factor, exponent) in cases {
++            assert_eq!(
++                try_multiply_complex_pair_normal_path(
++                    first,
++                    second,
++                    factor,
++                    additional_factor,
++                    exponent
++                )
++                .is_some(),
++                expected_fast_path
++            );
++            let (actual_first, actual_second) = multiply_complex_pair_scaled_product(
++                first,
++                second,
++                factor,
++                additional_factor,
++                exponent,
++            );
++            let expected_first =
++                multiply_complex_scaled_product(first, factor, additional_factor, exponent);
++            let expected_second =
++                multiply_complex_scaled_product(second, factor, additional_factor, exponent);
++            assert_eq!(actual_first.re.to_bits(), expected_first.re.to_bits());
++            assert_eq!(actual_first.im.to_bits(), expected_first.im.to_bits());
++            assert_eq!(actual_second.re.to_bits(), expected_second.re.to_bits());
++            assert_eq!(actual_second.im.to_bits(), expected_second.im.to_bits());
++        }
++    }
++
++    #[test]
+     fn complex_product_keeps_fallback_when_first_product_underflows() {
+         let value = Complex64::new(1.0e-200, -2.0e-200);
+         let factor = 1.0e-200;
+diff -ruN '--exclude=_rustsht.abi3.so' target/m6-spin1-routes/uninstrumented-source/src/spin_transform.rs target/m6-m2-spin1-fused-visitor/source/src/spin_transform.rs
+--- target/m6-spin1-routes/uninstrumented-source/src/spin_transform.rs	2026-10-17 19:25:00.090276404 -0400
++++ target/m6-m2-spin1-fused-visitor/source/src/spin_transform.rs	2026-10-17 19:39:30.595861385 -0400
+@@ -2058,13 +2058,8 @@
+                         compact_ring_indices.map_or(fallback_ring, |indices| indices[fallback_ring])
+                     };
+                     let inverse_sine = fallback_sin[fallback_ring].recip();
+-                    let first = T::multiply_complex_scaled_product(
++                    let (first, second) = T::multiply_complex_pair_scaled_product(
+                         recurrence.fast_scalar_first[l],
+-                        basis[lane],
+-                        inverse_sine,
+-                        exponents[lane],
+-                    );
+-                    let second = T::multiply_complex_scaled_product(
+                         recurrence.fast_scalar_second[l],
+                         basis[lane],
+                         inverse_sine,

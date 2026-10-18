@@ -1,0 +1,18 @@
+selected_pairs=12
+selected_processes=24
+pair_ratio_min=0.628262
+pair_ratio_max=1.48884
+median_within_process_cv_pct=40.065
+within_process_cv_min_pct=21.86
+within_process_cv_max_pct=107.36
+first3_median_of_medians_ms=19.698999999999998
+last2_median_of_medians_ms=9.539000000000001
+last2_over_first3=0.4842377785674401
+preflight_psi_min=0.02
+preflight_psi_max=0.38
+time_cpu_pct_min=355
+time_cpu_pct_max=440
+voluntary_context_switch_min=262
+voluntary_context_switch_max=312
+context-switch detail omitted
+context-switch detail omitted

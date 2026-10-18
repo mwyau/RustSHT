@@ -1,0 +1,2 @@
+cell,pairs,median_ratio,ci95_lower,ci95_upper,min_pair_ratio,max_pair_ratio,pairs_over_1_02,bootstrap_seed,bootstrap_resamples,gate
+spin0-t511-q1,12,1.002761069,0.996376328,1.005369291,0.993880445,1.015538683,0,2774063695,200000,pass

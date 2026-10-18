@@ -505,3 +505,26 @@ dominate at T2047. The ordered P01 matrix passes its measured gates but does
 not resolve the default-link spin-1 control; source relocation also left the
 linked symbol layout unchanged. C02's q1 T255 performance gate remains
 unresolved, and P01 still lacks an accepted default-link control solution.
+
+## M2 spin-1 fused Q/U visitor (preliminary pass; full matrix inconclusive)
+
+An isolated candidate fused shared recurrence-basis and inverse-sine work in
+the spin-1 Q/U visitor prologue. Per-channel coefficient/exponent handling,
+multiply order, safety checks, and the scaled fallback remained intact. This
+was not a SIMD change and did not modify shared production source. The source
+starts from the C02+C03 baseline with P01/P02 excluded. Candidate patch,
+archived source, focused checks, hashes, and raw timing evidence are in
+[`reports/data/m6-m2-spin1-fused-visitor/`](data/m6-m2-spin1-fused-visitor/). The preliminary six-pair screen passed: T2047 spin-1 q8 synthesis measured
+candidate/baseline `0.948295` [0.945511, 0.960977], and the T511 spin-1 q1
+control measured `1.006177` [1.002531, 1.018994]. Focused analytic and DUCC
+checks passed; the two output-map comparisons were bitwise equal to baseline. The full matrix is **incomplete and inconclusive**, so the candidate remains
+**unaccepted**. Scalar T511 q1 and spin-1 T511 q1 each completed 12 pairs and
+passed their control gates. Scalar T511 q8 also completed 12 pairs, but its
+raw samples were severely nonstationary: within-process sample CV median
+40.1%, range 21.9–107.4%, and paired ratios ranged 0.628–1.489. Its numerical
+bootstrap interval is therefore not treated as a valid gate pass. No valid
+sample was discarded. The next spin-1 T511 q8 cell has two completed pairs;
+CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
+limit. The matrix stopped there, without relaxing the limit. The complete
+audit, retained refusals/orphans, and partial cell records are linked from the
+candidate evidence directory.

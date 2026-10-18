@@ -1,0 +1,3 @@
+cell,pairs,median_ratio,ci95_lower,ci95_upper,min_pair_ratio,max_pair_ratio,pairs_over_1_02,bootstrap_seed,bootstrap_resamples,bootstrap_gate
+T2047 spin1 q8 synthesis primary,6,0.948295061,0.945511027,0.960977172,0.944022499,0.963544134,0,20261017,200000,pass
+T511 spin1 q1 synthesis control,6,1.006177367,1.002530727,1.018993954,1.000620318,1.029302270,1,20261017,200000,pass
