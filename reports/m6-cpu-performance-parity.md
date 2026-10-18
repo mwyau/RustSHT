@@ -1211,3 +1211,19 @@ timer scopes, memory, and validity findings are in the
 [route-profile report](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-route-profile-t2047-v1.md).
 The candidate remains unaccepted because the v2 T1023 matrix stopped at its
 invalid baseline SHTns timing series.
+
+### Scaled-prefix range-precheck diagnostic
+
+A test-only T2047 q1 route profile of the fused tile-128 source measured a
+6.41% lower prefix estimate and a 2.62% lower instrumented synthesis call
+after a SIMD range precheck skipped no-op lane normalization. The suffix and
+fallback timers were 0.815% and 10.772% higher in this single-process
+diagnostic, which has no uncertainty interval. Route counts matched, and each
+process produced bitwise-identical unprofiled and instrumented maps. The two
+sources were not compared bitwise. These numbers do not accept either
+optimization. The
+[protocol](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-range-precheck-t2047-q1-protocol-v1.md)
+and [result](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-range-precheck-t2047-v1.md)
+freeze source hashes, route timing, correctness evidence, and validity
+findings. One complete-transform T2047 q1 screen against the clean baseline is
+the next measurement.
