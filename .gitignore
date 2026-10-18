@@ -52,6 +52,10 @@ build/
 /reports/data/**/build*.stdout
 /reports/data/**/test*.stdout
 /reports/data/m6-spin1-routes/*.stdout
+/reports/data/m6-legendre-redesign/paired-q1-128/v3-*.stdout
+/reports/data/m6-legendre-redesign/paired-q1-128/v3-*.interference
+/reports/data/m6-legendre-redesign/paired-q1-128/v3-*.status
+/reports/data/m6-legendre-redesign/paired-q1-128/v3-*.stability-check-v3
 /crates/rustsht-fft/benches/results/**/*.preflight
 /crates/rustsht-fft/benches/results/**/*.preflight.txt
 /crates/rustsht-fft/benches/results/**/*.postflight

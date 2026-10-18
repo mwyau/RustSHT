@@ -51,3 +51,8 @@ predeclared stability rule, this process yields no paired timing ratio and
 does not establish the T1023 performance result. The q1 cell stopped as
 specified by protocol v2. The numerical series remains diagnostic evidence;
 detailed host and process captures are local and untracked.
+
+
+## Independent v3 acquisition
+
+V2 remains stopped at its first T1023 baseline process because DUCC's first-three/final-two median drift exceeded the fixed 5% limit by 0.0065 percentage points. That sample remains diagnostic and is not reclassified. The v3 protocol predeclares a complete six-pair q1 acquisition from pair 1 for both variants, with unchanged timing and CPU-pressure gates. It uses the frozen baseline and tile-128 candidate binaries whose hashes were rechecked after the history cleanup. No v3 process has started yet. See [`protocol-v3.md`](protocol-v3.md) and [`run-one-v3.sh`](run-one-v3.sh).
