@@ -530,10 +530,11 @@ load on that core; the cgroup had no CPU quota and recorded no throttling.
 
 CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. A warning-band CPU-pressure reading was recorded; its exact value remains local. The next process was pair 06 candidate.
 
-### T2047 q1 pair 06: candidate valid, baseline mate pending
+### T2047 q1 pair 06: both processes valid
 
 The sixth pair followed the fixed candidate-then-baseline order. All three
-candidate timing series and its numerical comparison against DUCC passed.
+timing series for both processes and both numerical comparisons against DUCC
+passed.
 
 | Backend | Samples (ms) | Median (ms) | CV | Drift |
 | --- | --- | ---: | ---: | ---: |
@@ -543,12 +544,42 @@ candidate timing series and its numerical comparison against DUCC passed.
 
 RustSHT-versus-DUCC relative L2 error was `3.015e-13`; SHTns-versus-DUCC
 was `8.764e-14`. The candidate was 4.74x DUCC and 6.57x SHTns in this
-process; its pair ratio awaits the baseline mate. Whole-process elapsed time
-was 1:11.75, peak RSS was 955,312 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked.
-The worker stayed within its one-core affinity. Process and thread snapshots
-showed no competing build or benchmark or sustained external CPU load on
-that core; the cgroup had no CPU quota and recorded no throttling.
+process. Whole-process elapsed time was 1:11.75, peak RSS was 955,312 kB, and
+Context-switch diagnostics were reviewed locally; exact counts remain untracked. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core
+affinity. Process and thread snapshots showed no competing build or benchmark
+or sustained external CPU load on that core; the cgroup had no CPU quota and
+recorded no throttling.
 
 CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are
-warnings, not rejections. Raw diagnostics remain local and untracked. The
-candidate remains unaccepted; the next process is the pair 06 baseline mate.
+warnings, not rejections. Raw diagnostics remain local and untracked.
+
+The baseline mate also passed all gates:
+
+| Backend | Samples (ms) | Median (ms) | CV | Drift |
+| --- | --- | ---: | ---: | ---: |
+| RustSHT | 3,339.506, 3,322.307, 3,355.191, 3,357.599, 3,353.419 | 3,353.419 | 0.3958% | 0.4772% |
+| DUCC | 374.182, 376.811, 374.361, 360.150, 379.493 | 374.361 | 1.7987% | 1.2126% |
+| SHTns | 277.245, 265.504, 268.163, 265.648, 266.179 | 266.179 | 1.6576% | 0.8451% |
+
+The paired RustSHT median ratio is 0.5187 (1.9287x, or 48.13% lower
+latency). RustSHT was 8.96x DUCC and 12.60x SHTns for baseline, and 4.74x
+DUCC and 6.57x SHTns for tile 128. RustSHT-versus-DUCC relative L2 error
+was `3.015e-13`; SHTns-versus-DUCC was `8.764e-14`. Whole-process elapsed
+time was 1:24.86, peak RSS was 955,528 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core affinity. Process and thread
+snapshots showed no competing build or benchmark or sustained external CPU
+load on that core; the cgroup had no CPU quota and recorded no throttling.
+
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are warnings, not
+rejections.
+
+### T2047 q1 six-pair result
+
+All six baseline/candidate pairs passed timing stability, interference review,
+and numerical checks. The candidate/baseline RustSHT median ratios were
+`0.521876`, `0.534575`, `0.566271`, `0.531789`, `0.534933`, and `0.518743`.
+Their median is `0.533182`; Python `random.Random(20261017)` with 50,000
+resamples, replacement sampling, the median statistic, and linear percentile
+interpolation gives `0.520310–0.550602`. Both T1023 and T2047 meet the
+high-resolution q1 criteria. The candidate still needs T511 controls and the
+planned q8 matrix before acceptance. The next process is the fixed T511 pair
+01 baseline.
