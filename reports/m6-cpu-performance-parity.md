@@ -1112,3 +1112,20 @@ its fixed stability limits; these correctness results do not change either
 candidate's performance status. Full test counts, high-bandlimit errors, and
 binary hashes are in the
 [correctness record](data/m6-legendre-redesign/route-timing/simd-prefix-candidate-correctness-v1.md).
+
+## Prefix normalization and accumulation fusion screen
+
+A new isolated source fuses scaled-pair normalization with prefix
+accumulation, removing a separate lane walk. Focused normalization-equivalence,
+fallback, high-order, and all-grid scalar controls passed in both parallel and
+serial builds. One T2047 q1 process per variant passed the frozen stability and
+CPU-pressure gates. The fused candidate's complete-transform median was
+1,235.878 ms versus 1,392.910 ms for the accumulator source, an 11.27%
+reduction; the output maps were bitwise identical and peak RSS was unchanged.
+This incremental screen does not compare the fused candidate directly with
+clean production, DUCC, or SHTns, and does not accept the candidate. Its source,
+protocol, samples, memory, and validity decisions are in the
+[screen report](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-screen-t2047-q1.md).
+The next gate is the matched q1 matrix against clean production at T1023 and
+T2047, then the T511 control. q8 and spin-1 regression measurements remain
+gated; the 128-ring route remains outside production.
