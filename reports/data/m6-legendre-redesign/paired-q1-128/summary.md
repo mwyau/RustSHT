@@ -218,4 +218,26 @@ load on that core; the cgroup recorded no throttling.
 CPU-pressure warnings were reviewed under the declared protocol; exact transient readings remain local. The four valid T1023 q1 pairs all favor tile 128,
 but the six-pair matrix and bootstrap gate remain incomplete, so the candidate
 remains unaccepted. No process was retried and no samples were removed. The
-next process is pair 05 baseline.
+next process was pair 05 baseline.
+
+### T1023 q1 pair 05: baseline valid, candidate mate pending
+
+The fifth pair followed the fixed baseline-then-candidate order. All three
+baseline timing series and its numerical comparison against DUCC passed.
+
+| Backend | Samples (ms) | Median (ms) | CV | Drift |
+| --- | --- | ---: | ---: | ---: |
+| RustSHT | 319.585, 295.916, 297.065, 298.956, 297.581 | 297.581 | 2.9606% | 0.4044% |
+| DUCC | 49.203, 47.206, 49.516, 50.720, 51.194 | 49.516 | 2.8079% | 3.5423% |
+| SHTns | 37.251, 36.074, 35.117, 35.268, 35.438 | 35.438 | 2.1822% | 2.0345% |
+
+RustSHT-versus-DUCC relative L2 error was `1.182e-13`; SHTns-versus-DUCC
+was `8.764e-14`. Whole-process elapsed time was 19.01 s, peak RSS was
+274,616 kB, and Context-switch diagnostics were reviewed locally; exact counts remain untracked. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its
+one-core affinity. No competing build or benchmark or sustained external CPU
+load was observed on that core; the cgroup recorded no throttling.
+
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The
+during-run readings above 0.50% are warnings, not rejections. Raw diagnostic
+captures remain local and untracked. The next process is the pair 05 candidate
+mate.
