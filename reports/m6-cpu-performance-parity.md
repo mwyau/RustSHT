@@ -1090,6 +1090,13 @@ range checks. It replaced only 0.014% of active lane-pairs and is rejected as
 a performance design. Its full numerical contract was not validated, and no
 production change was made. The [route profile](data/m6-legendre-redesign/route-timing/scalar-transition-q1-q8-route-profile-2026-10-18.md)
 and [decline diagnostic](data/m6-legendre-redesign/route-timing/scalar-visitor-accumulator-decline-diagnostic-v1.md)
-record the measured mechanism. The previously matched T2047 baseline ratios
-remain 9.06x RustSHT/DUCC at q1 and 13.97x at q8; this diagnostic does not
-refresh them.
+record the measured mechanism. A follow-up counted ordinary-range recurrence
+state in the scaled blocks: 76.48% of sampled lane-pairs passed state checks,
+and 82.13% of the first-pair contributions passed the existing safety checks.
+A corrected per-lane replay found only 206 of 133,176 lanes (0.15%) safe for
+all paired degrees; ordinary-safe work was 0.232% of the measured fallback
+pair budget. This does not support a SIMD lane-packing kernel for this route.
+Most safe-prefix work was scaled arithmetic. The next kernel work remains
+on the measured transition and scaled-prefix costs, with the lane accumulator
+rejected. The previously matched T2047 baseline ratios remain 9.06x
+RustSHT/DUCC at q1 and 13.97x at q8; these diagnostics do not refresh them.

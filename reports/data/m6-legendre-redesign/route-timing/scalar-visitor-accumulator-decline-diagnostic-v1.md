@@ -71,7 +71,71 @@ for correctness or performance.
 The compact-order visitor remains the largest measured visitor subpath, with
 521.675 ms of worker-summed time in this q1 profile. The accumulator decline
 counts show that whole-block eligibility is dominated by scaled-range work,
-not coefficient safety: 2,976 of 3,004 declines had that cause. The next
-bounded diagnostic should measure lane-level normal/scaled occupancy within
-those compact-order blocks before selecting another kernel design. Preserve
-the existing scaled path for every lane that cannot be shown safe.
+not coefficient safety: 2,976 of 3,004 declines had that cause. The lane-state
+and per-lane safe-prefix measurements below do not justify lane packing or a
+continuation kernel. Preserve the existing scaled path for every lane that
+cannot be shown safe.
+
+## Lane-state occupancy follow-up
+
+A second q1 profile added test-only lane-state counts without changing
+production arithmetic. The release test binary SHA-256 was
+`1ef0eaa27a76944963a5631d04a98290d615bd90aa040eed7a532ec8062c0656`. The
+updated `src/legendre/scalar_paired.rs` and test-only `route_profile.rs` file
+hashes were `a7b92a0784aab97f0340f726a14b294a96bbb16ac6ee3856800292c4ed893a38`
+and `6ad51b56b90b1a50f9b7eea9c99617c7b7c2d043fb62ed2898824a4b310b86c7`.
+The same T2047 GL f64 scalar route profile passed its map-equality assertion
+and the revised host-pressure gate; exact transient telemetry remains local.
+This was one diagnostic process, not a timing acceptance sample, and peak RSS
+was not measured.
+
+| Scaled-branch state check | Lane-pair samples | Fraction |
+|---|---:|---:|
+| Exponent zero; both recurrence values in ordinary range | 1,105,506 | 76.48% |
+| Nonzero exponent or recurrence value outside ordinary range | 340,042 | 23.52% |
+| **Total state samples** | **1,445,548** | **100%** |
+
+At the first paired degree of scaled blocks, 109,374 of 133,176 lane-pairs
+(82.13%) passed the existing contribution and accumulation checks; 23,802
+failed. These first-degree checks reproduce the current safety conditions.
+They do not show that a lane remains safe at subsequent degrees, and the
+profile does not prove that packing these lanes would improve a full
+transform. The corrected per-lane safe-prefix replay below extends these
+counts across the degree range. The scaled path remains required for every lane
+that fails those checks.
+
+## Corrected per-lane safe-prefix replay
+
+An initial replay hook was mistakenly attached to the two-channel transition
+kernel. That run did not measure the scalar accumulator and is excluded; its
+raw local diagnostic files remain unchanged. The corrected test-only replay
+runs once per scalar accumulator attempt and independently advances each lane
+through the existing scaled recurrence and ordinary-range checks. The release
+test binary SHA-256 was
+`4da15bb1633afbae0a1e9d5bdb7730cf3b68e2ae79a791a0c11b70c53079373e`. Updated
+source hashes were `1b139eda6cc327dd19d3e86cb42b26bb4abf51c126ce0de5b0b0bba7ffe45f0b`
+for `src/legendre/scalar_paired.rs` and
+`962c35453cbc194340815ad74f1a80640828e8e12e08091e8cc8d08c906e4ce4` for the
+test-only `src/legendre/route_profile.rs`. The replay changed no production
+arithmetic. The q1 profile preserved map equality and passed the revised
+host-pressure gate without observed interference. One process is not an
+acceptance sample; the replay itself added substantial timing overhead, so
+its wall time and route timers are not used for performance conclusions.
+
+| Per-lane replay result | Value |
+|---|---:|
+| Lanes profiled | 133,176 |
+| Lanes safe through all pairs | 206 (0.1547%) |
+| Pair budget | 84,363,880 |
+| Safe prefix pairs before first unsafe contribution | 10,786,624 (12.786%) |
+| Safe ordinary-range pairs | 196,116 (0.232%) |
+| Safe scaled pairs | 10,590,508 (12.553%) |
+
+The pair budget matches the source-resolved compact- and regular-order visitor
+counts. The replay applies the current product, contribution, factor and
+accumulator checks. Its ordinary scalar lane predicate is conservative for
+SIMD vector lanes. The result shows limited complete-lane eligibility and
+very little ordinary SIMD work. It does not show that committing partial
+prefix sums and resuming the robust visitor would be faster or numerically
+safe across the full supported input range. No lane-packing or continuation
+kernel is justified by this profile alone.
