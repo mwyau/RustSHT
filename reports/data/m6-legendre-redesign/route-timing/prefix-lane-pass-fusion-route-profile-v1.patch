@@ -1,0 +1,237 @@
+--- a/src/legendre/synthesis_fast.rs
++++ b/src/legendre/synthesis_fast.rs
+@@ -11,6 +11,8 @@
+ 
+ #[cfg(test)]
+ use std::cell::RefCell;
++#[cfg(test)]
++use std::time::Instant;
+ 
+ /// Largest active-ring tile used by this isolated prototype.
+ pub(crate) const ACTIVE_TILE_SIZE: usize = 128;
+@@ -19,6 +21,17 @@
+ #[derive(Clone, Copy, Debug, Default)]
+ struct FastRouteCounts {
+     tiles: u64,
++    active_lane_slots: u64,
++    ordinary_lane_slots: u64,
++    polar_lane_slots: u64,
++    tile_calls: u64,
++    tile_ns: u128,
++    transition_ns: u128,
++    coefficient_scan_ns: u128,
++    fallback_calls: u64,
++    fallback_ns: u128,
++    suffix_calls: u64,
++    suffix_ns: u128,
+     completed_tiles: u64,
+     declined_tiles: u64,
+     empty_tiles: u64,
+@@ -45,6 +58,11 @@
+     });
+ }
+ 
++#[cfg(test)]
++fn route_profile_enabled() -> bool {
++    FAST_ROUTE_COUNTS.with_borrow(|counts| counts.is_some())
++}
++
+ pub(crate) struct ScalarSynthesisFastScratch<'a, T> {
+     pub(crate) spectra: &'a mut [num_complex::Complex<T>],
+     pub(crate) previous: &'a mut [T],
+@@ -172,6 +190,8 @@
+ ) -> Result<(), ShtError> {
+     #[cfg(test)]
+     update_route_counts(|counts| counts.tiles += 1);
++    #[cfg(test)]
++    let tile_started = route_profile_enabled().then(Instant::now);
+     // A single polar lane must not force otherwise ordinary lanes through the
+     // scaled visitor. Partition the packed tile in place; ring indices travel
+     // with their geometry so the final scatter remains correct.
+@@ -191,6 +211,9 @@
+     let polar_len = tile_len - ordinary_len;
+     #[cfg(test)]
+     update_route_counts(|counts| {
++        counts.active_lane_slots += tile_len as u64;
++        counts.ordinary_lane_slots += ordinary_len as u64;
++        counts.polar_lane_slots += polar_len as u64;
+         counts.polar_pair_lanes += polar_len as u64 * ((lmax - m + 2) / 2) as u64;
+     });
+ 
+@@ -199,6 +222,8 @@
+     } else if let Some(safe) = *coefficient_safety {
+         safe
+     } else {
++        #[cfg(test)]
++        let scan_started = route_profile_enabled().then(Instant::now);
+         let safe = ordinary_coefficients_are_safe(
+             (lmax - m + 2) / 2,
+             coefficient_a,
+@@ -208,10 +233,20 @@
+         );
+         *coefficient_safety = Some(safe);
+         #[cfg(test)]
+-        update_route_counts(|counts| counts.coefficient_safety_scans += 1);
++        if let Some(started) = scan_started {
++            let elapsed = started.elapsed().as_nanos();
++            update_route_counts(|counts| {
++                counts.coefficient_safety_scans += 1;
++                counts.coefficient_scan_ns += elapsed;
++            });
++        } else {
++            update_route_counts(|counts| counts.coefficient_safety_scans += 1);
++        }
+         safe
+     };
+ 
++    #[cfg(test)]
++    let transition_started = (ordinary_len > 0 && route_profile_enabled()).then(Instant::now);
+     let fast = ordinary_len > 0
+         && try_transition_and_accumulate(
+             arch,
+@@ -233,6 +268,11 @@
+             &mut scratch.sum_im[..ordinary_len],
+         )
+         .is_some();
++    #[cfg(test)]
++    if let Some(started) = transition_started {
++        let elapsed = started.elapsed().as_nanos();
++        update_route_counts(|counts| counts.transition_ns += elapsed);
++    }
+ 
+     #[cfg(test)]
+     update_route_counts(|counts| {
+@@ -247,6 +287,8 @@
+         scratch.sum_re[ordinary_len..tile_len].fill(0.0);
+         scratch.sum_im[ordinary_len..tile_len].fill(0.0);
+         if polar_len > 0 {
++            #[cfg(test)]
++            let fallback_started = route_profile_enabled().then(Instant::now);
+             accumulate_scaled_range(
+                 arch,
+                 m,
+@@ -266,13 +308,21 @@
+                 &mut scratch.sum_im[ordinary_len..tile_len],
+             )?;
+             #[cfg(test)]
++            let fallback_elapsed = fallback_started.map(|started| started.elapsed().as_nanos());
++            #[cfg(test)]
+             update_route_counts(|counts| {
+                 counts.fallback_pair_lanes += polar_len as u64 * ((lmax - m + 2) / 2) as u64;
++                if let Some(elapsed) = fallback_elapsed {
++                    counts.fallback_calls += 1;
++                    counts.fallback_ns += elapsed;
++                }
+             });
+         }
+     } else {
+         scratch.sum_re[..tile_len].fill(0.0);
+         scratch.sum_im[..tile_len].fill(0.0);
++        #[cfg(test)]
++        let fallback_started = route_profile_enabled().then(Instant::now);
+         accumulate_scaled_range(
+             arch,
+             m,
+@@ -292,8 +342,14 @@
+             &mut scratch.sum_im[..tile_len],
+         )?;
+         #[cfg(test)]
++        let fallback_elapsed = fallback_started.map(|started| started.elapsed().as_nanos());
++        #[cfg(test)]
+         update_route_counts(|counts| {
+             counts.fallback_pair_lanes += tile_len as u64 * ((lmax - m + 2) / 2) as u64;
++            if let Some(elapsed) = fallback_elapsed {
++                counts.fallback_calls += 1;
++                counts.fallback_ns += elapsed;
++            }
+         });
+     }
+ 
+@@ -302,6 +358,14 @@
+         scratch.spectra[ring * spectrum_len + m] +=
+             Complex64::new(scratch.sum_re[tile_ring], scratch.sum_im[tile_ring]);
+     }
++    #[cfg(test)]
++    if let Some(started) = tile_started {
++        let elapsed = started.elapsed().as_nanos();
++        update_route_counts(|counts| {
++            counts.tile_calls += 1;
++            counts.tile_ns += elapsed;
++        });
++    }
+     Ok(())
+ }
+ 
+@@ -768,6 +832,8 @@
+ 
+     #[inline(always)]
+     fn with_simd<S: Simd>(self, simd: S) {
++        #[cfg(test)]
++        let suffix_started = route_profile_enabled().then(Instant::now);
+         let Self {
+             m,
+             lmax,
+@@ -846,6 +912,14 @@
+             sum_re_tail[lane] = accumulated_re;
+             sum_im_tail[lane] = accumulated_im;
+         }
++        #[cfg(test)]
++        if let Some(started) = suffix_started {
++            let elapsed = started.elapsed().as_nanos();
++            update_route_counts(|counts| {
++                counts.suffix_calls += 1;
++                counts.suffix_ns += elapsed;
++            });
++        }
+     }
+ }
+ 
+@@ -1421,8 +1495,10 @@
+         pool.broadcast(|_| {
+             FAST_ROUTE_COUNTS.with_borrow_mut(|counts| *counts = Some(FastRouteCounts::default()))
+         });
++        let synthesis_started = Instant::now();
+         pool.install(|| plan.synthesis_into(&alm, &mut map, &mut workspace))
+             .unwrap();
++        let synthesis_elapsed_ns = synthesis_started.elapsed().as_nanos();
+         assert_eq!(map, reference, "route accounting must preserve output bits");
+         let workers = pool.broadcast(|_| FAST_ROUTE_COUNTS.with_borrow_mut(Option::take));
+         let mut total = FastRouteCounts::default();
+@@ -1430,6 +1506,17 @@
+             let counts = counts.unwrap();
+             println!("fast_worker={worker} {counts:?}");
+             total.tiles += counts.tiles;
++            total.active_lane_slots += counts.active_lane_slots;
++            total.ordinary_lane_slots += counts.ordinary_lane_slots;
++            total.polar_lane_slots += counts.polar_lane_slots;
++            total.tile_calls += counts.tile_calls;
++            total.tile_ns += counts.tile_ns;
++            total.transition_ns += counts.transition_ns;
++            total.coefficient_scan_ns += counts.coefficient_scan_ns;
++            total.fallback_calls += counts.fallback_calls;
++            total.fallback_ns += counts.fallback_ns;
++            total.suffix_calls += counts.suffix_calls;
++            total.suffix_ns += counts.suffix_ns;
+             total.completed_tiles += counts.completed_tiles;
+             total.declined_tiles += counts.declined_tiles;
+             total.empty_tiles += counts.empty_tiles;
+@@ -1442,6 +1529,19 @@
+             total.fallback_pair_lanes += counts.fallback_pair_lanes;
+         }
+         println!("M6 fast routes L={lmax} q={threads} {total:?}");
++        let to_ms = |ns: u128| ns as f64 / 1_000_000.0;
++        println!(
++            "M6 route profile L={lmax} q={threads} synthesis_ms={:.3} tile_ms={:.3} transition_ms={:.3} suffix_ms={:.3} prefix_ms={:.3} fallback_ms={:.3} coefficient_scan_ms={:.3} avg_active_lanes_per_tile={:.2} ordinary_lane_share={:.4}",
++            to_ms(synthesis_elapsed_ns),
++            to_ms(total.tile_ns),
++            to_ms(total.transition_ns),
++            to_ms(total.suffix_ns),
++            to_ms(total.transition_ns.saturating_sub(total.suffix_ns)),
++            to_ms(total.fallback_ns),
++            to_ms(total.coefficient_scan_ns),
++            total.active_lane_slots as f64 / total.tiles.max(1) as f64,
++            total.ordinary_lane_slots as f64 / total.active_lane_slots.max(1) as f64,
++        );
+         assert_eq!(total.tiles, total.completed_tiles + total.declined_tiles);
+     }
+ }
