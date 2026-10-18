@@ -468,10 +468,19 @@ archived benchmark source. The rebuilt binary passed the T127 spin-1 smoke and
 all 24 matrix cells. Two earlier smoke/replay failures used an unrecorded or
 different ELF hash and are retained but excluded. The initial timing table is
 preserved separately because some DUCC medians differ from the source-linked
-replay. The bridge remains unaccepted: the screen lacks independent paired
-process repetitions, odd-longitude, adjoint, and extreme-value checks, and
-the high-resolution performance gap to DUCC remains large. Build provenance,
-the current table, timings, full-array comparisons and source are in
+replay. The timing screen remains unaccepted: it lacks independent paired
+process repetitions and odd-longitude operator controls, and the high-resolution
+performance gap to DUCC remains large. A separate reusable-buffer prototype
+now passes exact downcast comparisons against widened-input f64 outputs for
+S, A, S*, and A* at T127 and T511 for scalar and spin-1 GL cases. Its check
+also verifies scalar and spin-1 adjoint identities, independent low-degree
+monopole and spin-1 m=0 formulas, large and subnormal finite inputs,
+cancellation, downcast overflow, and unchanged reusable-buffer capacities.
+The operator matrix uses q1 and even longitude counts; it does not add
+odd-longitude coverage or performance evidence. Its T511 retained bridge-array payload is
+6.00 MiB for scalar and 12.01 MiB for spin-1, excluding the plan, workspace,
+and caller buffers. Build provenance, the current table, timings,
+full-array comparisons and source are in
 [`reports/data/m6-f32-bridge/`](data/m6-f32-bridge/).
 
 ## Post-C03 regression checks
