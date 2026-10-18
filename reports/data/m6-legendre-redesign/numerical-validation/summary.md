@@ -18,7 +18,30 @@ logs, GNU-time files, and host snapshots are local and untracked. Both commands
 used Rust 1.99.0, a local temporary directory, and `RUST_TEST_THREADS=1`. No benchmark ran concurrently with either test
 suite. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The checks cover the candidate's focused tile, polar-lane, mixed-fallback and
 scaled-to-ordinary transition tests, plus workspace compatibility and the
-existing DUCC comparisons. They do not include an external DUCC comparison
-for the complete T1023 or T2047 candidate transform. The paired benchmark
-harness checks candidate maps against DUCC on each process, and the candidate
-remains isolated pending the complete timing and regression controls.
+existing DUCC comparisons. These suites did not compare the complete T1023 or
+T2047 candidate transforms with DUCC; the later paired benchmark does so for
+each process and records the errors in the [q1 comparison](../paired-q1-128/summary.md).
+The candidate remains isolated because its T511 stability control and broader
+regression matrix are incomplete.
+
+## Targeted extreme finite coefficient fallback
+
+A temporary test in the frozen tile-128 source exercised the scaled fallback
+with an out-of-normal-range but finite prepared scalar coefficient of `1e300`
+at GL `lmax=511` with 513 latitude points. It asserted that the guard on
+ordinary coefficients declined the fast transition, the resulting spectrum
+contained only finite values, and the spectrum matched the paired scaled
+recurrence reference at the module's existing `2e-11` relative-L2 and
+`2e-12` maximum-absolute tolerances. The test passed in both configurations:
+
+- `cargo test --release --lib --features parallel legendre::synthesis_fast::tests::extreme_finite_prepared_coefficient_matches_scaled_reference -- --exact`
+- `cargo test --release --no-default-features --lib legendre::synthesis_fast::tests::extreme_finite_prepared_coefficient_matches_scaled_reference -- --exact`
+
+The test-only patch is
+[`extreme-finite-fast-route.patch`](extreme-finite-fast-route.patch), SHA-256
+`f8607872e7de6d39c37058297f1a159b87df122932a326d2e5822d58174d4a80`. The
+candidate source was restored to SHA-256
+`0c0ee956205f782626e6ab0ffc6914cfa9f0d1e20caf5075111a53a9c9449b25` after
+the test. This check exercises the internal prepared-coefficient fallback; it
+does not test every extreme public coefficient input or establish a full
+transform accuracy bound for arbitrary finite values.

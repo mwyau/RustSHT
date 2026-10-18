@@ -1,0 +1,72 @@
+--- a/src/legendre/synthesis_fast.rs
++++ b/src/legendre/synthesis_fast.rs
+@@ -1182,0 +1183,69 @@
++    #[test]
++    fn extreme_finite_prepared_coefficient_matches_scaled_reference() {
++        let m = 0;
++        let lmax = 511;
++        let grid = GridSpec::new(GridKind::GaussLegendre, lmax + 2, 1, 0.0).unwrap();
++        let sin_theta: Vec<_> = grid.theta().iter().map(|theta| theta.sin()).collect();
++        let cos_theta: Vec<_> = grid.theta().iter().map(|theta| theta.cos()).collect();
++        let ring_order_limits: Vec<_> = sin_theta
++            .iter()
++            .zip(&cos_theta)
++            .map(|(&sine, &cosine)| scalar::polar_order_limit(lmax, 0, sine, cosine))
++            .collect();
++        let coefficients = vec![Complex64::new(0.0, 0.0); lmax + 1];
++        let sectoral_norm = scalar::sectoral_normalizations(m).unwrap()[m];
++        let (_, coefficient_a, coefficient_b, mut coefficient_even, coefficient_odd) =
++            prepared_order(m, lmax, &coefficients);
++        coefficient_even[0] = Complex64::new(1.0e300, 0.0);
++        assert!(!ordinary_coefficients_are_safe(
++            (lmax - m + 2) / 2,
++            &coefficient_a,
++            &coefficient_b,
++            &coefficient_even,
++            &coefficient_odd,
++        ));
++        let spectrum_len = m + 1;
++        let mut candidate = vec![Complex64::new(0.0, 0.0); sin_theta.len() * spectrum_len];
++        let mut reference = candidate.clone();
++        {
++            let mut owner = TestScratch::new(sin_theta.len());
++            let mut scratch = fast_scratch(&mut owner, &mut candidate);
++            assert!(
++                synthesize_order_dispatched(
++                    Arch::new(),
++                    m,
++                    lmax,
++                    &sin_theta,
++                    &cos_theta,
++                    sectoral_norm,
++                    &coefficient_a,
++                    &coefficient_b,
++                    &coefficient_even,
++                    &coefficient_odd,
++                    &ring_order_limits,
++                    spectrum_len,
++                    &mut scratch,
++                )
++                .unwrap()
++            );
++        }
++        paired_reference(
++            m,
++            lmax,
++            &sin_theta,
++            &cos_theta,
++            sectoral_norm,
++            &coefficient_a,
++            &coefficient_b,
++            &coefficient_even,
++            &coefficient_odd,
++            &ring_order_limits,
++            spectrum_len,
++            &mut reference,
++        );
++        assert!(candidate
++            .iter()
++            .all(|value| value.re.is_finite() && value.im.is_finite()));
++        assert_spectra_close(&candidate, &reference);
++    }
++

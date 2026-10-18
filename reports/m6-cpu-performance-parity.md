@@ -860,3 +860,11 @@ range checks, normalization, or the repeated coefficient scan. A focused
 test-only diagnostic should time and count those operations separately before
 choosing a prefix-kernel redesign. This analysis does not alter the finite-input
 fallback or justify skipping scaled contributions.
+
+A targeted release test also exercised the transition guard with a prepared
+finite coefficient of `1e300` at T511. The guard declined the ordinary route;
+the staged scaled fallback returned a finite spectrum matching the paired
+scaled reference. The test passed in both parallel and no-default-features
+serial builds, and the candidate source was restored to its
+recorded hash. The test-only patch and exact assertion limits are in
+[`the numerical validation record`](data/m6-legendre-redesign/numerical-validation/summary.md).
