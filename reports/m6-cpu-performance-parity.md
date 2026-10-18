@@ -883,3 +883,9 @@ also returned a finite map matching the analytic monopole in parallel and
 serial builds. The test-only patch, integration test, commands, and assertion
 limits are in
 [`the numerical validation record`](data/m6-legendre-redesign/numerical-validation/summary.md).
+
+### Per-order coefficient-safety cache screen
+
+A bounded isolated patch now reuses each prepared order's coefficient-safety result across its 128-ring tiles. It preserves the same unsafe-coefficient decision and scaled fallback. A 257-ring test confirms one scan for three tiles and agreement with the scaled reference for a subnormal coefficient. Formatting, workspace Clippy, and the full workspace tests passed.
+
+The paired T2047 q1 screen did not produce a candidate timing: the telemetry runner exited after its process matcher selected a transient telemetry command. The first frozen tile-128 process was stable but unpaired. The protocol forbids retries, so the screen stopped without a speed ratio or acceptance decision; no q8 or additional regression workload ran. The tile-128 route remains isolated. The source patch and concise evidence are in the [cache screen record](data/m6-legendre-redesign/route-timing/coefficient-safety-cache-screen.md).

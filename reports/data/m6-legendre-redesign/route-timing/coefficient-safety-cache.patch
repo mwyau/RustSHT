@@ -1,0 +1,133 @@
+--- a/src/legendre/synthesis_fast.rs
++++ b/src/legendre/synthesis_fast.rs
+@@ -25,0 +26 @@
++    coefficient_safety_scans: u64,
+@@ -104,0 +106,3 @@
++    // Coefficient safety is shared by all latitude tiles for this order.
++    // Defer the scan until a tile has ordinary lanes, then reuse its result.
++    let mut coefficient_safety = None;
+@@ -125,0 +130 @@
++                &mut coefficient_safety,
+@@ -142,0 +148 @@
++            &mut coefficient_safety,
+@@ -163,0 +170 @@
++    coefficient_safety: &mut Option<bool>,
+@@ -189,0 +197,18 @@
++    let coefficients_safe = if ordinary_len == 0 {
++        false
++    } else if let Some(safe) = *coefficient_safety {
++        safe
++    } else {
++        let safe = ordinary_coefficients_are_safe(
++            (lmax - m + 2) / 2,
++            coefficient_a,
++            coefficient_b,
++            coefficient_even,
++            coefficient_odd,
++        );
++        *coefficient_safety = Some(safe);
++        #[cfg(test)]
++        update_route_counts(|counts| counts.coefficient_safety_scans += 1);
++        safe
++    };
++
+@@ -201,0 +227 @@
++            coefficients_safe,
+@@ -357,0 +384 @@
++    coefficients_safe: bool,
+@@ -371,7 +398 @@
+-    if !ordinary_coefficients_are_safe(
+-        pair_count,
+-        coefficient_a,
+-        coefficient_b,
+-        coefficient_even,
+-        coefficient_odd,
+-    ) {
++    if !coefficients_safe {
+@@ -610,0 +632,4 @@
++#[expect(
++    clippy::too_many_arguments,
++    reason = "The SIMD recurrence advances one coefficient pair over reusable latitude lanes."
++)]
+@@ -753,5 +778,3 @@
+-    fn prepared_order(
+-        m: usize,
+-        lmax: usize,
+-        coefficients: &[Complex64],
+-    ) -> (Vec<f64>, Vec<f64>, Vec<f64>, Vec<Complex64>, Vec<Complex64>) {
++    type PreparedOrder = (Vec<f64>, Vec<f64>, Vec<f64>, Vec<Complex64>, Vec<Complex64>);
++
++    fn prepared_order(m: usize, lmax: usize, coefficients: &[Complex64]) -> PreparedOrder {
+@@ -802,0 +826,4 @@
++    #[expect(
++        clippy::too_many_arguments,
++        reason = "The scalar paired reference mirrors the recurrence inputs to validate the isolated tile kernel."
++    )]
+@@ -987,0 +1015,57 @@
++    fn unsafe_coefficients_use_scaled_fallback_after_one_order_scan() {
++        let m = 0;
++        let lmax = 255;
++        let sin_theta = vec![0.5; 257];
++        let cos_theta = vec![(1.0_f64 - 0.25).sqrt(); sin_theta.len()];
++        let ring_order_limits = vec![usize::MAX; sin_theta.len()];
++        let coefficients = coefficient_row(m, lmax);
++        let sectoral_norm = scalar::sectoral_normalizations(m).unwrap()[m];
++        let (_, coefficient_a, coefficient_b, mut coefficient_even, coefficient_odd) =
++            prepared_order(m, lmax, &coefficients);
++        coefficient_even[0].re = f64::from_bits(1);
++        let spectrum_len = m + 1;
++        let mut candidate = vec![Complex64::new(0.0, 0.0); sin_theta.len() * spectrum_len];
++        let mut reference = candidate.clone();
++        FAST_ROUTE_COUNTS.with_borrow_mut(|counts| *counts = Some(FastRouteCounts::default()));
++        {
++            let mut owner = TestScratch::new(sin_theta.len());
++            let mut scratch = fast_scratch(&mut owner, &mut candidate);
++            synthesize_order_dispatched(
++                Arch::new(),
++                m,
++                lmax,
++                &sin_theta,
++                &cos_theta,
++                sectoral_norm,
++                &coefficient_a,
++                &coefficient_b,
++                &coefficient_even,
++                &coefficient_odd,
++                &ring_order_limits,
++                spectrum_len,
++                &mut scratch,
++            )
++            .unwrap();
++        }
++        let counts = FAST_ROUTE_COUNTS.with_borrow_mut(Option::take).unwrap();
++        assert_eq!(counts.tiles, 3, "257 rings form three 128-ring tiles");
++        assert_eq!(counts.coefficient_safety_scans, 1);
++        assert_eq!(counts.unsafe_coefficients, counts.tiles);
++        paired_reference(
++            m,
++            lmax,
++            &sin_theta,
++            &cos_theta,
++            sectoral_norm,
++            &coefficient_a,
++            &coefficient_b,
++            &coefficient_even,
++            &coefficient_odd,
++            &ring_order_limits,
++            spectrum_len,
++            &mut reference,
++        );
++        assert_spectra_close(&candidate, &reference);
++    }
++
++    #[test]
+@@ -1022,0 +1107,7 @@
++                ordinary_coefficients_are_safe(
++                    (lmax - m + 2) / 2,
++                    &coefficient_a,
++                    &coefficient_b,
++                    &coefficient_even,
++                    &coefficient_odd,
++                ),
+@@ -1239,0 +1331 @@
++            total.coefficient_safety_scans += counts.coefficient_safety_scans;
