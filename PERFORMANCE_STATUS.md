@@ -1,6 +1,14 @@
 # RustSHT performance status
 
-Snapshot: `opt/sht-performance-parity` at `857e842a` (2026-10-18). DUCC remains faster in the matched atmospheric workloads. The tile-128 scaled-prefix route is in f64 scalar GL synthesis for `lmax >= 255`; its prefix vectorizes factor formation and accumulation, reuses coefficient-safety checks across ring tiles, and retains per-lane exponent handling and scaled fallback. Local screens do not establish DUCC parity.
+Snapshot: `opt/sht-performance-parity` based on `c58d94c2` (2026-10-18). DUCC remains faster in the matched atmospheric workloads. The integrated tile-128 scaled-prefix route remains the multiworker implementation and robust fallback/reference. After the existing compact scalar Legendre table check, a separate order-major DUCC-parity candidate is selected for eligible f64 scalar GL synthesis when workspace capacity is one; it falls back on unsafe coefficients or recurrence states. The initial T255/T300 screen improved on the retained single-thread ring-group route, but full-call medians remained 8.3–32.3% above installed DUCC 0.41.0. These ungated measurements do not establish parity.
+
+## DUCC scalar candidate
+
+- **Current implementation:** The existing tile-128 route remains in the multiworker path and is retained as the single-thread correctness reference and safety fallback. Existing CC/F1 and spin paths are unchanged.
+- **Candidate:** `src/legendre/scalar_ducc.rs` implements order-major active-ring packing in 256-lane batches, reflected north/south reconstruction, DUCC-style scaled initialization and insignificant-prefix advancement, transformed coefficients reused across batches, and fused SIMD recurrence/accumulation. `ShtPlan::synthesis_into` checks the existing compact scalar Legendre table first, then dispatches to the candidate for eligible f64 scalar GL inputs when workspace capacity is one; unsafe inputs clear staged spectra and fall back.
+- **Numerical status:** T255 mixed and sectoral cases match pinned DUCC references. A release check at capacity one passed GL sectoral synthesis at T511, T1023, and T2047 plus analytic map checks; CC/F1 cases in that test remained on their existing route. q8, extreme normal-range mixtures, and full moderate/high-degree mixed coefficient fields remain unvalidated for this candidate.
+- **Measured performance:** At T255 and T300 q1, candidate Legendre-only medians were 56–63% lower than the existing ring-group route; full medians were 44–57% lower. Candidate full medians were 32.3% above DUCC at T255 and 8.3% above it at T300. The Rust plan/workspace are reused; DUCC's public `synthesis_2d` reconstructs geometry per call, so this is directional. See [the screen record](reports/scalar-ducc-kernel-screen-2026-10-18.md).
+- **Next engineering task:** Profile per-order coefficient preparation, active-ring packing, and the SIMD recurrence at T255/T300 and T1023. Use the measured costs and generated-code inspection to close the remaining single-thread gap before adding dynamic order scheduling.
 
 ## Production architecture
 
@@ -88,7 +96,7 @@ The production synthesis loop is ring-group-owned: each worker traverses orders 
 
 ## Operation status
 
-- **Scalar synthesis, f64:** Safely prepared GL orders at `lmax >= 255` use the tile-128 scaled-prefix route with SIMD prefix accumulation, one coefficient preflight per order with ordinary active tiles, a checked SIMD suffix, and scaled fallback. Scalar GL on the paired transition path may share transformed coefficient rows when ring-group coverage and buffer capacity permit. DUCC and closed-form tests pass for documented T255 and T511–T2047 cases; local performance screens remain ungated and do not compare with DUCC.
+- **Scalar synthesis, f64:** After the existing compact scalar Legendre table check, eligible single-thread f64 scalar GL synthesis dispatches to the order-major DUCC-parity candidate; unsafe inputs and unsupported shapes use the existing implementation. Candidate checks include T255 mixed and sectoral coefficients and T511/T1023/T2047 GL sectoral fields, with a DUCC reference and analytic field. The existing tile-128 scaled-prefix path remains the multiworker route and fallback/reference. Initial T255/T300 q1 screens favor the candidate over the retained single-thread route but show a remaining full-call gap against DUCC; q8 and broad mixed-field high-degree validation remain outstanding. CC/F1 and other spins are unchanged.
 - **Scalar analysis, f64:** GL, CC, and F1 analysis and the separate adjoint are implemented. The current high-resolution profiles place most q8 time in Legendre recurrence and coefficient accumulation. Scalar synthesis changes require separate analysis tests.
 - **Spin-1 synthesis, f64:** The general recurrence, scalar conversion, paired Q/U route, and restricted hemisphere route are present. E/B conversion and polar fallbacks are checked for extreme finite coefficients.
 - **Spin-1 analysis, f64:** Paired scalar and fused channel paths are present. DUCC comparisons and thread screens cover selected truncations; synthesis timing gains do not establish analysis gains.
@@ -103,22 +111,29 @@ The pinned DUCC comparison covers `sht_inner_loop.h` and `sht.cc` at revision
 `80388904b8cfc32400ba84af8a6a45aabfe60f86`. It identifies concrete differences
 between the two synthesis paths:
 
-- DUCC gathers active rings into order-specific batches with `fill_a2m`; RustSHT
-  currently skips inactive blocks and compacts mixed lanes in ring-group blocks.
-- DUCC transforms scalar coefficients once per order before ring batches. RustSHT
-  shares paired coefficients across ring groups when its path, group-count and
-  existing-buffer checks pass; recurrence factors remain worker-local.
-- DUCC dynamically assigns orders to workers; RustSHT assigns contiguous ring
-  groups and each worker traverses the full order range.
+- The candidate gathers active rings into order-specific batches with a 256-ring
+  limit. The retained multiworker ring-group path still skips inactive blocks
+  and compacts mixed lanes in ring-group blocks.
+- The candidate transforms scalar coefficients once per order. The retained
+  ring-group path shares paired coefficients across workers only when its path,
+  group-count and existing-buffer checks pass; recurrence factors remain
+  worker-local.
+- The candidate currently runs one order at a time on a single thread. The
+  multiworker route still assigns ring groups, so DUCC-style dynamic order
+  scheduling remains to be implemented.
 - Both implementations have scaled recurrence setup, an ordinary SIMD kernel,
   and scaled fallbacks. The likely gains are in repeated coefficient work,
   active-lane handling, and accumulation cost, not in replacing the recurrence
   with a generic dense transform.
 
-The source comparison proposes measuring coefficient-preparation time and
-active-lane density before changing the scheduler. Existing route profiles
-show that recurrence plus accumulation dominates high-resolution workloads, but
-they do not isolate either source-level cost. The rejected order-owned and
+The candidate now addresses the principal execution differences: it packs
+active rings per order, prepares transformed coefficients once per order,
+reconstructs reflected outputs from shared recurrence state, and executes
+order-major SIMD recurrence and accumulation. The remaining work is to measure
+preparation and packing costs separately, then refine the loop or add order
+scheduling based on those measurements. Existing route profiles show that
+recurrence plus accumulation dominates high-resolution workloads, but they do
+not isolate the candidate's source-level costs. The rejected order-owned and
 hemisphere prototypes also show that reducing recurrence counts alone does not
 guarantee lower whole-transform time.
 
@@ -144,10 +159,10 @@ guarantee lower whole-transform time.
 
 ## Implementation order
 
-1. Complete acceptance of the integrated scalar route, including fused and SIMD prefix accumulation. It uses bounded tile scratch and commits tile outputs only after the checked transition or scaled fallback completes. Current route-specific checks cover GL T255, T511, T1023, and T2047, plus reduced `mmax`, odd/even longitudes, and nonzero `phi0` at T255; a separate T511 GL synthesis/adjoint test covers four workers. Next cover T720 or T799, T1279, q8 numerical comparisons, and controlled DUCC comparisons; CC/F1 continue on their existing path.
-2. Reduce measured transition and coefficient-preparation work. Test per-order preparation and active-lane costs before changing the ring-group schedule.
-3. Extend shared recurrence work to spin-1 synthesis without changing E/B conversion, spin signs, polar behavior, or its checked fallbacks.
-4. Improve scalar and spin-1 analysis, then native f32. Keep operation-specific adjoint and accuracy checks.
-5. Run paired DUCC comparisons across representative workloads at integrated milestones. Report gaps and regressions by operation; do not infer parity from a single truncation.
+1. Profile the single-thread scalar DUCC candidate's order preparation, active-ring packing, and SIMD recurrence at the recorded T255/T300 shapes and T1023. Add mixed high-degree, reduced-order, tail, and numerical-safety checks where the profile does not require a separate operator change.
+2. Refine the SIMD loop and coefficient preparation based on those measurements, then compare q1 candidate kernels with pinned DUCC at representative irregular and atmospheric dimensions. Keep the old kernel as fallback/reference.
+3. Implement dynamic harmonic-order scheduling after the single-thread candidate is stable; measure q8 and workspace costs against the ring-group baseline.
+4. Reuse validated scalar recurrence and scheduling components for spin-1 synthesis, then address scalar/spin-1 analysis and native f32 with operation-specific adjoint and accuracy checks.
+5. Report gaps and regressions by operation; do not infer parity from one truncation or from the Legendre-only comparison alone.
 
 Historical reports and artifacts under `reports/` provide full methods, raw scientific samples, and source patches. Read them through the references above when a specific implementation decision needs more evidence.

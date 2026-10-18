@@ -926,11 +926,12 @@ fn m5_synthesis_phase_profile() {
 
 #[test]
 fn scalar_synthesis_matches_independent_low_degree_harmonics() {
-    let plan = make_plan(3, 2, 5, 9, 0.23);
+    let plan = make_plan(3, 2, 11, 9, 0.23);
     let alm = coefficients(plan.harmonics());
     let expected = analytic_map(&plan, &alm);
     let mut map = vec![0.0; plan.sample_count];
     let mut workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut workspace, 1).unwrap();
 
     plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
     for (&actual, &reference) in map.iter().zip(&expected) {
@@ -946,6 +947,7 @@ fn scalar_t1_synthesis_keeps_extreme_finite_harmonic_values_finite() {
     let original = alm.clone();
     let mut map = vec![0.0; plan.sample_count];
     let mut workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut workspace, 1).unwrap();
 
     plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
 
@@ -1358,6 +1360,7 @@ fn scalar_synthesis_matches_ducc_0410_reference() {
     ];
     let mut map = vec![0.0; plan.sample_count];
     let mut workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut workspace, 1).unwrap();
 
     plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
     for (&actual, &reference) in map.iter().zip(&expected) {
@@ -1377,6 +1380,7 @@ fn t255_sectoral_synthesis_matches_ducc_0410_samples() {
     alm[plan.harmonics().index(255, 255).unwrap()] = Complex64::new(1.0, 0.0);
     let mut map = vec![0.0; plan.sample_count];
     let mut workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut workspace, 1).unwrap();
 
     plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
     for (ring, longitude, reference) in [
@@ -1415,8 +1419,15 @@ fn t255_mixed_synthesis_matches_ducc_0410_samples() {
     }
     let mut map = vec![0.0; plan.sample_count];
     let mut workspace = plan.workspace().unwrap();
-
+    plan.prepare_workspace(&mut workspace, 1).unwrap();
     plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
+
+    let mut reference_map = vec![0.0; plan.sample_count];
+    let mut reference_workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut reference_workspace, 2).unwrap();
+    plan.synthesis_into(&alm, &mut reference_map, &mut reference_workspace)
+        .unwrap();
+    assert!(relative_l2_real(&map, &reference_map) < 3e-13);
     for (ring, longitude, reference) in [
         (0, 0, -7.73911562867147081e-5),
         (63, 1, 7.59821699150580896e-4),
@@ -1439,6 +1450,7 @@ fn t255_reduced_order_synthesis_matches_closed_form_on_odd_and_even_longitudes()
         let expected = analytic_map(&plan, &alm);
         let mut actual = vec![0.0; plan.sample_count];
         let mut workspace = plan.workspace().unwrap();
+        plan.prepare_workspace(&mut workspace, 1).unwrap();
 
         plan.synthesis_into(&alm, &mut actual, &mut workspace)
             .unwrap();
@@ -1448,6 +1460,33 @@ fn t255_reduced_order_synthesis_matches_closed_form_on_odd_and_even_longitudes()
             relative_l2_real(&actual, &expected)
         );
     }
+}
+
+#[test]
+fn ducc_candidate_batches_more_than_256_active_reflected_rings() {
+    let plan = make_plan(510, 0, 601, 5, 0.37);
+    let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    for (degree, value) in [(0, 0.7), (1, -0.2), (2, 0.1)] {
+        alm[plan.harmonics().index(degree, 0).unwrap()] = Complex64::new(value, 0.0);
+    }
+
+    let expected = analytic_map(&plan, &alm);
+    let mut candidate_map = vec![0.0; plan.sample_count];
+    let mut candidate_workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut candidate_workspace, 1).unwrap();
+    plan.synthesis_into(&alm, &mut candidate_map, &mut candidate_workspace)
+        .unwrap();
+    assert!(relative_l2_real(&candidate_map, &expected) < 2e-13);
+
+    alm[plan.harmonics().index(510, 0).unwrap()] = Complex64::new(1e-4, 0.0);
+    let mut reference_map = vec![0.0; plan.sample_count];
+    let mut reference_workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut reference_workspace, 2).unwrap();
+    plan.synthesis_into(&alm, &mut candidate_map, &mut candidate_workspace)
+        .unwrap();
+    plan.synthesis_into(&alm, &mut reference_map, &mut reference_workspace)
+        .unwrap();
+    assert!(relative_l2_real(&candidate_map, &reference_map) < 5e-13);
 }
 
 #[test]
@@ -3219,6 +3258,7 @@ fn synthesis_combines_the_even_longitude_nyquist_mode() {
     let expected = analytic_map(&plan, &alm);
     let mut map = vec![0.0; plan.sample_count];
     let mut workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut workspace, 1).unwrap();
 
     plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
     for (&actual, &reference) in map.iter().zip(&expected) {
@@ -3866,6 +3906,7 @@ fn m3_scalar_t511_t1023_t2047_all_grids_matches_ducc_and_closed_form() {
             let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
             alm[sectoral_index] = Complex64::new(1.0, 0.0);
             let mut workspace = plan.workspace().unwrap();
+            plan.prepare_workspace(&mut workspace, 1).unwrap();
             let mut map = vec![0.0; plan.sample_count];
             plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
 
@@ -3988,4 +4029,175 @@ fn m3_scalar_t511_t1023_t2047_all_grids_matches_ducc_and_closed_form() {
             );
         }
     }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+#[ignore = "focused single-thread timing screen for the scalar DUCC candidate"]
+fn scalar_ducc_candidate_t255_timing_screen() {
+    use std::hint::black_box;
+    use std::time::Instant;
+
+    fn sample_ms(mut operation: impl FnMut()) -> Vec<f64> {
+        operation();
+        (0..5)
+            .map(|_| {
+                let started = Instant::now();
+                operation();
+                started.elapsed().as_secs_f64() * 1e3
+            })
+            .collect()
+    }
+
+    fn prepare_latitudes(plan: &ShtPlan, workspace: &mut crate::workspace::ShtWorkspace) {
+        for (ring, &theta) in plan.grid.theta().iter().enumerate() {
+            (workspace.theta_sin[ring], workspace.theta_cos[ring]) =
+                crate::legendre::sin_cos_from_f64(theta);
+            workspace.ring_order_limits[ring] =
+                <f64 as crate::legendre::ShtScalar>::polar_order_limit(
+                    plan.harmonics.lmax(),
+                    0,
+                    workspace.theta_sin[ring],
+                    workspace.theta_cos[ring],
+                );
+        }
+    }
+
+    fn candidate_legendre(
+        plan: &ShtPlan,
+        alm: &[Complex64],
+        workspace: &mut crate::workspace::ShtWorkspace,
+    ) {
+        let recurrence = &mut workspace.recurrence_workers[0];
+        let mut scratch = crate::legendre::scalar_ducc::ScalarDuccScratch {
+            epsilon: &mut recurrence.epsilon,
+            alpha: &mut recurrence.spin_alpha,
+            coefficient_a: &mut recurrence.spin_coefficient_a,
+            coefficient_b: &mut recurrence.spin_coefficient_b,
+            coefficient_even: &mut recurrence.fast_spin_first,
+            coefficient_odd: &mut recurrence.fast_spin_second,
+            packed_sin: &mut recurrence.compact_theta_sin,
+            packed_cos: &mut recurrence.compact_theta_cos,
+            packed_csq: &mut recurrence.spin_current_plus,
+            packed_north: &mut recurrence.compact_ring_indices,
+            previous: &mut recurrence.previous,
+            current: &mut recurrence.current,
+            scale: &mut recurrence.exponents,
+            corfac: &mut recurrence.ducc_corfac,
+            sum_even_re: &mut recurrence.analysis_same_real,
+            sum_even_im: &mut recurrence.analysis_same_imag,
+            sum_odd_re: &mut recurrence.analysis_opposite_real,
+            sum_odd_im: &mut recurrence.analysis_opposite_imag,
+        };
+        assert!(
+            <f64 as crate::legendre::ShtScalar>::synthesize_scalar_ducc_dispatched(
+                pulp::Arch::new(),
+                alm,
+                plan.harmonics.lmax(),
+                plan.harmonics.mmax(),
+                plan.grid.nphi(),
+                plan.fft.spectrum_len(),
+                plan.grid.phi0(),
+                &plan.sectoral_norms,
+                &workspace.theta_sin[..plan.grid.ntheta()],
+                &workspace.theta_cos[..plan.grid.ntheta()],
+                &workspace.ring_order_limits[..plan.grid.ntheta()],
+                &mut workspace.spectra,
+                &mut scratch,
+            )
+        );
+    }
+
+    fn run_case(lmax: usize, ntheta: usize, nphi: usize) {
+        let plan = make_plan(lmax, lmax, ntheta, nphi, 0.37);
+        let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        for m in 0..=lmax {
+            for l in m..=lmax {
+                let re = ((l * 7 + m * 11) % 19) as f64 - 9.0;
+                let im = if m == 0 {
+                    0.0
+                } else {
+                    ((l * 13 + m * 5) % 23) as f64 - 11.0
+                };
+                alm[plan.harmonics.index(l, m).unwrap()] = Complex64::new(re * 1e-5, im * 1e-5);
+            }
+        }
+
+        let one_thread = rayon::ThreadPoolBuilder::new()
+            .num_threads(1)
+            .build()
+            .unwrap();
+        let mut candidate_workspace = one_thread.install(|| plan.workspace()).unwrap();
+        one_thread
+            .install(|| plan.prepare_workspace(&mut candidate_workspace, 1))
+            .unwrap();
+        let mut reference_workspace = one_thread.install(|| plan.workspace()).unwrap();
+        one_thread
+            .install(|| plan.prepare_workspace(&mut reference_workspace, 2))
+            .unwrap();
+        prepare_latitudes(&plan, &mut candidate_workspace);
+        prepare_latitudes(&plan, &mut reference_workspace);
+
+        candidate_legendre(&plan, &alm, &mut candidate_workspace);
+        plan.synthesize_ring_group(
+            &alm,
+            plan.grid.nphi(),
+            plan.fft.spectrum_len(),
+            plan.grid.phi0(),
+            0,
+            &mut reference_workspace.spectra,
+            &reference_workspace.theta_sin[..plan.grid.ntheta()],
+            &reference_workspace.theta_cos[..plan.grid.ntheta()],
+            &reference_workspace.ring_order_limits[..plan.grid.ntheta()],
+            pulp::Arch::new(),
+            &mut reference_workspace.recurrence_workers[0],
+        )
+        .unwrap();
+        assert!(
+            relative_l2_complex(&candidate_workspace.spectra, &reference_workspace.spectra) < 3e-13
+        );
+
+        let candidate_legendre_ms =
+            sample_ms(|| candidate_legendre(&plan, &alm, &mut candidate_workspace));
+        let reference_legendre_ms = sample_ms(|| {
+            reference_workspace.spectra.fill(Complex64::new(0.0, 0.0));
+            plan.synthesize_ring_group(
+                &alm,
+                plan.grid.nphi(),
+                plan.fft.spectrum_len(),
+                plan.grid.phi0(),
+                0,
+                &mut reference_workspace.spectra,
+                &reference_workspace.theta_sin[..plan.grid.ntheta()],
+                &reference_workspace.theta_cos[..plan.grid.ntheta()],
+                &reference_workspace.ring_order_limits[..plan.grid.ntheta()],
+                pulp::Arch::new(),
+                &mut reference_workspace.recurrence_workers[0],
+            )
+            .unwrap();
+            black_box(reference_workspace.spectra[0]);
+        });
+
+        let mut candidate_map = vec![0.0; plan.sample_count];
+        let mut reference_map = vec![0.0; plan.sample_count];
+        let candidate_full_ms = sample_ms(|| {
+            one_thread
+                .install(|| plan.synthesis_into(&alm, &mut candidate_map, &mut candidate_workspace))
+                .unwrap();
+            black_box(candidate_map[0]);
+        });
+        let reference_full_ms = sample_ms(|| {
+            one_thread
+                .install(|| plan.synthesis_into(&alm, &mut reference_map, &mut reference_workspace))
+                .unwrap();
+            black_box(reference_map[0]);
+        });
+        assert!(relative_l2_real(&candidate_map, &reference_map) < 3e-13);
+        eprintln!(
+            "SCALAR_DUCC_T{lmax} grid={ntheta}x{nphi} f64 q1 samples=5 legendre_candidate_ms={candidate_legendre_ms:?} legendre_ring_group_ms={reference_legendre_ms:?} full_candidate_ms={candidate_full_ms:?} full_ring_group_ms={reference_full_ms:?}"
+        );
+    }
+
+    run_case(255, 256, 513);
+    run_case(300, 301, 603);
 }

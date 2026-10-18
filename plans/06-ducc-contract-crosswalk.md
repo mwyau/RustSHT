@@ -52,6 +52,21 @@ In `src/ducc0/sht/sht.cc`, `analysis_2d` FFTs the longitude rows, then calls `re
 | Operator definitions | `doc/sht.rst` |
 | Numerical test cases | `python/test/test_sht.py` (**GPL-3.0-or-later header**; independently implement tests rather than copying source) |
 
+## Scalar GL synthesis execution crosswalk
+
+The native scalar candidate follows DUCC source revision [`80388904b8cfc32400ba84af8a6a45aabfe60f86`](https://github.com/mreineck/ducc/tree/80388904b8cfc32400ba84af8a6a45aabfe60f86), principally `sht_inner_loop.h` and `sht.cc`. The installed comparison wheel is `ducc0 0.41.0`, revision [`c1ed01b8fda69d2a378190f0915f1a19762dddbf`](https://github.com/mreineck/ducc/tree/c1ed01b8fda69d2a378190f0915f1a19762dddbf). A targeted diff of those two files shows only namespace and namespace-qualification edits; the scalar routines below are unchanged between the pinned source and installed comparison revision.
+
+| DUCC routine or data | RustSHT counterpart | Execution difference being addressed |
+| --- | --- | --- |
+| `make_ringdata`, `ringdata` | `GridSpec` latitude arrays, `ring_order_limits`, reflected indices in `scalar_ducc` | The candidate forms north/south pairs and equatorial singletons once per order; the current multiworker route retains ring groups. |
+| `fill_a2m` | `scalar_ducc::ScalarDuccSynthesis::with_simd`; existing `synthesize_ring_group_impl` | The candidate scans each order and packs only eligible north rings into batches of 256. The current route processes 64/128-row blocks and masks or compacts inactive rows. |
+| `Ylmgen::prepare`, scalar coefficient transform in `inner_loop_a2m` | `scalar::fill_epsilon`, `scalar_paired::fill_factors`, `prepare_synthesis_coefficients` | The recurrences and coefficient algebra are already present; the candidate prepares them once per order and reuses them across active batches. |
+| `mypow`, `Tvnormalize`, `init_lambda` | `scalar_ducc::mypow`, `normalize_lane` | The candidate ports DUCC's `2^±800` recurrence scaling and `2^-60` significance boundary. Existing RustSHT helpers remain in the fallback. |
+| `iter_to_ieee`, scaled section of `calc_alm2map` | `scalar_ducc::iter_to_ieee`, `scaled_pair_step`, `rescale_batch` | The candidate uses DUCC's batch-wide scale test, four-degree prefix steps, coefficient correction factors, and transition to ordinary SIMD values. |
+| `alm2map_kernel` | `scalar_ducc::recurrence_two_pair_step`, `scaled_pair_step`, `ordinary_two_pair_step` | The candidate uses SIMD latitude lanes, fused complex accumulation, explicit four-degree AVX2 recurrence steps, and a final pair tail. The existing fused ring-group kernel remains available as fallback/reference. |
+| `extract_a2m` | reflected reconstruction in `ScalarDuccSynthesis::with_simd` | The candidate reconstructs both reflected spectra from shared even/odd accumulators, then applies longitude phase and the existing Nyquist convention. |
+| `inner_loop_a2m`, `alm2leg` | `scalar_ducc::synthesize_dispatched` called by `ShtPlan::synthesis_into` | The integrated candidate is single-threaded and order-major when workspace capacity is one; the current multiworker route remains ring-group-owned. Dynamic harmonic-order scheduling is a later milestone. |
+
 ## Literature
 
 - [Reinecke & Seljebotn (2013)](https://doi.org/10.1051/0004-6361/201321494): libsharp, spin SHT and vectorized kernels.

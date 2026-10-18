@@ -569,6 +569,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             );
             phase_started = std::time::Instant::now();
         }
+        let arch = pulp::Arch::new();
         if self.scalar_legendre_strategy_with_capacity(
             LegendreOperation::Synthesis,
             workspace.execution_capacity,
@@ -578,63 +579,126 @@ impl<T: ShtScalar> ShtPlan<T> {
         {
             return Ok(());
         }
-        let arch = pulp::Arch::new();
-        #[cfg(feature = "parallel")]
+        let scalar_ducc_used = if T::supports_scalar_ducc()
+            && self.grid.kind() == GridKind::GaussLegendre
+            && workspace.execution_capacity == 1
         {
-            let execution_threads = rayon::current_num_threads().min(workspace.execution_capacity);
-            let group_ring_count = self
-                .fine_synthesis_ring_group_size(execution_threads)
-                .unwrap_or(workspace.ring_group_size)
-                .min(ntheta);
-            let parallel_groups = ntheta.div_ceil(group_ring_count);
-            let use_parallel = execution_threads > 1 && parallel_groups > 1;
-            if use_parallel {
-                let cached_scalar_coefficients = self
-                    .prepare_scalar_synthesis_coefficient_cache(
-                        alm,
-                        &mut workspace.spin_spectra,
-                        &mut workspace.recurrence_workers[..parallel_groups],
-                        execution_threads,
-                        parallel_groups,
-                    )
-                    .map(|layout| ScalarSynthesisCoefficientCache {
-                        values: &workspace.spin_spectra[..layout.coefficient_count],
-                        row_stride: layout.row_stride,
-                        half_stride: layout.half_stride,
-                    });
-                let spectrum_group_len = group_ring_count.checked_mul(spectrum_len).ok_or(
-                    ShtError::IntegerOverflow {
-                        quantity: "parallel Fourier spectrum group size",
-                    },
-                )?;
-                debug_assert!(parallel_groups <= workspace.recurrence_workers.len());
-                workspace
-                    .spectra
-                    .par_chunks_mut(spectrum_group_len)
-                    .zip(workspace.recurrence_workers[..parallel_groups].par_iter_mut())
-                    .enumerate()
-                    .with_min_len(parallel_groups.div_ceil(execution_threads))
-                    .map(|(group_index, (group_spectra, recurrence))| {
-                        let ring_start = group_index * group_ring_count;
-                        let ring_end =
-                            (ring_start + group_spectra.len() / spectrum_len).min(ntheta);
-                        self.synthesize_ring_group_with_scalar_coefficients(
+            let recurrence = &mut workspace.recurrence_workers[0];
+            #[cfg(all(test, feature = "parallel"))]
+            recurrence.record_active_worker();
+            let mut scratch = crate::legendre::scalar_ducc::ScalarDuccScratch {
+                epsilon: &mut recurrence.epsilon,
+                alpha: &mut recurrence.spin_alpha,
+                coefficient_a: &mut recurrence.spin_coefficient_a,
+                coefficient_b: &mut recurrence.spin_coefficient_b,
+                coefficient_even: &mut recurrence.fast_spin_first,
+                coefficient_odd: &mut recurrence.fast_spin_second,
+                packed_sin: &mut recurrence.compact_theta_sin,
+                packed_cos: &mut recurrence.compact_theta_cos,
+                packed_csq: &mut recurrence.spin_current_plus,
+                packed_north: &mut recurrence.compact_ring_indices,
+                previous: &mut recurrence.previous,
+                current: &mut recurrence.current,
+                scale: &mut recurrence.exponents,
+                corfac: &mut recurrence.ducc_corfac,
+                sum_even_re: &mut recurrence.analysis_same_real,
+                sum_even_im: &mut recurrence.analysis_same_imag,
+                sum_odd_re: &mut recurrence.analysis_opposite_real,
+                sum_odd_im: &mut recurrence.analysis_opposite_imag,
+            };
+            T::synthesize_scalar_ducc_dispatched(
+                arch,
+                alm,
+                lmax,
+                self.harmonics.mmax(),
+                nphi,
+                spectrum_len,
+                phi0,
+                &self.sectoral_norms,
+                &workspace.theta_sin[..ntheta],
+                &workspace.theta_cos[..ntheta],
+                &workspace.ring_order_limits[..ntheta],
+                &mut workspace.spectra,
+                &mut scratch,
+            )
+        } else {
+            false
+        };
+        if !scalar_ducc_used {
+            #[cfg(feature = "parallel")]
+            {
+                let execution_threads =
+                    rayon::current_num_threads().min(workspace.execution_capacity);
+                let group_ring_count = self
+                    .fine_synthesis_ring_group_size(execution_threads)
+                    .unwrap_or(workspace.ring_group_size)
+                    .min(ntheta);
+                let parallel_groups = ntheta.div_ceil(group_ring_count);
+                let use_parallel = execution_threads > 1 && parallel_groups > 1;
+                if use_parallel {
+                    let cached_scalar_coefficients = self
+                        .prepare_scalar_synthesis_coefficient_cache(
                             alm,
-                            nphi,
-                            spectrum_len,
-                            phi0,
-                            ring_start,
-                            &mut group_spectra[..(ring_end - ring_start) * spectrum_len],
-                            &workspace.theta_sin[ring_start..ring_end],
-                            &workspace.theta_cos[ring_start..ring_end],
-                            &workspace.ring_order_limits,
-                            arch,
-                            recurrence,
-                            cached_scalar_coefficients,
+                            &mut workspace.spin_spectra,
+                            &mut workspace.recurrence_workers[..parallel_groups],
+                            execution_threads,
+                            parallel_groups,
                         )
-                    })
-                    .try_for_each(|result| result)?;
-            } else {
+                        .map(|layout| ScalarSynthesisCoefficientCache {
+                            values: &workspace.spin_spectra[..layout.coefficient_count],
+                            row_stride: layout.row_stride,
+                            half_stride: layout.half_stride,
+                        });
+                    let spectrum_group_len = group_ring_count.checked_mul(spectrum_len).ok_or(
+                        ShtError::IntegerOverflow {
+                            quantity: "parallel Fourier spectrum group size",
+                        },
+                    )?;
+                    debug_assert!(parallel_groups <= workspace.recurrence_workers.len());
+                    workspace
+                        .spectra
+                        .par_chunks_mut(spectrum_group_len)
+                        .zip(workspace.recurrence_workers[..parallel_groups].par_iter_mut())
+                        .enumerate()
+                        .with_min_len(parallel_groups.div_ceil(execution_threads))
+                        .map(|(group_index, (group_spectra, recurrence))| {
+                            let ring_start = group_index * group_ring_count;
+                            let ring_end =
+                                (ring_start + group_spectra.len() / spectrum_len).min(ntheta);
+                            self.synthesize_ring_group_with_scalar_coefficients(
+                                alm,
+                                nphi,
+                                spectrum_len,
+                                phi0,
+                                ring_start,
+                                &mut group_spectra[..(ring_end - ring_start) * spectrum_len],
+                                &workspace.theta_sin[ring_start..ring_end],
+                                &workspace.theta_cos[ring_start..ring_end],
+                                &workspace.ring_order_limits,
+                                arch,
+                                recurrence,
+                                cached_scalar_coefficients,
+                            )
+                        })
+                        .try_for_each(|result| result)?;
+                } else {
+                    self.synthesize_ring_group(
+                        alm,
+                        nphi,
+                        spectrum_len,
+                        phi0,
+                        0,
+                        &mut workspace.spectra,
+                        &workspace.theta_sin[..ntheta],
+                        &workspace.theta_cos[..ntheta],
+                        &workspace.ring_order_limits[..ntheta],
+                        arch,
+                        &mut workspace.recurrence_workers[0],
+                    )?;
+                }
+            }
+            #[cfg(not(feature = "parallel"))]
+            {
                 self.synthesize_ring_group(
                     alm,
                     nphi,
@@ -649,22 +713,6 @@ impl<T: ShtScalar> ShtPlan<T> {
                     &mut workspace.recurrence_workers[0],
                 )?;
             }
-        }
-        #[cfg(not(feature = "parallel"))]
-        {
-            self.synthesize_ring_group(
-                alm,
-                nphi,
-                spectrum_len,
-                phi0,
-                0,
-                &mut workspace.spectra,
-                &workspace.theta_sin[..ntheta],
-                &workspace.theta_cos[..ntheta],
-                &workspace.ring_order_limits[..ntheta],
-                arch,
-                &mut workspace.recurrence_workers[0],
-            )?;
         }
 
         #[cfg(all(test, feature = "parallel"))]
@@ -2465,7 +2513,9 @@ impl<T: ShtScalar> ShtPlan<T> {
             .as_ref()
             .map_or(0, |resampling| resampling.prepared_ntheta());
         let latitude_count = self.grid.ntheta().max(prepared_ntheta);
-        let recurrence_scratch_len = latitude_count.min(LATITUDE_BLOCK_SIZE);
+        let recurrence_scratch_len = latitude_count
+            .min(LATITUDE_BLOCK_SIZE)
+            .max(crate::legendre::SCALAR_DUCC_BATCH_SIZE);
         if workspace.ring_group_size == 0 {
             return Err(ShtError::BufferLength {
                 buffer: "workspace latitude group size",
@@ -2619,6 +2669,11 @@ impl<T: ShtScalar> ShtPlan<T> {
                     "workspace opposite-parity analysis imaginary spectrum",
                     recurrence_scratch_len,
                     recurrence.analysis_opposite_imag.len(),
+                ),
+                (
+                    "workspace DUCC scalar scale correction",
+                    recurrence_scratch_len,
+                    recurrence.ducc_corfac.len(),
                 ),
                 (
                     "workspace spin-1 fast scalar first coefficients",

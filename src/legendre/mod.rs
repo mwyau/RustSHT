@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 mod scalar;
+pub(crate) mod scalar_ducc;
 mod scalar_f32;
 mod scalar_paired;
 mod scalar_table;
@@ -11,6 +12,7 @@ mod spin_fast;
 pub(crate) mod synthesis_fast;
 
 pub(crate) const SPIN1_FAST_MIN_LMAX: usize = 15;
+pub(crate) const SCALAR_DUCC_BATCH_SIZE: usize = 256;
 
 pub(crate) use scalar_table::{
     LegendreOperation, LegendreStrategy, MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX, ScalarLegendreTable,
@@ -87,6 +89,10 @@ pub(crate) trait ShtScalar:
     + std::ops::RemAssign
     + std::ops::SubAssign
 {
+    fn supports_scalar_ducc() -> bool {
+        false
+    }
+
     fn supports_paired_scalar() -> bool {
         false
     }
@@ -256,6 +262,27 @@ pub(crate) trait ShtScalar:
         _scratch: &mut synthesis_fast::ScalarSynthesisFastScratch<'_, Self>,
     ) -> Result<bool, ShtError> {
         Ok(false)
+    }
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The private DUCC route receives one complete scalar GL synthesis and reusable workspace scratch."
+    )]
+    fn synthesize_scalar_ducc_dispatched(
+        _arch: Arch,
+        _alm: &[Complex<Self>],
+        _lmax: usize,
+        _mmax: usize,
+        _nphi: usize,
+        _spectrum_len: usize,
+        _phi0: f64,
+        _sectoral_norms: &[Self],
+        _sin_theta: &[Self],
+        _cos_theta: &[Self],
+        _ring_order_limits: &[usize],
+        _spectra: &mut [Complex<Self>],
+        _scratch: &mut scalar_ducc::ScalarDuccScratch<'_, Self>,
+    ) -> bool {
+        false
     }
     #[expect(
         clippy::too_many_arguments,
@@ -655,6 +682,10 @@ pub(crate) trait ShtScalar:
 impl ShtScalar for f64 {
     type SpinInitial = spin::SpinInitial;
 
+    fn supports_scalar_ducc() -> bool {
+        true
+    }
+
     fn supports_paired_scalar() -> bool {
         true
     }
@@ -783,6 +814,38 @@ impl ShtScalar for f64 {
             coefficient_odd,
             ring_order_limits,
             spectrum_len,
+            scratch,
+        )
+    }
+
+    fn synthesize_scalar_ducc_dispatched(
+        arch: Arch,
+        alm: &[Complex<Self>],
+        lmax: usize,
+        mmax: usize,
+        nphi: usize,
+        spectrum_len: usize,
+        phi0: f64,
+        sectoral_norms: &[Self],
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        ring_order_limits: &[usize],
+        spectra: &mut [Complex<Self>],
+        scratch: &mut scalar_ducc::ScalarDuccScratch<'_, Self>,
+    ) -> bool {
+        scalar_ducc::synthesize_dispatched(
+            arch,
+            alm,
+            lmax,
+            mmax,
+            nphi,
+            spectrum_len,
+            phi0,
+            sectoral_norms,
+            sin_theta,
+            cos_theta,
+            ring_order_limits,
+            spectra,
             scratch,
         )
     }
