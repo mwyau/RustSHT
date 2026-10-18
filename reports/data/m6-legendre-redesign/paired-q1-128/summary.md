@@ -339,5 +339,26 @@ or sustained external CPU load on that core. The cgroup had no CPU quota and
 recorded no throttling.
 
 CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The two readings above 0.50% are warnings, not rejections.
-Raw diagnostics remain local and untracked. The next process is the pair 01
-candidate mate.
+Raw diagnostics remain local and untracked.
+
+The candidate mate also passed all gates:
+
+| Backend | Samples (ms) | Median (ms) | CV | Drift |
+| --- | --- | ---: | ---: | ---: |
+| RustSHT | 1,741.603, 1,745.272, 1,748.765, 1,745.539, 1,745.836 | 1,745.539 | 0.1306% | 0.0238% |
+| DUCC | 366.926, 365.775, 363.630, 366.670, 365.243 | 365.775 | 0.3220% | 0.0496% |
+| SHTns | 263.192, 263.869, 264.774, 266.116, 264.698 | 264.698 | 0.3716% | 0.5810% |
+
+The paired RustSHT median ratio is 0.5219 (1.9162x, or 47.81% lower
+latency). RustSHT was 8.97x DUCC and 12.35x SHTns for baseline, and 4.77x
+DUCC and 6.59x SHTns for tile 128. RustSHT-versus-DUCC relative L2 error
+was `3.015e-13`; SHTns-versus-DUCC was `8.764e-14`. Whole-process elapsed
+time was 1:12.54, peak RSS was 955,232 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core affinity. Process and thread
+snapshots showed no competing build or benchmark or sustained external CPU
+load on that core; the cgroup recorded no throttling.
+
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are
+warnings, not rejections. Raw diagnostic captures remain local and
+untracked. This single pair favors tile 128 but does not accept the candidate;
+the T2047 six-pair matrix remains incomplete. The next process is pair 02
+candidate.
