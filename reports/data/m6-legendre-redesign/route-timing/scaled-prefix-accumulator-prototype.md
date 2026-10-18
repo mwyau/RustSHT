@@ -86,7 +86,14 @@ error against DUCC remained `1.182e-13`. Exact backend samples, all PSI avg10
 readings, peak RSS, and aggregate placement/frequency review are in the
 [T1023 matrix report](scaled-prefix-accumulator-t1023-q1.md).
 
-This passes the T1023 part of the q1 gate, not the full q1 gate. T2047 q1 is
-the next measurement under the frozen matrix protocol. T511 remains the
-required control before q8 or broader regression work. The candidate remains
-experimental and is not routed in production.
+The six-pair T2047 q1 matrix also passed every gate. Its median paired ratio
+was `0.407892` (95% bootstrap interval `0.407274–0.408108`), with candidate
+and baseline medians of 1370.613 ms and 3360.075 ms. The candidate output had
+relative-L2 error `3.015e-13` and maximum absolute error `1.110e-12` against
+DUCC. Full timing samples, resources, and CPU-pressure validity decisions are in the
+[T2047 matrix report](scaled-prefix-accumulator-t2047-q1.md).
+
+The high-resolution part of the q1 gate passes. The six-pair T511 scalar
+control is the next required measurement before q8 or broader scalar/spin-1
+regression work. The candidate remains experimental and is not routed in
+production.

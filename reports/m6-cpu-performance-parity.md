@@ -26,16 +26,22 @@ benchmark harness changes, and numerical-plan edits remain uncommitted. The
 campaign report and raw measurements are recorded in diagnostic evidence
 checkpoints.
 
-The isolated tile-128 scalar kernel has since passed the six-pair q1 timing
-and numerical gates at T1023 and T2047. Its median candidate/baseline ratios
-are 0.679651 and 0.533182. The T511 baseline control failed Rust timing
-stability before a candidate mate ran, so the candidate remains unaccepted and
-the q8 candidate and broader regression matrices have not started. A bounded
-T511 q8 baseline-versus-baseline diagnostic found one stable and one unstable
-process under the existing one-warm-up protocol; the q8 stability issue remains
-unresolved. The paired q1 results and stop condition are recorded in [the v3
-q1 comparison](data/m6-legendre-redesign/paired-q1-128/summary.md), and the q8
-diagnostic is in [the route-timing report](data/m6-legendre-redesign/route-timing/q8-baseline-diagnostic-2026-10-18.md).
+An earlier frozen tile-128 scalar source passed six-pair q1 comparisons at
+T1023 and T2047 with median candidate/baseline ratios 0.679651 and 0.533182.
+Its T511 baseline control failed timing stability before a candidate mate ran,
+so that source was not accepted. A later isolated source added scaled-prefix
+accumulation and passed six-pair q1 comparisons at T1023 and T2047 with ratios
+0.568982 (95% interval 0.563779–0.571237) and 0.407892 (0.407274–0.408108).
+At T2047, its median latency was 1370.613 ms versus 3360.075 ms for the clean
+baseline, and 3.666x the DUCC median. Its T511 q1 control is still required;
+the source remains experimental. The complete matrices and numerical results
+are in the [T1023](data/m6-legendre-redesign/route-timing/scaled-prefix-accumulator-t1023-q1.md)
+and [T2047](data/m6-legendre-redesign/route-timing/scaled-prefix-accumulator-t2047-q1.md)
+reports. A bounded T511 q8 baseline-versus-baseline diagnostic found one
+stable and one unstable process under the one-warm-up protocol; that q8
+stability issue remains unresolved. The earlier paired q1 result is in
+[the v3 comparison](data/m6-legendre-redesign/paired-q1-128/summary.md), and
+the q8 diagnostic is in [the route-timing report](data/m6-legendre-redesign/route-timing/q8-baseline-diagnostic-2026-10-18.md).
 
 ## C01: workspace order-prefix compatibility
 
@@ -943,7 +949,11 @@ Rust median was 172.617 ms versus 301.823 ms for the clean baseline (ratio
 The separate six-pair T1023 q1 matrix passed every timing, numerical, PSI,
 placement, and interference gate. Its median paired ratio was `0.568982`
 (95% bootstrap interval `0.563779–0.571237`), with candidate and baseline
-medians of 171.624 ms and 301.582 ms. Full samples and CPU-pressure validity decisions are
-in the [T1023 matrix report](data/m6-legendre-redesign/route-timing/scaled-prefix-accumulator-t1023-q1.md).
-The candidate remains isolated. T2047 q1 and the T511 control remain before
-q8 or broader scalar/spin-1 regression work.
+medians of 171.624 ms and 301.582 ms. The six-pair T2047 q1 matrix also passed:
+its ratio was `0.407892` (95% interval `0.407274–0.408108`), with medians of
+1370.613 ms and 3360.075 ms. Relative-L2 error against DUCC was `3.015e-13`;
+maximum absolute error was `1.110e-12`. Full timing samples, resources and
+CPU-pressure validity decisions are in the [T1023](data/m6-legendre-redesign/route-timing/scaled-prefix-accumulator-t1023-q1.md)
+and [T2047](data/m6-legendre-redesign/route-timing/scaled-prefix-accumulator-t2047-q1.md)
+reports. The candidate remains isolated. Its T511 q1 control must pass before
+q8 or broader scalar/spin-1 regression measurements.

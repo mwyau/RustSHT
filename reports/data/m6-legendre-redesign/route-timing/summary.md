@@ -97,17 +97,17 @@ allocator metadata. The tile-size scratch difference is therefore bounded to
 9 KiB per worker; peak whole-process RSS is reported separately by the full
 transform benchmark.
 
-## Decision and later matched measurements
+## Earlier tile-128 candidate
 
-The 128-ring source and binary remain frozen and isolated. These instrumented
-same-candidate calls explain the 128-versus-256 difference but do not compare
-either tile against the clean baseline. The later six-pair q1 whole-transform
-matrices passed at T1023 and T2047, with candidate/baseline median ratios
-0.679651 and 0.533182. The first T511 baseline process then failed the fixed
-Rust timing-stability limits; no candidate mate, retry, q8 cell or broader
-regression measurement followed. The candidate remains unaccepted. See the
-[paired q1 record](../paired-q1-128/summary.md) for numerical agreement,
-per-process stability, memory and host-validity summaries.
+The 128-ring source and binary described above are an earlier candidate without
+the scaled-prefix accumulator. Its instrumented calls explain the tile-size
+difference but do not compare either tile against the clean baseline. Its
+six-pair q1 whole-transform matrices passed at T1023 and T2047, with
+candidate/baseline median ratios 0.679651 and 0.533182. The first T511 baseline
+process then failed the fixed Rust timing-stability limits; no candidate mate,
+retry, q8 cell or broader regression measurement followed. That candidate was
+not accepted. Its numerical checks and process records are in the
+[earlier paired q1 report](../paired-q1-128/summary.md).
 
 The route timers point to the scaled prefix as the next measured kernel target:
 at T2047 the 128-ring case spent 1,012.1 ms in the prefix and 529.5 ms in the
@@ -151,7 +151,28 @@ an additive interpretation.
 The sample indicates that scalar complex accumulation is the largest of the
 three sampled prefix components. The separately measured coefficient scan is
 also repeated for every tile even though its inputs are shared across tiles of
-one order. Caching that safety result once per order is a bounded next
-hypothesis. It must retain the current fallback decision and be evaluated as
-an isolated candidate. The 128-ring candidate remains unaccepted: the T511
-q1 stability control still blocks q8 and broader regression measurements.
+one order. The later accumulator candidate addresses repeated scaled complex
+accumulation; its new route costs have not yet been measured. The earlier
+per-order safety-cache hypothesis was evaluated as a separate isolated
+candidate and did not pass its paired screen.
+
+## Scaled-prefix accumulator q1 matrices
+
+A separate source keeps prefix sums in the recurrence's binary scale, rebases
+them when a lane exponent changes, and materializes each sum at the ordinary
+SIMD transition. The source and extension hashes are listed in the frozen
+[q1 protocol](scaled-prefix-accumulator-q1-v1-protocol.md).
+
+Six-pair q1 matrices passed at T1023 and T2047. Candidate/baseline median
+ratios were `0.568982` (95% interval `0.563779–0.571237`) and `0.407892`
+(`0.407274–0.408108`). The T2047 candidate median was 1370.613 ms versus
+3360.075 ms for the baseline; candidate latency was 3.666x DUCC and 5.040x
+SHTns. Relative-L2 error against DUCC was `3.015e-13`, with maximum absolute
+error `1.110e-12`. Full samples and CPU-pressure validity decisions are in the
+[T1023](scaled-prefix-accumulator-t1023-q1.md) and
+[T2047](scaled-prefix-accumulator-t2047-q1.md) result reports.
+
+These timings cover the complete transform and do not give route-resolved
+times for the accumulator source. The earlier prefix component timings above
+belong to a different binary. The new source's six-pair T511 control is next;
+no production route, q8 matrix, or spin-1 regression result is accepted yet.
