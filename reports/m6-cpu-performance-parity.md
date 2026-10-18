@@ -905,4 +905,21 @@ limits are in
 
 A bounded isolated patch now reuses each prepared order's coefficient-safety result across its 128-ring tiles. It preserves the same unsafe-coefficient decision and scaled fallback. A 257-ring test confirms one scan for three tiles and agreement with the scaled reference for a subnormal coefficient. Formatting, workspace Clippy, and the full workspace tests passed.
 
-The paired T2047 q1 screen did not produce a candidate timing: the telemetry runner exited after its process matcher selected a transient telemetry command. The first frozen tile-128 process was stable but unpaired. The protocol forbids retries, so the screen stopped without a speed ratio or acceptance decision; no q8 or additional regression workload ran. The tile-128 route remains isolated. The source patch and concise evidence are in the [cache screen record](data/m6-legendre-redesign/route-timing/coefficient-safety-cache-screen.md).
+The first paired T2047 q1 attempt did not produce a candidate timing: the telemetry runner exited after its process matcher selected a transient telemetry command. The first frozen tile-128 process was stable but unpaired. That protocol forbade retries, so this attempt stopped without a speed ratio or acceptance decision. The tile-128 route remains isolated. Its source patch and diagnostic are in the [original cache screen record](data/m6-legendre-redesign/route-timing/coefficient-safety-cache-screen.md).
+
+### Per-order coefficient-safety cache screen v2
+
+The v2 acquisition used the prospectively fixed stability and CPU-pressure
+criteria. It completed three paired T2047 q1 comparisons before the baseline
+process in pair 4 failed both timing stability checks (CV 7.0477%, drift
+-7.3840%). The complete five-call samples, CPU-pressure validity decisions, and per-process peak memory remain in the [v2 result
+record](data/m6-legendre-redesign/route-timing/coefficient-safety-cache-screen-v2.md).
+
+The three completed candidate/baseline median ratios were 0.95915, 0.95655,
+and 0.96284. These are descriptive only: the declared six-pair screen stopped
+at the first failed process and produced no bootstrap interval or acceptance
+result. PSI did not exceed the 2.00% rejection threshold; warning-band
+readings and broad CPU-frequency variation were recorded. No retries or
+replacement pairs ran. The cache patch remains isolated, and the tile-128
+kernel remains unaccepted pending its failed T511 control and complete
+regression matrix.
