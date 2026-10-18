@@ -40,6 +40,17 @@ are in the [T1023](data/m6-legendre-redesign/route-timing/scaled-prefix-accumula
 and [T2047](data/m6-legendre-redesign/route-timing/scaled-prefix-accumulator-t2047-q1.md)
 reports; the stopped control is in the
 [T511 record](data/m6-legendre-redesign/route-timing/scaled-prefix-accumulator-t511-q1-stopped.md).
+
+The latest isolated source experiment accumulates scaled-prefix contributions
+within each recurrence exponent epoch. Five focused fast-kernel tests and the
+full Rust workspace suite passed. One instrumented T2047 q1 call measured a
+694.493 ms pre-suffix transition estimate and a 532.543 ms SIMD suffix; the
+full call took 1378.917 ms. This is a route diagnostic, not a performance
+comparison: it has one timed call and no parent-source, clean-baseline, DUCC,
+or SHTns mate. The experiment is unaccepted and production routing is
+unchanged. Its source delta, hashes, route counts, and validation results are
+in the [exponent-epoch report](data/m6-legendre-redesign/route-timing/prefix-exponent-epoch-accumulator.md).
+
 A route decomposition and sampled prefix components are in the
 [T2047 route profile](data/m6-legendre-redesign/route-timing/scaled-prefix-accumulator-route-profile-t2047.md).
 A bounded T511 q8 baseline-versus-baseline diagnostic found one

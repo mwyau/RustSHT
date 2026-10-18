@@ -1,0 +1,327 @@
+--- a/src/legendre/synthesis_fast.rs
++++ b/src/legendre/synthesis_fast.rs
+@@ -13,0 +14,2 @@
++#[cfg(test)]
++use std::time::Instant;
+@@ -30,0 +33,4 @@
++    transition_ns: u128,
++    suffix_ns: u128,
++    fallback_ns: u128,
++    coefficient_scan_ns: u128,
+@@ -54,0 +61,3 @@
++    pub(crate) prefix_sum_re: &'a mut [T],
++    pub(crate) prefix_sum_im: &'a mut [T],
++    pub(crate) prefix_exponents: &'a mut [i64],
+@@ -93,0 +103,3 @@
++        || scratch.prefix_sum_re.len() < ACTIVE_TILE_SIZE.min(sin_theta.len())
++        || scratch.prefix_sum_im.len() < ACTIVE_TILE_SIZE.min(sin_theta.len())
++        || scratch.prefix_exponents.len() < ACTIVE_TILE_SIZE.min(sin_theta.len())
+@@ -207,0 +220,3 @@
++            &mut scratch.prefix_sum_re[..ordinary_len],
++            &mut scratch.prefix_sum_im[..ordinary_len],
++            &mut scratch.prefix_exponents[..ordinary_len],
+@@ -223,0 +239,2 @@
++            #[cfg(test)]
++            let fallback_started = Instant::now();
+@@ -244,0 +262 @@
++                counts.fallback_ns += fallback_started.elapsed().as_nanos();
+@@ -249,0 +268,2 @@
++        #[cfg(test)]
++        let fallback_started = Instant::now();
+@@ -270,0 +291 @@
++            counts.fallback_ns += fallback_started.elapsed().as_nanos();
+@@ -363,0 +385,3 @@
++    prefix_sum_re: &mut [f64],
++    prefix_sum_im: &mut [f64],
++    prefix_exponents: &mut [i64],
+@@ -371 +395,3 @@
+-    if !ordinary_coefficients_are_safe(
++    #[cfg(test)]
++    let scan_started = Instant::now();
++    let coefficients_safe = ordinary_coefficients_are_safe(
+@@ -377 +403,6 @@
+-    ) {
++    );
++    #[cfg(test)]
++    update_route_counts(|counts| {
++        counts.coefficient_scan_ns += scan_started.elapsed().as_nanos();
++    });
++    if !coefficients_safe {
+@@ -388,0 +420,2 @@
++    #[cfg(test)]
++    let transition_started = Instant::now();
+@@ -404,0 +438,7 @@
++        prefix_sum_re,
++        prefix_sum_im,
++        prefix_exponents,
++    });
++    #[cfg(test)]
++    update_route_counts(|counts| {
++        counts.transition_ns += transition_started.elapsed().as_nanos();
+@@ -444,0 +485,87 @@
++#[inline]
++fn product_preserves_scaled_range(left: f64, right: f64, product: f64) -> bool {
++    if left == 0.0 || right == 0.0 {
++        product == 0.0
++    } else {
++        product.is_normal()
++    }
++}
++
++fn flush_prefix_lane(
++    lane: usize,
++    new_exponent: i64,
++    prefix_sum_re: &mut [f64],
++    prefix_sum_im: &mut [f64],
++    prefix_exponents: &mut [i64],
++    sum_re: &mut [f64],
++    sum_im: &mut [f64],
++) -> bool {
++    let contribution_re = scalar::scale_binary(prefix_sum_re[lane], prefix_exponents[lane]);
++    let contribution_im = scalar::scale_binary(prefix_sum_im[lane], prefix_exponents[lane]);
++    let next_re = sum_re[lane] + contribution_re;
++    let next_im = sum_im[lane] + contribution_im;
++    if !next_re.is_finite()
++        || !next_im.is_finite()
++        || next_re.abs() > f64::MAX * 0.5
++        || next_im.abs() > f64::MAX * 0.5
++    {
++        return false;
++    }
++    sum_re[lane] = next_re;
++    sum_im[lane] = next_im;
++    prefix_sum_re[lane] = 0.0;
++    prefix_sum_im[lane] = 0.0;
++    prefix_exponents[lane] = new_exponent;
++    true
++}
++
++fn flush_changed_prefix_lanes(
++    exponents: &[i64],
++    prefix_sum_re: &mut [f64],
++    prefix_sum_im: &mut [f64],
++    prefix_exponents: &mut [i64],
++    sum_re: &mut [f64],
++    sum_im: &mut [f64],
++) -> bool {
++    for (lane, &exponent) in exponents.iter().enumerate() {
++        if prefix_exponents[lane] != exponent
++            && !flush_prefix_lane(
++                lane,
++                exponent,
++                prefix_sum_re,
++                prefix_sum_im,
++                prefix_exponents,
++                sum_re,
++                sum_im,
++            )
++        {
++            return false;
++        }
++    }
++    true
++}
++
++fn flush_all_prefix_lanes(
++    exponents: &[i64],
++    prefix_sum_re: &mut [f64],
++    prefix_sum_im: &mut [f64],
++    prefix_exponents: &mut [i64],
++    sum_re: &mut [f64],
++    sum_im: &mut [f64],
++) -> bool {
++    for (lane, &exponent) in exponents.iter().enumerate() {
++        if !flush_prefix_lane(
++            lane,
++            exponent,
++            prefix_sum_re,
++            prefix_sum_im,
++            prefix_exponents,
++            sum_re,
++            sum_im,
++        ) {
++            return false;
++        }
++    }
++    true
++}
++
+@@ -460,0 +588,3 @@
++    prefix_sum_re: &'a mut [f64],
++    prefix_sum_im: &'a mut [f64],
++    prefix_exponents: &'a mut [i64],
+@@ -483,0 +614,3 @@
++            prefix_sum_re,
++            prefix_sum_im,
++            prefix_exponents,
+@@ -498,0 +632,3 @@
++            prefix_sum_re[lane] = 0.0;
++            prefix_sum_im[lane] = 0.0;
++            prefix_exponents[lane] = exponent;
+@@ -503,0 +640 @@
++        prefix_exponents.copy_from_slice(exponents);
+@@ -541,3 +678,5 @@
+-                let contribution =
+-                    scalar::multiply_complex_scaled(factor, current[lane], exponents[lane]);
+-                if !contribution.re.is_finite() || !contribution.im.is_finite() {
++                let product_re = factor.re * current[lane];
++                let product_im = factor.im * current[lane];
++                if !product_preserves_scaled_range(factor.re, current[lane], product_re)
++                    || !product_preserves_scaled_range(factor.im, current[lane], product_im)
++                {
+@@ -546,3 +685,5 @@
+-                let next_re = sum_re[lane] + contribution.re;
+-                let next_im = sum_im[lane] + contribution.im;
+-                if !next_re.is_finite() || !next_im.is_finite() {
++                let next_re = prefix_sum_re[lane] + product_re;
++                let next_im = prefix_sum_im[lane] + product_im;
++                if !(next_re == 0.0 || next_re.is_normal())
++                    || !(next_im == 0.0 || next_im.is_normal())
++                {
+@@ -551,2 +692,2 @@
+-                sum_re[lane] = next_re;
+-                sum_im[lane] = next_im;
++                prefix_sum_re[lane] = next_re;
++                prefix_sum_im[lane] = next_im;
+@@ -583,0 +725,10 @@
++            if !flush_changed_prefix_lanes(
++                exponents,
++                prefix_sum_re,
++                prefix_sum_im,
++                prefix_exponents,
++                sum_re,
++                sum_im,
++            ) {
++                return None;
++            }
+@@ -587,0 +739,10 @@
++                if !flush_all_prefix_lanes(
++                    exponents,
++                    prefix_sum_re,
++                    prefix_sum_im,
++                    prefix_exponents,
++                    sum_re,
++                    sum_im,
++                ) {
++                    return None;
++                }
+@@ -610,0 +772,4 @@
++#[expect(
++    clippy::too_many_arguments,
++    reason = "The recurrence step receives one order's coefficients and reusable lane buffers."
++)]
+@@ -665,0 +831,2 @@
++        #[cfg(test)]
++        let suffix_started = Instant::now();
+@@ -743,0 +911,4 @@
++        #[cfg(test)]
++        update_route_counts(|counts| {
++            counts.suffix_ns += suffix_started.elapsed().as_nanos();
++        });
+@@ -753,5 +924 @@
+-    fn prepared_order(
+-        m: usize,
+-        lmax: usize,
+-        coefficients: &[Complex64],
+-    ) -> (Vec<f64>, Vec<f64>, Vec<f64>, Vec<Complex64>, Vec<Complex64>) {
++    fn prepared_order(m: usize, lmax: usize, coefficients: &[Complex64]) -> PreparedOrder {
+@@ -792,0 +960,2 @@
++    type PreparedOrder = (Vec<f64>, Vec<f64>, Vec<f64>, Vec<Complex64>, Vec<Complex64>);
++
+@@ -802,0 +972,4 @@
++    #[expect(
++        clippy::too_many_arguments,
++        reason = "The independent reference receives the complete recurrence setup and output buffer."
++    )]
+@@ -881,0 +1055,3 @@
++        prefix_sum_re: Vec<f64>,
++        prefix_sum_im: Vec<f64>,
++        prefix_exponents: Vec<i64>,
+@@ -896,0 +1073,3 @@
++                prefix_sum_re: vec![0.0; scratch_len],
++                prefix_sum_im: vec![0.0; scratch_len],
++                prefix_exponents: vec![0_i64; scratch_len],
+@@ -914,0 +1094,3 @@
++                prefix_sum_re: &mut self.prefix_sum_re,
++                prefix_sum_im: &mut self.prefix_sum_im,
++                prefix_exponents: &mut self.prefix_exponents,
+@@ -929,0 +1112,26 @@
++    fn scaled_prefix_accumulator_flushes_at_exponent_changes() {
++        let exponents = [810_i64, -790_i64];
++        let mut prefix_sum_re = [1.5, -0.75];
++        let mut prefix_sum_im = [-0.25, 0.5];
++        let mut prefix_exponents = [10_i64, -20_i64];
++        let mut sum_re = [0.0; 2];
++        let mut sum_im = [0.0; 2];
++
++        assert!(flush_changed_prefix_lanes(
++            &exponents,
++            &mut prefix_sum_re,
++            &mut prefix_sum_im,
++            &mut prefix_exponents,
++            &mut sum_re,
++            &mut sum_im,
++        ));
++        assert_eq!(sum_re[0], scalar::scale_binary(1.5, 10));
++        assert_eq!(sum_im[0], scalar::scale_binary(-0.25, 10));
++        assert_eq!(sum_re[1], scalar::scale_binary(-0.75, -20));
++        assert_eq!(sum_im[1], scalar::scale_binary(0.5, -20));
++        assert_eq!(prefix_sum_re, [0.0; 2]);
++        assert_eq!(prefix_sum_im, [0.0; 2]);
++        assert_eq!(prefix_exponents, exponents);
++    }
++
++    #[test]
+@@ -1011,0 +1220,3 @@
++            let mut prefix_sum_re = vec![0.0; sin_theta.len()];
++            let mut prefix_sum_im = vec![0.0; sin_theta.len()];
++            let mut prefix_exponents = vec![0_i64; sin_theta.len()];
+@@ -1028,0 +1240,3 @@
++                &mut prefix_sum_re,
++                &mut prefix_sum_im,
++                &mut prefix_exponents,
+@@ -1221,2 +1435,4 @@
+-        pool.install(|| plan.synthesis_into(&alm, &mut map, &mut workspace))
+-            .unwrap();
++        for _ in 0..5 {
++            pool.install(|| plan.synthesis_into(&alm, &mut map, &mut workspace))
++                .unwrap();
++        }
+@@ -1226,0 +1443 @@
++        let synthesis_started = Instant::now();
+@@ -1228,0 +1446 @@
++        let synthesis_elapsed = synthesis_started.elapsed();
+@@ -1229,0 +1448,4 @@
++        println!(
++            "M6 synthesis_ms={:.3}",
++            synthesis_elapsed.as_secs_f64() * 1_000.0
++        );
+@@ -1244,0 +1467,4 @@
++            total.transition_ns += counts.transition_ns;
++            total.suffix_ns += counts.suffix_ns;
++            total.fallback_ns += counts.fallback_ns;
++            total.coefficient_scan_ns += counts.coefficient_scan_ns;
+--- a/src/workspace.rs
++++ b/src/workspace.rs
+@@ -81,0 +82,3 @@
++    pub(crate) fast_scalar_prefix_sum_re: Vec<T>,
++    pub(crate) fast_scalar_prefix_sum_im: Vec<T>,
++    pub(crate) fast_scalar_prefix_exponents: Vec<i64>,
+@@ -255,0 +259,11 @@
++            )?,
++            fast_scalar_prefix_sum_re: allocate_real(
++                crate::legendre::synthesis_fast::ACTIVE_TILE_SIZE,
++                "fast scalar scaled-prefix real accumulator",
++            )?,
++            fast_scalar_prefix_sum_im: allocate_real(
++                crate::legendre::synthesis_fast::ACTIVE_TILE_SIZE,
++                "fast scalar scaled-prefix imaginary accumulator",
++            )?,
++            fast_scalar_prefix_exponents: allocate_exponents(
++                crate::legendre::synthesis_fast::ACTIVE_TILE_SIZE,
+--- a/src/transform.rs
++++ b/src/transform.rs
+@@ -838,0 +839,3 @@
++                    prefix_sum_re: &mut recurrence.fast_scalar_prefix_sum_re,
++                    prefix_sum_im: &mut recurrence.fast_scalar_prefix_sum_im,
++                    prefix_exponents: &mut recurrence.fast_scalar_prefix_exponents,
