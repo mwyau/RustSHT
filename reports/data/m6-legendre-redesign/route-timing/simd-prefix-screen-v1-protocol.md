@@ -1,12 +1,13 @@
-# SIMD prefix accumulation screen protocol v1.1
+# SIMD prefix accumulation screen protocol v1.2
 
 ## Version update
 
-Version 1 required SHTns timing. Its shared library was unavailable at the
-preflight, before any benchmark sample was collected. Version 1.1 excludes
-SHTns from this focused Rust variant screen; it changes no timing, numerical,
-CPU-pressure, or stop threshold. The screen makes no new SHTns performance
-claim.
+Version 1 required SHTns timing, but its shared library was unavailable at
+preflight. Version 1.1 removed that requirement, but its command used a harness
+that rejected `scope=into` before constructing the workload. No transform was
+timed. Version 1.2 uses the M6 harness, which supports `scope=into`, and
+compares RustSHT with DUCC only. It changes no timing, numerical, CPU-pressure,
+or stop threshold and makes no new SHTns performance claim.
 
 ## Purpose
 
@@ -29,7 +30,7 @@ configuration, Rust 1.99.0, Python 3.11.15, NumPy 2.4.6, DUCC 0.41.0, and the
 dependency lockfile. The only source change between variants is the prefix
 accumulation and its SIMD range checks. The benchmark harness is
 `examples/python_perf_baseline.py`, SHA-256
-`e7ffbe889922cc4da1b1ece63bc24bf264603c7373adb195abde5d705bb51c07`.
+`72cd1986a220573c1a445bd6a6aa96b9df272a6bff1dc833843ee3f274c77739`.
 
 The numerical reference is DUCC 0.41.0, source revision
 `80388904b8cfc32400ba84af8a6a45aabfe60f86`. The test machine is an AMD Ryzen
