@@ -74,7 +74,7 @@ interference; both completed processes remain valid under protocol v3.
 | Tile 128 DUCC | 50.425, 48.688, 47.776, 47.379, 48.383 | 48.383 | 2.1672% | 1.6679% | — |
 | Tile 128 SHTns | 34.734, 34.406, 34.065, 34.369, 34.237 | 34.369 | 0.6431% | 0.2997% | — |
 
-The paired RustSHT median ratio is 0.6821 (1.466x, or 31.8% lower latency)
+The paired RustSHT median ratio is 0.6820 (1.466x, or 31.8% lower latency)
 for this single pair. RustSHT was 6.11x DUCC and 8.26x SHTns for the baseline
 process, and 4.15x DUCC and 5.84x SHTns for the candidate process. These are
 one-pair observations, not the six-pair acceptance result. The candidate is
@@ -97,25 +97,39 @@ the 2.00% rejection threshold. Raw preflight, periodic process, thread,
 frequency, GNU-time, and console captures remain local and untracked. No
 process was retried and no samples were removed.
 
-### T1023 q1 pair 02: candidate process valid, baseline mate pending
+### T1023 q1 pair 02: both processes valid
 
-The second pair followed the fixed candidate-then-baseline order. The
-candidate's three backend series passed the same stability limits, and its
-numerical comparison against DUCC passed. This process is valid, but it does
-not yet produce a paired ratio.
+The second pair followed the fixed candidate-then-baseline order. Both
+processes passed the stability limits for RustSHT, DUCC, and SHTns and passed
+their numerical comparisons against DUCC.
 
-| Backend | Samples (ms) | Median (ms) | CV | Drift |
-| --- | --- | ---: | ---: | ---: |
-| RustSHT | 199.511, 199.124, 200.275, 198.509, 199.191 | 199.191 | 0.2892% | 0.3318% |
-| DUCC | 50.713, 49.188, 49.260, 49.766, 49.777 | 49.766 | 1.0952% | 1.0278% |
-| SHTns | 34.518, 35.483, 34.964, 35.522, 35.197 | 35.197 | 1.0531% | 1.1237% |
+| Variant / backend | Samples (ms) | Median (ms) | CV | Drift | Peak RSS (kB) |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Tile 128 RustSHT | 199.511, 199.124, 200.275, 198.509, 199.191 | 199.191 | 0.2892% | 0.3318% | 278,572 |
+| Tile 128 DUCC | 50.713, 49.188, 49.260, 49.766, 49.777 | 49.766 | 1.0952% | 1.0278% | — |
+| Tile 128 SHTns | 34.518, 35.483, 34.964, 35.522, 35.197 | 35.197 | 1.0531% | 1.1237% | — |
+| Baseline RustSHT | 292.824, 300.213, 303.707, 294.313, 294.244 | 294.313 | 1.4086% | 2.0164% | 274,592 |
+| Baseline DUCC | 47.185, 46.988, 49.131, 47.674, 47.366 | 47.366 | 1.6051% | 0.7073% | — |
+| Baseline SHTns | 35.059, 35.252, 35.401, 36.714, 35.407 | 35.401 | 1.6520% | 2.2838% | — |
 
-RustSHT-versus-DUCC relative L2 error was `1.182e-13`; SHTns-versus-DUCC
-was `8.764e-14`. Whole-process elapsed time was 18.52 s, peak RSS was
-278,572 kB, and Context-switch diagnostics were reviewed locally; exact counts remain untracked. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The benchmark worker stayed
-within its one-core affinity. The process snapshots showed no competing build
-or benchmark and no sustained external CPU load on that core. The cgroup had
-no CPU quota and recorded no throttling.
+The paired RustSHT median ratio is 0.6768 (1.4775x, or 32.32% lower latency).
+RustSHT was 6.21x DUCC and 8.31x SHTns for the baseline process, and 4.00x
+DUCC and 5.66x SHTns for the candidate process. Together with pair 01, both
+valid T1023 q1 observations favor tile 128, but the six-pair matrix and its
+bootstrap acceptance gate are still incomplete.
 
-CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The postflight value is a warning,
-not a rejection. The next process is the pair 02 baseline mate.
+RustSHT-versus-DUCC relative L2 error was `1.182e-13` for both variants;
+SHTns-versus-DUCC was `8.764e-14`. Whole-process elapsed times were 18.52 s
+for candidate and 19.13 s for baseline. Context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. Each
+worker stayed within its one-core affinity. Neither process showed a competing
+build or benchmark or sustained external CPU load on that core. The cgroup
+had no CPU quota and recorded no throttling.
+
+CPU-pressure validity decisions were:
+
+
+
+The candidate postflight and baseline during-run readings in the warning
+range are warnings, not rejections. Raw diagnostic captures remain local and
+untracked. No process was retried and no samples were removed. The next
+process is pair 03 baseline, as fixed by the alternating sequence.
