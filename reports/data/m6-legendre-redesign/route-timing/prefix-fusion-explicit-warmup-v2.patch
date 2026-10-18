@@ -1,0 +1,31 @@
+--- a/reports/data/m6-m1-scheduling/python_perf_baseline.py
++++ b/reports/data/m6-m1-scheduling/python_perf_baseline.py
+@@ -102,9 +102,11 @@
+ def rust_proc_analysis():
+     return rustsht.analysis_2d(map_in, spin=spin, lmax=lmax, geometry=geometry, mmax=lmax, phi0=phi0)
+ 
+-def time_runs(fn, count=runs, include_samples=False):
++def time_runs(fn, count=runs, include_samples=False, extra_warmups=0):
+     run_medians = []
+     run_samples = []
++    for _ in range(extra_warmups):
++        fn()
+     for _ in range(count):
+         fn()
+         samples = []
+@@ -133,12 +135,13 @@
+     return f"max_abs={np.max(np.abs(diff)):.3e} rms={np.sqrt(np.mean(np.abs(diff) ** 2)):.3e} rel_l2={np.linalg.norm(diff) / max(np.linalg.norm(expected), 1e-300):.3e}"
+ 
+ def report(name, fn):
++    extra_warmups = int(os.environ.get("RUSTSHT_BENCH_EXTRA_WARMUPS", "0"))
+     if os.environ.get("RUSTSHT_PERF_RAW") == "1":
+-        ms, samples = time_runs(fn, include_samples=True)
++        ms, samples = time_runs(fn, include_samples=True, extra_warmups=extra_warmups)
+         raw_text = ";".join(",".join(f"{x:.3f}" for x in group) for group in samples)
+         print(f"{name}_raw_samples_ms=" + raw_text)
+     else:
+-        ms = time_runs(fn)
++        ms = time_runs(fn, extra_warmups=extra_warmups)
+     print(f"{name}_run_medians_ms=" + ",".join(f"{x:.3f}" for x in ms) + f"; median={np.median(ms):.3f}; spread={max(ms)-min(ms):.3f}")
+ 
+ 

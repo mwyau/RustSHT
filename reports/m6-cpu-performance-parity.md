@@ -1162,3 +1162,18 @@ measured bottleneck, while the relative cost of its individual subcomponents
 needs a focused route profile of the fused source. No new timing run is
 authorized by this analysis; the q1 candidate matrix remains stopped pending
 a prospectively validated stability protocol.
+
+### Prospective warm-up protocol v2
+
+Review of the frozen benchmark harness found that each backend received one
+pre-timing transform for the numerical comparison and another warm-up inside
+the timed-series helper. Protocol v1 documented only the latter. Protocol v2
+records both and prospectively adds three fixed warm-up calls per backend,
+then requires two identical clean-baseline T1023 processes to pass all
+existing numerical, CV, drift, CPU-pressure, and interference gates before
+any candidate process runs. It leaves the five measured samples and every
+acceptance threshold unchanged; no v1 result is reclassified. The harness
+patch applies cleanly and its patched script passes Python syntax compilation.
+The v2 baseline controls have not run. The candidate remains isolated until
+both pass. See the [v2 protocol](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-q1-protocol-v2.md)
+and [explicit warm-up patch](data/m6-legendre-redesign/route-timing/prefix-fusion-explicit-warmup-v2.patch).
