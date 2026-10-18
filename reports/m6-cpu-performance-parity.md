@@ -30,8 +30,12 @@ The isolated tile-128 scalar kernel has since passed the six-pair q1 timing
 and numerical gates at T1023 and T2047. Its median candidate/baseline ratios
 are 0.679651 and 0.533182. The T511 baseline control failed Rust timing
 stability before a candidate mate ran, so the candidate remains unaccepted and
-q8 and broader regression cells have not started. The paired results and stop
-condition are recorded in [the v3 q1 comparison](data/m6-legendre-redesign/paired-q1-128/summary.md).
+the q8 candidate and broader regression matrices have not started. A bounded
+T511 q8 baseline-versus-baseline diagnostic found one stable and one unstable
+process under the existing one-warm-up protocol; the q8 stability issue remains
+unresolved. The paired q1 results and stop condition are recorded in [the v3
+q1 comparison](data/m6-legendre-redesign/paired-q1-128/summary.md), and the q8
+diagnostic is in [the route-timing report](data/m6-legendre-redesign/route-timing/q8-baseline-diagnostic-2026-10-18.md).
 
 ## C01: workspace order-prefix compatibility
 
@@ -847,7 +851,9 @@ sizes. These instrumented timers are nested and are not a whole-transform time
 decomposition. The [route timing report](data/m6-legendre-redesign/route-timing/summary.md)
 contains the tile comparison and the [paired q1 report](data/m6-legendre-redesign/paired-q1-128/summary.md)
 contains the process evidence. The failed T511 stability control blocks q8 and
-regression acceptance measurements under the declared matrix.
+regression acceptance measurements under the declared matrix. The separate
+[baseline-only q8 diagnostic](data/m6-legendre-redesign/route-timing/q8-baseline-diagnostic-2026-10-18.md)
+also failed its timing gate in one of two processes and did not run a candidate.
 
 ### Source-level components in the scaled prefix
 
