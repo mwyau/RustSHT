@@ -317,7 +317,7 @@ resamples, replacement sampling, the median statistic, and linear percentile
 interpolation gives `0.674353–0.685599`. T1023 meets the high-resolution
 component of the q1 criterion. The overall high-resolution gate and candidate
 acceptance remain open until T2047 q1 and T511 controls are measured. The next
-process is T2047 pair 01 baseline.
+process was T2047 pair 01 baseline.
 
 ### T2047 q1 pair 01: baseline valid, candidate mate pending
 
@@ -360,5 +360,29 @@ load on that core; the cgroup recorded no throttling.
 CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are
 warnings, not rejections. Raw diagnostic captures remain local and
 untracked. This single pair favors tile 128 but does not accept the candidate;
-the T2047 six-pair matrix remains incomplete. The next process is pair 02
+the T2047 six-pair matrix remains incomplete. The next process was pair 02
 candidate.
+
+### T2047 q1 pair 02: candidate valid, baseline mate pending
+
+The second pair followed the fixed candidate-then-baseline order. All three
+candidate timing series and its numerical comparison against DUCC passed.
+
+| Backend | Samples (ms) | Median (ms) | CV | Drift |
+| --- | --- | ---: | ---: | ---: |
+| RustSHT | 1,741.729, 1,742.245, 1,741.535, 1,746.631, 1,744.072 | 1,742.245 | 0.1100% | 0.2079% |
+| DUCC | 371.279, 371.620, 374.232, 375.060, 375.052 | 374.232 | 0.4454% | 0.9181% |
+| SHTns | 264.835, 265.811, 265.342, 264.951, 265.407 | 265.342 | 0.1314% | 0.0614% |
+
+RustSHT-versus-DUCC relative L2 error was `3.015e-13`; SHTns-versus-DUCC
+was `8.764e-14`. The candidate was 4.66x DUCC and 6.57x SHTns in this
+process; its pair ratio awaits the baseline mate. Whole-process elapsed time
+was 1:11.87, peak RSS was 955,136 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked.
+The worker stayed within its one-core affinity. Process and thread snapshots
+showed no competing build or benchmark or sustained external CPU load on
+that core; the cgroup recorded no throttling.
+
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are
+warnings, not rejections. Raw diagnostic captures remain local and
+untracked. The candidate remains unaccepted. The next process is the pair 02
+baseline mate.
