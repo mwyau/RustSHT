@@ -33,10 +33,12 @@ preserves each lane's binary scale while avoiding the no-op helper call.
   `ntheta=2048`, `nphi=4096`, one worker, plan scope, and one run group. Each
   fresh process performs one warm-up and five timed complete transformations
   for RustSHT and DUCC. Compare numerical output with DUCC in both processes.
-- Use DUCC 0.42.0, source revision
-  `80388904b8cfc32400ba84af8a6a45aabfe60f86`, Python 3.11, and the same NumPy,
-  compiler, and Rust release configuration for both variants. Record CPU
-  specifications and software versions as in the accumulator q1 protocol.
+- Use the frozen DUCC Python extension, module version 0.41.0, SHA-256
+  `1218502fa03116cd14578fe73f716f5a1d88db74d296359cc9e8c27e04047d1e`, built
+  from source revision `80388904b8cfc32400ba84af8a6a45aabfe60f86`. Use Python
+  3.11 and the same NumPy, compiler, and Rust release configuration for both
+  variants. Record CPU specifications and software versions as in the
+  accumulator q1 protocol.
 
 ## Correctness and screen rules
 
