@@ -172,10 +172,16 @@ error `1.110e-12`. Full samples and CPU-pressure validity decisions are in the
 [T1023](scaled-prefix-accumulator-t1023-q1.md) and
 [T2047](scaled-prefix-accumulator-t2047-q1.md) result reports.
 
-These timings cover the complete transform and do not give route-resolved
-times for the accumulator source. The earlier prefix component timings above
-belong to a different binary. The accumulator's six-pair T511 control stopped
+The paired matrices measure complete transforms. A separate test-only T2047
+profile of this accumulator source measured 715.931 ms in the pre-suffix
+transition, 543.517 ms in the ordinary SIMD suffix, 41.953 ms in scaled
+fallback calls, and 5.393 ms in coefficient-safety scans. The exact source and
+test patch hashes, route counts, sampled prefix components, and timer scopes
+are in the [T2047 profile report](scaled-prefix-accumulator-route-profile-t2047.md).
+The earlier 1,012.1 ms prefix timing belongs to a different binary. The
+accumulator's six-pair T511 control stopped
 at baseline pair 03 because the DUCC series failed the fixed CV and drift
 limits; no candidate mate or retry ran. The complete samples and CPU-pressure validity decisions are in the [stopped T511 record](scaled-prefix-accumulator-t511-q1-stopped.md).
-The control is unresolved, and no production route, q8 matrix, or spin-1
-regression result is accepted.
+The T511 control is unresolved, and no production route, q8 matrix, or spin-1
+regression result is accepted. The next kernel investigation should separate
+exponent rebasing and normalization costs within the pre-suffix transition.

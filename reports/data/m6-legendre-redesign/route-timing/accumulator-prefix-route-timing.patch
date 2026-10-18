@@ -1,0 +1,183 @@
+--- a/src/legendre/synthesis_fast.rs
++++ b/src/legendre/synthesis_fast.rs
+@@ -13,0 +14,2 @@
++#[cfg(test)]
++use std::time::Instant;
+@@ -31,0 +34,15 @@
++    tile_calls: u64,
++    tile_ns: u128,
++    transition_calls: u64,
++    transition_ns: u128,
++    coefficient_scan_ns: u128,
++    fallback_calls: u64,
++    fallback_ns: u128,
++    suffix_calls: u64,
++    suffix_ns: u128,
++    sampled_prefix_pairs: u64,
++    sampled_prefix_lane_pairs: u64,
++    sampled_accumulation_ns: u128,
++    sampled_recurrence_ns: u128,
++    sampled_range_check_ns: u128,
++    sampled_materialize_ns: u128,
+@@ -47,0 +65,5 @@
++#[cfg(test)]
++fn route_profile_enabled() -> bool {
++    FAST_ROUTE_COUNTS.with_borrow(|counts| counts.is_some())
++}
++
+@@ -173,0 +196,2 @@
++    let tile_started = route_profile_enabled().then(Instant::now);
++    #[cfg(test)]
+@@ -201,0 +226,2 @@
++        #[cfg(test)]
++        let scan_started = route_profile_enabled().then(Instant::now);
+@@ -211 +237,9 @@
+-        update_route_counts(|counts| counts.coefficient_safety_scans += 1);
++        if let Some(started) = scan_started {
++            let elapsed = started.elapsed().as_nanos();
++            update_route_counts(|counts| {
++                counts.coefficient_safety_scans += 1;
++                counts.coefficient_scan_ns += elapsed;
++            });
++        } else {
++            update_route_counts(|counts| counts.coefficient_safety_scans += 1);
++        }
+@@ -249,0 +284,2 @@
++            #[cfg(test)]
++            let fallback_started = route_profile_enabled().then(Instant::now);
+@@ -270,0 +307,4 @@
++                if let Some(started) = fallback_started {
++                    counts.fallback_calls += 1;
++                    counts.fallback_ns += started.elapsed().as_nanos();
++                }
+@@ -275,0 +316,2 @@
++        #[cfg(test)]
++        let fallback_started = route_profile_enabled().then(Instant::now);
+@@ -296,0 +339,4 @@
++            if let Some(started) = fallback_started {
++                counts.fallback_calls += 1;
++                counts.fallback_ns += started.elapsed().as_nanos();
++            }
+@@ -304,0 +351,8 @@
++    #[cfg(test)]
++    if let Some(started) = tile_started {
++        let elapsed = started.elapsed().as_nanos();
++        update_route_counts(|counts| {
++            counts.tile_calls += 1;
++            counts.tile_ns += elapsed;
++        });
++    }
+@@ -488,0 +543,2 @@
++        #[cfg(test)]
++        let transition_started = route_profile_enabled().then(Instant::now);
+@@ -532,0 +589,8 @@
++            #[cfg(test)]
++            if let Some(started) = transition_started {
++                let elapsed = started.elapsed().as_nanos();
++                update_route_counts(|counts| {
++                    counts.transition_calls += 1;
++                    counts.transition_ns += elapsed;
++                });
++            }
+@@ -551,0 +616,4 @@
++        #[cfg(test)]
++        let profile_enabled = route_profile_enabled();
++        #[cfg(test)]
++        let sample_offset = ((sin_theta[0].to_bits() >> 32) as usize) & 63;
+@@ -554,0 +623,4 @@
++            #[cfg(test)]
++            let profile_sample = profile_enabled && (pair & 63) == sample_offset;
++            #[cfg(test)]
++            let accumulation_started = profile_sample.then(Instant::now);
+@@ -594,0 +667,9 @@
++            #[cfg(test)]
++            if let Some(started) = accumulation_started {
++                let elapsed = started.elapsed().as_nanos();
++                update_route_counts(|counts| {
++                    counts.sampled_prefix_pairs += 1;
++                    counts.sampled_prefix_lane_pairs += current.len() as u64;
++                    counts.sampled_accumulation_ns += elapsed;
++                });
++            }
+@@ -598,0 +680,2 @@
++            #[cfg(test)]
++            let recurrence_started = profile_sample.then(Instant::now);
+@@ -625 +708,8 @@
+-            if normal_range
++            #[cfg(test)]
++            if let Some(started) = recurrence_started {
++                let elapsed = started.elapsed().as_nanos();
++                update_route_counts(|counts| counts.sampled_recurrence_ns += elapsed);
++            }
++            #[cfg(test)]
++            let range_check_started = profile_sample.then(Instant::now);
++            let suffix_ready = normal_range
+@@ -627,2 +717,9 @@
+-                && lane_values_in_normal_range(current)
+-            {
++                && lane_values_in_normal_range(current);
++            #[cfg(test)]
++            if let Some(started) = range_check_started {
++                let elapsed = started.elapsed().as_nanos();
++                update_route_counts(|counts| counts.sampled_range_check_ns += elapsed);
++            }
++            if suffix_ready {
++                #[cfg(test)]
++                let materialize_started = profile_sample.then(Instant::now);
+@@ -635,0 +733,13 @@
++                #[cfg(test)]
++                if let Some(started) = materialize_started {
++                    let elapsed = started.elapsed().as_nanos();
++                    update_route_counts(|counts| counts.sampled_materialize_ns += elapsed);
++                }
++                #[cfg(test)]
++                if let Some(started) = transition_started {
++                    let elapsed = started.elapsed().as_nanos();
++                    update_route_counts(|counts| {
++                        counts.transition_calls += 1;
++                        counts.transition_ns += elapsed;
++                    });
++                }
+@@ -653,0 +764,8 @@
++        #[cfg(test)]
++        if let Some(started) = transition_started {
++            let elapsed = started.elapsed().as_nanos();
++            update_route_counts(|counts| {
++                counts.transition_calls += 1;
++                counts.transition_ns += elapsed;
++            });
++        }
+@@ -765,0 +884,2 @@
++        #[cfg(test)]
++        let suffix_started = route_profile_enabled().then(Instant::now);
+@@ -843,0 +964,8 @@
++        #[cfg(test)]
++        if let Some(started) = suffix_started {
++            let elapsed = started.elapsed().as_nanos();
++            update_route_counts(|counts| {
++                counts.suffix_calls += 1;
++                counts.suffix_ns += elapsed;
++            });
++        }
+@@ -1418,0 +1547 @@
++        let synthesis_started = Instant::now();
+@@ -1420,0 +1550 @@
++        let synthesis_ns = synthesis_started.elapsed().as_nanos();
+@@ -1437,0 +1568,15 @@
++            total.tile_calls += counts.tile_calls;
++            total.tile_ns += counts.tile_ns;
++            total.transition_calls += counts.transition_calls;
++            total.transition_ns += counts.transition_ns;
++            total.coefficient_scan_ns += counts.coefficient_scan_ns;
++            total.fallback_calls += counts.fallback_calls;
++            total.fallback_ns += counts.fallback_ns;
++            total.suffix_calls += counts.suffix_calls;
++            total.suffix_ns += counts.suffix_ns;
++            total.sampled_prefix_pairs += counts.sampled_prefix_pairs;
++            total.sampled_prefix_lane_pairs += counts.sampled_prefix_lane_pairs;
++            total.sampled_accumulation_ns += counts.sampled_accumulation_ns;
++            total.sampled_recurrence_ns += counts.sampled_recurrence_ns;
++            total.sampled_range_check_ns += counts.sampled_range_check_ns;
++            total.sampled_materialize_ns += counts.sampled_materialize_ns;
+@@ -1438,0 +1584 @@
++        println!("M6 profiled synthesis elapsed_ns={synthesis_ns}");

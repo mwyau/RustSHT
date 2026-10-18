@@ -2,11 +2,13 @@
 
 ## Hypothesis
 
-The T2047 route diagnostic sampled 12.384 ms in scalar complex accumulation,
-0.618 ms in recurrence updates, and 3.365 ms in range checks and normalization
-across 16,215 sampled prefix pairs. These sampled values are not extrapolated
-to the complete prefix. The accumulation path called scaled complex multiply
-for every lane and degree pair.
+The earlier tile-128 source's T2047 route diagnostic sampled 12.384 ms in
+scalar complex accumulation, 0.618 ms in recurrence updates, and 3.365 ms in
+range checks and normalization across 16,215 sampled prefix pairs. These
+sampled values belong to that pre-accumulator source and are not extrapolated
+to its complete prefix or transferred to the current candidate. Its
+accumulation path called scaled complex multiply for every lane and degree
+pair.
 
 This isolated prototype accumulates prefix contributions in the recurrence's
 binary scale. It rebases the partial sum only when a lane's recurrence exponent
@@ -99,3 +101,11 @@ drift `8.2650%`); RustSHT and SHTns passed in that process. No retry or
 candidate mate ran. The T511 control remains unresolved, so q8 and broader
 scalar/spin-1 regression work are gated. The candidate remains experimental
 and is not routed in production. See the [stopped T511 record](scaled-prefix-accumulator-t511-q1-stopped.md).
+
+A test-only T2047 route profile of the frozen source measured 715.931 ms in
+the pre-suffix transition, 543.517 ms in the ordinary SIMD suffix, 41.953 ms
+in scaled fallback calls, and 5.393 ms in coefficient-safety scans. The route
+profile records exact counters, sampled prefix components, hashes, and timer
+scope in the [T2047 profile report](scaled-prefix-accumulator-route-profile-t2047.md).
+The pre-suffix transition is the next measured kernel target; its exponent
+rebasing and normalization costs need finer separation.
