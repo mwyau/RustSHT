@@ -655,7 +655,7 @@ success, scaled-prefix length, and fallback work by order and latitude tile,
 then make at most one source change that removes a measured source of duplicate
 work. No further performance claim should be made from this incomplete screen.
 
-## Polar-lane route diagnostic and split experiment (unaccepted)
+## Polar-lane route diagnostic and split experiment (rejected)
 
 Test-only route accounting at T511 q1 found 974 active tiles. Before the
 split, 206 tiles declined because one active lane had `sin(theta) < 0.01`,
@@ -665,12 +665,17 @@ after attempting the staged transition. This identifies the overly broad
 tile-level polar guard as the main concrete cause of the 2.96x result; the
 route counts are not themselves a timing attribution. The isolated follow-up partitions each packed tile in place by the existing
 `sin(theta) >= 0.01` ordinary-route condition, preserving ring indices. It
-runs the ordinary lanes through the staged SIMD path and the polar suffix
-through scaled recurrence, then scatters once. At the same T511 route
-diagnostic, 970/974 tiles completed the ordinary route; 47,534 polar
-lane-pairs and 255,104 other lane-pairs used the scaled visitor. The map was
-bitwise identical with route counters enabled and disabled. The four focused
-kernel tests pass. This source is an isolated experiment, not production code;
-its q1 T511 paired latency screen is pending. Raw counters, the post-split
-source snapshot and provenance are in
-[`the polar route diagnostic`](data/m6-legendre-redesign/polar-route-diagnostic/).
+runs ordinary lanes through the staged SIMD path and polar lanes through
+scaled recurrence, then scatters once. At the T511 q1 route diagnostic,
+970/974 tiles completed the ordinary route; 47,534 polar lane-pairs and
+255,104 other lane-pairs used the scaled visitor. The map was bitwise
+identical with route counters enabled and disabled. The paired release screen does not meet the performance gate. The baseline
+Rust median was 40.021 ms and the candidate median was 46.307 ms, a 15.71%
+increase. Candidate samples also failed the fixed drift limit (6.043% against
+5%), so this cell cannot establish an accepted comparison. The result rejects
+the current implementation for performance work; T1023/T2047 and q8 were not
+run. DUCC agreement was unchanged at relative L2 `6.632e-14`. The candidate
+workspace suite passed: 200 unit tests, 4 FFT-scaling tests, 11 f32 tests and
+1 workspace-compatibility test; 14 opt-in tests were ignored. The source,
+paired raw measurements, and test summary are in
+[`the polar split screen`](data/m6-legendre-redesign/polar-split-screen/). The implementation remains isolated from production routing.
