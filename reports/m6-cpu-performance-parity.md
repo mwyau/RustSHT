@@ -67,6 +67,15 @@ transition; scaled-prefix work remains the next measured target. A separate
 [q8 screen protocol](data/m6-legendre-redesign/route-timing/exponent-epoch-q8-screen-v1-protocol.md)
 is frozen before q8 acquisition.
 
+The q8 screen stopped at the T1023 baseline process for pair 5. RustSHT CV
+was 8.514%; the SHTns CV and drift were 15.904% and 34.843%. PSI was 0.00%
+before and after, and the local process review found no competing benchmark
+or cgroup throttling. The four earlier pairs were favorable but are
+descriptive only; no interval was calculated, no retry ran, and T2047 q8 was
+not started. The [q8 results](data/m6-legendre-redesign/route-timing/exponent-epoch-q8-screen-v1-results.md)
+preserve the valid pairs and the failed process samples. The q1 scaled-prefix
+transition profile remains the next measured kernel target.
+
 A route decomposition and sampled prefix components are in the
 [T2047 route profile](data/m6-legendre-redesign/route-timing/scaled-prefix-accumulator-route-profile-t2047.md).
 A bounded T511 q8 baseline-versus-baseline diagnostic found one
