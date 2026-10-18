@@ -855,11 +855,23 @@ arrays once for each tile with ordinary lanes. These source paths are in the arc
 and its scalar range helpers in `src/legendre/scalar.rs` at the frozen source
 revision.
 
-The current timers do not separate scaled complex accumulation, recurrence
-range checks, normalization, or the repeated coefficient scan. A focused
-test-only diagnostic should time and count those operations separately before
-choosing a prefix-kernel redesign. This analysis does not alter the finite-input
-fallback or justify skipping scaled contributions.
+The follow-up T2047 q1 diagnostic timed coefficient scans separately and
+sampled one in 64 scaled-prefix degree-pair iterations. It scanned coefficient
+safety once for each of 23,201 completed tiles; the scans used 69.235 ms. The
+16,215 sampled pairs covered 1,715,048 lane-pairs and recorded 12.384 ms in
+scalar accumulation, 0.618 ms in recurrence updates, and 3.365 ms in range
+checks and normalization. These sample times are not extrapolated to the
+whole prefix, and the single diagnostic is not acceptance evidence. The
+[route-timing report](data/m6-legendre-redesign/route-timing/summary.md)
+records the method, hashes and sample counts.
+
+The measured scan work supports a bounded experiment that caches the
+coefficient-safety result once per order and reuses it across that order's
+tiles. The sampled durations also identify scalar accumulation as the larger
+of the three sampled prefix components. Keep the scaled fallback and all
+finite-input contributions unchanged. The candidate remains unaccepted
+because the T511 stability control failed and the regression matrix is
+incomplete.
 
 A targeted release test also exercised the transition guard with a prepared
 finite coefficient of `1e300` at T511. The guard declined the ordinary route;

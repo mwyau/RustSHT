@@ -1,0 +1,89 @@
+--- a/src/legendre/synthesis_fast.rs
++++ b/src/legendre/synthesis_fast.rs
+@@ -13,0 +14,2 @@
++#[cfg(test)]
++use std::time::Instant;
+@@ -30,0 +33,7 @@
++    coefficient_scans: u64,
++    coefficient_scan_ns: u128,
++    sampled_prefix_pairs: u64,
++    sampled_prefix_lane_pairs: u64,
++    sampled_accumulation_ns: u128,
++    sampled_recurrence_ns: u128,
++    sampled_range_check_ns: u128,
+@@ -46,0 +56,5 @@
++#[cfg(test)]
++fn route_profile_enabled() -> bool {
++    FAST_ROUTE_COUNTS.with_borrow(|counts| counts.is_some())
++}
++
+@@ -371 +385,3 @@
+-    if !ordinary_coefficients_are_safe(
++    #[cfg(test)]
++    let coefficient_scan_started = route_profile_enabled().then(Instant::now);
++    let coefficients_safe = ordinary_coefficients_are_safe(
+@@ -377 +393,10 @@
+-    ) {
++    );
++    #[cfg(test)]
++    if let Some(started) = coefficient_scan_started {
++        let elapsed = started.elapsed().as_nanos();
++        update_route_counts(|counts| {
++            counts.coefficient_scans += 1;
++            counts.coefficient_scan_ns += elapsed;
++        });
++    }
++    if !coefficients_safe {
+@@ -526,0 +552,4 @@
++        #[cfg(test)]
++        let profile_enabled = route_profile_enabled();
++        #[cfg(test)]
++        let sample_offset = ((sin_theta[0].to_bits() >> 32) as usize) & 63;
+@@ -529,0 +559,4 @@
++            #[cfg(test)]
++            let profile_sample = profile_enabled && (pair & 63) == sample_offset;
++            #[cfg(test)]
++            let accumulation_started = profile_sample.then(Instant::now);
+@@ -553,0 +587,9 @@
++            #[cfg(test)]
++            if let Some(started) = accumulation_started {
++                let elapsed = started.elapsed().as_nanos();
++                update_route_counts(|counts| {
++                    counts.sampled_prefix_pairs += 1;
++                    counts.sampled_prefix_lane_pairs += current.len() as u64;
++                    counts.sampled_accumulation_ns += elapsed;
++                });
++            }
+@@ -557,0 +600,2 @@
++            #[cfg(test)]
++            let recurrence_started = profile_sample.then(Instant::now);
+@@ -567,0 +612,5 @@
++            #[cfg(test)]
++            if let Some(started) = recurrence_started {
++                let elapsed = started.elapsed().as_nanos();
++                update_route_counts(|counts| counts.sampled_recurrence_ns += elapsed);
++            }
+@@ -569,0 +619,2 @@
++            #[cfg(test)]
++            let range_check_started = profile_sample.then(Instant::now);
+@@ -584 +635 @@
+-            if normal_range
++            let suffix_ready = normal_range
+@@ -586,2 +637,7 @@
+-                && lane_values_in_normal_range(current)
+-            {
++                && lane_values_in_normal_range(current);
++            #[cfg(test)]
++            if let Some(started) = range_check_started {
++                let elapsed = started.elapsed().as_nanos();
++                update_route_counts(|counts| counts.sampled_range_check_ns += elapsed);
++            }
++            if suffix_ready {
+@@ -1244,0 +1301,7 @@
++            total.coefficient_scans += counts.coefficient_scans;
++            total.coefficient_scan_ns += counts.coefficient_scan_ns;
++            total.sampled_prefix_pairs += counts.sampled_prefix_pairs;
++            total.sampled_prefix_lane_pairs += counts.sampled_prefix_lane_pairs;
++            total.sampled_accumulation_ns += counts.sampled_accumulation_ns;
++            total.sampled_recurrence_ns += counts.sampled_recurrence_ns;
++            total.sampled_range_check_ns += counts.sampled_range_check_ns;

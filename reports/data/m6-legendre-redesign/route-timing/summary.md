@@ -113,3 +113,45 @@ The route timers point to the scaled prefix as the next measured kernel target:
 at T2047 the 128-ring case spent 1,012.1 ms in the prefix and 529.5 ms in the
 ordinary suffix. These nested test-only timers include instrumentation and do
 not form an additive decomposition of whole-transform time.
+
+## T2047 prefix component diagnostic
+
+A follow-up test-only profile split coefficient validation from sampled work
+inside the scaled prefix. It did not modify the frozen candidate mathematics.
+The frozen source and extension hashes remain `0c0ee956205f782626e6ab0ffc6914cfa9f0d1e20caf5075111a53a9c9449b25` and
+`5eeff4dd2087238f18278928ad2af84437d21b7caa38eb360783f9b627cf8620`.
+The diagnostic source was the frozen source plus
+[`prefix-component-timing.patch`](prefix-component-timing.patch), with SHA-256
+`58f0aa261940f6b3d3c0b9457fedde1a959c414b3a03330c343340305df4f385`; the
+patch SHA-256 is `58250f994e5913f8a476328107d0e01d9550f73f448d79eeca667fd299d1350f`.
+
+The ignored release test ran scalar f64 GL T2047, full `mmax`, `phi0=0.37`,
+`2048x4096` (even longitude), one Rayon worker pinned to one allowed CPU. It
+performed one unprofiled warm-up call and one profiled call; the latter was
+bitwise equal to the warm-up output. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. This single diagnostic has no timing-stability interval and is
+not an acceptance measurement. It used Rust 1.99.0, Cargo release settings,
+and the AMD Ryzen 9 5950X x86-64 host with AVX2/FMA. The reproducible command
+template is `RUSTSHT_FAST_ROUTE_LMAX=2047 RUSTSHT_FAST_ROUTE_THREADS=1
+taskset -c "${RUSTSHT_CPUSET:?set one allowed CPU}" cargo test --release --lib
+m6_fast_route_counts -- --ignored --nocapture`. The exact CPU ID, frequency,
+context switches and peak RSS were not recorded. The accepted q1 matrix used
+`2048x4097`; these route timings are a separate mechanism probe.
+
+The profiled call completed 23,201 tiles. It reported 110,608,856 prefix
+lane-pairs, 1,622,437,750 suffix lane-pairs and 1,331,458 fallback lane-pairs;
+all fallback lanes were polar. There were no declined tiles. The coefficient
+safety scan ran once per completed tile: 23,201 scans consumed 69.235 ms in
+total. For one deterministic sample in every 64 prefix degree-pair iterations,
+16,215 samples covered 1,715,048 lane-pairs. The sampled scalar accumulation
+took 12.384 ms, recurrence updates took 0.618 ms, and range checks plus
+normalization took 3.365 ms. These sampled component times are not scaled to
+whole-prefix estimates; sampling overhead and variable tile lengths prevent
+an additive interpretation.
+
+The sample indicates that scalar complex accumulation is the largest of the
+three sampled prefix components. The separately measured coefficient scan is
+also repeated for every tile even though its inputs are shared across tiles of
+one order. Caching that safety result once per order is a bounded next
+hypothesis. It must retain the current fallback decision and be evaluated as
+an isolated candidate. The 128-ring candidate remains unaccepted: the T511
+q1 stability control still blocks q8 and broader regression measurements.
