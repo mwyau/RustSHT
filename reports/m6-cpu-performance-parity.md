@@ -706,3 +706,25 @@ features identify possible instruction overhead, but do not attribute the
 tile-size timing difference. The symbol, instruction range, and reproduction
 details are in
 [`the candidate assembly note`](data/m6-legendre-redesign/tile128-screen/assembly.md).
+
+### Fast-route work accounting
+
+The isolated route-accounting test ran at T511/q1, T1023/q1, T2047/q1, and
+T2047/q8. Each exact ignored test passed and asserted bitwise equality between
+the same-source uninstrumented and counted synthesis calls. The candidate was
+`739275d` plus the uncommitted tile-128 patch; Rust 1.99.0/LLVM 23.1.1 built
+the filtered release test once. The detailed commands, per-worker counts,
+affinity/PSI snapshots, source fingerprints, and raw output are in
+[`the route-accounting record`](data/m6-legendre-redesign/route-accounting/summary.md). The test-only pair-lane counters attribute 93.35% of the route-work proxy to
+the ordinary suffix at T511, 94.71% at T1023, and 93.55% at T2047. Scaled
+prefixes account for 6.14%, 5.15%, and 6.38%; fallback accounts for 0.50%,
+0.14%, and 0.08%. A failed tile may count attempted prefix work again in its
+fallback, so these are work proxies, not unique-lane shares or time fractions. Polar work is a subset of fallback. At T2047/q8, per-worker proxies range
+from 111.5M to 268.7M pair lanes (6.43%–15.49%); this indicates differing
+assigned work but is not a timing or completion-time measurement. T2047/q1's
+requested CPU id affinity capture reported 0–31; it is retained without retry. PSI stayed below the predeclared host gate for all route-count cases. This result supports prioritizing the ordinary fused suffix over prefix
+skipping: the suffix dominates counted route work, and the first prototype
+preserves every scaled-prefix contribution. The next kernel experiment should
+compare one versus two paired-degree steps per SIMD iteration on this isolated
+candidate. It remains unaccepted until paired whole-transform timing passes
+the stability protocol and the complete regression control matrix.
