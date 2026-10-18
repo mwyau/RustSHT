@@ -234,3 +234,13 @@ does not establish a timing benefit. The instrumented source patch and method
 are in the [range probe profile](scaled-range-probe-profile-v1.md). The route
 timings from this counter run are not used because the additional SIMD probe
 changes the measured path.
+
+### SIMD precheck candidate
+
+A separate isolated source candidate now uses the SIMD probe to skip the
+scalar normalizer when every mantissa is in range. Its focused kernel and
+fallback tests passed, as did the bitwise T2047 route check. The profile
+recorded 535,953 fewer normalization calls than the no-op source count. This
+candidate has not been compared in a complete-transform benchmark; its
+source patch and route counts are in the
+[candidate report](scaled-prefix-simd-precheck-candidate-v1.md).

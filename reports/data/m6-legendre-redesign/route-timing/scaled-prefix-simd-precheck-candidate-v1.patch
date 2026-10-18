@@ -1,0 +1,49 @@
+--- a/src/legendre/synthesis_fast.rs
++++ b/src/legendre/synthesis_fast.rs
+@@ -830,30 +830,10 @@
+-            if normal_range {
+-                #[cfg(test)]
+-                {
+-                    scale_events.prefix_scale_probes += 1;
+-                }
+-                let needs_scaling = scalar::pair_lanes_need_scaling(simd, previous, current);
+-                #[cfg(test)]
+-                if needs_scaling {
+-                    scale_events.prefix_scale_probe_triggers += 1;
+-                }
+-                if needs_scaling {
+-                    #[cfg(test)]
+-                    let mut exponents_before = [0_i64; ACTIVE_TILE_SIZE];
+-                    #[cfg(test)]
+-                    exponents_before[..sin_theta.len()]
+-                        .copy_from_slice(&exponents[..sin_theta.len()]);
+-                    let normalization =
+-                        scalar::normalize_pair_lanes_skip_in_range(previous, current, exponents);
+-                    #[cfg(test)]
+-                    scale_events.record_normalization(
+-                        &exponents_before[..sin_theta.len()],
+-                        &exponents[..sin_theta.len()],
+-                        false,
+-                    );
+-                    normal_range = match normalization {
+-                        Ok(normal_range) => normal_range,
+-                        Err(_) => return None,
+-                    };
+-                }
+-            } else {
++            #[cfg(test)]
++            {
++                scale_events.prefix_scale_probes += 1;
++            }
++            let needs_scaling = scalar::pair_lanes_need_scaling(simd, previous, current);
++            #[cfg(test)]
++            if needs_scaling {
++                scale_events.prefix_scale_probe_triggers += 1;
++            }
++            if needs_scaling {
+@@ -875,0 +856,5 @@
++            } else if !normal_range {
++                // The SIMD suffix requires every active exponent to be zero.
++                normal_range = exponents[..sin_theta.len()]
++                    .iter()
++                    .all(|&exponent| exponent == 0);

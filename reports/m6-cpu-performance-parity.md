@@ -1035,3 +1035,11 @@ establish a performance gain. The
 records the source and method. The no-op screen remains inconclusive, the
 candidate remains isolated, and no T511, q8, or broader regression gate has
 passed.
+
+The SIMD precheck candidate implements this route in the isolated source. Its
+focused synthesis, range, and fallback tests passed, and its T2047 route test
+preserved the output bits. It reduced prefix normalizer calls from 1,034,964
+to 499,011 in the instrumented route profile; complete-transform latency and
+memory have not been measured. The candidate is not accepted. Its source
+patch and route evidence are in the
+[candidate report](data/m6-legendre-redesign/route-timing/scaled-prefix-simd-precheck-candidate-v1.md).
