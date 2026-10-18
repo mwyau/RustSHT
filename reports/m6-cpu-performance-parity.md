@@ -543,7 +543,49 @@ is not an exact reproduction of the full harness sequence. The q8 trace (8 pinne
 ms (CV 0.50%). Neither reproduced the previously retained descending q8
 samples 21.948, 17.882, 15.990, 13.217, 9.555 ms. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. Per-call process involuntary context
 switch deltas and thread CPU snapshots, as well as sysfs frequency readings,
-are in the raw diagnostic files. No thermal-zone readings were exposed. This diagnostic leaves all historical samples unchanged and does not identify
-the cause of their variability. It defines no revised warm-up or acceptance
-protocol and makes no decision on the archived M2 candidate, which remains
-unaccepted pending its existing gate. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local.
+are in the raw diagnostic files. No thermal-zone readings were exposed. This standalone diagnostic leaves all historical samples unchanged and does
+not identify the cause of their variability. It defined no revised warm-up or
+acceptance protocol. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local.
+
+## Exact-harness baseline stability check
+
+Four fresh baseline-only processes ran q8, q1, q1, q8 with the archived
+`backend=both` harness unchanged. The baseline extension hash was
+`a8641456e1fcdf8d37ce3dd583dd1b7cf224306ca792d38c2b75f3bfcac63847`; the
+archived harness hash was
+`72cd1986a220573c1a445bd6a6aa96b9df272a6bff1dc833843ee3f274c77739`. Configuration: scalar f64 GL T511, grid 512x1024, full mmax, phi0=.37,
+STANDARD, scope `into`, synthesis, `runs=1`. The harness performed its
+Rust-vs-DUCC correctness synthesis, one untimed warm-up, and five timed Rust
+calls per process.
+
+| Process | Five Rust samples (ms) | CV | First 3 median | Final 2 median |
+| --- | --- | ---: | ---: | ---: |
+| q8-01 | 24.938, 20.991, 14.161, 9.736, 9.289 | 48.96% | 20.991 | 9.512 |
+| q1-02 | 39.646, 39.516, 39.475, 39.645, 39.560 | .19% | 39.516 | 39.603 |
+| q1-03 | 39.787, 39.963, 39.534, 39.745, 39.827 | .39% | 39.787 | 39.786 |
+| q8-04 | 21.038, 15.110, 17.596, 9.379, 9.433 | 33.84% | 17.596 | 9.406 |
+
+Every preflight met PSI `some avg10 <= .50`, verified actual affinity of
+8 pinned CPU cores for q8 and one CPU core for q1, and listed no competing build or benchmark. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. GNU time records whole-process context switches; the unchanged harness cannot
+attribute involuntary context switches per call. A contemporaneous root-side
+cgroup check reported unlimited `cpu.max` and zero throttling. Thermal
+measurements were unavailable. The q8 decline reproduced on both baseline
+processes, while q1 remained stable; the cause remains unresolved. Under the
+prospective rule, both exact-harness q1 processes pass the CV and drift
+checks, with first-three/final-two drift of 0.22% and 0.003%. Both q8
+processes fail both checks, with drift of 81.1% and 54.2% and CVs of 48.96%
+and 33.84%. Raw
+process evidence is in
+[`reports/data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/`](data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/). The visitor candidate remains **unaccepted and deferred** because q8 host
+stability prevents its control gate. This is not a candidate performance
+rejection; do not run the candidate acceptance matrix now. For future acceptance sampling only, retain the exact original sequence above
+and all five timed Rust samples. Require process CV
+`sample_sd(samples) / median(samples) <= 5%` and first-three-to-final-two drift
+`abs(median(first3) - median(final2)) / median(all5) <= 5%`. Keep preflight
+PSI `some avg10 <= .50` and require no competing build or benchmark. If any
+process fails, retain it and stop the cell or matrix as inconclusive; do not
+delete samples or retry until one passes. This proposed rule is not applied
+retroactively. It is anchored to the clean standalone q8/q1 trace CVs
+2.37%/.50% and exact-harness q1 control CVs .19%/.39%, compared with exact-
+harness q8 CVs 48.96%/33.84%. The standalone trace and all historical samples
+remain unchanged.
