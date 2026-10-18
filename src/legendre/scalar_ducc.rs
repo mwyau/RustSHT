@@ -1068,7 +1068,7 @@ fn rescale_batch<S: Simd>(
     current: &mut [f64],
     scale: &mut [i64],
 ) -> Option<bool> {
-    rescale_batch_inner(simd, previous, current, scale, true, false).map(|status| status.0)
+    rescale_batch_inner::<S, true, false>(simd, previous, current, scale).map(|status| status.0)
 }
 
 #[inline]
@@ -1078,17 +1078,15 @@ fn rescale_for_prefix<S: Simd>(
     current: &mut [f64],
     scale: &mut [i64],
 ) -> Option<bool> {
-    rescale_batch_inner(simd, previous, current, scale, false, true).map(|status| status.1)
+    rescale_batch_inner::<S, false, true>(simd, previous, current, scale).map(|status| status.1)
 }
 
 #[inline]
-fn rescale_batch_inner<S: Simd>(
+fn rescale_batch_inner<S: Simd, const TRACK_ANY_RESCALED: bool, const TRACK_PREFIX_EPOCH: bool>(
     simd: S,
     previous: &mut [f64],
     current: &mut [f64],
     scale: &mut [i64],
-    track_any_rescaled: bool,
-    track_prefix_epoch: bool,
 ) -> Option<(bool, bool)> {
     if previous.len() != current.len() || current.len() != scale.len() {
         return None;
@@ -1109,7 +1107,7 @@ fn rescale_batch_inner<S: Simd>(
         if mask_any(simd, overflow) {
             return None;
         }
-        if track_any_rescaled {
+        if TRACK_ANY_RESCALED {
             any_rescaled |= mask_any(simd, rescale);
         }
         previous_vectors[index] = simd.select_f64s(
@@ -1127,7 +1125,7 @@ fn rescale_batch_inner<S: Simd>(
             simd.add_i64s(scale_vectors[index], scale_one),
             scale_vectors[index],
         );
-        if track_prefix_epoch {
+        if TRACK_PREFIX_EPOCH {
             all_below_one &= mask_all(simd, simd.less_than_i64s(scale_vectors[index], scale_one));
         }
     }
@@ -1137,11 +1135,11 @@ fn rescale_batch_inner<S: Simd>(
             previous_tail[lane] *= SCALE_DOWN;
             current_tail[lane] *= SCALE_DOWN;
             scale_tail[lane] = scale_tail[lane].checked_add(1)?;
-            if track_any_rescaled {
+            if TRACK_ANY_RESCALED {
                 any_rescaled = true;
             }
         }
-        if track_prefix_epoch {
+        if TRACK_PREFIX_EPOCH {
             all_below_one &= scale_tail[lane] < 1;
         }
     }
