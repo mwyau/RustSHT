@@ -202,47 +202,117 @@ def main() -> None:
             suffix = "f32" if operation == "synthesis" else "c32"
             wide_suffix = "f64" if operation == "synthesis" else "c128"
             channels = 1 if spin == 0 else 2
-            comparisons = []
-            native_path = dump_dir / f"l{lmax}-s{spin}-q{threads}-native-{operation}-0.{suffix}"
-            if not native_path.exists():
-                continue
+            legacy_prefix = f"l{lmax}-s{spin}-q{threads}"
+            reusable_prefix = f"t{lmax}-s{spin}-q{threads}-{operation}"
+            reusable_native_path = dump_dir / f"{reusable_prefix}-native_f32-0.{suffix}"
+            if reusable_native_path.exists():
+                variant_paths = {
+                    "native_f32": [
+                        dump_dir / f"{reusable_prefix}-native_f32-{channel}.{suffix}"
+                        for channel in range(channels)
+                    ],
+                    "allocating_bridge": [
+                        dump_dir / f"{reusable_prefix}-allocating_bridge-{channel}.{suffix}"
+                        for channel in range(channels)
+                    ],
+                    "reusable_bridge": [
+                        dump_dir / f"{reusable_prefix}-reusable_bridge-{channel}.{suffix}"
+                        for channel in range(channels)
+                    ],
+                    "native_f64": [
+                        dump_dir
+                        / f"{reusable_prefix}-native_f64_rounded_inputs-{channel}.{wide_suffix}"
+                        for channel in range(channels)
+                    ],
+                }
+            else:
+                legacy_native_path = (
+                    dump_dir / f"{legacy_prefix}-native-{operation}-0.{suffix}"
+                )
+                if not legacy_native_path.exists():
+                    continue
+                variant_paths = {
+                    "native_f32": [
+                        dump_dir
+                        / f"{legacy_prefix}-native-{operation}-{channel}.{suffix}"
+                        for channel in range(channels)
+                    ],
+                    "allocating_bridge": [
+                        dump_dir
+                        / f"{legacy_prefix}-bridge-{operation}-{channel}.{suffix}"
+                        for channel in range(channels)
+                    ],
+                    "native_f64": [
+                        dump_dir / f"{legacy_prefix}-f64-{operation}-{channel}.{wide_suffix}"
+                        for channel in range(channels)
+                    ],
+                }
+
+            expected_shape = (
+                (ntheta, nphi)
+                if operation == "synthesis"
+                else ((lmax + 1) * (lmax + 2) // 2,)
+            )
+            actual_values = {}
+            for variant, paths in variant_paths.items():
+                value_suffix = wide_suffix if variant == "native_f64" else suffix
+                dtype = (
+                    "<f4"
+                    if value_suffix == "f32"
+                    else "<c8"
+                    if value_suffix == "c32"
+                    else "<f8"
+                    if value_suffix == "f64"
+                    else "<c16"
+                )
+                actual_values[variant] = [
+                    np.fromfile(path, dtype=dtype).reshape(expected_shape)
+                    for path in paths
+                ]
+
+            operation_comparisons = []
             for channel in range(channels):
-                native = np.fromfile(
-                    dump_dir / f"l{lmax}-s{spin}-q{threads}-native-{operation}-{channel}.{suffix}",
-                    dtype="<f4" if suffix == "f32" else "<c8",
-                )
-                bridge = np.fromfile(
-                    dump_dir / f"l{lmax}-s{spin}-q{threads}-bridge-{operation}-{channel}.{suffix}",
-                    dtype="<f4" if suffix == "f32" else "<c8",
-                )
-                wide = np.fromfile(
-                    dump_dir / f"l{lmax}-s{spin}-q{threads}-f64-{operation}-{channel}.{wide_suffix}",
-                    dtype="<f8" if wide_suffix == "f64" else "<c16",
-                )
-                expected_shape = (
-                    (ntheta, nphi) if operation == "synthesis" else ((lmax + 1) * (lmax + 2) // 2,)
-                )
-                native = native.reshape(expected_shape)
-                bridge = bridge.reshape(expected_shape)
-                wide = wide.reshape(expected_shape)
-                target32 = reference32[operation][channel]
-                target64 = reference64[operation][channel]
-                comparisons.append(
-                    {
-                        "channel": channel,
-                        "native_f32_vs_ducc_f32": compare(native, target32),
-                        "bridge_f32_vs_ducc_f32": compare(bridge, target32),
-                        "bridge_f32_vs_ducc_f64_cast_to_f32": compare(
-                            bridge,
-                            target64.astype(
-                                np.complex64 if np.iscomplexobj(target64) else np.float32
+                record = {
+                    "channel": channel,
+                    "native_f32_vs_ducc_f32": compare(
+                        actual_values["native_f32"][channel], reference32[operation][channel]
+                    ),
+                    "native_f64_vs_ducc_f64": compare(
+                        actual_values["native_f64"][channel], reference64[operation][channel]
+                    ),
+                }
+                for variant in ("allocating_bridge", "reusable_bridge"):
+                    if variant in actual_values:
+                        record[f"{variant}_f32_vs_ducc_f32"] = compare(
+                            actual_values[variant][channel], reference32[operation][channel]
+                        )
+                        record[f"{variant}_f32_vs_ducc_f64_cast_to_f32"] = compare(
+                            actual_values[variant][channel],
+                            reference64[operation][channel].astype(
+                                np.complex64
+                                if np.iscomplexobj(reference64[operation][channel])
+                                else np.float32
                             ),
-                        ),
-                        "native_f64_vs_ducc_f64": compare(wide, target64),
-                        "bridge_f32_vs_native_f32": compare(bridge, native),
-                    }
+                        )
+                        record[f"{variant}_f32_vs_native_f32"] = compare(
+                            actual_values[variant][channel], actual_values["native_f32"][channel]
+                        )
+                primary_bridge = (
+                    "reusable_bridge"
+                    if "reusable_bridge" in actual_values
+                    else "allocating_bridge"
                 )
-            cell["operations"][operation] = comparisons
+                record["bridge_f32_vs_ducc_f32"] = record[
+                    f"{primary_bridge}_f32_vs_ducc_f32"
+                ]
+                record["bridge_f32_vs_ducc_f64_cast_to_f32"] = record[
+                    f"{primary_bridge}_f32_vs_ducc_f64_cast_to_f32"
+                ]
+                record["bridge_f32_vs_native_f32"] = record[
+                    f"{primary_bridge}_f32_vs_native_f32"
+                ]
+                operation_comparisons.append(record)
+            cell["operations"][operation] = operation_comparisons
         results["comparison"][f"T{lmax}-s{spin}-q{threads}"] = cell
     print(json.dumps(results, indent=2))
 
