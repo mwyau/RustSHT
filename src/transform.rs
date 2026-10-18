@@ -157,14 +157,14 @@ fn prepare_symmetric_analysis_pair_block<T: ShtScalar>(
     compact_theta_sin: &mut [T],
     compact_theta_cos: &mut [T],
 ) -> usize {
-    let mut active_pair_lanes = 0;
+    let mut output_lane = 0;
     for lane in 0..block_len {
         let north_ring = block_start + lane;
         let south_ring = latitude_count - 1 - north_ring;
         let north_active = m <= ring_order_limits[north_ring];
         let south_active = south_ring != north_ring && m <= ring_order_limits[south_ring];
-        if compact && (north_active || south_active) {
-            active_pair_lanes += 1;
+        if compact && !north_active && !south_active {
+            continue;
         }
         let north = if north_active {
             order_spectra[north_ring]
@@ -177,29 +177,39 @@ fn prepare_symmetric_analysis_pair_block<T: ShtScalar>(
         } else {
             Complex::new(T::zero(), T::zero())
         };
-        same_parity[lane] = north + south;
-        opposite_parity[lane] = north - south;
+        same_parity[output_lane] = north + south;
+        opposite_parity[output_lane] = north - south;
+        if compact {
+            compact_theta_sin[output_lane] = theta_sin[north_ring];
+            compact_theta_cos[output_lane] = theta_cos[north_ring];
+        }
+        output_lane += 1;
     }
 
-    if compact && active_pair_lanes < block_len {
-        let mut compact_len = 0;
-        for lane in 0..block_len {
-            let north_ring = block_start + lane;
-            let south_ring = latitude_count - 1 - north_ring;
-            let north_active = m <= ring_order_limits[north_ring];
-            let south_active = south_ring != north_ring && m <= ring_order_limits[south_ring];
-            if north_active || south_active {
-                compact_theta_sin[compact_len] = theta_sin[north_ring];
-                compact_theta_cos[compact_len] = theta_cos[north_ring];
-                same_parity[compact_len] = same_parity[lane];
-                opposite_parity[compact_len] = opposite_parity[lane];
-                compact_len += 1;
-            }
+    if compact { output_lane } else { block_len }
+}
+
+fn first_active_symmetric_pair(
+    m: usize,
+    latitude_count: usize,
+    ring_order_limits: &[usize],
+) -> usize {
+    // On supported symmetric grids, the scalar cutoff rises toward the equator;
+    // the maximum limit of each reflected pair is therefore monotone as well.
+    let pair_lane_count = latitude_count.div_ceil(2);
+    let pair_limit =
+        |pair: usize| ring_order_limits[pair].max(ring_order_limits[latitude_count - 1 - pair]);
+    let mut lower = 0;
+    let mut upper = pair_lane_count;
+    while lower < upper {
+        let midpoint = lower + (upper - lower) / 2;
+        if pair_limit(midpoint) < m {
+            lower = midpoint + 1;
+        } else {
+            upper = midpoint;
         }
-        compact_len
-    } else {
-        block_len
     }
+    lower
 }
 
 #[allow(private_bounds)]
@@ -2064,13 +2074,6 @@ impl<T: ShtScalar> ShtPlan<T> {
         debug_assert_eq!(ring_order_limits.len(), latitude_count);
         let lmax = self.harmonics.lmax();
         let pair_lane_count = latitude_count.div_ceil(2);
-        let mut minimum_block_limit = lmax;
-        for block_start in (0..pair_lane_count).step_by(LATITUDE_BLOCK_SIZE) {
-            let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(pair_lane_count);
-            let block_limit =
-                ring_order_limits[block_end - 1].max(ring_order_limits[latitude_count - block_end]);
-            minimum_block_limit = minimum_block_limit.min(block_limit);
-        }
         let mut coefficient_start = 0;
         #[cfg(all(test, feature = "parallel"))]
         let profiling = recurrence.analysis_leaf_profile_enabled();
@@ -2078,6 +2081,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         for m in m_start..m_end {
             let coefficient_count = lmax - m + 1;
             let coefficients = &mut alm[coefficient_start..coefficient_start + coefficient_count];
+            let first_active_pair =
+                first_active_symmetric_pair(m, latitude_count, ring_order_limits);
             T::fill_epsilon(m, lmax, &mut recurrence.epsilon);
             let mut paired_used = T::fill_paired_scalar_factors(
                 m,
@@ -2088,18 +2093,9 @@ impl<T: ShtScalar> ShtPlan<T> {
                 &mut recurrence.spin_coefficient_b,
             );
 
-            for block_start in (0..pair_lane_count).step_by(LATITUDE_BLOCK_SIZE) {
+            for block_start in (first_active_pair..pair_lane_count).step_by(LATITUDE_BLOCK_SIZE) {
                 let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(pair_lane_count);
                 let block_len = block_end - block_start;
-                if m > minimum_block_limit && block_len < pair_lane_count {
-                    // The scalar cutoff rises toward the equator on each hemisphere;
-                    // these endpoints bound the cutoff for every mirrored pair.
-                    let block_limit = ring_order_limits[block_end - 1]
-                        .max(ring_order_limits[latitude_count - block_end]);
-                    if m > block_limit {
-                        continue;
-                    }
-                }
                 let order_spectra = &spectra[m * latitude_count..(m + 1) * latitude_count];
                 let compact_candidate = T::supports_paired_scalar() && lmax >= 127;
                 let lane_count = prepare_symmetric_analysis_pair_block(

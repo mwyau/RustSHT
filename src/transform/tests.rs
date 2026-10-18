@@ -258,6 +258,45 @@ fn scalar_active_ring_schedule_matches_one_and_eight_threads() {
     }
 }
 
+#[test]
+fn scalar_reflected_active_pairs_form_one_equatorial_interval() {
+    for (kind, lmax, ntheta) in [
+        (GridKind::GaussLegendre, 127, 128),
+        (GridKind::ClenshawCurtis, 127, 130),
+        (GridKind::Fejer1, 127, 128),
+        (GridKind::GaussLegendre, 191, 192),
+        (GridKind::ClenshawCurtis, 191, 194),
+        (GridKind::Fejer1, 191, 192),
+    ] {
+        let grid = GridSpec::new(kind, ntheta, 2 * lmax + 3, 0.37).unwrap();
+        let ring_order_limits = grid
+            .theta()
+            .iter()
+            .map(|&theta| {
+                let (sin_theta, cos_theta) = crate::legendre::sin_cos_from_f64(theta);
+                <f64 as crate::legendre::ShtScalar>::polar_order_limit(
+                    lmax, 0, sin_theta, cos_theta,
+                )
+            })
+            .collect::<Vec<_>>();
+        let pair_lane_count = ntheta.div_ceil(2);
+        let pair_limit =
+            |pair: usize| ring_order_limits[pair].max(ring_order_limits[ntheta - 1 - pair]);
+
+        assert!(
+            (1..pair_lane_count).all(|pair| pair_limit(pair - 1) <= pair_limit(pair)),
+            "reflected order limits must increase toward the equator for {kind:?}, T{lmax}"
+        );
+        for m in 0..=lmax {
+            let reference = (0..pair_lane_count)
+                .find(|&pair| pair_limit(pair) >= m)
+                .unwrap_or(pair_lane_count);
+            let actual = first_active_symmetric_pair(m, ntheta, &ring_order_limits);
+            assert_eq!(actual, reference, "{kind:?}, T{lmax}, m={m}");
+        }
+    }
+}
+
 #[cfg(feature = "parallel")]
 #[test]
 fn analysis_fft_workspace_respects_shape_threshold_and_pool_migration() {
