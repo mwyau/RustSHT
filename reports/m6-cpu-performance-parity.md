@@ -866,5 +866,8 @@ finite coefficient of `1e300` at T511. The guard declined the ordinary route;
 the staged scaled fallback returned a finite spectrum matching the paired
 scaled reference. The test passed in both parallel and no-default-features
 serial builds, and the candidate source was restored to its
-recorded hash. The test-only patch and exact assertion limits are in
+recorded hash. An end-to-end public scalar T511 transform with `a00=1e300`
+also returned a finite map matching the analytic monopole in parallel and
+serial builds. The test-only patch, integration test, commands, and assertion
+limits are in
 [`the numerical validation record`](data/m6-legendre-redesign/numerical-validation/summary.md).

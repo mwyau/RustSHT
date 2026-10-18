@@ -42,6 +42,24 @@ The test-only patch is
 `f8607872e7de6d39c37058297f1a159b87df122932a326d2e5822d58174d4a80`. The
 candidate source was restored to SHA-256
 `0c0ee956205f782626e6ab0ffc6914cfa9f0d1e20caf5075111a53a9c9449b25` after
-the test. This check exercises the internal prepared-coefficient fallback; it
-does not test every extreme public coefficient input or establish a full
-transform accuracy bound for arbitrary finite values.
+the test. This internal check does not test every extreme public coefficient
+input or establish a full transform accuracy bound for arbitrary finite values.
+
+## Public high-bandlimit extreme monopole
+
+An end-to-end public API test used GL `lmax=511`, `ntheta=512`, `nphi=1024`,
+`phi0=0.37`, scalar full `mmax`, and `a00=1e300` with all other coefficients
+zero. The synthesized map was finite and matched the analytic constant
+`1e300/sqrt(4*pi)` at relative error below `1e-12`. One test passed in both
+parallel and no-default-features serial builds:
+
+- `cargo test --release --features parallel --test m6_extreme_fast_route -- --exact high_bandlimit_extreme_finite_monopole_stays_finite`
+- `cargo test --release --no-default-features --test m6_extreme_fast_route -- --exact high_bandlimit_extreme_finite_monopole_stays_finite`
+
+The temporary integration-test source is archived as
+[`public-extreme-fast-route.rs`](public-extreme-fast-route.rs), SHA-256
+`0639d12e278bf375065683911a4b171ca65984acf03a5bbd0b19dd494c10371b`.
+The test files were removed from the candidate worktree after both runs; the
+kernel source hash is unchanged. These checks exercise a high-bandlimit
+monopole and a prepared-coefficient fallback, not every possible extreme
+coefficient combination.
