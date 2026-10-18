@@ -654,3 +654,23 @@ and accumulation hypothesis. The next step is to account for fast-route
 success, scaled-prefix length, and fallback work by order and latitude tile,
 then make at most one source change that removes a measured source of duplicate
 work. No further performance claim should be made from this incomplete screen.
+
+## Polar-lane route diagnostic and split experiment (unaccepted)
+
+Test-only route accounting at T511 q1 found 974 active tiles. Before the
+split, 206 tiles declined because one active lane had `sin(theta) < 0.01`,
+forcing the entire tile through the robust visitor. Those tiles accounted for
+about 12.38 million fallback lane-pairs. Only four additional tiles declined
+after attempting the staged transition. This identifies the overly broad
+tile-level polar guard as the main concrete cause of the 2.96x result; the
+route counts are not themselves a timing attribution. The isolated follow-up partitions each packed tile in place by the existing
+`sin(theta) >= 0.01` ordinary-route condition, preserving ring indices. It
+runs the ordinary lanes through the staged SIMD path and the polar suffix
+through scaled recurrence, then scatters once. At the same T511 route
+diagnostic, 970/974 tiles completed the ordinary route; 47,534 polar
+lane-pairs and 255,104 other lane-pairs used the scaled visitor. The map was
+bitwise identical with route counters enabled and disabled. The four focused
+kernel tests pass. This source is an isolated experiment, not production code;
+its q1 T511 paired latency screen is pending. Raw counters, the post-split
+source snapshot and provenance are in
+[`the polar route diagnostic`](data/m6-legendre-redesign/polar-route-diagnostic/).

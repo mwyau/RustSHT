@@ -1,0 +1,5 @@
+Pre-split candidate, q1 T511, before separating polar and ordinary lanes:
+fast_worker=0 FastRouteCounts { tiles: 974, completed_tiles: 764, declined_tiles: 210, empty_or_polar: 206, unsafe_coefficients: 0, no_transition: 4, prefix_pair_lanes: 2315108, suffix_pair_lanes: 15357178, fallback_pair_lanes: 12376274 }
+M6 fast routes L=511 q=1 FastRouteCounts { tiles: 974, completed_tiles: 764, declined_tiles: 210, empty_or_polar: 206, unsafe_coefficients: 0, no_transition: 4, prefix_pair_lanes: 2315108, suffix_pair_lanes: 15357178, fallback_pair_lanes: 12376274 }
+fast_worker=0 FastRouteCounts { tiles: 974, completed_tiles: 970, declined_tiles: 4, empty_tiles: 0, unsafe_coefficients: 0, no_transition: 4, polar_pair_lanes: 47534, prefix_pair_lanes: 3824708, suffix_pair_lanes: 25968748, fallback_pair_lanes: 255104 }
+M6 fast routes L=511 q=1 FastRouteCounts { tiles: 974, completed_tiles: 970, declined_tiles: 4, empty_tiles: 0, unsafe_coefficients: 0, no_transition: 4, polar_pair_lanes: 47534, prefix_pair_lanes: 3824708, suffix_pair_lanes: 25968748, fallback_pair_lanes: 255104 }
