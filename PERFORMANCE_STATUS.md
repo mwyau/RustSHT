@@ -1,6 +1,6 @@
 # RustSHT performance status
 
-Snapshot: `opt/sht-performance-parity` at `9559f4a8` (2026-10-18). DUCC remains faster in the matched atmospheric workloads. The tile-128 scaled-prefix route is in f64 scalar GL synthesis for `lmax >= 255`; its prefix now vectorizes factor formation and accumulation while retaining per-lane exponent handling and scaled fallback. Local screens do not establish DUCC parity.
+Snapshot: `opt/sht-performance-parity` at `45ce8754` (2026-10-18). DUCC remains faster in the matched atmospheric workloads. The tile-128 scaled-prefix route is in f64 scalar GL synthesis for `lmax >= 255`; its prefix now vectorizes factor formation and accumulation while retaining per-lane exponent handling and scaled fallback. Local screens do not establish DUCC parity.
 
 ## Production architecture
 
