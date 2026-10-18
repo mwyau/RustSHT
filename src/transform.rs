@@ -34,6 +34,31 @@ struct ScalarSynthesisCoefficientCache<'a, T> {
     half_stride: usize,
 }
 
+fn scalar_ducc_scratch<T: ShtScalar>(
+    recurrence: &mut RecurrenceWorkspace<T>,
+) -> crate::legendre::scalar_ducc::ScalarDuccScratch<'_, T> {
+    crate::legendre::scalar_ducc::ScalarDuccScratch {
+        epsilon: &mut recurrence.epsilon,
+        alpha: &mut recurrence.spin_alpha,
+        coefficient_a: &mut recurrence.spin_coefficient_a,
+        coefficient_b: &mut recurrence.spin_coefficient_b,
+        coefficient_even: &mut recurrence.fast_spin_first,
+        coefficient_odd: &mut recurrence.fast_spin_second,
+        packed_sin: &mut recurrence.compact_theta_sin,
+        packed_cos: &mut recurrence.compact_theta_cos,
+        packed_csq: &mut recurrence.spin_current_plus,
+        packed_north: &mut recurrence.compact_ring_indices,
+        previous: &mut recurrence.previous,
+        current: &mut recurrence.current,
+        scale: &mut recurrence.exponents,
+        corfac: &mut recurrence.ducc_corfac,
+        sum_even_re: &mut recurrence.analysis_same_real,
+        sum_even_im: &mut recurrence.analysis_same_imag,
+        sum_odd_re: &mut recurrence.analysis_opposite_real,
+        sum_odd_im: &mut recurrence.analysis_opposite_imag,
+    }
+}
+
 #[cfg(feature = "parallel")]
 pub(crate) fn weighted_order_midpoint(lmax: usize, m_start: usize, m_end: usize) -> usize {
     debug_assert!(m_start < m_end);
@@ -519,6 +544,218 @@ impl<T: ShtScalar> ShtPlan<T> {
         Ok(())
     }
 
+    #[cfg(feature = "parallel")]
+    fn synthesize_scalar_ducc_parallel(
+        &self,
+        alm: &[Complex<T>],
+        arch: pulp::Arch,
+        workspace: &mut ShtWorkspace<T>,
+    ) -> bool {
+        let lmax = self.harmonics.lmax();
+        let mmax = self.harmonics.mmax();
+        let Some(order_count) = mmax.checked_add(1) else {
+            return false;
+        };
+        let ntheta = self.grid.ntheta();
+        let spectrum_len = self.fft.spectrum_len();
+        let Some(order_spectrum_len) = ntheta.checked_mul(order_count) else {
+            return false;
+        };
+        if mmax >= spectrum_len || order_spectrum_len > workspace.spin_spectra.len() {
+            return false;
+        }
+        let worker_count = rayon::current_num_threads()
+            .min(workspace.execution_capacity)
+            .min(workspace.recurrence_workers.len())
+            .min(order_count);
+        if worker_count <= 1 {
+            return false;
+        }
+
+        let order_work_prefix = if lmax >= 511 {
+            let Some(prefix) = workspace.order_work_prefix.get_mut(..=order_count) else {
+                return false;
+            };
+            if build_active_ring_order_work_prefix(
+                lmax,
+                mmax,
+                &workspace.ring_order_limits[..ntheta],
+                prefix,
+            )
+            .is_err()
+            {
+                return false;
+            }
+            Some(&prefix[..])
+        } else {
+            None
+        };
+        let order_spectra = &mut workspace.spin_spectra[..order_spectrum_len];
+        order_spectra.fill(Complex::new(T::zero(), T::zero()));
+        let succeeded = self.synthesize_scalar_ducc_order_groups_parallel(
+            alm,
+            order_spectra,
+            &workspace.theta_sin[..ntheta],
+            &workspace.theta_cos[..ntheta],
+            &workspace.ring_order_limits[..ntheta],
+            ntheta,
+            spectrum_len,
+            arch,
+            order_work_prefix,
+            0,
+            order_count,
+            &mut workspace.recurrence_workers[..worker_count],
+        );
+        if !succeeded {
+            return false;
+        }
+
+        const TRANSPOSE_TILE: usize = 32;
+        for ring_start in (0..ntheta).step_by(TRANSPOSE_TILE) {
+            let ring_end = (ring_start + TRANSPOSE_TILE).min(ntheta);
+            for order_start in (0..order_count).step_by(TRANSPOSE_TILE) {
+                let order_end = (order_start + TRANSPOSE_TILE).min(order_count);
+                for ring in ring_start..ring_end {
+                    let row_start = ring * spectrum_len;
+                    let output_row = &mut workspace.spectra[row_start..row_start + spectrum_len];
+                    for order in order_start..order_end {
+                        output_row[order] = order_spectra[order * ntheta + ring];
+                    }
+                }
+            }
+        }
+        true
+    }
+
+    #[cfg(feature = "parallel")]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Parallel DUCC order groups split one output layout and worker scratch over validated ranges."
+    )]
+    fn synthesize_scalar_ducc_order_groups_parallel(
+        &self,
+        alm: &[Complex<T>],
+        order_spectra: &mut [Complex<T>],
+        theta_sin: &[T],
+        theta_cos: &[T],
+        ring_order_limits: &[usize],
+        ntheta: usize,
+        spectrum_len: usize,
+        arch: pulp::Arch,
+        order_work_prefix: Option<&[u128]>,
+        m_start: usize,
+        m_end: usize,
+        recurrence: &mut [RecurrenceWorkspace<T>],
+    ) -> bool {
+        let order_count = m_end - m_start;
+        if order_count <= 1 || recurrence.len() <= 1 {
+            let Some(recurrence) = recurrence.first_mut() else {
+                return false;
+            };
+            #[cfg(all(test, feature = "parallel"))]
+            recurrence.record_active_worker();
+            let mut scratch = scalar_ducc_scratch(recurrence);
+            let succeeded = T::synthesize_scalar_ducc_order_range_dispatched(
+                arch,
+                alm,
+                self.harmonics.lmax(),
+                self.harmonics.mmax(),
+                m_start,
+                m_end,
+                self.grid.nphi(),
+                spectrum_len,
+                self.grid.phi0(),
+                &self.sectoral_norms,
+                theta_sin,
+                theta_cos,
+                ring_order_limits,
+                order_spectra,
+                &mut scratch,
+            );
+            return succeeded;
+        }
+
+        let left_worker_count = recurrence.len().div_ceil(2);
+        let right_worker_count = recurrence.len() - left_worker_count;
+        let lmax = self.harmonics.lmax();
+        let m_mid = if lmax >= 511 {
+            let Some(prefix) = order_work_prefix else {
+                return false;
+            };
+            if m_end >= prefix.len() {
+                return false;
+            }
+            let Ok(midpoint) = active_ring_weighted_order_midpoint_from_prefix_for_capacity(
+                lmax,
+                m_start,
+                m_end,
+                prefix,
+                left_worker_count,
+                right_worker_count,
+            ) else {
+                return false;
+            };
+            midpoint
+        } else {
+            let Ok(midpoint) = weighted_order_midpoint_for_capacity(
+                lmax,
+                m_start,
+                m_end,
+                left_worker_count,
+                right_worker_count,
+            ) else {
+                return false;
+            };
+            midpoint
+        };
+        let Some(left_len) = (m_mid - m_start).checked_mul(ntheta) else {
+            return false;
+        };
+        let Some(right_len) = (m_end - m_mid).checked_mul(ntheta) else {
+            return false;
+        };
+        if left_len.checked_add(right_len) != Some(order_spectra.len()) {
+            return false;
+        }
+        let (left_spectra, right_spectra) = order_spectra.split_at_mut(left_len);
+        let (left_recurrence, right_recurrence) = recurrence.split_at_mut(left_worker_count);
+        let (left_succeeded, right_succeeded) = rayon::join(
+            || {
+                self.synthesize_scalar_ducc_order_groups_parallel(
+                    alm,
+                    left_spectra,
+                    theta_sin,
+                    theta_cos,
+                    ring_order_limits,
+                    ntheta,
+                    spectrum_len,
+                    arch,
+                    order_work_prefix,
+                    m_start,
+                    m_mid,
+                    left_recurrence,
+                )
+            },
+            || {
+                self.synthesize_scalar_ducc_order_groups_parallel(
+                    alm,
+                    right_spectra,
+                    theta_sin,
+                    theta_cos,
+                    ring_order_limits,
+                    ntheta,
+                    spectrum_len,
+                    arch,
+                    order_work_prefix,
+                    m_mid,
+                    m_end,
+                    right_recurrence,
+                )
+            },
+        );
+        left_succeeded && right_succeeded
+    }
+
     /// Synthesizes one real scalar field into north-to-south row-major samples.
     ///
     /// For even longitude counts, the Nyquist order is allowed and its
@@ -579,51 +816,41 @@ impl<T: ShtScalar> ShtPlan<T> {
         {
             return Ok(());
         }
-        let scalar_ducc_used = if T::supports_scalar_ducc()
-            && self.grid.kind() == GridKind::GaussLegendre
-            && workspace.execution_capacity == 1
-        {
-            let recurrence = &mut workspace.recurrence_workers[0];
-            #[cfg(all(test, feature = "parallel"))]
-            recurrence.record_active_worker();
-            let mut scratch = crate::legendre::scalar_ducc::ScalarDuccScratch {
-                epsilon: &mut recurrence.epsilon,
-                alpha: &mut recurrence.spin_alpha,
-                coefficient_a: &mut recurrence.spin_coefficient_a,
-                coefficient_b: &mut recurrence.spin_coefficient_b,
-                coefficient_even: &mut recurrence.fast_spin_first,
-                coefficient_odd: &mut recurrence.fast_spin_second,
-                packed_sin: &mut recurrence.compact_theta_sin,
-                packed_cos: &mut recurrence.compact_theta_cos,
-                packed_csq: &mut recurrence.spin_current_plus,
-                packed_north: &mut recurrence.compact_ring_indices,
-                previous: &mut recurrence.previous,
-                current: &mut recurrence.current,
-                scale: &mut recurrence.exponents,
-                corfac: &mut recurrence.ducc_corfac,
-                sum_even_re: &mut recurrence.analysis_same_real,
-                sum_even_im: &mut recurrence.analysis_same_imag,
-                sum_odd_re: &mut recurrence.analysis_opposite_real,
-                sum_odd_im: &mut recurrence.analysis_opposite_imag,
+        let scalar_ducc_used =
+            if T::supports_scalar_ducc() && self.grid.kind() == GridKind::GaussLegendre {
+                if workspace.execution_capacity == 1 {
+                    let recurrence = &mut workspace.recurrence_workers[0];
+                    #[cfg(all(test, feature = "parallel"))]
+                    recurrence.record_active_worker();
+                    let mut scratch = scalar_ducc_scratch(recurrence);
+                    T::synthesize_scalar_ducc_dispatched(
+                        arch,
+                        alm,
+                        lmax,
+                        self.harmonics.mmax(),
+                        nphi,
+                        spectrum_len,
+                        phi0,
+                        &self.sectoral_norms,
+                        &workspace.theta_sin[..ntheta],
+                        &workspace.theta_cos[..ntheta],
+                        &workspace.ring_order_limits[..ntheta],
+                        &mut workspace.spectra,
+                        &mut scratch,
+                    )
+                } else {
+                    #[cfg(feature = "parallel")]
+                    {
+                        self.synthesize_scalar_ducc_parallel(alm, arch, workspace)
+                    }
+                    #[cfg(not(feature = "parallel"))]
+                    {
+                        false
+                    }
+                }
+            } else {
+                false
             };
-            T::synthesize_scalar_ducc_dispatched(
-                arch,
-                alm,
-                lmax,
-                self.harmonics.mmax(),
-                nphi,
-                spectrum_len,
-                phi0,
-                &self.sectoral_norms,
-                &workspace.theta_sin[..ntheta],
-                &workspace.theta_cos[..ntheta],
-                &workspace.ring_order_limits[..ntheta],
-                &mut workspace.spectra,
-                &mut scratch,
-            )
-        } else {
-            false
-        };
         if !scalar_ducc_used {
             #[cfg(feature = "parallel")]
             {

@@ -286,6 +286,30 @@ pub(crate) trait ShtScalar:
     }
     #[expect(
         clippy::too_many_arguments,
+        reason = "The private order-group DUCC route receives a disjoint output slice and worker scratch."
+    )]
+    #[cfg(feature = "parallel")]
+    fn synthesize_scalar_ducc_order_range_dispatched(
+        _arch: Arch,
+        _alm: &[Complex<Self>],
+        _lmax: usize,
+        _mmax: usize,
+        _order_start: usize,
+        _order_end: usize,
+        _nphi: usize,
+        _spectrum_len: usize,
+        _phi0: f64,
+        _sectoral_norms: &[Self],
+        _sin_theta: &[Self],
+        _cos_theta: &[Self],
+        _ring_order_limits: &[usize],
+        _order_spectra: &mut [Complex<Self>],
+        _scratch: &mut scalar_ducc::ScalarDuccScratch<'_, Self>,
+    ) -> bool {
+        false
+    }
+    #[expect(
+        clippy::too_many_arguments,
         reason = "The dual-channel scalar block receives two spectra and worker scratch explicitly."
     )]
     fn synthesize_paired_scalar_pair_block_dispatched(
@@ -846,6 +870,43 @@ impl ShtScalar for f64 {
             cos_theta,
             ring_order_limits,
             spectra,
+            scratch,
+        )
+    }
+
+    #[cfg(feature = "parallel")]
+    fn synthesize_scalar_ducc_order_range_dispatched(
+        arch: Arch,
+        alm: &[Complex<Self>],
+        lmax: usize,
+        mmax: usize,
+        order_start: usize,
+        order_end: usize,
+        nphi: usize,
+        spectrum_len: usize,
+        phi0: f64,
+        sectoral_norms: &[Self],
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        ring_order_limits: &[usize],
+        order_spectra: &mut [Complex<Self>],
+        scratch: &mut scalar_ducc::ScalarDuccScratch<'_, Self>,
+    ) -> bool {
+        scalar_ducc::synthesize_order_range_dispatched(
+            arch,
+            alm,
+            lmax,
+            mmax,
+            order_start,
+            order_end,
+            nphi,
+            spectrum_len,
+            phi0,
+            sectoral_norms,
+            sin_theta,
+            cos_theta,
+            ring_order_limits,
+            order_spectra,
             scratch,
         )
     }

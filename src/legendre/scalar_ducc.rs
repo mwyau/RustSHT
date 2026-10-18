@@ -70,14 +70,107 @@ pub(crate) fn synthesize_dispatched<'a>(
     spectra: &'a mut [Complex64],
     scratch: &'a mut ScalarDuccScratch<'_, f64>,
 ) -> bool {
+    let Some(order_end) = mmax.checked_add(1) else {
+        return false;
+    };
+    synthesize_range_dispatched(
+        arch,
+        alm,
+        lmax,
+        mmax,
+        0,
+        order_end,
+        nphi,
+        spectrum_len,
+        phi0,
+        sectoral_norms,
+        sin_theta,
+        cos_theta,
+        ring_order_limits,
+        spectra,
+        false,
+        scratch,
+    )
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The private order-group dispatch receives validated plan data and worker scratch."
+)]
+#[cfg(feature = "parallel")]
+pub(crate) fn synthesize_order_range_dispatched<'a>(
+    arch: Arch,
+    alm: &'a [Complex64],
+    lmax: usize,
+    mmax: usize,
+    order_start: usize,
+    order_end: usize,
+    nphi: usize,
+    spectrum_len: usize,
+    phi0: f64,
+    sectoral_norms: &'a [f64],
+    sin_theta: &'a [f64],
+    cos_theta: &'a [f64],
+    ring_order_limits: &'a [usize],
+    spectra: &'a mut [Complex64],
+    scratch: &'a mut ScalarDuccScratch<'_, f64>,
+) -> bool {
+    synthesize_range_dispatched(
+        arch,
+        alm,
+        lmax,
+        mmax,
+        order_start,
+        order_end,
+        nphi,
+        spectrum_len,
+        phi0,
+        sectoral_norms,
+        sin_theta,
+        cos_theta,
+        ring_order_limits,
+        spectra,
+        true,
+        scratch,
+    )
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Both scalar DUCC layouts share one validated recurrence dispatch."
+)]
+fn synthesize_range_dispatched<'a>(
+    arch: Arch,
+    alm: &'a [Complex64],
+    lmax: usize,
+    mmax: usize,
+    order_start: usize,
+    order_end: usize,
+    nphi: usize,
+    spectrum_len: usize,
+    phi0: f64,
+    sectoral_norms: &'a [f64],
+    sin_theta: &'a [f64],
+    cos_theta: &'a [f64],
+    ring_order_limits: &'a [usize],
+    spectra: &'a mut [Complex64],
+    order_major_output: bool,
+    scratch: &'a mut ScalarDuccScratch<'_, f64>,
+) -> bool {
     let ntheta = sin_theta.len();
     let Some(order_count) = mmax.checked_add(1) else {
         return false;
     };
-    let Some(expected_spectrum_count) = ntheta.checked_mul(spectrum_len) else {
+    let Some(expected_spectrum_count) = ntheta.checked_mul(if order_major_output {
+        order_end.saturating_sub(order_start)
+    } else {
+        spectrum_len
+    }) else {
         return false;
     };
     if mmax > lmax
+        || order_start >= order_end
+        || order_end > order_count
         || ntheta == 0
         || cos_theta.len() != ntheta
         || ring_order_limits.len() != ntheta
@@ -121,9 +214,11 @@ pub(crate) fn synthesize_dispatched<'a>(
     let succeeded = arch.dispatch(ScalarDuccSynthesis {
         alm,
         lmax,
-        order_count,
+        order_start,
+        order_end,
         nphi,
         spectrum_len,
+        order_major_output,
         phi0,
         sectoral_norms,
         sin_theta,
@@ -141,9 +236,11 @@ pub(crate) fn synthesize_dispatched<'a>(
 struct ScalarDuccSynthesis<'a, 's> {
     alm: &'a [Complex64],
     lmax: usize,
-    order_count: usize,
+    order_start: usize,
+    order_end: usize,
     nphi: usize,
     spectrum_len: usize,
+    order_major_output: bool,
     phi0: f64,
     sectoral_norms: &'a [f64],
     sin_theta: &'a [f64],
@@ -161,9 +258,11 @@ impl WithSimd for ScalarDuccSynthesis<'_, '_> {
         let Self {
             alm,
             lmax,
-            order_count,
+            order_start,
+            order_end,
             nphi,
             spectrum_len,
+            order_major_output,
             phi0,
             sectoral_norms,
             sin_theta,
@@ -176,17 +275,22 @@ impl WithSimd for ScalarDuccSynthesis<'_, '_> {
         let north_count = ntheta.div_ceil(2);
         let mut first_active_north_ring = 0;
 
-        for (m, &sectoral_norm) in sectoral_norms.iter().take(order_count).enumerate() {
+        for (m, &sectoral_norm) in sectoral_norms
+            .iter()
+            .enumerate()
+            .take(order_end)
+            .skip(order_start)
+        {
             let Some(order_offset) = packed_order_offset(m, lmax) else {
                 return false;
             };
             let Some(order_len) = lmax.checked_sub(m).and_then(|n| n.checked_add(1)) else {
                 return false;
             };
-            let Some(order_end) = order_offset.checked_add(order_len) else {
+            let Some(coefficient_end) = order_offset.checked_add(order_len) else {
                 return false;
             };
-            let Some(order_alm) = alm.get(order_offset..order_end) else {
+            let Some(order_alm) = alm.get(order_offset..coefficient_end) else {
                 return false;
             };
             if order_alm.iter().any(|coefficient| {
@@ -260,9 +364,27 @@ impl WithSimd for ScalarDuccSynthesis<'_, '_> {
                     {
                         return false;
                     }
-                    scratch_output(spectra, spectrum_len, m, north, north_value);
+                    scratch_output(
+                        spectra,
+                        spectrum_len,
+                        ntheta,
+                        order_start,
+                        order_major_output,
+                        m,
+                        north,
+                        north_value,
+                    );
                     if south != north {
-                        scratch_output(spectra, spectrum_len, m, south, south_value);
+                        scratch_output(
+                            spectra,
+                            spectrum_len,
+                            ntheta,
+                            order_start,
+                            order_major_output,
+                            m,
+                            south,
+                            south_value,
+                        );
                     }
                 }
                 ring_cursor += active_count;
@@ -273,14 +395,26 @@ impl WithSimd for ScalarDuccSynthesis<'_, '_> {
 }
 
 #[inline]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The private output helper supports both Fourier spectrum layouts."
+)]
 fn scratch_output(
     spectra: &mut [Complex64],
     spectrum_len: usize,
+    ntheta: usize,
+    order_start: usize,
+    order_major_output: bool,
     order: usize,
     ring: usize,
     value: Complex64,
 ) {
-    spectra[ring * spectrum_len + order] = value;
+    let index = if order_major_output {
+        (order - order_start) * ntheta + ring
+    } else {
+        ring * spectrum_len + order
+    };
+    spectra[index] = value;
 }
 
 fn packed_order_offset(m: usize, lmax: usize) -> Option<usize> {

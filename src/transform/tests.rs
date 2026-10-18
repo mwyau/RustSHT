@@ -34,9 +34,7 @@ fn make_f1_plan(lmax: usize, mmax: usize, ntheta: usize, nphi: usize, phi0: f64)
     .unwrap()
 }
 
-fn scalar_ring_group_spectra(plan: &ShtPlan, alm: &[Complex64]) -> Vec<Complex64> {
-    let mut workspace = plan.workspace().unwrap();
-    plan.prepare_workspace(&mut workspace, 1).unwrap();
+fn prepare_scalar_latitudes(plan: &ShtPlan, workspace: &mut crate::workspace::ShtWorkspace) {
     for (ring, &theta) in plan.grid.theta().iter().enumerate() {
         (workspace.theta_sin[ring], workspace.theta_cos[ring]) =
             crate::legendre::sin_cos_from_f64(theta);
@@ -47,6 +45,12 @@ fn scalar_ring_group_spectra(plan: &ShtPlan, alm: &[Complex64]) -> Vec<Complex64
             workspace.theta_cos[ring],
         );
     }
+}
+
+fn scalar_ring_group_spectra(plan: &ShtPlan, alm: &[Complex64]) -> Vec<Complex64> {
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut workspace, 1).unwrap();
+    prepare_scalar_latitudes(plan, &mut workspace);
     plan.synthesize_ring_group(
         alm,
         plan.grid.nphi(),
@@ -1534,6 +1538,99 @@ fn scalar_ducc_falls_back_safely_for_subnormal_and_extreme_coefficients() {
             assert!(relative_l2_complex(&workspace.spectra, &reference_spectra) < 3e-13);
         }
     }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn scalar_ducc_parallel_orders_match_serial_and_ring_group_synthesis() {
+    let plan = make_plan(300, 150, 301, 603, 0.37);
+    assert!(plan.scalar_legendre_table.set(None).is_ok());
+    let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    for m in 0..=plan.harmonics().mmax() {
+        for l in m..=plan.harmonics().lmax() {
+            let re = ((l * 7 + m * 11) % 19) as f64 - 9.0;
+            let im = if m == 0 {
+                0.0
+            } else {
+                ((l * 13 + m * 5) % 23) as f64 - 11.0
+            };
+            alm[plan.harmonics().index(l, m).unwrap()] = Complex64::new(re * 1e-6, im * 1e-6);
+        }
+    }
+
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let mut serial_workspace = one_thread.install(|| plan.workspace()).unwrap();
+    one_thread
+        .install(|| plan.prepare_workspace(&mut serial_workspace, 1))
+        .unwrap();
+    let mut parallel_workspace = eight_threads.install(|| plan.workspace()).unwrap();
+    eight_threads
+        .install(|| plan.prepare_workspace(&mut parallel_workspace, 8))
+        .unwrap();
+    prepare_scalar_latitudes(&plan, &mut parallel_workspace);
+    let worker_probe = parallel_workspace.observe_active_workers();
+
+    eight_threads.install(|| {
+        parallel_workspace.spectra.fill(Complex64::new(0.0, 0.0));
+        assert!(plan.synthesize_scalar_ducc_parallel(
+            &alm,
+            pulp::Arch::new(),
+            &mut parallel_workspace,
+        ));
+    });
+    assert!(worker_probe.lock().unwrap().len() > 1);
+    let reference_spectra = scalar_ring_group_spectra(&plan, &alm);
+    let reference_error = relative_l2_complex(&parallel_workspace.spectra, &reference_spectra);
+    assert!(
+        reference_error < 4e-13,
+        "reference error={reference_error:.3e}"
+    );
+
+    let mut serial_map = vec![0.0; plan.sample_count];
+    let mut parallel_map = vec![0.0; plan.sample_count];
+    one_thread
+        .install(|| plan.synthesis_into(&alm, &mut serial_map, &mut serial_workspace))
+        .unwrap();
+    eight_threads
+        .install(|| plan.synthesis_into(&alm, &mut parallel_map, &mut parallel_workspace))
+        .unwrap();
+    assert!(relative_l2_real(&parallel_map, &serial_map) < 4e-13);
+
+    alm.fill(Complex64::new(0.0, 0.0));
+    alm[plan.harmonics().index(100, 100).unwrap()] = Complex64::new(f64::from_bits(1), 0.0);
+    parallel_workspace.spectra.fill(Complex64::new(3.0, -2.0));
+    eight_threads.install(|| {
+        assert!(!plan.synthesize_scalar_ducc_parallel(
+            &alm,
+            pulp::Arch::new(),
+            &mut parallel_workspace,
+        ));
+    });
+    assert!(
+        parallel_workspace
+            .spectra
+            .iter()
+            .all(|&value| value == Complex64::new(3.0, -2.0))
+    );
+
+    one_thread
+        .install(|| plan.synthesis_into(&alm, &mut serial_map, &mut serial_workspace))
+        .unwrap();
+    eight_threads
+        .install(|| plan.synthesis_into(&alm, &mut parallel_map, &mut parallel_workspace))
+        .unwrap();
+    assert_eq!(parallel_map, serial_map);
+    assert_eq!(
+        parallel_workspace.spectra,
+        scalar_ring_group_spectra(&plan, &alm)
+    );
 }
 
 #[test]
@@ -4252,4 +4349,76 @@ fn scalar_ducc_candidate_t255_timing_screen() {
 
     run_case(255, 256, 513);
     run_case(300, 301, 603);
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+#[ignore = "light q1/q8 screen for the DUCC order-parallel route"]
+fn scalar_ducc_parallel_order_t300_timing_screen() {
+    use std::hint::black_box;
+    use std::time::Instant;
+
+    let plan = make_plan(300, 150, 301, 603, 0.37);
+    assert!(plan.scalar_legendre_table.set(None).is_ok());
+    let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    for m in 0..=plan.harmonics().mmax() {
+        for l in m..=plan.harmonics().lmax() {
+            let re = ((l * 7 + m * 11) % 19) as f64 - 9.0;
+            let im = if m == 0 {
+                0.0
+            } else {
+                ((l * 13 + m * 5) % 23) as f64 - 11.0
+            };
+            alm[plan.harmonics().index(l, m).unwrap()] = Complex64::new(re * 1e-6, im * 1e-6);
+        }
+    }
+
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let mut q1_workspace = one_thread.install(|| plan.workspace()).unwrap();
+    one_thread
+        .install(|| plan.prepare_workspace(&mut q1_workspace, 1))
+        .unwrap();
+    let mut q8_workspace = eight_threads.install(|| plan.workspace()).unwrap();
+    eight_threads
+        .install(|| plan.prepare_workspace(&mut q8_workspace, 8))
+        .unwrap();
+    let mut q1_map = vec![0.0; plan.sample_count];
+    let mut q8_map = vec![0.0; plan.sample_count];
+
+    one_thread
+        .install(|| plan.synthesis_into(&alm, &mut q1_map, &mut q1_workspace))
+        .unwrap();
+    eight_threads
+        .install(|| plan.synthesis_into(&alm, &mut q8_map, &mut q8_workspace))
+        .unwrap();
+    assert!(relative_l2_real(&q1_map, &q8_map) < 4e-13);
+
+    let mut q1_samples = Vec::with_capacity(5);
+    let mut q8_samples = Vec::with_capacity(5);
+    for _ in 0..5 {
+        let started = Instant::now();
+        one_thread
+            .install(|| plan.synthesis_into(&alm, &mut q1_map, &mut q1_workspace))
+            .unwrap();
+        q1_samples.push(started.elapsed().as_secs_f64() * 1e3);
+        black_box(q1_map[0]);
+
+        let started = Instant::now();
+        eight_threads
+            .install(|| plan.synthesis_into(&alm, &mut q8_map, &mut q8_workspace))
+            .unwrap();
+        q8_samples.push(started.elapsed().as_secs_f64() * 1e3);
+        black_box(q8_map[0]);
+    }
+    assert!(relative_l2_real(&q1_map, &q8_map) < 4e-13);
+    eprintln!(
+        "SCALAR_DUCC_T300 grid=301x603 f64 full synthesis q1_ms={q1_samples:?} q8_ms={q8_samples:?}"
+    );
 }
