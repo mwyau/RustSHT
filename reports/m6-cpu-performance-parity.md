@@ -1237,19 +1237,18 @@ It fixes source and binary hashes, the v2 warm-up sequence, numerical limits,
 stability gates, and the one-pair stop rule. The result below follows those
 rules; the candidate remains isolated.
 
-The baseline and range-precheck candidate completed one valid T2047 q1 pair.
-RustSHT medians were 3270.589 ms and 1235.409 ms; the candidate/baseline
-ratio was `0.377733` (2.647x speedup). The clean baseline was 8.91x DUCC and
-the candidate was 3.31x DUCC. All six backend series passed the fixed timing
-gates, and both RustSHT outputs passed the DUCC error limits. Candidate
-workspace tests passed. A large difference in untimed NumPy copy diagnostics
-is documented and will be checked in the next matrix. The result authorizes
-only the six-pair T2047 q1 matrix; the candidate remains isolated and
-unaccepted. See the
+The one-pair screen observed RustSHT medians of 3270.589 ms and 1235.409 ms;
+its candidate/baseline ratio was `0.377733`. All timing and numerical gates
+passed. The next clean-baseline process showed material system-wide memory
+pressure and repeated the screen's unusually slow untimed NumPy copies. Under
+the unchanged interference rule, the comparison is now inconclusive and its
+ratio is diagnostic only. The six-pair matrix stopped after that baseline;
+the candidate process did not run. See the
 [screen result](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-range-precheck-t2047-q1-screen-v1.md).
-The six-pair follow-up has its own
+Its six-pair follow-up has a
 [frozen protocol](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-range-precheck-t2047-q1-matrix-v1-protocol.md).
-It excludes the screen pair and stops at the first invalid process. The
-candidate also has one unresolved Clippy warning; production acceptance
-remains gated on resolving it and completing the scalar and regression
-controls.
+The [matrix stop report](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-range-precheck-t2047-q1-matrix-stop-v1.md)
+retains the baseline samples and validity decision. No further expensive
+matrix is planned on this host until paired measurements are interpretable.
+The candidate remains isolated; its Clippy warning and scalar regression
+controls also remain unresolved.

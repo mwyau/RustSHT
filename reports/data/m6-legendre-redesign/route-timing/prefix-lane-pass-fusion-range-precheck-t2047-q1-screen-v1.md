@@ -65,11 +65,14 @@ PSI captures were collected locally; raw captures remain untracked.
 The harness also measured NumPy input and output copies outside the transform
 interval. Their reported medians were 3.693 ms and 10.690 ms for the baseline,
 and 60.706 ms and 125.877 ms for the candidate. These ancillary values are
-unusually different, but the timed RustSHT, DUCC, and SHTns series were stable,
-and the copy operations were complete before the timed transformations. Under
-the frozen rules, this is a diagnostic caveat rather than evidence that the
-transform samples were interfered with. It must be checked again in the
-multi-pair acquisition.
+unusually different. At the time, the timed series and CPU PSI gates passed,
+and no competing CPU-heavy process or cgroup throttling was apparent. A later
+clean-baseline matrix process repeated the slow copy measurements and showed
+system-wide memory pressure. Applying the unchanged clear-interference rule,
+the initial one-pair comparison is now classified as inconclusive for
+comparative performance. Its measurements remain diagnostic evidence; they
+must not be counted as an accepted speedup or used to continue the matrix on
+this host.
 
 ## Correctness checks
 
@@ -88,11 +91,12 @@ failure, but it must be resolved before production acceptance.
 
 ## Decision and next measurement
 
-This valid one-pair screen is favorable and authorizes the frozen six-pair
-T2047 q1 matrix. It does not accept the candidate. The source remains isolated
-and is not production-routed. T1023, T511, q8, spin-1 controls, and the full
-regression matrix remain outstanding. The candidate still trails DUCC by
-3.31x for T2047 q1 scalar synthesis.
+The observed one-pair ratio is favorable, but the comparison is inconclusive
+under the interference rule and does not authorize further matrix runs on this
+host. The source remains isolated and is not production-routed. T1023, T511,
+q8, spin-1 controls, and the full regression matrix remain outstanding. The
+observed candidate median was 3.31x the paired DUCC median, but that ratio is
+diagnostic only.
 
 The route profile places the next measured kernel work in the scaled prefix:
 the range-precheck profile measured 643.386 ms in prefix plus transition setup,
