@@ -1,6 +1,6 @@
 # RustSHT performance status
 
-Snapshot: `opt/sht-performance-parity` based on `c58d94c2` (2026-10-18). DUCC remains faster in the matched atmospheric workloads. The integrated tile-128 scaled-prefix route remains the multiworker implementation and robust fallback/reference. After the existing compact scalar Legendre table check, a separate order-major DUCC-parity candidate is selected for eligible f64 scalar GL synthesis when workspace capacity is one; it falls back on unsafe coefficients or recurrence states. The initial T255/T300 screen improved on the retained single-thread ring-group route, but full-call medians remained 8.3–32.3% above installed DUCC 0.41.0. These ungated measurements do not establish parity.
+Snapshot: `opt/sht-performance-parity` at `b484a8c7` (2026-10-18). DUCC remains faster in the matched atmospheric workloads. The integrated tile-128 scaled-prefix route remains the multiworker implementation and robust fallback/reference. After the existing compact scalar Legendre table check, a separate order-major DUCC-parity candidate is selected for eligible f64 scalar GL synthesis when workspace capacity is one; it falls back on unsafe coefficients or recurrence states. The initial T255/T300 screen improved on the retained single-thread ring-group route, but full-call medians remained 8.3–32.3% above installed DUCC 0.41.0. These ungated measurements do not establish parity.
 
 ## DUCC scalar candidate
 
