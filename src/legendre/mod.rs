@@ -8,6 +8,7 @@ mod scalar_table;
 mod spin;
 mod spin_f32;
 mod spin_fast;
+pub(crate) mod synthesis_fast;
 
 pub(crate) const SPIN1_FAST_MIN_LMAX: usize = 15;
 
@@ -232,6 +233,27 @@ pub(crate) trait ShtScalar:
         _compact_theta_sin: &mut [Self],
         _compact_theta_cos: &mut [Self],
         _compact_ring_indices: &mut [usize],
+    ) -> Result<bool, ShtError> {
+        Ok(false)
+    }
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The scalar order path receives one order and reusable tile scratch."
+    )]
+    fn synthesize_scalar_fast_order_dispatched(
+        _arch: Arch,
+        _m: usize,
+        _lmax: usize,
+        _sin_theta: &[Self],
+        _cos_theta: &[Self],
+        _sectoral_norm: Self,
+        _coefficient_a: &[Self],
+        _coefficient_b: &[Self],
+        _coefficient_even: &[Complex<Self>],
+        _coefficient_odd: &[Complex<Self>],
+        _ring_order_limits: &[usize],
+        _spectrum_len: usize,
+        _scratch: &mut synthesis_fast::ScalarSynthesisFastScratch<'_, Self>,
     ) -> Result<bool, ShtError> {
         Ok(false)
     }
@@ -730,6 +752,38 @@ impl ShtScalar for f64 {
             coefficients,
             coefficient_even,
             coefficient_odd,
+        )
+    }
+
+    fn synthesize_scalar_fast_order_dispatched(
+        arch: Arch,
+        m: usize,
+        lmax: usize,
+        sin_theta: &[Self],
+        cos_theta: &[Self],
+        sectoral_norm: Self,
+        coefficient_a: &[Self],
+        coefficient_b: &[Self],
+        coefficient_even: &[Complex<Self>],
+        coefficient_odd: &[Complex<Self>],
+        ring_order_limits: &[usize],
+        spectrum_len: usize,
+        scratch: &mut synthesis_fast::ScalarSynthesisFastScratch<'_, Self>,
+    ) -> Result<bool, ShtError> {
+        synthesis_fast::synthesize_order_dispatched(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            cos_theta,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            coefficient_even,
+            coefficient_odd,
+            ring_order_limits,
+            spectrum_len,
+            scratch,
         )
     }
 

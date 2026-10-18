@@ -73,6 +73,15 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     pub(crate) compact_theta_sin: Vec<T>,
     pub(crate) compact_theta_cos: Vec<T>,
     pub(crate) compact_ring_indices: Vec<usize>,
+    pub(crate) fast_scalar_previous: Vec<T>,
+    pub(crate) fast_scalar_current: Vec<T>,
+    pub(crate) fast_scalar_next: Vec<T>,
+    pub(crate) fast_scalar_exponents: Vec<i64>,
+    pub(crate) fast_scalar_sum_re: Vec<T>,
+    pub(crate) fast_scalar_sum_im: Vec<T>,
+    pub(crate) fast_scalar_theta_sin: Vec<T>,
+    pub(crate) fast_scalar_theta_cos: Vec<T>,
+    pub(crate) fast_scalar_ring_indices: Vec<usize>,
     pub(crate) fast_scalar_first: Vec<Complex<T>>,
     pub(crate) fast_scalar_second: Vec<Complex<T>>,
     pub(crate) fast_spin_first: Vec<Complex<T>>,
@@ -221,6 +230,41 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
             compact_ring_indices: allocate_usizes(
                 recurrence_scratch_len,
                 "compacted latitude ring indices",
+            )?,
+            fast_scalar_previous: allocate_real(
+                crate::legendre::synthesis_fast::ACTIVE_TILE_SIZE,
+                "fast scalar previous recurrence values",
+            )?,
+            fast_scalar_current: allocate_real(
+                crate::legendre::synthesis_fast::ACTIVE_TILE_SIZE,
+                "fast scalar current recurrence values",
+            )?,
+            fast_scalar_next: allocate_real(
+                crate::legendre::synthesis_fast::ACTIVE_TILE_SIZE,
+                "fast scalar next recurrence values",
+            )?,
+            fast_scalar_exponents: allocate_exponents(
+                crate::legendre::synthesis_fast::ACTIVE_TILE_SIZE,
+            )?,
+            fast_scalar_sum_re: allocate_real(
+                crate::legendre::synthesis_fast::ACTIVE_TILE_SIZE,
+                "fast scalar real accumulator",
+            )?,
+            fast_scalar_sum_im: allocate_real(
+                crate::legendre::synthesis_fast::ACTIVE_TILE_SIZE,
+                "fast scalar imaginary accumulator",
+            )?,
+            fast_scalar_theta_sin: allocate_real(
+                crate::legendre::synthesis_fast::ACTIVE_TILE_SIZE,
+                "fast scalar compacted latitude sine values",
+            )?,
+            fast_scalar_theta_cos: allocate_real(
+                crate::legendre::synthesis_fast::ACTIVE_TILE_SIZE,
+                "fast scalar compacted latitude cosine values",
+            )?,
+            fast_scalar_ring_indices: allocate_usizes(
+                crate::legendre::synthesis_fast::ACTIVE_TILE_SIZE,
+                "fast scalar compacted latitude ring indices",
             )?,
             fast_scalar_first: allocate_complex(
                 spin_fast_coefficient_count,

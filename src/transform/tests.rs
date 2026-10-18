@@ -1432,6 +1432,25 @@ fn t255_mixed_synthesis_matches_ducc_0410_samples() {
 }
 
 #[test]
+fn t255_reduced_order_synthesis_matches_closed_form_on_odd_and_even_longitudes() {
+    for nphi in [5, 6] {
+        let plan = make_plan(255, 2, 256, nphi, 0.47);
+        let alm = coefficients(plan.harmonics());
+        let expected = analytic_map(&plan, &alm);
+        let mut actual = vec![0.0; plan.sample_count];
+        let mut workspace = plan.workspace().unwrap();
+
+        plan.synthesis_into(&alm, &mut actual, &mut workspace)
+            .unwrap();
+        assert!(
+            relative_l2_real(&actual, &expected) <= 2e-13,
+            "nphi={nphi}, relative L2 error={:.3e}",
+            relative_l2_real(&actual, &expected)
+        );
+    }
+}
+
+#[test]
 fn precomputed_scalar_gl_matches_recurrence_for_all_four_operators() {
     for (lmax, mmax, ntheta, nphi) in [
         (63, 63, 96, 192),
