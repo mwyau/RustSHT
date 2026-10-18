@@ -43,7 +43,9 @@ frequency readings. The 128-ring measurements were first collected directly
 with `taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}"`; their raw test output and PSI snapshots are retained, but
 those initial cases do not include full process/frequency snapshots. This is
 route-diagnostic evidence only. The later matched whole-transform q1 screen
-will use the frozen Python extensions and full pre/postflight records. The route timers are nested and inclusive: prefix and suffix time are inside
+used the frozen Python extensions; its results and T511 stability stop are in
+the [paired q1 record](../paired-q1-128/summary.md). The route timers are
+nested and inclusive: prefix and suffix time are inside
 transition time; transition and scaled fallback are inside tile time. Do not
 sum them. Full-call elapsed time includes the rest of `synthesis_into`,
 including the inverse longitude FFT. Timer and counter code exists only under
@@ -95,12 +97,19 @@ allocator metadata. The tile-size scratch difference is therefore bounded to
 9 KiB per worker; peak whole-process RSS is reported separately by the full
 transform benchmark.
 
-## Decision and next step
+## Decision and later matched measurements
 
-Keep the 128-ring source and binary frozen and isolated. The route diagnostic
-supports 128 over 256 for this implementation, but these instrumented
-same-candidate calls are not a baseline comparison, and the earlier T511
-candidate process failed its postflight PSI gate. Proceed with clean-baseline
-T511 control and T1023/T2047 q1 paired whole-transform measurements using the
-frozen extensions. Preserve the fixed stability rules and stop a cell if a
-process fails them. If q1 passes, measure q8 and scalar/spin-1 controls.
+The 128-ring source and binary remain frozen and isolated. These instrumented
+same-candidate calls explain the 128-versus-256 difference but do not compare
+either tile against the clean baseline. The later six-pair q1 whole-transform
+matrices passed at T1023 and T2047, with candidate/baseline median ratios
+0.679651 and 0.533182. The first T511 baseline process then failed the fixed
+Rust timing-stability limits; no candidate mate, retry, q8 cell or broader
+regression measurement followed. The candidate remains unaccepted. See the
+[paired q1 record](../paired-q1-128/summary.md) for numerical agreement,
+per-process stability, memory and host-validity summaries.
+
+The route timers point to the scaled prefix as the next measured kernel target:
+at T2047 the 128-ring case spent 1,012.1 ms in the prefix and 529.5 ms in the
+ordinary suffix. These nested test-only timers include instrumentation and do
+not form an additive decomposition of whole-transform time.

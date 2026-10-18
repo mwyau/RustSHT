@@ -1,15 +1,15 @@
-# Frozen q1 comparison: stopped at first process
+# Tile-128 q1 acquisition: high-resolution criteria pass; T511 gate failed
 
-The comparison stopped after the first T511 baseline process because the fixed postflight host gate failed. No candidate process, retry, or later-bandlimit process was started. This is a host-validity stop, not a candidate performance result.
+The fixed v3 q1 screen passed its six-pair timing and numerical gates at T1023 and T2047. The candidate/baseline median ratios were 0.679651 (95% bootstrap interval 0.674353–0.685599) and 0.533182 (0.520310–0.550602), respectively. The first T511 baseline process then failed the unchanged Rust timing-stability limits: CV 8.3308% and first-three/final-two median drift 11.4305%. No T511 candidate mate or retry was run. The candidate remains isolated and unaccepted; the T511 q1 interval and q8/regression controls are incomplete.
 
 ## Run and provenance
 
 - Harness: [`python_perf_baseline.py`](../../../../examples/python_perf_baseline.py), SHA-256 `72cd1986a220573c1a445bd6a6aa96b9df272a6bff1dc833843ee3f274c77739`.
 - Baseline extension: SHA-256 `69d3a2138e8012f331a94c8c09347433e526e5c8362c917cfefcb849c7177036`, from clean source HEAD `91c2cb8ff1ce576bd6dfa6764fd7fb516a00295a`.
-- Candidate extension: SHA-256 `5eeff4dd2087238f18278928ad2af84437d21b7caa38eb360783f9b627cf8620`, from candidate HEAD `739275d20987fec35506916cb682f961e8a7ffaf` plus the archived tile-128 patch SHA `bd5ce130e0b619f87660eaa80d04e004605fcabc35e6769d3ca18051d0f0b2c7`. Candidate was not run.
-- The complete pinned revisions, environment and test configuration are in [provenance.txt](provenance.txt). The frozen run helper is [run-one.sh](run-one.sh); no source or extension was changed.
+- Candidate extension: SHA-256 `5eeff4dd2087238f18278928ad2af84437d21b7caa38eb360783f9b627cf8620`, from candidate HEAD `739275d20987fec35506916cb682f961e8a7ffaf` plus the archived tile-128 patch SHA `bd5ce130e0b619f87660eaa80d04e004605fcabc35e6769d3ca18051d0f0b2c7`. It ran for all six T1023 and T2047 candidate processes; no T511 candidate process ran.
+- The pinned revisions and workload configuration are in [provenance.txt](provenance.txt). The v3 process method is in [protocol-v3.md](protocol-v3.md) and the frozen runner is [run-one-v3.sh](run-one-v3.sh). Neither source nor extension changed during the acquisition.
 
-## T511 baseline process
+## Earlier T511 q1 process (v1 host-gate rejection)
 
 CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
 
@@ -315,9 +315,8 @@ and numerical checks. The candidate/baseline RustSHT median ratios were
 Their median is `0.679651`; Python `random.Random(20261017)` with 50,000
 resamples, replacement sampling, the median statistic, and linear percentile
 interpolation gives `0.674353–0.685599`. T1023 meets the high-resolution
-component of the q1 criterion. The overall high-resolution gate and candidate
-acceptance remain open until T2047 q1 and T511 controls are measured. The next
-process was T2047 pair 01 baseline.
+component of the q1 criterion. The later T2047 result also passes that
+component; the T511 control failure is recorded below.
 
 ### T2047 q1 pair 01: baseline valid, candidate mate pending
 
@@ -580,6 +579,42 @@ and numerical checks. The candidate/baseline RustSHT median ratios were
 Their median is `0.533182`; Python `random.Random(20261017)` with 50,000
 resamples, replacement sampling, the median statistic, and linear percentile
 interpolation gives `0.520310–0.550602`. Both T1023 and T2047 meet the
-high-resolution q1 criteria. The candidate still needs T511 controls and the
-planned q8 matrix before acceptance. The next process is the fixed T511 pair
-01 baseline.
+high-resolution q1 criteria. Pair-level RustSHT/DUCC gaps were 3.99–4.27x at
+T1023 and 4.66–4.94x at T2047. The T511 q1 baseline failed its timing-stability
+gate before a candidate mate could run, so no T511 paired interval exists and
+the protocol does not permit q8 or the broader regression matrix to start.
+
+## Current T511 q1 pair 01 baseline: stopped on Rust timing stability
+
+The v3 process used GL f64 scalar `synthesis_into`, full `mmax`, `phi0=0.37`,
+and one worker, with one warm-up and five timed calls per backend. DUCC and
+SHTns passed the unchanged CV and drift limits. RustSHT did not: its CV was
+8.3308% and its first-three/final-two median drift was 11.4305%, both above
+5%. The process was not retried, and the candidate mate was not run.
+
+| Backend | Samples (ms) | Median (ms) | CV | Drift |
+| --- | --- | ---: | ---: | ---: |
+| RustSHT | 40.028, 40.076, 42.433, 49.193, 40.134 | 40.134 | 8.3308% | 11.4305% |
+| DUCC | 7.889, 7.827, 7.716, 7.510, 7.526 | 7.716 | 1.9991% | 4.0047% |
+| SHTns | 4.663, 4.643, 4.628, 4.606, 4.616 | 4.628 | 0.4347% | 0.6914% |
+
+The Rust map's relative L2 error versus DUCC was `6.632e-14`; the SHTns
+adapter's error versus DUCC was `4.286e-14`. Thus the numerical comparisons
+passed for this baseline process, but it yields no candidate/baseline timing
+ratio. Peak RSS was 98,204 kB, process elapsed time was 33.89 s, and the
+Context-switch diagnostics were reviewed locally; exact counts remain untracked.
+
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. These values were below the v3 warning range
+and rejection threshold. The worker stayed within its one-core affinity; the
+process review found no competing build or benchmark and no material external
+CPU load on the assigned core. The cgroup recorded no CPU throttling. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The available host
+measurements do not explain the Rust timing outlier.
+
+The high-resolution q1 result is favorable but incomplete as an acceptance
+matrix. The next measured kernel bottleneck is the scaled prefix: the separate
+T2047 route-timing diagnostic measured 1,012.1 ms in prefix work, 529.5 ms in
+the ordinary suffix, and 12.2 ms in fallback work for the 128-ring tile. Those
+timers are nested and instrumented; see the [route-timing record](../route-timing/summary.md)
+for route counts, occupancy and the 128-versus-256 comparison. The T511
+stability stop blocks further performance acceptance measurements in this
+acquisition.

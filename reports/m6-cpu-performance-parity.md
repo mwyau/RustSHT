@@ -26,6 +26,13 @@ benchmark harness changes, and numerical-plan edits remain uncommitted. The
 campaign report and raw measurements are recorded in diagnostic evidence
 checkpoints.
 
+The isolated tile-128 scalar kernel has since passed the six-pair q1 timing
+and numerical gates at T1023 and T2047. Its median candidate/baseline ratios
+are 0.679651 and 0.533182. The T511 baseline control failed Rust timing
+stability before a candidate mate ran, so the candidate remains unaccepted and
+q8 and broader regression cells have not started. The paired results and stop
+condition are recorded in [the v3 q1 comparison](data/m6-legendre-redesign/paired-q1-128/summary.md).
+
 ## C01: workspace order-prefix compatibility
 
 A public GL scalar T511 reproducer used identical `512×1024` grids and
@@ -721,12 +728,7 @@ prefixes account for 6.14%, 5.15%, and 6.38%; fallback accounts for 0.50%,
 fallback, so these are work proxies, not unique-lane shares or time fractions. Polar work is a subset of fallback. At T2047/q8, per-worker proxies range
 from 111.5M to 268.7M pair lanes (6.43%–15.49%); this indicates differing
 assigned work but is not a timing or completion-time measurement. T2047/q1's
-one affinity capture disagreed with its requested one-core configuration; this validity issue is retained without retry. PSI stayed below the predeclared host gate for all route-count cases. This result supports prioritizing the ordinary fused suffix over prefix
-skipping: the suffix dominates counted route work, and the first prototype
-preserves every scaled-prefix contribution. The next kernel experiment should
-compare one versus two paired-degree steps per SIMD iteration on this isolated
-candidate. It remains unaccepted until paired whole-transform timing passes
-the stability protocol and the complete regression control matrix.
+one affinity capture disagreed with its requested one-core configuration; this validity issue is retained without retry. PSI stayed below the predeclared host gate for all route-count cases. These counters show that the suffix dominates pair-lane work, not elapsed time. The later nested route timers instead measured 1,012.1 ms in the T2047 scaled prefix and 529.5 ms in the ordinary suffix. That timing evidence makes scaled-prefix execution the next measured kernel target; the route-count and route-time records are summarized in [the route-timing report](data/m6-legendre-redesign/route-timing/summary.md). The two-pair suffix unroll remains unmeasured. The candidate remains unaccepted because the T511 timing-stability control failed and the full regression matrix is incomplete.
 
 ### 128-versus-256 active-ring tile diagnostic
 
@@ -799,3 +801,41 @@ whole-process elapsed time (18.78 s), and peak RSS (276,132 KiB). Raw placement,
 frequency, and GNU-time captures remain local and untracked. No candidate or
 T2047 process ran, and no sample was retried or filtered. The T1023 comparison
 remains incomplete; the PSI warning did not cause the stop.
+
+## Tile-128 v3 paired q1 results and control stop
+
+The v3 acquisition used the frozen tile-128 candidate and clean baseline with
+identical GL f64 scalar `synthesis_into` workloads. All six independent
+T1023 pairs passed the fixed per-process timing-stability and numerical gates;
+their median candidate/baseline ratio was 0.679651 with a 95% bootstrap
+interval of 0.674353–0.685599. All six T2047 pairs passed the same gates; the
+median ratio was 0.533182 with interval 0.520310–0.550602. The T1023 candidate
+was 3.99–4.27x DUCC across the recorded candidate processes, and the T2047
+candidate was 4.66–4.94x DUCC. Candidate peak RSS was about 278 MiB at T1023
+and 955 MiB at T2047. Rust-versus-DUCC relative L2 errors were
+`1.182e-13` and `3.015e-13`, respectively. The 128-ring implementation and
+binary remain isolated.
+
+The first T511 q1 process was a clean-baseline run. The Rust timing samples
+were 40.028, 40.076, 42.433, 49.193 and 40.134 ms; CV was 8.3308% and
+first-three/final-two median drift was 11.4305%. Both exceed the unchanged
+5% stability limits. DUCC and SHTns passed their timing checks, and numerical
+errors versus DUCC were `6.632e-14` for RustSHT and `4.286e-14` for SHTns.
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The process review found no competing build or
+benchmark, no material outside CPU load on the assigned core, and no cgroup
+throttling. The candidate mate was not run, and no retry, q8 measurement or
+broader regression matrix followed. The T511 control therefore has no paired
+ratio or bootstrap interval, and the candidate is not accepted.
+
+The route-timing diagnostic identifies the scaled prefix as the next measured
+kernel bottleneck. At T2047, its test-only nested timers recorded 1,012.1 ms in
+the scaled prefix, 529.5 ms in the ordinary suffix, and 12.2 ms in fallback
+work. Prefix work was 6.38% of the route pair-lane proxy; at the same time the
+128-ring case reached 95.94% active-lane occupancy. The 256-ring case performed
+58.9% more prefix lane-pairs and spent 52.9% longer in the prefix, while
+ordinary suffix throughput was about 3.06 billion lane-pairs/s for both tile
+sizes. These instrumented timers are nested and are not a whole-transform time
+decomposition. The [route timing report](data/m6-legendre-redesign/route-timing/summary.md)
+contains the tile comparison and the [paired q1 report](data/m6-legendre-redesign/paired-q1-128/summary.md)
+contains the process evidence. The failed T511 stability control blocks q8 and
+regression acceptance measurements under the declared matrix.

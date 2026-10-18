@@ -54,6 +54,12 @@ wall-time or CPU-time distribution. Numerical counters and map-equality results
 are summarized here. Raw process captures and commands remain local and
 untracked.
 
+A later test-only timing comparison found a different per-work cost: at T2047
+the 128-ring candidate spent 1,012.1 ms in scaled-prefix work and 529.5 ms in
+the ordinary suffix. Thus the pair-lane shares above do not justify selecting
+the suffix as the next optimization target. See the [route-timing comparison](../route-timing/summary.md)
+for the nested timers and 128-versus-256 explanation.
+
 ## Preserved harness check
 
 An initial exact-name invocation omitted `--ignored`, so Rust's test harness
