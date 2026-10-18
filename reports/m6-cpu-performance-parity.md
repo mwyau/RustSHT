@@ -923,3 +923,21 @@ readings and broad CPU-frequency variation were recorded. No retries or
 replacement pairs ran. The cache patch remains isolated, and the tile-128
 kernel remains unaccepted pending its failed T511 control and complete
 regression matrix.
+
+### Scaled-prefix accumulator prototype
+
+The T2047 route sample identified scalar accumulation as the largest sampled
+prefix component. An isolated candidate now keeps the prefix sum in the
+recurrence's binary scale, rebases only when the lane exponent changes, and
+materializes once when entering the ordinary SIMD suffix. Unsafe factors,
+mantissas, rebases, and final values decline to the staged scaled fallback.
+The prototype adds no heap allocation or workspace storage. Its source hash,
+patch, safety behavior, and test results are recorded in the [prototype
+report](data/m6-legendre-redesign/route-timing/scaled-prefix-accumulator-prototype.md).
+
+Focused tests, all-features and serial workspace suites, formatting, and
+Clippy passed. No performance measurement has been collected for this source
+revision, so earlier tile-128 speedups do not apply to it. The prototype is
+not accepted and does not change production routing. A new validity-gated
+whole-transform screen must compare it with the previous tile-128 candidate
+and clean baseline before any regression matrix.

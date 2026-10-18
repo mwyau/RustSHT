@@ -1,0 +1,150 @@
+--- a/src/legendre/synthesis_fast.rs
++++ b/src/legendre/synthesis_fast.rs
+@@ -522,6 +522,10 @@
+             Ok(normal_range) => normal_range,
+             Err(_) => return None,
+         };
++        // Keep the prefix accumulator in the recurrence's scale. The fixed
++        // active tile bound makes this small per-call state safe on the stack.
++        let mut sum_exponents = [0_i64; ACTIVE_TILE_SIZE];
++        sum_exponents[..sin_theta.len()].copy_from_slice(&exponents[..sin_theta.len()]);
+         if normal_range
+             && lane_values_in_normal_range(previous)
+             && lane_values_in_normal_range(current)
+@@ -559,13 +563,29 @@
+                 if !factor.re.is_finite() || !factor.im.is_finite() {
+                     return None;
+                 }
+-                let contribution =
+-                    scalar::multiply_complex_scaled(factor, current[lane], exponents[lane]);
+-                if !contribution.re.is_finite() || !contribution.im.is_finite() {
++                let current_value = current[lane];
++                if !scalar_value_in_normal_range(current_value)
++                    || !scalar_value_in_normal_range(factor.re)
++                    || !scalar_value_in_normal_range(factor.im)
++                {
+                     return None;
+                 }
+-                let next_re = sum_re[lane] + contribution.re;
+-                let next_im = sum_im[lane] + contribution.im;
++                if sum_exponents[lane] != exponents[lane]
++                    && !rebase_accumulator_lane(
++                        &mut sum_re[lane],
++                        &mut sum_im[lane],
++                        &mut sum_exponents[lane],
++                        exponents[lane],
++                    )
++                {
++                    return None;
++                }
++                // The bounds above keep these products in the normal f64
++                // range. Unsafe lanes return to the scaled visitor.
++                let product_re = factor.re * current_value;
++                let product_im = factor.im * current_value;
++                let next_re = sum_re[lane] + product_re;
++                let next_im = sum_im[lane] + product_im;
+                 if !next_re.is_finite() || !next_im.is_finite() {
+                     return None;
+                 }
+@@ -606,6 +626,13 @@
+                 && lane_values_in_normal_range(previous)
+                 && lane_values_in_normal_range(current)
+             {
++                if !materialize_scaled_accumulator(
++                    sum_re,
++                    sum_im,
++                    &sum_exponents[..sin_theta.len()],
++                ) {
++                    return None;
++                }
+                 FusedScalarSuffix {
+                     m,
+                     lmax,
+@@ -666,6 +693,54 @@
+     values
+         .iter()
+         .all(|&value| scalar_value_in_normal_range(value))
++}
++
++#[inline]
++fn safe_rebased_accumulator(previous: f64, rebased: f64) -> bool {
++    rebased.is_finite() && (previous == 0.0 || rebased.is_normal())
++}
++
++#[inline]
++fn rebase_accumulator_lane(
++    sum_re: &mut f64,
++    sum_im: &mut f64,
++    sum_exponent: &mut i64,
++    target_exponent: i64,
++) -> bool {
++    let Some(scale) = sum_exponent.checked_sub(target_exponent) else {
++        return false;
++    };
++    let re = scalar::scale_binary(*sum_re, scale);
++    let im = scalar::scale_binary(*sum_im, scale);
++    if !safe_rebased_accumulator(*sum_re, re) || !safe_rebased_accumulator(*sum_im, im) {
++        return false;
++    }
++    *sum_re = re;
++    *sum_im = im;
++    *sum_exponent = target_exponent;
++    true
++}
++
++fn materialize_scaled_accumulator(
++    sum_re: &mut [f64],
++    sum_im: &mut [f64],
++    sum_exponents: &[i64],
++) -> bool {
++    debug_assert_eq!(sum_re.len(), sum_im.len());
++    debug_assert_eq!(sum_re.len(), sum_exponents.len());
++    for lane in 0..sum_re.len() {
++        let previous_re = sum_re[lane];
++        let previous_im = sum_im[lane];
++        let re = scalar::scale_binary(previous_re, sum_exponents[lane]);
++        let im = scalar::scale_binary(previous_im, sum_exponents[lane]);
++        if !safe_rebased_accumulator(previous_re, re) || !safe_rebased_accumulator(previous_im, im)
++        {
++            return false;
++        }
++        sum_re[lane] = re;
++        sum_im[lane] = im;
++    }
++    true
+ }
+ 
+ struct FusedScalarSuffix<'a> {
+@@ -951,6 +1026,32 @@
+         spectra: &'a mut [Complex64],
+     ) -> ScalarSynthesisFastScratch<'a, f64> {
+         owner.borrow(spectra)
++    }
++
++    #[test]
++    fn scaled_accumulator_rebases_exactly_and_rejects_unsafe_ranges() {
++        let mut sum_re = 0.75;
++        let mut sum_im = -0.625;
++        let mut sum_exponent = 800;
++        let expected_re = scalar::scale_binary(sum_re, sum_exponent);
++        let expected_im = scalar::scale_binary(sum_im, sum_exponent);
++        assert!(rebase_accumulator_lane(
++            &mut sum_re,
++            &mut sum_im,
++            &mut sum_exponent,
++            400
++        ));
++        assert_eq!(scalar::scale_binary(sum_re, sum_exponent), expected_re);
++        assert_eq!(scalar::scale_binary(sum_im, sum_exponent), expected_im);
++
++        let state_before_failure = (sum_re, sum_im, sum_exponent);
++        assert!(!rebase_accumulator_lane(
++            &mut sum_re,
++            &mut sum_im,
++            &mut sum_exponent,
++            -800
++        ));
++        assert_eq!((sum_re, sum_im, sum_exponent), state_before_failure);
+     }
+ 
+     #[test]
