@@ -757,3 +757,30 @@ compiling. The package extension remained the one-pair tile-128 artifact
 (`5eeff4…`); the unroll variant was not imported or benchmarked. Its complete
 source, patch, hashes, test result, and interrupted-build record are in
 [`the unroll-2 screen`](data/m6-legendre-redesign/unroll2-screen/status.md). This is preserved experimental work with no performance result.
+
+## Tile-128 candidate q1 comparison protocol v2
+
+The tile-128 candidate remains isolated. The prospective q1 process protocol
+uses a Linux CPU PSI `some avg10` rejection threshold of 2.00% for both
+preflight and postflight readings. Readings from 0.50% through 2.00% are
+warnings; their exact values and periodic host snapshots are recorded and
+reviewed for interference before another process starts. Clear interference
+still makes a process inconclusive. The per-process timing criteria are
+unchanged: population CV at most 5% and first-three/final-two median drift at
+most 5% for RustSHT, DUCC, and the SHTns adapter. The protocol fixes six
+alternating independent-process pairs per cell and forbids retries or sample
+removal. Its q1 expansion rule and host-interference triggers are recorded in
+[`protocol v2`](data/m6-legendre-redesign/paired-q1-128/protocol-v2.md). The CPU-pressure check failed the declared gate; exact transient readings remain local. It is not
+reclassified under v2. No v2 paired performance process has run at this
+checkpoint. The frozen T1023/T2047 q1 comparison uses clean baseline commit
+`91c2cb8ff1ce576bd6dfa6764fd7fb516a00295a` and candidate commit
+`739275d20987fec35506916cb682f961e8a7ffaf` plus the archived tile-128 patch. The baseline and candidate extension hashes are
+`69d3a2138e8012f331a94c8c09347433e526e5c8362c917cfefcb849c7177036` and
+`5eeff4dd2087238f18278928ad2af84437d21b7caa38eb360783f9b627cf8620`. The source hashes and identical GL f64 scalar workload are recorded in the
+protocol's provenance file. On the frozen candidate source, `cargo test --workspace --all-features`
+passed 216 tests with 15 ignored, and `cargo test --no-default-features`
+passed 177 with 8 ignored. The test logs, resource records, and candidate
+hashes are summarized in [`the numerical-validation record`](data/m6-legendre-redesign/numerical-validation/summary.md). These checks do not establish full-transform T1023/T2047 performance or
+candidate agreement with DUCC at those bandlimits. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The q1 cell results and
+remaining DUCC gaps will be added after processes pass the declared validity
+rules.

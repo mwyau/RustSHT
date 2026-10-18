@@ -1,0 +1,50 @@
+Frozen q1 clean-baseline comparison
+Started: 2026-10-18 UTC
+Working directory: <local-home-path>
+
+Harness
+  path: examples/python_perf_baseline.py
+  SHA-256: 72cd1986a220573c1a445bd6a6aa96b9df272a6bff1dc833843ee3f274c77739
+  argv template: L 0 1 GL 1 into synthesis all STANDARD 2*(L+1) L+1
+  config: scalar spin=0, GL, f64, STANDARD, synthesis_into, backend=all,
+          phi0=0.37, RAYON_NUM_THREADS=1, taskset CPU core, one harness warm-up
+          followed by five timed Rust/DUCC/SHTns calls per backend.
+  process order per cell: six alternating pairs; pair 1 baseline/candidate,
+          pair 2 candidate/baseline, continuing alternately.
+  bandlimits: T511 (512x1024), T1023 (1024x2048), T2047 (2048x4096). Frozen extensions
+  baseline package: <local-home-path>
+  baseline source HEAD: 91c2cb8ff1ce576bd6dfa6764fd7fb516a00295a
+  baseline source tree was clean at provenance check.
+  baseline extension SHA-256: 69d3a2138e8012f331a94c8c09347433e526e5c8362c917cfefcb849c7177036
+  candidate package: <local-home-path>
+  candidate source HEAD: 739275d20987fec35506916cb682f961e8a7ffaf
+  candidate source has pre-existing experimental changes in src/legendre/mod.rs,
+  src/transform.rs, src/workspace.rs, plus untracked src/legendre/synthesis_fast.rs.
+  candidate patch SHA-256 (archived): bd5ce130e0b619f87660eaa80d04e004605fcabc35e6769d3ca18051d0f0b2c7
+  candidate extension SHA-256: 5eeff4dd2087238f18278928ad2af84437d21b7caa38eb360783f9b627cf8620
+  candidate new source file SHA-256 at initial check:
+    src/legendre/synthesis_fast.rs 0c0ee956205f782626e6ab0ffc6914cfa9f0d1e20caf5075111a53a9c9449b25
+
+References
+  DUCC package: 0.42.0; source revision 80388904b8cfc32400ba84af8a6a45aabfe60f86
+  DUCC extension: target/m6-references/ducc-build/ducc0.cpython-311-x86_64-linux-gnu.so
+  DUCC extension SHA-256: 1218502fa03116cd14578fe73f716f5a1d88db74d296359cc9e8c27e04047d1e
+  SHTns source revision: 4e69ceb3fc5f19475d55b03ff0fdec210dc3075e
+  SHTns library SHA-256: 641195ac574ba02078f3238b357caecf0e268b3f4ef7eba1d87898197fcc888f
+  SHTns runtime library: target/m6-references/shtns-build/libshtns_omp.so
+
+Host and tools
+  CPU: x86-64 one CPU core-Core Processor; x86_64; host CPU topology omitted;
+       visible/online 32 pinned CPU cores; x86_64 flags include AVX2 and FMA.
+  cgroup 32 pinned CPU cores; cpu.max: max 100000 (unlimited quota).
+  rustc: 1.99.0 (b940084d7 2026-09-28), LLVM 23.1.1
+  cargo: 1.99.0 (5f94df478 2026-08-27)
+  Python: 3.11.15; uv 0.12.23
+  Python executable: <local-home-path>
+CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
+  nr_throttled=0 and throttled_usec=0. No compiler/benchmark process was seen. Per-process gate
+  Before and after every process: require CPU PSI some avg10 <=0.50 and no
+  competing compiler/benchmark process. Preserve refusal or failed runs; do not
+  retry or delete samples. For each of synthesis_rust_plan, synthesis_ducc and
+  synthesis_shtns_adapter raw five-call series, require population CV <=5% and
+  absolute first-three vs final-two median drift / whole-series median <=5%. Stop on any gate failure. No q8 runs and no build are part of this task.
