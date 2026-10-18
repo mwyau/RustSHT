@@ -535,45 +535,8 @@ fn synthesize_batch<S: Simd>(
         return false;
     }
 
-    // DUCC advances one SIMD group through all degrees before moving to the
-    // next group. Keeping this loop outside the recurrence keeps the live
-    // basis and accumulation state bounded to one vector.
-    for start in (0..active_count).step_by(simd_lanes) {
-        let end = start + simd_lanes;
-        if !synthesize_vector(
-            simd,
-            scratch,
-            m,
-            lmax,
-            pair_count,
-            sectoral_norm,
-            power_lower_limit,
-            start,
-            end,
-        ) {
-            return false;
-        }
-    }
-    true
-}
-
-#[expect(
-    clippy::too_many_arguments,
-    reason = "One active ring vector shares a prepared order and bounded workspace state."
-)]
-fn synthesize_vector<S: Simd>(
-    simd: S,
-    scratch: &mut ScalarOrderedScratch<'_, f64>,
-    m: usize,
-    lmax: usize,
-    pair_count: usize,
-    sectoral_norm: f64,
-    power_lower_limit: f64,
-    start: usize,
-    end: usize,
-) -> bool {
-    let packed_sin = &scratch.packed_sin[start..end];
-    let packed_csq = &scratch.packed_csq[start..end];
+    let packed_sin = &scratch.packed_sin[..active_count];
+    let packed_csq = &scratch.packed_csq[..active_count];
     let coefficient_a = &scratch.coefficient_a[..];
     let coefficient_b = &scratch.coefficient_b[..];
     let coefficient_even = &scratch.coefficient_even[..];
@@ -582,169 +545,115 @@ fn synthesize_vector<S: Simd>(
     if !initialize_sectoral_batch(
         simd,
         packed_sin,
-        &mut scratch.current[start..end],
-        &mut scratch.scale[start..end],
+        &mut scratch.current[..active_count],
+        &mut scratch.scale[..active_count],
         m,
         power_lower_limit,
         sign * sectoral_norm,
     ) {
         return false;
     }
-    scratch.previous[start..end].fill(0.0);
-    scratch.sum_even_re[start..end].fill(0.0);
-    scratch.sum_even_im[start..end].fill(0.0);
-    scratch.sum_odd_re[start..end].fill(0.0);
-    scratch.sum_odd_im[start..end].fill(0.0);
+    scratch.previous[..active_count].fill(0.0);
+    scratch.sum_even_re[..active_count].fill(0.0);
+    scratch.sum_even_im[..active_count].fill(0.0);
+    scratch.sum_odd_re[..active_count].fill(0.0);
+    scratch.sum_odd_im[..active_count].fill(0.0);
 
-    let mut previous = &mut scratch.previous[start..end];
-    let mut current = &mut scratch.current[start..end];
-    let Some((mut degree, mut pair, skip_remainder)) = iter_to_ieee(
-        simd,
-        m,
-        lmax,
-        packed_csq,
-        coefficient_a,
-        coefficient_b,
-        &mut previous,
-        &mut current,
-        &mut scratch.scale[start..end],
-    ) else {
-        return false;
-    };
-    if skip_remainder || degree > lmax {
-        return true;
-    }
-
-    set_correction_factors(
-        simd,
-        &scratch.scale[start..end],
-        &mut scratch.corfac[start..end],
-    );
-    let mut full_ieee = all_scale_nonnegative(simd, &scratch.scale[start..end]);
-    while !full_ieee && degree <= lmax && pair < pair_count {
-        scaled_pair_step(
+    // DUCC advances all vector groups in an active ring batch with one shared
+    // degree index. This also reuses each degree's coefficients across every
+    // SIMD group and avoids restarting the insignificant prefix per vector.
+    let (degree, pair, full_ieee) = {
+        let mut previous = &mut scratch.previous[..active_count];
+        let mut current = &mut scratch.current[..active_count];
+        let Some((mut degree, mut pair, skip_remainder)) = iter_to_ieee(
             simd,
-            &scratch.corfac[start..end],
+            m,
+            lmax,
             packed_csq,
-            coefficient_a[pair],
-            coefficient_b[pair],
-            coefficient_even[pair],
-            coefficient_odd[pair],
-            previous,
-            current,
-            &mut scratch.sum_even_re[start..end],
-            &mut scratch.sum_even_im[start..end],
-            &mut scratch.sum_odd_re[start..end],
-            &mut scratch.sum_odd_im[start..end],
-        );
-        degree += 2;
-        pair += 1;
-        let Some(rescaled) = rescale_batch(
-            simd,
-            &mut previous[..],
-            &mut current[..],
-            &mut scratch.scale[start..end],
+            coefficient_a,
+            coefficient_b,
+            &mut previous,
+            &mut current,
+            &mut scratch.scale[..active_count],
         ) else {
             return false;
         };
-        if rescaled {
-            set_correction_factors(
+        if skip_remainder || degree > lmax {
+            return true;
+        }
+
+        set_correction_factors(
+            simd,
+            &scratch.scale[..active_count],
+            &mut scratch.corfac[..active_count],
+        );
+        let mut full_ieee = all_scale_nonnegative(simd, &scratch.scale[..active_count]);
+        while !full_ieee && degree <= lmax && pair < pair_count {
+            scaled_pair_step(
                 simd,
-                &scratch.scale[start..end],
-                &mut scratch.corfac[start..end],
+                &scratch.corfac[..active_count],
+                packed_csq,
+                coefficient_a[pair],
+                coefficient_b[pair],
+                coefficient_even[pair],
+                coefficient_odd[pair],
+                &mut previous[..],
+                &mut current[..],
+                &mut scratch.sum_even_re[..active_count],
+                &mut scratch.sum_even_im[..active_count],
+                &mut scratch.sum_odd_re[..active_count],
+                &mut scratch.sum_odd_im[..active_count],
+            );
+            degree += 2;
+            pair += 1;
+            let Some(rescaled) = rescale_batch(
+                simd,
+                &mut previous[..],
+                &mut current[..],
+                &mut scratch.scale[..active_count],
+            ) else {
+                return false;
+            };
+            if rescaled {
+                set_correction_factors(
+                    simd,
+                    &scratch.scale[..active_count],
+                    &mut scratch.corfac[..active_count],
+                );
+            }
+            full_ieee = all_scale_nonnegative(simd, &scratch.scale[..active_count]);
+        }
+
+        if degree <= lmax && pair < pair_count && full_ieee {
+            apply_correction_and_clear_scale(
+                simd,
+                &mut previous[..],
+                &mut current[..],
+                &scratch.corfac[..active_count],
+                &mut scratch.scale[..active_count],
             );
         }
-        full_ieee = all_scale_nonnegative(simd, &scratch.scale[start..end]);
-    }
+        (degree, pair, full_ieee)
+    };
 
     if degree <= lmax && pair < pair_count && full_ieee {
-        apply_correction_and_clear_scale(
-            simd,
-            &mut previous[..],
-            &mut current[..],
-            &scratch.corfac[start..end],
-            &mut scratch.scale[start..end],
-        );
-
-        let Some(mut previous_vector) = load_simd_vector::<S>(&previous[..]) else {
-            return false;
-        };
-        let Some(mut current_vector) = load_simd_vector::<S>(&current[..]) else {
-            return false;
-        };
-        let Some(csq_vector) = load_simd_vector::<S>(packed_csq) else {
-            return false;
-        };
-        let Some(mut sum_even_re_vector) = load_simd_vector::<S>(&scratch.sum_even_re[start..end])
-        else {
-            return false;
-        };
-        let Some(mut sum_even_im_vector) = load_simd_vector::<S>(&scratch.sum_even_im[start..end])
-        else {
-            return false;
-        };
-        let Some(mut sum_odd_re_vector) = load_simd_vector::<S>(&scratch.sum_odd_re[start..end])
-        else {
-            return false;
-        };
-        let Some(mut sum_odd_im_vector) = load_simd_vector::<S>(&scratch.sum_odd_im[start..end])
-        else {
-            return false;
-        };
-
-        // The ordinary suffix handles most degrees. Keep this one-vector
-        // recurrence and its four accumulators in SIMD values between pairs;
-        // the scaled prefix continues to use checked workspace slices.
-        while pair + 1 < pair_count {
-            ordinary_two_pair_step(
+        for start in (0..active_count).step_by(simd_lanes) {
+            if !synthesize_ordinary_suffix_vector(
                 simd,
-                csq_vector,
-                coefficient_a[pair],
-                coefficient_b[pair],
-                coefficient_a[pair + 1],
-                coefficient_b[pair + 1],
-                coefficient_even[pair],
-                coefficient_odd[pair],
-                coefficient_even[pair + 1],
-                coefficient_odd[pair + 1],
-                &mut previous_vector,
-                &mut current_vector,
-                &mut sum_even_re_vector,
-                &mut sum_even_im_vector,
-                &mut sum_odd_re_vector,
-                &mut sum_odd_im_vector,
-            );
-            pair += 2;
-        }
-        if pair < pair_count {
-            ordinary_one_pair_step(
-                simd,
-                csq_vector,
-                coefficient_a[pair],
-                coefficient_b[pair],
-                coefficient_even[pair],
-                coefficient_odd[pair],
-                &mut previous_vector,
-                &mut current_vector,
-                &mut sum_even_re_vector,
-                &mut sum_even_im_vector,
-                &mut sum_odd_re_vector,
-                &mut sum_odd_im_vector,
-            );
-        }
-
-        if !store_simd_vector::<S>(&mut previous[..], previous_vector)
-            || !store_simd_vector::<S>(&mut current[..], current_vector)
-            || !store_simd_vector::<S>(&mut scratch.sum_even_re[start..end], sum_even_re_vector)
-            || !store_simd_vector::<S>(&mut scratch.sum_even_im[start..end], sum_even_im_vector)
-            || !store_simd_vector::<S>(&mut scratch.sum_odd_re[start..end], sum_odd_re_vector)
-            || !store_simd_vector::<S>(&mut scratch.sum_odd_im[start..end], sum_odd_im_vector)
-        {
-            return false;
+                scratch,
+                lmax,
+                pair_count,
+                degree,
+                pair,
+                start,
+                start + simd_lanes,
+            ) {
+                return false;
+            }
         }
     }
 
-    for lane in start..end {
+    for lane in 0..active_count {
         if !scratch.sum_even_re[lane].is_finite()
             || !scratch.sum_even_im[lane].is_finite()
             || !scratch.sum_odd_re[lane].is_finite()
@@ -756,6 +665,100 @@ fn synthesize_vector<S: Simd>(
         }
     }
     true
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The ordinary DUCC suffix keeps one packed SIMD recurrence state in registers."
+)]
+fn synthesize_ordinary_suffix_vector<S: Simd>(
+    simd: S,
+    scratch: &mut ScalarOrderedScratch<'_, f64>,
+    lmax: usize,
+    pair_count: usize,
+    degree: usize,
+    mut pair: usize,
+    start: usize,
+    end: usize,
+) -> bool {
+    if degree > lmax || pair >= pair_count {
+        return true;
+    }
+    let packed_csq = &scratch.packed_csq[start..end];
+    let coefficient_a = &scratch.coefficient_a[..];
+    let coefficient_b = &scratch.coefficient_b[..];
+    let coefficient_even = &scratch.coefficient_even[..];
+    let coefficient_odd = &scratch.coefficient_odd[..];
+    let Some(csq_vector) = load_simd_vector::<S>(packed_csq) else {
+        return false;
+    };
+    let Some(mut previous_vector) = load_simd_vector::<S>(&scratch.previous[start..end]) else {
+        return false;
+    };
+    let Some(mut current_vector) = load_simd_vector::<S>(&scratch.current[start..end]) else {
+        return false;
+    };
+    let Some(mut sum_even_re_vector) = load_simd_vector::<S>(&scratch.sum_even_re[start..end])
+    else {
+        return false;
+    };
+    let Some(mut sum_even_im_vector) = load_simd_vector::<S>(&scratch.sum_even_im[start..end])
+    else {
+        return false;
+    };
+    let Some(mut sum_odd_re_vector) = load_simd_vector::<S>(&scratch.sum_odd_re[start..end]) else {
+        return false;
+    };
+    let Some(mut sum_odd_im_vector) = load_simd_vector::<S>(&scratch.sum_odd_im[start..end]) else {
+        return false;
+    };
+
+    // Keep the ordinary suffix's four accumulators and recurrence values in
+    // registers after the batch-wide scaled prefix reaches ordinary range.
+    while pair + 1 < pair_count {
+        ordinary_two_pair_step(
+            simd,
+            csq_vector,
+            coefficient_a[pair],
+            coefficient_b[pair],
+            coefficient_a[pair + 1],
+            coefficient_b[pair + 1],
+            coefficient_even[pair],
+            coefficient_odd[pair],
+            coefficient_even[pair + 1],
+            coefficient_odd[pair + 1],
+            &mut previous_vector,
+            &mut current_vector,
+            &mut sum_even_re_vector,
+            &mut sum_even_im_vector,
+            &mut sum_odd_re_vector,
+            &mut sum_odd_im_vector,
+        );
+        pair += 2;
+    }
+    if pair < pair_count {
+        ordinary_one_pair_step(
+            simd,
+            csq_vector,
+            coefficient_a[pair],
+            coefficient_b[pair],
+            coefficient_even[pair],
+            coefficient_odd[pair],
+            &mut previous_vector,
+            &mut current_vector,
+            &mut sum_even_re_vector,
+            &mut sum_even_im_vector,
+            &mut sum_odd_re_vector,
+            &mut sum_odd_im_vector,
+        );
+    }
+
+    store_simd_vector::<S>(&mut scratch.previous[start..end], previous_vector)
+        && store_simd_vector::<S>(&mut scratch.current[start..end], current_vector)
+        && store_simd_vector::<S>(&mut scratch.sum_even_re[start..end], sum_even_re_vector)
+        && store_simd_vector::<S>(&mut scratch.sum_even_im[start..end], sum_even_im_vector)
+        && store_simd_vector::<S>(&mut scratch.sum_odd_re[start..end], sum_odd_re_vector)
+        && store_simd_vector::<S>(&mut scratch.sum_odd_im[start..end], sum_odd_im_vector)
 }
 
 fn power_lower_limit(exponent: usize) -> f64 {
