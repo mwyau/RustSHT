@@ -784,3 +784,28 @@ hashes are summarized in [`the numerical-validation record`](data/m6-legendre-re
 candidate agreement with DUCC at those bandlimits. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The q1 cell results and
 remaining DUCC gaps will be added after processes pass the declared validity
 rules.
+
+### First v2 T1023 process: baseline stability failure
+
+The first v2 process ran the frozen clean-baseline extension. The CPU-pressure check failed the declared gate; exact transient readings remain local. The final periodic snapshot read 0.72%. The process was
+pinned to one CPU core, no competing build or benchmark appeared, and snapshots
+showed no sustained external load on one CPU core. RustSHT's five synthesis samples
+had median 293.677 ms, CV 0.3250%, and drift 0.0627%. SHTns passed its timing
+stability checks. DUCC's samples were 49.831, 49.399, 48.647, 46.737, and
+47.190 ms; CV was 2.5034%, while first-three/final-two median drift was
+5.0065%, exceeding the fixed 5% limit by 0.0065 percentage points. Numerical
+checks passed (RustSHT/DUCC relative L2 `1.182e-13`; SHTns/DUCC
+`8.764e-14`). Runner status 24 stopped the cell. This process gives no valid
+RustSHT/DUCC performance ratio. No candidate or T2047 process ran, and the failed series was not retried or
+filtered. The T1023 comparison remains incomplete under the predeclared
+protocol; the PSI warning did not cause the stop. Full raw samples, timing
+stability output, snapshots, frequency and placement readings, context
+switches, and memory use are in
+[`the first v2 process record`](data/m6-legendre-redesign/paired-q1-128/summary.md). The latest valid internal route timing remains the T2047 tile-128 diagnostic:
+scaled-prefix time was 1,012 ms and ordinary-suffix time was 529 ms, nested
+within 1,651 ms of tile-route time. This identifies the scaled prefix as the
+largest measured route cost in that candidate diagnostic. It does not
+establish a clean-baseline speedup, and no further kernel change follows from
+the invalid paired cell. The source-specific historical T1023/T2047 baseline
+gaps remain the comparison context; they have not been revalidated by this
+stopped run.

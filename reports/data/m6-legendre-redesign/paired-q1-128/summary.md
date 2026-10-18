@@ -31,3 +31,25 @@ gate and is not reclassified. No v2 performance process had started when this
 summary was updated. The next measurements are the six alternating T1023 q1
 pairs, followed by T2047 q1 only if all T1023 processes pass the declared
 validity rules and their snapshots show no unresolved interference.
+
+## First v2 T1023 process: stopped at baseline
+
+The first T1023 q1 process used the frozen clean-baseline extension. CPU-pressure warnings were reviewed under the declared protocol; exact transient readings remain local. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. Snapshots showed the benchmark
+thread pinned to one CPU core, no competing build or benchmark, and no sustained
+external CPU load on one CPU core. Concurrent process-placement details were retained only in local diagnostics. CPU-frequency telemetry was retained only in local diagnostics. The
+process recorded involuntary context-switch detail omitted, 276,132 kB peak RSS, and
+18.78 s elapsed time. Exact snapshots and GNU time output are in the
+`T1023-p01-baseline.*` evidence files. RustSHT synthesis measured 295.985, 293.720, 293.657, 293.395, and
+293.677 ms (median 293.677 ms, CV 0.3250%, drift 0.0627%). DUCC measured
+49.831, 49.399, 48.647, 46.737, and 47.190 ms (median 48.647 ms, CV
+2.5034%, drift 5.0065%). The DUCC drift exceeds the fixed 5% limit by
+0.0065 percentage points. SHTns measured 35.002, 34.627, 34.781, 34.673,
+and 35.392 ms (median 34.781 ms, CV 0.8030%, drift 0.7231%). The RustSHT
+and SHTns timing series passed; the DUCC series failed. The runner stopped
+with status 24. Numerical comparisons passed for this baseline process:
+RustSHT versus DUCC relative L2 error was `1.182e-13`, and SHTns versus DUCC
+was `8.764e-14`. No candidate process or T2047 process was launched. No samples were removed
+and no process was retried. Because the baseline DUCC series failed the
+predeclared stability rule, this process yields no paired timing ratio and
+does not establish the T1023 performance result. The q1 cell stopped as
+specified by protocol v2. All raw measurements remain diagnostic evidence.

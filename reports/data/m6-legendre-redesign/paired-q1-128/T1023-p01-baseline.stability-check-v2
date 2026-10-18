@@ -1,0 +1,5 @@
+synthesis_rust_plan: samples_ms=295.985,293.720,293.657,293.395,293.677 median_ms=293.677 cv_pct=0.3250 first3_median_ms=293.720 final2_median_ms=293.536 drift_pct=0.0627 status=PASS
+synthesis_ducc: samples_ms=49.831,49.399,48.647,46.737,47.190 median_ms=48.647 cv_pct=2.5034 first3_median_ms=49.399 final2_median_ms=46.963 drift_pct=5.0065 status=FAIL
+synthesis_shtns_adapter: samples_ms=35.002,34.627,34.781,34.673,35.392 median_ms=34.781 cv_pct=0.8030 first3_median_ms=34.781 final2_median_ms=35.032 drift_pct=0.7231 status=PASS
+overall=FAIL
+failure=synthesis_ducc failed stability: CV=2.503% drift=5.006%
