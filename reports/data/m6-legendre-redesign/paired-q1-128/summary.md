@@ -318,3 +318,26 @@ interpolation gives `0.674353–0.685599`. T1023 meets the high-resolution
 component of the q1 criterion. The overall high-resolution gate and candidate
 acceptance remain open until T2047 q1 and T511 controls are measured. The next
 process is T2047 pair 01 baseline.
+
+### T2047 q1 pair 01: baseline valid, candidate mate pending
+
+The first T2047 pair followed the fixed baseline-then-candidate order. All
+three baseline timing series and its numerical comparison against DUCC passed.
+
+| Backend | Samples (ms) | Median (ms) | CV | Drift |
+| --- | --- | ---: | ---: | ---: |
+| RustSHT | 3,343.972, 3,333.515, 3,411.343, 3,344.738, 3,357.054 | 3,344.738 | 0.8229% | 0.2070% |
+| DUCC | 370.783, 372.902, 380.217, 370.120, 373.924 | 372.902 | 0.9608% | 0.2360% |
+| SHTns | 273.191, 270.804, 266.204, 275.300, 266.790 | 270.804 | 1.3081% | 0.0890% |
+
+RustSHT-versus-DUCC relative L2 error was `3.015e-13`; SHTns-versus-DUCC
+was `8.764e-14`. The baseline was 8.97x DUCC and 12.35x SHTns in this
+process. Whole-process elapsed time was 1:26.66, peak RSS was 955,568 kB,
+and Context-switch diagnostics were reviewed locally; exact counts remain untracked. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core
+affinity. Process and thread snapshots showed no competing build or benchmark
+or sustained external CPU load on that core. The cgroup had no CPU quota and
+recorded no throttling.
+
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The two readings above 0.50% are warnings, not rejections.
+Raw diagnostics remain local and untracked. The next process is the pair 01
+candidate mate.
