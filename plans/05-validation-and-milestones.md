@@ -2461,6 +2461,44 @@ unstable control; that matrix was not restarted or combined with this screen.
 Full samples, medians, RSS values, and limitations are in the
 [performance summary](../PERFORMANCE_STATUS.md).
 
+### SIMD accumulation in the scaled scalar prefix (M4, 2026-10-18)
+
+Commit `9559f4a8` vectorizes paired-coefficient factor formation and complex
+prefix accumulation across contiguous ordinary lanes in
+`src/legendre/synthesis_fast.rs`. Per-lane recurrence normalization, exponent
+tracking, and accumulator rebasing remain scalar. The SIMD factor and sum
+guards retain checked fallback behavior; a declined or unsafe tile is
+recomputed by the scaled visitor before any tile output is scattered. Scalar
+tails use the same range and finiteness checks.
+
+The focused fast-route tests pass with all features and with default features
+disabled. The T255 reduced-order analytic test passes with odd and even
+longitude counts and nonzero `phi0`. The ignored release high-bandlimit scalar
+test passes at T511, T1023, and T2047 on GL, CC, and F1 against `ducc0==0.41.0`
+(source revision `c1ed01b8fda69d2a378190f0915f1a19762dddbf`) and closed-form
+fields, including analysis recovery, with all features and with default
+features disabled.
+
+Validation passed on the final source: formatting; all-target/all-feature
+Clippy with warnings denied; `cargo test --workspace --all-features` (204
+unit, 4 extreme-FFT, 11 f32, and 1 workspace-compatibility tests passed; 14
+unit and 1 f32 test ignored); and `cargo test -p rustsht --no-default-features`
+(165 unit, 4 extreme-FFT, 11 f32, and 1 workspace-compatibility tests passed;
+7 unit and 1 f32 test ignored). Python tests were not rerun because the change
+is limited to the Rust numerical core.
+
+A one-process-per-source release screen compared `d67d408d` with `9559f4a8`
+at T255, T720, and T1279, using five timed samples after one warm-up at q1/q8.
+All cases were f64 scalar GL synthesis at full `mmax` and used the same
+AMD Ryzen 9 5950X, x86_64 AVX2/FMA host, Rust 1.99.0, Pulp 0.22.3, Rayon
+1.12.0, and RustFFT 6.4.1. Median changes ranged from 0.4% to 6.8% lower;
+T1279 had the clearest reductions. Peak RSS differed by at most 1.5%. T255
+samples varied and the T720 q8 difference was within sample variation. No
+host-pressure protocol ran, so there is no gate or interference assessment.
+This is a local directional screen, not a DUCC comparison or performance
+acceptance. The [performance summary](../PERFORMANCE_STATUS.md) records the
+workload medians, RSS, and limitations.
+
 ## Benchmark artifact hygiene
 
 Keep raw host and process captures, build/test logs, GNU-time output, and local
