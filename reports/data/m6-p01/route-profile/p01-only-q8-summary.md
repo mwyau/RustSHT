@@ -29,5 +29,4 @@ raw per-worker log retains the counts. Instrumentation changed measured wall tim
 T2047. The profile is a single diagnostic run at each size, not a paired
 performance acceptance benchmark. It does not isolate the T511 spin-1
 default-link slowdown or satisfy P01's full control matrix. P01 remains
-unaccepted. Raw logs, process/PSI snapshots, elapsed/RSS records, source and
-binary hashes, and build provenance are retained beside this summary.
+unaccepted. Structured route results, timing and peak-RSS summaries, source and binary hashes, and build provenance are retained beside this summary. Raw host and process captures remain local and untracked.

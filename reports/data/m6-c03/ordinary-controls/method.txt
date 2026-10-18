@@ -6,7 +6,7 @@ ntheta=512, nphi=1024, phi0=0.37, both operations, one Rayon thread pinned to
 one CPU core. Each process includes a warm-up followed by five retained samples per
 operation; the harness reports their median. Six fresh-process pairs per case
 alternate baseline-first and candidate-first order. /usr/bin/time records
-elapsed wall time and peak RSS. Raw stdout, .time files, and a process/load/CPU
+elapsed wall time and peak RSS. Raw stdout, GNU-time output and host/process
 pressure preflight snapshot before every process are retained. All samples are
 kept; the summarizer uses per-pair candidate/baseline ratios and a deterministic
 20,000-resample percentile bootstrap for the median. These controls estimate the ordinary-path effect of C03 relative to C02-only;

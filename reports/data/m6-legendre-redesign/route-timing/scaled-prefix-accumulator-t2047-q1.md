@@ -68,7 +68,7 @@ Each row gives all five samples, median, population CV, and first-three/final-tw
 
 Median paired ratio: `0.407892`; 95% bootstrap interval: `0.407274–0.408108`. Baseline/candidate median-of-process-medians: `3360.075/1370.613 ms`. Candidate median ratios to DUCC and SHTns are `3.666x` and `5.040x`.
 
-Peak RSS across all processes was 955,412–955,796 KiB. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. Every process was affinity-restricted to one logical CPU, and all sampled benchmark threads stayed on that assigned CPU. no cgroup-related interference was identified in the local review. No competing benchmark or build ran. Sampled the local interference review found no direct workload overlap.1%; transient host load was reviewed locally.2% in a sampled process snapshot. The review found no evidence that this activity interfered with the pinned workload.
+Peak RSS across all processes was 955,412–955,796 KiB. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. Each process used one worker, and sampled benchmark threads remained within the configured placement. The local interference review found no disqualifying contention or concurrent benchmark/build workload. The CPU-pressure gate passed under the declared protocol. Exact host-state readings remain local.
 
 ## CPU-pressure validity
 

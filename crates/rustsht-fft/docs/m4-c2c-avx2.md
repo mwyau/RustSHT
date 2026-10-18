@@ -224,7 +224,7 @@ the batch API. The host also ran the Legendre workload, so timings remain
 provisional. The table gives the median of six per-process medians in microseconds. The gain
 is the median of the six paired process ratios `(baseline / specialized) - 1`;
 the pair count shows how many individual pairs favored the specialized build. Consequently the gain need not equal the ratio of the two displayed medians. All checksums matched between revisions for every direction, length, and call
-count. Raw process samples, including R2C and C2R timings, are in
+count. Structured timing samples, including R2C and C2R results, are in
 [`m4-c2c-direction-specialization-process-samples.csv`](../benches/results/m4-c2c-direction-specialization-process-samples.csv).
 
 | n | Forward, one call: baseline → specialized (gain; favored pairs) | Forward, sequential 32 | Inverse, one call | Inverse, sequential 32 |

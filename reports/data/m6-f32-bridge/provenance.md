@@ -22,9 +22,12 @@ synthesis and analysis; q1 and q8. Each grid has `ntheta=T+1`,
 `nphi=2*(T+1)` and `phi0=0.37`. q1 was pinned to one CPU core and q8 to 8 pinned CPU cores. The Rust process compared native f32, per-call widening to f64 plus f64
 transform and output downcast, and native f64 on the same f32-rounded inputs. Each cell used one warmup and five alternating within-process samples per
 variant. DUCC f32 and f64 used separate q-specific processes, each with one
-warmup and five timed calls. Process preflights, CPU pressure, elapsed time,
-RSS and raw samples are retained under `raw/`. The bridge included allocation of f64 inputs and outputs in its timed region. The Rust process kept all three variants' plans, workspaces and output buffers
-alive for comparison. GNU time RSS is therefore process-wide and cannot be
+warmup and five timed calls. Structured per-cell timing samples, numerical
+errors and aggregate peak RSS are retained in the benchmark data. Raw
+preflight, process, host and GNU-time captures remain local and untracked. The
+bridge included allocation of f64 inputs and outputs in its timed region. The
+Rust process kept all three variants' plans, workspaces and output buffers
+alive for comparison. The reported peak RSS is process-wide and cannot be
 interpreted as bridge-only memory. The reported per-call temporary-array size
 is computed from the f64 input/output payload sizes.
 
@@ -42,10 +45,10 @@ binary reproduced the recorded ELF hash exactly. The source-linked T127 spin-1 q
 then completed with exit status zero for every cell, no refused runs, and the
 same ELF hash in all 24 preflights. Fresh DUCC f32/f64 full-array comparisons
 used `ducc0` 0.41.0 at the pinned source revision. The current timings,
-comparisons, build output, binary hash, matrix status, and per-cell records are
-in [`replay-source-linked/`](replay-source-linked/). The initial-screen raw
-files remain in `raw/`; its q1 DUCC medians differ in some cells from the
-source-linked rerun, so the two timing tables are kept separate. The first smoke attempt has no recorded ELF hash and failed with
+comparisons, binary hash, matrix status, and per-cell sample records are
+in [`replay-source-linked/`](replay-source-linked/). The initial and replay
+measurements remain separate because their q1 DUCC medians differ in some
+cells. The first smoke attempt has no recorded ELF hash and failed with
 `NonRealMZero { degree: 1 }`. A separate post-screen replay using ELF hash
 `aaf5808ed463632ac0926360265b3411f557eb2f8226f49510245a42c3bb54b6` failed
 with the same error. Both are retained and excluded. The source-linked build

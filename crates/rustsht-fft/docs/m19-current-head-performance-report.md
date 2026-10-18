@@ -14,7 +14,7 @@ a portable target and runtime AVX2 dispatch. RustFFT was 6.4.1. DUCC was pinned
 to `c1ed01b8fda69d2a378190f0915f1a19762dddbf`; the native build used g++ 15.2,
 `-O3 -DNDEBUG -march=native`, and DUCC planner vectorization. These measurements are diagnostic. A separate RustSHT SHT benchmark ran on
 8 pinned CPU cores during both captures. The FFT processes stayed pinned to one CPU core, and
-the collectors recorded load averages, but the shared host does not establish
+the captures overlapped other workloads, so the shared host does not establish
 quiet-host timing. The M18 RustFFT matrix remains the primary RustFFT baseline
 because it measured the same source and binary with tighter paired intervals. The M19 RustFFT run is a current-head repeat; the M19 native DUCC results are
 provisional. CPU-frequency telemetry was retained only in local diagnostics. The policy was not captured inside each process
@@ -159,7 +159,7 @@ outside the Rader safety bound. N=4,097 has a 484-point fallback convolution. Th
   and [Admiral raw output](../benches/results/m19-current-head-cross-library/m19-admiral-six-pairs.jsonl)
   and [summary](../benches/results/m19-current-head-cross-library/m19-admiral-summary.csv).
 - Per-reference [M19 configurations](../benches/results/m19-current-head-cross-library/)
-  record commands, binary hashes, affinity, toolchain and workload. The portable DUCC, FFTW and Admiral configurations and raw process records are
+  record reproducible command templates, binary hashes, worker counts, toolchain and workload. The portable DUCC, FFTW and Admiral configurations and structured timing results are
 retained alongside the summaries. No source changes or optimization
 acceptance are based on this baseline.
 

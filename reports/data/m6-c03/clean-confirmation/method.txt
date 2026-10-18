@@ -1,17 +1,3 @@
-C03 clean confirmation, no compilation. It compares the retained C02+C03
-release benchmark binary with the retained C02-only binary at T511, spin 1,
-GL STANDARD f64, full mmax=511, 512x1024, phi0=0.37, both operations,
-requested-only and one Rayon thread pinned to one CPU core. Six fresh-process pairs
-alternate baseline-first and candidate-first order. Each process warms once and
-retains the harness's five samples per operation; all samples and /usr/bin/time
-elapsed/RSS records are kept. Preflight records process list, load and CPU PSI
-before every process and refuses high-CPU/build/benchmark activity. Ratios are
-paired candidate/baseline medians with a deterministic 20,000-resample
-CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
-13 seconds apart, avg60 falling from 0.03% to 0.02%, and no competing compute
-process. This confirms the host was quiet before the screen; the per-process
-preflight log records pressure during it. This confirmation does not alter the
-earlier C03 result or decide acceptance by itself. The initial runner invocation refused before starting a benchmark because it
-mistook its own Bash process for a competing CPU task. That preflight and its
-false positive are retained in the log. The runner now captures its PID before
-the process-list substitution; all 12 benchmark processes passed preflight.
+C03 clean confirmation; no compilation was performed. The comparison uses the retained C02+C03 release benchmark binary and the retained C02-only binary at T511, spin 1, GL STANDARD f64, full mmax=511, 512x1024, phi0=0.37, both operations, requested-only mode, and one Rayon thread. Six fresh-process pairs alternate baseline-first and candidate-first order. Each process warms once and retains five samples per operation. The preflight checks CPU-pressure validity and competing build or benchmark work; exact transient host and process records remain local and untracked. The summary reports paired candidate/baseline medians and a deterministic 20,000-resample interval.
+
+The first runner invocation was refused because its process check matched the active shell. After correcting the check, all 12 benchmark processes passed preflight. The CPU-pressure gate passed, and local interference review found no competing compute workload. This confirmation does not alter the earlier C03 result or decide acceptance.

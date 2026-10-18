@@ -69,11 +69,11 @@ longitude row counts (`T+1` and `2(T+1)`).
 
 The 50-length screen ran one process per unique length with one row, seven
 warmed samples, and both directions. It recorded plan construction, workspace
-construction and bytes, execution time, checksums, affinity and host load. Load-average telemetry was retained only in local diagnostics. These timings are diagnostic route evidence,
+construction and bytes, execution time, checksums, and worker count. Host-pressure telemetry remains local. These timings are diagnostic route evidence,
 not paired performance estimates. T4095 was screened at one row only; its full
 4,096/8,192-row workloads were not run. The screen suggests that sampling choices can select very different routes. For example, the one-process medians for T799 were 86.0 microseconds at sampled
 N=1,601 and 5.7 microseconds at FFT-friendly N=1,600. That ratio is not an
-acceptance result because the capture overlapped host load. The raw records
+acceptance result because the capture overlapped unrelated work. The structured timing records
 retain each measurement and the associated load value. Supporting data:
 
 - [Length set and benchmark configuration](../benches/m22_atmospheric_lengths.json)

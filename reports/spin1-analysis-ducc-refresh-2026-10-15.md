@@ -7,7 +7,7 @@ RustSHT medians were `32.995 ms` and `6.345 ms`; DUCC medians were
 native RustSHT reusable-plan call and DUCC Python `analysis_2d` call have
 different boundaries, so these ratios describe this benchmark setup. An earlier screen on 8 pinned CPU cores gave q1 `1.28x` and q8 `3.07x`; RustSHT q8
 process medians ranged from `8.394` to `18.434 ms`. Two later screens used
-8 pinned CPU cores for q8 and recorded lower host load. Their q8 ratios were similar
+eight workers for q8; its local interference review found less competing activity. Their q8 ratios were similar
 (`1.77x` and `1.82x`). The DUCC times in these follow-ups are close to the
 `27.862/4.147 ms` q1/q8 Python-plan values in the [October 12 milestone
 record](../plans/05-validation-and-milestones.md#comparative-spin-1-analysis-profile-and-polar-cutoff-2026-10-12),
@@ -24,7 +24,7 @@ reused native plan and workspace from source commit `7ac443a40b034d5c52526d23ef3
 `c1ed01b8fda69d2a378190f0915f1a19762dddbf`, through the Python `analysis_2d`
 call. Each process warmed once and recorded five inner samples; each DUCC
 process used two five-sample batches. Five process pairs alternated RustSHT
-and DUCC at each thread count. The initial corrected screen pinned q1 to one CPU core and q8 to eight worker cores. Host contention was observed; detailed load readings remain local. The follow-ups used the same requested thread counts. Load-average telemetry was retained only in local diagnostics. The CPUs were not isolated. A cgroup check after
+and DUCC at each thread count. The initial corrected screen pinned q1 to one CPU core and q8 to eight worker cores. Host contention was observed; detailed load readings remain local. The follow-ups used the same requested thread counts. Load-average telemetry was retained only in local diagnostics. The workers were not isolated from other workloads. A cgroup check after
 the benchmark had no observed CPU quota.
 
 | Screen | Threads | RustSHT median (range) | DUCC median (range) | Paired ratio median (range) |

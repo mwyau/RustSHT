@@ -98,7 +98,7 @@ lookup = {
 lines = [
     "# Matched T2047 q8 RustSHT, DUCC and SHTns results",
     "",
-    "Each backend/operation has 15 samples (three groups of five) from one fresh process per spin. Times are medians of the retained raw samples; p10-p90 values and individual samples are in `summary.csv` and `*.stdout`. Rust and DUCC used reusable plans and caller-provided outputs. The SHTns adapter timing includes input preservation and E/B conversion.",
+    "Each backend/operation has 15 samples (three groups of five) from one fresh process per spin. Times are medians of the retained timing samples; p10-p90 values and individual benchmark timing samples are in `summary.csv` and the sanitized harness-output files. Rust and DUCC used reusable plans and caller-provided outputs. The SHTns adapter timing includes input preservation and E/B conversion.",
     "",
     "| spin | Rust S | DUCC S | Rust/DUCC | SHTns S | Rust/SHTns | Rust A | DUCC A | Rust/DUCC | SHTns A | Rust/SHTns | Rust peak RSS |",
     "|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
@@ -114,7 +114,7 @@ for spin in (0, 1):
 lines.extend(
     [
         "",
-        "Full-array errors were checked before timing in each process. This is an M1 reference baseline, not a P01 candidate measurement. Raw output, `/usr/bin/time -v` records, and preflight snapshots are retained beside this summary.",
+        "Full-array errors were checked before timing in each process. This is an M1 reference baseline, not a P01 candidate measurement. Structured timing and memory measurements are summarized here; raw process and host captures remain local.",
     ]
 )
 (ROOT / "summary.md").write_text("\n".join(lines) + "\n")

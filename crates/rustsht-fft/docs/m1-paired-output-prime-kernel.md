@@ -150,5 +150,4 @@ Benchmark artifacts are in [`benches/results`](../benches/results/):
   `m1-first-call-summary.csv`: first-call and warmed single-operation data.
 - `m1-ducc-comparison.txt`: pinned-DUCC output comparison summary. The warmed-operation candidate and baseline binary hashes are recorded in the
 JSONL captures. The first-call configuration records its benchmark source
-hashes and binary hashes. Raw process records contain command lines, pair
-order, CPU affinity, elapsed wall time, load averages, and operation output.
+hashes and binary hashes. The structured summary retains pair order, workload configuration, elapsed-time samples, and operation results. Raw commands and host-state captures remain local.

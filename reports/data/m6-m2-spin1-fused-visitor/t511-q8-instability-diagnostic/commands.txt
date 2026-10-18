@@ -1,11 +1,21 @@
-# Diagnostic commands (run sequentially; archived baseline binary only)
+# Diagnostic command templates (run sequentially; archived baseline binary only)
 
-Q8, 20 individually timed calls, 8 CPUs (8 pinned CPU cores):
+Set `RUSTSHT_WORKTREE` to the archived baseline worktree, `RUSTSHT_LOCAL_DIAG_DIR` to a directory outside every Git worktree, `RUSTSHT_PYTHONPATH` to the directory containing the baseline extension, and separate `RUSTSHT_CPUSET_Q1` / `RUSTSHT_CPUSET_Q8` values for the requested worker count. The affinity values are supplied locally and are not part of the committed evidence. The commands preserve the original workloads; all process output and GNU-time data go to the local diagnostics directory.
+
+Q8: 20 individually timed calls, eight workers:
 ```sh
-/usr/bin/time -v -o ${RUSTSHT_LOCAL_DIAG_DIR}/q8.time taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env PYTHONDONTWRITEBYTECODE=1 TMPDIR=<local-home-path> PYTHONPATH=<local-home-path> RAYON_NUM_THREADS=8 <local-home-path> reports/data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/call-trace.py 20 reports/data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/q8-calls.csv > ${RUSTSHT_LOCAL_DIAG_DIR}/q8.stdout 2>&1
+: "${RUSTSHT_WORKTREE:?set the archived baseline worktree}"
+: "${RUSTSHT_LOCAL_DIAG_DIR:?set a directory outside Git worktrees}"
+: "${RUSTSHT_PYTHONPATH:?set the baseline extension import path}"
+: "${RUSTSHT_CPUSET_Q8:?set local affinity for eight workers}"
+mkdir -p "$RUSTSHT_LOCAL_DIAG_DIR/tmp"
+taskset -c "$RUSTSHT_CPUSET_Q8" env PYTHONDONTWRITEBYTECODE=1 TMPDIR="$RUSTSHT_LOCAL_DIAG_DIR/tmp" PYTHONPATH="$RUSTSHT_PYTHONPATH" RAYON_NUM_THREADS=8 python3 "$RUSTSHT_WORKTREE/reports/data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/call-trace.py" 20 "$RUSTSHT_LOCAL_DIAG_DIR/q8-calls.csv" > "$RUSTSHT_LOCAL_DIAG_DIR/q8.stdout" 2>&1
 ```
 
-Q1, 10 individually timed calls, affinity pinned per worker count:
+Q1: 10 individually timed calls, one worker:
 ```sh
-/usr/bin/time -v -o ${RUSTSHT_LOCAL_DIAG_DIR}/q1.time taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env PYTHONDONTWRITEBYTECODE=1 TMPDIR=<local-home-path> PYTHONPATH=<local-home-path> RAYON_NUM_THREADS=1 <local-home-path> reports/data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/call-trace.py 10 reports/data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/q1-calls.csv > ${RUSTSHT_LOCAL_DIAG_DIR}/q1.stdout 2>&1
+: "${RUSTSHT_CPUSET_Q1:?set local affinity for one worker}"
+taskset -c "$RUSTSHT_CPUSET_Q1" env PYTHONDONTWRITEBYTECODE=1 TMPDIR="$RUSTSHT_LOCAL_DIAG_DIR/tmp" PYTHONPATH="$RUSTSHT_PYTHONPATH" RAYON_NUM_THREADS=1 python3 "$RUSTSHT_WORKTREE/reports/data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/call-trace.py" 10 "$RUSTSHT_LOCAL_DIAG_DIR/q1-calls.csv" > "$RUSTSHT_LOCAL_DIAG_DIR/q1.stdout" 2>&1
 ```
+
+The committed summary retains timing behavior, validity decisions and measurement conclusions. Raw process output, affinity, host-pressure captures and GNU-time records remain local and untracked.

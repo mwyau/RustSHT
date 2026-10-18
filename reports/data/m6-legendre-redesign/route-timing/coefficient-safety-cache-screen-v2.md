@@ -55,11 +55,7 @@ pressure gate. Peak resident memory is the per-process high-water mark.
 | 4 | Cache | 1675.970, 1673.767, 1674.481, 1675.998, 1677.090 | 1675.970 | 0.0708% | +0.1232% | 332188 | Pass |
 | 4 | Pre-cache | 1888.923, 2090.918, 1777.279, 1744.555, 1754.335 | 1777.279 | 7.0477% | -7.3840% | 332196 | **Fail** |
 
-CPU-pressure warnings were reviewed under the declared protocol; exact transient readings remain local. No sampled
-competing process exceeded 5% CPU, and the cgroup CPU limit was not
-restrictive. CPU frequency varied during the captures, but the samples do not
-align frequency with individual transform calls, so interference cannot be
-ruled out. The failed baseline process exceeds both 5% stability limits; its
+CPU-pressure warnings were reviewed under the declared protocol; exact transient readings remain local. The local interference review did not identify a competing workload or cgroup-related constraint. Frequency behavior was reviewed locally but cannot be aligned with individual transform calls; exact telemetry remains untracked, so interference cannot be ruled out. The failed baseline process exceeds both 5% stability limits; its
 samples remain in the table and were not retried or removed.
 
 Peak memory ranged from 332172 to 332252 KiB across all eight processes. The

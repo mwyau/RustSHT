@@ -42,6 +42,4 @@ Median aggregate route timers were:
 Route timers are inclusive and nested: prefix/suffix are within transition,
 and transition/fallback are within tile. They must not be added together or
 read as exclusive CPU time. `elapsed_ns` measures the complete instrumented
-synthesis call. Raw stdout, exact commands, actual affinity, process lists,
-PSI and frequency readings are retained in `t511-tile256.*` and
-`t2047-tile256.*`.
+synthesis call. Structured timing samples, numerical checks and aggregate route results are retained here. Raw stdout, command transcripts, affinity, process, PSI and frequency captures remain local and untracked.

@@ -43,13 +43,13 @@ symbol order preserves the same spin-1 control result.
 
 ## Contention and raw-sample review
 
-The preflight log retains four refused attempts. They caught a PSI spike before
+CPU-pressure checks refused four attempted processes before measurement. Exact transient readings and refusal captures remain local.
 the T511 spin-1 pair 3 baseline, a DUCC wheel build during T1023 pair 2, a
 DUCC LTO build before T2047 q1 pair 1's ordered side, and an xarray batching
 benchmark before T2047 q1 pair 2's ordered side. Each missing process was
 started only after two clean checks. A separate `uv build` and wheel install
 started after per-process preflight and overlapped both T2047 q1 pair 3
-processes. Those original raw files remain in [`contaminated/`](contaminated/)
+processes. Those suspect processes are documented by their validity outcomes; raw host and process captures remain local
 and are excluded; a clean pair 3 replacement was run after two clean checks. T2047 q1 pair 1's original baseline had a 34.34s elapsed time, a 4012.783ms
 synthesis sample, and analysis samples at 2101–2238ms while other process
 analysis medians were about 1.08–1.15s. Although no compiler was visible at its
@@ -62,8 +62,7 @@ T1023 q1 ordered analysis pair 1 had one 126.905ms sample, and T2047 q8
 ordered analysis pair 6 had one 256.095ms sample. The five-sample process
 medians were retained; no concrete overlapping workload was found for these
 samples, so they were not excluded or rerun. All five samples, timing/RSS
-files, process snapshots, refusals, and replaced suspect runs remain available
-in this directory. `summary.csv` and `process-pairs.csv` contain the complete
+Structured timing samples and validity outcomes remain in the report; raw process, refusal and host-state captures remain local and untracked. `summary.csv` and `process-pairs.csv` contain the complete
 operation and pair-level calculations. This matrix is performance evidence only. P01 remains pending review of the
 production link strategy and full regression-suite results on the exact
 candidate source; no acceptance or commit is recorded here.

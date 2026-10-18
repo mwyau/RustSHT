@@ -8,4 +8,4 @@ Selected 12 completed paired synthesis runs. Per-process times are medians of fi
 - Pairs above 1.02: 1 / 12
 - Gate: **pass** (control: 95% upper <= 1.02)
 
-Per-pair raw values and selected attempt IDs: [spin1-t511-q1-pairs.csv](spin1-t511-q1-pairs.csv). All selected stdout, GNU time and preflight records remain alongside the runner artifacts.
+Per-pair raw values and selected attempt IDs: [spin1-t511-q1-pairs.csv](spin1-t511-q1-pairs.csv). Structured per-pair timings are retained; raw stdout, GNU-time and preflight records remain local and untracked.

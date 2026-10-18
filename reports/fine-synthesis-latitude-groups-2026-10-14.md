@@ -18,7 +18,7 @@ subsequent calls.
 ## Investigation and hypothesis
 
 A temporary, removed per-group timer measured scalar GL T720 q8 groups at about
-4.3–6.2 ms for central/equatorial ranges or 7 CPU cores ms for polar ranges. The
+4.3–6.2 ms for central/equatorial ranges or about 7 ms for polar ranges. The
 existing active-degree-lane estimate ranked some central groups as more work,
 so it did not predict observed time. A smaller ring group can expose more
 parallel tasks across these heterogeneous recurrence regions. It also

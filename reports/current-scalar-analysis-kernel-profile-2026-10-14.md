@@ -7,7 +7,7 @@ This note records a current-source f64 scalar GL analysis profile at commit
 not a production change. The follow-up register-resident recurrence and
 accumulation kernel was not implemented. The only source edits made while
 sketching its trait boundary were removed; the tree is source-clean apart from
-this report and its raw timing file. The profile identifies paired recurrence and accumulation as the main
+this report and its structured timing samples. The profile identifies paired recurrence and accumulation as the main
 remaining RustSHT analysis work. It also shows a concrete code-generation
 difference: the recurrence kernel writes its current degree values to worker
 scratch, while a per-degree `FnMut` callback then invokes a separate SIMD

@@ -15,7 +15,7 @@ samples within each process. The reported ratio is
 `reference_time / RustSHT-FFT_time`; values above 1 indicate a faster
 RustSHT-FFT call. Each comparison has six alternating process pairs pinned to
 logical one CPU core. The raw JSONL records include command lines, executable hashes,
-process IDs, wall times and load averages before each process. The summary CSV
+per-process timing and a summarized interference validity decision. The summary CSV
 reports the median paired ratio, its observed range and a 95% percentile
 bootstrap interval for the median. The standard matrix covers 41 lengths, four operations, and row counts 1 and
 32. Row counts are capped at 4 when `N > 10000`. The matrix includes the

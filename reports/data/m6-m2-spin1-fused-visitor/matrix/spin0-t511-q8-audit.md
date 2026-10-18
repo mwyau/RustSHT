@@ -1,6 +1,6 @@
 # Timing audit: spin0-t511-q8
 
-The selected full-matrix cell was scalar (spin 0), GL STANDARD f64, T511, q8, synthesis. The runner kept all five measured calls per process. Before those five calls, the harness makes one unmeasured warm-up call (`time_runs`, in the matched benchmark script). All 12 pairs use the declared alternating order; selected runs all have PSI `some avg10` <= 0.50, with no compiler or benchmark process listed in the preflight active-process section.
+The selected full-matrix cell was scalar (spin 0), GL STANDARD f64, T511, q8, synthesis. The runner kept all five measured calls per process. Before those five calls, the harness makes one unmeasured warm-up call (`time_runs`, in the matched benchmark script). All 12 pairs use the declared alternating order; selected runs passed the historical v1 pressure gate, with no competing build or benchmark reported by the local preflight review.
 
 - Selected pairs: 12; paired median-ratio range: 0.628–1.489.
 - Within-process sample coefficient of variation: median 40.1%, range 21.9–107.4%.

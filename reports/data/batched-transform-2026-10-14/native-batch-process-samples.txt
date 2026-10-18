@@ -1,4 +1,4 @@
-RustSHT batch benchmark; transform source=5813be9f14bfc37422b48448201bcfeea88fcdaa; release example; affinity=configured worker affinity set..q-1; exact T grids; field 0 coefficients/maps match examples/python_perf_baseline.py; five warm samples per process; three process replicates.
+RustSHT batch benchmark; transform source=5813be9f14bfc37422b48448201bcfeea88fcdaa; release example; affinity=worker-count policy; exact T grids; field 0 coefficients/maps match examples/python_perf_baseline.py; five warm samples per process; three process replicates.
 case_count=152 process_count=456
 process_rep=1
 spin=0 T511 GL 512x1025 mmax=511 f64 operation=analysis threads=8 fields=4 schedule=parallel-one workspace=one-thread-workspaces reps=5

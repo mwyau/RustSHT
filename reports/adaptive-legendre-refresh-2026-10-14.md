@@ -24,7 +24,7 @@ alternated run order, pinned to one CPU core. `m1b_bench` also recorded plan and
 workspace creation and a first transform on a fresh plan. Warm synthesis
 latency is `synthesis_one_thread_ms`; warm analysis latency is
 `analysis_rayon_ms` in its one-thread Rayon pool. The first-call column is the
-fresh-plan first-call measurement. Full process output is in
+fresh-plan first-call measurement. Structured timing and first-call measurements are in
 [`reports/data/adaptive-legendre-refresh-2026-10-14`](data/adaptive-legendre-refresh-2026-10-14/). CPU: x86-64 CPU, Linux. Rust `1.99.0`
 (`b940084d7`, 2026-09-28), LLVM `23.1.1`; release `opt-level=3`, 16 codegen
 units, LTO off, Pulp runtime dispatch (AVX2/FMA), no `target-cpu=native`. DUCC comparisons used installed `ducc0==0.41.0`, source revision
@@ -145,7 +145,7 @@ medians changed from `6.552` to `6.545 ms`, `16.566` to `16.465 ms`, and
 `20.736` to `20.674 ms`, respectively. These differences are below the
 process variation; the added scan did not produce a measured transform
 regression. Avoided table payloads are `4.094`, `10.576` and `13.711 MiB` at
-those bands. Raw process outputs are in
+those bands. Structured timing results are in
 [`spin1-table-safety-processes.txt`](data/adaptive-legendre-refresh-2026-10-14/spin1-table-safety-processes.txt). The review found no other selector, numerical, race, or workspace issue. Focused recurrence/table equivalence and the unsafe-input regression passed. After the fix, the full all-feature suite passed (145 Rust and 10 f32 tests;
 8 ignored), and the full no-default-feature suite passed (129 Rust and 10 f32
 tests; 7 ignored). The T2047 sparse synthesis release regression passed for

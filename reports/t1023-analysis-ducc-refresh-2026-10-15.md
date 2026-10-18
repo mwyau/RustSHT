@@ -25,7 +25,7 @@ q1 was pinned to one CPU core; q8 was 8 pinned CPU cores on an x86-64 CPU
 running Linux. The CPUs were not isolated, and no CPU quota
 applied. Load-average telemetry was retained only in local diagnostics. The scalar values are
 provisional under that load. The spin-1 screen ran after load fell from `3.53`
-to `2.87`; its pair ranges were narrower. Raw samples, process timing, load snapshots, commands and binary hashes are
+to `2.87`; its pair ranges were narrower. Structured timing samples, binary hashes and reproduction commands are
 in [`the benchmark data`](data/sht-t1023-ducc-refresh-2026-10-15/). Existing
 scalar and spin-1 analytic, DUCC, adjoint and high-bandlimit tests remain the
 correctness evidence; this timing study did not rerun numerical tests.

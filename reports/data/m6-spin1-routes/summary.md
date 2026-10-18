@@ -46,7 +46,7 @@ factor timer columns are the existing shared scalar-kernel instrumentation. Ever
 The T2047 measurements place substantial work in both the scalar visitor and
 the paired transition path. These timer sums locate work in the profiled
 implementation; they do not establish a wall-time bottleneck breakdown. The
-per-worker records are retained in each cell's `.stdout` file for examining
+per-worker timing and route counts are retained in `timing-samples.jsonl` for examining
 worker balance and route variation. At T511 q8, 8,192 cached order invocations, 14.0 million hemisphere pair-lanes,
 and 6,102 hemisphere attempts accompany the special hemisphere path. This
 path does not appear in the T1023 or T2047 q8 profiles. At T2047 q8 the route

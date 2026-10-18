@@ -1,4 +1,10 @@
-baseline q1: user=0.14 sys=0.03 elapsed=0.17 max_rss_kib=28396
-baseline q8: user=0.18 sys=0.05 elapsed=0.10 max_rss_kib=40224
-candidate q1: user=0.13 sys=0.03 elapsed=0.16 max_rss_kib=28352
-candidate q8: user=0.17 sys=0.05 elapsed=0.10 max_rss_kib=41388
+Fused scalar analysis peak-RSS summary
+
+| Build | Threads | Peak RSS (KiB) |
+| --- | ---: | ---: |
+| Baseline | 1 | 28,396 |
+| Baseline | 8 | 40,224 |
+| Candidate | 1 | 28,352 |
+| Candidate | 8 | 41,388 |
+
+The measurements summarize peak resident memory. Process CPU-time and wall-time fields are omitted from this memory-only record.

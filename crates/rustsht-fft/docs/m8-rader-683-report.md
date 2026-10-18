@@ -32,7 +32,7 @@ radix-11 pass and a general radix-31 pass. Runtime feature detection guards
 the AVX2 path. The full trace is in
 [`m8-rader-683-route-diagnostics.txt`](../benches/results/m8-rader-683-route-diagnostics.txt). The benchmark-only prototype screen used two alternating pairs and favored
 the prototype by a median 1.15x for R2C. C2R favored it by 1.41x, but that
-screen ran at elevated host load and was treated as provisional. The
+screen ran under shared-host contention and was treated as provisional. The
 production acceptance campaign below is the decision evidence. The prototype
 kept the direct-reference tolerance unchanged; its N=2049 dense inverse case
 was checked against production while sparse inverse inputs were checked

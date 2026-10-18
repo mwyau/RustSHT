@@ -17,7 +17,7 @@ output. Each process retains all five warmed synthesis samples and
 `/usr/bin/time -v` peak RSS. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two stability
 checks are in `preflight-stability.txt`. The first T1023 pair's ordered
 CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
-`preflight-processes.log`. Two subsequent low-pressure checks were recorded
+the local pressure and interference review. Two subsequent validity checks were recorded
 before rerunning both sides of that pair. The original baseline side is
 preserved in `superseded-after-refusal/`. Pair ratios are ordered-link process median divided by default-link process
 median. The summary reports the median of six pair ratios, a deterministic

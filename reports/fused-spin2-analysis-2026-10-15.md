@@ -24,7 +24,7 @@ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" target/release/examples/m1b_b
 taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" target/release/examples/m1b_bench 2 720 8 analysis GL STANDARD 721 1443 720 requested-only
 ```
 
-Raw process samples, full benchmark logs and the RSS spot check are in [`reports/data/spin2-fused-analysis-2026-10-15`](data/spin2-fused-analysis-2026-10-15/). One T720 process per case measured peak RSS of `51,524/52,396 KiB` at baseline q1/q8 and `52,744/53,220 KiB` at candidate q1/q8. These single-process values are descriptive; they do not establish a repeatable memory change. The candidate reuses existing scratch.
+Structured timing samples and the RSS spot check are in [`reports/data/spin2-fused-analysis-2026-10-15`](data/spin2-fused-analysis-2026-10-15/). One T720 process per case measured peak RSS of `51,524/52,396 KiB` at baseline q1/q8 and `52,744/53,220 KiB` at candidate q1/q8. These single-process values are descriptive; they do not establish a repeatable memory change. The candidate reuses existing scratch.
 
 ## Numerical validation
 

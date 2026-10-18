@@ -22,5 +22,4 @@ visitor work by routing an ordinary scalar suffix through a scalar-only
 transition. It agrees with the separate six-pair T1023 scalar q1 synthesis
 ratio of 0.6647. It does not measure spin-1 behavior, replace the complete
 control matrix, or accept P01. The T511 spin-1 default-link control remains
-unresolved. The raw test output, source patch and hashes are retained in this
-directory.
+unresolved. The route counts, timer results, source patch and hashes are retained in this directory; raw test output remains local and untracked.

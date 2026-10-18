@@ -1,0 +1,669 @@
+diff --git a/src/legendre/mod.rs b/src/legendre/mod.rs
+--- a/src/legendre/mod.rs
++++ b/src/legendre/mod.rs
+@@ -2,0 +3,3 @@
++
++#[cfg(test)]
++mod route_profile;
+@@ -596,0 +600,12 @@
++    fn multiply_complex_pair_scaled_product(
++        first: Complex<Self>,
++        second: Complex<Self>,
++        factor: Self,
++        additional_factor: Self,
++        exponent: i64,
++    ) -> (Complex<Self>, Complex<Self>) {
++        (
++            Self::multiply_complex_scaled_product(first, factor, additional_factor, exponent),
++            Self::multiply_complex_scaled_product(second, factor, additional_factor, exponent),
++        )
++    }
+@@ -1332,0 +1348,16 @@
++    fn multiply_complex_pair_scaled_product(
++        first: Complex<Self>,
++        second: Complex<Self>,
++        factor: Self,
++        additional_factor: Self,
++        exponent: i64,
++    ) -> (Complex<Self>, Complex<Self>) {
++        scalar::multiply_complex_pair_scaled_product(
++            first,
++            second,
++            factor,
++            additional_factor,
++            exponent,
++        )
++    }
++
+diff --git /dev/null b/src/legendre/route_profile.rs
+new file mode 100644
+--- /dev/null
++++ b/src/legendre/route_profile.rs
+@@ -0,0 +1,210 @@
++// SPDX-FileCopyrightText: 2026 Albert M. W. Yau
++// SPDX-License-Identifier: GPL-2.0-or-later
++
++//! Test-only per-worker synthesis accounting. One unit is one latitude lane
++//! evaluated at one degree pair. Discarded transition work is recorded apart
++//! from committed projections. No counters are compiled into library builds.
++
++use std::cell::RefCell;
++use std::time::Instant;
++
++#[derive(Clone, Copy, Debug, Default)]
++pub(super) struct Counts {
++    pub fused_ns: u128,
++    pub visitor_ns: u128,
++    pub transition_ns: u128,
++    pub coefficients_ns: u128,
++    pub factors_ns: u128,
++    pub transition_calls: u64,
++    pub preparation_failures: u64,
++    pub fused: u64,
++    pub visitor_normal: u64,
++    pub visitor_scaled: u64,
++    pub transition_prefix: u64,
++    pub transition_fused: u64,
++    pub discarded_prefix: u64,
++    pub discarded_fused: u64,
++    pub completed_transitions: u64,
++    pub declined_transitions: u64,
++    pending_prefix: u64,
++    pending_fused: u64,
++}
++
++thread_local! {
++    static COUNTS: RefCell<Option<Counts>> = const { RefCell::new(None) };
++}
++
++fn update(f: impl FnOnce(&mut Counts)) {
++    COUNTS.with_borrow_mut(|counts| {
++        if let Some(counts) = counts {
++            f(counts);
++        }
++    });
++}
++
++pub(super) enum Phase {
++    Fused,
++    Visitor,
++    Transition,
++    Coefficients,
++    Factors,
++}
++
++pub(super) fn start() -> Option<Instant> {
++    COUNTS.with_borrow(|counts| counts.is_some().then(Instant::now))
++}
++
++pub(super) fn finish(start: Option<Instant>, phase: Phase) {
++    if let Some(start) = start {
++        let elapsed = start.elapsed().as_nanos();
++        update(|counts| match phase {
++            Phase::Fused => counts.fused_ns += elapsed,
++            Phase::Visitor => counts.visitor_ns += elapsed,
++            Phase::Transition => counts.transition_ns += elapsed,
++            Phase::Coefficients => counts.coefficients_ns += elapsed,
++            Phase::Factors => counts.factors_ns += elapsed,
++        });
++    }
++}
++
++pub(super) fn transition_call() {
++    update(|counts| counts.transition_calls += 1);
++}
++
++pub(super) fn preparation_failure() {
++    update(|counts| counts.preparation_failures += 1);
++}
++
++pub(super) fn fused(lanes: usize, pairs: usize) {
++    update(|counts| counts.fused += (lanes * pairs) as u64);
++}
++
++pub(super) fn visitor(lanes: usize, normal: bool) {
++    update(|counts| {
++        if normal {
++            counts.visitor_normal += lanes as u64;
++        } else {
++            counts.visitor_scaled += lanes as u64;
++        }
++    });
++}
++
++pub(super) fn transition_begin() {
++    update(|counts| {
++        counts.pending_prefix = 0;
++        counts.pending_fused = 0;
++    });
++}
++
++pub(super) fn transition_prefix(lanes: usize) {
++    update(|counts| counts.pending_prefix += lanes as u64);
++}
++
++pub(super) fn transition_fused(lanes: usize, pairs: usize) {
++    update(|counts| counts.pending_fused += (lanes * pairs) as u64);
++}
++
++pub(super) fn transition_end(success: bool) {
++    update(|counts| {
++        if success {
++            counts.transition_prefix += counts.pending_prefix;
++            counts.transition_fused += counts.pending_fused;
++            counts.completed_transitions += 1;
++        } else {
++            counts.discarded_prefix += counts.pending_prefix;
++            counts.discarded_fused += counts.pending_fused;
++            counts.declined_transitions += 1;
++        }
++        counts.pending_prefix = 0;
++        counts.pending_fused = 0;
++    });
++}
++
++#[cfg(feature = "parallel")]
++#[test]
++#[ignore = "opt-in M6 scalar synthesis route accounting"]
++fn m6_scalar_synthesis_routes() {
++    use crate::{Complex64, GridKind, GridSpec, HarmonicSpec, ShtPlan};
++    use std::time::Instant;
++
++    let lmax: usize = std::env::var("RUSTSHT_ROUTE_LMAX")
++        .unwrap_or_else(|_| "511".into())
++        .parse()
++        .unwrap();
++    let threads: usize = std::env::var("RUSTSHT_ROUTE_THREADS")
++        .unwrap_or_else(|_| "1".into())
++        .parse()
++        .unwrap();
++    assert!(lmax >= 511, "profile the recurrence path");
++    let pool = rayon::ThreadPoolBuilder::new()
++        .num_threads(threads)
++        .build()
++        .unwrap();
++    let plan = ShtPlan::new(
++        GridSpec::new(GridKind::GaussLegendre, lmax + 1, 2 * (lmax + 1), 0.37).unwrap(),
++        HarmonicSpec::scalar(lmax, lmax).unwrap(),
++    )
++    .unwrap();
++    let mut workspace = pool.install(|| plan.workspace()).unwrap();
++    let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
++    for m in 0..=lmax {
++        for l in m..=lmax {
++            alm[plan.harmonics().index(l, m).unwrap()] = Complex64::new(
++                ((l * 7 + m * 11) % 19) as f64 - 9.0,
++                if m == 0 {
++                    0.0
++                } else {
++                    ((l * 13 + m * 5) % 23) as f64 - 11.0
++                },
++            ) * 1e-5;
++        }
++    }
++    let mut map = vec![0.0; (lmax + 1) * 2 * (lmax + 1)];
++    pool.install(|| plan.synthesis_into(&alm, &mut map, &mut workspace))
++        .unwrap();
++    let start = Instant::now();
++    pool.install(|| plan.synthesis_into(&alm, &mut map, &mut workspace))
++        .unwrap();
++    let disabled = start.elapsed();
++    let reference = map.clone();
++    pool.broadcast(|_| COUNTS.with_borrow_mut(|counts| *counts = Some(Counts::default())));
++    let start = Instant::now();
++    pool.install(|| plan.synthesis_into(&alm, &mut map, &mut workspace))
++        .unwrap();
++    let enabled = start.elapsed();
++    assert_eq!(map, reference, "accounting must preserve every map sample");
++    let workers = pool.broadcast(|_| COUNTS.with_borrow_mut(Option::take));
++    let mut total = Counts::default();
++    for (worker, counts) in workers.into_iter().enumerate() {
++        let counts = counts.unwrap();
++        println!("worker={worker} {counts:?}");
++        total.fused_ns += counts.fused_ns;
++        total.visitor_ns += counts.visitor_ns;
++        total.transition_ns += counts.transition_ns;
++        total.coefficients_ns += counts.coefficients_ns;
++        total.factors_ns += counts.factors_ns;
++        total.transition_calls += counts.transition_calls;
++        total.preparation_failures += counts.preparation_failures;
++        total.fused += counts.fused;
++        total.visitor_normal += counts.visitor_normal;
++        total.visitor_scaled += counts.visitor_scaled;
++        total.transition_prefix += counts.transition_prefix;
++        total.transition_fused += counts.transition_fused;
++        total.discarded_prefix += counts.discarded_prefix;
++        total.discarded_fused += counts.discarded_fused;
++        total.completed_transitions += counts.completed_transitions;
++        total.declined_transitions += counts.declined_transitions;
++    }
++    let committed = total.fused
++        + total.visitor_normal
++        + total.visitor_scaled
++        + total.transition_prefix
++        + total.transition_fused;
++    let potential = (lmax + 1) * (0..=lmax).map(|m| (lmax - m + 2) / 2).sum::<usize>();
++    assert!(committed > 0 && committed <= potential as u64);
++    println!(
++        "M6 routes L={lmax} q={threads} potential={potential} committed={committed} disabled_ms={:.3} enabled_ms={:.3} {total:?}",
++        disabled.as_secs_f64() * 1000.0,
++        enabled.as_secs_f64() * 1000.0
++    );
++}
+diff --git a/src/legendre/scalar.rs b/src/legendre/scalar.rs
+--- a/src/legendre/scalar.rs
++++ b/src/legendre/scalar.rs
+@@ -411,0 +412,66 @@
++}
++
++/// Multiplies two channel values by one shared basis and inverse-sine factor.
++///
++/// The ordinary path shares the factor checks while preserving the individual
++/// left-associated products. If either channel cannot use the same normal-range
++/// path, both values use the established scaled helper.
++pub(crate) fn multiply_complex_pair_scaled_product(
++    first: Complex64,
++    second: Complex64,
++    factor: f64,
++    additional_factor: f64,
++    exponent: i64,
++) -> (Complex64, Complex64) {
++    if let Some(product_pair) =
++        try_multiply_complex_pair_normal_path(first, second, factor, additional_factor, exponent)
++    {
++        return product_pair;
++    }
++
++    (
++        multiply_complex_scaled_product(first, factor, additional_factor, exponent),
++        multiply_complex_scaled_product(second, factor, additional_factor, exponent),
++    )
++}
++
++#[inline(always)]
++fn try_multiply_complex_pair_normal_path(
++    first: Complex64,
++    second: Complex64,
++    factor: f64,
++    additional_factor: f64,
++    exponent: i64,
++) -> Option<(Complex64, Complex64)> {
++    if factor.is_normal()
++        && additional_factor.is_normal()
++        && first.re.is_normal()
++        && first.im.is_normal()
++        && second.re.is_normal()
++        && second.im.is_normal()
++    {
++        let first_product = Complex64::new(
++            (first.re * factor) * additional_factor,
++            (first.im * factor) * additional_factor,
++        );
++        let second_product = Complex64::new(
++            (second.re * factor) * additional_factor,
++            (second.im * factor) * additional_factor,
++        );
++        if first_product.re.is_normal()
++            && first_product.im.is_normal()
++            && second_product.re.is_normal()
++            && second_product.im.is_normal()
++        {
++            if exponent == 0 {
++                return Some((first_product, second_product));
++            }
++            if let (Some(first_scaled), Some(second_scaled)) = (
++                scale_complex_normal_binary(first_product, exponent),
++                scale_complex_normal_binary(second_product, exponent),
++            ) {
++                return Some((first_scaled, second_scaled));
++            }
++        }
++    }
++    None
+@@ -2040,0 +2107,91 @@
++    }
++
++    #[test]
++    fn paired_complex_products_match_independent_scaled_helpers() {
++        let cases = [
++            (
++                true,
++                Complex64::new(0.75, -1.25),
++                Complex64::new(-2.5, 0.375),
++                1.125,
++                -0.875,
++                0,
++            ),
++            (
++                false,
++                Complex64::new(0.0, -0.0),
++                Complex64::new(2.0, -3.0),
++                0.5,
++                2.0,
++                4,
++            ),
++            (
++                false,
++                Complex64::new(f64::from_bits(1), -2.0e-310),
++                Complex64::new(3.0, -4.0),
++                1.0e200,
++                1.0e100,
++                -16,
++            ),
++            (
++                false,
++                Complex64::new(1.0e308, -8.0e307),
++                Complex64::new(-7.0e307, 6.0e307),
++                2.0,
++                0.5,
++                0,
++            ),
++            (
++                false,
++                Complex64::new(0.75, -1.25),
++                Complex64::new(-2.5, 0.375),
++                1.125,
++                -0.875,
++                1024,
++            ),
++            (
++                false,
++                Complex64::new(0.75, -1.25),
++                Complex64::new(-2.5, 0.375),
++                1.125,
++                -0.875,
++                -1070,
++            ),
++            (
++                false,
++                Complex64::new(f64::INFINITY, 1.0),
++                Complex64::new(f64::NAN, 1.0),
++                1.0,
++                1.0,
++                0,
++            ),
++        ];
++
++        for (expected_fast_path, first, second, factor, additional_factor, exponent) in cases {
++            assert_eq!(
++                try_multiply_complex_pair_normal_path(
++                    first,
++                    second,
++                    factor,
++                    additional_factor,
++                    exponent
++                )
++                .is_some(),
++                expected_fast_path
++            );
++            let (actual_first, actual_second) = multiply_complex_pair_scaled_product(
++                first,
++                second,
++                factor,
++                additional_factor,
++                exponent,
++            );
++            let expected_first =
++                multiply_complex_scaled_product(first, factor, additional_factor, exponent);
++            let expected_second =
++                multiply_complex_scaled_product(second, factor, additional_factor, exponent);
++            assert_eq!(actual_first.re.to_bits(), expected_first.re.to_bits());
++            assert_eq!(actual_first.im.to_bits(), expected_first.im.to_bits());
++            assert_eq!(actual_second.re.to_bits(), expected_second.re.to_bits());
++            assert_eq!(actual_second.im.to_bits(), expected_second.im.to_bits());
++        }
+diff --git a/src/legendre/scalar_paired.rs b/src/legendre/scalar_paired.rs
+--- a/src/legendre/scalar_paired.rs
++++ b/src/legendre/scalar_paired.rs
+@@ -32,0 +33,2 @@
++    #[cfg(test)]
++    let profile_started = super::route_profile::start();
+@@ -58,0 +61,2 @@
++    #[cfg(test)]
++    super::route_profile::finish(profile_started, super::route_profile::Phase::Factors);
+@@ -71,0 +76,2 @@
++    #[cfg(test)]
++    let profile_started = super::route_profile::start();
+@@ -99,0 +106,8 @@
++            #[cfg(test)]
++            {
++                super::route_profile::preparation_failure();
++                super::route_profile::finish(
++                    profile_started,
++                    super::route_profile::Phase::Coefficients,
++                );
++            }
+@@ -104,0 +119,2 @@
++    #[cfg(test)]
++    super::route_profile::finish(profile_started, super::route_profile::Phase::Coefficients);
+@@ -635,0 +652,2 @@
++    #[cfg(test)]
++    super::route_profile::transition_call();
+@@ -672,0 +691,4 @@
++    #[cfg(test)]
++    let profile_started = super::route_profile::start();
++    #[cfg(test)]
++    super::route_profile::transition_begin();
+@@ -701,0 +724,5 @@
++        #[cfg(test)]
++        {
++            super::route_profile::transition_end(false);
++            super::route_profile::finish(profile_started, super::route_profile::Phase::Transition);
++        }
+@@ -702,0 +730,5 @@
++    }
++    #[cfg(test)]
++    {
++        super::route_profile::transition_end(true);
++        super::route_profile::finish(profile_started, super::route_profile::Phase::Transition);
+@@ -875,0 +908,2 @@
++            #[cfg(test)]
++            super::route_profile::transition_fused(sin_theta.len(), (lmax - m + 2) / 2);
+@@ -900,0 +935,2 @@
++            #[cfg(test)]
++            super::route_profile::transition_prefix(sin_theta.len());
+@@ -1021,0 +1058,2 @@
++                #[cfg(test)]
++                super::route_profile::transition_fused(sin_theta.len(), pair_count - pair - 1);
+@@ -1999,0 +2038,4 @@
++        #[cfg(test)]
++        let profile_started = super::route_profile::start();
++        #[cfg(test)]
++        super::route_profile::fused(self.cos_theta.len(), (self.lmax - self.m + 2) / 2);
+@@ -2083,0 +2126,2 @@
++        #[cfg(test)]
++        super::route_profile::finish(profile_started, super::route_profile::Phase::Fused);
+@@ -2852,0 +2897,2 @@
++    #[cfg(test)]
++    let profile_started = super::route_profile::start();
+@@ -2879,0 +2926,2 @@
++    #[cfg(test)]
++    super::route_profile::finish(profile_started, super::route_profile::Phase::Visitor);
+@@ -2935,0 +2984,2 @@
++            #[cfg(test)]
++            super::route_profile::visitor(current.len(), normal_range);
+diff --git a/src/legendre/scalar_table.rs b/src/legendre/scalar_table.rs
+--- a/src/legendre/scalar_table.rs
++++ b/src/legendre/scalar_table.rs
+@@ -75 +75 @@
+-    // Same-source measurements on a x86-64 CPU show no repeatable T63
++    // Same-source measurements on a Ryzen 9 5950X show no repeatable T63
+diff --git a/src/spin_transform.rs b/src/spin_transform.rs
+--- a/src/spin_transform.rs
++++ b/src/spin_transform.rs
+@@ -122 +122 @@
+-        // Same-source x86-64 CPU measurements show no repeatable warm
++        // Same-source Ryzen 9 5950X measurements show no repeatable warm
+@@ -2061 +2061 @@
+-                    let first = T::multiply_complex_scaled_product(
++                    let (first, second) = T::multiply_complex_pair_scaled_product(
+@@ -2063,5 +2062,0 @@
+-                        basis[lane],
+-                        inverse_sine,
+-                        exponents[lane],
+-                    );
+-                    let second = T::multiply_complex_scaled_product(
+diff --git a/examples/m1b_bench.rs b/examples/m1b_bench.rs
+--- a/examples/m1b_bench.rs
++++ b/examples/m1b_bench.rs
+@@ -114,0 +115,4 @@
++    let phi0: f64 = std::env::var("RUSTSHT_BENCH_PHI0")
++        .ok()
++        .map(|value| value.parse().expect("phi0 must be a real number"))
++        .unwrap_or(0.37);
+@@ -116 +120 @@
+-        let grid = GridSpec::new(grid_kind, ntheta, nphi, 0.37).unwrap();
++        let grid = GridSpec::new(grid_kind, ntheta, nphi, phi0).unwrap();
+@@ -473 +477 @@
+-        "spin-{spin} T{lmax} mmax={mmax}; {geometry} {ntheta}x{nphi}; f64; {mode}; requested={rayon_threads} threads; {operation}; requested_only={requested_only}; reuse_estimate={reuse_estimate:?}; strategy=automatic; 5 samples, median"
++        "spin-{spin} T{lmax} mmax={mmax}; {geometry} {ntheta}x{nphi}; f64; {mode}; requested={rayon_threads} threads; {operation}; requested_only={requested_only}; reuse_estimate={reuse_estimate:?}; phi0={phi0}; strategy=automatic; 5 samples, median"
+diff --git a/examples/python_perf_baseline.py b/examples/python_perf_baseline.py
+--- a/examples/python_perf_baseline.py
++++ b/examples/python_perf_baseline.py
+@@ -23,2 +23,2 @@
+-if scope not in {"full", "plan"}:
+-    raise SystemExit("scope must be 'full' or 'plan'")
++if scope not in {"full", "plan", "into"}:
++    raise SystemExit("scope must be 'full', 'plan' or 'into'")
+@@ -29,2 +29,2 @@
+-if backend not in {"both", "rust", "ducc"}:
+-    raise SystemExit("backend must be 'both', 'rust' or 'ducc'")
++if backend not in {"both", "rust", "ducc", "shtns", "references", "all"}:
++    raise SystemExit("unknown backend")
+@@ -42 +42,3 @@
+-phi0 = 0.37
++if scope == "into" and mode != "STANDARD":
++    raise SystemExit("into-buffer timing supports STANDARD only")
++phi0 = float(os.environ.get("RUSTSHT_BENCH_PHI0", "0.37"))
+@@ -73,0 +76,5 @@
++rust_map_out = np.empty_like(map_in)
++ducc_map_out = np.empty_like(map_in)
++rust_alm_out = np.empty_like(alm)
++ducc_alm_out = np.empty_like(alm_ducc)
++
+@@ -76 +83 @@
+-    return ducc_sht.synthesis_2d(alm=alm_ducc, spin=ducc_spin, lmax=lmax, mmax=lmax, geometry=geometry, ntheta=ntheta, nphi=nphi, phi0=phi0, mode=mode, nthreads=threads)
++    return ducc_sht.synthesis_2d(alm=alm_ducc, spin=ducc_spin, lmax=lmax, mmax=lmax, geometry=geometry, ntheta=ntheta, nphi=nphi, phi0=phi0, mode=mode, nthreads=threads, map=ducc_map_out if scope == "into" else None)
+@@ -77,0 +85,3 @@
++    if scope == "into":
++        plan.synthesis_into(alm, rust_map_out)
++        return rust_map_out
+@@ -86 +96 @@
+-    return ducc_sht.analysis_2d(map=map_in, spin=spin, lmax=lmax, mmax=lmax, geometry=geometry, phi0=phi0, nthreads=threads)
++    return ducc_sht.analysis_2d(map=map_in, spin=spin, lmax=lmax, mmax=lmax, geometry=geometry, phi0=phi0, nthreads=threads, alm=ducc_alm_out if scope == "into" else None)
+@@ -87,0 +98,3 @@
++    if scope == "into":
++        plan.analysis_into(map_in, rust_alm_out)
++        return rust_alm_out
+@@ -131 +144,84 @@
+-print(f"T{lmax} {geometry} {ntheta}x{nphi} spin={spin} mode={mode} threads={threads} runs={runs} scope={scope} operation={operation} backend={backend} python={sys.version.split()[0]} numpy={np.__version__} ducc={ducc0.__version__}")
++
++class ShtnsReference:
++    """SHTns 3.7.5 public C ABI; no numerical implementation is copied.
++
++    Timed calls include preserving the immutable inputs and converting E/B
++    to/from spheroidal/toroidal potentials. Setup and output allocation are
++    excluded. The current adapter supports exact rectangular GL grids.
++    """
++
++    def __init__(self):
++        import ctypes as ct
++
++        if geometry != "GL" or spin not in (0, 1) or mode != "STANDARD":
++            raise SystemExit("SHTns reference supports GL spin-0/1 STANDARD")
++        class Info(ct.Structure):
++            _fields_ = [("nlm", ct.c_uint), ("lmax", ct.c_ushort),
++                        ("mmax", ct.c_ushort), ("mres", ct.c_ushort),
++                        ("nlat_2", ct.c_ushort), ("nlat", ct.c_uint),
++                        ("nphi", ct.c_uint), ("nspat", ct.c_uint)]
++
++        path = os.environ["RUSTSHT_SHTNS_LIB"]
++        lib = ct.CDLL(path)
++        lib.shtns_use_threads.argtypes = [ct.c_int]
++        lib.shtns_use_threads.restype = ct.c_int
++        lib.shtns_create.argtypes = [ct.c_int] * 4
++        lib.shtns_create.restype = ct.c_void_p
++        lib.shtns_set_grid.argtypes = [ct.c_void_p, ct.c_int, ct.c_double, ct.c_int, ct.c_int]
++        lib.shtns_set_grid.restype = ct.c_int
++        for name, arrays in [("SH_to_spat", 2), ("spat_to_SH", 2),
++                             ("SHsphtor_to_spat", 4), ("spat_to_SHsphtor", 4)]:
++            function = getattr(lib, name)
++            function.argtypes = [ct.c_void_p] * (arrays + 1)
++            function.restype = None
++        lib.shtns_use_threads(threads)
++        self.cfg = lib.shtns_create(lmax, lmax, 1, 0)  # orthonormal, Condon–Shortley
++        if not self.cfg:
++            raise RuntimeError("SHTns plan allocation failed")
++        # sht_gauss | SHT_PHI_CONTIGUOUS; no padding or persisted tuning cache.
++        allocated = lib.shtns_set_grid(self.cfg, 512, 1e-30, ntheta, nphi)
++        info = ct.cast(self.cfg, ct.POINTER(Info)).contents
++        if (info.nlm, info.nlat, info.nphi, info.nspat) != (nalm, ntheta, nphi, ntheta * nphi):
++            raise RuntimeError("SHTns changed the requested grid or requires padded storage")
++        if allocated <= 0:
++            raise RuntimeError("SHTns grid allocation failed")
++        self.lib = lib
++        self.ptr = lambda array: ct.c_void_p(array.ctypes.data)
++        self.coefficients = np.empty_like(alm)
++        self.map = np.empty_like(map_in)
++        self.map_work = np.empty_like(map_in)
++        degrees = np.concatenate([np.arange(m, lmax + 1) for m in range(lmax + 1)])
++        orders = np.concatenate([np.full(lmax - m + 1, m) for m in range(lmax + 1)])
++        phase = np.exp(1j * orders * phi0)
++        if spin == 0:
++            self.synth_scale = phase[None, :]
++            self.analysis_scale = phase.conj()[None, :]
++        else:
++            norm = np.sqrt(degrees.astype(float) * (degrees + 1))
++            inverse = np.divide(1.0, norm, out=np.zeros_like(norm), where=norm != 0)
++            self.synth_scale = np.stack((phase * inverse, -phase * inverse))
++            self.analysis_scale = np.stack((phase.conj() * norm, -phase.conj() * norm))
++        print(f"shtns_library={path}; eps=1e-30; flags=512; wrapper=preserve-inputs-and-convert")
++
++    def synthesis(self):
++        np.multiply(alm, self.synth_scale, out=self.coefficients)
++        if spin == 0:
++            self.lib.SH_to_spat(self.cfg, self.ptr(self.coefficients[0]), self.ptr(self.map[0]))
++        else:
++            self.lib.SHsphtor_to_spat(self.cfg, self.ptr(self.coefficients[0]),
++                                     self.ptr(self.coefficients[1]), self.ptr(self.map[0]), self.ptr(self.map[1]))
++        return self.map
++
++    def analysis(self):
++        np.copyto(self.map_work, map_in)
++        if spin == 0:
++            self.lib.spat_to_SH(self.cfg, self.ptr(self.map_work[0]), self.ptr(self.coefficients[0]))
++        else:
++            self.lib.spat_to_SHsphtor(self.cfg, self.ptr(self.map_work[0]), self.ptr(self.map_work[1]),
++                                     self.ptr(self.coefficients[0]), self.ptr(self.coefficients[1]))
++        np.multiply(self.coefficients, self.analysis_scale, out=self.coefficients)
++        return self.coefficients
++
++shtns_reference = ShtnsReference() if backend in {"shtns", "references", "all"} else None
++
++print(f"T{lmax} {geometry} {ntheta}x{nphi} spin={spin} mode={mode} threads={threads} runs={runs} scope={scope} operation={operation} backend={backend} phi0={phi0} python={sys.version.split()[0]} numpy={np.__version__} ducc={ducc0.__version__}")
+@@ -137 +233 @@
+-    if backend == "both":
++    if backend in {"both", "all"}:
+@@ -139 +235 @@
+-    if backend in {"both", "rust"}:
++    if backend in {"both", "rust", "all"}:
+@@ -143 +239 @@
+-    if backend in {"both", "ducc"}:
++    if backend in {"both", "ducc", "references", "all"}:
+@@ -144,0 +241,3 @@
++    if shtns_reference is not None:
++        print("synthesis_shtns_ducc_error=" + errors(shtns_reference.synthesis(), ducc_synth()))
++        report("synthesis_shtns_adapter", shtns_reference.synthesis)
+@@ -146 +245 @@
+-    if backend == "both":
++    if backend in {"both", "all"}:
+@@ -148 +247 @@
+-    if backend in {"both", "rust"}:
++    if backend in {"both", "rust", "all"}:
+@@ -152 +251 @@
+-    if backend in {"both", "ducc"}:
++    if backend in {"both", "ducc", "references", "all"}:
+@@ -153,0 +253,3 @@
++    if shtns_reference is not None:
++        print("analysis_shtns_ducc_error=" + errors(shtns_reference.analysis(), to_rust_layout(ducc_analysis())))
++        report("analysis_shtns_adapter", shtns_reference.analysis)

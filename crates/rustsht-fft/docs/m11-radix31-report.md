@@ -46,7 +46,7 @@ At 1,024 rows, median public-operation times were 46.457 µs for M11 R2C and
 (1.174–1.208) and 1.193 (1.182–1.208); inverse speedups were 1.171
 (1.149–1.184) and 1.165 (1.150–1.182). The one-row inverse interval crossed
 parity, so it does not establish a gain at that row count. The N=241, N=257 and N=723 control medians showed no slowdown above 0.3%. Their paired intervals were wider than the N=2049 intervals. Load-average telemetry was retained only in local diagnostics. These control measurements do not establish
-parity under the recorded host load. Raw samples, configurations, and per-cell summaries are recorded in the
+parity under the reviewed interference conditions. Structured timing samples, configurations, and per-cell summaries are in the
 [N=2049 acceptance capture](../benches/results/m11-radix31-target-acceptance-six-pairs.jsonl),
 the [N=682 C2C capture](../benches/results/m11-radix31-n682-control-six-pairs.jsonl),
 the N=241, N=257 and N=723 control captures, and the

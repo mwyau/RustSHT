@@ -25,8 +25,7 @@ CPU-pressure validity was assessed under the declared protocol; raw readings rem
 not run the remaining T511 scalar pairs or the spin-1 control. This partial
 matrix is sufficient to reject the candidate: the primary target was 3.36%
 slower, and the four clean T511 scalar control pairs were 3.38% slower. The
-full control matrix was not run. Raw stdout, GNU time output, preflight process
-snapshots, and the refusal are retained alongside `summary.csv`.
+full control matrix was not run. Structured timing and numerical results are retained in `summary.csv`; raw stdout, GNU-time, preflight process snapshots, and refusal captures remain local.
 
 ## Numerical checks
 
@@ -39,7 +38,7 @@ Formatting and focused numerical validation passed:
 - Three pinned DUCC 0.41.0 scalar synthesis tests: low-degree reference,
   T255 sectoral samples, and T255 mixed samples
 
-The test output is in `numerical-checks.log`. Full workspace suites were not
+The focused regression passed; its raw console output remains local and untracked. Full workspace suites were not
 run because the performance candidate failed and was rejected. This result
 rejects the tested two-chain/two-pair panel; it does not accept a production
 change or make a parity claim. The exact candidate source is in `source/` and

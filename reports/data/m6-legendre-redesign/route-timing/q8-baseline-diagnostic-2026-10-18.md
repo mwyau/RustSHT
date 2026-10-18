@@ -31,12 +31,7 @@ process. The first process was stable under the same protocol.
 
 ## Validity observations
 
-CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The cgroup CPU limit was unlimited.
-The process was restricted to eight permitted logical CPUs; eight distinct
-worker placements were observed. Sampled process listings showed no competing
-build or benchmark workload. Thread context-switch counts and CPU frequency
-were captured locally. Frequency sampling occurred at 500 ms intervals, too
-coarse to explain changes between individual transform calls. Peak process RSS
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The benchmark used eight workers with placement checked against the configured worker count. The local interference review found no competing build or benchmark workload. Context-switch and frequency telemetry remain local; their sampling resolution was too coarse to explain changes between individual transform calls. Peak process RSS
 was 33.8 MiB and 33.2 MiB, respectively.
 
 The diagnostic confirms that q8 timing can fail the existing stability gate

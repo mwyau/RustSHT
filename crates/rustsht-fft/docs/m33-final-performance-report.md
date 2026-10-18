@@ -6,7 +6,7 @@ The accepted source is M32 at commit `234ab2d30b8d542457398e2f7be17e7e7b9aa25e`.
 
 ## Accepted-source comparison matrix
 
-The complete 34-cell matrix for each of RustFFT 6.4.1, native SIMD DUCC, portable DUCC, FFTW 3.3.10, and Admiral is in [`m32-accepted-source-cross-library-summary.csv`](../benches/results/m33-rader-fusion/m32-accepted-source-cross-library-summary.csv). The accompanying JSONL files record raw process output, binary hashes, setup times, scratch bytes, checksums, and host load. DUCC is pinned at `c1ed01b8fda69d2a378190f0915f1a19762dddbf`; native DUCC used planner vectorization. Admiral is pinned at `ce67bc00`. The table reports the accepted RustSHT-FFT median and `reference / RustSHT-FFT` latency ratios. A ratio above 1 means RustSHT-FFT was faster for that row.
+The complete 34-cell matrix for each of RustFFT 6.4.1, native SIMD DUCC, portable DUCC, FFTW 3.3.10, and Admiral is in [`m32-accepted-source-cross-library-summary.csv`](../benches/results/m33-rader-fusion/m32-accepted-source-cross-library-summary.csv). The accompanying JSONL files retain structured benchmark timings, binary hashes, setup times, scratch bytes, and checksums. Raw process and host-state captures remain local. DUCC is pinned at `c1ed01b8fda69d2a378190f0915f1a19762dddbf`; native DUCC used planner vectorization. Admiral is pinned at `ce67bc00`. The table reports the accepted RustSHT-FFT median and `reference / RustSHT-FFT` latency ratios. A ratio above 1 means RustSHT-FFT was faster for that row.
 
 | Operation | RustSHT-FFT | RustFFT 6.4.1 | DUCC native | DUCC portable | FFTW 3.3.10 | Admiral |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |

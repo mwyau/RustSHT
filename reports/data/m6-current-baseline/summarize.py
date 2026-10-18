@@ -135,7 +135,7 @@ for lmax, spin, threads in configs:
 lines.extend(
     [
         "",
-        "Relative L2 errors were checked in every process before timing. The exact per-process errors, all raw samples, RSS, wall time, and CPU utilization are in the neighboring `*.stdout` and `*.time` files.",
+        "Relative L2 errors were checked in every process before timing. Per-process numerical errors, timing samples, and aggregate RSS are summarized in structured outputs; raw process and GNU-time captures remain local.",
     ]
 )
 (ROOT / "summary.md").write_text("\n".join(lines) + "\n")

@@ -133,7 +133,7 @@ fallback. The f64 paired timings show small forward-control regressions at
 short lengths and a 1.0–2.1% gain for a single R2C/C2R pair and 1.6–2.7% for
 a 32-row pair at lengths 512–4,096. The f32 C2R/RustFFT ratios improve across
 the full tested set. Keep the change while M4 profiling continues; the
-remaining f32 C2R gap is about 1.83–1.97× RustFFT. Raw process records:
+remaining f32 C2R gap is about 1.83–1.97× RustFFT. Structured timing samples:
 
 - [f64 baseline/candidate process samples](../benches/results/m4-real-terminal-output-pass-process-samples.csv)
 - [f32 baseline samples](../benches/results/m4-real-terminal-output-pass-f32-baseline-process-samples.csv)

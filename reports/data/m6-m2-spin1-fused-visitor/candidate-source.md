@@ -1,0 +1,5 @@
+# Archived candidate source patch
+
+This patch retains the source differences from a previously archived M2 candidate tree without carrying a duplicate repository snapshot. It contains `src/` changes, including test-only route profiling, and the corresponding benchmark harness changes under `examples/`. The candidate remains experimental and is not enabled by this record.
+
+Apply it from the repository root with `git apply --unidiff-zero reports/data/m6-m2-spin1-fused-visitor/candidate-source.patch`; it is relative to the `src/` and `examples/` files in this cleaned opt-branch tree. Whitespace-only blank lines are normalized in the patch. The original snapshot SHA-256 was `f44a6f0e265f199733210798131a3428803fd410792a6ae84acce90ddd4056ef`. Its internal base revision was not recorded, so this patch documents the exact source delta against the stated branch tree rather than claiming a historical upstream commit. The extracted patch excludes benchmark output, local environment captures, generated binaries, dependency caches and unrelated report files.

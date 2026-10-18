@@ -19,6 +19,32 @@ build/
 .vscode/
 
 # Local benchmark and host-state captures; commit structured summaries instead.
+# Generated per-run validity captures remain local under benchmark data.
+/reports/data/**/*.stdout
+/reports/data/**/*.stderr
+/reports/data/**/raw/
+/crates/rustsht-fft/benches/results/**/*.stdout
+/crates/rustsht-fft/benches/results/**/*.stderr
+/reports/data/**/*.status
+/reports/data/**/*.refusal
+/reports/data/**/*.interference
+/reports/data/**/*.stability-check-v3
+/reports/data/**/*.v2-stability
+/reports/data/**/*.postflight-failed
+/reports/data/**/preflight*.log
+/reports/data/**/*preflight*.log
+/reports/data/**/isolation-preflight.log
+/reports/data/**/scalar-check-preflight.log
+/reports/data/**/*preflight*.txt
+/reports/data/**/*postflight*.txt
+/reports/data/**/*during*.txt
+/reports/data/**/*concurrent*.txt
+/reports/data/**/rebuild-*.log
+/reports/data/**/*rebuild*.log
+/reports/data/**/compile*.log
+/reports/data/**/release-*-test.log
+/reports/data/**/host.txt
+/reports/data/m6-m2-spin1-fused-visitor/matrix/spin0-t511-q8-audit-processes.csv
 /reports/data/**/*.preflight
 /reports/data/**/*.preflight.txt
 /reports/data/**/*.postflight
@@ -93,3 +119,8 @@ build/
 # Large local M6 code-generation and benchmark binaries.
 /reports/data/m6-legendre-redesign/cpu-isa-asm/rustsht-*.s
 /reports/data/m6-p02/precomputed-visitor/candidate-bench
+/reports/data/**/baseline-build.log
+/reports/data/**/candidate-build.log
+/reports/data/**/focused-tests.log
+/reports/data/**/test.log
+/reports/data/**/build.log

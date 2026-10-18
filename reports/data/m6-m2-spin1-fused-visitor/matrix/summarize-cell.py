@@ -144,7 +144,7 @@ def main() -> None:
         f"- Pairs above 1.02: {summary['pairs_over_1_02']} / 12\n"
         f"- Gate: **{summary['gate']}** ({gate_text})\n\n"
         f"Per-pair raw values and selected attempt IDs: [{cell}-pairs.csv]({cell}-pairs.csv). "
-        "All selected stdout, GNU time and preflight records remain alongside the runner artifacts.\n"
+        "Selected benchmark timing samples are summarized here; raw stdout, GNU-time, and preflight records remain local and untracked.\n"
     )
 
     central = ROOT / "cell-gates.csv"

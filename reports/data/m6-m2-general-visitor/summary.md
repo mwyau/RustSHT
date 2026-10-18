@@ -36,7 +36,7 @@ Rust 1.99.0 release binaries were built from the same base and Cargo lockfile. R
 phi0=0.37, ntheta=lmax+1, nphi=2(lmax+1), requested-only synthesis, one
 warmup and five measured synthesis samples. Six alternating baseline/candidate
 process pairs were run per cell. Peak RSS and wall-time output are in the
-paired .time and .stdout files; scripts are run-one.sh and run-screen.sh.
+structured timing-samples.jsonl; scripts are run-one.sh and run-screen.sh. Raw process output remains local and untracked.
 
 | T | Spin | Baseline median (ms) | Candidate median (ms) | Candidate / baseline | Paired bootstrap 95% interval | Result |
 |---:|---:|---:|---:|---:|---:|---|
@@ -48,9 +48,7 @@ All six T511 scalar pair ratios exceed 1.02. Five of six T1023 scalar pairs
 exceed 1.02, and its bootstrap interval is wholly above 1.02. The median
 paired peak-RSS change was negligible at both scalar targets. Raw pair rows
 and bootstrap summary are in [screen-pairs.csv](screen-pairs.csv) and
-[screen-summary.csv](screen-summary.csv). The preflight log records 36 benchmark process snapshots and one partial
-snapshot from a failed launcher probe. No run was refused; no compiler or
-benchmark workload was observed during accepted process preflights. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The initial
+[screen-summary.csv](screen-summary.csv). The 36 accepted process checks found no competing compiler or benchmark workload. One launcher probe stopped before measurement; its local process records remain untracked. No benchmark run was refused. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The initial
 taskset affinity probe had invalid arguments and stopped before launching a
 benchmark; the probe was corrected before the paired screen. The raw process
 timings show consistent scalar slowdown in both alternating orders. Treat

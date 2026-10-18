@@ -11,8 +11,8 @@ P02. Its counters are summarized in
 six-pair P01-to-P01+P02 comparison remains the evidence that P02 coefficient
 reuse has no material gain. A second profile from the retained P01-only source
 snapshot, with P02 excluded, is summarized in
-[`p01-only-summary.md`](p01-only-summary.md), with raw output and source hashes
-in `p01-only-test.log` and the related `p01-only-*` files. Its exact changed
+[`p01-only-summary.md`](p01-only-summary.md), with structured route results and source hashes
+in the structured route sample records and related `p01-only-*` files. Its exact changed
 source files are retained under `p01-only-source/`. Compare either
 profile with the committed baseline T1023 q1 row in
 [`m6-current-baseline/route-profile/summary.csv`](../../m6-current-baseline/route-profile/summary.csv). Per-worker route timers are CPU-time sums and are not wall time. Two additional P01-only profiles cover q8 at T1023 and T2047. Their worker

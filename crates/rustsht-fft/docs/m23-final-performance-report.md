@@ -45,16 +45,14 @@ vectorization enabled; the portable build disables planner vectorization. FFTW i
 for the native architecture with threading disabled. RustFFT is version
 6.4.1 in the same Rust benchmark executable. Load-average telemetry was retained only in local diagnostics. The clean native DUCC retry recorded 1.01–2.26. The portable
 DUCC, FFTW and Admiral captures overlapped a separate f32 SHT benchmark pinned
-to 8 pinned CPU cores; the FFT comparisons remained pinned to one CPU core. Their load ranges
+to eight workers; the FFT comparisons used one worker. Host-pressure observations
 were 2.05–4.52, 3.59–4.66 and 3.38–4.15, respectively. Treat those three
 cross-library captures as diagnostic; their paired intervals are reported
 without claiming quiet-host repeatability. A first native DUCC capture was
-stopped after three complete pairs when an SHT test raised host load. Its raw
-records remain preserved and are not summarized; the six-pair retry is the
-reported native result. Ratios below are reference time divided by M21 time, so values above 1 favor
+stopped after three complete pairs when concurrent SHT activity affected host pressure. Those samples remain diagnostic; the six-pair retry is the reported native result. Ratios below are reference time divided by M21 time, so values above 1 favor
 M21. Intervals are bootstrap 95% intervals over six paired process ratios. The M21 absolute time column is the median per transform from the M18 paired
 capture. Full per-process medians, plan/workspace construction medians, bytes,
-checksums, hashes and load records are in the linked CSV and JSONL files.
+checksums, hashes and structured timing results are in the linked CSV and JSONL files. Raw host-state records remain local.
 
 | Operation | N | Rows | M21 µs | M18/M21 | RustFFT/M21 | DUCC native/M21 | DUCC portable/M21 | FFTW/M21 | Admiral/M21 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|

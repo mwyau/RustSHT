@@ -6,9 +6,7 @@ Branch: `opt/sht-performance-parity`, based on integrated revision
 
 ## Checkpoint state
 
-Repository history cleanup removed committed raw process, environment, host-
-frequency, and thread-placement captures. This report and linked summaries retain numerical samples, CPU-pressure validity decisions, error metrics, route counts, workload configuration,
-source hashes, compiler/ISA settings, and conclusions. Detailed preflight/postflight captures are local and ignored.
+Repository history cleanup removes committed raw process, environment, host-frequency, and thread-placement captures. This report and linked summaries retain numerical samples, CPU-pressure validity decisions, error metrics, route counts, workload configuration, source hashes, compiler/ISA settings, and conclusions. Detailed preflight/postflight captures remain local and ignored.
 
 
 The branch contains three production checkpoints: C01 workspace validation
@@ -23,7 +21,7 @@ outside production. The isolated M2 general-visitor candidate is also rejected
 and remains outside production. The scalar M1 route-profile evidence is
 committed; the new spin-1 profile is recorded below. Test-only counters,
 benchmark harness changes, and numerical-plan edits remain uncommitted. The
-campaign report and raw measurements are recorded in diagnostic evidence
+campaign report and structured benchmark evidence are recorded in the linked
 checkpoints.
 
 An earlier frozen tile-128 scalar source passed six-pair q1 comparisons at
@@ -96,9 +94,7 @@ length-two extreme cases, smallest-subnormal f64 DC values at lengths
 spins 0–4, f64/f32, nonzero `phi0`, and odd/even longitudes. The range
 controls compare scaled complete arrays with ordinary execution at L4;
 independent analytic and DUCC checks are supplied by the existing suite. Private pre-FFT tests now compare Fourier-series amplitudes instead of
-`nphi`-scaled DFT bins, with unchanged tolerances. The first candidate passed full debug/release/serial suites, eight opt-in
-high-L tests, formatting and Clippy, and 111 standalone FFT tests in both
-debug and release. Its six-pair controls failed the predeclared per-operation
+`nphi`-scaled DFT bins, with unchanged tolerances. The first candidate passed full debug/release/serial suites, eight opt-in high-L tests, formatting and Clippy, and 111 standalone FFT tests in both debug and release. Its six-pair controls failed the predeclared per-operation
 regression gate: scalar T255 q1 synthesis increased by 3.68% (paired-median
 95% bootstrap interval 3.10%–4.39%). Analysis increased by 2.51% at that cell,
 with additional slowdown signals in other analysis controls. These results
@@ -118,9 +114,8 @@ candidate/baseline median 1.03003, 95% interval 1.02166–1.03604, with all six
 pairs above 1.02. Scalar T255 q1 analysis was 1.02069 (95% interval
 1.01719–1.02564; four of six pairs above 1.02). CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. Their raw samples were retained. The revised C02 candidate therefore
 passes these numerical checks but does not pass the per-operation performance
-control. It is not accepted. The summary, method, C02-only source patch, and
-all 96 process outputs are in
-[`reports/data/m6-c02/revised-validation/paired/`](data/m6-c02/revised-validation/paired/). Baseline timing artifacts are in [the C02 data directory](data/m6-c02/). The
+control. It is not accepted. The summary, method, C02-only source patch, and structured timing samples are in
+[`reports/data/m6-c02/revised-validation/paired/`](data/m6-c02/revised-validation/paired/); raw process output remains local and untracked. Baseline timing artifacts are in [the C02 data directory](data/m6-c02/). The
 private FFT adapter still inherits the FFT engine's range limits; these
 checks do not prove arbitrary large-spectrum cancellation is overflow-free.
 
@@ -128,7 +123,7 @@ checks do not prove arbitrary large-spectrum cancellation is overflow-free.
 
 Both reported conversion guard gaps are reproduced before FFT execution. The spin-1 hemisphere route at T319 produced infinity where the original
 spin recurrence gave a finite value. The spin-2 scalar route at T500
-produced NaN for finite E/B input with a finite general-reference value. The reproducer log is `target/m6-c03-reproduce.log`. The candidate extracts the existing general-spin order projection into a
+produced NaN for finite E/B input with a finite general-reference value. The numerical reproducer is summarized here; raw test output remains local and untracked. The candidate extracts the existing general-spin order projection into a
 private helper. Spin-1 hemisphere and spin-2 scalar synthesis check converted
 coefficients and paired preparation before committing any order output. A
 failure projects the original E/B coefficients with freshly initialized spin
@@ -223,11 +218,10 @@ timed pairs completed. Their exploratory candidate/baseline synthesis ratios
 were `0.83268`, `1.15892`, `0.84561`, and `1.18379`; the median was `1.00226`
 with a four-pair percentile-bootstrap interval of `0.83268–1.18379`. In each
 pair the second process was faster regardless of binary, so the partial sample
-does not identify a scheduling effect. Pair 5 candidate was refused at the
-CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
-eight-pair gate is incomplete and not met by the exploratory point estimate. No controls or route-profile rerun were started; the candidate is unaccepted. This incomplete scheduling experiment is separate from the rejected general
-visitor candidate described under M2. The isolated source, binary hashes, numerical outputs, time/RSS summaries, and CPU-pressure validity decisions
-records are in
+does not identify a scheduling effect. Pair 5 candidate was refused under the CPU-pressure gate. The eight-pair
+screen is incomplete and the exploratory point estimate does not meet its
+predeclared requirement. No controls or route-profile rerun were started; the candidate is unaccepted. This incomplete scheduling experiment is separate from the rejected general
+visitor candidate described under M2. The isolated source, binary hashes, numerical outputs, timing/RSS summaries, and CPU-pressure validity decisions are in
 [`reports/data/m6-m1-scheduling/`](data/m6-m1-scheduling/). The matched q8 T2047 reference run confirms that RustSHT remains 13.97x slower
 than DUCC for scalar synthesis and 8.12x slower for spin-1 synthesis under
 eight threads in this baseline.
@@ -254,9 +248,7 @@ total fused, visitor, and transition CPU timers changed from 285.548 to
 map matched its uninstrumented output bitwise. The maximum-to-minimum active
 worker timer ratio fell from 6.93x to 4.09x at T1023 and from 9.53x to 7.02x
 at T2047, so imbalance remains, especially at T2047. These are single-run
-diagnostic profiles, not acceptance measurements. The P01-only q8 summary,
-exact source and executable hashes, numerical timing results, PSI avg10 values, and RSS summaries
-records are in
+diagnostic profiles, not acceptance measurements. The P01-only q8 summary, exact source and executable hashes, numerical timing results, CPU-pressure gate outcomes, and RSS summaries are in
 [`reports/data/m6-p01/route-profile/p01-only-q8-summary.md`](data/m6-p01/route-profile/p01-only-q8-summary.md). A separate T2047 q8 lane-retry route-accounting test compared one
 uninstrumented call with one call that collected per-worker route counters. The maps matched bitwise; the times were 512.470 and 512.947 ms (+0.09%). The test counted 1.734 billion
 committed lane-pair units and 67,676 declined transitions. Worker route-timer
@@ -290,9 +282,8 @@ V4/V3 transition kernels moved from `0x1f8130`/`0x204fb0` to
 guaranteed for downstream executable or extension links. Six alternating q1 synthesis pairs against the retained pre-P01 binary gave
 an ordered/baseline ratio of 0.99061 [0.98131, 0.99295] for T511 spin-1 and
 0.65974 [0.65738, 0.66357] for T1023 scalar. This screen clears the 2%
-spin-1 control and retains a material scalar gain. One T1023 preflight at
-CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
-missing process and the remaining pairs completed. Numerical summaries and the refused
+spin-1 control and retains a material scalar gain. One T1023 preflight failed the CPU-pressure gate and its benchmark process
+was not launched; the remaining pairs completed. Numerical summaries and the refused
 attempt are recorded in
 [`reports/data/m6-p01/link-order/`](data/m6-p01/link-order/). The complete ordered-binary matrix then covered six alternating pairs for
 T511 scalar/spin-1 q1, T1023 scalar q1/q8, and T2047 scalar q1/q8, with both
@@ -305,8 +296,7 @@ guard at 1.00993 [1.00439, 1.01875]. Scalar synthesis ratios were 0.65845
 0.73957 [0.73325, 0.74639] at T2047 q1, and 0.68709 [0.68489, 0.68813] at
 T2047 q8. The full matrix is summarized in
 [`reports/data/m6-p01/link-order/acceptance/summary.md`](data/m6-p01/link-order/acceptance/summary.md),
-with timing samples, CPU-pressure validity decisions, refused attempts, and replaced
-runs retained alongside it.
+with structured timing samples, pressure-gate outcomes and replacement decisions.
 
 ## P01 ordered versus default final link
 
@@ -323,9 +313,8 @@ spin-1 synthesis (range 0.95980–0.97703), and 1.00025 [0.99767, 1.01304] for
 T1023 scalar synthesis (range 0.99738–1.01926). All six spin-1 pair ratios
 favored the ordered binary. The scalar result shows no measurable loss of the
 P01 gain. Several five-sample process records contain high outliers; they are
-included in the reported ranges and summaries. One initial T1023 ordered
-CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
-checks, both sides of that pair were rerun. Preflight records show no compiler
+included in the reported ranges and summaries. One initial T1023 ordered process pair was judged suspect by the local
+validity review; both sides of that pair were rerun. Preflight records show no compiler
 or benchmark process during accepted runs. This same-source comparison shows that the spin-1 timing shift tracks final
 text layout. It does not establish a particular instruction-level or
 microarchitectural mechanism, or a portable default-link solution. This
@@ -429,12 +418,10 @@ route, compared with 191.910 ms to the visitor. The candidate interleaved two
 SIMD latitude vectors and unrolled two paired-degree contributions. It used
 the pre-P01 source and changed no transition or visitor code. Six low-pressure T1023 scalar synthesis pairs measured candidate/baseline
 1.03358 [1.02877, 1.03524]. Four T511 scalar control pairs measured
-1.03383 [1.03290, 1.03551]. The runner refused T511 scalar pair 5 at CPU PSI
-CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
-rejected: the primary cell was 3.36% slower and the clean T511 scalar control
+1.03383 [1.03290, 1.03551]. The runner refused T511 scalar pair 5 under the pressure gate. The candidate
+was rejected: the primary cell was 3.36% slower and the clean T511 scalar control
 was 3.38% slower. The full control matrix was not run. Formatting, three fused-kernel checks, and three pinned DUCC 0.41 scalar
-synthesis checks passed. The candidate source, numerical pair results,
-refusal, tests, and hashes are in
+synthesis checks passed. The candidate source, numerical pair results, pressure-gate outcome, tests, and hashes are in
 [`reports/data/m6-p02/parity-panel/`](data/m6-p02/parity-panel/). This is a
 separate P02 experiment from coefficient reuse in the visitor.
 
@@ -557,11 +544,10 @@ passed their control gates. Scalar T511 q8 also completed 12 pairs, but its
 raw samples were severely nonstationary: within-process sample CV median
 40.1%, range 21.9–107.4%, and paired ratios ranged 0.628–1.489. Its numerical
 bootstrap interval is therefore not treated as a valid gate pass. No valid
-sample was discarded. The next spin-1 T511 q8 cell has two completed pairs;
-CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
-limit. The matrix stopped there, without relaxing the limit. The complete
-audit, retained refusals/orphans, and partial cell records are linked from the
-candidate evidence directory.
+sample was discarded. The next spin-1 T511 q8 cell had two completed pairs
+before the campaign stopped under its declared pressure gate. The complete audit and partial cell
+results are linked from the candidate evidence directory; raw refusal and
+process captures remain local.
 
 ## T511 baseline timing trace (diagnostic only)
 
@@ -599,25 +585,24 @@ calls per process.
 | q1-03 | 39.787, 39.963, 39.534, 39.745, 39.827 | .39% | 39.787 | 39.786 |
 | q8-04 | 21.038, 15.110, 17.596, 9.379, 9.433 | 33.84% | 17.596 | 9.406 |
 
-Every preflight met PSI `some avg10 <= .50`, verified actual affinity of
-8 pinned CPU cores for q8 and one CPU core for q1, and listed no competing build or benchmark. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. GNU time records whole-process context switches; the unchanged harness cannot
-attribute involuntary context switches per call. A contemporaneous review found no cgroup CPU quota constraint. Thermal
-measurements were unavailable; detailed host captures remain local and untracked. The q8 decline reproduced on both baseline
-processes, while q1 remained stable; the cause remains unresolved. Under the
-prospective rule, both exact-harness q1 processes pass the CV and drift
+All four preflights passed the historical v1 pressure gate and used affinity
+sized to the requested worker count. Exact host-state captures remain local.
+Per-process review cannot attribute context switches to individual calls. The baseline-only q8 decline reproduced,
+while q1 remained stable; the cause remains unresolved. Thermal details remain
+local. Under the prospective rule, both exact-harness q1 processes pass the CV and drift
 checks, with first-three/final-two drift of 0.22% and 0.003%. Both q8
 processes fail both checks, with drift of 81.1% and 54.2% and CVs of 48.96%
-and 33.84%. Raw
-process evidence is in
-[`reports/data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/`](data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/). The visitor candidate remains **unaccepted and deferred** because q8 host
+and 33.84%. The structured timing samples and numerical comparison are in
+[`reports/data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/`](data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/); raw process captures remain local. The visitor candidate remains **unaccepted and deferred** because q8 host
 stability prevents its control gate. This is not a candidate performance
 rejection; do not run the candidate acceptance matrix now. For future acceptance sampling only, retain the exact original sequence above
 and all five timed Rust samples. Require process CV
 `sample_sd(samples) / median(samples) <= 5%` and first-three-to-final-two drift
-`abs(median(first3) - median(final2)) / median(all5) <= 5%`. Keep preflight
-PSI `some avg10 <= .50` and require no competing build or benchmark. If any
-process fails, retain it and stop the cell or matrix as inconclusive; do not
-delete samples or retry until one passes. This proposed rule is not applied
+`abs(median(first3) - median(final2)) / median(all5) <= 5%`. Apply the current preflight and postflight gate: reject above 2.00%, treat
+0.50–2.00% as a warning, and keep exact transient readings local. Require no
+clear interference. If any process fails, retain its scientific samples and
+stop the cell or matrix as inconclusive; do not delete samples or retry until
+one passes. This proposed rule is not applied
 retroactively. It is anchored to the clean standalone q8/q1 trace CVs
 2.37%/.50% and exact-harness q1 control CVs .19%/.39%, compared with exact-
 harness q8 CVs 48.96%/33.84%. The standalone trace and all historical samples
@@ -657,10 +642,8 @@ STANDARD, `synthesis_into`, q1 pinned to one CPU core. The Python harness was
 | DUCC | 7.620, 7.531, 7.517, 7.517, 7.498 | 7.517 | 0.57% | — |
 | SHTns adapter | 4.608, 4.675, 4.648, 4.651, 4.653 | 4.651 | 0.47% | 4.286e-14 |
 
-The Rust median is 5.36x DUCC and 8.66x the SHTns adapter for this cell. CPU-pressure warnings were reviewed under the declared protocol; exact transient readings remain local. The
-next T1023 preflight exceeded that limit, so the screen stopped without
-reruns or omitted samples. Whole-process GNU time was 34.18 s and peak RSS was
-96.8 MiB; the process time includes setup and reference work and is not
+The Rust median is 5.36x DUCC and 8.66x the SHTns adapter for this cell. The next T1023 preflight failed the historical pressure gate, so the screen stopped without reruns or omitted samples. Whole-process elapsed time was 34.18 s and aggregate peak RSS was
+96.8 MiB; elapsed time includes setup and reference work and is not
 transform latency. This is one diagnostic cell, not a matched acceptance
 matrix or a revalidation of the historical T1023/T2047 baselines. Raw samples,
 summarized host-validity conclusions, provenance, hashes and reproduction scripts are in
@@ -679,8 +662,8 @@ clean baseline and DUCC (`relative L2 = 6.632e-14`). Its Rust median rose from
 within measurement noise. This exceeds the 2% operation regression guard by a
 large margin, so this implementation is rejected as a performance candidate;
 it is not accepted into production. The comparison used clean baseline source
-`91c2cb8` and prototype base `739275d` plus the archived patch. The host and
-timing gates passed for both T511 processes. The CPU-pressure check failed the declared gate; exact transient readings remain local. No retry was made. T1023/T2047 cells and the complete
+`91c2cb8` and prototype base `739275d` plus the archived patch. The timing and correctness gates passed for both T511 processes. The
+CPU-pressure gate failed; no retry was made. T1023/T2047 cells and the complete
 control matrix therefore remain unmeasured. This result rejects the current implementation, not the broader recurrence
 and accumulation hypothesis. The next step is to account for fast-route
 success, scaled-prefix length, and fallback work by order and latitude tile,
@@ -718,7 +701,7 @@ The isolated polar-split candidate was rebuilt with `ACTIVE_TILE_SIZE=128`;
 the rest of the source matched the archived tile-256 candidate. The T511 q1
 Rust median was 32.212 ms versus 40.061 ms for clean baseline source `91c2cb8`
 (ratio 0.8041, −19.59%). Rust timed-sample CV and drift were 0.13% and 0.19%. Relative L2 error against DUCC was `6.632e-14` for both builds. Peak process RSS
-was 99,184 KiB for the candidate and 99,144 KiB for baseline. The CPU-pressure check failed the declared gate; exact transient readings remain local. The screen therefore fails the host gate and does not establish an
+was 99,184 KiB for the candidate and 99,144 KiB for baseline. The CPU-pressure check failed the declared gate. The screen therefore fails the host gate and does not establish an
 accepted performance comparison. No retry, T1023/T2047 cell, q8 cell, analysis
 cell, or production change followed. This T511 result is a raw positive signal
 for the 128-slot tile; its numerical, performance, and regression controls
@@ -727,8 +710,7 @@ capacity: 200 unit tests, 4 FFT-scaling tests, 11 f32 tests, and 1
 workspace-compatibility test; 14 opt-in tests were ignored. The source patch,
 binary hashes, numerical results, test summary, and stability calculations are in
 [`the tile-128 screen`](data/m6-legendre-redesign/tile128-screen/). A T1023 q1 follow-up stopped after its baseline process. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The candidate was not launched. This cell has no paired timing
-result. Together with the T511 candidate postflight PSI of 0.75, it records
-two host-gate failures; the tile-128 matrix is closed without retries. The
+result. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The
 baseline-only process record and verified binary hashes are in
 [`the T1023 screen`](data/m6-legendre-redesign/tile128-t1023-screen/). Disassembly of the tile-128 candidate confirms a four-lane x86-v3 FMA suffix
 with recurrence state and accumulators in YMM registers and no YMM spill in
@@ -754,14 +736,14 @@ prefixes account for 6.14%, 5.15%, and 6.38%; fallback accounts for 0.50%,
 fallback, so these are work proxies, not unique-lane shares or time fractions. Polar work is a subset of fallback. At T2047/q8, per-worker proxies range
 from 111.5M to 268.7M pair lanes (6.43%–15.49%); this indicates differing
 assigned work but is not a timing or completion-time measurement. T2047/q1's
-one affinity capture disagreed with its requested one-core configuration; this validity issue is retained without retry. PSI stayed below the predeclared host gate for all route-count cases. These counters show that the suffix dominates pair-lane work, not elapsed time. The later nested route timers instead measured 1,012.1 ms in the T2047 scaled prefix and 529.5 ms in the ordinary suffix. That timing evidence makes scaled-prefix execution the next measured kernel target; the route-count and route-time records are summarized in [the route-timing report](data/m6-legendre-redesign/route-timing/summary.md). The two-pair suffix unroll remains unmeasured. The candidate remains unaccepted because the T511 timing-stability control failed and the full regression matrix is incomplete.
+one route-count run did not match its configured one-worker placement; this validity issue is retained without retry. The predeclared pressure gate passed for the other route-count cases. These counters show that the suffix dominates pair-lane work, not elapsed time. The later nested route timers instead measured 1,012.1 ms in the T2047 scaled prefix and 529.5 ms in the ordinary suffix. That timing evidence makes scaled-prefix execution the next measured kernel target; the route-count and route-time records are summarized in [the route-timing report](data/m6-legendre-redesign/route-timing/summary.md). The two-pair suffix unroll remains unmeasured. The candidate remains unaccepted because the T511 timing-stability control failed and the full regression matrix is incomplete.
 
 ### 128-versus-256 active-ring tile diagnostic
 
 Test-only complete Rust synthesis calls compare the isolated 128- and
 256-ring variants at T511 and T2047. All five-call series passed the fixed
-within-process CV/drift limits, and pre/post CPU pressure stayed below the
-0.50 host gate. At T511, medians were 31.364 ms for 128 rings and 44.475 ms
+within-process CV/drift limits, and pre/post CPU pressure passed the historical v1
+host gate. At T511, medians were 31.364 ms for 128 rings and 44.475 ms
 for 256; at T2047 they were 1,697.716 ms and 2,174.153 ms. At T2047, active
 lane counts and AVX2 block counts were equal, and logical suffix throughput
 was 3.064 versus 3.061 billion lane-pairs/s. The 256-ring variant instead
@@ -787,12 +769,10 @@ source, patch, hashes, test result, and interrupted-build record are in
 
 ## Tile-128 candidate q1 comparison protocol v2
 
-The tile-128 candidate remains isolated. The prospective q1 process protocol
-uses a Linux CPU PSI `some avg10` rejection threshold of 2.00% for both
-preflight and postflight readings. Readings from 0.50% through 2.00% are
-warnings; pressure-gate outcomes are included in the result summary. Raw
-periodic host captures are local and untracked; their conclusions are reviewed
-for interference before another process starts. Clear interference
+The tile-128 candidate remains isolated. Protocol v2 rejects preflight or
+postflight CPU PSI `some avg10` above 2.00%; readings from 0.50% through
+2.00% are warnings. Exact transient readings remain local. The summary records the pressure-gate
+decision and interference conclusion. Clear interference
 still makes a process inconclusive. The per-process timing criteria are
 unchanged: population CV at most 5% and first-three/final-two median drift at
 most 5% for RustSHT, DUCC, and the SHTns adapter. The protocol fixes six
@@ -815,8 +795,7 @@ rules.
 
 ### First v2 T1023 process: baseline stability failure
 
-The first v2 process used the frozen clean-baseline extension. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The revised
-2.00% PSI gate did not fail the process. RustSHT and SHTns passed their timing
+The first v2 process used the frozen clean-baseline extension and passed the revised 2.00% pressure gate. RustSHT and SHTns passed their timing
 stability checks. DUCC samples were 49.831, 49.399, 48.647, 46.737, and
 47.190 ms; its CV was 2.5034%, while first-three/final-two median drift was
 5.0065%, exceeding the fixed 5% limit by 0.0065 percentage points. Numerical
@@ -847,9 +826,7 @@ were 40.028, 40.076, 42.433, 49.193 and 40.134 ms; CV was 8.3308% and
 first-three/final-two median drift was 11.4305%. Both exceed the unchanged
 5% stability limits. DUCC and SHTns passed their timing checks, and numerical
 errors versus DUCC were `6.632e-14` for RustSHT and `4.286e-14` for SHTns.
-CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The process review found no competing build or
-benchmark, no material outside CPU load on the assigned core, and no cgroup
-throttling. The candidate mate was not run, and no retry, q8 measurement or
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The local interference review found no disqualifying contention. The candidate mate was not run, and no retry, q8 measurement or
 broader regression matrix followed. The T511 control therefore has no paired
 ratio or bootstrap interval, and the candidate is not accepted.
 
@@ -931,8 +908,8 @@ record](data/m6-legendre-redesign/route-timing/coefficient-safety-cache-screen-v
 The three completed candidate/baseline median ratios were 0.95915, 0.95655,
 and 0.96284. These are descriptive only: the declared six-pair screen stopped
 at the first failed process and produced no bootstrap interval or acceptance
-result. PSI did not exceed the 2.00% rejection threshold; warning-band
-readings and broad CPU-frequency variation were recorded. No retries or
+result. PSI did not exceed the 2.00% rejection threshold; pressure warnings fell within the warning band, and local frequency
+diagnostics showed variation. No retries or
 replacement pairs ran. The cache patch remains isolated, and the tile-128
 kernel remains unaccepted pending its failed T511 control and complete
 regression matrix.

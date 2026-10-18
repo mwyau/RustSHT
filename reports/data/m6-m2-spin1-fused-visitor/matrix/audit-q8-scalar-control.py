@@ -179,7 +179,7 @@ for row in rows:
 md.extend(
     [
         "",
-        "Per-process timing, wall/system/user time, CPU%, RSS and both context-switch counts are in [the process audit CSV](spin0-t511-q8-audit-processes.csv). Pair-order and five-sample details are in [the paired audit CSV](spin0-t511-q8-audit-pairs.csv). Original stdout, GNU time and PSI/process preflights remain unchanged under the cell stem filenames.",
+        "Structured per-process timing, aggregate RSS, pair order, and five-sample details are summarized in the paired audit CSV. Raw process, GNU-time, and PSI captures remain local and untracked.",
     ]
 )
 (ROOT / f"{CELL}-audit.md").write_text("\n".join(md) + "\n")

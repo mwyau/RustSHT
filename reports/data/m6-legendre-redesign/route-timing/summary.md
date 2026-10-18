@@ -35,13 +35,7 @@ binary, a one-thread Rayon pool pinned to one CPU core, and a GL f64 scalar plan
 `ntheta=L+1`, `nphi=2(L+1)`, full `mmax=L`, and `phi0=0.37`. The test performed
 one unmeasured synthesis, then five timed complete Rust synthesis calls and
 asserted bitwise equality with its reference map after each call. The test
-also recorded route counters and nested timers. CPU-pressure warnings were reviewed under the declared protocol; exact transient readings remain local. No sample was removed
-or retried. Full commands, raw samples, and PSI records are retained in the
-`t*-tile*.stdout`, `.preflight`, `.postflight`, `.command`, and `.stability`
-files. The 256-ring cases also retain process snapshots, actual affinity and CPU core
-frequency readings. The 128-ring measurements were first collected directly
-with `taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}"`; their raw test output and PSI snapshots are retained, but
-those initial cases do not include full process/frequency snapshots. This is
+also recorded route counters and nested timers. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. No sample was removed or retried. Structured test samples and aggregate route results are retained. Raw command, stdout, preflight, postflight, stability, process-placement, and frequency captures remain local and untracked. The 128-ring measurements used the worker-count affinity policy; full placement and frequency captures were not retained in the committed summary. This is
 route-diagnostic evidence only. The later matched whole-transform q1 screen
 used the frozen Python extensions; its results and T511 stability stop are in
 the [paired q1 record](../paired-q1-128/summary.md). The route timers are
@@ -106,7 +100,7 @@ six-pair q1 whole-transform matrices passed at T1023 and T2047, with
 candidate/baseline median ratios 0.679651 and 0.533182. The first T511 baseline
 process then failed the fixed Rust timing-stability limits; no candidate mate,
 retry, q8 cell or broader regression measurement followed. That candidate was
-not accepted. Its numerical checks and process records are in the
+not accepted. Its numerical checks and timing summary are in the
 [earlier paired q1 report](../paired-q1-128/summary.md).
 
 The route timers point to the scaled prefix as the next measured kernel target:

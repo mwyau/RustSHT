@@ -45,7 +45,7 @@ the next process. All binaries and the harness remain frozen through collection.
 ## Validity and numerical gates
 
 - Preflight or postflight CPU PSI `some avg10` above 2.00% rejects a process.
-  Values from 0.50% through 2.00% are warnings and must be reported exactly.
+  Values from 0.50% through 2.00% are warnings. Report the gate outcome and keep exact transient readings local.
 - Every RustSHT, DUCC, and SHTns five-call series must have population CV at
   most 5% and first-three/final-two median drift at most 5%.
 - Review affinity, worker-thread placement, frequency, involuntary context

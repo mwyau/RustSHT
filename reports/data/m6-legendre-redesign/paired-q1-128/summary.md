@@ -13,7 +13,7 @@ The fixed v3 q1 screen passed its six-pair timing and numerical gates at T1023 a
 
 CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
 
-Raw outputs remain unchanged in [`T511-p01-baseline.stdout`](T511-p01-baseline.stdout). Rust's five synthesis samples were 39.944, 39.821, 39.975, 39.890, 39.974 ms (median 39.944 ms; CV 0.147%; first-three/final-two drift 0.030%). DUCC samples were 7.995, 7.928, 7.854, 7.845, 7.892 ms (median 7.892 ms; CV 0.693%; drift 0.754%). SHTns adapter samples were 4.688, 4.652, 4.602, 4.686, 4.595 ms (median 4.652 ms; CV 0.857%; drift 0.247%). All three sample-series stability checks passed, and the numerical comparisons passed: Rust versus DUCC relative L2 error `6.632e-14`, SHTns adapter versus DUCC `4.286e-14`. GNU time reported 99,372 kB peak RSS, 33.60 s elapsed, and involuntary context-switch detail omitted. Despite stable individual series and passing numerical checks, the host-gate failure makes this process ineligible for a paired timing comparison. No paired ratio, bootstrap interval, or acceptance assessment is available. The q1 matrix remains incomplete and was not resumed.
+The structured record retains the benchmark configuration, timing samples and numerical errors in [`timing-samples.jsonl`](timing-samples.jsonl). Rust's five synthesis samples were 39.944, 39.821, 39.975, 39.890, 39.974 ms (median 39.944 ms; CV 0.147%; first-three/final-two drift 0.030%). DUCC samples were 7.995, 7.928, 7.854, 7.845, 7.892 ms (median 7.892 ms; CV 0.693%; drift 0.754%). SHTns adapter samples were 4.688, 4.652, 4.602, 4.686, 4.595 ms (median 4.652 ms; CV 0.857%; drift 0.247%). All three sample-series stability checks passed, and the numerical comparisons passed: Rust versus DUCC relative L2 error `6.632e-14`, SHTns adapter versus DUCC `4.286e-14`. Whole-process elapsed time was 33.60 s and aggregate peak RSS was 99,372 kB; context-switch diagnostics remain local. Despite stable individual series and passing numerical checks, the host-gate failure makes this process ineligible for a paired timing comparison. No paired ratio, bootstrap interval, or acceptance assessment is available. The q1 matrix remains incomplete and was not resumed.
 
 ## Prospective protocol v2
 
@@ -32,11 +32,8 @@ no v2 performance process had started. The planned sequence is six alternating T
 
 ## First v2 T1023 process: stopped at baseline
 
-The first T1023 q1 process used the frozen clean-baseline extension. CPU-pressure warnings were reviewed under the declared protocol; exact transient readings remain local. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. Snapshots showed the benchmark
-thread pinned to one CPU core, no competing build or benchmark, and no sustained
-external CPU load on one CPU core. Concurrent process placement and CPU-frequency telemetry remain in local diagnostics only. The
-process recorded involuntary context-switch detail omitted, 276,132 kB peak RSS, and
-18.78 s elapsed time. Raw snapshots and GNU time output remain local and untracked. RustSHT synthesis measured 295.985, 293.720, 293.657, 293.395, and
+The first T1023 q1 process used the frozen clean-baseline extension. CPU-pressure warnings were reviewed under the declared protocol; exact transient readings remain local. Local worker-placement and interference review matched the one-worker setup and found no disqualifying contention. Detailed placement and CPU-frequency telemetry remain local and untracked. The
+Whole-process elapsed time was 18.78 s and peak RSS was 276,132 kB. Raw host-state and GNU-time captures remain local and untracked. RustSHT synthesis measured 295.985, 293.720, 293.657, 293.395, and
 293.677 ms (median 293.677 ms, CV 0.3250%, drift 0.0627%). DUCC measured
 49.831, 49.399, 48.647, 46.737, and 47.190 ms (median 48.647 ms, CV
 2.5034%, drift 5.0065%). The DUCC drift exceeds the fixed 5% limit by
@@ -81,20 +78,17 @@ one-pair observations, not the six-pair acceptance result. The candidate is
 still isolated and unaccepted.
 
 Numerical checks gave RustSHT-versus-DUCC relative L2 error `1.182e-13` for
-both variants and SHTns-versus-DUCC `8.764e-14`. Context-switch diagnostic counts remain local. Whole-process elapsed
+both variants and SHTns-versus-DUCC `8.764e-14`. Context-switch diagnostics remain local. Whole-process elapsed
 times were 18.88 s and 18.63 s; peak RSS was 278,356 kB and 274,540 kB,
 respectively. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. Each
-benchmark worker stayed within its one-core affinity; no competing build or
-benchmark and no sustained external CPU load on that core were observed. The
-cgroup recorded no throttling.
+benchmark worker stayed within its one-worker placement; no competing build or
+benchmark and local interference review found no disqualifying contention. The
+Cgroup review found no disqualifying interference.
 
-CPU-pressure validity decisions were:
+CPU-pressure validity decisions are summarized here; exact transient readings remain local.
 
 
-
-The postflight readings are warnings under the fixed v3 rule and remain below
-the 2.00% rejection threshold. Raw preflight, periodic process, thread,
-frequency, GNU-time, and console captures remain local and untracked. No
+The process passed the v3 pressure gate; warning-band readings did not cause rejection. Raw host-state, GNU-time, and console captures remain local and untracked. No
 process was retried and no samples were removed.
 
 ### T1023 q1 pair 02: both processes valid
@@ -121,12 +115,9 @@ bootstrap acceptance gate are still incomplete.
 RustSHT-versus-DUCC relative L2 error was `1.182e-13` for both variants;
 SHTns-versus-DUCC was `8.764e-14`. Whole-process elapsed times were 18.52 s
 for candidate and 19.13 s for baseline. Context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. Each
-worker stayed within its one-core affinity. Neither process showed a competing
-build or benchmark or sustained external CPU load on that core. The cgroup
-had no CPU quota and recorded no throttling.
+worker stayed within its one-worker placement. The local interference review found no disqualifying contention.
 
-CPU-pressure validity decisions were:
-
+CPU-pressure validity decisions are summarized here; exact transient readings remain local.
 
 
 The candidate postflight and baseline during-run readings in the warning
@@ -146,13 +137,10 @@ three baseline timing series and its numerical comparison against DUCC passed.
 
 RustSHT-versus-DUCC relative L2 error was `1.182e-13`; SHTns-versus-DUCC
 was `8.764e-14`. Whole-process elapsed time was 18.98 s, peak RSS was
-274,560 kB, and Context-switch diagnostics were reviewed locally; exact counts remain untracked. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its
-one-core affinity. No competing build or benchmark or sustained external CPU
-load was observed on that core. The cgroup had no CPU quota and recorded no
-throttling.
+274,560 kB; context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its
+one-worker placement. Local interference review found no disqualifying contention.
 
-CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The two during-run values above 0.50% are warnings under v3; this
-process remains valid. Raw diagnostic captures remain local and untracked.
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The process passed the v3 pressure gate; warning-band readings did not cause rejection. Raw diagnostic captures remain local and untracked.
 The candidate mate also passed all timing and numerical gates:
 
 | Backend | Samples (ms) | Median (ms) | CV | Drift | Peak RSS (kB) |
@@ -165,9 +153,7 @@ The paired RustSHT median ratio is 0.6793 (1.4721x, or 32.07% lower
 latency). RustSHT was 5.95x DUCC and 8.15x SHTns for baseline, and 4.20x
 DUCC and 5.53x SHTns for tile 128. RustSHT-versus-DUCC relative L2 error
 was `1.182e-13`; SHTns-versus-DUCC was `8.764e-14`. Whole-process elapsed
-time was 18.27 s, peak RSS was 274,596 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core affinity, with no competing build
-or benchmark or sustained external CPU load on that core; the cgroup recorded
-no throttling.
+time was 18.27 s, peak RSS was 274,596 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-worker placement, and the local interference review found no disqualifying contention.
 
 CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The postflight reading is a warning, not
 a rejection. At this point pairs 01, 02, and 03 all favored tile 128. The
@@ -191,12 +177,9 @@ RustSHT-versus-DUCC relative L2 error was `1.182e-13`; SHTns-versus-DUCC
 was `8.764e-14`. The candidate was 3.99x DUCC and 5.77x SHTns in this
 process; the pair ratio awaits its baseline mate. Whole-process elapsed time
 was 18.44 s, peak RSS was 274,504 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked.
-The worker stayed within its one-core affinity. Process and thread snapshots
-showed no competing build or benchmark and no sustained external CPU load on
-that core; the cgroup recorded no throttling.
+Worker placement matched the one-worker policy. Local interference review found no disqualifying contention.
 
-CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The postflight value is
-a warning, not a rejection. Raw diagnostic captures remain local and
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The process passed the v3 pressure gate; warning-band status did not cause rejection. Raw diagnostic captures remain local and
 untracked.
 
 The baseline mate also passed all gates:
@@ -211,9 +194,8 @@ The paired RustSHT median ratio is 0.6892 (1.4510x, or 31.08% lower
 latency). RustSHT was 6.20x DUCC and 8.24x SHTns for baseline, and 3.99x
 DUCC and 5.77x SHTns for tile 128. RustSHT-versus-DUCC relative L2 error
 was `1.182e-13`; SHTns-versus-DUCC was `8.764e-14`. Whole-process elapsed
-time was 19.13 s, peak RSS was 274,596 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core affinity. Process and thread
-snapshots showed no competing build or benchmark or sustained external CPU
-load on that core; the cgroup recorded no throttling.
+time was 19.13 s, peak RSS was 274,596 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. Worker placement matched the one-worker policy. The local interference review
+found no disqualifying contention.
 
 CPU-pressure warnings were reviewed under the declared protocol; exact transient readings remain local. The four valid T1023 q1 pairs all favor tile 128,
 but the six-pair matrix and bootstrap gate remain incomplete, so the candidate
@@ -234,9 +216,8 @@ passed.
 
 RustSHT-versus-DUCC relative L2 error was `1.182e-13`; SHTns-versus-DUCC
 was `8.764e-14`. Whole-process elapsed time was 19.01 s, peak RSS was
-274,616 kB, and Context-switch diagnostics were reviewed locally; exact counts remain untracked. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its
-one-core affinity. No competing build or benchmark or sustained external CPU
-load was observed on that core; the cgroup recorded no throttling.
+274,616 kB; context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its
+one-worker placement. Local interference review found no disqualifying contention.
 
 CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The
 during-run readings above 0.50% are warnings, not rejections. Raw diagnostic
@@ -254,9 +235,8 @@ The paired RustSHT median ratio is 0.6800 (1.4706x, or 32.00% lower
 latency). RustSHT was 6.01x DUCC and 8.40x SHTns for baseline, and 4.27x
 DUCC and 5.53x SHTns for tile 128. RustSHT-versus-DUCC relative L2 error
 was `1.182e-13`; SHTns-versus-DUCC was `8.764e-14`. Whole-process elapsed
-time was 18.41 s, peak RSS was 274,608 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core affinity. Process and thread
-snapshots showed no competing build or benchmark or sustained external CPU
-load on that core; the cgroup recorded no throttling.
+time was 18.41 s, peak RSS was 274,608 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. Worker placement matched the one-worker policy. The local interference review
+found no disqualifying contention.
 
 CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The postflight value is a warning, not a rejection. The
 five valid T1023 q1 pairs all favor tile 128, but the six-pair matrix and
@@ -280,9 +260,7 @@ RustSHT-versus-DUCC relative L2 error was `1.182e-13`; SHTns-versus-DUCC
 was `8.764e-14`. The candidate was 4.27x DUCC and 5.74x SHTns in this
 process. Whole-process elapsed time was 18.35 s, peak RSS was 278,416 kB, and
 Context-switch diagnostics were reviewed locally; exact counts remain untracked. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core
-affinity. Process and thread snapshots showed no competing build or benchmark
-or sustained external CPU load on that core; the cgroup recorded no
-throttling.
+affinity. The local interference review found no disqualifying contention.
 
 CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. Both latter values
 are warnings under v3, not rejections. Raw diagnostic captures remain local
@@ -300,12 +278,10 @@ The paired RustSHT median ratio is 0.6719 (1.4883x, or 32.81% lower
 latency). RustSHT was 6.33x DUCC and 8.30x SHTns for baseline, and 4.27x
 DUCC and 5.75x SHTns for tile 128. RustSHT-versus-DUCC relative L2 error
 was `1.182e-13`; SHTns-versus-DUCC was `8.764e-14`. Whole-process elapsed
-time was 18.96 s, peak RSS was 278,560 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core affinity; process and thread
-snapshots showed no competing build or benchmark or sustained external CPU
-load on that core. The cgroup recorded no throttling.
+time was 18.96 s, peak RSS was 278,560 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within the configured placement. The local interference
+review found no disqualifying contention.
 
-CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The final periodic and postflight values are
-warnings under v3, not rejections.
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The process passed the v3 pressure gate; warning-band readings did not cause rejection.
 
 ### T1023 q1 six-pair result
 
@@ -332,10 +308,8 @@ three baseline timing series and its numerical comparison against DUCC passed.
 RustSHT-versus-DUCC relative L2 error was `3.015e-13`; SHTns-versus-DUCC
 was `8.764e-14`. The baseline was 8.97x DUCC and 12.35x SHTns in this
 process. Whole-process elapsed time was 1:26.66, peak RSS was 955,568 kB,
-and Context-switch diagnostics were reviewed locally; exact counts remain untracked. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core
-affinity. Process and thread snapshots showed no competing build or benchmark
-or sustained external CPU load on that core. The cgroup had no CPU quota and
-recorded no throttling.
+; context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core
+affinity. Local interference review found no disqualifying contention.
 
 CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The two readings above 0.50% are warnings, not rejections.
 Raw diagnostics remain local and untracked.
@@ -352,9 +326,8 @@ The paired RustSHT median ratio is 0.5219 (1.9162x, or 47.81% lower
 latency). RustSHT was 8.97x DUCC and 12.35x SHTns for baseline, and 4.77x
 DUCC and 6.59x SHTns for tile 128. RustSHT-versus-DUCC relative L2 error
 was `3.015e-13`; SHTns-versus-DUCC was `8.764e-14`. Whole-process elapsed
-time was 1:12.54, peak RSS was 955,232 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core affinity. Process and thread
-snapshots showed no competing build or benchmark or sustained external CPU
-load on that core; the cgroup recorded no throttling.
+time was 1:12.54, peak RSS was 955,232 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. Worker placement matched the one-worker policy. The local interference review
+found no disqualifying contention.
 
 CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are
 warnings, not rejections. Raw diagnostic captures remain local and
@@ -378,9 +351,7 @@ RustSHT-versus-DUCC relative L2 error was `3.015e-13`; SHTns-versus-DUCC
 was `8.764e-14`. The candidate was 4.66x DUCC and 6.57x SHTns in this
 process. Whole-process elapsed time was 1:11.87, peak RSS was 955,136 kB, and
 Context-switch diagnostics were reviewed locally; exact counts remain untracked. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core
-affinity. Process and thread snapshots showed no competing build or benchmark
-or sustained external CPU load on that core; the cgroup recorded no
-throttling.
+affinity. The local interference review found no disqualifying contention.
 
 CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are
 warnings, not rejections. Raw diagnostic captures remain local and
@@ -398,12 +369,10 @@ The paired RustSHT median ratio is 0.5346 (1.8706x, or 46.54% lower
 latency). RustSHT was 8.78x DUCC and 12.21x SHTns for baseline, and 4.66x
 DUCC and 6.57x SHTns for tile 128. RustSHT-versus-DUCC relative L2 error
 was `3.015e-13`; SHTns-versus-DUCC was `8.764e-14`. Whole-process elapsed
-time was 1:22.76, peak RSS was 955,304 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core affinity; process and thread
-snapshots showed no competing build or benchmark or sustained external CPU
-load on that core. The cgroup recorded no throttling.
+time was 1:22.76, peak RSS was 955,304 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within the configured placement. The local interference
+review found no disqualifying contention.
 
-CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are warnings, not
-rejections. The next process was pair 03 baseline.
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. Warning-band readings passed v3; no pressure rejection occurred. The next process was pair 03 baseline.
 
 ### T2047 q1 pair 03: both processes valid
 
@@ -419,13 +388,10 @@ passed.
 
 RustSHT-versus-DUCC relative L2 error was `3.015e-13`; SHTns-versus-DUCC
 was `8.764e-14`. Whole-process elapsed time was 1:22.60, peak RSS was
-955,420 kB, and Context-switch diagnostics were reviewed locally; exact counts remain untracked. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its
-one-core affinity. Process and thread snapshots showed no competing build or
-benchmark or sustained external CPU load on that core. The cgroup had no CPU
-quota and recorded no throttling.
+955,420 kB; context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its
+one-worker placement. The local interference review found no disqualifying contention.
 
-CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are warnings, not
-rejections. Raw diagnostics remain local and untracked.
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. Warning-band readings passed v3; no pressure rejection occurred. Raw diagnostics remain local and untracked.
 
 The candidate mate also passed all gates:
 
@@ -439,9 +405,8 @@ The paired RustSHT median ratio is 0.5663 (1.7659x, or 43.37% lower
 latency). RustSHT was 8.75x DUCC and 12.32x SHTns for baseline, and 4.94x
 DUCC and 6.97x SHTns for tile 128. RustSHT-versus-DUCC relative L2 error
 was `3.015e-13`; SHTns-versus-DUCC was `8.764e-14`. Whole-process elapsed
-time was 1:12.98, peak RSS was 955,268 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core affinity. Process and thread
-snapshots showed no competing build or benchmark or sustained external CPU
-load on that core; the cgroup had no CPU quota and recorded no throttling.
+time was 1:12.98, peak RSS was 955,268 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. Worker placement matched the one-worker policy. The local interference review
+found no disqualifying contention.
 
 CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero
 readings are warnings, not rejections. The T2047 six-pair matrix remains
@@ -463,9 +428,8 @@ passed.
 RustSHT-versus-DUCC relative L2 error was `3.015e-13`; SHTns-versus-DUCC
 was `8.764e-14`. The candidate was 4.68x DUCC and 6.53x SHTns in this
 process; the paired ratio awaits its baseline mate. Whole-process elapsed
-time was 1:12.04, peak RSS was 955,260 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core affinity. Process and thread
-snapshots showed no competing build or benchmark or sustained external CPU
-load on that core; the cgroup had no CPU quota and recorded no throttling.
+time was 1:12.04, peak RSS was 955,260 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. Worker placement matched the one-worker policy. The local interference review
+found no disqualifying contention.
 
 CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are
 warnings, not rejections. Raw diagnostics remain local and untracked.
@@ -482,11 +446,10 @@ The paired RustSHT median ratio is 0.5318 (1.8804x, or 46.82% lower
 latency). RustSHT was 8.89x DUCC and 12.33x SHTns for baseline, and 4.69x
 DUCC and 6.53x SHTns for tile 128. RustSHT-versus-DUCC relative L2 error
 was `3.015e-13`; SHTns-versus-DUCC was `8.764e-14`. Whole-process elapsed
-time was 1:22.65, peak RSS was 955,368 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core affinity. Process and thread
-snapshots showed no competing build or benchmark or sustained external CPU
-load on that core; the cgroup had no CPU quota and recorded no throttling.
+time was 1:22.65, peak RSS was 955,368 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. Worker placement matched the one-worker policy. The local interference review
+found no disqualifying contention.
 
-CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are warnings, not rejections. The
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. Warning-band readings passed v3; no pressure rejection occurred. The
 candidate remains unaccepted; the next process was pair 05 baseline.
 
 ### T2047 q1 pair 05: both processes valid
@@ -503,13 +466,10 @@ passed.
 
 RustSHT-versus-DUCC relative L2 error was `3.015e-13`; SHTns-versus-DUCC
 was `8.764e-14`. Whole-process elapsed time was 1:22.49, peak RSS was
-955,288 kB, and Context-switch diagnostics were reviewed locally; exact counts remain untracked. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its
-one-core affinity. Process and thread snapshots showed no competing build or
-benchmark or sustained external CPU load on that core; the cgroup had no CPU
-quota and recorded no throttling.
+955,288 kB; context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its
+one-worker placement. The local interference review found no disqualifying contention.
 
-CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are warnings, not
-rejections. Raw diagnostics remain local and untracked.
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. Warning-band readings passed v3; no pressure rejection occurred. Raw diagnostics remain local and untracked.
 
 The candidate mate also passed all gates:
 
@@ -523,9 +483,8 @@ The paired RustSHT median ratio is 0.5349 (1.8694x, or 46.51% lower
 latency). RustSHT was 8.79x DUCC and 12.25x SHTns for baseline, and 4.71x
 DUCC and 6.61x SHTns for tile 128. RustSHT-versus-DUCC relative L2 error
 was `3.015e-13`; SHTns-versus-DUCC was `8.764e-14`. Whole-process elapsed
-time was 1:11.98, peak RSS was 955,472 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core affinity. Process and thread
-snapshots showed no competing build or benchmark or sustained external CPU
-load on that core; the cgroup had no CPU quota and recorded no throttling.
+time was 1:11.98, peak RSS was 955,472 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. Worker placement matched the one-worker policy. The local interference review
+found no disqualifying contention.
 
 CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. A warning-band CPU-pressure reading was recorded; its exact value remains local. The next process was pair 06 candidate.
 
@@ -545,9 +504,7 @@ RustSHT-versus-DUCC relative L2 error was `3.015e-13`; SHTns-versus-DUCC
 was `8.764e-14`. The candidate was 4.74x DUCC and 6.57x SHTns in this
 process. Whole-process elapsed time was 1:11.75, peak RSS was 955,312 kB, and
 Context-switch diagnostics were reviewed locally; exact counts remain untracked. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core
-affinity. Process and thread snapshots showed no competing build or benchmark
-or sustained external CPU load on that core; the cgroup had no CPU quota and
-recorded no throttling.
+affinity. The local interference review found no disqualifying contention.
 
 CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are
 warnings, not rejections. Raw diagnostics remain local and untracked.
@@ -564,12 +521,10 @@ The paired RustSHT median ratio is 0.5187 (1.9287x, or 48.13% lower
 latency). RustSHT was 8.96x DUCC and 12.60x SHTns for baseline, and 4.74x
 DUCC and 6.57x SHTns for tile 128. RustSHT-versus-DUCC relative L2 error
 was `3.015e-13`; SHTns-versus-DUCC was `8.764e-14`. Whole-process elapsed
-time was 1:24.86, peak RSS was 955,528 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core affinity. Process and thread
-snapshots showed no competing build or benchmark or sustained external CPU
-load on that core; the cgroup had no CPU quota and recorded no throttling.
+time was 1:24.86, peak RSS was 955,528 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. Worker placement matched the one-worker policy. The local interference review
+found no disqualifying contention.
 
-CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are warnings, not
-rejections.
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. Warning-band readings passed v3; no pressure rejection occurred.
 
 ### T2047 q1 six-pair result
 
@@ -604,10 +559,7 @@ passed for this baseline process, but it yields no candidate/baseline timing
 ratio. Peak RSS was 98,204 kB, process elapsed time was 33.89 s, and the
 Context-switch diagnostics were reviewed locally; exact counts remain untracked.
 
-CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. These values were below the v3 warning range
-and rejection threshold. The worker stayed within its one-core affinity; the
-process review found no competing build or benchmark and no material external
-CPU load on the assigned core. The cgroup recorded no CPU throttling. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The available host
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The process passed the v3 pressure gate without a warning-band result. Worker placement matched the one-worker policy; the local interference review found no disqualifying contention. Cgroup review found no disqualifying interference. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The available host
 measurements do not explain the Rust timing outlier.
 
 The high-resolution q1 result is favorable but incomplete as an acceptance

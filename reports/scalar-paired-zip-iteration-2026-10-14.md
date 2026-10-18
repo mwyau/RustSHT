@@ -35,9 +35,9 @@ the candidate.
 The q1 changes were consistent and useful. q8 T511 was flat. The extended
 T720 q8 paired comparison favored the candidate in only two of ten pairs;
 the paired median was 3.39% slower. Individual q8 process medians varied
-substantially with host load. Because the shared kernel did not improve q8
+substantially under changing shared-host contention. Because the shared kernel did not improve q8
 work and showed a repeated T720 regression, the candidate was removed rather
-than introducing a separate q1-only kernel and selector. All raw per-process outputs are in
+than introducing a separate q1-only kernel and selector. Structured per-process benchmark results are in
 [`data/scalar-paired-zip-iteration-2026-10-14`](data/scalar-paired-zip-iteration-2026-10-14/). The `baseline-*` files contain five-process baseline screens;
 `paired-*` files retain the alternating comparisons and within-process
 samples. The extended T720 q8 repeat is in

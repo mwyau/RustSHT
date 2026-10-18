@@ -174,7 +174,7 @@ Hardware counters remained unavailable. This experiment measured complete reusab
 | Spin-1 analysis 1T | `684.30 / 8.88 ms` | `6.70 / 3.83 ms` | `691.00 / 12.71 ms` | `675.42 ms` |
 | Spin-1 analysis 8T | `173.90 / 1.40 ms` | `7.10 / 0.62 ms` | `181.00 / 2.02 ms` | `172.50 ms` |
 
-The phase sums approximately reconcile with the scoped operations. In that earlier revision, recurrence and accumulation were about 88–99% of RustSHT's phase total or 11 CPU cores% of DUCC's, depending on operation and thread count. Their absolute excess dominates the FFT/row phase excess in every row. This supports prioritizing Legendre and accumulation work, not an FFT change. The current table comparison shows that basis precomputation reduces recurrence cost at selected small bands; the temporary large tables do not give a robust all-operation, eight-thread benefit.
+The phase sums approximately reconcile with the scoped operations. In that earlier revision, recurrence and accumulation consumed about 88–99% of RustSHT's phase total and dominated the excess over DUCC across operations and thread counts. Their absolute excess dominates the FFT/row phase excess in every row. This supports prioritizing Legendre and accumulation work, not an FFT change. The current table comparison shows that basis precomputation reduces recurrence cost at selected small bands; the temporary large tables do not give a robust all-operation, eight-thread benefit.
 
 ### T511 spin-2 analysis instruction profile
 

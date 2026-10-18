@@ -7,4 +7,4 @@ Selected 12 completed paired synthesis runs. Per-process times are medians of fi
 - Pair ratio range: [0.628262, 1.488840]
 - Pairs above 1.02: 3 / 12
 - Numeric bootstrap threshold: **pass** (control 95% upper <= 1.02).
-- Measurement status: **inconclusive** due to severe within-process timing nonstationarity; the cell cannot serve as a control pass. Per-pair raw values and selected attempt IDs: [spin0-t511-q8-pairs.csv](spin0-t511-q8-pairs.csv). All selected stdout, GNU time and preflight records remain alongside the runner artifacts. See [the timing audit](spin0-t511-q8-audit.md) and [the preflight/process audit](spin0-t511-q8-preflight-audit.md).
+- Measurement status: **inconclusive** due to severe within-process timing nonstationarity; the cell cannot serve as a control pass. Per-pair raw values and selected attempt IDs: [spin0-t511-q8-pairs.csv](spin0-t511-q8-pairs.csv). Structured per-pair timings are retained; raw stdout, GNU-time and preflight records remain local. See [the timing audit](spin0-t511-q8-audit.md) and [the preflight/process audit](spin0-t511-q8-preflight-audit.md).

@@ -10,7 +10,7 @@ cargo test --release -p rustsht --all-features m5_analysis_phase_profile -- --ig
 
 ## Results
 
-Times are medians across five samples in milliseconds. The wall range is the minimum-to-maximum sample range; phase ranges and per-sample values are preserved in the raw log.
+Times are medians across five samples in milliseconds. The wall range is the minimum-to-maximum sample range; phase ranges and per-sample timings are preserved in the structured summary.
 
 | Operation | Degree | Threads | Whole call | Forward FFT | Recurrence and accumulation |
 | --- | ---: | ---: | ---: | ---: | ---: |

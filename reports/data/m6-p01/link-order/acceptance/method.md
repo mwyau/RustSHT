@@ -29,7 +29,7 @@ STANDARD mode, full `mmax=lmax`, `ntheta=lmax+1`, `nphi=2*(lmax+1)`,
 T511 scalar q1, T511 spin1 q1, T1023 scalar q1/q8, and T2047 scalar q1/q8. Each cell has six fresh-process pairs; odd pairs run baseline then ordered,
 even pairs run ordered then baseline. Every process retains all five timing
 samples for synthesis and analysis. `/usr/bin/time -v` records peak RSS. `run-one.sh` records a process/PSI snapshot before every process. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. A refused attempt is retained in
-`preflight-processes.log`; it creates no timing result and can be retried
+local preflight validity checks; the check creates no timing result and can be repeated
 after two clean preflights. Completed process outputs are never overwritten.
 
 ## Statistics and gate
@@ -42,6 +42,6 @@ the median of six paired ratios, their range, and a deterministic percentile
 deltas. The predeclared control gate is a median ratio below 1.02 for every
 operation/control; T1023 and T2047 scalar synthesis must also retain a
 material speedup. This report records evidence only and does not determine
-acceptance. Raw stdout, `/usr/bin/time` output, and per-process preflight evidence are in
+acceptance. Structured timing and RSS summaries are retained in the report; raw stdout, GNU-time output, and preflight captures remain local.
 this directory. `summarize.py` validates the complete matrix and writes
 `summary.csv` and `process-pairs.csv` after all cells finish.

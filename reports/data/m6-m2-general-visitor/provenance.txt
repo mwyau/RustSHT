@@ -25,9 +25,6 @@ Benchmark:
   q1; synthesis only; requested-only Rust Rayon path
   Fresh process per side; one warmup and five measured synthesis samples
   Six alternating baseline/candidate process pairs per cell
-  /usr/bin/time -v recorded wall time and peak RSS
+  Whole-process elapsed time and peak RSS were summarized
 
-The baseline and candidate ELF hashes are in binary-sha256.txt. Source file
-hashes are in candidate-source-sha256.txt. SHA-256 values for the retained
-patch, scripts, raw outputs, preflights, summaries and test/build logs are in
-evidence-sha256.txt.
+The baseline and candidate binary hashes are in binary-sha256.txt. Source hashes are in candidate-source-sha256.txt. Hashes for the retained patch, scripts, and structured numerical summaries are in evidence-sha256.txt. Raw preflight, build/test output, and host captures remain local and untracked.

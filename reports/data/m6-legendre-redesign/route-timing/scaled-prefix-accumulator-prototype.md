@@ -65,14 +65,7 @@ also passed for both processes. Both Rust outputs had relative-L2 error
 
 The single-pair RustSHT candidate/baseline median ratio was `0.571915`, a
 42.81% latency reduction. The candidate was 3.377x DUCC and 4.680x SHTns.
-These single-pair ratios are descriptive, not acceptance evidence. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The values in
-the 0.50–2.00% band are warnings under the unchanged protocol.
-
-Observed benchmark-thread affinity and placement stayed within the requested
-single-CPU set. No competing build or benchmark and no cgroup throttling were
-observed. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. GNU-time context-switch counts remain local and peak RSS values shown above. Raw local paths,
-process captures, CPU identifiers, frequency samples, PSI records, and GNU-time
-output remain untracked.
+These single-pair ratios are descriptive, not acceptance evidence. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. Warning-band results did not invalidate the measurements. The benchmark used one worker, and sampled execution matched the configured placement. No competing build or benchmark was observed. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. Peak RSS values are summarized above; raw GNU-time and host-state captures remain local and untracked.
 
 The predeclared 3% screen gate passed, so this result authorizes a separate
 six-pair q1 matrix. It does not accept the candidate or authorize q8 or
@@ -84,8 +77,8 @@ their own source and binary hashes.
 All six new pairs passed the fixed gates. The median paired RustSHT ratio was
 `0.568982` with a 95% bootstrap interval of `0.563779–0.571237`; the candidate
 median was 171.624 ms versus 301.582 ms for the clean baseline. Relative-L2
-error against DUCC remained `1.182e-13`. Exact backend samples, all PSI avg10
-readings, peak RSS, and aggregate placement/frequency review are in the
+error against DUCC remained `1.182e-13`. Exact backend timing samples, peak RSS,
+and summarized CPU-pressure and interference decisions are in the
 [T1023 matrix report](scaled-prefix-accumulator-t1023-q1.md).
 
 The six-pair T2047 q1 matrix also passed every gate. Its median paired ratio

@@ -6,31 +6,35 @@ from __future__ import annotations
 import csv
 import json
 import os
-import re
+import statistics
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-RAW = HERE / "raw"
 
 
-def median_from_stdout(text: str, name: str) -> float:
-    match = re.search(rf"{name}_samples_ms=[^\n]*median_ms=([0-9.]+)", text)
-    if match is None:
-        raise ValueError(f"missing {name} median")
-    return float(match.group(1))
-
-
-def peak_rss_kib(path: Path) -> int:
-    match = re.search(r"Maximum resident set size \(kbytes\):\s*(\d+)", path.read_text())
-    if match is None:
-        raise ValueError(f"missing RSS in {path}")
-    return int(match.group(1))
+def median_samples(record: dict, key: str) -> float:
+    value = record["measurements"][key]
+    samples = value["samples_ms"] if isinstance(value, dict) else value
+    return float(statistics.median(samples))
 
 
 ducc_by_cell: dict[str, dict] = {}
 for threads in (1, 8):
-    document = json.loads((RAW / f"ducc-q{threads}.json").read_text())
+    document = json.loads((HERE / f"ducc-q{threads}-samples.json").read_text())
     ducc_by_cell.update(document["comparison"])
+
+rust_by_stem = {}
+for line in (HERE / "timing-samples.jsonl").read_text().splitlines():
+    record = json.loads(line)
+    rust_by_stem[Path(record["source_record"]).name] = record
+
+previous_rows: dict[str, dict[str, str]] = {}
+summary_path = HERE / "summary.csv"
+if summary_path.exists():
+    with summary_path.open(newline="") as handle:
+        for row in csv.DictReader(handle):
+            key = f"T{row['lmax']}-s{row['spin']}-q{row['threads']}-{row['operation']}"
+            previous_rows[key] = row
 
 rows: list[dict[str, str | int | float]] = []
 for lmax in (127, 511, 1023):
@@ -40,13 +44,12 @@ for lmax in (127, 511, 1023):
             cell = ducc_by_cell[cell_key]
             for operation in ("synthesis", "analysis"):
                 stem = f"t{lmax}-s{spin}-q{threads}-{operation}"
-                stdout = (RAW / f"{stem}.stdout").read_text()
-                timing_path = RAW / f"{stem}.time"
-                if "Exit status: 0" not in timing_path.read_text():
-                    raise ValueError(f"failed Rust process: {timing_path}")
-                native = median_from_stdout(stdout, "native_f32")
-                bridge = median_from_stdout(stdout, "f32_through_f64_bridge")
-                f64 = median_from_stdout(stdout, "native_f64_rounded_inputs")
+                record = rust_by_stem[stem]
+                measurements = record["measurements"]
+                old = previous_rows[f"{cell_key}-{operation}"]
+                native = median_samples(record, "native_f32_samples_ms")
+                bridge = median_samples(record, "f32_through_f64_bridge_samples_ms")
+                f64 = median_samples(record, "native_f64_rounded_inputs_samples_ms")
                 channels = cell["operations"][operation]
                 native_error = max(
                     channel["native_f32_vs_ducc_f32"]["relative_l2"]
@@ -62,12 +65,7 @@ for lmax in (127, 511, 1023):
                 )
                 ducc_f32 = cell["ducc_timing"][operation]["f32_median_ms"]
                 ducc_f64 = cell["ducc_timing"][operation]["f64_median_ms"]
-                bridge_temp_match = re.search(
-                    r"bridge_temporary_input_output_bytes=(\d+)", stdout
-                )
-                if bridge_temp_match is None:
-                    raise ValueError(f"missing temporary-array estimate in {stem}")
-                bridge_temp_mib = int(bridge_temp_match.group(1)) / 2**20
+                bridge_temp_mib = measurements["bridge_temporary_input_output_bytes"] / 2**20
                 rows.append(
                     {
                         "lmax": lmax,
@@ -86,11 +84,11 @@ for lmax in (127, 511, 1023):
                         "bridge_max_rel_l2_vs_ducc_f32": bridge_error,
                         "bridge_max_rel_l2_vs_ducc_f64_cast": bridge_to_ducc64_error,
                         "bridge_temp_arrays_mib": bridge_temp_mib,
-                        "comparison_process_peak_rss_mib": peak_rss_kib(timing_path) / 1024,
+                        "comparison_process_peak_rss_mib": float(old["comparison_process_peak_rss_mib"]),
                     }
                 )
 
-with (HERE / "summary.csv").open("w", newline="") as handle:
+with summary_path.open("w", newline="") as handle:
     writer = csv.DictWriter(handle, fieldnames=list(rows[0]), lineterminator="\n")
     writer.writeheader()
     writer.writerows(rows)
@@ -144,8 +142,8 @@ if source_linked_replay:
             "`73493cf410809f8bbe0455f252b201188d0fc6a5` and the archived benchmark",
             "source. The release ELF SHA-256 matches all 24 matrix preflights:",
             "`2d5ddf6febd6ef9fd480a0c2cd97feb1f10f89ee0e003097cfa2b2be0ea6e4fb`.",
-            "Clippy, build, preflight, and per-cell timing logs are retained in",
-            "`raw/`. This fresh matrix is the current timing screen.",
+            "Structured Rust timing samples are retained in `timing-samples.jsonl`;",
+            "raw build, preflight, process and host captures remain local.",
             "",
             "A prior smoke without a recorded ELF hash and a replay using a",
             "different ELF (`aaf5808ed463632ac0926360265b3411f557eb2f8226f49510245a42c3bb54b6`)",

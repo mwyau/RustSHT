@@ -23,13 +23,11 @@ predeclared limit. No comparison or acceptance result can be calculated.
 
 ## Baseline process
 
-The baseline process completed with GNU time exit status 0. Rust synthesis
+The baseline benchmark process completed successfully. Rust synthesis
 samples were `300.971, 298.175, 296.277, 296.549, 296.407 ms` (median
 `296.549 ms`, CV `0.600%`, first-three/final-two median drift `0.572%`). The
 process stability calculation passes. The harness reported relative L2 error
-`1.182e-13` against DUCC. GNU time recorded 18.89 s elapsed, 99% CPU, 275,928
-KiB peak RSS, and involuntary context-switch detail omitted. The CPU-pressure check failed the declared gate; exact transient readings remain local. The runner therefore stopped before launching the candidate. The CPU-pressure validity decisions, timing samples, elapsed time,
-and peak RSS are summarized above. Raw process, command, and host captures are
+`1.182e-13` against DUCC. Whole-process elapsed time was 18.89 s and aggregate peak RSS was 275,928 KiB. The CPU-pressure check failed the declared gate; exact transient readings remain local. The runner therefore stopped before launching the candidate. The timing samples, elapsed time, peak RSS, and CPU-pressure validity decision are summarized above. Raw process, command, and host captures remain
 local and untracked. No sample was retried or discarded. This result remains a
 historical diagnostic under the original 0.50% protocol; protocol v2 does not
 retroactively change its status.

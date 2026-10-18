@@ -99,7 +99,7 @@ medians, paired ranges and 95% bootstrap intervals in
 [`DUCC native`](../benches/results/m5-current-head-paired-vs-ducc-c1ed01b8-native.jsonl),
 [`system FFTW 3.3.10`](../benches/results/m5-current-head-paired-vs-fftw-system-3.3.10.jsonl)
 and [`Admiral`](../benches/results/m5-current-head-paired-vs-admiral-ce67bc00.jsonl). Each capture records command lines, executable hashes, process order, affinity
-and load averages. The current candidate agreed with pinned DUCC over 232,604 output records at
+and host-pressure conclusions. The current candidate agreed with pinned DUCC over 232,604 output records at
 `atol=rtol=2e-11`. Maximum absolute/scaled errors were `1.819e-12`/`9.113e-13`
 for portable DUCC and `1.819e-12`/`1.076e-12` for native DUCC. The same
 232,604 records agreed with system FFTW at `3.638e-12`/`9.353e-13` and Admiral

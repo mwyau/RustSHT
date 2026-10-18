@@ -35,15 +35,16 @@ References
 
 Host and tools
   CPU architecture: x86_64; AVX2 and FMA are available; runtime dispatch is used.
-  No no cgroup-related interference was identified in the local review; detailed cgroup state is local.
+  The local interference review found no disqualifying cgroup-related contention; raw system-state captures remain local.
   rustc: 1.99.0 (b940084d7 2026-09-28), LLVM 23.1.1
   cargo: 1.99.0 (5f94df478 2026-08-27)
   Python: 3.11.15; uv 0.12.23
   Python executable path omitted.
 CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
   No competing compiler/benchmark process was seen. Per-process gate
-  Before and after every process: require CPU PSI some avg10 <=0.50 and no
-  competing compiler/benchmark process. Preserve refusal or failed runs; do not
+  Historical v1 pressure gate: CPU PSI some avg10 <=0.50 and no competing
+  compiler/benchmark process. Exact transient pressure and preflight captures
+  remain local. This historical gate was superseded prospectively by protocol v2. Preserve refusal or failed runs; do not
   retry or delete samples. For each of synthesis_rust_plan, synthesis_ducc and
   synthesis_shtns_adapter raw five-call series, require population CV <=5% and
   absolute first-three vs final-two median drift / whole-series median <=5%. Stop on any gate failure. No q8 runs and no build are part of this task.

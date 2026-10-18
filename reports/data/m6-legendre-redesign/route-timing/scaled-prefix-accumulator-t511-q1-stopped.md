@@ -42,7 +42,7 @@ The run followed [q1 protocol v1](scaled-prefix-accumulator-q1-v1-protocol.md): 
 | 02 | Baseline | 98,144 |
 | 03 | Baseline | 98,380 |
 
-Benchmark processes and worker threads stayed affinity-restricted to the assigned single logical CPU. No competing benchmark or build ran. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. CPU-pressure warnings were reviewed under the declared protocol; exact transient readings remain local. Brief the local interference review found no direct workload overlap.2%, and not on the assigned core.
+The benchmark used one worker and its sampled execution stayed within the configured placement. No competing benchmark or build ran. The CPU-pressure check failed the declared gate; exact readings remain local. The local interference review found no disqualifying competing workload. The DUCC timing series failed its predeclared CV and drift limits, so the control remained inconclusive.
 
 ## CPU-pressure validity
 

@@ -52,7 +52,7 @@ The control workloads do not use this N=682-only route. N=257 C2R was 1.1%
 slower by the paired median and N=723 C2R was 0.4% slower; both intervals were
 below parity. N=241 C2R and R2C intervals crossed parity. N=257 R2C also
 crossed parity, while N=723 R2C improved 1.6% with its interval above parity. These observations are retained as control results and do not establish a
-cause for the changes. Raw process samples, benchmark configurations, and the per-cell summary are in
+cause for the changes. Structured timing samples, benchmark configurations, and the per-cell summary are in
 the [N=2049 acceptance capture](../benches/results/m12-radix11-ido31-target-acceptance-six-pairs.jsonl),
 the [N=682 C2C capture](../benches/results/m12-radix11-ido31-n682-control-six-pairs.jsonl),
 the control captures, and the

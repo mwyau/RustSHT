@@ -13,8 +13,7 @@ Each fresh process used five warmed samples. The table reports the median of
 paired candidate/control ratios and a deterministic 95% bootstrap percentile
 interval over the eligible paired ratios. CPU affinity was one CPU core, q1, GL
 STANDARD f64, full `mmax`, `phi0=0.37`, and requested-only output. The benchmark
-used a x86-64 CPU and Rust 1.99.0. Each process's raw stdout, GNU time
-output, and preflight process/CPU-pressure snapshot is retained here.
+used a x86-64 CPU and Rust 1.99.0. Structured timing samples and RSS summaries are retained here; raw process, GNU-time and host captures remain local.
 
 | Comparison | Eligible pairs | Candidate/control ratio | Result |
 |---|---:|---:|---|
@@ -54,7 +53,7 @@ The full control matrix was not run. T511 spin-1 already exceeds the declared
 2% guard in the clean pairs, so reject this source design. P01 remains
 unaccepted; the measurement does not authorize production use or a parity
 claim. The detailed pair rows are in `process-pairs.csv`, and
-`summarize.py` regenerates the summaries from the retained raw files.
+`summarize.py` regenerates the summaries from local raw captures; structured scientific results are committed.
 
 ## Reproduction
 
@@ -62,6 +61,4 @@ The ordinary-link benchmark binary is archived at
 `target/m6-p01-shared-step-redesign/m1b_bench`; its SHA-256 is in `sha256.txt`. The pre-P01 baseline and original default-link P01 executable hashes are
 recorded there as well. `run-matrix.sh` records six alternating baseline vs
 redesign pairs for T1023 scalar and T511 spin-1 synthesis. `run-causal-ab.sh` records six alternating pairs of the original P01 and the
-shared-step redesign at T511 spin-1. `run-one.sh` records the process
-configuration, CPU PSI and process list, affinity, timing, and RSS for each
-fresh process.
+shared-step redesign at T511 spin-1. `run-one.sh` records local process configuration and host telemetry, plus benchmark timing and RSS. Git retains only the sanitized workload configuration and structured results.

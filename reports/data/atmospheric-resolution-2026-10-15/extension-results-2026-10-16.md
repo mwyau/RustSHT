@@ -46,7 +46,7 @@ The measurement timer also records order-spectrum preparation and setup phases; 
 
 ## Synthesis phase profile
 
-`profiles/synthesis-phase-profile.log` contains five timed samples after one warmup for each q1/q8 case. It uses the same FFT-friendly GL grids as the high-resolution native matrix: T720 `721×1458`, T1023 `1024×2048`, T1279 `1280×2560`, and T2047 `2048×4096`. The test-only diagnostic reuses the plan and workspace. Setup includes latitude preparation and spectrum clearing. The recurrence phase also includes spin coefficient conversion or cached coefficient preparation when selected, plus spectral accumulation. The inverse phase includes serial inverse FFT execution and row copy-out. It does not isolate individual RustFFT calls. Absolute call times are specific to the test diagnostic and its deterministic coefficient input; phase shares describe the execution path and should not be substituted for the native benchmark medians.
+`profiles/timing-samples.jsonl` contains five timed samples after one warmup for each q1/q8 case. It uses the same FFT-friendly GL grids as the high-resolution native matrix: T720 `721×1458`, T1023 `1024×2048`, T1279 `1280×2560`, and T2047 `2048×4096`. The test-only diagnostic reuses the plan and workspace. Setup includes latitude preparation and spectrum clearing. The recurrence phase also includes spin coefficient conversion or cached coefficient preparation when selected, plus spectral accumulation. The inverse phase includes serial inverse FFT execution and row copy-out. It does not isolate individual RustFFT calls. Absolute call times are specific to the test diagnostic and its deterministic coefficient input; phase shares describe the execution path and should not be substituted for the native benchmark medians.
 
 | Truncation | Grid | Spin | Whole q1 / q8 (ms) | Setup q1 / q8 (ms) | Legendre and accumulation q1 / q8 (ms) | Inverse FFT and writeback q1 / q8 (ms) | q8 Legendre share | q8 FFT share |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -59,11 +59,11 @@ The measurement timer also records order-spectrum preparation and setup phases; 
 | T2047 | 2048×4096 | 0 | 3,128 / 752 | 3.813 / 3.783 | 3,104 / 728 | 20.141 / 20.218 | 96.8% | 2.7% |
 | T2047 | 2048×4096 | 1 | 4,184 / 989 | 7.904 / 8.234 | 4,135 / 936 | 40.680 / 41.106 | 94.7% | 4.2% |
 
-The q8 Legendre phase remains dominant on these matrix-matched grids. The largest FFT share is spin 1 at T720, where the two serial inverse transforms account for 14.5% of diagnostic wall time; at T1279 and T2047 they account for 5.6% and 4.2%. The earlier successful odd-longitude diagnostic is preserved as `profiles/synthesis-phase-profile-odd-longitudes.log`. Its odd counts use the full-complex FFT path, so it is excluded from these conclusions. Sanitized source, binary, compiler, architecture, and SIMD provenance is in `profiles/synthesis-phase-profile-provenance.md`. The exact invalid m=0 attempt is marked and excluded there; raw affinity and host-load captures remain local.
+The q8 Legendre phase remains dominant on these matrix-matched grids. The largest FFT share is spin 1 at T720, where the two serial inverse transforms account for 14.5% of diagnostic wall time; at T1279 and T2047 they account for 5.6% and 4.2%. The earlier successful odd-longitude diagnostic is preserved in `profiles/timing-samples.jsonl` under the odd-longitude record. Its odd counts use the full-complex FFT path, so it is excluded from these conclusions. Sanitized source, binary, compiler, architecture, and SIMD provenance is in `profiles/synthesis-phase-profile-provenance.md`. The exact invalid m=0 attempt is marked and excluded there; raw affinity and host-load captures remain local.
 
 ## Analysis-leaf profile
 
-`profiles/leaf-profile.log` preserves per-leaf ranges, work estimates, worker IDs, phase offsets, and recurrence-block counts. The table gives medians across five samples at q8.
+`profiles/timing-samples.jsonl` retains the structured per-leaf ranges, work estimates, worker indices, phase offsets, and recurrence-block counts. The table gives medians across five samples at q8.
 
 | Truncation | Spin | Whole call | Leaf capacity fraction | Slowest / fastest leaf time | Max / min estimated work |
 | --- | ---: | ---: | ---: | ---: | ---: |

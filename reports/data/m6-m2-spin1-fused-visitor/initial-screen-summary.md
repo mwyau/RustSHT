@@ -16,7 +16,7 @@ The candidate and baseline are the exact isolated binaries identified in `source
 - Median C/B: 0.948295; paired bootstrap 95% interval: [0.945511, 0.960977].
 - Pair ratio range: [0.944022, 0.963544]; pairs above 1.02: 0/6.
 - Gate: **pass** (primary median <= 0.98 and upper < 1.00).
-- Initial refused attempts and retained orphans are excluded from these selected pairs and remain in the raw directory with their original preflights.
+- Initial refused attempts and unmatched orphans are excluded from these selected pairs; their validity outcomes are summarized here and raw preflight captures remain local.
 
 ## T511 spin1 q1 synthesis control
 
@@ -32,4 +32,4 @@ The candidate and baseline are the exact isolated binaries identified in `source
 - Median C/B: 1.006177; paired bootstrap 95% interval: [1.002531, 1.018994].
 - Pair ratio range: [1.000620, 1.029302]; pairs above 1.02: 1/6.
 - Gate: **pass** (control upper <= 1.02).
-- Initial refused attempts and retained orphans are excluded from these selected pairs and remain in the raw directory with their original preflights.
+- Initial refused attempts and unmatched orphans are excluded from these selected pairs; their validity outcomes are summarized here and raw preflight captures remain local.

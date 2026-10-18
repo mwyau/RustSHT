@@ -34,9 +34,7 @@ mmax and `phi0=0.37`, against the pinned DUCC 0.42.0 build at source revision
 bitwise equal (SHA-256
 `8433a17c70adf2ca7909d82233f8347189a09034d988859e318099b010bdcda3`). Both
 had relative L2 error `3.01496781410830626e-13` versus DUCC, with maximum
-absolute error `1.11038955807885031e-12`. Raw output and comparison records
-are `output-baseline.*`, `output-candidate.*`, `map-comparison.txt`, and
-`map-sha256.txt`.
+absolute error `1.11038955807885031e-12`. The numerical comparison results and output hashes are summarized in `map-comparison.txt` and `map-sha256.txt`; raw build and test output remains local.
 
 ## Timed partial screen
 
@@ -46,8 +44,7 @@ Rayon threads, requested 8 pinned CPU cores. Each process runs the retained
 `python_perf_baseline.py 2047 0 8 GL 1 into synthesis both STANDARD 4096 2048`
 harness command (`backend=both`, `scope=into`) and records five timed Rust
 samples. The paired estimate uses the median of those five samples per
-process, then candidate/baseline within each pair. All completed raw stdout,
-`/usr/bin/time -v` RSS records, exact commands and preflights are retained.
+process, then candidate/baseline within each pair. Structured timing samples, paired results and aggregate RSS are retained. Raw process and host captures remain local.
 
 | Pair | Order | Baseline median (ms) | Candidate median (ms) | Candidate/baseline | Peak RSS baseline/candidate (MiB) |
 |---:|---|---:|---:|---:|---:|
