@@ -1127,5 +1127,7 @@ clean production, DUCC, or SHTns, and does not accept the candidate. Its source,
 protocol, samples, memory, and validity decisions are in the
 [screen report](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-screen-t2047-q1.md).
 The next gate is the matched q1 matrix against clean production at T1023 and
-T2047, then the T511 control. q8 and spin-1 regression measurements remain
-gated; the 128-ring route remains outside production.
+T2047, then the T511 control, under the
+[frozen matrix protocol](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-q1-matrix-t2047-t1023-t511-protocol-v1.md).
+q8 and spin-1 regression measurements remain gated; the 128-ring route remains
+outside production.
