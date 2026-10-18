@@ -363,10 +363,11 @@ untracked. This single pair favors tile 128 but does not accept the candidate;
 the T2047 six-pair matrix remains incomplete. The next process was pair 02
 candidate.
 
-### T2047 q1 pair 02: candidate valid, baseline mate pending
+### T2047 q1 pair 02: both processes valid
 
 The second pair followed the fixed candidate-then-baseline order. All three
-candidate timing series and its numerical comparison against DUCC passed.
+timing series for both processes and both numerical comparisons against DUCC
+passed.
 
 | Backend | Samples (ms) | Median (ms) | CV | Drift |
 | --- | --- | ---: | ---: | ---: |
@@ -376,13 +377,31 @@ candidate timing series and its numerical comparison against DUCC passed.
 
 RustSHT-versus-DUCC relative L2 error was `3.015e-13`; SHTns-versus-DUCC
 was `8.764e-14`. The candidate was 4.66x DUCC and 6.57x SHTns in this
-process; its pair ratio awaits the baseline mate. Whole-process elapsed time
-was 1:11.87, peak RSS was 955,136 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked.
-The worker stayed within its one-core affinity. Process and thread snapshots
-showed no competing build or benchmark or sustained external CPU load on
-that core; the cgroup recorded no throttling.
+process. Whole-process elapsed time was 1:11.87, peak RSS was 955,136 kB, and
+Context-switch diagnostics were reviewed locally; exact counts remain untracked. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core
+affinity. Process and thread snapshots showed no competing build or benchmark
+or sustained external CPU load on that core; the cgroup recorded no
+throttling.
 
 CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are
 warnings, not rejections. Raw diagnostic captures remain local and
-untracked. The candidate remains unaccepted. The next process is the pair 02
-baseline mate.
+untracked.
+
+The baseline mate also passed all gates:
+
+| Backend | Samples (ms) | Median (ms) | CV | Drift |
+| --- | --- | ---: | ---: | ---: |
+| RustSHT | 3,259.119, 3,258.040, 3,265.884, 3,259.915, 3,257.353 | 3,259.119 | 0.0933% | 0.0149% |
+| DUCC | 370.816, 371.014, 370.100, 372.734, 373.209 | 371.014 | 0.3202% | 0.5810% |
+| SHTns | 268.273, 266.874, 266.841, 266.764, 266.663 | 266.841 | 0.2244% | 0.0601% |
+
+The paired RustSHT median ratio is 0.5346 (1.8706x, or 46.54% lower
+latency). RustSHT was 8.78x DUCC and 12.21x SHTns for baseline, and 4.66x
+DUCC and 6.57x SHTns for tile 128. RustSHT-versus-DUCC relative L2 error
+was `3.015e-13`; SHTns-versus-DUCC was `8.764e-14`. Whole-process elapsed
+time was 1:22.76, peak RSS was 955,304 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core affinity; process and thread
+snapshots showed no competing build or benchmark or sustained external CPU
+load on that core. The cgroup recorded no throttling.
+
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are warnings, not
+rejections. The next process is pair 03 baseline.
