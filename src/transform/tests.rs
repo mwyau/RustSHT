@@ -2297,7 +2297,7 @@ fn scalar_synthesis_coefficient_cache_matches_uncached_eligible_shapes() {
         .build()
         .unwrap();
     let group_ring_count = 64;
-    for (lmax, mmax, ntheta, nphi) in [(1023, 1023, 1024, 2049), (1279, 900, 1280, 2561)] {
+    for (lmax, mmax, ntheta, nphi) in [(1023, 1023, 1024, 2049), (1279, 900, 1281, 2561)] {
         let plan = make_plan(lmax, mmax, ntheta, nphi, 0.37);
         let mut eight_thread_workspace = eight_threads.install(|| plan.workspace()).unwrap();
         let group_ring_count = group_ring_count.min(ntheta);

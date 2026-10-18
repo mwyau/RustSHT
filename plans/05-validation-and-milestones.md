@@ -2501,12 +2501,14 @@ workload medians, RSS, and limitations.
 
 ### Scalar synthesis coefficient reuse (M4, 2026-10-18)
 
-At exact full-band GL T1023, f64 scalar synthesis with at least eight executing
-threads prepares the transformed paired coefficients once per transform in
-the existing `spin_spectra` workspace buffer. Ring-group workers read those
-rows while retaining ring ownership and private recurrence scratch. The cache
-uses at most 17 MiB, adds no workspace allocation, and falls back to per-group
-preparation if factor or coefficient preparation fails. Other shapes use
+The f64 scalar GL path shares transformed paired coefficients across ring
+groups when `lmax >= SCALAR_TRANSITION_MIN_LMAX`, there are at least as many
+ring groups as execution workers, and the existing `spin_spectra` buffer can
+hold the packed rows. This uses the paired-transition path's eligibility and
+workspace capacity rather than an exact bandlimit or full-band rule. It adds
+no workspace allocation; T1023 occupies 16 MiB, while larger or reduced-order
+shapes use only the rows that fit. Ring-group workers retain private
+recurrence scratch. Unsafe factor or coefficient preparation falls back to
 per-group preparation.
 
 A preliminary three-pair release screen against `cda5de38` used
@@ -2547,19 +2549,34 @@ uses the already allocated workspace buffer and added no workspace allocation.
 At T511, one q8 process per source measured `9.066/9.082 ms` (baseline/cache).
 At T720, two process medians per source gave median-of-medians
 `29.977/29.824 ms`, and the timed sample ranges overlapped. These screens did
-not show repeatable gains, so dispatch is limited to exact full-band T1023.
-No host-pressure protocol ran; the gate was not evaluated and interference is
-unknown. The measurements do not compare RustSHT with DUCC.
+not show repeatable gains below the paired-transition path.
 
-The cache consumer matches uncached T1023 ring-group spectra to relative L2
-error below `2e-15`. The release scalar T511/T1023/T2047 DUCC 0.41.0 and
+A one-process q8 screen compared the generalized selector at `c60b5950` with
+the prior selector at `b45da4f9`. It used the same host, software, command
+shape, one warm-up and five timed samples as the T1023 screen.
+
+| Workload | Prior-selector samples (ms) | General-selector samples (ms) | Medians (ms) |
+|---|---|---|---|
+| T1279 GL 1280x2561 | `145.421, 144.284, 144.970, 144.005, 144.246` | `147.310, 143.783, 146.589, 146.568, 145.607` | `144.284 / 146.568` |
+| T2047 GL 2048x4097 | `334.864, 355.499, 360.305, 335.822, 338.562` | `344.624, 345.223, 350.101, 350.517, 337.568` | `338.562 / 345.223` |
+
+Both sample ranges overlap. The screen did not show an additional high-band
+gain, and it used one process per source without a host-pressure gate. This is
+directional evidence, not performance acceptance; the T1023 result remains
+the only demonstrated cache gain. The measurements do not compare RustSHT
+with DUCC.
+
+The cache regression matches uncached ring-group spectra to relative L2 error
+below `2e-15` at full-band T1023 and oversampled, reduced-`mmax` T1279
+(`mmax=900`, `ntheta=1281`). The release scalar T511/T1023/T2047 DUCC 0.41.0 and
 closed-form check passes with all features and with default features disabled;
 its T1023 GL middle-row maximum absolute error is `1.288e-14`, analytic map
 maximum absolute error is `4.128e-12`, and analysis coefficient maximum
 absolute error is `1.199e-14`. The source revision is
 `c1ed01b8fda69d2a378190f0915f1a19762dddbf`.
 
-Final checks passed: `cargo fmt --all -- --check`; workspace all-target,
+The initial T1023 cache integration passed `cargo fmt --all -- --check`,
+workspace all-target,
 all-feature Clippy with warnings denied; `cargo test --workspace
 --all-features` (205 unit, 4 extreme-FFT, 11 f32, and 1
 workspace-compatibility tests passed; 14 unit and 1 f32 test ignored); and
@@ -2567,6 +2584,49 @@ workspace-compatibility tests passed; 14 unit and 1 f32 test ignored); and
 f32, and 1 workspace-compatibility tests passed; 7 unit and 1 f32 test
 ignored). Python tests were not run because the change modifies only the Rust
 core.
+
+### Reuse scalar prefix safety preflight across active tiles (M4, 2026-10-18)
+
+Commit `857e842a` moves the ordinary coefficient range scan and conservative
+sum-bound calculation out of `process_tile`. `synthesize_order_dispatched`
+computes that immutable preflight on the first active ordinary tile for an
+order and reuses it for the rest of that order's tiles. Entirely polar tiles
+do not trigger a scan. Each tile still checks its current recurrence lanes,
+factors and staged sums; unsafe or declined tiles still use the scaled
+recurrence and staged output is scattered only after success.
+
+The regression `coefficient_safety_preflight_is_shared_across_active_tiles`
+uses 300 active rings, verifies three tiles share one coefficient preflight,
+and compares the output with the paired reference. The release screen compared
+baseline commit `c60b5950` with candidate `857e842a` using
+`examples/m1b_bench 0 L Q synthesis GL STANDARD ntheta nphi L requested-only`,
+f64, `phi0=0.37`, one warm-up, five timed calls and reused plan/workspace per
+process. The host was an AMD Ryzen 9 5950X (x86_64, 16 cores/32 threads,
+AVX2/FMA, 96 GiB memory); software was Rust 1.99.0, Pulp 0.22.3, Rayon
+1.12.0, and RustFFT 6.4.1. No host-pressure protocol ran.
+
+| Workload | Baseline samples (ms) | Candidate samples (ms) | Medians (ms) | Change |
+|---|---|---|---|---:|
+| T2047 GL 2048x4097 q1 | `1272.946, 1274.914, 1286.595, 1277.407, 1292.435` | `1244.829, 1244.176, 1246.391, 1243.788, 1254.900` | `1277.407 / 1244.829` | −2.6% |
+| T1279 GL 1280x2561 q8 | `146.649, 146.726, 145.203, 146.503, 146.521` | `151.888, 150.711, 148.454, 145.096, 147.220` | `146.521 / 148.454` | +1.3% |
+
+The T2047 sample ranges did not overlap. T1279 ranges overlapped. Each
+workload used one process per source, so the result is directional rather
+than performance acceptance. No DUCC timing was collected. The T511/T1023/T2047
+scalar test against DUCC 0.41.0 and closed-form fields passed with all features
+and with default features disabled; reference revision
+`c1ed01b8fda69d2a378190f0915f1a19762dddbf`. Across those truncations and GL,
+CC and F1, maxima were `2.092e-13` for DUCC middle-row samples, `9.959e-12`
+for analytic maps and `4.175e-14` for analyzed coefficients.
+
+Validation passed: `cargo fmt --all -- --check`; workspace all-target,
+all-feature Clippy with warnings denied; `cargo test --workspace
+--all-features` (206 unit, 4 extreme-FFT, 11 f32 and 1 compatibility tests
+passed; 14 unit and 1 f32 test ignored); `cargo test -p rustsht
+--no-default-features` (166 unit, 4 extreme-FFT, 11 f32 and 1 compatibility
+tests passed; 7 unit and 1 f32 test ignored); and the release T511/T1023/T2047
+DUCC and closed-form test with all features and with default features disabled.
+Python tests were not run because the change modifies only the Rust core.
 
 ## Benchmark artifact hygiene
 
