@@ -205,3 +205,15 @@ configuration, and interpretation are in the
 [test-only source patch](scaled-prefix-transition-events-v1.patch) is
 archived alongside the report. The accumulator candidate remains unaccepted
 while the T511 stability control and full regression matrix are unresolved.
+
+## Scaled-lane occupancy profile
+
+A bounded T2047 profile counted 53,737,170 nonzero-exponent lane-visits among
+109,490,856 prefix normalization visits (49.08%). At least 53,030,846 of
+those visits (98.69%) had no exponent change. More than 33 scaled lanes were
+present in 57.46% of normalization calls, so a sparse lane-class split is not
+the next experiment. The next source hypothesis is to skip no-op
+normalization for in-range mantissas with nonzero exponents while retaining the
+scaled route and the existing out-of-range normalization path. The
+[occupancy report](scaled-lane-occupancy-v1.md) records the histogram, source
+hashes, bitwise test, and limits.

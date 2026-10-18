@@ -1,0 +1,56 @@
+--- a/src/legendre/synthesis_fast.rs
++++ b/src/legendre/synthesis_fast.rs
+@@ -60,0 +61,3 @@
++    prefix_nonzero_exponent_lane_visits: u64,
++    prefix_max_nonzero_exponent_lanes: u64,
++    prefix_exponent_occupancy: [u64; 8],
+@@ -96,0 +100,3 @@
++    prefix_nonzero_exponent_lane_visits: u64,
++    prefix_max_nonzero_exponent_lanes: u64,
++    prefix_exponent_occupancy: [u64; 8],
+@@ -104,0 +111 @@
++        let mut nonzero_exponents = 0_u64;
+@@ -105,0 +113,3 @@
++            if new != 0 {
++                nonzero_exponents += 1;
++            }
+@@ -124,0 +135,15 @@
++            self.prefix_nonzero_exponent_lane_visits += nonzero_exponents;
++            self.prefix_max_nonzero_exponent_lanes = self
++                .prefix_max_nonzero_exponent_lanes
++                .max(nonzero_exponents);
++            let bucket = match nonzero_exponents {
++                0 => 0,
++                1 => 1,
++                2..=4 => 2,
++                5..=8 => 3,
++                9..=16 => 4,
++                17..=32 => 5,
++                33..=64 => 6,
++                _ => 7,
++            };
++            self.prefix_exponent_occupancy[bucket] += 1;
+@@ -144,0 +170,11 @@
++            counts.prefix_nonzero_exponent_lane_visits += self.prefix_nonzero_exponent_lane_visits;
++            counts.prefix_max_nonzero_exponent_lanes = counts
++                .prefix_max_nonzero_exponent_lanes
++                .max(self.prefix_max_nonzero_exponent_lanes);
++            for (total, events) in counts
++                .prefix_exponent_occupancy
++                .iter_mut()
++                .zip(self.prefix_exponent_occupancy)
++            {
++                *total += events;
++            }
+@@ -1724,0 +1761,11 @@
++            total.prefix_nonzero_exponent_lane_visits += counts.prefix_nonzero_exponent_lane_visits;
++            total.prefix_max_nonzero_exponent_lanes = total
++                .prefix_max_nonzero_exponent_lanes
++                .max(counts.prefix_max_nonzero_exponent_lanes);
++            for (total_bucket, worker_bucket) in total
++                .prefix_exponent_occupancy
++                .iter_mut()
++                .zip(counts.prefix_exponent_occupancy)
++            {
++                *total_bucket += worker_bucket;
++            }

@@ -1002,3 +1002,15 @@ change. The [event profile](data/m6-legendre-redesign/route-timing/scaled-prefix
 records the frozen source hashes, bitwise warm-up check, and counter results.
 The candidate remains isolated: its T511 baseline stability control failed,
 and the full regression matrix has not run.
+
+#### Scaled-lane occupancy
+
+A bounded T2047 q1 profile found nonzero exponents in 49.08% of prefix
+normalization lane-visits. At least 98.69% of those visits had no exponent
+change. More than 33 scaled lanes occurred in 57.46% of calls, which does not
+support a sparse lane-class split. The next isolated source test will skip
+no-op normalization for in-range mantissas while retaining scaled execution
+for nonzero exponents and the existing fallback for out-of-range pairs. The
+[occupancy report](data/m6-legendre-redesign/route-timing/scaled-lane-occupancy-v1.md)
+records the histogram and bitwise test. It does not accept the accumulator
+candidate or change the failed T511 stability gate.
