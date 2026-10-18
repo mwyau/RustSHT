@@ -406,10 +406,11 @@ load on that core. The cgroup recorded no throttling.
 CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are warnings, not
 rejections. The next process was pair 03 baseline.
 
-### T2047 q1 pair 03: baseline valid, candidate mate pending
+### T2047 q1 pair 03: both processes valid
 
 The third pair followed the fixed baseline-then-candidate order. All three
-baseline timing series and its numerical comparison against DUCC passed.
+timing series for both processes and both numerical comparisons against DUCC
+passed.
 
 | Backend | Samples (ms) | Median (ms) | CV | Drift |
 | --- | --- | ---: | ---: | ---: |
@@ -425,5 +426,25 @@ benchmark or sustained external CPU load on that core. The cgroup had no CPU
 quota and recorded no throttling.
 
 CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are warnings, not
-rejections. Raw diagnostics remain local and untracked. The next process is
-the pair 03 candidate mate.
+rejections. Raw diagnostics remain local and untracked.
+
+The candidate mate also passed all gates:
+
+| Backend | Samples (ms) | Median (ms) | CV | Drift |
+| --- | --- | ---: | ---: | ---: |
+| RustSHT | 1,848.176, 1,846.184, 1,992.752, 1,824.478, 1,824.243 | 1,846.184 | 3.4073% | 1.2900% |
+| DUCC | 376.295, 373.658, 367.503, 370.616, 374.278 | 373.658 | 0.8268% | 0.3241% |
+| SHTns | 264.192, 265.753, 264.964, 265.385, 264.767 | 264.964 | 0.2013% | 0.0423% |
+
+The paired RustSHT median ratio is 0.5663 (1.7659x, or 43.37% lower
+latency). RustSHT was 8.75x DUCC and 12.32x SHTns for baseline, and 4.94x
+DUCC and 6.97x SHTns for tile 128. RustSHT-versus-DUCC relative L2 error
+was `3.015e-13`; SHTns-versus-DUCC was `8.764e-14`. Whole-process elapsed
+time was 1:12.98, peak RSS was 955,268 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core affinity. Process and thread
+snapshots showed no competing build or benchmark or sustained external CPU
+load on that core; the cgroup had no CPU quota and recorded no throttling.
+
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero
+readings are warnings, not rejections. The T2047 six-pair matrix remains
+incomplete and the candidate remains unaccepted. The next process is pair 04
+candidate.
