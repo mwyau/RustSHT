@@ -164,9 +164,10 @@ RAM. It used Ubuntu 26.04.1, Linux 7.0.14, Rust/Cargo 1.99.0, Rayon 1.12.0,
 and `pulp` 0.22.3.
 
 The compact-order visitor is the largest measured visitor subpath. It handles
-only 2.44% of active lane-pairs but costs 520–535 ms in worker-summed time.
-The next kernel investigation should target its declined-transition fallback
-with a native one-channel recurrence and accumulator, while preserving the
-scaled visitor as the robust fallback. No such optimization has been
-implemented or accepted. The frozen 128-ring candidate remains a separate,
-unaccepted experiment.
+only 2.44% of active lane-pairs but costs 520–535 ms in worker-summed time. A
+native one-channel recurrence and accumulator was tested for the declined-
+transition route. It committed only four calls; scaled-range checks caused
+2,976 of 3,004 declines. The path therefore replaced only 0.014% of active
+lane-pairs and is rejected as implemented. See the [decline
+diagnostic](scalar-visitor-accumulator-decline-diagnostic-v1.md). The frozen
+128-ring candidate remains a separate, unaccepted experiment.

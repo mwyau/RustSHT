@@ -1084,12 +1084,12 @@ The patch is archived but not applied to production. A follow-up source
 profile found that compact-order visitor calls after declined transitions
 used 520 ms at q1 and 535 ms at q8 in worker-summed time, the largest of three
 visitor sources. It classified 2,976 post-work transition declines and 32
-geometry declines; no coefficient or other pre-work decline occurred. A
-native one-channel recurrence and accumulator for the compact-order fallback
-is the next kernel hypothesis, with the scaled visitor retained as the robust
-fallback. This remains an isolated experiment, not an accepted production
-change. The [profile](data/m6-legendre-redesign/route-timing/scalar-transition-q1-q8-route-profile-2026-10-18.md)
-contains the source-resolved route counts, worker-summed timings, source and
-binary hashes, and measurement limits. The previously matched T2047 baseline
-ratios remain 9.06x RustSHT/DUCC at q1 and 13.97x at q8; this diagnostic does
-not refresh them.
+geometry declines; no coefficient or other pre-work decline occurred. A native one-channel accumulator was tested on the declined-transition
+route. Only four of 3,008 calls committed; 2,976 declines came from scaled-
+range checks. It replaced only 0.014% of active lane-pairs and is rejected as
+a performance design. Its full numerical contract was not validated, and no
+production change was made. The [route profile](data/m6-legendre-redesign/route-timing/scalar-transition-q1-q8-route-profile-2026-10-18.md)
+and [decline diagnostic](data/m6-legendre-redesign/route-timing/scalar-visitor-accumulator-decline-diagnostic-v1.md)
+record the measured mechanism. The previously matched T2047 baseline ratios
+remain 9.06x RustSHT/DUCC at q1 and 13.97x at q8; this diagnostic does not
+refresh them.
