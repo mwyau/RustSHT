@@ -304,6 +304,30 @@ pub(super) fn normalize_pair_lanes(
     Ok(normal_range)
 }
 
+#[inline(always)]
+pub(super) fn normalize_pair_lane(
+    previous: &mut f64,
+    current: &mut f64,
+    exponent: &mut i64,
+) -> Result<bool, ShtError> {
+    if *exponent == 0 && pair_is_in_normal_range(*previous, *current) {
+        return Ok(true);
+    }
+    let mut previous_value = ScaledValue {
+        mantissa: *previous,
+        exponent: *exponent,
+    };
+    let mut current_value = ScaledValue {
+        mantissa: *current,
+        exponent: *exponent,
+    };
+    normalize_pair(&mut previous_value, &mut current_value)?;
+    *previous = previous_value.mantissa;
+    *current = current_value.mantissa;
+    *exponent = current_value.exponent;
+    Ok(*exponent == 0 && pair_is_in_normal_range(*previous, *current))
+}
+
 pub(super) fn sectoral_value(
     sin_theta: f64,
     m: usize,
@@ -1936,6 +1960,34 @@ mod tests {
             assert_eq!(previous[lane], expected[lane].0);
             assert_eq!(current[lane], expected[lane].1);
             assert_eq!(exponents[lane], expected[lane].2);
+        }
+    }
+
+    #[test]
+    fn single_lane_normalization_matches_slice_normalization() {
+        for (previous_value, current_value, exponent) in [
+            (0.0, 0.0, 0),
+            (0.5, -0.75, 800),
+            (BIG * 2.0, -BIG * 1.5, 1),
+            (SMALL / 4.0, -SMALL / 8.0, -3),
+            (BIG * 2.0, -BIG, i64::MAX),
+        ] {
+            let mut previous = [previous_value];
+            let mut current = [current_value];
+            let mut exponents = [exponent];
+            let mut single_previous = previous_value;
+            let mut single_current = current_value;
+            let mut single_exponent = exponent;
+            let array_result = normalize_pair_lanes(&mut previous, &mut current, &mut exponents);
+            let single_result = normalize_pair_lane(
+                &mut single_previous,
+                &mut single_current,
+                &mut single_exponent,
+            );
+            assert_eq!(single_result, array_result);
+            assert_eq!(single_previous.to_bits(), previous[0].to_bits());
+            assert_eq!(single_current.to_bits(), current[0].to_bits());
+            assert_eq!(single_exponent, exponents[0]);
         }
     }
 

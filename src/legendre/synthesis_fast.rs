@@ -546,9 +546,53 @@ impl WithSimd for StagedScalarSynthesis<'_> {
         for pair in 0..pair_count {
             #[cfg(test)]
             update_route_counts(|counts| counts.prefix_pair_lanes += current.len() as u64);
+            let mut normalize = pair > 0 && !normal_range;
+            if pair > 0 && normal_range {
+                normalize = scalar::pair_lanes_need_scaling(simd, previous, current);
+                if !normalize
+                    && lane_values_in_normal_range(previous)
+                    && lane_values_in_normal_range(current)
+                {
+                    if !materialize_scaled_accumulator(
+                        sum_re,
+                        sum_im,
+                        &sum_exponents[..sin_theta.len()],
+                    ) {
+                        return None;
+                    }
+                    FusedScalarSuffix {
+                        m,
+                        lmax,
+                        pair_start: pair,
+                        cos_theta,
+                        coefficient_a,
+                        coefficient_b,
+                        coefficient_even,
+                        coefficient_odd,
+                        previous,
+                        current,
+                        sum_re,
+                        sum_im,
+                    }
+                    .with_simd(simd);
+                    return Some(pair);
+                }
+            }
+            let mut normal_after = if normalize { true } else { normal_range };
             let even = coefficient_even[pair];
             let odd = coefficient_odd[pair];
             for lane in 0..current.len() {
+                if normalize {
+                    let lane_normal = match scalar::normalize_pair_lane(
+                        &mut previous[lane],
+                        &mut current[lane],
+                        &mut exponents[lane],
+                    ) {
+                        Ok(normal) => normal,
+                        Err(_) => return None,
+                    };
+                    normal_after &= lane_normal;
+                }
                 let cosine = cos_theta[lane];
                 let factor = Complex64::new(
                     odd.re.mul_add(cosine, even.re),
@@ -586,6 +630,9 @@ impl WithSimd for StagedScalarSynthesis<'_> {
                 sum_re[lane] = next_re;
                 sum_im[lane] = next_im;
             }
+            if normalize {
+                normal_range = normal_after;
+            }
             if pair + 1 == pair_count {
                 break;
             }
@@ -602,48 +649,6 @@ impl WithSimd for StagedScalarSynthesis<'_> {
             );
             std::mem::swap(&mut previous, &mut current);
             std::mem::swap(&mut current, &mut next);
-            if normal_range {
-                if scalar::pair_lanes_need_scaling(simd, previous, current) {
-                    normal_range = match scalar::normalize_pair_lanes(previous, current, exponents)
-                    {
-                        Ok(normal_range) => normal_range,
-                        Err(_) => return None,
-                    };
-                }
-            } else {
-                normal_range = match scalar::normalize_pair_lanes(previous, current, exponents) {
-                    Ok(normal_range) => normal_range,
-                    Err(_) => return None,
-                };
-            }
-            if normal_range
-                && lane_values_in_normal_range(previous)
-                && lane_values_in_normal_range(current)
-            {
-                if !materialize_scaled_accumulator(
-                    sum_re,
-                    sum_im,
-                    &sum_exponents[..sin_theta.len()],
-                ) {
-                    return None;
-                }
-                FusedScalarSuffix {
-                    m,
-                    lmax,
-                    pair_start: pair + 1,
-                    cos_theta,
-                    coefficient_a,
-                    coefficient_b,
-                    coefficient_even,
-                    coefficient_odd,
-                    previous,
-                    current,
-                    sum_re,
-                    sum_im,
-                }
-                .with_simd(simd);
-                return Some(pair + 1);
-            }
         }
         None
     }
