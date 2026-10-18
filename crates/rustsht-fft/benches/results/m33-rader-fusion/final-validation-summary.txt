@@ -8,8 +8,8 @@ PASS: cargo test --workspace --all-features
 PASS: cargo test --workspace --all-features --release
 
 Debug and release each passed 111 tests: 37 unit, 2 across-row, 32 complex,
-and 40 real tests. Both runs had zero doctests. See final-workspace-*.txt for
-command output and m32-accepted-*-numerical-comparison.txt for f64 external
+and 40 real tests. Both runs had zero doctests. Raw test-console output is not tracked; this
+summary records the suite results. See m32-accepted-*-numerical-comparison.txt for f64 external
 comparisons. Portable DUCC comparison, native SIMD DUCC comparison, FFTW 3.3.10 comparison,
 and Admiral ce67bc00 comparison passed for C2C forward/inverse and R2C/C2R at
 N=722, 723, 2049, and 4097. The compare.py tolerances were rtol=2e-11 and

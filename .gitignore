@@ -51,6 +51,7 @@ build/
 /reports/data/**/*host-snapshot*
 /reports/data/**/build*.stdout
 /reports/data/**/test*.stdout
+/reports/data/m6-spin1-routes/*.stdout
 /crates/rustsht-fft/benches/results/**/*.preflight
 /crates/rustsht-fft/benches/results/**/*.preflight.txt
 /crates/rustsht-fft/benches/results/**/*.postflight

@@ -7,7 +7,6 @@ lmax=${1:?lmax required}
 threads=${2:?thread count required}
 stem="t${lmax}-q${threads}"
 cpu_set=${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}
-
 if [[ "$threads" != 1 && "$threads" != 8 ]]; then
     printf 'supported thread counts: 1 or 8\n' >&2
     exit 2

@@ -93,6 +93,7 @@ def main() -> int:
                     "raw process table",
                     "raw top snapshot",
                     "raw cgroup snapshot",
+                    "host or process snapshot field",
                 }:
                     continue
                 if pattern.search(data):
