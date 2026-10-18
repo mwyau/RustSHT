@@ -2628,6 +2628,18 @@ tests passed; 7 unit and 1 f32 test ignored); and the release T511/T1023/T2047
 DUCC and closed-form test with all features and with default features disabled.
 Python tests were not run because the change modifies only the Rust core.
 
+### SIMD transition range checks (M4, 2026-10-18, rejected)
+
+A candidate replaced the two scalar scans at transition decisions with Pulp
+SIMD range reductions. It retained scalar per-pair current-value checks,
+exponent rebasing, recurrence arithmetic and the scaled fallback. The focused
+`synthesis_fast::tests` passed (7 tests, 1 ignored), and formatting passed.
+Single-process release comparisons at T2047 q1 and T1279 q8 measured the
+candidate 5.2% and 5.1% slower, with no overlap between candidate and baseline
+sample ranges. No host-pressure protocol or DUCC timing ran. The measurements,
+commands, host and software details, and candidate patch are recorded in [the
+screen report](../reports/simd-transition-range-check-screen-2026-10-18.md).
+
 ## Benchmark artifact hygiene
 
 Keep raw host and process captures, build/test logs, GNU-time output, and local

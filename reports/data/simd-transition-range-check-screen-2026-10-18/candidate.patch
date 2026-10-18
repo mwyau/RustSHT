@@ -1,0 +1,37 @@
+diff --git a/src/legendre/synthesis_fast.rs b/src/legendre/synthesis_fast.rs
+index 8e483d77..830fbfb0 100644
+--- a/src/legendre/synthesis_fast.rs
++++ b/src/legendre/synthesis_fast.rs
+@@ -25,3 +25 @@ use crate::error::ShtError;
+-use crate::legendre::scalar::{
+-    lane_values_in_normal_range, scalar_value_in_normal_range, simd_values_in_normal_range,
+-};
++use crate::legendre::scalar::{scalar_value_in_normal_range, simd_values_in_normal_range};
+@@ -567,0 +566,11 @@ fn simd_values_are_finite<S: Simd>(simd: S, values: S::f64s) -> bool {
++#[inline(always)]
++fn slice_values_in_normal_range<S: Simd>(simd: S, values: &[f64]) -> bool {
++    let (vectors, tail) = S::as_simd_f64s(values);
++    vectors
++        .iter()
++        .all(|&vector| simd_values_in_normal_range(simd, vector))
++        && tail
++            .iter()
++            .all(|&value| scalar_value_in_normal_range(value))
++}
++
+@@ -632,2 +641,2 @@ impl WithSimd for StagedScalarSynthesis<'_> {
+-            && lane_values_in_normal_range(previous)
+-            && lane_values_in_normal_range(current)
++            && slice_values_in_normal_range(simd, previous)
++            && slice_values_in_normal_range(simd, current)
+@@ -661,2 +670,2 @@ impl WithSimd for StagedScalarSynthesis<'_> {
+-                    && lane_values_in_normal_range(previous)
+-                    && lane_values_in_normal_range(current)
++                    && slice_values_in_normal_range(simd, previous)
++                    && slice_values_in_normal_range(simd, current)
+@@ -704,2 +713 @@ impl WithSimd for StagedScalarSynthesis<'_> {
+-                let current_value = current[lane];
+-                if !scalar_value_in_normal_range(current_value) {
++                if !scalar_value_in_normal_range(current[lane]) {
+@@ -719 +726,0 @@ impl WithSimd for StagedScalarSynthesis<'_> {
+-
