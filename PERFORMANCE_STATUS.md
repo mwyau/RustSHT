@@ -102,7 +102,7 @@ guarantee lower whole-transform time.
 
 ## Implementation order
 
-1. Complete acceptance of the integrated scalar route. It uses bounded tile scratch and commits tile outputs only after the checked transition or scaled fallback completes. Current route-specific checks cover GL T255, T511, T1023, and T2047, plus reduced `mmax`, odd/even longitudes, and nonzero `phi0` at T255. Next cover T720 or T799, T1279, multiworker GL, and controlled DUCC comparisons; CC/F1 continue on their existing path.
+1. Complete acceptance of the integrated scalar route. It uses bounded tile scratch and commits tile outputs only after the checked transition or scaled fallback completes. Current route-specific checks cover GL T255, T511, T1023, and T2047, plus reduced `mmax`, odd/even longitudes, and nonzero `phi0` at T255; a separate T511 GL synthesis/adjoint test covers four workers. Next cover T720 or T799, T1279, q8 numerical comparisons, and controlled DUCC comparisons; CC/F1 continue on their existing path.
 2. Reduce measured transition and coefficient-preparation work. Test per-order preparation and active-lane costs before changing the ring-group schedule.
 3. Extend shared recurrence work to spin-1 synthesis without changing E/B conversion, spin signs, polar behavior, or its checked fallbacks.
 4. Improve scalar and spin-1 analysis, then native f32. Keep operation-specific adjoint and accuracy checks.

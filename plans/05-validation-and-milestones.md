@@ -2395,8 +2395,9 @@ reduced-`mmax` synthesis with closed-form fields at T255 on odd and even
 longitude counts with nonzero `phi0`. The release high-bandlimit test passed
 for scalar GL/CC/F1 synthesis at T511, T1023, and T2047 against DUCC 0.41.0 and
 closed-form fields; the test also checks analysis recovery. It runs full
-`mmax`, so integrated-route checks at T720/T799, T1279, and multiple worker
-counts remain outstanding.
+`mmax`. A separate T511 GL synthesis and adjoint-identity test passed with four
+workers. Integrated-route checks at T720/T799, T1279, and q8 numerical
+comparisons remain outstanding.
 
 A single-process release screen compared `8d001252` with `5fd41078` using five
 samples per call at q1/q8 on an AMD Ryzen 9 5950X. Median scalar GL synthesis
