@@ -12,7 +12,10 @@ GridKind = Literal["GL", "CC", "F1"]
 SynthesisMode = Literal["STANDARD", "GRAD_ONLY", "DERIV1"]
 
 class ShtPlan:
-    """Reusable GL, CC, or F1 transform plan. Map rings run north to south and longitudes eastward from ``phi0``. Calls on one plan serialize while reusing its workspace.
+    """Reusable GL, CC, or F1 transform plan.
+
+    Map rings run north to south and longitudes eastward from ``phi0``.
+    Calls on one plan serialize while reusing its workspace.
     """
 
     def __init__(
