@@ -528,4 +528,27 @@ time was 1:11.98, peak RSS was 955,472 kB, and context-switch diagnostic counts 
 snapshots showed no competing build or benchmark or sustained external CPU
 load on that core; the cgroup had no CPU quota and recorded no throttling.
 
-CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. A warning-band CPU-pressure reading was recorded; its exact value remains local. The next process is pair 06 candidate.
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. A warning-band CPU-pressure reading was recorded; its exact value remains local. The next process was pair 06 candidate.
+
+### T2047 q1 pair 06: candidate valid, baseline mate pending
+
+The sixth pair followed the fixed candidate-then-baseline order. All three
+candidate timing series and its numerical comparison against DUCC passed.
+
+| Backend | Samples (ms) | Median (ms) | CV | Drift |
+| --- | --- | ---: | ---: | ---: |
+| RustSHT | 1,739.564, 1,738.812, 1,742.063, 1,741.857, 1,732.645 | 1,739.564 | 0.1963% | 0.1330% |
+| DUCC | 366.280, 367.873, 366.534, 368.167, 366.765 | 366.765 | 0.2052% | 0.2541% |
+| SHTns | 264.798, 264.826, 265.064, 263.916, 265.342 | 264.826 | 0.1807% | 0.0744% |
+
+RustSHT-versus-DUCC relative L2 error was `3.015e-13`; SHTns-versus-DUCC
+was `8.764e-14`. The candidate was 4.74x DUCC and 6.57x SHTns in this
+process; its pair ratio awaits the baseline mate. Whole-process elapsed time
+was 1:11.75, peak RSS was 955,312 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked.
+The worker stayed within its one-core affinity. Process and thread snapshots
+showed no competing build or benchmark or sustained external CPU load on
+that core; the cgroup had no CPU quota and recorded no throttling.
+
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are
+warnings, not rejections. Raw diagnostics remain local and untracked. The
+candidate remains unaccepted; the next process is the pair 06 baseline mate.
