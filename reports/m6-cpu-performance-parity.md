@@ -1183,3 +1183,16 @@ All CV and drift gates passed, including the second DUCC series at 4.7351%
 drift. The candidate matrix may now proceed under v2. Detailed samples,
 aggregate memory, provenance, and validity review are in the
 [baseline-control report](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-v2-baseline-controls-t1023.md).
+
+### Prefix fusion v2 T1023 q1 matrix stopped
+
+Five complete baseline/candidate pairs passed and produced a descriptive
+median RustSHT ratio of `0.540572` (45.94% lower candidate latency). The
+sixth pair stopped when its baseline SHTns-adapter series exceeded the fixed
+CV limit at 7.4299%; no retry or replacement was run. The candidate remains
+unaccepted, no six-pair interval is available, and T2047/T511/q8/spin-1 gates
+did not run. All numerical comparisons passed, and valid candidate processes
+were a median `3.3104x` slower than DUCC at T1023 q1. Raw timings and gate
+outcomes are retained in the
+[structured samples](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-t1023-q1-v2-timing-samples.jsonl)
+and [stop report](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-t1023-q1-v2-stopped.md).
