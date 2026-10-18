@@ -9,17 +9,17 @@
 - Reproduce DUCC's **whole computational algorithm** and efficient execution architecture, not only its Ishioka recurrence formulas. Work in native stable Rust with `pulp` SIMD, bounded reusable scratch, portable fallback and existing RustFFT. Preserve GPL source attribution.
 - Aim for comparable numerical accuracy and CPU performance across **arbitrary supported bandlimits, shapes, precisions and operations**. No fixed trio of T511/T1023/T2047 performance targets. Those remain optional established regression cases, not mandatory daily screens.
 - **Implement first.** Make working, tested source increments; use focused correctness tests and small performance screens, and defer exhaustive statistical comparisons until major integration milestones. Avoid a proliferation of benchmark-protocol and report commits.
-- Preserve all existing transforms and fallbacks, and keep historical reports/artifacts and archived patches. Do not repeat rejected hemisphere or order-owned prototypes unchanged. Detailed status and prior attempts are indexed in [PERFORMANCE_STATUS.md](../PERFORMANCE_STATUS.md).
+- Preserve all supported numerical behavior, but **not every superseded implementation**. Keep one minimal, proven robust safety fallback where required and retire genuinely dead/dominated kernels from `src/` into [kernel backups](08-kernel-naming-and-retirement.md). Preserve historical reports/artifacts and archived patches. Do not repeat rejected hemisphere or order-owned prototypes unchanged. Detailed status is indexed in [PERFORMANCE_STATUS.md](../PERFORMANCE_STATUS.md).
 
 ## Milestones (in order)
 
 ### D1 — DUCC scalar synthesis execution port
 
-**First implementation committed:** `src/legendre/scalar_ducc.rs` now contains a single-thread, order-major, active/reflected-ring native candidate. The initial T255/T300 screen improved on RustSHT's ring-owned kernel but remains slower than DUCC. Continue validating and refining it; do not restart the translation or return to the old prefix micro-optimization queue.
+**Existing implementation:** The order-major active/reflected-ring scalar kernel, currently `src/legendre/scalar_ducc.rs`, has SIMD initialization/scaling and parallel harmonic-order scheduling. Rename its internal file/symbols to neutral algorithm-based names under [the active cleanup brief](08-kernel-naming-and-retirement.md), then continue refining; do not restart or reintroduce superseded prefix experiments.
 
 Complete and harden the f64 scalar GL Legendre synthesis kernel based on DUCC's pinned `sht_inner_loop.h`, `sht.cc`, associated SIMD and `Ylmgen` structures. Reproduce the **complete pathway**: per-order active-ring gathering; north/south reflection and even/odd parity; `fill_a2m`; `init_lambda`; scaled rescaling and `iter_to_ieee` insignificant-prefix advancement; `calc_alm2map`; unrolled vector `alm2map_kernel`; `extract_a2m`; coefficient transformation and output scatter. Avoid unnecessary allocations, duplicate per-order preparation and callbacks in the hot recurrence loop.
 
-Keep existing RustSHT production scalar kernels as reference/fallback. DUCC-style insignificant-prefix skipping must meet a predeclared accuracy contract; route extreme finite, subnormal and unsafe inputs to robust scaled implementations. Do not use FFI. Test scalar and SIMD code, reflection, polar lanes, all tails, phase, odd/even longitude and reduced `mmax`. **Extend the working Rust implementation before extensive profiling.**
+Retain only the smallest validated generic safety fallback needed for exceptional or still-unsupported cases; move provably inferior redundant kernels outside production source after coverage is secured. DUCC-style insignificant-prefix skipping must meet a predeclared accuracy contract; route extreme finite, subnormal and unsafe inputs to a robust implementation. Do not use FFI. Test scalar and SIMD code, reflection, polar lanes, all tails, phase, odd/even longitude and reduced `mmax`. **Extend the working Rust implementation before extensive profiling.**
 
 ### D2 — Integrate, identify and close the gap
 
