@@ -839,3 +839,24 @@ decomposition. The [route timing report](data/m6-legendre-redesign/route-timing/
 contains the tile comparison and the [paired q1 report](data/m6-legendre-redesign/paired-q1-128/summary.md)
 contains the process evidence. The failed T511 stability control blocks q8 and
 regression acceptance measurements under the declared matrix.
+
+### Source-level components in the scaled prefix
+
+In the frozen candidate, each scaled degree pair forms complex factors and
+contributions per lane, checks factor, contribution and accumulated values,
+then advances the recurrence with SIMD. The kernel checks whether every lane
+has entered the ordinary range after each recurrence step; it normalizes
+scaled lane pairs when required and starts the SIMD suffix only when the tile
+passes the range checks. The prefix timer combines these operations with
+sectoral initialization. The surrounding transition timer also includes
+`ordinary_coefficients_are_safe`, which scans the same order's coefficient
+arrays once for each tile with ordinary lanes. These source paths are in the archived
+[tile-128 candidate source](data/m6-legendre-redesign/route-accounting/candidate-synthesis_fast.rs)
+and its scalar range helpers in `src/legendre/scalar.rs` at the frozen source
+revision.
+
+The current timers do not separate scaled complex accumulation, recurrence
+range checks, normalization, or the repeated coefficient scan. A focused
+test-only diagnostic should time and count those operations separately before
+choosing a prefix-kernel redesign. This analysis does not alter the finite-input
+fallback or justify skipping scaled contributions.
