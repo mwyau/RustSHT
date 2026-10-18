@@ -1114,7 +1114,7 @@ fn iter_to_ieee<'a, S: Simd>(
     current: &mut &'a mut [f64],
     scale: &mut [i64],
 ) -> Option<(usize, usize, bool)> {
-    let mut below_limit = rescale_for_prefix(simd, &mut previous[..], &mut current[..], scale)?;
+    let mut below_limit = rescale_prefix_initial(simd, &mut previous[..], &mut current[..], scale)?;
     let mut degree = m;
     let mut pair = 0;
     while below_limit {
@@ -1136,7 +1136,7 @@ fn iter_to_ieee<'a, S: Simd>(
         );
         degree += 4;
         pair += 2;
-        below_limit = rescale_for_prefix(simd, &mut previous[..], &mut current[..], scale)?;
+        below_limit = rescale_prefix_step(simd, &mut previous[..], &mut current[..], scale)?;
     }
     Some((degree, pair, false))
 }
@@ -1164,13 +1164,24 @@ fn rescale_batch<S: Simd>(
 }
 
 #[inline]
-fn rescale_for_prefix<S: Simd>(
+fn rescale_prefix_initial<S: Simd>(
     simd: S,
     previous: &mut [f64],
     current: &mut [f64],
     scale: &mut [i64],
 ) -> Option<bool> {
     rescale_batch_inner::<S, false, true>(simd, previous, current, scale).map(|status| status.1)
+}
+
+#[inline]
+fn rescale_prefix_step<S: Simd>(
+    simd: S,
+    previous: &mut [f64],
+    current: &mut [f64],
+    scale: &mut [i64],
+) -> Option<bool> {
+    let (any_rescaled, _) = rescale_batch_inner::<S, true, false>(simd, previous, current, scale)?;
+    Some(!any_rescaled || all_scale_below_one(simd, scale))
 }
 
 // Scaled recurrence calls this after every degree pair; inlining removes a
@@ -1197,12 +1208,20 @@ fn rescale_batch_inner<S: Simd, const TRACK_ANY_RESCALED: bool, const TRACK_PREF
 
     for index in 0..current_vectors.len() {
         let rescale = simd.greater_than_f64s(simd.abs_f64s(current_vectors[index]), ftol);
+        if TRACK_ANY_RESCALED {
+            let vector_rescaled = mask_any(simd, rescale);
+            any_rescaled |= vector_rescaled;
+            if !vector_rescaled {
+                if TRACK_PREFIX_EPOCH {
+                    all_below_one &=
+                        mask_all(simd, simd.less_than_i64s(scale_vectors[index], scale_one));
+                }
+                continue;
+            }
+        }
         let overflow = simd.and_m64s(rescale, simd.equal_i64s(scale_vectors[index], scale_max));
         if mask_any(simd, overflow) {
             return None;
-        }
-        if TRACK_ANY_RESCALED {
-            any_rescaled |= mask_any(simd, rescale);
         }
         previous_vectors[index] = simd.select_f64s(
             rescale,
@@ -1274,6 +1293,16 @@ fn all_scale_nonnegative<S: Simd>(simd: S, scale: &[i64]) -> bool {
         all_nonnegative &= mask_all(simd, simd.greater_than_or_equal_i64s(*scale_vector, zero));
     }
     all_nonnegative && scale_tail.iter().all(|&value| value >= 0)
+}
+
+fn all_scale_below_one<S: Simd>(simd: S, scale: &[i64]) -> bool {
+    let (scale_vectors, scale_tail) = S::as_simd_i64s(scale);
+    let one = simd.splat_i64s(1);
+    let mut all_below_one = true;
+    for scale_vector in scale_vectors {
+        all_below_one &= mask_all(simd, simd.less_than_i64s(*scale_vector, one));
+    }
+    all_below_one && scale_tail.iter().all(|&value| value < 1)
 }
 
 fn apply_correction_and_clear_scale<S: Simd>(
@@ -1506,7 +1535,7 @@ mod tests {
     use super::{
         FTOL, SCALE_DOWN, SCALE_UP, WithSimd, all_scale_nonnegative, initialize_sectoral_batch,
         mypow, normalize_batch, normalize_lane, power_lower_limit, rescale_batch,
-        scalar_integer_power, set_correction_factors,
+        rescale_prefix_step, scalar_integer_power, set_correction_factors,
     };
     use pulp::{Arch, Simd};
 
@@ -1560,6 +1589,20 @@ mod tests {
 
         fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
             rescale_batch(simd, self.previous, self.current, self.scales)
+        }
+    }
+
+    struct PrefixStepDispatch<'a> {
+        previous: &'a mut [f64],
+        current: &'a mut [f64],
+        scales: &'a mut [i64],
+    }
+
+    impl WithSimd for PrefixStepDispatch<'_> {
+        type Output = Option<bool>;
+
+        fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+            rescale_prefix_step(simd, self.previous, self.current, self.scales)
         }
     }
 
@@ -1748,6 +1791,70 @@ mod tests {
             assert_eq!(actual_previous, expected_previous);
             assert_eq!(actual_current, expected_current);
             assert_eq!(actual_scales, expected_scales);
+        }
+    }
+
+    #[test]
+    fn insignificant_prefix_step_skips_scale_reduction_without_rescaling() {
+        let previous = vec![0.25; 19];
+        let current = vec![FTOL; 19];
+        let scales = vec![i64::MAX; 19];
+
+        for arch in [Arch::Scalar, Arch::new()] {
+            let mut actual_previous = previous.clone();
+            let mut actual_current = current.clone();
+            let mut actual_scales = scales.clone();
+            let below_limit = arch
+                .dispatch(PrefixStepDispatch {
+                    previous: &mut actual_previous,
+                    current: &mut actual_current,
+                    scales: &mut actual_scales,
+                })
+                .unwrap();
+
+            assert!(below_limit);
+            assert_eq!(actual_previous, previous);
+            assert_eq!(actual_current, current);
+            assert_eq!(actual_scales, scales);
+        }
+    }
+
+    #[test]
+    fn insignificant_prefix_step_checks_scale_epoch_after_rescaling() {
+        let previous = vec![0.25; 19];
+        let mut current = vec![FTOL; 19];
+        current[0] = FTOL * 2.0;
+        let mut scales = vec![-1; 19];
+
+        for arch in [Arch::Scalar, Arch::new()] {
+            let mut actual_previous = previous.clone();
+            let mut actual_current = current.clone();
+            let mut actual_scales = scales.clone();
+            let below_limit = arch
+                .dispatch(PrefixStepDispatch {
+                    previous: &mut actual_previous,
+                    current: &mut actual_current,
+                    scales: &mut actual_scales,
+                })
+                .unwrap();
+
+            assert!(below_limit);
+            assert_eq!(actual_scales[0], 0);
+
+            scales[0] = 0;
+            let mut actual_previous = previous.clone();
+            let mut actual_current = current.clone();
+            let mut actual_scales = scales.clone();
+            let below_limit = arch
+                .dispatch(PrefixStepDispatch {
+                    previous: &mut actual_previous,
+                    current: &mut actual_current,
+                    scales: &mut actual_scales,
+                })
+                .unwrap();
+            assert!(!below_limit);
+            assert_eq!(actual_scales[0], 1);
+            scales[0] = -1;
         }
     }
 
