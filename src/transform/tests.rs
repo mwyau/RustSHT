@@ -2291,95 +2291,102 @@ fn fine_synthesis_groups_follow_the_measured_spin_and_grid_policy() {
 
 #[cfg(feature = "parallel")]
 #[test]
-fn scalar_synthesis_coefficient_cache_matches_uncached_ring_group() {
-    let plan = make_plan(1023, 1023, 1024, 2049, 0.37);
+fn scalar_synthesis_coefficient_cache_matches_uncached_eligible_shapes() {
     let eight_threads = rayon::ThreadPoolBuilder::new()
         .num_threads(8)
         .build()
         .unwrap();
-    let mut eight_thread_workspace = eight_threads.install(|| plan.workspace()).unwrap();
     let group_ring_count = 64;
-    let parallel_groups = plan
-        .grid
-        .ntheta()
-        .div_ceil(eight_thread_workspace.ring_group_size);
-    let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
-    for m in 0..=plan.harmonics.mmax() {
-        for l in m..=plan.harmonics.lmax() {
-            let real = ((l * 7 + m * 11) % 19) as f64 - 9.0;
-            let imaginary = ((l * 13 + m * 5) % 23) as f64 - 11.0;
-            alm[plan.harmonics.index(l, m).unwrap()] =
-                Complex64::new(real * 1.0e-5, if m == 0 { 0.0 } else { imaginary * 1.0e-5 });
+    for (lmax, mmax, ntheta, nphi) in [(1023, 1023, 1024, 2049), (1279, 900, 1280, 2561)] {
+        let plan = make_plan(lmax, mmax, ntheta, nphi, 0.37);
+        let mut eight_thread_workspace = eight_threads.install(|| plan.workspace()).unwrap();
+        let group_ring_count = group_ring_count.min(ntheta);
+        let ring_group_size = plan
+            .fine_synthesis_ring_group_size(8)
+            .unwrap_or(eight_thread_workspace.ring_group_size)
+            .min(ntheta);
+        let parallel_groups = ntheta.div_ceil(ring_group_size);
+        let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        for m in 0..=plan.harmonics.mmax() {
+            for l in m..=plan.harmonics.lmax() {
+                let real = ((l * 7 + m * 11) % 19) as f64 - 9.0;
+                let imaginary = ((l * 13 + m * 5) % 23) as f64 - 11.0;
+                alm[plan.harmonics.index(l, m).unwrap()] =
+                    Complex64::new(real * 1.0e-5, if m == 0 { 0.0 } else { imaginary * 1.0e-5 });
+            }
         }
-    }
-    for (ring, &theta) in plan.grid.theta().iter().enumerate() {
-        let (sin_theta, cos_theta) = sin_cos_from_f64(theta);
-        eight_thread_workspace.theta_sin[ring] = sin_theta;
-        eight_thread_workspace.theta_cos[ring] = cos_theta;
-        eight_thread_workspace.ring_order_limits[ring] =
-            f64::polar_order_limit(plan.harmonics.lmax(), 0, sin_theta, cos_theta);
-    }
-    let layout = eight_threads
-        .install(|| {
-            plan.prepare_scalar_synthesis_coefficient_cache(
-                &alm,
-                &mut eight_thread_workspace.spin_spectra,
-                &mut eight_thread_workspace.recurrence_workers[..parallel_groups],
-                8,
-                parallel_groups,
-            )
-        })
-        .expect("T1023 cache fits the existing scalar workspace buffer");
-    assert_eq!(layout.row_stride, 1024);
-    assert_eq!(layout.half_stride, 512);
-    assert_eq!(layout.coefficient_count, 1024 * 1024);
+        for (ring, &theta) in plan.grid.theta().iter().enumerate() {
+            let (sin_theta, cos_theta) = sin_cos_from_f64(theta);
+            eight_thread_workspace.theta_sin[ring] = sin_theta;
+            eight_thread_workspace.theta_cos[ring] = cos_theta;
+            eight_thread_workspace.ring_order_limits[ring] =
+                f64::polar_order_limit(plan.harmonics.lmax(), 0, sin_theta, cos_theta);
+        }
+        let layout = eight_threads
+            .install(|| {
+                plan.prepare_scalar_synthesis_coefficient_cache(
+                    &alm,
+                    &mut eight_thread_workspace.spin_spectra,
+                    &mut eight_thread_workspace.recurrence_workers[..parallel_groups],
+                    8,
+                    parallel_groups,
+                )
+            })
+            .expect("eligible cache fits the existing scalar workspace buffer");
+        assert_eq!(layout.row_stride, (lmax + 2) / 2 * 2);
+        assert_eq!(layout.half_stride, (lmax + 2) / 2);
+        assert_eq!(layout.coefficient_count, layout.row_stride * (mmax + 1));
 
-    let ring_start = 256;
-    let ring_end = ring_start + group_ring_count;
-    let spectrum_len = plan.fft.spectrum_len();
-    let mut cached_spectra = vec![Complex64::new(0.0, 0.0); group_ring_count * spectrum_len];
-    let mut uncached_spectra = cached_spectra.clone();
-    let cached_coefficients = ScalarSynthesisCoefficientCache {
-        values: &eight_thread_workspace.spin_spectra[..layout.coefficient_count],
-        row_stride: layout.row_stride,
-        half_stride: layout.half_stride,
-    };
-    eight_threads
-        .install(|| {
-            plan.synthesize_ring_group_with_scalar_coefficients(
-                &alm,
-                plan.grid.nphi(),
-                spectrum_len,
-                plan.grid.phi0(),
-                ring_start,
-                &mut cached_spectra,
-                &eight_thread_workspace.theta_sin[ring_start..ring_end],
-                &eight_thread_workspace.theta_cos[ring_start..ring_end],
-                &eight_thread_workspace.ring_order_limits,
-                pulp::Arch::new(),
-                &mut eight_thread_workspace.recurrence_workers[0],
-                Some(cached_coefficients),
-            )
-        })
-        .unwrap();
-    eight_threads
-        .install(|| {
-            plan.synthesize_ring_group(
-                &alm,
-                plan.grid.nphi(),
-                spectrum_len,
-                plan.grid.phi0(),
-                ring_start,
-                &mut uncached_spectra,
-                &eight_thread_workspace.theta_sin[ring_start..ring_end],
-                &eight_thread_workspace.theta_cos[ring_start..ring_end],
-                &eight_thread_workspace.ring_order_limits,
-                pulp::Arch::new(),
-                &mut eight_thread_workspace.recurrence_workers[0],
-            )
-        })
-        .unwrap();
-    assert!(relative_l2_complex(&cached_spectra, &uncached_spectra) < 2.0e-15);
+        let ring_start = ntheta / 4;
+        let ring_end = ring_start + group_ring_count;
+        let spectrum_len = plan.fft.spectrum_len();
+        let mut cached_spectra = vec![Complex64::new(0.0, 0.0); group_ring_count * spectrum_len];
+        let mut uncached_spectra = cached_spectra.clone();
+        let cached_coefficients = ScalarSynthesisCoefficientCache {
+            values: &eight_thread_workspace.spin_spectra[..layout.coefficient_count],
+            row_stride: layout.row_stride,
+            half_stride: layout.half_stride,
+        };
+        eight_threads
+            .install(|| {
+                plan.synthesize_ring_group_with_scalar_coefficients(
+                    &alm,
+                    plan.grid.nphi(),
+                    spectrum_len,
+                    plan.grid.phi0(),
+                    ring_start,
+                    &mut cached_spectra,
+                    &eight_thread_workspace.theta_sin[ring_start..ring_end],
+                    &eight_thread_workspace.theta_cos[ring_start..ring_end],
+                    &eight_thread_workspace.ring_order_limits,
+                    pulp::Arch::new(),
+                    &mut eight_thread_workspace.recurrence_workers[0],
+                    Some(cached_coefficients),
+                )
+            })
+            .unwrap();
+        eight_threads
+            .install(|| {
+                plan.synthesize_ring_group(
+                    &alm,
+                    plan.grid.nphi(),
+                    spectrum_len,
+                    plan.grid.phi0(),
+                    ring_start,
+                    &mut uncached_spectra,
+                    &eight_thread_workspace.theta_sin[ring_start..ring_end],
+                    &eight_thread_workspace.theta_cos[ring_start..ring_end],
+                    &eight_thread_workspace.ring_order_limits,
+                    pulp::Arch::new(),
+                    &mut eight_thread_workspace.recurrence_workers[0],
+                )
+            })
+            .unwrap();
+        assert!(
+            relative_l2_complex(&cached_spectra, &uncached_spectra) < 2.0e-15,
+            "cached synthesis differs at T{lmax}, mmax={mmax}"
+        );
+    }
 }
 
 #[cfg(feature = "parallel")]

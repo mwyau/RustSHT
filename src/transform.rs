@@ -18,10 +18,6 @@ use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 const SCALAR_TRANSITION_MIN_LMAX: usize = 1023;
 const FUSED_SCALAR_ANALYSIS_MIN_LMAX: usize = 255;
-#[cfg(feature = "parallel")]
-const SCALAR_SYNTHESIS_COEFFICIENT_CACHE_LMAX: usize = 1023;
-#[cfg(feature = "parallel")]
-const SCALAR_SYNTHESIS_COEFFICIENT_CACHE_MAX_BYTES: usize = 17 * 1024 * 1024;
 
 #[cfg(feature = "parallel")]
 #[derive(Clone, Copy)]
@@ -709,14 +705,12 @@ impl<T: ShtScalar> ShtPlan<T> {
     ) -> Option<ScalarSynthesisCoefficientCacheLayout> {
         let lmax = self.harmonics.lmax();
         let order_count = self.harmonics.mmax().checked_add(1)?;
-        // Matched q8 screens found a repeatable warm gain only at exact GL T1023.
+        // Keep the cache on the paired-transition path and avoid preparing it
+        // when the ring-group schedule cannot keep each worker occupied.
         if self.harmonics.spin() != 0
             || self.grid.kind() != GridKind::GaussLegendre
-            || lmax != SCALAR_SYNTHESIS_COEFFICIENT_CACHE_LMAX
-            || self.harmonics.mmax() != lmax
-            || self.grid.ntheta() != lmax + 1
-            || execution_threads < 8
-            || parallel_groups < 2
+            || lmax < SCALAR_TRANSITION_MIN_LMAX
+            || parallel_groups < execution_threads
             || !T::supports_paired_scalar()
         {
             return None;
@@ -725,11 +719,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let half_stride = lmax.checked_add(2)?.checked_div(2)?;
         let row_stride = half_stride.checked_mul(2)?;
         let coefficient_count = row_stride.checked_mul(order_count)?;
-        let byte_count = coefficient_count.checked_mul(std::mem::size_of::<Complex<T>>())?;
-        if byte_count > SCALAR_SYNTHESIS_COEFFICIENT_CACHE_MAX_BYTES
-            || coefficient_count > cache.len()
-            || recurrence_workers.len() < parallel_groups
-        {
+        if coefficient_count > cache.len() || recurrence_workers.len() < parallel_groups {
             return None;
         }
 
