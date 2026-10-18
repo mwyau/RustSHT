@@ -528,3 +528,22 @@ CPU-pressure validity was assessed under the declared protocol; raw readings rem
 limit. The matrix stopped there, without relaxing the limit. The complete
 audit, retained refusals/orphans, and partial cell records are linked from the
 candidate evidence directory.
+
+## T511 baseline timing trace (diagnostic only)
+
+The archived baseline extension (`_rustsht.abi3.so`, SHA-256
+`a8641456e1fcdf8d37ce3dd583dd1b7cf224306ca792d38c2b75f3bfcac63847`) was
+traced on GL 512x1024 scalar f64 at phi0=0.37. The original `backend=both`
+harness does one correctness comparison before `time_runs`; `time_runs` then
+runs one untimed warm-up and five timed calls. The diagnostic recorded one
+Rust correctness-call equivalent, one warm-up, then 20 individual Rust
+synthesis calls. It omitted the intervening DUCC correctness synthesis, so it
+is not an exact reproduction of the full harness sequence. The q8 trace (8 pinned CPU cores) measured 9.041-9.869 ms per call, median 9.486 ms
+(CV 2.37%). The q1 control (one CPU core) measured 39.599-40.154 ms, median 39.834
+ms (CV 0.50%). Neither reproduced the previously retained descending q8
+samples 21.948, 17.882, 15.990, 13.217, 9.555 ms. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. Per-call process involuntary context
+switch deltas and thread CPU snapshots, as well as sysfs frequency readings,
+are in the raw diagnostic files. No thermal-zone readings were exposed. This diagnostic leaves all historical samples unchanged and does not identify
+the cause of their variability. It defines no revised warm-up or acceptance
+protocol and makes no decision on the archived M2 candidate, which remains
+unaccepted pending its existing gate. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local.

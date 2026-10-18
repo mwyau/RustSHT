@@ -1,0 +1,11 @@
+# Diagnostic commands (run sequentially; archived baseline binary only)
+
+Q8, 20 individually timed calls, 8 CPUs (8 pinned CPU cores):
+```sh
+/usr/bin/time -v -o ${RUSTSHT_LOCAL_DIAG_DIR}/q8.time taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env PYTHONDONTWRITEBYTECODE=1 TMPDIR=<local-home-path> PYTHONPATH=<local-home-path> RAYON_NUM_THREADS=8 <local-home-path> reports/data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/call-trace.py 20 reports/data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/q8-calls.csv > ${RUSTSHT_LOCAL_DIAG_DIR}/q8.stdout 2>&1
+```
+
+Q1, 10 individually timed calls, affinity pinned per worker count:
+```sh
+/usr/bin/time -v -o ${RUSTSHT_LOCAL_DIAG_DIR}/q1.time taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" env PYTHONDONTWRITEBYTECODE=1 TMPDIR=<local-home-path> PYTHONPATH=<local-home-path> RAYON_NUM_THREADS=1 <local-home-path> reports/data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/call-trace.py 10 reports/data/m6-m2-spin1-fused-visitor/t511-q8-instability-diagnostic/q1-calls.csv > ${RUSTSHT_LOCAL_DIAG_DIR}/q1.stdout 2>&1
+```
