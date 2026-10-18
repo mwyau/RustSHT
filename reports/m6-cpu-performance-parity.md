@@ -1234,5 +1234,16 @@ The baseline-first T2047 q1 complete-transform screen is now prospectively
 frozen in the
 [paired-screen protocol](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-range-precheck-t2047-q1-pair-protocol-v1.md).
 It fixes source and binary hashes, the v2 warm-up sequence, numerical limits,
-stability gates, and the one-pair stop rule. The candidate remains isolated;
-no complete-transform result is available from this protocol yet.
+stability gates, and the one-pair stop rule. The result below follows those
+rules; the candidate remains isolated.
+
+The baseline and range-precheck candidate completed one valid T2047 q1 pair.
+RustSHT medians were 3270.589 ms and 1235.409 ms; the candidate/baseline
+ratio was `0.377733` (2.647x speedup). The clean baseline was 8.91x DUCC and
+the candidate was 3.31x DUCC. All six backend series passed the fixed timing
+gates, and both RustSHT outputs passed the DUCC error limits. Candidate
+workspace tests passed. A large difference in untimed NumPy copy diagnostics
+is documented and will be checked in the next matrix. The result authorizes
+only the six-pair T2047 q1 matrix; the candidate remains isolated and
+unaccepted. See the
+[screen result](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-range-precheck-t2047-q1-screen-v1.md).
