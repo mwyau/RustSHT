@@ -92,6 +92,20 @@ def timed(operation) -> tuple[np.ndarray, list[float]]:
     return result, samples
 
 
+def timing_summary(samples: list[float]) -> dict[str, float | list[float]]:
+    first_three = statistics.median(samples[:3])
+    final_two = statistics.median(samples[3:])
+    mean = statistics.mean(samples)
+    return {
+        "samples_ms": samples,
+        "median_ms": statistics.median(samples),
+        "cv_pct": statistics.pstdev(samples) / mean * 100.0,
+        "first3_median_ms": first_three,
+        "final2_median_ms": final_two,
+        "drift_pct": abs(final_two / first_three - 1.0) * 100.0,
+    }
+
+
 def main() -> None:
     if len(sys.argv) not in (2, 3):
         raise SystemExit(
@@ -187,14 +201,18 @@ def main() -> None:
                 "synthesis": {
                     "f32_samples_ms": ducc32_synthesis_ms,
                     "f32_median_ms": statistics.median(ducc32_synthesis_ms),
+                    "f32_stability": timing_summary(ducc32_synthesis_ms),
                     "f64_samples_ms": ducc64_synthesis_ms,
                     "f64_median_ms": statistics.median(ducc64_synthesis_ms),
+                    "f64_stability": timing_summary(ducc64_synthesis_ms),
                 },
                 "analysis": {
                     "f32_samples_ms": ducc32_analysis_ms,
                     "f32_median_ms": statistics.median(ducc32_analysis_ms),
+                    "f32_stability": timing_summary(ducc32_analysis_ms),
                     "f64_samples_ms": ducc64_analysis_ms,
                     "f64_median_ms": statistics.median(ducc64_analysis_ms),
+                    "f64_stability": timing_summary(ducc64_analysis_ms),
                 },
             },
         }
