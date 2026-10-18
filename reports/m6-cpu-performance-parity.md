@@ -1227,3 +1227,12 @@ and [result](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-rang
 freeze source hashes, route timing, correctness evidence, and validity
 findings. One complete-transform T2047 q1 screen against the clean baseline is
 the next measurement.
+
+### Range-precheck complete-transform screen protocol
+
+The baseline-first T2047 q1 complete-transform screen is now prospectively
+frozen in the
+[paired-screen protocol](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-range-precheck-t2047-q1-pair-protocol-v1.md).
+It fixes source and binary hashes, the v2 warm-up sequence, numerical limits,
+stability gates, and the one-pair stop rule. The candidate remains isolated;
+no complete-transform result is available from this protocol yet.
