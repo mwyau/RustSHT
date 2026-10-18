@@ -13,12 +13,30 @@ backend series and both host-pressure checks pass. Do not replace or retry a
 process. If the diagnostic fails, stop the q1 screen.
 
 If the diagnostic passes, run one fresh baseline/candidate process pair at
-T1023, baseline first, then one pair at T2047 in the same fixed order. Each
-process uses one warm-up and five timed complete plan-scope transformations
-for each backend. Stop at the first invalid process. Do not remove samples,
-retry, or change the thresholds. These pairs are screening evidence only; a
-valid screen can authorize the existing six-pair q1 matrix but cannot accept
-the candidate.
+T1023, baseline first, then one pair at T2047 in the same fixed order. Launch
+each side as an independent fresh process and evaluate its full validity
+before launching the next side. This enforces the stop-at-first-invalid-
+process rule. Each process uses one warm-up and five timed complete plan-scope
+transformations for each backend. Do not remove samples, retry, or change the
+thresholds. These pairs are screening evidence only; a valid screen can
+authorize the existing six-pair q1 matrix but cannot accept the candidate.
+
+The baseline-versus-baseline diagnostic used the paired-process runner below.
+For the four screen processes, invoke the unchanged harness directly with the
+same environment and one-core placement. A reproducible command template is:
+
+```sh
+taskset -c "$BENCH_CPU" /usr/bin/time -v -o "$LOCAL_TIME" env \
+  PYTHONPATH="$VARIANT_PYTHONPATH" RAYON_NUM_THREADS=1 \
+  RUSTSHT_PERF_RAW=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 \
+  "$PYTHON" examples/python_perf_baseline.py \
+  "$L" 0 1 GL 1 plan synthesis both STANDARD "$((2*(L+1)))" "$((L+1))"
+```
+
+The harness and process-pair runner hashes below remain frozen. The runner
+hash documents the baseline stability diagnostic; the four candidate-screen
+cells use the command template above so each side can be validated before
+the next process starts.
 
 ## Frozen source and binaries
 
@@ -47,7 +65,8 @@ the candidate.
   `07fe9333f8edc80dab0285d51debb5e45979d3754b4ac9033712712668e28468`.
 - Benchmark harness: `examples/python_perf_baseline.py`, SHA-256
   `e7ffbe889922cc4da1b1ece63bc24bf264603c7373adb195abde5d705bb51c07`.
-  Fresh-process runner: `crates/rustsht-fft/benches/paired_processes.py`,
+  Baseline-control fresh-process runner:
+  `crates/rustsht-fft/benches/paired_processes.py`,
   SHA-256
   `430fe2ebb6cac4a6be30decf68687fb1fddf2f5d88dcaba00d79d266da940d7c`.
 - Configuration: Python 3.11.15, NumPy 2.4.6, CMake 4.2.3, C++ compiler
