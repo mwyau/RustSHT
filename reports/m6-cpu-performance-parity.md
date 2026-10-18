@@ -76,6 +76,16 @@ not started. The [q8 results](data/m6-legendre-redesign/route-timing/exponent-ep
 preserve the valid pairs and the failed process samples. The q1 scaled-prefix
 transition profile remains the next measured kernel target.
 
+A test-only T2047 q1 profile of the exponent-epoch source measured 764.727 ms
+in the pre-suffix transition and 547.002 ms in the nested SIMD suffix. The
+sampled prefix factor checks and complex accumulation took 7.038 ms across
+selected iterations, the largest sampled component; normalization took
+3.247 ms. These sampled totals are not extrapolated to the full prefix. The
+result supports testing a concrete factor-formation or scaled-accumulation
+mechanism with the existing range checks and fallback. The [profile report](data/m6-legendre-redesign/route-timing/exponent-epoch-prefix-component-profile-v1-results.md)
+contains route counts, source and binary hashes, pressure readings and
+sampling limits.
+
 A route decomposition and sampled prefix components are in the
 [T2047 route profile](data/m6-legendre-redesign/route-timing/scaled-prefix-accumulator-route-profile-t2047.md).
 A bounded T511 q8 baseline-versus-baseline diagnostic found one
