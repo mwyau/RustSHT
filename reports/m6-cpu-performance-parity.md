@@ -1063,3 +1063,11 @@ baseline/candidate screen at T1023 and T2047 to proceed. It does not accept
 the candidate; T511, q8, and the complete scalar/spin-1 regression matrix
 remain outstanding. The [fixed protocol](data/m6-legendre-redesign/route-timing/scaled-prefix-simd-precheck-q1-screen-v1-protocol.md)
 defines the next cells and stop conditions.
+
+The T1023 screen stopped at its first baseline process. RustSHT passed
+stability, but DUCC failed CV at `9.807%`; the numerical comparison passed.
+The process was inconclusive under the fixed rule, so no candidate or T2047
+screen process ran and no retry was made. The pre/post pressure gates passed,
+with a warning-band observation during the run; placement and cgroup checks
+showed no clear competing workload. The candidate remains unmeasured and
+unaccepted. See the [T1023 stop report](data/m6-legendre-redesign/route-timing/scaled-prefix-simd-precheck-t1023-baseline-stop-v1.md).
