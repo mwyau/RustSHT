@@ -1196,3 +1196,18 @@ were a median `3.3104x` slower than DUCC at T1023 q1. Raw timings and gate
 outcomes are retained in the
 [structured samples](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-t1023-q1-v2-timing-samples.jsonl)
 and [stop report](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-t1023-q1-v2-stopped.md).
+
+### Fused candidate T2047 route profile
+
+A test-only q1 profile of the frozen candidate verified bitwise output against
+its warm-up call and measured 674.421 ms in the scaled prefix plus transition
+setup estimate (51.39% of the instrumented synthesis call), 527.649 ms in the
+ordinary SIMD suffix (40.22%), 41.454 ms in scaled fallback, and 5.441 ms in
+coefficient-safety scans. Average tile occupancy was 122.80 of 128 active
+lanes, with 99.95% of active slots on the ordinary route. The timings are
+nested diagnostic phases and are not candidate acceptance measurements. The
+scaled-prefix lane loop is the next measured bottleneck; its full route counts,
+timer scopes, memory, and validity findings are in the
+[route-profile report](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-route-profile-t2047-v1.md).
+The candidate remains unaccepted because the v2 T1023 matrix stopped at its
+invalid baseline SHTns timing series.
