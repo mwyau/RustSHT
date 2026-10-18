@@ -27,10 +27,11 @@ run inconclusive below the PSI rejection threshold. The exact rules and
 runner are in [`protocol-v2.md`](protocol-v2.md),
 [`run-one-v2.sh`](run-one-v2.sh), and
 [`check-stability-v2.py`](check-stability-v2.py). The v1 T511 process above remains diagnostic under its original 0.50% host
-gate and is not reclassified. No v2 performance process had started when this
-summary was updated. The next measurements are the six alternating T1023 q1
-pairs, followed by T2047 q1 only if all T1023 processes pass the declared
-validity rules and their snapshots show no unresolved interference.
+gate and is not reclassified. When this protocol section was first recorded,
+no v2 performance process had started. The planned sequence was six
+alternating T1023 q1 pairs, followed by T2047 q1 only if all T1023 processes
+passed the declared validity rules and snapshots showed no unresolved
+interference.
 
 ## First v2 T1023 process: stopped at baseline
 
