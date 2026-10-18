@@ -1,3 +1,5 @@
+> **Historical review, not an active implementation plan (2026-10-18).** This review describes a specific earlier source snapshot, diagnostic ideas and example benchmark dimensions. Do not treat its experiment proposals, checkpoint sequence or T511/T1023/T2047 examples as current instructions. Read [AGENTS.md](AGENTS.md), the concise [PERFORMANCE_STATUS.md](PERFORMANCE_STATUS.md) and the new [active roadmap](plans/05-validation-and-milestones.md) instead. Preserve this report as evidence.
+
 # Integrated RustSHT architecture and performance review
 
 Reviewed checkout: `ac2970d33469461c02b21fe99bb2ec04a0fd5ae3` (`main`). Review completed 2026-10-17. This is a static source review. No builds, tests, benchmarks, profilers, project programs, or external-library programs were run. No numerical or timing result below was newly measured during this review. Evidence labels distinguish **Verified source finding**, **Previously measured result**, **Reasoned hypothesis**, and **Requires benchmark**. A source mechanism can be verified while its performance benefit still requires measurement. Historical measurements apply to their recorded revision and environment.
