@@ -32,6 +32,31 @@ const SCALE_UP: f64 = f64::from_bits(1823_u64 << 52);
 const SCALE_DOWN: f64 = f64::from_bits(223_u64 << 52);
 pub(crate) const LATITUDE_BLOCK_SIZE: usize = 64;
 
+#[inline]
+pub(super) fn scalar_value_in_normal_range(value: f64) -> bool {
+    value == 0.0 || (value.is_finite() && value.abs() <= BIG && value.abs() >= SMALL)
+}
+
+#[inline(always)]
+pub(super) fn simd_values_in_normal_range<S: Simd>(simd: S, values: S::f64s) -> bool {
+    let absolute = simd.abs_f64s(values);
+    let upper_mask = simd.less_than_or_equal_f64s(absolute, simd.splat_f64s(BIG));
+    let upper_ok = simd.select_f64s(upper_mask, simd.splat_f64s(1.0), simd.splat_f64s(0.0));
+    if simd.reduce_min_f64s(upper_ok) != 1.0 {
+        return false;
+    }
+    let zero_mask = simd.equal_f64s(absolute, simd.splat_f64s(0.0));
+    let lower_values = simd.select_f64s(zero_mask, simd.splat_f64s(BIG), absolute);
+    simd.reduce_min_f64s(lower_values) >= SMALL
+}
+
+#[inline]
+pub(super) fn lane_values_in_normal_range(values: &[f64]) -> bool {
+    values
+        .iter()
+        .all(|&value| scalar_value_in_normal_range(value))
+}
+
 #[derive(Clone, Copy)]
 struct ScaledValue {
     mantissa: f64,

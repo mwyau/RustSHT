@@ -19,6 +19,9 @@ use num_complex::Complex64;
 use pulp::{Arch, Simd, WithSimd};
 
 use crate::error::ShtError;
+use crate::legendre::scalar::{
+    lane_values_in_normal_range, scalar_value_in_normal_range, simd_values_in_normal_range,
+};
 use crate::legendre::{LATITUDE_BLOCK_SIZE, scalar};
 
 /// Prepares DUCC's per-order coefficient transformation and paired recurrence.
@@ -2082,31 +2085,6 @@ impl WithSimd for FusedSynthesisBlock<'_> {
             sum_im_tail[lane] = accumulated_im;
         }
     }
-}
-
-#[inline(always)]
-fn scalar_value_in_normal_range(value: f64) -> bool {
-    value == 0.0
-        || (value.is_finite() && value.abs() <= scalar::BIG && value.abs() >= scalar::SMALL)
-}
-
-#[inline(always)]
-fn simd_values_in_normal_range<S: Simd>(simd: S, values: S::f64s) -> bool {
-    let absolute = simd.abs_f64s(values);
-    let upper_mask = simd.less_than_or_equal_f64s(absolute, simd.splat_f64s(scalar::BIG));
-    let upper_ok = simd.select_f64s(upper_mask, simd.splat_f64s(1.0), simd.splat_f64s(0.0));
-    if simd.reduce_min_f64s(upper_ok) != 1.0 {
-        return false;
-    }
-    let zero_mask = simd.equal_f64s(absolute, simd.splat_f64s(0.0));
-    let lower_values = simd.select_f64s(zero_mask, simd.splat_f64s(scalar::BIG), absolute);
-    simd.reduce_min_f64s(lower_values) >= scalar::SMALL
-}
-
-fn lane_values_in_normal_range(values: &[f64]) -> bool {
-    values
-        .iter()
-        .all(|&value| scalar_value_in_normal_range(value))
 }
 
 fn finite_prefix_sums(
