@@ -1,0 +1,12 @@
+# Isolated baseline extension build
+worktree=<local-home-path>
+source_commit=91c2cb8ff1ce576bd6dfa6764fd7fb516a00295a
+source_status=clean-before-build
+command=cargo build -p rustsht-python --release
+exit_status=0
+observed_result='Finished release profile (optimized) target(s) in 9.67s'
+artifact=<local-home-path>
+package_module=<local-home-path>
+artifact_sha256=69d3a2138e8012f331a94c8c09347433e526e5c8362c917cfefcb849c7177036
+artifact_and_package_module_identical=yes
+import_check='passed with PYTHONPATH baseline/python then target/m6-references/ducc-build'

@@ -589,3 +589,46 @@ retroactively. It is anchored to the clean standalone q8/q1 trace CVs
 2.37%/.50% and exact-harness q1 control CVs .19%/.39%, compared with exact-
 harness q8 CVs 48.96%/33.84%. The standalone trace and all historical samples
 remain unchanged.
+
+## Legendre redesign: source and machine checkpoints
+
+The pinned DUCC `alm2leg` path prepares each harmonic order once, schedules
+orders dynamically, packs active latitude rings, and integrates recurrence
+with coefficient accumulation. Rust's current path assigns latitude groups;
+each group repeats order setup, and its scaled paired visitor invokes a
+coefficient callback for each degree pair and latitude block. Rust already has
+paired-degree Ishioka-style recurrence and a fused ordinary SIMD block. This
+comparison identifies duplicated setup and callback work as testable causes;
+it does not establish their timing share. Exact source references and hashes
+are in [`the source comparison`](data/m6-legendre-redesign/source-comparison.md). The clean baseline SIMD build at source `91c2cb8` used Rust 1.99.0 and
+portable runtime dispatch on a x86-64 CPU (AVX2/FMA, no AVX-512). Emitted
+`x86-v3` ordinary fused synthesis uses four f64 lanes and FMA without calls in
+the vector degree loop. The scaled visitor emits a callback call per degree
+pair. This is a code-generation observation, not a measured cause. The
+reproducible build configuration, host record, symbol selectors, and excerpts
+are in [`the assembly inspection`](data/m6-legendre-redesign/cpu-isa-asm.md). The full generated assembly remains in the local diagnostic capture with its
+SHA-256 recorded there; it is not a production artifact.
+
+## Clean-source baseline screen (incomplete)
+
+An isolated release extension built from clean source `91c2cb8` ran one
+exact-harness cell: GL scalar f64 T511, 512x1024, full mmax, phi0=0.37,
+STANDARD, `synthesis_into`, q1 pinned to one CPU core. The Python harness was
+`72cd1986…`; the references were DUCC 0.42.0 at
+`80388904b8cfc32400ba84af8a6a45aabfe60f86` and SHTns 3.7.5 at
+`4e69ceb3fc5f19475d55b03ff0fdec210dc3075e`.
+
+| Backend | Five timed samples (ms) | Median (ms) | CV | Relative L2 vs DUCC |
+|---|---:|---:|---:|---:|
+| RustSHT | 40.266, 40.139, 41.471, 40.322, 40.082 | 40.266 | 1.27% | 6.632e-14 |
+| DUCC | 7.620, 7.531, 7.517, 7.517, 7.498 | 7.517 | 0.57% | — |
+| SHTns adapter | 4.608, 4.675, 4.648, 4.651, 4.653 | 4.651 | 0.47% | 4.286e-14 |
+
+The Rust median is 5.36x DUCC and 8.66x the SHTns adapter for this cell. CPU-pressure warnings were reviewed under the declared protocol; exact transient readings remain local. The
+next T1023 preflight exceeded that limit, so the screen stopped without
+reruns or omitted samples. Whole-process GNU time was 34.18 s and peak RSS was
+96.8 MiB; the process time includes setup and reference work and is not
+transform latency. This is one diagnostic cell, not a matched acceptance
+matrix or a revalidation of the historical T1023/T2047 baselines. Raw samples,
+host snapshots, refusal, provenance, hashes, and reproduction scripts are in
+[`the clean baseline evidence`](data/m6-legendre-redesign/baseline/summary.md).

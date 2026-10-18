@@ -1,0 +1,9 @@
+HEAD=91c2cb8ff1ce576bd6dfa6764fd7fb516a00295a
+STATUS_BEGIN
+STATUS_END
+
+Source file hashes:
+479449ee8371873e6ab5f68c8987dc93db14061aa5b99afd1dfe7852874db75f  src/legendre/scalar_paired.rs
+388841b78579b75f96b62bac4ffb0684001cbf3be176b7a0dfb687999ca46442  src/legendre/scalar.rs
+5cb04beadfaf2ea544ce177d614c1c561face689aa837373650bd9c86e55cca2  src/transform.rs
+52bff484a39c29705ae65f08561e32eae813fcbbf50df37e7134e6187db1e649  src/spin_transform.rs

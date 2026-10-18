@@ -1,0 +1,417 @@
+--- x86-v3 FusedSynthesisBlock ---
+112486		.section	.text._RINvNvMsc_NtNtCsabg1hvrxBKj_4pulp3x862v3NtB8_2V39vectorize3impINtNvXs1_B8_BC_NtBc_4Simd9vectorize4ImplNtNtNtCsaNA9prTwPkd_7rustsht8legendre13scalar_paired19FusedSynthesisBlockEEB1I_,"ax",@progbits
+112487		.prefalign	4, .Lfunc_end296, nop
+112488		.type	_RINvNvMsc_NtNtCsabg1hvrxBKj_4pulp3x862v3NtB8_2V39vectorize3impINtNvXs1_B8_BC_NtBc_4Simd9vectorize4ImplNtNtNtCsaNA9prTwPkd_7rustsht8legendre13scalar_paired19FusedSynthesisBlockEEB1I_,@function
+112489	_RINvNvMsc_NtNtCsabg1hvrxBKj_4pulp3x862v3NtB8_2V39vectorize3impINtNvXs1_B8_BC_NtBc_4Simd9vectorize4ImplNtNtNtCsaNA9prTwPkd_7rustsht8legendre13scalar_paired19FusedSynthesisBlockEEB1I_:
+112490		.cfi_startproc
+112491		pushq	%rbp
+112492		.cfi_def_cfa_offset 16
+112493		pushq	%r15
+112494		.cfi_def_cfa_offset 24
+112495		pushq	%r14
+112496		.cfi_def_cfa_offset 32
+112497		pushq	%r13
+112498		.cfi_def_cfa_offset 40
+112499		pushq	%r12
+112500		.cfi_def_cfa_offset 48
+112501		pushq	%rbx
+112502		.cfi_def_cfa_offset 56
+112503		subq	$104, %rsp
+112504		.cfi_def_cfa_offset 160
+112505		.cfi_offset %rbx, -56
+112506		.cfi_offset %r12, -48
+112507		.cfi_offset %r13, -40
+112508		.cfi_offset %r14, -32
+112509		.cfi_offset %r15, -24
+112510		.cfi_offset %rbp, -16
+112511		movq	%rdi, %rdx
+112512		movq	136(%rdi), %r12
+112513		movq	(%rdi), %rax
+112514		movq	%rax, 72(%rsp)
+112515		movq	8(%rdi), %r9
+112516		movq	16(%rdi), %r13
+112517		movq	24(%rdi), %rsi
+112518		movq	32(%rdi), %rbp
+112519		movq	40(%rdi), %rax
+112520		movq	48(%rdi), %r15
+112521		movq	56(%rdi), %rdi
+112522		movq	64(%rdx), %rbx
+112523		movq	72(%rdx), %rcx
+112524		movq	80(%rdx), %r8
+112525		movq	%r8, 64(%rsp)
+112526		movq	88(%rdx), %r8
+112527		movq	%r8, 48(%rsp)
+112528		movq	96(%rdx), %r8
+112529		movq	%r8, 40(%rsp)
+112530		subq	128(%rdx), %r12
+112531		movq	104(%rdx), %r8
+112532		movq	%r8, 24(%rsp)
+112533		movq	112(%rdx), %r8
+112534		movq	%r8, 32(%rsp)
+112535		movq	120(%rdx), %rdx
+112536		movq	%rdx, 16(%rsp)
+112537		movq	%r9, 56(%rsp)
+112538		shrq	$2, %r9
+112539		addq	$2, %r12
+112540		shrq	%r12
+112541		movq	%r9, 8(%rsp)
+112542		testq	%r9, %r9
+112543		je	.LBB296_11
+112544		movq	48(%rsp), %rdx
+112545		shrq	$2, %rdx
+112546		movq	%rdx, 96(%rsp)
+112547		movq	24(%rsp), %rdx
+112548		shrq	$2, %rdx
+112549		movq	%rdx, 88(%rsp)
+112550		movq	16(%rsp), %rdx
+112551		shrq	$2, %rdx
+112552		movq	%rdx, 80(%rsp)
+112553		testq	%r12, %r12
+112554		je	.LBB296_60
+112555		xorl	%r14d, %r14d
+112556		.p2align	4
+112557	.LBB296_3:
+112558		cmpq	96(%rsp), %r14
+112559		je	.LBB296_84
+112560		leaq	1(%r14), %r11
+112561		movq	%r14, %r8
+112562		shlq	$5, %r8
+112563		movq	72(%rsp), %rdx
+112564		vmovupd	(%rdx,%r8), %ymm1
+112565		movq	64(%rsp), %rdx
+112566		vmovupd	(%rdx,%r8), %ymm5
+112567		vmulpd	%ymm1, %ymm1, %ymm2
+112568		vxorpd	%xmm4, %xmm4, %xmm4
+112569		movl	$1, %r9d
+112570		xorl	%r10d, %r10d
+112571		vxorpd	%xmm0, %xmm0, %xmm0
+112572		vxorpd	%xmm3, %xmm3, %xmm3
+112573		jmp	.LBB296_5
+112574		.p2align	4
+112575	.LBB296_8:
+112576		vmovapd	%ymm5, %ymm10
+112577	.LBB296_22:
+112578		vfmadd213pd	%ymm8, %ymm1, %ymm6
+112579		vfmadd213pd	%ymm9, %ymm1, %ymm7
+112580		vfmadd231pd	%ymm6, %ymm5, %ymm3
+112581		vfmadd231pd	%ymm7, %ymm5, %ymm0
+112582		addq	$2, %r9
+112583		movq	%rdx, %r10
+112584		vmovapd	%ymm10, %ymm5
+112585		cmpq	%rdx, %r12
+112586		je	.LBB296_23
+112587	.LBB296_5:
+112588		cmpq	%r10, %rdi
+112589		je	.LBB296_86
+112590		cmpq	%r10, %rcx
+112591		je	.LBB296_87
+112592		vbroadcastsd	-8(%rbx,%r9,8), %ymm6
+112593		vbroadcastsd	-8(%r15,%r9,8), %ymm8
+112594		vbroadcastsd	(%rbx,%r9,8), %ymm7
+112595		leaq	1(%r10), %rdx
+112596		vbroadcastsd	(%r15,%r9,8), %ymm9
+112597		cmpq	%r12, %rdx
+112598		jae	.LBB296_8
+112599		cmpq	%rsi, %r10
+112600		jae	.LBB296_88
+112601		cmpq	%rax, %r10
+112602		jae	.LBB296_89
+112603		vbroadcastsd	(%r13,%r10,8), %ymm11
+112604		vbroadcastsd	(%rbp,%r10,8), %ymm10
+112605		vfmadd231pd	%ymm11, %ymm2, %ymm10
+112606		vfmadd213pd	%ymm4, %ymm5, %ymm10
+112607		vmovapd	%ymm5, %ymm4
+112608		jmp	.LBB296_22
+112609		.p2align	4
+112610	.LBB296_23:
+112611		cmpq	88(%rsp), %r14
+112612		je	.LBB296_24
+112613		movq	40(%rsp), %rdx
+112614		vmovupd	%ymm3, (%rdx,%r8)
+112615		cmpq	80(%rsp), %r14
+112616		je	.LBB296_85
+112617		movq	32(%rsp), %rdx
+112618		vmovupd	%ymm0, (%rdx,%r8)
+112619		movq	%r11, %r14
+112620		cmpq	8(%rsp), %r11
+112621		jne	.LBB296_3
+112622		jmp	.LBB296_11
+--- x86-v4 FusedSynthesisBlock ---
+101445		.section	.text._RINvNvMs2_NtNtCsabg1hvrxBKj_4pulp3x862v4NtB8_2V49vectorize3impINtNvXs0_B8_BC_NtBc_4Simd9vectorize4ImplNtNtNtCsaNA9prTwPkd_7rustsht8legendre13scalar_paired19FusedSynthesisBlockEEB1I_,"ax",@progbits
+101446		.prefalign	4, .Lfunc_end283, nop
+101447		.type	_RINvNvMs2_NtNtCsabg1hvrxBKj_4pulp3x862v4NtB8_2V49vectorize3impINtNvXs0_B8_BC_NtBc_4Simd9vectorize4ImplNtNtNtCsaNA9prTwPkd_7rustsht8legendre13scalar_paired19FusedSynthesisBlockEEB1I_,@function
+101448	_RINvNvMs2_NtNtCsabg1hvrxBKj_4pulp3x862v4NtB8_2V49vectorize3impINtNvXs0_B8_BC_NtBc_4Simd9vectorize4ImplNtNtNtCsaNA9prTwPkd_7rustsht8legendre13scalar_paired19FusedSynthesisBlockEEB1I_:
+101449		.cfi_startproc
+101450		pushq	%rbp
+101451		.cfi_def_cfa_offset 16
+101452		pushq	%r15
+101453		.cfi_def_cfa_offset 24
+101454		pushq	%r14
+101455		.cfi_def_cfa_offset 32
+101456		pushq	%r13
+101457		.cfi_def_cfa_offset 40
+101458		pushq	%r12
+101459		.cfi_def_cfa_offset 48
+101460		pushq	%rbx
+101461		.cfi_def_cfa_offset 56
+101462		subq	$104, %rsp
+101463		.cfi_def_cfa_offset 160
+101464		.cfi_offset %rbx, -56
+101465		.cfi_offset %r12, -48
+101466		.cfi_offset %r13, -40
+101467		.cfi_offset %r14, -32
+101468		.cfi_offset %r15, -24
+101469		.cfi_offset %rbp, -16
+101470		movq	%rdi, %rdx
+101471		movq	136(%rdi), %rbx
+101472		movq	(%rdi), %rax
+101473		movq	%rax, 56(%rsp)
+101474		movq	8(%rdi), %r8
+101475		movq	16(%rdi), %r14
+101476		movq	24(%rdi), %rsi
+101477		movq	32(%rdi), %r15
+101478		movq	40(%rdi), %rax
+101479		movq	48(%rdi), %r12
+101480		movq	56(%rdi), %rdi
+101481		movq	64(%rdx), %r13
+101482		movq	72(%rdx), %rcx
+101483		movq	80(%rdx), %r9
+101484		movq	%r9, 88(%rsp)
+101485		movq	88(%rdx), %r9
+101486		movq	%r9, 80(%rsp)
+101487		movq	96(%rdx), %r9
+101488		movq	%r9, 16(%rsp)
+101489		subq	128(%rdx), %rbx
+101490		movq	104(%rdx), %r9
+101491		movq	%r9, 64(%rsp)
+101492		movq	112(%rdx), %r9
+101493		movq	%r9, 32(%rsp)
+101494		movq	120(%rdx), %rdx
+101495		movq	%rdx, 72(%rsp)
+101496		movq	%r8, 96(%rsp)
+101497		shrq	$3, %r8
+101498		addq	$2, %rbx
+101499		shrq	%rbx
+101500		movq	%r8, 40(%rsp)
+101501		testq	%r8, %r8
+101502		je	.LBB283_11
+101503		movq	80(%rsp), %rdx
+101504		shrq	$3, %rdx
+101505		movq	%rdx, 8(%rsp)
+101506		movq	64(%rsp), %rdx
+101507		shrq	$3, %rdx
+101508		movq	%rdx, 24(%rsp)
+101509		movq	72(%rsp), %rdx
+101510		shrq	$3, %rdx
+101511		movq	%rdx, 48(%rsp)
+101512		testq	%rbx, %rbx
+101513		je	.LBB283_36
+101514		xorl	%ebp, %ebp
+101515		.p2align	4
+101516	.LBB283_3:
+101517		cmpq	8(%rsp), %rbp
+101518		je	.LBB283_76
+101519		leaq	1(%rbp), %r11
+101520		movq	%rbp, %r8
+101521		shlq	$6, %r8
+101522		movq	56(%rsp), %rdx
+101523		vmovupd	(%rdx,%r8), %zmm1
+101524		movq	88(%rsp), %rdx
+101525		vmovupd	(%rdx,%r8), %zmm5
+101526		vmulpd	%zmm1, %zmm1, %zmm2
+101527		vxorpd	%xmm4, %xmm4, %xmm4
+101528		movl	$1, %r9d
+101529		xorl	%r10d, %r10d
+101530		vxorpd	%xmm0, %xmm0, %xmm0
+101531		vxorpd	%xmm3, %xmm3, %xmm3
+101532		jmp	.LBB283_5
+101533		.p2align	4
+101534	.LBB283_8:
+101535		vmovapd	%zmm5, %zmm8
+101536	.LBB283_23:
+101537		vfmadd231pd	%zmm6, %zmm5, %zmm3
+101538		vfmadd231pd	%zmm7, %zmm5, %zmm0
+101539		addq	$2, %r9
+101540		movq	%rdx, %r10
+101541		vmovapd	%zmm8, %zmm5
+101542		cmpq	%rdx, %rbx
+101543		je	.LBB283_24
+101544	.LBB283_5:
+101545		cmpq	%r10, %rdi
+101546		je	.LBB283_78
+101547		cmpq	%r10, %rcx
+101548		je	.LBB283_79
+101549		vbroadcastsd	-8(%r13,%r9,8), %zmm6
+101550		vfmadd213pd	-8(%r12,%r9,8){1to8}, %zmm1, %zmm6
+101551		vbroadcastsd	(%r13,%r9,8), %zmm7
+101552		leaq	1(%r10), %rdx
+101553		vfmadd213pd	(%r12,%r9,8){1to8}, %zmm1, %zmm7
+101554		cmpq	%rbx, %rdx
+101555		jae	.LBB283_8
+101556		cmpq	%rsi, %r10
+101557		jae	.LBB283_80
+101558		cmpq	%rax, %r10
+101559		jae	.LBB283_81
+101560		vbroadcastsd	(%r14,%r10,8), %zmm8
+101561		vfmadd213pd	(%r15,%r10,8){1to8}, %zmm2, %zmm8
+101562		vfmadd213pd	%zmm4, %zmm5, %zmm8
+101563		vmovapd	%zmm5, %zmm4
+101564		jmp	.LBB283_23
+101565		.p2align	4
+101566	.LBB283_24:
+101567		cmpq	24(%rsp), %rbp
+101568		je	.LBB283_25
+101569		movq	16(%rsp), %rdx
+101570		vmovupd	%zmm3, (%rdx,%r8)
+101571		cmpq	48(%rsp), %rbp
+101572		je	.LBB283_77
+101573		movq	32(%rsp), %rdx
+101574		vmovupd	%zmm0, (%rdx,%r8)
+101575		movq	%r11, %rbp
+101576		cmpq	40(%rsp), %r11
+101577		jne	.LBB283_3
+101578		jmp	.LBB283_11
+--- fallback dispatcher and SIMD calls ---
+ 95883		.section	.text._RINvNtNtCsaNA9prTwPkd_7rustsht8legendre13scalar_paired31for_each_y_lm_paired_dispatchedNCNvB2_45synthesize_order_block_partitioned_dispatcheds_0EB6_,"ax",@progbits
+ 95884		.prefalign	4, .Lfunc_end268, nop
+ 95885		.type	_RINvNtNtCsaNA9prTwPkd_7rustsht8legendre13scalar_paired31for_each_y_lm_paired_dispatchedNCNvB2_45synthesize_order_block_partitioned_dispatcheds_0EB6_,@function
+ 95886	_RINvNtNtCsaNA9prTwPkd_7rustsht8legendre13scalar_paired31for_each_y_lm_paired_dispatchedNCNvB2_45synthesize_order_block_partitioned_dispatcheds_0EB6_:
+ 95887		.cfi_startproc
+ 95888		pushq	%rbp
+ 95889		.cfi_def_cfa_offset 16
+ 95890		pushq	%r15
+ 95891		.cfi_def_cfa_offset 24
+ 95892		pushq	%r14
+ 95893		.cfi_def_cfa_offset 32
+ 95894		pushq	%r13
+ 95895		.cfi_def_cfa_offset 40
+ 95896		pushq	%r12
+ 95897		.cfi_def_cfa_offset 48
+ 95898		pushq	%rbx
+ 95899		.cfi_def_cfa_offset 56
+ 95900		subq	$536, %rsp
+ 95901		.cfi_def_cfa_offset 592
+ 95902		.cfi_offset %rbx, -56
+ 95903		.cfi_offset %r12, -48
+ 95904		.cfi_offset %r13, -40
+ 95905		.cfi_offset %r14, -32
+ 95906		.cfi_offset %r15, -24
+ 95907		.cfi_offset %rbp, -16
+ 95908		movsd	%xmm0, 144(%rsp)
+ 95909		movq	%rdi, 224(%rsp)
+ 95910		movq	704(%rsp), %rax
+ 95911		movq	%rax, 168(%rsp)
+ 95912		leaq	63(%r9), %rax
+ 95913		shrq	$6, %rax
+ 95914		je	.LBB268_98
+ 95915		movq	%r9, %rbx
+ 95916		movq	%r8, %r14
+ 95917		movq	%rcx, %r15
+ 95918		movq	%rdx, %r12
+ 95919		movl	%esi, %ebp
+ 95920		movq	592(%rsp), %rcx
+ 95921		movsd	.LCPI268_1(%rip), %xmm7
+ 95922		movsd	.LCPI268_3(%rip), %xmm8
+ 95923		xorpd	%xmm9, %xmm9
+ 95924		movapd	.LCPI268_0(%rip), %xmm3
+ 95925		movsd	.LCPI268_2(%rip), %xmm4
+ 95926		movsd	.LCPI268_4(%rip), %xmm5
+ 95927		leaq	8(%rcx), %rdx
+ 95928		movq	%rdx, 232(%rsp)
+ 95929		movq	$0, 248(%rsp)
+ 95930		movq	%rcx, 256(%rsp)
+ 95931		movl	$64, %ecx
+ 95932		xorl	%edx, %edx
+ 95933	.LBB268_2:
+ 95934		movq	248(%rsp), %rdi
+ 95935		cmpq	%rcx, %rbx
+ 95936		movq	%rcx, %r10
+ 95937		cmovbq	%rbx, %r10
+ 95938		leaq	(%r10,%rdx), %r11
+ 95939		cmpq	$1, %r11
+ 95940		adcq	%rdx, %r10
+ 95941		leaq	64(%rdi), %r8
+ 95942		cmpq	%r8, %rbx
+ 95943		movq	%r8, 248(%rsp)
+ 95944		cmovbq	%rbx, %r8
+ 95945		cmpq	%rdi, %rbx
+ 95946		jb	.LBB268_103
+ 95947		cmpq	600(%rsp), %r8
+ 95948		ja	.LBB268_105
+ 95949		subq	%rdi, %r8
+ 95950		cmpq	648(%rsp), %r8
+ 95951		ja	.LBB268_104
+ 95952		cmpq	664(%rsp), %r8
+ 95953		ja	.LBB268_106
+ 95954		cmpq	680(%rsp), %r8
+ 95955		ja	.LBB268_107
+ 95956		cmpq	696(%rsp), %r8
+ 95957		ja	.LBB268_108
+ 95958		movq	%rcx, 480(%rsp)
+ 95959		movq	%rax, 488(%rsp)
+ 95960		leaq	(%r14,%rdi,8), %rax
+ 95961		movq	592(%rsp), %rcx
+ 95962		leaq	(%rcx,%rdi,8), %rsi
+ 95963		testb	%bpl, %bpl
+ 95964		movq	%rdx, 472(%rsp)
+ 95965		je	.LBB268_11
+ 95966		movzbl	%bpl, %ecx
+ 95967		cmpl	$1, %ecx
+ 95968		jne	.LBB268_49
+ 95969		movq	%rax, 264(%rsp)
+ 95970		movq	%r8, 272(%rsp)
+ 95971		movq	%rsi, 280(%rsp)
+ 95972		movq	%r8, 288(%rsp)
+ 95973		movq	608(%rsp), %rax
+ 95974		movq	%rax, 296(%rsp)
+ 95975		movq	616(%rsp), %rax
+ 95976		movq	%rax, 304(%rsp)
+ 95977		movq	624(%rsp), %rax
+ 95978		movq	%rax, 312(%rsp)
+ 95979		movq	632(%rsp), %rax
+ 95980		movq	%rax, 320(%rsp)
+ 95981		movq	640(%rsp), %rax
+ 95982		movq	%rax, 328(%rsp)
+ 95983		movq	%r8, 336(%rsp)
+ 95984		movq	656(%rsp), %rax
+ 95985		movq	%rax, 344(%rsp)
+ 95986		movq	%r8, 352(%rsp)
+ 95987		movq	672(%rsp), %rax
+ 95988		movq	%rax, 360(%rsp)
+ 95989		movq	%r8, 368(%rsp)
+ 95990		movq	688(%rsp), %rax
+ 95991		movq	%rax, 376(%rsp)
+ 95992		movq	%r8, 384(%rsp)
+ 95993		leaq	168(%rsp), %rax
+ 95994		movq	%rax, 392(%rsp)
+ 95995		movq	%rdi, 400(%rsp)
+ 95996		movq	%r12, 408(%rsp)
+ 95997		movq	%r15, 416(%rsp)
+ 95998		movsd	144(%rsp), %xmm0
+ 95999		movsd	%xmm0, 424(%rsp)
+ 96000		leaq	80(%rsp), %rdi
+ 96001		leaq	264(%rsp), %rsi
+ 96002		callq	_RINvNvMsc_NtNtCsabg1hvrxBKj_4pulp3x862v3NtB8_2V39vectorize3impINtNvXs1_B8_BC_NtBc_4Simd9vectorize4ImplINtNtNtCsaNA9prTwPkd_7rustsht8legendre13scalar_paired16ForEachPairedYlmQNCINvB1F_31for_each_y_lm_paired_dispatchedNCNvB1F_45synthesize_order_block_partitioned_dispatcheds_0E0EEEB1J_
+ 96003		jmp	.LBB268_50
+ 96004		.p2align	4
+ 96005	.LBB268_11:
+ 96006		movq	%rsi, 464(%rsp)
+ 96007		cmpq	%rdi, %rbx
+ 96008		jne	.LBB268_52
+ 96009	.LBB268_12:
+ 96010		movq	%r11, 128(%rsp)
+ 96011		movq	%r10, 192(%rsp)
+ 96012		movq	%rdi, 240(%rsp)
+ 96013		movq	%r8, (%rsp)
+ 96014		leaq	264(%rsp), %rdi
+ 96015		movq	640(%rsp), %rsi
+ 96016		movq	%r8, %rdx
+ 96017		movq	656(%rsp), %rcx
+ 96018		movq	%r8, 40(%rsp)
+ 96019		movq	688(%rsp), %r9
+ 96020		callq	*_RNvNtNtCsaNA9prTwPkd_7rustsht8legendre6scalar20normalize_pair_lanes@GOTPCREL(%rip)
+ 96021		movq	264(%rsp), %rax
+ 96022		movzbl	272(%rsp), %edx
+ 96023		cmpq	$-1, %rax
+ 96024		jne	.LBB268_102
+ 96025		movb	%dl, 23(%rsp)

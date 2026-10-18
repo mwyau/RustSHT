@@ -1,0 +1,4 @@
+size,spin,threads,backend,operation,samples_ms,median_ms,population_cv_pct,first3_median_ms,last2_median_ms,drift_pct_of_median
+511,0,1,rustsht,synthesis,40.266|40.139|41.471|40.322|40.082,40.266,1.2723,40.266,40.202,0.1589
+511,0,1,ducc,synthesis,7.620|7.531|7.517|7.517|7.498,7.517,0.5706,7.531,7.5075,0.3126
+511,0,1,shtns_adapter,synthesis,4.608|4.675|4.648|4.651|4.653,4.651,0.4673,4.648,4.652,0.0860
