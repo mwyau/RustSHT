@@ -725,21 +725,36 @@ impl<T: ShtScalar> ShtPlan<T> {
 
         // Keep row-major spectra uncommitted until every dynamic order succeeds.
         const TRANSPOSE_TILE: usize = 32;
+        let Some(scatter_chunk_len) = spectrum_len.checked_mul(TRANSPOSE_TILE) else {
+            return false;
+        };
+        let Some(output_len) = ntheta.checked_mul(spectrum_len) else {
+            return false;
+        };
+        if output_len > workspace.spectra.len() {
+            return false;
+        }
         #[cfg(all(test, feature = "parallel"))]
         let scatter_started = std::time::Instant::now();
-        for ring_start in (0..ntheta).step_by(TRANSPOSE_TILE) {
-            let ring_end = (ring_start + TRANSPOSE_TILE).min(ntheta);
-            for order_start in (0..order_count).step_by(TRANSPOSE_TILE) {
-                let order_end = (order_start + TRANSPOSE_TILE).min(order_count);
-                for ring in ring_start..ring_end {
-                    let row_start = ring * spectrum_len;
-                    let output_row = &mut workspace.spectra[row_start..row_start + spectrum_len];
-                    for order in order_start..order_end {
-                        output_row[order] = order_spectra[order * ntheta + ring];
+        let order_spectra: &[Complex<T>] = order_spectra;
+        workspace.spectra[..output_len]
+            .par_chunks_mut(scatter_chunk_len)
+            .enumerate()
+            .for_each(|(ring_tile, rows)| {
+                let ring_start = ring_tile * TRANSPOSE_TILE;
+                let ring_count = rows.len() / spectrum_len;
+                for order_start in (0..order_count).step_by(TRANSPOSE_TILE) {
+                    let order_end = (order_start + TRANSPOSE_TILE).min(order_count);
+                    for local_ring in 0..ring_count {
+                        let ring = ring_start + local_ring;
+                        let row_start = local_ring * spectrum_len;
+                        let output_row = &mut rows[row_start..row_start + spectrum_len];
+                        for order in order_start..order_end {
+                            output_row[order] = order_spectra[order * ntheta + ring];
+                        }
                     }
                 }
-            }
-        }
+            });
         #[cfg(all(test, feature = "parallel"))]
         crate::workspace::record_transform_phase(
             &phase_probe,

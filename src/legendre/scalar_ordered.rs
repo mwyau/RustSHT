@@ -797,16 +797,19 @@ fn initialize_sectoral_batch<S: Simd>(
     if sine.len() != values.len() || sine.len() != scales.len() {
         return false;
     }
-    if sine.iter().any(|value| !value.is_finite()) {
-        return false;
-    }
-
     let threshold = simd.splat_f64s(lower_limit);
     let (sine_vectors, sine_tail) = S::as_simd_f64s(sine);
     let (value_vectors, value_tail) = S::as_mut_simd_f64s(values);
     let (scale_vectors, scale_tail) = S::as_mut_simd_i64s(scales);
     let factor = simd.splat_f64s(factor_value);
+    let finite_limit = simd.splat_f64s(f64::MAX);
     for index in 0..sine_vectors.len() {
+        if !mask_all(
+            simd,
+            simd.less_than_or_equal_f64s(simd.abs_f64s(sine_vectors[index]), finite_limit),
+        ) {
+            return false;
+        }
         let scaled = simd.less_than_f64s(simd.abs_f64s(sine_vectors[index]), threshold);
         if mask_any(simd, scaled) {
             let Some((value, scale)) =
@@ -823,6 +826,9 @@ fn initialize_sectoral_batch<S: Simd>(
             );
             scale_vectors[index] = simd.splat_i64s(0);
         }
+    }
+    if sine_tail.iter().any(|value| !value.is_finite()) {
+        return false;
     }
     for ((&sine_value, value), scale) in sine_tail
         .iter()
