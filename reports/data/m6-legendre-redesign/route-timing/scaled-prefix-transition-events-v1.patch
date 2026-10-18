@@ -1,0 +1,173 @@
+--- a/src/legendre/synthesis_fast.rs
++++ b/src/legendre/synthesis_fast.rs
+@@ -48,0 +49,12 @@
++    initial_normalize_calls: u64,
++    initial_normalize_lane_visits: u64,
++    initial_exponent_change_lanes: u64,
++    initial_abs_exponent_shift: u64,
++    prefix_normalize_calls: u64,
++    prefix_normalize_lane_visits: u64,
++    prefix_exponent_change_lanes: u64,
++    prefix_abs_exponent_shift: u64,
++    prefix_scale_probes: u64,
++    prefix_scale_probe_triggers: u64,
++    prefix_rebase_events: u64,
++    prefix_abs_rebase_shift: u64,
+@@ -69,0 +82,67 @@
++#[cfg(test)]
++#[derive(Default)]
++struct PrefixScaleEvents {
++    initial_normalize_calls: u64,
++    initial_normalize_lane_visits: u64,
++    initial_exponent_change_lanes: u64,
++    initial_abs_exponent_shift: u64,
++    prefix_normalize_calls: u64,
++    prefix_normalize_lane_visits: u64,
++    prefix_exponent_change_lanes: u64,
++    prefix_abs_exponent_shift: u64,
++    prefix_scale_probes: u64,
++    prefix_scale_probe_triggers: u64,
++    prefix_rebase_events: u64,
++    prefix_abs_rebase_shift: u64,
++}
++
++#[cfg(test)]
++impl PrefixScaleEvents {
++    fn record_normalization(&mut self, before: &[i64], after: &[i64], initial: bool) {
++        debug_assert_eq!(before.len(), after.len());
++        let mut changed = 0_u64;
++        let mut absolute_shift = 0_u64;
++        for (&old, &new) in before.iter().zip(after) {
++            if old != new {
++                changed += 1;
++                absolute_shift = absolute_shift.saturating_add(old.abs_diff(new));
++            }
++        }
++        if initial {
++            self.initial_normalize_calls += 1;
++            self.initial_normalize_lane_visits += after.len() as u64;
++            self.initial_exponent_change_lanes += changed;
++            self.initial_abs_exponent_shift = self
++                .initial_abs_exponent_shift
++                .saturating_add(absolute_shift);
++        } else {
++            self.prefix_normalize_calls += 1;
++            self.prefix_normalize_lane_visits += after.len() as u64;
++            self.prefix_exponent_change_lanes += changed;
++            self.prefix_abs_exponent_shift = self
++                .prefix_abs_exponent_shift
++                .saturating_add(absolute_shift);
++        }
++    }
++}
++
++#[cfg(test)]
++impl Drop for PrefixScaleEvents {
++    fn drop(&mut self) {
++        update_route_counts(|counts| {
++            counts.initial_normalize_calls += self.initial_normalize_calls;
++            counts.initial_normalize_lane_visits += self.initial_normalize_lane_visits;
++            counts.initial_exponent_change_lanes += self.initial_exponent_change_lanes;
++            counts.initial_abs_exponent_shift += self.initial_abs_exponent_shift;
++            counts.prefix_normalize_calls += self.prefix_normalize_calls;
++            counts.prefix_normalize_lane_visits += self.prefix_normalize_lane_visits;
++            counts.prefix_exponent_change_lanes += self.prefix_exponent_change_lanes;
++            counts.prefix_abs_exponent_shift += self.prefix_abs_exponent_shift;
++            counts.prefix_scale_probes += self.prefix_scale_probes;
++            counts.prefix_scale_probe_triggers += self.prefix_scale_probe_triggers;
++            counts.prefix_rebase_events += self.prefix_rebase_events;
++            counts.prefix_abs_rebase_shift += self.prefix_abs_rebase_shift;
++        });
++    }
++}
++
+@@ -564,0 +644,2 @@
++        #[cfg(test)]
++        let mut scale_events = PrefixScaleEvents::default();
+@@ -577 +658,12 @@
+-        let mut normal_range = match scalar::normalize_pair_lanes(previous, current, exponents) {
++        #[cfg(test)]
++        let mut initial_exponents = [0_i64; ACTIVE_TILE_SIZE];
++        #[cfg(test)]
++        initial_exponents[..sin_theta.len()].copy_from_slice(&exponents[..sin_theta.len()]);
++        let initial_normalization = scalar::normalize_pair_lanes(previous, current, exponents);
++        #[cfg(test)]
++        scale_events.record_normalization(
++            &initial_exponents[..sin_theta.len()],
++            &exponents[..sin_theta.len()],
++            true,
++        );
++        let mut normal_range = match initial_normalization {
+@@ -645,2 +737,9 @@
+-                if sum_exponents[lane] != exponents[lane]
+-                    && !rebase_accumulator_lane(
++                if sum_exponents[lane] != exponents[lane] {
++                    #[cfg(test)]
++                    {
++                        scale_events.prefix_rebase_events += 1;
++                        scale_events.prefix_abs_rebase_shift = scale_events
++                            .prefix_abs_rebase_shift
++                            .saturating_add(sum_exponents[lane].abs_diff(exponents[lane]));
++                    }
++                    if !rebase_accumulator_lane(
+@@ -651,3 +750,3 @@
+-                    )
+-                {
+-                    return None;
++                    ) {
++                        return None;
++                    }
+@@ -695,3 +794,23 @@
+-                if scalar::pair_lanes_need_scaling(simd, previous, current) {
+-                    normal_range = match scalar::normalize_pair_lanes(previous, current, exponents)
+-                    {
++                #[cfg(test)]
++                {
++                    scale_events.prefix_scale_probes += 1;
++                }
++                let needs_scaling = scalar::pair_lanes_need_scaling(simd, previous, current);
++                #[cfg(test)]
++                if needs_scaling {
++                    scale_events.prefix_scale_probe_triggers += 1;
++                }
++                if needs_scaling {
++                    #[cfg(test)]
++                    let mut exponents_before = [0_i64; ACTIVE_TILE_SIZE];
++                    #[cfg(test)]
++                    exponents_before[..sin_theta.len()]
++                        .copy_from_slice(&exponents[..sin_theta.len()]);
++                    let normalization = scalar::normalize_pair_lanes(previous, current, exponents);
++                    #[cfg(test)]
++                    scale_events.record_normalization(
++                        &exponents_before[..sin_theta.len()],
++                        &exponents[..sin_theta.len()],
++                        false,
++                    );
++                    normal_range = match normalization {
+@@ -703 +822,12 @@
+-                normal_range = match scalar::normalize_pair_lanes(previous, current, exponents) {
++                #[cfg(test)]
++                let mut exponents_before = [0_i64; ACTIVE_TILE_SIZE];
++                #[cfg(test)]
++                exponents_before[..sin_theta.len()].copy_from_slice(&exponents[..sin_theta.len()]);
++                let normalization = scalar::normalize_pair_lanes(previous, current, exponents);
++                #[cfg(test)]
++                scale_events.record_normalization(
++                    &exponents_before[..sin_theta.len()],
++                    &exponents[..sin_theta.len()],
++                    false,
++                );
++                normal_range = match normalization {
+@@ -1582,0 +1713,12 @@
++            total.initial_normalize_calls += counts.initial_normalize_calls;
++            total.initial_normalize_lane_visits += counts.initial_normalize_lane_visits;
++            total.initial_exponent_change_lanes += counts.initial_exponent_change_lanes;
++            total.initial_abs_exponent_shift += counts.initial_abs_exponent_shift;
++            total.prefix_normalize_calls += counts.prefix_normalize_calls;
++            total.prefix_normalize_lane_visits += counts.prefix_normalize_lane_visits;
++            total.prefix_exponent_change_lanes += counts.prefix_exponent_change_lanes;
++            total.prefix_abs_exponent_shift += counts.prefix_abs_exponent_shift;
++            total.prefix_scale_probes += counts.prefix_scale_probes;
++            total.prefix_scale_probe_triggers += counts.prefix_scale_probe_triggers;
++            total.prefix_rebase_events += counts.prefix_rebase_events;
++            total.prefix_abs_rebase_shift += counts.prefix_abs_rebase_shift;

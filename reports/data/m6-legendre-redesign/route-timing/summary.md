@@ -189,3 +189,19 @@ series failed (CV `19.812%`, drift `25.775%`). The RustSHT process median was
 1143.564 ms versus 1367.195 ms for the scalar-prefix process, but this single
 comparison is descriptive only. No retry or six-pair screen ran. The source
 patch is preserved and remains isolated.
+
+## Scaled-prefix transition event profile
+
+A test-only event profile counted 1,034,964 prefix normalizations across
+109,490,856 lane visits. It recorded 706,324 exponent changes and matching
+accumulator rebases. Only 8,263 scale probes ran, with no probe-triggered
+normalizations. The instrumented route timer measured 744.962 ms in the
+pre-suffix transition and 550.916 ms in the ordinary SIMD suffix. The event
+counter adds an exponent-array pass, so these times are diagnostic and are not
+performance comparisons. The event counts support measuring scaled-lane
+occupancy before testing a lane-class split. Full counts, source hashes, test
+configuration, and interpretation are in the
+[event profile report](scaled-prefix-transition-events-v1.md); its
+[test-only source patch](scaled-prefix-transition-events-v1.patch) is
+archived alongside the report. The accumulator candidate remains unaccepted
+while the T511 stability control and full regression matrix are unresolved.

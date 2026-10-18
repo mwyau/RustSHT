@@ -983,7 +983,22 @@ isolated and unaccepted; q8 and broader scalar/spin-1 regression measurements
 remain gated. The accumulator's six-pair q1 results remain `0.568982` at T1023
 and `0.407892` at T2047, approximately 3.38x and 3.67x DUCC latency. Its
 remaining measured kernel target is the pre-suffix transition: `715.931 ms`
-versus `543.517 ms` in the ordinary suffix at T2047. The next source-level
-diagnosis should separate exponent rebasing and recurrence normalization inside
-that transition. No further T511 acquisition or SIMD redesign is justified
-until the stability cause or measurement environment changes.
+versus `543.517 ms` in the ordinary suffix at T2047. A bounded event-count
+follow-up now records prefix normalization and accumulator rebase events; its
+results appear below. The T511 stability control and full regression matrix
+remain unresolved, so q8 and scalar/spin-1 regression measurements did not run.
+
+### Scaled-prefix transition event profile
+
+A bounded T2047 q1 event profile recorded 1,034,964 prefix normalizations
+across 109,490,856 lane visits, with 706,324 exponent changes and matching
+accumulator rebases. The pre-suffix route timer measured 744.962 ms; the
+ordinary suffix measured 550.916 ms. The test-only counter adds an exponent
+array pass, so these times are diagnostic and do not replace the paired
+whole-transform results. Few scale probes ran, and none triggered
+normalization; most prefix iterations used the unconditional scaled path. The
+next diagnostic will count scaled-lane occupancy before any lane partitioning
+change. The [event profile](data/m6-legendre-redesign/route-timing/scaled-prefix-transition-events-v1.md)
+records the frozen source hashes, bitwise warm-up check, and counter results.
+The candidate remains isolated: its T511 baseline stability control failed,
+and the full regression matrix has not run.
