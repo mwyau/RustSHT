@@ -446,5 +446,27 @@ load on that core; the cgroup had no CPU quota and recorded no throttling.
 
 CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero
 readings are warnings, not rejections. The T2047 six-pair matrix remains
-incomplete and the candidate remains unaccepted. The next process is pair 04
+incomplete and the candidate remains unaccepted. The next process was pair 04
 candidate.
+
+### T2047 q1 pair 04: candidate valid, baseline mate pending
+
+The fourth pair followed the fixed candidate-then-baseline order. All three
+candidate timing series and its numerical comparison against DUCC passed.
+
+| Backend | Samples (ms) | Median (ms) | CV | Drift |
+| --- | --- | ---: | ---: | ---: |
+| RustSHT | 1,741.183, 1,748.762, 1,739.926, 1,736.287, 1,739.317 | 1,739.926 | 0.2388% | 0.1943% |
+| DUCC | 371.858, 370.286, 371.345, 360.304, 372.871 | 371.345 | 1.2430% | 1.2812% |
+| SHTns | 267.260, 267.112, 266.416, 265.798, 264.276 | 266.416 | 0.4068% | 0.7789% |
+
+RustSHT-versus-DUCC relative L2 error was `3.015e-13`; SHTns-versus-DUCC
+was `8.764e-14`. The candidate was 4.68x DUCC and 6.53x SHTns in this
+process; the paired ratio awaits its baseline mate. Whole-process elapsed
+time was 1:12.04, peak RSS was 955,260 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its one-core affinity. Process and thread
+snapshots showed no competing build or benchmark or sustained external CPU
+load on that core; the cgroup had no CPU quota and recorded no throttling.
+
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The first two nonzero readings are
+warnings, not rejections. Raw diagnostics remain local and untracked. The
+candidate remains unaccepted; the next process is the pair 04 baseline mate.
