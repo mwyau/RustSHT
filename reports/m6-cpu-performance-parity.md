@@ -729,6 +729,23 @@ compare one versus two paired-degree steps per SIMD iteration on this isolated
 candidate. It remains unaccepted until paired whole-transform timing passes
 the stability protocol and the complete regression control matrix.
 
+### 128-versus-256 active-ring tile diagnostic
+
+Test-only complete Rust synthesis calls compare the isolated 128- and
+256-ring variants at T511 and T2047. All five-call series passed the fixed
+within-process CV/drift limits, and pre/post CPU pressure stayed below the
+0.50 host gate. At T511, medians were 31.364 ms for 128 rings and 44.475 ms
+for 256; at T2047 they were 1,697.716 ms and 2,174.153 ms. At T2047, active
+lane counts and AVX2 block counts were equal, and logical suffix throughput
+was 3.064 versus 3.061 billion lane-pairs/s. The 256-ring variant instead
+performed 58.9% more scaled-prefix lane-pairs and had lower tile occupancy
+(92.31% versus 95.94%). This explains the tile-size difference in the
+instrumented candidate: larger tiles expose more lanes to the slow prefix,
+while suffix SIMD throughput is unchanged. These are route diagnostics, not comparisons against the clean production
+baseline. They do not accept the 128-ring kernel. The exact sources, binaries,
+route counters, nested timing samples, host snapshots and stability records are
+in [`the tile-size route diagnostic`](data/m6-legendre-redesign/route-timing/summary.md).
+
 ### Two-pair suffix unroll (unmeasured, unaccepted)
 
 A two-pair SIMD suffix variant and focused odd/even pair-count test were

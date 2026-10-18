@@ -1,0 +1,13 @@
+samples_elapsed_ns=2180682592,2172977164,2174148260,2174152668,2185073309
+median_elapsed_ns=2174152668.000
+cv_pct=0.2157
+first3_median_ns=2174148260.000
+final2_median_ns=2179612988.500
+drift_pct=0.2513
+route_timer_medians_ns:
+  transition_elapsed_ns=2100736755
+  prefix_elapsed_ns=1549009279
+  suffix_elapsed_ns=508818726
+  fallback_elapsed_ns=12247355
+  tile_elapsed_ns=2128150853
+gate=PASS
