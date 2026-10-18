@@ -936,8 +936,10 @@ patch, safety behavior, and test results are recorded in the [prototype
 report](data/m6-legendre-redesign/route-timing/scaled-prefix-accumulator-prototype.md).
 
 Focused tests, all-features and serial workspace suites, formatting, and
-Clippy passed. No performance measurement has been collected for this source
-revision, so earlier tile-128 speedups do not apply to it. The prototype is
-not accepted and does not change production routing. A new validity-gated
-whole-transform screen must compare it with the previous tile-128 candidate
-and clean baseline before any regression matrix.
+Clippy passed. A prospectively frozen T1023 q1 one-pair screen then passed all
+stability, correctness, PSI, placement, and interference checks. The candidate
+Rust median was 172.617 ms versus 301.823 ms for the clean baseline (ratio
+0.5719); the single-pair result is not acceptance evidence. CPU-pressure warnings were reviewed under the declared protocol; exact transient readings remain local.
+The predeclared screen gate authorizes a six-pair q1 matrix. The candidate
+remains isolated, and q8 or scalar/spin-1 regression work remains gated on the
+full q1 and T511 control results.

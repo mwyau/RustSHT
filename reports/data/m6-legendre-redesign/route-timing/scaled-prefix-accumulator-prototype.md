@@ -44,9 +44,35 @@ without default features (162 unit tests, 7 ignored; all integration targets
 passed). The focused tests were rerun after extracting the rebase helper, and
 `cargo fmt --all -- --check` plus workspace Clippy with warnings denied passed.
 
-No performance measurement has been collected for this source revision. The
-previous T1023/T2047 speedups and cache-screen timing ratios apply to earlier
-candidate sources only. This accumulator prototype is not accepted and does
-not change production routing. The next decision requires a prospectively
-frozen, validity-gated whole-transform comparison against both the previous
-tile-128 candidate and the clean baseline.
+### T1023 one-pair screen
+
+The frozen [screen protocol](scaled-prefix-accumulator-screen-v1-protocol.md)
+authorized one clean-baseline/candidate pair. The baseline and candidate
+RustSHT series both passed the fixed stability rules. DUCC and SHTns series
+also passed for both processes. Both Rust outputs had relative-L2 error
+`1.182e-13` and maximum absolute error `1.556e-13` against DUCC.
+
+| Variant / backend | Five samples (ms) | Median (ms) | CV | Drift | Peak RSS (KiB) |
+|---|---|---:|---:|---:|---:|
+| Baseline RustSHT | 302.708, 301.823, 302.222, 301.171, 301.132 | 301.823 | 0.2012% | 0.3547% | 278,440 |
+| Baseline DUCC | 50.757, 52.018, 50.689, 51.036, 50.253 | 50.757 | 1.1576% | 0.2216% | — |
+| Baseline SHTns adapter | 35.442, 35.677, 35.654, 36.155, 35.980 | 35.677 | 0.7085% | 1.1590% | — |
+| Accumulator candidate RustSHT | 173.243, 171.871, 171.850, 172.617, 172.660 | 172.617 | 0.3064% | 0.4446% | 274,896 |
+| Accumulator candidate DUCC | 50.834, 51.112, 51.519, 51.219, 48.808 | 51.112 | 1.9139% | 2.1492% | — |
+| Accumulator candidate SHTns adapter | 37.535, 36.900, 36.599, 36.093, 36.883 | 36.883 | 1.2730% | 1.1170% | — |
+
+The single-pair RustSHT candidate/baseline median ratio was `0.571915`, a
+42.81% latency reduction. The candidate was 3.377x DUCC and 4.680x SHTns.
+These single-pair ratios are descriptive, not acceptance evidence. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The values in
+the 0.50–2.00% band are warnings under the unchanged protocol.
+
+Observed benchmark-thread affinity and placement stayed within the requested
+single-CPU set. No competing build or benchmark and no cgroup throttling were
+observed. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. GNU-time context-switch counts remain local and peak RSS values shown above. Raw local paths,
+process captures, CPU identifiers, frequency samples, PSI records, and GNU-time
+output remain untracked.
+
+The predeclared 3% screen gate passed, so this result authorizes a separate
+six-pair q1 matrix. It does not accept the candidate or authorize q8 or
+scalar/spin-1 regression tests. The earlier tile-128 results remain tied to
+their own source and binary hashes.
