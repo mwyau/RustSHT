@@ -2419,6 +2419,48 @@ extreme-FFT, 11 f32, and 1 workspace-compatibility tests passed; 7 unit and 1
 f32 test ignored); and `uv run pytest python/tests` (20 passed). The ignored
 release T511/T1023/T2047 all-grid scalar DUCC and analytic test passed.
 
+### Prefix normalization and accumulation fusion (M4, 2026-10-18)
+
+Commit `9bb3c00a` moves checked scalar recurrence-pair normalization into the
+tile route's prefix accumulation loop. A focused unit test finds bitwise
+equality with slice normalization for the exercised cases. The route still
+rebases its scaled accumulator when lane exponents change, and it enters the
+ordinary SIMD suffix only after the recurrence values pass the existing range
+checks. The scaled fallback and tile staging behavior are unchanged.
+
+The focused helper and route unit tests pass with all features; the route tests
+also pass with default features disabled. The T255 reduced-order analytic test
+passes for odd and even longitude counts with nonzero `phi0`. The ignored
+release high-bandlimit scalar test passes at T511, T1023, and T2047 on GL, CC,
+and F1 against `ducc0==0.41.0` (source revision
+`c1ed01b8fda69d2a378190f0915f1a19762dddbf`) and closed-form fields, including
+analysis recovery. The extreme-coefficient T1023 fallback check passes.
+
+Validation passed: `cargo fmt --all -- --check`; workspace all-target,
+all-feature Clippy with warnings denied; `cargo test --workspace
+--all-features` (204 unit, 4 extreme-FFT, 11 f32, and 1
+workspace-compatibility tests passed; 14 unit and 1 f32 test ignored); and
+`cargo test -p rustsht --no-default-features` (165 unit, 4 extreme-FFT, 11
+f32, and 1 workspace-compatibility tests passed; 7 unit and 1 f32 test
+ignored). Python tests were not rerun because this core-only change does not
+modify bindings.
+
+A separate local release screen compared `5fd41078` with the fused source
+committed at `9bb3c00a`. It used five timing samples in one process per source
+and workload, on an AMD Ryzen 9 5950X with x86_64 AVX2/FMA, Rust 1.99.0, Pulp
+0.22.3, Rayon 1.12.0, and RustFFT 6.4.1. Workloads were f64 scalar GL
+synthesis at full `mmax`, T255/T511/T2047, and q1/q8. Fused medians were 1.0%
+lower at T255 q1 and 0.3% higher at T255 q8; at T511 they were 7.5% and 2.4%
+lower for q1/q8, and at T2047 they were 9.3% and 8.8% lower. Peak RSS differed
+by less than 2% between the tile-route and fused processes in all six cases.
+No host-pressure protocol ran, so no gate result or interference assessment is
+available. The T255 q8 and T511 q8 samples varied widely. These measurements
+support retaining the fusion for further validation; they do not establish a
+broad speedup or DUCC parity. A historical T1023 fusion matrix stopped at an
+unstable control; that matrix was not restarted or combined with this screen.
+Full samples, medians, RSS values, and limitations are in the
+[performance summary](../PERFORMANCE_STATUS.md).
+
 ## Benchmark artifact hygiene
 
 Keep raw host and process captures, build/test logs, GNU-time output, and local
