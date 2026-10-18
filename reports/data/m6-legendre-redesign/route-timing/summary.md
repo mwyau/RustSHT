@@ -223,3 +223,14 @@ results, and the validity decision are in the
 delta is archived in the adjacent patch. The
 [occupancy report](scaled-lane-occupancy-v1.md) retains the counts and
 bitwise test that motivated the hypothesis.
+
+### Scaled-prefix whole-tile range probe
+
+A test-only T2047 q1 profile applied the existing SIMD range predicate before
+the scalar normalizer on each scaled-route call. The predicate found every
+mantissa in range on 535,953 of 1,034,964 calls (51.78%). This count supports
+a separate experiment that skips the scalar lane walk for those calls; it
+does not establish a timing benefit. The instrumented source patch and method
+are in the [range probe profile](scaled-range-probe-profile-v1.md). The route
+timings from this counter run are not used because the additional SIMD probe
+changes the measured path.

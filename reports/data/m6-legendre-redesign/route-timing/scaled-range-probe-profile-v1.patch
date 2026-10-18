@@ -1,0 +1,22 @@
+--- a/src/legendre/synthesis_fast.rs
++++ b/src/legendre/synthesis_fast.rs
+@@ -58,0 +59,2 @@
++    prefix_scaled_range_checks: u64,
++    prefix_scaled_noop_candidates: u64,
+@@ -97,0 +100,2 @@
++    prefix_scaled_range_checks: u64,
++    prefix_scaled_noop_candidates: u64,
+@@ -860,0 +865,10 @@
++                if route_profile_enabled() {
++                    let all_in_range = !scalar::pair_lanes_need_scaling(simd, previous, current);
++                    update_route_counts(|counts| {
++                        counts.prefix_scaled_range_checks += 1;
++                        if all_in_range {
++                            counts.prefix_scaled_noop_candidates += 1;
++                        }
++                    });
++                }
++                #[cfg(test)]
+@@ -1761,0 +1776,2 @@
++            total.prefix_scaled_range_checks += counts.prefix_scaled_range_checks;
++            total.prefix_scaled_noop_candidates += counts.prefix_scaled_noop_candidates;

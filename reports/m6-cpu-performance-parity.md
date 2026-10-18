@@ -1021,3 +1021,17 @@ records the histogram and bitwise test; the
 contains its source hashes, complete timing samples, correctness results,
 and validity decision. The T511 control and full regression gate remain
 unresolved.
+
+#### Scaled-prefix whole-tile range probe
+
+A test-only T2047 q1 profile called the existing SIMD range predicate before
+the scalar normalizer on scaled-route calls. It found every mantissa in range
+on 535,953 of 1,034,964 calls (51.78%). A distinct next hypothesis is to use
+that predicate to bypass the scalar lane walk on those calls while retaining
+the existing normalizer for any out-of-range lane. The profile added the SIMD
+probe to every counted call, so its route time is not used; the counts do not
+establish a performance gain. The
+[profile](data/m6-legendre-redesign/route-timing/scaled-range-probe-profile-v1.md)
+records the source and method. The no-op screen remains inconclusive, the
+candidate remains isolated, and no T511, q8, or broader regression gate has
+passed.
