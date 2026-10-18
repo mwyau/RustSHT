@@ -4408,7 +4408,7 @@ fn scalar_ducc_candidate_t255_timing_screen() {
 
 #[cfg(feature = "parallel")]
 #[test]
-#[ignore = "light q1/q8 screen for the DUCC order-parallel route"]
+#[ignore = "light q1/q4/q8 screen for the DUCC order-parallel route"]
 fn scalar_ducc_parallel_order_t300_timing_screen() {
     use std::hint::black_box;
     use std::time::Instant;
@@ -4432,6 +4432,10 @@ fn scalar_ducc_parallel_order_t300_timing_screen() {
         .num_threads(1)
         .build()
         .unwrap();
+    let four_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(4)
+        .build()
+        .unwrap();
     let eight_threads = rayon::ThreadPoolBuilder::new()
         .num_threads(8)
         .build()
@@ -4440,22 +4444,32 @@ fn scalar_ducc_parallel_order_t300_timing_screen() {
     one_thread
         .install(|| plan.prepare_workspace(&mut q1_workspace, 1))
         .unwrap();
+    let mut q4_workspace = four_threads.install(|| plan.workspace()).unwrap();
+    four_threads
+        .install(|| plan.prepare_workspace(&mut q4_workspace, 4))
+        .unwrap();
     let mut q8_workspace = eight_threads.install(|| plan.workspace()).unwrap();
     eight_threads
         .install(|| plan.prepare_workspace(&mut q8_workspace, 8))
         .unwrap();
     let mut q1_map = vec![0.0; plan.sample_count];
+    let mut q4_map = vec![0.0; plan.sample_count];
     let mut q8_map = vec![0.0; plan.sample_count];
 
     one_thread
         .install(|| plan.synthesis_into(&alm, &mut q1_map, &mut q1_workspace))
         .unwrap();
+    four_threads
+        .install(|| plan.synthesis_into(&alm, &mut q4_map, &mut q4_workspace))
+        .unwrap();
     eight_threads
         .install(|| plan.synthesis_into(&alm, &mut q8_map, &mut q8_workspace))
         .unwrap();
     assert!(relative_l2_real(&q1_map, &q8_map) < 4e-13);
+    assert!(relative_l2_real(&q1_map, &q4_map) < 4e-13);
 
     let mut q1_samples = Vec::with_capacity(5);
+    let mut q4_samples = Vec::with_capacity(5);
     let mut q8_samples = Vec::with_capacity(5);
     for _ in 0..5 {
         let started = Instant::now();
@@ -4466,6 +4480,13 @@ fn scalar_ducc_parallel_order_t300_timing_screen() {
         black_box(q1_map[0]);
 
         let started = Instant::now();
+        four_threads
+            .install(|| plan.synthesis_into(&alm, &mut q4_map, &mut q4_workspace))
+            .unwrap();
+        q4_samples.push(started.elapsed().as_secs_f64() * 1e3);
+        black_box(q4_map[0]);
+
+        let started = Instant::now();
         eight_threads
             .install(|| plan.synthesis_into(&alm, &mut q8_map, &mut q8_workspace))
             .unwrap();
@@ -4473,7 +4494,8 @@ fn scalar_ducc_parallel_order_t300_timing_screen() {
         black_box(q8_map[0]);
     }
     assert!(relative_l2_real(&q1_map, &q8_map) < 4e-13);
+    assert!(relative_l2_real(&q1_map, &q4_map) < 4e-13);
     eprintln!(
-        "SCALAR_DUCC_T300 grid=301x603 f64 full synthesis q1_ms={q1_samples:?} q8_ms={q8_samples:?}"
+        "SCALAR_DUCC_T300 grid=301x603 f64 full synthesis q1_ms={q1_samples:?} q4_ms={q4_samples:?} q8_ms={q8_samples:?}"
     );
 }
