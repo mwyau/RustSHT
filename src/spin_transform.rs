@@ -6,7 +6,7 @@ use num_complex::Complex;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
-use crate::error::ShtError;
+use crate::error::{ShtError, check_len};
 use crate::legendre::{
     LATITUDE_BLOCK_SIZE, LegendreOperation, MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX,
     SPIN1_FAST_MIN_LMAX, ShtScalar, longitude_phase, scalar_to_spin1, scalar_to_spin2,
@@ -4139,18 +4139,6 @@ impl<T: ShtScalar> ShtPlan<T> {
                 nphi: self.grid.nphi(),
             })
         }
-    }
-}
-
-fn check_len(buffer: &'static str, expected: usize, actual: usize) -> Result<(), ShtError> {
-    if expected == actual {
-        Ok(())
-    } else {
-        Err(ShtError::BufferLength {
-            buffer,
-            expected,
-            actual,
-        })
     }
 }
 

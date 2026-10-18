@@ -52,6 +52,22 @@ pub enum ShtError {
     InvalidExecutionCapacity { requested: usize, maximum: usize },
 }
 
+pub(crate) fn check_len(
+    buffer: &'static str,
+    expected: usize,
+    actual: usize,
+) -> Result<(), ShtError> {
+    if actual == expected {
+        Ok(())
+    } else {
+        Err(ShtError::BufferLength {
+            buffer,
+            expected,
+            actual,
+        })
+    }
+}
+
 impl Display for ShtError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {

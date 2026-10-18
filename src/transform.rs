@@ -6,7 +6,7 @@ use num_complex::Complex;
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
-use crate::error::ShtError;
+use crate::error::{ShtError, check_len};
 use crate::fft::RealFftWorkspace;
 use crate::grid::GridKind;
 use crate::legendre::{
@@ -2410,18 +2410,6 @@ impl<T: ShtScalar> ShtPlan<T> {
             }
         }
         Ok(())
-    }
-}
-
-fn check_len(buffer: &'static str, expected: usize, actual: usize) -> Result<(), ShtError> {
-    if actual == expected {
-        Ok(())
-    } else {
-        Err(ShtError::BufferLength {
-            buffer,
-            expected,
-            actual,
-        })
     }
 }
 
