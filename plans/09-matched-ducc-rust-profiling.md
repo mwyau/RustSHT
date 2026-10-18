@@ -1,6 +1,12 @@
 # Matched RustSHT–DUCC phase and function profiling
 
-**One bounded diagnostic checkpoint (2026-10-18).** This is a temporary profiling assignment, **not** a new broad benchmark or standing optimization plan. Check the latest branch HEAD and current code before acting. The active source module is `src/legendre/scalar_ordered.rs`, **not** the retired `scalar_ducc.rs`; `DUCC` belongs only in external-reference/attribution names. Follow the repository's minimal-fallback and Git synchronization rules.
+**Initial profiling checkpoint completed (2026-10-18).** This was a temporary profiling assignment, **not** a new broad benchmark or standing optimization plan. Check the latest branch HEAD and current code before acting. The active source module is `src/legendre/scalar_ordered.rs`, **not** the retired `scalar_ducc.rs`; `DUCC` belongs only in external-reference/attribution names. Follow the repository's minimal-fallback and Git synchronization rules.
+
+## Outcome — completed initial profiling; do not rerun unchanged
+
+The initial phase profiling and source-based follow-up were completed at `41b309a`. Results: [measured stage report](../reports/matched-rust-ducc-stage-profile-2026-10-18.md). The largest **pre-fix** Rust q1 cost was sectoral initialization/scaled prefix (T720 initialization 1.79 vs 0.51 ms, scaled-prefix 8.29 vs 0.09 ms; buckets not strictly equal work). The latest empty-rescale shortcut lowered full-synthesis q1 medians 14% at T720 and 12% at T300. **Post-fix component timing is still outstanding**; q8 remains slower and too variable to ascribe a confirmed improvement to the fix. Linux `perf` events are blocked by `perf_event_paranoid=4`.
+
+**This file is retained as the methodology and completed initial assignment**, not an instruction to rerun the entire profiling study. The active bounded follow-ups and implementation priorities are now in [plans/05-validation-and-milestones.md](05-validation-and-milestones.md), priorities P0–P4. Repeat only the two small current-source stage checks requested there; do not recreate the 21-cell matrix or add permanent hot-loop timers.
 
 ## Question and outcome
 

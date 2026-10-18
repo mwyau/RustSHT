@@ -29,7 +29,7 @@
 
 **Current matched scalar synthesis checkpoint:** RustSHT `6b356cb1` versus ducc0 `0.41.0`, 21 f64 GL full-synthesis cases across T255/T720/T1279, odd/even longitude counts, reduced `mmax`, and q1/q4/q8. Rust was 1.89–3.88× slower at q1, 1.98–5.77× at q4 and 2.09–6.43× at q8; relative L2 error was at most `3.95e-14`. The public Rust plan API does not expose a separate Legendre timing. The archived tile accelerator is not in production dispatch. Host-pressure stall was below 0.06%; no prior-revision regression is inferred.
 
-**Current c5 profile and rescale update:** the largest measured Rust-side excess is initialization/scaled-prefix work. A DUCC-aligned empty-rescale fast path passed targeted numerical checks and reduced matched q1 full-synthesis medians by 14% at T720 and 12% at T300; q8 results were inconclusive. Rust remains 1.03–1.92× DUCC in the follow-up full-call screen. See [the bounded stage profile](reports/matched-rust-ducc-stage-profile-2026-10-18.md); hardware performance counters are unavailable on this host.
+**Current c5 profile and rescale update (`41b309a`): the largest measured Rust-side excess is initialization/scaled-prefix work. A DUCC-aligned empty-rescale fast path passed targeted numerical checks and reduced matched q1 full-synthesis medians by 14% at T720 and 12% at T300; q8 results were inconclusive. Rust remains 1.03–1.92× DUCC in the follow-up full-call screen. See [the bounded stage profile](reports/matched-rust-ducc-stage-profile-2026-10-18.md); hardware performance counters are unavailable on this host.
 
 **DUCC-kernel checkpoint:** `b484a8c7` added `src/legendre/scalar_ducc.rs`, with order-major 256-ring active/reflected batching, DUCC-like scaled initialization and negligible-prefix skipping, parity reconstruction, transformed coefficient reuse and fused SIMD recurrence. It advances a monotone polar active-ring boundary, dynamically claims one harmonic order per task as DUCC does, reuses each worker's recurrence workspace, and stages into disjoint order-major rows before tiled scatter. T255 mixed coefficients match pinned DUCC samples and the retained ring-group spectra; tests cover reduced `mmax`, odd/even longitude counts, partial SIMD batches, subnormal fallback and unsafe transformed coefficients. A decline leaves row-major spectra untouched for fallback. The earlier recursive-weighted q1/q4/q8 screen measured 5.485/3.151/2.430 ms for reduced-mmax T300 (301×603); it compared RustSHT thread counts only. Earlier T255/T300 full-call screens measured the candidate 32.3%/8.3% slower than DUCC; rerun matched comparisons at the next integrated milestone. GL high-degree sectoral checks passed at opt-in T511/T1023/T2047. See [source screen](reports/scalar-ducc-kernel-screen-2026-10-18.md).
 
@@ -39,12 +39,12 @@ A vector-block-major register-resident suffix prototype matched the pair-major r
 
 **Historical performance context:** the archived 29-grid study (T42–T2047) found DUCC faster for all matched scalar/spin-1 S/A workloads from that source revision. A former six-pair isolated scalar T2047 q1 scaled-prefix candidate measured ~1,371 ms versus ~3,360 ms clean baseline, still ~3.67× DUCC. These are **not measurements of the latest integrated build**. The current ordered SIMD kernel and remaining operations still lack complete matched DUCC and cross-operation acceptance.
 
-## Active next steps — DUCC-first
+## Active next steps — post-profile
 
-1. Extend the DUCC-derived architecture for scalar analysis and spin-1 synthesis/analysis, preserving their distinct operators and adjoints. The analysis scheduler now claims one harmonic order at a time; compare representative performance after further kernel integration.
-2. Continue scalar synthesis parity work when it informs the shared recurrence architecture; do not default to isolated synthesis micro-optimization.
-3. Extend validated recurrence paths to f32 and eligible spin-2 workloads while preserving GL/CC/F1 behavior and robust fallbacks.
-4. Update this file *only after meaningful integrated milestones*. Keep detailed numerical histories archived and out of routine context.
+1. **Post-fix q1 checkpoint:** one bounded T720/T300 stage remeasure on the current ordered kernel to establish whether initial/scaled-prefix overhead remains after `41b309a`; then implement at most one directly supported fix or move on.
+2. **q8 bottleneck:** compare equivalent Legendre/order work, worker busy time, queue/scratch/scatter overhead and FFT against DUCC. The latest post-fix q8 1.62×/1.92× ratios are noisy and do not establish improvement.
+3. **Numerical implementation:** extend optimized execution into scalar analysis and spin-1 synthesis/analysis. Dynamic analysis order scheduling and ring compaction are already implemented; optimize the underlying recurrence before claiming parity.
+4. **Scope/cleanup:** native f32 and suitable CC/F1/spin-2 paths; keep one minimal robust fallback where necessary, neutral internal names and historical backup evidence. Follow [the active roadmap](plans/05-validation-and-milestones.md) and do not reopen the full profiling campaign.
 
 ## Read only when needed
 
