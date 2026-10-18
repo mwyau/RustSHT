@@ -133,3 +133,25 @@ The candidate postflight and baseline during-run readings in the warning
 range are warnings, not rejections. Raw diagnostic captures remain local and
 untracked. No process was retried and no samples were removed. The next
 process is pair 03 baseline, as fixed by the alternating sequence.
+
+### T1023 q1 pair 03: baseline valid, candidate mate pending
+
+The third pair began in the predeclared baseline-then-candidate order. All
+three baseline timing series and the numerical comparison against DUCC passed.
+
+| Backend | Samples (ms) | Median (ms) | CV | Drift |
+| --- | --- | ---: | ---: | ---: |
+| RustSHT | 294.935, 294.478, 294.609, 295.034, 295.201 | 294.935 | 0.0911% | 0.1724% |
+| DUCC | 49.663, 47.753, 49.565, 47.624, 49.628 | 49.565 | 1.9387% | 1.8945% |
+| SHTns | 36.480, 36.180, 36.221, 35.775, 36.170 | 36.180 | 0.6241% | 0.6868% |
+
+RustSHT-versus-DUCC relative L2 error was `1.182e-13`; SHTns-versus-DUCC
+was `8.764e-14`. Whole-process elapsed time was 18.98 s, peak RSS was
+274,560 kB, and Context-switch diagnostics were reviewed locally; exact counts remain untracked. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. The worker stayed within its
+one-core affinity. No competing build or benchmark or sustained external CPU
+load was observed on that core. The cgroup had no CPU quota and recorded no
+throttling.
+
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The two during-run values above 0.50% are warnings under v3; this
+process remains valid. Raw diagnostic captures remain local and untracked.
+The next process is the pair 03 candidate mate.
