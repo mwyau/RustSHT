@@ -1145,3 +1145,20 @@ fusion candidate remains isolated and unaccepted; T2047, T511, q8, and spin-1
 measurements remain gated. The [stop report](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-t1023-baseline-stop-v1.md)
 records the timing samples, numerical errors, aggregate peak RSS, source
 provenance, and gate decision. Raw host and process diagnostics remain local.
+
+### Next measured scalar-kernel bottleneck
+
+The existing T2047 q1 route profile of the scaled-prefix accumulator measured
+715.931 ms in the fast pre-suffix transition (51.91% of the full call),
+543.517 ms in the ordinary SIMD suffix (39.41%), 41.953 ms in scaled fallback
+(3.04%), and 5.393 ms in coefficient-safety scans (0.39%). In a separately
+sampled subset of prefix pairs, factor checks, exponent rebasing, and complex
+accumulation took 7.379 ms versus 3.690 ms for recurrence updates and
+normalization. That subset was sampled at one pair per 64 iterations and does
+not support extrapolating these subcomponent times to the full prefix. The
+fusion screen compares against the accumulator candidate only; it supplies no
+new production, DUCC, or SHTns ratio. Thus scaled-prefix work remains the next
+measured bottleneck, while the relative cost of its individual subcomponents
+needs a focused route profile of the fused source. No new timing run is
+authorized by this analysis; the q1 candidate matrix remains stopped pending
+a prospectively validated stability protocol.
