@@ -2375,6 +2375,49 @@ and extreme-value checks, and its high-resolution DUCC gap remains large. No
 f32 execution-path change is accepted. See [the M6 report](../reports/m6-cpu-performance-parity.md)
 and [the full source and raw evidence](../reports/data/m6-f32-bridge/).
 
+### M6 scaled-prefix scalar synthesis integration (2026-10-18)
+
+Commit `5fd41078` integrates a tile-128 scaled-prefix f64 scalar synthesis route
+for GL plans with `lmax >= 255` when paired coefficient preparation succeeds.
+It packs active rings into bounded
+workspace-owned tiles, keeps polar or unsafe lanes on the scaled recurrence,
+transitions ordinary lanes to a SIMD suffix when checked range conditions
+hold, and scatters each tile only after completion. Other precisions, grids,
+and lower bandlimits retain their existing dispatch. The new recurrence module
+retains the DUCC source notice and records source revision
+`c1ed01b8fda69d2a378190f0915f1a19762dddbf`. The f64 tile scratch adds about
+9 KiB per recurrence worker.
+
+Focused route tests cover active-ring tails and polar filtering, prefix-to-SIMD
+transition, mixed polar fallback, single-scatter staging, accumulator rebase
+safety, and extreme finite coefficients. An added public test compares
+reduced-`mmax` synthesis with closed-form fields at T255 on odd and even
+longitude counts with nonzero `phi0`. The release high-bandlimit test passed
+for scalar GL/CC/F1 synthesis at T511, T1023, and T2047 against DUCC 0.41.0 and
+closed-form fields; the test also checks analysis recovery. It runs full
+`mmax`, so integrated-route checks at T720/T799, T1279, and multiple worker
+counts remain outstanding.
+
+A single-process release screen compared `8d001252` with `5fd41078` using five
+samples per call at q1/q8 on an AMD Ryzen 9 5950X. Median scalar GL synthesis
+time changed from 5.972 to 5.780 ms (−3.2%) at T255 q1, 2.049 to 2.125 ms
+(+3.7%) at T255 q8, 42.322 to 30.716 ms (−27.4%) at T511 q1, and 12.324 to
+9.358 ms (−24.1%) at T511 q8. Peak RSS changed from 44,104 to 44,288 KiB and
+31,668 to 31,804 KiB at q1, and from 46,764 to 47,700 KiB and 34,720 to 34,756
+KiB at q8. The screen used isolated Cargo target directories and
+`examples/m1b_bench`. No host-pressure protocol ran, so there is no gate result
+or interference assessment. These measurements are a local implementation
+screen, not DUCC parity evidence; see [the performance summary](../PERFORMANCE_STATUS.md)
+for samples and compiler/software details.
+
+Validation passed: formatting; all-target/all-feature Clippy with warnings
+denied; `cargo test --workspace --all-features` (203 unit, 4 extreme-FFT, 11
+f32, and 1 workspace-compatibility tests passed; 14 unit and 1 f32 test
+ignored); `cargo test -p rustsht --no-default-features` (164 unit, 4
+extreme-FFT, 11 f32, and 1 workspace-compatibility tests passed; 7 unit and 1
+f32 test ignored); and `uv run pytest python/tests` (20 passed). The ignored
+release T511/T1023/T2047 all-grid scalar DUCC and analytic test passed.
+
 ## Benchmark artifact hygiene
 
 Keep raw host and process captures, build/test logs, GNU-time output, and local
