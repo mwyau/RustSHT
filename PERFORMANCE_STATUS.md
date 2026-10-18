@@ -28,6 +28,8 @@
 
 Recent implementation vectorizes sectoral integer powers, initialized-state normalization, recurrence rescaling and scale corrections with `pulp`; low-power lanes retain checked scaled arithmetic. Release assembly showed the one-pair AVX2 suffix was an out-of-line call, so that helper is now forced inline. A five-sample q1 Rust-only screen on the same Ryzen 9 5950X measured candidate/ring-group medians at T255 of 4.363/4.838 ms for the Legendre stage and 5.037/5.452 ms end to end; at irregular T300 they were 6.062/6.047 ms and 7.167/7.429 ms. The screen was ungated, is not a DUCC comparison, and does not establish general performance improvement. SIMD lane/tail, overflow, pinned-DUCC, fallback and full workspace checks pass.
 
+A vector-block-major register-resident suffix prototype matched the pair-major reference numerically but was 5.2×/6.4× slower for the T255/T300 Legendre stages in five-sample ungated screens. Repeated coefficient broadcasts per SIMD block are the likely cost; the prototype was removed.
+
 **Historical performance context:** the archived 29-grid study (T42–T2047) found DUCC faster for all matched scalar/spin-1 S/A workloads from that source revision. A former six-pair isolated scalar T2047 q1 scaled-prefix candidate measured ~1,371 ms versus ~3,360 ms clean baseline, still ~3.67× DUCC. These are **not measurements of the latest integrated build**. The latest integrated tile/SIMD/cache sources still lack complete matched DUCC and cross-operation acceptance.
 
 ## Active next steps — DUCC-first
