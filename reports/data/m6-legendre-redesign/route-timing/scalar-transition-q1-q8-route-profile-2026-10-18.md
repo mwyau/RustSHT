@@ -92,3 +92,81 @@ The frozen 128-ring extension and its earlier q1 whole-transform matrix are a
 separate experiment. This profile neither validates nor rejects that
 candidate. The last matched T2047 baseline remains 9.06x slower than DUCC at
 q1 and 13.97x at q8; these route diagnostics do not refresh those ratios.
+
+## Follow-up: visitor source and transition-decline timing
+
+The follow-up uses the v1 experimental source patch plus the test-only
+instrumentation in
+[`scalar-transition-visitor-source-profile-v2.patch`](scalar-transition-visitor-source-profile-v2.patch),
+SHA-256 `0d2168f28fdc7c12ed434a89cf395210c502906a4a07e1b0929e8371133af54f`.
+Applied in order to the clean branch base above, the two patches reconstruct
+the measured source; apply the v2 zero-context diff with
+`git apply --unidiff-zero`. Its SHA-256 is
+`6eefe98cf3326b4e725bf5b0a4f126eb55b37a84b80f9cd673886af55b5f966c`. The
+release test binary SHA-256 is
+`f3b802befbbba495fe8a29868ced5fe7cdb05d1c6379b735a3f13cd457d7b8b4`.
+The follow-up added source counters and timers only; it did not alter the
+candidate's numerical path.
+
+The same GL f64 scalar T2047 transform ran at q1 and q8. Each process used one
+unmeasured warm-up, then one transform with counters inactive and one with
+counters active. The map from the counter-active call was bitwise equal to the
+counter-inactive map. Both route-accounting assertions passed. These single
+calls are diagnostics, not performance acceptance samples; they do not
+establish within-process CV or drift and do not compare the candidate with the
+clean baseline, DUCC, or SHTns. Memory was not measured. The preflight and
+postflight pressure checks stayed below the warning threshold, and monitoring
+found no clear competing CPU workload. Sampled thread placement stayed within
+the requested affinity masks. Detailed transient pressure, frequency,
+context-switch, and process captures remain local and untracked.
+
+The first follow-up q1 attempt completed both transforms with bitwise-equal
+maps but failed a source-accounting assertion: 53.6 million visitor lane-pairs
+came from the scaled-lane fallback inside the fused-block helper and had no
+source label. That diagnostic was retained locally. The instrumentation then
+added this route as a third visitor source and required every visitor
+lane-pair to have exactly one label. The final q1 and q8 results below passed
+that assertion. This correction changes accounting only.
+
+### Visitor source work
+
+| Visitor source | Calls | Lane-pairs | Fraction of active work | q1 worker-summed time (ms) | q8 worker-summed time (ms) |
+|---|---:|---:|---:|---:|---:|
+| Compact order block | 1,954 | 42,249,640 | 2.44% | 520.301 | 535.323 |
+| Regular order block | 1,054 | 42,114,240 | 2.43% | 420.055 | 432.748 |
+| Scaled-lane fallback after fused work | 3,290 | 53,565,656 | 3.09% | 413.445 | 446.288 |
+| **Total paired visitor** | — | **137,929,536** | **7.95%** | **1,353.431** | **1,413.955** |
+
+The compact-order visitor used 38.44% of q1 and 37.86% of q8 visitor time. The
+regular-order visitor used 31.04% and 30.61%; the scaled-lane fallback used
+30.55% and 31.56%. The first two sources are the visitor calls after declined
+scalar transitions. The third source handles scaled lanes excluded from the
+fused block's ordinary path.
+
+The scalar transition was attempted 11,620 times: 8,612 completed and 3,008
+declined. Thirty-two declines were geometry rejections; 2,976 occurred after
+transition work. No coefficient or other pre-work rejection occurred. The
+declined transitions discarded 131,220 prefix lane-pairs. The visitor
+fallback accounts for the remaining recurrence work after those declines.
+
+### Whole-call and route phase times
+
+| Workers | Whole transform, counters inactive (ms) | Whole transform, counters active (ms) | Fused phase sum (ms) | Visitor phase sum (ms) | Transition phase sum (ms) | Coefficient preparation (ms) | Factor preparation (ms) |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 2,339.277 | 2,338.196 | 366.146 | 1,353.431 | 496.289 | 2.479 | 6.580 |
+| 8 | 527.449 | 528.440 | 403.767 | 1,413.955 | 524.288 | 19.454 | 54.874 |
+
+Route phase values sum across workers and can exceed whole-call latency. The
+counter-active call changed the single measured wall time by −0.05% at q1 and
+0.19% at q8; these differences are descriptive only. The fixed source used an
+AMD Ryzen 9 5950X with AVX2/FMA, 16 physical and 32 logical CPUs, and 96 GiB
+RAM. It used Ubuntu 26.04.1, Linux 7.0.14, Rust/Cargo 1.99.0, Rayon 1.12.0,
+and `pulp` 0.22.3.
+
+The compact-order visitor is the largest measured visitor subpath. It handles
+only 2.44% of active lane-pairs but costs 520–535 ms in worker-summed time.
+The next kernel investigation should target its declined-transition fallback
+with a native one-channel recurrence and accumulator, while preserving the
+scaled visitor as the robust fallback. No such optimization has been
+implemented or accepted. The frozen 128-ring candidate remains a separate,
+unaccepted experiment.

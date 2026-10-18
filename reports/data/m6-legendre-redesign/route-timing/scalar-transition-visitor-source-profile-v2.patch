@@ -1,0 +1,203 @@
+--- a/src/legendre/scalar_paired.rs
++++ b/src/legendre/scalar_paired.rs
+@@ -393 +393,5 @@
+-    for_each_y_lm_paired_dispatched(
++    #[cfg(test)]
++    super::route_profile::paired_visitor_begin(
++        super::route_profile::VisitorSource::ScaledLaneFallback,
++    );
++    let visitor_result = for_each_y_lm_paired_dispatched(
+@@ -427 +431,4 @@
+-    )?;
++    );
++    #[cfg(test)]
++    super::route_profile::paired_visitor_end();
++    visitor_result?;
+@@ -667 +674 @@
+-        super::route_profile::transition_rejected_before_work();
++        super::route_profile::transition_rejected_geometry();
+@@ -677 +684 @@
+-        super::route_profile::transition_rejected_before_work();
++        super::route_profile::transition_rejected_coefficients();
+--- a/src/transform.rs
++++ b/src/transform.rs
+@@ -947 +947,5 @@
+-                                T::for_each_y_lm_paired_dispatched(
++                                #[cfg(test)]
++                                crate::legendre::route_profile::paired_visitor_begin(
++                                    crate::legendre::route_profile::VisitorSource::CompactOrder,
++                                );
++                                let visitor_result = T::for_each_y_lm_paired_dispatched(
+@@ -987 +991,4 @@
+-                                )?;
++                                );
++                                #[cfg(test)]
++                                crate::legendre::route_profile::paired_visitor_end();
++                                visitor_result?;
+@@ -989 +996,5 @@
+-                                T::for_each_y_lm_paired_dispatched(
++                                #[cfg(test)]
++                                crate::legendre::route_profile::paired_visitor_begin(
++                                    crate::legendre::route_profile::VisitorSource::RegularOrder,
++                                );
++                                let visitor_result = T::for_each_y_lm_paired_dispatched(
+@@ -1030 +1041,4 @@
+-                                )?;
++                                );
++                                #[cfg(test)]
++                                crate::legendre::route_profile::paired_visitor_end();
++                                visitor_result?;
+--- a/src/legendre/route_profile.rs
++++ b/src/legendre/route_profile.rs
+@@ -9,0 +10,7 @@
++
++#[derive(Clone, Copy, Debug, Eq, PartialEq)]
++pub(crate) enum VisitorSource {
++    CompactOrder,
++    RegularOrder,
++    ScaledLaneFallback,
++}
+@@ -20,0 +28,4 @@
++    pub transition_geometry_rejections: u64,
++    pub transition_coefficient_rejections: u64,
++    pub transition_prework_rejections: u64,
++    pub transition_after_work_rejections: u64,
+@@ -25,0 +37,14 @@
++    pub visitor_compact_calls: u64,
++    pub visitor_regular_calls: u64,
++    pub visitor_scaled_lane_fallback_calls: u64,
++    pub visitor_compact_ns: u128,
++    pub visitor_regular_ns: u128,
++    pub visitor_scaled_lane_fallback_ns: u128,
++    pub visitor_compact_normal: u64,
++    pub visitor_compact_scaled: u64,
++    pub visitor_regular_normal: u64,
++    pub visitor_regular_scaled: u64,
++    pub visitor_scaled_lane_fallback_normal: u64,
++    pub visitor_scaled_lane_fallback_scaled: u64,
++    pub visitor_unclassified_normal: u64,
++    pub visitor_unclassified_scaled: u64,
+@@ -36,0 +62,2 @@
++    active_visitor_source: Option<VisitorSource>,
++    active_visitor_started: Option<Instant>,
+@@ -87 +114,18 @@
+-    update(|counts| counts.declined_transitions += 1);
++    update(|counts| {
++        counts.declined_transitions += 1;
++        counts.transition_prework_rejections += 1;
++    });
++}
++
++pub(super) fn transition_rejected_geometry() {
++    update(|counts| {
++        counts.declined_transitions += 1;
++        counts.transition_geometry_rejections += 1;
++    });
++}
++
++pub(super) fn transition_rejected_coefficients() {
++    update(|counts| {
++        counts.declined_transitions += 1;
++        counts.transition_coefficient_rejections += 1;
++    });
+@@ -112,0 +157,8 @@
++            match counts.active_visitor_source {
++                Some(VisitorSource::CompactOrder) => counts.visitor_compact_normal += lanes as u64,
++                Some(VisitorSource::RegularOrder) => counts.visitor_regular_normal += lanes as u64,
++                Some(VisitorSource::ScaledLaneFallback) => {
++                    counts.visitor_scaled_lane_fallback_normal += lanes as u64
++                }
++                None => counts.visitor_unclassified_normal += lanes as u64,
++            }
+@@ -114,0 +167,40 @@
++            match counts.active_visitor_source {
++                Some(VisitorSource::CompactOrder) => counts.visitor_compact_scaled += lanes as u64,
++                Some(VisitorSource::RegularOrder) => counts.visitor_regular_scaled += lanes as u64,
++                Some(VisitorSource::ScaledLaneFallback) => {
++                    counts.visitor_scaled_lane_fallback_scaled += lanes as u64
++                }
++                None => counts.visitor_unclassified_scaled += lanes as u64,
++            }
++        }
++    });
++}
++
++pub(crate) fn paired_visitor_begin(source: VisitorSource) {
++    update(|counts| {
++        assert!(counts.active_visitor_source.is_none());
++        counts.active_visitor_source = Some(source);
++        counts.active_visitor_started = Some(Instant::now());
++        match source {
++            VisitorSource::CompactOrder => counts.visitor_compact_calls += 1,
++            VisitorSource::RegularOrder => counts.visitor_regular_calls += 1,
++            VisitorSource::ScaledLaneFallback => counts.visitor_scaled_lane_fallback_calls += 1,
++        }
++    });
++}
++
++pub(crate) fn paired_visitor_end() {
++    update(|counts| {
++        let source = counts
++            .active_visitor_source
++            .take()
++            .expect("visitor source must be active");
++        let started = counts
++            .active_visitor_started
++            .take()
++            .expect("visitor timer must be active");
++        let elapsed = started.elapsed().as_nanos();
++        match source {
++            VisitorSource::CompactOrder => counts.visitor_compact_ns += elapsed,
++            VisitorSource::RegularOrder => counts.visitor_regular_ns += elapsed,
++            VisitorSource::ScaledLaneFallback => counts.visitor_scaled_lane_fallback_ns += elapsed,
+@@ -143,0 +236 @@
++            counts.transition_after_work_rejections += 1;
+@@ -207,0 +301,2 @@
++        assert!(counts.active_visitor_source.is_none());
++        assert!(counts.active_visitor_started.is_none());
+@@ -227,0 +323,4 @@
++        total.transition_geometry_rejections += counts.transition_geometry_rejections;
++        total.transition_coefficient_rejections += counts.transition_coefficient_rejections;
++        total.transition_prework_rejections += counts.transition_prework_rejections;
++        total.transition_after_work_rejections += counts.transition_after_work_rejections;
+@@ -230,0 +330,14 @@
++        total.visitor_compact_calls += counts.visitor_compact_calls;
++        total.visitor_regular_calls += counts.visitor_regular_calls;
++        total.visitor_scaled_lane_fallback_calls += counts.visitor_scaled_lane_fallback_calls;
++        total.visitor_compact_ns += counts.visitor_compact_ns;
++        total.visitor_regular_ns += counts.visitor_regular_ns;
++        total.visitor_scaled_lane_fallback_ns += counts.visitor_scaled_lane_fallback_ns;
++        total.visitor_compact_normal += counts.visitor_compact_normal;
++        total.visitor_compact_scaled += counts.visitor_compact_scaled;
++        total.visitor_regular_normal += counts.visitor_regular_normal;
++        total.visitor_regular_scaled += counts.visitor_regular_scaled;
++        total.visitor_scaled_lane_fallback_normal += counts.visitor_scaled_lane_fallback_normal;
++        total.visitor_scaled_lane_fallback_scaled += counts.visitor_scaled_lane_fallback_scaled;
++        total.visitor_unclassified_normal += counts.visitor_unclassified_normal;
++        total.visitor_unclassified_scaled += counts.visitor_unclassified_scaled;
+@@ -265,0 +379,25 @@
++    assert_eq!(
++        total.declined_transitions,
++        total.transition_geometry_rejections
++            + total.transition_coefficient_rejections
++            + total.transition_prework_rejections
++            + total.transition_after_work_rejections,
++        "every declined transition must have one rejection stage"
++    );
++    assert_eq!(
++        total.visitor_normal + total.visitor_scaled,
++        total.visitor_compact_normal
++            + total.visitor_compact_scaled
++            + total.visitor_regular_normal
++            + total.visitor_regular_scaled
++            + total.visitor_scaled_lane_fallback_normal
++            + total.visitor_scaled_lane_fallback_scaled
++            + total.visitor_unclassified_normal
++            + total.visitor_unclassified_scaled,
++        "every paired visitor lane-pair must have one source classification"
++    );
++    assert_eq!(
++        total.visitor_unclassified_normal + total.visitor_unclassified_scaled,
++        0,
++        "every paired visitor callback must run inside a source region"
++    );

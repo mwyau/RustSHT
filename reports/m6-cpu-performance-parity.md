@@ -1080,10 +1080,16 @@ its per-worker phase sums took 1.307 s at q1 and 1.346 s at q8. The visitor
 accounted for 60.0% and 58.0% of summed route time. The q8 worker work ratio
 was 2.41 from maximum to minimum; route-phase time differed by 5.45. These
 are single-process diagnostics, not candidate-versus-baseline measurements.
-The patch is archived but not applied to production. A bounded follow-up
-should resolve visitor time by decline reason before another kernel change.
-The [profile](data/m6-legendre-redesign/route-timing/scalar-transition-q1-q8-route-profile-2026-10-18.md)
-contains the route counts, per-worker results, source and binary hashes, and
-measurement limits. The previously matched T2047 baseline ratios remain
-9.06x RustSHT/DUCC at q1 and 13.97x at q8; this profile does not refresh
-them.
+The patch is archived but not applied to production. A follow-up source
+profile found that compact-order visitor calls after declined transitions
+used 520 ms at q1 and 535 ms at q8 in worker-summed time, the largest of three
+visitor sources. It classified 2,976 post-work transition declines and 32
+geometry declines; no coefficient or other pre-work decline occurred. A
+native one-channel recurrence and accumulator for the compact-order fallback
+is the next kernel hypothesis, with the scaled visitor retained as the robust
+fallback. This remains an isolated experiment, not an accepted production
+change. The [profile](data/m6-legendre-redesign/route-timing/scalar-transition-q1-q8-route-profile-2026-10-18.md)
+contains the source-resolved route counts, worker-summed timings, source and
+binary hashes, and measurement limits. The previously matched T2047 baseline
+ratios remain 9.06x RustSHT/DUCC at q1 and 13.97x at q8; this diagnostic does
+not refresh them.
