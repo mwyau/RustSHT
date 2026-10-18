@@ -174,3 +174,26 @@ a rejection. Together with pairs 01 and 02, all three valid T1023 q1 pairs
 favor tile 128. The six-pair matrix and bootstrap gate remain incomplete, so
 the candidate remains unaccepted. No process was retried and no samples
 were removed. The next process is pair 04 candidate.
+
+### T1023 q1 pair 04: candidate valid, baseline mate pending
+
+The fourth pair followed the fixed candidate-then-baseline order. All three
+candidate timing series and its numerical comparison against DUCC passed.
+
+| Backend | Samples (ms) | Median (ms) | CV | Drift |
+| --- | --- | ---: | ---: | ---: |
+| RustSHT | 201.180, 203.438, 209.279, 199.597, 213.683 | 203.438 | 2.5664% | 1.5739% |
+| DUCC | 50.969, 50.747, 50.767, 51.644, 51.457 | 50.969 | 0.7186% | 1.5372% |
+| SHTns | 34.543, 35.275, 34.481, 35.274, 35.297 | 35.274 | 1.0803% | 2.1049% |
+
+RustSHT-versus-DUCC relative L2 error was `1.182e-13`; SHTns-versus-DUCC
+was `8.764e-14`. The candidate was 3.99x DUCC and 5.77x SHTns in this
+process; the pair ratio awaits its baseline mate. Whole-process elapsed time
+was 18.44 s, peak RSS was 274,504 kB, and context-switch diagnostic counts remain local. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked.
+The worker stayed within its one-core affinity. Process and thread snapshots
+showed no competing build or benchmark and no sustained external CPU load on
+that core; the cgroup recorded no throttling.
+
+CPU-pressure validity was reviewed under the declared protocol; exact transient readings remain local. The postflight value is a warning,
+not a rejection. Raw diagnostic captures remain local and untracked. The
+candidate remains unaccepted; the next process is the pair 04 baseline mate.
