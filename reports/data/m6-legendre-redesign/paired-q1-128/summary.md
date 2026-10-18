@@ -55,4 +55,45 @@ detailed host and process captures are local and untracked.
 
 ## Independent v3 acquisition
 
-V2 remains stopped at its first T1023 baseline process because DUCC's first-three/final-two median drift exceeded the fixed 5% limit by 0.0065 percentage points. That sample remains diagnostic and is not reclassified. The v3 protocol predeclares a complete six-pair q1 acquisition from pair 1 for both variants, with unchanged timing and CPU-pressure gates. It uses the frozen baseline and tile-128 candidate binaries whose hashes were rechecked after the history cleanup. No v3 process has started yet. See [`protocol-v3.md`](protocol-v3.md) and [`run-one-v3.sh`](run-one-v3.sh).
+V2 remains stopped at its first T1023 baseline process because DUCC's first-three/final-two median drift exceeded the fixed 5% limit by 0.0065 percentage points. That sample remains diagnostic and is not reclassified. The v3 protocol predeclared a complete six-pair q1 acquisition from pair 1 for both variants, with unchanged timing and CPU-pressure gates. It uses the frozen baseline and tile-128 candidate binaries whose hashes were rechecked after the history cleanup. Pair 01 is now complete; see [`protocol-v3.md`](protocol-v3.md) and [`run-one-v3.sh`](run-one-v3.sh).
+
+### T1023 q1 pair 01: both processes valid, candidate remains unaccepted
+
+Pair 01 followed the predeclared baseline-then-candidate order. Both processes
+passed the five-sample CV and first-three/final-two median-drift limits for
+RustSHT, DUCC, and SHTns. Both processes passed numerical comparisons against
+DUCC. PSI warnings and placement checks did not reveal
+interference; both completed processes remain valid under protocol v3.
+
+| Variant / backend | Samples (ms) | Median (ms) | CV | Drift | Peak RSS (kB) |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Baseline RustSHT | 293.791, 296.880, 293.939, 294.236, 294.618 | 294.236 | 0.3833% | 0.1659% | 278,356 |
+| Baseline DUCC | 47.606, 47.493, 50.612, 49.324, 48.117 | 48.117 | 2.4356% | 2.3162% | — |
+| Baseline SHTns | 35.299, 34.948, 36.091, 35.632, 36.222 | 35.632 | 1.3383% | 1.7625% | — |
+| Tile 128 RustSHT | 200.670, 200.039, 200.386, 200.691, 201.202 | 200.670 | 0.1913% | 0.2793% | 274,540 |
+| Tile 128 DUCC | 50.425, 48.688, 47.776, 47.379, 48.383 | 48.383 | 2.1672% | 1.6679% | — |
+| Tile 128 SHTns | 34.734, 34.406, 34.065, 34.369, 34.237 | 34.369 | 0.6431% | 0.2997% | — |
+
+The paired RustSHT median ratio is 0.6821 (1.466x, or 31.8% lower latency)
+for this single pair. RustSHT was 6.11x DUCC and 8.26x SHTns for the baseline
+process, and 4.15x DUCC and 5.84x SHTns for the candidate process. These are
+one-pair observations, not the six-pair acceptance result. The candidate is
+still isolated and unaccepted.
+
+Numerical checks gave RustSHT-versus-DUCC relative L2 error `1.182e-13` for
+both variants and SHTns-versus-DUCC `8.764e-14`. Context-switch diagnostic counts remain local. Whole-process elapsed
+times were 18.88 s and 18.63 s; peak RSS was 278,356 kB and 274,540 kB,
+respectively. CPU-frequency behavior was reviewed locally; exact transient samples remain untracked. Each
+benchmark worker stayed within its one-core affinity; no competing build or
+benchmark and no sustained external CPU load on that core were observed. The
+cgroup recorded no throttling.
+
+CPU-pressure validity decisions were:
+
+
+
+The postflight readings are warnings under the fixed v3 rule and remain below
+the 2.00% rejection threshold. Raw preflight, periodic process, thread,
+frequency, GNU-time, and console captures remain local and untracked. The
+next process is pair 02 candidate, as fixed by the alternating sequence. No
+process was retried and no samples were removed.
