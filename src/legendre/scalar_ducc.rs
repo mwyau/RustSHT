@@ -341,6 +341,30 @@ impl WithSimd for ScalarDuccSynthesis<'_, '_> {
                     debug_assert_eq!(south, ntheta - 1 - scratch.packed_north[lane]);
                 }
 
+                // DUCC pads an incomplete vector with the last valid ring.
+                // Repeating its recurrence inputs lets the ordinary and
+                // scaled paths stay vectorized; reconstruction still writes
+                // only the active lanes below.
+                let simd_lanes = S::F64_LANES;
+                if simd_lanes == 0 {
+                    return false;
+                }
+                let Some(simd_count) = active_count.div_ceil(simd_lanes).checked_mul(simd_lanes)
+                else {
+                    return false;
+                };
+                if simd_count > SCALAR_DUCC_BATCH_SIZE {
+                    return false;
+                }
+                if simd_count > active_count {
+                    let last = active_count - 1;
+                    for lane in active_count..simd_count {
+                        scratch.packed_sin[lane] = scratch.packed_sin[last];
+                        scratch.packed_cos[lane] = scratch.packed_cos[last];
+                        scratch.packed_csq[lane] = scratch.packed_csq[last];
+                    }
+                }
+
                 if !synthesize_batch(
                     simd,
                     scratch,
@@ -348,7 +372,7 @@ impl WithSimd for ScalarDuccSynthesis<'_, '_> {
                     lmax,
                     sectoral_norm,
                     power_lower_limit,
-                    active_count,
+                    simd_count,
                 ) {
                     return false;
                 }
