@@ -457,6 +457,29 @@ fn complex_in_normal_range(value: Complex64) -> bool {
     scalar_value_in_normal_range(value.re) && scalar_value_in_normal_range(value.im)
 }
 
+#[inline(always)]
+fn simd_values_in_normal_range<S: Simd>(simd: S, values: S::f64s) -> bool {
+    let absolute = simd.abs_f64s(values);
+    let upper_mask = simd.less_than_or_equal_f64s(absolute, simd.splat_f64s(scalar::BIG));
+    let upper_ok = simd.select_f64s(upper_mask, simd.splat_f64s(1.0), simd.splat_f64s(0.0));
+    if simd.reduce_min_f64s(upper_ok) != 1.0 {
+        return false;
+    }
+    let zero_mask = simd.equal_f64s(absolute, simd.splat_f64s(0.0));
+    let lower_values = simd.select_f64s(zero_mask, simd.splat_f64s(scalar::BIG), absolute);
+    simd.reduce_min_f64s(lower_values) >= scalar::SMALL
+}
+
+#[inline(always)]
+fn simd_values_are_finite<S: Simd>(simd: S, values: S::f64s) -> bool {
+    let absolute = simd.abs_f64s(values);
+    let ordered = simd.equal_f64s(values, values);
+    let ordered_absolute = simd.select_f64s(ordered, absolute, simd.splat_f64s(f64::INFINITY));
+    let finite_mask = simd.less_than_or_equal_f64s(ordered_absolute, simd.splat_f64s(f64::MAX));
+    let finite = simd.select_f64s(finite_mask, simd.splat_f64s(1.0), simd.splat_f64s(0.0));
+    simd.reduce_min_f64s(finite) == 1.0
+}
+
 struct StagedScalarSynthesis<'a> {
     m: usize,
     lmax: usize,
@@ -593,19 +616,8 @@ impl WithSimd for StagedScalarSynthesis<'_> {
                     };
                     normal_after &= lane_normal;
                 }
-                let cosine = cos_theta[lane];
-                let factor = Complex64::new(
-                    odd.re.mul_add(cosine, even.re),
-                    odd.im.mul_add(cosine, even.im),
-                );
-                if !factor.re.is_finite() || !factor.im.is_finite() {
-                    return None;
-                }
                 let current_value = current[lane];
-                if !scalar_value_in_normal_range(current_value)
-                    || !scalar_value_in_normal_range(factor.re)
-                    || !scalar_value_in_normal_range(factor.im)
-                {
+                if !scalar_value_in_normal_range(current_value) {
                     return None;
                 }
                 if sum_exponents[lane] != exponents[lane]
@@ -618,17 +630,68 @@ impl WithSimd for StagedScalarSynthesis<'_> {
                 {
                     return None;
                 }
-                // The bounds above keep these products in the normal f64
-                // range. Unsafe lanes return to the scaled visitor.
-                let product_re = factor.re * current_value;
-                let product_im = factor.im * current_value;
-                let next_re = sum_re[lane] + product_re;
-                let next_im = sum_im[lane] + product_im;
+            }
+
+            // The scalar prefix still tracks and rebases each lane's scale.
+            // Factor formation and accumulation then run over contiguous
+            // ordinary lanes with SIMD; unsafe values decline the tile before
+            // it is scattered, so the scaled visitor can recompute it.
+            let (cos_vectors, cos_tail) = S::as_simd_f64s(cos_theta);
+            let (current_vectors, current_tail) = S::as_simd_f64s(current);
+            let (sum_re_vectors, sum_re_tail) = S::as_mut_simd_f64s(sum_re);
+            let (sum_im_vectors, sum_im_tail) = S::as_mut_simd_f64s(sum_im);
+            debug_assert_eq!(cos_vectors.len(), current_vectors.len());
+            debug_assert_eq!(cos_tail.len(), current_tail.len());
+            debug_assert_eq!(cos_vectors.len(), sum_re_vectors.len());
+            debug_assert_eq!(cos_vectors.len(), sum_im_vectors.len());
+            debug_assert_eq!(cos_tail.len(), sum_re_tail.len());
+            debug_assert_eq!(cos_tail.len(), sum_im_tail.len());
+
+            for vector_index in 0..cos_vectors.len() {
+                let cosine = cos_vectors[vector_index];
+                let current_value = current_vectors[vector_index];
+                let factor_re =
+                    simd.mul_add_f64s(simd.splat_f64s(odd.re), cosine, simd.splat_f64s(even.re));
+                let factor_im =
+                    simd.mul_add_f64s(simd.splat_f64s(odd.im), cosine, simd.splat_f64s(even.im));
+                if !simd_values_in_normal_range(simd, factor_re)
+                    || !simd_values_in_normal_range(simd, factor_im)
+                {
+                    return None;
+                }
+                let next_re = simd.add_f64s(
+                    simd.mul_f64s(factor_re, current_value),
+                    sum_re_vectors[vector_index],
+                );
+                let next_im = simd.add_f64s(
+                    simd.mul_f64s(factor_im, current_value),
+                    sum_im_vectors[vector_index],
+                );
+                if !simd_values_are_finite(simd, next_re) || !simd_values_are_finite(simd, next_im)
+                {
+                    return None;
+                }
+                sum_re_vectors[vector_index] = next_re;
+                sum_im_vectors[vector_index] = next_im;
+            }
+            for lane in 0..cos_tail.len() {
+                let cosine = cos_tail[lane];
+                let current_value = current_tail[lane];
+                let factor_re = odd.re.mul_add(cosine, even.re);
+                let factor_im = odd.im.mul_add(cosine, even.im);
+                if !scalar_value_in_normal_range(current_value)
+                    || !scalar_value_in_normal_range(factor_re)
+                    || !scalar_value_in_normal_range(factor_im)
+                {
+                    return None;
+                }
+                let next_re = sum_re_tail[lane] + factor_re * current_value;
+                let next_im = sum_im_tail[lane] + factor_im * current_value;
                 if !next_re.is_finite() || !next_im.is_finite() {
                     return None;
                 }
-                sum_re[lane] = next_re;
-                sum_im[lane] = next_im;
+                sum_re_tail[lane] = next_re;
+                sum_im_tail[lane] = next_im;
             }
             if normalize {
                 normal_range = normal_after;
