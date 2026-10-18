@@ -71,3 +71,19 @@ cell was not completed; two pairs are retained and a subsequent preflight
 CPU-pressure validity was assessed under the declared protocol; raw readings remain local.
 artifacts are under `matrix/`. Because one control cell is inconclusive and the remaining matrix was not
 run, these data do not establish the candidate's full performance gate.
+
+### Version split of the T511 q8 timing audit
+
+The selected 12 pairs contain 12 baseline and 12 candidate process traces. Using the audit's within-process CV definition (sample standard deviation
+normalized by that process median), baseline median/mean CV was
+37.42%/41.24%; candidate was 43.08%/49.41%. Across processes, the median of
+the first-three-call medians was 18.964 ms for baseline and 20.965 ms for
+candidate; the median of the final-two-call medians was 9.500 ms and 9.555 ms,
+respectively. Both versions therefore fell to nearly the same final-call
+range, while candidate traces had somewhat greater dispersion. Pair order was
+balanced: six baseline-then-candidate and six candidate-then-baseline pairs,
+so each version ran first six times and second six times. This shows the early
+decline in both versions but does not identify its cause or change the
+inconclusive gate. All selected raw samples remain preserved and none was
+discarded. The version-split calculation uses the process records in
+`matrix/spin0-t511-q8-audit-processes.csv` and their selected raw outputs.
