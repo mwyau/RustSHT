@@ -1247,3 +1247,9 @@ is documented and will be checked in the next matrix. The result authorizes
 only the six-pair T2047 q1 matrix; the candidate remains isolated and
 unaccepted. See the
 [screen result](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-range-precheck-t2047-q1-screen-v1.md).
+The six-pair follow-up has its own
+[frozen protocol](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-range-precheck-t2047-q1-matrix-v1-protocol.md).
+It excludes the screen pair and stops at the first invalid process. The
+candidate also has one unresolved Clippy warning; production acceptance
+remains gated on resolving it and completing the scalar and regression
+controls.
