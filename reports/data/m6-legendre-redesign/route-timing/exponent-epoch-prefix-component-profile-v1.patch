@@ -1,0 +1,102 @@
+--- a/src/legendre/synthesis_fast.rs
++++ b/src/legendre/synthesis_fast.rs
+@@ -36,0 +37,9 @@
++    sampled_prefix_pairs: u64,
++    sampled_prefix_lane_visits: u64,
++    sampled_exponent_changes: u64,
++    sampled_accumulation_ns: u128,
++    sampled_recurrence_ns: u128,
++    sampled_normalization_ns: u128,
++    sampled_rebase_ns: u128,
++    sampled_transition_test_ns: u128,
++    sampled_materialize_ns: u128,
+@@ -666,0 +676,2 @@
++            #[cfg(test)]
++            let profile_sample = (pair + (m & 63)) & 63 == 0;
+@@ -668,0 +680,2 @@
++            #[cfg(test)]
++            let accumulation_started = profile_sample.then(Instant::now);
+@@ -694,0 +708,8 @@
++            #[cfg(test)]
++            if let Some(started) = accumulation_started {
++                update_route_counts(|counts| {
++                    counts.sampled_prefix_pairs += 1;
++                    counts.sampled_prefix_lane_visits += current.len() as u64;
++                    counts.sampled_accumulation_ns += started.elapsed().as_nanos();
++                });
++            }
+@@ -698,0 +720,2 @@
++            #[cfg(test)]
++            let recurrence_started = profile_sample.then(Instant::now);
+@@ -708,0 +732,6 @@
++            #[cfg(test)]
++            if let Some(started) = recurrence_started {
++                update_route_counts(|counts| {
++                    counts.sampled_recurrence_ns += started.elapsed().as_nanos();
++                });
++            }
+@@ -710,0 +740,2 @@
++            #[cfg(test)]
++            let normalization_started = profile_sample.then(Instant::now);
+@@ -724,0 +756,18 @@
++            #[cfg(test)]
++            if let Some(started) = normalization_started {
++                update_route_counts(|counts| {
++                    counts.sampled_normalization_ns += started.elapsed().as_nanos();
++                });
++            }
++            #[cfg(test)]
++            let changed_exponents = if profile_sample {
++                exponents
++                    .iter()
++                    .zip(prefix_exponents.iter())
++                    .filter(|(exponent, prefix_exponent)| exponent != prefix_exponent)
++                    .count() as u64
++            } else {
++                0
++            };
++            #[cfg(test)]
++            let rebase_started = profile_sample.then(Instant::now);
+@@ -734,0 +784,9 @@
++            #[cfg(test)]
++            if let Some(started) = rebase_started {
++                update_route_counts(|counts| {
++                    counts.sampled_rebase_ns += started.elapsed().as_nanos();
++                    counts.sampled_exponent_changes += changed_exponents;
++                });
++            }
++            #[cfg(test)]
++            let transition_test_started = profile_sample.then(Instant::now);
+@@ -738,0 +797,8 @@
++                #[cfg(test)]
++                if let Some(started) = transition_test_started {
++                    update_route_counts(|counts| {
++                        counts.sampled_transition_test_ns += started.elapsed().as_nanos();
++                    });
++                }
++                #[cfg(test)]
++                let materialize_started = profile_sample.then(Instant::now);
+@@ -747,0 +814,6 @@
++                }
++                #[cfg(test)]
++                if let Some(started) = materialize_started {
++                    update_route_counts(|counts| {
++                        counts.sampled_materialize_ns += started.elapsed().as_nanos();
++                    });
+@@ -764,0 +837,6 @@
++            }
++            #[cfg(test)]
++            if let Some(started) = transition_test_started {
++                update_route_counts(|counts| {
++                    counts.sampled_transition_test_ns += started.elapsed().as_nanos();
++                });
+@@ -1470,0 +1549,9 @@
++            total.sampled_prefix_pairs += counts.sampled_prefix_pairs;
++            total.sampled_prefix_lane_visits += counts.sampled_prefix_lane_visits;
++            total.sampled_exponent_changes += counts.sampled_exponent_changes;
++            total.sampled_accumulation_ns += counts.sampled_accumulation_ns;
++            total.sampled_recurrence_ns += counts.sampled_recurrence_ns;
++            total.sampled_normalization_ns += counts.sampled_normalization_ns;
++            total.sampled_rebase_ns += counts.sampled_rebase_ns;
++            total.sampled_transition_test_ns += counts.sampled_transition_test_ns;
++            total.sampled_materialize_ns += counts.sampled_materialize_ns;
