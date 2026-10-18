@@ -1633,6 +1633,61 @@ fn scalar_ducc_parallel_orders_match_serial_and_ring_group_synthesis() {
     );
 }
 
+#[cfg(feature = "parallel")]
+#[test]
+fn scalar_ducc_parallel_orders_use_active_work_prefix_above_t511() {
+    let plan = make_plan(511, 128, 512, 257, 0.23);
+    assert!(plan.scalar_legendre_table.set(None).is_ok());
+    let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    for m in 0..=plan.harmonics().mmax() {
+        for l in m..=plan.harmonics().lmax() {
+            let re = ((l * 3 + m * 7) % 29) as f64 - 14.0;
+            let im = if m == 0 {
+                0.0
+            } else {
+                ((l * 11 + m * 13) % 31) as f64 - 15.0
+            };
+            alm[plan.harmonics().index(l, m).unwrap()] = Complex64::new(re * 1e-7, im * 1e-7);
+        }
+    }
+
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let mut serial_workspace = one_thread.install(|| plan.workspace()).unwrap();
+    one_thread
+        .install(|| plan.prepare_workspace(&mut serial_workspace, 1))
+        .unwrap();
+    let mut parallel_workspace = eight_threads.install(|| plan.workspace()).unwrap();
+    eight_threads
+        .install(|| plan.prepare_workspace(&mut parallel_workspace, 8))
+        .unwrap();
+    let worker_probe = parallel_workspace.observe_active_workers();
+    let mut serial_map = vec![0.0; plan.sample_count];
+    let mut parallel_map = vec![0.0; plan.sample_count];
+
+    one_thread
+        .install(|| plan.synthesis_into(&alm, &mut serial_map, &mut serial_workspace))
+        .unwrap();
+    eight_threads
+        .install(|| plan.synthesis_into(&alm, &mut parallel_map, &mut parallel_workspace))
+        .unwrap();
+
+    assert!(worker_probe.lock().unwrap().len() > 1);
+    assert!(relative_l2_real(&parallel_map, &serial_map) < 8e-13);
+    let reference_spectra = scalar_ring_group_spectra(&plan, &alm);
+    let reference_error = relative_l2_complex(&parallel_workspace.spectra, &reference_spectra);
+    assert!(
+        reference_error < 8e-13,
+        "reference error={reference_error:.3e}"
+    );
+}
+
 #[test]
 fn precomputed_scalar_gl_matches_recurrence_for_all_four_operators() {
     for (lmax, mmax, ntheta, nphi) in [

@@ -722,14 +722,15 @@ fn iter_to_ieee<'a, S: Simd>(
     current: &mut &'a mut [f64],
     scale: &mut [i64],
 ) -> Option<(usize, usize, bool)> {
+    let mut below_limit = true;
     for lane in 0..active_count {
         if current[lane].abs() > FTOL {
             previous[lane] *= SCALE_DOWN;
             current[lane] *= SCALE_DOWN;
             scale[lane] = scale[lane].checked_add(1)?;
         }
+        below_limit &= scale[lane] < 1;
     }
-    let mut below_limit = scale[..active_count].iter().all(|&value| value < 1);
     let mut degree = m;
     let mut pair = 0;
     while below_limit {
@@ -751,17 +752,13 @@ fn iter_to_ieee<'a, S: Simd>(
         );
         degree += 4;
         pair += 2;
-        let mut rescaled = false;
         for lane in 0..active_count {
             if current[lane].abs() > FTOL {
                 previous[lane] *= SCALE_DOWN;
                 current[lane] *= SCALE_DOWN;
                 scale[lane] = scale[lane].checked_add(1)?;
-                rescaled = true;
+                below_limit &= scale[lane] < 1;
             }
-        }
-        if rescaled {
-            below_limit = scale[..active_count].iter().all(|&value| value < 1);
         }
     }
     Some((degree, pair, false))
