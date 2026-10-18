@@ -2499,6 +2499,75 @@ This is a local directional screen, not a DUCC comparison or performance
 acceptance. The [performance summary](../PERFORMANCE_STATUS.md) records the
 workload medians, RSS, and limitations.
 
+### Scalar synthesis coefficient reuse (M4, 2026-10-18)
+
+At exact full-band GL T1023, f64 scalar synthesis with at least eight executing
+threads prepares the transformed paired coefficients once per transform in
+the existing `spin_spectra` workspace buffer. Ring-group workers read those
+rows while retaining ring ownership and private recurrence scratch. The cache
+uses at most 17 MiB, adds no workspace allocation, and falls back to per-group
+preparation if factor or coefficient preparation fails. Other shapes use
+per-group preparation.
+
+A preliminary three-pair release screen against `cda5de38` used
+`examples/m1b_bench 0 1023 8 synthesis GL STANDARD 1024 2049 1023
+requested-only`, f64, `phi0=0.37`, one warm-up, and five timed synthesis calls
+per process. Each process reused its plan and workspace. The host was an AMD
+Ryzen 9 5950X (x86_64, 16 cores/32 threads, AVX2/FMA); software was Rust
+1.99.0, Pulp 0.22.3, Rayon 1.12.0, and RustFFT 6.4.1. The initial process
+medians were `70.954, 70.258, 76.396 ms` before the cache and `64.214, 64.931,
+63.970 ms` with it. All three pairs favored the cache by 7.6–16.3%. These
+measurements used the first cache dispatcher, before the noncached route was
+const-specialized.
+
+| Preliminary pair | Baseline samples (ms) | Cache samples (ms) |
+|---|---|---|
+| 1 | `70.819, 70.554, 71.445, 71.069, 70.954` | `64.257, 64.214, 64.213, 64.407, 63.717` |
+| 2 | `71.053, 70.072, 70.258, 70.227, 70.924` | `71.619, 64.613, 69.167, 64.716, 64.931` |
+| 3 | `76.396, 76.965, 82.228, 70.869, 69.889` | `66.152, 63.104, 63.260, 64.020, 63.970` |
+
+A five-pair release repeat on the final const-specialized dispatcher used the
+same command and baseline. Process medians were `72.203, 70.254, 74.858,
+69.954, 71.059 ms` before the cache and `74.506, 64.078, 68.793, 65.010,
+64.197 ms` with it. Four pairs favored the cache by 7.1–9.7%; one pair was
+3.2% slower with overlapping sample ranges. The median process times were
+`71.059/65.010 ms` (baseline/cache), an 8.5% reduction; the median paired
+change was −8.1%. The first-call medians were `76.234/71.388 ms`. A peak-RSS
+sample from the first pair was `121804/120920 KiB` (baseline/cache). The cache
+uses the already allocated workspace buffer and added no workspace allocation.
+
+| Final-code pair | Baseline samples (ms) | Cache samples (ms) |
+|---|---|---|
+| 1 | `74.358, 76.588, 71.462, 71.363, 72.203` | `74.506, 74.979, 74.626, 74.389, 72.527` |
+| 2 | `71.253, 70.567, 70.254, 70.125, 69.943` | `65.091, 64.078, 63.842, 63.774, 65.369` |
+| 3 | `79.769, 74.858, 70.579, 77.704, 69.844` | `70.631, 68.793, 63.605, 68.844, 64.939` |
+| 4 | `70.024, 70.392, 69.868, 69.848, 69.954` | `63.680, 65.010, 64.217, 65.679, 66.626` |
+| 5 | `71.668, 71.413, 70.704, 70.526, 71.059` | `64.441, 63.855, 63.283, 64.197, 73.650` |
+
+At T511, one q8 process per source measured `9.066/9.082 ms` (baseline/cache).
+At T720, two process medians per source gave median-of-medians
+`29.977/29.824 ms`, and the timed sample ranges overlapped. These screens did
+not show repeatable gains, so dispatch is limited to exact full-band T1023.
+No host-pressure protocol ran; the gate was not evaluated and interference is
+unknown. The measurements do not compare RustSHT with DUCC.
+
+The cache consumer matches uncached T1023 ring-group spectra to relative L2
+error below `2e-15`. The release scalar T511/T1023/T2047 DUCC 0.41.0 and
+closed-form check passes with all features and with default features disabled;
+its T1023 GL middle-row maximum absolute error is `1.288e-14`, analytic map
+maximum absolute error is `4.128e-12`, and analysis coefficient maximum
+absolute error is `1.199e-14`. The source revision is
+`c1ed01b8fda69d2a378190f0915f1a19762dddbf`.
+
+Final checks passed: `cargo fmt --all -- --check`; workspace all-target,
+all-feature Clippy with warnings denied; `cargo test --workspace
+--all-features` (205 unit, 4 extreme-FFT, 11 f32, and 1
+workspace-compatibility tests passed; 14 unit and 1 f32 test ignored); and
+`cargo test -p rustsht --no-default-features` (165 unit, 4 extreme-FFT, 11
+f32, and 1 workspace-compatibility tests passed; 7 unit and 1 f32 test
+ignored). Python tests were not run because the change modifies only the Rust
+core.
+
 ## Benchmark artifact hygiene
 
 Keep raw host and process captures, build/test logs, GNU-time output, and local

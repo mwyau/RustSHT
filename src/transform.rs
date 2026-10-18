@@ -18,6 +18,25 @@ use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 const SCALAR_TRANSITION_MIN_LMAX: usize = 1023;
 const FUSED_SCALAR_ANALYSIS_MIN_LMAX: usize = 255;
+#[cfg(feature = "parallel")]
+const SCALAR_SYNTHESIS_COEFFICIENT_CACHE_LMAX: usize = 1023;
+#[cfg(feature = "parallel")]
+const SCALAR_SYNTHESIS_COEFFICIENT_CACHE_MAX_BYTES: usize = 17 * 1024 * 1024;
+
+#[cfg(feature = "parallel")]
+#[derive(Clone, Copy)]
+struct ScalarSynthesisCoefficientCacheLayout {
+    coefficient_count: usize,
+    row_stride: usize,
+    half_stride: usize,
+}
+
+#[derive(Clone, Copy)]
+struct ScalarSynthesisCoefficientCache<'a, T> {
+    values: &'a [Complex<T>],
+    row_stride: usize,
+    half_stride: usize,
+}
 
 #[cfg(feature = "parallel")]
 pub(crate) fn weighted_order_midpoint(lmax: usize, m_start: usize, m_end: usize) -> usize {
@@ -574,6 +593,19 @@ impl<T: ShtScalar> ShtPlan<T> {
             let parallel_groups = ntheta.div_ceil(group_ring_count);
             let use_parallel = execution_threads > 1 && parallel_groups > 1;
             if use_parallel {
+                let cached_scalar_coefficients = self
+                    .prepare_scalar_synthesis_coefficient_cache(
+                        alm,
+                        &mut workspace.spin_spectra,
+                        &mut workspace.recurrence_workers[..parallel_groups],
+                        execution_threads,
+                        parallel_groups,
+                    )
+                    .map(|layout| ScalarSynthesisCoefficientCache {
+                        values: &workspace.spin_spectra[..layout.coefficient_count],
+                        row_stride: layout.row_stride,
+                        half_stride: layout.half_stride,
+                    });
                 let spectrum_group_len = group_ring_count.checked_mul(spectrum_len).ok_or(
                     ShtError::IntegerOverflow {
                         quantity: "parallel Fourier spectrum group size",
@@ -590,7 +622,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         let ring_start = group_index * group_ring_count;
                         let ring_end =
                             (ring_start + group_spectra.len() / spectrum_len).min(ntheta);
-                        self.synthesize_ring_group(
+                        self.synthesize_ring_group_with_scalar_coefficients(
                             alm,
                             nphi,
                             spectrum_len,
@@ -602,6 +634,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             &workspace.ring_order_limits,
                             arch,
                             recurrence,
+                            cached_scalar_coefficients,
                         )
                     })
                     .try_for_each(|result| result)?;
@@ -663,6 +696,100 @@ impl<T: ShtScalar> ShtPlan<T> {
             phase_started,
         );
         Ok(())
+    }
+
+    #[cfg(feature = "parallel")]
+    fn prepare_scalar_synthesis_coefficient_cache(
+        &self,
+        alm: &[Complex<T>],
+        cache: &mut [Complex<T>],
+        recurrence_workers: &mut [RecurrenceWorkspace<T>],
+        execution_threads: usize,
+        parallel_groups: usize,
+    ) -> Option<ScalarSynthesisCoefficientCacheLayout> {
+        let lmax = self.harmonics.lmax();
+        let order_count = self.harmonics.mmax().checked_add(1)?;
+        // Matched q8 screens found a repeatable warm gain only at exact GL T1023.
+        if self.harmonics.spin() != 0
+            || self.grid.kind() != GridKind::GaussLegendre
+            || lmax != SCALAR_SYNTHESIS_COEFFICIENT_CACHE_LMAX
+            || self.harmonics.mmax() != lmax
+            || self.grid.ntheta() != lmax + 1
+            || execution_threads < 8
+            || parallel_groups < 2
+            || !T::supports_paired_scalar()
+        {
+            return None;
+        }
+
+        let half_stride = lmax.checked_add(2)?.checked_div(2)?;
+        let row_stride = half_stride.checked_mul(2)?;
+        let coefficient_count = row_stride.checked_mul(order_count)?;
+        let byte_count = coefficient_count.checked_mul(std::mem::size_of::<Complex<T>>())?;
+        if byte_count > SCALAR_SYNTHESIS_COEFFICIENT_CACHE_MAX_BYTES
+            || coefficient_count > cache.len()
+            || recurrence_workers.len() < parallel_groups
+        {
+            return None;
+        }
+
+        let worker_count = execution_threads
+            .min(order_count)
+            .min(recurrence_workers.len())
+            .max(1);
+        let orders_per_chunk = order_count.div_ceil(worker_count);
+        let chunk_len = orders_per_chunk.checked_mul(row_stride)?;
+        let chunk_count = order_count.div_ceil(orders_per_chunk);
+        let prepared = cache[..coefficient_count]
+            .par_chunks_mut(chunk_len)
+            .zip(recurrence_workers[..chunk_count].par_iter_mut())
+            .enumerate()
+            .all(|(chunk_index, (coefficient_chunk, recurrence))| {
+                for (local_order, order_coefficients) in
+                    coefficient_chunk.chunks_mut(row_stride).enumerate()
+                {
+                    let m = chunk_index * orders_per_chunk + local_order;
+                    if m >= order_count {
+                        break;
+                    }
+                    let pair_count = (lmax - m + 2) / 2;
+                    T::fill_epsilon(m, lmax, &mut recurrence.epsilon);
+                    if !T::fill_paired_scalar_factors(
+                        m,
+                        lmax,
+                        &recurrence.epsilon,
+                        &mut recurrence.spin_alpha,
+                        &mut recurrence.spin_coefficient_a,
+                        &mut recurrence.spin_coefficient_b,
+                    ) {
+                        return false;
+                    }
+                    let coefficient_start = self
+                        .harmonics
+                        .index(m, m)
+                        .expect("every packed order starts at its diagonal degree");
+                    let coefficient_len = lmax - m + 1;
+                    let (coefficient_even, coefficient_odd) =
+                        order_coefficients.split_at_mut(half_stride);
+                    if !T::prepare_paired_scalar_synthesis_coefficients(
+                        m,
+                        lmax,
+                        &recurrence.epsilon,
+                        &recurrence.spin_alpha,
+                        &alm[coefficient_start..coefficient_start + coefficient_len],
+                        &mut coefficient_even[..pair_count],
+                        &mut coefficient_odd[..pair_count],
+                    ) {
+                        return false;
+                    }
+                }
+                true
+            });
+        prepared.then_some(ScalarSynthesisCoefficientCacheLayout {
+            coefficient_count,
+            row_stride,
+            half_stride,
+        })
     }
 
     fn synthesize_scalar_table(
@@ -775,6 +902,93 @@ impl<T: ShtScalar> ShtPlan<T> {
         arch: pulp::Arch,
         recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<(), ShtError> {
+        self.synthesize_ring_group_impl::<false>(
+            alm,
+            nphi,
+            spectrum_len,
+            phi0,
+            group_ring_start,
+            spectra,
+            theta_sin,
+            theta_cos,
+            ring_order_limits,
+            arch,
+            recurrence,
+            None,
+        )
+    }
+
+    #[cfg(feature = "parallel")]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The cached synthesis group receives plan geometry, optional shared coefficients, and worker scratch."
+    )]
+    fn synthesize_ring_group_with_scalar_coefficients(
+        &self,
+        alm: &[Complex<T>],
+        nphi: usize,
+        spectrum_len: usize,
+        phi0: f64,
+        group_ring_start: usize,
+        spectra: &mut [Complex<T>],
+        theta_sin: &[T],
+        theta_cos: &[T],
+        ring_order_limits: &[usize],
+        arch: pulp::Arch,
+        recurrence: &mut RecurrenceWorkspace<T>,
+        scalar_coefficients: Option<ScalarSynthesisCoefficientCache<'_, T>>,
+    ) -> Result<(), ShtError> {
+        if let Some(scalar_coefficients) = scalar_coefficients {
+            self.synthesize_ring_group_impl::<true>(
+                alm,
+                nphi,
+                spectrum_len,
+                phi0,
+                group_ring_start,
+                spectra,
+                theta_sin,
+                theta_cos,
+                ring_order_limits,
+                arch,
+                recurrence,
+                Some(scalar_coefficients),
+            )
+        } else {
+            self.synthesize_ring_group(
+                alm,
+                nphi,
+                spectrum_len,
+                phi0,
+                group_ring_start,
+                spectra,
+                theta_sin,
+                theta_cos,
+                ring_order_limits,
+                arch,
+                recurrence,
+            )
+        }
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The synthesis group receives plan geometry, optional shared coefficients, and worker scratch."
+    )]
+    fn synthesize_ring_group_impl<const USE_SCALAR_COEFFICIENT_CACHE: bool>(
+        &self,
+        alm: &[Complex<T>],
+        nphi: usize,
+        spectrum_len: usize,
+        phi0: f64,
+        group_ring_start: usize,
+        spectra: &mut [Complex<T>],
+        theta_sin: &[T],
+        theta_cos: &[T],
+        ring_order_limits: &[usize],
+        arch: pulp::Arch,
+        recurrence: &mut RecurrenceWorkspace<T>,
+        scalar_coefficients: Option<ScalarSynthesisCoefficientCache<'_, T>>,
+    ) -> Result<(), ShtError> {
         #[cfg(all(test, feature = "parallel"))]
         recurrence.record_active_worker();
         let lmax = self.harmonics.lmax();
@@ -804,18 +1018,47 @@ impl<T: ShtScalar> ShtPlan<T> {
             // coefficient transform even when the final scaled contribution
             // is representable. Keep those orders on the unpaired scaled path.
             let coefficient_pair_count = (lmax - m + 2) / 2;
+            let cached_pair = if USE_SCALAR_COEFFICIENT_CACHE {
+                scalar_coefficients.map(|cache| {
+                    let row_start = m * cache.row_stride;
+                    let row = &cache.values[row_start..row_start + cache.row_stride];
+                    (
+                        &row[..coefficient_pair_count],
+                        &row[cache.half_stride..cache.half_stride + coefficient_pair_count],
+                    )
+                })
+            } else {
+                None
+            };
             let coefficients_prepared = paired_factors_ready
-                && recurrence.fast_spin_first.len() >= coefficient_pair_count
-                && recurrence.fast_spin_second.len() >= coefficient_pair_count
-                && T::prepare_paired_scalar_synthesis_coefficients(
-                    m,
-                    lmax,
-                    &recurrence.epsilon,
-                    &recurrence.spin_alpha,
-                    &alm[coefficient_start..],
-                    &mut recurrence.fast_spin_first[..coefficient_pair_count],
-                    &mut recurrence.fast_spin_second[..coefficient_pair_count],
-                );
+                && if cached_pair.is_some() {
+                    true
+                } else {
+                    recurrence.fast_spin_first.len() >= coefficient_pair_count
+                        && recurrence.fast_spin_second.len() >= coefficient_pair_count
+                        && T::prepare_paired_scalar_synthesis_coefficients(
+                            m,
+                            lmax,
+                            &recurrence.epsilon,
+                            &recurrence.spin_alpha,
+                            &alm[coefficient_start..],
+                            &mut recurrence.fast_spin_first[..coefficient_pair_count],
+                            &mut recurrence.fast_spin_second[..coefficient_pair_count],
+                        )
+                };
+            let (fast_first, fast_second) = match cached_pair {
+                Some((first, second)) => (first, second),
+                None => (
+                    recurrence
+                        .fast_spin_first
+                        .get(..coefficient_pair_count)
+                        .unwrap_or(&[]),
+                    recurrence
+                        .fast_spin_second
+                        .get(..coefficient_pair_count)
+                        .unwrap_or(&[]),
+                ),
+            };
             let phase = if m == 0 {
                 Complex::new(T::one(), T::zero())
             } else {
@@ -849,8 +1092,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                     self.sectoral_norms[m],
                     &recurrence.spin_coefficient_a,
                     &recurrence.spin_coefficient_b,
-                    &recurrence.fast_spin_first[..coefficient_pair_count],
-                    &recurrence.fast_spin_second[..coefficient_pair_count],
+                    fast_first,
+                    fast_second,
                     &ring_order_limits[ring_limit_start..ring_limit_end],
                     spectrum_len,
                     &mut scratch,
@@ -879,8 +1122,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                             self.sectoral_norms[m],
                             &recurrence.spin_coefficient_a,
                             &recurrence.spin_coefficient_b,
-                            &recurrence.fast_spin_first[..coefficient_pair_count],
-                            &recurrence.fast_spin_second[..coefficient_pair_count],
+                            fast_first,
+                            fast_second,
                             ring_limits,
                             spectrum_len,
                             &mut spectra[spectrum_start..spectrum_end],
