@@ -89,293 +89,6 @@ pub(crate) fn weighted_order_midpoint(lmax: usize, m_start: usize, m_end: usize)
     best_mid
 }
 
-#[cfg(feature = "parallel")]
-pub(crate) fn weighted_order_midpoint_for_capacity(
-    lmax: usize,
-    m_start: usize,
-    m_end: usize,
-    left_capacity: usize,
-    right_capacity: usize,
-) -> Result<usize, ShtError> {
-    debug_assert!(m_start < m_end);
-    debug_assert!(m_end - 1 <= lmax);
-    debug_assert!(m_end - m_start > 1);
-    debug_assert!(left_capacity > 0 && right_capacity > 0);
-
-    if left_capacity == right_capacity {
-        return Ok(weighted_order_midpoint(lmax, m_start, m_end));
-    }
-
-    let total_work = (m_start..m_end).try_fold(0_u128, |total, m| {
-        total
-            .checked_add((lmax as u128) - (m as u128) + 1)
-            .ok_or(ShtError::IntegerOverflow {
-                quantity: "analysis order work",
-            })
-    })?;
-    let target_left_work = capacity_target_left_work(total_work, left_capacity, right_capacity)?;
-    let mut left_work = 0_u128;
-    let mut best_mid = m_start + 1;
-    let mut best_difference = (u128::MAX, u128::MAX);
-    for m in m_start..(m_end - 1) {
-        left_work = left_work
-            .checked_add((lmax as u128) - (m as u128) + 1)
-            .ok_or(ShtError::IntegerOverflow {
-                quantity: "analysis order work",
-            })?;
-        let difference = capacity_work_distance(left_work, target_left_work);
-        if difference < best_difference {
-            best_difference = difference;
-            best_mid = m + 1;
-        }
-    }
-    Ok(best_mid)
-}
-
-#[cfg(feature = "parallel")]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct CapacityWorkTarget {
-    whole: u128,
-    fractional_numerator: u128,
-    denominator: u128,
-}
-
-#[cfg(feature = "parallel")]
-fn capacity_target_left_work(
-    total_work: u128,
-    left_capacity: usize,
-    right_capacity: usize,
-) -> Result<CapacityWorkTarget, ShtError> {
-    debug_assert!(left_capacity > 0 && right_capacity > 0);
-    let left_capacity = left_capacity as u128;
-    let capacity_sum =
-        left_capacity
-            .checked_add(right_capacity as u128)
-            .ok_or(ShtError::IntegerOverflow {
-                quantity: "analysis order work capacity sum",
-            })?;
-    let whole_share = (total_work / capacity_sum)
-        .checked_mul(left_capacity)
-        .ok_or(ShtError::IntegerOverflow {
-            quantity: "analysis order work capacity target",
-        })?;
-    let fractional_product = (total_work % capacity_sum)
-        .checked_mul(left_capacity)
-        .ok_or(ShtError::IntegerOverflow {
-            quantity: "analysis order work capacity target",
-        })?;
-    let fractional_share = fractional_product / capacity_sum;
-    let whole = whole_share
-        .checked_add(fractional_share)
-        .ok_or(ShtError::IntegerOverflow {
-            quantity: "analysis order work capacity target",
-        })?;
-    Ok(CapacityWorkTarget {
-        whole,
-        fractional_numerator: fractional_product % capacity_sum,
-        denominator: capacity_sum,
-    })
-}
-
-#[cfg(feature = "parallel")]
-fn capacity_work_distance(work: u128, target: CapacityWorkTarget) -> (u128, u128) {
-    if work <= target.whole {
-        (target.whole - work, target.fractional_numerator)
-    } else if target.fractional_numerator == 0 {
-        (work - target.whole, 0)
-    } else {
-        (
-            work - target.whole - 1,
-            target.denominator - target.fractional_numerator,
-        )
-    }
-}
-
-#[cfg(all(feature = "parallel", test))]
-pub(crate) fn active_ring_weighted_order_midpoint(
-    lmax: usize,
-    m_start: usize,
-    m_end: usize,
-    ring_order_limits: &[usize],
-) -> usize {
-    debug_assert!(m_start < m_end);
-    debug_assert!(m_end - 1 <= lmax);
-    debug_assert!(m_end - m_start > 1);
-
-    let order_work = |m: usize| {
-        let active_lanes = ring_order_limits
-            .iter()
-            .filter(|&&limit| m <= limit)
-            .count() as u128;
-        (lmax - m + 1) as u128 * active_lanes
-    };
-    let total_work = (m_start..m_end).map(order_work).sum::<u128>();
-    if total_work == 0 {
-        return weighted_order_midpoint(lmax, m_start, m_end);
-    }
-
-    let mut left_work = 0_u128;
-    let mut best_mid = m_start + 1;
-    let mut best_difference = u128::MAX;
-    for m in m_start..(m_end - 1) {
-        left_work += order_work(m);
-        let right_work = total_work - left_work;
-        let difference = left_work.abs_diff(right_work);
-        if difference < best_difference {
-            best_difference = difference;
-            best_mid = m + 1;
-        }
-    }
-    best_mid
-}
-
-#[cfg(feature = "parallel")]
-pub(crate) fn build_active_ring_order_work_prefix(
-    lmax: usize,
-    mmax: usize,
-    ring_order_limits: &[usize],
-    prefix: &mut [u128],
-) -> Result<(), ShtError> {
-    if mmax > lmax {
-        return Err(ShtError::InvalidHarmonicBounds { lmax, mmax });
-    }
-    let order_count = mmax.checked_add(1).ok_or(ShtError::IntegerOverflow {
-        quantity: "analysis order work prefix length",
-    })?;
-    let prefix_len = order_count
-        .checked_add(1)
-        .ok_or(ShtError::IntegerOverflow {
-            quantity: "analysis order work prefix length",
-        })?;
-    if prefix.len() != prefix_len {
-        return Err(ShtError::BufferLength {
-            buffer: "analysis order work prefix",
-            expected: prefix_len,
-            actual: prefix.len(),
-        });
-    }
-
-    prefix.fill(0);
-    for &limit in ring_order_limits {
-        let bucket = limit.min(mmax);
-        prefix[bucket] = prefix[bucket]
-            .checked_add(1)
-            .ok_or(ShtError::IntegerOverflow {
-                quantity: "analysis order work prefix",
-            })?;
-    }
-
-    let mut active_rings = 0_u128;
-    for m in (0..order_count).rev() {
-        active_rings = active_rings
-            .checked_add(prefix[m])
-            .ok_or(ShtError::IntegerOverflow {
-                quantity: "analysis order work prefix",
-            })?;
-        let degree_count = (lmax as u128)
-            .checked_sub(m as u128)
-            .and_then(|count| count.checked_add(1))
-            .ok_or(ShtError::IntegerOverflow {
-                quantity: "analysis order work prefix",
-            })?;
-        prefix[m] = degree_count
-            .checked_mul(active_rings)
-            .ok_or(ShtError::IntegerOverflow {
-                quantity: "analysis order work prefix",
-            })?;
-    }
-
-    let mut total_work = 0_u128;
-    for order_work in prefix.iter_mut().take(order_count) {
-        let work = *order_work;
-        *order_work = total_work;
-        total_work = total_work
-            .checked_add(work)
-            .ok_or(ShtError::IntegerOverflow {
-                quantity: "analysis order work prefix",
-            })?;
-    }
-    prefix[order_count] = total_work;
-    Ok(())
-}
-
-#[cfg(feature = "parallel")]
-pub(crate) fn active_ring_weighted_order_midpoint_from_prefix(
-    lmax: usize,
-    m_start: usize,
-    m_end: usize,
-    prefix: &[u128],
-) -> usize {
-    debug_assert!(m_start < m_end);
-    debug_assert!(m_end - 1 <= lmax);
-    debug_assert!(m_end - m_start > 1);
-    debug_assert!(m_end < prefix.len());
-
-    let total_work = prefix[m_end] - prefix[m_start];
-    if total_work == 0 {
-        return weighted_order_midpoint(lmax, m_start, m_end);
-    }
-
-    let mut best_mid = m_start + 1;
-    let mut best_difference = u128::MAX;
-    for m_mid in (m_start + 1)..m_end {
-        let left_work = prefix[m_mid] - prefix[m_start];
-        let right_work = prefix[m_end] - prefix[m_mid];
-        let difference = left_work.abs_diff(right_work);
-        if difference < best_difference {
-            best_difference = difference;
-            best_mid = m_mid;
-        }
-    }
-    best_mid
-}
-
-#[cfg(feature = "parallel")]
-pub(crate) fn active_ring_weighted_order_midpoint_from_prefix_for_capacity(
-    lmax: usize,
-    m_start: usize,
-    m_end: usize,
-    prefix: &[u128],
-    left_capacity: usize,
-    right_capacity: usize,
-) -> Result<usize, ShtError> {
-    debug_assert!(m_start < m_end);
-    debug_assert!(m_end - 1 <= lmax);
-    debug_assert!(m_end - m_start > 1);
-    debug_assert!(m_end < prefix.len());
-    debug_assert!(left_capacity > 0 && right_capacity > 0);
-
-    if left_capacity == right_capacity {
-        return Ok(active_ring_weighted_order_midpoint_from_prefix(
-            lmax, m_start, m_end, prefix,
-        ));
-    }
-
-    let total_work = prefix[m_end] - prefix[m_start];
-    if total_work == 0 {
-        return weighted_order_midpoint_for_capacity(
-            lmax,
-            m_start,
-            m_end,
-            left_capacity,
-            right_capacity,
-        );
-    }
-
-    let target_left_work = capacity_target_left_work(total_work, left_capacity, right_capacity)?;
-    let mut best_mid = m_start + 1;
-    let mut best_difference = (u128::MAX, u128::MAX);
-    for m_mid in (m_start + 1)..m_end {
-        let left_work = prefix[m_mid] - prefix[m_start];
-        let difference = capacity_work_distance(left_work, target_left_work);
-        if difference < best_difference {
-            best_difference = difference;
-            best_mid = m_mid;
-        }
-    }
-    Ok(best_mid)
-}
-
 fn accumulate_precomputed_synthesis_order<T: ShtScalar>(
     plan: &ShtPlan<T>,
     table: &crate::legendre::ScalarLegendreTable<T>,
@@ -1982,39 +1695,13 @@ impl<T: ShtScalar> ShtPlan<T> {
                 .min(order_count);
             let use_parallel = rayon::current_num_threads() > 1 && worker_count > 1;
             if use_parallel {
-                #[cfg(all(test, feature = "parallel"))]
-                let prefix_started = std::time::Instant::now();
-                let order_work_prefix = if self.harmonics.lmax() >= 511 {
-                    let prefix = &mut workspace.order_work_prefix[..=order_count];
-                    build_active_ring_order_work_prefix(
-                        self.harmonics.lmax(),
-                        mmax,
-                        ring_order_limits,
-                        prefix,
-                    )?;
-                    Some(&prefix[..])
-                } else {
-                    None
-                };
-                #[cfg(all(test, feature = "parallel"))]
-                {
-                    crate::workspace::record_transform_phase(
-                        &phase_probe,
-                        "order work prefix",
-                        prefix_started,
-                    );
-                    phase_started = std::time::Instant::now();
-                }
-                self.analyze_order_groups_parallel(
+                self.analyze_order_jobs_dynamic(
                     order_spectra,
                     analysis_ntheta,
                     theta_sin,
                     theta_cos,
                     ring_order_limits,
-                    order_work_prefix,
                     arch,
-                    0,
-                    order_count,
                     alm,
                     &mut workspace.recurrence_workers[..worker_count],
                 )?;
@@ -2030,11 +1717,6 @@ impl<T: ShtScalar> ShtPlan<T> {
             } else {
                 #[cfg(all(test, feature = "parallel"))]
                 {
-                    crate::workspace::record_transform_phase(
-                        &phase_probe,
-                        "order work prefix",
-                        phase_started,
-                    );
                     phase_started = std::time::Instant::now();
                 }
                 self.analyze_order_group(
@@ -2205,23 +1887,21 @@ impl<T: ShtScalar> ShtPlan<T> {
     #[cfg(feature = "parallel")]
     #[expect(
         clippy::too_many_arguments,
-        reason = "The parallel analysis groups share plan geometry and split caller-owned outputs and scratch."
+        reason = "Dynamic analysis jobs share plan geometry and own disjoint coefficient slices."
     )]
-    fn analyze_order_groups_parallel(
+    fn analyze_order_jobs_dynamic(
         &self,
         spectra: &[Complex<T>],
         latitude_count: usize,
         theta_sin: &[T],
         theta_cos: &[T],
         ring_order_limits: &[usize],
-        order_work_prefix: Option<&[u128]>,
         arch: pulp::Arch,
-        m_start: usize,
-        m_end: usize,
         alm: &mut [Complex<T>],
         recurrence: &mut [RecurrenceWorkspace<T>],
     ) -> Result<(), ShtError> {
-        let order_count = m_end - m_start;
+        let lmax = self.harmonics.lmax();
+        let order_count = self.harmonics.mmax() + 1;
         if order_count <= 1 || recurrence.len() <= 1 {
             return self.analyze_order_group(
                 spectra,
@@ -2230,8 +1910,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                 theta_cos,
                 ring_order_limits,
                 arch,
-                m_start,
-                m_end,
+                0,
+                order_count,
                 alm,
                 recurrence
                     .first_mut()
@@ -2239,72 +1919,74 @@ impl<T: ShtScalar> ShtPlan<T> {
             );
         }
 
-        let left_worker_count = recurrence.len().div_ceil(2);
-        let right_worker_count = recurrence.len() - left_worker_count;
-        let m_mid = if self.harmonics.lmax() >= 511 {
-            active_ring_weighted_order_midpoint_from_prefix_for_capacity(
-                self.harmonics.lmax(),
-                m_start,
-                m_end,
-                order_work_prefix.expect("large parallel analyses build an order-work prefix"),
-                left_worker_count,
-                right_worker_count,
-            )?
-        } else {
-            weighted_order_midpoint_for_capacity(
-                self.harmonics.lmax(),
-                m_start,
-                m_end,
-                left_worker_count,
-                right_worker_count,
-            )?
-        };
-        let coefficient_start = self
-            .harmonics
-            .index(m_start, m_start)
-            .expect("every packed order starts at its diagonal degree");
-        let coefficient_mid = self
-            .harmonics
-            .index(m_mid, m_mid)
-            .expect("the end of an order group starts the next order");
-        let coefficient_split = coefficient_mid - coefficient_start;
-        let (left_alm, right_alm) = alm.split_at_mut(coefficient_split);
-        let (left_recurrence, right_recurrence) = recurrence.split_at_mut(left_worker_count);
+        let mut order_jobs = VecDeque::new();
+        if order_jobs.try_reserve_exact(order_count).is_err() {
+            return self.analyze_order_group(
+                spectra,
+                latitude_count,
+                theta_sin,
+                theta_cos,
+                ring_order_limits,
+                arch,
+                0,
+                order_count,
+                alm,
+                &mut recurrence[0],
+            );
+        }
+        let mut remaining = alm;
+        for m in 0..order_count {
+            let coefficient_count = lmax - m + 1;
+            let (coefficients, tail) = remaining.split_at_mut(coefficient_count);
+            order_jobs.push_back((m, coefficients));
+            remaining = tail;
+        }
+        debug_assert!(remaining.is_empty());
 
-        let (left_result, right_result) = rayon::join(
-            || {
-                self.analyze_order_groups_parallel(
+        let order_jobs = Mutex::new(order_jobs);
+        let failed = AtomicBool::new(false);
+        let failure = Mutex::new(None::<ShtError>);
+        recurrence.par_iter_mut().for_each(|worker| {
+            loop {
+                if failed.load(Ordering::Relaxed) {
+                    break;
+                }
+                let job = order_jobs
+                    .lock()
+                    .expect("scalar analysis order queue is not poisoned")
+                    .pop_front();
+                let Some((m, coefficients)) = job else {
+                    break;
+                };
+                if let Err(error) = self.analyze_order_group(
                     spectra,
                     latitude_count,
                     theta_sin,
                     theta_cos,
                     ring_order_limits,
-                    order_work_prefix,
                     arch,
-                    m_start,
-                    m_mid,
-                    left_alm,
-                    left_recurrence,
-                )
-            },
-            || {
-                self.analyze_order_groups_parallel(
-                    spectra,
-                    latitude_count,
-                    theta_sin,
-                    theta_cos,
-                    ring_order_limits,
-                    order_work_prefix,
-                    arch,
-                    m_mid,
-                    m_end,
-                    right_alm,
-                    right_recurrence,
-                )
-            },
-        );
-        left_result?;
-        right_result
+                    m,
+                    m + 1,
+                    coefficients,
+                    worker,
+                ) {
+                    failed.store(true, Ordering::Relaxed);
+                    let mut first_error = failure
+                        .lock()
+                        .expect("scalar analysis error slot is not poisoned");
+                    first_error.get_or_insert(error);
+                    break;
+                }
+            }
+        });
+
+        if failed.load(Ordering::Relaxed) {
+            return Err(failure
+                .into_inner()
+                .expect("scalar analysis error slot is not poisoned")
+                .expect("a failed analysis job records its error"));
+        }
+        Ok(())
     }
 
     #[expect(
@@ -2716,23 +2398,6 @@ impl<T: ShtScalar> ShtPlan<T> {
                 expected: 1,
                 actual: 0,
             });
-        }
-        #[cfg(feature = "parallel")]
-        {
-            let expected =
-                self.harmonics
-                    .mmax()
-                    .checked_add(2)
-                    .ok_or(ShtError::IntegerOverflow {
-                        quantity: "analysis order work prefix length",
-                    })?;
-            if workspace.order_work_prefix.len() < expected {
-                return Err(ShtError::BufferLength {
-                    buffer: "workspace analysis order work prefix",
-                    expected,
-                    actual: workspace.order_work_prefix.len(),
-                });
-            }
         }
         check_len(
             "workspace Fourier spectra",

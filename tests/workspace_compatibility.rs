@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#[cfg(feature = "parallel")]
-use rustsht::ShtError;
 use rustsht::{Complex64, GridKind, GridSpec, HarmonicSpec, ShtPlan};
 
 fn cross_order_workspace(spin: usize, capacity: usize) {
@@ -23,29 +21,17 @@ fn cross_order_workspace(spin: usize, capacity: usize) {
     } else {
         full.analysis_spin_into(&map, &map, &mut e, &mut b, &mut workspace)
     };
-    #[cfg(feature = "parallel")]
-    {
-        let expected_error = ShtError::BufferLength {
-            buffer: "workspace analysis order work prefix",
-            expected: lmax + 2,
-            actual: 2,
-        };
-        assert_eq!(preparation, Err(expected_error.clone()));
-        assert_eq!(analysis, Err(expected_error));
-        assert!(e.iter().chain(&b).all(|&value| value == sentinel));
-    }
-    #[cfg(not(feature = "parallel"))]
-    {
-        // Serial builds have no order-prefix allocation or parallel slice.
-        preparation.unwrap();
-        analysis.unwrap();
-        assert!(e.iter().all(|value| value.norm() == 0.0));
+    preparation.unwrap();
+    analysis.unwrap();
+    assert!(e.iter().all(|value| value.norm() == 0.0));
+    if spin != 0 {
+        assert!(b.iter().all(|value| value.norm() == 0.0));
     }
     assert_eq!(workspace.execution_capacity(), capacity);
     assert_eq!(workspace.allocated_worker_count(), prior_workers);
 
-    // A larger prefix can serve a reduced-order plan without reallocating or
-    // changing the execution budget. Compare it with a paired workspace.
+    // A workspace prepared for the larger order plan also serves the reduced
+    // order plan without reallocating or changing the execution budget.
     let mut larger = full.workspace().unwrap();
     low.prepare_workspace(&mut larger, capacity).unwrap();
     let mut alm = vec![Complex64::new(0.0, 0.0); low.harmonics().nalm()];

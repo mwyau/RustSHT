@@ -5,6 +5,12 @@ use num_complex::Complex;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::*;
+#[cfg(feature = "parallel")]
+use std::collections::VecDeque;
+#[cfg(feature = "parallel")]
+use std::sync::Mutex;
+#[cfg(feature = "parallel")]
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::error::{ShtError, check_len};
 use crate::legendre::{
@@ -13,11 +19,6 @@ use crate::legendre::{
     sin_cos_from_f64, spin1_to_scalar, spin2_to_scalar,
 };
 use crate::plan::{ShtPlan, current_execution_thread_count};
-#[cfg(feature = "parallel")]
-use crate::transform::{
-    active_ring_weighted_order_midpoint_from_prefix_for_capacity,
-    build_active_ring_order_work_prefix, weighted_order_midpoint_for_capacity,
-};
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 #[cfg(feature = "parallel")]
@@ -787,30 +788,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 .min(order_count);
             let use_parallel = rayon::current_num_threads() > 1 && worker_count > 1;
             if use_parallel {
-                #[cfg(all(test, feature = "parallel"))]
-                let prefix_started = std::time::Instant::now();
-                let order_work_prefix = if self.harmonics.lmax() >= 255 {
-                    let prefix = &mut workspace.order_work_prefix[..=order_count];
-                    build_active_ring_order_work_prefix(
-                        self.harmonics.lmax(),
-                        self.harmonics.mmax(),
-                        ring_order_limits,
-                        prefix,
-                    )?;
-                    Some(&prefix[..])
-                } else {
-                    None
-                };
-                #[cfg(all(test, feature = "parallel"))]
-                {
-                    crate::workspace::record_transform_phase(
-                        &phase_probe,
-                        "order work prefix",
-                        prefix_started,
-                    );
-                    phase_started = std::time::Instant::now();
-                }
-                self.analyze_spin_order_groups_parallel(
+                self.analyze_spin_order_jobs_dynamic(
                     q_spectra,
                     u_spectra,
                     nphi,
@@ -824,10 +802,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     theta_sin,
                     theta_cos,
                     ring_order_limits,
-                    order_work_prefix,
                     arch,
-                    0,
-                    order_count,
                     e_alm,
                     b_alm.as_deref_mut(),
                     &mut workspace.recurrence_workers[..worker_count],
@@ -844,11 +819,6 @@ impl<T: ShtScalar> ShtPlan<T> {
             } else {
                 #[cfg(all(test, feature = "parallel"))]
                 {
-                    crate::workspace::record_transform_phase(
-                        &phase_probe,
-                        "order work prefix",
-                        phase_started,
-                    );
                     phase_started = std::time::Instant::now();
                 }
                 self.analyze_spin_order_group(
@@ -3969,9 +3939,9 @@ impl<T: ShtScalar> ShtPlan<T> {
     #[cfg(feature = "parallel")]
     #[expect(
         clippy::too_many_arguments,
-        reason = "Recursive analysis splits coefficient outputs and recurrence scratch while sharing immutable grid inputs."
+        reason = "Dynamic spin-analysis jobs share immutable geometry and own disjoint E/B coefficient slices."
     )]
-    fn analyze_spin_order_groups_parallel(
+    fn analyze_spin_order_jobs_dynamic(
         &self,
         q_spectra: &[Complex<T>],
         u_spectra: &[Complex<T>],
@@ -3986,15 +3956,13 @@ impl<T: ShtScalar> ShtPlan<T> {
         theta_sin: &[T],
         theta_cos: &[T],
         ring_order_limits: &[usize],
-        order_work_prefix: Option<&[u128]>,
         arch: pulp::Arch,
-        m_start: usize,
-        m_end: usize,
         e_alm: &mut [Complex<T>],
         b_alm: Option<&mut [Complex<T>]>,
         recurrence: &mut [RecurrenceWorkspace<T>],
     ) -> Result<(), ShtError> {
-        let order_count = m_end - m_start;
+        let lmax = self.harmonics.lmax();
+        let order_count = self.harmonics.mmax() + 1;
         if order_count <= 1 || recurrence.len() <= 1 {
             return self.analyze_spin_order_group(
                 q_spectra,
@@ -4011,55 +3979,78 @@ impl<T: ShtScalar> ShtPlan<T> {
                 theta_cos,
                 ring_order_limits,
                 arch,
-                m_start,
-                m_end,
+                0,
+                order_count,
                 e_alm,
                 b_alm,
                 recurrence
                     .first_mut()
-                    .expect("each analysis group has at least one recurrence workspace"),
+                    .expect("each spin-analysis group has at least one recurrence workspace"),
             );
         }
-        let left_worker_count = recurrence.len().div_ceil(2);
-        let right_worker_count = recurrence.len() - left_worker_count;
-        let m_mid = if self.harmonics.lmax() >= 255 {
-            active_ring_weighted_order_midpoint_from_prefix_for_capacity(
-                self.harmonics.lmax(),
-                m_start,
-                m_end,
-                order_work_prefix.expect("large parallel analyses build an order-work prefix"),
-                left_worker_count,
-                right_worker_count,
-            )?
-        } else {
-            weighted_order_midpoint_for_capacity(
-                self.harmonics.lmax(),
-                m_start,
-                m_end,
-                left_worker_count,
-                right_worker_count,
-            )?
-        };
-        let coefficient_start = self
-            .harmonics
-            .index(m_start, m_start)
-            .expect("every packed order starts at its diagonal degree");
-        let coefficient_mid = self
-            .harmonics
-            .index(m_mid, m_mid)
-            .expect("the end of an order group starts the next order");
-        let coefficient_split = coefficient_mid - coefficient_start;
-        let (left_e, right_e) = e_alm.split_at_mut(coefficient_split);
-        let (left_b, right_b) = if let Some(b_alm) = b_alm {
-            let (left, right) = b_alm.split_at_mut(coefficient_split);
-            (Some(left), Some(right))
-        } else {
-            (None, None)
-        };
-        let (left_recurrence, right_recurrence) = recurrence.split_at_mut(left_worker_count);
-        let (left_result, right_result) = rayon::join(
-            || {
-                self.analyze_spin_order_groups_parallel(
+
+        let mut order_jobs = VecDeque::new();
+        if order_jobs.try_reserve_exact(order_count).is_err() {
+            return self.analyze_spin_order_group(
+                q_spectra,
+                u_spectra,
+                nphi,
+                spectrum_len,
+                phi0,
+                ring_weights,
+                normalize_fourier,
+                spectra_preweighted,
+                recurrence_spin,
+                derivative_norm,
+                theta_sin,
+                theta_cos,
+                ring_order_limits,
+                arch,
+                0,
+                order_count,
+                e_alm,
+                b_alm,
+                &mut recurrence[0],
+            );
+        }
+
+        let mut remaining_e = e_alm;
+        let mut remaining_b = b_alm;
+        for m in 0..order_count {
+            let coefficient_count = lmax - m + 1;
+            let (e_coefficients, e_tail) = remaining_e.split_at_mut(coefficient_count);
+            remaining_e = e_tail;
+            let b_coefficients = match remaining_b.take() {
+                Some(b_remaining) => {
+                    let (b_order, b_tail) = b_remaining.split_at_mut(coefficient_count);
+                    remaining_b = Some(b_tail);
+                    Some(b_order)
+                }
+                None => None,
+            };
+            order_jobs.push_back((m, e_coefficients, b_coefficients));
+        }
+        debug_assert!(remaining_e.is_empty());
+        debug_assert!(remaining_b.as_ref().is_none_or(|tail| tail.is_empty()));
+
+        // Match DUCC's dynamic harmonic-order schedule. Each task owns one
+        // packed coefficient order and reuses its recurrence workspace.
+        let order_jobs = Mutex::new(order_jobs);
+        let failed = AtomicBool::new(false);
+        let failure = Mutex::new(None::<ShtError>);
+        recurrence.par_iter_mut().for_each(|worker| {
+            loop {
+                if failed.load(Ordering::Relaxed) {
+                    break;
+                }
+                let job = order_jobs
+                    .lock()
+                    .expect("spin analysis order queue is not poisoned")
+                    .pop_front();
+                let Some((m, e_coefficients, b_coefficients)) = job else {
+                    break;
+                };
+                if let Err(error) = self.analyze_spin_order_group(
                     q_spectra,
                     u_spectra,
                     nphi,
@@ -4073,42 +4064,30 @@ impl<T: ShtScalar> ShtPlan<T> {
                     theta_sin,
                     theta_cos,
                     ring_order_limits,
-                    order_work_prefix,
                     arch,
-                    m_start,
-                    m_mid,
-                    left_e,
-                    left_b,
-                    left_recurrence,
-                )
-            },
-            || {
-                self.analyze_spin_order_groups_parallel(
-                    q_spectra,
-                    u_spectra,
-                    nphi,
-                    spectrum_len,
-                    phi0,
-                    ring_weights,
-                    normalize_fourier,
-                    spectra_preweighted,
-                    recurrence_spin,
-                    derivative_norm,
-                    theta_sin,
-                    theta_cos,
-                    ring_order_limits,
-                    order_work_prefix,
-                    arch,
-                    m_mid,
-                    m_end,
-                    right_e,
-                    right_b,
-                    right_recurrence,
-                )
-            },
-        );
-        left_result?;
-        right_result
+                    m,
+                    m + 1,
+                    e_coefficients,
+                    b_coefficients,
+                    worker,
+                ) {
+                    failed.store(true, Ordering::Relaxed);
+                    let mut first_error = failure
+                        .lock()
+                        .expect("spin analysis error slot is not poisoned");
+                    first_error.get_or_insert(error);
+                    break;
+                }
+            }
+        });
+
+        if failed.load(Ordering::Relaxed) {
+            return Err(failure
+                .into_inner()
+                .expect("spin analysis error slot is not poisoned")
+                .expect("a failed spin-analysis job records its error"));
+        }
+        Ok(())
     }
 
     fn prepare_spin_latitudes(&self, workspace: &mut ShtWorkspace<T>, spin: usize) {
