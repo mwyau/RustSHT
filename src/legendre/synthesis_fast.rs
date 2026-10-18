@@ -40,6 +40,7 @@ struct FastRouteCounts {
     completed_tiles: u64,
     declined_tiles: u64,
     empty_tiles: u64,
+    coefficient_preflights: u64,
     unsafe_coefficients: u64,
     no_transition: u64,
     polar_pair_lanes: u64,
@@ -73,6 +74,12 @@ pub(crate) struct ScalarSynthesisFastScratch<'a, T> {
     pub(crate) compact_theta_sin: &'a mut [T],
     pub(crate) compact_theta_cos: &'a mut [T],
     pub(crate) compact_ring_indices: &'a mut [usize],
+}
+
+#[derive(Clone, Copy)]
+struct TransitionPreflight {
+    coefficients_safe: bool,
+    sum_bound_safe: bool,
 }
 
 /// Packs active rings for one order, attempts the scalar-only transition
@@ -120,6 +127,7 @@ pub(crate) fn synthesize_order_dispatched(
         return Ok(false);
     }
 
+    let mut preflight_cache = None;
     let mut tile_len = 0;
     for ring in 0..sin_theta.len() {
         if m > ring_order_limits[ring] {
@@ -134,6 +142,7 @@ pub(crate) fn synthesize_order_dispatched(
                 arch,
                 m,
                 lmax,
+                &mut preflight_cache,
                 sectoral_norm,
                 coefficient_a,
                 coefficient_b,
@@ -151,6 +160,7 @@ pub(crate) fn synthesize_order_dispatched(
             arch,
             m,
             lmax,
+            &mut preflight_cache,
             sectoral_norm,
             coefficient_a,
             coefficient_b,
@@ -172,6 +182,7 @@ fn process_tile(
     arch: Arch,
     m: usize,
     lmax: usize,
+    preflight_cache: &mut Option<TransitionPreflight>,
     sectoral_norm: f64,
     coefficient_a: &[f64],
     coefficient_b: &[f64],
@@ -205,11 +216,22 @@ fn process_tile(
         counts.polar_pair_lanes += polar_len as u64 * ((lmax - m + 2) / 2) as u64;
     });
 
-    let fast = ordinary_len > 0
-        && try_transition_and_accumulate(
+    let fast = if ordinary_len > 0 {
+        let preflight = *preflight_cache.get_or_insert_with(|| {
+            make_transition_preflight(
+                m,
+                lmax,
+                coefficient_a,
+                coefficient_b,
+                coefficient_even,
+                coefficient_odd,
+            )
+        });
+        try_transition_after_preflight(
             arch,
             m,
             lmax,
+            preflight,
             &scratch.compact_theta_sin[..ordinary_len],
             &scratch.compact_theta_cos[..ordinary_len],
             sectoral_norm,
@@ -224,7 +246,10 @@ fn process_tile(
             &mut scratch.sum_re[..ordinary_len],
             &mut scratch.sum_im[..ordinary_len],
         )
-        .is_some();
+        .is_some()
+    } else {
+        false
+    };
 
     #[cfg(test)]
     update_route_counts(|counts| {
@@ -358,6 +383,7 @@ fn accumulate_scaled_range(
     )
 }
 
+#[cfg(test)]
 #[expect(
     clippy::too_many_arguments,
     reason = "The transition receives recurrence lanes, prepared coefficients and tile-local staging explicitly."
@@ -380,25 +406,99 @@ fn try_transition_and_accumulate(
     sum_re: &mut [f64],
     sum_im: &mut [f64],
 ) -> Option<usize> {
-    let pair_count = (lmax - m + 2) / 2;
     if sin_theta.is_empty() {
         #[cfg(test)]
         update_route_counts(|counts| counts.empty_tiles += 1);
         return None;
     }
-    if !ordinary_coefficients_are_safe(
+    let preflight = make_transition_preflight(
+        m,
+        lmax,
+        coefficient_a,
+        coefficient_b,
+        coefficient_even,
+        coefficient_odd,
+    );
+    try_transition_after_preflight(
+        arch,
+        m,
+        lmax,
+        preflight,
+        sin_theta,
+        cos_theta,
+        sectoral_norm,
+        coefficient_a,
+        coefficient_b,
+        coefficient_even,
+        coefficient_odd,
+        previous,
+        current,
+        next,
+        exponents,
+        sum_re,
+        sum_im,
+    )
+}
+
+fn make_transition_preflight(
+    m: usize,
+    lmax: usize,
+    coefficient_a: &[f64],
+    coefficient_b: &[f64],
+    coefficient_even: &[Complex64],
+    coefficient_odd: &[Complex64],
+) -> TransitionPreflight {
+    #[cfg(test)]
+    update_route_counts(|counts| counts.coefficient_preflights += 1);
+    let pair_count = (lmax - m + 2) / 2;
+    let coefficients_safe = ordinary_coefficients_are_safe(
         pair_count,
         coefficient_a,
         coefficient_b,
         coefficient_even,
         coefficient_odd,
-    ) {
+    );
+    let maximum_sum_bound = 2.0 * scalar::BIG * scalar::BIG * pair_count as f64 * 10_000.0;
+    TransitionPreflight {
+        coefficients_safe,
+        sum_bound_safe: maximum_sum_bound.is_finite() && maximum_sum_bound <= f64::MAX * 0.5,
+    }
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The transition receives recurrence lanes, prepared coefficients, preflight state, and tile-local staging explicitly."
+)]
+fn try_transition_after_preflight(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    preflight: TransitionPreflight,
+    sin_theta: &[f64],
+    cos_theta: &[f64],
+    sectoral_norm: f64,
+    coefficient_a: &[f64],
+    coefficient_b: &[f64],
+    coefficient_even: &[Complex64],
+    coefficient_odd: &[Complex64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    next: &mut [f64],
+    exponents: &mut [i64],
+    sum_re: &mut [f64],
+    sum_im: &mut [f64],
+) -> Option<usize> {
+    if sin_theta.is_empty() {
+        #[cfg(test)]
+        update_route_counts(|counts| counts.empty_tiles += 1);
+        return None;
+    }
+    if !preflight.coefficients_safe {
         #[cfg(test)]
         update_route_counts(|counts| counts.unsafe_coefficients += 1);
         return None;
     }
-    let maximum_sum_bound = 2.0 * scalar::BIG * scalar::BIG * pair_count as f64 * 10_000.0;
-    if !maximum_sum_bound.is_finite() || maximum_sum_bound > f64::MAX * 0.5 {
+    if !preflight.sum_bound_safe {
         #[cfg(test)]
         update_route_counts(|counts| counts.no_transition += 1);
         return None;
@@ -1070,6 +1170,63 @@ mod tests {
     }
 
     #[test]
+    fn coefficient_safety_preflight_is_shared_across_active_tiles() {
+        let m = 0;
+        let lmax = 255;
+        let sin_theta = vec![0.5; 300];
+        let cos_theta = vec![(1.0_f64 - 0.5 * 0.5).sqrt(); sin_theta.len()];
+        let ring_order_limits = vec![usize::MAX; sin_theta.len()];
+        let coefficients = coefficient_row(m, lmax);
+        let sectoral_norm = scalar::sectoral_normalizations(m).unwrap()[m];
+        let (_, coefficient_a, coefficient_b, coefficient_even, coefficient_odd) =
+            prepared_order(m, lmax, &coefficients);
+        let mut candidate = vec![Complex64::new(0.0, 0.0); sin_theta.len()];
+        FAST_ROUTE_COUNTS.with_borrow_mut(|counts| *counts = Some(FastRouteCounts::default()));
+        {
+            let mut owner = TestScratch::new(sin_theta.len());
+            let mut scratch = fast_scratch(&mut owner, &mut candidate);
+            assert!(
+                synthesize_order_dispatched(
+                    Arch::new(),
+                    m,
+                    lmax,
+                    &sin_theta,
+                    &cos_theta,
+                    sectoral_norm,
+                    &coefficient_a,
+                    &coefficient_b,
+                    &coefficient_even,
+                    &coefficient_odd,
+                    &ring_order_limits,
+                    1,
+                    &mut scratch,
+                )
+                .unwrap()
+            );
+        }
+        let counts = FAST_ROUTE_COUNTS.with_borrow_mut(Option::take).unwrap();
+        assert_eq!(counts.tiles, 3);
+        assert_eq!(counts.coefficient_preflights, 1);
+
+        let mut reference = vec![Complex64::new(0.0, 0.0); sin_theta.len()];
+        paired_reference(
+            m,
+            lmax,
+            &sin_theta,
+            &cos_theta,
+            sectoral_norm,
+            &coefficient_a,
+            &coefficient_b,
+            &coefficient_even,
+            &coefficient_odd,
+            &ring_order_limits,
+            1,
+            &mut reference,
+        );
+        assert_spectra_close(&candidate, &reference);
+    }
+
+    #[test]
     fn scaled_accumulator_rebases_exactly_and_rejects_unsafe_ranges() {
         let mut sum_re = 0.75;
         let mut sum_im = -0.625;
@@ -1476,6 +1633,7 @@ mod tests {
             total.completed_tiles += counts.completed_tiles;
             total.declined_tiles += counts.declined_tiles;
             total.empty_tiles += counts.empty_tiles;
+            total.coefficient_preflights += counts.coefficient_preflights;
             total.unsafe_coefficients += counts.unsafe_coefficients;
             total.no_transition += counts.no_transition;
             total.polar_pair_lanes += counts.polar_pair_lanes;
