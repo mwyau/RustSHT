@@ -1131,3 +1131,17 @@ T2047, then the T511 control, under the
 [frozen matrix protocol](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-q1-matrix-t2047-t1023-t511-protocol-v1.md).
 q8 and spin-1 regression measurements remain gated; the 128-ring route remains
 outside production.
+
+### Prefix normalization fusion: q1 matrix stopped at T1023 baseline
+
+The prospective six-pair q1 matrix stopped at its first T1023 baseline
+process. RustSHT and SHTns passed their within-process timing limits, while
+DUCC exceeded the fixed 5% first-three/final-two drift limit (6.6858%). The
+numerical comparison passed, and the preflight and postflight pressure gates
+passed, but protocol v1 requires stopping at the first invalid process. No
+candidate process ran, so there is no baseline/candidate ratio and no
+T1023/T2047 matrix result. No retry or replacement sample was collected. The
+fusion candidate remains isolated and unaccepted; T2047, T511, q8, and spin-1
+measurements remain gated. The [stop report](data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-t1023-baseline-stop-v1.md)
+records the timing samples, numerical errors, aggregate peak RSS, source
+provenance, and gate decision. Raw host and process diagnostics remain local.
