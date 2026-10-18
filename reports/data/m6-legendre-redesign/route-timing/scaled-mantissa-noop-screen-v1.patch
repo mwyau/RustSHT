@@ -1,0 +1,98 @@
+--- a/src/legendre/scalar.rs
++++ b/src/legendre/scalar.rs
+@@ -281,0 +282,19 @@
++    normalize_pair_lanes_impl(previous, current, exponents, false)
++}
++
++#[inline(always)]
++pub(super) fn normalize_pair_lanes_skip_in_range(
++    previous: &mut [f64],
++    current: &mut [f64],
++    exponents: &mut [i64],
++) -> Result<bool, ShtError> {
++    normalize_pair_lanes_impl(previous, current, exponents, true)
++}
++
++#[inline(always)]
++fn normalize_pair_lanes_impl(
++    previous: &mut [f64],
++    current: &mut [f64],
++    exponents: &mut [i64],
++    skip_scaled_in_range: bool,
++) -> Result<bool, ShtError> {
+@@ -286 +305,4 @@
+-        if exponents[ring] == 0 && pair_is_in_normal_range(previous[ring], current[ring]) {
++        if (exponents[ring] == 0 || skip_scaled_in_range)
++            && pair_is_in_normal_range(previous[ring], current[ring])
++        {
++            normal_range &= exponents[ring] == 0;
+@@ -1956,0 +1979,69 @@
++    }
++
++    #[test]
++    fn normalize_pair_lanes_skip_in_range_matches_scaled_normalizer() {
++        let cases = [
++            (
++                [0.25, -0.5, SMALL, BIG, 0.0, -BIG, f64::MIN_POSITIVE, 1.0],
++                [-0.5, 0.75, BIG, SMALL, 0.0, BIG, SMALL, -1.0],
++                [800, -800, 1600, -1600, i64::MAX, i64::MIN, 17, 0],
++            ),
++            (
++                [
++                    BIG * 2.0,
++                    SMALL / 2.0,
++                    f64::MAX,
++                    f64::MIN_POSITIVE,
++                    1.0,
++                    0.0,
++                    -BIG * 2.0,
++                    SMALL / 4.0,
++                ],
++                [
++                    BIG,
++                    SMALL / 4.0,
++                    f64::MAX / 2.0,
++                    f64::from_bits(1),
++                    -1.0,
++                    0.0,
++                    -BIG,
++                    SMALL / 8.0,
++                ],
++                [0, 800, -1600, 0, -800, -400, 1600, 2400],
++            ),
++        ];
++
++        for (previous, current, exponents) in cases {
++            let mut actual_previous = previous;
++            let mut actual_current = current;
++            let mut actual_exponents = exponents;
++            let mut expected_previous = previous;
++            let mut expected_current = current;
++            let mut expected_exponents = exponents;
++
++            let actual_range = normalize_pair_lanes_skip_in_range(
++                &mut actual_previous,
++                &mut actual_current,
++                &mut actual_exponents,
++            )
++            .unwrap();
++            let expected_range = normalize_pair_lanes(
++                &mut expected_previous,
++                &mut expected_current,
++                &mut expected_exponents,
++            )
++            .unwrap();
++
++            assert_eq!(actual_range, expected_range);
++            for lane in 0..previous.len() {
++                assert_eq!(
++                    actual_previous[lane].to_bits(),
++                    expected_previous[lane].to_bits()
++                );
++                assert_eq!(
++                    actual_current[lane].to_bits(),
++                    expected_current[lane].to_bits()
++                );
++                assert_eq!(actual_exponents[lane], expected_exponents[lane]);
++            }
++        }

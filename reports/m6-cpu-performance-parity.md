@@ -996,9 +996,10 @@ accumulator rebases. The pre-suffix route timer measured 744.962 ms; the
 ordinary suffix measured 550.916 ms. The test-only counter adds an exponent
 array pass, so these times are diagnostic and do not replace the paired
 whole-transform results. Few scale probes ran, and none triggered
-normalization; most prefix iterations used the unconditional scaled path. The
-next diagnostic will count scaled-lane occupancy before any lane partitioning
-change. The [event profile](data/m6-legendre-redesign/route-timing/scaled-prefix-transition-events-v1.md)
+normalization; most prefix iterations used the unconditional scaled path. A
+follow-up occupancy profile found nonzero exponents in 49.08% of prefix
+lane-visits, with no exponent change in 98.69% of those visits. The
+[event profile](data/m6-legendre-redesign/route-timing/scaled-prefix-transition-events-v1.md)
 records the frozen source hashes, bitwise warm-up check, and counter results.
 The candidate remains isolated: its T511 baseline stability control failed,
 and the full regression matrix has not run.
@@ -1008,9 +1009,15 @@ and the full regression matrix has not run.
 A bounded T2047 q1 profile found nonzero exponents in 49.08% of prefix
 normalization lane-visits. At least 98.69% of those visits had no exponent
 change. More than 33 scaled lanes occurred in 57.46% of calls, which does not
-support a sparse lane-class split. The next isolated source test will skip
-no-op normalization for in-range mantissas while retaining scaled execution
-for nonzero exponents and the existing fallback for out-of-range pairs. The
-[occupancy report](data/m6-legendre-redesign/route-timing/scaled-lane-occupancy-v1.md)
-records the histogram and bitwise test. It does not accept the accumulator
-candidate or change the failed T511 stability gate.
+support a sparse lane-class split. An isolated no-op normalization candidate
+skipped normalization for in-range mantissas while retaining scaled execution
+for nonzero exponents and the existing fallback for out-of-range pairs. At
+T2047 its RustSHT median was 5.00% below the unmodified accumulator source,
+but the DUCC series failed the fixed drift limit (6.228%). The screen is
+inconclusive; no retry or follow-up matrix ran. The candidate remains
+isolated. The [occupancy report](data/m6-legendre-redesign/route-timing/scaled-lane-occupancy-v1.md)
+records the histogram and bitwise test; the
+[no-op screen report](data/m6-legendre-redesign/route-timing/scaled-mantissa-noop-screen-v1.md)
+contains its source hashes, complete timing samples, correctness results,
+and validity decision. The T511 control and full regression gate remain
+unresolved.

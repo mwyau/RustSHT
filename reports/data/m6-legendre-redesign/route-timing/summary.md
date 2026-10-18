@@ -212,8 +212,14 @@ A bounded T2047 profile counted 53,737,170 nonzero-exponent lane-visits among
 109,490,856 prefix normalization visits (49.08%). At least 53,030,846 of
 those visits (98.69%) had no exponent change. More than 33 scaled lanes were
 present in 57.46% of normalization calls, so a sparse lane-class split is not
-the next experiment. The next source hypothesis is to skip no-op
-normalization for in-range mantissas with nonzero exponents while retaining the
-scaled route and the existing out-of-range normalization path. The
-[occupancy report](scaled-lane-occupancy-v1.md) records the histogram, source
-hashes, bitwise test, and limits.
+the next experiment. The isolated no-op normalization candidate applied the
+measured source hypothesis while retaining the scaled route and existing
+out-of-range normalization path. Its RustSHT T2047 median was 5.00% below the
+unmodified accumulator source, but the candidate DUCC series exceeded the
+fixed drift limit. The screen is inconclusive; no retry or follow-up matrix
+ran. The candidate remains isolated. Source hashes, timing samples, numerical
+results, and the validity decision are in the
+[no-op screen report](scaled-mantissa-noop-screen-v1.md); its exact source
+delta is archived in the adjacent patch. The
+[occupancy report](scaled-lane-occupancy-v1.md) retains the counts and
+bitwise test that motivated the hypothesis.
