@@ -1081,7 +1081,9 @@ fn rescale_for_prefix<S: Simd>(
     rescale_batch_inner::<S, false, true>(simd, previous, current, scale).map(|status| status.1)
 }
 
-#[inline]
+// Scaled recurrence calls this after every degree pair; inlining removes a
+// helper call from that loop and lets the compiler keep SIMD state in place.
+#[inline(always)]
 fn rescale_batch_inner<S: Simd, const TRACK_ANY_RESCALED: bool, const TRACK_PREFIX_EPOCH: bool>(
     simd: S,
     previous: &mut [f64],

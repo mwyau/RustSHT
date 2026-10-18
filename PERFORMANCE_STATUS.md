@@ -18,6 +18,7 @@
 | --- | --- | --- |
 | Ishioka paired recurrence, SIMD suffix and scaled fallback | Production | Mathematically DUCC-derived, but work batching, prefix skipping and reflected output differ from DUCC. |
 | Tile-128 fallback accelerator | Retired from production | The tile layer added no unique operation coverage after the ordered kernel; its source and tests are archived. Historical measurements remain in reports. The ordered kernel retains its own vectorized scaling and prefix advancement. |
+| Inlined scaled rescale check | Production | Optimized assembly no longer calls the rescale helper per degree pair; ungated q1 Legendre medians improved about 3% at T255 and 4% at irregular T300, with no consistent full-synthesis gain. Screen: AMD Ryzen 9 5950X, Rust 1.99.0, five samples. |
 | Generalized coefficient cache and reused coefficient safety preflights | Production for eligible ring-group fallback | Remove repeated work across eligible ring groups; benefits across arbitrary shapes not yet established. |
 | Scalar hemisphere pairing, whole order-owned scheduling | Historical prototypes rejected | Coarse pairing and scheduling overhead outweighed saved work; do not repeat the same designs. |
 | Exponent-epoch accumulator, SIMD precheck, f32-to-f64 bridge | Experimental/inconclusive | No general demonstrated improvement over the preferred route; preserve archived evidence. |
