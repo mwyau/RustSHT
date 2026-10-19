@@ -1574,6 +1574,9 @@ impl<T: ShtScalar> ShtPlan<T> {
             }
             (workspace.spectra.as_slice(), ntheta, ring_weights)
         };
+        let allow_insignificant_prefix = analysis_ring_weights.is_some()
+            && self.grid.kind() == GridKind::GaussLegendre
+            && T::scalar_analysis_prefix_skip_allowed(analysis_ntheta);
         #[cfg(all(test, feature = "parallel"))]
         {
             crate::workspace::record_transform_phase(
@@ -1712,6 +1715,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     theta_cos,
                     ring_order_limits,
                     arch,
+                    allow_insignificant_prefix,
                     alm,
                     &mut workspace.recurrence_workers[..worker_count],
                 )?;
@@ -1736,6 +1740,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     theta_cos,
                     ring_order_limits,
                     arch,
+                    allow_insignificant_prefix,
                     0,
                     order_count,
                     alm,
@@ -1762,6 +1767,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 theta_cos,
                 ring_order_limits,
                 arch,
+                allow_insignificant_prefix,
                 0,
                 order_count,
                 alm,
@@ -1907,6 +1913,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         theta_cos: &[T],
         ring_order_limits: &[usize],
         arch: pulp::Arch,
+        allow_insignificant_prefix: bool,
         alm: &mut [Complex<T>],
         recurrence: &mut [RecurrenceWorkspace<T>],
     ) -> Result<(), ShtError> {
@@ -1920,6 +1927,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 theta_cos,
                 ring_order_limits,
                 arch,
+                allow_insignificant_prefix,
                 0,
                 order_count,
                 alm,
@@ -1938,6 +1946,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 theta_cos,
                 ring_order_limits,
                 arch,
+                allow_insignificant_prefix,
                 0,
                 order_count,
                 alm,
@@ -1975,6 +1984,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     theta_cos,
                     ring_order_limits,
                     arch,
+                    allow_insignificant_prefix,
                     m,
                     m + 1,
                     coefficients,
@@ -2011,6 +2021,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         theta_cos: &[T],
         ring_order_limits: &[usize],
         arch: pulp::Arch,
+        allow_insignificant_prefix: bool,
         m_start: usize,
         m_end: usize,
         alm: &mut [Complex<T>],
@@ -2031,6 +2042,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             theta_cos,
             ring_order_limits,
             arch,
+            allow_insignificant_prefix,
             m_start,
             m_end,
             alm,
@@ -2062,6 +2074,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         theta_cos: &[T],
         ring_order_limits: &[usize],
         arch: pulp::Arch,
+        allow_insignificant_prefix: bool,
         m_start: usize,
         m_end: usize,
         alm: &mut [Complex<T>],
@@ -2170,6 +2183,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             arch,
                             m,
                             lmax,
+                            allow_insignificant_prefix,
                             pair_sin,
                             pair_cos,
                             self.sectoral_norms[m],

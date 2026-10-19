@@ -464,6 +464,9 @@ pub(crate) trait ShtScalar:
     ) -> bool {
         false
     }
+    fn scalar_analysis_prefix_skip_allowed(_latitude_count: usize) -> bool {
+        false
+    }
     fn prepare_scalar_analysis_opposite(
         _opposite_real: &mut [Self],
         _opposite_imag: &mut [Self],
@@ -518,6 +521,7 @@ pub(crate) trait ShtScalar:
         _arch: Arch,
         _m: usize,
         _lmax: usize,
+        _allow_insignificant_prefix: bool,
         _sin_theta: &[Self],
         _cos_theta: &[Self],
         _sectoral_norm: Self,
@@ -1284,6 +1288,10 @@ impl ShtScalar for f64 {
         )
     }
 
+    fn scalar_analysis_prefix_skip_allowed(latitude_count: usize) -> bool {
+        scalar_paired::insignificant_prefix_budget_safe(latitude_count)
+    }
+
     fn prepare_scalar_analysis_opposite(
         opposite_real: &mut [Self],
         opposite_imag: &mut [Self],
@@ -1326,6 +1334,7 @@ impl ShtScalar for f64 {
         arch: Arch,
         m: usize,
         lmax: usize,
+        allow_insignificant_prefix: bool,
         sin_theta: &[Self],
         cos_theta: &[Self],
         sectoral_norm: Self,
@@ -1345,6 +1354,7 @@ impl ShtScalar for f64 {
             arch,
             m,
             lmax,
+            allow_insignificant_prefix,
             sin_theta,
             cos_theta,
             sectoral_norm,

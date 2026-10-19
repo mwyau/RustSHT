@@ -3,7 +3,9 @@
 /*
  * This module adapts DUCC's transformed paired-degree scalar recurrence from
  * src/ducc0/sht/sht_inner_loop.h, revision
- * c1ed01b8fda69d2a378190f0915f1a19762dddbf.
+ * c1ed01b8fda69d2a378190f0915f1a19762dddbf. The analysis prefix cutoff also
+ * follows DUCC's iter_to_ieee logic from revision
+ * 80388904b8cfc32400ba84af8a6a45aabfe60f86.
  *
  * This code is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -25,6 +27,16 @@ use crate::legendre::scalar::{
 use crate::legendre::{LATITUDE_BLOCK_SIZE, scalar};
 
 const SIMD_SECTORAL_INIT_MIN_LMAX: usize = 511;
+const ANALYSIS_FTOL: f64 = f64::from_bits(963_u64 << 52);
+const ANALYSIS_SCALE_STEP: i64 = 800;
+
+/// Bounds DUCC's insignificant-prefix omission by eight f64 ulps of the
+/// maximum paired-spectrum scale. The latitude count bounds the sum of the
+/// omitted per-lane terms because each skipped recurrence value is at most
+/// `sht_ftol` after DUCC-style sectoral normalization.
+pub(crate) fn insignificant_prefix_budget_safe(latitude_count: usize) -> bool {
+    (latitude_count as f64) * ANALYSIS_FTOL <= 8.0 * f64::EPSILON
+}
 
 /// Prepares DUCC's per-order coefficient transformation and paired recurrence.
 pub(crate) fn fill_factors(
@@ -1187,7 +1199,7 @@ pub(crate) fn analysis_products_safe(
         .chain(same_imag)
         .chain(opposite_real)
         .chain(opposite_imag)
-        .all(|value| value.is_finite() && value.abs() <= max_input)
+        .all(|value| (value.is_normal() || *value == 0.0) && value.abs() <= max_input)
         && cos_theta
             .iter()
             .all(|value| value.is_finite() && value.abs() <= 1.0)
@@ -1404,6 +1416,7 @@ pub(crate) fn fused_scalar_analysis_pair_block_dispatched(
         arch,
         m,
         lmax,
+        false,
         sin_theta,
         cos_theta,
         sectoral_norm,
@@ -1429,6 +1442,7 @@ pub(crate) fn fused_scalar_analysis_pair_block_preweighted_dispatched(
     arch: Arch,
     m: usize,
     lmax: usize,
+    allow_insignificant_prefix: bool,
     sin_theta: &[f64],
     cos_theta: &[f64],
     sectoral_norm: f64,
@@ -1448,6 +1462,7 @@ pub(crate) fn fused_scalar_analysis_pair_block_preweighted_dispatched(
         arch,
         m,
         lmax,
+        allow_insignificant_prefix,
         sin_theta,
         cos_theta,
         sectoral_norm,
@@ -1473,6 +1488,7 @@ fn fused_scalar_analysis_pair_block_impl<const OPPOSITE_COSINE_WEIGHTED: bool>(
     arch: Arch,
     m: usize,
     lmax: usize,
+    allow_insignificant_prefix: bool,
     sin_theta: &[f64],
     cos_theta: &[f64],
     sectoral_norm: f64,
@@ -1531,6 +1547,7 @@ fn fused_scalar_analysis_pair_block_impl<const OPPOSITE_COSINE_WEIGHTED: bool>(
         return arch.dispatch(FusedScaledScalarAnalysisPair::<OPPOSITE_COSINE_WEIGHTED> {
             m,
             lmax,
+            allow_insignificant_prefix,
             cos_theta,
             cos_theta_squared,
             coefficient_a,
@@ -1568,9 +1585,121 @@ fn fused_scalar_analysis_pair_block_impl<const OPPOSITE_COSINE_WEIGHTED: bool>(
     Ok(succeeded)
 }
 
+#[inline(always)]
+fn analysis_mask_all<S: Simd>(simd: S, mask: S::m64s) -> bool {
+    simd.reduce_min_f64s(simd.select_f64s(mask, simd.splat_f64s(1.0), simd.splat_f64s(0.0))) > 0.0
+}
+
+/// Tests whether the normalized recurrence pair is below DUCC's `sht_ftol`.
+/// Rust scale exponents use binary powers, so a negative exponent is smaller
+/// than DUCC's zero scale; the zero exponent case compares the mantissa pair.
+#[inline(always)]
+fn analysis_pair_below_ftol<S: Simd>(
+    simd: S,
+    previous: &[f64],
+    current: &[f64],
+    exponents: &[i64],
+) -> bool {
+    if previous.len() != current.len() || current.len() != exponents.len() {
+        return false;
+    }
+    debug_assert!(
+        exponents
+            .iter()
+            .all(|exponent| exponent % ANALYSIS_SCALE_STEP == 0)
+    );
+    let (previous_vectors, previous_tail) = S::as_simd_f64s(previous);
+    let (current_vectors, current_tail) = S::as_simd_f64s(current);
+    let (exponent_vectors, exponent_tail) = S::as_simd_i64s(exponents);
+    let zero = simd.splat_f64s(0.0);
+    let ftol = simd.splat_f64s(ANALYSIS_FTOL);
+    let exponent_zero = simd.splat_i64s(0);
+    let mut all_below = true;
+
+    // Pair normalization keeps the maximum mantissa magnitude in [SMALL, BIG]
+    // and scale changes in 800-bit steps. A negative exponent is therefore
+    // always below sht_ftol; at exponent zero, compare the pair magnitude.
+    for index in 0..current_vectors.len() {
+        let magnitude = simd.max_f64s(
+            simd.abs_f64s(previous_vectors[index]),
+            simd.abs_f64s(current_vectors[index]),
+        );
+        let zero_pair = simd.equal_f64s(magnitude, zero);
+        let small_pair = simd.less_than_or_equal_f64s(magnitude, ftol);
+        let negative_scale = simd.less_than_i64s(exponent_vectors[index], exponent_zero);
+        let zero_scale = simd.equal_i64s(exponent_vectors[index], exponent_zero);
+        let below = simd.or_m64s(
+            zero_pair,
+            simd.or_m64s(negative_scale, simd.and_m64s(zero_scale, small_pair)),
+        );
+        all_below &= analysis_mask_all(simd, below);
+    }
+
+    for lane in 0..current_tail.len() {
+        let magnitude = previous_tail[lane].abs().max(current_tail[lane].abs());
+        let exponent = exponent_tail[lane];
+        all_below &=
+            magnitude == 0.0 || exponent < 0 || (exponent == 0 && magnitude <= ANALYSIS_FTOL);
+    }
+    all_below
+}
+
+#[inline(always)]
+fn advance_analysis_pair<S: Simd>(
+    simd: S,
+    coefficient_a: f64,
+    coefficient_b: f64,
+    cos_theta_squared: &[f64],
+    previous: &[f64],
+    current: &[f64],
+    next: &mut [f64],
+) -> bool {
+    if previous.len() != current.len()
+        || current.len() != next.len()
+        || current.len() != cos_theta_squared.len()
+    {
+        return false;
+    }
+    let (previous_vectors, previous_tail) = S::as_simd_f64s(previous);
+    let (current_vectors, current_tail) = S::as_simd_f64s(current);
+    let (cosine_squared_vectors, cosine_squared_tail) = S::as_simd_f64s(cos_theta_squared);
+    let (next_vectors, next_tail) = S::as_mut_simd_f64s(next);
+    let a = simd.splat_f64s(coefficient_a);
+    let b = simd.splat_f64s(coefficient_b);
+    for index in 0..current_vectors.len() {
+        let leading = simd.mul_add_f64s(a, cosine_squared_vectors[index], b);
+        let value = simd.mul_add_f64s(leading, current_vectors[index], previous_vectors[index]);
+        next_vectors[index] = value;
+    }
+    for lane in 0..current_tail.len() {
+        let leading = coefficient_a.mul_add(cosine_squared_tail[lane], coefficient_b);
+        let value = leading.mul_add(current_tail[lane], previous_tail[lane]);
+        next_tail[lane] = value;
+    }
+    // The caller rescales and validates each pair before it contributes any
+    // coefficient, so this recurrence step needs no per-vector reduction.
+    true
+}
+
+#[inline(always)]
+fn zero_staged_analysis_pair(
+    staged_coefficients: &mut [Complex64],
+    m: usize,
+    lmax: usize,
+    pair_index: usize,
+) {
+    let degree = m + 2 * pair_index;
+    let offset = degree - m;
+    staged_coefficients[offset] = Complex64::new(0.0, 0.0);
+    if degree < lmax {
+        staged_coefficients[offset + 1] = Complex64::new(0.0, 0.0);
+    }
+}
+
 struct FusedScaledScalarAnalysisPair<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
     m: usize,
     lmax: usize,
+    allow_insignificant_prefix: bool,
     cos_theta: &'a [f64],
     cos_theta_squared: &'a [f64],
     coefficient_a: &'a [f64],
@@ -1596,6 +1725,7 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
         let FusedScaledScalarAnalysisPair {
             m,
             lmax,
+            allow_insignificant_prefix,
             cos_theta,
             cos_theta_squared,
             coefficient_a,
@@ -1614,9 +1744,75 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
         let mut current = current;
         let mut next = next;
         let pair_count = (lmax - m + 2) / 2;
+        let mut pair_start = 0;
         let mut normal_range = false;
 
-        for pair_index in 0..pair_count {
+        if allow_insignificant_prefix {
+            let mut below_limit = analysis_pair_below_ftol(simd, previous, current, exponents);
+            while below_limit && pair_start < pair_count {
+                zero_staged_analysis_pair(staged_coefficients, m, lmax, pair_start);
+                if pair_count - pair_start == 1 {
+                    return Ok(true);
+                }
+
+                let first_pair = pair_start;
+                if !advance_analysis_pair(
+                    simd,
+                    coefficient_a[first_pair],
+                    coefficient_b[first_pair],
+                    cos_theta_squared,
+                    previous,
+                    current,
+                    next,
+                ) {
+                    return Ok(false);
+                }
+                std::mem::swap(&mut previous, &mut current);
+                std::mem::swap(&mut current, &mut next);
+                let Some(first_normal_range) =
+                    scalar::normalize_pair_lanes_simd(simd, previous, current, exponents)
+                else {
+                    return Ok(false);
+                };
+                if !analysis_pair_below_ftol(simd, previous, current, exponents) {
+                    pair_start += 1;
+                    normal_range = first_normal_range;
+                    break;
+                }
+
+                let second_pair = first_pair + 1;
+                zero_staged_analysis_pair(staged_coefficients, m, lmax, second_pair);
+                if pair_count - second_pair == 1 {
+                    return Ok(true);
+                }
+                if !advance_analysis_pair(
+                    simd,
+                    coefficient_a[second_pair],
+                    coefficient_b[second_pair],
+                    cos_theta_squared,
+                    previous,
+                    current,
+                    next,
+                ) {
+                    return Ok(false);
+                }
+                std::mem::swap(&mut previous, &mut current);
+                std::mem::swap(&mut current, &mut next);
+                let Some(next_normal_range) =
+                    scalar::normalize_pair_lanes_simd(simd, previous, current, exponents)
+                else {
+                    return Ok(false);
+                };
+                normal_range = next_normal_range;
+                pair_start += 2;
+                below_limit = analysis_pair_below_ftol(simd, previous, current, exponents);
+            }
+            if pair_start == pair_count {
+                return Ok(true);
+            }
+        }
+
+        for pair_index in pair_start..pair_count {
             if normal_range {
                 return Ok(FusedScalarAnalysisPair::<OPPOSITE_COSINE_WEIGHTED> {
                     m,
@@ -3578,6 +3774,7 @@ mod tests {
             arch,
             m,
             lmax,
+            false,
             &sin_theta,
             &cos_theta,
             sectoral_norm,
@@ -4008,6 +4205,7 @@ mod tests {
             .zip(&cos_theta)
             .map(|(&spectrum, &cosine)| spectrum * cosine)
             .collect();
+        assert!(insignificant_prefix_budget_safe(lane_count));
         staged.fill(Complex64::new(0.0, 0.0));
         previous.fill(0.0);
         current.fill(0.0);
@@ -4017,6 +4215,7 @@ mod tests {
             Arch::new(),
             m,
             lmax,
+            true,
             &sin_theta,
             &cos_theta,
             sectoral_norm,
@@ -4034,6 +4233,27 @@ mod tests {
         )
         .unwrap();
         assert!(fused_preweighted);
+        assert_eq!(staged[0], Complex64::new(0.0, 0.0));
+        let prefix_len = staged
+            .iter()
+            .take_while(|&&value| value == Complex64::new(0.0, 0.0))
+            .count();
+        assert!(prefix_len > 0);
+        let input_scale = same_real
+            .iter()
+            .zip(&same_imag)
+            .chain(weighted_opposite_real.iter().zip(&weighted_opposite_imag))
+            .map(|(&real, &imag)| real.hypot(imag))
+            .fold(0.0_f64, f64::max);
+        let omission_bound = 2.0 * lane_count as f64 * ANALYSIS_FTOL * input_scale;
+        for (degree_offset, expected) in reference.iter().take(prefix_len).enumerate() {
+            assert!(
+                expected.norm() <= omission_bound,
+                "skipped pair {degree_offset} error {:.3e} exceeds {:.3e}",
+                expected.norm(),
+                omission_bound,
+            );
+        }
         for (actual, expected) in staged.iter().zip(&reference) {
             assert!(
                 (*actual - *expected).norm() <= reference_scale * 2.0e-12 + 1.0e-300,
