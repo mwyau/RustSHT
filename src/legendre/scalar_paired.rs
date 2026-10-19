@@ -1403,7 +1403,7 @@ pub(crate) fn fused_scalar_analysis_pair_block_dispatched(
         return Ok(false);
     }
 
-    staged_coefficients[..coefficient_count].fill(Complex64::new(0.0, 0.0));
+    // A successful block overwrites every coefficient; a declined block's scratch is discarded.
     Ok(arch.dispatch(FusedScalarAnalysisPair {
         m,
         lmax,
@@ -1600,8 +1600,7 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
         return Ok(false);
     }
 
-    staged_first[..coefficient_count].fill(Complex64::new(0.0, 0.0));
-    staged_second[..coefficient_count].fill(Complex64::new(0.0, 0.0));
+    // Each successful channel overwrites its full row; declined scratch is discarded.
     Ok(arch.dispatch(FusedScalarAnalysisPairChannels {
         m,
         lmax,
@@ -3167,7 +3166,7 @@ mod tests {
         );
         let sectoral_norm = scalar::sectoral_normalizations(m).unwrap()[m];
         let coefficient_count = lmax - m + 1;
-        let mut staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
+        let mut staged = vec![Complex64::new(17.0, -9.0); coefficient_count];
         let mut previous = vec![0.0; lane_count];
         let mut current = vec![0.0; lane_count];
         let mut next = vec![0.0; lane_count];
@@ -3284,8 +3283,8 @@ mod tests {
         );
         let sectoral_norm = scalar::sectoral_normalizations(m).unwrap()[m];
         let coefficient_count = lmax - m + 1;
-        let mut staged_first = vec![Complex64::new(0.0, 0.0); coefficient_count];
-        let mut staged_second = vec![Complex64::new(0.0, 0.0); coefficient_count];
+        let mut staged_first = vec![Complex64::new(17.0, -9.0); coefficient_count];
+        let mut staged_second = vec![Complex64::new(-13.0, 7.0); coefficient_count];
         let mut previous = vec![0.0; lane_count];
         let mut current = vec![0.0; lane_count];
         let mut next = vec![0.0; lane_count];

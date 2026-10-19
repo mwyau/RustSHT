@@ -46,7 +46,7 @@ A vector-block-major register-resident suffix prototype matched the pair-major r
 
 1. **P0 complete:** the shared-prefix follow-up confirms the original initialization/prefix excess is substantially reduced. Stop q1 prefix micro-tuning.
 2. **P1 implementation landed:** ordinary recurrence now advances two adjacent SIMD ring vectors together. q8 T720 improved in the bounded screen; q8 remains slower than DUCC and requires another source-grounded change only if a distinct structural cause is measured.
-3. **P2 next:** improve the scalar-analysis degree loop and SIMD accumulation using DUCC's two-pair `map2alm_kernel` structure. Dynamic scheduling, active-ring compaction and the first vectorized initialization step are implemented; A, S*, and A* remain distinct.
+3. **P2 next:** the bounded T720 profile locates the main excess in normal paired recurrence/accumulation, not FFT, packing or q8 scheduling. A fused two-pair experiment regressed the Rust screen by 8% q1 / 12% q8 and was discarded; see [the stage profile](reports/scalar-analysis-stage-profile-2026-10-18.md). Next test a lower-register-pressure recurrence unroll. Dynamic scheduling, active-ring compaction and vectorized initialization are implemented; A, S*, and A* remain distinct.
 4. **P3–P4:** extend validated recurrence improvements to spin-1 synthesis/analysis, then applicable f32, CC/F1 and spin-2 regimes; preserve spin 3–4 and one minimal robust fallback per necessary regime. Do not reopen the broad profiling campaign.
 
 ## Read only when needed
