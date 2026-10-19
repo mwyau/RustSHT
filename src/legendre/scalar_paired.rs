@@ -1915,6 +1915,180 @@ struct FusedScalarAnalysisPair<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
     next: &'a mut [f64],
 }
 
+struct FusedAnalysisPairStep<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
+    same_real: &'a [f64],
+    same_imag: &'a [f64],
+    opposite_real: &'a [f64],
+    opposite_imag: &'a [f64],
+    basis_previous: &'a [f64],
+    basis_current: &'a [f64],
+    cos_theta: &'a [f64],
+    cos_theta_squared: &'a [f64],
+    coefficient_a: f64,
+    coefficient_b: f64,
+    basis_next: &'a mut [f64],
+}
+
+impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
+    for FusedAnalysisPairStep<'_, OPPOSITE_COSINE_WEIGHTED>
+{
+    type Output = (Complex64, Complex64, bool);
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let FusedAnalysisPairStep {
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            basis_previous,
+            basis_current,
+            cos_theta,
+            cos_theta_squared,
+            coefficient_a,
+            coefficient_b,
+            basis_next,
+        } = self;
+        let (same_real_vectors, same_real_tail) = S::as_simd_f64s(same_real);
+        let (same_imag_vectors, same_imag_tail) = S::as_simd_f64s(same_imag);
+        let (opposite_real_vectors, opposite_real_tail) = S::as_simd_f64s(opposite_real);
+        let (opposite_imag_vectors, opposite_imag_tail) = S::as_simd_f64s(opposite_imag);
+        let (previous_vectors, previous_tail) = S::as_simd_f64s(basis_previous);
+        let (current_vectors, current_tail) = S::as_simd_f64s(basis_current);
+        let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
+        let (cosine_squared_vectors, cosine_squared_tail) = S::as_simd_f64s(cos_theta_squared);
+        let (next_vectors, next_tail) = S::as_mut_simd_f64s(basis_next);
+        debug_assert_eq!(same_real_vectors.len(), current_vectors.len());
+        debug_assert_eq!(same_imag_vectors.len(), current_vectors.len());
+        debug_assert_eq!(opposite_real_vectors.len(), current_vectors.len());
+        debug_assert_eq!(opposite_imag_vectors.len(), current_vectors.len());
+        debug_assert_eq!(previous_vectors.len(), current_vectors.len());
+        debug_assert_eq!(cosine_vectors.len(), current_vectors.len());
+        debug_assert_eq!(cosine_squared_vectors.len(), current_vectors.len());
+        debug_assert_eq!(next_vectors.len(), current_vectors.len());
+        debug_assert_eq!(same_real_tail.len(), current_tail.len());
+        debug_assert_eq!(same_imag_tail.len(), current_tail.len());
+        debug_assert_eq!(opposite_real_tail.len(), current_tail.len());
+        debug_assert_eq!(opposite_imag_tail.len(), current_tail.len());
+        debug_assert_eq!(previous_tail.len(), current_tail.len());
+        debug_assert_eq!(cosine_tail.len(), current_tail.len());
+        debug_assert_eq!(cosine_squared_tail.len(), current_tail.len());
+        debug_assert_eq!(next_tail.len(), current_tail.len());
+
+        let zero = simd.splat_f64s(0.0);
+        let minimum = simd.splat_f64s(scalar::SMALL);
+        let maximum = simd.splat_f64s(scalar::BIG);
+        let a = simd.splat_f64s(coefficient_a);
+        let b = simd.splat_f64s(coefficient_b);
+        let mut same_re = zero;
+        let mut same_im = zero;
+        let mut opposite_re = zero;
+        let mut opposite_im = zero;
+        let mut all_vectors_in_range = simd.equal_f64s(zero, zero);
+        let mut all_tails_in_range = true;
+
+        // Each vector contributes to the current coefficient while the same
+        // pass advances and range-checks its recurrence state.
+        for (
+            (
+                (
+                    (((((same_real, same_imag), opposite_real), opposite_imag), previous), basis),
+                    cosine,
+                ),
+                cosine_squared,
+            ),
+            next,
+        ) in same_real_vectors
+            .iter()
+            .zip(same_imag_vectors.iter())
+            .zip(opposite_real_vectors.iter())
+            .zip(opposite_imag_vectors.iter())
+            .zip(previous_vectors.iter())
+            .zip(current_vectors.iter())
+            .zip(cosine_vectors.iter())
+            .zip(cosine_squared_vectors.iter())
+            .zip(next_vectors.iter_mut())
+        {
+            let basis = *basis;
+            same_re = simd.add_f64s(same_re, simd.mul_f64s(*same_real, basis));
+            same_im = simd.add_f64s(same_im, simd.mul_f64s(*same_imag, basis));
+            let opposite_re_product = if OPPOSITE_COSINE_WEIGHTED {
+                simd.mul_f64s(*opposite_real, basis)
+            } else {
+                simd.mul_f64s(simd.mul_f64s(*opposite_real, basis), *cosine)
+            };
+            let opposite_im_product = if OPPOSITE_COSINE_WEIGHTED {
+                simd.mul_f64s(*opposite_imag, basis)
+            } else {
+                simd.mul_f64s(simd.mul_f64s(*opposite_imag, basis), *cosine)
+            };
+            opposite_re = simd.add_f64s(opposite_re, opposite_re_product);
+            opposite_im = simd.add_f64s(opposite_im, opposite_im_product);
+
+            let leading = simd.mul_add_f64s(a, *cosine_squared, b);
+            let next_value = simd.mul_add_f64s(leading, basis, *previous);
+            *next = next_value;
+            let magnitude = simd.abs_f64s(next_value);
+            let is_zero = simd.equal_f64s(magnitude, zero);
+            let above_minimum = simd.greater_than_or_equal_f64s(magnitude, minimum);
+            let below_maximum = simd.less_than_or_equal_f64s(magnitude, maximum);
+            let in_range = simd.and_m64s(simd.or_m64s(is_zero, above_minimum), below_maximum);
+            all_vectors_in_range = simd.and_m64s(all_vectors_in_range, in_range);
+        }
+
+        let mut same_re_sum = simd.reduce_sum_f64s(same_re);
+        let mut same_im_sum = simd.reduce_sum_f64s(same_im);
+        let mut opposite_re_sum = simd.reduce_sum_f64s(opposite_re);
+        let mut opposite_im_sum = simd.reduce_sum_f64s(opposite_im);
+        for (
+            (
+                (
+                    (((((same_real, same_imag), opposite_real), opposite_imag), previous), basis),
+                    cosine,
+                ),
+                cosine_squared,
+            ),
+            next,
+        ) in same_real_tail
+            .iter()
+            .zip(same_imag_tail.iter())
+            .zip(opposite_real_tail.iter())
+            .zip(opposite_imag_tail.iter())
+            .zip(previous_tail.iter())
+            .zip(current_tail.iter())
+            .zip(cosine_tail.iter())
+            .zip(cosine_squared_tail.iter())
+            .zip(next_tail.iter_mut())
+        {
+            let basis = *basis;
+            let cosine = *cosine;
+            same_re_sum += *same_real * basis;
+            same_im_sum += *same_imag * basis;
+            if OPPOSITE_COSINE_WEIGHTED {
+                opposite_re_sum += *opposite_real * basis;
+                opposite_im_sum += *opposite_imag * basis;
+            } else {
+                opposite_re_sum += (*opposite_real * basis) * cosine;
+                opposite_im_sum += (*opposite_imag * basis) * cosine;
+            }
+
+            let leading = coefficient_a.mul_add(*cosine_squared, coefficient_b);
+            let next_value = leading.mul_add(basis, *previous);
+            *next = next_value;
+            let magnitude = next_value.abs();
+            all_tails_in_range &= next_value.is_finite()
+                && magnitude <= scalar::BIG
+                && (magnitude == 0.0 || magnitude >= scalar::SMALL);
+        }
+
+        (
+            Complex64::new(same_re_sum, same_im_sum),
+            Complex64::new(opposite_re_sum, opposite_im_sum),
+            analysis_mask_all(simd, all_vectors_in_range) && all_tails_in_range,
+        )
+    }
+}
+
 impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
     for FusedScalarAnalysisPair<'_, OPPOSITE_COSINE_WEIGHTED>
 {
@@ -1943,76 +2117,51 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
         let mut current = current;
         let mut next = next;
 
-        for pair_index in pair_start..(lmax - m + 2) / 2 {
+        let pair_count = (lmax - m + 2) / 2;
+        for pair_index in pair_start..pair_count.saturating_sub(1) {
             let l = m + 2 * pair_index;
             let offset = l - m;
-            let (same_sum, opposite_sum) = AnalysisPairAccumulation::<OPPOSITE_COSINE_WEIGHTED> {
-                same_real,
-                same_imag,
-                opposite_real,
-                opposite_imag,
-                basis: current,
-                cos_theta,
-            }
-            .with_simd(simd);
+            let (same_sum, opposite_sum, next_is_in_range) =
+                FusedAnalysisPairStep::<OPPOSITE_COSINE_WEIGHTED> {
+                    same_real,
+                    same_imag,
+                    opposite_real,
+                    opposite_imag,
+                    basis_previous: previous,
+                    basis_current: current,
+                    cos_theta,
+                    cos_theta_squared,
+                    coefficient_a: coefficient_a[pair_index],
+                    coefficient_b: coefficient_b[pair_index],
+                    basis_next: next,
+                }
+                .with_simd(simd);
             staged_coefficients[offset] = same_sum;
             if l < lmax {
                 staged_coefficients[offset + 1] = opposite_sum;
             }
-            if l + 2 > lmax {
-                break;
-            }
-
-            let (current_vectors, current_tail) = S::as_simd_f64s(current);
-            let (previous_vectors, previous_tail) = S::as_simd_f64s(previous);
-            let (cosine_squared_vectors, cosine_squared_tail) = S::as_simd_f64s(cos_theta_squared);
-            let (next_vectors, next_tail) = S::as_mut_simd_f64s(next);
-            let a = simd.splat_f64s(coefficient_a[pair_index]);
-            let b = simd.splat_f64s(coefficient_b[pair_index]);
-            let big = simd.splat_f64s(scalar::BIG);
-            let zeros = simd.splat_f64s(0.0);
-            let mut all_vectors_in_range = simd.equal_f64s(zeros, zeros);
-            debug_assert_eq!(current_vectors.len(), previous_vectors.len());
-            debug_assert_eq!(current_vectors.len(), cosine_squared_vectors.len());
-            debug_assert_eq!(current_vectors.len(), next_vectors.len());
-            // The previous/current pair is normal on entry. Check each new
-            // next value before it becomes current on the following iteration.
-            for index in 0..current_vectors.len() {
-                let leading = simd.mul_add_f64s(a, cosine_squared_vectors[index], b);
-                let next_value =
-                    simd.mul_add_f64s(leading, current_vectors[index], previous_vectors[index]);
-                next_vectors[index] = next_value;
-
-                let magnitude = simd.abs_f64s(next_value);
-                let is_zero = simd.equal_f64s(magnitude, zeros);
-                let above_lower_bound =
-                    simd.greater_than_or_equal_f64s(magnitude, simd.splat_f64s(scalar::SMALL));
-                let below_upper_bound = simd.less_than_or_equal_f64s(magnitude, big);
-                let in_range =
-                    simd.and_m64s(simd.or_m64s(is_zero, above_lower_bound), below_upper_bound);
-                all_vectors_in_range = simd.and_m64s(all_vectors_in_range, in_range);
-            }
-            for index in 0..current_tail.len() {
-                let leading = coefficient_a[pair_index]
-                    .mul_add(cosine_squared_tail[index], coefficient_b[pair_index]);
-                let next_value = leading.mul_add(current_tail[index], previous_tail[index]);
-                next_tail[index] = next_value;
-                let magnitude = next_value.abs();
-                if !next_value.is_finite()
-                    || magnitude > scalar::BIG
-                    || (magnitude != 0.0 && magnitude < scalar::SMALL)
-                {
-                    return false;
-                }
-            }
-            if simd.reduce_min_f64s(simd.select_f64s(all_vectors_in_range, big, zeros))
-                < scalar::SMALL
-            {
+            if !next_is_in_range {
                 return false;
             }
-
             std::mem::swap(&mut previous, &mut current);
             std::mem::swap(&mut current, &mut next);
+        }
+
+        let last_pair = pair_count - 1;
+        let l = m + 2 * last_pair;
+        let offset = l - m;
+        let (same_sum, opposite_sum) = AnalysisPairAccumulation::<OPPOSITE_COSINE_WEIGHTED> {
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            basis: current,
+            cos_theta,
+        }
+        .with_simd(simd);
+        staged_coefficients[offset] = same_sum;
+        if l < lmax {
+            staged_coefficients[offset + 1] = opposite_sum;
         }
         true
     }
