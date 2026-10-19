@@ -2,6 +2,8 @@
 
 **Status:** Updated 2026-10-18 after the matched RustSHT–DUCC stage profile and scalar-prefix fix `41b309a`. Active development branch: `opt/sht-performance-parity`. The objective remains faithful **native Rust implementation of DUCC's complete numerical execution algorithms**, with comparable accuracy and performance across supported SHT operations. **DUCC is an external numerical reference, not a name for RustSHT modules/types.**
 
+**Three-paper literature audit (reference only):** [plan 10](10-three-paper-method-audit.md) classifies methods from libsharp (2013), Ishioka (2018), and general SHT (2023) against current source. Continue P2/P3; defer multi-map fusion, autotuning, new grids, MPI and NUFFT until separately justified.
+
 **Start here:** [AGENTS.md](../AGENTS.md) → [PERFORMANCE_STATUS.md](../PERFORMANCE_STATUS.md) → this roadmap. Read the [measured stage profile](../reports/matched-rust-ducc-stage-profile-2026-10-18.md) and [profiling procedure](09-matched-ducc-rust-profiling.md) only when profiling or changing the measured hotspots. Do not bulk-read the [historical ledger](05-validation-and-milestones-history.md), [old performance snapshot](../reports/performance-status-pre-ducc-port-2026-10-18.md), or archived reviews.
 
 ## Verified checkpoint and interpretation
