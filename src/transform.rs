@@ -2470,6 +2470,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                 workspace.theta_cos.len(),
             ),
             (
+                "workspace analysis ring scales",
+                workspace.analysis_ring_scales.len(),
+            ),
+            (
                 "workspace latitude order limits",
                 workspace.ring_order_limits.len(),
             ),

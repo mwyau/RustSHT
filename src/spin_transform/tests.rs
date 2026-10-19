@@ -2592,6 +2592,13 @@ fn spin1_gl_paired_analysis_matches_full_latitude_recurrence() {
     let mut workspace = plan.workspace().unwrap();
     plan.prepare_spin_latitudes(&mut workspace, 1);
     let spectrum_len = plan.fft.spectrum_len();
+    let ring_scales: Vec<_> = plan
+        .grid
+        .ring_weights()
+        .iter()
+        .zip(&workspace.theta_sin)
+        .map(|(&weight, &sine)| (weight / sine) / nphi as f64)
+        .collect();
 
     for m in [0, 17, 450] {
         let mut ring_order_limits = workspace.ring_order_limits.clone();
@@ -2618,10 +2625,8 @@ fn spin1_gl_paired_analysis_matches_full_latitude_recurrence() {
                 &q_spectra,
                 &u_spectra,
                 spectrum_len,
-                nphi as f64,
                 longitude_phase::<f64>(m, plan.grid.phi0(), true),
-                plan.grid.ring_weights(),
-                true,
+                &ring_scales,
                 m,
                 &workspace.theta_sin,
                 &workspace.theta_cos,
@@ -2677,6 +2682,13 @@ fn spin1_gl_paired_analysis_falls_back_for_extreme_inputs() {
     let mut workspace = plan.workspace().unwrap();
     plan.prepare_spin_latitudes(&mut workspace, 1);
     let spectrum_len = plan.fft.spectrum_len();
+    let ring_scales: Vec<_> = plan
+        .grid
+        .ring_weights()
+        .iter()
+        .zip(&workspace.theta_sin)
+        .map(|(&weight, &sine)| (weight / sine) / nphi as f64)
+        .collect();
     let mut q_spectra = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
     let u_spectra = q_spectra.clone();
     for ring in 0..ntheta {
@@ -2689,10 +2701,8 @@ fn spin1_gl_paired_analysis_falls_back_for_extreme_inputs() {
             &q_spectra,
             &u_spectra,
             spectrum_len,
-            nphi as f64,
             longitude_phase::<f64>(0, plan.grid.phi0(), true),
-            plan.grid.ring_weights(),
-            true,
+            &ring_scales,
             0,
             &workspace.theta_sin,
             &workspace.theta_cos,
@@ -2895,6 +2905,20 @@ fn spin1_fused_analysis_falls_back_when_only_q_products_are_unsafe() {
     let mut general_workspace = general_plan.workspace().unwrap();
     fast_plan.prepare_spin_latitudes(&mut fast_workspace, 1);
     general_plan.prepare_spin_latitudes(&mut general_workspace, 1);
+    let fast_ring_scales: Vec<_> = fast_plan
+        .grid
+        .ring_weights()
+        .iter()
+        .zip(&fast_workspace.theta_sin)
+        .map(|(&weight, &sine)| (weight / sine) / nphi as f64)
+        .collect();
+    let general_ring_scales: Vec<_> = general_plan
+        .grid
+        .ring_weights()
+        .iter()
+        .zip(&general_workspace.theta_sin)
+        .map(|(&weight, &sine)| (weight / sine) / nphi as f64)
+        .collect();
 
     let spectrum_len = fast_plan.fft.spectrum_len();
     let mut q_spectra = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
@@ -2922,6 +2946,7 @@ fn spin1_fused_analysis_falls_back_when_only_q_products_are_unsafe() {
                 fast_plan.grid.phi0(),
                 Some(fast_plan.grid.ring_weights()),
                 true,
+                Some(&fast_ring_scales),
                 false,
                 1,
                 false,
@@ -2946,6 +2971,7 @@ fn spin1_fused_analysis_falls_back_when_only_q_products_are_unsafe() {
             general_plan.grid.phi0(),
             Some(general_plan.grid.ring_weights()),
             true,
+            Some(&general_ring_scales),
             false,
             1,
             false,

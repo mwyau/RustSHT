@@ -756,6 +756,22 @@ impl<T: ShtScalar> ShtPlan<T> {
             )
         } else {
             self.prepare_spin_latitudes(workspace, recurrence_spin);
+            if T::supports_paired_scalar()
+                && recurrence_spin == 1
+                && !derivative_norm
+                && self.grid.kind() == crate::grid::GridKind::GaussLegendre
+                && let Some(ring_weights) = ring_weights
+            {
+                let longitude_count = T::from_usize(nphi).expect("longitude count converts");
+                for (ring, &weight) in ring_weights.iter().enumerate() {
+                    let mut scale = T::from_f64(weight).expect("ring weight is representable")
+                        / workspace.theta_sin[ring];
+                    if normalize_fourier {
+                        scale /= longitude_count;
+                    }
+                    workspace.analysis_ring_scales[ring] = scale;
+                }
+            }
             (
                 workspace.spectra.as_slice(),
                 workspace.spin_spectra.as_slice(),
@@ -774,6 +790,16 @@ impl<T: ShtScalar> ShtPlan<T> {
             );
             phase_started = std::time::Instant::now();
         }
+        let analysis_ring_scales = if T::supports_paired_scalar()
+            && recurrence_spin == 1
+            && !derivative_norm
+            && self.grid.kind() == crate::grid::GridKind::GaussLegendre
+            && analysis_ring_weights.is_some()
+        {
+            Some(&workspace.analysis_ring_scales[..analysis_ntheta])
+        } else {
+            None
+        };
         let theta_sin = &workspace.theta_sin[..analysis_ntheta];
         let theta_cos = &workspace.theta_cos[..analysis_ntheta];
         let ring_order_limits = &workspace.ring_order_limits[..analysis_ntheta];
@@ -796,6 +822,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     self.grid.phi0(),
                     analysis_ring_weights,
                     analysis_normalize_fourier,
+                    analysis_ring_scales,
                     analysis_spectra_preweighted,
                     recurrence_spin,
                     derivative_norm,
@@ -829,6 +856,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     self.grid.phi0(),
                     analysis_ring_weights,
                     analysis_normalize_fourier,
+                    analysis_ring_scales,
                     analysis_spectra_preweighted,
                     recurrence_spin,
                     derivative_norm,
@@ -862,6 +890,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             self.grid.phi0(),
             analysis_ring_weights,
             analysis_normalize_fourier,
+            analysis_ring_scales,
             analysis_spectra_preweighted,
             recurrence_spin,
             derivative_norm,
@@ -2390,6 +2419,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         phi0: f64,
         ring_weights: Option<&[f64]>,
         normalize_fourier: bool,
+        analysis_ring_scales: Option<&[T]>,
         spectra_preweighted: bool,
         recurrence_spin: usize,
         derivative_norm: bool,
@@ -2501,10 +2531,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                         q_spectra,
                         u_spectra,
                         spectrum_len,
-                        longitude_count,
                         phase,
-                        ring_weights.expect("GL spin analysis has ring weights"),
-                        normalize_fourier,
+                        analysis_ring_scales.expect("GL spin analysis has ring scales"),
                         m,
                         theta_sin,
                         theta_cos,
@@ -2927,10 +2955,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         q_spectra: &[Complex<T>],
         u_spectra: &[Complex<T>],
         spectrum_len: usize,
-        longitude_count: T,
         phase: Complex<T>,
-        ring_weights: &[f64],
-        normalize_fourier: bool,
+        ring_scales: &[T],
         m: usize,
         theta_sin: &[T],
         theta_cos: &[T],
@@ -2945,7 +2971,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         }
         debug_assert_eq!(theta_sin.len(), theta_cos.len());
         debug_assert_eq!(theta_sin.len(), ring_order_limits.len());
-        debug_assert_eq!(ring_weights.len(), theta_sin.len());
+        debug_assert_eq!(ring_scales.len(), theta_sin.len());
 
         let scalar_lmax = self.harmonics.lmax() + 1;
         let scalar_coefficient_count = scalar_lmax + 1;
@@ -2984,34 +3010,25 @@ impl<T: ShtScalar> ShtPlan<T> {
                     active_lanes += 1;
                 }
 
-                let weighted = |ring: usize, spectrum: Complex<T>| {
-                    let mut scale = T::from_f64(ring_weights[ring])
-                        .expect("GL ring weight is representable")
-                        / theta_sin[ring];
-                    if normalize_fourier {
-                        scale /= longitude_count;
-                    }
-                    spectrum * phase * scale
-                };
                 let north_spectrum_start = north_ring * spectrum_len + m;
                 let south_spectrum_start = south_ring * spectrum_len + m;
                 let north_q = if north_active {
-                    weighted(north_ring, q_spectra[north_spectrum_start])
+                    q_spectra[north_spectrum_start] * phase * ring_scales[north_ring]
                 } else {
                     Complex::new(T::zero(), T::zero())
                 };
                 let south_q = if south_active {
-                    weighted(south_ring, q_spectra[south_spectrum_start])
+                    q_spectra[south_spectrum_start] * phase * ring_scales[south_ring]
                 } else {
                     Complex::new(T::zero(), T::zero())
                 };
                 let north_u = if north_active {
-                    weighted(north_ring, u_spectra[north_spectrum_start])
+                    u_spectra[north_spectrum_start] * phase * ring_scales[north_ring]
                 } else {
                     Complex::new(T::zero(), T::zero())
                 };
                 let south_u = if south_active {
-                    weighted(south_ring, u_spectra[south_spectrum_start])
+                    u_spectra[south_spectrum_start] * phase * ring_scales[south_ring]
                 } else {
                     Complex::new(T::zero(), T::zero())
                 };
@@ -3950,6 +3967,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         phi0: f64,
         ring_weights: Option<&[f64]>,
         normalize_fourier: bool,
+        analysis_ring_scales: Option<&[T]>,
         spectra_preweighted: bool,
         recurrence_spin: usize,
         derivative_norm: bool,
@@ -3972,6 +3990,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 phi0,
                 ring_weights,
                 normalize_fourier,
+                analysis_ring_scales,
                 spectra_preweighted,
                 recurrence_spin,
                 derivative_norm,
@@ -3999,6 +4018,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 phi0,
                 ring_weights,
                 normalize_fourier,
+                analysis_ring_scales,
                 spectra_preweighted,
                 recurrence_spin,
                 derivative_norm,
@@ -4058,6 +4078,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     phi0,
                     ring_weights,
                     normalize_fourier,
+                    analysis_ring_scales,
                     spectra_preweighted,
                     recurrence_spin,
                     derivative_norm,
