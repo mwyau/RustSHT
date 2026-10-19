@@ -104,19 +104,14 @@ were within host variation. See the
 - Numerical checks must include analytic fields and adjoint identities alongside
   pinned DUCC comparisons; roundtrips alone do not establish correctness.
 
+**Focused scalar-analysis plan (active):** [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md) defines a matched native Rust/DUCC kernel comparison, an integrated scaled-to-ordinary transition for the initially scaled blocks, bounded ordinary recurrence/accumulation changes, and numerical acceptance gates. No parity claim yet; use the existing handoff results as baseline, not a fresh benchmark campaign.
+
 ## Next implementation work
 
-1. **Spin-1:** profile recurrence and accumulation next; keep E/B, pole and
-   adjoint semantics distinct and test both synthesis and analysis before
-   broadening shared code. GL analysis now reuses ring scales per transform.
-2. **Scalar analysis:** preserve the checked fallback and A/A* distinctions;
-   investigate DUCC's lane-wise scaled transition before changing degree-loop
-   structure again.
-3. **Generalization:** extend useful changes to native f32 and applicable CC/F1
-   and spin-2 paths, preserving spin 3–4 and bounded memory.
-4. Use lightweight correctness/performance screens at varied truncations,
-   including irregular longitude counts and reduced `mmax`; reserve full DUCC
-   comparisons for meaningful integrated milestones.
+1. **Scalar analysis (priority):** execute [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md) with paired native kernel measurements and validated integrated normal/scaled execution. Do not mistake initialization declines for failed degree-loop replay.
+2. **Spin-1:** after a substantive scalar-analysis result, profile recurrence/accumulation and reuse compatible techniques; preserve E/B, pole and adjoint semantics. Per-ring scales already exist.
+3. **Generalization:** after validated kernels, improve native f32 and applicable CC/F1/spin-2 paths without breaking spin 3–4.
+4. Keep benchmark screens bounded and irregular/reduced cases represented; reserve broader DUCC comparisons for meaningful integrated milestones.
 
 ## Selective source and evidence index
 

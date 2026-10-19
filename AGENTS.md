@@ -15,6 +15,8 @@ Production-code naming and retirement are governed by [plans/08-kernel-naming-an
 
 Implement and test meaningful source changes before launching major profiling or benchmark campaigns. No arbitrary T511/T1023/T2047 optimization focus; choose varied, realistic and irregular bandlimits, reduced `mmax`, grid sizes and worker counts. Those historic cases remain regression coverage only. Do not install exact-bandlimit tuning selectors without a measured, explainable regime boundary.
 
+**Current scalar-analysis campaign:** follow [plan 11 — native DUCC-equivalent scalar analysis](plans/11-ducc-equivalent-scalar-analysis.md) before beginning new scalar-analysis micro-optimizations. It supersedes only earlier P2 sequencing, not numerical/safety/generation constraints. The matched kernel experiment must establish a reproducible residual before claiming parity.
+
 ## Performance-work handoff
 
 1. Start performance work by reading `AGENTS.md` and `PERFORMANCE_STATUS.md`.
