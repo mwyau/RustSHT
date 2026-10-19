@@ -1081,7 +1081,7 @@ pub(crate) fn accumulate_analysis_pair_dispatched(
     if products_safe {
         if normal_range {
             debug_assert!(exponents.iter().all(|&exponent| exponent == 0));
-            return arch.dispatch(AnalysisPairAccumulation {
+            return arch.dispatch(AnalysisPairAccumulation::<false> {
                 same_real,
                 same_imag,
                 opposite_real,
@@ -1167,8 +1167,7 @@ pub(crate) fn accumulate_analysis_pair_channels_dispatched(
     })
 }
 
-/// Checks once per latitude block whether Fourier values can multiply the
-/// largest unscaled recurrence lane and reduce across the block safely.
+/// Checks whether an analysis block can safely use ordinary SIMD accumulation.
 pub(crate) fn analysis_products_safe(
     same_real: &[f64],
     same_imag: &[f64],
@@ -1192,6 +1191,34 @@ pub(crate) fn analysis_products_safe(
         && cos_theta
             .iter()
             .all(|value| value.is_finite() && value.abs() <= 1.0)
+}
+
+/// Applies DUCC's cosine weight to the opposite channels while checking that
+/// the transformation does not introduce subnormal products.
+///
+/// A `false` result can leave part of the opposite channels weighted; callers
+/// must restore them from the original spectra before using the scaled path.
+pub(crate) fn prepare_analysis_opposite(
+    opposite_real: &mut [f64],
+    opposite_imag: &mut [f64],
+    cos_theta: &[f64],
+) -> bool {
+    debug_assert_eq!(opposite_real.len(), opposite_imag.len());
+    debug_assert_eq!(opposite_real.len(), cos_theta.len());
+    for ((real, imag), &cosine) in opposite_real.iter_mut().zip(opposite_imag).zip(cos_theta) {
+        let weighted_real = *real * cosine;
+        let weighted_imag = *imag * cosine;
+        let real_safe =
+            weighted_real.is_normal() || (weighted_real == 0.0 && (*real == 0.0 || cosine == 0.0));
+        let imag_safe =
+            weighted_imag.is_normal() || (weighted_imag == 0.0 && (*imag == 0.0 || cosine == 0.0));
+        if !real_safe || !imag_safe {
+            return false;
+        }
+        *real = weighted_real;
+        *imag = weighted_imag;
+    }
+    true
 }
 
 /// Initializes ordinary-range sectoral values across SIMD latitude lanes.
@@ -1353,7 +1380,96 @@ fn integer_power_vector<S: Simd>(simd: S, mut base: S::f64s, mut exponent: usize
     clippy::too_many_arguments,
     reason = "The fused scalar analysis block receives parity spectra and worker-owned recurrence scratch explicitly."
 )]
+#[cfg(test)]
 pub(crate) fn fused_scalar_analysis_pair_block_dispatched(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[f64],
+    cos_theta: &[f64],
+    sectoral_norm: f64,
+    coefficient_a: &[f64],
+    coefficient_b: &[f64],
+    same_real: &[f64],
+    same_imag: &[f64],
+    opposite_real: &[f64],
+    opposite_imag: &[f64],
+    staged_coefficients: &mut [Complex64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    next: &mut [f64],
+    exponents: &mut [i64],
+) -> Result<bool, ShtError> {
+    fused_scalar_analysis_pair_block_impl::<false>(
+        arch,
+        m,
+        lmax,
+        sin_theta,
+        cos_theta,
+        sectoral_norm,
+        coefficient_a,
+        coefficient_b,
+        same_real,
+        same_imag,
+        opposite_real,
+        opposite_imag,
+        staged_coefficients,
+        previous,
+        current,
+        next,
+        exponents,
+    )
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The preweighted block receives active geometry, spectra and worker scratch explicitly."
+)]
+pub(crate) fn fused_scalar_analysis_pair_block_preweighted_dispatched(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[f64],
+    cos_theta: &[f64],
+    sectoral_norm: f64,
+    coefficient_a: &[f64],
+    coefficient_b: &[f64],
+    same_real: &[f64],
+    same_imag: &[f64],
+    opposite_real: &[f64],
+    opposite_imag: &[f64],
+    staged_coefficients: &mut [Complex64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    next: &mut [f64],
+    exponents: &mut [i64],
+) -> Result<bool, ShtError> {
+    fused_scalar_analysis_pair_block_impl::<true>(
+        arch,
+        m,
+        lmax,
+        sin_theta,
+        cos_theta,
+        sectoral_norm,
+        coefficient_a,
+        coefficient_b,
+        same_real,
+        same_imag,
+        opposite_real,
+        opposite_imag,
+        staged_coefficients,
+        previous,
+        current,
+        next,
+        exponents,
+    )
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The scalar analysis block shares caller-owned coefficients, spectra and recurrence scratch."
+)]
+fn fused_scalar_analysis_pair_block_impl<const OPPOSITE_COSINE_WEIGHTED: bool>(
     arch: Arch,
     m: usize,
     lmax: usize,
@@ -1404,7 +1520,7 @@ pub(crate) fn fused_scalar_analysis_pair_block_dispatched(
     }
 
     // A successful block overwrites every coefficient; a declined block's scratch is discarded.
-    Ok(arch.dispatch(FusedScalarAnalysisPair {
+    let succeeded = arch.dispatch(FusedScalarAnalysisPair::<OPPOSITE_COSINE_WEIGHTED> {
         m,
         lmax,
         cos_theta,
@@ -1418,10 +1534,11 @@ pub(crate) fn fused_scalar_analysis_pair_block_dispatched(
         previous: &mut previous[..sin_theta.len()],
         current: &mut current[..sin_theta.len()],
         next: &mut next[..sin_theta.len()],
-    }))
+    });
+    Ok(succeeded)
 }
 
-struct FusedScalarAnalysisPair<'a> {
+struct FusedScalarAnalysisPair<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
     m: usize,
     lmax: usize,
     cos_theta: &'a [f64],
@@ -1437,7 +1554,9 @@ struct FusedScalarAnalysisPair<'a> {
     next: &'a mut [f64],
 }
 
-impl WithSimd for FusedScalarAnalysisPair<'_> {
+impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
+    for FusedScalarAnalysisPair<'_, OPPOSITE_COSINE_WEIGHTED>
+{
     type Output = bool;
 
     #[inline(always)]
@@ -1463,7 +1582,7 @@ impl WithSimd for FusedScalarAnalysisPair<'_> {
 
         for (pair_index, l) in (m..=lmax).step_by(2).enumerate() {
             let offset = l - m;
-            let (same_sum, opposite_sum) = AnalysisPairAccumulation {
+            let (same_sum, opposite_sum) = AnalysisPairAccumulation::<OPPOSITE_COSINE_WEIGHTED> {
                 same_real,
                 same_imag,
                 opposite_real,
@@ -1476,7 +1595,6 @@ impl WithSimd for FusedScalarAnalysisPair<'_> {
             if l < lmax {
                 staged_coefficients[offset + 1] = opposite_sum;
             }
-
             if l + 2 > lmax {
                 break;
             }
@@ -1734,7 +1852,7 @@ impl WithSimd for FusedScalarAnalysisPairChannels<'_> {
     }
 }
 
-struct AnalysisPairAccumulation<'a> {
+struct AnalysisPairAccumulation<'a, const OPPOSITE_COSINE_WEIGHTED: bool = false> {
     same_real: &'a [f64],
     same_imag: &'a [f64],
     opposite_real: &'a [f64],
@@ -1890,7 +2008,9 @@ impl WithSimd for AnalysisPairChannelsAccumulation<'_> {
     }
 }
 
-impl WithSimd for AnalysisPairAccumulation<'_> {
+impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
+    for AnalysisPairAccumulation<'_, OPPOSITE_COSINE_WEIGHTED>
+{
     type Output = (Complex64, Complex64);
 
     #[inline(always)]
@@ -1952,24 +2072,32 @@ impl WithSimd for AnalysisPairAccumulation<'_> {
         {
             same_re_even = simd.add_f64s(same_re_even, simd.mul_f64s(same_real[0], basis[0]));
             same_im_even = simd.add_f64s(same_im_even, simd.mul_f64s(same_imag[0], basis[0]));
-            opposite_re_even = simd.add_f64s(
-                opposite_re_even,
-                simd.mul_f64s(simd.mul_f64s(opposite_real[0], basis[0]), cosine[0]),
-            );
-            opposite_im_even = simd.add_f64s(
-                opposite_im_even,
-                simd.mul_f64s(simd.mul_f64s(opposite_imag[0], basis[0]), cosine[0]),
-            );
+            let opposite_re_product = if OPPOSITE_COSINE_WEIGHTED {
+                simd.mul_f64s(opposite_real[0], basis[0])
+            } else {
+                simd.mul_f64s(simd.mul_f64s(opposite_real[0], basis[0]), cosine[0])
+            };
+            let opposite_im_product = if OPPOSITE_COSINE_WEIGHTED {
+                simd.mul_f64s(opposite_imag[0], basis[0])
+            } else {
+                simd.mul_f64s(simd.mul_f64s(opposite_imag[0], basis[0]), cosine[0])
+            };
+            opposite_re_even = simd.add_f64s(opposite_re_even, opposite_re_product);
+            opposite_im_even = simd.add_f64s(opposite_im_even, opposite_im_product);
             same_re_odd = simd.add_f64s(same_re_odd, simd.mul_f64s(same_real[1], basis[1]));
             same_im_odd = simd.add_f64s(same_im_odd, simd.mul_f64s(same_imag[1], basis[1]));
-            opposite_re_odd = simd.add_f64s(
-                opposite_re_odd,
-                simd.mul_f64s(simd.mul_f64s(opposite_real[1], basis[1]), cosine[1]),
-            );
-            opposite_im_odd = simd.add_f64s(
-                opposite_im_odd,
-                simd.mul_f64s(simd.mul_f64s(opposite_imag[1], basis[1]), cosine[1]),
-            );
+            let opposite_re_product = if OPPOSITE_COSINE_WEIGHTED {
+                simd.mul_f64s(opposite_real[1], basis[1])
+            } else {
+                simd.mul_f64s(simd.mul_f64s(opposite_real[1], basis[1]), cosine[1])
+            };
+            let opposite_im_product = if OPPOSITE_COSINE_WEIGHTED {
+                simd.mul_f64s(opposite_imag[1], basis[1])
+            } else {
+                simd.mul_f64s(simd.mul_f64s(opposite_imag[1], basis[1]), cosine[1])
+            };
+            opposite_re_odd = simd.add_f64s(opposite_re_odd, opposite_re_product);
+            opposite_im_odd = simd.add_f64s(opposite_im_odd, opposite_im_product);
         }
         if !basis_remainder.is_empty() {
             let basis = basis_remainder[0];
@@ -1978,14 +2106,18 @@ impl WithSimd for AnalysisPairAccumulation<'_> {
                 simd.add_f64s(same_re_even, simd.mul_f64s(same_real_remainder[0], basis));
             same_im_even =
                 simd.add_f64s(same_im_even, simd.mul_f64s(same_imag_remainder[0], basis));
-            opposite_re_even = simd.add_f64s(
-                opposite_re_even,
-                simd.mul_f64s(simd.mul_f64s(opposite_real_remainder[0], basis), cosine),
-            );
-            opposite_im_even = simd.add_f64s(
-                opposite_im_even,
-                simd.mul_f64s(simd.mul_f64s(opposite_imag_remainder[0], basis), cosine),
-            );
+            let opposite_re_product = if OPPOSITE_COSINE_WEIGHTED {
+                simd.mul_f64s(opposite_real_remainder[0], basis)
+            } else {
+                simd.mul_f64s(simd.mul_f64s(opposite_real_remainder[0], basis), cosine)
+            };
+            let opposite_im_product = if OPPOSITE_COSINE_WEIGHTED {
+                simd.mul_f64s(opposite_imag_remainder[0], basis)
+            } else {
+                simd.mul_f64s(simd.mul_f64s(opposite_imag_remainder[0], basis), cosine)
+            };
+            opposite_re_even = simd.add_f64s(opposite_re_even, opposite_re_product);
+            opposite_im_even = simd.add_f64s(opposite_im_even, opposite_im_product);
         }
         let mut same_re = simd.reduce_sum_f64s(simd.add_f64s(same_re_even, same_re_odd));
         let mut same_im = simd.reduce_sum_f64s(simd.add_f64s(same_im_even, same_im_odd));
@@ -1996,8 +2128,13 @@ impl WithSimd for AnalysisPairAccumulation<'_> {
         for lane in 0..basis_tail.len() {
             same_re += same_real_tail[lane] * basis_tail[lane];
             same_im += same_imag_tail[lane] * basis_tail[lane];
-            opposite_re += (opposite_real_tail[lane] * basis_tail[lane]) * cosine_tail[lane];
-            opposite_im += (opposite_imag_tail[lane] * basis_tail[lane]) * cosine_tail[lane];
+            if OPPOSITE_COSINE_WEIGHTED {
+                opposite_re += opposite_real_tail[lane] * basis_tail[lane];
+                opposite_im += opposite_imag_tail[lane] * basis_tail[lane];
+            } else {
+                opposite_re += (opposite_real_tail[lane] * basis_tail[lane]) * cosine_tail[lane];
+                opposite_im += (opposite_imag_tail[lane] * basis_tail[lane]) * cosine_tail[lane];
+            }
         }
         (
             Complex64::new(same_re, same_im),
@@ -3233,9 +3370,69 @@ mod tests {
         )
         .unwrap();
 
-        for (actual, expected) in staged.iter().zip(reference) {
+        for (actual, expected) in staged.iter().zip(&reference) {
             assert!((*actual - expected).norm() <= 2.0e-14);
         }
+
+        let weighted_opposite_real: Vec<_> = opposite_real
+            .iter()
+            .zip(&cos_theta)
+            .map(|(&spectrum, &cosine)| spectrum * cosine)
+            .collect();
+        let weighted_opposite_imag: Vec<_> = opposite_imag
+            .iter()
+            .zip(&cos_theta)
+            .map(|(&spectrum, &cosine)| spectrum * cosine)
+            .collect();
+        let mut staged_preweighted = vec![Complex64::new(17.0, -9.0); coefficient_count];
+        previous.fill(0.0);
+        current.fill(0.0);
+        next.fill(0.0);
+        exponents.fill(0);
+        let fused_preweighted = fused_scalar_analysis_pair_block_preweighted_dispatched(
+            arch,
+            m,
+            lmax,
+            &sin_theta,
+            &cos_theta,
+            sectoral_norm,
+            &coefficient_a,
+            &coefficient_b,
+            &same_real,
+            &same_imag,
+            &weighted_opposite_real,
+            &weighted_opposite_imag,
+            &mut staged_preweighted,
+            &mut previous,
+            &mut current,
+            &mut next,
+            &mut exponents,
+        )
+        .unwrap();
+        assert!(fused_preweighted);
+        for (actual, expected) in staged_preweighted.iter().zip(&reference) {
+            assert!((*actual - expected).norm() <= 2.0e-14);
+        }
+    }
+
+    #[test]
+    fn analysis_preparation_rejects_subnormal_cosine_weight() {
+        let mut opposite_real = [1.0];
+        let mut opposite_imag = [0.0];
+        assert!(!prepare_analysis_opposite(
+            &mut opposite_real,
+            &mut opposite_imag,
+            &[1.0e-310],
+        ));
+        let mut zero_real = [0.0];
+        let mut zero_imag = [0.0];
+        assert!(prepare_analysis_opposite(
+            &mut zero_real,
+            &mut zero_imag,
+            &[1.0e-310],
+        ));
+        assert_eq!(zero_real, [0.0]);
+        assert_eq!(zero_imag, [0.0]);
     }
 
     #[test]

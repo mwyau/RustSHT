@@ -464,6 +464,13 @@ pub(crate) trait ShtScalar:
     ) -> bool {
         false
     }
+    fn prepare_scalar_analysis_opposite(
+        _opposite_real: &mut [Self],
+        _opposite_imag: &mut [Self],
+        _cos_theta: &[Self],
+    ) -> Option<bool> {
+        None
+    }
     #[expect(
         clippy::too_many_arguments,
         reason = "Paired analysis combines two parity spectra with lane recurrence values."
@@ -507,7 +514,7 @@ pub(crate) trait ShtScalar:
         clippy::too_many_arguments,
         reason = "The fused f64 scalar analysis block receives parity spectra and worker-owned recurrence scratch explicitly."
     )]
-    fn fused_scalar_analysis_pair_block(
+    fn fused_scalar_analysis_pair_block_preweighted(
         _arch: Arch,
         _m: usize,
         _lmax: usize,
@@ -1277,6 +1284,18 @@ impl ShtScalar for f64 {
         )
     }
 
+    fn prepare_scalar_analysis_opposite(
+        opposite_real: &mut [Self],
+        opposite_imag: &mut [Self],
+        cos_theta: &[Self],
+    ) -> Option<bool> {
+        Some(scalar_paired::prepare_analysis_opposite(
+            opposite_real,
+            opposite_imag,
+            cos_theta,
+        ))
+    }
+
     fn accumulate_scalar_analysis_pair(
         arch: Arch,
         products_safe: bool,
@@ -1303,7 +1322,7 @@ impl ShtScalar for f64 {
         )
     }
 
-    fn fused_scalar_analysis_pair_block(
+    fn fused_scalar_analysis_pair_block_preweighted(
         arch: Arch,
         m: usize,
         lmax: usize,
@@ -1322,7 +1341,7 @@ impl ShtScalar for f64 {
         next: &mut [Self],
         exponents: &mut [i64],
     ) -> Result<bool, ShtError> {
-        scalar_paired::fused_scalar_analysis_pair_block_dispatched(
+        scalar_paired::fused_scalar_analysis_pair_block_preweighted_dispatched(
             arch,
             m,
             lmax,

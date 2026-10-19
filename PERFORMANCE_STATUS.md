@@ -1,6 +1,6 @@
 # RustSHT — performance and implementation handoff
 
-**Updated:** 2026-10-18. **Branch:** `opt/sht-performance-parity` at `fbefc60d`.
+**Updated:** 2026-10-18. **Branch:** `opt/sht-performance-parity`.
 **Objective:** implement DUCC-class native numerical execution while preserving
 RustSHT's API, numerical safety and supported operation families. DUCC remains
 the external reference; detailed methods and samples stay in the linked reports.
@@ -45,10 +45,16 @@ at q1 and 5.123/1.76 ms at q8. Relative L2 error was `6.039e-14`.
 
 FFT, coefficient preparation and ring packing did not explain the gap; q8
 worker use was about 98% over the recurrence interval. `perf` hardware events
-were unavailable under the host's existing permissions. A fused two-pair
-analysis prototype regressed the same-source whole-call screen by 8% at q1
-and 12% at q8, so it was removed. Next, reduce recurrence register pressure
-without restoring that prototype. See the [profile](reports/scalar-analysis-stage-profile-2026-10-18.md).
+were unavailable under the host's existing permissions. Temporary counters
+found 474 T720 declines, all during sectoral initialization; no recurrence
+declines or discarded degree work occurred. The 11.8 ms callback time is
+therefore mostly required mixed/scaled recurrence, with only a repeated seed
+attempt. A bounded normal-route change preweights opposite-parity spectra once
+per active block, improving the same-source full-call screen 2.5%/1.7% at T720
+q1/q8 and 1.1% at T300 q1; T300 q8 was within screen noise. The T720 Rust/DUCC
+ratios remain about 2.0–2.1×, with different setup boundaries. The rejected
+two-pair implementation remains archived. See the
+[profile](reports/scalar-analysis-stage-profile-2026-10-18.md).
 
 ## Technique findings
 
@@ -71,7 +77,7 @@ without restoring that prototype. See the [profile](reports/scalar-analysis-stag
 | Two-vector ordinary synthesis suffix | Production | T720 ordinary stage improved about 20%; q8 full-call screen improved about 21% versus the preceding source. | Pair-major register residency reuses coefficients while preserving lane state; DUCC gap remains workload-dependent. | [Source comparison](reports/matched-rust-ducc-stage-profile-2026-10-18-41b309a5.md) | Keep and validate across irregular sizes and fallback cases. |
 | Vector-block-major synthesis suffix | Rejected | Legendre stage was 5.2×/6.4× slower at T255/T300. | Repeated coefficient broadcasts per SIMD block outweighed the changed loop order. | [Current source screen](reports/scalar-ducc-kernel-screen-2026-10-18.md) | Do not retry this layout unchanged. |
 | Coefficient cache and safety preflight | Production, eligible fallback route | T1023 q8 median improved 8.5% in five paired process comparisons; broader grids were inconclusive. | Reuses coefficient work without changing ring ownership when workspace constraints allow. | [Prior status](reports/performance-status-pre-ducc-port-2026-10-18.md) | Retain bounded eligibility; avoid extra per-grid selectors. |
-| Scalar analysis fused recurrence/accumulation | Production | T511 improved 12.2% q1 and 5.5% q8; latest T720 profile still shows a 2.15×/2.31× full-call gap. | Degree recurrence and coefficient reduction dominate; an unrolled two-pair prototype regressed. | [Profile](reports/scalar-analysis-stage-profile-2026-10-18.md), [fusion screen](reports/fused-scalar-analysis-2026-10-15.md) | Test a lower-register-pressure inner loop, then extend only after correctness. |
+| Scalar analysis fused recurrence/accumulation | Production | Cosine preweighting improved T720 q1/q8 by 2.5%/1.7%; the bounded candidate remains about 2.0–2.1× DUCC. | Initialization declines account for fallback; ordinary recurrence/accumulation remains the largest gap. The two-pair prototype regressed. | [Profile](reports/scalar-analysis-stage-profile-2026-10-18.md), [fusion screen](reports/fused-scalar-analysis-2026-10-15.md) | Continue with spin-1 analysis; revisit scalar lane-wise scaled transition only with a source-grounded design. |
 | Spin-1 analysis | Production; behind DUCC | Current operation has paired channels and dynamic order scheduling; T2047 q8 historical ratio was 4.40×. | Channel preparation and spin recurrence remain distinct from scalar analysis. | [M6 campaign](reports/m6-cpu-performance-parity.md) | Reuse validated scalar improvements where basis operations match. |
 | Native f32 recurrence and normalization skips | Production, restricted selector | T1023/T1279 scalar skips matched fallback and improved measured S/A; T720 rejected a broad selector. | Benefit depends on degree range and cannot be generalized from two truncations. | [f32 status](reports/f32-scalar-normalization-skip-2026-10-16.md) | Preserve selector; optimize native f32 after f64 kernel work. |
 | Reusable f64 bridge for f32 | Rejected as general route | Faster than Rust native f32 in an initial screen but up to 13× slower than DUCC; spin-1 temporary reached 48 MiB. | Conversion and memory costs do not establish a useful general route. | [Bridge summary](reports/data/m6-f32-bridge/summary.md) | Keep native f32 recurrence as the target. |
@@ -94,12 +100,13 @@ without restoring that prototype. See the [profile](reports/scalar-analysis-stag
 
 ## Next implementation work
 
-1. **Scalar analysis:** use the latest T720 profile. Reduce normal recurrence
-   instruction/register cost without restoring the rejected fused two-pair
-   form. Preserve scaled fallback, A/A* distinctions and numerical checks.
-2. **Spin-1:** transfer only validated low-level recurrence or scheduling work;
+1. **Spin-1:** transfer only validated low-level recurrence or scheduling work;
    keep E/B, pole and adjoint semantics distinct and test both synthesis and
-   analysis before broadening shared code.
+   analysis before broadening shared code. The scalar-analysis normal route has
+   now received one measured recurrence change.
+2. **Scalar analysis:** preserve the checked fallback and A/A* distinctions;
+   investigate DUCC's lane-wise scaled transition before changing degree-loop
+   structure again.
 3. **Generalization:** extend useful changes to native f32 and applicable CC/F1
    and spin-2 paths, preserving spin 3–4 and bounded memory.
 4. Use lightweight correctness/performance screens at varied truncations,

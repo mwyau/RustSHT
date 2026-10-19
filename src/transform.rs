@@ -2138,26 +2138,35 @@ impl<T: ShtScalar> ShtPlan<T> {
                         recurrence.analysis_opposite_real[lane] = opposite_parity_spectrum[lane].re;
                         recurrence.analysis_opposite_imag[lane] = opposite_parity_spectrum[lane].im;
                     }
-                    let same_real = &recurrence.analysis_same_real[..lane_count];
-                    let same_imag = &recurrence.analysis_same_imag[..lane_count];
-                    let opposite_real = &recurrence.analysis_opposite_real[..lane_count];
-                    let opposite_imag = &recurrence.analysis_opposite_imag[..lane_count];
-                    let product_range_safe = T::scalar_analysis_products_safe(
-                        same_real,
-                        same_imag,
-                        opposite_real,
-                        opposite_imag,
-                        pair_cos,
-                    );
                     // Paired degrees l=m+2k use north+south for the even term;
                     // the intervening odd term uses north-south and cos(theta).
                     let staged_count = coefficient_count;
                     // Commit scratch coefficients only when every recurrence lane stays normal.
-                    let fused_block = if lmax >= FUSED_SCALAR_ANALYSIS_MIN_LMAX
+                    let product_range_safe = T::scalar_analysis_products_safe(
+                        &recurrence.analysis_same_real[..lane_count],
+                        &recurrence.analysis_same_imag[..lane_count],
+                        &recurrence.analysis_opposite_real[..lane_count],
+                        &recurrence.analysis_opposite_imag[..lane_count],
+                        pair_cos,
+                    );
+                    let fast_path_candidate = lmax >= FUSED_SCALAR_ANALYSIS_MIN_LMAX
                         && product_range_safe
-                        && recurrence.fast_scalar_first.len() >= staged_count
-                    {
-                        T::fused_scalar_analysis_pair_block(
+                        && recurrence.fast_scalar_first.len() >= staged_count;
+                    // DUCC's fill_m2a cosine-weights opposite parity while
+                    // packing. The existing range preflight runs once; weighting
+                    // checks its product in the same pass that stores it.
+                    let opposite_preparation = if fast_path_candidate {
+                        T::prepare_scalar_analysis_opposite(
+                            &mut recurrence.analysis_opposite_real[..lane_count],
+                            &mut recurrence.analysis_opposite_imag[..lane_count],
+                            pair_cos,
+                        )
+                    } else {
+                        None
+                    };
+                    let fast_path_eligible = opposite_preparation == Some(true);
+                    let fused_block = if fast_path_eligible {
+                        T::fused_scalar_analysis_pair_block_preweighted(
                             arch,
                             m,
                             lmax,
@@ -2166,10 +2175,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                             self.sectoral_norms[m],
                             &recurrence.spin_coefficient_a,
                             &recurrence.spin_coefficient_b,
-                            same_real,
-                            same_imag,
-                            opposite_real,
-                            opposite_imag,
+                            &recurrence.analysis_same_real[..lane_count],
+                            &recurrence.analysis_same_imag[..lane_count],
+                            &recurrence.analysis_opposite_real[..lane_count],
+                            &recurrence.analysis_opposite_imag[..lane_count],
                             &mut recurrence.fast_scalar_first[..staged_count],
                             &mut recurrence.previous,
                             &mut recurrence.current,
@@ -2191,6 +2200,21 @@ impl<T: ShtScalar> ShtPlan<T> {
                             *coefficient += *contribution;
                         }
                     } else {
+                        if opposite_preparation.is_some() {
+                            for ((real, imag), spectrum) in recurrence.analysis_opposite_real
+                                [..lane_count]
+                                .iter_mut()
+                                .zip(&mut recurrence.analysis_opposite_imag[..lane_count])
+                                .zip(opposite_parity_spectrum)
+                            {
+                                *real = spectrum.re;
+                                *imag = spectrum.im;
+                            }
+                        }
+                        let same_real = &recurrence.analysis_same_real[..lane_count];
+                        let same_imag = &recurrence.analysis_same_imag[..lane_count];
+                        let opposite_real = &recurrence.analysis_opposite_real[..lane_count];
+                        let opposite_imag = &recurrence.analysis_opposite_imag[..lane_count];
                         paired_used = T::for_each_y_lm_paired_status_dispatched(
                             arch,
                             m,
