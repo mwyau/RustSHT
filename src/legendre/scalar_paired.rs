@@ -1985,8 +1985,8 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
         let mut all_vectors_in_range = simd.equal_f64s(zero, zero);
         let mut all_tails_in_range = true;
 
-        // Each vector contributes to the current coefficient while the same
-        // pass advances and range-checks its recurrence state.
+        // DUCC's optimized map2alm kernel folds each spectrum product into its
+        // lane accumulator. This pass also advances and range-checks recurrence.
         for (
             (
                 (
@@ -2008,20 +2008,19 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
             .zip(next_vectors.iter_mut())
         {
             let basis = *basis;
-            same_re = simd.add_f64s(same_re, simd.mul_f64s(*same_real, basis));
-            same_im = simd.add_f64s(same_im, simd.mul_f64s(*same_imag, basis));
-            let opposite_re_product = if OPPOSITE_COSINE_WEIGHTED {
-                simd.mul_f64s(*opposite_real, basis)
+            same_re = simd.mul_add_f64s(*same_real, basis, same_re);
+            same_im = simd.mul_add_f64s(*same_imag, basis, same_im);
+            if OPPOSITE_COSINE_WEIGHTED {
+                opposite_re = simd.mul_add_f64s(*opposite_real, basis, opposite_re);
+                opposite_im = simd.mul_add_f64s(*opposite_imag, basis, opposite_im);
             } else {
-                simd.mul_f64s(simd.mul_f64s(*opposite_real, basis), *cosine)
-            };
-            let opposite_im_product = if OPPOSITE_COSINE_WEIGHTED {
-                simd.mul_f64s(*opposite_imag, basis)
-            } else {
-                simd.mul_f64s(simd.mul_f64s(*opposite_imag, basis), *cosine)
-            };
-            opposite_re = simd.add_f64s(opposite_re, opposite_re_product);
-            opposite_im = simd.add_f64s(opposite_im, opposite_im_product);
+                let opposite_re_product =
+                    simd.mul_f64s(simd.mul_f64s(*opposite_real, basis), *cosine);
+                let opposite_im_product =
+                    simd.mul_f64s(simd.mul_f64s(*opposite_imag, basis), *cosine);
+                opposite_re = simd.add_f64s(opposite_re, opposite_re_product);
+                opposite_im = simd.add_f64s(opposite_im, opposite_im_product);
+            }
 
             let leading = simd.mul_add_f64s(a, *cosine_squared, b);
             let next_value = simd.mul_add_f64s(leading, basis, *previous);
@@ -2060,11 +2059,11 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
         {
             let basis = *basis;
             let cosine = *cosine;
-            same_re_sum += *same_real * basis;
-            same_im_sum += *same_imag * basis;
+            same_re_sum = same_real.mul_add(basis, same_re_sum);
+            same_im_sum = same_imag.mul_add(basis, same_im_sum);
             if OPPOSITE_COSINE_WEIGHTED {
-                opposite_re_sum += *opposite_real * basis;
-                opposite_im_sum += *opposite_imag * basis;
+                opposite_re_sum = opposite_real.mul_add(basis, opposite_re_sum);
+                opposite_im_sum = opposite_imag.mul_add(basis, opposite_im_sum);
             } else {
                 opposite_re_sum += (*opposite_real * basis) * cosine;
                 opposite_im_sum += (*opposite_imag * basis) * cosine;
