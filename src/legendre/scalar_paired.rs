@@ -24,6 +24,8 @@ use crate::legendre::scalar::{
 };
 use crate::legendre::{LATITUDE_BLOCK_SIZE, scalar};
 
+const SIMD_SECTORAL_INIT_MIN_LMAX: usize = 511;
+
 /// Prepares DUCC's per-order coefficient transformation and paired recurrence.
 pub(crate) fn fill_factors(
     m: usize,
@@ -1192,6 +1194,156 @@ pub(crate) fn analysis_products_safe(
             .all(|value| value.is_finite() && value.abs() <= 1.0)
 }
 
+/// Initializes ordinary-range sectoral values across SIMD latitude lanes.
+///
+/// Returns `false` when any lane needs the existing scaled scalar path. The
+/// candidate values are checked before the recurrence consumes them.
+fn initialize_normal_analysis_sectoral_dispatched(
+    arch: Arch,
+    m: usize,
+    sin_theta: &[f64],
+    sectoral_norm: f64,
+    current: &mut [f64],
+) -> Result<bool, ShtError> {
+    arch.dispatch(InitializeNormalAnalysisSectoral {
+        m,
+        sin_theta,
+        sectoral_norm,
+        current,
+    })
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The shared initializer receives the order geometry and caller-owned recurrence lanes explicitly."
+)]
+fn initialize_analysis_sectoral_lanes(
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    sin_theta: &[f64],
+    sectoral_norm: f64,
+    previous: &mut [f64],
+    current: &mut [f64],
+    exponents: &mut [i64],
+) -> Result<bool, ShtError> {
+    debug_assert!(previous.len() >= sin_theta.len());
+    debug_assert!(current.len() >= sin_theta.len());
+    debug_assert!(exponents.len() >= sin_theta.len());
+    previous[..sin_theta.len()].fill(0.0);
+
+    let initialized_normal = lmax >= SIMD_SECTORAL_INIT_MIN_LMAX
+        && initialize_normal_analysis_sectoral_dispatched(
+            arch,
+            m,
+            sin_theta,
+            sectoral_norm,
+            &mut current[..sin_theta.len()],
+        )?;
+    if initialized_normal {
+        exponents[..sin_theta.len()].fill(0);
+        return Ok(true);
+    }
+
+    for lane in 0..sin_theta.len() {
+        let (value, exponent) = scalar::sectoral_value(sin_theta[lane], m, sectoral_norm)?;
+        current[lane] = value;
+        exponents[lane] = exponent;
+    }
+    scalar::normalize_pair_lanes(
+        &mut previous[..sin_theta.len()],
+        &mut current[..sin_theta.len()],
+        &mut exponents[..sin_theta.len()],
+    )
+}
+
+struct InitializeNormalAnalysisSectoral<'a> {
+    m: usize,
+    sin_theta: &'a [f64],
+    sectoral_norm: f64,
+    current: &'a mut [f64],
+}
+
+impl WithSimd for InitializeNormalAnalysisSectoral<'_> {
+    type Output = Result<bool, ShtError>;
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let InitializeNormalAnalysisSectoral {
+            m,
+            sin_theta,
+            sectoral_norm,
+            current,
+        } = self;
+        debug_assert_eq!(sin_theta.len(), current.len());
+
+        if !sectoral_norm.is_finite() || sectoral_norm <= 0.0 {
+            return Ok(false);
+        }
+        let (sine_vectors, sine_tail) = S::as_simd_f64s(sin_theta);
+        let (current_vectors, current_tail) = S::as_mut_simd_f64s(current);
+        debug_assert_eq!(sine_vectors.len(), current_vectors.len());
+        debug_assert_eq!(sine_tail.len(), current_tail.len());
+
+        let one = simd.splat_f64s(1.0);
+        let zero = simd.splat_f64s(0.0);
+        let sine_max = simd.splat_f64s(1.0);
+        let sign = if m.is_multiple_of(2) { 1.0 } else { -1.0 };
+        let factor = simd.splat_f64s(sectoral_norm * sign);
+        let minimum = simd.splat_f64s(scalar::SMALL);
+        let maximum = simd.splat_f64s(scalar::BIG);
+        for (output, &sine) in current_vectors.iter_mut().zip(sine_vectors) {
+            let value = simd.mul_f64s(integer_power_vector(simd, sine, m), factor);
+            let magnitude = simd.abs_f64s(value);
+            let zero_result_is_valid = simd.and_m64s(
+                simd.equal_f64s(magnitude, zero),
+                simd.equal_f64s(simd.abs_f64s(sine), zero),
+            );
+            let above_minimum = simd.or_m64s(
+                simd.greater_than_or_equal_f64s(magnitude, minimum),
+                zero_result_is_valid,
+            );
+            let in_range = simd.and_m64s(
+                simd.and_m64s(
+                    above_minimum,
+                    simd.less_than_or_equal_f64s(magnitude, maximum),
+                ),
+                simd.less_than_or_equal_f64s(simd.abs_f64s(sine), sine_max),
+            );
+            if simd.reduce_min_f64s(simd.select_f64s(in_range, one, zero)) != 1.0 {
+                return Ok(false);
+            }
+            *output = value;
+        }
+        for (&sine, output) in sine_tail.iter().zip(current_tail) {
+            if !sine.is_finite() || sine.abs() > 1.0 {
+                return Ok(false);
+            }
+            let (value, exponent) = scalar::sectoral_value(sine, m, sectoral_norm)?;
+            if exponent != 0 || !scalar::scalar_value_in_normal_range(value) {
+                return Ok(false);
+            }
+            *output = value;
+        }
+        Ok(true)
+    }
+}
+
+#[inline(always)]
+fn integer_power_vector<S: Simd>(simd: S, mut base: S::f64s, mut exponent: usize) -> S::f64s {
+    let mut result = simd.splat_f64s(1.0);
+    while exponent > 0 {
+        if exponent & 1 != 0 {
+            result = simd.mul_f64s(result, base);
+        }
+        exponent >>= 1;
+        if exponent > 0 {
+            base = simd.mul_f64s(base, base);
+        }
+    }
+    result
+}
+
 /// Computes a normal-range scalar analysis block while advancing its recurrence.
 ///
 /// Returns `false` for an empty block or when the recurrence requires binary
@@ -1238,16 +1390,15 @@ pub(crate) fn fused_scalar_analysis_pair_block_dispatched(
         return Ok(false);
     }
 
-    for lane in 0..sin_theta.len() {
-        let (value, exponent) = scalar::sectoral_value(sin_theta[lane], m, sectoral_norm)?;
-        previous[lane] = 0.0;
-        current[lane] = value;
-        exponents[lane] = exponent;
-    }
-    if !scalar::normalize_pair_lanes(
-        &mut previous[..sin_theta.len()],
-        &mut current[..sin_theta.len()],
-        &mut exponents[..sin_theta.len()],
+    if !initialize_analysis_sectoral_lanes(
+        arch,
+        m,
+        lmax,
+        sin_theta,
+        sectoral_norm,
+        previous,
+        current,
+        exponents,
     )? {
         return Ok(false);
     }
@@ -1436,16 +1587,15 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
         return Ok(false);
     }
 
-    for lane in 0..sin_theta.len() {
-        let (value, exponent) = scalar::sectoral_value(sin_theta[lane], m, sectoral_norm)?;
-        previous[lane] = 0.0;
-        current[lane] = value;
-        exponents[lane] = exponent;
-    }
-    if !scalar::normalize_pair_lanes(
-        &mut previous[..sin_theta.len()],
-        &mut current[..sin_theta.len()],
-        &mut exponents[..sin_theta.len()],
+    if !initialize_analysis_sectoral_lanes(
+        arch,
+        m,
+        lmax,
+        sin_theta,
+        sectoral_norm,
+        previous,
+        current,
+        exponents,
     )? {
         return Ok(false);
     }
@@ -2953,9 +3103,37 @@ mod tests {
     use super::*;
 
     #[test]
+    fn vector_sectoral_initialization_matches_high_order_reference_and_tail() {
+        let m = 720;
+        let lane_count = 21;
+        let sin_theta: Vec<_> = (0..lane_count)
+            .map(|lane| 0.71 + lane as f64 * 0.001)
+            .collect();
+        let sectoral_norm = scalar::sectoral_normalizations(m).unwrap()[m];
+        let mut current = vec![0.0; lane_count];
+
+        assert!(
+            initialize_normal_analysis_sectoral_dispatched(
+                Arch::new(),
+                m,
+                &sin_theta,
+                sectoral_norm,
+                &mut current,
+            )
+            .unwrap()
+        );
+
+        for (&sine, &actual) in sin_theta.iter().zip(&current) {
+            let (expected, exponent) = scalar::sectoral_value(sine, m, sectoral_norm).unwrap();
+            assert_eq!(exponent, 0);
+            assert!((actual - expected).abs() <= expected.abs() * 2.0e-14);
+        }
+    }
+
+    #[test]
     fn fused_scalar_analysis_block_matches_paired_reference_with_simd_tails() {
         let m = 2;
-        let lmax = 20;
+        let lmax = 511;
         let lane_count = 21;
         let angles: Vec<_> = (0..lane_count)
             .map(|lane| 0.04 + lane as f64 * 0.075)
@@ -3064,7 +3242,7 @@ mod tests {
     #[test]
     fn fused_two_channel_analysis_block_matches_paired_reference_with_simd_tails() {
         let m = 2;
-        let lmax = 20;
+        let lmax = 511;
         let lane_count = 17;
         let angles: Vec<_> = (0..lane_count)
             .map(|lane| 0.04 + lane as f64 * 0.075)
