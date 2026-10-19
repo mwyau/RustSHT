@@ -1066,7 +1066,9 @@ impl WithSimd for StagedSynthesisPairTransition<'_> {
 /// Accumulates a paired scalar analysis block across its latitude lanes.
 ///
 /// Normal recurrence lanes use vector products and horizontal reductions.
-/// Lanes carrying binary scale exponents retain the scalar scaled path.
+/// Lanes carrying significant binary scale exponents retain the checked scalar
+/// path; the safeguarded GL analysis route omits negative epochs under its
+/// latitude-wide error budget.
 #[expect(
     clippy::too_many_arguments,
     reason = "The analysis kernel receives parity spectra and recurrence lanes explicitly."
@@ -1111,6 +1113,7 @@ pub(crate) fn accumulate_analysis_pair_dispatched(
                 basis,
                 exponents,
                 cos_theta,
+                allow_insignificant_scaled_lanes: false,
             });
         }
     }
@@ -1590,6 +1593,11 @@ fn analysis_mask_all<S: Simd>(simd: S, mask: S::m64s) -> bool {
     simd.reduce_min_f64s(simd.select_f64s(mask, simd.splat_f64s(1.0), simd.splat_f64s(0.0))) > 0.0
 }
 
+#[inline(always)]
+fn analysis_mask_any<S: Simd>(simd: S, mask: S::m64s) -> bool {
+    simd.reduce_max_f64s(simd.select_f64s(mask, simd.splat_f64s(1.0), simd.splat_f64s(0.0))) > 0.0
+}
+
 /// Tests whether the normalized recurrence pair is below DUCC's `sht_ftol`.
 /// Rust scale exponents use binary powers, so a negative exponent is smaller
 /// than DUCC's zero scale; the zero exponent case compares the mantissa pair.
@@ -1845,6 +1853,7 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
                     basis: current,
                     exponents,
                     cos_theta,
+                    allow_insignificant_scaled_lanes: allow_insignificant_prefix,
                 }
                 .with_simd(simd);
             staged_coefficients[offset] = same_sum;
@@ -2504,6 +2513,7 @@ struct MixedAnalysisPairAccumulation<'a, const OPPOSITE_COSINE_WEIGHTED: bool = 
     basis: &'a [f64],
     exponents: &'a [i64],
     cos_theta: &'a [f64],
+    allow_insignificant_scaled_lanes: bool,
 }
 
 impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
@@ -2521,6 +2531,7 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
             basis,
             exponents,
             cos_theta,
+            allow_insignificant_scaled_lanes,
         } = self;
         let (same_real_vectors, same_real_tail) = S::as_simd_f64s(same_real);
         let (same_imag_vectors, same_imag_tail) = S::as_simd_f64s(same_imag);
@@ -2550,8 +2561,11 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
         let mut same_im = simd.splat_f64s(0.0);
         let mut opposite_re = simd.splat_f64s(0.0);
         let mut opposite_im = simd.splat_f64s(0.0);
+        let mut vector_needs_scaled_fallback = false;
         for index in 0..basis_vectors.len() {
             let exponent_is_zero = simd.equal_i64s(exponent_vectors[index], zero_exponent);
+            let exponent_is_positive =
+                simd.greater_than_i64s(exponent_vectors[index], zero_exponent);
             let basis_magnitude = simd.abs_f64s(basis_vectors[index]);
             let basis_is_zero = simd.equal_f64s(basis_magnitude, zeros);
             let basis_is_large_enough = simd.greater_than_or_equal_f64s(basis_magnitude, small);
@@ -2560,6 +2574,14 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
                 basis_is_small_enough,
                 simd.or_m64s(basis_is_zero, basis_is_large_enough),
             );
+            if allow_insignificant_scaled_lanes {
+                let zero_exponent_needs_fallback =
+                    simd.and_m64s(exponent_is_zero, simd.not_m64s(basis_is_normal_or_zero));
+                vector_needs_scaled_fallback |= analysis_mask_any(
+                    simd,
+                    simd.or_m64s(exponent_is_positive, zero_exponent_needs_fallback),
+                );
+            }
             let normal_lanes = simd.and_m64s(exponent_is_zero, basis_is_normal_or_zero);
             let basis = simd.select_f64s(normal_lanes, basis_vectors[index], zeros);
             let same_real = simd.select_f64s(normal_lanes, same_real_vectors[index], zeros);
@@ -2588,28 +2610,46 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
             simd.reduce_sum_f64s(opposite_im),
         );
         let vector_lane_count = basis.len() - basis_tail.len();
-        for lane in 0..vector_lane_count {
-            if exponents[lane] != 0 || !scalar_value_in_normal_range(basis[lane]) {
-                same += scalar::multiply_complex_scaled(
-                    Complex64::new(same_real[lane], same_imag[lane]),
-                    basis[lane],
-                    exponents[lane],
-                );
-                let opposite_value = Complex64::new(opposite_real[lane], opposite_imag[lane]);
-                opposite += if OPPOSITE_COSINE_WEIGHTED {
-                    scalar::multiply_complex_scaled(opposite_value, basis[lane], exponents[lane])
+        if !allow_insignificant_scaled_lanes || vector_needs_scaled_fallback {
+            for lane in 0..vector_lane_count {
+                let needs_scaled_fallback = if allow_insignificant_scaled_lanes {
+                    exponents[lane] > 0
+                        || (exponents[lane] == 0 && !scalar_value_in_normal_range(basis[lane]))
                 } else {
-                    scalar::multiply_complex_scaled_product(
-                        opposite_value,
-                        basis[lane],
-                        cos_theta[lane],
-                        exponents[lane],
-                    )
+                    exponents[lane] != 0 || !scalar_value_in_normal_range(basis[lane])
                 };
+                if needs_scaled_fallback {
+                    same += scalar::multiply_complex_scaled(
+                        Complex64::new(same_real[lane], same_imag[lane]),
+                        basis[lane],
+                        exponents[lane],
+                    );
+                    let opposite_value = Complex64::new(opposite_real[lane], opposite_imag[lane]);
+                    opposite += if OPPOSITE_COSINE_WEIGHTED {
+                        scalar::multiply_complex_scaled(
+                            opposite_value,
+                            basis[lane],
+                            exponents[lane],
+                        )
+                    } else {
+                        scalar::multiply_complex_scaled_product(
+                            opposite_value,
+                            basis[lane],
+                            cos_theta[lane],
+                            exponents[lane],
+                        )
+                    };
+                }
             }
         }
         for lane in 0..basis_tail.len() {
-            if exponent_tail[lane] == 0 && scalar_value_in_normal_range(basis_tail[lane]) {
+            if allow_insignificant_scaled_lanes && exponent_tail[lane] < 0 {
+                // The normalized mantissa is at most 2^400 and negative scale
+                // epochs are multiples of 800, so this basis contribution is
+                // below 2^-400. The caller's latitude-wide budget covers its
+                // omission after coefficient accumulation.
+                continue;
+            } else if exponent_tail[lane] == 0 && scalar_value_in_normal_range(basis_tail[lane]) {
                 same.re += same_real_tail[lane] * basis_tail[lane];
                 same.im += same_imag_tail[lane] * basis_tail[lane];
                 if OPPOSITE_COSINE_WEIGHTED {
@@ -4206,6 +4246,41 @@ mod tests {
             .map(|(&spectrum, &cosine)| spectrum * cosine)
             .collect();
         assert!(insignificant_prefix_budget_safe(lane_count));
+        let input_scale = same_real
+            .iter()
+            .zip(&same_imag)
+            .chain(weighted_opposite_real.iter().zip(&weighted_opposite_imag))
+            .map(|(&real, &imag)| real.hypot(imag))
+            .fold(0.0_f64, f64::max);
+        let omission_bound = 2.0 * lane_count as f64 * ANALYSIS_FTOL * input_scale;
+        let mut checked_staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
+        let mut checked_previous = vec![0.0; lane_count];
+        let mut checked_current = vec![0.0; lane_count];
+        let mut checked_next = vec![0.0; lane_count];
+        let mut checked_exponents = vec![0; lane_count];
+        assert!(
+            fused_scalar_analysis_pair_block_preweighted_dispatched(
+                Arch::new(),
+                m,
+                lmax,
+                false,
+                &sin_theta,
+                &cos_theta,
+                sectoral_norm,
+                &coefficient_a,
+                &coefficient_b,
+                &same_real,
+                &same_imag,
+                &weighted_opposite_real,
+                &weighted_opposite_imag,
+                &mut checked_staged,
+                &mut checked_previous,
+                &mut checked_current,
+                &mut checked_next,
+                &mut checked_exponents,
+            )
+            .unwrap()
+        );
         staged.fill(Complex64::new(0.0, 0.0));
         previous.fill(0.0);
         current.fill(0.0);
@@ -4239,19 +4314,18 @@ mod tests {
             .take_while(|&&value| value == Complex64::new(0.0, 0.0))
             .count();
         assert!(prefix_len > 0);
-        let input_scale = same_real
-            .iter()
-            .zip(&same_imag)
-            .chain(weighted_opposite_real.iter().zip(&weighted_opposite_imag))
-            .map(|(&real, &imag)| real.hypot(imag))
-            .fold(0.0_f64, f64::max);
-        let omission_bound = 2.0 * lane_count as f64 * ANALYSIS_FTOL * input_scale;
         for (degree_offset, expected) in reference.iter().take(prefix_len).enumerate() {
             assert!(
                 expected.norm() <= omission_bound,
                 "skipped pair {degree_offset} error {:.3e} exceeds {:.3e}",
                 expected.norm(),
                 omission_bound,
+            );
+        }
+        for (degree, (actual, checked)) in staged.iter().zip(&checked_staged).enumerate() {
+            assert!(
+                (*actual - *checked).norm() <= omission_bound,
+                "insignificant terms at offset {degree} exceed {omission_bound:e}"
             );
         }
         for (actual, expected) in staged.iter().zip(&reference) {
