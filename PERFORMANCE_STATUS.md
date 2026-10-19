@@ -100,6 +100,19 @@ packing experiments regressed and were discarded; checked scaled fallback is
 unchanged. The remaining stage gap calls for a broader execution-structure
 improvement, not more local unrolling.
 
+The mixed-scale recurrence now also accumulates the current coefficient pair
+while advancing the next pair in one lane traversal. It retains exact scaled
+products for lanes not covered by the prefix omission budget and normalizes
+before entering the ordinary SIMD loop. A same-flags Rust phase screen against
+`8f2c597a` used one warmup and five timed calls on a Ryzen 9 5950X with Rust
+1.99.0 and `x86-64-v3`: T720 GL (721×1443, full `mmax`) recurrence and
+accumulation fell from 23.508 to 23.023 ms at q1 and 3.463 to 3.306 ms at q8.
+The profiled full-call medians fell from 35.233 to 34.250 ms and 6.191 to
+5.902 ms. A separate exact-even full-call screen and the reduced T300 screen
+were noisy and did not show a stable change. The screen measures the full
+Legendre phase, not mixed blocks alone, and does not establish DUCC parity; see
+the [bounded screen record](reports/data/scalar-analysis-mixed-fusion/README.md).
+
 ## Technique findings
 
 | Technique | Status | Result | Reason | Reference | Next action |
@@ -121,7 +134,7 @@ improvement, not more local unrolling.
 | Two-vector ordinary synthesis suffix | Production | T720 ordinary stage improved about 20%; q8 full-call screen improved about 21% versus the preceding source. | Pair-major register residency reuses coefficients while preserving lane state; DUCC gap remains workload-dependent. | [Source comparison](reports/matched-rust-ducc-stage-profile-2026-10-18-41b309a5.md) | Keep and validate across irregular sizes and fallback cases. |
 | Vector-block-major synthesis suffix | Rejected | Legendre stage was 5.2×/6.4× slower at T255/T300. | Repeated coefficient broadcasts per SIMD block outweighed the changed loop order. | [Current source screen](reports/scalar-ducc-kernel-screen-2026-10-18.md) | Do not retry this layout unchanged. |
 | Coefficient cache and safety preflight | Production, eligible fallback route | T1023 q8 median improved 8.5% in five paired process comparisons; broader grids were inconclusive. | Reuses coefficient work without changing ring ownership when workspace constraints allow. | [Prior status](reports/performance-status-pre-ducc-port-2026-10-18.md) | Retain bounded eligibility; avoid extra per-grid selectors. |
-| Scalar analysis fused recurrence/accumulation | Production, eligible f64 GL `A` | DUCC-threshold prefix advancement and masked negative-scale accumulation remain enabled; the ordinary loop now accumulates a degree pair while advancing and validating the next recurrence state in one SIMD pass. The bounded screen reduced recurrence/accumulation by about 6–8% from the preceding Rust source. | q1 output agrees with pinned DUCC to relative L2 `1.1–1.8e-14`; phase ratios remain directionally about 1.6–2.2× with nonidentical boundaries. The checked scaled fallback is unchanged. | [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md), [profile](reports/scalar-analysis-stage-profile-2026-10-18.md) | Focus on a safe SIMD scaled-to-ordinary transition; do not restore rejected mixed fusion, 256-lane batching or multi-pair unrolling without new evidence. |
+| Scalar analysis fused recurrence/accumulation | Production, eligible f64 GL `A` | DUCC-threshold prefix advancement and masked negative-scale accumulation remain enabled. Ordinary and mixed-scale loops accumulate one coefficient pair while advancing the next recurrence state in a single SIMD lane traversal. | q1 output agrees with pinned DUCC to relative L2 `1.1–1.8e-14`; the T720 full Legendre phase screen improved 2.1%/4.5% at q1/q8. Exact-even full-call and reduced T300 screens were inconclusive. The checked scaled fallback remains. | [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md), [profile](reports/scalar-analysis-stage-profile-2026-10-18.md), [mixed-fusion screen](reports/data/scalar-analysis-mixed-fusion/README.md) | Isolate mixed-stage timing, then inspect the remaining ordinary-loop instruction flow; do not restore the rejected multi-pair kernel unchanged. |
 | Spin-1 analysis | Production; behind DUCC | GL f64 paired analysis now reuses per-ring scales across orders; q1 full-call screens fell 2.6%/3.1% at T511/T720. q8 remained within host variation. | Channel preparation and spin recurrence remain distinct from scalar analysis. | [M6 campaign](reports/m6-cpu-performance-parity.md), [ring-scale screen](reports/spin1-analysis-ring-scale-screen-2026-10-18.md) | Profile recurrence and accumulation next; preserve E/B and adjoint semantics. |
 | Native f32 recurrence and normalization skips | Production, restricted selector | T1023/T1279 scalar skips matched fallback and improved measured S/A; T720 rejected a broad selector. | Benefit depends on degree range and cannot be generalized from two truncations. | [f32 status](reports/f32-scalar-normalization-skip-2026-10-16.md) | Preserve selector; optimize native f32 after f64 kernel work. |
 | Reusable f64 bridge for f32 | Rejected as general route | Faster than Rust native f32 in an initial screen but up to 13× slower than DUCC; spin-1 temporary reached 48 MiB. | Conversion and memory costs do not establish a useful general route. | [Bridge summary](reports/data/m6-f32-bridge/summary.md) | Keep native f32 recurrence as the target. |
@@ -146,7 +159,7 @@ improvement, not more local unrolling.
 
 ## Next implementation work
 
-1. **Scalar analysis (priority):** continue [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md) by reducing the real mixed/scaled work for blocks that decline at initialization, while preserving exponent correction and checked fallback. Recompare matched stages after a functional transition; do not mistake initialization declines for failed degree-loop replay.
+1. **Scalar analysis (priority):** isolate the mixed/scaled route after its one-pass recurrence change, then inspect ordinary-loop assembly and compare against DUCC at equivalent work. Preserve exponent correction and checked fallback; do not reintroduce the rejected multi-pair kernel unchanged.
 2. **Spin-1:** after a substantive scalar-analysis result, profile recurrence/accumulation and reuse compatible techniques; preserve E/B, pole and adjoint semantics. Per-ring scales already exist.
 3. **Generalization:** after validated kernels, improve native f32 and applicable CC/F1/spin-2 paths without breaking spin 3–4.
 4. Keep benchmark screens bounded and irregular/reduced cases represented; reserve broader DUCC comparisons for meaningful integrated milestones.

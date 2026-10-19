@@ -1,0 +1,43 @@
+diff --git a/src/transform/tests.rs b/src/transform/tests.rs
+--- a/src/transform/tests.rs
++++ b/src/transform/tests.rs
+@@
+ fn m5_analysis_phase_profile() {
+-    for (spin, lmax, thread_count) in [
+-        (0, 511, 1),
+-        (0, 511, 6),
+-        (0, 1023, 1),
+-        (0, 1023, 6),
+-        (1, 511, 1),
+-        (1, 511, 6),
+-        (1, 1023, 1),
+-        (1, 1023, 6),
+-        (0, 720, 1),
+-        (0, 720, 8),
+-        (0, 1023, 8),
+-        (0, 1279, 1),
+-        (0, 1279, 8),
+-        (0, 2047, 1),
+-        (0, 2047, 8),
+-        (1, 720, 1),
+-        (1, 720, 8),
+-        (1, 1023, 8),
+-        (1, 1279, 1),
+-        (1, 1279, 8),
+-        (1, 2047, 1),
+-        (1, 2047, 8),
+-    ] {
++    for (spin, lmax, thread_count) in [(0, 720, 1), (0, 720, 8)] {
+@@
+         let mut scalar_output = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+         let mut spin_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+         let mut spin_b = spin_e.clone();
++
++        profile.lock().expect("analysis phase profile is not poisoned").clear();
++        pool.install(|| {
++            plan.analysis_into(&first, &mut scalar_output, &mut workspace)
++                .unwrap();
++        });
++        profile.lock().expect("analysis phase profile is not poisoned").clear();
+
+         for sample in 0..5 {
