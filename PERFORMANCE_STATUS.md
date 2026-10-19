@@ -62,6 +62,19 @@ transform and reuses them across orders and Q/U. Full-call q1 screens fell
 were within host variation. See the
 [ring-scale screen](reports/spin1-analysis-ring-scale-screen-2026-10-18.md).
 
+The current scalar-analysis candidate keeps initially scaled sectors in a
+staged fused recurrence, switches transitionable lanes to ordinary SIMD, and
+reuses DUCC's stable cosine-square geometry across the degree loop. A Rust-only
+phase screen (Rust 1.99.0, x86_64 Ryzen 9 5950X with AVX2/FMA, reused plans and
+workspaces; aggregate memory not measured) used one warmup and five timed
+samples. T720 GL (721×1442, full mmax) measured 29.5 ms q1 and 4.42 ms q8 for
+recurrence plus accumulation; reduced T300 GL (301×603, mmax=150) measured
+2.74 ms q1 and 0.414 ms q8. Relative to the immediately preceding Rust
+candidate at the same dimensions, T720 q1 improved about 6%; q8 and T300
+stayed within 1%. DUCC was not remeasured, so the earlier Rust/DUCC ratios
+remain historical context rather than a current parity claim. The checked
+callback path still handles unsafe inputs.
+
 ## Technique findings
 
 | Technique | Status | Result | Reason | Reference | Next action |
@@ -83,7 +96,7 @@ were within host variation. See the
 | Two-vector ordinary synthesis suffix | Production | T720 ordinary stage improved about 20%; q8 full-call screen improved about 21% versus the preceding source. | Pair-major register residency reuses coefficients while preserving lane state; DUCC gap remains workload-dependent. | [Source comparison](reports/matched-rust-ducc-stage-profile-2026-10-18-41b309a5.md) | Keep and validate across irregular sizes and fallback cases. |
 | Vector-block-major synthesis suffix | Rejected | Legendre stage was 5.2×/6.4× slower at T255/T300. | Repeated coefficient broadcasts per SIMD block outweighed the changed loop order. | [Current source screen](reports/scalar-ducc-kernel-screen-2026-10-18.md) | Do not retry this layout unchanged. |
 | Coefficient cache and safety preflight | Production, eligible fallback route | T1023 q8 median improved 8.5% in five paired process comparisons; broader grids were inconclusive. | Reuses coefficient work without changing ring ownership when workspace constraints allow. | [Prior status](reports/performance-status-pre-ducc-port-2026-10-18.md) | Retain bounded eligibility; avoid extra per-grid selectors. |
-| Scalar analysis fused recurrence/accumulation | Production | Cosine preweighting improved T720 q1/q8 by 2.5%/1.7%; the bounded candidate remains about 2.0–2.1× DUCC. | Initialization declines account for fallback; ordinary recurrence/accumulation remains the largest gap. The two-pair prototype regressed. | [Profile](reports/scalar-analysis-stage-profile-2026-10-18.md), [fusion screen](reports/fused-scalar-analysis-2026-10-15.md) | Continue with spin-1 analysis; revisit scalar lane-wise scaled transition only with a source-grounded design. |
+| Scalar analysis fused recurrence/accumulation | Production candidate | Initially scaled blocks transition to ordinary SIMD where safe; stable cosine squares are reused. Current T720 q1 Legendre stage improved ~6%; q8 and reduced T300 were within 1% of the preceding Rust candidate. | A checked scaled prefix remains for every contribution; staged output preserves fallback safety. The older two-pair prototype regressed. | [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md), [profile](reports/scalar-analysis-stage-profile-2026-10-18.md) | Implement validated insignificant-prefix advancement and compare matched ordinary/mixed kernels before further unrolling. |
 | Spin-1 analysis | Production; behind DUCC | GL f64 paired analysis now reuses per-ring scales across orders; q1 full-call screens fell 2.6%/3.1% at T511/T720. q8 remained within host variation. | Channel preparation and spin recurrence remain distinct from scalar analysis. | [M6 campaign](reports/m6-cpu-performance-parity.md), [ring-scale screen](reports/spin1-analysis-ring-scale-screen-2026-10-18.md) | Profile recurrence and accumulation next; preserve E/B and adjoint semantics. |
 | Native f32 recurrence and normalization skips | Production, restricted selector | T1023/T1279 scalar skips matched fallback and improved measured S/A; T720 rejected a broad selector. | Benefit depends on degree range and cannot be generalized from two truncations. | [f32 status](reports/f32-scalar-normalization-skip-2026-10-16.md) | Preserve selector; optimize native f32 after f64 kernel work. |
 | Reusable f64 bridge for f32 | Rejected as general route | Faster than Rust native f32 in an initial screen but up to 13× slower than DUCC; spin-1 temporary reached 48 MiB. | Conversion and memory costs do not establish a useful general route. | [Bridge summary](reports/data/m6-f32-bridge/summary.md) | Keep native f32 recurrence as the target. |

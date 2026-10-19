@@ -329,6 +329,163 @@ pub(super) fn normalize_pair_lanes(
     Ok(normal_range)
 }
 
+/// Normalizes paired recurrence lanes with SIMD masks and exact checked
+/// exponent updates. `None` asks the caller to use the robust scalar route.
+#[inline(always)]
+pub(super) fn normalize_pair_lanes_simd<S: Simd>(
+    simd: S,
+    previous: &mut [f64],
+    current: &mut [f64],
+    exponents: &mut [i64],
+) -> Option<bool> {
+    if previous.len() != current.len() || current.len() != exponents.len() {
+        return None;
+    }
+
+    let (previous_vectors, previous_tail) = S::as_mut_simd_f64s(previous);
+    let (current_vectors, current_tail) = S::as_mut_simd_f64s(current);
+    let (exponent_vectors, exponent_tail) = S::as_mut_simd_i64s(exponents);
+    let maximum = simd.splat_f64s(BIG);
+    let minimum = simd.splat_f64s(SMALL);
+    let zero_f64 = simd.splat_f64s(0.0);
+    let maximum_finite = simd.splat_f64s(f64::MAX);
+    let scale_up = simd.splat_f64s(SCALE_UP);
+    let scale_down = simd.splat_f64s(SCALE_DOWN);
+    let exponent_step = simd.splat_i64s(800);
+    let zero_i64 = simd.splat_i64s(0);
+    let mut all_normal = true;
+
+    for index in 0..previous_vectors.len() {
+        let mut previous_value = previous_vectors[index];
+        let mut current_value = current_vectors[index];
+        let mut exponent = exponent_vectors[index];
+        let previous_magnitude = simd.abs_f64s(previous_value);
+        let current_magnitude = simd.abs_f64s(current_value);
+        if !mask_all_f64(
+            simd,
+            simd.less_than_or_equal_f64s(previous_magnitude, maximum_finite),
+        ) || !mask_all_f64(
+            simd,
+            simd.less_than_or_equal_f64s(current_magnitude, maximum_finite),
+        ) {
+            return None;
+        }
+
+        let mut magnitude = simd.max_f64s(previous_magnitude, current_magnitude);
+        let mut in_range = pair_magnitudes_in_range(simd, magnitude, minimum, maximum, zero_f64);
+        if mask_all_f64(simd, in_range) {
+            all_normal &= mask_all_i64(simd, simd.equal_i64s(exponent, zero_i64));
+            continue;
+        }
+
+        loop {
+            let too_large = simd.greater_than_f64s(magnitude, maximum);
+            if !mask_any_f64(simd, too_large) {
+                break;
+            }
+            let next_exponent = simd.add_i64s(exponent, exponent_step);
+            let overflow = simd.and_m64s(too_large, simd.less_than_i64s(next_exponent, exponent));
+            if mask_any_f64(simd, overflow) {
+                return None;
+            }
+            previous_value = simd.select_f64s(
+                too_large,
+                simd.mul_f64s(previous_value, scale_down),
+                previous_value,
+            );
+            current_value = simd.select_f64s(
+                too_large,
+                simd.mul_f64s(current_value, scale_down),
+                current_value,
+            );
+            exponent = simd.select_i64s(too_large, next_exponent, exponent);
+            magnitude = simd.max_f64s(simd.abs_f64s(previous_value), simd.abs_f64s(current_value));
+        }
+
+        loop {
+            let nonzero = simd.not_m64s(simd.equal_f64s(magnitude, zero_f64));
+            let too_small = simd.and_m64s(nonzero, simd.less_than_f64s(magnitude, minimum));
+            if !mask_any_f64(simd, too_small) {
+                break;
+            }
+            let next_exponent = simd.sub_i64s(exponent, exponent_step);
+            let overflow =
+                simd.and_m64s(too_small, simd.greater_than_i64s(next_exponent, exponent));
+            if mask_any_f64(simd, overflow) {
+                return None;
+            }
+            previous_value = simd.select_f64s(
+                too_small,
+                simd.mul_f64s(previous_value, scale_up),
+                previous_value,
+            );
+            current_value = simd.select_f64s(
+                too_small,
+                simd.mul_f64s(current_value, scale_up),
+                current_value,
+            );
+            exponent = simd.select_i64s(too_small, next_exponent, exponent);
+            magnitude = simd.max_f64s(simd.abs_f64s(previous_value), simd.abs_f64s(current_value));
+        }
+
+        previous_vectors[index] = previous_value;
+        current_vectors[index] = current_value;
+        exponent_vectors[index] = exponent;
+        in_range = pair_magnitudes_in_range(simd, magnitude, minimum, maximum, zero_f64);
+        all_normal &=
+            mask_all_i64(simd, simd.equal_i64s(exponent, zero_i64)) && mask_all_f64(simd, in_range);
+    }
+
+    for lane in 0..previous_tail.len() {
+        if !previous_tail[lane].is_finite() || !current_tail[lane].is_finite() {
+            return None;
+        }
+        let normalized = normalize_pair_lanes(
+            &mut previous_tail[lane..lane + 1],
+            &mut current_tail[lane..lane + 1],
+            &mut exponent_tail[lane..lane + 1],
+        )
+        .ok()?;
+        all_normal &= normalized;
+    }
+    Some(all_normal)
+}
+
+#[inline(always)]
+fn pair_magnitudes_in_range<S: Simd>(
+    simd: S,
+    magnitude: S::f64s,
+    minimum: S::f64s,
+    maximum: S::f64s,
+    zero: S::f64s,
+) -> S::m64s {
+    simd.and_m64s(
+        simd.less_than_or_equal_f64s(magnitude, maximum),
+        simd.or_m64s(
+            simd.equal_f64s(magnitude, zero),
+            simd.greater_than_or_equal_f64s(magnitude, minimum),
+        ),
+    )
+}
+
+#[inline(always)]
+fn mask_any_f64<S: Simd>(simd: S, mask: S::m64s) -> bool {
+    let selected = simd.select_f64s(mask, simd.splat_f64s(1.0), simd.splat_f64s(0.0));
+    simd.reduce_max_f64s(selected) > 0.0
+}
+
+#[inline(always)]
+fn mask_all_f64<S: Simd>(simd: S, mask: S::m64s) -> bool {
+    let selected = simd.select_f64s(mask, simd.splat_f64s(1.0), simd.splat_f64s(0.0));
+    simd.reduce_min_f64s(selected) > 0.0
+}
+
+#[inline(always)]
+fn mask_all_i64<S: Simd>(simd: S, mask: S::m64s) -> bool {
+    let selected = simd.select_f64s(mask, simd.splat_f64s(1.0), simd.splat_f64s(0.0));
+    simd.reduce_min_f64s(selected) > 0.0
+}
+
 #[cfg(test)]
 #[inline(always)]
 pub(super) fn normalize_pair_lane(
@@ -739,6 +896,20 @@ fn scale_normal_binary(value: f64, exponent: i64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    struct PairLaneNormalization<'a> {
+        previous: &'a mut [f64],
+        current: &'a mut [f64],
+        exponents: &'a mut [i64],
+    }
+
+    impl WithSimd for PairLaneNormalization<'_> {
+        type Output = Option<bool>;
+
+        fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+            normalize_pair_lanes_simd(simd, self.previous, self.current, self.exponents)
+        }
+    }
 
     struct PairRangeCheck<'a> {
         previous: &'a [f64],
@@ -1987,6 +2158,82 @@ mod tests {
             assert_eq!(current[lane], expected[lane].1);
             assert_eq!(exponents[lane], expected[lane].2);
         }
+    }
+
+    #[test]
+    fn simd_pair_normalization_matches_scalar_with_tails_and_mixed_scales() {
+        for lane_count in [4, 9, 17] {
+            let mut previous: Vec<_> = (0..lane_count)
+                .map(|lane| match lane % 5 {
+                    0 => BIG * 2.0,
+                    1 => SMALL / 2.0,
+                    2 => -BIG * 3.0,
+                    3 => SMALL / 16.0,
+                    _ => 0.375,
+                })
+                .collect();
+            let mut current: Vec<_> = (0..lane_count)
+                .map(|lane| match lane % 5 {
+                    0 => -BIG * 1.5,
+                    1 => SMALL / 4.0,
+                    2 => SMALL / 8.0,
+                    3 => BIG / 2.0,
+                    _ => -0.625,
+                })
+                .collect();
+            let mut exponents: Vec<_> = (0..lane_count)
+                .map(|lane| lane as i64 * 800 - 1600)
+                .collect();
+            let mut expected_previous = previous.clone();
+            let mut expected_current = current.clone();
+            let mut expected_exponents = exponents.clone();
+            let mut expected_normal = true;
+            for lane in 0..lane_count {
+                expected_normal &= normalize_pair_lanes(
+                    &mut expected_previous[lane..lane + 1],
+                    &mut expected_current[lane..lane + 1],
+                    &mut expected_exponents[lane..lane + 1],
+                )
+                .unwrap();
+            }
+
+            let actual_normal = Arch::new().dispatch(PairLaneNormalization {
+                previous: &mut previous,
+                current: &mut current,
+                exponents: &mut exponents,
+            });
+            assert_eq!(actual_normal, Some(expected_normal));
+            assert_eq!(previous, expected_previous);
+            assert_eq!(current, expected_current);
+            assert_eq!(exponents, expected_exponents);
+        }
+    }
+
+    #[test]
+    fn simd_pair_normalization_declines_nonfinite_and_overflowing_lanes() {
+        let mut previous = [BIG * 2.0, 0.0, 0.0, 0.0];
+        let mut current = [0.5, 0.5, 0.5, 0.5];
+        let mut exponents = [i64::MAX, 0, 0, 0];
+        assert_eq!(
+            Arch::new().dispatch(PairLaneNormalization {
+                previous: &mut previous,
+                current: &mut current,
+                exponents: &mut exponents,
+            }),
+            None
+        );
+
+        let mut previous = [f64::INFINITY, 0.5, 0.5, 0.5];
+        let mut current = [0.5; 4];
+        let mut exponents = [0; 4];
+        assert_eq!(
+            Arch::new().dispatch(PairLaneNormalization {
+                previous: &mut previous,
+                current: &mut current,
+                exponents: &mut exponents,
+            }),
+            None
+        );
     }
 
     #[test]
