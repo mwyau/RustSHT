@@ -41,3 +41,34 @@ For q8, a Rust phase probe measured T720 setup 0.556 ms, outer Legendre 4.163 ms
 3. **q8 execution and output layout.** Rust remains 1.30× DUCC at T720 and 1.60× at T300 in the candidate screen. Rust's active work is balanced, while its q8 phase shows recurrence and order-major spectrum staging/scatter consume most Legendre time. Scheduler and memory-traffic costs are plausible contributors, not yet isolated; do not attribute the gap to imbalance or cache behavior without counters.
 
 Correctness: `cargo fmt --all -- --check` and `cargo test --release --lib` passed (209 passed, 15 ignored); the latter includes pinned DUCC scalar references, active-batch/tail tests, extreme/subnormal fallback and serial/parallel comparisons. This checkpoint covers only f64 scalar GL at the stated two workloads; it does not establish broad performance parity.
+
+## Current-source P0/P1 follow-up (18 October 2026)
+
+The q1 P0 stage probe used source `021884dd` (after shared-prefix batching, before the two-vector change) in a temporary instrumented worktree. It ran five calls per case with order/batch-boundary timers. Production source has no profiling hooks. The P1 candidate `scalar_ordered.rs` SHA256 is `36309e3e114f8e8c29a61bca108e993f1c60b346998c659227874b5485e3e7b2`.
+
+| q1 stage, ms | T720 before two-vector grouping | T300 before two-vector grouping | DUCC T720 | DUCC T300 |
+| --- | ---: | ---: | ---: | ---: |
+| Coefficient preparation | 1.377 | 0.186 | 1.779 | 0.217 |
+| Active-ring packing | 0.386 | 0.045 | 0.848 | 0.070 |
+| Sectoral initialization | 0.680 | 0.074 | 0.523 | 0.044 |
+| Prefix advancement | 0.364 | 0.048 | 0.094* | 0.011* |
+| Scaled accumulation | 0.118 | 0.015 | included above* | included above* |
+| Ordinary recurrence | 15.394 | 1.001 | 12.747 | 0.801 |
+| Reflection/output scatter | 0.890 | 0.102 | 0.596 | 0.057 |
+
+`*` DUCC's timer combines `iter_to_ieee` and the scaled correction loop; boundaries differ. Compared with the pre-fix Rust sum for initialization plus prefix/scaled work (6.79 ms at T720 and 0.63 ms at T300), current work is 1.16 ms and 0.14 ms. The original excess has shrunk enough to end P0. The q1 probe counted 1,139 empty and zero nonempty prefix-rescale checks at T720, 151 empty and zero nonempty at T300, and zero prefix recurrence steps. The ordered route succeeded and no fallback fired.
+
+P1 compared the same q8 work with reusable plans/workspaces and a temporary phase/worker probe. Worker order jobs were balanced by elapsed time. At T720 each worker spent about 2.4–2.9 ms inside order jobs; the dynamic queue and utilization do not explain the main gap. The wall time for ordered recurrence fell from a 2.92 ms median to 2.50 ms; scatter fell from 0.27 ms to 0.22 ms. Inverse FFT/map was about 0.8–1.3 ms and was not the principal T720 excess. At T300 the recurrence and scatter stages were about 0.27 ms and 0.03 ms. `perf_event_paranoid=4` prevents hardware-counter sampling; no cache-miss or cycle claims are made.
+
+The P1 change pairs two adjacent SIMD ring vectors in the ordinary suffix so both use the same degree coefficients before advancing. In the q1 stage probe, ordinary recurrence fell from 15.394 to 12.318 ms at T720 and from 1.001 to 0.779 ms at T300. It keeps each recurrence and four accumulation vectors local; scalar SIMD retains the one-vector route, and an unpaired SIMD tail uses the original helper. Existing all-feature tests cover reflected batches, SIMD tails and unsafe-value fallback.
+
+A matched, interleaved, five-sample release screen compared the prior source, the two-vector source and pinned DUCC. Plans and workspaces were reused; Rust called public `ShtPlan::synthesis_into`, and DUCC called pinned native `synthesis_2d`. Times are medians in milliseconds. Map errors were unchanged by the source change.
+
+| Workload | Prior Rust | Two-vector Rust | DUCC | New/prior | New/DUCC | Max abs / relative L2 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| T300, mmax=150, q1 | 3.199 | 3.044 | 2.322 | 0.952× | 1.311× | 2.952e-13 / 3.586e-15 |
+| T720, full mmax, q1 | 25.686 | 23.613 | 25.244 | 0.919× | 0.935× | 1.873e-12 / 8.662e-15 |
+| T300, mmax=150, q8 | 0.926 | 0.859 | 0.560 | 0.927× | 1.534× | 2.952e-13 / 3.586e-15 |
+| T720, full mmax, q8 | 6.401 | 5.023 | 3.631 | 0.785× | 1.384× | 1.873e-12 / 8.662e-15 |
+
+The q1 T720 result approached DUCC in this screen; q1 T300 and both q8 cases remain behind. q8 samples were noisy, notably DUCC's first T720 sample (7.33 ms versus 3.58–3.64 ms for the remaining four), and Rust's T300 q8 samples also had outliers. Treat the ratios as a bounded checkpoint, not a broad parity claim. Full all-feature workspace tests passed; the ordered-kernel focus passed with default and no-default features, and Clippy/formatting passed.

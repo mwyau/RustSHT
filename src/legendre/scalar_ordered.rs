@@ -637,18 +637,52 @@ fn synthesize_batch<S: Simd>(
     };
 
     if degree <= lmax && pair < pair_count && full_ieee {
-        for start in (0..active_count).step_by(simd_lanes) {
-            if !synthesize_ordinary_suffix_vector(
-                simd,
-                scratch,
-                lmax,
-                pair_count,
-                degree,
-                pair,
-                start,
-                start + simd_lanes,
-            ) {
+        if simd_lanes > 1 {
+            let vector_pair_width = 2 * simd_lanes;
+            let mut start = 0;
+            while start + vector_pair_width <= active_count {
+                if !synthesize_ordinary_suffix_two_vectors(
+                    simd,
+                    scratch,
+                    lmax,
+                    pair_count,
+                    degree,
+                    pair,
+                    start,
+                    start + simd_lanes,
+                ) {
+                    return false;
+                }
+                start += vector_pair_width;
+            }
+            if start < active_count
+                && !synthesize_ordinary_suffix_vector(
+                    simd,
+                    scratch,
+                    lmax,
+                    pair_count,
+                    degree,
+                    pair,
+                    start,
+                    active_count,
+                )
+            {
                 return false;
+            }
+        } else {
+            for start in (0..active_count).step_by(simd_lanes) {
+                if !synthesize_ordinary_suffix_vector(
+                    simd,
+                    scratch,
+                    lmax,
+                    pair_count,
+                    degree,
+                    pair,
+                    start,
+                    start + simd_lanes,
+                ) {
+                    return false;
+                }
             }
         }
     }
@@ -759,6 +793,219 @@ fn synthesize_ordinary_suffix_vector<S: Simd>(
         && store_simd_vector::<S>(&mut scratch.sum_even_im[start..end], sum_even_im_vector)
         && store_simd_vector::<S>(&mut scratch.sum_odd_re[start..end], sum_odd_re_vector)
         && store_simd_vector::<S>(&mut scratch.sum_odd_im[start..end], sum_odd_im_vector)
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Two ring vectors share each degree's coefficient broadcasts while retaining register state."
+)]
+fn synthesize_ordinary_suffix_two_vectors<S: Simd>(
+    simd: S,
+    scratch: &mut ScalarOrderedScratch<'_, f64>,
+    lmax: usize,
+    pair_count: usize,
+    degree: usize,
+    mut pair: usize,
+    first_start: usize,
+    second_start: usize,
+) -> bool {
+    if degree > lmax || pair >= pair_count {
+        return true;
+    }
+    let lanes = S::F64_LANES;
+    let first_end = first_start + lanes;
+    let second_end = second_start + lanes;
+    let coefficient_a = &scratch.coefficient_a[..];
+    let coefficient_b = &scratch.coefficient_b[..];
+    let coefficient_even = &scratch.coefficient_even[..];
+    let coefficient_odd = &scratch.coefficient_odd[..];
+
+    let Some(first_csq) = load_simd_vector::<S>(&scratch.packed_csq[first_start..first_end]) else {
+        return false;
+    };
+    let Some(second_csq) = load_simd_vector::<S>(&scratch.packed_csq[second_start..second_end])
+    else {
+        return false;
+    };
+    let Some(mut first_previous) = load_simd_vector::<S>(&scratch.previous[first_start..first_end])
+    else {
+        return false;
+    };
+    let Some(mut first_current) = load_simd_vector::<S>(&scratch.current[first_start..first_end])
+    else {
+        return false;
+    };
+    let Some(mut first_even_re) =
+        load_simd_vector::<S>(&scratch.sum_even_re[first_start..first_end])
+    else {
+        return false;
+    };
+    let Some(mut first_even_im) =
+        load_simd_vector::<S>(&scratch.sum_even_im[first_start..first_end])
+    else {
+        return false;
+    };
+    let Some(mut first_odd_re) = load_simd_vector::<S>(&scratch.sum_odd_re[first_start..first_end])
+    else {
+        return false;
+    };
+    let Some(mut first_odd_im) = load_simd_vector::<S>(&scratch.sum_odd_im[first_start..first_end])
+    else {
+        return false;
+    };
+    let Some(mut second_previous) =
+        load_simd_vector::<S>(&scratch.previous[second_start..second_end])
+    else {
+        return false;
+    };
+    let Some(mut second_current) =
+        load_simd_vector::<S>(&scratch.current[second_start..second_end])
+    else {
+        return false;
+    };
+    let Some(mut second_even_re) =
+        load_simd_vector::<S>(&scratch.sum_even_re[second_start..second_end])
+    else {
+        return false;
+    };
+    let Some(mut second_even_im) =
+        load_simd_vector::<S>(&scratch.sum_even_im[second_start..second_end])
+    else {
+        return false;
+    };
+    let Some(mut second_odd_re) =
+        load_simd_vector::<S>(&scratch.sum_odd_re[second_start..second_end])
+    else {
+        return false;
+    };
+    let Some(mut second_odd_im) =
+        load_simd_vector::<S>(&scratch.sum_odd_im[second_start..second_end])
+    else {
+        return false;
+    };
+
+    while pair + 1 < pair_count {
+        let a1 = coefficient_a[pair];
+        let b1 = coefficient_b[pair];
+        let a2 = coefficient_a[pair + 1];
+        let b2 = coefficient_b[pair + 1];
+        let even1 = coefficient_even[pair];
+        let odd1 = coefficient_odd[pair];
+        let even2 = coefficient_even[pair + 1];
+        let odd2 = coefficient_odd[pair + 1];
+        ordinary_two_pair_step(
+            simd,
+            first_csq,
+            a1,
+            b1,
+            a2,
+            b2,
+            even1,
+            odd1,
+            even2,
+            odd2,
+            &mut first_previous,
+            &mut first_current,
+            &mut first_even_re,
+            &mut first_even_im,
+            &mut first_odd_re,
+            &mut first_odd_im,
+        );
+        ordinary_two_pair_step(
+            simd,
+            second_csq,
+            a1,
+            b1,
+            a2,
+            b2,
+            even1,
+            odd1,
+            even2,
+            odd2,
+            &mut second_previous,
+            &mut second_current,
+            &mut second_even_re,
+            &mut second_even_im,
+            &mut second_odd_re,
+            &mut second_odd_im,
+        );
+        pair += 2;
+    }
+    if pair < pair_count {
+        ordinary_one_pair_step(
+            simd,
+            first_csq,
+            coefficient_a[pair],
+            coefficient_b[pair],
+            coefficient_even[pair],
+            coefficient_odd[pair],
+            &mut first_previous,
+            &mut first_current,
+            &mut first_even_re,
+            &mut first_even_im,
+            &mut first_odd_re,
+            &mut first_odd_im,
+        );
+        ordinary_one_pair_step(
+            simd,
+            second_csq,
+            coefficient_a[pair],
+            coefficient_b[pair],
+            coefficient_even[pair],
+            coefficient_odd[pair],
+            &mut second_previous,
+            &mut second_current,
+            &mut second_even_re,
+            &mut second_even_im,
+            &mut second_odd_re,
+            &mut second_odd_im,
+        );
+    }
+
+    store_simd_vector::<S>(
+        &mut scratch.previous[first_start..first_end],
+        first_previous,
+    ) && store_simd_vector::<S>(&mut scratch.current[first_start..first_end], first_current)
+        && store_simd_vector::<S>(
+            &mut scratch.sum_even_re[first_start..first_end],
+            first_even_re,
+        )
+        && store_simd_vector::<S>(
+            &mut scratch.sum_even_im[first_start..first_end],
+            first_even_im,
+        )
+        && store_simd_vector::<S>(
+            &mut scratch.sum_odd_re[first_start..first_end],
+            first_odd_re,
+        )
+        && store_simd_vector::<S>(
+            &mut scratch.sum_odd_im[first_start..first_end],
+            first_odd_im,
+        )
+        && store_simd_vector::<S>(
+            &mut scratch.previous[second_start..second_end],
+            second_previous,
+        )
+        && store_simd_vector::<S>(
+            &mut scratch.current[second_start..second_end],
+            second_current,
+        )
+        && store_simd_vector::<S>(
+            &mut scratch.sum_even_re[second_start..second_end],
+            second_even_re,
+        )
+        && store_simd_vector::<S>(
+            &mut scratch.sum_even_im[second_start..second_end],
+            second_even_im,
+        )
+        && store_simd_vector::<S>(
+            &mut scratch.sum_odd_re[second_start..second_end],
+            second_odd_re,
+        )
+        && store_simd_vector::<S>(
+            &mut scratch.sum_odd_im[second_start..second_end],
+            second_odd_im,
+        )
 }
 
 fn power_lower_limit(exponent: usize) -> f64 {
