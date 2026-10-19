@@ -1,59 +1,121 @@
-# RustSHT — current performance and implementation status
+# RustSHT — performance and implementation handoff
 
-**Updated:** 2026-10-18. **Active branch:** `opt/sht-performance-parity`. **Goal:** faithful native Rust implementations of DUCC's complete scalar/spin SHT execution algorithms, then measured CPU parity across atmospheric workloads.
+**Updated:** 2026-10-18. **Branch:** `opt/sht-performance-parity` at `fbefc60d`.
+**Objective:** implement DUCC-class native numerical execution while preserving
+RustSHT's API, numerical safety and supported operation families. DUCC remains
+the external reference; detailed methods and samples stay in the linked reports.
 
-**This is the short context index.** Do not preload `reports/`, the old milestone ledger or architectural reviews. Detailed pre-DUCC-port evidence is preserved in [the prior performance snapshot](reports/performance-status-pre-ducc-port-2026-10-18.md); consult individual linked reports only for a concrete implementation decision. The active roadmap is [plans/05-validation-and-milestones.md](plans/05-validation-and-milestones.md).
+## How to use this summary
 
-## Current production
+Read this file before revisiting historical experiments. It records current
+production paths, the accepted interpretation of earlier screens, and the next
+implementation work. Consult linked reports only when their details affect a
+specific engineering decision. Do not combine timings from different commits,
+workloads, operation boundaries or compiler settings.
 
-- Stable Rust 1.99.0; f64/f32; GL/CC/F1; scalar and spin 1–4 operations, relevant adjoints and derivative modes. Existing numerical and precision support is **combination-specific**, not universal; see [numerical contract](plans/02-numerics-and-grids.md).
-- Scalar synthesis: the private order-major kernel in `src/legendre/scalar_ordered.rs` handles eligible f64 GL transforms with active/reflected ring batches, SIMD recurrence and dynamic order scheduling. Its ordinary suffix now processes two adjacent ring vectors per degree block to expose coefficient reuse while keeping recurrence state in registers. The ring-group path retains paired SIMD and normalized scalar recurrences as the robust fallback. Its former tile-128 accelerator is archived under `backups/retired-kernels/`; nine tile-only scratch arrays were removed. Parallel output uses bounded order-major workspace scratch and commits to row-major spectra only after all order groups succeed.
-- Scalar GL synthesis can precompute/share transformed coefficients across ring groups when transition, worker and buffer eligibility permit. This generalizes the initially T1023-only cache; only the earlier T1023 q8 screen clearly demonstrated benefit.
-- Scalar and spin analysis recurrence use dynamic one-order jobs with disjoint coefficient slices and worker-owned recurrence scratch. Scalar analysis now binary-searches the first active reflected pair per order and compacts mixed SIMD blocks in one pass. The recursive weighted-prefix scheduler and its workspace allocation were removed. Allocation failure falls back to serial recurrence. DUCC, analytic, all-grid compaction and q1–q16 correctness checks pass; performance remains behind DUCC.
-- Fused f64 scalar analysis now initializes ordinary sectoral powers across SIMD latitude lanes; the same two-channel block benefits spin-1 Q/U analysis. It retains the checked scaled scalar path for unsafe lanes. A short T720 screen showed a 5.9% q1 scalar-analysis improvement; q8 was inconclusive. Current T720 full-call Rust/DUCC ratios were 2.17× q1 and 2.13× q8, with setup-boundary caveats. See [the analysis checkpoint](reports/analysis-sectoral-simd-2026-10-18.md).
-- Spin-1 includes existing restricted hemisphere pairing, scalar conversion and robust extreme-value guards. Scalar/spin analysis, f32 and CC/F1 use their respective established production routes. RustFFT is the root FFT backend; the separate RustSHT-FFT crate is not integrated.
-- Public APIs remain unchanged; DUCC-derived source attribution and external comparison references remain explicit.
+## Current production paths
 
-## What is known (not an active benchmark queue)
+- Scalar f64 GL synthesis uses the order-major kernel in
+  `src/legendre/scalar_ordered.rs` when eligible. It packs active/reflected
+  rings by order, prepares coefficients per order, uses SIMD recurrence and
+  dynamic order scheduling, and stages spectra before committing output.
+- Unsupported or unsafe scalar synthesis cases retain the ring-group paired
+  recurrence and checked scaled fallback. The old tile-128 accelerator and its
+  tile-only workspace arrays are retired; archived source remains available.
+- Scalar analysis uses active reflected-ring packing, compacted SIMD blocks,
+  dynamic per-order work and a fused ordinary recurrence/accumulator. It falls
+  back to the checked scaled path when range validation declines a block.
+- Spin-1 synthesis retains a narrow, measured reflected-hemisphere route and
+  scalar-conversion paths; other shapes use the general spin recurrence.
+  Analysis remains operation-specific. Spin 2–4 and their supported adjoints
+  remain on established paths.
+- Native f32 recurrences are production. The scalar normalization-skip
+  selector is restricted to tested truncations; f64 bridging is not the general
+  f32 route. GL, CC and F1 retain their distinct rules and resampling behavior.
+- RustFFT remains the root FFT engine. Reusable workspace scratch is bounded
+  by worker and transform dimensions; public APIs are unchanged.
 
-| Technique | Status | Key finding |
-| --- | --- | --- |
-| Ishioka paired recurrence, SIMD suffix and scaled fallback | Production | Mathematically DUCC-derived, but work batching, prefix skipping and reflected output differ from DUCC. |
-| Tile-128 fallback accelerator | Retired from production | The tile layer added no unique operation coverage after the ordered kernel; its source and tests are archived. Historical measurements remain in reports. The ordered kernel retains its own vectorized scaling and prefix advancement. |
-| Inlined scaled rescale check | Production | Optimized assembly no longer calls the rescale helper per degree pair; ungated q1 Legendre medians improved about 3% at T255 and 4% at irregular T300, with no consistent full-synthesis gain. Screen: AMD Ryzen 9 5950X, Rust 1.99.0, five samples. |
-| Vector-major recurrence with register-resident ordinary state | Production | Keeps one SIMD ring group and its four sums in registers through ordinary degree pairs. Ungated q1 T255/T300 Legendre medians improved 6%/5% versus the degree-major version; full-call medians improved 5%/3%. Rust-only screen on Ryzen 9 5950X x86_64 AVX2/FMA, Rust 1.99.0; no DUCC timing comparison. |
-| Generalized coefficient cache and reused coefficient safety preflights | Production for eligible ring-group fallback | Remove repeated work across eligible ring groups; benefits across arbitrary shapes not yet established. |
-| Scalar hemisphere pairing, whole order-owned scheduling | Historical prototypes rejected | Coarse pairing and scheduling overhead outweighed saved work; do not repeat the same designs. |
-| Exponent-epoch accumulator, SIMD precheck, f32-to-f64 bridge | Experimental/inconclusive | No general demonstrated improvement over the preferred route; preserve archived evidence. |
-| Spin-1 hemisphere pairing, small-band tables, selected f32 normalization skips | Production, restricted | Keep measured selectors and fallback while reworking common kernels. |
-| Native analysis and spin-1 performance | Production, behind DUCC | Separate kernels and operator checks required; synthesis gains do not establish analysis gains. |
+## Latest matched analysis profile
 
-**Current matched scalar synthesis checkpoint:** RustSHT `6b356cb1` versus ducc0 `0.41.0`, 21 f64 GL full-synthesis cases across T255/T720/T1279, odd/even longitude counts, reduced `mmax`, and q1/q4/q8. Rust was 1.89–3.88× slower at q1, 1.98–5.77× at q4 and 2.09–6.43× at q8; relative L2 error was at most `3.95e-14`. The public Rust plan API does not expose a separate Legendre timing. The archived tile accelerator is not in production dispatch. Host-pressure stall was below 0.06%; no prior-revision regression is inferred.
+The T720 f64 GL profile at `fbefc60d` found recurrence and coefficient
+accumulation to be the largest Rust excess. Full reused-call analysis measured
+41.822/19.443 ms (2.15×) at q1 and 7.507/3.245 ms (2.31×) at q8, Rust/DUCC.
+The instrumented recurrence-plus-accumulation stage measured 34.166/11.12 ms
+at q1 and 5.123/1.76 ms at q8. Relative L2 error was `6.039e-14`.
 
-**Current c5 profile and rescale update (`41b309a`): the largest measured Rust-side excess is initialization/scaled-prefix work. A DUCC-aligned empty-rescale fast path passed targeted numerical checks and reduced matched q1 full-synthesis medians by 14% at T720 and 12% at T300; q8 results were inconclusive. Rust remains 1.03–1.92× DUCC in the follow-up full-call screen. See [the bounded stage profile](reports/matched-rust-ducc-stage-profile-2026-10-18.md); hardware performance counters are unavailable on this host.
+FFT, coefficient preparation and ring packing did not explain the gap; q8
+worker use was about 98% over the recurrence interval. `perf` hardware events
+were unavailable under the host's existing permissions. A fused two-pair
+analysis prototype regressed the same-source whole-call screen by 8% at q1
+and 12% at q8, so it was removed. Next, reduce recurrence register pressure
+without restoring that prototype. See the [profile](reports/scalar-analysis-stage-profile-2026-10-18.md).
 
-**P0/P1 follow-up (current scalar ordered source): the shared-prefix change reduces T720 initialization/prefix/scaled time from 6.79 ms to 1.16 ms and T300 from 0.63 ms to 0.14 ms. No `iter_to_ieee` recurrence steps or nonempty prefix rescalings occur in these q1 workloads. A two-vector ordinary SIMD suffix then reduced the T720 q1 ordinary stage by about 20% and its q8 full-call median by about 21% versus the immediately preceding source. In one interleaved five-sample screen, the new source was 0.94×/1.31× DUCC at q1 and 1.38×/1.53× at q8 for T720/T300 respectively; q8 host jitter was substantial. This is a bounded result, not general parity. Details are in the updated [stage profile](reports/matched-rust-ducc-stage-profile-2026-10-18-41b309a5.md).
+## Technique findings
 
-**DUCC-kernel checkpoint:** `b484a8c7` added `src/legendre/scalar_ducc.rs`, with order-major 256-ring active/reflected batching, DUCC-like scaled initialization and negligible-prefix skipping, parity reconstruction, transformed coefficient reuse and fused SIMD recurrence. It advances a monotone polar active-ring boundary, dynamically claims one harmonic order per task as DUCC does, reuses each worker's recurrence workspace, and stages into disjoint order-major rows before tiled scatter. T255 mixed coefficients match pinned DUCC samples and the retained ring-group spectra; tests cover reduced `mmax`, odd/even longitude counts, partial SIMD batches, subnormal fallback and unsafe transformed coefficients. A decline leaves row-major spectra untouched for fallback. The earlier recursive-weighted q1/q4/q8 screen measured 5.485/3.151/2.430 ms for reduced-mmax T300 (301×603); it compared RustSHT thread counts only. Earlier T255/T300 full-call screens measured the candidate 32.3%/8.3% slower than DUCC; rerun matched comparisons at the next integrated milestone. GL high-degree sectoral checks passed at opt-in T511/T1023/T2047. See [source screen](reports/scalar-ducc-kernel-screen-2026-10-18.md).
+| Technique | Status | Result | Reason | Reference | Next action |
+|---|---|---|---|---|---|
+| Ishioka paired-degree scalar recurrence | Production basis | DUCC-derived paired recurrence with ordinary SIMD and scaled fallback. | Recurrence mathematics is established; execution and accumulation differ from DUCC. | [`scalar_paired.rs`](src/legendre/scalar_paired.rs) | Retain as reference and improve measured loop structure. |
+| SIMD scalar and spin recurrence | Production | Pulp handles normal lanes; checked scalar/scaled paths preserve unsafe cases. | Mixed lane ranges and exceptional coefficients require safe decline behavior. | [`scalar_paired.rs`](src/legendre/scalar_paired.rs), [`spin_transform.rs`](src/spin_transform.rs) | Reuse common machinery only where operator semantics agree. |
+| Scalar hemisphere-pair synthesis | Rejected prototype | T511 was 10.4% slower at q1 and 6.2% slower at q8. | Few blocks were eligible; setup and scatter outweighed shared recurrence. | [Experiment](reports/hemisphere-paired-synthesis-2026-10-14.md) | Do not repeat the coarse block design. |
+| Spin-1 hemisphere pairing | Production, restricted | Selected GL full-mmax route covers T319–T511 at q4/q8; tested reductions ranged from 4.1% to 22.7%. | Benefit depends on eligible geometry, normal range and worker count; checked fallback remains. | [Results](reports/spin1-hemisphere-pair-synthesis-2026-10-14.md) | Preserve selector; widen only with matched evidence. |
+| Earlier order-owned vs ring-owned synthesis | Prototype rejected | Old order-owned prototype was 32.65% slower at T511 q8 and 1.87% slower at T1023 q8. | It added coefficient setup, transpose and order-imbalance costs; it was not DUCC's full active-ring algorithm. | [Screen](reports/order-owned-synthesis-2026-10-15.md) | Do not repeat that prototype; current order-major path is a separate complete kernel. |
+| Active-ring packing and compaction | Production | Order-major synthesis packs active rings; analysis compacts mixed SIMD blocks. | Dense per-order packing reduces inactive work but carries packing/scatter overhead. | [`scalar_ordered.rs`](src/legendre/scalar_ordered.rs), [`transform.rs`](src/transform.rs) | Improve only against measured active-lane and packing costs. |
+| Scaled transition and safety fallback | Production | Unsafe transformed coefficients or recurrence lanes decline before output commit. | Extreme finite values and subnormals need the existing robust route. | [`scalar_ordered.rs`](src/legendre/scalar_ordered.rs) | Keep transactional output and checked fallback. |
+| Tile-128 scalar synthesis | Retired from production | Historical screens showed useful T511/high-degree gains, but were not a stable general acceptance. | Ordered execution now covers the useful operation; tile-only buffers and dispatch were removed. | [Prior status](reports/performance-status-pre-ducc-port-2026-10-18.md) | Keep source evidence archived; do not restore tile dispatch. |
+| Scaled-prefix accumulator | Historical candidate, superseded | Isolated q1 candidate/baseline ratios were 0.569 at T1023 and 0.408 at T2047. | These were tile-route source comparisons, not the present integrated kernel or broad DUCC parity evidence. | [M6 campaign](reports/m6-cpu-performance-parity.md) | Preserve numerical ideas only when they fit the ordered kernel. |
+| Exponent-epoch accumulator | Rejected as an improvement | q1 ratios were 0.594 at T1023 and 0.415 at T2047, weaker than the preceding accumulator. | It added epoch handling without improving those measured cases; T511 evidence was unresolved. | [Epoch results](reports/data/m6-legendre-redesign/route-timing/exponent-epoch-q1-screen-v1-results.md) | Do not reintroduce absent a new profile-supported mechanism. |
+| Prefix normalization/accumulation fusion | Historical tile implementation | Directional screens improved selected T511/T2047 cases; T255 was effectively unchanged. | The route is retired and screens lacked a controlled broad gate. | [Fusion screen](reports/data/m6-legendre-redesign/route-timing/prefix-lane-pass-fusion-screen-t2047-q1.md) | Do not restore the tile implementation; compare any reused primitive in current code. |
+| SIMD prefix arithmetic | Partly retained, historical tile screen | Prior one-process screens ranged from 0.4% to 6.8% lower at selected T255/T720/T1279 cases. | Those results were Rust-only, ungated and tied to the retired route. | [Prior status](reports/performance-status-pre-ducc-port-2026-10-18.md) | Keep current vectorized scaling; avoid claims from the retired screen. |
+| SIMD range prechecks | Inconclusive | A diagnostic reduced one prefix estimate by 6.41% and whole-call estimate by 2.62%. | No paired acceptance; corrected lane replay found little work safe across all degrees. | [M6 report](reports/m6-cpu-performance-parity.md) | Keep checked transitions; do not add a scan without a new whole-call case. |
+| Vectorized shared prefix and empty-rescale check | Production | T720/T300 q1 synthesis fell 14%/12% in the bounded screen; later stage checks found prefix work substantially reduced. | Gains were q1-specific; q8 remained variable and behind DUCC. | [Post-fix profile](reports/matched-rust-ducc-stage-profile-2026-10-18-41b309a5.md) | Stop q1 prefix tuning; address distinct q8 structure only with evidence. |
+| Two-vector ordinary synthesis suffix | Production | T720 ordinary stage improved about 20%; q8 full-call screen improved about 21% versus the preceding source. | Pair-major register residency reuses coefficients while preserving lane state; DUCC gap remains workload-dependent. | [Source comparison](reports/matched-rust-ducc-stage-profile-2026-10-18-41b309a5.md) | Keep and validate across irregular sizes and fallback cases. |
+| Vector-block-major synthesis suffix | Rejected | Legendre stage was 5.2×/6.4× slower at T255/T300. | Repeated coefficient broadcasts per SIMD block outweighed the changed loop order. | [Current source screen](reports/scalar-ducc-kernel-screen-2026-10-18.md) | Do not retry this layout unchanged. |
+| Coefficient cache and safety preflight | Production, eligible fallback route | T1023 q8 median improved 8.5% in five paired process comparisons; broader grids were inconclusive. | Reuses coefficient work without changing ring ownership when workspace constraints allow. | [Prior status](reports/performance-status-pre-ducc-port-2026-10-18.md) | Retain bounded eligibility; avoid extra per-grid selectors. |
+| Scalar analysis fused recurrence/accumulation | Production | T511 improved 12.2% q1 and 5.5% q8; latest T720 profile still shows a 2.15×/2.31× full-call gap. | Degree recurrence and coefficient reduction dominate; an unrolled two-pair prototype regressed. | [Profile](reports/scalar-analysis-stage-profile-2026-10-18.md), [fusion screen](reports/fused-scalar-analysis-2026-10-15.md) | Test a lower-register-pressure inner loop, then extend only after correctness. |
+| Spin-1 analysis | Production; behind DUCC | Current operation has paired channels and dynamic order scheduling; T2047 q8 historical ratio was 4.40×. | Channel preparation and spin recurrence remain distinct from scalar analysis. | [M6 campaign](reports/m6-cpu-performance-parity.md) | Reuse validated scalar improvements where basis operations match. |
+| Native f32 recurrence and normalization skips | Production, restricted selector | T1023/T1279 scalar skips matched fallback and improved measured S/A; T720 rejected a broad selector. | Benefit depends on degree range and cannot be generalized from two truncations. | [f32 status](reports/f32-scalar-normalization-skip-2026-10-16.md) | Preserve selector; optimize native f32 after f64 kernel work. |
+| Reusable f64 bridge for f32 | Rejected as general route | Faster than Rust native f32 in an initial screen but up to 13× slower than DUCC; spin-1 temporary reached 48 MiB. | Conversion and memory costs do not establish a useful general route. | [Bridge summary](reports/data/m6-f32-bridge/summary.md) | Keep native f32 recurrence as the target. |
+| FFT and multicore scheduling | RustFFT production; recurrence dominates | Parallel row FFT helped analysis; high-resolution Legendre work remains the largest phase. | FFT changes do not address the measured recurrence excess; order scheduling is already dynamic on current fast paths. | [Atmospheric study](reports/atmospheric-resolution-performance-ectrans-2026-10-16.md) | Keep FFT stable; improve recurrence and worker balance from measurements. |
+| Atmospheric-resolution comparison | Historical 29-grid matrix | DUCC was faster for all measured scalar/spin-1 S/A workloads from that source revision. | The matrix predates current kernels and its ratios cannot be transferred to this branch. | [Study](reports/atmospheric-resolution-performance-ectrans-2026-10-16.md) | Use as workload context; compare representative grids at major milestones. |
 
-Sectoral initialization now follows DUCC's per-SIMD-vector decision: it uses the fast power route when every lane stays above that order's threshold, and normalized mantissas with checked SIMD exponent updates when any lane in the vector approaches underflow. Normalization, recurrence rescaling and correction factors also use `pulp` masks. The one-pair AVX2 recurrence suffix is forced inline, and partial SIMD batches repeat the last valid ring without scattering padded lanes. After tile retirement, a five-sample release q1 screen against the generic ring-group fallback measured T255 (256×513) medians of 5.017/6.465 ms for the Legendre stage and 4.991/7.079 ms end to end; irregular T300 (301×603) medians were 6.126/8.714 ms and 7.667/10.115 ms. This ungated Rust-only comparison does not isolate the retired tile code, compare DUCC or sample memory. Static T720 order leaves took 3.94–10.17 ms despite near-equal estimated work; dynamic one-order scheduling reduced worker recurrence times to 5.46–5.55 ms. Synthesis inverse FFT now uses reusable per-worker scratch and writes disjoint map rows directly. After tile retirement, the latest ungated five-sample Rust-only q1/q4/q8 medians on an AMD Ryzen 9 5950X (x86_64, 16C/32T, AVX2/FMA; Rust 1.99.0) were 49.669/15.347/8.777 ms at full-mmax T720 (721×1442, even `nphi`) and 5.509/1.817/1.186 ms at reduced-mmax T300 (301×603, odd `nphi`). These are lightweight screens without host-pressure gating, a matched DUCC comparison or a memory sample; they only check that q scaling and output correctness remain intact. The T720 inverse FFT/map phase previously fell from 5.58 to 0.83 ms after parallelization; q4/q8 maps match q1 below relative L2 `4e-13`. Earlier q1 candidate/ring-group medians were 4.363/4.838 ms for the T255 Legendre stage and 5.037/5.452 ms end to end; at irregular T300 they were 6.062/6.047 ms and 7.167/7.429 ms. SIMD tail, overflow, pinned-DUCC, fallback and portable scalar checks pass.
+## Operation and numerical coverage
 
-A vector-block-major register-resident suffix prototype matched the pair-major reference numerically but was 5.2×/6.4× slower for the T255/T300 Legendre stages in five-sample ungated screens. Repeated coefficient broadcasts per SIMD block are the likely cost; the prototype was removed.
+- Scalar synthesis: eligible f64 GL order-major path plus a checked fallback;
+  CC/F1, unsupported layouts and unsafe fast-path inputs keep established routes.
+- Scalar analysis and its adjoint remain separate from synthesis and synthesis
+  adjoint. Their weights, `m=0`, and rectangular-grid rules are unchanged.
+- Spin-1 synthesis/analysis retain E/B conversion, spin-specific recurrences,
+  polar handling and distinct adjoint behavior; the narrow hemisphere selector
+  is not a general spin route.
+- f32, CC/F1 and spin 2–4 remain supported on existing validated paths. Current
+  timing evidence is combination-specific, not a universal performance claim.
+- Numerical checks must include analytic fields and adjoint identities alongside
+  pinned DUCC comparisons; roundtrips alone do not establish correctness.
 
-**Historical performance context:** the archived 29-grid study (T42–T2047) found DUCC faster for all matched scalar/spin-1 S/A workloads from that source revision. A former six-pair isolated scalar T2047 q1 scaled-prefix candidate measured ~1,371 ms versus ~3,360 ms clean baseline, still ~3.67× DUCC. These are **not measurements of the latest integrated build**. The current ordered SIMD kernel and remaining operations still lack complete matched DUCC and cross-operation acceptance.
+## Next implementation work
 
-## Active next steps — post-profile
+1. **Scalar analysis:** use the latest T720 profile. Reduce normal recurrence
+   instruction/register cost without restoring the rejected fused two-pair
+   form. Preserve scaled fallback, A/A* distinctions and numerical checks.
+2. **Spin-1:** transfer only validated low-level recurrence or scheduling work;
+   keep E/B, pole and adjoint semantics distinct and test both synthesis and
+   analysis before broadening shared code.
+3. **Generalization:** extend useful changes to native f32 and applicable CC/F1
+   and spin-2 paths, preserving spin 3–4 and bounded memory.
+4. Use lightweight correctness/performance screens at varied truncations,
+   including irregular longitude counts and reduced `mmax`; reserve full DUCC
+   comparisons for meaningful integrated milestones.
 
-1. **P0 complete:** the shared-prefix follow-up confirms the original initialization/prefix excess is substantially reduced. Stop q1 prefix micro-tuning.
-2. **P1 implementation landed:** ordinary recurrence now advances two adjacent SIMD ring vectors together. q8 T720 improved in the bounded screen; q8 remains slower than DUCC and requires another source-grounded change only if a distinct structural cause is measured.
-3. **P2 next:** the bounded T720 profile locates the main excess in normal paired recurrence/accumulation, not FFT, packing or q8 scheduling. A fused two-pair experiment regressed the Rust screen by 8% q1 / 12% q8 and was discarded; see [the stage profile](reports/scalar-analysis-stage-profile-2026-10-18.md). Next test a lower-register-pressure recurrence unroll. Dynamic scheduling, active-ring compaction and vectorized initialization are implemented; A, S*, and A* remain distinct.
-4. **P3–P4:** extend validated recurrence improvements to spin-1 synthesis/analysis, then applicable f32, CC/F1 and spin-2 regimes; preserve spin 3–4 and one minimal robust fallback per necessary regime. Do not reopen the broad profiling campaign.
+## Selective source and evidence index
 
-## Read only when needed
+- [Active validation roadmap](plans/05-validation-and-milestones.md): P0–P4.
+- [DUCC operation contract](plans/06-ducc-contract-crosswalk.md) and
+  [numerical/grid rules](plans/02-numerics-and-grids.md): consult for kernel changes.
+- [Latest scalar analysis stage profile](reports/scalar-analysis-stage-profile-2026-10-18.md): recurrence bottleneck and rejected loop prototype.
+- [Scalar synthesis stage profile](reports/matched-rust-ducc-stage-profile-2026-10-18.md): prefix and q8 findings.
+- [Prior status snapshot](reports/performance-status-pre-ducc-port-2026-10-18.md): archived experiment index.
+- [Atmospheric study](reports/atmospheric-resolution-performance-ectrans-2026-10-16.md): historical workload patterns, not a standing matrix.
 
-- [DUCC execution crosswalk](plans/06-ducc-contract-crosswalk.md) and [numerical specification](plans/02-numerics-and-grids.md): actual mode, grid, adjoint and accuracy contracts.
-- [Prior status snapshot](reports/performance-status-pre-ducc-port-2026-10-18.md): details and citations for tile, prefix, SIMD, cache and candidate screens.
-- [Historical validation/milestones](plans/05-validation-and-milestones-history.md) and [historical integrated review](ASTRA_INTEGRATED_REVIEW.md): provenance, not instructions.
-- [Atmospheric comparison](reports/atmospheric-resolution-performance-ectrans-2026-10-16.md), [M6 campaign report](reports/m6-cpu-performance-parity.md): benchmark data, **not a standing test matrix**.
-
-**Execution:** implementation and numerical correctness first; light smoke screens during coding, comprehensive DUCC comparison at major milestones. Do not default to T511/T1023/T2047.
+**Evidence rule:** every performance number is tied to the report's source,
+workload, operation boundary and worker count. Do not claim DUCC parity from
+an isolated Rust-only comparison or from a previous source revision.

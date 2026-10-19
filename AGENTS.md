@@ -15,6 +15,19 @@ Production-code naming and retirement are governed by [plans/08-kernel-naming-an
 
 Implement and test meaningful source changes before launching major profiling or benchmark campaigns. No arbitrary T511/T1023/T2047 optimization focus; choose varied, realistic and irregular bandlimits, reduced `mmax`, grid sizes and worker counts. Those historic cases remain regression coverage only. Do not install exact-bandlimit tuning selectors without a measured, explainable regime boundary.
 
+## Performance-work handoff
+
+1. Start performance work by reading `AGENTS.md` and `PERFORMANCE_STATUS.md`.
+2. Consult historical reports selectively; do not preload `reports/` or archived reviews.
+3. Use `PERFORMANCE_STATUS.md` as the primary index of prior attempts and findings.
+4. Inspect the current production source and dispatch before implementing a change.
+5. Do not repeat a rejected approach without addressing its recorded failure mechanism.
+6. Update the status summary after a meaningful implementation milestone, not a minor timing screen.
+7. Prioritize implementation and correctness over writing additional benchmark reports.
+8. Retain historical reports, benchmark artifacts and archived source patches.
+9. Keep raw process, local environment, host-state, PSI and machine-specific captures untracked, as required by the artifact policy below.
+10. Benchmark reports may retain CPU model and features, memory capacity, compiler versions and useful numerical results.
+
 ## Numerical and implementation contract
 
 - Independent GPL-2.0-or-later Rust library. Use **Albert M. W. Yau** for new contributions and preserve Martin Reinecke/DUCC notices, GPL obligations, and pinned source revisions when directly translating source. Do not copy DUCC's GPL-3.0-or-later Python tests verbatim.
