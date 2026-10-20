@@ -327,9 +327,37 @@ features passed. The direct Rust and DUCC fixture drivers are retained in
 [`reports/data/scalar-analysis-pair-grouping-2026-10-19`](../../data/scalar-analysis-pair-grouping-2026-10-19).
 No full DUCC transform timing or host performance counters were collected.
 
+## Direct parity-spectrum packing candidate — 2026-10-20
+
+The analysis packer now writes north-plus-south and north-minus-south
+directly into the four real/imaginary SIMD input arrays. This removes the
+intermediate complex buffers and their later copy. Compact north-ring indices
+allow the checked path to reconstruct the unweighted opposite parity if the
+preweighted fused route declines. The compaction test covers north-only,
+south-only, paired and equatorial lanes, including fallback restoration.
+
+A full T720 GL analysis screen used `m1b_bench`, reused plans and workspaces,
+and ran five calls per process on the same pinned physical core set. Three
+process invocations per revision were interleaved; map inputs were the same
+deterministic nonzero field. Values below are medians of those process
+medians, with the process-median range in parentheses:
+
+| Threads | Before | Direct-SoA candidate | Candidate / before |
+|---:|---:|---:|---:|
+| q1 | 26.705 ms (26.580–26.877) | 26.851 ms (26.685–27.758) | 1.005× |
+| q8 | 4.348 ms (4.335–4.355) | 4.327 ms (4.307–5.151) | 0.995× |
+
+The q8 candidate range includes one slow process. The screen shows no reliable
+latency change, so the layout change remains in the cumulative candidate but is
+not reported as a performance win. The all-feature release suite passed,
+including DUCC and analytic scalar-analysis references, adjoint identities,
+f32 and extreme-value tests. These full-transform numbers include FFT and
+scheduling; they are not direct Legendre timings.
+
 ## Next implementation target
 
-Measure and reduce the ordinary kernel's post-group validation traversal while
-retaining the checked fallback contract. Then repeat the same direct comparison
-and full T720 q1/q8 screen before deciding whether the residual gap comes from
-range-safety work, instruction scheduling, or another stage.
+Evaluate the cumulative 256-pair and direct-SoA candidate against the unchecked
+ordinary recurrence using the calibrated direct-kernel protocol and full T720
+q1/q8 checks. Keep the checked fallback contract until valid GL, polar,
+subnormal and extreme-value cases establish that removing the late scan is
+safe for production inputs.

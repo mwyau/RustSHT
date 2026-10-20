@@ -32,6 +32,13 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   time 64/128 controls. Shared synthesis/spin tiles and f32 analysis remain at
   64. T720 and T300 active-block counts fell by about two thirds with unchanged
   SIMD-tail capacity and no increase in recurrence scratch.
+- Pair packing now writes north/south parity spectra directly into the four
+  real/imaginary SIMD arrays. It removes the intermediate complex-spectrum
+  staging and copy; packed ring indices let the checked fallback reconstruct
+  the unweighted opposite parity when needed. A three-process T720 full-analysis
+  screen was neutral: q1 medians were 26.705 ms before and 26.851 ms after;
+  q8 medians were 4.348 ms and 4.327 ms, with one candidate process outlier.
+  Retain the layout change for cumulative evaluation, without claiming a speedup.
 - The three-process full-analysis screen improved q1 by 4.0% at T720 and 5.4%
   at reduced-order T300; q8 T720 improved 4.4%. q8 T300 was too noisy to show a
   clear benefit. The candidate passed all-feature release tests at 64/128/256,
@@ -42,7 +49,8 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   unchecked route remained stable. All batches are retained. See the report
   for process-level distributions and host diagnostics.
 
-**Next:** keep the checked post-group scan and continue the cumulative 256-pair
-analysis candidate. The direct unchecked kernel remains 8.5–14.2% slower than
-DUCC in the calibrated 64/128/256-lane comparison; reduce recurrence cost while
-preserving the checked fallback.
+**Next:** evaluate the cumulative 256-pair and direct-SoA candidate against the
+unchecked specialization using the calibrated kernel protocol and full T720
+q1/q8 transform checks. The direct unchecked kernel remains 8.5–14.2% slower
+than DUCC at 64/128/256 lanes; reduce recurrence cost while preserving the
+checked fallback.

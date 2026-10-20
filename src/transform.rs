@@ -153,8 +153,11 @@ fn prepare_symmetric_analysis_pair_block<T: ShtScalar>(
     theta_sin: &[T],
     theta_cos: &[T],
     theta_cos_squared: &[T],
-    same_parity: &mut [Complex<T>],
-    opposite_parity: &mut [Complex<T>],
+    same_real: &mut [T],
+    same_imag: &mut [T],
+    opposite_real: &mut [T],
+    opposite_imag: &mut [T],
+    packed_north_ring: &mut [usize],
     compact_theta_sin: &mut [T],
     compact_theta_cos: &mut [T],
     compact_theta_cos_squared: &mut [T],
@@ -180,9 +183,12 @@ fn prepare_symmetric_analysis_pair_block<T: ShtScalar>(
         } else {
             Complex::new(T::zero(), T::zero())
         };
-        same_parity[output_lane] = north + south;
-        opposite_parity[output_lane] = north - south;
+        same_real[output_lane] = north.re + south.re;
+        same_imag[output_lane] = north.im + south.im;
+        opposite_real[output_lane] = north.re - south.re;
+        opposite_imag[output_lane] = north.im - south.im;
         if compact {
+            packed_north_ring[output_lane] = north_ring;
             compact_theta_sin[output_lane] = theta_sin[north_ring];
             compact_theta_cos[output_lane] = theta_cos[north_ring];
             compact_theta_cos_squared[output_lane] = theta_cos_squared[north_ring];
@@ -191,6 +197,39 @@ fn prepare_symmetric_analysis_pair_block<T: ShtScalar>(
     }
 
     if compact { output_lane } else { block_len }
+}
+
+#[inline]
+fn restore_symmetric_analysis_pair_opposite<T: ShtScalar>(
+    m: usize,
+    latitude_count: usize,
+    order_spectra: &[Complex<T>],
+    ring_order_limits: &[usize],
+    packed_north_ring: &[usize],
+    opposite_real: &mut [T],
+    opposite_imag: &mut [T],
+) {
+    debug_assert_eq!(order_spectra.len(), latitude_count);
+    debug_assert_eq!(ring_order_limits.len(), latitude_count);
+    debug_assert_eq!(packed_north_ring.len(), opposite_real.len());
+    debug_assert_eq!(opposite_real.len(), opposite_imag.len());
+    for (lane, &north_ring) in packed_north_ring.iter().enumerate() {
+        let south_ring = latitude_count - 1 - north_ring;
+        let north_active = m <= ring_order_limits[north_ring];
+        let south_active = south_ring != north_ring && m <= ring_order_limits[south_ring];
+        let north = if north_active {
+            order_spectra[north_ring]
+        } else {
+            Complex::new(T::zero(), T::zero())
+        };
+        let south = if south_active {
+            order_spectra[south_ring]
+        } else {
+            Complex::new(T::zero(), T::zero())
+        };
+        opposite_real[lane] = north.re - south.re;
+        opposite_imag[lane] = north.im - south.im;
+    }
 }
 
 #[inline]
@@ -2160,8 +2199,11 @@ impl<T: ShtScalar> ShtPlan<T> {
                     theta_sin,
                     theta_cos,
                     theta_cos_squared,
-                    &mut recurrence.weighted_spin_q_spectrum,
-                    &mut recurrence.weighted_spin_u_spectrum,
+                    &mut recurrence.analysis_same_real,
+                    &mut recurrence.analysis_same_imag,
+                    &mut recurrence.analysis_opposite_real,
+                    &mut recurrence.analysis_opposite_imag,
+                    &mut recurrence.compact_ring_indices,
                     &mut recurrence.compact_theta_sin,
                     &mut recurrence.compact_theta_cos,
                     &mut recurrence.compact_theta_cos_squared,
@@ -2187,15 +2229,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 } else {
                     &theta_cos_squared[block_start..block_end]
                 };
-                let same_parity_spectrum = &recurrence.weighted_spin_q_spectrum[..lane_count];
-                let opposite_parity_spectrum = &recurrence.weighted_spin_u_spectrum[..lane_count];
                 if paired_used {
-                    for lane in 0..lane_count {
-                        recurrence.analysis_same_real[lane] = same_parity_spectrum[lane].re;
-                        recurrence.analysis_same_imag[lane] = same_parity_spectrum[lane].im;
-                        recurrence.analysis_opposite_real[lane] = opposite_parity_spectrum[lane].re;
-                        recurrence.analysis_opposite_imag[lane] = opposite_parity_spectrum[lane].im;
-                    }
                     // Paired degrees l=m+2k use north+south for the even term;
                     // the intervening odd term uses north-south and cos(theta).
                     let staged_count = coefficient_count;
@@ -2263,15 +2297,15 @@ impl<T: ShtScalar> ShtPlan<T> {
                         }
                     } else {
                         if opposite_preparation.is_some() {
-                            for ((real, imag), spectrum) in recurrence.analysis_opposite_real
-                                [..lane_count]
-                                .iter_mut()
-                                .zip(&mut recurrence.analysis_opposite_imag[..lane_count])
-                                .zip(opposite_parity_spectrum)
-                            {
-                                *real = spectrum.re;
-                                *imag = spectrum.im;
-                            }
+                            restore_symmetric_analysis_pair_opposite(
+                                m,
+                                latitude_count,
+                                order_spectra,
+                                ring_order_limits,
+                                &recurrence.compact_ring_indices[..lane_count],
+                                &mut recurrence.analysis_opposite_real[..lane_count],
+                                &mut recurrence.analysis_opposite_imag[..lane_count],
+                            );
                         }
                         let same_real = &recurrence.analysis_same_real[..lane_count];
                         let same_imag = &recurrence.analysis_same_imag[..lane_count];
@@ -2333,6 +2367,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                     }
                 }
                 if !paired_used {
+                    let same_real = &recurrence.analysis_same_real[..lane_count];
+                    let same_imag = &recurrence.analysis_same_imag[..lane_count];
+                    let opposite_real = &recurrence.analysis_opposite_real[..lane_count];
+                    let opposite_imag = &recurrence.analysis_opposite_imag[..lane_count];
                     T::for_each_y_lm_dispatched(
                         arch,
                         m,
@@ -2355,15 +2393,15 @@ impl<T: ShtScalar> ShtPlan<T> {
                                 }
                             }
                             let coefficient = &mut coefficients[l - m];
-                            let paired_spectra = if (l + m).is_multiple_of(2) {
-                                same_parity_spectrum
+                            let (spectrum_real, spectrum_imag) = if (l + m).is_multiple_of(2) {
+                                (same_real, same_imag)
                             } else {
-                                opposite_parity_spectrum
+                                (opposite_real, opposite_imag)
                             };
                             for lane in 0..current.len() {
                                 let ring = ring_start + lane;
                                 *coefficient += T::multiply_complex_scaled(
-                                    paired_spectra[ring],
+                                    Complex::new(spectrum_real[ring], spectrum_imag[ring]),
                                     current[lane],
                                     exponents[lane],
                                 );

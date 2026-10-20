@@ -200,8 +200,11 @@ fn report_scalar_analysis_pair_tile_utilization() {
                         &workspace.theta_sin,
                         &workspace.theta_cos,
                         &workspace.theta_cos_squared,
-                        &mut recurrence.weighted_spin_q_spectrum,
-                        &mut recurrence.weighted_spin_u_spectrum,
+                        &mut recurrence.analysis_same_real,
+                        &mut recurrence.analysis_same_imag,
+                        &mut recurrence.analysis_opposite_real,
+                        &mut recurrence.analysis_opposite_imag,
+                        &mut recurrence.compact_ring_indices,
                         &mut recurrence.compact_theta_sin,
                         &mut recurrence.compact_theta_cos,
                         &mut recurrence.compact_theta_cos_squared,
@@ -3260,8 +3263,11 @@ fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
         .collect();
     let theta_cos_squared: Vec<_> = theta_cos.iter().map(|cosine| cosine * cosine).collect();
 
-    let mut full_same = vec![Complex64::new(0.0, 0.0); block_len];
-    let mut full_opposite = vec![Complex64::new(0.0, 0.0); block_len];
+    let mut full_same_real = vec![0.0; block_len];
+    let mut full_same_imag = vec![0.0; block_len];
+    let mut full_opposite_real = vec![0.0; block_len];
+    let mut full_opposite_imag = vec![0.0; block_len];
+    let mut full_north_ring = vec![0; block_len];
     let mut unused_sin = vec![0.0; block_len];
     let mut unused_cos = vec![0.0; block_len];
     let mut unused_cos_squared = vec![0.0; block_len];
@@ -3276,16 +3282,22 @@ fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
         &theta_sin,
         &theta_cos,
         &theta_cos_squared,
-        &mut full_same,
-        &mut full_opposite,
+        &mut full_same_real,
+        &mut full_same_imag,
+        &mut full_opposite_real,
+        &mut full_opposite_imag,
+        &mut full_north_ring,
         &mut unused_sin,
         &mut unused_cos,
         &mut unused_cos_squared,
     );
     assert_eq!(full_len, block_len);
 
-    let mut compact_same = vec![Complex64::new(0.0, 0.0); block_len];
-    let mut compact_opposite = vec![Complex64::new(0.0, 0.0); block_len];
+    let mut compact_same_real = vec![0.0; block_len];
+    let mut compact_same_imag = vec![0.0; block_len];
+    let mut compact_opposite_real = vec![0.0; block_len];
+    let mut compact_opposite_imag = vec![0.0; block_len];
+    let mut compact_north_ring = vec![0; block_len];
     let mut compact_sin = vec![0.0; block_len];
     let mut compact_cos = vec![0.0; block_len];
     let mut compact_cos_squared = vec![0.0; block_len];
@@ -3300,8 +3312,11 @@ fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
         &theta_sin,
         &theta_cos,
         &theta_cos_squared,
-        &mut compact_same,
-        &mut compact_opposite,
+        &mut compact_same_real,
+        &mut compact_same_imag,
+        &mut compact_opposite_real,
+        &mut compact_opposite_imag,
+        &mut compact_north_ring,
         &mut compact_sin,
         &mut compact_cos,
         &mut compact_cos_squared,
@@ -3309,28 +3324,69 @@ fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
     let active_lanes = [2, 4, 6];
     assert_eq!(compact_len, active_lanes.len());
     for (packed_lane, &source_lane) in active_lanes.iter().enumerate() {
+        assert_eq!(compact_north_ring[packed_lane], source_lane);
         assert_eq!(compact_sin[packed_lane], theta_sin[source_lane]);
         assert_eq!(compact_cos[packed_lane], theta_cos[source_lane]);
         assert_eq!(
             compact_cos_squared[packed_lane],
             theta_cos_squared[source_lane]
         );
-        assert_eq!(compact_same[packed_lane], full_same[source_lane]);
-        assert_eq!(compact_opposite[packed_lane], full_opposite[source_lane]);
+        assert_eq!(compact_same_real[packed_lane], full_same_real[source_lane]);
+        assert_eq!(compact_same_imag[packed_lane], full_same_imag[source_lane]);
+        assert_eq!(
+            compact_opposite_real[packed_lane],
+            full_opposite_real[source_lane]
+        );
+        assert_eq!(
+            compact_opposite_imag[packed_lane],
+            full_opposite_imag[source_lane]
+        );
     }
-    assert_eq!(full_same[2], spectra[2]);
-    assert_eq!(full_opposite[2], spectra[2]);
-    assert_eq!(full_same[4], spectra[latitude_count - 1 - 4]);
-    assert_eq!(full_opposite[4], -spectra[latitude_count - 1 - 4]);
-    assert_eq!(full_same[6], spectra[6] + spectra[latitude_count - 1 - 6]);
-    assert_eq!(
-        full_opposite[6],
-        spectra[6] - spectra[latitude_count - 1 - 6]
+    let expected_opposite_real = compact_opposite_real[..compact_len].to_vec();
+    let expected_opposite_imag = compact_opposite_imag[..compact_len].to_vec();
+    for lane in 0..compact_len {
+        compact_opposite_real[lane] *= compact_cos[lane];
+        compact_opposite_imag[lane] *= compact_cos[lane];
+    }
+    super::restore_symmetric_analysis_pair_opposite(
+        m,
+        latitude_count,
+        &spectra,
+        &limits,
+        &compact_north_ring[..compact_len],
+        &mut compact_opposite_real[..compact_len],
+        &mut compact_opposite_imag[..compact_len],
     );
+    assert_eq!(
+        &compact_opposite_real[..compact_len],
+        expected_opposite_real
+    );
+    assert_eq!(
+        &compact_opposite_imag[..compact_len],
+        expected_opposite_imag
+    );
+    assert_eq!(full_same_real[2], spectra[2].re);
+    assert_eq!(full_same_imag[2], spectra[2].im);
+    assert_eq!(full_opposite_real[2], spectra[2].re);
+    assert_eq!(full_opposite_imag[2], spectra[2].im);
+    let south_only = spectra[latitude_count - 1 - 4];
+    assert_eq!(full_same_real[4], south_only.re);
+    assert_eq!(full_same_imag[4], south_only.im);
+    assert_eq!(full_opposite_real[4], -south_only.re);
+    assert_eq!(full_opposite_imag[4], -south_only.im);
+    let north_pair = spectra[6];
+    let south_pair = spectra[latitude_count - 1 - 6];
+    assert_eq!(full_same_real[6], north_pair.re + south_pair.re);
+    assert_eq!(full_same_imag[6], north_pair.im + south_pair.im);
+    assert_eq!(full_opposite_real[6], north_pair.re - south_pair.re);
+    assert_eq!(full_opposite_imag[6], north_pair.im - south_pair.im);
 
     let equator_start = latitude_count / 2;
-    let mut equator_same = [Complex64::new(0.0, 0.0)];
-    let mut equator_opposite = [Complex64::new(0.0, 0.0)];
+    let mut equator_same_real = [0.0];
+    let mut equator_same_imag = [0.0];
+    let mut equator_opposite_real = [0.0];
+    let mut equator_opposite_imag = [0.0];
+    let mut equator_north_ring = [0];
     let mut equator_sin = [0.0];
     let mut equator_cos = [0.0];
     let mut equator_cos_squared = [0.0];
@@ -3345,15 +3401,21 @@ fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
         &theta_sin,
         &theta_cos,
         &theta_cos_squared,
-        &mut equator_same,
-        &mut equator_opposite,
+        &mut equator_same_real,
+        &mut equator_same_imag,
+        &mut equator_opposite_real,
+        &mut equator_opposite_imag,
+        &mut equator_north_ring,
         &mut equator_sin,
         &mut equator_cos,
         &mut equator_cos_squared,
     );
     assert_eq!(equator_len, 1);
-    assert_eq!(equator_same[0], spectra[equator_start]);
-    assert_eq!(equator_opposite[0], spectra[equator_start]);
+    assert_eq!(equator_north_ring[0], equator_start);
+    assert_eq!(equator_same_real[0], spectra[equator_start].re);
+    assert_eq!(equator_same_imag[0], spectra[equator_start].im);
+    assert_eq!(equator_opposite_real[0], spectra[equator_start].re);
+    assert_eq!(equator_opposite_imag[0], spectra[equator_start].im);
 }
 
 #[test]
