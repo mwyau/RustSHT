@@ -34,6 +34,7 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
     pub(crate) row: Vec<T>,
     pub(crate) theta_sin: Vec<T>,
     pub(crate) theta_cos: Vec<T>,
+    pub(crate) theta_cos_squared: Vec<T>,
     pub(crate) analysis_ring_scales: Vec<T>,
     pub(crate) ring_order_limits: Vec<usize>,
     pub(crate) recurrence_workers: Vec<RecurrenceWorkspace<T>>,
@@ -52,6 +53,8 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     pub(crate) current: Vec<T>,
     pub(crate) next: Vec<T>,
     pub(crate) exponents: Vec<i64>,
+    pub(crate) analysis_scale_epochs: Vec<T>,
+    pub(crate) analysis_scale_corrections: Vec<T>,
     pub(crate) spin_alpha: Vec<T>,
     pub(crate) spin_coefficient_a: Vec<T>,
     pub(crate) spin_coefficient_b: Vec<T>,
@@ -72,6 +75,7 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     pub(crate) scalar_order_correction: Vec<T>,
     pub(crate) compact_theta_sin: Vec<T>,
     pub(crate) compact_theta_cos: Vec<T>,
+    pub(crate) compact_theta_cos_squared: Vec<T>,
     pub(crate) compact_ring_indices: Vec<usize>,
     pub(crate) fast_scalar_first: Vec<Complex<T>>,
     pub(crate) fast_scalar_second: Vec<Complex<T>>,
@@ -164,6 +168,14 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
             current: allocate_real(recurrence_scratch_len, "current recurrence values")?,
             next: allocate_real(recurrence_scratch_len, "next recurrence values")?,
             exponents: allocate_exponents(recurrence_scratch_len)?,
+            analysis_scale_epochs: allocate_real(
+                recurrence_scratch_len,
+                "scalar-analysis scale epochs",
+            )?,
+            analysis_scale_corrections: allocate_real(
+                recurrence_scratch_len,
+                "scalar-analysis scale corrections",
+            )?,
             spin_alpha: allocate_real(spin_recurrence_factor_count, "spin recurrence alpha")?,
             spin_coefficient_a: allocate_real(
                 spin_recurrence_factor_count,
@@ -234,6 +246,10 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
             compact_theta_cos: allocate_real(
                 recurrence_scratch_len,
                 "compacted latitude cosine values",
+            )?,
+            compact_theta_cos_squared: allocate_real(
+                recurrence_scratch_len,
+                "compacted latitude cosine-square values",
             )?,
             compact_ring_indices: allocate_usizes(
                 recurrence_scratch_len,
@@ -634,6 +650,7 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             row: allocate_real(nphi, "longitude row")?,
             theta_sin: allocate_real(latitude_count, "latitude sine values")?,
             theta_cos: allocate_real(latitude_count, "latitude cosine values")?,
+            theta_cos_squared: allocate_real(latitude_count, "latitude cosine-square values")?,
             analysis_ring_scales: allocate_real(latitude_count, "analysis ring scales")?,
             ring_order_limits: allocate_usizes(latitude_count, "latitude order limits")?,
             recurrence_workers,

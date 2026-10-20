@@ -152,11 +152,14 @@ fn prepare_symmetric_analysis_pair_block<T: ShtScalar>(
     ring_order_limits: &[usize],
     theta_sin: &[T],
     theta_cos: &[T],
+    theta_cos_squared: &[T],
     same_parity: &mut [Complex<T>],
     opposite_parity: &mut [Complex<T>],
     compact_theta_sin: &mut [T],
     compact_theta_cos: &mut [T],
+    compact_theta_cos_squared: &mut [T],
 ) -> usize {
+    debug_assert_eq!(latitude_count, theta_cos_squared.len());
     let mut output_lane = 0;
     for lane in 0..block_len {
         let north_ring = block_start + lane;
@@ -182,11 +185,21 @@ fn prepare_symmetric_analysis_pair_block<T: ShtScalar>(
         if compact {
             compact_theta_sin[output_lane] = theta_sin[north_ring];
             compact_theta_cos[output_lane] = theta_cos[north_ring];
+            compact_theta_cos_squared[output_lane] = theta_cos_squared[north_ring];
         }
         output_lane += 1;
     }
 
     if compact { output_lane } else { block_len }
+}
+
+#[inline]
+fn stable_analysis_cosine_squared<T: ShtScalar>(sine: T, cosine: T) -> T {
+    if cosine.abs() > T::from_f64(0.99).expect("0.99 is representable") {
+        (T::one() - sine) * (T::one() + sine)
+    } else {
+        cosine * cosine
+    }
 }
 
 fn first_active_symmetric_pair(
@@ -1549,6 +1562,10 @@ impl<T: ShtScalar> ShtPlan<T> {
             for (ring, &theta) in resampling.prepared_theta().iter().enumerate() {
                 (workspace.theta_sin[ring], workspace.theta_cos[ring]) =
                     sin_cos_from_f64::<T>(theta);
+                workspace.theta_cos_squared[ring] = stable_analysis_cosine_squared(
+                    workspace.theta_sin[ring],
+                    workspace.theta_cos[ring],
+                );
                 workspace.ring_order_limits[ring] = T::polar_order_limit(
                     self.harmonics.lmax(),
                     0,
@@ -1565,6 +1582,10 @@ impl<T: ShtScalar> ShtPlan<T> {
             for (ring, &theta) in self.grid.theta().iter().enumerate() {
                 (workspace.theta_sin[ring], workspace.theta_cos[ring]) =
                     sin_cos_from_f64::<T>(theta);
+                workspace.theta_cos_squared[ring] = stable_analysis_cosine_squared(
+                    workspace.theta_sin[ring],
+                    workspace.theta_cos[ring],
+                );
                 workspace.ring_order_limits[ring] = T::polar_order_limit(
                     self.harmonics.lmax(),
                     0,
@@ -1713,6 +1734,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     analysis_ntheta,
                     theta_sin,
                     theta_cos,
+                    &workspace.theta_cos_squared[..analysis_ntheta],
                     ring_order_limits,
                     arch,
                     allow_insignificant_prefix,
@@ -1738,6 +1760,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     analysis_ntheta,
                     theta_sin,
                     theta_cos,
+                    &workspace.theta_cos_squared[..analysis_ntheta],
                     ring_order_limits,
                     arch,
                     allow_insignificant_prefix,
@@ -1765,6 +1788,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 analysis_ntheta,
                 theta_sin,
                 theta_cos,
+                &workspace.theta_cos_squared[..analysis_ntheta],
                 ring_order_limits,
                 arch,
                 allow_insignificant_prefix,
@@ -1911,6 +1935,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         latitude_count: usize,
         theta_sin: &[T],
         theta_cos: &[T],
+        theta_cos_squared: &[T],
         ring_order_limits: &[usize],
         arch: pulp::Arch,
         allow_insignificant_prefix: bool,
@@ -1925,6 +1950,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 latitude_count,
                 theta_sin,
                 theta_cos,
+                theta_cos_squared,
                 ring_order_limits,
                 arch,
                 allow_insignificant_prefix,
@@ -1944,6 +1970,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 latitude_count,
                 theta_sin,
                 theta_cos,
+                theta_cos_squared,
                 ring_order_limits,
                 arch,
                 allow_insignificant_prefix,
@@ -1982,6 +2009,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     latitude_count,
                     theta_sin,
                     theta_cos,
+                    theta_cos_squared,
                     ring_order_limits,
                     arch,
                     allow_insignificant_prefix,
@@ -2019,6 +2047,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         latitude_count: usize,
         theta_sin: &[T],
         theta_cos: &[T],
+        theta_cos_squared: &[T],
         ring_order_limits: &[usize],
         arch: pulp::Arch,
         allow_insignificant_prefix: bool,
@@ -2040,6 +2069,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             latitude_count,
             theta_sin,
             theta_cos,
+            theta_cos_squared,
             ring_order_limits,
             arch,
             allow_insignificant_prefix,
@@ -2072,6 +2102,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         latitude_count: usize,
         theta_sin: &[T],
         theta_cos: &[T],
+        theta_cos_squared: &[T],
         ring_order_limits: &[usize],
         arch: pulp::Arch,
         allow_insignificant_prefix: bool,
@@ -2084,6 +2115,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         // Scalar harmonics satisfy Y_lm(pi-theta) = (-1)^(l+m) Y_lm(theta).
         debug_assert_eq!(theta_sin.len(), latitude_count);
         debug_assert_eq!(theta_cos.len(), latitude_count);
+        debug_assert_eq!(theta_cos_squared.len(), latitude_count);
         debug_assert_eq!(ring_order_limits.len(), latitude_count);
         let lmax = self.harmonics.lmax();
         let pair_lane_count = latitude_count.div_ceil(2);
@@ -2121,10 +2153,12 @@ impl<T: ShtScalar> ShtPlan<T> {
                     ring_order_limits,
                     theta_sin,
                     theta_cos,
+                    theta_cos_squared,
                     &mut recurrence.weighted_spin_q_spectrum,
                     &mut recurrence.weighted_spin_u_spectrum,
                     &mut recurrence.compact_theta_sin,
                     &mut recurrence.compact_theta_cos,
+                    &mut recurrence.compact_theta_cos_squared,
                 );
                 if lane_count == 0 {
                     continue;
@@ -2141,6 +2175,11 @@ impl<T: ShtScalar> ShtPlan<T> {
                     &recurrence.compact_theta_cos[..lane_count]
                 } else {
                     &theta_cos[block_start..block_end]
+                };
+                let pair_cos_squared = if compact_mixed_block {
+                    &recurrence.compact_theta_cos_squared[..lane_count]
+                } else {
+                    &theta_cos_squared[block_start..block_end]
                 };
                 let same_parity_spectrum = &recurrence.weighted_spin_q_spectrum[..lane_count];
                 let opposite_parity_spectrum = &recurrence.weighted_spin_u_spectrum[..lane_count];
@@ -2186,6 +2225,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             allow_insignificant_prefix,
                             pair_sin,
                             pair_cos,
+                            pair_cos_squared,
                             self.sectoral_norms[m],
                             &recurrence.spin_coefficient_a,
                             &recurrence.spin_coefficient_b,
@@ -2197,6 +2237,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                             &mut recurrence.previous,
                             &mut recurrence.current,
                             &mut recurrence.next,
+                            &mut recurrence.analysis_scale_epochs,
+                            &mut recurrence.analysis_scale_corrections,
                             &mut recurrence.exponents,
                         )?
                     } else {
@@ -2484,6 +2526,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                 workspace.theta_cos.len(),
             ),
             (
+                "workspace latitude cosine-square values",
+                workspace.theta_cos_squared.len(),
+            ),
+            (
                 "workspace analysis ring scales",
                 workspace.analysis_ring_scales.len(),
             ),
@@ -2531,6 +2577,21 @@ impl<T: ShtScalar> ShtPlan<T> {
                     "workspace recurrence exponents",
                     recurrence_scratch_len,
                     recurrence.exponents.len(),
+                ),
+                (
+                    "workspace scalar-analysis scale epochs",
+                    recurrence_scratch_len,
+                    recurrence.analysis_scale_epochs.len(),
+                ),
+                (
+                    "workspace scalar-analysis scale corrections",
+                    recurrence_scratch_len,
+                    recurrence.analysis_scale_corrections.len(),
+                ),
+                (
+                    "workspace compact latitude cosine-square values",
+                    recurrence_scratch_len,
+                    recurrence.compact_theta_cos_squared.len(),
                 ),
                 (
                     "workspace spin recurrence alpha factors",

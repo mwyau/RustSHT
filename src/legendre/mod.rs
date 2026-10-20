@@ -524,6 +524,7 @@ pub(crate) trait ShtScalar:
         _allow_insignificant_prefix: bool,
         _sin_theta: &[Self],
         _cos_theta: &[Self],
+        _cos_theta_squared: &[Self],
         _sectoral_norm: Self,
         _coefficient_a: &[Self],
         _coefficient_b: &[Self],
@@ -535,6 +536,8 @@ pub(crate) trait ShtScalar:
         _previous: &mut [Self],
         _current: &mut [Self],
         _next: &mut [Self],
+        _analysis_scale_epochs: &mut [Self],
+        _analysis_scale_corrections: &mut [Self],
         _exponents: &mut [i64],
     ) -> Result<bool, ShtError> {
         Ok(false)
@@ -775,8 +778,7 @@ impl ShtScalar for f64 {
         coefficient_a: &mut [Self],
         coefficient_b: &mut [Self],
     ) -> bool {
-        scalar_paired::fill_factors(m, lmax, epsilon, alpha, coefficient_a, coefficient_b);
-        true
+        scalar_paired::fill_factors(m, lmax, epsilon, alpha, coefficient_a, coefficient_b)
     }
 
     fn prepare_paired_scalar_synthesis_coefficients(
@@ -1337,6 +1339,7 @@ impl ShtScalar for f64 {
         allow_insignificant_prefix: bool,
         sin_theta: &[Self],
         cos_theta: &[Self],
+        cos_theta_squared: &[Self],
         sectoral_norm: Self,
         coefficient_a: &[Self],
         coefficient_b: &[Self],
@@ -1348,6 +1351,8 @@ impl ShtScalar for f64 {
         previous: &mut [Self],
         current: &mut [Self],
         next: &mut [Self],
+        analysis_scale_epochs: &mut [Self],
+        analysis_scale_corrections: &mut [Self],
         exponents: &mut [i64],
     ) -> Result<bool, ShtError> {
         scalar_paired::fused_scalar_analysis_pair_block_preweighted_dispatched(
@@ -1357,6 +1362,7 @@ impl ShtScalar for f64 {
             allow_insignificant_prefix,
             sin_theta,
             cos_theta,
+            cos_theta_squared,
             sectoral_norm,
             coefficient_a,
             coefficient_b,
@@ -1368,6 +1374,8 @@ impl ShtScalar for f64 {
             previous,
             current,
             next,
+            analysis_scale_epochs,
+            analysis_scale_corrections,
             exponents,
         )
     }

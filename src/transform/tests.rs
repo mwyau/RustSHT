@@ -3158,11 +3158,13 @@ fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
     let theta_cos: Vec<_> = (0..latitude_count)
         .map(|ring| -0.01 * (ring as f64 + 1.0))
         .collect();
+    let theta_cos_squared: Vec<_> = theta_cos.iter().map(|cosine| cosine * cosine).collect();
 
     let mut full_same = vec![Complex64::new(0.0, 0.0); block_len];
     let mut full_opposite = vec![Complex64::new(0.0, 0.0); block_len];
     let mut unused_sin = vec![0.0; block_len];
     let mut unused_cos = vec![0.0; block_len];
+    let mut unused_cos_squared = vec![0.0; block_len];
     let full_len = super::prepare_symmetric_analysis_pair_block(
         m,
         latitude_count,
@@ -3173,10 +3175,12 @@ fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
         &limits,
         &theta_sin,
         &theta_cos,
+        &theta_cos_squared,
         &mut full_same,
         &mut full_opposite,
         &mut unused_sin,
         &mut unused_cos,
+        &mut unused_cos_squared,
     );
     assert_eq!(full_len, block_len);
 
@@ -3184,6 +3188,7 @@ fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
     let mut compact_opposite = vec![Complex64::new(0.0, 0.0); block_len];
     let mut compact_sin = vec![0.0; block_len];
     let mut compact_cos = vec![0.0; block_len];
+    let mut compact_cos_squared = vec![0.0; block_len];
     let compact_len = super::prepare_symmetric_analysis_pair_block(
         m,
         latitude_count,
@@ -3194,16 +3199,22 @@ fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
         &limits,
         &theta_sin,
         &theta_cos,
+        &theta_cos_squared,
         &mut compact_same,
         &mut compact_opposite,
         &mut compact_sin,
         &mut compact_cos,
+        &mut compact_cos_squared,
     );
     let active_lanes = [2, 4, 6];
     assert_eq!(compact_len, active_lanes.len());
     for (packed_lane, &source_lane) in active_lanes.iter().enumerate() {
         assert_eq!(compact_sin[packed_lane], theta_sin[source_lane]);
         assert_eq!(compact_cos[packed_lane], theta_cos[source_lane]);
+        assert_eq!(
+            compact_cos_squared[packed_lane],
+            theta_cos_squared[source_lane]
+        );
         assert_eq!(compact_same[packed_lane], full_same[source_lane]);
         assert_eq!(compact_opposite[packed_lane], full_opposite[source_lane]);
     }
@@ -3222,6 +3233,7 @@ fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
     let mut equator_opposite = [Complex64::new(0.0, 0.0)];
     let mut equator_sin = [0.0];
     let mut equator_cos = [0.0];
+    let mut equator_cos_squared = [0.0];
     let equator_len = super::prepare_symmetric_analysis_pair_block(
         m,
         latitude_count,
@@ -3232,10 +3244,12 @@ fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
         &limits,
         &theta_sin,
         &theta_cos,
+        &theta_cos_squared,
         &mut equator_same,
         &mut equator_opposite,
         &mut equator_sin,
         &mut equator_cos,
+        &mut equator_cos_squared,
     );
     assert_eq!(equator_len, 1);
     assert_eq!(equator_same[0], spectra[equator_start]);

@@ -113,6 +113,18 @@ were noisy and did not show a stable change. The screen measures the full
 Legendre phase, not mixed blocks alone, and does not establish DUCC parity; see
 the [bounded screen record](reports/data/scalar-analysis-mixed-fusion/README.md).
 
+The SIMD code-generation follow-up moved cosine-square and scale-correction
+arrays into reusable workspace scratch. Matched x86-64-v3 assembly reduced the
+block wrapper's local reservation from 1088 to 896 bytes and YMM stack-memory
+operands from 31 to 16. A bounded full-call comparison of the complete
+candidate against `a707780`
+improved reduced T300 q1 by 10.3%, while T720 q1/q8 were 6.9%/10.1% slower;
+T300 q8 was 2.1% slower. Output differences from the baseline were below
+`1.2e-17` relative L2. A no-inline initializer experiment regressed and was
+reverted. The remaining T720 q1/q8 stage gap is directional at about
+2.36×/1.96× against pinned DUCC because phase boundaries differ. See the
+[code-generation follow-up](reports/scalar-analysis-codegen-followup-2026-10-19.md).
+
 ## Technique findings
 
 | Technique | Status | Result | Reason | Reference | Next action |
@@ -159,7 +171,7 @@ the [bounded screen record](reports/data/scalar-analysis-mixed-fusion/README.md)
 
 ## Next implementation work
 
-1. **Scalar analysis (priority):** isolate the mixed/scaled route after its one-pass recurrence change, then inspect ordinary-loop assembly and compare against DUCC at equivalent work. Preserve exponent correction and checked fallback; do not reintroduce the rejected multi-pair kernel unchanged.
+1. **Scalar analysis (priority):** inspect the mixed-path vector spill and remaining per-pair lane checks, then compare matched recurrence work against DUCC. Keep the single-pair recurrence until a measured change addresses the earlier unroll regression. Preserve exponent correction and checked fallback.
 2. **Spin-1:** after a substantive scalar-analysis result, profile recurrence/accumulation and reuse compatible techniques; preserve E/B, pole and adjoint semantics. Per-ring scales already exist.
 3. **Generalization:** after validated kernels, improve native f32 and applicable CC/F1/spin-2 paths without breaking spin 3–4.
 4. Keep benchmark screens bounded and irregular/reduced cases represented; reserve broader DUCC comparisons for meaningful integrated milestones.

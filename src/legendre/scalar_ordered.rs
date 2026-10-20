@@ -489,14 +489,16 @@ fn prepare_order(
         return false;
     }
     scalar::fill_epsilon(m, lmax, scratch.epsilon);
-    scalar_paired::fill_factors(
+    if !scalar_paired::fill_factors(
         m,
         lmax,
         scratch.epsilon,
         scratch.alpha,
         scratch.coefficient_a,
         scratch.coefficient_b,
-    );
+    ) {
+        return false;
+    }
     if !scalar_paired::prepare_synthesis_coefficients(
         m,
         lmax,
