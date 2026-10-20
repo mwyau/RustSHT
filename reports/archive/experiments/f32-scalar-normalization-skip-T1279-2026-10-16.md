@@ -63,4 +63,4 @@ uses the rejected array-search gate and is retained as negative evidence. Final
 exact-match timings are in `paired-T1279-match/` and
 `paired-T720-match-control/`. Raw process logs, elapsed time and RSS, complete
 output arrays, hashes, comparison scripts, and validation logs are in
-[`reports/data/f32-scalar-normalization-skip-T1279-2026-10-16`](data/f32-scalar-normalization-skip-T1279-2026-10-16/).
+[`reports/data/f32-scalar-normalization-skip-T1279-2026-10-16`](../../data/f32-scalar-normalization-skip-T1279-2026-10-16).

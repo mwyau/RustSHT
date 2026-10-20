@@ -35,7 +35,7 @@ do not indicate a selector benefit or regression. None of these results are
 repeated performance acceptance evidence. The benchmark reported plan construction between 0.217 and 0.574 ms and
 workspace allocation between 24.716 and 27.133 ms. Peak process RSS ranged
 from 199,460 to 199,604 KiB. A first-use call and all raw warm samples are
-preserved in the [data directory](data/f32-scalar-normalization-skip-T2047-2026-10-16/). The production selector uses the skip at T1023 and T1279; T2047 uses the
+preserved in the [data directory](../../data/f32-scalar-normalization-skip-T2047-2026-10-16). The production selector uses the skip at T1023 and T1279; T2047 uses the
 established normalizer. The experiment stopped after one process pair per spin because the scalar
 observations did not establish a repeatable benefit and were mixed across
 operations. The spin-1 results are controls, not candidate effects. The pair

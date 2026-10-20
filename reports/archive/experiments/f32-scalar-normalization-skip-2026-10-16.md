@@ -26,7 +26,7 @@ control is GL `721×1458`, full `mmax=720`, and the same longitude phase. Both
 use deterministic f32 maps and complex64 coefficients. Three alternating
 baseline/candidate process pairs were collected at each truncation. The
 baseline and candidate binary hashes and raw logs are in the
-[`benchmark data`](data/f32-scalar-normalization-skip-2026-10-16/).
+[`benchmark data`](../../data/f32-scalar-normalization-skip-2026-10-16).
 
 ## T1023 performance
 
@@ -85,4 +85,4 @@ The following checks passed with the final source:
   tests passed; seven unit tests and one f32 test were ignored.
 - The opt-in T1023 f32 comparison with DUCC 0.41.0 passed. Python tests were not run because the Python bindings did not change. The exact
 commands, test logs, binary hashes, pair summaries, and six-array comparisons
-are under [`reports/data/f32-scalar-normalization-skip-2026-10-16`](data/f32-scalar-normalization-skip-2026-10-16/).
+are under [`reports/data/f32-scalar-normalization-skip-2026-10-16`](../../data/f32-scalar-normalization-skip-2026-10-16).
