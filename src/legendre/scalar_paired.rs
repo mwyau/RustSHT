@@ -3146,6 +3146,9 @@ struct FusedScalarAnalysisPair<
     // Experimental checked mode folds the group-state reduction into the
     // recurrence traversal instead of rereading the resulting state arrays.
     const FUSE_PAIR_GROUP_RANGE_CHECK: bool = { cfg!(rustsht_fused_analysis_pair_range_check) },
+    // Test-only source attribution compiles the same loop without coefficient
+    // products; the production specialization always keeps accumulation.
+    const ACCUMULATE: bool = true,
 > {
     m: usize,
     lmax: usize,
@@ -3394,6 +3397,7 @@ fn fused_analysis_two_pair_steps_with_simd<
     const OPPOSITE_COSINE_WEIGHTED: bool,
     const CHECK_GROUP_RANGE: bool,
     const TRACK_STATE_RANGE: bool,
+    const ACCUMULATE: bool,
 >(
     simd: S,
     step: FusedAnalysisTwoPairSteps<'_, OPPOSITE_COSINE_WEIGHTED>,
@@ -3479,22 +3483,24 @@ fn fused_analysis_two_pair_steps_with_simd<
          $cosine_squared:expr) => {{
             let previous_value = *($previous);
             let current_value = *($current);
-            first_same_re = simd.mul_add_f64s(*($same_real), current_value, first_same_re);
-            first_same_im = simd.mul_add_f64s(*($same_imag), current_value, first_same_im);
-            if OPPOSITE_COSINE_WEIGHTED {
-                first_opposite_re =
-                    simd.mul_add_f64s(*($opposite_real), current_value, first_opposite_re);
-                first_opposite_im =
-                    simd.mul_add_f64s(*($opposite_imag), current_value, first_opposite_im);
-            } else {
-                first_opposite_re = simd.add_f64s(
-                    first_opposite_re,
-                    simd.mul_f64s(simd.mul_f64s(*($opposite_real), current_value), *($cosine)),
-                );
-                first_opposite_im = simd.add_f64s(
-                    first_opposite_im,
-                    simd.mul_f64s(simd.mul_f64s(*($opposite_imag), current_value), *($cosine)),
-                );
+            if ACCUMULATE {
+                first_same_re = simd.mul_add_f64s(*($same_real), current_value, first_same_re);
+                first_same_im = simd.mul_add_f64s(*($same_imag), current_value, first_same_im);
+                if OPPOSITE_COSINE_WEIGHTED {
+                    first_opposite_re =
+                        simd.mul_add_f64s(*($opposite_real), current_value, first_opposite_re);
+                    first_opposite_im =
+                        simd.mul_add_f64s(*($opposite_imag), current_value, first_opposite_im);
+                } else {
+                    first_opposite_re = simd.add_f64s(
+                        first_opposite_re,
+                        simd.mul_f64s(simd.mul_f64s(*($opposite_real), current_value), *($cosine)),
+                    );
+                    first_opposite_im = simd.add_f64s(
+                        first_opposite_im,
+                        simd.mul_f64s(simd.mul_f64s(*($opposite_imag), current_value), *($cosine)),
+                    );
+                }
             }
 
             #[cfg(rustsht_rematerialize_analysis_coefficients)]
@@ -3507,22 +3513,24 @@ fn fused_analysis_two_pair_steps_with_simd<
             let first_leading = simd.mul_add_f64s(first_a, *($cosine_squared), first_b);
             let first_next = simd.mul_add_f64s(first_leading, current_value, previous_value);
 
-            second_same_re = simd.mul_add_f64s(*($same_real), first_next, second_same_re);
-            second_same_im = simd.mul_add_f64s(*($same_imag), first_next, second_same_im);
-            if OPPOSITE_COSINE_WEIGHTED {
-                second_opposite_re =
-                    simd.mul_add_f64s(*($opposite_real), first_next, second_opposite_re);
-                second_opposite_im =
-                    simd.mul_add_f64s(*($opposite_imag), first_next, second_opposite_im);
-            } else {
-                second_opposite_re = simd.add_f64s(
-                    second_opposite_re,
-                    simd.mul_f64s(simd.mul_f64s(*($opposite_real), first_next), *($cosine)),
-                );
-                second_opposite_im = simd.add_f64s(
-                    second_opposite_im,
-                    simd.mul_f64s(simd.mul_f64s(*($opposite_imag), first_next), *($cosine)),
-                );
+            if ACCUMULATE {
+                second_same_re = simd.mul_add_f64s(*($same_real), first_next, second_same_re);
+                second_same_im = simd.mul_add_f64s(*($same_imag), first_next, second_same_im);
+                if OPPOSITE_COSINE_WEIGHTED {
+                    second_opposite_re =
+                        simd.mul_add_f64s(*($opposite_real), first_next, second_opposite_re);
+                    second_opposite_im =
+                        simd.mul_add_f64s(*($opposite_imag), first_next, second_opposite_im);
+                } else {
+                    second_opposite_re = simd.add_f64s(
+                        second_opposite_re,
+                        simd.mul_f64s(simd.mul_f64s(*($opposite_real), first_next), *($cosine)),
+                    );
+                    second_opposite_im = simd.add_f64s(
+                        second_opposite_im,
+                        simd.mul_f64s(simd.mul_f64s(*($opposite_imag), first_next), *($cosine)),
+                    );
+                }
             }
 
             #[cfg(rustsht_rematerialize_analysis_coefficients)]
@@ -3607,22 +3615,33 @@ fn fused_analysis_two_pair_steps_with_simd<
         );
     }
 
-    let first_same = reduce_analysis_complex_pair::<
-        S,
-        { cfg!(rustsht_packed_complex_pair_reduction) },
-    >(simd, first_same_re, first_same_im);
-    let first_opposite = reduce_analysis_complex_pair::<
-        S,
-        { cfg!(rustsht_packed_complex_pair_reduction) },
-    >(simd, first_opposite_re, first_opposite_im);
-    let second_same = reduce_analysis_complex_pair::<
-        S,
-        { cfg!(rustsht_packed_complex_pair_reduction) },
-    >(simd, second_same_re, second_same_im);
-    let second_opposite = reduce_analysis_complex_pair::<
-        S,
-        { cfg!(rustsht_packed_complex_pair_reduction) },
-    >(simd, second_opposite_re, second_opposite_im);
+    let (first_same, first_opposite, second_same, second_opposite) = if ACCUMULATE {
+        (
+            reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
+                simd,
+                first_same_re,
+                first_same_im,
+            ),
+            reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
+                simd,
+                first_opposite_re,
+                first_opposite_im,
+            ),
+            reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
+                simd,
+                second_same_re,
+                second_same_im,
+            ),
+            reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
+                simd,
+                second_opposite_re,
+                second_opposite_im,
+            ),
+        )
+    } else {
+        let zero = Complex64::new(0.0, 0.0);
+        (zero, zero, zero, zero)
+    };
     let mut first_same_re_sum = first_same.re;
     let mut first_same_im_sum = first_same.im;
     let mut first_opposite_re_sum = first_opposite.re;
@@ -3647,14 +3666,18 @@ fn fused_analysis_two_pair_steps_with_simd<
     {
         let previous_value = *previous;
         let current_value = *current;
-        first_same_re_sum = (*same_real).mul_add(current_value, first_same_re_sum);
-        first_same_im_sum = (*same_imag).mul_add(current_value, first_same_im_sum);
-        if OPPOSITE_COSINE_WEIGHTED {
-            first_opposite_re_sum = (*opposite_real).mul_add(current_value, first_opposite_re_sum);
-            first_opposite_im_sum = (*opposite_imag).mul_add(current_value, first_opposite_im_sum);
-        } else {
-            first_opposite_re_sum += (*opposite_real * current_value) * *cosine;
-            first_opposite_im_sum += (*opposite_imag * current_value) * *cosine;
+        if ACCUMULATE {
+            first_same_re_sum = (*same_real).mul_add(current_value, first_same_re_sum);
+            first_same_im_sum = (*same_imag).mul_add(current_value, first_same_im_sum);
+            if OPPOSITE_COSINE_WEIGHTED {
+                first_opposite_re_sum =
+                    (*opposite_real).mul_add(current_value, first_opposite_re_sum);
+                first_opposite_im_sum =
+                    (*opposite_imag).mul_add(current_value, first_opposite_im_sum);
+            } else {
+                first_opposite_re_sum += (*opposite_real * current_value) * *cosine;
+                first_opposite_im_sum += (*opposite_imag * current_value) * *cosine;
+            }
         }
 
         let first_next = first_coefficient_a
@@ -3663,14 +3686,18 @@ fn fused_analysis_two_pair_steps_with_simd<
         let first_magnitude = first_next.abs();
         tails_in_range &= first_magnitude == 0.0 || first_magnitude >= f64::MIN_POSITIVE;
 
-        second_same_re_sum = (*same_real).mul_add(first_next, second_same_re_sum);
-        second_same_im_sum = (*same_imag).mul_add(first_next, second_same_im_sum);
-        if OPPOSITE_COSINE_WEIGHTED {
-            second_opposite_re_sum = (*opposite_real).mul_add(first_next, second_opposite_re_sum);
-            second_opposite_im_sum = (*opposite_imag).mul_add(first_next, second_opposite_im_sum);
-        } else {
-            second_opposite_re_sum += (*opposite_real * first_next) * *cosine;
-            second_opposite_im_sum += (*opposite_imag * first_next) * *cosine;
+        if ACCUMULATE {
+            second_same_re_sum = (*same_real).mul_add(first_next, second_same_re_sum);
+            second_same_im_sum = (*same_imag).mul_add(first_next, second_same_im_sum);
+            if OPPOSITE_COSINE_WEIGHTED {
+                second_opposite_re_sum =
+                    (*opposite_real).mul_add(first_next, second_opposite_re_sum);
+                second_opposite_im_sum =
+                    (*opposite_imag).mul_add(first_next, second_opposite_im_sum);
+            } else {
+                second_opposite_re_sum += (*opposite_real * first_next) * *cosine;
+                second_opposite_im_sum += (*opposite_imag * first_next) * *cosine;
+            }
         }
 
         let second_next = second_coefficient_a
@@ -3835,12 +3862,14 @@ impl<
     const OPPOSITE_COSINE_WEIGHTED: bool,
     const CHECK_PAIR_GROUP_RANGE: bool,
     const FUSE_PAIR_GROUP_RANGE_CHECK: bool,
+    const ACCUMULATE: bool,
 > WithSimd
     for FusedScalarAnalysisPair<
         '_,
         OPPOSITE_COSINE_WEIGHTED,
         CHECK_PAIR_GROUP_RANGE,
         FUSE_PAIR_GROUP_RANGE_CHECK,
+        ACCUMULATE,
     >
 {
     type Output = bool;
@@ -3896,6 +3925,7 @@ impl<
                 OPPOSITE_COSINE_WEIGHTED,
                 CHECK_PAIR_GROUP_RANGE,
                 FUSE_PAIR_GROUP_RANGE_CHECK,
+                ACCUMULATE,
             >(
                 simd,
                 FusedAnalysisTwoPairSteps {
@@ -3974,13 +4004,23 @@ impl<
                 );
             all_vectors_in_range = simd.and_m64s(all_vectors_in_range, pair_vectors_in_range);
             all_tails_in_range &= pair_tails_in_range;
-            store_analysis_pair(
-                staged_coefficients,
-                offset,
-                l < lmax,
-                same_sum,
-                opposite_sum,
-            );
+            if ACCUMULATE {
+                store_analysis_pair(
+                    staged_coefficients,
+                    offset,
+                    l < lmax,
+                    same_sum,
+                    opposite_sum,
+                );
+            } else {
+                store_analysis_pair(
+                    staged_coefficients,
+                    offset,
+                    l < lmax,
+                    Complex64::new(0.0, 0.0),
+                    Complex64::new(0.0, 0.0),
+                );
+            }
             std::mem::swap(&mut previous, &mut current);
             std::mem::swap(&mut current, &mut next);
             pair_index += 1;
@@ -3989,15 +4029,20 @@ impl<
         let last_pair = pair_count - 1;
         let l = m + 2 * last_pair;
         let offset = l - m;
-        let (same_sum, opposite_sum) = AnalysisPairAccumulation::<OPPOSITE_COSINE_WEIGHTED> {
-            same_real,
-            same_imag,
-            opposite_real,
-            opposite_imag,
-            basis: current,
-            cos_theta,
-        }
-        .with_simd(simd);
+        let (same_sum, opposite_sum) = if ACCUMULATE {
+            AnalysisPairAccumulation::<OPPOSITE_COSINE_WEIGHTED> {
+                same_real,
+                same_imag,
+                opposite_real,
+                opposite_imag,
+                basis: current,
+                cos_theta,
+            }
+            .with_simd(simd)
+        } else {
+            let zero = Complex64::new(0.0, 0.0);
+            (zero, zero)
+        };
         store_analysis_pair(
             staged_coefficients,
             offset,

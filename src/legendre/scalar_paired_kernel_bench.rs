@@ -425,6 +425,7 @@ fn read_f64s(file: &mut File, count: usize) -> Vec<f64> {
 fn time_fused_scalar_analysis_pair<
     const CHECK_PAIR_GROUP_RANGE: bool,
     const FUSE_PAIR_GROUP_RANGE_CHECK: bool,
+    const ACCUMULATE: bool,
 >(
     arch: Arch,
     m: usize,
@@ -446,6 +447,7 @@ fn time_fused_scalar_analysis_pair<
         true,
         CHECK_PAIR_GROUP_RANGE,
         FUSE_PAIR_GROUP_RANGE_CHECK,
+        ACCUMULATE,
     > {
         m,
         lmax,
@@ -488,6 +490,51 @@ impl WithSimd for AnalysisRangeCheckLoop<'_> {
     }
 }
 
+fn run_analysis_pair_component<const ACCUMULATE: bool>(
+    arch: Arch,
+    fixture: &Fixture,
+    staged: &mut [Complex64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    next: &mut [f64],
+) -> bool {
+    run_fused_scalar_analysis_pair_variant::<false, false, ACCUMULATE>(
+        arch, fixture, staged, previous, current, next,
+    )
+}
+
+fn time_analysis_pair_components<const ACCUMULATE: bool>(
+    repetitions: usize,
+    arch: Arch,
+    fixture: &Fixture,
+    staged: &mut [Complex64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    next: &mut [f64],
+) -> (f64, f64, f64) {
+    let reset_started = Instant::now();
+    for _ in 0..repetitions {
+        previous.copy_from_slice(&fixture.previous);
+        current.copy_from_slice(&fixture.current);
+        staged.fill(Complex64::new(0.0, 0.0));
+        std::hint::black_box((&*staged, &*previous, &*current, &*next));
+    }
+    let reset_us = reset_started.elapsed().as_secs_f64() * 1.0e6;
+
+    let wall_started = Instant::now();
+    for _ in 0..repetitions {
+        previous.copy_from_slice(&fixture.previous);
+        current.copy_from_slice(&fixture.current);
+        staged.fill(Complex64::new(0.0, 0.0));
+        assert!(run_analysis_pair_component::<ACCUMULATE>(
+            arch, fixture, staged, previous, current, next,
+        ));
+        std::hint::black_box((&*staged, &*previous, &*current, &*next));
+    }
+    let wall_us = wall_started.elapsed().as_secs_f64() * 1.0e6;
+    ((wall_us - reset_us).max(0.0), wall_us, reset_us)
+}
+
 #[test]
 #[ignore = "manual direct Rust/DUCC SIMD-kernel comparison"]
 fn benchmark_fused_scalar_analysis_pair_kernel() {
@@ -513,6 +560,55 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
     let mut previous = vec![0.0; lane_count];
     let mut current = vec![0.0; lane_count];
     let mut next = vec![0.0; lane_count];
+    let mut component_full_staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
+    let mut component_recurrence_staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
+    let mut component_full_previous = vec![0.0; lane_count];
+    let mut component_full_current = vec![0.0; lane_count];
+    let mut component_full_next = vec![0.0; lane_count];
+    let mut component_recurrence_previous = vec![0.0; lane_count];
+    let mut component_recurrence_current = vec![0.0; lane_count];
+    let mut component_recurrence_next = vec![0.0; lane_count];
+
+    assert!(run_analysis_pair_component::<true>(
+        arch,
+        &fixture,
+        &mut component_full_staged,
+        &mut component_full_previous,
+        &mut component_full_current,
+        &mut component_full_next,
+    ));
+    assert!(run_analysis_pair_component::<false>(
+        arch,
+        &fixture,
+        &mut component_recurrence_staged,
+        &mut component_recurrence_previous,
+        &mut component_recurrence_current,
+        &mut component_recurrence_next,
+    ));
+    assert_eq!(component_full_previous, component_recurrence_previous);
+    assert_eq!(component_full_current, component_recurrence_current);
+    assert_eq!(component_full_next, component_recurrence_next);
+    assert!(
+        component_recurrence_staged
+            .iter()
+            .all(|value| *value == Complex64::new(0.0, 0.0))
+    );
+    let mut component_reference = vec![Complex64::new(0.0, 0.0); coefficient_count];
+    let mut component_reference_previous = vec![0.0; lane_count];
+    let mut component_reference_current = vec![0.0; lane_count];
+    let mut component_reference_next = vec![0.0; lane_count];
+    assert!(run_fused_scalar_analysis_pair::<false>(
+        arch,
+        &fixture,
+        &mut component_reference,
+        &mut component_reference_previous,
+        &mut component_reference_current,
+        &mut component_reference_next,
+    ));
+    assert_eq!(component_full_staged, component_reference);
+    eprintln!(
+        "COMPONENT_VALIDATION lanes={lane_count} recurrence_state_equal=true reference_coefficients_equal=true"
+    );
 
     match std::env::var("RUSTSHT_KERNEL_BENCH_MODE").as_deref() {
         Ok("prepare") => {
@@ -644,6 +740,26 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
             }
             assert_eq!(checked_staged, unchecked_staged);
             assert_eq!(checked_output, unchecked_output);
+            for _ in 0..3 {
+                time_analysis_pair_components::<true>(
+                    1,
+                    arch,
+                    &fixture,
+                    &mut component_full_staged,
+                    &mut component_full_previous,
+                    &mut component_full_current,
+                    &mut component_full_next,
+                );
+                time_analysis_pair_components::<false>(
+                    1,
+                    arch,
+                    &fixture,
+                    &mut component_recurrence_staged,
+                    &mut component_recurrence_previous,
+                    &mut component_recurrence_current,
+                    &mut component_recurrence_next,
+                );
+            }
 
             for batch in 0..batch_count {
                 let checked_first = batch.is_multiple_of(2);
@@ -834,6 +950,60 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                     "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=reset_inclusive variant=unchecked batch_us={:.3} reset_us={:.3} wall_us={:.3}",
                     unchecked_reset.0, unchecked_reset.1, unchecked_reset.0
                 );
+
+                let (component_full, component_recurrence) = if checked_first {
+                    let full = time_analysis_pair_components::<true>(
+                        repetitions,
+                        arch,
+                        &fixture,
+                        &mut component_full_staged,
+                        &mut component_full_previous,
+                        &mut component_full_current,
+                        &mut component_full_next,
+                    );
+                    let recurrence = time_analysis_pair_components::<false>(
+                        repetitions,
+                        arch,
+                        &fixture,
+                        &mut component_recurrence_staged,
+                        &mut component_recurrence_previous,
+                        &mut component_recurrence_current,
+                        &mut component_recurrence_next,
+                    );
+                    (full, recurrence)
+                } else {
+                    let recurrence = time_analysis_pair_components::<false>(
+                        repetitions,
+                        arch,
+                        &fixture,
+                        &mut component_recurrence_staged,
+                        &mut component_recurrence_previous,
+                        &mut component_recurrence_current,
+                        &mut component_recurrence_next,
+                    );
+                    let full = time_analysis_pair_components::<true>(
+                        repetitions,
+                        arch,
+                        &fixture,
+                        &mut component_full_staged,
+                        &mut component_full_previous,
+                        &mut component_full_current,
+                        &mut component_full_next,
+                    );
+                    (full, recurrence)
+                };
+                assert_eq!(component_full_previous, component_recurrence_previous);
+                assert_eq!(component_full_current, component_recurrence_current);
+                assert_eq!(component_full_next, component_recurrence_next);
+                eprintln!(
+                    "COMPONENT_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} full_kernel_us={:.3} recurrence_kernel_us={:.3} full_reset_us={:.3} recurrence_reset_us={:.3} full_wall_us={:.3} recurrence_wall_us={:.3}",
+                    component_full.0,
+                    component_recurrence.0,
+                    component_full.2,
+                    component_recurrence.2,
+                    component_full.1,
+                    component_recurrence.1,
+                );
             }
 
             write_complex(&checked_output_path, &checked_output);
@@ -870,6 +1040,7 @@ fn run_fused_scalar_analysis_pair<const CHECK_PAIR_GROUP_RANGE: bool>(
     run_fused_scalar_analysis_pair_variant::<
         CHECK_PAIR_GROUP_RANGE,
         { cfg!(rustsht_fused_analysis_pair_range_check) },
+        true,
     >(arch, fixture, staged, previous, current, next)
 }
 
@@ -877,6 +1048,7 @@ fn run_fused_scalar_analysis_pair<const CHECK_PAIR_GROUP_RANGE: bool>(
 fn run_fused_scalar_analysis_pair_variant<
     const CHECK_PAIR_GROUP_RANGE: bool,
     const FUSE_PAIR_GROUP_RANGE_CHECK: bool,
+    const ACCUMULATE: bool,
 >(
     arch: Arch,
     fixture: &Fixture,
@@ -890,6 +1062,7 @@ fn run_fused_scalar_analysis_pair_variant<
         true,
         CHECK_PAIR_GROUP_RANGE,
         FUSE_PAIR_GROUP_RANGE_CHECK,
+        ACCUMULATE,
     > {
         m: BENCH_ORDER,
         lmax: BENCH_LMAX,
@@ -1139,7 +1312,7 @@ fn unchecked_group_range_matches_checked_for_zero_cancellation_and_tails() {
                 fixture.opposite_real[lane] = value;
                 fixture.opposite_imag[lane] = value * 0.5;
             }
-            let _ = time_fused_scalar_analysis_pair::<true, false>(
+            let _ = time_fused_scalar_analysis_pair::<true, false, true>(
                 arch,
                 BENCH_ORDER,
                 BENCH_LMAX,
@@ -1149,7 +1322,7 @@ fn unchecked_group_range_matches_checked_for_zero_cancellation_and_tails() {
                 &mut current,
                 &mut next,
             );
-            let _ = time_fused_scalar_analysis_pair::<true, true>(
+            let _ = time_fused_scalar_analysis_pair::<true, true, true>(
                 arch,
                 BENCH_ORDER,
                 BENCH_LMAX,
@@ -1159,7 +1332,7 @@ fn unchecked_group_range_matches_checked_for_zero_cancellation_and_tails() {
                 &mut current,
                 &mut next,
             );
-            let _ = time_fused_scalar_analysis_pair::<false, false>(
+            let _ = time_fused_scalar_analysis_pair::<false, false, true>(
                 arch,
                 BENCH_ORDER,
                 BENCH_LMAX,
@@ -1183,7 +1356,7 @@ fn unchecked_group_range_matches_checked_for_zero_cancellation_and_tails() {
         next.fill(0.0);
         scanned_staged.fill(Complex64::new(0.0, 0.0));
         fused_staged.fill(Complex64::new(0.0, 0.0));
-        let scanned_succeeded = run_fused_scalar_analysis_pair_variant::<true, false>(
+        let scanned_succeeded = run_fused_scalar_analysis_pair_variant::<true, false, true>(
             arch,
             &fixture,
             &mut scanned_staged,
@@ -1194,7 +1367,7 @@ fn unchecked_group_range_matches_checked_for_zero_cancellation_and_tails() {
         previous.copy_from_slice(&fixture.previous);
         current.copy_from_slice(&fixture.current);
         next.fill(0.0);
-        let fused_succeeded = run_fused_scalar_analysis_pair_variant::<true, true>(
+        let fused_succeeded = run_fused_scalar_analysis_pair_variant::<true, true, true>(
             arch,
             &fixture,
             &mut fused_staged,

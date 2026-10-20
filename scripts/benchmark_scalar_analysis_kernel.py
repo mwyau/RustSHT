@@ -457,8 +457,10 @@ def main() -> None:
             )
 
         observations = defaultdict(list)
+        component_observations = defaultdict(list)
         numeric_errors = {}
         batch_durations = []
+        component_batch_durations = []
         wall_durations = []
         reset_observations = defaultdict(list)
         stability_checks = []
@@ -497,7 +499,31 @@ def main() -> None:
                             )
                     expected_prefix = "RUST_BATCH" if backend == "rust" else "DUCC_BATCH"
                     parsed_count = 0
+                    component_count = 0
                     for line in stdout.splitlines():
+                        component = line_fields(line, "COMPONENT_BATCH")
+                        if component is not None:
+                            if backend != "rust":
+                                raise RuntimeError("DUCC emitted a Rust-only component record")
+                            if int(component["lanes"]) != lane_count:
+                                raise RuntimeError(f"component lane mismatch: {component}")
+                            if int(component["repetitions"]) != repetitions[lane_count]:
+                                raise RuntimeError(f"component repetition mismatch: {component}")
+                            batch_index = int(component["batch"])
+                            if batch_index != component_count:
+                                raise RuntimeError(f"component batch order mismatch: {component}")
+                            for variant in ("full", "recurrence"):
+                                kernel_us = float(component[f"{variant}_kernel_us"])
+                                wall_us = float(component[f"{variant}_wall_us"])
+                                reset_us = float(component[f"{variant}_reset_us"])
+                                per_call_us = kernel_us / repetitions[lane_count]
+                                wall_ms = wall_us / 1000.0
+                                component_observations[(lane_count, variant)].append(
+                                    (per_call_us, invocation + 1, batch_index, wall_ms, reset_us / repetitions[lane_count])
+                                )
+                                component_batch_durations.append(wall_ms)
+                            component_count += 1
+                            continue
                         fields = line_fields(line, expected_prefix)
                         if fields is None:
                             continue
@@ -534,6 +560,13 @@ def main() -> None:
                         raise RuntimeError(
                             f"expected {expected_lines} batch records from {backend}, got {parsed_count}\n{stdout}"
                         )
+                    if backend == "rust":
+                        if component_count != BATCHES:
+                            raise RuntimeError(
+                                f"expected {BATCHES} component batches from Rust, got {component_count}\n{stdout}"
+                            )
+                        if "COMPONENT_VALIDATION lanes=" not in stdout:
+                            raise RuntimeError(f"component numerical validation missing:\n{stdout}")
                     if backend == "ducc":
                         error = metric_line(stdout, "DUCC_KERNEL")
                         numeric = (
@@ -748,6 +781,57 @@ def main() -> None:
                         f"  ratios checked/DUCC={medians['checked'] / medians['ducc']:.3f} "
                         f"unchecked/DUCC={medians['unchecked'] / medians['ducc']:.3f}"
                     )
+
+        print(
+            "COMPONENT_METHOD full uses the ordinary fused production loop; recurrence-only compiles out spectrum products and horizontal reductions while retaining recurrence, safety checks, state updates, dispatch, and zeroed coefficient stores."
+        )
+        for lane_count in lanes:
+            process_medians = {}
+            for variant in ("full", "recurrence"):
+                samples = component_observations[(lane_count, variant)]
+                per_call = [sample[0] for sample in samples]
+                median, p10, p90, _, _, _, _ = summarize(per_call)
+                process_medians[variant] = {}
+                for invocation in range(1, INVOCATIONS + 1):
+                    values = [sample[0] for sample in samples if sample[1] == invocation]
+                    process_medians[variant][invocation] = statistics.median(values)
+                process_values = list(process_medians[variant].values())
+                process_spread = (max(process_values) - min(process_values)) / max(
+                    statistics.median(process_values), 1e-12
+                )
+                state = "STABLE" if process_spread <= MAX_PROCESS_RANGE_OVER_MEDIAN else "UNSTABLE"
+                stability_checks.append((lane_count, "components", variant, "rust", process_spread, state))
+                resets = [sample[4] for sample in samples]
+                print(
+                    f"COMPONENT_TIMING lanes={lane_count} variant={variant} median={median:.3f}us/op "
+                    f"p10/p90={p10:.3f}..{p90:.3f} process_spread={process_spread:.1%} state={state} "
+                    f"reset_median={statistics.median(resets):.3f}us/op"
+                )
+            paired_excess = [
+                process_medians["full"][invocation] - process_medians["recurrence"][invocation]
+                for invocation in range(1, INVOCATIONS + 1)
+            ]
+            paired_ratio = [
+                process_medians["full"][invocation] / process_medians["recurrence"][invocation]
+                for invocation in range(1, INVOCATIONS + 1)
+            ]
+            excess_summary = summarize(paired_excess)
+            ratio_summary = summarize(paired_ratio)
+            print(
+                f"COMPONENT_DELTA lanes={lane_count} spectrum_accumulation_plus_reduction="
+                f"{excess_summary[0]:.3f}us/op p10/p90={excess_summary[1]:.3f}..{excess_summary[2]:.3f} "
+                f"full/recurrence={ratio_summary[0]:.3f} p10/p90={ratio_summary[1]:.3f}..{ratio_summary[2]:.3f}"
+            )
+
+        min_component_batch = min(component_batch_durations)
+        max_component_batch = max(component_batch_durations)
+        component_outside = [
+            value for value in component_batch_durations if not (20.0 <= value <= 100.0)
+        ]
+        print(
+            f"COMPONENT_BATCH_DURATIONS ms range={min_component_batch:.2f}..{max_component_batch:.2f}; "
+            f"outside_20_100ms={len(component_outside)}/{len(component_batch_durations)}"
+        )
 
         min_batch = min(batch_durations)
         max_batch = max(batch_durations)
