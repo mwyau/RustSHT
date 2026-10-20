@@ -266,7 +266,7 @@ impl WithSimd for AnalysisPrefixLoopProbe<'_> {
             if pair_count - second_pair == 1 {
                 return Some(pair_count);
             }
-            let Some((rescaled, remains_below_limit)) = advance_and_rescale_analysis_pair(
+            let (rescaled, remains_below_limit) = advance_and_rescale_analysis_pair(
                 simd,
                 [
                     (coefficient_a[pair_start], coefficient_b[pair_start]),
@@ -277,9 +277,7 @@ impl WithSimd for AnalysisPrefixLoopProbe<'_> {
                 scale_epochs,
                 scale_corrections,
                 skip_insignificant_validation,
-            ) else {
-                return None;
-            };
+            )?;
             pair_start += 2;
             below_limit = remains_below_limit;
             if rescaled {
