@@ -96,7 +96,7 @@ initialized by another eligible operation, while `Some(0)` keeps recurrence. The
 | Spin-1 T159 atmospheric GL analysis, q4 | 2.495/2.529 ms | 17.551/1.928 ms | 27 calls | 30 |
 
 These results are exact to the documented grid dimensions in
-[`legendre-reuse-estimate-2026-10-14.md`](../reports/legendre-reuse-estimate-2026-10-14.md). Payload estimates ranged from 1.83 to 15.92 MiB. RSS was not measured in that
+[`legendre-reuse-estimate-2026-10-14.md`](../../legendre-reuse-estimate-2026-10-14.md). Payload estimates ranged from 1.83 to 15.92 MiB. RSS was not measured in that
 experiment. Extensive earlier studies found large tables can make high-band
 multithread analysis slower despite one-thread synthesis gains; do not raise
 the budget based on isolated kernels. Sol High performed a strictly read-only review of the selector architecture
@@ -189,7 +189,7 @@ vectorizer was 37.91%, normal analysis accumulation 15.52%, and RustFFT column
 butterflies 3.16% of the reported attribution. The scalar reused-workspace
 native baseline at T511 was `22.788 ms` q1 and `6.959 ms` q8; T127 was
 `0.612/0.334 ms`. All raw process medians and the command are in
-[`native-process-samples.txt`](../reports/data/current-scalar-analysis-profile-2026-10-14/native-process-samples.txt). The proposed next kernel would fuse the scalar paired recurrence and analysis
+[`native-process-samples.txt`](../../data/current-scalar-analysis-profile-2026-10-14/native-process-samples.txt). The proposed next kernel would fuse the scalar paired recurrence and analysis
 accumulation in a Pulp dispatch, stage output coefficients per block, and
 commit them only if the full block stays normal-range; otherwise it would
 discard staged values and run the existing scaled fallback. This avoids
@@ -197,7 +197,7 @@ partial coefficient updates if late recurrence scaling is needed. The
 hypothesis is supported by the recurrence scratch writes and separate
 per-degree reducer in generated AVX2 code, but the kernel was not implemented
 or tested. Only temporary method declarations were started and then removed. There is no uncommitted production source change from this experiment. The profile and implementation conditions are in
-[`current-scalar-analysis-kernel-profile-2026-10-14.md`](../reports/current-scalar-analysis-kernel-profile-2026-10-14.md).
+[`current-scalar-analysis-kernel-profile-2026-10-14.md`](../../current-scalar-analysis-kernel-profile-2026-10-14.md).
 
 ## Next steps, in priority order
 

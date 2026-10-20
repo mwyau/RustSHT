@@ -6,7 +6,7 @@
 
 ## Decision in brief
 
-RustSHT's [`Cargo.toml`](../Cargo.toml) and [README](../README.md) state **`GPL-2.0-or-later`**, not `GPL-2.0-only`. This preserves an important optional GPLv2 distribution path. The root [`LICENSE`](../LICENSE) reproduces GPL version 2; the version-choice notice appears in Cargo/README, so keep that choice explicit on original source-file headers and on contributions.
+RustSHT's [`Cargo.toml`](../../../Cargo.toml) and [README](../../../README.md) state **`GPL-2.0-or-later`**, not `GPL-2.0-only`. This preserves an important optional GPLv2 distribution path. The root [`LICENSE`](../../../LICENSE) reproduces GPL version 2; the version-choice notice appears in Cargo/README, so keep that choice explicit on original source-file headers and on contributions.
 
 **Recommended policy:** implement new numerical techniques from published papers and original derivations, and use reference implementations as validation or for ideas. Directly adapt source only from **license-compatible material** with the required notices. Maintain a repository build/distribution that is genuinely usable under GPLv2 if that remains a goal. Do **not** import GPLv3-only or Apache-2.0 source into that code path. A combined derivative can instead be distributed under GPLv3, but then the **combined program** is no longer distributable under GPLv2. A new independently authored algorithm can remain GPL-2.0-or-later.
 
@@ -14,12 +14,12 @@ RustSHT's [`Cargo.toml`](../Cargo.toml) and [README](../README.md) state **`GPL-
 
 - **GPL-2.0-only:** cannot combine copyright-covered GPLv3-only source or Apache-2.0 source into a program distributed under GPLv2.
 - **GPL-2.0-or-later:** recipients may choose GPLv2 or a later GPL version for original code carrying that grant. This enables combining with GPLv3-only or Apache-2.0 code **by conveying the resulting combined program under GPLv3**, not by converting GPLv3/Apache code into GPLv2 code. The individual upstream files' notices still apply.
-- **MIT/BSD-3-Clause:** permissive and compatible with GPLv2 and GPLv3. Keep the original copyright and permission notices when copying/adapting substantial code; retain provenance in [third-party notices](../LICENSE-THIRD-PARTY) as appropriate.
+- **MIT/BSD-3-Clause:** permissive and compatible with GPLv2 and GPLv3. Keep the original copyright and permission notices when copying/adapting substantial code; retain provenance in [third-party notices](../../../LICENSE-THIRD-PARTY) as appropriate.
 - **CeCILL-2/2.1:** contains an explicit GPL compatibility clause (5.3.4); check the exact upstream version and file headers, but it is generally possible to include covered code in a GPLv2 or later combination pursuant to that clause and its notice obligations. Do **not** confuse basic CeCILL with CeCILL-B/C.
 - **No express software license / all rights reserved:** public access to a Git repository is **not** a grant to copy, translate, sublicense or distribute copyright-covered source. Request permission or independently implement mathematics from papers.
 - **Algorithm vs source:** mathematical ideas, methods, formulas and benchmark-defined behavior are distinct from protectable software expression. An original Rust implementation from the published method is usually a sound strategy and is **not automatically a derivative** merely because its results match. Avoid copying protected code structure, distinctive detailed pseudocode or substantial tables verbatim. A documented separation between a paper-derived specification and independent implementation is extra protection when a repo has restrictive/unclear licensing. A clean room is **not categorically mandatory**; it does not itself clear patent rights or license copied code.
 - **Do not use an LLM as a license washer.** Translating or paraphrasing existing GPLv3/Apache/no-license C/C++/Python source into Rust may still be copyright-derived. Do not treat syntax changes as an independent implementation.
-- **Ancillary materials:** tests, scripts, tables, data and generated code may have **different** licenses. For example, the [RustSHT agent policy](../AGENTS.md) notes DUCC's GPL-3.0-or-later Python tests: do not copy them verbatim into a GPLv2-compatible Rust test suite. Independently recreate test cases from public numerical specifications.
+- **Ancillary materials:** tests, scripts, tables, data and generated code may have **different** licenses. For example, the [RustSHT agent policy](../../../AGENTS.md) notes DUCC's GPL-3.0-or-later Python tests: do not copy them verbatim into a GPLv2-compatible Rust test suite. Independently recreate test cases from public numerical specifications.
 
 Primary GPL guidance: [FSF GPL compatibility FAQ](https://www.gnu.org/licenses/gpl-faq.en.html#v2v3Compatibility); [FSF license list](https://www.gnu.org/licenses/license-list.en.html); [FSF clear GPL version identification](https://www.gnu.org/licenses/identify-licenses-clearly.html). These describe legal license compatibility, not technical performance.
 
@@ -99,7 +99,7 @@ Need an algorithm from another implementation?
 
 ## Primary references and licensing sources
 
-- [RustSHT package license choice](../Cargo.toml) and [README](../README.md); [third-party notices](../LICENSE-THIRD-PARTY).
+- [RustSHT package license choice](../../../Cargo.toml) and [README](../../../README.md); [third-party notices](../../../LICENSE-THIRD-PARTY).
 - [GNU GPL license compatibility FAQ](https://www.gnu.org/licenses/gpl-faq.en.html#v2v3Compatibility) and [license list](https://www.gnu.org/licenses/license-list.en.html); [GPL version identification](https://www.gnu.org/licenses/identify-licenses-clearly.html).
 - [DUCC licensing terms](https://github.com/mreineck/ducc#licensing-terms) and [source](https://github.com/mreineck/ducc).
 - [SHTns documentation](https://nschaeff.bitbucket.io/shtns/) and [CeCILL 2.1 text (OSI)](https://opensource.org/license/CECILL-2.1), particularly §5.3.4.
