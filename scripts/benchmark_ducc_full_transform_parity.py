@@ -756,7 +756,7 @@ def plot_issue_ratio_svg(path: pathlib.Path, operation: str, order_label: str,
     ymax = max(16.0, max(value for _, value in observed) * 1.1)
     if ymin <= 0:
         raise ValueError("ratio plot requires positive runtimes")
-    xmax = max(3072, max(degree for degree, _ in observed))
+    xmax = max(1, max(degree for degree, _ in observed))
     xlogmax = math.log1p(xmax)
     ylogmin, ylogmax = math.log(ymin), math.log(ymax)
 
@@ -848,7 +848,7 @@ def plot_issue_runtime_svg(path: pathlib.Path, operation: str,
         return
     if any(runtime <= 0 or not math.isfinite(runtime) for _, runtime in observed):
         raise ValueError("runtime log plot requires positive finite timings")
-    xmax = max(3072, max(degree for degree, _ in observed))
+    xmax = max(1, max(degree for degree, _ in observed))
     xmin_runtime = min(value for _, value in observed)
     xmax_runtime = max(value for _, value in observed)
     # Fixed engineering-decade ticks keep analysis and synthesis comparable.
