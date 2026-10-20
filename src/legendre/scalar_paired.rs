@@ -26,6 +26,10 @@ use crate::legendre::scalar::{
 };
 use crate::legendre::{LATITUDE_BLOCK_SIZE, scalar};
 
+#[cfg(test)]
+#[path = "scalar_paired_kernel_bench.rs"]
+mod kernel_bench;
+
 const SIMD_SECTORAL_INIT_MIN_LMAX: usize = 511;
 const ANALYSIS_FTOL: f64 = f64::from_bits(963_u64 << 52);
 const ANALYSIS_SCALE_STEP: i64 = 800;
@@ -1953,6 +1957,15 @@ fn analysis_scale_epochs_below_one<S: Simd>(simd: S, scale_epochs: &[f64]) -> bo
 }
 
 #[inline(always)]
+fn analysis_recurrence_state_is_finite(previous: &[f64], current: &[f64]) -> bool {
+    previous.len() == current.len()
+        && previous
+            .iter()
+            .chain(current)
+            .all(|value| value.is_finite())
+}
+
+#[inline(always)]
 fn analysis_value_in_ieee_range(value: f64) -> bool {
     value.is_finite()
         && (value == 0.0 || (value.abs() >= f64::MIN_POSITIVE && value.abs() <= scalar::BIG))
@@ -2005,41 +2018,172 @@ fn analysis_scale_epochs_allow_recurrence(scale_epochs: &[f64], pair_count: usiz
     })
 }
 
+/// Advances two recurrence pairs and applies DUCC's scale threshold in one
+/// latitude pass. This is used only by the insignificant-prefix route, which
+/// intentionally discards the accumulated coefficients until the recurrence
+/// reaches IEEE scale.
 #[inline(always)]
-fn advance_analysis_pair<S: Simd>(
+fn advance_and_rescale_analysis_pair<S: Simd>(
     simd: S,
-    coefficient_a: f64,
-    coefficient_b: f64,
+    coefficients: [(f64, f64); 2],
     cos_theta_squared: &[f64],
-    previous: &[f64],
-    current: &[f64],
-    next: &mut [f64],
-) -> bool {
+    recurrence: (&mut [f64], &mut [f64]),
+    scale_epochs: &mut [f64],
+    corrections: &mut [f64],
+    skip_insignificant_validation: bool,
+) -> Option<bool> {
+    let [
+        (coefficient_a1, coefficient_b1),
+        (coefficient_a2, coefficient_b2),
+    ] = coefficients;
+    let (previous, current) = recurrence;
     if previous.len() != current.len()
-        || current.len() != next.len()
         || current.len() != cos_theta_squared.len()
+        || current.len() != scale_epochs.len()
+        || current.len() != corrections.len()
     {
-        return false;
+        return None;
     }
-    let (previous_vectors, previous_tail) = S::as_simd_f64s(previous);
-    let (current_vectors, current_tail) = S::as_simd_f64s(current);
+    let (previous_vectors, previous_tail) = S::as_mut_simd_f64s(previous);
+    let (current_vectors, current_tail) = S::as_mut_simd_f64s(current);
     let (cosine_squared_vectors, cosine_squared_tail) = S::as_simd_f64s(cos_theta_squared);
-    let (next_vectors, next_tail) = S::as_mut_simd_f64s(next);
-    let a = simd.splat_f64s(coefficient_a);
-    let b = simd.splat_f64s(coefficient_b);
+    let (scale_vectors, scale_tail) = S::as_mut_simd_f64s(scale_epochs);
+    let (correction_vectors, correction_tail) = S::as_mut_simd_f64s(corrections);
+    let a1 = simd.splat_f64s(coefficient_a1);
+    let b1 = simd.splat_f64s(coefficient_b1);
+    let a2 = simd.splat_f64s(coefficient_a2);
+    let b2 = simd.splat_f64s(coefficient_b2);
+    let zero = simd.splat_f64s(0.0);
+    let one = simd.splat_f64s(1.0);
+    let ftol = simd.splat_f64s(ANALYSIS_FTOL);
+    let down = simd.splat_f64s(ANALYSIS_SCALE_DOWN);
+    let up = simd.splat_f64s(ANALYSIS_SCALE_UP);
+    let min_normal = simd.splat_f64s(f64::MIN_POSITIVE);
+    let max_finite = simd.splat_f64s(f64::MAX);
+    let max_mantissa = simd.splat_f64s(scalar::BIG);
+    let mut all_vectors_valid = simd.equal_f64s(zero, zero);
+    let mut any_rescaled = false;
+
     for index in 0..current_vectors.len() {
-        let leading = simd.mul_add_f64s(a, cosine_squared_vectors[index], b);
-        let value = simd.mul_add_f64s(leading, current_vectors[index], previous_vectors[index]);
-        next_vectors[index] = value;
+        let previous_value = previous_vectors[index];
+        let current_value = current_vectors[index];
+        let cosine_squared = cosine_squared_vectors[index];
+        let first_leading = simd.mul_add_f64s(a1, cosine_squared, b1);
+        let first = simd.mul_add_f64s(first_leading, current_value, previous_value);
+        let second_leading = simd.mul_add_f64s(a2, cosine_squared, b2);
+        let second = simd.mul_add_f64s(second_leading, first, current_value);
+        let magnitude = simd.abs_f64s(second);
+        let rescale = simd.greater_than_f64s(magnitude, ftol);
+        let vector_rescaled = simd.reduce_max_f64s(magnitude) > ANALYSIS_FTOL;
+        any_rescaled |= vector_rescaled;
+
+        if !vector_rescaled {
+            // The active prefix has scale epochs below one. Negative epochs
+            // intentionally suppress insignificant mantissas; epoch zero
+            // still requires an ordinary nonzero mantissa. Since every lane
+            // is below ftol here, no upper-magnitude check is needed.
+            if !skip_insignificant_validation {
+                let finite_mantissa = simd.less_than_or_equal_f64s(magnitude, max_finite);
+                let zero_or_normal = simd.or_m64s(
+                    simd.equal_f64s(magnitude, zero),
+                    simd.greater_than_or_equal_f64s(magnitude, min_normal),
+                );
+                let negative_epoch = simd.less_than_f64s(scale_vectors[index], zero);
+                let current_valid = simd.and_m64s(
+                    finite_mantissa,
+                    simd.or_m64s(negative_epoch, zero_or_normal),
+                );
+                all_vectors_valid = simd.and_m64s(all_vectors_valid, current_valid);
+            }
+            previous_vectors[index] = first;
+            current_vectors[index] = second;
+            continue;
+        }
+
+        let updated_previous = simd.select_f64s(rescale, simd.mul_f64s(first, down), first);
+        let updated_current = simd.select_f64s(rescale, simd.mul_f64s(second, down), second);
+        let next_scale = simd.add_f64s(scale_vectors[index], one);
+        let updated_scale = simd.select_f64s(rescale, next_scale, scale_vectors[index]);
+        let correction = simd.select_f64s(
+            simd.less_than_f64s(updated_scale, zero),
+            zero,
+            simd.select_f64s(simd.less_than_f64s(updated_scale, one), one, up),
+        );
+        let updated_correction = simd.select_f64s(rescale, correction, correction_vectors[index]);
+
+        let corrected_current = simd.mul_f64s(updated_current, updated_correction);
+        let current_magnitude = simd.abs_f64s(corrected_current);
+        let finite_mantissa =
+            simd.less_than_or_equal_f64s(simd.abs_f64s(updated_current), max_finite);
+        let current_valid = simd.and_m64s(
+            finite_mantissa,
+            simd.or_m64s(
+                simd.equal_f64s(current_magnitude, zero),
+                simd.and_m64s(
+                    simd.greater_than_or_equal_f64s(current_magnitude, min_normal),
+                    simd.less_than_or_equal_f64s(current_magnitude, max_mantissa),
+                ),
+            ),
+        );
+        all_vectors_valid = simd.and_m64s(all_vectors_valid, current_valid);
+        previous_vectors[index] = updated_previous;
+        current_vectors[index] = updated_current;
+        scale_vectors[index] = updated_scale;
+        correction_vectors[index] = updated_correction;
     }
+
     for lane in 0..current_tail.len() {
-        let leading = coefficient_a.mul_add(cosine_squared_tail[lane], coefficient_b);
-        let value = leading.mul_add(current_tail[lane], previous_tail[lane]);
-        next_tail[lane] = value;
+        let first = coefficient_a1
+            .mul_add(cosine_squared_tail[lane], coefficient_b1)
+            .mul_add(current_tail[lane], previous_tail[lane]);
+        let second = coefficient_a2
+            .mul_add(cosine_squared_tail[lane], coefficient_b2)
+            .mul_add(first, current_tail[lane]);
+        if !first.is_finite() || !second.is_finite() {
+            return None;
+        }
+        let rescale = second.abs() > ANALYSIS_FTOL;
+        any_rescaled |= rescale;
+        let (updated_previous, updated_current) = if rescale {
+            let next_scale = scale_tail[lane] + 1.0;
+            if !next_scale.is_finite()
+                || next_scale == scale_tail[lane]
+                || next_scale.abs() > 4.5e15
+            {
+                return None;
+            }
+            let previous_scaled = first * ANALYSIS_SCALE_DOWN;
+            let current_scaled = second * ANALYSIS_SCALE_DOWN;
+            if second != 0.0 && current_scaled.abs() < f64::MIN_POSITIVE {
+                return None;
+            }
+            scale_tail[lane] = next_scale;
+            correction_tail[lane] = analysis_scale_correction(current_scaled, next_scale)?;
+            (previous_scaled, current_scaled)
+        } else {
+            (first, second)
+        };
+        let corrected_current = updated_current * correction_tail[lane];
+        if !analysis_value_in_ieee_range(corrected_current) {
+            return None;
+        }
+        previous_tail[lane] = updated_previous;
+        current_tail[lane] = updated_current;
     }
-    // The caller rescales and validates each pair before it contributes any
-    // coefficient, so this recurrence step needs no per-vector reduction.
-    true
+
+    if !analysis_mask_all(simd, all_vectors_valid) {
+        return None;
+    }
+    if skip_insignificant_validation
+        && any_rescaled
+        && !previous
+            .iter()
+            .chain(current.iter())
+            .all(|value| value.is_finite())
+    {
+        return None;
+    }
+    Some(any_rescaled)
 }
 
 /// Applies DUCC's per-lane `rescale` rule while the analysis recurrence is in
@@ -2069,15 +2213,43 @@ fn rescale_scaled_analysis_pair<S: Simd, const CHECK_NONNEGATIVE: bool>(
     let one = simd.splat_f64s(1.0);
     let min_normal = simd.splat_f64s(f64::MIN_POSITIVE);
     let max_finite = simd.splat_f64s(f64::MAX);
-    let mut all_nonnegative = true;
+    let max_mantissa = simd.splat_f64s(scalar::BIG);
+    let mut all_vectors_valid = simd.equal_f64s(zero_f64, zero_f64);
+    let mut all_nonnegative_lanes = simd.equal_f64s(zero_f64, zero_f64);
+    let mut all_nonnegative_tails = true;
     let mut any_rescaled = false;
 
     for index in 0..current_vectors.len() {
         let previous_value = previous_vectors[index];
         let current_value = current_vectors[index];
-        let rescale = simd.greater_than_f64s(simd.abs_f64s(current_value), ftol);
+        let current_magnitude = simd.abs_f64s(current_value);
+        let rescale = simd.greater_than_f64s(current_magnitude, ftol);
         if !CHECK_NONNEGATIVE {
-            any_rescaled |= analysis_mask_any(simd, rescale);
+            // Reducing the magnitudes avoids materializing a 0/1 vector from
+            // the comparison mask before the horizontal test. NaNs are
+            // rejected by the accumulated range validation below.
+            let vector_rescaled = simd.reduce_max_f64s(current_magnitude) > ANALYSIS_FTOL;
+            any_rescaled |= vector_rescaled;
+            if !vector_rescaled {
+                // DUCC's rescale() returns immediately when no lane crosses
+                // the threshold. Keep the Rust range check, but avoid scale,
+                // correction and state-update work for this vector.
+                let corrected_current = simd.mul_f64s(current_value, correction_vectors[index]);
+                let corrected_magnitude = simd.abs_f64s(corrected_current);
+                let current_is_finite = simd.less_than_or_equal_f64s(current_magnitude, max_finite);
+                let current_valid = simd.and_m64s(
+                    current_is_finite,
+                    simd.or_m64s(
+                        simd.equal_f64s(corrected_magnitude, zero_f64),
+                        simd.and_m64s(
+                            simd.greater_than_or_equal_f64s(corrected_magnitude, min_normal),
+                            simd.less_than_or_equal_f64s(corrected_magnitude, max_mantissa),
+                        ),
+                    ),
+                );
+                all_vectors_valid = simd.and_m64s(all_vectors_valid, current_valid);
+                continue;
+            }
         }
         let next_scale = simd.add_f64s(scale_vectors[index], one);
         let previous_scaled =
@@ -2109,16 +2281,14 @@ fn rescale_scaled_analysis_pair<S: Simd, const CHECK_NONNEGATIVE: bool>(
                 simd.equal_f64s(current_magnitude, zero_f64),
                 simd.and_m64s(
                     simd.greater_than_or_equal_f64s(current_magnitude, min_normal),
-                    simd.less_than_or_equal_f64s(current_magnitude, simd.splat_f64s(scalar::BIG)),
+                    simd.less_than_or_equal_f64s(current_magnitude, max_mantissa),
                 ),
             ),
         );
-        if !analysis_mask_all(simd, current_valid) {
-            return None;
-        }
+        all_vectors_valid = simd.and_m64s(all_vectors_valid, current_valid);
         if CHECK_NONNEGATIVE {
-            all_nonnegative &= analysis_mask_all(
-                simd,
+            all_nonnegative_lanes = simd.and_m64s(
+                all_nonnegative_lanes,
                 simd.greater_than_or_equal_f64s(updated_scale, zero_f64),
             );
         }
@@ -2155,9 +2325,14 @@ fn rescale_scaled_analysis_pair<S: Simd, const CHECK_NONNEGATIVE: bool>(
             return None;
         }
         if CHECK_NONNEGATIVE {
-            all_nonnegative &= scale_tail[lane] >= 0.0;
+            all_nonnegative_tails &= scale_tail[lane] >= 0.0;
         }
     }
+    if !analysis_mask_all(simd, all_vectors_valid) {
+        return None;
+    }
+    let all_nonnegative = !CHECK_NONNEGATIVE
+        || (analysis_mask_all(simd, all_nonnegative_lanes) && all_nonnegative_tails);
     Some((any_rescaled, all_nonnegative))
 }
 
@@ -2621,77 +2796,41 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
             return Ok(false);
         }
         let mut below_limit = analysis_scale_epochs_below_one(simd, scale_epochs);
+        let mut skip_insignificant_validation = scale_epochs.iter().all(|&scale| scale < 0.0);
         while below_limit && pair_start < pair_count {
             zero_staged_analysis_pair(staged_coefficients, m, lmax, pair_start);
             if pair_count - pair_start == 1 {
-                return Ok(true);
+                return Ok(analysis_recurrence_state_is_finite(previous, current));
             }
 
             let first_pair = pair_start;
-            if !advance_analysis_pair(
-                simd,
-                coefficient_a[first_pair],
-                coefficient_b[first_pair],
-                cos_theta_squared,
-                previous,
-                current,
-                next,
-            ) {
-                return Ok(false);
-            }
-            std::mem::swap(&mut previous, &mut current);
-            std::mem::swap(&mut current, &mut next);
-            let Some((rescaled, _)) = rescale_scaled_analysis_pair::<S, false>(
-                simd,
-                previous,
-                current,
-                scale_epochs,
-                &mut scale_corrections[..current.len()],
-            ) else {
-                return Ok(false);
-            };
-            if rescaled {
-                below_limit = analysis_scale_epochs_below_one(simd, scale_epochs);
-                if !below_limit {
-                    pair_start += 1;
-                    break;
-                }
-            }
-
             let second_pair = first_pair + 1;
             zero_staged_analysis_pair(staged_coefficients, m, lmax, second_pair);
             if pair_count - second_pair == 1 {
-                return Ok(true);
+                return Ok(analysis_recurrence_state_is_finite(previous, current));
             }
-            if !advance_analysis_pair(
+            let Some(rescaled) = advance_and_rescale_analysis_pair(
                 simd,
-                coefficient_a[second_pair],
-                coefficient_b[second_pair],
+                [
+                    (coefficient_a[first_pair], coefficient_b[first_pair]),
+                    (coefficient_a[second_pair], coefficient_b[second_pair]),
+                ],
                 cos_theta_squared,
-                previous,
-                current,
-                next,
-            ) {
-                return Ok(false);
-            }
-            std::mem::swap(&mut previous, &mut current);
-            std::mem::swap(&mut current, &mut next);
-            let Some((rescaled, _)) = rescale_scaled_analysis_pair::<S, false>(
-                simd,
-                previous,
-                current,
+                (&mut *previous, &mut *current),
                 scale_epochs,
-                &mut scale_corrections[..current.len()],
+                scale_corrections,
+                skip_insignificant_validation,
             ) else {
                 return Ok(false);
             };
             pair_start += 2;
             if rescaled {
                 below_limit = analysis_scale_epochs_below_one(simd, scale_epochs);
+                skip_insignificant_validation = scale_epochs.iter().all(|&scale| scale < 0.0);
             }
         }
         if pair_start == pair_count {
-            return Ok(true);
+            return Ok(analysis_recurrence_state_is_finite(previous, current));
         }
 
         let Some(mut normal_range) = promote_analysis_pair_to_ordinary(
@@ -2823,6 +2962,29 @@ struct FusedAnalysisPairStep<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
     coefficient_a: f64,
     coefficient_b: f64,
     basis_next: &'a mut [f64],
+}
+
+struct FusedAnalysisPairGroup {
+    first_same: Complex64,
+    first_opposite: Complex64,
+    second_same: Complex64,
+    second_opposite: Complex64,
+    tails_in_range: bool,
+}
+
+struct FusedAnalysisTwoPairSteps<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
+    same_real: &'a [f64],
+    same_imag: &'a [f64],
+    opposite_real: &'a [f64],
+    opposite_imag: &'a [f64],
+    basis_previous: &'a mut [f64],
+    basis_current: &'a mut [f64],
+    cos_theta: &'a [f64],
+    cos_theta_squared: &'a [f64],
+    first_coefficient_a: f64,
+    first_coefficient_b: f64,
+    second_coefficient_a: f64,
+    second_coefficient_b: f64,
 }
 
 #[inline(always)]
@@ -2983,6 +3145,254 @@ fn fused_analysis_pair_step_with_simd<S: Simd, const OPPOSITE_COSINE_WEIGHTED: b
     )
 }
 
+/// Accumulates two consecutive paired-degree outputs during one latitude
+/// traversal, matching DUCC's ordinary scalar-analysis loop grouping. The
+/// recurrence state is updated in place from `(P[l-2], P[l])` to
+/// `(P[l+2], P[l+4])`; both generated values retain the ordinary-range check
+/// so a declined block can use the checked scaled route.
+#[inline(always)]
+fn fused_analysis_two_pair_steps_with_simd<S: Simd, const OPPOSITE_COSINE_WEIGHTED: bool>(
+    simd: S,
+    step: FusedAnalysisTwoPairSteps<'_, OPPOSITE_COSINE_WEIGHTED>,
+) -> Option<FusedAnalysisPairGroup> {
+    let FusedAnalysisTwoPairSteps {
+        same_real,
+        same_imag,
+        opposite_real,
+        opposite_imag,
+        basis_previous,
+        basis_current,
+        cos_theta,
+        cos_theta_squared,
+        first_coefficient_a,
+        first_coefficient_b,
+        second_coefficient_a,
+        second_coefficient_b,
+    } = step;
+    if same_real.len() != basis_current.len()
+        || same_imag.len() != basis_current.len()
+        || opposite_real.len() != basis_current.len()
+        || opposite_imag.len() != basis_current.len()
+        || basis_previous.len() != basis_current.len()
+        || cos_theta.len() != basis_current.len()
+        || cos_theta_squared.len() != basis_current.len()
+    {
+        return None;
+    }
+
+    let (same_real_vectors, same_real_tail) = S::as_simd_f64s(same_real);
+    let (same_imag_vectors, same_imag_tail) = S::as_simd_f64s(same_imag);
+    let (opposite_real_vectors, opposite_real_tail) = S::as_simd_f64s(opposite_real);
+    let (opposite_imag_vectors, opposite_imag_tail) = S::as_simd_f64s(opposite_imag);
+    let (previous_vectors, previous_tail) = S::as_mut_simd_f64s(basis_previous);
+    let (current_vectors, current_tail) = S::as_mut_simd_f64s(basis_current);
+    let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
+    let (cosine_squared_vectors, cosine_squared_tail) = S::as_simd_f64s(cos_theta_squared);
+    if same_real_vectors.len() != current_vectors.len()
+        || same_imag_vectors.len() != current_vectors.len()
+        || opposite_real_vectors.len() != current_vectors.len()
+        || opposite_imag_vectors.len() != current_vectors.len()
+        || previous_vectors.len() != current_vectors.len()
+        || cosine_vectors.len() != current_vectors.len()
+        || cosine_squared_vectors.len() != current_vectors.len()
+        || same_real_tail.len() != current_tail.len()
+        || same_imag_tail.len() != current_tail.len()
+        || opposite_real_tail.len() != current_tail.len()
+        || opposite_imag_tail.len() != current_tail.len()
+        || previous_tail.len() != current_tail.len()
+        || cosine_tail.len() != current_tail.len()
+        || cosine_squared_tail.len() != current_tail.len()
+    {
+        return None;
+    }
+
+    let zero = simd.splat_f64s(0.0);
+    let first_a = simd.splat_f64s(first_coefficient_a);
+    let first_b = simd.splat_f64s(first_coefficient_b);
+    let second_a = simd.splat_f64s(second_coefficient_a);
+    let second_b = simd.splat_f64s(second_coefficient_b);
+    let mut first_same_re = zero;
+    let mut first_same_im = zero;
+    let mut first_opposite_re = zero;
+    let mut first_opposite_im = zero;
+    let mut second_same_re = zero;
+    let mut second_same_im = zero;
+    let mut second_opposite_re = zero;
+    let mut second_opposite_im = zero;
+    let mut tails_in_range = true;
+
+    for (
+        ((((((previous, current), same_real), same_imag), opposite_real), opposite_imag), cosine),
+        cosine_squared,
+    ) in previous_vectors
+        .iter_mut()
+        .zip(current_vectors.iter_mut())
+        .zip(same_real_vectors.iter())
+        .zip(same_imag_vectors.iter())
+        .zip(opposite_real_vectors.iter())
+        .zip(opposite_imag_vectors.iter())
+        .zip(cosine_vectors.iter())
+        .zip(cosine_squared_vectors.iter())
+    {
+        let previous_value = *previous;
+        let current_value = *current;
+        first_same_re = simd.mul_add_f64s(*same_real, current_value, first_same_re);
+        first_same_im = simd.mul_add_f64s(*same_imag, current_value, first_same_im);
+        if OPPOSITE_COSINE_WEIGHTED {
+            first_opposite_re = simd.mul_add_f64s(*opposite_real, current_value, first_opposite_re);
+            first_opposite_im = simd.mul_add_f64s(*opposite_imag, current_value, first_opposite_im);
+        } else {
+            first_opposite_re = simd.add_f64s(
+                first_opposite_re,
+                simd.mul_f64s(simd.mul_f64s(*opposite_real, current_value), *cosine),
+            );
+            first_opposite_im = simd.add_f64s(
+                first_opposite_im,
+                simd.mul_f64s(simd.mul_f64s(*opposite_imag, current_value), *cosine),
+            );
+        }
+
+        let first_leading = simd.mul_add_f64s(first_a, *cosine_squared, first_b);
+        let first_next = simd.mul_add_f64s(first_leading, current_value, previous_value);
+
+        second_same_re = simd.mul_add_f64s(*same_real, first_next, second_same_re);
+        second_same_im = simd.mul_add_f64s(*same_imag, first_next, second_same_im);
+        if OPPOSITE_COSINE_WEIGHTED {
+            second_opposite_re = simd.mul_add_f64s(*opposite_real, first_next, second_opposite_re);
+            second_opposite_im = simd.mul_add_f64s(*opposite_imag, first_next, second_opposite_im);
+        } else {
+            second_opposite_re = simd.add_f64s(
+                second_opposite_re,
+                simd.mul_f64s(simd.mul_f64s(*opposite_real, first_next), *cosine),
+            );
+            second_opposite_im = simd.add_f64s(
+                second_opposite_im,
+                simd.mul_f64s(simd.mul_f64s(*opposite_imag, first_next), *cosine),
+            );
+        }
+
+        let second_leading = simd.mul_add_f64s(second_a, *cosine_squared, second_b);
+        let second_next = simd.mul_add_f64s(second_leading, first_next, current_value);
+        *previous = first_next;
+        *current = second_next;
+    }
+
+    let mut first_same_re_sum = simd.reduce_sum_f64s(first_same_re);
+    let mut first_same_im_sum = simd.reduce_sum_f64s(first_same_im);
+    let mut first_opposite_re_sum = simd.reduce_sum_f64s(first_opposite_re);
+    let mut first_opposite_im_sum = simd.reduce_sum_f64s(first_opposite_im);
+    let mut second_same_re_sum = simd.reduce_sum_f64s(second_same_re);
+    let mut second_same_im_sum = simd.reduce_sum_f64s(second_same_im);
+    let mut second_opposite_re_sum = simd.reduce_sum_f64s(second_opposite_re);
+    let mut second_opposite_im_sum = simd.reduce_sum_f64s(second_opposite_im);
+
+    for (
+        ((((((previous, current), same_real), same_imag), opposite_real), opposite_imag), cosine),
+        cosine_squared,
+    ) in previous_tail
+        .iter_mut()
+        .zip(current_tail.iter_mut())
+        .zip(same_real_tail.iter())
+        .zip(same_imag_tail.iter())
+        .zip(opposite_real_tail.iter())
+        .zip(opposite_imag_tail.iter())
+        .zip(cosine_tail.iter())
+        .zip(cosine_squared_tail.iter())
+    {
+        let previous_value = *previous;
+        let current_value = *current;
+        first_same_re_sum = (*same_real).mul_add(current_value, first_same_re_sum);
+        first_same_im_sum = (*same_imag).mul_add(current_value, first_same_im_sum);
+        if OPPOSITE_COSINE_WEIGHTED {
+            first_opposite_re_sum = (*opposite_real).mul_add(current_value, first_opposite_re_sum);
+            first_opposite_im_sum = (*opposite_imag).mul_add(current_value, first_opposite_im_sum);
+        } else {
+            first_opposite_re_sum += (*opposite_real * current_value) * *cosine;
+            first_opposite_im_sum += (*opposite_imag * current_value) * *cosine;
+        }
+
+        let first_next = first_coefficient_a
+            .mul_add(*cosine_squared, first_coefficient_b)
+            .mul_add(current_value, previous_value);
+        let first_magnitude = first_next.abs();
+        tails_in_range &= first_magnitude == 0.0 || first_magnitude >= f64::MIN_POSITIVE;
+
+        second_same_re_sum = (*same_real).mul_add(first_next, second_same_re_sum);
+        second_same_im_sum = (*same_imag).mul_add(first_next, second_same_im_sum);
+        if OPPOSITE_COSINE_WEIGHTED {
+            second_opposite_re_sum = (*opposite_real).mul_add(first_next, second_opposite_re_sum);
+            second_opposite_im_sum = (*opposite_imag).mul_add(first_next, second_opposite_im_sum);
+        } else {
+            second_opposite_re_sum += (*opposite_real * first_next) * *cosine;
+            second_opposite_im_sum += (*opposite_imag * first_next) * *cosine;
+        }
+
+        let second_next = second_coefficient_a
+            .mul_add(*cosine_squared, second_coefficient_b)
+            .mul_add(first_next, current_value);
+        let second_magnitude = second_next.abs();
+        tails_in_range &= second_magnitude == 0.0 || second_magnitude >= f64::MIN_POSITIVE;
+        *previous = first_next;
+        *current = second_next;
+    }
+
+    Some(FusedAnalysisPairGroup {
+        first_same: Complex64::new(first_same_re_sum, first_same_im_sum),
+        first_opposite: Complex64::new(first_opposite_re_sum, first_opposite_im_sum),
+        second_same: Complex64::new(second_same_re_sum, second_same_im_sum),
+        second_opposite: Complex64::new(second_opposite_re_sum, second_opposite_im_sum),
+        tails_in_range,
+    })
+}
+
+/// Checks the two recurrence states produced by a fused pair group after its
+/// register-heavy accumulation pass has completed. This keeps the safety
+/// check out of the multi-accumulator loop while preserving fallback on any
+/// nonzero subnormal lane.
+#[inline(always)]
+fn analysis_pair_group_state_in_range<S: Simd>(simd: S, previous: &[f64], current: &[f64]) -> bool {
+    if previous.len() != current.len() {
+        return false;
+    }
+    let (previous_vectors, previous_tail) = S::as_simd_f64s(previous);
+    let (current_vectors, current_tail) = S::as_simd_f64s(current);
+    if previous_vectors.len() != current_vectors.len() || previous_tail.len() != current_tail.len()
+    {
+        return false;
+    }
+
+    let zero = simd.splat_f64s(0.0);
+    let minimum = simd.splat_f64s(f64::MIN_POSITIVE);
+    let mut vectors_in_range = simd.equal_f64s(zero, zero);
+    for (&previous_value, &current_value) in previous_vectors.iter().zip(current_vectors) {
+        let previous_magnitude = simd.abs_f64s(previous_value);
+        let current_magnitude = simd.abs_f64s(current_value);
+        let previous_in_range = simd.or_m64s(
+            simd.equal_f64s(previous_magnitude, zero),
+            simd.greater_than_or_equal_f64s(previous_magnitude, minimum),
+        );
+        let current_in_range = simd.or_m64s(
+            simd.equal_f64s(current_magnitude, zero),
+            simd.greater_than_or_equal_f64s(current_magnitude, minimum),
+        );
+        vectors_in_range = simd.and_m64s(
+            vectors_in_range,
+            simd.and_m64s(previous_in_range, current_in_range),
+        );
+    }
+    if !analysis_mask_all(simd, vectors_in_range) {
+        return false;
+    }
+
+    previous_tail
+        .iter()
+        .zip(current_tail)
+        .all(|(&previous_value, &current_value)| {
+            (previous_value == 0.0 || previous_value.abs() >= f64::MIN_POSITIVE)
+                && (current_value == 0.0 || current_value.abs() >= f64::MIN_POSITIVE)
+        })
+}
+
 impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
     for FusedScalarAnalysisPair<'_, OPPOSITE_COSINE_WEIGHTED>
 {
@@ -3010,12 +3420,67 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
         let mut previous = previous;
         let mut current = current;
         let mut next = next;
+        let lane_count = current.len();
+        if previous.len() != lane_count
+            || next.len() != lane_count
+            || cos_theta.len() != lane_count
+            || cos_theta_squared.len() != lane_count
+            || same_real.len() != lane_count
+            || same_imag.len() != lane_count
+            || opposite_real.len() != lane_count
+            || opposite_imag.len() != lane_count
+        {
+            return false;
+        }
         let zero = simd.splat_f64s(0.0);
         let mut all_vectors_in_range = simd.equal_f64s(zero, zero);
         let mut all_tails_in_range = true;
 
         let pair_count = (lmax - m + 2) / 2;
-        for pair_index in pair_start..pair_count.saturating_sub(1) {
+        let recurrence_stop = pair_count.saturating_sub(1);
+        let mut pair_index = pair_start;
+        while pair_index < recurrence_stop.saturating_sub(1) {
+            let Some(group) = fused_analysis_two_pair_steps_with_simd::<S, OPPOSITE_COSINE_WEIGHTED>(
+                simd,
+                FusedAnalysisTwoPairSteps {
+                    same_real,
+                    same_imag,
+                    opposite_real,
+                    opposite_imag,
+                    basis_previous: previous,
+                    basis_current: current,
+                    cos_theta,
+                    cos_theta_squared,
+                    first_coefficient_a: coefficient_a[pair_index],
+                    first_coefficient_b: coefficient_b[pair_index],
+                    second_coefficient_a: coefficient_a[pair_index + 1],
+                    second_coefficient_b: coefficient_b[pair_index + 1],
+                },
+            ) else {
+                return false;
+            };
+            if !analysis_pair_group_state_in_range(simd, previous, current) {
+                return false;
+            }
+            all_tails_in_range &= group.tails_in_range;
+
+            let first_l = m + 2 * pair_index;
+            let first_offset = first_l - m;
+            staged_coefficients[first_offset] = group.first_same;
+            if first_l < lmax {
+                staged_coefficients[first_offset + 1] = group.first_opposite;
+            }
+
+            let second_l = first_l + 2;
+            let second_offset = second_l - m;
+            staged_coefficients[second_offset] = group.second_same;
+            if second_l < lmax {
+                staged_coefficients[second_offset + 1] = group.second_opposite;
+            }
+            pair_index += 2;
+        }
+
+        while pair_index < recurrence_stop {
             let l = m + 2 * pair_index;
             let offset = l - m;
             let (same_sum, opposite_sum, pair_vectors_in_range, pair_tails_in_range) =
@@ -3043,6 +3508,7 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
             }
             std::mem::swap(&mut previous, &mut current);
             std::mem::swap(&mut current, &mut next);
+            pair_index += 1;
         }
 
         let last_pair = pair_count - 1;
