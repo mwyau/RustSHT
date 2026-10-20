@@ -354,10 +354,55 @@ including DUCC and analytic scalar-analysis references, adjoint identities,
 f32 and extreme-value tests. These full-transform numbers include FFT and
 scheduling; they are not direct Legendre timings.
 
+## Production post-group scan A/B — 2026-10-20
+
+This run explicitly selected the production post-group scan with
+`RUSTSHT_KERNEL_BENCH_RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs'`.
+It used Rust 1.99, Pulp V3 AVX2/FMA, GCC 15.2, and pinned DUCC
+`80388904b8cfc32400ba84af8a6a45aabfe60f86`. Rust and DUCC used four f64
+latitude lanes. The five-process, 30-batch protocol pinned each single-thread
+trial to one physical core and interleaved backend order. All 2,700 timed
+batches were 33.51–82.40 ms. Checked and unchecked Rust coefficients matched
+exactly; DUCC relative output L2 errors were `6.670e-14`, `1.628e-13` and
+`5.928e-14` at 64, 128 and 256 lanes.
+
+Kernel-only medians are µs per block; parentheses give p10–p90 across batches:
+
+| Lanes | Rust checked | Rust unchecked | DUCC | Checked / unchecked / DUCC |
+|---:|---:|---:|---:|---:|
+| 64 | 7.067 (7.024–7.153) | 4.746 (4.717–4.797) | 4.129 (4.099–4.156) | 1.712× / 1.149× |
+| 128 | 12.705 (12.608–12.869) | 8.782 (8.723–8.865) | 8.073 (8.000–8.197) | 1.574× / 1.088× |
+| 256 | 24.790 (24.645–24.901) | 17.344 (17.221–17.451) | 15.860 (15.755–15.922) | 1.563× / 1.094× |
+
+The post-group validation costs 2.321, 3.923 and 7.446 µs at the respective
+lane counts. At 256 lanes it is 30.0% of checked Rust time and explains 83.4%
+of the 8.930 µs checked-Rust excess over DUCC. The remaining unchecked excess
+is 1.484 µs, or 9.4% of DUCC time. Reset-inclusive Rust/DUCC ratios were
+1.687/1.135×, 1.559/1.081× and 1.550/1.087×; reset work is small relative to
+the validation pass.
+
+A full odd-longitude T720 GL (`721×1443`, full `mmax`) check used the same
+deterministic nonzero map, reused plan/workspace, and five interleaved process
+pairs with five calls per process. Medians of process medians were:
+
+| Threads | Checked | Unchecked | Unchecked / checked |
+|---:|---:|---:|---:|
+| q1 | 26.932 ms (26.613–27.510) | 23.541 ms (23.430–23.784) | 0.874× |
+| q8 | 4.415 ms (4.298–4.864) | 3.936 ms (3.879–5.159) | 0.892× |
+
+The q8 unchecked range includes one slow process; its cause was not sampled.
+Frequency and scheduling observations for the calibrated direct-kernel run
+showed similar median clocks across backends and less than 0.05% run-queue wait.
+The ignored T720 production counter test recorded zero late declines at q1 and
+q8. The complete release suite passed both with the checked default and with
+the unchecked specialization selected, including polar, subnormal, extreme,
+zero/cancellation, SIMD-tail, analytic and adjoint cases. Keep the checked path
+as production default while confirming the unchecked behavior across the
+remaining high-order fallback cases.
+
 ## Next implementation target
 
-Evaluate the cumulative 256-pair and direct-SoA candidate against the unchecked
-ordinary recurrence using the calibrated direct-kernel protocol and full T720
-q1/q8 checks. Keep the checked fallback contract until valid GL, polar,
-subnormal and extreme-value cases establish that removing the late scan is
-safe for production inputs.
+Reduce the remaining ordinary recurrence cost. The unchecked kernel is
+1.149×/1.088×/1.094× DUCC at 64/128/256 lanes. Focus on the remaining 1.484 µs
+at 256 lanes after validation has been removed, while preserving the checked
+fallback where scaled recurrence is needed.

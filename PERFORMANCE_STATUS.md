@@ -1,7 +1,8 @@
 # RustSHT performance checkpoint
 
-**Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Source
-baseline for the five-process benchmark refresh:** `205c20b6`. For the
+**Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Measured
+source revision:** `d470b793`. **Source baseline for the five-process benchmark
+refresh:** `205c20b6`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
 
 - Production f64 scalar GL analysis keeps the checked two-pair AVX2/FMA route
@@ -13,10 +14,11 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   inclusive ratios are 1.129×, 1.074× and 1.092×. These are Legendre
   recurrence/accumulation timings, excluding setup, FFT and scheduling. See
   the [calibrated checkpoint](reports/archive/experiments/scalar-analysis-pair-grouping-2026-10-19.md).
-- Removing the post-group scan saves 2.28, 3.83 and 7.39 µs per call at those
-  lane counts; at 256 lanes, 7.39 µs is 27.8% of the historical 26.590 µs
-  measurement. Reset-inclusive timings exceed kernel-only timings by 0.03–0.21
-  µs per call across the measured variants.
+- A new five-process comparison of the production post-group scan against the
+  unchecked specialization saves 2.321, 3.923 and 7.446 µs per kernel call at
+  64/128/256 lanes. At 256 lanes, the scan is 30.0% of checked Rust time and
+  accounts for 83.4% of the measured Rust/DUCC excess; unchecked Rust remains
+  9.4% slower than DUCC. All 2,700 calibrated batches were 33.51–82.40 ms.
 - Checked and unchecked direct outputs match exactly. Extreme finite,
   subnormal, zero/cancellation, SIMD-tail, T255/T511 DUCC, scalar adjoint and
   full T720 q1/q8 checks passed. Valid T720 GL q1 and q8 analyses had zero
@@ -39,6 +41,12 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   screen was neutral: q1 medians were 26.705 ms before and 26.851 ms after;
   q8 medians were 4.348 ms and 4.327 ms, with one candidate process outlier.
   Retain the layout change for cumulative evaluation, without claiming a speedup.
+- On the same T720 GL full-order analysis, five interleaved q1 process pairs
+  measured checked/unchecked medians of 26.932/23.541 ms (12.6% lower unchecked).
+  q8 medians were 4.415/3.936 ms (10.8% lower), with one slow unchecked process.
+  The checked T720 route recorded zero late declines at q1 and q8; the unchecked
+  release suite also passed. Keep the robust checked default until the remaining
+  high-order exceptional-value coverage justifies a production switch.
 - The three-process full-analysis screen improved q1 by 4.0% at T720 and 5.4%
   at reduced-order T300; q8 T720 improved 4.4%. q8 T300 was too noisy to show a
   clear benefit. The candidate passed all-feature release tests at 64/128/256,
@@ -49,8 +57,7 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   unchecked route remained stable. All batches are retained. See the report
   for process-level distributions and host diagnostics.
 
-**Next:** evaluate the cumulative 256-pair and direct-SoA candidate against the
-unchecked specialization using the calibrated kernel protocol and full T720
-q1/q8 transform checks. The direct unchecked kernel remains 8.5–14.2% slower
-than DUCC at 64/128/256 lanes; reduce recurrence cost while preserving the
-checked fallback.
+**Next:** reduce the remaining ordinary recurrence cost. The latest matched
+unchecked kernel is 1.149×, 1.088× and 1.094× DUCC at 64/128/256 lanes; address
+the 1.484 µs excess at 256 lanes after the measured validation pass, while
+preserving the checked fallback for inputs that need scaled recurrence.
