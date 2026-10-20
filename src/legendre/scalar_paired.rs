@@ -3185,7 +3185,7 @@ fn reduce_four_analysis_accumulators<S: Simd>(simd: S, values: [S::f64s; 4]) -> 
     }
     #[cfg(not(rustsht_group_analysis_reduction))]
     {
-        #[cfg(target_arch = "x86_64")]
+        #[cfg(all(target_arch = "x86_64", rustsht_avx2_group_analysis_reduction))]
         if const {
             S::F64_LANES == 4
                 && core::mem::size_of::<S::f64s>()
@@ -3202,7 +3202,7 @@ fn reduce_four_analysis_accumulators<S: Simd>(simd: S, values: [S::f64s; 4]) -> 
     }
 }
 
-#[allow(dead_code)]
+#[allow(dead_code, unexpected_cfgs)]
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
 #[inline]
