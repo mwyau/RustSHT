@@ -479,6 +479,15 @@ The fused recurrence assembly was unchanged; the caller/workspace layout
 became smaller. The Vec layout remains the production default pending
 cumulative ablation. See [the cumulative analysis](reports/scalar-analysis-cumulative-2026-10-20.md).
 
-**Next:** implement and measure a distinct DUCC-style packed complex reduction
-candidate. Do not reuse the previous grouped Pulp or custom AVX2 reduction
-unchanged. Keep the validated checked-first cache and robust fallback.
+**Cumulative kernel screen at `5f0158a8`:** combining the safe indexed loop
+and packed complex reduction produced 4.3%/1.7% lower direct-kernel medians
+at 64/128 lanes; the 256-lane sample was unstable. A T720 full-transform
+matrix passed 72 numerical comparisons (maximum relative L2 `1.841e-13`),
+but candidate median run-queue wait was 15.4% (p90 79.0%), so its timings do
+not establish a whole-transform effect. Both cfgs remain experimental.
+See the [cumulative analysis](reports/scalar-analysis-cumulative-2026-10-20.md).
+
+**Next:** attribute the warmed recurrence/accumulation cost with same-dispatch
+component measurements. Keep zipped iteration, separate reductions, the
+checked-first cache and robust fallback as production defaults until a stable
+full-transform benefit is demonstrated.

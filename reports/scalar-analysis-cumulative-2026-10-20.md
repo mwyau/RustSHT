@@ -167,3 +167,36 @@ consistent with less iterator control, but it did not improve measured time.
 Keep the indexed form only as a compile-time candidate for cumulative
 evaluation; do not change production loop selection. See the
 [machine-readable comparison and reproduction notes](data/scalar-analysis-cumulative-2026-10-20/indexed-loop/README.md).
+
+## Cumulative packed-reduction plus indexed-loop screen
+
+At source `5f0158a8`, a matched direct-kernel screen compared the default
+zipped/separate-reduction path with both existing cfg candidates enabled:
+`rustsht_indexed_analysis_pair_loop` and
+`rustsht_packed_complex_pair_reduction`. Rust 1.99.1 used strict FP and Pulp
+V3; pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b` used GCC 15.2 with
+`-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3` for its SHT kernel and
+strict FP for the driver. Ten interleaved process pairs collected 60 calibrated
+batches per timing boundary and lane count.
+
+| Active lanes | Rust kernel+commit, default→combined (µs) | DUCC, default/combined (µs) | Rust/DUCC, default→combined | Numerical relative L2 |
+|---:|---:|---:|---:|---:|
+| 64 | 4.887→4.676 | 4.151 / 4.145 | 1.179→1.130 | `6.670e-14` |
+| 128 | 8.953→8.804 | 8.098 / 8.102 | 1.108→1.087 | `1.628e-13` |
+| 256 | 17.567→18.300 | 16.345 / 17.001 | 1.070→1.079 | `5.928e-14` |
+
+The 64- and 128-lane direct-kernel candidate medians were 4.3% and 1.7%
+lower, respectively, but the 256-lane candidate was unstable: its process
+spread was 30.6%, and maximum measured run-queue wait was 46.5%. These small
+results do not establish a production benefit.
+
+A second screen compared the full T720 transform at six geometries spanning
+`mmax=1,180,720`, odd-minimum/even-smooth longitude counts, A/S and q1/q8
+(24 operation rows, 72 numerical comparisons per build). The maximum relative
+L2 error was `1.841e-13`. It is not a usable timing ablation: baseline and
+candidate ran in different host regimes. Candidate median run-queue wait was
+15.4% (p90 79.0%), versus 0.58% (p90 16.8%) for baseline. Both runs and all
+samples are retained outside the repository; no timings were removed. The
+two cfgs remain experimental and production still uses zipped iteration and
+separate reductions. Next, measure recurrence and accumulation components
+with a same-dispatch benchmark before making another ordinary-loop change.
