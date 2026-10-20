@@ -8,6 +8,18 @@ recurrence from T64; analysis retains its prior table policy).
 `e2c2dc15`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
 
+- **Warmed T720 analysis-kernel attribution, `4c6945fc` plus a benchmark-only
+  alignment correction:** the probe now shares the ordinary unchecked timing's
+  buffers and wrapper; component-full and kernel-only medians agree within
+  0.4%. Recurrence took 3.71/6.90/13.44 µs and four-spectrum accumulation plus
+  reduction added 3.78/6.82/12.10 µs at 64/128/256 lanes. The matched Rust/DUCC
+  kernel-plus-commit ratios were 0.940/0.874/0.838, so this `m=1` warmed kernel
+  is not slower than DUCC. Reduction remains combined with accumulation in
+  this probe; prior reduction ablations were neutral or slower. No production
+  recurrence change is justified by this result. Next separate accumulation
+  chains from reductions, then profile the largest remaining full-transform
+  stage. See the [cumulative findings](reports/scalar-analysis-cumulative-2026-10-20.md).
+
 - Full-transform checkpoint at source `5e290b7` compared production f64 scalar
   GL analysis and synthesis with DUCC `80388904b8cfc32400ba84af8a6a45aabfe60f86`
   using Rust 1.99.0/Pulp V3 and GCC DUCC x86-64-v3, at q1/q8. The exhaustive

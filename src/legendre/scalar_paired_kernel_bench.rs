@@ -490,6 +490,7 @@ impl WithSimd for AnalysisRangeCheckLoop<'_> {
     }
 }
 
+#[allow(unexpected_cfgs)]
 fn run_analysis_pair_component<const ACCUMULATE: bool>(
     arch: Arch,
     fixture: &Fixture,
@@ -498,9 +499,15 @@ fn run_analysis_pair_component<const ACCUMULATE: bool>(
     current: &mut [f64],
     next: &mut [f64],
 ) -> bool {
-    run_fused_scalar_analysis_pair_variant::<false, false, ACCUMULATE>(
-        arch, fixture, staged, previous, current, next,
-    )
+    if ACCUMULATE {
+        run_fused_scalar_analysis_pair::<false>(arch, fixture, staged, previous, current, next)
+    } else {
+        run_fused_scalar_analysis_pair_variant::<
+            false,
+            { cfg!(rustsht_fused_analysis_pair_range_check) },
+            false,
+        >(arch, fixture, staged, previous, current, next)
+    }
 }
 
 fn time_analysis_pair_components<const ACCUMULATE: bool>(
@@ -560,11 +567,7 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
     let mut previous = vec![0.0; lane_count];
     let mut current = vec![0.0; lane_count];
     let mut next = vec![0.0; lane_count];
-    let mut component_full_staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
     let mut component_recurrence_staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
-    let mut component_full_previous = vec![0.0; lane_count];
-    let mut component_full_current = vec![0.0; lane_count];
-    let mut component_full_next = vec![0.0; lane_count];
     let mut component_recurrence_previous = vec![0.0; lane_count];
     let mut component_recurrence_current = vec![0.0; lane_count];
     let mut component_recurrence_next = vec![0.0; lane_count];
@@ -572,10 +575,10 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
     assert!(run_analysis_pair_component::<true>(
         arch,
         &fixture,
-        &mut component_full_staged,
-        &mut component_full_previous,
-        &mut component_full_current,
-        &mut component_full_next,
+        &mut unchecked_staged,
+        &mut previous,
+        &mut current,
+        &mut next,
     ));
     assert!(run_analysis_pair_component::<false>(
         arch,
@@ -585,9 +588,9 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
         &mut component_recurrence_current,
         &mut component_recurrence_next,
     ));
-    assert_eq!(component_full_previous, component_recurrence_previous);
-    assert_eq!(component_full_current, component_recurrence_current);
-    assert_eq!(component_full_next, component_recurrence_next);
+    assert_eq!(previous, component_recurrence_previous);
+    assert_eq!(current, component_recurrence_current);
+    assert_eq!(next, component_recurrence_next);
     assert!(
         component_recurrence_staged
             .iter()
@@ -605,7 +608,7 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
         &mut component_reference_current,
         &mut component_reference_next,
     ));
-    assert_eq!(component_full_staged, component_reference);
+    assert_eq!(unchecked_staged, component_reference);
     eprintln!(
         "COMPONENT_VALIDATION lanes={lane_count} recurrence_state_equal=true reference_coefficients_equal=true"
     );
@@ -745,10 +748,10 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                     1,
                     arch,
                     &fixture,
-                    &mut component_full_staged,
-                    &mut component_full_previous,
-                    &mut component_full_current,
-                    &mut component_full_next,
+                    &mut unchecked_staged,
+                    &mut previous,
+                    &mut current,
+                    &mut next,
                 );
                 time_analysis_pair_components::<false>(
                     1,
@@ -956,10 +959,10 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                         repetitions,
                         arch,
                         &fixture,
-                        &mut component_full_staged,
-                        &mut component_full_previous,
-                        &mut component_full_current,
-                        &mut component_full_next,
+                        &mut unchecked_staged,
+                        &mut previous,
+                        &mut current,
+                        &mut next,
                     );
                     let recurrence = time_analysis_pair_components::<false>(
                         repetitions,
@@ -985,16 +988,16 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                         repetitions,
                         arch,
                         &fixture,
-                        &mut component_full_staged,
-                        &mut component_full_previous,
-                        &mut component_full_current,
-                        &mut component_full_next,
+                        &mut unchecked_staged,
+                        &mut previous,
+                        &mut current,
+                        &mut next,
                     );
                     (full, recurrence)
                 };
-                assert_eq!(component_full_previous, component_recurrence_previous);
-                assert_eq!(component_full_current, component_recurrence_current);
-                assert_eq!(component_full_next, component_recurrence_next);
+                assert_eq!(previous, component_recurrence_previous);
+                assert_eq!(current, component_recurrence_current);
+                assert_eq!(next, component_recurrence_next);
                 eprintln!(
                     "COMPONENT_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} full_kernel_us={:.3} recurrence_kernel_us={:.3} full_reset_us={:.3} recurrence_reset_us={:.3} full_wall_us={:.3} recurrence_wall_us={:.3}",
                     component_full.0,

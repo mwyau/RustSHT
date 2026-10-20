@@ -198,5 +198,48 @@ candidate ran in different host regimes. Candidate median run-queue wait was
 15.4% (p90 79.0%), versus 0.58% (p90 16.8%) for baseline. Both runs and all
 samples are retained outside the repository; no timings were removed. The
 two cfgs remain experimental and production still uses zipped iteration and
-separate reductions. Next, measure recurrence and accumulation components
-with a same-dispatch benchmark before making another ordinary-loop change.
+separate reductions. The subsequent recurrence/accumulation attribution is
+recorded below.
+
+## Recurrence and accumulation attribution
+
+At source `4c6945fc` plus a benchmark-only alignment correction, the probe now
+uses the same state and coefficient buffers and the same unchecked wrapper as
+the ordinary kernel timing. An earlier run used separate scratch allocations;
+its full-component times did not agree with the main timing and are excluded.
+In the corrected run, the component full-path median matched the ordinary
+kernel-only median within 0.4% at every lane count.
+
+The benchmark used T720 GL, `m=1`, q1, and 64/128/256 active latitude lanes.
+Rust 1.99.1 used Pulp V3 with strict FP and
+`-C target-cpu=x86-64-v3`. DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`
+used GCC 15.2; its SHT object used
+`-O3 -DNDEBUG -ffast-math -ffp-contract=fast -march=x86-64-v3`, while its
+driver used `-fno-fast-math`. Ten interleaved process pairs collected six
+20–100 ms batches per process and lane count. All 360 component batches were
+21.75–52.01 ms. The Ryzen 9 5950X frequency median was 3.923 GHz; host runqueue
+wait median was 2.2%, with a 99.7% maximum outlier retained.
+
+| Active lanes | Recurrence-only (µs) | Accumulation + reduction (µs) | Combined-path total (µs) | Component full / ordinary kernel-only | Rust/DUCC kernel + commit | Paired Rust/DUCC |
+|---:|---:|---:|---:|---:|---:|---:|
+| 64 | 3.706 | 3.781 | 7.498 | 7.498 / 7.484 | 7.681 / 8.154 | 0.940× |
+| 128 | 6.901 | 6.820 | 13.717 | 13.717 / 13.762 | 13.869 / 15.837 | 0.874× |
+| 256 | 13.438 | 12.096 | 25.551 | 25.551 / 25.529 | 25.785 / 30.859 | 0.838× |
+
+The accumulation-plus-reduction branch contributes 47–50% of the ordinary
+kernel time in this matched `m=1` fixture. It includes four-spectrum loads,
+eight SIMD accumulation chains, horizontal reductions, and coefficient
+construction; this probe does not separate those costs. Earlier reduction
+ablations found less than 1% benefit from the private AVX2 reduction and
+regressions from grouped reductions, so the evidence points to the spectrum
+loads and accumulator chains as the larger part of this combined cost. No
+individual share is claimed. The scalar V3 loop processes the two-pair group
+with four recurrence FMAs and eight accumulation FMAs per SIMD vector.
+
+The current direct warmed kernel-plus-commit timing is faster than DUCC at all
+three widths, with relative L2 errors of `6.670e-14`, `1.628e-13`, and
+`5.928e-14`. This result does not establish full-transform or q8 parity. The
+next benchmark-only step is to retain the SIMD accumulation vectors while
+separately measuring horizontal reduction and coefficient construction; then
+profile the largest remaining full-transform stage before changing the
+ordinary production loop.
