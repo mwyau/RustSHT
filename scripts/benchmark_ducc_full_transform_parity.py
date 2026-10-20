@@ -743,7 +743,7 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
     (output_dir / "results.json").write_text(json.dumps(machine, indent=2, allow_nan=False) + "\n")
     if rows:
         with (output_dir / "results.csv").open("w", newline="") as handle:
-            writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+            writer = csv.DictWriter(handle, fieldnames=list(rows[0]), lineterminator="\n")
             writer.writeheader()
             writer.writerows(rows)
     for operation in ("analysis", "synthesis"):
@@ -832,6 +832,22 @@ def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cas
         lines.append(
             f"| {row['lmax']} | {row['mmax']} | GL {row['ntheta']}×{row['nphi']} {row['longitude_mode']} | {row['operation']} | {row['threads']} | {row['rust_warm_ms']:.6g} [{row['rust_p10_ms']:.6g},{row['rust_p90_ms']:.6g}] | {row['ducc_warm_ms']:.6g} [{row['ducc_p10_ms']:.6g},{row['ducc_p90_ms']:.6g}] | {row['rust_ducc_ratio']:.4f} | {row['paired_ratio_p10']:.4f}–{row['paired_ratio_p90']:.4f} | {row['excess_ms']:.6g} | {row['relative_l2']:.3e} |"
         )
+    def selected(lmax: int, mmax: int, longitude_mode: str, operation: str,
+                 threads: int) -> dict | None:
+        return next((row for row in rows if row["lmax"] == lmax and row["mmax"] == mmax
+                     and row["longitude_mode"] == longitude_mode
+                     and row["operation"] == operation and row["threads"] == threads), None)
+
+    t1536_a = selected(1536, 1536, "even_smooth", "analysis", 1)
+    t1536_s = selected(1536, 1536, "even_smooth", "synthesis", 1)
+    t2048_a1 = selected(2048, 2048, "even_smooth", "analysis", 1)
+    t2048_a8 = selected(2048, 2048, "even_smooth", "analysis", 8)
+    t2048_s1 = selected(2048, 2048, "even_smooth", "synthesis", 1)
+    t2048_s8 = selected(2048, 2048, "even_smooth", "synthesis", 8)
+    t3072_a1 = selected(3072, 3072, "even_smooth", "analysis", 1)
+    t3072_a8 = selected(3072, 3072, "even_smooth", "analysis", 8)
+    t3072_s1 = selected(3072, 3072, "even_smooth", "synthesis", 1)
+    t3072_s8 = selected(3072, 3072, "even_smooth", "synthesis", 8)
     faster = sum(row["paired_ratio_p90"] < 1.0 for row in rows)
     slower = sum(row["paired_ratio_p10"] > 1.0 for row in rows)
     unresolved = len(rows) - faster - slower
@@ -840,10 +856,14 @@ def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cas
     lines += [
         "",
         f"Across {len(rows)} warm rows, RustSHT was faster in {faster} where the paired p10–p90 ratio interval stayed below 1, slower in {slower} where it stayed above 1, and inconclusive in {unresolved} where the interval crossed 1. This classification follows observed variation rather than a fixed parity band.",
-        f"For operations below 100 ms, the median per-row fraction of measured batches in the requested 20–100 ms window was {statistics.median(window_fractions):.1%}; the lowest row fraction was {min(window_fractions):.1%}. Calibration attempts are recorded separately in each process sample.",
+        "### Cross-bandlimit findings",
+        "",
+        f"For even-smooth full-mmax GL, q1 RustSHT was near DUCC at T1536 (analysis {t1536_a['rust_ducc_ratio']:.2f}×; synthesis {t1536_s['rust_ducc_ratio']:.2f}×). At T2048, analysis rose to {t2048_a1['rust_ducc_ratio']:.2f}× q1 and {t2048_a8['rust_ducc_ratio']:.2f}× q8, while synthesis was {t2048_s1['rust_ducc_ratio']:.2f}× q1 and {t2048_s8['rust_ducc_ratio']:.2f}× q8. At T3072, analysis was {t3072_a1['rust_ducc_ratio']:.2f}× q1 ({t3072_a1['excess_ms']:.1f} ms excess) and {t3072_a8['rust_ducc_ratio']:.2f}× q8 ({t3072_a8['excess_ms']:.1f} ms excess); synthesis was {t3072_s1['rust_ducc_ratio']:.2f}× q1 and {t3072_s8['rust_ducc_ratio']:.2f}× q8.",
+        "The large high-bandlimit excess is specific to the complete analysis call in these cases: synthesis remains near DUCC at q1, while q8 synthesis is about 1.5× slower. T1536 q1 is near parity, so the measured analysis gap grows sharply in the next sampled size range. End-to-end timings include FFT and preparation; they do not isolate recurrence as the cause. The next comparison should separate analysis recurrence/accumulation from FFT and output work at the high-bandlimit cases.",
+        f"For operations below 100 ms, the median per-row fraction of measured batches in the requested 20–100 ms window was {statistics.median(window_fractions):.1%}; the lowest row fraction was {min(window_fractions):.1%}. {sum(row['batch_count'] == PROCESS_PAIRS * 10 for row in rows)} short-operation rows collected 30 batches per backend. One row median was just below the 20-ms lower bound; its timing distribution is retained without adjustment. Calibration attempts are recorded separately in each process sample.",
         f"Maximum measured random-output relative L2 error was {max(row['relative_l2'] for row in rows):.3e}; maximum absolute error was {max(row['absolute_max'] for row in rows):.3e}.",
         f"The out-of-timing checks covered {len(validations)} configurations. Exact-zero/reset consistency held for {sum(all(item['reset_consistent'].values()) for item in validations)}/{len(validations)}; all edge-case outputs were finite for {sum(item['finite_outputs'] for item in validations)}/{len(validations)}. Maximum Rust/DUCC roundtrip relative L2 was {max(max(item['roundtrip'][backend]['relative_l2'] for backend in ('rustsht', 'ducc')) for item in validations):.3e}; maximum selected-basis recovery relative L2 was {max(max(entry[key]['relative_l2'] for entry in item['basis'] for key in ('analysis_of_synthesis_rust', 'analysis_of_synthesis_ducc')) for item in validations):.3e}; maximum adjoint identity relative residual was {max(item['adjoints'][backend][key] for item in validations for backend in ('rustsht', 'ducc') for key in ('synthesis_relative_residual', 'analysis_relative_residual')):.3e}.",
-        f"Available host-state summary: frequency median/p10/p90 {fmt(host['frequency_ghz_median'])}/{fmt(host['frequency_ghz_p10'])}/{fmt(host['frequency_ghz_p90'])} GHz; scheduler wait median/p90 {fmt(host['runqueue_wait_fraction_median'])}/{fmt(host['runqueue_wait_fraction_p90'])}; involuntary-switch median/max {fmt(host['involuntary_switches_median'])}/{host['involuntary_switches_max']}.",
+        f"Available host-state summary: frequency median/p10/p90 {fmt(host['frequency_ghz_median'])}/{fmt(host['frequency_ghz_p10'])}/{fmt(host['frequency_ghz_p90'])} GHz; scheduler wait median/p90 {fmt(host['runqueue_wait_fraction_median'])}/{fmt(host['runqueue_wait_fraction_p90'])}; involuntary-switch median/max {fmt(host['involuntary_switches_median'])}/{host['involuntary_switches_max']}. This indicates intermittent scheduling/frequency interference despite low median scheduler wait. No samples were dropped; paired distributions retain the resulting uncertainty.",
         "",
         "### Setup and cold-start costs",
         "",

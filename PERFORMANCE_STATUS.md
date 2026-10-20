@@ -9,6 +9,24 @@ variant removed).
 `e2c2dc15`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
 
+- Full-transform checkpoint at source `5e290b7` compared production f64 scalar
+  GL analysis and synthesis with DUCC `80388904b8cfc32400ba84af8a6a45aabfe60f86`
+  using Rust 1.99.0/Pulp V3 and GCC DUCC x86-64-v3, at q1/q8. The exhaustive
+  small-degree and cross-bandlimit sweep covered 214 configurations, 856 warm
+  rows, 2,568 random-output comparisons and 428 additional numerical suites;
+  maximum relative L2 output error was `2.536e-13`. Of 856 rows, paired
+  intervals classified 292 faster, 552 slower and 12 inconclusive. Ratios vary
+  by operation, size and longitude sampling: even-smooth full-order q1 was
+  near parity at T1536 (A 0.99×, S 0.96×), but T3072 analysis reached 8.39×
+  at q1 and 7.44× at q8, while T3072 synthesis was 0.99× at q1 and 1.50× at
+  q8. End-to-end measurements do not isolate the stage responsible. Host
+  samples show intermittent scheduling/frequency interference; no timings were
+  removed and paired distributions are retained. See the
+  [full-transform report](reports/ducc-full-transform-parity-2026-10-20.md)
+  and machine-readable results. Next, update the compiler and pinned DUCC
+  reference as directed by Plan 11, then isolate the analysis excess at high
+  bandlimits before changing recurrence code.
+
 - Production f64 scalar GL analysis keeps the checked two-pair AVX2/FMA route
   and scaled fallback. The active range-cache candidate reuses a checked
   ordinary-recurrence range result for each plan/order/tile/Pulp backend only
