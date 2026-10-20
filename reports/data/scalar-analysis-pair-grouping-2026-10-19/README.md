@@ -62,13 +62,13 @@ samples live in a temporary directory that is removed at exit.
   costs are outside all direct-kernel boundaries. Rust's `next` scratch is
   overwritten before use. Output arrays are compared outside timed regions.
 
-Rust passes mutable state through `std::hint::black_box` and consumes outputs
-after each batch. DUCC uses a compiler fence and post-batch checksum. Both
-adapters validate recurrence coefficients and compare final coefficients
-outside timed regions. Checked and unchecked Rust outputs are compared exactly.
+Rust passes mutable state through `std::hint::black_box`; DUCC uses compiler
+barriers. Both adapters validate recurrence coefficients and compare final
+states outside timed regions. Checked and unchecked Rust outputs are compared
+exactly.
 
-The ignored `benchmark_fused_scaled_scalar_analysis_prefix` now emits both
-synthetic seeds and T720 GL sectoral seeds (`m=500`) at 64, 128 and 256 lanes.
+The ignored `benchmark_fused_scaled_scalar_analysis_prefix` emits synthetic
+seeds and T720 GL sectoral seeds (`m=500`) at 64, 128 and 256 lanes.
 The DUCC adapter initializes from those same Rust-generated recurrence states
 and verifies the resulting state and scale epochs after `iter_to_ieee`. The
 256-lane GL case includes significant seeds, so DUCC correctly skips prefix
@@ -80,16 +80,18 @@ DUCC_GIT=/path/to/ducc-git-repository \
 python3 scripts/benchmark_scalar_analysis_prefix.py
 ```
 
-The runner verifies the pinned source, dispatches Pulp V3 and four-lane DUCC,
-and collects 30 batches in three independent interleaved process pairs per
-case. Batch wall times target 35 ms and must remain within 20–100 ms. Kernel
-timing excludes state reset for both implementations; reset-inclusive wall
-time is reported separately. Rust's block scale/correction preflight is
-measured outside the recurrence-prefix boundary and reported separately.
-Output states and scale epochs are compared after timing. Rust reset restores
-its correction scratch as well as recurrence state; DUCC has no equivalent
-scratch, so kernel-only timing is the primary comparison. Host frequency and
-scheduling summaries are printed without saving raw host captures.
+The runner verifies the pinned source, selects Pulp V3 and four-lane DUCC, and
+collects 30 batches in three independent interleaved process pairs per case.
+Kernel-only and reset-inclusive batches use separately calibrated repetition
+counts, target 32 ms and must remain within 20–100 ms. Rust dispatches its SIMD
+specialization once per batch. Kernel-only samples time the recurrence after
+reset, then subtract per-call clock overhead measured in the same binary.
+Reset-inclusive samples use one outer timer around state resets and recurrence;
+they do not call the per-operation timer. Rust's scale/correction preflight is
+measured separately. Output states and scale epochs are compared after timing.
+Rust also resets its correction scratch, which has no DUCC counterpart, so
+wall timings include this extra Rust buffer copy. Host frequency and scheduling
+summaries are printed without saving raw host captures.
 `split-check-candidate.patch` preserves the earlier split-loop prototype for
 review; it is not part of the timed candidate.
 

@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -32,15 +33,16 @@ static void read_values(std::ifstream &in, std::vector<double> &values) {
 }
 
 int main(int argc, char **argv) {
-  if (argc != 4) {
-    std::cerr << "usage: ducc-analysis-prefix-bench FIXTURE --calibrate REPETITIONS | FIXTURE REPETITIONS BATCHES\n";
+  const bool calibrate = argc == 4 && std::string(argv[2]) == "--calibrate";
+  if ((calibrate && argc != 4) || (!calibrate && argc != 5)) {
+    std::cerr << "usage: ducc-analysis-prefix-bench FIXTURE --calibrate REPETITIONS | FIXTURE KERNEL_REPETITIONS WALL_REPETITIONS BATCHES\n";
     return 2;
   }
   const std::string fixture_path = argv[1];
-  const bool calibrate = std::string(argv[2]) == "--calibrate";
-  const size_t repetitions = calibrate ? std::stoul(argv[3]) : std::stoul(argv[2]);
-  const size_t batch_count = calibrate ? 0 : std::stoul(argv[3]);
-  if (repetitions == 0 || (!calibrate && batch_count == 0))
+  const size_t kernel_repetitions = calibrate ? std::stoul(argv[3]) : std::stoul(argv[2]);
+  const size_t wall_repetitions = calibrate ? kernel_repetitions : std::stoul(argv[3]);
+  const size_t batch_count = calibrate ? 0 : std::stoul(argv[4]);
+  if (kernel_repetitions == 0 || wall_repetitions == 0 || (!calibrate && batch_count == 0))
     throw std::runtime_error("requires positive repetitions and batches");
   std::ifstream in(fixture_path, std::ios::binary);
   if (!in) throw std::runtime_error("cannot open Rust-generated fixture");
@@ -88,9 +90,9 @@ int main(int argc, char **argv) {
 
   loop::s0data_v data{};
   const size_t vectors = lane_count / loop::VLEN;
+  static_assert(sizeof(loop::Tv) == loop::VLEN * sizeof(double));
   auto copy_lanes = [](auto &destination, const std::vector<double> &source) {
-    for (size_t i = 0; i < source.size(); ++i)
-      destination[i / loop::VLEN][i % loop::VLEN] = source[i];
+    std::memcpy(destination.data(), source.data(), source.size() * sizeof(double));
   };
   copy_lanes(data.csq, cosine_squared);
   copy_lanes(data.lam1, previous);
@@ -101,53 +103,136 @@ int main(int argc, char **argv) {
     copy_lanes(data.lam2, current);
     copy_lanes(data.scale, initial_scale_epochs);
   };
+  auto compiler_barrier = [&]() {
+    __asm__ volatile("" : : "g"(data.lam1.data()), "g"(data.lam2.data()),
+                     "g"(data.scale.data()) : "memory");
+  };
   size_t final_l = 0, final_il = 0;
-  auto run = [&]() {
+  auto run_algorithm = [&]() {
     size_t l = 0, il = 0;
-    const auto started = Clock::now();
     loop::iter_to_ieee(generator, data, l, il, vectors, m, lmax + 1);
     std::atomic_signal_fence(std::memory_order_seq_cst);
     if (l > generator.lmax) il = (lmax - m + 2) / 2;
     final_l = l;
     final_il = il;
+    compiler_barrier();
+  };
+  auto run = [&]() {
+    const auto started = Clock::now();
+    run_algorithm();
     return std::chrono::duration<double, std::micro>(Clock::now() - started).count();
+  };
+  auto measure_timer_overhead = [&](size_t count) {
+    double elapsed_us = 0.0;
+    for (size_t i = 0; i < count; ++i) {
+      const auto started = Clock::now();
+      std::atomic_signal_fence(std::memory_order_seq_cst);
+      compiler_barrier();
+      elapsed_us += std::chrono::duration<double, std::micro>(Clock::now() - started).count();
+    }
+    return elapsed_us / count;
+  };
+  auto choose_repetitions = [](double us_per_call) {
+    constexpr double target_us = 32000.0;
+    constexpr double max_batch_us = 80000.0;
+    if (!(us_per_call > 0.0))
+      throw std::runtime_error("non-positive calibration duration");
+    const size_t minimum = static_cast<size_t>(std::ceil(20000.0 / us_per_call));
+    const size_t maximum = static_cast<size_t>(std::floor(max_batch_us / us_per_call));
+    if (minimum > maximum)
+      throw std::runtime_error("kernel and reset-inclusive durations do not fit 20-80 ms");
+    const size_t target = static_cast<size_t>(std::round(target_us / us_per_call));
+    return std::min(std::max(target, minimum), maximum);
   };
 
   for (size_t i = 0; i < 4; ++i) {
     reset();
     run();
   }
+  constexpr size_t timer_calibration_repetitions = 1024;
   if (calibrate) {
+    double bootstrap_kernel_us = 0.0;
+    for (size_t i = 0; i < kernel_repetitions; ++i) {
+      reset();
+      bootstrap_kernel_us += run();
+      compiler_barrier();
+    }
+    const auto bootstrap_wall_started = Clock::now();
+    for (size_t i = 0; i < wall_repetitions; ++i) {
+      reset();
+      run_algorithm();
+    }
+    const double bootstrap_wall_us =
+        std::chrono::duration<double, std::micro>(Clock::now() - bootstrap_wall_started).count();
+    const double bootstrap_timer_us_per_call = measure_timer_overhead(timer_calibration_repetitions);
+    const double bootstrap_kernel_per_call =
+        bootstrap_kernel_us / kernel_repetitions - bootstrap_timer_us_per_call;
+    const double bootstrap_wall_per_call = bootstrap_wall_us / wall_repetitions;
+    const size_t calibrated_kernel_repetitions = final_il == 0
+        ? kernel_repetitions
+        : choose_repetitions(bootstrap_kernel_per_call);
+    const size_t calibrated_wall_repetitions = final_il == 0
+        ? wall_repetitions
+        : choose_repetitions(bootstrap_wall_per_call);
     double kernel_us = 0.0;
-    const auto wall_started = Clock::now();
-    for (size_t i = 0; i < repetitions; ++i) {
+    for (size_t i = 0; i < calibrated_kernel_repetitions; ++i) {
       reset();
       kernel_us += run();
+      compiler_barrier();
+    }
+    const auto wall_started = Clock::now();
+    for (size_t i = 0; i < calibrated_wall_repetitions; ++i) {
+      reset();
+      run_algorithm();
     }
     const double wall_us = std::chrono::duration<double, std::micro>(Clock::now() - wall_started).count();
+    const double timer_us_per_call = measure_timer_overhead(timer_calibration_repetitions);
     const double checksum = data.lam1[0][0] + data.lam2[0][0] + data.scale[0][0];
     std::cout << std::fixed << std::setprecision(6)
               << "DUCC_PREFIX_CALIBRATION m=" << m << " lanes=" << lane_count
               << " vlen=" << loop::VLEN << " vectors=" << vectors
-              << " repetitions=" << repetitions
-              << " kernel_us_per_call=" << kernel_us / repetitions
-              << " wall_us_per_call=" << wall_us / repetitions
+              << " kernel_repetitions=" << calibrated_kernel_repetitions
+              << " wall_repetitions=" << calibrated_wall_repetitions
+              << " kernel_us_per_call=" << kernel_us / calibrated_kernel_repetitions - timer_us_per_call
+              << " wall_us_per_call=" << wall_us / calibrated_wall_repetitions
+              << " timer_us_per_call=" << timer_us_per_call
               << " checksum=" << checksum << "\n";
   } else {
+    for (size_t warmup = 0; warmup < 2; ++warmup) {
+      for (size_t i = 0; i < kernel_repetitions; ++i) {
+        reset();
+        run();
+        compiler_barrier();
+      }
+      for (size_t i = 0; i < wall_repetitions; ++i) {
+        reset();
+        run_algorithm();
+      }
+    }
+    const double timer_us_per_call = measure_timer_overhead(timer_calibration_repetitions);
     for (size_t batch = 0; batch < batch_count; ++batch) {
       double kernel_us = 0.0;
-      const auto wall_started = Clock::now();
-      for (size_t i = 0; i < repetitions; ++i) {
+      for (size_t i = 0; i < kernel_repetitions; ++i) {
         reset();
         kernel_us += run();
+        compiler_barrier();
+      }
+      const auto wall_started = Clock::now();
+      for (size_t i = 0; i < wall_repetitions; ++i) {
+        reset();
+        run_algorithm();
       }
       const double wall_us = std::chrono::duration<double, std::micro>(Clock::now() - wall_started).count();
       const double checksum = data.lam1[0][0] + data.lam2[0][0] + data.scale[0][0];
       std::cout << std::fixed << std::setprecision(3)
-                << "DUCC_PREFIX_BATCH m=" << m << " lanes=" << lane_count
-                << " batch=" << batch << " repetitions=" << repetitions
-                << " kernel_us=" << kernel_us << " wall_us=" << wall_us
+                << "DUCC_PREFIX_KERNEL_BATCH m=" << m << " lanes=" << lane_count
+                << " batch=" << batch << " repetitions=" << kernel_repetitions
+                << " kernel_us=" << kernel_us
+                << " timer_us_per_call=" << timer_us_per_call
                 << " checksum=" << checksum << "\n";
+      std::cout << "DUCC_PREFIX_WALL_BATCH m=" << m << " lanes=" << lane_count
+                << " batch=" << batch << " repetitions=" << wall_repetitions
+                << " wall_us=" << wall_us << "\n";
     }
   }
 
@@ -181,7 +266,8 @@ int main(int argc, char **argv) {
 
   std::cout << std::fixed << std::setprecision(3)
             << "DUCC_PREFIX m=" << m << " lmax=" << lmax << " lanes=" << lane_count
-            << " vlen=" << loop::VLEN << " vectors=" << vectors << " repetitions=" << repetitions
+            << " vlen=" << loop::VLEN << " vectors=" << vectors
+            << " kernel_repetitions=" << kernel_repetitions << " wall_repetitions=" << wall_repetitions
             << " batches=" << batch_count << " prefix_l=" << final_l << " prefix_pair=" << final_il
             << " state_relative_l2=" << std::scientific << state_relative_l2
             << " state_max_abs=" << state_max_abs << " scale_mismatches=" << scale_mismatches << "\n";

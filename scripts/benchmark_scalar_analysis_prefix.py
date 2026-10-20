@@ -31,14 +31,22 @@ CONTROL_CASE = ("gl-sectoral", 256)
 CALIBRATION_REPETITIONS = 1024
 BATCHES_PER_PROCESS = 10
 PROCESS_INVOCATIONS = 3
-TARGET_BATCH_US = 35_000.0
+TARGET_BATCH_US = 32_000.0
 
 
 def pinned_text(command: list[str], env: dict, cpu: int, monitor_cpu: int):
     return common.run_pinned(command, env, cpu, monitor_cpu)
 
 
-def rust_environment(base: pathlib.Path, *, case=None, reps=None, batches=0, calibrate=False):
+def rust_environment(
+    base: pathlib.Path,
+    *,
+    case=None,
+    kernel_reps=None,
+    wall_reps=None,
+    batches=0,
+    calibrate=False,
+):
     env = os.environ.copy()
     env.pop("RUSTSHT_PREFIX_CALIBRATE_ONLY", None)
     env.pop("RUSTSHT_PREFIX_ONLY_CASE", None)
@@ -49,8 +57,11 @@ def rust_environment(base: pathlib.Path, *, case=None, reps=None, batches=0, cal
         env["RUSTSHT_PREFIX_CALIBRATE_ONLY"] = "1"
     if case is not None:
         env["RUSTSHT_PREFIX_ONLY_CASE"] = f"{case[0]}-{case[1]}"
-    if reps is not None:
-        env[f"RUSTSHT_PREFIX_REPS_{case[0].replace('-', '_').upper()}_{case[1]}"] = str(reps)
+    case_suffix = f"{case[0].replace('-', '_').upper()}_{case[1]}" if case else ""
+    if kernel_reps is not None:
+        env[f"RUSTSHT_PREFIX_KERNEL_REPS_{case_suffix}"] = str(kernel_reps)
+    if wall_reps is not None:
+        env[f"RUSTSHT_PREFIX_WALL_REPS_{case_suffix}"] = str(wall_reps)
     return env
 
 
@@ -190,34 +201,55 @@ def main() -> None:
             print(
                 f"PREPARATION kind={case[0]} lanes={case[1]} "
                 f"rust_scale_and_correction_preflight_us={float(rust_fields['preflight_us']):.3f} "
+                f"rust_timer_overhead_ns={float(rust_fields['timer_us_per_call']) * 1000.0:.1f} "
+                f"ducc_timer_overhead_ns={float(fields['timer_us_per_call']) * 1000.0:.1f} "
+                f"rust_kernel_us={float(rust_fields['kernel_us_per_call']):.6f} "
+                f"ducc_kernel_us={float(fields['kernel_us_per_call']):.6f} "
+                f"rust_wall_us={float(rust_fields['wall_us_per_call']):.6f} "
+                f"ducc_wall_us={float(fields['wall_us_per_call']):.6f} "
                 f"state_relative_l2={float(state['state_relative_l2']):.3e} "
                 f"prefix_pair={state['prefix_pair']}"
             )
-            fastest = min(
-                float(rust_fields["wall_us_per_call"]),
-                float(fields["wall_us_per_call"]),
-            )
-            slowest = max(
-                float(rust_fields["wall_us_per_call"]),
-                float(fields["wall_us_per_call"]),
-            )
-            lower = math.ceil(20_000.0 / fastest)
-            upper = math.floor(95_000.0 / slowest)
-            if lower > upper:
-                raise RuntimeError(f"cannot fit both backends in 20-100 ms for {case}")
-            reps = min(max(round(TARGET_BATCH_US / fastest), lower), upper)
-            calibration[case] = {
-                "repetitions": reps,
-                "rust_wall_us": float(rust_fields["wall_us_per_call"]),
-                "ducc_wall_us": float(fields["wall_us_per_call"]),
-            }
             if case == CONTROL_CASE:
                 print(
                     f"CONTROL case={case[0]} lanes={case[1]} prefix_pair="
                     f"{rust_fields['pair_start']} rust_prep_us={rust_fields['preflight_us']} "
                     "timed=no"
                 )
-        print(f"CALIBRATION batches={PROCESS_INVOCATIONS * BATCHES_PER_PROCESS} target_wall_ms=35")
+                continue
+            kernel_per_call = [
+                float(fields_for_backend["kernel_us_per_call"])
+                for fields_for_backend in (rust_fields, fields)
+            ]
+            wall_per_call = [
+                float(fields_for_backend["wall_us_per_call"])
+                for fields_for_backend in (rust_fields, fields)
+            ]
+            if min(kernel_per_call) <= 0.0 or min(wall_per_call) <= 0.0:
+                raise RuntimeError(f"timer overhead exceeds measured work for {case}")
+
+            def choose_repetitions(per_call_values: list[float], phase: str) -> int:
+                fastest, slowest = min(per_call_values), max(per_call_values)
+                lower = math.ceil(20_000.0 / fastest)
+                upper = math.floor(80_000.0 / slowest)
+                if lower > upper:
+                    raise RuntimeError(f"cannot fit paired {phase} batches in 20-100 ms for {case}")
+                return min(max(round(TARGET_BATCH_US / fastest), lower), upper)
+
+            kernel_reps = choose_repetitions(kernel_per_call, "kernel-only")
+            wall_reps = choose_repetitions(wall_per_call, "reset-inclusive")
+            calibration[case] = {
+                "kernel_repetitions": kernel_reps,
+                "wall_repetitions": wall_reps,
+            }
+            print(
+                f"CALIBRATION_CASE kind={case[0]} lanes={case[1]} "
+                f"kernel_repetitions={kernel_reps} wall_repetitions={wall_reps}"
+            )
+        print(
+            f"CALIBRATION batches={PROCESS_INVOCATIONS * BATCHES_PER_PROCESS} "
+            "kernel_and_reset_inclusive_target_ms=32; accepted=20..100"
+        )
 
         observations = {
             (case, backend, phase): []
@@ -228,7 +260,8 @@ def main() -> None:
         process_observations = {}
         diagnostics = []
         for case in TIMED_CASES:
-            repetitions = calibration[case]["repetitions"]
+            kernel_repetitions = calibration[case]["kernel_repetitions"]
+            wall_repetitions = calibration[case]["wall_repetitions"]
             for invocation in range(PROCESS_INVOCATIONS):
                 order = ("rust", "ducc") if invocation % 2 == 0 else ("ducc", "rust")
                 for backend in order:
@@ -236,7 +269,8 @@ def main() -> None:
                         env = rust_environment(
                             base,
                             case=case,
-                            reps=repetitions,
+                            kernel_reps=kernel_repetitions,
+                            wall_reps=wall_repetitions,
                             batches=BATCHES_PER_PROCESS,
                         )
                         output_text, diag = pinned_text(
@@ -244,39 +278,60 @@ def main() -> None:
                         )
                         if "RUST_PREFIX_ARCH V3(" not in output_text:
                             raise RuntimeError(f"Rust did not dispatch Pulp V3:\n{output_text}")
-                        rows = output_fields(output_text, "RUST_PREFIX_BATCH")
+                        kernel_rows = output_fields(output_text, "RUST_PREFIX_KERNEL_BATCH")
+                        wall_rows = output_fields(output_text, "RUST_PREFIX_WALL_BATCH")
+                        timer_us_per_call = float(kernel_rows[0]["timer_us_per_call"])
                     else:
                         fixture = pathlib.Path(f"{base}-{case[0]}-{case[1]}.in")
                         output_text, diag = pinned_text(
                             [
                                 str(ducc_binary),
                                 str(fixture),
-                                str(repetitions),
+                                str(kernel_repetitions),
+                                str(wall_repetitions),
                                 str(BATCHES_PER_PROCESS),
                             ],
                             os.environ.copy(),
                             cpu,
                             monitor_cpu,
                         )
-                        rows = output_fields(output_text, "DUCC_PREFIX_BATCH")
+                        kernel_rows = output_fields(output_text, "DUCC_PREFIX_KERNEL_BATCH")
+                        wall_rows = output_fields(output_text, "DUCC_PREFIX_WALL_BATCH")
+                        timer_us_per_call = float(kernel_rows[0]["timer_us_per_call"])
                         state = common.metric_line(output_text, "DUCC_PREFIX")
                         if int(state["scale_mismatches"]) != 0 or float(state["state_relative_l2"]) > 1e-12:
                             raise RuntimeError(f"Rust/DUCC prefix states differ: {state}")
-                    if len(rows) != BATCHES_PER_PROCESS:
+                    if len(kernel_rows) != BATCHES_PER_PROCESS or len(wall_rows) != BATCHES_PER_PROCESS:
                         raise RuntimeError(
-                            f"expected {BATCHES_PER_PROCESS} {backend} batches for {case}, got {len(rows)}\n{output_text}"
+                            f"expected {BATCHES_PER_PROCESS} kernel and reset-inclusive "
+                            f"batches for {case}/{backend}, got {len(kernel_rows)}/{len(wall_rows)}\n{output_text}"
                         )
                     process_values = {"kernel": [], "wall": []}
-                    for row in rows:
-                        if backend == "rust" and int(row["repetitions"]) != repetitions:
-                            raise RuntimeError("Rust used a mismatched repetition count")
-                        if backend == "ducc" and int(row["repetitions"]) != repetitions:
-                            raise RuntimeError("DUCC used a mismatched repetition count")
-                        wall_us = float(row["wall_us"])
+                    for kernel_row, wall_row in zip(kernel_rows, wall_rows, strict=True):
+                        if int(kernel_row["repetitions"]) != kernel_repetitions:
+                            raise RuntimeError(f"{backend} used a mismatched kernel repetition count")
+                        if int(wall_row["repetitions"]) != wall_repetitions:
+                            raise RuntimeError(f"{backend} used a mismatched wall repetition count")
+                        row_timer_us = float(kernel_row["timer_us_per_call"])
+                        if not math.isclose(row_timer_us, timer_us_per_call, rel_tol=0.0, abs_tol=1e-12):
+                            raise RuntimeError(f"{backend} changed timer calibration between batches")
+                        wall_us = float(wall_row["wall_us"])
+                        kernel_us = float(kernel_row["kernel_us"])
+                        corrected_kernel_us = kernel_us - row_timer_us * kernel_repetitions
                         if not 20_000.0 <= wall_us <= 100_000.0:
-                            raise RuntimeError(f"batch outside 20-100ms for {case}/{backend}: {wall_us} us")
-                        kernel_per_call = float(row["kernel_us"]) / repetitions
-                        wall_per_call = wall_us / repetitions
+                            raise RuntimeError(
+                                f"reset-inclusive batch outside 20-100ms "
+                                f"for {case}/{backend}: {wall_us} us"
+                            )
+                        if not 20_000.0 <= corrected_kernel_us <= 100_000.0:
+                            raise RuntimeError(
+                                f"kernel corrected batch outside 20-100ms "
+                                f"for {case}/{backend}: {corrected_kernel_us} us; "
+                                f"raw={kernel_us} us repetitions={kernel_repetitions} "
+                                f"timer_us_per_call={row_timer_us}"
+                            )
+                        wall_per_call = wall_us / wall_repetitions
+                        kernel_per_call = corrected_kernel_us / kernel_repetitions
                         observations[(case, backend, "kernel")].append(kernel_per_call)
                         observations[(case, backend, "wall")].append(wall_per_call)
                         process_values["kernel"].append(kernel_per_call)
@@ -287,7 +342,10 @@ def main() -> None:
                         )
                     diagnostics.append((case, backend, invocation + 1, diag))
 
-        print("RESULTS stage=iter_to_ieee_or_Rust_prefix_loop; times=median_us_per_operation")
+        print(
+            "RESULTS stage=iter_to_ieee_or_Rust_prefix_loop; times=median_us_per_operation; "
+            "kernel subtracts measured per-call clock overhead; wall includes reset"
+        )
         for case in TIMED_CASES:
             values = {}
             for backend in ("rust", "ducc"):

@@ -54,51 +54,44 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   it. The scalar seed reference test covers orders 0, 1, 250 and 720, mixed
   vectors and a SIMD tail. The all-feature and no-default-feature release test
   suites pass.
-- The scaled-prefix candidate now carries DUCC's below-one epoch frontier out
-  of the two-pair recurrence pass, checking only vectors that rescaled instead
-  of rereading the full epoch array after each group. Scale correction,
-  insignificant-term handling and fallback checks are unchanged. A focused
-  test covers threshold crossings, sparse rescaled vectors and SIMD tails; the
-  all-feature release library suite passes. The prefix harness now compares
-  synthetic seeds and T720 GL sectoral seeds (`m=500`) against DUCC's
-  `iter_to_ieee` state. Rust and DUCC agree on all lane states and scale epochs:
-  the GL seed advances to pair 36 at 64 lanes, pair 2 at 128 lanes, and skips
-  the prefix at 256 lanes because that block includes significant seeds. Its
-  five-call samples remain exploratory; calibrated prefix timings remain next.
-- The prefix frontier update now reduces the updated epoch mask only when a
-  SIMD vector actually rescales, matching DUCC's conditional `rescale` check.
-  Vectors with no scale change retain the entry invariant that every epoch is
-  below one. Release tests and DUCC state checks pass; the five-call screen is
-  too short and variable to establish a speed change, so keep this as an
-  experimental candidate pending calibrated paired measurements.
-- The calibrated prefix runner measured the production Rust frontier loop
-  against pinned DUCC `iter_to_ieee` on x86-64-v3, Pulp V3/GCC 15.2 AVX2/FMA,
-  Ryzen 9 5950X. Each case has 30 batches across three interleaved process
-  pairs, with ~35 ms target batch walls; states matched at relative L2
-  `0..1.47e-16` for GL seeds, with exact scale epochs. Median kernel µs/op:
+- The scaled-prefix candidate carries DUCC's below-one epoch frontier out of
+  the two-pair recurrence pass, checking only vectors that rescaled instead of
+  rereading the full epoch array after each group. Scale correction,
+  insignificant-term handling and fallback checks are unchanged. Tests cover
+  threshold crossings, sparse rescaled vectors and SIMD tails. A calibrated
+  A/B/A screen found no consistent speed change from the further conditional
+  epoch-mask reduction; retest that source delta with the timer-corrected
+  harness before claiming a speed effect.
+- The calibrated prefix runner dispatches Pulp once per batch and separates
+  kernel-only from reset-inclusive timing. Kernel-only batches exclude state
+  copies and subtract same-binary per-call clock overhead; reset-inclusive
+  batches use one outer timer around state restoration and recurrence. Each
+  phase targets 32 ms within an enforced 20–100 ms window, with 30 batches per
+  case across three interleaved process pairs. The comparison used Rust
+  1.99.0/Pulp V3, GCC 15.2, AVX2/FMA, x86-64-v3, Ryzen 9 5950X and pinned DUCC
+  revision `80388904b8cfc32400ba84af8a6a45aabfe60f86`. Median µs/op:
 
-  | Seed | Lanes | Rust | DUCC | Ratio | Reset-inclusive ratio |
+  | Seed | Lanes | Rust/DUCC kernel | Ratio | Rust/DUCC reset-inclusive | Ratio |
   |---|---:|---:|---:|---:|---:|
-  | Synthetic `m=1` | 64 | 3.813 | 2.676 | 1.43× | 1.41× |
-  | Synthetic `m=1` | 128 | 6.476 | 5.171 | 1.25× | 1.24× |
-  | Synthetic `m=1` | 256 | 13.093 | 10.761 | 1.22× | 1.20× |
-  | T720 GL sectoral `m=500` | 64 | 0.570 | 0.306 | 1.87× | 1.67× |
-  | T720 GL sectoral `m=500` | 128 | 0.099 | 0.067 | 1.48× | 0.87× |
+  | Synthetic `m=1` | 64 | 3.901 / 2.644 | 1.48× | 3.922 / 2.663 | 1.47× |
+  | Synthetic `m=1` | 128 | 6.412 / 5.162 | 1.24× | 6.447 / 5.185 | 1.24× |
+  | Synthetic `m=1` | 256 | 13.173 / 10.765 | 1.22× | 13.197 / 10.795 | 1.22× |
+  | T720 GL sectoral `m=500` | 64 | 0.572 / 0.288 | 1.98× | 0.602 / 0.304 | 1.98× |
+  | T720 GL sectoral `m=500` | 128 | 0.0842 / 0.0477 | 1.76× | 0.1204 / 0.0732 | 1.65× |
 
-  The GL seed advances 36 pairs at 64 lanes and 2 at 128; the 256-lane seed
-  has significant values and does no prefix recurrence. Rust's scale/correction
-  preflight is separate (0.250/0.381 µs at 64/128) and is not included in the
-  DUCC kernel ratio. The 64-lane kernel excess is 0.264 µs per tested block;
-  these measurements do not attribute the full analysis gap to prefix work.
-  Reset-inclusive timing also resets Rust's correction scratch, which DUCC does
-  not have. Process-median frequency samples were 4.6–4.7 GHz (individual
-  samples fell to about 3.6 GHz); runqueue wait stayed below 0.09%.
-  GL kernel p10–p90 ranges were 0.568–0.573/0.305–0.308 µs (Rust/DUCC) at 64
-  lanes and 0.0985–0.1002/0.0668–0.0677 µs at 128 lanes; their process medians
-  were similarly grouped. One synthetic 128-lane Rust process was slower
-  without a matching scheduler-wait signal. The frontier
-  conditional-check change itself still needs a calibrated before/after
-  ablation. See [the calibrated runner](scripts/benchmark_scalar_analysis_prefix.py).
+  Timer overhead was about 20 ns/op. State relative L2 error was
+  `2.013e-13..4.279e-14` on synthetic seeds and `0..1.471e-16` on GL seeds;
+  scale epochs matched exactly. Rust scale/correction preflight was
+  0.240/0.371 µs at 64/128 lanes and is outside kernel timing. GL kernel
+  p10–p90 was 0.570–0.577/0.287–0.290 µs (Rust/DUCC) at 64 lanes and
+  0.0837–0.0849/0.0474–0.0484 µs at 128 lanes. GL process medians were
+  grouped. One synthetic 64-lane Rust process median was 4.37 µs versus 3.87 µs
+  in the other two without a matching scheduler-wait signal; retain that
+  variability in synthetic 64-lane conclusions. DUCC process medians were
+  grouped. The 256-lane GL case is a no-prefix control and was not timed.
+  Reset-inclusive timing also includes Rust's correction-scratch copy, which
+  DUCC does not need. This prefix result does not explain the full scalar
+  analysis gap. See [the calibrated runner](scripts/benchmark_scalar_analysis_prefix.py).
 - A short full-transform Rust screen compared `fc9f44a4` with this change using
   five interleaved process pairs and five samples per process, GL STANDARD A,
   odd `nphi=2T+3`, and q1/q8. Median baseline→candidate times were T300 q1

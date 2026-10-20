@@ -282,6 +282,76 @@ impl WithSimd for AnalysisPrefixLoopProbe<'_> {
     }
 }
 
+struct AnalysisPrefixBatchProbe<'a, const TIME_KERNEL: bool> {
+    repetitions: usize,
+    m: usize,
+    lmax: usize,
+    cos_theta_squared: &'a [f64],
+    coefficient_a: &'a [f64],
+    coefficient_b: &'a [f64],
+    initial_previous: &'a [f64],
+    initial_current: &'a [f64],
+    initial_scale_epochs: &'a [f64],
+    initial_scale_corrections: &'a [f64],
+    previous: &'a mut [f64],
+    current: &'a mut [f64],
+    scale_epochs: &'a mut [f64],
+    scale_corrections: &'a mut [f64],
+}
+
+impl<const TIME_KERNEL: bool> WithSimd for AnalysisPrefixBatchProbe<'_, TIME_KERNEL> {
+    type Output = Option<(f64, usize)>;
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let Self {
+            repetitions,
+            m,
+            lmax,
+            cos_theta_squared,
+            coefficient_a,
+            coefficient_b,
+            initial_previous,
+            initial_current,
+            initial_scale_epochs,
+            initial_scale_corrections,
+            previous,
+            current,
+            scale_epochs,
+            scale_corrections,
+        } = self;
+        let mut kernel_us = 0.0;
+        let mut final_pair_start = 0;
+        for _ in 0..repetitions {
+            previous.copy_from_slice(initial_previous);
+            current.copy_from_slice(initial_current);
+            scale_epochs.copy_from_slice(initial_scale_epochs);
+            scale_corrections.copy_from_slice(initial_scale_corrections);
+            let probe = AnalysisPrefixLoopProbe {
+                m,
+                lmax,
+                cos_theta_squared,
+                coefficient_a,
+                coefficient_b,
+                previous: &mut *previous,
+                current: &mut *current,
+                scale_epochs: &mut *scale_epochs,
+                scale_corrections: &mut *scale_corrections,
+            };
+            final_pair_start = if TIME_KERNEL {
+                let started = Instant::now();
+                let result = probe.with_simd(simd)?;
+                kernel_us += started.elapsed().as_secs_f64() * 1.0e6;
+                result
+            } else {
+                probe.with_simd(simd)?
+            };
+            std::hint::black_box((&*previous, &*current, &*scale_epochs, final_pair_start));
+        }
+        Some((kernel_us, final_pair_start))
+    }
+}
+
 fn write_complex(path: &str, values: &[Complex64]) {
     let mut file = File::create(path).expect("create Rust kernel output");
     for value in values {
@@ -1201,9 +1271,9 @@ fn run_prefix_probe_case(
     let preflight_us = preflight_started.elapsed().as_secs_f64() * 1.0e6;
     let initial_scale_corrections = scale_corrections.clone();
 
-    // Match DUCC's iter_to_ieee boundary: recurrence-prefix work is timed
-    // separately from Rust's block scale/correction preflight.
-    let calibration_repetitions = 1024;
+    // Match DUCC's iter_to_ieee boundary: prefix recurrence and reset-inclusive
+    // batches are timed independently, outside Rust's scale/correction preflight.
+    let bootstrap_repetitions = 1024;
     for _ in 0..4 {
         prefix_probe_batch(
             1,
@@ -1219,8 +1289,8 @@ fn run_prefix_probe_case(
             &mut scale_corrections,
         );
     }
-    let (calibration_kernel_us, calibration_wall_us, calibration_pair_start) = prefix_probe_batch(
-        calibration_repetitions,
+    let (bootstrap_kernel_us, bootstrap_pair_start) = prefix_probe_batch(
+        bootstrap_repetitions,
         arch,
         m,
         lmax,
@@ -1232,10 +1302,65 @@ fn run_prefix_probe_case(
         &mut scale_epochs,
         &mut scale_corrections,
     );
-    let kernel_per_call = calibration_kernel_us / calibration_repetitions as f64;
-    let wall_per_call = calibration_wall_us / calibration_repetitions as f64;
+    let bootstrap_wall_us = prefix_probe_wall_batch(
+        bootstrap_repetitions,
+        arch,
+        m,
+        lmax,
+        &fixture,
+        &initial_scale_epochs,
+        &initial_scale_corrections,
+        &mut previous,
+        &mut current,
+        &mut scale_epochs,
+        &mut scale_corrections,
+    );
+    let bootstrap_timer_us_per_call = prefix_probe_timer_overhead(bootstrap_repetitions);
+    let bootstrap_kernel_per_call =
+        bootstrap_kernel_us / bootstrap_repetitions as f64 - bootstrap_timer_us_per_call;
+    let bootstrap_wall_per_call = bootstrap_wall_us / bootstrap_repetitions as f64;
+    let calibration_kernel_repetitions = if bootstrap_pair_start == 0 {
+        bootstrap_repetitions
+    } else {
+        prefix_probe_repetitions(bootstrap_kernel_per_call)
+    };
+    let calibration_wall_repetitions = if bootstrap_pair_start == 0 {
+        bootstrap_repetitions
+    } else {
+        prefix_probe_repetitions(bootstrap_wall_per_call)
+    };
+    let (calibration_kernel_us, calibration_pair_start) = prefix_probe_batch(
+        calibration_kernel_repetitions,
+        arch,
+        m,
+        lmax,
+        &fixture,
+        &initial_scale_epochs,
+        &initial_scale_corrections,
+        &mut previous,
+        &mut current,
+        &mut scale_epochs,
+        &mut scale_corrections,
+    );
+    let calibration_wall_us = prefix_probe_wall_batch(
+        calibration_wall_repetitions,
+        arch,
+        m,
+        lmax,
+        &fixture,
+        &initial_scale_epochs,
+        &initial_scale_corrections,
+        &mut previous,
+        &mut current,
+        &mut scale_epochs,
+        &mut scale_corrections,
+    );
+    let timer_us_per_call = prefix_probe_timer_overhead(bootstrap_repetitions);
+    let kernel_per_call =
+        calibration_kernel_us / calibration_kernel_repetitions as f64 - timer_us_per_call;
+    let wall_per_call = calibration_wall_us / calibration_wall_repetitions as f64;
     eprintln!(
-        "RUST_PREFIX_CALIBRATION kind={label} m={m} lanes={lane_count} repetitions={calibration_repetitions} kernel_us_per_call={kernel_per_call:.6} wall_us_per_call={wall_per_call:.6} preflight_us={preflight_us:.3} pair_start={calibration_pair_start}"
+        "RUST_PREFIX_CALIBRATION kind={label} m={m} lanes={lane_count} kernel_repetitions={calibration_kernel_repetitions} wall_repetitions={calibration_wall_repetitions} kernel_us_per_call={kernel_per_call:.6} wall_us_per_call={wall_per_call:.6} timer_us_per_call={timer_us_per_call:.6} preflight_us={preflight_us:.3} pair_start={calibration_pair_start}"
     );
 
     if std::env::var("RUSTSHT_PREFIX_CALIBRATE_ONLY").as_deref() == Ok("1") {
@@ -1243,23 +1368,67 @@ fn run_prefix_probe_case(
         return;
     }
 
-    let repetitions = std::env::var(format!(
-        "RUSTSHT_PREFIX_REPS_{}_{}",
-        label.replace('-', "_").to_uppercase(),
-        lane_count
-    ))
-    .ok()
-    .and_then(|value| value.parse().ok())
-    .unwrap_or_else(|| (35_000.0 / wall_per_call).round().max(1.0) as usize);
+    let case_suffix = format!("{}_{}", label.replace('-', "_").to_uppercase(), lane_count);
+    let kernel_repetitions = std::env::var(format!("RUSTSHT_PREFIX_KERNEL_REPS_{case_suffix}"))
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(calibration_kernel_repetitions);
+    let wall_repetitions = std::env::var(format!("RUSTSHT_PREFIX_WALL_REPS_{case_suffix}"))
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(calibration_wall_repetitions);
     let batches = std::env::var("RUSTSHT_PREFIX_BATCHES")
         .ok()
         .and_then(|value| value.parse().ok())
         .unwrap_or(30_usize);
-    assert!(repetitions > 0 && batches > 0);
+    assert!(kernel_repetitions > 0 && wall_repetitions > 0 && batches > 0);
+
+    for _ in 0..2 {
+        prefix_probe_batch(
+            kernel_repetitions,
+            arch,
+            m,
+            lmax,
+            &fixture,
+            &initial_scale_epochs,
+            &initial_scale_corrections,
+            &mut previous,
+            &mut current,
+            &mut scale_epochs,
+            &mut scale_corrections,
+        );
+        prefix_probe_wall_batch(
+            wall_repetitions,
+            arch,
+            m,
+            lmax,
+            &fixture,
+            &initial_scale_epochs,
+            &initial_scale_corrections,
+            &mut previous,
+            &mut current,
+            &mut scale_epochs,
+            &mut scale_corrections,
+        );
+    }
+    let timed_timer_us_per_call = prefix_probe_timer_overhead(bootstrap_repetitions);
 
     for batch in 0..batches {
-        let (kernel_us, wall_us, pair_start) = prefix_probe_batch(
-            repetitions,
+        let (kernel_us, pair_start) = prefix_probe_batch(
+            kernel_repetitions,
+            arch,
+            m,
+            lmax,
+            &fixture,
+            &initial_scale_epochs,
+            &initial_scale_corrections,
+            &mut previous,
+            &mut current,
+            &mut scale_epochs,
+            &mut scale_corrections,
+        );
+        let wall_us = prefix_probe_wall_batch(
+            wall_repetitions,
             arch,
             m,
             lmax,
@@ -1278,7 +1447,10 @@ fn run_prefix_probe_case(
                 .all(|value| value.is_finite())
         );
         eprintln!(
-            "RUST_PREFIX_BATCH kind={label} m={m} lanes={lane_count} batch={batch} repetitions={repetitions} kernel_us={kernel_us:.3} wall_us={wall_us:.3} pair_start={pair_start}"
+            "RUST_PREFIX_KERNEL_BATCH kind={label} m={m} lanes={lane_count} batch={batch} repetitions={kernel_repetitions} kernel_us={kernel_us:.3} timer_us_per_call={timed_timer_us_per_call:.6} pair_start={pair_start}"
+        );
+        eprintln!(
+            "RUST_PREFIX_WALL_BATCH kind={label} m={m} lanes={lane_count} batch={batch} repetitions={wall_repetitions} wall_us={wall_us:.3}"
         );
     }
 
@@ -1301,34 +1473,84 @@ fn prefix_probe_batch(
     current: &mut [f64],
     scale_epochs: &mut [f64],
     scale_corrections: &mut [f64],
-) -> (f64, f64, usize) {
+) -> (f64, usize) {
+    arch.dispatch(AnalysisPrefixBatchProbe::<true> {
+        repetitions,
+        m,
+        lmax,
+        cos_theta_squared: &fixture.cosine_squared,
+        coefficient_a: &fixture.coefficient_a,
+        coefficient_b: &fixture.coefficient_b,
+        initial_previous: &fixture.previous,
+        initial_current: &fixture.current,
+        initial_scale_epochs,
+        initial_scale_corrections,
+        previous,
+        current,
+        scale_epochs,
+        scale_corrections,
+    })
+    .expect("scaled prefix recurrence batch")
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The reset-inclusive probe uses the same state, geometry and SIMD dispatch as the kernel-only probe."
+)]
+fn prefix_probe_wall_batch(
+    repetitions: usize,
+    arch: Arch,
+    m: usize,
+    lmax: usize,
+    fixture: &Fixture,
+    initial_scale_epochs: &[f64],
+    initial_scale_corrections: &[f64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    scale_epochs: &mut [f64],
+    scale_corrections: &mut [f64],
+) -> f64 {
     let wall_started = Instant::now();
-    let mut kernel_us = 0.0;
-    let mut final_pair_start = 0;
+    let (_, final_pair_start) = arch
+        .dispatch(AnalysisPrefixBatchProbe::<false> {
+            repetitions,
+            m,
+            lmax,
+            cos_theta_squared: &fixture.cosine_squared,
+            coefficient_a: &fixture.coefficient_a,
+            coefficient_b: &fixture.coefficient_b,
+            initial_previous: &fixture.previous,
+            initial_current: &fixture.current,
+            initial_scale_epochs,
+            initial_scale_corrections,
+            previous,
+            current,
+            scale_epochs,
+            scale_corrections,
+        })
+        .expect("reset-inclusive prefix recurrence batch");
+    std::hint::black_box(final_pair_start);
+    wall_started.elapsed().as_secs_f64() * 1.0e6
+}
+
+fn prefix_probe_timer_overhead(repetitions: usize) -> f64 {
+    let mut elapsed_us = 0.0;
     for _ in 0..repetitions {
-        previous.copy_from_slice(&fixture.previous);
-        current.copy_from_slice(&fixture.current);
-        scale_epochs.copy_from_slice(initial_scale_epochs);
-        scale_corrections.copy_from_slice(initial_scale_corrections);
         let started = Instant::now();
-        final_pair_start = arch
-            .dispatch(AnalysisPrefixLoopProbe {
-                m,
-                lmax,
-                cos_theta_squared: &fixture.cosine_squared,
-                coefficient_a: &fixture.coefficient_a,
-                coefficient_b: &fixture.coefficient_b,
-                previous,
-                current,
-                scale_epochs,
-                scale_corrections,
-            })
-            .expect("scaled prefix recurrence");
-        kernel_us += started.elapsed().as_secs_f64() * 1.0e6;
-        std::hint::black_box((&*previous, &*current, &*scale_epochs, final_pair_start));
+        std::hint::black_box(());
+        elapsed_us += started.elapsed().as_secs_f64() * 1.0e6;
     }
-    let wall_us = wall_started.elapsed().as_secs_f64() * 1.0e6;
-    (kernel_us, wall_us, final_pair_start)
+    elapsed_us / repetitions as f64
+}
+
+fn prefix_probe_repetitions(us_per_call: f64) -> usize {
+    const TARGET_BATCH_US: f64 = 32_000.0;
+    const MAX_CALIBRATION_BATCH_US: f64 = 80_000.0;
+    assert!(us_per_call.is_finite() && us_per_call > 0.0);
+    let minimum = (20_000.0 / us_per_call).ceil() as usize;
+    let maximum = (MAX_CALIBRATION_BATCH_US / us_per_call).floor() as usize;
+    assert!(minimum <= maximum, "batch duration does not fit 20-80 ms");
+    ((TARGET_BATCH_US / us_per_call).round() as usize).clamp(minimum, maximum)
 }
 
 #[test]
