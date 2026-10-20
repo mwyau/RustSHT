@@ -1,7 +1,7 @@
 # RustSHT performance checkpoint
 
-**Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Production
-baseline:** `90bdde14`. **Grouped-reduction experiment:** `7cd69307`. For the
+**Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Checked
+production baseline:** Pulp reductions. **A/B source:** `978968ca`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
 
 - Production f64 scalar GL analysis keeps the checked two-pair AVX2/FMA route
@@ -26,6 +26,12 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   comparison measured DUCC at 4.128 µs (64 lanes) and 15.805 µs (256 lanes),
   with tightly grouped process medians; the old single-call timing regimes
   were not reproduced.
+- The private DUCC-style AVX2 `vhaddpd`/`vperm2f128` reduction remains behind
+  `rustsht_avx2_group_analysis_reduction`. It improved unchecked kernel time
+  by 2.7%, 0.8% and 0.7% at 64/128/256 lanes, but made the checked route
+  0.3%, 1.3% and 1.0% slower. Keep production on Pulp's original reductions;
+  the AVX2 candidate applies the same summation order to checked and unchecked
+  variants so their benchmark outputs remain exactly equal.
 - Checked and unchecked direct outputs match exactly. Extreme finite,
   subnormal, zero/cancellation, SIMD-tail, T255/T511 DUCC, scalar adjoint and
   full T720 q1/q8 checks passed. Valid T720 GL q1 and q8 analyses had zero
@@ -64,7 +70,8 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   unchecked route remained stable. All batches are retained. See the report
   for process-level distributions and host diagnostics.
 
-**Next:** reduce the remaining ordinary recurrence cost. The latest baseline
-unchecked kernel is 1.158×, 1.091× and 1.098× DUCC at 64/128/256 lanes; address
-the 1.552 µs excess at 256 lanes while preserving the checked fallback for
-inputs that need scaled recurrence.
+**Next:** address the checked production kernel's remaining gap first. The
+latest matched ratios are 1.702×, 1.568× and 1.565× DUCC at 64/128/256 lanes.
+The raw AVX2 candidate closes only 0.119 µs of the unchecked 1.544 µs excess
+at 256 lanes; retain its checked safety scan and scaled fallback while
+investigating the larger checked-path cost.

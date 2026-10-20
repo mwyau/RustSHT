@@ -449,9 +449,64 @@ medians stayed between 4.125–4.128 µs at 64 lanes and 15.743–15.866 µs at 
 lanes. The old runs do not support a parity conclusion; current evidence does
 not identify the exact cause of their process-level shifts.
 
+## AVX2 horizontal-reduction A/B — 2026-10-20
+
+The candidate applies DUCC's four-vector AVX2 horizontal-sum sequence to the
+eight ordinary recurrence accumulators. It is selected only with
+`rustsht_avx2_group_analysis_reduction`; the checked production build keeps
+Pulp's individual reductions. The matched baseline was source `7cd69307`,
+with the AVX2 candidate built from the same source plus the experimental cfg.
+Rust used 1.99.0, Pulp 0.22.3 and `-C target-cpu=x86-64-v3`; DUCC remained
+pinned to `80388904b8cfc32400ba84af8a6a45aabfe60f86`, compiled with GCC 15.2,
+`-O3 -DNDEBUG -march=x86-64-v3`. Both selected four f64 latitude lanes.
+Disassembly of the candidate V3 specialization confirmed `vhaddpd`,
+`vperm2f128` and packed additions, without the Pulp candidate's output
+partial-store call and stack reloads.
+
+The benchmark used five independent Rust/DUCC process pairs per lane count,
+30 calibrated batches per process, alternating backend order and pinning all
+single-thread trials to one physical core. Every batch was in the 20–100 ms
+window: 33.47–76.01 ms for baseline and 31.63–78.33 ms for candidate.
+`kernel_only` excludes reset; `reset_inclusive` applies the same recurrence
+state and coefficient reset for each implementation.
+
+Kernel-only medians are µs per operation; unchecked Rust p10–p90 ranges are
+shown in parentheses.
+
+| Lanes | Checked baseline → AVX2 | Unchecked baseline → AVX2 | DUCC baseline → candidate |
+|---:|---:|---:|---:|
+| 64 | 7.066 → 7.087 | 4.797 (4.752–4.930) → 4.668 (4.628–4.750) | 4.152 → 4.138 |
+| 128 | 12.645 → 12.815 | 8.814 (8.757–8.986) → 8.742 (8.674–8.842) | 8.062 → 8.053 |
+| 256 | 24.834 → 25.091 | 17.412 (17.331–17.866) → 17.297 (17.182–17.556) | 15.868 → 15.872 |
+
+Checked Rust/DUCC ratios changed from 1.702/1.568/1.565× to
+1.713/1.591/1.581×. Unchecked ratios changed from 1.155/1.093/1.097× to
+1.128/1.086/1.090×. Every unchecked candidate process median was below every
+baseline process median. The candidate therefore saves
+0.129/0.072/0.115 µs at 64/128/256 lanes, while its checked route is slightly
+slower. Keep it opt-in until a larger combined improvement justifies the
+checked-path cost; both checked and unchecked variants use the same candidate
+reduction order so the fixture's exact-output assertion remains valid.
+
+Reset-inclusive checked Rust medians changed 7.139→7.237, 12.742→13.019 and
+24.924→25.319 µs. Unchecked medians changed 4.858→4.729, 8.910→8.833 and
+17.506→17.406 µs. DUCC measured 4.260→4.246, 8.213→8.191 and 16.081→16.087
+µs. CPU-frequency monitoring showed no material median shift between runs.
+Median run-queue wait was zero, with maxima below 0.05%. One slow batch
+appeared in each run, but the per-process medians remained consistent.
+
+Maximum scaled coefficient difference from DUCC remained `1.970e-16`; relative
+output L2 errors were `6.670e-14`, `1.628e-13` and `5.928e-14`. The candidate
+passed the all-feature release suite with the experiment cfg, including exact
+checked/unchecked fixture equality, polar, subnormal, extreme finite,
+cancellation, SIMD-tail, analytic and adjoint tests. Default release tests and
+all-target/all-feature Clippy also passed. The checked production ratios remain
+1.702×/1.568×/1.565×; the unchecked AVX2 candidate is still 1.128×/1.086×/
+1.090× DUCC.
+
 ## Next implementation target
 
-Reduce the remaining ordinary recurrence cost. The calibrated baseline
-unchecked kernel is 1.158×/1.091×/1.098× DUCC at 64/128/256 lanes. Focus on
-the remaining 1.552 µs at 256 lanes after validation has been removed, while
-preserving the checked fallback where scaled recurrence is needed.
+Reduce the checked production path's remaining cost. It is 1.702×/1.568×/
+1.565× DUCC at 64/128/256 lanes. The unchecked AVX2 candidate saves 0.119 µs
+of the 1.544 µs excess at 256 lanes; keep the checked safety scan and scaled
+fallback while investigating the larger checked-path cost.
