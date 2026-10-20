@@ -29,6 +29,7 @@ RUSTFLAGS = os.environ.get(
 BATCHES = 30
 INVOCATIONS = 5
 TARGET_FASTEST_BATCH_US = 35_000.0
+COMMIT_CALIBRATION_REPETITIONS = 100_000
 
 
 def output(command: list[str], *, cwd: pathlib.Path = ROOT, env=None) -> str:
@@ -164,7 +165,13 @@ def run_pinned(
     return stdout + "\n" + stderr, diagnostics
 
 
-def test_environment(base: pathlib.Path, lane_count: int, mode: str, reps=0) -> dict[str, str]:
+def test_environment(
+    base: pathlib.Path,
+    lane_count: int,
+    mode: str,
+    reps=0,
+    commit_reps=0,
+) -> dict[str, str]:
     env = os.environ.copy()
     env["RUSTSHT_KERNEL_BENCH_BASE"] = str(base)
     env["RUSTSHT_KERNEL_BENCH_LANES"] = str(lane_count)
@@ -172,9 +179,13 @@ def test_environment(base: pathlib.Path, lane_count: int, mode: str, reps=0) -> 
     env["RUSTFLAGS"] = RUSTFLAGS
     if mode == "run":
         env["RUSTSHT_KERNEL_BENCH_REPETITIONS"] = str(reps)
+        env["RUSTSHT_KERNEL_BENCH_COMMIT_REPETITIONS"] = str(commit_reps)
         env["RUSTSHT_KERNEL_BENCH_BATCHES"] = str(BATCHES)
     elif mode == "calibrate":
         env["RUSTSHT_KERNEL_BENCH_CALIBRATION_REPETITIONS"] = str(reps)
+        env["RUSTSHT_KERNEL_BENCH_COMMIT_CALIBRATION_REPETITIONS"] = str(
+            COMMIT_CALIBRATION_REPETITIONS
+        )
     return env
 
 
@@ -352,29 +363,37 @@ def main() -> None:
                 raise RuntimeError(f"DUCC did not execute four-lane f64 AVX2: {ducc_cal}")
             if int(rust_cal["repetitions"]) != calibration_repetitions[lane_count]:
                 raise RuntimeError("Rust calibration used an unexpected batch size")
+            if int(rust_cal["commit_repetitions"]) != COMMIT_CALIBRATION_REPETITIONS:
+                raise RuntimeError("Rust commit calibration used an unexpected batch size")
             if int(ducc_cal["repetitions"]) != calibration_repetitions[lane_count]:
                 raise RuntimeError("DUCC calibration used an unexpected batch size")
             calibration[lane_count] = {
                 "rust_checked": float(rust_cal["checked_us"]),
                 "rust_unchecked": float(rust_cal["unchecked_us"]),
                 "ducc": float(ducc_cal["reset_inclusive_us"]),
+                "commit_only": float(rust_cal["commit_us"]),
             }
             diagnostics.extend(
                 [("rust-calibrate", lane_count, rust_diag), ("ducc-calibrate", lane_count, ducc_diag)]
             )
 
         repetitions = {}
+        commit_repetitions = {}
         for lane_count, samples in calibration.items():
             calibration_ms = {
                 key: value * calibration_repetitions[lane_count] / 1000.0
                 for key, value in samples.items()
+                if key != "commit_only"
             }
             if any(not (20.0 <= value <= 100.0) for value in calibration_ms.values()):
                 raise RuntimeError(
                     f"calibration batch outside 20-100 ms for lane={lane_count}: {calibration_ms}"
                 )
-            fastest = min(samples.values())
-            slowest = max(samples.values())
+            kernel_samples = {
+                key: value for key, value in samples.items() if key != "commit_only"
+            }
+            fastest = min(kernel_samples.values())
+            slowest = max(kernel_samples.values())
             lower = math.ceil(20_000.0 / fastest)
             upper = math.floor(95_000.0 / slowest)
             if lower > upper:
@@ -384,6 +403,18 @@ def main() -> None:
                 )
             chosen = min(max(round(TARGET_FASTEST_BATCH_US / fastest), lower), upper)
             repetitions[lane_count] = chosen
+            commit_us = samples["commit_only"]
+            commit_lower = math.ceil(20_000.0 / commit_us)
+            commit_upper = math.floor(95_000.0 / commit_us)
+            if commit_lower > commit_upper:
+                raise RuntimeError(
+                    f"cannot fit commit-only lane={lane_count} into 20-100 ms batches: "
+                    f"calibrated at {commit_us:.6f} us/call"
+                )
+            commit_repetitions[lane_count] = min(
+                max(round(TARGET_FASTEST_BATCH_US / commit_us), commit_lower),
+                commit_upper,
+            )
 
         observations = defaultdict(list)
         numeric_errors = []
@@ -394,7 +425,11 @@ def main() -> None:
                 for backend in order:
                     if backend == "rust":
                         run_env = test_environment(
-                            base, lane_count, "run", repetitions[lane_count]
+                            base,
+                            lane_count,
+                            "run",
+                            repetitions[lane_count],
+                            commit_repetitions[lane_count],
                         )
                         command = rust_command
                     else:
@@ -417,10 +452,17 @@ def main() -> None:
                         mode = fields["mode"]
                         variant = fields.get("variant", "ducc")
                         reps = int(fields["repetitions"])
-                        if reps != repetitions[lane_count]:
+                        expected_repetitions = (
+                            commit_repetitions[lane_count]
+                            if mode == "commit_only"
+                            else repetitions[lane_count]
+                        )
+                        if reps != expected_repetitions:
                             raise RuntimeError("backend used a different repetition count")
-                        if mode == "kernel_only":
+                        if mode in ("kernel_only", "kernel_plus_commit"):
                             batch_us = float(fields["kernel_us"])
+                        elif mode == "commit_only":
+                            batch_us = float(fields["commit_us"])
                         else:
                             batch_us = float(fields["batch_us"])
                         batch_durations.append(batch_us / 1000.0)
@@ -428,7 +470,7 @@ def main() -> None:
                         observations[(lane_count, mode, variant, backend)].append(
                             (per_call_us, invocation + 1, batch_us / 1000.0)
                         )
-                    expected_lines = BATCHES * (4 if backend == "rust" else 2)
+                    expected_lines = BATCHES * (8 if backend == "rust" else 2)
                     if parsed_count != expected_lines:
                         raise RuntimeError(
                             f"expected {expected_lines} batch records from {backend}, got {parsed_count}\n{stdout}"
@@ -467,25 +509,46 @@ def main() -> None:
             calibration_batch_ms = {
                 key: value * calibration_repetitions[lane_count] / 1000.0
                 for key, value in calibration[lane_count].items()
+                if key != "commit_only"
             }
+            commit_calibration_batch_ms = (
+                calibration[lane_count]["commit_only"]
+                * COMMIT_CALIBRATION_REPETITIONS
+                / 1000.0
+            )
             print(
                 f"CALIBRATION lanes={lane_count} calibration_repetitions={calibration_repetitions[lane_count]} "
                 f"run_repetitions={repetitions[lane_count]} "
-                + " ".join(f"{key}={value:.3f}us" for key, value in calibration[lane_count].items())
+                f"commit_calibration_repetitions={COMMIT_CALIBRATION_REPETITIONS} "
+                f"commit_run_repetitions={commit_repetitions[lane_count]} "
+                + " ".join(
+                    f"{key}={value:.3f}us"
+                    for key, value in calibration[lane_count].items()
+                )
             )
             print(
                 "CALIBRATION_BATCH_MS "
                 + " ".join(f"{key}={value:.2f}" for key, value in calibration_batch_ms.items())
+                + f" commit_only={commit_calibration_batch_ms:.2f}"
             )
 
         print(
-            f"TIMINGS are per kernel call; aggregate values summarize "
+            "Rust kernel_only measures recurrence plus SIMD accumulation into staging; "
+            "commit_only measures final coefficient addition; kernel_plus_commit includes both. "
+            "DUCC kernel_plus_commit updates its output directly. reset_inclusive adds input/output reset."
+        )
+        print(
+            f"TIMINGS are per operation; aggregate values summarize "
             f"{INVOCATIONS * BATCHES} batches ({INVOCATIONS} processes x {BATCHES})."
         )
         for lane_count in lanes:
-            for mode in ("kernel_only", "reset_inclusive"):
+            for mode in ("kernel_only", "commit_only", "kernel_plus_commit", "reset_inclusive"):
                 print(f"{mode} lanes={lane_count}")
-                variants = ("checked", "unchecked", "ducc")
+                variants = (
+                    ("checked", "unchecked", "ducc")
+                    if mode in ("kernel_plus_commit", "reset_inclusive")
+                    else ("checked", "unchecked")
+                )
                 medians = {}
                 for variant in variants:
                     backend = "ducc" if variant == "ducc" else "rust"
@@ -519,14 +582,19 @@ def main() -> None:
                             f"median={process_median:.3f}us "
                             f"p10/p90={process_p10:.3f}..{process_p90:.3f}us"
                         )
-                print(
-                    f"  ratios checked/DUCC={medians['checked'] / medians['ducc']:.3f} "
-                    f"unchecked/DUCC={medians['unchecked'] / medians['ducc']:.3f}"
-                )
+                if mode in ("kernel_plus_commit", "reset_inclusive"):
+                    print(
+                        f"  ratios checked/DUCC={medians['checked'] / medians['ducc']:.3f} "
+                        f"unchecked/DUCC={medians['unchecked'] / medians['ducc']:.3f}"
+                    )
 
         min_batch = min(batch_durations)
         max_batch = max(batch_durations)
         outside = sum(not (20.0 <= sample <= 100.0) for sample in batch_durations)
+        if outside:
+            raise RuntimeError(
+                f"{outside}/{len(batch_durations)} measured batches fell outside 20-100 ms"
+            )
         print(
             f"BATCH_DURATIONS measured_kernel_or_reset_ms range={min_batch:.2f}..{max_batch:.2f}; "
             f"outside_20_100ms={outside}/{len(batch_durations)}"

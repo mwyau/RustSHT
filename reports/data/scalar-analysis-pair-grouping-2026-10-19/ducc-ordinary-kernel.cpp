@@ -157,7 +157,7 @@ int main(int argc, char **argv) {
     const double checksum = keep_result();
     std::cout << std::fixed << std::setprecision(3)
               << "DUCC_BATCH lanes=" << lane_count << " batch=" << batch
-              << " repetitions=" << repetitions << " mode=kernel_only"
+              << " repetitions=" << repetitions << " mode=kernel_plus_commit"
               << " kernel_us=" << kernel_batch_us << " wall_us=" << wall_us
               << " checksum=" << std::setprecision(12) << checksum << "\n";
 

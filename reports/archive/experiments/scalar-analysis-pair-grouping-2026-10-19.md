@@ -98,6 +98,16 @@ release no-default-feature tests and all-target/all-feature Clippy also passed.
 
 ## Calibrated checked/unchecked comparison — 2026-10-20
 
+**Boundary correction:** the table and ratios in this historical subsection
+measure Rust's fused recurrence and writes into `staged_coefficients`, but
+DUCC's `map2alm_kernel` also accumulates directly into `alm`. Rust's subsequent
+per-block coefficient commit was outside its timer, so the old cross-library
+ratios are not equivalent-work and must not be used for parity claims. The
+updated runner reports Rust `kernel_plus_commit`, `commit_only`, and
+`reset_inclusive` separately; use the corrected values in
+[`PERFORMANCE_STATUS.md`](../../../PERFORMANCE_STATUS.md). The historical
+samples below remain for traceability.
+
 The earlier nine-call direct measurements are retained below as historical
 evidence. This remeasurement uses the reusable harness in
 [`reports/data/scalar-analysis-pair-grouping-2026-10-19`](../../data/scalar-analysis-pair-grouping-2026-10-19)

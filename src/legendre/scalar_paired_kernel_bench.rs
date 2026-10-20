@@ -251,6 +251,8 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
     let coefficient_count = BENCH_LMAX - BENCH_ORDER + 1;
     let mut checked_staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
     let mut unchecked_staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
+    let mut checked_output = vec![Complex64::new(0.0, 0.0); coefficient_count];
+    let mut unchecked_output = vec![Complex64::new(0.0, 0.0); coefficient_count];
     let mut previous = vec![0.0; lane_count];
     let mut current = vec![0.0; lane_count];
     let mut next = vec![0.0; lane_count];
@@ -271,6 +273,7 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                 &mut current,
                 &mut next,
             ));
+            commit_staged_coefficients(&checked_staged, &mut checked_output);
             reset_fused_scalar_analysis_pair(
                 &fixture,
                 &mut unchecked_staged,
@@ -285,9 +288,10 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                 &mut current,
                 &mut next,
             ));
-            assert_eq!(checked_staged, unchecked_staged);
-            write_complex(&checked_output_path, &checked_staged);
-            write_complex(&unchecked_output_path, &unchecked_staged);
+            commit_staged_coefficients(&unchecked_staged, &mut unchecked_output);
+            assert_eq!(checked_output, unchecked_output);
+            write_complex(&checked_output_path, &checked_output);
+            write_complex(&unchecked_output_path, &unchecked_output);
             eprintln!("RUST_PREPARED lanes={lane_count} output_equal=true");
         }
         Ok("calibrate") => {
@@ -296,11 +300,17 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                     .expect("RUSTSHT_KERNEL_BENCH_CALIBRATION_REPETITIONS must be set")
                     .parse::<usize>()
                     .expect("valid calibration repetition count");
+            let commit_calibration_repetitions =
+                std::env::var("RUSTSHT_KERNEL_BENCH_COMMIT_CALIBRATION_REPETITIONS")
+                    .expect("RUSTSHT_KERNEL_BENCH_COMMIT_CALIBRATION_REPETITIONS must be set")
+                    .parse::<usize>()
+                    .expect("valid commit calibration repetition count");
             let checked_us = calibrate_fused_scalar_analysis_pair::<true>(
                 calibration_repetitions,
                 arch,
                 &fixture,
                 &mut checked_staged,
+                &mut checked_output,
                 &mut previous,
                 &mut current,
                 &mut next,
@@ -310,13 +320,19 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                 arch,
                 &fixture,
                 &mut unchecked_staged,
+                &mut unchecked_output,
                 &mut previous,
                 &mut current,
                 &mut next,
             );
+            let commit_us = calibrate_commit_only(
+                commit_calibration_repetitions,
+                &checked_staged,
+                &mut checked_output,
+            );
             assert_eq!(checked_staged, unchecked_staged);
             eprintln!(
-                "RUST_CALIBRATION lanes={lane_count} repetitions={calibration_repetitions} checked_us={checked_us:.6} unchecked_us={unchecked_us:.6} output_equal=true"
+                "RUST_CALIBRATION lanes={lane_count} repetitions={calibration_repetitions} checked_us={checked_us:.6} unchecked_us={unchecked_us:.6} commit_repetitions={commit_calibration_repetitions} commit_us={commit_us:.6} output_equal=true"
             );
         }
         Ok("run") => {
@@ -328,8 +344,13 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                 .expect("RUSTSHT_KERNEL_BENCH_BATCHES must be set")
                 .parse::<usize>()
                 .expect("valid batch count");
+            let commit_repetitions = std::env::var("RUSTSHT_KERNEL_BENCH_COMMIT_REPETITIONS")
+                .expect("RUSTSHT_KERNEL_BENCH_COMMIT_REPETITIONS must be set")
+                .parse::<usize>()
+                .expect("valid commit repetition count");
             assert!(batch_count >= 30);
             assert!(repetitions > 0);
+            assert!(commit_repetitions > 0);
 
             // Warm both monomorphizations before collecting calibrated batches.
             for _ in 0..3 {
@@ -347,6 +368,7 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                     &mut current,
                     &mut next,
                 ));
+                commit_staged_coefficients(&checked_staged, &mut checked_output);
                 reset_fused_scalar_analysis_pair(
                     &fixture,
                     &mut unchecked_staged,
@@ -361,8 +383,10 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                     &mut current,
                     &mut next,
                 ));
+                commit_staged_coefficients(&unchecked_staged, &mut unchecked_output);
             }
             assert_eq!(checked_staged, unchecked_staged);
+            assert_eq!(checked_output, unchecked_output);
 
             for batch in 0..batch_count {
                 let checked_first = batch.is_multiple_of(2);
@@ -417,12 +441,95 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                     unchecked_kernel.0, unchecked_kernel.1
                 );
 
+                let (checked_commit, unchecked_commit) = if checked_first {
+                    let checked =
+                        commit_only_batch(commit_repetitions, &checked_staged, &mut checked_output);
+                    let unchecked = commit_only_batch(
+                        commit_repetitions,
+                        &unchecked_staged,
+                        &mut unchecked_output,
+                    );
+                    (checked, unchecked)
+                } else {
+                    let unchecked = commit_only_batch(
+                        commit_repetitions,
+                        &unchecked_staged,
+                        &mut unchecked_output,
+                    );
+                    let checked =
+                        commit_only_batch(commit_repetitions, &checked_staged, &mut checked_output);
+                    (checked, unchecked)
+                };
+                assert_eq!(checked_output, unchecked_output);
+                eprintln!(
+                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={commit_repetitions} mode=commit_only variant=checked commit_us={checked_commit:.3}"
+                );
+                eprintln!(
+                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={commit_repetitions} mode=commit_only variant=unchecked commit_us={unchecked_commit:.3}"
+                );
+
+                let (checked_combined, unchecked_combined) = if checked_first {
+                    let checked = kernel_plus_commit_batch::<true>(
+                        repetitions,
+                        arch,
+                        &fixture,
+                        &mut checked_staged,
+                        &mut checked_output,
+                        &mut previous,
+                        &mut current,
+                        &mut next,
+                    );
+                    let unchecked = kernel_plus_commit_batch::<false>(
+                        repetitions,
+                        arch,
+                        &fixture,
+                        &mut unchecked_staged,
+                        &mut unchecked_output,
+                        &mut previous,
+                        &mut current,
+                        &mut next,
+                    );
+                    (checked, unchecked)
+                } else {
+                    let unchecked = kernel_plus_commit_batch::<false>(
+                        repetitions,
+                        arch,
+                        &fixture,
+                        &mut unchecked_staged,
+                        &mut unchecked_output,
+                        &mut previous,
+                        &mut current,
+                        &mut next,
+                    );
+                    let checked = kernel_plus_commit_batch::<true>(
+                        repetitions,
+                        arch,
+                        &fixture,
+                        &mut checked_staged,
+                        &mut checked_output,
+                        &mut previous,
+                        &mut current,
+                        &mut next,
+                    );
+                    (checked, unchecked)
+                };
+                assert_eq!(checked_output, unchecked_output);
+                eprintln!(
+                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=kernel_plus_commit variant=checked kernel_us={:.3} wall_us={:.3}",
+                    checked_combined.0, checked_combined.1
+                );
+                eprintln!(
+                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=kernel_plus_commit variant=unchecked kernel_us={:.3} wall_us={:.3}",
+                    unchecked_combined.0, unchecked_combined.1
+                );
+
                 let (checked_reset, unchecked_reset) = if checked_first {
                     let checked = reset_inclusive_batch::<true>(
                         repetitions,
                         arch,
                         &fixture,
                         &mut checked_staged,
+                        &mut checked_output,
                         &mut previous,
                         &mut current,
                         &mut next,
@@ -432,6 +539,7 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                         arch,
                         &fixture,
                         &mut unchecked_staged,
+                        &mut unchecked_output,
                         &mut previous,
                         &mut current,
                         &mut next,
@@ -443,6 +551,7 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                         arch,
                         &fixture,
                         &mut unchecked_staged,
+                        &mut unchecked_output,
                         &mut previous,
                         &mut current,
                         &mut next,
@@ -452,13 +561,14 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                         arch,
                         &fixture,
                         &mut checked_staged,
+                        &mut checked_output,
                         &mut previous,
                         &mut current,
                         &mut next,
                     );
                     (checked, unchecked)
                 };
-                assert_eq!(checked_staged, unchecked_staged);
+                assert_eq!(checked_output, unchecked_output);
                 eprintln!(
                     "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=reset_inclusive variant=checked batch_us={checked_reset:.3}"
                 );
@@ -467,8 +577,8 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                 );
             }
 
-            write_complex(&checked_output_path, &checked_staged);
-            write_complex(&unchecked_output_path, &unchecked_staged);
+            write_complex(&checked_output_path, &checked_output);
+            write_complex(&unchecked_output_path, &unchecked_output);
             eprintln!(
                 "RUST_BATCHES_COMPLETE lanes={lane_count} batches={batch_count} repetitions={repetitions} output_equal=true"
             );
@@ -539,11 +649,16 @@ fn run_fused_scalar_analysis_pair_variant<
     })
 }
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The benchmark forwards the operation state explicitly to match the production kernel inputs."
+)]
 fn calibrate_fused_scalar_analysis_pair<const CHECK_PAIR_GROUP_RANGE: bool>(
     repetitions: usize,
     arch: Arch,
     fixture: &Fixture,
     staged: &mut [Complex64],
+    output: &mut [Complex64],
     previous: &mut [f64],
     current: &mut [f64],
     next: &mut [f64],
@@ -558,13 +673,38 @@ fn calibrate_fused_scalar_analysis_pair<const CHECK_PAIR_GROUP_RANGE: bool>(
     let mut all_succeeded = true;
     for _ in 0..repetitions {
         reset_fused_scalar_analysis_pair(fixture, staged, previous, current);
-        all_succeeded &= run_fused_scalar_analysis_pair::<CHECK_PAIR_GROUP_RANGE>(
+        output.fill(Complex64::new(0.0, 0.0));
+        let succeeded = run_fused_scalar_analysis_pair::<CHECK_PAIR_GROUP_RANGE>(
             arch, fixture, staged, previous, current, next,
         );
-        std::hint::black_box((&*staged, &*previous, &*current, &*next));
+        if succeeded {
+            commit_staged_coefficients(staged, output);
+        }
+        all_succeeded &= succeeded;
+        std::hint::black_box((&*staged, &*output, &*previous, &*current, &*next));
     }
     let elapsed_us = started.elapsed().as_secs_f64() * 1.0e6 / repetitions as f64;
     assert!(all_succeeded);
+    elapsed_us
+}
+
+fn calibrate_commit_only(
+    repetitions: usize,
+    staged: &[Complex64],
+    output: &mut [Complex64],
+) -> f64 {
+    output.fill(Complex64::new(0.0, 0.0));
+    let started = Instant::now();
+    for _ in 0..repetitions {
+        commit_staged_coefficients(staged, output);
+    }
+    let elapsed_us = started.elapsed().as_secs_f64() * 1.0e6 / repetitions as f64;
+    std::hint::black_box(&*output);
+    assert!(
+        output
+            .iter()
+            .all(|value| value.re.is_finite() && value.im.is_finite())
+    );
     elapsed_us
 }
 
@@ -597,11 +737,86 @@ fn kernel_only_batch<const CHECK_PAIR_GROUP_RANGE: bool>(
     )
 }
 
+fn commit_staged_coefficients(staged: &[Complex64], output: &mut [Complex64]) {
+    for (coefficient, contribution) in output.iter_mut().zip(staged) {
+        *coefficient += *contribution;
+    }
+}
+
+fn reset_analysis_kernel_state(
+    fixture: &Fixture,
+    output: &mut [Complex64],
+    previous: &mut [f64],
+    current: &mut [f64],
+) {
+    previous.copy_from_slice(&fixture.previous);
+    current.copy_from_slice(&fixture.current);
+    output.fill(Complex64::new(0.0, 0.0));
+}
+
+fn commit_only_batch(repetitions: usize, staged: &[Complex64], output: &mut [Complex64]) -> f64 {
+    output.fill(Complex64::new(0.0, 0.0));
+    let started = Instant::now();
+    for _ in 0..repetitions {
+        commit_staged_coefficients(staged, output);
+    }
+    let elapsed_us = started.elapsed().as_secs_f64() * 1.0e6;
+    std::hint::black_box(&*output);
+    assert!(
+        output
+            .iter()
+            .all(|value| value.re.is_finite() && value.im.is_finite())
+    );
+    elapsed_us
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The benchmark forwards the operation state explicitly to match the production kernel inputs."
+)]
+fn kernel_plus_commit_batch<const CHECK_PAIR_GROUP_RANGE: bool>(
+    repetitions: usize,
+    arch: Arch,
+    fixture: &Fixture,
+    staged: &mut [Complex64],
+    output: &mut [Complex64],
+    previous: &mut [f64],
+    current: &mut [f64],
+    next: &mut [f64],
+) -> (f64, f64) {
+    let wall_started = Instant::now();
+    let mut kernel_and_commit_duration = std::time::Duration::ZERO;
+    let mut all_succeeded = true;
+    for _ in 0..repetitions {
+        reset_analysis_kernel_state(fixture, output, previous, current);
+        let started = Instant::now();
+        let succeeded = run_fused_scalar_analysis_pair::<CHECK_PAIR_GROUP_RANGE>(
+            arch, fixture, staged, previous, current, next,
+        );
+        if succeeded {
+            commit_staged_coefficients(staged, output);
+        }
+        kernel_and_commit_duration += started.elapsed();
+        all_succeeded &= succeeded;
+        std::hint::black_box((&*staged, &*output, &*previous, &*current, &*next));
+    }
+    assert!(all_succeeded);
+    (
+        kernel_and_commit_duration.as_secs_f64() * 1.0e6,
+        wall_started.elapsed().as_secs_f64() * 1.0e6,
+    )
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The benchmark forwards the operation state explicitly to match the production kernel inputs."
+)]
 fn reset_inclusive_batch<const CHECK_PAIR_GROUP_RANGE: bool>(
     repetitions: usize,
     arch: Arch,
     fixture: &Fixture,
     staged: &mut [Complex64],
+    output: &mut [Complex64],
     previous: &mut [f64],
     current: &mut [f64],
     next: &mut [f64],
@@ -609,11 +824,15 @@ fn reset_inclusive_batch<const CHECK_PAIR_GROUP_RANGE: bool>(
     let started = Instant::now();
     let mut all_succeeded = true;
     for _ in 0..repetitions {
-        reset_fused_scalar_analysis_pair(fixture, staged, previous, current);
-        all_succeeded &= run_fused_scalar_analysis_pair::<CHECK_PAIR_GROUP_RANGE>(
+        reset_analysis_kernel_state(fixture, output, previous, current);
+        let succeeded = run_fused_scalar_analysis_pair::<CHECK_PAIR_GROUP_RANGE>(
             arch, fixture, staged, previous, current, next,
         );
-        std::hint::black_box((&*staged, &*previous, &*current, &*next));
+        if succeeded {
+            commit_staged_coefficients(staged, output);
+        }
+        all_succeeded &= succeeded;
+        std::hint::black_box((&*staged, &*output, &*previous, &*current, &*next));
     }
     let elapsed_us = started.elapsed().as_secs_f64() * 1.0e6;
     assert!(all_succeeded);

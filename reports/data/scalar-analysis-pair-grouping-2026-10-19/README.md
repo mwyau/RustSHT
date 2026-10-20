@@ -17,9 +17,10 @@ script verifies SHA-256 equality for the pinned `sht_inner_loop.h`, `sht.h`,
 `simd.h` and `constants.h` before compiling. Set `CXX` to select the C++
 compiler; the default is `g++`. The script builds optimized release code with
 Rust `-C target-cpu=x86-64-v3` and C++ `-O3 -DNDEBUG -march=x86-64-v3`. By
-default, its checked Rust candidate fuses group-state range validation into
-the recurrence traversal; set `RUSTSHT_KERNEL_BENCH_RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs'`
-to benchmark the existing post-group scan instead. The script verifies that
+default, the checked Rust route uses the production post-group scan. To
+benchmark fused group-state validation instead, set
+`RUSTSHT_KERNEL_BENCH_RUSTFLAGS='-C target-cpu=x86-64-v3 --cfg rustsht_fused_analysis_pair_range_check -Aunexpected_cfgs'`.
+The script verifies that
 Rust selects Pulp V3 and DUCC uses four f64 lanes, and runs one fixture
 (`m=1`, `lmax=720`) at 64, 128 and 256 active latitude lanes.
 
@@ -28,39 +29,37 @@ To benchmark the scalar reduction variant, set
 This selects the same checked recurrence with one scalar mask reduction per
 four-lane vector chunk.
 
-The script warms and calibrates each specialization in a sustained batch
-(5,000 calls at 64 lanes, 3,000 at 128, and 1,400 at 256). It then chooses one
-shared operation count per lane count so the fastest variant targets 35 ms per
-batch and the slowest is projected below 95 ms. It records 30 batches in each
-of five independent process invocations per implementation and lane count. The
-Rust/DUCC process order alternates by invocation, and checked/unchecked Rust
-batches alternate their within-process order. Each child is pinned to the same
-allowed logical CPU; frequency and scheduler counters are sampled outside the
-benchmark core where a second physical core is available. Frequency sampling
-uses the cpufreq policy covering the pinned CPU. Output includes batch
-median, p10/p90 and full-range distributions, per-process medians and p10/p90,
-frequency and scheduling summaries. Process timing distributions and their
-host diagnostics share backend, lane-count and invocation identifiers so
-between-process timing regimes can be checked against sampled frequency,
-involuntary context switches and run-queue wait.
+The script warms and calibrates each specialization in sustained batches. It
+chooses separate operation counts for recurrence and commit-only work so every
+measured batch targets 35 ms and is checked against a 20–95 ms window. It
+records 30 batches in each of five independent process invocations per
+implementation and lane count. Rust/DUCC process order alternates by
+invocation; checked/unchecked Rust variants alternate within each mode. Each
+child is pinned to the same allowed logical CPU. Frequency and scheduler
+counters are sampled outside the benchmark core where a second physical core
+is available. Output includes batch median, p10/p90 and full-range
+distributions, per-process medians and p10/p90, frequency and scheduling
+summaries.
 
 The benchmark prints only a sanitized summary. Fixtures, binaries and raw
 samples live in a temporary directory that is removed at exit.
 
 ## Timed boundaries
 
-- `kernel_only` restores identical recurrence input state and clears the
-  coefficient output before each operation, outside that operation's timer.
-  The reported kernel duration sums per-operation intervals; the surrounding
-  batch wall time also includes resets. Rust's `next` buffer is recurrence
-  scratch, overwritten before it is read, so it is not part of the input reset.
-- `reset_inclusive` times the input copies, output clear and kernel together.
-  Rust and DUCC restore the same `previous/current` recurrence values and zero
-  the corresponding coefficient output on every operation. DUCC's padded
-  output buffer is cleared only over its active `m..=lmax` coefficient span.
+- Rust `kernel_only` times the fused recurrence, SIMD accumulation and writes
+  into `staged_coefficients`. It is a Rust subphase and is not compared directly
+  with DUCC, whose ordinary kernel updates its output coefficients directly.
+- Rust `commit_only` times repeated additions from the staged array into the
+  output array. The output is cleared once per batch, then consumed after the
+  repeated commit operations finish.
+- `kernel_plus_commit` is the matched boundary. Rust restores identical input
+  state and clears output outside the timer, then runs the fused recurrence and
+  commits staged coefficients inside it. DUCC performs the direct coefficient
+  accumulation inside `map2alm_kernel`. `reset_inclusive` includes the same
+  input copies and output clearing for both implementations.
 - Coefficient preparation, ring packing, FFT, scheduling and complete-transform
-  costs are outside both boundaries. The benchmark compares the ordinary
-  recurrence and coefficient accumulation only.
+  costs are outside all direct-kernel boundaries. Rust's `next` scratch is
+  overwritten before use. Output arrays are compared outside timed regions.
 
 Rust passes mutable state through `std::hint::black_box` and consumes outputs
 after each batch. DUCC uses a compiler fence and post-batch checksum. Both
