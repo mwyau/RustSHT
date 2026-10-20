@@ -86,6 +86,15 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   ordinary recurrence versus spectrum accumulation and evaluate the reduction
   only as part of the cumulative candidate.
 
+- At `2d4fd6b6`, added a cfg-gated safe indexed loop ablation for the validated
+  SIMD slices; zipped iterators remain production default. On matched T720
+  `m=1` kernel-plus-commit batches, Rust latency changed −0.25%, −0.34%, and
+  −0.17% at 64/128/256 lanes, with overlapping sample ranges. The V3 symbol
+  was 29 instructions smaller but retained the same FMA and YMM memory counts;
+  no time benefit was established. Numerical, exceptional-value, adjoint and
+  tail tests pass in both loop builds. Next isolate recurrence from the four
+  spectrum accumulation chains before selecting another source rewrite.
+
 - The T64 dispatch experiment covered 848 rows for the full matrix and a
   clean 104-row final-policy boundary/reduced-order subset (312 numerical
   comparisons, maximum relative L2 error `2.353e-14`). A global T64 rule

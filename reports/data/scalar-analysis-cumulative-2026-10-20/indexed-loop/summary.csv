@@ -1,0 +1,7 @@
+loop_form,active_lanes,rust_kernel_only_median_us,rust_kernel_only_p10_us,rust_kernel_only_p90_us,rust_kernel_only_process_range_over_median_pct,rust_kernel_only_process_stability,rust_kernel_plus_commit_median_us,rust_kernel_plus_commit_p10_us,rust_kernel_plus_commit_p90_us,rust_kernel_plus_commit_process_range_over_median_pct,rust_kernel_plus_commit_process_stability,ducc_kernel_plus_commit_median_us,ducc_kernel_plus_commit_p10_us,ducc_kernel_plus_commit_p90_us,paired_rust_ducc_ratio,paired_ratio_p10,paired_ratio_p90,paired_excess_us,output_relative_l2,output_max_abs,timed_batches_per_backend,process_invocations_per_backend
+zipped,64,4.728,4.69,4.87,3.9,STABLE,4.861,4.823,5.014,3.8,STABLE,4.108,4.083,4.144,1.182,1.172,1.211,0.747,6.67e-14,5.009e-12,60,10
+zipped,128,8.747,8.705,8.814,1.2,STABLE,8.892,8.845,8.939,0.7,STABLE,8.043,7.985,8.1,1.105,1.101,1.11,0.841,1.628e-13,1.896e-11,60,10
+zipped,256,17.057,16.951,17.238,5.3,STABLE,17.237,17.068,17.519,5.3,STABLE,15.948,15.77,16.543,1.083,1.052,1.097,1.329,5.928e-14,2.559e-11,60,10
+indexed,64,4.735,4.699,5.058,18.1,UNSTABLE,4.849,4.812,4.98,13.0,STABLE,4.104,4.085,4.133,1.179,1.173,1.209,0.734,6.67e-14,5.009e-12,60,10
+indexed,128,8.745,8.684,8.812,1.3,STABLE,8.862,8.811,8.917,0.9,STABLE,8.046,7.979,8.139,1.102,1.094,1.106,0.823,1.628e-13,1.896e-11,60,10
+indexed,256,17.072,16.974,17.158,0.7,STABLE,17.207,17.102,17.282,0.7,STABLE,15.819,15.741,15.946,1.087,1.083,1.088,1.378,5.928e-14,2.559e-11,60,10

@@ -15,7 +15,8 @@ selected Pulp V3 and fixed DUCC x86-64-v3 for the measured transforms.
 | 1 | Scalar f64 analysis pair tile: 64/128/256 | Already implemented at `c19e5382`; production default is 256, with 64/128 controls. Active-pair counts fell from 3,384/1,851 to 1,139 at T720 and from 453/302 to 151 at T300. The prior three-process screen measured T720 full q1 at 27.581/26.462/26.467 ms and q8 at 4.487/4.342/4.290 ms; T300 reduced-order q1 at 2.859/2.752/2.704 ms. Keep 256 pending the combined ablation. See the [tile screen](archive/experiments/scalar-analysis-pair-grouping-2026-10-19.md). |
 | 2 | Fixed-capacity contiguous state/spectrum scratch | Candidate is behind `rustsht_scalar_analysis_fixed_simd_arrays`; it packs previous/current/next and the four prepared spectrum planes as contiguous 256-element, 64-byte-aligned arrays. The full-transform screen suggests a small q1 benefit, but q8 is inconclusive under high scheduler wait. Retain for cumulative evaluation; the Vec layout remains the default during the experiment. |
 | 3 | DUCC-style packed complex horizontal reduction | Candidate is gated by `rustsht_packed_complex_pair_reduction`; default remains the eight scalar f64 reductions. In matched T720 `m=1` kernel batches, kernel-only medians improved 2.8%, 2.5% and 1.1% at 64/128/256 active lanes. Kernel-plus-commit Rust medians improved 2.9%, 1.9% and 0.9%; numerical checks passed. A separate full-transform q1 screen was neutral-to-small but did not isolate the reduction; q8 was host-contended. Keep for cumulative evaluation; do not change the default yet. |
-| 4–10 | Range-check placement; output staging; sectoral initialization; prefix; scaled transition; input packing; final conversion | Pending in the owner-specified sequence after the reduction experiment. |
+| 4 | Zipped versus safe indexed SIMD loop | Candidate is gated by `rustsht_indexed_analysis_pair_loop`; the production default remains zipped. At 64/128/256 active lanes the matched kernel-plus-commit Rust median changed by −0.25%/−0.34%/−0.17%, within overlapping distributions. Static code size fell 1.7%, but vector arithmetic, memory operands, and spill behavior were unchanged. No speedup was demonstrated. |
+| 5–10 | Recurrence/accumulation attribution; output staging; sectoral initialization; prefix; scaled transition; input packing; final conversion | Continue in the owner-specified sequence after the reduction and loop-form ablations. |
 
 The initial fixed-scratch comparison is full native synthesis and analysis,
 including packing, Legendre work, FFT and output production. Ten GL geometries
@@ -131,3 +132,38 @@ inconclusive. Next, compare the recurrence and four-spectrum accumulation
 costs separately, then combine only candidates whose individual and
 cumulative timings remain stable. Machine-readable results and reproduction
 commands are in [the packed-reduction data directory](data/scalar-analysis-cumulative-2026-10-20/packed-reduction/README.md).
+
+## Zipped versus indexed SIMD loop
+
+The comparison used baseline `68381d3d` and candidate `2d4fd6b6`. The
+candidate keeps the same per-vector recurrence and eight accumulators in a
+shared macro, then visits validated equal-length SIMD slices using safe
+indices under `rustsht_indexed_analysis_pair_loop`. The default build still
+uses the existing zipped iterators. No recurrence, accumulation, safety check,
+or reduction arithmetic changed.
+
+Both builds used Rust 1.99.1, strict FP, Pulp V3, and the same native kernel
+harness as the packed-reduction comparison. DUCC was compiled with GCC 15.2
+using `-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3`; its driver was
+strict. Ten alternating Rust/DUCC process pairs collected 60 calibrated
+20–100 ms batches at each lane count, with matched T720 GL `m=1` inputs.
+
+| Active lanes | Rust kernel only, zipped→indexed (µs) | Rust kernel+commit, zipped→indexed (µs) | DUCC kernel+commit (µs) | Paired ratio, zipped→indexed | Relative L2 |
+|---:|---:|---:|---:|---:|---:|
+| 64 | 4.728→4.735 | 4.861→4.849 | 4.108 / 4.104 | 1.182→1.179 | `6.670e-14` |
+| 128 | 8.747→8.745 | 8.892→8.862 | 8.043 / 8.046 | 1.105→1.102 | `1.628e-13` |
+| 256 | 17.057→17.072 | 17.237→17.207 | 15.948 / 15.819 | 1.083→1.087 | `5.928e-14` |
+
+The p10–p90 ranges overlap at all lane counts. The indexed 64-lane run had
+one process median outside the other samples; the benchmark retained it and
+flagged that lane's process spread as unstable. Measured run-queue wait was
+negligible in both executions, so no timing samples were filtered.
+
+The executed Pulp V3 pair symbol decreased from 6,113 to 6,008 bytes and from
+1,257 to 1,228 disassembled instructions. It retained the same 46 packed
+`vfmadd*pd`, 66 scalar-double FMA, 159 total scalar-double, and 108 YMM memory
+instructions; both binaries had zero YMM stack operands. The static change is
+consistent with less iterator control, but it did not improve measured time.
+Keep the indexed form only as a compile-time candidate for cumulative
+evaluation; do not change production loop selection. See the
+[machine-readable comparison and reproduction notes](data/scalar-analysis-cumulative-2026-10-20/indexed-loop/README.md).
