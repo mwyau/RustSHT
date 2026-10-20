@@ -30,8 +30,8 @@ The q1 improvement repeated at both sizes. The pooled q8 result is near
 neutral at T511 and slightly faster at T1023, with ranges that still cross
 zero. The process peak RSS medians are within 52 KiB of baseline across these
 cases; no workspace arrays were added. Initial and repeated samples are in
-[`paired-results.tsv`](data/spin1-analysis-range-check-fusion-screen-2026-10-15/paired-results.tsv)
-and [`q8-results.tsv`](data/spin1-analysis-range-check-fusion-screen-2026-10-15/q8-results.tsv). The [paired-process provenance](data/spin1-analysis-range-check-fusion-screen-2026-10-15/paired-process-provenance.md) retains binary hashes and source identity.
+[`paired-results.tsv`](../../data/spin1-analysis-range-check-fusion-screen-2026-10-15/paired-results.tsv)
+and [`q8-results.tsv`](../../data/spin1-analysis-range-check-fusion-screen-2026-10-15/q8-results.tsv). The [paired-process provenance](../../data/spin1-analysis-range-check-fusion-screen-2026-10-15/paired-process-provenance.md) retains binary hashes and source identity.
 
 ## Current T1023 comparison with DUCC
 
@@ -50,7 +50,7 @@ One DUCC q1 process contained a much slower inner run, widening the q1 ratio
 range. The q8 comparison is narrower. The ratio describes the candidate's
 current timing against this DUCC run; it does not isolate the code change's
 effect on the ratio. Numerical results, version information and binary identity are in
-[`the DUCC comparison data`](data/spin1-analysis-range-check-fusion-screen-2026-10-15/ducc-comparison/).
+[`the DUCC comparison data`](../../data/spin1-analysis-range-check-fusion-screen-2026-10-15/ducc-comparison).
 
 ## Validation
 

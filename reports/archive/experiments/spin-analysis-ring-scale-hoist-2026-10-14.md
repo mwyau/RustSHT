@@ -51,7 +51,7 @@ checks, not timing comparisons. The host was an x86-64 CPU running Linux. Rust w
 `1.99.0 (b940084d7 2026-09-28)` with LLVM 23.1.1. The release profile used
 `opt-level=3`, 16 codegen units and no LTO; Pulp used portable runtime dispatch
 prevented hardware-counter collection. Benchmark output with all paired raw
-samples is in [`paired-process-samples.txt`](data/spin-analysis-ring-scale-hoist-2026-10-14/paired-process-samples.txt). Reproduce the native run with:
+samples is in [`paired-process-samples.txt`](../../data/spin-analysis-ring-scale-hoist-2026-10-14/paired-process-samples.txt). Reproduce the native run with:
 
 ```sh
 cargo build --release --example m1b_bench

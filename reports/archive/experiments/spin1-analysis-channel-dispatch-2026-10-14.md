@@ -45,7 +45,7 @@ latency; the results below describe only the corrected candidate.
   `src/legendre/scalar_paired.rs`, `src/legendre/scalar.rs` and
   `src/spin_transform.rs`; those changes were removed after measurement.
 - Process medians and all five inner samples are in
-  [`process-medians.csv`](data/spin1-analysis-channel-dispatch-2026-10-14/process-medians.csv).
+  [`process-medians.csv`](../../data/spin1-analysis-channel-dispatch-2026-10-14/process-medians.csv).
 
 ## Native timings
 

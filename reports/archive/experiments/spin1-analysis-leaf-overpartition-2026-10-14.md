@@ -19,7 +19,7 @@ The baseline executable was built from RustSHT commit `803ccb1` and saved with S
 | T720 `721x1443` | 8 | 3 | `34.486 / 38.403` | `+11.55%` slower | 0/3 |
 | T511 `512x1025` control | 4 | 3 | `15.988 / 15.971` | `+1.13%` | branch disabled |
 
-The T511 q8 candidate was slower in four process pairs and faster in one. T511 q16 had one large candidate slowdown despite two faster process medians. T720 q8 slowed by 10–13% in all three pairs. The q4 control exercised the baseline path on both sides and shows expected process noise. The candidate reused the workspace's existing recurrence buffers; it requested no extra workspace allocation. Per-process timing vectors, first-call times and workspace allocation samples are in [`more-leaves-paired-samples.txt`](data/spin1-analysis-thread-scaling-2026-10-14/more-leaves-paired-samples.txt). The command for each process was:
+The T511 q8 candidate was slower in four process pairs and faster in one. T511 q16 had one large candidate slowdown despite two faster process medians. T720 q8 slowed by 10–13% in all three pairs. The q4 control exercised the baseline path on both sides and shows expected process noise. The candidate reused the workspace's existing recurrence buffers; it requested no extra workspace allocation. Per-process timing vectors, first-call times and workspace allocation samples are in [`more-leaves-paired-samples.txt`](../../data/spin1-analysis-thread-scaling-2026-10-14/more-leaves-paired-samples.txt). The command for each process was:
 
 ```sh
 taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" examples/m1b_bench 1 511 8 analysis GL STANDARD 512 1025 511 requested-only

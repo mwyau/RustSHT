@@ -10,7 +10,7 @@ process medians ranged from `8.394` to `18.434 ms`. Two later screens used
 eight workers for q8; its local interference review found less competing activity. Their q8 ratios were similar
 (`1.77x` and `1.82x`). The DUCC times in these follow-ups are close to the
 `27.862/4.147 ms` q1/q8 Python-plan values in the [October 12 milestone
-record](../plans/05-validation-and-milestones.md#comparative-spin-1-analysis-profile-and-polar-cutoff-2026-10-12),
+record](../../../plans/05-validation-and-milestones.md#comparative-spin-1-analysis-profile-and-polar-cutoff-2026-10-12),
 and differ from the `13.056/1.943 ms` values in the [October 14
 thread-scaling report](spin1-analysis-thread-scaling-2026-10-14.md). The
 cross-session difference remains unresolved; this refresh records the current
@@ -38,7 +38,7 @@ the benchmark had no observed CPU quota.
 
 The host was an x86-64 CPU running Linux. Rust was
 `1.99.0` with LLVM `23.1.1`; release builds used portable Pulp runtime
-dispatch and no `target-cpu=native`. Python was `3.11.15` with NumPy `2.4.6`. Inner timing samples, paired results and binary hashes are in the [benchmark data directory](data/spin1-analysis-ducc-refresh-2026-10-15/). Raw process, load and command captures remain local and untracked. The `preliminary-*` files record an earlier run whose native q1 arguments were
+dispatch and no `target-cpu=native`. Python was `3.11.15` with NumPy `2.4.6`. Inner timing samples, paired results and binary hashes are in the [benchmark data directory](../../data/spin1-analysis-ducc-refresh-2026-10-15). Raw process, load and command captures remain local and untracked. The `preliminary-*` files record an earlier run whose native q1 arguments were
 incorrect. The first corrected q8 screen had wide variation; the two
 follow-ups used a separate CPU set and showed similar paired ratios. No Rust
 source or transform behavior changed during these measurements. Existing
