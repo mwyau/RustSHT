@@ -115,8 +115,22 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   process-median ratios were `0.994/0.992` for full-mmax q1/q8
   and `0.945/1.014` for reduced `mmax=255` q1/q8. These small, noisy changes do
   not establish a general speedup; keep the candidate opt-in for final
-  cumulative ablation. Next, inspect `fill_m2a` input packing and remaining
-  coefficient preparation work for the initially scaled block population.
+  cumulative ablation.
+- Candidate `rustsht_fused_analysis_input_preparation` at `0b423400` combines
+  the packed-spectrum range check and opposite-parity cosine weighting in one
+  lane pass, retaining the separate production path and restoring inputs before
+  scaled fallback on failure. The helper matches the previous checks for normal,
+  subnormal, zero, extreme and SIMD-tail cases; candidate T511 DUCC/analytic,
+  cached-safety and q1/q8 consistency tests passed. A same-source Rust 1.99,
+  x86-64-v3 T720 GL screen used three alternating process pairs, one warmup and
+  five samples, with q1 on one physical core and q8 on eight. Candidate/base
+  medians were `23.382/23.485 ms` full-mmax q1, `3.897/3.978 ms` full-mmax q8,
+  `17.774/17.899 ms` reduced-mmax q1 and `2.643/2.584 ms` reduced-mmax q8.
+  The mixed result, including a 2.3% reduced-mmax q8 regression, is not a
+  general speedup; retain it disabled for cumulative ablation. All-target,
+  all-feature Clippy and the no-default-feature helper test passed. Next, inspect
+  the alpha/epsilon final coefficient conversion corresponding to DUCC's
+  `inner_loop_m2a`.
 - Warmup-controlled rerun at `9967ad19` kept the same work and flags after the
   DUCC timed-process warmup fix. Across 64/128/256 lanes, kernel-plus-commit
   medians (checked/unchecked/DUCC, µs) were `7.151/4.848/4.115`,
