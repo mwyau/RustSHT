@@ -14,7 +14,7 @@ selected Pulp V3 and fixed DUCC x86-64-v3 for the measured transforms.
 |---|---|---|
 | 1 | Scalar f64 analysis pair tile: 64/128/256 | Already implemented at `c19e5382`; production default is 256, with 64/128 controls. Active-pair counts fell from 3,384/1,851 to 1,139 at T720 and from 453/302 to 151 at T300. The prior three-process screen measured T720 full q1 at 27.581/26.462/26.467 ms and q8 at 4.487/4.342/4.290 ms; T300 reduced-order q1 at 2.859/2.752/2.704 ms. Keep 256 pending the combined ablation. See the [tile screen](archive/experiments/scalar-analysis-pair-grouping-2026-10-19.md). |
 | 2 | Fixed-capacity contiguous state/spectrum scratch | Candidate is behind `rustsht_scalar_analysis_fixed_simd_arrays`; it packs previous/current/next and the four prepared spectrum planes as contiguous 256-element, 64-byte-aligned arrays. The full-transform screen suggests a small q1 benefit, but q8 is inconclusive under high scheduler wait. Retain for cumulative evaluation; the Vec layout remains the default during the experiment. |
-| 3 | DUCC-style packed complex horizontal reduction | Next. The AVX2 reduction experiments recorded earlier are not reintroduced unchanged. |
+| 3 | DUCC-style packed complex horizontal reduction | Candidate is gated by `rustsht_packed_complex_pair_reduction`; default remains the eight scalar f64 reductions. In matched T720 `m=1` kernel batches, kernel-only medians improved 2.8%, 2.5% and 1.1% at 64/128/256 active lanes. Kernel-plus-commit Rust medians improved 2.9%, 1.9% and 0.9%; numerical checks passed. A separate full-transform q1 screen was neutral-to-small but did not isolate the reduction; q8 was host-contended. Keep for cumulative evaluation; do not change the default yet. |
 | 4–10 | Range-check placement; output staging; sectoral initialization; prefix; scaled transition; input packing; final conversion | Pending in the owner-specified sequence after the reduction experiment. |
 
 The initial fixed-scratch comparison is full native synthesis and analysis,
@@ -70,7 +70,64 @@ seven scratch planes use the same 14,336-byte f64 payload per worker as seven
 256-element vectors; the candidate removes those seven data allocations and
 places the arrays inline. Peak RSS was not measured in this screen.
 
-The implementation remains experimental pending the cumulative 64/128/256
-comparison and ablations. Next, implement a distinct packed reduction
-candidate, measure its isolated and full-transform effects, and continue with
-the remaining steps before selecting the final production layout.
+## Packed complex reduction ablation
+
+The source baseline was `1548b5c5`; candidate `0db88bd5` adds a cfg-gated
+Pulp reduction and an exact lane-sum test. With four f64 lanes, it interleaves
+the real/imaginary accumulator vectors and reduces two complex vectors per
+coefficient pair. Other lane widths and the default build keep separate f64
+reductions. The recurrence, product preparation, range checks, safety cache,
+and scaled fallback are unchanged.
+
+The direct comparison used T720 GL, `m=1`, checked-proven warmed recurrence,
+and 64/128/256 active-ring lanes. Rust 1.99.1 used Pulp V3 and strict FP under
+`-C target-cpu=x86-64-v3`; DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`
+used GCC 15.2, an AVX2/FMA v3 kernel compiled with `-O3 -ffast-math
+-ffp-contract=fast -march=x86-64-v3`, and a strict driver. Ten alternating
+process pairs produced 60 calibrated 20–100 ms batches per backend, lane
+count, and timing boundary. The unchanged fixture and output checks were used
+for both binaries.
+
+| Active lanes | Rust kernel only, base→candidate (µs) | Change | Rust kernel+commit, base→candidate (µs) | DUCC kernel+commit, base/candidate (µs) | Paired Rust/DUCC, base→candidate | Candidate relative L2 |
+|---:|---:|---:|---:|---:|---:|---:|
+| 64 | 7.821→7.601 | −2.8% | 8.024→7.789 | 8.117 / 8.122 | 0.990→0.959 | `6.670e-14` |
+| 128 | 14.250→13.894 | −2.5% | 14.400→14.130 | 15.768 / 15.861 | 0.914→0.889 | `1.628e-13` |
+| 256 | 26.574→26.270 | −1.1% | 26.708→26.464 | 30.994 / 30.806 | 0.862→0.861 | `5.928e-14` |
+
+The candidate’s Rust process-median spread was 1.3–3.3%; the baseline spread
+was 1.7–6.3%. DUCC spread was 3.1–7.9%. The total kernel-only improvement is
+small at 256 lanes, where recurrence and accumulation remain the larger body
+of work. Numerical maximum
+absolute errors were `5.009e-12`, `1.896e-11`, and `2.559e-11` at 64/128/256
+lanes; the scaled coefficient difference was `1.970e-16` for each case.
+
+In the optimized V3 pair symbol, the packed candidate reduced code size from
+6,113 to 5,648 bytes and the `objdump` instruction count from 1,257 to 1,170.
+Packed `vfmadd*pd` increased from 46 to 58, scalar-double FMA decreased from
+66 to 42, and all counted scalar-double instructions decreased from 159 to
+96. YMM memory operands increased from 108 to 116; neither version spilled
+YMM values to the stack. These are whole-symbol static counts, not dynamic
+loop counts. The candidate exchanges some scalar reduction work for vector
+interleave/reduction work; timing, rather than the instruction counts, is the
+evidence for the modest kernel improvement.
+
+A full-transform check used T720 GL `mmax=1`, `ntheta=721`, odd-minimum
+`nphi=3`, analysis and synthesis, q1/q8, and three process pairs with ten
+25 ms-target batches per backend. Baseline versus the cumulative fixed-scratch
+plus packed-reduction candidate measured q1 analysis at 175.383 versus
+172.493 µs and q1 synthesis at 240.252 versus 240.224 µs. Their paired Rust /
+DUCC ratios were 0.733→0.709 for analysis and 1.073→1.069 for synthesis.
+These were separate runs, and the candidate also enables fixed scratch, so
+the q1 difference is directional and does not isolate the reduction. q8
+ranges overlapped broadly, and run-queue contention was high in both runs; do
+not attribute a q8 change. A separate reduction-only full-transform
+invocation entered a different timing regime: both Rust and DUCC latencies
+shifted substantially, so it is retained in the CSV as a host-regime
+diagnostic and excluded from effect estimation.
+
+The kernel candidate remains compile-time gated. The T720 q1 full-transform
+screen supports no production policy change, and the q8 result is
+inconclusive. Next, compare the recurrence and four-spectrum accumulation
+costs separately, then combine only candidates whose individual and
+cumulative timings remain stable. Machine-readable results and reproduction
+commands are in [the packed-reduction data directory](data/scalar-analysis-cumulative-2026-10-20/packed-reduction/README.md).

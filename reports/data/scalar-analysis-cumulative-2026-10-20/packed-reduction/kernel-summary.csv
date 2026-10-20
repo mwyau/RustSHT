@@ -1,0 +1,7 @@
+variant,active_lanes,rust_kernel_only_median_us,rust_kernel_only_p10_us,rust_kernel_only_p90_us,rust_kernel_plus_commit_median_us,rust_kernel_plus_commit_p10_us,rust_kernel_plus_commit_p90_us,ducc_kernel_plus_commit_median_us,ducc_kernel_plus_commit_p10_us,ducc_kernel_plus_commit_p90_us,paired_rust_ducc_ratio,paired_excess_us,output_relative_l2,output_max_abs,timed_batches_per_backend,process_pairs
+baseline,64,7.821,7.61,7.896,8.024,7.875,8.149,8.117,7.9,8.448,0.99,-0.08,6.67e-14,5.009e-12,60,10
+baseline,128,14.25,14.079,14.592,14.4,14.159,14.988,15.768,15.589,16.101,0.914,-1.347,1.628e-13,1.896e-11,60,10
+baseline,256,26.574,26.258,26.846,26.708,26.437,26.961,30.994,30.374,32.261,0.862,-4.257,5.928e-14,2.559e-11,60,10
+packed,64,7.601,7.403,7.676,7.789,7.645,7.923,8.122,7.884,8.335,0.959,-0.328,6.67e-14,5.009e-12,60,10
+packed,128,13.894,13.772,14.106,14.13,13.905,14.292,15.861,15.519,16.306,0.889,-1.765,1.628e-13,1.896e-11,60,10
+packed,256,26.27,25.897,26.504,26.464,25.99,26.704,30.806,29.997,31.4,0.861,-4.289,5.928e-14,2.559e-11,60,10

@@ -75,6 +75,17 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   host permissions. Next compare stage-level q1/q8 behavior across larger
   degrees, separating recurrence/accumulation from packing, FFT and scheduling.
 
+- At `0db88bd5`, added a cfg-gated Pulp packed-complex horizontal reduction
+  for the warmed f64 scalar-analysis pair kernel. Against the previous
+  `1548b5c5` source, matched T720 `m=1` kernel-plus-commit medians improved
+  2.9%, 1.9% and 0.9% at 64/128/256 active lanes; paired Rust/DUCC ratios were
+  0.959/0.889/0.861 versus 0.990/0.914/0.862. Numerical checks passed. The
+  separate-run q1 full-transform check was directional only because it also
+  enabled the fixed-scratch candidate; q8 was inconclusive under high run-queue
+  contention. Existing reductions remain the production default. Next isolate
+  ordinary recurrence versus spectrum accumulation and evaluate the reduction
+  only as part of the cumulative candidate.
+
 - The T64 dispatch experiment covered 848 rows for the full matrix and a
   clean 104-row final-policy boundary/reduced-order subset (312 numerical
   comparisons, maximum relative L2 error `2.353e-14`). A global T64 rule
