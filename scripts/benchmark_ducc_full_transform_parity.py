@@ -30,7 +30,10 @@ DUCC_REVISION = os.environ.get(
 HISTORICAL_DUCC_REVISION = "80388904b8cfc32400ba84af8a6a45aabfe60f86"
 DATA_DIR = ROOT / "reports/data/ducc-full-transform-parity-2026-10-20"
 REPORT_PATH = ROOT / "reports/ducc-full-transform-parity-2026-10-20.md"
-RUST_FLAGS = "-C target-cpu=x86-64-v3 -Aunexpected_cfgs"
+RUST_FLAGS = os.environ.get(
+    "RUSTSHT_FULL_TRANSFORM_RUSTFLAGS",
+    "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+)
 PHI0 = 0.23
 TARGET_BATCH_MS = 25.0
 PROCESS_PAIRS = 3
@@ -575,7 +578,8 @@ def hardware_metadata(ducc_src: pathlib.Path) -> dict:
 
 
 def build(ducc_src: pathlib.Path, build_dir: pathlib.Path, skip_build: bool) -> dict[str, pathlib.Path]:
-    rust_binary = ROOT / "target/release/examples/ducc_full_transform_parity"
+    cargo_target_dir = pathlib.Path(os.environ.get("CARGO_TARGET_DIR", ROOT / "target"))
+    rust_binary = cargo_target_dir / "release/examples/ducc_full_transform_parity"
     ducc_binary = build_dir / "ducc_full_transform_parity"
     if not skip_build:
         env = os.environ.copy()

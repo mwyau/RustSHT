@@ -14,6 +14,8 @@ use crate::legendre::{
 };
 use crate::meridional::CCResamplingPlan;
 
+const ANALYSIS_VECTOR_BUFFER_CAPACITY: usize = crate::legendre::SCALAR_ORDER_BATCH_SIZE;
+
 #[cfg(all(test, feature = "parallel"))]
 use std::collections::BTreeSet;
 #[cfg(all(test, feature = "parallel"))]
@@ -59,11 +61,27 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
     transform_phase_probe: Option<TransformPhaseProbe>,
 }
 
+#[allow(unexpected_cfgs)]
+#[cfg_attr(rustsht_scalar_analysis_fixed_simd_arrays, repr(C))]
 pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
+    // Keep the scalar recurrence state and the four packed analysis spectra
+    // together. The fixed-array experiment matches DUCC's per-order SIMD
+    // storage while preserving slice-based Pulp dispatch.
+    #[allow(unexpected_cfgs)]
+    pub(crate) previous: AnalysisVectorBuffer<T>,
+    #[allow(unexpected_cfgs)]
+    pub(crate) current: AnalysisVectorBuffer<T>,
+    #[allow(unexpected_cfgs)]
+    pub(crate) next: AnalysisVectorBuffer<T>,
+    #[allow(unexpected_cfgs)]
+    pub(crate) analysis_same_real: AnalysisVectorBuffer<T>,
+    #[allow(unexpected_cfgs)]
+    pub(crate) analysis_same_imag: AnalysisVectorBuffer<T>,
+    #[allow(unexpected_cfgs)]
+    pub(crate) analysis_opposite_real: AnalysisVectorBuffer<T>,
+    #[allow(unexpected_cfgs)]
+    pub(crate) analysis_opposite_imag: AnalysisVectorBuffer<T>,
     pub(crate) epsilon: Vec<T>,
-    pub(crate) previous: Vec<T>,
-    pub(crate) current: Vec<T>,
-    pub(crate) next: Vec<T>,
     pub(crate) exponents: Vec<i64>,
     pub(crate) analysis_scale_epochs: Vec<T>,
     pub(crate) analysis_scale_corrections: Vec<T>,
@@ -80,10 +98,6 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     pub(crate) spin_exponents_minus: Vec<i64>,
     pub(crate) weighted_spin_q_spectrum: Vec<Complex<T>>,
     pub(crate) weighted_spin_u_spectrum: Vec<Complex<T>>,
-    pub(crate) analysis_same_real: Vec<T>,
-    pub(crate) analysis_same_imag: Vec<T>,
-    pub(crate) analysis_opposite_real: Vec<T>,
-    pub(crate) analysis_opposite_imag: Vec<T>,
     pub(crate) scalar_order_correction: Vec<T>,
     pub(crate) compact_theta_sin: Vec<T>,
     pub(crate) compact_theta_cos: Vec<T>,
@@ -107,6 +121,76 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     profile_scaled_blocks: usize,
     #[cfg(all(test, feature = "parallel"))]
     profile_mixed_blocks: usize,
+}
+
+#[allow(unexpected_cfgs)]
+#[cfg(rustsht_scalar_analysis_fixed_simd_arrays)]
+#[repr(align(64))]
+pub(crate) struct FixedAnalysisVectorBuffer<T: ShtScalar>([T; ANALYSIS_VECTOR_BUFFER_CAPACITY]);
+
+#[allow(unexpected_cfgs)]
+#[cfg(rustsht_scalar_analysis_fixed_simd_arrays)]
+impl<T: ShtScalar> FixedAnalysisVectorBuffer<T> {
+    fn new(length: usize, name: &'static str) -> Result<Self, ShtError> {
+        if length > ANALYSIS_VECTOR_BUFFER_CAPACITY {
+            return Err(ShtError::BufferLength {
+                buffer: name,
+                expected: length,
+                actual: ANALYSIS_VECTOR_BUFFER_CAPACITY,
+            });
+        }
+        Ok(Self([T::zero(); ANALYSIS_VECTOR_BUFFER_CAPACITY]))
+    }
+
+    #[cfg(test)]
+    pub(crate) fn capacity(&self) -> usize {
+        ANALYSIS_VECTOR_BUFFER_CAPACITY
+    }
+}
+
+#[allow(unexpected_cfgs)]
+#[cfg(rustsht_scalar_analysis_fixed_simd_arrays)]
+impl<T: ShtScalar> std::ops::Deref for FixedAnalysisVectorBuffer<T> {
+    type Target = [T];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[allow(unexpected_cfgs)]
+#[cfg(rustsht_scalar_analysis_fixed_simd_arrays)]
+impl<T: ShtScalar> std::ops::DerefMut for FixedAnalysisVectorBuffer<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[allow(unexpected_cfgs)]
+#[cfg(rustsht_scalar_analysis_fixed_simd_arrays)]
+type AnalysisVectorBuffer<T> = FixedAnalysisVectorBuffer<T>;
+
+#[allow(unexpected_cfgs)]
+#[cfg(not(rustsht_scalar_analysis_fixed_simd_arrays))]
+type AnalysisVectorBuffer<T> = Vec<T>;
+
+#[allow(unexpected_cfgs)]
+#[cfg(rustsht_scalar_analysis_fixed_simd_arrays)]
+fn allocate_analysis_vector_buffer<T: ShtScalar>(
+    length: usize,
+    name: &'static str,
+) -> Result<AnalysisVectorBuffer<T>, ShtError> {
+    FixedAnalysisVectorBuffer::new(length, name)
+}
+
+#[allow(unexpected_cfgs)]
+#[cfg(not(rustsht_scalar_analysis_fixed_simd_arrays))]
+fn allocate_analysis_vector_buffer<T: ShtScalar>(
+    length: usize,
+    name: &'static str,
+) -> Result<AnalysisVectorBuffer<T>, ShtError> {
+    debug_assert!(length <= ANALYSIS_VECTOR_BUFFER_CAPACITY);
+    allocate_real(length, name)
 }
 
 #[cfg(all(test, feature = "parallel"))]
@@ -176,9 +260,18 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
     ) -> Result<Self, ShtError> {
         Ok(Self {
             epsilon: allocate_real(recurrence_factor_count, "scalar recurrence factors")?,
-            previous: allocate_real(recurrence_scratch_len, "previous recurrence values")?,
-            current: allocate_real(recurrence_scratch_len, "current recurrence values")?,
-            next: allocate_real(recurrence_scratch_len, "next recurrence values")?,
+            previous: allocate_analysis_vector_buffer(
+                recurrence_scratch_len,
+                "previous recurrence values",
+            )?,
+            current: allocate_analysis_vector_buffer(
+                recurrence_scratch_len,
+                "current recurrence values",
+            )?,
+            next: allocate_analysis_vector_buffer(
+                recurrence_scratch_len,
+                "next recurrence values",
+            )?,
             exponents: allocate_exponents(recurrence_scratch_len)?,
             analysis_scale_epochs: allocate_real(
                 recurrence_scratch_len,
@@ -231,19 +324,19 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
                 recurrence_scratch_len,
                 "weighted spin U Fourier modes",
             )?,
-            analysis_same_real: allocate_real(
+            analysis_same_real: allocate_analysis_vector_buffer(
                 recurrence_scratch_len,
                 "same-parity analysis real spectrum",
             )?,
-            analysis_same_imag: allocate_real(
+            analysis_same_imag: allocate_analysis_vector_buffer(
                 recurrence_scratch_len,
                 "same-parity analysis imaginary spectrum",
             )?,
-            analysis_opposite_real: allocate_real(
+            analysis_opposite_real: allocate_analysis_vector_buffer(
                 recurrence_scratch_len,
                 "opposite-parity analysis real spectrum",
             )?,
-            analysis_opposite_imag: allocate_real(
+            analysis_opposite_imag: allocate_analysis_vector_buffer(
                 recurrence_scratch_len,
                 "opposite-parity analysis imaginary spectrum",
             )?,
@@ -742,4 +835,57 @@ fn allocate_usizes(len: usize, array: &'static str) -> Result<Vec<usize>, ShtErr
         .map_err(|_| ShtError::AllocationFailed { array })?;
     values.resize(len, 0);
     Ok(values)
+}
+
+#[allow(unexpected_cfgs)]
+#[cfg(all(test, rustsht_scalar_analysis_fixed_simd_arrays))]
+mod fixed_analysis_vector_tests {
+    use super::{ANALYSIS_VECTOR_BUFFER_CAPACITY, FixedAnalysisVectorBuffer, RecurrenceWorkspace};
+    use pulp::{Arch, Simd, WithSimd};
+
+    struct VectorSpan<'a>(&'a [f64]);
+
+    impl WithSimd for VectorSpan<'_> {
+        type Output = (usize, usize, usize);
+
+        fn with_simd<S: Simd>(self, _simd: S) -> Self::Output {
+            let (vectors, tail) = S::as_simd_f64s(self.0);
+            (S::F64_LANES, vectors.len(), tail.len())
+        }
+    }
+
+    #[test]
+    fn analysis_arrays_are_contiguous_aligned_and_vector_complete() {
+        let workspace =
+            RecurrenceWorkspace::<f64>::new(4, 4, 4, 4, ANALYSIS_VECTOR_BUFFER_CAPACITY)
+                .expect("fixed-array recurrence workspace");
+        let bases = [
+            workspace.previous.as_ptr() as usize,
+            workspace.current.as_ptr() as usize,
+            workspace.next.as_ptr() as usize,
+            workspace.analysis_same_real.as_ptr() as usize,
+            workspace.analysis_same_imag.as_ptr() as usize,
+            workspace.analysis_opposite_real.as_ptr() as usize,
+            workspace.analysis_opposite_imag.as_ptr() as usize,
+        ];
+        let stride = std::mem::size_of::<FixedAnalysisVectorBuffer<f64>>();
+        assert_eq!(
+            stride,
+            ANALYSIS_VECTOR_BUFFER_CAPACITY * std::mem::size_of::<f64>()
+        );
+        for (index, base) in bases.iter().enumerate() {
+            assert_eq!(base % 64, 0, "buffer {index} alignment");
+            if index > 0 {
+                assert_eq!(*base - bases[index - 1], stride, "buffer {index} stride");
+            }
+        }
+
+        let (width, vector_count, tail_count) =
+            Arch::new().dispatch(VectorSpan(&workspace.analysis_same_real));
+        assert_eq!(
+            vector_count * width + tail_count,
+            ANALYSIS_VECTOR_BUFFER_CAPACITY
+        );
+        assert_eq!(tail_count, 0);
+    }
 }

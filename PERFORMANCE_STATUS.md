@@ -449,7 +449,16 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   stayed tightly grouped; long batch tails remain in the reported distributions.
   No favorable or unfavorable samples were removed.
 
-**Next:** inspect the exact AVX2 ordinary loop from the calibrated run and
-compare its remaining 1.368 µs excess at 256 lanes with DUCC's `map2alm_kernel`.
-Attribute recurrence dependency chains, loads and horizontal reductions before
-changing the loop. Keep the validated checked-first cache and robust fallback.
+**Cumulative scratch-layout screen:** an experimental cfg stores three
+recurrence arrays and four prepared spectrum planes in one contiguous,
+64-byte-aligned 256-element workspace region. In a matched T300/T720
+full-transform screen, median candidate/baseline Rust latency was 0.986× at
+q1 and 0.969× at q8; the Rust/DUCC ratio changed by 0.984× and 0.999×,
+respectively. High run-queue wait and wide q8 variation make q8 inconclusive.
+The fused recurrence assembly was unchanged; the caller/workspace layout
+became smaller. The Vec layout remains the production default pending
+cumulative ablation. See [the cumulative analysis](reports/scalar-analysis-cumulative-2026-10-20.md).
+
+**Next:** implement and measure a distinct DUCC-style packed complex reduction
+candidate. Do not reuse the previous grouped Pulp or custom AVX2 reduction
+unchanged. Keep the validated checked-first cache and robust fallback.
