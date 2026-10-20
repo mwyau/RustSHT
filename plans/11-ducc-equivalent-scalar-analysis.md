@@ -1,46 +1,80 @@
-# Active plan — scalar-analysis SIMD execution and code generation
+# Active plan — close scalar-analysis SIMD performance gap with DUCC
 
 **Branch:** `opt/sht-performance-parity`  
-**Updated:** 2026-10-19. **Last reviewed production SHA:** `96ffd14` (fetch current HEAD before working).  
-**Numerical reference:** pinned DUCC `80388904b8cfc32400ba84af8a6a45aabfe60f86`, especially `sht_inner_loop.h` `fill_m2a`, `iter_to_ieee`, `calc_map2alm` and `map2alm_kernel`.
+**Updated:** 2026-10-19. **Reviewed implementation:** `96ffd14`; inspect current remote HEAD before acting.  
+**Reference:** pinned DUCC `80388904b8cfc32400ba84af8a6a45aabfe60f86`; source `src/ducc0/sht/sht_inner_loop.h` (`fill_m2a`, `init_lambda`, `iter_to_ieee`, `calc_map2alm`, `map2alm_kernel`) and surrounding `sht.cc`.
 
-## Objective
+## Non-negotiable objective
 
-Make RustSHT's **native f64 scalar GL analysis (A)** computationally competitive with DUCC by identifying and removing **measured differences in equivalent Legendre execution and generated SIMD instructions**. Numerical correctness, robust scaled arithmetic, bounded memory and the public API are requirements, not performance trade-offs.
+**Close the observed roughly 2× RustSHT-versus-DUCC f64 GL scalar-analysis Legendre performance gap through a source- and assembly-grounded implementation.** The existing measurements are *directional*, because stage boundaries differ; first establish a defensible apples-to-apples gap and then attack its largest contributors.
 
-**Do not use a fixed 10–20% parity threshold, a particular harmonic truncation, a prescribed speedup or a benchmark matrix as a completion criterion.** Report the actual improvement and remaining attributable gap. The goal is a validated explanation and implementation, not a promise of parity.
+**Do not treat a sequence of 2–5% wins, fewer static instructions, a smaller stack frame, or merely producing another profiling report as completion.** After each validated improvement, remeasure the residual and continue with the highest attributable bottleneck. If parity proves unattainable in the available scope, the final result must isolate the concrete unresolved cause and test a viable next design—not merely say the gap remains.
 
-## Current baseline and established findings
+This is a *goal*, not a guaranteed result or a license to weaken accuracy. Do not impose artificial truncation-specific or 10–20% acceptance thresholds. Completion requires either convincing near-DUCC behavior under equivalent workloads or a thoroughly measured, technically bounded explanation of the residual, including tested remediation attempts.
 
-- Production scalar analysis uses active mirrored-ring compaction, order-level scheduling, ordinary SIMD recurrence/accumulation, an integrated mixed/scaled-to-ordinary path, and guarded insignificant-prefix advancement. Keep these rather than starting another port.
-- A prior bounded Rust/DUCC comparison showed a **roughly 2× stage deficit**, but measurement boundaries differed. **This is not a current equivalent-work parity result.** Follow-up timings and the `a707780` FMA optimization are Rust-only baseline/candidate screens.
-- Optimized assembly at `a707780` showed Rust ordinary coefficient accumulation was using separate `vmulpd`/`vaddpd`; the accepted `mul_add_f64s` change generates FMA like DUCC. This improved representative Rust-only q1 and q8 medians, with overlap/noise and one inconclusive small q8 case.
-- Follow-up `96ffd14` moved cosine-square and scaled-correction scratch to reusable per-worker workspace, reduced one inspected Rust frame from 1,088 to 896 bytes, and lowered YMM stack operands from 31 to 16. It also folded approximately 689,643 per-pair lane-validity reductions into approximately 3,384 per-block reductions for T720. These assembly-level improvements **did not establish a whole-call speedup**: the short T720 screen regressed while a smaller q1 case improved. Inspect equivalent function boundaries and actual hot-path costs; a frame-size comparison alone cannot prove spilling.
-- Pinned DUCC `map2alm_kernel` in the codegen comparison has no YMM/XMM stack operands, but that narrower function is **not equivalent** to Rust's enclosing initialization/recurrence wrapper. Remaining Rust stack accesses mostly concern checked scaled-transition branches.
-- Rust still advances/checks one degree pair at a time, while DUCC's ordinary kernel processes two. A previous naive four-degree unroll, wide packing and several layout experiments regressed. **Do not repeat them unchanged.**
-- Earlier profiling found many initially scaled blocks but **no late normal-kernel recurrence failures**. This is real scaled work, not replay of discarded completed degree loops.
+**Active work is scalar f64 GL STANDARD analysis (A) only.** Leave spin-1/f32/CC/F1 and FFT redesign to a separate goal; preserve their existing correctness and API behavior.
 
-Evidence: [latest AVX2 codegen follow-up](../reports/scalar-analysis-codegen-followup-2026-10-19.md), [earlier AVX2 report](../reports/scalar-analysis-avx2-codegen-2026-10-19.md), [scalar-analysis stage profile](../reports/scalar-analysis-stage-profile-2026-10-18.md) and [mixed-path screen](../reports/data/scalar-analysis-mixed-fusion/README.md). The long former handoff is [archived](../reports/archive/performance-status-2026-10-19-pre-cleanup.md).
+## Current verified facts — do not rediscover them
 
-## Next implementation sequence
+- Production analysis already has compact reflected-ring packing, dynamic order scheduling, SIMD sectoral initialization, cosine-parity preweighting, guarded insignificant-prefix skipping (`sht_ftol=2^-60` with an explicit error budget), mixed/scaled-to-ordinary execution, and single-pair fused recurrence/accumulation.
+- The historical stage profiles found the main excess in recurrence/accumulation rather than FFT or scheduling. T720 had **2,910 ordinary and 474 initially scaled blocks**; **no** late normal-loop declines or discarded completed degree work. Scaled blocks do real work.
+- `a707780` changed the ordinary SIMD accumulators from `vmulpd` + `vaddpd` to fused `vfmadd*` instructions. Rust-only whole-call gains were modest and not uniform across workloads.
+- `96ffd14` moved per-block cosine-square and scaled-correction tables into reusable workspace and reduced approximately 689,643 ordinary per-pair mask reductions to approximately 3,384 per-block reductions for T720. Despite fewer YMM stack-memory operands and reduced frame size, its **short T720 whole-call screen regressed** (29.203→31.215 ms q1; 6.493→7.150 ms q8), while smaller T300 q1 improved. This means the optimization was not validated as a general speedup.
+- The inspected Rust wrapper and DUCC `map2alm_kernel` have **different boundaries**; do not compare frame sizes/spills or instruction totals from nonmatching scopes. The prior naive two-pair/four-degree unroll, 256-lane packing and out-of-line scaled initialization regressed; do not replay unchanged.
+- No reliable current equal-work Rust/DUCC ratio is established. Historical 2× figures remain the working hypothesis, **not** proven current parity measurements. CPU hardware `perf` counters were blocked on the host; do not change system-wide security settings.
 
-1. **Equivalent-work comparison.** Identify the actual Pulp AVX2/FMA monomorphization and pinned DUCC specialization used by their production dispatch. Define paired native kernel timings with identical recurrence inputs, useful latitude/degree work, coefficient conventions and source/ISA settings. Time preparation, normal recurrence, mixed/scaled recurrence and commit separately; include full-call timing as a separate metric. Test representative large and irregular/reduced-order inputs, odd/even longitudes, q1/q8, tails and polar cases. Record timing variance and phase-boundary differences rather than combining incompatible numbers.
-2. **Assembly-led diagnosis.** Inspect optimized symbolized disassembly for redundant memory traversals, register spills/reloads, stack accesses, FMA use, horizontal reductions, masks/range checks, branches, inlining and call overhead. Confirm whether remaining scaled-branch memory accesses, lane range checks, staging, or recurrence dependency chains **actually** cost time. The earlier cosine-square scratch move and per-block mask aggregation already landed and did not produce a consistent whole-call win. Optional `llvm-mca` is a model, not a measured result. Do not block on inaccessible `perf` counters or change host permissions.
-3. **One bounded implementation at a time.** Prefer a measured structural cost: preparing stable `cos²(theta)` outside repeated hot blocks, lowering unnecessary scratch traffic, reducing expensive safety-check frequency **without weakening safeguards**, or improving accumulator instruction-level parallelism. Inspect the emitted assembly after each change. Retain only repeatable, validated improvements at whole-call and equivalent-kernel boundaries; archive rejected experiments.
-4. **Numerical acceptance.** Check pinned DUCC outputs, analytic harmonics, distinct `A` versus `S*` and `A*`, adjoint identities, GL weights, `m=0`, reflection parity, longitude phase, irregular/reduced `mmax`, extremes, subnormals and SIMD tails. Other grids, spins, operators and precisions must not regress; do not generalize this kernel beyond validated regimes. Use stable Rust/Pulp and existing tests.
-5. **Decisive closeout.** Report source hashes, compiler/ISA settings, actual code path, before/after q1/q8, changes in assembly, numerical error, accepted/rejected ideas, remaining component times and limitations. If progress plateaus, state the residual bottleneck rather than expanding into speculative unrolling or another broad performance campaign.
+Evidence: [latest code-generation follow-up](../reports/scalar-analysis-codegen-followup-2026-10-19.md), [initial AVX2 report](../reports/scalar-analysis-avx2-codegen-2026-10-19.md), [stage profile](../reports/scalar-analysis-stage-profile-2026-10-18.md), [mixed-fusion screen](../reports/data/scalar-analysis-mixed-fusion/README.md). Archived reports are evidence, not competing goals.
 
-## Workflow and constraints
+## Milestone 1 — Build a truly matched Rust/DUCC hotspot comparison
 
-- Work only on `opt/sht-performance-parity`; fetch/reconcile concurrent work before each push. No force push, reset-away, or `main` change. Commit validated milestones; keep raw machine/host/process artifacts untracked.
-- Preserve GPL provenance, neutral production names, public APIs, the robust scaled/fallback paths, and one minimal implementation per necessary regime. Stable toolchain and portable SIMD with scalar fallback; no FFT backend rewrite or unrelated dependency.
-- At most one Luna benchmark-only subagent and no Sol reviewer unless explicitly authorized. Validate formatting, Clippy, relevant release/all-features/no-default-feature tests; Python tests only if bindings change.
-- After this **scalar-analysis** investigation produces either an accepted improvement or a grounded residual, propose a separate goal for spin-1, f32 and other grids. They are **not active scope here**.
+Create or refine a **small native kernel benchmark**. Do not substitute Rust whole-call versus DUCC high-level Python timings.
 
-## Reference specifications (not separate task lists)
+- Exercise the **production-dispatched** f64 GL `A` path, including the actual monomorphized Pulp AVX2/FMA kernel, and the matching optimized DUCC specialization. Confirm execution by symbols/disassembly and optionally temporary counters; do not analyze dead/generic branches.
+- Match inputs, transformed recurrence coefficients, active latitudes, parity-weighted Fourier spectra, prepared cosine squares, useful lane-degree count, `m` range, scaled/ordinary distribution, CPU target/ISA and compiler optimization settings. Separate **prepare/pack**, **normal recurrence + accumulation**, **scaled prefix and mixed recurrence + accumulation**, **normalization/scatter**, **FFT**, and worker scheduling. Account for work moved outside measured regions rather than hiding it.
+- Test representative high-bandlimit and irregular/reduced-`mmax` cases, odd/even longitude count and 1/8 workers. In T720, separately report matched blocks from ordinary and the initially scaled population, with useful degrees and actual transition points. Report q8 *wall elapsed* rather than summing worker CPU incorrectly.
+- Interleave warmed release runs under reasonably uncontended conditions, record sample spread, and validate output. Choose only a few informative cases, not a broad 29-grid campaign. If a benchmark stage is not actually equivalent, **fix the stage correspondence** before claiming its speed ratio.
+- Produce an attribution table with absolute **milliseconds**, Rust/DUCC ratio, call/loop count, lane utilization and fraction of full-transform time. A profiler that cannot apportion the excess is incomplete.
 
-- [Numerics and grids](02-numerics-and-grids.md)
-- [DUCC operation crosswalk](06-ducc-contract-crosswalk.md)
-- [Source licensing](01-ducc-provenance-and-license.md)
+**Decision:** is the deficit primarily (a) ordinary recurrence and accumulation, (b) scaled/mixed work, (c) setup/reduction/commit, (d) compiler-generated instructions, or (e) remaining whole-call overhead? If multiple, rank by *absolute excess latency*, not code complexity or speculation.
 
-All other prior milestones, ASTRA reviews and superseded performance plans are retained under [historical reports](../reports/archive/README.md) for evidence, not agent instructions.
+## Milestone 2 — Diagnose the real machine code, not just source syntax
+
+Inspect `objdump`/`llvm-objdump` output from the **exact optimized binaries actually timed**. Pin compiler and target arguments. Rust uses LLVM; pinned DUCC currently uses GCC. Where feasible, build the same C++ DUCC kernel with **Clang at the same AVX2/FMA target** as a control: distinguish algorithm/data-flow effects from LLVM-versus-GCC code generation. Do not equate equal flags with identical codegen.
+
+For the *matched loop bodies and their callers*, annotate:
+- `vfmadd*`/multiply-add chains, instruction/iteration counts, vector width and live accumulator dependency chains.
+- Actual **hot-path** YMM spills/reloads, stack and buffer memory operands, stores of recurrence state, load/store address generation and vector input broadcasts.
+- Range-check comparisons, mask reductions, scalarized exceptional-lane processing, branch frequency and per-pair safety work. Specifically test whether checked guards can be moved to a mathematically justified preflight or cheap slow-path exit **without removing safeguards**.
+- Ordinary versus initially scaled blocks; insignificant-prefix skip work, exponent normalization, transition rates, exception/correction products.
+- SIMD horizontal reductions, pair-degree loop organization, front-end/code-size effects and inlining. DUCC's two-pair progression is a hypothesis for instruction-level parallelism, **not** permission to restore the rejected register-heavy unroll unchanged.
+
+Use targeted source+assembly evidence, annotated loop snippets, `llvm-mca` selectively as a throughput model if available, and separate equivalent-work timing to test the top hypotheses. Never infer a measured bottleneck from stack-frame size or instruction count alone. Hardware `perf` being unavailable is not a reason to stop.
+
+## Milestone 3 — Attack the dominant cost with substantial implementation work
+
+Once the cause is isolated, pursue the **largest plausible structural reduction in actual executed work or per-lane throughput**, not another series of superficial tweaks. Choose the design based on measured attribution; candidate classes include:
+
+1. **Common ordinary hot loop:** remove proven redundant memory passes, unneeded loop-body checks and stores; restructure latency chains and coefficient reduction; keep a separate checked slow path where preflight can guarantee fast-path safety. Retain appropriate polar/subnormal checks and transactional output.
+2. **Mixed/scaled blocks:** avoid repeated per-lane scalar correction and branch-heavy iteration when a safe vectorized/batched scaled-to-ordinary transition can preserve exact required contributions; quantify the number of blocks/degrees and their fraction of latency.
+3. **Layout and degree grouping:** port DUCC's *effective* dataflow (prepared geometry, coefficient reuse, latitude batching and paired-degree accumulation), measuring register demand and spills before and after. An alternative layout/unroll is acceptable if it solves the **recorded causes** of previous regressions.
+4. **Compiler specialization:** if source algorithms are equivalent but assembly demonstrably differs, change Rust layout/inlining/loop presentation, investigate Pulp boundaries, or selectively use a **small private AVX2 specialization with portable fallback** only after compiler output and benchmarks establish necessity. Avoid unstable Rust features or public ISA dependencies.
+
+**Accept proven incremental improvements, but do not call the performance objective complete just because one passed.** Reprofile against DUCC and prioritize the next largest absolute excess. If a supposedly substantial change fails to move end-to-end latency, explicitly resolve that discrepancy; do not keep layering optimizations blindly.
+
+## Milestone 4 — Numerical, performance and closeout gates
+
+- Verify pinned DUCC numerical outputs **and** analytic/adjoint identities, including distinct `S`, `A`, `S*`, `A*`; GL weights, reflected parity, `m=0`, `phi0`, polar/high-`m` cases, longitudes/tails, truncated `mmax`, extreme finite inputs, subnormals, exponent correctness, scalar/parallel routes. Other grids/spins/f32 paths must not regress.
+- Run `cargo fmt --all -- --check`, relevant `cargo clippy --workspace --all-targets --all-features -- -D warnings`, release tests and no-default-feature tests; Python tests if bindings changed. Keep minimal validated production paths, stable Rust, portable Pulp dispatch and bounded workspace; no unrelated FFT or scheduler rewrite.
+- For each accepted/rejected experiment, record baseline/candidate revisions, source/ISA flags, **equivalent-work Rust versus DUCC times**, phase boundaries, numerical errors, actual assembly differences, repeatability and residual excess latency. Use a concise rolling report, not an ever-growing new handoff.
+- **Do not stop after the first few-percent win.** Continue while a justified larger opportunity remains. If representative equivalent-work and whole-call latencies reach the same practical performance class, verify across several shapes/q1/q8 and document any residual. If a large deficit persists, the closeout must identify a specific bottleneck, prove why attempted solutions failed and propose an actionable next kernel redesign. A generic “remaining ~2×” is not a sufficient final finding.
+- Scope stays scalar f64 GL analysis. Spin-1, native f32 and other grid improvements require a *later separate goal*.
+
+## Repository sync and instruction authority
+
+**Before every push:** inspect `git status`, commit or safely stash WIP, `git fetch origin`, then `git rebase origin/opt/sht-performance-parity` for **unpublished local commits only**; reconcile conflicts without discarding concurrent work. Once the remote contents are integrated, **reread the latest `AGENTS.md` and this plan**, plus any new owner instructions in the update, before continuing and before pushing. Revalidate affected tests, push normally, verify remote HEAD. **After every pull, rebase, merge or integration of newer remote changes, recheck current instructions.** Never force-push, reset away work, rewrite published commits or update `main` without authorization. If safe rebase cannot complete, preserve work and clearly report the conflict.
+
+At most one Luna benchmark-only subagent; no Sol reviewer unless expressly authorized. Keep raw disassembly, process/host/PSI diagnostic logs local and untracked per `AGENTS.md`. Commit meaningful validated improvements and concise reproducible findings.
+
+## Reference specifications (not active task queues)
+
+[Numerics and grids](02-numerics-and-grids.md) · [DUCC operation crosswalk](06-ducc-contract-crosswalk.md) · [Licensing](01-ducc-provenance-and-license.md) · [Historical archive](../reports/archive/README.md).
