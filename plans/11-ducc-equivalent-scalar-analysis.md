@@ -15,14 +15,17 @@ recorded in `reports/ducc-upgrade-baseline-2026-10-20.md`; inspect those exact
 objects before assigning the remaining compiler-dependent gap. Rust keeps its
 strict V3 target without fast-math.
 
-The current-source recheck at `be608eb2` confirmed the same flags in the
-standalone commands: the DUCC numerical object uses
-`-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3`, while the separately
-compiled driver uses `-fno-fast-math`. The runner now rejects overrides that
-break this split. Actual upstream multiarch `compile_commands.json` entries
-for `sht.cc` contain `-O3 -ffast-math -march=x86-64-v3` for the v3 object;
-they do not spell out `-ffp-contract=fast`. See the current-source rerun and
-the exact command summary in `reports/data/ducc-kernel-flags-rerun-2026-10-20/`.
+The `be608eb2` recheck confirmed that standalone split. A further rerun at
+`6682095c` verified the actual GCC 15.2 and Clang 21.1.8 commands against the
+pinned upstream multiarch `compile_commands.json`: `sht.cc` v3 uses
+`-O3 -ffast-math -march=x86-64-v3`, while the standalone kernel adds explicit
+`-ffp-contract=fast` and the separate driver uses `-fno-fast-math`. The runner
+rejects overrides that break this contract. This current-source timing sample
+had high scheduling interference and opposite GCC/Clang ratio directions, so
+it confirms the flags and numerics but does not support compiler-performance
+attribution. Repeat under low host contention before resuming that comparison.
+See `reports/data/ducc-kernel-fastmath-confirmed-2026-10-20/` and the matched
+results in `reports/ducc-upgrade-baseline-2026-10-20.md`.
 
 A separate scalar dispatch experiment rejected a global T64 recurrence
 cutoff because it regressed q1 analysis. Production applies the T64 cutoff to
