@@ -1,8 +1,9 @@
 # RustSHT performance checkpoint
 
 **Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Current
-production candidate:** `88716ca3` (fused scalar-analysis input preparation
-enabled by default). **Earlier A/B source:** `9f7e8658`.
+production candidate:** `3ad85539` (fused scalar-analysis input preparation
+enabled by default; slower direct-output experiment removed). **Earlier A/B
+source:** `9f7e8658`.
 **Calibrated harness:** `1ee1a195`. **Benchmark default:** production flags at
 `e2c2dc15`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
@@ -25,8 +26,12 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   after the checked range cache; the custom AVX2 reduction and single-pass
   scale-promotion variants had mixed or negligible whole-transform effects.
   Production retains checked recurrence, staged output, portable Pulp
-  reductions and the existing robust fallback. Next: remove rejected compile-
-  time experiment branches, then resume source-grounded kernel work.
+  reductions and the existing robust fallback. At `3ad85539`, removed the
+  direct-output experiment and its preflight/dispatch plumbing after completing
+  the four-case ablation. Release T511 DUCC/analytic, exceptional-input cache,
+  q1/q8 schedule, no-default-feature safety tests, formatting and all-target
+  Clippy passed. Next: remove the remaining rejected AVX2-reduction and
+  single-pass-promotion branches, then resume source-grounded kernel work.
 - The release regression test covers oversampled T511 GL, an odd SIMD-tail
   lane, zero/subnormal/extreme finite maps, repeated workspace reuse, and a
   compatible workspace reused across plans. The valid T720 fixture recorded
