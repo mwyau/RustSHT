@@ -8,6 +8,21 @@ recurrence from T64; analysis retains its prior table policy).
 `e2c2dc15`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
 
+- **Cumulative scalar-analysis candidate:** the guarded direct-output path is
+  restored behind `rustsht_scalar_analysis_direct_accumulation`; production
+  still uses staged output. It requires a cached checked-recurrence proof and
+  an input bound covering all reflected latitude lanes, while scaled and
+  unsafe inputs retain the transactional path. The combined tile-256,
+  fixed-scratch, packed-reduction, indexed-loop and direct-output build passed
+  229 release library tests (23 ignored), 191 no-default-feature release
+  library tests (14 ignored), and all-target/all-feature Clippy. Its focused
+  T511 cached-versus-checked comparison has relative L2 error `2.5974e-16`.
+  The historical direct-only T720 screen regressed, so no performance claim is
+  made for the combined candidate. Timings are deferred while unrelated host
+  CPU jobs saturate the machine; the next step is a matched T720 full/reduced
+  q1/q8 comparison when the host is stable. See the
+  [cumulative experiment record](reports/scalar-analysis-cumulative-2026-10-20.md).
+
 - **Warmed T720 analysis-kernel attribution, `4c6945fc` plus a benchmark-only
   alignment correction:** the probe now shares the ordinary unchecked timing's
   buffers and wrapper; component-full and kernel-only medians agree within
@@ -153,9 +168,10 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   after the checked range cache; the custom AVX2 reduction and single-pass
   scale-promotion variants had mixed or negligible whole-transform effects.
   Production retains checked recurrence, staged output, portable Pulp
-  reductions and the existing robust fallback. At `3ad85539`, removed the
-  direct-output experiment and its preflight/dispatch plumbing after completing
-  the four-case ablation. Release T511 DUCC/analytic, exceptional-input cache,
+  reductions and the existing robust fallback. At `3ad85539`, the direct-output
+  experiment was removed after a four-case ablation; the cumulative candidate
+  below restores it behind an explicit cfg for combined evaluation. Release
+  T511 DUCC/analytic, exceptional-input cache,
   q1/q8 schedule, no-default-feature safety tests, formatting and all-target
   Clippy passed. At `dfa900ca`, removed grouped Pulp and private AVX2
   reductions: grouped reduction was 4.9–13.8% slower in unchecked kernel

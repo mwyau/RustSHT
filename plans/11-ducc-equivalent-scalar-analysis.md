@@ -30,6 +30,22 @@ f64 scalar synthesis only; analysis and spin-1 selectors remain unchanged.
 The full comparison and final-policy checks are in
 `reports/scalar-t64-recurrence-transition-2026-10-20.md`.
 
+## Cumulative output-staging experiment (2026-10-20)
+
+The direct-output accumulator is restored as an opt-in candidate under
+`rustsht_scalar_analysis_direct_accumulation`; staged output remains the
+production default. The candidate requires a cached checked recurrence proof
+for the plan/order/tile and a product bound over the full reflected-latitude
+count. It declines before output writes for scaled or unsafe inputs. The
+combined tile-256, fixed-scratch, packed-reduction, indexed-loop and
+direct-output build passed release library tests with and without default
+features, strict all-target Clippy, DUCC/analytic, adjoint, edge-input, SIMD
+tail and thread-count checks. T511 direct-versus-staged output relative L2 was
+`2.5974e-16`. The earlier direct-only T720 screen regressed, so this combined
+candidate needs its own matched performance run before selection. No timing
+was collected during current host CPU saturation. The next measured work is
+T720 full/reduced `mmax`, q1/q8, with the 64/128/256-lane cumulative variants.
+
 ## Non-negotiable objective
 
 **Close the observed roughly 2× RustSHT-versus-DUCC f64 GL scalar-analysis Legendre performance gap through a source- and assembly-grounded implementation.** The existing measurements are *directional*, because stage boundaries differ; first establish a defensible apples-to-apples gap and then attack its largest contributors.

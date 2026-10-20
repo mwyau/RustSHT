@@ -483,6 +483,16 @@ pub(crate) trait ShtScalar:
     ) -> bool {
         false
     }
+    fn scalar_analysis_direct_products_safe(
+        _same_real: &[Self],
+        _same_imag: &[Self],
+        _opposite_real: &[Self],
+        _opposite_imag: &[Self],
+        _cos_theta: &[Self],
+        _total_lane_count: usize,
+    ) -> bool {
+        false
+    }
     fn prepare_scalar_analysis_pair_inputs(
         _same_real: &[Self],
         _same_imag: &[Self],
@@ -562,6 +572,7 @@ pub(crate) trait ShtScalar:
         _same_imag: &[Self],
         _opposite_real: &[Self],
         _opposite_imag: &[Self],
+        _direct_accumulation: bool,
         _staged_coefficients: &mut [Complex<Self>],
         _previous: &mut [Self],
         _current: &mut [Self],
@@ -1320,6 +1331,24 @@ impl ShtScalar for f64 {
         )
     }
 
+    fn scalar_analysis_direct_products_safe(
+        same_real: &[Self],
+        same_imag: &[Self],
+        opposite_real: &[Self],
+        opposite_imag: &[Self],
+        cos_theta: &[Self],
+        total_lane_count: usize,
+    ) -> bool {
+        scalar_paired::analysis_products_safe_with_lane_bound(
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            cos_theta,
+            total_lane_count,
+        )
+    }
+
     fn prepare_scalar_analysis_pair_inputs(
         same_real: &[Self],
         same_imag: &[Self],
@@ -1395,6 +1424,7 @@ impl ShtScalar for f64 {
         same_imag: &[Self],
         opposite_real: &[Self],
         opposite_imag: &[Self],
+        direct_accumulation: bool,
         staged_coefficients: &mut [Complex<Self>],
         previous: &mut [Self],
         current: &mut [Self],
@@ -1420,6 +1450,7 @@ impl ShtScalar for f64 {
             same_imag,
             opposite_real,
             opposite_imag,
+            direct_accumulation,
             staged_coefficients,
             previous,
             current,

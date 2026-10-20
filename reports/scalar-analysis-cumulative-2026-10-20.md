@@ -16,7 +16,31 @@ selected Pulp V3 and fixed DUCC x86-64-v3 for the measured transforms.
 | 2 | Fixed-capacity contiguous state/spectrum scratch | Candidate is behind `rustsht_scalar_analysis_fixed_simd_arrays`; it packs previous/current/next and the four prepared spectrum planes as contiguous 256-element, 64-byte-aligned arrays. The full-transform screen suggests a small q1 benefit, but q8 is inconclusive under high scheduler wait. Retain for cumulative evaluation; the Vec layout remains the default during the experiment. |
 | 3 | DUCC-style packed complex horizontal reduction | Candidate is gated by `rustsht_packed_complex_pair_reduction`; default remains the eight scalar f64 reductions. In matched T720 `m=1` kernel batches, kernel-only medians improved 2.8%, 2.5% and 1.1% at 64/128/256 active lanes. Kernel-plus-commit Rust medians improved 2.9%, 1.9% and 0.9%; numerical checks passed. A separate full-transform q1 screen was neutral-to-small but did not isolate the reduction; q8 was host-contended. Keep for cumulative evaluation; do not change the default yet. |
 | 4 | Zipped versus safe indexed SIMD loop | Candidate is gated by `rustsht_indexed_analysis_pair_loop`; the production default remains zipped. At 64/128/256 active lanes the matched kernel-plus-commit Rust median changed by −0.25%/−0.34%/−0.17%, within overlapping distributions. Static code size fell 1.7%, but vector arithmetic, memory operands, and spill behavior were unchanged. No speedup was demonstrated. |
-| 5–10 | Recurrence/accumulation attribution; output staging; sectoral initialization; prefix; scaled transition; input packing; final conversion | Continue in the owner-specified sequence after the reduction and loop-form ablations. |
+| 5 | Direct output accumulation | Restored as the opt-in `rustsht_scalar_analysis_direct_accumulation` cumulative candidate. It requires a cached recurrence proof and a whole-latitude product bound; otherwise the checked staged route remains active. The default is unchanged. The combined candidate passes release tests; its direct-versus-staged T511 coefficient comparison has relative L2 error `2.5974e-16` and maximum absolute error `2.5324e-17`. The earlier direct-only T720 screen regressed, so this candidate still needs measurement in the final combined 64/128/256-lane evaluation. No new timing was collected while other host jobs saturated CPU capacity. |
+| 6–10 | Sectoral initialization; insignificant-prefix recurrence; scaled-to-normal transition; input packing; final coefficient conversion | Continue with the source-guided experiments after the staging candidate. |
+
+## Direct-output candidate validation
+
+The direct-output candidate is compiled only when
+`rustsht_scalar_analysis_direct_accumulation` is set. It can write output only
+after the workspace cache proves that the same plan/order/tile geometry passed
+the checked recurrence and the input preflight bounds the absolute sum across
+all reflected latitude lanes. Scaled seeds, subnormal products, unsafe values,
+and unproven blocks keep the staged checked path. The candidate preserves the
+existing transactional fallback for any decline before output writes.
+
+The combined 256-lane candidate with fixed-capacity scratch, packed complex
+reduction, the safe indexed loop, and direct output passed 229 release library
+tests (23 ignored) and 191 `--no-default-features` release library tests (14
+ignored). All-target, all-feature Clippy passed with warnings denied. The
+focused cached-versus-checked output test reports 37,253 bitwise-different
+coefficients from the changed accumulation order, relative L2 error
+`2.5974e-16`, and maximum absolute error `2.5324e-17`; its error bound is
+`4e-14`, matching the existing tight low-degree DUCC reference tolerance.
+Subnormal, extreme-finite, zero, SIMD-tail, DUCC, analytic, adjoint, and
+thread-count tests also passed in the combined build. These checks establish
+correctness only. Re-run calibrated performance comparisons after host CPU
+contention clears and after the remaining cumulative candidates are available.
 
 The initial fixed-scratch comparison is full native synthesis and analysis,
 including packing, Legendre work, FFT and output production. Ten GL geometries

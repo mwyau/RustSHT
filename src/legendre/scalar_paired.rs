@@ -1210,13 +1210,33 @@ pub(crate) fn analysis_products_safe(
     opposite_imag: &[f64],
     cos_theta: &[f64],
 ) -> bool {
+    analysis_products_safe_with_lane_bound(
+        same_real,
+        same_imag,
+        opposite_real,
+        opposite_imag,
+        cos_theta,
+        same_real.len(),
+    )
+}
+
+/// Checks whether ordinary analysis products remain finite when accumulated
+/// across all reflected latitude lanes, rather than only one packed tile.
+pub(crate) fn analysis_products_safe_with_lane_bound(
+    same_real: &[f64],
+    same_imag: &[f64],
+    opposite_real: &[f64],
+    opposite_imag: &[f64],
+    cos_theta: &[f64],
+    total_lane_count: usize,
+) -> bool {
     debug_assert_eq!(same_real.len(), same_imag.len());
     debug_assert_eq!(same_real.len(), opposite_real.len());
     debug_assert_eq!(same_real.len(), opposite_imag.len());
     debug_assert_eq!(same_real.len(), cos_theta.len());
     // Bound the absolute sum as well as each product. This keeps both the
-    // vector reduction and the accumulation of vector partials finite.
-    let max_input = f64::MAX / scalar::BIG / (2.0 * same_real.len().max(1) as f64);
+    // vector reduction and accumulation across previous latitude tiles finite.
+    let max_input = f64::MAX / scalar::BIG / (2.0 * total_lane_count.max(1) as f64);
     same_real
         .iter()
         .chain(same_imag)
@@ -1854,6 +1874,7 @@ pub(crate) fn fused_scalar_analysis_pair_block_preweighted_dispatched(
     same_imag: &[f64],
     opposite_real: &[f64],
     opposite_imag: &[f64],
+    direct_accumulation: bool,
     staged_coefficients: &mut [Complex64],
     previous: &mut [f64],
     current: &mut [f64],
@@ -1863,6 +1884,56 @@ pub(crate) fn fused_scalar_analysis_pair_block_preweighted_dispatched(
     exponents: &mut [i64],
 ) -> Result<bool, ShtError> {
     *range_check_was_exercised = false;
+    if direct_accumulation {
+        // The output is touched only after the cached range proof and the
+        // whole-latitude input bound make this ordinary path nondeclining.
+        // Scaled seeds stay on the transactional staged route.
+        if !range_check_is_proven_safe
+            || lmax < SIMD_SECTORAL_INIT_MIN_LMAX
+            || staged_coefficients.len() < lmax - m + 1
+            || previous.len() < sin_theta.len()
+            || current.len() < sin_theta.len()
+            || next.len() < sin_theta.len()
+            || cos_theta.len() != sin_theta.len()
+            || cos_theta_squared.len() != sin_theta.len()
+            || same_real.len() != sin_theta.len()
+            || same_imag.len() != sin_theta.len()
+            || opposite_real.len() != sin_theta.len()
+            || opposite_imag.len() != sin_theta.len()
+        {
+            return Ok(false);
+        }
+        previous[..sin_theta.len()].fill(0.0);
+        if !initialize_normal_analysis_sectoral_dispatched(
+            arch,
+            m,
+            sin_theta,
+            sectoral_norm,
+            &mut current[..sin_theta.len()],
+        )? {
+            return Ok(false);
+        }
+        return Ok(
+            arch.dispatch(FusedScalarAnalysisPair::<true, false, false, true, true> {
+                m,
+                lmax,
+                range_check_was_exercised,
+                pair_start: 0,
+                cos_theta,
+                cos_theta_squared,
+                coefficient_a,
+                coefficient_b,
+                same_real,
+                same_imag,
+                opposite_real,
+                opposite_imag,
+                staged_coefficients,
+                previous: &mut previous[..sin_theta.len()],
+                current: &mut current[..sin_theta.len()],
+                next: &mut next[..sin_theta.len()],
+            }),
+        );
+    }
     if range_check_is_proven_safe {
         fused_scalar_analysis_pair_block_impl::<true, false>(
             arch,
@@ -3149,6 +3220,9 @@ struct FusedScalarAnalysisPair<
     // Test-only source attribution compiles the same loop without coefficient
     // products; the production specialization always keeps accumulation.
     const ACCUMULATE: bool = true,
+    // Experimental route accumulates only after a cached recurrence proof and
+    // a whole-latitude input-product preflight.
+    const DIRECT_ACCUMULATE_OUTPUT: bool = false,
 > {
     m: usize,
     lmax: usize,
@@ -3845,16 +3919,23 @@ fn analysis_pair_state_range_mask<S: Simd>(
 }
 
 #[inline(always)]
-fn store_analysis_pair(
+fn store_analysis_pair<const ACCUMULATE_OUTPUT: bool>(
     coefficients: &mut [Complex64],
     offset: usize,
     has_odd: bool,
     same: Complex64,
     opposite: Complex64,
 ) {
-    coefficients[offset] = same;
-    if has_odd {
-        coefficients[offset + 1] = opposite;
+    if ACCUMULATE_OUTPUT {
+        coefficients[offset] += same;
+        if has_odd {
+            coefficients[offset + 1] += opposite;
+        }
+    } else {
+        coefficients[offset] = same;
+        if has_odd {
+            coefficients[offset + 1] = opposite;
+        }
     }
 }
 
@@ -3863,6 +3944,7 @@ impl<
     const CHECK_PAIR_GROUP_RANGE: bool,
     const FUSE_PAIR_GROUP_RANGE_CHECK: bool,
     const ACCUMULATE: bool,
+    const DIRECT_ACCUMULATE_OUTPUT: bool,
 > WithSimd
     for FusedScalarAnalysisPair<
         '_,
@@ -3870,6 +3952,7 @@ impl<
         CHECK_PAIR_GROUP_RANGE,
         FUSE_PAIR_GROUP_RANGE_CHECK,
         ACCUMULATE,
+        DIRECT_ACCUMULATE_OUTPUT,
     >
 {
     type Output = bool;
@@ -3962,7 +4045,7 @@ impl<
 
             let first_l = m + 2 * pair_index;
             let first_offset = first_l - m;
-            store_analysis_pair(
+            store_analysis_pair::<DIRECT_ACCUMULATE_OUTPUT>(
                 staged_coefficients,
                 first_offset,
                 first_l < lmax,
@@ -3972,7 +4055,7 @@ impl<
 
             let second_l = first_l + 2;
             let second_offset = second_l - m;
-            store_analysis_pair(
+            store_analysis_pair::<DIRECT_ACCUMULATE_OUTPUT>(
                 staged_coefficients,
                 second_offset,
                 second_l < lmax,
@@ -4005,7 +4088,7 @@ impl<
             all_vectors_in_range = simd.and_m64s(all_vectors_in_range, pair_vectors_in_range);
             all_tails_in_range &= pair_tails_in_range;
             if ACCUMULATE {
-                store_analysis_pair(
+                store_analysis_pair::<DIRECT_ACCUMULATE_OUTPUT>(
                     staged_coefficients,
                     offset,
                     l < lmax,
@@ -4013,7 +4096,7 @@ impl<
                     opposite_sum,
                 );
             } else {
-                store_analysis_pair(
+                store_analysis_pair::<DIRECT_ACCUMULATE_OUTPUT>(
                     staged_coefficients,
                     offset,
                     l < lmax,
@@ -4043,14 +4126,19 @@ impl<
             let zero = Complex64::new(0.0, 0.0);
             (zero, zero)
         };
-        store_analysis_pair(
+        store_analysis_pair::<DIRECT_ACCUMULATE_OUTPUT>(
             staged_coefficients,
             offset,
             l < lmax,
             same_sum,
             opposite_sum,
         );
-        analysis_mask_all(simd, all_vectors_in_range) && all_tails_in_range
+        if DIRECT_ACCUMULATE_OUTPUT {
+            debug_assert!(analysis_mask_all(simd, all_vectors_in_range) && all_tails_in_range);
+            true
+        } else {
+            analysis_mask_all(simd, all_vectors_in_range) && all_tails_in_range
+        }
     }
 }
 
@@ -6263,6 +6351,7 @@ mod tests {
             &same_imag,
             &weighted_opposite_real,
             &weighted_opposite_imag,
+            false,
             &mut staged_preweighted,
             &mut previous,
             &mut current,
@@ -6869,6 +6958,7 @@ mod tests {
                 &same_imag,
                 &weighted_opposite_real,
                 &weighted_opposite_imag,
+                false,
                 &mut checked_staged,
                 &mut checked_previous,
                 &mut checked_current,
@@ -6904,6 +6994,7 @@ mod tests {
             &same_imag,
             &weighted_opposite_real,
             &weighted_opposite_imag,
+            false,
             &mut staged,
             &mut previous,
             &mut current,
