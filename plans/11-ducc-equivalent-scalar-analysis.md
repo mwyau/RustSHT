@@ -49,21 +49,33 @@ Both are deferred until this Plan 11 campaign concludes **or the owner
 explicitly reprioritizes**. Neither alters the active numerical, dispatch,
 performance, or dependency constraints.
 
-## Cumulative output-staging experiment (2026-10-20)
+## Latest owner priority — T720 candidate disposition, then T2048 (2026-10-20)
 
-The direct-output accumulator is restored as an opt-in candidate under
-`rustsht_scalar_analysis_direct_accumulation`; staged output remains the
-production default. The candidate requires a cached checked recurrence proof
-for the plan/order/tile and a product bound over the full reflected-latitude
-count. It declines before output writes for scaled or unsafe inputs. The
-combined tile-256, fixed-scratch, packed-reduction, indexed-loop and
-direct-output build passed release library tests with and without default
-features, strict all-target Clippy, DUCC/analytic, adjoint, edge-input, SIMD
-tail and thread-count checks. T511 direct-versus-staged output relative L2 was
-`2.5974e-16`. The earlier direct-only T720 screen regressed, so this combined
-candidate needs its own matched performance run before selection. No timing
-was collected during current host CPU saturation. The next measured work is
-T720 full/reduced `mmax`, q1/q8, with the 64/128/256-lane cumulative variants.
+The T720 full-transform comparison is recorded in
+`reports/scalar-analysis-cumulative-2026-10-20.md` and its data directory.
+At source `fbba7c39`, the direct-output-inclusive build ran 24 matched rows:
+`mmax=1,180,720`, odd-minimum/even-smooth longitude sampling, A/S and q1/q8.
+The warmed Rust analysis cost was 1.38–2.62× production across full/reduced
+rows; the q1 `mmax=180` even-smooth and `mmax=720` odd-minimum cases were
+2.62× and 2.04×. Maximum relative L2 error was `1.841e-13`. Synthesis rows
+shifted despite analysis-only flags, showing cross-run host variation; the
+no-direct rerun was unusable because run-queue wait median/p90 reached
+`13.7% / 67.5%`. Do not promote or claim a gain from this matrix.
+
+The direct-output path was removed after this warmed regression and the earlier
+direct-only slowdown. The safe indexed-loop ablation was removed because its
+isolated kernel timings were neutral. Fixed scratch and packed complex
+reduction remain behind cfgs for a later clean end-to-end comparison; neither
+changes production dispatch. Prefix seed reuse and scaled-prefix epoch reuse
+remain unmeasured candidates while the host is saturated.
+
+The next major measurement is T2047 versus T2048 at fixed `mmax=2047`,
+`nphi=4096`, q1/q8. The existing error budget accepts insignificant-prefix
+skipping at 2048 latitudes and rejects it at 2049. Independently compare
+pair-tile sizes 64/128/256: the workspace's potential block count crosses
+4→5 at tile 256, 8→9 at tile 128, and 16→17 at tile 64 as the reflected-pair
+lane count moves from 1024 to 1025. Keep all numerical safeguards and use the
+benchmark's host-stability summaries to decide whether timing is credible.
 
 ## Non-negotiable objective
 
@@ -83,7 +95,7 @@ This is a *goal*, not a guaranteed result or a license to weaken accuracy. Do no
 
 Benchmark **warmed and cold** full transforms separately (T720 full/reduced `mmax`, q1/q8) and retain checked-path cost in reports as a safety/startup cost, **not a performance optimization objective**. Validate cache eligibility/invalidation, the first checked call, reused workspaces, changing maps/plans, extreme/subnormal/cancellation cases, SIMD tails, and DUCC/analytic/adjoint correctness. Revisit the checked path only for a demonstrated correctness issue or evidence that cold-start cost materially dominates a relevant real workload. This owner priority supersedes older milestones wherever they emphasize optimizing checked-loop throughput.
 
-**Current cumulative candidates (unmeasured):** scaled sectoral initialization
+**Remaining cumulative candidates (unmeasured):** scaled sectoral initialization
 reuses contiguous ordinary SIMD seed vectors before the first vector that
 requires exponent scaling. The scaled two-pair prefix carries its all-negative
 epoch state from the SIMD update pass rather than rereading the epoch slice.
@@ -97,7 +109,9 @@ Fallbacks, lane range checks and tail scaling remain unchanged. Release and
 no-default-feature library tests pass; timing is deferred under host CPU
 saturation. Keep these candidates experimental until matched 64/128/256-lane
 and representative full/reduced-order q1/q8 comparisons measure their
-contribution.
+contribution. The previously tested direct-output and indexed-loop routes have
+been removed after the T720 A/B; do not restore them without new measured
+evidence.
 
 ## Next sequence — comprehensive benchmark, toolchain/reference rebaseline, then kernel attribution (2026-10-20)
 
@@ -114,7 +128,7 @@ contribution.
 
 - In the corrected same-dispatch component probe at `be608eb2`, recurrence-only work measured `2.695/5.209/10.245 µs`; four-spectrum accumulation plus horizontal reduction/coefficient construction added `2.123/3.649/6.996 µs` at 64/128/256 lanes. This is about 40% of measured ordinary kernel time, but the probe does not separate accumulator chains from horizontal reduction and coefficient conversion. A retained-vector attempt through `std::hint::black_box` added eight YMM stack stores per pair group and gave deltas of inconsistent sign; the timings are invalid and the source patch is archived in the cumulative report data. Replace it with a measured scratch sink or independent reduction microbenchmark. Prior private AVX2 reduction gains were below 1%, and grouped reductions regressed.
 - The GCC and Clang DUCC medians in the current matched-flag rerun were within 1% across all lane counts. Run-queue wait was low; three GCC batches slightly exceeded 100 ms and one GCC process spread triggered the stability flag. No samples were discarded. After the bounded reduction attribution, profile a larger-order q8 full transform and separate recurrence, packing, FFT and scheduling. Do not infer q8 or whole-transform parity from this `m=1` q1 kernel.
-- **Then test loop form** in `fused_analysis_two_pair_steps_with_simd`: present eight zipped SIMD slices versus a straightforward indexed loop over validated equal-length vectors; compare executed v3 machine code for bounds/iterator overhead, address generation, loads/stores, spills, FMA dependency chains and register pressure. Do not assume iterator syntax is slower or use unsafe indexing without evidence.
+- The safe indexed-loop A/B is complete: matched warmed kernel medians changed by `-0.25%/-0.34%/-0.17%` at 64/128/256 lanes, within overlapping ranges, and the v3 vector arithmetic/memory operands were unchanged. It did not establish a speedup and its cfg branch has been removed. Do not repeat the same loop-form variant.
 - **Compare compiler/ISA output:** Rust 1.99.1 LLVM v3, pinned DUCC GCC v3, pinned DUCC Clang v3; inspect DUCC v4 AVX-512 disassembly strictly as a source/dataflow reference, never as executable timing evidence. Identify useful algorithmic/loop differences without copying v4-specific requirements into the portable runtime path.
 - **Implement one justified change at a time**, test numeric and exceptional cases, remeasure the warmed kernel and representative full/reduced-order q1/q8 analysis/synthesis; commit/push each validated change. Retain correct-but-slower experimental results for final cumulative attribution, then clean up unsuccessful production variants. No checked-loop performance rewrites; preserve cold checked proof, range-cache validity and robust scaled fallback.
 

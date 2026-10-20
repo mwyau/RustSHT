@@ -353,3 +353,91 @@ library tests (14 ignored), formatting, and all-target/all-feature Clippy. No
 timing was collected because the host remained contended. Retain as an
 unmeasured candidate pending the matched lane-count and full-transform
 ablation.
+
+## T720 production versus cumulative candidate (2026-10-20)
+
+The matched full-transform A/B used RustSHT source `fbba7c39`, Rust 1.99.1
+(LLVM 23.1.1), strict x86-64-v3/Pulp V3 and DUCC 0.42.0 at
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b` (GCC 15.2, DUCC SHT flags
+`-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3`). The six T720 cases
+covered `mmax=1,180,720`, odd-minimum and even-smooth longitude counts, A/S,
+q1/q8, three interleaved process pairs and 10 calibrated batches per backend
+and row. The cumulative Rust build enabled fixed SIMD scratch, packed complex
+reduction, indexed-loop traversal and direct output accumulation. Its results
+are retained as an experimental candidate, not a production recommendation.
+
+| mmax | longitude | op | threads | Rust production ms | Rust candidate ms | change | DUCC production → candidate ms | candidate Rust/DUCC | relative L2 |
+|---:|---|---|---:|---:|---:|---:|---:|---:|---:|
+| 180 | even-smooth | A | q1 | 6.409 | 16.765 | +161.6% | 5.923 → 5.951 | 2.817× | `4.975e-14` |
+| 180 | even-smooth | A | q8 | 1.140 | 2.573 | +125.6% | 0.939 → 0.986 | 2.610× | `4.975e-14` |
+| 180 | odd-minimum | A | q1 | 13.153 | 18.105 | +37.7% | 11.806 → 6.093 | 2.972× | `4.952e-14` |
+| 180 | odd-minimum | A | q8 | 1.350 | 2.746 | +103.3% | 0.955 → 0.967 | 2.839× | `4.952e-14` |
+| 720 | even-smooth | A | q1 | 20.834 | 41.115 | +97.3% | 27.095 → 14.603 | 2.816× | `4.657e-14` |
+| 720 | even-smooth | A | q8 | 4.190 | 6.874 | +64.0% | 2.859 → 2.133 | 3.223× | `4.657e-14` |
+| 720 | odd-minimum | A | q1 | 23.674 | 48.344 | +104.2% | 22.273 → 22.329 | 2.165× | `4.659e-14` |
+| 720 | odd-minimum | A | q8 | 3.856 | 7.343 | +90.4% | 3.191 → 3.195 | 2.298× | `4.659e-14` |
+
+The extreme reduced-order `mmax=1` rows are also included below. They are
+short, low-work controls; their raw timing distribution is in the CSV. This
+path did not show the warmed-analysis regression seen at larger `mmax`.
+
+| longitude | op | threads | Rust production → candidate ms | change | DUCC production → candidate ms | candidate Rust/DUCC | relative L2 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| even-smooth | A | q1 | 0.107827 → 0.107827 | +0.0% | 0.135974 → 0.135458 | 0.796× | `6.121e-14` |
+| even-smooth | A | q8 | 0.089372 → 0.088678 | -0.8% | 0.138593 → 0.132577 | 0.669× | `6.121e-14` |
+| odd-minimum | A | q1 | 0.100400 → 0.100561 | +0.2% | 0.133680 → 0.133283 | 0.754× | `5.277e-14` |
+| odd-minimum | A | q8 | 0.081847 → 0.080131 | -2.1% | 0.132453 → 0.138873 | 0.577× | `5.277e-14` |
+| even-smooth | S | q1 | 0.142745 → 0.143066 | +0.2% | 0.151587 → 0.152774 | 0.936× | `1.841e-13` |
+| even-smooth | S | q8 | 0.157346 → 0.112220 | -28.7% | 0.143192 → 0.131518 | 0.853× | `1.841e-13` |
+| odd-minimum | S | q1 | 0.144713 → 0.144470 | -0.2% | 0.151259 → 0.155575 | 0.929× | `1.077e-13` |
+| odd-minimum | S | q8 | 0.145044 → 0.110371 | -23.9% | 0.136345 → 0.133240 | 0.828× | `1.077e-13` |
+
+Synthesis was the unchanged-operation control. The shifts below are not
+candidate effects; they show the run-to-run timing regime changed, especially
+for q8.
+
+| mmax | longitude | threads | Rust production → candidate ms | change | DUCC production → candidate ms | candidate Rust/DUCC | relative L2 |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 180 | even-smooth | q1 | 9.163 → 9.110 | -0.6% | 8.512 → 8.320 | 1.095× | `4.707e-14` |
+| 180 | even-smooth | q8 | 2.122 → 1.743 | -17.9% | 1.228 → 1.224 | 1.424× | `4.707e-14` |
+| 180 | odd-minimum | q1 | 12.434 → 10.858 | -12.7% | 11.476 → 8.627 | 1.259× | `5.195e-14` |
+| 180 | odd-minimum | q8 | 2.387 → 2.000 | -16.2% | 1.361 → 1.270 | 1.575× | `5.195e-14` |
+| 720 | even-smooth | q1 | 21.919 → 20.518 | -6.4% | 20.302 → 19.037 | 1.078× | `4.405e-14` |
+| 720 | even-smooth | q8 | 5.980 → 3.927 | -34.3% | 3.608 → 2.709 | 1.450× | `4.405e-14` |
+| 720 | odd-minimum | q1 | 28.339 → 28.257 | -0.3% | 27.517 → 27.906 | 1.013× | `4.448e-14` |
+| 720 | odd-minimum | q8 | 7.789 → 5.143 | -34.0% | 4.419 → 3.894 | 1.321× | `4.448e-14` |
+
+Across all 72 output comparisons the candidate maximum relative L2 error was
+`1.841e-13` and maximum absolute error was `3.742e-10`. Its first analysis
+call was close to production, then warmed analysis was much slower: T720
+`mmax=180` even-smooth q1 changed from 7.997/6.409 ms (first/warm) to
+7.879/16.765 ms, and full-order odd-minimum q1 changed from 27.283/23.674 ms
+to 27.067/48.344 ms. This points at the direct-output route selected after
+the cached checked proof. Source inspection also found that this route
+performs a separate full-latitude product-bound scan and retries ordinary
+sectoral initialization before scaled fallback can run. The direct-output
+path was removed after the combined candidate reproduced the large warmed
+regression. Exact first-versus-warm output comparison was false for 24 of 144
+candidate worker samples; numerical comparisons still passed.
+
+Do not attribute every row change to the candidate: synthesis was unchanged
+by these flags but several synthesis rows shifted 6–34%, and the production
+run-queue wait median/p90 was `0.97% / 15.4%` versus `0.48% / 10.1%` for the
+candidate run. The no-direct combined rerun (fixed scratch, packed reduction,
+indexed loop) was unusable: wait median/p90 rose to `13.7% / 67.5%`. Its
+timings are excluded. Existing isolated kernel screens found fixed scratch
+neutral at 128/256 lanes, packed reduction faster by 5.0/1.5/0.6% at
+64/128/256 lanes (256-lane run unstable), and indexed traversal within 0.4%
+of neutral. The indexed-loop candidate was removed; fixed scratch and packed
+reduction remain gated for a later uncontended end-to-end comparison.
+
+The T720 CSV summaries and reproduction notes are in
+[`data/scalar-analysis-cumulative-2026-10-20/t720-ab/`](data/scalar-analysis-cumulative-2026-10-20/t720-ab/).
+The next benchmark is the T2047/T2048 analysis regression with `mmax=2047`
+and `nphi=4096` held fixed. The current safety bound allows insignificant
+prefix skipping at `ntheta=2048` (T2047) and disables it at `ntheta=2049`
+(T2048). Separately, the default 256-pair tile changes the workspace's
+potential block count from `ceil(1024/256)=4` to `ceil(1025/256)=5`; tile 128
+and 64 controls change from 8→9 and 16→17. Compare these tile policies at
+both degrees, retain all scale safeguards, and do not time further candidates
+while run-queue contention remains high.

@@ -8,25 +8,26 @@ recurrence from T64; analysis retains its prior table policy).
 `e2c2dc15`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
 
-- **Cumulative scalar-analysis candidate:** the guarded direct-output path is
-  restored behind `rustsht_scalar_analysis_direct_accumulation`; production
-  still uses staged output. It requires a cached checked-recurrence proof and
-  an input bound covering all reflected latitude lanes, while scaled and
-  unsafe inputs retain the transactional path. The scaled sectoral initializer
-  now reuses each already-validated ordinary SIMD vector preceding the first
-  unsafe vector, then scales only the remaining vectors and tail. The combined
-  scaled-prefix recurrence also carries its all-negative epoch condition from
-  the SIMD update pass instead of rereading the epoch slice. These cumulative
-  candidates passed 230 release library tests (23 ignored), 192 no-default-
-  feature release library tests (14 ignored), and all-target/all-feature
-  Clippy. Focused tests cover prefix reuse and epoch transitions across SIMD
-  lanes and tails. The focused T511 cached-versus-checked comparison has
-  relative L2 error `2.5974e-16`.
-  The historical direct-only T720 screen regressed, so no performance claim is
-  made for the combined candidate. Timings are deferred while unrelated host
-  CPU jobs saturate the machine; the next step is a matched T720 full/reduced
-  q1/q8 comparison when the host is stable. See the
-  [cumulative experiment record](reports/scalar-analysis-cumulative-2026-10-20.md).
+- **T720 cumulative-candidate checkpoint:** source `fbba7c39` was compared
+  against the fixed DUCC 0.42.0 pin at T720, with `mmax=180,720`, odd and
+  even-smooth longitude counts, A/S, and q1/q8. The direct-output-inclusive
+  candidate's warmed Rust analysis ranged from 1.38× to 2.62× production
+  across the full/reduced rows; the matched q1 T720 `mmax=180` even-smooth
+  and `mmax=720` odd-minimum rows were 2.62× and 2.04×. Maximum relative
+  L2 error was `1.841e-13`.
+  First-call times were similar, while the warmed direct-output route was
+  slower, and 24/144 candidate worker samples differed bitwise between their
+  first and final outputs. The direct-output path and the neutral indexed-loop
+  ablation have been removed. The fixed-scratch/packed-reduction combined
+  rerun was invalid under host saturation (run-queue wait median/p90
+  `13.7% / 67.5%`); retain their cfgs only for a later clean comparison. The
+  T720 results and host summaries are in the
+  [cumulative experiment record](reports/scalar-analysis-cumulative-2026-10-20.md)
+  and [machine-readable data](reports/data/scalar-analysis-cumulative-2026-10-20/t720-ab/).
+  Next, compare T2047/T2048 with fixed `mmax=2047`, `nphi=4096`, q1/q8, and
+  pair tiles 64/128/256. The prefix error budget permits skipping at 2048
+  latitudes but not 2049; the 256-pair workspace also crosses a 4→5-block
+  boundary. Keep the safety bound unchanged.
 
 - **Scaled preflight candidate:** correction preparation now carries the
   below-one and all-negative epoch frontiers in the same pass, removing two
