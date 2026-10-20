@@ -94,6 +94,67 @@ impl Fixture {
         }
     }
 
+    fn from_geometry(m: usize, lmax: usize, cosine: Vec<f64>, sine: Vec<f64>) -> Self {
+        assert_eq!(cosine.len(), sine.len());
+        let lane_count = sine.len();
+        let mut epsilon = vec![0.0; lmax + 4];
+        scalar::fill_epsilon(m, lmax + 3, &mut epsilon);
+        let factor_count = lmax / 2 + 2;
+        let mut alpha = vec![0.0; factor_count];
+        let mut coefficient_a = vec![0.0; factor_count];
+        let mut coefficient_b = vec![0.0; factor_count];
+        assert!(fill_factors(
+            m,
+            lmax,
+            &epsilon,
+            &mut alpha,
+            &mut coefficient_a,
+            &mut coefficient_b,
+        ));
+
+        let cosine_squared = sine
+            .iter()
+            .zip(&cosine)
+            .map(|(&sin_theta, &cos_theta)| {
+                if cos_theta.abs() > 0.99 {
+                    (1.0 - sin_theta) * (1.0 + sin_theta)
+                } else {
+                    cos_theta * cos_theta
+                }
+            })
+            .collect();
+        let same_real = (0..lane_count)
+            .map(|lane| 0.1 + (0.017 * (lane as f64 + 1.0)).sin())
+            .collect();
+        let same_imag = (0..lane_count)
+            .map(|lane| -0.2 + 0.4 * (0.011 * (lane as f64 + 1.0)).cos())
+            .collect();
+        let opposite_real = cosine
+            .iter()
+            .enumerate()
+            .map(|(lane, &value)| value * (0.2 + (0.013 * (lane as f64 + 1.0)).sin()))
+            .collect();
+        let opposite_imag = cosine
+            .iter()
+            .enumerate()
+            .map(|(lane, &value)| value * (0.3 + (0.019 * (lane as f64 + 1.0)).cos()))
+            .collect();
+        let pair_count = (lmax - m + 2) / 2;
+
+        Self {
+            cosine,
+            cosine_squared,
+            previous: vec![0.0; lane_count],
+            current: vec![0.0; lane_count],
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            coefficient_a: coefficient_a[..pair_count].to_vec(),
+            coefficient_b: coefficient_b[..pair_count].to_vec(),
+        }
+    }
+
     fn write_input(&self, path: &str, lane_count: usize) {
         let mut file = File::create(path).expect("create kernel fixture");
         for value in [
@@ -122,6 +183,110 @@ impl Fixture {
                     .expect("write kernel fixture values");
             }
         }
+    }
+
+    fn write_prefix_input(&self, path: &str, m: usize, lmax: usize, scale_epochs: &[f64]) {
+        let lane_count = self.cosine.len();
+        assert_eq!(self.previous.len(), lane_count);
+        assert_eq!(self.current.len(), lane_count);
+        assert_eq!(scale_epochs.len(), lane_count);
+        let mut file = File::create(path).expect("create prefix fixture");
+        for value in [
+            m as u64,
+            lmax as u64,
+            lane_count as u64,
+            self.coefficient_a.len() as u64,
+        ] {
+            file.write_all(&value.to_le_bytes())
+                .expect("write prefix fixture header");
+        }
+        for values in [
+            self.cosine.as_slice(),
+            self.cosine_squared.as_slice(),
+            self.previous.as_slice(),
+            self.current.as_slice(),
+            self.same_real.as_slice(),
+            self.same_imag.as_slice(),
+            self.opposite_real.as_slice(),
+            self.opposite_imag.as_slice(),
+            self.coefficient_a.as_slice(),
+            self.coefficient_b.as_slice(),
+            scale_epochs,
+        ] {
+            for value in values {
+                file.write_all(&value.to_le_bytes())
+                    .expect("write prefix fixture values");
+            }
+        }
+    }
+}
+
+struct AnalysisPrefixLoopProbe<'a> {
+    m: usize,
+    lmax: usize,
+    cos_theta_squared: &'a [f64],
+    coefficient_a: &'a [f64],
+    coefficient_b: &'a [f64],
+    previous: &'a mut [f64],
+    current: &'a mut [f64],
+    scale_epochs: &'a mut [f64],
+    scale_corrections: &'a mut [f64],
+}
+
+impl WithSimd for AnalysisPrefixLoopProbe<'_> {
+    type Output = Option<usize>;
+
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let Self {
+            m,
+            lmax,
+            cos_theta_squared,
+            coefficient_a,
+            coefficient_b,
+            previous,
+            current,
+            scale_epochs,
+            scale_corrections,
+        } = self;
+        let pair_count = (lmax - m + 2) / 2;
+        if !analysis_scale_epochs_allow_recurrence(scale_epochs, pair_count)
+            || !fill_analysis_scale_corrections(current, scale_epochs, scale_corrections)
+        {
+            return None;
+        }
+
+        let mut pair_start = 0;
+        let mut below_limit = analysis_scale_epochs_below_one(simd, scale_epochs);
+        let mut skip_insignificant_validation = scale_epochs.iter().all(|&epoch| epoch < 0.0);
+        while below_limit && pair_start < pair_count {
+            if pair_count - pair_start == 1 {
+                return Some(pair_count);
+            }
+            let second_pair = pair_start + 1;
+            if pair_count - second_pair == 1 {
+                return Some(pair_count);
+            }
+            let Some((rescaled, remains_below_limit)) = advance_and_rescale_analysis_pair(
+                simd,
+                [
+                    (coefficient_a[pair_start], coefficient_b[pair_start]),
+                    (coefficient_a[second_pair], coefficient_b[second_pair]),
+                ],
+                cos_theta_squared,
+                (&mut *previous, &mut *current),
+                scale_epochs,
+                scale_corrections,
+                skip_insignificant_validation,
+            ) else {
+                return None;
+            };
+            pair_start += 2;
+            below_limit = remains_below_limit;
+            if rescaled {
+                skip_insignificant_validation = scale_epochs.iter().all(|&epoch| epoch < 0.0);
+            }
+        }
+        Some(pair_start)
     }
 }
 
@@ -938,69 +1103,134 @@ fn benchmark_fused_scaled_scalar_analysis_prefix() {
     let arch = Arch::new();
     let output_base = output_base();
     eprintln!("RUST_PREFIX_ARCH {arch:?}");
-    for lane_count in [64, 256] {
-        let fixture = Fixture::new(lane_count);
-        let input_path = format!("{output_base}-{lane_count}.in");
-        let state_path = format!("{output_base}-{lane_count}.rust_state");
-        fixture.write_input(&input_path, lane_count);
-        let mut previous = vec![0.0; lane_count];
-        let mut current = vec![2.0_f64.powi(-100); lane_count];
-        let mut next = vec![0.0; lane_count];
-        let mut scale_epochs = vec![-1.0; lane_count];
-        let mut scale_corrections = vec![0.0; lane_count];
-        let mut staged = vec![Complex64::new(17.0, -9.0); BENCH_LMAX - BENCH_ORDER + 1];
-        let mut samples_us = Vec::with_capacity(5);
-
-        for sample in 0..6 {
-            previous.fill(0.0);
-            current.fill(2.0_f64.powi(-100));
-            next.fill(0.0);
-            scale_epochs.fill(-1.0);
-            scale_corrections.fill(0.0);
-            staged.fill(Complex64::new(17.0, -9.0));
-
-            let started = Instant::now();
-            let succeeded = arch
-                .dispatch(FusedScaledScalarAnalysisPair::<true> {
-                    m: BENCH_ORDER,
-                    lmax: BENCH_LMAX,
-                    cos_theta: &fixture.cosine,
-                    cos_theta_squared: &fixture.cosine_squared,
-                    coefficient_a: &fixture.coefficient_a,
-                    coefficient_b: &fixture.coefficient_b,
-                    same_real: &fixture.same_real,
-                    same_imag: &fixture.same_imag,
-                    opposite_real: &fixture.opposite_real,
-                    opposite_imag: &fixture.opposite_imag,
-                    staged_coefficients: &mut staged,
-                    previous: &mut previous,
-                    current: &mut current,
-                    next: &mut next,
-                    scale_epochs: &mut scale_epochs,
-                    scale_corrections: &mut scale_corrections,
-                })
-                .expect("scaled prefix route");
-            let elapsed_us = started.elapsed().as_secs_f64() * 1.0e6;
-            assert!(
-                succeeded,
-                "scaled prefix route declined for {lane_count} lanes"
-            );
-            if sample != 0 {
-                samples_us.push(elapsed_us);
-            }
-        }
-        assert!(
-            staged
-                .iter()
-                .all(|coefficient| *coefficient == Complex64::new(0.0, 0.0))
+    let grid = crate::GridSpec::new(crate::GridKind::GaussLegendre, 721, 1443, 0.37).unwrap();
+    const REALISTIC_M: usize = 500;
+    for lane_count in [64, 128, 256] {
+        let mut synthetic = Fixture::new(lane_count);
+        synthetic.previous.fill(0.0);
+        synthetic.current.fill(2.0_f64.powi(-100));
+        run_prefix_probe_case(
+            arch,
+            &output_base,
+            "synthetic",
+            BENCH_ORDER,
+            BENCH_LMAX,
+            synthetic,
+            vec![-1.0; lane_count],
         );
-        write_f64s(&state_path, [&previous, &current, &scale_epochs]);
-        samples_us.sort_by(f64::total_cmp);
+
+        let active_geometry: Vec<_> = grid
+            .theta()
+            .iter()
+            .map(|&theta| (theta.sin(), theta.cos()))
+            .filter(|&(sine, cosine)| {
+                REALISTIC_M <= scalar::polar_order_limit(BENCH_LMAX, 0, sine, cosine)
+            })
+            .take(lane_count)
+            .collect();
+        assert_eq!(active_geometry.len(), lane_count);
+        let sine: Vec<_> = active_geometry.iter().map(|&(sine, _)| sine).collect();
+        let cosine: Vec<_> = active_geometry.iter().map(|&(_, cosine)| cosine).collect();
+        let sectoral_norm = scalar::sectoral_normalizations(REALISTIC_M).unwrap()[REALISTIC_M];
+        let mut previous = vec![0.0; lane_count];
+        let mut current = vec![0.0; lane_count];
+        let mut scale_epochs = vec![0.0; lane_count];
+        assert!(
+            !initialize_scaled_analysis_sectoral_lanes(
+                arch,
+                REALISTIC_M,
+                BENCH_LMAX,
+                &sine,
+                sectoral_norm,
+                &mut previous,
+                &mut current,
+                &mut scale_epochs,
+            )
+            .unwrap()
+            .expect("realistic GL sectoral seed")
+        );
+        assert!(scale_epochs.iter().all(|epoch| epoch.is_finite()));
+        let initially_below_limit = scale_epochs.iter().all(|&epoch| epoch < 1.0);
+        assert!(current.iter().any(|value| value.abs() <= ANALYSIS_FTOL));
+        let scaled_lanes = current
+            .iter()
+            .filter(|value| value.abs() <= ANALYSIS_FTOL)
+            .count();
+        let mut realistic = Fixture::from_geometry(REALISTIC_M, BENCH_LMAX, cosine, sine);
+        realistic.previous = previous;
+        realistic.current = current;
         eprintln!(
-            "RUST_PREFIX m={} lmax={} lanes={} repetitions=5 median_us={:.3} samples_us={:?}",
-            BENCH_ORDER, BENCH_LMAX, lane_count, samples_us[2], samples_us
+            "RUST_PREFIX_SEED kind=gl_sectoral m={REALISTIC_M} lanes={lane_count} below_limit={initially_below_limit} insignificant_seed_lanes={scaled_lanes}"
+        );
+        run_prefix_probe_case(
+            arch,
+            &output_base,
+            "gl-sectoral",
+            REALISTIC_M,
+            BENCH_LMAX,
+            realistic,
+            scale_epochs,
         );
     }
+}
+
+fn run_prefix_probe_case(
+    arch: Arch,
+    output_base: &str,
+    label: &str,
+    m: usize,
+    lmax: usize,
+    fixture: Fixture,
+    initial_scale_epochs: Vec<f64>,
+) {
+    let lane_count = fixture.cosine.len();
+    let input_path = format!("{output_base}-{label}-{lane_count}.in");
+    let state_path = format!("{output_base}-{label}-{lane_count}.rust_state");
+    fixture.write_prefix_input(&input_path, m, lmax, &initial_scale_epochs);
+    let mut previous = fixture.previous.clone();
+    let mut current = fixture.current.clone();
+    let mut scale_epochs = initial_scale_epochs.clone();
+    let mut scale_corrections = vec![0.0; lane_count];
+    let mut samples_us = Vec::with_capacity(5);
+    let mut final_pair_start = 0;
+
+    for sample in 0..6 {
+        previous.copy_from_slice(&fixture.previous);
+        current.copy_from_slice(&fixture.current);
+        scale_epochs.copy_from_slice(&initial_scale_epochs);
+        scale_corrections.fill(0.0);
+        let started = Instant::now();
+        final_pair_start = arch
+            .dispatch(AnalysisPrefixLoopProbe {
+                m,
+                lmax,
+                cos_theta_squared: &fixture.cosine_squared,
+                coefficient_a: &fixture.coefficient_a,
+                coefficient_b: &fixture.coefficient_b,
+                previous: &mut previous,
+                current: &mut current,
+                scale_epochs: &mut scale_epochs,
+                scale_corrections: &mut scale_corrections,
+            })
+            .expect("scaled prefix recurrence");
+        let elapsed_us = started.elapsed().as_secs_f64() * 1.0e6;
+        assert!(
+            previous
+                .iter()
+                .chain(&current)
+                .all(|value| value.is_finite())
+        );
+        if sample != 0 {
+            samples_us.push(elapsed_us);
+        }
+    }
+
+    write_f64s(&state_path, [&previous, &current, &scale_epochs]);
+    samples_us.sort_by(f64::total_cmp);
+    eprintln!(
+        "RUST_PREFIX kind={label} m={m} lmax={lmax} lanes={lane_count} pair_start={final_pair_start} repetitions=5 median_us={:.3} samples_us={samples_us:?}",
+        samples_us[2]
+    );
 }
 
 #[test]

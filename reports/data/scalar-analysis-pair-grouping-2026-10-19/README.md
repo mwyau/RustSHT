@@ -67,11 +67,15 @@ after each batch. DUCC uses a compiler fence and post-batch checksum. Both
 adapters validate recurrence coefficients and compare final coefficients
 outside timed regions. Checked and unchecked Rust outputs are compared exactly.
 
-The ignored `benchmark_fused_scaled_scalar_analysis_prefix` and the separate
-scaled-block adapter remain available for focused experiments. Their older
-single-call measurements are historical and are not comparable to the
-calibrated ordinary-kernel results. `split-check-candidate.patch` preserves the
-earlier split-loop prototype for review; it is not part of the timed candidate.
+The ignored `benchmark_fused_scaled_scalar_analysis_prefix` now emits both
+synthetic seeds and T720 GL sectoral seeds (`m=500`) at 64, 128 and 256 lanes.
+The DUCC adapter initializes from those same Rust-generated recurrence states
+and verifies the resulting state and scale epochs after `iter_to_ieee`. The
+256-lane GL case includes significant seeds, so DUCC correctly skips prefix
+advancement. These five-call samples are exploratory and are not comparable to
+the calibrated ordinary-kernel results. `split-check-candidate.patch`
+preserves the earlier split-loop prototype for review; it is not part of the
+timed candidate.
 
 ## Scalar-analysis pair-tile screen
 

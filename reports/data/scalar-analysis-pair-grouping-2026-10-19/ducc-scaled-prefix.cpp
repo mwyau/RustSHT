@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
   std::vector<double> cosine(lane_count), cosine_squared(lane_count), previous(lane_count),
       current(lane_count), same_real(lane_count), same_imag(lane_count),
       opposite_real(lane_count), opposite_imag(lane_count), coefficient_a(pair_count),
-      coefficient_b(pair_count);
+      coefficient_b(pair_count), initial_scale_epochs(lane_count);
   read_values(in, cosine);
   read_values(in, cosine_squared);
   read_values(in, previous);
@@ -65,6 +65,7 @@ int main(int argc, char **argv) {
   read_values(in, opposite_imag);
   read_values(in, coefficient_a);
   read_values(in, coefficient_b);
+  read_values(in, initial_scale_epochs);
   (void)cosine;
   (void)same_real;
   (void)same_imag;
@@ -87,18 +88,22 @@ int main(int argc, char **argv) {
       destination[i / loop::VLEN][i % loop::VLEN] = source[i];
   };
   copy_lanes(data.csq, cosine_squared);
+  copy_lanes(data.lam1, previous);
+  copy_lanes(data.lam2, current);
+  copy_lanes(data.scale, initial_scale_epochs);
   auto reset = [&]() {
-    for (size_t i = 0; i < vectors; ++i) {
-      data.lam1[i] = loop::Tv(0.0);
-      data.lam2[i] = loop::Tv(0x1p-100);
-      data.scale[i] = loop::Tv(-1.0);
-    }
+    copy_lanes(data.lam1, previous);
+    copy_lanes(data.lam2, current);
+    copy_lanes(data.scale, initial_scale_epochs);
   };
+  size_t final_l = 0, final_il = 0;
   auto run = [&]() {
     reset();
     size_t l = 0, il = 0;
     const auto started = Clock::now();
     loop::iter_to_ieee(generator, data, l, il, vectors, m, lmax + 1);
+    final_l = l;
+    final_il = il;
     return std::chrono::duration<double, std::micro>(Clock::now() - started).count();
   };
 
@@ -144,6 +149,7 @@ int main(int argc, char **argv) {
     if (i) std::cout << ",";
     std::cout << samples[i];
   }
-  std::cout << "] state_relative_l2=" << std::scientific << state_relative_l2
+  std::cout << "] prefix_l=" << final_l << " prefix_pair=" << final_il
+            << " state_relative_l2=" << std::scientific << state_relative_l2
             << " state_max_abs=" << state_max_abs << " scale_mismatches=" << scale_mismatches << "\n";
 }

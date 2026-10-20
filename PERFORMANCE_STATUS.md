@@ -59,10 +59,12 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   of rereading the full epoch array after each group. Scale correction,
   insignificant-term handling and fallback checks are unchanged. A focused
   test covers threshold crossings, sparse rescaled vectors and SIMD tails; the
-  all-feature release library suite passes. The five-call synthetic prefix
-  screen still matches DUCC state and scale epochs, but is too short for a
-  performance claim. Calibrated comparisons of synthetic and GL-derived scaled
-  seeds remain next; retain this source change as experimental meanwhile.
+  all-feature release library suite passes. The prefix harness now compares
+  synthetic seeds and T720 GL sectoral seeds (`m=500`) against DUCC's
+  `iter_to_ieee` state. Rust and DUCC agree on all lane states and scale epochs:
+  the GL seed advances to pair 36 at 64 lanes, pair 2 at 128 lanes, and skips
+  the prefix at 256 lanes because that block includes significant seeds. Its
+  five-call samples remain exploratory; calibrated prefix timings remain next.
 - A short full-transform Rust screen compared `fc9f44a4` with this change using
   five interleaved process pairs and five samples per process, GL STANDARD A,
   odd `nphi=2T+3`, and q1/q8. Median baseline→candidate times were T300 q1
