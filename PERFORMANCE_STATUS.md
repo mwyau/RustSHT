@@ -1,7 +1,7 @@
 # RustSHT performance checkpoint
 
-**Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Checked
-production baseline:** Pulp post-group scan. **A/B source:** `9f7e8658`.
+**Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Current
+candidate:** `aeb123d6`. **Earlier A/B source:** `9f7e8658`.
 **Calibrated harness:** `19771bb7`. **Benchmark default:** production flags at
 `e2c2dc15`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
@@ -25,6 +25,20 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   provisional Rust-only full-transform result. Earlier unpaired baseline
   screens are not used for attribution. The benefit applies after the checked
   workspace warmup and is not a DUCC comparison.
+- A calibrated direct-kernel run at `aeb123d6` used T720 GL `m=1`, Rust 1.99.0,
+  Pulp V3, x86-64-v3, GCC 15.2.0 and pinned DUCC revision
+  `80388904b8cfc32400ba84af8a6a45aabfe60f86`. Ten interleaved process pairs
+  collected 60 batches per backend/variant; batch durations were 28.94–82.12 ms.
+  Equivalent kernel-plus-commit medians (checked/cached-hot-path/DUCC, µs) were
+  `7.079/4.869/4.119`, `12.632/8.902/8.050`, and `24.356/17.199/15.814` at
+  64/128/256 lanes. The ordinary post-group validation cost was respectively
+  2.210/3.730/7.157 µs. At 256 lanes, it accounts for 83.5% of checked Rust's
+  paired excess over DUCC (8.574 µs); the cached hot path retains 1.368 µs
+  excess, or 1.088× DUCC. The 7.157 µs saving is about 27% of the earlier
+  single-call 26.590 µs figure, but the calibrated checked median is 24.356 µs.
+  Output relative L2 errors were `6.670e-14`, `1.628e-13`, and `5.928e-14`.
+  Median measured frequency was 4.617 GHz; median/max involuntary switches were
+  2/11. This is an ordinary `m=1` kernel result, not a whole-transform claim.
 - **Work-boundary correction:** the prior direct-kernel comparison stopped
   Rust timing after writing `staged_coefficients`, while DUCC's kernel also
   accumulated into `alm`. Its Rust/DUCC ratios omitted Rust's final coefficient
@@ -228,12 +242,13 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   screen was neutral: q1 medians were 26.705 ms before and 26.851 ms after;
   q8 medians were 4.348 ms and 4.327 ms, with one candidate process outlier.
   Retain the layout change for cumulative evaluation, without claiming a speedup.
-- On the same T720 GL full-order analysis, five interleaved q1 process pairs
+- At the pre-cache source, the same T720 GL full-order analysis with five
+  interleaved q1 process pairs
   measured checked/unchecked medians of 26.932/23.541 ms (12.6% lower unchecked).
   q8 medians were 4.415/3.936 ms (10.8% lower), with one slow unchecked process.
   The checked T720 route recorded zero late declines at q1 and q8; the unchecked
-  release suite also passed. Keep the robust checked default until the remaining
-  high-order exceptional-value coverage justifies a production switch.
+  release suite also passed. This was the earlier pre-cache default; the current
+  path uses the cached unchecked specialization only after checked validation.
 - The three-process full-analysis screen improved q1 by 4.0% at T720 and 5.4%
   at reduced-order T300; q8 T720 improved 4.4%. q8 T300 was too noisy to show a
   clear benefit. The candidate passed all-feature release tests at 64/128/256,
@@ -244,8 +259,7 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   stayed tightly grouped; long batch tails remain in the reported distributions.
   No favorable or unfavorable samples were removed.
 
-**Next:** reduce the post-group state reread without adding a live SIMD mask to
-the eight-accumulator recurrence loop. The split-mask scan kept the same state
-loads/comparisons and was slower at 64/128 lanes. Any new path must detect
-subnormal intermediate states and preserve the checked fallback before output
-commit; do not disable the range check based only on zero declines in T720.
+**Next:** inspect the exact AVX2 ordinary loop from the calibrated run and
+compare its remaining 1.368 µs excess at 256 lanes with DUCC's `map2alm_kernel`.
+Attribute recurrence dependency chains, loads and horizontal reductions before
+changing the loop. Keep the validated checked-first cache and robust fallback.
