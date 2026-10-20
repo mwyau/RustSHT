@@ -43,6 +43,117 @@ const PAIRED_FACTOR_LIMIT: f64 = f64::from_bits(1151_u64 << 52);
 pub(crate) static ANALYSIS_PAIR_GROUP_RANGE_DECLINES: std::sync::atomic::AtomicUsize =
     std::sync::atomic::AtomicUsize::new(0);
 
+#[cfg(all(test, feature = "parallel"))]
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct ScalarAnalysisRouteCounts {
+    pub(crate) normal_seed_blocks: usize,
+    pub(crate) prefix_enabled_scaled_blocks: usize,
+    pub(crate) checked_scaled_blocks: usize,
+    pub(crate) prefix_initialization_declines: usize,
+    pub(crate) prefix_recurrence_declines: usize,
+    pub(crate) checked_scaled_recurrence_declines: usize,
+}
+
+#[cfg(all(test, feature = "parallel"))]
+static SCALAR_ANALYSIS_ROUTE_PROFILE_ENABLED: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+#[cfg(all(test, feature = "parallel"))]
+static SCALAR_ANALYSIS_NORMAL_SEED_BLOCKS: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+#[cfg(all(test, feature = "parallel"))]
+static SCALAR_ANALYSIS_PREFIX_ENABLED_SCALED_BLOCKS: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+#[cfg(all(test, feature = "parallel"))]
+static SCALAR_ANALYSIS_CHECKED_SCALED_BLOCKS: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+#[cfg(all(test, feature = "parallel"))]
+static SCALAR_ANALYSIS_PREFIX_INITIALIZATION_DECLINES: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+#[cfg(all(test, feature = "parallel"))]
+static SCALAR_ANALYSIS_PREFIX_RECURRENCE_DECLINES: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+#[cfg(all(test, feature = "parallel"))]
+static SCALAR_ANALYSIS_CHECKED_SCALED_RECURRENCE_DECLINES: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+
+#[cfg(all(test, feature = "parallel"))]
+pub(crate) fn begin_scalar_analysis_route_profile() {
+    use std::sync::atomic::Ordering;
+
+    SCALAR_ANALYSIS_ROUTE_PROFILE_ENABLED.store(false, Ordering::Relaxed);
+    SCALAR_ANALYSIS_NORMAL_SEED_BLOCKS.store(0, Ordering::Relaxed);
+    SCALAR_ANALYSIS_PREFIX_ENABLED_SCALED_BLOCKS.store(0, Ordering::Relaxed);
+    SCALAR_ANALYSIS_CHECKED_SCALED_BLOCKS.store(0, Ordering::Relaxed);
+    SCALAR_ANALYSIS_PREFIX_INITIALIZATION_DECLINES.store(0, Ordering::Relaxed);
+    SCALAR_ANALYSIS_PREFIX_RECURRENCE_DECLINES.store(0, Ordering::Relaxed);
+    SCALAR_ANALYSIS_CHECKED_SCALED_RECURRENCE_DECLINES.store(0, Ordering::Relaxed);
+    SCALAR_ANALYSIS_ROUTE_PROFILE_ENABLED.store(true, Ordering::Release);
+}
+
+#[cfg(all(test, feature = "parallel"))]
+pub(crate) fn finish_scalar_analysis_route_profile() -> ScalarAnalysisRouteCounts {
+    use std::sync::atomic::Ordering;
+
+    SCALAR_ANALYSIS_ROUTE_PROFILE_ENABLED.store(false, Ordering::Release);
+    ScalarAnalysisRouteCounts {
+        normal_seed_blocks: SCALAR_ANALYSIS_NORMAL_SEED_BLOCKS.load(Ordering::Relaxed),
+        prefix_enabled_scaled_blocks: SCALAR_ANALYSIS_PREFIX_ENABLED_SCALED_BLOCKS
+            .load(Ordering::Relaxed),
+        checked_scaled_blocks: SCALAR_ANALYSIS_CHECKED_SCALED_BLOCKS.load(Ordering::Relaxed),
+        prefix_initialization_declines: SCALAR_ANALYSIS_PREFIX_INITIALIZATION_DECLINES
+            .load(Ordering::Relaxed),
+        prefix_recurrence_declines: SCALAR_ANALYSIS_PREFIX_RECURRENCE_DECLINES
+            .load(Ordering::Relaxed),
+        checked_scaled_recurrence_declines: SCALAR_ANALYSIS_CHECKED_SCALED_RECURRENCE_DECLINES
+            .load(Ordering::Relaxed),
+    }
+}
+
+#[cfg(all(test, feature = "parallel"))]
+#[inline(always)]
+fn record_scalar_analysis_seed_route(initialized_normal: bool, prefix_allowed: bool) {
+    use std::sync::atomic::Ordering;
+
+    if !SCALAR_ANALYSIS_ROUTE_PROFILE_ENABLED.load(Ordering::Acquire) {
+        return;
+    }
+    let counter = if initialized_normal {
+        &SCALAR_ANALYSIS_NORMAL_SEED_BLOCKS
+    } else if prefix_allowed {
+        &SCALAR_ANALYSIS_PREFIX_ENABLED_SCALED_BLOCKS
+    } else {
+        &SCALAR_ANALYSIS_CHECKED_SCALED_BLOCKS
+    };
+    counter.fetch_add(1, Ordering::Relaxed);
+}
+
+#[cfg(all(test, feature = "parallel"))]
+#[inline(always)]
+fn record_scalar_analysis_initialization_decline() {
+    use std::sync::atomic::Ordering;
+
+    if !SCALAR_ANALYSIS_ROUTE_PROFILE_ENABLED.load(Ordering::Acquire) {
+        return;
+    }
+    SCALAR_ANALYSIS_PREFIX_INITIALIZATION_DECLINES.fetch_add(1, Ordering::Relaxed);
+}
+
+#[cfg(all(test, feature = "parallel"))]
+#[inline(always)]
+fn record_scalar_analysis_recurrence_decline(prefix_allowed: bool) {
+    use std::sync::atomic::Ordering;
+
+    if !SCALAR_ANALYSIS_ROUTE_PROFILE_ENABLED.load(Ordering::Acquire) {
+        return;
+    }
+    let counter = if prefix_allowed {
+        &SCALAR_ANALYSIS_PREFIX_RECURRENCE_DECLINES
+    } else {
+        &SCALAR_ANALYSIS_CHECKED_SCALED_RECURRENCE_DECLINES
+    };
+    counter.fetch_add(1, Ordering::Relaxed);
+}
+
 /// Bounds DUCC's insignificant-prefix omission by eight f64 ulps of the
 /// maximum paired-spectrum scale. The latitude count bounds the sum of the
 /// omitted per-lane terms because each skipped recurrence value is at most
@@ -2018,6 +2129,8 @@ fn fused_scalar_analysis_pair_block_impl<
             scale_epochs,
         )?
         else {
+            #[cfg(all(test, feature = "parallel"))]
+            record_scalar_analysis_initialization_decline();
             return Ok(false);
         };
         initialized_normal
@@ -2034,8 +2147,15 @@ fn fused_scalar_analysis_pair_block_impl<
         )?
     };
 
+    #[cfg(all(test, feature = "parallel"))]
+    record_scalar_analysis_seed_route(
+        initialized_normal,
+        allow_insignificant_prefix && OPPOSITE_COSINE_WEIGHTED,
+    );
+
     if !initialized_normal {
-        let succeeded = if allow_insignificant_prefix && OPPOSITE_COSINE_WEIGHTED {
+        let prefix_route = allow_insignificant_prefix && OPPOSITE_COSINE_WEIGHTED;
+        let succeeded = if prefix_route {
             arch.dispatch(FusedScaledScalarAnalysisPair::<
                 OPPOSITE_COSINE_WEIGHTED,
                 CHECK_PAIR_GROUP_RANGE,
@@ -2081,6 +2201,10 @@ fn fused_scalar_analysis_pair_block_impl<
                 exponents: &mut exponents[..sin_theta.len()],
             })?
         };
+        #[cfg(all(test, feature = "parallel"))]
+        if !succeeded {
+            record_scalar_analysis_recurrence_decline(prefix_route);
+        }
         return Ok(succeeded);
     }
 

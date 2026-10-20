@@ -679,6 +679,49 @@ fn m5_analysis_leaf_imbalance_profile() {
 
 #[cfg(feature = "parallel")]
 #[test]
+#[ignore = "T2047/T2048 seed-route diagnostic; run as one release test outside timing runs"]
+fn report_t2048_scalar_analysis_seed_routes() {
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+
+    for (lmax, ntheta) in [(2047, 2048), (2047, 2049), (2048, 2049)] {
+        let plan = make_plan(lmax, 2047, ntheta, 4096, 0.37);
+        let mut workspace = pool.install(|| plan.workspace()).unwrap();
+        plan.prepare_workspace(&mut workspace, 1).unwrap();
+        let map = vec![0.0; plan.sample_count];
+        let mut coefficients = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+
+        crate::legendre::begin_scalar_analysis_route_profile();
+        pool.install(|| {
+            plan.analysis_into(&map, &mut coefficients, &mut workspace)
+                .unwrap();
+        });
+        let routes: crate::legendre::ScalarAnalysisRouteCounts =
+            crate::legendre::finish_scalar_analysis_route_profile();
+
+        eprintln!(
+            "SCALAR_ANALYSIS_SEED_ROUTES T{lmax} ntheta={ntheta} nphi=4096 mmax=2047 tile={} normal={} prefix_enabled_scaled={} checked_scaled={} prefix_init_declines={} prefix_recurrence_declines={} checked_scaled_recurrence_declines={}",
+            crate::legendre::SCALAR_ANALYSIS_PAIR_TILE_SIZE,
+            routes.normal_seed_blocks,
+            routes.prefix_enabled_scaled_blocks,
+            routes.checked_scaled_blocks,
+            routes.prefix_initialization_declines,
+            routes.prefix_recurrence_declines,
+            routes.checked_scaled_recurrence_declines,
+        );
+        assert!(
+            routes.normal_seed_blocks
+                + routes.prefix_enabled_scaled_blocks
+                + routes.checked_scaled_blocks
+                > 0
+        );
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
 #[ignore = "M5 current-source analysis phase profile; run this diagnostic in release mode"]
 fn m5_analysis_phase_profile() {
     for (spin, lmax, thread_count) in [

@@ -433,11 +433,47 @@ reduction remain gated for a later uncontended end-to-end comparison.
 
 The T720 CSV summaries and reproduction notes are in
 [`data/scalar-analysis-cumulative-2026-10-20/t720-ab/`](data/scalar-analysis-cumulative-2026-10-20/t720-ab/).
-The next benchmark is the T2047/T2048 analysis regression with `mmax=2047`
-and `nphi=4096` held fixed. The current safety bound allows insignificant
-prefix skipping at `ntheta=2048` (T2047) and disables it at `ntheta=2049`
-(T2048). Separately, the default 256-pair tile changes the workspace's
-potential block count from `ceil(1024/256)=4` to `ceil(1025/256)=5`; tile 128
-and 64 controls change from 8→9 and 16→17. Compare these tile policies at
-both degrees, retain all scale safeguards, and do not time further candidates
-while run-queue contention remains high.
+
+## T2047/T2048 seed-route profile
+
+An ignored release test with test-only counters ran one full-triangle scalar
+analysis for each geometry, using a zero map so recurrence routing depended on
+geometry and factors rather than input spectral magnitude. This is route
+counting, not timing. The source was based on `7cb427e8`; Rust was 1.99.1 with
+the `parallel` feature. The tile was selected by the same compile-time cfg as
+the production analysis workspace.
+
+| Tile | lmax | ntheta | Normal seeds | Prefix-enabled scaled route | Checked-scaled route |
+|---:|---:|---:|---:|---:|---:|
+| 256 | 2047 | 2048 | 4039 | 2432 | 0 |
+| 256 | 2047 | 2049 | 4144 | 0 | 2434 |
+| 256 | 2048 | 2049 | 4146 | 0 | 2434 |
+| 128 | 2047 | 2048 | 8259 | 3798 | 0 |
+| 128 | 2047 | 2049 | 8369 | 0 | 3802 |
+| 128 | 2048 | 2049 | 8373 | 0 | 3802 |
+| 64 | 2047 | 2048 | 16735 | 6466 | 0 |
+| 64 | 2047 | 2049 | 16856 | 0 | 6471 |
+| 64 | 2048 | 2049 | 16861 | 0 | 6473 |
+
+No prefix-initialization, prefix-recurrence, or checked-scaled recurrence
+declines occurred. Crossing 2048 to 2049 latitudes moves thousands of
+initially scaled blocks from the prefix-enabled scaled route to checked-scaled
+recurrence. The counters identify route selection, not how many insignificant
+pairs each block advances. At fixed 2049 latitudes, adding degree 2048 changes
+the checked-scaled block count by zero at tiles 128 and 256 and by two at tile
+64. This supports the cutoff as a likely contributor but does not measure its
+latency cost. Keep the safety bound unchanged. Timings remain pending because
+host scheduling was oversubscribed during this diagnostic.
+
+Reproduce the route counts with the three tile builds:
+
+```sh
+cargo test --release --features parallel --lib report_t2048_scalar_analysis_seed_routes -- --ignored --nocapture --test-threads=1
+RUSTFLAGS='--cfg rustsht_scalar_analysis_pair_tile_64 -Aunexpected_cfgs' cargo test --release --features parallel --lib report_t2048_scalar_analysis_seed_routes -- --ignored --nocapture --test-threads=1
+RUSTFLAGS='--cfg rustsht_scalar_analysis_pair_tile_128 -Aunexpected_cfgs' cargo test --release --features parallel --lib report_t2048_scalar_analysis_seed_routes -- --ignored --nocapture --test-threads=1
+```
+
+The timing comparison remains T2047/2048 latitudes, T2047/2049 latitudes, and
+T2048/2049 latitudes with `mmax=2047`, `nphi=4096`, q1/q8, and tiles 64/128/256.
+This separates the safety-bound crossing from the extra degree while keeping
+the longitude FFT fixed.

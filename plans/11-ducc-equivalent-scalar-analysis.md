@@ -81,6 +81,18 @@ unchanged and use the benchmark's host-stability summaries to decide whether
 timing is credible. The native benchmark exposes `--fixed-ntheta` for this
 controlled geometry selection.
 
+**Route-count result:** a test-only release profile on the three geometries
+found 2,432/3,798/6,466 prefix-enabled scaled blocks at `ntheta=2048` for tiles
+256/128/64, respectively. At `ntheta=2049`, those blocks instead entered the
+checked-scaled route (2,434/3,802/6,471 blocks for T2047; 2,434/3,802/6,473
+for T2048). No initialization or recurrence declines occurred. These counts
+confirm that the cutoff changes the route selection for thousands of blocks;
+they do not count skipped degree pairs or establish the latency cost. Keep the
+safety bound unchanged; run the calibrated timing comparison when host
+scheduling is suitable. Detailed route counts and
+the release-test command are in
+`reports/scalar-analysis-cumulative-2026-10-20.md`.
+
 ## Non-negotiable objective
 
 **Close the observed roughly 2× RustSHT-versus-DUCC f64 GL scalar-analysis Legendre performance gap through a source- and assembly-grounded implementation.** The existing measurements are *directional*, because stage boundaries differ; first establish a defensible apples-to-apples gap and then attack its largest contributors.

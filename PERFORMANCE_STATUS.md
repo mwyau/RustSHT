@@ -24,6 +24,13 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   T720 results and host summaries are in the
   [cumulative experiment record](reports/scalar-analysis-cumulative-2026-10-20.md)
   and [machine-readable data](reports/data/scalar-analysis-cumulative-2026-10-20/t720-ab/).
+  A test-only route profile now covers the T2047/T2048 cutoff cases at tile
+  64/128/256. Crossing from 2048 to 2049 latitudes moves 2,432/3,798/6,466
+  blocks from the prefix-enabled scaled route into checked-scaled recurrence.
+  No initialization or recurrence declines occurred. At fixed 2049 latitudes,
+  T2047→T2048 changed checked-scaled counts by 0/0/2. These are block counts,
+  not time attribution; the host remained too busy for credible timings. The
+  route profile and exact counts are in the cumulative experiment record.
   Next, compare `mmax=2047`, `nphi=4096`, q1/q8 at T2047/`ntheta=2048`,
   T2047/`ntheta=2049`, and T2048/`ntheta=2049`, with pair tiles 64/128/256.
   This separates the prefix-bound transition from the extra-degree cost while

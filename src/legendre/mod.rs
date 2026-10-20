@@ -40,6 +40,12 @@ pub(crate) use spin_fast::{
     fill_spin2_factors, scalar_to_spin1, scalar_to_spin2, spin1_to_scalar, spin2_to_scalar,
 };
 
+#[cfg(all(test, feature = "parallel"))]
+pub(crate) use scalar_paired::{
+    ScalarAnalysisRouteCounts, begin_scalar_analysis_route_profile,
+    finish_scalar_analysis_route_profile,
+};
+
 use num_complex::Complex;
 use pulp::Arch;
 use rustfft::FftNum;
