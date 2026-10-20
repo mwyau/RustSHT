@@ -1,7 +1,8 @@
 # Active plan — close scalar-analysis SIMD performance gap with DUCC
 
 **Branch:** `opt/sht-performance-parity`  
-**Updated:** 2026-10-19. **Reviewed implementation:** `96ffd14`; inspect current remote HEAD before acting.  
+**Updated:** 2026-10-20. **Reviewed implementation:** `96ffd14`; inspect current remote HEAD before acting.
+
 **Reference:** pinned DUCC `80388904b8cfc32400ba84af8a6a45aabfe60f86`; source `src/ducc0/sht/sht_inner_loop.h` (`fill_m2a`, `init_lambda`, `iter_to_ieee`, `calc_map2alm`, `map2alm_kernel`) and surrounding `sht.cc`.
 
 ## Non-negotiable objective
@@ -31,7 +32,16 @@ This is a *goal*, not a guaranteed result or a license to weaken accuracy. Do no
 - `a707780` changed the ordinary SIMD accumulators from `vmulpd` + `vaddpd` to fused `vfmadd*` instructions. Rust-only whole-call gains were modest and not uniform across workloads.
 - `96ffd14` moved per-block cosine-square and scaled-correction tables into reusable workspace and reduced approximately 689,643 ordinary per-pair mask reductions to approximately 3,384 per-block reductions for T720. Despite fewer YMM stack-memory operands and reduced frame size, its **short T720 whole-call screen regressed** (29.203→31.215 ms q1; 6.493→7.150 ms q8), while smaller T300 q1 improved. This means the optimization was not validated as a general speedup.
 - The inspected Rust wrapper and DUCC `map2alm_kernel` have **different boundaries**; do not compare frame sizes/spills or instruction totals from nonmatching scopes. The prior naive two-pair/four-degree unroll, 256-lane packing and out-of-line scaled initialization regressed; do not replay unchanged.
-- No reliable current equal-work Rust/DUCC ratio is established. Historical 2× figures remain the working hypothesis, **not** proven current parity measurements. CPU hardware `perf` counters were blocked on the host; do not change system-wide security settings.
+- A matched ordinary f64 scalar-analysis kernel screen now measures `m=1`,
+  `lmax=720`, q1 against pinned DUCC. Rust checked kernel-plus-commit / DUCC
+  ratios are 1.736×, 1.582× and 1.549× at 64/128/256 active latitude lanes;
+  each case uses ten interleaved process pairs and six 29–79 ms batches per
+  process. Output relative L2 error is `6.670e-14..1.628e-13`. This is not a
+  full-transform or q8 result and does not measure scaled/mixed recurrence,
+  other orders, or setup/FFT/scheduling phases; those gaps still need matched
+  attribution. See [the rolling status](../PERFORMANCE_STATUS.md). CPU hardware
+  `perf` counters were blocked on the host; do not change system-wide security
+  settings.
 
 Evidence: [latest code-generation follow-up](../reports/archive/experiments/scalar-analysis-codegen-followup-2026-10-19.md), [initial AVX2 report](../reports/archive/experiments/scalar-analysis-avx2-codegen-2026-10-19.md), [stage profile](../reports/archive/experiments/scalar-analysis-stage-profile-2026-10-18.md), [mixed-fusion screen](../reports/data/scalar-analysis-mixed-fusion/README.md). Archived reports are evidence, not competing goals.
 

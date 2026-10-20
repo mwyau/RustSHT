@@ -29,10 +29,13 @@ To benchmark the scalar reduction variant, set
 This selects the same checked recurrence with one scalar mask reduction per
 four-lane vector chunk.
 
-The script warms and calibrates each specialization in sustained batches. It
-chooses separate operation counts for recurrence and commit-only work so every
-measured batch targets 35 ms. Calibration predicts a shared 20–95 ms interval;
-the runner then verifies every recorded batch is between 20 and 100 ms. It
+The script warms and calibrates each specialization in sustained batches. Each
+timed Rust process warms both variants three times; each timed DUCC process
+performs three reset/kernel/checksum warmups before measurement, and the runner
+validates that warmup record. It chooses separate operation counts for
+recurrence and commit-only work so every measured batch targets 35 ms.
+Calibration predicts a shared 20–95 ms interval; the runner then verifies every
+recorded batch is between 20 and 100 ms. It
 records 60 batches in each of ten independent process invocations per
 implementation and lane count, with six batches per process. Rust/DUCC process
 order alternates at each process pair; checked/unchecked Rust variants

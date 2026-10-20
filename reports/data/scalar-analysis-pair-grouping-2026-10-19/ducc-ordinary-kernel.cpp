@@ -143,6 +143,20 @@ int main(int argc, char **argv) {
     return 0;
   }
 
+  constexpr size_t warmup_repetitions = 3;
+  double warmup_checksum = 0.0;
+  for (size_t i = 0; i < warmup_repetitions; ++i) {
+    reset();
+    run();
+    warmup_checksum += keep_result();
+  }
+  if (!std::isfinite(warmup_checksum))
+    throw std::runtime_error("DUCC warmup produced a non-finite result");
+  std::cout << std::fixed << std::setprecision(12)
+            << "DUCC_WARMUP lanes=" << lane_count
+            << " repetitions=" << warmup_repetitions
+            << " checksum=" << warmup_checksum << "\n";
+
   for (size_t batch = 0; batch < batch_count; ++batch) {
     double kernel_batch_us = 0.0;
     const auto wall_started = Clock::now();

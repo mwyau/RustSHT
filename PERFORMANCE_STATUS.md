@@ -19,9 +19,11 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   pairs and six batches per process/backend (60 per lane/backend). It reports
   kernel-only, kernel-plus-commit and reset-inclusive phases, validates outputs
   outside timing, and prints paired process ratios and excess latency. The
-  timed processes are pinned to the same physical core; frequency/scheduling
-  aggregates exclude build and calibration processes. DUCC revision is
-  `80388904b8cfc32400ba84af8a6a45aabfe60f86`.
+  timed processes are pinned to the same physical core. Rust warms its checked
+  and unchecked routes three times each; each DUCC timed process now performs
+  and reports three reset/kernel/checksum warmups, which the runner validates.
+  Frequency/scheduling aggregates exclude build and calibration processes.
+  DUCC revision is `80388904b8cfc32400ba84af8a6a45aabfe60f86`.
 - Fresh matched run: AMD Ryzen 9 5950X, Rust 1.99.0/Pulp V3, GCC 15.2.0,
   x86-64-v3 AVX2/FMA. All 1,800 timed batches were 29.32–60.16 ms. Median
   µs/op, Rust checked/unchecked versus DUCC:
@@ -42,6 +44,20 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   Numerical errors remained `1.970e-16` coefficient-scaled, `5.928e-14` to
   `1.628e-13` relative output L2, and at most `2.559e-11` maximum absolute.
   See the [reproducible runner](scripts/benchmark_scalar_analysis_kernel.py).
+- Warmup-controlled rerun at `9967ad19` kept the same work and flags after the
+  DUCC timed-process warmup fix. Across 64/128/256 lanes, kernel-plus-commit
+  medians (checked/unchecked/DUCC, µs) were `7.151/4.848/4.115`,
+  `12.679/8.846/8.021`, and `24.491/17.026/15.813`; paired checked/DUCC
+  ratios were `1.736` (p10–p90 `1.727–1.748`), `1.582` (`1.576–1.597`) and
+  `1.549` (`1.542–1.558`). Reset-inclusive medians were
+  `7.242/4.947/4.217`, `12.787/8.956/8.159` and
+  `24.643/17.204/16.000` µs. All 1,800 batches were 29.42–79.12 ms and passed
+  the 20–100 ms gate. Output errors were unchanged. DUCC medians were within
+  0.6% of the earlier run without timed-process warmups, so cold startup does
+  not explain the previously reported 9.599/5.621 µs and 25.318–39.165 µs
+  regimes; calibrated runs did not reproduce them. Median frequency was
+  4.617 GHz, median run-queue wait 0.012%, and one 66.38% wait outlier was
+  retained. See the runner and the [benchmark method](reports/data/scalar-analysis-pair-grouping-2026-10-19/README.md).
 - Follow-up `rustsht_rematerialize_analysis_coefficients` candidate at
   `20992eaf` used the same calibrated 10-process-pair run and the same
   four-lane V3/DUCC AVX2 work. Across 64/128/256 lanes, kernel-plus-commit

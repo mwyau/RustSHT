@@ -33,6 +33,7 @@ BATCHES = 6
 INVOCATIONS = 10
 TARGET_FASTEST_BATCH_US = 35_000.0
 COMMIT_CALIBRATION_REPETITIONS = 100_000
+DUCC_TIMED_WARMUPS = 3
 
 
 def output(command: list[str], *, cwd: pathlib.Path = ROOT, env=None) -> str:
@@ -447,6 +448,16 @@ def main() -> None:
                         ]
                     stdout, diag = run_pinned(command, run_env, cpu, monitor_cpu)
                     diagnostics.append((f"{backend}-run-{invocation + 1}", lane_count, diag))
+                    if backend == "ducc":
+                        warmup = metric_line(stdout, "DUCC_WARMUP")
+                        if (
+                            int(warmup["lanes"]) != lane_count
+                            or int(warmup["repetitions"]) != DUCC_TIMED_WARMUPS
+                            or not math.isfinite(float(warmup["checksum"]))
+                        ):
+                            raise RuntimeError(
+                                f"DUCC timed-process warmup mismatch: {warmup}"
+                            )
                     expected_prefix = "RUST_BATCH" if backend == "rust" else "DUCC_BATCH"
                     parsed_count = 0
                     for line in stdout.splitlines():
@@ -541,6 +552,10 @@ def main() -> None:
             "Rust kernel_only measures recurrence plus SIMD accumulation into staging; "
             "commit_only measures final coefficient addition; kernel_plus_commit includes both. "
             "DUCC kernel_plus_commit updates its output directly. reset_inclusive adds input/output reset."
+        )
+        print(
+            "Timed-process warmups: Rust checked and unchecked routes each run three times; "
+            "DUCC runs three reset/kernel/checksum passes before timing."
         )
         print(
             f"TIMINGS are per operation; aggregate values summarize "
