@@ -4,7 +4,7 @@ The f64 fused scalar analysis block now combines recurrence range checks as SIMD
 
 ## Native comparison
 
-The baseline is commit `d188b772587ed377fbe5b9772ab31c79b324b4bb`. The candidate change relative to the baseline is recorded in [`candidate-change.txt`](data/scalar-analysis-range-mask-reduction-2026-10-15/candidate-change.txt). Each process used `examples/m1b_bench.rs` for f64 GL STANDARD analysis with a reused plan and workspace, full `mmax`, `phi0=0.37`, one warm-up and five timed calls. The grids were T511 (`512 x 1025`) and T1023 (`1024 x 2049`). Five paired processes ran at q1; twenty ran at T511 q8 and ten at T1023 q8. Process order alternated within each pair.
+The baseline is commit `d188b772587ed377fbe5b9772ab31c79b324b4bb`. The candidate change relative to the baseline is recorded in [`candidate-change.txt`](../../data/scalar-analysis-range-mask-reduction-2026-10-15/candidate-change.txt). Each process used `examples/m1b_bench.rs` for f64 GL STANDARD analysis with a reused plan and workspace, full `mmax`, `phi0=0.37`, one warm-up and five timed calls. The grids were T511 (`512 x 1025`) and T1023 (`1024 x 2049`). Five paired processes ran at q1; twenty ran at T511 q8 and ten at T1023 q8. Process order alternated within each pair.
 
 | Grid | Threads | Baseline median (range) | Candidate median (range) | Paired change (range) | Candidate faster |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -13,7 +13,7 @@ The baseline is commit `d188b772587ed377fbe5b9772ab31c79b324b4bb`. The candidate
 | T1023 | q1 | `150.632 ms` (`150.346–151.150`) | `143.147 ms` (`142.462–144.434`) | `-4.91%` (`-5.38% to -4.17%`) | 5/5 |
 | T1023 | q8 | `24.341 ms` (`24.025–27.324`) | `23.877 ms` (`23.407–26.566`) | `-2.48%` (`-14.34% to +9.55%`) | 8/10 |
 
-The q1 result favored the candidate in all ten pairs. q8 medians were 2.5–2.6% lower, but both q8 ranges cross zero. These measurements support the q1 improvement; the q8 effect remains uncertain. A single-process T1023 RSS check measured baseline/candidate peaks of `101,396/101,464 KiB` at q1 and `144,672/144,772 KiB` at q8. The kernel adds no workspace storage; these single-process differences do not establish a repeatable memory change. The T511 q8 `m1b_bench` process recorded `2,662,738,568` instruction references at baseline and `2,577,533,222` with the candidate, a `3.20%` decrease. The fused kernel accounted for `43.02%` and `41.06%` of those references, respectively. Each profile includes plan/workspace setup and five timed transforms. Instruction references are not cycles or elapsed time. The compressed profiles and summaries are in [`the benchmark data`](data/scalar-analysis-range-mask-reduction-2026-10-15/).
+The q1 result favored the candidate in all ten pairs. q8 medians were 2.5–2.6% lower, but both q8 ranges cross zero. These measurements support the q1 improvement; the q8 effect remains uncertain. A single-process T1023 RSS check measured baseline/candidate peaks of `101,396/101,464 KiB` at q1 and `144,672/144,772 KiB` at q8. The kernel adds no workspace storage; these single-process differences do not establish a repeatable memory change. The T511 q8 `m1b_bench` process recorded `2,662,738,568` instruction references at baseline and `2,577,533,222` with the candidate, a `3.20%` decrease. The fused kernel accounted for `43.02%` and `41.06%` of those references, respectively. Each profile includes plan/workspace setup and five timed transforms. Instruction references are not cycles or elapsed time. The compressed profiles and summaries are in [`the benchmark data`](../../data/scalar-analysis-range-mask-reduction-2026-10-15).
 
 ## Current T1023 comparison with DUCC
 
@@ -24,7 +24,7 @@ Five paired processes compared the candidate’s native reused-plan/workspace an
 | q1 | `143.297 ms` (`142.105–143.661`) | `123.885 ms` (`122.861–124.395`) | `1.16x` (`1.15–1.16x`) |
 | q8 | `26.481 ms` (`24.550–27.436`) | `15.824 ms` (`15.744–16.275`) | `1.63x` (`1.56–1.74x`) |
 
-The q8 RustSHT times varied more than DUCC’s. This comparison describes the current setup and does not isolate the patch’s effect on the RustSHT/DUCC ratio. Raw process logs and timing records are in [`the DUCC comparison data`](data/scalar-analysis-range-mask-reduction-2026-10-15/ducc-comparison/).
+The q8 RustSHT times varied more than DUCC’s. This comparison describes the current setup and does not isolate the patch’s effect on the RustSHT/DUCC ratio. Raw process logs and timing records are in [`the DUCC comparison data`](../../data/scalar-analysis-range-mask-reduction-2026-10-15/ducc-comparison).
 
 ## Validation
 

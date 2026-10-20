@@ -38,10 +38,10 @@ the paired median was 3.39% slower. Individual q8 process medians varied
 substantially under changing shared-host contention. Because the shared kernel did not improve q8
 work and showed a repeated T720 regression, the candidate was removed rather
 than introducing a separate q1-only kernel and selector. Structured per-process benchmark results are in
-[`data/scalar-paired-zip-iteration-2026-10-14`](data/scalar-paired-zip-iteration-2026-10-14/). The `baseline-*` files contain five-process baseline screens;
+[`data/scalar-paired-zip-iteration-2026-10-14`](../../data/scalar-paired-zip-iteration-2026-10-14). The `baseline-*` files contain five-process baseline screens;
 `paired-*` files retain the alternating comparisons and within-process
 samples. The extended T720 q8 repeat is in
-[`paired-t720-q8-repeat.txt`](data/scalar-paired-zip-iteration-2026-10-14/paired-t720-q8-repeat.txt).
+[`paired-t720-q8-repeat.txt`](../../data/scalar-paired-zip-iteration-2026-10-14/paired-t720-q8-repeat.txt).
 
 ## Numerical validation
 
