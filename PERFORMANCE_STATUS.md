@@ -128,9 +128,19 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   `17.774/17.899 ms` reduced-mmax q1 and `2.643/2.584 ms` reduced-mmax q8.
   The mixed result, including a 2.3% reduced-mmax q8 regression, is not a
   general speedup; retain it disabled for cumulative ablation. All-target,
-  all-feature Clippy and the no-default-feature helper test passed. Next, inspect
-  the alpha/epsilon final coefficient conversion corresponding to DUCC's
-  `inner_loop_m2a`.
+  all-feature Clippy and the no-default-feature helper test passed.
+- Final coefficient conversion at `2cebdd2a` now carries the previous alpha
+  with the previous even coefficient, matching DUCC's `inner_loop_m2a` data
+  flow without the indexed prior-alpha reload. The helper matches the prior
+  indexed formula exactly across odd/even `m`, degree tails and short orders;
+  T511 DUCC/analytic and exceptional-input tests passed. In three alternating
+  Rust 1.99 x86-64-v3 T720 GL process pairs, candidate/parent median ratios were
+  `0.992/0.987` full-mmax q1/q8 and `0.996/1.007` reduced-mmax q1/q8. These
+  small mixed changes do not establish a speedup. Formatting, no-default
+  conversion tests and all-target/all-feature Clippy passed; strict Clippy
+  requires allowing the repository's pre-existing custom-cfg warnings. Steps
+  1–10 are implemented; next run the required cumulative 64/128/256-lane and
+  DUCC comparison, then ablate the interacting candidates.
 - Warmup-controlled rerun at `9967ad19` kept the same work and flags after the
   DUCC timed-process warmup fix. Across 64/128/256 lanes, kernel-plus-commit
   medians (checked/unchecked/DUCC, µs) were `7.151/4.848/4.115`,
