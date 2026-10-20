@@ -49,3 +49,7 @@ required-features = ["parallel"]
 [[example]]
 name = "m1_f32_atmospheric_bench"
 required-features = ["parallel"]
+
+[[example]]
+name = "ducc_full_transform_parity"
+required-features = ["parallel"]
