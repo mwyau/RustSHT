@@ -24,10 +24,11 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   T720 results and host summaries are in the
   [cumulative experiment record](reports/scalar-analysis-cumulative-2026-10-20.md)
   and [machine-readable data](reports/data/scalar-analysis-cumulative-2026-10-20/t720-ab/).
-  Next, compare T2047/T2048 with fixed `mmax=2047`, `nphi=4096`, q1/q8, and
-  pair tiles 64/128/256. The prefix error budget permits skipping at 2048
-  latitudes but not 2049; the 256-pair workspace also crosses a 4→5-block
-  boundary. Keep the safety bound unchanged.
+  Next, compare `mmax=2047`, `nphi=4096`, q1/q8 at T2047/`ntheta=2048`,
+  T2047/`ntheta=2049`, and T2048/`ntheta=2049`, with pair tiles 64/128/256.
+  This separates the prefix-bound transition from the extra-degree cost while
+  keeping analysis exact. The bound permits skipping at 2048 latitudes but
+  not 2049; keep it unchanged.
 
 - **Scaled preflight candidate:** correction preparation now carries the
   below-one and all-negative epoch frontiers in the same pass, removing two

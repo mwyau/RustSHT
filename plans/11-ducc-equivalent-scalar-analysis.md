@@ -69,13 +69,17 @@ reduction remain behind cfgs for a later clean end-to-end comparison; neither
 changes production dispatch. Prefix seed reuse and scaled-prefix epoch reuse
 remain unmeasured candidates while the host is saturated.
 
-The next major measurement is T2047 versus T2048 at fixed `mmax=2047`,
-`nphi=4096`, q1/q8. The existing error budget accepts insignificant-prefix
-skipping at 2048 latitudes and rejects it at 2049. Independently compare
-pair-tile sizes 64/128/256: the workspace's potential block count crosses
-4→5 at tile 256, 8→9 at tile 128, and 16→17 at tile 64 as the reflected-pair
-lane count moves from 1024 to 1025. Keep all numerical safeguards and use the
-benchmark's host-stability summaries to decide whether timing is credible.
+The next major measurement uses `mmax=2047`, `nphi=4096`, q1/q8, and these
+three GL geometries: T2047 with 2048 latitudes, T2047 with 2049 latitudes, and
+T2048 with 2049 latitudes. The first comparison holds harmonic work fixed
+while crossing the existing insignificant-prefix bound; the second holds the
+latitude count and bound decision fixed while adding degree 2048. Analysis
+remains exact because every case has `ntheta >= lmax + 1`. Compare pair-tile
+sizes 64/128/256 within each geometry: maximum workspace block counts are
+4/5, 8/9, and 16/17 for 2048/2049 latitudes. Keep all numerical safeguards
+unchanged and use the benchmark's host-stability summaries to decide whether
+timing is credible. The native benchmark exposes `--fixed-ntheta` for this
+controlled geometry selection.
 
 ## Non-negotiable objective
 

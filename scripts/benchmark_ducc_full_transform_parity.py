@@ -242,6 +242,9 @@ def make_cases(
     smoke: bool,
     fixed_mmax: int | None = None,
     fixed_nphi: int | None = None,
+    fixed_ntheta: int | None = None,
+    selected_lmax: set[int] | None = None,
+    max_lmax: int | None = None,
 ) -> list[dict]:
     if smoke:
         lmax_values = [0, 4, 16, 64]
@@ -261,6 +264,10 @@ def make_cases(
     }
     cases: list[dict] = []
     for lmax in lmax_values:
+        if selected_lmax is not None and lmax not in selected_lmax:
+            continue
+        if max_lmax is not None and lmax > max_lmax:
+            continue
         if fixed_mmax is None:
             mmax_values = {lmax}
             if lmax >= 4:
@@ -298,15 +305,24 @@ def make_cases(
                     if fixed_nphi is not None
                     else longitude_count(mmax, longitude_mode)
                 )
+                ntheta = fixed_ntheta if fixed_ntheta is not None else lmax + 1
+                if ntheta < lmax + 1:
+                    raise ValueError(
+                        f"fixed ntheta={ntheta} cannot exactly analyze lmax={lmax}"
+                    )
                 cases.append({
                     "case_id": (
                         f"T{lmax}-m{mmax}-{longitude_mode}"
                         if fixed_nphi is None
-                        else f"T{lmax}-m{mmax}-nphi{fixed_nphi}"
+                        else (
+                            f"T{lmax}-m{mmax}-nphi{fixed_nphi}"
+                            if ntheta == lmax + 1
+                            else f"T{lmax}-m{mmax}-ntheta{ntheta}-nphi{fixed_nphi}"
+                        )
                     ),
                     "lmax": lmax,
                     "mmax": mmax,
-                    "ntheta": lmax + 1,
+                    "ntheta": ntheta,
                     "nphi": nphi,
                     "longitude_mode": longitude_mode,
                     "grid": "GL",
@@ -1205,6 +1221,8 @@ def main() -> None:
                         help="use one fixed mmax for every selected lmax")
     parser.add_argument("--fixed-nphi", type=int,
                         help="use one fixed longitude count for every selected case")
+    parser.add_argument("--fixed-ntheta", type=int,
+                        help="use one GL latitude count for every selected case; must be >= lmax + 1")
     parser.add_argument("--results-dir", type=pathlib.Path, default=DATA_DIR,
                         help="directory for machine-readable outputs and plots")
     parser.add_argument("--report-path", type=pathlib.Path, default=REPORT_PATH,
@@ -1239,14 +1257,21 @@ def main() -> None:
         parser.error("--mmax must be nonnegative")
     if args.fixed_nphi is not None and args.fixed_nphi < 1:
         parser.error("--fixed-nphi must be positive")
-    cases = make_cases(args.smoke, args.mmax, args.fixed_nphi)
-    if args.lmax:
-        selected_lmax = set(args.lmax)
-        cases = [case for case in cases if case["lmax"] in selected_lmax]
-    if args.max_lmax is not None:
-        if args.max_lmax < 0:
-            parser.error("--max-lmax must be nonnegative")
-        cases = [case for case in cases if case["lmax"] <= args.max_lmax]
+    if args.fixed_ntheta is not None and args.fixed_ntheta < 1:
+        parser.error("--fixed-ntheta must be positive")
+    if args.max_lmax is not None and args.max_lmax < 0:
+        parser.error("--max-lmax must be nonnegative")
+    try:
+        cases = make_cases(
+            args.smoke,
+            args.mmax,
+            args.fixed_nphi,
+            args.fixed_ntheta,
+            set(args.lmax) if args.lmax else None,
+            args.max_lmax,
+        )
+    except ValueError as error:
+        parser.error(str(error))
     if not cases:
         parser.error("case filters selected no configurations")
     if args.case_limit:
