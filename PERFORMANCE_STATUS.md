@@ -204,8 +204,10 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   stayed tightly grouped; long batch tails remain in the reported distributions.
   No favorable or unfavorable samples were removed.
 
-**Next:** reduce ordinary-loop coefficient stack traffic without restoring
-the rejected wide unroll; preserve the checked post-group path and keep fused
-range-check/AVX2 reduction for final cumulative ablation. The checked kernel
-remains 1.55× DUCC at 256 lanes after the Rust output commit; the unchecked
-A/B route is about 1.10×.
+**Next:** target the checked post-group state scan. In the latest direct
+comparison, checked-minus-unchecked kernel-plus-commit latency was
+`2.224/3.799/7.329` µs at 64/128/256 lanes; the corresponding checked excess
+over DUCC was `3.021/4.694/8.714` µs. This isolates most of the measured
+checked gap at 256 lanes to range validation, while the unchecked residual is
+`0.801/0.896/1.385` µs. Preserve the exceptional-value fallback and establish
+why earlier fused checks spilled or slowed before designing another scan path.
