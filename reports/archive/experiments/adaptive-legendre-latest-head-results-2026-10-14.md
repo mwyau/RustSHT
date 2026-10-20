@@ -67,7 +67,7 @@ table gain means `(recurrence - table) / recurrence`; a negative value favors
 recurrence. Initial comparisons used three to five process pairs. The q2 T255
 analysis result uses ten pairs. Raw timed samples, run order, first-call
 measurements, RSS and exact commands are in
-[`the process data`](data/adaptive-legendre-latest-head-recheck-2026-10-14/). The combined medians are in [`strategy-summary.csv`](data/adaptive-legendre-latest-head-recheck-2026-10-14/strategy-summary.csv).
+[`the process data`](../../data/adaptive-legendre-latest-head-recheck-2026-10-14). The combined medians are in [`strategy-summary.csv`](../../data/adaptive-legendre-latest-head-recheck-2026-10-14/strategy-summary.csv).
 
 | Operation | T / threads | Recurrence (ms) | Table (ms) | Paired table gain | Pairs |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -157,7 +157,7 @@ analysis results on one plan. Existing analytic, DUCC, adjoint, polar and
 table-fallback tests passed; no tolerance changed. The f32 and high-band
 recurrence paths are unchanged. Opt-in T1023/T2047 tests were not rerun in
 this selector-only change because all table candidates are capped at T255;
-their previous validation is recorded in the [milestone history](../plans/05-validation-and-milestones.md). Python-plan elapsed times are retained beside each numerical result. They
+their previous validation is recorded in the [milestone history](../../../plans/05-validation-and-milestones.md). Python-plan elapsed times are retained beside each numerical result. They
 varied across process pairs on the shared host and are not used to select the
 policy. Native reused-workspace timings decide the table thresholds.
 

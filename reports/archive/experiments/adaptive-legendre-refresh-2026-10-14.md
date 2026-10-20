@@ -25,7 +25,7 @@ workspace creation and a first transform on a fresh plan. Warm synthesis
 latency is `synthesis_one_thread_ms`; warm analysis latency is
 `analysis_rayon_ms` in its one-thread Rayon pool. The first-call column is the
 fresh-plan first-call measurement. Structured timing and first-call measurements are in
-[`reports/data/adaptive-legendre-refresh-2026-10-14`](data/adaptive-legendre-refresh-2026-10-14/). CPU: x86-64 CPU, Linux. Rust `1.99.0`
+[`reports/data/adaptive-legendre-refresh-2026-10-14`](../../data/adaptive-legendre-refresh-2026-10-14). CPU: x86-64 CPU, Linux. Rust `1.99.0`
 (`b940084d7`, 2026-09-28), LLVM `23.1.1`; release `opt-level=3`, 16 codegen
 units, LTO off, Pulp runtime dispatch (AVX2/FMA), no `target-cpu=native`. DUCC comparisons used installed `ducc0==0.41.0`, source revision
 `c1ed01b8fda69d2a378190f0915f1a19762dddbf`. Representative native commands were:
@@ -113,7 +113,7 @@ for spec in '127 257' '144 291' '159 321' '175 353' '191 385'; do set -- $spec; 
 The Python timings used two batches and establish current plan/DUCC context;
 they were not used to choose the table gate. The native table-vs-recurrence
 measurements decide the selector. Full Python output and commands are in
-[`python-ducc-checks.txt`](data/adaptive-legendre-refresh-2026-10-14/python-ducc-checks.txt). The release `spin1_gl_table_synthesis_matches_recurrence_and_adjoint` test
+[`python-ducc-checks.txt`](../../data/adaptive-legendre-refresh-2026-10-14/python-ducc-checks.txt). The release `spin1_gl_table_synthesis_matches_recurrence_and_adjoint` test
 now covers T72, T127, T128, T144, T159, T175, T191 and T255. Table-selected
 outputs match the recurrence within `3e-11` absolute sample error and preserve
 synthesis adjoint identities within `2e-11` relative error. The new selection
@@ -146,7 +146,7 @@ medians changed from `6.552` to `6.545 ms`, `16.566` to `16.465 ms`, and
 process variation; the added scan did not produce a measured transform
 regression. Avoided table payloads are `4.094`, `10.576` and `13.711 MiB` at
 those bands. Structured timing results are in
-[`spin1-table-safety-processes.txt`](data/adaptive-legendre-refresh-2026-10-14/spin1-table-safety-processes.txt). The review found no other selector, numerical, race, or workspace issue. Focused recurrence/table equivalence and the unsafe-input regression passed. After the fix, the full all-feature suite passed (145 Rust and 10 f32 tests;
+[`spin1-table-safety-processes.txt`](../../data/adaptive-legendre-refresh-2026-10-14/spin1-table-safety-processes.txt). The review found no other selector, numerical, race, or workspace issue. Focused recurrence/table equivalence and the unsafe-input regression passed. After the fix, the full all-feature suite passed (145 Rust and 10 f32 tests;
 8 ignored), and the full no-default-feature suite passed (129 Rust and 10 f32
 tests; 7 ignored). The T2047 sparse synthesis release regression passed for
 spins 1–4 on GL, CC and F1. Formatting and workspace Clippy passed. The review
