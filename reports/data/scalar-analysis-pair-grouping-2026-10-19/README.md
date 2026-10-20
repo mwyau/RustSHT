@@ -23,6 +23,11 @@ to benchmark the existing post-group scan instead. The script verifies that
 Rust selects Pulp V3 and DUCC uses four f64 lanes, and runs one fixture
 (`m=1`, `lmax=720`) at 64, 128 and 256 active latitude lanes.
 
+To benchmark the scalar reduction variant, set
+`RUSTSHT_KERNEL_BENCH_RUSTFLAGS='-C target-cpu=x86-64-v3 --cfg rustsht_fused_analysis_pair_range_check --cfg rustsht_scalar_fused_analysis_pair_range_check -Aunexpected_cfgs'`.
+This selects the same checked recurrence with one scalar mask reduction per
+four-lane vector chunk.
+
 The script warms and calibrates each specialization in a sustained batch
 (5,000 calls at 64 lanes, 3,000 at 128, and 1,400 at 256). It then chooses one
 shared operation count per lane count so the fastest variant targets 35 ms per

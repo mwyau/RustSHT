@@ -124,6 +124,35 @@ operand in its recurrence loop. This register spill coincides with the 21–33%
 regression. The fused check is retained only as an experimental compile-time
 candidate; it does not replace the production scan.
 
+### Scalar reduction variant — 2026-10-20
+
+To remove the vector-mask accumulator that spilled in the first fused
+candidate, this variant reduces each four-lane validity mask immediately into
+a scalar flag. The checked and unchecked decisions match the scanned route on
+the zero/cancellation, subnormal, and SIMD-tail fixtures.
+
+The same pinned `m=1`, `lmax=720`, x86-64-v3, three-process, 30-batch protocol
+measured these kernel-only medians (p10–p90) in µs/op:
+
+| Lanes | Scalar-reduced check | Vector-mask check | Unchecked | DUCC |
+|---:|---:|---:|---:|---:|
+| 64 | 10.017 (9.952–10.098) | 8.626 (8.591–8.687) | 4.719 (4.690–4.736) | 4.150 (4.128–4.169) |
+| 128 | 18.667 (18.553–18.763) | 16.784 (16.688–16.911) | 8.743 (8.685–8.769) | 8.059 (7.989–8.097) |
+| 256 | 37.215 (37.017–37.350) | 32.977 (32.789–33.139) | 17.541 (17.440–17.633) | 15.888 (15.825–15.957) |
+
+The per-vector reductions were 16.1%, 11.2%, and 12.9% slower than the
+vector-mask candidate, and 41–50% slower than the earlier post-group scan.
+They remove the vector-mask spill from the recurrence body but serialize a
+mask reduction for every four-lane chunk. The unchecked path remained
+1.137/1.085/1.104× DUCC. Reset-inclusive medians (scalar check/vector-mask
+check/unchecked/DUCC) were 10.037/8.757/4.786/4.260, 18.664/16.909/8.807/8.208,
+and 37.410/33.093/17.640/16.090 µs at 64/128/256 lanes; unchecked ratios were
+1.123/1.073/1.096. All 1,620 batches measured 33.52–91.07 ms, with no batch
+outside the 20–100 ms target. Numerical errors matched the preceding run. The
+full release all-feature suite passed with this cfg, and valid T720 GL q1/q8
+analysis still had zero late declines. This variant remains an experimental
+compile-time candidate; production retains the post-group scan.
+
 ## Historical pair-grouping checkpoint
 
 ## Changes and validation

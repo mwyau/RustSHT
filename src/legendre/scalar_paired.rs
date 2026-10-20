@@ -3165,6 +3165,7 @@ fn fused_analysis_pair_step_with_simd<S: Simd, const OPPOSITE_COSINE_WEIGHTED: b
 /// recurrence state is updated in place from `(P[l-2], P[l])` to
 /// `(P[l+2], P[l+4])`; both generated values retain the ordinary-range check
 /// so a declined block can use the checked scaled route.
+#[allow(unexpected_cfgs)]
 #[inline(always)]
 fn fused_analysis_two_pair_steps_with_simd<
     S: Simd,
@@ -3241,6 +3242,7 @@ fn fused_analysis_two_pair_steps_with_simd<
     let mut second_opposite_re = zero;
     let mut second_opposite_im = zero;
     let mut vector_states_in_range = simd.equal_f64s(zero, zero);
+    let mut scalar_states_in_range = true;
     let mut tails_in_range = true;
 
     for (
@@ -3306,10 +3308,14 @@ fn fused_analysis_two_pair_steps_with_simd<
                 simd.equal_f64s(current_magnitude, zero),
                 simd.greater_than_or_equal_f64s(current_magnitude, minimum),
             );
-            vector_states_in_range = simd.and_m64s(
-                vector_states_in_range,
-                simd.and_m64s(previous_in_range, current_in_range),
-            );
+            let states_in_range = simd.and_m64s(previous_in_range, current_in_range);
+            // The scalar-reduction candidate shortens the vector-mask live
+            // range at the cost of one horizontal reduction per vector chunk.
+            if cfg!(rustsht_scalar_fused_analysis_pair_range_check) {
+                scalar_states_in_range &= analysis_mask_all(simd, states_in_range);
+            } else {
+                vector_states_in_range = simd.and_m64s(vector_states_in_range, states_in_range);
+            }
         }
         *previous = first_next;
         *current = second_next;
@@ -3375,7 +3381,11 @@ fn fused_analysis_two_pair_steps_with_simd<
     }
 
     let states_in_range = if CHECK_GROUP_RANGE && TRACK_STATE_RANGE {
-        let vectors_in_range = analysis_mask_all(simd, vector_states_in_range);
+        let vectors_in_range = if cfg!(rustsht_scalar_fused_analysis_pair_range_check) {
+            scalar_states_in_range
+        } else {
+            analysis_mask_all(simd, vector_states_in_range)
+        };
         let tails_in_range = previous_tail.iter().zip(current_tail.iter()).all(
             |(&previous_value, &current_value)| {
                 (previous_value == 0.0 || previous_value.abs() >= f64::MIN_POSITIVE)

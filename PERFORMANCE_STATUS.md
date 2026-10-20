@@ -27,6 +27,8 @@ The percentile distribution refresh is in commit `633e4408`.
   checked post-group scan. Its executed AVX2 loop spills a YMM value to the
   stack while eight accumulators are live. It remains behind a custom cfg for
   ablation and is not selected in production.
+- A scalar reduction per four-lane chunk avoids that spill but is 41–50% slower
+  than the scan; keep both checked experiments out of the production path.
 - DUCC and checked Rust process medians were stable. One 256-lane unchecked
   Rust process was about 5% slower than the other two; several batches had
   isolated high maxima, but no source was identified. All batches remain in
@@ -34,7 +36,7 @@ The percentile distribution refresh is in commit `633e4408`.
   low sampled run-queue wait in this run. The prior inconsistent single-call
   DUCC regimes were not reproduced; their exact historical cause is unknown.
 
-**Next:** keep the checked post-group scan; reject the in-loop mask variant.
+**Next:** keep the checked post-group scan; reject both in-loop variants.
 Continue from the unchecked direct kernel, 9–17% slower than DUCC in these
-matched cases, and reduce register pressure or recurrence instruction cost
-without weakening fallback behavior.
+matched cases, and reduce recurrence instruction cost without weakening
+fallback behavior.
