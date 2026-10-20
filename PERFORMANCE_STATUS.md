@@ -1,6 +1,7 @@
 # RustSHT performance checkpoint
 
-**Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. For the
+**Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Benchmark
+checkpoint:** `1279bb80`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
 
 - Production f64 scalar GL analysis keeps the checked two-pair AVX2/FMA route
