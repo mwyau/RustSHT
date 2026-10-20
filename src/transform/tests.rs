@@ -3239,6 +3239,167 @@ fn scalar_t511_gl_analysis_matches_ducc_and_analytic_sectoral_field() {
 }
 
 #[test]
+#[allow(unexpected_cfgs)]
+fn scalar_analysis_pair_range_cache_matches_checked_recurrence_and_is_plan_scoped() {
+    let plan = ShtPlan::new(
+        GridSpec::new(GridKind::GaussLegendre, 1025, 513, 0.37).unwrap(),
+        HarmonicSpec::scalar(511, 255).unwrap(),
+    )
+    .unwrap();
+    assert!(plan.scalar_legendre_table.set(None).is_ok());
+    let mut cached_workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut cached_workspace, 1).unwrap();
+
+    let input = arbitrary_map(&plan);
+    let mut first = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    plan.analysis_into(&input, &mut first, &mut cached_workspace)
+        .unwrap();
+    if !cfg!(rustsht_unchecked_analysis_pair_range)
+        && !cfg!(rustsht_disable_analysis_pair_range_cache)
+    {
+        assert!(
+            cached_workspace
+                .analysis_pair_range_safe
+                .iter()
+                .any(|safe| safe.load(std::sync::atomic::Ordering::Relaxed))
+        );
+    }
+    assert!(std::sync::Arc::ptr_eq(
+        cached_workspace
+            .analysis_pair_range_cache_id
+            .as_ref()
+            .unwrap(),
+        &plan.analysis_pair_range_cache_id,
+    ));
+
+    let mut cached_second = vec![Complex64::new(0.0, 0.0); first.len()];
+    plan.analysis_into(&input, &mut cached_second, &mut cached_workspace)
+        .unwrap();
+    let mut checked_workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut checked_workspace, 1).unwrap();
+    let mut checked = vec![Complex64::new(0.0, 0.0); first.len()];
+    plan.analysis_into(&input, &mut checked, &mut checked_workspace)
+        .unwrap();
+    assert_eq!(cached_second, checked);
+
+    let zero_input = vec![0.0; plan.sample_count];
+    let mut cached_zero = vec![Complex64::new(0.0, 0.0); first.len()];
+    plan.analysis_into(&zero_input, &mut cached_zero, &mut cached_workspace)
+        .unwrap();
+    assert!(
+        cached_zero
+            .iter()
+            .all(|value| *value == Complex64::new(0.0, 0.0))
+    );
+
+    let subnormal_input: Vec<_> = input.iter().map(|value| value * 1.0e-310).collect();
+    let mut cached_subnormal = vec![Complex64::new(0.0, 0.0); first.len()];
+    plan.analysis_into(
+        &subnormal_input,
+        &mut cached_subnormal,
+        &mut cached_workspace,
+    )
+    .unwrap();
+    let mut checked_subnormal = vec![Complex64::new(0.0, 0.0); first.len()];
+    plan.analysis_into(
+        &subnormal_input,
+        &mut checked_subnormal,
+        &mut checked_workspace,
+    )
+    .unwrap();
+    assert_eq!(cached_subnormal, checked_subnormal);
+
+    let extreme_input: Vec<_> = input.iter().map(|value| value * 1.0e300).collect();
+    let mut cached_extreme = vec![Complex64::new(0.0, 0.0); first.len()];
+    plan.analysis_into(&extreme_input, &mut cached_extreme, &mut cached_workspace)
+        .unwrap();
+    let mut checked_extreme = vec![Complex64::new(0.0, 0.0); first.len()];
+    plan.analysis_into(&extreme_input, &mut checked_extreme, &mut checked_workspace)
+        .unwrap();
+    assert_eq!(cached_extreme, checked_extreme);
+
+    let mut cached_adjoint = vec![Complex64::new(0.0, 0.0); first.len()];
+    plan.adjoint_synthesis_into(&input, &mut cached_adjoint, &mut cached_workspace)
+        .unwrap();
+    assert_eq!(
+        cached_workspace.analysis_pair_range_geometry,
+        Some((plan.grid.ntheta(), false))
+    );
+    let mut checked_adjoint_workspace = plan.workspace().unwrap();
+    let mut checked_adjoint = vec![Complex64::new(0.0, 0.0); first.len()];
+    plan.adjoint_synthesis_into(&input, &mut checked_adjoint, &mut checked_adjoint_workspace)
+        .unwrap();
+    assert_eq!(cached_adjoint, checked_adjoint);
+
+    let compatible_plan = ShtPlan::new(
+        GridSpec::new(GridKind::GaussLegendre, 1025, 513, 0.19).unwrap(),
+        HarmonicSpec::scalar(511, 255).unwrap(),
+    )
+    .unwrap();
+    assert!(compatible_plan.scalar_legendre_table.set(None).is_ok());
+    let mut compatible_alm = vec![Complex64::new(0.0, 0.0); compatible_plan.harmonics().nalm()];
+    compatible_plan
+        .analysis_into(&input, &mut compatible_alm, &mut cached_workspace)
+        .unwrap();
+    let mut compatible_reference_workspace = compatible_plan.workspace().unwrap();
+    compatible_plan
+        .prepare_workspace(&mut compatible_reference_workspace, 1)
+        .unwrap();
+    let mut compatible_reference =
+        vec![Complex64::new(0.0, 0.0); compatible_plan.harmonics().nalm()];
+    compatible_plan
+        .analysis_into(
+            &input,
+            &mut compatible_reference,
+            &mut compatible_reference_workspace,
+        )
+        .unwrap();
+    assert_eq!(compatible_alm, compatible_reference);
+    assert!(std::sync::Arc::ptr_eq(
+        cached_workspace
+            .analysis_pair_range_cache_id
+            .as_ref()
+            .unwrap(),
+        &compatible_plan.analysis_pair_range_cache_id,
+    ));
+}
+
+#[test]
+fn scalar_analysis_pair_range_cache_invalidates_prepared_geometry() {
+    let plan = ShtPlan::new(
+        GridSpec::new(GridKind::ClenshawCurtis, 1025, 7, 0.37).unwrap(),
+        HarmonicSpec::scalar(255, 1).unwrap(),
+    )
+    .unwrap();
+    assert!(plan.scalar_legendre_table.set(None).is_ok());
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut workspace, 1).unwrap();
+    let input = arbitrary_map(&plan);
+    let mut analyzed = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    plan.analysis_into(&input, &mut analyzed, &mut workspace)
+        .unwrap();
+    let prepared_ntheta = plan.cc_resampling.as_ref().unwrap().prepared_ntheta();
+    assert_eq!(
+        workspace.analysis_pair_range_geometry,
+        Some((prepared_ntheta, false))
+    );
+
+    let mut cached_adjoint = vec![Complex64::new(0.0, 0.0); analyzed.len()];
+    plan.adjoint_synthesis_into(&input, &mut cached_adjoint, &mut workspace)
+        .unwrap();
+    assert_eq!(
+        workspace.analysis_pair_range_geometry,
+        Some((plan.grid.ntheta(), false))
+    );
+    let mut checked_workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut checked_workspace, 1).unwrap();
+    let mut checked_adjoint = vec![Complex64::new(0.0, 0.0); analyzed.len()];
+    plan.adjoint_synthesis_into(&input, &mut checked_adjoint, &mut checked_workspace)
+        .unwrap();
+    assert_eq!(cached_adjoint, checked_adjoint);
+}
+
+#[test]
 fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
     let m = 3;
     let latitude_count = 129;

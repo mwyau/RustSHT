@@ -13,6 +13,7 @@ use crate::legendre::{
 };
 use crate::meridional::CCResamplingPlan;
 use crate::workspace::ShtWorkspace;
+use std::sync::Arc;
 use std::sync::OnceLock;
 
 /// Expected STANDARD transform uses grouped by execution direction.
@@ -98,6 +99,8 @@ pub struct ShtPlan<T: ShtScalar = f64> {
     pub(crate) spin_fast_coefficient_count: usize,
     pub(crate) spin2_fast_f1: Vec<T>,
     pub(crate) spin2_fast_f2: Vec<T>,
+    // Non-zero-sized token gives each plan a stable workspace-cache identity.
+    pub(crate) analysis_pair_range_cache_id: Arc<u8>,
     legendre_reuse_estimate: LegendreReuseEstimate,
     pub(crate) scalar_legendre_table: OnceLock<Option<ScalarLegendreTable<T>>>,
     pub(crate) spin1_scalar_legendre_table: OnceLock<Option<ScalarLegendreTable<T>>>,
@@ -223,6 +226,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             spin_fast_coefficient_count,
             spin2_fast_f1,
             spin2_fast_f2,
+            analysis_pair_range_cache_id: Arc::new(0),
             legendre_reuse_estimate,
             scalar_legendre_table: OnceLock::new(),
             spin1_scalar_legendre_table: OnceLock::new(),
@@ -409,6 +413,8 @@ impl<T: ShtScalar> ShtPlan<T> {
             &self.fft,
             self.cc_resampling.as_ref(),
         )?;
+        workspace.analysis_pair_range_cache_id =
+            Some(Arc::clone(&self.analysis_pair_range_cache_id));
         self.prepare_workspace(&mut workspace, execution_capacity)?;
         Ok(workspace)
     }

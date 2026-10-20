@@ -1717,6 +1717,7 @@ fn integer_power_vector<S: Simd>(simd: S, mut base: S::f64s, mut exponent: usize
     reason = "The fused scalar analysis block receives parity spectra and worker-owned recurrence scratch explicitly."
 )]
 #[cfg(test)]
+#[allow(unexpected_cfgs)]
 pub(crate) fn fused_scalar_analysis_pair_block_dispatched(
     arch: Arch,
     m: usize,
@@ -1744,11 +1745,13 @@ pub(crate) fn fused_scalar_analysis_pair_block_dispatched(
             cosine * cosine
         };
     }
-    fused_scalar_analysis_pair_block_impl::<false>(
+    let mut range_check_was_exercised = false;
+    fused_scalar_analysis_pair_block_impl::<false, { !cfg!(rustsht_unchecked_analysis_pair_range) }>(
         arch,
         m,
         lmax,
         false,
+        &mut range_check_was_exercised,
         sin_theta,
         cos_theta,
         &cos_theta_squared[..sin_theta.len()],
@@ -1773,11 +1776,22 @@ pub(crate) fn fused_scalar_analysis_pair_block_dispatched(
     clippy::too_many_arguments,
     reason = "The preweighted block receives active geometry, spectra and worker scratch explicitly."
 )]
+/// Runs a preweighted scalar-analysis block.
+///
+/// `range_check_is_proven_safe` may disable the ordinary recurrence group scan
+/// only after this block completed checked validation for the same order, plan,
+/// latitude geometry, prefix mode and SIMD backend. Input-product checks remain
+/// the caller's responsibility.
+/// `range_check_was_exercised` reports whether the checked ordinary recurrence
+/// group scan ran for this block, including after scaled-to-ordinary promotion.
+#[allow(unexpected_cfgs)]
 pub(crate) fn fused_scalar_analysis_pair_block_preweighted_dispatched(
     arch: Arch,
     m: usize,
     lmax: usize,
     allow_insignificant_prefix: bool,
+    range_check_is_proven_safe: bool,
+    range_check_was_exercised: &mut bool,
     sin_theta: &[f64],
     cos_theta: &[f64],
     cos_theta_squared: &[f64],
@@ -1796,40 +1810,76 @@ pub(crate) fn fused_scalar_analysis_pair_block_preweighted_dispatched(
     scale_corrections: &mut [f64],
     exponents: &mut [i64],
 ) -> Result<bool, ShtError> {
-    fused_scalar_analysis_pair_block_impl::<true>(
-        arch,
-        m,
-        lmax,
-        allow_insignificant_prefix,
-        sin_theta,
-        cos_theta,
-        cos_theta_squared,
-        sectoral_norm,
-        coefficient_a,
-        coefficient_b,
-        same_real,
-        same_imag,
-        opposite_real,
-        opposite_imag,
-        staged_coefficients,
-        previous,
-        current,
-        next,
-        scale_epochs,
-        scale_corrections,
-        exponents,
-    )
+    *range_check_was_exercised = false;
+    if range_check_is_proven_safe {
+        fused_scalar_analysis_pair_block_impl::<true, false>(
+            arch,
+            m,
+            lmax,
+            allow_insignificant_prefix,
+            range_check_was_exercised,
+            sin_theta,
+            cos_theta,
+            cos_theta_squared,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            staged_coefficients,
+            previous,
+            current,
+            next,
+            scale_epochs,
+            scale_corrections,
+            exponents,
+        )
+    } else {
+        fused_scalar_analysis_pair_block_impl::<
+            true,
+            { !cfg!(rustsht_unchecked_analysis_pair_range) },
+        >(
+            arch,
+            m,
+            lmax,
+            allow_insignificant_prefix,
+            range_check_was_exercised,
+            sin_theta,
+            cos_theta,
+            cos_theta_squared,
+            sectoral_norm,
+            coefficient_a,
+            coefficient_b,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            staged_coefficients,
+            previous,
+            current,
+            next,
+            scale_epochs,
+            scale_corrections,
+            exponents,
+        )
+    }
 }
 
 #[expect(
     clippy::too_many_arguments,
     reason = "The scalar analysis block shares caller-owned coefficients, spectra and recurrence scratch."
 )]
-fn fused_scalar_analysis_pair_block_impl<const OPPOSITE_COSINE_WEIGHTED: bool>(
+fn fused_scalar_analysis_pair_block_impl<
+    const OPPOSITE_COSINE_WEIGHTED: bool,
+    const CHECK_PAIR_GROUP_RANGE: bool,
+>(
     arch: Arch,
     m: usize,
     lmax: usize,
     allow_insignificant_prefix: bool,
+    range_check_was_exercised: &mut bool,
     sin_theta: &[f64],
     cos_theta: &[f64],
     cos_theta_squared: &[f64],
@@ -1905,9 +1955,13 @@ fn fused_scalar_analysis_pair_block_impl<const OPPOSITE_COSINE_WEIGHTED: bool>(
 
     if !initialized_normal {
         let succeeded = if allow_insignificant_prefix && OPPOSITE_COSINE_WEIGHTED {
-            arch.dispatch(FusedScaledScalarAnalysisPair::<OPPOSITE_COSINE_WEIGHTED> {
+            arch.dispatch(FusedScaledScalarAnalysisPair::<
+                OPPOSITE_COSINE_WEIGHTED,
+                CHECK_PAIR_GROUP_RANGE,
+            > {
                 m,
                 lmax,
+                range_check_was_exercised,
                 cos_theta,
                 cos_theta_squared,
                 coefficient_a,
@@ -1924,33 +1978,39 @@ fn fused_scalar_analysis_pair_block_impl<const OPPOSITE_COSINE_WEIGHTED: bool>(
                 scale_corrections: &mut scale_corrections[..sin_theta.len()],
             })?
         } else {
-            arch.dispatch(
-                FusedCheckedScaledScalarAnalysisPair::<OPPOSITE_COSINE_WEIGHTED> {
-                    m,
-                    lmax,
-                    cos_theta,
-                    cos_theta_squared,
-                    coefficient_a,
-                    coefficient_b,
-                    same_real,
-                    same_imag,
-                    opposite_real,
-                    opposite_imag,
-                    staged_coefficients: &mut staged_coefficients[..coefficient_count],
-                    previous: &mut previous[..sin_theta.len()],
-                    current: &mut current[..sin_theta.len()],
-                    next: &mut next[..sin_theta.len()],
-                    exponents: &mut exponents[..sin_theta.len()],
-                },
-            )?
+            arch.dispatch(FusedCheckedScaledScalarAnalysisPair::<
+                OPPOSITE_COSINE_WEIGHTED,
+                CHECK_PAIR_GROUP_RANGE,
+            > {
+                m,
+                lmax,
+                range_check_was_exercised,
+                cos_theta,
+                cos_theta_squared,
+                coefficient_a,
+                coefficient_b,
+                same_real,
+                same_imag,
+                opposite_real,
+                opposite_imag,
+                staged_coefficients: &mut staged_coefficients[..coefficient_count],
+                previous: &mut previous[..sin_theta.len()],
+                current: &mut current[..sin_theta.len()],
+                next: &mut next[..sin_theta.len()],
+                exponents: &mut exponents[..sin_theta.len()],
+            })?
         };
         return Ok(succeeded);
     }
 
     // A successful block overwrites every coefficient; a declined block's scratch is discarded.
-    let succeeded = arch.dispatch(FusedScalarAnalysisPair::<OPPOSITE_COSINE_WEIGHTED> {
+    let succeeded = arch.dispatch(FusedScalarAnalysisPair::<
+        OPPOSITE_COSINE_WEIGHTED,
+        CHECK_PAIR_GROUP_RANGE,
+    > {
         m,
         lmax,
+        range_check_was_exercised,
         pair_start: 0,
         cos_theta,
         cos_theta_squared,
@@ -2510,9 +2570,14 @@ fn zero_staged_analysis_pair(
     }
 }
 
-struct FusedScaledScalarAnalysisPair<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
+struct FusedScaledScalarAnalysisPair<
+    'a,
+    const OPPOSITE_COSINE_WEIGHTED: bool,
+    const CHECK_PAIR_GROUP_RANGE: bool = { !cfg!(rustsht_unchecked_analysis_pair_range) },
+> {
     m: usize,
     lmax: usize,
+    range_check_was_exercised: &'a mut bool,
     cos_theta: &'a [f64],
     cos_theta_squared: &'a [f64],
     coefficient_a: &'a [f64],
@@ -2531,9 +2596,14 @@ struct FusedScaledScalarAnalysisPair<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
 
 /// Checked scaled path for analysis variants that cannot use insignificant
 /// prefix advancement. Scaled lanes retain exact exponent-aware accumulation.
-struct FusedCheckedScaledScalarAnalysisPair<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
+struct FusedCheckedScaledScalarAnalysisPair<
+    'a,
+    const OPPOSITE_COSINE_WEIGHTED: bool,
+    const CHECK_PAIR_GROUP_RANGE: bool,
+> {
     m: usize,
     lmax: usize,
+    range_check_was_exercised: &'a mut bool,
     cos_theta: &'a [f64],
     cos_theta_squared: &'a [f64],
     coefficient_a: &'a [f64],
@@ -2549,8 +2619,8 @@ struct FusedCheckedScaledScalarAnalysisPair<'a, const OPPOSITE_COSINE_WEIGHTED: 
     exponents: &'a mut [i64],
 }
 
-impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
-    for FusedCheckedScaledScalarAnalysisPair<'_, OPPOSITE_COSINE_WEIGHTED>
+impl<const OPPOSITE_COSINE_WEIGHTED: bool, const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
+    for FusedCheckedScaledScalarAnalysisPair<'_, OPPOSITE_COSINE_WEIGHTED, CHECK_PAIR_GROUP_RANGE>
 {
     type Output = Result<bool, ShtError>;
 
@@ -2559,6 +2629,7 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
         let FusedCheckedScaledScalarAnalysisPair {
             m,
             lmax,
+            range_check_was_exercised,
             cos_theta,
             cos_theta_squared,
             coefficient_a,
@@ -2580,9 +2651,13 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
         let mut normal_range = false;
         for pair_index in 0..pair_count {
             if normal_range {
-                return Ok(FusedScalarAnalysisPair::<OPPOSITE_COSINE_WEIGHTED> {
+                return Ok(FusedScalarAnalysisPair::<
+                    OPPOSITE_COSINE_WEIGHTED,
+                    CHECK_PAIR_GROUP_RANGE,
+                > {
                     m,
                     lmax,
+                    range_check_was_exercised,
                     pair_start: pair_index,
                     cos_theta,
                     cos_theta_squared,
@@ -2826,8 +2901,8 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
     }
 }
 
-impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
-    for FusedScaledScalarAnalysisPair<'_, OPPOSITE_COSINE_WEIGHTED>
+impl<const OPPOSITE_COSINE_WEIGHTED: bool, const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
+    for FusedScaledScalarAnalysisPair<'_, OPPOSITE_COSINE_WEIGHTED, CHECK_PAIR_GROUP_RANGE>
 {
     type Output = Result<bool, ShtError>;
 
@@ -2836,6 +2911,7 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
         let FusedScaledScalarAnalysisPair {
             m,
             lmax,
+            range_check_was_exercised,
             cos_theta,
             cos_theta_squared,
             coefficient_a,
@@ -2915,9 +2991,13 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
 
         for pair_index in pair_start..pair_count {
             if normal_range {
-                return Ok(FusedScalarAnalysisPair::<OPPOSITE_COSINE_WEIGHTED> {
+                return Ok(FusedScalarAnalysisPair::<
+                    OPPOSITE_COSINE_WEIGHTED,
+                    CHECK_PAIR_GROUP_RANGE,
+                > {
                     m,
                     lmax,
+                    range_check_was_exercised,
                     pair_start: pair_index,
                     cos_theta,
                     cos_theta_squared,
@@ -3006,8 +3086,8 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
 struct FusedScalarAnalysisPair<
     'a,
     const OPPOSITE_COSINE_WEIGHTED: bool,
-    // The custom cfg supports a compile-time whole-transform A/B build. The
-    // normal production build retains the group-state safety scan.
+    // The custom cfg supports whole-transform A/B builds. Production also
+    // selects the unchecked specialization after a cached checked validation.
     const CHECK_PAIR_GROUP_RANGE: bool = { !cfg!(rustsht_unchecked_analysis_pair_range) },
     // Experimental checked mode folds the group-state reduction into the
     // recurrence traversal instead of rereading the resulting state arrays.
@@ -3015,6 +3095,7 @@ struct FusedScalarAnalysisPair<
 > {
     m: usize,
     lmax: usize,
+    range_check_was_exercised: &'a mut bool,
     pair_start: usize,
     cos_theta: &'a [f64],
     cos_theta_squared: &'a [f64],
@@ -3701,6 +3782,7 @@ impl<
         let FusedScalarAnalysisPair {
             m,
             lmax,
+            range_check_was_exercised,
             pair_start,
             cos_theta,
             cos_theta_squared,
@@ -3736,6 +3818,9 @@ impl<
 
         let pair_count = (lmax - m + 2) / 2;
         let recurrence_stop = pair_count.saturating_sub(1);
+        if CHECK_PAIR_GROUP_RANGE && pair_start < recurrence_stop.saturating_sub(1) {
+            *range_check_was_exercised = true;
+        }
         let mut pair_index = pair_start;
         while pair_index < recurrence_stop.saturating_sub(1) {
             let Some(group) = fused_analysis_two_pair_steps_with_simd::<
@@ -6062,12 +6147,15 @@ mod tests {
         current.fill(0.0);
         next.fill(0.0);
         let mut scale_epochs = vec![0.0; sin_theta.len()];
+        let mut range_check_was_exercised = false;
         exponents.fill(0);
         let fused_preweighted = fused_scalar_analysis_pair_block_preweighted_dispatched(
             arch,
             m,
             lmax,
             false,
+            false,
+            &mut range_check_was_exercised,
             &sin_theta,
             &cos_theta,
             &cos_theta_squared,
@@ -6577,12 +6665,15 @@ mod tests {
         let mut checked_next = vec![0.0; lane_count];
         let mut checked_scale_epochs = vec![0.0; lane_count];
         let mut checked_exponents = vec![0; lane_count];
+        let mut checked_range_was_exercised = false;
         assert!(
             fused_scalar_analysis_pair_block_preweighted_dispatched(
                 Arch::new(),
                 m,
                 lmax,
                 false,
+                false,
+                &mut checked_range_was_exercised,
                 &sin_theta,
                 &cos_theta,
                 &cos_theta_squared,
@@ -6610,11 +6701,14 @@ mod tests {
         scale_epochs.fill(0.0);
         exponents.fill(0);
         let mut scale_corrections = vec![0.0; lane_count];
+        let mut range_check_was_exercised = false;
         let fused_preweighted = fused_scalar_analysis_pair_block_preweighted_dispatched(
             Arch::new(),
             m,
             lmax,
             true,
+            false,
+            &mut range_check_was_exercised,
             &sin_theta,
             &cos_theta,
             &cos_theta_squared,

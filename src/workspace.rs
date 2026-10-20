@@ -4,16 +4,20 @@
 use num_complex::Complex;
 use rustfft::FftNum;
 use rustfft::num_traits::Zero;
+use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 
 use crate::error::ShtError;
 use crate::fft::{RealFftPlan, RealFftWorkspace};
-use crate::legendre::{LATITUDE_BLOCK_SIZE, ShtScalar, recurrence_scratch_len};
+use crate::legendre::{
+    LATITUDE_BLOCK_SIZE, SCALAR_ANALYSIS_PAIR_TILE_SIZE, ShtScalar, recurrence_scratch_len,
+};
 use crate::meridional::CCResamplingPlan;
 
 #[cfg(all(test, feature = "parallel"))]
 use std::collections::BTreeSet;
 #[cfg(all(test, feature = "parallel"))]
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 #[cfg(all(test, feature = "parallel"))]
 use std::time::Instant;
 
@@ -38,6 +42,14 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
     pub(crate) analysis_ring_scales: Vec<T>,
     pub(crate) ring_order_limits: Vec<usize>,
     pub(crate) recurrence_workers: Vec<RecurrenceWorkspace<T>>,
+    // Order/tile pairs whose ordinary recurrence passed checked range validation.
+    pub(crate) analysis_pair_range_safe: Vec<AtomicBool>,
+    // Entries are cleared when plan identity, backend or geometry changes.
+    pub(crate) analysis_pair_range_arch: Option<std::mem::Discriminant<pulp::Arch>>,
+    pub(crate) analysis_pair_range_cache_id: Option<Arc<u8>>,
+    // Analysis and adjoint-synthesis may use different latitude geometry and
+    // insignificant-prefix rules on the same plan.
+    pub(crate) analysis_pair_range_geometry: Option<(usize, bool)>,
     pub(crate) ring_group_size: usize,
     pub(crate) execution_capacity: usize,
     pub(crate) fft: RealFftWorkspace<T>,
@@ -604,6 +616,19 @@ impl<T: ShtScalar> ShtWorkspace<T> {
                     quantity: "prepared CC Fourier spectrum count",
                 })?;
         let recurrence_scratch_len = recurrence_scratch_len(latitude_count);
+        let analysis_pair_block_size = if T::supports_paired_scalar() {
+            SCALAR_ANALYSIS_PAIR_TILE_SIZE
+        } else {
+            LATITUDE_BLOCK_SIZE
+        };
+        let analysis_pair_block_count = latitude_count
+            .div_ceil(2)
+            .div_ceil(analysis_pair_block_size);
+        let analysis_pair_range_cache_len = analysis_order_count
+            .checked_mul(analysis_pair_block_count)
+            .ok_or(ShtError::IntegerOverflow {
+                quantity: "scalar-analysis range cache count",
+            })?;
         let ring_group_size = Self::ring_group_size_for_capacity(ntheta, execution_capacity)?;
         let ring_worker_count = ntheta.div_ceil(ring_group_size);
         let analysis_worker_count = execution_capacity.min(analysis_order_count).max(1);
@@ -652,6 +677,10 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             analysis_ring_scales: allocate_real(latitude_count, "analysis ring scales")?,
             ring_order_limits: allocate_usizes(latitude_count, "latitude order limits")?,
             recurrence_workers,
+            analysis_pair_range_safe: allocate_atomic_bools(analysis_pair_range_cache_len)?,
+            analysis_pair_range_arch: None,
+            analysis_pair_range_cache_id: None,
+            analysis_pair_range_geometry: None,
             ring_group_size,
             execution_capacity,
             fft: fft.workspace()?,
@@ -661,6 +690,17 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             transform_phase_probe: None,
         })
     }
+}
+
+fn allocate_atomic_bools(len: usize) -> Result<Vec<AtomicBool>, ShtError> {
+    let mut values = Vec::new();
+    values
+        .try_reserve_exact(len)
+        .map_err(|_| ShtError::AllocationFailed {
+            array: "scalar-analysis range cache",
+        })?;
+    values.extend((0..len).map(|_| AtomicBool::new(false)));
+    Ok(values)
 }
 
 fn allocate_complex<T: FftNum + Zero>(

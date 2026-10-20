@@ -9,7 +9,6 @@ use rayon::prelude::*;
 use std::collections::VecDeque;
 #[cfg(feature = "parallel")]
 use std::sync::Mutex;
-#[cfg(feature = "parallel")]
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::error::{ShtError, check_len};
@@ -1758,6 +1757,26 @@ impl<T: ShtScalar> ShtPlan<T> {
             return Ok(());
         }
         let arch = pulp::Arch::new();
+        let selected_arch = std::mem::discriminant(&arch);
+        let same_plan = workspace
+            .analysis_pair_range_cache_id
+            .as_ref()
+            .is_some_and(|cache_id| {
+                std::sync::Arc::ptr_eq(cache_id, &self.analysis_pair_range_cache_id)
+            });
+        let cache_geometry = (analysis_ntheta, allow_insignificant_prefix);
+        if !same_plan
+            || workspace.analysis_pair_range_arch != Some(selected_arch)
+            || workspace.analysis_pair_range_geometry != Some(cache_geometry)
+        {
+            for cached in &workspace.analysis_pair_range_safe {
+                cached.store(false, Ordering::Relaxed);
+            }
+            workspace.analysis_pair_range_cache_id =
+                Some(std::sync::Arc::clone(&self.analysis_pair_range_cache_id));
+            workspace.analysis_pair_range_arch = Some(selected_arch);
+            workspace.analysis_pair_range_geometry = Some(cache_geometry);
+        }
 
         #[cfg(feature = "parallel")]
         {
@@ -1777,6 +1796,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     ring_order_limits,
                     arch,
                     allow_insignificant_prefix,
+                    &workspace.analysis_pair_range_safe,
                     alm,
                     &mut workspace.recurrence_workers[..worker_count],
                 )?;
@@ -1803,6 +1823,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     ring_order_limits,
                     arch,
                     allow_insignificant_prefix,
+                    &workspace.analysis_pair_range_safe,
                     0,
                     order_count,
                     alm,
@@ -1831,6 +1852,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 ring_order_limits,
                 arch,
                 allow_insignificant_prefix,
+                &workspace.analysis_pair_range_safe,
                 0,
                 order_count,
                 alm,
@@ -1978,6 +2000,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         ring_order_limits: &[usize],
         arch: pulp::Arch,
         allow_insignificant_prefix: bool,
+        analysis_pair_range_safe: &[AtomicBool],
         alm: &mut [Complex<T>],
         recurrence: &mut [RecurrenceWorkspace<T>],
     ) -> Result<(), ShtError> {
@@ -1993,6 +2016,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 ring_order_limits,
                 arch,
                 allow_insignificant_prefix,
+                analysis_pair_range_safe,
                 0,
                 order_count,
                 alm,
@@ -2013,6 +2037,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 ring_order_limits,
                 arch,
                 allow_insignificant_prefix,
+                analysis_pair_range_safe,
                 0,
                 order_count,
                 alm,
@@ -2052,6 +2077,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     ring_order_limits,
                     arch,
                     allow_insignificant_prefix,
+                    analysis_pair_range_safe,
                     m,
                     m + 1,
                     coefficients,
@@ -2090,6 +2116,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         ring_order_limits: &[usize],
         arch: pulp::Arch,
         allow_insignificant_prefix: bool,
+        analysis_pair_range_safe: &[AtomicBool],
         m_start: usize,
         m_end: usize,
         alm: &mut [Complex<T>],
@@ -2112,6 +2139,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             ring_order_limits,
             arch,
             allow_insignificant_prefix,
+            analysis_pair_range_safe,
             m_start,
             m_end,
             alm,
@@ -2135,6 +2163,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         clippy::too_many_arguments,
         reason = "The symmetric analysis group receives plan geometry and worker scratch explicitly."
     )]
+    #[allow(unexpected_cfgs)]
     fn analyze_symmetric_order_group(
         &self,
         spectra: &[Complex<T>],
@@ -2145,6 +2174,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         ring_order_limits: &[usize],
         arch: pulp::Arch,
         allow_insignificant_prefix: bool,
+        analysis_pair_range_safe: &[AtomicBool],
         m_start: usize,
         m_end: usize,
         alm: &mut [Complex<T>],
@@ -2163,6 +2193,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         } else {
             LATITUDE_BLOCK_SIZE
         };
+        let range_cache_block_count = pair_lane_count.div_ceil(pair_block_size);
         debug_assert!(recurrence.previous.len() >= pair_block_size);
         let mut coefficient_start = 0;
         #[cfg(all(test, feature = "parallel"))]
@@ -2182,7 +2213,6 @@ impl<T: ShtScalar> ShtPlan<T> {
                 &mut recurrence.spin_coefficient_a,
                 &mut recurrence.spin_coefficient_b,
             );
-
             for block_start in (first_active_pair..pair_lane_count).step_by(pair_block_size) {
                 let block_end = (block_start + pair_block_size).min(pair_lane_count);
                 let block_len = block_end - block_start;
@@ -2211,6 +2241,21 @@ impl<T: ShtScalar> ShtPlan<T> {
                 if lane_count == 0 {
                     continue;
                 }
+                let cache_index = m
+                    .checked_mul(range_cache_block_count)
+                    .and_then(|order_index| order_index.checked_add(block_start / pair_block_size));
+                let range_cache_enabled = !cfg!(rustsht_disable_analysis_pair_range_cache);
+                let range_check_is_proven_safe = range_cache_enabled
+                    && cache_index
+                        .and_then(|index| analysis_pair_range_safe.get(index))
+                        .is_some_and(|safe| safe.load(Ordering::Relaxed));
+                // Recurrence state depends on this plan's fixed factors and
+                // active geometry, not the map spectrum. Cache each block only
+                // after its checked fused traversal has exercised group checks.
+                let mut may_cache_range_safe = range_cache_enabled
+                    && !range_check_is_proven_safe
+                    && !cfg!(rustsht_unchecked_analysis_pair_range);
+                let mut saw_successful_fused_block = false;
                 #[cfg(all(test, feature = "parallel"))]
                 let (mut block_saw_normal, mut block_saw_scaled) = (false, false);
                 let compact_mixed_block = compact_candidate && lane_count < block_len;
@@ -2257,12 +2302,15 @@ impl<T: ShtScalar> ShtPlan<T> {
                         None
                     };
                     let fast_path_eligible = opposite_preparation == Some(true);
+                    let mut range_check_was_exercised = false;
                     let fused_block = if fast_path_eligible {
                         T::fused_scalar_analysis_pair_block_preweighted(
                             arch,
                             m,
                             lmax,
                             allow_insignificant_prefix,
+                            range_check_is_proven_safe,
+                            &mut range_check_was_exercised,
                             pair_sin,
                             pair_cos,
                             pair_cos_squared,
@@ -2285,6 +2333,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                         false
                     };
                     if fused_block {
+                        saw_successful_fused_block = true;
+                        if !range_check_is_proven_safe && !range_check_was_exercised {
+                            may_cache_range_safe = false;
+                        }
                         #[cfg(all(test, feature = "parallel"))]
                         {
                             block_saw_normal = true;
@@ -2296,6 +2348,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             *coefficient += *contribution;
                         }
                     } else {
+                        may_cache_range_safe = false;
                         if opposite_preparation.is_some() {
                             restore_symmetric_analysis_pair_opposite(
                                 m,
@@ -2365,6 +2418,11 @@ impl<T: ShtScalar> ShtPlan<T> {
                             },
                         )?;
                     }
+                    if !fast_path_eligible {
+                        may_cache_range_safe = false;
+                    }
+                } else {
+                    may_cache_range_safe = false;
                 }
                 if !paired_used {
                     let same_real = &recurrence.analysis_same_real[..lane_count];
@@ -2413,6 +2471,13 @@ impl<T: ShtScalar> ShtPlan<T> {
                 #[cfg(all(test, feature = "parallel"))]
                 if profiling {
                     recurrence.record_analysis_leaf_block(block_saw_normal, block_saw_scaled);
+                }
+                if may_cache_range_safe
+                    && saw_successful_fused_block
+                    && let Some(index) = cache_index
+                    && let Some(safe) = analysis_pair_range_safe.get(index)
+                {
+                    safe.store(true, Ordering::Relaxed);
                 }
             }
             if paired_used {

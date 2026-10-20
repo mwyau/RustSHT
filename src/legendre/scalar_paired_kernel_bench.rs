@@ -412,6 +412,7 @@ fn time_fused_scalar_analysis_pair<
     next.fill(0.0);
     staged.fill(Complex64::new(0.0, 0.0));
 
+    let mut range_check_was_exercised = false;
     let started = Instant::now();
     let succeeded = arch.dispatch(FusedScalarAnalysisPair::<
         true,
@@ -420,6 +421,7 @@ fn time_fused_scalar_analysis_pair<
     > {
         m,
         lmax,
+        range_check_was_exercised: &mut range_check_was_exercised,
         pair_start: 0,
         cos_theta: &fixture.cosine,
         cos_theta_squared: &fixture.cosine_squared,
@@ -853,6 +855,7 @@ fn run_fused_scalar_analysis_pair_variant<
     current: &mut [f64],
     next: &mut [f64],
 ) -> bool {
+    let mut range_check_was_exercised = false;
     arch.dispatch(FusedScalarAnalysisPair::<
         true,
         CHECK_PAIR_GROUP_RANGE,
@@ -860,6 +863,7 @@ fn run_fused_scalar_analysis_pair_variant<
     > {
         m: BENCH_ORDER,
         lmax: BENCH_LMAX,
+        range_check_was_exercised: &mut range_check_was_exercised,
         pair_start: 0,
         cos_theta: &fixture.cosine,
         cos_theta_squared: &fixture.cosine_squared,
@@ -1599,11 +1603,13 @@ fn benchmark_production_scaled_scalar_analysis_block() {
         scale_epochs.copy_from_slice(&initial_scale_epochs);
         scale_corrections.fill(0.0);
         staged.fill(Complex64::new(0.0, 0.0));
+        let mut range_check_was_exercised = false;
         let started = Instant::now();
         let succeeded = arch
             .dispatch(FusedScaledScalarAnalysisPair::<true> {
                 m,
                 lmax,
+                range_check_was_exercised: &mut range_check_was_exercised,
                 cos_theta: &fixture.cosine,
                 cos_theta_squared: &fixture.cosine_squared,
                 coefficient_a: &fixture.coefficient_a,
@@ -1642,6 +1648,7 @@ fn benchmark_production_scaled_scalar_analysis_block() {
                 initial_scale_epochs.clone(),
                 vec![0.0; lane_count],
                 vec![Complex64::new(0.0, 0.0); lmax - m + 1],
+                false,
             )
         })
         .collect();
@@ -1649,7 +1656,9 @@ fn benchmark_production_scaled_scalar_analysis_block() {
     for sample in 0..6 {
         let started = Instant::now();
         std::thread::scope(|scope| {
-            for (previous, current, next, epochs, corrections, staged) in &mut workers {
+            for (previous, current, next, epochs, corrections, staged, range_check_was_exercised) in
+                &mut workers
+            {
                 let fixture = &fixture;
                 let initial_scale_epochs = &initial_scale_epochs;
                 scope.spawn(move || {
@@ -1660,10 +1669,12 @@ fn benchmark_production_scaled_scalar_analysis_block() {
                         epochs.copy_from_slice(initial_scale_epochs);
                         corrections.fill(0.0);
                         staged.fill(Complex64::new(0.0, 0.0));
+                        *range_check_was_exercised = false;
                         assert!(
                             arch.dispatch(FusedScaledScalarAnalysisPair::<true> {
                                 m,
                                 lmax,
+                                range_check_was_exercised,
                                 cos_theta: &fixture.cosine,
                                 cos_theta_squared: &fixture.cosine_squared,
                                 coefficient_a: &fixture.coefficient_a,
@@ -1739,10 +1750,12 @@ fn benchmark_production_ordinary_scalar_analysis_block() {
         current.copy_from_slice(&fixture.current);
         next.fill(0.0);
         staged.fill(Complex64::new(0.0, 0.0));
+        let mut range_check_was_exercised = false;
         let started = Instant::now();
         let succeeded = arch.dispatch(FusedScalarAnalysisPair::<true> {
             m,
             lmax,
+            range_check_was_exercised: &mut range_check_was_exercised,
             pair_start: 0,
             cos_theta: &fixture.cosine,
             cos_theta_squared: &fixture.cosine_squared,
@@ -1777,6 +1790,7 @@ fn benchmark_production_ordinary_scalar_analysis_block() {
                 fixture.current.clone(),
                 vec![0.0; lane_count],
                 vec![Complex64::new(0.0, 0.0); lmax - m + 1],
+                false,
             )
         })
         .collect();
@@ -1784,7 +1798,7 @@ fn benchmark_production_ordinary_scalar_analysis_block() {
     for sample in 0..6 {
         let started = Instant::now();
         std::thread::scope(|scope| {
-            for (previous, current, next, staged) in &mut workers {
+            for (previous, current, next, staged, range_check_was_exercised) in &mut workers {
                 let fixture = &fixture;
                 scope.spawn(move || {
                     for _ in 0..128 {
@@ -1792,9 +1806,11 @@ fn benchmark_production_ordinary_scalar_analysis_block() {
                         current.copy_from_slice(&fixture.current);
                         next.fill(0.0);
                         staged.fill(Complex64::new(0.0, 0.0));
+                        *range_check_was_exercised = false;
                         assert!(arch.dispatch(FusedScalarAnalysisPair::<true> {
                             m,
                             lmax,
+                            range_check_was_exercised,
                             pair_start: 0,
                             cos_theta: &fixture.cosine,
                             cos_theta_squared: &fixture.cosine_squared,

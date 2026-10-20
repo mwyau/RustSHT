@@ -7,8 +7,24 @@ production baseline:** Pulp post-group scan. **A/B source:** `9f7e8658`.
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
 
 - Production f64 scalar GL analysis keeps the checked two-pair AVX2/FMA route
-  and scaled fallback. A compile-time unchecked specialization is available
-  for controlled evaluation; it removes the ordinary post-group range scan.
+  and scaled fallback. The active range-cache candidate reuses a checked
+  ordinary-recurrence range result for each plan/order/tile/Pulp backend only
+  after that block has exercised every checked group and completed successfully.
+  Initialization, product preflights, scaled recurrence and robust fallback
+  still run for every call. The compile-time unchecked specialization remains
+  available for controlled evaluation.
+- The release regression test covers oversampled T511 GL, an odd SIMD-tail
+  lane, zero/subnormal/extreme finite maps, repeated workspace reuse, and a
+  compatible workspace reused across plans. The valid T720 fixture recorded
+  zero late group-range declines at q1 and q8. A short Rust 1.99.0/Pulp V3,
+  x86-64-v3 T720 GL STANDARD screen on Ryzen 9 5950X compared the cache with
+  the same source compiled using `rustsht_disable_analysis_pair_range_cache`.
+  At q1 the no-cache/cached medians were 26.405/23.291 ms (11.8% lower with
+  cache). At q8, process medians were 5.138–5.287/4.556–4.772 ms; the candidate
+  was lower in both pairs, but outliers and host variation make this a
+  provisional Rust-only full-transform result. Earlier unpaired baseline
+  screens are not used for attribution. The benefit applies after the checked
+  workspace warmup and is not a DUCC comparison.
 - **Work-boundary correction:** the prior direct-kernel comparison stopped
   Rust timing after writing `staged_coefficients`, while DUCC's kernel also
   accumulated into `alm`. Its Rust/DUCC ratios omitted Rust's final coefficient
