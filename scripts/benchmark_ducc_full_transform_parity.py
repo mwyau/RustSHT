@@ -310,16 +310,14 @@ def make_cases(
                     raise ValueError(
                         f"fixed ntheta={ntheta} cannot exactly analyze lmax={lmax}"
                     )
+                ntheta_tag = "" if ntheta == lmax + 1 else f"-ntheta{ntheta}"
+                case_id = (
+                    f"T{lmax}-m{mmax}{ntheta_tag}-{longitude_mode}"
+                    if fixed_nphi is None
+                    else f"T{lmax}-m{mmax}{ntheta_tag}-nphi{fixed_nphi}"
+                )
                 cases.append({
-                    "case_id": (
-                        f"T{lmax}-m{mmax}-{longitude_mode}"
-                        if fixed_nphi is None
-                        else (
-                            f"T{lmax}-m{mmax}-nphi{fixed_nphi}"
-                            if ntheta == lmax + 1
-                            else f"T{lmax}-m{mmax}-ntheta{ntheta}-nphi{fixed_nphi}"
-                        )
-                    ),
+                    "case_id": case_id,
                     "lmax": lmax,
                     "mmax": mmax,
                     "ntheta": ntheta,
