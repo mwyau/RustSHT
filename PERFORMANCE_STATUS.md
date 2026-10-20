@@ -71,6 +71,34 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   below one. Release tests and DUCC state checks pass; the five-call screen is
   too short and variable to establish a speed change, so keep this as an
   experimental candidate pending calibrated paired measurements.
+- The calibrated prefix runner measured the production Rust frontier loop
+  against pinned DUCC `iter_to_ieee` on x86-64-v3, Pulp V3/GCC 15.2 AVX2/FMA,
+  Ryzen 9 5950X. Each case has 30 batches across three interleaved process
+  pairs, with ~35 ms target batch walls; states matched at relative L2
+  `0..1.47e-16` for GL seeds, with exact scale epochs. Median kernel µs/op:
+
+  | Seed | Lanes | Rust | DUCC | Ratio | Reset-inclusive ratio |
+  |---|---:|---:|---:|---:|---:|
+  | Synthetic `m=1` | 64 | 3.813 | 2.676 | 1.43× | 1.41× |
+  | Synthetic `m=1` | 128 | 6.476 | 5.171 | 1.25× | 1.24× |
+  | Synthetic `m=1` | 256 | 13.093 | 10.761 | 1.22× | 1.20× |
+  | T720 GL sectoral `m=500` | 64 | 0.570 | 0.306 | 1.87× | 1.67× |
+  | T720 GL sectoral `m=500` | 128 | 0.099 | 0.067 | 1.48× | 0.87× |
+
+  The GL seed advances 36 pairs at 64 lanes and 2 at 128; the 256-lane seed
+  has significant values and does no prefix recurrence. Rust's scale/correction
+  preflight is separate (0.250/0.381 µs at 64/128) and is not included in the
+  DUCC kernel ratio. The 64-lane kernel excess is 0.264 µs per tested block;
+  these measurements do not attribute the full analysis gap to prefix work.
+  Reset-inclusive timing also resets Rust's correction scratch, which DUCC does
+  not have. Process-median frequency samples were 4.6–4.7 GHz (individual
+  samples fell to about 3.6 GHz); runqueue wait stayed below 0.09%.
+  GL kernel p10–p90 ranges were 0.568–0.573/0.305–0.308 µs (Rust/DUCC) at 64
+  lanes and 0.0985–0.1002/0.0668–0.0677 µs at 128 lanes; their process medians
+  were similarly grouped. One synthetic 128-lane Rust process was slower
+  without a matching scheduler-wait signal. The frontier
+  conditional-check change itself still needs a calibrated before/after
+  ablation. See [the calibrated runner](scripts/benchmark_scalar_analysis_prefix.py).
 - A short full-transform Rust screen compared `fc9f44a4` with this change using
   five interleaved process pairs and five samples per process, GL STANDARD A,
   odd `nphi=2T+3`, and q1/q8. Median baseline→candidate times were T300 q1

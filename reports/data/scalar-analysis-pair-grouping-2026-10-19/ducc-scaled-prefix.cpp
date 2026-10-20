@@ -32,11 +32,16 @@ static void read_values(std::ifstream &in, std::vector<double> &values) {
 }
 
 int main(int argc, char **argv) {
-  if (argc != 3) {
-    std::cerr << "usage: ducc-analysis-prefix-bench FIXTURE REPETITIONS\n";
+  if (argc != 4) {
+    std::cerr << "usage: ducc-analysis-prefix-bench FIXTURE --calibrate REPETITIONS | FIXTURE REPETITIONS BATCHES\n";
     return 2;
   }
   const std::string fixture_path = argv[1];
+  const bool calibrate = std::string(argv[2]) == "--calibrate";
+  const size_t repetitions = calibrate ? std::stoul(argv[3]) : std::stoul(argv[2]);
+  const size_t batch_count = calibrate ? 0 : std::stoul(argv[3]);
+  if (repetitions == 0 || (!calibrate && batch_count == 0))
+    throw std::runtime_error("requires positive repetitions and batches");
   std::ifstream in(fixture_path, std::ios::binary);
   if (!in) throw std::runtime_error("cannot open Rust-generated fixture");
   uint64_t m64, lmax64, lane_count64, pair_count64;
@@ -98,20 +103,53 @@ int main(int argc, char **argv) {
   };
   size_t final_l = 0, final_il = 0;
   auto run = [&]() {
-    reset();
     size_t l = 0, il = 0;
     const auto started = Clock::now();
     loop::iter_to_ieee(generator, data, l, il, vectors, m, lmax + 1);
+    std::atomic_signal_fence(std::memory_order_seq_cst);
+    if (l > generator.lmax) il = (lmax - m + 2) / 2;
     final_l = l;
     final_il = il;
     return std::chrono::duration<double, std::micro>(Clock::now() - started).count();
   };
 
-  const size_t repetitions = std::stoul(argv[2]);
-  (void)run();
-  std::vector<double> samples;
-  for (size_t i = 0; i < repetitions; ++i) samples.push_back(run());
-  std::sort(samples.begin(), samples.end());
+  for (size_t i = 0; i < 4; ++i) {
+    reset();
+    run();
+  }
+  if (calibrate) {
+    double kernel_us = 0.0;
+    const auto wall_started = Clock::now();
+    for (size_t i = 0; i < repetitions; ++i) {
+      reset();
+      kernel_us += run();
+    }
+    const double wall_us = std::chrono::duration<double, std::micro>(Clock::now() - wall_started).count();
+    const double checksum = data.lam1[0][0] + data.lam2[0][0] + data.scale[0][0];
+    std::cout << std::fixed << std::setprecision(6)
+              << "DUCC_PREFIX_CALIBRATION m=" << m << " lanes=" << lane_count
+              << " vlen=" << loop::VLEN << " vectors=" << vectors
+              << " repetitions=" << repetitions
+              << " kernel_us_per_call=" << kernel_us / repetitions
+              << " wall_us_per_call=" << wall_us / repetitions
+              << " checksum=" << checksum << "\n";
+  } else {
+    for (size_t batch = 0; batch < batch_count; ++batch) {
+      double kernel_us = 0.0;
+      const auto wall_started = Clock::now();
+      for (size_t i = 0; i < repetitions; ++i) {
+        reset();
+        kernel_us += run();
+      }
+      const double wall_us = std::chrono::duration<double, std::micro>(Clock::now() - wall_started).count();
+      const double checksum = data.lam1[0][0] + data.lam2[0][0] + data.scale[0][0];
+      std::cout << std::fixed << std::setprecision(3)
+                << "DUCC_PREFIX_BATCH m=" << m << " lanes=" << lane_count
+                << " batch=" << batch << " repetitions=" << repetitions
+                << " kernel_us=" << kernel_us << " wall_us=" << wall_us
+                << " checksum=" << checksum << "\n";
+    }
+  }
 
   const std::string state_path = fixture_path.substr(0, fixture_path.size() - 3) + ".rust_state";
   std::ifstream state_in(state_path, std::ios::binary);
@@ -143,13 +181,8 @@ int main(int argc, char **argv) {
 
   std::cout << std::fixed << std::setprecision(3)
             << "DUCC_PREFIX m=" << m << " lmax=" << lmax << " lanes=" << lane_count
-            << " vectors=" << vectors << " repetitions=" << repetitions
-            << " median_us=" << samples[samples.size()/2] << " samples_us=[";
-  for (size_t i = 0; i < samples.size(); ++i) {
-    if (i) std::cout << ",";
-    std::cout << samples[i];
-  }
-  std::cout << "] prefix_l=" << final_l << " prefix_pair=" << final_il
+            << " vlen=" << loop::VLEN << " vectors=" << vectors << " repetitions=" << repetitions
+            << " batches=" << batch_count << " prefix_l=" << final_l << " prefix_pair=" << final_il
             << " state_relative_l2=" << std::scientific << state_relative_l2
             << " state_max_abs=" << state_max_abs << " scale_mismatches=" << scale_mismatches << "\n";
 }

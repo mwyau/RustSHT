@@ -72,10 +72,26 @@ synthetic seeds and T720 GL sectoral seeds (`m=500`) at 64, 128 and 256 lanes.
 The DUCC adapter initializes from those same Rust-generated recurrence states
 and verifies the resulting state and scale epochs after `iter_to_ieee`. The
 256-lane GL case includes significant seeds, so DUCC correctly skips prefix
-advancement. These five-call samples are exploratory and are not comparable to
-the calibrated ordinary-kernel results. `split-check-candidate.patch`
-preserves the earlier split-loop prototype for review; it is not part of the
-timed candidate.
+advancement. Run the calibrated prefix comparison with:
+
+```sh
+DUCC_SRC=/path/to/ducc-source-snapshot \
+DUCC_GIT=/path/to/ducc-git-repository \
+python3 scripts/benchmark_scalar_analysis_prefix.py
+```
+
+The runner verifies the pinned source, dispatches Pulp V3 and four-lane DUCC,
+and collects 30 batches in three independent interleaved process pairs per
+case. Batch wall times target 35 ms and must remain within 20–100 ms. Kernel
+timing excludes state reset for both implementations; reset-inclusive wall
+time is reported separately. Rust's block scale/correction preflight is
+measured outside the recurrence-prefix boundary and reported separately.
+Output states and scale epochs are compared after timing. Rust reset restores
+its correction scratch as well as recurrence state; DUCC has no equivalent
+scratch, so kernel-only timing is the primary comparison. Host frequency and
+scheduling summaries are printed without saving raw host captures.
+`split-check-candidate.patch` preserves the earlier split-loop prototype for
+review; it is not part of the timed candidate.
 
 ## Scalar-analysis pair-tile screen
 
