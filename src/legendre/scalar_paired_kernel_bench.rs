@@ -288,23 +288,22 @@ impl WithSimd for AnalysisPrefixLoopProbe<'_> {
             if pair_count - second_pair == 1 {
                 return Some(pair_count);
             }
-            let (rescaled, remains_below_limit) = advance_and_rescale_analysis_pair(
-                simd,
-                [
-                    (coefficient_a[pair_start], coefficient_b[pair_start]),
-                    (coefficient_a[second_pair], coefficient_b[second_pair]),
-                ],
-                cos_theta_squared,
-                (&mut *previous, &mut *current),
-                scale_epochs,
-                scale_corrections,
-                skip_insignificant_validation,
-            )?;
+            let (remains_below_limit, remains_insignificant_prefix) =
+                advance_and_rescale_analysis_pair(
+                    simd,
+                    [
+                        (coefficient_a[pair_start], coefficient_b[pair_start]),
+                        (coefficient_a[second_pair], coefficient_b[second_pair]),
+                    ],
+                    cos_theta_squared,
+                    (&mut *previous, &mut *current),
+                    scale_epochs,
+                    scale_corrections,
+                    skip_insignificant_validation,
+                )?;
             pair_start += 2;
             below_limit = remains_below_limit;
-            if rescaled {
-                skip_insignificant_validation = scale_epochs.iter().all(|&epoch| epoch < 0.0);
-            }
+            skip_insignificant_validation = remains_insignificant_prefix;
         }
         Some(pair_start)
     }

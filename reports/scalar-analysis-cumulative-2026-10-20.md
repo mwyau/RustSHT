@@ -318,3 +318,23 @@ all-target/all-feature Clippy passed. No timing was collected because unrelated
 host CPU work saturated the machine. This change remains an unmeasured
 cumulative candidate; do not infer a latency improvement before the matched
 64/128/256-lane and representative full-transform rerun.
+
+### Scaled-prefix epoch-state reuse candidate
+
+The scaled two-pair prefix previously scanned the `scale_epochs` slice after a
+rescale pass to decide whether every epoch remained negative. Epochs only
+increase in this prefix. The SIMD recurrence now carries that condition while
+it already updates vector epochs and scalar tail lanes, and returns it with the
+existing transition state. If the input state was not all-negative, it stays
+false; if it was, changed vectors and tail epochs determine whether it remains
+true. This preserves the validation gate while removing the follow-up scalar
+read of the epoch slice.
+
+The focused vector/tail test compares the carried condition with a direct
+post-update scan, including the case where an epoch advances from -1 to 0 while
+remaining below the ordinary-scale boundary. The cumulative configuration
+passes 230 release library tests (23 ignored), 192 no-default-feature release
+library tests (14 ignored), formatting, and all-target/all-feature Clippy. No
+timing was collected because the host remained contended. Retain as an
+unmeasured candidate pending the matched lane-count and full-transform
+ablation.

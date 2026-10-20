@@ -64,13 +64,15 @@ This is a *goal*, not a guaranteed result or a license to weaken accuracy. Do no
 
 Benchmark **warmed and cold** full transforms separately (T720 full/reduced `mmax`, q1/q8) and retain checked-path cost in reports as a safety/startup cost, **not a performance optimization objective**. Validate cache eligibility/invalidation, the first checked call, reused workspaces, changing maps/plans, extreme/subnormal/cancellation cases, SIMD tails, and DUCC/analytic/adjoint correctness. Revisit the checked path only for a demonstrated correctness issue or evidence that cold-start cost materially dominates a relevant real workload. This owner priority supersedes older milestones wherever they emphasize optimizing checked-loop throughput.
 
-**Current cumulative candidate (unmeasured):** scaled sectoral initialization
+**Current cumulative candidates (unmeasured):** scaled sectoral initialization
 reuses contiguous ordinary SIMD seed vectors before the first vector that
-requires exponent scaling. The fallback, lane range checks and tail scaling are
-unchanged. Release and no-default-feature library tests pass; timing is deferred
-under host CPU saturation. Keep this candidate experimental until the matched
-64/128/256-lane and representative full/reduced-order q1/q8 comparisons measure
-its contribution.
+requires exponent scaling. The scaled two-pair prefix carries its all-negative
+epoch state from the SIMD update pass rather than rereading the epoch slice.
+Fallbacks, lane range checks and tail scaling remain unchanged. Release and
+no-default-feature library tests pass; timing is deferred under host CPU
+saturation. Keep both candidates experimental until matched 64/128/256-lane
+and representative full/reduced-order q1/q8 comparisons measure their
+contribution.
 
 ## Next sequence — comprehensive benchmark, toolchain/reference rebaseline, then kernel attribution (2026-10-20)
 

@@ -15,11 +15,13 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   unsafe inputs retain the transactional path. The scaled sectoral initializer
   now reuses each already-validated ordinary SIMD vector preceding the first
   unsafe vector, then scales only the remaining vectors and tail. The combined
-  candidate passed 230 release library tests (23 ignored), 192 no-default-
+  scaled-prefix recurrence also carries its all-negative epoch condition from
+  the SIMD update pass instead of rereading the epoch slice. These cumulative
+  candidates passed 230 release library tests (23 ignored), 192 no-default-
   feature release library tests (14 ignored), and all-target/all-feature
-  Clippy. Its focused prefix-reuse test checks ordinary and scaled seeds across
-  the runtime lane width and tail. The focused T511 cached-versus-checked
-  comparison has relative L2 error `2.5974e-16`.
+  Clippy. Focused tests cover prefix reuse and epoch transitions across SIMD
+  lanes and tails. The focused T511 cached-versus-checked comparison has
+  relative L2 error `2.5974e-16`.
   The historical direct-only T720 screen regressed, so no performance claim is
   made for the combined candidate. Timings are deferred while unrelated host
   CPU jobs saturate the machine; the next step is a matched T720 full/reduced

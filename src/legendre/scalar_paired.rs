@@ -2337,8 +2337,11 @@ fn advance_and_rescale_analysis_pair<S: Simd>(
     let max_finite = simd.splat_f64s(f64::MAX);
     let max_mantissa = simd.splat_f64s(scalar::BIG);
     let mut all_vectors_valid = simd.equal_f64s(zero, zero);
+    let mut all_rescaled_epochs_negative = simd.equal_f64s(zero, zero);
     let mut any_rescaled = false;
+    let mut any_vector_rescaled = false;
     let mut below_limit = true;
+    let mut all_tail_epochs_negative = true;
 
     for index in 0..current_vectors.len() {
         let previous_value = previous_vectors[index];
@@ -2352,6 +2355,7 @@ fn advance_and_rescale_analysis_pair<S: Simd>(
         let rescale = simd.greater_than_f64s(magnitude, ftol);
         let vector_rescaled = simd.reduce_max_f64s(magnitude) > ANALYSIS_FTOL;
         any_rescaled |= vector_rescaled;
+        any_vector_rescaled |= vector_rescaled;
 
         if !vector_rescaled {
             // The active prefix has scale epochs below one. Negative epochs
@@ -2385,6 +2389,12 @@ fn advance_and_rescale_analysis_pair<S: Simd>(
         // vectors whose scale changed; avoid an unconditional reduction here.
         if vector_rescaled {
             below_limit &= analysis_mask_all(simd, simd.less_than_f64s(updated_scale, one));
+            if skip_insignificant_validation {
+                all_rescaled_epochs_negative = simd.and_m64s(
+                    all_rescaled_epochs_negative,
+                    simd.less_than_f64s(updated_scale, zero),
+                );
+            }
         }
         let correction = simd.select_f64s(
             simd.less_than_f64s(updated_scale, zero),
@@ -2446,6 +2456,9 @@ fn advance_and_rescale_analysis_pair<S: Simd>(
         } else {
             (first, second)
         };
+        if skip_insignificant_validation {
+            all_tail_epochs_negative &= scale_tail[lane] < 0.0;
+        }
         let corrected_current = updated_current * correction_tail[lane];
         if !analysis_value_in_ieee_range(corrected_current) {
             return None;
@@ -2466,7 +2479,10 @@ fn advance_and_rescale_analysis_pair<S: Simd>(
     {
         return None;
     }
-    Some((any_rescaled, below_limit))
+    let remains_insignificant_prefix = skip_insignificant_validation
+        && all_tail_epochs_negative
+        && (!any_vector_rescaled || analysis_mask_all(simd, all_rescaled_epochs_negative));
+    Some((below_limit, remains_insignificant_prefix))
 }
 
 /// Applies DUCC's per-lane `rescale` rule while the analysis recurrence is in
@@ -3109,25 +3125,25 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool, const CHECK_PAIR_GROUP_RANGE: bool> W
             if pair_count - second_pair == 1 {
                 return Ok(analysis_recurrence_state_is_finite(previous, current));
             }
-            let Some((rescaled, remains_below_limit)) = advance_and_rescale_analysis_pair(
-                simd,
-                [
-                    (coefficient_a[first_pair], coefficient_b[first_pair]),
-                    (coefficient_a[second_pair], coefficient_b[second_pair]),
-                ],
-                cos_theta_squared,
-                (&mut *previous, &mut *current),
-                scale_epochs,
-                scale_corrections,
-                skip_insignificant_validation,
-            ) else {
+            let Some((remains_below_limit, remains_insignificant_prefix)) =
+                advance_and_rescale_analysis_pair(
+                    simd,
+                    [
+                        (coefficient_a[first_pair], coefficient_b[first_pair]),
+                        (coefficient_a[second_pair], coefficient_b[second_pair]),
+                    ],
+                    cos_theta_squared,
+                    (&mut *previous, &mut *current),
+                    scale_epochs,
+                    scale_corrections,
+                    skip_insignificant_validation,
+                )
+            else {
                 return Ok(false);
             };
             pair_start += 2;
             below_limit = remains_below_limit;
-            if rescaled {
-                skip_insignificant_validation = scale_epochs.iter().all(|&scale| scale < 0.0);
-            }
+            skip_insignificant_validation = remains_insignificant_prefix;
         }
         if pair_start == pair_count {
             return Ok(analysis_recurrence_state_is_finite(previous, current));
@@ -6051,7 +6067,7 @@ mod tests {
     }
 
     impl WithSimd for AdvanceAnalysisPrefixProbe<'_> {
-        type Output = Option<(bool, bool, bool)>;
+        type Output = Option<(bool, bool, bool, bool)>;
 
         fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
             let Self {
@@ -6071,11 +6087,12 @@ mod tests {
                 corrections,
                 skip_insignificant_validation,
             )
-            .map(|(rescaled, below_limit)| {
+            .map(|(below_limit, remains_insignificant_prefix)| {
                 (
-                    rescaled,
                     below_limit,
+                    remains_insignificant_prefix,
                     analysis_scale_epochs_below_one(simd, scale_epochs),
+                    scale_epochs.iter().all(|&epoch| epoch < 0.0),
                 )
             })
         }
@@ -6128,8 +6145,25 @@ mod tests {
                     corrections: &mut corrections,
                     skip_insignificant_validation: true,
                 }),
-                Some((false, true, true)),
+                Some((true, true, true, true)),
                 "no-crossing lanes={lane_count}"
+            );
+
+            previous.fill(0.0);
+            current.fill(0.5);
+            scale_epochs.fill(-1.0);
+            corrections.fill(0.0);
+            assert_eq!(
+                Arch::new().dispatch(AdvanceAnalysisPrefixProbe {
+                    cosine_squared: &cosine_squared,
+                    previous: &mut previous,
+                    current: &mut current,
+                    scale_epochs: &mut scale_epochs,
+                    corrections: &mut corrections,
+                    skip_insignificant_validation: true,
+                }),
+                Some((true, false, true, false)),
+                "epoch-zero lanes={lane_count}"
             );
 
             previous.fill(0.0);
@@ -6147,7 +6181,7 @@ mod tests {
                     corrections: &mut corrections,
                     skip_insignificant_validation: false,
                 }),
-                Some((true, false, false)),
+                Some((false, false, false, false)),
                 "crossing-lane lanes={lane_count}"
             );
 
@@ -6168,7 +6202,7 @@ mod tests {
                         corrections: &mut corrections,
                         skip_insignificant_validation: false,
                     }),
-                    Some((true, false, false)),
+                    Some((false, false, false, false)),
                     "sparse-crossing-vector lanes={lane_count}"
                 );
             }
