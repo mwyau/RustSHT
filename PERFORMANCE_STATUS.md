@@ -45,9 +45,21 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   eight. The v4 objects were static-inspection only. A public T255 multiarch
   analysis smoke call completed, but its short timing screen was noisy and is
   not a performance comparison. Build commands and findings are in
-  `reports/data/ducc-multiarch-2026-10-20/README.md`. Next: establish the
-  calibrated Rust 1.99.1 / DUCC GCC and Clang v3 baseline, then isolate the
-  remaining warmed-kernel costs. Clang diagnosed `std::isfinite` checks in the
+  `reports/data/ducc-multiarch-2026-10-20/README.md`. The post-upgrade Phase 4
+  baseline now compares Rust 1.99.1 with fixed-v3 DUCC GCC and Clang builds at
+  T255/T300/T720. At even-smooth T720 full `mmax`, q1 analysis/synthesis ratios
+  are 1.016/1.270 with GCC and 1.156/1.199 with Clang; reduced-order results
+  vary by operation. The full-transform runs passed 192 numerical comparisons
+  and 32 validation suites per compiler (maximum relative L2 error
+  `3.575e-13`). Host run-queue wait was high (33–40% median; about 79% p90),
+  especially affecting q8, so these timings are provisional. A T720 Rust
+  1.99.0 control showed no clear q1 compiler-version change; q8 was noisy. See
+  `reports/ducc-upgrade-baseline-2026-10-20.md` and its machine-readable data.
+  The selected ordinary-kernel GCC/Clang screen omitted production DUCC
+  fast-math flags and had asymmetric queue delay; it is not an attribution
+  result. Next: rerun that focused kernel comparison with actual CMake v3
+  flags under lower host interference, then isolate the remaining
+  warmed-kernel costs. Clang diagnosed `std::isfinite` checks in the
   small C++ benchmark driver when all translation units inherited
   `-ffast-math`; the active CMake target now disables fast-math for that
   driver only. DUCC's numerical translation units retain the optimized

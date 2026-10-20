@@ -1,0 +1,4370 @@
+{
+  "cases": [
+    {
+      "case_id": "T720-m1-odd_minimum",
+      "grid": "GL",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "mmax": 1,
+      "nphi": 3,
+      "ntheta": 721
+    },
+    {
+      "case_id": "T720-m1-even_smooth",
+      "grid": "GL",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "mmax": 1,
+      "nphi": 4,
+      "ntheta": 721
+    },
+    {
+      "case_id": "T720-m180-odd_minimum",
+      "grid": "GL",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "mmax": 180,
+      "nphi": 361,
+      "ntheta": 721
+    },
+    {
+      "case_id": "T720-m180-even_smooth",
+      "grid": "GL",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "mmax": 180,
+      "nphi": 378,
+      "ntheta": 721
+    },
+    {
+      "case_id": "T720-m720-odd_minimum",
+      "grid": "GL",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "mmax": 720,
+      "nphi": 1441,
+      "ntheta": 721
+    },
+    {
+      "case_id": "T720-m720-even_smooth",
+      "grid": "GL",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "mmax": 720,
+      "nphi": 1458,
+      "ntheta": 721
+    }
+  ],
+  "host_summary": {
+    "cpu_frequency_telemetry_available": true,
+    "involuntary_switches_max": 60218,
+    "involuntary_switches_median": 338.0,
+    "runqueue_wait_fraction_median": 0.16129703649475208,
+    "runqueue_wait_fraction_p90": 0.7674609230121887,
+    "sampled_worker_processes": 144
+  },
+  "metadata": {
+    "affinity_policy": "q1: one allowed physical core; q8: eight allowed physical cores",
+    "aggregate_peak_rss_kib": 150708,
+    "architecture": "x86_64",
+    "benchmark_harness_revision": "b8c1b85a",
+    "cargo": "cargo 1.99.0 (5f94df478 2026-08-27)",
+    "cpu_features": [
+      "avx2",
+      "fma"
+    ],
+    "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+    "cxx": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "ducc_dispatch": "fixed x86-64-v3 C++ build (AVX2/FMA, four f64 lanes)",
+    "ducc_flags": "DUCC sources: -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; benchmark driver: -O3 -fno-fast-math -ffp-contract=fast -march=x86-64-v3",
+    "ducc_source_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "ducc_version": "0.42.0",
+    "installed_ram_gib": 96.0,
+    "logical_cpus_visible": 32,
+    "os": "Linux-7.0.14-20-pve-x86_64-with-glibc2.43",
+    "physical_cores_visible": 16,
+    "pulp": "0.22.3",
+    "rust_dispatch": "runtime Pulp Arch::new; worker records actual specialization",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "rust_source_revision": "b8c1b85a",
+    "rustc": "rustc 1.99.0 (b940084d7 2026-09-28)",
+    "sanitization": "Per-batch values are summarized by operation and process quantiles in rows; individual batch records, per-process RSS and numeric CPU-frequency readings remain local. Aggregate peak RSS and summarized queue-wait fields are retained."
+  },
+  "numerics": [
+    {
+      "absolute_max": 1.3784112740111709e-14,
+      "case_id": "T720-m1-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 3.4678407864458215e-09,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 3,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 0,
+      "relative_l2": 5.277335753361046e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 1.3784112740111709e-14,
+      "case_id": "T720-m1-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 3.4678407864458215e-09,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 3,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 1,
+      "relative_l2": 5.277335753361046e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 1.3784112740111709e-14,
+      "case_id": "T720-m1-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 3.4678407864458215e-09,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 3,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 2,
+      "relative_l2": 5.277335753361046e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 9.811174095375463e-11,
+      "case_id": "T720-m1-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 1.0504671416957385e-11,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 3,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 0,
+      "relative_l2": 1.0767237770487452e-13,
+      "threads": 1
+    },
+    {
+      "absolute_max": 9.811174095375463e-11,
+      "case_id": "T720-m1-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 1.0504671416957385e-11,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 3,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 1,
+      "relative_l2": 1.0767237770487452e-13,
+      "threads": 1
+    },
+    {
+      "absolute_max": 9.811174095375463e-11,
+      "case_id": "T720-m1-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 1.0504671416957385e-11,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 3,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 2,
+      "relative_l2": 1.0767237770487452e-13,
+      "threads": 1
+    },
+    {
+      "absolute_max": 1.3784112740111709e-14,
+      "case_id": "T720-m1-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 3.4678407864458215e-09,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 3,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 0,
+      "relative_l2": 5.277335753361046e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 1.3784112740111709e-14,
+      "case_id": "T720-m1-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 3.4678407864458215e-09,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 3,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 1,
+      "relative_l2": 5.277335753361046e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 1.3784112740111709e-14,
+      "case_id": "T720-m1-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 3.4678407864458215e-09,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 3,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 2,
+      "relative_l2": 5.277335753361046e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 9.811174095375463e-11,
+      "case_id": "T720-m1-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 1.0504671416957385e-11,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 3,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 0,
+      "relative_l2": 1.0767237770487452e-13,
+      "threads": 8
+    },
+    {
+      "absolute_max": 9.811174095375463e-11,
+      "case_id": "T720-m1-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 1.0504671416957385e-11,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 3,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 1,
+      "relative_l2": 1.0767237770487452e-13,
+      "threads": 8
+    },
+    {
+      "absolute_max": 9.811174095375463e-11,
+      "case_id": "T720-m1-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 1.0504671416957385e-11,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 3,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 2,
+      "relative_l2": 1.0767237770487452e-13,
+      "threads": 8
+    },
+    {
+      "absolute_max": 2.4202861936828413e-14,
+      "case_id": "T720-m1-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 1.6780949890274575e-10,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 4,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 0,
+      "relative_l2": 6.120666870086681e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 2.4202861936828413e-14,
+      "case_id": "T720-m1-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 1.6780949890274575e-10,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 4,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 1,
+      "relative_l2": 6.120666870086681e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 2.4202861936828413e-14,
+      "case_id": "T720-m1-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 1.6780949890274575e-10,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 4,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 2,
+      "relative_l2": 6.120666870086681e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 1.2357759260339662e-10,
+      "case_id": "T720-m1-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 9.07392240807564e-11,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 4,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 0,
+      "relative_l2": 1.841188549465178e-13,
+      "threads": 1
+    },
+    {
+      "absolute_max": 1.2357759260339662e-10,
+      "case_id": "T720-m1-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 9.07392240807564e-11,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 4,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 1,
+      "relative_l2": 1.841188549465178e-13,
+      "threads": 1
+    },
+    {
+      "absolute_max": 1.2357759260339662e-10,
+      "case_id": "T720-m1-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 9.07392240807564e-11,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 4,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 2,
+      "relative_l2": 1.841188549465178e-13,
+      "threads": 1
+    },
+    {
+      "absolute_max": 2.4202861936828413e-14,
+      "case_id": "T720-m1-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 1.6780949890274575e-10,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 4,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 0,
+      "relative_l2": 6.120666870086681e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 2.4202861936828413e-14,
+      "case_id": "T720-m1-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 1.6780949890274575e-10,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 4,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 1,
+      "relative_l2": 6.120666870086681e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 2.4202861936828413e-14,
+      "case_id": "T720-m1-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 1.6780949890274575e-10,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 4,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 2,
+      "relative_l2": 6.120666870086681e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 1.2357759260339662e-10,
+      "case_id": "T720-m1-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 9.07392240807564e-11,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 4,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 0,
+      "relative_l2": 1.841188549465178e-13,
+      "threads": 8
+    },
+    {
+      "absolute_max": 1.2357759260339662e-10,
+      "case_id": "T720-m1-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 9.07392240807564e-11,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 4,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 1,
+      "relative_l2": 1.841188549465178e-13,
+      "threads": 8
+    },
+    {
+      "absolute_max": 1.2357759260339662e-10,
+      "case_id": "T720-m1-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 9.07392240807564e-11,
+      "mmax": 1,
+      "near_zero_reference_count": 0,
+      "nphi": 4,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 2,
+      "relative_l2": 1.841188549465178e-13,
+      "threads": 8
+    },
+    {
+      "absolute_max": 1.8539611141763e-15,
+      "case_id": "T720-m180-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 3.135491724488725e-11,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 361,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 0,
+      "relative_l2": 4.89092822999973e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 1.8539611141763e-15,
+      "case_id": "T720-m180-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 3.135491724488725e-11,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 361,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 1,
+      "relative_l2": 4.89092822999973e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 1.8539611141763e-15,
+      "case_id": "T720-m180-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 3.135491724488725e-11,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 361,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 2,
+      "relative_l2": 4.89092822999973e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 3.7414338294183835e-10,
+      "case_id": "T720-m180-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 2.6030472505053866e-09,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 361,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 0,
+      "relative_l2": 5.1948878105452126e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 3.7414338294183835e-10,
+      "case_id": "T720-m180-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 2.6030472505053866e-09,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 361,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 1,
+      "relative_l2": 5.1948878105452126e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 3.7414338294183835e-10,
+      "case_id": "T720-m180-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 2.6030472505053866e-09,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 361,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 2,
+      "relative_l2": 5.1948878105452126e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 1.8539611141763e-15,
+      "case_id": "T720-m180-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 3.135491724488725e-11,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 361,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 0,
+      "relative_l2": 4.89092822999973e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 1.8539611141763e-15,
+      "case_id": "T720-m180-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 3.135491724488725e-11,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 361,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 1,
+      "relative_l2": 4.89092822999973e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 1.8539611141763e-15,
+      "case_id": "T720-m180-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 3.135491724488725e-11,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 361,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 2,
+      "relative_l2": 4.89092822999973e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 3.7414338294183835e-10,
+      "case_id": "T720-m180-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 2.6030472505053866e-09,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 361,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 0,
+      "relative_l2": 5.1948878105452126e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 3.7414338294183835e-10,
+      "case_id": "T720-m180-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 2.6030472505053866e-09,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 361,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 1,
+      "relative_l2": 5.1948878105452126e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 3.7414338294183835e-10,
+      "case_id": "T720-m180-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 2.6030472505053866e-09,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 361,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 2,
+      "relative_l2": 5.1948878105452126e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 1.943454770653606e-15,
+      "case_id": "T720-m180-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.1907032076494744e-11,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 378,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 0,
+      "relative_l2": 4.90947343327803e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 1.943454770653606e-15,
+      "case_id": "T720-m180-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.1907032076494744e-11,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 378,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 1,
+      "relative_l2": 4.90947343327803e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 1.943454770653606e-15,
+      "case_id": "T720-m180-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.1907032076494744e-11,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 378,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 2,
+      "relative_l2": 4.90947343327803e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 3.710738383233547e-10,
+      "case_id": "T720-m180-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.0306498107507597e-09,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 378,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 0,
+      "relative_l2": 4.706767412875743e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 3.710738383233547e-10,
+      "case_id": "T720-m180-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.0306498107507597e-09,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 378,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 1,
+      "relative_l2": 4.706767412875743e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 3.710738383233547e-10,
+      "case_id": "T720-m180-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.0306498107507597e-09,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 378,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 2,
+      "relative_l2": 4.706767412875743e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 1.943454770653606e-15,
+      "case_id": "T720-m180-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.1907032076494744e-11,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 378,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 0,
+      "relative_l2": 4.90947343327803e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 1.943454770653606e-15,
+      "case_id": "T720-m180-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.1907032076494744e-11,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 378,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 1,
+      "relative_l2": 4.90947343327803e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 1.943454770653606e-15,
+      "case_id": "T720-m180-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.1907032076494744e-11,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 378,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 2,
+      "relative_l2": 4.90947343327803e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 3.710738383233547e-10,
+      "case_id": "T720-m180-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.0306498107507597e-09,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 378,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 0,
+      "relative_l2": 4.706767412875743e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 3.710738383233547e-10,
+      "case_id": "T720-m180-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.0306498107507597e-09,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 378,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 1,
+      "relative_l2": 4.706767412875743e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 3.710738383233547e-10,
+      "case_id": "T720-m180-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.0306498107507597e-09,
+      "mmax": 180,
+      "near_zero_reference_count": 0,
+      "nphi": 378,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 2,
+      "relative_l2": 4.706767412875743e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 9.718415738830587e-16,
+      "case_id": "T720-m720-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 5.009599199210793e-11,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1441,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 0,
+      "relative_l2": 4.6302015542824894e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 9.718415738830587e-16,
+      "case_id": "T720-m720-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 5.009599199210793e-11,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1441,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 1,
+      "relative_l2": 4.6302015542824894e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 9.718415738830587e-16,
+      "case_id": "T720-m720-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 5.009599199210793e-11,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1441,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 2,
+      "relative_l2": 4.6302015542824894e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 3.2730440580053255e-10,
+      "case_id": "T720-m720-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 4.740621023073887e-08,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1441,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 0,
+      "relative_l2": 4.4481227764098905e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 3.2730440580053255e-10,
+      "case_id": "T720-m720-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 4.740621023073887e-08,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1441,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 1,
+      "relative_l2": 4.4481227764098905e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 3.2730440580053255e-10,
+      "case_id": "T720-m720-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 4.740621023073887e-08,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1441,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 2,
+      "relative_l2": 4.4481227764098905e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 9.718415738830587e-16,
+      "case_id": "T720-m720-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 5.009599199210793e-11,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1441,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 0,
+      "relative_l2": 4.6302015542824894e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 9.718415738830587e-16,
+      "case_id": "T720-m720-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 5.009599199210793e-11,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1441,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 1,
+      "relative_l2": 4.6302015542824894e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 9.718415738830587e-16,
+      "case_id": "T720-m720-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 5.009599199210793e-11,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1441,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 2,
+      "relative_l2": 4.6302015542824894e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 3.2730440580053255e-10,
+      "case_id": "T720-m720-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 4.740621023073887e-08,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1441,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 0,
+      "relative_l2": 4.4481227764098905e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 3.2730440580053255e-10,
+      "case_id": "T720-m720-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 4.740621023073887e-08,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1441,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 1,
+      "relative_l2": 4.4481227764098905e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 3.2730440580053255e-10,
+      "case_id": "T720-m720-odd_minimum",
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 4.740621023073887e-08,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1441,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 2,
+      "relative_l2": 4.4481227764098905e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 9.453208419344607e-16,
+      "case_id": "T720-m720-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.1597233028388236e-11,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1458,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 0,
+      "relative_l2": 4.632358171194061e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 9.453208419344607e-16,
+      "case_id": "T720-m720-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.1597233028388236e-11,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1458,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 1,
+      "relative_l2": 4.632358171194061e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 9.453208419344607e-16,
+      "case_id": "T720-m720-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.1597233028388236e-11,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1458,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 2,
+      "relative_l2": 4.632358171194061e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 3.5146285881637596e-10,
+      "case_id": "T720-m720-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1458,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 0,
+      "relative_l2": 4.405014032298958e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 3.5146285881637596e-10,
+      "case_id": "T720-m720-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1458,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 1,
+      "relative_l2": 4.405014032298958e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 3.5146285881637596e-10,
+      "case_id": "T720-m720-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1458,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 2,
+      "relative_l2": 4.405014032298958e-14,
+      "threads": 1
+    },
+    {
+      "absolute_max": 9.453208419344607e-16,
+      "case_id": "T720-m720-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.1597233028388236e-11,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1458,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 0,
+      "relative_l2": 4.632358171194061e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 9.453208419344607e-16,
+      "case_id": "T720-m720-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.1597233028388236e-11,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1458,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 1,
+      "relative_l2": 4.632358171194061e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 9.453208419344607e-16,
+      "case_id": "T720-m720-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.1597233028388236e-11,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1458,
+      "ntheta": 721,
+      "operation": "analysis",
+      "process_pair": 2,
+      "relative_l2": 4.632358171194061e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 3.5146285881637596e-10,
+      "case_id": "T720-m720-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1458,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 0,
+      "relative_l2": 4.405014032298958e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 3.5146285881637596e-10,
+      "case_id": "T720-m720-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1458,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 1,
+      "relative_l2": 4.405014032298958e-14,
+      "threads": 8
+    },
+    {
+      "absolute_max": 3.5146285881637596e-10,
+      "case_id": "T720-m720-even_smooth",
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+      "mmax": 720,
+      "near_zero_reference_count": 0,
+      "nphi": 1458,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "process_pair": 2,
+      "relative_l2": 4.405014032298958e-14,
+      "threads": 8
+    }
+  ],
+  "protocol": {
+    "batch_export": "Individual process/batch records are not committed; each result row carries batch p10/p90, paired process-ratio p10/p90 and invocation counts.",
+    "batches_per_process": 10,
+    "independent_process_pairs": 3,
+    "input_layout": "identical compact m-major coefficient body; DUCC mstart adds a leading offset and maps without timed conversion",
+    "interleaving": "Rust then DUCC for even process-pair indexes; DUCC then Rust for odd indexes",
+    "long_transform_rule": "operations whose warmup exceeds 100 ms are timed individually (five per process invocation)",
+    "operations": [
+      "analysis",
+      "synthesis"
+    ],
+    "output_buffers": "reused across calls; transform outputs read and compared outside timed intervals",
+    "output_reset_check": "after timing, exact comparison of first-call output and last repeated-call output",
+    "q_values": [
+      1,
+      8
+    ],
+    "short_operation_calibration": "up to three untimed repeated-call batches; adjust repetitions until 20-100 ms, then collect 10 measured batches",
+    "source_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "target_batch_ms": 25.0,
+    "thread_control": "Rust fixed Rayon pool; DUCC DUCC0_NUM_THREADS; both workers report active pool capacity",
+    "timed_region": "native public transform call loop; setup and first call reported separately"
+  },
+  "rows": [
+    {
+      "20_100ms_batch_fraction_for_short_ops": 0.8833333333333333,
+      "absolute_max": 1.3784112740111709e-14,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 21.29325,
+      "batch_elapsed_p10_ms": 19.91807,
+      "batch_elapsed_p90_ms": 24.1834912,
+      "case_id": "T720-m1-odd_minimum",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 0.603362,
+      "ducc_fixture_load_ms": 0.091624,
+      "ducc_p10_ms": 0.23383400000000001,
+      "ducc_p90_ms": 0.2420327,
+      "ducc_setup_ms": 0.048442,
+      "ducc_warm_ms": 0.23882150000000002,
+      "excess_ms": -0.06774218650000002,
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 3.4678407864458215e-09,
+      "mmax": 1,
+      "nphi": 3,
+      "ntheta": 721,
+      "operation": "analysis",
+      "paired_ratio_p10": 0.7070934048544663,
+      "paired_ratio_p90": 0.7364311427322693,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 5.277335753361046e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 0.242038,
+      "rust_ducc_ratio": 0.7163480402727559,
+      "rust_fixture_load_ms": 0.101612,
+      "rust_p10_ms": 0.1689985812,
+      "rust_p90_ms": 0.1737804375,
+      "rust_setup_ms": 0.308954,
+      "rust_warm_ms": 0.1710793135,
+      "threads": 1
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 0.65,
+      "absolute_max": 1.3784112740111709e-14,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 21.2763,
+      "batch_elapsed_p10_ms": 16.406983500000003,
+      "batch_elapsed_p90_ms": 29.0272383,
+      "case_id": "T720-m1-odd_minimum",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 1.25545,
+      "ducc_fixture_load_ms": 0.086223,
+      "ducc_p10_ms": 0.3908552,
+      "ducc_p90_ms": 0.5826274,
+      "ducc_setup_ms": 0.049313,
+      "ducc_warm_ms": 0.3982875,
+      "excess_ms": -0.268087711,
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 3.4678407864458215e-09,
+      "mmax": 1,
+      "nphi": 3,
+      "ntheta": 721,
+      "operation": "analysis",
+      "paired_ratio_p10": 0.25643552157917404,
+      "paired_ratio_p90": 0.4209410287548984,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 5.277335753361046e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 0.271674,
+      "rust_ducc_ratio": 0.3268990088817751,
+      "rust_fixture_load_ms": 0.103727,
+      "rust_p10_ms": 0.1157029359,
+      "rust_p90_ms": 0.1748137068,
+      "rust_setup_ms": 2.187379,
+      "rust_warm_ms": 0.130199789,
+      "threads": 8
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 0.9333333333333333,
+      "absolute_max": 9.811174095375463e-11,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 20.53445,
+      "batch_elapsed_p10_ms": 20.054979999999997,
+      "batch_elapsed_p90_ms": 25.8653972,
+      "case_id": "T720-m1-odd_minimum",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 0.55488,
+      "ducc_fixture_load_ms": 0.089049,
+      "ducc_p10_ms": 0.2208363,
+      "ducc_p90_ms": 0.2251548,
+      "ducc_setup_ms": 0.046348,
+      "ducc_warm_ms": 0.2240875,
+      "excess_ms": 0.019289023500000002,
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 1.0504671416957385e-11,
+      "mmax": 1,
+      "nphi": 3,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "paired_ratio_p10": 1.06373666226452,
+      "paired_ratio_p90": 1.1169891632348012,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 1.0767237770487452e-13,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 0.278938,
+      "rust_ducc_ratio": 1.0860780878005243,
+      "rust_fixture_load_ms": 0.099538,
+      "rust_p10_ms": 0.24066452459999998,
+      "rust_p90_ms": 0.24555601230000002,
+      "rust_setup_ms": 0.324985,
+      "rust_warm_ms": 0.2433765235,
+      "threads": 1
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 0.75,
+      "absolute_max": 9.811174095375463e-11,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 21.613500000000002,
+      "batch_elapsed_p10_ms": 15.7008527,
+      "batch_elapsed_p90_ms": 25.56501,
+      "case_id": "T720-m1-odd_minimum",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 1.30984,
+      "ducc_fixture_load_ms": 0.091353,
+      "ducc_p10_ms": 0.3503745,
+      "ducc_p90_ms": 0.42834620000000007,
+      "ducc_setup_ms": 0.048252,
+      "ducc_warm_ms": 0.37532600000000005,
+      "excess_ms": -0.15511119600000006,
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 1.0504671416957385e-11,
+      "mmax": 1,
+      "nphi": 3,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "paired_ratio_p10": 0.5083416349813452,
+      "paired_ratio_p90": 0.6940222524590957,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 1.0767237770487452e-13,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 0.314465,
+      "rust_ducc_ratio": 0.5867294138961862,
+      "rust_fixture_load_ms": 0.111671,
+      "rust_p10_ms": 0.20807302230000002,
+      "rust_p90_ms": 0.2583759175,
+      "rust_setup_ms": 2.168804,
+      "rust_warm_ms": 0.220214804,
+      "threads": 8
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 0.9833333333333333,
+      "absolute_max": 2.4202861936828413e-14,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 23.438122,
+      "batch_elapsed_p10_ms": 20.66058,
+      "batch_elapsed_p90_ms": 24.90992,
+      "case_id": "T720-m1-even_smooth",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 0.543779,
+      "ducc_fixture_load_ms": 0.098226,
+      "ducc_p10_ms": 0.2353662,
+      "ducc_p90_ms": 0.2401971,
+      "ducc_setup_ms": 0.047029,
+      "ducc_warm_ms": 0.2378925,
+      "excess_ms": -0.05764743050000001,
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 1.6780949890274575e-10,
+      "mmax": 1,
+      "nphi": 4,
+      "ntheta": 721,
+      "operation": "analysis",
+      "paired_ratio_p10": 0.7338754685936559,
+      "paired_ratio_p90": 0.766689668525782,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 6.120666870086681e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 0.247338,
+      "rust_ducc_ratio": 0.7576744516956188,
+      "rust_fixture_load_ms": 0.091724,
+      "rust_p10_ms": 0.1761084099,
+      "rust_p90_ms": 0.181076808,
+      "rust_setup_ms": 0.345163,
+      "rust_warm_ms": 0.1802450695,
+      "threads": 1
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 0.4166666666666667,
+      "absolute_max": 2.4202861936828413e-14,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 18.614018,
+      "batch_elapsed_p10_ms": 15.36237,
+      "batch_elapsed_p90_ms": 22.82369,
+      "case_id": "T720-m1-even_smooth",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 1.22008,
+      "ducc_fixture_load_ms": 0.106221,
+      "ducc_p10_ms": 0.25180030000000003,
+      "ducc_p90_ms": 0.4015435,
+      "ducc_setup_ms": 0.043973,
+      "ducc_warm_ms": 0.3934645,
+      "excess_ms": -0.261242137,
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 1.6780949890274575e-10,
+      "mmax": 1,
+      "nphi": 4,
+      "ntheta": 721,
+      "operation": "analysis",
+      "paired_ratio_p10": 0.31978039805410224,
+      "paired_ratio_p90": 0.5363267641652946,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 6.120666870086681e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 0.260292,
+      "rust_ducc_ratio": 0.3360464870401269,
+      "rust_fixture_load_ms": 0.08982,
+      "rust_p10_ms": 0.1254892356,
+      "rust_p90_ms": 0.17112024390000002,
+      "rust_setup_ms": 2.212496,
+      "rust_warm_ms": 0.132222363,
+      "threads": 8
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 0.9833333333333333,
+      "absolute_max": 1.2357759260339662e-10,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 22.1222875,
+      "batch_elapsed_p10_ms": 20.73347,
+      "batch_elapsed_p90_ms": 25.9384216,
+      "case_id": "T720-m1-even_smooth",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 0.549179,
+      "ducc_fixture_load_ms": 0.103957,
+      "ducc_p10_ms": 0.22325450000000002,
+      "ducc_p90_ms": 0.2274476,
+      "ducc_setup_ms": 0.050465,
+      "ducc_warm_ms": 0.2258025,
+      "excess_ms": 0.014592739500000007,
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 9.07392240807564e-11,
+      "mmax": 1,
+      "nphi": 4,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "paired_ratio_p10": 1.053551045293618,
+      "paired_ratio_p90": 1.0790792760055212,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 1.841188549465178e-13,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 0.267206,
+      "rust_ducc_ratio": 1.0646261201713887,
+      "rust_fixture_load_ms": 0.085792,
+      "rust_p10_ms": 0.23772419050000002,
+      "rust_p90_ms": 0.24219543600000001,
+      "rust_setup_ms": 0.392472,
+      "rust_warm_ms": 0.2403952395,
+      "threads": 1
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 0.9333333333333333,
+      "absolute_max": 1.2357759260339662e-10,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 22.943346,
+      "batch_elapsed_p10_ms": 20.915119999999998,
+      "batch_elapsed_p90_ms": 26.3651859,
+      "case_id": "T720-m1-even_smooth",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 1.31071,
+      "ducc_fixture_load_ms": 0.102214,
+      "ducc_p10_ms": 0.355035,
+      "ducc_p90_ms": 0.3865038,
+      "ducc_setup_ms": 0.04775,
+      "ducc_warm_ms": 0.374872,
+      "excess_ms": -0.1211048495,
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 9.07392240807564e-11,
+      "mmax": 1,
+      "nphi": 4,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "paired_ratio_p10": 0.5646264709726038,
+      "paired_ratio_p90": 0.7384662461929683,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 1.841188549465178e-13,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 0.313673,
+      "rust_ducc_ratio": 0.6769434647026185,
+      "rust_fixture_load_ms": 0.091302,
+      "rust_p10_ms": 0.2154292417,
+      "rust_p90_ms": 0.261960314,
+      "rust_setup_ms": 2.241742,
+      "rust_warm_ms": 0.2537671505,
+      "threads": 8
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 1.0,
+      "absolute_max": 1.8539611141763e-15,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 26.457962000000002,
+      "batch_elapsed_p10_ms": 23.1937,
+      "batch_elapsed_p90_ms": 27.3021162,
+      "case_id": "T720-m180-odd_minimum",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 13.9668,
+      "ducc_fixture_load_ms": 4.75249,
+      "ducc_p10_ms": 11.230939999999999,
+      "ducc_p90_ms": 12.19433,
+      "ducc_setup_ms": 4.06672,
+      "ducc_warm_ms": 11.74225,
+      "excess_ms": 1.7502267499999995,
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 3.135491724488725e-11,
+      "mmax": 180,
+      "nphi": 361,
+      "ntheta": 721,
+      "operation": "analysis",
+      "paired_ratio_p10": 1.0862252200908749,
+      "paired_ratio_p90": 1.205465446853884,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 4.89092822999973e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 16.673632,
+      "rust_ducc_ratio": 1.1490537801528666,
+      "rust_fixture_load_ms": 7.114413,
+      "rust_p10_ms": 13.252203000000002,
+      "rust_p90_ms": 13.68830005,
+      "rust_setup_ms": 3.349779,
+      "rust_warm_ms": 13.49247675,
+      "threads": 1
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 0.7666666666666667,
+      "absolute_max": 1.8539611141763e-15,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 24.4803615,
+      "batch_elapsed_p10_ms": 15.1767521,
+      "batch_elapsed_p90_ms": 42.204170000000005,
+      "case_id": "T720-m180-odd_minimum",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 16.008,
+      "ducc_fixture_load_ms": 4.82346,
+      "ducc_p10_ms": 6.833461,
+      "ducc_p90_ms": 12.19575,
+      "ducc_setup_ms": 3.90086,
+      "ducc_warm_ms": 9.357695,
+      "excess_ms": -2.059888666499999,
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 3.135491724488725e-11,
+      "mmax": 180,
+      "nphi": 361,
+      "ntheta": 721,
+      "operation": "analysis",
+      "paired_ratio_p10": 0.587009469106488,
+      "paired_ratio_p90": 1.7429367595338143,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 4.89092822999973e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 16.774503,
+      "rust_ducc_ratio": 0.7798722157005545,
+      "rust_fixture_load_ms": 7.154769,
+      "rust_p10_ms": 5.829066158300001,
+      "rust_p90_ms": 13.56560945,
+      "rust_setup_ms": 5.659219,
+      "rust_warm_ms": 7.2978063335000005,
+      "threads": 8
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 1.0,
+      "absolute_max": 3.7414338294183835e-10,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 32.0528305,
+      "batch_elapsed_p10_ms": 23.991090000000003,
+      "batch_elapsed_p90_ms": 36.5093995,
+      "case_id": "T720-m180-odd_minimum",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 14.3284,
+      "ducc_fixture_load_ms": 4.69682,
+      "ducc_p10_ms": 11.8765,
+      "ducc_p90_ms": 12.38907,
+      "ducc_setup_ms": 3.54588,
+      "ducc_warm_ms": 12.187449999999998,
+      "excess_ms": 5.9975867500000035,
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 2.6030472505053866e-09,
+      "mmax": 180,
+      "nphi": 361,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "paired_ratio_p10": 1.466955709486475,
+      "paired_ratio_p90": 1.5348239869235867,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 5.1948878105452126e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 18.355595,
+      "rust_ducc_ratio": 1.4921117009710814,
+      "rust_fixture_load_ms": 7.094535,
+      "rust_p10_ms": 18.09023415,
+      "rust_p90_ms": 18.2903244,
+      "rust_setup_ms": 3.344268,
+      "rust_warm_ms": 18.185036750000002,
+      "threads": 1
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 0.6166666666666667,
+      "absolute_max": 3.7414338294183835e-10,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 23.035495,
+      "batch_elapsed_p10_ms": 13.3337,
+      "batch_elapsed_p90_ms": 27.0385091,
+      "case_id": "T720-m180-odd_minimum",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 15.2702,
+      "ducc_fixture_load_ms": 4.96723,
+      "ducc_p10_ms": 6.481779,
+      "ducc_p90_ms": 12.523449999999999,
+      "ducc_setup_ms": 3.85496,
+      "ducc_warm_ms": 10.287099999999999,
+      "excess_ms": 1.4763950000000001,
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 2.6030472505053866e-09,
+      "mmax": 180,
+      "nphi": 361,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "paired_ratio_p10": 0.8066353345978126,
+      "paired_ratio_p90": 1.7858302411437466,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 5.1948878105452126e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 24.210073,
+      "rust_ducc_ratio": 1.1435190675700635,
+      "rust_fixture_load_ms": 6.783567,
+      "rust_p10_ms": 8.67564815,
+      "rust_p90_ms": 14.114437350000001,
+      "rust_setup_ms": 4.842964,
+      "rust_warm_ms": 11.763494999999999,
+      "threads": 8
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 1.0,
+      "absolute_max": 1.943454770653606e-15,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 22.9769,
+      "batch_elapsed_p10_ms": 20.9836746,
+      "batch_elapsed_p90_ms": 31.5925043,
+      "case_id": "T720-m180-even_smooth",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 13.4991,
+      "ducc_fixture_load_ms": 4.9087,
+      "ducc_p10_ms": 11.314110000000001,
+      "ducc_p90_ms": 11.53787,
+      "ducc_setup_ms": 3.92129,
+      "ducc_warm_ms": 11.43855,
+      "excess_ms": -0.9503254999999982,
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.1907032076494744e-11,
+      "mmax": 180,
+      "nphi": 378,
+      "ntheta": 721,
+      "operation": "analysis",
+      "paired_ratio_p10": 0.9023469676532059,
+      "paired_ratio_p90": 0.9406881502443265,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 4.90947343327803e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 13.361084,
+      "rust_ducc_ratio": 0.9169190587967883,
+      "rust_fixture_load_ms": 7.273764,
+      "rust_p10_ms": 10.3642348833,
+      "rust_p90_ms": 10.6244686997,
+      "rust_setup_ms": 3.26017,
+      "rust_warm_ms": 10.488224500000001,
+      "threads": 1
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 0.7833333333333333,
+      "absolute_max": 1.943454770653606e-15,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 23.88534,
+      "batch_elapsed_p10_ms": 17.0732779,
+      "batch_elapsed_p90_ms": 32.6263777,
+      "case_id": "T720-m180-even_smooth",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 14.524,
+      "ducc_fixture_load_ms": 4.80881,
+      "ducc_p10_ms": 6.688293,
+      "ducc_p90_ms": 11.97823,
+      "ducc_setup_ms": 3.91489,
+      "ducc_warm_ms": 11.368549999999999,
+      "excess_ms": -4.700544208499998,
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.1907032076494744e-11,
+      "mmax": 180,
+      "nphi": 378,
+      "ntheta": 721,
+      "operation": "analysis",
+      "paired_ratio_p10": 0.49297847154932684,
+      "paired_ratio_p90": 1.4681560445875894,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 4.90947343327803e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 13.8561,
+      "rust_ducc_ratio": 0.586530893693567,
+      "rust_fixture_load_ms": 6.98605,
+      "rust_p10_ms": 5.7102570997,
+      "rust_p90_ms": 10.8087910336,
+      "rust_setup_ms": 5.219807,
+      "rust_warm_ms": 6.668005791500001,
+      "threads": 8
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 1.0,
+      "absolute_max": 3.710738383233547e-10,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 29.973629,
+      "batch_elapsed_p10_ms": 22.880119999999998,
+      "batch_elapsed_p90_ms": 30.7875219,
+      "case_id": "T720-m180-even_smooth",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 13.613,
+      "ducc_fixture_load_ms": 5.15261,
+      "ducc_p10_ms": 11.42365,
+      "ducc_p90_ms": 11.90663,
+      "ducc_setup_ms": 4.06329,
+      "ducc_warm_ms": 11.5157,
+      "excess_ms": 3.697593249999999,
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.0306498107507597e-09,
+      "mmax": 180,
+      "nphi": 378,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "paired_ratio_p10": 1.2885869063684894,
+      "paired_ratio_p90": 1.3339084202306293,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 4.706767412875743e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 15.548994,
+      "rust_ducc_ratio": 1.3210914881422753,
+      "rust_fixture_load_ms": 7.439868,
+      "rust_p10_ms": 15.0338231,
+      "rust_p90_ms": 15.495177550000001,
+      "rust_setup_ms": 3.195957,
+      "rust_warm_ms": 15.21329325,
+      "threads": 1
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 0.6333333333333333,
+      "absolute_max": 3.710738383233547e-10,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 21.9528,
+      "batch_elapsed_p10_ms": 13.20743,
+      "batch_elapsed_p90_ms": 42.034606800000006,
+      "case_id": "T720-m180-even_smooth",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 15.1199,
+      "ducc_fixture_load_ms": 5.88353,
+      "ducc_p10_ms": 6.462279,
+      "ducc_p90_ms": 12.024310000000002,
+      "ducc_setup_ms": 3.70424,
+      "ducc_warm_ms": 7.902065,
+      "excess_ms": 2.812567999999999,
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.0306498107507597e-09,
+      "mmax": 180,
+      "nphi": 378,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "paired_ratio_p10": 0.8723738297283312,
+      "paired_ratio_p90": 1.7695711057746495,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 4.706767412875743e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 20.93212,
+      "rust_ducc_ratio": 1.355928228887006,
+      "rust_fixture_load_ms": 7.286569,
+      "rust_p10_ms": 7.70473895,
+      "rust_p90_ms": 13.202654300000003,
+      "rust_setup_ms": 5.294249,
+      "rust_warm_ms": 10.714633,
+      "threads": 8
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 1.0,
+      "absolute_max": 9.718415738830587e-16,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 40.232063499999995,
+      "batch_elapsed_p10_ms": 39.1356741,
+      "batch_elapsed_p90_ms": 42.31884,
+      "case_id": "T720-m720-odd_minimum",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 46.7926,
+      "ducc_fixture_load_ms": 15.0102,
+      "ducc_p10_ms": 39.97348,
+      "ducc_p90_ms": 42.51672,
+      "ducc_setup_ms": 11.0725,
+      "ducc_warm_ms": 41.6051,
+      "excess_ms": -1.7582774999999984,
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 5.009599199210793e-11,
+      "mmax": 720,
+      "nphi": 1441,
+      "ntheta": 721,
+      "operation": "analysis",
+      "paired_ratio_p10": 0.9377840771427117,
+      "paired_ratio_p90": 1.00437888854156,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 4.6302015542824894e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 45.059707,
+      "rust_ducc_ratio": 0.9577388949912391,
+      "rust_fixture_load_ms": 22.978192,
+      "rust_p10_ms": 39.0461363,
+      "rust_p90_ms": 41.5078875,
+      "rust_setup_ms": 11.107769,
+      "rust_warm_ms": 39.8468225,
+      "threads": 1
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 0.8666666666666667,
+      "absolute_max": 9.718415738830587e-16,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 26.772297000000002,
+      "batch_elapsed_p10_ms": 18.503049999999998,
+      "batch_elapsed_p90_ms": 58.502613700000005,
+      "case_id": "T720-m720-odd_minimum",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 35.3949,
+      "ducc_fixture_load_ms": 15.5633,
+      "ducc_p10_ms": 17.41586,
+      "ducc_p90_ms": 31.330020000000005,
+      "ducc_setup_ms": 11.9069,
+      "ducc_warm_ms": 23.165799999999997,
+      "excess_ms": 0.6451350000000033,
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 5.009599199210793e-11,
+      "mmax": 720,
+      "nphi": 1441,
+      "ntheta": 721,
+      "operation": "analysis",
+      "paired_ratio_p10": 0.7246105173245753,
+      "paired_ratio_p90": 1.8505328723808412,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 4.6302015542824894e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 45.346044,
+      "rust_ducc_ratio": 1.027848595774806,
+      "rust_fixture_load_ms": 24.823473,
+      "rust_p10_ms": 19.865496,
+      "rust_p90_ms": 41.172823300000005,
+      "rust_setup_ms": 14.424072,
+      "rust_warm_ms": 23.810935,
+      "threads": 8
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 1.0,
+      "absolute_max": 3.2730440580053255e-10,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 45.376234499999995,
+      "batch_elapsed_p10_ms": 40.708909999999996,
+      "batch_elapsed_p90_ms": 48.3578671,
+      "case_id": "T720-m720-odd_minimum",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 47.792,
+      "ducc_fixture_load_ms": 15.378,
+      "ducc_p10_ms": 40.23951,
+      "ducc_p90_ms": 42.28568,
+      "ducc_setup_ms": 11.2696,
+      "ducc_warm_ms": 41.593599999999995,
+      "excess_ms": 6.340866500000004,
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 4.740621023073887e-08,
+      "mmax": 720,
+      "nphi": 1441,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "paired_ratio_p10": 1.1083173067957508,
+      "paired_ratio_p90": 1.2210967162687905,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 4.4481227764098905e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 51.25967,
+      "rust_ducc_ratio": 1.1524481290390831,
+      "rust_fixture_load_ms": 25.912144,
+      "rust_p10_ms": 47.0688009,
+      "rust_p90_ms": 49.007023800000006,
+      "rust_setup_ms": 11.16067,
+      "rust_warm_ms": 47.9344665,
+      "threads": 1
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 0.7833333333333333,
+      "absolute_max": 3.2730440580053255e-10,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 32.640626999999995,
+      "batch_elapsed_p10_ms": 15.04416,
+      "batch_elapsed_p90_ms": 56.28741380000001,
+      "case_id": "T720-m720-odd_minimum",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 51.2724,
+      "ducc_fixture_load_ms": 15.453,
+      "ducc_p10_ms": 14.32427,
+      "ducc_p90_ms": 27.96233,
+      "ducc_setup_ms": 11.8933,
+      "ducc_warm_ms": 18.03935,
+      "excess_ms": 16.758531500000004,
+      "lmax": 720,
+      "longitude_mode": "odd_minimum",
+      "max_relative_above_1e-12_peak": 4.740621023073887e-08,
+      "mmax": 720,
+      "nphi": 1441,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "paired_ratio_p10": 1.258642018800227,
+      "paired_ratio_p90": 3.5951862814742737,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 4.4481227764098905e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 34.450089,
+      "rust_ducc_ratio": 1.9289986335427831,
+      "rust_fixture_load_ms": 29.178065,
+      "rust_p10_ms": 25.5215356,
+      "rust_p90_ms": 61.4929436,
+      "rust_setup_ms": 15.655344,
+      "rust_warm_ms": 34.7978815,
+      "threads": 8
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 1.0,
+      "absolute_max": 9.453208419344607e-16,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 27.4394,
+      "batch_elapsed_p10_ms": 27.080180000000002,
+      "batch_elapsed_p90_ms": 28.030768000000002,
+      "case_id": "T720-m720-even_smooth",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 33.9765,
+      "ducc_fixture_load_ms": 16.6559,
+      "ducc_p10_ms": 26.94362,
+      "ducc_p90_ms": 28.16868,
+      "ducc_setup_ms": 11.3122,
+      "ducc_warm_ms": 27.4394,
+      "excess_ms": 0.015712000000000614,
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.1597233028388236e-11,
+      "mmax": 720,
+      "nphi": 1458,
+      "ntheta": 721,
+      "operation": "analysis",
+      "paired_ratio_p10": 0.9731164850964739,
+      "paired_ratio_p90": 1.0324060327451798,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 4.632358171194061e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 33.964293,
+      "rust_ducc_ratio": 1.0005726072727539,
+      "rust_fixture_load_ms": 23.741453,
+      "rust_p10_ms": 27.198869900000002,
+      "rust_p90_ms": 27.904552,
+      "rust_setup_ms": 11.120956,
+      "rust_warm_ms": 27.455112,
+      "threads": 1
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 0.8666666666666667,
+      "absolute_max": 9.453208419344607e-16,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 27.929987500000003,
+      "batch_elapsed_p10_ms": 16.29196,
+      "batch_elapsed_p90_ms": 37.76809900000001,
+      "case_id": "T720-m720-even_smooth",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 35.5235,
+      "ducc_fixture_load_ms": 15.5978,
+      "ducc_p10_ms": 13.966410000000002,
+      "ducc_p90_ms": 28.034580000000002,
+      "ducc_setup_ms": 11.7708,
+      "ducc_warm_ms": 17.1688,
+      "excess_ms": 1.2532342499999984,
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 3.1597233028388236e-11,
+      "mmax": 720,
+      "nphi": 1458,
+      "ntheta": 721,
+      "operation": "analysis",
+      "paired_ratio_p10": 0.5350451646712913,
+      "paired_ratio_p90": 1.9129302030005064,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 4.632358171194061e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 25.520003,
+      "rust_ducc_ratio": 1.0729948656865942,
+      "rust_fixture_load_ms": 25.352187,
+      "rust_p10_ms": 13.64383235,
+      "rust_p90_ms": 27.9489288,
+      "rust_setup_ms": 15.128004,
+      "rust_warm_ms": 18.42203425,
+      "threads": 8
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 1.0,
+      "absolute_max": 3.5146285881637596e-10,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 30.248973,
+      "batch_elapsed_p10_ms": 27.02663,
+      "batch_elapsed_p90_ms": 35.1858065,
+      "case_id": "T720-m720-even_smooth",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 36.3652,
+      "ducc_fixture_load_ms": 17.238,
+      "ducc_p10_ms": 26.971870000000003,
+      "ducc_p90_ms": 27.31785,
+      "ducc_setup_ms": 13.2665,
+      "ducc_warm_ms": 27.104950000000002,
+      "excess_ms": 7.8132255000000015,
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+      "mmax": 720,
+      "nphi": 1458,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "paired_ratio_p10": 1.268076641331016,
+      "paired_ratio_p90": 1.297198739979773,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 4.405014032298958e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 38.873504,
+      "rust_ducc_ratio": 1.288258251721549,
+      "rust_fixture_load_ms": 25.47466,
+      "rust_p10_ms": 34.5448172,
+      "rust_p90_ms": 35.3242178,
+      "rust_setup_ms": 11.245633,
+      "rust_warm_ms": 34.918175500000004,
+      "threads": 1
+    },
+    {
+      "20_100ms_batch_fraction_for_short_ops": 0.9333333333333333,
+      "absolute_max": 3.5146285881637596e-10,
+      "batch_count": 30,
+      "batch_elapsed_median_ms": 27.398600000000002,
+      "batch_elapsed_p10_ms": 20.6828732,
+      "batch_elapsed_p90_ms": 33.55464,
+      "case_id": "T720-m720-even_smooth",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "ducc_cold_first_ms": 25.3763,
+      "ducc_fixture_load_ms": 15.0573,
+      "ducc_p10_ms": 12.301779999999999,
+      "ducc_p90_ms": 27.84449,
+      "ducc_setup_ms": 13.4134,
+      "ducc_warm_ms": 16.11965,
+      "excess_ms": 10.247846,
+      "lmax": 720,
+      "longitude_mode": "even_smooth",
+      "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+      "mmax": 720,
+      "nphi": 1458,
+      "ntheta": 721,
+      "operation": "synthesis",
+      "paired_ratio_p10": 0.778411125144923,
+      "paired_ratio_p90": 2.268934504526616,
+      "process_invocations_per_backend": 3,
+      "relative_l2": 4.405014032298958e-14,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "rust_cold_first_ms": 39.899634,
+      "rust_ducc_ratio": 1.6357362597823153,
+      "rust_fixture_load_ms": 23.049292,
+      "rust_p10_ms": 20.6828732,
+      "rust_p90_ms": 31.7513086,
+      "rust_setup_ms": 14.45047,
+      "rust_warm_ms": 26.367496,
+      "threads": 8
+    }
+  ],
+  "validation": [
+    {
+      "adjoints": {
+        "ducc": {
+          "analysis_relative_residual": 5.698750968749395e-15,
+          "synthesis_relative_residual": 9.864561702229553e-16
+        },
+        "rustsht": {
+          "analysis_relative_residual": 3.276781807030381e-15,
+          "synthesis_relative_residual": 0.0
+        }
+      },
+      "basis": [
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.3988810110276972e-14,
+            "max_relative_above_1e-12_peak": 2.220446049250313e-16,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 7.167660701917269e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.9317880628477724e-14,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 7.516101918480356e-14
+          },
+          "l": 0,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "relative_l2": 0.0
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 2.4991108555205406e-14,
+            "max_relative_above_1e-12_peak": 7.882623910322024e-15,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 1.5031441492756574e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 2.6244443505484702e-14,
+            "max_relative_above_1e-12_peak": 5.996040862631076e-15,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 1.5025779544854985e-13
+          },
+          "l": 360,
+          "m": 1,
+          "map_rust_ducc": {
+            "absolute_max": 5.941913627793838e-13,
+            "max_relative_above_1e-12_peak": 2.6880838160824966e-11,
+            "near_zero_reference_count": 3,
+            "relative_l2": 4.395376786237061e-14
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 3.996593099404723e-14,
+            "max_relative_above_1e-12_peak": 2.531308496145357e-14,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 2.9372019113567093e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 4.3735586600125086e-14,
+            "max_relative_above_1e-12_peak": 2.0872192862952943e-14,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 3.09824558021283e-13
+          },
+          "l": 720,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 3.475511545225629e-12,
+            "max_relative_above_1e-12_peak": 1.8743599692625448e-10,
+            "near_zero_reference_count": 0,
+            "relative_l2": 7.468636132012684e-13
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 3.1910201547368414e-14,
+            "max_relative_above_1e-12_peak": 2.953194595265006e-14,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 1.847487723824568e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 3.159154385499795e-14,
+            "max_relative_above_1e-12_peak": 2.831084084612176e-14,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 2.0021921479946656e-13
+          },
+          "l": 720,
+          "m": 1,
+          "map_rust_ducc": {
+            "absolute_max": 2.5721647034515627e-12,
+            "max_relative_above_1e-12_peak": 5.781624828200652e-11,
+            "near_zero_reference_count": 3,
+            "relative_l2": 1.2142144972686054e-13
+          }
+        }
+      ],
+      "case_id": "T720-m1-odd_minimum",
+      "edge_cases": {
+        "extreme": {
+          "alm_rust_ducc": {
+            "absolute_max": 1.666144657457164e+136,
+            "max_relative_above_1e-12_peak": 1.280433834136509e-15,
+            "near_zero_reference_count": 1438,
+            "relative_l2": 6.954652474369343e-14
+          },
+          "map_rust_ducc": {
+            "absolute_max": 2.692210634790928e+138,
+            "max_relative_above_1e-12_peak": 1.087239070280298e-11,
+            "near_zero_reference_count": 0,
+            "relative_l2": 1.0912567258984657e-13
+          }
+        },
+        "subnormal": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 1441,
+            "relative_l2": 0.0
+          },
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 2163,
+            "relative_l2": 0.0
+          }
+        },
+        "zero": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 1441,
+            "relative_l2": 0.0
+          },
+          "exact_zero": true,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 2163,
+            "relative_l2": 0.0
+          }
+        }
+      },
+      "finite_flags": {
+        "ducc": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        },
+        "rustsht": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        }
+      },
+      "finite_outputs": true,
+      "lmax": 720,
+      "mmax": 1,
+      "nphi": 3,
+      "ntheta": 721,
+      "reset_consistent": {
+        "ducc": true,
+        "rustsht": true
+      },
+      "roundtrip": {
+        "ducc": {
+          "absolute_max": 7.178556177611759e-13,
+          "max_relative_above_1e-12_peak": 1.0076973635307684e-10,
+          "near_zero_reference_count": 0,
+          "relative_l2": 1.7526211850795184e-13
+        },
+        "rust_ducc": {
+          "absolute_max": 3.694822225952521e-13,
+          "max_relative_above_1e-12_peak": 8.425429192118272e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 8.215289492148717e-14
+        },
+        "rustsht": {
+          "absolute_max": 6.04419292393743e-13,
+          "max_relative_above_1e-12_peak": 4.593826214681162e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 1.7710591932025478e-13
+        }
+      },
+      "threads": 1
+    },
+    {
+      "adjoints": {
+        "ducc": {
+          "analysis_relative_residual": 5.698750968749395e-15,
+          "synthesis_relative_residual": 9.864561702229553e-16
+        },
+        "rustsht": {
+          "analysis_relative_residual": 3.276781807030381e-15,
+          "synthesis_relative_residual": 0.0
+        }
+      },
+      "basis": [
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.3988810110276972e-14,
+            "max_relative_above_1e-12_peak": 2.220446049250313e-16,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 7.167660701917269e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.9317880628477724e-14,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 7.516101918480356e-14
+          },
+          "l": 0,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "relative_l2": 0.0
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 2.4991108555205406e-14,
+            "max_relative_above_1e-12_peak": 7.882623910322024e-15,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 1.5031441492756574e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 2.6244443505484702e-14,
+            "max_relative_above_1e-12_peak": 5.996040862631076e-15,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 1.5025779544854985e-13
+          },
+          "l": 360,
+          "m": 1,
+          "map_rust_ducc": {
+            "absolute_max": 5.941913627793838e-13,
+            "max_relative_above_1e-12_peak": 2.6880838160824966e-11,
+            "near_zero_reference_count": 3,
+            "relative_l2": 4.395376786237061e-14
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 3.996593099404723e-14,
+            "max_relative_above_1e-12_peak": 2.531308496145357e-14,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 2.9372019113567093e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 4.3735586600125086e-14,
+            "max_relative_above_1e-12_peak": 2.0872192862952943e-14,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 3.09824558021283e-13
+          },
+          "l": 720,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 3.475511545225629e-12,
+            "max_relative_above_1e-12_peak": 1.8743599692625448e-10,
+            "near_zero_reference_count": 0,
+            "relative_l2": 7.468636132012684e-13
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 3.1910201547368414e-14,
+            "max_relative_above_1e-12_peak": 2.953194595265006e-14,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 1.847487723824568e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 3.159154385499795e-14,
+            "max_relative_above_1e-12_peak": 2.831084084612176e-14,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 2.0021921479946656e-13
+          },
+          "l": 720,
+          "m": 1,
+          "map_rust_ducc": {
+            "absolute_max": 2.5721647034515627e-12,
+            "max_relative_above_1e-12_peak": 5.781624828200652e-11,
+            "near_zero_reference_count": 3,
+            "relative_l2": 1.2142144972686054e-13
+          }
+        }
+      ],
+      "case_id": "T720-m1-odd_minimum",
+      "edge_cases": {
+        "extreme": {
+          "alm_rust_ducc": {
+            "absolute_max": 1.666144657457164e+136,
+            "max_relative_above_1e-12_peak": 1.280433834136509e-15,
+            "near_zero_reference_count": 1438,
+            "relative_l2": 6.954652474369343e-14
+          },
+          "map_rust_ducc": {
+            "absolute_max": 2.692210634790928e+138,
+            "max_relative_above_1e-12_peak": 1.087239070280298e-11,
+            "near_zero_reference_count": 0,
+            "relative_l2": 1.0912567258984657e-13
+          }
+        },
+        "subnormal": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 1441,
+            "relative_l2": 0.0
+          },
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 2163,
+            "relative_l2": 0.0
+          }
+        },
+        "zero": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 1441,
+            "relative_l2": 0.0
+          },
+          "exact_zero": true,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 2163,
+            "relative_l2": 0.0
+          }
+        }
+      },
+      "finite_flags": {
+        "ducc": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        },
+        "rustsht": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        }
+      },
+      "finite_outputs": true,
+      "lmax": 720,
+      "mmax": 1,
+      "nphi": 3,
+      "ntheta": 721,
+      "reset_consistent": {
+        "ducc": true,
+        "rustsht": true
+      },
+      "roundtrip": {
+        "ducc": {
+          "absolute_max": 7.178556177611759e-13,
+          "max_relative_above_1e-12_peak": 1.0076973635307684e-10,
+          "near_zero_reference_count": 0,
+          "relative_l2": 1.7526211850795184e-13
+        },
+        "rust_ducc": {
+          "absolute_max": 3.694822225952521e-13,
+          "max_relative_above_1e-12_peak": 8.425429192118272e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 8.215289492148717e-14
+        },
+        "rustsht": {
+          "absolute_max": 6.04419292393743e-13,
+          "max_relative_above_1e-12_peak": 4.593826214681162e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 1.7710591932025478e-13
+        }
+      },
+      "threads": 8
+    },
+    {
+      "adjoints": {
+        "ducc": {
+          "analysis_relative_residual": 1.2173957197963956e-15,
+          "synthesis_relative_residual": 1.1460587600165372e-15
+        },
+        "rustsht": {
+          "analysis_relative_residual": 2.5739223789966854e-14,
+          "synthesis_relative_residual": 0.0
+        }
+      },
+      "basis": [
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.4099832412739488e-14,
+            "max_relative_above_1e-12_peak": 2.220446049250313e-16,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 7.166792220139262e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.942890293094024e-14,
+            "max_relative_above_1e-12_peak": 1.1102230246251565e-16,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 7.524752571022592e-14
+          },
+          "l": 0,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "relative_l2": 0.0
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 2.498466241545633e-14,
+            "max_relative_above_1e-12_peak": 7.882583485195054e-15,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 1.5032140823246318e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 2.623831564870754e-14,
+            "max_relative_above_1e-12_peak": 5.7731597778617075e-15,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 1.5025941019680196e-13
+          },
+          "l": 360,
+          "m": 1,
+          "map_rust_ducc": {
+            "absolute_max": 5.941913627793838e-13,
+            "max_relative_above_1e-12_peak": 2.688015991742988e-11,
+            "near_zero_reference_count": 4,
+            "relative_l2": 4.400624417728741e-14
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 3.9987242923507364e-14,
+            "max_relative_above_1e-12_peak": 2.531308496145357e-14,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 2.9376838122094785e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 4.353574784066117e-14,
+            "max_relative_above_1e-12_peak": 2.1094237467877974e-14,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 3.0963025489368215e-13
+          },
+          "l": 720,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 3.475511545225629e-12,
+            "max_relative_above_1e-12_peak": 1.8743599692625448e-10,
+            "near_zero_reference_count": 0,
+            "relative_l2": 7.468636132012687e-13
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 3.190570780701307e-14,
+            "max_relative_above_1e-12_peak": 2.9531932468025666e-14,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 1.8474194185139478e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 3.1586233126517566e-14,
+            "max_relative_above_1e-12_peak": 2.786659791818889e-14,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 2.0015898870412453e-13
+          },
+          "l": 720,
+          "m": 1,
+          "map_rust_ducc": {
+            "absolute_max": 2.5721647034515627e-12,
+            "max_relative_above_1e-12_peak": 5.781532949253104e-11,
+            "near_zero_reference_count": 4,
+            "relative_l2": 1.2150099052286862e-13
+          }
+        }
+      ],
+      "case_id": "T720-m1-even_smooth",
+      "edge_cases": {
+        "extreme": {
+          "alm_rust_ducc": {
+            "absolute_max": 1.6668073512481383e+136,
+            "max_relative_above_1e-12_peak": 1.4640757342540445e-15,
+            "near_zero_reference_count": 1438,
+            "relative_l2": 6.95542567215585e-14
+          },
+          "map_rust_ducc": {
+            "absolute_max": 2.692210634790928e+138,
+            "max_relative_above_1e-12_peak": 2.1439639894080558e-11,
+            "near_zero_reference_count": 0,
+            "relative_l2": 1.0917946464505592e-13
+          }
+        },
+        "subnormal": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 1441,
+            "relative_l2": 0.0
+          },
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 2884,
+            "relative_l2": 0.0
+          }
+        },
+        "zero": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 1441,
+            "relative_l2": 0.0
+          },
+          "exact_zero": true,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 2884,
+            "relative_l2": 0.0
+          }
+        }
+      },
+      "finite_flags": {
+        "ducc": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        },
+        "rustsht": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        }
+      },
+      "finite_outputs": true,
+      "lmax": 720,
+      "mmax": 1,
+      "nphi": 4,
+      "ntheta": 721,
+      "reset_consistent": {
+        "ducc": true,
+        "rustsht": true
+      },
+      "roundtrip": {
+        "ducc": {
+          "absolute_max": 5.516596017179046e-13,
+          "max_relative_above_1e-12_peak": 6.609748616626308e-10,
+          "near_zero_reference_count": 0,
+          "relative_l2": 1.541959192731586e-13
+        },
+        "rust_ducc": {
+          "absolute_max": 3.183153219053186e-13,
+          "max_relative_above_1e-12_peak": 2.338929961176588e-10,
+          "near_zero_reference_count": 0,
+          "relative_l2": 7.196468981837107e-14
+        },
+        "rustsht": {
+          "absolute_max": 6.203926261605375e-13,
+          "max_relative_above_1e-12_peak": 6.170404100399695e-10,
+          "near_zero_reference_count": 0,
+          "relative_l2": 1.6101319453942274e-13
+        }
+      },
+      "threads": 1
+    },
+    {
+      "adjoints": {
+        "ducc": {
+          "analysis_relative_residual": 1.2173957197963956e-15,
+          "synthesis_relative_residual": 1.1460587600165372e-15
+        },
+        "rustsht": {
+          "analysis_relative_residual": 2.5739223789966854e-14,
+          "synthesis_relative_residual": 0.0
+        }
+      },
+      "basis": [
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.4099832412739488e-14,
+            "max_relative_above_1e-12_peak": 2.220446049250313e-16,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 7.166792220139262e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.942890293094024e-14,
+            "max_relative_above_1e-12_peak": 1.1102230246251565e-16,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 7.524752571022592e-14
+          },
+          "l": 0,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "relative_l2": 0.0
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 2.498466241545633e-14,
+            "max_relative_above_1e-12_peak": 7.882583485195054e-15,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 1.5032140823246318e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 2.623831564870754e-14,
+            "max_relative_above_1e-12_peak": 5.7731597778617075e-15,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 1.5025941019680196e-13
+          },
+          "l": 360,
+          "m": 1,
+          "map_rust_ducc": {
+            "absolute_max": 5.941913627793838e-13,
+            "max_relative_above_1e-12_peak": 2.688015991742988e-11,
+            "near_zero_reference_count": 4,
+            "relative_l2": 4.400624417728741e-14
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 3.9987242923507364e-14,
+            "max_relative_above_1e-12_peak": 2.531308496145357e-14,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 2.9376838122094785e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 4.353574784066117e-14,
+            "max_relative_above_1e-12_peak": 2.1094237467877974e-14,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 3.0963025489368215e-13
+          },
+          "l": 720,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 3.475511545225629e-12,
+            "max_relative_above_1e-12_peak": 1.8743599692625448e-10,
+            "near_zero_reference_count": 0,
+            "relative_l2": 7.468636132012687e-13
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 3.190570780701307e-14,
+            "max_relative_above_1e-12_peak": 2.9531932468025666e-14,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 1.8474194185139478e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 3.1586233126517566e-14,
+            "max_relative_above_1e-12_peak": 2.786659791818889e-14,
+            "near_zero_reference_count": 1440,
+            "relative_l2": 2.0015898870412453e-13
+          },
+          "l": 720,
+          "m": 1,
+          "map_rust_ducc": {
+            "absolute_max": 2.5721647034515627e-12,
+            "max_relative_above_1e-12_peak": 5.781532949253104e-11,
+            "near_zero_reference_count": 4,
+            "relative_l2": 1.2150099052286862e-13
+          }
+        }
+      ],
+      "case_id": "T720-m1-even_smooth",
+      "edge_cases": {
+        "extreme": {
+          "alm_rust_ducc": {
+            "absolute_max": 1.6668073512481383e+136,
+            "max_relative_above_1e-12_peak": 1.4640757342540445e-15,
+            "near_zero_reference_count": 1438,
+            "relative_l2": 6.95542567215585e-14
+          },
+          "map_rust_ducc": {
+            "absolute_max": 2.692210634790928e+138,
+            "max_relative_above_1e-12_peak": 2.1439639894080558e-11,
+            "near_zero_reference_count": 0,
+            "relative_l2": 1.0917946464505592e-13
+          }
+        },
+        "subnormal": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 1441,
+            "relative_l2": 0.0
+          },
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 2884,
+            "relative_l2": 0.0
+          }
+        },
+        "zero": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 1441,
+            "relative_l2": 0.0
+          },
+          "exact_zero": true,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 2884,
+            "relative_l2": 0.0
+          }
+        }
+      },
+      "finite_flags": {
+        "ducc": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        },
+        "rustsht": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        }
+      },
+      "finite_outputs": true,
+      "lmax": 720,
+      "mmax": 1,
+      "nphi": 4,
+      "ntheta": 721,
+      "reset_consistent": {
+        "ducc": true,
+        "rustsht": true
+      },
+      "roundtrip": {
+        "ducc": {
+          "absolute_max": 5.516596017179046e-13,
+          "max_relative_above_1e-12_peak": 6.609748616626308e-10,
+          "near_zero_reference_count": 0,
+          "relative_l2": 1.541959192731586e-13
+        },
+        "rust_ducc": {
+          "absolute_max": 3.183153219053186e-13,
+          "max_relative_above_1e-12_peak": 2.338929961176588e-10,
+          "near_zero_reference_count": 0,
+          "relative_l2": 7.196468981837107e-14
+        },
+        "rustsht": {
+          "absolute_max": 6.203926261605375e-13,
+          "max_relative_above_1e-12_peak": 6.170404100399695e-10,
+          "near_zero_reference_count": 0,
+          "relative_l2": 1.6101319453942274e-13
+        }
+      },
+      "threads": 8
+    },
+    {
+      "adjoints": {
+        "ducc": {
+          "analysis_relative_residual": 1.3457332837610583e-15,
+          "synthesis_relative_residual": 1.0485554622343419e-15
+        },
+        "rustsht": {
+          "analysis_relative_residual": 4.5418498326934175e-15,
+          "synthesis_relative_residual": 4.240824313925067e-14
+        }
+      },
+      "basis": [
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.4099832412739488e-14,
+            "max_relative_above_1e-12_peak": 2.220446049250313e-16,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 7.146791063856513e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.942890293094024e-14,
+            "max_relative_above_1e-12_peak": 2.220446049250313e-16,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 7.520975912946995e-14
+          },
+          "l": 0,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 3.885780586188048e-16,
+            "max_relative_above_1e-12_peak": 1.3774733527525797e-15,
+            "near_zero_reference_count": 0,
+            "relative_l2": 3.5228832011820095e-16
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.0880186186254529e-14,
+            "max_relative_above_1e-12_peak": 3.552737309734096e-15,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 6.485192520209945e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.4876989945935378e-14,
+            "max_relative_above_1e-12_peak": 2.2347009088025206e-15,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 6.799693911497399e-14
+          },
+          "l": 360,
+          "m": 180,
+          "map_rust_ducc": {
+            "absolute_max": 8.482103908136196e-14,
+            "max_relative_above_1e-12_peak": 7.97765826805529e-12,
+            "near_zero_reference_count": 63880,
+            "relative_l2": 2.8395142790059704e-14
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 3.9793047449167164e-14,
+            "max_relative_above_1e-12_peak": 2.531308496145357e-14,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 2.9365052631142823e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 4.341588053145861e-14,
+            "max_relative_above_1e-12_peak": 2.0872192862952943e-14,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 3.0947592316563196e-13
+          },
+          "l": 720,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 3.475528892460389e-12,
+            "max_relative_above_1e-12_peak": 1.8743693247090706e-10,
+            "near_zero_reference_count": 0,
+            "relative_l2": 7.468638223872667e-13
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.680028599942574e-14,
+            "max_relative_above_1e-12_peak": 1.2215383374206158e-15,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 8.991470629180157e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.8995980807528603e-14,
+            "max_relative_above_1e-12_peak": 4.25108146777479e-16,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 9.421233768314487e-14
+          },
+          "l": 720,
+          "m": 180,
+          "map_rust_ducc": {
+            "absolute_max": 1.9144408280880043e-13,
+            "max_relative_above_1e-12_peak": 1.1605524939526797e-11,
+            "near_zero_reference_count": 30742,
+            "relative_l2": 6.009619942510669e-14
+          }
+        }
+      ],
+      "case_id": "T720-m180-odd_minimum",
+      "edge_cases": {
+        "extreme": {
+          "alm_rust_ducc": {
+            "absolute_max": 1.7637857444302117e+136,
+            "max_relative_above_1e-12_peak": 6.817752086213107e-16,
+            "near_zero_reference_count": 114208,
+            "relative_l2": 6.235729068479057e-14
+          },
+          "map_rust_ducc": {
+            "absolute_max": 1.956104716760552e+137,
+            "max_relative_above_1e-12_peak": 7.362554987497384e-08,
+            "near_zero_reference_count": 0,
+            "relative_l2": 4.1960942010103465e-14
+          }
+        },
+        "subnormal": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 114211,
+            "relative_l2": 0.0
+          },
+          "map_rust_ducc": {
+            "absolute_max": 5e-324,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 260281,
+            "relative_l2": 1.1324274851176597e-13
+          }
+        },
+        "zero": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 114211,
+            "relative_l2": 0.0
+          },
+          "exact_zero": true,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 260281,
+            "relative_l2": 0.0
+          }
+        }
+      },
+      "finite_flags": {
+        "ducc": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        },
+        "rustsht": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        }
+      },
+      "finite_outputs": true,
+      "lmax": 720,
+      "mmax": 180,
+      "nphi": 361,
+      "ntheta": 721,
+      "reset_consistent": {
+        "ducc": true,
+        "rustsht": true
+      },
+      "roundtrip": {
+        "ducc": {
+          "absolute_max": 1.241935861210268e-12,
+          "max_relative_above_1e-12_peak": 5.528130865772362e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 9.873936427833283e-14
+        },
+        "rust_ducc": {
+          "absolute_max": 4.617456399707126e-13,
+          "max_relative_above_1e-12_peak": 5.587579606101544e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 6.504727469128213e-14
+        },
+        "rustsht": {
+          "absolute_max": 1.0571462154437187e-12,
+          "max_relative_above_1e-12_peak": 4.119423433313711e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 1.0161522792934683e-13
+        }
+      },
+      "threads": 1
+    },
+    {
+      "adjoints": {
+        "ducc": {
+          "analysis_relative_residual": 1.3457332837610583e-15,
+          "synthesis_relative_residual": 1.0485554622343419e-15
+        },
+        "rustsht": {
+          "analysis_relative_residual": 4.5418498326934175e-15,
+          "synthesis_relative_residual": 4.240824313925067e-14
+        }
+      },
+      "basis": [
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.4099832412739488e-14,
+            "max_relative_above_1e-12_peak": 2.220446049250313e-16,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 7.146791063856513e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.942890293094024e-14,
+            "max_relative_above_1e-12_peak": 2.220446049250313e-16,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 7.520975912946995e-14
+          },
+          "l": 0,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 3.885780586188048e-16,
+            "max_relative_above_1e-12_peak": 1.3774733527525797e-15,
+            "near_zero_reference_count": 0,
+            "relative_l2": 3.5228832011820095e-16
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.0880186186254529e-14,
+            "max_relative_above_1e-12_peak": 3.552737309734096e-15,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 6.485192520209945e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.4876989945935378e-14,
+            "max_relative_above_1e-12_peak": 2.2347009088025206e-15,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 6.799693911497399e-14
+          },
+          "l": 360,
+          "m": 180,
+          "map_rust_ducc": {
+            "absolute_max": 8.482103908136196e-14,
+            "max_relative_above_1e-12_peak": 7.97765826805529e-12,
+            "near_zero_reference_count": 63880,
+            "relative_l2": 2.8395142790059704e-14
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 3.9793047449167164e-14,
+            "max_relative_above_1e-12_peak": 2.531308496145357e-14,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 2.9365052631142823e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 4.341588053145861e-14,
+            "max_relative_above_1e-12_peak": 2.0872192862952943e-14,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 3.0947592316563196e-13
+          },
+          "l": 720,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 3.475528892460389e-12,
+            "max_relative_above_1e-12_peak": 1.8743693247090706e-10,
+            "near_zero_reference_count": 0,
+            "relative_l2": 7.468638223872667e-13
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.680028599942574e-14,
+            "max_relative_above_1e-12_peak": 1.2215383374206158e-15,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 8.991470629180157e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.8995980807528603e-14,
+            "max_relative_above_1e-12_peak": 4.25108146777479e-16,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 9.421233768314487e-14
+          },
+          "l": 720,
+          "m": 180,
+          "map_rust_ducc": {
+            "absolute_max": 1.9144408280880043e-13,
+            "max_relative_above_1e-12_peak": 1.1605524939526797e-11,
+            "near_zero_reference_count": 30742,
+            "relative_l2": 6.009619942510669e-14
+          }
+        }
+      ],
+      "case_id": "T720-m180-odd_minimum",
+      "edge_cases": {
+        "extreme": {
+          "alm_rust_ducc": {
+            "absolute_max": 1.7637857444302117e+136,
+            "max_relative_above_1e-12_peak": 6.817752086213107e-16,
+            "near_zero_reference_count": 114208,
+            "relative_l2": 6.235729068479057e-14
+          },
+          "map_rust_ducc": {
+            "absolute_max": 1.956104716760552e+137,
+            "max_relative_above_1e-12_peak": 7.362554987497384e-08,
+            "near_zero_reference_count": 0,
+            "relative_l2": 4.1960942010103465e-14
+          }
+        },
+        "subnormal": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 114211,
+            "relative_l2": 0.0
+          },
+          "map_rust_ducc": {
+            "absolute_max": 5e-324,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 260281,
+            "relative_l2": 1.1324274851176597e-13
+          }
+        },
+        "zero": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 114211,
+            "relative_l2": 0.0
+          },
+          "exact_zero": true,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 260281,
+            "relative_l2": 0.0
+          }
+        }
+      },
+      "finite_flags": {
+        "ducc": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        },
+        "rustsht": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        }
+      },
+      "finite_outputs": true,
+      "lmax": 720,
+      "mmax": 180,
+      "nphi": 361,
+      "ntheta": 721,
+      "reset_consistent": {
+        "ducc": true,
+        "rustsht": true
+      },
+      "roundtrip": {
+        "ducc": {
+          "absolute_max": 1.241935861210268e-12,
+          "max_relative_above_1e-12_peak": 5.528130865772362e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 9.873936427833283e-14
+        },
+        "rust_ducc": {
+          "absolute_max": 4.617456399707126e-13,
+          "max_relative_above_1e-12_peak": 5.587579606101544e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 6.504727469128213e-14
+        },
+        "rustsht": {
+          "absolute_max": 1.0571462154437187e-12,
+          "max_relative_above_1e-12_peak": 4.119423433313711e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 1.0161522792934683e-13
+        }
+      },
+      "threads": 8
+    },
+    {
+      "adjoints": {
+        "ducc": {
+          "analysis_relative_residual": 5.068581183204556e-15,
+          "synthesis_relative_residual": 4.026777797651061e-15
+        },
+        "rustsht": {
+          "analysis_relative_residual": 3.439394374317113e-14,
+          "synthesis_relative_residual": 3.814842124090465e-15
+        }
+      },
+      "basis": [
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.4099832412739488e-14,
+            "max_relative_above_1e-12_peak": 1.1102230246251565e-16,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 7.177130719599696e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.942890293094024e-14,
+            "max_relative_above_1e-12_peak": 2.220446049250313e-16,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 7.519277240628603e-14
+          },
+          "l": 0,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "relative_l2": 0.0
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.0880190090027852e-14,
+            "max_relative_above_1e-12_peak": 3.6637367560051804e-15,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 6.468514689599866e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.487698853285382e-14,
+            "max_relative_above_1e-12_peak": 2.3315094217644263e-15,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 6.791005612925303e-14
+          },
+          "l": 360,
+          "m": 180,
+          "map_rust_ducc": {
+            "absolute_max": 8.465450562766819e-14,
+            "max_relative_above_1e-12_peak": 5.1715803820091645e-12,
+            "near_zero_reference_count": 66888,
+            "relative_l2": 2.8420429656728018e-14
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 4.000834233916117e-14,
+            "max_relative_above_1e-12_peak": 2.531308496145357e-14,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 2.936948657015e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 4.3619096181265626e-14,
+            "max_relative_above_1e-12_peak": 2.1094237467877974e-14,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 3.097412237090367e-13
+          },
+          "l": 720,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 3.475511545225629e-12,
+            "max_relative_above_1e-12_peak": 1.8743599692625448e-10,
+            "near_zero_reference_count": 0,
+            "relative_l2": 7.468636132012686e-13
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.6689549966219605e-14,
+            "max_relative_above_1e-12_peak": 1.4432928995855186e-15,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 8.989099661216562e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.8883750700122325e-14,
+            "max_relative_above_1e-12_peak": 5.557394530601103e-16,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 9.429808285988013e-14
+          },
+          "l": 720,
+          "m": 180,
+          "map_rust_ducc": {
+            "absolute_max": 1.9128448824901056e-13,
+            "max_relative_above_1e-12_peak": 1.0969061491950885e-11,
+            "near_zero_reference_count": 32184,
+            "relative_l2": 6.011322709129389e-14
+          }
+        }
+      ],
+      "case_id": "T720-m180-even_smooth",
+      "edge_cases": {
+        "extreme": {
+          "alm_rust_ducc": {
+            "absolute_max": 1.749220961375549e+136,
+            "max_relative_above_1e-12_peak": 7.536577211858622e-16,
+            "near_zero_reference_count": 114208,
+            "relative_l2": 6.233316581103753e-14
+          },
+          "map_rust_ducc": {
+            "absolute_max": 1.948836329517596e+137,
+            "max_relative_above_1e-12_peak": 3.2206240836768847e-10,
+            "near_zero_reference_count": 0,
+            "relative_l2": 4.196629897138039e-14
+          }
+        },
+        "subnormal": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 114211,
+            "relative_l2": 0.0
+          },
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 272538,
+            "relative_l2": 0.0
+          }
+        },
+        "zero": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 114211,
+            "relative_l2": 0.0
+          },
+          "exact_zero": true,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 272538,
+            "relative_l2": 0.0
+          }
+        }
+      },
+      "finite_flags": {
+        "ducc": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        },
+        "rustsht": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        }
+      },
+      "finite_outputs": true,
+      "lmax": 720,
+      "mmax": 180,
+      "nphi": 378,
+      "ntheta": 721,
+      "reset_consistent": {
+        "ducc": true,
+        "rustsht": true
+      },
+      "roundtrip": {
+        "ducc": {
+          "absolute_max": 9.832757213750314e-13,
+          "max_relative_above_1e-12_peak": 1.3903166352790353e-09,
+          "near_zero_reference_count": 0,
+          "relative_l2": 1.0093046474903875e-13
+        },
+        "rust_ducc": {
+          "absolute_max": 5.106716761110536e-13,
+          "max_relative_above_1e-12_peak": 1.7326926789506294e-10,
+          "near_zero_reference_count": 0,
+          "relative_l2": 6.507754521473226e-14
+        },
+        "rustsht": {
+          "absolute_max": 9.621999101813502e-13,
+          "max_relative_above_1e-12_peak": 1.2170473676248716e-09,
+          "near_zero_reference_count": 0,
+          "relative_l2": 1.0292993041164958e-13
+        }
+      },
+      "threads": 1
+    },
+    {
+      "adjoints": {
+        "ducc": {
+          "analysis_relative_residual": 5.068581183204556e-15,
+          "synthesis_relative_residual": 4.026777797651061e-15
+        },
+        "rustsht": {
+          "analysis_relative_residual": 3.439394374317113e-14,
+          "synthesis_relative_residual": 3.814842124090465e-15
+        }
+      },
+      "basis": [
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.4099832412739488e-14,
+            "max_relative_above_1e-12_peak": 1.1102230246251565e-16,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 7.177130719599696e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.942890293094024e-14,
+            "max_relative_above_1e-12_peak": 2.220446049250313e-16,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 7.519277240628603e-14
+          },
+          "l": 0,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "relative_l2": 0.0
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.0880190090027852e-14,
+            "max_relative_above_1e-12_peak": 3.6637367560051804e-15,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 6.468514689599866e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.487698853285382e-14,
+            "max_relative_above_1e-12_peak": 2.3315094217644263e-15,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 6.791005612925303e-14
+          },
+          "l": 360,
+          "m": 180,
+          "map_rust_ducc": {
+            "absolute_max": 8.465450562766819e-14,
+            "max_relative_above_1e-12_peak": 5.1715803820091645e-12,
+            "near_zero_reference_count": 66888,
+            "relative_l2": 2.8420429656728018e-14
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 4.000834233916117e-14,
+            "max_relative_above_1e-12_peak": 2.531308496145357e-14,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 2.936948657015e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 4.3619096181265626e-14,
+            "max_relative_above_1e-12_peak": 2.1094237467877974e-14,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 3.097412237090367e-13
+          },
+          "l": 720,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 3.475511545225629e-12,
+            "max_relative_above_1e-12_peak": 1.8743599692625448e-10,
+            "near_zero_reference_count": 0,
+            "relative_l2": 7.468636132012686e-13
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.6689549966219605e-14,
+            "max_relative_above_1e-12_peak": 1.4432928995855186e-15,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 8.989099661216562e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.8883750700122325e-14,
+            "max_relative_above_1e-12_peak": 5.557394530601103e-16,
+            "near_zero_reference_count": 114210,
+            "relative_l2": 9.429808285988013e-14
+          },
+          "l": 720,
+          "m": 180,
+          "map_rust_ducc": {
+            "absolute_max": 1.9128448824901056e-13,
+            "max_relative_above_1e-12_peak": 1.0969061491950885e-11,
+            "near_zero_reference_count": 32184,
+            "relative_l2": 6.011322709129389e-14
+          }
+        }
+      ],
+      "case_id": "T720-m180-even_smooth",
+      "edge_cases": {
+        "extreme": {
+          "alm_rust_ducc": {
+            "absolute_max": 1.749220961375549e+136,
+            "max_relative_above_1e-12_peak": 7.536577211858622e-16,
+            "near_zero_reference_count": 114208,
+            "relative_l2": 6.233316581103753e-14
+          },
+          "map_rust_ducc": {
+            "absolute_max": 1.948836329517596e+137,
+            "max_relative_above_1e-12_peak": 3.2206240836768847e-10,
+            "near_zero_reference_count": 0,
+            "relative_l2": 4.196629897138039e-14
+          }
+        },
+        "subnormal": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 114211,
+            "relative_l2": 0.0
+          },
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 272538,
+            "relative_l2": 0.0
+          }
+        },
+        "zero": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 114211,
+            "relative_l2": 0.0
+          },
+          "exact_zero": true,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 272538,
+            "relative_l2": 0.0
+          }
+        }
+      },
+      "finite_flags": {
+        "ducc": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        },
+        "rustsht": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        }
+      },
+      "finite_outputs": true,
+      "lmax": 720,
+      "mmax": 180,
+      "nphi": 378,
+      "ntheta": 721,
+      "reset_consistent": {
+        "ducc": true,
+        "rustsht": true
+      },
+      "roundtrip": {
+        "ducc": {
+          "absolute_max": 9.832757213750314e-13,
+          "max_relative_above_1e-12_peak": 1.3903166352790353e-09,
+          "near_zero_reference_count": 0,
+          "relative_l2": 1.0093046474903875e-13
+        },
+        "rust_ducc": {
+          "absolute_max": 5.106716761110536e-13,
+          "max_relative_above_1e-12_peak": 1.7326926789506294e-10,
+          "near_zero_reference_count": 0,
+          "relative_l2": 6.507754521473226e-14
+        },
+        "rustsht": {
+          "absolute_max": 9.621999101813502e-13,
+          "max_relative_above_1e-12_peak": 1.2170473676248716e-09,
+          "near_zero_reference_count": 0,
+          "relative_l2": 1.0292993041164958e-13
+        }
+      },
+      "threads": 8
+    },
+    {
+      "adjoints": {
+        "ducc": {
+          "analysis_relative_residual": 5.091031114786175e-15,
+          "synthesis_relative_residual": 1.0121579120373666e-15
+        },
+        "rustsht": {
+          "analysis_relative_residual": 3.5840859048095157e-14,
+          "synthesis_relative_residual": 1.180176125435449e-13
+        }
+      },
+      "basis": [
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.4210854715202004e-14,
+            "max_relative_above_1e-12_peak": 1.1102230246251565e-16,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 7.160796723225413e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.9317880628477724e-14,
+            "max_relative_above_1e-12_peak": 2.220446049250313e-16,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 7.511600470048944e-14
+          },
+          "l": 0,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "relative_l2": 0.0
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.1990408677567835e-14,
+            "max_relative_above_1e-12_peak": 8.659746230697655e-15,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 7.306526563801178e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 2.0872193049524523e-14,
+            "max_relative_above_1e-12_peak": 8.882911631007606e-15,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 1.4282234250299865e-13
+          },
+          "l": 360,
+          "m": 360,
+          "map_rust_ducc": {
+            "absolute_max": 3.11972669919669e-14,
+            "max_relative_above_1e-12_peak": 1.264067272324135e-11,
+            "near_zero_reference_count": 786332,
+            "relative_l2": 1.1187427400856299e-14
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 4.0014257421483316e-14,
+            "max_relative_above_1e-12_peak": 2.531308496145357e-14,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 2.938586202693221e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 4.353262886778569e-14,
+            "max_relative_above_1e-12_peak": 2.1094237467877974e-14,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 3.0972988127398215e-13
+          },
+          "l": 720,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 3.475511545225629e-12,
+            "max_relative_above_1e-12_peak": 1.8743599692625448e-10,
+            "near_zero_reference_count": 0,
+            "relative_l2": 7.468636132012686e-13
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 5.44049850101944e-15,
+            "max_relative_above_1e-12_peak": 5.44049850101944e-15,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 5.447409144965146e-15
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 5.440117670479802e-15,
+            "max_relative_above_1e-12_peak": 5.440117670479802e-15,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 5.493368232705204e-15
+          },
+          "l": 720,
+          "m": 720,
+          "map_rust_ducc": {
+            "absolute_max": 7.049916206369744e-14,
+            "max_relative_above_1e-12_peak": 2.90030523193841e-11,
+            "near_zero_reference_count": 858844,
+            "relative_l2": 2.1773856347929833e-14
+          }
+        }
+      ],
+      "case_id": "T720-m720-odd_minimum",
+      "edge_cases": {
+        "extreme": {
+          "alm_rust_ducc": {
+            "absolute_max": 1.1811129269803612e+136,
+            "max_relative_above_1e-12_peak": 1.817096810739017e-16,
+            "near_zero_reference_count": 260278,
+            "relative_l2": 4.1685426227811916e-14
+          },
+          "map_rust_ducc": {
+            "absolute_max": 7.150275950258033e+136,
+            "max_relative_above_1e-12_peak": 1.5723414887399438e-09,
+            "near_zero_reference_count": 0,
+            "relative_l2": 1.2826436853517698e-14
+          }
+        },
+        "subnormal": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 260281,
+            "relative_l2": 0.0
+          },
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 1038961,
+            "relative_l2": 0.0
+          }
+        },
+        "zero": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 260281,
+            "relative_l2": 0.0
+          },
+          "exact_zero": true,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 1038961,
+            "relative_l2": 0.0
+          }
+        }
+      },
+      "finite_flags": {
+        "ducc": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        },
+        "rustsht": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        }
+      },
+      "finite_outputs": true,
+      "lmax": 720,
+      "mmax": 720,
+      "nphi": 1441,
+      "ntheta": 721,
+      "reset_consistent": {
+        "ducc": true,
+        "rustsht": true
+      },
+      "roundtrip": {
+        "ducc": {
+          "absolute_max": 8.641920772652033e-13,
+          "max_relative_above_1e-12_peak": 9.03333508737368e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 8.208505575254818e-14
+        },
+        "rust_ducc": {
+          "absolute_max": 4.439079844749223e-13,
+          "max_relative_above_1e-12_peak": 7.34209069850467e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 6.063200425521519e-14
+        },
+        "rustsht": {
+          "absolute_max": 9.157317711001534e-13,
+          "max_relative_above_1e-12_peak": 4.758381964836445e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 8.4956890841645e-14
+        }
+      },
+      "threads": 1
+    },
+    {
+      "adjoints": {
+        "ducc": {
+          "analysis_relative_residual": 5.091031114786175e-15,
+          "synthesis_relative_residual": 1.0121579120373666e-15
+        },
+        "rustsht": {
+          "analysis_relative_residual": 3.5840859048095157e-14,
+          "synthesis_relative_residual": 1.180176125435449e-13
+        }
+      },
+      "basis": [
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.4210854715202004e-14,
+            "max_relative_above_1e-12_peak": 1.1102230246251565e-16,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 7.160796723225413e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.9317880628477724e-14,
+            "max_relative_above_1e-12_peak": 2.220446049250313e-16,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 7.511600470048944e-14
+          },
+          "l": 0,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "relative_l2": 0.0
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.1990408677567835e-14,
+            "max_relative_above_1e-12_peak": 8.659746230697655e-15,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 7.306526563801178e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 2.0872193049524523e-14,
+            "max_relative_above_1e-12_peak": 8.882911631007606e-15,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 1.4282234250299865e-13
+          },
+          "l": 360,
+          "m": 360,
+          "map_rust_ducc": {
+            "absolute_max": 3.11972669919669e-14,
+            "max_relative_above_1e-12_peak": 1.264067272324135e-11,
+            "near_zero_reference_count": 786332,
+            "relative_l2": 1.1187427400856299e-14
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 4.0014257421483316e-14,
+            "max_relative_above_1e-12_peak": 2.531308496145357e-14,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 2.938586202693221e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 4.353262886778569e-14,
+            "max_relative_above_1e-12_peak": 2.1094237467877974e-14,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 3.0972988127398215e-13
+          },
+          "l": 720,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 3.475511545225629e-12,
+            "max_relative_above_1e-12_peak": 1.8743599692625448e-10,
+            "near_zero_reference_count": 0,
+            "relative_l2": 7.468636132012686e-13
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 5.44049850101944e-15,
+            "max_relative_above_1e-12_peak": 5.44049850101944e-15,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 5.447409144965146e-15
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 5.440117670479802e-15,
+            "max_relative_above_1e-12_peak": 5.440117670479802e-15,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 5.493368232705204e-15
+          },
+          "l": 720,
+          "m": 720,
+          "map_rust_ducc": {
+            "absolute_max": 7.049916206369744e-14,
+            "max_relative_above_1e-12_peak": 2.90030523193841e-11,
+            "near_zero_reference_count": 858844,
+            "relative_l2": 2.1773856347929833e-14
+          }
+        }
+      ],
+      "case_id": "T720-m720-odd_minimum",
+      "edge_cases": {
+        "extreme": {
+          "alm_rust_ducc": {
+            "absolute_max": 1.1811129269803612e+136,
+            "max_relative_above_1e-12_peak": 1.817096810739017e-16,
+            "near_zero_reference_count": 260278,
+            "relative_l2": 4.1685426227811916e-14
+          },
+          "map_rust_ducc": {
+            "absolute_max": 7.150275950258033e+136,
+            "max_relative_above_1e-12_peak": 1.5723414887399438e-09,
+            "near_zero_reference_count": 0,
+            "relative_l2": 1.2826436853517698e-14
+          }
+        },
+        "subnormal": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 260281,
+            "relative_l2": 0.0
+          },
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 1038961,
+            "relative_l2": 0.0
+          }
+        },
+        "zero": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 260281,
+            "relative_l2": 0.0
+          },
+          "exact_zero": true,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 1038961,
+            "relative_l2": 0.0
+          }
+        }
+      },
+      "finite_flags": {
+        "ducc": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        },
+        "rustsht": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        }
+      },
+      "finite_outputs": true,
+      "lmax": 720,
+      "mmax": 720,
+      "nphi": 1441,
+      "ntheta": 721,
+      "reset_consistent": {
+        "ducc": true,
+        "rustsht": true
+      },
+      "roundtrip": {
+        "ducc": {
+          "absolute_max": 8.641920772652033e-13,
+          "max_relative_above_1e-12_peak": 9.03333508737368e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 8.208505575254818e-14
+        },
+        "rust_ducc": {
+          "absolute_max": 4.439079844749223e-13,
+          "max_relative_above_1e-12_peak": 7.34209069850467e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 6.063200425521519e-14
+        },
+        "rustsht": {
+          "absolute_max": 9.157317711001534e-13,
+          "max_relative_above_1e-12_peak": 4.758381964836445e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 8.4956890841645e-14
+        }
+      },
+      "threads": 8
+    },
+    {
+      "adjoints": {
+        "ducc": {
+          "analysis_relative_residual": 7.877347102052699e-16,
+          "synthesis_relative_residual": 9.020466626851898e-16
+        },
+        "rustsht": {
+          "analysis_relative_residual": 6.223104210621772e-14,
+          "synthesis_relative_residual": 7.641623871032436e-14
+        }
+      },
+      "basis": [
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.4099832412739488e-14,
+            "max_relative_above_1e-12_peak": 1.1102230246251565e-16,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 7.145710001840377e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.9317880628477724e-14,
+            "max_relative_above_1e-12_peak": 2.220446049250313e-16,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 7.512131928336821e-14
+          },
+          "l": 0,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "relative_l2": 0.0
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.1990411415746031e-14,
+            "max_relative_above_1e-12_peak": 8.992863425368894e-15,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 7.326844115749568e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 2.0872193051568913e-14,
+            "max_relative_above_1e-12_peak": 8.994194183948025e-15,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 1.4256759376840052e-13
+          },
+          "l": 360,
+          "m": 360,
+          "map_rust_ducc": {
+            "absolute_max": 2.90878432451791e-14,
+            "max_relative_above_1e-12_peak": 8.663870530241286e-13,
+            "near_zero_reference_count": 795564,
+            "relative_l2": 1.0868642213060498e-14
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 3.993838111883604e-14,
+            "max_relative_above_1e-12_peak": 2.531308496145357e-14,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 2.9386174564290354e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 4.362701027421003e-14,
+            "max_relative_above_1e-12_peak": 2.1094237467877974e-14,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 3.0969973958303494e-13
+          },
+          "l": 720,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 3.475511545225629e-12,
+            "max_relative_above_1e-12_peak": 1.8743599692625448e-10,
+            "near_zero_reference_count": 0,
+            "relative_l2": 7.468636132012685e-13
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 5.551128086842912e-15,
+            "max_relative_above_1e-12_peak": 5.551128086842912e-15,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 5.556230042451157e-15
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 5.662138903450689e-15,
+            "max_relative_above_1e-12_peak": 5.662138903450689e-15,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 5.693710144697708e-15
+          },
+          "l": 720,
+          "m": 720,
+          "map_rust_ducc": {
+            "absolute_max": 6.925016116099414e-14,
+            "max_relative_above_1e-12_peak": 3.2826270187056015e-12,
+            "near_zero_reference_count": 868932,
+            "relative_l2": 2.1904083613247884e-14
+          }
+        }
+      ],
+      "case_id": "T720-m720-even_smooth",
+      "edge_cases": {
+        "extreme": {
+          "alm_rust_ducc": {
+            "absolute_max": 1.1811129269803612e+136,
+            "max_relative_above_1e-12_peak": 1.9029739339068082e-16,
+            "near_zero_reference_count": 260278,
+            "relative_l2": 4.1569154785885726e-14
+          },
+          "map_rust_ducc": {
+            "absolute_max": 7.050335625667387e+136,
+            "max_relative_above_1e-12_peak": 5.4774984396274944e-11,
+            "near_zero_reference_count": 0,
+            "relative_l2": 1.2896554228269522e-14
+          }
+        },
+        "subnormal": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 260281,
+            "relative_l2": 0.0
+          },
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 1051218,
+            "relative_l2": 0.0
+          }
+        },
+        "zero": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 260281,
+            "relative_l2": 0.0
+          },
+          "exact_zero": true,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 1051218,
+            "relative_l2": 0.0
+          }
+        }
+      },
+      "finite_flags": {
+        "ducc": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        },
+        "rustsht": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        }
+      },
+      "finite_outputs": true,
+      "lmax": 720,
+      "mmax": 720,
+      "nphi": 1458,
+      "ntheta": 721,
+      "reset_consistent": {
+        "ducc": true,
+        "rustsht": true
+      },
+      "roundtrip": {
+        "ducc": {
+          "absolute_max": 1.0240066603837296e-12,
+          "max_relative_above_1e-12_peak": 5.082699228332095e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 8.283658109585198e-14
+        },
+        "rust_ducc": {
+          "absolute_max": 4.2542291863434384e-13,
+          "max_relative_above_1e-12_peak": 3.042934708576205e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 6.055739287063989e-14
+        },
+        "rustsht": {
+          "absolute_max": 1.0640518236260475e-12,
+          "max_relative_above_1e-12_peak": 3.84440161521818e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 8.57085252926929e-14
+        }
+      },
+      "threads": 1
+    },
+    {
+      "adjoints": {
+        "ducc": {
+          "analysis_relative_residual": 7.877347102052699e-16,
+          "synthesis_relative_residual": 9.020466626851898e-16
+        },
+        "rustsht": {
+          "analysis_relative_residual": 6.223104210621772e-14,
+          "synthesis_relative_residual": 7.641623871032436e-14
+        }
+      },
+      "basis": [
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.4099832412739488e-14,
+            "max_relative_above_1e-12_peak": 1.1102230246251565e-16,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 7.145710001840377e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.9317880628477724e-14,
+            "max_relative_above_1e-12_peak": 2.220446049250313e-16,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 7.512131928336821e-14
+          },
+          "l": 0,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0,
+            "relative_l2": 0.0
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.1990411415746031e-14,
+            "max_relative_above_1e-12_peak": 8.992863425368894e-15,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 7.326844115749568e-14
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 2.0872193051568913e-14,
+            "max_relative_above_1e-12_peak": 8.994194183948025e-15,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 1.4256759376840052e-13
+          },
+          "l": 360,
+          "m": 360,
+          "map_rust_ducc": {
+            "absolute_max": 2.90878432451791e-14,
+            "max_relative_above_1e-12_peak": 8.663870530241286e-13,
+            "near_zero_reference_count": 795564,
+            "relative_l2": 1.0868642213060498e-14
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 3.993838111883604e-14,
+            "max_relative_above_1e-12_peak": 2.531308496145357e-14,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 2.9386174564290354e-13
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 4.362701027421003e-14,
+            "max_relative_above_1e-12_peak": 2.1094237467877974e-14,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 3.0969973958303494e-13
+          },
+          "l": 720,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 3.475511545225629e-12,
+            "max_relative_above_1e-12_peak": 1.8743599692625448e-10,
+            "near_zero_reference_count": 0,
+            "relative_l2": 7.468636132012685e-13
+          }
+        },
+        {
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 5.551128086842912e-15,
+            "max_relative_above_1e-12_peak": 5.551128086842912e-15,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 5.556230042451157e-15
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 5.662138903450689e-15,
+            "max_relative_above_1e-12_peak": 5.662138903450689e-15,
+            "near_zero_reference_count": 260280,
+            "relative_l2": 5.693710144697708e-15
+          },
+          "l": 720,
+          "m": 720,
+          "map_rust_ducc": {
+            "absolute_max": 6.925016116099414e-14,
+            "max_relative_above_1e-12_peak": 3.2826270187056015e-12,
+            "near_zero_reference_count": 868932,
+            "relative_l2": 2.1904083613247884e-14
+          }
+        }
+      ],
+      "case_id": "T720-m720-even_smooth",
+      "edge_cases": {
+        "extreme": {
+          "alm_rust_ducc": {
+            "absolute_max": 1.1811129269803612e+136,
+            "max_relative_above_1e-12_peak": 1.9029739339068082e-16,
+            "near_zero_reference_count": 260278,
+            "relative_l2": 4.1569154785885726e-14
+          },
+          "map_rust_ducc": {
+            "absolute_max": 7.050335625667387e+136,
+            "max_relative_above_1e-12_peak": 5.4774984396274944e-11,
+            "near_zero_reference_count": 0,
+            "relative_l2": 1.2896554228269522e-14
+          }
+        },
+        "subnormal": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 260281,
+            "relative_l2": 0.0
+          },
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 1051218,
+            "relative_l2": 0.0
+          }
+        },
+        "zero": {
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 260281,
+            "relative_l2": 0.0
+          },
+          "exact_zero": true,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 1051218,
+            "relative_l2": 0.0
+          }
+        }
+      },
+      "finite_flags": {
+        "ducc": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        },
+        "rustsht": {
+          "extreme_finite": true,
+          "subnormal_finite": true,
+          "zero_finite": true
+        }
+      },
+      "finite_outputs": true,
+      "lmax": 720,
+      "mmax": 720,
+      "nphi": 1458,
+      "ntheta": 721,
+      "reset_consistent": {
+        "ducc": true,
+        "rustsht": true
+      },
+      "roundtrip": {
+        "ducc": {
+          "absolute_max": 1.0240066603837296e-12,
+          "max_relative_above_1e-12_peak": 5.082699228332095e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 8.283658109585198e-14
+        },
+        "rust_ducc": {
+          "absolute_max": 4.2542291863434384e-13,
+          "max_relative_above_1e-12_peak": 3.042934708576205e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 6.055739287063989e-14
+        },
+        "rustsht": {
+          "absolute_max": 1.0640518236260475e-12,
+          "max_relative_above_1e-12_peak": 3.84440161521818e-11,
+          "near_zero_reference_count": 0,
+          "relative_l2": 8.57085252926929e-14
+        }
+      },
+      "threads": 8
+    }
+  ]
+}
