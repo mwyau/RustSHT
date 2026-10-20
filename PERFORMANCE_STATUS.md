@@ -1,9 +1,8 @@
 # RustSHT performance checkpoint
 
 **Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Current
-production candidate:** `04ea6cf4` (fused scalar-analysis input preparation
-enabled by default; rejected direct-output, custom reductions and promotion
-variant removed).
+production candidate:** `d6382614` (scalar synthesis selects on-the-fly
+recurrence from T64; analysis retains its prior table policy).
 **Earlier A/B source:** `9f7e8658`.
 **Calibrated harness:** `1ee1a195`. **Benchmark default:** production flags at
 `e2c2dc15`. For the
@@ -55,16 +54,23 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   especially affecting q8, so these timings are provisional. A T720 Rust
   1.99.0 control showed no clear q1 compiler-version change; q8 was noisy. See
   `reports/ducc-upgrade-baseline-2026-10-20.md` and its machine-readable data.
-  The selected ordinary-kernel GCC/Clang screen omitted production DUCC
-  fast-math flags and had asymmetric queue delay; it is not an attribution
-  result. Next: rerun that focused kernel comparison with actual CMake v3
-  flags under lower host interference, then isolate the remaining
-  warmed-kernel costs. Clang diagnosed `std::isfinite` checks in the
-  small C++ benchmark driver when all translation units inherited
-  `-ffast-math`; the active CMake target now disables fast-math for that
-  driver only. DUCC's numerical translation units retain the optimized
-  `-ffast-math` flags. Historical finite-output metrics were computed in
-  Python from saved arrays and remain valid.
+  The corrected matched kernel comparison now gives DUCC's numerical object
+  `-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3`, with the driver
+  separately compiled using `-fno-fast-math`; Rust remains strict under its
+  V3 target. At 64/128/256 lanes, the warmed Rust/DUCC ratios are
+  0.990/0.906/0.868 with GCC 15 and 1.211/1.145/1.112 with Clang 21. Paired
+  medians were stable, although max run-queue wait reached 70.6%/87.6%. The
+  compiler-dependent difference is now a code-generation question, not a
+  fast-math flag mismatch. See the updated report and
+  `reports/data/ducc-kernel-fastmath-2026-10-20/`; next inspect these exact
+  hot loops against Rust's executed V3 specialization.
+
+- The T64 dispatch experiment covered 848 rows for the full matrix and a
+  clean 104-row final-policy boundary/reduced-order subset (312 numerical
+  comparisons, maximum relative L2 error `2.353e-14`). A global T64 rule
+  regressed q1 analysis, so the retained policy applies the cutover only to
+  f64 scalar synthesis; analysis and spin-1 keep their existing selectors.
+  See [the focused report](reports/scalar-t64-recurrence-transition-2026-10-20.md).
 
 - Production f64 scalar GL analysis keeps the checked two-pair AVX2/FMA route
   and scaled fallback. The active range-cache candidate reuses a checked

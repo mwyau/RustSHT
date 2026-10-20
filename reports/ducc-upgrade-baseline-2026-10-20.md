@@ -94,24 +94,76 @@ intervals are correspondingly broad and include both sides of parity. No timed
 observations were filtered. Treat q1 medians as a provisional baseline and do
 not infer a stable q8 performance ranking from this run.
 
-The ordinary `m=1`, T720 kernel screen used ten interleaved process pairs and
-60 batches per lane/backend. Its direct C++ builds used
-`-O3 -DNDEBUG -march=x86-64-v3` **without** `-ffast-math` or an explicit
-`-ffp-contract=fast`; these runs are a same-flags GCC/Clang control, not the
-DUCC CMake production-flags comparison. At 256 lanes, the warmed Rust
-kernel-plus-commit median was 26.830 µs versus 24.015 µs GCC DUCC (1.117×,
-2.815 µs excess), and 26.885 µs versus 34.930 µs Clang DUCC (0.770×). The
-Rust worker queue-wait medians were 51.6% and 54.0%, versus 0.8% and 0.5% for
-the GCC and Clang DUCC workers. These asymmetries invalidate a compiler or
-parity conclusion from the kernel screen. Its full lane results and timing
-distributions are recorded in `ordinary-kernel-summary.csv`.
+### DUCC floating-point flags
+
+The pinned upstream multiarch CMake builds were checked using their actual
+`compile_commands.json`, not just CMake settings. For `src/ducc0/sht/sht.cc`,
+both GCC 15.2.0 and Clang 21.1.8 v3 commands include
+`-O3 -ffast-math -march=x86-64-v3`, `DUCC0_MULTIARCH`, and the v3 namespace.
+The corresponding v1/v4 objects use `-march=x86-64` and `-march=x86-64-v4`.
+The upstream commands do not spell out `-ffp-contract=fast`; the standalone
+comparison below adds that flag explicitly as requested. The actual command
+summaries are in
+[`reports/data/ducc-multiarch-2026-10-20/README.md`](data/ducc-multiarch-2026-10-20/README.md).
+
+The corrected standalone build compiles the DUCC kernel and driver as separate
+objects. The numerical kernel uses
+`-O3 -DNDEBUG -ffast-math -ffp-contract=fast -march=x86-64-v3`; the driver
+uses `-O3 -DNDEBUG -fno-fast-math -ffp-contract=fast -march=x86-64-v3` so
+`std::isfinite` and output validation retain strict semantics. GCC 15 and
+Clang 21 receive the same flags. Rust remains Rust 1.99.1 with
+`-C target-cpu=x86-64-v3 -Aunexpected_cfgs`; no Rust fast-math options are
+enabled. The runner prints each actual compile and link command.
+
+### Matched ordinary-kernel results
+
+The corrected screen uses T720 GL, `m=1`, four f64 values per AVX2 vector,
+64/128/256 active latitude lanes, and the production-dispatched Rust fused
+analysis kernel. Each compiler run has ten interleaved Rust/DUCC process pairs
+and 60 calibrated batches per backend/lane. The Rust warm column disables the
+ordinary recurrence group's post-pair range traversal; the checked column
+retains it. Both Rust columns include coefficient commit, matching DUCC's
+direct accumulation boundary. Setup and input preparation are outside timing;
+the output and recurrence-state reset cost is measured separately and
+subtracted from operation batches. Results are paired by process invocation.
+
+| Compiler | lanes | Rust warm µs (p10–p90) | DUCC µs (p10–p90) | warm/DUCC paired ratio (p10–p90) | excess µs | checked/DUCC | relative L2 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| GCC 15.2 | 64 | 8.075 (7.931–8.155) | 8.134 (7.897–8.326) | 0.990 (0.982–0.999) | -0.081 | 1.374 | 6.670e-14 |
+| GCC 15.2 | 128 | 14.405 (14.283–14.531) | 15.888 (14.825–16.680) | 0.906 (0.899–0.950) | -1.491 | 1.269 | 1.628e-13 |
+| GCC 15.2 | 256 | 26.746 (26.370–26.985) | 30.955 (29.694–31.568) | 0.868 (0.857–0.883) | -4.075 | 1.238 | 5.928e-14 |
+| Clang 21.1.8 | 64 | 8.008 (7.860–8.112) | 6.624 (6.489–7.050) | 1.211 (1.201–1.217) | 1.393 | 1.679 | 6.670e-14 |
+| Clang 21.1.8 | 128 | 14.331 (14.018–14.529) | 12.478 (12.304–12.865) | 1.145 (1.141–1.160) | 1.818 | 1.615 | 1.628e-13 |
+| Clang 21.1.8 | 256 | 26.651 (26.384–26.917) | 23.953 (23.202–24.321) | 1.112 (1.105–1.122) | 2.685 | 1.590 | 5.928e-14 |
+
+The coefficient transform maximum scaled difference was `1.970e-16`; maximum
+absolute output error was `2.559e-11`. Every final batch was 20–100 ms (GCC
+37.91–80.22 ms; Clang 35.73–88.44 ms), with no batches outside the window.
+Median process run-queue wait was 1.6% for GCC and 1.5% for Clang; maxima
+reached 70.6% and 87.6%, respectively. Median sampled CPU frequency was
+3.96 GHz for both runs. Paired-process ratio spreads were at most 8.4% for
+GCC and 3.8% for Clang; keep the maximum scheduling-delay cases in mind.
+
+The matched production flags change the attribution picture: Rust's warm
+256-lane route is 13% faster than GCC DUCC but 11% slower than Clang DUCC.
+The GCC and Clang DUCC medians differ by about 29% at that lane count under
+the same flags, while Rust timings are nearly unchanged. This is a compiler
+code-generation difference to investigate in the exact executed loops, not
+evidence that Rust or either compiler is generally faster. The earlier
+single-translation-unit kernel screen omitted fast-math, had high Rust queue
+delay, and is retained only as historical data in
+`ordinary-kernel-summary.csv`; it is not used for the current conclusion.
+Machine-readable paired distributions and commands are in
+[`reports/data/ducc-kernel-fastmath-2026-10-20/`](data/ducc-kernel-fastmath-2026-10-20/).
 
 ## Next step
 
-Keep this baseline separate from historical measurements. Re-run the focused
-kernel comparison with DUCC's actual CMake v3 flags and lower host interference,
-then isolate recurrence, coefficient accumulation and horizontal-reduction
-costs before changing production source. The existing v4 SHT disassembly remains
-static inspection only; no AVX-512 code ran on this AVX2-only host. See
+Keep this baseline separate from historical measurements. Next, inspect the
+actual GCC and Clang v3 kernel loops generated by these corrected builds and
+compare their instruction scheduling, spills, vector reductions and memory
+traffic with Rust's executed specialization. Isolate recurrence,
+coefficient-accumulation and horizontal-reduction costs before changing
+production source. The existing v4 SHT disassembly remains static inspection
+only; no AVX-512 code ran on this AVX2-only host. See
 [`reports/data/ducc-multiarch-2026-10-20/README.md`](data/ducc-multiarch-2026-10-20/README.md)
 for the v3/v4 build and symbol evidence.

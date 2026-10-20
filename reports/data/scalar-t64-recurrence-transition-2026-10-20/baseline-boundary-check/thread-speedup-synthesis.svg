@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+<rect width="100%" height="100%" fill="white"/>
+<text x="78" y="30" font-family="sans-serif" font-size="21" font-weight="bold">One-thread/eight-thread speedup: synthesis</text>
+<line x1="78" y1="464.0" x2="932" y2="464.0" stroke="#ddd"/>
+<text x="68" y="468.0" text-anchor="end" font-family="sans-serif" font-size="12">-0.4</text>
+<line x1="78" y1="382.4" x2="932" y2="382.4" stroke="#ddd"/>
+<text x="68" y="386.4" text-anchor="end" font-family="sans-serif" font-size="12">1.09</text>
+<line x1="78" y1="300.8" x2="932" y2="300.8" stroke="#ddd"/>
+<text x="68" y="304.8" text-anchor="end" font-family="sans-serif" font-size="12">2.59</text>
+<line x1="78" y1="219.2" x2="932" y2="219.2" stroke="#ddd"/>
+<text x="68" y="223.2" text-anchor="end" font-family="sans-serif" font-size="12">4.08</text>
+<line x1="78" y1="137.6" x2="932" y2="137.6" stroke="#ddd"/>
+<text x="68" y="141.6" text-anchor="end" font-family="sans-serif" font-size="12">5.57</text>
+<line x1="78" y1="56.0" x2="932" y2="56.0" stroke="#ddd"/>
+<text x="68" y="60.0" text-anchor="end" font-family="sans-serif" font-size="12">7.06</text>
+<line x1="78" y1="56" x2="78" y2="464" stroke="#333"/>
+<line x1="78" y1="464" x2="932" y2="464" stroke="#333"/>
+<polyline fill="none" stroke="#174a7e" stroke-width="2" points="78.0,357.0 78.0,337.9 78.0,385.8 78.0,335.8 82.4,339.1 82.4,331.2 82.4,373.9 82.4,363.0 927.6,386.4 927.6,386.0 927.6,327.6 927.6,170.1 927.6,308.4 927.6,260.2 932.0,327.1 932.0,278.3 932.0,211.9 932.0,226.0"/>
+<circle cx="78.0" cy="357.0" r="3" fill="#174a7e"/>
+<circle cx="78.0" cy="337.9" r="3" fill="#174a7e"/>
+<circle cx="78.0" cy="385.8" r="3" fill="#174a7e"/>
+<circle cx="78.0" cy="335.8" r="3" fill="#174a7e"/>
+<circle cx="82.4" cy="339.1" r="3" fill="#174a7e"/>
+<circle cx="82.4" cy="331.2" r="3" fill="#174a7e"/>
+<circle cx="82.4" cy="373.9" r="3" fill="#174a7e"/>
+<circle cx="82.4" cy="363.0" r="3" fill="#174a7e"/>
+<circle cx="927.6" cy="386.4" r="3" fill="#174a7e"/>
+<circle cx="927.6" cy="386.0" r="3" fill="#174a7e"/>
+<circle cx="927.6" cy="327.6" r="3" fill="#174a7e"/>
+<circle cx="927.6" cy="170.1" r="3" fill="#174a7e"/>
+<circle cx="927.6" cy="308.4" r="3" fill="#174a7e"/>
+<circle cx="927.6" cy="260.2" r="3" fill="#174a7e"/>
+<circle cx="932.0" cy="327.1" r="3" fill="#174a7e"/>
+<circle cx="932.0" cy="278.3" r="3" fill="#174a7e"/>
+<circle cx="932.0" cy="211.9" r="3" fill="#174a7e"/>
+<circle cx="932.0" cy="226.0" r="3" fill="#174a7e"/>
+<line x1="78" y1="512" x2="102" y2="512" stroke="#174a7e" stroke-width="3"/>
+<text x="108" y="516" font-family="sans-serif" font-size="12">RustSHT</text>
+<polyline fill="none" stroke="#d1495b" stroke-width="2" points="78.0,372.6 78.0,408.0 78.0,344.0 78.0,342.9 82.4,386.1 82.4,393.8 82.4,298.1 82.4,338.2 927.6,403.5 927.6,402.2 927.6,150.2 927.6,77.9 927.6,98.2 927.6,114.5 932.0,141.9 932.0,176.5 932.0,120.8 932.0,108.7"/>
+<circle cx="78.0" cy="372.6" r="3" fill="#d1495b"/>
+<circle cx="78.0" cy="408.0" r="3" fill="#d1495b"/>
+<circle cx="78.0" cy="344.0" r="3" fill="#d1495b"/>
+<circle cx="78.0" cy="342.9" r="3" fill="#d1495b"/>
+<circle cx="82.4" cy="386.1" r="3" fill="#d1495b"/>
+<circle cx="82.4" cy="393.8" r="3" fill="#d1495b"/>
+<circle cx="82.4" cy="298.1" r="3" fill="#d1495b"/>
+<circle cx="82.4" cy="338.2" r="3" fill="#d1495b"/>
+<circle cx="927.6" cy="403.5" r="3" fill="#d1495b"/>
+<circle cx="927.6" cy="402.2" r="3" fill="#d1495b"/>
+<circle cx="927.6" cy="150.2" r="3" fill="#d1495b"/>
+<circle cx="927.6" cy="77.9" r="3" fill="#d1495b"/>
+<circle cx="927.6" cy="98.2" r="3" fill="#d1495b"/>
+<circle cx="927.6" cy="114.5" r="3" fill="#d1495b"/>
+<circle cx="932.0" cy="141.9" r="3" fill="#d1495b"/>
+<circle cx="932.0" cy="176.5" r="3" fill="#d1495b"/>
+<circle cx="932.0" cy="120.8" r="3" fill="#d1495b"/>
+<circle cx="932.0" cy="108.7" r="3" fill="#d1495b"/>
+<line x1="253" y1="512" x2="277" y2="512" stroke="#d1495b" stroke-width="3"/>
+<text x="283" y="516" font-family="sans-serif" font-size="12">DUCC</text>
+<text x="505.0" y="536" text-anchor="middle" font-family="sans-serif" font-size="14">lmax</text>
+<text transform="translate(18 260.0) rotate(-90)" text-anchor="middle" font-family="sans-serif" font-size="14">q1 time / q8 time</text>
+</svg>

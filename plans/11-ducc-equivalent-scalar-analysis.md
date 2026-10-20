@@ -5,6 +5,22 @@
 
 **Reference:** historical benchmark pin DUCC `80388904b8cfc32400ba84af8a6a45aabfe60f86`; after the current comprehensive report, pin latest fetched `ducc0` branch HEAD (verified `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b` on 2026-10-20). Source `src/ducc0/sht/sht_inner_loop.h` (`fill_m2a`, `init_lambda`, `iter_to_ieee`, `calc_map2alm`, `map2alm_kernel`) and surrounding `sht.cc`.
 
+## Current checkpoint — matched flags and T64 selector
+
+The standalone ordinary-kernel comparison now uses the pinned CMake v3 SHT
+flags for DUCC's numerical translation unit (`-O3 -ffast-math
+-ffp-contract=fast -march=x86-64-v3`) and a separately compiled strict driver.
+The actual GCC 15 / Clang 21 commands, matched timings and numerical errors are
+recorded in `reports/ducc-upgrade-baseline-2026-10-20.md`; inspect those exact
+objects before assigning the remaining compiler-dependent gap. Rust keeps its
+strict V3 target without fast-math.
+
+A separate scalar dispatch experiment rejected a global T64 recurrence
+cutoff because it regressed q1 analysis. Production applies the T64 cutoff to
+f64 scalar synthesis only; analysis and spin-1 selectors remain unchanged.
+The full comparison and final-policy checks are in
+`reports/scalar-t64-recurrence-transition-2026-10-20.md`.
+
 ## Non-negotiable objective
 
 **Close the observed roughly 2× RustSHT-versus-DUCC f64 GL scalar-analysis Legendre performance gap through a source- and assembly-grounded implementation.** The existing measurements are *directional*, because stage boundaries differ; first establish a defensible apples-to-apples gap and then attack its largest contributors.

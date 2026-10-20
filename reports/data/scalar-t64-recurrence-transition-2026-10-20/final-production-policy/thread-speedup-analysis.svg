@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+<rect width="100%" height="100%" fill="white"/>
+<text x="78" y="30" font-family="sans-serif" font-size="21" font-weight="bold">One-thread/eight-thread speedup: analysis</text>
+<line x1="78" y1="464.0" x2="932" y2="464.0" stroke="#ddd"/>
+<text x="68" y="468.0" text-anchor="end" font-family="sans-serif" font-size="12">-0.328</text>
+<line x1="78" y1="382.4" x2="932" y2="382.4" stroke="#ddd"/>
+<text x="68" y="386.4" text-anchor="end" font-family="sans-serif" font-size="12">0.895</text>
+<line x1="78" y1="300.8" x2="932" y2="300.8" stroke="#ddd"/>
+<text x="68" y="304.8" text-anchor="end" font-family="sans-serif" font-size="12">2.12</text>
+<line x1="78" y1="219.2" x2="932" y2="219.2" stroke="#ddd"/>
+<text x="68" y="223.2" text-anchor="end" font-family="sans-serif" font-size="12">3.34</text>
+<line x1="78" y1="137.6" x2="932" y2="137.6" stroke="#ddd"/>
+<text x="68" y="141.6" text-anchor="end" font-family="sans-serif" font-size="12">4.56</text>
+<line x1="78" y1="56.0" x2="932" y2="56.0" stroke="#ddd"/>
+<text x="68" y="60.0" text-anchor="end" font-family="sans-serif" font-size="12">5.79</text>
+<line x1="78" y1="56" x2="78" y2="464" stroke="#333"/>
+<line x1="78" y1="464" x2="932" y2="464" stroke="#333"/>
+<polyline fill="none" stroke="#174a7e" stroke-width="2" points="78.0,297.7 78.0,281.5 78.0,347.3 78.0,332.5 82.4,279.4 82.4,276.3 82.4,345.6 82.4,333.0 361.2,220.1 361.2,239.5 361.2,296.6 361.2,276.1 365.6,275.4 365.6,247.8 365.6,267.5 365.6,222.8 927.6,358.7 927.6,363.6 927.6,310.8 927.6,379.3 927.6,392.0 927.6,401.9 932.0,363.2 932.0,376.3 932.0,321.6 932.0,323.9"/>
+<circle cx="78.0" cy="297.7" r="3" fill="#174a7e"/>
+<circle cx="78.0" cy="281.5" r="3" fill="#174a7e"/>
+<circle cx="78.0" cy="347.3" r="3" fill="#174a7e"/>
+<circle cx="78.0" cy="332.5" r="3" fill="#174a7e"/>
+<circle cx="82.4" cy="279.4" r="3" fill="#174a7e"/>
+<circle cx="82.4" cy="276.3" r="3" fill="#174a7e"/>
+<circle cx="82.4" cy="345.6" r="3" fill="#174a7e"/>
+<circle cx="82.4" cy="333.0" r="3" fill="#174a7e"/>
+<circle cx="361.2" cy="220.1" r="3" fill="#174a7e"/>
+<circle cx="361.2" cy="239.5" r="3" fill="#174a7e"/>
+<circle cx="361.2" cy="296.6" r="3" fill="#174a7e"/>
+<circle cx="361.2" cy="276.1" r="3" fill="#174a7e"/>
+<circle cx="365.6" cy="275.4" r="3" fill="#174a7e"/>
+<circle cx="365.6" cy="247.8" r="3" fill="#174a7e"/>
+<circle cx="365.6" cy="267.5" r="3" fill="#174a7e"/>
+<circle cx="365.6" cy="222.8" r="3" fill="#174a7e"/>
+<circle cx="927.6" cy="358.7" r="3" fill="#174a7e"/>
+<circle cx="927.6" cy="363.6" r="3" fill="#174a7e"/>
+<circle cx="927.6" cy="310.8" r="3" fill="#174a7e"/>
+<circle cx="927.6" cy="379.3" r="3" fill="#174a7e"/>
+<circle cx="927.6" cy="392.0" r="3" fill="#174a7e"/>
+<circle cx="927.6" cy="401.9" r="3" fill="#174a7e"/>
+<circle cx="932.0" cy="363.2" r="3" fill="#174a7e"/>
+<circle cx="932.0" cy="376.3" r="3" fill="#174a7e"/>
+<circle cx="932.0" cy="321.6" r="3" fill="#174a7e"/>
+<circle cx="932.0" cy="323.9" r="3" fill="#174a7e"/>
+<line x1="78" y1="512" x2="102" y2="512" stroke="#174a7e" stroke-width="3"/>
+<text x="108" y="516" font-family="sans-serif" font-size="12">RustSHT</text>
+<polyline fill="none" stroke="#d1495b" stroke-width="2" points="78.0,354.0 78.0,389.8 78.0,144.9 78.0,336.6 82.4,387.3 82.4,382.8 82.4,264.9 82.4,333.4 361.2,302.1 361.2,310.5 361.2,196.3 361.2,205.9 365.6,337.6 365.6,311.6 365.6,200.9 365.6,195.8 927.6,399.9 927.6,399.5 927.6,77.9 927.6,413.6 927.6,379.6 927.6,379.5 932.0,385.5 932.0,390.0 932.0,381.3 932.0,381.4"/>
+<circle cx="78.0" cy="354.0" r="3" fill="#d1495b"/>
+<circle cx="78.0" cy="389.8" r="3" fill="#d1495b"/>
+<circle cx="78.0" cy="144.9" r="3" fill="#d1495b"/>
+<circle cx="78.0" cy="336.6" r="3" fill="#d1495b"/>
+<circle cx="82.4" cy="387.3" r="3" fill="#d1495b"/>
+<circle cx="82.4" cy="382.8" r="3" fill="#d1495b"/>
+<circle cx="82.4" cy="264.9" r="3" fill="#d1495b"/>
+<circle cx="82.4" cy="333.4" r="3" fill="#d1495b"/>
+<circle cx="361.2" cy="302.1" r="3" fill="#d1495b"/>
+<circle cx="361.2" cy="310.5" r="3" fill="#d1495b"/>
+<circle cx="361.2" cy="196.3" r="3" fill="#d1495b"/>
+<circle cx="361.2" cy="205.9" r="3" fill="#d1495b"/>
+<circle cx="365.6" cy="337.6" r="3" fill="#d1495b"/>
+<circle cx="365.6" cy="311.6" r="3" fill="#d1495b"/>
+<circle cx="365.6" cy="200.9" r="3" fill="#d1495b"/>
+<circle cx="365.6" cy="195.8" r="3" fill="#d1495b"/>
+<circle cx="927.6" cy="399.9" r="3" fill="#d1495b"/>
+<circle cx="927.6" cy="399.5" r="3" fill="#d1495b"/>
+<circle cx="927.6" cy="77.9" r="3" fill="#d1495b"/>
+<circle cx="927.6" cy="413.6" r="3" fill="#d1495b"/>
+<circle cx="927.6" cy="379.6" r="3" fill="#d1495b"/>
+<circle cx="927.6" cy="379.5" r="3" fill="#d1495b"/>
+<circle cx="932.0" cy="385.5" r="3" fill="#d1495b"/>
+<circle cx="932.0" cy="390.0" r="3" fill="#d1495b"/>
+<circle cx="932.0" cy="381.3" r="3" fill="#d1495b"/>
+<circle cx="932.0" cy="381.4" r="3" fill="#d1495b"/>
+<line x1="253" y1="512" x2="277" y2="512" stroke="#d1495b" stroke-width="3"/>
+<text x="283" y="516" font-family="sans-serif" font-size="12">DUCC</text>
+<text x="505.0" y="536" text-anchor="middle" font-family="sans-serif" font-size="14">lmax</text>
+<text transform="translate(18 260.0) rotate(-90)" text-anchor="middle" font-family="sans-serif" font-size="14">q1 time / q8 time</text>
+</svg>
