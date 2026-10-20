@@ -42,21 +42,6 @@ const PAIRED_FACTOR_LIMIT: f64 = f64::from_bits(1151_u64 << 52);
 #[cfg(test)]
 pub(crate) static ANALYSIS_PAIR_GROUP_RANGE_DECLINES: std::sync::atomic::AtomicUsize =
     std::sync::atomic::AtomicUsize::new(0);
-#[cfg(test)]
-static ANALYSIS_SINGLE_PASS_PROMOTIONS: std::sync::atomic::AtomicUsize =
-    std::sync::atomic::AtomicUsize::new(0);
-#[cfg(test)]
-static ANALYSIS_SCALED_FUSED_BLOCKS: std::sync::atomic::AtomicUsize =
-    std::sync::atomic::AtomicUsize::new(0);
-#[cfg(test)]
-static ANALYSIS_INITIAL_NORMAL_PROMOTIONS: std::sync::atomic::AtomicUsize =
-    std::sync::atomic::AtomicUsize::new(0);
-#[cfg(test)]
-static ANALYSIS_INITIAL_NORMAL_READY: std::sync::atomic::AtomicUsize =
-    std::sync::atomic::AtomicUsize::new(0);
-#[cfg(test)]
-static ANALYSIS_MIXED_NORMAL_PROMOTIONS: std::sync::atomic::AtomicUsize =
-    std::sync::atomic::AtomicUsize::new(0);
 
 /// Bounds DUCC's insignificant-prefix omission by eight f64 ulps of the
 /// maximum paired-spectrum scale. The latitude count bounds the sum of the
@@ -2145,18 +2130,6 @@ fn analysis_scale_epochs_below_one<S: Simd>(simd: S, scale_epochs: &[f64]) -> bo
 }
 
 #[inline(always)]
-fn analysis_scale_epochs_nonnegative<S: Simd>(simd: S, scale_epochs: &[f64]) -> bool {
-    let (scale_vectors, scale_tail) = S::as_simd_f64s(scale_epochs);
-    let zero = simd.splat_f64s(0.0);
-    for &scale in scale_vectors {
-        if !analysis_mask_all(simd, simd.greater_than_or_equal_f64s(scale, zero)) {
-            return false;
-        }
-    }
-    scale_tail.iter().all(|&scale| scale >= 0.0)
-}
-
-#[inline(always)]
 fn analysis_recurrence_state_is_finite(previous: &[f64], current: &[f64]) -> bool {
     previous.len() == current.len()
         && previous
@@ -2634,72 +2607,6 @@ fn promote_analysis_pair_to_ordinary<S: Simd>(
     Some(true)
 }
 
-/// Converts a scale block to ordinary recurrence in one traversal after the
-/// caller has established that every scale epoch is nonnegative. The scaled
-/// recurrence has already validated each current value; this pass also checks
-/// the preceding value before converting either state. A decline may leave
-/// earlier scratch lanes converted, so callers must restart the robust path
-/// from sectoral initialization rather than resume this scratch state.
-#[inline(always)]
-fn promote_analysis_pair_to_ordinary_single_pass<S: Simd>(
-    simd: S,
-    previous: &mut [f64],
-    current: &mut [f64],
-    corrections: &[f64],
-) -> Option<bool> {
-    if previous.len() != current.len() || current.len() != corrections.len() {
-        return None;
-    }
-    let (previous_vectors, previous_tail) = S::as_mut_simd_f64s(previous);
-    let (current_vectors, current_tail) = S::as_mut_simd_f64s(current);
-    let (correction_vectors, correction_tail) = S::as_simd_f64s(corrections);
-    let zero = simd.splat_f64s(0.0);
-    let minimum = simd.splat_f64s(f64::MIN_POSITIVE);
-    let maximum = simd.splat_f64s(scalar::BIG);
-
-    for index in 0..current_vectors.len() {
-        let corrected_previous = simd.mul_f64s(previous_vectors[index], correction_vectors[index]);
-        let corrected_current = simd.mul_f64s(current_vectors[index], correction_vectors[index]);
-        let previous_magnitude = simd.abs_f64s(corrected_previous);
-        let current_magnitude = simd.abs_f64s(corrected_current);
-        let previous_valid = simd.or_m64s(
-            simd.equal_f64s(previous_magnitude, zero),
-            simd.and_m64s(
-                simd.greater_than_or_equal_f64s(previous_magnitude, minimum),
-                simd.less_than_or_equal_f64s(previous_magnitude, maximum),
-            ),
-        );
-        let current_valid = simd.or_m64s(
-            simd.equal_f64s(current_magnitude, zero),
-            simd.and_m64s(
-                simd.greater_than_or_equal_f64s(current_magnitude, minimum),
-                simd.less_than_or_equal_f64s(current_magnitude, maximum),
-            ),
-        );
-        if !analysis_mask_all(simd, simd.and_m64s(previous_valid, current_valid)) {
-            return None;
-        }
-        previous_vectors[index] = corrected_previous;
-        current_vectors[index] = corrected_current;
-    }
-
-    for lane in 0..current_tail.len() {
-        let corrected_previous = previous_tail[lane] * correction_tail[lane];
-        let corrected_current = current_tail[lane] * correction_tail[lane];
-        if !analysis_value_in_ieee_range(corrected_previous)
-            || !analysis_value_in_ieee_range(corrected_current)
-        {
-            return None;
-        }
-        previous_tail[lane] = corrected_previous;
-        current_tail[lane] = corrected_current;
-    }
-
-    #[cfg(test)]
-    ANALYSIS_SINGLE_PASS_PROMOTIONS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    Some(true)
-}
-
 #[inline(always)]
 fn zero_staged_analysis_pair(
     staged_coefficients: &mut [Complex64],
@@ -3073,8 +2980,6 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool, const CHECK_PAIR_GROUP_RANGE: bool> W
             scale_epochs,
             scale_corrections,
         } = self;
-        #[cfg(test)]
-        ANALYSIS_SCALED_FUSED_BLOCKS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let mut previous = previous;
         let mut current = current;
         let mut next = next;
@@ -3127,30 +3032,13 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool, const CHECK_PAIR_GROUP_RANGE: bool> W
             return Ok(analysis_recurrence_state_is_finite(previous, current));
         }
 
-        #[cfg(test)]
-        ANALYSIS_INITIAL_NORMAL_PROMOTIONS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let initial_normal_range = if cfg!(rustsht_single_pass_analysis_promotion)
-            && analysis_scale_epochs_nonnegative(simd, scale_epochs)
-        {
-            promote_analysis_pair_to_ordinary_single_pass(
-                simd,
-                previous,
-                current,
-                &scale_corrections[..current.len()],
-            )
-        } else {
-            promote_analysis_pair_to_ordinary(
-                simd,
-                previous,
-                current,
-                scale_epochs,
-                &mut scale_corrections[..current.len()],
-            )
-        };
-        #[cfg(test)]
-        if initial_normal_range == Some(true) {
-            ANALYSIS_INITIAL_NORMAL_READY.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        }
+        let initial_normal_range = promote_analysis_pair_to_ordinary(
+            simd,
+            previous,
+            current,
+            scale_epochs,
+            &mut scale_corrections[..current.len()],
+        );
         let Some(mut normal_range) = initial_normal_range else {
             return Ok(false);
         };
@@ -3230,25 +3118,13 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool, const CHECK_PAIR_GROUP_RANGE: bool> W
                 return Ok(false);
             };
             normal_range = if all_nonnegative {
-                #[cfg(test)]
-                ANALYSIS_MIXED_NORMAL_PROMOTIONS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                let promotion = if cfg!(rustsht_single_pass_analysis_promotion) {
-                    promote_analysis_pair_to_ordinary_single_pass(
-                        simd,
-                        previous,
-                        current,
-                        &scale_corrections[..current.len()],
-                    )
-                } else {
-                    promote_analysis_pair_to_ordinary(
-                        simd,
-                        previous,
-                        current,
-                        scale_epochs,
-                        &mut scale_corrections[..current.len()],
-                    )
-                };
-                match promotion {
+                match promote_analysis_pair_to_ordinary(
+                    simd,
+                    previous,
+                    current,
+                    scale_epochs,
+                    &mut scale_corrections[..current.len()],
+                ) {
                     Some(ready) => ready,
                     None => return Ok(false),
                 }
@@ -5921,115 +5797,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    struct AnalysisPromotionProbe<'a> {
-        fast_previous: &'a mut [f64],
-        fast_current: &'a mut [f64],
-        corrections: &'a [f64],
-        checked_previous: &'a mut [f64],
-        checked_current: &'a mut [f64],
-        epochs: &'a mut [f64],
-        checked_corrections: &'a mut [f64],
-    }
-
-    impl WithSimd for AnalysisPromotionProbe<'_> {
-        type Output = (Option<bool>, Option<bool>);
-
-        fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
-            let fast = promote_analysis_pair_to_ordinary_single_pass(
-                simd,
-                self.fast_previous,
-                self.fast_current,
-                self.corrections,
-            );
-            let checked = promote_analysis_pair_to_ordinary(
-                simd,
-                self.checked_previous,
-                self.checked_current,
-                self.epochs,
-                self.checked_corrections,
-            );
-            (fast, checked)
-        }
-    }
-
-    #[test]
-    fn one_pass_scaled_analysis_promotion_matches_checked_conversion() {
-        let lane_count = 9;
-        for (epoch, correction, previous_seed, current_seed) in [
-            (0.0, 1.0, 0.125, 0.25),
-            (1.0, ANALYSIS_SCALE_UP, 1.0e-140, 2.0e-140),
-        ] {
-            let initial_previous = vec![previous_seed; lane_count];
-            let initial_current = vec![current_seed; lane_count];
-            let corrections = vec![correction; lane_count];
-            let mut fast_previous = initial_previous.clone();
-            let mut fast_current = initial_current.clone();
-            let mut checked_previous = initial_previous;
-            let mut checked_current = initial_current;
-            let mut epochs = vec![epoch; lane_count];
-            let mut checked_corrections = corrections.clone();
-
-            assert_eq!(
-                Arch::new().dispatch(AnalysisPromotionProbe {
-                    fast_previous: &mut fast_previous,
-                    fast_current: &mut fast_current,
-                    corrections: &corrections,
-                    checked_previous: &mut checked_previous,
-                    checked_current: &mut checked_current,
-                    epochs: &mut epochs,
-                    checked_corrections: &mut checked_corrections,
-                }),
-                (Some(true), Some(true))
-            );
-            assert_eq!(fast_previous, checked_previous);
-            assert_eq!(fast_current, checked_current);
-            assert_eq!(epochs, vec![0.0; lane_count]);
-            assert_eq!(checked_corrections, vec![1.0; lane_count]);
-        }
-    }
-
-    #[test]
-    #[allow(unexpected_cfgs)]
-    #[cfg(rustsht_single_pass_analysis_promotion)]
-    fn t720_analysis_exercises_single_pass_scaled_promotion() {
-        ANALYSIS_SINGLE_PASS_PROMOTIONS.store(0, std::sync::atomic::Ordering::Relaxed);
-        ANALYSIS_SCALED_FUSED_BLOCKS.store(0, std::sync::atomic::Ordering::Relaxed);
-        ANALYSIS_INITIAL_NORMAL_PROMOTIONS.store(0, std::sync::atomic::Ordering::Relaxed);
-        ANALYSIS_INITIAL_NORMAL_READY.store(0, std::sync::atomic::Ordering::Relaxed);
-        ANALYSIS_MIXED_NORMAL_PROMOTIONS.store(0, std::sync::atomic::Ordering::Relaxed);
-        let plan = crate::plan::ShtPlan::new(
-            crate::grid::GridSpec::new(crate::grid::GridKind::GaussLegendre, 721, 1443, 0.37)
-                .unwrap(),
-            crate::harmonics::HarmonicSpec::scalar(720, 720).unwrap(),
-        )
-        .unwrap();
-        let mut workspace = plan.workspace().unwrap();
-        plan.prepare_workspace(&mut workspace, 1).unwrap();
-        let mut map = vec![0.0; plan.sample_count];
-        for (index, value) in map.iter_mut().enumerate() {
-            let position = index as f64;
-            *value = (position * 0.000_017).sin() + 0.2 * (position * 0.000_003).cos();
-        }
-        let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
-        plan.analysis_into(&map, &mut alm, &mut workspace).unwrap();
-        eprintln!(
-            "scaled promotion counts: blocks={}, initial={}, initially_ready={}, mixed={}, one_pass={}",
-            ANALYSIS_SCALED_FUSED_BLOCKS.load(std::sync::atomic::Ordering::Relaxed),
-            ANALYSIS_INITIAL_NORMAL_PROMOTIONS.load(std::sync::atomic::Ordering::Relaxed),
-            ANALYSIS_INITIAL_NORMAL_READY.load(std::sync::atomic::Ordering::Relaxed),
-            ANALYSIS_MIXED_NORMAL_PROMOTIONS.load(std::sync::atomic::Ordering::Relaxed),
-            ANALYSIS_SINGLE_PASS_PROMOTIONS.load(std::sync::atomic::Ordering::Relaxed),
-        );
-        assert!(
-            ANALYSIS_SINGLE_PASS_PROMOTIONS.load(std::sync::atomic::Ordering::Relaxed) > 0,
-            "T720 GL analysis should exercise single-pass ordinary conversion"
-        );
-        assert!(
-            alm.iter()
-                .all(|coefficient| coefficient.re.is_finite() && coefficient.im.is_finite())
-        );
-    }
 
     struct AdvanceAnalysisPrefixProbe<'a> {
         cosine_squared: &'a [f64],
