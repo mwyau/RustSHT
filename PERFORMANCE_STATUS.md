@@ -131,6 +131,20 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   This interaction removes the earlier fused-check regression in the kernel
   screen but does not materially close the checked 256-lane gap. Keep it as a
   cumulative candidate pending full-transform measurement and ablation.
+- Full-transform screen at source `e8675966` compared production with that
+  cumulative candidate, using identical `-C target-cpu=x86-64-v3` builds and
+  three alternating process pairs per cell. The reusable-plan `m1b_bench`
+  measured f64 scalar GL analysis on `721x1443`, full and half `mmax`, q1 and
+  q8; q1 used the same physical core, q8 the same eight distinct cores. The
+  median process times (production/candidate, ms) and median paired candidate
+  changes were: full q1 `26.371/27.648` (`+3.30%`), full q8 `4.295/4.406`
+  (`+2.21%`), reduced q1 `21.903/22.767` (`+3.94%`), reduced q8
+  `3.436/3.481` (`+1.39%`). Each process used one warmup and five timed calls.
+  A first generic-target build was discarded after it ran about four times
+  slower than the established x86-64-v3 baseline. The candidate's focused
+  fused-analysis reference/tail test passed. Retain the cfg candidate for
+  cumulative ablation, but do not select it for production based on this
+  full-transform screen.
 - Checked and unchecked direct outputs match exactly. Extreme finite,
   subnormal, zero/cancellation, SIMD-tail, T255/T511 DUCC, scalar adjoint and
   full T720 q1/q8 checks passed. Valid T720 GL q1 and q8 analyses had zero
@@ -173,8 +187,8 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   stayed tightly grouped; long batch tails remain in the reported distributions.
   No favorable or unfavorable samples were removed.
 
-**Next:** measure the cumulative candidates on T720 q1/q8 and reduced-mmax
-full transforms, then investigate the remaining checked-loop coefficient
-loads and tile-size interactions. The checked kernel remains 1.55× DUCC at
-256 lanes after the Rust output commit is included; the unchecked A/B route is
-about 1.10×.
+**Next:** reduce ordinary-loop coefficient stack traffic without restoring
+the rejected wide unroll; preserve the checked post-group path and keep fused
+range-check/AVX2 reduction for final cumulative ablation. The checked kernel
+remains 1.55× DUCC at 256 lanes after the Rust output commit; the unchecked
+A/B route is about 1.10×.
