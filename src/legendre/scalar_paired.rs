@@ -2080,9 +2080,10 @@ fn analysis_scale_epochs_allow_recurrence(scale_epochs: &[f64], pair_count: usiz
 }
 
 /// Advances two recurrence pairs and applies DUCC's scale threshold in one
-/// latitude pass. This is used only by the insignificant-prefix route, which
-/// intentionally discards the accumulated coefficients until the recurrence
-/// reaches IEEE scale.
+/// latitude pass. The caller enters with every epoch below one; carry the
+/// updated below-limit state forward instead of rereading the epoch array
+/// after each pair group. This route discards coefficients until the
+/// recurrence reaches IEEE scale.
 #[inline(always)]
 fn advance_and_rescale_analysis_pair<S: Simd>(
     simd: S,
@@ -2092,7 +2093,7 @@ fn advance_and_rescale_analysis_pair<S: Simd>(
     scale_epochs: &mut [f64],
     corrections: &mut [f64],
     skip_insignificant_validation: bool,
-) -> Option<bool> {
+) -> Option<(bool, bool)> {
     let [
         (coefficient_a1, coefficient_b1),
         (coefficient_a2, coefficient_b2),
@@ -2124,6 +2125,7 @@ fn advance_and_rescale_analysis_pair<S: Simd>(
     let max_mantissa = simd.splat_f64s(scalar::BIG);
     let mut all_vectors_valid = simd.equal_f64s(zero, zero);
     let mut any_rescaled = false;
+    let mut below_limit = true;
 
     for index in 0..current_vectors.len() {
         let previous_value = previous_vectors[index];
@@ -2165,6 +2167,7 @@ fn advance_and_rescale_analysis_pair<S: Simd>(
         let updated_current = simd.select_f64s(rescale, simd.mul_f64s(second, down), second);
         let next_scale = simd.add_f64s(scale_vectors[index], one);
         let updated_scale = simd.select_f64s(rescale, next_scale, scale_vectors[index]);
+        below_limit &= analysis_mask_all(simd, simd.less_than_f64s(updated_scale, one));
         let correction = simd.select_f64s(
             simd.less_than_f64s(updated_scale, zero),
             zero,
@@ -2219,6 +2222,7 @@ fn advance_and_rescale_analysis_pair<S: Simd>(
                 return None;
             }
             scale_tail[lane] = next_scale;
+            below_limit &= next_scale < 1.0;
             correction_tail[lane] = analysis_scale_correction(current_scaled, next_scale)?;
             (previous_scaled, current_scaled)
         } else {
@@ -2244,7 +2248,7 @@ fn advance_and_rescale_analysis_pair<S: Simd>(
     {
         return None;
     }
-    Some(any_rescaled)
+    Some((any_rescaled, below_limit))
 }
 
 /// Applies DUCC's per-lane `rescale` rule while the analysis recurrence is in
@@ -2870,7 +2874,7 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
             if pair_count - second_pair == 1 {
                 return Ok(analysis_recurrence_state_is_finite(previous, current));
             }
-            let Some(rescaled) = advance_and_rescale_analysis_pair(
+            let Some((rescaled, remains_below_limit)) = advance_and_rescale_analysis_pair(
                 simd,
                 [
                     (coefficient_a[first_pair], coefficient_b[first_pair]),
@@ -2885,8 +2889,8 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
                 return Ok(false);
             };
             pair_start += 2;
+            below_limit = remains_below_limit;
             if rescaled {
-                below_limit = analysis_scale_epochs_below_one(simd, scale_epochs);
                 skip_insignificant_validation = scale_epochs.iter().all(|&scale| scale < 0.0);
             }
         }
@@ -5613,6 +5617,46 @@ where
 mod tests {
     use super::*;
 
+    struct AdvanceAnalysisPrefixProbe<'a> {
+        cosine_squared: &'a [f64],
+        previous: &'a mut [f64],
+        current: &'a mut [f64],
+        scale_epochs: &'a mut [f64],
+        corrections: &'a mut [f64],
+        skip_insignificant_validation: bool,
+    }
+
+    impl WithSimd for AdvanceAnalysisPrefixProbe<'_> {
+        type Output = Option<(bool, bool, bool)>;
+
+        fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+            let Self {
+                cosine_squared,
+                previous,
+                current,
+                scale_epochs,
+                corrections,
+                skip_insignificant_validation,
+            } = self;
+            advance_and_rescale_analysis_pair(
+                simd,
+                [(0.0, 1.0), (0.0, 1.0)],
+                cosine_squared,
+                (previous, current),
+                scale_epochs,
+                corrections,
+                skip_insignificant_validation,
+            )
+            .map(|(rescaled, below_limit)| {
+                (
+                    rescaled,
+                    below_limit,
+                    analysis_scale_epochs_below_one(simd, scale_epochs),
+                )
+            })
+        }
+    }
+
     struct AnalysisMaskAllProbe;
 
     impl WithSimd for AnalysisMaskAllProbe {
@@ -5640,6 +5684,71 @@ mod tests {
             Arch::new().dispatch(AnalysisMaskAllProbe),
             (true, false, false)
         );
+    }
+
+    #[test]
+    fn prefix_advance_carries_the_epoch_frontier_across_vectors_and_tails() {
+        for lane_count in [4, 5, 8, 9] {
+            let cosine_squared = vec![0.25; lane_count];
+            let mut previous = vec![0.0; lane_count];
+            let mut current = vec![ANALYSIS_FTOL * 0.5; lane_count];
+            let mut scale_epochs = vec![-1.0; lane_count];
+            let mut corrections = vec![0.0; lane_count];
+
+            assert_eq!(
+                Arch::new().dispatch(AdvanceAnalysisPrefixProbe {
+                    cosine_squared: &cosine_squared,
+                    previous: &mut previous,
+                    current: &mut current,
+                    scale_epochs: &mut scale_epochs,
+                    corrections: &mut corrections,
+                    skip_insignificant_validation: true,
+                }),
+                Some((false, true, true)),
+                "no-crossing lanes={lane_count}"
+            );
+
+            previous.fill(0.0);
+            current.fill(0.5);
+            scale_epochs.fill(-1.0);
+            corrections.fill(0.0);
+            scale_epochs[0] = 0.0;
+            corrections[0] = 1.0;
+            assert_eq!(
+                Arch::new().dispatch(AdvanceAnalysisPrefixProbe {
+                    cosine_squared: &cosine_squared,
+                    previous: &mut previous,
+                    current: &mut current,
+                    scale_epochs: &mut scale_epochs,
+                    corrections: &mut corrections,
+                    skip_insignificant_validation: false,
+                }),
+                Some((true, false, false)),
+                "crossing-lane lanes={lane_count}"
+            );
+
+            if lane_count >= 8 {
+                previous.fill(0.0);
+                current.fill(ANALYSIS_FTOL * 0.5);
+                current[4..8].fill(0.5);
+                scale_epochs.fill(-1.0);
+                corrections.fill(0.0);
+                scale_epochs[4] = 0.0;
+                corrections[4] = 1.0;
+                assert_eq!(
+                    Arch::new().dispatch(AdvanceAnalysisPrefixProbe {
+                        cosine_squared: &cosine_squared,
+                        previous: &mut previous,
+                        current: &mut current,
+                        scale_epochs: &mut scale_epochs,
+                        corrections: &mut corrections,
+                        skip_insignificant_validation: false,
+                    }),
+                    Some((true, false, false)),
+                    "sparse-crossing-vector lanes={lane_count}"
+                );
+            }
+        }
     }
 
     struct FourAccumulatorReductionProbe;

@@ -54,6 +54,15 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   it. The scalar seed reference test covers orders 0, 1, 250 and 720, mixed
   vectors and a SIMD tail. The all-feature and no-default-feature release test
   suites pass.
+- The scaled-prefix candidate now carries DUCC's below-one epoch frontier out
+  of the two-pair recurrence pass, checking only vectors that rescaled instead
+  of rereading the full epoch array after each group. Scale correction,
+  insignificant-term handling and fallback checks are unchanged. A focused
+  test covers threshold crossings, sparse rescaled vectors and SIMD tails; the
+  all-feature release library suite passes. The five-call synthetic prefix
+  screen still matches DUCC state and scale epochs, but is too short for a
+  performance claim. Calibrated comparisons of synthetic and GL-derived scaled
+  seeds remain next; retain this source change as experimental meanwhile.
 - A short full-transform Rust screen compared `fc9f44a4` with this change using
   five interleaved process pairs and five samples per process, GL STANDARD A,
   odd `nphi=2T+3`, and q1/q8. Median baseline→candidate times were T300 q1
