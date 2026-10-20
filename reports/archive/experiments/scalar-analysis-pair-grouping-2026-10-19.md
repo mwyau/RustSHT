@@ -400,9 +400,58 @@ zero/cancellation, SIMD-tail, analytic and adjoint cases. Keep the checked path
 as production default while confirming the unchecked behavior across the
 remaining high-order fallback cases.
 
+## Calibrated grouped-reduction A/B — 2026-10-20
+
+The Pulp candidate groups four accumulator vectors, transposes their AVX2
+lanes, and sums matching degree/parity channels before storing the four scalar
+results. It is selected only by `rustsht_group_analysis_reduction`; the
+standard independent reductions remain the default. The baseline was
+`90bdde14`; the candidate was `7cd69307`. Both used the same `m=1`,
+`lmax=720` f64 fixture and pinned DUCC revision
+`80388904b8cfc32400ba84af8a6a45aabfe60f86`. Rust 1.99.0 with Pulp 0.22.3
+used `-C target-cpu=x86-64-v3`; DUCC used GCC 15.2 with
+`-O3 -DNDEBUG -march=x86-64-v3`. Runtime dispatch selected Rust Pulp V3 and
+both implementations used four AVX2 f64 lanes.
+
+The comparison used five independent Rust/DUCC process pairs per lane count,
+30 calibrated batches per process, alternating backend order and pinning all
+single-thread trials to the same physical core. Each batch measured 20–100 ms;
+baseline batches were 33.55–66.83 ms and candidate batches were 33.76–62.60
+ms. Results are median µs per operation with p10–p90 batch ranges.
+`kernel_only` excludes reset; `reset_inclusive` includes identical state and
+coefficient reset work for both libraries.
+
+| Lanes | Rust unchecked baseline | Grouped candidate | Candidate / baseline | DUCC baseline → candidate | Candidate / DUCC |
+|---:|---:|---:|---:|---:|---:|
+| 64 | 4.782 (4.752–4.809) | 5.444 (5.382–5.571) | 1.138× | 4.128 (4.097–4.144) → 4.125 (4.092–4.169) | 1.320× |
+| 128 | 8.790 (8.740–8.829) | 9.403 (9.341–9.449) | 1.070× | 8.055 (8.005–8.089) → 8.049 (8.007–8.085) | 1.168× |
+| 256 | 17.357 (17.253–17.419) | 18.206 (18.077–18.298) | 1.049× | 15.805 (15.707–15.893) → 15.849 (15.757–15.895) | 1.149× |
+
+Reset-inclusive medians were 4.845/5.584/4.233/4.232 µs at 64 lanes,
+8.874/9.473/8.196/8.189 µs at 128 lanes, and
+17.446/18.318/16.005/16.043 µs at 256 lanes (Rust baseline/candidate,
+DUCC baseline/candidate). Grouped reduction slowed the unchecked kernel by
+13.8%, 7.0% and 4.9%. Its AVX2 output path adds packed transposes and stack
+materialization/reloads, explaining why fewer independent horizontal
+reductions did not improve latency.
+
+The candidate passed the all-feature release suite (220 unit tests, four
+extreme-value integration tests, 11 f32 tests and workspace compatibility),
+all-target/all-feature Clippy and the focused grouped-sum test. DUCC output
+relative L2 errors remained `6.670e-14`, `1.628e-13` and `5.928e-14`; the
+maximum scaled coefficient difference was `1.970e-16`. Sampled median CPU
+frequencies were 4.607 GHz for baseline and 4.617 GHz for candidate. Median
+run-queue wait was 0% in both runs, with maxima below 0.05%.
+
+The earlier single-call DUCC timings of 9.599/5.621 µs at 64 lanes and
+25.318–39.165 µs at 256 lanes were not reproduced. Calibrated DUCC process
+medians stayed between 4.125–4.128 µs at 64 lanes and 15.743–15.866 µs at 256
+lanes. The old runs do not support a parity conclusion; current evidence does
+not identify the exact cause of their process-level shifts.
+
 ## Next implementation target
 
-Reduce the remaining ordinary recurrence cost. The unchecked kernel is
-1.149×/1.088×/1.094× DUCC at 64/128/256 lanes. Focus on the remaining 1.484 µs
-at 256 lanes after validation has been removed, while preserving the checked
-fallback where scaled recurrence is needed.
+Reduce the remaining ordinary recurrence cost. The calibrated baseline
+unchecked kernel is 1.158×/1.091×/1.098× DUCC at 64/128/256 lanes. Focus on
+the remaining 1.552 µs at 256 lanes after validation has been removed, while
+preserving the checked fallback where scaled recurrence is needed.

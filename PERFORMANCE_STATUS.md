@@ -1,8 +1,7 @@
 # RustSHT performance checkpoint
 
-**Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Measured
-source revision:** `d470b793`. **Source baseline for the five-process benchmark
-refresh:** `205c20b6`. For the
+**Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Production
+baseline:** `90bdde14`. **Grouped-reduction experiment:** `7cd69307`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
 
 - Production f64 scalar GL analysis keeps the checked two-pair AVX2/FMA route
@@ -19,6 +18,14 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   64/128/256 lanes. At 256 lanes, the scan is 30.0% of checked Rust time and
   accounts for 83.4% of the measured Rust/DUCC excess; unchecked Rust remains
   9.4% slower than DUCC. All 2,700 calibrated batches were 33.51–82.40 ms.
+- A Pulp grouped four-accumulator reduction remains behind
+  `rustsht_group_analysis_reduction` for cumulative evaluation. It reduced the
+  final channels with AVX2 shuffles and packed adds but regressed unchecked
+  kernel time by 13.8%, 7.0% and 4.9% at 64/128/256 lanes. The standard
+  individual reductions remain the production path. The repeated-batch
+  comparison measured DUCC at 4.128 µs (64 lanes) and 15.805 µs (256 lanes),
+  with tightly grouped process medians; the old single-call timing regimes
+  were not reproduced.
 - Checked and unchecked direct outputs match exactly. Extreme finite,
   subnormal, zero/cancellation, SIMD-tail, T255/T511 DUCC, scalar adjoint and
   full T720 q1/q8 checks passed. Valid T720 GL q1 and q8 analyses had zero
@@ -57,7 +64,7 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   unchecked route remained stable. All batches are retained. See the report
   for process-level distributions and host diagnostics.
 
-**Next:** reduce the remaining ordinary recurrence cost. The latest matched
-unchecked kernel is 1.149×, 1.088× and 1.094× DUCC at 64/128/256 lanes; address
-the 1.484 µs excess at 256 lanes after the measured validation pass, while
-preserving the checked fallback for inputs that need scaled recurrence.
+**Next:** reduce the remaining ordinary recurrence cost. The latest baseline
+unchecked kernel is 1.158×, 1.091× and 1.098× DUCC at 64/128/256 lanes; address
+the 1.552 µs excess at 256 lanes while preserving the checked fallback for
+inputs that need scaled recurrence.
