@@ -48,7 +48,7 @@ the minimum and maximum block percentage changes.
 
 The q1 regressions were consistent in all five process blocks. q8 T511 was
 inconclusive; q8 T720 was consistently slower. Raw per-process samples are in
-[`reports/data/paired-analysis-three-chain-2026-10-14`](data/paired-analysis-three-chain-2026-10-14/).
+[`reports/data/paired-analysis-three-chain-2026-10-14`](../../data/paired-analysis-three-chain-2026-10-14).
 
 ## Numerical checks
 

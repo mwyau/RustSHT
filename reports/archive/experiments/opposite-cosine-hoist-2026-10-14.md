@@ -19,7 +19,7 @@ The candidate did not improve whole-transform time and was removed. Five paired 
 | T720 spin-1 STANDARD analysis | 1 | 107.219 | 107.190 | +0.33% (-1.10% to +1.03%) |
 | T720 spin-1 STANDARD analysis | 8 | 34.959 | 35.201 | +1.10% (-1.83% to +1.32%) |
 
-Raw samples for all 32 process runs are in [`paired-process-samples.txt`](data/opposite-cosine-hoist-2026-10-14/paired-process-samples.txt). No memory change was measured or expected; the temporary path reused existing worker arrays.
+Raw samples for all 32 process runs are in [`paired-process-samples.txt`](../../data/opposite-cosine-hoist-2026-10-14/paired-process-samples.txt). No memory change was measured or expected; the temporary path reused existing worker arrays.
 
 ## Numerical checks and profiling context
 

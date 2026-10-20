@@ -13,7 +13,7 @@ The baseline was commit `3b8e6159d7ffcd405377037ddfe12645f8e930d6`; the candidat
 | 1 | 39.707 ms | 39.423 ms | -0.72% | -0.35% (-1.41% to +0.54%) |
 | 8 | 12.888 ms | 12.633 ms | -1.98% | -1.25% (-3.00% to +1.67%) |
 
-The paired ranges cross zero, so neither apparent improvement meets the retention threshold. Raw process medians and exact commands are in [`reports/data/paired-recurrence-range-check-2026-10-14/paired-process-samples.txt`](data/paired-recurrence-range-check-2026-10-14/paired-process-samples.txt).
+The paired ranges cross zero, so neither apparent improvement meets the retention threshold. Raw process medians and exact commands are in [`reports/data/paired-recurrence-range-check-2026-10-14/paired-process-samples.txt`](../../data/paired-recurrence-range-check-2026-10-14/paired-process-samples.txt).
 
 
 ## Numerical validation
