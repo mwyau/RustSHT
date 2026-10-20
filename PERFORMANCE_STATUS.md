@@ -41,8 +41,29 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   initially scaled T720 blocks were ready at the first promotion point. The
   checked scale correction remains the production transition. Release T511
   DUCC/analytic and cached exceptional-input tests, formatting and all-target
-  Clippy pass. Next: profile the selected 64/128/256-lane kernel's remaining
-  excess by recurrence versus output reduction using the calibrated batches.
+  Clippy pass.
+- Final calibrated kernel profile ran at `d36b1a63` on the selected source:
+  T720 GL `m=1`, q1, Rust 1.99/Pulp V3 and pinned DUCC, both x86-64-v3, on a
+  Ryzen 9 5950X. Ten interleaved process pairs collected six 20–100 ms batches
+  per process/backend/lane. Paired Rust kernel-plus-commit medians versus DUCC:
+
+  | Lanes | Rust checked | Rust warmed route | DUCC | Checked ratio / excess | Warmed ratio / excess | Rust commit only |
+  |---:|---:|---:|---:|---:|---:|---:|
+  | 64 | 7.135 µs | 4.893 µs | 4.105 µs | 1.736× / 3.024 µs | 1.191× / 0.786 µs | 0.136 µs |
+  | 128 | 12.832 µs | 8.919 µs | 8.045 µs | 1.595× / 4.772 µs | 1.109× / 0.876 µs | 0.136 µs |
+  | 256 | 24.578 µs | 17.267 µs | 15.800 µs | 1.556× / 8.780 µs | 1.095× / 1.506 µs | 0.136 µs |
+
+  The warmed route uses the same unchecked specialization production selects
+  after its plan/order range proof; the checked route remains necessary to
+  establish that proof. Final coefficient commit is only 0.136 µs, so it cannot
+  explain the warmed excess. The fused recurrence and per-degree
+  SIMD lane reductions remain jointly timed; this profile does not attribute
+  their separate shares. All 1,800 kernel/reset batches were 28.83–77.32 ms;
+  all 1,440 operation wall batches were 33.40–77.75 ms. Numerical relative
+  L2 error was `5.928e-14..1.628e-13`. Process ratio spreads were stable; median
+  CPU frequency was 4.592 GHz and median run-queue wait 0.012%, with one
+  66.528% wait outlier retained. Next: isolate the horizontal reductions in a
+  benchmark-only kernel variant before changing recurrence scheduling.
 - The release regression test covers oversampled T511 GL, an odd SIMD-tail
   lane, zero/subnormal/extreme finite maps, repeated workspace reuse, and a
   compatible workspace reused across plans. The valid T720 fixture recorded
