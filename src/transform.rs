@@ -2328,18 +2328,17 @@ impl<T: ShtScalar> ShtPlan<T> {
                     // DUCC's fill_m2a checks the packed spectra and cosine-weights
                     // opposite parity in one pass. Preserve the transformed
                     // values only when both range checks succeed.
-                    let packed_preparation =
-                        if cfg!(rustsht_fused_analysis_input_preparation) && fast_path_candidate {
-                            T::prepare_scalar_analysis_pair_inputs(
-                                &recurrence.analysis_same_real[..lane_count],
-                                &recurrence.analysis_same_imag[..lane_count],
-                                &mut recurrence.analysis_opposite_real[..lane_count],
-                                &mut recurrence.analysis_opposite_imag[..lane_count],
-                                pair_cos,
-                            )
-                        } else {
-                            None
-                        };
+                    let packed_preparation = if fast_path_candidate {
+                        T::prepare_scalar_analysis_pair_inputs(
+                            &recurrence.analysis_same_real[..lane_count],
+                            &recurrence.analysis_same_imag[..lane_count],
+                            &mut recurrence.analysis_opposite_real[..lane_count],
+                            &mut recurrence.analysis_opposite_imag[..lane_count],
+                            pair_cos,
+                        )
+                    } else {
+                        None
+                    };
                     let (product_range_safe, opposite_preparation) =
                         if let Some((products_safe, opposite_safe)) = packed_preparation {
                             (products_safe, Some(opposite_safe))
