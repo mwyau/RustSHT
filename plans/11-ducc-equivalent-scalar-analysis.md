@@ -1,7 +1,7 @@
 # Active plan — close scalar-analysis SIMD performance gap with DUCC
 
 **Branch:** `opt/sht-performance-parity`  
-**Updated:** 2026-10-20. **Reviewed implementation:** `96ffd14`; inspect current remote HEAD before acting.
+**Updated:** 2026-10-20. **Reviewed production profile:** `d36b1a63` (status at `cf96d2d`); inspect current remote HEAD before acting.
 
 **Reference:** pinned DUCC `80388904b8cfc32400ba84af8a6a45aabfe60f86`; source `src/ducc0/sht/sht_inner_loop.h` (`fill_m2a`, `init_lambda`, `iter_to_ieee`, `calc_map2alm`, `map2alm_kernel`) and surrounding `sht.cc`.
 
@@ -14,6 +14,14 @@
 This is a *goal*, not a guaranteed result or a license to weaken accuracy. Do not impose artificial truncation-specific or 10–20% acceptance thresholds. Completion requires either convincing near-DUCC behavior under equivalent workloads or a thoroughly measured, technically bounded explanation of the residual, including tested remediation attempts.
 
 **Active work is scalar f64 GL STANDARD analysis (A) only.** Leave spin-1/f32/CC/F1 and FFT redesign to a separate goal; preserve their existing correctness and API behavior.
+
+## Owner priority (2026-10-20) — stop optimizing the checked hot loop
+
+**Do not pursue further *performance* rewrites of the per-group checked ordinary recurrence** (range-scan/mask/fused-check variants). It is a correctness and cold-start/fallback mechanism, **not the DUCC-parity target**. Keep the existing checked-first range proof/cache and robust scaled/exceptional fallback; do not remove required validation, weaken numerical behavior, or assume an unsafe unchecked path is valid for arbitrary inputs.
+
+**Optimize the warmed, proven-safe ordinary AVX2/FMA path next**, using pinned DUCC's `map2alm_kernel` as the equivalent-work reference. The latest selected-kernel profile (`d36b1a63`; see `PERFORMANCE_STATUS.md`) gives a 256-lane warmed Rust/DUCC ratio of ~1.095× versus ~1.556× for the cold checked path. Attribute and reduce the *remaining warmed-path* excess, starting by isolating SIMD horizontal reductions from recurrence arithmetic; continue with source/assembly-grounded changes, scaled-prefix work when its whole-transform contribution justifies it, and cumulative ablations. Do not restart already-tested checked-loop mask experiments.
+
+Benchmark **warmed and cold** full transforms separately (T720 full/reduced `mmax`, q1/q8) and retain checked-path cost in reports as a safety/startup cost, **not a performance optimization objective**. Validate cache eligibility/invalidation, the first checked call, reused workspaces, changing maps/plans, extreme/subnormal/cancellation cases, SIMD tails, and DUCC/analytic/adjoint correctness. Revisit the checked path only for a demonstrated correctness issue or evidence that cold-start cost materially dominates a relevant real workload. This owner priority supersedes older milestones wherever they emphasize optimizing checked-loop throughput.
 
 ## Milestone 0 — Verify the *executed* Pulp backend first
 
