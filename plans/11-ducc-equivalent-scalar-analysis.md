@@ -33,6 +33,15 @@ f64 scalar synthesis only; analysis and spin-1 selectors remain unchanged.
 The full comparison and final-policy checks are in
 `reports/scalar-t64-recurrence-transition-2026-10-20.md`.
 
+**Future TODO (not active):** [Plan 12 — offline-calibrated, cache-informed
+Legendre dispatch](12-cache-informed-legendre-dispatch.md). Investigate a
+one-time, near-zero-overhead, cross-platform L2/L3 **capacity** probe and an
+offline-derived table/recurrence decision rule, rather than SHTns-style
+benchmarking at Python import or plan construction. Cache size is only a
+heuristic: retain separate analysis/synthesis/spin-1 policies and existing
+fallbacks. **Do not implement this until the present Plan 11 campaign is
+closed or the owner explicitly reprioritizes it.**
+
 ## Cumulative output-staging experiment (2026-10-20)
 
 The direct-output accumulator is restored as an opt-in candidate under
