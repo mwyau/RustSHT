@@ -63,4 +63,4 @@ synthesis-analysis coefficient max absolute error `1.255e-14`. The scheduling
 change preserves coefficient arithmetic and output ownership. The candidate
 was reverted: halving cached row copies did not repay the loss in group
 parallelism. Raw within-process samples are in
-[`ring64-process-samples.txt`](data/spin1-ring64-synthesis-2026-10-14/ring64-process-samples.txt).
+[`ring64-process-samples.txt`](../../data/spin1-ring64-synthesis-2026-10-14/ring64-process-samples.txt).
