@@ -134,9 +134,9 @@ RUSTSHT_LEGENDRE_REUSE_ESTIMATE=-,28 taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_C
 ```
 
 Raw output has every measured command and sample in
-[`paired-process-samples.txt`](data/legendre-reuse-estimate-2026-10-14/paired-process-samples.txt);
+[`paired-process-samples.txt`](../../data/legendre-reuse-estimate-2026-10-14/paired-process-samples.txt);
 calculations are in
-[`paired-process-summary.csv`](data/legendre-reuse-estimate-2026-10-14/paired-process-summary.csv). The release executable predates final threshold corrections, but the kernels,
+[`paired-process-summary.csv`](../../data/legendre-reuse-estimate-2026-10-14/paired-process-summary.csv). The release executable predates final threshold corrections, but the kernels,
 inputs, and table/recurrence implementations match. Focused tests cover the
 corrected selection boundaries.
 
@@ -173,4 +173,4 @@ by the library. The lookup returns no threshold for unmeasured combinations. Val
 passed; 7 ignored), and `uv run pytest python/tests` (20 passed). The full
 Rust suites include spin-3/4 regression coverage. The focused selector tests
 also passed independently after the last code change. The validation record is
-in [`plans/05-validation-and-milestones.md`](../plans/05-validation-and-milestones.md).
+in [`plans/05-validation-and-milestones.md`](../../../plans/05-validation-and-milestones.md).
