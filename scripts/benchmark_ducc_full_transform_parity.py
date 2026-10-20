@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
 import os
@@ -59,6 +60,14 @@ def cpu_flags() -> set[str]:
 def topology(cpu: int) -> tuple[str, str]:
     base = pathlib.Path(f"/sys/devices/system/cpu/cpu{cpu}/topology")
     return (base / "physical_package_id").read_text().strip(), (base / "core_id").read_text().strip()
+
+
+def sha256_file(path: pathlib.Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def physical_cpus() -> list[int]:
@@ -234,11 +243,15 @@ def make_cases(smoke: bool) -> list[dict]:
             set(range(0, 33))
             | set(range(40, 257, 16))
             | {
+                62, 63, 64, 65, 126, 127, 128, 129, 159, 191, 223, 254,
                 255, 256, 300, 320, 384, 448, 511, 512, 513, 640, 720, 721,
                 768, 896, 1024, 1280, 1536, 1792, 2048, 3072,
             }
         )
-    key_sizes = {255, 256, 300, 511, 512, 513, 720, 721, 1024, 1536, 2048}
+    key_sizes = {
+        62, 63, 64, 65, 126, 127, 128, 129, 159, 191, 223, 248, 254,
+        255, 256, 300, 511, 512, 513, 720, 721, 1024, 1536, 2048,
+    }
     cases: list[dict] = []
     for lmax in lmax_values:
         mmax_values = {lmax}
@@ -277,6 +290,10 @@ def make_fixture(case: dict, directory: pathlib.Path) -> None:
     case["map_path"] = directory / "map.bin"
     alm.tofile(case["alm_path"])
     map_values.tofile(case["map_path"])
+    case["input_sha256"] = {
+        "alm": sha256_file(case["alm_path"]),
+        "map": sha256_file(case["map_path"]),
+    }
 
 
 def error_metrics(actual: np.ndarray, reference: np.ndarray) -> dict[str, float]:
@@ -543,6 +560,8 @@ def hardware_metadata(ducc_src: pathlib.Path) -> dict:
         "os": platform.platform(),
         "rustc": command_output(["rustc", "--version"]),
         "cargo": command_output(["cargo", "--version"]),
+        "rust_source_revision": command_output(["git", "rev-parse", "HEAD"]),
+        "rust_worktree_clean": not bool(command_output(["git", "status", "--porcelain"])),
         "cxx": command_output(cxx + ["--version"]).splitlines()[0],
         "pulp": pulp_match.group(1) if pulp_match else "unknown",
         "ducc_source_revision": command_output(["git", "rev-parse", "HEAD"], ducc_src),
@@ -965,6 +984,7 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
             "thread_control": "Rust fixed Rayon pool; DUCC DUCC0_NUM_THREADS; both workers report active pool capacity",
             "operations": ["analysis", "synthesis"],
             "input_layout": "identical compact m-major coefficient body; DUCC mstart adds a leading offset and maps without timed conversion",
+            "fixture_generation": "deterministic PCG64 seed derived from lmax, mmax, and nphi; SHA-256 of each alm/map fixture is recorded per case",
             "output_buffers": "reused across calls; transform outputs read and compared outside timed intervals",
             "timed_region": "native public transform call loop; setup and first call reported separately",
             "short_operation_calibration": "up to three untimed repeated-call batches; adjust repetitions until 20-100 ms, then collect 10 measured batches",
@@ -1144,6 +1164,8 @@ def main() -> None:
     parser.add_argument("--skip-build", action="store_true")
     parser.add_argument("--case-limit", type=int, help="run only the first N configurations")
     parser.add_argument("--lmax", type=int, action="append", help="run all cases at this lmax; may be repeated")
+    parser.add_argument("--max-lmax", type=int,
+                        help="run every defined case with lmax at or below this value")
     parser.add_argument("--results-dir", type=pathlib.Path, default=DATA_DIR,
                         help="directory for machine-readable outputs and plots")
     parser.add_argument("--report-path", type=pathlib.Path, default=REPORT_PATH,
@@ -1178,6 +1200,12 @@ def main() -> None:
     if args.lmax:
         selected_lmax = set(args.lmax)
         cases = [case for case in cases if case["lmax"] in selected_lmax]
+    if args.max_lmax is not None:
+        if args.max_lmax < 0:
+            parser.error("--max-lmax must be nonnegative")
+        cases = [case for case in cases if case["lmax"] <= args.max_lmax]
+    if not cases:
+        parser.error("case filters selected no configurations")
     if args.case_limit:
         cases = cases[: args.case_limit]
     if args.smoke:
