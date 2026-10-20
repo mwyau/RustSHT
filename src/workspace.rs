@@ -7,7 +7,7 @@ use rustfft::num_traits::Zero;
 
 use crate::error::ShtError;
 use crate::fft::{RealFftPlan, RealFftWorkspace};
-use crate::legendre::{LATITUDE_BLOCK_SIZE, SCALAR_ORDER_BATCH_SIZE, ShtScalar};
+use crate::legendre::{LATITUDE_BLOCK_SIZE, ShtScalar, recurrence_scratch_len};
 use crate::meridional::CCResamplingPlan;
 
 #[cfg(all(test, feature = "parallel"))]
@@ -603,9 +603,7 @@ impl<T: ShtScalar> ShtWorkspace<T> {
                 .ok_or(ShtError::IntegerOverflow {
                     quantity: "prepared CC Fourier spectrum count",
                 })?;
-        let recurrence_scratch_len = latitude_count
-            .min(LATITUDE_BLOCK_SIZE)
-            .max(SCALAR_ORDER_BATCH_SIZE);
+        let recurrence_scratch_len = recurrence_scratch_len(latitude_count);
         let ring_group_size = Self::ring_group_size_for_capacity(ntheta, execution_capacity)?;
         let ring_worker_count = ntheta.div_ceil(ring_group_size);
         let analysis_worker_count = execution_capacity.min(analysis_order_count).max(1);

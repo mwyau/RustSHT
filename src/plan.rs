@@ -5,6 +5,8 @@ use crate::error::ShtError;
 use crate::fft::RealFftPlan;
 use crate::grid::GridSpec;
 use crate::harmonics::HarmonicSpec;
+#[cfg(feature = "parallel")]
+use crate::legendre::recurrence_scratch_len;
 use crate::legendre::{
     LegendreOperation, LegendreStrategy, SPIN1_FAST_MIN_LMAX, ScalarLegendreTable, ShtScalar,
     fill_spin2_factors, measured_table_break_even_calls, select_scalar_legendre_strategy,
@@ -495,11 +497,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 self.spin_recurrence_factor_count,
                 self.spin_fast_coefficient_count,
                 spin_pair_fast_coefficient_count,
-                workspace
-                    .theta_sin
-                    .len()
-                    .min(crate::legendre::LATITUDE_BLOCK_SIZE)
-                    .max(crate::legendre::SCALAR_ORDER_BATCH_SIZE),
+                recurrence_scratch_len(workspace.theta_sin.len()),
             )?;
             if self.row_fft_parallelism_supported() {
                 let fft_worker_count = execution_capacity.min(self.grid.ntheta());

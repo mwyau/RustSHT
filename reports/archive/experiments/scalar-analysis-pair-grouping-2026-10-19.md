@@ -53,6 +53,49 @@ descriptive, not a stable production estimate. Exact transient frequency and
 scheduler readings remain local. Output relative L2 error was `6.670e-14`,
 `1.628e-13` and `5.928e-14` for 64, 128 and 256 lanes.
 
+## Scalar-analysis pair-tile screen — 2026-10-20
+
+The scalar-analysis block loop now has compile-time 64/128/256 pair tiles;
+256 is the candidate default. Only f64's paired scalar-analysis path uses this
+tile. The shared 64-lane synthesis/spin blocks and f32 scalar-analysis blocks
+are unchanged. Workspace scratch was already allocated for 256 lanes due to
+`SCALAR_ORDER_BATCH_SIZE`, so the 256 tile adds no scratch bytes.
+
+The ignored active-pair diagnostic invokes the production packer on the
+T720 GL full-order (`721x1443`) and T300 GL reduced-order (`301x603`,
+`mmax=150`) geometries. It confirms identical active-lane counts and SIMD tail
+capacity at all three tiles:
+
+| Case | Tile 64 blocks | Tile 128 blocks | Tile 256 blocks | Active pairs | SIMD lane capacity |
+|---|---:|---:|---:|---:|---:|
+| T720, `mmax=720` | 3,384 | 1,851 | 1,139 | 193,993 | 195,204 |
+| T300, `mmax=150` | 453 | 302 | 151 | 22,413 | 22,592 |
+
+This reduces repeated per-order block preparation by 66–67% at 256 lanes while
+preserving all active latitude work. The SIMD tail capacity is unchanged and
+the lane-sized recurrence scratch remains 55,296 bytes per worker.
+
+The lightweight full-analysis screen reused plans/workspaces and ran five
+timed calls in each of three independent processes per tile, interleaving tile
+order. Each single-thread process was pinned to one physical core; q8 processes
+used the same eight physical cores. Results are medians of the three process
+medians, with the process-median range in parentheses (ms):
+
+| Grid and `mmax` | Threads | Tile 64 | Tile 128 | Tile 256 |
+|---|---:|---:|---:|---:|
+| T720, full | q1 | 27.581 (27.475–27.811) | 26.462 (26.320–26.500) | 26.467 (26.300–26.657) |
+| T720, full | q8 | 4.487 (4.412–6.066) | 4.342 (4.270–4.353) | 4.290 (4.290–4.311) |
+| T300, `mmax=150` | q1 | 2.859 (2.839–2.925) | 2.752 (2.729–2.760) | 2.704 (2.677–2.718) |
+| T300, `mmax=150` | q8 | 0.494 (0.494–0.660) | 0.572 (0.533–0.633) | 0.548 (0.466–0.552) |
+
+Tile 256 improved the q1 medians by 4.0% at T720 and 5.4% at T300, and the
+q8 T720 median by 4.4%. q8 T300 did not show a reliable improvement; all three
+process groups had substantial spread relative to the sub-millisecond
+operation. The first q8 T720 tile-64 process also had one elevated process
+median. Treat these as development screens, not final parity measurements.
+Release all-feature tests passed for the 64, 128 and 256 configurations;
+release no-default-feature tests and all-target/all-feature Clippy also passed.
+
 ## Calibrated checked/unchecked comparison — 2026-10-20
 
 The earlier nine-call direct measurements are retained below as historical

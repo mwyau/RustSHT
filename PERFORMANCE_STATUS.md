@@ -28,13 +28,21 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   ablation and is not selected in production.
 - A scalar reduction per four-lane chunk avoids that spill but is 41–50% slower
   than the scan; keep both checked experiments out of the production path.
+- Scalar analysis now uses a separate 256-pair tile by default, with compile-
+  time 64/128 controls. Shared synthesis/spin tiles and f32 analysis remain at
+  64. T720 and T300 active-block counts fell by about two thirds with unchanged
+  SIMD-tail capacity and no increase in recurrence scratch.
+- The three-process full-analysis screen improved q1 by 4.0% at T720 and 5.4%
+  at reduced-order T300; q8 T720 improved 4.4%. q8 T300 was too noisy to show a
+  clear benefit. The candidate passed all-feature release tests at 64/128/256,
+  no-default-feature tests, and all-target/all-feature Clippy.
 - DUCC process medians were stable and the old single-call regimes were not
   reproduced. The checked experimental Rust route had several 3–8% process
   shifts that sampled frequency and scheduler data did not explain; the
   unchecked route remained stable. All batches are retained. See the report
   for process-level distributions and host diagnostics.
 
-**Next:** keep the checked post-group scan; reject both in-loop variants.
-Continue from the unchecked direct kernel, 9–17% slower than DUCC in these
-matched cases, and reduce recurrence instruction cost without weakening
-fallback behavior.
+**Next:** keep the checked post-group scan and continue the cumulative 256-pair
+analysis candidate. The direct unchecked kernel remains 8.5–14.2% slower than
+DUCC in the calibrated 64/128/256-lane comparison; reduce recurrence cost while
+preserving the checked fallback.

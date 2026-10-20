@@ -72,3 +72,23 @@ scaled-block adapter remain available for focused experiments. Their older
 single-call measurements are historical and are not comparable to the
 calibrated ordinary-kernel results. `split-check-candidate.patch` preserves the
 earlier split-loop prototype for review; it is not part of the timed candidate.
+
+## Scalar-analysis pair-tile screen
+
+The production scalar-analysis pair tile defaults to 256. For controls, build
+the same release example with either
+`--cfg rustsht_scalar_analysis_pair_tile_64` or
+`--cfg rustsht_scalar_analysis_pair_tile_128` in `RUSTFLAGS`; omitting both
+selects 256. For example:
+
+```sh
+RUSTFLAGS='-C target-cpu=x86-64-v3 --cfg rustsht_scalar_analysis_pair_tile_64 -Aunexpected_cfgs' \
+  cargo build -p rustsht --release --example m1b_bench
+```
+
+The options change only the f64 paired scalar-analysis block size. They do not
+change shared synthesis/spin block sizes; f32 analysis continues to use 64.
+The ignored `report_scalar_analysis_pair_tile_utilization` test reports the
+active block and SIMD-tail counts for the T720 full-order and T300 reduced-order
+cases. Run it with
+`cargo test -p rustsht --release --lib report_scalar_analysis_pair_tile_utilization -- --ignored --nocapture`.

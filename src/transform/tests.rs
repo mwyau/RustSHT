@@ -162,6 +162,106 @@ fn relative_l2_complex(actual: &[Complex64], expected: &[Complex64]) -> f64 {
     (difference / reference.max(1e-300)).sqrt()
 }
 
+#[test]
+#[ignore = "manual active-pair tile utilization report"]
+fn report_scalar_analysis_pair_tile_utilization() {
+    for (lmax, mmax, ntheta, nphi) in [(720, 720, 721, 1443), (300, 150, 301, 603)] {
+        let plan = make_plan(lmax, mmax, ntheta, nphi, 0.37);
+        let mut workspace = plan.workspace().unwrap();
+        prepare_scalar_latitudes(&plan, &mut workspace);
+        for ring in 0..ntheta {
+            workspace.theta_cos_squared[ring] = stable_analysis_cosine_squared(
+                workspace.theta_sin[ring],
+                workspace.theta_cos[ring],
+            );
+        }
+
+        let pair_lane_count = ntheta.div_ceil(2);
+        let order_spectra = vec![Complex64::new(0.3, -0.2); ntheta];
+        let recurrence = &mut workspace.recurrence_workers[0];
+        let mut reference_active_lanes = None;
+        for tile_size in [64, 128, 256] {
+            let mut block_count = 0;
+            let mut active_lanes = 0;
+            let mut block_lane_capacity = 0;
+            let mut simd_lane_capacity = 0;
+            for m in 0..=mmax {
+                let first = first_active_symmetric_pair(m, ntheta, &workspace.ring_order_limits);
+                for block_start in (first..pair_lane_count).step_by(tile_size) {
+                    let block_len = (block_start + tile_size).min(pair_lane_count) - block_start;
+                    let packed = prepare_symmetric_analysis_pair_block(
+                        m,
+                        ntheta,
+                        block_start,
+                        block_len,
+                        true,
+                        &order_spectra,
+                        &workspace.ring_order_limits,
+                        &workspace.theta_sin,
+                        &workspace.theta_cos,
+                        &workspace.theta_cos_squared,
+                        &mut recurrence.weighted_spin_q_spectrum,
+                        &mut recurrence.weighted_spin_u_spectrum,
+                        &mut recurrence.compact_theta_sin,
+                        &mut recurrence.compact_theta_cos,
+                        &mut recurrence.compact_theta_cos_squared,
+                    );
+                    block_count += 1;
+                    active_lanes += packed;
+                    block_lane_capacity += block_len;
+                    simd_lane_capacity += packed.div_ceil(4) * 4;
+                }
+            }
+            if let Some(reference) = reference_active_lanes {
+                assert_eq!(active_lanes, reference);
+            } else {
+                reference_active_lanes = Some(active_lanes);
+            }
+            eprintln!(
+                "PAIR_TILE lmax={lmax} mmax={mmax} tile={tile_size} blocks={block_count} active_lanes={active_lanes} block_lane_capacity={block_lane_capacity} simd_lane_capacity={simd_lane_capacity}"
+            );
+        }
+
+        let f64_capacities = [
+            recurrence.previous.capacity(),
+            recurrence.current.capacity(),
+            recurrence.next.capacity(),
+            recurrence.analysis_scale_epochs.capacity(),
+            recurrence.analysis_scale_corrections.capacity(),
+            recurrence.spin_previous_plus.capacity(),
+            recurrence.spin_current_plus.capacity(),
+            recurrence.spin_next_plus.capacity(),
+            recurrence.spin_previous_minus.capacity(),
+            recurrence.spin_current_minus.capacity(),
+            recurrence.spin_next_minus.capacity(),
+            recurrence.analysis_same_real.capacity(),
+            recurrence.analysis_same_imag.capacity(),
+            recurrence.analysis_opposite_real.capacity(),
+            recurrence.analysis_opposite_imag.capacity(),
+            recurrence.scalar_order_correction.capacity(),
+            recurrence.compact_theta_sin.capacity(),
+            recurrence.compact_theta_cos.capacity(),
+            recurrence.compact_theta_cos_squared.capacity(),
+        ]
+        .into_iter()
+        .sum::<usize>();
+        let i64_capacities = recurrence.exponents.capacity()
+            + recurrence.spin_exponents_plus.capacity()
+            + recurrence.spin_exponents_minus.capacity();
+        let complex_capacities = recurrence.weighted_spin_q_spectrum.capacity()
+            + recurrence.weighted_spin_u_spectrum.capacity();
+        let index_capacity = recurrence.compact_ring_indices.capacity();
+        let scratch_bytes = f64_capacities * std::mem::size_of::<f64>()
+            + i64_capacities * std::mem::size_of::<i64>()
+            + complex_capacities * std::mem::size_of::<Complex64>()
+            + index_capacity * std::mem::size_of::<usize>();
+        eprintln!(
+            "PAIR_TILE_SCRATCH lmax={lmax} lanes={} bytes_per_worker={scratch_bytes}",
+            recurrence.previous.len()
+        );
+    }
+}
+
 fn harmonic_inner_product(spec: &HarmonicSpec, left: &[Complex64], right: &[Complex64]) -> f64 {
     let mut result = 0.0;
     for m in 0..=spec.mmax() {

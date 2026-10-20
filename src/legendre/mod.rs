@@ -13,6 +13,25 @@ mod spin_fast;
 pub(crate) const SPIN1_FAST_MIN_LMAX: usize = 15;
 pub(crate) const SCALAR_ORDER_BATCH_SIZE: usize = 256;
 
+/// Compile-time scalar-analysis pair tile used for focused 64/128/256 A/B
+/// builds. The production default is 256 active reflected-latitude pairs.
+#[allow(unexpected_cfgs)]
+pub(crate) const SCALAR_ANALYSIS_PAIR_TILE_SIZE: usize =
+    if cfg!(rustsht_scalar_analysis_pair_tile_64) {
+        64
+    } else if cfg!(rustsht_scalar_analysis_pair_tile_128) {
+        128
+    } else {
+        256
+    };
+
+pub(crate) fn recurrence_scratch_len(latitude_count: usize) -> usize {
+    latitude_count
+        .min(scalar::LATITUDE_BLOCK_SIZE)
+        .max(SCALAR_ORDER_BATCH_SIZE)
+        .max(SCALAR_ANALYSIS_PAIR_TILE_SIZE)
+}
+
 pub(crate) use scalar_table::{
     LegendreOperation, LegendreStrategy, MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX, ScalarLegendreTable,
     measured_table_break_even_calls, select_scalar_legendre_strategy,
@@ -1715,3 +1734,28 @@ impl ShtScalar for f32 {
 }
 
 pub(crate) use scalar::{LATITUDE_BLOCK_SIZE, scale_binary};
+
+#[cfg(test)]
+mod scalar_analysis_tile_tests {
+    use super::{SCALAR_ANALYSIS_PAIR_TILE_SIZE, SCALAR_ORDER_BATCH_SIZE, recurrence_scratch_len};
+
+    #[allow(unexpected_cfgs)]
+    #[test]
+    fn scalar_analysis_pair_tile_matches_build_configuration() {
+        let expected = if cfg!(rustsht_scalar_analysis_pair_tile_64) {
+            64
+        } else if cfg!(rustsht_scalar_analysis_pair_tile_128) {
+            128
+        } else {
+            256
+        };
+        assert_eq!(SCALAR_ANALYSIS_PAIR_TILE_SIZE, expected);
+    }
+
+    #[test]
+    fn recurrence_scratch_covers_scalar_analysis_pair_tile() {
+        let expected = SCALAR_ORDER_BATCH_SIZE.max(SCALAR_ANALYSIS_PAIR_TILE_SIZE);
+        assert_eq!(recurrence_scratch_len(721), expected);
+        assert!(recurrence_scratch_len(0) >= SCALAR_ANALYSIS_PAIR_TILE_SIZE);
+    }
+}

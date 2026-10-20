@@ -16,8 +16,8 @@ use crate::error::{ShtError, check_len};
 use crate::fft::RealFftWorkspace;
 use crate::grid::GridKind;
 use crate::legendre::{
-    LATITUDE_BLOCK_SIZE, LegendreOperation, LegendreStrategy, ShtScalar, longitude_phase,
-    sin_cos_from_f64,
+    LATITUDE_BLOCK_SIZE, LegendreOperation, LegendreStrategy, SCALAR_ANALYSIS_PAIR_TILE_SIZE,
+    ShtScalar, longitude_phase, recurrence_scratch_len, sin_cos_from_f64,
 };
 use crate::plan::ShtPlan;
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
@@ -2119,6 +2119,12 @@ impl<T: ShtScalar> ShtPlan<T> {
         debug_assert_eq!(ring_order_limits.len(), latitude_count);
         let lmax = self.harmonics.lmax();
         let pair_lane_count = latitude_count.div_ceil(2);
+        let pair_block_size = if T::supports_paired_scalar() {
+            SCALAR_ANALYSIS_PAIR_TILE_SIZE
+        } else {
+            LATITUDE_BLOCK_SIZE
+        };
+        debug_assert!(recurrence.previous.len() >= pair_block_size);
         let mut coefficient_start = 0;
         #[cfg(all(test, feature = "parallel"))]
         let profiling = recurrence.analysis_leaf_profile_enabled();
@@ -2138,8 +2144,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                 &mut recurrence.spin_coefficient_b,
             );
 
-            for block_start in (first_active_pair..pair_lane_count).step_by(LATITUDE_BLOCK_SIZE) {
-                let block_end = (block_start + LATITUDE_BLOCK_SIZE).min(pair_lane_count);
+            for block_start in (first_active_pair..pair_lane_count).step_by(pair_block_size) {
+                let block_end = (block_start + pair_block_size).min(pair_lane_count);
                 let block_len = block_end - block_start;
                 let order_spectra = &spectra[m * latitude_count..(m + 1) * latitude_count];
                 let compact_candidate = T::supports_paired_scalar() && lmax >= 127;
@@ -2465,9 +2471,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             .as_ref()
             .map_or(0, |resampling| resampling.prepared_ntheta());
         let latitude_count = self.grid.ntheta().max(prepared_ntheta);
-        let recurrence_scratch_len = latitude_count
-            .min(LATITUDE_BLOCK_SIZE)
-            .max(crate::legendre::SCALAR_ORDER_BATCH_SIZE);
+        let recurrence_scratch_len = recurrence_scratch_len(latitude_count);
         if workspace.ring_group_size == 0 {
             return Err(ShtError::BufferLength {
                 buffer: "workspace latitude group size",
