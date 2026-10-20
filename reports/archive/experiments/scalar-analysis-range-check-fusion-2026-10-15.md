@@ -28,7 +28,7 @@ but both paired ranges cross zero, so the measurements do not establish a q8
 gain. At T1023, median peak process RSS was 102,364/102,224 KiB at q1 and
 145,864/145,496 KiB at q8 (baseline/candidate). The code adds no workspace
 storage. The raw per-call samples, process logs, hashes, affinity and load
-records are in [`the paired data`](data/scalar-analysis-range-check-fusion-2026-10-15/).
+records are in [`the paired data`](../../data/scalar-analysis-range-check-fusion-2026-10-15).
 
 ## Current T1023 comparison with DUCC
 
@@ -48,7 +48,7 @@ measurements, not isolated-core results.
 The comparison describes the candidate's current gap at this grid and setup;
 it does not isolate the change's effect on the RustSHT/DUCC ratio. Raw logs,
 process resource records, commands, compiler and CPU details are in
-[`the DUCC comparison data`](data/scalar-analysis-range-check-fusion-2026-10-15/ducc-comparison/).
+[`the DUCC comparison data`](../../data/scalar-analysis-range-check-fusion-2026-10-15/ducc-comparison).
 
 ## Validation
 

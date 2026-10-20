@@ -23,6 +23,6 @@ comparison recorded DUCC at `6.470/1.074 ms` for q1/q8
 ([scalar normalization report](scaled-lane-normalization-2026-10-14.md));
 the new DUCC medians are higher. This screen records a current observation and
 does not replace the earlier table. Raw samples, process timings, load snapshots, commands and binary hashes are
-in [`the benchmark data`](data/scalar-analysis-ducc-refresh-2026-10-15/). No Rust source changed during the screen. This timing study did not rerun
+in [`the benchmark data`](../../data/scalar-analysis-ducc-refresh-2026-10-15). No Rust source changed during the screen. This timing study did not rerun
 numerical tests; existing scalar analytic, DUCC, adjoint and high-bandlimit
 tests remain the correctness evidence.
