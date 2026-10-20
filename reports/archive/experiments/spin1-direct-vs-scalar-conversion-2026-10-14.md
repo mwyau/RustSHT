@@ -12,7 +12,7 @@ taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" cargo test --release -p rusts
   benchmark_spin1_scalar_conversion_vs_direct_recurrence -- --ignored --nocapture
 ```
 
-The T511 repeats used `RUSTSHT_SPIN1_BENCH_LMAX=511` with the same command. Seven-sample raw timings are in [`native-samples.txt`](data/spin1-direct-vs-scalar-conversion-2026-10-14/native-samples.txt). Times below are milliseconds as `scalar conversion / general recurrence`; the ratio is general recurrence divided by scalar conversion.
+The T511 repeats used `RUSTSHT_SPIN1_BENCH_LMAX=511` with the same command. Seven-sample raw timings are in [`native-samples.txt`](../../data/spin1-direct-vs-scalar-conversion-2026-10-14/native-samples.txt). Times below are milliseconds as `scalar conversion / general recurrence`; the ratio is general recurrence divided by scalar conversion.
 
 ## Native results
 
@@ -35,7 +35,7 @@ Across the three T511 process medians, conversion-path synthesis ranged from `58
 
 ## Direct fused recurrence prototype
 
-The prototype fused the two spin-1 recurrence sequences and E/B accumulation into one Pulp-dispatched latitude loop. It held four output sums in SIMD vectors while updating the plus and minus spin bases. The scalar-conversion control used the existing `spin1_to_scalar()` coefficient conversion and optimized paired scalar recurrence. Both plans used identical f64 GL inputs and disabled the compact table. The grid used `ntheta=lmax+1`, `nphi=2*lmax+3`, `mmax=lmax`, and `phi0=0.37`; tested bands were T127 (`128x257`), T255 (`256x513`) and T511 (`512x1025`). Three separate processes were pinned with `taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}"`. Each process warmed both methods three times, then collected nine paired samples per thread count with execution order alternating. Plans, workspaces, coefficients and outputs were allocated before timing. The reported values are medians across the three process medians. Raw sample vectors and per-process medians are in [`direct-fused-raw-samples.tsv`](data/spin1-direct-vs-scalar-conversion-2026-10-14/direct-fused-raw-samples.tsv). The command was:
+The prototype fused the two spin-1 recurrence sequences and E/B accumulation into one Pulp-dispatched latitude loop. It held four output sums in SIMD vectors while updating the plus and minus spin bases. The scalar-conversion control used the existing `spin1_to_scalar()` coefficient conversion and optimized paired scalar recurrence. Both plans used identical f64 GL inputs and disabled the compact table. The grid used `ntheta=lmax+1`, `nphi=2*lmax+3`, `mmax=lmax`, and `phi0=0.37`; tested bands were T127 (`128x257`), T255 (`256x513`) and T511 (`512x1025`). Three separate processes were pinned with `taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}"`. Each process warmed both methods three times, then collected nine paired samples per thread count with execution order alternating. Plans, workspaces, coefficients and outputs were allocated before timing. The reported values are medians across the three process medians. Raw sample vectors and per-process medians are in [`direct-fused-raw-samples.tsv`](../../data/spin1-direct-vs-scalar-conversion-2026-10-14/direct-fused-raw-samples.tsv). The command was:
 
 ```sh
 taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" cargo test --release -p rustsht \

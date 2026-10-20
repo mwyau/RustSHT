@@ -46,7 +46,7 @@ changes are medians across corresponding pairs.
 The q1 gains were faster in all five pairs. T511 q8 was faster in all five
 pairs; T720 q8 was faster in four of five, but its median gain is comparable
 to process variation and is not treated as established. Raw samples are in
-[`spin1-dual-analysis-paired`](data/current-kernel-baseline-2026-10-14/spin1-dual-analysis-paired/).
+[`spin1-dual-analysis-paired`](../../data/current-kernel-baseline-2026-10-14/spin1-dual-analysis-paired).
 
 ## DUCC0 comparison and current gap
 
@@ -67,12 +67,12 @@ measurements above are native Rust timings and isolate the changed kernel.
 The q8 Python Rust timing at T511 had a 4.324 ms range across three
 processes, so its ratio is context rather than a controlled performance
 claim. The native paired run is the q8 acceptance result. Full Python records
-are in [`python-candidate-spin1-analysis`](data/current-kernel-baseline-2026-10-14/python-candidate-spin1-analysis/). The broader pre-change baseline shows the next optimization is still
+are in [`python-candidate-spin1-analysis`](../../data/current-kernel-baseline-2026-10-14/python-candidate-spin1-analysis). The broader pre-change baseline shows the next optimization is still
 substantial. At T720, native Rust scalar synthesis/analysis take
 `103.395/61.274 ms` at q1 and `27.905/19.521 ms` at q8. Spin-1 synthesis and
 analysis take `125.544/101.040 ms` at q1 and `41.646/33.532 ms` at q8. The
 Python plan matrix against DUCC and all within-process samples is in
-[`python-process-samples`](data/current-kernel-baseline-2026-10-14/python-process-samples/).
+[`python-process-samples`](../../data/current-kernel-baseline-2026-10-14/python-process-samples).
 
 ## Profile and code generation
 
@@ -142,4 +142,4 @@ RAYON_NUM_THREADS=8 taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" uv run py
 
 The initial baseline matrix used three fresh processes for each T511/T720,
 scalar/spin-1, synthesis/analysis, and q1/q8 case. Native process samples are
-in [`native-process-samples.txt`](data/current-kernel-baseline-2026-10-14/native-process-samples.txt).
+in [`native-process-samples.txt`](../../data/current-kernel-baseline-2026-10-14/native-process-samples.txt).

@@ -151,7 +151,7 @@ the transpose. Workspace construction did not allocate this scratch. The
 measured q1 control had baseline medians `39.570 ms` at T511; the candidate
 selector excludes q1, so this was not a paired comparison. Exact individual
 samples are in
-[`the layout experiment data`](data/spin1-order-major-analysis-2026-10-14/process-samples.txt). The q8 release DUCC T511 test passed with `RAYON_NUM_THREADS=8`; spin-1 GL
+[`the layout experiment data`](../../data/spin1-order-major-analysis-2026-10-14/process-samples.txt). The q8 release DUCC T511 test passed with `RAYON_NUM_THREADS=8`; spin-1 GL
 analysis coefficient maximum absolute error was `4.970e-18`, and the
 synthesis-analysis coefficient maximum absolute error was `1.255e-14`. The
 test also covered spin 1/2 on CC and F1 and their existing DUCC checks. The
