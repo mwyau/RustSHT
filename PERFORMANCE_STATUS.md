@@ -28,6 +28,15 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   q1/q8 comparison when the host is stable. See the
   [cumulative experiment record](reports/scalar-analysis-cumulative-2026-10-20.md).
 
+- **Scaled preflight candidate:** correction preparation now carries the
+  below-one and all-negative epoch frontiers in the same pass, removing two
+  follow-up reads of the epoch array. The independent recurrence-bound scan,
+  correction range checks and decline-before-staging behavior remain. The
+  focused lane/tail and invalid-value checks plus the full release library
+  suites pass; no timing is available under current host contention, so this
+  is an unmeasured candidate rather than an established speedup. See the
+  [cumulative experiment record](reports/scalar-analysis-cumulative-2026-10-20.md).
+
 - **Warmed T720 analysis-kernel attribution, `4c6945fc` plus a benchmark-only
   alignment correction:** the probe now shares the ordinary unchecked timing's
   buffers and wrapper; component-full and kernel-only medians agree within

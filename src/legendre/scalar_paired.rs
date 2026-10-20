@@ -2219,6 +2219,7 @@ fn analysis_mask_any<S: Simd>(simd: S, mask: S::m64s) -> bool {
 /// normalizes each lane to `sht_ftol`; the recurrence increments its epoch
 /// whenever a lane crosses that threshold.
 #[inline(always)]
+#[cfg(test)]
 fn analysis_scale_epochs_below_one<S: Simd>(simd: S, scale_epochs: &[f64]) -> bool {
     let (scale_vectors, scale_tail) = S::as_simd_f64s(scale_epochs);
     let one = simd.splat_f64s(1.0);
@@ -2261,21 +2262,23 @@ fn analysis_scale_correction(value: f64, scale_epoch: f64) -> Option<f64> {
     analysis_value_in_ieee_range(value * correction).then_some(correction)
 }
 
-fn fill_analysis_scale_corrections(
+fn prepare_analysis_scale_corrections(
     basis: &[f64],
     scale_epochs: &[f64],
     corrections: &mut [f64],
-) -> bool {
+) -> Option<(bool, bool)> {
     debug_assert_eq!(basis.len(), scale_epochs.len());
     debug_assert!(corrections.len() >= basis.len());
+    let mut below_limit = true;
+    let mut all_negative = true;
     for ((correction, &value), &scale_epoch) in corrections.iter_mut().zip(basis).zip(scale_epochs)
     {
-        let Some(next) = analysis_scale_correction(value, scale_epoch) else {
-            return false;
-        };
+        below_limit &= scale_epoch < 1.0;
+        all_negative &= scale_epoch < 0.0;
+        let next = analysis_scale_correction(value, scale_epoch)?;
         *correction = next;
     }
-    true
+    Some((below_limit, all_negative))
 }
 
 /// Checks the scale range once before the recurrence. At most one epoch is
@@ -3102,17 +3105,18 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool, const CHECK_PAIR_GROUP_RANGE: bool> W
         let mut next = next;
         let pair_count = (lmax - m + 2) / 2;
         let mut pair_start = 0;
-        if !analysis_scale_epochs_allow_recurrence(scale_epochs, pair_count)
-            || !fill_analysis_scale_corrections(
+        if !analysis_scale_epochs_allow_recurrence(scale_epochs, pair_count) {
+            return Ok(false);
+        }
+        let Some((mut below_limit, mut skip_insignificant_validation)) =
+            prepare_analysis_scale_corrections(
                 current,
                 scale_epochs,
                 &mut scale_corrections[..current.len()],
             )
-        {
+        else {
             return Ok(false);
-        }
-        let mut below_limit = analysis_scale_epochs_below_one(simd, scale_epochs);
-        let mut skip_insignificant_validation = scale_epochs.iter().all(|&scale| scale < 0.0);
+        };
         while below_limit && pair_start < pair_count {
             zero_staged_analysis_pair(staged_coefficients, m, lmax, pair_start);
             if pair_count - pair_start == 1 {
@@ -6057,6 +6061,16 @@ mod tests {
         }
     }
 
+    struct ScaleEpochBelowProbe<'a>(&'a [f64]);
+
+    impl WithSimd for ScaleEpochBelowProbe<'_> {
+        type Output = bool;
+
+        fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+            analysis_scale_epochs_below_one(simd, self.0)
+        }
+    }
+
     struct AdvanceAnalysisPrefixProbe<'a> {
         cosine_squared: &'a [f64],
         previous: &'a mut [f64],
@@ -6665,6 +6679,58 @@ mod tests {
         if usize::BITS == 64 {
             assert!(!analysis_scale_epochs_allow_recurrence(&[0.0], usize::MAX));
         }
+    }
+
+    #[test]
+    fn scale_correction_preparation_carries_epoch_frontiers_across_tails() {
+        let arch = Arch::new();
+        let lane_width = arch.dispatch(F64LaneCount);
+        for lane_count in [
+            lane_width.saturating_sub(1),
+            lane_width,
+            lane_width + 1,
+            lane_width * 2 + 3,
+        ] {
+            let scale_epochs: Vec<_> = (0..lane_count)
+                .map(|lane| [-3.0, -1.0, 0.0, 0.5, 1.0, 2.0][lane % 6])
+                .collect();
+            let basis: Vec<_> = scale_epochs
+                .iter()
+                .map(|&epoch| if epoch < 1.0 { 0.5 } else { f64::MIN_POSITIVE })
+                .collect();
+            let mut corrections = vec![f64::NAN; lane_count];
+            let prepared =
+                prepare_analysis_scale_corrections(&basis, &scale_epochs, &mut corrections)
+                    .unwrap();
+
+            assert_eq!(
+                prepared.0,
+                arch.dispatch(ScaleEpochBelowProbe(&scale_epochs)),
+                "below-one lane_count={lane_count}"
+            );
+            assert_eq!(
+                prepared.1,
+                scale_epochs.iter().all(|&epoch| epoch < 0.0),
+                "all-negative lane_count={lane_count}"
+            );
+            for ((&value, &epoch), &correction) in basis.iter().zip(&scale_epochs).zip(&corrections)
+            {
+                assert_eq!(correction, analysis_scale_correction(value, epoch).unwrap());
+            }
+        }
+
+        for invalid_epoch in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            let mut correction = [0.0];
+            assert_eq!(
+                prepare_analysis_scale_corrections(&[0.5], &[invalid_epoch], &mut correction),
+                None
+            );
+        }
+        let mut correction = [0.0];
+        assert_eq!(
+            prepare_analysis_scale_corrections(&[f64::MAX], &[2.0], &mut correction),
+            None
+        );
     }
 
     #[test]

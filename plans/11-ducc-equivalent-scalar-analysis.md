@@ -68,9 +68,15 @@ Benchmark **warmed and cold** full transforms separately (T720 full/reduced `mma
 reuses contiguous ordinary SIMD seed vectors before the first vector that
 requires exponent scaling. The scaled two-pair prefix carries its all-negative
 epoch state from the SIMD update pass rather than rereading the epoch slice.
+The initial scaled-block preflight also carries the below-one and all-negative
+frontiers while preparing correction factors, removing two subsequent epoch
+array passes; the independent recurrence-bound scan and correction safety
+checks remain. Focused SIMD-tail and invalid-value tests plus full release and
+no-default-feature library suites pass. Host load prevents a reliable timing
+claim, so retain this as an unmeasured cumulative candidate.
 Fallbacks, lane range checks and tail scaling remain unchanged. Release and
 no-default-feature library tests pass; timing is deferred under host CPU
-saturation. Keep both candidates experimental until matched 64/128/256-lane
+saturation. Keep these candidates experimental until matched 64/128/256-lane
 and representative full/reduced-order q1/q8 comparisons measure their
 contribution.
 

@@ -18,6 +18,21 @@ selected Pulp V3 and fixed DUCC x86-64-v3 for the measured transforms.
 | 4 | Zipped versus safe indexed SIMD loop | Candidate is gated by `rustsht_indexed_analysis_pair_loop`; the production default remains zipped. At 64/128/256 active lanes the matched kernel-plus-commit Rust median changed by −0.25%/−0.34%/−0.17%, within overlapping distributions. Static code size fell 1.7%, but vector arithmetic, memory operands, and spill behavior were unchanged. No speedup was demonstrated. |
 | 5 | Direct output accumulation | Restored as the opt-in `rustsht_scalar_analysis_direct_accumulation` cumulative candidate. It requires a cached recurrence proof and a whole-latitude product bound; otherwise the checked staged route remains active. The default is unchanged. The combined candidate passes release tests; its direct-versus-staged T511 coefficient comparison has relative L2 error `2.5974e-16` and maximum absolute error `2.5324e-17`. The earlier direct-only T720 screen regressed, so this candidate still needs measurement in the final combined 64/128/256-lane evaluation. No new timing was collected while other host jobs saturated CPU capacity. |
 | 6–10 | Sectoral initialization; insignificant-prefix recurrence; scaled-to-normal transition; input packing; final coefficient conversion | Continue with the source-guided experiments after the staging candidate. |
+| 11 | Scaled-preflight frontier fusion | Correction preparation returns the below-one and all-negative epoch predicates, removing two follow-up epoch-array scans. The range-bound check and correction validation remain. Focused SIMD-tail/invalid-value and full release/no-default library tests pass; no performance measurement is available under host contention. Keep in the cumulative candidate pending a stable comparison. |
+
+## Scaled-preflight frontier fusion
+
+The scaled block now derives `below_limit` and the insignificant-prefix
+`all_negative` state while it writes its correction factors. This replaces the
+separate SIMD below-one reduction and scalar all-negative scan. The recurrence
+epoch-bound preflight remains a separate full pass, and any failure still
+returns before staged coefficients are touched. Invalid or partial correction
+scratch is discarded with the declined fast path. Tests compare the fused
+predicates to the prior SIMD/scalar results for SIMD-width, tail, and mixed
+epoch cases, and reject NaN, infinity, and out-of-range correction products.
+The 230-test release and 192-test no-default-feature library suites pass. The
+host was carrying a load average near 39 on 32 logical CPUs, so no timing was
+collected and no speedup is claimed.
 
 ## Direct-output candidate validation
 

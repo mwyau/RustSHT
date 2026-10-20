@@ -1490,11 +1490,14 @@ fn run_prefix_probe_case(
         &initial_scale_epochs,
         pair_count,
     ));
-    assert!(fill_analysis_scale_corrections(
-        &fixture.current,
-        &initial_scale_epochs,
-        &mut scale_corrections,
-    ));
+    assert!(
+        prepare_analysis_scale_corrections(
+            &fixture.current,
+            &initial_scale_epochs,
+            &mut scale_corrections,
+        )
+        .is_some()
+    );
     let preflight_us = preflight_started.elapsed().as_secs_f64() * 1.0e6;
     let initial_scale_corrections = scale_corrections.clone();
 
