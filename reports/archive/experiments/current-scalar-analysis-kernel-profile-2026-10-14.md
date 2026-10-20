@@ -40,7 +40,7 @@ grid `ntheta=lmax+1`, `nphi=2*lmax+3`.
 | T511 | 8 | 6.875, 7.068, 6.982, 6.959, 6.894 | 6.959 |
 
 The complete process output is in
-[`native-process-samples.txt`](data/current-scalar-analysis-profile-2026-10-14/native-process-samples.txt). T511 q1 contains one slower process; subsequent candidate comparisons should
+[`native-process-samples.txt`](../../data/current-scalar-analysis-profile-2026-10-14/native-process-samples.txt). T511 q1 contains one slower process; subsequent candidate comparisons should
 alternate source binaries and compare paired process medians. The historical matched Python-plan comparison in
 [`scaled-lane-normalization-2026-10-14.md`](scaled-lane-normalization-2026-10-14.md)
 reported T511 scalar analysis at `23.058/7.344 ms` for RustSHT and
