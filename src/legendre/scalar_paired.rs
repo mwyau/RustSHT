@@ -3473,6 +3473,115 @@ fn fused_analysis_two_pair_steps_with_simd<
     let mut scalar_states_in_range = true;
     let mut tails_in_range = true;
 
+    macro_rules! update_analysis_pair_vector {
+        ($previous:expr, $current:expr, $same_real:expr, $same_imag:expr,
+         $opposite_real:expr, $opposite_imag:expr, $cosine:expr,
+         $cosine_squared:expr) => {{
+            let previous_value = *($previous);
+            let current_value = *($current);
+            first_same_re = simd.mul_add_f64s(*($same_real), current_value, first_same_re);
+            first_same_im = simd.mul_add_f64s(*($same_imag), current_value, first_same_im);
+            if OPPOSITE_COSINE_WEIGHTED {
+                first_opposite_re =
+                    simd.mul_add_f64s(*($opposite_real), current_value, first_opposite_re);
+                first_opposite_im =
+                    simd.mul_add_f64s(*($opposite_imag), current_value, first_opposite_im);
+            } else {
+                first_opposite_re = simd.add_f64s(
+                    first_opposite_re,
+                    simd.mul_f64s(simd.mul_f64s(*($opposite_real), current_value), *($cosine)),
+                );
+                first_opposite_im = simd.add_f64s(
+                    first_opposite_im,
+                    simd.mul_f64s(simd.mul_f64s(*($opposite_imag), current_value), *($cosine)),
+                );
+            }
+
+            #[cfg(rustsht_rematerialize_analysis_coefficients)]
+            let first_leading = simd.mul_add_f64s(
+                simd.splat_f64s(first_coefficient_a),
+                *($cosine_squared),
+                simd.splat_f64s(first_coefficient_b),
+            );
+            #[cfg(not(rustsht_rematerialize_analysis_coefficients))]
+            let first_leading = simd.mul_add_f64s(first_a, *($cosine_squared), first_b);
+            let first_next = simd.mul_add_f64s(first_leading, current_value, previous_value);
+
+            second_same_re = simd.mul_add_f64s(*($same_real), first_next, second_same_re);
+            second_same_im = simd.mul_add_f64s(*($same_imag), first_next, second_same_im);
+            if OPPOSITE_COSINE_WEIGHTED {
+                second_opposite_re =
+                    simd.mul_add_f64s(*($opposite_real), first_next, second_opposite_re);
+                second_opposite_im =
+                    simd.mul_add_f64s(*($opposite_imag), first_next, second_opposite_im);
+            } else {
+                second_opposite_re = simd.add_f64s(
+                    second_opposite_re,
+                    simd.mul_f64s(simd.mul_f64s(*($opposite_real), first_next), *($cosine)),
+                );
+                second_opposite_im = simd.add_f64s(
+                    second_opposite_im,
+                    simd.mul_f64s(simd.mul_f64s(*($opposite_imag), first_next), *($cosine)),
+                );
+            }
+
+            #[cfg(rustsht_rematerialize_analysis_coefficients)]
+            let second_leading = simd.mul_add_f64s(
+                simd.splat_f64s(second_coefficient_a),
+                *($cosine_squared),
+                simd.splat_f64s(second_coefficient_b),
+            );
+            #[cfg(not(rustsht_rematerialize_analysis_coefficients))]
+            let second_leading = simd.mul_add_f64s(second_a, *($cosine_squared), second_b);
+            let second_next = simd.mul_add_f64s(second_leading, first_next, current_value);
+            if CHECK_GROUP_RANGE && TRACK_STATE_RANGE {
+                let previous_magnitude = simd.abs_f64s(first_next);
+                let current_magnitude = simd.abs_f64s(second_next);
+                let previous_in_range = simd.or_m64s(
+                    simd.equal_f64s(previous_magnitude, zero),
+                    simd.greater_than_or_equal_f64s(previous_magnitude, minimum),
+                );
+                let current_in_range = simd.or_m64s(
+                    simd.equal_f64s(current_magnitude, zero),
+                    simd.greater_than_or_equal_f64s(current_magnitude, minimum),
+                );
+                let states_in_range = simd.and_m64s(previous_in_range, current_in_range);
+                // The scalar-reduction candidate shortens the vector-mask live
+                // range at the cost of one horizontal reduction per vector chunk.
+                if cfg!(rustsht_scalar_fused_analysis_pair_range_check) {
+                    scalar_states_in_range &= analysis_mask_all(simd, states_in_range);
+                } else {
+                    vector_states_in_range = simd.and_m64s(vector_states_in_range, states_in_range);
+                }
+            }
+            *($previous) = first_next;
+            *($current) = second_next;
+        }};
+    }
+
+    #[cfg(rustsht_indexed_analysis_pair_loop)]
+    for index in 0..previous_vectors.len() {
+        let previous = &mut previous_vectors[index];
+        let current = &mut current_vectors[index];
+        let same_real = &same_real_vectors[index];
+        let same_imag = &same_imag_vectors[index];
+        let opposite_real = &opposite_real_vectors[index];
+        let opposite_imag = &opposite_imag_vectors[index];
+        let cosine = &cosine_vectors[index];
+        let cosine_squared = &cosine_squared_vectors[index];
+        update_analysis_pair_vector!(
+            previous,
+            current,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            cosine,
+            cosine_squared
+        );
+    }
+
+    #[cfg(not(rustsht_indexed_analysis_pair_loop))]
     for (
         ((((((previous, current), same_real), same_imag), opposite_real), opposite_imag), cosine),
         cosine_squared,
@@ -3486,81 +3595,16 @@ fn fused_analysis_two_pair_steps_with_simd<
         .zip(cosine_vectors.iter())
         .zip(cosine_squared_vectors.iter())
     {
-        let previous_value = *previous;
-        let current_value = *current;
-        first_same_re = simd.mul_add_f64s(*same_real, current_value, first_same_re);
-        first_same_im = simd.mul_add_f64s(*same_imag, current_value, first_same_im);
-        if OPPOSITE_COSINE_WEIGHTED {
-            first_opposite_re = simd.mul_add_f64s(*opposite_real, current_value, first_opposite_re);
-            first_opposite_im = simd.mul_add_f64s(*opposite_imag, current_value, first_opposite_im);
-        } else {
-            first_opposite_re = simd.add_f64s(
-                first_opposite_re,
-                simd.mul_f64s(simd.mul_f64s(*opposite_real, current_value), *cosine),
-            );
-            first_opposite_im = simd.add_f64s(
-                first_opposite_im,
-                simd.mul_f64s(simd.mul_f64s(*opposite_imag, current_value), *cosine),
-            );
-        }
-
-        #[cfg(rustsht_rematerialize_analysis_coefficients)]
-        let first_leading = simd.mul_add_f64s(
-            simd.splat_f64s(first_coefficient_a),
-            *cosine_squared,
-            simd.splat_f64s(first_coefficient_b),
+        update_analysis_pair_vector!(
+            previous,
+            current,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            cosine,
+            cosine_squared
         );
-        #[cfg(not(rustsht_rematerialize_analysis_coefficients))]
-        let first_leading = simd.mul_add_f64s(first_a, *cosine_squared, first_b);
-        let first_next = simd.mul_add_f64s(first_leading, current_value, previous_value);
-
-        second_same_re = simd.mul_add_f64s(*same_real, first_next, second_same_re);
-        second_same_im = simd.mul_add_f64s(*same_imag, first_next, second_same_im);
-        if OPPOSITE_COSINE_WEIGHTED {
-            second_opposite_re = simd.mul_add_f64s(*opposite_real, first_next, second_opposite_re);
-            second_opposite_im = simd.mul_add_f64s(*opposite_imag, first_next, second_opposite_im);
-        } else {
-            second_opposite_re = simd.add_f64s(
-                second_opposite_re,
-                simd.mul_f64s(simd.mul_f64s(*opposite_real, first_next), *cosine),
-            );
-            second_opposite_im = simd.add_f64s(
-                second_opposite_im,
-                simd.mul_f64s(simd.mul_f64s(*opposite_imag, first_next), *cosine),
-            );
-        }
-
-        #[cfg(rustsht_rematerialize_analysis_coefficients)]
-        let second_leading = simd.mul_add_f64s(
-            simd.splat_f64s(second_coefficient_a),
-            *cosine_squared,
-            simd.splat_f64s(second_coefficient_b),
-        );
-        #[cfg(not(rustsht_rematerialize_analysis_coefficients))]
-        let second_leading = simd.mul_add_f64s(second_a, *cosine_squared, second_b);
-        let second_next = simd.mul_add_f64s(second_leading, first_next, current_value);
-        if CHECK_GROUP_RANGE && TRACK_STATE_RANGE {
-            let previous_magnitude = simd.abs_f64s(first_next);
-            let current_magnitude = simd.abs_f64s(second_next);
-            let previous_in_range = simd.or_m64s(
-                simd.equal_f64s(previous_magnitude, zero),
-                simd.greater_than_or_equal_f64s(previous_magnitude, minimum),
-            );
-            let current_in_range = simd.or_m64s(
-                simd.equal_f64s(current_magnitude, zero),
-                simd.greater_than_or_equal_f64s(current_magnitude, minimum),
-            );
-            let states_in_range = simd.and_m64s(previous_in_range, current_in_range);
-            // The scalar-reduction candidate shortens the vector-mask live
-            // range at the cost of one horizontal reduction per vector chunk.
-            if cfg!(rustsht_scalar_fused_analysis_pair_range_check) {
-                scalar_states_in_range &= analysis_mask_all(simd, states_in_range);
-            } else {
-                vector_states_in_range = simd.and_m64s(vector_states_in_range, states_in_range);
-            }
-        }
-        *previous = first_next;
-        *current = second_next;
     }
 
     let first_same = reduce_analysis_complex_pair::<
