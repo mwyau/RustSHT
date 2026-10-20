@@ -39,6 +39,10 @@ const ANALYSIS_FBIGHALF: f64 = f64::from_bits(1423_u64 << 52);
 const ANALYSIS_MAX_SCALE_EPOCH: f64 = 4.5e15;
 const PAIRED_FACTOR_LIMIT: f64 = f64::from_bits(1151_u64 << 52);
 
+#[cfg(test)]
+pub(crate) static ANALYSIS_PAIR_GROUP_RANGE_DECLINES: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+
 /// Bounds DUCC's insignificant-prefix omission by eight f64 ulps of the
 /// maximum paired-spectrum scale. The latitude count bounds the sum of the
 /// omitted per-lane terms because each skipped recurrence value is at most
@@ -2932,7 +2936,14 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
     }
 }
 
-struct FusedScalarAnalysisPair<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
+#[allow(unexpected_cfgs)]
+struct FusedScalarAnalysisPair<
+    'a,
+    const OPPOSITE_COSINE_WEIGHTED: bool,
+    // The custom cfg supports a compile-time whole-transform A/B build. The
+    // normal production build retains the group-state safety scan.
+    const CHECK_PAIR_GROUP_RANGE: bool = { !cfg!(rustsht_unchecked_analysis_pair_range) },
+> {
     m: usize,
     lmax: usize,
     pair_start: usize,
@@ -3393,8 +3404,8 @@ fn analysis_pair_group_state_in_range<S: Simd>(simd: S, previous: &[f64], curren
         })
 }
 
-impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
-    for FusedScalarAnalysisPair<'_, OPPOSITE_COSINE_WEIGHTED>
+impl<const OPPOSITE_COSINE_WEIGHTED: bool, const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
+    for FusedScalarAnalysisPair<'_, OPPOSITE_COSINE_WEIGHTED, CHECK_PAIR_GROUP_RANGE>
 {
     type Output = bool;
 
@@ -3459,7 +3470,12 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool> WithSimd
             ) else {
                 return false;
             };
-            if !analysis_pair_group_state_in_range(simd, previous, current) {
+            if CHECK_PAIR_GROUP_RANGE
+                && !analysis_pair_group_state_in_range(simd, previous, current)
+            {
+                #[cfg(test)]
+                ANALYSIS_PAIR_GROUP_RANGE_DECLINES
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 return false;
             }
             all_tails_in_range &= group.tails_in_range;
