@@ -3167,6 +3167,30 @@ fn fused_analysis_pair_step_with_simd<S: Simd, const OPPOSITE_COSINE_WEIGHTED: b
 /// so a declined block can use the checked scaled route.
 #[allow(unexpected_cfgs)]
 #[inline(always)]
+fn reduce_four_analysis_accumulators<S: Simd>(simd: S, values: [S::f64s; 4]) -> [f64; 4] {
+    #[cfg(rustsht_group_analysis_reduction)]
+    {
+        if const { S::F64_LANES == 4 } {
+            // Transpose the four AVX2 lane vectors, then sum corresponding
+            // degree/parity accumulators with the same adjacent-lane pairing
+            // as DUCC's four-vector complex horizontal reduction.
+            let [lane_0, lane_1, lane_2, lane_3] = simd.interleave_shfl_f64s(values);
+            let sums = simd.add_f64s(simd.add_f64s(lane_0, lane_1), simd.add_f64s(lane_2, lane_3));
+            let mut reduced = [0.0; 4];
+            simd.partial_store_f64s(&mut reduced, sums);
+            reduced
+        } else {
+            values.map(|value| simd.reduce_sum_f64s(value))
+        }
+    }
+    #[cfg(not(rustsht_group_analysis_reduction))]
+    {
+        values.map(|value| simd.reduce_sum_f64s(value))
+    }
+}
+
+#[allow(unexpected_cfgs)]
+#[inline(always)]
 fn fused_analysis_two_pair_steps_with_simd<
     S: Simd,
     const OPPOSITE_COSINE_WEIGHTED: bool,
@@ -3321,14 +3345,34 @@ fn fused_analysis_two_pair_steps_with_simd<
         *current = second_next;
     }
 
-    let mut first_same_re_sum = simd.reduce_sum_f64s(first_same_re);
-    let mut first_same_im_sum = simd.reduce_sum_f64s(first_same_im);
-    let mut first_opposite_re_sum = simd.reduce_sum_f64s(first_opposite_re);
-    let mut first_opposite_im_sum = simd.reduce_sum_f64s(first_opposite_im);
-    let mut second_same_re_sum = simd.reduce_sum_f64s(second_same_re);
-    let mut second_same_im_sum = simd.reduce_sum_f64s(second_same_im);
-    let mut second_opposite_re_sum = simd.reduce_sum_f64s(second_opposite_re);
-    let mut second_opposite_im_sum = simd.reduce_sum_f64s(second_opposite_im);
+    let [
+        mut first_same_re_sum,
+        mut first_same_im_sum,
+        mut first_opposite_re_sum,
+        mut first_opposite_im_sum,
+    ] = reduce_four_analysis_accumulators(
+        simd,
+        [
+            first_same_re,
+            first_same_im,
+            first_opposite_re,
+            first_opposite_im,
+        ],
+    );
+    let [
+        mut second_same_re_sum,
+        mut second_same_im_sum,
+        mut second_opposite_re_sum,
+        mut second_opposite_im_sum,
+    ] = reduce_four_analysis_accumulators(
+        simd,
+        [
+            second_same_re,
+            second_same_im,
+            second_opposite_re,
+            second_opposite_im,
+        ],
+    );
 
     for (
         ((((((previous, current), same_real), same_imag), opposite_real), opposite_imag), cosine),
@@ -5474,6 +5518,34 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    struct FourAccumulatorReductionProbe;
+
+    impl WithSimd for FourAccumulatorReductionProbe {
+        type Output = ([f64; 4], [f64; 4]);
+
+        fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+            let mut source = Vec::with_capacity(4 * S::F64_LANES);
+            for vector in 0..4 {
+                for lane in 0..S::F64_LANES {
+                    source.push(vector as f64 * 1000.0 + lane as f64 + 0.25);
+                }
+            }
+            let (vectors, tail) = S::as_simd_f64s(&source);
+            assert!(tail.is_empty());
+            assert_eq!(vectors.len(), 4);
+            let values = std::array::from_fn(|index| vectors[index]);
+            let grouped = reduce_four_analysis_accumulators(simd, values);
+            let separate = values.map(|value| simd.reduce_sum_f64s(value));
+            (grouped, separate)
+        }
+    }
+
+    #[test]
+    fn grouped_four_accumulator_reduction_matches_individual_sums() {
+        let (grouped, separate) = Arch::new().dispatch(FourAccumulatorReductionProbe);
+        assert_eq!(grouped, separate);
+    }
 
     #[test]
     fn vector_sectoral_initialization_matches_high_order_reference_and_tail() {
