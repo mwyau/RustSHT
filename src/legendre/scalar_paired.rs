@@ -3203,6 +3203,32 @@ struct FusedAnalysisTwoPairSteps<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
     second_coefficient_b: f64,
 }
 
+/// Reduces a real/imaginary SIMD pair into one complex sum.
+///
+/// The packed path interleaves matching real and imaginary lanes and reduces
+/// the resulting complex vectors. Other vector widths keep the established
+/// scalar horizontal reductions.
+#[allow(unexpected_cfgs)]
+#[inline(always)]
+fn reduce_analysis_complex_pair<S: Simd, const PACKED_COMPLEX: bool>(
+    simd: S,
+    real: S::f64s,
+    imag: S::f64s,
+) -> Complex64 {
+    if const {
+        PACKED_COMPLEX
+            && S::F64_LANES == 4
+            && std::mem::size_of::<S::f64s>() == std::mem::size_of::<S::c64s>()
+    } {
+        let [even_lanes, odd_lanes] = simd.interleave_shfl_f64s([real, imag]);
+        let even_sum = simd.reduce_sum_c64s(pulp::bytemuck::cast(even_lanes));
+        let odd_sum = simd.reduce_sum_c64s(pulp::bytemuck::cast(odd_lanes));
+        Complex64::new(even_sum.re + odd_sum.re, even_sum.im + odd_sum.im)
+    } else {
+        Complex64::new(simd.reduce_sum_f64s(real), simd.reduce_sum_f64s(imag))
+    }
+}
+
 #[inline(always)]
 fn fused_analysis_pair_step_with_simd<S: Simd, const OPPOSITE_COSINE_WEIGHTED: bool>(
     simd: S,
@@ -3537,30 +3563,30 @@ fn fused_analysis_two_pair_steps_with_simd<
         *current = second_next;
     }
 
-    let [
-        mut first_same_re_sum,
-        mut first_same_im_sum,
-        mut first_opposite_re_sum,
-        mut first_opposite_im_sum,
-    ] = [
-        first_same_re,
-        first_same_im,
-        first_opposite_re,
-        first_opposite_im,
-    ]
-    .map(|value| simd.reduce_sum_f64s(value));
-    let [
-        mut second_same_re_sum,
-        mut second_same_im_sum,
-        mut second_opposite_re_sum,
-        mut second_opposite_im_sum,
-    ] = [
-        second_same_re,
-        second_same_im,
-        second_opposite_re,
-        second_opposite_im,
-    ]
-    .map(|value| simd.reduce_sum_f64s(value));
+    let first_same = reduce_analysis_complex_pair::<
+        S,
+        { cfg!(rustsht_packed_complex_pair_reduction) },
+    >(simd, first_same_re, first_same_im);
+    let first_opposite = reduce_analysis_complex_pair::<
+        S,
+        { cfg!(rustsht_packed_complex_pair_reduction) },
+    >(simd, first_opposite_re, first_opposite_im);
+    let second_same = reduce_analysis_complex_pair::<
+        S,
+        { cfg!(rustsht_packed_complex_pair_reduction) },
+    >(simd, second_same_re, second_same_im);
+    let second_opposite = reduce_analysis_complex_pair::<
+        S,
+        { cfg!(rustsht_packed_complex_pair_reduction) },
+    >(simd, second_opposite_re, second_opposite_im);
+    let mut first_same_re_sum = first_same.re;
+    let mut first_same_im_sum = first_same.im;
+    let mut first_opposite_re_sum = first_opposite.re;
+    let mut first_opposite_im_sum = first_opposite.im;
+    let mut second_same_re_sum = second_same.re;
+    let mut second_same_im_sum = second_same.im;
+    let mut second_opposite_re_sum = second_opposite.re;
+    let mut second_opposite_im_sum = second_opposite.im;
 
     for (
         ((((((previous, current), same_real), same_imag), opposite_real), opposite_imag), cosine),

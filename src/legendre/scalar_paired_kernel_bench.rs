@@ -4,12 +4,40 @@
 // production builds and calls the same Pulp implementation as the analysis path.
 
 use super::*;
+use pulp::{Simd, WithSimd};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::time::Instant;
 
 const BENCH_LMAX: usize = 720;
 const BENCH_ORDER: usize = 1;
+
+struct PackedComplexReductionProbe;
+
+impl WithSimd for PackedComplexReductionProbe {
+    type Output = Option<([f64; 2], [f64; 2])>;
+
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        if S::F64_LANES != 4 {
+            return None;
+        }
+        let same_re = simd.partial_load_f64s(&[1.0, -2.0, 3.0, 4.0]);
+        let same_im = simd.partial_load_f64s(&[5.0, -6.0, 7.0, -8.0]);
+        let opposite_re = simd.partial_load_f64s(&[-1.0, 2.0, -3.0, 4.0]);
+        let opposite_im = simd.partial_load_f64s(&[8.0, 7.0, 6.0, 5.0]);
+        let same = reduce_analysis_complex_pair::<S, true>(simd, same_re, same_im);
+        let opposite = reduce_analysis_complex_pair::<S, true>(simd, opposite_re, opposite_im);
+        Some(([same.re, same.im], [opposite.re, opposite.im]))
+    }
+}
+
+#[test]
+fn packed_complex_reduction_matches_scalar_lane_sums() {
+    if let Some((same, opposite)) = Arch::new().dispatch(PackedComplexReductionProbe) {
+        assert_eq!(same, [6.0, -2.0]);
+        assert_eq!(opposite, [2.0, 26.0]);
+    }
+}
 
 fn output_base() -> String {
     std::env::var("RUSTSHT_KERNEL_BENCH_BASE").unwrap_or_else(|_| {
