@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: GPL-2.0-or-later
-// Benchmark adapter for DUCC revision 80388904b8cfc32400ba84af8a6a45aabfe60f86.
+// Benchmark driver for DUCC revision 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b.
 
 #include <algorithm>
 #include <array>
@@ -22,6 +22,11 @@
 
 namespace loop = ducc0::detail_sht::detail_sht_inner_loop;
 using Clock = std::chrono::steady_clock;
+
+extern "C" void rustsht_ducc_map2alm_kernel(
+    loop::s0data_v *data, const loop::Ylmgen *generator,
+    std::complex<double> *alm, size_t l, size_t il, size_t lmax,
+    size_t nv2);
 
 static inline void escape_memory(const void *pointer) {
 #if defined(__GNUC__) || defined(__clang__)
@@ -119,7 +124,8 @@ int main(int argc, char **argv) {
         std::complex<double>(0.0, 0.0));
   };
   auto run = [&]() {
-    loop::map2alm_kernel(data, generator.coef, alm.data(), m, 0, lmax, vectors);
+    rustsht_ducc_map2alm_kernel(
+        &data, &generator, alm.data(), m, 0, lmax, vectors);
     escape_memory(alm.data());
   };
 
