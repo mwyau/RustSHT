@@ -33,7 +33,7 @@ CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_LTO=thin \
 
 The exact per-process timed samples for the five-pair thin-LTO confirmation
 at T511 are in
-[`process-samples.txt`](data/release-profile-screen-2026-10-14/process-samples.txt). Additional process-median screens are summarized below. They are useful for
+[`process-samples.txt`](../../data/release-profile-screen-2026-10-14/process-samples.txt). Additional process-median screens are summarized below. They are useful for
 rejecting large regressions; small changes are not treated as repeatable
 without the confirming sample set.
 
