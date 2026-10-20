@@ -3,6 +3,7 @@
 **Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Benchmark
 checkpoint:** `6c0189cb`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
+The percentile distribution refresh is in commit `633e4408`.
 
 - Production f64 scalar GL analysis keeps the checked two-pair AVX2/FMA route
   and scaled fallback. A compile-time unchecked specialization is available
