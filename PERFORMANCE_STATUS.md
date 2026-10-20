@@ -74,6 +74,21 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   Numerical errors remained `1.970e-16` coefficient-scaled, `5.928e-14` to
   `1.628e-13` relative output L2, and at most `2.559e-11` maximum absolute.
   See the [reproducible runner](scripts/benchmark_scalar_analysis_kernel.py).
+- Batch-timing methodology checkpoint on clean production source `3c86e40d`:
+  the runner now brackets repeated operations with batch-level clocks, derives
+  reset-excluded time by subtracting a separate reset-only batch, and retains
+  the unadjusted reset-inclusive result. It checks each DUCC checksum and the
+  Rust/DUCC coefficient/output error outside timing, and flags process ranges
+  above 15% of the process-median value. Ten interleaved process pairs produced
+  60 batches per backend/lane; all 1,800 measured intervals were 27.74–77.49 ms
+  and all 1,440 operation wall batches were 34.05–77.82 ms. Process-level
+  checked/unchecked/DUCC kernel-plus-commit medians were `7.016/4.902/4.053`,
+  `12.633/8.903/7.981`, and `24.297/17.164/15.691` µs for 64/128/256 lanes.
+  No process spread exceeded the gate; numerical relative L2 errors were at
+  most `1.628e-13`. The earlier 9.599/5.621 µs and 25.318–39.165 µs DUCC
+  regimes did not recur. Frequency telemetry was available; median/max
+  run-queue wait was 0.004/0.080%, with 2 median and 11 maximum involuntary
+  switches. This remains an isolated ordinary `m=1` kernel comparison.
 - Warmup-controlled rerun at `9967ad19` kept the same work and flags after the
   DUCC timed-process warmup fix. Across 64/128/256 lanes, kernel-plus-commit
   medians (checked/unchecked/DUCC, µs) were `7.151/4.848/4.115`,

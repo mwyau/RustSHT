@@ -34,6 +34,10 @@ INVOCATIONS = 10
 TARGET_FASTEST_BATCH_US = 35_000.0
 COMMIT_CALIBRATION_REPETITIONS = 100_000
 DUCC_TIMED_WARMUPS = 3
+MAX_PROCESS_RANGE_OVER_MEDIAN = 0.15
+
+if BATCHES * INVOCATIONS < 30:
+    raise RuntimeError("the benchmark requires at least 30 batches per backend")
 
 
 def output(command: list[str], *, cwd: pathlib.Path = ROOT, env=None) -> str:
@@ -423,8 +427,11 @@ def main() -> None:
             )
 
         observations = defaultdict(list)
-        numeric_errors = []
+        numeric_errors = {}
         batch_durations = []
+        wall_durations = []
+        reset_observations = defaultdict(list)
+        stability_checks = []
         for lane_count in lanes:
             for invocation in range(INVOCATIONS):
                 order = ("rust", "ducc") if invocation % 2 == 0 else ("ducc", "rust")
@@ -486,6 +493,12 @@ def main() -> None:
                         observations[(lane_count, mode, variant, backend)].append(
                             (per_call_us, invocation + 1, batch_us / 1000.0)
                         )
+                        if "wall_us" in fields:
+                            wall_durations.append(float(fields["wall_us"]) / 1000.0)
+                        if "reset_us" in fields:
+                            reset_observations[(lane_count, mode, variant, backend)].append(
+                                (float(fields["reset_us"]) / reps, invocation + 1)
+                            )
                     expected_lines = BATCHES * (8 if backend == "rust" else 2)
                     if parsed_count != expected_lines:
                         raise RuntimeError(
@@ -493,14 +506,28 @@ def main() -> None:
                         )
                     if backend == "ducc":
                         error = metric_line(stdout, "DUCC_KERNEL")
-                        numeric_errors.append(
-                            (
-                                lane_count,
-                                float(error["coefficient_max_scaled_diff"]),
-                                float(error["output_relative_l2"]),
-                                float(error["output_max_abs"]),
-                            )
+                        numeric = (
+                            lane_count,
+                            float(error["coefficient_max_scaled_diff"]),
+                            float(error["output_relative_l2"]),
+                            float(error["output_max_abs"]),
                         )
+                        if not all(math.isfinite(value) for value in numeric[1:]):
+                            raise RuntimeError(f"non-finite numerical comparison: {error}")
+                        if numeric[1] > 2e-15 or numeric[2] > 5e-12:
+                            raise RuntimeError(
+                                f"Rust/DUCC output comparison failed at lanes={lane_count}: {error}"
+                            )
+                        previous_numeric = numeric_errors.get(lane_count)
+                        if previous_numeric is None:
+                            numeric_errors[lane_count] = numeric
+                        else:
+                            numeric_errors[lane_count] = (
+                                lane_count,
+                                max(previous_numeric[1], numeric[1]),
+                                max(previous_numeric[2], numeric[2]),
+                                max(previous_numeric[3], numeric[3]),
+                            )
                     elif "output_equal=true" not in stdout:
                         raise RuntimeError(f"checked/unchecked outputs differ:\n{stdout}")
 
@@ -549,9 +576,11 @@ def main() -> None:
             )
 
         print(
-            "Rust kernel_only measures recurrence plus SIMD accumulation into staging; "
-            "commit_only measures final coefficient addition; kernel_plus_commit includes both. "
-            "DUCC kernel_plus_commit updates its output directly. reset_inclusive adds input/output reset."
+            "Batch timers bracket repeated operations; reset-excluded kernel estimates subtract "
+            "a separately timed reset-only batch. Rust kernel_only measures recurrence plus SIMD "
+            "staging; commit_only measures final coefficient addition; kernel_plus_commit includes "
+            "both. DUCC accumulates directly into its output. reset_inclusive reports the unadjusted "
+            "reset plus operation batch."
         )
         print(
             "Timed-process warmups: Rust checked and unchecked routes each run three times; "
@@ -590,6 +619,29 @@ def main() -> None:
                         f"range={low:.3f}..{high:.3f}; process_medians="
                         + ",".join(f"{value:.3f}" for value in process_medians)
                     )
+                    process_spread = (max(process_medians) - min(process_medians)) / max(
+                        statistics.median(process_medians), 1e-12
+                    )
+                    process_state = (
+                        "STABLE"
+                        if process_spread <= MAX_PROCESS_RANGE_OVER_MEDIAN
+                        else "UNSTABLE"
+                    )
+                    stability_checks.append(
+                        (lane_count, mode, variant, backend, process_spread, process_state)
+                    )
+                    print(
+                        f"  PROCESS_STABILITY backend={backend} variant={variant} "
+                        f"range_over_median={process_spread:.1%} state={process_state}"
+                    )
+                    resets = reset_observations[(lane_count, mode, variant, backend)]
+                    if resets:
+                        reset_per_call = [value for value, _ in resets]
+                        print(
+                            f"  reset_cost median={statistics.median(reset_per_call):.3f} "
+                            f"p10/p90={summarize(reset_per_call)[1]:.3f}.."
+                            f"{summarize(reset_per_call)[2]:.3f} us/op"
+                        )
                     for invocation in range(1, INVOCATIONS + 1):
                         process_values = [
                             sample[0] for sample in samples if sample[1] == invocation
@@ -631,11 +683,30 @@ def main() -> None:
                             paired_excess.append(rust_process_median - ducc_process_median)
                         ratio_summary = summarize(paired_ratios)
                         excess_summary = summarize(paired_excess)
+                        ratio_spread = (max(paired_ratios) - min(paired_ratios)) / max(
+                            statistics.median(paired_ratios), 1e-12
+                        )
+                        ratio_state = (
+                            "STABLE"
+                            if ratio_spread <= MAX_PROCESS_RANGE_OVER_MEDIAN
+                            else "UNSTABLE"
+                        )
+                        stability_checks.append(
+                            (
+                                lane_count,
+                                mode,
+                                f"{rust_variant}/DUCC",
+                                "paired",
+                                ratio_spread,
+                                ratio_state,
+                            )
+                        )
                         print(
                             f"  paired_process {rust_variant}/DUCC: "
                             f"ratio median={ratio_summary[0]:.3f} "
                             f"p10/p90={ratio_summary[1]:.3f}..{ratio_summary[2]:.3f} "
                             f"range={ratio_summary[5]:.3f}..{ratio_summary[6]:.3f}; "
+                            f"stability_spread={ratio_spread:.1%} state={ratio_state}; "
                             f"excess_us median={excess_summary[0]:.3f} "
                             f"p10/p90={excess_summary[1]:.3f}..{excess_summary[2]:.3f} "
                             f"range={excess_summary[5]:.3f}..{excess_summary[6]:.3f}"
@@ -656,7 +727,35 @@ def main() -> None:
             f"BATCH_DURATIONS measured_kernel_or_reset_ms range={min_batch:.2f}..{max_batch:.2f}; "
             f"outside_20_100ms={outside}/{len(batch_durations)}"
         )
-        for lane_count, coefficient_error, relative_l2, max_abs in numeric_errors:
+        if wall_durations:
+            wall_min = min(wall_durations)
+            wall_max = max(wall_durations)
+            wall_outside = sum(not (20.0 <= sample <= 100.0) for sample in wall_durations)
+            if wall_outside:
+                raise RuntimeError(
+                    f"{wall_outside}/{len(wall_durations)} operation wall batches fell outside 20-100 ms"
+                )
+            print(
+                f"BATCH_WALL_DURATIONS operation_ms range={wall_min:.2f}..{wall_max:.2f}; "
+                f"outside_20_100ms={wall_outside}/{len(wall_durations)}"
+            )
+        unstable = [item for item in stability_checks if item[-1] == "UNSTABLE"]
+        print(
+            f"TIMING_STABILITY threshold_process_range_over_median="
+            f"{MAX_PROCESS_RANGE_OVER_MEDIAN:.0%} status="
+            f"{'UNSTABLE' if unstable else 'STABLE'}"
+        )
+        if unstable:
+            for lane_count, mode, variant, backend, spread, _ in unstable:
+                print(
+                    f"  unexplained_regime_candidate lanes={lane_count} mode={mode} "
+                    f"variant={variant} backend={backend} range_over_median={spread:.1%}"
+                )
+            print(
+                "INTERPRETATION unstable process-level results require correlation with "
+                "HOST_PROCESS frequency and scheduling records before parity claims"
+            )
+        for lane_count, coefficient_error, relative_l2, max_abs in numeric_errors.values():
             print(
                 f"NUMERICS lanes={lane_count} coefficient_max_scaled_diff={coefficient_error:.3e} "
                 f"output_relative_l2={relative_l2:.3e} output_max_abs={max_abs:.3e}"

@@ -23,6 +23,15 @@
 namespace loop = ducc0::detail_sht::detail_sht_inner_loop;
 using Clock = std::chrono::steady_clock;
 
+static inline void escape_memory(const void *pointer) {
+#if defined(__GNUC__) || defined(__clang__)
+  asm volatile("" : : "g"(pointer) : "memory");
+#else
+  (void)pointer;
+  std::atomic_signal_fence(std::memory_order_seq_cst);
+#endif
+}
+
 static void read_u64(std::ifstream &in, uint64_t &value) {
   in.read(reinterpret_cast<char *>(&value), sizeof(value));
   if (!in) throw std::runtime_error("truncated fixture header");
@@ -111,7 +120,7 @@ int main(int argc, char **argv) {
   };
   auto run = [&]() {
     loop::map2alm_kernel(data, generator.coef, alm.data(), m, 0, lmax, vectors);
-    std::atomic_signal_fence(std::memory_order_seq_cst);
+    escape_memory(alm.data());
   };
 
   auto keep_result = [&]() {
@@ -120,6 +129,15 @@ int main(int argc, char **argv) {
       checksum += value->real() + 0.5 * value->imag();
     std::atomic_signal_fence(std::memory_order_seq_cst);
     return checksum;
+  };
+  auto reset_batch_us = [&]() {
+    const auto started = Clock::now();
+    for (size_t i = 0; i < repetitions; ++i) {
+      reset();
+      escape_memory(data.lam1.data());
+      escape_memory(alm.data());
+    }
+    return std::chrono::duration<double, std::micro>(Clock::now() - started).count();
   };
 
   if (calibrate) {
@@ -145,10 +163,17 @@ int main(int argc, char **argv) {
 
   constexpr size_t warmup_repetitions = 3;
   double warmup_checksum = 0.0;
+  double reference_checksum = 0.0;
   for (size_t i = 0; i < warmup_repetitions; ++i) {
     reset();
     run();
-    warmup_checksum += keep_result();
+    const double checksum = keep_result();
+    if (i == 0)
+      reference_checksum = checksum;
+    else if (std::abs(checksum - reference_checksum) >
+             1e-12 * std::max(1.0, std::abs(reference_checksum)))
+      throw std::runtime_error("DUCC warmup result changed between repetitions");
+    warmup_checksum += checksum;
   }
   if (!std::isfinite(warmup_checksum))
     throw std::runtime_error("DUCC warmup produced a non-finite result");
@@ -158,37 +183,55 @@ int main(int argc, char **argv) {
             << " checksum=" << warmup_checksum << "\n";
 
   for (size_t batch = 0; batch < batch_count; ++batch) {
-    double kernel_batch_us = 0.0;
+    const double reset_us = reset_batch_us();
     const auto wall_started = Clock::now();
     for (size_t i = 0; i < repetitions; ++i) {
       reset();
-      const auto started = Clock::now();
       run();
-      const auto ended = Clock::now();
-      kernel_batch_us += std::chrono::duration<double, std::micro>(ended - started).count();
     }
     const double wall_us = std::chrono::duration<double, std::micro>(Clock::now() - wall_started).count();
     const double checksum = keep_result();
+    const double kernel_batch_us = wall_us - reset_us;
+    if (std::abs(checksum - reference_checksum) >
+        1e-12 * std::max(1.0, std::abs(reference_checksum)))
+      throw std::runtime_error("DUCC kernel result changed between timed batches");
     std::cout << std::fixed << std::setprecision(3)
               << "DUCC_BATCH lanes=" << lane_count << " batch=" << batch
               << " repetitions=" << repetitions << " mode=kernel_plus_commit"
-              << " kernel_us=" << kernel_batch_us << " wall_us=" << wall_us
+              << " kernel_us=" << kernel_batch_us << " reset_us=" << reset_us
+              << " wall_us=" << wall_us
               << " checksum=" << std::setprecision(12) << checksum << "\n";
 
-    const auto reset_started = Clock::now();
+    const double inclusive_reset_us = reset_batch_us();
+    const auto reset_inclusive_started = Clock::now();
     for (size_t i = 0; i < repetitions; ++i) {
       reset();
       run();
+      escape_memory(data.lam1.data());
     }
     const double reset_inclusive_us =
-        std::chrono::duration<double, std::micro>(Clock::now() - reset_started).count();
+        std::chrono::duration<double, std::micro>(Clock::now() - reset_inclusive_started).count();
     const double reset_checksum = keep_result();
+    if (std::abs(reset_checksum - reference_checksum) >
+        1e-12 * std::max(1.0, std::abs(reference_checksum)))
+      throw std::runtime_error("DUCC reset-inclusive result changed between timed batches");
     std::cout << std::fixed << std::setprecision(3)
               << "DUCC_BATCH lanes=" << lane_count << " batch=" << batch
               << " repetitions=" << repetitions << " mode=reset_inclusive"
               << " batch_us=" << reset_inclusive_us
+              << " wall_us=" << reset_inclusive_us
+              << " reset_us=" << inclusive_reset_us
               << " checksum=" << std::setprecision(12) << reset_checksum << "\n";
   }
+
+  // Restore one validated result after the final reset-only diagnostic batch.
+  // This work is outside every timed region and feeds the Rust/DUCC comparison.
+  reset();
+  run();
+  const double final_checksum = keep_result();
+  if (std::abs(final_checksum - reference_checksum) >
+      1e-12 * std::max(1.0, std::abs(reference_checksum)))
+    throw std::runtime_error("DUCC final result differs from the validated warmup");
 
   std::ifstream rust_in(fixture_path.substr(0, fixture_path.size() - 3) + ".rust",
                         std::ios::binary);

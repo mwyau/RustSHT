@@ -662,12 +662,12 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                 };
                 assert_eq!(checked_staged, unchecked_staged);
                 eprintln!(
-                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=kernel_only variant=checked kernel_us={:.3} wall_us={:.3}",
-                    checked_kernel.0, checked_kernel.1
+                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=kernel_only variant=checked kernel_us={:.3} reset_us={:.3} wall_us={:.3}",
+                    checked_kernel.0, checked_kernel.2, checked_kernel.1
                 );
                 eprintln!(
-                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=kernel_only variant=unchecked kernel_us={:.3} wall_us={:.3}",
-                    unchecked_kernel.0, unchecked_kernel.1
+                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=kernel_only variant=unchecked kernel_us={:.3} reset_us={:.3} wall_us={:.3}",
+                    unchecked_kernel.0, unchecked_kernel.2, unchecked_kernel.1
                 );
 
                 let (checked_commit, unchecked_commit) = if checked_first {
@@ -744,12 +744,12 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                 };
                 assert_eq!(checked_output, unchecked_output);
                 eprintln!(
-                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=kernel_plus_commit variant=checked kernel_us={:.3} wall_us={:.3}",
-                    checked_combined.0, checked_combined.1
+                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=kernel_plus_commit variant=checked kernel_us={:.3} reset_us={:.3} wall_us={:.3}",
+                    checked_combined.0, checked_combined.2, checked_combined.1
                 );
                 eprintln!(
-                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=kernel_plus_commit variant=unchecked kernel_us={:.3} wall_us={:.3}",
-                    unchecked_combined.0, unchecked_combined.1
+                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=kernel_plus_commit variant=unchecked kernel_us={:.3} reset_us={:.3} wall_us={:.3}",
+                    unchecked_combined.0, unchecked_combined.2, unchecked_combined.1
                 );
 
                 let (checked_reset, unchecked_reset) = if checked_first {
@@ -799,10 +799,12 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                 };
                 assert_eq!(checked_output, unchecked_output);
                 eprintln!(
-                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=reset_inclusive variant=checked batch_us={checked_reset:.3}"
+                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=reset_inclusive variant=checked batch_us={:.3} reset_us={:.3} wall_us={:.3}",
+                    checked_reset.0, checked_reset.1, checked_reset.0
                 );
                 eprintln!(
-                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=reset_inclusive variant=unchecked batch_us={unchecked_reset:.3}"
+                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=reset_inclusive variant=unchecked batch_us={:.3} reset_us={:.3} wall_us={:.3}",
+                    unchecked_reset.0, unchecked_reset.1, unchecked_reset.0
                 );
             }
 
@@ -947,25 +949,30 @@ fn kernel_only_batch<const CHECK_PAIR_GROUP_RANGE: bool>(
     previous: &mut [f64],
     current: &mut [f64],
     next: &mut [f64],
-) -> (f64, f64) {
+) -> (f64, f64, f64) {
+    // Time whole batches, not individual calls. Subtract a separate batch of
+    // identical resets to estimate the recurrence/staging time without
+    // adding a clock read to every kernel invocation.
+    let reset_started = Instant::now();
+    for _ in 0..repetitions {
+        reset_fused_scalar_analysis_pair(fixture, staged, previous, current);
+        std::hint::black_box((&*staged, &*previous, &*current));
+    }
+    let reset_us = reset_started.elapsed().as_secs_f64() * 1.0e6;
+
     let wall_started = Instant::now();
-    let mut kernel_duration = std::time::Duration::ZERO;
     let mut all_succeeded = true;
     for _ in 0..repetitions {
         reset_fused_scalar_analysis_pair(fixture, staged, previous, current);
-        let started = Instant::now();
         let succeeded = run_fused_scalar_analysis_pair::<CHECK_PAIR_GROUP_RANGE>(
             arch, fixture, staged, previous, current, next,
         );
-        kernel_duration += started.elapsed();
         all_succeeded &= succeeded;
         std::hint::black_box((&*staged, &*previous, &*current, &*next));
     }
     assert!(all_succeeded);
-    (
-        kernel_duration.as_secs_f64() * 1.0e6,
-        wall_started.elapsed().as_secs_f64() * 1.0e6,
-    )
+    let wall_us = wall_started.elapsed().as_secs_f64() * 1.0e6;
+    ((wall_us - reset_us).max(0.0), wall_us, reset_us)
 }
 
 fn commit_staged_coefficients(staged: &[Complex64], output: &mut [Complex64]) {
@@ -1014,28 +1021,32 @@ fn kernel_plus_commit_batch<const CHECK_PAIR_GROUP_RANGE: bool>(
     previous: &mut [f64],
     current: &mut [f64],
     next: &mut [f64],
-) -> (f64, f64) {
+) -> (f64, f64, f64) {
+    // This is the reset-excluded recurrence plus coefficient-commit estimate;
+    // the caller also records the unadjusted operation-batch wall time.
+    let reset_started = Instant::now();
+    for _ in 0..repetitions {
+        reset_analysis_kernel_state(fixture, output, previous, current);
+        std::hint::black_box((&*output, &*previous, &*current));
+    }
+    let reset_us = reset_started.elapsed().as_secs_f64() * 1.0e6;
+
     let wall_started = Instant::now();
-    let mut kernel_and_commit_duration = std::time::Duration::ZERO;
     let mut all_succeeded = true;
     for _ in 0..repetitions {
         reset_analysis_kernel_state(fixture, output, previous, current);
-        let started = Instant::now();
         let succeeded = run_fused_scalar_analysis_pair::<CHECK_PAIR_GROUP_RANGE>(
             arch, fixture, staged, previous, current, next,
         );
         if succeeded {
             commit_staged_coefficients(staged, output);
         }
-        kernel_and_commit_duration += started.elapsed();
         all_succeeded &= succeeded;
         std::hint::black_box((&*staged, &*output, &*previous, &*current, &*next));
     }
     assert!(all_succeeded);
-    (
-        kernel_and_commit_duration.as_secs_f64() * 1.0e6,
-        wall_started.elapsed().as_secs_f64() * 1.0e6,
-    )
+    let wall_us = wall_started.elapsed().as_secs_f64() * 1.0e6;
+    ((wall_us - reset_us).max(0.0), wall_us, reset_us)
 }
 
 #[expect(
@@ -1051,7 +1062,16 @@ fn reset_inclusive_batch<const CHECK_PAIR_GROUP_RANGE: bool>(
     previous: &mut [f64],
     current: &mut [f64],
     next: &mut [f64],
-) -> f64 {
+) -> (f64, f64) {
+    // Retain both values: the unadjusted operation time is the reset-inclusive
+    // result, while reset-only is reported to expose buffer-management cost.
+    let reset_started = Instant::now();
+    for _ in 0..repetitions {
+        reset_analysis_kernel_state(fixture, output, previous, current);
+        std::hint::black_box((&*output, &*previous, &*current));
+    }
+    let reset_us = reset_started.elapsed().as_secs_f64() * 1.0e6;
+
     let started = Instant::now();
     let mut all_succeeded = true;
     for _ in 0..repetitions {
@@ -1067,7 +1087,7 @@ fn reset_inclusive_batch<const CHECK_PAIR_GROUP_RANGE: bool>(
     }
     let elapsed_us = started.elapsed().as_secs_f64() * 1.0e6;
     assert!(all_succeeded);
-    elapsed_us
+    (elapsed_us, reset_us)
 }
 
 #[test]
