@@ -44,7 +44,7 @@ process performed one warm-up and five timed DUCC calls. The same input
 generation and operation wrapper from `examples/python_perf_baseline.py`
 were used for both builds. `RUSTSHT_PERF_RAW=1` records each timed call as
 well as the per-process median. The raw process samples are in
-[`process-samples.csv`](data/ducc-source-build-screen-2026-10-14/process-samples.csv).
+[`process-samples.csv`](../../data/ducc-source-build-screen-2026-10-14/process-samples.csv).
 
 ## Paired DUCC timings
 
@@ -83,7 +83,7 @@ using matching deterministic inputs. Relative-L2 errors stayed between
 `3.486e-14` and `9.123e-14` across the tested operations, bands, and thread
 counts. Maximum absolute, RMS, relative-L2, Python-plan timing, and raw timing
 values are in
-[`source-ducc-rust-errors.csv`](data/ducc-source-build-screen-2026-10-14/source-ducc-rust-errors.csv). These comparisons validate numerical agreement; the single-process Python
+[`source-ducc-rust-errors.csv`](../../data/ducc-source-build-screen-2026-10-14/source-ducc-rust-errors.csv). These comparisons validate numerical agreement; the single-process Python
 timings in that file are not used for the source-build performance decision. The source build leaves the current native Rust-to-DUCC gap materially
 unchanged. Using the paired Rust native timings from commit `612a90e` for
 operations unaffected by the spin-1 analysis change, and `614db91` for that
