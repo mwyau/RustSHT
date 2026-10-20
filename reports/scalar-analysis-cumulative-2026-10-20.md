@@ -239,7 +239,39 @@ with four recurrence FMAs and eight accumulation FMAs per SIMD vector.
 The current direct warmed kernel-plus-commit timing is faster than DUCC at all
 three widths, with relative L2 errors of `6.670e-14`, `1.628e-13`, and
 `5.928e-14`. This result does not establish full-transform or q8 parity. The
-next benchmark-only step is to retain the SIMD accumulation vectors while
-separately measuring horizontal reduction and coefficient construction; then
-profile the largest remaining full-transform stage before changing the
-ordinary production loop.
+next step is to separately measure horizontal reduction and coefficient
+construction, then profile the largest remaining full-transform stage before
+changing the ordinary production loop. The first retained-vector attempt was
+invalid and is documented below.
+
+### Failed retained-vector split
+
+A follow-up benchmark-only variant kept the eight SIMD accumulation chains,
+passed their vector results through `std::hint::black_box`, and omitted the
+horizontal reductions. It used the same Rust/DUCC build and q1 T720 GL `m=1`
+work, with ten process pairs and six 20–100 ms target batches per case. Three
+of 540 batches fell below 20 ms (minimum 19.12 ms); they were retained. The
+host-frequency median was 3.968 GHz, and host runqueue wait was 0.92% median
+with an 81.0% maximum outlier.
+
+| Active lanes | Full path (µs) | Retained vectors, no reduction (µs) | Recurrence-only (µs) | Paired full-minus-retained delta (µs) |
+|---:|---:|---:|---:|---:|
+| 64 | 7.805 | 8.809 | 3.702 | −0.991 |
+| 128 | 14.110 | 13.473 | 7.102 | +0.694 |
+| 256 | 26.366 | 27.643 | 13.837 | −1.266 |
+
+This split is invalid for reduction-cost attribution. The optimized Rust
+dispatch path shows the eight vector accumulators being written to YMM stack
+slots at the end of each two-pair group so the black-box sink can observe them.
+That artificial memory traffic made the retained-vector variant slower than
+the full path at 64 and 256 lanes, while the 128-lane delta had the opposite
+sign. Recurrence-state equality and the standard Rust/DUCC numerical checks
+passed (`6.670e-14..1.628e-13` relative L2), but those checks do not validate
+the timing decomposition. The source patch is retained for review in the
+[probe data directory](data/scalar-analysis-cumulative-2026-10-20/retained-vector-probe.md);
+the invalid specialization was removed from `src/`. Do not interpret these
+deltas as horizontal-reduction cost. A replacement probe needs an explicit
+scratch sink with its write cost controlled, or a separately timed reduction
+microbenchmark. The ordinary warmed kernel remains faster than DUCC in the
+matched comparison above, so no production recurrence change follows from
+this failed split.

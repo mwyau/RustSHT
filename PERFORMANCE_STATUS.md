@@ -16,9 +16,12 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   kernel-plus-commit ratios were 0.940/0.874/0.838, so this `m=1` warmed kernel
   is not slower than DUCC. Reduction remains combined with accumulation in
   this probe; prior reduction ablations were neutral or slower. No production
-  recurrence change is justified by this result. Next separate accumulation
-  chains from reductions, then profile the largest remaining full-transform
-  stage. See the [cumulative findings](reports/scalar-analysis-cumulative-2026-10-20.md).
+  recurrence change is justified by this result. The first retained-vector
+  split for measuring reductions caused YMM stack stores and produced
+  lane-dependent deltas of inconsistent sign; it is excluded and archived.
+  Next replace that probe with a controlled scratch sink or independent
+  reduction timing, then profile the largest remaining full-transform stage.
+  See the [cumulative findings](reports/scalar-analysis-cumulative-2026-10-20.md).
 
 - Full-transform checkpoint at source `5e290b7` compared production f64 scalar
   GL analysis and synthesis with DUCC `80388904b8cfc32400ba84af8a6a45aabfe60f86`

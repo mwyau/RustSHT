@@ -1,0 +1,277 @@
+diff --git a/scripts/benchmark_scalar_analysis_kernel.py b/scripts/benchmark_scalar_analysis_kernel.py
+index e3eebfc9..f3a5f2ab 100644
+--- a/scripts/benchmark_scalar_analysis_kernel.py
++++ b/scripts/benchmark_scalar_analysis_kernel.py
+@@ -515 +515 @@ def main() -> None:
+-                            for variant in ("full", "recurrence"):
++                            for variant in ("full", "accumulation", "recurrence"):
+@@ -786 +786 @@ def main() -> None:
+-            "COMPONENT_METHOD full uses the ordinary fused production loop; recurrence-only compiles out spectrum products and horizontal reductions while retaining recurrence, safety checks, state updates, dispatch, and zeroed coefficient stores."
++            "COMPONENT_METHOD full uses the ordinary fused production loop; accumulation-only retains the SIMD spectrum products and accumulator chains, black-boxes their vectors, and compiles out horizontal reductions; recurrence-only also compiles out spectrum products and accumulation. All variants retain recurrence, safety checks, state updates, dispatch, and coefficient stores."
+@@ -790 +790 @@ def main() -> None:
+-            for variant in ("full", "recurrence"):
++            for variant in ("full", "accumulation", "recurrence"):
+@@ -809,0 +810,10 @@ def main() -> None:
++            accumulation_excess = [
++                process_medians["accumulation"][invocation]
++                - process_medians["recurrence"][invocation]
++                for invocation in range(1, INVOCATIONS + 1)
++            ]
++            reduction_excess = [
++                process_medians["full"][invocation]
++                - process_medians["accumulation"][invocation]
++                for invocation in range(1, INVOCATIONS + 1)
++            ]
+@@ -818,0 +829,2 @@ def main() -> None:
++            accumulation_summary = summarize(accumulation_excess)
++            reduction_summary = summarize(reduction_excess)
+@@ -821,2 +833,6 @@ def main() -> None:
+-                f"COMPONENT_DELTA lanes={lane_count} spectrum_accumulation_plus_reduction="
+-                f"{excess_summary[0]:.3f}us/op p10/p90={excess_summary[1]:.3f}..{excess_summary[2]:.3f} "
++                f"COMPONENT_DELTA lanes={lane_count} accumulation_chains="
++                f"{accumulation_summary[0]:.3f}us/op p10/p90={accumulation_summary[1]:.3f}..{accumulation_summary[2]:.3f} "
++                f"reduction_and_coefficient_conversion={reduction_summary[0]:.3f}us/op "
++                f"p10/p90={reduction_summary[1]:.3f}..{reduction_summary[2]:.3f} "
++                f"combined_accumulation_plus_reduction={excess_summary[0]:.3f}us/op "
++                f"p10/p90={excess_summary[1]:.3f}..{excess_summary[2]:.3f} "
+diff --git a/src/legendre/scalar_paired.rs b/src/legendre/scalar_paired.rs
+index 983e4d26..309b423a 100644
+--- a/src/legendre/scalar_paired.rs
++++ b/src/legendre/scalar_paired.rs
+@@ -3151,0 +3152,3 @@ struct FusedScalarAnalysisPair<
++    // The benchmark attribution path can retain SIMD accumulators without
++    // reducing them to coefficients. Production keeps reductions enabled.
++    const REDUCE_ACCUMULATORS: bool = true,
+@@ -3400,0 +3404 @@ fn fused_analysis_two_pair_steps_with_simd<
++    const REDUCE_ACCUMULATORS: bool,
+@@ -3618,27 +3622,42 @@ fn fused_analysis_two_pair_steps_with_simd<
+-    let (first_same, first_opposite, second_same, second_opposite) = if ACCUMULATE {
+-        (
+-            reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
+-                simd,
+-                first_same_re,
+-                first_same_im,
+-            ),
+-            reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
+-                simd,
+-                first_opposite_re,
+-                first_opposite_im,
+-            ),
+-            reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
+-                simd,
+-                second_same_re,
+-                second_same_im,
+-            ),
+-            reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
+-                simd,
+-                second_opposite_re,
+-                second_opposite_im,
+-            ),
+-        )
+-    } else {
+-        let zero = Complex64::new(0.0, 0.0);
+-        (zero, zero, zero, zero)
+-    };
++    let (first_same, first_opposite, second_same, second_opposite) =
++        if ACCUMULATE && REDUCE_ACCUMULATORS {
++            (
++                reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
++                    simd,
++                    first_same_re,
++                    first_same_im,
++                ),
++                reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
++                    simd,
++                    first_opposite_re,
++                    first_opposite_im,
++                ),
++                reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
++                    simd,
++                    second_same_re,
++                    second_same_im,
++                ),
++                reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
++                    simd,
++                    second_opposite_re,
++                    second_opposite_im,
++                ),
++            )
++        } else {
++            if ACCUMULATE {
++                // Keep this benchmark-only specialization's vector FMA chains
++                // observable while omitting their horizontal reductions.
++                std::hint::black_box((
++                    first_same_re,
++                    first_same_im,
++                    first_opposite_re,
++                    first_opposite_im,
++                    second_same_re,
++                    second_same_im,
++                    second_opposite_re,
++                    second_opposite_im,
++                ));
++            }
++            let zero = Complex64::new(0.0, 0.0);
++            (zero, zero, zero, zero)
++        };
+@@ -3865,0 +3885 @@ impl<
++    const REDUCE_ACCUMULATORS: bool,
+@@ -3872,0 +3893 @@ impl<
++        REDUCE_ACCUMULATORS,
+@@ -3928,0 +3950 @@ impl<
++                REDUCE_ACCUMULATORS,
+diff --git a/src/legendre/scalar_paired_kernel_bench.rs b/src/legendre/scalar_paired_kernel_bench.rs
+index b6dc7639..9c3389cd 100644
+--- a/src/legendre/scalar_paired_kernel_bench.rs
++++ b/src/legendre/scalar_paired_kernel_bench.rs
+@@ -494 +494 @@ impl WithSimd for AnalysisRangeCheckLoop<'_> {
+-fn run_analysis_pair_component<const ACCUMULATE: bool>(
++fn run_analysis_pair_component<const ACCUMULATE: bool, const REDUCE_ACCUMULATORS: bool>(
+@@ -502 +502 @@ fn run_analysis_pair_component<const ACCUMULATE: bool>(
+-    if ACCUMULATE {
++    if ACCUMULATE && REDUCE_ACCUMULATORS {
+@@ -508 +508,2 @@ fn run_analysis_pair_component<const ACCUMULATE: bool>(
+-            false,
++            ACCUMULATE,
++            REDUCE_ACCUMULATORS,
+@@ -513 +514 @@ fn run_analysis_pair_component<const ACCUMULATE: bool>(
+-fn time_analysis_pair_components<const ACCUMULATE: bool>(
++fn time_analysis_pair_components<const ACCUMULATE: bool, const REDUCE_ACCUMULATORS: bool>(
+@@ -536,3 +537,5 @@ fn time_analysis_pair_components<const ACCUMULATE: bool>(
+-        assert!(run_analysis_pair_component::<ACCUMULATE>(
+-            arch, fixture, staged, previous, current, next,
+-        ));
++        assert!(
++            run_analysis_pair_component::<ACCUMULATE, REDUCE_ACCUMULATORS>(
++                arch, fixture, staged, previous, current, next,
++            )
++        );
+@@ -570,0 +574,4 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
++    let mut component_accumulation_staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
++    let mut component_accumulation_previous = vec![0.0; lane_count];
++    let mut component_accumulation_current = vec![0.0; lane_count];
++    let mut component_accumulation_next = vec![0.0; lane_count];
+@@ -575 +582 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
+-    assert!(run_analysis_pair_component::<true>(
++    assert!(run_analysis_pair_component::<true, true>(
+@@ -583 +590,9 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
+-    assert!(run_analysis_pair_component::<false>(
++    assert!(run_analysis_pair_component::<true, false>(
++        arch,
++        &fixture,
++        &mut component_accumulation_staged,
++        &mut component_accumulation_previous,
++        &mut component_accumulation_current,
++        &mut component_accumulation_next,
++    ));
++    assert!(run_analysis_pair_component::<false, false>(
+@@ -593,0 +609,8 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
++    assert_eq!(previous, component_accumulation_previous);
++    assert_eq!(current, component_accumulation_current);
++    assert_eq!(next, component_accumulation_next);
++    assert!(
++        component_accumulation_staged
++            .iter()
++            .all(|value| { *value == Complex64::new(0.0, 0.0) })
++    );
+@@ -613 +636 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
+-        "COMPONENT_VALIDATION lanes={lane_count} recurrence_state_equal=true reference_coefficients_equal=true"
++        "COMPONENT_VALIDATION lanes={lane_count} recurrence_state_equal=true accumulation_state_equal=true reference_coefficients_equal=true"
+@@ -747 +770 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
+-                time_analysis_pair_components::<true>(
++                time_analysis_pair_components::<true, true>(
+@@ -756 +779,10 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
+-                time_analysis_pair_components::<false>(
++                time_analysis_pair_components::<true, false>(
++                    1,
++                    arch,
++                    &fixture,
++                    &mut component_accumulation_staged,
++                    &mut component_accumulation_previous,
++                    &mut component_accumulation_current,
++                    &mut component_accumulation_next,
++                );
++                time_analysis_pair_components::<false, false>(
+@@ -957,2 +989,2 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
+-                let (component_full, component_recurrence) = if checked_first {
+-                    let full = time_analysis_pair_components::<true>(
++                let mut time_full = || {
++                    time_analysis_pair_components::<true, true>(
+@@ -966,2 +998,4 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
+-                    );
+-                    let recurrence = time_analysis_pair_components::<false>(
++                    )
++                };
++                let mut time_accumulation = || {
++                    time_analysis_pair_components::<true, false>(
+@@ -971,8 +1005,8 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
+-                        &mut component_recurrence_staged,
+-                        &mut component_recurrence_previous,
+-                        &mut component_recurrence_current,
+-                        &mut component_recurrence_next,
+-                    );
+-                    (full, recurrence)
+-                } else {
+-                    let recurrence = time_analysis_pair_components::<false>(
++                        &mut component_accumulation_staged,
++                        &mut component_accumulation_previous,
++                        &mut component_accumulation_current,
++                        &mut component_accumulation_next,
++                    )
++                };
++                let mut time_recurrence = || {
++                    time_analysis_pair_components::<false, false>(
+@@ -986,11 +1020,17 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
+-                    );
+-                    let full = time_analysis_pair_components::<true>(
+-                        repetitions,
+-                        arch,
+-                        &fixture,
+-                        &mut unchecked_staged,
+-                        &mut previous,
+-                        &mut current,
+-                        &mut next,
+-                    );
+-                    (full, recurrence)
++                    )
++                };
++                let (component_full, component_accumulation, component_recurrence) = match batch % 3
++                {
++                    0 => (time_full(), time_accumulation(), time_recurrence()),
++                    1 => {
++                        let accumulation = time_accumulation();
++                        let recurrence = time_recurrence();
++                        let full = time_full();
++                        (full, accumulation, recurrence)
++                    }
++                    _ => {
++                        let recurrence = time_recurrence();
++                        let full = time_full();
++                        let accumulation = time_accumulation();
++                        (full, accumulation, recurrence)
++                    }
+@@ -1000,0 +1041,3 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
++                assert_eq!(previous, component_accumulation_previous);
++                assert_eq!(current, component_accumulation_current);
++                assert_eq!(next, component_accumulation_next);
+@@ -1002 +1045 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
+-                    "COMPONENT_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} full_kernel_us={:.3} recurrence_kernel_us={:.3} full_reset_us={:.3} recurrence_reset_us={:.3} full_wall_us={:.3} recurrence_wall_us={:.3}",
++                    "COMPONENT_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} full_kernel_us={:.3} accumulation_kernel_us={:.3} recurrence_kernel_us={:.3} full_reset_us={:.3} accumulation_reset_us={:.3} recurrence_reset_us={:.3} full_wall_us={:.3} accumulation_wall_us={:.3} recurrence_wall_us={:.3}",
+@@ -1003,0 +1047 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
++                    component_accumulation.0,
+@@ -1005,0 +1050 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
++                    component_accumulation.2,
+@@ -1007,0 +1053 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
++                    component_accumulation.1,
+@@ -1046,0 +1093 @@ fn run_fused_scalar_analysis_pair<const CHECK_PAIR_GROUP_RANGE: bool>(
++        true,
+@@ -1054,0 +1102 @@ fn run_fused_scalar_analysis_pair_variant<
++    const REDUCE_ACCUMULATORS: bool,
+@@ -1068,0 +1117 @@ fn run_fused_scalar_analysis_pair_variant<
++        REDUCE_ACCUMULATORS,
+@@ -1362 +1411 @@ fn unchecked_group_range_matches_checked_for_zero_cancellation_and_tails() {
+-        let scanned_succeeded = run_fused_scalar_analysis_pair_variant::<true, false, true>(
++        let scanned_succeeded = run_fused_scalar_analysis_pair_variant::<true, false, true, true>(
+@@ -1373 +1422 @@ fn unchecked_group_range_matches_checked_for_zero_cancellation_and_tails() {
+-        let fused_succeeded = run_fused_scalar_analysis_pair_variant::<true, true, true>(
++        let fused_succeeded = run_fused_scalar_analysis_pair_variant::<true, true, true, true>(
