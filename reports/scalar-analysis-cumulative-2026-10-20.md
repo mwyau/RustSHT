@@ -299,3 +299,22 @@ scratch sink with its write cost controlled, or a separately timed reduction
 microbenchmark. The ordinary warmed kernel remains faster than DUCC in the
 matched comparison above, so no production recurrence change follows from
 this failed split.
+
+### Sectoral seed-prefix reuse candidate
+
+When the ordinary SIMD sectoral initializer encounters an unsafe vector, it
+returns the count of preceding vectors that passed its range checks. The scaled
+pass now starts at that vector instead of recomputing the earlier integer
+powers. It still prepares later vectors and the scalar tail with the existing
+scaled exponent logic; invalid inputs still decline to the robust fallback.
+Ordinary prefix scale epochs remain zero.
+
+The focused test verifies a two-vector ordinary prefix followed by a scaled
+vector and tail at the runtime SIMD lane width. With the cumulative
+tile-256/fixed-scratch/packed-reduction/indexed-loop/direct-output cfgs, release
+library tests passed (230 passed, 23 ignored), no-default-feature release
+library tests passed (192 passed, 14 ignored), formatting passed, and
+all-target/all-feature Clippy passed. No timing was collected because unrelated
+host CPU work saturated the machine. This change remains an unmeasured
+cumulative candidate; do not infer a latency improvement before the matched
+64/128/256-lane and representative full-transform rerun.

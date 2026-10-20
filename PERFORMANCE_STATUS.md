@@ -12,11 +12,14 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   restored behind `rustsht_scalar_analysis_direct_accumulation`; production
   still uses staged output. It requires a cached checked-recurrence proof and
   an input bound covering all reflected latitude lanes, while scaled and
-  unsafe inputs retain the transactional path. The combined tile-256,
-  fixed-scratch, packed-reduction, indexed-loop and direct-output build passed
-  229 release library tests (23 ignored), 191 no-default-feature release
-  library tests (14 ignored), and all-target/all-feature Clippy. Its focused
-  T511 cached-versus-checked comparison has relative L2 error `2.5974e-16`.
+  unsafe inputs retain the transactional path. The scaled sectoral initializer
+  now reuses each already-validated ordinary SIMD vector preceding the first
+  unsafe vector, then scales only the remaining vectors and tail. The combined
+  candidate passed 230 release library tests (23 ignored), 192 no-default-
+  feature release library tests (14 ignored), and all-target/all-feature
+  Clippy. Its focused prefix-reuse test checks ordinary and scaled seeds across
+  the runtime lane width and tail. The focused T511 cached-versus-checked
+  comparison has relative L2 error `2.5974e-16`.
   The historical direct-only T720 screen regressed, so no performance claim is
   made for the combined candidate. Timings are deferred while unrelated host
   CPU jobs saturate the machine; the next step is a matched T720 full/reduced

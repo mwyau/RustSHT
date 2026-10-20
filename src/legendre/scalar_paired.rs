@@ -1338,7 +1338,7 @@ fn initialize_normal_analysis_sectoral_dispatched(
     sin_theta: &[f64],
     sectoral_norm: f64,
     current: &mut [f64],
-) -> Result<bool, ShtError> {
+) -> Result<NormalSectoralInitialization, ShtError> {
     arch.dispatch(InitializeNormalAnalysisSectoral {
         m,
         sin_theta,
@@ -1366,15 +1366,18 @@ fn initialize_analysis_sectoral_lanes(
     debug_assert!(exponents.len() >= sin_theta.len());
     previous[..sin_theta.len()].fill(0.0);
 
-    let initialized_normal = lmax >= SIMD_SECTORAL_INIT_MIN_LMAX
-        && initialize_normal_analysis_sectoral_dispatched(
+    let initialization = if lmax >= SIMD_SECTORAL_INIT_MIN_LMAX {
+        initialize_normal_analysis_sectoral_dispatched(
             arch,
             m,
             sin_theta,
             sectoral_norm,
             &mut current[..sin_theta.len()],
-        )?;
-    if initialized_normal {
+        )?
+    } else {
+        NormalSectoralInitialization::default()
+    };
+    if initialization.complete {
         exponents[..sin_theta.len()].fill(0);
         return Ok(true);
     }
@@ -1414,15 +1417,18 @@ fn initialize_scaled_analysis_sectoral_lanes(
     debug_assert!(scale_epochs.len() >= sin_theta.len());
     previous[..sin_theta.len()].fill(0.0);
 
-    let initialized_normal = lmax >= SIMD_SECTORAL_INIT_MIN_LMAX
-        && initialize_normal_analysis_sectoral_dispatched(
+    let initialization = if lmax >= SIMD_SECTORAL_INIT_MIN_LMAX {
+        initialize_normal_analysis_sectoral_dispatched(
             arch,
             m,
             sin_theta,
             sectoral_norm,
             &mut current[..sin_theta.len()],
-        )?;
-    if initialized_normal {
+        )?
+    } else {
+        NormalSectoralInitialization::default()
+    };
+    if initialization.complete {
         return Ok(Some(true));
     }
 
@@ -1430,10 +1436,11 @@ fn initialize_scaled_analysis_sectoral_lanes(
         m,
         sin_theta,
         sectoral_norm,
+        normal_prefix_vectors: initialization.completed_vectors,
         current: &mut current[..sin_theta.len()],
         scale_epochs: &mut scale_epochs[..sin_theta.len()],
     });
-    if initialized_scaled {
+    if initialized_scaled.is_some() {
         return Ok(Some(false));
     }
 
@@ -1441,16 +1448,23 @@ fn initialize_scaled_analysis_sectoral_lanes(
     Ok(None)
 }
 
+#[derive(Clone, Copy, Default)]
+struct NormalSectoralInitialization {
+    complete: bool,
+    completed_vectors: usize,
+}
+
 struct InitializeScaledAnalysisSectoral<'a> {
     m: usize,
     sin_theta: &'a [f64],
     sectoral_norm: f64,
+    normal_prefix_vectors: usize,
     current: &'a mut [f64],
     scale_epochs: &'a mut [f64],
 }
 
 impl WithSimd for InitializeScaledAnalysisSectoral<'_> {
-    type Output = bool;
+    type Output = Option<()>;
 
     #[inline(always)]
     fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
@@ -1458,11 +1472,12 @@ impl WithSimd for InitializeScaledAnalysisSectoral<'_> {
             m,
             sin_theta,
             sectoral_norm,
+            normal_prefix_vectors,
             current,
             scale_epochs,
         } = self;
         if !sectoral_norm.is_finite() || sectoral_norm <= 0.0 {
-            return false;
+            return None;
         }
         let (sine_vectors, sine_tail) = S::as_simd_f64s(sin_theta);
         let (current_vectors, current_tail) = S::as_mut_simd_f64s(current);
@@ -1471,8 +1486,9 @@ impl WithSimd for InitializeScaledAnalysisSectoral<'_> {
             || current_tail.len() != sine_tail.len()
             || scale_vectors.len() != sine_vectors.len()
             || scale_tail.len() != sine_tail.len()
+            || normal_prefix_vectors > sine_vectors.len()
         {
-            return false;
+            return None;
         }
 
         let one = simd.splat_f64s(1.0);
@@ -1483,7 +1499,10 @@ impl WithSimd for InitializeScaledAnalysisSectoral<'_> {
         let coefficient =
             simd.splat_f64s(sectoral_norm * if m.is_multiple_of(2) { 1.0 } else { -1.0 });
 
-        for index in 0..sine_vectors.len() {
+        for scale in &mut scale_vectors[..normal_prefix_vectors] {
+            *scale = zero_scale;
+        }
+        for index in normal_prefix_vectors..sine_vectors.len() {
             let sine = sine_vectors[index];
             let sine_magnitude = simd.abs_f64s(sine);
             if !analysis_mask_all(
@@ -1493,7 +1512,7 @@ impl WithSimd for InitializeScaledAnalysisSectoral<'_> {
                     simd.less_than_or_equal_f64s(sine_magnitude, maximum_finite),
                 ),
             ) {
-                return false;
+                return None;
             }
 
             // DUCC's mypow uses an unscaled exponentiation for a SIMD vector
@@ -1512,7 +1531,7 @@ impl WithSimd for InitializeScaledAnalysisSectoral<'_> {
                     &mut value_scale,
                     ANALYSIS_FTOL,
                 ) {
-                    return false;
+                    return None;
                 }
                 current_vectors[index] = value;
                 scale_vectors[index] = value_scale;
@@ -1523,7 +1542,7 @@ impl WithSimd for InitializeScaledAnalysisSectoral<'_> {
             let mut base_scale = zero_scale;
             if !normalize_analysis_power_vector(simd, &mut base, &mut base_scale, ANALYSIS_FBIGHALF)
             {
-                return false;
+                return None;
             }
 
             let mut value = one;
@@ -1539,7 +1558,7 @@ impl WithSimd for InitializeScaledAnalysisSectoral<'_> {
                         &mut value_scale,
                         ANALYSIS_FBIGHALF,
                     ) {
-                        return false;
+                        return None;
                     }
                 }
                 remaining >>= 1;
@@ -1552,7 +1571,7 @@ impl WithSimd for InitializeScaledAnalysisSectoral<'_> {
                         &mut base_scale,
                         ANALYSIS_FBIGHALF,
                     ) {
-                        return false;
+                        return None;
                     }
                 }
             }
@@ -1569,7 +1588,7 @@ impl WithSimd for InitializeScaledAnalysisSectoral<'_> {
                 &mut value_scale,
                 ANALYSIS_FTOL,
             ) {
-                return false;
+                return None;
             }
             current_vectors[index] = value;
             scale_vectors[index] = value_scale;
@@ -1578,22 +1597,20 @@ impl WithSimd for InitializeScaledAnalysisSectoral<'_> {
         for lane in 0..sine_tail.len() {
             let sine = sine_tail[lane];
             if !sine.is_finite() || sine.abs() > 1.0 {
-                return false;
+                return None;
             }
             let Ok((value, exponent)) = scalar::sectoral_value(sine, m, sectoral_norm) else {
-                return false;
+                return None;
             };
-            let Some((value, exponent)) = normalize_analysis_seed_scalar(value, exponent) else {
-                return false;
-            };
+            let (value, exponent) = normalize_analysis_seed_scalar(value, exponent)?;
             let scale = exponent as f64 / ANALYSIS_SCALE_STEP as f64;
             if !scale.is_finite() {
-                return false;
+                return None;
             }
             current_tail[lane] = value;
             scale_tail[lane] = scale;
         }
-        true
+        Some(())
     }
 }
 
@@ -1700,7 +1717,7 @@ struct InitializeNormalAnalysisSectoral<'a> {
 }
 
 impl WithSimd for InitializeNormalAnalysisSectoral<'_> {
-    type Output = Result<bool, ShtError>;
+    type Output = Result<NormalSectoralInitialization, ShtError>;
 
     #[inline(always)]
     fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
@@ -1713,7 +1730,7 @@ impl WithSimd for InitializeNormalAnalysisSectoral<'_> {
         debug_assert_eq!(sin_theta.len(), current.len());
 
         if !sectoral_norm.is_finite() || sectoral_norm <= 0.0 {
-            return Ok(false);
+            return Ok(NormalSectoralInitialization::default());
         }
         let (sine_vectors, sine_tail) = S::as_simd_f64s(sin_theta);
         let (current_vectors, current_tail) = S::as_mut_simd_f64s(current);
@@ -1727,7 +1744,7 @@ impl WithSimd for InitializeNormalAnalysisSectoral<'_> {
         let factor = simd.splat_f64s(sectoral_norm * sign);
         let minimum = simd.splat_f64s(scalar::SMALL);
         let maximum = simd.splat_f64s(scalar::BIG);
-        for (output, &sine) in current_vectors.iter_mut().zip(sine_vectors) {
+        for (index, (output, &sine)) in current_vectors.iter_mut().zip(sine_vectors).enumerate() {
             let value = simd.mul_f64s(integer_power_vector(simd, sine, m), factor);
             let magnitude = simd.abs_f64s(value);
             let zero_result_is_valid = simd.and_m64s(
@@ -1746,21 +1763,33 @@ impl WithSimd for InitializeNormalAnalysisSectoral<'_> {
                 simd.less_than_or_equal_f64s(simd.abs_f64s(sine), sine_max),
             );
             if simd.reduce_min_f64s(simd.select_f64s(in_range, one, zero)) != 1.0 {
-                return Ok(false);
+                return Ok(NormalSectoralInitialization {
+                    complete: false,
+                    completed_vectors: index,
+                });
             }
             *output = value;
         }
         for (&sine, output) in sine_tail.iter().zip(current_tail) {
             if !sine.is_finite() || sine.abs() > 1.0 {
-                return Ok(false);
+                return Ok(NormalSectoralInitialization {
+                    complete: false,
+                    completed_vectors: sine_vectors.len(),
+                });
             }
             let (value, exponent) = scalar::sectoral_value(sine, m, sectoral_norm)?;
             if exponent != 0 || !scalar::scalar_value_in_normal_range(value) {
-                return Ok(false);
+                return Ok(NormalSectoralInitialization {
+                    complete: false,
+                    completed_vectors: sine_vectors.len(),
+                });
             }
             *output = value;
         }
-        Ok(true)
+        Ok(NormalSectoralInitialization {
+            complete: true,
+            completed_vectors: sine_vectors.len(),
+        })
     }
 }
 
@@ -1904,13 +1933,14 @@ pub(crate) fn fused_scalar_analysis_pair_block_preweighted_dispatched(
             return Ok(false);
         }
         previous[..sin_theta.len()].fill(0.0);
-        if !initialize_normal_analysis_sectoral_dispatched(
+        let initialization = initialize_normal_analysis_sectoral_dispatched(
             arch,
             m,
             sin_theta,
             sectoral_norm,
             &mut current[..sin_theta.len()],
-        )? {
+        )?;
+        if !initialization.complete {
             return Ok(false);
         }
         return Ok(
@@ -6001,6 +6031,16 @@ where
 mod tests {
     use super::*;
 
+    struct F64LaneCount;
+
+    impl WithSimd for F64LaneCount {
+        type Output = usize;
+
+        fn with_simd<S: Simd>(self, _: S) -> Self::Output {
+            S::F64_LANES
+        }
+    }
+
     struct AdvanceAnalysisPrefixProbe<'a> {
         cosine_squared: &'a [f64],
         previous: &'a mut [f64],
@@ -6145,15 +6185,18 @@ mod tests {
         let sectoral_norm = scalar::sectoral_normalizations(m).unwrap()[m];
         let mut current = vec![0.0; lane_count];
 
-        assert!(
-            initialize_normal_analysis_sectoral_dispatched(
-                Arch::new(),
-                m,
-                &sin_theta,
-                sectoral_norm,
-                &mut current,
-            )
-            .unwrap()
+        let initialization = initialize_normal_analysis_sectoral_dispatched(
+            Arch::new(),
+            m,
+            &sin_theta,
+            sectoral_norm,
+            &mut current,
+        )
+        .unwrap();
+        assert!(initialization.complete);
+        assert_eq!(
+            initialization.completed_vectors,
+            lane_count / Arch::new().dispatch(F64LaneCount)
         );
 
         for (&sine, &actual) in sin_theta.iter().zip(&current) {
@@ -6174,13 +6217,17 @@ mod tests {
             let sectoral_norm = scalar::sectoral_normalizations(m).unwrap()[m];
             let mut current = vec![f64::NAN; sin_theta.len()];
             let mut scale_epochs = vec![-1.0; sin_theta.len()];
-            assert!(arch.dispatch(InitializeScaledAnalysisSectoral {
-                m,
-                sin_theta: &sin_theta,
-                sectoral_norm,
-                current: &mut current,
-                scale_epochs: &mut scale_epochs,
-            }));
+            assert!(
+                arch.dispatch(InitializeScaledAnalysisSectoral {
+                    m,
+                    sin_theta: &sin_theta,
+                    sectoral_norm,
+                    normal_prefix_vectors: 0,
+                    current: &mut current,
+                    scale_epochs: &mut scale_epochs,
+                })
+                .is_some()
+            );
 
             for (lane, (&sine, &actual)) in sin_theta.iter().zip(&current).enumerate() {
                 let (value, exponent) = scalar::sectoral_value(sine, m, sectoral_norm).unwrap();
@@ -6194,6 +6241,96 @@ mod tests {
                 } else {
                     assert!((actual - expected).abs() <= expected.abs() * 2.0e-13);
                 }
+            }
+        }
+    }
+
+    #[test]
+    fn scaled_sectoral_initialization_reuses_normal_vector_prefix() {
+        let arch = Arch::new();
+        let m = 720;
+        let lane_width = arch.dispatch(F64LaneCount);
+        let mut sin_theta = vec![0.71; lane_width * 2];
+        sin_theta.extend(std::iter::repeat_n(0.5, lane_width));
+        sin_theta.push(0.83);
+        let sectoral_norm = scalar::sectoral_normalizations(m).unwrap()[m];
+        let mut current = vec![f64::NAN; sin_theta.len()];
+        let initialization = initialize_normal_analysis_sectoral_dispatched(
+            arch,
+            m,
+            &sin_theta,
+            sectoral_norm,
+            &mut current,
+        )
+        .unwrap();
+        assert!(!initialization.complete);
+        assert_eq!(initialization.completed_vectors, 2);
+
+        let prefix_len = initialization.completed_vectors * lane_width;
+        for lane in 0..prefix_len {
+            let (expected, exponent) =
+                scalar::sectoral_value(sin_theta[lane], m, sectoral_norm).unwrap();
+            assert_eq!(exponent, 0);
+            assert!((current[lane] - expected).abs() <= expected.abs() * 2.0e-14);
+        }
+        current[..prefix_len].fill(1234.5);
+        let mut scale_epochs = vec![-7.0; sin_theta.len()];
+        let result = arch.dispatch(InitializeScaledAnalysisSectoral {
+            m,
+            sin_theta: &sin_theta,
+            sectoral_norm,
+            normal_prefix_vectors: initialization.completed_vectors,
+            current: &mut current,
+            scale_epochs: &mut scale_epochs,
+        });
+        assert_eq!(result, Some(()));
+
+        for lane in 0..prefix_len {
+            assert_eq!(current[lane], 1234.5);
+            assert_eq!(scale_epochs[lane], 0.0);
+        }
+        for lane in prefix_len..sin_theta.len() {
+            let (value, exponent) =
+                scalar::sectoral_value(sin_theta[lane], m, sectoral_norm).unwrap();
+            let (expected, exponent) = normalize_analysis_seed_scalar(value, exponent).unwrap();
+            assert_eq!(
+                scale_epochs[lane],
+                exponent as f64 / ANALYSIS_SCALE_STEP as f64
+            );
+            if expected == 0.0 {
+                assert_eq!(current[lane], expected);
+            } else {
+                assert!((current[lane] - expected).abs() <= expected.abs() * 2.0e-13);
+            }
+        }
+
+        let mut previous = vec![f64::NAN; sin_theta.len()];
+        current.fill(f64::NAN);
+        scale_epochs.fill(-7.0);
+        assert_eq!(
+            initialize_scaled_analysis_sectoral_lanes(
+                arch,
+                m,
+                m,
+                &sin_theta,
+                sectoral_norm,
+                &mut previous,
+                &mut current,
+                &mut scale_epochs,
+            )
+            .unwrap(),
+            Some(false)
+        );
+        assert!(previous.iter().all(|&value| value == 0.0));
+        assert!(scale_epochs[..prefix_len].iter().all(|&epoch| epoch == 0.0));
+        for (lane, &actual) in current.iter().enumerate() {
+            let (value, exponent) =
+                scalar::sectoral_value(sin_theta[lane], m, sectoral_norm).unwrap();
+            let (expected, _) = normalize_analysis_seed_scalar(value, exponent).unwrap();
+            if expected == 0.0 {
+                assert_eq!(actual, expected);
+            } else {
+                assert!((actual - expected).abs() <= expected.abs() * 2.0e-13);
             }
         }
     }
