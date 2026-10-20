@@ -31,15 +31,16 @@ four-lane vector chunk.
 
 The script warms and calibrates each specialization in sustained batches. It
 chooses separate operation counts for recurrence and commit-only work so every
-measured batch targets 35 ms and is checked against a 20–95 ms window. It
-records 30 batches in each of five independent process invocations per
-implementation and lane count. Rust/DUCC process order alternates by
-invocation; checked/unchecked Rust variants alternate within each mode. Each
-child is pinned to the same allowed logical CPU. Frequency and scheduler
-counters are sampled outside the benchmark core where a second physical core
-is available. Output includes batch median, p10/p90 and full-range
-distributions, per-process medians and p10/p90, frequency and scheduling
-summaries.
+measured batch targets 35 ms. Calibration predicts a shared 20–95 ms interval;
+the runner then verifies every recorded batch is between 20 and 100 ms. It
+records 60 batches in each of ten independent process invocations per
+implementation and lane count, with six batches per process. Rust/DUCC process
+order alternates at each process pair; checked/unchecked Rust variants
+alternate within each mode. Each child is pinned to the same allowed logical
+CPU. Frequency and scheduler counters are sampled outside the benchmark core
+where a second physical core is available. Output includes batch median,
+p10/p90 and full-range distributions, per-process medians and p10/p90,
+frequency and scheduling summaries.
 
 The benchmark prints only a sanitized summary. Fixtures, binaries and raw
 samples live in a temporary directory that is removed at exit.

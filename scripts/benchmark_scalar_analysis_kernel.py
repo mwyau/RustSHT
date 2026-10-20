@@ -26,8 +26,11 @@ RUSTFLAGS = os.environ.get(
     # range-check variants are selected only through the explicit override.
     "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
 )
-BATCHES = 30
-INVOCATIONS = 5
+# Spread samples across more independent processes while keeping several
+# calibrated batches in each process. This makes process-level timing regimes
+# visible without relying on one long invocation per backend.
+BATCHES = 6
+INVOCATIONS = 10
 TARGET_FASTEST_BATCH_US = 35_000.0
 COMMIT_CALIBRATION_REPETITIONS = 100_000
 
@@ -238,6 +241,8 @@ def read_cpu_features() -> str:
 
 
 def main() -> None:
+    if BATCHES * INVOCATIONS < 30:
+        raise RuntimeError("the comparison must collect at least 30 batches per backend")
     ducc_src_value = os.environ.get("DUCC_SRC")
     ducc_git_value = os.environ.get("DUCC_GIT")
     if not ducc_src_value or not ducc_git_value:
@@ -539,7 +544,8 @@ def main() -> None:
         )
         print(
             f"TIMINGS are per operation; aggregate values summarize "
-            f"{INVOCATIONS * BATCHES} batches ({INVOCATIONS} processes x {BATCHES})."
+            f"{INVOCATIONS * BATCHES} batches ({INVOCATIONS} independent processes x "
+            f"{BATCHES} batches per process and backend)."
         )
         for lane_count in lanes:
             for mode in ("kernel_only", "commit_only", "kernel_plus_commit", "reset_inclusive"):

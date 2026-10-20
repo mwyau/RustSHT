@@ -14,10 +14,11 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   accumulated into `alm`. Its Rust/DUCC ratios omitted Rust's final coefficient
   commit and are superseded below. The calibrated runner now reports Rust
   recurrence/staging, commit-only, kernel-plus-commit and reset-inclusive work.
-- A matched `m=1, lmax=720` rerun used 30 batches in five interleaved process
-  pairs per lane count. Every one of the 4,500 timed batches measured
-  24.20–76.93 ms. Median µs/op; kernel-plus-commit includes Rust's staged
-  coefficient addition and matches DUCC's direct output accumulation:
+- A matched `m=1, lmax=720` rerun used 60 calibrated batches in ten
+  interleaved process pairs per lane count (six batches per process). All
+  1,800 measured batches were 29.31–70.75 ms. Median µs/op; kernel-plus-commit
+  includes Rust's staged coefficient addition and matches DUCC's direct output
+  accumulation:
 
   The run used an AMD Ryzen 9 5950X, Rust 1.99.0/Pulp V3 and GCC 15.2.0,
   both targeting x86-64-v3 AVX2/FMA. Each single-thread process used the same
@@ -25,21 +26,27 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
 
   | Lanes | Kernel + commit: Rust checked / unchecked / DUCC | Reset inclusive: Rust checked / unchecked / DUCC |
   |---:|---:|---:|
-  | 64 | 7.162 / 4.863 / 4.146 | 7.249 / 4.952 / 4.255 |
-  | 128 | 12.764 / 8.880 / 8.063 | 12.869 / 8.993 / 8.206 |
-  | 256 | 24.590 / 17.176 / 15.898 | 24.720 / 17.312 / 16.093 |
+  | 64 | 7.239 / 4.914 / 4.166 | 7.307 / 5.010 / 4.278 |
+  | 128 | 12.840 / 8.920 / 8.089 | 12.885 / 9.038 / 8.230 |
+  | 256 | 24.596 / 17.274 / 15.966 | 24.737 / 17.433 / 16.164 |
 
-  Kernel-plus-commit checked/unchecked ratios were 1.727×/1.173×, 1.583×/1.101×
-  and 1.547×/1.080× at 64/128/256 lanes. Reset-inclusive ratios were
-  1.704×/1.164×, 1.568×/1.096× and 1.536×/1.076×. The isolated Rust commit
+  Kernel-plus-commit checked/unchecked ratios were 1.738×/1.180×, 1.587×/1.103×
+  and 1.540×/1.082× at 64/128/256 lanes. Reset-inclusive ratios were
+  1.708×/1.171×, 1.566×/1.098× and 1.530×/1.079×. The isolated Rust commit
   loop measured 0.10–0.14 µs/op, under 1% of the 256-lane unchecked kernel
   time. The staging writes remain inside recurrence timing, so these data do
   not measure the full cost of changing the transaction design; they provide
   no basis for weakening fallback safety. Rust's staged recurrence output is
   not compared directly with DUCC. Outputs were
   validated outside timing; coefficient scaled difference was `1.970e-16`,
-  and output relative L2 error was `6.670e-14` to `1.628e-13`. See the
-  [reproducible runner](scripts/benchmark_scalar_analysis_kernel.py).
+  output relative L2 error was `5.928e-14` to `1.628e-13`, and max absolute
+  error was at most `2.559e-11`. DUCC kernel-plus-commit process medians were
+  tightly grouped at 4.145–4.330, 8.030–8.222 and 15.852–16.577 µs. The old
+  64-lane 9.599/5.621 µs and 256-lane 25.318–39.165 µs regimes did not recur.
+  Host samples showed 4.592 GHz median frequency (3.593–4.692), 0.000% median
+  run-queue wait (0.702% max), and zero median involuntary switches (13 max).
+  These diagnostics do not identify the exact cause of the earlier regimes.
+  See the [reproducible runner](scripts/benchmark_scalar_analysis_kernel.py).
 - Sectoral initialization now follows DUCC's per-SIMD-vector `mypow` choice:
   vectors above the `2^-400/m` underflow limit use direct exponentiation, while
   vectors containing smaller lanes retain scaled exponent management. This

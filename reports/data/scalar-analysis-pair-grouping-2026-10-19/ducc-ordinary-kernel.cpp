@@ -45,8 +45,8 @@ int main(int argc, char **argv) {
   const bool calibrate = std::string(argv[2]) == "--calibrate";
   const size_t repetitions = calibrate ? std::stoul(argv[3]) : std::stoul(argv[2]);
   const size_t batch_count = calibrate ? 0 : std::stoul(argv[3]);
-  if (repetitions == 0 || (!calibrate && batch_count < 30))
-    throw std::runtime_error("requires positive repetitions and at least 30 run batches");
+  if (repetitions == 0 || (!calibrate && batch_count == 0))
+    throw std::runtime_error("requires positive repetitions and run batches");
   std::ifstream in(fixture_path, std::ios::binary);
   if (!in) throw std::runtime_error("cannot open Rust-generated fixture");
   uint64_t m64, lmax64, lane_count64, pair_count64;

@@ -348,7 +348,7 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                 .expect("RUSTSHT_KERNEL_BENCH_COMMIT_REPETITIONS must be set")
                 .parse::<usize>()
                 .expect("valid commit repetition count");
-            assert!(batch_count >= 30);
+            assert!(batch_count > 0);
             assert!(repetitions > 0);
             assert!(commit_repetitions > 0);
 
