@@ -238,7 +238,11 @@ def longitude_count(mmax: int, mode: str) -> int:
     raise ValueError(mode)
 
 
-def make_cases(smoke: bool) -> list[dict]:
+def make_cases(
+    smoke: bool,
+    fixed_mmax: int | None = None,
+    fixed_nphi: int | None = None,
+) -> list[dict]:
     if smoke:
         lmax_values = [0, 4, 16, 64]
     else:
@@ -248,7 +252,7 @@ def make_cases(smoke: bool) -> list[dict]:
             | {
                 62, 63, 64, 65, 126, 127, 128, 129, 159, 191, 223, 254,
                 255, 256, 300, 320, 384, 448, 511, 512, 513, 640, 720, 721,
-                768, 896, 1024, 1280, 1536, 1792, 2048, 3072,
+                768, 896, 1024, 1280, 1536, 1792, 2047, 2048, 3072,
             }
         )
     key_sizes = {
@@ -257,22 +261,49 @@ def make_cases(smoke: bool) -> list[dict]:
     }
     cases: list[dict] = []
     for lmax in lmax_values:
-        mmax_values = {lmax}
-        if lmax >= 4:
-            mmax_values.add(max(1, lmax // 4))
-        if lmax in {255, 720, 1024}:
-            mmax_values.add(1)
+        if fixed_mmax is None:
+            mmax_values = {lmax}
+            if lmax >= 4:
+                mmax_values.add(max(1, lmax // 4))
+            if lmax in {255, 720, 1024}:
+                mmax_values.add(1)
+        elif fixed_mmax <= lmax:
+            mmax_values = {fixed_mmax}
+        else:
+            continue
         for mmax in sorted(mmax_values):
-            if lmax <= 32 or (lmax in key_sizes and lmax < 2048):
+            if fixed_nphi is not None:
+                if fixed_nphi < 2 * mmax + 1:
+                    raise ValueError(
+                        f"fixed nphi={fixed_nphi} cannot represent mmax={mmax}"
+                    )
+                remainder = fixed_nphi
+                for factor in (2, 3, 5, 7):
+                    while remainder % factor == 0:
+                        remainder //= factor
+                longitude_modes = [
+                    "even_smooth"
+                    if fixed_nphi % 2 == 0 and remainder == 1
+                    else "fixed_nphi"
+                ]
+            elif lmax <= 32 or (lmax in key_sizes and lmax < 2048):
                 longitude_modes = ["odd_minimum", "even_smooth"]
             elif smoke:
                 longitude_modes = ["odd_minimum"]
             else:
                 longitude_modes = ["even_smooth" if lmax % 2 == 0 else "odd_minimum"]
             for longitude_mode in longitude_modes:
-                nphi = longitude_count(mmax, longitude_mode)
+                nphi = (
+                    fixed_nphi
+                    if fixed_nphi is not None
+                    else longitude_count(mmax, longitude_mode)
+                )
                 cases.append({
-                    "case_id": f"T{lmax}-m{mmax}-{longitude_mode}",
+                    "case_id": (
+                        f"T{lmax}-m{mmax}-{longitude_mode}"
+                        if fixed_nphi is None
+                        else f"T{lmax}-m{mmax}-nphi{fixed_nphi}"
+                    ),
                     "lmax": lmax,
                     "mmax": mmax,
                     "ntheta": lmax + 1,
@@ -1170,6 +1201,10 @@ def main() -> None:
     parser.add_argument("--lmax", type=int, action="append", help="run all cases at this lmax; may be repeated")
     parser.add_argument("--max-lmax", type=int,
                         help="run every defined case with lmax at or below this value")
+    parser.add_argument("--mmax", type=int,
+                        help="use one fixed mmax for every selected lmax")
+    parser.add_argument("--fixed-nphi", type=int,
+                        help="use one fixed longitude count for every selected case")
     parser.add_argument("--results-dir", type=pathlib.Path, default=DATA_DIR,
                         help="directory for machine-readable outputs and plots")
     parser.add_argument("--report-path", type=pathlib.Path, default=REPORT_PATH,
@@ -1200,7 +1235,11 @@ def main() -> None:
     compiler = pathlib.Path(shlex.split(os.environ.get("CXX", "g++"))[0]).name
     build_dir = pathlib.Path(tempfile.gettempdir()) / f"rustsht-ducc-full-parity-{revision[:12]}-{compiler}"
     binaries = build(ducc_src, build_dir, args.skip_build)
-    cases = make_cases(args.smoke)
+    if args.mmax is not None and args.mmax < 0:
+        parser.error("--mmax must be nonnegative")
+    if args.fixed_nphi is not None and args.fixed_nphi < 1:
+        parser.error("--fixed-nphi must be positive")
+    cases = make_cases(args.smoke, args.mmax, args.fixed_nphi)
     if args.lmax:
         selected_lmax = set(args.lmax)
         cases = [case for case in cases if case["lmax"] in selected_lmax]

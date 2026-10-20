@@ -6051,6 +6051,13 @@ where
 mod tests {
     use super::*;
 
+    #[test]
+    fn insignificant_prefix_error_budget_stops_above_2048_latitudes() {
+        assert!(insignificant_prefix_budget_safe(2047));
+        assert!(insignificant_prefix_budget_safe(2048));
+        assert!(!insignificant_prefix_budget_safe(2049));
+    }
+
     struct F64LaneCount;
 
     impl WithSimd for F64LaneCount {
