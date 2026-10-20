@@ -1,7 +1,7 @@
 # RustSHT performance checkpoint
 
 **Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Checked
-production baseline:** Pulp post-group scan. **A/B source:** `20992eaf`.
+production baseline:** Pulp post-group scan. **A/B source:** `9f7e8658`.
 **Calibrated harness:** `19771bb7`. **Benchmark default:** production flags at
 `e2c2dc15`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
@@ -59,6 +59,14 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   additional q8 pairs were mixed: full `mmax` was 1.9% slower by paired
   median, reduced `mmax` 0.4% faster. These small results do not justify
   enabling the candidate, and they do not change the direct-kernel conclusion.
+- Split-mask scan candidate `rustsht_split_analysis_range_masks` at `9f7e8658`
+  emitted two independent AVX2 validity-mask chains in the post-group scan,
+  but retained the same state loads and lane comparisons. Relative to the
+  rematerialization candidate, checked kernel-plus-commit medians were
+  `7.262/13.082/24.644` versus `7.152/12.725/24.582` µs at 64/128/256 lanes
+  (`+1.5%/+2.8%/+0.3%`). The candidate did not reduce the scan cost; leave it
+  disabled. All 1,800 calibrated batches were 29.12–71.25 ms; a single process
+  had 66.44% run-queue wait while the median was 0.011%, so retain all samples.
 - Sectoral initialization now follows DUCC's per-SIMD-vector `mypow` choice:
   vectors above the `2^-400/m` underflow limit use direct exponentiation, while
   vectors containing smaller lanes retain scaled exponent management. This
@@ -204,10 +212,8 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   stayed tightly grouped; long batch tails remain in the reported distributions.
   No favorable or unfavorable samples were removed.
 
-**Next:** target the checked post-group state scan. In the latest direct
-comparison, checked-minus-unchecked kernel-plus-commit latency was
-`2.224/3.799/7.329` µs at 64/128/256 lanes; the corresponding checked excess
-over DUCC was `3.021/4.694/8.714` µs. This isolates most of the measured
-checked gap at 256 lanes to range validation, while the unchecked residual is
-`0.801/0.896/1.385` µs. Preserve the exceptional-value fallback and establish
-why earlier fused checks spilled or slowed before designing another scan path.
+**Next:** reduce the post-group state reread without adding a live SIMD mask to
+the eight-accumulator recurrence loop. The split-mask scan kept the same state
+loads/comparisons and was slower at 64/128 lanes. Any new path must detect
+subnormal intermediate states and preserve the checked fallback before output
+commit; do not disable the range check based only on zero declines in T720.
