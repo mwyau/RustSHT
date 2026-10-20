@@ -1,8 +1,8 @@
 # RustSHT performance checkpoint
 
 **Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Current
-candidate:** `3d0048d0` (single-pass scale promotion, opt-in). **Earlier A/B
-source:** `9f7e8658`.
+production candidate:** `88716ca3` (fused scalar-analysis input preparation
+enabled by default). **Earlier A/B source:** `9f7e8658`.
 **Calibrated harness:** `1ee1a195`. **Benchmark default:** production flags at
 `e2c2dc15`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
@@ -14,6 +14,19 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   Initialization, product preflights, scaled recurrence and robust fallback
   still run for every call. The compile-time unchecked specialization remains
   available for controlled evaluation.
+- At `88716ca3`, the one-pass preparation route became the default: it checks
+  packed spectra while applying the opposite-parity cosine weight. In three
+  interleaved T720 GL full-transform pairs, candidate/base median ratios were
+  0.989/0.979 (full-mmax q1/q8) and 0.991/0.989 (reduced-mmax q1/q8). The
+  helper edge cases, T511 DUCC/analytic analysis, exceptional-input range-cache
+  checks and q1/q8 schedule test passed. This is a modest Rust-only gain, not a
+  DUCC parity claim. Final ablations found direct coefficient accumulation
+  substantially slower end to end; unchecked ordinary recurrence was neutral
+  after the checked range cache; the custom AVX2 reduction and single-pass
+  scale-promotion variants had mixed or negligible whole-transform effects.
+  Production retains checked recurrence, staged output, portable Pulp
+  reductions and the existing robust fallback. Next: remove rejected compile-
+  time experiment branches, then resume source-grounded kernel work.
 - The release regression test covers oversampled T511 GL, an odd SIMD-tail
   lane, zero/subnormal/extreme finite maps, repeated workspace reuse, and a
   compatible workspace reused across plans. The valid T720 fixture recorded
