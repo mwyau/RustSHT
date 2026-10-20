@@ -1065,6 +1065,7 @@ fn benchmark_production_ordinary_coefficient_commit() {
 }
 
 #[test]
+#[cfg(feature = "parallel")]
 #[ignore = "manual check of late ordinary-range declines on valid full T720 GL analysis"]
 fn count_t720_production_late_ordinary_range_declines() {
     let grid = crate::GridSpec::new(crate::GridKind::GaussLegendre, 721, 1442, 0.37).unwrap();

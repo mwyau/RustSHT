@@ -186,11 +186,12 @@ def metric_line(text: str, prefix: str) -> dict[str, str]:
     raise RuntimeError(f"missing {prefix} output:\n{text}")
 
 
-def summarize(values: list[float]) -> tuple[float, float, float, float, float]:
+def summarize(values: list[float]) -> tuple[float, float, float, float, float, float, float]:
     ordered = sorted(values)
     median = statistics.median(ordered)
+    deciles = statistics.quantiles(ordered, n=10, method="inclusive")
     q1, _, q3 = statistics.quantiles(ordered, n=4, method="inclusive")
-    return median, q1, q3, ordered[0], ordered[-1]
+    return median, deciles[0], deciles[8], q1, q3, ordered[0], ordered[-1]
 
 
 def read_cpu_summary() -> tuple[str, int, int, float]:
@@ -475,7 +476,7 @@ def main() -> None:
                     backend = "ducc" if variant == "ducc" else "rust"
                     samples = observations[(lane_count, mode, variant, backend)]
                     per_call = [sample[0] for sample in samples]
-                    median, q1, q3, low, high = summarize(per_call)
+                    median, p10, p90, q1, q3, low, high = summarize(per_call)
                     medians[variant] = median
                     process_medians = []
                     for invocation in (1, 2, 3):
@@ -485,7 +486,8 @@ def main() -> None:
                             )
                         )
                     print(
-                        f"  {variant}: {median:.3f} us/op; IQR={q1:.3f}..{q3:.3f}; "
+                        f"  {variant}: {median:.3f} us/op; p10/p90={p10:.3f}..{p90:.3f}; "
+                        f"IQR={q1:.3f}..{q3:.3f}; "
                         f"range={low:.3f}..{high:.3f}; process_medians="
                         + ",".join(f"{value:.3f}" for value in process_medians)
                     )

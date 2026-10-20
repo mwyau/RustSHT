@@ -30,7 +30,8 @@ batches alternate their within-process order. Each child is pinned to the same
 allowed logical CPU; frequency and scheduler counters are sampled outside the
 benchmark core where a second physical core is available. Frequency sampling
 uses the cpufreq policy covering the pinned CPU. Output includes batch
-distributions, process medians, frequency and scheduling summaries.
+median, p10/p90 and full-range distributions, process medians, frequency and
+scheduling summaries.
 
 The benchmark prints only a sanitized summary. Fixtures, binaries and raw
 samples live in a temporary directory that is removed at exit.
