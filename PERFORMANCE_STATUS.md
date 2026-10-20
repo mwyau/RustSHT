@@ -65,6 +65,12 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   the GL seed advances to pair 36 at 64 lanes, pair 2 at 128 lanes, and skips
   the prefix at 256 lanes because that block includes significant seeds. Its
   five-call samples remain exploratory; calibrated prefix timings remain next.
+- The prefix frontier update now reduces the updated epoch mask only when a
+  SIMD vector actually rescales, matching DUCC's conditional `rescale` check.
+  Vectors with no scale change retain the entry invariant that every epoch is
+  below one. Release tests and DUCC state checks pass; the five-call screen is
+  too short and variable to establish a speed change, so keep this as an
+  experimental candidate pending calibrated paired measurements.
 - A short full-transform Rust screen compared `fc9f44a4` with this change using
   five interleaved process pairs and five samples per process, GL STANDARD A,
   odd `nphi=2T+3`, and q1/q8. Median baseline→candidate times were T300 q1

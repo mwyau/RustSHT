@@ -2167,7 +2167,12 @@ fn advance_and_rescale_analysis_pair<S: Simd>(
         let updated_current = simd.select_f64s(rescale, simd.mul_f64s(second, down), second);
         let next_scale = simd.add_f64s(scale_vectors[index], one);
         let updated_scale = simd.select_f64s(rescale, next_scale, scale_vectors[index]);
-        below_limit &= analysis_mask_all(simd, simd.less_than_f64s(updated_scale, one));
+        // A vector that did not rescale retains the entry invariant that all
+        // epochs are below one. DUCC performs this all-lane test only for
+        // vectors whose scale changed; avoid an unconditional reduction here.
+        if vector_rescaled {
+            below_limit &= analysis_mask_all(simd, simd.less_than_f64s(updated_scale, one));
+        }
         let correction = simd.select_f64s(
             simd.less_than_f64s(updated_scale, zero),
             zero,
