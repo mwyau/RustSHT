@@ -33,14 +33,21 @@ f64 scalar synthesis only; analysis and spin-1 selectors remain unchanged.
 The full comparison and final-policy checks are in
 `reports/scalar-t64-recurrence-transition-2026-10-20.md`.
 
-**Future TODO (not active):** [Plan 12 — offline-calibrated, cache-informed
-Legendre dispatch](12-cache-informed-legendre-dispatch.md). Investigate a
-one-time, near-zero-overhead, cross-platform L2/L3 **capacity** probe and an
-offline-derived table/recurrence decision rule, rather than SHTns-style
-benchmarking at Python import or plan construction. Cache size is only a
-heuristic: retain separate analysis/synthesis/spin-1 policies and existing
-fallbacks. **Do not implement this until the present Plan 11 campaign is
-closed or the owner explicitly reprioritizes it.**
+**Future plans (not active):**
+- [Plan 12 — Cache-informed Legendre selection](12-cache-informed-legendre-dispatch.md):
+  one-time cross-platform L2/L3 metadata detection, an **opt-in portable
+  pointer-chase diagnostic** to check untrusted cache reports, and
+  **offline multi-host calibration** of a cheap table/recurrence heuristic.
+  Do not benchmark during Python import or ordinary plan construction.
+- [Plan 13 — Fused batched SHT](13-fused-batched-sht.md): accept large user
+  batch dimensions with bounded internal blocks; benchmark shared recurrence
+  versus blocked precomputed/GEMM reuse at B=1/2/4/8/16/32/64+.
+  Calibrate a **batch-aware** version of Plan 12 only after true fusion is
+  implemented. Do not confuse two spin components with a batch.
+
+Both are deferred until this Plan 11 campaign concludes **or the owner
+explicitly reprioritizes**. Neither alters the active numerical, dispatch,
+performance, or dependency constraints.
 
 ## Cumulative output-staging experiment (2026-10-20)
 
