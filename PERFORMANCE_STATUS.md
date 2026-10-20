@@ -2,7 +2,7 @@
 
 **Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Checked
 production baseline:** Pulp post-group scan. **A/B source:** `4fcb1136`.
-**Calibrated harness:** `e4c90133`. **Benchmark default:** production flags at
+**Calibrated harness:** `19771bb7`. **Benchmark default:** production flags at
 `e2c2dc15`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
 
@@ -14,38 +14,33 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   accumulated into `alm`. Its Rust/DUCC ratios omitted Rust's final coefficient
   commit and are superseded below. The calibrated runner now reports Rust
   recurrence/staging, commit-only, kernel-plus-commit and reset-inclusive work.
-- A matched `m=1, lmax=720` rerun used 60 calibrated batches in ten
-  interleaved process pairs per lane count (six batches per process). All
-  1,800 measured batches were 29.31–70.75 ms. Median µs/op; kernel-plus-commit
-  includes Rust's staged coefficient addition and matches DUCC's direct output
-  accumulation:
+- The matched `m=1, lmax=720` runner uses identical fixture data and reset
+  semantics, 20–100 ms calibrated batches, ten interleaved Rust/DUCC process
+  pairs and six batches per process/backend (60 per lane/backend). It reports
+  kernel-only, kernel-plus-commit and reset-inclusive phases, validates outputs
+  outside timing, and prints paired process ratios and excess latency. The
+  timed processes are pinned to the same physical core; frequency/scheduling
+  aggregates exclude build and calibration processes. DUCC revision is
+  `80388904b8cfc32400ba84af8a6a45aabfe60f86`.
+- Fresh matched run: AMD Ryzen 9 5950X, Rust 1.99.0/Pulp V3, GCC 15.2.0,
+  x86-64-v3 AVX2/FMA. All 1,800 timed batches were 29.32–60.16 ms. Median
+  µs/op, Rust checked/unchecked versus DUCC:
 
-  The run used an AMD Ryzen 9 5950X, Rust 1.99.0/Pulp V3 and GCC 15.2.0,
-  both targeting x86-64-v3 AVX2/FMA. Each single-thread process used the same
-  physical core; DUCC was pinned to revision `80388904b8cfc32400ba84af8a6a45aabfe60f86`.
-
-  | Lanes | Kernel + commit: Rust checked / unchecked / DUCC | Reset inclusive: Rust checked / unchecked / DUCC |
+  | Lanes | Kernel + commit | Reset inclusive |
   |---:|---:|---:|
-  | 64 | 7.239 / 4.914 / 4.166 | 7.307 / 5.010 / 4.278 |
-  | 128 | 12.840 / 8.920 / 8.089 | 12.885 / 9.038 / 8.230 |
-  | 256 | 24.596 / 17.274 / 15.966 | 24.737 / 17.433 / 16.164 |
+  | 64 | 7.146 / 4.836 / 4.126 | 7.218 / 4.923 / 4.231 |
+  | 128 | 12.728 / 8.869 / 8.066 | 12.830 / 8.983 / 8.219 |
+  | 256 | 24.532 / 17.088 / 15.859 | 24.687 / 17.240 / 16.062 |
 
-  Kernel-plus-commit checked/unchecked ratios were 1.738×/1.180×, 1.587×/1.103×
-  and 1.540×/1.082× at 64/128/256 lanes. Reset-inclusive ratios were
-  1.708×/1.171×, 1.566×/1.098× and 1.530×/1.079×. The isolated Rust commit
-  loop measured 0.10–0.14 µs/op, under 1% of the 256-lane unchecked kernel
-  time. The staging writes remain inside recurrence timing, so these data do
-  not measure the full cost of changing the transaction design; they provide
-  no basis for weakening fallback safety. Rust's staged recurrence output is
-  not compared directly with DUCC. Outputs were
-  validated outside timing; coefficient scaled difference was `1.970e-16`,
-  output relative L2 error was `5.928e-14` to `1.628e-13`, and max absolute
-  error was at most `2.559e-11`. DUCC kernel-plus-commit process medians were
-  tightly grouped at 4.145–4.330, 8.030–8.222 and 15.852–16.577 µs. The old
-  64-lane 9.599/5.621 µs and 256-lane 25.318–39.165 µs regimes did not recur.
-  Host samples showed 4.592 GHz median frequency (3.593–4.692), 0.000% median
-  run-queue wait (0.702% max), and zero median involuntary switches (13 max).
-  These diagnostics do not identify the exact cause of the earlier regimes.
+  Paired process kernel-plus-commit checked/DUCC ratios were 1.734× (p10–p90
+  1.727–1.737), 1.579× (1.572–1.583) and 1.547× (1.542–1.549) at
+  64/128/256 lanes; median excess was 3.026/4.664/8.677 µs. DUCC process
+  medians stayed within 4.102–4.144 µs at 64 lanes and 15.828–15.912 µs at
+  256 lanes; the old 9.599/5.621 and 25.318–39.165 µs regimes did not recur.
+  Timed-process frequency medians were 4.542–4.642 GHz; median/max run-queue
+  wait was 0.005/0.113%, with 1.5 median involuntary switches (11 max).
+  Numerical errors remained `1.970e-16` coefficient-scaled, `5.928e-14` to
+  `1.628e-13` relative output L2, and at most `2.559e-11` maximum absolute.
   See the [reproducible runner](scripts/benchmark_scalar_analysis_kernel.py).
 - Sectoral initialization now follows DUCC's per-SIMD-vector `mypow` choice:
   vectors above the `2^-400/m` underflow limit use direct exponentiation, while
@@ -120,6 +115,22 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   0.3%, 1.3% and 1.0% slower. Keep production on Pulp's original reductions;
   the AVX2 candidate applies the same summation order to checked and unchecked
   variants so their benchmark outputs remain exactly equal.
+- Cumulative interaction screen at source `35179326` combined the fused
+  in-loop range check with that AVX2 reduction, retaining the 256-pair
+  production tile. Ten interleaved process pairs collected 60 batches per
+  lane/backend; all 1,800 timed batches were 29.21–75.90 ms. Kernel-plus-commit
+  medians, Rust checked/unchecked versus pinned DUCC, were 6.995/4.709/4.148 µs
+  at 64 lanes, 12.766/8.803/8.090 µs at 128, and 24.587/17.510/15.890 µs at
+  256. Relative to the earlier checked default, this combination was 3.4%
+  faster at 64, 0.6% at 128 and neutral at 256; unchecked 256 was 1.4% slower.
+  Coefficient errors were `1.970e-16`; output relative L2 error was
+  `5.928e-14..1.628e-13`. In the exact AVX2 build, the hot fused-check loop
+  keeps its vector range mask in a YMM register; the Pulp-reduction fused
+  build stores and reloads that mask from the stack each vector iteration.
+  Recurrence coefficient vectors still use stack-backed memory operands.
+  This interaction removes the earlier fused-check regression in the kernel
+  screen but does not materially close the checked 256-lane gap. Keep it as a
+  cumulative candidate pending full-transform measurement and ablation.
 - Checked and unchecked direct outputs match exactly. Extreme finite,
   subnormal, zero/cancellation, SIMD-tail, T255/T511 DUCC, scalar adjoint and
   full T720 q1/q8 checks passed. Valid T720 GL q1 and q8 analyses had zero
@@ -162,7 +173,8 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   stayed tightly grouped; long batch tails remain in the reported distributions.
   No favorable or unfavorable samples were removed.
 
-**Next:** reduce the checked kernel's repeated post-group state traffic without
-carrying masks through the eight-accumulator recurrence or weakening its
-scaled fallback. The checked kernel remains 1.55× DUCC at 256 lanes after the
-Rust output commit is included; the unchecked A/B route is 1.08×.
+**Next:** measure the cumulative candidates on T720 q1/q8 and reduced-mmax
+full transforms, then investigate the remaining checked-loop coefficient
+loads and tile-size interactions. The checked kernel remains 1.55× DUCC at
+256 lanes after the Rust output commit is included; the unchecked A/B route is
+about 1.10×.
