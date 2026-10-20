@@ -589,6 +589,42 @@ def main() -> None:
                             f"p10/p90={process_p10:.3f}..{process_p90:.3f}us"
                         )
                 if mode in ("kernel_plus_commit", "reset_inclusive"):
+                    for rust_variant in ("checked", "unchecked"):
+                        paired_ratios = []
+                        paired_excess = []
+                        for invocation in range(1, INVOCATIONS + 1):
+                            rust_process = [
+                                sample[0]
+                                for sample in observations[
+                                    (lane_count, mode, rust_variant, "rust")
+                                ]
+                                if sample[1] == invocation
+                            ]
+                            ducc_process = [
+                                sample[0]
+                                for sample in observations[(lane_count, mode, "ducc", "ducc")]
+                                if sample[1] == invocation
+                            ]
+                            if len(rust_process) != BATCHES or len(ducc_process) != BATCHES:
+                                raise RuntimeError(
+                                    f"incomplete paired process samples for lanes={lane_count} "
+                                    f"mode={mode} invocation={invocation}"
+                                )
+                            rust_process_median = statistics.median(rust_process)
+                            ducc_process_median = statistics.median(ducc_process)
+                            paired_ratios.append(rust_process_median / ducc_process_median)
+                            paired_excess.append(rust_process_median - ducc_process_median)
+                        ratio_summary = summarize(paired_ratios)
+                        excess_summary = summarize(paired_excess)
+                        print(
+                            f"  paired_process {rust_variant}/DUCC: "
+                            f"ratio median={ratio_summary[0]:.3f} "
+                            f"p10/p90={ratio_summary[1]:.3f}..{ratio_summary[2]:.3f} "
+                            f"range={ratio_summary[5]:.3f}..{ratio_summary[6]:.3f}; "
+                            f"excess_us median={excess_summary[0]:.3f} "
+                            f"p10/p90={excess_summary[1]:.3f}..{excess_summary[2]:.3f} "
+                            f"range={excess_summary[5]:.3f}..{excess_summary[6]:.3f}"
+                        )
                     print(
                         f"  ratios checked/DUCC={medians['checked'] / medians['ducc']:.3f} "
                         f"unchecked/DUCC={medians['unchecked'] / medians['ducc']:.3f}"
@@ -611,9 +647,12 @@ def main() -> None:
                 f"output_relative_l2={relative_l2:.3e} output_max_abs={max_abs:.3e}"
             )
 
+        timed_diagnostics = [
+            diag for label, _, diag in diagnostics if "-run-" in label
+        ]
         frequencies = [
             value
-            for _, _, diag in diagnostics
+            for diag in timed_diagnostics
             for value in diag["frequencies_khz"]
         ]
         if frequencies:
@@ -628,7 +667,7 @@ def main() -> None:
 
         switch_deltas = []
         wait_fractions = []
-        for _, _, diag in diagnostics:
+        for diag in timed_diagnostics:
             before, after = diag["switches_before"], diag["switches_after"]
             if before and after:
                 switch_deltas.append((after[0] - before[0], after[1] - before[1]))
