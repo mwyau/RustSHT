@@ -1,8 +1,9 @@
 # RustSHT performance checkpoint
 
 **Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Current
-production candidate:** `dfa900ca` (fused scalar-analysis input preparation
-enabled by default; rejected direct-output and custom reductions removed).
+production candidate:** `04ea6cf4` (fused scalar-analysis input preparation
+enabled by default; rejected direct-output, custom reductions and promotion
+variant removed).
 **Earlier A/B source:** `9f7e8658`.
 **Calibrated harness:** `1ee1a195`. **Benchmark default:** production flags at
 `e2c2dc15`. For the
@@ -34,8 +35,14 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   reductions: grouped reduction was 4.9–13.8% slower in unchecked kernel
   timing, while AVX2's sub-1% unchecked benefit did not improve checked or
   full-transform execution. T511 DUCC/analytic, formatting and all-target
-  Clippy passed. Next: remove the mixed, non-winning single-pass promotion
-  branch, then resume matched source-grounded kernel work.
+  Clippy passed. At `04ea6cf4`, removed the single-pass scaled promotion
+  alternative and its diagnostic-only counters/tests; the cumulative
+  full/reduced q1/q8 comparison had mixed sub-percent results and all 474
+  initially scaled T720 blocks were ready at the first promotion point. The
+  checked scale correction remains the production transition. Release T511
+  DUCC/analytic and cached exceptional-input tests, formatting and all-target
+  Clippy pass. Next: profile the selected 64/128/256-lane kernel's remaining
+  excess by recurrence versus output reduction using the calibrated batches.
 - The release regression test covers oversampled T511 GL, an odd SIMD-tail
   lane, zero/subnormal/extreme finite maps, repeated workspace reuse, and a
   compatible workspace reused across plans. The valid T720 fixture recorded
