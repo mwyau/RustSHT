@@ -89,6 +89,18 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   regimes did not recur. Frequency telemetry was available; median/max
   run-queue wait was 0.004/0.080%, with 2 median and 11 maximum involuntary
   switches. This remains an isolated ordinary `m=1` kernel comparison.
+- Experimental direct coefficient accumulation, enabled only by
+  `rustsht_scalar_analysis_direct_accumulation`, passes the T511 cached-versus-
+  checked safety test (relative L2 `2.60e-16`) and the T255/T1023 q1/q8
+  analysis consistency test. A matched Rust-only T720 GL screen used the same
+  reused plan/workspace and input at `721x1443`, with three alternating
+  baseline/candidate process pairs and five timed samples per process. For full
+  and reduced `mmax=255`, direct/staged median ratios were respectively
+  `2.142/1.896` at q1 and `1.531/1.902` at q8. The q1 processes were pinned;
+  q8 process ratios were more variable but direct was slower in every pair.
+  Keep this correct candidate disabled and retain it for final cumulative
+  ablation. The next task is to isolate its preflight and output-write costs
+  before stacking another change.
 - Warmup-controlled rerun at `9967ad19` kept the same work and flags after the
   DUCC timed-process warmup fix. Across 64/128/256 lanes, kernel-plus-commit
   medians (checked/unchecked/DUCC, µs) were `7.151/4.848/4.115`,

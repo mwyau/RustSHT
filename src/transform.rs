@@ -9,6 +9,8 @@ use rayon::prelude::*;
 use std::collections::VecDeque;
 #[cfg(feature = "parallel")]
 use std::sync::Mutex;
+#[cfg(test)]
+use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::error::{ShtError, check_len};
@@ -23,6 +25,9 @@ use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 const SCALAR_TRANSITION_MIN_LMAX: usize = 1023;
 const FUSED_SCALAR_ANALYSIS_MIN_LMAX: usize = 255;
+
+#[cfg(test)]
+pub(crate) static SCALAR_ANALYSIS_DIRECT_ACCUMULATION_BLOCKS: AtomicUsize = AtomicUsize::new(0);
 
 #[cfg(feature = "parallel")]
 #[derive(Clone, Copy)]
@@ -2286,6 +2291,16 @@ impl<T: ShtScalar> ShtPlan<T> {
                         &recurrence.analysis_opposite_imag[..lane_count],
                         pair_cos,
                     );
+                    let direct_products_safe = cfg!(rustsht_scalar_analysis_direct_accumulation)
+                        && range_check_is_proven_safe
+                        && T::scalar_analysis_direct_products_safe(
+                            &recurrence.analysis_same_real[..lane_count],
+                            &recurrence.analysis_same_imag[..lane_count],
+                            &recurrence.analysis_opposite_real[..lane_count],
+                            &recurrence.analysis_opposite_imag[..lane_count],
+                            pair_cos,
+                            latitude_count,
+                        );
                     let fast_path_candidate = lmax >= FUSED_SCALAR_ANALYSIS_MIN_LMAX
                         && product_range_safe
                         && recurrence.fast_scalar_first.len() >= staged_count;
@@ -2302,8 +2317,16 @@ impl<T: ShtScalar> ShtPlan<T> {
                         None
                     };
                     let fast_path_eligible = opposite_preparation == Some(true);
+                    let direct_accumulation = cfg!(rustsht_scalar_analysis_direct_accumulation)
+                        && fast_path_eligible
+                        && direct_products_safe;
                     let mut range_check_was_exercised = false;
                     let fused_block = if fast_path_eligible {
+                        let output_coefficients = if direct_accumulation {
+                            &mut coefficients[..staged_count]
+                        } else {
+                            &mut recurrence.fast_scalar_first[..staged_count]
+                        };
                         T::fused_scalar_analysis_pair_block_preweighted(
                             arch,
                             m,
@@ -2321,7 +2344,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                             &recurrence.analysis_same_imag[..lane_count],
                             &recurrence.analysis_opposite_real[..lane_count],
                             &recurrence.analysis_opposite_imag[..lane_count],
-                            &mut recurrence.fast_scalar_first[..staged_count],
+                            direct_accumulation,
+                            output_coefficients,
                             &mut recurrence.previous,
                             &mut recurrence.current,
                             &mut recurrence.next,
@@ -2332,6 +2356,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                     } else {
                         false
                     };
+                    #[cfg(test)]
+                    if direct_accumulation && fused_block {
+                        SCALAR_ANALYSIS_DIRECT_ACCUMULATION_BLOCKS.fetch_add(1, Ordering::Relaxed);
+                    }
                     if fused_block {
                         saw_successful_fused_block = true;
                         if !range_check_is_proven_safe && !range_check_was_exercised {
@@ -2341,11 +2369,13 @@ impl<T: ShtScalar> ShtPlan<T> {
                         {
                             block_saw_normal = true;
                         }
-                        for (coefficient, contribution) in coefficients
-                            .iter_mut()
-                            .zip(&recurrence.fast_scalar_first[..staged_count])
-                        {
-                            *coefficient += *contribution;
+                        if !direct_accumulation {
+                            for (coefficient, contribution) in coefficients
+                                .iter_mut()
+                                .zip(&recurrence.fast_scalar_first[..staged_count])
+                            {
+                                *coefficient += *contribution;
+                            }
                         }
                     } else {
                         may_cache_range_safe = false;

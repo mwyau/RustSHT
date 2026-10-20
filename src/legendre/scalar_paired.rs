@@ -1210,13 +1210,35 @@ pub(crate) fn analysis_products_safe(
     opposite_imag: &[f64],
     cos_theta: &[f64],
 ) -> bool {
+    analysis_products_safe_with_lane_bound(
+        same_real,
+        same_imag,
+        opposite_real,
+        opposite_imag,
+        cos_theta,
+        same_real.len(),
+    )
+}
+
+/// Checks whether a set of paired spectra can be accumulated directly into
+/// coefficients while bounding the absolute sum across every latitude tile.
+pub(crate) fn analysis_products_safe_with_lane_bound(
+    same_real: &[f64],
+    same_imag: &[f64],
+    opposite_real: &[f64],
+    opposite_imag: &[f64],
+    cos_theta: &[f64],
+    total_lane_count: usize,
+) -> bool {
     debug_assert_eq!(same_real.len(), same_imag.len());
     debug_assert_eq!(same_real.len(), opposite_real.len());
     debug_assert_eq!(same_real.len(), opposite_imag.len());
     debug_assert_eq!(same_real.len(), cos_theta.len());
     // Bound the absolute sum as well as each product. This keeps both the
-    // vector reduction and the accumulation of vector partials finite.
-    let max_input = f64::MAX / scalar::BIG / (2.0 * same_real.len().max(1) as f64);
+    // vector reduction and the accumulation of vector partials finite. Direct
+    // output accumulation uses the total reflected-latitude count so the
+    // bound also covers contributions from earlier blocks.
+    let max_input = f64::MAX / scalar::BIG / (2.0 * total_lane_count.max(1) as f64);
     same_real
         .iter()
         .chain(same_imag)
@@ -1802,6 +1824,7 @@ pub(crate) fn fused_scalar_analysis_pair_block_preweighted_dispatched(
     same_imag: &[f64],
     opposite_real: &[f64],
     opposite_imag: &[f64],
+    direct_accumulation: bool,
     staged_coefficients: &mut [Complex64],
     previous: &mut [f64],
     current: &mut [f64],
@@ -1811,6 +1834,57 @@ pub(crate) fn fused_scalar_analysis_pair_block_preweighted_dispatched(
     exponents: &mut [i64],
 ) -> Result<bool, ShtError> {
     *range_check_was_exercised = false;
+    if direct_accumulation {
+        // Direct output is allowed only after the same order/tile geometry
+        // completed checked recurrence validation on an earlier call. Normal
+        // sectoral initialization is checked before the first coefficient is
+        // touched; scaled seeds keep the transactional staged path.
+        if !range_check_is_proven_safe
+            || lmax < SIMD_SECTORAL_INIT_MIN_LMAX
+            || staged_coefficients.len() < lmax - m + 1
+            || previous.len() < sin_theta.len()
+            || current.len() < sin_theta.len()
+            || next.len() < sin_theta.len()
+            || cos_theta.len() != sin_theta.len()
+            || cos_theta_squared.len() != sin_theta.len()
+            || same_real.len() != sin_theta.len()
+            || same_imag.len() != sin_theta.len()
+            || opposite_real.len() != sin_theta.len()
+            || opposite_imag.len() != sin_theta.len()
+        {
+            return Ok(false);
+        }
+        previous[..sin_theta.len()].fill(0.0);
+        if !initialize_normal_analysis_sectoral_dispatched(
+            arch,
+            m,
+            sin_theta,
+            sectoral_norm,
+            &mut current[..sin_theta.len()],
+        )? {
+            return Ok(false);
+        }
+        return Ok(
+            arch.dispatch(FusedScalarAnalysisPair::<true, false, false, true> {
+                m,
+                lmax,
+                range_check_was_exercised,
+                pair_start: 0,
+                cos_theta,
+                cos_theta_squared,
+                coefficient_a,
+                coefficient_b,
+                same_real,
+                same_imag,
+                opposite_real,
+                opposite_imag,
+                staged_coefficients,
+                previous: &mut previous[..sin_theta.len()],
+                current: &mut current[..sin_theta.len()],
+                next: &mut next[..sin_theta.len()],
+            }),
+        );
+    }
     if range_check_is_proven_safe {
         fused_scalar_analysis_pair_block_impl::<true, false>(
             arch,
@@ -3092,6 +3166,9 @@ struct FusedScalarAnalysisPair<
     // Experimental checked mode folds the group-state reduction into the
     // recurrence traversal instead of rereading the resulting state arrays.
     const FUSE_PAIR_GROUP_RANGE_CHECK: bool = { cfg!(rustsht_fused_analysis_pair_range_check) },
+    // Uses a plan-validated, preflighted output range to remove the temporary
+    // coefficient tile and accumulate directly into the analysis output.
+    const DIRECT_ACCUMULATE_OUTPUT: bool = false,
 > {
     m: usize,
     lmax: usize,
@@ -3763,16 +3840,39 @@ fn analysis_pair_state_range_mask<S: Simd>(
     simd.and_m64s(previous_in_range, current_in_range)
 }
 
+#[inline(always)]
+fn store_analysis_pair<const ACCUMULATE: bool>(
+    coefficients: &mut [Complex64],
+    offset: usize,
+    has_odd: bool,
+    same: Complex64,
+    opposite: Complex64,
+) {
+    if ACCUMULATE {
+        coefficients[offset] += same;
+        if has_odd {
+            coefficients[offset + 1] += opposite;
+        }
+    } else {
+        coefficients[offset] = same;
+        if has_odd {
+            coefficients[offset + 1] = opposite;
+        }
+    }
+}
+
 impl<
     const OPPOSITE_COSINE_WEIGHTED: bool,
     const CHECK_PAIR_GROUP_RANGE: bool,
     const FUSE_PAIR_GROUP_RANGE_CHECK: bool,
+    const DIRECT_ACCUMULATE_OUTPUT: bool,
 > WithSimd
     for FusedScalarAnalysisPair<
         '_,
         OPPOSITE_COSINE_WEIGHTED,
         CHECK_PAIR_GROUP_RANGE,
         FUSE_PAIR_GROUP_RANGE_CHECK,
+        DIRECT_ACCUMULATE_OUTPUT,
     >
 {
     type Output = bool;
@@ -3864,17 +3964,23 @@ impl<
 
             let first_l = m + 2 * pair_index;
             let first_offset = first_l - m;
-            staged_coefficients[first_offset] = group.first_same;
-            if first_l < lmax {
-                staged_coefficients[first_offset + 1] = group.first_opposite;
-            }
+            store_analysis_pair::<DIRECT_ACCUMULATE_OUTPUT>(
+                staged_coefficients,
+                first_offset,
+                first_l < lmax,
+                group.first_same,
+                group.first_opposite,
+            );
 
             let second_l = first_l + 2;
             let second_offset = second_l - m;
-            staged_coefficients[second_offset] = group.second_same;
-            if second_l < lmax {
-                staged_coefficients[second_offset + 1] = group.second_opposite;
-            }
+            store_analysis_pair::<DIRECT_ACCUMULATE_OUTPUT>(
+                staged_coefficients,
+                second_offset,
+                second_l < lmax,
+                group.second_same,
+                group.second_opposite,
+            );
             pair_index += 2;
         }
 
@@ -3900,10 +4006,13 @@ impl<
                 );
             all_vectors_in_range = simd.and_m64s(all_vectors_in_range, pair_vectors_in_range);
             all_tails_in_range &= pair_tails_in_range;
-            staged_coefficients[offset] = same_sum;
-            if l < lmax {
-                staged_coefficients[offset + 1] = opposite_sum;
-            }
+            store_analysis_pair::<DIRECT_ACCUMULATE_OUTPUT>(
+                staged_coefficients,
+                offset,
+                l < lmax,
+                same_sum,
+                opposite_sum,
+            );
             std::mem::swap(&mut previous, &mut current);
             std::mem::swap(&mut current, &mut next);
             pair_index += 1;
@@ -3921,11 +4030,19 @@ impl<
             cos_theta,
         }
         .with_simd(simd);
-        staged_coefficients[offset] = same_sum;
-        if l < lmax {
-            staged_coefficients[offset + 1] = opposite_sum;
+        store_analysis_pair::<DIRECT_ACCUMULATE_OUTPUT>(
+            staged_coefficients,
+            offset,
+            l < lmax,
+            same_sum,
+            opposite_sum,
+        );
+        if DIRECT_ACCUMULATE_OUTPUT {
+            debug_assert!(analysis_mask_all(simd, all_vectors_in_range) && all_tails_in_range);
+            true
+        } else {
+            analysis_mask_all(simd, all_vectors_in_range) && all_tails_in_range
         }
-        analysis_mask_all(simd, all_vectors_in_range) && all_tails_in_range
     }
 }
 
@@ -6166,6 +6283,7 @@ mod tests {
             &same_imag,
             &weighted_opposite_real,
             &weighted_opposite_imag,
+            false,
             &mut staged_preweighted,
             &mut previous,
             &mut current,
@@ -6684,6 +6802,7 @@ mod tests {
                 &same_imag,
                 &weighted_opposite_real,
                 &weighted_opposite_imag,
+                false,
                 &mut checked_staged,
                 &mut checked_previous,
                 &mut checked_current,
@@ -6719,6 +6838,7 @@ mod tests {
             &same_imag,
             &weighted_opposite_real,
             &weighted_opposite_imag,
+            false,
             &mut staged,
             &mut previous,
             &mut current,
