@@ -62,8 +62,18 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   medians were stable, although max run-queue wait reached 70.6%/87.6%. The
   compiler-dependent difference is now a code-generation question, not a
   fast-math flag mismatch. See the updated report and
-  `reports/data/ducc-kernel-fastmath-2026-10-20/`; next inspect these exact
-  hot loops against Rust's executed V3 specialization.
+  `reports/data/ducc-kernel-fastmath-2026-10-20/`. Static inspection confirms
+  the warmed Rust V3 loop and DUCC v3 loops all use 12 packed FMAs per
+  four-degree group, with no YMM spills or scalar-double arithmetic in the
+  repeated vector loop. Rust emits unaligned slice loads and scalarized
+  horizontal reductions; DUCC Clang uses aligned state loads and `vhaddpd`.
+  A clean matched GCC `-mtune=znver3` control changed GCC DUCC medians by only
+  -0.5/-1.4/-0.8% at 64/128/256 lanes; host run-queue delay was high (11.8%
+  median, 80.2% maximum), so this is not a reliable tuning win. Neither loop
+  instruction counts nor the prior reduction ablation explain the 22–28%
+  GCC/Clang DUCC spread. Hardware counters are unavailable under the current
+  host permissions. Next compare stage-level q1/q8 behavior across larger
+  degrees, separating recurrence/accumulation from packing, FFT and scheduling.
 
 - The T64 dispatch experiment covered 848 rows for the full matrix and a
   clean 104-row final-policy boundary/reduced-order subset (312 numerical
