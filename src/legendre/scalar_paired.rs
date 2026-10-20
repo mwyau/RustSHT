@@ -3577,6 +3577,7 @@ fn fused_analysis_two_pair_steps_with_simd<
 /// register-heavy accumulation pass has completed. This keeps the safety
 /// check out of the multi-accumulator loop while preserving fallback on any
 /// nonzero subnormal lane.
+#[allow(unexpected_cfgs)]
 #[inline(always)]
 fn analysis_pair_group_state_in_range<S: Simd>(simd: S, previous: &[f64], current: &[f64]) -> bool {
     if previous.len() != current.len() {
@@ -3591,23 +3592,62 @@ fn analysis_pair_group_state_in_range<S: Simd>(simd: S, previous: &[f64], curren
 
     let zero = simd.splat_f64s(0.0);
     let minimum = simd.splat_f64s(f64::MIN_POSITIVE);
+    #[cfg(not(rustsht_split_analysis_range_masks))]
     let mut vectors_in_range = simd.equal_f64s(zero, zero);
+    #[cfg(not(rustsht_split_analysis_range_masks))]
     for (&previous_value, &current_value) in previous_vectors.iter().zip(current_vectors) {
-        let previous_magnitude = simd.abs_f64s(previous_value);
-        let current_magnitude = simd.abs_f64s(current_value);
-        let previous_in_range = simd.or_m64s(
-            simd.equal_f64s(previous_magnitude, zero),
-            simd.greater_than_or_equal_f64s(previous_magnitude, minimum),
-        );
-        let current_in_range = simd.or_m64s(
-            simd.equal_f64s(current_magnitude, zero),
-            simd.greater_than_or_equal_f64s(current_magnitude, minimum),
-        );
         vectors_in_range = simd.and_m64s(
             vectors_in_range,
-            simd.and_m64s(previous_in_range, current_in_range),
+            analysis_pair_state_range_mask(simd, previous_value, current_value, zero, minimum),
         );
     }
+    // Keep two independent mask chains in the scan loop. The AVX2 loop used
+    // one loop-carried YMM AND chain after checking each recurrence group.
+    #[cfg(rustsht_split_analysis_range_masks)]
+    let mut first_vectors_in_range = simd.equal_f64s(zero, zero);
+    #[cfg(rustsht_split_analysis_range_masks)]
+    let mut second_vectors_in_range = simd.equal_f64s(zero, zero);
+    #[cfg(rustsht_split_analysis_range_masks)]
+    for pair in 0..previous_vectors.len() / 2 {
+        let first = pair * 2;
+        first_vectors_in_range = simd.and_m64s(
+            first_vectors_in_range,
+            analysis_pair_state_range_mask(
+                simd,
+                previous_vectors[first],
+                current_vectors[first],
+                zero,
+                minimum,
+            ),
+        );
+        let second = first + 1;
+        second_vectors_in_range = simd.and_m64s(
+            second_vectors_in_range,
+            analysis_pair_state_range_mask(
+                simd,
+                previous_vectors[second],
+                current_vectors[second],
+                zero,
+                minimum,
+            ),
+        );
+    }
+    #[cfg(rustsht_split_analysis_range_masks)]
+    if previous_vectors.len() % 2 != 0 {
+        let last = previous_vectors.len() - 1;
+        first_vectors_in_range = simd.and_m64s(
+            first_vectors_in_range,
+            analysis_pair_state_range_mask(
+                simd,
+                previous_vectors[last],
+                current_vectors[last],
+                zero,
+                minimum,
+            ),
+        );
+    }
+    #[cfg(rustsht_split_analysis_range_masks)]
+    let vectors_in_range = simd.and_m64s(first_vectors_in_range, second_vectors_in_range);
     if !analysis_mask_all(simd, vectors_in_range) {
         return false;
     }
@@ -3619,6 +3659,27 @@ fn analysis_pair_group_state_in_range<S: Simd>(simd: S, previous: &[f64], curren
             (previous_value == 0.0 || previous_value.abs() >= f64::MIN_POSITIVE)
                 && (current_value == 0.0 || current_value.abs() >= f64::MIN_POSITIVE)
         })
+}
+
+#[inline(always)]
+fn analysis_pair_state_range_mask<S: Simd>(
+    simd: S,
+    previous: S::f64s,
+    current: S::f64s,
+    zero: S::f64s,
+    minimum: S::f64s,
+) -> S::m64s {
+    let previous_magnitude = simd.abs_f64s(previous);
+    let current_magnitude = simd.abs_f64s(current);
+    let previous_in_range = simd.or_m64s(
+        simd.equal_f64s(previous_magnitude, zero),
+        simd.greater_than_or_equal_f64s(previous_magnitude, minimum),
+    );
+    let current_in_range = simd.or_m64s(
+        simd.equal_f64s(current_magnitude, zero),
+        simd.greater_than_or_equal_f64s(current_magnitude, minimum),
+    );
+    simd.and_m64s(previous_in_range, current_in_range)
 }
 
 impl<
