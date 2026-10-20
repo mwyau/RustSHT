@@ -1407,6 +1407,7 @@ impl WithSimd for InitializeScaledAnalysisSectoral<'_> {
         let zero_scale = simd.splat_f64s(0.0);
         let maximum_finite = simd.splat_f64s(f64::MAX);
         let sine_limit = simd.splat_f64s(1.0);
+        let power_limit = simd.splat_f64s(analysis_sectoral_power_limit(m));
         let coefficient =
             simd.splat_f64s(sectoral_norm * if m.is_multiple_of(2) { 1.0 } else { -1.0 });
 
@@ -1421,6 +1422,29 @@ impl WithSimd for InitializeScaledAnalysisSectoral<'_> {
                 ),
             ) {
                 return false;
+            }
+
+            // DUCC's mypow uses an unscaled exponentiation for a SIMD vector
+            // when every lane is above its per-order underflow limit. Keep
+            // that quick route for safe vectors even when another vector in
+            // this block needs scaled initialization.
+            if analysis_mask_all(
+                simd,
+                simd.greater_than_or_equal_f64s(sine_magnitude, power_limit),
+            ) {
+                let mut value = simd.mul_f64s(integer_power_vector(simd, sine, m), coefficient);
+                let mut value_scale = zero_scale;
+                if !normalize_analysis_power_vector(
+                    simd,
+                    &mut value,
+                    &mut value_scale,
+                    ANALYSIS_FTOL,
+                ) {
+                    return false;
+                }
+                current_vectors[index] = value;
+                scale_vectors[index] = value_scale;
+                continue;
             }
 
             let mut base = sine;
@@ -1498,6 +1522,15 @@ impl WithSimd for InitializeScaledAnalysisSectoral<'_> {
             scale_tail[lane] = scale;
         }
         true
+    }
+}
+
+#[inline]
+fn analysis_sectoral_power_limit(m: usize) -> f64 {
+    if m == 0 {
+        0.0
+    } else {
+        (-400.0 * std::f64::consts::LN_2 / m as f64).exp()
     }
 }
 
@@ -5662,6 +5695,41 @@ mod tests {
             let (expected, exponent) = scalar::sectoral_value(sine, m, sectoral_norm).unwrap();
             assert_eq!(exponent, 0);
             assert!((actual - expected).abs() <= expected.abs() * 2.0e-14);
+        }
+    }
+
+    #[test]
+    fn scaled_sectoral_initialization_matches_ducc_power_routes_and_tail() {
+        let arch = Arch::new();
+        let sin_theta = [
+            0.0, 1.0e-30, 0.2, 0.5, 0.7, 0.95, 0.999, 1.0, 0.42, 0.83, 0.91,
+        ];
+
+        for m in [0, 1, 250, 720] {
+            let sectoral_norm = scalar::sectoral_normalizations(m).unwrap()[m];
+            let mut current = vec![f64::NAN; sin_theta.len()];
+            let mut scale_epochs = vec![-1.0; sin_theta.len()];
+            assert!(arch.dispatch(InitializeScaledAnalysisSectoral {
+                m,
+                sin_theta: &sin_theta,
+                sectoral_norm,
+                current: &mut current,
+                scale_epochs: &mut scale_epochs,
+            }));
+
+            for (lane, (&sine, &actual)) in sin_theta.iter().zip(&current).enumerate() {
+                let (value, exponent) = scalar::sectoral_value(sine, m, sectoral_norm).unwrap();
+                let (expected, exponent) = normalize_analysis_seed_scalar(value, exponent).unwrap();
+                assert_eq!(
+                    scale_epochs[lane],
+                    exponent as f64 / ANALYSIS_SCALE_STEP as f64
+                );
+                if expected == 0.0 {
+                    assert_eq!(actual, expected);
+                } else {
+                    assert!((actual - expected).abs() <= expected.abs() * 2.0e-13);
+                }
+            }
         }
     }
 

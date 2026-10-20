@@ -40,6 +40,22 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   validated outside timing; coefficient scaled difference was `1.970e-16`,
   and output relative L2 error was `6.670e-14` to `1.628e-13`. See the
   [reproducible runner](scripts/benchmark_scalar_analysis_kernel.py).
+- Sectoral initialization now follows DUCC's per-SIMD-vector `mypow` choice:
+  vectors above the `2^-400/m` underflow limit use direct exponentiation, while
+  vectors containing smaller lanes retain scaled exponent management. This
+  avoids scaling safe vectors merely because another vector in the block needs
+  it. The scalar seed reference test covers orders 0, 1, 250 and 720, mixed
+  vectors and a SIMD tail. The all-feature and no-default-feature release test
+  suites pass.
+- A short full-transform Rust screen compared `fc9f44a4` with this change using
+  five interleaved process pairs and five samples per process, GL STANDARD A,
+  odd `nphi=2T+3`, and q1/q8. Median baseline→candidate times were T300 q1
+  3.396→3.244 ms, q8 0.623→0.603 ms; T720 q1 26.669→26.284 ms, q8
+  4.525→4.420 ms. Both builds used Rust 1.99/Pulp V3, x86-64-v3, and the same
+  Ryzen 9 5950X host; q1 used one pinned physical core and q8 the same set of
+  eight physical cores. One T300 q8 sample was an outlier, while process
+  medians remained grouped. This is a Rust-only screen, not a DUCC parity
+  measurement; it does not change the matched-kernel ratios above.
 - A Pulp grouped four-accumulator reduction remains behind
   `rustsht_group_analysis_reduction` for cumulative evaluation. It reduced the
   final channels with AVX2 shuffles and packed adds but regressed unchecked
@@ -101,8 +117,7 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   stayed tightly grouped; long batch tails remain in the reported distributions.
   No favorable or unfavorable samples were removed.
 
-**Next:** compare Rust's sectoral initialization with DUCC's `mypow`,
-`Tvnormalize` and `init_lambda`, then test a vectorized exponentiation and
-normalization path. The checked kernel remains 1.55× DUCC at 256 lanes after
-the Rust output commit is included; the unchecked A/B route is 1.08×. Keep
-range validation and scaled fallback in production.
+**Next:** reduce the checked kernel's repeated post-group state traffic without
+carrying masks through the eight-accumulator recurrence or weakening its
+scaled fallback. The checked kernel remains 1.55× DUCC at 256 lanes after the
+Rust output commit is included; the unchecked A/B route is 1.08×.
