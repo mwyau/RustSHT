@@ -3355,9 +3355,15 @@ fn fused_analysis_two_pair_steps_with_simd<
     }
 
     let zero = simd.splat_f64s(0.0);
+    // The experiment re-materializes coefficient splats at the recurrence
+    // expressions; the default keeps the established broadcast lifetimes.
+    #[cfg(not(rustsht_rematerialize_analysis_coefficients))]
     let first_a = simd.splat_f64s(first_coefficient_a);
+    #[cfg(not(rustsht_rematerialize_analysis_coefficients))]
     let first_b = simd.splat_f64s(first_coefficient_b);
+    #[cfg(not(rustsht_rematerialize_analysis_coefficients))]
     let second_a = simd.splat_f64s(second_coefficient_a);
+    #[cfg(not(rustsht_rematerialize_analysis_coefficients))]
     let second_b = simd.splat_f64s(second_coefficient_b);
     let minimum = simd.splat_f64s(f64::MIN_POSITIVE);
     let mut first_same_re = zero;
@@ -3403,6 +3409,13 @@ fn fused_analysis_two_pair_steps_with_simd<
             );
         }
 
+        #[cfg(rustsht_rematerialize_analysis_coefficients)]
+        let first_leading = simd.mul_add_f64s(
+            simd.splat_f64s(first_coefficient_a),
+            *cosine_squared,
+            simd.splat_f64s(first_coefficient_b),
+        );
+        #[cfg(not(rustsht_rematerialize_analysis_coefficients))]
         let first_leading = simd.mul_add_f64s(first_a, *cosine_squared, first_b);
         let first_next = simd.mul_add_f64s(first_leading, current_value, previous_value);
 
@@ -3422,6 +3435,13 @@ fn fused_analysis_two_pair_steps_with_simd<
             );
         }
 
+        #[cfg(rustsht_rematerialize_analysis_coefficients)]
+        let second_leading = simd.mul_add_f64s(
+            simd.splat_f64s(second_coefficient_a),
+            *cosine_squared,
+            simd.splat_f64s(second_coefficient_b),
+        );
+        #[cfg(not(rustsht_rematerialize_analysis_coefficients))]
         let second_leading = simd.mul_add_f64s(second_a, *cosine_squared, second_b);
         let second_next = simd.mul_add_f64s(second_leading, first_next, current_value);
         if CHECK_GROUP_RANGE && TRACK_STATE_RANGE {
