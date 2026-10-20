@@ -36,9 +36,18 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   additional basis, roundtrip, edge-input and adjoint suites passed. Workspace
   release tests and no-default-features release tests passed (242 passed in
   each; 24 ignored); formatting and strict Clippy passed with the repository's
-  existing custom-cfg warning suppressed. Next: build and inspect DUCC
-  multiarch v3/v4 objects, then establish the Rust 1.99.1 / GCC / Clang v3
-  baseline before further kernel changes.
+  existing custom-cfg warning suppressed.
+- DUCC 0.42.0 was built from its upstream CMake project with
+  `DUCC0_OPTIMIZATION=multiarch`, using GCC 15.2 and Clang 21.1.8. Both
+  extensions reported runtime dispatch to x86-64-v3 on this AVX2-only Ryzen
+  5950X. Their SHT-specific `map2alm_kernel` symbols were identified and
+  disassembled in the v3 and v4 objects; v3 uses four f64 lanes and v4 uses
+  eight. The v4 objects were static-inspection only. A public T255 multiarch
+  analysis smoke call completed, but its short timing screen was noisy and is
+  not a performance comparison. Build commands and findings are in
+  `reports/data/ducc-multiarch-2026-10-20/README.md`. Next: establish the
+  calibrated Rust 1.99.1 / DUCC GCC and Clang v3 baseline, then isolate the
+  remaining warmed-kernel costs.
 
 - Production f64 scalar GL analysis keeps the checked two-pair AVX2/FMA route
   and scaled fallback. The active range-cache candidate reuses a checked
