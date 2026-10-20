@@ -1,50 +1,43 @@
 # RustSHT performance checkpoint
 
 **Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Current
-implementation source measured:** `be608eb2` (scalar synthesis selects on-the-fly
+implementation source measured:** `b25c011d` (scalar synthesis selects on-the-fly
 recurrence from T64; analysis retains its prior table policy).
 **Earlier dispatch-policy source:** `d6382614`; **earlier A/B source:** `9f7e8658`.
 **Calibrated harness:** `1ee1a195`. **Benchmark default:** production flags at
 `e2c2dc15`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
 
-- **T720 cumulative-candidate checkpoint:** source `fbba7c39` was compared
-  against the fixed DUCC 0.42.0 pin at T720, with `mmax=180,720`, odd and
-  even-smooth longitude counts, A/S, and q1/q8. The direct-output-inclusive
-  candidate's warmed Rust analysis ranged from 1.38× to 2.62× production
-  across the full/reduced rows; the matched q1 T720 `mmax=180` even-smooth
-  and `mmax=720` odd-minimum rows were 2.62× and 2.04×. Maximum relative
-  L2 error was `1.841e-13`.
-  First-call times were similar, while the warmed direct-output route was
-  slower, and 24/144 candidate worker samples differed bitwise between their
-  first and final outputs. The direct-output path and the neutral indexed-loop
-  ablation have been removed. The fixed-scratch/packed-reduction combined
-  rerun was invalid under host saturation (run-queue wait median/p90
-  `13.7% / 67.5%`); retain their cfgs only for a later clean comparison. The
-  T720 results and host summaries are in the
-  [cumulative experiment record](reports/scalar-analysis-cumulative-2026-10-20.md)
-  and [machine-readable data](reports/data/scalar-analysis-cumulative-2026-10-20/t720-ab/).
-  A test-only route profile now covers the T2047/T2048 cutoff cases at tile
-  64/128/256. Crossing from 2048 to 2049 latitudes moves 2,432/3,798/6,466
-  blocks from the prefix-enabled scaled route into checked-scaled recurrence.
-  No initialization or recurrence declines occurred. At fixed 2049 latitudes,
-  T2047→T2048 changed checked-scaled counts by 0/0/2. These are block counts,
-  not time attribution; the host remained too busy for credible timings. The
-  route profile and exact counts are in the cumulative experiment record.
-  Next, compare `mmax=2047`, `nphi=4096`, q1/q8 at T2047/`ntheta=2048`,
-  T2047/`ntheta=2049`, and T2048/`ntheta=2049`, with pair tiles 64/128/256.
-  This separates the prefix-bound transition from the extra-degree cost while
-  keeping analysis exact. The bound permits skipping at 2048 latitudes but
-  not 2049; keep it unchanged.
+- **Current T720 production/candidate comparison (b25c011d):** T720 f64 GL
+  A/S ran at mmax=180,720, odd-minimum/even-smooth longitude counts, q1/q8,
+  with 30 calibrated batches per backend/case against DUCC 42ce8ab5 (Rust
+  1.99.1, GCC 15.2, strict Rust V3 and DUCC -O3 -ffast-math
+  -ffp-contract=fast -march=x86-64-v3). Fixed scratch and packed reduction
+  were tested alone and together. Combined analysis changed warmed latency
+  by -4.9%..+0.6%; maximum relative L2 error was 5.20e-14. A separate
+  interleaved q8 synthesis confirmation found fixed scratch faster by
+  11.4%..18.0% across all four T720 shape/longitude cases (50 batches per
+  backend/case, five process pairs); q1 synthesis was near-neutral. Fixed
+  scratch remains an opt-in candidate for broader assessment. Packed reduction
+  is being retired: it improved isolated 64-lane kernel time but gave small,
+  inconsistent full-transform changes. Detailed tables and machine-readable
+  results are in the [current T720 A/B](reports/scalar-analysis-cumulative-2026-10-20.md#current-t720-productioncandidate-ab-2026-10-20)
+  and [data](reports/data/scalar-analysis-cumulative-2026-10-20/t720-ab-current/).
 
-- **Scaled preflight candidate:** correction preparation now carries the
-  below-one and all-negative epoch frontiers in the same pass, removing two
-  follow-up reads of the epoch array. The independent recurrence-bound scan,
-  correction range checks and decline-before-staging behavior remain. The
-  focused lane/tail and invalid-value checks plus the full release library
-  suites pass; no timing is available under current host contention, so this
-  is an unmeasured candidate rather than an established speedup. See the
-  [cumulative experiment record](reports/scalar-analysis-cumulative-2026-10-20.md).
+- **T2048 cutoff route profile:** test-only release counters cover the
+  T2047/T2048 cases at tiles 64/128/256. Crossing 2048 to 2049 latitudes moves
+  2,432/3,798/6,466 blocks from prefix-enabled scaled recurrence to the
+  checked-scaled route; adding degree 2048 at fixed 2049 latitudes changes
+  checked-scaled counts by 0/0/2. Counts do not measure skipped degree pairs
+  or latency. Next compare mmax=2047, nphi=4096, q1/q8 at T2047 with
+  ntheta=2048 and 2049, and T2048 with ntheta=2049, using pair tiles
+  64/128/256. Keep the safety bound unchanged.
+
+- **Prefix reuse/preflight changes:** sectoral seed reuse and scaled-prefix
+  epoch/preflight reuse are part of the current measured production source.
+  The T720 compile-time candidate A/B used identical source for those paths,
+  so it does not attribute their individual benefit versus earlier code.
+  Keep them unchanged while the T2048 route-bound cost is measured.
 
 - **Warmed T720 analysis-kernel attribution, `4c6945fc` plus a benchmark-only
   alignment correction:** the probe now shares the ordinary unchecked timing's

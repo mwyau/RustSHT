@@ -477,3 +477,69 @@ The timing comparison remains T2047/2048 latitudes, T2047/2049 latitudes, and
 T2048/2049 latitudes with `mmax=2047`, `nphi=4096`, q1/q8, and tiles 64/128/256.
 This separates the safety-bound crossing from the extra degree while keeping
 the longitude FFT fixed.
+
+
+## Current T720 production/candidate A/B (2026-10-20)
+
+This rerun uses current source b25c011d4bd6a4f1cae832a16f20cd5a12611897,
+Rust 1.99.1 / LLVM 23.1.1, strict -C target-cpu=x86-64-v3 with runtime Pulp
+V3, and DUCC 0.42.0 at
+42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b (GCC 15.2). DUCC numerical SHT
+sources used -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; the
+validation driver remained strict. The comparison differs only by compile-time
+candidate flags: default production, fixed aligned SIMD scratch,
+packed-complex reduction, and both. The retired direct-output and indexed-loop
+routes were not present.
+
+The full-transform matrix used T720 GL with mmax=180 and 720, odd-minimum
+and even-smooth longitude counts (nphi=361/378 and 1441/1458), analysis and
+synthesis, q1/q8. Rust and DUCC trials were interleaved within each of three
+process pairs; each row has 30 timed batches per backend, with 25 ms target
+batches. The Rust plan/workspace setup is outside the warmed call; first-call
+latency and reset consistency are recorded separately. Pulp dispatch was V3
+for all Rust rows. All outputs were checked against DUCC and the harness ran
+its basis, roundtrip, adjoint, zero, subnormal and extreme-finite checks.
+The largest relative L2 error was 5.20e-14; machine-readable rows retain
+absolute and maximum errors, first-call times, p10/p90, paired intervals,
+frequency samples and host run-queue summaries.
+
+| mmax | longitude | threads | production ms | fixed scratch ms | packed reduction ms | combined ms | DUCC ms | combined/base | combined Rust/DUCC | relative L2 |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 180 | odd-minimum | q1 | 7.893 | 7.676 | 7.832 | 7.509 | 6.114 | -4.9% | 1.240x | 4.89e-14 |
+| 180 | odd-minimum | q8 | 1.324 | 1.305 | 1.315 | 1.332 | 0.946 | +0.6% | 1.402x | 4.89e-14 |
+| 180 | even-smooth | q1 | 6.420 | 6.385 | 6.293 | 6.316 | 5.930 | -1.6% | 1.057x | 4.91e-14 |
+| 180 | even-smooth | q8 | 1.125 | 1.127 | 1.120 | 1.103 | 0.924 | -1.9% | 1.194x | 4.91e-14 |
+| 720 | odd-minimum | q1 | 23.599 | 23.562 | 23.689 | 23.392 | 22.159 | -0.9% | 1.015x | 4.63e-14 |
+| 720 | odd-minimum | q8 | 3.903 | 3.805 | 3.872 | 3.785 | 3.186 | -3.0% | 1.187x | 4.63e-14 |
+| 720 | even-smooth | q1 | 16.382 | 16.154 | 16.245 | 16.004 | 14.596 | -2.3% | 1.101x | 4.63e-14 |
+| 720 | even-smooth | q8 | 3.040 | 2.996 | 3.015 | 2.967 | 2.128 | -2.4% | 1.404x | 4.63e-14 |
+
+These whole-call analysis changes are modest and not uniform. Fixed scratch
+alone changes analysis by -2.8%..+0.2%; packed reduction alone by
+-2.0%..+0.4%. The separate native kernel comparison used 10 independent
+process pairs and six calibrated batches per pair (60 batches per backend at
+each 64/128/256 lane count). Fixed scratch was neutral within the kernel
+spread. Packed reduction changed the unchecked kernel-plus-commit medians
+from 4.872/8.955/17.341 us to 4.689/8.849/17.229 us, respectively. Its
+128-lane DUCC pairing was unstable; reset-inclusive ratios and all lane
+results are in data/scalar-analysis-cumulative-2026-10-20/t720-ab-current/kernel/summary.csv.
+Numerical output relative L2 stayed within 6.67e-14..1.63e-13. This kernel
+result alone does not justify promoting packed reduction.
+
+The separate full-matrix runs showed fixed-scratch q8 synthesis 12-18% faster
+although synthesis does not use the analysis recurrence. A focused confirmation
+then interleaved production and fixed-scratch Rust runs with DUCC at q8, across
+four T720 mmax/longitude cases, five process pairs and 50 batches per
+backend/case. Paired fixed/production Rust median ratios were
+0.820/0.857/0.875/0.886 (18.0%, 14.3%, 12.5%, and 11.4% faster); q1 controls
+were near-neutral. Maximum relative L2 errors matched between layouts
+(4.41e-14..5.20e-14). Run-queue wait was low in this confirmation
+(median/p90 0.30%/1.87% production and 0.31%/1.09% fixed). This is a real
+end-to-end signal but the mechanism is not yet isolated; fixed scratch remains
+opt-in pending a broader workspace/memory check.
+
+Clean T720 full-transform bundles and the long-form comparison are in
+reports/data/scalar-analysis-cumulative-2026-10-20/t720-ab-current/. The
+interleaved q8 confirmation's compact data is interleaved-q8-synthesis.csv;
+per-process host logs remain local. The 2026-10-20 fbba7c39 direct-output run
+above is historical and is not used for current candidate conclusions.

@@ -49,49 +49,48 @@ Both are deferred until this Plan 11 campaign concludes **or the owner
 explicitly reprioritizes**. Neither alters the active numerical, dispatch,
 performance, or dependency constraints.
 
-## Latest owner priority — T720 candidate disposition, then T2048 (2026-10-20)
+## Latest owner priority — measured T720 candidates, then T2048 (2026-10-20)
 
-The T720 full-transform comparison is recorded in
-`reports/scalar-analysis-cumulative-2026-10-20.md` and its data directory.
-At source `fbba7c39`, the direct-output-inclusive build ran 24 matched rows:
-`mmax=1,180,720`, odd-minimum/even-smooth longitude sampling, A/S and q1/q8.
-The warmed Rust analysis cost was 1.38–2.62× production across full/reduced
-rows; the q1 `mmax=180` even-smooth and `mmax=720` odd-minimum cases were
-2.62× and 2.04×. Maximum relative L2 error was `1.841e-13`. Synthesis rows
-shifted despite analysis-only flags, showing cross-run host variation; the
-no-direct rerun was unusable because run-queue wait median/p90 reached
-`13.7% / 67.5%`. Do not promote or claim a gain from this matrix.
+The current-source T720 matrix is at
+reports/data/scalar-analysis-cumulative-2026-10-20/t720-ab-current/ and the
+rolling report has the comparison table. At b25c011d, Rust 1.99.1/Pulp V3
+was compared with DUCC 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b at T720:
+mmax=180,720, odd-minimum/even-smooth longitude sampling, A/S, q1/q8. Each
+row collected 30 calibrated batches (three process pairs, ten batches each).
+The builds differed only by fixed-scratch and packed-complex-reduction
+compile-time candidates, tested alone and together. Rust/DUCC numerical
+comparisons passed; maximum relative L2 error was 5.20e-14.
 
-The direct-output path was removed after this warmed regression and the earlier
-direct-only slowdown. The safe indexed-loop ablation was removed because its
-isolated kernel timings were neutral. Fixed scratch and packed complex
-reduction remain behind cfgs for a later clean end-to-end comparison; neither
-changes production dispatch. Prefix seed reuse and scaled-prefix epoch reuse
-remain unmeasured candidates while the host is saturated.
+The combined candidate changed warmed analysis latency from -4.9% to +0.6%
+versus current production. Fixed scratch alone changed analysis by
+-2.8%..+0.2%; packed reduction alone by -2.0%..+0.4%. The isolated kernel test
+found fixed scratch neutral, while packed reduction reduced the unchecked
+kernel-plus-commit time by 3.8%/1.2%/0.6% at 64/128/256 lanes; the 128-lane
+DUCC pairing was unstable. A focused five-pair interleaved q8 synthesis check
+reproduced a fixed-scratch improvement of 11.4%..18.0% across T720 mmax
+180/720 and both longitude sizes, with matching numerical errors; q1 synthesis
+remained near-neutral. Keep fixed scratch opt-in pending a broader
+memory/workspace assessment. Retire the packed-reduction production cfg after
+recording the result; its isolated win did not translate into a consistent
+whole-transform gain. The previous direct-output and indexed-loop candidates
+remain removed. Do not attribute the seed-prefix and epoch-reuse changes
+separately: they are common to all builds in this A/B.
 
-The next major measurement uses `mmax=2047`, `nphi=4096`, q1/q8, and these
-three GL geometries: T2047 with 2048 latitudes, T2047 with 2049 latitudes, and
-T2048 with 2049 latitudes. The first comparison holds harmonic work fixed
-while crossing the existing insignificant-prefix bound; the second holds the
-latitude count and bound decision fixed while adding degree 2048. Analysis
-remains exact because every case has `ntheta >= lmax + 1`. Compare pair-tile
-sizes 64/128/256 within each geometry: maximum workspace block counts are
-4/5, 8/9, and 16/17 for 2048/2049 latitudes. Keep all numerical safeguards
-unchanged and use the benchmark's host-stability summaries to decide whether
-timing is credible. The native benchmark exposes `--fixed-ntheta` for this
-controlled geometry selection.
+The next measurement uses mmax=2047, nphi=4096, q1/q8 and three GL
+geometries: T2047 with 2048 latitudes, T2047 with 2049 latitudes, and T2048
+with 2049 latitudes. This holds the longitude FFT fixed, first crosses the
+insignificant-prefix safety bound at fixed harmonic work, then adds degree
+2048 while keeping the bound decision fixed. Compare production pair tiles
+64/128/256, retain all numerical safeguards, and use host timing stability to
+qualify conclusions. Analysis remains exact because ntheta >= lmax + 1.
 
-**Route-count result:** a test-only release profile on the three geometries
-found 2,432/3,798/6,466 prefix-enabled scaled blocks at `ntheta=2048` for tiles
-256/128/64, respectively. At `ntheta=2049`, those blocks instead entered the
-checked-scaled route (2,434/3,802/6,471 blocks for T2047; 2,434/3,802/6,473
-for T2048). No initialization or recurrence declines occurred. These counts
-confirm that the cutoff changes the route selection for thousands of blocks;
-they do not count skipped degree pairs or establish the latency cost. Keep the
-safety bound unchanged; run the calibrated timing comparison when host
-scheduling is suitable. Detailed route counts and
-the release-test command are in
-`reports/scalar-analysis-cumulative-2026-10-20.md`.
+**Route counts:** test-only release profiles observed 2,432/3,798/6,466
+prefix-enabled scaled blocks at ntheta=2048 for tiles 256/128/64. At
+ntheta=2049, they entered checked-scaled recurrence (2,434/3,802/6,471 for
+T2047; 2,434/3,802/6,473 for T2048). No initialization or recurrence
+fallback declines occurred. These counts do not measure skipped degree pairs
+or latency. Keep the safety bound unchanged; exact commands and counts are in
+the cumulative report.
 
 ## Non-negotiable objective
 
