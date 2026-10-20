@@ -52,22 +52,19 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   reduction timing, then profile the largest remaining full-transform stage.
   See the [cumulative findings](reports/scalar-analysis-cumulative-2026-10-20.md).
 
-- **DUCC flag confirmation at `be608eb2`:** inspected the pinned 0.42.0
-  upstream CMake `compile_commands.json` for both compilers and verified the
-  actual standalone command lines. DUCC kernel objects use
-  `-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3`; the validation driver
-  is separately compiled with `-fno-fast-math`. Rust remains strict with
-  `-C target-cpu=x86-64-v3`. The runner now rejects flag overrides that violate
-  this split. In a fresh matched T720 `m=1` q1 rerun, warmed Rust/DUCC ratios at
-  64/128/256 lanes were 1.172/1.107/1.089 with GCC 15 and
-  1.161/1.094/1.078 with Clang 21; excess was 0.676–1.422 µs. Relative L2
-  errors were `5.928e-14..1.628e-13`. GCC/Clang DUCC medians were within 1%;
-  three GCC batches exceeded 100 ms and one process spread triggered the
-  instability flag. Samples are separate from the earlier `d6382614` run.
-  Current component measurements place recurrence at 2.695/5.209/10.245 µs
-  and accumulation plus reduction at 2.123/3.649/6.996 µs. Next isolate the
-  latter without introducing spills, then profile larger-order/q8 transforms.
-  See the [flag rerun data](reports/data/ducc-kernel-flags-rerun-2026-10-20/)
+- **DUCC flag contract, rechecked at `6682095c`:** the pinned 0.42.0 upstream
+  GCC 15.2 and Clang 21.1.8 multiarch command databases both compile the
+  `sht.cc` v3 object with `-O3 -ffast-math -march=x86-64-v3`. The standalone
+  kernel explicitly adds `-ffp-contract=fast`; its separate driver uses
+  `-fno-fast-math`. The actual commands were verified for both compilers.
+  Rust stays strict under `-C target-cpu=x86-64-v3`. Current T720 `m=1` q1
+  kernel-plus-commit paired ratios at 64/128/256 lanes are 0.991/0.906/0.860
+  with GCC and 1.204/1.147/1.098 with Clang; output relative L2 errors are
+  `5.928e-14..1.628e-13`. Although calibrated batches and process-median
+  checks passed, run-queue wait reached 84%/100%, so these compiler-dependent
+  directions are not a clean performance attribution. The flag asymmetry is
+  eliminated; repeat under low host contention before the compiler comparison.
+  See the [current run data](reports/data/ducc-kernel-fastmath-confirmed-2026-10-20/)
   and [matched report](reports/ducc-upgrade-baseline-2026-10-20.md).
 
 - Full-transform checkpoint at source `5e290b7` compared production f64 scalar

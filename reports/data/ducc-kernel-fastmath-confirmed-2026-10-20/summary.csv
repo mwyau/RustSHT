@@ -1,0 +1,7 @@
+compiler,lanes_f64,rust_warm_median_us,rust_warm_p10_us,rust_warm_p90_us,ducc_median_us,ducc_p10_us,ducc_p90_us,paired_ratio_median,paired_ratio_p10,paired_ratio_p90,paired_excess_median_us,paired_excess_p10_us,paired_excess_p90_us,coefficient_max_scaled_diff,output_relative_l2,output_max_abs,process_pairs,batches_per_backend,operation_batch_ms_min,operation_batch_ms_max,out_of_window_batches,median_cpu_frequency_ghz,runqueue_wait_median_pct,runqueue_wait_max_pct,aggregate_timing_stability
+GCC 15.2,64,7.939,7.766,8.055,8.028,7.648,8.259,0.991,0.975,1.024,-0.070,-0.204,0.183,1.970e-16,6.670e-14,5.009e-12,10,60,45.27,85.07,0/1440,3.968,0.816,84.156,stable
+GCC 15.2,128,14.155,13.961,14.370,15.648,14.568,15.883,0.906,0.894,0.961,-1.468,-1.676,-0.570,1.970e-16,1.628e-13,1.896e-11,10,60,45.27,85.07,0/1440,3.968,0.816,84.156,stable
+GCC 15.2,256,26.356,25.723,26.727,30.756,30.102,31.733,0.860,0.846,0.866,-4.297,-4.851,-4.058,1.970e-16,5.928e-14,2.559e-11,10,60,45.27,85.07,0/1440,3.968,0.816,84.156,stable
+Clang 21.1.8,64,7.983,7.822,8.081,6.629,6.318,6.809,1.204,1.193,1.226,1.358,1.284,1.474,1.970e-16,6.670e-14,5.009e-12,10,60,39.88,84.98,0/1440,3.943,12.483,99.544,stable
+Clang 21.1.8,128,14.175,14.060,14.348,12.375,12.175,12.748,1.147,1.137,1.160,1.827,1.707,1.972,1.970e-16,1.628e-13,1.896e-11,10,60,39.88,84.98,0/1440,3.943,12.483,99.544,stable
+Clang 21.1.8,256,26.530,26.140,26.808,24.142,23.509,24.636,1.098,1.088,1.115,2.371,2.153,2.770,1.970e-16,5.928e-14,2.559e-11,10,60,39.88,84.98,0/1440,3.943,12.483,99.544,stable
