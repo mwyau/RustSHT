@@ -2,7 +2,7 @@
 
 **Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Current
 candidate:** `aeb123d6`. **Earlier A/B source:** `9f7e8658`.
-**Calibrated harness:** `19771bb7`. **Benchmark default:** production flags at
+**Calibrated harness:** `1ee1a195`. **Benchmark default:** production flags at
 `e2c2dc15`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
 
