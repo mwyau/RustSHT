@@ -1,7 +1,7 @@
 # RustSHT performance checkpoint
 
 **Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Checked
-production baseline:** Pulp post-group scan. **A/B source:** `4fcb1136`.
+production baseline:** Pulp post-group scan. **A/B source:** `20992eaf`.
 **Calibrated harness:** `19771bb7`. **Benchmark default:** production flags at
 `e2c2dc15`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
@@ -42,6 +42,23 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   Numerical errors remained `1.970e-16` coefficient-scaled, `5.928e-14` to
   `1.628e-13` relative output L2, and at most `2.559e-11` maximum absolute.
   See the [reproducible runner](scripts/benchmark_scalar_analysis_kernel.py).
+- Follow-up `rustsht_rematerialize_analysis_coefficients` candidate at
+  `20992eaf` used the same calibrated 10-process-pair run and the same
+  four-lane V3/DUCC AVX2 work. Across 64/128/256 lanes, kernel-plus-commit
+  medians (checked candidate / unchecked candidate / DUCC, µs) were
+  `7.152/4.928/4.127`, `12.725/8.926/8.030`, and
+  `24.582/17.253/15.868`; paired checked ratios were `1.732/1.585/1.550`.
+  The previous checked implementation measured `7.146/12.728/24.532` µs, so
+  the candidate did not improve the checked kernel; its unchecked path was
+  0.6–1.9% slower. Focused release tests pass with the default and candidate
+  cfgs. Keep the candidate disabled by default. The 1,800 timed batches took
+  29.30–60.90 ms; host frequency median was 4.617 GHz. Median run-queue wait
+  was 0.009%, with one 66.45% process outlier; all samples remain included.
+- T720 Rust-only full-transform A/B for that candidate found paired q1 medians
+  about 0.9% lower at full `mmax` and 1.1% lower at reduced `mmax`. Three
+  additional q8 pairs were mixed: full `mmax` was 1.9% slower by paired
+  median, reduced `mmax` 0.4% faster. These small results do not justify
+  enabling the candidate, and they do not change the direct-kernel conclusion.
 - Sectoral initialization now follows DUCC's per-SIMD-vector `mypow` choice:
   vectors above the `2^-400/m` underflow limit use direct exponentiation, while
   vectors containing smaller lanes retain scaled exponent management. This
