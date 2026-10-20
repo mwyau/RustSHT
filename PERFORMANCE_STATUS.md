@@ -1,19 +1,18 @@
 # RustSHT performance checkpoint
 
-**Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Benchmark
-checkpoint:** `6c0189cb`. For the
+**Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Source
+baseline for the five-process benchmark refresh:** `205c20b6`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
-The percentile distribution refresh is in commit `633e4408`.
 
 - Production f64 scalar GL analysis keeps the checked two-pair AVX2/FMA route
   and scaled fallback. A compile-time unchecked specialization is available
   for controlled evaluation; it removes the ordinary post-group range scan.
-- The calibrated `m=1, lmax=720` direct-kernel comparison now measures 64, 128
-  and 256 lanes with 30 batches per process, three independent interleaved
-  Rust/DUCC invocations and 20–100 ms batches. Checked Rust / DUCC ratios are
-  1.71×, 1.56× and 1.56×; unchecked ratios are 1.17×, 1.09× and 1.10×.
-  These are Legendre recurrence/accumulation timings, excluding setup, FFT and
-  scheduling. See the [calibrated checkpoint](reports/archive/experiments/scalar-analysis-pair-grouping-2026-10-19.md).
+- The refreshed `m=1, lmax=720` direct-kernel comparison records 30 calibrated
+  batches in five independent interleaved process pairs at 64, 128 and 256
+  lanes. Unchecked Rust/DUCC ratios are 1.142×, 1.085× and 1.101×; reset-
+  inclusive ratios are 1.129×, 1.074× and 1.092×. These are Legendre
+  recurrence/accumulation timings, excluding setup, FFT and scheduling. See
+  the [calibrated checkpoint](reports/archive/experiments/scalar-analysis-pair-grouping-2026-10-19.md).
 - Removing the post-group scan saves 2.28, 3.83 and 7.39 µs per call at those
   lane counts; at 256 lanes, 7.39 µs is 27.8% of the historical 26.590 µs
   measurement. Reset-inclusive timings exceed kernel-only timings by 0.03–0.21
@@ -29,12 +28,11 @@ The percentile distribution refresh is in commit `633e4408`.
   ablation and is not selected in production.
 - A scalar reduction per four-lane chunk avoids that spill but is 41–50% slower
   than the scan; keep both checked experiments out of the production path.
-- DUCC and checked Rust process medians were stable. One 256-lane unchecked
-  Rust process was about 5% slower than the other two; several batches had
-  isolated high maxima, but no source was identified. All batches remain in
-  the summaries. CPU-frequency and scheduling counters were available, with
-  low sampled run-queue wait in this run. The prior inconsistent single-call
-  DUCC regimes were not reproduced; their exact historical cause is unknown.
+- DUCC process medians were stable and the old single-call regimes were not
+  reproduced. The checked experimental Rust route had several 3–8% process
+  shifts that sampled frequency and scheduler data did not explain; the
+  unchecked route remained stable. All batches are retained. See the report
+  for process-level distributions and host diagnostics.
 
 **Next:** keep the checked post-group scan; reject both in-loop variants.
 Continue from the unchecked direct kernel, 9–17% slower than DUCC in these

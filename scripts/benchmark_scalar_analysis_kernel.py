@@ -25,6 +25,7 @@ RUSTFLAGS = os.environ.get(
     "-C target-cpu=x86-64-v3 --cfg rustsht_fused_analysis_pair_range_check -Aunexpected_cfgs",
 )
 BATCHES = 30
+INVOCATIONS = 5
 TARGET_FASTEST_BATCH_US = 35_000.0
 
 
@@ -386,7 +387,7 @@ def main() -> None:
         numeric_errors = []
         batch_durations = []
         for lane_count in lanes:
-            for invocation in range(3):
+            for invocation in range(INVOCATIONS):
                 order = ("rust", "ducc") if invocation % 2 == 0 else ("ducc", "rust")
                 for backend in order:
                     if backend == "rust":
@@ -453,7 +454,13 @@ def main() -> None:
             f"DUCC={DUCC_REVISION}; cxx={cxx_version}; CXXFLAGS='-O3 -DNDEBUG -march=x86-64-v3'"
         )
         print("DISPATCH Rust=Pulp V3 AVX2/FMA; DUCC=compiled x86-64-v3; both use 4 f64 lanes")
-        print("TRIAL_ORDER per lane: Rust/DUCC, DUCC/Rust, Rust/DUCC")
+        trial_order = ", ".join(
+            "Rust/DUCC" if invocation % 2 == 0 else "DUCC/Rust"
+            for invocation in range(INVOCATIONS)
+        )
+        print(
+            f"TRIAL_ORDER per lane across {INVOCATIONS} independent process pairs: {trial_order}"
+        )
         for lane_count in lanes:
             calibration_batch_ms = {
                 key: value * calibration_repetitions[lane_count] / 1000.0
@@ -469,7 +476,10 @@ def main() -> None:
                 + " ".join(f"{key}={value:.2f}" for key, value in calibration_batch_ms.items())
             )
 
-        print("TIMINGS are per kernel call; values summarize 90 batches (3 processes x 30).")
+        print(
+            f"TIMINGS are per kernel call; aggregate values summarize "
+            f"{INVOCATIONS * BATCHES} batches ({INVOCATIONS} processes x {BATCHES})."
+        )
         for lane_count in lanes:
             for mode in ("kernel_only", "reset_inclusive"):
                 print(f"{mode} lanes={lane_count}")
@@ -482,7 +492,7 @@ def main() -> None:
                     median, p10, p90, q1, q3, low, high = summarize(per_call)
                     medians[variant] = median
                     process_medians = []
-                    for invocation in (1, 2, 3):
+                    for invocation in range(1, INVOCATIONS + 1):
                         process_medians.append(
                             statistics.median(
                                 sample[0] for sample in samples if sample[1] == invocation
@@ -494,6 +504,19 @@ def main() -> None:
                         f"range={low:.3f}..{high:.3f}; process_medians="
                         + ",".join(f"{value:.3f}" for value in process_medians)
                     )
+                    for invocation in range(1, INVOCATIONS + 1):
+                        process_values = [
+                            sample[0] for sample in samples if sample[1] == invocation
+                        ]
+                        process_median, process_p10, process_p90, _, _, _, _ = summarize(
+                            process_values
+                        )
+                        print(
+                            f"  PROCESS backend={backend} variant={variant} "
+                            f"lanes={lane_count} mode={mode} invocation={invocation} "
+                            f"median={process_median:.3f}us "
+                            f"p10/p90={process_p10:.3f}..{process_p90:.3f}us"
+                        )
                 print(
                     f"  ratios checked/DUCC={medians['checked'] / medians['ducc']:.3f} "
                     f"unchecked/DUCC={medians['unchecked'] / medians['ducc']:.3f}"

@@ -1,5 +1,58 @@
 # Scalar-analysis SIMD pair-grouping checkpoint
 
+## Five-process calibrated refresh — 2026-10-20
+
+The calibrated runner now records five independent Rust/DUCC process pairs
+instead of three and prints each process median and p10/p90 beside the matching
+host diagnostics. It used the current `205c20b6` kernel source, Rust 1.99.0,
+Pulp V3 AVX2/FMA (`-C target-cpu=x86-64-v3`), and pinned DUCC
+`80388904b8cfc32400ba84af8a6a45aabfe60f86` with GCC 15.2.0
+(`-O3 -DNDEBUG -march=x86-64-v3`). The same `m=1`, `lmax=720` fixture and
+transformed coefficients were used at 64, 128 and 256 active latitude lanes.
+Each process ran 30 calibrated batches; repetition counts were 8,257, 4,260
+and 2,186 respectively. All 2,700 measured kernel or reset-inclusive batches
+were 33.72–80.57 ms, with none outside the 20–100 ms target.
+
+Entries are median (p10–p90) µs per operation. The checked column measures the
+experimental in-loop range-check specialization; the unchecked column omits
+the ordinary post-group scan. Production still uses the post-group scan.
+
+| Lanes | Boundary | Rust checked | Rust unchecked | DUCC | Ratios checked / unchecked |
+|---:|---|---:|---:|---:|---:|
+| 64 | Kernel only | 8.746 (8.653–9.382) | 4.742 (4.699–4.797) | 4.151 (4.105–4.213) | 2.107× / 1.142× |
+| 128 | Kernel only | 16.862 (16.731–17.876) | 8.723 (8.677–8.786) | 8.038 (7.980–8.107) | 2.098× / 1.085× |
+| 256 | Kernel only | 33.038 (32.776–34.055) | 17.478 (17.339–17.740) | 15.873 (15.746–15.950) | 2.081× / 1.101× |
+| 64 | Reset inclusive | 8.912 (8.792–9.703) | 4.808 (4.763–4.864) | 4.260 (4.212–4.323) | 2.092× / 1.129× |
+| 128 | Reset inclusive | 16.919 (16.824–17.641) | 8.783 (8.750–8.846) | 8.178 (8.115–8.247) | 2.069× / 1.074× |
+| 256 | Reset inclusive | 33.139 (32.864–34.253) | 17.559 (17.410–17.750) | 16.073 (15.957–16.174) | 2.062× / 1.092× |
+
+The `kernel_only` timer excludes input copies and output clearing; the
+`reset_inclusive` timer includes both. DUCC clears the active `m..=lmax`
+coefficient span, matching Rust's staged output. Coefficient preparation,
+packing, FFT and scheduling are outside these direct-kernel boundaries. Both
+adapters fence or black-box mutable state during repeated operations, compare
+Rust and DUCC outputs after timing, and validate the transformed factors.
+The optimized DUCC adapter disassembly contains a `map2alm_kernel` call between
+the per-operation clock reads and a backward branch to the repetition loop;
+the kernel contains packed AVX2 `vfmadd*pd` operations. Rust reports Pulp V3 at
+runtime and black-boxes state after every measured operation.
+
+DUCC's per-process kernel medians stayed within 0.9%, 1.2% and 0.7% at 64,
+128 and 256 lanes; this run therefore does not reproduce the earlier 64-lane
+9.599/5.621 µs or 256-lane 25–39 µs process regimes. Their original cause is
+not recoverable. Rust unchecked medians also stayed within 1.0% across its five
+processes. The checked experimental route had elevated process medians in two
+64-lane runs, one 128-lane run and one 256-lane run, despite narrow within-run
+spreads. Frequency and scheduler sampling were available. The sampled clock
+rates for the slower checked processes were similar to those of the faster
+processes, run-queue wait remained negligible, and DUCC showed more involuntary
+preemption without corresponding shifts in its stable medians. These
+diagnostics do not identify a single cause for the checked-route process
+shifts; retain all timing samples and treat the checked aggregate ratio as
+descriptive, not a stable production estimate. Exact transient frequency and
+scheduler readings remain local. Output relative L2 error was `6.670e-14`,
+`1.628e-13` and `5.928e-14` for 64, 128 and 256 lanes.
+
 ## Calibrated checked/unchecked comparison — 2026-10-20
 
 The earlier nine-call direct measurements are retained below as historical

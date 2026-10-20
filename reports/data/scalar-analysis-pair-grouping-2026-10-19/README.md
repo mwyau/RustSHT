@@ -31,15 +31,18 @@ four-lane vector chunk.
 The script warms and calibrates each specialization in a sustained batch
 (5,000 calls at 64 lanes, 3,000 at 128, and 1,400 at 256). It then chooses one
 shared operation count per lane count so the fastest variant targets 35 ms per
-batch and the slowest is projected below 95 ms. It records 30 batches in each of
-three independent process invocations per implementation and lane count. The
+batch and the slowest is projected below 95 ms. It records 30 batches in each
+of five independent process invocations per implementation and lane count. The
 Rust/DUCC process order alternates by invocation, and checked/unchecked Rust
 batches alternate their within-process order. Each child is pinned to the same
 allowed logical CPU; frequency and scheduler counters are sampled outside the
 benchmark core where a second physical core is available. Frequency sampling
 uses the cpufreq policy covering the pinned CPU. Output includes batch
-median, p10/p90 and full-range distributions, process medians, frequency and
-scheduling summaries.
+median, p10/p90 and full-range distributions, per-process medians and p10/p90,
+frequency and scheduling summaries. Process timing distributions and their
+host diagnostics share backend, lane-count and invocation identifiers so
+between-process timing regimes can be checked against sampled frequency,
+involuntary context switches and run-queue wait.
 
 The benchmark prints only a sanitized summary. Fixtures, binaries and raw
 samples live in a temporary directory that is removed at exit.
