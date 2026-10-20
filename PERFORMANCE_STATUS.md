@@ -1,7 +1,8 @@
 # RustSHT performance checkpoint
 
 **Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Checked
-production baseline:** Pulp reductions. **A/B source:** `978968ca`. For the
+production baseline:** Pulp post-group scan. **A/B source:** `4fcb1136`.
+**Benchmark default:** production flags at `e2c2dc15`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
 
 - Production f64 scalar GL analysis keeps the checked two-pair AVX2/FMA route
@@ -42,7 +43,11 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   stack while eight accumulators are live. It remains behind a custom cfg for
   ablation and is not selected in production.
 - A scalar reduction per four-lane chunk avoids that spill but is 41–50% slower
-  than the scan; keep both checked experiments out of the production path.
+  than the scan with Pulp reductions. An experimental AVX2 `vtestpd` mask
+  conversion cut that in-loop candidate by 23.8/24.7/23.9%, but it remains
+  7.7/12.0/15.3% slower than the post-group scan. Applying the helper to the
+  production scan changed timings by less than 1.2%, within batch variation;
+  keep it cfg-gated and leave production unchanged.
 - Scalar analysis now uses a separate 256-pair tile by default, with compile-
   time 64/128 controls. Shared synthesis/spin tiles and f32 analysis remain at
   64. T720 and T300 active-block counts fell by about two thirds with unchanged
@@ -70,8 +75,7 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   unchecked route remained stable. All batches are retained. See the report
   for process-level distributions and host diagnostics.
 
-**Next:** address the checked production kernel's remaining gap first. The
-latest matched ratios are 1.702×, 1.568× and 1.565× DUCC at 64/128/256 lanes.
-The raw AVX2 candidate closes only 0.119 µs of the unchecked 1.544 µs excess
-at 256 lanes; retain its checked safety scan and scaled fallback while
-investigating the larger checked-path cost.
+**Next:** reduce the repeated production post-group validation traffic without
+carrying a lane mask through the eight-accumulator loop. The checked kernel
+remains about 1.56× DUCC at 256 lanes; the AVX2 mask helper did not materially
+change this. Keep the range check and scaled fallback in production.

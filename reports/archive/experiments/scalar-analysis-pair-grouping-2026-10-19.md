@@ -504,9 +504,57 @@ all-target/all-feature Clippy also passed. The checked production ratios remain
 1.702×/1.568×/1.565×; the unchecked AVX2 candidate is still 1.128×/1.086×/
 1.090× DUCC.
 
+## AVX2 lane-mask reduction A/B — 2026-10-20
+
+Both builds used the source at `4fcb1136`, Rust 1.99, Pulp 0.22.3, the V3
+AVX2/FMA dispatch, and the same `m=1`, `lmax=720` fixture. The Pulp build had
+`rustsht_fused_analysis_pair_range_check` and
+`rustsht_scalar_fused_analysis_pair_range_check`; the candidate added only
+`rustsht_avx2_mask_all`. DUCC used the pinned revision and GCC 15.2 with
+`-O3 -DNDEBUG -march=x86-64-v3`. Each run used five interleaved Rust/DUCC
+process pairs and 30 batches per process. `kernel_only` excludes reset;
+`reset_inclusive` applies the same state and coefficient reset to both.
+
+Kernel-only medians are µs/op, with p10–p90 batch ranges in parentheses:
+
+| Lanes | Pulp in-loop check | AVX2 mask check | DUCC | AVX2 / DUCC |
+|---:|---:|---:|---:|---:|
+| 64 | 9.985 (9.940–10.046) | 7.608 (7.563–7.807) | 4.113 (4.086–4.137) | 1.850× |
+| 128 | 18.901 (18.792–20.082) | 14.224 (14.122–14.582) | 8.045 (7.997–8.134) | 1.768× |
+| 256 | 37.553 (37.359–38.518) | 28.573 (28.382–29.670) | 15.857 (15.703–20.026) | 1.802× |
+
+The AVX2 mask route reduced the fused in-loop check by 23.8%, 24.7% and
+23.9%. Its optimized loop converts each four-lane range mask to a scalar
+validity flag with `vtestpd`; the Pulp version carries a vector mask through
+the group and reduces it afterward. Reset-inclusive medians were
+10.091/18.908/37.646 µs for the Pulp check, 7.888/14.327/28.732 µs for AVX2,
+and 4.223/8.180/16.060 µs for DUCC. Numerical errors stayed at the established
+levels (`1.970e-16` maximum scaled coefficient difference and
+`6.670e-14`/`1.628e-13`/`5.928e-14` relative output L2).
+
+This fused candidate remains slower than the production post-group scan,
+whose prior calibrated medians were 7.067/12.705/24.790 µs: the AVX2 fused
+check is 7.7%, 12.0% and 15.3% slower. Do not select it in production. The
+DUCC 256-lane candidate run had one process median near 20.0 µs while the other
+four stayed near 15.8 µs. Available frequency and scheduler summaries did not
+explain that process shift; the aggregate median was unaffected. Baseline and
+candidate batches were 33.62–87.00 ms and 33.32–94.31 ms, with none outside
+the 20–100 ms target.
+
+The AVX2 mask helper was also tested on the production post-group path with
+only `rustsht_avx2_mask_all` enabled. Relative to the calibrated Pulp scan,
+kernel-only medians changed from 7.067/12.705/24.790 µs to
+6.995/12.559/24.726 µs at 64/128/256 lanes (−1.0%/−1.1%/−0.3%). Those small
+changes are within the observed batch variation and do not establish a win.
+DUCC medians were 4.130/8.060/15.864 µs; reset-inclusive Rust/DUCC medians
+were 7.087/4.237, 12.656/8.202 and 24.828/16.070 µs. All 2,700 batches were
+33.09–74.11 ms. The full release suite and candidate Clippy passed. Keep the
+helper gated for analysis; leave production on the Pulp check.
+
 ## Next implementation target
 
-Reduce the checked production path's remaining cost. It is 1.702×/1.568×/
-1.565× DUCC at 64/128/256 lanes. The unchecked AVX2 candidate saves 0.119 µs
-of the 1.544 µs excess at 256 lanes; keep the checked safety scan and scaled
-fallback while investigating the larger checked-path cost.
+Reduce the production post-group validation cost without carrying a lane mask
+through the eight-accumulator recurrence loop. The calibrated checked path
+remains about 1.56× DUCC at 256 lanes; the AVX2 mask helper did not materially
+change it. Keep the checked scan and scaled fallback while testing a source-
+grounded reduction in repeated state traffic.
