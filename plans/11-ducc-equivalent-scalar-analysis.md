@@ -14,6 +14,16 @@ This is a *goal*, not a guaranteed result or a license to weaken accuracy. Do no
 
 **Active work is scalar f64 GL STANDARD analysis (A) only.** Leave spin-1/f32/CC/F1 and FFT redesign to a separate goal; preserve their existing correctness and API behavior.
 
+## Milestone 0 — Verify the *executed* Pulp backend first
+
+**Urgent prerequisite (2026-10-19):** An agent hypothesized that specifying only `features = ["x86-v4"]` in RustSHT's Pulp 0.22.3 dependency disabled AVX2 on Ryzen 9 5950X. **The published Pulp manifest contradicts that inference:** `x86-v3` is a *default* feature, and RustSHT does not disable dependency defaults. Pulp `Arch::new()` tries V4, then V3, then Scalar. Adding explicit `"x86-v3"` should therefore be functionally redundant. The scalar-fallback diagnosis remains **unverified** until a runtime trace demonstrates it.
+
+1. Inspect `cargo tree -e features -i pulp`, actual active Cargo features and any `default-features = false` unification context. Instrument the **actual production Arch value** used by the benchmark (one-off diagnostic of `pulp::Arch::new()` and the path through `dispatch`); inspect hot executed V3 symbols. Do not infer dispatch from a V4 symbol in `objdump`.
+2. In *otherwise identical, optimized* before/after builds, compare explicit feature-list change alone. If both choose V3 and perform alike, reject the feature omission as the root cause and continue the equivalent-work analysis. If dispatch differs, explain **why** in terms of resolved features/compile flags/actual dispatched call.
+3. Preserve this as a small, standalone reproducible result in the findings/report. Do not modify or disable numerical fallbacks to force SIMD. Treat the claimed ~2× stage gap as provisional until dispatched path and stage boundaries are both validated.
+
+**Upstream evidence:** [Pulp 0.22.3 default features](https://docs.rs/crate/pulp/0.22.3/features) and [`Arch::new()` source](https://docs.rs/crate/pulp/0.22.3/source/src/x86.rs).
+
 ## Current verified facts — do not rediscover them
 
 - Production analysis already has compact reflected-ring packing, dynamic order scheduling, SIMD sectoral initialization, cosine-parity preweighting, guarded insignificant-prefix skipping (`sht_ftol=2^-60` with an explicit error budget), mixed/scaled-to-ordinary execution, and single-pair fused recurrence/accumulation.
