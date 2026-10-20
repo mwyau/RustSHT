@@ -3,7 +3,7 @@
 The candidate replaced two scalar scans of recurrence lanes with Pulp SIMD
 reductions at the scalar synthesis transition decisions. The per-pair current
 value check, exponent rebasing, recurrence and scaled fallback were unchanged.
-The candidate patch is in [`candidate.patch`](data/simd-transition-range-check-screen-2026-10-18/candidate.patch).
+The candidate patch is in [`candidate.patch`](../../data/simd-transition-range-check-screen-2026-10-18/candidate.patch).
 Apply it to `ff7c91d4` with `git apply --unidiff-zero`.
 
 The comparison used baseline commit `ff7c91d4` and the same source with that
@@ -24,4 +24,4 @@ single-process screens do not establish a general performance result, but
 both measured workloads were slower, so the SIMD reductions were rejected.
 No DUCC timing was collected. The focused `synthesis_fast::tests` passed with
 7 tests and 1 ignored; `cargo fmt --all -- --check` passed. The exact benchmark
-commands are in [`run-screen.sh`](data/simd-transition-range-check-screen-2026-10-18/run-screen.sh).
+commands are in [`run-screen.sh`](../../data/simd-transition-range-check-screen-2026-10-18/run-screen.sh).
