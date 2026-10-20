@@ -4438,7 +4438,7 @@ fn derivative_adjoint_matches_ducc_and_inner_product() {
 }
 
 #[test]
-fn scalar_legendre_table_is_materialized_only_for_standard_scalar_operations() {
+fn scalar_legendre_table_is_materialized_for_standard_analysis_not_derivatives() {
     let derivative_plan = make_plan(0, 127, 127, 128, 257);
     assert!(derivative_plan.scalar_legendre_table.get().is_none());
     let alm = vec![Complex64::new(0.0, 0.0); derivative_plan.harmonics().nalm()];
@@ -4450,14 +4450,14 @@ fn scalar_legendre_table_is_materialized_only_for_standard_scalar_operations() {
         .unwrap();
     assert!(derivative_plan.scalar_legendre_table.get().is_none());
 
-    // T159 retains the measured one-thread scalar synthesis table path.
-    let standard_plan = make_plan(0, 159, 159, 160, 321);
+    // Standard scalar analysis retains the compact-table route at T127.
+    let standard_plan = make_plan(0, 127, 127, 128, 257);
     assert!(standard_plan.scalar_legendre_table.get().is_none());
-    let standard_alm = vec![Complex64::new(0.0, 0.0); standard_plan.harmonics().nalm()];
-    let mut standard_map = vec![0.0; standard_plan.sample_count];
+    let standard_map = vec![0.0; standard_plan.sample_count];
+    let mut standard_alm = vec![Complex64::new(0.0, 0.0); standard_plan.harmonics().nalm()];
     let mut standard_workspace = standard_plan.workspace().unwrap();
     standard_plan
-        .synthesis_into(&standard_alm, &mut standard_map, &mut standard_workspace)
+        .analysis_into(&standard_map, &mut standard_alm, &mut standard_workspace)
         .unwrap();
     assert!(
         standard_plan

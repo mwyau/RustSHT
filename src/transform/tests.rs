@@ -2028,7 +2028,7 @@ fn scalar_strategy_selects_against_the_executing_pool() {
 
 #[cfg(feature = "parallel")]
 #[test]
-fn scalar_t64_dispatch_preserves_t63_exceptions_and_uses_recurrence_above() {
+fn scalar_t64_dispatch_keeps_analysis_tables_and_uses_synthesis_recurrence() {
     use LegendreOperation::{Analysis, Synthesis};
     use LegendreStrategy::{CompactTable, Recurrence};
 
@@ -2046,7 +2046,7 @@ fn scalar_t64_dispatch_preserves_t63_exceptions_and_uses_recurrence_above() {
         (63, Synthesis, [Recurrence, CompactTable]),
         (63, Analysis, [CompactTable, Recurrence]),
         (64, Synthesis, [Recurrence, Recurrence]),
-        (64, Analysis, [Recurrence, Recurrence]),
+        (64, Analysis, [CompactTable, CompactTable]),
     ];
 
     for (lmax, operation, expected_by_pool) in operations {
@@ -2230,7 +2230,7 @@ fn scalar_reuse_estimate_counts_adjoint_calls_by_execution_direction() {
 
 #[cfg(feature = "parallel")]
 #[test]
-fn scalar_reuse_estimate_cannot_override_the_t64_cutoff() {
+fn scalar_reuse_estimate_controls_analysis_table_at_t159() {
     let pool = rayon::ThreadPoolBuilder::new()
         .num_threads(8)
         .build()
@@ -2249,7 +2249,7 @@ fn scalar_reuse_estimate_cannot_override_the_t64_cutoff() {
     );
     assert_eq!(
         pool.install(|| make(158).scalar_legendre_strategy(LegendreOperation::Analysis)),
-        LegendreStrategy::Recurrence
+        LegendreStrategy::CompactTable
     );
 }
 
@@ -2324,7 +2324,7 @@ fn scalar_strategy_bounds_oversampled_tables_by_operation_and_truncation() {
     for pool in [&one_thread, &two_threads, &four_threads, &eight_threads] {
         assert_eq!(
             pool.install(|| t159.scalar_legendre_strategy(LegendreOperation::Analysis)),
-            LegendreStrategy::Recurrence
+            LegendreStrategy::CompactTable
         );
     }
     assert_eq!(

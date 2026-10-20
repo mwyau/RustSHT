@@ -26,7 +26,7 @@ use super::{ShtScalar, sin_cos_from_f64};
 
 const MIN_PRECOMPUTED_LMAX: usize = 63;
 const MAX_PRECOMPUTED_LMAX: usize = 255;
-const MAX_SCALAR_TABLE_DISPATCH_LMAX: usize = 63;
+const MAX_SCALAR_SYNTHESIS_TABLE_LMAX: usize = 63;
 pub(crate) const MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX: usize = 159;
 const MAX_TABLE_BYTES: usize = 34 * 1024 * 1024;
 // Keep direct table products far from overflow; larger and non-finite input
@@ -52,10 +52,12 @@ pub(crate) fn select_scalar_legendre_strategy(
     operation: LegendreOperation,
     thread_count: usize,
 ) -> LegendreStrategy {
-    // Spin-0 scalar transforms at and above T64 use on-the-fly basis
-    // evaluation. Keep the measured operation-specific policy below T64;
-    // spin-1 table dispatch uses a separate selection path.
-    if lmax > MAX_SCALAR_TABLE_DISPATCH_LMAX {
+    // Matched measurements show that on-the-fly recurrence improves
+    // synthesis when the compact table would otherwise be selected, starting
+    // at T64. Analysis retains its operation-specific table policy: switching
+    // full-order q1 analysis to recurrence regressed by 24-30% at T127-T128.
+    // Spin-1 table dispatch uses a separate selection path.
+    if operation == LegendreOperation::Synthesis && lmax > MAX_SCALAR_SYNTHESIS_TABLE_LMAX {
         return LegendreStrategy::Recurrence;
     }
 
@@ -64,6 +66,9 @@ pub(crate) fn select_scalar_legendre_strategy(
         // Preserve the existing T63 over-resolved policy. Spin-1 uses its own
         // selector, including the broader measured T159 table eligibility.
         if mmax != lmax
+            || (operation == LegendreOperation::Analysis
+                && lmax > MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX)
+            || (operation == LegendreOperation::Analysis && lmax == 159 && thread_count >= 16)
             || (operation == LegendreOperation::Synthesis && thread_count == 1)
             || (operation == LegendreOperation::Analysis
                 && lmax == MIN_PRECOMPUTED_LMAX
@@ -73,11 +78,15 @@ pub(crate) fn select_scalar_legendre_strategy(
         }
     }
     // Preserve the existing exact-grid T63 analysis and small-band single-
-    // thread synthesis exceptions. Higher scalar bandlimits return above.
+    // thread synthesis exceptions, plus measured T255 analysis regressions.
     let measured_regression = match operation {
         LegendreOperation::Synthesis => thread_count == 1 && lmax <= 127,
         LegendreOperation::Analysis => {
-            thread_count >= 8 && lmax == MIN_PRECOMPUTED_LMAX && ntheta == lmax + 1
+            (thread_count >= 8 && lmax == MIN_PRECOMPUTED_LMAX && ntheta == lmax + 1)
+                || (thread_count == 1 && lmax == MAX_PRECOMPUTED_LMAX && mmax >= 192)
+                || (thread_count >= 16
+                    && lmax == MAX_PRECOMPUTED_LMAX
+                    && mmax == MAX_PRECOMPUTED_LMAX)
         }
     };
     if measured_regression {
