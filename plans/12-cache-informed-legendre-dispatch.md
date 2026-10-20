@@ -100,6 +100,57 @@ Cgroups, affinity changes, hybrid cores, VM reports and processor migration
 can make a once-per-process value inexact; use a conservative policy or
 existing defaults where the relevant sharing information is uncertain.
 
+## Optional empirical cache probe — cross-platform diagnostic, not default startup
+
+Because OS/firmware/CPUID metadata can be incomplete, stale, virtualized,
+or misleading for hybrid cores and cache-sharing domains, investigate a
+**small portable Rust randomized pointer-chase probe** as an independent
+validation aid. Unlike cache queries, it measures memory-access latency
+versus working-set size rather than reporting nominal hardware capacity.
+
+- **One Rust implementation:** randomized cache-line-spaced index chain in
+  `Vec<usize>`, dependent loads, `std::time::Instant` timing,
+  `std::hint::black_box` around the observed result, bounded warmups and
+  repeated measurements. Use no inline assembly, CPU brand table, OS calls
+  or native library for the probe itself. Guard against optimizing away
+  dependent loads; use checked allocation sizes and inspect release results.
+- **Target matrix:** Linux x86-64 and ARM64; Windows x86-64 and ARM64;
+  macOS x86-64 and Apple silicon ARM64. Pure-Rust portability is plausible
+  on these six targets, but **accuracy and actual build/run coverage are
+  unverified** until separately tested. Also test heterogeneous and
+  virtualized hosts when possible.
+- **Indicative signatures:** latency jumps as the randomized working set
+  stops fitting private L2, shared L3/system cache, or DRAM. A *coarse*
+  L2 sweep (for example 128 KiB to 4 MiB) may be relatively cheap.
+  Distinguishing L3, especially with multiple CCDs or shared caches,
+  generally needs larger footprints and longer trials.
+- **Confounders:** page walks/TLB reach, cache-line spacing, huge-page
+  availability, clock/timer resolution, frequency scaling, thread migration,
+  prefetching, NUMA/cache-sharing, host contention and virtual machines.
+  Single-thread dependent-load **latency** is not the same as precomputed
+  Legendre streaming **bandwidth** or blocked-batch performance.
+- **Evidence:** record wall time for the probe, inferred breakpoints,
+  confidence/variation across repetitions, cache metadata, thread/core
+  placement, and disagreements. Test false classification rates across
+  several hosts. Treat "unknown" as a valid result; a short, noisy probe
+  must not override reliable metadata or measured RustSHT dispatch.
+- **Policy:** provide an **opt-in diagnostic/offline calibration** path,
+  not automatic import/startup probing. If the owner later considers an
+  automatic *very short* L2-only sanity check, require a measured startup
+  budget, low misclassification rate, and evidence that it improves real
+  transform dispatch on held-out hosts. L3 probing should not silently
+  prolong plan construction.
+
+Relevant reference: [Arm's ASCT pointer-chasing explanation and cache
+latency sweep](https://learn.arm.com/learning-paths/servers-and-cloud-computing/memory-subsystem/pointer-chase-latency/).
+That thorough characterization tool is **not** itself a startup solution:
+it performs large sweeps and may use huge pages, privilege and core pinning.
+
+**Preferred production decision remains:** a cheap one-time metadata query,
+validated against offline measurements where available, followed by a
+conservative heuristic and the existing safe fallback. Cache-size metadata
+does not have to be perfect for the default to remain correct.
+
 ## Phase 2 — Estimate the *actual* Legendre table working set
 
 Reuse/refactor, rather than duplicate, the overflow-checked element count in
@@ -161,6 +212,30 @@ prefer less memory and initialization cost. A cache-only model may prove
 insufficient; in that case retain the current policy rather than shipping an
 unreliable heuristic.
 
+## Interaction with future fused batches
+
+See [Plan 13 — Fused Batched SHT](13-fused-batched-sht.md) for the
+separate future implementation and full batch-size experiments.
+
+**The cache probe runs once per process, not per batch.** A future batch
+selector can cheaply combine cached hardware characteristics with
+`table_bytes`, direction, spin/precision, effective worker count,
+**total batch size**, **internal fused block size**, memory layout,
+and expected plan reuse. It must distinguish independent repeated
+single-map calls from true fused reuse of one recurrence/table across
+multiple fields.
+
+Offline follow-up calibration should include B=1,2,4,8,16,32 plus
+larger streaming tests, with isolated Legendre and full SHT times.
+Fused recurrence and blocked precomputed matrix multiplication are
+**different kernels** with potentially different optimal internal blocks;
+their cache break-even points cannot be inferred from B=1 timings.
+Bigger batches may favor either method. Do not turn the present
+operation-specific single-map cutoff into a global B-independent rule,
+and **do not delay the single-map cache study to implement batching**.
+Integrate a batch-aware heuristic only after Plan 13 delivers genuine
+fused kernels and evidence.
+
 ## Phase 4 — Integrate only a validated cheap default
 
 - Keep detection and lookup **outside timed transform calls**; cache once,
@@ -191,9 +266,10 @@ unreliable heuristic.
    performance on development and held-out hosts, **only if actually better**
    than the current dispatch; otherwise a report rejecting cache-based
    automatic selection is a valid outcome.
-4. An explicit recorded non-goal: runtime autotuning, cache-size estimation
-   by memory-latency microbenchmarks, CPU-brand databases, or automatic
-   calibration files.
+4. Non-goals for the **default runtime**: autotuning, automatic memory-latency
+   cache estimation at import/plan construction, CPU-brand lookup tables,
+   or automatic calibration files. An **opt-in** portable pointer-chase
+   diagnostic and offline validation against hardware metadata are allowed.
 
 This plan is a **future TODO**, not permission to interrupt Plan 11, restart
 the T64 experiments, or add an expensive initialization-time autotuner.
