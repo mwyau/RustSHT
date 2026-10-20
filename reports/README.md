@@ -1,12 +1,12 @@
-# RustSHT performance evidence
+# Performance findings and evidence
 
-This directory contains **historical measurements, research reviews, rejected experiments and implementation evidence**. Results are only meaningful for their recorded source revision, operation, workload and build conditions. Proposed milestones, specific truncations and speedup targets in older reports are **not active instructions**.
+The [consolidated performance findings](PERFORMANCE_FINDINGS.md) analyze all 80 archived performance reports: accepted changes, rejected prototypes, mixed/noisy results, measured Rust/DUCC gaps, and a complete categorized source catalog.
 
-The sole active implementation plan is [Plan 11](../plans/11-ducc-equivalent-scalar-analysis.md). The concise factual checkpoint is [PERFORMANCE_STATUS](../PERFORMANCE_STATUS.md).
+**Current technical goal:** [Plan 11 — close the scalar-analysis SIMD gap](../plans/11-ducc-equivalent-scalar-analysis.md). **Current factual checkpoint:** [PERFORMANCE_STATUS](../PERFORMANCE_STATUS.md).
 
-- [Latest AVX2 code-generation follow-up](scalar-analysis-codegen-followup-2026-10-19.md)
-- [Earlier AVX2 disassembly/codegen evidence](scalar-analysis-avx2-codegen-2026-10-19.md)
-- [Matched scalar-analysis stage profile](scalar-analysis-stage-profile-2026-10-18.md)
-- [Prior reviews, long handoffs and superseded plans](archive/README.md)
+- [Consolidated findings and full report catalog](PERFORMANCE_FINDINGS.md)
+- [Archived dated experiments and performance reports](archive/experiments/)
+- [Archived prior reviews, plans, and long handoffs](archive/README.md)
+- [Raw and structured benchmark data, kept in place](data/)
 
-Preserve historic data and source-specific conclusions. Do not promote old report suggestions into implementation requirements.
+Older reports retain their original benchmark assumptions and source revisions. They are **evidence, not active tasks or speedup commitments**. Avoid comparing unlike compiler/ISA settings, timing boundaries, useful degree work, thread-count modes, or first-call/warm runs.

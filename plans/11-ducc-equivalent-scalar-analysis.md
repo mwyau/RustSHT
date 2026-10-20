@@ -23,7 +23,7 @@ This is a *goal*, not a guaranteed result or a license to weaken accuracy. Do no
 - The inspected Rust wrapper and DUCC `map2alm_kernel` have **different boundaries**; do not compare frame sizes/spills or instruction totals from nonmatching scopes. The prior naive two-pair/four-degree unroll, 256-lane packing and out-of-line scaled initialization regressed; do not replay unchanged.
 - No reliable current equal-work Rust/DUCC ratio is established. Historical 2× figures remain the working hypothesis, **not** proven current parity measurements. CPU hardware `perf` counters were blocked on the host; do not change system-wide security settings.
 
-Evidence: [latest code-generation follow-up](../reports/scalar-analysis-codegen-followup-2026-10-19.md), [initial AVX2 report](../reports/scalar-analysis-avx2-codegen-2026-10-19.md), [stage profile](../reports/scalar-analysis-stage-profile-2026-10-18.md), [mixed-fusion screen](../reports/data/scalar-analysis-mixed-fusion/README.md). Archived reports are evidence, not competing goals.
+Evidence: [latest code-generation follow-up](../reports/archive/experiments/scalar-analysis-codegen-followup-2026-10-19.md), [initial AVX2 report](../reports/archive/experiments/scalar-analysis-avx2-codegen-2026-10-19.md), [stage profile](../reports/archive/experiments/scalar-analysis-stage-profile-2026-10-18.md), [mixed-fusion screen](../reports/data/scalar-analysis-mixed-fusion/README.md). Archived reports are evidence, not competing goals.
 
 ## Milestone 1 — Build a truly matched Rust/DUCC hotspot comparison
 

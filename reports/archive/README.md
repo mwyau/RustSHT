@@ -16,3 +16,9 @@ Preserved for provenance and historical evidence; **none of these documents is a
 Previous scope decisions, API/architecture proposals, milestone ledgers, synthesis performance-gap briefs, kernel-retirement assignments, profiling plans and paper method audits are in [plans/](plans/). Links from old locations remain as short historical pointers.
 
 Retained numerical specifications, licensing records and the DUCC operation crosswalk remain in the main `plans/` directory as **references**, not active work queues.
+
+## Performance experiment archive
+
+- [Consolidated findings and categorized catalog](../PERFORMANCE_FINDINGS.md)
+- [Archived dated performance reports](experiments/)
+- [Benchmark data (unchanged)](../data/)
