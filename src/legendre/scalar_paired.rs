@@ -1937,7 +1937,31 @@ fn fused_scalar_analysis_pair_block_impl<const OPPOSITE_COSINE_WEIGHTED: bool>(
 
 #[inline(always)]
 fn analysis_mask_all<S: Simd>(simd: S, mask: S::m64s) -> bool {
+    #[cfg(all(target_arch = "x86_64", rustsht_avx2_mask_all))]
+    if const {
+        S::F64_LANES == 4
+            && core::mem::size_of::<S::m64s>() == core::mem::size_of::<std::arch::x86_64::__m256d>()
+    } {
+        // SAFETY: the four-lane Pulp mask is the AVX2 lane mask selected only
+        // by the V3 dispatch path. Its size check above permits a bitwise copy.
+        let mask = unsafe { core::mem::transmute_copy(&mask) };
+        // SAFETY: the Pulp V3 specialization is dispatched only when AVX2 is
+        // supported by the current CPU.
+        return unsafe { analysis_mask_all_avx2(mask) };
+    }
+
     simd.reduce_min_f64s(simd.select_f64s(mask, simd.splat_f64s(1.0), simd.splat_f64s(0.0))) > 0.0
+}
+
+#[allow(dead_code, unexpected_cfgs)]
+#[cfg(all(target_arch = "x86_64", rustsht_avx2_mask_all))]
+#[target_feature(enable = "avx2")]
+#[inline]
+unsafe fn analysis_mask_all_avx2(mask: std::arch::x86_64::__m256d) -> bool {
+    use std::arch::x86_64::_mm256_movemask_pd;
+
+    // Pulp comparison masks use an all-ones lane for true and zero for false.
+    _mm256_movemask_pd(mask) == 0b1111
 }
 
 #[inline(always)]
@@ -5555,6 +5579,35 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    struct AnalysisMaskAllProbe;
+
+    impl WithSimd for AnalysisMaskAllProbe {
+        type Output = (bool, bool, bool);
+
+        fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+            let one = simd.splat_f64s(1.0);
+            let zero = simd.splat_f64s(0.0);
+            let all_true = analysis_mask_all(simd, simd.equal_f64s(one, one));
+            let all_false = analysis_mask_all(simd, simd.equal_f64s(one, zero));
+            let values: Vec<_> = (0..S::F64_LANES)
+                .map(|lane| if lane == 0 { 0.0 } else { 1.0 })
+                .collect();
+            let (vectors, tail) = S::as_simd_f64s(&values);
+            assert_eq!(vectors.len(), 1);
+            assert!(tail.is_empty());
+            let one_false_lane = analysis_mask_all(simd, simd.equal_f64s(vectors[0], one));
+            (all_true, all_false, one_false_lane)
+        }
+    }
+
+    #[test]
+    fn analysis_mask_all_handles_all_and_mixed_lanes() {
+        assert_eq!(
+            Arch::new().dispatch(AnalysisMaskAllProbe),
+            (true, false, false)
+        );
+    }
 
     struct FourAccumulatorReductionProbe;
 
