@@ -47,7 +47,12 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   not a performance comparison. Build commands and findings are in
   `reports/data/ducc-multiarch-2026-10-20/README.md`. Next: establish the
   calibrated Rust 1.99.1 / DUCC GCC and Clang v3 baseline, then isolate the
-  remaining warmed-kernel costs.
+  remaining warmed-kernel costs. Clang diagnosed `std::isfinite` checks in the
+  small C++ benchmark driver when all translation units inherited
+  `-ffast-math`; the active CMake target now disables fast-math for that
+  driver only. DUCC's numerical translation units retain the optimized
+  `-ffast-math` flags. Historical finite-output metrics were computed in
+  Python from saved arrays and remain valid.
 
 - Production f64 scalar GL analysis keeps the checked two-pair AVX2/FMA route
   and scaled fallback. The active range-cache candidate reuses a checked

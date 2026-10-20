@@ -35,4 +35,8 @@ target_compile_definitions(ducc_full_transform_parity PRIVATE
   DUCC0_NAMESPACE=ducc0 PKGNAME=ducc0 PKGVERSION=0.42.0)
 target_compile_options(ducc_full_transform_parity PRIVATE
   -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3)
+# Keep benchmark-side exceptional-value checks meaningful. The numerical DUCC
+# translation units above retain DUCC's optimized fast-math flags.
+set_source_files_properties(ducc_full_transform_parity.cpp PROPERTIES
+  COMPILE_OPTIONS "-fno-fast-math;-ffp-contract=fast")
 target_link_libraries(ducc_full_transform_parity PRIVATE Threads::Threads)

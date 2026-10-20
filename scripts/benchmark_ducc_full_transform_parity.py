@@ -234,11 +234,11 @@ def make_cases(smoke: bool) -> list[dict]:
             set(range(0, 33))
             | set(range(40, 257, 16))
             | {
-                255, 256, 320, 384, 448, 511, 512, 513, 640, 720, 721,
+                255, 256, 300, 320, 384, 448, 511, 512, 513, 640, 720, 721,
                 768, 896, 1024, 1280, 1536, 1792, 2048, 3072,
             }
         )
-    key_sizes = {255, 256, 511, 512, 513, 720, 721, 1024, 1536, 2048}
+    key_sizes = {255, 256, 300, 511, 512, 513, 720, 721, 1024, 1536, 2048}
     cases: list[dict] = []
     for lmax in lmax_values:
         mmax_values = {lmax}
@@ -548,7 +548,7 @@ def hardware_metadata(ducc_src: pathlib.Path) -> dict:
         "ducc_source_revision": command_output(["git", "rev-parse", "HEAD"], ducc_src),
         "ducc_version": ducc_version_match.group(1) if ducc_version_match else "unknown",
         "rust_flags": RUST_FLAGS,
-        "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3",
+        "ducc_flags": "DUCC sources: -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; benchmark driver: -O3 -fno-fast-math -ffp-contract=fast -march=x86-64-v3",
         "rust_dispatch": "runtime Pulp Arch::new; worker records actual specialization",
         "ducc_dispatch": "fixed x86-64-v3 C++ build (AVX2/FMA, four f64 lanes)",
         "affinity_policy": "q1: one allowed physical core; q8: eight allowed physical cores",

@@ -192,6 +192,8 @@ The largest completed degree is T3072. The sweep includes exhaustive lmax 0–32
 
 The Rust/DUCC output comparison validates identical deterministic random maps and complete-triangle coefficient arrays in every timed configuration at q1 and q8. For each configuration and thread count, the first q1/q8 analysis process also runs out-of-timing roundtrip, zonal/intermediate/sectoral basis, zero, subnormal, extreme-finite and analysis/synthesis adjoint checks. Their per-case results are in `data/ducc-full-transform-parity-2026-10-20/results.json`; neither set of checks is inferred from roundtrip alone.
 
+The historical executable was compiled with `-ffast-math` on both DUCC sources and the small C++ driver. The committed finite-output results are computed independently by Python from the serialized output arrays, outside timing. The active runner now compiles the driver with `-fno-fast-math` while leaving DUCC numerical translation units optimized with `-ffast-math`; this also keeps the driver's `std::isfinite` diagnostics defined under Clang. New baseline flags are recorded separately and do not alter these historical measurements.
+
 ## Reproduction
 
 ```sh
