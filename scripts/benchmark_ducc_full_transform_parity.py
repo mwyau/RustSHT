@@ -810,6 +810,121 @@ def plot_issue_ratio_svg(path: pathlib.Path, operation: str, order_label: str,
     path.write_text("\n".join(parts) + "\n")
 
 
+
+def plot_issue_runtime_svg(path: pathlib.Path, operation: str,
+                           series: list[dict]) -> None:
+    """Issue-ready log-log absolute timings, matched to the ratio charts.
+
+    The plotted points are the observed warmed full-order, even-smooth GL
+    configurations only. Color represents backend; solid/dashed represent q1/q8.
+    """
+    width, height = 1260, 680
+    left, right, top, bottom = 98, 40, 94, 139
+    plot_w, plot_h = width - left - right, height - top - bottom
+    observed = [
+        (int(point["lmax"]), float(point["ms"]))
+        for item in series for point in item["points"]
+    ]
+    if not observed:
+        return
+    if any(runtime <= 0 or not math.isfinite(runtime) for _, runtime in observed):
+        raise ValueError("runtime log plot requires positive finite timings")
+    xmax = max(3072, max(degree for degree, _ in observed))
+    xmin_runtime = min(value for _, value in observed)
+    xmax_runtime = max(value for _, value in observed)
+    # Fixed engineering-decade ticks keep analysis and synthesis comparable.
+    runtime_ticks = [0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3,
+                     10, 30, 100, 300, 1000, 3000, 10000]
+    ymin = min(0.0007, xmin_runtime / 1.15)
+    ymax = max(10000.0, xmax_runtime * 1.15)
+    xlogmax = math.log1p(xmax)
+    logmin, logmax = math.log(ymin), math.log(ymax)
+
+    def xcoord(degree: float) -> float:
+        return left + math.log1p(degree) / xlogmax * plot_w
+
+    def ycoord(runtime: float) -> float:
+        return top + (logmax - math.log(runtime)) / (logmax - logmin) * plot_h
+
+    parts = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
+        '<rect width="100%" height="100%" fill="#fff"/>',
+        f'<text x="{left}" y="35" font-family="sans-serif" font-size="25" font-weight="bold">RustSHT vs DUCC — {operation.capitalize()} runtime (full mmax)</text>',
+        f'<text x="{left}" y="61" font-family="sans-serif" font-size="15" fill="#555">f64 · Gauss–Legendre · even-smooth longitude sampling · warmed full transforms · lower is faster</text>',
+    ]
+    for runtime in runtime_ticks:
+        if not ymin <= runtime <= ymax:
+            continue
+        y = ycoord(runtime)
+        parts.append(f'<line x1="{left}" y1="{y:.1f}" x2="{width-right}" y2="{y:.1f}" stroke="#e3e8ed"/>')
+        parts.append(f'<text x="{left-11}" y="{y+4:.1f}" text-anchor="end" font-family="sans-serif" font-size="13">{runtime:g}</text>')
+    xticks = [0, 1, 2, 4, 8, 16, 24, 32, 40, 64, 128, 255, 511,
+              720, 1024, 1536, 1792, 2048, 3072]
+    for i, degree in enumerate(v for v in xticks if v <= xmax):
+        x = xcoord(degree)
+        label_y = height - bottom + 27 + (18 if i >= 7 and i % 2 else 0)
+        parts.append(f'<line x1="{x:.1f}" y1="{height-bottom}" x2="{x:.1f}" y2="{height-bottom+6}" stroke="#77818b"/>')
+        parts.append(f'<text transform="translate({x:.1f} {label_y}) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="12" fill="#394651">{degree}</text>')
+    boundary = xcoord(32)
+    parts.append(f'<line x1="{boundary:.1f}" y1="{top}" x2="{boundary:.1f}" y2="{height-bottom}" stroke="#7b8794" stroke-dasharray="4 4"/>')
+    parts.append(f'<text x="{left+9}" y="{top+20}" font-family="sans-serif" font-size="13" fill="#4c5a67">Dense: every lmax = 0…32</text>')
+    if xmax >= 2048:
+        onset = xcoord(2048)
+        parts.append(f'<line x1="{onset:.1f}" y1="{top}" x2="{onset:.1f}" y2="{height-bottom}" stroke="#9d752c" stroke-dasharray="4 4"/>')
+        parts.append(f'<text x="{onset-8:.1f}" y="{top+20}" text-anchor="end" font-family="sans-serif" font-size="13" fill="#825a18">T2048</text>')
+    parts.append(f'<line x1="{left}" y1="{height-bottom}" x2="{width-right}" y2="{height-bottom}" stroke="#34404a" stroke-width="1.5"/>')
+    parts.append(f'<line x1="{left}" y1="{top}" x2="{left}" y2="{height-bottom}" stroke="#34404a" stroke-width="1.5"/>')
+
+    palette = {"RustSHT": "#155e99", "DUCC": "#bf3b42"}
+    for item in series:
+        backend, threads = item["backend"], item["threads"]
+        color = palette[backend]
+        dash = ' stroke-dasharray="7 5"' if threads == 8 else ""
+        points = sorted(item["points"], key=lambda point: point["lmax"])
+        coords = [(xcoord(p["lmax"]), ycoord(p["ms"])) for p in points]
+        if len(coords) > 1:
+            poly = " ".join(f"{x:.1f},{y:.1f}" for x, y in coords)
+            parts.append(f'<polyline fill="none" stroke="{color}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"{dash} points="{poly}"/>')
+        for x, y in coords:
+            parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="2.2" fill="{color}"/>')
+    for index, (backend, threads) in enumerate(
+        (("RustSHT", 1), ("DUCC", 1), ("RustSHT", 8), ("DUCC", 8))
+    ):
+        x = left + index * 193
+        y = 77
+        color = palette[backend]
+        dash = ' stroke-dasharray="7 5"' if threads == 8 else ""
+        parts.append(f'<line x1="{x}" y1="{y}" x2="{x+24}" y2="{y}" stroke="{color}" stroke-width="3"{dash}/>')
+        parts.append(f'<text x="{x+30}" y="{y+5}" font-family="sans-serif" font-size="14" fill="#24333f">{backend} q{threads}</text>')
+    parts += [
+        f'<text x="{left+plot_w/2:.1f}" y="{height-12}" text-anchor="middle" font-family="sans-serif" font-size="15">lmax (log(1 + lmax) spacing; sampled degrees, not evenly spaced)</text>',
+        f'<text transform="translate(20 {top+plot_h/2:.1f}) rotate(-90)" text-anchor="middle" font-family="sans-serif" font-size="15">Warmed transform time (ms, log scale)</text>',
+        '</svg>',
+    ]
+    path.write_text("\n".join(parts) + "\n")
+
+
+def write_issue_runtime_plots(rows: list[dict], output_dir: pathlib.Path) -> None:
+    """Create issue-ready full-mmax actual runtimes without rerunning timings."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for operation in ("analysis", "synthesis"):
+        series = []
+        for backend, field in (("RustSHT", "rust_warm_ms"), ("DUCC", "ducc_warm_ms")):
+            for threads in (1, 8):
+                points = [
+                    {"lmax": int(row["lmax"]), "ms": float(row[field])}
+                    for row in rows
+                    if row["operation"] == operation
+                    and int(row["threads"]) == threads
+                    and int(row["mmax"]) == int(row["lmax"])
+                    and row["longitude_mode"] == "even_smooth"
+                ]
+                series.append({"backend": backend, "threads": threads, "points": points})
+        plot_issue_runtime_svg(
+            output_dir / f"runtime-{operation}.svg", operation, series,
+        )
+
+
 def write_issue_ratio_plots(rows: list[dict], output_dir: pathlib.Path) -> None:
     """Regenerate consistent GitHub-issue figures without rerunning timings."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -870,14 +985,7 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
             writer.writeheader()
             writer.writerows(rows)
     write_issue_ratio_plots(rows, output_dir)
-    for operation in ("analysis", "synthesis"):
-        subset = [row for row in rows if row["operation"] == operation and row["threads"] == 1]
-        points = [{"lmax": row["lmax"], "ms": row["rust_warm_ms"]} for row in subset if row["mmax"] == row["lmax"]]
-        points += [{"lmax": row["lmax"], "ms": row["ducc_warm_ms"]} for row in subset if row["mmax"] == row["lmax"]]
-        rust_points = points[:len(points)//2]
-        ducc_points = points[len(points)//2:]
-        plot_svg(output_dir / f"runtime-{operation}.svg", f"Warm full-transform runtime: {operation}",
-                 [{"name": "RustSHT q1", "points": rust_points}, {"name": "DUCC q1", "points": ducc_points}], "lmax", "ms", "milliseconds")
+    write_issue_runtime_plots(rows, output_dir)
     for operation in ("analysis", "synthesis"):
         speed_series = []
         for backend, key in (("RustSHT", "rust_warm_ms"), ("DUCC", "ducc_warm_ms")):
@@ -1031,7 +1139,7 @@ def main() -> None:
     parser.add_argument("--ducc-src", type=pathlib.Path, default=os.environ.get("DUCC_SRC"))
     parser.add_argument("--ducc-revision", default=DUCC_REVISION,
                         help="required immutable DUCC commit SHA (default: current active pin)")
-    parser.add_argument("--plot-only", action="store_true", help="regenerate the four ratio SVGs from existing results.csv; no benchmark or DUCC checkout needed")
+    parser.add_argument("--plot-only", action="store_true", help="regenerate ratio and runtime SVGs from existing results.csv; no benchmark or DUCC checkout needed")
     parser.add_argument("--smoke", action="store_true", help="small harness check; not a parity result")
     parser.add_argument("--skip-build", action="store_true")
     parser.add_argument("--case-limit", type=int, help="run only the first N configurations")
@@ -1049,7 +1157,8 @@ def main() -> None:
         if not rows:
             parser.error("results.csv has no benchmark rows")
         write_issue_ratio_plots(rows, args.results_dir)
-        print(f"Regenerated four sampled-degree ratio figures from {len(rows)} committed rows")
+        write_issue_runtime_plots(rows, args.results_dir)
+        print(f"Regenerated four ratio and two runtime figures from {len(rows)} committed rows")
         return
     if args.ducc_src is None:
         parser.error("--ducc-src or DUCC_SRC must name the pinned DUCC checkout")
