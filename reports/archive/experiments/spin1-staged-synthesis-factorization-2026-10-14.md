@@ -41,8 +41,8 @@ alternated per band and thread count; q1 was pinned to one CPU core and q8 to 8 
 Every q1 pair improved. The paired q8 ranges crossed zero at T511 and T720;
 the T1023 q8 range was −12.75% to −9.25%. The whole-transform q1 gains are
 therefore repeatable through T1023. Raw five-call samples are in
-[`the T511/T720 CSV`](data/current-kernel-baseline-2026-10-14/stage-factor-process-samples-t511-t720.csv)
-and [`the T1023 CSV`](data/current-kernel-baseline-2026-10-14/stage-factor-process-samples-t1023.csv). Representative commands were `cargo build --release --example m1b_bench`,
+[`the T511/T720 CSV`](../../data/current-kernel-baseline-2026-10-14/stage-factor-process-samples-t511-t720.csv)
+and [`the T1023 CSV`](../../data/current-kernel-baseline-2026-10-14/stage-factor-process-samples-t1023.csv). Representative commands were `cargo build --release --example m1b_bench`,
 `taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" target/release/examples/m1b_bench 1 511 1 synthesis GL STANDARD 512 1025 511 requested-only`, and the same command with `taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}"` and the thread argument set to `8`. The paired harness alternated archived baseline and candidate binaries and wrote the retained CSV samples. Python comparisons used
 `RUSTSHT_PERF_RAW=1 RAYON_NUM_THREADS=1 taskset -c "${RUSTSHT_CPUSET:?set RUSTSHT_CPUSET}" uv run python examples/python_perf_baseline.py 511 1 1 GL 1 plan synthesis both STANDARD`; q8 used `RAYON_NUM_THREADS=8`, affinity sized for the worker count, and the thread argument `8`. Each process used five timed method calls after one warm-up; three fresh processes were recorded per case.
 
@@ -57,7 +57,7 @@ DUCC medians were 22.276/2.557 ms and 52.166/6.357 ms, respectively. These
 Python method timings include binding work and describe the remaining gap;
 they are not used to attribute the native kernel improvement. Per-process
 samples and error summaries are in
-[`stage-factor-python`](data/current-kernel-baseline-2026-10-14/stage-factor-python/).
+[`stage-factor-python`](../../data/current-kernel-baseline-2026-10-14/stage-factor-python).
 
 ## Numerical checks and review
 
