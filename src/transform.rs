@@ -2283,14 +2283,6 @@ impl<T: ShtScalar> ShtPlan<T> {
                     // Paired degrees l=m+2k use north+south for the even term;
                     // the intervening odd term uses north-south and cos(theta).
                     let staged_count = coefficient_count;
-                    // Commit scratch coefficients only when every recurrence lane stays normal.
-                    let product_range_safe = T::scalar_analysis_products_safe(
-                        &recurrence.analysis_same_real[..lane_count],
-                        &recurrence.analysis_same_imag[..lane_count],
-                        &recurrence.analysis_opposite_real[..lane_count],
-                        &recurrence.analysis_opposite_imag[..lane_count],
-                        pair_cos,
-                    );
                     let direct_products_safe = cfg!(rustsht_scalar_analysis_direct_accumulation)
                         && range_check_is_proven_safe
                         && T::scalar_analysis_direct_products_safe(
@@ -2302,20 +2294,44 @@ impl<T: ShtScalar> ShtPlan<T> {
                             latitude_count,
                         );
                     let fast_path_candidate = lmax >= FUSED_SCALAR_ANALYSIS_MIN_LMAX
-                        && product_range_safe
                         && recurrence.fast_scalar_first.len() >= staged_count;
-                    // DUCC's fill_m2a cosine-weights opposite parity while
-                    // packing. The existing range preflight runs once; weighting
-                    // checks its product in the same pass that stores it.
-                    let opposite_preparation = if fast_path_candidate {
-                        T::prepare_scalar_analysis_opposite(
-                            &mut recurrence.analysis_opposite_real[..lane_count],
-                            &mut recurrence.analysis_opposite_imag[..lane_count],
-                            pair_cos,
-                        )
-                    } else {
-                        None
-                    };
+                    // DUCC's fill_m2a checks the packed spectra and cosine-weights
+                    // opposite parity in one pass. Preserve the transformed
+                    // values only when both range checks succeed.
+                    let packed_preparation =
+                        if cfg!(rustsht_fused_analysis_input_preparation) && fast_path_candidate {
+                            T::prepare_scalar_analysis_pair_inputs(
+                                &recurrence.analysis_same_real[..lane_count],
+                                &recurrence.analysis_same_imag[..lane_count],
+                                &mut recurrence.analysis_opposite_real[..lane_count],
+                                &mut recurrence.analysis_opposite_imag[..lane_count],
+                                pair_cos,
+                            )
+                        } else {
+                            None
+                        };
+                    let (product_range_safe, opposite_preparation) =
+                        if let Some((products_safe, opposite_safe)) = packed_preparation {
+                            (products_safe, Some(opposite_safe))
+                        } else {
+                            let products_safe = T::scalar_analysis_products_safe(
+                                &recurrence.analysis_same_real[..lane_count],
+                                &recurrence.analysis_same_imag[..lane_count],
+                                &recurrence.analysis_opposite_real[..lane_count],
+                                &recurrence.analysis_opposite_imag[..lane_count],
+                                pair_cos,
+                            );
+                            let opposite_preparation = if fast_path_candidate && products_safe {
+                                T::prepare_scalar_analysis_opposite(
+                                    &mut recurrence.analysis_opposite_real[..lane_count],
+                                    &mut recurrence.analysis_opposite_imag[..lane_count],
+                                    pair_cos,
+                                )
+                            } else {
+                                None
+                            };
+                            (products_safe, opposite_preparation)
+                        };
                     let fast_path_eligible = opposite_preparation == Some(true);
                     let direct_accumulation = cfg!(rustsht_scalar_analysis_direct_accumulation)
                         && fast_path_eligible

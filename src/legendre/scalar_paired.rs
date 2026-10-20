@@ -1265,6 +1265,58 @@ pub(crate) fn analysis_products_safe_with_lane_bound(
             .all(|value| value.is_finite() && value.abs() <= 1.0)
 }
 
+/// Checks the ordinary-range accumulation bound while applying the opposite
+/// parity cosine weight. A failed result may leave earlier lanes weighted;
+/// callers restore the packed opposite channels from the original spectra.
+pub(crate) fn prepare_analysis_products_and_opposite(
+    same_real: &[f64],
+    same_imag: &[f64],
+    opposite_real: &mut [f64],
+    opposite_imag: &mut [f64],
+    cos_theta: &[f64],
+) -> (bool, bool) {
+    debug_assert_eq!(same_real.len(), same_imag.len());
+    debug_assert_eq!(same_real.len(), opposite_real.len());
+    debug_assert_eq!(same_real.len(), opposite_imag.len());
+    debug_assert_eq!(same_real.len(), cos_theta.len());
+    let max_input = f64::MAX / scalar::BIG / (2.0 * same_real.len().max(1) as f64);
+    let mut products_safe = true;
+    let mut opposite_safe = true;
+
+    for lane in 0..same_real.len() {
+        let same_re = same_real[lane];
+        let same_im = same_imag[lane];
+        let opposite_re = opposite_real[lane];
+        let opposite_im = opposite_imag[lane];
+        let cosine = cos_theta[lane];
+        let lane_inputs_safe = [same_re, same_im, opposite_re, opposite_im]
+            .into_iter()
+            .all(|value| (value.is_normal() || value == 0.0) && value.abs() <= max_input)
+            && cosine.is_finite()
+            && cosine.abs() <= 1.0;
+        if !lane_inputs_safe {
+            products_safe = false;
+            opposite_safe = false;
+            continue;
+        }
+
+        let weighted_real = opposite_re * cosine;
+        let weighted_imag = opposite_im * cosine;
+        let real_safe = weighted_real.is_normal()
+            || (weighted_real == 0.0 && (opposite_re == 0.0 || cosine == 0.0));
+        let imag_safe = weighted_imag.is_normal()
+            || (weighted_imag == 0.0 && (opposite_im == 0.0 || cosine == 0.0));
+        if real_safe && imag_safe {
+            opposite_real[lane] = weighted_real;
+            opposite_imag[lane] = weighted_imag;
+        } else {
+            opposite_safe = false;
+        }
+    }
+
+    (products_safe, products_safe && opposite_safe)
+}
+
 /// Applies DUCC's cosine weight to the opposite channels while checking that
 /// the transformation does not introduce subnormal products.
 ///
@@ -6552,6 +6604,93 @@ mod tests {
         ));
         assert_eq!(zero_real, [0.0]);
         assert_eq!(zero_imag, [0.0]);
+    }
+
+    #[test]
+    fn fused_analysis_input_preparation_matches_separate_preflights() {
+        for lane_count in [1, 4, 5, 9] {
+            let same_real: Vec<_> = (0..lane_count)
+                .map(|lane| 0.2 + lane as f64 * 0.01)
+                .collect();
+            let same_imag: Vec<_> = (0..lane_count)
+                .map(|lane| -0.3 + lane as f64 * 0.008)
+                .collect();
+            let opposite_real: Vec<_> = (0..lane_count)
+                .map(|lane| 0.4 - lane as f64 * 0.007)
+                .collect();
+            let opposite_imag: Vec<_> = (0..lane_count)
+                .map(|lane| -0.1 + lane as f64 * 0.003)
+                .collect();
+            let cosine: Vec<_> = (0..lane_count)
+                .map(|lane| -0.8 + lane as f64 * 1.6 / lane_count.max(1) as f64)
+                .collect();
+            let products_safe = analysis_products_safe(
+                &same_real,
+                &same_imag,
+                &opposite_real,
+                &opposite_imag,
+                &cosine,
+            );
+            let mut separate_real = opposite_real.clone();
+            let mut separate_imag = opposite_imag.clone();
+            let separate_weighting = products_safe
+                && prepare_analysis_opposite(&mut separate_real, &mut separate_imag, &cosine);
+            let mut fused_real = opposite_real.clone();
+            let mut fused_imag = opposite_imag.clone();
+            let fused = prepare_analysis_products_and_opposite(
+                &same_real,
+                &same_imag,
+                &mut fused_real,
+                &mut fused_imag,
+                &cosine,
+            );
+            assert_eq!(fused, (products_safe, separate_weighting));
+            if separate_weighting {
+                assert_eq!(fused_real, separate_real);
+                assert_eq!(fused_imag, separate_imag);
+            }
+        }
+
+        let same_real = [1.0, 1.0];
+        let same_imag = [0.0, 0.0];
+        let opposite_real = [1.0, 1.0];
+        let opposite_imag = [0.0, 0.0];
+        let mut weighted_real = opposite_real;
+        let mut weighted_imag = opposite_imag;
+        assert_eq!(
+            prepare_analysis_products_and_opposite(
+                &same_real,
+                &same_imag,
+                &mut weighted_real,
+                &mut weighted_imag,
+                &[1.0, 1.0e-310],
+            ),
+            (true, false)
+        );
+        let mut zero_real = [0.0];
+        let mut zero_imag = [0.0];
+        assert_eq!(
+            prepare_analysis_products_and_opposite(
+                &[0.0],
+                &[0.0],
+                &mut zero_real,
+                &mut zero_imag,
+                &[1.0e-310],
+            ),
+            (true, true)
+        );
+        let mut extreme_real = [0.25, f64::MAX / 16.0];
+        let mut extreme_imag = [0.0, 0.0];
+        assert_eq!(
+            prepare_analysis_products_and_opposite(
+                &[0.0, 0.0],
+                &[0.0, 0.0],
+                &mut extreme_real,
+                &mut extreme_imag,
+                &[1.0, 1.0],
+            ),
+            (false, false)
+        );
     }
 
     #[test]

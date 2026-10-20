@@ -493,6 +493,15 @@ pub(crate) trait ShtScalar:
     ) -> bool {
         false
     }
+    fn prepare_scalar_analysis_pair_inputs(
+        _same_real: &[Self],
+        _same_imag: &[Self],
+        _opposite_real: &mut [Self],
+        _opposite_imag: &mut [Self],
+        _cos_theta: &[Self],
+    ) -> Option<(bool, bool)> {
+        None
+    }
     fn scalar_analysis_prefix_skip_allowed(_latitude_count: usize) -> bool {
         false
     }
@@ -1338,6 +1347,22 @@ impl ShtScalar for f64 {
             cos_theta,
             total_lane_count,
         )
+    }
+
+    fn prepare_scalar_analysis_pair_inputs(
+        same_real: &[Self],
+        same_imag: &[Self],
+        opposite_real: &mut [Self],
+        opposite_imag: &mut [Self],
+        cos_theta: &[Self],
+    ) -> Option<(bool, bool)> {
+        Some(scalar_paired::prepare_analysis_products_and_opposite(
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            cos_theta,
+        ))
     }
 
     fn scalar_analysis_prefix_skip_allowed(latitude_count: usize) -> bool {
