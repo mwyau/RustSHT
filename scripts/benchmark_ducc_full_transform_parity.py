@@ -716,6 +716,121 @@ def plot_svg(path: pathlib.Path, title: str, series: list[dict], xkey: str, ykey
     path.write_text("\n".join(parts))
 
 
+
+def plot_issue_ratio_svg(path: pathlib.Path, operation: str, order_label: str,
+                         points_by_threads: dict[int, list[dict]]) -> None:
+    """Issue-ready full-transform ratio chart: sampled lmax, q1/q8, log axes.
+
+    Display even FFT-smooth longitude counts only; odd-minimum FFTs are a
+    separate workload. No averaging or smoothing between observed lmax points.
+    """
+    width, height = 1260, 680
+    left, right, top, bottom = 98, 40, 94, 139
+    plot_w, plot_h = width - left - right, height - top - bottom
+    observed = [
+        (int(point["lmax"]), float(point["ratio"]))
+        for points in points_by_threads.values() for point in points
+    ]
+    if not observed:
+        return
+    ymin = min(0.25, min(value for _, value in observed) * 0.9)
+    ymax = max(16.0, max(value for _, value in observed) * 1.1)
+    if ymin <= 0:
+        raise ValueError("ratio plot requires positive runtimes")
+    xmax = max(3072, max(degree for degree, _ in observed))
+    xlogmax = math.log1p(xmax)
+    ylogmin, ylogmax = math.log(ymin), math.log(ymax)
+
+    def xcoord(degree: float) -> float:
+        return left + math.log1p(degree) / xlogmax * plot_w
+
+    def ycoord(ratio: float) -> float:
+        return top + (ylogmax - math.log(ratio)) / (ylogmax - ylogmin) * plot_h
+
+    def fmt_number(value: float) -> str:
+        return f"{value:g}"
+
+    colors = {1: "#155e99", 8: "#bf3b42"}
+    parts = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
+        '<rect width="100%" height="100%" fill="#fff"/>',
+        f'<text x="{left}" y="35" font-family="sans-serif" font-size="25" font-weight="bold">RustSHT / DUCC — {operation.capitalize()} ({order_label})</text>',
+        f'<text x="{left}" y="61" font-family="sans-serif" font-size="15" fill="#555">f64 · Gauss–Legendre · even-smooth longitude sampling · warmed full transforms · lower is faster</text>',
+    ]
+    tick_values = [0.25, 0.5, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16]
+    tick_values = [v for v in tick_values if ymin <= v <= ymax]
+    if all(abs(v - 1) > 1e-12 for v in tick_values):
+        tick_values.append(1)
+    for ratio in sorted(tick_values):
+        y = ycoord(ratio)
+        strong = ratio == 1
+        stroke = "#53616c" if strong else "#e3e8ed"
+        dash = ' stroke-dasharray="6 4"' if strong else ""
+        parts.append(f'<line x1="{left}" y1="{y:.1f}" x2="{width-right}" y2="{y:.1f}" stroke="{stroke}"{dash}/>')
+        suffix = "× parity" if strong else "×"
+        parts.append(f'<text x="{left-11}" y="{y+4:.1f}" text-anchor="end" font-family="sans-serif" font-size="13" font-weight="{"bold" if strong else "normal"}">{fmt_number(ratio)}{suffix}</text>')
+    xticks = [0, 1, 2, 4, 8, 16, 24, 32, 40, 64, 128, 255, 511,
+              720, 1024, 1536, 1792, 2048, 3072]
+    xticks = [v for v in xticks if v <= xmax]
+    for i, degree in enumerate(xticks):
+        x = xcoord(degree)
+        parts.append(f'<line x1="{x:.1f}" y1="{height-bottom}" x2="{x:.1f}" y2="{height-bottom+6}" stroke="#77818b"/>')
+        # Rotate long tick labels and alternate placement at close transitions.
+        label_y = height - bottom + 27 + (18 if i >= 7 and i % 2 else 0)
+        parts.append(f'<text transform="translate({x:.1f} {label_y}) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="12" fill="#394651">{degree}</text>')
+    boundary = xcoord(32)
+    parts.append(f'<line x1="{boundary:.1f}" y1="{top}" x2="{boundary:.1f}" y2="{height-bottom}" stroke="#7b8794" stroke-dasharray="4 4"/>')
+    parts.append(f'<text x="{left+9}" y="{top+20}" font-family="sans-serif" font-size="13" fill="#4c5a67">Dense: every lmax = 0…32</text>')
+    if xmax >= 2048:
+        onset = xcoord(2048)
+        parts.append(f'<line x1="{onset:.1f}" y1="{top}" x2="{onset:.1f}" y2="{height-bottom}" stroke="#9d752c" stroke-dasharray="4 4"/>')
+        parts.append(f'<text x="{onset-8:.1f}" y="{top+20}" text-anchor="end" font-family="sans-serif" font-size="13" fill="#825a18">T2048</text>')
+    parts.append(f'<line x1="{left}" y1="{height-bottom}" x2="{width-right}" y2="{height-bottom}" stroke="#34404a" stroke-width="1.5"/>')
+    parts.append(f'<line x1="{left}" y1="{top}" x2="{left}" y2="{height-bottom}" stroke="#34404a" stroke-width="1.5"/>')
+    for threads in (1, 8):
+        points = sorted(points_by_threads.get(threads, []), key=lambda pt: pt["lmax"])
+        if not points:
+            continue
+        coords = [(xcoord(p["lmax"]), ycoord(p["ratio"])) for p in points]
+        color = colors[threads]
+        poly = " ".join(f"{x:.1f},{y:.1f}" for x, y in coords)
+        parts.append(f'<polyline fill="none" stroke="{color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="{poly}"/>')
+        for x, y in coords:
+            parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="2.4" fill="{color}"/>')
+    for index, threads in enumerate((1, 8)):
+        x = width - right - 207 + 105 * index
+        y = 77
+        parts.append(f'<line x1="{x}" y1="{y}" x2="{x+24}" y2="{y}" stroke="{colors[threads]}" stroke-width="3"/>')
+        parts.append(f'<text x="{x+30}" y="{y+5}" font-family="sans-serif" font-size="14" fill="#24333f">q{threads}</text>')
+    parts += [
+        f'<text x="{left+plot_w/2:.1f}" y="{height-12}" text-anchor="middle" font-family="sans-serif" font-size="15">lmax (log(1 + lmax) spacing; sampled degrees, not evenly spaced)</text>',
+        f'<text transform="translate(20 {top+plot_h/2:.1f}) rotate(-90)" text-anchor="middle" font-family="sans-serif" font-size="15">RustSHT / DUCC runtime (log scale)</text>',
+        '</svg>',
+    ]
+    path.write_text("\n".join(parts) + "\n")
+
+
+def write_issue_ratio_plots(rows: list[dict], output_dir: pathlib.Path) -> None:
+    """Regenerate consistent GitHub-issue figures without rerunning timings."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for operation in ("analysis", "synthesis"):
+        for label, full in (("full mmax", True), ("reduced mmax", False)):
+            grouped = {}
+            for threads in (1, 8):
+                grouped[threads] = [
+                    {"lmax": int(row["lmax"]), "ratio": float(row["rust_ducc_ratio"])}
+                    for row in rows
+                    if row["operation"] == operation
+                    and int(row["threads"]) == threads
+                    and (int(row["mmax"]) == int(row["lmax"])) == full
+                    and row["longitude_mode"] == "even_smooth"
+                ]
+            plot_issue_ratio_svg(
+                output_dir / f"ratio-{operation}-{label.replace(' ', '-')}.svg",
+                operation, label, grouped,
+            )
+
+
 def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict], raw: list[dict], analysis: dict) -> None:
     rows = aggregate(raw, analysis["errors"])
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -754,13 +869,9 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
             writer = csv.DictWriter(handle, fieldnames=list(rows[0]), lineterminator="\n")
             writer.writeheader()
             writer.writerows(rows)
+    write_issue_ratio_plots(rows, output_dir)
     for operation in ("analysis", "synthesis"):
         subset = [row for row in rows if row["operation"] == operation and row["threads"] == 1]
-        for m_label, predicate in (("full mmax", lambda row: row["mmax"] == row["lmax"]),
-                                   ("reduced mmax", lambda row: row["mmax"] < row["lmax"])):
-            points = [{"lmax": row["lmax"], "ratio": row["rust_ducc_ratio"]} for row in subset if predicate(row)]
-            plot_svg(output_dir / f"ratio-{operation}-{m_label.replace(' ', '-')}.svg",
-                     f"RustSHT/DUCC warm {operation}: {m_label}", [{"name": m_label, "points": points}], "lmax", "ratio", "RustSHT / DUCC")
         points = [{"lmax": row["lmax"], "ms": row["rust_warm_ms"]} for row in subset if row["mmax"] == row["lmax"]]
         points += [{"lmax": row["lmax"], "ms": row["ducc_warm_ms"]} for row in subset if row["mmax"] == row["lmax"]]
         rust_points = points[:len(points)//2]
@@ -920,6 +1031,7 @@ def main() -> None:
     parser.add_argument("--ducc-src", type=pathlib.Path, default=os.environ.get("DUCC_SRC"))
     parser.add_argument("--ducc-revision", default=DUCC_REVISION,
                         help="required immutable DUCC commit SHA (default: current active pin)")
+    parser.add_argument("--plot-only", action="store_true", help="regenerate the four ratio SVGs from existing results.csv; no benchmark or DUCC checkout needed")
     parser.add_argument("--smoke", action="store_true", help="small harness check; not a parity result")
     parser.add_argument("--skip-build", action="store_true")
     parser.add_argument("--case-limit", type=int, help="run only the first N configurations")
@@ -931,6 +1043,14 @@ def main() -> None:
     parser.add_argument("--no-report", action="store_true",
                         help="write machine-readable artifacts without replacing a report")
     args = parser.parse_args()
+    if args.plot_only:
+        with (args.results_dir / "results.csv").open(newline="") as handle:
+            rows = list(csv.DictReader(handle))
+        if not rows:
+            parser.error("results.csv has no benchmark rows")
+        write_issue_ratio_plots(rows, args.results_dir)
+        print(f"Regenerated four sampled-degree ratio figures from {len(rows)} committed rows")
+        return
     if args.ducc_src is None:
         parser.error("--ducc-src or DUCC_SRC must name the pinned DUCC checkout")
     ducc_src = pathlib.Path(args.ducc_src).resolve()
