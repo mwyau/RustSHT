@@ -23,6 +23,10 @@ The percentile distribution refresh is in commit `633e4408`.
   full T720 q1/q8 checks passed. Valid T720 GL q1 and q8 analyses had zero
   late ordinary-range declines. The checked route remains the default pending
   broader safety review.
+- An in-loop SIMD state-mask candidate was correct but 21–33% slower than the
+  checked post-group scan. Its executed AVX2 loop spills a YMM value to the
+  stack while eight accumulators are live. It remains behind a custom cfg for
+  ablation and is not selected in production.
 - DUCC and checked Rust process medians were stable. One 256-lane unchecked
   Rust process was about 5% slower than the other two; several batches had
   isolated high maxima, but no source was identified. All batches remain in
@@ -30,7 +34,7 @@ The percentile distribution refresh is in commit `633e4408`.
   low sampled run-queue wait in this run. The prior inconsistent single-call
   DUCC regimes were not reproduced; their exact historical cause is unknown.
 
-**Next:** determine whether a cheaper preflight can replace repeated group
-validation without changing valid or exceptional outputs, then use the
-unchecked specialization in cumulative comparisons. After scan removal, the
-remaining ordinary-kernel gap is about 9–17% across these lane counts.
+**Next:** keep the checked post-group scan; reject the in-loop mask variant.
+Continue from the unchecked direct kernel, 9–17% slower than DUCC in these
+matched cases, and reduce register pressure or recurrence instruction cost
+without weakening fallback behavior.

@@ -16,8 +16,11 @@ The source snapshot and Git object store may be different directories. The
 script verifies SHA-256 equality for the pinned `sht_inner_loop.h`, `sht.h`,
 `simd.h` and `constants.h` before compiling. Set `CXX` to select the C++
 compiler; the default is `g++`. The script builds optimized release code with
-Rust `-C target-cpu=x86-64-v3` and C++ `-O3 -DNDEBUG -march=x86-64-v3`, verifies
-that Rust selects Pulp V3 and DUCC uses four f64 lanes, and runs one fixture
+Rust `-C target-cpu=x86-64-v3` and C++ `-O3 -DNDEBUG -march=x86-64-v3`. By
+default, its checked Rust candidate fuses group-state range validation into
+the recurrence traversal; set `RUSTSHT_KERNEL_BENCH_RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs'`
+to benchmark the existing post-group scan instead. The script verifies that
+Rust selects Pulp V3 and DUCC uses four f64 lanes, and runs one fixture
 (`m=1`, `lmax=720`) at 64, 128 and 256 active latitude lanes.
 
 The script warms and calibrates each specialization in a sustained batch

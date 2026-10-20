@@ -2943,6 +2943,9 @@ struct FusedScalarAnalysisPair<
     // The custom cfg supports a compile-time whole-transform A/B build. The
     // normal production build retains the group-state safety scan.
     const CHECK_PAIR_GROUP_RANGE: bool = { !cfg!(rustsht_unchecked_analysis_pair_range) },
+    // Experimental checked mode folds the group-state reduction into the
+    // recurrence traversal instead of rereading the resulting state arrays.
+    const FUSE_PAIR_GROUP_RANGE_CHECK: bool = { cfg!(rustsht_fused_analysis_pair_range_check) },
 > {
     m: usize,
     lmax: usize,
@@ -2980,6 +2983,7 @@ struct FusedAnalysisPairGroup {
     first_opposite: Complex64,
     second_same: Complex64,
     second_opposite: Complex64,
+    states_in_range: bool,
     tails_in_range: bool,
 }
 
@@ -3162,7 +3166,12 @@ fn fused_analysis_pair_step_with_simd<S: Simd, const OPPOSITE_COSINE_WEIGHTED: b
 /// `(P[l+2], P[l+4])`; both generated values retain the ordinary-range check
 /// so a declined block can use the checked scaled route.
 #[inline(always)]
-fn fused_analysis_two_pair_steps_with_simd<S: Simd, const OPPOSITE_COSINE_WEIGHTED: bool>(
+fn fused_analysis_two_pair_steps_with_simd<
+    S: Simd,
+    const OPPOSITE_COSINE_WEIGHTED: bool,
+    const CHECK_GROUP_RANGE: bool,
+    const TRACK_STATE_RANGE: bool,
+>(
     simd: S,
     step: FusedAnalysisTwoPairSteps<'_, OPPOSITE_COSINE_WEIGHTED>,
 ) -> Option<FusedAnalysisPairGroup> {
@@ -3222,6 +3231,7 @@ fn fused_analysis_two_pair_steps_with_simd<S: Simd, const OPPOSITE_COSINE_WEIGHT
     let first_b = simd.splat_f64s(first_coefficient_b);
     let second_a = simd.splat_f64s(second_coefficient_a);
     let second_b = simd.splat_f64s(second_coefficient_b);
+    let minimum = simd.splat_f64s(f64::MIN_POSITIVE);
     let mut first_same_re = zero;
     let mut first_same_im = zero;
     let mut first_opposite_re = zero;
@@ -3230,6 +3240,7 @@ fn fused_analysis_two_pair_steps_with_simd<S: Simd, const OPPOSITE_COSINE_WEIGHT
     let mut second_same_im = zero;
     let mut second_opposite_re = zero;
     let mut second_opposite_im = zero;
+    let mut vector_states_in_range = simd.equal_f64s(zero, zero);
     let mut tails_in_range = true;
 
     for (
@@ -3284,6 +3295,22 @@ fn fused_analysis_two_pair_steps_with_simd<S: Simd, const OPPOSITE_COSINE_WEIGHT
 
         let second_leading = simd.mul_add_f64s(second_a, *cosine_squared, second_b);
         let second_next = simd.mul_add_f64s(second_leading, first_next, current_value);
+        if CHECK_GROUP_RANGE && TRACK_STATE_RANGE {
+            let previous_magnitude = simd.abs_f64s(first_next);
+            let current_magnitude = simd.abs_f64s(second_next);
+            let previous_in_range = simd.or_m64s(
+                simd.equal_f64s(previous_magnitude, zero),
+                simd.greater_than_or_equal_f64s(previous_magnitude, minimum),
+            );
+            let current_in_range = simd.or_m64s(
+                simd.equal_f64s(current_magnitude, zero),
+                simd.greater_than_or_equal_f64s(current_magnitude, minimum),
+            );
+            vector_states_in_range = simd.and_m64s(
+                vector_states_in_range,
+                simd.and_m64s(previous_in_range, current_in_range),
+            );
+        }
         *previous = first_next;
         *current = second_next;
     }
@@ -3347,11 +3374,24 @@ fn fused_analysis_two_pair_steps_with_simd<S: Simd, const OPPOSITE_COSINE_WEIGHT
         *current = second_next;
     }
 
+    let states_in_range = if CHECK_GROUP_RANGE && TRACK_STATE_RANGE {
+        let vectors_in_range = analysis_mask_all(simd, vector_states_in_range);
+        let tails_in_range = previous_tail.iter().zip(current_tail.iter()).all(
+            |(&previous_value, &current_value)| {
+                (previous_value == 0.0 || previous_value.abs() >= f64::MIN_POSITIVE)
+                    && (current_value == 0.0 || current_value.abs() >= f64::MIN_POSITIVE)
+            },
+        );
+        vectors_in_range && tails_in_range
+    } else {
+        true
+    };
     Some(FusedAnalysisPairGroup {
         first_same: Complex64::new(first_same_re_sum, first_same_im_sum),
         first_opposite: Complex64::new(first_opposite_re_sum, first_opposite_im_sum),
         second_same: Complex64::new(second_same_re_sum, second_same_im_sum),
         second_opposite: Complex64::new(second_opposite_re_sum, second_opposite_im_sum),
+        states_in_range,
         tails_in_range,
     })
 }
@@ -3404,8 +3444,17 @@ fn analysis_pair_group_state_in_range<S: Simd>(simd: S, previous: &[f64], curren
         })
 }
 
-impl<const OPPOSITE_COSINE_WEIGHTED: bool, const CHECK_PAIR_GROUP_RANGE: bool> WithSimd
-    for FusedScalarAnalysisPair<'_, OPPOSITE_COSINE_WEIGHTED, CHECK_PAIR_GROUP_RANGE>
+impl<
+    const OPPOSITE_COSINE_WEIGHTED: bool,
+    const CHECK_PAIR_GROUP_RANGE: bool,
+    const FUSE_PAIR_GROUP_RANGE_CHECK: bool,
+> WithSimd
+    for FusedScalarAnalysisPair<
+        '_,
+        OPPOSITE_COSINE_WEIGHTED,
+        CHECK_PAIR_GROUP_RANGE,
+        FUSE_PAIR_GROUP_RANGE_CHECK,
+    >
 {
     type Output = bool;
 
@@ -3451,7 +3500,12 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool, const CHECK_PAIR_GROUP_RANGE: bool> W
         let recurrence_stop = pair_count.saturating_sub(1);
         let mut pair_index = pair_start;
         while pair_index < recurrence_stop.saturating_sub(1) {
-            let Some(group) = fused_analysis_two_pair_steps_with_simd::<S, OPPOSITE_COSINE_WEIGHTED>(
+            let Some(group) = fused_analysis_two_pair_steps_with_simd::<
+                S,
+                OPPOSITE_COSINE_WEIGHTED,
+                CHECK_PAIR_GROUP_RANGE,
+                FUSE_PAIR_GROUP_RANGE_CHECK,
+            >(
                 simd,
                 FusedAnalysisTwoPairSteps {
                     same_real,
@@ -3470,13 +3524,18 @@ impl<const OPPOSITE_COSINE_WEIGHTED: bool, const CHECK_PAIR_GROUP_RANGE: bool> W
             ) else {
                 return false;
             };
-            if CHECK_PAIR_GROUP_RANGE
-                && !analysis_pair_group_state_in_range(simd, previous, current)
-            {
-                #[cfg(test)]
-                ANALYSIS_PAIR_GROUP_RANGE_DECLINES
-                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                return false;
+            if CHECK_PAIR_GROUP_RANGE {
+                let group_in_range = if FUSE_PAIR_GROUP_RANGE_CHECK {
+                    group.states_in_range
+                } else {
+                    analysis_pair_group_state_in_range(simd, previous, current)
+                };
+                if !group_in_range {
+                    #[cfg(test)]
+                    ANALYSIS_PAIR_GROUP_RANGE_DECLINES
+                        .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    return false;
+                }
             }
             all_tails_in_range &= group.tails_in_range;
 

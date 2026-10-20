@@ -84,6 +84,46 @@ The prior 64-lane DUCC values of 9.599 and 5.621 µs and 256-lane values of
 contemporaneous host measurements; the calibrated measurements replace them
 for current comparisons.
 
+## Fused group-range-check candidate — 2026-10-20
+
+The candidate validates final recurrence states in the SIMD recurrence loop,
+accumulating one lane mask across vector blocks and reducing it once per group.
+It avoids the post-group reread of the `previous` and `current` arrays. It is
+selected only by `rustsht_fused_analysis_pair_range_check`; ordinary builds
+keep the existing checked post-group scan. The benchmark script enables the
+candidate by default and accepts `RUSTSHT_KERNEL_BENCH_RUSTFLAGS` to compare
+the post-group-scan route.
+
+This run used the same pinned `m=1`, `lmax=720` fixture, Pulp V3/GCC AVX2/FMA
+builds, CPU pinning, reset boundaries, and three-process, 30-batch protocol as
+the previous section. Entries are median `(p10–p90; full range)` in µs/op.
+
+| Mode | Lanes | Fused checked | Unchecked | DUCC |
+|---|---:|---:|---:|---:|
+| Kernel only | 64 | 8.626 (8.591–8.687; 8.547–8.751) | 4.704 (4.671–4.737; 4.656–4.775) | 4.104 (4.081–4.124; 4.059–4.147) |
+| Kernel only | 128 | 16.784 (16.688–16.911; 16.625–17.003) | 8.745 (8.691–8.785; 8.636–8.828) | 8.052 (7.995–8.156; 7.949–8.526) |
+| Kernel only | 256 | 32.977 (32.789–33.139; 32.564–33.298) | 17.652 (17.499–18.030; 17.355–18.310) | 15.969 (15.826–16.169; 15.697–16.297) |
+| Reset inclusive | 64 | 8.757 (8.712–8.824; 8.662–8.874) | 4.777 (4.745–4.810; 4.729–4.850) | 4.210 (4.184–4.233; 4.168–4.264) |
+| Reset inclusive | 128 | 16.909 (16.787–17.016; 16.680–17.116) | 8.810 (8.754–8.857; 8.707–8.907) | 8.205 (8.122–8.304; 8.091–8.490) |
+| Reset inclusive | 256 | 33.093 (32.955–33.308; 32.666–33.367) | 17.659 (17.572–17.926; 17.422–18.268) | 16.177 (16.016–16.330; 15.808–16.692) |
+
+The fused checked candidate was 21.1%, 32.6%, and 32.5% slower than the
+post-group-scan checked medians in the previous run at 64, 128, and 256 lanes.
+Its Rust/DUCC kernel-only ratios were 2.102/2.085/2.065. The unchecked
+specialization remained 1.146/1.086/1.105× DUCC. Reset-inclusive ratios for
+the fused checked candidate were 2.080/2.061/2.046×. All 1,620 timed batches
+were 33.31–73.24 ms. Output errors remained at the levels recorded above, and
+the candidate full release test suite passed. A T720 GL q1/q8 production-plan
+counter run also recorded zero late group-range declines.
+
+The exact optimized V3 candidate body inserts packed validity comparisons
+while the recurrence and eight coefficient accumulators are live. In the
+executed loop, disassembly shows a YMM stack store and reload (`vmovupd` and
+`vandpd` through `0x100(%rsp)`). The previous checked loop has no YMM stack
+operand in its recurrence loop. This register spill coincides with the 21–33%
+regression. The fused check is retained only as an experimental compile-time
+candidate; it does not replace the production scan.
+
 ## Historical pair-grouping checkpoint
 
 ## Changes and validation

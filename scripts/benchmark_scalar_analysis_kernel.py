@@ -20,7 +20,10 @@ from collections import defaultdict
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DUCC_REVISION = "80388904b8cfc32400ba84af8a6a45aabfe60f86"
 RUST_TEST = "legendre::scalar_paired::kernel_bench::benchmark_fused_scalar_analysis_pair_kernel"
-RUSTFLAGS = "-C target-cpu=x86-64-v3 -Aunexpected_cfgs"
+RUSTFLAGS = os.environ.get(
+    "RUSTSHT_KERNEL_BENCH_RUSTFLAGS",
+    "-C target-cpu=x86-64-v3 --cfg rustsht_fused_analysis_pair_range_check -Aunexpected_cfgs",
+)
 BATCHES = 30
 TARGET_FASTEST_BATCH_US = 35_000.0
 
