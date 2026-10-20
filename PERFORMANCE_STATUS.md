@@ -1,7 +1,8 @@
 # RustSHT performance checkpoint
 
 **Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Current
-candidate:** `aeb123d6`. **Earlier A/B source:** `9f7e8658`.
+candidate:** `3d0048d0` (single-pass scale promotion, opt-in). **Earlier A/B
+source:** `9f7e8658`.
 **Calibrated harness:** `1ee1a195`. **Benchmark default:** production flags at
 `e2c2dc15`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
@@ -99,8 +100,23 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   `2.142/1.896` at q1 and `1.531/1.902` at q8. The q1 processes were pinned;
   q8 process ratios were more variable but direct was slower in every pair.
   Keep this correct candidate disabled and retain it for final cumulative
-  ablation. The next task is to isolate its preflight and output-write costs
-  before stacking another change.
+  ablation. Its regression source remains unattributed.
+- Candidate `rustsht_single_pass_analysis_promotion` compares a SIMD scale-epoch
+  check followed by checked in-place conversion against the current validation
+  and conversion passes. The T720 GL q1 instrumentation counted 474 initially
+  scaled fused blocks; all 474 were ready at the first promotion point, with no
+  later mixed-to-ordinary transitions. The candidate exercised all 474. Tests
+  matched checked conversion for ordinary and scaled values with a SIMD tail,
+  passed T511 DUCC/analytic checks, T255/T1023 q1/q8 consistency, cached safety,
+  no-default-feature coverage and Clippy. A Rust-only T720 GL full-transform
+  screen used Rust 1.99.0, x86-64-v3, AMD Ryzen 9 5950X, three alternating
+  process pairs, one warmup and five timed calls per process, with q1 pinned to
+  one physical core and q8 pinned to eight physical cores. Candidate/base
+  process-median ratios were `0.994/0.992` for full-mmax q1/q8
+  and `0.945/1.014` for reduced `mmax=255` q1/q8. These small, noisy changes do
+  not establish a general speedup; keep the candidate opt-in for final
+  cumulative ablation. Next, inspect `fill_m2a` input packing and remaining
+  coefficient preparation work for the initially scaled block population.
 - Warmup-controlled rerun at `9967ad19` kept the same work and flags after the
   DUCC timed-process warmup fix. Across 64/128/256 lanes, kernel-plus-commit
   medians (checked/unchecked/DUCC, µs) were `7.151/4.848/4.115`,
