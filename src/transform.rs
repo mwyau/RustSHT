@@ -69,6 +69,36 @@ fn scalar_ordered_scratch<T: ShtScalar>(
     }
 }
 
+#[inline]
+fn finalize_paired_scalar_analysis_coefficients<T: ShtScalar>(
+    coefficients: &mut [Complex<T>],
+    m: usize,
+    lmax: usize,
+    epsilon: &[T],
+    alpha: &[T],
+) {
+    debug_assert_eq!(coefficients.len(), lmax - m + 1);
+    let mut previous_even = Complex::new(T::zero(), T::zero());
+    let mut previous_alpha = T::zero();
+    for (pair_index, l) in (m..=lmax).step_by(2).enumerate() {
+        let offset = l - m;
+        let even = coefficients[offset];
+        let odd = if l < lmax {
+            coefficients[offset + 1]
+        } else {
+            Complex::new(T::zero(), T::zero())
+        };
+        let previous = previous_even * (previous_alpha * epsilon[l]);
+        let pair_alpha = alpha[pair_index];
+        coefficients[offset] = even * (pair_alpha * epsilon[l + 1]) + previous;
+        if l < lmax {
+            coefficients[offset + 1] = odd * pair_alpha;
+        }
+        previous_even = even;
+        previous_alpha = pair_alpha;
+    }
+}
+
 #[cfg(feature = "parallel")]
 pub(crate) fn weighted_order_midpoint(lmax: usize, m_start: usize, m_end: usize) -> usize {
     debug_assert!(m_start < m_end);
@@ -2527,29 +2557,13 @@ impl<T: ShtScalar> ShtPlan<T> {
                 }
             }
             if paired_used {
-                let mut previous_even = Complex::new(T::zero(), T::zero());
-                for (pair_index, l) in (m..=lmax).step_by(2).enumerate() {
-                    let offset = l - m;
-                    let even = coefficients[offset];
-                    let odd = if l < lmax {
-                        coefficients[offset + 1]
-                    } else {
-                        Complex::new(T::zero(), T::zero())
-                    };
-                    let previous = if pair_index == 0 {
-                        Complex::new(T::zero(), T::zero())
-                    } else {
-                        previous_even
-                            * (recurrence.spin_alpha[pair_index - 1] * recurrence.epsilon[l])
-                    };
-                    coefficients[offset] = even
-                        * (recurrence.spin_alpha[pair_index] * recurrence.epsilon[l + 1])
-                        + previous;
-                    if l < lmax {
-                        coefficients[offset + 1] = odd * recurrence.spin_alpha[pair_index];
-                    }
-                    previous_even = even;
-                }
+                finalize_paired_scalar_analysis_coefficients(
+                    coefficients,
+                    m,
+                    lmax,
+                    &recurrence.epsilon,
+                    &recurrence.spin_alpha,
+                );
             }
             coefficient_start += coefficient_count;
         }

@@ -85,6 +85,52 @@ fn coefficients(spec: &HarmonicSpec) -> Vec<Complex64> {
     alm
 }
 
+#[test]
+fn paired_analysis_final_conversion_matches_indexed_reference() {
+    for (m, lmax) in [(0, 0), (0, 5), (1, 6), (2, 9), (5, 10)] {
+        let mut epsilon = vec![0.0; lmax + 2];
+        for (degree, value) in epsilon.iter_mut().enumerate() {
+            *value = 0.25 + (degree % 11) as f64 * 0.07;
+        }
+        let pair_count = (lmax - m) / 2 + 1;
+        let alpha: Vec<_> = (0..pair_count)
+            .map(|pair| 0.6 + (pair % 7) as f64 * 0.09)
+            .collect();
+        let mut actual: Vec<_> = (0..=lmax - m)
+            .map(|offset| {
+                Complex64::new(
+                    (offset as f64 - 3.0) * 0.13,
+                    (offset as f64 % 5.0 - 2.0) * 0.17,
+                )
+            })
+            .collect();
+        let mut expected = actual.clone();
+        let mut previous_even = Complex64::new(0.0, 0.0);
+        for (pair_index, l) in (m..=lmax).step_by(2).enumerate() {
+            let offset = l - m;
+            let even = expected[offset];
+            let odd = if l < lmax {
+                expected[offset + 1]
+            } else {
+                Complex64::new(0.0, 0.0)
+            };
+            let previous = if pair_index == 0 {
+                Complex64::new(0.0, 0.0)
+            } else {
+                previous_even * (alpha[pair_index - 1] * epsilon[l])
+            };
+            expected[offset] = even * (alpha[pair_index] * epsilon[l + 1]) + previous;
+            if l < lmax {
+                expected[offset + 1] = odd * alpha[pair_index];
+            }
+            previous_even = even;
+        }
+
+        finalize_paired_scalar_analysis_coefficients(&mut actual, m, lmax, &epsilon, &alpha);
+        assert_eq!(actual, expected, "m={m}, lmax={lmax}");
+    }
+}
+
 fn analytic_y(theta: f64, phi: f64, l: usize, m: usize) -> Complex64 {
     let (sin_theta, cos_theta) = theta.sin_cos();
     let amplitude = match (l, m) {
