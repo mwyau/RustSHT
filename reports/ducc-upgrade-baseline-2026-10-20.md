@@ -156,6 +156,48 @@ delay, and is retained only as historical data in
 Machine-readable paired distributions and commands are in
 [`reports/data/ducc-kernel-fastmath-2026-10-20/`](data/ducc-kernel-fastmath-2026-10-20/).
 
+### Fast-math flags rechecked at the current benchmark source
+
+At RustSHT source `be608eb2`, I repeated the calibrated 64/128/256-lane
+comparison after checking the actual upstream CMake compilation database and
+the standalone compiler invocations. The pinned DUCC checkout is exactly
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b` (0.42.0). Its GCC 15.2 and Clang
+21.1.8 `src/ducc0/sht/sht.cc` v3 commands contain `-O3 -ffast-math
+-march=x86-64-v3`, `DUCC0_MULTIARCH`, and the `ducc0_v3` profile namespace;
+upstream CMake does not print `-ffp-contract=fast`. The standalone benchmark
+adds that flag explicitly to the DUCC kernel and uses the requested
+`-march=x86-64-v3` with both compilers. Its driver is a separate object with
+`-fno-fast-math`, keeping finite and numerical validation strict. The runner
+now rejects overrides that violate this flag contract and prints the actual
+compile commands.
+
+Rust remains strict with `-C target-cpu=x86-64-v3`; this enables the V3
+instruction set and is not equivalent to C++ `-ffast-math`. No Rust fast-math
+or LLVM unsafe-FP option was added. Numerical validation passed at all three
+lane counts. The refreshed data uses source `be608eb2`, so it is kept separate
+from the preceding `d6382614` rows rather than mixed into their distributions.
+
+| Compiler | lanes | Rust warm µs | DUCC µs | paired ratio p10–p90 | excess µs | relative L2 |
+|---|---:|---:|---:|---:|---:|---:|
+| GCC 15.2 | 64 | 4.900 | 4.187 | 1.166–1.180 | 0.722 | 6.670e-14 |
+| GCC 15.2 | 128 | 8.970 | 8.100 | 1.101–1.115 | 0.866 | 1.628e-13 |
+| GCC 15.2 | 256 | 17.338 | 15.958 | 1.081–1.092 | 1.422 | 5.928e-14 |
+| Clang 21.1.8 | 64 | 4.867 | 4.190 | 1.158–1.167 | 0.676 | 6.670e-14 |
+| Clang 21.1.8 | 128 | 8.958 | 8.181 | 1.089–1.105 | 0.766 | 1.628e-13 |
+| Clang 21.1.8 | 256 | 17.265 | 16.013 | 1.073–1.081 | 1.250 | 5.928e-14 |
+
+Both compiler runs used ten paired process invocations and 60 batches per
+backend/lane. DUCC GCC/Clang medians were within 1% in this rerun. Run-queue
+wait medians were 0.008% and 0.010%; three of 1,800 GCC operation/reset
+batches exceeded 100 ms by at most 5.1 ms, while all Clang batches stayed
+within 20–100 ms. The GCC aggregate stability check was marked unstable due
+one process spread; samples were retained. Component timing placed recurrence
+at 2.695/5.209/10.245 µs and accumulation plus reduction at
+2.123/3.649/6.996 µs (64/128/256 lanes). These are current-source results,
+not a causal comparison of flags against earlier code. Full distributions,
+host summaries, and commands are in
+[`reports/data/ducc-kernel-flags-rerun-2026-10-20/`](data/ducc-kernel-flags-rerun-2026-10-20/).
+
 ### Executed AVX2 loop and GCC tuning control
 
 The benchmark-reported Rust `Arch::new()` dispatch is Pulp V3. Its warmed

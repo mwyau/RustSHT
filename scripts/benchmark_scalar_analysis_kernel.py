@@ -3,8 +3,8 @@
 
 from __future__ import annotations
 
-import math
 import hashlib
+import math
 import os
 import pathlib
 import re
@@ -15,7 +15,6 @@ import tempfile
 import threading
 import time
 from collections import defaultdict
-
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DUCC_REVISION = os.environ.get(
@@ -49,6 +48,50 @@ TARGET_FASTEST_BATCH_US = 50_000.0
 COMMIT_CALIBRATION_REPETITIONS = 100_000
 DUCC_TIMED_WARMUPS = 3
 MAX_PROCESS_RANGE_OVER_MEDIAN = 0.15
+
+
+def validate_ducc_flag_contract(compiler: list[str]) -> None:
+    """Reject builds that do not preserve the measured strict/fast split."""
+    kernel_flags = [*compiler[1:], *DUCC_KERNEL_CXXFLAGS]
+    driver_flags = [*compiler[1:], *DUCC_DRIVER_CXXFLAGS]
+    required_kernel = {
+        "-O3",
+        "-ffast-math",
+        "-ffp-contract=fast",
+        "-march=x86-64-v3",
+    }
+    required_driver = {
+        "-O3",
+        "-fno-fast-math",
+        "-ffp-contract=fast",
+        "-march=x86-64-v3",
+    }
+    if not required_kernel.issubset(kernel_flags):
+        raise RuntimeError(
+            "DUCC kernel flags must include -O3 -ffast-math "
+            "-ffp-contract=fast -march=x86-64-v3"
+        )
+    if not required_driver.issubset(driver_flags):
+        raise RuntimeError(
+            "DUCC validation driver flags must include -O3 -fno-fast-math "
+            "-ffp-contract=fast -march=x86-64-v3"
+        )
+    for role, flags in (("kernel", kernel_flags), ("driver", driver_flags)):
+        optimization_flags = [flag for flag in flags if flag.startswith("-O")]
+        if optimization_flags != ["-O3"]:
+            raise RuntimeError(
+                f"unexpected optimization flags for DUCC {role}: {optimization_flags}"
+            )
+        march_flags = [flag for flag in flags if flag.startswith("-march=")]
+        if march_flags != ["-march=x86-64-v3"]:
+            raise RuntimeError(f"unexpected ISA flags for DUCC {role}: {march_flags}")
+        contract_flags = [flag for flag in flags if flag.startswith("-ffp-contract=")]
+        if contract_flags != ["-ffp-contract=fast"]:
+            raise RuntimeError(f"unexpected contraction flags for DUCC {role}: {contract_flags}")
+    if "-fno-fast-math" in kernel_flags:
+        raise RuntimeError("DUCC numerical kernel must retain -ffast-math")
+    if "-ffast-math" in driver_flags or "-Ofast" in driver_flags:
+        raise RuntimeError("DUCC validation driver must retain strict floating-point semantics")
 
 if BATCHES * INVOCATIONS < 30:
     raise RuntimeError("the benchmark requires at least 30 batches per backend")
@@ -290,6 +333,7 @@ def main() -> None:
     rustc = output(["rustc", "--version"]).strip()
     cargo = output(["cargo", "--version"]).strip()
     cxx = shlex.split(os.environ.get("CXX", "g++"))
+    validate_ducc_flag_contract(cxx)
     cxx_version = output(cxx + ["--version"]).splitlines()[0]
     lanes = (64, 128, 256)
 

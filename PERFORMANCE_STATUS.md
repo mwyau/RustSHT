@@ -1,9 +1,9 @@
 # RustSHT performance checkpoint
 
 **Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Current
-production candidate:** `d6382614` (scalar synthesis selects on-the-fly
+implementation source measured:** `be608eb2` (scalar synthesis selects on-the-fly
 recurrence from T64; analysis retains its prior table policy).
-**Earlier A/B source:** `9f7e8658`.
+**Earlier dispatch-policy source:** `d6382614`; **earlier A/B source:** `9f7e8658`.
 **Calibrated harness:** `1ee1a195`. **Benchmark default:** production flags at
 `e2c2dc15`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
@@ -22,6 +22,24 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   Next replace that probe with a controlled scratch sink or independent
   reduction timing, then profile the largest remaining full-transform stage.
   See the [cumulative findings](reports/scalar-analysis-cumulative-2026-10-20.md).
+
+- **DUCC flag confirmation at `be608eb2`:** inspected the pinned 0.42.0
+  upstream CMake `compile_commands.json` for both compilers and verified the
+  actual standalone command lines. DUCC kernel objects use
+  `-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3`; the validation driver
+  is separately compiled with `-fno-fast-math`. Rust remains strict with
+  `-C target-cpu=x86-64-v3`. The runner now rejects flag overrides that violate
+  this split. In a fresh matched T720 `m=1` q1 rerun, warmed Rust/DUCC ratios at
+  64/128/256 lanes were 1.172/1.107/1.089 with GCC 15 and
+  1.161/1.094/1.078 with Clang 21; excess was 0.676–1.422 µs. Relative L2
+  errors were `5.928e-14..1.628e-13`. GCC/Clang DUCC medians were within 1%;
+  three GCC batches exceeded 100 ms and one process spread triggered the
+  instability flag. Samples are separate from the earlier `d6382614` run.
+  Current component measurements place recurrence at 2.695/5.209/10.245 µs
+  and accumulation plus reduction at 2.123/3.649/6.996 µs. Next isolate the
+  latter without introducing spills, then profile larger-order/q8 transforms.
+  See the [flag rerun data](reports/data/ducc-kernel-flags-rerun-2026-10-20/)
+  and [matched report](reports/ducc-upgrade-baseline-2026-10-20.md).
 
 - Full-transform checkpoint at source `5e290b7` compared production f64 scalar
   GL analysis and synthesis with DUCC `80388904b8cfc32400ba84af8a6a45aabfe60f86`
