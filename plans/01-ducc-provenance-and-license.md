@@ -13,6 +13,7 @@ The README cites:
 
 - DUCC GitHub repository: https://github.com/mreineck/ducc
 - Initially pinned comparison revision: `c1ed01b8fda69d2a378190f0915f1a19762dddbf` on `ducc0` (2026-10-09).
+- Current performance-reference revision: `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b` on `ducc0` (2026-10-20; DUCC 0.42.0). Keep source-translation notices and historical fixtures tied to the revisions they actually used.
 - SHT interface: `src/ducc0/sht/sht.h`
 - Algorithms, geometry, quadrature, resampling and adjoints: `src/ducc0/sht/sht.cc`, `sht_inner_loop.h`, `sht_utils.h`
 - GL integrator: `src/ducc0/math/gl_integrator.h`, `gl_integrator.cc` (iterative small-N and Bogaert/FastGL large-N)

@@ -23,9 +23,22 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   samples show intermittent scheduling/frequency interference; no timings were
   removed and paired distributions are retained. See the
   [full-transform report](reports/ducc-full-transform-parity-2026-10-20.md)
-  and machine-readable results. Next, update the compiler and pinned DUCC
-  reference as directed by Plan 11, then isolate the analysis excess at high
-  bandlimits before changing recurrence code.
+  and machine-readable results. The historical benchmark remains pinned to
+  its original compiler and DUCC source.
+- Plan 11 Phase 2 uses Rust 1.99.1 (`rustc 58cf8f9c3`, LLVM 23.1.1) and the
+  latest fetched DUCC 0.42.0 `ducc0` head,
+  `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. The five numerical SHT, SIMD
+  and constants headers checked by the native benchmark are byte-identical to
+  the previous `80388904` pin; checksums are recorded in
+  `reports/data/ducc-reference-rebaseline-2026-10-20/SHA256SUMS`. Native T255
+  GL validation covered six longitude/order configurations, A/S, q1/q8 and
+  72 output comparisons; maximum relative L2 error was `8.976e-14`. Twelve
+  additional basis, roundtrip, edge-input and adjoint suites passed. Workspace
+  release tests and no-default-features release tests passed (242 passed in
+  each; 24 ignored); formatting and strict Clippy passed with the repository's
+  existing custom-cfg warning suppressed. Next: build and inspect DUCC
+  multiarch v3/v4 objects, then establish the Rust 1.99.1 / GCC / Clang v3
+  baseline before further kernel changes.
 
 - Production f64 scalar GL analysis keeps the checked two-pair AVX2/FMA route
   and scaled fallback. The active range-cache candidate reuses a checked

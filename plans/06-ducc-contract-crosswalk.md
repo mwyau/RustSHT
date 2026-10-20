@@ -1,6 +1,6 @@
 # DUCC operation and grid crosswalk
 
-This document maps the GL/CC/F1 subset of the DUCC `ducc0` API to RustSHT operations. Reference: commit [`c1ed01b8fda69d2a378190f0915f1a19762dddbf`](https://github.com/mreineck/ducc/commit/c1ed01b8fda69d2a378190f0915f1a19762dddbf) (2026-10-09) in [mreineck/ducc](https://github.com/mreineck/ducc). Source comparisons define behavior; they do not prescribe the Rust code organization.
+This document maps the GL/CC/F1 subset of the DUCC `ducc0` API to RustSHT operations. The initial API and fixture review used commit [`c1ed01b8fda69d2a378190f0915f1a19762dddbf`](https://github.com/mreineck/ducc/commit/c1ed01b8fda69d2a378190f0915f1a19762dddbf) (2026-10-09). The current performance reference is DUCC 0.42.0 at [`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`](https://github.com/mreineck/ducc/commit/42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b) (2026-10-20). The core SHT files `sht_inner_loop.h`, `sht.cc`, `sht.h`, `infra/simd.h` and `math/constants.h` are byte-identical between this commit and the historical performance pin `80388904b8cfc32400ba84af8a6a45aabfe60f86`; their SHA-256 values are recorded under `reports/data/ducc-reference-rebaseline-2026-10-20/`. Source comparisons define behavior; they do not prescribe the Rust code organization.
 
 ## Supported operators
 

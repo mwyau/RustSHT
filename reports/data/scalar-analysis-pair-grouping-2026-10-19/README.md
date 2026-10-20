@@ -2,11 +2,13 @@
 
 `src/legendre/scalar_paired_kernel_bench.rs` contains the test-only Rust
 fixture and kernel harness. `ducc-ordinary-kernel.cpp` invokes DUCC's native
-`map2alm_kernel` from revision
-`80388904b8cfc32400ba84af8a6a45aabfe60f86`. Run the calibrated ordinary-kernel
-comparison with:
+`map2alm_kernel` from the recorded revision
+`80388904b8cfc32400ba84af8a6a45aabfe60f86`. The runner defaults to the current
+reference pin; set `RUSTSHT_DUCC_REVISION` explicitly to reproduce this
+historical comparison:
 
 ```sh
+RUSTSHT_DUCC_REVISION=80388904b8cfc32400ba84af8a6a45aabfe60f86 \
 DUCC_SRC=/path/to/ducc-source-snapshot \
 DUCC_GIT=/path/to/ducc-git-repository \
 python3 scripts/benchmark_scalar_analysis_kernel.py

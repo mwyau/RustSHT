@@ -23,8 +23,12 @@ import numpy as np
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-DUCC_REVISION = "80388904b8cfc32400ba84af8a6a45aabfe60f86"
+DUCC_REVISION = os.environ.get(
+    "RUSTSHT_DUCC_REVISION", "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b"
+)
+HISTORICAL_DUCC_REVISION = "80388904b8cfc32400ba84af8a6a45aabfe60f86"
 DATA_DIR = ROOT / "reports/data/ducc-full-transform-parity-2026-10-20"
+REPORT_PATH = ROOT / "reports/ducc-full-transform-parity-2026-10-20.md"
 RUST_FLAGS = "-C target-cpu=x86-64-v3 -Aunexpected_cfgs"
 PHI0 = 0.23
 TARGET_BATCH_MS = 25.0
@@ -526,6 +530,9 @@ def hardware_metadata(ducc_src: pathlib.Path) -> dict:
     memory_kib = int(re.search(r"^MemTotal:\s+(\d+)", meminfo, re.MULTILINE).group(1))
     cargo_lock = (ROOT / "Cargo.lock").read_text()
     pulp_match = re.search(r'\[\[package\]\]\nname = "pulp"\nversion = "([^"]+)', cargo_lock)
+    ducc_project = (ducc_src / "pyproject.toml").read_text()
+    ducc_version_match = re.search(r'^version\s*=\s*"([^"]+)"', ducc_project, re.MULTILINE)
+    cxx = shlex.split(os.environ.get("CXX", "g++"))
     return {
         "cpu_model": cpu_model(),
         "architecture": platform.machine(),
@@ -536,10 +543,10 @@ def hardware_metadata(ducc_src: pathlib.Path) -> dict:
         "os": platform.platform(),
         "rustc": command_output(["rustc", "--version"]),
         "cargo": command_output(["cargo", "--version"]),
-        "gxx": command_output(["g++", "--version"]).splitlines()[0],
+        "cxx": command_output(cxx + ["--version"]).splitlines()[0],
         "pulp": pulp_match.group(1) if pulp_match else "unknown",
         "ducc_source_revision": command_output(["git", "rev-parse", "HEAD"], ducc_src),
-        "ducc_version": "0.42.0",
+        "ducc_version": ducc_version_match.group(1) if ducc_version_match else "unknown",
         "rust_flags": RUST_FLAGS,
         "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3",
         "rust_dispatch": "runtime Pulp Arch::new; worker records actual specialization",
@@ -560,7 +567,8 @@ def build(ducc_src: pathlib.Path, build_dir: pathlib.Path, skip_build: bool) -> 
         )
         subprocess.run(
             ["cmake", "-S", str(DATA_DIR), "-B", str(build_dir),
-             f"-DDUCC_SRC={ducc_src}", "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_CXX_COMPILER=g++"],
+             f"-DDUCC_SRC={ducc_src}", "-DCMAKE_BUILD_TYPE=Release",
+             f"-DCMAKE_CXX_COMPILER={shlex.split(os.environ.get('CXX', 'g++'))[0]}"],
             cwd=ROOT, check=True,
         )
         subprocess.run(["cmake", "--build", str(build_dir), "--parallel", "4"], cwd=ROOT, check=True)
@@ -801,8 +809,11 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
 
 
 def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cases: list[dict],
-                 host: dict, validations: list[dict]) -> None:
-    report = ROOT / "reports/ducc-full-transform-parity-2026-10-20.md"
+                 host: dict, validations: list[dict], report: pathlib.Path = REPORT_PATH) -> None:
+    report.parent.mkdir(parents=True, exist_ok=True)
+    results_prefix = pathlib.Path(os.path.relpath(output_dir, report.parent)).as_posix()
+    results_from_root = pathlib.Path(os.path.relpath(output_dir, ROOT)).as_posix()
+    report_from_root = pathlib.Path(os.path.relpath(report, ROOT)).as_posix()
     target_lmax = {0, 4, 8, 16, 32, 64, 128, 255, 256, 511, 512, 513, 720, 721, 1024, 1536, 2048, 3072}
     chosen = [row for row in rows if row["lmax"] in target_lmax and (row["mmax"] == row["lmax"] or row["lmax"] in {720, 2048})]
     lines = [
@@ -810,7 +821,7 @@ def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cas
         "",
         f"Pinned DUCC revision: `{metadata['ducc_source_revision']}` (DUCC {metadata['ducc_version']}).",
         f"Hardware: {metadata['cpu_model']}; {metadata['physical_cores_visible']} physical cores and {metadata['logical_cpus_visible']} logical CPUs visible; {metadata['installed_ram_gib']} GiB RAM; x86-64 features `{', '.join(metadata['cpu_features'])}`.",
-        f"Builds: Rust `{metadata['rustc']}` with `{metadata['rust_flags']}`, Pulp {metadata['pulp']}; DUCC `{metadata['gxx']}` with `{metadata['ducc_flags']}`.",
+        f"Builds: Rust `{metadata['rustc']}` with `{metadata['rust_flags']}`, Pulp {metadata['pulp']}; DUCC `{metadata.get('cxx', metadata.get('gxx', 'unknown'))}` with `{metadata['ducc_flags']}`.",
         f"Runtime SIMD: Rust worker reports `{rows[0]['rust_arch'] if rows else 'not recorded'}`; DUCC is compiled for x86-64-v3 (AVX2/FMA, four f64 lanes).",
         "",
         "## Scope and method",
@@ -819,7 +830,7 @@ def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cas
         "",
         f"Analysis and synthesis were each timed at q1 and q8. Single-thread processes were pinned to one allowed physical core; q8 used eight physical cores. Rust reused its plan and caller-owned workspace. DUCC's public 2D functions have no persistent plan/workspace object, so the adapter reuses all input/output buffers and reports its internal per-call preparation as part of transform latency. DUCC `mstart` mapped its indexing into a leading-offset view of the same compact coefficient body; no per-call coefficient conversion was timed.",
         "",
-        f"Each backend/case/operation/thread-count collected {PROCESS_PAIRS} interleaved independent process pairs with up to three out-of-sample calibration batches and 10 measured repeated-operation batches per process when each operation was below 100 ms. Target was {TARGET_BATCH_MS:g} ms and each measured short-operation batch was checked against the requested 20–100 ms range. Operations above 100 ms were measured individually five times per process. First-call and setup costs are separate from warmed samples. The runner records median, p10/p90, range, paired per-batch ratios and output error. See `reports/data/ducc-full-transform-parity-2026-10-20/results.json` and `.csv` for all cases and samples.",
+        f"Each backend/case/operation/thread-count collected {PROCESS_PAIRS} interleaved independent process pairs with up to three out-of-sample calibration batches and 10 measured repeated-operation batches per process when each operation was below 100 ms. Target was {TARGET_BATCH_MS:g} ms and each measured short-operation batch was checked against the requested 20–100 ms range. Operations above 100 ms were measured individually five times per process. First-call and setup costs are separate from warmed samples. The runner records median, p10/p90, range, paired per-batch ratios and output error. See `{results_prefix}/results.json` and `.csv` for all cases and samples.",
         "",
         "## Results",
         "",
@@ -871,21 +882,21 @@ def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cas
         "",
         "### Plots",
         "",
-        "- [Analysis ratio by lmax](data/ducc-full-transform-parity-2026-10-20/ratio-analysis-full-mmax.svg)",
-        "- [Synthesis ratio by lmax](data/ducc-full-transform-parity-2026-10-20/ratio-synthesis-full-mmax.svg)",
-        "- [Analysis absolute runtime](data/ducc-full-transform-parity-2026-10-20/runtime-analysis.svg)",
-        "- [Synthesis absolute runtime](data/ducc-full-transform-parity-2026-10-20/runtime-synthesis.svg)",
-        "- [Analysis q1/q8 speedup](data/ducc-full-transform-parity-2026-10-20/thread-speedup-analysis.svg)",
-        "- [Synthesis q1/q8 speedup](data/ducc-full-transform-parity-2026-10-20/thread-speedup-synthesis.svg)",
-        "- [Full/reduced mmax analysis](data/ducc-full-transform-parity-2026-10-20/full-reduced-mmax-analysis.svg)",
-        "- [Full/reduced mmax synthesis](data/ducc-full-transform-parity-2026-10-20/full-reduced-mmax-synthesis.svg)",
-        "- [Rust analysis first/warmed latency](data/ducc-full-transform-parity-2026-10-20/cold-warm-analysis-rust-q1.svg)",
+        f"- [Analysis ratio by lmax]({results_prefix}/ratio-analysis-full-mmax.svg)",
+        f"- [Synthesis ratio by lmax]({results_prefix}/ratio-synthesis-full-mmax.svg)",
+        f"- [Analysis absolute runtime]({results_prefix}/runtime-analysis.svg)",
+        f"- [Synthesis absolute runtime]({results_prefix}/runtime-synthesis.svg)",
+        f"- [Analysis q1/q8 speedup]({results_prefix}/thread-speedup-analysis.svg)",
+        f"- [Synthesis q1/q8 speedup]({results_prefix}/thread-speedup-synthesis.svg)",
+        f"- [Full/reduced mmax analysis]({results_prefix}/full-reduced-mmax-analysis.svg)",
+        f"- [Full/reduced mmax synthesis]({results_prefix}/full-reduced-mmax-synthesis.svg)",
+        f"- [Rust analysis first/warmed latency]({results_prefix}/cold-warm-analysis-rust-q1.svg)",
         "",
         "## Measured scope and limitations",
         "",
         f"The largest completed degree is T{max(case['lmax'] for case in cases)}. The sweep includes exhaustive lmax 0–32, dense low/intermediate sampling, required T255/T256/T511/T512/T513/T720/T721/T1024/T1536/T2048, and T3072 where resources permitted. f64 scalar GL is the full matrix; other precisions, spins, CC and F1 are outside this benchmark. Existing stage-level scalar-analysis measurements remain in `PERFORMANCE_STATUS.md` and the linked active profile; this run times complete native calls including FFT, Legendre work, packing/conversion and output writes.",
         "",
-        "The Rust/DUCC output comparison validates identical deterministic random maps and complete-triangle coefficient arrays in every timed configuration at q1 and q8. For each configuration and thread count, the first q1/q8 analysis process also runs out-of-timing roundtrip, zonal/intermediate/sectoral basis, zero, subnormal, extreme-finite and analysis/synthesis adjoint checks. Their per-case results are in `results.json`; neither set of checks is inferred from roundtrip alone.",
+        f"The Rust/DUCC output comparison validates identical deterministic random maps and complete-triangle coefficient arrays in every timed configuration at q1 and q8. For each configuration and thread count, the first q1/q8 analysis process also runs out-of-timing roundtrip, zonal/intermediate/sectoral basis, zero, subnormal, extreme-finite and analysis/synthesis adjoint checks. Their per-case results are in `{results_prefix}/results.json`; neither set of checks is inferred from roundtrip alone.",
         "",
         "## Reproduction",
         "",
@@ -893,7 +904,7 @@ def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cas
         "RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs' cargo build --release --example ducc_full_transform_parity --features parallel",
         "cmake -S reports/data/ducc-full-transform-parity-2026-10-20 -B \"${DUCC_BUILD_DIR:-ducc-build}\" -DDUCC_SRC=\"${DUCC_SRC:?set DUCC_SRC to the pinned checkout}\" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++",
         "cmake --build \"${DUCC_BUILD_DIR:-ducc-build}\" --parallel 4",
-        "python3 scripts/benchmark_ducc_full_transform_parity.py --ducc-src \"${DUCC_SRC:?set DUCC_SRC to the pinned checkout}\" --skip-build",
+        f"python3 scripts/benchmark_ducc_full_transform_parity.py --ducc-src \"${{DUCC_SRC:?set DUCC_SRC to the pinned checkout}}\" --ducc-revision {metadata['ducc_source_revision']} --results-dir {results_from_root} --report-path {report_from_root} --skip-build",
         "```",
         "",
     ]
@@ -907,18 +918,32 @@ def fmt(value):
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--ducc-src", type=pathlib.Path, default=os.environ.get("DUCC_SRC"))
+    parser.add_argument("--ducc-revision", default=DUCC_REVISION,
+                        help="required immutable DUCC commit SHA (default: current active pin)")
     parser.add_argument("--smoke", action="store_true", help="small harness check; not a parity result")
     parser.add_argument("--skip-build", action="store_true")
     parser.add_argument("--case-limit", type=int, help="run only the first N configurations")
     parser.add_argument("--lmax", type=int, action="append", help="run all cases at this lmax; may be repeated")
+    parser.add_argument("--results-dir", type=pathlib.Path, default=DATA_DIR,
+                        help="directory for machine-readable outputs and plots")
+    parser.add_argument("--report-path", type=pathlib.Path, default=REPORT_PATH,
+                        help="report path; ignored with --no-report")
+    parser.add_argument("--no-report", action="store_true",
+                        help="write machine-readable artifacts without replacing a report")
     args = parser.parse_args()
     if args.ducc_src is None:
         parser.error("--ducc-src or DUCC_SRC must name the pinned DUCC checkout")
     ducc_src = pathlib.Path(args.ducc_src).resolve()
+    args.results_dir = args.results_dir.resolve()
+    args.report_path = args.report_path.resolve()
     revision = command_output(["git", "rev-parse", "HEAD"], ducc_src)
-    if revision != DUCC_REVISION:
-        raise RuntimeError(f"DUCC source revision {revision} != required {DUCC_REVISION}")
-    build_dir = pathlib.Path(tempfile.gettempdir()) / "rustsht-ducc-full-parity-build"
+    if revision != args.ducc_revision:
+        raise RuntimeError(f"DUCC source revision {revision} != required {args.ducc_revision}")
+    if (not args.no_report and args.results_dir.resolve() == DATA_DIR.resolve()
+            and revision != HISTORICAL_DUCC_REVISION):
+        raise RuntimeError("refusing to overwrite the historical 80388904 benchmark artifacts; choose a new --results-dir and --report-path or pass --no-report")
+    compiler = pathlib.Path(shlex.split(os.environ.get("CXX", "g++"))[0]).name
+    build_dir = pathlib.Path(tempfile.gettempdir()) / f"rustsht-ducc-full-parity-{revision[:12]}-{compiler}"
     binaries = build(ducc_src, build_dir, args.skip_build)
     cases = make_cases(args.smoke)
     if args.lmax:
@@ -959,10 +984,11 @@ def main() -> None:
                 flush=True,
             )
         return
-    output_dir = DATA_DIR
+    output_dir = args.results_dir
     rows = aggregate(raw, aux["errors"])
     write_artifacts(output_dir, metadata, cases, raw, aux)
-    write_report(output_dir, metadata, rows, cases, aux["host"], aux["validations"])
+    if not args.no_report:
+        write_report(output_dir, metadata, rows, cases, aux["host"], aux["validations"], args.report_path)
     print(f"RESULTS {len(rows)} rows, {len(aux['errors'])} numerical comparisons; max relative L2={max(row['relative_l2'] for row in rows):.3e}", flush=True)
 
 

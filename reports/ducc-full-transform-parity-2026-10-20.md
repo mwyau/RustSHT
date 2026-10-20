@@ -11,7 +11,7 @@ Measured 214 GL scalar configurations using RustSHT's native `ShtPlan` and pinne
 
 Analysis and synthesis were each timed at q1 and q8. Single-thread processes were pinned to one allowed physical core; q8 used eight physical cores. Rust reused its plan and caller-owned workspace. DUCC's public 2D functions have no persistent plan/workspace object, so the adapter reuses all input/output buffers and reports its internal per-call preparation as part of transform latency. DUCC `mstart` mapped its indexing into a leading-offset view of the same compact coefficient body; no per-call coefficient conversion was timed.
 
-Each backend/case/operation/thread-count collected 3 interleaved independent process pairs with up to three out-of-sample calibration batches and 10 measured repeated-operation batches per process when each operation was below 100 ms. Target was 25 ms and each measured short-operation batch was checked against the requested 20–100 ms range. Operations above 100 ms were measured individually five times per process. First-call and setup costs are separate from warmed samples. The runner records median, p10/p90, range, paired per-batch ratios and output error. See `reports/data/ducc-full-transform-parity-2026-10-20/results.json` and `.csv` for all cases and samples.
+Each backend/case/operation/thread-count collected 3 interleaved independent process pairs with up to three out-of-sample calibration batches and 10 measured repeated-operation batches per process when each operation was below 100 ms. Target was 25 ms and each measured short-operation batch was checked against the requested 20–100 ms range. Operations above 100 ms were measured individually five times per process. First-call and setup costs are separate from warmed samples. The runner records median, p10/p90, range, paired per-batch ratios and output error. See `data/ducc-full-transform-parity-2026-10-20/results.json` and `.csv` for all cases and samples.
 
 ## Results
 
@@ -190,7 +190,7 @@ The machine-readable rows retain per-process fixture loading, output-buffer prep
 
 The largest completed degree is T3072. The sweep includes exhaustive lmax 0–32, dense low/intermediate sampling, required T255/T256/T511/T512/T513/T720/T721/T1024/T1536/T2048, and T3072 where resources permitted. f64 scalar GL is the full matrix; other precisions, spins, CC and F1 are outside this benchmark. Existing stage-level scalar-analysis measurements remain in `PERFORMANCE_STATUS.md` and the linked active profile; this run times complete native calls including FFT, Legendre work, packing/conversion and output writes.
 
-The Rust/DUCC output comparison validates identical deterministic random maps and complete-triangle coefficient arrays in every timed configuration at q1 and q8. For each configuration and thread count, the first q1/q8 analysis process also runs out-of-timing roundtrip, zonal/intermediate/sectoral basis, zero, subnormal, extreme-finite and analysis/synthesis adjoint checks. Their per-case results are in `results.json`; neither set of checks is inferred from roundtrip alone.
+The Rust/DUCC output comparison validates identical deterministic random maps and complete-triangle coefficient arrays in every timed configuration at q1 and q8. For each configuration and thread count, the first q1/q8 analysis process also runs out-of-timing roundtrip, zonal/intermediate/sectoral basis, zero, subnormal, extreme-finite and analysis/synthesis adjoint checks. Their per-case results are in `data/ducc-full-transform-parity-2026-10-20/results.json`; neither set of checks is inferred from roundtrip alone.
 
 ## Reproduction
 
@@ -198,5 +198,5 @@ The Rust/DUCC output comparison validates identical deterministic random maps an
 RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs' cargo build --release --example ducc_full_transform_parity --features parallel
 cmake -S reports/data/ducc-full-transform-parity-2026-10-20 -B "${DUCC_BUILD_DIR:-ducc-build}" -DDUCC_SRC="${DUCC_SRC:?set DUCC_SRC to the pinned checkout}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++
 cmake --build "${DUCC_BUILD_DIR:-ducc-build}" --parallel 4
-python3 scripts/benchmark_ducc_full_transform_parity.py --ducc-src "${DUCC_SRC:?set DUCC_SRC to the pinned checkout}" --skip-build
+python3 scripts/benchmark_ducc_full_transform_parity.py --ducc-src "${DUCC_SRC:?set DUCC_SRC to the pinned checkout}" --ducc-revision 80388904b8cfc32400ba84af8a6a45aabfe60f86 --results-dir reports/data/ducc-full-transform-parity-2026-10-20 --report-path reports/ducc-full-transform-parity-2026-10-20.md --skip-build
 ```
