@@ -12,10 +12,11 @@ For reproducible raw benchmark tables see [reports/README](reports/README.md).
 is closed at `a37f74d68631ab5fd373a4097640895e9f0c0c23`. The input scan,
 row FFT, spectrum pruning, order preparation and recurrence stage evidence
 is recorded in the cumulative report and CSV. Plan 14 is now active on the
-same branch/session. Its first clean-source q8 synthesis comparison is now
-published. The small-q1 baseline and T127 reduced-analysis stage attribution
-are now published; q8 stage attribution remains open. Plans 12/13 remain
-deferred.
+same branch/session. Its first clean-source q8 synthesis comparison is
+published. The small-q1 baseline, T127 reduced-analysis profile and a
+diagnostic T720 q8 synthesis stage profile are now recorded. The odd-length
+inverse stage is the leading q8 synthesis lead; no new production
+optimization has been retained. Plans 12/13 remain deferred.
 
 **Plan 14 q1 rebaseline (2026-10-21):** the 64-case T4–T127 warmed q1
 screen and T127 reduced-order phase profile are in
@@ -40,6 +41,18 @@ The measured change removes an intermediate spectrum pass and a parallel
 scatter region; their individual shares are not isolated. The full
 distributions and comparison data are in the
 [direct-output checkpoint](reports/plan14-direct-spectrum-output-2026-10-21.md).
+
+The T720 `mmax=180` q8 stage probe identifies about 0.13 ms excess in the
+ordered recurrence and about 0.16 ms in the combined inverse-FFT/map-write
+stage for odd-minimum `nphi=361`; the even-smooth `nphi=378` inverse stage is
+shorter in Rust than DUCC's combined `leg2map`. These are diagnostic phase
+samples, not calibrated Rust stage distributions. The odd case uses Rust's
+full complex FFT path while DUCC uses a real FFT, making odd-length inverse
+work the next source-grounded comparison. A scattered polar-zero initializer
+was correct but 18% slower and removed. A row-contiguous clear reduction was
+inconclusive under 12% scheduler wait and was also removed; production keeps
+the original full spectrum clear. Details and limits are recorded in
+[Plan 14](plans/14-small-serial-parallel-performance.md).
 
 
 ## Highest-confidence current finding — prefix discontinuity removed
@@ -186,16 +199,15 @@ isolated `m=1` results or a desire to assemble another candidate matrix.
 
 ## Current next steps and deferred work
 
-1. **Plan 14 Phase B:** profile the remaining q8 synthesis stages from
-   `fe0590ac`, then compare q8 analysis on the same clean current source.
-   T720 reduced-order odd-minimum synthesis remains the largest measured
-   residual in this subset (about 0.45 ms); T2047 synthesis is now at
-   DUCC-level latency. Identify whether the remaining absolute cost is
-   recurrence, scheduling or FFT before proposing another change.
+1. **Plan 14 Phase B:** isolate Rust's odd-length inverse FFT arithmetic
+   from spectrum preparation and map writeback at T720 `mmax=180`, then
+   compare q8 analysis on the same clean source. The current odd-minimum
+   synthesis excess is about 0.47 ms; the even-smooth control is about
+   0.19 ms. Do not change the FFT until the odd-stage gap is isolated more
+   narrowly.
 2. Compare the T127 `mmax=31` q1 ordinary analysis kernel against DUCC at a
-   matched active-ring boundary after the q8 synthesis profile. Keep the
-   recurrence unchanged until the kernel work/dataflow difference is
-   measured.
+   matched active-ring boundary. Keep the recurrence unchanged until the
+   kernel work/dataflow difference is measured.
 3. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
    cache-topology queries plus optional offline pointer-chase diagnostic
    (no startup autotuning); [Plan 13](plans/13-fused-batched-sht.md)

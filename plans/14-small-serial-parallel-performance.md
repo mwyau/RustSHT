@@ -126,8 +126,55 @@ while isolating same-active-ring kernel work. Full results, exact revisions,
 flags, error and contention indicators are in
 [`plan14-small-q1-baseline-2026-10-21.md`](../reports/plan14-small-q1-baseline-2026-10-21.md).
 
-No small-q1 source change is supported yet. Continue with the larger absolute
-q8 synthesis residual before returning to the T127 q1 kernel comparison.
+No small-q1 source change is supported yet. The q8 synthesis phase profile
+below now narrows the remaining large-transform lead; isolate that odd-length
+inverse stage before returning to the T127 q1 kernel comparison.
+
+## Current progress — T720 q8 synthesis stage profile (2026-10-21)
+
+At T720, `mmax=180`, q8, exact `phi0=0.23` benchmark coefficients and GL
+geometry, the clean whole-transform baseline is 1.723 ms Rust / 1.254 ms DUCC
+for odd-minimum `nphi=361` (+0.469 ms), and 1.410 / 1.221 ms for even-smooth
+`nphi=378` (+0.189 ms). The values are from the existing 30-batch
+`fe0590ac` checkpoint, not the short phase probe.
+
+Test-only Rust phase probes (three process runs, eight calls per run) and
+timer-only hooks in a temporary pinned DUCC copy produced this diagnostic
+breakdown:
+
+| `nphi` | Rust geometry + clear | Rust ordered recurrence | Rust inverse FFT + writeback | DUCC `alm2leg` | DUCC `leg2map` |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 361 | 0.075 ms | 1.210 ms | 0.332 ms | 1.084 ms | 0.168 ms |
+| 378 | 0.086 ms | 1.198 ms | 0.065 ms | 1.088 ms | 0.128 ms |
+
+These are stage diagnostics, not calibrated Rust stage distributions. Rust
+phase probes used short individual calls; the outer test-only Legendre timer
+overlaps the ordered-recurrence timer and is excluded above. DUCC's timings
+average 234–245 instrumented calls per process. The high-level boundaries also
+differ: DUCC `leg2map` includes phase packing, real FFT and map stores, while
+Rust reports its inverse row routine as one FFT/writeback phase. No stage
+percentages should be interpreted as CPU-cycle shares.
+
+The odd-length path is the largest measured shape-specific lead. Rust's
+`Engine::Odd` reconstructs and transforms a full complex length-361 row;
+DUCC's `leg2map` uses its real pocketfft path. For the even-smooth control Rust
+uses its half-complex real path and the combined inverse stage is shorter than
+DUCC's. This supports testing the odd real-transform work separately; it does
+not yet prove that replacing the Rust FFT path is the best whole-call change.
+
+Two spectrum-clear experiments were removed. Writing polar zeros separately
+from each order produced bitwise-identical output but regressed a matched
+same-host q8 A/B from 1.692 ms to 1.996 ms Rust, with DUCC at 1.266 ms; the
+extra strided per-order stores outweighed skipping the clear. A row-contiguous
+polar-tail initializer reduced the test-only clear phase from about 54 µs to
+2 µs, but its full-transform follow-up ran with roughly 12% scheduler wait
+and DUCC itself moved to 1.46 ms. That timing is inconclusive, so this variant
+was also removed. Production retains the existing full clear.
+
+Next, isolate the odd inverse path's FFT arithmetic from spectrum preparation
+and map writeback on a quiet host. Then compare the remaining q8 analysis
+stages and return to the same-active-ring T127 q1 kernel boundary. Do not
+promote either spectrum-clear experiment from these screens.
 
 ## 4. Phase A — Find and fix small serial fixed costs
 
