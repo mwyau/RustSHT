@@ -1,22 +1,30 @@
 # RustSHT plans — current status and reference index
 
-**Updated 2026-10-21 UTC.** This index distinguishes the **one active
-implementation task** from deferred proposals, numerical contracts and
-archived historical instructions. In any conflict, current explicit owner
+**Updated 2026-10-21 UTC.** This index distinguishes the **currently active Plan 11 and its
+owner-authorized automatic successor Plan 14**, deferred proposals,
+numerical contracts and archived historical instructions. In any conflict, current explicit owner
 instructions, [AGENTS.md](../AGENTS.md) and
 [Plan 11](11-ducc-equivalent-scalar-analysis.md) control.
 
 ## One active plan
 
 **[11 — Scalar f64 GL analysis parity](11-ducc-equivalent-scalar-analysis.md)**.
-Priority: investigate the Rust-only global insignificant-prefix cutoff
-at 2048/2049 latitudes, validate any change against DUCC and adversarial
-numerics, then profile remaining q8 cost. **Keep scalar-analysis tiles
-at 256 reflected pairs**; stop retrying 64/128 diagnostic tiles.
-[Current benchmark decisions](../PERFORMANCE_STATUS.md) replace
-old plans and historical “next” statements.
+The T2048 prefix cutoff is fixed and q8 order-row preparation is parallelized.
+Current remaining objective: measure/reconcile reduced-`mmax` frontend
+overhead (finite scan, row FFT, spectra and weight packing), then **validate,
+document, clean up, commit and push Plan 11 completion**. Keep scalar-analysis
+tiles at 256 reflected pairs; do not restart completed 64/128 studies.
 
-## Future TODOs — not authorized for this session
+**Authorized automatic successor:**
+[14 — Small serial and large parallel SHT parity](14-small-serial-parallel-performance.md).
+After Plan 11's closeout, **the same Luna session must immediately
+activate Plan 14 on the same `opt/sht-performance-parity` branch**.
+Update the active status files and rebaseline against the completed
+Plan 11 source. No second session, new branch or user confirmation.
+[Current benchmark decisions](../PERFORMANCE_STATUS.md) govern
+historical comparisons.
+
+## Deferred TODOs — Plans 12 and 13 remain inactive
 
 - **[12 — Cache-informed Legendre dispatch](12-cache-informed-legendre-dispatch.md):**
   offline multi-host calibration of a cheap cross-platform cache-metadata
