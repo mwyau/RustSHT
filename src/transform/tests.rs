@@ -2275,9 +2275,22 @@ fn scalar_ordered_parallel_orders_match_serial_and_ring_group_synthesis() {
         .unwrap();
     assert!(relative_l2_real(&parallel_map, &serial_map) < 4e-13);
 
-    alm.fill(Complex64::new(0.0, 0.0));
+    // Reuse the same prepared workspace after poisoning every cell. The
+    // sparse initializer must zero inactive tails and the order jobs must
+    // overwrite every active cell on every call.
+    parallel_workspace.spectra.fill(Complex64::new(-7.0, 5.0));
+    eight_threads.install(|| {
+        assert!(plan.synthesize_scalar_ordered_parallel(
+            &alm,
+            pulp::Arch::new(),
+            &mut parallel_workspace,
+        ));
+    });
+    assert!(relative_l2_complex(&parallel_workspace.spectra, &reference_spectra) < 4e-13);
+
     alm[plan.harmonics().index(100, 100).unwrap()] = Complex64::new(f64::from_bits(1), 0.0);
     parallel_workspace.spectra.fill(Complex64::new(3.0, -2.0));
+    let leaf_probe = parallel_workspace.observe_scalar_order_leaves();
     eight_threads.install(|| {
         assert!(!plan.synthesize_scalar_ordered_parallel(
             &alm,
@@ -2292,6 +2305,18 @@ fn scalar_ordered_parallel_orders_match_serial_and_ring_group_synthesis() {
             .all(|&value| value == Complex64::new(0.0, 0.0)),
         "failed direct-order execution must clear partial spectral output before fallback"
     );
+    assert!(
+        leaf_probe
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|leaf| leaf.m_start < 100 && leaf.succeeded),
+        "the late subnormal decline must occur after earlier order jobs wrote spectra"
+    );
+    assert!(
+        parallel_workspace.last_scalar_ordered_decline_had_partial_output(),
+        "earlier normal orders must have produced nonzero spectra before decline"
+    );
 
     one_thread
         .install(|| plan.synthesis_into(&alm, &mut serial_map, &mut serial_workspace))
@@ -2299,11 +2324,105 @@ fn scalar_ordered_parallel_orders_match_serial_and_ring_group_synthesis() {
     eight_threads
         .install(|| plan.synthesis_into(&alm, &mut parallel_map, &mut parallel_workspace))
         .unwrap();
-    assert_eq!(parallel_map, serial_map);
-    assert_eq!(
-        parallel_workspace.spectra,
-        scalar_ring_group_spectra(&plan, &alm)
+    assert!(relative_l2_real(&parallel_map, &serial_map) < 4e-13);
+    assert!(
+        relative_l2_complex(
+            &parallel_workspace.spectra,
+            &scalar_ring_group_spectra(&plan, &alm)
+        ) < 4e-13
     );
+
+    // The finite extreme coefficients overflow the fast transformed
+    // coefficient preflight and must reach the robust scaled fallback.
+    alm.fill(Complex64::new(0.0, 0.0));
+    let coefficient_scale = 0.75 * f64::MAX;
+    alm[plan.harmonics().index(0, 0).unwrap()] = Complex64::new(coefficient_scale, 0.0);
+    alm[plan.harmonics().index(2, 0).unwrap()] = Complex64::new(coefficient_scale, 0.0);
+    parallel_workspace.spectra.fill(Complex64::new(3.0, -2.0));
+    assert!(!eight_threads.install(|| {
+        plan.synthesize_scalar_ordered_parallel(&alm, pulp::Arch::new(), &mut parallel_workspace)
+    }));
+    assert!(
+        parallel_workspace
+            .spectra
+            .iter()
+            .all(|&value| value == Complex64::new(0.0, 0.0))
+    );
+
+    let scaled_alm = alm
+        .iter()
+        .map(|coefficient| *coefficient / coefficient_scale)
+        .collect::<Vec<_>>();
+    let expected = analytic_map(&plan, &scaled_alm);
+    one_thread
+        .install(|| plan.synthesis_into(&alm, &mut serial_map, &mut serial_workspace))
+        .unwrap();
+    eight_threads
+        .install(|| plan.synthesis_into(&alm, &mut parallel_map, &mut parallel_workspace))
+        .unwrap();
+    assert!(parallel_map.iter().all(|value| value.is_finite()));
+    let scaled_error = parallel_map
+        .iter()
+        .zip(expected)
+        .map(|(&actual, expected)| (actual / coefficient_scale - expected).abs())
+        .fold(0.0_f64, f64::max);
+    assert!(
+        scaled_error < 5e-13,
+        "extreme finite fallback error={scaled_error:.3e}"
+    );
+    assert!(relative_l2_real(&parallel_map, &serial_map) < 5e-13);
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn scalar_ordered_parallel_sparse_tails_reuse_odd_and_even_latitude_workspaces() {
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+
+    for (ntheta, nphi) in [(33, 33), (34, 36)] {
+        let plan = make_plan(32, 16, ntheta, nphi, 0.23);
+        assert!(plan.scalar_legendre_table.set(None).is_ok());
+        let mut workspace = eight_threads.install(|| plan.workspace()).unwrap();
+        eight_threads
+            .install(|| plan.prepare_workspace(&mut workspace, 8))
+            .unwrap();
+        prepare_scalar_latitudes(&plan, &mut workspace);
+        let worker_probe = workspace.observe_active_workers();
+
+        for generation in 0..3 {
+            let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+            for order in 0..=plan.harmonics().mmax() {
+                for degree in order..=plan.harmonics().lmax() {
+                    let index = plan.harmonics().index(degree, order).unwrap();
+                    let scale = (generation + 1) as f64 * 1.0e-5;
+                    alm[index] = Complex64::new(
+                        (((degree * 17 + order * 3) % 29) as f64 - 14.0) * scale,
+                        if order == 0 {
+                            0.0
+                        } else {
+                            (((degree * 5 + order * 19) % 31) as f64 - 15.0) * scale
+                        },
+                    );
+                }
+            }
+
+            let stale = Complex64::new(11.0 + generation as f64, -13.0);
+            workspace.spectra.fill(stale);
+            assert!(eight_threads.install(|| {
+                plan.synthesize_scalar_ordered_parallel(&alm, pulp::Arch::new(), &mut workspace)
+            }));
+            let reference = scalar_ring_group_spectra(&plan, &alm);
+            assert!(
+                relative_l2_complex(&workspace.spectra, &reference) < 4e-13,
+                "spectrum mismatch for ntheta={ntheta}, generation={generation}"
+            );
+            assert!(workspace.spectra.iter().all(|value| *value != stale));
+        }
+
+        assert!(worker_probe.lock().unwrap().len() > 1);
+    }
 }
 
 #[cfg(feature = "parallel")]

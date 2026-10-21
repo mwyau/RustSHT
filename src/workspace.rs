@@ -59,6 +59,8 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
     pub(crate) fft_worker_workspaces: Vec<RealFftWorkspace<T>>,
     #[cfg(all(test, feature = "parallel"))]
     transform_phase_probe: Option<TransformPhaseProbe>,
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) last_scalar_ordered_decline_had_partial_output: bool,
 }
 
 #[repr(C)]
@@ -201,6 +203,7 @@ pub(crate) struct ScalarOrderLeafObservation {
     pub(crate) elapsed_ns: u128,
     pub(crate) queue_lock_ns: u128,
     pub(crate) worker: Option<usize>,
+    pub(crate) succeeded: bool,
 }
 
 #[cfg(all(test, feature = "parallel"))]
@@ -455,6 +458,10 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
     }
 
     #[cfg(all(test, feature = "parallel"))]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The test-only order observation records the completed job and its queue timing."
+    )]
     pub(crate) fn record_scalar_order_leaf(
         &self,
         lmax: usize,
@@ -463,6 +470,7 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
         ring_order_limits: &[usize],
         started: Option<Instant>,
         queue_lock_ns: u128,
+        succeeded: bool,
     ) {
         let (Some(probe), Some(started)) = (&self.scalar_order_leaf_probe, started) else {
             return;
@@ -489,6 +497,7 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
                 elapsed_ns: finished.duration_since(started).as_nanos(),
                 queue_lock_ns,
                 worker: rayon::current_thread_index(),
+                succeeded,
             });
     }
 
@@ -670,6 +679,11 @@ impl<T: ShtScalar> ShtWorkspace<T> {
     }
 
     #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn last_scalar_ordered_decline_had_partial_output(&self) -> bool {
+        self.last_scalar_ordered_decline_had_partial_output
+    }
+
+    #[cfg(all(test, feature = "parallel"))]
     pub(crate) fn observe_transform_phases(
         &mut self,
     ) -> Arc<Mutex<Vec<TransformPhaseObservation>>> {
@@ -828,6 +842,8 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             fft_worker_workspaces: Vec::new(),
             #[cfg(all(test, feature = "parallel"))]
             transform_phase_probe: None,
+            #[cfg(all(test, feature = "parallel"))]
+            last_scalar_ordered_decline_had_partial_output: false,
         })
     }
 }

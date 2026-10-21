@@ -606,8 +606,14 @@ impl<T: ShtScalar> ShtPlan<T> {
             theta_cos,
             ring_order_limits,
             recurrence_workers,
+            #[cfg(all(test, feature = "parallel"))]
+            last_scalar_ordered_decline_had_partial_output,
             ..
         } = workspace;
+        #[cfg(all(test, feature = "parallel"))]
+        {
+            *last_scalar_ordered_decline_had_partial_output = false;
+        }
         let Some(geometry) = T::validate_scalar_ordered_geometry_dispatched(
             &theta_sin[..ntheta],
             &theta_cos[..ntheta],
@@ -697,6 +703,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             &ring_order_limits[..ntheta],
                             leaf_started,
                             queue_lock_ns,
+                            succeeded,
                         );
                         if !succeeded {
                             failed.store(true, Ordering::Relaxed);
@@ -717,6 +724,12 @@ impl<T: ShtScalar> ShtPlan<T> {
             // The order jobs write directly into `spectra`. A failed order
             // may follow completed columns, so clear them before the robust
             // fallback accumulates into this workspace.
+            #[cfg(all(test, feature = "parallel"))]
+            {
+                *last_scalar_ordered_decline_had_partial_output = spectra[..output_len]
+                    .iter()
+                    .any(|value| value.re != T::zero() || value.im != T::zero());
+            }
             spectra.fill(Complex::new(T::zero(), T::zero()));
             return false;
         }
