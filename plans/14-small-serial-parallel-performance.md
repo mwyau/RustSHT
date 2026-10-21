@@ -1,12 +1,12 @@
 # Follow-on plan 14 — Small-transform latency and large parallel SHT parity
 
-**Status: ACTIVE (2026-10-21), following Plan 11 closeout
-`a37f74d68631ab5fd373a4097640895e9f0c0c23`.** Plan 11 is complete and
-retained as historical evidence. Work continues on the same Luna session
-and `opt/sht-performance-parity` branch. The transition refreshed the
-historical reduced-`mmax` claims below, and the initial Plan 14 rebaseline
-from final Plan 11 source is complete. Continue the staged, evidence-driven
-work from the current q1/q8 findings below. Plans 12/13 remain future-only.
+**Status: COMPLETE (2026-10-21; closeout report and source SHA are in
+[`plan14-closeout-2026-10-21.md`](../reports/plan14-closeout-2026-10-21.md)).**
+The scalar full-sweep checkpoint, q8 sparse-tail validation, matched stage
+profile and final release checks are complete. No additional scalar kernel
+change was supported by the remaining measurements. Preserve the residual
+latencies and rejected FFT alternative in the closeout report; Plan 15 is
+the owner-authorized next scope. Plans 12/13 remain deferred.
 
 **One-line goal:** Identify and reduce the dominant, measured sources of (1) small **serial** SHT latency and (2) residual large **eight-thread** SHT latency relative to a pinned native DUCC implementation, without sacrificing numerical correctness, portability, or memory safety.
 

@@ -24,6 +24,16 @@ so individual low-degree extremes need cautious interpretation. This is a
 baseline for the current source, not an optimization A/B. See the [report,
 four principal figures and raw data](reports/ducc-current-full-sweep-2026-10-21.md).
 
+**Plan 14 closeout (2026-10-21):** the fresh sweep reproduced the T720
+`mmax=180`, `nphi=361` q8 synthesis excess at +0.228 ms; the prior matched
+stage run measured +0.231 ms. Its two measured excess stages are recurrence
+plus spectrum (+0.112 ms) and inverse/writeback (+0.121 ms). Sparse-tail
+initialization is 1.62 µs, and the tested real-C2R alternative was slower.
+No further production change has a supported mechanism. The q1 reduced odd
+T720 analysis/synthesis excesses (+1.452/+2.080 ms) remain visible but
+un-attributed. Plan 14 is complete; see the [concise closeout](reports/plan14-closeout-2026-10-21.md).
+The next owner-authorized scope is Plan 15 spin-1 GL/CC/F1.
+
 **Plan transition (2026-10-21):** Plan 11's reduced-`mmax` frontend study
 is closed at `a37f74d68631ab5fd373a4097640895e9f0c0c23`. The input scan,
 row FFT, spectrum pruning, order preparation and recurrence stage evidence
