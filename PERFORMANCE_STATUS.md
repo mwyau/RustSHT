@@ -102,6 +102,23 @@ The remaining whole-transform excess is still large; next attribute CC/F1
 recurrence/spectrum and inverse-output stages at matched boundaries rather
 than widening cache eligibility without measured evidence.
 
+**Plan 15 CC q8 surplus-group scheduling (`ae3278a1`):** the exact-T720 CC
+route now uses the existing bounded dynamic ring-group queue only when cached
+coefficient work is eligible and there are more groups than workers. In three
+interleaved q8 process pairs, full-order synthesis fell 40.027→23.596 ms
+(40.9%) and `mmax=180` fell 21.237→17.179 ms (19.4%); q1 synthesis and q8
+analysis controls were neutral. A T511 control improved full order with nine
+groups but correctly kept reduced order on the static path. Output was
+bitwise identical to baseline and DUCC relative L2 error was at most
+`3.64e-13`. Stage timings leave recurrence and spectrum accumulation as the
+dominant remaining cost; inverse/writeback was 1.2 ms full and below 0.2 ms
+reduced. A current-source F1 recheck measured 22.382/5.884 ms full and
+14.338/2.545 ms reduced (Rust/DUCC), with under 1% runqueue wait; the older
+42.752/9.442 ms result coincided with 17–19% wait and is not evidence of a
+source regression. See the [CC scheduling report and data](reports/plan15-spin1-cc-group-scheduling-2026-10-21.md).
+Next: compare CC/F1 recurrence and spectrum dataflow at matched stage
+boundaries, then decide whether a source change is warranted before closeout.
+
 **Plan 15 Phase B candidate:** q8 GL spin-1 synthesis now borrows the shared
 scalar-conversion rows across ring groups instead of copying them into worker
 scratch for each order/group. At T720's 23 groups, the removed copies account
@@ -660,11 +677,10 @@ polar-order validation out of each T720 q8 synthesis order job. At reduced
 DUCC stayed at 1.2607/1.2619 ms and Rust/DUCC moved 1.273×→1.224×. The
 whole-call excess fell 66.7 µs, but the optimized dispatcher also changed
 code generation, so that amount is not assigned solely to the removed scan.
-The exact-source next step is to reprofile the remaining q8 recurrence and
-inverse-row costs, then return to the unresolved small-q1 stage difference.
-The odd inverse change remains limited to f64 `nphi=361`; do not revive the
-rejected standalone C2R engine or generalize that route without matched
-evidence.
+Plan 15's current next step is the matched CC/F1 recurrence and spectrum
+dataflow comparison noted above. The older Plan 14 inverse-row checkpoint
+remains historical; do not revive the rejected standalone C2R engine or
+generalize that route without new matched evidence.
 **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
 cache-topology queries and [Plan 13](plans/13-fused-batched-sht.md)
 true basis-shared batches.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Remove raw process telemetry and emit reviewable F1 cache A/B summaries."""
+"""Remove raw process telemetry and emit reviewable spin-1 cache A/B summaries."""
 
 from __future__ import annotations
 

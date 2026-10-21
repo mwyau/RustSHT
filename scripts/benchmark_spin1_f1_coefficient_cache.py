@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Matched native A/B benchmark for q8 spin-1 synthesis coefficient reuse.
+"""Matched native A/B benchmark for spin-1 coefficient reuse and scheduling.
 
 The driver expects already-built baseline RustSHT, candidate RustSHT, and
 pinned DUCC worker binaries. Raw JSON includes host diagnostics and should be
@@ -45,6 +45,12 @@ def main() -> None:
     parser.add_argument("--output", type=pathlib.Path, required=True)
     parser.add_argument("--grid", choices=("CC", "F1"), default="F1")
     parser.add_argument(
+        "--lmax",
+        type=int,
+        action="append",
+        help="bandlimit to measure (repeatable; defaults to 720)",
+    )
+    parser.add_argument(
         "--baseline-source", default="0b2e1336409ba0bbe9fd6fa4cff70db0e327cd52"
     )
     parser.add_argument(
@@ -67,15 +73,24 @@ def main() -> None:
     if len(cpus) < 8:
         parser.error(f"q8 needs eight physical CPUs; found {len(cpus)}")
     monitor_cpu = cpus[8] if len(cpus) > 8 else cpus[0]
-    source_cases = spin1_bench.make_cases([720], [args.grid], False)
+    lmax_values = args.lmax or [720]
+    source_cases = spin1_bench.make_cases(lmax_values, [args.grid], False)
     cases = [
         case
         for case in source_cases
         if case["latitude_mode"] == "exact"
         and case["longitude_mode"] == "even-smooth"
     ]
-    if {case["mmax"] for case in cases} != {180, 720}:
-        raise RuntimeError(f"unexpected F1 benchmark cases: {cases!r}")
+    expected_mmax = {
+        lmax: {lmax, max(1, lmax // 4)} if lmax >= 16 else {lmax}
+        for lmax in lmax_values
+    }
+    actual_mmax = {
+        lmax: {case["mmax"] for case in cases if case["lmax"] == lmax}
+        for lmax in lmax_values
+    }
+    if actual_mmax != expected_mmax:
+        raise RuntimeError(f"unexpected {args.grid} benchmark cases: {cases!r}")
 
     raw: list[dict] = []
     comparisons: list[dict] = []
@@ -170,7 +185,7 @@ def main() -> None:
                         summaries.append(
                             {
                                 "case_id": case["case_id"],
-                                "grid": "F1",
+                                "grid": case["grid"],
                                 "lmax": case["lmax"],
                                 "mmax": case["mmax"],
                                 "operation": operation,

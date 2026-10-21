@@ -1,0 +1,62 @@
+{
+  "source": "F1 route measured at Rust source 1b832770c4dc052deb48b65a62eff34bed3864f5; ae3278 CC queue change does not alter F1 route",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "rust_toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "ducc_compiler": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+  "ducc_flags": "SHT numerical sources: -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver adds -fno-fast-math",
+  "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+  "q8_cpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "binary_sha256": {
+    "rustsht": "118ce3f77dabb21b539a416429fcf7fabc0747f0e05b538d8f289e075baa2ffa",
+    "ducc": "89125091d06ddd4c24589c6f53e6785682d79f40cf0b991f64ad75a034ae2423"
+  },
+  "process_pairs": 3,
+  "batches_per_short_process": 10,
+  "target_batch_ms": 25,
+  "cases": [
+    {
+      "case_id": "F1-T720-m180-n721-exact-p378-even-smooth",
+      "lmax": 720,
+      "mmax": 180,
+      "ntheta": 721,
+      "nphi": 378,
+      "rust_ms": 14.33799625,
+      "rust_p10_ms": 14.164825350000001,
+      "rust_p90_ms": 14.629778250000001,
+      "ducc_ms": 2.5447549727272727,
+      "ducc_p10_ms": 2.4915170636363637,
+      "ducc_p90_ms": 2.659805972727273,
+      "rust_ducc_ratio": 5.654424020690011,
+      "relative_l2_max": 8.084178221093609e-13,
+      "rust_wait_fraction_median": 0.0059525893051068784,
+      "ducc_wait_fraction_median": 0.01092984545879099
+    },
+    {
+      "case_id": "F1-T720-m720-n721-exact-p1458-even-smooth",
+      "lmax": 720,
+      "mmax": 720,
+      "ntheta": 721,
+      "nphi": 1458,
+      "rust_ms": 22.3818625,
+      "rust_p10_ms": 22.03048185,
+      "rust_p90_ms": 23.032114299999996,
+      "ducc_ms": 5.884359375,
+      "ducc_p10_ms": 5.837318095,
+      "ducc_p90_ms": 6.05114786,
+      "rust_ducc_ratio": 3.7775880658206735,
+      "relative_l2_max": 5.233394665355413e-13,
+      "rust_wait_fraction_median": 0.007839293189466637,
+      "ducc_wait_fraction_median": 0.0030466086407552346
+    }
+  ]
+}
