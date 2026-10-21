@@ -15,6 +15,7 @@ import re
 import shlex
 import statistics
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -38,6 +39,16 @@ PHI0 = 0.23
 TARGET_BATCH_MS = 25.0
 PROCESS_PAIRS = 3
 BATCHES_PER_PROCESS = 10
+DENSE_SWEEP_HIGH_LMAX = (
+    129, 159, 191, 223, 248, 254, 255, 256, 257, 300, 320, 384, 448,
+    511, 512, 513, 640, 720, 721, 768, 896, 1024, 1280, 1536, 1792,
+    2047, 2048, 3072,
+)
+DENSE_SWEEP_ODD_LMAX = frozenset({
+    0, 1, 2, 3, 4, 8, 16, 32, 48, 62, 63, 64, 65, 127, 128, 129, 159,
+    191, 223, 248, 254, 255, 256, 257, 511, 512, 513, 720, 721, 1024,
+    2047, 2048, 3072,
+})
 
 
 def command_output(command: list[str], cwd: pathlib.Path = ROOT, env=None) -> str:
@@ -63,6 +74,14 @@ def cpu_flags() -> set[str]:
 def topology(cpu: int) -> tuple[str, str]:
     base = pathlib.Path(f"/sys/devices/system/cpu/cpu{cpu}/topology")
     return (base / "physical_package_id").read_text().strip(), (base / "core_id").read_text().strip()
+
+
+def l3_cache_id(cpu: int) -> str | None:
+    path = pathlib.Path(f"/sys/devices/system/cpu/cpu{cpu}/cache/index3/id")
+    try:
+        return path.read_text().strip()
+    except OSError:
+        return None
 
 
 def sha256_file(path: pathlib.Path) -> str:
@@ -245,9 +264,12 @@ def make_cases(
     fixed_ntheta: int | None = None,
     selected_lmax: set[int] | None = None,
     max_lmax: int | None = None,
+    dense_sweep: bool = False,
 ) -> list[dict]:
-    if smoke:
+    if smoke and not dense_sweep:
         lmax_values = [0, 4, 16, 64]
+    elif dense_sweep:
+        lmax_values = sorted(set(range(129)) | set(DENSE_SWEEP_HIGH_LMAX))
     else:
         lmax_values = sorted(
             set(range(0, 33))
@@ -270,9 +292,13 @@ def make_cases(
             continue
         if fixed_mmax is None:
             mmax_values = {lmax}
-            if lmax >= 4:
+            if dense_sweep and lmax > 0:
+                reduced_mmax = max(1, lmax // 4)
+                if reduced_mmax <= lmax:
+                    mmax_values.add(reduced_mmax)
+            elif lmax >= 4:
                 mmax_values.add(max(1, lmax // 4))
-            if lmax in {255, 720, 1024}:
+            if not dense_sweep and lmax in {255, 720, 1024}:
                 mmax_values.add(1)
         elif fixed_mmax <= lmax:
             mmax_values = {fixed_mmax}
@@ -293,6 +319,10 @@ def make_cases(
                     if fixed_nphi % 2 == 0 and remainder == 1
                     else "fixed_nphi"
                 ]
+            elif dense_sweep:
+                longitude_modes = ["even_smooth"]
+                if lmax in DENSE_SWEEP_ODD_LMAX:
+                    longitude_modes.append("odd_minimum")
             elif lmax <= 32 or (lmax in key_sizes and lmax < 2048):
                 longitude_modes = ["odd_minimum", "even_smooth"]
             elif smoke:
@@ -500,6 +530,7 @@ def run_matrix(
     target_ms = 5.0 if smoke else TARGET_BATCH_MS
     raw: list[dict] = []
     errors: list[dict] = []
+    failures: list[dict] = []
     validations: list[dict] = []
     host_samples: list[dict] = []
     total = len(cases) * len(threads_to_run) * len(operations_to_run)
@@ -507,7 +538,27 @@ def run_matrix(
     for case in cases:
         with tempfile.TemporaryDirectory(prefix="rustsht-ducc-parity-") as temporary:
             temp = pathlib.Path(temporary)
-            make_fixture(case, temp)
+            try:
+                make_fixture(case, temp)
+            except Exception as error:
+                for threads in threads_to_run:
+                    for operation in operations_to_run:
+                        failures.append({
+                            "case_id": case["case_id"],
+                            "lmax": case["lmax"],
+                            "mmax": case["mmax"],
+                            "ntheta": case["ntheta"],
+                            "nphi": case["nphi"],
+                            "longitude_mode": case["longitude_mode"],
+                            "operation": operation,
+                            "threads": threads,
+                            "process_pair": -1,
+                            "backend": "fixture",
+                            "failure_class": "fixture_error",
+                            "reason": str(error)[:16000],
+                        })
+                print(f"FAIL fixture {case['case_id']}: {error}", flush=True)
+                continue
             for threads in threads_to_run:
                 cpus = physical[:threads]
                 for operation in operations_to_run:
@@ -527,7 +578,36 @@ def run_matrix(
                                 binaries, backend, case, operation, threads, output_path, target_ms,
                                 validate=validate,
                             )
-                            result, diagnostics = run_pinned(command, cpus, monitor_cpu)
+                            try:
+                                result, diagnostics = run_pinned(command, cpus, monitor_cpu)
+                            except Exception as error:
+                                reason = str(error)
+                                lowered = reason.lower()
+                                failure_class = (
+                                    "unsupported" if any(term in lowered for term in
+                                                         ("unsupported", "not supported", "invalid geometry"))
+                                    else "worker_error"
+                                )
+                                failures.append({
+                                    "case_id": case["case_id"],
+                                    "lmax": case["lmax"],
+                                    "mmax": case["mmax"],
+                                    "ntheta": case["ntheta"],
+                                    "nphi": case["nphi"],
+                                    "longitude_mode": case["longitude_mode"],
+                                    "operation": operation,
+                                    "threads": threads,
+                                    "process_pair": pair,
+                                    "backend": backend,
+                                    "failure_class": failure_class,
+                                    "reason": reason[:16000],
+                                })
+                                print(
+                                    f"FAIL {case['case_id']} {operation} q{threads} "
+                                    f"pair={pair} backend={backend}: {reason[:500]}",
+                                    flush=True,
+                                )
+                                continue
                             result.update({
                                 "case_id": case["case_id"],
                                 "lmax": case["lmax"],
@@ -538,14 +618,58 @@ def run_matrix(
                                 "operation": operation,
                                 "threads": threads,
                                 "process_pair": pair,
+                                "host_diagnostics": diagnostics,
                             })
                             raw.append(result)
                             pair_records[backend] = result
                             outputs[backend] = output_path
                             host_samples.append(diagnostics)
-                        rust_values = read_result(outputs["rustsht"], operation, case, "rustsht")
-                        ducc_values = read_result(outputs["ducc"], operation, case, "ducc")
-                        metrics = error_metrics(rust_values, ducc_values)
+                        if len(outputs) != 2:
+                            continue
+                        try:
+                            rust_values = read_result(outputs["rustsht"], operation, case, "rustsht")
+                            ducc_values = read_result(outputs["ducc"], operation, case, "ducc")
+                        except Exception as error:
+                            failures.append({
+                                "case_id": case["case_id"],
+                                "lmax": case["lmax"],
+                                "mmax": case["mmax"],
+                                "ntheta": case["ntheta"],
+                                "nphi": case["nphi"],
+                                "longitude_mode": case["longitude_mode"],
+                                "operation": operation,
+                                "threads": threads,
+                                "process_pair": pair,
+                                "backend": "comparison",
+                                "failure_class": "output_read_error",
+                                "reason": str(error)[:16000],
+                            })
+                            continue
+                        all_finite = bool(np.isfinite(rust_values).all() and np.isfinite(ducc_values).all())
+                        if all_finite:
+                            metrics = error_metrics(rust_values, ducc_values)
+                        else:
+                            metrics = {
+                                "absolute_max": None,
+                                "relative_l2": None,
+                                "max_relative_above_1e-12_peak": None,
+                                "nonfinite_rust_values": int((~np.isfinite(rust_values)).sum()),
+                                "nonfinite_ducc_values": int((~np.isfinite(ducc_values)).sum()),
+                            }
+                            failures.append({
+                                "case_id": case["case_id"],
+                                "lmax": case["lmax"],
+                                "mmax": case["mmax"],
+                                "ntheta": case["ntheta"],
+                                "nphi": case["nphi"],
+                                "longitude_mode": case["longitude_mode"],
+                                "operation": operation,
+                                "threads": threads,
+                                "process_pair": pair,
+                                "backend": "comparison",
+                                "failure_class": "numerical_nonfinite_output",
+                                **metrics,
+                            })
                         errors.append({
                             "case_id": case["case_id"],
                             "lmax": case["lmax"],
@@ -556,10 +680,28 @@ def run_matrix(
                             "operation": operation,
                             "threads": threads,
                             "process_pair": pair,
+                            "finite_outputs": all_finite,
                             **metrics,
                         })
                         if validate:
-                            validation = compare_validation(case, outputs, pair_records)
+                            try:
+                                validation = compare_validation(case, outputs, pair_records)
+                            except Exception as error:
+                                failures.append({
+                                    "case_id": case["case_id"],
+                                    "lmax": case["lmax"],
+                                    "mmax": case["mmax"],
+                                    "ntheta": case["ntheta"],
+                                    "nphi": case["nphi"],
+                                    "longitude_mode": case["longitude_mode"],
+                                    "operation": operation,
+                                    "threads": threads,
+                                    "process_pair": pair,
+                                    "backend": "validation",
+                                    "failure_class": "validation_error",
+                                    "reason": str(error)[:16000],
+                                })
+                                continue
                             validation.update({
                                 "case_id": case["case_id"],
                                 "lmax": case["lmax"],
@@ -570,6 +712,21 @@ def run_matrix(
                             })
                             validations.append(validation)
                             if not validation["finite_outputs"] or not all(validation["reset_consistent"].values()):
+                                failures.append({
+                                    "case_id": case["case_id"],
+                                    "lmax": case["lmax"],
+                                    "mmax": case["mmax"],
+                                    "ntheta": case["ntheta"],
+                                    "nphi": case["nphi"],
+                                    "longitude_mode": case["longitude_mode"],
+                                    "operation": operation,
+                                    "threads": threads,
+                                    "process_pair": pair,
+                                    "backend": "validation",
+                                    "failure_class": "validation_failed",
+                                    "finite_outputs": validation["finite_outputs"],
+                                    "reset_consistent": validation["reset_consistent"],
+                                })
                                 print(
                                     f"VALIDATION WARNING {case['case_id']} finite={validation['finite_outputs']} reset={validation['reset_consistent']}",
                                     flush=True,
@@ -577,7 +734,8 @@ def run_matrix(
             case["map_path"] = str(case["map_path"])
             case["alm_path"] = str(case["alm_path"])
     host = summarize_host(host_samples)
-    return raw, {"errors": errors, "validations": validations, "host": host}
+    return raw, {"errors": errors, "validations": validations, "host": host,
+                 "failures": failures}
 
 
 def summarize_host(samples: list[dict]) -> dict:
@@ -605,18 +763,28 @@ def hardware_metadata(ducc_src: pathlib.Path) -> dict:
     ducc_project = (ducc_src / "pyproject.toml").read_text()
     ducc_version_match = re.search(r'^version\s*=\s*"([^"]+)"', ducc_project, re.MULTILINE)
     cxx = shlex.split(os.environ.get("CXX", "g++"))
+    selected_cpus = physical_cpus()
+    source_status = command_output(
+        ["git", "status", "--porcelain", "--", "src", "examples", "Cargo.toml", "Cargo.lock"]
+    )
     return {
         "cpu_model": cpu_model(),
         "architecture": platform.machine(),
         "physical_cores_visible": len(physical_cpus()),
+        "selected_q1_cpu": selected_cpus[0],
+        "selected_q8_cpus": selected_cpus[:8],
+        "selected_q8_topology": [topology(cpu) for cpu in selected_cpus[:8]],
+        "selected_q8_l3_cache_ids": [l3_cache_id(cpu) for cpu in selected_cpus[:8]],
         "logical_cpus_visible": len(os.sched_getaffinity(0)),
         "installed_ram_gib": round(memory_kib / 1024 / 1024, 2),
         "cpu_features": [name for name in ("avx2", "fma", "avx512f") if name in flags],
         "os": platform.platform(),
         "rustc": command_output(["rustc", "--version"]),
+        "rustc_verbose": command_output(["rustc", "-Vv"]),
         "cargo": command_output(["cargo", "--version"]),
         "rust_source_revision": command_output(["git", "rev-parse", "HEAD"]),
-        "rust_worktree_clean": not bool(command_output(["git", "status", "--porcelain"])),
+        "rust_source_worktree_clean": not bool(source_status),
+        "repository_worktree_clean": not bool(command_output(["git", "status", "--porcelain"])),
         "cxx": command_output(cxx + ["--version"]).splitlines()[0],
         "pulp": pulp_match.group(1) if pulp_match else "unknown",
         "ducc_source_revision": command_output(["git", "rev-parse", "HEAD"], ducc_src),
@@ -644,12 +812,31 @@ def build(ducc_src: pathlib.Path, build_dir: pathlib.Path, skip_build: bool) -> 
         subprocess.run(
             ["cmake", "-S", str(DATA_DIR), "-B", str(build_dir),
              f"-DDUCC_SRC={ducc_src}", "-DCMAKE_BUILD_TYPE=Release",
+             "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
              f"-DCMAKE_CXX_COMPILER={shlex.split(os.environ.get('CXX', 'g++'))[0]}"],
             cwd=ROOT, check=True,
         )
         subprocess.run(["cmake", "--build", str(build_dir), "--parallel", "4"], cwd=ROOT, check=True)
     if not rust_binary.exists() or not ducc_binary.exists():
         raise FileNotFoundError("benchmark binaries missing; rerun without --skip-build")
+    compile_commands = build_dir / "compile_commands.json"
+    if not compile_commands.is_file():
+        raise FileNotFoundError(f"missing DUCC compile_commands.json: {compile_commands}")
+    commands = json.loads(compile_commands.read_text())
+    sht = next((entry for entry in commands if pathlib.Path(entry["file"]).name == "sht.cc"), None)
+    driver = next((entry for entry in commands
+                   if pathlib.Path(entry["file"]).name == "ducc_full_transform_parity.cpp"), None)
+    if sht is None or driver is None:
+        raise RuntimeError("DUCC compile database lacks the SHT TU or native benchmark driver")
+    sht_command = sht.get("command", " ".join(sht.get("arguments", [])))
+    driver_command = driver.get("command", " ".join(driver.get("arguments", [])))
+    required_sht_flags = ("-O3", "-ffast-math", "-ffp-contract=fast", "-march=x86-64-v3")
+    if any(flag not in sht_command for flag in required_sht_flags):
+        raise RuntimeError(f"DUCC SHT compile flags do not match the benchmark contract: {sht_command}")
+    if "-fno-fast-math" not in driver_command or "-ffast-math" not in driver_command:
+        raise RuntimeError(f"native driver must compile with target fast-math overridden by -fno-fast-math: {driver_command}")
+    if driver_command.rfind("-fno-fast-math") < driver_command.rfind("-ffast-math"):
+        raise RuntimeError(f"driver -fno-fast-math does not override target -ffast-math: {driver_command}")
     return {"rustsht": rust_binary, "ducc": ducc_binary}
 
 
@@ -667,19 +854,30 @@ def aggregate(raw: list[dict], errors: list[dict]) -> list[dict]:
         error_groups[(entry["case_id"], entry["operation"], entry["threads"])].append(entry)
     rows = []
     for (case_id, operation, threads), backends in groups.items():
-        rust_values = [value for proc in backends["rustsht"] for value in proc["batch_ms"]]
-        ducc_values = [value for proc in backends["ducc"] for value in proc["batch_ms"]]
+        rust_by_pair = {proc["process_pair"]: proc for proc in backends["rustsht"]}
+        ducc_by_pair = {proc["process_pair"]: proc for proc in backends["ducc"]}
+        valid_error_pairs = {
+            item["process_pair"] for item in error_groups[(case_id, operation, threads)]
+            if item.get("relative_l2") is not None
+        }
+        common_pairs = sorted(set(rust_by_pair) & set(ducc_by_pair) & valid_error_pairs)
+        if not common_pairs:
+            continue
+        matched_rust = [rust_by_pair[pair] for pair in common_pairs]
+        matched_ducc = [ducc_by_pair[pair] for pair in common_pairs]
+        rust_values = [value for proc in matched_rust for value in proc["batch_ms"]]
+        ducc_values = [value for proc in matched_ducc for value in proc["batch_ms"]]
         paired_ratios = []
-        for rust_proc, ducc_proc in zip(backends["rustsht"], backends["ducc"]):
+        for rust_proc, ducc_proc in zip(matched_rust, matched_ducc):
             for rust_time, ducc_time in zip(rust_proc["batch_ms"], ducc_proc["batch_ms"]):
                 paired_ratios.append(rust_time / ducc_time)
         rs = summarize(rust_values)
         ds = summarize(ducc_values)
-        rust_batch_totals = [value for proc in backends["rustsht"] for value in proc["batch_total_ms"]]
-        ducc_batch_totals = [value for proc in backends["ducc"] for value in proc["batch_total_ms"]]
+        rust_batch_totals = [value for proc in matched_rust for value in proc["batch_total_ms"]]
+        ducc_batch_totals = [value for proc in matched_ducc for value in proc["batch_total_ms"]]
         batch_totals = rust_batch_totals + ducc_batch_totals
         short_operation_entries = [
-            entry for backend in backends.values() for entry in backend
+            entry for backend in (matched_rust, matched_ducc) for entry in backend
             if entry["warmup_ms"] < 100.0
         ]
         target_window_values = [
@@ -690,12 +888,17 @@ def aggregate(raw: list[dict], errors: list[dict]) -> list[dict]:
             if target_window_values else None
         )
         pair_summary = summarize(paired_ratios)
-        error_values = error_groups[(case_id, operation, threads)]
+        error_values = [
+            item for item in error_groups[(case_id, operation, threads)]
+            if item["process_pair"] in common_pairs and item.get("relative_l2") is not None
+        ]
+        if not error_values:
+            continue
         errors_summary = {
             key: max(item[key] for item in error_values)
             for key in ("absolute_max", "relative_l2", "max_relative_above_1e-12_peak")
         }
-        template = backends["rustsht"][0]
+        template = matched_rust[0]
         rows.append({
             "case_id": case_id,
             "lmax": template["lmax"],
@@ -716,20 +919,22 @@ def aggregate(raw: list[dict], errors: list[dict]) -> list[dict]:
             "paired_ratio_p90": pair_summary["p90"],
             "excess_ms": rs["median"] - ds["median"],
             **errors_summary,
-            "rust_cold_first_ms": statistics.median(proc["first_ms"] for proc in backends["rustsht"]),
-            "ducc_cold_first_ms": statistics.median(proc["first_ms"] for proc in backends["ducc"]),
-            "rust_setup_ms": statistics.median(proc["setup_ms"] for proc in backends["rustsht"]),
-            "ducc_setup_ms": statistics.median(proc["setup_ms"] for proc in backends["ducc"]),
-            "rust_fixture_load_ms": statistics.median(proc["fixture_load_ms"] for proc in backends["rustsht"]),
-            "ducc_fixture_load_ms": statistics.median(proc["fixture_load_ms"] for proc in backends["ducc"]),
-            "rust_arch": backends["rustsht"][0]["arch"],
-            "ducc_arch": backends["ducc"][0]["arch"],
+            "rust_cold_first_ms": statistics.median(proc["first_ms"] for proc in matched_rust),
+            "ducc_cold_first_ms": statistics.median(proc["first_ms"] for proc in matched_ducc),
+            "rust_setup_ms": statistics.median(proc["setup_ms"] for proc in matched_rust),
+            "ducc_setup_ms": statistics.median(proc["setup_ms"] for proc in matched_ducc),
+            "rust_fixture_load_ms": statistics.median(proc["fixture_load_ms"] for proc in matched_rust),
+            "ducc_fixture_load_ms": statistics.median(proc["fixture_load_ms"] for proc in matched_ducc),
+            "rust_arch": matched_rust[0]["arch"],
+            "ducc_arch": matched_ducc[0]["arch"],
             "batch_count": len(rust_values),
             "batch_elapsed_median_ms": statistics.median(batch_totals),
             "batch_elapsed_p10_ms": percentile(batch_totals, 0.10),
             "batch_elapsed_p90_ms": percentile(batch_totals, 0.90),
             "20_100ms_batch_fraction_for_short_ops": target_window_fraction,
-            "process_invocations_per_backend": len(backends["rustsht"]),
+            "process_invocations_per_backend": len(matched_rust),
+            "completed_process_pairs": len(common_pairs),
+            "measurement_status": "complete" if len(common_pairs) == PROCESS_PAIRS else "partial",
         })
     return sorted(rows, key=lambda row: (row["lmax"], row["mmax"], row["nphi"], row["operation"], row["threads"]))
 
@@ -808,6 +1013,14 @@ def plot_issue_ratio_svg(path: pathlib.Path, operation: str, order_label: str,
         for points in points_by_threads.values() for point in points
     ]
     if not observed:
+        path.write_text(
+            f'<svg xmlns="http://www.w3.org/2000/svg" width="1260" height="680" viewBox="0 0 1260 680">'
+            f'<rect width="100%" height="100%" fill="#fff"/>'
+            f'<text x="98" y="35" font-family="sans-serif" font-size="25" font-weight="bold">RustSHT / DUCC — {operation.capitalize()} ({order_label})</text>'
+            '<text x="98" y="61" font-family="sans-serif" font-size="15" fill="#555">f64 · Gauss–Legendre · even-smooth longitude sampling · warmed full transforms</text>'
+            '<text x="630" y="340" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#555">No completed measurements for this selection</text>'
+            '<text x="960" y="77" font-family="sans-serif" font-size="14">q1 / q8</text></svg>\n'
+        )
         return
     ymin = min(0.25, min(value for _, value in observed) * 0.9)
     ymax = max(16.0, max(value for _, value in observed) * 1.1)
@@ -845,8 +1058,10 @@ def plot_issue_ratio_svg(path: pathlib.Path, operation: str, order_label: str,
         parts.append(f'<line x1="{left}" y1="{y:.1f}" x2="{width-right}" y2="{y:.1f}" stroke="{stroke}"{dash}/>')
         suffix = "× parity" if strong else "×"
         parts.append(f'<text x="{left-11}" y="{y+4:.1f}" text-anchor="end" font-family="sans-serif" font-size="13" font-weight="{"bold" if strong else "normal"}">{fmt_number(ratio)}{suffix}</text>')
-    xticks = [0, 1, 2, 4, 8, 16, 24, 32, 40, 64, 128, 255, 511,
-              720, 1024, 1536, 1792, 2048, 3072]
+    xticks = [0, 1, 2, 4, 8, 16, 24, 32, 48, 64, 80, 96, 112, 128,
+              129, 159, 191, 223, 248, 254, 255, 256, 257, 300, 320,
+              384, 448, 511, 512, 513, 640, 720, 721, 768, 896, 1024,
+              1280, 1536, 1792, 2047, 2048, 3072]
     xticks = [v for v in xticks if v <= xmax]
     for i, degree in enumerate(xticks):
         x = xcoord(degree)
@@ -854,9 +1069,9 @@ def plot_issue_ratio_svg(path: pathlib.Path, operation: str, order_label: str,
         # Rotate long tick labels and alternate placement at close transitions.
         label_y = height - bottom + 27 + (18 if i >= 7 and i % 2 else 0)
         parts.append(f'<text transform="translate({x:.1f} {label_y}) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="12" fill="#394651">{degree}</text>')
-    boundary = xcoord(32)
+    boundary = xcoord(128)
     parts.append(f'<line x1="{boundary:.1f}" y1="{top}" x2="{boundary:.1f}" y2="{height-bottom}" stroke="#7b8794" stroke-dasharray="4 4"/>')
-    parts.append(f'<text x="{left+9}" y="{top+20}" font-family="sans-serif" font-size="13" fill="#4c5a67">Dense: every lmax = 0…32</text>')
+    parts.append(f'<text x="{left+9}" y="{top+20}" font-family="sans-serif" font-size="13" fill="#4c5a67">Dense: every lmax = 0…128</text>')
     if xmax >= 2048:
         onset = xcoord(2048)
         parts.append(f'<line x1="{onset:.1f}" y1="{top}" x2="{onset:.1f}" y2="{height-bottom}" stroke="#9d752c" stroke-dasharray="4 4"/>')
@@ -934,16 +1149,18 @@ def plot_issue_runtime_svg(path: pathlib.Path, operation: str,
         y = ycoord(runtime)
         parts.append(f'<line x1="{left}" y1="{y:.1f}" x2="{width-right}" y2="{y:.1f}" stroke="#e3e8ed"/>')
         parts.append(f'<text x="{left-11}" y="{y+4:.1f}" text-anchor="end" font-family="sans-serif" font-size="13">{runtime:g}</text>')
-    xticks = [0, 1, 2, 4, 8, 16, 24, 32, 40, 64, 128, 255, 511,
-              720, 1024, 1536, 1792, 2048, 3072]
+    xticks = [0, 1, 2, 4, 8, 16, 24, 32, 48, 64, 80, 96, 112, 128,
+              129, 159, 191, 223, 248, 254, 255, 256, 257, 300, 320,
+              384, 448, 511, 512, 513, 640, 720, 721, 768, 896, 1024,
+              1280, 1536, 1792, 2047, 2048, 3072]
     for i, degree in enumerate(v for v in xticks if v <= xmax):
         x = xcoord(degree)
         label_y = height - bottom + 27 + (18 if i >= 7 and i % 2 else 0)
         parts.append(f'<line x1="{x:.1f}" y1="{height-bottom}" x2="{x:.1f}" y2="{height-bottom+6}" stroke="#77818b"/>')
         parts.append(f'<text transform="translate({x:.1f} {label_y}) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="12" fill="#394651">{degree}</text>')
-    boundary = xcoord(32)
+    boundary = xcoord(128)
     parts.append(f'<line x1="{boundary:.1f}" y1="{top}" x2="{boundary:.1f}" y2="{height-bottom}" stroke="#7b8794" stroke-dasharray="4 4"/>')
-    parts.append(f'<text x="{left+9}" y="{top+20}" font-family="sans-serif" font-size="13" fill="#4c5a67">Dense: every lmax = 0…32</text>')
+    parts.append(f'<text x="{left+9}" y="{top+20}" font-family="sans-serif" font-size="13" fill="#4c5a67">Dense: every lmax = 0…128</text>')
     if xmax >= 2048:
         onset = xcoord(2048)
         parts.append(f'<line x1="{onset:.1f}" y1="{top}" x2="{onset:.1f}" y2="{height-bottom}" stroke="#9d752c" stroke-dasharray="4 4"/>')
@@ -1022,9 +1239,103 @@ def write_issue_ratio_plots(rows: list[dict], output_dir: pathlib.Path) -> None:
             )
 
 
+def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
+                         failures: list[dict]) -> dict:
+    expected = make_cases(False, dense_sweep=True)
+    expected_by_id = {case["case_id"]: case for case in expected}
+    actual_by_id = {case["case_id"]: case for case in cases}
+    expected_ids = set(expected_by_id)
+    actual_ids = set(actual_by_id)
+    measurement_groups = {}
+    for case in expected:
+        for operation in ("analysis", "synthesis"):
+            for threads in (1, 8):
+                key = (case["case_id"], operation, threads)
+                backend_pairs = {
+                    backend: {
+                        entry["process_pair"] for entry in raw
+                        if entry["case_id"] == key[0]
+                        and entry["operation"] == operation
+                        and entry["threads"] == threads
+                        and entry["backend"] == backend
+                    }
+                    for backend in ("rustsht", "ducc")
+                }
+                comparison_pairs = {
+                    entry["process_pair"] for entry in errors
+                    if entry["case_id"] == key[0]
+                    and entry["operation"] == operation
+                    and entry["threads"] == threads
+                    and entry.get("relative_l2") is not None
+                }
+                failed_pairs = {
+                    entry["process_pair"] for entry in failures
+                    if entry.get("case_id") == key[0]
+                    and entry.get("operation") == operation
+                    and entry.get("threads") == threads
+                }
+                complete = backend_pairs["rustsht"] & backend_pairs["ducc"] & comparison_pairs
+                measurement_groups[f"{key[0]}|{operation}|q{threads}"] = {
+                    "rust_process_pairs": sorted(backend_pairs["rustsht"]),
+                    "ducc_process_pairs": sorted(backend_pairs["ducc"]),
+                    "compared_process_pairs": sorted(comparison_pairs),
+                    "complete_process_pairs": sorted(complete),
+                    "failed_process_pairs": sorted(failed_pairs),
+                    "status": (
+                        "complete" if len(complete) == PROCESS_PAIRS
+                        else "partial" if complete
+                        else "failed" if failed_pairs
+                        else "missing"
+                    ),
+                }
+    low_degrees = sorted({case["lmax"] for case in expected if case["lmax"] <= 128})
+    required_high = sorted(DENSE_SWEEP_HIGH_LMAX)
+    low_even_missing = []
+    for lmax in range(129):
+        mmax_values = {lmax}
+        if lmax > 0:
+            mmax_values.add(max(1, lmax // 4))
+        for mmax in mmax_values:
+            case_id = f"T{lmax}-m{mmax}-even_smooth"
+            if case_id not in actual_ids:
+                low_even_missing.append(case_id)
+    return {
+        "profile": "dense-0-128-plus-selected-high-degrees",
+        "expected_lmax_0_through_128": list(range(129)),
+        "observed_lmax_0_through_128": low_degrees,
+        "required_high_lmax": required_high,
+        "observed_high_lmax": sorted({case["lmax"] for case in cases if case["lmax"] > 128}),
+        "expected_case_count": len(expected),
+        "observed_case_count": len(cases),
+        "missing_case_ids": sorted(expected_ids - actual_ids),
+        "unexpected_case_ids": sorted(actual_ids - expected_ids),
+        "low_degree_even_smooth_missing": low_even_missing,
+        "expected_measurement_group_count": len(expected) * 4,
+        "measurement_groups": measurement_groups,
+        "measurement_status_counts": {
+            status: sum(group["status"] == status for group in measurement_groups.values())
+            for status in ("complete", "partial", "failed", "missing")
+        },
+        "failure_count": len(failures),
+        "all_requested_measurements_attempted": all(
+            group["status"] != "missing" for group in measurement_groups.values()
+        ),
+        "all_measurements_complete": all(
+            group["status"] == "complete" for group in measurement_groups.values()
+        ),
+        "coverage_pass": (
+            actual_ids == expected_ids and not low_even_missing
+            and not (expected_ids - actual_ids)
+        ),
+    }
+
+
 def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict], raw: list[dict], analysis: dict) -> None:
     rows = aggregate(raw, analysis["errors"])
     output_dir.mkdir(parents=True, exist_ok=True)
+    metadata["runtime_rust_arches"] = sorted({entry["arch"] for entry in raw if entry["backend"] == "rustsht"})
+    metadata["runtime_ducc_arches"] = sorted({entry["arch"] for entry in raw if entry["backend"] == "ducc"})
+    metadata["runtime_rust_f64_lane_widths"] = sorted({entry["lane_width_f64"] for entry in raw if entry["backend"] == "rustsht"})
     sanitized_cases = [
         {key: value for key, value in case.items() if key not in {"map_path", "alm_path"}}
         for case in cases
@@ -1054,14 +1365,41 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
         "samples": raw,
         "numerics": analysis["errors"],
         "validation": analysis["validations"],
+        "failures": analysis.get("failures", []),
         "host_summary": analysis["host"],
     }
     (output_dir / "results.json").write_text(json.dumps(machine, indent=2, allow_nan=False) + "\n")
-    if rows:
-        with (output_dir / "results.csv").open("w", newline="") as handle:
-            writer = csv.DictWriter(handle, fieldnames=list(rows[0]), lineterminator="\n")
-            writer.writeheader()
-            writer.writerows(rows)
+    result_fields = list(rows[0]) if rows else [
+        "case_id", "lmax", "mmax", "ntheta", "nphi", "longitude_mode",
+        "operation", "threads", "rust_warm_ms", "rust_p10_ms", "rust_p90_ms",
+        "ducc_warm_ms", "ducc_p10_ms", "ducc_p90_ms", "rust_ducc_ratio",
+        "paired_ratio_p10", "paired_ratio_p90", "excess_ms", "absolute_max",
+        "relative_l2", "max_relative_above_1e-12_peak", "batch_count",
+        "completed_process_pairs", "measurement_status",
+    ]
+    with (output_dir / "results.csv").open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=result_fields, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+    failures = analysis.get("failures", [])
+    failure_fields = [
+        "case_id", "lmax", "mmax", "ntheta", "nphi", "longitude_mode",
+        "operation", "threads", "process_pair", "backend", "failure_class", "reason",
+    ]
+    failure_fields = list(dict.fromkeys(failure_fields + [key for failure in failures for key in failure]))
+    with (output_dir / "failures.csv").open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=failure_fields, lineterminator="\n")
+        writer.writeheader()
+        for failure in failures:
+            writer.writerow({
+                key: json.dumps(value, sort_keys=True) if isinstance(value, (dict, list)) else value
+                for key, value in failure.items()
+            })
+    if metadata.get("dense_sweep"):
+        coverage = dense_sweep_coverage(cases, raw, analysis["errors"], failures)
+        (output_dir / "coverage-audit.json").write_text(
+            json.dumps(coverage, indent=2, allow_nan=False) + "\n"
+        )
     write_issue_ratio_plots(rows, output_dir)
     write_issue_runtime_plots(rows, output_dir)
     for operation in ("analysis", "synthesis"):
@@ -1208,6 +1546,256 @@ def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cas
     report.write_text("\n".join(lines))
 
 
+def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
+                             metadata: dict, rows: list[dict], cases: list[dict],
+                             coverage: dict, validations: list[dict],
+                             failures: list[dict], host: dict,
+                             invocations: list[str]) -> None:
+    report.parent.mkdir(parents=True, exist_ok=True)
+    result_prefix = pathlib.Path(os.path.relpath(output_dir, report.parent)).as_posix()
+    degree_bands = ((1, 32), (33, 63), (64, 128), (129, 256), (257, 720),
+                    (721, 1536), (1537, 3072))
+    lines = [
+        "# Current-source native RustSHT/DUCC scalar GL sweep (2026-10-21)",
+        "",
+        f"Production Rust source: `{metadata.get('production_source_revision', metadata['rust_source_revision'])}`; benchmark harness commit: `{metadata['rust_source_revision']}`.",
+        f"Pinned DUCC 0.42.0 source: `{metadata['ducc_source_revision']}`.",
+        f"Host: {metadata['cpu_model']}; selected q1 CPU `{metadata['selected_q1_cpu']}`, q8 CPUs `{','.join(map(str, metadata['selected_q8_cpus']))}`; q8 L3 cache IDs `{metadata['selected_q8_l3_cache_ids']}` (one CCD on this host).",
+        f"Toolchains: Rust `{metadata['rustc']}` / {metadata['pulp']} with `{metadata['rust_flags']}`; DUCC `{metadata['cxx']}` with `{metadata['ducc_flags']}`.",
+        f"The production Rust source matches the frozen baseline: `{metadata.get('production_code_matches_baseline')}`; changed production paths since it: `{metadata.get('production_code_changes_since_baseline')}`. Executed Rust Pulp architectures: `{metadata.get('runtime_rust_arches')}`, f64 lane widths `{metadata.get('runtime_rust_f64_lane_widths')}`; DUCC runtime label: `{metadata.get('runtime_ducc_arches')}`.",
+        "The exact `rustc -Vv`, DUCC SHT compile command, and strict benchmark-driver compile command are preserved in the result JSON metadata.",
+        "",
+        "## Scope and method",
+        "",
+        f"The case manifest contains {len(cases)} distinct GL geometries: every `lmax=0…128` plus the requested {len(DENSE_SWEEP_HIGH_LMAX)} sampled higher degrees. For each applicable degree it covers full and quarter-order `mmax`, with even FFT-smooth longitude counts throughout and odd-minimum counts at the selected small, boundary and larger degrees. Each transform uses `ntheta=lmax+1`, `phi0=0.23`, the full permitted degree/order triangle and deterministic PCG64 fixtures shared by both native libraries.",
+        f"Both analysis and synthesis were run at q1/q8. Short calls use {PROCESS_PAIRS} interleaved process pairs and {BATCHES_PER_PROCESS} calibrated batches per backend process, targeting {TARGET_BATCH_MS:g} ms; long calls use the existing individually timed rule. Rust plan/workspace setup, first-call and warmed timings are separate. The saved JSON contains every invocation, batch, numerical comparison, validation, frequency sample and scheduler observation; CSV rows are computed from paired process data. Failure records are retained in `failures.csv` and JSON.",
+        f"The q1/q8 CPU affinity was pinned to the physical core sets shown above. q8 uses the first eight physical cores visible to the process (one CCD on this host). RustSHT and DUCC receive the same fixtures and reusable caller buffers; DUCC's public API performs its own internal setup on each call.",
+        "",
+        "## Coverage audit",
+        "",
+        f"The low-degree audit includes {len(coverage['observed_lmax_0_through_128'])}/129 integer degrees, with no omitted `lmax` values. The required higher list has {len(coverage['required_high_lmax'])} values; case selection check: `{coverage['coverage_pass']}`. Low-degree even-smooth full/reduced coverage omissions: {len(coverage['low_degree_even_smooth_missing'])}. Across {coverage['expected_measurement_group_count']} operation/thread groups, statuses are `{coverage['measurement_status_counts']}`. Failed or partial groups are listed explicitly rather than silently removed.",
+        "",
+        "## Warmed whole-transform summary",
+        "",
+        "Ratios below 1 mean RustSHT was faster. Each table cell reports median ratio, geometric mean ratio, and completed paired case count. Odd-minimum cases are excluded from this even-smooth summary.",
+        "",
+        "| lmax band | operation | mmax | threads | median ratio | geomean ratio | cases |",
+        "|---|---|---|---:|---:|---:|---:|",
+    ]
+    for lo, hi in degree_bands:
+        for operation in ("analysis", "synthesis"):
+            for order_label, is_full in (("full", True), ("reduced", False)):
+                for threads in (1, 8):
+                    selected = [
+                        row for row in rows
+                        if lo <= row["lmax"] <= hi
+                        and row["operation"] == operation
+                        and row["threads"] == threads
+                        and ((row["mmax"] == row["lmax"]) == is_full)
+                        and row["longitude_mode"] == "even_smooth"
+                    ]
+                    if not selected:
+                        continue
+                    ratios = [float(row["rust_ducc_ratio"]) for row in selected]
+                    geomean = math.exp(sum(math.log(value) for value in ratios) / len(ratios))
+                    lines.append(
+                        f"| {lo}–{hi} | {operation} | {order_label} | q{threads} | "
+                        f"{statistics.median(ratios):.3f} | {geomean:.3f} | {len(selected)} |"
+                    )
+    lines += ["", "### Fast and slow measured cases", ""]
+    if rows:
+        worst = sorted(rows, key=lambda row: row["rust_ducc_ratio"], reverse=True)[:8]
+        best = sorted(rows, key=lambda row: row["rust_ducc_ratio"])[:8]
+        lines += [
+            "| case | operation | q | Rust ms | DUCC ms | ratio | relative L2 |",
+            "|---|---|---:|---:|---:|---:|---:|",
+        ]
+        for label, group in (("Largest ratios", worst), ("Smallest ratios", best)):
+            lines.append(f"| **{label}** |  |  |  |  |  |  |")
+            for row in group:
+                lines.append(
+                    f"| T{row['lmax']} m{row['mmax']} {row['longitude_mode']} | {row['operation']} | q{row['threads']} | "
+                    f"{row['rust_warm_ms']:.6g} | {row['ducc_warm_ms']:.6g} | {row['rust_ducc_ratio']:.3f} | {row['relative_l2']:.3e} |"
+                )
+    lines += ["", "### Longitude-shape sensitivity", ""]
+    shape_summary = []
+    for operation in ("analysis", "synthesis"):
+        for threads in (1, 8):
+            by_key = {
+                (row["lmax"], row["mmax"], row["operation"], row["threads"], row["longitude_mode"]): row
+                for row in rows
+            }
+            pairs = []
+            for row in rows:
+                if row["operation"] != operation or row["threads"] != threads or row["longitude_mode"] != "odd_minimum":
+                    continue
+                even = by_key.get((row["lmax"], row["mmax"], operation, threads, "even_smooth"))
+                if even is not None:
+                    pairs.append((row, even))
+            if pairs:
+                rust_factors = [odd["rust_warm_ms"] / even["rust_warm_ms"] for odd, even in pairs]
+                ducc_factors = [odd["ducc_warm_ms"] / even["ducc_warm_ms"] for odd, even in pairs]
+                shape_summary.append(
+                    f"- {operation} q{threads}: odd/even median runtime factor Rust {statistics.median(rust_factors):.3f}×, DUCC {statistics.median(ducc_factors):.3f}× across {len(pairs)} matched cases."
+                )
+    lines += shape_summary or ["No odd/even matched geometries completed."]
+    if rows:
+        lines += [
+            "",
+            "### Crossover and numerical results",
+            "",
+        ]
+        for operation in ("analysis", "synthesis"):
+            for is_full, order_label in ((True, "full"), (False, "reduced")):
+                for threads in (1, 8):
+                    selected = sorted(
+                        [row for row in rows if row["operation"] == operation
+                         and row["threads"] == threads
+                         and ((row["mmax"] == row["lmax"]) == is_full)
+                         and row["longitude_mode"] == "even_smooth"],
+                        key=lambda row: row["lmax"],
+                    )
+                    if not selected:
+                        lines.append(f"- {operation} {order_label} q{threads}: no completed even-smooth comparisons.")
+                        continue
+                    below = [row["lmax"] for row in selected if row["rust_ducc_ratio"] < 1]
+                    above = [row["lmax"] for row in selected if row["rust_ducc_ratio"] > 1]
+                    crossings = [
+                        f"T{left['lmax']}→T{right['lmax']}"
+                        for left, right in zip(selected, selected[1:])
+                        if (left["rust_ducc_ratio"] < 1) != (right["rust_ducc_ratio"] < 1)
+                    ]
+                    lines.append(
+                        f"- {operation} {order_label} q{threads}: {len(below)} observed points below parity and {len(above)} above; "
+                        f"lowest-ratio degree {min(selected, key=lambda row: row['rust_ducc_ratio'])['lmax']}, "
+                        f"highest-ratio degree {max(selected, key=lambda row: row['rust_ducc_ratio'])['lmax']}; "
+                        f"observed parity crossings {', '.join(crossings) if crossings else 'none in degree order'} (sampled points only)."
+                    )
+        max_l2 = max(row["relative_l2"] for row in rows)
+        max_abs = max(row["absolute_max"] for row in rows)
+        lines.append(f"Maximum random-output relative L2 error: `{max_l2:.3e}`; maximum absolute error: `{max_abs:.3e}`.")
+    finite_validations = sum(item["finite_outputs"] for item in validations)
+    reset_validations = sum(all(item["reset_consistent"].values()) for item in validations)
+    roundtrip_max = max((item["roundtrip"][backend]["relative_l2"]
+                         for item in validations for backend in ("rustsht", "ducc")), default=0.0)
+    basis_max = max((entry[key]["relative_l2"] for item in validations for entry in item["basis"]
+                     for key in ("analysis_of_synthesis_rust", "analysis_of_synthesis_ducc")), default=0.0)
+    adjoint_max = max((item["adjoints"][backend][key] for item in validations
+                       for backend in ("rustsht", "ducc")
+                       for key in ("synthesis_relative_residual", "analysis_relative_residual")), default=0.0)
+    lines += [
+        f"Validation ran for {len(validations)} case/thread configurations: finite edge outputs {finite_validations}/{len(validations)}, reused-output reset checks {reset_validations}/{len(validations)}; maximum roundtrip relative L2 `{roundtrip_max:.3e}`, selected-basis recovery `{basis_max:.3e}`, and adjoint residual `{adjoint_max:.3e}`. Sidecar results include zero, subnormal and extreme-finite checks.",
+        f"Observed CPU frequency median/p10/p90 `{fmt(host['frequency_ghz_median'])}/{fmt(host['frequency_ghz_p10'])}/{fmt(host['frequency_ghz_p90'])}` GHz; scheduler wait median/p90 `{fmt(host['runqueue_wait_fraction_median'])}/{fmt(host['runqueue_wait_fraction_p90'])}`; involuntary-switch median/max `{fmt(host['involuntary_switches_median'])}/{host['involuntary_switches_max']}`. No batch samples are removed from the saved distributions.",
+        f"There were {len(failures)} recorded failure/warning events. Inspect `{result_prefix}/failures.csv` and the JSON `failures` array; unsupported cases are labeled separately from worker and numerical-validation errors.",
+        "",
+        "## Principal figures",
+        "",
+        f"- [Analysis, full mmax](./{result_prefix}/ratio-analysis-full-mmax.svg)",
+        f"- [Analysis, reduced mmax](./{result_prefix}/ratio-analysis-reduced-mmax.svg)",
+        f"- [Synthesis, full mmax](./{result_prefix}/ratio-synthesis-full-mmax.svg)",
+        f"- [Synthesis, reduced mmax](./{result_prefix}/ratio-synthesis-reduced-mmax.svg)",
+        "",
+        "The four figures plot measured warmed RustSHT/DUCC ratios for even-smooth longitude cases only; q1 and q8 are separate curves and points are not smoothed. Odd-minimum cases remain in the data and shape summary.",
+        "",
+        "## Reproduction and attribution",
+        "",
+        f"The machine-readable artifacts are [`results.csv`](./{result_prefix}/results.csv), [`results.json`](./{result_prefix}/results.json), and [`coverage-audit.json`](./{result_prefix}/coverage-audit.json). Rust plan setup/first-call fields, calibrated warm batch distributions, process pairing, per-case numerical errors, host scheduling/frequency diagnostics, and every requested geometry are retained.",
+        "",
+        "```sh",
+        f"git checkout {metadata.get('benchmark_harness_revision', metadata['rust_source_revision'])}",
+        f"git -C \"$DUCC_SRC\" checkout --detach {metadata['ducc_source_revision']}",
+        "# Build once with the checked-in native parity CMake project and the recorded toolchain/flags.",
+    ]
+    lines.extend(invocations)
+    lines += [
+        "```",
+        "",
+        "The October 20 sweep is retained as a historical illustration only. It used a different Rust source/toolchain combination; its points are not merged into this dataset or used to compute the ratios above.",
+        "",
+    ]
+    report.write_text("\n".join(lines))
+
+
+def merge_shards(shard_paths: list[pathlib.Path], output_dir: pathlib.Path,
+                 report_path: pathlib.Path, dense_sweep: bool) -> None:
+    shards = [json.loads(path.read_text()) for path in shard_paths]
+    if not shards:
+        raise ValueError("no shard results supplied")
+    metadata = dict(shards[0]["metadata"])
+    invariant_fields = (
+        "rust_source_revision", "production_source_revision", "ducc_source_revision",
+        "ducc_version", "rustc", "cargo", "cxx", "rust_flags", "ducc_flags",
+        "cpu_model", "selected_q1_cpu", "selected_q8_cpus", "selected_q8_topology",
+        "selected_q8_l3_cache_ids", "process_pairs", "batches_per_process",
+        "target_batch_ms", "phi0", "dense_sweep", "sweep_id",
+        "ducc_sht_compile_command", "ducc_driver_compile_command",
+        "production_code_changes_since_baseline", "production_code_matches_baseline",
+        "rust_binary_sha256", "ducc_binary_sha256", "rust_build_command",
+        "ducc_cmake_build_command",
+    )
+    for index, shard in enumerate(shards[1:], 2):
+        for field in invariant_fields:
+            if shard["metadata"].get(field) != metadata.get(field):
+                raise ValueError(f"shard {index} metadata mismatch for {field}")
+    cases: list[dict] = []
+    raw: list[dict] = []
+    errors: list[dict] = []
+    validations: list[dict] = []
+    failures: list[dict] = []
+    invocations = []
+    seen_case_ids = set()
+    seen_samples = set()
+    for path, shard in zip(shard_paths, shards):
+        shard_cases = shard["cases"]
+        shard_ids = {case["case_id"] for case in shard_cases}
+        overlap = seen_case_ids & shard_ids
+        if overlap:
+            raise ValueError(f"duplicate case IDs across shards: {sorted(overlap)[:8]}")
+        seen_case_ids |= shard_ids
+        cases.extend(shard_cases)
+        for sample in shard["samples"]:
+            key = (sample["case_id"], sample["operation"], sample["threads"],
+                   sample["backend"], sample["process_pair"])
+            if key in seen_samples:
+                raise ValueError(f"duplicate native sample key: {key}")
+            seen_samples.add(key)
+            raw.append(sample)
+        errors.extend(shard["numerics"])
+        validations.extend(shard["validation"])
+        failures.extend(shard.get("failures", []))
+        invocation = shard["metadata"].get("invocation")
+        if invocation:
+            invocations.append(invocation)
+    cases.sort(key=lambda case: (case["lmax"], case["mmax"], case["nphi"]))
+    raw.sort(key=lambda item: (item["lmax"], item["case_id"], item["operation"],
+                               item["threads"], item["process_pair"], item["backend"]))
+    errors.sort(key=lambda item: (item["lmax"], item["case_id"], item["operation"],
+                                  item["threads"], item["process_pair"]))
+    validations.sort(key=lambda item: (item["lmax"], item["case_id"], item["threads"]))
+    metadata["dense_sweep"] = dense_sweep
+    metadata["merged_shards"] = [
+        {
+            "name": path.name,
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "case_count": len(shard["cases"]),
+        }
+        for path, shard in zip(shard_paths, shards)
+    ]
+    metadata["invocation"] = "merged shard results"
+    diagnostics = [sample["host_diagnostics"] for sample in raw if "host_diagnostics" in sample]
+    analysis = {
+        "errors": errors,
+        "validations": validations,
+        "failures": failures,
+        "host": summarize_host(diagnostics),
+    }
+    rows = write_artifacts(output_dir, metadata, cases, raw, analysis)
+    if dense_sweep:
+        coverage = dense_sweep_coverage(cases, raw, errors, failures)
+        write_dense_sweep_report(output_dir, report_path, metadata, rows, cases,
+                                 coverage, validations, failures, analysis["host"], invocations)
+
+
 def fmt(value):
     return "unavailable" if value is None else f"{value:.4g}"
 
@@ -1218,6 +1806,14 @@ def main() -> None:
     parser.add_argument("--ducc-revision", default=DUCC_REVISION,
                         help="required immutable DUCC commit SHA (default: current active pin)")
     parser.add_argument("--plot-only", action="store_true", help="regenerate ratio and runtime SVGs from existing results.csv; no benchmark or DUCC checkout needed")
+    parser.add_argument("--merge-shards", type=pathlib.Path, nargs="+",
+                        help="merge completed native benchmark shard results.json files")
+    parser.add_argument("--dense-sweep", action="store_true",
+                        help="select every lmax 0..128 plus the requested representative higher degrees")
+    parser.add_argument("--production-source-revision",
+                        help="frozen Rust production source commit represented by this benchmark")
+    parser.add_argument("--sweep-id", default="",
+                        help="label recorded in machine-readable metadata")
     parser.add_argument("--smoke", action="store_true", help="small harness check; not a parity result")
     parser.add_argument("--skip-build", action="store_true")
     parser.add_argument("--case-limit", type=int, help="run only the first N configurations")
@@ -1245,6 +1841,25 @@ def main() -> None:
     parser.add_argument("--no-report", action="store_true",
                         help="write machine-readable artifacts without replacing a report")
     args = parser.parse_args()
+    args.results_dir = args.results_dir.resolve()
+    args.report_path = args.report_path.resolve()
+    if args.merge_shards:
+        merge_shards(
+            [path.resolve() for path in args.merge_shards], args.results_dir,
+            args.report_path, args.dense_sweep,
+        )
+        if args.dense_sweep:
+            with (args.results_dir / "coverage-audit.json").open() as handle:
+                coverage = json.load(handle)
+            print(
+                f"MERGED {len(args.merge_shards)} shards; case selection pass="
+                f"{coverage['coverage_pass']}; measurements="
+                f"{coverage['measurement_status_counts']}",
+                flush=True,
+            )
+        else:
+            print(f"MERGED {len(args.merge_shards)} benchmark shards", flush=True)
+        return
     if args.plot_only:
         with (args.results_dir / "results.csv").open(newline="") as handle:
             rows = list(csv.DictReader(handle))
@@ -1257,8 +1872,6 @@ def main() -> None:
     if args.ducc_src is None:
         parser.error("--ducc-src or DUCC_SRC must name the pinned DUCC checkout")
     ducc_src = pathlib.Path(args.ducc_src).resolve()
-    args.results_dir = args.results_dir.resolve()
-    args.report_path = args.report_path.resolve()
     revision = command_output(["git", "rev-parse", "HEAD"], ducc_src)
     if revision != args.ducc_revision:
         raise RuntimeError(f"DUCC source revision {revision} != required {args.ducc_revision}")
@@ -1284,6 +1897,7 @@ def main() -> None:
             args.fixed_ntheta,
             set(args.lmax) if args.lmax else None,
             args.max_lmax,
+            args.dense_sweep,
         )
     except ValueError as error:
         parser.error(str(error))
@@ -1301,6 +1915,47 @@ def main() -> None:
         PROCESS_PAIRS = 1
         TARGET_BATCH_MS = 5.0
     metadata = hardware_metadata(ducc_src)
+    metadata.update({
+        "production_source_revision": args.production_source_revision or metadata["rust_source_revision"],
+        "benchmark_harness_revision": metadata["rust_source_revision"],
+        "benchmark_invocation": shlex.join([sys.executable, *sys.argv]),
+        "invocation": shlex.join([sys.executable, *sys.argv]),
+        "dense_sweep": args.dense_sweep,
+        "sweep_id": args.sweep_id,
+        "process_pairs": PROCESS_PAIRS,
+        "batches_per_process": BATCHES_PER_PROCESS,
+        "target_batch_ms": TARGET_BATCH_MS,
+        "phi0": PHI0,
+        "rust_binary_sha256": sha256_file(binaries["rustsht"]),
+        "ducc_binary_sha256": sha256_file(binaries["ducc"]),
+        "rust_build_command": "RUSTFLAGS='" + RUST_FLAGS + "' cargo build --release --example ducc_full_transform_parity --features parallel",
+        "ducc_cmake_build_command": (
+            f"cmake -S {DATA_DIR} -B {build_dir} -DDUCC_SRC={ducc_src} "
+            f"-DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER={shlex.split(os.environ.get('CXX', 'g++'))[0]} "
+            "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON; cmake --build " + str(build_dir) + " --parallel 4"
+        ),
+    })
+    baseline = metadata["production_source_revision"]
+    if re.fullmatch(r"[0-9a-fA-F]{40}", baseline):
+        delta = subprocess.run(
+            ["git", "diff", "--name-only", f"{baseline}..HEAD", "--", "src", "examples", "Cargo.toml", "Cargo.lock"],
+            cwd=ROOT, text=True, capture_output=True, check=True,
+        ).stdout.splitlines()
+        metadata["production_code_changes_since_baseline"] = delta
+        metadata["production_code_matches_baseline"] = not delta and metadata["rust_source_worktree_clean"]
+    else:
+        metadata["production_code_changes_since_baseline"] = None
+        metadata["production_code_matches_baseline"] = False
+    ducc_commands = json.loads((build_dir / "compile_commands.json").read_text())
+    metadata["ducc_sht_compile_command"] = next(
+        entry.get("command", " ".join(entry.get("arguments", [])))
+        for entry in ducc_commands if pathlib.Path(entry["file"]).name == "sht.cc"
+    )
+    metadata["ducc_driver_compile_command"] = next(
+        entry.get("command", " ".join(entry.get("arguments", [])))
+        for entry in ducc_commands
+        if pathlib.Path(entry["file"]).name == "ducc_full_transform_parity.cpp"
+    )
     print(f"BUILD rust={binaries['rustsht']} DUCC={binaries['ducc']}", flush=True)
     print(f"ENV cpu={metadata['cpu_model']} x86={metadata['cpu_features']} affinity=q1/q8 physical cores", flush=True)
     print(f"DISPATCH Rust=Pulp V3 selected by worker; DUCC=fixed x86-64-v3", flush=True)
@@ -1314,7 +1969,7 @@ def main() -> None:
         print(
             f"SMOKE complete: {len(cases)} configs, {len(raw)} worker invocations, "
             f"{len(aux['errors'])} random-output comparisons, max relative L2="
-            f"{max(row['relative_l2'] for row in rows):.3e}; "
+            f"{max((row['relative_l2'] for row in rows), default=float('nan')):.3e}; "
             f"finite edge checks {finite_count}/{len(aux['validations'])}, "
             f"repeat reset checks {reset_count}/{len(aux['validations'])}",
             flush=True,
@@ -1336,7 +1991,12 @@ def main() -> None:
     write_artifacts(output_dir, metadata, cases, raw, aux)
     if not args.no_report:
         write_report(output_dir, metadata, rows, cases, aux["host"], aux["validations"], args.report_path)
-    print(f"RESULTS {len(rows)} rows, {len(aux['errors'])} numerical comparisons; max relative L2={max(row['relative_l2'] for row in rows):.3e}", flush=True)
+    max_relative_l2 = max((row["relative_l2"] for row in rows), default=float("nan"))
+    print(
+        f"RESULTS {len(rows)} rows, {len(aux['errors'])} numerical comparisons, "
+        f"{len(aux.get('failures', []))} failure records; max relative L2={max_relative_l2:.3e}",
+        flush=True,
+    )
 
 
 if __name__ == "__main__":
