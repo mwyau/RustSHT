@@ -18,7 +18,7 @@ benchmark driver remains strict FP.
 Run from the repository root after setting the binary and source variables:
 
 ```sh
-python3 scripts/benchmark_plan14_order_local_init.py \
+python3 scripts/benchmark_plan14_analysis_source_ab.py \
   --baseline-binary "$BASELINE_BIN" \
   --candidate-binary "$CANDIDATE_BIN" \
   --ducc-binary "$DUCC_BIN" \

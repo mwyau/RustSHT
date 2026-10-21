@@ -1,0 +1,31 @@
+backend,process,stage,p10_us,median_us,p90_us,whole_min_us,whole_median_us,whole_max_us,timed_batches,calls_per_batch,stage_calls
+RustSHT baseline f2249ac,1,Legendre recurrence and accumulation,1678.801,1702.315,1739.958,2335.01,2432.19,2582.145,30,22,
+RustSHT baseline f2249ac,1,Legendre table retrieval,0.022,0.023,0.024,2335.01,2432.19,2582.145,30,22,
+RustSHT baseline f2249ac,1,coefficient cleanup,0.538,0.607,0.644,2335.01,2432.19,2582.145,30,22,
+RustSHT baseline f2249ac,1,coefficient initialization,0.024,0.025,0.027,2335.01,2432.19,2582.145,30,22,
+RustSHT baseline f2249ac,1,forward FFT,444.45,471.681,519.676,2335.01,2432.19,2582.145,30,22,
+RustSHT baseline f2249ac,1,order spectrum preparation,231.292,240.847,257.829,2335.01,2432.19,2582.145,30,22,
+RustSHT baseline f2249ac,1,resampling and latitude setup,14.926,15.344,15.746,2335.01,2432.19,2582.145,30,22,
+RustSHT baseline f2249ac,1,strategy selection,0.032,0.036,0.045,2335.01,2432.19,2582.145,30,22,
+RustSHT baseline f2249ac,2,Legendre recurrence and accumulation,1670.125,1695.453,1727.804,2359.915,2419.573,2627.283,30,22,
+RustSHT baseline f2249ac,2,Legendre table retrieval,0.021,0.023,0.024,2359.915,2419.573,2627.283,30,22,
+RustSHT baseline f2249ac,2,coefficient cleanup,0.54,0.572,0.621,2359.915,2419.573,2627.283,30,22,
+RustSHT baseline f2249ac,2,coefficient initialization,0.024,0.025,0.027,2359.915,2419.573,2627.283,30,22,
+RustSHT baseline f2249ac,2,forward FFT,441.87,464.932,515.315,2359.915,2419.573,2627.283,30,22,
+RustSHT baseline f2249ac,2,order spectrum preparation,229.737,241.914,261.876,2359.915,2419.573,2627.283,30,22,
+RustSHT baseline f2249ac,2,resampling and latitude setup,15.019,15.287,16.008,2359.915,2419.573,2627.283,30,22,
+RustSHT baseline f2249ac,2,strategy selection,0.029,0.033,0.037,2359.915,2419.573,2627.283,30,22,
+RustSHT baseline f2249ac,3,Legendre recurrence and accumulation,1672.278,1698.366,1742.173,2350.585,2429.438,2749.681,30,20,
+RustSHT baseline f2249ac,3,Legendre table retrieval,0.022,0.023,0.024,2350.585,2429.438,2749.681,30,20,
+RustSHT baseline f2249ac,3,coefficient cleanup,0.55,0.586,0.72,2350.585,2429.438,2749.681,30,20,
+RustSHT baseline f2249ac,3,coefficient initialization,0.024,0.026,0.028,2350.585,2429.438,2749.681,30,20,
+RustSHT baseline f2249ac,3,forward FFT,446.39,472.54,518.686,2350.585,2429.438,2749.681,30,20,
+RustSHT baseline f2249ac,3,order spectrum preparation,228.69,242.059,267.34,2350.585,2429.438,2749.681,30,20,
+RustSHT baseline f2249ac,3,resampling and latitude setup,15.049,15.459,16.267,2350.585,2429.438,2749.681,30,20,
+RustSHT baseline f2249ac,3,strategy selection,0.03,0.033,0.036,2350.585,2429.438,2749.681,30,20,
+DUCC instrumented 42ce8ab5,1,map2leg (FFT stage),,510.89099999999996,,2105.62,2125.805,2203.74,10,14,140
+DUCC instrumented 42ce8ab5,1,leg2alm_internal (packing plus recurrence),,1578.33,,2105.62,2125.805,2203.74,10,14,140
+DUCC instrumented 42ce8ab5,2,map2leg (FFT stage),,511.555,,2120.88,2130.655,2189.48,10,15,150
+DUCC instrumented 42ce8ab5,2,leg2alm_internal (packing plus recurrence),,1582.94,,2120.88,2130.655,2189.48,10,15,150
+DUCC instrumented 42ce8ab5,3,map2leg (FFT stage),,511.298,,2117.98,2126.2700000000004,2233.76,10,14,140
+DUCC instrumented 42ce8ab5,3,leg2alm_internal (packing plus recurrence),,1579.21,,2117.98,2126.2700000000004,2233.76,10,14,140

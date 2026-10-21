@@ -119,6 +119,16 @@ path and f32 initialization are unchanged. See the
 [analysis initialization data](reports/data/plan14-analysis-order-local-init-2026-10-21/)
 and [odd/even synthesis rebaseline](reports/data/plan14-q8-synthesis-odd-rebaseline-2026-10-21/).
 
+**Plan 14 direct scalar-analysis packing (e51da649):** f64 GL recurrence now
+loads ring-major FFT values while packing reflected pairs, avoiding the
+separate T720 full-order `721 x 721` complex order-spectrum materialization.
+The matched repeat screen improved T720 full-order q1/q8 by 3.9%/11.3% and
+reduced-order q1/q8 by 2.3%/5.6%; candidate output was bitwise equal to the
+previous route. The q8 benefit is directional because candidate scheduler
+wait was lower than baseline in the repeat process pairs; the initial q8
+screen also had a wider interval. Candidate/DUCC relative L2 was at most
+`4.96e-14`. See the [Plan 14 source A/B data](reports/data/plan14-direct-analysis-ring-pack-2026-10-21/).
+
 
 ## Highest-confidence current finding — prefix discontinuity removed
 
@@ -359,13 +369,15 @@ observations are in the [batch ablation CSV](reports/data/plan14-analysis-schedu
 
 ## Current next steps and deferred work
 
-1. Reprofile T720 full-order q8 analysis after the order-local initialization
-   change. The whole-call excess is now about +0.260 ms; separate current
-   order preparation from recurrence/accumulation before changing the kernel.
-2. The odd q8 synthesis inverse excess is quantified at +0.430 ms, but the
+1. Recheck the direct-input analysis route at T2047 q8 (full and reduced
+   `mmax`) against the prior source and pinned DUCC; the T720 repeat reduced
+   excess to about +0.100 ms, with q8 timing uncertainty recorded.
+2. Reconfirm the T720 q8 A/B on a quieter host and profile the current fused
+   packing/recurrence stage before selecting another source change.
+3. The odd q8 synthesis inverse excess is quantified at +0.430 ms, but the
    tested alternative was slower. Do not revisit it without a new source-level
    mechanism or matched isolated real-FFT evidence.
-3. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
+4. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
    cache-topology queries plus optional offline pointer-chase diagnostic
    (no startup autotuning); [Plan 13](plans/13-fused-batched-sht.md)
    true basis-shared batches with measured internal blocking.

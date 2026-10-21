@@ -676,21 +676,78 @@ p10–p90 was `2.490–2.887` ms before and `2.364–2.461` ms after; DUCC was
 than 0.3%, with 11–16% sampled runqueue wait, so q1 is neutral. First-call
 and setup timings are included in the raw data; their process ranges overlap,
 and no cold-start gain is claimed. The candidate and baseline outputs were
-bitwise identical. The full raw batches, process/host observations, fixture
-hashes and summary are in
-[`paired-batches.json`](../reports/data/plan14-analysis-order-local-init-2026-10-21/paired-batches.json)
-and [`summary.csv`](../reports/data/plan14-analysis-order-local-init-2026-10-21/summary.csv).
+bitwise identical. Process-level host and frequency captures remain local;
+the committed sanitized timing summary is
+[`summary.csv`](../reports/data/plan14-analysis-order-local-init-2026-10-21/summary.csv).
 The interleaved runner is
-[`benchmark_plan14_order_local_init.py`](../scripts/benchmark_plan14_order_local_init.py).
+[`benchmark_plan14_analysis_source_ab.py`](../scripts/benchmark_plan14_analysis_source_ab.py).
 
 Release parallel and no-default-feature suites passed, including f32,
 exceptional-value, all-grid, spin and adjoint coverage. A focused q1/q8 test
 also initializes the output coefficients to nonzero values and verifies
 bitwise equality with a zero-initialized output. Formatting and strict
 Clippy passed. The remaining selected q8 full-order analysis excess is
-about 0.260 ms. Next, reprofile its current post-change order preparation
-and recurrence stages; keep the scheduler and odd FFT path unchanged absent
-a new measured mechanism.
+about 0.260 ms before the follow-up direct-input change below.
+
+## Current progress — direct ring-major scalar analysis packing (2026-10-21)
+
+The post-initialization phase profile at T720, `mmax=720`, `nphi=1458`, q8
+measured the separate Rust order-spectrum preparation at a median `241.9 us`
+(three processes: `240.8–242.1 us`). The recurrence/accumulation phase was
+`1.698 ms`, forward FFT `472 us`, and latitude setup `15.3 us`. A temporary
+DUCC 0.42.0 stage build at the same geometry measured `map2leg` at `511 us`
+and `leg2alm_internal` at `1.579 ms`. These stage boundaries differ and the
+Rust phase probe and DUCC stage runner used different deterministic finite
+maps; they rank the work but are not subtractable cycle shares. Rust's
+separate order-major pass was the clearest Rust-only cost to test.
+
+The f64 GL fused-analysis route now reads the ring-major FFT spectra directly
+while it packs reflected north/south pairs. It applies the same longitude
+phase and per-ring weight/longitude scale in the same operation order as the
+previous preparation routine. DUCC performs the analogous active-ring
+preparation in `fill_m2a` inside `leg2alm_internal`. This avoids materializing
+the full weighted order-major matrix and its later reads: T720 full `mmax`
+has `721 x 721` complex values (`8,317,456` bytes, about `7.9 MiB`). The
+existing workspace capacity remains unchanged. Compact-table, non-GL,
+resampled and other-precision paths still use their prior preparation.
+Product checks, scaled/ordinary transition, recurrence range proof and safe
+fallback are unchanged. The direct-value test verifies bitwise equality with
+the previous prepared row for every ring/order in its fixture.
+
+The matched source comparison used baseline `f2249ac7` and candidate
+`e51da649`, Rust 1.99.1 / LLVM 23.1.1 strict FP with Pulp V3, and pinned
+DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b` built with GCC 15.2 and
+`-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3` for SHT code. Both
+screens used T720 GL, `ntheta=721`, `nphi=1458`, q1/q8, full `mmax=720` and
+reduced `mmax=180`; each case had three interleaved process pairs and 30
+calibrated batches per backend/thread count. The repeat screen is summarized
+here; both it and the initial screen are retained in the
+[machine-readable data](../reports/data/plan14-direct-analysis-ring-pack-2026-10-21/).
+
+| `mmax` | q | Baseline Rust ms | Candidate Rust ms | DUCC ms | Candidate/baseline | Candidate/DUCC | Candidate excess ms |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 720 | 1 | 16.015 | 15.398 | 14.523 | 0.961 | 1.061 | +0.874 |
+| 720 | 8 | 2.513 | 2.229 | 2.129 | 0.889 | 1.047 | +0.100 |
+| 180 | 1 | 7.694 | 7.512 | 8.294 | 0.977 | 0.905 | −0.782 |
+| 180 | 8 | 1.205 | 1.137 | 1.243 | 0.955 | 0.911 | −0.106 |
+
+The candidate/baseline paired p10–p90 ratios were `0.948–0.972`,
+`0.800–0.941`, `0.968–0.989`, and `0.850–0.988` in table order. A first
+screen had full-order q8 ratio `0.945` with interval `0.894–1.092`; retain
+that less favorable screen as well. In the repeat q8 run, candidate scheduler
+wait was lower than baseline in each process pair, so the q8 reduction is
+directional and its magnitude needs a quieter-host confirmation. q1 had
+11–16% scheduler wait, but the full/reduced source change was consistent
+across both screens. The candidate output was bitwise identical to baseline;
+relative L2 versus DUCC was `4.63e-14` full-order and `4.96e-14` reduced.
+
+The immediate full-order q8 excess fell from `+0.384 ms` to `+0.100 ms` in
+the repeat screen. The order-major workspace is still allocated, but this
+route no longer writes or rereads its full weighted matrix. Run the same
+source comparison at T2047 q8 next to confirm the dataflow benefit at the
+larger parallel geometry; keep the scheduler and odd FFT path unchanged.
+Release parallel and no-default-feature tests, including all-grid/spin,
+extreme-value, adjoint and f32 coverage, formatting and strict Clippy passed.
 
 ## 4. Phase A — Find and fix small serial fixed costs
 

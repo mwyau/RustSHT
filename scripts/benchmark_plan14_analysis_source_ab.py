@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Interleaved T720 source A/B for scalar-analysis output initialization."""
+"""Interleaved source A/B for T720 scalar GL analysis."""
 
 from __future__ import annotations
 
