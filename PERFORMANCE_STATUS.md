@@ -10,8 +10,9 @@ outside spin-1 is not included; Plans 12/13 are deferred.
 paired-real-row FFTs, `realfft` substitution and custom `rustsht-fft`
 integration. Keep odd/even longitude benchmarks and numerical correctness
 controls, but do not initiate an odd-FFT performance campaign. Plan 15 Phase A
-is complete; GL stage work is closed for now, and the active sequence has
-advanced through CC resampling to F1 attribution.
+is complete; GL stage work is closed for now. CC and F1 analysis resampling
+are implemented, and the F1 synthesis scheduling screen is complete. Continue
+with integrated GL/CC/F1 validation and Plan 15 closeout.
 This is a **measured checkpoint, not a standalone instruction queue**.
 The previous long status, including intermediate experiments and historical
 next-step text, is preserved
@@ -63,9 +64,13 @@ F1 spin-1 analysis now uses this order-parallel preparation for high-work q8
 cases while preserving F1's half-grid phase. The matched T720/T1023 full and
 quarter-order q8 cases improved 22–45%; T1023 full-order phase resampling fell
 from 91.0 to 38.7 ms. q1 is unchanged by the worker gate and its timings were
-too noisy for a source comparison. F1 synthesis remains a separate recurrence
-cost. See the [F1 report and raw distributions](reports/plan15-spin1-f1-analysis-resampling-2026-10-21.md).
-Next: integrated GL/CC/F1 validation and F1 synthesis attribution.
+too noisy for a source comparison. See the [F1 analysis report and raw distributions](reports/plan15-spin1-f1-analysis-resampling-2026-10-21.md).
+F1 q8 synthesis now dynamically schedules surplus existing ring groups. At
+T720, Rust synthesis fell 25.9% reduced and 41.2% full; residual Rust/DUCC
+ratios are 7.07x and 5.70x, with recurrence and spectral accumulation still
+dominant. The finer T1023 group split regressed reduced order and was rejected.
+See the [F1 synthesis report and raw distributions](reports/plan15-spin1-f1-synthesis-scheduling-2026-10-21.md).
+Next: integrated GL/CC/F1 validation and Plan 15 closeout.
 
 **Plan 15 Phase B candidate:** q8 GL spin-1 synthesis now borrows the shared
 scalar-conversion rows across ring groups instead of copying them into worker
