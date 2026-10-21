@@ -163,6 +163,55 @@ other.
 | `mmax=180` q1 | 6.158 (6.091–6.233) | 5.966 (5.882–6.134) | 1.032× | 16.547 (16.369–17.159) | 5.951 (5.870–6.623) | 2.781× | 2.687× | `4.91e-14` / `4.98e-14` |
 | `mmax=180` q8 | 0.935 (0.911–1.039) | 0.980 (0.921–1.008) | 0.955× | 2.355 (2.284–2.558) | 0.953 (0.919–1.003) | 2.472× | 2.518× | `4.91e-14` / `4.98e-14` |
 
+## Step 6 — sectoral initialization review
+
+No new source change was justified. Rust's vectorized ordinary and scaled
+sectoral initializers are already present from `cbb1ea6b`:
+`InitializeNormalAnalysisSectoral` evaluates integer powers over four f64 V3
+lanes and verifies the result range, while `InitializeScaledAnalysisSectoral`
+reuses completed ordinary vectors and normalizes the remaining vectors and
+scalar tail with lane-specific scale epochs. This corresponds to DUCC
+`fill_m2a` followed by `init_lambda`/`mypow`. The current T720 scalar analysis
+route is above `SIMD_SECTORAL_INIT_MIN_LMAX=511` and uses the vector route.
+Below that gate, the established scalar scaled-power initializer remains
+active; the T64–T256 policy checkpoint measured recurrence whole calls at or
+near DUCC after its table and row-FFT dispatch changes, so there is no current
+evidence that lowering this gate would improve whole-call latency.
+
+Existing tests compare the high-order vector result with the scaled scalar
+reference, cover V3 lane tails, and verify reuse of a completed ordinary
+prefix when later vectors require scaling. DUCC chooses its quick versus
+scaled power route from `powlimit` before evaluating each vector. Rust may
+compute an ordinary power for the first vector that declines before
+continuing through the scaled initializer, but this bounded extra work has
+not been isolated as a material cost. Retain the current initialization and
+safety checks; do not add another initializer candidate without new stage
+evidence.
+
+## Steps 7–10 — existing scaled execution, packing and factors
+
+Source review found these requested pieces already implemented; no separate
+candidate was added.
+
+| DUCC routine/dataflow | RustSHT production counterpart | Remaining difference |
+|---|---|---|
+| `fill_a2m` active ring selection and parity spectra | `first_active_symmetric_pair` and `prepare_symmetric_analysis_pair_block` in `src/transform.rs` | Rust binary-searches the first active reflected pair, then packs mixed polar blocks into caller-owned SoA scratch; DUCC fills fixed vector groups by scanning `ringdata`. Both preserve the equatorial singleton and use north/south even/odd sums. |
+| `init_lambda` / `mypow` | `initialize_normal_analysis_sectoral_lanes`, `InitializeNormalAnalysisSectoral`, and `InitializeScaledAnalysisSectoral` | Rust keeps its scalar scaled initializer below the measured 511-degree vectorization gate and adds explicit checks/tail handling. |
+| `iter_to_ieee` / `rescale` | `prepare_analysis_scale_corrections`, `advance_and_rescale_analysis_pair`, and `rescale_scaled_analysis_pair` | The ordinary SIMD vectors carry the below-limit frontier through the two-pair traversal. Rust also checks exponent bounds, finite values and representable corrections before promotion/fallback. |
+| `calc_map2alm` mixed route and transition | `FusedScaledScalarAnalysisPair` and `promote_analysis_pair_to_ordinary` | Same scaled-to-ordinary structure; Rust validates the complete block before entering the ordinary kernel and retains exponent-aware fallback. |
+| `map2alm_kernel` | `FusedScalarAnalysisPair` | Both process two recurrence pairs in a lane traversal and accumulate the even/odd complex spectra; Rust retains its checked state contract and optional packed reduction. |
+| `Ylmgen::prepare` epsilon, alpha and recurrence coefficients | `T::fill_epsilon`, `T::fill_paired_scalar_factors` / `fill_factors`, then `finalize_paired_scalar_analysis_coefficients` | Both prepare the per-order factors once before the ring-block loop and convert accumulated coefficients once after all blocks. Rust stores these arrays in reusable worker workspace. |
+
+DUCC's scaled loop applies its threshold to the second state after each
+two-pair recurrence group. Rust's `advance_and_rescale_analysis_pair` does the
+same grouping and carries the epoch frontier instead of rescanning it. The
+extra Rust checks are tied to the existing extreme/subnormal safety contract;
+removing them would require a distinct proof and measured benefit. Active
+packing tests cover reflected polar masks and the equatorial singleton, while
+the scaled-state tests cover SIMD tails and mixed epochs. The 256-pair tile
+remains the production default; no tile-policy change follows from this code
+review.
+
 Reproduce the two matched case sets with separate result directories and
 target directories so each binary keeps its own cfg set:
 
@@ -252,7 +301,11 @@ RUSTFLAGS='-C target-cpu=x86-64-v3 --cfg rustsht_packed_complex_pair_reduction -
 | 3. Packed complex reduction | Implemented and validated behind cfg; isolated reducer is 3% faster, whole-transform effect remains inconclusive; retain only for cumulative evaluation. |
 | 4. Recurrence range-check handling | Complete in production since `aeb123d6`; checked-first cached proof skips only repeated ordinary vector scans. |
 | 5. Output staging and accumulation | Fused-preflight direct-output candidate implemented and validated, but 2.42–2.69× slower; retain only for final cumulative ablation. |
-| 6–10. Initialization, prefix, transition, packing and conversion | Pending review against current source; skip anything already implemented. |
+| 6. Sectoral initialization | Reviewed: existing ordinary/scaled SIMD implementation already covers the production high-bandlimit route; no new change justified. |
+| 7. Scaled prefix/rescaling | Reviewed: existing SIMD threshold/frontier handling matches DUCC's two-pair transition and preserves checked scaling. |
+| 8. Scaled-to-ordinary transition | Reviewed: guarded correction/promotion and transactional fallback are already integrated. |
+| 9. Reflected active-ring packing | Reviewed: binary-searched first-active pair plus bounded SoA compaction is already integrated. |
+| 10. Coefficient/factor preparation | Reviewed: epsilon and recurrence factors are prepared once per order and reused across ring blocks, matching DUCC `Ylmgen::prepare`. |
 | Final combined evaluation | Pending: original `ce710` baseline, cumulative 64/128/256, DUCC, then one-change-at-a-time ablations. |
 
 The scalar analysis objective remains active until this final evaluation and
