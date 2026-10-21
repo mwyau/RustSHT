@@ -69,10 +69,18 @@ wait was 9–24% with thousands of involuntary switches, the q1 synthesis
 control was about 2% slower, and q8 analysis controls were too contended to
 interpret. The measured screen also preceded moving the new workspace vector
 to the end of the struct to preserve existing field offsets. Keep the finite
-check change experimental pending a lower-interference recheck. Full all-feature
-and no-default-feature release tests, formatting and strict Clippy pass. The
-next Plan 15 task is to recheck the GL candidate under a quieter host and
-attribute the remaining recurrence/scheduling cost before advancing to CC.
+check change experimental pending a lower-interference recheck. A final-layout
+screen still had 2–32% q8 runqueue wait and multimodal q1 timings, so it does
+not establish a finite-check performance claim. Commit `ac8e7547` routes the
+two spin-1 synthesis channels through the existing row-parallel inverse-FFT
+helper. At T720 q8, the phase probe fell from 7.97 to 2.30 ms for inverse rows;
+paired whole-call screens changed 63.39→59.05 ms full-even, 90.71→64.74 ms
+full-odd, and 36.34→34.90 ms reduced-even. The q1 control was unstable and is
+not claimed. The recurrence/scheduling stage remains 53.7–56.9 ms, with q8
+Rust/DUCC ratios around 6–8× under elevated host wait. See the
+[focused A/B report](reports/plan15-spin1-gl-rowfft-2026-10-21.md). Next:
+measure ring-group work/utilization and recurrence dataflow, continuing GL
+before CC and F1.
 
 **Current-source full-transform sweep (2026-10-21):** the frozen Rust source
 `e487b85b` was compared with pinned DUCC 0.42.0 `42ce8ab5` across every

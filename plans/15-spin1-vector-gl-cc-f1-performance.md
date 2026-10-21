@@ -5,39 +5,33 @@ The Plan 14 scalar full-transform sweep, four principal figures, validation and 
 
 **Current phase:** Phase A's native spin-1 GL → CC → F1 baseline is complete at Rust source `549bd2f0` and pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. The temporary owner-priority scalar T64–T256 GL diagnostic is complete in [the focused report](../reports/scalar-t64-256-performance-discontinuities-2026-10-21.md); it did not reopen Plan 14 or change the spin-1 recurrence. Continue Phase B GL attribution, excluding all odd-FFT optimization per the owner direction below.
 
-**Phase B checkpoint (2026-10-21):** the q8 GL synthesis path now reads
-cached spin-1 scalar-conversion rows directly across ring groups, avoiding
-repeated worker-buffer copies on the paired route. For T720's 23 groups, the
-source-level estimate is 365 MiB of coefficient payload copied per transform
-(about 730 MiB of source-read/write traffic before cache effects). Worker rows
-are still filled before any checked polar/scaled fallback. Release cached/uncached
-and poisoned-workspace reuse with changed coefficients pass at T127 (maximum
+**Phase B checkpoint (2026-10-21):** the q8 GL synthesis path reads cached
+spin-1 scalar-conversion rows directly across ring groups, avoiding repeated
+worker-buffer copies on the paired route. For T720's 23 groups, the source-level
+estimate is 365 MiB of coefficient payload copied per transform (about 730 MiB
+of source-read/write traffic before cache effects). Worker rows are still
+filled before any checked polar/scaled fallback. Release cached/uncached and
+poisoned-workspace reuse with changed coefficients pass at T127 (maximum
 absolute channel difference `2.17e-18`), along with T720 adjoint,
-general-channel, large-finite and no-default synthesis checks. The exploratory
-matched timing run was invalidated by 9–40% runqueue
-wait and high involuntary-switch counts; do not infer a gain from it. Re-run
-the q1/q8 matched whole-call A/B and stage timing under a quiet host before
-deciding whether to retain this candidate as a production optimization.
+general-channel, large-finite and no-default synthesis checks. A final-layout
+three-way screen confirmed modest q8 gains (about 2–5%) but still had 2–32%
+runqueue wait and multimodal q1 timings; keep this finite-check candidate
+provisional.
 
-**Per-order finite-check candidate (2026-10-21; experimental):** the cached
-rows were also being rescanned for finite values once per ring group. The
-T720 q8 full-order probe counted 18,421,108 complex values visited by these
-repeated checks. The candidate stores one finite flag per order in reusable
-workspace scratch and checks the converted rows once during preparation
-(1,041,124 values, 94.3% fewer); nonfinite rows still take the original E/B
-fallback, and the flag buffer is poisoned/reuse tested. All tested candidate
-outputs were bitwise equal to the `76094ff9` baseline, with DUCC relative L2
-error at most `5.23e-13`. On the three-way 30-batch T720 screen, q8 synthesis
-candidate/baseline paired ratios were `0.970` full-even, `0.978` full-odd and
-`0.978` reduced-even. These timings are **provisional**: q8 runqueue wait was
-9–24%, with thousands of involuntary switches. The q1 synthesis control was
-about 2% slower, and q8 analysis controls were too contended to interpret.
-Keep this change experimental and recheck whole-call q1/q8 performance under
-lower host interference before promoting it. The timed candidate preceded a
-layout-only move that appended the new vector to `ShtWorkspace` to preserve
-existing field offsets. Recheck the final layout as well. The measured GL
-recurrence and scheduling stage remains the larger residual; continue there
-after this bounded attribution, then proceed through CC and F1.
+Commit `ac8e7547` routes each spin-1 synthesis output channel through the
+existing row-parallel inverse-FFT helper when the established geometry and
+workspace guards permit it. This changes neither the FFT algorithm nor the
+recurrence. At T720, the q8 phase probe reduced the two inverse rows from
+7.97 to 2.30 ms. Matched whole-call candidate/baseline ratios were 0.933
+full-even, 0.719 full-odd and 0.958 reduced-even. Host wait was elevated, so
+use the odd case as a control and treat the even ratios as provisional; the q1
+control was unstable and is not claimed. Candidate outputs were bitwise equal
+to the before binary, reset/repeat checks passed and maximum relative L2 versus
+DUCC was `5.23e-13`. The remaining q8 Rust/DUCC ratio is around 6–8×, and the
+recurrence/scheduling stage remains 53.7–56.9 ms. See the [focused report](../reports/plan15-spin1-gl-rowfft-2026-10-21.md)
+and [machine-readable A/B data](../reports/data/plan15-spin1-gl-rowfft-2026-10-21/rowfft-ab.json).
+Next, quantify ring-group work and worker utilization before changing the GL
+recurrence schedule; then proceed through CC and F1.
 
 **Owner direction (2026-10-21): defer odd-length FFT optimization.** Continue to benchmark and validate odd/even longitude cases as **controls**, but do **not** prototype paired-real-row FFTs, swap in `realfft` or the standalone `rustsht-fft` backend, change prime-radix/FFT planners, or start a C2R/odd-FFT optimization investigation. Do not choose an odd-specific FFT issue as a Plan 15 optimization target even when profiling identifies it. Record the residual and continue to measured **spin-1 vector** bottlenecks outside the FFT engine. Existing FFT behavior and numerical safeguards stay intact. This hold remains until an explicit new owner instruction revokes it.
 

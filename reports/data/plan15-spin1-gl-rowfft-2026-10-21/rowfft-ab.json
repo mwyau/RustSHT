@@ -1,0 +1,1694 @@
+{
+  "metadata": {
+    "baseline_source": "4523b9278e1752b206e03f2d256827aaadd26fbf",
+    "candidate_source": "ac8e754791322c33d305be55631dbaa3403214aa",
+    "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "binary_sha256": {
+      "baseline": "e5453643b82c6e4686ab5be9ccd85c5034021dce8eed369d1569f86fd03feae2",
+      "candidate": "73ea47a7f663fd125273563d883f4eeb40c4adae5ea6b064af65899e122f5750",
+      "ducc": "8e3fa9a785d4de1f5db71406a00c4b35d0e815a95ee84ccaa62f6c3e357cf01d"
+    },
+    "process_pairs": 3,
+    "batches_per_short_call": 10,
+    "target_batch_ms": 25,
+    "rust_toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+    "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+    "ducc_sht_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3",
+    "ducc_driver_flags": "-fno-fast-math after strict-validation compilation",
+    "measurement_protocol": "Three interleaved process pairs; q8 short calls calibrated to 25 ms and 10 batches/process; q1 long calls individually timed (5 calls/process). Reused plans/workspaces; output validation outside timing.",
+    "affinity_policy": "q1 pinned to one physical core; q8 pinned to eight physical cores on one CCD"
+  },
+  "summary": [
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "threads": 8,
+      "latency_ms_per_call": {
+        "baseline": {
+          "median": 63.3906695,
+          "p10": 51.5294613,
+          "p90": 65.8174221,
+          "count": 30
+        },
+        "candidate": {
+          "median": 59.051863999999995,
+          "p10": 50.602153400000006,
+          "p90": 60.3344655,
+          "count": 30
+        },
+        "ducc": {
+          "median": 9.315392875,
+          "p10": 8.9766391,
+          "p90": 10.84914725,
+          "count": 30
+        }
+      },
+      "paired_ratios": {
+        "candidate/baseline": [
+          0.988843608391517,
+          0.9328759328296088,
+          0.9278495685601568
+        ],
+        "candidate/ducc": [
+          6.454078135456008,
+          6.434826469090955,
+          5.726380758007618
+        ],
+        "baseline/ducc": [
+          6.526894729040528,
+          6.897837367904619,
+          6.171669365427259
+        ]
+      },
+      "host": [
+        {
+          "backend": "baseline",
+          "pair": 0,
+          "wait_fraction": 0.13738564735958417,
+          "involuntary_switches": 2428
+        },
+        {
+          "backend": "candidate",
+          "pair": 0,
+          "wait_fraction": 0.01797838200907445,
+          "involuntary_switches": 397
+        },
+        {
+          "backend": "ducc",
+          "pair": 0,
+          "wait_fraction": 0.17995767235710294,
+          "involuntary_switches": 114
+        },
+        {
+          "backend": "ducc",
+          "pair": 1,
+          "wait_fraction": 0.1296833249295872,
+          "involuntary_switches": 166
+        },
+        {
+          "backend": "baseline",
+          "pair": 1,
+          "wait_fraction": 0.13022558221613317,
+          "involuntary_switches": 3055
+        },
+        {
+          "backend": "candidate",
+          "pair": 1,
+          "wait_fraction": 0.14559483619639504,
+          "involuntary_switches": 6947
+        },
+        {
+          "backend": "candidate",
+          "pair": 2,
+          "wait_fraction": 0.11888171766141026,
+          "involuntary_switches": 6230
+        },
+        {
+          "backend": "ducc",
+          "pair": 2,
+          "wait_fraction": 0.18856557089474574,
+          "involuntary_switches": 170
+        },
+        {
+          "backend": "baseline",
+          "pair": 2,
+          "wait_fraction": 0.12891125753633104,
+          "involuntary_switches": 3343
+        }
+      ]
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1443-odd",
+      "threads": 8,
+      "latency_ms_per_call": {
+        "baseline": {
+          "median": 90.71046100000001,
+          "p10": 85.34447039999999,
+          "p90": 91.8756626,
+          "count": 30
+        },
+        "candidate": {
+          "median": 64.742229,
+          "p10": 57.94845229999999,
+          "p90": 66.0629057,
+          "count": 30
+        },
+        "ducc": {
+          "median": 10.316182999999999,
+          "p10": 9.124945050000001,
+          "p90": 11.6722125,
+          "count": 30
+        }
+      },
+      "paired_ratios": {
+        "candidate/baseline": [
+          0.700164092612594,
+          0.7197222603829889,
+          0.7185225590396469
+        ],
+        "candidate/ducc": [
+          6.399279074782598,
+          5.595830926251032,
+          6.783416658569624
+        ],
+        "baseline/ducc": [
+          9.139684742906926,
+          7.774986594513969,
+          9.440784528235426
+        ]
+      },
+      "host": [
+        {
+          "backend": "baseline",
+          "pair": 0,
+          "wait_fraction": 0.11598451662493733,
+          "involuntary_switches": 2891
+        },
+        {
+          "backend": "candidate",
+          "pair": 0,
+          "wait_fraction": 0.07374188489443224,
+          "involuntary_switches": 2720
+        },
+        {
+          "backend": "ducc",
+          "pair": 0,
+          "wait_fraction": 0.2367783927032554,
+          "involuntary_switches": 167
+        },
+        {
+          "backend": "ducc",
+          "pair": 1,
+          "wait_fraction": 0.28714548759114106,
+          "involuntary_switches": 246
+        },
+        {
+          "backend": "baseline",
+          "pair": 1,
+          "wait_fraction": 0.11165545621855859,
+          "involuntary_switches": 2712
+        },
+        {
+          "backend": "candidate",
+          "pair": 1,
+          "wait_fraction": 0.057801934609438534,
+          "involuntary_switches": 2406
+        },
+        {
+          "backend": "candidate",
+          "pair": 2,
+          "wait_fraction": 0.06657766802901337,
+          "involuntary_switches": 3295
+        },
+        {
+          "backend": "ducc",
+          "pair": 2,
+          "wait_fraction": 0.17565350762030474,
+          "involuntary_switches": 74
+        },
+        {
+          "backend": "baseline",
+          "pair": 2,
+          "wait_fraction": 0.07767734427075318,
+          "involuntary_switches": 2596
+        }
+      ]
+    },
+    {
+      "case_id": "GL-T720-m180-n721-p378-even",
+      "threads": 8,
+      "latency_ms_per_call": {
+        "baseline": {
+          "median": 36.3356975,
+          "p10": 35.540488499999995,
+          "p90": 37.2866717,
+          "count": 30
+        },
+        "candidate": {
+          "median": 34.900583999999995,
+          "p10": 33.0384455,
+          "p90": 35.4683731,
+          "count": 30
+        },
+        "ducc": {
+          "median": 5.064021791666667,
+          "p10": 4.208143066666667,
+          "p90": 5.814511,
+          "count": 30
+        }
+      },
+      "paired_ratios": {
+        "candidate/baseline": [
+          0.9490899517824227,
+          0.971374829093645,
+          0.9579774316990644
+        ],
+        "candidate/ducc": [
+          6.98115582619027,
+          6.28721469474263,
+          8.090936133088022
+        ],
+        "baseline/ducc": [
+          7.355631374117307,
+          6.472490851558306,
+          8.445852548674319
+        ]
+      },
+      "host": [
+        {
+          "backend": "baseline",
+          "pair": 0,
+          "wait_fraction": 0.17084471048195987,
+          "involuntary_switches": 1835
+        },
+        {
+          "backend": "candidate",
+          "pair": 0,
+          "wait_fraction": 0.23372126968949472,
+          "involuntary_switches": 5737
+        },
+        {
+          "backend": "ducc",
+          "pair": 0,
+          "wait_fraction": 0.3049968854794481,
+          "involuntary_switches": 240
+        },
+        {
+          "backend": "ducc",
+          "pair": 1,
+          "wait_fraction": 0.3509862741869456,
+          "involuntary_switches": 167
+        },
+        {
+          "backend": "baseline",
+          "pair": 1,
+          "wait_fraction": 0.2138483341693289,
+          "involuntary_switches": 2853
+        },
+        {
+          "backend": "candidate",
+          "pair": 1,
+          "wait_fraction": 0.23828853433352534,
+          "involuntary_switches": 5263
+        },
+        {
+          "backend": "candidate",
+          "pair": 2,
+          "wait_fraction": 0.23193076498271567,
+          "involuntary_switches": 5728
+        },
+        {
+          "backend": "ducc",
+          "pair": 2,
+          "wait_fraction": 0.3081365067318342,
+          "involuntary_switches": 276
+        },
+        {
+          "backend": "baseline",
+          "pair": 2,
+          "wait_fraction": 0.061584015562230324,
+          "involuntary_switches": 2349
+        }
+      ]
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "threads": 1,
+      "latency_ms_per_call": {
+        "baseline": {
+          "median": 171.60909999999998,
+          "p10": 168.94449060000002,
+          "p90": 172.7591588,
+          "count": 15
+        },
+        "candidate": {
+          "median": 104.030601,
+          "p10": 103.20023699999999,
+          "p90": 172.7792058,
+          "count": 15
+        },
+        "ducc": {
+          "median": 56.014414,
+          "p10": 48.86611,
+          "p90": 57.2911493,
+          "count": 30
+        }
+      },
+      "paired_ratios": {
+        "candidate/baseline": [
+          0.9993341365682875,
+          0.614384169678812,
+          0.6005899269497955
+        ],
+        "candidate/ducc": [
+          3.02265691149915,
+          2.0696981286015492,
+          1.8446759405426831
+        ],
+        "baseline/ducc": [
+          3.0246709292639107,
+          3.3687360950129084,
+          3.0714400254949386
+        ]
+      },
+      "host": [
+        {
+          "backend": "baseline",
+          "pair": 0,
+          "wait_fraction": 0.02357454486097242,
+          "involuntary_switches": 79
+        },
+        {
+          "backend": "candidate",
+          "pair": 0,
+          "wait_fraction": 0.022924593746808667,
+          "involuntary_switches": 83
+        },
+        {
+          "backend": "ducc",
+          "pair": 0,
+          "wait_fraction": 0.0002367308544697427,
+          "involuntary_switches": 4
+        },
+        {
+          "backend": "ducc",
+          "pair": 1,
+          "wait_fraction": 7.572228286936956e-05,
+          "involuntary_switches": 4
+        },
+        {
+          "backend": "baseline",
+          "pair": 1,
+          "wait_fraction": 0.02478637370449977,
+          "involuntary_switches": 100
+        },
+        {
+          "backend": "candidate",
+          "pair": 1,
+          "wait_fraction": 0.032329186801040896,
+          "involuntary_switches": 87
+        },
+        {
+          "backend": "candidate",
+          "pair": 2,
+          "wait_fraction": 0.03467644326730938,
+          "involuntary_switches": 92
+        },
+        {
+          "backend": "ducc",
+          "pair": 2,
+          "wait_fraction": 0.000335539530049837,
+          "involuntary_switches": 7
+        },
+        {
+          "backend": "baseline",
+          "pair": 2,
+          "wait_fraction": 0.02398327916185062,
+          "involuntary_switches": 102
+        }
+      ]
+    }
+  ],
+  "comparisons": [
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "threads": 8,
+      "process_pair": 0,
+      "candidate_baseline_bitwise": true,
+      "candidate_ducc": {
+        "absolute_max": 3.969319095631363e-09,
+        "relative_l2": 3.931776670055661e-13,
+        "max_relative_above_1e-12_peak": 1.838928992073043e-07,
+        "near_zero_reference_count": 0
+      },
+      "baseline_ducc": {
+        "absolute_max": 3.969319095631363e-09,
+        "relative_l2": 3.931776670055661e-13,
+        "max_relative_above_1e-12_peak": 1.838928992073043e-07,
+        "near_zero_reference_count": 0
+      },
+      "reset": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      },
+      "repeat": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      }
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "threads": 8,
+      "process_pair": 1,
+      "candidate_baseline_bitwise": true,
+      "candidate_ducc": {
+        "absolute_max": 3.969319095631363e-09,
+        "relative_l2": 3.931776670055661e-13,
+        "max_relative_above_1e-12_peak": 1.838928992073043e-07,
+        "near_zero_reference_count": 0
+      },
+      "baseline_ducc": {
+        "absolute_max": 3.969319095631363e-09,
+        "relative_l2": 3.931776670055661e-13,
+        "max_relative_above_1e-12_peak": 1.838928992073043e-07,
+        "near_zero_reference_count": 0
+      },
+      "reset": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      },
+      "repeat": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      }
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "threads": 8,
+      "process_pair": 2,
+      "candidate_baseline_bitwise": true,
+      "candidate_ducc": {
+        "absolute_max": 3.969319095631363e-09,
+        "relative_l2": 3.931776670055661e-13,
+        "max_relative_above_1e-12_peak": 1.838928992073043e-07,
+        "near_zero_reference_count": 0
+      },
+      "baseline_ducc": {
+        "absolute_max": 3.969319095631363e-09,
+        "relative_l2": 3.931776670055661e-13,
+        "max_relative_above_1e-12_peak": 1.838928992073043e-07,
+        "near_zero_reference_count": 0
+      },
+      "reset": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      },
+      "repeat": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      }
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1443-odd",
+      "threads": 8,
+      "process_pair": 0,
+      "candidate_baseline_bitwise": true,
+      "candidate_ducc": {
+        "absolute_max": 4.499128181123524e-09,
+        "relative_l2": 3.643895653259073e-13,
+        "max_relative_above_1e-12_peak": 9.596770511245841e-08,
+        "near_zero_reference_count": 0
+      },
+      "baseline_ducc": {
+        "absolute_max": 4.499128181123524e-09,
+        "relative_l2": 3.643895653259073e-13,
+        "max_relative_above_1e-12_peak": 9.596770511245841e-08,
+        "near_zero_reference_count": 0
+      },
+      "reset": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      },
+      "repeat": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      }
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1443-odd",
+      "threads": 8,
+      "process_pair": 1,
+      "candidate_baseline_bitwise": true,
+      "candidate_ducc": {
+        "absolute_max": 4.499128181123524e-09,
+        "relative_l2": 3.643895653259073e-13,
+        "max_relative_above_1e-12_peak": 9.596770511245841e-08,
+        "near_zero_reference_count": 0
+      },
+      "baseline_ducc": {
+        "absolute_max": 4.499128181123524e-09,
+        "relative_l2": 3.643895653259073e-13,
+        "max_relative_above_1e-12_peak": 9.596770511245841e-08,
+        "near_zero_reference_count": 0
+      },
+      "reset": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      },
+      "repeat": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      }
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1443-odd",
+      "threads": 8,
+      "process_pair": 2,
+      "candidate_baseline_bitwise": true,
+      "candidate_ducc": {
+        "absolute_max": 4.499128181123524e-09,
+        "relative_l2": 3.643895653259073e-13,
+        "max_relative_above_1e-12_peak": 9.596770511245841e-08,
+        "near_zero_reference_count": 0
+      },
+      "baseline_ducc": {
+        "absolute_max": 4.499128181123524e-09,
+        "relative_l2": 3.643895653259073e-13,
+        "max_relative_above_1e-12_peak": 9.596770511245841e-08,
+        "near_zero_reference_count": 0
+      },
+      "reset": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      },
+      "repeat": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      }
+    },
+    {
+      "case_id": "GL-T720-m180-n721-p378-even",
+      "threads": 8,
+      "process_pair": 0,
+      "candidate_baseline_bitwise": true,
+      "candidate_ducc": {
+        "absolute_max": 3.4996716635760095e-09,
+        "relative_l2": 5.224279067934392e-13,
+        "max_relative_above_1e-12_peak": 1.873190559223278e-08,
+        "near_zero_reference_count": 0
+      },
+      "baseline_ducc": {
+        "absolute_max": 3.4996716635760095e-09,
+        "relative_l2": 5.224279067934392e-13,
+        "max_relative_above_1e-12_peak": 1.873190559223278e-08,
+        "near_zero_reference_count": 0
+      },
+      "reset": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      },
+      "repeat": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      }
+    },
+    {
+      "case_id": "GL-T720-m180-n721-p378-even",
+      "threads": 8,
+      "process_pair": 1,
+      "candidate_baseline_bitwise": true,
+      "candidate_ducc": {
+        "absolute_max": 3.4996716635760095e-09,
+        "relative_l2": 5.224279067934392e-13,
+        "max_relative_above_1e-12_peak": 1.873190559223278e-08,
+        "near_zero_reference_count": 0
+      },
+      "baseline_ducc": {
+        "absolute_max": 3.4996716635760095e-09,
+        "relative_l2": 5.224279067934392e-13,
+        "max_relative_above_1e-12_peak": 1.873190559223278e-08,
+        "near_zero_reference_count": 0
+      },
+      "reset": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      },
+      "repeat": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      }
+    },
+    {
+      "case_id": "GL-T720-m180-n721-p378-even",
+      "threads": 8,
+      "process_pair": 2,
+      "candidate_baseline_bitwise": true,
+      "candidate_ducc": {
+        "absolute_max": 3.4996716635760095e-09,
+        "relative_l2": 5.224279067934392e-13,
+        "max_relative_above_1e-12_peak": 1.873190559223278e-08,
+        "near_zero_reference_count": 0
+      },
+      "baseline_ducc": {
+        "absolute_max": 3.4996716635760095e-09,
+        "relative_l2": 5.224279067934392e-13,
+        "max_relative_above_1e-12_peak": 1.873190559223278e-08,
+        "near_zero_reference_count": 0
+      },
+      "reset": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      },
+      "repeat": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      }
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "threads": 1,
+      "process_pair": 0,
+      "candidate_baseline_bitwise": true,
+      "candidate_ducc": {
+        "absolute_max": 3.969319095631363e-09,
+        "relative_l2": 3.9317766705641284e-13,
+        "max_relative_above_1e-12_peak": 1.838928992073043e-07,
+        "near_zero_reference_count": 0
+      },
+      "baseline_ducc": {
+        "absolute_max": 3.969319095631363e-09,
+        "relative_l2": 3.9317766705641284e-13,
+        "max_relative_above_1e-12_peak": 1.838928992073043e-07,
+        "near_zero_reference_count": 0
+      },
+      "reset": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      },
+      "repeat": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      }
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "threads": 1,
+      "process_pair": 1,
+      "candidate_baseline_bitwise": true,
+      "candidate_ducc": {
+        "absolute_max": 3.969319095631363e-09,
+        "relative_l2": 3.9317766705641284e-13,
+        "max_relative_above_1e-12_peak": 1.838928992073043e-07,
+        "near_zero_reference_count": 0
+      },
+      "baseline_ducc": {
+        "absolute_max": 3.969319095631363e-09,
+        "relative_l2": 3.9317766705641284e-13,
+        "max_relative_above_1e-12_peak": 1.838928992073043e-07,
+        "near_zero_reference_count": 0
+      },
+      "reset": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      },
+      "repeat": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      }
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "threads": 1,
+      "process_pair": 2,
+      "candidate_baseline_bitwise": true,
+      "candidate_ducc": {
+        "absolute_max": 3.969319095631363e-09,
+        "relative_l2": 3.9317766705641284e-13,
+        "max_relative_above_1e-12_peak": 1.838928992073043e-07,
+        "near_zero_reference_count": 0
+      },
+      "baseline_ducc": {
+        "absolute_max": 3.969319095631363e-09,
+        "relative_l2": 3.9317766705641284e-13,
+        "max_relative_above_1e-12_peak": 1.838928992073043e-07,
+        "near_zero_reference_count": 0
+      },
+      "reset": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      },
+      "repeat": {
+        "baseline": true,
+        "candidate": true,
+        "ducc": true
+      }
+    }
+  ],
+  "raw_workers": [
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "baseline",
+      "process_pair": 0,
+      "latency_ms_per_call": [
+        52.185033,
+        45.629316,
+        44.918034000000006,
+        64.73789500000001,
+        67.745225,
+        64.83522599999999,
+        65.79895400000001,
+        61.844977,
+        43.874779000000004,
+        57.328233
+      ],
+      "timed_call_count": 10,
+      "first_ms": 82.766252,
+      "warmup_ms": 51.762843000000004,
+      "setup_ms": 13.452784000000001,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 38606.48134262105
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "candidate",
+      "process_pair": 0,
+      "latency_ms_per_call": [
+        58.264059,
+        54.317558000000005,
+        60.262097,
+        60.193891,
+        59.579608,
+        59.864033,
+        56.900413,
+        48.945364999999995,
+        39.171640000000004,
+        59.919885
+      ],
+      "timed_call_count": 10,
+      "first_ms": 76.300622,
+      "warmup_ms": 74.36424899999999,
+      "setup_ms": 12.283515999999999,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 38606.48134262105
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "ducc",
+      "process_pair": 0,
+      "latency_ms_per_call": [
+        10.1598575,
+        10.3399295,
+        9.1233695,
+        8.983922,
+        9.374924,
+        9.8426765,
+        8.977415,
+        9.1071995,
+        9.135422,
+        9.081102
+      ],
+      "timed_call_count": 10,
+      "first_ms": 20.030421,
+      "warmup_ms": 16.69711,
+      "setup_ms": 36.005969,
+      "repetitions_per_batch": 2,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": -25268.830982850053
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "ducc",
+      "process_pair": 1,
+      "latency_ms_per_call": [
+        9.03486375,
+        8.93920975,
+        9.41748975,
+        9.97785625,
+        10.4025475,
+        9.1127725,
+        8.2424365,
+        9.586056,
+        9.25586175,
+        9.11765175
+      ],
+      "timed_call_count": 10,
+      "first_ms": 17.03875,
+      "warmup_ms": 14.531273,
+      "setup_ms": 34.869652,
+      "repetitions_per_batch": 4,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": -25268.830982850053
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "baseline",
+      "process_pair": 1,
+      "latency_ms_per_call": [
+        63.545235000000005,
+        63.365542999999995,
+        63.371965,
+        60.530752,
+        64.01717599999999,
+        60.980723,
+        64.104938,
+        63.652653,
+        61.540935999999995,
+        53.279182
+      ],
+      "timed_call_count": 10,
+      "first_ms": 82.304871,
+      "warmup_ms": 53.583734,
+      "setup_ms": 13.395468000000001,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 38606.48134262105
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "candidate",
+      "process_pair": 1,
+      "latency_ms_per_call": [
+        50.786241000000004,
+        59.132543000000005,
+        54.05319,
+        53.207219,
+        59.47767,
+        59.016258,
+        59.405305,
+        71.00507,
+        59.097828,
+        65.480096
+      ],
+      "timed_call_count": 10,
+      "first_ms": 71.658636,
+      "warmup_ms": 59.33129,
+      "setup_ms": 12.718478,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 38606.48134262105
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "candidate",
+      "process_pair": 2,
+      "latency_ms_per_call": [
+        59.050951999999995,
+        59.230944,
+        58.96313,
+        52.921342,
+        58.937973,
+        59.052776,
+        48.767987999999995,
+        59.988772000000004,
+        60.985782,
+        56.00964
+      ],
+      "timed_call_count": 10,
+      "first_ms": 71.239903,
+      "warmup_ms": 59.612909,
+      "setup_ms": 13.236714000000001,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 38606.48134262105
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "ducc",
+      "process_pair": 2,
+      "latency_ms_per_call": [
+        10.8893435,
+        10.844681,
+        10.976544,
+        11.6995985,
+        9.675353,
+        10.5832035,
+        10.0256395,
+        8.969656,
+        9.2123285,
+        9.2072945
+      ],
+      "timed_call_count": 10,
+      "first_ms": 16.94649,
+      "warmup_ms": 13.618469,
+      "setup_ms": 32.238217,
+      "repetitions_per_batch": 2,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": -25268.830982850053
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "baseline",
+      "process_pair": 2,
+      "latency_ms_per_call": [
+        54.480228,
+        63.610205,
+        63.40937400000001,
+        65.98363499999999,
+        63.161576999999994,
+        64.81595,
+        53.596948,
+        72.149381,
+        63.58076,
+        64.046931
+      ],
+      "timed_call_count": 10,
+      "first_ms": 84.593223,
+      "warmup_ms": 62.504354,
+      "setup_ms": 13.359621,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 38606.48134262105
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1443-odd",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "baseline",
+      "process_pair": 0,
+      "latency_ms_per_call": [
+        91.052432,
+        91.50667,
+        101.55601300000001,
+        91.82962599999999,
+        90.820564,
+        86.139817,
+        73.41352499999999,
+        91.653221,
+        91.897952,
+        90.96270700000001
+      ],
+      "timed_call_count": 10,
+      "first_ms": 106.304646,
+      "warmup_ms": 78.836481,
+      "setup_ms": 10.988897,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 23706.005155991337
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1443-odd",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "candidate",
+      "process_pair": 0,
+      "latency_ms_per_call": [
+        61.648125,
+        62.002427999999995,
+        62.505275999999995,
+        66.290981,
+        65.92294199999999,
+        63.86786,
+        63.953468,
+        63.204837,
+        65.033561,
+        65.382986
+      ],
+      "timed_call_count": 10,
+      "first_ms": 90.705692,
+      "warmup_ms": 65.68871,
+      "setup_ms": 11.534103,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 23706.005155991337
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1443-odd",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "ducc",
+      "process_pair": 0,
+      "latency_ms_per_call": [
+        8.136183,
+        10.4185395,
+        10.6059755,
+        9.14788,
+        10.0363395,
+        11.2175385,
+        10.6388055,
+        9.937993,
+        9.0674565,
+        9.139269
+      ],
+      "timed_call_count": 10,
+      "first_ms": 24.687373,
+      "warmup_ms": 17.194477,
+      "setup_ms": 35.481381,
+      "repetitions_per_batch": 2,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 26716.45771829317
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1443-odd",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "ducc",
+      "process_pair": 1,
+      "latency_ms_per_call": [
+        12.9997575,
+        11.3376305,
+        11.331374,
+        12.2780155,
+        11.4769325,
+        11.670044,
+        11.6665775,
+        10.309939,
+        11.691729,
+        10.701667
+      ],
+      "timed_call_count": 10,
+      "first_ms": 20.685209,
+      "warmup_ms": 18.237332,
+      "setup_ms": 24.905346,
+      "repetitions_per_batch": 2,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 26716.45771829317
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1443-odd",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "baseline",
+      "process_pair": 1,
+      "latency_ms_per_call": [
+        91.87318599999999,
+        89.447611,
+        90.096097,
+        90.817449,
+        86.467772,
+        78.186351,
+        75.728676,
+        89.844383,
+        90.28221,
+        100.84354900000001
+      ],
+      "timed_call_count": 10,
+      "first_ms": 108.69686,
+      "warmup_ms": 84.481828,
+      "setup_ms": 10.829113,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 23706.005155991337
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1443-odd",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "candidate",
+      "process_pair": 1,
+      "latency_ms_per_call": [
+        64.796243,
+        64.656535,
+        65.963307,
+        64.710926,
+        63.68723599999999,
+        57.967251999999995,
+        67.123978,
+        65.39147200000001,
+        67.439491,
+        56.475559000000004
+      ],
+      "timed_call_count": 10,
+      "first_ms": 78.451901,
+      "warmup_ms": 64.520344,
+      "setup_ms": 11.547096999999999,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 23706.005155991337
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1443-odd",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "candidate",
+      "process_pair": 2,
+      "latency_ms_per_call": [
+        62.291402000000005,
+        66.037564,
+        65.501315,
+        64.77353199999999,
+        54.301448,
+        57.779255,
+        65.43184600000001,
+        65.28941300000001,
+        61.755112000000004,
+        65.483262
+      ],
+      "timed_call_count": 10,
+      "first_ms": 70.916707,
+      "warmup_ms": 64.098816,
+      "setup_ms": 11.08253,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 23706.005155991337
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1443-odd",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "ducc",
+      "process_pair": 2,
+      "latency_ms_per_call": [
+        9.131332666666667,
+        10.251763333333333,
+        10.737496333333333,
+        10.203845333333334,
+        9.777642,
+        9.396021,
+        8.954199000000001,
+        9.234860333333334,
+        10.322427,
+        9.172829
+      ],
+      "timed_call_count": 10,
+      "first_ms": 18.287694,
+      "warmup_ms": 13.881294,
+      "setup_ms": 35.073688,
+      "repetitions_per_batch": 3,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 26716.45771829317
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1443-odd",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "baseline",
+      "process_pair": 2,
+      "latency_ms_per_call": [
+        90.410948,
+        90.363251,
+        89.037554,
+        91.111611,
+        91.715205,
+        90.60347300000001,
+        90.10121699999999,
+        89.587899,
+        91.719793,
+        91.389173
+      ],
+      "timed_call_count": 10,
+      "first_ms": 108.51560500000001,
+      "warmup_ms": 89.635778,
+      "setup_ms": 10.157503,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 23706.005155991337
+    },
+    {
+      "case_id": "GL-T720-m180-n721-p378-even",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "baseline",
+      "process_pair": 0,
+      "latency_ms_per_call": [
+        37.285779999999995,
+        36.459706000000004,
+        36.14782099999999,
+        36.669784,
+        36.890781999999994,
+        36.661969,
+        36.803720999999996,
+        36.413712000000004,
+        36.325679,
+        36.345716
+      ],
+      "timed_call_count": 10,
+      "first_ms": 40.142441,
+      "warmup_ms": 36.403101,
+      "setup_ms": 3.9274169999999997,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": -28969.198541397796
+    },
+    {
+      "case_id": "GL-T720-m180-n721-p378-even",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "candidate",
+      "process_pair": 0,
+      "latency_ms_per_call": [
+        26.373495000000002,
+        34.309148,
+        34.409042,
+        36.363198,
+        35.273447,
+        34.751224,
+        31.531551999999998,
+        34.647823,
+        35.322067,
+        34.924352999999996
+      ],
+      "timed_call_count": 10,
+      "first_ms": 37.693552999999994,
+      "warmup_ms": 35.585533000000005,
+      "setup_ms": 3.764546,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": -28969.198541397796
+    },
+    {
+      "case_id": "GL-T720-m180-n721-p378-even",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "ducc",
+      "process_pair": 0,
+      "latency_ms_per_call": [
+        5.62769675,
+        5.6508645,
+        5.6511375,
+        4.8487095,
+        4.70764675,
+        5.09220125,
+        4.50124575,
+        4.531256,
+        5.2441165,
+        4.49456325
+      ],
+      "timed_call_count": 10,
+      "first_ms": 9.862048,
+      "warmup_ms": 8.328879,
+      "setup_ms": 10.117499,
+      "repetitions_per_batch": 4,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 22939.781669729127
+    },
+    {
+      "case_id": "GL-T720-m180-n721-p378-even",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "ducc",
+      "process_pair": 1,
+      "latency_ms_per_call": [
+        6.979061000000001,
+        5.808548333333333,
+        5.6007446666666665,
+        5.035842333333333,
+        5.450591,
+        5.868175,
+        5.7668376666666665,
+        5.232261333333333,
+        4.510262666666667,
+        5.3854940000000004
+      ],
+      "timed_call_count": 10,
+      "first_ms": 11.012591,
+      "warmup_ms": 10.217704,
+      "setup_ms": 9.847351,
+      "repetitions_per_batch": 3,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 22939.781669729127
+    },
+    {
+      "case_id": "GL-T720-m180-n721-p378-even",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "baseline",
+      "process_pair": 1,
+      "latency_ms_per_call": [
+        35.847967000000004,
+        35.962388999999995,
+        35.587858,
+        35.735530000000004,
+        35.206233000000005,
+        36.009626000000004,
+        34.816635,
+        40.780159000000005,
+        35.794139,
+        35.679487
+      ],
+      "timed_call_count": 10,
+      "first_ms": 41.731052999999996,
+      "warmup_ms": 29.178870999999997,
+      "setup_ms": 4.14607,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": -28969.198541397796
+    },
+    {
+      "case_id": "GL-T720-m180-n721-p378-even",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "candidate",
+      "process_pair": 1,
+      "latency_ms_per_call": [
+        35.100658,
+        34.544672999999996,
+        37.934357,
+        33.111869,
+        34.801466000000005,
+        32.377634,
+        34.478410000000004,
+        34.680654,
+        35.167632,
+        35.162392000000004
+      ],
+      "timed_call_count": 10,
+      "first_ms": 36.268133,
+      "warmup_ms": 35.307410999999995,
+      "setup_ms": 3.663851,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": -28969.198541397796
+    },
+    {
+      "case_id": "GL-T720-m180-n721-p378-even",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "candidate",
+      "process_pair": 2,
+      "latency_ms_per_call": [
+        34.559049,
+        35.34492,
+        35.043803999999994,
+        34.923942,
+        35.756779,
+        35.436328,
+        35.298313,
+        34.336980000000004,
+        35.081603,
+        34.877226
+      ],
+      "timed_call_count": 10,
+      "first_ms": 38.197543,
+      "warmup_ms": 34.512423,
+      "setup_ms": 3.9234999999999998,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": -28969.198541397796
+    },
+    {
+      "case_id": "GL-T720-m180-n721-p378-even",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "ducc",
+      "process_pair": 2,
+      "latency_ms_per_call": [
+        4.210908333333333,
+        6.126675166666666,
+        5.737186333333334,
+        4.288388,
+        4.183255666666667,
+        4.378768166666666,
+        3.9690586666666667,
+        4.0436863333333335,
+        4.4394401666666665,
+        4.6266671666666666
+      ],
+      "timed_call_count": 10,
+      "first_ms": 11.756293,
+      "warmup_ms": 10.917625,
+      "setup_ms": 9.916198,
+      "repetitions_per_batch": 6,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 22939.781669729127
+    },
+    {
+      "case_id": "GL-T720-m180-n721-p378-even",
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "baseline",
+      "process_pair": 2,
+      "latency_ms_per_call": [
+        37.294697,
+        36.809070999999996,
+        37.208799,
+        36.566543,
+        36.052043999999995,
+        35.577628,
+        36.63498,
+        35.059392,
+        37.508592,
+        36.140086000000004
+      ],
+      "timed_call_count": 10,
+      "first_ms": 40.695082,
+      "warmup_ms": 35.716965,
+      "setup_ms": 4.195091,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": -28969.198541397796
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "operation": "synthesis",
+      "threads": 1,
+      "backend": "baseline",
+      "process_pair": 0,
+      "latency_ms_per_call": [
+        174.471408,
+        172.83125199999998,
+        169.97725599999998,
+        172.651019,
+        172.46520600000002
+      ],
+      "timed_call_count": 5,
+      "first_ms": 181.401496,
+      "warmup_ms": 173.598849,
+      "setup_ms": 11.126721,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 19303.24067131053
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "operation": "synthesis",
+      "threads": 1,
+      "backend": "candidate",
+      "process_pair": 0,
+      "latency_ms_per_call": [
+        173.24801100000002,
+        170.405816,
+        172.941305,
+        172.536057,
+        167.84004199999998
+      ],
+      "timed_call_count": 5,
+      "first_ms": 181.449885,
+      "warmup_ms": 174.280456,
+      "setup_ms": 10.353745,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 19303.24067131053
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "operation": "synthesis",
+      "threads": 1,
+      "backend": "ducc",
+      "process_pair": 0,
+      "latency_ms_per_call": [
+        57.16691,
+        57.439292,
+        56.994943,
+        57.447779,
+        57.274689,
+        57.554746,
+        56.036104,
+        54.757254,
+        55.180024,
+        56.139214
+      ],
+      "timed_call_count": 10,
+      "first_ms": 69.5628,
+      "warmup_ms": 67.455843,
+      "setup_ms": 34.090625,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": -25268.830982850053
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "operation": "synthesis",
+      "threads": 1,
+      "backend": "ducc",
+      "process_pair": 1,
+      "latency_ms_per_call": [
+        56.427967,
+        56.602027,
+        56.33202,
+        55.225649,
+        50.62985,
+        49.7523,
+        48.887215,
+        48.40242,
+        48.344553,
+        48.676165
+      ],
+      "timed_call_count": 10,
+      "first_ms": 68.60907,
+      "warmup_ms": 66.540083,
+      "setup_ms": 33.948583,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": -25268.830982850053
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "operation": "synthesis",
+      "threads": 1,
+      "backend": "baseline",
+      "process_pair": 1,
+      "latency_ms_per_call": [
+        169.080486,
+        169.153239,
+        170.397345,
+        168.85382700000002,
+        166.34474799999998
+      ],
+      "timed_call_count": 5,
+      "first_ms": 183.292246,
+      "warmup_ms": 172.84448,
+      "setup_ms": 10.789556000000001,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 19303.24067131053
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "operation": "synthesis",
+      "threads": 1,
+      "backend": "candidate",
+      "process_pair": 1,
+      "latency_ms_per_call": [
+        104.030601,
+        103.65062,
+        103.484835,
+        104.073471,
+        103.880374
+      ],
+      "timed_call_count": 5,
+      "first_ms": 180.910722,
+      "warmup_ms": 123.924214,
+      "setup_ms": 10.286268,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 19303.24067131053
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "operation": "synthesis",
+      "threads": 1,
+      "backend": "candidate",
+      "process_pair": 2,
+      "latency_ms_per_call": [
+        103.284735,
+        104.139974,
+        103.062576,
+        103.14390499999999,
+        103.588195
+      ],
+      "timed_call_count": 5,
+      "first_ms": 111.250723,
+      "warmup_ms": 103.78432699999999,
+      "setup_ms": 7.5222880000000005,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 19303.24067131053
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "operation": "synthesis",
+      "threads": 1,
+      "backend": "ducc",
+      "process_pair": 2,
+      "latency_ms_per_call": [
+        56.251111,
+        55.927513,
+        56.083532,
+        56.318225,
+        55.683443,
+        55.988717,
+        56.205967,
+        55.992724,
+        55.620708,
+        55.716424
+      ],
+      "timed_call_count": 10,
+      "first_ms": 67.967487,
+      "warmup_ms": 65.724097,
+      "setup_ms": 33.060085,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": -25268.830982850053
+    },
+    {
+      "case_id": "GL-T720-m720-n721-p1458-even",
+      "operation": "synthesis",
+      "threads": 1,
+      "backend": "baseline",
+      "process_pair": 2,
+      "latency_ms_per_call": [
+        171.97214,
+        172.585362,
+        172.04811,
+        170.941238,
+        171.60909999999998
+      ],
+      "timed_call_count": 5,
+      "first_ms": 181.239708,
+      "warmup_ms": 174.03865299999998,
+      "setup_ms": 10.080207000000001,
+      "repetitions_per_batch": 1,
+      "reset_consistent": true,
+      "repeat_consistent": true,
+      "output_checksum": 19303.24067131053
+    }
+  ]
+}
