@@ -1184,6 +1184,36 @@ For each accepted candidate:
   diagnostics and oversized disassembly local/untracked.
 - Final deliverables: reproducible native baseline, stage-level excess-time table, source/assembly explanation, small serial and q8 results with noise bounds, numerical and memory checks, concise plan completion report, and exact remaining bottlenecks.
 
+## Current progress — T720 q8 reflected-geometry preflight (2026-10-21)
+
+Implementation commit [`93ba59fb`](../reports/plan14-reflected-geometry-preflight-2026-10-21.md)
+moves the existing reflected-latitude symmetry and polar-order monotonicity
+check out of the per-order synthesis route. The q8 T720 `mmax=180`,
+`nphi=361` call previously checked 361 reflected pairs for each of 181
+orders; it now checks those pairs once before entering Rayon. The same checks,
+tolerance and safe fallback remain in place.
+
+Two interleaved baseline captures at `4909c3b8` and two candidate captures
+at `93ba59fb` each contributed 30 calibrated batches per backend. Across 60
+samples per source, Rust median latency fell from 1.6033 to 1.5379 ms; DUCC
+was stable at 1.2607/1.2619 ms. The paired Rust/DUCC median moved from
+1.273x to 1.224x, while relative L2 remained `5.195e-14`. The measured
+whole-call excess fell 66.7 us (about 19% of the baseline excess). A q1
+control was inconclusive because scheduler wait was elevated.
+
+The exact V3 binary confirms that the validator is called once before the
+q8 worker region and is absent from each order's dispatch. LLVM also inlined
+the V3 synthesis body into the candidate range dispatcher, increasing that
+wrapper's stack frame from 248 to 1,224 bytes; the baseline had a separate
+V3 call. Therefore the full timing change is evidence for this source
+candidate, but does not isolate the scan's exact share. Full distributions,
+host diagnostics, source flags, fixture hashes and q1 controls are in the
+[machine-readable data](../reports/data/plan14-reflected-geometry-preflight-2026-10-21/summary.json).
+
+The selected q8 excess is now about 0.276 ms. Reprofile recurrence and
+inverse-row time on this exact source before choosing the next change; then
+resume the unresolved small-q1 stage attribution.
+
 ## References
 
 - RustSHT source: `src/transform.rs`, `src/legendre/scalar_paired.rs`, `src/legendre/scalar_ordered.rs`, `src/legendre/scalar_table.rs`, `src/fft.rs`, `src/workspace.rs`.

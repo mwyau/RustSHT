@@ -2,22 +2,26 @@
 
 **Current implementation plan:** [Plan 14](../plans/14-small-serial-parallel-performance.md).
 **Current factual status and priorities:** [PERFORMANCE_STATUS.md](../PERFORMANCE_STATUS.md).
-**Recent measured results:** [Plan 14 T16 fused analysis route](plan14-t16-analysis-cutoff-2026-10-21.md), [Plan 14 T64 fused analysis route](plan14-t64-fused-analysis-cutoff-2026-10-21.md), [Plan 14 T127 compact-table SIMD analysis](plan14-t127-table-analysis-simd-2026-10-21.md), [Plan 14 small-q1 baseline and T127 analysis attribution](plan14-small-q1-baseline-2026-10-21.md), [Plan 14 direct synthesis output](plan14-direct-spectrum-output-2026-10-21.md) and [Plan 11 scalar-analysis closeout](scalar-analysis-cumulative-2026-10-20.md).
+**Recent measured results:** [Plan 14 reflected-geometry preflight](plan14-reflected-geometry-preflight-2026-10-21.md), [Plan 14 T16 fused analysis route](plan14-t16-analysis-cutoff-2026-10-21.md), [Plan 14 T64 fused analysis route](plan14-t64-fused-analysis-cutoff-2026-10-21.md), [Plan 14 T127 compact-table SIMD analysis](plan14-t127-table-analysis-simd-2026-10-21.md), [Plan 14 small-q1 baseline and T127 analysis attribution](plan14-small-q1-baseline-2026-10-21.md), [Plan 14 direct synthesis output](plan14-direct-spectrum-output-2026-10-21.md) and [Plan 11 scalar-analysis closeout](scalar-analysis-cumulative-2026-10-20.md).
 Do not follow forward-looking instructions embedded in historical reports.
 
 ## Current and accepted evidence
 
 - [T2047/T2048 cutoff and previous T720 A/B findings](scalar-analysis-cumulative-2026-10-20.md):
   q1 nearly at DUCC parity at T2047/2048 latitudes with 256-pair
-  tiles; one-latitude increase triggers the Rust-only prefix gate
-  and a severe checked-scaled route regression. Current investigations
-  concern the *necessity* of that extra gate, not small tile sweeps.
-  Fixed SIMD scratch remains opt-in; packed reduction, indexed
-  traversal and direct coefficient accumulation are retired.
+  tiles. The extra latitude-count prefix gate was removed after matched
+  T2047/T2048/T3072 validation; the 3.1–3.3x discontinuity is closed.
+  Fixed SIMD scratch remains opt-in; packed reduction, indexed traversal
+  and direct coefficient accumulation are retired.
 - [Plan 14 direct q8 synthesis output](plan14-direct-spectrum-output-2026-10-21.md):
   a new order-owned ring-major output path removes the intermediate
   order-major spectrum and parallel scatter. This is distinct from the
   retired analysis direct-coefficient-accumulation experiment.
+- [Plan 14 reflected-geometry preflight](plan14-reflected-geometry-preflight-2026-10-21.md):
+  hoisting the unchanged GL reflection/polar-order validation out of each
+  T720 q8 synthesis order job reduced matched Rust median latency by 4.1%;
+  generated-code inlining also changed, so the full gain is not assigned to
+  the scan alone.
 - [Plan 14 T127 table analysis SIMD](plan14-t127-table-analysis-simd-2026-10-21.md):
   a V3 two-complex-lane table accumulator improved matched q1 whole-call
   latency by 5.5%; q8 was inconclusive and did not show a gain.

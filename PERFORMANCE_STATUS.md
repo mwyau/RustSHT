@@ -487,11 +487,18 @@ q8 scheduling included. No production kernel changed in this checkpoint.
 
 ## Current next steps and deferred work
 
-The q8 `nphi=361` inverse candidate is integrated and measured. Rebaseline
-the T3072 full-order q8 analysis case under the current Plan 14 source, then
-select the largest measured whole-transform excess. Keep the FFT change
-limited to f64 `nphi=361`; do not revive the rejected standalone C2R engine
-or generalize the mixed-radix route without matched evidence.
+The q8 `nphi=361` inverse candidate and current-source T3072 q8 analysis
+rebaseline are complete. Commit `93ba59fb` hoists reflected-geometry and
+polar-order validation out of each T720 q8 synthesis order job. At reduced
+`mmax=180`, `nphi=361`, the matched 60-batch median fell 1.6033→1.5379 ms;
+DUCC stayed at 1.2607/1.2619 ms and Rust/DUCC moved 1.273×→1.224×. The
+whole-call excess fell 66.7 µs, but the optimized dispatcher also changed
+code generation, so that amount is not assigned solely to the removed scan.
+The exact-source next step is to reprofile the remaining q8 recurrence and
+inverse-row costs, then return to the unresolved small-q1 stage difference.
+The odd inverse change remains limited to f64 `nphi=361`; do not revive the
+rejected standalone C2R engine or generalize that route without matched
+evidence.
 **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
 cache-topology queries and [Plan 13](plans/13-fused-batched-sht.md)
 true basis-shared batches.
@@ -516,6 +523,24 @@ was 8.8–10.0% slower than the current Rust path and remains rejected.
 See the [focused report](reports/plan14-ducc-inverse-rows-2026-10-21.md),
 [main data](reports/data/plan14-ducc-fft-rows-2026-10-21/) and
 [q8 repeat data](reports/data/plan14-ducc-fft-rows-q8-recheck-2026-10-21/).
+
+## Plan 14 — T720 q8 reflected-geometry preflight (`93ba59fb`)
+
+The ordered scalar synthesis path now validates reflected GL geometry once
+before launching per-order q8 jobs, rather than repeating the scan 181 times
+at T720 `mmax=180`. In matched q8 odd-synthesis captures, 60-batch Rust
+median latency fell from 1.6033 ms to 1.5379 ms against 1.2607/1.2619 ms
+DUCC; relative L2 stayed `5.195e-14`. The q1 control was inconclusive under
+7% median runqueue wait. Assembly confirms that the candidate removes the
+per-order check but also changes inlining and dispatcher frame size, so the
+full 66.7 µs excess reduction is not attributed solely to validation. See
+the [focused report](reports/plan14-reflected-geometry-preflight-2026-10-21.md)
+and [batch data](reports/data/plan14-reflected-geometry-preflight-2026-10-21/summary.json).
+
+Next, reprofile the T720 q8 recurrence and inverse rows on source `93ba59fb`
+to rank the remaining approximately 0.276 ms excess. Then resume the
+small-q1 stage attribution. Plan 11 remains complete and Plans 12/13 remain
+deferred.
 
 All prior measurements, full machine-readable CSV/JSON, rejected
 experiments, historical plans and source versions are intentionally
