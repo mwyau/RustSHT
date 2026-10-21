@@ -1,8 +1,9 @@
 # RustSHT performance checkpoint
 
 **Branch:** `opt/sht-performance-parity`. **Updated:** 2026-10-20. **Current
-implementation source measured:** `b25c011d` (scalar synthesis selects on-the-fly
-recurrence from T64; analysis retains its prior table policy).
+production source measured:** `86f43486` (scalar synthesis selects on-the-fly
+recurrence from T64; analysis retains its prior table policy). The T720
+candidate A/B source was `b25c011d`.
 **Earlier dispatch-policy source:** `d6382614`; **earlier A/B source:** `9f7e8658`.
 **Calibrated harness:** `1ee1a195`. **Benchmark default:** production flags at
 `e2c2dc15`. For the
@@ -24,20 +25,31 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   results are in the [current T720 A/B](reports/scalar-analysis-cumulative-2026-10-20.md#current-t720-productioncandidate-ab-2026-10-20)
   and [data](reports/data/scalar-analysis-cumulative-2026-10-20/t720-ab-current/).
 
-- **T2048 cutoff route profile:** test-only release counters cover the
-  T2047/T2048 cases at tiles 64/128/256. Crossing 2048 to 2049 latitudes moves
-  2,432/3,798/6,466 blocks from prefix-enabled scaled recurrence to the
-  checked-scaled route; adding degree 2048 at fixed 2049 latitudes changes
-  checked-scaled counts by 0/0/2. Counts do not measure skipped degree pairs
-  or latency. Next compare mmax=2047, nphi=4096, q1/q8 at T2047 with
-  ntheta=2048 and 2049, and T2048 with ntheta=2049, using pair tiles
-  64/128/256. Keep the safety bound unchanged.
+- **T2048 cutoff and tile comparison (source `86f43486`):** matched full f64
+  GL analysis held `mmax=2047`, `nphi=4096` fixed across T2047/`ntheta=2048`,
+  T2047/`ntheta=2049` and T2048/`ntheta=2049`, q1/q8. Three interleaved
+  process rounds collected 15 whole-call observations per tile/backend for
+  the long cases (30 calibrated batches where q8 calls were below 100 ms).
+  At T2047 q1, crossing one extra latitude changed tile-256 latency from
+  251.5 ms (DUCC 248.6 ms) to 828.4 ms (DUCC 249.4 ms), ratio 3.33x; q8
+  changed from 62.2 ms (45.8 ms) to 143.7 ms (45.9 ms), ratio 3.13x by
+  medians. The route counters show the matching change: 2,432 prefix-enabled
+  blocks at 2048 latitudes versus 2,434 checked-scaled blocks at 2049.
+  Smaller tiles recover part of this: tile 64 is 16.0% faster q1 and 14.4%
+  faster q8 than tile 256 at T2047/2049, but remains 2.79x/2.65x slower than
+  DUCC. At fixed 2049 latitudes, adding degree 2048 has no material cost.
+  Maximum relative L2 error is 1.18e-13; all worker reset checks passed.
+  q8 spreads and moderate run-queue wait are retained in the data. See the
+  [cutoff report and summary CSV](reports/scalar-analysis-cumulative-2026-10-20.md#t2047t2048-cutoff-and-pair-tile-comparison-2026-10-20).
+  Next investigate a stricter per-latitude insignificance threshold that keeps
+  the existing eight-ulp omission bound, then retest this exact matrix. Do not
+  relax the safety bound.
 
 - **Prefix reuse/preflight changes:** sectoral seed reuse and scaled-prefix
   epoch/preflight reuse are part of the current measured production source.
   The T720 compile-time candidate A/B used identical source for those paths,
   so it does not attribute their individual benefit versus earlier code.
-  Keep them unchanged while the T2048 route-bound cost is measured.
+  Keep them unchanged while the checked-scaled route is investigated.
 
 - **Warmed T720 analysis-kernel attribution, `4c6945fc` plus a benchmark-only
   alignment correction:** the probe now shares the ordinary unchecked timing's

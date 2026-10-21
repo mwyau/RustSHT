@@ -543,3 +543,50 @@ reports/data/scalar-analysis-cumulative-2026-10-20/t720-ab-current/. The
 interleaved q8 confirmation's compact data is interleaved-q8-synthesis.csv;
 per-process host logs remain local. The 2026-10-20 fbba7c39 direct-output run
 above is historical and is not used for current candidate conclusions.
+
+## T2047/T2048 cutoff and pair-tile comparison (2026-10-20)
+
+This full-transform screen used Rust source
+`86f43486b75774bd30046cc78dc712aa28d58077`, Rust 1.99.1/LLVM 23.1.1 with
+strict `-C target-cpu=x86-64-v3`, and DUCC
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. DUCC SHT sources used GCC 15.2
+with `-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3`; the driver used
+strict floating-point semantics. Runtime dispatch was Pulp V3 versus fixed
+DUCC V3. Every case used GL, `mmax=2047`, `nphi=4096`, and identical seeded
+maps per geometry. The three geometries separate the latitude cutoff from
+adding degree 2048. Three interleaved rounds rotated tile order around DUCC.
+Each process performed a cold call and warmup, then either five whole-call
+samples for operations at least 100 ms or ten calibrated batches. This yields
+15 long-call observations per backend/tile and 30 shorter q8 batches where
+applicable. All outputs were compared after timing; reset checks passed.
+
+| Geometry | Threads | DUCC ms | Rust tile 256/128/64 ms | Paired Rust/DUCC ratio 256/128/64 | Relative L2 |
+|---|---:|---:|---:|---:|---:|
+| T2047, 2048 latitudes | q1 | 248.645 | 251.498 / 261.872 / 282.107 | 1.013 / 1.050 / 1.125 | 1.18e-13 |
+| T2047, 2048 latitudes | q8 | 45.793 | 62.201 / 63.074 / 67.679 | 1.371 / 1.388 / 1.468 | 1.18e-13 |
+| T2047, 2049 latitudes | q1 | 249.445 | 828.435 / 718.965 / 696.002 | 3.326 / 2.888 / 2.781 | 1.18e-13 |
+| T2047, 2049 latitudes | q8 | 45.928 | 143.732 / 129.008 / 122.973 | 2.926 / 2.741 / 2.647 | 1.18e-13 |
+| T2048, 2049 latitudes | q1 | 250.061 | 832.444 / 716.284 / 693.156 | 3.328 / 2.857 / 2.774 | 1.18e-13 |
+| T2048, 2049 latitudes | q8 | 42.401 | 133.959 / 121.908 / 115.758 | 3.198 / 2.899 / 2.752 | 1.18e-13 |
+
+The one-latitude increase at fixed T2047 and longitude sampling raises tile-256
+Rust q1 latency from 251.5 to 828.4 ms while DUCC remains 248.6–249.4 ms.
+This matches the route profile: 2,432 blocks use prefix-enabled scaled
+recurrence at 2048 latitudes, while 2,434 use checked-scaled recurrence at
+2049. This is the dominant measured cause. At the same 2049-latitude geometry,
+adding degree 2048 has no material cost (T2047/T2048 Rust medians are within
+the observed spread). Tile selection is a second, separate contributor:
+tile 64 is 12.2% slower than tile 256 below the cutoff, but 14.4–16.7% faster
+at 2049 latitudes. It only recovers part of the regression; the best 2049-row
+Rust/DUCC ratios remain 2.65–2.79x. Do not replace the general tile policy
+based on this narrow geometry.
+
+The p10/p90, per-process wait/frequency summaries and errors are in
+[`t2048-cutoff-current/summary.csv`](data/scalar-analysis-cumulative-2026-10-20/t2048-cutoff-current/summary.csv).
+CPU PSI `full` remained zero; background activity raised `some` from a low
+starting level, and an `ncdu` process briefly shared one q8-eligible physical
+core. All samples are retained. The q1 cutoff effect is much larger than the
+observed run-queue wait; q8 ratios are correspondingly more variable.
+Reproduce with `scripts/benchmark_scalar_analysis_tile_cutoff.py`; build
+instructions and exact commands are in the adjacent data README. The raw
+per-process/host capture stays local and untracked.

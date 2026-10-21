@@ -49,7 +49,7 @@ Both are deferred until this Plan 11 campaign concludes **or the owner
 explicitly reprioritizes**. Neither alters the active numerical, dispatch,
 performance, or dependency constraints.
 
-## Latest owner priority — measured T720 candidates, then T2048 (2026-10-20)
+## Latest owner priority — T720 A/B and T2048 timing result (2026-10-20)
 
 The current-source T720 matrix is at
 reports/data/scalar-analysis-cumulative-2026-10-20/t720-ab-current/ and the
@@ -76,13 +76,27 @@ whole-transform gain. The previous direct-output and indexed-loop candidates
 remain removed. Do not attribute the seed-prefix and epoch-reuse changes
 separately: they are common to all builds in this A/B.
 
-The next measurement uses mmax=2047, nphi=4096, q1/q8 and three GL
-geometries: T2047 with 2048 latitudes, T2047 with 2049 latitudes, and T2048
-with 2049 latitudes. This holds the longitude FFT fixed, first crosses the
-insignificant-prefix safety bound at fixed harmonic work, then adds degree
-2048 while keeping the bound decision fixed. Compare production pair tiles
-64/128/256, retain all numerical safeguards, and use host timing stability to
-qualify conclusions. Analysis remains exact because ntheta >= lmax + 1.
+The matched full-transform measurement is complete at mmax=2047, nphi=4096,
+q1/q8, for T2047 with 2048 and 2049 latitudes and T2048 with 2049 latitudes.
+It used three interleaved process rounds and tile sizes 64/128/256, with
+15 whole-call observations per tile/backend for the long-operation rows. At
+T2047 q1, tile 256 matches DUCC at 2048 latitudes (251.5 versus 248.6 ms) but
+takes 828.4 ms at 2049 latitudes (DUCC 249.4 ms). At q8 the corresponding
+times are 62.2 versus 45.8 ms and 143.7 versus 45.9 ms. This isolates the
+cutoff route, not the extra degree: T2047 and T2048 at fixed 2049 latitudes
+have nearly equal Rust times. Tile 64 reduces the 2049-latitude time 14–17%
+versus tile 256, but the remaining DUCC ratio is still 2.65–2.79x. Maximum
+relative L2 error was 1.18e-13. See the cumulative report and
+`t2048-cutoff-current/summary.csv`.
+
+The route counts confirm that 2,432 prefix-enabled blocks at 2048 latitudes
+become 2,434 checked-scaled blocks at 2049. The current guard is an explicit
+bound `latitude_count * sht_ftol <= 8 * epsilon`; do not loosen it. Next test
+whether a slightly stricter, latitude-dependent `sht_ftol` can retain this
+same eight-ulp error budget while admitting the prefix path. Validate the
+threshold and exceptional/polar behavior before timing this exact geometry
+matrix again. Keep tile variants for this concrete follow-up; do not make an
+unmeasured tile-dispatch change.
 
 **Route counts:** test-only release profiles observed 2,432/3,798/6,466
 prefix-enabled scaled blocks at ntheta=2048 for tiles 256/128/64. At
