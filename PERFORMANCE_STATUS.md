@@ -6,6 +6,12 @@
 [Plan 15 — spin-1 vector GL, CC and F1 performance](plans/15-spin1-vector-gl-cc-f1-performance.md),
 authorized for the same session and branch. Scalar CC/F1 optimization
 outside spin-1 is not included; Plans 12/13 are deferred.
+**Owner scope decision (2026-10-21): defer odd-length FFT optimization**, including
+paired-real-row FFTs, `realfft` substitution and custom `rustsht-fft`
+integration. Keep odd/even longitude benchmarks and numerical correctness
+controls, but do not initiate an odd-FFT performance campaign. Continue
+Plan 15 Phase A native spin-1 baseline (GL → CC → F1) and its measured
+non-FFT vector opportunities.
 This is a **measured checkpoint, not a standalone instruction queue**.
 The previous long status, including intermediate experiments and historical
 next-step text, is preserved
