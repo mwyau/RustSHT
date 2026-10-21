@@ -42,15 +42,26 @@ from initial porting. Such language is not an active assignment or a
 new acceptance criterion; use these files for mathematical, API
 and licensing invariants only.
 
-## Already retired historical plans
+## Archived historical plans — direct links
 
-Files 00, 03, 04, 05 (including history), 07, 08, 09 and 10 are
-**short links** to preserved prior plans under
-[reports/archive/plans](../reports/archive/plans/).
+The retired plan documents are stored **only in the archive**, not as
+redirect stubs in `plans/`. These links are for historical context, **not**
+active implementation instructions:
+
+- [00 — Scope and decisions](../reports/archive/plans/00-scope-and-decisions.md)
+- [03 — API and Python](../reports/archive/plans/03-api-and-python.md)
+- [04 — Architecture and performance](../reports/archive/plans/04-architecture-and-performance.md)
+- [05 — Validation and milestones](../reports/archive/plans/05-validation-and-milestones.md)
+- [05 — Validation and milestones history](../reports/archive/plans/05-validation-and-milestones-history.md)
+- [07 — DUCC performance gap](../reports/archive/plans/07-ducc-performance-gap.md)
+- [08 — Kernel naming and retirement](../reports/archive/plans/08-kernel-naming-and-retirement.md)
+- [09 — Matched DUCC–Rust profiling](../reports/archive/plans/09-matched-ducc-rust-profiling.md)
+- [10 — Three-paper method audit](../reports/archive/plans/10-three-paper-method-audit.md)
+
 The [older full Plan 11 before the 2026-10-21 cleanup](../reports/archive/plans/11-ducc-equivalent-scalar-analysis-pre-refresh-2026-10-21.md)
-and [old status log](../reports/archive/performance-status-2026-10-21-pre-refresh.md)
-are also historical. Do not resume their rejected profiling,
-tile-size, packed-reduction or SIMD plans without new measured evidence.
+and [old performance status](../reports/archive/performance-status-2026-10-21-pre-refresh.md)
+are also historical. Do not revive rejected profiling, tile-size,
+packed-reduction or SIMD experiments without new measured evidence.
 
 ## Evidence and data
 
