@@ -3946,10 +3946,10 @@ fn scalar_analysis_pair_range_cache_matches_checked_recurrence_and_is_plan_scope
 }
 
 #[test]
-fn scalar_analysis_fused_route_cutoff_is_f64_specific_and_active_at_t64() {
+fn scalar_analysis_fused_route_cutoff_is_f64_specific_and_active_at_t32() {
     assert_eq!(
         <f64 as crate::legendre::ShtScalar>::FUSED_SCALAR_ANALYSIS_MIN_LMAX,
-        64
+        32
     );
     assert_eq!(
         <f32 as crate::legendre::ShtScalar>::FUSED_SCALAR_ANALYSIS_MIN_LMAX,
@@ -3957,7 +3957,9 @@ fn scalar_analysis_fused_route_cutoff_is_f64_specific_and_active_at_t64() {
     );
 
     for (lmax, mmax, ntheta, nphi, expect_fused) in [
-        (63, 15, 64, 31, false),
+        (31, 15, 32, 31, false),
+        (32, 16, 33, 33, true),
+        (63, 15, 64, 31, true),
         (64, 16, 65, 33, true),
         (126, 31, 127, 63, true),
         (127, 31, 128, 63, true),
