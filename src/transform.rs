@@ -2067,7 +2067,30 @@ impl<T: ShtScalar> ShtPlan<T> {
         for m in m_start..m_end {
             let coefficient_count = lmax - m + 1;
             let coefficients = &mut alm[coefficient_start..coefficient_start + coefficient_count];
-            for (degree_offset, coefficient) in coefficients.iter_mut().enumerate() {
+            let mut degree_offset = 0;
+            // Reflection parity alternates by degree, so accumulate an
+            // adjacent even/odd coefficient pair from one north/south load.
+            while degree_offset + 1 < coefficient_count {
+                let even_basis = table.degree_lanes(m, degree_offset);
+                let odd_basis = table.degree_lanes(m, degree_offset + 1);
+                let mut even_sum = Complex::new(T::zero(), T::zero());
+                let mut odd_sum = Complex::new(T::zero(), T::zero());
+                for north_ring in 0..table.north_ring_count() {
+                    let south_ring = ntheta - 1 - north_ring;
+                    let north = order_spectra[m * ntheta + north_ring];
+                    let south = if south_ring != north_ring {
+                        order_spectra[m * ntheta + south_ring]
+                    } else {
+                        Complex::new(T::zero(), T::zero())
+                    };
+                    even_sum += (north + south) * even_basis[north_ring];
+                    odd_sum += (north - south) * odd_basis[north_ring];
+                }
+                coefficients[degree_offset] = even_sum;
+                coefficients[degree_offset + 1] = odd_sum;
+                degree_offset += 2;
+            }
+            if degree_offset < coefficient_count {
                 let l = m + degree_offset;
                 let parity = if (l + m).is_multiple_of(2) {
                     T::one()
@@ -2086,7 +2109,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     };
                     sum += (north + south) * basis;
                 }
-                *coefficient = sum;
+                coefficients[degree_offset] = sum;
             }
             coefficient_start += coefficient_count;
         }
