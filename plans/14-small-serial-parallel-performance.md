@@ -318,23 +318,31 @@ contended observation. Stage boundaries differ, so these values rank work
 but are not subtractable cycle shares. The clean whole-call medians remain
 the performance comparison.
 
-The exact Rust preparation currently transforms and stores every
-order/ring pair: `721 x 721 = 519,841` complex entries. The recurrence
-consumer checks `ring_order_limits` before every order-spectrum read and
-substitutes zero for inactive north/south rings. DUCC's `fill_m2a` instead
-packs only rings with `mlim >= m`. This supports one narrow candidate:
-skip the phase/weight preparation and store for polar-inactive entries only
-on the scalar GL recurrence route, leaving table, CC/F1, adjoint and other
-paths unchanged. First prove the inactive entries remain unread with a
-NaN-sentinel test, then compare the whole call and numerical output.
+The exact Rust preparation transforms and stores every order/ring pair:
+`721 x 721 = 519,841` complex entries. The recurrence consumer checks
+`ring_order_limits` before each read and substitutes zero for inactive
+north/south rings; DUCC `fill_m2a` packs only rings with `mlim >= m`. I
+tested skipping inactive slots in two forms. A per-ring guarded form raised
+phase preparation from `240.1` to `333.2 us` and the q8 whole call from
+`2.479` to `2.596 ms` (same pinned DUCC source, but with a high 10% p90
+runqueue-wait observation). Bounding the loop to a symmetric active interval
+reduced preparation to `222.9 us`, but whole q8 latency was `2.483 ms`
+versus `2.479 ms` at baseline; the distributions overlap and no end-to-end
+gain is established. The q1 candidate was `16.128 ms`, but has no same-round
+Rust baseline. Both variants matched DUCC at `4.63e-14` relative L2, and
+NaN-sentinel/GL-cutoff checks passed. The candidate code was removed because
+the stage saving did not produce a whole-call improvement. Measurements are
+in [`candidate-ablation.csv`](../reports/data/plan14-inactive-ring-preparation-2026-10-21/candidate-ablation.csv).
 
 The q8 synthesis scheduler probe counted 181 order jobs. In two
 instrumented calls, mutex acquisition plus pop took `6.04/6.67 us` total;
 the first call's workers processed estimated work from `8.93M` to `10.76M`
 terms in `1.099–1.154 ms`.
 That queue cost cannot explain the `0.375 ms` whole-call excess, so do not
-replace the synthesis scheduler on this evidence. Raw timer and process logs
-remain local under `/tmp`; compact reproducible values are in
+replace the synthesis scheduler on this evidence. The next q8 analysis
+measurement will separate analysis queue locking from per-order work
+imbalance inside the `1.683 ms` recurrence/accumulation stage. Raw timer and
+process logs remain local under `/tmp`; compact reproducible values are in
 [`stage.csv`](../reports/data/plan14-q8-rebaseline-2026-10-21/stage.csv).
 
 ## Current progress — T127 q1 reduced-order dispatch correction (2026-10-21)

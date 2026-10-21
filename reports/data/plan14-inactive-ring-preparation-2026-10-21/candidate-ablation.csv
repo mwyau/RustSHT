@@ -1,0 +1,5 @@
+variant,threads,rust_median_ms,rust_p10_ms,rust_p90_ms,ducc_median_ms,ducc_p10_ms,ducc_p90_ms,rust_ducc_ratio,excess_ms,order_preparation_median_us,relative_l2,runqueue_wait_median,runqueue_wait_p90,conclusion
+baseline,8,2.478789,2.454242,2.537034,2.124090,2.113500,2.136261,1.16699,0.354699,240.148,4.63236e-14,0.00414,0.00874,production source 42401f20; three interleaved process pairs and 30 calibrated batches
+per-ring-check,8,2.595711,2.546656,2.650766,2.137110,2.122342,2.157034,1.21459,0.458601,333.185,4.63236e-14,0.00284,0.09943,per-ring cutoff branch increased preparation time; reject
+active-reflection-interval,8,2.483356,2.452050,2.590702,2.130815,2.118882,2.150319,1.16545,0.352541,222.911,4.63236e-14,0.00411,0.09995,phase reduced about 17 us but whole-call result overlaps baseline; remove
+active-reflection-interval,1,16.127578,15.940948,16.483158,14.659100,14.560310,14.818670,1.10018,1.468478,,4.63236e-14,0.00411,0.09995,DUCC comparison only; no same-round Rust baseline
