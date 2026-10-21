@@ -608,6 +608,13 @@ impl<T: ShtScalar> ShtPlan<T> {
             recurrence_workers,
             ..
         } = workspace;
+        let Some(geometry) = T::validate_scalar_ordered_geometry_dispatched(
+            &theta_sin[..ntheta],
+            &theta_cos[..ntheta],
+            &ring_order_limits[..ntheta],
+        ) else {
+            return false;
+        };
         #[cfg(all(test, feature = "parallel"))]
         let order_started = std::time::Instant::now();
         let succeeded = {
@@ -659,9 +666,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                                     spectrum_len,
                                     self.grid.phi0(),
                                     &self.sectoral_norms,
-                                    &theta_sin[..ntheta],
-                                    &theta_cos[..ntheta],
-                                    &ring_order_limits[..ntheta],
+                                    &geometry,
                                     &output,
                                     &mut scratch,
                                 )

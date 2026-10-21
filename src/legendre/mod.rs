@@ -119,6 +119,15 @@ pub(crate) trait ShtScalar:
         false
     }
 
+    #[cfg(feature = "parallel")]
+    fn validate_scalar_ordered_geometry_dispatched<'a>(
+        _sin_theta: &'a [Self],
+        _cos_theta: &'a [Self],
+        _ring_order_limits: &'a [usize],
+    ) -> Option<scalar_ordered::ValidatedReflectedGeometry<'a>> {
+        None
+    }
+
     fn supports_paired_scalar() -> bool {
         false
     }
@@ -330,9 +339,7 @@ pub(crate) trait ShtScalar:
         _spectrum_len: usize,
         _phi0: f64,
         _sectoral_norms: &[Self],
-        _sin_theta: &[Self],
-        _cos_theta: &[Self],
-        _ring_order_limits: &[usize],
+        _geometry: &scalar_ordered::ValidatedReflectedGeometry<'_>,
         _output: &scalar_ordered::DisjointSpectrumOutput<'_, Self>,
         _scratch: &mut scalar_ordered::ScalarOrderedScratch<'_, Self>,
     ) -> bool {
@@ -767,6 +774,15 @@ impl ShtScalar for f64 {
         true
     }
 
+    #[cfg(feature = "parallel")]
+    fn validate_scalar_ordered_geometry_dispatched<'a>(
+        sin_theta: &'a [Self],
+        cos_theta: &'a [Self],
+        ring_order_limits: &'a [usize],
+    ) -> Option<scalar_ordered::ValidatedReflectedGeometry<'a>> {
+        scalar_ordered::validate_reflected_geometry(sin_theta, cos_theta, ring_order_limits)
+    }
+
     fn supports_paired_scalar() -> bool {
         true
     }
@@ -933,9 +949,7 @@ impl ShtScalar for f64 {
         spectrum_len: usize,
         phi0: f64,
         sectoral_norms: &[Self],
-        sin_theta: &[Self],
-        cos_theta: &[Self],
-        ring_order_limits: &[usize],
+        geometry: &scalar_ordered::ValidatedReflectedGeometry<'_>,
         output: &scalar_ordered::DisjointSpectrumOutput<'_, Self>,
         scratch: &mut scalar_ordered::ScalarOrderedScratch<'_, Self>,
     ) -> bool {
@@ -952,9 +966,7 @@ impl ShtScalar for f64 {
                 spectrum_len,
                 phi0,
                 sectoral_norms,
-                sin_theta,
-                cos_theta,
-                ring_order_limits,
+                geometry,
                 output,
                 scratch,
             )

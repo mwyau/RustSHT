@@ -115,6 +115,39 @@ pub(crate) struct DisjointSpectrumWriter<'a, T> {
     _not_sync: PhantomData<Cell<()>>,
 }
 
+/// Immutable geometry whose north/south reflection and polar-order limits
+/// were checked once before the synthesis call entered its per-order workers.
+pub(crate) struct ValidatedReflectedGeometry<'a> {
+    sin_theta: &'a [f64],
+    cos_theta: &'a [f64],
+    ring_order_limits: &'a [usize],
+}
+
+pub(crate) fn validate_reflected_geometry<'a>(
+    sin_theta: &'a [f64],
+    cos_theta: &'a [f64],
+    ring_order_limits: &'a [usize],
+) -> Option<ValidatedReflectedGeometry<'a>> {
+    let ntheta = sin_theta.len();
+    if ntheta == 0 || cos_theta.len() != ntheta || ring_order_limits.len() != ntheta {
+        return None;
+    }
+    for north in 0..ntheta.div_ceil(2) {
+        let south = ntheta - 1 - north;
+        if (sin_theta[north] - sin_theta[south]).abs() > 5.0e-15
+            || (cos_theta[north] + cos_theta[south]).abs() > 5.0e-15
+            || (north > 0 && ring_order_limits[north] < ring_order_limits[north - 1])
+        {
+            return None;
+        }
+    }
+    Some(ValidatedReflectedGeometry {
+        sin_theta,
+        cos_theta,
+        ring_order_limits,
+    })
+}
+
 impl<T: Copy> DisjointSpectrumWriter<'_, T> {
     #[inline]
     fn write(&self, ring: usize, value: num_complex::Complex<T>) {
@@ -155,6 +188,10 @@ pub(crate) fn synthesize_dispatched<'a>(
     let Some(order_end) = mmax.checked_add(1) else {
         return false;
     };
+    let Some(geometry) = validate_reflected_geometry(sin_theta, cos_theta, ring_order_limits)
+    else {
+        return false;
+    };
     synthesize_range_dispatched(
         arch,
         alm,
@@ -166,9 +203,7 @@ pub(crate) fn synthesize_dispatched<'a>(
         spectrum_len,
         phi0,
         sectoral_norms,
-        sin_theta,
-        cos_theta,
-        ring_order_limits,
+        &geometry,
         spectra,
         None,
         scratch,
@@ -197,16 +232,14 @@ pub(crate) unsafe fn synthesize_order_output_dispatched<'a>(
     spectrum_len: usize,
     phi0: f64,
     sectoral_norms: &'a [f64],
-    sin_theta: &'a [f64],
-    cos_theta: &'a [f64],
-    ring_order_limits: &'a [usize],
+    geometry: &ValidatedReflectedGeometry<'a>,
     output: &DisjointSpectrumOutput<'a, f64>,
     scratch: &'a mut ScalarOrderedScratch<'_, f64>,
 ) -> bool {
     let Some(order_end) = order.checked_add(1) else {
         return false;
     };
-    if output.ntheta != sin_theta.len() || output.spectrum_len != spectrum_len {
+    if output.ntheta != geometry.sin_theta.len() || output.spectrum_len != spectrum_len {
         return false;
     }
     // SAFETY: the caller assigns one dynamic job to each order and never
@@ -226,9 +259,7 @@ pub(crate) unsafe fn synthesize_order_output_dispatched<'a>(
         spectrum_len,
         phi0,
         sectoral_norms,
-        sin_theta,
-        cos_theta,
-        ring_order_limits,
+        geometry,
         &mut empty_spectra,
         Some(writer),
         scratch,
@@ -250,13 +281,14 @@ fn synthesize_range_dispatched<'a>(
     spectrum_len: usize,
     phi0: f64,
     sectoral_norms: &'a [f64],
-    sin_theta: &'a [f64],
-    cos_theta: &'a [f64],
-    ring_order_limits: &'a [usize],
+    geometry: &ValidatedReflectedGeometry<'a>,
     spectra: &'a mut [Complex64],
     disjoint_output: Option<DisjointSpectrumWriter<'a, f64>>,
     scratch: &'a mut ScalarOrderedScratch<'_, f64>,
 ) -> bool {
+    let sin_theta = geometry.sin_theta;
+    let cos_theta = geometry.cos_theta;
+    let ring_order_limits = geometry.ring_order_limits;
     let ntheta = sin_theta.len();
     let Some(order_count) = mmax.checked_add(1) else {
         return false;
@@ -298,18 +330,6 @@ fn synthesize_range_dispatched<'a>(
         || scratch.sum_odd_im.len() < SCALAR_ORDER_BATCH_SIZE
     {
         return false;
-    }
-
-    // The candidate pairs reflected GL rings. Reject a geometry that does not
-    // satisfy that contract and leave it to the general latitude kernel.
-    for north in 0..ntheta.div_ceil(2) {
-        let south = ntheta - 1 - north;
-        if (sin_theta[north] - sin_theta[south]).abs() > 5.0e-15
-            || (cos_theta[north] + cos_theta[south]).abs() > 5.0e-15
-            || (north > 0 && ring_order_limits[north] < ring_order_limits[north - 1])
-        {
-            return false;
-        }
     }
 
     if !phi0.is_finite() {
@@ -1885,6 +1905,7 @@ mod tests {
         FTOL, SCALE_DOWN, SCALE_UP, WithSimd, all_scale_nonnegative, initialize_sectoral_batch,
         mypow, normalize_batch, normalize_lane, power_lower_limit, rescale_batch,
         rescale_prefix_step, scalar_integer_power, set_correction_factors,
+        validate_reflected_geometry,
     };
     use pulp::{Arch, Simd};
 
@@ -1967,6 +1988,25 @@ mod tests {
             set_correction_factors(simd, self.scales, self.correction);
             all_scale_nonnegative(simd, self.scales)
         }
+    }
+
+    #[test]
+    fn reflected_geometry_preflight_checks_symmetry_and_order_limits() {
+        let sin_theta = [0.2, 0.8, 0.8, 0.2];
+        let cos_theta = [0.98, 0.6, -0.6, -0.98];
+        let ring_order_limits = [1, 3, 3, 1];
+        assert!(validate_reflected_geometry(&sin_theta, &cos_theta, &ring_order_limits,).is_some());
+
+        let mut asymmetric_sin = sin_theta;
+        asymmetric_sin[3] += 1.0e-12;
+        assert!(
+            validate_reflected_geometry(&asymmetric_sin, &cos_theta, &ring_order_limits,).is_none()
+        );
+
+        let nonmonotone_limits = [3, 1, 1, 3];
+        assert!(
+            validate_reflected_geometry(&sin_theta, &cos_theta, &nonmonotone_limits,).is_none()
+        );
     }
 
     #[test]
