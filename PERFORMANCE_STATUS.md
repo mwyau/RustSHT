@@ -35,10 +35,18 @@ dispatch deficits rather than newly introduced source regressions. Numerical
 comparisons and release checks passed. See the
 [focused report and matched summary](reports/scalar-t64-256-performance-discontinuities-2026-10-21.md).
 
-Plan 15 resumes at its Phase A native spin-1 baseline, in GL → CC → F1 order.
-Its two-channel adapter was smoke-validated on T4 GL/CC/F1 for A/S q1/q8 (24
-comparisons, max relative L2 `6.19e-16`, stale-output checks passed). The
-adapter and reproducible smoke command are in
+**Plan 15 Phase A baseline complete:** 170 GL/CC/F1 geometry cases produced
+680 q1/q8 A/S timing rows and 2,040 numerical comparisons with no failures.
+Maximum relative L2 was `1.63e-12`. The largest GL q8 synthesis excess was
+T720 over-resolved odd (`+60.7 ms`); GL q1 T1023 synthesis was `+138.9 ms`.
+CC/F1 retain larger grid-specific q8 synthesis excesses that need separate
+stage attribution. The host had substantial scheduling wait during F1, so
+small deltas remain provisional. See the
+[matched baseline report and aggregate data](reports/plan15-spin1-native-baseline-2026-10-21.md).
+Plan 15 Phase B now starts with GL stage attribution. Its two-channel adapter
+was smoke-validated on T4 GL/CC/F1 for A/S q1/q8 (24 comparisons, max
+relative L2 `6.19e-16`, stale-output checks passed). The adapter and
+reproducible smoke command are in
 [`reports/data/plan15-spin1-native-baseline-2026-10-21`](reports/data/plan15-spin1-native-baseline-2026-10-21/README.md).
 
 **Current-source full-transform sweep (2026-10-21):** the frozen Rust source
