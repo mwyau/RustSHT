@@ -827,6 +827,87 @@ fn m5_analysis_phase_profile() {
 
 #[cfg(feature = "parallel")]
 #[test]
+#[ignore = "focused current-source scalar analysis phase profile; set RUSTSHT_PROFILE_Q and RUSTSHT_PROFILE_LMAX"]
+fn scalar_analysis_phase_profile_selected() {
+    let thread_count = std::env::var("RUSTSHT_PROFILE_Q")
+        .expect("set RUSTSHT_PROFILE_Q")
+        .parse::<usize>()
+        .expect("RUSTSHT_PROFILE_Q must be an integer");
+    assert!(thread_count > 0);
+    let lmax_values = std::env::var("RUSTSHT_PROFILE_LMAX")
+        .expect("set RUSTSHT_PROFILE_LMAX")
+        .split(',')
+        .map(|value| value.parse::<usize>().expect("invalid lmax"))
+        .collect::<Vec<_>>();
+
+    for lmax in lmax_values {
+        let (ntheta, nphi) = match lmax {
+            720 => (721, 1442),
+            2047 => (2049, 4096),
+            3072 => (3073, 6174),
+            _ => panic!("unsupported focused profile case T{lmax}"),
+        };
+        let plan = make_plan(lmax, lmax, ntheta, nphi, 0.37);
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(thread_count)
+            .build()
+            .unwrap();
+        let mut workspace = pool.install(|| plan.workspace()).unwrap();
+        pool.install(|| plan.prepare_workspace(&mut workspace, thread_count))
+            .unwrap();
+        let probe = workspace.observe_transform_phases();
+        let map = (0..plan.sample_count)
+            .map(|index| {
+                let index = index as f64;
+                (index * 0.000173).sin() + 0.2 * (index * 0.000071).cos()
+            })
+            .collect::<Vec<_>>();
+        let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+
+        pool.install(|| {
+            plan.analysis_into(&map, &mut alm, &mut workspace).unwrap();
+        });
+        for sample in 0..5 {
+            probe
+                .lock()
+                .expect("analysis phase profile is not poisoned")
+                .clear();
+            let started = std::time::Instant::now();
+            pool.install(|| {
+                plan.analysis_into(&map, &mut alm, &mut workspace).unwrap();
+            });
+            let wall_ns = started.elapsed().as_nanos();
+            let phases = probe
+                .lock()
+                .expect("analysis phase profile is not poisoned")
+                .clone();
+            let phase_sum_ns = phases.iter().map(|phase| phase.elapsed_ns).sum::<u128>();
+            eprintln!(
+                "FOCUSED_PHASE_PROFILE T{lmax} q{thread_count} sample={} wall_ms={:.3} phase_sum_ms={:.3} unmeasured_ms={:.3}",
+                sample + 1,
+                wall_ns as f64 / 1e6,
+                phase_sum_ns as f64 / 1e6,
+                wall_ns.saturating_sub(phase_sum_ns) as f64 / 1e6,
+            );
+            for phase in phases {
+                eprintln!(
+                    "FOCUSED_PHASE T{lmax} q{thread_count} sample={} name={:?} elapsed_ms={:.3}",
+                    sample + 1,
+                    phase.phase,
+                    phase.elapsed_ns as f64 / 1e6,
+                );
+            }
+            assert!(
+                alm.iter()
+                    .all(|value| value.re.is_finite() && value.im.is_finite())
+            );
+            std::hint::black_box(&alm);
+        }
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
 #[ignore = "M5 current-source synthesis phase profile; run this diagnostic in release mode"]
 fn m5_synthesis_phase_profile() {
     for (spin, lmax, thread_count) in [

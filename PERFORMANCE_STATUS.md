@@ -43,8 +43,13 @@ measurements, not a large-resolution timing campaign. Random output relative
 L2 errors were `1.96e-13` for analysis and `2.11e-13` for synthesis; extreme,
 subnormal, polar/high-order, cancellation and adjoint checks passed.
 
-**Next:** profile the remaining q8 full-transform gap at the largest
-attributable stage. Keep tile 256; do not rerun the cutoff or tile matrix.
+**Current q8 finding:** the warmed recurrence/accumulation phase is close to
+DUCC at T2047 and T3072, while Rust's order-spectrum preparation stays nearly
+serial at q8 (23.5 ms at T2047; 40.5 ms at T3072). Matched whole-analysis
+ratios are 1.36x at T2047 q8 and 1.22x at T3072 q8. The next focused test is
+parallel preparation of independent order rows, preserving table-path safety
+checks and the 256-pair recurrence tile. See the current q8 stage section in
+the [cumulative report](reports/scalar-analysis-cumulative-2026-10-20.md).
 
 ## Tile decision — not an open recurring benchmark
 

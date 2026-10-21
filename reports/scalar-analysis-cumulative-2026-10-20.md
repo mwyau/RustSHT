@@ -133,8 +133,85 @@ zero, extreme, subnormal, basis, roundtrip and adjoint checks; maximum random
 relative L2 error was `1.18e-13` for analysis and `1.28e-13` for synthesis.
 Release tests passed (230); no-default-feature release tests passed (192);
 formatting, all-target/all-feature Clippy and the T2047/T2048/T3072 route test
-passed. Next, profile the remaining q8 full-transform cost; do not repeat the
+passed. The subsequent q8 phase profile is recorded below; do not repeat the
 cutoff or tile experiment.
+
+## Current q8 stage profile and whole-transform comparison
+
+Current source is `6948ecdb`; Rust 1.99.1/LLVM 23.1.1, strict Rust
+`-C target-cpu=x86-64-v3` with runtime Pulp V3 (four f64 lanes), compared with
+DUCC 0.42.0 `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. DUCC's SHT translation
+unit used GCC 15.2 and `-O3 -ffast-math -ffp-contract=fast
+-march=x86-64-v3`; its validation driver remained strict. Rust's phase probe
+used the real production analysis path, reusable workspace, one warm call and
+five timed whole calls per case. These five-call phase medians identify where
+time is spent but are not the calibrated whole-transform estimates below.
+
+| lmax / threads | Rust FFT | Rust order-spectrum preparation | Rust recurrence + accumulation | Rust whole call |
+|---|---:|---:|---:|---:|
+| T720 q1 | 6.949 ms | 0.813 ms | 12.445 ms | 20.316 ms |
+| T720 q8 | 0.893 ms | 0.781 ms | 1.735 ms | 3.544 ms |
+| T2047 q1 | 24.256 ms | 26.443 ms | 206.799 ms | 259.718 ms |
+| T2047 q8 | 5.525 ms | 23.523 ms | 28.256 ms | 59.616 ms |
+| T3072 q1 | 64.189 ms | 38.744 ms | 659.959 ms | 766.162 ms |
+| T3072 q8 | 17.215 ms | 40.515 ms | 91.285 ms | 152.412 ms |
+
+For the direct DUCC decomposition, `map2leg` covers Fourier extraction and
+ring weighting; `leg2alm` covers its order-oriented ring packing and Legendre
+recurrence/accumulation. The boundaries do not exactly match Rust's separate
+order-spectrum preparation pass.
+
+| lmax / threads | DUCC `map2leg` | DUCC `leg2alm` |
+|---|---:|---:|
+| T720 q1 | 8.617 ms | 10.821 ms |
+| T720 q8 | 1.218 ms | 1.600 ms |
+| T2047 q1 | 28.433 ms | 190.158 ms |
+| T2047 q8 | 5.165 ms | 28.329 ms |
+| T3072 q1 | 71.745 ms | 606.329 ms |
+| T3072 q8 | 13.066 ms | 85.937 ms |
+
+DUCC numbers are medians from calibrated direct-stage batches (30 batches for
+short stages; 15 individually timed calls when a stage exceeded 100 ms), one
+process per case. Rust's five-call phase probe is less robust and some T3072
+q8 phase samples show host-frequency variation; interpret this table as stage
+attribution, not a final kernel parity claim. Rust `Legendre recurrence and
+accumulation` includes dynamic order scheduling at q8. DUCC `leg2alm` includes
+its order scheduling and `fill_m2a` packing.
+
+Matched production-dispatch full-transform analysis measurements provide the
+stronger comparison:
+
+| Geometry | Threads | Rust ms | DUCC ms | Rust/DUCC | Excess ms | Relative L2 error |
+|---|---:|---:|---:|---:|---:|---:|
+| T720, mmax 720, nphi 1442 | q1 | 20.332 | 19.959 | 1.019x | 0.373 | `4.66e-14` |
+| T720, mmax 720, nphi 1442 | q8 | 3.597 | 2.915 | 1.234x | 0.682 | `4.66e-14` |
+| T2047, mmax 2047, nphi 4096 | q1 | 254.644 | 245.730 | 1.036x | 8.914 | `1.18e-13` |
+| T2047, mmax 2047, nphi 4096 | q8 | 57.310 | 42.121 | 1.361x | 15.190 | `1.18e-13` |
+| T3072, mmax 3072, nphi 6174 | q1 | 768.713 | 736.621 | 1.044x | 32.092 | `1.96e-13` |
+| T3072, mmax 3072, nphi 6174 | q8 | 144.337 | 117.933 | 1.224x | 26.404 | `1.96e-13` |
+
+T720 used three interleaved process pairs and 30 calibrated batches per
+backend/case. T2047 used three process rounds, 15 long q1 calls and 30 q8
+batches. T3072 used three interleaved process pairs with five individually
+timed long calls per process and backend; one repeat screen had occasional
+outliers despite low process wait fractions, so treat its spread as host
+variability. The q8 excess is real at T2047/T3072, but recurrence alone does
+not explain it: T2047's phase recurrence is 28.256 ms against DUCC's 28.329 ms,
+and T3072's is 91.285 against 85.937 ms. Meanwhile Rust's order-spectrum
+preparation remains nearly serial from q1 to q8 (26.443 to 23.523 ms at
+T2047; 38.744 to 40.515 ms at T3072). DUCC performs eligible-ring packing
+inside dynamically scheduled order work. This identifies the largest
+source-level candidate as parallelizing Rust's independent order-spectrum
+rows; it does not predict that the whole q8 gap will disappear. The first
+implementation comparison will leave table-path product checks and all
+recurrence/safety behavior unchanged.
+
+T720 whole-call source, distributions and cold/warm data are in
+[`t720-ab-current`](data/scalar-analysis-cumulative-2026-10-20/t720-ab-current/);
+T2047 distributions and validation are in
+[`t2048-ducc-fixed-ftol`](data/scalar-analysis-cumulative-2026-10-20/t2048-ducc-fixed-ftol/).
+T3072 timing samples and host diagnostics were kept locally because they
+contain process/host detail.
 
 ## Current T720 production/candidate A/B (2026-10-20)
 
