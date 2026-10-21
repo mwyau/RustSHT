@@ -21,8 +21,12 @@ fn extreme_spin1_hemisphere_restores_original_coefficients() {
         let spectrum_len = plan.fft.spectrum_len();
         let group_len = 67;
         let mut cache = Vec::new();
-        assert!(plan.prepare_spin1_scalar_coefficients(&e, &b, &mut cache, 1));
-        for coefficient_cache in [None, Some(cache.as_slice())] {
+        let mut finite_orders = Vec::new();
+        assert!(plan.prepare_spin1_scalar_coefficients(&e, &b, &mut cache, &mut finite_orders, 1));
+        for (coefficient_cache, finite_cache) in [
+            (None, None),
+            (Some(cache.as_slice()), Some(finite_orders.as_slice())),
+        ] {
             let mut north_q = vec![Complex64::new(0.0, 0.0); group_len * spectrum_len];
             let mut north_u = north_q.clone();
             let mut south_q = north_q.clone();
@@ -32,6 +36,7 @@ fn extreme_spin1_hemisphere_restores_original_coefficients() {
                 &e,
                 &b,
                 coefficient_cache,
+                finite_cache,
                 0,
                 group_len,
                 plan.grid.nphi(),
@@ -60,6 +65,7 @@ fn extreme_spin1_hemisphere_restores_original_coefficients() {
                     false,
                     false,
                     false,
+                    None,
                     None,
                     plan.grid.nphi(),
                     spectrum_len,

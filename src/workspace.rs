@@ -61,6 +61,9 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
     transform_phase_probe: Option<TransformPhaseProbe>,
     #[cfg(all(test, feature = "parallel"))]
     pub(crate) last_scalar_ordered_decline_had_partial_output: bool,
+    // Appended to preserve offsets of the existing workspace fields.
+    #[cfg(feature = "parallel")]
+    pub(crate) spin1_scalar_coefficient_finite_orders: Vec<u8>,
 }
 
 #[repr(C)]
@@ -119,6 +122,26 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     analysis_schedule_profile: bool,
     #[cfg(all(test, feature = "parallel"))]
     analysis_schedule_stats: AnalysisScheduleStats,
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) spin1_profile_enabled: bool,
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) spin1_profile_factor_ns: u128,
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) spin1_profile_pair_prepare_ns: u128,
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) spin1_profile_recurrence_ns: u128,
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) spin1_profile_fallback_ns: u128,
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) spin1_profile_pair_eligible_blocks: usize,
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) spin1_profile_pair_success_blocks: usize,
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) spin1_profile_fallback_blocks: usize,
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) spin1_profile_coefficient_safety_ns: u128,
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) spin1_profile_coefficient_safety_values: u128,
 }
 
 #[repr(align(64))]
@@ -385,6 +408,26 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
             analysis_schedule_profile: false,
             #[cfg(all(test, feature = "parallel"))]
             analysis_schedule_stats: AnalysisScheduleStats::default(),
+            #[cfg(all(test, feature = "parallel"))]
+            spin1_profile_enabled: false,
+            #[cfg(all(test, feature = "parallel"))]
+            spin1_profile_factor_ns: 0,
+            #[cfg(all(test, feature = "parallel"))]
+            spin1_profile_pair_prepare_ns: 0,
+            #[cfg(all(test, feature = "parallel"))]
+            spin1_profile_recurrence_ns: 0,
+            #[cfg(all(test, feature = "parallel"))]
+            spin1_profile_fallback_ns: 0,
+            #[cfg(all(test, feature = "parallel"))]
+            spin1_profile_pair_eligible_blocks: 0,
+            #[cfg(all(test, feature = "parallel"))]
+            spin1_profile_pair_success_blocks: 0,
+            #[cfg(all(test, feature = "parallel"))]
+            spin1_profile_fallback_blocks: 0,
+            #[cfg(all(test, feature = "parallel"))]
+            spin1_profile_coefficient_safety_ns: 0,
+            #[cfg(all(test, feature = "parallel"))]
+            spin1_profile_coefficient_safety_values: 0,
         })
     }
 
@@ -816,6 +859,8 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             )?,
             #[cfg(feature = "parallel")]
             spin1_scalar_coefficients: Vec::new(),
+            #[cfg(feature = "parallel")]
+            spin1_scalar_coefficient_finite_orders: Vec::new(),
             cc_profile: allocate_complex(
                 cc_resampling.map_or(0, CCResamplingPlan::workspace_profile_len),
                 "CC meridional profile",

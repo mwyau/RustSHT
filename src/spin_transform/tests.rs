@@ -1127,6 +1127,7 @@ fn spin1_scalar_fast_synthesis_matches_general_channel_cases() {
             true,
             false,
             None,
+            None,
             nphi,
             plan.fft.spectrum_len(),
             plan.grid.phi0(),
@@ -1153,6 +1154,7 @@ fn spin1_scalar_fast_synthesis_matches_general_channel_cases() {
             false,
             false,
             false,
+            None,
             None,
             nphi,
             plan.fft.spectrum_len(),
@@ -1470,6 +1472,7 @@ fn spin1_scalar_transition_splits_polar_lanes_and_matches_general() {
                 true,
                 false,
                 None,
+                None,
                 nphi,
                 spectrum_len,
                 plan.grid.phi0(),
@@ -1494,6 +1497,7 @@ fn spin1_scalar_transition_splits_polar_lanes_and_matches_general() {
                 derivative_norm,
                 false,
                 false,
+                None,
                 None,
                 nphi,
                 spectrum_len,
@@ -1676,6 +1680,7 @@ fn spin1_scalar_transition_preserves_the_sine_cutoff_boundary() {
             true,
             false,
             None,
+            None,
             nphi,
             spectrum_len,
             plan.grid.phi0(),
@@ -1700,6 +1705,7 @@ fn spin1_scalar_transition_preserves_the_sine_cutoff_boundary() {
             false,
             false,
             false,
+            None,
             None,
             nphi,
             spectrum_len,
@@ -1772,6 +1778,7 @@ fn spin1_scalar_conversion_matches_general_on_all_grids() {
                     true,
                     false,
                     None,
+                    None,
                     nphi,
                     spectrum_len,
                     plan.grid.phi0(),
@@ -1795,6 +1802,7 @@ fn spin1_scalar_conversion_matches_general_on_all_grids() {
                     false,
                     false,
                     false,
+                    None,
                     None,
                     nphi,
                     spectrum_len,
@@ -2151,6 +2159,7 @@ fn spin1_synthesis_skips_high_orders_in_a_clenshaw_curtis_pole_segment() {
         false,
         false,
         None,
+        None,
         nphi,
         spectrum_len,
         plan.grid.phi0(),
@@ -2251,6 +2260,7 @@ fn spin1_paired_coefficient_overflow_falls_back_without_partial_commit() {
         true,
         false,
         None,
+        None,
         nphi,
         spectrum_len,
         plan.grid.phi0(),
@@ -2275,6 +2285,7 @@ fn spin1_paired_coefficient_overflow_falls_back_without_partial_commit() {
         false,
         false,
         false,
+        None,
         None,
         nphi,
         spectrum_len,
@@ -2349,6 +2360,7 @@ fn spin1_nonfinite_scalar_conversion_falls_back_to_general_recurrence() {
         true,
         false,
         None,
+        None,
         3,
         spectrum_len,
         plan.grid.phi0(),
@@ -2373,6 +2385,7 @@ fn spin1_nonfinite_scalar_conversion_falls_back_to_general_recurrence() {
         false,
         false,
         false,
+        None,
         None,
         3,
         spectrum_len,
@@ -5587,6 +5600,18 @@ fn spin1_parallel_coefficient_cache_matches_uncached_synthesis() {
         cached_workspace.spin1_scalar_coefficients.len(),
         expected_cache_len
     );
+    assert_eq!(
+        cached_workspace
+            .spin1_scalar_coefficient_finite_orders
+            .len(),
+        plan.harmonics.mmax() + 1
+    );
+    assert!(
+        cached_workspace
+            .spin1_scalar_coefficient_finite_orders
+            .iter()
+            .all(|&finite| finite == 1)
+    );
     let row_len = plan.harmonics.lmax() + 2;
     let row_stride = 2 * row_len;
     for m in 0..=plan.harmonics.mmax() {
@@ -5649,6 +5674,9 @@ fn spin1_parallel_coefficient_cache_matches_uncached_synthesis() {
     }
     let poison = Complex64::new(f64::NAN, f64::NAN);
     cached_workspace.spin1_scalar_coefficients.fill(poison);
+    cached_workspace
+        .spin1_scalar_coefficient_finite_orders
+        .fill(0);
     for worker in &mut cached_workspace.recurrence_workers {
         worker.fast_scalar_first.fill(poison);
         worker.fast_scalar_second.fill(poison);
@@ -5701,9 +5729,114 @@ fn spin1_parallel_coefficient_cache_matches_uncached_synthesis() {
             .chain(&cached_second)
             .all(|value| value.is_finite())
     );
+    assert!(
+        cached_workspace
+            .spin1_scalar_coefficient_finite_orders
+            .iter()
+            .all(|&finite| finite == 1)
+    );
     eprintln!(
         "T127 GL spin-1 parallel conversion cache: initial max absolute component errors {first_max_error:.3e}, {second_max_error:.3e}; poisoned reuse errors {first_reuse_error:.3e}, {second_reuse_error:.3e}"
     );
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn spin1_parallel_nonfinite_conversion_cache_refreshes_fallback_flag() {
+    let lmax = 127;
+    let ntheta = lmax + 1;
+    let plan = make_plan(1, lmax, 1, ntheta, 33);
+    let mut e_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    let mut b_alm = e_alm.clone();
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let mut cached_workspace = pool.install(|| plan.workspace()).unwrap();
+    let mut uncached_workspace = pool.install(|| plan.workspace()).unwrap();
+    assert!(cached_workspace.ring_group_size < ntheta);
+    uncached_workspace.ring_group_size = ntheta;
+
+    // Prime the reusable cache with an ordinary finite conversion, then poison
+    // its cached values and flags before replacing the coefficients with a
+    // finite input whose scalar conversion overflows.
+    e_alm[plan.harmonics().index(2, 1).unwrap()] = Complex64::new(1.0e-6, 0.0);
+    b_alm[plan.harmonics().index(1, 1).unwrap()] = Complex64::new(0.0, -1.0e-6);
+    let mut first = vec![0.0; plan.sample_count];
+    let mut second = first.clone();
+    pool.install(|| {
+        plan.synthesis_spin_into(
+            &e_alm,
+            &b_alm,
+            &mut first,
+            &mut second,
+            &mut cached_workspace,
+        )
+    })
+    .unwrap();
+    assert!(
+        cached_workspace
+            .spin1_scalar_coefficient_finite_orders
+            .iter()
+            .all(|&finite| finite == 1)
+    );
+
+    let magnitude = 1.44e308;
+    e_alm[plan.harmonics().index(2, 1).unwrap()] = Complex64::new(magnitude, 0.0);
+    b_alm[plan.harmonics().index(1, 1).unwrap()] = Complex64::new(0.0, -magnitude);
+    cached_workspace
+        .spin1_scalar_coefficients
+        .fill(Complex64::new(f64::NAN, f64::NAN));
+    cached_workspace
+        .spin1_scalar_coefficient_finite_orders
+        .fill(1);
+    first.fill(17.0);
+    second.fill(-23.0);
+    let mut expected_first = vec![17.0; plan.sample_count];
+    let mut expected_second = vec![-23.0; plan.sample_count];
+    pool.install(|| {
+        plan.synthesis_spin_into(
+            &e_alm,
+            &b_alm,
+            &mut first,
+            &mut second,
+            &mut cached_workspace,
+        )
+    })
+    .unwrap();
+    pool.install(|| {
+        plan.synthesis_spin_into(
+            &e_alm,
+            &b_alm,
+            &mut expected_first,
+            &mut expected_second,
+            &mut uncached_workspace,
+        )
+    })
+    .unwrap();
+    assert_eq!(
+        cached_workspace.spin1_scalar_coefficient_finite_orders[1],
+        0
+    );
+
+    let compare = |actual: f64, expected: f64| {
+        if expected.is_finite() {
+            assert!(actual.is_finite());
+            assert!((actual / magnitude - expected / magnitude).abs() < 2e-12);
+        } else if expected.is_infinite() {
+            assert!(actual.is_infinite());
+            assert_eq!(actual.is_sign_positive(), expected.is_sign_positive());
+        } else {
+            assert!(actual.is_nan());
+        }
+    };
+    for (&actual, &expected) in first
+        .iter()
+        .chain(&second)
+        .zip(expected_first.iter().chain(&expected_second))
+    {
+        compare(actual, expected);
+    }
 }
 
 #[cfg(feature = "parallel")]
@@ -8588,6 +8721,7 @@ fn extreme_spin2_scalar_conversion_restores_original_coefficients() {
                     fast,
                     false,
                     None,
+                    None,
                     plan.grid.nphi(),
                     spectrum_len,
                     plan.grid.phi0(),
@@ -8697,8 +8831,22 @@ fn profile_spin1_standard_synthesis_phases() {
         std::hint::black_box((&first, &second));
     }
     probe.lock().unwrap().clear();
+    for worker in &mut workspace.recurrence_workers {
+        worker.spin1_profile_enabled = true;
+    }
 
     for repetition in 0..repetitions {
+        for worker in &mut workspace.recurrence_workers {
+            worker.spin1_profile_factor_ns = 0;
+            worker.spin1_profile_pair_prepare_ns = 0;
+            worker.spin1_profile_recurrence_ns = 0;
+            worker.spin1_profile_fallback_ns = 0;
+            worker.spin1_profile_pair_eligible_blocks = 0;
+            worker.spin1_profile_pair_success_blocks = 0;
+            worker.spin1_profile_fallback_blocks = 0;
+            worker.spin1_profile_coefficient_safety_ns = 0;
+            worker.spin1_profile_coefficient_safety_values = 0;
+        }
         let started = Instant::now();
         pool.install(|| {
             plan.synthesis_spin_into(&e_alm, &b_alm, &mut first, &mut second, &mut workspace)
@@ -8708,6 +8856,74 @@ fn profile_spin1_standard_synthesis_phases() {
         eprintln!(
             "PROFILE_TOTAL,{lmax},{mmax},{nphi},{phi0},{thread_count},{repetition},{:.6}",
             started.elapsed().as_secs_f64() * 1.0e3,
+        );
+        let factor_ns: u128 = workspace
+            .recurrence_workers
+            .iter()
+            .map(|worker| worker.spin1_profile_factor_ns)
+            .sum();
+        let pair_prepare_ns: u128 = workspace
+            .recurrence_workers
+            .iter()
+            .map(|worker| worker.spin1_profile_pair_prepare_ns)
+            .sum();
+        let recurrence_ns: u128 = workspace
+            .recurrence_workers
+            .iter()
+            .map(|worker| worker.spin1_profile_recurrence_ns)
+            .sum();
+        let fallback_ns: u128 = workspace
+            .recurrence_workers
+            .iter()
+            .map(|worker| worker.spin1_profile_fallback_ns)
+            .sum();
+        let pair_eligible_blocks: usize = workspace
+            .recurrence_workers
+            .iter()
+            .map(|worker| worker.spin1_profile_pair_eligible_blocks)
+            .sum();
+        let pair_success_blocks: usize = workspace
+            .recurrence_workers
+            .iter()
+            .map(|worker| worker.spin1_profile_pair_success_blocks)
+            .sum();
+        let fallback_blocks: usize = workspace
+            .recurrence_workers
+            .iter()
+            .map(|worker| worker.spin1_profile_fallback_blocks)
+            .sum();
+        let safety_ns: u128 = workspace
+            .recurrence_workers
+            .iter()
+            .map(|worker| worker.spin1_profile_coefficient_safety_ns)
+            .sum();
+        let safety_values: u128 = workspace
+            .recurrence_workers
+            .iter()
+            .map(|worker| worker.spin1_profile_coefficient_safety_values)
+            .sum();
+        eprintln!(
+            "PROFILE_INNER,{lmax},{mmax},{nphi},{phi0},{thread_count},{repetition},worker-sum order factors,{:.6}",
+            factor_ns as f64 / 1.0e6,
+        );
+        eprintln!(
+            "PROFILE_INNER,{lmax},{mmax},{nphi},{phi0},{thread_count},{repetition},worker-sum paired coefficient preparation,{:.6}",
+            pair_prepare_ns as f64 / 1.0e6,
+        );
+        eprintln!(
+            "PROFILE_INNER,{lmax},{mmax},{nphi},{phi0},{thread_count},{repetition},worker-sum fused recurrence and accumulation,{:.6}",
+            recurrence_ns as f64 / 1.0e6,
+        );
+        eprintln!(
+            "PROFILE_INNER,{lmax},{mmax},{nphi},{phi0},{thread_count},{repetition},worker-sum scaled/per-degree fallback,{:.6},fallback_blocks={fallback_blocks}",
+            fallback_ns as f64 / 1.0e6,
+        );
+        eprintln!(
+            "PROFILE_ROUTES,{lmax},{mmax},{nphi},{phi0},{thread_count},{repetition},pair_eligible={pair_eligible_blocks},pair_success={pair_success_blocks},fallback={fallback_blocks}"
+        );
+        eprintln!(
+            "PROFILE_INNER,{lmax},{mmax},{nphi},{phi0},{thread_count},{repetition},worker-sum coefficient finite scans,{:.6},complex_values={safety_values}",
+            safety_ns as f64 / 1.0e6,
         );
     }
     for (repetition, observation) in probe.lock().unwrap().iter().enumerate() {

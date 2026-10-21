@@ -26,6 +26,7 @@ fn synthesize_group<T: ShtScalar>(
     e_alm: &[Complex<T>],
     b_alm: &[Complex<T>],
     coefficient_cache: Option<&[Complex<T>]>,
+    coefficient_finite_orders: Option<&[u8]>,
     ring_start: usize,
     ring_end: usize,
     nphi: usize,
@@ -94,10 +95,15 @@ fn synthesize_group<T: ShtScalar>(
         );
         let pair_count = (scalar_lmax - m + 2) / 2;
 
-        let converted_finite = recurrence.fast_scalar_first[m..=scalar_lmax]
-            .iter()
-            .chain(&recurrence.fast_scalar_second[m..=scalar_lmax])
-            .all(|value| value.re.is_finite() && value.im.is_finite());
+        let converted_finite = coefficient_finite_orders.map_or_else(
+            || {
+                recurrence.fast_scalar_first[m..=scalar_lmax]
+                    .iter()
+                    .chain(&recurrence.fast_scalar_second[m..=scalar_lmax])
+                    .all(|value| value.re.is_finite() && value.im.is_finite())
+            },
+            |finite_orders| finite_orders[m] != 0,
+        );
         let first_ready = converted_finite
             && factors_ready
             && T::prepare_paired_scalar_synthesis_coefficients(
@@ -309,6 +315,7 @@ pub(super) fn synthesize<T: ShtScalar>(
             true,
             false,
             None,
+            None,
             nphi,
             spectrum_len,
             plan.grid.phi0(),
@@ -333,15 +340,19 @@ pub(super) fn synthesize<T: ShtScalar>(
     // contract even when a scheduling group is smaller.
     debug_assert!(group_count.max(1) <= workspace.recurrence_workers.len());
 
-    let coefficient_cache = (thread_count >= 8
+    let coefficient_cache_ready = thread_count >= 8
         && plan.harmonics.lmax() <= super::SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_LMAX
         && plan.prepare_spin1_scalar_coefficients(
             e_alm,
             b_alm,
             &mut workspace.spin1_scalar_coefficients,
+            &mut workspace.spin1_scalar_coefficient_finite_orders,
             thread_count,
-        ))
-    .then_some(workspace.spin1_scalar_coefficients.as_slice());
+        );
+    let coefficient_cache =
+        coefficient_cache_ready.then_some(workspace.spin1_scalar_coefficients.as_slice());
+    let coefficient_finite_orders = coefficient_cache_ready
+        .then_some(workspace.spin1_scalar_coefficient_finite_orders.as_slice());
 
     let theta_sin = &workspace.theta_sin[..ntheta];
     let theta_cos = &workspace.theta_cos[..ntheta];
@@ -361,6 +372,7 @@ pub(super) fn synthesize<T: ShtScalar>(
             e_alm,
             b_alm,
             coefficient_cache,
+            coefficient_finite_orders,
             0,
             first_group_len,
             nphi,
@@ -412,6 +424,7 @@ pub(super) fn synthesize<T: ShtScalar>(
                     e_alm,
                     b_alm,
                     coefficient_cache,
+                    coefficient_finite_orders,
                     ring_start,
                     ring_end,
                     nphi,

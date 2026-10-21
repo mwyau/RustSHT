@@ -3,7 +3,7 @@
 **Status: ACTIVE (2026-10-21), after Plan 14 closeout `f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`. Owner-authorized.**
 The Plan 14 scalar full-transform sweep, four principal figures, validation and closeout are committed and pushed on `opt/sht-performance-parity`. Continue this plan in the same Luna session and branch without another owner prompt. The handoff preserves the scalar baseline and does not expand Plan 15 beyond its stated spin-1 scope.
 
-**Current phase:** Phase A's native spin-1 GL → CC → F1 baseline is complete at Rust source `549bd2f0` and pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. The temporary owner-priority scalar T64–T256 GL diagnostic is also complete and its boundary attribution is corrected in [the focused report](../reports/scalar-t64-256-performance-discontinuities-2026-10-21.md); it did not reopen Plan 14 or modify the spin-1 numerical kernels. Proceed to Phase B GL stage attribution, excluding all odd-FFT optimization per the owner direction below.
+**Current phase:** Phase A's native spin-1 GL → CC → F1 baseline is complete at Rust source `549bd2f0` and pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. The temporary owner-priority scalar T64–T256 GL diagnostic is complete in [the focused report](../reports/scalar-t64-256-performance-discontinuities-2026-10-21.md); it did not reopen Plan 14 or change the spin-1 recurrence. Continue Phase B GL attribution, excluding all odd-FFT optimization per the owner direction below.
 
 **Phase B checkpoint (2026-10-21):** the q8 GL synthesis path now reads
 cached spin-1 scalar-conversion rows directly across ring groups, avoiding
@@ -18,6 +18,26 @@ matched timing run was invalidated by 9–40% runqueue
 wait and high involuntary-switch counts; do not infer a gain from it. Re-run
 the q1/q8 matched whole-call A/B and stage timing under a quiet host before
 deciding whether to retain this candidate as a production optimization.
+
+**Per-order finite-check candidate (2026-10-21; experimental):** the cached
+rows were also being rescanned for finite values once per ring group. The
+T720 q8 full-order probe counted 18,421,108 complex values visited by these
+repeated checks. The candidate stores one finite flag per order in reusable
+workspace scratch and checks the converted rows once during preparation
+(1,041,124 values, 94.3% fewer); nonfinite rows still take the original E/B
+fallback, and the flag buffer is poisoned/reuse tested. All tested candidate
+outputs were bitwise equal to the `76094ff9` baseline, with DUCC relative L2
+error at most `5.23e-13`. On the three-way 30-batch T720 screen, q8 synthesis
+candidate/baseline paired ratios were `0.970` full-even, `0.978` full-odd and
+`0.978` reduced-even. These timings are **provisional**: q8 runqueue wait was
+9–24%, with thousands of involuntary switches. The q1 synthesis control was
+about 2% slower, and q8 analysis controls were too contended to interpret.
+Keep this change experimental and recheck whole-call q1/q8 performance under
+lower host interference before promoting it. The timed candidate preceded a
+layout-only move that appended the new vector to `ShtWorkspace` to preserve
+existing field offsets. Recheck the final layout as well. The measured GL
+recurrence and scheduling stage remains the larger residual; continue there
+after this bounded attribution, then proceed through CC and F1.
 
 **Owner direction (2026-10-21): defer odd-length FFT optimization.** Continue to benchmark and validate odd/even longitude cases as **controls**, but do **not** prototype paired-real-row FFTs, swap in `realfft` or the standalone `rustsht-fft` backend, change prime-radix/FFT planners, or start a C2R/odd-FFT optimization investigation. Do not choose an odd-specific FFT issue as a Plan 15 optimization target even when profiling identifies it. Record the residual and continue to measured **spin-1 vector** bottlenecks outside the FFT engine. Existing FFT behavior and numerical safeguards stay intact. This hold remains until an explicit new owner instruction revokes it.
 

@@ -505,6 +505,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             false,
             false,
             None,
+            None,
             1,
             self.fft.spectrum_len(),
             self.grid.phi0(),
@@ -1110,17 +1111,21 @@ impl<T: ShtScalar> ShtPlan<T> {
                     && workspace.ring_group_size < ntheta;
                 #[cfg(all(test, feature = "parallel"))]
                 let coefficient_prep_started = std::time::Instant::now();
-                let spin1_coefficients = use_spin1_coefficient_cache
-                    .then(|| {
-                        self.prepare_spin1_scalar_coefficients(
-                            e_alm,
-                            b_alm.expect("the cache requires both spin-1 channels"),
-                            &mut workspace.spin1_scalar_coefficients,
-                            execution_threads,
-                        )
-                    })
-                    .filter(|prepared| *prepared)
-                    .map(|_| workspace.spin1_scalar_coefficients.as_slice());
+                let spin1_coefficients_ready = if use_spin1_coefficient_cache {
+                    self.prepare_spin1_scalar_coefficients(
+                        e_alm,
+                        b_alm.expect("the cache requires both spin-1 channels"),
+                        &mut workspace.spin1_scalar_coefficients,
+                        &mut workspace.spin1_scalar_coefficient_finite_orders,
+                        execution_threads,
+                    )
+                } else {
+                    false
+                };
+                let spin1_coefficients = spin1_coefficients_ready
+                    .then_some(workspace.spin1_scalar_coefficients.as_slice());
+                let spin1_coefficient_finite_orders = spin1_coefficients_ready
+                    .then_some(workspace.spin1_scalar_coefficient_finite_orders.as_slice());
                 #[cfg(all(test, feature = "parallel"))]
                 {
                     crate::workspace::record_transform_phase(
@@ -1153,6 +1158,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             allow_fast_scalar,
                             can_use_spin1_table,
                             spin1_coefficients,
+                            spin1_coefficient_finite_orders,
                             nphi,
                             spectrum_len,
                             phi0,
@@ -1175,6 +1181,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     derivative_norm,
                     allow_fast_scalar,
                     can_use_spin1_table,
+                    None,
                     None,
                     nphi,
                     spectrum_len,
@@ -1199,6 +1206,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             derivative_norm,
             allow_fast_scalar,
             can_use_spin1_table,
+            None,
             None,
             nphi,
             spectrum_len,
@@ -1256,6 +1264,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         e_alm: &[Complex<T>],
         b_alm: &[Complex<T>],
         coefficients: &mut Vec<Complex<T>>,
+        finite_orders: &mut Vec<u8>,
         execution_capacity: usize,
     ) -> bool {
         let row_len = match self.harmonics.lmax().checked_add(2) {
@@ -1288,7 +1297,15 @@ impl<T: ShtScalar> ShtPlan<T> {
         {
             return false;
         }
+        if finite_orders.capacity() < order_count
+            && finite_orders
+                .try_reserve_exact(order_count.saturating_sub(finite_orders.len()))
+                .is_err()
+        {
+            return false;
+        }
         coefficients.resize(coefficient_count, Complex::new(T::zero(), T::zero()));
+        finite_orders.resize(order_count, 0);
 
         let worker_count = current_execution_thread_count()
             .min(execution_capacity)
@@ -1296,9 +1313,10 @@ impl<T: ShtScalar> ShtPlan<T> {
             .max(1);
         coefficients
             .par_chunks_mut(row_stride)
+            .zip(finite_orders.par_iter_mut())
             .enumerate()
             .with_min_len(order_count.div_ceil(worker_count))
-            .for_each(|(m, order_coefficients)| {
+            .for_each(|(m, (order_coefficients, finite))| {
                 let coefficient_start = self
                     .harmonics
                     .index(m, m)
@@ -1312,6 +1330,12 @@ impl<T: ShtScalar> ShtPlan<T> {
                     Some(&b_alm[coefficient_start..coefficient_start + coefficient_len]),
                     first,
                     second,
+                );
+                *finite = u8::from(
+                    first
+                        .iter()
+                        .chain(second.iter())
+                        .all(|value| value.re.is_finite() && value.im.is_finite()),
                 );
             });
         true
@@ -1330,6 +1354,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         allow_fast_scalar: bool,
         allow_spin1_table: bool,
         spin1_scalar_coefficients: Option<&[Complex<T>]>,
+        spin1_scalar_coefficient_finite_orders: Option<&[u8]>,
         nphi: usize,
         spectrum_len: usize,
         phi0: f64,
@@ -1393,6 +1418,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 segment_fast,
                 allow_spin1_table,
                 spin1_scalar_coefficients,
+                spin1_scalar_coefficient_finite_orders,
                 nphi,
                 spectrum_len,
                 phi0,
@@ -1424,6 +1450,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         fast_scalar: bool,
         allow_spin1_table: bool,
         spin1_scalar_coefficients: Option<&[Complex<T>]>,
+        spin1_scalar_coefficient_finite_orders: Option<&[u8]>,
         nphi: usize,
         spectrum_len: usize,
         phi0: f64,
@@ -1485,7 +1512,11 @@ impl<T: ShtScalar> ShtPlan<T> {
                 } else {
                     Some(&e_alm[coefficient_start..coefficient_start + coefficient_count])
                 };
-                if let Some(e_coefficients) = coefficient_slice {
+                if let Some(finite_orders) = spin1_scalar_coefficient_finite_orders {
+                    debug_assert!(spin1_scalar_coefficients.is_some());
+                    debug_assert!(m < finite_orders.len());
+                    fast_scalar_order = finite_orders[m] != 0;
+                } else if let Some(e_coefficients) = coefficient_slice {
                     let (scalar_first, scalar_second): (&[Complex<T>], &[Complex<T>]) =
                         if let Some(coefficients) = spin1_scalar_coefficients {
                             let row_len = lmax + 2;
@@ -1515,10 +1546,21 @@ impl<T: ShtScalar> ShtPlan<T> {
                     // The conversion can overflow for finite E/B coefficients
                     // even when the scaled spin recurrence can represent the
                     // sampled field. Keep the original channels for fallback.
+                    #[cfg(all(test, feature = "parallel"))]
+                    let safety_started = recurrence
+                        .spin1_profile_enabled
+                        .then(std::time::Instant::now);
                     fast_scalar_order = scalar_first
                         .iter()
                         .chain(scalar_second)
                         .all(|value| value.re.is_finite() && value.im.is_finite());
+                    #[cfg(all(test, feature = "parallel"))]
+                    if let Some(safety_started) = safety_started {
+                        recurrence.spin1_profile_coefficient_safety_ns +=
+                            safety_started.elapsed().as_nanos();
+                        recurrence.spin1_profile_coefficient_safety_values +=
+                            (scalar_first.len() + scalar_second.len()) as u128;
+                    }
                 }
             }
             if fast_scalar_order {
@@ -1539,6 +1581,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                     )?;
                 } else {
                     let scalar_lmax = lmax + 1;
+                    #[cfg(all(test, feature = "parallel"))]
+                    let factor_started = recurrence
+                        .spin1_profile_enabled
+                        .then(std::time::Instant::now);
                     T::fill_epsilon(m, scalar_lmax, &mut recurrence.epsilon);
                     let paired_factors_ready = T::fill_paired_scalar_factors(
                         m,
@@ -1549,6 +1595,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                         &mut recurrence.spin_coefficient_b,
                     );
                     debug_assert!(paired_factors_ready);
+                    #[cfg(all(test, feature = "parallel"))]
+                    if let Some(factor_started) = factor_started {
+                        recurrence.spin1_profile_factor_ns += factor_started.elapsed().as_nanos();
+                    }
                     for block_start in
                         (0..theta_sin.len()).step_by(crate::legendre::LATITUDE_BLOCK_SIZE)
                     {
@@ -1789,8 +1839,16 @@ impl<T: ShtScalar> ShtPlan<T> {
                 && recurrence.fast_spin_first.len() >= (scalar_lmax - m + 2) / 2
                 && recurrence.fast_spin_pair_first.len() >= (scalar_lmax - m + 2) / 2
                 && theta_sin.iter().all(|&sine| sine >= pair_min_sine);
+            #[cfg(all(test, feature = "parallel"))]
+            if recurrence.spin1_profile_enabled && paired_channels_eligible {
+                recurrence.spin1_profile_pair_eligible_blocks += 1;
+            }
             let coefficient_pair_count = (scalar_lmax - m + 2) / 2;
             let prepared_pair = if paired_channels_eligible {
+                #[cfg(all(test, feature = "parallel"))]
+                let prepare_started = recurrence
+                    .spin1_profile_enabled
+                    .then(std::time::Instant::now);
                 let (scalar_first, scalar_second) = cached_scalar_row.unwrap_or((
                     &recurrence.fast_scalar_first[..scalar_lmax + 1],
                     &recurrence.fast_scalar_second[..scalar_lmax + 1],
@@ -1813,11 +1871,20 @@ impl<T: ShtScalar> ShtPlan<T> {
                     &mut recurrence.fast_spin_pair_first[..coefficient_pair_count],
                     &mut recurrence.fast_spin_pair_second[..coefficient_pair_count],
                 );
+                #[cfg(all(test, feature = "parallel"))]
+                if let Some(prepare_started) = prepare_started {
+                    recurrence.spin1_profile_pair_prepare_ns +=
+                        prepare_started.elapsed().as_nanos();
+                }
                 prepared_first && prepared_second
             } else {
                 false
             };
             if prepared_pair {
+                #[cfg(all(test, feature = "parallel"))]
+                let recurrence_started = recurrence
+                    .spin1_profile_enabled
+                    .then(std::time::Instant::now);
                 let fused_pair = T::synthesize_prepared_scalar_pair_block_dispatched(
                     arch,
                     m,
@@ -1844,7 +1911,16 @@ impl<T: ShtScalar> ShtPlan<T> {
                     &mut recurrence.analysis_opposite_real[..block_len],
                     &mut recurrence.analysis_opposite_imag[..block_len],
                 )?;
+                #[cfg(all(test, feature = "parallel"))]
+                if let Some(recurrence_started) = recurrence_started {
+                    recurrence.spin1_profile_recurrence_ns +=
+                        recurrence_started.elapsed().as_nanos();
+                }
                 if fused_pair {
+                    #[cfg(all(test, feature = "parallel"))]
+                    if recurrence.spin1_profile_enabled {
+                        recurrence.spin1_profile_pair_success_blocks += 1;
+                    }
                     for (ring, &sin_theta) in theta_sin.iter().enumerate() {
                         let spectrum_index = ring * spectrum_len + m;
                         let inverse_sine = sin_theta.recip();
@@ -1956,6 +2032,14 @@ impl<T: ShtScalar> ShtPlan<T> {
             recurrence.fast_scalar_first[..scalar_lmax + 1].copy_from_slice(scalar_first);
             recurrence.fast_scalar_second[..scalar_lmax + 1].copy_from_slice(scalar_second);
         }
+        #[cfg(all(test, feature = "parallel"))]
+        let fallback_started = recurrence
+            .spin1_profile_enabled
+            .then(std::time::Instant::now);
+        #[cfg(all(test, feature = "parallel"))]
+        if recurrence.spin1_profile_enabled {
+            recurrence.spin1_profile_fallback_blocks += 1;
+        }
         let mut split_transition_attempted = false;
         let mut split_polar_count = None;
         if self.harmonics.lmax() >= SPIN1_TRANSITION_MIN_LMAX {
@@ -1995,6 +2079,10 @@ impl<T: ShtScalar> ShtPlan<T> {
             }
         }
         if split_polar_count == Some(0) {
+            #[cfg(all(test, feature = "parallel"))]
+            if let Some(fallback_started) = fallback_started {
+                recurrence.spin1_profile_fallback_ns += fallback_started.elapsed().as_nanos();
+            }
             return Ok(());
         }
         let (fallback_sin, fallback_cos, compact_ring_indices, fallback_len, split_polar_fallback) =
@@ -2084,6 +2172,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                     recurrence.analysis_opposite_imag[lane] * inverse_sine,
                 );
             }
+            #[cfg(all(test, feature = "parallel"))]
+            if let Some(fallback_started) = fallback_started {
+                recurrence.spin1_profile_fallback_ns += fallback_started.elapsed().as_nanos();
+            }
             return Ok(());
         }
 
@@ -2128,6 +2220,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                 Ok(())
             },
         )?;
+        #[cfg(all(test, feature = "parallel"))]
+        if let Some(fallback_started) = fallback_started {
+            recurrence.spin1_profile_fallback_ns += fallback_started.elapsed().as_nanos();
+        }
         Ok(())
     }
 

@@ -54,14 +54,25 @@ scalar-conversion rows across ring groups instead of copying them into worker
 scratch for each order/group. At T720's 23 groups, the removed copies account
 for about 365 MiB of coefficient payload (roughly 730 MiB of source-read and
 destination-write traffic before cache effects); checked polar/scaled fallbacks
-still populate their worker-local rows when the paired route declines. The
-T127 cached/uncached test now reuses a poisoned workspace with changed
-coefficients; its maximum absolute channel difference is `2.17e-18`. The T720
-q8 adjoint identity, general-channel and large-finite fallback tests pass. A
-short q8 timing screen was stopped because
-runqueue wait was 9–40% with thousands of involuntary switches, so it gives no
-performance conclusion. Next: repeat the matched whole-transform A/B and
-stage profile under a quiet host.
+still populate their worker-local rows when the paired route declines. A second
+experimental change caches each converted order's finite check in reusable
+workspace storage: the T720 q8 full-order probe's repeated scan fell from
+18,421,108 complex values across ring groups to 1,041,124 values once during
+preparation (94.3% fewer). The checked E/B fallback remains active for flagged
+orders. Changed-coefficient poisoned-workspace reuse, nonfinite conversion
+fallback, T720 adjoint, large-finite and general-channel tests pass; candidate
+outputs were bitwise equal to the `76094ff9` baseline in the tested workloads.
+The three-way T720 screen showed q8 synthesis candidate/baseline paired ratios
+of `0.970` full-even, `0.978` full-odd and `0.978` reduced-even, with DUCC
+relative L2 error at most `5.23e-13`. This result is provisional: q8 runqueue
+wait was 9–24% with thousands of involuntary switches, the q1 synthesis
+control was about 2% slower, and q8 analysis controls were too contended to
+interpret. The measured screen also preceded moving the new workspace vector
+to the end of the struct to preserve existing field offsets. Keep the finite
+check change experimental pending a lower-interference recheck. Full all-feature
+and no-default-feature release tests, formatting and strict Clippy pass. The
+next Plan 15 task is to recheck the GL candidate under a quieter host and
+attribute the remaining recurrence/scheduling cost before advancing to CC.
 
 **Current-source full-transform sweep (2026-10-21):** the frozen Rust source
 `e487b85b` was compared with pinned DUCC 0.42.0 `42ce8ab5` across every
