@@ -1,0 +1,443 @@
+{
+  "metadata": {
+    "candidate_commit": "0bc5f153",
+    "pre_change_baseline_commit": "86f43486",
+    "rust": "1.99.1 (LLVM 23.1.1)",
+    "pulp": "0.22.3, runtime V3 (AVX2/FMA)",
+    "ducc_version": "0.42.0",
+    "ducc_commit": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "ducc_sht_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3",
+    "ducc_validation_driver_flags": "-O3 -fno-fast-math -ffp-contract=fast -march=x86-64-v3",
+    "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+    "tile": "256 production; 128/64 diagnostic only",
+    "note": "Compact timing and numerical summaries only; raw per-process/host logs remain local."
+  },
+  "T2047_T2048_validation": [
+    {
+      "lmax": 2047,
+      "ntheta": 2049,
+      "threads": 1,
+      "finite_outputs": true,
+      "reset_consistent": {
+        "rustsht": true,
+        "ducc": true
+      },
+      "edge_cases": {
+        "zero": {
+          "map_absolute_max": 0.0,
+          "map_relative_l2": 0.0,
+          "alm_absolute_max": 0.0,
+          "alm_relative_l2": 0.0,
+          "exact_zero": true
+        },
+        "extreme": {
+          "map_absolute_max": 3.797732334444546e+136,
+          "map_relative_l2": 5.130660538952663e-15,
+          "alm_absolute_max": 3.779561366337156e+136,
+          "alm_relative_l2": 2.0125980666840408e-13,
+          "exact_zero": null
+        },
+        "subnormal": {
+          "map_absolute_max": 0.0,
+          "map_relative_l2": 0.0,
+          "alm_absolute_max": 0.0,
+          "alm_relative_l2": 0.0,
+          "exact_zero": null
+        }
+      },
+      "roundtrip_rust_ducc_relative_l2": {
+        "rustsht": 3.1066351209587044e-13,
+        "ducc": 3.0429319324883683e-13,
+        "rust_ducc": 1.6069905237408853e-13
+      },
+      "rust_adjoint_relative_residuals": {
+        "synthesis_relative_residual": 3.153956846330787e-13,
+        "analysis_relative_residual": 1.9743745804720973e-13
+      }
+    },
+    {
+      "lmax": 2047,
+      "ntheta": 2049,
+      "threads": 8,
+      "finite_outputs": true,
+      "reset_consistent": {
+        "rustsht": true,
+        "ducc": true
+      },
+      "edge_cases": {
+        "zero": {
+          "map_absolute_max": 0.0,
+          "map_relative_l2": 0.0,
+          "alm_absolute_max": 0.0,
+          "alm_relative_l2": 0.0,
+          "exact_zero": true
+        },
+        "extreme": {
+          "map_absolute_max": 3.797732334444546e+136,
+          "map_relative_l2": 5.130660538952663e-15,
+          "alm_absolute_max": 3.779561366337156e+136,
+          "alm_relative_l2": 2.0125980666840408e-13,
+          "exact_zero": null
+        },
+        "subnormal": {
+          "map_absolute_max": 0.0,
+          "map_relative_l2": 0.0,
+          "alm_absolute_max": 0.0,
+          "alm_relative_l2": 0.0,
+          "exact_zero": null
+        }
+      },
+      "roundtrip_rust_ducc_relative_l2": {
+        "rustsht": 3.1066351209587044e-13,
+        "ducc": 3.0429319324883683e-13,
+        "rust_ducc": 1.6069905237408853e-13
+      },
+      "rust_adjoint_relative_residuals": {
+        "synthesis_relative_residual": 3.153956846330787e-13,
+        "analysis_relative_residual": 1.9743745804720973e-13
+      }
+    },
+    {
+      "lmax": 2048,
+      "ntheta": 2049,
+      "threads": 1,
+      "finite_outputs": true,
+      "reset_consistent": {
+        "rustsht": true,
+        "ducc": true
+      },
+      "edge_cases": {
+        "zero": {
+          "map_absolute_max": 0.0,
+          "map_relative_l2": 0.0,
+          "alm_absolute_max": 0.0,
+          "alm_relative_l2": 0.0,
+          "exact_zero": true
+        },
+        "extreme": {
+          "map_absolute_max": 5.923735603009196e+136,
+          "map_relative_l2": 6.227619609265885e-15,
+          "alm_absolute_max": 3.779561366337156e+136,
+          "alm_relative_l2": 2.0129567414124356e-13,
+          "exact_zero": null
+        },
+        "subnormal": {
+          "map_absolute_max": 0.0,
+          "map_relative_l2": 0.0,
+          "alm_absolute_max": 0.0,
+          "alm_relative_l2": 0.0,
+          "exact_zero": null
+        }
+      },
+      "roundtrip_rust_ducc_relative_l2": {
+        "rustsht": 2.909890357873588e-13,
+        "ducc": 2.8273613569786986e-13,
+        "rust_ducc": 1.6107641399101714e-13
+      },
+      "rust_adjoint_relative_residuals": {
+        "synthesis_relative_residual": 6.33178375989823e-13,
+        "analysis_relative_residual": 7.511569591124523e-14
+      }
+    },
+    {
+      "lmax": 2048,
+      "ntheta": 2049,
+      "threads": 8,
+      "finite_outputs": true,
+      "reset_consistent": {
+        "rustsht": true,
+        "ducc": true
+      },
+      "edge_cases": {
+        "zero": {
+          "map_absolute_max": 0.0,
+          "map_relative_l2": 0.0,
+          "alm_absolute_max": 0.0,
+          "alm_relative_l2": 0.0,
+          "exact_zero": true
+        },
+        "extreme": {
+          "map_absolute_max": 5.923735603009196e+136,
+          "map_relative_l2": 6.227619609265885e-15,
+          "alm_absolute_max": 3.779561366337156e+136,
+          "alm_relative_l2": 2.0129567414124356e-13,
+          "exact_zero": null
+        },
+        "subnormal": {
+          "map_absolute_max": 0.0,
+          "map_relative_l2": 0.0,
+          "alm_absolute_max": 0.0,
+          "alm_relative_l2": 0.0,
+          "exact_zero": null
+        }
+      },
+      "roundtrip_rust_ducc_relative_l2": {
+        "rustsht": 2.909890357873588e-13,
+        "ducc": 2.8273613569786986e-13,
+        "rust_ducc": 1.6107641399101714e-13
+      },
+      "rust_adjoint_relative_residuals": {
+        "synthesis_relative_residual": 6.33178375989823e-13,
+        "analysis_relative_residual": 7.511569591124523e-14
+      }
+    }
+  ],
+  "T3072_full_order": {
+    "geometry": {
+      "lmax": 3072,
+      "mmax": 3072,
+      "ntheta": 3073,
+      "nphi": 6174,
+      "grid": "GL",
+      "longitude": "even_smooth"
+    },
+    "input_sha256": {
+      "alm": "1f5ab73a89beb4c9e2eb0bb8297604f9bbea7c459546b4ea5f9fbd92e4adb682",
+      "map": "d891e4c43ea2c81cc5a6695970fe17dca3b47b91c46590a57ed0197e81b7d31f"
+    },
+    "analysis": {
+      "rustsht": {
+        "samples_ms": [
+          763.708306,
+          775.844913,
+          790.648135,
+          773.070077,
+          782.521894
+        ],
+        "median_ms": 775.844913,
+        "p10_ms": 767.4530144,
+        "p90_ms": 787.3976386
+      },
+      "ducc": {
+        "samples_ms": [
+          746.207,
+          734.856,
+          735.629,
+          732.626,
+          735.056
+        ],
+        "median_ms": 735.056,
+        "p10_ms": 733.518,
+        "p90_ms": 741.9758
+      },
+      "rust_ducc_ratio": 1.055490891850417
+    },
+    "synthesis": {
+      "rustsht": {
+        "samples_ms": [
+          1117.150931,
+          1126.958737,
+          1143.868729,
+          1121.364668,
+          1119.101043
+        ],
+        "median_ms": 1121.364668,
+        "p10_ms": 1117.9309758,
+        "p90_ms": 1137.1047322
+      },
+      "ducc": {
+        "samples_ms": [
+          1172.77,
+          1141.48,
+          1151.11,
+          1156.82,
+          1152.59
+        ],
+        "median_ms": 1152.59,
+        "p10_ms": 1145.3319999999999,
+        "p90_ms": 1166.3899999999999
+      },
+      "rust_ducc_ratio": 0.9729085520436582
+    },
+    "analysis_error_rust_ducc": {
+      "absolute_max": 1.443377499531718e-15,
+      "relative_l2": 1.9612887990434797e-13,
+      "max_relative_above_1e-12_peak": 4.729874465138404e-09,
+      "near_zero_reference_count": 0
+    },
+    "synthesis_error_rust_ducc": {
+      "absolute_max": 1.0706912689784076e-08,
+      "relative_l2": 2.1142877548207483e-13,
+      "max_relative_above_1e-12_peak": 2.6704824743338583e-06,
+      "near_zero_reference_count": 0
+    },
+    "validation": {
+      "random_roundtrip_relative_l2_rust_ducc": {
+        "rustsht": 4.4097081787435334e-13,
+        "ducc": 4.182475476536969e-13,
+        "rust_ducc": 2.652625306780697e-13
+      },
+      "edge_cases": {
+        "zero": {
+          "map_absolute_max": 0.0,
+          "map_relative_l2": 0.0,
+          "alm_absolute_max": 0.0,
+          "alm_relative_l2": 0.0,
+          "exact_zero": true
+        },
+        "extreme": {
+          "map_absolute_max": 3.9907988705855666e+136,
+          "map_relative_l2": 1.319249261588453e-15,
+          "alm_absolute_max": 3.470654908511523e+136,
+          "alm_relative_l2": 2.224243635420621e-13,
+          "exact_zero": null
+        },
+        "subnormal": {
+          "map_absolute_max": 0.0,
+          "map_relative_l2": 0.0,
+          "alm_absolute_max": 0.0,
+          "alm_relative_l2": 0.0,
+          "exact_zero": null
+        }
+      },
+      "rust_adjoint_relative_residuals": {
+        "synthesis_relative_residual": 1.1873427876879015e-15,
+        "analysis_relative_residual": 1.0995358013973251e-14
+      },
+      "selected_modes": [
+        {
+          "l": 0,
+          "m": 0,
+          "map_absolute_max": 0.0,
+          "map_relative_l2": 0.0
+        },
+        {
+          "l": 1536,
+          "m": 1536,
+          "map_absolute_max": 1.0402789740737717e-13,
+          "map_relative_l2": 5.890970460352762e-15
+        },
+        {
+          "l": 3072,
+          "m": 0,
+          "map_absolute_max": 1.2314633861254531e-10,
+          "map_relative_l2": 1.256864644236574e-11
+        },
+        {
+          "l": 3072,
+          "m": 3072,
+          "map_absolute_max": 3.888556143749611e-14,
+          "map_relative_l2": 2.2365098600219155e-15
+        }
+      ],
+      "finite_outputs": true,
+      "reset_consistent": {
+        "rustsht": true,
+        "ducc": true
+      }
+    }
+  },
+  "antisymmetric_cancellation": [
+    {
+      "case": "T2047-antisymmetric-map",
+      "nphi": 4096,
+      "map_sha256": "9147da3cdd19a6614f78800b8eaee4c04d463f3ca2cdd840935c8f0ce3c25f76",
+      "rust_ducc": {
+        "absolute_max": 6.776523786555799e-14,
+        "relative_l2": 1.7967439627326518e-13,
+        "max_relative_above_1e-12_peak": 5.808470341446255e-10,
+        "near_zero_reference_count": 2097152
+      },
+      "even_m0_absolute_max_rust": 0.0,
+      "even_m0_absolute_max_ducc": 0.0,
+      "rust_timing_ms": {
+        "samples_ms": [
+          258.933888,
+          250.953715,
+          251.517746,
+          250.913309,
+          254.800685
+        ],
+        "median_ms": 251.517746,
+        "p10_ms": 250.92947139999998,
+        "p90_ms": 257.2806068
+      },
+      "ducc_timing_ms": {
+        "samples_ms": [
+          252.638,
+          251.227,
+          256.562,
+          247.055,
+          246.512
+        ],
+        "median_ms": 251.227,
+        "p10_ms": 246.7292,
+        "p90_ms": 254.9924
+      }
+    },
+    {
+      "case": "T2048-antisymmetric-map",
+      "nphi": 4116,
+      "map_sha256": "bfd7e747a730aeb96d60a359c5d9cedf3d51c2533e4d0f0dfa44988563641bd2",
+      "rust_ducc": {
+        "absolute_max": 5.440092820663267e-14,
+        "relative_l2": 1.1587865720875705e-13,
+        "max_relative_above_1e-12_peak": 1.3440955590739005e-10,
+        "near_zero_reference_count": 2099201
+      },
+      "even_m0_absolute_max_rust": 0.0,
+      "even_m0_absolute_max_ducc": 0.0,
+      "rust_timing_ms": {
+        "samples_ms": [
+          267.420481,
+          266.84561,
+          271.26174,
+          271.69934,
+          265.89166
+        ],
+        "median_ms": 267.420481,
+        "p10_ms": 266.27324,
+        "p90_ms": 271.5243
+      },
+      "ducc_timing_ms": {
+        "samples_ms": [
+          247.161,
+          252.356,
+          252.214,
+          253.482,
+          251.918
+        ],
+        "median_ms": 252.214,
+        "p10_ms": 249.06380000000001,
+        "p90_ms": 253.0316
+      }
+    },
+    {
+      "case": "T3072-antisymmetric-map",
+      "nphi": 6174,
+      "map_sha256": "27cdc6dce17c2c3e9a96f138c05b7d7187337f4156bd7d313c970735fb5f836d",
+      "rust_ducc": {
+        "absolute_max": 8.147692590054767e-14,
+        "relative_l2": 1.887777394836231e-13,
+        "max_relative_above_1e-12_peak": 1.1210768214768339e-10,
+        "near_zero_reference_count": 4721665
+      },
+      "even_m0_absolute_max_rust": 0.0,
+      "even_m0_absolute_max_ducc": 0.0,
+      "rust_timing_ms": {
+        "samples_ms": [
+          787.826984,
+          785.339114,
+          775.500965,
+          780.78935,
+          784.804709
+        ],
+        "median_ms": 784.804709,
+        "p10_ms": 777.616319,
+        "p90_ms": 786.8318360000001
+      },
+      "ducc_timing_ms": {
+        "samples_ms": [
+          740.534,
+          764.289,
+          754.156,
+          757.756,
+          734.973
+        ],
+        "median_ms": 754.156,
+        "p10_ms": 737.1974,
+        "p90_ms": 761.6758
+      }
+    }
+  ]
+}

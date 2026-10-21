@@ -33,39 +33,36 @@ identified.
 
 ## Established results — use these, do not rerun finished campaigns
 
-1. **T2047 abrupt cutoff is primarily a route change, not added
-   harmonic-degree cost.** With `mmax=2047`, `nphi=4096` fixed,
-   T2047/ntheta=2048 is 251.5 ms Rust vs 248.6 ms DUCC (q1)
-   and 62.2 vs 45.8 ms (q8), using **256 reflected-pair tiles**.
-   Changing only ntheta to 2049 is 828.4 vs 249.4 ms (q1) and
-   143.7 vs 45.9 ms (q8). At fixed ntheta=2049, T2048 adds
-   essentially no cost over T2047. Measured routes change from
-   2,432 prefix-enabled blocks at 2048 latitudes to 2,434
-   checked-scaled blocks at 2049. This is a demonstrated association
-   with the dominant slowdown; verify causality with a one-change
-   controlled ablation, not an assumption about CPU cache or tiles.
-   [Report](../reports/scalar-analysis-cumulative-2026-10-20.md)
-   · [original measured data](../reports/data/scalar-analysis-cumulative-2026-10-20/t2048-cutoff-current/).
-2. **Rust-only global prefix gate.** The current code requires
-   `latitude_count * ANALYSIS_FTOL <= 8 * f64::EPSILON`, with
-   `ANALYSIS_FTOL=2^-60`, which passes at 2048 and fails at
-   2049. Pinned DUCC `iter_to_ieee`/`rescale` uses
-   `sht_ftol=2^-60` and does **not** impose the global latitude-count
-   gate. The gate is an additional RustSHT accuracy policy, not a
-   stated requirement of DUCC. Whether it protects a distinct,
-   *needed* invariant still requires direct proof and adversarial tests;
-   do not declare removing it safe solely from matching DUCC.
-3. **256-tile policy is settled for now.** In the fast-prefix
-   T2047/2048-latitude configuration 256 beats 128 and 64 at q1
-   (251.5 / 261.9 / 282.1 ms) and q8
-   (62.2 / 63.1 / 67.7 ms). In the *abnormally slow*
-   prefix-disabled 2049-latitude route, 64 recovers only about
-   14–17% and remains ~2.65–2.79× slower than DUCC. **Do not
-   repeatedly benchmark, restore, recommend, or globally select 64/128
-   tiles** to mask the prefix issue. Keep production 256; retain
-   past smaller-tile data as diagnostic history. An isolated **512**
-   experiment may follow *after* fixing the cutoff if a specific
-   performance hypothesis warrants it, not as a prerequisite.
+1. **The T2047/T2048 prefix discontinuity is resolved in `0bc5f153`.**
+   With `mmax=2047`, `nphi=4096`, and tile 256, the prior T2047/2048-latitude
+   baseline was 251.5 ms Rust vs 248.6 ms DUCC (q1), while changing only
+   latitude count to 2049 raised it to 828.4 vs 249.4 ms. Removing only the
+   latitude-count gate gives 254.6 vs 245.7 ms at T2047/2049 (q1), 57.3 vs
+   42.1 ms (q8), 255.4 vs 248.3 ms at T2048/2049 (q1), and 58.3 vs 42.2 ms
+   (q8). The former 3.1–3.3x slowdown is gone; the remaining q8 excess is
+   1.36–1.38x. The route count changes from 2,434 checked-scaled blocks to
+   2,434 prefix-enabled blocks with zero declines. See the
+   [follow-up report](../reports/scalar-analysis-cumulative-2026-10-20.md),
+   [after data](../reports/data/scalar-analysis-cumulative-2026-10-20/t2048-ducc-fixed-ftol/)
+   and [before data](../reports/data/scalar-analysis-cumulative-2026-10-20/t2048-cutoff-current/).
+2. **The extra gate was a conservative aggregate-error budget, not a
+   finite/exponent safety invariant.** It bounded the worst-case coherent
+   sum of insignificant-prefix omissions. DUCC's `init_lambda`,
+   `iter_to_ieee`, `rescale` and `calc_map2alm` use fixed
+   `sht_ftol=2^-60` without a latitude-count multiplier. The Rust change
+   preserves independent finite/range checks, scale/exponent validation and
+   safe fallback. T2047/T2048 q1/q8 and T3072 full-order cases passed DUCC,
+   polar/high-order basis, zero, subnormal, extreme-finite, antisymmetric
+   cancellation and adjoint checks. Even-degree zonal cancellation
+   coefficients were exactly zero in both libraries. This is extensive
+   empirical coverage, not a claim of bitwise identity for all inputs.
+3. **The 256-tile policy remains settled after fixing the prefix route.**
+   At T2047/2049, tile 256 beat 128 and 64 at q1 (254.6 / 263.5 / 280.7 ms)
+   and q8 (57.3 / 59.2 / 61.9 ms); T2048/2049 showed the same ordering.
+   **Keep production tile 256.** The one post-fix 64/128 comparison was
+   diagnostic; do not repeat the tile sweep or promote smaller tiles. An
+   isolated 512 experiment may follow only for a separate, evidence-based
+   setup/cache hypothesis that justifies increasing workspace capacity.
 4. **T720 A/B closed several experiments.** Packed-complex reduction,
    indexed SIMD loop and direct-output accumulation candidates were
    removed after absent/inconsistent full-transform gains or severe
@@ -89,41 +86,20 @@ identified.
 
 ## Immediate work — priority order
 
-### A. Resolve the T2048 insignificant-prefix discontinuity
+### A. Prefix-route experiment — complete
 
-1. Compare the **executed** Rust scale-epoch initialization,
-   prefix-skipping, mantissa validity, `rescale` and transition-to-
-   ordinary path against pinned DUCC's `init_lambda`,
-   `iter_to_ieee`, `calc_map2alm` and `map2alm_kernel`.
-   Identify any actual invariant supplied by RustSHT's **global**
-   eight-ULP gate beyond existing finite/range/fallback checks.
-2. In a controlled experimental build, remove **only the extra
-   latitude-count gate**, retaining `sht_ftol=2^-60`, all scale
-   transitions, exponent safety, checked finite/nonfinite behavior
-   and transactional output handling. Do not simultaneously change
-   the tile, FFT, compiler, weights or fallback. If it is unsafe,
-   isolate a counterexample and derive the *smallest* principled
-   alternative (for example a more precise omission bound or
-   selective guard); do not invent a new blanket cutoff.
-3. Establish correctness against DUCC, analytic coefficients,
-   independent adjoints, weighted cancellation/near-zero modes,
-   high-order polar tails, subnormal/extreme-finite/nonfinite
-   inputs, SIMD tails, repeated workspaces and first-call behavior.
-   Report both **absolute** and relative errors, and assess
-   coefficient-wise cancellation. Do not silently relax tolerances
-   or eliminate necessary safety checks.
-4. Run identical full f64 GL `mmax=2047, nphi=4096` T2047/
-   ntheta=2048, T2047/ntheta=2049 and T2048/ntheta=2049,
-   q1/q8 on **the unchanged 256 tile**. Collect before/after
-   time and prefix/checked-scaled/ordinary/fallback route counts
-   with comparable warm/cold conditions. Check representative
-   T720 and T3072 to prevent shifting the discontinuity elsewhere.
-   Compare to pinned DUCC and preserve all timing distributions.
+The source and benchmark milestones are complete at `0bc5f153`. The
+production path uses fixed `sht_ftol=2^-60` for every nonempty latitude
+geometry. The T2047/T2048 fixed-grid q1/q8 matrix and the T3072 full-order q1
+check passed with tile 256; T3072 records 5,780 prefix-scaled blocks, zero
+checked-scaled blocks and zero initialization/recurrence declines. Numerical
+errors, distributions and edge-case outcomes are in the report and data links
+above. Do not repeat the cutoff experiment or broaden it into another tile
+campaign.
 
 ### B. Profile remaining q8 and validated synthesis candidate
 
-Only after A produces an evidence-based result, profile the
-remaining q8 gap at representative T720/T2047/T3072, separating
+Profile the remaining q8 gap at representative T720/T2047/T3072, separating
 Fourier, packing/weights, ordinary Legendre work, scaled-prefix
 work, scheduling, memory pressure and output. Prioritize the
 **largest measured** residual. q8 must use the same physical
@@ -134,7 +110,8 @@ using source/assembly/worker-layout inspection, peak workspace and
 stack/heap/RSS data, plus controlled q1/q8 A/S runs. Promotion
 requires a reproduced whole-transform advantage across relevant
 shapes, satisfactory memory cost and all correctness tests. It
-must not distract from A or trigger another accumulation of cfgs.
+must not distract from measuring the remaining q8 analysis cost or trigger
+another accumulation of cfgs.
 
 ### C. Close out the active task
 
