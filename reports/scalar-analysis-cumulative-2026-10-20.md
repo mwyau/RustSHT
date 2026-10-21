@@ -385,3 +385,79 @@ No archived experiment or older "next" paragraph is authorization
 to retry a known rejected tile/reduction experiment. The prefix cutoff
 investigation is complete; the next target is the measured q8 reduced-order
 analysis front end described above.
+
+## Plan 11 reduced-mmax frontend closeout (2026-10-21)
+
+The final frontend study uses the production output-pruning candidate at
+`1fddce4a75b0a0c3ba5ee5825d2cbaa50a42b0ed`, Rust 1.99.1 / LLVM 23.1.1,
+strict `RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs'`, runtime
+Pulp V3, and DUCC 0.42.0 at
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. DUCC SHT sources used GCC
+15.2 with `-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3`; the
+benchmark driver used `-fno-fast-math`. Both ran on the Ryzen 9 5950X.
+Single-thread screens were pinned to physical CPU 0; q8 screens used
+physical CPUs 0–7. CPU pressure stayed low on average, though two q8
+T3072 phase samples were visibly slower than the other three.
+
+For Rust, five warmed production-path calls per case were profiled. Temporary
+test-only timers separated the existing full-row finite/headroom scan and
+FFT-input copy, the half-length complex FFT, and output recombination. The
+reported q8 substage time is the maximum worker-local accumulation, while
+the forward-FFT phase is wall time; these values are diagnostic, not
+calibrated kernel benchmarks. The counters were removed after collection.
+The DUCC native stage harness collected 30 calibrated batches per stage,
+with per-batch repetitions selected to reach about 25 ms. DUCC `map2leg`
+includes ring weighting and row FFT; `leg2alm` includes `fill_m2a` packing
+and recurrence. These stage boundaries are similar but not identical.
+
+| Shape / threads | Rust input scan + copy | Rust complex FFT | Rust recombination | Rust forward wall | Rust order prep | Rust recurrence | DUCC `map2leg` | DUCC `leg2alm` |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| T2047 m511 q1 | 6.03 ms | 7.25 ms | 2.84 ms | 16.32 ms | 5.21 ms | 98.62 ms | 25.60 ms | 94.37 ms |
+| T2047 m511 q8 | 1.48 ms | 1.03 ms | 0.49 ms | 3.05 ms | 1.35 ms | 13.78 ms | 3.59 ms | 13.50 ms |
+| T3072 m768 q1 | 13.25 ms | 25.88 ms | 6.37 ms | 45.76 ms | 8.64 ms | 318.38 ms | 64.90 ms | 306.05 ms |
+| T3072 m768 q8 | 3.01 ms | 3.85 ms | 1.02 ms | 7.99 ms | 4.56 ms | 45.23 ms | 9.45 ms | 43.03 ms |
+
+The full input pass remains necessary: every longitude sample participates
+in the row FFT, and Rust must retain its finite/headroom validation. It is
+already fused with the copy into FFT workspace. The candidate still performs
+the complete FFT, but recombines only 512 of 2,049 bins at T2047 m511 and 769
+of 3,088 bins at T3072 m768. Its forward wall stage is below DUCC `map2leg`
+in all four diagnostic cases, though DUCC folds ring weighting into that
+stage. This does not support the forward FFT or safe input scan as the
+remaining dominant source of whole-transform excess.
+
+Order-spectrum preparation is a separate Rust pass that applies the
+ring/order factors and creates order-major data; DUCC performs its related
+packing within `leg2alm`. The stage probes therefore cannot be subtracted
+as if they were identical CPU counters. Their combined serial timings are
+close at T2047; the T3072 q8 samples include contention-sensitive recurrence
+outliers. The calibrated full-transform data remain the comparison of
+record: q8 T2047 m511 is 18.739 ms Rust vs 17.064 ms DUCC (+1.675 ms,
+paired ratio p10–p90 0.981–1.180); q8 T3072 m768 is 59.266 vs 58.253 ms
+(+1.013 ms, paired ratio p10–p90 0.895–1.042). q1 T2047 is 122.010 vs
+119.737 ms, while q1 T3072 Rust is faster at 380.152 vs 384.761 ms. The
+q8 residual is small and the paired ranges overlap; this study found no
+additional frontend change with a demonstrated material whole-transform
+benefit. Do not remove the finite scan or launch an FFT rewrite on this
+evidence.
+
+The existing output pruning is numerically exact relative to the prior
+Rust output in all measured q8 cases. Against pinned DUCC the maximum
+relative L2 error is `2.08e-13` and the maximum absolute error is
+`1.44e-15`; release parallel and no-default-feature suites, including
+FFT exceptional-value, analytic and adjoint tests, passed. Detailed medians
+and whole-transform uncertainty are in
+[`reduced-frontend-attribution-2026-10-21.csv`](data/scalar-analysis-cumulative-2026-10-20/reduced-frontend-attribution-2026-10-21.csv).
+Reproduce the Rust broad phases with the ignored
+`scalar_analysis_phase_profile_selected` test and the environment variables
+`RUSTSHT_PROFILE_Q`, `RUSTSHT_PROFILE_LMAX` and `RUSTSHT_PROFILE_MMAX`;
+run the DUCC stage profile with `(lmax, ntheta, nphi, threads, mmax)` for
+the rows above. The matched whole-transform harness and commands remain
+listed in the preceding output-pruning section.
+
+**Plan 11 is ready to close.** Keep `forward_truncated` as the validated
+reduced-order path. Defer further frontend redesign: the remaining q8
+whole-call differences overlap the measured spread, and the separated
+profile does not isolate a safe additional optimization with sufficient
+impact. Continue with the Plan 14 small-serial and large-parallel baseline
+from this final code.

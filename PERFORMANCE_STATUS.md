@@ -10,7 +10,8 @@ For reproducible raw benchmark tables see [reports/README](reports/README.md).
 
 **Owner-directed continuation (2026-10-21):** Finish the currently active
 Plan 11 reduced-`mmax` frontend investigation and produce a validated,
-committed/pushed Plan 11 closeout. **Then, in the same Luna session and on
+committed/pushed Plan 11 closeout. The substage attribution is now complete;
+the closeout documentation is being finalized. **Then, in the same Luna session and on
 the same `opt/sht-performance-parity` branch, immediately activate
 [Plan 14](plans/14-small-serial-parallel-performance.md)** for small q1 and
 large q8 performance work. No new branch/session or owner permission is
@@ -69,9 +70,12 @@ reduced-order q8 latency improved 12.4% at T2047 `mmax=511` (21.399 to
 median ratios are 1.098x and 1.017x. Full-order changes stayed within the
 measured distributions. The q8 Rust outputs were bitwise identical
 before/after, and DUCC errors remained at most `2.08e-13` relative L2. The
-next step is to separate the remaining input scan/copy from FFT execution;
-do not weaken input safeguards. See the [candidate comparison and stage
-findings](reports/scalar-analysis-cumulative-2026-10-20.md#reduced-order-real-fft-output-pruning-2026-10-20),
+pruning source is current commit `1fddce4a` (the source-equivalent pre-rebase
+hash was `41c7223f`). The follow-up substage screen found no remaining
+forward-FFT excess against DUCC `map2leg`; the safe input check remains fused
+with full-row FFT packing, and no further frontend rewrite is justified by
+the overlapping whole-call distributions. See the [candidate comparison and
+frontend closeout](reports/scalar-analysis-cumulative-2026-10-20.md#plan-11-reduced-mmax-frontend-closeout-2026-10-21),
 [q1/q8 summary](reports/data/scalar-analysis-cumulative-2026-10-20/truncated-output-candidate/summary.csv)
 and [order-preparation results](reports/data/scalar-analysis-cumulative-2026-10-20/order-prep-q8-candidate/summary.csv).
 
@@ -153,16 +157,13 @@ isolated `m=1` results or a desire to assemble another candidate matrix.
 
 ## Current next steps and deferred work
 
-1. **Active:** separate the remaining reduced-`mmax` forward analysis costs
-   at T2047 `mmax=511` and T3072 `mmax=768`: full input finite-check/copy,
-   real FFT execution, and the now-truncated output recombination. The
-   candidate already removed recombination/stores for unused modes and
-   reduced whole-call excess to 1.7 ms / 1.0 ms in q8 medians. Determine
-   whether the residual comes from FFT implementation or safe input scanning
-   before another source change. Keep 256 as default.
-2. **Then:** investigate opt-in fixed scratch only when a source-grounded
-   hypothesis and matched whole-transform measurements justify it.
-3. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
+1. **Plan 11 frontend study complete:** the input scan/copy, FFT, output
+   recombination, order preparation and corresponding DUCC stage boundaries
+   were profiled at T2047 m511 and T3072 m768, q1/q8. Output pruning remains
+   validated; the remaining q8 whole-call differences are within paired
+   spread or about 1–2 ms. Close Plan 11, then rebaseline and activate Plan 14
+   in this same session and branch.
+2. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
    cache-topology queries plus optional offline pointer-chase diagnostic
    (no startup autotuning); [Plan 13](plans/13-fused-batched-sht.md)
    true basis-shared batches with measured internal blocking.

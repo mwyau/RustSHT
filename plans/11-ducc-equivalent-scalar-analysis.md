@@ -96,7 +96,8 @@ identified.
    1.122x at T3072 m768. Stage profiles show their recurrence near DUCC and
    locate the next investigation before recurrence. Details and distributions
    are in the [cumulative report](../reports/scalar-analysis-cumulative-2026-10-20.md#q8-independent-order-preparation-candidate-2026-10-20).
-8. **Reduced-`mmax` FFT output pruning is validated** in `41c7223f`.
+8. **Reduced-`mmax` FFT output pruning is validated** in current source
+   commit `1fddce4a` (source-equivalent pre-rebase hash `41c7223f`).
    The full real FFT and safe input scan remain; only recombination/stores of
    bins above `mmax` are skipped for scalar GL analysis. q8 T2047 m511
    improved 12.4% (21.399 to 18.739 ms), and T3072 m768 improved 7.8%
@@ -118,15 +119,30 @@ errors, distributions and edge-case outcomes are in the report and data links
 above. Do not repeat the cutoff experiment or broaden it into another tile
 campaign.
 
-### B. Reduced-order q8 front end — active
+### B. Reduced-order q8 front end — complete
 
 The recurrence-plan order-preparation and truncated-spectrum candidates are
-complete; do not repeat their comparisons. Next separate reduced-`mmax`
-production-path input finite-check/copy from row FFT execution at T2047 m511
-and T3072 m768. Output recombination above `mmax` is now skipped, so profile
-the remaining costs before another optimization. DUCC `map2leg` combines FFT
-and weighting; use comparable boundaries. Preserve robust input checks and
-the 256-pair tile. Avoid a wholesale FFT rewrite.
+complete; do not repeat their comparisons. The remaining reduced-`mmax`
+production-path input finite-check/copy, row FFT, output recombination and
+spectrum/weight packing were profiled at T2047 m511 and T3072 m768. DUCC
+`map2leg` combines FFT and ring weighting, while its `leg2alm` includes
+packing and recurrence. Preserve robust input checks and the 256-pair tile.
+The profile did not justify a wholesale FFT rewrite.
+
+The final Rust split used temporary test-only timers at the current V3 build:
+q1/q8 input scan and complex-workspace copy, complex FFT, output recombination,
+order-spectrum preparation and Legendre recurrence. Its forward wall stage
+was below DUCC `map2leg` in both geometries at both thread counts. Rust's full
+finite/headroom scan is required and already fused with FFT packing. DUCC's
+`leg2alm` includes order packing plus recurrence, while Rust reports those as
+separate phases; stage timings are diagnostic rather than subtractable
+hardware counters. After output pruning, the calibrated q8 whole-transform
+excess is +1.675 ms at T2047 m511 and +1.013 ms at T3072 m768; paired ratio
+ranges overlap unity. The q1 T3072 candidate is faster than DUCC in the
+matched whole-transform screen. No further frontend change has demonstrated
+a material benefit, so the finite scan remains and no FFT rewrite is proposed.
+See the [closeout profile and interpretation](../reports/scalar-analysis-cumulative-2026-10-20.md#plan-11-reduced-mmax-frontend-closeout-2026-10-21)
+and [stage/whole-call data](../reports/data/scalar-analysis-cumulative-2026-10-20/reduced-frontend-attribution-2026-10-21.csv).
 
 ### C. Close out Plan 11, then activate Plan 14 in the same session
 
