@@ -154,12 +154,11 @@ fn record_scalar_analysis_recurrence_decline(prefix_allowed: bool) {
     counter.fetch_add(1, Ordering::Relaxed);
 }
 
-/// Bounds DUCC's insignificant-prefix omission by eight f64 ulps of the
-/// maximum paired-spectrum scale. The latitude count bounds the sum of the
-/// omitted per-lane terms because each skipped recurrence value is at most
-/// `sht_ftol` after DUCC-style sectoral normalization.
-pub(crate) fn insignificant_prefix_budget_safe(latitude_count: usize) -> bool {
-    (latitude_count as f64) * ANALYSIS_FTOL <= 8.0 * f64::EPSILON
+/// DUCC applies `sht_ftol = 2^-60` independently of the number of latitude
+/// lanes. Keep the prefix route available for any non-empty geometry; its
+/// scaled recurrence still checks values, exponents and safe fallback state.
+pub(crate) fn insignificant_prefix_skip_allowed(latitude_count: usize) -> bool {
+    latitude_count != 0
 }
 
 /// Prepares DUCC's per-order coefficient transformation and paired recurrence.
@@ -6028,10 +6027,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn insignificant_prefix_error_budget_stops_above_2048_latitudes() {
-        assert!(insignificant_prefix_budget_safe(2047));
-        assert!(insignificant_prefix_budget_safe(2048));
-        assert!(!insignificant_prefix_budget_safe(2049));
+    fn insignificant_prefix_uses_ducc_threshold_at_all_latitude_counts() {
+        assert_eq!(ANALYSIS_FTOL, 2.0_f64.powi(-60));
+        assert!(!insignificant_prefix_skip_allowed(0));
+        for latitude_count in [1, 2047, 2048, 2049, 3073, 4096, 8192] {
+            assert!(insignificant_prefix_skip_allowed(latitude_count));
+        }
     }
 
     struct F64LaneCount;
@@ -7144,7 +7145,7 @@ mod tests {
                 }
             })
             .collect();
-        assert!(insignificant_prefix_budget_safe(lane_count));
+        assert!(insignificant_prefix_skip_allowed(lane_count));
         let input_scale = same_real
             .iter()
             .zip(&same_imag)

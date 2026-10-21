@@ -1343,7 +1343,7 @@ impl ShtScalar for f64 {
     }
 
     fn scalar_analysis_prefix_skip_allowed(latitude_count: usize) -> bool {
-        scalar_paired::insignificant_prefix_budget_safe(latitude_count)
+        scalar_paired::insignificant_prefix_skip_allowed(latitude_count)
     }
 
     fn prepare_scalar_analysis_opposite(

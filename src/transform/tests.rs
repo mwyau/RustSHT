@@ -679,15 +679,20 @@ fn m5_analysis_leaf_imbalance_profile() {
 
 #[cfg(feature = "parallel")]
 #[test]
-#[ignore = "T2047/T2048 seed-route diagnostic; run as one release test outside timing runs"]
-fn report_t2048_scalar_analysis_seed_routes() {
+#[ignore = "T2047/T2048/T3072 seed-route diagnostic; run as one release test outside timing runs"]
+fn report_scalar_analysis_seed_routes_high_degree() {
     let pool = rayon::ThreadPoolBuilder::new()
         .num_threads(1)
         .build()
         .unwrap();
 
-    for (lmax, ntheta) in [(2047, 2048), (2047, 2049), (2048, 2049)] {
-        let plan = make_plan(lmax, 2047, ntheta, 4096, 0.37);
+    for (lmax, mmax, ntheta, nphi) in [
+        (2047, 2047, 2048, 4096),
+        (2047, 2047, 2049, 4096),
+        (2048, 2047, 2049, 4096),
+        (3072, 3072, 3073, 6174),
+    ] {
+        let plan = make_plan(lmax, mmax, ntheta, nphi, 0.37);
         let mut workspace = pool.install(|| plan.workspace()).unwrap();
         plan.prepare_workspace(&mut workspace, 1).unwrap();
         let map = vec![0.0; plan.sample_count];
@@ -702,7 +707,7 @@ fn report_t2048_scalar_analysis_seed_routes() {
             crate::legendre::finish_scalar_analysis_route_profile();
 
         eprintln!(
-            "SCALAR_ANALYSIS_SEED_ROUTES T{lmax} ntheta={ntheta} nphi=4096 mmax=2047 tile={} normal={} prefix_enabled_scaled={} checked_scaled={} prefix_init_declines={} prefix_recurrence_declines={} checked_scaled_recurrence_declines={}",
+            "SCALAR_ANALYSIS_SEED_ROUTES T{lmax} ntheta={ntheta} nphi={nphi} mmax={mmax} tile={} normal={} prefix_enabled_scaled={} checked_scaled={} prefix_init_declines={} prefix_recurrence_declines={} checked_scaled_recurrence_declines={}",
             crate::legendre::SCALAR_ANALYSIS_PAIR_TILE_SIZE,
             routes.normal_seed_blocks,
             routes.prefix_enabled_scaled_blocks,
