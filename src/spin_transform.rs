@@ -1197,11 +1197,16 @@ impl<T: ShtScalar> ShtPlan<T> {
             let group_count = ntheta.div_ceil(group_ring_count);
             let use_parallel = execution_threads > 1 && group_count > 1;
             if use_parallel {
+                let reusable_spin1_coefficient_geometry = (self.grid.kind()
+                    == crate::grid::GridKind::GaussLegendre
+                    && self.grid.ntheta() == self.harmonics.lmax() + 1)
+                    || (self.grid.kind() == crate::grid::GridKind::Fejer1
+                        && f1_synthesis_group_size.is_some());
                 let use_spin1_coefficient_cache = recurrence_spin == 1
                     && self.harmonics.spin() == 1
                     && b_alm.is_some()
                     && !derivative_norm
-                    && self.grid.kind() == crate::grid::GridKind::GaussLegendre
+                    && reusable_spin1_coefficient_geometry
                     && allow_fast_scalar
                     && self.harmonics.lmax() >= SPIN1_FAST_MIN_LMAX
                     && self.harmonics.lmax() <= SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_LMAX

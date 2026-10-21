@@ -5349,6 +5349,14 @@ fn spin1_f1_dynamic_synthesis_groups_match_serial_and_reuse_workspace() {
             )
         })
         .unwrap();
+    assert_eq!(
+        eight_workspace.spin1_scalar_coefficients.len(),
+        (plan.harmonics.lmax() + 2) * 2 * (plan.harmonics.mmax() + 1)
+    );
+    assert_eq!(
+        eight_workspace.spin1_scalar_coefficient_finite_orders.len(),
+        plan.harmonics.mmax() + 1
+    );
     for (actual, expected) in eight_first
         .iter()
         .zip(&one_first)
@@ -5400,6 +5408,42 @@ fn spin1_f1_dynamic_synthesis_groups_match_serial_and_reuse_workspace() {
     let lhs = spin_map_inner_product(&eight_first, &eight_second, &map_first, &map_second);
     let rhs = spin_harmonic_inner_product(plan.harmonics(), &e, &b, &adjoint_e, &adjoint_b);
     assert!((lhs - rhs).abs() <= 3.0e-11 * lhs.abs().max(rhs.abs()).max(1.0));
+
+    let mut changed_e = e.clone();
+    changed_e[plan.harmonics.index(720, 180).unwrap()].re += 0.125;
+    let mut changed_one_first = vec![0.0; plan.sample_count];
+    let mut changed_one_second = vec![0.0; plan.sample_count];
+    let mut changed_eight_first = vec![0.0; plan.sample_count];
+    let mut changed_eight_second = vec![0.0; plan.sample_count];
+    one_thread
+        .install(|| {
+            plan.synthesis_spin_into(
+                &changed_e,
+                &b,
+                &mut changed_one_first,
+                &mut changed_one_second,
+                &mut one_workspace,
+            )
+        })
+        .unwrap();
+    eight_threads
+        .install(|| {
+            plan.synthesis_spin_into(
+                &changed_e,
+                &b,
+                &mut changed_eight_first,
+                &mut changed_eight_second,
+                &mut eight_workspace,
+            )
+        })
+        .unwrap();
+    for (actual, expected) in changed_eight_first
+        .iter()
+        .zip(&changed_one_first)
+        .chain(changed_eight_second.iter().zip(&changed_one_second))
+    {
+        assert!((actual - expected).abs() <= 2.0e-11 * expected.abs().max(1.0));
+    }
 }
 
 #[cfg(feature = "parallel")]
