@@ -1,0 +1,935 @@
+{
+  "metadata": {
+    "rust_source_revision": "1033d4994eaf3c783d0eb6276773b54e989084d3",
+    "rust_toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "rust_binary_sha256": "7f35c656bd24e0b437a61468a642c7c750bd0816196448e44eb9171dfa9e5e47",
+    "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "ducc_version": "0.42.0",
+    "ducc_compiler": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "ducc_flags": "SHT numerical sources: -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver adds -fno-fast-math",
+    "ducc_binary_sha256": "e3908ae1ce2502b1a7b9c9ede1442d85d4f977efbb62adc39542482d2352f61d",
+    "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+    "q1_cpus": [
+      0
+    ],
+    "q8_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "q8_topology": [
+      [
+        "0",
+        "0"
+      ],
+      [
+        "0",
+        "1"
+      ],
+      [
+        "0",
+        "2"
+      ],
+      [
+        "0",
+        "3"
+      ],
+      [
+        "0",
+        "4"
+      ],
+      [
+        "0",
+        "5"
+      ],
+      [
+        "0",
+        "6"
+      ],
+      [
+        "0",
+        "7"
+      ]
+    ],
+    "q8_l3_ids": [
+      "0",
+      "0",
+      "0",
+      "0",
+      "0",
+      "0",
+      "0",
+      "0"
+    ],
+    "affinity_policy": "q1 first allowed physical core; q8 first eight allowed physical cores",
+    "measurement": {
+      "process_pairs": 3,
+      "batches_per_short_process": 10,
+      "target_batch_ms": 25.0,
+      "long_call_threshold_ms": 100,
+      "interleaved_backend_order": "Rust then DUCC for even pair; DUCC then Rust for odd pair"
+    },
+    "call_boundary": "reused Rust ShtPlan/ShtWorkspace per process; direct native DUCC analysis_2d/synthesis_2d calls; output checksum outside timed batch",
+    "case_count": 6,
+    "smoke": false,
+    "source_commit_note": "Production code is at 32bb0a2f; recorded HEAD 1033d499 contains documentation-only changes."
+  },
+  "cases": [
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 180,
+      "ntheta": 721,
+      "nphi": 378,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "seed": 1416779897,
+      "input_sha256": {
+        "map0": "33ed76ff3e7ebfbe866484fe2473634df9b5380cfe123936d263515be97b3eed",
+        "map1": "e92ffce48a2fa329a5bf113e0cdc6dd9b212bbea6c0f63568fb2e304e6bcf881",
+        "e": "86f69cdcee1047e6b8d83f39aad923db97ed05d6fcc20fb3f4c4c6df5d256d3b",
+        "b": "9486b6bf16def3639839b08609f28c9e9531c7cff4d03d49a482665c585b62aa"
+      }
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 720,
+      "ntheta": 721,
+      "nphi": 1458,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "seed": 1416973757,
+      "input_sha256": {
+        "map0": "e3379278cb0dfc9a9f4d5f2c8ece40995f965bd727dcb4ce884b85fc62d7abba",
+        "map1": "dc3a132282b074d16cea41cf7305e64e796a48beac398221776ee8c7ad74d5cc",
+        "e": "f4e07903e76707c0c5b7904dd8b32542899c961dd9043f4cb0b5592202bb96b8",
+        "b": "148b93ae3c31ee14d53d2d45846899d3d53d039a128ce3f596fa93faff9174fd"
+      }
+    },
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "ntheta": 722,
+      "nphi": 378,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "seed": 1416779915,
+      "input_sha256": {
+        "map0": "d27487b743f150323b8a33c25b41e292a2a338301ca57375546e9020af7d4199",
+        "map1": "047f6349a5bd4dc4c0bbd7a61bd129ef0c8bc61d5754556db7b512a35b757610",
+        "e": "333a9c5403e5051732b254ae7a0a9916e068da0d98378157babcc5527cb0414a",
+        "b": "2f464f02de01197f2c89a5e21b865bcd1d7fee3d32b68f0d9b534bebc35e4201"
+      }
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "ntheta": 722,
+      "nphi": 1458,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "seed": 1416973775,
+      "input_sha256": {
+        "map0": "0ef753888c1dcf2697719846270a85cacff8b1ed0019ece40829884974707985",
+        "map1": "95ffdc443cf192afb7524063c5a8b3e0624e85bc83e33f23aa66180545e4958e",
+        "e": "d4a10dc30a800a986b8944e81e36214355ac74a571b145167378451ecdb8adb6",
+        "b": "fe66537ca2a62828fab75ee3c343b6fd56e34f1831ae0fc50394a3c5c8cb34db"
+      }
+    },
+    {
+      "case_id": "F1-T720-m180-n721-exact-p378-even-smooth",
+      "grid": "F1",
+      "lmax": 720,
+      "mmax": 180,
+      "ntheta": 721,
+      "nphi": 378,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "seed": 1416779899,
+      "input_sha256": {
+        "map0": "91284a0ddf43de4d81e3142ce6aea81a75b5490470bc0d2f3d7ebbb4b764aa63",
+        "map1": "d56cb2ee4572be5a54b74ded30aadc48c0e78e3339d12c7e359ef569f36c91d3",
+        "e": "55d8162e73e69b6911519181af3c5ddca8514e889436b4c856c1f70ec6c08399",
+        "b": "dd1cc3ec3530d7c6c3e2c19d5e7071256979b0c49c046685e5fccf71fb4561df"
+      }
+    },
+    {
+      "case_id": "F1-T720-m720-n721-exact-p1458-even-smooth",
+      "grid": "F1",
+      "lmax": 720,
+      "mmax": 720,
+      "ntheta": 721,
+      "nphi": 1458,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "seed": 1416973759,
+      "input_sha256": {
+        "map0": "b94fe971fe1119ca05ab778b0d2a8d364a51e6b13f9d660d331936570021bf72",
+        "map1": "b831cc482a2e3c0239897d6d86a8e556d4bfba40bce8954445306f68a971adda",
+        "e": "282143102acfa369c403ac4e33942a6183ad442f1c03a8b47649054f556b0f00",
+        "b": "94ed88814bdbbb8115eac1445718fd554c4f79bd54bdab25f988db3d8ae5b617"
+      }
+    }
+  ],
+  "summaries": [
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 180,
+      "ntheta": 721,
+      "nphi": 378,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "analysis",
+      "threads": 1,
+      "rust_ms": {
+        "median": 48.717355,
+        "p10": 48.008761,
+        "p90": 49.3854607,
+        "min": 47.724679,
+        "max": 49.475496,
+        "count": 30
+      },
+      "ducc_ms": {
+        "median": 21.250790000000002,
+        "p10": 21.0486365,
+        "p90": 21.7589972,
+        "min": 20.887058,
+        "max": 22.072772,
+        "count": 30
+      },
+      "paired_ratio_median": 2.298424751076785,
+      "max_relative_l2": 5.2130306805912244e-14,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 180,
+      "ntheta": 721,
+      "nphi": 378,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "synthesis",
+      "threads": 1,
+      "rust_ms": {
+        "median": 74.6995655,
+        "p10": 73.39976750000001,
+        "p90": 75.4359868,
+        "min": 71.657385,
+        "max": 76.358842,
+        "count": 30
+      },
+      "ducc_ms": {
+        "median": 23.636637,
+        "p10": 23.451297500000003,
+        "p90": 23.8120846,
+        "min": 23.37444,
+        "max": 23.977258,
+        "count": 30
+      },
+      "paired_ratio_median": 3.169037000402631,
+      "max_relative_l2": 5.224279067934392e-13,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 180,
+      "ntheta": 721,
+      "nphi": 378,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "analysis",
+      "threads": 8,
+      "rust_ms": {
+        "median": 8.693521,
+        "p10": 8.213730433333334,
+        "p90": 10.772138450000002,
+        "min": 7.898936,
+        "max": 11.910504000000001,
+        "count": 30
+      },
+      "ducc_ms": {
+        "median": 3.0961864375,
+        "p10": 2.8949327208333333,
+        "p90": 4.316284616666667,
+        "min": 2.83415375,
+        "max": 5.153971333333334,
+        "count": 30
+      },
+      "paired_ratio_median": 2.945123008502619,
+      "max_relative_l2": 5.2130306805912244e-14,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "GL-T720-m180-n721-exact-p378-even-smooth",
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 180,
+      "ntheta": 721,
+      "nphi": 378,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "synthesis",
+      "threads": 8,
+      "rust_ms": {
+        "median": 28.0119895,
+        "p10": 26.4157027,
+        "p90": 29.0447298,
+        "min": 21.865863,
+        "max": 32.474643,
+        "count": 30
+      },
+      "ducc_ms": {
+        "median": 3.4100973750000003,
+        "p10": 3.3143986285714284,
+        "p90": 3.9365027,
+        "min": 3.292622142857143,
+        "max": 4.254375428571429,
+        "count": 30
+      },
+      "paired_ratio_median": 8.286182152660825,
+      "max_relative_l2": 5.224279067934392e-13,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 720,
+      "ntheta": 721,
+      "nphi": 1458,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "analysis",
+      "threads": 1,
+      "rust_ms": {
+        "median": 72.95595300000001,
+        "p10": 72.3365668,
+        "p90": 107.9989284,
+        "min": 72.038792,
+        "max": 108.951645,
+        "count": 25
+      },
+      "ducc_ms": {
+        "median": 51.474672999999996,
+        "p10": 49.1576079,
+        "p90": 51.881983,
+        "min": 47.766026,
+        "max": 52.068784,
+        "count": 30
+      },
+      "paired_ratio_median": 1.474332620527339,
+      "max_relative_l2": 4.7607671481389646e-14,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 720,
+      "ntheta": 721,
+      "nphi": 1458,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "synthesis",
+      "threads": 1,
+      "rust_ms": {
+        "median": 171.131277,
+        "p10": 102.38411579999999,
+        "p90": 173.4105162,
+        "min": 101.57619,
+        "max": 173.71627900000001,
+        "count": 15
+      },
+      "ducc_ms": {
+        "median": 55.207333500000004,
+        "p10": 54.7365283,
+        "p90": 56.1592263,
+        "min": 54.637276,
+        "max": 57.36288,
+        "count": 30
+      },
+      "paired_ratio_median": 3.0372970354146798,
+      "max_relative_l2": 3.9317766705641284e-13,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 720,
+      "ntheta": 721,
+      "nphi": 1458,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "analysis",
+      "threads": 8,
+      "rust_ms": {
+        "median": 20.092707750000002,
+        "p10": 18.047085950000003,
+        "p90": 21.300716150000003,
+        "min": 16.871572,
+        "max": 23.409454999999998,
+        "count": 30
+      },
+      "ducc_ms": {
+        "median": 7.524062499999999,
+        "p10": 6.968819266666667,
+        "p90": 8.803976766666667,
+        "min": 6.953392999999999,
+        "max": 9.643881333333333,
+        "count": 30
+      },
+      "paired_ratio_median": 2.6278502113553395,
+      "max_relative_l2": 4.7607671481389646e-14,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "GL-T720-m720-n721-exact-p1458-even-smooth",
+      "grid": "GL",
+      "lmax": 720,
+      "mmax": 720,
+      "ntheta": 721,
+      "nphi": 1458,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "synthesis",
+      "threads": 8,
+      "rust_ms": {
+        "median": 36.028818,
+        "p10": 33.1282371,
+        "p90": 37.555987,
+        "min": 33.002131,
+        "max": 45.187736,
+        "count": 30
+      },
+      "ducc_ms": {
+        "median": 9.489638833333334,
+        "p10": 8.76872185,
+        "p90": 10.82870335,
+        "min": 8.3980715,
+        "max": 11.8180025,
+        "count": 30
+      },
+      "paired_ratio_median": 3.7870526005399894,
+      "max_relative_l2": 3.931776670055661e-13,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "ntheta": 722,
+      "nphi": 378,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "analysis",
+      "threads": 1,
+      "rust_ms": {
+        "median": 115.54590200000001,
+        "p10": 80.5714834,
+        "p90": 121.15727840000001,
+        "min": 80.183694,
+        "max": 121.968049,
+        "count": 25
+      },
+      "ducc_ms": {
+        "median": 57.1117945,
+        "p10": 56.402893399999996,
+        "p90": 57.7993135,
+        "min": 54.727174,
+        "max": 58.018617,
+        "count": 30
+      },
+      "paired_ratio_median": 2.042924861110174,
+      "max_relative_l2": 6.830903674067347e-14,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "ntheta": 722,
+      "nphi": 378,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "synthesis",
+      "threads": 1,
+      "rust_ms": {
+        "median": 85.1311125,
+        "p10": 83.4911565,
+        "p90": 85.9193329,
+        "min": 80.375259,
+        "max": 86.019234,
+        "count": 30
+      },
+      "ducc_ms": {
+        "median": 24.6197435,
+        "p10": 24.3784201,
+        "p90": 25.282953799999998,
+        "min": 24.165217,
+        "max": 25.367175,
+        "count": 30
+      },
+      "paired_ratio_median": 3.463548345122927,
+      "max_relative_l2": 3.632237677704203e-13,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "ntheta": 722,
+      "nphi": 378,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "analysis",
+      "threads": 8,
+      "rust_ms": {
+        "median": 26.66988025,
+        "p10": 23.18793,
+        "p90": 30.084702,
+        "min": 20.99637,
+        "max": 31.977472,
+        "count": 30
+      },
+      "ducc_ms": {
+        "median": 17.475357250000002,
+        "p10": 16.649564100000003,
+        "p90": 18.126904449999998,
+        "min": 16.3908465,
+        "max": 19.23224,
+        "count": 30
+      },
+      "paired_ratio_median": 1.5915363477484727,
+      "max_relative_l2": 6.830903674067347e-14,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "ntheta": 722,
+      "nphi": 378,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "synthesis",
+      "threads": 8,
+      "rust_ms": {
+        "median": 47.172630999999996,
+        "p10": 43.3133994,
+        "p90": 47.578775699999994,
+        "min": 38.228812,
+        "max": 48.540352,
+        "count": 30
+      },
+      "ducc_ms": {
+        "median": 4.3478957000000005,
+        "p10": 3.854933725,
+        "p90": 4.95565482,
+        "min": 3.7806716666666667,
+        "max": 5.250821,
+        "count": 30
+      },
+      "paired_ratio_median": 10.769042566471674,
+      "max_relative_l2": 3.632237679032239e-13,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "ntheta": 722,
+      "nphi": 1458,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "analysis",
+      "threads": 1,
+      "rust_ms": {
+        "median": 294.83799999999997,
+        "p10": 201.68534860000003,
+        "p90": 299.9059712,
+        "min": 199.331865,
+        "max": 301.57973999999996,
+        "count": 15
+      },
+      "ducc_ms": {
+        "median": 190.483399,
+        "p10": 186.1060304,
+        "p90": 193.8918388,
+        "min": 135.638807,
+        "max": 195.224149,
+        "count": 15
+      },
+      "paired_ratio_median": 1.5398452841915669,
+      "max_relative_l2": 6.09715459872357e-14,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "ntheta": 722,
+      "nphi": 1458,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "synthesis",
+      "threads": 1,
+      "rust_ms": {
+        "median": 179.828423,
+        "p10": 111.55793,
+        "p90": 185.4111736,
+        "min": 110.756883,
+        "max": 188.115378,
+        "count": 15
+      },
+      "ducc_ms": {
+        "median": 58.619185,
+        "p10": 58.1671086,
+        "p90": 59.487549800000004,
+        "min": 56.561164,
+        "max": 61.60149,
+        "count": 30
+      },
+      "paired_ratio_median": 3.0879441432015815,
+      "max_relative_l2": 2.285323513533807e-13,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "ntheta": 722,
+      "nphi": 1458,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "analysis",
+      "threads": 8,
+      "rust_ms": {
+        "median": 64.994,
+        "p10": 54.7711862,
+        "p90": 76.0063182,
+        "min": 53.633044999999996,
+        "max": 77.015339,
+        "count": 30
+      },
+      "ducc_ms": {
+        "median": 34.291737499999996,
+        "p10": 33.919673700000004,
+        "p90": 36.328992,
+        "min": 33.643721,
+        "max": 40.138995,
+        "count": 30
+      },
+      "paired_ratio_median": 1.8523002735102292,
+      "max_relative_l2": 6.09715459872357e-14,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "ntheta": 722,
+      "nphi": 1458,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "synthesis",
+      "threads": 8,
+      "rust_ms": {
+        "median": 90.5771505,
+        "p10": 88.3691191,
+        "p90": 91.2968555,
+        "min": 74.649193,
+        "max": 92.142087,
+        "count": 30
+      },
+      "ducc_ms": {
+        "median": 10.021125999999999,
+        "p10": 9.494057399999999,
+        "p90": 11.3339432,
+        "min": 9.072712333333333,
+        "max": 12.805093,
+        "count": 30
+      },
+      "paired_ratio_median": 9.003000161286725,
+      "max_relative_l2": 2.285323513064065e-13,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "F1-T720-m180-n721-exact-p378-even-smooth",
+      "grid": "F1",
+      "lmax": 720,
+      "mmax": 180,
+      "ntheta": 721,
+      "nphi": 378,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "analysis",
+      "threads": 1,
+      "rust_ms": {
+        "median": 119.55135899999999,
+        "p10": 117.9987776,
+        "p90": 121.6887358,
+        "min": 113.20880799999999,
+        "max": 121.76496300000001,
+        "count": 15
+      },
+      "ducc_ms": {
+        "median": 56.126082499999995,
+        "p10": 51.703007,
+        "p90": 57.9489976,
+        "min": 50.921307,
+        "max": 58.041179,
+        "count": 30
+      },
+      "paired_ratio_median": 2.1280419823770163,
+      "max_relative_l2": 6.760441898580679e-14,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "F1-T720-m180-n721-exact-p378-even-smooth",
+      "grid": "F1",
+      "lmax": 720,
+      "mmax": 180,
+      "ntheta": 721,
+      "nphi": 378,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "synthesis",
+      "threads": 1,
+      "rust_ms": {
+        "median": 47.5293725,
+        "p10": 45.6177631,
+        "p90": 76.37113320000002,
+        "min": 45.309692,
+        "max": 76.76820199999999,
+        "count": 30
+      },
+      "ducc_ms": {
+        "median": 23.267106,
+        "p10": 22.9606027,
+        "p90": 23.905141800000003,
+        "min": 22.731047,
+        "max": 24.000521,
+        "count": 30
+      },
+      "paired_ratio_median": 1.9899112512147703,
+      "max_relative_l2": 8.084178221093609e-13,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "F1-T720-m180-n721-exact-p378-even-smooth",
+      "grid": "F1",
+      "lmax": 720,
+      "mmax": 180,
+      "ntheta": 721,
+      "nphi": 378,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "analysis",
+      "threads": 8,
+      "rust_ms": {
+        "median": 26.7950675,
+        "p10": 22.458807,
+        "p90": 31.557820400000004,
+        "min": 21.778582,
+        "max": 42.435162,
+        "count": 30
+      },
+      "ducc_ms": {
+        "median": 17.28503675,
+        "p10": 16.56930075,
+        "p90": 18.2966627,
+        "min": 16.5036705,
+        "max": 19.137229,
+        "count": 30
+      },
+      "paired_ratio_median": 1.606186060921604,
+      "max_relative_l2": 6.760441898580679e-14,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "F1-T720-m180-n721-exact-p378-even-smooth",
+      "grid": "F1",
+      "lmax": 720,
+      "mmax": 180,
+      "ntheta": 721,
+      "nphi": 378,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "synthesis",
+      "threads": 8,
+      "rust_ms": {
+        "median": 30.707066,
+        "p10": 25.5631253,
+        "p90": 31.5278928,
+        "min": 25.096994000000002,
+        "max": 36.74452,
+        "count": 30
+      },
+      "ducc_ms": {
+        "median": 3.756453416666666,
+        "p10": 3.427378171428572,
+        "p90": 4.3334750642857145,
+        "min": 3.369453142857143,
+        "max": 4.390646714285714,
+        "count": 30
+      },
+      "paired_ratio_median": 7.9913005959647725,
+      "max_relative_l2": 8.084178221093609e-13,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "F1-T720-m720-n721-exact-p1458-even-smooth",
+      "grid": "F1",
+      "lmax": 720,
+      "mmax": 720,
+      "ntheta": 721,
+      "nphi": 1458,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "analysis",
+      "threads": 1,
+      "rust_ms": {
+        "median": 203.072181,
+        "p10": 201.17011620000002,
+        "p90": 296.1888044,
+        "min": 200.65918599999998,
+        "max": 297.47601099999997,
+        "count": 15
+      },
+      "ducc_ms": {
+        "median": 189.465431,
+        "p10": 134.4438976,
+        "p90": 192.2622594,
+        "min": 134.19468,
+        "max": 192.773765,
+        "count": 15
+      },
+      "paired_ratio_median": 1.510264287536477,
+      "max_relative_l2": 6.108859220694216e-14,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "F1-T720-m720-n721-exact-p1458-even-smooth",
+      "grid": "F1",
+      "lmax": 720,
+      "mmax": 720,
+      "ntheta": 721,
+      "nphi": 1458,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "synthesis",
+      "threads": 1,
+      "rust_ms": {
+        "median": 103.293424,
+        "p10": 102.6115674,
+        "p90": 173.0187202,
+        "min": 102.306894,
+        "max": 174.411859,
+        "count": 15
+      },
+      "ducc_ms": {
+        "median": 57.0894785,
+        "p10": 49.449347,
+        "p90": 57.790248899999995,
+        "min": 49.165962,
+        "max": 58.061296,
+        "count": 30
+      },
+      "paired_ratio_median": 2.0607977361459993,
+      "max_relative_l2": 5.233394665355413e-13,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "F1-T720-m720-n721-exact-p1458-even-smooth",
+      "grid": "F1",
+      "lmax": 720,
+      "mmax": 720,
+      "ntheta": 721,
+      "nphi": 1458,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "analysis",
+      "threads": 8,
+      "rust_ms": {
+        "median": 57.2314775,
+        "p10": 53.5690141,
+        "p90": 67.49579569999999,
+        "min": 53.078667,
+        "max": 74.136922,
+        "count": 30
+      },
+      "ducc_ms": {
+        "median": 35.462633499999995,
+        "p10": 34.47078990000001,
+        "p90": 36.45480310000001,
+        "min": 33.910125,
+        "max": 37.439208,
+        "count": 30
+      },
+      "paired_ratio_median": 1.638494759229534,
+      "max_relative_l2": 6.108859220694216e-14,
+      "comparison_pairs": 3
+    },
+    {
+      "case_id": "F1-T720-m720-n721-exact-p1458-even-smooth",
+      "grid": "F1",
+      "lmax": 720,
+      "mmax": 720,
+      "ntheta": 721,
+      "nphi": 1458,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth",
+      "operation": "synthesis",
+      "threads": 8,
+      "rust_ms": {
+        "median": 49.1080195,
+        "p10": 48.3540135,
+        "p90": 49.78866010000001,
+        "min": 47.513578,
+        "max": 52.337673,
+        "count": 30
+      },
+      "ducc_ms": {
+        "median": 9.392774166666667,
+        "p10": 8.604233266666666,
+        "p90": 10.985723166666666,
+        "min": 8.543855333333333,
+        "max": 11.619577999999999,
+        "count": 30
+      },
+      "paired_ratio_median": 5.098288154329674,
+      "max_relative_l2": 5.233394665355413e-13,
+      "comparison_pairs": 3
+    }
+  ],
+  "comparison_count": 72,
+  "failure_count": 0
+}

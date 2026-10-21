@@ -11,8 +11,9 @@ paired-real-row FFTs, `realfft` substitution and custom `rustsht-fft`
 integration. Keep odd/even longitude benchmarks and numerical correctness
 controls, but do not initiate an odd-FFT performance campaign. Plan 15 Phase A
 is complete; GL stage work is closed for now. CC and F1 analysis resampling
-are implemented, and the F1 synthesis scheduling screen is complete. Continue
-with integrated GL/CC/F1 validation and Plan 15 closeout.
+are implemented, and the F1 synthesis scheduling screen is complete. A
+current-source T720 GL/CC/F1 integration screen and serialized regression
+suites pass; the remaining synthesis recurrence gap is still under Plan 15.
 This is a **measured checkpoint, not a standalone instruction queue**.
 The previous long status, including intermediate experiments and historical
 next-step text, is preserved
@@ -70,7 +71,15 @@ T720, Rust synthesis fell 25.9% reduced and 41.2% full; residual Rust/DUCC
 ratios are 7.07x and 5.70x, with recurrence and spectral accumulation still
 dominant. The finer T1023 group split regressed reduced order and was rejected.
 See the [F1 synthesis report and raw distributions](reports/plan15-spin1-f1-synthesis-scheduling-2026-10-21.md).
-Next: integrated GL/CC/F1 validation and Plan 15 closeout.
+The current-source exact-grid T720 check covers GL/CC/F1, full/reduced order,
+q1/q8 and analysis/synthesis: 24 workloads and 72 numerical/reset comparisons
+passed, with max relative L2 `8.09e-13`. q8 wait was elevated (median 9.6%,
+p90 19.3%), so small q8 differences are not attributed. Current q8 synthesis
+ratios remain 3.79–8.29x GL, 9.00–10.77x CC and 5.10–7.99x F1; the prior F1
+phase probe places most Rust cost in recurrence and spectrum accumulation.
+See the [integrated report and raw distributions](reports/plan15-spin1-integrated-t720-2026-10-21.md).
+Next: compare the executed CC/F1 synthesis recurrence and spectrum paths with
+DUCC at matched stage boundaries; keep odd-FFT work deferred.
 
 **Plan 15 Phase B candidate:** q8 GL spin-1 synthesis now borrows the shared
 scalar-conversion rows across ring groups instead of copying them into worker
