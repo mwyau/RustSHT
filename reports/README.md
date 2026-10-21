@@ -1,12 +1,49 @@
-# Performance findings and evidence
+# RustSHT performance evidence — reading guide
 
-The [consolidated performance findings](PERFORMANCE_FINDINGS.md) analyze all 80 archived performance reports: accepted changes, rejected prototypes, mixed/noisy results, measured Rust/DUCC gaps, and a complete categorized source catalog.
+**Single current implementation plan:** [Plan 11](../plans/11-ducc-equivalent-scalar-analysis.md).
+**Current factual status and priorities:** [PERFORMANCE_STATUS.md](../PERFORMANCE_STATUS.md).
+**Recent measured result index:** [scalar-analysis T720 A/B and T2047/2048 cutoff](scalar-analysis-cumulative-2026-10-20.md).
+Do not follow forward-looking instructions embedded in historical reports.
 
-**Current technical goal:** [Plan 11 — close the scalar-analysis SIMD gap](../plans/11-ducc-equivalent-scalar-analysis.md). **Current factual checkpoint:** [PERFORMANCE_STATUS](../PERFORMANCE_STATUS.md).
+## Current and accepted evidence
 
-- [Consolidated findings and full report catalog](PERFORMANCE_FINDINGS.md)
-- [Archived dated experiments and performance reports](archive/experiments/)
-- [Archived prior reviews, plans, and long handoffs](archive/README.md)
-- [Raw and structured benchmark data, kept in place](data/)
+- [T2047/T2048 cutoff and previous T720 A/B findings](scalar-analysis-cumulative-2026-10-20.md):
+  q1 nearly at DUCC parity at T2047/2048 latitudes with 256-pair
+  tiles; one-latitude increase triggers the Rust-only prefix gate
+  and a severe checked-scaled route regression. Current investigations
+  concern the *necessity* of that extra gate, not small tile sweeps.
+  Fixed SIMD scratch remains opt-in; packed reduction, indexed
+  traversal and direct output are retired.
+- [T64 Legendre table/recurrence dispatch decision](scalar-t64-recurrence-transition-2026-10-20.md):
+  retained synthesis-only recurrence cutoff; analysis and spin-1
+  keep their own policies. This is a **completed** dispatch study,
+  not an instruction to repeat it.
+- [Raw benchmark datasets and reproduction evidence](data/):
+  remain in their original paths. Dataset source revisions and
+  compiler/ISA flags vary. Preserve exact attribution.
 
-Older reports retain their original benchmark assumptions and source revisions. They are **evidence, not active tasks or speedup commitments**. Avoid comparing unlike compiler/ISA settings, timing boundaries, useful degree work, thread-count modes, or first-call/warm runs.
+## Historical evidence — archived, not live directions
+
+- [2026-10-20 full cumulative scalar-analysis experiments](archive/experiments/scalar-analysis-cumulative-2026-10-20-snapshot.md):
+  complete rejected/opt-in candidate history before consolidation.
+- [DUCC 0.42.0 GCC/Clang post-upgrade baseline](archive/experiments/ducc-upgrade-baseline-2026-10-20.md):
+  compiler/source contract and kernel evidence; high-contention
+  differences cannot be treated as clean current conclusions.
+- [Older full-transform 214-configuration sweep](archive/experiments/ducc-full-transform-parity-2026-10-20.md):
+  Rust 1.99.0 and its original pinned DUCC source; T3072 historical
+  ratios are not current-source benchmarks.
+- [2026-10-19 consolidated review of 80 older reports](archive/performance-findings-2026-10-19-consolidated.md):
+  source catalog and rejected prototypes, not a new task queue.
+- [Prior Plan 11 and status snapshots](archive/README.md),
+  [earlier dated experiments](archive/experiments/) and
+  [past reviews/plans](archive/README.md).
+
+**Method:** Do not combine different code revisions, compiler flags,
+ISA dispatch, timing boundaries, truncation/order/longitude work,
+q1/q8 thread placement or cold/warm states into a trend.
+Matched whole-transform and reproducible numerical checks govern
+production decisions. **Keep 256 reflected-latitude-pair tiles as
+the current default; do not repeat the retired 64/128 comparison.**
+
+**Deferred work only:** [cache-informed Legendre choice](../plans/12-cache-informed-legendre-dispatch.md)
+and [fused batches](../plans/13-fused-batched-sht.md).
