@@ -61,7 +61,7 @@ Final Plan 11 source and closeout (commit
   bottleneck**. Investigate the execution profile, not the source
   appearance, before modifying scheduling.
 - DUCC's `sht.cc` performs `map2leg` and `leg2alm_internal` with its own geometry/packing and `execDynamic` scheduling; `sht_inner_loop.h` uses `fill_m2a`, `iter_to_ieee`, and `map2alm_kernel`. DUCC's output layout can differ by synthesis/analysis and thread count (`allocate_leg`). Compare actual data movement and SIMD useful work, not just surface API names.
-- Some historical q8 synthesis profiles localized excess in Legendre/order work rather than FFT, and an **experimental** fixed-size aligned scratch variant improved selected T720 q8 synthesis by 11.4–18.0% without a comparable consistent analysis improvement. Its mechanism and generality remain unproven. Do not promote it on that result alone.
+- At plan start, a fixed-size aligned scratch candidate was experimental. Its initial 11.4–18.0% q8 synthesis screen was not sufficient to promote it. The later aligned/unaligned ablation and current-source results below isolated its layout effect; the default implementation now uses inline aligned scratch.
 
 **Source checkpoints:** `PERFORMANCE_STATUS.md`; `reports/scalar-t64-recurrence-transition-2026-10-20.md`; `reports/scalar-analysis-cumulative-2026-10-20.md`; `reports/PERFORMANCE_FINDINGS.md`; DUCC issue 86, especially comments `6294359778` and `6294831374`. These are provenance, not fresh performance guarantees.
 
@@ -431,9 +431,80 @@ a first-call improvement.
 
 The report, binary hashes, raw batches and phase summaries are in the
 [T16 cutoff checkpoint](../reports/plan14-t16-analysis-cutoff-2026-10-21.md).
-Phase A's low-band cutoff follow-up is closed for now. Next re-rank current
-source q8 full/reduced analysis and synthesis whole-call excesses; do not
-start another low-degree cutoff sweep.
+Phase A's low-band cutoff follow-up is closed for now. The current q8
+rebaseline and scratch-layout result are recorded below; do not start another
+low-degree cutoff sweep.
+
+## Current progress — inline aligned recurrence scratch (2026-10-21)
+
+The fixed-scratch candidate was tested at source `b38d6696` against the
+`Vec`-backed workspace, then promoted without a cfg selector in source commit
+`8e49f7d5`. The seven recurrence/analysis buffers have a 256-element
+capacity in both layouts: `recurrence_scratch_len()` is at least
+`SCALAR_ORDER_BATCH_SIZE=256` and `LATITUDE_BLOCK_SIZE=64`. f64 scratch
+payload remains 14,336 bytes per recurrence worker; the new layout removes
+seven heap allocations and 168 bytes of `Vec` headers per worker. The
+workspace stays caller-owned and bounded.
+
+The matched T720 GL q8 whole-transform comparison used Rust 1.99.1/LLVM
+23.1.1 with runtime Pulp V3 (four f64 lanes), and DUCC 0.42.0 at
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b` with GCC 15.2 x86-64-v3 SHT
+flags `-O3 -ffast-math -ffp-contract=fast`. Full `mmax=720` and reduced
+`mmax=180` each covered odd-minimum and even-smooth longitude sizes. Each
+backend/case had three interleaved process pairs and 30 calibrated batches;
+the target was 25 ms. One full-order candidate batch measured 19.5 ms, just
+below the 20 ms lower bound; the remaining batches were within 20–100 ms.
+
+| mmax | nphi | op | Rust Vec → inline (ms) | DUCC before-run → after-run (ms) | Rust/DUCC ratio before → after | Rust change |
+| ---: | ---: | :-- | ---: | ---: | ---: | ---: |
+| 720 | 1441 | A | 3.332 → 3.339 | 3.171 → 3.171 | 1.051 → 1.053 | +0.2% |
+| 720 | 1441 | S | 4.173 → 4.093 | 3.887 → 3.889 | 1.073 → 1.053 | −1.9% |
+| 720 | 1458 | A | 2.510 → 2.457 | 2.122 → 2.121 | 1.183 → 1.158 | −2.1% |
+| 720 | 1458 | S | 3.100 → 3.018 | 2.695 → 2.731 | 1.150 → 1.105 | −2.7% |
+| 180 | 361 | A | 1.239 → 1.212 | 0.949 → 0.972 | 1.305 → 1.247 | −2.2% |
+| 180 | 361 | S | 1.711 → 1.660 | 1.258 → 1.254 | 1.361 → 1.324 | −3.0% |
+| 180 | 378 | A | 1.005 → 1.003 | 0.923 → 0.921 | 1.089 → 1.090 | −0.2% |
+| 180 | 378 | S | 1.424 → 1.342 | 1.220 → 1.219 | 1.167 → 1.101 | −5.8% |
+
+The reduced even-smooth synthesis case was independently extended to 60
+batches per source over six process runs. Rust Vec / inline p10–median–p90
+was `1.3996/1.4127/1.4371` / `1.3254/1.3380/1.3664` ms; the corresponding
+DUCC distributions were `1.2041/1.2138/1.2245` / `1.1976/1.2110/1.2279`
+ms. Its median Rust/DUCC ratio fell from 1.164 to 1.105 and absolute excess
+from 0.199 to 0.127 ms. A targeted 64-byte versus 16-byte alignment build
+kept the contiguous inline layout: medians were 1.338 and 1.373 ms
+respectively, versus 1.450 ms for `Vec` and 1.221 ms for DUCC. The 16-byte
+variant's upper tail was affected by a 5.2% sampled runqueue wait, so the
+independent 64-byte alignment contribution remains directional rather than
+conclusive.
+
+A six-pair q1 repeat (60 batches per source, 40 ms target) of full-order
+even-smooth synthesis measured baseline / inline p10–median–p90 at
+`20.174/21.960/38.457` / `20.191/21.984/22.506` ms; DUCC was
+`18.713/18.893/19.889` ms. The median difference is 0.1%. The isolated
+near-2× process moved from the inline build in the earlier run to the Vec
+baseline in this repeat; all Rust q1 runs showed 5–7% sampled runqueue wait.
+Treat q1 as neutral within host/process variability, not as a candidate
+regression or a measured gain. Rust baseline and inline outputs were
+bitwise identical in the repeated comparison; max relative L2 error versus
+DUCC was `4.71e-14` for the q8 control and `4.41e-14` for q1.
+
+The executed AVX2 V3 `ScalarOrderedSynthesis` symbol remained 12,824 bytes
+and 2,435 decoded instructions in both builds. Its opcode sequence and
+normalized non-address operands matched exactly (46 packed FMA instructions,
+25 packed multiply/add instructions, 165 vector moves). The measured change
+therefore comes from scratch placement/allocation and alignment, not a new
+SIMD instruction schedule. Fixed arrays have the same capacity as the prior
+vectors; process RSS was comparable. Release all-feature and no-default
+feature tests, the aligned-layout/tail test, formatting and strict Clippy
+passed. The compact matched data is in
+[`summary.csv`](../reports/data/plan14-aligned-scratch-layout-2026-10-21/summary.csv);
+raw process and host logs remain local under `/tmp`.
+
+The largest remaining selected q8 excess is now reduced-order odd-minimum
+synthesis (+0.407 ms); full-order even-smooth analysis is next (+0.335 ms).
+Re-profile the first case's recurrence versus odd inverse stage after this
+layout change, then continue with the largest measured absolute stage.
 
 ## 4. Phase A — Find and fix small serial fixed costs
 

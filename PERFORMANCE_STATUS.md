@@ -199,7 +199,7 @@ error `5.20e-14`.
 
 | Candidate | Measured result | Disposition |
 | --- | --- | --- |
-| Fixed aligned SIMD scratch | Analysis nearly neutral: -2.8% to +0.2% alone; independently interleaved q8 **synthesis 11.4–18.0% faster** across four geometry cases, q1 near-neutral | **Opt-in investigation only**; mechanism and memory/workspace trade-off unresolved |
+| Fixed inline aligned SIMD scratch | Initial q8 synthesis screen: 11.4–18.0%; current matched T720 q8 screens: 7 of 8 A/S cases improved 0.2–5.8%; q1 repeat is neutral | **Production default at `8e49f7d5`** after alignment ablation and equivalent-capacity/memory review; see current source evidence below |
 | Packed complex reduction | Small isolated kernel gains, whole-analysis -2.0% to +0.4% alone, inconsistent across shapes | **Retired from production** |
 | Direct coefficient accumulation | Earlier sizable T720 analysis regression; guarded variant not shown to beat production | **Retired** |
 | Safe indexed SIMD traversal | 0.2–0.3% directional isolated changes within uncertainty; no full-call proof | **Retired** |
@@ -286,10 +286,30 @@ first-call speedup is established. Full samples, phase distributions and
 build provenance are in the
 [T16 report and data](reports/plan14-t16-analysis-cutoff-2026-10-21.md).
 
+**Plan 14 inline aligned scratch (source commit `8e49f7d5`):** the former
+opt-in layout is now the default. Seven 256-element recurrence/analysis
+buffers are contiguous and 64-byte aligned with unchanged scratch payload;
+the layout removes seven per-worker heap allocations. At T720 q8 it improved
+7 of 8 full/reduced, odd/even A/S screens by 0.2–5.8%; the exception was a
+0.2% analysis regression. Reduced even-smooth synthesis was repeated for 60
+batches per source: Rust median fell 1.4127→1.3380 ms while DUCC stayed
+1.2138/1.2110 ms; the Rust/DUCC ratio fell 1.164→1.105. A q1 repeat found
+no median change, and the near-2× process outlier moved to the Vec baseline.
+Rust outputs were bitwise identical between layouts; maximum relative L2
+versus DUCC across the matrix was `5.20e-14`. V3 disassembly showed the same 2,435-instruction
+sequence, so the gain is in scratch placement rather than recurrence codegen.
+Release all-feature/no-default tests, format and strict Clippy passed. Full
+per-case results and alignment ablation are in
+[Plan 14](plans/14-small-serial-parallel-performance.md) and its
+[summary CSV](reports/data/plan14-aligned-scratch-layout-2026-10-21/summary.csv).
+
 ## Current next steps and deferred work
 
-1. Re-rank current-source q8 analysis/synthesis whole-transform excesses
-   and continue only on the leading stage.
+1. Re-profile T720 reduced-order odd-minimum q8 synthesis after the scratch
+   layout change. It retains the largest selected whole-call excess
+   (+0.407 ms); separate ordered recurrence from the odd inverse stage, then
+   continue with the largest measured absolute stage. T720 full-order
+   even-smooth analysis is the next whole-call lead (+0.335 ms).
 2. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
    cache-topology queries plus optional offline pointer-chase diagnostic
    (no startup autotuning); [Plan 13](plans/13-fused-batched-sht.md)
