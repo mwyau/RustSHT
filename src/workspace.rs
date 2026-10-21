@@ -142,6 +142,10 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     pub(crate) spin1_profile_coefficient_safety_ns: u128,
     #[cfg(all(test, feature = "parallel"))]
     pub(crate) spin1_profile_coefficient_safety_values: u128,
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) spin1_profile_group_ns: u128,
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) spin1_profile_group_worker_id: usize,
 }
 
 #[repr(align(64))]
@@ -428,6 +432,10 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
             spin1_profile_coefficient_safety_ns: 0,
             #[cfg(all(test, feature = "parallel"))]
             spin1_profile_coefficient_safety_values: 0,
+            #[cfg(all(test, feature = "parallel"))]
+            spin1_profile_group_ns: 0,
+            #[cfg(all(test, feature = "parallel"))]
+            spin1_profile_group_worker_id: usize::MAX,
         })
     }
 

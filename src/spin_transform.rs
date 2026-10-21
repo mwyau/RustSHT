@@ -1140,39 +1140,109 @@ impl<T: ShtScalar> ShtPlan<T> {
                         quantity: "spin Fourier spectrum group size",
                     },
                 )?;
-                workspace
-                    .spectra
-                    .par_chunks_mut(group_spectrum_len)
-                    .zip(workspace.spin_spectra.par_chunks_mut(group_spectrum_len))
-                    .zip(workspace.recurrence_workers[..group_count].par_iter_mut())
-                    .enumerate()
-                    .with_min_len(group_count.div_ceil(execution_threads))
-                    .try_for_each(|(group_index, ((q_spectra, u_spectra), recurrence))| {
-                        let ring_start = group_index * group_ring_count;
-                        let ring_end = (ring_start + q_spectra.len() / spectrum_len).min(ntheta);
-                        self.synthesize_spin_ring_group(
-                            e_alm,
-                            b_alm,
-                            recurrence_spin,
-                            derivative_norm,
-                            allow_fast_scalar,
-                            can_use_spin1_table,
-                            spin1_coefficients,
-                            spin1_coefficient_finite_orders,
-                            nphi,
-                            spectrum_len,
-                            phi0,
-                            ring_start,
-                            ring_end,
-                            q_spectra,
-                            u_spectra,
-                            &workspace.theta_sin[ring_start..ring_end],
-                            &workspace.theta_cos[ring_start..ring_end],
-                            &workspace.ring_order_limits,
-                            arch,
-                            recurrence,
-                        )
-                    })?;
+                if use_spin1_coefficient_cache {
+                    // Spin-1 synthesis groups have strongly varying work near
+                    // polar cutoffs. Queue one group at a time to balance the
+                    // work, while limiting active workers to the capacity
+                    // used to prepare this workspace.
+                    let group_queue = Mutex::new(
+                        workspace
+                            .spectra
+                            .chunks_mut(group_spectrum_len)
+                            .zip(workspace.spin_spectra.chunks_mut(group_spectrum_len))
+                            .enumerate(),
+                    );
+                    let worker_count = group_count.min(execution_threads);
+                    workspace.recurrence_workers[..worker_count]
+                        .par_iter_mut()
+                        .try_for_each(|recurrence| {
+                            #[cfg(all(test, feature = "parallel"))]
+                            if recurrence.spin1_profile_enabled {
+                                recurrence.spin1_profile_group_worker_id =
+                                    rayon::current_thread_index().unwrap_or(usize::MAX);
+                            }
+                            loop {
+                                let group = group_queue
+                                    .lock()
+                                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                                    .next();
+                                let Some((group_index, (q_spectra, u_spectra))) = group else {
+                                    break;
+                                };
+                                let ring_start = group_index * group_ring_count;
+                                let ring_end =
+                                    (ring_start + q_spectra.len() / spectrum_len).min(ntheta);
+                                #[cfg(all(test, feature = "parallel"))]
+                                let group_started = recurrence
+                                    .spin1_profile_enabled
+                                    .then(std::time::Instant::now);
+                                let result = self.synthesize_spin_ring_group(
+                                    e_alm,
+                                    b_alm,
+                                    recurrence_spin,
+                                    derivative_norm,
+                                    allow_fast_scalar,
+                                    can_use_spin1_table,
+                                    spin1_coefficients,
+                                    spin1_coefficient_finite_orders,
+                                    nphi,
+                                    spectrum_len,
+                                    phi0,
+                                    ring_start,
+                                    ring_end,
+                                    q_spectra,
+                                    u_spectra,
+                                    &workspace.theta_sin[ring_start..ring_end],
+                                    &workspace.theta_cos[ring_start..ring_end],
+                                    &workspace.ring_order_limits,
+                                    arch,
+                                    recurrence,
+                                );
+                                #[cfg(all(test, feature = "parallel"))]
+                                if let Some(group_started) = group_started {
+                                    recurrence.spin1_profile_group_ns +=
+                                        group_started.elapsed().as_nanos();
+                                }
+                                result?;
+                            }
+                            Ok(())
+                        })?;
+                } else {
+                    workspace
+                        .spectra
+                        .par_chunks_mut(group_spectrum_len)
+                        .zip(workspace.spin_spectra.par_chunks_mut(group_spectrum_len))
+                        .zip(workspace.recurrence_workers[..group_count].par_iter_mut())
+                        .enumerate()
+                        .with_min_len(group_count.div_ceil(execution_threads))
+                        .try_for_each(|(group_index, ((q_spectra, u_spectra), recurrence))| {
+                            let ring_start = group_index * group_ring_count;
+                            let ring_end =
+                                (ring_start + q_spectra.len() / spectrum_len).min(ntheta);
+                            self.synthesize_spin_ring_group(
+                                e_alm,
+                                b_alm,
+                                recurrence_spin,
+                                derivative_norm,
+                                allow_fast_scalar,
+                                can_use_spin1_table,
+                                spin1_coefficients,
+                                spin1_coefficient_finite_orders,
+                                nphi,
+                                spectrum_len,
+                                phi0,
+                                ring_start,
+                                ring_end,
+                                q_spectra,
+                                u_spectra,
+                                &workspace.theta_sin[ring_start..ring_end],
+                                &workspace.theta_cos[ring_start..ring_end],
+                                &workspace.ring_order_limits,
+                                arch,
+                                recurrence,
+                            )
+                        })?;
+                }
             } else {
                 self.synthesize_spin_ring_group(
                     e_alm,

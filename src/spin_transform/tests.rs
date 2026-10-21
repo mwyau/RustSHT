@@ -8822,6 +8822,12 @@ fn profile_spin1_standard_synthesis_phases() {
         .unwrap();
     let mut workspace = pool.install(|| plan.workspace()).unwrap();
     let probe = workspace.observe_transform_phases();
+    let group_ring_count = plan
+        .fine_synthesis_ring_group_size(thread_count)
+        .unwrap_or(workspace.ring_group_size)
+        .min(plan.grid.ntheta());
+    let group_count = plan.grid.ntheta().div_ceil(group_ring_count);
+    let worker_count = group_count.min(thread_count);
 
     for _ in 0..3 {
         pool.install(|| {
@@ -8846,6 +8852,8 @@ fn profile_spin1_standard_synthesis_phases() {
             worker.spin1_profile_fallback_blocks = 0;
             worker.spin1_profile_coefficient_safety_ns = 0;
             worker.spin1_profile_coefficient_safety_values = 0;
+            worker.spin1_profile_group_ns = 0;
+            worker.spin1_profile_group_worker_id = usize::MAX;
         }
         let started = Instant::now();
         pool.install(|| {
@@ -8925,6 +8933,23 @@ fn profile_spin1_standard_synthesis_phases() {
             "PROFILE_INNER,{lmax},{mmax},{nphi},{phi0},{thread_count},{repetition},worker-sum coefficient finite scans,{:.6},complex_values={safety_values}",
             safety_ns as f64 / 1.0e6,
         );
+        for (worker_index, worker) in workspace
+            .recurrence_workers
+            .iter()
+            .take(worker_count)
+            .enumerate()
+        {
+            eprintln!(
+                "PROFILE_WORKER,{lmax},{mmax},{nphi},{thread_count},{repetition},{worker_index},{},{:.3},{:.3},{:.3},{:.3},{},{}",
+                worker.spin1_profile_group_worker_id,
+                worker.spin1_profile_group_ns as f64 / 1.0e3,
+                worker.spin1_profile_factor_ns as f64 / 1.0e3,
+                worker.spin1_profile_pair_prepare_ns as f64 / 1.0e3,
+                worker.spin1_profile_recurrence_ns as f64 / 1.0e3,
+                worker.spin1_profile_pair_success_blocks,
+                worker.spin1_profile_fallback_blocks,
+            );
+        }
     }
     for (repetition, observation) in probe.lock().unwrap().iter().enumerate() {
         eprintln!(
