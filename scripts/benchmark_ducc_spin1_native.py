@@ -329,7 +329,7 @@ def main() -> int:
               "first_ms", "warmup_ms", "setup_ms", "repetitions_per_batch", "runqueue_wait_fraction",
               "frequency_ghz_median", "fixture_sha256"]
     with (result_dir / "batch-samples.csv").open("w", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=fields)
+        writer = csv.DictWriter(stream, fieldnames=fields, lineterminator="\n")
         writer.writeheader()
         for item in raw:
             diag = item.get("host_diagnostics", {})
@@ -344,7 +344,9 @@ def main() -> int:
                                  "setup_ms": item.get("setup_ms"), "repetitions_per_batch": item["repetitions_per_batch"],
                                  "runqueue_wait_fraction": diag.get("wait_fraction"),
                                  "frequency_ghz_median": float(np.median(freq)) if freq else None,
-                                 "fixture_sha256": item["fixture_sha256"]})
+                                 "fixture_sha256": json.dumps(
+                                     item["fixture_sha256"], sort_keys=True, separators=(",", ":")
+                                 )})
     (result_dir / "failures.json").write_text(json.dumps(failures, indent=2) + "\n")
     print(f"Finished {len(cases)} configurations; {len(raw)} worker records; {len(comparisons)} numerical comparisons; {len(failures)} failures. Results: {result_dir}", flush=True)
     return 1 if failures else 0

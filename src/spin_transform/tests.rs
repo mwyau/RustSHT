@@ -517,8 +517,20 @@ fn cc_parallel_order_resampling_matches_serial_with_reused_workspace() {
 
         for generation in 0..3 {
             for (index, value) in input.iter_mut().enumerate() {
-                let phase = (index * 19 + generation * 7) as f64 * 0.013;
-                *value = Complex64::new(phase.sin(), phase.cos() * 0.37);
+                *value = match generation {
+                    0 => {
+                        let phase = (index * 19) as f64 * 0.013;
+                        Complex64::new(phase.sin(), phase.cos() * 0.37)
+                    }
+                    1 => {
+                        let tiny = f64::from_bits(1 + (index % 7) as u64);
+                        Complex64::new(tiny, if index.is_multiple_of(2) { -tiny } else { 0.0 })
+                    }
+                    _ => {
+                        let sign = if index.is_multiple_of(2) { 1.0 } else { -1.0 };
+                        Complex64::new(sign * 1.0e290, -sign * 2.5e289)
+                    }
+                };
             }
             serial.fill(Complex64::new(91.0, -37.0));
             parallel.fill(Complex64::new(-22.0, 43.0));
@@ -8888,6 +8900,8 @@ fn profile_spin1_standard_synthesis_phases() {
         .build()
         .unwrap();
     let mut workspace = pool.install(|| plan.workspace()).unwrap();
+    plan.prepare_workspace(&mut workspace, thread_count)
+        .unwrap();
     let probe = workspace.observe_transform_phases();
     let group_ring_count = plan
         .fine_synthesis_ring_group_size(thread_count)

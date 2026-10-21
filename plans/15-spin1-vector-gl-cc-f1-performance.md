@@ -3,7 +3,7 @@
 **Status: ACTIVE (2026-10-21), after Plan 14 closeout `f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`. Owner-authorized.**
 The Plan 14 scalar full-transform sweep, four principal figures, validation and closeout are committed and pushed on `opt/sht-performance-parity`. Continue this plan in the same Luna session and branch without another owner prompt. The handoff preserves the scalar baseline and does not expand Plan 15 beyond its stated spin-1 scope.
 
-**Current phase:** Phase A's native spin-1 GL → CC → F1 baseline is complete at Rust source `549bd2f0` and pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. The temporary owner-priority scalar T64–T256 GL diagnostic is complete in [the focused report](../reports/scalar-t64-256-performance-discontinuities-2026-10-21.md); it did not reopen Plan 14 or change the spin-1 recurrence. Phase B has validated the q8 GL dynamic ring-group scheduler; continue GL attribution at q1, then close GL and proceed through CC and F1. Odd-FFT optimization remains excluded per the owner direction below.
+**Current phase:** Phase A's native spin-1 GL → CC → F1 baseline is complete at Rust source `549bd2f0` and pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. The temporary owner-priority scalar T64–T256 GL diagnostic is complete in [the focused report](../reports/scalar-t64-256-performance-discontinuities-2026-10-21.md); it did not reopen Plan 14 or change the spin-1 recurrence. GL attribution is complete for this pass. Phase C validated q8 CC spin-1 order-parallel analysis resampling and corrected the synthesis phase probe to use production-prepared workspace; the remaining CC q8 synthesis cost is in the general order/recurrence stage. Proceed to F1 preparation and phase attribution, then integrated cross-grid validation. Odd-FFT optimization remains excluded per the owner direction below.
 
 **Phase B checkpoint (2026-10-21):** the q8 GL synthesis path reads cached
 spin-1 scalar-conversion rows directly across ring groups, avoiding repeated
@@ -47,8 +47,11 @@ The q1 T1023 GL synthesis attribution is complete in the
 the whole-call excess is +141.5 ms (2.18x), and the dominant Rust cost is the
 order/recurrence stage. A temporary counter split showed the large fallback
 bucket is mostly completed staged recurrence, not replayed degree callbacks.
-No GL production change is justified by that profile alone. Next: proceed to
-CC spin-1 stage attribution, then F1.
+No GL production change is justified by that profile alone. CC's measured
+analysis-resampling improvement and q8 synthesis profile are recorded in
+[`reports/plan15-spin1-cc-resampling-2026-10-21.md`](../reports/plan15-spin1-cc-resampling-2026-10-21.md).
+The remaining CC synthesis cost is in the general order/recurrence stage;
+continue to F1 spin-1 preparation and phase attribution.
 
 **Owner direction (2026-10-21): defer odd-length FFT optimization.** Continue to benchmark and validate odd/even longitude cases as **controls**, but do **not** prototype paired-real-row FFTs, swap in `realfft` or the standalone `rustsht-fft` backend, change prime-radix/FFT planners, or start a C2R/odd-FFT optimization investigation. Do not choose an odd-specific FFT issue as a Plan 15 optimization target even when profiling identifies it. Record the residual and continue to measured **spin-1 vector** bottlenecks outside the FFT engine. Existing FFT behavior and numerical safeguards stay intact. This hold remains until an explicit new owner instruction revokes it.
 
@@ -139,7 +142,7 @@ A gap is **closed** if correct matched whole-call results no longer justify furt
 1. **Complete:** Plan 14's full scalar sweep, four figures and closeout at `f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`; Plan 15 activation was pushed at `341661a0256ecab329e5de65ad286f96a8a73914`.
 2. **Adapter checkpoint:** native Rust/DUCC spin-1 STANDARD workers and the matched runner are implemented. The T4 GL/CC/F1 A/S q1/q8 smoke passed at `6.19e-16` max relative L2. Phase A then completed 170 GL/CC/F1 geometry cases, 680 warm timing rows and 2,040 numerical comparisons with no failures; see [`reports/plan15-spin1-native-baseline-2026-10-21.md`](../reports/plan15-spin1-native-baseline-2026-10-21.md) and its sanitized data.
 3. **Temporary owner-priority interruption — complete:** focused scalar GL T64–T256 row-FFT and table/recurrence controls are recorded in [`reports/scalar-t64-256-performance-discontinuities-2026-10-21.md`](../reports/scalar-t64-256-performance-discontinuities-2026-10-21.md). The boundary causes and residual synthesis gap are documented; Plan 15 now resumes at Phase B GL attribution.
-4. **Next:** attribute the q1 T1023 GL spin-1 synthesis absolute excess by matched stages; then continue GL, CC, F1, integrated cross-grid rebenchmark/validation and completion documentation.
+4. **Current next step:** complete F1 spin-1 preparation and half-grid phase attribution, using the existing native matrix and corrected CC measurements as controls; then run integrated GL/CC/F1 rebenchmarking, validation and completion documentation.
 5. **Stay deferred:** Plan 12 cache-topology heuristics; Plan 13 fused multi-field batching; spin 2–4 performance work; scalar CC/F1 optimization outside vector-shared code; and **all odd-length FFT improvements**, including paired-real rows, `realfft` migration, and standalone `rustsht-fft` integration. Keep odd/even benchmark controls.
 
 Keep working under `opt/sht-performance-parity` unless an explicit later owner instruction changes it. Before every push, inspect the tree and fetch remote changes, preserve all concurrent/unpublished work, rebase **only unpublished** commits when safe, reread updated instructions, rerun affected tests, push normally and verify remote SHA. Never force-push, reset away concurrent work, alter `main`, or silently claim a test passed if it was not run. Use the existing limit of at most one Luna benchmark-only subagent; no Sol reviewer unless specifically authorized.
