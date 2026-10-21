@@ -90,6 +90,18 @@ Next: check whether cached coefficient preparation similarly helps CC q8
 synthesis, then continue matched CC/F1 recurrence and spectrum attribution.
 Odd-FFT work remains deferred.
 
+**Plan 15 CC q8 coefficient reuse (`be3c48eb`):** with CC group scheduling
+unchanged, reusing converted spin-1 coefficients across T720's 12 exact-grid
+ring groups reduced Rust q8 synthesis 15.5% full-order and 18.1% at
+`mmax=180`; each of the three paired process runs improved. Paired Rust/DUCC
+medians moved 7.855×→6.668× full and 9.823×→7.984× reduced. Outputs were
+bitwise equal to baseline, and DUCC relative L2 error was at most `3.64e-13`.
+The q1 synthesis and q8 analysis controls were neutral. See the
+[matched report and sanitized data](reports/plan15-spin1-cc-coefficient-reuse-2026-10-21.md).
+The remaining whole-transform excess is still large; next attribute CC/F1
+recurrence/spectrum and inverse-output stages at matched boundaries rather
+than widening cache eligibility without measured evidence.
+
 **Plan 15 Phase B candidate:** q8 GL spin-1 synthesis now borrows the shared
 scalar-conversion rows across ring groups instead of copying them into worker
 scratch for each order/group. At T720's 23 groups, the removed copies account

@@ -7,6 +7,8 @@ The Plan 14 scalar full-transform sweep, four principal figures, validation and 
 
 **Latest F1 synthesis result (`7f47f06f`, 2026-10-21):** the q8 T720 F1 route has 12 ring groups. Reusing spin-1 scalar-converted coefficient rows across those groups reduced matched full-order Rust median 48.37→42.75 ms; all three paired candidate/baseline ratios were 0.844–0.896. Reduced-order and q1 controls are inconclusive. Candidate output is bitwise equal to baseline, with maximum DUCC relative L2 error `8.09e-13`. The bounded next check is whether the same grid-independent conversion reuse helps q8 CC synthesis; retain cache byte/degree limits and safe fallback. See [report and sanitized data](../reports/plan15-spin1-f1-coefficient-reuse-2026-10-21.md).
 
+**Latest CC synthesis result (`be3c48eb`, 2026-10-21):** caching converted coefficients across the 12 exact-T720 CC groups, while retaining static group scheduling, reduced q8 whole-call Rust medians 15.5% full and 18.1% reduced-order; all three pairs improved. Candidate output was bitwise equal to baseline and DUCC relative L2 was at most `3.64e-13`. q1 synthesis and q8 analysis controls were neutral. The remaining q8 ratios are 6.67× full and 7.98× reduced, so proceed to matched CC/F1 recurrence/spectrum and inverse-output attribution. See [report and sanitized data](../reports/plan15-spin1-cc-coefficient-reuse-2026-10-21.md).
+
 **Phase B checkpoint (2026-10-21):** the q8 GL synthesis path reads cached
 spin-1 scalar-conversion rows directly across ring groups, avoiding repeated
 worker-buffer copies on the paired route. For T720's 23 groups, the source-level
