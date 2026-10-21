@@ -106,6 +106,42 @@ the lane traversal. Its `vhsum_cmplx_special` uses `vhaddpd`,
 and Rust symbols have no observed YMM stack spills. Keep this as code-shape
 evidence, not a runtime attribution.
 
+## Step 4 — recurrence range-check handling
+
+No new range-check implementation was needed: the current production path
+already contains the checked-first proof cache from `aeb123d6`. It keeps the
+initialization and input-product checks active, requires a checked fused
+traversal to complete before setting a block's proof bit, and invalidates the
+bits when the plan, runtime SIMD backend, latitude count, or insignificant
+prefix mode changes. On a cached block the ordinary vector-state scan is
+omitted; scalar tails and input-product safeguards remain checked. A declined
+block is not cached, and output remains in `fast_scalar_first` until the
+transactional block has succeeded.
+
+The earlier same-source cache A/B measured T720 full-order analysis at
+26.405 → 23.291 ms q1 (11.8% lower). Its q8 process-pair medians were
+5.138–5.287 ms without the cache and 4.556–4.772 ms with it; the q8 spread
+includes host outliers. The matched kernel experiment attributes 7.388 µs of
+the checked 256-lane direct-kernel time to the post-group scan. These results
+identify a real validation cost and show the current safe route already
+removes repeated scans after proof. The packed-reduction candidate's focused
+release regression test passed with the cache enabled, including reuse after
+zero, subnormal, extreme-finite and adjoint inputs. Final combined timing will
+still measure interaction with the reduction candidate and all three tiles.
+
+## Step 5 — output staging and accumulation
+
+The direct-output experiment already exists in published history at
+`376992ce` and was removed at `3ad85539` after four matched T720 full/reduced
+q1/q8 cases measured 1.44–1.71× the staged route. Its direct route required
+an additional whole-latitude product-bound scan before the already checked
+input-preparation pass, then performed read/modify/write accumulation into
+the user coefficient span. The record does not isolate which cost dominated.
+Do not restore that implementation unchanged. A new candidate, if justified,
+must fuse the global product bound into the existing input-preparation pass
+and preserve transactional fallback if any eligibility check fails. Staged
+coefficient commit remains the known-good path meanwhile.
+
 ## Validation and reproducibility
 
 - Candidate-enabled release library suite: 250 passed, 34 ignored.
@@ -147,8 +183,9 @@ RUSTFLAGS='-C target-cpu=x86-64-v3 --cfg rustsht_packed_complex_pair_reduction -
 | 1. 64/128/256 pair tiles | Selector and 256 initial setting exist; compare all three in final cumulative evaluation. |
 | 2. Fixed SIMD workspace layout | Existing source layout retained; include in final ablation. |
 | 3. Packed complex reduction | Implemented and validated behind cfg; isolated reducer is 3% faster, whole-transform effect remains inconclusive; retain only for cumulative evaluation. |
-| 4. Recurrence range-check handling | Next source investigation; preserve finite/range safety and checked fallback. |
-| 5–10. Staging, initialization, prefix, transition, packing and conversion | Pending review against current source; skip anything already implemented. |
+| 4. Recurrence range-check handling | Complete in production since `aeb123d6`; checked-first cached proof skips only repeated ordinary vector scans. |
+| 5. Output staging and accumulation | Prior direct path regressed; test only a distinct candidate that fuses the duplicated product preflight. |
+| 6–10. Initialization, prefix, transition, packing and conversion | Pending review against current source; skip anything already implemented. |
 | Final combined evaluation | Pending: original `ce710` baseline, cumulative 64/128/256, DUCC, then one-change-at-a-time ablations. |
 
 The scalar analysis objective remains active until this final evaluation and
