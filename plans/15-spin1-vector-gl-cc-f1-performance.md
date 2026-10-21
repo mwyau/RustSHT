@@ -42,8 +42,13 @@ in recurrence plus scheduling; median worker group durations span 21.5–28.6
 ms (1.33x max/min). Elevated runqueue wait and candidate spread make the gain
 directional. See the [report](../reports/plan15-spin1-gl-dynamic-scheduling-2026-10-21.md)
 and [raw timing distributions](../reports/data/plan15-spin1-gl-dynamic-scheduling-2026-10-21/dynamic-scheduling-ab.json).
-Next: attribute q1 T1023 synthesis by matched stages, then continue GL and
-move through CC/F1.
+The q1 T1023 GL synthesis attribution is complete in the
+[focused stage profile](../reports/plan15-spin1-gl-q1-t1023-stage-profile-2026-10-21.md):
+the whole-call excess is +141.5 ms (2.18x), and the dominant Rust cost is the
+order/recurrence stage. A temporary counter split showed the large fallback
+bucket is mostly completed staged recurrence, not replayed degree callbacks.
+No GL production change is justified by that profile alone. Next: proceed to
+CC spin-1 stage attribution, then F1.
 
 **Owner direction (2026-10-21): defer odd-length FFT optimization.** Continue to benchmark and validate odd/even longitude cases as **controls**, but do **not** prototype paired-real-row FFTs, swap in `realfft` or the standalone `rustsht-fft` backend, change prime-radix/FFT planners, or start a C2R/odd-FFT optimization investigation. Do not choose an odd-specific FFT issue as a Plan 15 optimization target even when profiling identifies it. Record the residual and continue to measured **spin-1 vector** bottlenecks outside the FFT engine. Existing FFT behavior and numerical safeguards stay intact. This hold remains until an explicit new owner instruction revokes it.
 

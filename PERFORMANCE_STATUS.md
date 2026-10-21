@@ -89,8 +89,18 @@ scheduling, with worker group medians balanced to a 1.33x max/min ratio.
 Candidate output is bitwise equal to parent and relative L2 versus DUCC is at
 most `5.23e-13`. Host wait remains elevated, so gain size is directional.
 See the [matched report and raw distributions](reports/plan15-spin1-gl-dynamic-scheduling-2026-10-21.md).
-Next: attribute the larger q1 T1023 synthesis excess, then continue GL before
-CC and F1.
+
+**Plan 15 q1 GL synthesis attribution (2026-10-21):** at T1023 full order,
+current-source RustSHT measured 261.848 ms versus DUCC 120.307 ms q1 (2.18x,
+`+141.541 ms`) with `3.90e-13` relative L2 error. Test-only phase timing
+localized the Rust excess to order scheduling/Legendre recurrence and
+spectral accumulation; Rust inverse FFT/writeback was about 10 ms. A temporary
+counter split found 2,910 completed staged transitions and 130 polar-split
+blocks reaching the generic degree callback. The 185.6 ms broad fallback
+bucket therefore mostly represents useful staged recurrence, not repeated
+degree-loop work. No GL change was justified; continue with CC's separate
+meridional path. See the [stage profile](reports/plan15-spin1-gl-q1-t1023-stage-profile-2026-10-21.md).
+Next: proceed through CC spin-1 stage attribution, then F1.
 
 **Current-source full-transform sweep (2026-10-21):** the frozen Rust source
 `e487b85b` was compared with pinned DUCC 0.42.0 `42ce8ab5` across every
