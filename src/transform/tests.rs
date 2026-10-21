@@ -1619,7 +1619,7 @@ fn scalar_ordered_falls_back_safely_for_subnormal_and_extreme_coefficients() {
 #[cfg(feature = "parallel")]
 #[test]
 fn scalar_ordered_parallel_orders_match_serial_and_ring_group_synthesis() {
-    let plan = make_plan(300, 150, 301, 603, 0.37);
+    let plan = make_plan(300, 150, 301, 301, 0.37);
     assert!(plan.scalar_legendre_table.set(None).is_ok());
     let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
     for m in 0..=plan.harmonics().mmax() {
