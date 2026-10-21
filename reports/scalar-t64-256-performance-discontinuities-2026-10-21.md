@@ -15,6 +15,18 @@ Two dispatch choices explain most of the T64–T256 q8 analysis and T64–T126 q
 
 The integrated policies now use a 4096-sample row-FFT work floor for **f64 scalar GL only**, and select recurrence for exact-grid table-eligible scalar analysis at q8 and for q1 table payloads at or above 20 MiB. Spin-1, f32, CC/F1, synthesis table eligibility, oversampled table rules, and numerical safeguards remain unchanged.
 
+### Boundary attribution and executed routes
+
+The boundary changes have different causes; the old row-FFT gate did **not** cause the T63→T64 analysis jump. In the frozen baseline, T63 and T64 both executed serial row FFTs at q8. T63 exact-grid scalar analysis used its recurrence exception, while T64 selected the compact table: full-even analysis rose from 46.05 to 63.56 µs. The recurrence-only T64 control was 58.96 µs, and the row-FFT-only control was 37.24 µs; the combined policy was 30.09 µs. The current q8 policy therefore keeps both T63 and T64 on recurrence and enables row FFTs when there is enough grid work.
+
+At T126→T127, both full-order analysis cases used the compact table, but the old row-FFT gate changed from serial to parallel at T127 (`ntheta` reaches 128 and `nphi` reaches 255/256). Baseline q8 even analysis fell from 190.09 to 108.99 µs across that boundary. Forcing row FFTs at T126 reduced it to 122.38 µs, while changing only T127's table route to recurrence reduced its 108.99 µs to 69.02 µs. Thus the observed boundary mixes two independent effects; neither alone explains all of the residual.
+
+At T255→T256, full-order q8 row FFTs were already active on both sides. The baseline's table eligibility ended at T255, switching analysis from the slow compact table at T255 (604.71 µs) to recurrence at T256 (251.91 µs). Forcing row FFTs changed those medians by only −5.3% and −1.5%; the measured T255 recurrence candidate was 235.97 µs. This is a table eligibility cliff, not a row-FFT cliff.
+
+The old longitude-size gate also excluded **reduced-order** q8 transforms well above T127 because their `nphi` stayed below 255. At T248–T256 quarter order, forced row FFTs cut full-transform analysis by about 48–63% and synthesis by about 23–58% across even/odd sampling. The current sample-count rule enables these cases when `ntheta*nphi >= 4096`; T64 quarter-order grids below that work floor remain serial because forcing workers cost 9–28% there. At q1, FFT execution remains serial because there is only one worker, regardless of the capability predicate.
+
+The T127 compact-table SIMD report is a separate control: its AVX2 reflected-lane accumulator improved q1 by 5.5%, while q8 changed by +1.1% (within the observed spread). It did not account for the q8 table penalty; the recurrence A/B did. The old row-FFT gate, table-vs-recurrence choice, and table SIMD specialization must therefore be treated as separate mechanisms.
+
 ## Matched whole-transform A/B
 
 RustSHT candidate `985fa844` and baseline `f3a2313c` were measured against DUCC 0.42.0 `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. For each case, runs used q1/q8, both operations, full and quarter `mmax`, even-smooth and odd-minimum `nphi`, three process pairs, and ten calibrated ~25 ms batches per process pair. RustSHT and DUCC were interleaved within each process pair. q1 used CPU 0; q8 used CPUs 0–7 on one L3 domain. Rust used `-C target-cpu=x86-64-v3`; DUCC numerical sources used `-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3`, with its validation driver compiled using `-fno-fast-math`.
@@ -49,8 +61,9 @@ At T256 quarter-order q8, where the table is ineligible but the old `nphi >= 255
 
 ## Remaining gaps and discontinuities
 
-- The T63/64 and T126/127 q8 row-FFT discontinuities were caused by the previous latitude/longitude cutoffs; a sample-work predicate removes the geometry cliff. The threshold also enables the measured T48/T63 full-grid cases with enough samples.
-- The T127 and T248–T255 q8 full-analysis gaps were caused by the table route; the T256 control was already on recurrence. The integrated policy makes T255 q8 full analysis close to parity and removes the T255/T256 jump.
+- The T63→T64 full-order q8 analysis jump was caused by the selector changing from its T63 recurrence exception to the compact table at T64; row FFTs were serial on both baseline cases. The recurrence selector removes that table detour.
+- The T126→T127 change combined the old row-FFT eligibility boundary with the compact-table analysis path. The sample-work predicate removes the FFT geometry cliff, and q8 recurrence removes the table accumulation penalty. At T127 the compact-table SIMD specialization alone did not produce a q8 gain.
+- The T255→T256 full-order q8 analysis change came from the compact-table limit, with row FFTs already active on both sides. The recurrence policy makes T255 q8 analysis close to parity and removes the table cliff. T248–T255 q8 table-route gaps were likewise not caused by row-FFT eligibility for full-order grids.
 - The new policy does **not** close all synthesis gaps. T248–T256 full-order q8 synthesis remains about 1.15–1.45× DUCC, and T127 odd q8 synthesis remains about 1.35×. These cases already used row FFTs and recurrence; they need a separately measured recurrence/output-stage investigation, not a dispatch change in this bounded task.
 - Small q1 differences under roughly 2% are within the observed run variation and are not promoted as regressions or gains.
 

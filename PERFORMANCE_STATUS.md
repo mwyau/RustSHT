@@ -13,17 +13,20 @@ next-step text, is preserved
 For reproducible raw benchmark tables see [reports/README](reports/README.md).
 
 **Scalar GL T64–T256 diagnostic complete (2026-10-21):** matched controls
-identified two dispatch causes: q8 row FFTs were disabled by the old
-`ntheta >= 128 && nphi >= 255` gate, and q8 scalar analysis used the compact
-Legendre-value table through T255. The scalar-only row-FFT gate now uses
-`ntheta*nphi >= 4096`; the q8 exact-grid analysis route uses recurrence, and
-q1 uses recurrence above a measured 20 MiB table payload. q8 T124 full-order
-analysis moved from 2.52–2.75x to 0.68–0.95x DUCC; T248/T255 moved from
-2.08–2.91x to 0.86–1.14x. The remaining full-order T248–T256 q8 synthesis
-ratio is 1.15–1.45x and needs a separate measured stage study. The source
-delta from the published sweep baseline contains no earlier scalar production
-change, so these were dispatch deficits rather than newly introduced source
-regressions. Numerical comparisons and release checks passed. See the
+identified separate row-FFT and compact-table costs. The T63→T64 q8 analysis
+jump was a selector change (T63 recurrence to T64 compact table); both
+baseline FFT routes were serial. The T126→T127 full-grid change combined the
+old row-FFT boundary with the table path. At T255→T256, row FFTs were already
+active and the jump came from compact-table eligibility ending at T255. The
+f64 scalar GL row-FFT gate now uses `ntheta*nphi >= 4096`; the q8 exact-grid
+analysis route uses recurrence, and q1 uses recurrence above a measured 20
+MiB table payload. q8 T124 full-order analysis moved from 2.52–2.75x to
+0.68–0.95x DUCC; T248/T255 moved from 2.08–2.91x to 0.86–1.14x. The
+remaining full-order T248–T256 q8 synthesis ratio is 1.15–1.45x and needs a
+separate measured stage study. The source delta from the published sweep
+baseline contains no earlier scalar production change, so these were
+dispatch deficits rather than newly introduced source regressions. Numerical
+comparisons and release checks passed. See the
 [focused report and matched summary](reports/scalar-t64-256-performance-discontinuities-2026-10-21.md).
 
 Plan 15 resumes at its Phase A native spin-1 baseline, in GL → CC → F1 order.
