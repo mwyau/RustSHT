@@ -90,21 +90,61 @@ relative L2 error was 1.18e-13. See the cumulative report and
 `t2048-cutoff-current/summary.csv`.
 
 The route counts confirm that 2,432 prefix-enabled blocks at 2048 latitudes
-become 2,434 checked-scaled blocks at 2049. The current guard is an explicit
-bound `latitude_count * sht_ftol <= 8 * epsilon`; do not loosen it. Next test
-whether a slightly stricter, latitude-dependent `sht_ftol` can retain this
-same eight-ulp error budget while admitting the prefix path. Validate the
-threshold and exceptional/polar behavior before timing this exact geometry
-matrix again. Keep tile variants for this concrete follow-up; do not make an
-unmeasured tile-dispatch change.
+become 2,434 checked-scaled blocks at 2049. RustSHT's explicit bound
+`latitude_count * sht_ftol <= 8 * epsilon` is an **additional RustSHT-only
+global restriction**, not present in pinned DUCC 0.42.0: DUCC's
+`iter_to_ieee`/`rescale` uses `sht_ftol = 2^-60` without this latitude-count
+cutoff. First assess whether the RustSHT-only restriction is actually needed
+for an invariant not already covered by DUCC's scale handling and existing
+numerical/fallback checks; isolate a candidate removing **only that extra
+global gate** while preserving `sht_ftol`, normal/exceptional-input safety,
+scale transitions and correct numerical output. Test the exact fixed-grid
+T2047/T2048 cases and larger degrees, including adversarial cancellation,
+polar and subnormal cases. If a meaningful error appears, document it and
+derive the narrowest justified replacement safeguard. A latitude-dependent
+threshold is an alternative only if evidence shows it is necessary.
+
+**Owner tile policy (2026-10-20): Keep 256 reflected-latitude pairs as the
+production scalar-analysis tile. Do not repeatedly return to 64 or 128
+tiles, rerun their full benchmark matrix, or change the production default
+to a smaller tile merely because the artificially disabled-prefix route
+becomes less slow.** The fixed-grid study already established that 256 is
+best of 64/128/256 when the fast prefix is enabled at 2048 latitudes; the
+2049-latitude smaller-tile advantage only partially masks the distinct
+prefix-cutoff problem. Use the existing 64/128 data as historical diagnostic
+evidence. Recheck a smaller tile only if a **new, clearly attributable**
+regression after the prefix fix justifies it; otherwise benchmark production
+256 against DUCC directly. A **single optional separate 512-tile exploratory
+study** may be justified *after* resolving the cutoff; do not make it a
+prerequisite or repeat arbitrary tile-size sweeps.
+
+**What a tile means:** The code iterates over northern/southern reflected
+latitude **pairs** for one `m`, taking at most
+`SCALAR_ANALYSIS_PAIR_TILE_SIZE` active pair positions per tile and compacting
+inactive lanes. A tile of 256 spans up to **512 physical latitude positions**;
+it is not 256 map fields, harmonic degrees, or threads. At `ntheta=2048`,
+the 1024 latitude pairs form up to four tiles for an order that uses all
+pairs. Larger tiles reduce per-tile sectoral initialization, range-cache
+entries, loop transitions and partial coefficient accumulation, but enlarge
+worker scratch, cache footprint and per-tile scan/reduction work. They may
+help or hurt depending on route and CPU cache behavior, and are not
+monotonically faster.
+
+**Why not 512 by simply changing the constant?** DUCC's scalar
+`nv0=256/VLEN` groups 256 latitude *entries*, whereas RustSHT's 256
+*reflected pairs* are a different unit. Current fixed-analysis-buffer
+capacity is `ANALYSIS_VECTOR_BUFFER_CAPACITY =
+SCALAR_ORDER_BATCH_SIZE = 256` in `src/workspace.rs`; a 512 experiment
+must update capacity/allocation and check scratch and cached per-order/tile
+geometry, edge lanes, stack/heap size, threading and correctness. Prefer an
+isolated compile-time study, not a new global dispatch policy.
 
 **Route counts:** test-only release profiles observed 2,432/3,798/6,466
 prefix-enabled scaled blocks at ntheta=2048 for tiles 256/128/64. At
 ntheta=2049, they entered checked-scaled recurrence (2,434/3,802/6,471 for
 T2047; 2,434/3,802/6,473 for T2048). No initialization or recurrence
 fallback declines occurred. These counts do not measure skipped degree pairs
-or latency. Keep the safety bound unchanged; exact commands and counts are in
-the cumulative report.
+or latency. Exact commands and counts are in the cumulative report.
 
 ## Non-negotiable objective
 
