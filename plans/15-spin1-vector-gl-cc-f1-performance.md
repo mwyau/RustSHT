@@ -1,7 +1,7 @@
 # Plan 15 — Spin-1 vector SHT performance on GL, CC and F1
 
-**Status: NEXT AFTER PLAN 14; NOT ACTIVE WHILE PLAN 14 IS OPEN. Owner-authorized 2026-10-21.**
-After the ongoing Plan 14 comprehensive scalar RustSHT/DUCC sweep is committed and pushed, and Plan 14's validation, evidence and closeout are committed and pushed, **continue automatically into this plan in the same Luna session and on the same `opt/sht-performance-parity` branch**. Mark Plan 14 COMPLETE and Plan 15 ACTIVE in `AGENTS.md`, `plans/README.md`, `PERFORMANCE_STATUS.md` and the two plans, with the exact closeout SHA. Do not require a new human prompt, session or branch. This authorization does **not** interrupt the scalar sweep or expand the active Plan 14 scope.
+**Status: ACTIVE (2026-10-21), after Plan 14 closeout `f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`. Owner-authorized.**
+The Plan 14 scalar full-transform sweep, four principal figures, validation and closeout are committed and pushed on `opt/sht-performance-parity`. Continue this plan in the same Luna session and branch without another owner prompt. The handoff preserves the scalar baseline and does not expand Plan 15 beyond its stated spin-1 scope.
 
 **Goal:** Improve the measured **single-vector-field spin-1** spherical harmonic transforms—STANDARD E/B synthesis and analysis—against native DUCC, for **Gauss–Legendre (GL), Clenshaw–Curtis (CC), and Fejér-1 (F1)** grids, using mathematically identical work and reliable matched full-transform benchmarks. Prioritize absolute residual latency, correct vector results, reusable memory and practical atmospheric resolutions. A documented absence of a justified optimization is a legitimate outcome.
 

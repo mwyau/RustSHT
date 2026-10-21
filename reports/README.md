@@ -1,6 +1,6 @@
 # RustSHT performance evidence — reading guide
 
-**Current implementation plan:** [Plan 14](../plans/14-small-serial-parallel-performance.md).
+**Current implementation plan:** [Plan 15 — spin-1 vector GL/CC/F1](../plans/15-spin1-vector-gl-cc-f1-performance.md).
 **Current factual status and priorities:** [PERFORMANCE_STATUS.md](../PERFORMANCE_STATUS.md).
 **Recent measured results:** [Plan 14 sparse spectrum-tail validation and current synthesis profile](plan14-sparse-spectrum-tail-2026-10-21.md), [Plan 14 reflected-geometry preflight](plan14-reflected-geometry-preflight-2026-10-21.md), [Plan 14 T16 fused analysis route](plan14-t16-analysis-cutoff-2026-10-21.md), [Plan 14 T64 fused analysis route](plan14-t64-fused-analysis-cutoff-2026-10-21.md), [Plan 14 T127 compact-table SIMD analysis](plan14-t127-table-analysis-simd-2026-10-21.md), [Plan 14 small-q1 baseline and T127 analysis attribution](plan14-small-q1-baseline-2026-10-21.md), [Plan 14 direct synthesis output](plan14-direct-spectrum-output-2026-10-21.md) and [Plan 11 scalar-analysis closeout](scalar-analysis-cumulative-2026-10-20.md).
 Do not follow forward-looking instructions embedded in historical reports.

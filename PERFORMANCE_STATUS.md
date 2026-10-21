@@ -1,12 +1,11 @@
 # RustSHT performance checkpoint — current findings
 
 **Updated:** 2026-10-21 UTC. **Branch:** `opt/sht-performance-parity`.
-**Active objective:** [Plan 14 — small serial and large parallel SHT parity](plans/14-small-serial-parallel-performance.md).
-**Scheduled next (not active):** [Plan 15 — spin-1 vector GL, CC and F1 performance](plans/15-spin1-vector-gl-cc-f1-performance.md).
-After the requested comprehensive Plan 14 scalar sweep and Plan 14 closeout
-are committed and pushed, the same Luna session continues automatically on
-`opt/sht-performance-parity` into spin-1 E/B GL → CC → F1 work. Scalar
-CC/F1 optimization outside spin-1 is not included; Plans 12/13 are deferred.
+**Plan 14:** COMPLETE at closeout commit
+`f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`. **Active objective:**
+[Plan 15 — spin-1 vector GL, CC and F1 performance](plans/15-spin1-vector-gl-cc-f1-performance.md),
+authorized for the same session and branch. Scalar CC/F1 optimization
+outside spin-1 is not included; Plans 12/13 are deferred.
 This is a **measured checkpoint, not a standalone instruction queue**.
 The previous long status, including intermediate experiments and historical
 next-step text, is preserved
@@ -35,15 +34,13 @@ un-attributed. Plan 14 is complete; see the [concise closeout](reports/plan14-cl
 The next owner-authorized scope is Plan 15 spin-1 GL/CC/F1.
 
 **Plan transition (2026-10-21):** Plan 11's reduced-`mmax` frontend study
-is closed at `a37f74d68631ab5fd373a4097640895e9f0c0c23`. The input scan,
-row FFT, spectrum pruning, order preparation and recurrence stage evidence
-is recorded in the cumulative report and CSV. Plan 14 is now active on the
-same branch/session. Its first clean-source q8 synthesis comparison is
-published. The small-q1 baseline, T127 reduced-analysis profile and T720 q8
-synthesis and analysis stage profiles are now recorded. The odd-length
-complex inverse arithmetic is the largest identified q8 synthesis substage;
-the current reprofile found no faster supported replacement. Plans 12/13
-remain deferred.
+is closed at `a37f74d68631ab5fd373a4097640895e9f0c0c23`. Plan 14's current
+source sweep, four principal figures, numerical validation and q8 stage
+closeout are complete at `f2d9ce47`. The remaining T720 reduced-odd q8
+synthesis excess is +0.228 ms, split across recurrence/spectrum and inverse
+rows; no tested replacement is faster. The authorized next plan, spin-1
+GL → CC → F1, is now active on the same branch/session. Plans 12/13 remain
+deferred.
 
 **Plan 14 q1 rebaseline (2026-10-21):** the 64-case T4–T127 warmed q1
 screen and T127 reduced-order phase profile are in
@@ -563,15 +560,16 @@ full 66.7 µs excess reduction is not attributed solely to validation. See
 the [focused report](reports/plan14-reflected-geometry-preflight-2026-10-21.md)
 and [batch data](reports/data/plan14-reflected-geometry-preflight-2026-10-21/summary.json).
 
-Next, reprofile the T720 q8 recurrence and inverse rows on source `93ba59fb`
-to rank the remaining approximately 0.276 ms excess. Then resume the
-small-q1 stage attribution. Plan 11 remains complete and Plans 12/13 remain
-deferred.
+The later source-`1951e833` matched stage profile and current-source full
+sweep completed that reprofile: T720 reduced odd q8 synthesis retains about
+0.23 ms excess, split between recurrence/spectrum and inverse/writeback. The
+tested real-C2R candidate was slower. Plan 14 is complete; Plan 15 is active.
+Plans 12/13 remain deferred.
 
 All prior measurements, full machine-readable CSV/JSON, rejected
 experiments, historical plans and source versions are intentionally
-**retained in the archive or reports/data**. Historical sections and
-old forward-looking language do not override active Plan 14.
+**retained in the archive or reports/data**. The Plan 14 stage entries below
+are historical evidence and do not override the current Plan 15 objective.
 
 ## Plan 14 current status — T720 q8 synthesis tail validation (2026-10-21)
 

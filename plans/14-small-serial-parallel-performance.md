@@ -1,12 +1,17 @@
 # Follow-on plan 14 — Small-transform latency and large parallel SHT parity
 
-**Status: COMPLETE (2026-10-21; closeout report and source SHA are in
+**Status: COMPLETE at closeout commit
+`f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e` (2026-10-21; see
 [`plan14-closeout-2026-10-21.md`](../reports/plan14-closeout-2026-10-21.md)).**
 The scalar full-sweep checkpoint, q8 sparse-tail validation, matched stage
 profile and final release checks are complete. No additional scalar kernel
 change was supported by the remaining measurements. Preserve the residual
 latencies and rejected FFT alternative in the closeout report; Plan 15 is
 the owner-authorized next scope. Plans 12/13 remain deferred.
+
+All remaining stage descriptions below are retained as historical evidence;
+the final disposition and current residuals are summarized in the closeout
+report above.
 
 **One-line goal:** Identify and reduce the dominant, measured sources of (1) small **serial** SHT latency and (2) residual large **eight-thread** SHT latency relative to a pinned native DUCC implementation, without sacrificing numerical correctness, portability, or memory safety.
 
@@ -1154,10 +1159,10 @@ For each accepted candidate:
 
 ## 7. Execution and branch rules
 
-- **Active branch/session:** remain on `opt/sht-performance-parity`.
-  Plan 11 closeout `a37f74d6` was pushed and verified. `AGENTS.md`,
-  `plans/README.md`, Plan 11 and this plan mark Plan 11 complete and
-  Plan 14 active. No branch or session change is needed.
+- **Branch/session:** remain on `opt/sht-performance-parity`.
+  Plan 11 closeout `a37f74d6` and Plan 14 closeout
+  `f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e` were pushed and verified.
+  Plan 14 is complete; Plan 15 is the active successor in the same session.
 - Rebaseline the target cases from the final Plan 11 commit and use the
   staged measurements below to select work. Do not rerun the closed
   reduced-`mmax` frontend, cutoff or tile experiments.
@@ -1253,26 +1258,15 @@ validated sparse-tail change and proceed to Plan 14 closeout without another
 speculative recurrence or FFT variant. Detailed batch stages are in
 [`stage_profile.json`](../reports/data/plan14-sparse-spectrum-current-2026-10-21/stage_profile.json).
 
-## Scheduled successor after this plan's closeout (owner-authorized 2026-10-21)
+## Successor transition (owner-authorized; complete 2026-10-21)
 
-**This does not change the active Plan 14 work.** Finish the already-requested
-comprehensive current-source scalar RustSHT/DUCC sweep (all `lmax=0..128`,
-sampled larger degrees and the four principal comparison SVGs), publish
-the tested dataset and report, then complete, validate, commit and push Plan 14
-closeout. Do not interrupt the sweep to benchmark or optimize spin-1.
-
-**Immediately afterward**, in the **same Luna session and the same
-`opt/sht-performance-parity` branch**, mark Plan 14 **COMPLETE** and
-[Plan 15 — spin-1 vector performance on GL, CC and F1](15-spin1-vector-gl-cc-f1-performance.md)
-**ACTIVE** in this plan, the successor plan, `AGENTS.md`,
-`plans/README.md` and `PERFORMANCE_STATUS.md`. Commit/push the status
-transition with the exact Plan 14 closeout SHA, then continue the Plan 15
-native-DUCC baseline and phased **GL → CC → F1 spin-1 E/B** work. No separate
-session, new branch or additional owner confirmation is required.
-
-Plans 12 and 13 stay deferred. This authorization is for **spin-1 vector
-transforms** on the three grids, **not** broad scalar CC/F1 optimization,
-spin-2/3/4 tuning, batching or cache autodetection.
+The comprehensive scalar sweep, four principal figures, Plan 14 numerical
+validation and closeout are published. Plan 14 is complete at
+`f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`. The same-session, same-branch
+transition made [Plan 15 — spin-1 vector performance on GL, CC and F1](15-spin1-vector-gl-cc-f1-performance.md)
+active. Continue with its native DUCC baseline and GL → CC → F1 spin-1 E/B
+work. Plans 12/13 remain deferred; scalar CC/F1 optimization, spins 2–4,
+batching and cache autodetection remain out of scope.
 
 ## References
 
