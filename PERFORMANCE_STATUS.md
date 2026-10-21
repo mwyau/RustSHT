@@ -129,6 +129,18 @@ wait was lower than baseline in the repeat process pairs; the initial q8
 screen also had a wider interval. Candidate/DUCC relative L2 was at most
 `4.96e-14`. See the [Plan 14 source A/B data](reports/data/plan14-direct-analysis-ring-pack-2026-10-21/).
 
+The matched T2047 q8 confirmation used `ntheta=2049`, `nphi=4096`, full and
+quarter `mmax`, three interleaved process runs and 30 calibrated batches per
+backend/case. At full order Rust fell `39.177→34.094 ms` (−13.0%, −5.082 ms)
+and changed from `0.958x` to `0.830x` DUCC. At `mmax=511` it fell
+`16.995→16.067 ms` (−5.3%, −0.929 ms), from `1.035x` to `0.977x` DUCC.
+The candidate was bitwise identical to baseline; relative L2 error versus
+DUCC was at most `1.27e-13`. Scheduler wait was low apart from one reduced
+case pair; process medians consistently favored the candidate. The direct
+route is retained. Next recheck the T720 full-order q1 excess on a quieter
+host before selecting its next stage target. Full distributions and method
+are in the [direct-input A/B dataset](reports/data/plan14-direct-analysis-ring-pack-2026-10-21/).
+
 
 ## Highest-confidence current finding — prefix discontinuity removed
 

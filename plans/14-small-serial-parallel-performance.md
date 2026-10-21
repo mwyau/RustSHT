@@ -741,13 +741,37 @@ directional and its magnitude needs a quieter-host confirmation. q1 had
 across both screens. The candidate output was bitwise identical to baseline;
 relative L2 versus DUCC was `4.63e-14` full-order and `4.96e-14` reduced.
 
-The immediate full-order q8 excess fell from `+0.384 ms` to `+0.100 ms` in
-the repeat screen. The order-major workspace is still allocated, but this
-route no longer writes or rereads its full weighted matrix. Run the same
-source comparison at T2047 q8 next to confirm the dataflow benefit at the
-larger parallel geometry; keep the scheduler and odd FFT path unchanged.
-Release parallel and no-default-feature tests, including all-grid/spin,
-extreme-value, adjoint and f32 coverage, formatting and strict Clippy passed.
+The immediate full-order T720 q8 excess fell from `+0.384 ms` to `+0.100 ms`
+in the repeat screen. The order-major workspace remains allocated, but this
+route no longer writes or rereads its weighted matrix.
+
+The T2047 follow-up used the same baseline/candidate source revisions,
+`ntheta=2049`, fixed `nphi=4096`, q8, and three interleaved process runs with
+30 calibrated batches per backend/case. For full `mmax=2047`, Rust changed
+from `39.177 ms` to `34.094 ms` (−5.082 ms, 0.872x baseline); DUCC was
+`41.082 ms`, so the candidate was 0.830x DUCC. For reduced `mmax=511`, Rust
+changed from `16.995 ms` to `16.067 ms` (−0.929 ms, 0.947x baseline), with
+DUCC at `16.453 ms` (candidate 0.977x DUCC). Candidate/baseline paired
+p10–p90 ratios were `0.859–0.884` full and `0.869–0.963` reduced. Each of
+the three process-median comparisons favored the candidate. Candidate output
+was bitwise identical to baseline; relative L2 error versus DUCC was
+`1.18e-13` full and `1.26e-13` reduced (maximum absolute errors
+`1.38e-15` and `1.11e-15`). Host CPU pressure was low, with maximum scheduler
+wait below 0.8% in full-order runs and one reduced-order DUCC/baseline run at
+2.3%/1.7%; cpufreq polling included idle/transition readings and is not a
+reliable effective-clock comparison. Compact timing data and reproduction
+details are in the [direct-input A/B dataset](../reports/data/plan14-direct-analysis-ring-pack-2026-10-21/).
+
+This confirms a useful q8 whole-transform benefit at the larger geometry,
+especially full order; the timing does not attribute all saved time to the
+removed matrix traffic. Keep the direct-input route. The largest remaining
+measured issue is now the T720 q1 full-order excess (`+0.874 ms` in the
+repeat source screen), whose candidate q1 runs had elevated scheduler wait.
+Next recheck that case on a quieter host before choosing whether to profile
+serial recurrence or a different stage. Keep the scheduler and odd FFT path
+unchanged. Release parallel and no-default-feature suites, including
+all-grid/spin, extreme-value, adjoint and f32 coverage, formatting and strict
+Clippy passed for the source change.
 
 ## 4. Phase A — Find and fix small serial fixed costs
 

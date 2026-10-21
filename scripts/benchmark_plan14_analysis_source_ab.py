@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Interleaved source A/B for T720 scalar GL analysis."""
+"""Interleaved native source A/B for scalar GL analysis."""
 
 from __future__ import annotations
 
@@ -33,10 +33,32 @@ def main() -> None:
     parser.add_argument("--baseline-revision", required=True)
     parser.add_argument("--candidate-revision", required=True)
     parser.add_argument("--results-dir", type=pathlib.Path, required=True)
+    parser.add_argument("--lmax", type=int, default=720)
+    parser.add_argument("--mmax", type=int, nargs="+")
+    parser.add_argument("--ntheta", type=int)
+    parser.add_argument("--nphi", type=int)
+    parser.add_argument("--threads", type=int, nargs="+", default=(1, 8))
     parser.add_argument("--batch-ms", type=float, default=25.0)
     args = parser.parse_args()
     if not 20.0 <= args.batch_ms <= 100.0:
         parser.error("--batch-ms must be in the 20–100 ms calibration window")
+    if args.lmax < 0:
+        parser.error("--lmax must be nonnegative")
+    ntheta = args.ntheta if args.ntheta is not None else args.lmax + 1
+    if ntheta < args.lmax + 1:
+        parser.error("--ntheta must be at least lmax + 1 for GL analysis")
+    if args.mmax is not None:
+        mmax_values = args.mmax
+    elif args.lmax == 720:
+        mmax_values = [720, 180]
+    elif args.lmax < 4:
+        mmax_values = [args.lmax]
+    else:
+        mmax_values = [args.lmax, max(1, args.lmax // 4)]
+    if any(mmax < 0 or mmax > args.lmax for mmax in mmax_values):
+        parser.error("each --mmax must be within 0..=lmax")
+    if any(threads < 1 for threads in args.threads):
+        parser.error("--threads values must be positive")
     actual_ducc_revision = parity.command_output(
         ["git", "rev-parse", "HEAD"], cwd=args.ducc_src
     )
@@ -70,18 +92,30 @@ def main() -> None:
             "interleaving": [list(order) for order in PROCESS_ORDER],
             "timed_scope": "full native ShtPlan scalar GL analysis; setup and first call recorded separately",
             "fixtures": "deterministic PCG64 from the shared parity harness; SHA-256 recorded per geometry",
+            "selected_lmax": args.lmax,
+            "selected_mmax": mmax_values,
+            "selected_ntheta": ntheta,
+            "selected_nphi": args.nphi,
+            "selected_threads": list(args.threads),
         },
         "cases": [],
     }
     summary = []
 
-    for mmax in (720, 180):
+    for mmax in mmax_values:
+        nphi = (
+            args.nphi
+            if args.nphi is not None
+            else parity.smooth_even_at_least(2 * mmax + 2)
+        )
+        if nphi < 2 * mmax + 1:
+            parser.error(f"nphi={nphi} cannot represent mmax={mmax}")
         case = {
-            "case_id": f"T720-m{mmax}-nphi1458",
-            "lmax": 720,
+            "case_id": f"T{args.lmax}-m{mmax}-ntheta{ntheta}-nphi{nphi}",
+            "lmax": args.lmax,
             "mmax": mmax,
-            "ntheta": 721,
-            "nphi": 1458,
+            "ntheta": ntheta,
+            "nphi": nphi,
             "longitude_mode": "even_smooth",
             "grid": "GL",
         }
@@ -94,7 +128,7 @@ def main() -> None:
             parity.make_fixture(case, temp)
             case_record["input_sha256"] = case["input_sha256"]
 
-            for threads in (1, 8):
+            for threads in args.threads:
                 cpus = physical[:threads]
                 process_pairs = []
                 for pair, order in enumerate(PROCESS_ORDER):
