@@ -1253,6 +1253,27 @@ validated sparse-tail change and proceed to Plan 14 closeout without another
 speculative recurrence or FFT variant. Detailed batch stages are in
 [`stage_profile.json`](../reports/data/plan14-sparse-spectrum-current-2026-10-21/stage_profile.json).
 
+## Scheduled successor after this plan's closeout (owner-authorized 2026-10-21)
+
+**This does not change the active Plan 14 work.** Finish the already-requested
+comprehensive current-source scalar RustSHT/DUCC sweep (all `lmax=0..128`,
+sampled larger degrees and the four principal comparison SVGs), publish
+the tested dataset and report, then complete, validate, commit and push Plan 14
+closeout. Do not interrupt the sweep to benchmark or optimize spin-1.
+
+**Immediately afterward**, in the **same Luna session and the same
+`opt/sht-performance-parity` branch**, mark Plan 14 **COMPLETE** and
+[Plan 15 — spin-1 vector performance on GL, CC and F1](15-spin1-vector-gl-cc-f1-performance.md)
+**ACTIVE** in this plan, the successor plan, `AGENTS.md`,
+`plans/README.md` and `PERFORMANCE_STATUS.md`. Commit/push the status
+transition with the exact Plan 14 closeout SHA, then continue the Plan 15
+native-DUCC baseline and phased **GL → CC → F1 spin-1 E/B** work. No separate
+session, new branch or additional owner confirmation is required.
+
+Plans 12 and 13 stay deferred. This authorization is for **spin-1 vector
+transforms** on the three grids, **not** broad scalar CC/F1 optimization,
+spin-2/3/4 tuning, batching or cache autodetection.
+
 ## References
 
 - RustSHT source: `src/transform.rs`, `src/legendre/scalar_paired.rs`, `src/legendre/scalar_ordered.rs`, `src/legendre/scalar_table.rs`, `src/fft.rs`, `src/workspace.rs`.
