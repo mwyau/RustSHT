@@ -2,6 +2,11 @@
 
 **Updated:** 2026-10-21 UTC. **Branch:** `opt/sht-performance-parity`.
 **Active objective:** [Plan 14 — small serial and large parallel SHT parity](plans/14-small-serial-parallel-performance.md).
+**Scheduled next (not active):** [Plan 15 — spin-1 vector GL, CC and F1 performance](plans/15-spin1-vector-gl-cc-f1-performance.md).
+After the requested comprehensive Plan 14 scalar sweep and Plan 14 closeout
+are committed and pushed, the same Luna session continues automatically on
+`opt/sht-performance-parity` into spin-1 E/B GL → CC → F1 work. Scalar
+CC/F1 optimization outside spin-1 is not included; Plans 12/13 are deferred.
 This is a **measured checkpoint, not a standalone instruction queue**.
 The previous long status, including intermediate experiments and historical
 next-step text, is preserved
