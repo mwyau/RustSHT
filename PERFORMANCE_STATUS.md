@@ -247,11 +247,28 @@ isolated `m=1` results or a desire to assemble another candidate matrix.
   profile the actual residual at equivalent boundaries.
   [Historical toolchain report](reports/archive/experiments/ducc-upgrade-baseline-2026-10-20.md).
 
+## Plan 14 — T32 checked fused analysis (2026-10-21)
+
+Current source is `de4c6569`. The f64 scalar analysis checked fused route
+now starts at T32; the f32 floor remains T255 and the safety proof, scaled
+transition, late checks and fallback are unchanged. Three interleaved
+q1 Rust/DUCC process pairs with 30 calibrated batches per backend showed
+T31 controls stable within 0.4%, while T32 full and reduced-order cases
+improved 18.1–22.1%. At T32 full-order even sampling, Rust fell from 31.011
+to 25.176 µs; DUCC was 21.678/21.833 µs, reducing excess from 9.333 to
+3.343 µs. The stage probe attributes 4.626 µs of the change to
+recurrence/accumulation; FFT and preparation were stable. Maximum relative
+L2 was `2.62e-15`. The residual low-band analysis lead is T31 full-order
+even-smooth: 27.130/27.054 µs Rust versus 16.499/16.491 µs DUCC.
+Runqueue wait was elevated, so further threshold work requires a phase
+profile and matched T31/T32 control. Full distributions and data are in the
+[T32 report](reports/plan14-t32-fused-analysis-cutoff-2026-10-21.md).
+
 ## Current next steps and deferred work
 
-1. Attribute the remaining low-band q1 anomalies, especially T32 full-order
-   analysis, after the validated T64 route improvement. Avoid another broad
-   benchmark matrix.
+1. Profile T31 full-order even-smooth q1 analysis; do not lower the fused
+   eligibility floor without phase attribution and a matched T31/T32
+   control. Avoid another broad benchmark matrix.
 2. Re-rank the largest measured absolute q8 analysis/synthesis excess from
    current-source controls and continue only on the leading stage.
 3. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)

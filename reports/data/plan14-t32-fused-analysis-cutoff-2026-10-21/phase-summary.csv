@@ -1,0 +1,17 @@
+route,phase,p10_us,median_us,p90_us,batches,threads,geometry
+baseline,Legendre recurrence and accumulation,21.072,21.184,21.301,30,1,T32 m32 33x66
+candidate,Legendre recurrence and accumulation,16.507,16.558,16.644,30,1,T32 m32 33x66
+baseline,Legendre table retrieval,0.021,0.021,0.022,30,1,T32 m32 33x66
+candidate,Legendre table retrieval,0.021,0.021,0.021,30,1,T32 m32 33x66
+baseline,coefficient cleanup,0.037,0.038,0.038,30,1,T32 m32 33x66
+candidate,coefficient cleanup,0.038,0.039,0.044,30,1,T32 m32 33x66
+baseline,coefficient initialization,0.085,0.085,0.087,30,1,T32 m32 33x66
+candidate,coefficient initialization,0.084,0.084,0.085,30,1,T32 m32 33x66
+baseline,forward FFT,5.974,6.014,6.053,30,1,T32 m32 33x66
+candidate,forward FFT,5.934,5.951,5.963,30,1,T32 m32 33x66
+baseline,order spectrum preparation,1.688,1.698,1.720,30,1,T32 m32 33x66
+candidate,order spectrum preparation,1.681,1.695,1.706,30,1,T32 m32 33x66
+baseline,resampling and latitude setup,0.657,0.661,0.668,30,1,T32 m32 33x66
+candidate,resampling and latitude setup,0.659,0.662,0.670,30,1,T32 m32 33x66
+baseline,strategy selection,0.024,0.024,0.024,30,1,T32 m32 33x66
+candidate,strategy selection,0.024,0.024,0.024,30,1,T32 m32 33x66

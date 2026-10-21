@@ -347,9 +347,11 @@ flags, dispatch and numerical checks are in the
 [focused report](../reports/plan14-t127-table-analysis-simd-2026-10-21.md).
 
 The T64 reduced-order recurrence lead and its checked fused-route candidate
-are described next. The remaining small-q1 work is the T32 full-order case;
-after that, rank q8 from current-source controls rather than reusing
-historical pre-layout timings.
+are described next. T32 full/reduced-order analysis has since moved onto
+the checked fused route with a measured improvement; the remaining low-band
+analysis lead is T31 full-order even-smooth sampling. Profile that route
+before considering another eligibility change, then rank q8 from current-
+source controls rather than reusing historical pre-layout timings.
 
 ## Current progress — T64 checked fused analysis route (2026-10-21)
 
@@ -369,8 +371,35 @@ The current-source stage profiles attribute 13.6–14.3 µs of the full-call
 gain to recurrence/accumulation; FFT and preparation stages stayed stable.
 The report and raw data are in
 [the T64 checkpoint](../reports/plan14-t64-fused-analysis-cutoff-2026-10-21.md).
-Continue Phase A with T32 full-order analysis, then rank q8 whole-call
-excesses from current-source measurements.
+
+## Current progress — T32 checked fused analysis route (2026-10-21)
+
+Commit `de4c6569` lowers only the f64 scalar analysis fused-route floor
+from T64 to T32. The proof/cache, scaled transition, late range checks and
+robust fallback are unchanged; f32 remains at T255 and table, spin-1 and
+other operation policies are unchanged.
+
+The matched q1 GL A/B used three interleaved Rust/DUCC process pairs and
+30 calibrated batches per backend for T31/T32 full/reduced `mmax`, with
+odd-minimum and even-smooth longitude counts. At T31, Rust changed by
+`+0.35%` (`nphi=63`) and `-0.28%` (`nphi=64`) within the process spread.
+At T32, all four cases improved: full-order `nphi=65/66` fell by
+`18.1%/18.8%` and reduced-order `nphi=17/18` by `22.1%/22.0%`. The T32
+full-order even case moved from 31.011 to 25.176 µs versus DUCC's 21.678
+and 21.833 µs in the two rounds; its absolute excess narrowed from 9.333
+to 3.343 µs. Maximum candidate relative L2 was `2.62e-15` and maximum
+absolute error `2.67e-15`. Runqueue wait remained elevated (median roughly
+12–16%, p90 up to 32%), but the baseline/candidate latency distributions
+separated for every T32 case.
+
+The calibrated phase probe for T32 full-order even sampling measured
+recurrence/accumulation falling from 21.184 to 16.558 µs; FFT and other
+preparation stayed effectively unchanged. The remaining low-band analysis
+lead is T31 full-order even-smooth sampling: Rust/DUCC was 27.130/16.499 µs
+before and 27.054/16.491 µs after T32 dispatch, a stable +10.6 µs excess.
+Next profile this existing callback route before considering a lower floor.
+Full raw batches and reproducibility details are in the
+[T32 report and data](../reports/plan14-t32-fused-analysis-cutoff-2026-10-21.md).
 
 ## 4. Phase A — Find and fix small serial fixed costs
 
