@@ -1224,8 +1224,12 @@ impl<T: ShtScalar> ShtPlan<T> {
                     && T::supports_paired_scalar()
                     && execution_threads >= 8
                     && workspace.ring_group_size < ntheta;
+                // For exact CC cache-enabled synthesis, use the existing
+                // one-group queue when ring groups outnumber workers. With
+                // fewer groups, retain the lower-overhead static iterator.
                 let use_dynamic_spin1_group_queue = (use_spin1_coefficient_cache
-                    && self.grid.kind() != crate::grid::GridKind::ClenshawCurtis)
+                    && (self.grid.kind() != crate::grid::GridKind::ClenshawCurtis
+                        || group_count > execution_threads))
                     || (recurrence_spin == 1
                         && !derivative_norm
                         && b_alm.is_some()
