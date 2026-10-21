@@ -1444,6 +1444,7 @@ fn spin1_scalar_transition_splits_polar_lanes_and_matches_general() {
                 plan.synthesize_spin1_scalar_block(
                     m,
                     scalar_lmax,
+                    None,
                     spectrum_len,
                     0,
                     false,
@@ -1942,6 +1943,7 @@ fn spin1_scalar_synthesis_compacts_mixed_high_order_cutoff_blocks() {
         plan.synthesize_spin1_scalar_block(
             m,
             lmax + 1,
+            None,
             spectrum_len,
             block_start,
             false,
@@ -1969,6 +1971,7 @@ fn spin1_scalar_synthesis_compacts_mixed_high_order_cutoff_blocks() {
         plan.synthesize_spin1_scalar_block(
             m,
             lmax + 1,
+            None,
             spectrum_len,
             block_start,
             false,
@@ -2005,6 +2008,7 @@ fn spin1_scalar_synthesis_compacts_mixed_high_order_cutoff_blocks() {
     plan.synthesize_spin1_scalar_block(
         m,
         lmax + 1,
+        None,
         spectrum_len,
         boundary_ring,
         false,
@@ -8553,5 +8557,99 @@ fn extreme_spin2_scalar_conversion_restores_original_coefficients() {
             }
             assert!(finite_count > 67);
         }
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+#[ignore = "focused phase profiling helper; run explicitly with RUSTSHT_PROFILE_* variables"]
+fn profile_spin1_standard_synthesis_phases() {
+    use std::time::Instant;
+
+    let lmax = std::env::var("RUSTSHT_PROFILE_LMAX")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(720_usize);
+    let mmax = std::env::var("RUSTSHT_PROFILE_MMAX")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(lmax);
+    let nphi = std::env::var("RUSTSHT_PROFILE_NPHI")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or_else(|| 2 * (lmax + 1));
+    let thread_count = std::env::var("RUSTSHT_PROFILE_THREADS")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(8_usize);
+    let phi0 = std::env::var("RUSTSHT_PROFILE_PHI0")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(0.23_f64);
+    let repetitions = std::env::var("RUSTSHT_PROFILE_REPETITIONS")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(12_usize);
+    let plan = ShtPlan::new(
+        GridSpec::new(GridKind::GaussLegendre, lmax + 1, nphi, phi0).unwrap(),
+        HarmonicSpec::new(lmax, mmax, 1).unwrap(),
+    )
+    .unwrap();
+    let mut e_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+    let mut b_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+    let mut state = 0x7a31_9d42_8b6c_05e1_u64;
+    let mut next_value = || {
+        state = state.wrapping_add(0x9e37_79b9_7f4a_7c15);
+        let mut value = state;
+        value = (value ^ (value >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+        value = (value ^ (value >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+        value ^= value >> 31;
+        ((value >> 11) as f64) * (1.0 / ((1_u64 << 53) as f64)) * 2.0 - 1.0
+    };
+    for order in 0..=mmax {
+        for degree in 1.max(order)..=lmax {
+            let index = plan.harmonics.index(degree, order).unwrap();
+            e_alm[index].re = next_value();
+            e_alm[index].im = if order == 0 { 0.0 } else { next_value() };
+            b_alm[index].re = next_value();
+            b_alm[index].im = if order == 0 { 0.0 } else { next_value() };
+        }
+    }
+    let mut first = vec![0.0; plan.sample_count];
+    let mut second = vec![0.0; plan.sample_count];
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(thread_count)
+        .build()
+        .unwrap();
+    let mut workspace = pool.install(|| plan.workspace()).unwrap();
+    let probe = workspace.observe_transform_phases();
+
+    for _ in 0..3 {
+        pool.install(|| {
+            plan.synthesis_spin_into(&e_alm, &b_alm, &mut first, &mut second, &mut workspace)
+        })
+        .unwrap();
+        std::hint::black_box((&first, &second));
+    }
+    probe.lock().unwrap().clear();
+
+    for repetition in 0..repetitions {
+        let started = Instant::now();
+        pool.install(|| {
+            plan.synthesis_spin_into(&e_alm, &b_alm, &mut first, &mut second, &mut workspace)
+        })
+        .unwrap();
+        std::hint::black_box((&first, &second));
+        eprintln!(
+            "PROFILE_TOTAL,{lmax},{mmax},{nphi},{phi0},{thread_count},{repetition},{:.6}",
+            started.elapsed().as_secs_f64() * 1.0e3,
+        );
+    }
+    for (repetition, observation) in probe.lock().unwrap().iter().enumerate() {
+        eprintln!(
+            "PROFILE_PHASE,{lmax},{mmax},{nphi},{phi0},{thread_count},{repetition},{},{:.6}",
+            observation.phase,
+            observation.elapsed_ns as f64 / 1.0e6,
+        );
     }
 }

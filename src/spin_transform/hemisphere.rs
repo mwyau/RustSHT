@@ -218,6 +218,7 @@ fn synthesize_group<T: ShtScalar>(
                     plan.synthesize_spin1_scalar_block(
                         m,
                         scalar_lmax,
+                        None,
                         spectrum_len,
                         north_first_ring,
                         false,
@@ -239,6 +240,7 @@ fn synthesize_group<T: ShtScalar>(
                     plan.synthesize_spin1_scalar_block(
                         m,
                         scalar_lmax,
+                        None,
                         spectrum_len,
                         south_first_ring,
                         false,

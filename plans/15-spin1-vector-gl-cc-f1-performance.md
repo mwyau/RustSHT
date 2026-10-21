@@ -5,6 +5,18 @@ The Plan 14 scalar full-transform sweep, four principal figures, validation and 
 
 **Current phase:** Phase A's native spin-1 GL → CC → F1 baseline is complete at Rust source `549bd2f0` and pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. The temporary owner-priority scalar T64–T256 GL diagnostic is also complete and its boundary attribution is corrected in [the focused report](../reports/scalar-t64-256-performance-discontinuities-2026-10-21.md); it did not reopen Plan 14 or modify the spin-1 numerical kernels. Proceed to Phase B GL stage attribution, excluding all odd-FFT optimization per the owner direction below.
 
+**Phase B checkpoint (2026-10-21):** the q8 GL synthesis path now reads
+cached spin-1 scalar-conversion rows directly across ring groups, avoiding
+repeated worker-buffer copies on the paired route. For T720's 23 groups, the
+source-level estimate is 365 MiB of coefficient payload copied per transform
+(about 730 MiB of source-read/write traffic before cache effects). Worker rows
+are still filled before any checked polar/scaled fallback. Release cached/uncached,
+T720 adjoint, general-channel, large-finite and no-default synthesis checks
+pass. The exploratory matched timing run was invalidated by 9–40% runqueue
+wait and high involuntary-switch counts; do not infer a gain from it. Re-run
+the q1/q8 matched whole-call A/B and stage timing under a quiet host before
+deciding whether to retain this candidate as a production optimization.
+
 **Owner direction (2026-10-21): defer odd-length FFT optimization.** Continue to benchmark and validate odd/even longitude cases as **controls**, but do **not** prototype paired-real-row FFTs, swap in `realfft` or the standalone `rustsht-fft` backend, change prime-radix/FFT planners, or start a C2R/odd-FFT optimization investigation. Do not choose an odd-specific FFT issue as a Plan 15 optimization target even when profiling identifies it. Record the residual and continue to measured **spin-1 vector** bottlenecks outside the FFT engine. Existing FFT behavior and numerical safeguards stay intact. This hold remains until an explicit new owner instruction revokes it.
 
 **Goal:** Improve the measured **single-vector-field spin-1** spherical harmonic transforms—STANDARD E/B synthesis and analysis—against native DUCC, for **Gauss–Legendre (GL), Clenshaw–Curtis (CC), and Fejér-1 (F1)** grids, using mathematically identical work and reliable matched full-transform benchmarks. Prioritize absolute residual latency, correct vector results, reusable memory and practical atmospheric resolutions. A documented absence of a justified optimization is a legitimate outcome.

@@ -49,6 +49,18 @@ relative L2 `6.19e-16`, stale-output checks passed). The adapter and
 reproducible smoke command are in
 [`reports/data/plan15-spin1-native-baseline-2026-10-21`](reports/data/plan15-spin1-native-baseline-2026-10-21/README.md).
 
+**Plan 15 Phase B candidate:** q8 GL spin-1 synthesis now borrows the shared
+scalar-conversion rows across ring groups instead of copying them into worker
+scratch for each order/group. At T720's 23 groups, the removed copies account
+for about 365 MiB of coefficient payload (roughly 730 MiB of source-read and
+destination-write traffic before cache effects); checked polar/scaled fallbacks
+still populate their worker-local rows when the paired route declines. The
+T127 cached/uncached comparison, T720 q8 adjoint identity, general-channel and
+large-finite fallback tests pass. A short q8 timing screen was stopped because
+runqueue wait was 9–40% with thousands of involuntary switches, so it gives no
+performance conclusion. Next: repeat the matched whole-transform A/B and
+stage profile under a quiet host.
+
 **Current-source full-transform sweep (2026-10-21):** the frozen Rust source
 `e487b85b` was compared with pinned DUCC 0.42.0 `42ce8ab5` across every
 `lmax=0…128` and 28 sampled degrees through T3072, full/reduced `mmax`,

@@ -1108,6 +1108,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                     && T::supports_paired_scalar()
                     && execution_threads >= 8
                     && workspace.ring_group_size < ntheta;
+                #[cfg(all(test, feature = "parallel"))]
+                let coefficient_prep_started = std::time::Instant::now();
                 let spin1_coefficients = use_spin1_coefficient_cache
                     .then(|| {
                         self.prepare_spin1_scalar_coefficients(
@@ -1119,6 +1121,15 @@ impl<T: ShtScalar> ShtPlan<T> {
                     })
                     .filter(|prepared| *prepared)
                     .map(|_| workspace.spin1_scalar_coefficients.as_slice());
+                #[cfg(all(test, feature = "parallel"))]
+                {
+                    crate::workspace::record_transform_phase(
+                        &phase_probe,
+                        "spin-1 scalar coefficient cache preparation",
+                        coefficient_prep_started,
+                    );
+                    phase_started = std::time::Instant::now();
+                }
                 let group_spectrum_len = group_ring_count.checked_mul(spectrum_len).ok_or(
                     ShtError::IntegerOverflow {
                         quantity: "spin Fourier spectrum group size",
@@ -1207,7 +1218,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         {
             crate::workspace::record_transform_phase(
                 &phase_probe,
-                "spin coefficient preparation, Legendre recurrence, and spectral accumulation",
+                "order scheduling, Legendre recurrence, and spectral accumulation",
                 phase_started,
             );
             phase_started = std::time::Instant::now();
@@ -1475,33 +1486,38 @@ impl<T: ShtScalar> ShtPlan<T> {
                     Some(&e_alm[coefficient_start..coefficient_start + coefficient_count])
                 };
                 if let Some(e_coefficients) = coefficient_slice {
-                    if let Some(coefficients) = spin1_scalar_coefficients {
-                        let row_len = lmax + 2;
-                        let row_stride = row_len * 2;
-                        let row_start = m * row_stride;
-                        recurrence.fast_scalar_first[..row_len]
-                            .copy_from_slice(&coefficients[row_start..row_start + row_len]);
-                        recurrence.fast_scalar_second[..row_len].copy_from_slice(
-                            &coefficients[row_start + row_len..row_start + row_stride],
-                        );
-                    } else {
-                        spin1_to_scalar(
-                            m,
-                            lmax,
-                            e_coefficients,
-                            b_alm.map(|values| {
-                                &values[coefficient_start..coefficient_start + coefficient_count]
-                            }),
-                            &mut recurrence.fast_scalar_first[..lmax + 2],
-                            &mut recurrence.fast_scalar_second[..lmax + 2],
-                        );
-                    }
+                    let (scalar_first, scalar_second): (&[Complex<T>], &[Complex<T>]) =
+                        if let Some(coefficients) = spin1_scalar_coefficients {
+                            let row_len = lmax + 2;
+                            let row_stride = row_len * 2;
+                            let row_start = m * row_stride;
+                            (
+                                &coefficients[row_start..row_start + row_len],
+                                &coefficients[row_start + row_len..row_start + row_stride],
+                            )
+                        } else {
+                            spin1_to_scalar(
+                                m,
+                                lmax,
+                                e_coefficients,
+                                b_alm.map(|values| {
+                                    &values
+                                        [coefficient_start..coefficient_start + coefficient_count]
+                                }),
+                                &mut recurrence.fast_scalar_first[..lmax + 2],
+                                &mut recurrence.fast_scalar_second[..lmax + 2],
+                            );
+                            (
+                                &recurrence.fast_scalar_first[..lmax + 2],
+                                &recurrence.fast_scalar_second[..lmax + 2],
+                            )
+                        };
                     // The conversion can overflow for finite E/B coefficients
                     // even when the scaled spin recurrence can represent the
                     // sampled field. Keep the original channels for fallback.
-                    fast_scalar_order = recurrence.fast_scalar_first[..lmax + 2]
+                    fast_scalar_order = scalar_first
                         .iter()
-                        .chain(&recurrence.fast_scalar_second[..lmax + 2])
+                        .chain(scalar_second)
                         .all(|value| value.re.is_finite() && value.im.is_finite());
                 }
             }
@@ -1543,6 +1559,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         self.synthesize_spin1_scalar_block(
                             m,
                             scalar_lmax,
+                            spin1_scalar_coefficients,
                             spectrum_len,
                             ring_start + block_start,
                             allow_spin1_table,
@@ -1683,6 +1700,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         &self,
         m: usize,
         scalar_lmax: usize,
+        cached_scalar_coefficients: Option<&[Complex<T>]>,
         spectrum_len: usize,
         global_ring_start: usize,
         allow_table: bool,
@@ -1700,6 +1718,15 @@ impl<T: ShtScalar> ShtPlan<T> {
         debug_assert_eq!(q_spectra.len(), block_len * spectrum_len);
         debug_assert_eq!(u_spectra.len(), q_spectra.len());
 
+        let cached_scalar_row = cached_scalar_coefficients.map(|coefficients| {
+            let row_len = self.harmonics.lmax() + 2;
+            let row_stride = row_len * 2;
+            let row_start = m * row_stride;
+            (
+                &coefficients[row_start..row_start + row_len],
+                &coefficients[row_start + row_len..row_start + row_stride],
+            )
+        });
         let has_excluded_ring = ring_order_limits.iter().any(|&limit| m > limit);
         if ring_order_limits.iter().all(|&limit| m > limit) {
             return Ok(());
@@ -1715,8 +1742,12 @@ impl<T: ShtScalar> ShtPlan<T> {
                 .and_then(Option::as_ref)
             && theta_sin.iter().all(|&sine| sine >= pair_min_sine)
             && (m..=scalar_lmax).all(|degree| {
-                let first = recurrence.fast_scalar_first[degree];
-                let second = recurrence.fast_scalar_second[degree];
+                let (scalar_first, scalar_second) = cached_scalar_row.unwrap_or((
+                    &recurrence.fast_scalar_first[..scalar_lmax + 1],
+                    &recurrence.fast_scalar_second[..scalar_lmax + 1],
+                ));
+                let first = scalar_first[degree];
+                let second = scalar_second[degree];
                 table.input_is_safe(first.re)
                     && table.input_is_safe(first.im)
                     && table.input_is_safe(second.re)
@@ -1725,9 +1756,13 @@ impl<T: ShtScalar> ShtPlan<T> {
         {
             let ntheta = self.grid.ntheta();
             for degree in m..=scalar_lmax {
+                let (scalar_first, scalar_second) = cached_scalar_row.unwrap_or((
+                    &recurrence.fast_scalar_first[..scalar_lmax + 1],
+                    &recurrence.fast_scalar_second[..scalar_lmax + 1],
+                ));
                 let basis_lanes = table.degree_lanes(m, degree - m);
-                let first_coefficient = recurrence.fast_scalar_first[degree];
-                let second_coefficient = recurrence.fast_scalar_second[degree];
+                let first_coefficient = scalar_first[degree];
+                let second_coefficient = scalar_second[degree];
                 let reflected_odd = !(degree + m).is_multiple_of(2);
                 for lane in 0..block_len {
                     if m > ring_order_limits[lane] {
@@ -1756,12 +1791,16 @@ impl<T: ShtScalar> ShtPlan<T> {
                 && theta_sin.iter().all(|&sine| sine >= pair_min_sine);
             let coefficient_pair_count = (scalar_lmax - m + 2) / 2;
             let prepared_pair = if paired_channels_eligible {
+                let (scalar_first, scalar_second) = cached_scalar_row.unwrap_or((
+                    &recurrence.fast_scalar_first[..scalar_lmax + 1],
+                    &recurrence.fast_scalar_second[..scalar_lmax + 1],
+                ));
                 let prepared_first = T::prepare_paired_scalar_synthesis_coefficients(
                     m,
                     scalar_lmax,
                     &recurrence.epsilon,
                     &recurrence.spin_alpha,
-                    &recurrence.fast_scalar_first[m..=scalar_lmax],
+                    &scalar_first[m..=scalar_lmax],
                     &mut recurrence.fast_spin_first[..coefficient_pair_count],
                     &mut recurrence.fast_spin_second[..coefficient_pair_count],
                 );
@@ -1770,7 +1809,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     scalar_lmax,
                     &recurrence.epsilon,
                     &recurrence.spin_alpha,
-                    &recurrence.fast_scalar_second[m..=scalar_lmax],
+                    &scalar_second[m..=scalar_lmax],
                     &mut recurrence.fast_spin_pair_first[..coefficient_pair_count],
                     &mut recurrence.fast_spin_pair_second[..coefficient_pair_count],
                 );
@@ -1822,6 +1861,10 @@ impl<T: ShtScalar> ShtPlan<T> {
             // either consumer writes spectra so a single unsafe channel cannot
             // cause a partial commit.
             let prepared_separate = if !paired_channels_eligible {
+                let (scalar_first, scalar_second) = cached_scalar_row.unwrap_or((
+                    &recurrence.fast_scalar_first[..scalar_lmax + 1],
+                    &recurrence.fast_scalar_second[..scalar_lmax + 1],
+                ));
                 let scratch_ready = recurrence.fast_spin_first.len() >= coefficient_pair_count
                     && recurrence.fast_spin_second.len() >= coefficient_pair_count
                     && recurrence.fast_spin_pair_first.len() >= coefficient_pair_count
@@ -1832,7 +1875,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         scalar_lmax,
                         &recurrence.epsilon,
                         &recurrence.spin_alpha,
-                        &recurrence.fast_scalar_first[m..=scalar_lmax],
+                        &scalar_first[m..=scalar_lmax],
                         &mut recurrence.fast_spin_first[..coefficient_pair_count],
                         &mut recurrence.fast_spin_second[..coefficient_pair_count],
                     )
@@ -1841,7 +1884,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         scalar_lmax,
                         &recurrence.epsilon,
                         &recurrence.spin_alpha,
-                        &recurrence.fast_scalar_second[m..=scalar_lmax],
+                        &scalar_second[m..=scalar_lmax],
                         &mut recurrence.fast_spin_pair_first[..coefficient_pair_count],
                         &mut recurrence.fast_spin_pair_second[..coefficient_pair_count],
                     )
@@ -1906,6 +1949,13 @@ impl<T: ShtScalar> ShtPlan<T> {
             }
         }
 
+        // The common paired route reads the shared rows directly. The
+        // scaled and per-degree fallbacks still consume worker-local rows, so
+        // populate those only after the paired route declines.
+        if let Some((scalar_first, scalar_second)) = cached_scalar_row {
+            recurrence.fast_scalar_first[..scalar_lmax + 1].copy_from_slice(scalar_first);
+            recurrence.fast_scalar_second[..scalar_lmax + 1].copy_from_slice(scalar_second);
+        }
         let mut split_transition_attempted = false;
         let mut split_polar_count = None;
         if self.harmonics.lmax() >= SPIN1_TRANSITION_MIN_LMAX {
