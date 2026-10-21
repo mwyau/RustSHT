@@ -1,0 +1,606 @@
+{
+  "metadata": {
+    "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+    "architecture": "x86_64",
+    "physical_cores_visible": 16,
+    "logical_cpus_visible": 32,
+    "installed_ram_gib": 96.0,
+    "cpu_features": [
+      "avx2",
+      "fma"
+    ],
+    "os": "Linux-7.0.14-20-pve-x86_64-with-glibc2.43",
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
+    "rust_source_revision": "1d39a28829b8f9d963a024b69af7a27e2b56596c",
+    "rust_worktree_clean": true,
+    "cxx": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "pulp": "0.22.3",
+    "ducc_source_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "ducc_version": "0.42.0",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "ducc_flags": "DUCC sources: -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; benchmark driver: -O3 -fno-fast-math -ffp-contract=fast -march=x86-64-v3",
+    "rust_dispatch": "runtime Pulp Arch::new; worker records actual specialization",
+    "rust_call_boundary": "direct ShtPlan calls on a process-global Rayon pool; no per-call ThreadPool::install wrapper",
+    "ducc_dispatch": "fixed x86-64-v3 C++ build (AVX2/FMA, four f64 lanes)",
+    "affinity_policy": "q1: one allowed physical core; q8: eight allowed physical cores",
+    "source_worktree_note": "production source matched recorded commit; generated benchmark output directories were untracked during measurement"
+  },
+  "protocol": {
+    "source_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "target_batch_ms": 25.0,
+    "batches_per_process": 10,
+    "independent_process_pairs": 3,
+    "interleaving": "Rust then DUCC for even process-pair indexes; DUCC then Rust for odd indexes",
+    "q_values": [
+      8
+    ],
+    "thread_control": "Rust process-global Rayon pool configured before plan creation; DUCC DUCC0_NUM_THREADS; both workers report active pool capacity",
+    "operations": [
+      "analysis"
+    ],
+    "input_layout": "identical compact m-major coefficient body; DUCC mstart adds a leading offset and maps without timed conversion",
+    "fixture_generation": "deterministic PCG64 seed derived from lmax, mmax, and nphi; SHA-256 of each alm/map fixture is recorded per case",
+    "output_buffers": "reused across calls; transform outputs read and compared outside timed intervals",
+    "timed_region": "direct native ShtPlan transform calls with a process-global Rayon pool reused; pool/workspace setup and first call reported separately",
+    "rust_call_boundary": "no per-call ThreadPool::install wrapper; RAYON_NUM_THREADS is set before process startup",
+    "short_operation_calibration": "up to three untimed repeated-call batches; adjust repetitions until 20-100 ms, then collect 10 measured batches",
+    "long_transform_rule": "operations whose warmup exceeds 100 ms are timed individually (five per process invocation)",
+    "output_reset_check": "after timing, exact comparison of first-call output and last repeated-call output"
+  },
+  "cases": [
+    {
+      "case_id": "T3072-m3072-even_smooth",
+      "lmax": 3072,
+      "mmax": 3072,
+      "ntheta": 3073,
+      "nphi": 6174,
+      "longitude_mode": "even_smooth",
+      "grid": "GL",
+      "input_sha256": {
+        "alm": "1f5ab73a89beb4c9e2eb0bb8297604f9bbea7c459546b4ea5f9fbd92e4adb682",
+        "map": "d891e4c43ea2c81cc5a6695970fe17dca3b47b91c46590a57ed0197e81b7d31f"
+      }
+    }
+  ],
+  "rows": [
+    {
+      "case_id": "T3072-m3072-even_smooth",
+      "lmax": 3072,
+      "mmax": 3072,
+      "ntheta": 3073,
+      "nphi": 6174,
+      "longitude_mode": "even_smooth",
+      "operation": "analysis",
+      "threads": 8,
+      "rust_warm_ms": 105.051941,
+      "rust_p10_ms": 104.2414708,
+      "rust_p90_ms": 106.1218172,
+      "ducc_warm_ms": 115.697,
+      "ducc_p10_ms": 113.5236,
+      "ducc_p90_ms": 117.5508,
+      "rust_ducc_ratio": 0.9079919185458568,
+      "paired_ratio_p10": 0.8860471885041341,
+      "paired_ratio_p90": 0.9279048734093926,
+      "excess_ms": -10.645059000000003,
+      "absolute_max": 1.443377499531718e-15,
+      "relative_l2": 1.9612887990434797e-13,
+      "max_relative_above_1e-12_peak": 4.729874465138404e-09,
+      "rust_cold_first_ms": 132.644904,
+      "ducc_cold_first_ms": 115.82,
+      "rust_setup_ms": 106.463975,
+      "ducc_setup_ms": 117.47,
+      "rust_fixture_load_ms": 289.8496,
+      "ducc_fixture_load_ms": 160.073,
+      "rust_arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "ducc_arch": "x86-64-v3 fixed build",
+      "batch_count": 15,
+      "batch_elapsed_median_ms": 110.00170349999999,
+      "batch_elapsed_p10_ms": 104.50724650000001,
+      "batch_elapsed_p90_ms": 116.712,
+      "20_100ms_batch_fraction_for_short_ops": null,
+      "process_invocations_per_backend": 3
+    }
+  ],
+  "samples": [
+    {
+      "backend": "rustsht",
+      "operation": "analysis",
+      "threads": 8,
+      "fixture_load_ms": 289.8496,
+      "buffer_setup_ms": 27.489969,
+      "pool_ms": 0.362155,
+      "setup_ms": 106.463975,
+      "first_ms": 133.005207,
+      "warmup_ms": 103.680595,
+      "repetitions": 1,
+      "batch_ms": [
+        107.199407,
+        104.655591,
+        103.780684,
+        106.179186,
+        104.531276
+      ],
+      "batch_total_ms": [
+        107.199407,
+        104.655591,
+        103.780684,
+        106.179186,
+        104.531276
+      ],
+      "calibration_batch_total_ms": [],
+      "checksum": 0.005913903353499153,
+      "reset_consistent": true,
+      "thread_pool_size": 8,
+      "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "lane_width_f64": 4,
+      "rss_kib": 2524392,
+      "validation": {
+        "roundtrip_relative_l2": 4.4097081787373054e-13,
+        "selected_basis_modes": 4,
+        "zero_finite": true,
+        "extreme_finite": true,
+        "subnormal_finite": true,
+        "synthesis_adjoint_relative_residual": 1.1873427876879015e-15,
+        "analysis_adjoint_relative_residual": 1.0995358013973251e-14
+      },
+      "case_id": "T3072-m3072-even_smooth",
+      "lmax": 3072,
+      "mmax": 3072,
+      "ntheta": 3073,
+      "nphi": 6174,
+      "longitude_mode": "even_smooth",
+      "process_pair": 0
+    },
+    {
+      "backend": "ducc",
+      "operation": "analysis",
+      "threads": 8,
+      "setup_ms": 119.112,
+      "fixture_load_ms": 161.505,
+      "first_ms": 114.698,
+      "warmup_ms": 113.405,
+      "repetitions": 1,
+      "batch_ms": [
+        115.769,
+        116.642,
+        117.297,
+        120.48,
+        117.72
+      ],
+      "batch_total_ms": [
+        115.769,
+        116.642,
+        117.297,
+        120.48,
+        117.72
+      ],
+      "calibration_batch_total_ms": [],
+      "checksum": 0.00883737,
+      "reset_consistent": true,
+      "thread_pool_size": 8,
+      "arch": "x86-64-v3 fixed build",
+      "lane_width_f64": 4,
+      "validation": {
+        "roundtrip_relative_l2": 4.182475476536969e-13,
+        "selected_basis_modes": 4,
+        "zero_finite": true,
+        "extreme_finite": true,
+        "subnormal_finite": true,
+        "synthesis_adjoint_relative_residual": 4.07088955779045e-15,
+        "analysis_adjoint_relative_residual": 1.940357296584473e-15
+      },
+      "case_id": "T3072-m3072-even_smooth",
+      "lmax": 3072,
+      "mmax": 3072,
+      "ntheta": 3073,
+      "nphi": 6174,
+      "longitude_mode": "even_smooth",
+      "process_pair": 0
+    },
+    {
+      "backend": "ducc",
+      "operation": "analysis",
+      "threads": 8,
+      "setup_ms": 117.47,
+      "fixture_load_ms": 160.073,
+      "first_ms": 115.908,
+      "warmup_ms": 113.397,
+      "repetitions": 1,
+      "batch_ms": [
+        112.804,
+        113.128,
+        114.117,
+        115.381,
+        115.556
+      ],
+      "batch_total_ms": [
+        112.804,
+        113.128,
+        114.117,
+        115.381,
+        115.556
+      ],
+      "calibration_batch_total_ms": [],
+      "checksum": 0.00883737,
+      "reset_consistent": true,
+      "thread_pool_size": 8,
+      "arch": "x86-64-v3 fixed build",
+      "lane_width_f64": 4,
+      "validation": null,
+      "case_id": "T3072-m3072-even_smooth",
+      "lmax": 3072,
+      "mmax": 3072,
+      "ntheta": 3073,
+      "nphi": 6174,
+      "longitude_mode": "even_smooth",
+      "process_pair": 1
+    },
+    {
+      "backend": "rustsht",
+      "operation": "analysis",
+      "threads": 8,
+      "fixture_load_ms": 287.316083,
+      "buffer_setup_ms": 27.099719,
+      "pool_ms": 0.415757,
+      "setup_ms": 105.689148,
+      "first_ms": 132.644904,
+      "warmup_ms": 110.990295,
+      "repetitions": 1,
+      "batch_ms": [
+        105.20422,
+        105.117436,
+        105.051941,
+        105.618935,
+        106.035764
+      ],
+      "batch_total_ms": [
+        105.20422,
+        105.117436,
+        105.051941,
+        105.618935,
+        106.035764
+      ],
+      "calibration_batch_total_ms": [],
+      "checksum": 0.005913903353499153,
+      "reset_consistent": true,
+      "thread_pool_size": 8,
+      "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "lane_width_f64": 4,
+      "rss_kib": 824092,
+      "validation": null,
+      "case_id": "T3072-m3072-even_smooth",
+      "lmax": 3072,
+      "mmax": 3072,
+      "ntheta": 3073,
+      "nphi": 6174,
+      "longitude_mode": "even_smooth",
+      "process_pair": 1
+    },
+    {
+      "backend": "rustsht",
+      "operation": "analysis",
+      "threads": 8,
+      "fixture_load_ms": 294.468616,
+      "buffer_setup_ms": 27.157088,
+      "pool_ms": 0.436025,
+      "setup_ms": 108.018448,
+      "first_ms": 132.308919,
+      "warmup_ms": 104.193396,
+      "repetitions": 1,
+      "batch_ms": [
+        104.208464,
+        104.290981,
+        104.631425,
+        104.822707,
+        105.361307
+      ],
+      "batch_total_ms": [
+        104.208464,
+        104.290981,
+        104.631425,
+        104.822707,
+        105.361307
+      ],
+      "calibration_batch_total_ms": [],
+      "checksum": 0.005913903353499153,
+      "reset_consistent": true,
+      "thread_pool_size": 8,
+      "arch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+      "lane_width_f64": 4,
+      "rss_kib": 824004,
+      "validation": null,
+      "case_id": "T3072-m3072-even_smooth",
+      "lmax": 3072,
+      "mmax": 3072,
+      "ntheta": 3073,
+      "nphi": 6174,
+      "longitude_mode": "even_smooth",
+      "process_pair": 2
+    },
+    {
+      "backend": "ducc",
+      "operation": "analysis",
+      "threads": 8,
+      "setup_ms": 109.18,
+      "fixture_load_ms": 157.705,
+      "first_ms": 115.82,
+      "warmup_ms": 115.946,
+      "repetitions": 1,
+      "batch_ms": [
+        115.697,
+        116.647,
+        115.613,
+        114.468,
+        116.486
+      ],
+      "batch_total_ms": [
+        115.697,
+        116.647,
+        115.613,
+        114.468,
+        116.486
+      ],
+      "calibration_batch_total_ms": [],
+      "checksum": 0.00883737,
+      "reset_consistent": true,
+      "thread_pool_size": 8,
+      "arch": "x86-64-v3 fixed build",
+      "lane_width_f64": 4,
+      "validation": null,
+      "case_id": "T3072-m3072-even_smooth",
+      "lmax": 3072,
+      "mmax": 3072,
+      "ntheta": 3073,
+      "nphi": 6174,
+      "longitude_mode": "even_smooth",
+      "process_pair": 2
+    }
+  ],
+  "numerics": [
+    {
+      "case_id": "T3072-m3072-even_smooth",
+      "lmax": 3072,
+      "mmax": 3072,
+      "ntheta": 3073,
+      "nphi": 6174,
+      "longitude_mode": "even_smooth",
+      "operation": "analysis",
+      "threads": 8,
+      "process_pair": 0,
+      "absolute_max": 1.443377499531718e-15,
+      "relative_l2": 1.9612887990434797e-13,
+      "max_relative_above_1e-12_peak": 4.729874465138404e-09,
+      "near_zero_reference_count": 0
+    },
+    {
+      "case_id": "T3072-m3072-even_smooth",
+      "lmax": 3072,
+      "mmax": 3072,
+      "ntheta": 3073,
+      "nphi": 6174,
+      "longitude_mode": "even_smooth",
+      "operation": "analysis",
+      "threads": 8,
+      "process_pair": 1,
+      "absolute_max": 1.443377499531718e-15,
+      "relative_l2": 1.9612887990434797e-13,
+      "max_relative_above_1e-12_peak": 4.729874465138404e-09,
+      "near_zero_reference_count": 0
+    },
+    {
+      "case_id": "T3072-m3072-even_smooth",
+      "lmax": 3072,
+      "mmax": 3072,
+      "ntheta": 3073,
+      "nphi": 6174,
+      "longitude_mode": "even_smooth",
+      "operation": "analysis",
+      "threads": 8,
+      "process_pair": 2,
+      "absolute_max": 1.443377499531718e-15,
+      "relative_l2": 1.9612887990434797e-13,
+      "max_relative_above_1e-12_peak": 4.729874465138404e-09,
+      "near_zero_reference_count": 0
+    }
+  ],
+  "validation": [
+    {
+      "finite_flags": {
+        "rustsht": {
+          "zero_finite": true,
+          "extreme_finite": true,
+          "subnormal_finite": true
+        },
+        "ducc": {
+          "zero_finite": true,
+          "extreme_finite": true,
+          "subnormal_finite": true
+        }
+      },
+      "roundtrip": {
+        "rustsht": {
+          "absolute_max": 1.934183247876563e-11,
+          "relative_l2": 4.4097081787435334e-13,
+          "max_relative_above_1e-12_peak": 1.0930431880472302e-08,
+          "near_zero_reference_count": 0
+        },
+        "ducc": {
+          "absolute_max": 1.8926886909021932e-11,
+          "relative_l2": 4.182475476536969e-13,
+          "max_relative_above_1e-12_peak": 1.0293352431237614e-08,
+          "near_zero_reference_count": 0
+        },
+        "rust_ducc": {
+          "absolute_max": 2.552993862543858e-12,
+          "relative_l2": 2.652625306780697e-13,
+          "max_relative_above_1e-12_peak": 9.713091576216378e-10,
+          "near_zero_reference_count": 0
+        }
+      },
+      "basis": [
+        {
+          "l": 0,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 0
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 3.68594044175552e-14,
+            "relative_l2": 3.0952619258733915e-13,
+            "max_relative_above_1e-12_peak": 1.1102230246251565e-16,
+            "near_zero_reference_count": 4723200
+          },
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 3.2085445411667024e-14,
+            "relative_l2": 3.9689042081983887e-13,
+            "max_relative_above_1e-12_peak": 2.220446049250313e-16,
+            "near_zero_reference_count": 4723200
+          }
+        },
+        {
+          "l": 1536,
+          "m": 1536,
+          "map_rust_ducc": {
+            "absolute_max": 1.0402789740737717e-13,
+            "relative_l2": 5.890970460352762e-15,
+            "max_relative_above_1e-12_peak": 1.5100349659571852e-12,
+            "near_zero_reference_count": 16717848
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 3.108624469230406e-14,
+            "relative_l2": 4.0382856392833007e-13,
+            "max_relative_above_1e-12_peak": 3.330821583188556e-15,
+            "near_zero_reference_count": 4723200
+          },
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 5.151434835915774e-14,
+            "relative_l2": 5.827871636223253e-13,
+            "max_relative_above_1e-12_peak": 2.8866246420134617e-15,
+            "near_zero_reference_count": 4723200
+          }
+        },
+        {
+          "l": 3072,
+          "m": 0,
+          "map_rust_ducc": {
+            "absolute_max": 1.2314633861254531e-10,
+            "relative_l2": 1.256864644236574e-11,
+            "max_relative_above_1e-12_peak": 1.3707355988045047e-08,
+            "near_zero_reference_count": 0
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 3.554861834243626e-13,
+            "relative_l2": 5.152980700142052e-12,
+            "max_relative_above_1e-12_peak": 1.5054624213917123e-13,
+            "near_zero_reference_count": 4723200
+          },
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 3.4567658912581925e-13,
+            "relative_l2": 5.004028279348523e-12,
+            "max_relative_above_1e-12_peak": 1.4022116801015727e-13,
+            "near_zero_reference_count": 4723200
+          }
+        },
+        {
+          "l": 3072,
+          "m": 3072,
+          "map_rust_ducc": {
+            "absolute_max": 3.888556143749611e-14,
+            "relative_l2": 2.2365098600219155e-15,
+            "max_relative_above_1e-12_peak": 1.1125712431454611e-12,
+            "near_zero_reference_count": 17376072
+          },
+          "analysis_of_synthesis_rust": {
+            "absolute_max": 1.0214634299271056e-14,
+            "relative_l2": 1.022589556162244e-14,
+            "max_relative_above_1e-12_peak": 1.0214634299271056e-14,
+            "near_zero_reference_count": 4723200
+          },
+          "analysis_of_synthesis_ducc": {
+            "absolute_max": 1.0325101999813281e-14,
+            "relative_l2": 1.032895902957459e-14,
+            "max_relative_above_1e-12_peak": 1.0325101999813281e-14,
+            "near_zero_reference_count": 4723200
+          }
+        }
+      ],
+      "edge_cases": {
+        "zero": {
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 18972702
+          },
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 4723201
+          },
+          "exact_zero": true
+        },
+        "extreme": {
+          "map_rust_ducc": {
+            "absolute_max": 3.9907988705855666e+136,
+            "relative_l2": 1.319249261588453e-15,
+            "max_relative_above_1e-12_peak": 1.0866372337145848e-10,
+            "near_zero_reference_count": 0
+          },
+          "alm_rust_ducc": {
+            "absolute_max": 3.470654908511523e+136,
+            "relative_l2": 2.224243635420621e-13,
+            "max_relative_above_1e-12_peak": 1.9921241621448733e-16,
+            "near_zero_reference_count": 4723198
+          }
+        },
+        "subnormal": {
+          "map_rust_ducc": {
+            "absolute_max": 0.0,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 18972702
+          },
+          "alm_rust_ducc": {
+            "absolute_max": 0.0,
+            "relative_l2": 0.0,
+            "max_relative_above_1e-12_peak": 0.0,
+            "near_zero_reference_count": 4723201
+          }
+        }
+      },
+      "adjoints": {
+        "rustsht": {
+          "synthesis_relative_residual": 1.1873427876879015e-15,
+          "analysis_relative_residual": 1.0995358013973251e-14
+        },
+        "ducc": {
+          "synthesis_relative_residual": 4.07088955779045e-15,
+          "analysis_relative_residual": 1.940357296584473e-15
+        }
+      },
+      "finite_outputs": true,
+      "reset_consistent": {
+        "rustsht": true,
+        "ducc": true
+      },
+      "case_id": "T3072-m3072-even_smooth",
+      "lmax": 3072,
+      "mmax": 3072,
+      "ntheta": 3073,
+      "nphi": 6174,
+      "threads": 8
+    }
+  ],
+  "host_summary": {
+    "runqueue_wait_fraction_median": 0.0023103525907288733,
+    "runqueue_wait_fraction_p90": 0.005549244226525964,
+    "involuntary_switches_median": 218.0,
+    "involuntary_switches_max": 3603,
+    "sampled_worker_processes": 6
+  }
+}

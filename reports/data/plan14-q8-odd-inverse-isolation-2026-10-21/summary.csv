@@ -1,0 +1,4 @@
+process,length,rows,threads,calls_per_batch,batches,target_batch_ms,relative_l2,max_abs,rustfft_p10_ms,rustfft_median_ms,rustfft_p90_ms,rustsht_fft_real_p10_ms,rustsht_fft_real_median_ms,rustsht_fft_real_p90_ms,real_over_complex_ratio
+1,361,721,8,79,30,30.0,5.5292734e-16,8.526512829e-14,0.35339,0.364004,0.391845,0.383993,0.396044,0.434888,1.08802
+2,361,721,8,80,30,30.0,5.5292734e-16,8.526512829e-14,0.356733,0.363625,0.374472,0.386841,0.398232,0.417707,1.09517
+3,361,721,8,79,30,30.0,5.5292734e-16,8.526512829e-14,0.357014,0.367528,0.396433,0.387136,0.404445,0.449835,1.10045

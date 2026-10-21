@@ -414,18 +414,36 @@ stage. Phase A is closed; see the
 [attribution report](reports/plan14-small-q1-fixed-cost-attribution-2026-10-21.md)
 and [timing/phase data](reports/data/plan14-small-q1-current-2026-10-21/).
 
+## Plan 14 — current-source q8 rerank and FFT screen
+
+At Rust source `1d39a288`, a matched q8 rebaseline found T3072 full-order
+analysis faster than DUCC (105.052 vs 115.697 ms, 0.908x), so its old
+positive excess is no longer current. The largest selected current q8 excess
+is T720 reduced odd synthesis: +0.407 ms (1.315x); T720 full and reduced
+analysis excesses were +0.122 and +0.036 ms. Relative L2 errors across these
+cases were at most `1.96e-13`. T720 used three interleaved process pairs and
+30 calibrated batches; T3072 used 15 individual warm calls/backend because
+calls exceeded 100 ms. Runqueue wait and full distributions are recorded in
+the [rerank report](reports/plan14-q8-current-rerank-2026-10-21.md).
+
+A separate q8, n=361, 721-row screen compared the production-style RustFFT
+Hermitian-pack/C2C inverse with the existing RustSHT-FFT real C2R engine.
+Across three processes and 30 calibrated batches per process, the real engine
+was 8.8–10.0% slower. Relative L2 was `5.53e-16`; it is rejected as a
+production replacement. This was not a direct DUCC FFT comparison and does
+not identify the complete SHT excess. The next measurement is a matched
+DUCC pocketfft versus Rust inverse-row comparison with packing, scaling and
+q8 scheduling included. No production kernel changed in this checkpoint.
+
 ## Current next steps and deferred work
 
-1. Revalidate the largest prior q8 absolute excess at T3072 full-order
-   analysis on the current source, then profile matched stages and select a
-   source-grounded target. The T2047 q8 direct-input comparison is complete.
-2. The odd q8 synthesis inverse excess is quantified at +0.430 ms, but the
-   tested alternative was slower. Do not revisit it without a new source-level
-   mechanism or matched isolated real-FFT evidence.
-3. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
-   cache-topology queries plus optional offline pointer-chase diagnostic
-   (no startup autotuning); [Plan 13](plans/13-fused-batched-sht.md)
-   true basis-shared batches with measured internal blocking.
+1. Directly compare the current q8 n=361 Rust inverse-row path with pinned
+   DUCC pocketfft using equivalent packing, scaling and row scheduling. The
+   existing standalone real C2R engine was slower than the current Rust path.
+2. If the FFT stage does not justify a production change, resume the T127 q1
+   fused-analysis residual. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
+   cache-topology queries and [Plan 13](plans/13-fused-batched-sht.md)
+   true basis-shared batches.
 
 All prior measurements, full machine-readable CSV/JSON, rejected
 experiments, historical plans and source versions are intentionally

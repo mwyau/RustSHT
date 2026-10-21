@@ -1,0 +1,14 @@
+[package]
+name = "plan14-q8-odd-inverse"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+num-complex = "0.4"
+rayon = "1"
+rustfft = "6.4"
+rustsht-fft = { path = "../../crates/rustsht-fft" }
+
+[workspace]
+resolver = "3"

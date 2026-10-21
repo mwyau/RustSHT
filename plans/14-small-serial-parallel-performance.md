@@ -923,6 +923,31 @@ then use its matched stage profile to select the next attributable work.
 
 **Plan 12 interface:** measure and report the separate T63/T64 and T127/T255 table-selection discontinuities, cold-build cost and warm-read cost, but leave any cache-aware threshold redesign to Plan 12. Current f64 scalar **synthesis** selects recurrence from T64; scalar **analysis** has its own selector. One global T64 cutoff has already been rejected.
 
+## Current progress — current-source q8 rerank and odd inverse screen (2026-10-21)
+
+The T3072 full-order q8 analysis recheck at source `1d39a288` is faster than
+DUCC: 105.052 vs 115.697 ms (0.908x, −10.645 ms; 15 individual warm calls
+per backend). The previously recorded T3072 excess no longer ranks first.
+Current selected q8 T720 cases show +0.122 ms full analysis, +0.036 ms
+reduced analysis and +0.407 ms reduced odd-length synthesis. Relative L2
+errors are at most `1.96e-13`; the largest selected q8 synthesis excess is
+T720 `mmax=180`, `nphi=361`. The comparison used pinned DUCC 0.42.0, Rust
+1.99.1/Pulp V3, x86-64-v3 builds and interleaved q8 calls. Process timing,
+cold-call, runqueue and fixture data are in the
+[current-source rerank report](../reports/plan14-q8-current-rerank-2026-10-21.md)
+and linked machine-readable results.
+
+A calibrated 8-worker, 721-row n=361 inverse screen then compared RustFFT's
+production-style Hermitian-pack/C2C/output path to the existing standalone
+RustSHT-FFT real C2R engine. Across three independent 30-batch processes,
+C2R was 8.8–10.0% slower; outputs agreed to `5.53e-16` relative L2. This
+rejects that real engine as a replacement, but it is not a direct DUCC FFT
+comparison. No production source changed. Next, directly compare matched
+DUCC pocketfft and Rust inverse-row work at n=361/q8 (including packing and
+row scheduling) before deciding whether FFT is actionable; then return to the
+remaining T127 q1 fused-analysis residual if the FFT stage does not explain
+an actionable part of the whole-call gap.
+
 ## 5. Phase B — Attribute the remaining q8 large-transform excess
 
 Do this **after** integrating the T2048 result, using the new baseline. Rank **excess wall milliseconds**, not percentage speedups of isolated microkernels. Analyze scalar **analysis and synthesis separately**. A 1.2–1.4× whole-transform ratio cannot be attributed to a mutex, memory traffic, FFT or SIMD solely because that difference is visible in source.
