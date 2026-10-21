@@ -12,6 +12,17 @@ next-step text, is preserved
 [here](reports/archive/performance-status-2026-10-21-pre-refresh.md).
 For reproducible raw benchmark tables see [reports/README](reports/README.md).
 
+**Temporary scalar diagnostic priority (2026-10-21):** the newly published
+full sweep showed large q8 scalar GL ratios at selected T64–T256 points,
+including a T256 full-analysis return to near parity. A bounded dispatch and
+parallel-row-FFT investigation now precedes the broader Plan 15 baseline; it
+does not reopen Plan 14. Plan 15's separate native two-channel benchmark
+adapter has been implemented and smoke-validated on T4 GL/CC/F1 for A/S q1/q8
+(24 comparisons, max relative L2 `6.19e-16`, stale-output checks passed).
+The adapter and reproducible smoke command are in
+[`reports/data/plan15-spin1-native-baseline-2026-10-21`](reports/data/plan15-spin1-native-baseline-2026-10-21/README.md);
+the full spin-1 performance matrix remains unrun and will resume afterward.
+
 **Current-source full-transform sweep (2026-10-21):** the frozen Rust source
 `e487b85b` was compared with pinned DUCC 0.42.0 `42ce8ab5` across every
 `lmax=0…128` and 28 sampled degrees through T3072, full/reduced `mmax`,

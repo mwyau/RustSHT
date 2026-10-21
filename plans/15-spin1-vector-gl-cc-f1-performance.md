@@ -87,9 +87,10 @@ A gap is **closed** if correct matched whole-call results no longer justify furt
 
 ## 8. Sequence, concurrent work and branch discipline
 
-1. **First:** finish and push the already-requested Plan 14 scalar full sweep, its four figures, and Plan 14 closeout. The new plan must not preempt, alter or slow this benchmark.
-2. **Next (same Luna session, same feature branch):** promote Plan 15 to ACTIVE and mark Plan 14 COMPLETE, recording the closeout SHA; refresh `AGENTS.md` and plan index and push the transition.
-3. **Then:** matched native spin-1 GL/CC/F1 baseline; targeted GL optimization; targeted CC optimization; targeted F1 optimization; integrated cross-grid rebenchmark/validation; completion documentation.
+1. **Complete:** Plan 14's full scalar sweep, four figures and closeout at `f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`; Plan 15 activation was pushed at `341661a0256ecab329e5de65ad286f96a8a73914`.
+2. **Adapter checkpoint:** native Rust/DUCC spin-1 STANDARD workers and the matched runner are implemented. The T4 GL/CC/F1 A/S q1/q8 smoke passed at `6.19e-16` max relative L2. The full Plan 15 baseline matrix remains pending.
+3. **Temporary owner-priority interruption:** before the broader spin-1 baseline, investigate the scalar GL T64–T256 gaps using existing sweep evidence and focused row-FFT/dispatch diagnostics. Do not reopen Plan 14. Resume the Plan 15 GL → CC → F1 baseline sequence after that bounded diagnostic.
+4. **Then:** matched native spin-1 GL/CC/F1 baseline; targeted GL optimization; targeted CC optimization; targeted F1 optimization; integrated cross-grid rebenchmark/validation; completion documentation.
 4. **Stay deferred:** Plan 12 cache-topology heuristics; Plan 13 fused multi-field batching; spin 2–4 performance work; scalar CC/F1 optimization outside vector-shared code; and any independent odd-FFT rewrite.
 
 Keep working under `opt/sht-performance-parity` unless an explicit later owner instruction changes it. Before every push, inspect the tree and fetch remote changes, preserve all concurrent/unpublished work, rebase **only unpublished** commits when safe, reread updated instructions, rerun affected tests, push normally and verify remote SHA. Never force-push, reset away concurrent work, alter `main`, or silently claim a test passed if it was not run. Use the existing limit of at most one Luna benchmark-only subagent; no Sol reviewer unless specifically authorized.
