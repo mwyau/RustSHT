@@ -78,8 +78,17 @@ p90 19.3%), so small q8 differences are not attributed. Current q8 synthesis
 ratios remain 3.79–8.29x GL, 9.00–10.77x CC and 5.10–7.99x F1; the prior F1
 phase probe places most Rust cost in recurrence and spectrum accumulation.
 See the [integrated report and raw distributions](reports/plan15-spin1-integrated-t720-2026-10-21.md).
-Next: compare the executed CC/F1 synthesis recurrence and spectrum paths with
-DUCC at matched stage boundaries; keep odd-FFT work deferred.
+**Plan 15 F1 q8 coefficient reuse (`7f47f06f`):** full-order T720 F1
+synthesis reuses each order's converted coefficients across the 12 ring
+groups. Three paired process comparisons all improved, with candidate/baseline
+ratios `0.844–0.896` (paired median `0.886`) and pooled Rust median 48.37→42.75
+ms; Rust/DUCC moved 5.034×→4.458×. Reduced-order results were inconclusive
+under host wait. Candidate output is bitwise equal to the previous Rust
+binary; maximum DUCC relative L2 is `8.09e-13`. See the
+[A/B report and sanitized data](reports/plan15-spin1-f1-coefficient-reuse-2026-10-21.md).
+Next: check whether cached coefficient preparation similarly helps CC q8
+synthesis, then continue matched CC/F1 recurrence and spectrum attribution.
+Odd-FFT work remains deferred.
 
 **Plan 15 Phase B candidate:** q8 GL spin-1 synthesis now borrows the shared
 scalar-conversion rows across ring groups instead of copying them into worker
