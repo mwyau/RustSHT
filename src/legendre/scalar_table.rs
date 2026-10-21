@@ -19,6 +19,9 @@
  * Source revision: c1ed01b8fda69d2a378190f0915f1a19762dddbf.
  */
 
+use num_complex::Complex;
+use pulp::{Arch, Simd, WithSimd};
+
 use crate::grid::{GridKind, GridSpec};
 use crate::harmonics::HarmonicSpec;
 
@@ -356,5 +359,210 @@ impl<T: ShtScalar> ScalarLegendreTable<T> {
     pub(crate) fn degree_lanes(&self, m: usize, degree_offset: usize) -> &[T] {
         let start = self.order_offsets[m] + degree_offset * self.north_ring_count;
         &self.values[start..start + self.north_ring_count]
+    }
+}
+
+pub(crate) fn analyze_group_scalar<T: ShtScalar>(
+    order_spectra: &[Complex<T>],
+    table: &ScalarLegendreTable<T>,
+    ntheta: usize,
+    lmax: usize,
+    m_start: usize,
+    m_end: usize,
+    alm: &mut [Complex<T>],
+) {
+    let mut coefficient_start = 0;
+    for m in m_start..m_end {
+        let coefficient_count = lmax - m + 1;
+        let coefficients = &mut alm[coefficient_start..coefficient_start + coefficient_count];
+        let mut degree_offset = 0;
+        while degree_offset + 1 < coefficient_count {
+            let even_basis = table.degree_lanes(m, degree_offset);
+            let odd_basis = table.degree_lanes(m, degree_offset + 1);
+            let mut even_sum = Complex::new(T::zero(), T::zero());
+            let mut odd_sum = Complex::new(T::zero(), T::zero());
+            for north_ring in 0..table.north_ring_count() {
+                let south_ring = ntheta - 1 - north_ring;
+                let north = order_spectra[m * ntheta + north_ring];
+                let south = if south_ring != north_ring {
+                    order_spectra[m * ntheta + south_ring]
+                } else {
+                    Complex::new(T::zero(), T::zero())
+                };
+                even_sum += (north + south) * even_basis[north_ring];
+                odd_sum += (north - south) * odd_basis[north_ring];
+            }
+            coefficients[degree_offset] = even_sum;
+            coefficients[degree_offset + 1] = odd_sum;
+            degree_offset += 2;
+        }
+        if degree_offset < coefficient_count {
+            let l = m + degree_offset;
+            let parity = if (l + m).is_multiple_of(2) {
+                T::one()
+            } else {
+                -T::one()
+            };
+            let mut sum = Complex::new(T::zero(), T::zero());
+            for (north_ring, &basis) in table.degree_lanes(m, degree_offset).iter().enumerate() {
+                let south_ring = ntheta - 1 - north_ring;
+                let south = if south_ring != north_ring {
+                    order_spectra[m * ntheta + south_ring] * parity
+                } else {
+                    Complex::new(T::zero(), T::zero())
+                };
+                sum += (order_spectra[m * ntheta + north_ring] + south) * basis;
+            }
+            coefficients[degree_offset] = sum;
+        }
+        coefficient_start += coefficient_count;
+    }
+}
+
+struct F64TableAnalysisGroup<'a> {
+    order_spectra: &'a [Complex<f64>],
+    table: &'a ScalarLegendreTable<f64>,
+    ntheta: usize,
+    lmax: usize,
+    m_start: usize,
+    m_end: usize,
+    alm: &'a mut [Complex<f64>],
+}
+
+pub(crate) fn analyze_group_f64(
+    order_spectra: &[Complex<f64>],
+    table: &ScalarLegendreTable<f64>,
+    ntheta: usize,
+    lmax: usize,
+    m_start: usize,
+    m_end: usize,
+    alm: &mut [Complex<f64>],
+) {
+    Arch::new().dispatch(F64TableAnalysisGroup {
+        order_spectra,
+        table,
+        ntheta,
+        lmax,
+        m_start,
+        m_end,
+        alm,
+    });
+}
+
+impl WithSimd for F64TableAnalysisGroup<'_> {
+    type Output = ();
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) {
+        if S::C64_LANES == 2 && self.ntheta.is_multiple_of(4) {
+            analyze_group_f64_two_complex_lanes(self, simd);
+        } else {
+            analyze_group_scalar(
+                self.order_spectra,
+                self.table,
+                self.ntheta,
+                self.lmax,
+                self.m_start,
+                self.m_end,
+                self.alm,
+            );
+        }
+    }
+}
+
+#[inline(always)]
+fn analyze_group_f64_two_complex_lanes<S: Simd>(group: F64TableAnalysisGroup<'_>, simd: S) {
+    debug_assert_eq!(S::C64_LANES, 2);
+    debug_assert_eq!(S::F64_LANES, 4);
+
+    let F64TableAnalysisGroup {
+        order_spectra,
+        table,
+        ntheta,
+        lmax,
+        m_start,
+        m_end,
+        alm,
+    } = group;
+    let north_ring_count = table.north_ring_count();
+    let lower_complex_lane = simd.mask_between_m64s(2, 4).mask();
+    let mut coefficient_start = 0;
+
+    for m in m_start..m_end {
+        let coefficient_count = lmax - m + 1;
+        let coefficients = &mut alm[coefficient_start..coefficient_start + coefficient_count];
+        let order_start = m * ntheta;
+        let order_row = &order_spectra[order_start..order_start + ntheta];
+        let paired_ring_count = ntheta / 2;
+        let (north_vectors, north_tail) = S::as_simd_c64s(&order_row[..paired_ring_count]);
+        let south_start = ntheta - paired_ring_count;
+        let (south_vectors, south_tail) = S::as_simd_c64s(&order_row[south_start..]);
+        debug_assert!(north_tail.is_empty());
+        debug_assert!(south_tail.is_empty());
+        debug_assert_eq!(north_vectors.len(), south_vectors.len());
+        let mut degree_offset = 0;
+
+        while degree_offset + 1 < coefficient_count {
+            let even_basis = table.degree_lanes(m, degree_offset);
+            let odd_basis = table.degree_lanes(m, degree_offset + 1);
+            let mut even_sum = simd.splat_f64s(0.0);
+            let mut odd_sum = simd.splat_f64s(0.0);
+            for (vector_index, (&north, &south_forward)) in north_vectors
+                .iter()
+                .zip(south_vectors.iter().rev())
+                .enumerate()
+            {
+                let north_ring = vector_index * 2;
+                let south = simd.rotate_right_c64s(south_forward, 1);
+                let even_values = pulp::bytemuck::cast(simd.add_c64s(north, south));
+                let odd_values = pulp::bytemuck::cast(simd.sub_c64s(north, south));
+                let even_weights = simd.select_f64s(
+                    lower_complex_lane,
+                    simd.splat_f64s(even_basis[north_ring + 1]),
+                    simd.splat_f64s(even_basis[north_ring]),
+                );
+                let odd_weights = simd.select_f64s(
+                    lower_complex_lane,
+                    simd.splat_f64s(odd_basis[north_ring + 1]),
+                    simd.splat_f64s(odd_basis[north_ring]),
+                );
+                even_sum = simd.add_f64s(even_sum, simd.mul_f64s(even_values, even_weights));
+                odd_sum = simd.add_f64s(odd_sum, simd.mul_f64s(odd_values, odd_weights));
+            }
+
+            let mut even_complex = simd.reduce_sum_c64s(pulp::bytemuck::cast(even_sum));
+            let mut odd_complex = simd.reduce_sum_c64s(pulp::bytemuck::cast(odd_sum));
+            for north_ring in paired_ring_count..north_ring_count {
+                let south_ring = ntheta - 1 - north_ring;
+                let north = order_spectra[order_start + north_ring];
+                let south = if south_ring != north_ring {
+                    order_spectra[order_start + south_ring]
+                } else {
+                    Complex::new(0.0, 0.0)
+                };
+                even_complex += (north + south) * even_basis[north_ring];
+                odd_complex += (north - south) * odd_basis[north_ring];
+            }
+            coefficients[degree_offset] = even_complex;
+            coefficients[degree_offset + 1] = odd_complex;
+            degree_offset += 2;
+        }
+
+        if degree_offset < coefficient_count {
+            let l = m + degree_offset;
+            let parity = if (l + m).is_multiple_of(2) { 1.0 } else { -1.0 };
+            let mut sum = Complex::new(0.0, 0.0);
+            for (north_ring, &basis) in table.degree_lanes(m, degree_offset).iter().enumerate() {
+                let south_ring = ntheta - 1 - north_ring;
+                let south = if south_ring != north_ring {
+                    order_spectra[order_start + south_ring] * parity
+                } else {
+                    Complex::new(0.0, 0.0)
+                };
+                sum += (order_spectra[order_start + north_ring] + south) * basis;
+            }
+            coefficients[degree_offset] = sum;
+        }
+        coefficient_start += coefficient_count;
     }
 }

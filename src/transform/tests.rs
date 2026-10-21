@@ -1095,7 +1095,7 @@ fn scalar_analysis_phase_profile_selected() {
 
 #[cfg(feature = "parallel")]
 #[test]
-#[ignore = "Plan 14 calibrated q8 analysis phase profile; requires selected T720 case and q8 affinity"]
+#[ignore = "Plan 14 calibrated analysis phase profile; set geometry, q and affinity"]
 fn plan14_analysis_phase_batch_profile() {
     let thread_count = std::env::var("RUSTSHT_PROFILE_Q")
         .expect("set RUSTSHT_PROFILE_Q")
@@ -1117,13 +1117,25 @@ fn plan14_analysis_phase_batch_profile() {
         .ok()
         .map(|value| value.parse::<f64>().expect("invalid batch duration"))
         .unwrap_or(30.0);
-    assert_eq!(lmax, 720, "this focused profile is for T720 only");
     assert!(mmax <= lmax && thread_count > 0 && batches >= 30);
     assert!((20.0..=100.0).contains(&target_batch_ms));
 
-    let ntheta = 721;
-    let nphi = 1442;
+    let ntheta = std::env::var("RUSTSHT_PROFILE_NTHETA")
+        .ok()
+        .map(|value| value.parse::<usize>().expect("invalid ntheta"))
+        .unwrap_or(lmax + 1);
+    let nphi = std::env::var("RUSTSHT_PROFILE_NPHI")
+        .ok()
+        .map(|value| value.parse::<usize>().expect("invalid nphi"))
+        .unwrap_or_else(|| GridSpec::fft_friendly_nphi(lmax).unwrap());
+    assert!(ntheta > lmax);
+    assert!(nphi > 2 * mmax);
     let plan = make_plan(lmax, mmax, ntheta, nphi, 0.23);
+    let force_recurrence =
+        std::env::var("RUSTSHT_PROFILE_FORCE_RECURRENCE").is_ok_and(|value| value == "1");
+    if force_recurrence {
+        assert!(plan.scalar_legendre_table.set(None).is_ok());
+    }
     let pool = rayon::ThreadPoolBuilder::new()
         .num_threads(thread_count)
         .build()
@@ -1195,7 +1207,7 @@ fn plan14_analysis_phase_batch_profile() {
             .collect::<Vec<_>>()
             .join(" ");
         eprintln!(
-            "PLAN14_ANALYSIS_PHASE_BATCH T{lmax} m{mmax} q{thread_count} batch={} repeats={repetitions} wall_us={:.3} {}",
+            "PLAN14_ANALYSIS_PHASE_BATCH T{lmax} m{mmax} grid={ntheta}x{nphi} q{thread_count} batch={} repeats={repetitions} wall_us={:.3} {}",
             batch + 1,
             wall_ms * 1e3 / repetitions as f64,
             per_call_us,
@@ -1211,12 +1223,18 @@ fn plan14_analysis_phase_batch_profile() {
         .iter()
         .map(|record| record.0)
         .collect::<Vec<_>>();
+    let selected_arch = format!("{:?}", pulp::Arch::new());
     let mut phase_names = std::collections::BTreeSet::new();
     for (_, phases) in &batch_records {
         phase_names.extend(phases.keys().copied());
     }
     eprintln!(
-        "PLAN14_ANALYSIS_PHASE_META T{lmax} m{mmax} q{thread_count} ntheta={ntheta} nphi={nphi} batches={batches} repeats={repetitions} target_batch_ms={target_batch_ms:.3} calibration_call_ms={calibration_call_ms:.6} wall_median_us={:.3} wall_min_us={:.3} wall_max_us={:.3}",
+        "PLAN14_ANALYSIS_PHASE_META T{lmax} m{mmax} grid={ntheta}x{nphi} q{thread_count} route={} arch={selected_arch} batches={batches} repeats={repetitions} target_batch_ms={target_batch_ms:.3} calibration_call_ms={calibration_call_ms:.6} wall_median_us={:.3} wall_min_us={:.3} wall_max_us={:.3}",
+        if force_recurrence {
+            "forced-recurrence"
+        } else {
+            "production"
+        },
         quantile(&wall_samples, 0.5),
         quantile(&wall_samples, 0.0),
         quantile(&wall_samples, 1.0),
@@ -2092,8 +2110,14 @@ fn scalar_ordered_parallel_orders_above_t511_match_serial_and_ring_group() {
 }
 
 #[test]
-fn t63_precomputed_scalar_gl_matches_recurrence_for_all_four_operators() {
-    for (lmax, mmax, ntheta, nphi) in [(63, 63, 64, 128), (63, 63, 96, 192)] {
+fn precomputed_scalar_gl_matches_recurrence_for_all_four_operators() {
+    for (lmax, mmax, ntheta, nphi) in [
+        (63, 63, 64, 128),
+        (63, 63, 96, 192),
+        (126, 126, 127, 255),
+        (127, 127, 128, 255),
+        (127, 127, 129, 257),
+    ] {
         let table_plan = make_plan(lmax, mmax, ntheta, nphi, 0.37);
         assert!(table_plan.get_scalar_legendre_table().is_some());
         let recurrence_plan = make_plan(lmax, mmax, ntheta, nphi, 0.37);
@@ -2158,7 +2182,11 @@ fn t63_precomputed_scalar_gl_matches_recurrence_for_all_four_operators() {
             {
                 assert_eq!(
                     table_plan.scalar_legendre_strategy(LegendreOperation::Synthesis),
-                    LegendreStrategy::CompactTable
+                    if lmax <= 63 {
+                        LegendreStrategy::CompactTable
+                    } else {
+                        LegendreStrategy::Recurrence
+                    }
                 );
                 assert_eq!(
                     table_plan.scalar_legendre_strategy(LegendreOperation::Analysis),

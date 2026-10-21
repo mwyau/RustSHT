@@ -127,6 +127,18 @@ pub(crate) trait ShtScalar:
         false
     }
 
+    fn analyze_scalar_table_group(
+        order_spectra: &[Complex<Self>],
+        table: &ScalarLegendreTable<Self>,
+        ntheta: usize,
+        lmax: usize,
+        m_start: usize,
+        m_end: usize,
+        alm: &mut [Complex<Self>],
+    ) {
+        scalar_table::analyze_group_scalar(order_spectra, table, ntheta, lmax, m_start, m_end, alm);
+    }
+
     fn supports_spin_analysis_simd() -> bool {
         false
     }
@@ -755,6 +767,18 @@ impl ShtScalar for f64 {
 
     fn supports_precomputed_scalar() -> bool {
         true
+    }
+
+    fn analyze_scalar_table_group(
+        order_spectra: &[Complex<Self>],
+        table: &ScalarLegendreTable<Self>,
+        ntheta: usize,
+        lmax: usize,
+        m_start: usize,
+        m_end: usize,
+        alm: &mut [Complex<Self>],
+    ) {
+        scalar_table::analyze_group_f64(order_spectra, table, ntheta, lmax, m_start, m_end, alm);
     }
 
     fn supports_spin_analysis_simd() -> bool {
