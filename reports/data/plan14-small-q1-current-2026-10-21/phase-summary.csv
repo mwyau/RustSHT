@@ -1,0 +1,43 @@
+operation,lmax,process,whole_min_us,whole_median_us,whole_max_us,phase,p10_us,median_us,p90_us
+analysis,31,1,21.127,21.273,21.485,Legendre recurrence and accumulation,15.286,15.346,15.409
+analysis,31,1,21.127,21.273,21.485,forward FFT,4.799,4.823,4.848
+analysis,31,1,21.127,21.273,21.485,resampling and latitude setup,0.641,0.646,0.652
+analysis,31,1,21.127,21.273,21.485,coefficient initialization,0.021,0.021,0.022
+analysis,31,1,21.127,21.273,21.485,order spectrum preparation,0.023,0.023,0.023
+analysis,31,1,21.127,21.273,21.485,Legendre table retrieval,0.021,0.021,0.024
+analysis,31,1,21.127,21.273,21.485,coefficient cleanup,0.038,0.038,0.039
+analysis,31,1,21.127,21.273,21.485,strategy selection,0.024,0.024,0.024
+analysis,31,2,21.261,21.430,21.942,Legendre recurrence and accumulation,15.379,15.499,15.567
+analysis,31,2,21.261,21.430,21.942,forward FFT,4.824,4.848,4.892
+analysis,31,2,21.261,21.430,21.942,resampling and latitude setup,0.645,0.651,0.655
+analysis,31,2,21.261,21.430,21.942,coefficient initialization,0.021,0.022,0.022
+analysis,31,2,21.261,21.430,21.942,order spectrum preparation,0.023,0.024,0.024
+analysis,31,2,21.261,21.430,21.942,Legendre table retrieval,0.021,0.021,0.022
+analysis,31,2,21.261,21.430,21.942,coefficient cleanup,0.038,0.039,0.039
+analysis,31,2,21.261,21.430,21.942,strategy selection,0.024,0.024,0.024
+analysis,31,3,21.136,21.282,22.040,Legendre recurrence and accumulation,15.345,15.391,15.494
+analysis,31,3,21.136,21.282,22.040,forward FFT,4.790,4.817,4.848
+analysis,31,3,21.136,21.282,22.040,resampling and latitude setup,0.644,0.645,0.651
+analysis,31,3,21.136,21.282,22.040,coefficient initialization,0.021,0.021,0.022
+analysis,31,3,21.136,21.282,22.040,order spectrum preparation,0.023,0.024,0.024
+analysis,31,3,21.136,21.282,22.040,Legendre table retrieval,0.021,0.021,0.021
+analysis,31,3,21.136,21.282,22.040,coefficient cleanup,0.038,0.039,0.039
+analysis,31,3,21.136,21.282,22.040,strategy selection,0.024,0.024,0.024
+synthesis,63,1,70.245,70.662,72.263,Legendre recurrence and spectral accumulation,59.880,60.041,60.119
+synthesis,63,1,70.245,70.662,72.263,inverse longitude FFT and map writeback,8.742,8.769,8.862
+synthesis,63,1,70.245,70.662,72.263,latitude setup and spectrum clear,1.653,1.660,1.671
+synthesis,63,2,70.624,70.976,71.804,Legendre recurrence and spectral accumulation,60.119,60.311,60.483
+synthesis,63,2,70.624,70.976,71.804,inverse longitude FFT and map writeback,8.771,8.789,8.901
+synthesis,63,2,70.624,70.976,71.804,latitude setup and spectrum clear,1.658,1.665,1.681
+synthesis,63,3,73.416,73.724,74.698,Legendre recurrence and spectral accumulation,62.762,62.869,63.139
+synthesis,63,3,73.416,73.724,74.698,inverse longitude FFT and map writeback,8.765,8.796,8.888
+synthesis,63,3,73.416,73.724,74.698,latitude setup and spectrum clear,1.800,1.809,1.822
+synthesis,64,1,83.333,84.212,85.609,Legendre recurrence and spectral accumulation,66.834,67.182,67.988
+synthesis,64,1,83.333,84.212,85.609,inverse longitude FFT and map writeback,14.993,15.075,15.186
+synthesis,64,1,83.333,84.212,85.609,latitude setup and spectrum clear,1.738,1.745,1.771
+synthesis,64,2,83.920,84.372,84.686,Legendre recurrence and spectral accumulation,67.171,67.330,67.455
+synthesis,64,2,83.920,84.372,84.686,inverse longitude FFT and map writeback,15.017,15.043,15.109
+synthesis,64,2,83.920,84.372,84.686,latitude setup and spectrum clear,1.763,1.766,1.785
+synthesis,64,3,83.537,86.691,95.136,Legendre recurrence and spectral accumulation,66.813,68.948,72.491
+synthesis,64,3,83.537,86.691,95.136,inverse longitude FFT and map writeback,15.084,15.675,16.621
+synthesis,64,3,83.537,86.691,95.136,latitude setup and spectrum clear,1.743,1.812,1.910

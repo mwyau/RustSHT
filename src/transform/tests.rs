@@ -1248,6 +1248,139 @@ fn plan14_analysis_phase_batch_profile() {
 
 #[cfg(feature = "parallel")]
 #[test]
+#[ignore = "Plan 14 calibrated synthesis phase profile; set geometry, q and affinity"]
+fn plan14_synthesis_phase_batch_profile() {
+    let thread_count = std::env::var("RUSTSHT_PROFILE_Q")
+        .expect("set RUSTSHT_PROFILE_Q")
+        .parse::<usize>()
+        .expect("RUSTSHT_PROFILE_Q must be an integer");
+    let lmax = std::env::var("RUSTSHT_PROFILE_LMAX")
+        .expect("set RUSTSHT_PROFILE_LMAX")
+        .parse::<usize>()
+        .expect("RUSTSHT_PROFILE_LMAX must be an integer");
+    let mmax = std::env::var("RUSTSHT_PROFILE_MMAX")
+        .expect("set RUSTSHT_PROFILE_MMAX")
+        .parse::<usize>()
+        .expect("RUSTSHT_PROFILE_MMAX must be an integer");
+    let batches = std::env::var("RUSTSHT_PROFILE_BATCHES")
+        .ok()
+        .map(|value| value.parse::<usize>().expect("invalid batch count"))
+        .unwrap_or(30);
+    let target_batch_ms = std::env::var("RUSTSHT_PROFILE_BATCH_MS")
+        .ok()
+        .map(|value| value.parse::<f64>().expect("invalid batch duration"))
+        .unwrap_or(30.0);
+    assert!(mmax <= lmax && thread_count > 0 && batches >= 30);
+    assert!((20.0..=100.0).contains(&target_batch_ms));
+
+    let ntheta = std::env::var("RUSTSHT_PROFILE_NTHETA")
+        .ok()
+        .map(|value| value.parse::<usize>().expect("invalid ntheta"))
+        .unwrap_or(lmax + 1);
+    let nphi = std::env::var("RUSTSHT_PROFILE_NPHI")
+        .ok()
+        .map(|value| value.parse::<usize>().expect("invalid nphi"))
+        .unwrap_or_else(|| GridSpec::fft_friendly_nphi(lmax).unwrap());
+    assert!(ntheta > lmax);
+    assert!(nphi > 2 * mmax);
+    assert_eq!(rayon::current_num_threads(), thread_count);
+
+    let plan = make_plan(lmax, mmax, ntheta, nphi, 0.23);
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut workspace, thread_count)
+        .unwrap();
+    let probe = workspace.observe_transform_phases();
+    let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+    for order in 0..=mmax {
+        for degree in order..=lmax {
+            let phase = (degree * 31 + order * 17) as f64 * 0.001_37;
+            let index = plan.harmonics.index(degree, order).unwrap();
+            alm[index] = Complex64::new(
+                phase.sin() * 1e-4,
+                if order == 0 { 0.0 } else { phase.cos() * 1e-4 },
+            );
+        }
+    }
+    let mut map = vec![0.0; plan.sample_count];
+    plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
+    let started = std::time::Instant::now();
+    plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
+    let calibration_call_ms = started.elapsed().as_secs_f64() * 1e3;
+    let repetitions =
+        ((target_batch_ms / calibration_call_ms.max(1e-6)).ceil() as usize).clamp(1, 100_000);
+
+    let mut batch_records = Vec::with_capacity(batches);
+    for batch in 0..batches {
+        probe
+            .lock()
+            .expect("synthesis phase profile is not poisoned")
+            .clear();
+        let started = std::time::Instant::now();
+        for _ in 0..repetitions {
+            plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
+        }
+        std::hint::black_box(&map);
+        let wall_ms = started.elapsed().as_secs_f64() * 1e3;
+        let phases = probe
+            .lock()
+            .expect("synthesis phase profile is not poisoned")
+            .clone();
+        let mut phase_totals = std::collections::BTreeMap::<&str, u128>::new();
+        for phase in phases {
+            *phase_totals.entry(phase.phase).or_default() += phase.elapsed_ns;
+        }
+        assert!(map.iter().all(|value| value.is_finite()));
+        let per_call_us = phase_totals
+            .iter()
+            .map(|(name, value)| format!("{name}={:.3}", *value as f64 / repetitions as f64 / 1e3))
+            .collect::<Vec<_>>()
+            .join(" ");
+        eprintln!(
+            "PLAN14_SYNTHESIS_PHASE_BATCH T{lmax} m{mmax} grid={ntheta}x{nphi} q{thread_count} batch={} repeats={repetitions} wall_us={:.3} {}",
+            batch + 1,
+            wall_ms * 1e3 / repetitions as f64,
+            per_call_us,
+        );
+        batch_records.push((wall_ms * 1e3 / repetitions as f64, phase_totals));
+    }
+    let quantile = |values: &[f64], q: f64| {
+        let mut sorted = values.to_vec();
+        sorted.sort_by(f64::total_cmp);
+        sorted[((sorted.len() - 1) as f64 * q).round() as usize]
+    };
+    let wall_samples = batch_records
+        .iter()
+        .map(|record| record.0)
+        .collect::<Vec<_>>();
+    let selected_arch = format!("{:?}", pulp::Arch::new());
+    let mut phase_names = std::collections::BTreeSet::new();
+    for (_, phases) in &batch_records {
+        phase_names.extend(phases.keys().copied());
+    }
+    eprintln!(
+        "PLAN14_SYNTHESIS_PHASE_META T{lmax} m{mmax} grid={ntheta}x{nphi} q{thread_count} arch={selected_arch} batches={batches} repeats={repetitions} target_batch_ms={target_batch_ms:.3} calibration_call_ms={calibration_call_ms:.6} wall_median_us={:.3} wall_min_us={:.3} wall_max_us={:.3}",
+        quantile(&wall_samples, 0.5),
+        quantile(&wall_samples, 0.0),
+        quantile(&wall_samples, 1.0),
+    );
+    for name in phase_names {
+        let values = batch_records
+            .iter()
+            .map(|(_, phases)| {
+                phases.get(name).copied().unwrap_or(0) as f64 / repetitions as f64 / 1e3
+            })
+            .collect::<Vec<_>>();
+        eprintln!(
+            "PLAN14_SYNTHESIS_PHASE_SUMMARY T{lmax} m{mmax} q{thread_count} phase={name:?} p10_us={:.3} median_us={:.3} p90_us={:.3}",
+            quantile(&values, 0.1),
+            quantile(&values, 0.5),
+            quantile(&values, 0.9),
+        );
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
 #[ignore = "Plan 14: profile analysis order-queue lock and per-worker work at T720 q8"]
 fn plan14_analysis_order_queue_profile() {
     use std::time::Instant;

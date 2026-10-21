@@ -401,18 +401,28 @@ candidate is retained; the one-order scheduler remains production. Matched
 Rust/DUCC results for q1/q8, full/reduced `mmax`, numerical error and host
 observations are in the [batch ablation CSV](reports/data/plan14-analysis-scheduler-2026-10-21/batch-ablation.csv).
 
+**Plan 14 small-q1 fixed-cost attribution (current source `f3f222b7`):**
+the matched T1/T2/T4/T16/T31/T32/T63/T64 full-order q1 sweep found Rust
+faster at T1–T4. The largest sampled positive excesses were T63 synthesis
+(+9.982 µs), T64 synthesis (+7.703 µs), and T31 analysis (+5.208 µs).
+Three process-level Rust phase captures put setup below 1.9 µs for T63/T64
+synthesis and non-FFT/non-Legendre analysis phases below 0.8 µs at T31;
+recurrence and FFT work dominate the Rust calls. Runqueue wait was elevated
+(10.5% median, 31.6% p90), and no small-case DUCC stage hooks were enabled,
+so this does not support a source edit or assign the full excess to one
+stage. Phase A is closed; see the
+[attribution report](reports/plan14-small-q1-fixed-cost-attribution-2026-10-21.md)
+and [timing/phase data](reports/data/plan14-small-q1-current-2026-10-21/).
+
 ## Current next steps and deferred work
 
-1. Finish small-q1 fixed-cost attribution across T1–T64, separating setup,
-   FFT and Legendre work before choosing a source change. The one-base
-   workspace candidate is tested and rejected; production already uses
-   contiguous aligned scratch.
-2. Re-rank the largest q8 whole-call excess after that attribution. The
-   T2047 q8 direct-input comparison is already complete.
-3. The odd q8 synthesis inverse excess is quantified at +0.430 ms, but the
+1. Revalidate the largest prior q8 absolute excess at T3072 full-order
+   analysis on the current source, then profile matched stages and select a
+   source-grounded target. The T2047 q8 direct-input comparison is complete.
+2. The odd q8 synthesis inverse excess is quantified at +0.430 ms, but the
    tested alternative was slower. Do not revisit it without a new source-level
    mechanism or matched isolated real-FFT evidence.
-4. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
+3. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
    cache-topology queries plus optional offline pointer-chase diagnostic
    (no startup autotuning); [Plan 13](plans/13-fused-batched-sht.md)
    true basis-shared batches with measured internal blocking.

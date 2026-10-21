@@ -887,11 +887,35 @@ remaining small-q1 fixed-cost attribution across T1–T64 and rank the largest
 absolute per-call excess before selecting another source change. Keep the
 existing contiguous production workspace and slice dispatch.
 
+## Current progress — small-q1 fixed-cost attribution (2026-10-21)
+
+The current-source T1/T2/T4/T16/T31/T32/T63/T64 q1 sweep is in
+[`plan14-small-q1-fixed-cost-attribution-2026-10-21.md`](../reports/plan14-small-q1-fixed-cost-attribution-2026-10-21.md)
+and its
+[`results.csv`](../reports/data/plan14-small-q1-current-2026-10-21/results.csv).
+It used full `mmax`, even-smooth longitude sampling, three interleaved
+process pairs and 30 calibrated batches per backend/case. Rust was faster at
+T1–T4. The largest sampled positive excesses were T63 synthesis (+9.982 µs),
+T64 synthesis (+7.703 µs) and T31 analysis (+5.208 µs); q1 runqueue wait was
+elevated (10.5% median / 31.6% p90), so small shifts remain directional.
+
+Three process-level test-only phase runs found less than 1.9 µs in synthesis
+geometry/setup at T63/T64 and under 0.8 µs in non-FFT/non-Legendre analysis
+phases at T31. Rust recurrence/accumulation took 60–69 µs in the synthesis
+cases; the inverse stage was 8.8–15.7 µs. No DUCC stage timer was enabled for
+these small cases, so the whole-call excess cannot be assigned to a Rust
+substage. The fixed per-call setup hypothesis is closed without a source
+change; no recurrence or FFT rewrite is justified by this profile alone.
+
+Re-rank the large-q8 whole-transform excess from the current source. First
+revalidate T3072 full-order analysis, the largest prior absolute q8 excess,
+then use its matched stage profile to select the next attributable work.
+
 ## 4. Phase A — Find and fix small serial fixed costs
 
 **Hypothesis to test:** small T1–T32 transforms spend a significant fraction of wall time in repeated per-call setup, data conversion, buffer handling and/or independent row FFTs rather than in useful Legendre arithmetic. This is a hypothesis, not a proven diagnosis.
 
-1. The small-q1 route-cutoff experiment is complete at T16. Retain its cold/warm tradeoff and proceed to the q8 rebaseline below; only reopen Phase A for a concrete newly measured cause.
+1. The small-q1 route-cutoff and fixed-cost attribution are complete at T16 and the current-source T1–T64 checkpoint above. No fixed per-call cause justified a source change; proceed to q8 re-ranking. Reopen Phase A only for a concrete newly measured cause.
 2. Compare DUCC's `map2leg`/`leg2map`, `ringhelper`, `allocate_leg` and Legendre preparation with Rust's `src/fft.rs`, `src/transform.rs`, `src/plan.rs` and `src/workspace.rs`. DUCC's own per-call preparation can be **greater** than Rust's; measure it rather than assuming a plan advantage or deficit.
 3. Distinguish **fixed per-call costs** from O(`ntheta*nphi`) row FFT costs and O(`lmax`-dependent) Legendre work by fitting latency against operation counts or using carefully chosen neighboring sizes. Identify the single largest excess in **absolute microseconds** across target sizes before editing production.
 4. Test one reversible, source-justified candidate at a time: e.g. remove demonstrably redundant initialization, cache immutable geometry already owned by the plan, avoid unnecessary intermediate copies, or specialize an existing tiny-FFT path if measured. Any cache must be immutable/thread-safe and preserve first-use behavior. Do not bypass input validation, finite/range checks, real Nyquist handling, scaling, or adjoint invariants. No unsupported small-band hardcoded answers.
