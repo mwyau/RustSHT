@@ -53,3 +53,7 @@ required-features = ["parallel"]
 [[example]]
 name = "ducc_full_transform_parity"
 required-features = ["parallel"]
+
+[[example]]
+name = "ducc_spin1_full_transform_parity"
+required-features = ["parallel"]
