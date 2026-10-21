@@ -17,6 +17,7 @@
 
 use num_complex::Complex64;
 use pulp::{Arch, Simd, WithSimd};
+use std::{cell::Cell, marker::PhantomData, ptr::NonNull};
 
 use crate::legendre::{SCALAR_ORDER_BATCH_SIZE, longitude_phase, scalar, scalar_paired};
 
@@ -44,6 +45,87 @@ pub(crate) struct ScalarOrderedScratch<'a, T> {
     pub(crate) sum_even_im: &'a mut [T],
     pub(crate) sum_odd_re: &'a mut [T],
     pub(crate) sum_odd_im: &'a mut [T],
+}
+
+/// Shared destination for parallel jobs that each own one Fourier order.
+///
+/// The output is ring-major, while each parallel job writes one disjoint
+/// order column. This avoids materializing and transposing a second full
+/// spectrum array.
+pub(crate) struct DisjointSpectrumOutput<'a, T> {
+    pointer: NonNull<num_complex::Complex<T>>,
+    ntheta: usize,
+    spectrum_len: usize,
+    _exclusive: PhantomData<&'a mut [num_complex::Complex<T>]>,
+}
+
+// SAFETY: a shared output can only produce a writer through the unsafe
+// `writer_for_unique_order` method. The caller assigns each order exactly once;
+// writers then touch distinct matrix columns, and the buffer is not read until
+// all parallel order jobs have joined.
+unsafe impl<T: Send + Sync> Sync for DisjointSpectrumOutput<'_, T> {}
+
+#[allow(dead_code)]
+impl<'a, T: Send + Sync> DisjointSpectrumOutput<'a, T> {
+    pub(crate) fn new(
+        spectra: &'a mut [num_complex::Complex<T>],
+        ntheta: usize,
+        spectrum_len: usize,
+    ) -> Option<Self> {
+        let required = ntheta.checked_mul(spectrum_len)?;
+        if ntheta == 0 || spectrum_len == 0 || spectra.len() < required {
+            return None;
+        }
+        Some(Self {
+            pointer: NonNull::new(spectra.as_mut_ptr())?,
+            ntheta,
+            spectrum_len,
+            _exclusive: PhantomData,
+        })
+    }
+
+    /// Creates the sole writer for `order` across the active parallel region.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure no other live writer targets this order. Each
+    /// ring in that order must also be written at most once before the output
+    /// is read.
+    pub(crate) unsafe fn writer_for_unique_order(
+        &self,
+        order: usize,
+    ) -> Option<DisjointSpectrumWriter<'a, T>> {
+        (order < self.spectrum_len).then_some(DisjointSpectrumWriter {
+            pointer: self.pointer,
+            ntheta: self.ntheta,
+            spectrum_len: self.spectrum_len,
+            order,
+            _buffer: PhantomData,
+            _not_sync: PhantomData,
+        })
+    }
+}
+
+pub(crate) struct DisjointSpectrumWriter<'a, T> {
+    pointer: NonNull<num_complex::Complex<T>>,
+    ntheta: usize,
+    spectrum_len: usize,
+    order: usize,
+    _buffer: PhantomData<&'a num_complex::Complex<T>>,
+    _not_sync: PhantomData<Cell<()>>,
+}
+
+impl<T: Copy> DisjointSpectrumWriter<'_, T> {
+    #[inline]
+    fn write(&self, ring: usize, value: num_complex::Complex<T>) {
+        debug_assert!(ring < self.ntheta);
+        debug_assert!(self.order < self.spectrum_len);
+        let index = ring * self.spectrum_len + self.order;
+        // SAFETY: the output constructor checked `ntheta * spectrum_len` for
+        // overflow and against the slice length. This writer owns one unique
+        // order, and the recurrence emits each physical ring once for it.
+        unsafe { self.pointer.as_ptr().add(index).write(value) };
+    }
 }
 
 /// Runs DUCC's order-major, reflected-ring scalar synthesis for GL geometry.
@@ -88,23 +170,29 @@ pub(crate) fn synthesize_dispatched<'a>(
         cos_theta,
         ring_order_limits,
         spectra,
-        false,
+        None,
         scratch,
     )
 }
 
+#[cfg(feature = "parallel")]
+/// Runs one DUCC-style order against a uniquely owned output column.
+///
+/// # Safety
+///
+/// The caller must assign `order` to exactly one live parallel job, and that
+/// job must not write any ring in the order more than once. All jobs must join
+/// before the destination is read.
 #[expect(
     clippy::too_many_arguments,
-    reason = "The private order-group dispatch receives validated plan data and worker scratch."
+    reason = "The private order dispatch receives validated plan data and a disjoint output column."
 )]
-#[cfg(feature = "parallel")]
-pub(crate) fn synthesize_order_range_dispatched<'a>(
+pub(crate) unsafe fn synthesize_order_output_dispatched<'a>(
     arch: Arch,
     alm: &'a [Complex64],
     lmax: usize,
     mmax: usize,
-    order_start: usize,
-    order_end: usize,
+    order: usize,
     nphi: usize,
     spectrum_len: usize,
     phi0: f64,
@@ -112,15 +200,27 @@ pub(crate) fn synthesize_order_range_dispatched<'a>(
     sin_theta: &'a [f64],
     cos_theta: &'a [f64],
     ring_order_limits: &'a [usize],
-    spectra: &'a mut [Complex64],
+    output: &DisjointSpectrumOutput<'a, f64>,
     scratch: &'a mut ScalarOrderedScratch<'_, f64>,
 ) -> bool {
+    let Some(order_end) = order.checked_add(1) else {
+        return false;
+    };
+    if output.ntheta != sin_theta.len() || output.spectrum_len != spectrum_len {
+        return false;
+    }
+    // SAFETY: the caller assigns one dynamic job to each order and never
+    // creates another writer for this order during the parallel region.
+    let Some(writer) = (unsafe { output.writer_for_unique_order(order) }) else {
+        return false;
+    };
+    let mut empty_spectra = [];
     synthesize_range_dispatched(
         arch,
         alm,
         lmax,
         mmax,
-        order_start,
+        order,
         order_end,
         nphi,
         spectrum_len,
@@ -129,15 +229,15 @@ pub(crate) fn synthesize_order_range_dispatched<'a>(
         sin_theta,
         cos_theta,
         ring_order_limits,
-        spectra,
-        true,
+        &mut empty_spectra,
+        Some(writer),
         scratch,
     )
 }
 
 #[expect(
     clippy::too_many_arguments,
-    reason = "Both order-major scalar layouts share one validated recurrence dispatch."
+    reason = "The private scalar dispatch receives validated plan data and reusable workspace scratch."
 )]
 fn synthesize_range_dispatched<'a>(
     arch: Arch,
@@ -154,19 +254,24 @@ fn synthesize_range_dispatched<'a>(
     cos_theta: &'a [f64],
     ring_order_limits: &'a [usize],
     spectra: &'a mut [Complex64],
-    order_major_output: bool,
+    disjoint_output: Option<DisjointSpectrumWriter<'a, f64>>,
     scratch: &'a mut ScalarOrderedScratch<'_, f64>,
 ) -> bool {
     let ntheta = sin_theta.len();
     let Some(order_count) = mmax.checked_add(1) else {
         return false;
     };
-    let Some(expected_spectrum_count) = ntheta.checked_mul(if order_major_output {
-        order_end.saturating_sub(order_start)
-    } else {
-        spectrum_len
-    }) else {
+    let Some(expected_spectrum_count) = ntheta.checked_mul(spectrum_len) else {
         return false;
+    };
+    let output_len_valid = if disjoint_output.is_some() {
+        spectra.is_empty()
+            && order_end == order_start + 1
+            && disjoint_output
+                .as_ref()
+                .is_some_and(|writer| writer.order == order_start)
+    } else {
+        spectra.len() == expected_spectrum_count
     };
     if mmax > lmax
         || order_start >= order_end
@@ -174,7 +279,7 @@ fn synthesize_range_dispatched<'a>(
         || ntheta == 0
         || cos_theta.len() != ntheta
         || ring_order_limits.len() != ntheta
-        || spectra.len() != expected_spectrum_count
+        || !output_len_valid
         || sectoral_norms.len() <= mmax
         || spectrum_len == 0
         || mmax >= spectrum_len
@@ -210,7 +315,10 @@ fn synthesize_range_dispatched<'a>(
     if !phi0.is_finite() {
         return false;
     }
-    spectra.fill(Complex64::new(0.0, 0.0));
+    let output_is_disjoint = disjoint_output.is_some();
+    if disjoint_output.is_none() {
+        spectra.fill(Complex64::new(0.0, 0.0));
+    }
     let succeeded = arch.dispatch(ScalarOrderedSynthesis {
         alm,
         lmax,
@@ -218,7 +326,7 @@ fn synthesize_range_dispatched<'a>(
         order_end,
         nphi,
         spectrum_len,
-        order_major_output,
+        disjoint_output,
         phi0,
         sectoral_norms,
         sin_theta,
@@ -227,7 +335,7 @@ fn synthesize_range_dispatched<'a>(
         spectra,
         scratch,
     });
-    if !succeeded {
+    if !succeeded && !output_is_disjoint {
         spectra.fill(Complex64::new(0.0, 0.0));
     }
     succeeded
@@ -240,7 +348,7 @@ struct ScalarOrderedSynthesis<'a, 's> {
     order_end: usize,
     nphi: usize,
     spectrum_len: usize,
-    order_major_output: bool,
+    disjoint_output: Option<DisjointSpectrumWriter<'a, f64>>,
     phi0: f64,
     sectoral_norms: &'a [f64],
     sin_theta: &'a [f64],
@@ -262,7 +370,7 @@ impl WithSimd for ScalarOrderedSynthesis<'_, '_> {
             order_end,
             nphi,
             spectrum_len,
-            order_major_output,
+            mut disjoint_output,
             phi0,
             sectoral_norms,
             sin_theta,
@@ -403,9 +511,7 @@ impl WithSimd for ScalarOrderedSynthesis<'_, '_> {
                     scratch_output(
                         spectra,
                         spectrum_len,
-                        ntheta,
-                        order_start,
-                        order_major_output,
+                        &mut disjoint_output,
                         m,
                         north,
                         north_value,
@@ -414,9 +520,7 @@ impl WithSimd for ScalarOrderedSynthesis<'_, '_> {
                         scratch_output(
                             spectra,
                             spectrum_len,
-                            ntheta,
-                            order_start,
-                            order_major_output,
+                            &mut disjoint_output,
                             m,
                             south,
                             south_value,
@@ -431,26 +535,19 @@ impl WithSimd for ScalarOrderedSynthesis<'_, '_> {
 }
 
 #[inline]
-#[expect(
-    clippy::too_many_arguments,
-    reason = "The private output helper supports both Fourier spectrum layouts."
-)]
 fn scratch_output(
     spectra: &mut [Complex64],
     spectrum_len: usize,
-    ntheta: usize,
-    order_start: usize,
-    order_major_output: bool,
+    disjoint_output: &mut Option<DisjointSpectrumWriter<'_, f64>>,
     order: usize,
     ring: usize,
     value: Complex64,
 ) {
-    let index = if order_major_output {
-        (order - order_start) * ntheta + ring
-    } else {
-        ring * spectrum_len + order
-    };
-    spectra[index] = value;
+    if let Some(output) = disjoint_output {
+        output.write(ring, value);
+        return;
+    }
+    spectra[ring * spectrum_len + order] = value;
 }
 
 fn packed_order_offset(m: usize, lmax: usize) -> Option<usize> {

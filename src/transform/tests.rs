@@ -1693,7 +1693,8 @@ fn scalar_ordered_parallel_orders_match_serial_and_ring_group_synthesis() {
         parallel_workspace
             .spectra
             .iter()
-            .all(|&value| value == Complex64::new(3.0, -2.0))
+            .all(|&value| value == Complex64::new(0.0, 0.0)),
+        "failed direct-order execution must clear partial spectral output before fallback"
     );
 
     one_thread

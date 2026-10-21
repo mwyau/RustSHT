@@ -287,18 +287,25 @@ pub(crate) trait ShtScalar:
     ) -> bool {
         false
     }
+    /// Writes one uniquely scheduled harmonic order directly into a shared
+    /// ring-major spectrum destination.
+    ///
+    /// # Safety
+    ///
+    /// `order` must be assigned to exactly one live parallel job, and that job
+    /// must not write any ring in the order more than once. All jobs must join
+    /// before the destination is read.
     #[expect(
         clippy::too_many_arguments,
-        reason = "The private scalar order-range route receives a disjoint output slice and worker scratch."
+        reason = "The private scalar order route receives validated geometry and worker scratch."
     )]
     #[cfg(feature = "parallel")]
-    fn synthesize_scalar_ordered_range_dispatched(
+    unsafe fn synthesize_scalar_ordered_output_dispatched(
         _arch: Arch,
         _alm: &[Complex<Self>],
         _lmax: usize,
         _mmax: usize,
-        _order_start: usize,
-        _order_end: usize,
+        _order: usize,
         _nphi: usize,
         _spectrum_len: usize,
         _phi0: f64,
@@ -306,7 +313,7 @@ pub(crate) trait ShtScalar:
         _sin_theta: &[Self],
         _cos_theta: &[Self],
         _ring_order_limits: &[usize],
-        _order_spectra: &mut [Complex<Self>],
+        _output: &scalar_ordered::DisjointSpectrumOutput<'_, Self>,
         _scratch: &mut scalar_ordered::ScalarOrderedScratch<'_, Self>,
     ) -> bool {
         false
@@ -870,13 +877,12 @@ impl ShtScalar for f64 {
     }
 
     #[cfg(feature = "parallel")]
-    fn synthesize_scalar_ordered_range_dispatched(
+    unsafe fn synthesize_scalar_ordered_output_dispatched(
         arch: Arch,
         alm: &[Complex<Self>],
         lmax: usize,
         mmax: usize,
-        order_start: usize,
-        order_end: usize,
+        order: usize,
         nphi: usize,
         spectrum_len: usize,
         phi0: f64,
@@ -884,26 +890,29 @@ impl ShtScalar for f64 {
         sin_theta: &[Self],
         cos_theta: &[Self],
         ring_order_limits: &[usize],
-        order_spectra: &mut [Complex<Self>],
+        output: &scalar_ordered::DisjointSpectrumOutput<'_, Self>,
         scratch: &mut scalar_ordered::ScalarOrderedScratch<'_, Self>,
     ) -> bool {
-        scalar_ordered::synthesize_order_range_dispatched(
-            arch,
-            alm,
-            lmax,
-            mmax,
-            order_start,
-            order_end,
-            nphi,
-            spectrum_len,
-            phi0,
-            sectoral_norms,
-            sin_theta,
-            cos_theta,
-            ring_order_limits,
-            order_spectra,
-            scratch,
-        )
+        // SAFETY: the caller schedules each order exactly once, and the
+        // scalar kernel emits at most one value per physical ring and order.
+        unsafe {
+            scalar_ordered::synthesize_order_output_dispatched(
+                arch,
+                alm,
+                lmax,
+                mmax,
+                order,
+                nphi,
+                spectrum_len,
+                phi0,
+                sectoral_norms,
+                sin_theta,
+                cos_theta,
+                ring_order_limits,
+                output,
+                scratch,
+            )
+        }
     }
 
     #[cfg(feature = "parallel")]

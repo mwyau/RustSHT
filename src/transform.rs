@@ -500,10 +500,10 @@ impl<T: ShtScalar> ShtPlan<T> {
         };
         let ntheta = self.grid.ntheta();
         let spectrum_len = self.fft.spectrum_len();
-        let Some(order_spectrum_len) = ntheta.checked_mul(order_count) else {
+        let Some(output_len) = ntheta.checked_mul(spectrum_len) else {
             return false;
         };
-        if mmax >= spectrum_len || order_spectrum_len > workspace.spin_spectra.len() {
+        if mmax >= spectrum_len || output_len > workspace.spectra.len() {
             return false;
         }
         let worker_count = rayon::current_num_threads()
@@ -516,78 +516,97 @@ impl<T: ShtScalar> ShtPlan<T> {
 
         #[cfg(all(test, feature = "parallel"))]
         let phase_probe = workspace.transform_phase_probe();
-        let order_spectra = &mut workspace.spin_spectra[..order_spectrum_len];
-        order_spectra.fill(Complex::new(T::zero(), T::zero()));
-        // Match DUCC's one-order dynamic schedule. The queue owns disjoint
-        // output rows, while each Rayon task reuses one recurrence workspace.
+        // Match DUCC's one-order dynamic schedule. Each job owns one Fourier
+        // order column in the ring-major output; the writer's unsafe contract
+        // is established by putting each order in the queue exactly once.
         let mut order_jobs = VecDeque::new();
         if order_jobs.try_reserve_exact(order_count).is_err() {
             return false;
         }
-        for (order, spectra) in order_spectra.chunks_mut(ntheta).enumerate() {
-            order_jobs.push_back((order, spectra));
+        for order in 0..order_count {
+            order_jobs.push_back(order);
         }
         if order_jobs.len() != order_count {
             return false;
         }
         let order_jobs = Mutex::new(order_jobs);
         let failed = AtomicBool::new(false);
+        let ShtWorkspace {
+            spectra,
+            theta_sin,
+            theta_cos,
+            ring_order_limits,
+            recurrence_workers,
+            ..
+        } = workspace;
         #[cfg(all(test, feature = "parallel"))]
         let order_started = std::time::Instant::now();
-        workspace.recurrence_workers[..worker_count]
-            .par_iter_mut()
-            .for_each(|recurrence| {
-                #[cfg(all(test, feature = "parallel"))]
-                recurrence.record_active_worker();
-                loop {
-                    if failed.load(Ordering::Relaxed) {
-                        break;
-                    }
-                    let job = order_jobs
-                        .lock()
-                        .expect("scalar synthesis order queue is not poisoned")
-                        .pop_front();
-                    let Some((order, spectra)) = job else {
-                        break;
-                    };
+        let succeeded = {
+            let Some(output) = crate::legendre::scalar_ordered::DisjointSpectrumOutput::new(
+                &mut spectra[..output_len],
+                ntheta,
+                spectrum_len,
+            ) else {
+                return false;
+            };
+            recurrence_workers[..worker_count]
+                .par_iter_mut()
+                .for_each(|recurrence| {
                     #[cfg(all(test, feature = "parallel"))]
-                    let leaf_started = recurrence.scalar_order_leaf_started();
-                    let succeeded = {
-                        let mut scratch = scalar_ordered_scratch(recurrence);
-                        T::synthesize_scalar_ordered_range_dispatched(
-                            arch,
-                            alm,
+                    recurrence.record_active_worker();
+                    loop {
+                        if failed.load(Ordering::Relaxed) {
+                            break;
+                        }
+                        let job = order_jobs
+                            .lock()
+                            .expect("scalar synthesis order queue is not poisoned")
+                            .pop_front();
+                        let Some(order) = job else {
+                            break;
+                        };
+                        #[cfg(all(test, feature = "parallel"))]
+                        let leaf_started = recurrence.scalar_order_leaf_started();
+                        let succeeded = {
+                            let mut scratch = scalar_ordered_scratch(recurrence);
+                            // SAFETY: `order_jobs` contains every order exactly
+                            // once, and each job writes only that order's column.
+                            unsafe {
+                                T::synthesize_scalar_ordered_output_dispatched(
+                                    arch,
+                                    alm,
+                                    lmax,
+                                    mmax,
+                                    order,
+                                    self.grid.nphi(),
+                                    spectrum_len,
+                                    self.grid.phi0(),
+                                    &self.sectoral_norms,
+                                    &theta_sin[..ntheta],
+                                    &theta_cos[..ntheta],
+                                    &ring_order_limits[..ntheta],
+                                    &output,
+                                    &mut scratch,
+                                )
+                            }
+                        };
+                        #[cfg(all(test, feature = "parallel"))]
+                        recurrence.record_scalar_order_leaf(
                             lmax,
-                            mmax,
                             order,
                             order + 1,
-                            self.grid.nphi(),
-                            spectrum_len,
-                            self.grid.phi0(),
-                            &self.sectoral_norms,
-                            &workspace.theta_sin[..ntheta],
-                            &workspace.theta_cos[..ntheta],
-                            &workspace.ring_order_limits[..ntheta],
-                            spectra,
-                            &mut scratch,
-                        )
-                    };
-                    #[cfg(all(test, feature = "parallel"))]
-                    recurrence.record_scalar_order_leaf(
-                        lmax,
-                        order,
-                        order + 1,
-                        &workspace.ring_order_limits[..ntheta],
-                        leaf_started,
-                    );
-                    if !succeeded {
-                        failed.store(true, Ordering::Relaxed);
-                        break;
+                            &ring_order_limits[..ntheta],
+                            leaf_started,
+                        );
+                        if !succeeded {
+                            failed.store(true, Ordering::Relaxed);
+                            break;
+                        }
                     }
-                }
-            });
-        drop(order_jobs);
-        let succeeded = !failed.load(Ordering::Relaxed);
+                });
+            drop(order_jobs);
+            !failed.load(Ordering::Relaxed)
+        };
         #[cfg(all(test, feature = "parallel"))]
         crate::workspace::record_transform_phase(
             &phase_probe,
@@ -595,47 +614,12 @@ impl<T: ShtScalar> ShtPlan<T> {
             order_started,
         );
         if !succeeded {
+            // The order jobs write directly into `spectra`. A failed order
+            // may follow completed columns, so clear them before the robust
+            // fallback accumulates into this workspace.
+            spectra.fill(Complex::new(T::zero(), T::zero()));
             return false;
         }
-
-        // Keep row-major spectra uncommitted until every dynamic order succeeds.
-        const TRANSPOSE_TILE: usize = 32;
-        let Some(scatter_chunk_len) = spectrum_len.checked_mul(TRANSPOSE_TILE) else {
-            return false;
-        };
-        let Some(output_len) = ntheta.checked_mul(spectrum_len) else {
-            return false;
-        };
-        if output_len > workspace.spectra.len() {
-            return false;
-        }
-        #[cfg(all(test, feature = "parallel"))]
-        let scatter_started = std::time::Instant::now();
-        let order_spectra: &[Complex<T>] = order_spectra;
-        workspace.spectra[..output_len]
-            .par_chunks_mut(scatter_chunk_len)
-            .enumerate()
-            .for_each(|(ring_tile, rows)| {
-                let ring_start = ring_tile * TRANSPOSE_TILE;
-                let ring_count = rows.len() / spectrum_len;
-                for order_start in (0..order_count).step_by(TRANSPOSE_TILE) {
-                    let order_end = (order_start + TRANSPOSE_TILE).min(order_count);
-                    for local_ring in 0..ring_count {
-                        let ring = ring_start + local_ring;
-                        let row_start = local_ring * spectrum_len;
-                        let output_row = &mut rows[row_start..row_start + spectrum_len];
-                        for order in order_start..order_end {
-                            output_row[order] = order_spectra[order * ntheta + ring];
-                        }
-                    }
-                }
-            });
-        #[cfg(all(test, feature = "parallel"))]
-        crate::workspace::record_transform_phase(
-            &phase_probe,
-            "ordered spectrum scatter",
-            scatter_started,
-        );
         true
     }
 
