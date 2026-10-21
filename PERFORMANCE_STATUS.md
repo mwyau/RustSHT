@@ -323,24 +323,30 @@ Rebaseline distributions and candidate ablation are in
 [machine-readable data](reports/data/plan14-q8-rebaseline-2026-10-21/) and
 [the candidate ablation](reports/data/plan14-inactive-ring-preparation-2026-10-21/candidate-ablation.csv).
 
-**Plan 14 T720 q8 analysis queue profile:** a test-only worker-local probe
-counted 721 order jobs. The summed dequeue lock/wait durations were
-38.3/41.7/49.4 us p10/median/p90 across 30 calls. Per-thread accumulated
-order time stayed within 1.660–1.668 ms, while estimated work varied by
-about 7.5% max/min. This profile is not a calibrated wall-stage subtraction;
-the instrumented-call median shifted by 72 us and tail ordering changed.
-Dynamic scheduling appears balanced, so any queue-batching candidate must
-show a matched whole-call q1/q8 benefit without worsening full/reduced-order
-balance. Details and reproduction are in
+**Plan 14 T720 q8 analysis queue profile:** two test-only worker-local runs
+counted 721 order jobs per call. Summed dequeue lock/wait medians were 41.7
+and 39.0 us across 30 calls per run. Per-thread accumulated order time
+stayed within 1.645–1.668 ms; estimated work spread was 3.0–7.5% max/min.
+This is aggregate lock time, not a calibrated wall-stage subtraction, and
+the probe's call timing shifted under host variability. Dynamic scheduling
+appears balanced. Details and reproduction are in
 [Plan 14](plans/14-small-serial-parallel-performance.md) and
 [the compact queue data](reports/data/plan14-analysis-scheduler-2026-10-21/analysis-queue-profile.csv).
 
+The T720 q8 analysis one-order queue was tested with two temporary dequeue
+variants. Fixed pairs of orders gave a noisy 1.2% full-order improvement but
+regressed the reduced-order control by 2.2% and serialized the two-job
+`mmax=1` control by 40%. A guided variant restored the small case but changed
+full/reduced q8 latency by only +0.2%/−0.2%, within variability. Neither
+candidate is retained; the one-order scheduler remains production. Matched
+Rust/DUCC results for q1/q8, full/reduced `mmax`, numerical error and host
+observations are in the [batch ablation CSV](reports/data/plan14-analysis-scheduler-2026-10-21/batch-ablation.csv).
+
 ## Current next steps and deferred work
 
-1. Test one bounded analysis queue-batching candidate against the current
-   T720 q8 full-order scheduler. Keep it only if matched whole-call q1/q8
-   full/reduced-`mmax` timings show an improvement without harming the
-   measured work balance.
+1. Reprofile the current-source T720 q8 reduced-order odd-length synthesis
+   inverse stage against DUCC. It is now the largest selected absolute
+   q8 excess; queue batching did not improve analysis robustly.
 2. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
    cache-topology queries plus optional offline pointer-chase diagnostic
    (no startup autotuning); [Plan 13](plans/13-fused-batched-sht.md)

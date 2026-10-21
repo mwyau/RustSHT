@@ -56,10 +56,11 @@ Final Plan 11 source and closeout (commit
 - RustSHT's scalar analysis constructs order-major longitude spectra.
   Independent per-order **preparation is already parallel** for recurrence
   plans using Rayon and disjoint output rows; do not propose to parallelize
-  it again. Legendre jobs still use `Mutex<VecDeque>` dynamic
-  scheduling; its cost is **not yet established as a meaningful q8
-  bottleneck**. Investigate the execution profile, not the source
-  appearance, before modifying scheduling.
+  it again. Legendre jobs use `Mutex<VecDeque>` one-order scheduling. A
+  T720 q8 profile measured about `42 us` aggregate dequeue lock/wait time,
+  while per-thread work stayed balanced. A batch-pop candidate did not
+  produce a repeatable full-transform gain and is rejected; see the current
+  q8 analysis scheduling results below.
 - DUCC's `sht.cc` performs `map2leg` and `leg2alm_internal` with its own geometry/packing and `execDynamic` scheduling; `sht_inner_loop.h` uses `fill_m2a`, `iter_to_ieee`, and `map2alm_kernel`. DUCC's output layout can differ by synthesis/analysis and thread count (`allocate_leg`). Compare actual data movement and SIMD useful work, not just surface API names.
 - At plan start, a fixed-size aligned scratch candidate was experimental. Its initial 11.4–18.0% q8 synthesis screen was not sufficient to promote it. The later aligned/unaligned ablation and current-source results below isolated its layout effect; the default implementation now uses inline aligned scratch.
 
@@ -350,28 +351,60 @@ are in
 A test-only profile of the exact T720 full-order analysis fixture counted 721
 order jobs per call. It times dequeue locking and each order's analysis work
 in worker-local counters; it does not take the shared observation mutex used
-by the first, provisional probe. Across 30 instrumented calls, the sum of
+by the first, provisional probe. In two independent 30-call runs, the sum of
 lock/wait durations over all Rayon threads had p10/median/p90
-`38.258/41.654/49.448 us` per call. This is aggregate thread time, not a
-directly subtractable wall-time stage because each worker's waiting is
-counted in the sum.
+`38.258/41.654/49.448 us` and `34.072/38.990/49.847 us` per call. This is
+aggregate thread time, not a directly subtractable wall-time stage because
+each worker's waiting is counted in the sum.
 
 Across the eight Rayon threads, average estimated work ranged from `19.12M`
-to `20.54M` ring-degree terms (about a 7.5% max/min spread); accumulated order
-execution time ranged only from `1.660` to `1.668 ms` per thread, with 85–91
-orders per thread. This suggests the dynamic queue is balancing this case
-well. Unprofiled call p10/median/p90 was `2.422/2.464/2.879 ms`; the
-instrumented calls were `2.448/2.536/2.802 ms`. The shifted median and
-reversed upper-tail ordering show that this one-process probe cannot provide
-a calibrated production timing or isolate the instrumentation overhead.
+to `20.54M` ring-degree terms (max/min spreads of about 7.5% and 3.0%); order
+execution time ranged `1.660–1.668 ms` and `1.645–1.650 ms` per thread in the
+two runs, with 85–91 orders per thread. This suggests the dynamic queue is
+balancing this case well. Unprofiled call medians were `2.464/2.588 ms`;
+instrumented medians were `2.536/2.528 ms`. Their differing shifts and tail
+ordering show that these probes cannot provide a calibrated production timing
+or isolate timer overhead.
 
 The queue has a measurable cost and is a candidate for one bounded
 batch-dequeue experiment, but this profile does not establish its wall-time
-contribution to the `+0.355 ms` Rust/DUCC whole-call excess. Any candidate
-must preserve the observed work balance and be evaluated with matched q1/q8,
-full/reduced-`mmax` whole transforms before retention. The ignored test is
-`plan14_analysis_order_queue_profile`; its compact measurements are in
+contribution to the `+0.355 ms` Rust/DUCC whole-call excess. The experiment
+below found no robust benefit, so production keeps one-order dequeue. The
+ignored test is `plan14_analysis_order_queue_profile`; its compact
+measurements are in
 [`analysis-queue-profile.csv`](../reports/data/plan14-analysis-scheduler-2026-10-21/analysis-queue-profile.csv).
+
+## Current progress — q8 analysis dequeue batching A/B (2026-10-21)
+
+Two temporary queue variants were compared against the unchanged
+single-order scheduler at T720, even-smooth GL analysis, `mmax=1/180/720`,
+q1/q8. Each matrix used three interleaved Rust/DUCC process pairs and 30
+calibrated 25 ms batches per backend/case on the same physical cores. Rust
+was 1.99.1/LLVM 23.1.1 with strict FP and runtime Pulp V3; DUCC was pinned at
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`, GCC 15.2, with the production
+x86-64-v3 SHT flags. Deterministic inputs were identical; the maximum
+relative L2 error was `6.12e-14`. The runs were separate source builds (each
+interleaved Rust with DUCC), not an interleaved three-way source comparison.
+Host runqueue-wait p90 was about 16.7% in all three matrices, so retain the
+spread and treat small shifts as inconclusive.
+
+| q8 policy | `mmax=1` Rust ms | `mmax=180` Rust ms | `mmax=720` Rust ms | Change vs one-pop (`m=1/180/720`) |
+| --- | ---: | ---: | ---: | ---: |
+| One order per pop | 0.0870 | 1.0067 | 2.4956 | reference |
+| Fixed two-order pop | 0.1222 | 1.0289 | 2.4658 | +40.4% / +2.2% / −1.2% |
+| Two-order while queue is deep; one-order tail | 0.0859 | 1.0043 | 2.5003 | −1.3% / −0.2% / +0.2% |
+
+DUCC medians for the same q8 cases were respectively `0.1323/0.9359/2.1252
+ms` in the one-pop matrix and `0.1320/0.9320/2.1376 ms` in the guided
+matrix. Fixed two-order dequeue assigned both jobs in the `mmax=1` queue to
+one worker, explaining that failure. The guided tail avoided this regression,
+but neither full nor reduced order showed a repeatable whole-call gain; q1
+changes were within noise and q1 bypasses the parallel queue. Both temporary
+variants were removed. Keep the current scheduler and proceed to the current
+source q8 synthesis odd-inverse stage, the largest selected absolute excess.
+
+The complete q1/q8 rows, p10/p90, excess, errors and host summary are in
+[`batch-ablation.csv`](../reports/data/plan14-analysis-scheduler-2026-10-21/batch-ablation.csv).
 
 ## Current progress — T127 q1 reduced-order dispatch correction (2026-10-21)
 
