@@ -616,6 +616,23 @@ impl<T: ShtScalar> ShtPlan<T> {
             return false;
         };
         #[cfg(all(test, feature = "parallel"))]
+        let spectrum_init_started = std::time::Instant::now();
+        if !crate::legendre::scalar_ordered::initialize_inactive_spectrum_tails(
+            &mut spectra[..output_len],
+            spectrum_len,
+            mmax,
+            &geometry,
+            Complex::new(T::zero(), T::zero()),
+        ) {
+            return false;
+        }
+        #[cfg(all(test, feature = "parallel"))]
+        crate::workspace::record_transform_phase(
+            &phase_probe,
+            "sparse spectrum-tail initialization",
+            spectrum_init_started,
+        );
+        #[cfg(all(test, feature = "parallel"))]
         let order_started = std::time::Instant::now();
         let succeeded = {
             let Some(output) = crate::legendre::scalar_ordered::DisjointSpectrumOutput::new(
@@ -746,14 +763,9 @@ impl<T: ShtScalar> ShtPlan<T> {
                 workspace.theta_cos[ring],
             );
         }
-        workspace.spectra.fill(Complex::new(T::zero(), T::zero()));
         #[cfg(all(test, feature = "parallel"))]
         {
-            crate::workspace::record_transform_phase(
-                &phase_probe,
-                "latitude setup and spectrum clear",
-                phase_started,
-            );
+            crate::workspace::record_transform_phase(&phase_probe, "latitude setup", phase_started);
             phase_started = std::time::Instant::now();
         }
         let arch = pulp::Arch::new();
@@ -802,6 +814,11 @@ impl<T: ShtScalar> ShtPlan<T> {
                 false
             };
         if !ordered_scalar_used {
+            // The ordered and table routes initialize every Fourier cell they
+            // leave untouched. The general recurrence accumulates into its
+            // spectrum, so establish its zero state only when that route is
+            // selected (or after a declined fast path).
+            workspace.spectra.fill(Complex::new(T::zero(), T::zero()));
             #[cfg(feature = "parallel")]
             {
                 let execution_threads =

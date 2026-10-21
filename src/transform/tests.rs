@@ -2250,7 +2250,7 @@ fn scalar_ordered_parallel_orders_match_serial_and_ring_group_synthesis() {
     let worker_probe = parallel_workspace.observe_active_workers();
 
     eight_threads.install(|| {
-        parallel_workspace.spectra.fill(Complex64::new(0.0, 0.0));
+        parallel_workspace.spectra.fill(Complex64::new(3.0, -2.0));
         assert!(plan.synthesize_scalar_ordered_parallel(
             &alm,
             pulp::Arch::new(),

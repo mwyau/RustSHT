@@ -148,6 +148,33 @@ pub(crate) fn validate_reflected_geometry<'a>(
     })
 }
 
+/// Zeroes only the Fourier cells that the reflected-order kernel will not
+/// write. Each active prefix is written by one order job; the remaining tail
+/// contains polar-excluded orders and modes above `mmax`.
+#[cfg(feature = "parallel")]
+pub(crate) fn initialize_inactive_spectrum_tails<T: Copy>(
+    spectra: &mut [num_complex::Complex<T>],
+    spectrum_len: usize,
+    mmax: usize,
+    geometry: &ValidatedReflectedGeometry<'_>,
+    zero: num_complex::Complex<T>,
+) -> bool {
+    let Some(required_len) = geometry.ring_order_limits.len().checked_mul(spectrum_len) else {
+        return false;
+    };
+    if spectrum_len == 0 || mmax >= spectrum_len || spectra.len() != required_len {
+        return false;
+    }
+
+    let ntheta = geometry.ring_order_limits.len();
+    for (ring, row) in spectra.chunks_exact_mut(spectrum_len).enumerate() {
+        let north = ring.min(ntheta - 1 - ring);
+        let first_inactive = geometry.ring_order_limits[north].min(mmax) + 1;
+        row[first_inactive..].fill(zero);
+    }
+    true
+}
+
 impl<T: Copy> DisjointSpectrumWriter<'_, T> {
     #[inline]
     fn write(&self, ring: usize, value: num_complex::Complex<T>) {
@@ -1907,7 +1934,12 @@ mod tests {
         rescale_prefix_step, scalar_integer_power, set_correction_factors,
         validate_reflected_geometry,
     };
+    #[cfg(feature = "parallel")]
+    use num_complex::Complex64;
     use pulp::{Arch, Simd};
+
+    #[cfg(feature = "parallel")]
+    use super::initialize_inactive_spectrum_tails;
 
     struct InitializeDispatch<'a> {
         sine: &'a [f64],
@@ -2007,6 +2039,43 @@ mod tests {
         assert!(
             validate_reflected_geometry(&sin_theta, &cos_theta, &nonmonotone_limits,).is_none()
         );
+    }
+
+    #[cfg(feature = "parallel")]
+    #[test]
+    fn sparse_spectrum_tails_follow_northern_reflected_order_limits() {
+        let sin_theta = [0.2, 0.8, 0.8, 0.2];
+        let cos_theta = [0.98, 0.6, -0.6, -0.98];
+        let limits = [1, 3, 99, 99];
+        let geometry = validate_reflected_geometry(&sin_theta, &cos_theta, &limits).unwrap();
+        let mut spectra = vec![Complex64::new(3.0, -2.0); 4 * 5];
+        assert!(initialize_inactive_spectrum_tails(
+            &mut spectra,
+            5,
+            3,
+            &geometry,
+            Complex64::new(0.0, 0.0),
+        ));
+
+        for ring in [0, 3] {
+            let row = &spectra[ring * 5..(ring + 1) * 5];
+            assert_eq!(row[0], Complex64::new(3.0, -2.0));
+            assert_eq!(row[1], Complex64::new(3.0, -2.0));
+            assert!(
+                row[2..]
+                    .iter()
+                    .all(|&value| value == Complex64::new(0.0, 0.0))
+            );
+        }
+        for ring in [1, 2] {
+            let row = &spectra[ring * 5..(ring + 1) * 5];
+            assert!(
+                row[..4]
+                    .iter()
+                    .all(|&value| value == Complex64::new(3.0, -2.0))
+            );
+            assert_eq!(row[4], Complex64::new(0.0, 0.0));
+        }
     }
 
     #[test]
