@@ -3666,6 +3666,51 @@ fn scalar_analysis_matches_ducc_0410_reference() {
     }
 }
 
+#[cfg(feature = "parallel")]
+#[test]
+fn analysis_order_local_init_overwrites_existing_coefficients() {
+    let plan = make_plan(127, 31, 128, 63, 0.23);
+    assert_eq!(
+        plan.scalar_legendre_strategy(LegendreOperation::Analysis),
+        LegendreStrategy::Recurrence
+    );
+    let map: Vec<f64> = (0..plan.sample_count)
+        .map(|index| {
+            let x = index as f64;
+            (x * 0.000173).sin() + 0.2 * (x * 0.000071).cos()
+        })
+        .collect();
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+
+    for threads in [1, 8] {
+        let mut reference = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        let mut initialized = vec![Complex64::new(0.375, -0.625); plan.harmonics.nalm()];
+        let mut reference_workspace = plan.workspace().unwrap();
+        let mut initialized_workspace = plan.workspace().unwrap();
+        plan.prepare_workspace(&mut reference_workspace, threads)
+            .unwrap();
+        plan.prepare_workspace(&mut initialized_workspace, threads)
+            .unwrap();
+        if threads == 1 {
+            plan.analysis_into(&map, &mut reference, &mut reference_workspace)
+                .unwrap();
+            plan.analysis_into(&map, &mut initialized, &mut initialized_workspace)
+                .unwrap();
+        } else {
+            pool.install(|| {
+                plan.analysis_into(&map, &mut reference, &mut reference_workspace)
+                    .unwrap();
+                plan.analysis_into(&map, &mut initialized, &mut initialized_workspace)
+                    .unwrap();
+            });
+        }
+        assert_eq!(initialized, reference);
+    }
+}
+
 #[test]
 #[expect(
     clippy::excessive_precision,

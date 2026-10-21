@@ -14,9 +14,10 @@ row FFT, spectrum pruning, order preparation and recurrence stage evidence
 is recorded in the cumulative report and CSV. Plan 14 is now active on the
 same branch/session. Its first clean-source q8 synthesis comparison is
 published. The small-q1 baseline, T127 reduced-analysis profile and T720 q8
-synthesis and analysis stage profiles are now recorded. The odd-length complex inverse
-arithmetic is the largest identified q8 synthesis substage; no production
-FFT change is justified. Plans 12/13 remain deferred.
+synthesis and analysis stage profiles are now recorded. The odd-length
+complex inverse arithmetic is the largest identified q8 synthesis substage;
+the current reprofile found no faster supported replacement. Plans 12/13
+remain deferred.
 
 **Plan 14 q1 rebaseline (2026-10-21):** the 64-case T4–T127 warmed q1
 screen and T127 reduced-order phase profile are in
@@ -103,6 +104,20 @@ wait. DUCC stage hooks counted only timed calls after calibration (90 full,
 130 reduced). No T720 q8 source change is justified. The machine-readable
 data and method are in [the Plan 14 profile](plans/14-small-serial-parallel-performance.md)
 and [summary CSV](reports/data/plan14-q8-analysis-t720-2026-10-21/summary.csv).
+
+**Plan 14 current T720 findings (2026-10-21):** the q8 reduced odd synthesis
+rebaseline is 1.682/1.252 ms Rust/DUCC (+0.430 ms), versus +0.141 ms for the
+even-smooth control. The odd inverse stage remains a lead, but the tested
+standalone real inverse was slower, so production FFT is unchanged. A measured
+analysis candidate moves f64 paired-route coefficient initialization from one
+serial full-output fill into order-owned worker slices. At T720 full-order q8,
+Rust fell 2.578→2.388 ms (−7.4%; excess +0.450→+0.260 ms); reduced
+`mmax=180` fell 1.236→1.195 ms (−3.3%, directional). q1 changed by less than
+0.3% under elevated runqueue wait. Candidate output was bitwise identical to
+baseline; relative L2 versus DUCC was at most `4.96e-14`. The compact-table
+path and f32 initialization are unchanged. See the
+[analysis initialization data](reports/data/plan14-analysis-order-local-init-2026-10-21/)
+and [odd/even synthesis rebaseline](reports/data/plan14-q8-synthesis-odd-rebaseline-2026-10-21/).
 
 
 ## Highest-confidence current finding — prefix discontinuity removed
@@ -344,10 +359,13 @@ observations are in the [batch ablation CSV](reports/data/plan14-analysis-schedu
 
 ## Current next steps and deferred work
 
-1. Reprofile the current-source T720 q8 reduced-order odd-length synthesis
-   inverse stage against DUCC. It is now the largest selected absolute
-   q8 excess; queue batching did not improve analysis robustly.
-2. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
+1. Reprofile T720 full-order q8 analysis after the order-local initialization
+   change. The whole-call excess is now about +0.260 ms; separate current
+   order preparation from recurrence/accumulation before changing the kernel.
+2. The odd q8 synthesis inverse excess is quantified at +0.430 ms, but the
+   tested alternative was slower. Do not revisit it without a new source-level
+   mechanism or matched isolated real-FFT evidence.
+3. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
    cache-topology queries plus optional offline pointer-chase diagnostic
    (no startup autotuning); [Plan 13](plans/13-fused-batched-sht.md)
    true basis-shared batches with measured internal blocking.

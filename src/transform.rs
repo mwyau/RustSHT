@@ -1817,19 +1817,21 @@ impl<T: ShtScalar> ShtPlan<T> {
             phase_started = std::time::Instant::now();
         }
 
-        alm.fill(Complex::new(T::zero(), T::zero()));
-        #[cfg(all(test, feature = "parallel"))]
-        {
-            crate::workspace::record_transform_phase(
-                &phase_probe,
-                "coefficient initialization",
-                phase_started,
-            );
-            phase_started = std::time::Instant::now();
-        }
         let lmax = self.harmonics.lmax();
         let mmax = self.harmonics.mmax();
         if let Some(table) = scalar_table {
+            // The compact-table accumulator writes through every coefficient
+            // by addition, so retain its whole-output initialization.
+            alm.fill(Complex::new(T::zero(), T::zero()));
+            #[cfg(all(test, feature = "parallel"))]
+            {
+                crate::workspace::record_transform_phase(
+                    &phase_probe,
+                    "coefficient initialization",
+                    phase_started,
+                );
+                phase_started = std::time::Instant::now();
+            }
             self.analyze_scalar_table(order_spectra, alm, table, workspace.execution_capacity);
             #[cfg(all(test, feature = "parallel"))]
             {
@@ -1854,6 +1856,22 @@ impl<T: ShtScalar> ShtPlan<T> {
                 phase_started,
             );
             return Ok(());
+        }
+        // The f64 paired recurrence owns a disjoint coefficient slice per
+        // harmonic order. Initialize each slice on its worker immediately
+        // before accumulation instead of serially clearing the full output.
+        let order_local_init = T::supports_paired_scalar();
+        if !order_local_init {
+            alm.fill(Complex::new(T::zero(), T::zero()));
+        }
+        #[cfg(all(test, feature = "parallel"))]
+        {
+            crate::workspace::record_transform_phase(
+                &phase_probe,
+                "coefficient initialization",
+                phase_started,
+            );
+            phase_started = std::time::Instant::now();
         }
         let arch = pulp::Arch::new();
         let selected_arch = std::mem::discriminant(&arch);
@@ -2302,6 +2320,9 @@ impl<T: ShtScalar> ShtPlan<T> {
         for m in m_start..m_end {
             let coefficient_count = lmax - m + 1;
             let coefficients = &mut alm[coefficient_start..coefficient_start + coefficient_count];
+            if T::supports_paired_scalar() {
+                coefficients.fill(Complex::new(T::zero(), T::zero()));
+            }
             let first_active_pair =
                 first_active_symmetric_pair(m, latitude_count, ring_order_limits);
             T::fill_epsilon(m, lmax, &mut recurrence.epsilon);

@@ -4,9 +4,9 @@
 `a37f74d68631ab5fd373a4097640895e9f0c0c23`.** Plan 11 is complete and
 retained as historical evidence. Work continues on the same Luna session
 and `opt/sht-performance-parity` branch. The transition refreshed the
-historical reduced-`mmax` claims below; now rebaseline the Plan 14 target
-cases from this final source and continue its staged evidence-driven work.
-Plans 12/13 remain future-only.
+historical reduced-`mmax` claims below, and the initial Plan 14 rebaseline
+from final Plan 11 source is complete. Continue the staged, evidence-driven
+work from the current q1/q8 findings below. Plans 12/13 remain future-only.
 
 **One-line goal:** Identify and reduce the dominant, measured sources of (1) small **serial** SHT latency and (2) residual large **eight-thread** SHT latency relative to a pinned native DUCC implementation, without sacrificing numerical correctness, portability, or memory safety.
 
@@ -621,6 +621,76 @@ The largest remaining selected q8 excess is now reduced-order odd-minimum
 synthesis (+0.407 ms); full-order even-smooth analysis is next (+0.335 ms).
 Re-profile the first case's recurrence versus odd inverse stage after this
 layout change, then continue with the largest measured absolute stage.
+
+## Current progress — post-scheduler T720 synthesis rebaseline (2026-10-21)
+
+After the analysis queue A/B, the current production source was remeasured at
+T720, `mmax=180`, `ntheta=721`, q1/q8 with odd-minimum `nphi=361` and
+even-smooth `nphi=378`. The same pinned DUCC 0.42.0 build and native
+full-transform harness were used. Rust Pulp V3 and DUCC x86-64-v3 were
+selected; each backend/case had three interleaved process pairs and 30
+calibrated batches. The odd q8 case measured 1.682/1.252 ms Rust/DUCC
+(1.344x, +0.430 ms); the even control was 1.363/1.221 ms (1.116x,
++0.141 ms). Relative L2 errors were `5.19e-14` and `4.71e-14`.
+
+The q1 odd/even excesses were +2.220/+0.753 ms. Host runqueue wait reached
+14–16% in the q8 comparison, so the exact q8 ratios remain directional. The
+shape-specific odd inverse stage is still a measured lead, but the tested
+standalone real inverse was slower than RustFFT's odd-complex adapter. No
+production FFT replacement is supported by this evidence. Per-case timing
+distributions are in the
+[odd/even rebaseline data](../reports/data/plan14-q8-synthesis-odd-rebaseline-2026-10-21/summary.csv).
+
+## Current progress — order-local f64 analysis output initialization (2026-10-21)
+
+The prior T720 q8 phase profile measured a serial `alm.fill(0)` stage of
+about 82 us at full `mmax` and 27 us at `mmax=180`. The recurrence owns
+disjoint output slices by harmonic order, so the production change moves
+that initialization into each order job immediately before accumulation.
+This does not remove coefficient zeroing. The compact-table branch retains
+whole-output initialization, and f32 keeps the same global initialization
+because only f64 supports the paired scalar recurrence. No recurrence
+arithmetic, scaling, fallback or output format changed.
+
+The source A/B used T720 GL, `nphi=1458`, full `mmax=720` and reduced
+`mmax=180`, q1/q8, deterministic full-triangle fixtures, and pinned DUCC
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. Rust 1.99.1/LLVM 23.1.1 used
+strict FP and `-C target-cpu=x86-64-v3` with runtime Pulp V3; DUCC GCC 15.2
+used `-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3` for SHT code.
+Three process rounds rotated baseline Rust, DUCC and candidate Rust; each
+backend had 30 calibrated 25 ms batches per case/thread.
+
+| `mmax` | q | Rust before → after (ms) | DUCC (ms) | Rust/DUCC before → after | Candidate/baseline | Candidate relative L2 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 720 | 1 | 16.012 → 15.969 | 14.473 | 1.110 → 1.103 | 0.997 | `4.63e-14` |
+| 720 | 8 | 2.578 → 2.388 | 2.128 | 1.209 → 1.124 | 0.926 | `4.63e-14` |
+| 180 | 1 | 7.758 → 7.737 | 8.353 | 0.929 → 0.929 | 0.999 | `4.96e-14` |
+| 180 | 8 | 1.236 → 1.195 | 1.248 | 0.989 → 0.961 | 0.967 | `4.96e-14` |
+
+All three q8 full-order process-pair medians improved, reducing the median
+Rust/DUCC excess by about 0.190 ms (7.4% Rust latency reduction). The
+reduced-order q8 median fell 3.3%, but its per-pair effect was mixed and its
+distributions overlap; treat that gain as directional. Full-order q8 Rust
+p10–p90 was `2.490–2.887` ms before and `2.364–2.461` ms after; DUCC was
+`2.117–2.146` ms. Reduced-order ranges overlap. q1 medians changed by less
+than 0.3%, with 11–16% sampled runqueue wait, so q1 is neutral. First-call
+and setup timings are included in the raw data; their process ranges overlap,
+and no cold-start gain is claimed. The candidate and baseline outputs were
+bitwise identical. The full raw batches, process/host observations, fixture
+hashes and summary are in
+[`paired-batches.json`](../reports/data/plan14-analysis-order-local-init-2026-10-21/paired-batches.json)
+and [`summary.csv`](../reports/data/plan14-analysis-order-local-init-2026-10-21/summary.csv).
+The interleaved runner is
+[`benchmark_plan14_order_local_init.py`](../scripts/benchmark_plan14_order_local_init.py).
+
+Release parallel and no-default-feature suites passed, including f32,
+exceptional-value, all-grid, spin and adjoint coverage. A focused q1/q8 test
+also initializes the output coefficients to nonzero values and verifies
+bitwise equality with a zero-initialized output. Formatting and strict
+Clippy passed. The remaining selected q8 full-order analysis excess is
+about 0.260 ms. Next, reprofile its current post-change order preparation
+and recurrence stages; keep the scheduler and odd FFT path unchanged absent
+a new measured mechanism.
 
 ## 4. Phase A — Find and fix small serial fixed costs
 
