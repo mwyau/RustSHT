@@ -21,14 +21,16 @@ FFT change is justified. Plans 12/13 remain deferred.
 **Plan 14 q1 rebaseline (2026-10-21):** the 64-case T4–T127 warmed q1
 screen and T127 reduced-order phase profile are in
 [the small-q1 report](reports/plan14-small-q1-baseline-2026-10-21.md).
-The largest selected analysis excess is T127 `mmax=31`: Rust 192.5 µs
-versus DUCC 99.5 µs averaged across odd/even longitude shapes. Rust's phase
-probe attributes about 161 µs to recurrence/accumulation; the ordinary route
-processed 32 normal blocks and zero scaled blocks. Rust and DUCC both execute
-four-lane AVX2/FMA loops without observed hot-loop spills, so this is not a
-missing-SIMD or scaled-prefix regression. No q1 source change is justified
-yet; the matched T720 q8 analysis profile is now complete, and the next q1
-step is a same-active-ring kernel comparison.
+The initial same-active-ring attribution found that T127 `mmax=31` was still
+using the per-degree callback path: the fused symbol in the original assembly
+inspection was compiled, but not eligible at T127 under the 255 cutoff. The
+corrected executed-path comparison and production dispatch are in the
+[T127 report](reports/plan14-t127-fused-route-2026-10-21.md). At the same
+geometry, fused Rust now measures 100.249 µs versus 103.999 µs DUCC (0.964x),
+with `8.77e-15` relative L2 error. The former callback route was 188.940 µs.
+This removes that T127 reduced-order whole-call excess; the isolated fused
+kernel remains 2.12x DUCC. Full all-feature and no-default-feature release
+tests passed. The next serial lead is fixed-cost attribution in T1–T64.
 
 **Plan 14 progress (2026-10-21):** `fe0590ac` removes a separate
 order-major-to-ring-major spectrum scatter from parallel scalar GL
@@ -228,11 +230,11 @@ isolated `m=1` results or a desire to assemble another candidate matrix.
 
 ## Current next steps and deferred work
 
-1. Compare the T127 `mmax=31` q1 ordinary analysis kernel against DUCC at a
-   matched active-ring boundary. Keep the recurrence unchanged until the
-   kernel work/dataflow difference is measured.
+1. Attribute fixed per-call costs across the remaining T1–T64 q1 analysis
+   and synthesis cases. Preserve the T127 dispatch result and avoid another
+   broad benchmark matrix.
 2. Re-rank the largest measured absolute q8 analysis/synthesis excess from
-   final-source T2047/T3072 controls and continue only on the leading stage.
+   final-source controls and continue only on the leading stage.
 3. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
    cache-topology queries plus optional offline pointer-chase diagnostic
    (no startup autotuning); [Plan 13](plans/13-fused-batched-sht.md)

@@ -92,19 +92,25 @@ latitude preparation leaves roughly 98 µs in Rust's Legendre side versus
 than DUCC's `map2leg`. This locates the whole-call excess in Legendre work,
 not the FFT or scaled-prefix path.
 
-## Executed V3 loop inspection
+## Compiled fused V3 loop inspection (not executed at original T127)
 
-The exact Rust specialization is
-`fused_scalar_analysis_pair_block_impl::<true, false>` on the production
-fused path. Its recurrent SIMD body processes four f64 latitude lanes and
-uses packed `vfmadd*pd` operations for both recurrence and accumulation. The
-two-pair loop body contains 12 packed FMA instructions, eight coefficient
-accumulator chains and two recurrence-state updates. Horizontal reductions
-and the one-to-three-lane tail are outside the repeated packed body. The
-inspected vector loop has no scalar `sd` recurrence operation and no
-stack-based vector spill/reload; the function reserves 568 bytes for its
-larger setup/tail/error-path state, which alone is not evidence of a hot-loop
-spill.
+The inspected binary contains
+`fused_scalar_analysis_pair_block_impl::<true, false>`, whose recurrent SIMD
+body processes four f64 latitude lanes with packed `vfmadd*pd` for recurrence
+and accumulation. Its two-pair loop body contains 12 packed FMA instructions,
+eight coefficient accumulator chains and two recurrence-state updates.
+Horizontal reductions and the one-to-three-lane tail are outside the repeated
+packed body. The inspected vector loop has no scalar `sd` recurrence
+operation and no stack-based vector spill/reload; the function reserves 568
+bytes for setup/tail/error-path state, which alone is not evidence of a
+hot-loop spill.
+
+**Correction:** this disassembly was compiled-candidate evidence, not proof
+that T127 production executed the fused route. At the profiled source,
+`FUSED_SCALAR_ANALYSIS_MIN_LMAX` was 255, so T127 `mmax=31` used the generic
+paired recurrence with per-degree callback accumulation. A calibrated direct
+comparison and the corrected production dispatch are in the
+[T127 fused-route report](plan14-t127-fused-route-2026-10-21.md).
 
 The pinned GCC DUCC `map2alm_kernel` loop also uses four f64 lanes and packed
 FMA, with eight accumulation chains and two recurrence states in its
@@ -123,13 +129,10 @@ was calibrated and process-paired, but host scheduling adds uncertainty; the
 stage gap is large enough to prioritize, not precise enough to attribute to a
 single instruction sequence.
 
-## Decision and next work
+## Decision at the time of the initial profile
 
-No small-q1 source change is justified by this screen. The T127 reduced-order
-case is the strongest q1 analysis lead, but its packed recurrence already
-matches DUCC's basic lane width and degree grouping, so the next useful step
-is to compare the same active-ring fixture through the isolated ordinary
-kernel and account for per-order initialization/data movement. Continue
-Plan 14's separate q8 synthesis stage attribution from the current direct
-ring-spectrum-output source; do not change table cutoffs or recurrence
-arithmetic based on the small screen alone.
+At the time, the compiled-loop inspection alone did not justify a source
+change. The subsequent same-active-ring comparison identified the unselected
+fused route as the cause of much of the T127 reduced-order gap; see the
+corrected attribution report. The older table above and the contemporaneous
+stage values remain historical evidence for the callback implementation.

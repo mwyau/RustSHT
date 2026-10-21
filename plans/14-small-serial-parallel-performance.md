@@ -290,6 +290,43 @@ counters. The committed machine-readable summary is
 [`summary.csv`](../reports/data/plan14-q8-analysis-t720-2026-10-21/summary.csv);
 raw host and process logs remain local.
 
+## Current progress — T127 q1 reduced-order dispatch correction (2026-10-21)
+
+The earlier T127 phase profile compared the ordinary callback route against
+DUCC, but its assembly section incorrectly treated the compiled fused symbol
+as the executed production path. Source tracing showed
+`FUSED_SCALAR_ANALYSIS_MIN_LMAX=255`; at T127, `mmax=31`, Rust used
+`for_each_y_lm_paired_status_dispatched` and callback accumulation at every
+degree. The matched 64-lane comparison then measured that actual route at
+3.700 µs median versus 0.705 µs for DUCC. The checked fused route measured
+1.499 µs versus 0.707 µs DUCC (2.12x at this isolated boundary).
+
+Commit [`50c9866b`](https://github.com/astro-informatics/RustSHT/commit/50c9866b196d7979eb2f1f301fc9b3a5d07b6adf)
+sets a type-specific eligibility threshold: f64 scalar analysis uses the
+existing fused route from T127, while f32 remains at T255. T126/T127
+production tests observed zero/32 fused blocks for the reduced-order plan.
+The fused route retains its checked proof, scaling path, numerical
+preflights, late range validation and fallback. No recurrence arithmetic,
+table policy, spin-1 path or FFT changed.
+
+On the same T127 GL `mmax=31`, `ntheta=128`, odd `nphi=63` whole-transform
+fixture, Rust improved from 188.940 µs (1.818x DUCC) to 100.249 µs (0.964x
+DUCC at 103.999 µs). Candidate relative L2 error was `8.77e-15`, maximum
+absolute error `1.55e-15`. The paired-ratio p10/p90 was 0.934/0.993. The
+candidate's median runqueue wait was 10.4% (p90 29.3%), so the small whole
+call win over DUCC is approximate parity; the reduction from the previous
+85 µs excess is the robust result. Isolated-kernel and full-call distributions,
+flags, setup/cold timings, validation, and reproduction commands are in the
+[T127 report](../reports/plan14-t127-fused-route-2026-10-21.md). The earlier
+report's compiled-versus-executed correction is preserved in the
+[initial q1 baseline](../reports/plan14-small-q1-baseline-2026-10-21.md).
+
+This closes the reduced-order T127 q1 lead, not the full small-q1 study.
+Continue with the remaining T1–T64 fixed-cost attribution, then re-rank the
+largest whole-call q8 synthesis/analysis excess. The T720 odd-length inverse
+FFT remains a diagnostic lead only: the tested standalone real inverse was
+slower, so no production FFT change is supported.
+
 ## 4. Phase A — Find and fix small serial fixed costs
 
 **Hypothesis to test:** small T1–T32 transforms spend a significant fraction of wall time in repeated per-call setup, data conversion, buffer handling and/or independent row FFTs rather than in useful Legendre arithmetic. This is a hypothesis, not a proven diagnosis.

@@ -1,0 +1,5 @@
+measurement,route,rust_p10_us,rust_median_us,rust_p90_us,ducc_p10_us,ducc_median_us,ducc_p90_us,rust_ducc_ratio,rust_reset_median_us,ducc_reset_median_us,relative_l2,max_abs_error,notes
+active_ring_kernel,callback,3.674562,3.699966,3.858760,0.699174,0.705455,0.723079,5.2456,3.711012,0.716293,2.871e-15,,90 batches per backend across 3 process runs; 64 active reflected pairs; 16 AVX2 vectors
+active_ring_kernel,fused,1.488890,1.499092,1.541158,0.698462,0.707321,0.715968,2.1195,1.510330,0.717733,2.741e-15,,90 batches per backend across 3 process runs; checked route confirmed
+full_transform,callback_baseline,,188.940079,, ,103.935000,,1.8179,,,9.1517e-15,2.109e-15,prior-source matched median; original process distributions are not part of this checkpoint
+full_transform,fused_candidate,99.309979,100.249224,102.510444,103.155700,103.998500,108.691200,0.9639,,,8.7696e-15,1.5543e-15,30 calibrated batches per backend across 3 process pairs; paired ratio p10/p90 0.9344/0.9935
