@@ -42,7 +42,7 @@ const SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MAX_LMAX: usize = 224;
 const SPIN1_FAST_MIN_SIN_THETA: f64 = 0.0001;
 const SPIN1_PAIR_MIN_SIN_THETA: f64 = 0.01;
 #[cfg(feature = "parallel")]
-const SPIN1_CC_PARALLEL_RESAMPLING_MIN_ORDER_RING_PAIRS: usize = 65_536;
+const SPIN1_PARALLEL_MERIDIONAL_RESAMPLING_MIN_ORDER_RING_PAIRS: usize = 65_536;
 const SPIN2_FAST_MIN_SIN_THETA: f64 = 0.01;
 #[cfg(feature = "parallel")]
 const SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_LMAX: usize = 720;
@@ -987,9 +987,13 @@ impl<T: ShtScalar> ShtPlan<T> {
             if self.harmonics.spin() == 1
                 && spin == 1
                 && T::supports_precomputed_scalar()
-                && self.grid.kind() == crate::grid::GridKind::ClenshawCurtis
+                && matches!(
+                    self.grid.kind(),
+                    crate::grid::GridKind::ClenshawCurtis | crate::grid::GridKind::Fejer1
+                )
                 && resampling.needs_resampling()
-                && estimated_active_pairs >= SPIN1_CC_PARALLEL_RESAMPLING_MIN_ORDER_RING_PAIRS
+                && estimated_active_pairs
+                    >= SPIN1_PARALLEL_MERIDIONAL_RESAMPLING_MIN_ORDER_RING_PAIRS
                 && active_workers > 1
             {
                 resampling.to_prepared_parallel(

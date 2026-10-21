@@ -406,7 +406,11 @@ impl<T: ShtScalar> ShtPlan<T> {
             self.grid.nphi(),
             self.grid.ntheta(),
             analysis_order_count,
-            self.harmonics.spin() == 1 && self.grid.kind() == crate::grid::GridKind::ClenshawCurtis,
+            self.harmonics.spin() == 1
+                && matches!(
+                    self.grid.kind(),
+                    crate::grid::GridKind::ClenshawCurtis | crate::grid::GridKind::Fejer1
+                ),
             self.recurrence_factor_count,
             self.spin_recurrence_factor_count,
             self.spin_fast_coefficient_count,
@@ -526,7 +530,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                     .min(analysis_order_count)
                     .min(crate::meridional::CC_RESAMPLING_ORDER_TILE),
                 if self.harmonics.spin() == 1
-                    && self.grid.kind() == crate::grid::GridKind::ClenshawCurtis
+                    && matches!(
+                        self.grid.kind(),
+                        crate::grid::GridKind::ClenshawCurtis | crate::grid::GridKind::Fejer1
+                    )
                 {
                     self.cc_resampling.as_ref()
                 } else {

@@ -498,18 +498,28 @@ fn spin1_hemisphere_pair_selector_matches_measured_domain() {
 
 #[cfg(feature = "parallel")]
 #[test]
-fn cc_parallel_order_resampling_matches_serial_with_reused_workspace() {
+fn cc_f1_parallel_order_resampling_matches_serial_with_reused_workspace() {
     let pool = rayon::ThreadPoolBuilder::new()
         .num_threads(4)
         .build()
         .unwrap();
 
-    for (lmax, ntheta) in [(129, 131), (130, 132)] {
+    for (grid_kind, lmax, ntheta) in [
+        (GridKind::ClenshawCurtis, 129, 131),
+        (GridKind::ClenshawCurtis, 130, 132),
+        (GridKind::Fejer1, 129, 130),
+        (GridKind::Fejer1, 130, 131),
+    ] {
         let nphi = 2 * (lmax + 1);
-        let plan = make_cc_plan(1, lmax, lmax, ntheta, nphi);
+        let plan = ShtPlan::new(
+            GridSpec::new(grid_kind, ntheta, nphi, 0.23).unwrap(),
+            HarmonicSpec::new(lmax, lmax, 1).unwrap(),
+        )
+        .unwrap();
         let resampling = plan.cc_resampling.as_ref().unwrap();
         let spectrum_len = plan.fft.spectrum_len();
         let mut workspace = pool.install(|| plan.workspace()).unwrap();
+        plan.prepare_workspace(&mut workspace, 4).unwrap();
         let prepared_count = resampling.prepared_ntheta() * spectrum_len;
         let mut serial = vec![Complex64::new(0.0, 0.0); prepared_count];
         let mut parallel = serial.clone();
@@ -559,7 +569,7 @@ fn cc_parallel_order_resampling_matches_serial_with_reused_workspace() {
                 .unwrap();
             assert_eq!(
                 parallel, serial,
-                "T{lmax}, ntheta={ntheta}, pass {generation}"
+                "{grid_kind:?} T{lmax}, ntheta={ntheta}, pass {generation}"
             );
         }
     }
@@ -9113,6 +9123,8 @@ fn profile_spin1_standard_analysis_phases() {
         .build()
         .unwrap();
     let mut workspace = pool.install(|| plan.workspace()).unwrap();
+    plan.prepare_workspace(&mut workspace, thread_count)
+        .unwrap();
     let probe = workspace.observe_transform_phases();
     eprintln!(
         "PROFILE_CONFIG,grid={grid_kind:?},lmax={lmax},mmax={mmax},ntheta={ntheta},nphi={nphi},threads={thread_count},phi0={phi0}"
