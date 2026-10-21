@@ -1002,9 +1002,36 @@ All-feature and no-default release suites, strict Clippy and formatting
 passed.
 
 The T127 q1 table residual is now near DUCC for these two longitude lengths.
-Resume Phase B by re-ranking current-source q8 whole-transform excess and
-stage costs; the odd T720 inverse remains the largest measured selected
-synthesis lead, with no supported FFT replacement yet.
+The q8 forward FFT and order-spectrum preparation remain visible frontend
+costs; the row-FFT dispatch experiment below addresses the larger of them.
+
+## Current progress — T127 q8 row FFT parallelism (2026-10-21)
+
+The row-FFT gate required `ntheta >= 128 && nphi >= 257`, leaving the T127
+`ntheta=128`, `nphi=255/256` cases serial even at q8. Test-only phase probes
+measured q8 forward FFT at 107.5 µs for odd 255 and 79.4 µs for even 256;
+order-spectrum preparation was about 41–43 µs. The production gate now
+starts at `nphi >= 255`; q1 stays serial because parallel execution still
+requires multiple workers. It reuses existing per-worker FFT workspaces and
+does not change row FFT arithmetic.
+
+Matched full-transform T127 q8 cases improved 26.7–51.5% for analysis and
+synthesis across the two longitude shapes. Rust/DUCC ratios moved from
+1.55–2.91x to 1.13–1.49x. A second three-process-pair candidate run under
+lower runqueue wait reproduced the result. Candidate forward-FFT phases
+fell to 24.4 µs (odd) and 18.8 µs (even); table accumulation remains about
+43–44 µs. q1 was unaffected within measurement variation. Relative L2 stayed
+below `8.53e-15`; the new boundary test, all-feature/no-default release
+suites, strict Clippy and formatting passed. See the
+[matched report](../reports/plan14-t127-row-fft-parallelism-2026-10-21.md)
+and [comparison CSV](../reports/data/plan14-row-fft-parallelism-2026-10-21/comparison.csv).
+
+T127 odd q8 analysis still has about 40 µs excess, with serial order-spectrum
+preparation now prominent. The larger selected Plan 14 lead remains T720
+q8 odd-length synthesis at about 0.407 ms excess. The existing C2R
+replacement candidate was slower; next continue from its measured stage
+profile and test a new source-grounded option before changing the production
+FFT.
 
 ## 5. Phase B — Attribute the remaining q8 large-transform excess
 

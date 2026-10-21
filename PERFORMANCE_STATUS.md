@@ -53,7 +53,17 @@ interference. Relative L2 remained at most `8.53e-15`; full release and
 no-default-feature tests passed. See the
 [matched report](reports/plan14-t127-reflected-spectrum-reuse-2026-10-21.md)
 and [comparison data](reports/data/plan14-t127-reflected-spectrum-reuse-2026-10-21/comparison.csv).
-Next: re-rank the current-source q8 whole-transform excess by stage.
+The remaining T127 q8 front-end lead is measured separately below.
+
+**Plan 14 T127 q8 row FFT (2026-10-21):** lowering the row-parallelism
+geometry floor from `nphi=257` to `255` reduced matched T127 q8 analysis and
+synthesis latency by 26.7–51.5% across odd/even longitude counts. Rust/DUCC
+ratios moved from 1.55–2.91x to 1.13–1.49x; the q1 path remains serial.
+Phase timing shows the forward FFT fell from 79–107 µs to 19–24 µs. Relative
+L2 stayed below `8.53e-15`; full release/no-default tests, Clippy and format
+passed. See the [row-FFT report](reports/plan14-t127-row-fft-parallelism-2026-10-21.md)
+and [comparison data](reports/data/plan14-row-fft-parallelism-2026-10-21/comparison.csv).
+Next: resume the T720 q8 odd-synthesis stage investigation.
 
 **Plan 14 T64 reduced-order analysis (2026-10-21):** commit `7e51ae43`
 lowers only the f64 checked fused-analysis route floor from T127 to T64.

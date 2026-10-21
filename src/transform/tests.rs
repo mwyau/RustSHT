@@ -34,6 +34,16 @@ fn make_f1_plan(lmax: usize, mmax: usize, ntheta: usize, nphi: usize, phi0: f64)
     .unwrap()
 }
 
+#[cfg(feature = "parallel")]
+#[test]
+fn row_fft_parallelism_covers_smallest_t127_longitude_shapes() {
+    assert!(!make_plan(126, 126, 127, 255, 0.23).row_fft_parallelism_supported());
+    assert!(!make_plan(127, 126, 128, 254, 0.23).row_fft_parallelism_supported());
+    assert!(make_plan(127, 127, 128, 255, 0.23).row_fft_parallelism_supported());
+    assert!(make_plan(127, 127, 128, 256, 0.23).row_fft_parallelism_supported());
+    assert!(make_plan(127, 127, 128, 257, 0.23).row_fft_parallelism_supported());
+}
+
 fn prepare_scalar_latitudes(plan: &ShtPlan, workspace: &mut crate::workspace::ShtWorkspace) {
     for (ring, &theta) in plan.grid.theta().iter().enumerate() {
         (workspace.theta_sin[ring], workspace.theta_cos[ring]) =

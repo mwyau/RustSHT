@@ -421,7 +421,7 @@ impl<T: ShtScalar> ShtPlan<T> {
 
     #[cfg(feature = "parallel")]
     pub(crate) fn row_fft_parallelism_supported(&self) -> bool {
-        self.grid.ntheta() >= 128 && self.grid.nphi() >= 257
+        self.grid.ntheta() >= 128 && self.grid.nphi() >= 255
     }
 
     /// Reserves execution scratch and sets the maximum concurrency for a
