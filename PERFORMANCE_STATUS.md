@@ -9,6 +9,19 @@ candidate A/B source was `b25c011d`.
 `e2c2dc15`. For the
 active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md).
 
+- **Owner tile decision (2026-10-20):** production scalar-analysis
+  `SCALAR_ANALYSIS_PAIR_TILE_SIZE` stays **256 reflected-latitude pairs**.
+  At T2047/ntheta=2048, 256 beat 128/64; 64's partial improvement on the
+  ntheta=2049 *disabled-prefix* route does not justify revisiting 64/128
+  or changing production tile size. **Stop repeated small-tile sweeps**;
+  address the Rust-only global prefix safety cutoff first by comparing
+  directly with DUCC's `iter_to_ieee`/`rescale` and validating any
+  isolated change without relaxing other numerical safeguards. An
+  independent, optional **512** tile experiment is permissible only after
+  the cutoff is resolved and has to account for the current fixed-array
+  scratch capacity of 256 plus cache, memory, and range-cache costs.
+  See [Plan 11](plans/11-ducc-equivalent-scalar-analysis.md#latest-owner-priority--t720-ab-and-t2048-timing-result-2026-10-20).
+
 - **Current T720 production/candidate comparison (b25c011d):** T720 f64 GL
   A/S ran at mmax=180,720, odd-minimum/even-smooth longitude counts, q1/q8,
   with 30 calibrated batches per backend/case against DUCC 42ce8ab5 (Rust
