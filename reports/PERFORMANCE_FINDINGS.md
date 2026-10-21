@@ -1,173 +1,27 @@
-# RustSHT performance findings — consolidated evidence
+# Historical RustSHT performance findings — archived 80-report synthesis
 
-**Report audit:** 80 top-level performance/research Markdown reports originally in `reports/`, dated mainly 2026-10-13 to 2026-10-19. **Branch reference:** `opt/sht-performance-parity` at `f604c8d` (2026-10-19/20). **Status:** retrospective synthesis, **not** a new benchmark and not a competing agent plan. Source versions, workload boundaries, validation scope, and confidence differ. Consult [the current active Plan 11](../plans/11-ducc-equivalent-scalar-analysis.md) for instructions, and [PERFORMANCE_STATUS](../PERFORMANCE_STATUS.md) for the most recent succinct facts. Archive links below point to their preserved original reports.
+**Status: HISTORICAL CATALOG, NOT CURRENT PERFORMANCE OR AN ACTIVE PLAN.**
+The complete October 13–19 review of **80 older reports**, rejected
+prototypes, accepted historical experiments, Pulp dispatch checks and
+source-by-source references is preserved in the
+[archived consolidated synthesis](archive/performance-findings-2026-10-19-consolidated.md).
 
-## Pulp runtime dispatch: verify before attributing the gap (2026-10-19)
+Its interpretations refer to the source and timing conditions
+available on **2026-10-19**, before Rust 1.99.1/DUCC current
+matching, the T720 candidate A/B and the T2047/2048 route study.
+Consequently, old claims such as an approximately universal 2×
+scalar-analysis gap or a proposed next SIMD rewrite **must not be
+treated as current findings**.
 
-**Important correction to the contemporaneous agent hypothesis:** RustSHT declares `pulp = { version = "0.22.3", features = ["x86-v4"] }` without `default-features = false`. The published **Pulp 0.22.3 default features already include `x86-v3`**; explicitly adding `"x86-v3"` is therefore redundant under normal Cargo feature resolution. In Pulp's `src/x86.rs`, `Arch::new()` tries `V4::try_new()` (AVX-512), then `V3::try_new()` (AVX2/FMA), then scalar. The Ryzen 9 5950X has AVX2/FMA but no AVX-512. **Do not interpret an AVX-512 compiled symbol or a missing explicit `x86-v3` entry in Cargo.toml as proof of scalar execution.**
-
-The agent reported suspected scalar fallback after seeing a V4 symbol and proposed adding `"x86-v3"`. That claim **is not established** by the dependency manifest. Verify actual feature resolution (`cargo tree -e features -i pulp`) and instrument the exact production-running `pulp::Arch::new()` selection or dispatched monomorphization in the executable used for benchmarks. Compare original and edited builds if the edit is retained; ensure identical settings, revision and inputs. If the original selected `V3`, reattribute the remaining gap to measured kernel work rather than a nonexistent feature omission. This check precedes further assembly-loop optimization.
-
-Sources: [Pulp 0.22.3 feature manifest](https://docs.rs/crate/pulp/0.22.3/features), [Pulp dispatch implementation](https://docs.rs/crate/pulp/0.22.3/source/src/x86.rs).
-
-## Executive findings
-
-1. **There are genuine, accepted speedups, but no established scalar-analysis parity.** Scalar f64 GL analysis gained fused recurrence/accumulation, vector masks, dual accumulator chains, guarded normalization and prefix skipping, FMA coefficient accumulation, and order scheduling. Whole-call benefits often occur at q1 but fluctuate at q8; measured residual Legendre work remains the main concern.
-2. **The `~2×` gap is a directional target, not an exact current result.** Earlier T720 analysis profiles put Rust recurrence/accumulation near twice a pinned DUCC inner loop, with **different phase boundaries**. The reference checkpoint showed full Rust/DUCC f64 GL analysis 41.822/19.443 ms (q1) and 7.507/3.245 ms (q8) at `fbefc60d`, but subsequent Rust commits and workload settings changed. The latest correct response is to establish equal-work kernel/whole-call comparisons before claiming parity.
-3. **Fewer instructions or checks do not guarantee speed.** `a707780`'s AVX2 FMA accumulation delivered modest Rust-only wins, while `96ffd14`'s large reduction in lane-mask horizontal reductions, scratch stores, and stack traffic **did not yield a consistent whole-call win**: a short T720 comparison regressed, though T300 q1 improved. Other failed rewrites reduced branch or arithmetic counts but raised register pressure, branches or setup.
-4. **Substantial failed ideas should not be repeated unchanged.** A naive two-pair/four-degree scalar-analysis unroll, three-chain SIMD reduction, wide 256-lane packing, out-of-line scaled initializer, order-owned prototype, and several range-check / cosine-hoist variants either regressed or were inconclusive. Revisit only with a different, measured mechanism.
-5. **Many narrower wins are retained for other operations.** f64 spin-1 GL synthesis has a guarded hemisphere-paired path, parallel coefficient preparation and staged factorization; selected analysis kernels fuse Q/U. Native f32 spin-1 SIMD accumulation and certain exact-match scalar normalization-skip routes improved tested cells. Table lookups help some small/warm workloads but need tight memory/eligibility guards.
-6. **Benchmark methodology is part of the finding.** Use the actual production-selected code path and same useful degree/lane work; distinguish wall time from worker-CPU sums, native Rust reusable plan from Python DUCC call boundaries, warm versus first-call cost, and compiler/ISA choices. Source and configuration differences explain why historical Rust/DUCC ratios and speedups cannot be combined across reports.
-
-## Working and retained changes (as documented at their source checkpoints)
-
-| Component | Tried and evidence | Disposition and limits |
-| --- | --- | --- |
-| Scalar f64 analysis | Fused recurrence + accumulation avoids separately dispatched per-degree visitor; guarded staging ensures no partial coefficient writes. SIMD mask aggregation and in-loop range checks each reduced earlier q1 full analysis by roughly 5–6% in their own paired screens. | **Accepted in applicable source paths.** Other workloads, q8 and later structural rewrites must be remeasured. [Fusion](archive/experiments/fused-scalar-analysis-2026-10-15.md), [mask aggregation](archive/experiments/scalar-analysis-range-mask-reduction-2026-10-15.md), [in-loop checks](archive/experiments/scalar-analysis-range-check-fusion-2026-10-15.md). |
-| Scalar SIMD accumulator structure | Two independent latitude-vector chains shortened reduction dependencies without AVX2 spills; consistent q1 improvements for some scalar/spin-1 cases. `a707780` converted ordinary scalar accumulations from `vmulpd` + `vaddpd` to FMA: bounded full-call median improvements T720 q1 −2.4%, q8 −4.0%, T300 q1 −6.5%; T300 q8 was noisy. | **Accepted**, but individual benchmark gains must not be added together or equated to DUCC parity. [Two-way chains](archive/experiments/paired-analysis-two-way-unroll-2026-10-14.md), [FMA codegen](archive/experiments/scalar-analysis-avx2-codegen-2026-10-19.md). |
-| Scalar scaling and prefixes | Skip repeated normalization for already-normal ordinary lanes; bound initially insignificant pairs and mask exceptional exponent lanes. More recent ordinary/mixed recurrence fusion retained checked scaled fallback. | **Accepted with safeguards.** All 474 initially scaled T720 blocks still perform useful work; no ordinary-loop replay was found. [Normalization](archive/experiments/scaled-lane-normalization-2026-10-14.md), [stage profile](archive/experiments/scalar-analysis-stage-profile-2026-10-18.md). |
-| f64 scalar synthesis | Order-major active reflected-ring batches, SIMD ordinary recurrence and shared/scaled prefix improvements superseded earlier tile-128 production routing. The shared-prefix/empty-rescale shortcut lowered q1 full-call T720/T300 by roughly 14%/12% in a bounded screen; a two-vector ordinary suffix helped q8 in a subsequent screen. | **Retained production route at later checkpoints**; archived snapshots describe older dispatch and should not be treated as current. [Matched synthesis profile](archive/experiments/matched-rust-ducc-stage-profile-2026-10-18.md), [post-fix profile](archive/experiments/matched-rust-ducc-stage-profile-2026-10-18-41b309a5.md), [initial port](archive/experiments/scalar-ducc-kernel-screen-2026-10-18.md). |
-| Spin-1 f64 analysis | Simultaneous Q/U SIMD reduction reused basis loads; T511 analysis −4.79% q1 and −3.60% q8 in one paired screen. Q/U fused recurrence, guarded range-check fusion and per-ring scale reuse yielded further q1 improvements (e.g. T720 per-ring scale −3.1% q1). | **Retained with dispatch gates**, especially q1-only eligibility where parallel improvement was unsupported. [Dual-channel](archive/experiments/spin1-dual-channel-analysis-2026-10-14.md), [fused](archive/experiments/fused-spin1-analysis-2026-10-15.md), [range check](archive/experiments/spin1-analysis-range-check-fusion-2026-10-15.md), [ring scale](archive/experiments/spin1-analysis-ring-scale-screen-2026-10-18.md). |
-| Spin synthesis | A narrow f64 GL spin-1 north/south paired synthesis path provided repeatable T319 and selected T511 parallel gains. Parallel lazy coefficient conversion cache, 32-ring targeted scheduler, zipped coefficient iteration and staged coefficient factorization improved eligible cases; T511 q1 staged factorization was ~13.6% faster. | **Accepted only for measured shapes, modes and worker counts.** Do not extrapolate to scalar, spin-2, derivative, f32 or CC/F1. [Hemisphere spin-1](archive/experiments/spin1-hemisphere-pair-synthesis-2026-10-14.md), [cache](archive/experiments/spin1-parallel-coefficient-cache-2026-10-14.md), [factorization](archive/experiments/spin1-staged-synthesis-factorization-2026-10-14.md), [scheduling](archive/experiments/fine-synthesis-latitude-groups-2026-10-14.md). |
-| f32 | f32 spin-1 guarded SIMD analysis reduction improved T511 analysis ~14% q1 and ~9–10% q8; extending exact-zero SIMD lanes added repeatable q1 reductions. Overflow postcheck recovers scalar cancellation for exceptional partial sums. Scalar f32 recurrence normalization skip improved T1023 and T1279 under exact-match selectors. | **Retained with exceptional-value fallback and narrow eligibility.** T720 broad/array selector and T2047 extension did not qualify. [Spin-1 SIMD](archive/experiments/f32-spin1-analysis-simd-2026-10-15.md), [zero](archive/experiments/f32-spin1-zero-lane-simd-2026-10-15.md), [overflow](archive/experiments/f32-spin1-simd-overflow-fallback-2026-10-15.md), [scalar](archive/experiments/f32-scalar-normalization-skip-2026-10-16.md), [T1279](archive/experiments/f32-scalar-normalization-skip-T1279-2026-10-16.md). |
-| Tables and batching | Compact northern-hemisphere Legendre tables improve selected repeated, small/warm GL cases; static selector tightened after finding table regressions. Explicit FFT-friendly nphi suggestion saved ~6–28% in tested q1 bands when the user can choose longitude sampling. Independent fields can run concurrently with one workspace per field (eight fields: ~2.0–2.6× higher throughput than sequential reuse at T511). | **Retained as opt-in/selected policies**, not proof of equivalent-grid DUCC speedup. Tables cost setup and up to the cap; changing nphi changes workload and is not a like-for-like kernel optimization. [Selector recheck](archive/experiments/adaptive-legendre-latest-head-results-2026-10-14.md), [longitude](archive/experiments/fft-friendly-longitude-selection-2026-10-14.md), [batch](archive/experiments/batched-transform-study-2026-10-14.md). |
-| Scheduling and workspace | Parallel longitude row FFT for analysis and capacity-aware workspace ownership, guarded scalar/spin operator scheduling and fine synthesis grouping. | **Useful in their measured regimes**, but not grounds for broadly retuning the recurrence kernel. [Row FFT](archive/experiments/row-fft-parallelism-2026-10-15.md), [capacity](archive/experiments/workspace-capacity-paired-2026-10-15.md), [groups](archive/experiments/fine-synthesis-latitude-groups-2026-10-14.md). |
-
-## Rejected, reverted or not established
-
-| Attempt | Observed problem | Action / source |
-| --- | --- | --- |
-| Three SIMD reduction chains instead of two | Twelve live YMM accumulators caused stack-mediated vector traffic; spin-1 q1 analysis slower 6.8–7.2%. | **Rejected.** [Three-chain](archive/experiments/paired-analysis-three-chain-2026-10-14.md) |
-| Naive fused two-pair/four-degree scalar-analysis step | T720 q1 43.789 vs 40.681 ms and q8 7.772 vs 6.929 ms (candidate slower), despite sharing loads. | **Rejected**; redesign must resolve live-register and loop-control costs. [Stage profile](archive/experiments/scalar-analysis-stage-profile-2026-10-18.md) |
-| Move cosine squares into local scratch / reduce masks per block (`96ffd14`) | 1088→896 byte inspected frame, fewer YMM accesses, ~99.5% fewer horizontal mask reductions, **but** T720 whole-call screen q1 29.203→31.215 ms and q8 6.493→7.150 ms. T300 reduced q1 improved. | **Source landed; performance benefit unresolved, not a proven win.** Do not claim moving scratch alone closed the gap. [Codegen follow-up](archive/experiments/scalar-analysis-codegen-followup-2026-10-19.md) |
-| Local cosine-square hoist and basis/cosine reassociation | Slight q1 improvement but inconsistent q8 or q1 regression; safety/setup overhead outweighed arithmetic savings on tested shapes. | **Rejected source-level prototypes.** [cos²](archive/experiments/scalar-analysis-cosine-square-hoist-screen-2026-10-15.md), [basis×cos](archive/experiments/scalar-analysis-basis-cosine-screen-2026-10-15.md), [opposite cos](archive/experiments/opposite-cosine-hoist-2026-10-14.md) |
-| Generic SIMD/check fusion and extended normalization | Range-check predicate fusion or per-vector horizontal-min precheck often added comparisons/branching; T1023 q8 high-band aggregation unstable. The standalone SIMD synthesis transition scan was ~5% slower in two screens. f32 spin normalization precheck was 66–82% slower. | **Rejected or narrowed to known good implementations**. [pair check](archive/experiments/paired-recurrence-range-check-2026-10-14.md), [scalar aggregation](archive/experiments/scalar-analysis-range-check-min-aggregation-screen-2026-10-15.md), [transition](archive/experiments/simd-transition-range-check-screen-2026-10-18.md), [f32 spin](archive/experiments/f32-spin1-normalization-range-check-2026-10-15.md) |
-| Naive extra parallelism/layout | Scalar hemisphere recurrence-sharing T511 slower 10.4% q1/6.2% q8; earlier order-owned synthesis prototype T511 q8 32.65% slower; universal 16-ring groups slowed spin-1 ~14%; extra spin-1 analysis leaf split T720 q8 ~11.55% slower. | **Rejected individually**; later full order-major scalar synthesis is a different algorithm. [scalar pairing](archive/experiments/hemisphere-paired-synthesis-2026-10-14.md), [order owned](archive/experiments/order-owned-synthesis-2026-10-15.md), [16-ring](archive/experiments/latitude-group-size-16-2026-10-14.md), [overpartition](archive/experiments/spin1-analysis-leaf-overpartition-2026-10-14.md) |
-| Spin-1 direct general recurrence and serial conversion cache | General spin recurrence 6.8–25.7× slower than scalar conversion at T511; serial cache was detrimental to parallel conversion. | **Rejected.** Distinguish accepted *parallel* coefficient cache. [direct](archive/experiments/spin1-direct-vs-scalar-conversion-2026-10-14.md), [serial cache](archive/experiments/spin1-shared-coefficient-cache-2026-10-14.md) |
-| Compiler flags, crude indexing/dispatch rearrangements | Thin LTO and 1-CGU not consistently faster; some loop-index changes reduced static branches but regressed q8; spin-1 serial channel dispatch produced no stable q8 win and an initial `.map` version was >7× slower. | **Rejected as global settings/designs.** [release profile](archive/experiments/release-profile-screen-2026-10-14.md), [paired zip](archive/experiments/scalar-paired-zip-iteration-2026-10-14.md), [spin dispatch](archive/experiments/spin1-analysis-channel-dispatch-2026-10-14.md) |
-| Dense/butterfly ecTrans approaches | Dense matrices exceed target memory budgets; butterfly not tested for reusable-field workload and error budget; source review alone cannot justify port. | **Research only**, no production change. [ecTrans](archive/experiments/ectrans-legendre-strategy-study-2026-10-16.md) |
-| T2047 f32 scalar normalization selector | Only one pair completed and benchmark had possible competing CPU work; no full numerical acceptance. | **Not accepted.** [T2047 screen](archive/experiments/f32-scalar-normalization-skip-T2047-2026-10-16.md) |
-| Interleaved f32 spin-1 normalization | T511 q1/q8 whole-transform gains unproven, sums slightly slower. | **Reverted.** [interleaved](archive/experiments/f32-spin1-normalize-interleave-screen-2026-10-15.md) |
-
-## Profiling interpretation and unresolved questions
-
-**Analysis, at the profile checkpoints.** A T720 scalar f64 GL report at `fbefc60d` gives full analysis Rust/DUCC 41.822/19.443 ms (2.15×) q1, 7.507/3.245 ms (2.31×) q8. Rust recurrence-plus-accumulation 34.166/5.123 ms versus DUCC inner-loop 11.12/1.76 ms; **the Rust and DUCC phase boundaries differ**. Another later pre-`96ffd14` probe reported 25.56/3.73 ms against 10.819/1.899 ms, also not equivalent. No late recurrence declines; scaled blocks do real work. FFT, packing and order preparation alone did not account for the gap. [Stage profile](archive/experiments/scalar-analysis-stage-profile-2026-10-18.md), [codegen follow-up](archive/experiments/scalar-analysis-codegen-followup-2026-10-19.md).
-
-**Comparison variability is material.** At T1023 scalar analysis `7ac443a`, repeated whole-call native/Python screens produced q8 ratios 2.13× and later 1.67×, while q1 stayed ~1.32×. Spin-1 T511 q8 ratios varied across sessions (an early thread-scaling report ~6.37×, later follow-up ~1.77–1.82×). Those discrepancies involve different host conditions and call boundaries; do not promote the worst/best figure into a timeless present-day claim. [T1023 first](archive/experiments/t1023-analysis-ducc-refresh-2026-10-15.md), [follow-up](archive/experiments/t1023-scalar-ducc-followup-2026-10-15.md), [spin-1 scaling](archive/experiments/spin1-analysis-thread-scaling-2026-10-14.md), [spin-1 refresh](archive/experiments/spin1-analysis-ducc-refresh-2026-10-15.md).
-
-**Synthesis is a separate kernel.** The order-major scalar synthesis path and its scaled-prefix optimization are not interchangeable with analysis, despite sharing associated-Legendre mathematics. Report Rust/DUCC algorithmic boundaries, repeated FFT stage, coefficient preparation, active-ring packing, ordinary and mixed/scaled recurrence, output reconstruction and exact numerical agreement separately. [Synthesis profiles](archive/experiments/matched-rust-ducc-stage-profile-2026-10-18.md).
-
-**High-resolution macro benchmarks** spanning T42–T2047 found DUCC generally faster for tested atmospheric workloads and identified large high-band differences, but the binary under test predates current source. They establish workloads, memory costs and direction, not a current parity ratio. [Atmospheric study](archive/experiments/atmospheric-resolution-performance-ectrans-2026-10-16.md).
-
-### Current priority derived from the evidence
-
-The active Plan 11's **~2× scalar f64 GL analysis gap-closing goal** should proceed with (1) equal-useful-work native Rust/DUCC normal and scaled kernel benchmarks; (2) matched optimized AVX2/FMA disassembly of the *executed* specializations, with GCC/Clang compiler controls when justified; (3) a latency/excess-milliseconds breakdown, rather than a count of saved instructions; (4) one hypothesis-driven structural change at a time, especially ordinary-loop dependency/data flow versus checked mixed-block work; (5) numerical safeguards and reproducible full-call retests. The previous naive unroll, cosine precheck and stack-frame simplification failures are constraints on designs, not prohibitions on new evidence-backed kernels.
-
-## How to read the archive
-
-The following catalog lists every one of the **80 audited top-level reports**; each original report retains source-specific benchmark tables, provenance and linked raw data. A source report can describe an accepted *historical* implementation that was later superseded. Archive entries are not standing instructions; no performance claim is a portable guarantee. Raw benchmark material stays in `reports/data/`, not in this index.
+For measured decisions use
+[current PERFORMANCE_STATUS](../PERFORMANCE_STATUS.md),
+[active Plan 11](../plans/11-ducc-equivalent-scalar-analysis.md)
+and the [recent evidence index](scalar-analysis-cumulative-2026-10-20.md).
 
 ## Complete audited report catalog
 
-### Scalar f64 analysis and SIMD (22)
+Read the [historical source catalog and category links](archive/performance-findings-2026-10-19-consolidated.md#complete-audited-report-catalog).
 
-- [analysis-capacity-split-2026-10-15.md](archive/experiments/analysis-capacity-split-2026-10-15.md)
-- [analysis-leaf-imbalance-2026-10-15.md](archive/experiments/analysis-leaf-imbalance-2026-10-15.md)
-- [analysis-phase-profile-2026-10-15.md](archive/experiments/analysis-phase-profile-2026-10-15.md)
-- [analysis-sectoral-simd-2026-10-18.md](archive/experiments/analysis-sectoral-simd-2026-10-18.md)
-- [current-analysis-phase-profile-2026-10-15.md](archive/experiments/current-analysis-phase-profile-2026-10-15.md)
-- [current-scalar-analysis-kernel-profile-2026-10-14.md](archive/experiments/current-scalar-analysis-kernel-profile-2026-10-14.md)
-- [opposite-cosine-hoist-2026-10-14.md](archive/experiments/opposite-cosine-hoist-2026-10-14.md)
-- [paired-analysis-three-chain-2026-10-14.md](archive/experiments/paired-analysis-three-chain-2026-10-14.md)
-- [paired-analysis-two-way-unroll-2026-10-14.md](archive/experiments/paired-analysis-two-way-unroll-2026-10-14.md)
-- [paired-recurrence-range-check-2026-10-14.md](archive/experiments/paired-recurrence-range-check-2026-10-14.md)
-- [scalar-analysis-avx2-codegen-2026-10-19.md](archive/experiments/scalar-analysis-avx2-codegen-2026-10-19.md)
-- [scalar-analysis-basis-cosine-screen-2026-10-15.md](archive/experiments/scalar-analysis-basis-cosine-screen-2026-10-15.md)
-- [scalar-analysis-codegen-followup-2026-10-19.md](archive/experiments/scalar-analysis-codegen-followup-2026-10-19.md)
-- [scalar-analysis-cosine-square-hoist-screen-2026-10-15.md](archive/experiments/scalar-analysis-cosine-square-hoist-screen-2026-10-15.md)
-- [scalar-analysis-ducc-refresh-2026-10-15.md](archive/experiments/scalar-analysis-ducc-refresh-2026-10-15.md)
-- [scalar-analysis-loop-fusion-screen-2026-10-15.md](archive/experiments/scalar-analysis-loop-fusion-screen-2026-10-15.md)
-- [scalar-analysis-range-check-fusion-2026-10-15.md](archive/experiments/scalar-analysis-range-check-fusion-2026-10-15.md)
-- [scalar-analysis-range-check-min-aggregation-screen-2026-10-15.md](archive/experiments/scalar-analysis-range-check-min-aggregation-screen-2026-10-15.md)
-- [scalar-analysis-range-mask-reduction-2026-10-15.md](archive/experiments/scalar-analysis-range-mask-reduction-2026-10-15.md)
-- [scalar-analysis-stage-profile-2026-10-18.md](archive/experiments/scalar-analysis-stage-profile-2026-10-18.md)
-- [scalar-paired-zip-iteration-2026-10-14.md](archive/experiments/scalar-paired-zip-iteration-2026-10-14.md)
-- [scaled-lane-normalization-2026-10-14.md](archive/experiments/scaled-lane-normalization-2026-10-14.md)
+## Rejected, reverted or not established
 
-### Scalar synthesis and DUCC kernel (9)
-
-- [fine-synthesis-latitude-groups-2026-10-14.md](archive/experiments/fine-synthesis-latitude-groups-2026-10-14.md)
-- [fused-synthesis-register-hoist-2026-10-14.md](archive/experiments/fused-synthesis-register-hoist-2026-10-14.md)
-- [hemisphere-paired-synthesis-2026-10-14.md](archive/experiments/hemisphere-paired-synthesis-2026-10-14.md)
-- [latitude-group-size-16-2026-10-14.md](archive/experiments/latitude-group-size-16-2026-10-14.md)
-- [matched-rust-ducc-stage-profile-2026-10-18-41b309a5.md](archive/experiments/matched-rust-ducc-stage-profile-2026-10-18-41b309a5.md)
-- [matched-rust-ducc-stage-profile-2026-10-18.md](archive/experiments/matched-rust-ducc-stage-profile-2026-10-18.md)
-- [order-owned-synthesis-2026-10-15.md](archive/experiments/order-owned-synthesis-2026-10-15.md)
-- [scalar-ducc-kernel-screen-2026-10-18.md](archive/experiments/scalar-ducc-kernel-screen-2026-10-18.md)
-- [simd-transition-range-check-screen-2026-10-18.md](archive/experiments/simd-transition-range-check-screen-2026-10-18.md)
-
-### Spin-1 and spin-2 algorithms (17)
-
-- [fused-spin1-analysis-2026-10-15.md](archive/experiments/fused-spin1-analysis-2026-10-15.md)
-- [fused-spin2-analysis-2026-10-15.md](archive/experiments/fused-spin2-analysis-2026-10-15.md)
-- [spin-analysis-ring-scale-hoist-2026-10-14.md](archive/experiments/spin-analysis-ring-scale-hoist-2026-10-14.md)
-- [spin1-analysis-channel-dispatch-2026-10-14.md](archive/experiments/spin1-analysis-channel-dispatch-2026-10-14.md)
-- [spin1-analysis-ducc-refresh-2026-10-15.md](archive/experiments/spin1-analysis-ducc-refresh-2026-10-15.md)
-- [spin1-analysis-leaf-overpartition-2026-10-14.md](archive/experiments/spin1-analysis-leaf-overpartition-2026-10-14.md)
-- [spin1-analysis-range-check-fusion-2026-10-15.md](archive/experiments/spin1-analysis-range-check-fusion-2026-10-15.md)
-- [spin1-analysis-ring-scale-screen-2026-10-18.md](archive/experiments/spin1-analysis-ring-scale-screen-2026-10-18.md)
-- [spin1-analysis-thread-scaling-2026-10-14.md](archive/experiments/spin1-analysis-thread-scaling-2026-10-14.md)
-- [spin1-direct-vs-scalar-conversion-2026-10-14.md](archive/experiments/spin1-direct-vs-scalar-conversion-2026-10-14.md)
-- [spin1-dual-channel-analysis-2026-10-14.md](archive/experiments/spin1-dual-channel-analysis-2026-10-14.md)
-- [spin1-hemisphere-pair-synthesis-2026-10-14.md](archive/experiments/spin1-hemisphere-pair-synthesis-2026-10-14.md)
-- [spin1-paired-coefficient-preparation-2026-10-14.md](archive/experiments/spin1-paired-coefficient-preparation-2026-10-14.md)
-- [spin1-paired-zip-iteration-2026-10-14.md](archive/experiments/spin1-paired-zip-iteration-2026-10-14.md)
-- [spin1-parallel-coefficient-cache-2026-10-14.md](archive/experiments/spin1-parallel-coefficient-cache-2026-10-14.md)
-- [spin1-shared-coefficient-cache-2026-10-14.md](archive/experiments/spin1-shared-coefficient-cache-2026-10-14.md)
-- [spin1-staged-synthesis-factorization-2026-10-14.md](archive/experiments/spin1-staged-synthesis-factorization-2026-10-14.md)
-
-### Native f32 (10)
-
-- [f32-scalar-normalization-skip-2026-10-16.md](archive/experiments/f32-scalar-normalization-skip-2026-10-16.md)
-- [f32-scalar-normalization-skip-T1279-2026-10-16.md](archive/experiments/f32-scalar-normalization-skip-T1279-2026-10-16.md)
-- [f32-scalar-normalization-skip-T2047-2026-10-16.md](archive/experiments/f32-scalar-normalization-skip-T2047-2026-10-16.md)
-- [f32-spin1-analysis-simd-2026-10-15.md](archive/experiments/f32-spin1-analysis-simd-2026-10-15.md)
-- [f32-spin1-current-screen-2026-10-15.md](archive/experiments/f32-spin1-current-screen-2026-10-15.md)
-- [f32-spin1-normalization-range-check-2026-10-15.md](archive/experiments/f32-spin1-normalization-range-check-2026-10-15.md)
-- [f32-spin1-normalize-interleave-screen-2026-10-15.md](archive/experiments/f32-spin1-normalize-interleave-screen-2026-10-15.md)
-- [f32-spin1-simd-overflow-fallback-2026-10-15.md](archive/experiments/f32-spin1-simd-overflow-fallback-2026-10-15.md)
-- [f32-spin1-zero-lane-simd-2026-10-15.md](archive/experiments/f32-spin1-zero-lane-simd-2026-10-15.md)
-- [f32-t1023-ducc-validation-2026-10-16.md](archive/experiments/f32-t1023-ducc-validation-2026-10-16.md)
-
-### Legendre table, strategy and API (10)
-
-- [adaptive-legendre-latest-head-recheck-2026-10-14.md](archive/experiments/adaptive-legendre-latest-head-recheck-2026-10-14.md)
-- [adaptive-legendre-latest-head-results-2026-10-14.md](archive/experiments/adaptive-legendre-latest-head-results-2026-10-14.md)
-- [adaptive-legendre-refresh-2026-10-14.md](archive/experiments/adaptive-legendre-refresh-2026-10-14.md)
-- [adaptive-legendre-strategy-2026-10-14.md](archive/experiments/adaptive-legendre-strategy-2026-10-14.md)
-- [ectrans-legendre-strategy-study-2026-10-16.md](archive/experiments/ectrans-legendre-strategy-study-2026-10-16.md)
-- [fft-friendly-longitude-selection-2026-10-14.md](archive/experiments/fft-friendly-longitude-selection-2026-10-14.md)
-- [legendre-precomputation-2026-10-13.md](archive/experiments/legendre-precomputation-2026-10-13.md)
-- [legendre-reuse-estimate-2026-10-14.md](archive/experiments/legendre-reuse-estimate-2026-10-14.md)
-- [overresolved-gl-legendre-table-2026-10-14.md](archive/experiments/overresolved-gl-legendre-table-2026-10-14.md)
-- [t159-overresolved-analysis-2026-10-14.md](archive/experiments/t159-overresolved-analysis-2026-10-14.md)
-
-### Whole-transform comparison, scheduling and profiling (10)
-
-- [atmospheric-resolution-performance-ectrans-2026-10-16.md](archive/experiments/atmospheric-resolution-performance-ectrans-2026-10-16.md)
-- [batched-transform-study-2026-10-14.md](archive/experiments/batched-transform-study-2026-10-14.md)
-- [ducc-source-build-screen-2026-10-14.md](archive/experiments/ducc-source-build-screen-2026-10-14.md)
-- [m6-cpu-performance-parity.md](archive/experiments/m6-cpu-performance-parity.md)
-- [release-profile-screen-2026-10-14.md](archive/experiments/release-profile-screen-2026-10-14.md)
-- [row-fft-parallelism-2026-10-15.md](archive/experiments/row-fft-parallelism-2026-10-15.md)
-- [t1023-analysis-ducc-refresh-2026-10-15.md](archive/experiments/t1023-analysis-ducc-refresh-2026-10-15.md)
-- [t1023-scalar-ducc-followup-2026-10-15.md](archive/experiments/t1023-scalar-ducc-followup-2026-10-15.md)
-- [workspace-capacity-control-2026-10-15.md](archive/experiments/workspace-capacity-control-2026-10-15.md)
-- [workspace-capacity-paired-2026-10-15.md](archive/experiments/workspace-capacity-paired-2026-10-15.md)
-
-### Other historical reports (2)
-
-- [fused-scalar-analysis-2026-10-15.md](archive/experiments/fused-scalar-analysis-2026-10-15.md)
-- [performance-status-pre-ducc-port-2026-10-18.md](archive/experiments/performance-status-pre-ducc-port-2026-10-18.md)
-
-**Audit inventory:** 80 report narratives across 7 categories. Source documents are preserved under `reports/archive/experiments/`; the groupings above are navigational, not classifications of numerical validity.
+Read the [preserved rejected-experiment assessment](archive/performance-findings-2026-10-19-consolidated.md#rejected-reverted-or-not-established).
