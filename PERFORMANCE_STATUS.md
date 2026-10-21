@@ -264,14 +264,33 @@ Runqueue wait was elevated, so further threshold work requires a phase
 profile and matched T31/T32 control. Full distributions and data are in the
 [T32 report](reports/plan14-t32-fused-analysis-cutoff-2026-10-21.md).
 
+## Plan 14 — T16 checked fused analysis (2026-10-21)
+
+Source commit `830ecc63` lowers only the f64 scalar-analysis fused-route
+floor from T32 to T16. The matched q1 GL full-order screen used T15/T16/T31,
+odd-minimum/even-smooth longitude sampling, three interleaved process pairs
+and 30 calibrated batches per backend/case. T15 controls changed within
+0.5%; T16 improved 8.8–9.4%, and T31 improved 20.3–22.3%. At T31
+even-smooth, Rust moved 27.051→21.559 µs while DUCC stayed near 16.5 µs,
+reducing excess from 10.531 to 5.234 µs. The T31 stage probe attributes
+4.936 µs of the gain to recurrence/accumulation; FFT and preparation stayed
+flat. Candidate relative L2 was at most `1.54e-15`; full and no-default
+release tests, safety/adjoint checks, formatting and strict Clippy passed.
+
+A 10-process-pair T15/T16 cold/warm follow-up measured T16 first-call
+medians of 26.230 µs before and 30.898 µs after; their p10–p90 ranges
+overlap, as do shifts in the T15 control. If the full 4.67 µs T16 shift is
+real, the 0.775 µs warm saving repays it after about six more analyses.
+Keep this caveat visible: the warmed reusable-plan path improves, but no
+first-call speedup is established. Full samples, phase distributions and
+build provenance are in the
+[T16 report and data](reports/plan14-t16-analysis-cutoff-2026-10-21.md).
+
 ## Current next steps and deferred work
 
-1. Profile T31 full-order even-smooth q1 analysis; do not lower the fused
-   eligibility floor without phase attribution and a matched T31/T32
-   control. Avoid another broad benchmark matrix.
-2. Re-rank the largest measured absolute q8 analysis/synthesis excess from
-   current-source controls and continue only on the leading stage.
-3. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
+1. Re-rank current-source q8 analysis/synthesis whole-transform excesses
+   and continue only on the leading stage.
+2. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
    cache-topology queries plus optional offline pointer-chase diagnostic
    (no startup autotuning); [Plan 13](plans/13-fused-batched-sht.md)
    true basis-shared batches with measured internal blocking.

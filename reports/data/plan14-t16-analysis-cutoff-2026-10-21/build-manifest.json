@@ -1,0 +1,13 @@
+{
+  "baseline_source_commit": "2dadb0c07d776e0f7a6679af8c28bb908082c443",
+  "candidate_source_commit": "830ecc63eb9df829bebefb7c7a908bba4e20242e",
+  "candidate_source_diff": "only f64 fused analysis floor 32->16 and dispatch test updated to verify T15 callback, T16/T31 fused routes; no recurrence arithmetic changes",
+  "baseline_rust_binary_sha256": "f2e91ac2df5003d6d342e4609e58068a41c34b1a7e81eed3839b5076a549c133",
+  "candidate_rust_binary_sha256": "78e247412da08871f4bcce9ce3818f0b5b7f5c3c7c0ef58f983d639016f40c41",
+  "ducc_binary_sha256": "3f3970c94e6046c6838619d8efac091b5ca425628e24b91e2b65afd5627641db",
+  "ducc_commit": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "benchmark_target_batch_ms": 75,
+  "process_pairs": 3,
+  "batches_per_backend_case": 30
+}

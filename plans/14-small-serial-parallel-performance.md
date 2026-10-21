@@ -347,11 +347,11 @@ flags, dispatch and numerical checks are in the
 [focused report](../reports/plan14-t127-table-analysis-simd-2026-10-21.md).
 
 The T64 reduced-order recurrence lead and its checked fused-route candidate
-are described next. T32 full/reduced-order analysis has since moved onto
-the checked fused route with a measured improvement; the remaining low-band
-analysis lead is T31 full-order even-smooth sampling. Profile that route
-before considering another eligibility change, then rank q8 from current-
-source controls rather than reusing historical pre-layout timings.
+are described next. T32 and T31 full/reduced-order analysis now use the
+checked fused route from T32/T16, respectively. The T16 cutoff experiment
+and its first-call caveat are recorded below; do not continue lowering the
+analysis floor without new evidence. Return to the remaining q8 whole-call
+excess from current-source controls.
 
 ## Current progress — T64 checked fused analysis route (2026-10-21)
 
@@ -397,15 +397,49 @@ recurrence/accumulation falling from 21.184 to 16.558 µs; FFT and other
 preparation stayed effectively unchanged. The remaining low-band analysis
 lead is T31 full-order even-smooth sampling: Rust/DUCC was 27.130/16.499 µs
 before and 27.054/16.491 µs after T32 dispatch, a stable +10.6 µs excess.
-Next profile this existing callback route before considering a lower floor.
-Full raw batches and reproducibility details are in the
+That callback-route gap was subsequently tested with a lower T16 floor; see
+the next section. Full raw batches and reproducibility details are in the
 [T32 report and data](../reports/plan14-t32-fused-analysis-cutoff-2026-10-21.md).
+
+## Current progress — T16 checked fused analysis route (2026-10-21)
+
+Commit `830ecc63` lowers only the f64 fused scalar-analysis floor from T32
+to T16. The route-selection test confirms T15 remains on the callback path
+and T16/T31 use the checked fused path. f32 remains at T255; scaling,
+preflight, proof/cache, fallback, tables, spin-1 and all other operators are
+unchanged.
+
+The native Rust/DUCC GL q1 A/B covers full-order T15/T16/T31 at odd-minimum
+and even-smooth `nphi`, with three interleaved process pairs and 30 timed
+75 ms-target batches per backend/case. Every batch lasted 42.47–71.94 ms.
+T15 moved by only ±0.5%. T16 improved 8.8–9.4%, and T31 improved
+20.3–22.3%. T31 even-smooth Rust/DUCC moved from 27.051/16.520 µs to
+21.559/16.325 µs; the remaining excess is +5.234 µs. Rust's actual Pulp
+backend was V3; DUCC was GCC 15.2, AVX2/FMA, built with its production
+fast-math SHT flags. Host frequency medians matched at 4.691 GHz; q1
+runqueue-wait medians were 5.4%/5.8%, p90 11.7%/14.2%.
+
+The candidate maximum relative L2 error was `1.54e-15`; all full and
+no-default release tests, numerical/adjoint checks, formatting and strict
+Clippy passed. A 10-pair T15/T16 cold-follow-up found T16's first-call
+median at 30.898 µs candidate versus 26.230 µs baseline, with overlapping
+p10–p90 ranges and a 2.29 µs first-call shift in the T15 control. If the full
+4.67 µs T16 shift is real, its 0.775 µs warm saving repays it after roughly
+six further analyses. Keep this cold/warm distinction visible; the measured
+steady-state gain supports the floor for reused plans but does not establish
+a first-call improvement.
+
+The report, binary hashes, raw batches and phase summaries are in the
+[T16 cutoff checkpoint](../reports/plan14-t16-analysis-cutoff-2026-10-21.md).
+Phase A's low-band cutoff follow-up is closed for now. Next re-rank current
+source q8 full/reduced analysis and synthesis whole-call excesses; do not
+start another low-degree cutoff sweep.
 
 ## 4. Phase A — Find and fix small serial fixed costs
 
 **Hypothesis to test:** small T1–T32 transforms spend a significant fraction of wall time in repeated per-call setup, data conversion, buffer handling and/or independent row FFTs rather than in useful Legendre arithmetic. This is a hypothesis, not a proven diagnosis.
 
-1. Build a microsecond-level, reusable-plan stage profile for q1 analysis and synthesis. Measure per-call validation, output clearing, grid `sin/cos`/order-limit preparation, phase and weight construction, spectrum reordering, table or recurrence dispatch, real FFT packing/recombination, recurrence coefficient preparation and numerical safety paths. Use repeated stage timing or controlled no-op/phase ablations so timer overhead does not dominate.
+1. The small-q1 route-cutoff experiment is complete at T16. Retain its cold/warm tradeoff and proceed to the q8 rebaseline below; only reopen Phase A for a concrete newly measured cause.
 2. Compare DUCC's `map2leg`/`leg2map`, `ringhelper`, `allocate_leg` and Legendre preparation with Rust's `src/fft.rs`, `src/transform.rs`, `src/plan.rs` and `src/workspace.rs`. DUCC's own per-call preparation can be **greater** than Rust's; measure it rather than assuming a plan advantage or deficit.
 3. Distinguish **fixed per-call costs** from O(`ntheta*nphi`) row FFT costs and O(`lmax`-dependent) Legendre work by fitting latency against operation counts or using carefully chosen neighboring sizes. Identify the single largest excess in **absolute microseconds** across target sizes before editing production.
 4. Test one reversible, source-justified candidate at a time: e.g. remove demonstrably redundant initialization, cache immutable geometry already owned by the plan, avoid unnecessary intermediate copies, or specialize an existing tiny-FFT path if measured. Any cache must be immutable/thread-safe and preserve first-use behavior. Do not bypass input validation, finite/range checks, real Nyquist handling, scaling, or adjoint invariants. No unsupported small-band hardcoded answers.

@@ -1,0 +1,17 @@
+route,phase,process_p10_median_us,process_median_of_medians_us,process_p90_median_us,process_median_min_us,process_median_max_us,batch_ms_min,batch_ms_median,batch_ms_max
+baseline,Legendre recurrence and accumulation,19.379,19.451,20.291,19.434,19.543,31.168326,32.625992,47.078097
+baseline,Legendre table retrieval,0.021,0.021,0.021,0.021,0.021,31.168326,32.625992,47.078097
+baseline,coefficient cleanup,0.037,0.037,0.038,0.037,0.037,31.168326,32.625992,47.078097
+baseline,coefficient initialization,0.08,0.081,0.084,0.08,0.081,31.168326,32.625992,47.078097
+baseline,forward FFT,4.76,4.775,4.858,4.77,4.797,31.168326,32.625992,47.078097
+baseline,order spectrum preparation,1.611,1.622,1.661,1.619,1.649,31.168326,32.625992,47.078097
+baseline,resampling and latitude setup,0.64,0.645,0.662,0.643,0.647,31.168326,32.625992,47.078097
+baseline,strategy selection,0.024,0.024,0.025,0.024,0.024,31.168326,32.625992,47.078097
+candidate,Legendre recurrence and accumulation,14.359,14.515,15.134,14.461,14.518,26.405797,28.409788,46.19592000000001
+candidate,Legendre table retrieval,0.021,0.021,0.022,0.021,0.022,26.405797,28.409788,46.19592000000001
+candidate,coefficient cleanup,0.036,0.037,0.039,0.037,0.037,26.405797,28.409788,46.19592000000001
+candidate,coefficient initialization,0.079,0.079,0.083,0.079,0.08,26.405797,28.409788,46.19592000000001
+candidate,forward FFT,4.766,4.807,4.959,4.789,4.812,26.405797,28.409788,46.19592000000001
+candidate,order spectrum preparation,1.612,1.627,1.668,1.622,1.642,26.405797,28.409788,46.19592000000001
+candidate,resampling and latitude setup,0.641,0.645,0.671,0.644,0.647,26.405797,28.409788,46.19592000000001
+candidate,strategy selection,0.024,0.024,0.025,0.024,0.024,26.405797,28.409788,46.19592000000001

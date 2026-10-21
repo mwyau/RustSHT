@@ -64,10 +64,13 @@ features. Formatting and strict Clippy passed in both feature modes.
 
 Keep the f64 fused analysis floor at T32. It removes about 5.5–6.0 µs of
 T32 full-order excess and improves the reduced-order cases without changing
-T31. The remaining small-q1 lead is T31 full-order even-smooth analysis
-(about 10.6 µs excess); profile and test the existing fused route there
-before selecting any lower threshold. Then return to the largest current
-q8 whole-transform excess.
+T31. At this checkpoint the small-q1 lead was T31 full-order even-smooth
+analysis (about 10.6 µs excess). A subsequent calibrated T31 phase profile
+and T16 cutoff comparison showed that the existing checked fused route
+reduces recurrence/accumulation by 4.94 µs and whole-call latency by 5.49 µs
+there; see the [T16 follow-up](plan14-t16-analysis-cutoff-2026-10-21.md).
+The current small-q1 cutoff work is closed at T16. Continue with current-
+source q8 whole-transform attribution.
 
 Raw samples, checksums, dispatch, numerical outputs and host summaries are
 in [`reports/data/plan14-t32-fused-analysis-cutoff-2026-10-21/`](data/plan14-t32-fused-analysis-cutoff-2026-10-21/).
