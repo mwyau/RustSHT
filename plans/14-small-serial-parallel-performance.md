@@ -767,11 +767,75 @@ especially full order; the timing does not attribute all saved time to the
 removed matrix traffic. Keep the direct-input route. The largest remaining
 measured issue is now the T720 q1 full-order excess (`+0.874 ms` in the
 repeat source screen), whose candidate q1 runs had elevated scheduler wait.
-Next recheck that case on a quieter host before choosing whether to profile
-serial recurrence or a different stage. Keep the scheduler and odd FFT path
-unchanged. Release parallel and no-default-feature suites, including
-all-grid/spin, extreme-value, adjoint and f32 coverage, formatting and strict
-Clippy passed for the source change.
+The quieter-host recheck and phase attribution are recorded below. Keep the
+scheduler and odd FFT path unchanged. Release parallel and no-default-feature
+suites, including all-grid/spin, extreme-value, adjoint and f32 coverage,
+formatting and strict Clippy passed for the source change.
+
+## Current progress — T720 q1 recheck and warmed kernel boundary (2026-10-21)
+
+The direct-input source A/B was repeated at T720, full `mmax`, q1 with
+`ntheta=721`, `nphi=1458`, and `phi0=0.23`, using three interleaved process
+pairs and 30 calibrated batches per backend/source. Against source
+`f2249ac7`, the direct-input candidate at `e51da649` changed Rust latency
+from `16.090 ms` (p10–p90
+`15.955–16.920`) to `15.459 ms` (`15.384–16.097`); DUCC was `14.676 ms`
+(`14.359–16.716`). Candidate/baseline was `0.964`, and candidate/DUCC was
+`1.057` (`+0.782 ms`). Candidate output was bitwise equal to the previous
+Rust path; relative L2 versus DUCC was `4.63e-14`, maximum absolute error
+`9.45e-16`. Scheduler wait in the q1 source A/B remained elevated
+(`7.7–8.7%` for Rust), so the absolute Rust/DUCC ratio is less conclusive
+than the consistent source A/B reduction.
+
+Three test-only Rust phase captures put recurrence plus accumulation at
+`12.435 ms` median, forward FFT at `3.082 ms`, latitude/setup at `14.4 us`,
+and coefficient cleanup below `0.6 us`. Three timer-only DUCC builds put
+`map2leg` at `3.615 ms` and `leg2alm_internal` at `11.278 ms` median. The
+boundaries differ: DUCC `leg2alm_internal` includes order packing and
+initialization, while the Rust recurrence phase is measured separately.
+These samples indicate about `1.16 ms` more Rust recurrence/accumulation
+time, partly offset by about `0.53 ms` less Rust FFT/frontend time; they are
+diagnostic phase timers, not subtractable counters.
+
+The isolated kernel harness was corrected after review found its default
+DUCC driver mode did not call the numerical kernel. The timed DUCC route now
+explicitly calls pinned DUCC `map2alm_kernel` from the same preinitialized
+recurrence state, with the same reset and raw coefficient boundary as Rust;
+the harness asserts this route during calibration and timing. Sectoral
+initialization and transform-level coefficient correction are excluded on
+both sides. The older no-op-driver timings are invalid and excluded. At
+`m=1`, `lmax=720`, the warmed Rust cached-proof route uses Pulp V3 AVX2/FMA
+and is `1.171x`, `1.107x`, and `1.083x` DUCC at 64/128/256 lanes; paired
+excesses are `0.705`, `0.866`, and `1.324 us`. Each point aggregates 60
+calibrated batches across ten interleaved process pairs. The 256-lane Rust
+unchecked loop was `17.206 us` versus DUCC `15.920 us`; Rust recurrence-only
+was `10.238 us`, and recurrence plus spectrum accumulation/reduction added
+`6.861 us`. This decomposition shows where Rust spends time, but does not
+assign that entire component to the Rust/DUCC gap. Numerical relative L2
+was at most `1.63e-13`. Full distributions and error values are in the
+[corrected kernel summary](../reports/data/plan14-warmed-analysis-kernel-2026-10-21/summary.csv);
+reproduction uses `scripts/benchmark_scalar_analysis_kernel.py` with pinned
+DUCC `42ce8ab5` and the source-level harness under
+`reports/data/scalar-analysis-pair-grouping-2026-10-19/`. Rust used 1.99.1,
+LLVM 23.1.1, strict FP and `-C target-cpu=x86-64-v3`; the DUCC kernel used
+GCC 15.2 with `-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3`, while
+its driver remained strict-FP. The kernel batches had 60 observations per
+backend/lane count, stable process medians (at most 2.7% range/median for
+the production route), median observed frequency `4.592 GHz` and maximum
+aggregated runqueue wait `0.169%`. One 100.944 ms operation batch slightly
+exceeded the target window; it was retained and identified, not filtered.
+This is an isolated `m=1` kernel workload, not an all-orders transform
+sample.
+
+Executed AVX2 loops in both libraries use four f64 lanes and two-degree
+recurrence grouping with packed FMA; no hot-loop YMM spills or scalarized
+recurrence were found. Rust carries separate slice bases for recurrence,
+geometry and four spectrum arrays, while DUCC's `s0data_v` access uses one
+base plus fixed member offsets. That is a code-generation lead, not yet a
+measured cause. Next test a single-workspace-base access path against the
+current production kernel, first at matched 64/128/256-lane boundaries and
+then at T720 q1. Keep it only if the executed loop and latency improve; do
+not infer a win from shorter assembly.
 
 ## 4. Phase A — Find and fix small serial fixed costs
 

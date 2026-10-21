@@ -23,7 +23,7 @@
 namespace loop = ducc0::detail_sht::detail_sht_inner_loop;
 using Clock = std::chrono::steady_clock;
 
-extern "C" void rustsht_ducc_calc_map2alm(
+extern "C" void rustsht_ducc_map2alm_kernel(
     loop::s0data_v *data, const loop::Ylmgen *generator,
     std::complex<double> *alm, size_t nth, size_t lstart, size_t lstop);
 
@@ -51,11 +51,11 @@ static double scaled_diff(double actual, double expected) {
 
 int main(int argc, char **argv) {
   if (argc != 4 && argc != 5) {
-    std::cerr << "usage: ducc-analysis-kernel-bench FIXTURE --calibrate REPETITIONS | FIXTURE REPETITIONS BATCHES [--calc-map2alm]\n";
+    std::cerr << "usage: ducc-analysis-kernel-bench FIXTURE --calibrate REPETITIONS | FIXTURE REPETITIONS BATCHES [--map2alm-kernel]\n";
     return 2;
   }
-  const bool production_analysis = argc == 5 && std::string(argv[4]) == "--calc-map2alm";
-  if (argc == 5 && !production_analysis)
+  const bool run_map2alm_kernel = argc == 5 && std::string(argv[4]) == "--map2alm-kernel";
+  if (argc == 5 && !run_map2alm_kernel)
     throw std::runtime_error("unknown optional argument");
   const std::string fixture_path = argv[1];
   const bool calibrate = std::string(argv[2]) == "--calibrate";
@@ -91,11 +91,6 @@ int main(int argc, char **argv) {
   read_values(in, opposite_imag);
   read_values(in, coefficient_a);
   read_values(in, coefficient_b);
-  std::vector<double> sin_theta;
-  if (production_analysis) {
-    sin_theta.resize(lane_count);
-    read_values(in, sin_theta);
-  }
   in.close();
 
   loop::YlmBase base(lmax, m, 0);
@@ -118,8 +113,6 @@ int main(int argc, char **argv) {
       destination[i / loop::VLEN][i % loop::VLEN] = source[i];
   };
   copy_lanes(data.csq, cosine_squared);
-  if (production_analysis)
-    copy_lanes(data.sth, sin_theta);
   copy_lanes(data.p1r, same_real);
   copy_lanes(data.p1i, same_imag);
   copy_lanes(data.p2r, opposite_real);
@@ -127,16 +120,14 @@ int main(int argc, char **argv) {
   std::vector<std::complex<double>> alm(lmax + 2, {0.0, 0.0});
 
   auto reset = [&]() {
-    if (!production_analysis) {
-      copy_lanes(data.lam1, previous);
-      copy_lanes(data.lam2, current);
-    }
+    copy_lanes(data.lam1, previous);
+    copy_lanes(data.lam2, current);
     std::fill(alm.begin() + m, alm.begin() + lmax + 1,
         std::complex<double>(0.0, 0.0));
   };
   auto run = [&]() {
-    if (production_analysis)
-      rustsht_ducc_calc_map2alm(
+    if (run_map2alm_kernel)
+      rustsht_ducc_map2alm_kernel(
           &data, &generator, alm.data(), lane_count, m, lmax + 1);
     escape_memory(alm.data());
   };
@@ -175,6 +166,7 @@ int main(int argc, char **argv) {
               << " vlen=" << loop::VLEN
               << " repetitions=" << repetitions
               << " reset_inclusive_us=" << elapsed_us / repetitions
+              << " map2alm_kernel=" << (run_map2alm_kernel ? 1 : 0)
               << " checksum=" << std::setprecision(12) << checksum << "\n";
     return 0;
   }
@@ -216,7 +208,7 @@ int main(int argc, char **argv) {
     std::cout << std::fixed << std::setprecision(3)
               << "DUCC_BATCH lanes=" << lane_count << " batch=" << batch
               << " repetitions=" << repetitions
-              << " mode=" << (production_analysis ? "calc_map2alm" : "kernel_plus_commit")
+              << " mode=" << (run_map2alm_kernel ? "map2alm_kernel" : "kernel_plus_commit")
               << " kernel_us=" << kernel_batch_us << " reset_us=" << reset_us
               << " wall_us=" << wall_us
               << " checksum=" << std::setprecision(12) << checksum << "\n";
@@ -275,7 +267,7 @@ int main(int argc, char **argv) {
   std::cout << std::fixed << std::setprecision(3)
             << "DUCC_KERNEL m=" << m << " lmax=" << lmax
             << " lanes=" << lane_count << " vectors=" << vectors
-            << " calc_map2alm=" << (production_analysis ? 1 : 0)
+              << " map2alm_kernel=" << (run_map2alm_kernel ? 1 : 0)
             << " repetitions_per_batch=" << repetitions << " batches=" << batch_count
             << " coefficient_max_scaled_diff=" << std::scientific << coefficient_error
             << " output_relative_l2=" << relative_l2

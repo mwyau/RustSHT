@@ -1,0 +1,4 @@
+lanes,rust_production_variant,rust_kernel_plus_commit_us,rust_p10_us,rust_p90_us,ducc_map2alm_kernel_us,ducc_p10_us,ducc_p90_us,paired_rust_ducc_ratio,paired_ratio_p10,paired_ratio_p90,paired_excess_us,rust_recurrence_only_us,rust_accumulation_reduction_delta_us,relative_l2_error,max_abs_error
+64,unchecked_cached-proof,4.838,4.821,4.954,4.142,4.104,5.173,1.171,1.159,1.180,0.705,2.688,2.038,6.670e-14,5.009e-12
+128,unchecked_cached-proof,8.941,8.840,9.985,8.100,8.052,8.344,1.107,1.094,1.121,0.866,5.189,3.618,1.628e-13,1.896e-11
+256,unchecked_cached-proof,17.206,17.078,17.890,15.920,15.767,16.738,1.083,1.079,1.088,1.324,10.238,6.861,5.928e-14,2.559e-11

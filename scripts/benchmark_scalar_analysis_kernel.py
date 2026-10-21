@@ -129,6 +129,19 @@ def choose_cpus() -> tuple[int, int]:
 
 def parse_schedstat(pid: int) -> tuple[int, int, int] | None:
     try:
+        task_paths = pathlib.Path(f"/proc/{pid}/task").glob("*/schedstat")
+        totals = [0, 0, 0]
+        found = False
+        for task_path in task_paths:
+            fields = task_path.read_text().split()
+            for index in range(3):
+                totals[index] += int(fields[index])
+            found = True
+        if found:
+            return tuple(totals)
+    except (OSError, ValueError, IndexError):
+        pass
+    try:
         fields = pathlib.Path(f"/proc/{pid}/schedstat").read_text().split()
         return int(fields[0]), int(fields[1]), int(fields[2])
     except (OSError, ValueError, IndexError):
@@ -137,14 +150,32 @@ def parse_schedstat(pid: int) -> tuple[int, int, int] | None:
 
 def parse_context_switches(pid: int) -> tuple[int, int] | None:
     try:
-        status = pathlib.Path(f"/proc/{pid}/status").read_text()
+        task_paths = pathlib.Path(f"/proc/{pid}/task").glob("*/status")
     except OSError:
         return None
     values = {}
     for key in ("voluntary_ctxt_switches", "nonvoluntary_ctxt_switches"):
-        match = re.search(rf"^{key}:\s+(\d+)$", status, re.MULTILINE)
-        if match:
-            values[key] = int(match.group(1))
+        values[key] = 0
+    found = False
+    try:
+        for task_path in task_paths:
+            status = task_path.read_text()
+            found = True
+            for key in values:
+                match = re.search(rf"^{key}:\s+(\d+)$", status, re.MULTILINE)
+                if match:
+                    values[key] += int(match.group(1))
+    except (OSError, ValueError):
+        return None
+    if not found:
+        try:
+            status = pathlib.Path(f"/proc/{pid}/status").read_text()
+            for key in values:
+                match = re.search(rf"^{key}:\s+(\d+)$", status, re.MULTILINE)
+                if match:
+                    values[key] = int(match.group(1))
+        except OSError:
+            return None
     if len(values) != 2:
         return None
     return values["voluntary_ctxt_switches"], values["nonvoluntary_ctxt_switches"]
@@ -437,6 +468,7 @@ def main() -> None:
                     str(fixture_paths[lane_count]),
                     "--calibrate",
                     str(calibration_repetitions[lane_count]),
+                    "--map2alm-kernel",
                 ],
                 env,
                 cpu,
@@ -445,6 +477,8 @@ def main() -> None:
             ducc_cal = metric_line(ducc_stdout, "DUCC_CALIBRATION")
             if int(ducc_cal["vlen"]) != 4:
                 raise RuntimeError(f"DUCC did not execute four-lane f64 AVX2: {ducc_cal}")
+            if int(ducc_cal["map2alm_kernel"]) != 1:
+                raise RuntimeError(f"DUCC calibration skipped map2alm_kernel: {ducc_cal}")
             if int(rust_cal["repetitions"]) != calibration_repetitions[lane_count]:
                 raise RuntimeError("Rust calibration used an unexpected batch size")
             if int(rust_cal["commit_repetitions"]) != COMMIT_CALIBRATION_REPETITIONS:
@@ -528,6 +562,7 @@ def main() -> None:
                             str(fixture_paths[lane_count]),
                             str(repetitions[lane_count]),
                             str(BATCHES),
+                            "--map2alm-kernel",
                         ]
                     stdout, diag = run_pinned(command, run_env, cpu, monitor_cpu)
                     diagnostics.append((f"{backend}-run-{invocation + 1}", lane_count, diag))
@@ -573,6 +608,8 @@ def main() -> None:
                             continue
                         parsed_count += 1
                         mode = fields["mode"]
+                        if backend == "ducc" and mode == "map2alm_kernel":
+                            mode = "kernel_plus_commit"
                         variant = fields.get("variant", "ducc")
                         reps = int(fields["repetitions"])
                         expected_repetitions = (
@@ -613,6 +650,10 @@ def main() -> None:
                             raise RuntimeError(f"component numerical validation missing:\n{stdout}")
                     if backend == "ducc":
                         error = metric_line(stdout, "DUCC_KERNEL")
+                        if int(error["map2alm_kernel"]) != 1:
+                            raise RuntimeError(
+                                f"DUCC did not execute map2alm_kernel: {error}"
+                            )
                         numeric = (
                             lane_count,
                             float(error["coefficient_max_scaled_diff"]),
@@ -689,7 +730,10 @@ def main() -> None:
             "Batch timers bracket repeated operations; reset-excluded kernel estimates subtract "
             "a separately timed reset-only batch. Rust kernel_only measures recurrence plus SIMD "
             "staging; commit_only measures final coefficient addition; kernel_plus_commit includes "
-            "both. DUCC accumulates directly into its output. reset_inclusive reports the unadjusted "
+            "both. DUCC times map2alm_kernel from the same preinitialized recurrence state and "
+            "writes raw paired coefficients; sectoral initialization and transform-level paired "
+            "coefficient correction are excluded on both sides. "
+            "DUCC accumulates directly into its output. reset_inclusive reports the unadjusted "
             "reset plus operation batch."
         )
         print(
