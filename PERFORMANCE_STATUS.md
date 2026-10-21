@@ -13,6 +13,17 @@ next-step text, is preserved
 [here](reports/archive/performance-status-2026-10-21-pre-refresh.md).
 For reproducible raw benchmark tables see [reports/README](reports/README.md).
 
+**Current-source full-transform sweep (2026-10-21):** the frozen Rust source
+`e487b85b` was compared with pinned DUCC 0.42.0 `42ce8ab5` across every
+`lmax=0…128` and 28 sampled degrees through T3072, full/reduced `mmax`,
+analysis/synthesis and q1/q8. All 1,504 measurement groups completed; 752
+numerical validation configurations passed. The result is workload-dependent:
+large-degree full-order ratios are mostly near parity, while some T64–T256
+full-order q8 analysis cases exceed 2x. Host frequency and scheduling varied,
+so individual low-degree extremes need cautious interpretation. This is a
+baseline for the current source, not an optimization A/B. See the [report,
+four principal figures and raw data](reports/ducc-current-full-sweep-2026-10-21.md).
+
 **Plan transition (2026-10-21):** Plan 11's reduced-`mmax` frontend study
 is closed at `a37f74d68631ab5fd373a4097640895e9f0c0c23`. The input scan,
 row FFT, spectrum pruning, order preparation and recurrence stage evidence

@@ -7,6 +7,7 @@ Do not follow forward-looking instructions embedded in historical reports.
 
 ## Current and accepted evidence
 
+- [Current-source dense RustSHT/DUCC scalar GL sweep (2026-10-21)](ducc-current-full-sweep-2026-10-21.md): all `lmax=0…128` plus 28 sampled degrees through T3072, full/reduced order, analysis/synthesis, q1/q8, even-smooth coverage throughout and selected odd-minimum cases. Pinned Rust source `e487b85b`, DUCC 0.42.0 `42ce8ab5`; 1,504 complete measurement groups, 752 numerical validation configurations and no failed cases. The broad result is mixed by degree/order/thread count: large-degree full-order ratios cluster near parity, while some T64–T256 full-order q8 analysis cases are substantially slower. Raw samples, coverage audit and figures are linked from the report. This is a current-source baseline, not a Plan 14 optimization A/B.
 - [T2047/T2048 cutoff and previous T720 A/B findings](scalar-analysis-cumulative-2026-10-20.md):
   q1 nearly at DUCC parity at T2047/2048 latitudes with 256-pair
   tiles. The extra latitude-count prefix gate was removed after matched
