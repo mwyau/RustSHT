@@ -7,6 +7,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use num_complex::Complex;
+use rustfft::algorithm::MixedRadix;
 use rustfft::num_traits::{Float, Zero};
 use rustfft::{Fft, FftNum, FftPlanner};
 
@@ -21,6 +22,7 @@ enum Engine<T: FftNum> {
     Odd {
         forward: Arc<dyn Fft<T>>,
         inverse: Arc<dyn Fft<T>>,
+        inverse_mixed_radix: Option<Arc<dyn Fft<T>>>,
     },
 }
 
@@ -53,9 +55,22 @@ impl<T: FftNum + Float> RealFftPlan<T> {
         let mut planner = FftPlanner::<T>::new();
         let forward = planner.plan_fft_forward(transform_len);
         let inverse = planner.plan_fft_inverse(transform_len);
+        // This alternative has been numerically validated for f64. Preserve
+        // the existing f32 planner until a separate accuracy/performance
+        // comparison justifies changing that route.
+        let inverse_mixed_radix = if even || T::epsilon().to_f64() != Some(f64::EPSILON) {
+            None
+        } else {
+            odd_square_inverse_plan(&mut planner, transform_len)
+        };
         let scratch_len = forward
             .get_inplace_scratch_len()
-            .max(inverse.get_inplace_scratch_len());
+            .max(inverse.get_inplace_scratch_len())
+            .max(
+                inverse_mixed_radix
+                    .as_ref()
+                    .map_or(0, |plan| plan.get_inplace_scratch_len()),
+            );
 
         let engine = if even {
             let twiddle_count = transform_len
@@ -82,7 +97,11 @@ impl<T: FftNum + Float> RealFftPlan<T> {
                 twiddles,
             }
         } else {
-            Engine::Odd { forward, inverse }
+            Engine::Odd {
+                forward,
+                inverse,
+                inverse_mixed_radix,
+            }
         };
 
         Ok(Self {
@@ -292,7 +311,11 @@ impl<T: FftNum + Float> RealFftPlan<T> {
                     pair[1] = workspace.transform[j].im * scale;
                 }
             }
-            Engine::Odd { inverse, .. } => {
+            Engine::Odd {
+                inverse,
+                inverse_mixed_radix,
+                ..
+            } => {
                 if input[0].im != T::zero() {
                     return Err(ShtError::NonRealFftEdge { index: 0 });
                 }
@@ -316,6 +339,17 @@ impl<T: FftNum + Float> RealFftPlan<T> {
 
                 #[cfg(all(test, feature = "parallel"))]
                 let phase_started = workspace.odd_inverse_phase_enabled.then(Instant::now);
+                // The ordinary RustFFT planner treats repeated unsupported
+                // prime factors (for example 19 x 19) as one Bluestein size.
+                // A mixed-radix decomposition reuses its direct odd-radix
+                // butterflies. Keep the original plan for the checked route:
+                // the mixed-radix path is only selected when the caller has
+                // already established the ordinary-transform headroom.
+                let inverse = if ROBUST {
+                    inverse.as_ref()
+                } else {
+                    inverse_mixed_radix.as_deref().unwrap_or(inverse.as_ref())
+                };
                 inverse.process_with_scratch(&mut workspace.transform, &mut workspace.scratch);
                 #[cfg(all(test, feature = "parallel"))]
                 if let Some(phase_started) = phase_started {
@@ -353,6 +387,25 @@ impl<T: FftNum + Float> RealFftPlan<T> {
             workspace.scratch.len(),
         )
     }
+}
+
+fn odd_square_inverse_plan<T: FftNum>(
+    planner: &mut FftPlanner<T>,
+    transform_len: usize,
+) -> Option<Arc<dyn Fft<T>>> {
+    // RustFFT 6.4.1 leaves N=19² in its Bluestein base even though it has a
+    // direct radix-19 butterfly. Composing that measured T720 odd longitude
+    // length from the existing butterflies avoids the expensive Bluestein
+    // convolution. Other lengths remain on RustFFT's normal planner until a
+    // matched workload establishes that the alternative helps there too.
+    if transform_len == 19 * 19 {
+        let one_dimensional = planner.plan_fft_inverse(19);
+        return Some(Arc::new(MixedRadix::new(
+            Arc::clone(&one_dimensional),
+            one_dimensional,
+        )));
+    }
+    None
 }
 
 #[cfg(all(test, feature = "parallel"))]
@@ -763,6 +816,126 @@ mod tests {
                     "n={n}, dc={dc}, {output:?}"
                 );
             }
+        }
+    }
+
+    #[test]
+    fn mixed_radix_odd_inverse_series_matches_full_complex_and_keeps_dc_edges() {
+        let n = 361;
+        let plan = RealFftPlan::<f64>::new(n).unwrap();
+        let mut workspace = plan.workspace().unwrap();
+        let mut spectrum: Vec<_> = (0..plan.spectrum_len())
+            .map(|k| Complex64::new(0.21 * (k + 1) as f64, 0.17 * (k as f64 - 2.0)))
+            .collect();
+        spectrum[0].im = 0.0;
+        let mut actual = vec![0.0; n];
+        plan.inverse_series(&spectrum, &mut actual, &mut workspace)
+            .unwrap();
+
+        let mut reference: Vec<_> = (0..n).map(|_| Complex64::new(0.0, 0.0)).collect();
+        reference[0] = spectrum[0];
+        for k in 1..=n / 2 {
+            reference[k] = spectrum[k];
+            reference[n - k] = spectrum[k].conj();
+        }
+        let mut planner = FftPlanner::<f64>::new();
+        let inverse = planner.plan_fft_inverse(n);
+        let mut scratch = vec![Complex64::new(0.0, 0.0); inverse.get_inplace_scratch_len()];
+        inverse.process_with_scratch(&mut reference, &mut scratch);
+        for (&value, transformed) in actual.iter().zip(&reference) {
+            let error = (value - transformed.re).abs();
+            assert!(
+                error <= 5e-14 * transformed.re.abs().max(1.0),
+                "actual={value:.16e}, reference={:.16e}, error={error:.3e}",
+                transformed.re
+            );
+        }
+
+        // The checked inverse deliberately keeps RustFFT's original full-size
+        // plan. Its normalized output must agree with the candidate series
+        // after applying the same 1/N scaling.
+        let mut robust = vec![0.0; n];
+        plan.inverse(&spectrum, &mut robust, &mut workspace)
+            .unwrap();
+        for (&series_value, &robust_value) in actual.iter().zip(&robust) {
+            let normalized = series_value / n as f64;
+            assert!(
+                (normalized - robust_value).abs() <= 5e-14 * robust_value.abs().max(1.0),
+                "series={normalized:.16e}, robust={robust_value:.16e}"
+            );
+        }
+
+        for dc in [f64::from_bits(1), -f64::from_bits(1), f64::MAX] {
+            spectrum.fill(Complex64::new(0.0, 0.0));
+            spectrum[0].re = dc;
+            plan.inverse_series(&spectrum, &mut actual, &mut workspace)
+                .unwrap();
+            assert!(actual.iter().all(|&value| value == dc));
+        }
+    }
+
+    #[test]
+    fn only_measured_odd_square_selects_mixed_inverse() {
+        for n in [169, 289, 529, 841, 961, 255, 359, 363] {
+            let plan = RealFftPlan::<f64>::new(n).unwrap();
+            let Engine::Odd {
+                inverse_mixed_radix,
+                ..
+            } = &plan.engine
+            else {
+                panic!("odd transform should use the odd engine");
+            };
+            assert!(inverse_mixed_radix.is_none(), "n={n}");
+        }
+
+        let plan = RealFftPlan::<f64>::new(361).unwrap();
+        let Engine::Odd {
+            inverse_mixed_radix,
+            ..
+        } = &plan.engine
+        else {
+            panic!("odd transform should use the odd engine");
+        };
+        assert!(inverse_mixed_radix.is_some());
+    }
+
+    #[test]
+    fn f32_odd_square_keeps_existing_inverse_planner() {
+        let n = 361;
+        let plan = RealFftPlan::<f32>::new(n).unwrap();
+        let Engine::Odd {
+            inverse_mixed_radix,
+            ..
+        } = &plan.engine
+        else {
+            panic!("odd transform should use the odd engine");
+        };
+        assert!(inverse_mixed_radix.is_none());
+        let mut workspace = plan.workspace().unwrap();
+        let mut spectrum: Vec<_> = (0..plan.spectrum_len())
+            .map(|k| Complex32::new(0.21 * (k + 1) as f32, 0.17 * (k as f32 - 2.0)))
+            .collect();
+        spectrum[0].im = 0.0;
+        let mut output = vec![0.0_f32; n];
+        plan.inverse_series(&spectrum, &mut output, &mut workspace)
+            .unwrap();
+
+        let mut reference: Vec<_> = (0..n).map(|_| Complex32::new(0.0, 0.0)).collect();
+        reference[0] = spectrum[0];
+        for k in 1..=n / 2 {
+            reference[k] = spectrum[k];
+            reference[n - k] = spectrum[k].conj();
+        }
+        let mut planner = FftPlanner::<f32>::new();
+        let inverse = planner.plan_fft_inverse(n);
+        let mut scratch = vec![Complex32::new(0.0, 0.0); inverse.get_inplace_scratch_len()];
+        inverse.process_with_scratch(&mut reference, &mut scratch);
+        for (&actual, transformed) in output.iter().zip(&reference) {
+            assert!(
+                (actual - transformed.re).abs() <= 5e-6 * transformed.re.abs().max(1.0),
+                "actual={actual:.8e}, reference={:.8e}",
+                transformed.re
+            );
         }
     }
 
