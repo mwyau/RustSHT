@@ -363,6 +363,36 @@ impl<T: ShtScalar> ShtPlan<T> {
         }
     }
 
+    #[cfg(feature = "parallel")]
+    pub(crate) fn spin1_f1_synthesis_ring_group_size(
+        &self,
+        execution_capacity: usize,
+    ) -> Option<usize> {
+        if !T::supports_precomputed_scalar()
+            || self.grid.kind() != crate::grid::GridKind::Fejer1
+            || self.harmonics.spin() != 1
+            || execution_capacity < 8
+        {
+            return None;
+        }
+
+        let base_ring_group_size =
+            ShtWorkspace::<T>::ring_group_size_for_capacity(self.grid.ntheta(), execution_capacity)
+                .ok()?;
+        let base_group_count = self.grid.ntheta().div_ceil(base_ring_group_size);
+        if base_group_count <= execution_capacity {
+            return None;
+        }
+
+        let active_order_count = self.harmonics.mmax().checked_add(1)?;
+        let estimated_order_ring_work = active_order_count.checked_mul(self.grid.ntheta())?;
+        // F1 q8 phase profiles show large differences between polar and
+        // central ring groups. Reuse the existing group size and let the
+        // queue balance its spare groups after enough work per worker.
+        let minimum_work = execution_capacity.checked_mul(12_000)?;
+        (estimated_order_ring_work >= minimum_work).then_some(base_ring_group_size)
+    }
+
     /// Returns the grid used by this plan.
     #[must_use]
     pub const fn grid(&self) -> &GridSpec {

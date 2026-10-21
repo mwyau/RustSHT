@@ -3442,6 +3442,37 @@ fn fine_synthesis_groups_follow_the_measured_spin_and_grid_policy() {
 
 #[cfg(feature = "parallel")]
 #[test]
+fn f1_spin1_synthesis_grouping_is_gated_by_work_and_worker_capacity() {
+    let make_f1 = |lmax, mmax| {
+        ShtPlan::<f64>::new(
+            GridSpec::new(GridKind::Fejer1, lmax + 1, 2 * (mmax + 1), 0.37).unwrap(),
+            HarmonicSpec::new(lmax, mmax, 1).unwrap(),
+        )
+        .unwrap()
+    };
+
+    let reduced_t720 = make_f1(720, 180);
+    assert_eq!(reduced_t720.spin1_f1_synthesis_ring_group_size(8), Some(64));
+    assert_eq!(reduced_t720.spin1_f1_synthesis_ring_group_size(4), None);
+
+    let full_t1023 = make_f1(1023, 1023);
+    assert_eq!(full_t1023.spin1_f1_synthesis_ring_group_size(8), None);
+    let reduced_t1023 = make_f1(1023, 255);
+    assert_eq!(reduced_t1023.spin1_f1_synthesis_ring_group_size(8), None);
+
+    let below_work_gate = make_f1(255, 255);
+    assert_eq!(below_work_gate.spin1_f1_synthesis_ring_group_size(8), None);
+
+    let gl_control = ShtPlan::<f64>::new(
+        GridSpec::new(GridKind::GaussLegendre, 1024, 2048, 0.37).unwrap(),
+        HarmonicSpec::new(1023, 1023, 1).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(gl_control.spin1_f1_synthesis_ring_group_size(8), None);
+}
+
+#[cfg(feature = "parallel")]
+#[test]
 fn scalar_synthesis_coefficient_cache_matches_uncached_eligible_shapes() {
     let eight_threads = rayon::ThreadPoolBuilder::new()
         .num_threads(8)

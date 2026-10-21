@@ -1182,9 +1182,14 @@ impl<T: ShtScalar> ShtPlan<T> {
         {
             let execution_threads =
                 current_execution_thread_count().min(workspace.execution_capacity);
+            let f1_synthesis_group_size =
+                self.spin1_f1_synthesis_ring_group_size(execution_threads);
             let group_size = if !derivative_norm && b_alm.is_some() {
                 self.fine_synthesis_ring_group_size(execution_threads)
-                    .unwrap_or(workspace.ring_group_size)
+                    .or(f1_synthesis_group_size)
+                    .map_or(workspace.ring_group_size, |size| {
+                        size.min(workspace.ring_group_size)
+                    })
             } else {
                 workspace.ring_group_size
             };
@@ -1192,7 +1197,6 @@ impl<T: ShtScalar> ShtPlan<T> {
             let group_count = ntheta.div_ceil(group_ring_count);
             let use_parallel = execution_threads > 1 && group_count > 1;
             if use_parallel {
-                debug_assert!(group_count <= workspace.recurrence_workers.len());
                 let use_spin1_coefficient_cache = recurrence_spin == 1
                     && self.harmonics.spin() == 1
                     && b_alm.is_some()
@@ -1204,6 +1208,17 @@ impl<T: ShtScalar> ShtPlan<T> {
                     && T::supports_paired_scalar()
                     && execution_threads >= 8
                     && workspace.ring_group_size < ntheta;
+                let use_dynamic_spin1_group_queue = use_spin1_coefficient_cache
+                    || (recurrence_spin == 1
+                        && !derivative_norm
+                        && b_alm.is_some()
+                        && f1_synthesis_group_size.is_some());
+                let required_recurrence_workers = if use_dynamic_spin1_group_queue {
+                    group_count.min(execution_threads)
+                } else {
+                    group_count
+                };
+                debug_assert!(required_recurrence_workers <= workspace.recurrence_workers.len());
                 #[cfg(all(test, feature = "parallel"))]
                 let coefficient_prep_started = std::time::Instant::now();
                 let spin1_coefficients_ready = if use_spin1_coefficient_cache {
@@ -1235,7 +1250,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         quantity: "spin Fourier spectrum group size",
                     },
                 )?;
-                if use_spin1_coefficient_cache {
+                if use_dynamic_spin1_group_queue {
                     // Spin-1 synthesis groups have strongly varying work near
                     // polar cutoffs. Queue one group at a time to balance the
                     // work, while limiting active workers to the capacity

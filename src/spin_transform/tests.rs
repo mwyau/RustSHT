@@ -5314,6 +5314,96 @@ fn spin_operations_reject_unsupported_spin_and_invalid_coefficients() {
 
 #[cfg(feature = "parallel")]
 #[test]
+fn spin1_f1_dynamic_synthesis_groups_match_serial_and_reuse_workspace() {
+    let plan = make_f1_plan(1, 720, 180, 721, 378);
+    let (e, b) = coefficients(&plan);
+    let (map_first, map_second) = arbitrary_maps(&plan);
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let mut one_workspace = one_thread.install(|| plan.workspace()).unwrap();
+    let mut eight_workspace = eight_threads.install(|| plan.workspace()).unwrap();
+    let mut one_first = vec![0.0; plan.sample_count];
+    let mut one_second = vec![0.0; plan.sample_count];
+    let mut eight_first = vec![0.0; plan.sample_count];
+    let mut eight_second = vec![0.0; plan.sample_count];
+
+    one_thread
+        .install(|| {
+            plan.synthesis_spin_into(&e, &b, &mut one_first, &mut one_second, &mut one_workspace)
+        })
+        .unwrap();
+    eight_threads
+        .install(|| {
+            plan.synthesis_spin_into(
+                &e,
+                &b,
+                &mut eight_first,
+                &mut eight_second,
+                &mut eight_workspace,
+            )
+        })
+        .unwrap();
+    for (actual, expected) in eight_first
+        .iter()
+        .zip(&one_first)
+        .chain(eight_second.iter().zip(&one_second))
+    {
+        assert!((actual - expected).abs() <= 2.0e-11 * expected.abs().max(1.0));
+    }
+
+    eight_first.fill(f64::NAN);
+    eight_second.fill(f64::NAN);
+    eight_threads
+        .install(|| {
+            plan.synthesis_spin_into(
+                &e,
+                &b,
+                &mut eight_first,
+                &mut eight_second,
+                &mut eight_workspace,
+            )
+        })
+        .unwrap();
+    assert!(
+        eight_first
+            .iter()
+            .chain(&eight_second)
+            .all(|value| value.is_finite())
+    );
+    for (actual, expected) in eight_first
+        .iter()
+        .zip(&one_first)
+        .chain(eight_second.iter().zip(&one_second))
+    {
+        assert!((actual - expected).abs() <= 2.0e-11 * expected.abs().max(1.0));
+    }
+
+    let mut adjoint_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+    let mut adjoint_b = adjoint_e.clone();
+    eight_threads
+        .install(|| {
+            plan.adjoint_synthesis_spin_into(
+                &map_first,
+                &map_second,
+                &mut adjoint_e,
+                &mut adjoint_b,
+                &mut eight_workspace,
+            )
+        })
+        .unwrap();
+    let lhs = spin_map_inner_product(&eight_first, &eight_second, &map_first, &map_second);
+    let rhs = spin_harmonic_inner_product(plan.harmonics(), &e, &b, &adjoint_e, &adjoint_b);
+    assert!((lhs - rhs).abs() <= 3.0e-11 * lhs.abs().max(rhs.abs()).max(1.0));
+}
+
+#[cfg(feature = "parallel")]
+#[test]
 fn spin_transform_matches_between_one_and_two_rayon_threads() {
     let plan = make_plan(2, 4, 4, 131, 11);
     let (e, b) = coefficients(&plan);
