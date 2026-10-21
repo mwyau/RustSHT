@@ -241,7 +241,7 @@ def main() -> None:
         "binary_sha256",
     ]
     with (args.output_dir / "summary.csv").open("w", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=columns)
+        writer = csv.DictWriter(stream, fieldnames=columns, lineterminator="\n")
         writer.writeheader()
         for row in rows:
             writer.writerow(
