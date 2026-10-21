@@ -1136,12 +1136,9 @@ fn plan14_analysis_phase_batch_profile() {
     if force_recurrence {
         assert!(plan.scalar_legendre_table.set(None).is_ok());
     }
-    let pool = rayon::ThreadPoolBuilder::new()
-        .num_threads(thread_count)
-        .build()
-        .unwrap();
-    let mut workspace = pool.install(|| plan.workspace()).unwrap();
-    pool.install(|| plan.prepare_workspace(&mut workspace, thread_count))
+    assert_eq!(rayon::current_num_threads(), thread_count);
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut workspace, thread_count)
         .unwrap();
     let probe = workspace.observe_transform_phases();
 
@@ -1164,13 +1161,9 @@ fn plan14_analysis_phase_batch_profile() {
     };
     let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
 
-    pool.install(|| {
-        plan.analysis_into(&map, &mut alm, &mut workspace).unwrap();
-    });
+    plan.analysis_into(&map, &mut alm, &mut workspace).unwrap();
     let started = std::time::Instant::now();
-    pool.install(|| {
-        plan.analysis_into(&map, &mut alm, &mut workspace).unwrap();
-    });
+    plan.analysis_into(&map, &mut alm, &mut workspace).unwrap();
     let calibration_call_ms = started.elapsed().as_secs_f64() * 1e3;
     let repetitions =
         ((target_batch_ms / calibration_call_ms.max(1e-6)).ceil() as usize).clamp(1, 100_000);
@@ -1182,12 +1175,10 @@ fn plan14_analysis_phase_batch_profile() {
             .expect("analysis phase profile is not poisoned")
             .clear();
         let started = std::time::Instant::now();
-        pool.install(|| {
-            for _ in 0..repetitions {
-                plan.analysis_into(&map, &mut alm, &mut workspace).unwrap();
-            }
-            std::hint::black_box(&alm);
-        });
+        for _ in 0..repetitions {
+            plan.analysis_into(&map, &mut alm, &mut workspace).unwrap();
+        }
+        std::hint::black_box(&alm);
         let wall_ms = started.elapsed().as_secs_f64() * 1e3;
         let phases = probe
             .lock()
@@ -5169,38 +5160,51 @@ fn plan14_odd_inverse_phase_attribution() {
     use std::time::Instant;
 
     let plan = make_plan(720, 180, 721, 361, 0.23);
-    let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
-    for m in 0..=plan.harmonics().mmax() {
-        for l in m..=plan.harmonics().lmax() {
-            let re = ((l * 17 + m * 13) % 61) as f64 - 30.0;
-            let im = if m == 0 {
-                0.0
-            } else {
-                ((l * 19 + m * 7) % 67) as f64 - 33.0
-            };
-            alm[plan.harmonics().index(l, m).unwrap()] = Complex64::new(re * 1.0e-7, im * 1.0e-7);
+    let alm = if let Some(path) = std::env::var_os("RUSTSHT_PLAN14_ALM_PATH") {
+        let bytes = std::fs::read(path).expect("read matched Plan 14 coefficient fixture");
+        assert_eq!(bytes.len(), plan.harmonics().nalm() * 16);
+        let (chunks, remainder) = bytes.as_chunks::<16>();
+        assert!(remainder.is_empty());
+        chunks
+            .iter()
+            .map(|chunk| {
+                Complex64::new(
+                    f64::from_le_bytes(chunk[..8].try_into().unwrap()),
+                    f64::from_le_bytes(chunk[8..].try_into().unwrap()),
+                )
+            })
+            .collect()
+    } else {
+        let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        for m in 0..=plan.harmonics().mmax() {
+            for l in m..=plan.harmonics().lmax() {
+                let re = ((l * 17 + m * 13) % 61) as f64 - 30.0;
+                let im = if m == 0 {
+                    0.0
+                } else {
+                    ((l * 19 + m * 7) % 67) as f64 - 33.0
+                };
+                alm[plan.harmonics().index(l, m).unwrap()] =
+                    Complex64::new(re * 1.0e-7, im * 1.0e-7);
+            }
         }
-    }
+        alm
+    };
 
-    let q8 = rayon::ThreadPoolBuilder::new()
-        .num_threads(8)
-        .build()
-        .unwrap();
-    let mut workspace = q8.install(|| plan.workspace()).unwrap();
-    q8.install(|| plan.prepare_workspace(&mut workspace, 8))
-        .unwrap();
+    let q8_threads = rayon::current_num_threads();
+    assert_eq!(q8_threads, 8, "run with RAYON_NUM_THREADS=8");
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut workspace, q8_threads).unwrap();
     let mut map = vec![0.0; plan.sample_count];
 
     for _ in 0..3 {
-        q8.install(|| plan.synthesis_into(&alm, &mut map, &mut workspace))
-            .unwrap();
+        plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
     }
 
     let mut uninstrumented = Vec::with_capacity(10);
     for _ in 0..10 {
         let started = Instant::now();
-        q8.install(|| plan.synthesis_into(&alm, &mut map, &mut workspace))
-            .unwrap();
+        plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
         uninstrumented.push(started.elapsed().as_secs_f64() * 1.0e3);
         black_box(map[0]);
     }
@@ -5210,8 +5214,7 @@ fn plan14_odd_inverse_phase_attribution() {
     let mut instrumented = Vec::with_capacity(10);
     for _ in 0..10 {
         let started = Instant::now();
-        q8.install(|| plan.synthesis_into(&alm, &mut map, &mut workspace))
-            .unwrap();
+        plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
         instrumented.push(started.elapsed().as_secs_f64() * 1.0e3);
         black_box(map[0]);
     }
@@ -5230,6 +5233,8 @@ fn plan14_odd_inverse_phase_attribution() {
     const BATCH_COUNT: usize = 30;
     const CALLS_PER_BATCH: usize = 16;
     let mut batch_wall = Vec::with_capacity(BATCH_COUNT);
+    let mut batch_recurrence = Vec::with_capacity(BATCH_COUNT);
+    let mut batch_ordered = Vec::with_capacity(BATCH_COUNT);
     let mut batch_inverse = Vec::with_capacity(BATCH_COUNT);
     let mut max_worker_total = Vec::with_capacity(BATCH_COUNT);
     let mut component_cpu = [
@@ -5250,12 +5255,25 @@ fn plan14_odd_inverse_phase_attribution() {
         let phases = workspace.observe_transform_phases();
         let started = Instant::now();
         for _ in 0..CALLS_PER_BATCH {
-            q8.install(|| plan.synthesis_into(&alm, &mut map, &mut workspace))
-                .unwrap();
+            plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
             black_box(map[0]);
         }
         let wall_ms = started.elapsed().as_secs_f64() * 1.0e3 / CALLS_PER_BATCH as f64;
         let phases = phases.lock().unwrap();
+        let recurrence_ms = phases
+            .iter()
+            .filter(|observation| {
+                observation.phase == "Legendre recurrence and spectral accumulation"
+            })
+            .map(|observation| observation.elapsed_ns as f64 * 1.0e-6)
+            .sum::<f64>()
+            / CALLS_PER_BATCH as f64;
+        let ordered_ms = phases
+            .iter()
+            .filter(|observation| observation.phase == "ordered scalar recurrence")
+            .map(|observation| observation.elapsed_ns as f64 * 1.0e-6)
+            .sum::<f64>()
+            / CALLS_PER_BATCH as f64;
         let inverse_ms = phases
             .iter()
             .filter(|observation| observation.phase == "inverse longitude FFT and map writeback")
@@ -5293,6 +5311,8 @@ fn plan14_odd_inverse_phase_attribution() {
             / CALLS_PER_BATCH as f64
             / 1.0e3;
         batch_wall.push(wall_ms);
+        batch_recurrence.push(recurrence_ms);
+        batch_ordered.push(ordered_ms);
         batch_inverse.push(inverse_ms);
         max_worker_total.push(max_worker_total_us);
         for stage in 0..3 {
@@ -5300,7 +5320,7 @@ fn plan14_odd_inverse_phase_attribution() {
             component_max_worker[stage].push(maxima[stage]);
         }
         eprintln!(
-            "PLAN14_ODD_FFT_BATCH batch={batch} calls={CALLS_PER_BATCH} wall_ms={wall_ms:.6} inverse_stage_ms={inverse_ms:.6} pack_cpu_us={:.3} fft_cpu_us={:.3} output_cpu_us={:.3} max_worker_pack_us={:.3} max_worker_fft_us={:.3} max_worker_output_us={:.3} max_worker_total_us={max_worker_total_us:.3}",
+            "PLAN14_ODD_FFT_BATCH batch={batch} calls={CALLS_PER_BATCH} wall_ms={wall_ms:.6} recurrence_stage_ms={recurrence_ms:.6} nested_ordered_ms={ordered_ms:.6} inverse_stage_ms={inverse_ms:.6} pack_cpu_us={:.3} fft_cpu_us={:.3} output_cpu_us={:.3} max_worker_pack_us={:.3} max_worker_fft_us={:.3} max_worker_output_us={:.3} max_worker_total_us={max_worker_total_us:.3}",
             sums[0], sums[1], sums[2], maxima[0], maxima[1], maxima[2],
         );
     }
@@ -5315,10 +5335,12 @@ fn plan14_odd_inverse_phase_attribution() {
         )
     };
     let (wall_p10, wall_median, wall_p90) = summarize(&batch_wall);
+    let (recurrence_p10, recurrence_median, recurrence_p90) = summarize(&batch_recurrence);
+    let (ordered_p10, ordered_median, ordered_p90) = summarize(&batch_ordered);
     let (inverse_p10, inverse_median, inverse_p90) = summarize(&batch_inverse);
     let (worker_p10, worker_median, worker_p90) = summarize(&max_worker_total);
     eprintln!(
-        "PLAN14_ODD_FFT_SUMMARY cases=30 calls_per_batch=16 wall_ms_p10_median_p90={wall_p10:.6},{wall_median:.6},{wall_p90:.6} inverse_stage_ms_p10_median_p90={inverse_p10:.6},{inverse_median:.6},{inverse_p90:.6} max_worker_total_us_p10_median_p90={worker_p10:.3},{worker_median:.3},{worker_p90:.3}"
+        "PLAN14_ODD_FFT_SUMMARY cases=30 calls_per_batch=16 wall_ms_p10_median_p90={wall_p10:.6},{wall_median:.6},{wall_p90:.6} recurrence_stage_ms_p10_median_p90={recurrence_p10:.6},{recurrence_median:.6},{recurrence_p90:.6} nested_ordered_ms_p10_median_p90={ordered_p10:.6},{ordered_median:.6},{ordered_p90:.6} inverse_stage_ms_p10_median_p90={inverse_p10:.6},{inverse_median:.6},{inverse_p90:.6} max_worker_total_us_p10_median_p90={worker_p10:.3},{worker_median:.3},{worker_p90:.3}"
     );
     for (stage, name) in ["pack", "complex_inverse", "real_output"]
         .iter()
@@ -5330,6 +5352,44 @@ fn plan14_odd_inverse_phase_attribution() {
             "PLAN14_ODD_FFT_COMPONENT name={name} summed_worker_cpu_us_p10_median_p90={p10:.3},{med:.3},{p90:.3} max_worker_us_p10_median_p90={max_p10:.3},{max_med:.3},{max_p90:.3}"
         );
     }
+
+    let order_probe = workspace.observe_scalar_order_leaves();
+    plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
+    let order_leaves = order_probe.lock().unwrap().clone();
+    assert_eq!(order_leaves.len(), plan.harmonics().mmax() + 1);
+    let mut order_workers =
+        std::collections::BTreeMap::<usize, (usize, u128, u128, u128, u128)>::new();
+    for leaf in &order_leaves {
+        let worker = leaf.worker.unwrap_or(usize::MAX);
+        let work = order_workers.entry(worker).or_default();
+        work.0 += leaf.m_end - leaf.m_start;
+        work.1 += leaf.active_ring_order_pairs;
+        work.2 += leaf.estimated_work;
+        work.3 += leaf.elapsed_ns;
+        work.4 += leaf.queue_lock_ns;
+    }
+    let queue_lock_us = order_leaves
+        .iter()
+        .map(|leaf| leaf.queue_lock_ns)
+        .sum::<u128>() as f64
+        / 1.0e3;
+    eprintln!(
+        "PLAN14_ORDER_SCHEDULE jobs={} queue_lock_total_us={queue_lock_us:.3} worker_jobs_work_elapsed_queue_lock_us={:?}",
+        order_leaves.len(),
+        order_workers
+            .iter()
+            .map(
+                |(&worker, &(jobs, active_pairs, estimated_work, elapsed_ns, queue_lock_ns))| (
+                    worker,
+                    jobs,
+                    active_pairs,
+                    estimated_work,
+                    elapsed_ns as f64 * 1.0e-3,
+                    queue_lock_ns as f64 * 1.0e-3,
+                )
+            )
+            .collect::<Vec<_>>()
+    );
 
     let q1 = rayon::ThreadPoolBuilder::new()
         .num_threads(1)

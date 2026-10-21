@@ -1,0 +1,3 @@
+operation,lmax,mmax,ntheta,nphi,threads,rust_median_ms,rust_p10_ms,rust_p90_ms,ducc_median_ms,ducc_p10_ms,ducc_p90_ms,rust_ducc_ratio,excess_ms,relative_l2
+analysis,720,720,721,1458,8,2.478789,2.454242,2.537034,2.124090,2.113500,2.136261,1.16699,0.354699,4.63236e-14
+synthesis,720,180,721,361,8,1.637977,1.620324,1.805008,1.262810,1.255025,1.295114,1.2971,0.375167,5.1949e-14

@@ -184,6 +184,7 @@ pub(crate) struct ScalarOrderLeafObservation {
     pub(crate) active_ring_order_pairs: u128,
     pub(crate) estimated_work: u128,
     pub(crate) elapsed_ns: u128,
+    pub(crate) queue_lock_ns: u128,
     pub(crate) worker: Option<usize>,
 }
 
@@ -391,6 +392,11 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
     }
 
     #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn scalar_order_leaf_profile_enabled(&self) -> bool {
+        self.scalar_order_leaf_probe.is_some()
+    }
+
+    #[cfg(all(test, feature = "parallel"))]
     pub(crate) fn record_scalar_order_leaf(
         &self,
         lmax: usize,
@@ -398,6 +404,7 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
         m_end: usize,
         ring_order_limits: &[usize],
         started: Option<Instant>,
+        queue_lock_ns: u128,
     ) {
         let (Some(probe), Some(started)) = (&self.scalar_order_leaf_probe, started) else {
             return;
@@ -422,6 +429,7 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
                 active_ring_order_pairs,
                 estimated_work,
                 elapsed_ns: finished.duration_since(started).as_nanos(),
+                queue_lock_ns,
                 worker: rayon::current_thread_index(),
             });
     }

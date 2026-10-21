@@ -290,6 +290,53 @@ counters. The committed machine-readable summary is
 [`summary.csv`](../reports/data/plan14-q8-analysis-t720-2026-10-21/summary.csv);
 raw host and process logs remain local.
 
+## Current progress — exact T720 q8 stage rebaseline (2026-10-21)
+
+After Plan 11 closeout and the inline-scratch production commit, the exact
+full-order even-smooth analysis case (`mmax=720`, `ntheta=721`,
+`nphi=1458`) measured **2.479 ms Rust vs 2.124 ms DUCC** (1.167x,
+`+0.355 ms`). The reduced-order odd-minimum synthesis case
+(`mmax=180`, `nphi=361`) measured **1.638 vs 1.263 ms** (1.297x,
+`+0.375 ms`). Each clean whole-call comparison used three interleaved
+process pairs, 30 calibrated 25 ms batches per backend and q8 pinned to the
+same eight physical cores. Rust used 1.99.1/LLVM 23.1.1, strict FP,
+`-C target-cpu=x86-64-v3`, runtime Pulp V3; DUCC was pinned at
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`, GCC 15.2, with production SHT
+flags `-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3` and a strict
+driver. Relative L2 errors were `4.63e-14` for analysis and `5.19e-14` for
+synthesis. Per-case whole-call distributions are in
+[`summary.csv`](../reports/data/plan14-q8-rebaseline-2026-10-21/summary.csv).
+
+For full-order analysis, Rust's test-only phase batches put median order
+spectrum preparation at `240.1 us` (p10/p90 `225.3/255.7 us`) and output
+coefficient initialization at `81.8 us`; recurrence/accumulation was
+`1.683 ms`, forward FFT `491.3 us`, and latitude setup `15.4 us`. Three
+temporary DUCC timer-hook processes measured `map2leg` at `500/503/550 us`
+and `leg2alm_internal` at `1.568/1.567/1.730 ms`. The third DUCC process
+was slower across both stages and the whole call; keep it visible as a
+contended observation. Stage boundaries differ, so these values rank work
+but are not subtractable cycle shares. The clean whole-call medians remain
+the performance comparison.
+
+The exact Rust preparation currently transforms and stores every
+order/ring pair: `721 x 721 = 519,841` complex entries. The recurrence
+consumer checks `ring_order_limits` before every order-spectrum read and
+substitutes zero for inactive north/south rings. DUCC's `fill_m2a` instead
+packs only rings with `mlim >= m`. This supports one narrow candidate:
+skip the phase/weight preparation and store for polar-inactive entries only
+on the scalar GL recurrence route, leaving table, CC/F1, adjoint and other
+paths unchanged. First prove the inactive entries remain unread with a
+NaN-sentinel test, then compare the whole call and numerical output.
+
+The q8 synthesis scheduler probe counted 181 order jobs. In two
+instrumented calls, mutex acquisition plus pop took `6.04/6.67 us` total;
+the first call's workers processed estimated work from `8.93M` to `10.76M`
+terms in `1.099–1.154 ms`.
+That queue cost cannot explain the `0.375 ms` whole-call excess, so do not
+replace the synthesis scheduler on this evidence. Raw timer and process logs
+remain local under `/tmp`; compact reproducible values are in
+[`stage.csv`](../reports/data/plan14-q8-rebaseline-2026-10-21/stage.csv).
+
 ## Current progress — T127 q1 reduced-order dispatch correction (2026-10-21)
 
 The earlier T127 phase profile compared the ordinary callback route against

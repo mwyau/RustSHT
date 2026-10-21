@@ -553,14 +553,22 @@ impl<T: ShtScalar> ShtPlan<T> {
                 .for_each(|recurrence| {
                     #[cfg(all(test, feature = "parallel"))]
                     recurrence.record_active_worker();
+                    #[cfg(all(test, feature = "parallel"))]
+                    let profile_order_queue = recurrence.scalar_order_leaf_profile_enabled();
                     loop {
                         if failed.load(Ordering::Relaxed) {
                             break;
                         }
+                        #[cfg(all(test, feature = "parallel"))]
+                        let queue_lock_started = profile_order_queue.then(std::time::Instant::now);
                         let job = order_jobs
                             .lock()
                             .expect("scalar synthesis order queue is not poisoned")
                             .pop_front();
+                        #[cfg(all(test, feature = "parallel"))]
+                        let queue_lock_ns = queue_lock_started
+                            .map(|started| started.elapsed().as_nanos())
+                            .unwrap_or(0);
                         let Some(order) = job else {
                             break;
                         };
@@ -596,6 +604,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             order + 1,
                             &ring_order_limits[..ntheta],
                             leaf_started,
+                            queue_lock_ns,
                         );
                         if !succeeded {
                             failed.store(true, Ordering::Relaxed);

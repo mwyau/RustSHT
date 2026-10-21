@@ -1,0 +1,7 @@
+operation,phase,rust_p10_us,rust_median_us,rust_p90_us,comparison_run1_us,comparison_run2_us,comparison_run3_us,notes
+analysis,order spectrum preparation,225.317,240.148,255.684,,,,Rust test-only phase timer across 87 calibrated sub-batches
+analysis,coefficient initialization,78.108,81.821,90.790,,,,Rust test-only phase timer; output alm zero-fill
+analysis,forward FFT,479.769,491.302,563.068,500.197,503.169,550.097,DUCC map2leg; third process slower and retained
+analysis,Legendre recurrence and accumulation,1664.041,1682.652,1753.805,1568.240,1567.090,1730.210,DUCC leg2alm_internal; boundaries are not identical
+analysis,resampling and latitude setup,14.951,15.366,16.159,,,,Rust test-only phase timer
+synthesis,order queue lock plus pop,,,,6.043,6.673,,Two instrumented q8 calls, 181 order jobs per call; not a calibrated stage distribution

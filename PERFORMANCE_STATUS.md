@@ -303,13 +303,30 @@ per-case results and alignment ablation are in
 [Plan 14](plans/14-small-serial-parallel-performance.md) and its
 [summary CSV](reports/data/plan14-aligned-scratch-layout-2026-10-21/summary.csv).
 
+**Plan 14 q8 rebaseline (source `42401f20`):** clean, interleaved T720
+whole-call comparisons show the largest current selected excess at
+full-order even-smooth analysis (`2.479/2.124 ms`, `+0.355 ms`) and
+reduced-order odd-minimum synthesis (`1.638/1.263 ms`, `+0.375 ms`).
+The full-analysis Rust phase probe measured `240 us` for order-spectrum
+preparation and `82 us` to zero coefficients; Rust's 491 us forward FFT is
+close to DUCC's 500–503 us `map2leg` in the two stable instrumented runs.
+DUCC `leg2alm_internal` was 1.567–1.568 ms in those runs (a third slower,
+retained as contended data). For odd synthesis, order-queue lock and pop
+cost `6.04/6.67 us` across 181 jobs in two diagnostic calls, far below its whole-call
+excess; no scheduler rewrite is indicated. The next source-grounded
+candidate skips preparation for polar-inactive spectrum entries only on
+scalar GL recurrence analysis; table, CC/F1, adjoint and fallback routes
+remain unchanged. Rebaseline distributions and stage details are in
+[Plan 14](plans/14-small-serial-parallel-performance.md) and
+[machine-readable data](reports/data/plan14-q8-rebaseline-2026-10-21/).
+
 ## Current next steps and deferred work
 
-1. Re-profile T720 reduced-order odd-minimum q8 synthesis after the scratch
-   layout change. It retains the largest selected whole-call excess
-   (+0.407 ms); separate ordered recurrence from the odd inverse stage, then
-   continue with the largest measured absolute stage. T720 full-order
-   even-smooth analysis is the next whole-call lead (+0.335 ms).
+1. Test skipping polar-inactive scalar GL recurrence entries during
+   order-spectrum preparation against the exact T720 full-order q8 analysis
+   baseline. Preserve checked paths and validate that no inactive NaN value
+   reaches recurrence. Recheck full-transform performance and numerical
+   agreement before retaining it.
 2. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
    cache-topology queries plus optional offline pointer-chase diagnostic
    (no startup autotuning); [Plan 13](plans/13-fused-batched-sht.md)
