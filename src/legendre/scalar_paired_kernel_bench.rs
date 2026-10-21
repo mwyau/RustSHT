@@ -2772,6 +2772,7 @@ fn benchmark_plan14_t127_active_ring_route() {
                         lane_count,
                     ),
                     false,
+                    false,
                     &mut range_check_was_exercised,
                     &sin_theta,
                     &fixture.cosine,

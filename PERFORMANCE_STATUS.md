@@ -11,11 +11,13 @@ code shape and remaining steps are tracked in the
 [cumulative ablation record](reports/scalar-analysis-cumulative-ablation-2026-10-21.md).
 Step 4 is already implemented by the checked-first recurrence range-proof
 cache (`aeb123d6`); after first validation it skips only the repeated ordinary
-vector scan. The cached-versus-checked exceptional-input regression test also
-passes with the cumulative packed-reduction cfg. Step 5 keeps transactional
-staging: the earlier direct-output path was measured 1.44–1.71× slower and
-will not be restored unchanged; the next candidate must fuse its extra product
-bound into input preparation before any new direct-accumulation comparison.
+vector scan. Step 5 now has a fused-preflight direct-output candidate behind
+`rustsht_scalar_analysis_fused_direct_preflight`. It is numerically within the
+existing limits but 2.42–2.69× slower than staging at T720 full/reduced q1/q8,
+and its cold/warm outputs are not bitwise identical. Production remains
+transactionally staged; keep the candidate only for the required final
+cumulative evaluation. See the detailed matrix in the
+[cumulative ablation record](reports/scalar-analysis-cumulative-ablation-2026-10-21.md).
 **Plan 14:** COMPLETE at closeout commit
 `f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`. **Plan 15:** COMPLETE after the
 spin-1 GL → CC → F1 sequence on this branch; see

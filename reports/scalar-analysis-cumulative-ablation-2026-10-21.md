@@ -137,17 +137,80 @@ q1/q8 cases measured 1.44–1.71× the staged route. Its direct route required
 an additional whole-latitude product-bound scan before the already checked
 input-preparation pass, then performed read/modify/write accumulation into
 the user coefficient span. The record does not isolate which cost dominated.
-Do not restore that implementation unchanged. A new candidate, if justified,
-must fuse the global product bound into the existing input-preparation pass
-and preserve transactional fallback if any eligibility check fails. Staged
-coefficient commit remains the known-good path meanwhile.
+Do not restore that implementation unchanged. A new candidate fused the
+global product bound into the existing input-preparation pass, then selected
+direct output only for checked, cached recurrence blocks whose inputs passed
+that whole-latitude bound. Unsafe inputs and unproven blocks still use the
+transactional staged path. This removes the previously duplicated input scan,
+but the direct-output layout remains an experimental compile-time candidate
+(`rustsht_scalar_analysis_fused_direct_preflight`), never the default.
+
+Matched full-transform comparison used Rust 1.99.1 / LLVM 23.1.1 and the
+release Rust example with Pulp V3 AVX2/FMA and strict Rust FP. DUCC was pinned
+to `80388904b8cfc32400ba84af8a6a45aabfe60f86` and GCC 15.2.0; the SHT kernel
+used `-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3`, with strict driver
+validation. Both Rust variants included Step 3's packed reduction; only the
+candidate enabled fused-preflight direct output. Each row has three
+interleaved Rust/DUCC process pairs and 30 calibrated batches per backend.
+Timings are median (p10–p90), milliseconds; the source variants ran in
+separate blocks, so process pairs are interleaved with DUCC, not with each
+other.
+
+| T720 case | Staged Rust | DUCC | Staged/DUCC | Direct Rust | DUCC | Direct/DUCC | Direct/staged | Relative L2 vs DUCC (staged/direct) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| full q1 | 15.424 (15.339–15.516) | 14.489 (14.404–14.610) | 1.065× | 40.210 (39.886–41.237) | 14.579 (14.449–14.817) | 2.758× | 2.607× | `4.63e-14` / `4.66e-14` |
+| full q8 | 2.265 (2.227–2.416) | 2.164 (2.124–2.352) | 1.047× | 5.488 (5.428–5.802) | 2.147 (2.118–2.209) | 2.556× | 2.423× | `4.63e-14` / `4.66e-14` |
+| `mmax=180` q1 | 6.158 (6.091–6.233) | 5.966 (5.882–6.134) | 1.032× | 16.547 (16.369–17.159) | 5.951 (5.870–6.623) | 2.781× | 2.687× | `4.91e-14` / `4.98e-14` |
+| `mmax=180` q8 | 0.935 (0.911–1.039) | 0.980 (0.921–1.008) | 0.955× | 2.355 (2.284–2.558) | 0.953 (0.919–1.003) | 2.472× | 2.518× | `4.91e-14` / `4.98e-14` |
+
+Reproduce the two matched case sets with separate result directories and
+target directories so each binary keeps its own cfg set:
+
+```sh
+STAGED_FLAGS='-C target-cpu=x86-64-v3 --cfg rustsht_packed_complex_pair_reduction -Aunexpected_cfgs'
+DIRECT_FLAGS="$STAGED_FLAGS --cfg rustsht_scalar_analysis_fused_direct_preflight"
+CARGO_TARGET_DIR="${STAGED_TARGET:?}" RUSTSHT_FULL_TRANSFORM_RUSTFLAGS="$STAGED_FLAGS" \
+  python3 scripts/benchmark_ducc_full_transform_parity.py --ducc-src "${DUCC_SRC:?}" \
+  --ducc-revision 80388904b8cfc32400ba84af8a6a45aabfe60f86 \
+  --lmax 720 --full-mmax-only --longitude-mode even_smooth --operation analysis \
+  --threads 1 --threads 8 --results-dir "${STAGED_FULL_RESULTS:?}" --no-report
+CARGO_TARGET_DIR="${STAGED_TARGET:?}" RUSTSHT_FULL_TRANSFORM_RUSTFLAGS="$STAGED_FLAGS" \
+  python3 scripts/benchmark_ducc_full_transform_parity.py --ducc-src "${DUCC_SRC:?}" \
+  --ducc-revision 80388904b8cfc32400ba84af8a6a45aabfe60f86 \
+  --lmax 720 --mmax 180 --longitude-mode even_smooth --operation analysis \
+  --threads 1 --threads 8 --results-dir "${STAGED_REDUCED_RESULTS:?}" --no-report
+CARGO_TARGET_DIR="${DIRECT_TARGET:?}" RUSTSHT_FULL_TRANSFORM_RUSTFLAGS="$DIRECT_FLAGS" \
+  python3 scripts/benchmark_ducc_full_transform_parity.py --ducc-src "${DUCC_SRC:?}" \
+  --ducc-revision 80388904b8cfc32400ba84af8a6a45aabfe60f86 \
+  --lmax 720 --full-mmax-only --longitude-mode even_smooth --operation analysis \
+  --threads 1 --threads 8 --results-dir "${DIRECT_FULL_RESULTS:?}" --no-report
+CARGO_TARGET_DIR="${DIRECT_TARGET:?}" RUSTSHT_FULL_TRANSFORM_RUSTFLAGS="$DIRECT_FLAGS" \
+  python3 scripts/benchmark_ducc_full_transform_parity.py --ducc-src "${DUCC_SRC:?}" \
+  --ducc-revision 80388904b8cfc32400ba84af8a6a45aabfe60f86 \
+  --lmax 720 --mmax 180 --longitude-mode even_smooth --operation analysis \
+  --threads 1 --threads 8 --results-dir "${DIRECT_REDUCED_RESULTS:?}" --no-report
+```
+
+The candidate is 2.42–2.69× slower than staged Rust across these four
+workloads despite removal of the separate bound scan. This is a clear
+whole-transform regression with tight Rust timing distributions and similar
+frequency/runqueue telemetry between builds; the source does not yet isolate
+the cause beyond the direct per-pair read/modify/write output flow. Keep it
+only for the required cumulative interaction/ablation evaluation. The
+candidate's first call uses staging to establish the range proof, while warm
+calls use direct output, so the native harness correctly records
+`reset_consistent=false` when comparing cold and warm outputs. Warm candidate
+repeats are bitwise stable. The staged-versus-direct coefficient difference
+was `2.5974e-16` relative L2 (`2.5324e-17` maximum absolute); DUCC comparisons
+also passed their existing numerical limits. Release exceptional-input and
+adjoint tests exercise the staged fallback. Do not promote this route.
 
 ## Validation and reproducibility
 
-- Candidate-enabled release library suite: 250 passed, 34 ignored.
-- Candidate-enabled no-default-features release library suite: 202 passed,
-  17 ignored.
-- Strict all-target/all-feature Clippy with the candidate cfg: passed;
+- Release library suite with packed-reduction and fused-preflight direct cfgs:
+  250 passed, 34 ignored. No-default-features release library suite: 202
+  passed, 17 ignored.
+- Strict all-target/all-feature Clippy with both candidate cfgs: passed;
   formatting and `git diff --check`: passed.
 - Coefficient max-scaled difference was `1.97e-16`; direct-kernel output
   relative L2 was at most `1.63e-13`, and max absolute error at most
@@ -159,6 +222,10 @@ coefficient commit remains the known-good path meanwhile.
 Reproduce the direct kernel comparison with the pinned DUCC checkout:
 
 ```sh
+RUSTFLAGS='-C target-cpu=x86-64-v3 --cfg rustsht_packed_complex_pair_reduction --cfg rustsht_scalar_analysis_fused_direct_preflight -Aunexpected_cfgs' \
+  cargo test --release --lib scalar_analysis_pair_range_cache_matches_checked_recurrence_and_is_plan_scoped \
+  -- --nocapture --test-threads=1
+
 RUSTSHT_KERNEL_BENCH_RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs' \
   python3 scripts/benchmark_scalar_analysis_kernel.py
 RUSTSHT_KERNEL_BENCH_RUSTFLAGS='-C target-cpu=x86-64-v3 --cfg rustsht_packed_complex_pair_reduction -Aunexpected_cfgs' \
@@ -184,7 +251,7 @@ RUSTFLAGS='-C target-cpu=x86-64-v3 --cfg rustsht_packed_complex_pair_reduction -
 | 2. Fixed SIMD workspace layout | Existing source layout retained; include in final ablation. |
 | 3. Packed complex reduction | Implemented and validated behind cfg; isolated reducer is 3% faster, whole-transform effect remains inconclusive; retain only for cumulative evaluation. |
 | 4. Recurrence range-check handling | Complete in production since `aeb123d6`; checked-first cached proof skips only repeated ordinary vector scans. |
-| 5. Output staging and accumulation | Prior direct path regressed; test only a distinct candidate that fuses the duplicated product preflight. |
+| 5. Output staging and accumulation | Fused-preflight direct-output candidate implemented and validated, but 2.42–2.69× slower; retain only for final cumulative ablation. |
 | 6–10. Initialization, prefix, transition, packing and conversion | Pending review against current source; skip anything already implemented. |
 | Final combined evaluation | Pending: original `ce710` baseline, cumulative 64/128/256, DUCC, then one-change-at-a-time ablations. |
 
