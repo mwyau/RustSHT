@@ -5,6 +5,8 @@ The Plan 14 scalar full-transform sweep, four principal figures, validation and 
 
 **Current phase:** resume Phase A's native spin-1 GL → CC → F1 baseline. The temporary owner-priority scalar T64–T256 GL diagnostic is complete and documented in [the focused report](../reports/scalar-t64-256-performance-discontinuities-2026-10-21.md); it did not reopen Plan 14 or modify the spin-1 numerical kernels.
 
+**Owner direction (2026-10-21): defer odd-length FFT optimization.** Continue to benchmark and validate odd/even longitude cases as **controls**, but do **not** prototype paired-real-row FFTs, swap in `realfft` or the standalone `rustsht-fft` backend, change prime-radix/FFT planners, or start a C2R/odd-FFT optimization investigation. Do not choose an odd-specific FFT issue as a Plan 15 optimization target even when profiling identifies it. Record the residual and continue to measured **spin-1 vector** bottlenecks outside the FFT engine. Existing FFT behavior and numerical safeguards stay intact. This hold remains until an explicit new owner instruction revokes it.
+
 **Goal:** Improve the measured **single-vector-field spin-1** spherical harmonic transforms—STANDARD E/B synthesis and analysis—against native DUCC, for **Gauss–Legendre (GL), Clenshaw–Curtis (CC), and Fejér-1 (F1)** grids, using mathematically identical work and reliable matched full-transform benchmarks. Prioritize absolute residual latency, correct vector results, reusable memory and practical atmospheric resolutions. A documented absence of a justified optimization is a legitimate outcome.
 
 ## 1. Explicit scope and exclusions
@@ -13,7 +15,7 @@ The Plan 14 scalar full-transform sweep, four principal figures, validation and 
 - **Three distinct optimization targets:** (a) GL spin-1, (b) CC spin-1 including **conditional** prepared-grid resampling, (c) F1 spin-1 including **required** prepared-grid resampling and phase shift. Do not treat CC/F1 as GL plus different latitude weights.
 - **Preserve semantics:** two real map channels in DUCC's component order and complex E/B coefficient channels; physical east/north wind component signs and meteorological divergence/vorticity conventions are separate application-level questions. Avoid inventing a new wind API.
 - **Keep operational coverage:** STANDARD vector E/B is the performance priority. Preserve spin-1 `GRAD_ONLY`, scalar `DERIV1` (which uses a spin-1 recurrence) and all defined adjoints; any shared-kernel change must test them. They are controls, not extra standalone optimization campaigns.
-- **Out of scope:** optimizing scalar spin-0 CC/F1 generally, spins 2–4, batched fields/fused multi-map APIs (Plan 13), cache-hardware autodetection (Plan 12), replacing the whole FFT subsystem, new dependencies, public API changes or arbitrary rewrite of an algorithm that has not been profiled.
+- **Out of scope:** optimizing scalar spin-0 CC/F1 generally, spins 2–4, batched fields/fused multi-map APIs (Plan 13), cache-hardware autodetection (Plan 12), **all odd-length real-FFT optimization or backend substitution (including paired-real rows and native/custom FFT integration)**, replacing the whole FFT subsystem, new dependencies, public API changes or arbitrary rewrite of an algorithm that has not been profiled.
 
 Relevant implemented paths: `src/spin_transform.rs`, `src/meridional.rs`, `src/legendre/`, `src/fft.rs`, `src/grid.rs`, `src/plan.rs`, `src/workspace.rs`, Python `ShtPlan(spin=1)` and its DUCC comparison tests.
 
@@ -38,7 +40,7 @@ Extend a suitable existing `m1b_bench` or matched full-transform benchmark adapt
 
 **Representative initial screen for each of GL, CC and F1:**
 - T1, T4, T16, T31/32, T63/64/65, T127/128, T159, T255/256, T511, T720, T1023; include T2047 if resources permit, clearly documenting any unmeasured case. Expand around verified discontinuities rather than repeating every scalar Plan 14 configuration.
-- Full `mmax=lmax` and reduced `mmax=max(1, lmax//4)` for meaningful bandlimits, avoiding duplicate tiny cases; odd-minimum and even FFT-smooth `nphi` controls at representative points; `phi0` nonzero.
+- Full `mmax=lmax` and reduced `mmax=max(1, lmax//4)` for meaningful bandlimits, avoiding duplicate tiny cases; odd-minimum and even FFT-smooth `nphi` **benchmark/validation controls only (no odd-FFT tuning)** at representative points; `phi0` nonzero.
 - **Exact and over-resolved latitude grids** with correct distinct minimum exact analysis limits: GL `ntheta >= lmax+1`, CC `ntheta >= lmax+2`, F1 `ntheta >= lmax+1`; include CC just below and just above its **resampling-skip threshold**, without confusing that with the exact-analysis minimum. F1 retains its required phase-shift/resampling path.
 - q1 and q8 on matched physical CPUs (and q4/q16 only if capacity/scheduling evidence justifies them). Both STANDARD `A` and `S`, with selected `S*`/`A*`, `GRAD_ONLY` and `DERIV1` regression controls.
 
@@ -93,7 +95,7 @@ A gap is **closed** if correct matched whole-call results no longer justify furt
 2. **Adapter checkpoint:** native Rust/DUCC spin-1 STANDARD workers and the matched runner are implemented. The T4 GL/CC/F1 A/S q1/q8 smoke passed at `6.19e-16` max relative L2. The full Plan 15 baseline matrix remains pending.
 3. **Temporary owner-priority interruption — complete:** focused scalar GL T64–T256 row-FFT and table/recurrence controls are recorded in [`reports/scalar-t64-256-performance-discontinuities-2026-10-21.md`](../reports/scalar-t64-256-performance-discontinuities-2026-10-21.md). The measured dispatch policies and residual synthesis gap are documented; continue Plan 15 Phase A now.
 4. **Then:** matched native spin-1 GL/CC/F1 baseline; targeted GL optimization; targeted CC optimization; targeted F1 optimization; integrated cross-grid rebenchmark/validation; completion documentation.
-4. **Stay deferred:** Plan 12 cache-topology heuristics; Plan 13 fused multi-field batching; spin 2–4 performance work; scalar CC/F1 optimization outside vector-shared code; and any independent odd-FFT rewrite.
+5. **Stay deferred:** Plan 12 cache-topology heuristics; Plan 13 fused multi-field batching; spin 2–4 performance work; scalar CC/F1 optimization outside vector-shared code; and **all odd-length FFT improvements**, including paired-real rows, `realfft` migration, and standalone `rustsht-fft` integration. Keep odd/even benchmark controls.
 
 Keep working under `opt/sht-performance-parity` unless an explicit later owner instruction changes it. Before every push, inspect the tree and fetch remote changes, preserve all concurrent/unpublished work, rebase **only unpublished** commits when safe, reread updated instructions, rerun affected tests, push normally and verify remote SHA. Never force-push, reset away concurrent work, alter `main`, or silently claim a test passed if it was not run. Use the existing limit of at most one Luna benchmark-only subagent; no Sol reviewer unless specifically authorized.
 
