@@ -78,9 +78,19 @@ paired whole-call screens changed 63.39→59.05 ms full-even, 90.71→64.74 ms
 full-odd, and 36.34→34.90 ms reduced-even. The q1 control was unstable and is
 not claimed. The recurrence/scheduling stage remains 53.7–56.9 ms, with q8
 Rust/DUCC ratios around 6–8× under elevated host wait. See the
-[focused A/B report](reports/plan15-spin1-gl-rowfft-2026-10-21.md). Next:
-measure ring-group work/utilization and recurrence dataflow, continuing GL
-before CC and F1.
+[focused A/B report](reports/plan15-spin1-gl-rowfft-2026-10-21.md).
+
+**Plan 15 q8 GL scheduling (2026-10-21):** commit `4e62e200` replaces static
+multi-group assignment with a bounded one-group queue for the guarded f64 GL
+spin-1 synthesis cache route. An exact-source 3-pair recheck found 19–39%
+lower q8 whole-call Rust latency in four T720 cases; candidate/DUCC remains
+3.12–6.53x. The phase profile still puts most Rust time in recurrence plus
+scheduling, with worker group medians balanced to a 1.33x max/min ratio.
+Candidate output is bitwise equal to parent and relative L2 versus DUCC is at
+most `5.23e-13`. Host wait remains elevated, so gain size is directional.
+See the [matched report and raw distributions](reports/plan15-spin1-gl-dynamic-scheduling-2026-10-21.md).
+Next: attribute the larger q1 T1023 synthesis excess, then continue GL before
+CC and F1.
 
 **Current-source full-transform sweep (2026-10-21):** the frozen Rust source
 `e487b85b` was compared with pinned DUCC 0.42.0 `42ce8ab5` across every

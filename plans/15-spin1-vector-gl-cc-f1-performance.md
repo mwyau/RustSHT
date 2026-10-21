@@ -3,7 +3,7 @@
 **Status: ACTIVE (2026-10-21), after Plan 14 closeout `f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`. Owner-authorized.**
 The Plan 14 scalar full-transform sweep, four principal figures, validation and closeout are committed and pushed on `opt/sht-performance-parity`. Continue this plan in the same Luna session and branch without another owner prompt. The handoff preserves the scalar baseline and does not expand Plan 15 beyond its stated spin-1 scope.
 
-**Current phase:** Phase A's native spin-1 GL → CC → F1 baseline is complete at Rust source `549bd2f0` and pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. The temporary owner-priority scalar T64–T256 GL diagnostic is complete in [the focused report](../reports/scalar-t64-256-performance-discontinuities-2026-10-21.md); it did not reopen Plan 14 or change the spin-1 recurrence. Continue Phase B GL attribution, excluding all odd-FFT optimization per the owner direction below.
+**Current phase:** Phase A's native spin-1 GL → CC → F1 baseline is complete at Rust source `549bd2f0` and pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. The temporary owner-priority scalar T64–T256 GL diagnostic is complete in [the focused report](../reports/scalar-t64-256-performance-discontinuities-2026-10-21.md); it did not reopen Plan 14 or change the spin-1 recurrence. Phase B has validated the q8 GL dynamic ring-group scheduler; continue GL attribution at q1, then close GL and proceed through CC and F1. Odd-FFT optimization remains excluded per the owner direction below.
 
 **Phase B checkpoint (2026-10-21):** the q8 GL synthesis path reads cached
 spin-1 scalar-conversion rows directly across ring groups, avoiding repeated
@@ -30,8 +30,20 @@ to the before binary, reset/repeat checks passed and maximum relative L2 versus
 DUCC was `5.23e-13`. The remaining q8 Rust/DUCC ratio is around 6–8×, and the
 recurrence/scheduling stage remains 53.7–56.9 ms. See the [focused report](../reports/plan15-spin1-gl-rowfft-2026-10-21.md)
 and [machine-readable A/B data](../reports/data/plan15-spin1-gl-rowfft-2026-10-21/rowfft-ab.json).
-Next, quantify ring-group work and worker utilization before changing the GL
-recurrence schedule; then proceed through CC and F1.
+
+**Phase B q8 scheduler checkpoint (2026-10-21):** commit `4e62e200` uses a
+bounded dynamic queue for one spin-1 scalar-coefficient ring group at a time,
+only on the q8 f64 GL synthesis cache route. On an exact-source recheck at
+T720, q8 whole-call latency fell 19–39% against parent in full/reduced order
+and odd/even controls; the remaining Rust/DUCC ratio is 3.12–6.53x. The
+candidate is bitwise equal to parent and has at most `5.23e-13` relative L2
+error versus DUCC. Test-only phase timing still places the largest Rust cost
+in recurrence plus scheduling; median worker group durations span 21.5–28.6
+ms (1.33x max/min). Elevated runqueue wait and candidate spread make the gain
+directional. See the [report](../reports/plan15-spin1-gl-dynamic-scheduling-2026-10-21.md)
+and [raw timing distributions](../reports/data/plan15-spin1-gl-dynamic-scheduling-2026-10-21/dynamic-scheduling-ab.json).
+Next: attribute q1 T1023 synthesis by matched stages, then continue GL and
+move through CC/F1.
 
 **Owner direction (2026-10-21): defer odd-length FFT optimization.** Continue to benchmark and validate odd/even longitude cases as **controls**, but do **not** prototype paired-real-row FFTs, swap in `realfft` or the standalone `rustsht-fft` backend, change prime-radix/FFT planners, or start a C2R/odd-FFT optimization investigation. Do not choose an odd-specific FFT issue as a Plan 15 optimization target even when profiling identifies it. Record the residual and continue to measured **spin-1 vector** bottlenecks outside the FFT engine. Existing FFT behavior and numerical safeguards stay intact. This hold remains until an explicit new owner instruction revokes it.
 
@@ -122,7 +134,7 @@ A gap is **closed** if correct matched whole-call results no longer justify furt
 1. **Complete:** Plan 14's full scalar sweep, four figures and closeout at `f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`; Plan 15 activation was pushed at `341661a0256ecab329e5de65ad286f96a8a73914`.
 2. **Adapter checkpoint:** native Rust/DUCC spin-1 STANDARD workers and the matched runner are implemented. The T4 GL/CC/F1 A/S q1/q8 smoke passed at `6.19e-16` max relative L2. Phase A then completed 170 GL/CC/F1 geometry cases, 680 warm timing rows and 2,040 numerical comparisons with no failures; see [`reports/plan15-spin1-native-baseline-2026-10-21.md`](../reports/plan15-spin1-native-baseline-2026-10-21.md) and its sanitized data.
 3. **Temporary owner-priority interruption — complete:** focused scalar GL T64–T256 row-FFT and table/recurrence controls are recorded in [`reports/scalar-t64-256-performance-discontinuities-2026-10-21.md`](../reports/scalar-t64-256-performance-discontinuities-2026-10-21.md). The boundary causes and residual synthesis gap are documented; Plan 15 now resumes at Phase B GL attribution.
-4. **Next:** attribute the highest GL spin-1 absolute excess by measured stages, then pursue one validated GL improvement; continue to CC, F1, integrated cross-grid rebenchmark/validation and completion documentation.
+4. **Next:** attribute the q1 T1023 GL spin-1 synthesis absolute excess by matched stages; then continue GL, CC, F1, integrated cross-grid rebenchmark/validation and completion documentation.
 5. **Stay deferred:** Plan 12 cache-topology heuristics; Plan 13 fused multi-field batching; spin 2–4 performance work; scalar CC/F1 optimization outside vector-shared code; and **all odd-length FFT improvements**, including paired-real rows, `realfft` migration, and standalone `rustsht-fft` integration. Keep odd/even benchmark controls.
 
 Keep working under `opt/sht-performance-parity` unless an explicit later owner instruction changes it. Before every push, inspect the tree and fetch remote changes, preserve all concurrent/unpublished work, rebase **only unpublished** commits when safe, reread updated instructions, rerun affected tests, push normally and verify remote SHA. Never force-push, reset away concurrent work, alter `main`, or silently claim a test passed if it was not run. Use the existing limit of at most one Luna benchmark-only subagent; no Sol reviewer unless specifically authorized.
