@@ -546,3 +546,28 @@ All prior measurements, full machine-readable CSV/JSON, rejected
 experiments, historical plans and source versions are intentionally
 **retained in the archive or reports/data**. Historical sections and
 old forward-looking language do not override active Plan 14.
+
+## Plan 14 current status — T720 q8 synthesis tail validation (2026-10-21)
+
+The sparse inactive-spectrum-tail initialization in `1951e833` passed
+repeated poisoned-workspace reuse, odd/even latitude counts, polar limits,
+subnormal and extreme-finite decline/fallback checks. A test-only observer
+confirmed the subnormal q8 route had already written nonzero output before
+the fallback clear. Full release suites passed with and without `parallel`.
+
+The integrated T720 whole-transform matrix covers full/reduced `mmax`, q1/q8
+and odd/even `nphi` against DUCC 0.42.0. Reduced odd q8 is 1.477/1.267 ms
+(1.166x, +0.210 ms); reduced even q8 is 1.263/1.220 ms (1.035x).
+Full-order odd q8 is near parity at 1.015x; full-order even q8 is 1.047x.
+Maximum relative L2 error is `5.20e-14`. On a matched q8 stage fixture,
+Rust recurrence/spectrum costs 1.185 ms versus DUCC `alm2leg` 1.072 ms,
+and Rust inverse/writeback costs 0.286 ms versus DUCC `leg2map` 0.165 ms.
+Tail initialization itself is 1.62 µs, so it does not explain the residual.
+The existing real C2R alternative remains rejected; no additional source
+change is supported by this profile. See the
+[expanded validation and stage report](reports/plan14-sparse-spectrum-tail-2026-10-21.md),
+[whole-transform matrix](reports/data/plan14-sparse-spectrum-current-2026-10-21/results.json)
+and [paired stage batches](reports/data/plan14-sparse-spectrum-current-2026-10-21/stage_profile.json).
+
+Plan 14 moves into closeout: retain the validated tail initializer, summarize
+the measured residual, and do not add speculative recurrence or FFT variants.

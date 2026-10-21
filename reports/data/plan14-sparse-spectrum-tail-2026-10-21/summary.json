@@ -1,0 +1,3993 @@
+{
+  "title": "Plan 14 sparse spectrum-tail initialization, matched T720 synthesis A/B",
+  "implementation_commit": "1951e8337f239f5278ccb3eb23819134c41eb62e",
+  "baseline_commit": "2661dbb6d4ac3fab2b295c6376e1ed50c65ca948",
+  "measurement_source_note": "The candidate binaries were built from the exact source diff later committed as 1951e833; during capture the Git base reported 2661dbb6 with a dirty worktree. No unrelated source changes were present.",
+  "ducc": {
+    "revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "version": "0.42.0"
+  },
+  "toolchain": {
+    "rustc": "1.99.1",
+    "llvm": "23.1.1",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "runtime_simd": "Pulp V3 AVX2/FMA; four f64 lanes",
+    "gxx": "GCC 15.2",
+    "ducc_flags": "SHT: -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver: -O3 -fno-fast-math -ffp-contract=fast -march=x86-64-v3"
+  },
+  "host": {
+    "cpu": "AMD Ryzen 9 5950X 16-Core Processor",
+    "affinity": "same eight physical CPUs selected by the benchmark harness for q8; q1 controls use its selected physical CPU",
+    "cpu_psi_at_start_end": "avg10=0.00 at initial profiling checkpoint; individual captures also record runqueue wait and sampled frequency"
+  },
+  "method": {
+    "harness": "scripts/benchmark_ducc_full_transform_parity.py",
+    "timing": "reused plans/workspaces; 25 ms calibrated batches; 10 timed batches per process; three interleaved Rust/DUCC process pairs per capture; backend order alternated",
+    "fixtures": "deterministic parity-harness coefficient/map inputs; exact SHA-256 stored per capture",
+    "setup": "plan/workspace setup and first call recorded outside warmed batches",
+    "scope": "whole native synthesis including Legendre recurrence, Fourier spectrum production, inverse FFT and output"
+  },
+  "q8_cases": {
+    "reduced_mmax": {
+      "baseline_captures": [
+        {
+          "capture": "baseline-2661",
+          "case": "T720 GL synthesis q8 mmax=180 ntheta=721 nphi=361",
+          "process_pair_summary": {
+            "rust_warm_ms": 1.5433317815,
+            "rust_p10_ms": 1.5315449886,
+            "rust_p90_ms": 1.5658972642,
+            "ducc_warm_ms": 1.25827,
+            "ducc_p10_ms": 1.239587,
+            "ducc_p90_ms": 1.2755429999999999,
+            "rust_ducc_median_ratio": 1.2265505666510368,
+            "paired_ratio_p10": 1.208288308242917,
+            "paired_ratio_p90": 1.2515247544348698,
+            "excess_ms": 0.28506178150000006,
+            "relative_l2": 5.194418659785921e-14,
+            "absolute_max": 3.7425706977955997e-10,
+            "max_relative_above_1e-12_peak": 2.661239209644606e-09,
+            "batch_count_per_backend": 30,
+            "batch_wall_p10_ms": 21.8330018,
+            "batch_wall_median_ms": 25.8861565,
+            "batch_wall_p90_ms": 26.52682,
+            "first_call_rust_ms": 1.773517,
+            "first_call_ducc_ms": 2.72931,
+            "setup_rust_ms": 2.556219,
+            "setup_ducc_ms": 2.10856
+          },
+          "host": {
+            "frequency_ghz_median": 4.416945500000001,
+            "frequency_ghz_p10": 1.74646,
+            "frequency_ghz_p90": 4.5061855,
+            "runqueue_wait_fraction_median": 0.00555427366350701,
+            "runqueue_wait_fraction_p90": 0.009819554892916374,
+            "involuntary_switches_median": 247.5,
+            "involuntary_switches_max": 559,
+            "sampled_worker_processes": 6
+          },
+          "batches": {
+            "rustsht": [
+              {
+                "process_pair": 0,
+                "warmup_ms": 1.942707,
+                "first_call_ms": 1.758007,
+                "setup_ms": 2.556219,
+                "repetitions_per_batch": 17,
+                "batch_call_ms": [
+                  1.531615471,
+                  1.527056294,
+                  1.566898706,
+                  1.523212529,
+                  1.538389471,
+                  1.545985647,
+                  1.534590529,
+                  1.541410471,
+                  1.530910647,
+                  1.542931
+                ],
+                "batch_wall_ms": [
+                  26.037463,
+                  25.959957,
+                  26.637278,
+                  25.894613,
+                  26.152621,
+                  26.281756,
+                  26.088039,
+                  26.203978,
+                  26.025481,
+                  26.229827
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 1,
+                "warmup_ms": 1.642359,
+                "first_call_ms": 1.800307,
+                "setup_ms": 2.543014,
+                "repetitions_per_batch": 16,
+                "batch_call_ms": [
+                  1.533778125,
+                  1.549047062,
+                  1.59809675,
+                  1.535046125,
+                  1.5573615,
+                  1.560163063,
+                  1.543732563,
+                  1.539495188,
+                  1.556948187,
+                  1.561473062
+                ],
+                "batch_wall_ms": [
+                  24.54045,
+                  24.784753,
+                  25.569548,
+                  24.560738,
+                  24.917784,
+                  24.962609,
+                  24.699721,
+                  24.631923,
+                  24.911171,
+                  24.983569
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 2,
+                "warmup_ms": 1.787092,
+                "first_call_ms": 1.773517,
+                "setup_ms": 2.924706,
+                "repetitions_per_batch": 14,
+                "batch_call_ms": [
+                  1.565872357,
+                  1.541134857,
+                  1.541356714,
+                  1.5458695,
+                  1.539953357,
+                  1.5621955,
+                  1.561014643,
+                  1.535783286,
+                  1.545629071,
+                  1.566121429
+                ],
+                "batch_wall_ms": [
+                  21.922213,
+                  21.575888,
+                  21.578994,
+                  21.642173,
+                  21.559347,
+                  21.870737,
+                  21.854205,
+                  21.500966,
+                  21.638807,
+                  21.9257
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              }
+            ],
+            "ducc": [
+              {
+                "process_pair": 0,
+                "warmup_ms": 2.2138,
+                "first_call_ms": 2.72475,
+                "setup_ms": 2.10856,
+                "repetitions_per_batch": 20,
+                "batch_call_ms": [
+                  1.26234,
+                  1.27168,
+                  1.27044,
+                  1.2509,
+                  1.2676,
+                  1.25056,
+                  1.29388,
+                  1.27487,
+                  1.26595,
+                  1.26064
+                ],
+                "batch_wall_ms": [
+                  25.2469,
+                  25.4336,
+                  25.4088,
+                  25.0181,
+                  25.3519,
+                  25.0112,
+                  25.8777,
+                  25.4975,
+                  25.319,
+                  25.2127
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 1,
+                "warmup_ms": 2.16976,
+                "first_call_ms": 2.9188,
+                "setup_ms": 2.44299,
+                "repetitions_per_batch": 21,
+                "batch_call_ms": [
+                  1.25205,
+                  1.24936,
+                  1.26683,
+                  1.26695,
+                  1.25405,
+                  1.24678,
+                  1.2683,
+                  1.2816,
+                  1.2537,
+                  1.28357
+                ],
+                "batch_wall_ms": [
+                  26.293,
+                  26.2365,
+                  26.6035,
+                  26.6059,
+                  26.335,
+                  26.1824,
+                  26.6343,
+                  26.9136,
+                  26.3277,
+                  26.955
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 2,
+                "warmup_ms": 2.31593,
+                "first_call_ms": 2.72931,
+                "setup_ms": 2.08724,
+                "repetitions_per_batch": 21,
+                "batch_call_ms": [
+                  1.25414,
+                  1.23567,
+                  1.23704,
+                  1.23591,
+                  1.25593,
+                  1.26061,
+                  1.24576,
+                  1.24228,
+                  1.26278,
+                  1.23987
+                ],
+                "batch_wall_ms": [
+                  26.3369,
+                  25.949,
+                  25.9779,
+                  25.9541,
+                  26.3746,
+                  26.4729,
+                  26.161,
+                  26.088,
+                  26.5183,
+                  26.0373
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              }
+            ]
+          },
+          "fixture_sha256": {
+            "alm": "f162457c9c8cc9d032a5895a5e0f40f41421ea478765725c841039a5517b9295",
+            "map": "d6adeba4fb3bcd10af9e44dcbe3f6e2ec066e0763f4695f857301eed30a1fa4d"
+          }
+        },
+        {
+          "capture": "baseline-2661-repeat",
+          "case": "T720 GL synthesis q8 mmax=180 ntheta=721 nphi=361",
+          "process_pair_summary": {
+            "rust_warm_ms": 1.562508721,
+            "rust_p10_ms": 1.5288936925,
+            "rust_p90_ms": 1.6123908125,
+            "ducc_warm_ms": 1.2547700000000002,
+            "ducc_p10_ms": 1.244307,
+            "ducc_p90_ms": 1.266337,
+            "rust_ducc_median_ratio": 1.2452550834017388,
+            "paired_ratio_p10": 1.2112515222725293,
+            "paired_ratio_p90": 1.2801146704925102,
+            "excess_ms": 0.30773872099999977,
+            "relative_l2": 5.194418659785921e-14,
+            "absolute_max": 3.7425706977955997e-10,
+            "max_relative_above_1e-12_peak": 2.661239209644606e-09,
+            "batch_count_per_backend": 30,
+            "batch_wall_p10_ms": 20.077751000000003,
+            "batch_wall_median_ms": 25.976129,
+            "batch_wall_p90_ms": 26.5135,
+            "first_call_rust_ms": 1.773747,
+            "first_call_ducc_ms": 2.74044,
+            "setup_rust_ms": 2.503428,
+            "setup_ducc_ms": 2.31108
+          },
+          "host": {
+            "frequency_ghz_median": 4.4296635,
+            "frequency_ghz_p10": 1.74646,
+            "frequency_ghz_p90": 4.4904672,
+            "runqueue_wait_fraction_median": 0.0075691144121437706,
+            "runqueue_wait_fraction_p90": 0.015229812464025688,
+            "involuntary_switches_median": 400.5,
+            "involuntary_switches_max": 2969,
+            "sampled_worker_processes": 6
+          },
+          "batches": {
+            "rustsht": [
+              {
+                "process_pair": 0,
+                "warmup_ms": 1.977463,
+                "first_call_ms": 2.13441,
+                "setup_ms": 2.485765,
+                "repetitions_per_batch": 13,
+                "batch_call_ms": [
+                  1.588271692,
+                  1.529625231,
+                  1.560968385,
+                  1.567441385,
+                  1.544770077,
+                  1.532184692,
+                  1.516935077,
+                  1.522309846,
+                  1.541493154,
+                  1.518269154
+                ],
+                "batch_wall_ms": [
+                  20.647532,
+                  19.885128,
+                  20.292589,
+                  20.376738,
+                  20.082011,
+                  19.918401,
+                  19.720156,
+                  19.790028,
+                  20.039411,
+                  19.737499
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 1,
+                "warmup_ms": 1.669871,
+                "first_call_ms": 1.773747,
+                "setup_ms": 2.503428,
+                "repetitions_per_batch": 15,
+                "batch_call_ms": [
+                  1.6095886,
+                  1.65154,
+                  1.585189733,
+                  1.599181533,
+                  1.6338478,
+                  1.5769234,
+                  1.5785004,
+                  1.611738,
+                  1.564427133,
+                  1.562096067
+                ],
+                "batch_wall_ms": [
+                  24.143829,
+                  24.7731,
+                  23.777846,
+                  23.987723,
+                  24.507717,
+                  23.653851,
+                  23.677506,
+                  24.17607,
+                  23.466407,
+                  23.431441
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 2,
+                "warmup_ms": 1.624114,
+                "first_call_ms": 1.751545,
+                "setup_ms": 2.649335,
+                "repetitions_per_batch": 16,
+                "batch_call_ms": [
+                  1.545655563,
+                  1.555941312,
+                  1.539892812,
+                  1.562921375,
+                  1.570017938,
+                  1.558803563,
+                  1.533949062,
+                  1.536200187,
+                  1.584012563,
+                  1.618266125
+                ],
+                "batch_wall_ms": [
+                  24.730489,
+                  24.895061,
+                  24.638285,
+                  25.006742,
+                  25.120287,
+                  24.940857,
+                  24.543185,
+                  24.579203,
+                  25.344201,
+                  25.892258
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              }
+            ],
+            "ducc": [
+              {
+                "process_pair": 0,
+                "warmup_ms": 2.14546,
+                "first_call_ms": 2.74044,
+                "setup_ms": 2.31108,
+                "repetitions_per_batch": 21,
+                "batch_call_ms": [
+                  1.24314,
+                  1.25696,
+                  1.25181,
+                  1.25288,
+                  1.26254,
+                  1.25326,
+                  1.26165,
+                  1.26299,
+                  1.24553,
+                  1.25279
+                ],
+                "batch_wall_ms": [
+                  26.1059,
+                  26.3961,
+                  26.2881,
+                  26.3106,
+                  26.5134,
+                  26.3185,
+                  26.4946,
+                  26.5228,
+                  26.1562,
+                  26.3087
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 1,
+                "warmup_ms": 2.18897,
+                "first_call_ms": 2.9449,
+                "setup_ms": 2.33683,
+                "repetitions_per_batch": 21,
+                "batch_call_ms": [
+                  1.39788,
+                  1.26242,
+                  1.24753,
+                  1.25769,
+                  1.26001,
+                  1.26259,
+                  1.26553,
+                  1.26072,
+                  1.25085,
+                  1.2736
+                ],
+                "batch_wall_ms": [
+                  29.3555,
+                  26.5108,
+                  26.1981,
+                  26.4115,
+                  26.4601,
+                  26.5144,
+                  26.5762,
+                  26.4752,
+                  26.2678,
+                  26.7457
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 2,
+                "warmup_ms": 2.13206,
+                "first_call_ms": 2.62887,
+                "setup_ms": 2.16022,
+                "repetitions_per_batch": 21,
+                "batch_call_ms": [
+                  1.24892,
+                  1.24329,
+                  1.24095,
+                  1.24442,
+                  1.25971,
+                  1.27823,
+                  1.25628,
+                  1.24931,
+                  1.2491,
+                  1.24933
+                ],
+                "batch_wall_ms": [
+                  26.2273,
+                  26.109,
+                  26.06,
+                  26.1329,
+                  26.4539,
+                  26.8429,
+                  26.3818,
+                  26.2356,
+                  26.2311,
+                  26.236
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              }
+            ]
+          },
+          "fixture_sha256": {
+            "alm": "f162457c9c8cc9d032a5895a5e0f40f41421ea478765725c841039a5517b9295",
+            "map": "d6adeba4fb3bcd10af9e44dcbe3f6e2ec066e0763f4695f857301eed30a1fa4d"
+          }
+        },
+        {
+          "capture": "baseline-2661-third",
+          "case": "T720 GL synthesis q8 mmax=180 ntheta=721 nphi=361",
+          "process_pair_summary": {
+            "rust_warm_ms": 1.5552656565,
+            "rust_p10_ms": 1.5192311437000001,
+            "rust_p90_ms": 1.6395770317,
+            "ducc_warm_ms": 1.26325,
+            "ducc_p10_ms": 1.2557770000000001,
+            "ducc_p90_ms": 1.292789,
+            "rust_ducc_median_ratio": 1.2311622058183258,
+            "paired_ratio_p10": 1.188673057798766,
+            "paired_ratio_p90": 1.2969665458745256,
+            "excess_ms": 0.29201565650000005,
+            "relative_l2": 5.194418659785921e-14,
+            "absolute_max": 3.7425706977955997e-10,
+            "max_relative_above_1e-12_peak": 2.661239209644606e-09,
+            "batch_count_per_backend": 30,
+            "batch_wall_p10_ms": 24.077240999999997,
+            "batch_wall_median_ms": 25.49455,
+            "batch_wall_p90_ms": 26.60649,
+            "first_call_rust_ms": 1.811248,
+            "first_call_ducc_ms": 2.81306,
+            "setup_rust_ms": 2.528796,
+            "setup_ducc_ms": 2.0626
+          },
+          "host": {
+            "frequency_ghz_median": 4.423813,
+            "frequency_ghz_p10": 1.74646,
+            "frequency_ghz_p90": 4.5249806,
+            "runqueue_wait_fraction_median": 0.009661596565724304,
+            "runqueue_wait_fraction_p90": 0.016320166695526557,
+            "involuntary_switches_median": 1146.0,
+            "involuntary_switches_max": 2132,
+            "sampled_worker_processes": 6
+          },
+          "batches": {
+            "rustsht": [
+              {
+                "process_pair": 0,
+                "warmup_ms": 1.602062,
+                "first_call_ms": 1.811248,
+                "setup_ms": 2.459185,
+                "repetitions_per_batch": 16,
+                "batch_call_ms": [
+                  1.51925375,
+                  1.524947625,
+                  1.517648812,
+                  1.519027687,
+                  1.598423625,
+                  1.60372925,
+                  1.5966515,
+                  1.575428812,
+                  1.637776813,
+                  1.655779
+                ],
+                "batch_wall_ms": [
+                  24.30806,
+                  24.399162,
+                  24.282381,
+                  24.304443,
+                  25.574778,
+                  25.659668,
+                  25.546424,
+                  25.206861,
+                  26.204429,
+                  26.492464
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 1,
+                "warmup_ms": 1.736858,
+                "first_call_ms": 1.770351,
+                "setup_ms": 2.740918,
+                "repetitions_per_batch": 15,
+                "batch_call_ms": [
+                  1.537783333,
+                  1.5365744,
+                  1.5762802,
+                  1.542062733,
+                  1.605818133,
+                  1.662802667,
+                  1.553185867,
+                  1.5991308,
+                  1.618633733,
+                  1.6699722
+                ],
+                "batch_wall_ms": [
+                  23.06675,
+                  23.048616,
+                  23.644203,
+                  23.130941,
+                  24.087272,
+                  24.94204,
+                  23.297788,
+                  23.986962,
+                  24.279506,
+                  25.049583
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 2,
+                "warmup_ms": 1.625718,
+                "first_call_ms": 1.857246,
+                "setup_ms": 2.528796,
+                "repetitions_per_batch": 16,
+                "batch_call_ms": [
+                  1.553504812,
+                  1.518420312,
+                  1.556112875,
+                  1.521980125,
+                  1.579391938,
+                  1.544157125,
+                  1.620186625,
+                  1.554418438,
+                  1.545326187,
+                  1.54024725
+                ],
+                "batch_wall_ms": [
+                  24.856077,
+                  24.294725,
+                  24.897806,
+                  24.351682,
+                  25.270271,
+                  24.706514,
+                  25.922986,
+                  24.870695,
+                  24.725219,
+                  24.643956
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              }
+            ],
+            "ducc": [
+              {
+                "process_pair": 0,
+                "warmup_ms": 2.59963,
+                "first_call_ms": 2.81306,
+                "setup_ms": 2.0626,
+                "repetitions_per_batch": 20,
+                "batch_call_ms": [
+                  1.27455,
+                  1.28937,
+                  1.30504,
+                  1.26105,
+                  1.25752,
+                  1.2735,
+                  1.30025,
+                  1.27119,
+                  1.24201,
+                  1.27491
+                ],
+                "batch_wall_ms": [
+                  25.4909,
+                  25.7875,
+                  26.1008,
+                  25.221,
+                  25.1503,
+                  25.4701,
+                  26.005,
+                  25.4237,
+                  24.8401,
+                  25.4982
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 1,
+                "warmup_ms": 2.19554,
+                "first_call_ms": 2.83871,
+                "setup_ms": 2.05487,
+                "repetitions_per_batch": 21,
+                "batch_call_ms": [
+                  1.30417,
+                  1.29196,
+                  1.26437,
+                  1.26627,
+                  1.25743,
+                  1.2822,
+                  1.26213,
+                  1.25581,
+                  1.27897,
+                  1.28643
+                ],
+                "batch_wall_ms": [
+                  27.3876,
+                  27.1312,
+                  26.5517,
+                  26.5917,
+                  26.406,
+                  26.9262,
+                  26.5048,
+                  26.3721,
+                  26.8584,
+                  27.0149
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 2,
+                "warmup_ms": 2.21795,
+                "first_call_ms": 2.8066,
+                "setup_ms": 2.21007,
+                "repetitions_per_batch": 21,
+                "batch_call_ms": [
+                  1.25638,
+                  1.2606,
+                  1.25907,
+                  1.25691,
+                  1.2569,
+                  1.25548,
+                  1.27331,
+                  1.26004,
+                  1.26077,
+                  1.24963
+                ],
+                "batch_wall_ms": [
+                  26.384,
+                  26.4725,
+                  26.4405,
+                  26.3952,
+                  26.3949,
+                  26.365,
+                  26.7396,
+                  26.4608,
+                  26.4763,
+                  26.2422
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              }
+            ]
+          },
+          "fixture_sha256": {
+            "alm": "f162457c9c8cc9d032a5895a5e0f40f41421ea478765725c841039a5517b9295",
+            "map": "d6adeba4fb3bcd10af9e44dcbe3f6e2ec066e0763f4695f857301eed30a1fa4d"
+          }
+        }
+      ],
+      "candidate_captures": [
+        {
+          "capture": "candidate-final-reduced",
+          "case": "T720 GL synthesis q8 mmax=180 ntheta=721 nphi=361",
+          "process_pair_summary": {
+            "rust_warm_ms": 1.4691788235,
+            "rust_p10_ms": 1.4603847139000001,
+            "rust_p90_ms": 1.5055117459,
+            "ducc_warm_ms": 1.25595,
+            "ducc_p10_ms": 1.247746,
+            "ducc_p90_ms": 1.265018,
+            "rust_ducc_median_ratio": 1.169774930132569,
+            "paired_ratio_p10": 1.1560545279111742,
+            "paired_ratio_p90": 1.198907226051508,
+            "excess_ms": 0.21322882350000016,
+            "relative_l2": 5.194418659785921e-14,
+            "absolute_max": 3.7425706977955997e-10,
+            "max_relative_above_1e-12_peak": 2.661239209644606e-09,
+            "batch_count_per_backend": 30,
+            "batch_wall_p10_ms": 23.8585959,
+            "batch_wall_median_ms": 25.084004,
+            "batch_wall_p90_ms": 26.45473,
+            "first_call_rust_ms": 1.683376,
+            "first_call_ducc_ms": 2.77598,
+            "setup_rust_ms": 2.464514,
+            "setup_ducc_ms": 2.12964
+          },
+          "host": {
+            "frequency_ghz_median": 4.4169525,
+            "frequency_ghz_p10": 1.74646,
+            "frequency_ghz_p90": 4.514963000000001,
+            "runqueue_wait_fraction_median": 0.003991321555192545,
+            "runqueue_wait_fraction_p90": 0.010095574046864968,
+            "involuntary_switches_median": 262.5,
+            "involuntary_switches_max": 916,
+            "sampled_worker_processes": 6
+          },
+          "batches": {
+            "rustsht": [
+              {
+                "process_pair": 0,
+                "warmup_ms": 1.514706,
+                "first_call_ms": 1.683376,
+                "setup_ms": 2.402697,
+                "repetitions_per_batch": 17,
+                "batch_call_ms": [
+                  1.464041118,
+                  1.453498235,
+                  1.467766471,
+                  1.455769647,
+                  1.472292647,
+                  1.463846059,
+                  1.46933,
+                  1.464898059,
+                  1.469027647,
+                  1.464140176
+                ],
+                "batch_wall_ms": [
+                  24.888699,
+                  24.70947,
+                  24.95203,
+                  24.748084,
+                  25.028975,
+                  24.885383,
+                  24.97861,
+                  24.903267,
+                  24.97347,
+                  24.890383
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 1,
+                "warmup_ms": 1.605869,
+                "first_call_ms": 1.737929,
+                "setup_ms": 2.464514,
+                "repetitions_per_batch": 16,
+                "batch_call_ms": [
+                  1.498137625,
+                  1.462198937,
+                  1.506686875,
+                  1.485197437,
+                  1.463513313,
+                  1.480478563,
+                  1.461512687,
+                  1.491825,
+                  1.460404937,
+                  1.492812562
+                ],
+                "batch_wall_ms": [
+                  23.970202,
+                  23.395183,
+                  24.10699,
+                  23.763159,
+                  23.416213,
+                  23.687657,
+                  23.384203,
+                  23.8692,
+                  23.366479,
+                  23.885001
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 2,
+                "warmup_ms": 1.522301,
+                "first_call_ms": 1.649171,
+                "setup_ms": 2.616983,
+                "repetitions_per_batch": 17,
+                "batch_call_ms": [
+                  1.533479,
+                  1.461521647,
+                  1.460202706,
+                  1.505381176,
+                  1.478636412,
+                  1.475908294,
+                  1.462896,
+                  1.475151,
+                  1.470109118,
+                  1.522579588
+                ],
+                "batch_wall_ms": [
+                  26.069143,
+                  24.845868,
+                  24.823446,
+                  25.59148,
+                  25.136819,
+                  25.090441,
+                  24.869232,
+                  25.077567,
+                  24.991855,
+                  25.883853
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              }
+            ],
+            "ducc": [
+              {
+                "process_pair": 0,
+                "warmup_ms": 2.23477,
+                "first_call_ms": 2.77598,
+                "setup_ms": 2.12964,
+                "repetitions_per_batch": 21,
+                "batch_call_ms": [
+                  1.2659,
+                  1.25114,
+                  1.25378,
+                  1.25918,
+                  1.24799,
+                  1.24776,
+                  1.25106,
+                  1.26268,
+                  1.27186,
+                  1.26373
+                ],
+                "batch_wall_ms": [
+                  26.584,
+                  26.274,
+                  26.3294,
+                  26.4428,
+                  26.2078,
+                  26.203,
+                  26.2722,
+                  26.5162,
+                  26.7091,
+                  26.5384
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 1,
+                "warmup_ms": 2.11169,
+                "first_call_ms": 2.63893,
+                "setup_ms": 1.95181,
+                "repetitions_per_batch": 20,
+                "batch_call_ms": [
+                  1.26228,
+                  1.25651,
+                  1.2424,
+                  1.23972,
+                  1.25056,
+                  1.24785,
+                  1.26492,
+                  1.24831,
+                  1.26788,
+                  1.25922
+                ],
+                "batch_wall_ms": [
+                  25.2457,
+                  25.1303,
+                  24.8479,
+                  24.7944,
+                  25.0111,
+                  24.957,
+                  25.2984,
+                  24.9662,
+                  25.3576,
+                  25.1844
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 2,
+                "warmup_ms": 2.23842,
+                "first_call_ms": 2.89723,
+                "setup_ms": 2.17396,
+                "repetitions_per_batch": 21,
+                "batch_call_ms": [
+                  1.25539,
+                  1.25464,
+                  1.24762,
+                  1.25956,
+                  1.26293,
+                  1.25675,
+                  1.25865,
+                  1.25424,
+                  1.25245,
+                  1.26148
+                ],
+                "batch_wall_ms": [
+                  26.3633,
+                  26.3473,
+                  26.2,
+                  26.4507,
+                  26.5214,
+                  26.3917,
+                  26.4317,
+                  26.3391,
+                  26.3015,
+                  26.491
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              }
+            ]
+          },
+          "fixture_sha256": {
+            "alm": "f162457c9c8cc9d032a5895a5e0f40f41421ea478765725c841039a5517b9295",
+            "map": "d6adeba4fb3bcd10af9e44dcbe3f6e2ec066e0763f4695f857301eed30a1fa4d"
+          }
+        },
+        {
+          "capture": "candidate-final-reduced-repeat",
+          "case": "T720 GL synthesis q8 mmax=180 ntheta=721 nphi=361",
+          "process_pair_summary": {
+            "rust_warm_ms": 1.4838943750000002,
+            "rust_p10_ms": 1.4622247938000001,
+            "rust_p90_ms": 1.5175803308,
+            "ducc_warm_ms": 1.25947,
+            "ducc_p10_ms": 1.25194,
+            "ducc_p90_ms": 1.2987060000000001,
+            "rust_ducc_median_ratio": 1.1781895360746981,
+            "paired_ratio_p10": 1.1474759540209578,
+            "paired_ratio_p90": 1.2077854233357461,
+            "excess_ms": 0.22442437500000012,
+            "relative_l2": 5.194418659785921e-14,
+            "absolute_max": 3.7425706977955997e-10,
+            "max_relative_above_1e-12_peak": 2.661239209644606e-09,
+            "batch_count_per_backend": 30,
+            "batch_wall_p10_ms": 23.4565588,
+            "batch_wall_median_ms": 25.97961,
+            "batch_wall_p90_ms": 26.88524,
+            "first_call_rust_ms": 1.673957,
+            "first_call_ducc_ms": 2.66868,
+            "setup_rust_ms": 2.468581,
+            "setup_ducc_ms": 2.30789
+          },
+          "host": {
+            "frequency_ghz_median": 4.3990725,
+            "frequency_ghz_p10": 1.74646,
+            "frequency_ghz_p90": 4.4899173,
+            "runqueue_wait_fraction_median": 0.007181111324695587,
+            "runqueue_wait_fraction_p90": 0.015693171790128295,
+            "involuntary_switches_median": 106.0,
+            "involuntary_switches_max": 954,
+            "sampled_worker_processes": 6
+          },
+          "batches": {
+            "rustsht": [
+              {
+                "process_pair": 0,
+                "warmup_ms": 1.582514,
+                "first_call_ms": 1.811709,
+                "setup_ms": 2.468581,
+                "repetitions_per_batch": 16,
+                "batch_call_ms": [
+                  1.459876437,
+                  1.463969188,
+                  1.461853938,
+                  1.47754925,
+                  1.48449175,
+                  1.479976938,
+                  1.501995563,
+                  1.481822375,
+                  1.464163937,
+                  1.50482275
+                ],
+                "batch_wall_ms": [
+                  23.358023,
+                  23.423507,
+                  23.389663,
+                  23.640788,
+                  23.751868,
+                  23.679631,
+                  24.031929,
+                  23.709158,
+                  23.426623,
+                  24.077164
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 1,
+                "warmup_ms": 1.593265,
+                "first_call_ms": 1.673957,
+                "setup_ms": 2.429848,
+                "repetitions_per_batch": 16,
+                "batch_call_ms": [
+                  1.471688188,
+                  1.488016562,
+                  1.466242812,
+                  1.517275062,
+                  1.513374562,
+                  1.512227437,
+                  1.466910375,
+                  1.498807,
+                  1.471814063,
+                  1.492575187
+                ],
+                "batch_wall_ms": [
+                  23.547011,
+                  23.808265,
+                  23.459885,
+                  24.276401,
+                  24.213993,
+                  24.195639,
+                  23.470566,
+                  23.980912,
+                  23.549025,
+                  23.881203
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 2,
+                "warmup_ms": 1.597523,
+                "first_call_ms": 1.656325,
+                "setup_ms": 2.489201,
+                "repetitions_per_batch": 16,
+                "batch_call_ms": [
+                  1.46170175,
+                  1.462266,
+                  1.6133575,
+                  1.49994975,
+                  1.477763375,
+                  1.503408188,
+                  1.52032775,
+                  1.493583312,
+                  1.483297,
+                  1.532543938
+                ],
+                "batch_wall_ms": [
+                  23.387228,
+                  23.396256,
+                  25.81372,
+                  23.999196,
+                  23.644214,
+                  24.054531,
+                  24.325244,
+                  23.897333,
+                  23.732752,
+                  24.520703
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              }
+            ],
+            "ducc": [
+              {
+                "process_pair": 0,
+                "warmup_ms": 2.16945,
+                "first_call_ms": 2.66868,
+                "setup_ms": 2.36721,
+                "repetitions_per_batch": 21,
+                "batch_call_ms": [
+                  1.25265,
+                  1.25196,
+                  1.25295,
+                  1.25764,
+                  1.2612,
+                  1.24999,
+                  1.25381,
+                  1.26315,
+                  1.25688,
+                  1.25774
+                ],
+                "batch_wall_ms": [
+                  26.3057,
+                  26.2911,
+                  26.3119,
+                  26.4105,
+                  26.4852,
+                  26.2497,
+                  26.3301,
+                  26.5261,
+                  26.3944,
+                  26.4126
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 1,
+                "warmup_ms": 2.09389,
+                "first_call_ms": 2.60814,
+                "setup_ms": 2.04635,
+                "repetitions_per_batch": 21,
+                "batch_call_ms": [
+                  1.31424,
+                  1.25176,
+                  1.24503,
+                  1.25612,
+                  1.25303,
+                  1.34727,
+                  1.27237,
+                  1.25443,
+                  1.26191,
+                  1.25756
+                ],
+                "batch_wall_ms": [
+                  27.599,
+                  26.2869,
+                  26.1455,
+                  26.3786,
+                  26.3136,
+                  28.2927,
+                  26.7198,
+                  26.3431,
+                  26.5002,
+                  26.4087
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 2,
+                "warmup_ms": 2.20079,
+                "first_call_ms": 2.80133,
+                "setup_ms": 2.30789,
+                "repetitions_per_batch": 21,
+                "batch_call_ms": [
+                  1.27076,
+                  1.34087,
+                  1.29698,
+                  1.26274,
+                  1.26829,
+                  1.29553,
+                  1.29574,
+                  1.27632,
+                  1.27855,
+                  1.25515
+                ],
+                "batch_wall_ms": [
+                  26.6859,
+                  28.1582,
+                  27.2366,
+                  26.5175,
+                  26.634,
+                  27.206,
+                  27.2105,
+                  26.8027,
+                  26.8496,
+                  26.3582
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              }
+            ]
+          },
+          "fixture_sha256": {
+            "alm": "f162457c9c8cc9d032a5895a5e0f40f41421ea478765725c841039a5517b9295",
+            "map": "d6adeba4fb3bcd10af9e44dcbe3f6e2ec066e0763f4695f857301eed30a1fa4d"
+          }
+        }
+      ]
+    },
+    "full_mmax": {
+      "baseline_captures": [
+        {
+          "capture": "full-baseline",
+          "case": "T720 GL synthesis q8 mmax=720 ntheta=721 nphi=1458",
+          "process_pair_summary": {
+            "rust_warm_ms": 2.9277154285,
+            "rust_p10_ms": 2.89702,
+            "rust_p90_ms": 3.0197368,
+            "ducc_warm_ms": 2.72867,
+            "ducc_p10_ms": 2.6741740000000003,
+            "ducc_p90_ms": 2.832278,
+            "rust_ducc_median_ratio": 1.072945951141032,
+            "paired_ratio_p10": 1.0250584081998368,
+            "paired_ratio_p90": 1.1055784944320182,
+            "excess_ms": 0.19904542849999984,
+            "relative_l2": 4.405014032298958e-14,
+            "absolute_max": 3.5146285881637596e-10,
+            "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+            "batch_count_per_backend": 30,
+            "batch_wall_p10_ms": 20.7828719,
+            "batch_wall_median_ms": 24.64743,
+            "batch_wall_p90_ms": 27.25337,
+            "first_call_rust_ms": 3.693239,
+            "first_call_ducc_ms": 7.02293,
+            "setup_rust_ms": 7.359347,
+            "setup_ducc_ms": 6.26031
+          },
+          "host": {
+            "frequency_ghz_median": 4.093147,
+            "frequency_ghz_p10": 1.74646,
+            "frequency_ghz_p90": 4.5168121,
+            "runqueue_wait_fraction_median": 0.006075067725901185,
+            "runqueue_wait_fraction_p90": 0.007930775770823555,
+            "involuntary_switches_median": 125.0,
+            "involuntary_switches_max": 369,
+            "sampled_worker_processes": 6
+          },
+          "batches": {
+            "rustsht": [
+              {
+                "process_pair": 0,
+                "warmup_ms": 3.158668,
+                "first_call_ms": 3.693239,
+                "setup_ms": 7.834225,
+                "repetitions_per_batch": 8,
+                "batch_call_ms": [
+                  2.947472875,
+                  2.913152875,
+                  2.906862125,
+                  2.950676375,
+                  2.919231875,
+                  2.90007175,
+                  2.912445375,
+                  2.94834325,
+                  2.949808375,
+                  3.0197095
+                ],
+                "batch_wall_ms": [
+                  23.579783,
+                  23.305223,
+                  23.254897,
+                  23.605411,
+                  23.353855,
+                  23.200574,
+                  23.299563,
+                  23.586746,
+                  23.598467,
+                  24.157676
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 1,
+                "warmup_ms": 3.765045,
+                "first_call_ms": 3.671407,
+                "setup_ms": 7.210475,
+                "repetitions_per_batch": 7,
+                "batch_call_ms": [
+                  2.977707857,
+                  2.931789571,
+                  3.081746143,
+                  2.951731571,
+                  2.923641286,
+                  3.037501,
+                  2.964875,
+                  2.969438,
+                  2.936185143,
+                  2.914326571
+                ],
+                "batch_wall_ms": [
+                  20.843955,
+                  20.522527,
+                  21.572223,
+                  20.662121,
+                  20.465489,
+                  21.262507,
+                  20.754125,
+                  20.786066,
+                  20.553296,
+                  20.400286
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 2,
+                "warmup_ms": 3.235874,
+                "first_call_ms": 3.744887,
+                "setup_ms": 7.359347,
+                "repetitions_per_batch": 8,
+                "batch_call_ms": [
+                  2.978911,
+                  2.89524025,
+                  2.89351075,
+                  2.902524,
+                  2.917856875,
+                  2.89721775,
+                  2.92204975,
+                  2.909756375,
+                  2.8848305,
+                  3.0199825
+                ],
+                "batch_wall_ms": [
+                  23.831288,
+                  23.161922,
+                  23.148086,
+                  23.220192,
+                  23.342855,
+                  23.177742,
+                  23.376398,
+                  23.278051,
+                  23.078644,
+                  24.15986
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              }
+            ],
+            "ducc": [
+              {
+                "process_pair": 0,
+                "warmup_ms": 5.66418,
+                "first_call_ms": 6.55992,
+                "setup_ms": 6.26031,
+                "repetitions_per_batch": 10,
+                "batch_call_ms": [
+                  2.67002,
+                  2.67463,
+                  2.69315,
+                  2.67553,
+                  2.67007,
+                  2.69194,
+                  2.72459,
+                  2.66683,
+                  2.67493,
+                  2.73095
+                ],
+                "batch_wall_ms": [
+                  26.7002,
+                  26.7463,
+                  26.9315,
+                  26.7553,
+                  26.7007,
+                  26.9194,
+                  27.2459,
+                  26.6683,
+                  26.7493,
+                  27.3095
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 1,
+                "warmup_ms": 5.76748,
+                "first_call_ms": 7.02293,
+                "setup_ms": 6.11231,
+                "repetitions_per_batch": 10,
+                "batch_call_ms": [
+                  2.718,
+                  2.72522,
+                  2.71471,
+                  2.75204,
+                  2.73136,
+                  2.7211,
+                  2.78628,
+                  2.70358,
+                  2.77473,
+                  2.72639
+                ],
+                "batch_wall_ms": [
+                  27.18,
+                  27.2522,
+                  27.1471,
+                  27.5204,
+                  27.3136,
+                  27.211,
+                  27.8628,
+                  27.0358,
+                  27.7473,
+                  27.2639
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 2,
+                "warmup_ms": 5.99322,
+                "first_call_ms": 7.16416,
+                "setup_ms": 6.48464,
+                "repetitions_per_batch": 9,
+                "batch_call_ms": [
+                  2.82715,
+                  2.87887,
+                  2.8471,
+                  2.83088,
+                  2.80486,
+                  2.79278,
+                  2.7991,
+                  2.84486,
+                  2.80033,
+                  2.80814
+                ],
+                "batch_wall_ms": [
+                  25.4444,
+                  25.9099,
+                  25.6239,
+                  25.4779,
+                  25.2437,
+                  25.135,
+                  25.1919,
+                  25.6038,
+                  25.2029,
+                  25.2733
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              }
+            ]
+          },
+          "fixture_sha256": {
+            "alm": "3287233ee711f55c89f036cedeb3e73dcee3397b8059444063e048f024496bc0",
+            "map": "e5929b5372ec1d08c3b5500993a38b5a8661d4fa26c80cb07f3434a24b40d469"
+          }
+        },
+        {
+          "capture": "full-baseline-repeat",
+          "case": "T720 GL synthesis q8 mmax=720 ntheta=721 nphi=1458",
+          "process_pair_summary": {
+            "rust_warm_ms": 2.9149218125000003,
+            "rust_p10_ms": 2.8834617500000004,
+            "rust_p90_ms": 2.95477385,
+            "ducc_warm_ms": 2.698005,
+            "ducc_p10_ms": 2.684699,
+            "ducc_p90_ms": 2.722704,
+            "rust_ducc_median_ratio": 1.0803989660879056,
+            "paired_ratio_p10": 1.0683804746475507,
+            "paired_ratio_p90": 1.0916452315080505,
+            "excess_ms": 0.21691681250000006,
+            "relative_l2": 4.405014032298958e-14,
+            "absolute_max": 3.5146285881637596e-10,
+            "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+            "batch_count_per_backend": 30,
+            "batch_wall_p10_ms": 23.1396865,
+            "batch_wall_median_ms": 25.513838,
+            "batch_wall_p90_ms": 27.152540000000002,
+            "first_call_rust_ms": 3.939265,
+            "first_call_ducc_ms": 6.73655,
+            "setup_rust_ms": 7.410995,
+            "setup_ducc_ms": 6.18694
+          },
+          "host": {
+            "frequency_ghz_median": 4.0222465,
+            "frequency_ghz_p10": 1.74646,
+            "frequency_ghz_p90": 4.5417117,
+            "runqueue_wait_fraction_median": 0.005410365868321377,
+            "runqueue_wait_fraction_p90": 0.007947012542762175,
+            "involuntary_switches_median": 134.0,
+            "involuntary_switches_max": 334,
+            "sampled_worker_processes": 6
+          },
+          "batches": {
+            "rustsht": [
+              {
+                "process_pair": 0,
+                "warmup_ms": 3.166232,
+                "first_call_ms": 3.687148,
+                "setup_ms": 7.341223,
+                "repetitions_per_batch": 8,
+                "batch_call_ms": [
+                  2.914093375,
+                  2.907,
+                  2.89692225,
+                  2.923968375,
+                  2.91887625,
+                  2.89262775,
+                  2.91575025,
+                  2.8957925,
+                  2.88467275,
+                  2.945132125
+                ],
+                "batch_wall_ms": [
+                  23.312747,
+                  23.256,
+                  23.175378,
+                  23.391747,
+                  23.35101,
+                  23.141022,
+                  23.326002,
+                  23.16634,
+                  23.077382,
+                  23.561057
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 1,
+                "warmup_ms": 3.228249,
+                "first_call_ms": 3.939265,
+                "setup_ms": 7.410995,
+                "repetitions_per_batch": 8,
+                "batch_call_ms": [
+                  3.026247,
+                  2.97133925,
+                  2.890958375,
+                  2.900333625,
+                  2.896058,
+                  2.928653375,
+                  2.95293325,
+                  2.923431125,
+                  2.940224125,
+                  2.923054125
+                ],
+                "batch_wall_ms": [
+                  24.209976,
+                  23.770714,
+                  23.127667,
+                  23.202669,
+                  23.168464,
+                  23.429227,
+                  23.623466,
+                  23.387449,
+                  23.521793,
+                  23.384433
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 2,
+                "warmup_ms": 3.189545,
+                "first_call_ms": 4.326477,
+                "setup_ms": 7.509602,
+                "repetitions_per_batch": 8,
+                "batch_call_ms": [
+                  2.8697595,
+                  2.883451625,
+                  2.883462875,
+                  2.86298675,
+                  2.975469625,
+                  2.946425875,
+                  2.90637125,
+                  2.9183965,
+                  2.91651925,
+                  2.892672875
+                ],
+                "batch_wall_ms": [
+                  22.958076,
+                  23.067613,
+                  23.067703,
+                  22.903894,
+                  23.803757,
+                  23.571407,
+                  23.25097,
+                  23.347172,
+                  23.332154,
+                  23.141383
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              }
+            ],
+            "ducc": [
+              {
+                "process_pair": 0,
+                "warmup_ms": 5.68361,
+                "first_call_ms": 6.77761,
+                "setup_ms": 6.18694,
+                "repetitions_per_batch": 10,
+                "batch_call_ms": [
+                  2.68947,
+                  2.68721,
+                  2.73205,
+                  2.72246,
+                  2.6948,
+                  2.68177,
+                  2.6976,
+                  2.70646,
+                  2.69948,
+                  2.713
+                ],
+                "batch_wall_ms": [
+                  26.8947,
+                  26.8721,
+                  27.3205,
+                  27.2246,
+                  26.948,
+                  26.8177,
+                  26.976,
+                  27.0646,
+                  26.9948,
+                  27.13
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 1,
+                "warmup_ms": 5.83468,
+                "first_call_ms": 6.70298,
+                "setup_ms": 6.05745,
+                "repetitions_per_batch": 10,
+                "batch_call_ms": [
+                  2.68294,
+                  2.71507,
+                  2.69032,
+                  2.68979,
+                  2.70677,
+                  2.68942,
+                  2.7249,
+                  2.71691,
+                  2.69414,
+                  2.69315
+                ],
+                "batch_wall_ms": [
+                  26.8294,
+                  27.1507,
+                  26.9032,
+                  26.8979,
+                  27.0677,
+                  26.8942,
+                  27.249,
+                  27.1691,
+                  26.9414,
+                  26.9315
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 2,
+                "warmup_ms": 5.79313,
+                "first_call_ms": 6.73655,
+                "setup_ms": 6.20676,
+                "repetitions_per_batch": 10,
+                "batch_call_ms": [
+                  2.74188,
+                  2.69102,
+                  2.68397,
+                  2.68478,
+                  2.68711,
+                  2.72187,
+                  2.7017,
+                  2.71439,
+                  2.70738,
+                  2.69841
+                ],
+                "batch_wall_ms": [
+                  27.4188,
+                  26.9102,
+                  26.8397,
+                  26.8478,
+                  26.8711,
+                  27.2187,
+                  27.017,
+                  27.1439,
+                  27.0738,
+                  26.9841
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              }
+            ]
+          },
+          "fixture_sha256": {
+            "alm": "3287233ee711f55c89f036cedeb3e73dcee3397b8059444063e048f024496bc0",
+            "map": "e5929b5372ec1d08c3b5500993a38b5a8661d4fa26c80cb07f3434a24b40d469"
+          }
+        }
+      ],
+      "candidate_captures": [
+        {
+          "capture": "candidate-final-full",
+          "case": "T720 GL synthesis q8 mmax=720 ntheta=721 nphi=1458",
+          "process_pair_summary": {
+            "rust_warm_ms": 2.8224657779999998,
+            "rust_p10_ms": 2.7899323778,
+            "rust_p90_ms": 2.8826421556,
+            "ducc_warm_ms": 2.727995,
+            "ducc_p10_ms": 2.698288,
+            "ducc_p90_ms": 2.789734,
+            "rust_ducc_median_ratio": 1.0346301140581269,
+            "paired_ratio_p10": 1.0136461805523909,
+            "paired_ratio_p90": 1.0612522840337095,
+            "excess_ms": 0.09447077799999981,
+            "relative_l2": 4.405014032298958e-14,
+            "absolute_max": 3.5146285881637596e-10,
+            "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+            "batch_count_per_backend": 30,
+            "batch_wall_p10_ms": 25.2015894,
+            "batch_wall_median_ms": 26.4764415,
+            "batch_wall_p90_ms": 27.72321,
+            "first_call_rust_ms": 3.538826,
+            "first_call_ducc_ms": 6.72903,
+            "setup_rust_ms": 7.391598,
+            "setup_ducc_ms": 6.47651
+          },
+          "host": {
+            "frequency_ghz_median": 4.3637325,
+            "frequency_ghz_p10": 1.74646,
+            "frequency_ghz_p90": 4.5843958,
+            "runqueue_wait_fraction_median": 0.005792662557720452,
+            "runqueue_wait_fraction_p90": 0.007393098640457763,
+            "involuntary_switches_median": 142.0,
+            "involuntary_switches_max": 374,
+            "sampled_worker_processes": 6
+          },
+          "batches": {
+            "rustsht": [
+              {
+                "process_pair": 0,
+                "warmup_ms": 2.962927,
+                "first_call_ms": 3.538826,
+                "setup_ms": 7.45093,
+                "repetitions_per_batch": 9,
+                "batch_call_ms": [
+                  2.860449778,
+                  2.88227,
+                  2.796236,
+                  2.787882444,
+                  2.79009,
+                  2.878990444,
+                  2.800614444,
+                  2.899920111,
+                  2.822336667,
+                  2.822594889
+                ],
+                "batch_wall_ms": [
+                  25.744048,
+                  25.94043,
+                  25.166124,
+                  25.090942,
+                  25.11081,
+                  25.910914,
+                  25.20553,
+                  26.099281,
+                  25.40103,
+                  25.403354
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 1,
+                "warmup_ms": 3.070551,
+                "first_call_ms": 3.496787,
+                "setup_ms": 7.391598,
+                "repetitions_per_batch": 9,
+                "batch_call_ms": [
+                  2.788513778,
+                  2.779699222,
+                  2.907142556,
+                  2.802086,
+                  2.803296111,
+                  2.863246111,
+                  2.827257,
+                  2.816607889,
+                  2.800920444,
+                  2.794630778
+                ],
+                "batch_wall_ms": [
+                  25.096624,
+                  25.017293,
+                  26.164283,
+                  25.218774,
+                  25.229665,
+                  25.769215,
+                  25.445313,
+                  25.349471,
+                  25.208284,
+                  25.151677
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 2,
+                "warmup_ms": 3.098995,
+                "first_call_ms": 3.554988,
+                "setup_ms": 7.313199,
+                "repetitions_per_batch": 9,
+                "batch_call_ms": [
+                  2.817775667,
+                  2.873270778,
+                  2.829928667,
+                  2.885991556,
+                  2.837601,
+                  2.821703111,
+                  2.857423,
+                  2.881943889,
+                  2.812343222,
+                  2.843001222
+                ],
+                "batch_wall_ms": [
+                  25.359981,
+                  25.859437,
+                  25.469358,
+                  25.973924,
+                  25.538409,
+                  25.395328,
+                  25.716807,
+                  25.937495,
+                  25.311089,
+                  25.587011
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              }
+            ],
+            "ducc": [
+              {
+                "process_pair": 0,
+                "warmup_ms": 5.75715,
+                "first_call_ms": 6.72903,
+                "setup_ms": 6.56589,
+                "repetitions_per_batch": 10,
+                "batch_call_ms": [
+                  2.70583,
+                  2.69943,
+                  3.11359,
+                  2.75517,
+                  2.70183,
+                  2.68801,
+                  2.67886,
+                  2.74817,
+                  2.7838,
+                  2.71265
+                ],
+                "batch_wall_ms": [
+                  27.0583,
+                  26.9943,
+                  31.1359,
+                  27.5517,
+                  27.0183,
+                  26.8801,
+                  26.7886,
+                  27.4817,
+                  27.838,
+                  27.1265
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 1,
+                "warmup_ms": 5.8126,
+                "first_call_ms": 6.63328,
+                "setup_ms": 6.43119,
+                "repetitions_per_batch": 10,
+                "batch_call_ms": [
+                  2.70119,
+                  2.68557,
+                  2.70246,
+                  2.73625,
+                  2.70633,
+                  2.69982,
+                  2.70137,
+                  2.76543,
+                  2.72855,
+                  2.71338
+                ],
+                "batch_wall_ms": [
+                  27.0119,
+                  26.8557,
+                  27.0246,
+                  27.3625,
+                  27.0633,
+                  26.9982,
+                  27.0137,
+                  27.6543,
+                  27.2855,
+                  27.1338
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 2,
+                "warmup_ms": 5.87973,
+                "first_call_ms": 7.00101,
+                "setup_ms": 6.47651,
+                "repetitions_per_batch": 10,
+                "batch_call_ms": [
+                  2.72445,
+                  2.80961,
+                  2.75602,
+                  2.72744,
+                  2.74806,
+                  2.77134,
+                  2.76907,
+                  2.78115,
+                  2.78944,
+                  2.79238
+                ],
+                "batch_wall_ms": [
+                  27.2445,
+                  28.0961,
+                  27.5602,
+                  27.2744,
+                  27.4806,
+                  27.7134,
+                  27.6907,
+                  27.8115,
+                  27.8944,
+                  27.9238
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              }
+            ]
+          },
+          "fixture_sha256": {
+            "alm": "3287233ee711f55c89f036cedeb3e73dcee3397b8059444063e048f024496bc0",
+            "map": "e5929b5372ec1d08c3b5500993a38b5a8661d4fa26c80cb07f3434a24b40d469"
+          }
+        },
+        {
+          "capture": "candidate-final-full-repeat",
+          "case": "T720 GL synthesis q8 mmax=720 ntheta=721 nphi=1458",
+          "process_pair_summary": {
+            "rust_warm_ms": 2.8169274445,
+            "rust_p10_ms": 2.7875263328999997,
+            "rust_p90_ms": 2.9671107329,
+            "ducc_warm_ms": 2.6905,
+            "ducc_p10_ms": 2.677174,
+            "ducc_p90_ms": 2.724621,
+            "rust_ducc_median_ratio": 1.0469903157405687,
+            "paired_ratio_p10": 1.0314144973145547,
+            "paired_ratio_p90": 1.1012300915156006,
+            "excess_ms": 0.12642744449999999,
+            "relative_l2": 4.405014032298958e-14,
+            "absolute_max": 3.5146285881637596e-10,
+            "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+            "batch_count_per_backend": 30,
+            "batch_wall_p10_ms": 25.1085147,
+            "batch_wall_median_ms": 26.7515,
+            "batch_wall_p90_ms": 27.13561,
+            "first_call_rust_ms": 3.567501,
+            "first_call_ducc_ms": 6.80011,
+            "setup_rust_ms": 7.400675,
+            "setup_ducc_ms": 6.23833
+          },
+          "host": {
+            "frequency_ghz_median": 4.237411,
+            "frequency_ghz_p10": 1.74646,
+            "frequency_ghz_p90": 4.5174952,
+            "runqueue_wait_fraction_median": 0.0024414278908009867,
+            "runqueue_wait_fraction_p90": 0.007542607985413271,
+            "involuntary_switches_median": 151.0,
+            "involuntary_switches_max": 490,
+            "sampled_worker_processes": 6
+          },
+          "batches": {
+            "rustsht": [
+              {
+                "process_pair": 0,
+                "warmup_ms": 2.965472,
+                "first_call_ms": 3.506225,
+                "setup_ms": 7.356702,
+                "repetitions_per_batch": 9,
+                "batch_call_ms": [
+                  2.812482333,
+                  2.865183222,
+                  2.801769889,
+                  2.787507333,
+                  2.789703667,
+                  2.811719778,
+                  2.813807111,
+                  2.783278222,
+                  2.786545444,
+                  2.820047778
+                ],
+                "batch_wall_ms": [
+                  25.312341,
+                  25.786649,
+                  25.215929,
+                  25.087566,
+                  25.107333,
+                  25.305478,
+                  25.324264,
+                  25.049504,
+                  25.078909,
+                  25.38043
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 1,
+                "warmup_ms": 3.097953,
+                "first_call_ms": 3.567501,
+                "setup_ms": 7.536492,
+                "repetitions_per_batch": 9,
+                "batch_call_ms": [
+                  3.042080222,
+                  2.962321444,
+                  2.861432778,
+                  3.010214333,
+                  2.876987778,
+                  2.881899333,
+                  2.900903,
+                  2.891493,
+                  2.8817,
+                  3.039734667
+                ],
+                "batch_wall_ms": [
+                  27.378722,
+                  26.660893,
+                  25.752895,
+                  27.091929,
+                  25.89289,
+                  25.937094,
+                  26.108127,
+                  26.023437,
+                  25.9353,
+                  27.357612
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 2,
+                "warmup_ms": 3.015927,
+                "first_call_ms": 3.573082,
+                "setup_ms": 7.400675,
+                "repetitions_per_batch": 9,
+                "batch_call_ms": [
+                  2.789849556,
+                  2.798464667,
+                  2.821472667,
+                  2.788109556,
+                  2.801256778,
+                  2.826393111,
+                  2.805808667,
+                  2.787528444,
+                  2.822780778,
+                  2.808339
+                ],
+                "batch_wall_ms": [
+                  25.108646,
+                  25.186182,
+                  25.393254,
+                  25.092986,
+                  25.211311,
+                  25.437538,
+                  25.252278,
+                  25.087756,
+                  25.405027,
+                  25.275051
+                ],
+                "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              }
+            ],
+            "ducc": [
+              {
+                "process_pair": 0,
+                "warmup_ms": 5.79506,
+                "first_call_ms": 6.80011,
+                "setup_ms": 6.18527,
+                "repetitions_per_batch": 10,
+                "batch_call_ms": [
+                  2.67225,
+                  2.67975,
+                  2.7285,
+                  2.67768,
+                  2.68945,
+                  2.69005,
+                  2.68243,
+                  2.68309,
+                  2.7057,
+                  2.69689
+                ],
+                "batch_wall_ms": [
+                  26.7225,
+                  26.7975,
+                  27.285,
+                  26.7768,
+                  26.8945,
+                  26.9005,
+                  26.8243,
+                  26.8309,
+                  27.057,
+                  26.9689
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 1,
+                "warmup_ms": 5.77165,
+                "first_call_ms": 6.76036,
+                "setup_ms": 6.23833,
+                "repetitions_per_batch": 10,
+                "batch_call_ms": [
+                  2.68873,
+                  2.69398,
+                  2.68179,
+                  2.68644,
+                  2.69095,
+                  2.68233,
+                  2.71238,
+                  2.75027,
+                  2.70798,
+                  2.72419
+                ],
+                "batch_wall_ms": [
+                  26.8873,
+                  26.9398,
+                  26.8179,
+                  26.8644,
+                  26.9095,
+                  26.8233,
+                  27.1238,
+                  27.5027,
+                  27.0798,
+                  27.2419
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              },
+              {
+                "process_pair": 2,
+                "warmup_ms": 5.79604,
+                "first_call_ms": 6.81998,
+                "setup_ms": 6.24239,
+                "repetitions_per_batch": 10,
+                "batch_call_ms": [
+                  2.7332,
+                  2.6812,
+                  2.66637,
+                  2.67262,
+                  2.70066,
+                  2.70689,
+                  2.69881,
+                  2.70218,
+                  2.71136,
+                  2.67847
+                ],
+                "batch_wall_ms": [
+                  27.332,
+                  26.812,
+                  26.6637,
+                  26.7262,
+                  27.0066,
+                  27.0689,
+                  26.9881,
+                  27.0218,
+                  27.1136,
+                  26.7847
+                ],
+                "actual_dispatch": "x86-64-v3 fixed build",
+                "f64_lanes": 4,
+                "output_reset_consistent": true
+              }
+            ]
+          },
+          "fixture_sha256": {
+            "alm": "3287233ee711f55c89f036cedeb3e73dcee3397b8059444063e048f024496bc0",
+            "map": "e5929b5372ec1d08c3b5500993a38b5a8661d4fa26c80cb07f3434a24b40d469"
+          }
+        }
+      ]
+    }
+  },
+  "q1_controls": {
+    "reduced_mmax": [
+      {
+        "capture": "q1-reduced-baseline",
+        "case": "T720 GL synthesis q1 reduced_mmax",
+        "process_pair_summary": {
+          "rust_warm_ms": 10.3526063335,
+          "rust_p10_ms": 10.2901973664,
+          "rust_p90_ms": 10.4024386997,
+          "ducc_warm_ms": 8.581344999999999,
+          "ducc_p10_ms": 8.541308,
+          "ducc_p90_ms": 8.668195,
+          "rust_ducc_median_ratio": 1.2064083583051377,
+          "paired_ratio_p10": 1.1883677646068878,
+          "paired_ratio_p90": 1.215496476397022,
+          "excess_ms": 1.7712613335000018,
+          "relative_l2": 5.194418659785921e-14,
+          "absolute_max": 3.7425706977955997e-10,
+          "max_relative_above_1e-12_peak": 2.661239209644606e-09,
+          "batch_count_per_backend": 30,
+          "batch_wall_p10_ms": 25.69585,
+          "batch_wall_median_ms": 28.972122499999998,
+          "batch_wall_p90_ms": 31.175446400000002,
+          "first_call_rust_ms": 10.315461,
+          "first_call_ducc_ms": 9.62566,
+          "setup_rust_ms": 1.740233,
+          "setup_ducc_ms": 2.04652
+        },
+        "host": {
+          "frequency_ghz_median": 4.666541,
+          "frequency_ghz_p10": 4.6495008,
+          "frequency_ghz_p90": 4.7663684,
+          "runqueue_wait_fraction_median": 0.07118946058044046,
+          "runqueue_wait_fraction_p90": 0.1434941091874613,
+          "involuntary_switches_median": 36.5,
+          "involuntary_switches_max": 72,
+          "sampled_worker_processes": 6
+        },
+        "batches": {
+          "rustsht": [
+            {
+              "process_pair": 0,
+              "warmup_ms": 10.273682,
+              "first_call_ms": 10.322444,
+              "setup_ms": 1.724253,
+              "repetitions_per_batch": 3,
+              "batch_call_ms": [
+                10.325306333,
+                10.325386667,
+                10.298659333,
+                10.325797333,
+                10.384835667,
+                10.296094667,
+                10.354131,
+                10.35889,
+                10.351081667,
+                10.325733667
+              ],
+              "batch_wall_ms": [
+                30.975919,
+                30.97616,
+                30.895978,
+                30.977392,
+                31.154507,
+                30.888284,
+                31.062393,
+                31.07667,
+                31.053245,
+                30.977201
+              ],
+              "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            },
+            {
+              "process_pair": 1,
+              "warmup_ms": 10.306444,
+              "first_call_ms": 10.315461,
+              "setup_ms": 1.740233,
+              "repetitions_per_batch": 3,
+              "batch_call_ms": [
+                10.396601333,
+                10.391591667,
+                10.342282,
+                10.323847,
+                10.369269667,
+                10.364477333,
+                10.396310667,
+                10.393829667,
+                10.454975,
+                10.376700333
+              ],
+              "batch_wall_ms": [
+                31.189804,
+                31.174775,
+                31.026846,
+                30.971541,
+                31.107809,
+                31.093432,
+                31.188932,
+                31.181489,
+                31.364925,
+                31.130101
+              ],
+              "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            },
+            {
+              "process_pair": 2,
+              "warmup_ms": 10.157663,
+              "first_call_ms": 10.216053,
+              "setup_ms": 1.766423,
+              "repetitions_per_batch": 3,
+              "batch_call_ms": [
+                10.318012333,
+                10.290727333,
+                10.284923333,
+                10.285427667,
+                10.798638667,
+                10.341099667,
+                10.282248333,
+                10.47686,
+                10.389227333,
+                10.360710333
+              ],
+              "batch_wall_ms": [
+                30.954037,
+                30.872182,
+                30.85477,
+                30.856283,
+                32.395916,
+                31.023299,
+                30.846745,
+                31.43058,
+                31.167682,
+                31.082131
+              ],
+              "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            }
+          ],
+          "ducc": [
+            {
+              "process_pair": 0,
+              "warmup_ms": 9.17852,
+              "first_call_ms": 9.64575,
+              "setup_ms": 2.04652,
+              "repetitions_per_batch": 3,
+              "batch_call_ms": [
+                8.619,
+                8.60633,
+                8.60825,
+                8.57833,
+                8.61185,
+                8.53382,
+                8.56767,
+                8.58436,
+                8.56906,
+                8.61168
+              ],
+              "batch_wall_ms": [
+                25.857,
+                25.819,
+                25.8248,
+                25.735,
+                25.8355,
+                25.6014,
+                25.703,
+                25.7531,
+                25.7072,
+                25.835
+              ],
+              "actual_dispatch": "x86-64-v3 fixed build",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            },
+            {
+              "process_pair": 1,
+              "warmup_ms": 9.42635,
+              "first_call_ms": 9.62566,
+              "setup_ms": 2.08493,
+              "repetitions_per_batch": 3,
+              "batch_call_ms": [
+                8.56816,
+                8.8252,
+                8.56621,
+                8.64628,
+                8.59021,
+                8.56725,
+                8.54214,
+                8.60333,
+                8.6017,
+                8.57252
+              ],
+              "batch_wall_ms": [
+                25.7045,
+                26.4756,
+                25.6986,
+                25.9388,
+                25.7706,
+                25.7018,
+                25.6264,
+                25.81,
+                25.8051,
+                25.7176
+              ],
+              "actual_dispatch": "x86-64-v3 fixed build",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            },
+            {
+              "process_pair": 2,
+              "warmup_ms": 9.17335,
+              "first_call_ms": 9.54452,
+              "setup_ms": 1.9811,
+              "repetitions_per_batch": 3,
+              "batch_call_ms": [
+                8.51632,
+                8.65075,
+                9.00281,
+                9.03252,
+                8.55704,
+                8.5083,
+                8.57303,
+                8.61673,
+                8.55367,
+                8.56917
+              ],
+              "batch_wall_ms": [
+                25.549,
+                25.9522,
+                27.0084,
+                27.0975,
+                25.6711,
+                25.5249,
+                25.7191,
+                25.8502,
+                25.661,
+                25.7075
+              ],
+              "actual_dispatch": "x86-64-v3 fixed build",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            }
+          ]
+        },
+        "fixture_sha256": {
+          "alm": "f162457c9c8cc9d032a5895a5e0f40f41421ea478765725c841039a5517b9295",
+          "map": "d6adeba4fb3bcd10af9e44dcbe3f6e2ec066e0763f4695f857301eed30a1fa4d"
+        }
+      },
+      {
+        "capture": "q1-reduced-candidate",
+        "case": "T720 GL synthesis q1 reduced_mmax",
+        "process_pair_summary": {
+          "rust_warm_ms": 10.3484135,
+          "rust_p10_ms": 10.250665900300001,
+          "rust_p90_ms": 10.6546254997,
+          "ducc_warm_ms": 9.032525,
+          "ducc_p10_ms": 8.561865000000001,
+          "ducc_p90_ms": 9.280135999999999,
+          "rust_ducc_median_ratio": 1.145683349893856,
+          "paired_ratio_p10": 1.1096041369769514,
+          "paired_ratio_p90": 1.2445204129455358,
+          "excess_ms": 1.3158884999999998,
+          "relative_l2": 5.194418659785921e-14,
+          "absolute_max": 3.7425706977955997e-10,
+          "max_relative_above_1e-12_peak": 2.661239209644606e-09,
+          "batch_count_per_backend": 30,
+          "batch_wall_p10_ms": 25.73565,
+          "batch_wall_median_ms": 29.3102245,
+          "batch_wall_p90_ms": 31.906706,
+          "first_call_rust_ms": 10.330861,
+          "first_call_ducc_ms": 9.36972,
+          "setup_rust_ms": 1.782664,
+          "setup_ducc_ms": 2.11238
+        },
+        "host": {
+          "frequency_ghz_median": 4.666529000000001,
+          "frequency_ghz_p10": 4.4474625,
+          "frequency_ghz_p90": 4.7589475,
+          "runqueue_wait_fraction_median": 0.07215903755221775,
+          "runqueue_wait_fraction_p90": 0.1559745093407274,
+          "involuntary_switches_median": 37.5,
+          "involuntary_switches_max": 70,
+          "sampled_worker_processes": 6
+        },
+        "batches": {
+          "rustsht": [
+            {
+              "process_pair": 0,
+              "warmup_ms": 10.170236,
+              "first_call_ms": 10.330861,
+              "setup_ms": 1.846694,
+              "repetitions_per_batch": 3,
+              "batch_call_ms": [
+                10.233683,
+                10.251072667,
+                10.259639,
+                10.262941667,
+                10.247005,
+                10.246791,
+                10.252007667,
+                10.275341667,
+                10.272058667,
+                10.268776
+              ],
+              "batch_wall_ms": [
+                30.701049,
+                30.753218,
+                30.778917,
+                30.788825,
+                30.741015,
+                30.740373,
+                30.756023,
+                30.826025,
+                30.816176,
+                30.806328
+              ],
+              "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            },
+            {
+              "process_pair": 1,
+              "warmup_ms": 10.277039,
+              "first_call_ms": 10.309009,
+              "setup_ms": 1.782664,
+              "repetitions_per_batch": 3,
+              "batch_call_ms": [
+                10.326776,
+                10.347542,
+                10.349285,
+                10.352457667,
+                10.400946333,
+                10.387537333,
+                10.385657333,
+                10.342204667,
+                10.336126667,
+                10.335752667
+              ],
+              "batch_wall_ms": [
+                30.980328,
+                31.042626,
+                31.047855,
+                31.057373,
+                31.202839,
+                31.162612,
+                31.156972,
+                31.026614,
+                31.00838,
+                31.007258
+              ],
+              "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            },
+            {
+              "process_pair": 2,
+              "warmup_ms": 10.562128,
+              "first_call_ms": 10.608526,
+              "setup_ms": 1.77543,
+              "repetitions_per_batch": 3,
+              "batch_call_ms": [
+                10.67257,
+                10.629545333,
+                10.606104333,
+                10.634678667,
+                10.643889333,
+                10.643578667,
+                10.653664333,
+                10.625718333,
+                10.671174333,
+                10.663276
+              ],
+              "batch_wall_ms": [
+                32.01771,
+                31.888636,
+                31.818313,
+                31.904036,
+                31.931668,
+                31.930736,
+                31.960993,
+                31.877155,
+                32.013523,
+                31.989828
+              ],
+              "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            }
+          ],
+          "ducc": [
+            {
+              "process_pair": 0,
+              "warmup_ms": 9.19944,
+              "first_call_ms": 9.36972,
+              "setup_ms": 2.08785,
+              "repetitions_per_batch": 3,
+              "batch_call_ms": [
+                9.29118,
+                9.19181,
+                8.9703,
+                9.02657,
+                9.23716,
+                9.15135,
+                9.21313,
+                9.19662,
+                9.19724,
+                9.25919
+              ],
+              "batch_wall_ms": [
+                27.8735,
+                27.5754,
+                26.9109,
+                27.0797,
+                27.7115,
+                27.454,
+                27.6394,
+                27.5899,
+                27.5917,
+                27.7776
+              ],
+              "actual_dispatch": "x86-64-v3 fixed build",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            },
+            {
+              "process_pair": 1,
+              "warmup_ms": 9.68692,
+              "first_call_ms": 9.58973,
+              "setup_ms": 2.24162,
+              "repetitions_per_batch": 3,
+              "batch_call_ms": [
+                9.30646,
+                9.28307,
+                9.27981,
+                9.25152,
+                9.27189,
+                9.03848,
+                9.26219,
+                8.77536,
+                8.67634,
+                8.67061
+              ],
+              "batch_wall_ms": [
+                27.9194,
+                27.8492,
+                27.8394,
+                27.7546,
+                27.8157,
+                27.1154,
+                27.7866,
+                26.3261,
+                26.029,
+                26.0118
+              ],
+              "actual_dispatch": "x86-64-v3 fixed build",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            },
+            {
+              "process_pair": 2,
+              "warmup_ms": 9.36678,
+              "first_call_ms": 9.35975,
+              "setup_ms": 2.11238,
+              "repetitions_per_batch": 3,
+              "batch_call_ms": [
+                8.61064,
+                8.65084,
+                8.56508,
+                8.50946,
+                8.59984,
+                8.57922,
+                8.56207,
+                8.50363,
+                8.56002,
+                8.5724
+              ],
+              "batch_wall_ms": [
+                25.8319,
+                25.9525,
+                25.6952,
+                25.5284,
+                25.7995,
+                25.7377,
+                25.6862,
+                25.5109,
+                25.6801,
+                25.7172
+              ],
+              "actual_dispatch": "x86-64-v3 fixed build",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            }
+          ]
+        },
+        "fixture_sha256": {
+          "alm": "f162457c9c8cc9d032a5895a5e0f40f41421ea478765725c841039a5517b9295",
+          "map": "d6adeba4fb3bcd10af9e44dcbe3f6e2ec066e0763f4695f857301eed30a1fa4d"
+        }
+      }
+    ],
+    "full_mmax": [
+      {
+        "capture": "q1-full-baseline",
+        "case": "T720 GL synthesis q1 full_mmax",
+        "process_pair_summary": {
+          "rust_warm_ms": 20.85440525,
+          "rust_p10_ms": 20.7177202,
+          "rust_p90_ms": 20.97486705,
+          "ducc_warm_ms": 19.07395,
+          "ducc_p10_ms": 18.85029,
+          "ducc_p90_ms": 19.73458,
+          "rust_ducc_median_ratio": 1.0933448630199827,
+          "paired_ratio_p10": 1.062277323205771,
+          "paired_ratio_p90": 1.1067996932060158,
+          "excess_ms": 1.7804552499999993,
+          "relative_l2": 4.405014032298958e-14,
+          "absolute_max": 3.5146285881637596e-10,
+          "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+          "batch_count_per_backend": 30,
+          "batch_wall_p10_ms": 37.76512,
+          "batch_wall_median_ms": 40.832263,
+          "batch_wall_p90_ms": 41.8744005,
+          "first_call_rust_ms": 22.435457,
+          "first_call_ducc_ms": 22.6446,
+          "setup_rust_ms": 6.399591,
+          "setup_ducc_ms": 6.10568
+        },
+        "host": {
+          "frequency_ghz_median": 4.7123895000000005,
+          "frequency_ghz_p10": 4.6664744,
+          "frequency_ghz_p90": 4.7894888,
+          "runqueue_wait_fraction_median": 0.03470420077947965,
+          "runqueue_wait_fraction_p90": 0.0690517516393302,
+          "involuntary_switches_median": 42.0,
+          "involuntary_switches_max": 80,
+          "sampled_worker_processes": 6
+        },
+        "batches": {
+          "rustsht": [
+            {
+              "process_pair": 0,
+              "warmup_ms": 20.934667,
+              "first_call_ms": 22.435457,
+              "setup_ms": 6.437994,
+              "repetitions_per_batch": 2,
+              "batch_call_ms": [
+                21.020575,
+                20.8197245,
+                20.9159515,
+                20.9021505,
+                20.903358,
+                20.947872,
+                20.837468,
+                21.0083565,
+                20.820957,
+                21.0426315
+              ],
+              "batch_wall_ms": [
+                42.04115,
+                41.639449,
+                41.831903,
+                41.804301,
+                41.806716,
+                41.895744,
+                41.674936,
+                42.016713,
+                41.641914,
+                42.085263
+              ],
+              "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            },
+            {
+              "process_pair": 1,
+              "warmup_ms": 21.194579,
+              "first_call_ms": 22.318696,
+              "setup_ms": 6.332453,
+              "repetitions_per_batch": 2,
+              "batch_call_ms": [
+                20.8916555,
+                20.751871,
+                20.70388,
+                20.9707905,
+                20.713834,
+                20.7575365,
+                20.668463,
+                20.7903035,
+                20.7806605,
+                20.755117
+              ],
+              "batch_wall_ms": [
+                41.783311,
+                41.503742,
+                41.40776,
+                41.941581,
+                41.427668,
+                41.515073,
+                41.336926,
+                41.580607,
+                41.561321,
+                41.510234
+              ],
+              "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            },
+            {
+              "process_pair": 2,
+              "warmup_ms": 21.05788,
+              "first_call_ms": 22.52145,
+              "setup_ms": 6.399591,
+              "repetitions_per_batch": 2,
+              "batch_call_ms": [
+                20.718152,
+                20.8661175,
+                20.872414,
+                20.842693,
+                20.874859,
+                20.7276555,
+                20.9360145,
+                20.971146,
+                20.838916,
+                20.869854
+              ],
+              "batch_wall_ms": [
+                41.436304,
+                41.732235,
+                41.744828,
+                41.685386,
+                41.749718,
+                41.455311,
+                41.872029,
+                41.942292,
+                41.677832,
+                41.739708
+              ],
+              "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            }
+          ],
+          "ducc": [
+            {
+              "process_pair": 0,
+              "warmup_ms": 22.1282,
+              "first_call_ms": 22.6446,
+              "setup_ms": 6.42391,
+              "repetitions_per_batch": 2,
+              "batch_call_ms": [
+                19.0654,
+                19.1458,
+                19.2469,
+                18.8854,
+                19.6281,
+                19.8097,
+                19.2527,
+                19.1164,
+                19.0253,
+                19.3098
+              ],
+              "batch_wall_ms": [
+                38.1309,
+                38.2917,
+                38.4937,
+                37.7708,
+                39.2563,
+                39.6194,
+                38.5054,
+                38.2329,
+                38.0506,
+                38.6196
+              ],
+              "actual_dispatch": "x86-64-v3 fixed build",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            },
+            {
+              "process_pair": 1,
+              "warmup_ms": 22.2204,
+              "first_call_ms": 22.5859,
+              "setup_ms": 6.02078,
+              "repetitions_per_batch": 2,
+              "batch_call_ms": [
+                19.1602,
+                19.7632,
+                20.1638,
+                19.7314,
+                19.1059,
+                19.2282,
+                19.2745,
+                18.8517,
+                19.0825,
+                18.9303
+              ],
+              "batch_wall_ms": [
+                38.3204,
+                39.5265,
+                40.3276,
+                39.4628,
+                38.2118,
+                38.4564,
+                38.5491,
+                37.7034,
+                38.1649,
+                37.8606
+              ],
+              "actual_dispatch": "x86-64-v3 fixed build",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            },
+            {
+              "process_pair": 2,
+              "warmup_ms": 22.2038,
+              "first_call_ms": 22.6597,
+              "setup_ms": 6.10568,
+              "repetitions_per_batch": 2,
+              "batch_call_ms": [
+                18.9486,
+                18.851,
+                18.9017,
+                18.762,
+                18.7492,
+                19.0164,
+                19.0342,
+                18.9758,
+                18.8439,
+                18.857
+              ],
+              "batch_wall_ms": [
+                37.8972,
+                37.7021,
+                37.8033,
+                37.524,
+                37.4984,
+                38.0328,
+                38.0684,
+                37.9516,
+                37.6878,
+                37.714
+              ],
+              "actual_dispatch": "x86-64-v3 fixed build",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            }
+          ]
+        },
+        "fixture_sha256": {
+          "alm": "3287233ee711f55c89f036cedeb3e73dcee3397b8059444063e048f024496bc0",
+          "map": "e5929b5372ec1d08c3b5500993a38b5a8661d4fa26c80cb07f3434a24b40d469"
+        }
+      },
+      {
+        "capture": "q1-full-candidate",
+        "case": "T720 GL synthesis q1 full_mmax",
+        "process_pair_summary": {
+          "rust_warm_ms": 19.91192675,
+          "rust_p10_ms": 19.74867355,
+          "rust_p90_ms": 20.8834946,
+          "ducc_warm_ms": 19.167749999999998,
+          "ducc_p10_ms": 18.83765,
+          "ducc_p90_ms": 19.818089999999998,
+          "rust_ducc_median_ratio": 1.0388244186198172,
+          "paired_ratio_p10": 0.9994631817144776,
+          "paired_ratio_p90": 1.0900990086394589,
+          "excess_ms": 0.7441767500000012,
+          "relative_l2": 4.405014032298958e-14,
+          "absolute_max": 3.5146285881637596e-10,
+          "max_relative_above_1e-12_peak": 1.701728138064052e-07,
+          "batch_count_per_backend": 30,
+          "batch_wall_p10_ms": 37.792190000000005,
+          "batch_wall_median_ms": 39.5017135,
+          "batch_wall_p90_ms": 41.6816781,
+          "first_call_rust_ms": 21.637126,
+          "first_call_ducc_ms": 22.6674,
+          "setup_rust_ms": 6.260368,
+          "setup_ducc_ms": 6.12921
+        },
+        "host": {
+          "frequency_ghz_median": 4.709352,
+          "frequency_ghz_p10": 4.6664672000000005,
+          "frequency_ghz_p90": 4.7761016,
+          "runqueue_wait_fraction_median": 0.034765551973507114,
+          "runqueue_wait_fraction_p90": 0.07042441366429901,
+          "involuntary_switches_median": 44.5,
+          "involuntary_switches_max": 86,
+          "sampled_worker_processes": 6
+        },
+        "batches": {
+          "rustsht": [
+            {
+              "process_pair": 0,
+              "warmup_ms": 19.927722,
+              "first_call_ms": 21.265633,
+              "setup_ms": 6.231252,
+              "repetitions_per_batch": 2,
+              "batch_call_ms": [
+                19.799103,
+                19.744084,
+                19.792155,
+                19.75253,
+                19.6572645,
+                19.764518,
+                19.756828,
+                19.735222,
+                19.7491835,
+                19.7593375
+              ],
+              "batch_wall_ms": [
+                39.598206,
+                39.488168,
+                39.58431,
+                39.50506,
+                39.314529,
+                39.529036,
+                39.513656,
+                39.470444,
+                39.498367,
+                39.518675
+              ],
+              "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            },
+            {
+              "process_pair": 1,
+              "warmup_ms": 20.239261,
+              "first_call_ms": 21.637126,
+              "setup_ms": 6.339347,
+              "repetitions_per_batch": 2,
+              "batch_call_ms": [
+                19.812889,
+                19.8557,
+                19.8822005,
+                19.847505,
+                19.899478,
+                19.9243755,
+                20.940448,
+                20.466576,
+                20.15156,
+                20.0533695
+              ],
+              "batch_wall_ms": [
+                39.625778,
+                39.7114,
+                39.764401,
+                39.69501,
+                39.798956,
+                39.848751,
+                41.880896,
+                40.933152,
+                40.30312,
+                40.106739
+              ],
+              "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            },
+            {
+              "process_pair": 2,
+              "warmup_ms": 21.165333,
+              "first_call_ms": 22.939391,
+              "setup_ms": 6.260368,
+              "repetitions_per_batch": 2,
+              "batch_call_ms": [
+                20.6584595,
+                20.731833,
+                20.8370675,
+                20.928435,
+                20.8405585,
+                20.7853695,
+                20.843364,
+                20.878681,
+                20.926817,
+                20.848554
+              ],
+              "batch_wall_ms": [
+                41.316919,
+                41.463666,
+                41.674135,
+                41.85687,
+                41.681117,
+                41.570739,
+                41.686728,
+                41.757362,
+                41.853634,
+                41.697108
+              ],
+              "actual_dispatch": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            }
+          ],
+          "ducc": [
+            {
+              "process_pair": 0,
+              "warmup_ms": 21.9595,
+              "first_call_ms": 22.565,
+              "setup_ms": 6.13962,
+              "repetitions_per_batch": 2,
+              "batch_call_ms": [
+                19.8038,
+                18.9886,
+                19.0144,
+                19.4038,
+                18.8972,
+                18.8862,
+                18.8381,
+                18.8336,
+                18.6683,
+                18.7047
+              ],
+              "batch_wall_ms": [
+                39.6076,
+                37.9772,
+                38.0288,
+                38.8075,
+                37.7944,
+                37.7723,
+                37.6761,
+                37.6672,
+                37.3365,
+                37.4095
+              ],
+              "actual_dispatch": "x86-64-v3 fixed build",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            },
+            {
+              "process_pair": 1,
+              "warmup_ms": 22.2039,
+              "first_call_ms": 22.6674,
+              "setup_ms": 6.01799,
+              "repetitions_per_batch": 2,
+              "batch_call_ms": [
+                20.0533,
+                20.049,
+                19.9467,
+                18.994,
+                18.8571,
+                19.1584,
+                18.9285,
+                19.4356,
+                19.5521,
+                19.6319
+              ],
+              "batch_wall_ms": [
+                40.1066,
+                40.098,
+                39.8934,
+                37.9881,
+                37.7143,
+                38.3168,
+                37.8569,
+                38.8712,
+                39.1042,
+                39.2638
+              ],
+              "actual_dispatch": "x86-64-v3 fixed build",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            },
+            {
+              "process_pair": 2,
+              "warmup_ms": 22.2795,
+              "first_call_ms": 22.7218,
+              "setup_ms": 6.12921,
+              "repetitions_per_batch": 2,
+              "batch_call_ms": [
+                19.5723,
+                19.2818,
+                19.1151,
+                19.1963,
+                19.1242,
+                19.1607,
+                19.2626,
+                19.2985,
+                19.1748,
+                19.2618
+              ],
+              "batch_wall_ms": [
+                39.1446,
+                38.5636,
+                38.2302,
+                38.3926,
+                38.2485,
+                38.3215,
+                38.5252,
+                38.597,
+                38.3495,
+                38.5236
+              ],
+              "actual_dispatch": "x86-64-v3 fixed build",
+              "f64_lanes": 4,
+              "output_reset_consistent": true
+            }
+          ]
+        },
+        "fixture_sha256": {
+          "alm": "3287233ee711f55c89f036cedeb3e73dcee3397b8059444063e048f024496bc0",
+          "map": "e5929b5372ec1d08c3b5500993a38b5a8661d4fa26c80cb07f3434a24b40d469"
+        }
+      }
+    ]
+  },
+  "phase_profile": {
+    "baseline": {
+      "metadata_line": "PLAN14_SYNTHESIS_PHASE_META T720 m180 grid=721x361 q8 arch=V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt }) batches=30 repeats=17 target_batch_ms=30.000 calibration_call_ms=1.859720 wall_median_us=1534.108 wall_min_us=1514.881 wall_max_us=1574.035",
+      "batches": [
+        {
+          "batch": 1,
+          "repeats": 17,
+          "wall_us": 1522.384,
+          "legendre_accum_us": 1170.302,
+          "inverse_fft_writeback_us": 280.009,
+          "latitude_setup_or_setup_plus_clear_us": 70.744,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1168.997
+        },
+        {
+          "batch": 2,
+          "repeats": 17,
+          "wall_us": 1523.533,
+          "legendre_accum_us": 1175.216,
+          "inverse_fft_writeback_us": 279.327,
+          "latitude_setup_or_setup_plus_clear_us": 67.788,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1174.347
+        },
+        {
+          "batch": 3,
+          "repeats": 17,
+          "wall_us": 1521.843,
+          "legendre_accum_us": 1175.928,
+          "inverse_fft_writeback_us": 275.154,
+          "latitude_setup_or_setup_plus_clear_us": 69.542,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1175.023
+        },
+        {
+          "batch": 4,
+          "repeats": 17,
+          "wall_us": 1537.748,
+          "legendre_accum_us": 1175.075,
+          "inverse_fft_writeback_us": 292.387,
+          "latitude_setup_or_setup_plus_clear_us": 69.079,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1174.235
+        },
+        {
+          "batch": 5,
+          "repeats": 17,
+          "wall_us": 1523.68,
+          "legendre_accum_us": 1174.244,
+          "inverse_fft_writeback_us": 275.64,
+          "latitude_setup_or_setup_plus_clear_us": 72.557,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1173.399
+        },
+        {
+          "batch": 6,
+          "repeats": 17,
+          "wall_us": 1525.075,
+          "legendre_accum_us": 1176.215,
+          "inverse_fft_writeback_us": 279.845,
+          "latitude_setup_or_setup_plus_clear_us": 67.808,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1175.354
+        },
+        {
+          "batch": 7,
+          "repeats": 17,
+          "wall_us": 1523.122,
+          "legendre_accum_us": 1177.878,
+          "inverse_fft_writeback_us": 274.511,
+          "latitude_setup_or_setup_plus_clear_us": 69.517,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1177.011
+        },
+        {
+          "batch": 8,
+          "repeats": 17,
+          "wall_us": 1529.515,
+          "legendre_accum_us": 1178.382,
+          "inverse_fft_writeback_us": 279.867,
+          "latitude_setup_or_setup_plus_clear_us": 70.04,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1177.52
+        },
+        {
+          "batch": 9,
+          "repeats": 17,
+          "wall_us": 1539.248,
+          "legendre_accum_us": 1185.334,
+          "inverse_fft_writeback_us": 281.302,
+          "latitude_setup_or_setup_plus_clear_us": 71.385,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1184.473
+        },
+        {
+          "batch": 10,
+          "repeats": 17,
+          "wall_us": 1544.365,
+          "legendre_accum_us": 1183.511,
+          "inverse_fft_writeback_us": 288.279,
+          "latitude_setup_or_setup_plus_clear_us": 71.337,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1182.619
+        },
+        {
+          "batch": 11,
+          "repeats": 17,
+          "wall_us": 1529.962,
+          "legendre_accum_us": 1180.253,
+          "inverse_fft_writeback_us": 276.321,
+          "latitude_setup_or_setup_plus_clear_us": 72.156,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1179.354
+        },
+        {
+          "batch": 12,
+          "repeats": 17,
+          "wall_us": 1566.794,
+          "legendre_accum_us": 1191.746,
+          "inverse_fft_writeback_us": 306.894,
+          "latitude_setup_or_setup_plus_clear_us": 66.953,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1190.932
+        },
+        {
+          "batch": 13,
+          "repeats": 17,
+          "wall_us": 1546.083,
+          "legendre_accum_us": 1188.572,
+          "inverse_fft_writeback_us": 281.48,
+          "latitude_setup_or_setup_plus_clear_us": 74.787,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1187.39
+        },
+        {
+          "batch": 14,
+          "repeats": 17,
+          "wall_us": 1530.057,
+          "legendre_accum_us": 1181.661,
+          "inverse_fft_writeback_us": 278.09,
+          "latitude_setup_or_setup_plus_clear_us": 69.114,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1180.84
+        },
+        {
+          "batch": 15,
+          "repeats": 17,
+          "wall_us": 1546.538,
+          "legendre_accum_us": 1187.155,
+          "inverse_fft_writeback_us": 285.638,
+          "latitude_setup_or_setup_plus_clear_us": 72.491,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1186.206
+        },
+        {
+          "batch": 16,
+          "repeats": 17,
+          "wall_us": 1536.446,
+          "legendre_accum_us": 1187.821,
+          "inverse_fft_writeback_us": 277.351,
+          "latitude_setup_or_setup_plus_clear_us": 70.07,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1186.964
+        },
+        {
+          "batch": 17,
+          "repeats": 17,
+          "wall_us": 1529.676,
+          "legendre_accum_us": 1181.917,
+          "inverse_fft_writeback_us": 276.74,
+          "latitude_setup_or_setup_plus_clear_us": 69.823,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1181.115
+        },
+        {
+          "batch": 18,
+          "repeats": 17,
+          "wall_us": 1563.064,
+          "legendre_accum_us": 1197.108,
+          "inverse_fft_writeback_us": 293.122,
+          "latitude_setup_or_setup_plus_clear_us": 71.544,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1196.196
+        },
+        {
+          "batch": 19,
+          "repeats": 17,
+          "wall_us": 1539.059,
+          "legendre_accum_us": 1187.81,
+          "inverse_fft_writeback_us": 277.103,
+          "latitude_setup_or_setup_plus_clear_us": 72.937,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1186.999
+        },
+        {
+          "batch": 20,
+          "repeats": 17,
+          "wall_us": 1574.035,
+          "legendre_accum_us": 1203.583,
+          "inverse_fft_writeback_us": 299.082,
+          "latitude_setup_or_setup_plus_clear_us": 70.141,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1202.705
+        },
+        {
+          "batch": 21,
+          "repeats": 17,
+          "wall_us": 1534.108,
+          "legendre_accum_us": 1186.318,
+          "inverse_fft_writeback_us": 278.527,
+          "latitude_setup_or_setup_plus_clear_us": 68.08,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1185.507
+        },
+        {
+          "batch": 22,
+          "repeats": 17,
+          "wall_us": 1529.733,
+          "legendre_accum_us": 1182.798,
+          "inverse_fft_writeback_us": 278.203,
+          "latitude_setup_or_setup_plus_clear_us": 67.573,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1182.014
+        },
+        {
+          "batch": 23,
+          "repeats": 17,
+          "wall_us": 1525.439,
+          "legendre_accum_us": 1181.845,
+          "inverse_fft_writeback_us": 274.844,
+          "latitude_setup_or_setup_plus_clear_us": 67.589,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1181.088
+        },
+        {
+          "batch": 24,
+          "repeats": 17,
+          "wall_us": 1525.41,
+          "legendre_accum_us": 1179.621,
+          "inverse_fft_writeback_us": 276.527,
+          "latitude_setup_or_setup_plus_clear_us": 68.094,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1178.855
+        },
+        {
+          "batch": 25,
+          "repeats": 17,
+          "wall_us": 1564.626,
+          "legendre_accum_us": 1178.689,
+          "inverse_fft_writeback_us": 310.112,
+          "latitude_setup_or_setup_plus_clear_us": 74.596,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1177.828
+        },
+        {
+          "batch": 26,
+          "repeats": 17,
+          "wall_us": 1514.881,
+          "legendre_accum_us": 1171.859,
+          "inverse_fft_writeback_us": 271.963,
+          "latitude_setup_or_setup_plus_clear_us": 69.899,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1171.082
+        },
+        {
+          "batch": 27,
+          "repeats": 17,
+          "wall_us": 1521.785,
+          "legendre_accum_us": 1179.451,
+          "inverse_fft_writeback_us": 273.35,
+          "latitude_setup_or_setup_plus_clear_us": 67.817,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1178.658
+        },
+        {
+          "batch": 28,
+          "repeats": 17,
+          "wall_us": 1559.773,
+          "legendre_accum_us": 1180.554,
+          "inverse_fft_writeback_us": 305.992,
+          "latitude_setup_or_setup_plus_clear_us": 71.967,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1179.621
+        },
+        {
+          "batch": 29,
+          "repeats": 17,
+          "wall_us": 1552.952,
+          "legendre_accum_us": 1182.267,
+          "inverse_fft_writeback_us": 297.664,
+          "latitude_setup_or_setup_plus_clear_us": 71.775,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1181.384
+        },
+        {
+          "batch": 30,
+          "repeats": 17,
+          "wall_us": 1537.09,
+          "legendre_accum_us": 1189.31,
+          "inverse_fft_writeback_us": 277.819,
+          "latitude_setup_or_setup_plus_clear_us": 68.755,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1188.458
+        }
+      ],
+      "summary_lines": [
+        "T720 m180 q8 phase=\"Legendre recurrence and spectral accumulation\" p10_us=1175.075 median_us=1181.845 p90_us=1189.310",
+        "T720 m180 q8 phase=\"inverse longitude FFT and map writeback\" p10_us=274.844 median_us=279.327 p90_us=299.082",
+        "T720 m180 q8 phase=\"latitude setup and spectrum clear\" p10_us=67.788 median_us=70.040 p90_us=72.557",
+        "T720 m180 q8 phase=\"ordered scalar recurrence\" p10_us=1174.235 median_us=1181.088 p90_us=1188.458"
+      ]
+    },
+    "candidate_exact_source": {
+      "metadata_line": "PLAN14_SYNTHESIS_PHASE_META T720 m180 grid=721x361 q8 arch=V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt }) batches=30 repeats=22 target_batch_ms=30.000 calibration_call_ms=1.423374 wall_median_us=1556.648 wall_min_us=1459.797 wall_max_us=1800.240",
+      "batches": [
+        {
+          "batch": 1,
+          "repeats": 22,
+          "wall_us": 1459.797,
+          "legendre_accum_us": 1160.678,
+          "inverse_fft_writeback_us": 283.915,
+          "latitude_setup_or_setup_plus_clear_us": 13.774,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1158.169
+        },
+        {
+          "batch": 2,
+          "repeats": 22,
+          "wall_us": 1462.302,
+          "legendre_accum_us": 1173.952,
+          "inverse_fft_writeback_us": 273.076,
+          "latitude_setup_or_setup_plus_clear_us": 14.115,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1171.461
+        },
+        {
+          "batch": 3,
+          "repeats": 22,
+          "wall_us": 1481.542,
+          "legendre_accum_us": 1180.316,
+          "inverse_fft_writeback_us": 286.17,
+          "latitude_setup_or_setup_plus_clear_us": 13.903,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1177.937
+        },
+        {
+          "batch": 4,
+          "repeats": 22,
+          "wall_us": 1493.192,
+          "legendre_accum_us": 1184.973,
+          "inverse_fft_writeback_us": 292.803,
+          "latitude_setup_or_setup_plus_clear_us": 14.232,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1182.394
+        },
+        {
+          "batch": 5,
+          "repeats": 22,
+          "wall_us": 1464.508,
+          "legendre_accum_us": 1176.356,
+          "inverse_fft_writeback_us": 273.024,
+          "latitude_setup_or_setup_plus_clear_us": 13.96,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1173.893
+        },
+        {
+          "batch": 6,
+          "repeats": 22,
+          "wall_us": 1556.648,
+          "legendre_accum_us": 1205.304,
+          "inverse_fft_writeback_us": 335.308,
+          "latitude_setup_or_setup_plus_clear_us": 14.773,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1202.557
+        },
+        {
+          "batch": 7,
+          "repeats": 22,
+          "wall_us": 1475.297,
+          "legendre_accum_us": 1179.037,
+          "inverse_fft_writeback_us": 280.904,
+          "latitude_setup_or_setup_plus_clear_us": 14.2,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1176.718
+        },
+        {
+          "batch": 8,
+          "repeats": 22,
+          "wall_us": 1471.68,
+          "legendre_accum_us": 1179.868,
+          "inverse_fft_writeback_us": 276.654,
+          "latitude_setup_or_setup_plus_clear_us": 13.982,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1177.408
+        },
+        {
+          "batch": 9,
+          "repeats": 22,
+          "wall_us": 1479.262,
+          "legendre_accum_us": 1178.992,
+          "inverse_fft_writeback_us": 284.88,
+          "latitude_setup_or_setup_plus_clear_us": 14.227,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1176.573
+        },
+        {
+          "batch": 10,
+          "repeats": 22,
+          "wall_us": 1516.815,
+          "legendre_accum_us": 1214.379,
+          "inverse_fft_writeback_us": 286.576,
+          "latitude_setup_or_setup_plus_clear_us": 14.698,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1211.992
+        },
+        {
+          "batch": 11,
+          "repeats": 22,
+          "wall_us": 1483.72,
+          "legendre_accum_us": 1187.539,
+          "inverse_fft_writeback_us": 280.588,
+          "latitude_setup_or_setup_plus_clear_us": 14.396,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1184.968
+        },
+        {
+          "batch": 12,
+          "repeats": 22,
+          "wall_us": 1491.99,
+          "legendre_accum_us": 1189.654,
+          "inverse_fft_writeback_us": 286.986,
+          "latitude_setup_or_setup_plus_clear_us": 14.176,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1187.255
+        },
+        {
+          "batch": 13,
+          "repeats": 22,
+          "wall_us": 1511.014,
+          "legendre_accum_us": 1207.271,
+          "inverse_fft_writeback_us": 288.283,
+          "latitude_setup_or_setup_plus_clear_us": 14.261,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1204.704
+        },
+        {
+          "batch": 14,
+          "repeats": 22,
+          "wall_us": 1517.16,
+          "legendre_accum_us": 1197.074,
+          "inverse_fft_writeback_us": 304.68,
+          "latitude_setup_or_setup_plus_clear_us": 14.21,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1194.483
+        },
+        {
+          "batch": 15,
+          "repeats": 22,
+          "wall_us": 1485.514,
+          "legendre_accum_us": 1190.17,
+          "inverse_fft_writeback_us": 279.863,
+          "latitude_setup_or_setup_plus_clear_us": 14.306,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1187.653
+        },
+        {
+          "batch": 16,
+          "repeats": 22,
+          "wall_us": 1475.316,
+          "legendre_accum_us": 1185.316,
+          "inverse_fft_writeback_us": 274.423,
+          "latitude_setup_or_setup_plus_clear_us": 14.123,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1182.861
+        },
+        {
+          "batch": 17,
+          "repeats": 22,
+          "wall_us": 1660.283,
+          "legendre_accum_us": 1264.636,
+          "inverse_fft_writeback_us": 379.606,
+          "latitude_setup_or_setup_plus_clear_us": 14.718,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1261.903
+        },
+        {
+          "batch": 18,
+          "repeats": 22,
+          "wall_us": 1634.348,
+          "legendre_accum_us": 1245.788,
+          "inverse_fft_writeback_us": 370.994,
+          "latitude_setup_or_setup_plus_clear_us": 16.305,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1242.448
+        },
+        {
+          "batch": 19,
+          "repeats": 22,
+          "wall_us": 1758.764,
+          "legendre_accum_us": 1332.766,
+          "inverse_fft_writeback_us": 408.989,
+          "latitude_setup_or_setup_plus_clear_us": 15.664,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1329.788
+        },
+        {
+          "batch": 20,
+          "repeats": 22,
+          "wall_us": 1584.505,
+          "legendre_accum_us": 1244.495,
+          "inverse_fft_writeback_us": 321.148,
+          "latitude_setup_or_setup_plus_clear_us": 17.171,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1241.254
+        },
+        {
+          "batch": 21,
+          "repeats": 22,
+          "wall_us": 1599.183,
+          "legendre_accum_us": 1245.524,
+          "inverse_fft_writeback_us": 337.594,
+          "latitude_setup_or_setup_plus_clear_us": 14.731,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1242.183
+        },
+        {
+          "batch": 22,
+          "repeats": 22,
+          "wall_us": 1661.727,
+          "legendre_accum_us": 1286.159,
+          "inverse_fft_writeback_us": 359.854,
+          "latitude_setup_or_setup_plus_clear_us": 14.399,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1283.32
+        },
+        {
+          "batch": 23,
+          "repeats": 22,
+          "wall_us": 1733.44,
+          "legendre_accum_us": 1300.973,
+          "inverse_fft_writeback_us": 416.145,
+          "latitude_setup_or_setup_plus_clear_us": 15.022,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1297.73
+        },
+        {
+          "batch": 24,
+          "repeats": 22,
+          "wall_us": 1800.24,
+          "legendre_accum_us": 1370.6,
+          "inverse_fft_writeback_us": 412.87,
+          "latitude_setup_or_setup_plus_clear_us": 15.393,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1367.396
+        },
+        {
+          "batch": 25,
+          "repeats": 22,
+          "wall_us": 1715.213,
+          "legendre_accum_us": 1269.848,
+          "inverse_fft_writeback_us": 428.926,
+          "latitude_setup_or_setup_plus_clear_us": 15.08,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1266.925
+        },
+        {
+          "batch": 26,
+          "repeats": 22,
+          "wall_us": 1617.588,
+          "legendre_accum_us": 1233.374,
+          "inverse_fft_writeback_us": 368.595,
+          "latitude_setup_or_setup_plus_clear_us": 14.371,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1230.318
+        },
+        {
+          "batch": 27,
+          "repeats": 22,
+          "wall_us": 1586.935,
+          "legendre_accum_us": 1219.516,
+          "inverse_fft_writeback_us": 350.477,
+          "latitude_setup_or_setup_plus_clear_us": 15.701,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1216.439
+        },
+        {
+          "batch": 28,
+          "repeats": 22,
+          "wall_us": 1722.087,
+          "legendre_accum_us": 1297.44,
+          "inverse_fft_writeback_us": 407.382,
+          "latitude_setup_or_setup_plus_clear_us": 15.88,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1294.553
+        },
+        {
+          "batch": 29,
+          "repeats": 22,
+          "wall_us": 1676.314,
+          "legendre_accum_us": 1285.026,
+          "inverse_fft_writeback_us": 373.85,
+          "latitude_setup_or_setup_plus_clear_us": 16.127,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1280.924
+        },
+        {
+          "batch": 30,
+          "repeats": 22,
+          "wall_us": 1670.702,
+          "legendre_accum_us": 1258.597,
+          "inverse_fft_writeback_us": 395.349,
+          "latitude_setup_or_setup_plus_clear_us": 15.462,
+          "sparse_tail_init_us": null,
+          "ordered_recurrence_us": 1254.736
+        }
+      ],
+      "summary_lines": [
+        "T720 m180 q8 phase=\"Legendre recurrence and spectral accumulation\" p10_us=1178.992 median_us=1214.379 p90_us=1297.440",
+        "T720 m180 q8 phase=\"inverse longitude FFT and map writeback\" p10_us=276.654 median_us=321.148 p90_us=408.989",
+        "T720 m180 q8 phase=\"latitude setup\" p10_us=13.982 median_us=14.399 p90_us=15.880",
+        "T720 m180 q8 phase=\"ordered scalar recurrence\" p10_us=1176.573 median_us=1211.992 p90_us=1294.553",
+        "T720 m180 q8 phase=\"sparse spectrum-tail initialization\" p10_us=1.565 median_us=1.738 p90_us=2.159"
+      ]
+    }
+  },
+  "limitations": [
+    "q1 controls had 3.5-7.2% median runqueue wait and are inconclusive.",
+    "The final candidate phase profile had a broad whole-call tail; its initialization phases are diagnostic, while whole-transform A/B captures govern the performance conclusion.",
+    "No claim is made that this change closes all of the remaining Rust/DUCC synthesis gap."
+  ],
+  "integrated_current_source_matrix": {
+    "source_commit": "1951e8337f239f5278ccb3eb23819134c41eb62e",
+    "results": "../plan14-sparse-spectrum-current-2026-10-21/results.json",
+    "cases": 8,
+    "relative_l2_max": 5.194418659785921e-14,
+    "absolute_error_max": 3.7425706977955997e-10,
+    "host_summary": {
+      "reduced-odd": {
+        "frequency_ghz_median": 4.417002,
+        "frequency_ghz_p10": 1.74646,
+        "frequency_ghz_p90": 4.641568,
+        "runqueue_wait_fraction_median": 0.003006160931494738,
+        "runqueue_wait_fraction_p90": 0.15238715122292965,
+        "involuntary_switches_median": 52.5,
+        "involuntary_switches_max": 699,
+        "sampled_worker_processes": 12
+      },
+      "reduced-even": {
+        "frequency_ghz_median": 4.4155475,
+        "frequency_ghz_p10": 1.74646,
+        "frequency_ghz_p90": 4.6485549,
+        "runqueue_wait_fraction_median": 0.004036371697275942,
+        "runqueue_wait_fraction_p90": 0.15531358637355006,
+        "involuntary_switches_median": 46.5,
+        "involuntary_switches_max": 582,
+        "sampled_worker_processes": 12
+      },
+      "full-odd": {
+        "frequency_ghz_median": 4.407432,
+        "frequency_ghz_p10": 1.74646,
+        "frequency_ghz_p90": 4.7414304000000005,
+        "runqueue_wait_fraction_median": 0.0028888256836291154,
+        "runqueue_wait_fraction_p90": 0.07417536201255381,
+        "involuntary_switches_median": 51.0,
+        "involuntary_switches_max": 908,
+        "sampled_worker_processes": 12
+      },
+      "full-even": {
+        "frequency_ghz_median": 4.391939,
+        "frequency_ghz_p10": 1.74646,
+        "frequency_ghz_p90": 4.7220496,
+        "runqueue_wait_fraction_median": 0.006657473388146744,
+        "runqueue_wait_fraction_p90": 0.06868546360591811,
+        "involuntary_switches_median": 65.5,
+        "involuntary_switches_max": 774,
+        "sampled_worker_processes": 12
+      }
+    },
+    "stage_profile": "../plan14-sparse-spectrum-current-2026-10-21/stage_profile.json"
+  }
+}

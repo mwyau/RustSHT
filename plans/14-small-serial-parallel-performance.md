@@ -1210,9 +1210,48 @@ candidate, but does not isolate the scan's exact share. Full distributions,
 host diagnostics, source flags, fixture hashes and q1 controls are in the
 [machine-readable data](../reports/data/plan14-reflected-geometry-preflight-2026-10-21/summary.json).
 
-The selected q8 excess is now about 0.276 ms. Reprofile recurrence and
-inverse-row time on this exact source before choosing the next change; then
-resume the unresolved small-q1 stage attribution.
+The sparse spectrum-tail optimization and its exact-source recurrence and
+inverse-row reprofile are complete at `1951e833`. The current four-case
+T720 source matrix and paired stage timings below supersede this earlier
+0.276 ms excess and its pending reprofile.
+
+## Current progress — sparse synthesis-tail validation and q8 stage closeout (2026-10-21)
+
+Commit `1951e833` replaces the q8 ordered synthesis route's full ring-major
+spectrum clear with contiguous inactive-tail initialization. Stale/nonzero
+workspace reuse was validated for odd/even latitude counts, partial polar
+orders, and repeated coefficient updates. A T300 subnormal decline was
+confirmed to follow completed lower-order writes of nonzero spectra; the
+partial output is cleared before generic fallback. Finite extreme
+coefficients also decline the optimized route, and scaled analytic q8 output
+remains finite and within `5e-13`.
+
+The integrated current source was compared with pinned DUCC on T720 scalar
+GL synthesis for full/reduced `mmax`, q1/q8 and odd/even longitude counts.
+Each of the eight cases used three interleaved process pairs and 30
+calibrated ~25 ms batches/backend. The reduced odd q8 call measured
+1.477/1.267 ms Rust/DUCC (+0.210 ms, 1.166x); reduced even q8 measured
+1.263/1.220 ms (+0.042 ms, 1.035x). Full-order odd q8 was near parity
+(3.961/3.904 ms, 1.015x); full-order even q8 was 2.838/2.711 ms (1.047x).
+The maximum relative L2 error was `5.20e-14`, maximum absolute error
+`3.75e-10`, and all repeated-output reset checks passed. Cold first-call
+latencies and setup costs are recorded separately. Full rows are in the
+[focused report](../reports/plan14-sparse-spectrum-tail-2026-10-21.md) and
+[machine-readable results](../reports/data/plan14-sparse-spectrum-current-2026-10-21/results.json).
+
+Three paired T720 `mmax=180`, `nphi=361`, q8 stage captures on a shared
+coefficient fixture measured Rust recurrence/spectrum at 1.185 ms median
+versus DUCC `alm2leg` at 1.072 ms. Rust inverse FFT/writeback was 0.286 ms
+versus DUCC `leg2map` at 0.165 ms. The two stage excesses total about
+0.234 ms, consistent with the 0.231 ms phase-profile whole-call excess and
+close to the 0.210 ms independent full-transform result. Rust tail
+initialization is only 1.62 µs median. The remaining gap is split between
+recurrence/spectrum work and odd-length inverse rows; no new safe source
+mechanism is supported. The existing C2R engine was already 8.8–10.0%
+slower than the production path, so it remains rejected. Preserve the
+validated sparse-tail change and proceed to Plan 14 closeout without another
+speculative recurrence or FFT variant. Detailed batch stages are in
+[`stage_profile.json`](../reports/data/plan14-sparse-spectrum-current-2026-10-21/stage_profile.json).
 
 ## References
 
