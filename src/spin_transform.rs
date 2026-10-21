@@ -1232,23 +1232,24 @@ impl<T: ShtScalar> ShtPlan<T> {
             phase_started = std::time::Instant::now();
         }
 
-        for ring in 0..ntheta {
-            let spectrum_start = ring * spectrum_len;
-            let spectrum_end = spectrum_start + spectrum_len;
-            self.fft.inverse_series(
-                &workspace.spectra[spectrum_start..spectrum_end],
-                &mut workspace.row,
-                &mut workspace.fft,
-            )?;
-            let output_start = ring * nphi;
-            first_component[output_start..output_start + nphi].copy_from_slice(&workspace.row);
-            self.fft.inverse_series(
-                &workspace.spin_spectra[spectrum_start..spectrum_end],
-                &mut workspace.row,
-                &mut workspace.fft,
-            )?;
-            second_component[output_start..output_start + nphi].copy_from_slice(&workspace.row);
-        }
+        self.inverse_synthesis_rows(
+            &workspace.spectra,
+            first_component,
+            &mut workspace.fft,
+            #[cfg(feature = "parallel")]
+            &mut workspace.fft_worker_workspaces,
+            #[cfg(feature = "parallel")]
+            workspace.execution_capacity,
+        )?;
+        self.inverse_synthesis_rows(
+            &workspace.spin_spectra,
+            second_component,
+            &mut workspace.fft,
+            #[cfg(feature = "parallel")]
+            &mut workspace.fft_worker_workspaces,
+            #[cfg(feature = "parallel")]
+            workspace.execution_capacity,
+        )?;
         #[cfg(all(test, feature = "parallel"))]
         crate::workspace::record_transform_phase(
             &phase_probe,

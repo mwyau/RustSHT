@@ -494,7 +494,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         Ok(())
     }
 
-    fn inverse_synthesis_rows(
+    pub(crate) fn inverse_synthesis_rows(
         &self,
         spectra: &[Complex<T>],
         output: &mut [T],
