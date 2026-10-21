@@ -73,7 +73,6 @@ dependencies = [
  "num-complex",
  "rayon",
  "rustfft",
- "rustsht-fft",
 ]
 
 [[package]]
@@ -117,14 +116,6 @@ dependencies = [
  "primal-check",
  "strength_reduce",
  "transpose",
-]
-
-[[package]]
-name = "rustsht-fft"
-version = "0.1.0-dev.0"
-dependencies = [
- "num-complex",
- "num-traits",
 ]
 
 [[package]]

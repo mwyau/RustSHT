@@ -8,7 +8,9 @@ publish = false
 num-complex = "0.4"
 rayon = "1"
 rustfft = "6.4"
-rustsht-fft = { path = "../../crates/rustsht-fft" }
+
+[features]
+parallel = []
 
 [workspace]
 resolver = "3"

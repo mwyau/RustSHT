@@ -941,12 +941,43 @@ A calibrated 8-worker, 721-row n=361 inverse screen then compared RustFFT's
 production-style Hermitian-pack/C2C/output path to the existing standalone
 RustSHT-FFT real C2R engine. Across three independent 30-batch processes,
 C2R was 8.8–10.0% slower; outputs agreed to `5.53e-16` relative L2. This
-rejects that real engine as a replacement, but it is not a direct DUCC FFT
-comparison. No production source changed. Next, directly compare matched
-DUCC pocketfft and Rust inverse-row work at n=361/q8 (including packing and
-row scheduling) before deciding whether FFT is actionable; then return to the
-remaining T127 q1 fused-analysis residual if the FFT stage does not explain
-an actionable part of the whole-call gap.
+rejects that real engine as a replacement. The direct DUCC row comparison
+below supersedes the old forward-looking sentence here. No production source
+changed in this checkpoint.
+
+## Current progress — matched DUCC inverse rows (2026-10-21)
+
+The direct row comparison is complete at T720 geometry (`rows=721`,
+`mmax=180`), q1/q8, `nphi=361` odd-minimum and `nphi=378` even-smooth.
+Rust calls the current `RealFftPlan::inverse_series` source and DUCC calls
+`pocketfft_r<double>` with matched packed spectra, scratch, output and row
+scheduling. Three calibrated process pairs per case were interleaved. The
+q1 data are stable: n=361 Rust/DUCC was 2.189/0.864 ms (2.540x, +1.328 ms),
+while n=378 was 0.391/0.570 ms (0.687x, −0.178 ms). Error was at most
+`5.40e-16` relative L2.
+
+The odd q8 gap repeats, but CPU pressure makes its absolute latency unstable:
+two independent three-pair episodes measured Rust/DUCC medians of
+0.458/0.163 and 0.453/0.165 ms; paired ratios were 2.811x and 2.771x. q8
+even controls were near parity to slightly faster in Rust during these
+contended sessions. CPU PSI and available frequency samples were checked;
+raw transient host snapshots are retained locally and remain untracked.
+Timing distributions are in the [benchmark data](../reports/data/plan14-ducc-fft-rows-2026-10-21/)
+and [q8 repeat](../reports/data/plan14-ducc-fft-rows-q8-recheck-2026-10-21/).
+Do not treat the q8 absolute values as a clean baseline.
+
+The source explains the parity split: Rust's odd path expands a Hermitian
+spectrum, runs a full complex inverse, then extracts real samples; DUCC uses
+a packed real inverse. The existing RustSHT-FFT real C2R candidate was already
+8.8–10.0% slower than the current Rust route, so no production FFT change is
+supported. This direct timing includes packing, row scheduling and output;
+it does not isolate FFT arithmetic from those costs. See the
+[matched row report](../reports/plan14-ducc-inverse-rows-2026-10-21.md).
+
+**Next:** resume the remaining T127 q1 analysis residual. Reopen odd real-FFT
+work only with a new source-grounded candidate that beats the current
+complex route; any such comparison must attribute packing and FFT arithmetic
+before promotion.
 
 ## 5. Phase B — Attribute the remaining q8 large-transform excess
 

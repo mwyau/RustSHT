@@ -437,13 +437,33 @@ q8 scheduling included. No production kernel changed in this checkpoint.
 
 ## Current next steps and deferred work
 
-1. Directly compare the current q8 n=361 Rust inverse-row path with pinned
-   DUCC pocketfft using equivalent packing, scaling and row scheduling. The
-   existing standalone real C2R engine was slower than the current Rust path.
-2. If the FFT stage does not justify a production change, resume the T127 q1
-   fused-analysis residual. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
-   cache-topology queries and [Plan 13](plans/13-fused-batched-sht.md)
-   true basis-shared batches.
+The q1/q8 inverse-row comparison is complete. Resume the remaining T127 q1
+analysis residual. Keep the odd-length real-inverse gap as a lead, but do not
+replace production FFT code with the already-rejected real C2R candidate.
+**Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
+cache-topology queries and [Plan 13](plans/13-fused-batched-sht.md)
+true basis-shared batches.
+
+## Plan 14 — matched Rust/DUCC inverse rows
+
+At current production source `41dc652`, q1 T720 inverse rows (`721` rows,
+`mmax=180`) were measured against pinned DUCC `42ce8ab5` with exact Rust
+`src/fft.rs` and DUCC `pocketfft_r<double>` paths. At odd `nphi=361`, Rust
+was 2.189 ms versus 0.864 ms DUCC (2.540x, +1.328 ms); at even `nphi=378`,
+Rust was 0.391 ms versus 0.570 ms DUCC (0.687x). Relative L2 error was at
+most `5.40e-16`.
+
+Two q8 episodes repeated the odd gap (Rust/DUCC 0.458/0.163 ms and
+0.453/0.165 ms; paired ratios 2.811x and 2.771x), but PSI rose during both
+and absolute q8 latency is host-sensitive. The even q8 controls were near
+parity or slightly faster for Rust in these sessions. Rust expands odd
+Hermitian spectra and runs a complex inverse; DUCC uses packed real inverse.
+This stage includes row packing, scheduling and output, so it does not
+isolate FFT arithmetic alone. The existing RustSHT-FFT real C2R alternative
+was 8.8–10.0% slower than the current Rust path and remains rejected.
+See the [focused report](reports/plan14-ducc-inverse-rows-2026-10-21.md),
+[main data](reports/data/plan14-ducc-fft-rows-2026-10-21/) and
+[q8 repeat data](reports/data/plan14-ducc-fft-rows-q8-recheck-2026-10-21/).
 
 All prior measurements, full machine-readable CSV/JSON, rejected
 experiments, historical plans and source versions are intentionally
