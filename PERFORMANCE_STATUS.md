@@ -13,10 +13,10 @@ is closed at `a37f74d68631ab5fd373a4097640895e9f0c0c23`. The input scan,
 row FFT, spectrum pruning, order preparation and recurrence stage evidence
 is recorded in the cumulative report and CSV. Plan 14 is now active on the
 same branch/session. Its first clean-source q8 synthesis comparison is
-published. The small-q1 baseline, T127 reduced-analysis profile and a
-diagnostic T720 q8 synthesis stage profile are now recorded. The odd-length
-inverse stage is the leading q8 synthesis lead; no new production
-optimization has been retained. Plans 12/13 remain deferred.
+published. The small-q1 baseline, T127 reduced-analysis profile and T720 q8
+synthesis stage profiles are now recorded. The odd-length complex inverse
+arithmetic is the largest identified q8 synthesis substage; no production
+FFT change is justified. Plans 12/13 remain deferred.
 
 **Plan 14 q1 rebaseline (2026-10-21):** the 64-case T4–T127 warmed q1
 screen and T127 reduced-order phase profile are in
@@ -27,7 +27,7 @@ probe attributes about 161 µs to recurrence/accumulation; the ordinary route
 processed 32 normal blocks and zero scaled blocks. Rust and DUCC both execute
 four-lane AVX2/FMA loops without observed hot-loop spills, so this is not a
 missing-SIMD or scaled-prefix regression. No q1 source change is justified
-yet; profile q8 synthesis, then compare the same active-ring q1 kernel
+yet; profile q8 analysis, then compare the same active-ring q1 kernel
 boundary.
 
 **Plan 14 progress (2026-10-21):** `fe0590ac` removes a separate
@@ -53,6 +53,21 @@ was correct but 18% slower and removed. A row-contiguous clear reduction was
 inconclusive under 12% scheduler wait and was also removed; production keeps
 the original full spectrum clear. Details and limits are recorded in
 [Plan 14](plans/14-small-serial-parallel-performance.md).
+
+**Odd inverse component profile (2026-10-21):** three independent pinned q8
+captures each used 30 batches × 16 T720 synthesis calls. Median inverse-stage
+latencies were 0.423, 0.385 and 0.370 ms, with process spread recorded in
+Plan 14. Test-only timers attributed about 0.300 ms on the slowest worker to
+RustFFT's full-complex N=361 inverse, versus about 0.034 ms for Hermitian
+packing and 0.008 ms for real output extraction. Profiling timers added
+11–23 µs in the first three paired controls; a later short control reversed
+the sign under wider timing spread, so no fixed timer correction is applied.
+A one-thread screening run of the existing
+`rustsht-fft` real inverse was 3.861 µs per transform versus 3.089 µs for the
+RustFFT odd-complex adapter; it is not a production q8 A/B and was not
+promoted. Production FFT code remains unchanged. The next Plan 14 task is a
+matched q8 analysis stage profile, then the same-active-ring T127 q1 analysis
+comparison.
 
 
 ## Highest-confidence current finding — prefix discontinuity removed

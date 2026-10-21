@@ -4765,6 +4765,189 @@ fn scalar_ordered_candidate_t255_timing_screen() {
 
 #[cfg(feature = "parallel")]
 #[test]
+#[ignore = "test-only odd-length inverse phase attribution at T720 q8"]
+fn plan14_odd_inverse_phase_attribution() {
+    use std::hint::black_box;
+    use std::time::Instant;
+
+    let plan = make_plan(720, 180, 721, 361, 0.23);
+    let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+    for m in 0..=plan.harmonics().mmax() {
+        for l in m..=plan.harmonics().lmax() {
+            let re = ((l * 17 + m * 13) % 61) as f64 - 30.0;
+            let im = if m == 0 {
+                0.0
+            } else {
+                ((l * 19 + m * 7) % 67) as f64 - 33.0
+            };
+            alm[plan.harmonics().index(l, m).unwrap()] = Complex64::new(re * 1.0e-7, im * 1.0e-7);
+        }
+    }
+
+    let q8 = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let mut workspace = q8.install(|| plan.workspace()).unwrap();
+    q8.install(|| plan.prepare_workspace(&mut workspace, 8))
+        .unwrap();
+    let mut map = vec![0.0; plan.sample_count];
+
+    for _ in 0..3 {
+        q8.install(|| plan.synthesis_into(&alm, &mut map, &mut workspace))
+            .unwrap();
+    }
+
+    let mut uninstrumented = Vec::with_capacity(10);
+    for _ in 0..10 {
+        let started = Instant::now();
+        q8.install(|| plan.synthesis_into(&alm, &mut map, &mut workspace))
+            .unwrap();
+        uninstrumented.push(started.elapsed().as_secs_f64() * 1.0e3);
+        black_box(map[0]);
+    }
+    for fft_workspace in &mut workspace.fft_worker_workspaces {
+        fft_workspace.set_odd_inverse_phase_enabled(true);
+    }
+    let mut instrumented = Vec::with_capacity(10);
+    for _ in 0..10 {
+        let started = Instant::now();
+        q8.install(|| plan.synthesis_into(&alm, &mut map, &mut workspace))
+            .unwrap();
+        instrumented.push(started.elapsed().as_secs_f64() * 1.0e3);
+        black_box(map[0]);
+    }
+    let median = |values: &mut [f64]| {
+        values.sort_by(f64::total_cmp);
+        values[values.len() / 2]
+    };
+    let mut uninstrumented_median = uninstrumented.clone();
+    let mut instrumented_median = instrumented.clone();
+    eprintln!(
+        "PLAN14_ODD_FFT_TIMER_OVERHEAD uninstrumented_ms={:.6} instrumented_ms={:.6} uninstrumented_calls=10 instrumented_calls=10",
+        median(&mut uninstrumented_median),
+        median(&mut instrumented_median),
+    );
+
+    const BATCH_COUNT: usize = 30;
+    const CALLS_PER_BATCH: usize = 16;
+    let mut batch_wall = Vec::with_capacity(BATCH_COUNT);
+    let mut batch_inverse = Vec::with_capacity(BATCH_COUNT);
+    let mut max_worker_total = Vec::with_capacity(BATCH_COUNT);
+    let mut component_cpu = [
+        Vec::with_capacity(BATCH_COUNT),
+        Vec::with_capacity(BATCH_COUNT),
+        Vec::with_capacity(BATCH_COUNT),
+    ];
+    let mut component_max_worker = [
+        Vec::with_capacity(BATCH_COUNT),
+        Vec::with_capacity(BATCH_COUNT),
+        Vec::with_capacity(BATCH_COUNT),
+    ];
+
+    for batch in 0..BATCH_COUNT {
+        for fft_workspace in &mut workspace.fft_worker_workspaces {
+            fft_workspace.take_odd_inverse_phase_ns();
+        }
+        let phases = workspace.observe_transform_phases();
+        let started = Instant::now();
+        for _ in 0..CALLS_PER_BATCH {
+            q8.install(|| plan.synthesis_into(&alm, &mut map, &mut workspace))
+                .unwrap();
+            black_box(map[0]);
+        }
+        let wall_ms = started.elapsed().as_secs_f64() * 1.0e3 / CALLS_PER_BATCH as f64;
+        let phases = phases.lock().unwrap();
+        let inverse_ms = phases
+            .iter()
+            .filter(|observation| observation.phase == "inverse longitude FFT and map writeback")
+            .map(|observation| observation.elapsed_ns as f64 * 1.0e-6)
+            .sum::<f64>()
+            / CALLS_PER_BATCH as f64;
+        drop(phases);
+
+        let mut worker_components = Vec::with_capacity(workspace.fft_worker_workspaces.len());
+        for fft_workspace in &mut workspace.fft_worker_workspaces {
+            worker_components.push(fft_workspace.take_odd_inverse_phase_ns());
+        }
+        let sums = std::array::from_fn::<_, 3, _>(|stage| {
+            worker_components
+                .iter()
+                .map(|components| components[stage])
+                .sum::<u64>() as f64
+                / CALLS_PER_BATCH as f64
+                / 1.0e3
+        });
+        let maxima = std::array::from_fn::<_, 3, _>(|stage| {
+            worker_components
+                .iter()
+                .map(|components| components[stage])
+                .max()
+                .unwrap_or(0) as f64
+                / CALLS_PER_BATCH as f64
+                / 1.0e3
+        });
+        let max_worker_total_us = worker_components
+            .iter()
+            .map(|components| components.iter().sum::<u64>())
+            .max()
+            .unwrap_or(0) as f64
+            / CALLS_PER_BATCH as f64
+            / 1.0e3;
+        batch_wall.push(wall_ms);
+        batch_inverse.push(inverse_ms);
+        max_worker_total.push(max_worker_total_us);
+        for stage in 0..3 {
+            component_cpu[stage].push(sums[stage]);
+            component_max_worker[stage].push(maxima[stage]);
+        }
+        eprintln!(
+            "PLAN14_ODD_FFT_BATCH batch={batch} calls={CALLS_PER_BATCH} wall_ms={wall_ms:.6} inverse_stage_ms={inverse_ms:.6} pack_cpu_us={:.3} fft_cpu_us={:.3} output_cpu_us={:.3} max_worker_pack_us={:.3} max_worker_fft_us={:.3} max_worker_output_us={:.3} max_worker_total_us={max_worker_total_us:.3}",
+            sums[0], sums[1], sums[2], maxima[0], maxima[1], maxima[2],
+        );
+    }
+
+    let summarize = |values: &[f64]| {
+        let mut sorted = values.to_vec();
+        sorted.sort_by(f64::total_cmp);
+        (
+            sorted[(sorted.len() - 1) / 10],
+            sorted[sorted.len() / 2],
+            sorted[(sorted.len() - 1) * 9 / 10],
+        )
+    };
+    let (wall_p10, wall_median, wall_p90) = summarize(&batch_wall);
+    let (inverse_p10, inverse_median, inverse_p90) = summarize(&batch_inverse);
+    let (worker_p10, worker_median, worker_p90) = summarize(&max_worker_total);
+    eprintln!(
+        "PLAN14_ODD_FFT_SUMMARY cases=30 calls_per_batch=16 wall_ms_p10_median_p90={wall_p10:.6},{wall_median:.6},{wall_p90:.6} inverse_stage_ms_p10_median_p90={inverse_p10:.6},{inverse_median:.6},{inverse_p90:.6} max_worker_total_us_p10_median_p90={worker_p10:.3},{worker_median:.3},{worker_p90:.3}"
+    );
+    for (stage, name) in ["pack", "complex_inverse", "real_output"]
+        .iter()
+        .enumerate()
+    {
+        let (p10, med, p90) = summarize(&component_cpu[stage]);
+        let (max_p10, max_med, max_p90) = summarize(&component_max_worker[stage]);
+        eprintln!(
+            "PLAN14_ODD_FFT_COMPONENT name={name} summed_worker_cpu_us_p10_median_p90={p10:.3},{med:.3},{p90:.3} max_worker_us_p10_median_p90={max_p10:.3},{max_med:.3},{max_p90:.3}"
+        );
+    }
+
+    let q1 = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let mut q1_workspace = q1.install(|| plan.workspace()).unwrap();
+    q1.install(|| plan.prepare_workspace(&mut q1_workspace, 1))
+        .unwrap();
+    let mut q1_map = vec![0.0; plan.sample_count];
+    q1.install(|| plan.synthesis_into(&alm, &mut q1_map, &mut q1_workspace))
+        .unwrap();
+    assert!(relative_l2_real(&q1_map, &map) < 4e-13);
+}
+
+#[cfg(feature = "parallel")]
+#[test]
 #[ignore = "light q1/q4/q8 screen for the ordered scalar parallel route"]
 fn scalar_ordered_parallel_order_timing_screen() {
     use std::hint::black_box;

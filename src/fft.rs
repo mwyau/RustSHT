@@ -3,6 +3,8 @@
 
 use std::f64::consts::PI;
 use std::sync::Arc;
+#[cfg(all(test, feature = "parallel"))]
+use std::time::Instant;
 
 use num_complex::Complex;
 use rustfft::num_traits::{Float, Zero};
@@ -34,6 +36,10 @@ pub(crate) struct RealFftPlan<T: FftNum = f64> {
 pub(crate) struct RealFftWorkspace<T: FftNum = f64> {
     transform: Vec<Complex<T>>,
     scratch: Vec<Complex<T>>,
+    #[cfg(all(test, feature = "parallel"))]
+    odd_inverse_phase_ns: [u64; 3],
+    #[cfg(all(test, feature = "parallel"))]
+    odd_inverse_phase_enabled: bool,
 }
 
 impl<T: FftNum + Float> RealFftPlan<T> {
@@ -91,6 +97,10 @@ impl<T: FftNum + Float> RealFftPlan<T> {
         Ok(RealFftWorkspace::<T> {
             transform: allocate_complex(self.transform_len, "real FFT transform")?,
             scratch: allocate_complex(self.scratch_len, "real FFT scratch")?,
+            #[cfg(all(test, feature = "parallel"))]
+            odd_inverse_phase_ns: [0; 3],
+            #[cfg(all(test, feature = "parallel"))]
+            odd_inverse_phase_enabled: false,
         })
     }
 
@@ -286,6 +296,8 @@ impl<T: FftNum + Float> RealFftPlan<T> {
                 if input[0].im != T::zero() {
                     return Err(ShtError::NonRealFftEdge { index: 0 });
                 }
+                #[cfg(all(test, feature = "parallel"))]
+                let phase_started = workspace.odd_inverse_phase_enabled.then(Instant::now);
                 workspace.transform[0] = Complex::new(input[0].re, T::zero());
                 let highest_positive_mode = self.n / 2;
                 for (k, &mode) in input
@@ -297,15 +309,31 @@ impl<T: FftNum + Float> RealFftPlan<T> {
                     workspace.transform[k] = mode;
                     workspace.transform[self.n - k] = mode.conj();
                 }
+                #[cfg(all(test, feature = "parallel"))]
+                if let Some(phase_started) = phase_started {
+                    workspace.odd_inverse_phase_ns[0] += phase_started.elapsed().as_nanos() as u64;
+                }
 
+                #[cfg(all(test, feature = "parallel"))]
+                let phase_started = workspace.odd_inverse_phase_enabled.then(Instant::now);
                 inverse.process_with_scratch(&mut workspace.transform, &mut workspace.scratch);
+                #[cfg(all(test, feature = "parallel"))]
+                if let Some(phase_started) = phase_started {
+                    workspace.odd_inverse_phase_ns[1] += phase_started.elapsed().as_nanos() as u64;
+                }
                 let scale = if NORMALIZE {
                     T::one() / T::from_usize(self.n).expect("usize converts to the FFT scalar")
                 } else {
                     T::one()
                 };
+                #[cfg(all(test, feature = "parallel"))]
+                let phase_started = workspace.odd_inverse_phase_enabled.then(Instant::now);
                 for (value, sample) in output.iter_mut().zip(&workspace.transform) {
                     *value = sample.re * scale;
+                }
+                #[cfg(all(test, feature = "parallel"))]
+                if let Some(phase_started) = phase_started {
+                    workspace.odd_inverse_phase_ns[2] += phase_started.elapsed().as_nanos() as u64;
                 }
             }
         }
@@ -324,6 +352,17 @@ impl<T: FftNum + Float> RealFftPlan<T> {
             self.scratch_len,
             workspace.scratch.len(),
         )
+    }
+}
+
+#[cfg(all(test, feature = "parallel"))]
+impl<T: FftNum> RealFftWorkspace<T> {
+    pub(crate) fn set_odd_inverse_phase_enabled(&mut self, enabled: bool) {
+        self.odd_inverse_phase_enabled = enabled;
+    }
+
+    pub(crate) fn take_odd_inverse_phase_ns(&mut self) -> [u64; 3] {
+        std::mem::take(&mut self.odd_inverse_phase_ns)
     }
 }
 

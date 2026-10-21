@@ -171,10 +171,57 @@ polar-tail initializer reduced the test-only clear phase from about 54 µs to
 and DUCC itself moved to 1.46 ms. That timing is inconclusive, so this variant
 was also removed. Production retains the existing full clear.
 
-Next, isolate the odd inverse path's FFT arithmetic from spectrum preparation
-and map writeback on a quiet host. Then compare the remaining q8 analysis
-stages and return to the same-active-ring T127 q1 kernel boundary. Do not
-promote either spectrum-clear experiment from these screens.
+## Current progress — odd-length inverse component profile (2026-10-21)
+
+The test-only `plan14_odd_inverse_phase_attribution` probe decomposes the
+actual Rust odd inverse path at T720, `mmax=180`, `ntheta=721`, `nphi=361`,
+q8. It retains the existing implementation and separately times Hermitian
+row packing, `rustfft` complex inverse execution, and real-output extraction.
+The probe checks q1/q8 map agreement (`relative L2 < 4e-13`). Three pinned
+processes each ran 30 batches of 16 full synthesis calls. Each batch lasted
+about 26–27 ms. CPU affinity used the same eight physical cores within one
+CCD; Rust release used `-C target-cpu=x86-64-v3` and runtime Pulp V3. Host CPU PSI `avg10` was
+0.25% after the capture. Raw batch logs were retained locally and are not
+committed.
+
+| Process | Whole-call p10 / median / p90 (ms) | Inverse stage p10 / median / p90 (ms) | Max-worker pack / complex FFT / output (µs per call) |
+| ---: | ---: | ---: | ---: |
+| 1 | 1.621 / 1.706 / 1.787 | 0.374 / 0.423 / 0.481 | 34.0 / 300.5 / 7.5 |
+| 2 | 1.613 / 1.653 / 1.711 | 0.362 / 0.385 / 0.426 | 34.4 / 299.9 / 7.5 |
+| 3 | 1.612 / 1.630 / 1.665 | 0.361 / 0.370 / 0.394 | 34.4 / 300.3 / 7.6 |
+
+The component counters aggregate worker CPU time, so their sums exceed wall
+time. Across the three process medians, the summed worker costs per full call
+were about 0.263 ms for packing, 2.236 ms for complex inverse arithmetic and
+0.056 ms for output extraction. The slowest worker spent about 0.034, 0.300
+and 0.008 ms in those components. The first three timer controls suggested
+an 11–23 µs increase to the complete call, but a later short control reversed
+the sign amid wider timing spread; do not subtract a fixed instrumentation
+correction. Component values are diagnostic. The separate existing phase
+probe measured a 0.370–0.423 ms median inverse stage in the primary runs.
+This confirms that the complex FFT itself dominates the Rust odd inverse
+stage, while packing and output stores are small. The earlier DUCC `leg2map`
+timer was 0.168 ms, but its boundary also includes pocketfft and map output;
+the remaining difference is not a direct FFT-only ratio.
+
+A screening comparison of the existing standalone `rustsht-fft` real C2R
+engine at N=361 (721 rows, one thread) measured 3.861 µs per transform versus
+3.089 µs for the RustFFT odd-complex adapter. It is single-process screening
+evidence, not a q8 production A/B. It provides no basis for integrating that
+engine into `ShtPlan`, and no production FFT code changed.
+
+Reproduction: run
+`RUSTFLAGS='-C target-cpu=x86-64-v3' taskset -c "${RUSTSHT_Q8_CPUSET:?set eight physical CPU IDs}" cargo test --release --lib plan14_odd_inverse_phase_attribution -- --ignored --nocapture --test-threads=1`
+three times; screen the standalone alternative with
+`RUSTFLAGS='-C target-cpu=x86-64-v3' taskset -c "${RUSTSHT_Q1_CPUSET:?set one physical CPU ID}" cargo bench --manifest-path crates/rustsht-fft/Cargo.toml --bench rustfft -- bench-one c2r 361 721`
+and `RUSTFLAGS='-C target-cpu=x86-64-v3' taskset -c "${RUSTSHT_Q1_CPUSET:?set one physical CPU ID}" cargo bench --manifest-path crates/rustsht-fft/Cargo.toml --bench rustfft -- bench-native-real 361 721`.
+
+The source lead is now bounded: the odd full-complex inverse arithmetic is
+the largest identified q8 synthesis substage, but the existing real-FFT
+implementation is slower and the stage still accounts for only part of the
+whole-call excess. Do not add a replacement FFT engine based on this profile.
+Next profile the remaining q8 analysis path on the same T720 full/reduced
+cases, then return to the same-active-ring T127 q1 analysis boundary.
 
 ## 4. Phase A — Find and fix small serial fixed costs
 
