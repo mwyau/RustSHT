@@ -8,6 +8,15 @@ next-step text, is preserved
 [here](reports/archive/performance-status-2026-10-21-pre-refresh.md).
 For reproducible raw benchmark tables see [reports/README](reports/README.md).
 
+**Owner-directed continuation (2026-10-21):** Finish the currently active
+Plan 11 reduced-`mmax` frontend investigation and produce a validated,
+committed/pushed Plan 11 closeout. **Then, in the same Luna session and on
+the same `opt/sht-performance-parity` branch, immediately activate
+[Plan 14](plans/14-small-serial-parallel-performance.md)** for small q1 and
+large q8 performance work. No new branch/session or owner permission is
+needed. Rebaseline from the final Plan 11 source; leave Plans 12/13 deferred.
+
+
 ## Highest-confidence current finding — prefix discontinuity removed
 
 The controlled change at `0bc5f153` removes only RustSHT's global
