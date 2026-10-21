@@ -406,6 +406,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             self.grid.nphi(),
             self.grid.ntheta(),
             analysis_order_count,
+            self.harmonics.spin() == 1 && self.grid.kind() == crate::grid::GridKind::ClenshawCurtis,
             self.recurrence_factor_count,
             self.spin_recurrence_factor_count,
             self.spin_fast_coefficient_count,
@@ -519,6 +520,18 @@ impl<T: ShtScalar> ShtPlan<T> {
                 self.spin_fast_coefficient_count,
                 spin_pair_fast_coefficient_count,
                 recurrence_scratch_len(workspace.theta_sin.len()),
+            )?;
+            workspace.ensure_cc_resampling_worker_count(
+                execution_capacity
+                    .min(analysis_order_count)
+                    .min(crate::meridional::CC_RESAMPLING_ORDER_TILE),
+                if self.harmonics.spin() == 1
+                    && self.grid.kind() == crate::grid::GridKind::ClenshawCurtis
+                {
+                    self.cc_resampling.as_ref()
+                } else {
+                    None
+                },
             )?;
             if self.row_fft_parallelism_supported() {
                 let fft_worker_count = execution_capacity.min(self.grid.ntheta());

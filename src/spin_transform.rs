@@ -18,6 +18,9 @@ use crate::legendre::{
     SPIN1_FAST_MIN_LMAX, ShtScalar, longitude_phase, scalar_to_spin1, scalar_to_spin2,
     sin_cos_from_f64, spin1_to_scalar, spin2_to_scalar,
 };
+use crate::meridional::CCResamplingPlan;
+#[cfg(feature = "parallel")]
+use crate::meridional::CCResamplingWorkspace;
 use crate::plan::{ShtPlan, current_execution_thread_count};
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
@@ -38,6 +41,8 @@ const SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MIN_LMAX: usize = 63;
 const SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MAX_LMAX: usize = 224;
 const SPIN1_FAST_MIN_SIN_THETA: f64 = 0.0001;
 const SPIN1_PAIR_MIN_SIN_THETA: f64 = 0.01;
+#[cfg(feature = "parallel")]
+const SPIN1_CC_PARALLEL_RESAMPLING_MIN_ORDER_RING_PAIRS: usize = 65_536;
 const SPIN2_FAST_MIN_SIN_THETA: f64 = 0.01;
 #[cfg(feature = "parallel")]
 const SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_LMAX: usize = 720;
@@ -715,30 +720,57 @@ impl<T: ShtScalar> ShtPlan<T> {
             .as_ref()
             .filter(|_| ring_weights.is_some())
         {
+            #[cfg(all(test, feature = "parallel"))]
+            let meridional_started = std::time::Instant::now();
             for value in &mut workspace.spectra {
                 *value /= T::from_usize(nphi).expect("longitude count converts");
             }
             for value in &mut workspace.spin_spectra {
                 *value /= T::from_usize(nphi).expect("longitude count converts");
             }
-            resampling.to_prepared(
+            let _first_resample_parallel = self.resample_spin_analysis_spectrum(
+                resampling,
                 &workspace.spectra,
                 &mut workspace.prepared_spectra,
                 spectrum_len,
-                self.harmonics.mmax(),
                 recurrence_spin,
                 &mut workspace.cc_profile,
                 &mut workspace.cc_fft_scratch,
+                #[cfg(feature = "parallel")]
+                &mut workspace.cc_resampling_order_tile,
+                #[cfg(feature = "parallel")]
+                &mut workspace.cc_resampling_workers,
+                #[cfg(feature = "parallel")]
+                workspace.execution_capacity,
             )?;
-            resampling.to_prepared(
+            let _second_resample_parallel = self.resample_spin_analysis_spectrum(
+                resampling,
                 &workspace.spin_spectra,
                 &mut workspace.prepared_spin_spectra,
                 spectrum_len,
-                self.harmonics.mmax(),
                 recurrence_spin,
                 &mut workspace.cc_profile,
                 &mut workspace.cc_fft_scratch,
+                #[cfg(feature = "parallel")]
+                &mut workspace.cc_resampling_order_tile,
+                #[cfg(feature = "parallel")]
+                &mut workspace.cc_resampling_workers,
+                #[cfg(feature = "parallel")]
+                workspace.execution_capacity,
             )?;
+            #[cfg(all(test, feature = "parallel"))]
+            {
+                crate::workspace::record_transform_phase(
+                    &phase_probe,
+                    if _first_resample_parallel || _second_resample_parallel {
+                        "meridional resampling (parallel orders)"
+                    } else {
+                        "meridional resampling (serial orders)"
+                    },
+                    meridional_started,
+                );
+                phase_started = std::time::Instant::now();
+            }
             for (ring, &theta) in resampling.prepared_theta().iter().enumerate() {
                 (workspace.theta_sin[ring], workspace.theta_cos[ring]) =
                     sin_cos_from_f64::<T>(theta);
@@ -788,7 +820,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         {
             crate::workspace::record_transform_phase(
                 &phase_probe,
-                "resampling and latitude setup",
+                "latitude geometry setup",
                 phase_started,
             );
             phase_started = std::time::Instant::now();
@@ -925,6 +957,65 @@ impl<T: ShtScalar> ShtPlan<T> {
             phase_started,
         );
         Ok(())
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "CC preparation receives both legacy serial scratch and bounded parallel order scratch."
+    )]
+    fn resample_spin_analysis_spectrum(
+        &self,
+        resampling: &CCResamplingPlan<T>,
+        input: &[Complex<T>],
+        output: &mut [Complex<T>],
+        spectrum_len: usize,
+        spin: usize,
+        profile: &mut [Complex<T>],
+        fft_scratch: &mut [Complex<T>],
+        #[cfg(feature = "parallel")] order_tile: &mut [Complex<T>],
+        #[cfg(feature = "parallel")] worker_workspaces: &mut [CCResamplingWorkspace<T>],
+        #[cfg(feature = "parallel")] execution_capacity: usize,
+    ) -> Result<bool, ShtError> {
+        #[cfg(feature = "parallel")]
+        {
+            let order_count = self.harmonics.mmax() + 1;
+            let active_workers = current_execution_thread_count()
+                .min(execution_capacity)
+                .min(worker_workspaces.len())
+                .min(order_count);
+            let estimated_active_pairs = order_count.saturating_mul(resampling.prepared_ntheta());
+            if self.harmonics.spin() == 1
+                && spin == 1
+                && T::supports_precomputed_scalar()
+                && self.grid.kind() == crate::grid::GridKind::ClenshawCurtis
+                && resampling.needs_resampling()
+                && estimated_active_pairs >= SPIN1_CC_PARALLEL_RESAMPLING_MIN_ORDER_RING_PAIRS
+                && active_workers > 1
+            {
+                resampling.to_prepared_parallel(
+                    input,
+                    output,
+                    spectrum_len,
+                    self.harmonics.mmax(),
+                    spin,
+                    order_tile,
+                    worker_workspaces,
+                    active_workers,
+                )?;
+                return Ok(true);
+            }
+        }
+
+        resampling.to_prepared(
+            input,
+            output,
+            spectrum_len,
+            self.harmonics.mmax(),
+            spin,
+            profile,
+            fft_scratch,
+        )?;
+        Ok(false)
     }
 
     #[expect(

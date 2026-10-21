@@ -13,6 +13,8 @@ use crate::legendre::{
     LATITUDE_BLOCK_SIZE, SCALAR_ANALYSIS_PAIR_TILE_SIZE, ShtScalar, recurrence_scratch_len,
 };
 use crate::meridional::CCResamplingPlan;
+#[cfg(feature = "parallel")]
+use crate::meridional::CCResamplingWorkspace;
 
 const ANALYSIS_VECTOR_BUFFER_CAPACITY: usize = crate::legendre::SCALAR_ORDER_BATCH_SIZE;
 
@@ -37,6 +39,10 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
     pub(crate) spin1_scalar_coefficients: Vec<Complex<T>>,
     pub(crate) cc_profile: Vec<Complex<T>>,
     pub(crate) cc_fft_scratch: Vec<Complex<T>>,
+    #[cfg(feature = "parallel")]
+    pub(crate) cc_resampling_workers: Vec<CCResamplingWorkspace<T>>,
+    #[cfg(feature = "parallel")]
+    pub(crate) cc_resampling_order_tile: Vec<Complex<T>>,
     pub(crate) row: Vec<T>,
     pub(crate) theta_sin: Vec<T>,
     pub(crate) theta_cos: Vec<T>,
@@ -798,12 +804,37 @@ impl<T: ShtScalar> ShtWorkspace<T> {
         Ok(())
     }
 
+    #[cfg(feature = "parallel")]
+    pub(crate) fn ensure_cc_resampling_worker_count(
+        &mut self,
+        worker_count: usize,
+        resampling: Option<&CCResamplingPlan<T>>,
+    ) -> Result<(), ShtError> {
+        let Some(resampling) = resampling else {
+            return Ok(());
+        };
+        if worker_count <= self.cc_resampling_workers.len() {
+            return Ok(());
+        }
+        self.cc_resampling_workers
+            .try_reserve_exact(worker_count - self.cc_resampling_workers.len())
+            .map_err(|_| ShtError::AllocationFailed {
+                array: "CC meridional worker scratch slots",
+            })?;
+        while self.cc_resampling_workers.len() < worker_count {
+            self.cc_resampling_workers
+                .push(resampling.worker_workspace()?);
+        }
+        Ok(())
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
         spectrum_count: usize,
         nphi: usize,
         ntheta: usize,
         analysis_order_count: usize,
+        _parallel_cc_resampling: bool,
         recurrence_factor_count: usize,
         spin_recurrence_factor_count: usize,
         spin_fast_coefficient_count: usize,
@@ -876,6 +907,18 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             cc_fft_scratch: allocate_complex(
                 cc_resampling.map_or(0, CCResamplingPlan::workspace_fft_scratch_len),
                 "CC meridional FFT scratch",
+            )?,
+            #[cfg(feature = "parallel")]
+            cc_resampling_workers: Vec::new(),
+            #[cfg(feature = "parallel")]
+            cc_resampling_order_tile: allocate_complex(
+                if _parallel_cc_resampling {
+                    let resampling = cc_resampling.expect("spin-1 CC has a resampling plan");
+                    resampling.parallel_order_tile_len(analysis_order_count)?
+                } else {
+                    0
+                },
+                "CC meridional order tile",
             )?,
             row: allocate_real(nphi, "longitude row")?,
             theta_sin: allocate_real(latitude_count, "latitude sine values")?,

@@ -33,6 +33,29 @@ use rustfft::{Fft, FftNum, FftPlanner};
 use crate::error::ShtError;
 use crate::grid::{GridKind, clenshaw_curtis_ring_weights};
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
+
+#[cfg(feature = "parallel")]
+pub(crate) const CC_RESAMPLING_ORDER_TILE: usize = 128;
+
+/// Reusable per-worker scratch for independent meridional order transforms.
+#[cfg(feature = "parallel")]
+pub(crate) struct CCResamplingWorkspace<T: FftNum> {
+    pub(crate) profile: Vec<Complex<T>>,
+    pub(crate) fft_scratch: Vec<Complex<T>>,
+}
+
+#[cfg(feature = "parallel")]
+impl<T: FftNum + Zero> CCResamplingWorkspace<T> {
+    fn new(profile_len: usize, fft_scratch_len: usize) -> Result<Self, ShtError> {
+        Ok(Self {
+            profile: allocate_complex(profile_len, "CC worker meridional profile")?,
+            fft_scratch: allocate_complex(fft_scratch_len, "CC worker FFT scratch")?,
+        })
+    }
+}
+
 struct FftPair<T: FftNum> {
     forward: Arc<dyn Fft<T>>,
     inverse: Arc<dyn Fft<T>>,
@@ -196,6 +219,11 @@ impl<T: FftNum + Float> CCResamplingPlan<T> {
         self.prepared_theta.len()
     }
 
+    #[cfg(feature = "parallel")]
+    pub(crate) const fn needs_resampling(&self) -> bool {
+        self.needs_resampling
+    }
+
     pub(crate) const fn workspace_profile_len(&self) -> usize {
         if self.original_full_len > self.full_len {
             self.original_full_len
@@ -206,6 +234,24 @@ impl<T: FftNum + Float> CCResamplingPlan<T> {
 
     pub(crate) const fn workspace_fft_scratch_len(&self) -> usize {
         self.fft_scratch_len
+    }
+
+    #[cfg(feature = "parallel")]
+    pub(crate) fn parallel_order_tile_len(&self, order_count: usize) -> Result<usize, ShtError> {
+        let tile_orders = order_count.min(CC_RESAMPLING_ORDER_TILE);
+        checked_product(
+            tile_orders,
+            self.prepared_ntheta(),
+            "CC meridional order tile",
+        )
+    }
+
+    #[cfg(feature = "parallel")]
+    pub(crate) fn worker_workspace(&self) -> Result<CCResamplingWorkspace<T>, ShtError>
+    where
+        T: Zero,
+    {
+        CCResamplingWorkspace::new(self.workspace_profile_len(), self.fft_scratch_len)
     }
 
     #[expect(
@@ -260,55 +306,16 @@ impl<T: FftNum + Float> CCResamplingPlan<T> {
                 } else {
                     T::one()
                 });
-        let parity = if spin.is_multiple_of(2) {
-            T::one()
-        } else {
-            -T::one()
-        };
-
         for m in 0..=mmax {
-            let order_parity = if m.is_multiple_of(2) {
-                T::one()
-            } else {
-                -T::one()
-            };
-            let reflected_sign = parity * order_parity;
-            self.fill_reflected_profile(
+            let reflected_sign = self.reflected_sign(spin, m);
+            self.prepare_order_profile(
                 input,
-                self.original_ntheta,
-                nfull_in,
                 spectrum_len,
                 m,
                 reflected_sign,
-                self.original_north_pole,
                 profile,
+                fft_scratch,
             );
-            if self.needs_resampling {
-                self.original_fft
-                    .forward
-                    .process_with_scratch(&mut profile[..nfull_in], fft_scratch);
-                apply_phase_shift(
-                    &mut profile[..nfull_in],
-                    self.original_ntheta,
-                    &self.phase_shift,
-                );
-                if self.full_len > nfull_in {
-                    pad_spectrum(profile, nfull_in, self.full_len);
-                } else if self.full_len < nfull_in {
-                    truncate_spectrum(profile, nfull_in, self.full_len);
-                }
-                self.full_fft
-                    .inverse
-                    .process_with_scratch(&mut profile[..self.full_len], fft_scratch);
-            }
-            multiply_cc_weights(profile, self.full_len, &self.weights);
-            self.full_fft
-                .forward
-                .process_with_scratch(&mut profile[..self.full_len], fft_scratch);
-            truncate_spectrum(profile, self.full_len, nfull_out);
-            self.prepared_fft
-                .inverse
-                .process_with_scratch(&mut profile[..nfull_out], fft_scratch);
 
             for ring in 0..self.prepared_ntheta() {
                 let mirror = reflected_ring(nfull_out, ring, true);
@@ -322,6 +329,211 @@ impl<T: FftNum + Float> CCResamplingPlan<T> {
             }
         }
         Ok(())
+    }
+
+    /// Resamples independent Fourier orders in bounded parallel tiles, then
+    /// scatters each tile into the transform's ring-major spectrum layout.
+    #[cfg(feature = "parallel")]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Parallel order resampling receives one shared tile and per-worker FFT scratch."
+    )]
+    pub(crate) fn to_prepared_parallel(
+        &self,
+        input: &[Complex<T>],
+        output: &mut [Complex<T>],
+        spectrum_len: usize,
+        mmax: usize,
+        spin: usize,
+        order_tile: &mut [Complex<T>],
+        worker_workspaces: &mut [CCResamplingWorkspace<T>],
+        worker_count: usize,
+    ) -> Result<(), ShtError> {
+        check_len(
+            "CC input Fourier spectra",
+            checked_product(
+                self.original_ntheta,
+                spectrum_len,
+                "CC input Fourier spectra",
+            )?,
+            input.len(),
+        )?;
+        check_len(
+            "prepared CC Fourier spectra",
+            checked_product(
+                self.prepared_ntheta(),
+                spectrum_len,
+                "prepared CC Fourier spectra",
+            )?,
+            output.len(),
+        )?;
+        let order_count = mmax.checked_add(1).ok_or(ShtError::IntegerOverflow {
+            quantity: "CC resampling order count",
+        })?;
+        let tile_orders = order_count.min(CC_RESAMPLING_ORDER_TILE);
+        let required_tile_len = checked_product(
+            tile_orders,
+            self.prepared_ntheta(),
+            "CC meridional order tile",
+        )?;
+        check_len(
+            "CC meridional order tile",
+            required_tile_len,
+            order_tile.len(),
+        )?;
+        if worker_count == 0 {
+            return Err(ShtError::BufferLength {
+                buffer: "CC worker workspaces",
+                expected: 1,
+                actual: 0,
+            });
+        }
+        if worker_count > worker_workspaces.len() {
+            return Err(ShtError::BufferLength {
+                buffer: "CC worker workspaces",
+                expected: worker_count,
+                actual: worker_workspaces.len(),
+            });
+        }
+        for worker in &worker_workspaces[..worker_count] {
+            check_len(
+                "CC/F1 worker meridional profile",
+                self.workspace_profile_len(),
+                worker.profile.len(),
+            )?;
+            check_len(
+                "CC worker FFT scratch",
+                self.fft_scratch_len,
+                worker.fft_scratch.len(),
+            )?;
+        }
+
+        output.fill(Complex::new(T::zero(), T::zero()));
+        let nfull_out = self.prepared_full_len;
+        let norm = T::from_f64(0.5).expect("half is representable")
+            / (T::from_usize(nfull_out).expect("usize converts to the transform scalar")
+                * if self.needs_resampling {
+                    T::from_usize(self.original_full_len)
+                        .expect("usize converts to the transform scalar")
+                } else {
+                    T::one()
+                });
+        let prepared_ntheta = self.prepared_ntheta();
+
+        for order_start in (0..order_count).step_by(CC_RESAMPLING_ORDER_TILE) {
+            let block_orders = (order_count - order_start).min(CC_RESAMPLING_ORDER_TILE);
+            let block_len =
+                checked_product(block_orders, prepared_ntheta, "CC meridional order tile")?;
+            let active_workers = worker_count.min(block_orders);
+            let orders_per_worker = block_orders.div_ceil(active_workers);
+            let output_per_worker =
+                checked_product(orders_per_worker, prepared_ntheta, "CC worker order output")?;
+            order_tile[..block_len]
+                .par_chunks_mut(output_per_worker)
+                .zip(worker_workspaces[..active_workers].par_iter_mut())
+                .enumerate()
+                .for_each(|(worker_index, (worker_output, worker))| {
+                    let first_order = order_start + worker_index * orders_per_worker;
+                    for (local_order, order_output) in
+                        worker_output.chunks_mut(prepared_ntheta).enumerate()
+                    {
+                        let m = first_order + local_order;
+                        if m >= order_start + block_orders {
+                            break;
+                        }
+                        let reflected_sign = self.reflected_sign(spin, m);
+                        self.prepare_order_profile(
+                            input,
+                            spectrum_len,
+                            m,
+                            reflected_sign,
+                            &mut worker.profile,
+                            &mut worker.fft_scratch,
+                        );
+                        for (ring, output_value) in order_output.iter_mut().enumerate() {
+                            let mirror = reflected_ring(nfull_out, ring, true);
+                            let endpoint_scale = if mirror == ring {
+                                T::from_f64(0.5).expect("half is representable")
+                            } else {
+                                T::one()
+                            };
+                            *output_value = (worker.profile[ring]
+                                + worker.profile[mirror] * reflected_sign)
+                                * (endpoint_scale * norm);
+                        }
+                    }
+                });
+
+            for ring in 0..prepared_ntheta {
+                let ring_start = ring * spectrum_len + order_start;
+                let ring_output = &mut output[ring_start..ring_start + block_orders];
+                for (local_order, output_value) in ring_output.iter_mut().enumerate() {
+                    *output_value = order_tile[local_order * prepared_ntheta + ring];
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn reflected_sign(&self, spin: usize, m: usize) -> T {
+        let spin_parity = if spin.is_multiple_of(2) {
+            T::one()
+        } else {
+            -T::one()
+        };
+        if m.is_multiple_of(2) {
+            spin_parity
+        } else {
+            -spin_parity
+        }
+    }
+
+    fn prepare_order_profile(
+        &self,
+        input: &[Complex<T>],
+        spectrum_len: usize,
+        m: usize,
+        reflected_sign: T,
+        profile: &mut [Complex<T>],
+        fft_scratch: &mut [Complex<T>],
+    ) {
+        let nfull_in = self.original_full_len;
+        self.fill_reflected_profile(
+            input,
+            self.original_ntheta,
+            nfull_in,
+            spectrum_len,
+            m,
+            reflected_sign,
+            self.original_north_pole,
+            profile,
+        );
+        if self.needs_resampling {
+            self.original_fft
+                .forward
+                .process_with_scratch(&mut profile[..nfull_in], fft_scratch);
+            apply_phase_shift(
+                &mut profile[..nfull_in],
+                self.original_ntheta,
+                &self.phase_shift,
+            );
+            if self.full_len > nfull_in {
+                pad_spectrum(profile, nfull_in, self.full_len);
+            } else if self.full_len < nfull_in {
+                truncate_spectrum(profile, nfull_in, self.full_len);
+            }
+            self.full_fft
+                .inverse
+                .process_with_scratch(&mut profile[..self.full_len], fft_scratch);
+        }
+        multiply_cc_weights(profile, self.full_len, &self.weights);
+        self.full_fft
+            .forward
+            .process_with_scratch(&mut profile[..self.full_len], fft_scratch);
+        truncate_spectrum(profile, self.full_len, self.prepared_full_len);
+        self.prepared_fft
+            .inverse
+            .process_with_scratch(&mut profile[..self.prepared_full_len], fft_scratch);
     }
 
     #[expect(

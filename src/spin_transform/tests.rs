@@ -498,6 +498,63 @@ fn spin1_hemisphere_pair_selector_matches_measured_domain() {
 
 #[cfg(feature = "parallel")]
 #[test]
+fn cc_parallel_order_resampling_matches_serial_with_reused_workspace() {
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(4)
+        .build()
+        .unwrap();
+
+    for (lmax, ntheta) in [(129, 131), (130, 132)] {
+        let nphi = 2 * (lmax + 1);
+        let plan = make_cc_plan(1, lmax, lmax, ntheta, nphi);
+        let resampling = plan.cc_resampling.as_ref().unwrap();
+        let spectrum_len = plan.fft.spectrum_len();
+        let mut workspace = pool.install(|| plan.workspace()).unwrap();
+        let prepared_count = resampling.prepared_ntheta() * spectrum_len;
+        let mut serial = vec![Complex64::new(0.0, 0.0); prepared_count];
+        let mut parallel = serial.clone();
+        let mut input = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
+
+        for generation in 0..3 {
+            for (index, value) in input.iter_mut().enumerate() {
+                let phase = (index * 19 + generation * 7) as f64 * 0.013;
+                *value = Complex64::new(phase.sin(), phase.cos() * 0.37);
+            }
+            serial.fill(Complex64::new(91.0, -37.0));
+            parallel.fill(Complex64::new(-22.0, 43.0));
+            resampling
+                .to_prepared(
+                    &input,
+                    &mut serial,
+                    spectrum_len,
+                    lmax,
+                    1,
+                    &mut workspace.cc_profile,
+                    &mut workspace.cc_fft_scratch,
+                )
+                .unwrap();
+            resampling
+                .to_prepared_parallel(
+                    &input,
+                    &mut parallel,
+                    spectrum_len,
+                    lmax,
+                    1,
+                    &mut workspace.cc_resampling_order_tile,
+                    &mut workspace.cc_resampling_workers,
+                    4,
+                )
+                .unwrap();
+            assert_eq!(
+                parallel, serial,
+                "T{lmax}, ntheta={ntheta}, pass {generation}"
+            );
+        }
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
 fn prepared_workspace_matches_fresh_workspace_for_spin1_operations_all_grids() {
     let one = rayon::ThreadPoolBuilder::new()
         .num_threads(1)
@@ -8773,6 +8830,16 @@ fn profile_spin1_standard_synthesis_phases() {
         .ok()
         .and_then(|value| value.parse().ok())
         .unwrap_or(lmax);
+    let grid_kind = match std::env::var("RUSTSHT_PROFILE_GRID").as_deref() {
+        Ok("CC") => GridKind::ClenshawCurtis,
+        Ok("F1") => GridKind::Fejer1,
+        _ => GridKind::GaussLegendre,
+    };
+    let minimum_ntheta = lmax + usize::from(grid_kind == GridKind::ClenshawCurtis) + 1;
+    let ntheta = std::env::var("RUSTSHT_PROFILE_NTHETA")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(minimum_ntheta);
     let nphi = std::env::var("RUSTSHT_PROFILE_NPHI")
         .ok()
         .and_then(|value| value.parse().ok())
@@ -8790,7 +8857,7 @@ fn profile_spin1_standard_synthesis_phases() {
         .and_then(|value| value.parse().ok())
         .unwrap_or(12_usize);
     let plan = ShtPlan::new(
-        GridSpec::new(GridKind::GaussLegendre, lmax + 1, nphi, phi0).unwrap(),
+        GridSpec::new(grid_kind, ntheta, nphi, phi0).unwrap(),
         HarmonicSpec::new(lmax, mmax, 1).unwrap(),
     )
     .unwrap();
@@ -8828,6 +8895,9 @@ fn profile_spin1_standard_synthesis_phases() {
         .min(plan.grid.ntheta());
     let group_count = plan.grid.ntheta().div_ceil(group_ring_count);
     let worker_count = group_count.min(thread_count);
+    eprintln!(
+        "PROFILE_CONFIG,grid={grid_kind:?},lmax={lmax},mmax={mmax},ntheta={ntheta},nphi={nphi},threads={thread_count},phi0={phi0}"
+    );
 
     for _ in 0..3 {
         pool.install(|| {
@@ -8957,5 +9027,108 @@ fn profile_spin1_standard_synthesis_phases() {
             observation.phase,
             observation.elapsed_ns as f64 / 1.0e6,
         );
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+#[ignore = "focused phase profiling helper; run explicitly with RUSTSHT_PROFILE_* variables"]
+fn profile_spin1_standard_analysis_phases() {
+    use std::time::Instant;
+
+    let lmax = std::env::var("RUSTSHT_PROFILE_LMAX")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(720_usize);
+    let mmax = std::env::var("RUSTSHT_PROFILE_MMAX")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(lmax);
+    let grid_kind = match std::env::var("RUSTSHT_PROFILE_GRID").as_deref() {
+        Ok("CC") => GridKind::ClenshawCurtis,
+        Ok("F1") => GridKind::Fejer1,
+        _ => GridKind::GaussLegendre,
+    };
+    let minimum_ntheta = lmax + usize::from(grid_kind == GridKind::ClenshawCurtis) + 1;
+    let ntheta = std::env::var("RUSTSHT_PROFILE_NTHETA")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(minimum_ntheta);
+    let nphi = std::env::var("RUSTSHT_PROFILE_NPHI")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or_else(|| 2 * (lmax + 1));
+    let thread_count = std::env::var("RUSTSHT_PROFILE_THREADS")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(8_usize);
+    let phi0 = std::env::var("RUSTSHT_PROFILE_PHI0")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(0.23_f64);
+    let repetitions = std::env::var("RUSTSHT_PROFILE_REPETITIONS")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(8_usize);
+    let plan = ShtPlan::new(
+        GridSpec::new(grid_kind, ntheta, nphi, phi0).unwrap(),
+        HarmonicSpec::new(lmax, mmax, 1).unwrap(),
+    )
+    .unwrap();
+    let mut state = 0x7a31_9d42_8b6c_05e1_u64;
+    let mut next_value = || {
+        state = state.wrapping_add(0x9e37_79b9_7f4a_7c15);
+        let mut value = state;
+        value = (value ^ (value >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+        value = (value ^ (value >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+        value ^= value >> 31;
+        ((value >> 11) as f64) * (1.0 / ((1_u64 << 53) as f64)) * 2.0 - 1.0
+    };
+    let mut first = vec![0.0; plan.sample_count];
+    let mut second = vec![0.0; plan.sample_count];
+    for value in &mut first {
+        *value = next_value();
+    }
+    for value in &mut second {
+        *value = next_value();
+    }
+    let mut e_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+    let mut b_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(thread_count)
+        .build()
+        .unwrap();
+    let mut workspace = pool.install(|| plan.workspace()).unwrap();
+    let probe = workspace.observe_transform_phases();
+    eprintln!(
+        "PROFILE_CONFIG,grid={grid_kind:?},lmax={lmax},mmax={mmax},ntheta={ntheta},nphi={nphi},threads={thread_count},phi0={phi0}"
+    );
+
+    for _ in 0..3 {
+        pool.install(|| {
+            plan.analysis_spin_into(&first, &second, &mut e_alm, &mut b_alm, &mut workspace)
+        })
+        .unwrap();
+        std::hint::black_box((&e_alm, &b_alm));
+    }
+    for repetition in 0..repetitions {
+        probe.lock().unwrap().clear();
+        let started = Instant::now();
+        pool.install(|| {
+            plan.analysis_spin_into(&first, &second, &mut e_alm, &mut b_alm, &mut workspace)
+        })
+        .unwrap();
+        std::hint::black_box((&e_alm, &b_alm));
+        eprintln!(
+            "PROFILE_TOTAL,{grid_kind:?},{lmax},{mmax},{ntheta},{nphi},{thread_count},{repetition},{:.6}",
+            started.elapsed().as_secs_f64() * 1.0e3,
+        );
+        for observation in probe.lock().unwrap().iter() {
+            eprintln!(
+                "PROFILE_PHASE,{grid_kind:?},{lmax},{mmax},{ntheta},{nphi},{thread_count},{repetition},{},{:.6}",
+                observation.phase,
+                observation.elapsed_ns as f64 / 1.0e6,
+            );
+        }
     }
 }
