@@ -327,6 +327,28 @@ largest whole-call q8 synthesis/analysis excess. The T720 odd-length inverse
 FFT remains a diagnostic lead only: the tested standalone real inverse was
 slower, so no production FFT change is supported.
 
+## Current progress — T127 compact-table analysis SIMD (2026-10-21)
+
+Commit `0484a876` adds a Pulp V3 path for the existing f64 scalar analysis
+table. It packs two reflected complex latitude pairs per YMM and accumulates
+adjacent even/odd degrees together. Other vector widths and unsupported
+geometries retain the scalar implementation; analysis selection and
+synthesis, spin-1, f32 and numerical fallbacks are unchanged.
+
+At T127 full `mmax`, `ntheta=128`, odd `nphi=255`, q1 warmed Rust latency
+fell from 398.496 to 376.600 µs (-5.5%), against DUCC 294.042 µs in the
+candidate round (1.281x Rust/DUCC, +82.6 µs). Relative L2 was `8.52e-15`.
+At q8, Rust was 221.254 µs before and 223.743 µs after, with overlapping
+spreads and higher scheduler interference in the candidate round; no q8
+change is established. Three interleaved process pairs and 30 calibrated
+batches per backend were used. A table-versus-forced-recurrence route control
+does not support changing the table selector. Full distributions, toolchain,
+flags, dispatch and numerical checks are in the
+[focused report](../reports/plan14-t127-table-analysis-simd-2026-10-21.md).
+
+Continue with T1–T64 fixed-cost attribution first, then rank q8 from
+current-source controls rather than reusing historical pre-layout timings.
+
 ## 4. Phase A — Find and fix small serial fixed costs
 
 **Hypothesis to test:** small T1–T32 transforms spend a significant fraction of wall time in repeated per-call setup, data conversion, buffer handling and/or independent row FFTs rather than in useful Legendre arithmetic. This is a hypothesis, not a proven diagnosis.

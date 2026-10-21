@@ -32,6 +32,16 @@ This removes that T127 reduced-order whole-call excess; the isolated fused
 kernel remains 2.12x DUCC. Full all-feature and no-default-feature release
 tests passed. The next serial lead is fixed-cost attribution in T1–T64.
 
+**Plan 14 T127 table analysis (2026-10-21):** commit `0484a876` adds a
+Pulp V3 two-complex-latitude table accumulator. On T127 full `mmax`, q1
+whole-call latency fell 5.5% (398.496 to 376.600 µs); the candidate remains
+1.281x DUCC (+82.6 µs), with `8.52e-15` relative L2 error. q8 showed no
+measurable change and was noisier under scheduler interference. The table
+selector remains unchanged because forced recurrence was slightly slower
+in the route control. See the
+[focused report](reports/plan14-t127-table-analysis-simd-2026-10-21.md) and
+[raw data](reports/data/plan14-t127-table-analysis-simd-2026-10-21/).
+
 **Plan 14 progress (2026-10-21):** `fe0590ac` removes a separate
 order-major-to-ring-major spectrum scatter from parallel scalar GL
 synthesis. On clean parent/candidate builds, q8 T720 cases improved 16–35%;

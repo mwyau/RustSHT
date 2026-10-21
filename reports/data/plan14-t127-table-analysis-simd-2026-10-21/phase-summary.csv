@@ -1,0 +1,8 @@
+measurement,route,process,stage_median_us,stage_p10_us,stage_p90_us,batches,process_count,notes
+T127 table accumulation,scalar table baseline,1,240.012,,,30,3,Process medians 240.012 241.482 239.475 us
+T127 table accumulation,scalar table baseline,2,241.482,,,30,3,Process medians 240.012 241.482 239.475 us
+T127 table accumulation,scalar table baseline,3,239.475,,,30,3,Process medians 240.012 241.482 239.475 us
+T127 table accumulation,forced recurrence,1,243.250,,,30,3,Process medians 243.250 245.460 244.560 us
+T127 table accumulation,forced recurrence,2,245.460,,,30,3,Process medians 243.250 245.460 244.560 us
+T127 table accumulation,forced recurrence,3,244.560,,,30,3,Process medians 243.250 245.460 244.560 us
+T127 table accumulation,V3 two-complex-lane candidate,1,220.199,218.337,239.253,30,1,Single-process phase profile; supporting diagnostic only
