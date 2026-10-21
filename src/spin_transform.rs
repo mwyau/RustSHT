@@ -1197,11 +1197,22 @@ impl<T: ShtScalar> ShtPlan<T> {
             let group_count = ntheta.div_ceil(group_ring_count);
             let use_parallel = execution_threads > 1 && group_count > 1;
             if use_parallel {
+                // Exact CC groups share the same order-independent E/B
+                // conversion. Cache it only when this geometry has surplus
+                // ring groups and enough order-ring work to amortize prepare.
+                let cc_coefficients_reused_across_groups = self.grid.kind()
+                    == crate::grid::GridKind::ClenshawCurtis
+                    && self.grid.ntheta() == self.harmonics.lmax() + 2
+                    && group_count > execution_threads
+                    && (self.harmonics.mmax() + 1)
+                        .checked_mul(ntheta)
+                        .is_some_and(|work| work >= execution_threads.saturating_mul(12_000));
                 let reusable_spin1_coefficient_geometry = (self.grid.kind()
                     == crate::grid::GridKind::GaussLegendre
                     && self.grid.ntheta() == self.harmonics.lmax() + 1)
                     || (self.grid.kind() == crate::grid::GridKind::Fejer1
-                        && f1_synthesis_group_size.is_some());
+                        && f1_synthesis_group_size.is_some())
+                    || cc_coefficients_reused_across_groups;
                 let use_spin1_coefficient_cache = recurrence_spin == 1
                     && self.harmonics.spin() == 1
                     && b_alm.is_some()
@@ -1213,7 +1224,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                     && T::supports_paired_scalar()
                     && execution_threads >= 8
                     && workspace.ring_group_size < ntheta;
-                let use_dynamic_spin1_group_queue = use_spin1_coefficient_cache
+                let use_dynamic_spin1_group_queue = (use_spin1_coefficient_cache
+                    && self.grid.kind() != crate::grid::GridKind::ClenshawCurtis)
                     || (recurrence_spin == 1
                         && !derivative_norm
                         && b_alm.is_some()

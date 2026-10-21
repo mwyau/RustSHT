@@ -5448,6 +5448,155 @@ fn spin1_f1_dynamic_synthesis_groups_match_serial_and_reuse_workspace() {
 
 #[cfg(feature = "parallel")]
 #[test]
+fn spin1_cc_grouped_synthesis_reuses_checked_coefficients() {
+    let plan = make_cc_plan(1, 720, 180, 722, 378);
+    let (e, b) = coefficients(&plan);
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let mut one_workspace = one_thread.install(|| plan.workspace()).unwrap();
+    let mut eight_workspace = eight_threads.install(|| plan.workspace()).unwrap();
+    let mut one_first = vec![0.0; plan.sample_count];
+    let mut one_second = vec![0.0; plan.sample_count];
+    let mut eight_first = vec![0.0; plan.sample_count];
+    let mut eight_second = vec![0.0; plan.sample_count];
+
+    one_thread
+        .install(|| {
+            plan.synthesis_spin_into(&e, &b, &mut one_first, &mut one_second, &mut one_workspace)
+        })
+        .unwrap();
+    eight_threads
+        .install(|| {
+            plan.synthesis_spin_into(
+                &e,
+                &b,
+                &mut eight_first,
+                &mut eight_second,
+                &mut eight_workspace,
+            )
+        })
+        .unwrap();
+    assert_eq!(
+        eight_workspace.spin1_scalar_coefficients.len(),
+        (plan.harmonics.lmax() + 2) * 2 * (plan.harmonics.mmax() + 1)
+    );
+    assert_eq!(
+        eight_workspace.spin1_scalar_coefficient_finite_orders.len(),
+        plan.harmonics.mmax() + 1
+    );
+    assert!(
+        eight_workspace
+            .spin1_scalar_coefficient_finite_orders
+            .iter()
+            .all(|&finite| finite == 1)
+    );
+    for (actual, expected) in eight_first
+        .iter()
+        .zip(&one_first)
+        .chain(eight_second.iter().zip(&one_second))
+    {
+        assert!((actual - expected).abs() <= 2.0e-11 * expected.abs().max(1.0));
+    }
+
+    let mut changed_e = e.clone();
+    changed_e[plan.harmonics.index(720, 180).unwrap()].re += 0.125;
+    eight_first.fill(f64::NAN);
+    eight_second.fill(f64::NAN);
+    let mut changed_one_first = vec![0.0; plan.sample_count];
+    let mut changed_one_second = vec![0.0; plan.sample_count];
+    one_thread
+        .install(|| {
+            plan.synthesis_spin_into(
+                &changed_e,
+                &b,
+                &mut changed_one_first,
+                &mut changed_one_second,
+                &mut one_workspace,
+            )
+        })
+        .unwrap();
+    eight_threads
+        .install(|| {
+            plan.synthesis_spin_into(
+                &changed_e,
+                &b,
+                &mut eight_first,
+                &mut eight_second,
+                &mut eight_workspace,
+            )
+        })
+        .unwrap();
+    assert!(
+        eight_first
+            .iter()
+            .chain(&eight_second)
+            .all(|value| value.is_finite())
+    );
+    for (actual, expected) in eight_first
+        .iter()
+        .zip(&changed_one_first)
+        .chain(eight_second.iter().zip(&changed_one_second))
+    {
+        assert!((actual - expected).abs() <= 2.0e-11 * expected.abs().max(1.0));
+    }
+
+    let magnitude = 1.44e308;
+    let mut extreme_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+    let mut extreme_b = extreme_e.clone();
+    extreme_e[plan.harmonics.index(2, 1).unwrap()] = Complex64::new(magnitude, 0.0);
+    extreme_b[plan.harmonics.index(1, 1).unwrap()] = Complex64::new(0.0, -magnitude);
+    eight_first.fill(f64::NAN);
+    eight_second.fill(f64::NAN);
+    one_first.fill(f64::NAN);
+    one_second.fill(f64::NAN);
+    one_thread
+        .install(|| {
+            plan.synthesis_spin_into(
+                &extreme_e,
+                &extreme_b,
+                &mut one_first,
+                &mut one_second,
+                &mut one_workspace,
+            )
+        })
+        .unwrap();
+    eight_threads
+        .install(|| {
+            plan.synthesis_spin_into(
+                &extreme_e,
+                &extreme_b,
+                &mut eight_first,
+                &mut eight_second,
+                &mut eight_workspace,
+            )
+        })
+        .unwrap();
+    assert_eq!(eight_workspace.spin1_scalar_coefficient_finite_orders[1], 0);
+    for (actual, expected) in eight_first
+        .iter()
+        .chain(&eight_second)
+        .zip(one_first.iter().chain(&one_second))
+    {
+        if expected.is_finite() {
+            assert!(actual.is_finite());
+            assert!((actual / magnitude - expected / magnitude).abs() < 2.0e-12);
+        } else if expected.is_infinite() {
+            assert!(actual.is_infinite());
+            assert_eq!(actual.is_sign_positive(), expected.is_sign_positive());
+        } else {
+            assert!(actual.is_nan());
+        }
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
 fn spin_transform_matches_between_one_and_two_rayon_threads() {
     let plan = make_plan(2, 4, 4, 131, 11);
     let (e, b) = coefficients(&plan);
