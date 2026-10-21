@@ -827,7 +827,7 @@ fn m5_analysis_phase_profile() {
 
 #[cfg(feature = "parallel")]
 #[test]
-#[ignore = "focused current-source scalar analysis phase profile; set RUSTSHT_PROFILE_Q and RUSTSHT_PROFILE_LMAX"]
+#[ignore = "focused current-source scalar analysis phase profile; set RUSTSHT_PROFILE_Q and RUSTSHT_PROFILE_LMAX, optionally RUSTSHT_PROFILE_MMAX"]
 fn scalar_analysis_phase_profile_selected() {
     let thread_count = std::env::var("RUSTSHT_PROFILE_Q")
         .expect("set RUSTSHT_PROFILE_Q")
@@ -839,6 +839,9 @@ fn scalar_analysis_phase_profile_selected() {
         .split(',')
         .map(|value| value.parse::<usize>().expect("invalid lmax"))
         .collect::<Vec<_>>();
+    let mmax_override = std::env::var("RUSTSHT_PROFILE_MMAX")
+        .ok()
+        .map(|value| value.parse::<usize>().expect("invalid mmax"));
 
     for lmax in lmax_values {
         let (ntheta, nphi) = match lmax {
@@ -847,7 +850,9 @@ fn scalar_analysis_phase_profile_selected() {
             3072 => (3073, 6174),
             _ => panic!("unsupported focused profile case T{lmax}"),
         };
-        let plan = make_plan(lmax, lmax, ntheta, nphi, 0.37);
+        let mmax = mmax_override.unwrap_or(lmax);
+        assert!(mmax <= lmax);
+        let plan = make_plan(lmax, mmax, ntheta, nphi, 0.37);
         let pool = rayon::ThreadPoolBuilder::new()
             .num_threads(thread_count)
             .build()
@@ -883,7 +888,7 @@ fn scalar_analysis_phase_profile_selected() {
                 .clone();
             let phase_sum_ns = phases.iter().map(|phase| phase.elapsed_ns).sum::<u128>();
             eprintln!(
-                "FOCUSED_PHASE_PROFILE T{lmax} q{thread_count} sample={} wall_ms={:.3} phase_sum_ms={:.3} unmeasured_ms={:.3}",
+                "FOCUSED_PHASE_PROFILE T{lmax} m{mmax} q{thread_count} sample={} wall_ms={:.3} phase_sum_ms={:.3} unmeasured_ms={:.3}",
                 sample + 1,
                 wall_ns as f64 / 1e6,
                 phase_sum_ns as f64 / 1e6,
@@ -891,7 +896,7 @@ fn scalar_analysis_phase_profile_selected() {
             );
             for phase in phases {
                 eprintln!(
-                    "FOCUSED_PHASE T{lmax} q{thread_count} sample={} name={:?} elapsed_ms={:.3}",
+                    "FOCUSED_PHASE T{lmax} m{mmax} q{thread_count} sample={} name={:?} elapsed_ms={:.3}",
                     sample + 1,
                     phase.phase,
                     phase.elapsed_ns as f64 / 1e6,
