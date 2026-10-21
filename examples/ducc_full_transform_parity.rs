@@ -9,7 +9,6 @@ use std::hint::black_box;
 use std::io::Write;
 use std::time::Instant;
 
-use rayon::ThreadPoolBuilder;
 use rustsht::{Complex64, GridKind, GridSpec, HarmonicSpec, ShtPlan};
 
 fn read_f64(path: &str, count: usize) -> Result<Vec<f64>, Box<dyn Error>> {
@@ -147,7 +146,6 @@ where
 #[allow(clippy::too_many_arguments)]
 fn run_once(
     operation: &str,
-    pool: &rayon::ThreadPool,
     plan: &ShtPlan,
     map: &[f64],
     alm: &[Complex64],
@@ -155,11 +153,11 @@ fn run_once(
     alm_output: &mut [Complex64],
     workspace: &mut rustsht::ShtWorkspace,
 ) -> Result<(), rustsht::ShtError> {
-    pool.install(|| match operation {
+    match operation {
         "analysis" => plan.analysis_into(map, alm_output, workspace),
         "synthesis" => plan.synthesis_into(alm, map_output, workspace),
         _ => unreachable!(),
-    })
+    }
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -194,23 +192,28 @@ fn main() -> Result<(), Box<dyn Error>> {
     let buffer_setup_ms = buffer_setup_started.elapsed().as_secs_f64() * 1e3;
 
     let pool_started = Instant::now();
-    let pool = ThreadPoolBuilder::new().num_threads(threads).build()?;
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(threads)
+        .build_global()?;
     let pool_ms = pool_started.elapsed().as_secs_f64() * 1e3;
+    if rayon::current_num_threads() != threads {
+        return Err(format!(
+            "global Rayon pool has {} threads, expected {threads}",
+            rayon::current_num_threads()
+        )
+        .into());
+    }
     let setup_started = Instant::now();
-    let (plan, mut workspace) = pool.install(|| {
-        let grid = GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, phi0)?;
-        let harmonics = HarmonicSpec::scalar(lmax, mmax)?;
-        let plan = ShtPlan::new(grid, harmonics)?;
-        let mut workspace = plan.workspace()?;
-        plan.prepare_workspace(&mut workspace, threads)?;
-        Ok::<_, rustsht::ShtError>((plan, workspace))
-    })?;
+    let grid = GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, phi0)?;
+    let harmonics = HarmonicSpec::scalar(lmax, mmax)?;
+    let plan = ShtPlan::new(grid, harmonics)?;
+    let mut workspace = plan.workspace()?;
+    plan.prepare_workspace(&mut workspace, threads)?;
     let setup_ms = setup_started.elapsed().as_secs_f64() * 1e3;
 
     let first_started = Instant::now();
     run_once(
         operation,
-        &pool,
         &plan,
         &map,
         &alm,
@@ -225,7 +228,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let warmup_started = Instant::now();
     run_once(
         operation,
-        &pool,
         &plan,
         &map,
         &alm,
@@ -253,7 +255,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             for _ in 0..repetitions {
                 run_once(
                     operation,
-                    &pool,
                     &plan,
                     &map,
                     &alm,
@@ -280,7 +281,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         for _ in 0..repetitions {
             run_once(
                 operation,
-                &pool,
                 &plan,
                 &map,
                 &alm,
@@ -314,10 +314,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         let suffix = |name: &str| format!("{output_path}.{name}");
         let mut roundtrip_map = vec![0.0; ntheta * nphi];
         let mut roundtrip_alm = vec![Complex64::new(0.0, 0.0); alm_count];
-        pool.install(|| -> Result<(), rustsht::ShtError> {
-            plan.synthesis_into(&alm, &mut roundtrip_map, &mut workspace)?;
-            plan.analysis_into(&roundtrip_map, &mut roundtrip_alm, &mut workspace)
-        })?;
+        plan.synthesis_into(&alm, &mut roundtrip_map, &mut workspace)?;
+        plan.analysis_into(&roundtrip_map, &mut roundtrip_alm, &mut workspace)?;
         let roundtrip_error = relative_complex_l2(&roundtrip_alm, &alm);
         write_complex(&suffix("roundtrip.alm"), &roundtrip_alm)?;
 
@@ -338,10 +336,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             basis[index] = Complex64::new(1.0, 0.0);
             let mut basis_map = vec![0.0; ntheta * nphi];
             let mut recovered = vec![Complex64::new(0.0, 0.0); alm_count];
-            pool.install(|| -> Result<(), rustsht::ShtError> {
-                plan.synthesis_into(&basis, &mut basis_map, &mut workspace)?;
-                plan.analysis_into(&basis_map, &mut recovered, &mut workspace)
-            })?;
+            plan.synthesis_into(&basis, &mut basis_map, &mut workspace)?;
+            plan.analysis_into(&basis_map, &mut recovered, &mut workspace)?;
             write_f64(&suffix(&format!("basis-{mode_index}.map")), &basis_map)?;
             write_complex(&suffix(&format!("basis-{mode_index}.alm")), &recovered)?;
         }
@@ -349,10 +345,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         let zero_alm = vec![Complex64::new(0.0, 0.0); alm_count];
         let mut zero_map = vec![0.0; ntheta * nphi];
         let mut zero_analysis = vec![Complex64::new(0.0, 0.0); alm_count];
-        pool.install(|| -> Result<(), rustsht::ShtError> {
-            plan.synthesis_into(&zero_alm, &mut zero_map, &mut workspace)?;
-            plan.analysis_into(&zero_map, &mut zero_analysis, &mut workspace)
-        })?;
+        plan.synthesis_into(&zero_alm, &mut zero_map, &mut workspace)?;
+        plan.analysis_into(&zero_map, &mut zero_analysis, &mut workspace)?;
         write_f64(&suffix("zero.map"), &zero_map)?;
         write_complex(&suffix("zero.alm"), &zero_analysis)?;
 
@@ -368,10 +362,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         let mut edge_map = vec![0.0; ntheta * nphi];
         let mut edge_analysis = vec![Complex64::new(0.0, 0.0); alm_count];
-        pool.install(|| -> Result<(), rustsht::ShtError> {
-            plan.synthesis_into(&edge_alm, &mut edge_map, &mut workspace)?;
-            plan.analysis_into(&edge_map, &mut edge_analysis, &mut workspace)
-        })?;
+        plan.synthesis_into(&edge_alm, &mut edge_map, &mut workspace)?;
+        plan.analysis_into(&edge_map, &mut edge_analysis, &mut workspace)?;
         write_f64(&suffix("extreme.map"), &edge_map)?;
         write_complex(&suffix("extreme.alm"), &edge_analysis)?;
 
@@ -380,27 +372,21 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut subnormal_map = vec![0.0; ntheta * nphi];
         let subnormal_input = vec![f64::from_bits(1); ntheta * nphi];
         let mut subnormal_analysis = vec![Complex64::new(0.0, 0.0); alm_count];
-        pool.install(|| -> Result<(), rustsht::ShtError> {
-            plan.synthesis_into(&subnormal_alm, &mut subnormal_map, &mut workspace)?;
-            plan.analysis_into(&subnormal_input, &mut subnormal_analysis, &mut workspace)
-        })?;
+        plan.synthesis_into(&subnormal_alm, &mut subnormal_map, &mut workspace)?;
+        plan.analysis_into(&subnormal_input, &mut subnormal_analysis, &mut workspace)?;
         write_f64(&suffix("subnormal.map"), &subnormal_map)?;
         write_complex(&suffix("subnormal.alm"), &subnormal_analysis)?;
 
         let mut adjoint_synthesis = vec![Complex64::new(0.0, 0.0); alm_count];
         let mut synthesized = vec![0.0; ntheta * nphi];
-        pool.install(|| -> Result<(), rustsht::ShtError> {
-            plan.synthesis_into(&alm, &mut synthesized, &mut workspace)?;
-            plan.adjoint_synthesis_into(&map, &mut adjoint_synthesis, &mut workspace)
-        })?;
+        plan.synthesis_into(&alm, &mut synthesized, &mut workspace)?;
+        plan.adjoint_synthesis_into(&map, &mut adjoint_synthesis, &mut workspace)?;
         let synthesis_left = map_dot(&synthesized, &map);
         let synthesis_right = harmonic_dot(&alm, &adjoint_synthesis, lmax, mmax);
         let mut analyzed = vec![Complex64::new(0.0, 0.0); alm_count];
         let mut adjoint_analysis = vec![0.0; ntheta * nphi];
-        pool.install(|| -> Result<(), rustsht::ShtError> {
-            plan.analysis_into(&map, &mut analyzed, &mut workspace)?;
-            plan.adjoint_analysis_into(&alm, &mut adjoint_analysis, &mut workspace)
-        })?;
+        plan.analysis_into(&map, &mut analyzed, &mut workspace)?;
+        plan.adjoint_analysis_into(&alm, &mut adjoint_analysis, &mut workspace)?;
         let analysis_left = harmonic_dot(&analyzed, &alm, lmax, mmax);
         let analysis_right = map_dot(&map, &adjoint_analysis);
 
@@ -448,7 +434,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!(
         "],\"checksum\":{:.17e},\"reset_consistent\":{reset_consistent},\"thread_pool_size\":{},\"arch\":\"{:?}\",\"lane_width_f64\":4,\"rss_kib\":{rss_kib},\"validation\":{validation_json}}}",
         checksum + output_checksum,
-        pool.current_num_threads(),
+        rayon::current_num_threads(),
         pulp::Arch::new()
     );
     Ok(())

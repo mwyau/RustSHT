@@ -485,17 +485,24 @@ def summarize(values: list[float]) -> dict[str, float]:
     }
 
 
-def run_matrix(cases: list[dict], binaries: dict[str, pathlib.Path], smoke: bool) -> tuple[list[dict], dict]:
+def run_matrix(
+    cases: list[dict],
+    binaries: dict[str, pathlib.Path],
+    smoke: bool,
+    threads_to_run: list[int] | None = None,
+    operations_to_run: list[str] | None = None,
+) -> tuple[list[dict], dict]:
     physical = physical_cpus()
     monitor_cpu = physical[8]
-    threads_to_run = [1, 8]
+    threads_to_run = threads_to_run or [1, 8]
+    operations_to_run = operations_to_run or ["analysis", "synthesis"]
     pairs = 1 if smoke else PROCESS_PAIRS
     target_ms = 5.0 if smoke else TARGET_BATCH_MS
     raw: list[dict] = []
     errors: list[dict] = []
     validations: list[dict] = []
     host_samples: list[dict] = []
-    total = len(cases) * len(threads_to_run) * 2
+    total = len(cases) * len(threads_to_run) * len(operations_to_run)
     progress = 0
     for case in cases:
         with tempfile.TemporaryDirectory(prefix="rustsht-ducc-parity-") as temporary:
@@ -503,7 +510,7 @@ def run_matrix(cases: list[dict], binaries: dict[str, pathlib.Path], smoke: bool
             make_fixture(case, temp)
             for threads in threads_to_run:
                 cpus = physical[:threads]
-                for operation in ("analysis", "synthesis"):
+                for operation in operations_to_run:
                     progress += 1
                     print(
                         f"CASE {progress}/{total} {case['case_id']} {operation} q{threads}",
@@ -617,6 +624,7 @@ def hardware_metadata(ducc_src: pathlib.Path) -> dict:
         "rust_flags": RUST_FLAGS,
         "ducc_flags": "DUCC sources: -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; benchmark driver: -O3 -fno-fast-math -ffp-contract=fast -march=x86-64-v3",
         "rust_dispatch": "runtime Pulp Arch::new; worker records actual specialization",
+        "rust_call_boundary": "direct ShtPlan calls on a process-global Rayon pool; no per-call ThreadPool::install wrapper",
         "ducc_dispatch": "fixed x86-64-v3 C++ build (AVX2/FMA, four f64 lanes)",
         "affinity_policy": "q1: one allowed physical core; q8: eight allowed physical cores",
     }
@@ -1029,13 +1037,14 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
             "batches_per_process": BATCHES_PER_PROCESS,
             "independent_process_pairs": PROCESS_PAIRS,
             "interleaving": "Rust then DUCC for even process-pair indexes; DUCC then Rust for odd indexes",
-            "q_values": [1, 8],
-            "thread_control": "Rust fixed Rayon pool; DUCC DUCC0_NUM_THREADS; both workers report active pool capacity",
-            "operations": ["analysis", "synthesis"],
+            "q_values": sorted({entry["threads"] for entry in raw}),
+            "thread_control": "Rust process-global Rayon pool configured before plan creation; DUCC DUCC0_NUM_THREADS; both workers report active pool capacity",
+            "operations": sorted({entry["operation"] for entry in raw}),
             "input_layout": "identical compact m-major coefficient body; DUCC mstart adds a leading offset and maps without timed conversion",
             "fixture_generation": "deterministic PCG64 seed derived from lmax, mmax, and nphi; SHA-256 of each alm/map fixture is recorded per case",
             "output_buffers": "reused across calls; transform outputs read and compared outside timed intervals",
-            "timed_region": "native public transform call loop; setup and first call reported separately",
+            "timed_region": "direct native ShtPlan transform calls with a process-global Rayon pool reused; pool/workspace setup and first call reported separately",
+            "rust_call_boundary": "no per-call ThreadPool::install wrapper; RAYON_NUM_THREADS is set before process startup",
             "short_operation_calibration": "up to three untimed repeated-call batches; adjust repetitions until 20-100 ms, then collect 10 measured batches",
             "long_transform_rule": "operations whose warmup exceeds 100 ms are timed individually (five per process invocation)",
             "output_reset_check": "after timing, exact comparison of first-call output and last repeated-call output",
@@ -1221,6 +1230,14 @@ def main() -> None:
                         help="use one fixed longitude count for every selected case")
     parser.add_argument("--fixed-ntheta", type=int,
                         help="use one GL latitude count for every selected case; must be >= lmax + 1")
+    parser.add_argument("--full-mmax-only", action="store_true",
+                        help="omit reduced-order configurations from the selected degrees")
+    parser.add_argument("--longitude-mode", choices=("odd_minimum", "even_smooth"), action="append",
+                        help="retain only this longitude shape; may be repeated")
+    parser.add_argument("--operation", choices=("analysis", "synthesis"), action="append",
+                        help="run only these operations; may be repeated (default: both)")
+    parser.add_argument("--threads", choices=(1, 8), type=int, action="append",
+                        help="run only these thread counts; may be repeated (default: 1 and 8)")
     parser.add_argument("--results-dir", type=pathlib.Path, default=DATA_DIR,
                         help="directory for machine-readable outputs and plots")
     parser.add_argument("--report-path", type=pathlib.Path, default=REPORT_PATH,
@@ -1270,6 +1287,11 @@ def main() -> None:
         )
     except ValueError as error:
         parser.error(str(error))
+    if args.full_mmax_only:
+        cases = [case for case in cases if case["mmax"] == case["lmax"]]
+    if args.longitude_mode:
+        selected_modes = set(args.longitude_mode)
+        cases = [case for case in cases if case["longitude_mode"] in selected_modes]
     if not cases:
         parser.error("case filters selected no configurations")
     if args.case_limit:
@@ -1282,7 +1304,9 @@ def main() -> None:
     print(f"BUILD rust={binaries['rustsht']} DUCC={binaries['ducc']}", flush=True)
     print(f"ENV cpu={metadata['cpu_model']} x86={metadata['cpu_features']} affinity=q1/q8 physical cores", flush=True)
     print(f"DISPATCH Rust=Pulp V3 selected by worker; DUCC=fixed x86-64-v3", flush=True)
-    raw, aux = run_matrix(cases, binaries, args.smoke)
+    raw, aux = run_matrix(
+        cases, binaries, args.smoke, args.threads, args.operation,
+    )
     if args.smoke:
         rows = aggregate(raw, aux["errors"])
         finite_count = sum(item["finite_outputs"] for item in aux["validations"])
