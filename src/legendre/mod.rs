@@ -753,7 +753,7 @@ pub(crate) trait ShtScalar:
 }
 
 impl ShtScalar for f64 {
-    const FUSED_SCALAR_ANALYSIS_MIN_LMAX: usize = 127;
+    const FUSED_SCALAR_ANALYSIS_MIN_LMAX: usize = 64;
 
     type SpinInitial = spin::SpinInitial;
 

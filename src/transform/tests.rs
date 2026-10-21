@@ -3946,18 +3946,23 @@ fn scalar_analysis_pair_range_cache_matches_checked_recurrence_and_is_plan_scope
 }
 
 #[test]
-fn scalar_analysis_fused_route_cutoff_is_f64_specific_and_active_at_t127() {
+fn scalar_analysis_fused_route_cutoff_is_f64_specific_and_active_at_t64() {
     assert_eq!(
         <f64 as crate::legendre::ShtScalar>::FUSED_SCALAR_ANALYSIS_MIN_LMAX,
-        127
+        64
     );
     assert_eq!(
         <f32 as crate::legendre::ShtScalar>::FUSED_SCALAR_ANALYSIS_MIN_LMAX,
         255
     );
 
-    for (lmax, ntheta, expect_fused) in [(126, 127, false), (127, 128, true)] {
-        let plan = make_plan(lmax, 31, ntheta, 63, 0.23);
+    for (lmax, mmax, ntheta, nphi, expect_fused) in [
+        (63, 15, 64, 31, false),
+        (64, 16, 65, 33, true),
+        (126, 31, 127, 63, true),
+        (127, 31, 128, 63, true),
+    ] {
+        let plan = make_plan(lmax, mmax, ntheta, nphi, 0.23);
         assert!(plan.scalar_legendre_table.set(None).is_ok());
         let mut workspace = plan.workspace().unwrap();
         plan.prepare_workspace(&mut workspace, 1).unwrap();
