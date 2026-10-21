@@ -13,8 +13,21 @@ is closed at `a37f74d68631ab5fd373a4097640895e9f0c0c23`. The input scan,
 row FFT, spectrum pruning, order preparation and recurrence stage evidence
 is recorded in the cumulative report and CSV. Plan 14 is now active on the
 same branch/session. Its first clean-source q8 synthesis comparison is now
-published; small-q1 attribution and the remaining q8 stage profiles are
-still open. Plans 12/13 remain deferred.
+published. The small-q1 baseline and T127 reduced-analysis stage attribution
+are now published; q8 stage attribution remains open. Plans 12/13 remain
+deferred.
+
+**Plan 14 q1 rebaseline (2026-10-21):** the 64-case T4–T127 warmed q1
+screen and T127 reduced-order phase profile are in
+[the small-q1 report](reports/plan14-small-q1-baseline-2026-10-21.md).
+The largest selected analysis excess is T127 `mmax=31`: Rust 192.5 µs
+versus DUCC 99.5 µs averaged across odd/even longitude shapes. Rust's phase
+probe attributes about 161 µs to recurrence/accumulation; the ordinary route
+processed 32 normal blocks and zero scaled blocks. Rust and DUCC both execute
+four-lane AVX2/FMA loops without observed hot-loop spills, so this is not a
+missing-SIMD or scaled-prefix regression. No q1 source change is justified
+yet; profile q8 synthesis, then compare the same active-ring q1 kernel
+boundary.
 
 **Plan 14 progress (2026-10-21):** `fe0590ac` removes a separate
 order-major-to-ring-major spectrum scatter from parallel scalar GL
@@ -173,16 +186,16 @@ isolated `m=1` results or a desire to assemble another candidate matrix.
 
 ## Current next steps and deferred work
 
-1. **Plan 14 Phase A:** obtain a clean current-source small-q1 A/S baseline
-   and attribute the largest fixed cost for T4/T8/T16/T32, with T48/T63/T64
-   controls. Keep cold/setup separate from warmed native calls. Do not change
-   production code until the largest excess is measured.
-2. **Plan 14 Phase B:** profile the remaining q8 synthesis stages from
+1. **Plan 14 Phase B:** profile the remaining q8 synthesis stages from
    `fe0590ac`, then compare q8 analysis on the same clean current source.
    T720 reduced-order odd-minimum synthesis remains the largest measured
    residual in this subset (about 0.45 ms); T2047 synthesis is now at
    DUCC-level latency. Identify whether the remaining absolute cost is
    recurrence, scheduling or FFT before proposing another change.
+2. Compare the T127 `mmax=31` q1 ordinary analysis kernel against DUCC at a
+   matched active-ring boundary after the q8 synthesis profile. Keep the
+   recurrence unchanged until the kernel work/dataflow difference is
+   measured.
 3. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
    cache-topology queries plus optional offline pointer-chase diagnostic
    (no startup autotuning); [Plan 13](plans/13-fused-batched-sht.md)

@@ -98,8 +98,36 @@ The earlier dirty-worktree screen is excluded from this comparison.
 
 This is a measured layout/scheduling improvement, not evidence that all of
 the removed 20.35 ms at T2047 came from the transpose alone. The next work
-returns to Phase A's clean small-q1 stage attribution, then profiles the
-remaining q8 synthesis excess using this direct-output source.
+completes a clean small-q1 baseline, then profiles the remaining q8
+synthesis excess using this direct-output source.
+
+## Current progress — small q1 baseline and T127 analysis gap (2026-10-21)
+
+The clean-source q1 screen covers T4, T8, T16, T32, T48, T63, T64 and T127,
+with full/quarter `mmax`, odd/even longitude shapes, analysis and synthesis.
+Each case used 30 calibrated batches across three interleaved process pairs.
+The T127 reduced-order case (`mmax=31`) is the largest selected q1 analysis
+excess: 192.5 µs Rust versus 99.5 µs DUCC averaged across longitude shapes.
+A warmed Rust phase probe measured 161.0 µs in recurrence/accumulation,
+19.96 µs in FFT, 4.95 µs in order preparation and 2.49 µs in latitude
+setup. Its route had 32 normal blocks, zero scaled blocks and 460,800
+estimated active ring-degree terms. Timer-only DUCC hooks measured
+34.34 µs in `map2leg` and 69.84 µs in `leg2alm_internal`; boundaries differ
+because the latter includes DUCC ring packing and initialization.
+
+Disassembly of the executed GCC DUCC and Rust Pulp V3 bodies shows four f64
+lanes and packed FMA in both. The Rust two-pair vector body has 12 packed
+FMA instructions with eight accumulation chains; the DUCC two-coefficient
+body has 13 with the same eight accumulators and two recurrence states. No
+hot-loop spills or important scalarized recurrence were observed. The nearly
+2x reduced-order stage gap is therefore not explained by a missing SIMD path
+or a spill visible in these loops. Keep the current recurrence unchanged
+while isolating same-active-ring kernel work. Full results, exact revisions,
+flags, error and contention indicators are in
+[`plan14-small-q1-baseline-2026-10-21.md`](../reports/plan14-small-q1-baseline-2026-10-21.md).
+
+No small-q1 source change is supported yet. Continue with the larger absolute
+q8 synthesis residual before returning to the T127 q1 kernel comparison.
 
 ## 4. Phase A — Find and fix small serial fixed costs
 

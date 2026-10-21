@@ -2,7 +2,7 @@
 
 **Current implementation plan:** [Plan 14](../plans/14-small-serial-parallel-performance.md).
 **Current factual status and priorities:** [PERFORMANCE_STATUS.md](../PERFORMANCE_STATUS.md).
-**Recent measured results:** [Plan 14 direct synthesis output](plan14-direct-spectrum-output-2026-10-21.md) and [Plan 11 scalar-analysis closeout](scalar-analysis-cumulative-2026-10-20.md).
+**Recent measured results:** [Plan 14 small-q1 baseline and T127 analysis attribution](plan14-small-q1-baseline-2026-10-21.md), [Plan 14 direct synthesis output](plan14-direct-spectrum-output-2026-10-21.md) and [Plan 11 scalar-analysis closeout](scalar-analysis-cumulative-2026-10-20.md).
 Do not follow forward-looking instructions embedded in historical reports.
 
 ## Current and accepted evidence
