@@ -83,6 +83,15 @@ identified.
    chooses recurrence starting at T64, while analysis and spin-1
    retain their own table policies. One universal T64 cutoff
    regressed q1 analysis. Defer cache-informed dispatch to Plan 12.
+7. **q8 order preparation is parallelized and measured** in
+   `dfed3ff7`/`3b32f2de`. The fixed 256-pair recurrence and the table-route
+   safety preflight are unchanged. At full `mmax`, current Rust/DUCC median
+   q8 ratios are 1.067x at T720, 1.003x at T2047 and 1.042x at T3072;
+   T2047 and T3072 Rust whole-call latency fell 25.6% and 14.9% from the
+   pre-change screen. Reduced-`mmax` ratios are 1.228x at T2047 m511 and
+   1.122x at T3072 m768. Stage profiles show their recurrence near DUCC and
+   locate the next investigation before recurrence. Details and distributions
+   are in the [cumulative report](../reports/scalar-analysis-cumulative-2026-10-20.md#q8-independent-order-preparation-candidate-2026-10-20).
 
 ## Immediate work — priority order
 
@@ -97,21 +106,17 @@ errors, distributions and edge-case outcomes are in the report and data links
 above. Do not repeat the cutoff experiment or broaden it into another tile
 campaign.
 
-### B. Profile remaining q8 and validated synthesis candidate
+### B. Reduced-order q8 front end — active
 
-Profile the remaining q8 gap at representative T720/T2047/T3072, separating
-Fourier, packing/weights, ordinary Legendre work, scaled-prefix
-work, scheduling, memory pressure and output. Prioritize the
-**largest measured** residual. q8 must use the same physical
-core/affinity conventions as its reference.
-
-The optional fixed-scratch candidate may be examined independently,
-using source/assembly/worker-layout inspection, peak workspace and
-stack/heap/RSS data, plus controlled q1/q8 A/S runs. Promotion
-requires a reproduced whole-transform advantage across relevant
-shapes, satisfactory memory cost and all correctness tests. It
-must not distract from measuring the remaining q8 analysis cost or trigger
-another accumulation of cfgs.
+The recurrence-plan order-preparation candidate is complete; do not repeat
+its parallelization experiment. Next separate reduced-`mmax` production-path
+input finite scanning, row FFT execution, and output/weight packing at T2047
+m511 and T3072 m768. Rust computes and stores all `nphi/2+1` real-FFT bins,
+while recurrence consumes only through `mmax`. DUCC `map2leg` combines FFT
+and weighting, so first make the stage boundaries comparable before proposing
+a structural change. Keep the recurrence, robust checks, and 256-pair tile
+unchanged unless measurements establish otherwise. Avoid a wholesale FFT
+rewrite.
 
 ### C. Close out the active task
 

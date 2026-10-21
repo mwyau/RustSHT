@@ -213,6 +213,72 @@ T2047 distributions and validation are in
 T3072 timing samples and host diagnostics were kept locally because they
 contain process/host detail.
 
+## q8 independent-order preparation candidate (2026-10-20)
+
+Source baseline was `6948ecdb`; the implementation is `dfed3ff7` and the
+inlinable preparation context cleanup is `3b32f2de`. For recurrence plans,
+the candidate prepares disjoint order-major spectrum rows using the existing
+Rayon pool and workspace capacity. Each row retains the same phase, weight,
+and product operation order. Compact-table safety preparation remains
+serial. The Legendre recurrence, fallback checks, 256-pair tile, and fixed
+`2^-60` prefix threshold are unchanged. At q1, where the pool capacity is
+one, preparation remains serial.
+
+The focused phase probe measured order preparation at approximately
+0.25/6.4/15.4 ms for T720/T2047/T3072 q8, compared with 0.781/23.523/40.515
+ms before the change. This probe used one warm call and five timed calls and
+is stage attribution, not the primary performance result.
+
+The current-source whole-transform screen used Rust `3b32f2de`, the same
+Rust 1.99.1/Pulp V3 strict build and DUCC 0.42.0/GCC 15.2 flags described
+above, deterministic full-triangle inputs, reusable plans/workspaces, three
+interleaved Rust/DUCC process pairs, and q8 workers pinned to the same eight
+physical cores. Each backend/case collected 30 calibrated approximately
+25 ms batches, except T3072 full-mmax whose operations exceeded 100 ms and
+were measured as five whole calls per process (15 samples). Output comparison
+was outside timing. Reported ratio is the ratio of medians; paired batch
+ratios and p10/p90 are also retained in the summary data.
+
+| Case | Rust ms [p10,p90] | DUCC ms [p10,p90] | Median ratio | Paired ratio median [p10,p90] | Excess ms | Max absolute error | Relative L2 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| T720, m720, nphi1442 | 3.081 [2.966,3.226] | 2.888 [2.840,3.102] | 1.067x | 1.053 [0.996,1.114] | +0.193 | 1.04e-15 | 4.66e-14 |
+| T720, m180, nphi1442 | 1.848 [1.801,1.953] | 2.016 [1.970,2.171] | 0.917x | 0.927 [0.829,0.985] | -0.168 | 1.11e-15 | 4.93e-14 |
+| T2047, m2047, nphi4096, ntheta2049 | 42.655 [41.639,46.416] | 42.515 [41.199,51.367] | 1.003x | 1.012 [0.828,1.100] | +0.140 | 1.38e-15 | 1.18e-13 |
+| T2047, m511, nphi4096, ntheta2049 | 21.399 [20.975,23.236] | 17.425 [16.593,18.992] | 1.228x | 1.248 [1.139,1.332] | +3.974 | 1.11e-15 | 1.26e-13 |
+| T3072, m3072, nphi6174 | 122.835 [122.379,130.428] | 117.828 [115.233,118.998] | 1.042x | 1.060 [1.029,1.114] | +5.007 | 1.44e-15 | 1.96e-13 |
+| T3072, m768, nphi6174 | 64.306 [63.197,65.840] | 57.315 [55.693,59.070] | 1.122x | 1.125 [1.097,1.161] | +6.991 | 1.39e-15 | 2.08e-13 |
+
+Against the pre-change whole-transform q8 screen on full `mmax`, Rust latency
+fell from 3.597 to 3.081 ms at T720 (-14.4%), 57.310 to 42.655 ms at T2047
+(-25.6%), and 144.337 to 122.835 ms at T3072 (-14.9%). The corresponding
+Rust/DUCC ratios moved from 1.234x/1.361x/1.224x to 1.067x/1.003x/1.042x.
+The T2047 median distributions overlap broadly; the DUCC first process pair
+was an outlier (50.7 ms versus about 42 ms in the later pairs), so the
+near-equal median is not evidence of stable Rust superiority. The full-order
+q8 excess is now small relative to measurement spread at T2047 and about
+5 ms at T3072. The clearest remaining excess is in reduced-order cases:
+about 4.0 ms at T2047 m511 and 7.0 ms at T3072 m768.
+
+For reduced `mmax`, a direct stage screen found Rust recurrence/accumulation
+near DUCC `leg2alm` (T2047 m511: approximately 13.43/13.37 ms; T3072 m768:
+44.1/42.85 ms). Rust's forward FFT plus order-spectrum preparation was
+approximately 7.15 ms at T2047 m511 and 19–23 ms at T3072 m768, while DUCC
+`map2leg` was approximately 3.50 and 9.32 ms. Those stage boundaries differ:
+DUCC `map2leg` combines FFT extraction and ring weighting, so this identifies
+the front end as the next investigation rather than assigning its entire
+excess to one exact substage. Rust currently computes and retains all
+`nphi/2+1` real-FFT bins per ring even when only orders through `mmax` enter
+the scalar recurrence. Do not start a wholesale FFT rewrite; first separate
+finite-input scanning, FFT execution, and output/weight packing costs at the
+production call boundary.
+
+Host conditions were not fully quiet. CPU frequency varied, and one T720
+Rust process recorded 474 involuntary context switches; the distributions
+show that variation. Numerical comparisons remained stable: across the six
+cases relative L2 error was at most `2.08e-13` and maximum absolute
+difference at most `1.44e-15`. Exact per-batch summaries are in
+[`order-prep-q8-candidate/summary.csv`](data/scalar-analysis-cumulative-2026-10-20/order-prep-q8-candidate/summary.csv).
+
 ## Current T720 production/candidate A/B (2026-10-20)
 
 Source `b25c011d`; identical f64 GL scalar A/S,
@@ -260,5 +326,6 @@ only when a specific source or provenance question requires it.
   [active Plan 11](../plans/11-ducc-equivalent-scalar-analysis.md).
 
 No archived experiment or older "next" paragraph is authorization
-to divert from the current cutoff investigation or to retry a
-known rejected tile/reduction experiment.
+to retry a known rejected tile/reduction experiment. The prefix cutoff
+investigation is complete; the next target is the measured q8 reduced-order
+analysis front end described above.

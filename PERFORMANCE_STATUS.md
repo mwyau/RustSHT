@@ -43,13 +43,19 @@ measurements, not a large-resolution timing campaign. Random output relative
 L2 errors were `1.96e-13` for analysis and `2.11e-13` for synthesis; extreme,
 subnormal, polar/high-order, cancellation and adjoint checks passed.
 
-**Current q8 finding:** the warmed recurrence/accumulation phase is close to
-DUCC at T2047 and T3072, while Rust's order-spectrum preparation stays nearly
-serial at q8 (23.5 ms at T2047; 40.5 ms at T3072). Matched whole-analysis
-ratios are 1.36x at T2047 q8 and 1.22x at T3072 q8. The next focused test is
-parallel preparation of independent order rows, preserving table-path safety
-checks and the 256-pair recurrence tile. See the current q8 stage section in
-the [cumulative report](reports/scalar-analysis-cumulative-2026-10-20.md).
+**Current q8 result:** commit `dfed3ff7` parallelizes independent order-row
+preparation for recurrence plans; `3b32f2de` bundles its shared read-only
+state. The compact-table safety pass remains serial, and recurrence,
+fallbacks, prefix threshold and 256-pair tile are unchanged. Order-prep phase
+time fell from 23.5 to about 6.4 ms at T2047 and 40.5 to about 15.4 ms at
+T3072. Matched whole-transform Rust q8 latency fell 25.6% at T2047 full
+`mmax` (57.310 to 42.655 ms) and 14.9% at T3072 (144.337 to 122.835 ms);
+T720 fell 14.4% (3.597 to 3.081 ms). Current median Rust/DUCC ratios are
+1.003x, 1.042x and 1.067x, respectively, with distribution overlap at
+T2047. Reduced-order cases remain 1.228x at T2047 `mmax=511` and 1.122x at
+T3072 `mmax=768`; stage screens place their larger excess before recurrence.
+See the [candidate results and next stage attribution](reports/scalar-analysis-cumulative-2026-10-20.md#q8-independent-order-preparation-candidate-2026-10-20)
+and [machine-readable summary](reports/data/scalar-analysis-cumulative-2026-10-20/order-prep-q8-candidate/summary.csv).
 
 ## Tile decision — not an open recurring benchmark
 
@@ -129,10 +135,13 @@ isolated `m=1` results or a desire to assemble another candidate matrix.
 
 ## Current next steps and deferred work
 
-1. **Active:** attribute the remaining q8 whole-transform costs at
-   representative geometries, starting with the largest measured stage.
-   Reuse the matched T2047/T2048 and T3072 results instead of restarting
-   their matrices. Keep 256 as default.
+1. **Active:** isolate the reduced-`mmax` forward analysis front-end cost at
+   T2047 `mmax=511` and T3072 `mmax=768`. Separate input finite checks, FFT
+   execution, and spectrum/weight packing using the production path. Rust
+   computes and retains `nphi/2+1` bins per ring although the recurrence
+   consumes only through `mmax`; DUCC `map2leg` combines FFT and weighting,
+   so no one substage is yet proven responsible. Avoid a wholesale FFT
+   rewrite. Keep 256 as default.
 2. **Then:** investigate opt-in fixed scratch only when a source-grounded
    hypothesis and matched whole-transform measurements justify it.
 3. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
