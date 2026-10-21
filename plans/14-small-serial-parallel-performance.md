@@ -220,8 +220,75 @@ The source lead is now bounded: the odd full-complex inverse arithmetic is
 the largest identified q8 synthesis substage, but the existing real-FFT
 implementation is slower and the stage still accounts for only part of the
 whole-call excess. Do not add a replacement FFT engine based on this profile.
-Next profile the remaining q8 analysis path on the same T720 full/reduced
-cases, then return to the same-active-ring T127 q1 analysis boundary.
+The T720 q8 analysis profile below is complete; next compare the same-active-
+ring T127 q1 analysis boundary.
+
+## Current progress — calibrated q8 analysis profile (2026-10-21)
+
+The final Plan 11 source at `5268ec4a` was compared with DUCC 0.42.0 at
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. Both cases used T720 GL,
+`ntheta=721`, `nphi=1442`, `phi0=0.23`, q8, identical deterministic map
+fixtures and three interleaved process pairs pinned to the same eight physical
+cores. Each backend/case contributed 30 timed batches across three processes;
+each batch targeted 25 ms; observed whole-call batch durations were
+20.5–26.2 ms. Rust used release, strict FP,
+`-C target-cpu=x86-64-v3` and runtime Pulp V3. DUCC used GCC 15 x86-64-v3
+SHT objects with `-O3 -ffast-math -ffp-contract=fast`; its validation driver
+remained strict. The CSV preserves exact fixture hashes, batch distributions
+and phase distributions.
+
+| `mmax` | Rust whole p10/median/p90 (ms) | DUCC whole p10/median/p90 (ms) | median Rust/DUCC | median excess | relative L2 error |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 720 | 2.960 / 3.009 / 3.109 | 2.835 / 2.854 / 2.881 | 1.054x | +0.155 ms | `4.66e-14` |
+| 180 | 1.632 / 1.687 / 1.752 | 1.960 / 1.972 / 1.990 | 0.856x | -0.284 ms | `4.93e-14` |
+
+For full `mmax`, Rust phase medians were 0.948 ms forward FFT, 0.015 ms
+latitude setup, 0.252 ms order-spectrum preparation, 0.084 ms coefficient
+initialization and 1.746 ms recurrence/accumulation. DUCC measured 1.221 ms
+in `map2leg` and 1.589 ms in `leg2alm_internal`. Grouping Rust's front-end
+phases gives about 1.215 ms, close to DUCC `map2leg`; the recurrence-side
+Rust phases total about 1.831 ms, above DUCC's combined Legendre stage. This
+is the remaining T720 full-order lead, but its phase boundaries are not exact
+subtractions and it explains only the observed 0.155 ms whole-call excess
+directionally.
+
+At `mmax=180` with the same full longitude sampling, Rust measured 0.802 ms
+forward FFT, 0.015 ms latitude setup, 0.069 ms order preparation, 0.027 ms
+coefficient initialization and 0.774 ms recurrence/accumulation. DUCC measured
+1.176 ms in `map2leg` and 0.757 ms in `leg2alm_internal`. The Rust front-end
+group is about 0.886 ms while the recurrence-side group is about 0.801 ms;
+the former advantage outweighs the small latter excess, consistent with the
+0.284 ms whole-call win. The recurrence phase includes job scheduling and
+worker waiting, so this profile does not isolate SIMD arithmetic from q8
+scheduling.
+
+Across the matched whole-call runs, CPU pressure-stall readings remained
+negligible; observed per-process CPU-frequency medians ranged 3.89–4.42 GHz for Rust and
+4.34–4.38 GHz for DUCC. Rust's third instrumented full-order phase run had a
+wider tail, retained in the p90 and source data. DUCC stage hooks were enabled
+only after calibration: the per-process stage call counts were exactly 90 for
+full order and 130 for reduced order, matching their timed calls. Maximum
+absolute output error was `1.04e-15` (full) and `1.11e-15` (reduced). No
+production kernel change was justified by this profile. The reduced-order
+front end is already faster than DUCC at this geometry; preserve it and
+proceed to the matched T127 q1 same-active-ring comparison.
+
+Reproduction: use
+`scripts/benchmark_ducc_full_transform_parity.py` with
+`--lmax 720 --mmax 720 --fixed-nphi 1442 --threads 8 --operation analysis`
+and then `--mmax 180`, using three interleaved process pairs, 25 ms batches,
+and the pinned DUCC revision above. Whole-call timings use the clean pinned
+DUCC SHT object build; the temporary instrumented build is used only for
+stages. The test-only Rust phase probe is
+`plan14_analysis_phase_batch_profile`; run it three times per `mmax` with
+`RUSTSHT_PROFILE_Q=8`, `RUSTSHT_PROFILE_LMAX=720`,
+`RUSTSHT_PROFILE_MMAX=720` or `180`, `RUSTSHT_PROFILE_BATCHES=30`,
+`RUSTSHT_PROFILE_BATCH_MS=30`, and `RUSTSHT_PROFILE_MAP` set to the matching
+fixture. DUCC phase values use temporary `steady_clock` hooks around
+`map2leg` and `leg2alm_internal`; they are stage diagnostics, not hardware
+counters. The committed machine-readable summary is
+[`summary.csv`](../reports/data/plan14-q8-analysis-t720-2026-10-21/summary.csv);
+raw host and process logs remain local.
 
 ## 4. Phase A — Find and fix small serial fixed costs
 

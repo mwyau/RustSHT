@@ -14,7 +14,7 @@ row FFT, spectrum pruning, order preparation and recurrence stage evidence
 is recorded in the cumulative report and CSV. Plan 14 is now active on the
 same branch/session. Its first clean-source q8 synthesis comparison is
 published. The small-q1 baseline, T127 reduced-analysis profile and T720 q8
-synthesis stage profiles are now recorded. The odd-length complex inverse
+synthesis and analysis stage profiles are now recorded. The odd-length complex inverse
 arithmetic is the largest identified q8 synthesis substage; no production
 FFT change is justified. Plans 12/13 remain deferred.
 
@@ -27,8 +27,8 @@ probe attributes about 161 µs to recurrence/accumulation; the ordinary route
 processed 32 normal blocks and zero scaled blocks. Rust and DUCC both execute
 four-lane AVX2/FMA loops without observed hot-loop spills, so this is not a
 missing-SIMD or scaled-prefix regression. No q1 source change is justified
-yet; profile q8 analysis, then compare the same active-ring q1 kernel
-boundary.
+yet; the matched T720 q8 analysis profile is now complete, and the next q1
+step is a same-active-ring kernel comparison.
 
 **Plan 14 progress (2026-10-21):** `fe0590ac` removes a separate
 order-major-to-ring-major spectrum scatter from parallel scalar GL
@@ -65,9 +65,23 @@ the sign under wider timing spread, so no fixed timer correction is applied.
 A one-thread screening run of the existing
 `rustsht-fft` real inverse was 3.861 µs per transform versus 3.089 µs for the
 RustFFT odd-complex adapter; it is not a production q8 A/B and was not
-promoted. Production FFT code remains unchanged. The next Plan 14 task is a
-matched q8 analysis stage profile, then the same-active-ring T127 q1 analysis
-comparison.
+promoted. Production FFT code remains unchanged.
+
+**T720 q8 analysis profile (2026-10-21):** three interleaved process pairs
+collected 30 calibrated batches per backend for full `mmax=720` and reduced
+`mmax=180`, both at `nphi=1442`. Full-order Rust/DUCC was 3.009/2.854 ms
+(1.054x, +0.155 ms); reduced-order was 1.687/1.972 ms (0.856x, -0.284 ms).
+Relative L2 errors were `4.66e-14` and `4.93e-14`. Rust's full-order forward
+FFT plus geometry/order preparation was about 1.215 ms, close to DUCC
+`map2leg` at 1.221 ms; Rust recurrence/initialization was about 1.831 ms
+versus DUCC `leg2alm_internal` at 1.589 ms. For reduced order, Rust's
+front-end group was about 0.886 ms versus DUCC 1.176 ms, while the recurrence
+group was about 0.801 ms versus 0.757 ms. These test-timer stages have
+different boundaries; the recurrence timer includes scheduling and worker
+wait. DUCC stage hooks counted only timed calls after calibration (90 full,
+130 reduced). No T720 q8 source change is justified. The machine-readable
+data and method are in [the Plan 14 profile](plans/14-small-serial-parallel-performance.md)
+and [summary CSV](reports/data/plan14-q8-analysis-t720-2026-10-21/summary.csv).
 
 
 ## Highest-confidence current finding — prefix discontinuity removed
@@ -214,15 +228,11 @@ isolated `m=1` results or a desire to assemble another candidate matrix.
 
 ## Current next steps and deferred work
 
-1. **Plan 14 Phase B:** isolate Rust's odd-length inverse FFT arithmetic
-   from spectrum preparation and map writeback at T720 `mmax=180`, then
-   compare q8 analysis on the same clean source. The current odd-minimum
-   synthesis excess is about 0.47 ms; the even-smooth control is about
-   0.19 ms. Do not change the FFT until the odd-stage gap is isolated more
-   narrowly.
-2. Compare the T127 `mmax=31` q1 ordinary analysis kernel against DUCC at a
+1. Compare the T127 `mmax=31` q1 ordinary analysis kernel against DUCC at a
    matched active-ring boundary. Keep the recurrence unchanged until the
    kernel work/dataflow difference is measured.
+2. Re-rank the largest measured absolute q8 analysis/synthesis excess from
+   final-source T2047/T3072 controls and continue only on the leading stage.
 3. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
    cache-topology queries plus optional offline pointer-chase diagnostic
    (no startup autotuning); [Plan 13](plans/13-fused-batched-sht.md)
