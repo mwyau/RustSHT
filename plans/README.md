@@ -13,7 +13,11 @@ current explicit owner instructions, [AGENTS.md](../AGENTS.md) and
 **[15 — Spin-1 vector GL/CC/F1 performance](15-spin1-vector-gl-cc-f1-performance.md)**
 is active on `opt/sht-performance-parity` after Plan 14's full scalar
 sweep and closeout. Its native-DUCC baseline proceeds through GL, CC and F1.
-See [current benchmark decisions](../PERFORMANCE_STATUS.md).
+The owner has **deferred all odd-length FFT optimization**, including paired-real
+rows, `realfft` substitution and native/custom FFT integration; odd/even
+benchmark and numerical validation controls remain in scope. The completed
+scalar T64–T256 dispatch diagnostic is reference evidence, not a new scalar
+task. See [current benchmark decisions](../PERFORMANCE_STATUS.md).
 
 **[11 — Scalar f64 GL analysis parity](11-ducc-equivalent-scalar-analysis.md)**
 is **complete** at `a37f74d68631ab5fd373a4097640895e9f0c0c23`; retain its
