@@ -42,6 +42,15 @@ in the route control. See the
 [focused report](reports/plan14-t127-table-analysis-simd-2026-10-21.md) and
 [raw data](reports/data/plan14-t127-table-analysis-simd-2026-10-21/).
 
+**Plan 14 T64 reduced-order analysis (2026-10-21):** commit `7e51ae43`
+lowers only the f64 checked fused-analysis route floor from T127 to T64.
+T64 `mmax=16` q1 GL analysis improved 35–36% at `nphi=33/36`; T63 controls
+moved less than 0.4%. Stage probes attribute about 14 µs of the gain to
+recurrence/accumulation, with numerical relative L2 below `2.91e-15`. f32,
+spin-1, table policy and safety fallback are unchanged. See the
+[T64 report](reports/plan14-t64-fused-analysis-cutoff-2026-10-21.md) and
+[raw data](reports/data/plan14-t64-fused-analysis-cutoff-2026-10-21/).
+
 **Plan 14 progress (2026-10-21):** `fe0590ac` removes a separate
 order-major-to-ring-major spectrum scatter from parallel scalar GL
 synthesis. On clean parent/candidate builds, q8 T720 cases improved 16–35%;
@@ -240,11 +249,11 @@ isolated `m=1` results or a desire to assemble another candidate matrix.
 
 ## Current next steps and deferred work
 
-1. Attribute fixed per-call costs across the remaining T1–T64 q1 analysis
-   and synthesis cases. Preserve the T127 dispatch result and avoid another
-   broad benchmark matrix.
+1. Attribute the remaining low-band q1 anomalies, especially T32 full-order
+   analysis, after the validated T64 route improvement. Avoid another broad
+   benchmark matrix.
 2. Re-rank the largest measured absolute q8 analysis/synthesis excess from
-   final-source controls and continue only on the leading stage.
+   current-source controls and continue only on the leading stage.
 3. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
    cache-topology queries plus optional offline pointer-chase diagnostic
    (no startup autotuning); [Plan 13](plans/13-fused-batched-sht.md)

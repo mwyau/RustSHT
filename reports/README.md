@@ -2,7 +2,7 @@
 
 **Current implementation plan:** [Plan 14](../plans/14-small-serial-parallel-performance.md).
 **Current factual status and priorities:** [PERFORMANCE_STATUS.md](../PERFORMANCE_STATUS.md).
-**Recent measured results:** [Plan 14 T127 compact-table SIMD analysis](plan14-t127-table-analysis-simd-2026-10-21.md), [Plan 14 small-q1 baseline and T127 analysis attribution](plan14-small-q1-baseline-2026-10-21.md), [Plan 14 direct synthesis output](plan14-direct-spectrum-output-2026-10-21.md) and [Plan 11 scalar-analysis closeout](scalar-analysis-cumulative-2026-10-20.md).
+**Recent measured results:** [Plan 14 T64 fused analysis route](plan14-t64-fused-analysis-cutoff-2026-10-21.md), [Plan 14 T127 compact-table SIMD analysis](plan14-t127-table-analysis-simd-2026-10-21.md), [Plan 14 small-q1 baseline and T127 analysis attribution](plan14-small-q1-baseline-2026-10-21.md), [Plan 14 direct synthesis output](plan14-direct-spectrum-output-2026-10-21.md) and [Plan 11 scalar-analysis closeout](scalar-analysis-cumulative-2026-10-20.md).
 Do not follow forward-looking instructions embedded in historical reports.
 
 ## Current and accepted evidence
@@ -21,6 +21,9 @@ Do not follow forward-looking instructions embedded in historical reports.
 - [Plan 14 T127 table analysis SIMD](plan14-t127-table-analysis-simd-2026-10-21.md):
   a V3 two-complex-lane table accumulator improved matched q1 whole-call
   latency by 5.5%; q8 was inconclusive and did not show a gain.
+- [Plan 14 T64 fused analysis route](plan14-t64-fused-analysis-cutoff-2026-10-21.md):
+  lowering the checked f64 fused-route floor from T127 to T64 improved
+  matched q1 T64 m16 analysis by 35–36%; the T63 controls were stable.
 - [T64 Legendre table/recurrence dispatch decision](scalar-t64-recurrence-transition-2026-10-20.md):
   retained synthesis-only recurrence cutoff; analysis and spin-1
   keep their own policies. This is a **completed** dispatch study,

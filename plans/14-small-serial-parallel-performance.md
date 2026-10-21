@@ -346,8 +346,31 @@ does not support changing the table selector. Full distributions, toolchain,
 flags, dispatch and numerical checks are in the
 [focused report](../reports/plan14-t127-table-analysis-simd-2026-10-21.md).
 
-Continue with T1–T64 fixed-cost attribution first, then rank q8 from
-current-source controls rather than reusing historical pre-layout timings.
+The T64 reduced-order recurrence lead and its checked fused-route candidate
+are described next. The remaining small-q1 work is the T32 full-order case;
+after that, rank q8 from current-source controls rather than reusing
+historical pre-layout timings.
+
+## Current progress — T64 checked fused analysis route (2026-10-21)
+
+Commit `7e51ae43` lowers the f64 scalar fused-analysis eligibility floor
+from T127 to T64. The checked SIMD route, range proof, scaled transition,
+late validation and fallback are unchanged. f32 remains at T255; the
+scalar table selector, spin-1 and other operations are untouched.
+
+Matched T63/T64 GL q1 analysis at full local geometry used odd-minimum and
+even-smooth longitude counts, three interleaved Rust/DUCC process pairs and
+30 calibrated batches per backend/case. At T63, Rust moved only +0.2–0.4%
+within the observed spread. At T64 `mmax=16`, Rust improved 36.1% for
+`nphi=33` (41.262 to 26.374 µs, 0.855x DUCC) and 35.2% for `nphi=36`
+(42.912 to 27.793 µs, 1.051x DUCC). Relative errors were below `2.91e-15`.
+
+The current-source stage profiles attribute 13.6–14.3 µs of the full-call
+gain to recurrence/accumulation; FFT and preparation stages stayed stable.
+The report and raw data are in
+[the T64 checkpoint](../reports/plan14-t64-fused-analysis-cutoff-2026-10-21.md).
+Continue Phase A with T32 full-order analysis, then rank q8 whole-call
+excesses from current-source measurements.
 
 ## 4. Phase A — Find and fix small serial fixed costs
 
