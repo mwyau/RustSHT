@@ -1,0 +1,126 @@
+{
+  "source_revision": "140b4bff8cb5a8d53ec87666229be2f5f0a2b5ee",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "geometry": {
+    "lmax": 3072,
+    "mmax": 3072,
+    "ntheta": 3073,
+    "nphi": 6174,
+    "longitude_mode": "even_smooth"
+  },
+  "summary": {
+    "rustsht": {
+      "process_medians_ms": [
+        106.01438,
+        112.199768,
+        105.013626
+      ],
+      "median_ms": 106.01438,
+      "p10_ms": 104.9629728,
+      "p90_ms": 112.22115620000001,
+      "first_ms": [
+        140.63152,
+        132.177499,
+        132.566324
+      ],
+      "warmup_ms": [
+        105.945189,
+        105.176424,
+        104.792467
+      ],
+      "repetitions": [
+        1,
+        1,
+        1
+      ],
+      "batch_counts": [
+        5,
+        5,
+        5
+      ],
+      "runqueue_wait": [
+        0.0030987453375537237,
+        0.009665036631858213,
+        0.0027396878871188473
+      ],
+      "involuntary_switches": [
+        244,
+        453,
+        240
+      ]
+    },
+    "ducc": {
+      "process_medians_ms": [
+        114.496,
+        118.248,
+        115.653
+      ],
+      "median_ms": 115.653,
+      "p10_ms": 113.4742,
+      "p90_ms": 119.22319999999999,
+      "first_ms": [
+        114.014,
+        113.595,
+        113.41
+      ],
+      "warmup_ms": [
+        115.653,
+        112.974,
+        113.172
+      ],
+      "repetitions": [
+        1,
+        1,
+        1
+      ],
+      "batch_counts": [
+        5,
+        5,
+        5
+      ],
+      "runqueue_wait": [
+        0.0016116697657572625,
+        0.00916230385762489,
+        0.0018056698336223567
+      ],
+      "involuntary_switches": [
+        70,
+        83,
+        63
+      ]
+    }
+  },
+  "comparisons": [
+    {
+      "pair": 0,
+      "absolute_max": 1.443377499531718e-15,
+      "relative_l2": 1.9612887990434797e-13,
+      "max_relative_above_1e-12_peak": 4.729874465138404e-09,
+      "near_zero_reference_count": 0
+    },
+    {
+      "pair": 1,
+      "absolute_max": 1.443377499531718e-15,
+      "relative_l2": 1.9612887990434797e-13,
+      "max_relative_above_1e-12_peak": 4.729874465138404e-09,
+      "near_zero_reference_count": 0
+    },
+    {
+      "pair": 2,
+      "absolute_max": 1.443377499531718e-15,
+      "relative_l2": 1.9612887990434797e-13,
+      "max_relative_above_1e-12_peak": 4.729874465138404e-09,
+      "near_zero_reference_count": 0
+    }
+  ],
+  "metadata": {
+    "host": "AMD Ryzen 9 5950X, 16 physical cores / 32 threads",
+    "rust": "rustc 1.99.1, LLVM 23.1.1, release, -C target-cpu=x86-64-v3, strict FP, runtime Pulp V3",
+    "ducc": "DUCC 0.42.0 at 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b; GCC 15.2, SHT -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3",
+    "threads": "q8 pinned to physical CPUs 0-7; Rust Rayon and DUCC worker pools reused within process",
+    "protocol": "3 interleaved independent process pairs; each process did one warmup, 5 individually timed warm calls (each operation >100 ms); outputs compared after each pair; first-call times retained separately",
+    "validation": "The timed deterministic full-order analysis outputs were compared after every pair. The harness post-timing edge-case sidecar sweep was omitted for this rebaseline; production exceptional-value and adjoint coverage had passed the full release test suites at source commit 140b4bff, and this change only affects inverse synthesis.",
+    "fixture": "Existing native full-transform harness fixture formula, phi0=0.23; lmax=mmax=3072; GL ntheta=3073, nphi=6174 even-smooth.",
+    "contention": "Per-process runqueue-wait fractions and involuntary context switches are retained in summary.json. Rust runs recorded 240-453 involuntary switches vs DUCC 63-83; scheduling noise is material and source comparisons are directional. Per-run CPU-frequency/PSI snapshots were not retained."
+  }
+}

@@ -198,8 +198,21 @@ and q8 runqueue wait had occasional 5.8–6.7% p90 spikes. Treat this as a
 directional, case-specific gain; the remaining q8 excess is about 0.332 ms.
 See [Plan 14](plans/14-small-serial-parallel-performance.md) and the
 [comparison CSV](reports/data/plan14-mixed-radix-n361-2026-10-21/comparison.csv).
-Next: rebaseline T3072 full-order q8 analysis on the current source and rank
-the remaining whole-transform excess before another change.
+**Plan 14 current-source T3072 q8 analysis recheck (`140b4bff`):** with
+`lmax=mmax=3072`, `ntheta=3073`, `nphi=6174`, Rust measured 106.014 ms and
+DUCC 115.653 ms (0.917x; Rust faster by 9.639 ms), with relative L2
+`1.96e-13`. This confirms the current rerank: T3072 full-order analysis is
+not a remaining excess. Each of three interleaved process pairs recorded
+five individually timed calls; the Rust runs had 240–453 involuntary context
+switches versus DUCC's 63–83, so the size of the win is directional. The
+current largest selected q8 excess remains T720 reduced-order odd synthesis
+at about 0.332 ms after the n=361 inverse change. See the
+[recheck data](reports/data/plan14-t3072-current-q8-2026-10-21/).
+
+Next: compare the current T720 q8 `nphi=361` synthesis recurrence and
+inverse-row costs on matched boundaries, then pursue only a source-level
+change supported by the measured residual. The rejected standalone C2R
+engine is not a candidate without a new mechanism.
 
 ## Highest-confidence current finding — prefix discontinuity removed
 

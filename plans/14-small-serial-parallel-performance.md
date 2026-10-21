@@ -1022,10 +1022,37 @@ benchmark compared both outputs to pinned DUCC. Reproduction details and
 compact timing data are in
 [`plan14-mixed-radix-n361-2026-10-21`](../reports/data/plan14-mixed-radix-n361-2026-10-21/).
 
-**Next:** revalidate the current q8 T3072 full-order analysis result against
-the final Plan 14 source, then rank the largest remaining q8 whole-transform
-excess before selecting another source change. Do not generalize this FFT
+**Next:** compare current T720 q8 `nphi=361` synthesis recurrence and
+inverse-row costs on matched stage boundaries. Do not generalize this FFT
 decomposition beyond the measured f64 n=361 case without matched evidence.
+
+## Current progress — T3072 full-order q8 analysis recheck (2026-10-21)
+
+The current source `140b4bff8cb5a8d53ec87666229be2f5f0a2b5ee` was rechecked
+against DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b` at T3072 GL,
+`lmax=mmax=3072`, `ntheta=3073`, `nphi=6174` even-smooth, q8. Rust measured
+106.014 ms and DUCC 115.653 ms (0.917x, Rust faster by 9.639 ms); relative
+L2 error was `1.9613e-13`. The three Rust process medians were 105.014,
+106.014 and 112.200 ms; DUCC medians were 114.496, 115.653 and 118.248 ms.
+Each process used one warmup and five individually timed calls, with three
+interleaved process pairs. Calls above 100 ms were measured whole, not
+batched. The initial runqueue-wait fractions were low, but Rust accumulated
+240–453 involuntary context switches versus DUCC's 63–83; retain the spread
+and treat the size of the win as directional.
+
+The timed output was compared after each process pair. This targeted
+rebaseline omitted the harness's separate post-timing edge-sidecar sweep;
+the exceptional-input and adjoint release suites had passed on this source,
+and the n=361 source change affects inverse synthesis only. First-call
+latencies were 132.2–140.6 ms for Rust and 113.4–114.0 ms for DUCC. The
+current-source result confirms that full-order q8 analysis at T3072 is not a
+remaining excess. Following the n=361 candidate, the largest selected q8
+excess remains T720 reduced-order odd synthesis at about 0.332 ms. The next
+comparison should align that case's recurrence and inverse-row boundaries;
+do not revive the previously slower standalone real-C2R engine unchanged.
+
+Machine-readable timings, errors, host counters and build provenance are in
+[`plan14-t3072-current-q8-2026-10-21`](../reports/data/plan14-t3072-current-q8-2026-10-21/).
 
 ## Current progress — T127 full-order analysis reuses reflected spectra (2026-10-21)
 
