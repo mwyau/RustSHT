@@ -179,8 +179,12 @@ def main() -> None:
             }
         )
     sanitized_metadata = {
-        "baseline_source": "0b2e1336409ba0bbe9fd6fa4cff70db0e327cd52",
-        "candidate_source": "7f47f06f875991a982caf0f4c396323a32c0d72b",
+        "baseline_source": metadata.get(
+            "baseline_source", "0b2e1336409ba0bbe9fd6fa4cff70db0e327cd52"
+        ),
+        "candidate_source": metadata.get(
+            "candidate_source", "7f47f06f875991a982caf0f4c396323a32c0d72b"
+        ),
         "binary_sha256": binary_hashes,
         "ducc_revision": metadata["ducc_revision"],
         "rust_toolchain": metadata["rust_toolchain"],

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Matched native A/B benchmark for q8 F1 spin-1 synthesis coefficient reuse.
+"""Matched native A/B benchmark for q8 spin-1 synthesis coefficient reuse.
 
 The driver expects already-built baseline RustSHT, candidate RustSHT, and
 pinned DUCC worker binaries. Raw JSON includes host diagnostics and should be
@@ -43,6 +43,13 @@ def main() -> None:
     parser.add_argument("--candidate", type=pathlib.Path, required=True)
     parser.add_argument("--ducc", type=pathlib.Path, required=True)
     parser.add_argument("--output", type=pathlib.Path, required=True)
+    parser.add_argument("--grid", choices=("CC", "F1"), default="F1")
+    parser.add_argument(
+        "--baseline-source", default="0b2e1336409ba0bbe9fd6fa4cff70db0e327cd52"
+    )
+    parser.add_argument(
+        "--candidate-source", default="7f47f06f875991a982caf0f4c396323a32c0d72b"
+    )
     parser.add_argument("--target-ms", type=float, default=25.0)
     parser.add_argument("--process-pairs", type=int, default=3)
     args = parser.parse_args()
@@ -60,7 +67,7 @@ def main() -> None:
     if len(cpus) < 8:
         parser.error(f"q8 needs eight physical CPUs; found {len(cpus)}")
     monitor_cpu = cpus[8] if len(cpus) > 8 else cpus[0]
-    source_cases = spin1_bench.make_cases([720], ["F1"], False)
+    source_cases = spin1_bench.make_cases([720], [args.grid], False)
     cases = [
         case
         for case in source_cases
@@ -219,8 +226,8 @@ def main() -> None:
                     )
 
     metadata = {
-        "baseline_source": "0b2e1336409ba0bbe9fd6fa4cff70db0e327cd52",
-        "candidate_source": "7f47f06f875991a982caf0f4c396323a32c0d72b",
+        "baseline_source": args.baseline_source,
+        "candidate_source": args.candidate_source,
         "binaries": {backend: str(path) for backend, path in binaries.items()},
         "binary_sha256": {backend: sha256(path) for backend, path in binaries.items()},
         "ducc_revision": spin1_bench.PINNED_DUCC,
