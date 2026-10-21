@@ -3,7 +3,7 @@
 **Status: ACTIVE (2026-10-21), after Plan 14 closeout `f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`. Owner-authorized.**
 The Plan 14 scalar full-transform sweep, four principal figures, validation and closeout are committed and pushed on `opt/sht-performance-parity`. Continue this plan in the same Luna session and branch without another owner prompt. The handoff preserves the scalar baseline and does not expand Plan 15 beyond its stated spin-1 scope.
 
-**Current phase:** Phase A's native spin-1 GL → CC → F1 baseline is complete at Rust source `549bd2f0` and pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. The temporary owner-priority scalar T64–T256 GL diagnostic is complete in [the focused report](../reports/scalar-t64-256-performance-discontinuities-2026-10-21.md); it did not reopen Plan 14 or change the spin-1 recurrence. GL attribution is complete for this pass. Phase C validated q8 CC spin-1 order-parallel analysis resampling and corrected the synthesis phase probe to use production-prepared workspace; the remaining CC q8 synthesis cost is in the general order/recurrence stage. Proceed to F1 preparation and phase attribution, then integrated cross-grid validation. Odd-FFT optimization remains excluded per the owner direction below.
+**Current phase:** Phase A's native spin-1 GL → CC → F1 baseline is complete at Rust source `549bd2f0` and pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. The temporary owner-priority scalar T64–T256 GL diagnostic is complete in [the focused report](../reports/scalar-t64-256-performance-discontinuities-2026-10-21.md); it did not reopen Plan 14 or change the spin-1 recurrence. GL attribution is complete for this pass. Phase C validated q8 CC spin-1 order-parallel analysis resampling and corrected the synthesis phase probe to use production-prepared workspace; the remaining CC q8 synthesis cost is in the general order/recurrence stage. Phase D has now enabled the same bounded order-parallel resampler for high-work f64 F1 analysis; matched T720/T1023 q8 whole transforms improved 22–45%, and the q8 stage probe reduced T1023 resampling from 91.0 to 38.7 ms. Proceed to integrated cross-grid validation and F1 synthesis attribution. Odd-FFT optimization remains excluded per the owner direction below.
 
 **Phase B checkpoint (2026-10-21):** the q8 GL synthesis path reads cached
 spin-1 scalar-conversion rows directly across ring groups, avoiding repeated
@@ -51,7 +51,19 @@ No GL production change is justified by that profile alone. CC's measured
 analysis-resampling improvement and q8 synthesis profile are recorded in
 [`reports/plan15-spin1-cc-resampling-2026-10-21.md`](../reports/plan15-spin1-cc-resampling-2026-10-21.md).
 The remaining CC synthesis cost is in the general order/recurrence stage;
-continue to F1 spin-1 preparation and phase attribution.
+continue to integrated GL/CC/F1 validation and F1 synthesis attribution.
+
+**Phase D F1 analysis checkpoint (2026-10-21):** commit `29e4b126` extends
+the same guarded, reusable order-parallel meridional preparation from CC to
+F1 spin-1 analysis, preserving F1 phase shifting. At T720/T1023, full and
+quarter order, q8 Rust warm medians improved 22–45% across four matched
+whole-transform cases; Rust/DUCC moved from 2.38–3.48x to 1.47–2.48x. The
+T1023 full-order phase probe reduced median resampling from 91.0 to 38.7 ms.
+Numerical/reset comparisons passed with maximum relative L2 `1.30e-12`.
+q1 remains serial; its cross-campaign measurements were noisy and are not
+claimed as an effect. q8 scheduling wait was nonzero, so the measured benefit
+direction is clear while exact magnitude remains host-sensitive. See the
+[report and full timing distributions](../reports/plan15-spin1-f1-analysis-resampling-2026-10-21.md).
 
 **Owner direction (2026-10-21): defer odd-length FFT optimization.** Continue to benchmark and validate odd/even longitude cases as **controls**, but do **not** prototype paired-real-row FFTs, swap in `realfft` or the standalone `rustsht-fft` backend, change prime-radix/FFT planners, or start a C2R/odd-FFT optimization investigation. Do not choose an odd-specific FFT issue as a Plan 15 optimization target even when profiling identifies it. Record the residual and continue to measured **spin-1 vector** bottlenecks outside the FFT engine. Existing FFT behavior and numerical safeguards stay intact. This hold remains until an explicit new owner instruction revokes it.
 

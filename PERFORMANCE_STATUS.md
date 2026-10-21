@@ -59,8 +59,13 @@ and places 229 ms of a 236 ms Rust call in order scheduling, recurrence and
 spectral accumulation. No CC-specific synthesis change is supported yet.
 See the [CC report](reports/plan15-spin1-cc-resampling-2026-10-21.md) and
 [matched data](reports/data/plan15-spin1-cc-resampling-2026-10-21/).
-Next: F1 spin-1 preparation and half-grid phase attribution, retaining CC
-whole-transform behavior as a control.
+F1 spin-1 analysis now uses this order-parallel preparation for high-work q8
+cases while preserving F1's half-grid phase. The matched T720/T1023 full and
+quarter-order q8 cases improved 22–45%; T1023 full-order phase resampling fell
+from 91.0 to 38.7 ms. q1 is unchanged by the worker gate and its timings were
+too noisy for a source comparison. F1 synthesis remains a separate recurrence
+cost. See the [F1 report and raw distributions](reports/plan15-spin1-f1-analysis-resampling-2026-10-21.md).
+Next: integrated GL/CC/F1 validation and F1 synthesis attribution.
 
 **Plan 15 Phase B candidate:** q8 GL spin-1 synthesis now borrows the shared
 scalar-conversion rows across ring groups instead of copying them into worker
