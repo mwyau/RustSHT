@@ -8,16 +8,33 @@ the same Luna session. The T2048 latitude-dependent prefix discontinuity
 was fixed at `0bc5f153`; q8 order preparation is implemented at
 `dfed3ff7`/`3b32f2de`; reduced-`mmax` frontend attribution and output
 pruning are closed in Plan 11. Rebaseline Plan 14 from the final Plan 11
-source, then pursue its measured small-q1 and large-q8 objectives. Do not
-start Plans 12/13. Explicit current owner instructions take precedence;
+source, then pursue its measured small-q1 and large-q8 objectives. **Owner-
+authorized successor (2026-10-21): [Plan 15](plans/15-spin1-vector-gl-cc-f1-performance.md)
+is NEXT, but NOT ACTIVE until the comprehensive Plan 14 scalar sweep,
+its four figures, and Plan 14 validation/closeout are committed and
+pushed. Then continue in this same Luna session and on the same branch
+without requesting another approval; mark Plan 14 COMPLETE and Plan 15
+ACTIVE in the plan index and status files. Plan 15 addresses spin-1
+vector GL, then spin-1 CC, then spin-1 F1 only; do not start unrelated
+scalar CC/F1 optimization.** Plans 12/13 remain deferred.
+Explicit current owner instructions take precedence;
 other archived plans/reviews and benchmark reports are historical evidence.
 Read the current active plan and production source before acting.
 
-- **Scope:** Execute Plan 14's bounded f64 scalar GL STANDARD small-q1 and large-q8 stages from the final Plan 11 source. Reuse completed frontend and order-preparation evidence; do not repeat the T2048 cutoff, q8 order-row preparation, or 64/128 tile campaigns. Plans 12/13 remain future-only; no speculative global FFT rewrite, cache autotune, batch API or unrelated new dependencies.
+- **Scope/sequence:** Complete the ongoing Plan 14 f64 scalar GL STANDARD
+  full-sweep checkpoint and bounded small-q1/large-q8 closeout **before**
+  beginning Plan 15. Reuse completed frontend and order-preparation evidence;
+  do not repeat the T2048 cutoff, q8 order-row preparation, or 64/128 tile
+  campaigns. Once Plan 15 becomes ACTIVE, follow its native matched spin-1
+  E/B benchmark and GL → CC → F1 optimization stages, preserving all
+  grid-specific meridional analysis and adjoint semantics. Do not treat
+  scalar optimization or spins 2–4 as part of Plan 15. Plans 12/13
+  remain future-only; no speculative global FFT rewrite, cache autotune,
+  batch API or unrelated dependencies.
 - **Numerics:** preserve the Rust API, independent `S/A/S*/A*` operators, GL/CC/F1, f32/f64, spin 0–4, correct scaling/phase/weights, subnormal and extreme-value safeguards, SIMD tails, serial/parallel behavior and checked fallbacks. Verify against pinned DUCC **and** analytic/adjoint tests; never relax tolerances for speed.
 - **Implementation:** stable Rust, portable runtime Pulp SIMD and bounded caller-owned scratch. Neutral RustSHT source names, correct GPL-2.0-or-later and translated DUCC attribution. Archive demonstrably retired prototypes; do not retain layers of competing kernels.
 - **Evidence:** compare **equivalent kernel boundaries and actual executed SIMD machine code** using matched native Rust/DUCC release builds. Isolate normal versus scaled work, hot-loop frequency, memory access, reductions, checks, loads/stores, compiler effects and full-transform overhead. A shorter assembly listing or lower stack frame is not proof of speed. Keep investigating the dominant residual when an isolated small change succeeds. No arbitrary truncation-specific or percentage acceptance target. Preserve historical evidence; keep raw disassembly and local host/process/PSI logs untracked, with concise reproducible findings committed.
 - **Benchmark repetitions:** Nine single-call samples are insufficient for final short-kernel claims. For short operations, warm up and calibrate repeated invocations to ~20–100 ms per timed batch; collect **at least 30 timed batches across independent runs** per case. For long whole-transform calls above ~100 ms, individually timed calls over repeated interleaved processes are appropriate: report the actual count (e.g. 15), median, p10/p90 and spread, not a fabricated batch count. Pin q1 to one physical core, use matched physical-core sets at q8, retain first-call/warm distinctions and host-contended observations. Equivalent work/reset semantics are mandatory.
 - **Workflow:** at most one Luna benchmark-only subagent, no Sol reviewer unless the owner changes this. Run formatting, relevant Clippy, release tests and no-default-features tests, with Python tests if bindings change.
 - **Reviewable progress:** Implement and benchmark **one attributable change at a time**; make small buildable, numerically validated commits and push after each meaningful change, following the sync rule below. **Keep production scalar-analysis tiles at 256 reflected latitude pairs. Do not repeatedly rebench or recommend 64/128 tiles** as a workaround for the disabled-prefix route; previously measured comparisons are archived. A 512-tile experiment is optional only *after* the cutoff has been addressed and requires appropriate workspace-capacity changes. Packed reductions, direct coefficient accumulation and indexed-loop prototypes have been measured/rejected or retired; do not resurrect them without a new mechanism. The fixed-scratch q8 synthesis speedup is opt-in/unattributed, not promoted. Do not push known correctness regressions.
-- **Mandatory sync before every push:** inspect worktree; safely commit/stash uncommitted work; `git fetch origin`; **rebase only unpublished local commits onto `origin/opt/sht-performance-parity`** when safe. Resolve conflicts without losing concurrent work; if unsafe, preserve work and report the conflict, never reset or force-push. After integrating remote work, reread this file, the active Plan 14 and any new owner instructions, then rerun affected tests, push normally and verify remote HEAD. Never rewrite published commits, force-push or touch `main` without authorization.
+- **Mandatory sync before every push:** inspect worktree; safely commit/stash uncommitted work; `git fetch origin`; **rebase only unpublished local commits onto `origin/opt/sht-performance-parity`** when safe. Resolve conflicts without losing concurrent work; if unsafe, preserve work and report the conflict, never reset or force-push. After integrating remote work, reread this file, the currently active Plan 14 or Plan 15 and any new owner instructions, then rerun affected tests, push normally and verify remote HEAD. Never rewrite published commits, force-push or touch `main` without authorization.
