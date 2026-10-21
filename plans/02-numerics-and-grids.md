@@ -37,7 +37,7 @@ For alias-free **analysis**, `mmax <= floor((Nφ-1)/2)`, in addition to `0 <= mm
 - GL: port DUCC's `GL_Integrator` node/weight/colatitude ordering. Its small-grid method iterates Legendre roots in `long double`; above 100 rings it uses Bogaert/FastGL expansions and symmetry. Match the published approximations, source terms and tested numerical behavior. No third-party quadrature crate.
 - CC/F1: port DUCC's FFT-based Waldvogel weights and prepared-CC resampling including pole flags, parity, phase shifts, padding, convolution and matching adjoint. Use RustFFT for FFT execution.
 - Legendre/spin: retain scaled normalized recurrence, sectoral initialization, rescaling, reflection parity and polar cutoffs; use SIMD across independent latitude lanes while keeping degree recurrence sequential.
-- FFT: implement only the even-length real-input packing/Hermitian recombination necessary around complex RustFFT; handle odd lengths with the full-complex path. Verify direct FFT outputs against an independent full-complex implementation before SHT integration. See [04](04-architecture-and-performance.md) for memory blocking, threading and runtime dispatch.
+- FFT: implement only the even-length real-input packing/Hermitian recombination necessary around complex RustFFT; handle odd lengths with the full-complex path. Verify direct FFT outputs against an independent full-complex implementation before SHT integration. See the [archived architecture and performance plan](../reports/archive/plans/04-architecture-and-performance.md) for the historical memory-blocking, threading and dispatch design.
 
 ## Storage and coordinate conventions
 
