@@ -1,5 +1,7 @@
 # Scalar T64 recurrence dispatch experiment
 
+> **Completed dispatch study — retained accepted evidence, not an open task.** The global T64 recurrence proposal was rejected after q1-analysis regressions. Current f64 scalar synthesis alone uses recurrence at T64+; analysis and spin-1 retain distinct policies. Do not rerun this campaign or introduce a universal cache cutoff as part of [active Plan 11](../plans/11-ducc-equivalent-scalar-analysis.md). Future cache-informed calibration belongs to [Plan 12](../plans/12-cache-informed-legendre-dispatch.md).
+
 ## Scope and source versions
 
 Baseline benchmark checkout HEAD: `d68d8e48e982bc1e0ef347e95c744a703cbadf70` (scalar production source last changed at `980e8e4f`); candidate source commit: `0ffcddda3f020d7c7144301de4320e127c5167b5`.
