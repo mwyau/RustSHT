@@ -104,7 +104,7 @@ fn capture_plan14_t127_active_ring_kernel_input() {
         block_start,
         block_len,
         true,
-        &order_spectra,
+        super::ScalarAnalysisOrderSpectra::Weighted(&order_spectra),
         &workspace.ring_order_limits[..ntheta],
         &workspace.theta_sin[..ntheta],
         &workspace.theta_cos[..ntheta],
@@ -423,7 +423,7 @@ fn report_scalar_analysis_pair_tile_utilization() {
                         block_start,
                         block_len,
                         true,
-                        &order_spectra,
+                        ScalarAnalysisOrderSpectra::Weighted(&order_spectra),
                         &workspace.ring_order_limits,
                         &workspace.theta_sin,
                         &workspace.theta_cos,
@@ -3712,6 +3712,49 @@ fn analysis_order_local_init_overwrites_existing_coefficients() {
 }
 
 #[test]
+fn scalar_analysis_direct_ring_input_matches_prepared_order_values() {
+    let plan = make_plan(8, 5, 9, 18, 0.37);
+    let mut workspace = plan.workspace().unwrap();
+    let spectrum_len = plan.fft.spectrum_len();
+    for (index, value) in workspace.spectra.iter_mut().enumerate() {
+        let x = index as f64;
+        *value = Complex64::new((x * 0.071).sin(), (x * 0.043).cos());
+    }
+
+    let latitude_count = plan.grid.ntheta();
+    let order_count = plan.harmonics.mmax() + 1;
+    let preparation = ScalarAnalysisOrderPreparation {
+        analysis_spectra: &workspace.spectra,
+        spectrum_len,
+        phi0: plan.grid.phi0(),
+        ring_order_limits: &workspace.ring_order_limits[..latitude_count],
+        scalar_table_selected: false,
+        ring_weights: Some(plan.grid.ring_weights()),
+        longitude_count: plan.grid.nphi() as f64,
+        scalar_table_input_limit: None,
+    };
+    let mut prepared = vec![Complex64::new(0.0, 0.0); order_count * latitude_count];
+    for (order, row) in prepared.chunks_mut(latitude_count).enumerate() {
+        assert!(preparation.prepare_order(order, row));
+    }
+
+    let direct = ScalarAnalysisSpectra::Direct(ScalarAnalysisDirectSpectra {
+        values: &workspace.spectra,
+        spectrum_len,
+        phi0: plan.grid.phi0(),
+        ring_weights: plan.grid.ring_weights(),
+        longitude_count: plan.grid.nphi() as f64,
+    });
+    for order in 0..order_count {
+        let direct_order = direct.for_order(order);
+        let prepared_order = &prepared[order * latitude_count..(order + 1) * latitude_count];
+        for (ring, &prepared_value) in prepared_order.iter().enumerate() {
+            assert_eq!(direct_order.value(ring), prepared_value);
+        }
+    }
+}
+
+#[test]
 #[expect(
     clippy::excessive_precision,
     reason = "The literals retain DUCC's printed reference digits."
@@ -4217,7 +4260,7 @@ fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
         block_start,
         block_len,
         false,
-        &spectra,
+        super::ScalarAnalysisOrderSpectra::Weighted(&spectra),
         &limits,
         &theta_sin,
         &theta_cos,
@@ -4247,7 +4290,7 @@ fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
         block_start,
         block_len,
         true,
-        &spectra,
+        super::ScalarAnalysisOrderSpectra::Weighted(&spectra),
         &limits,
         &theta_sin,
         &theta_cos,
@@ -4291,7 +4334,7 @@ fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
     super::restore_symmetric_analysis_pair_opposite(
         m,
         latitude_count,
-        &spectra,
+        super::ScalarAnalysisOrderSpectra::Weighted(&spectra),
         &limits,
         &compact_north_ring[..compact_len],
         &mut compact_opposite_real[..compact_len],
@@ -4336,7 +4379,7 @@ fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
         equator_start,
         1,
         true,
-        &spectra,
+        super::ScalarAnalysisOrderSpectra::Weighted(&spectra),
         &limits,
         &theta_sin,
         &theta_cos,

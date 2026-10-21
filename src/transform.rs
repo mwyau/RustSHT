@@ -156,6 +156,77 @@ impl<T: ShtScalar> ScalarAnalysisOrderPreparation<'_, T> {
     }
 }
 
+#[derive(Clone, Copy)]
+struct ScalarAnalysisDirectSpectra<'a, T> {
+    values: &'a [Complex<T>],
+    spectrum_len: usize,
+    phi0: f64,
+    ring_weights: &'a [f64],
+    longitude_count: T,
+}
+
+#[derive(Clone, Copy)]
+enum ScalarAnalysisSpectra<'a, T> {
+    OrderMajor {
+        values: &'a [Complex<T>],
+        latitude_count: usize,
+    },
+    Direct(ScalarAnalysisDirectSpectra<'a, T>),
+}
+
+#[derive(Clone, Copy)]
+enum ScalarAnalysisOrderSpectra<'a, T> {
+    Weighted(&'a [Complex<T>]),
+    Direct {
+        source: ScalarAnalysisDirectSpectra<'a, T>,
+        order: usize,
+        phase: Complex<T>,
+    },
+}
+
+impl<'a, T: ShtScalar> ScalarAnalysisSpectra<'a, T> {
+    #[inline]
+    fn for_order(self, order: usize) -> ScalarAnalysisOrderSpectra<'a, T> {
+        match self {
+            Self::OrderMajor {
+                values,
+                latitude_count,
+            } => ScalarAnalysisOrderSpectra::Weighted(
+                &values[order * latitude_count..(order + 1) * latitude_count],
+            ),
+            Self::Direct(source) => ScalarAnalysisOrderSpectra::Direct {
+                source,
+                order,
+                phase: if order == 0 {
+                    Complex::new(T::one(), T::zero())
+                } else {
+                    longitude_phase::<T>(order, source.phi0, true)
+                },
+            },
+        }
+    }
+}
+
+impl<T: ShtScalar> ScalarAnalysisOrderSpectra<'_, T> {
+    #[inline]
+    fn value(self, ring: usize) -> Complex<T> {
+        match self {
+            Self::Weighted(values) => values[ring],
+            Self::Direct {
+                source,
+                order,
+                phase,
+            } => {
+                let mut value = source.values[ring * source.spectrum_len + order] * phase;
+                let weight =
+                    T::from_f64(source.ring_weights[ring]).expect("ring weight is representable");
+                value *= weight / source.longitude_count;
+                value
+            }
+        }
+    }
+}
+
 #[cfg(feature = "parallel")]
 pub(crate) fn weighted_order_midpoint(lmax: usize, m_start: usize, m_end: usize) -> usize {
     debug_assert!(m_start < m_end);
@@ -239,7 +310,7 @@ fn prepare_symmetric_analysis_pair_block<T: ShtScalar>(
     block_start: usize,
     block_len: usize,
     compact: bool,
-    order_spectra: &[Complex<T>],
+    order_spectra: ScalarAnalysisOrderSpectra<'_, T>,
     ring_order_limits: &[usize],
     theta_sin: &[T],
     theta_cos: &[T],
@@ -264,13 +335,13 @@ fn prepare_symmetric_analysis_pair_block<T: ShtScalar>(
             continue;
         }
         let north = if north_active {
-            order_spectra[north_ring]
+            order_spectra.value(north_ring)
         } else {
             Complex::new(T::zero(), T::zero())
         };
         // The equatorial singleton has no reflected sample and contributes once to both parities.
         let south = if south_active {
-            order_spectra[south_ring]
+            order_spectra.value(south_ring)
         } else {
             Complex::new(T::zero(), T::zero())
         };
@@ -294,13 +365,12 @@ fn prepare_symmetric_analysis_pair_block<T: ShtScalar>(
 fn restore_symmetric_analysis_pair_opposite<T: ShtScalar>(
     m: usize,
     latitude_count: usize,
-    order_spectra: &[Complex<T>],
+    order_spectra: ScalarAnalysisOrderSpectra<'_, T>,
     ring_order_limits: &[usize],
     packed_north_ring: &[usize],
     opposite_real: &mut [T],
     opposite_imag: &mut [T],
 ) {
-    debug_assert_eq!(order_spectra.len(), latitude_count);
     debug_assert_eq!(ring_order_limits.len(), latitude_count);
     debug_assert_eq!(packed_north_ring.len(), opposite_real.len());
     debug_assert_eq!(opposite_real.len(), opposite_imag.len());
@@ -309,12 +379,12 @@ fn restore_symmetric_analysis_pair_opposite<T: ShtScalar>(
         let north_active = m <= ring_order_limits[north_ring];
         let south_active = south_ring != north_ring && m <= ring_order_limits[south_ring];
         let north = if north_active {
-            order_spectra[north_ring]
+            order_spectra.value(north_ring)
         } else {
             Complex::new(T::zero(), T::zero())
         };
         let south = if south_active {
-            order_spectra[south_ring]
+            order_spectra.value(south_ring)
         } else {
             Complex::new(T::zero(), T::zero())
         };
@@ -1772,27 +1842,51 @@ impl<T: ShtScalar> ShtPlan<T> {
             longitude_count,
             scalar_table_input_limit,
         };
+        let direct_pair_source = if !scalar_table_selected
+            && T::supports_paired_scalar()
+            && self.harmonics.lmax() >= T::FUSED_SCALAR_ANALYSIS_MIN_LMAX
+            && self.grid.kind() == GridKind::GaussLegendre
+            && analysis_ntheta == ntheta
+        {
+            analysis_ring_weights.map(|ring_weights| ScalarAnalysisDirectSpectra {
+                values: analysis_spectra,
+                spectrum_len,
+                phi0: self.grid.phi0(),
+                ring_weights,
+                longitude_count,
+            })
+        } else {
+            None
+        };
         #[cfg(feature = "parallel")]
         let scalar_table_inputs_safe = {
-            let worker_count = rayon::current_num_threads()
-                .min(workspace.execution_capacity)
-                .min(order_count);
-            if !scalar_table_selected && worker_count > 1 {
-                order_spectra
-                    .par_chunks_mut(analysis_ntheta)
-                    .enumerate()
-                    .with_min_len(order_count.div_ceil(worker_count))
-                    .for_each(|(order, order_row)| {
-                        let inputs_safe = order_preparation.prepare_order(order, order_row);
-                        debug_assert!(inputs_safe);
-                    });
+            if direct_pair_source.is_some() {
                 true
             } else {
-                order_preparation.prepare_serial(order_spectra)
+                let worker_count = rayon::current_num_threads()
+                    .min(workspace.execution_capacity)
+                    .min(order_count);
+                if !scalar_table_selected && worker_count > 1 {
+                    order_spectra
+                        .par_chunks_mut(analysis_ntheta)
+                        .enumerate()
+                        .with_min_len(order_count.div_ceil(worker_count))
+                        .for_each(|(order, order_row)| {
+                            let inputs_safe = order_preparation.prepare_order(order, order_row);
+                            debug_assert!(inputs_safe);
+                        });
+                    true
+                } else {
+                    order_preparation.prepare_serial(order_spectra)
+                }
             }
         };
         #[cfg(not(feature = "parallel"))]
-        let scalar_table_inputs_safe = order_preparation.prepare_serial(order_spectra);
+        let scalar_table_inputs_safe = if direct_pair_source.is_some() {
+            true
+        } else {
+            order_preparation.prepare_serial(order_spectra)
+        };
         #[cfg(all(test, feature = "parallel"))]
         {
             crate::workspace::record_transform_phase(
@@ -1857,6 +1951,14 @@ impl<T: ShtScalar> ShtPlan<T> {
             );
             return Ok(());
         }
+        let scalar_analysis_spectra = if let Some(source) = direct_pair_source {
+            ScalarAnalysisSpectra::Direct(source)
+        } else {
+            ScalarAnalysisSpectra::OrderMajor {
+                values: order_spectra,
+                latitude_count: analysis_ntheta,
+            }
+        };
         // The f64 paired recurrence owns a disjoint coefficient slice per
         // harmonic order. Initialize each slice on its worker immediately
         // before accumulation instead of serially clearing the full output.
@@ -1905,7 +2007,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             let use_parallel = rayon::current_num_threads() > 1 && worker_count > 1;
             if use_parallel {
                 self.analyze_order_jobs_dynamic(
-                    order_spectra,
+                    scalar_analysis_spectra,
                     analysis_ntheta,
                     theta_sin,
                     theta_cos,
@@ -1932,7 +2034,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     phase_started = std::time::Instant::now();
                 }
                 self.analyze_order_group(
-                    order_spectra,
+                    scalar_analysis_spectra,
                     analysis_ntheta,
                     theta_sin,
                     theta_cos,
@@ -1961,7 +2063,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         {
             let order_count = mmax + 1;
             self.analyze_order_group(
-                order_spectra,
+                scalar_analysis_spectra,
                 analysis_ntheta,
                 theta_sin,
                 theta_cos,
@@ -2089,7 +2191,7 @@ impl<T: ShtScalar> ShtPlan<T> {
     )]
     fn analyze_order_jobs_dynamic(
         &self,
-        spectra: &[Complex<T>],
+        spectra: ScalarAnalysisSpectra<'_, T>,
         latitude_count: usize,
         theta_sin: &[T],
         theta_cos: &[T],
@@ -2226,7 +2328,7 @@ impl<T: ShtScalar> ShtPlan<T> {
     )]
     fn analyze_order_group(
         &self,
-        spectra: &[Complex<T>],
+        spectra: ScalarAnalysisSpectra<'_, T>,
         latitude_count: usize,
         theta_sin: &[T],
         theta_cos: &[T],
@@ -2284,7 +2386,7 @@ impl<T: ShtScalar> ShtPlan<T> {
     #[allow(unexpected_cfgs)]
     fn analyze_symmetric_order_group(
         &self,
-        spectra: &[Complex<T>],
+        spectra: ScalarAnalysisSpectra<'_, T>,
         latitude_count: usize,
         theta_sin: &[T],
         theta_cos: &[T],
@@ -2325,6 +2427,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             }
             let first_active_pair =
                 first_active_symmetric_pair(m, latitude_count, ring_order_limits);
+            let order_spectra = spectra.for_order(m);
             T::fill_epsilon(m, lmax, &mut recurrence.epsilon);
             let mut paired_used = T::fill_paired_scalar_factors(
                 m,
@@ -2337,7 +2440,6 @@ impl<T: ShtScalar> ShtPlan<T> {
             for block_start in (first_active_pair..pair_lane_count).step_by(pair_block_size) {
                 let block_end = (block_start + pair_block_size).min(pair_lane_count);
                 let block_len = block_end - block_start;
-                let order_spectra = &spectra[m * latitude_count..(m + 1) * latitude_count];
                 let compact_candidate = T::supports_paired_scalar() && lmax >= 127;
                 let lane_count = prepare_symmetric_analysis_pair_block(
                     m,
