@@ -974,10 +974,58 @@ supported. This direct timing includes packing, row scheduling and output;
 it does not isolate FFT arithmetic from those costs. See the
 [matched row report](../reports/plan14-ducc-inverse-rows-2026-10-21.md).
 
-**Next:** the remaining T127 full-order q1 table-analysis residual is
-addressed below. Reopen odd real-FFT work only with a new source-grounded
-candidate that beats the current complex route; any such comparison must
-attribute packing and FFT arithmetic before promotion.
+## Current progress — f64 n=361 mixed-radix inverse (2026-10-21)
+
+Source commit [`a6cfdc49`](../src/fft.rs) adds a narrowly selected inverse
+plan for the measured T720 odd-minimum longitude length, `nphi=361=19²`.
+RustFFT 6.4.1 plans this composite as one Bluestein transform even though it
+has a direct radix-19 butterfly. RustSHT now composes two existing radix-19
+inverse butterflies with `MixedRadix` for **f64 `inverse_series` at n=361**.
+The normal planner remains in use for every other length, for every f32 plan,
+and for the checked inverse path; existing finite/headroom checks and caller
+scratch are unchanged.
+
+The comparison used baseline source `3fcbaee6` and candidate `a6cfdc49`, Rust
+1.99.1/LLVM 23.1.1 with strict FP and `-C target-cpu=x86-64-v3`, runtime Pulp
+V3 (four f64 lanes), and DUCC 0.42.0 at
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`, GCC 15.2 with SHT flags
+`-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3`. q1 was pinned to CPU 0;
+q8 used physical cores 0–7. The row benchmark used 30 calibrated batches per
+process and three interleaved process pairs. The whole-transform benchmark
+used three interleaved Rust/DUCC process pairs per run, 10 calibrated batches
+per process, identical deterministic coefficients, and separate plan/first-
+call measurements.
+
+| Boundary | q | Rust baseline → candidate | DUCC baseline → candidate | Rust/DUCC baseline → candidate | Relative L2 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 721 inverse rows, n=361 | 1 | 2.203 → 1.854 ms (−15.9%) | 0.887 → 0.859 ms | 2.485× → 2.157× | `4.28e-16` candidate |
+| 721 inverse rows, n=361 | 8 | 0.377 → 0.293 ms (−22.3%) | 0.156 → 0.158 ms | 2.415× → 1.858× | `4.28e-16` candidate |
+| Full T720, `mmax=180`, `nphi=361` synthesis | 1 | 10.700 → 10.454 ms (−2.3%) | 8.795 → 8.615 ms | 1.217× → 1.213× | `5.19e-14` candidate |
+| Full T720, `mmax=180`, `nphi=361` synthesis | 8 | 1.633 → 1.589 ms (−2.7%) | 1.262 → 1.258 ms | 1.294× → 1.264× | `5.19e-14` candidate |
+
+The q8 whole-call excess fell about 39 µs, roughly 10.6% of the measured
+baseline excess. It remains about 0.332 ms; this change does not close the
+whole-transform gap. The three q8 source runs all favored the candidate, but
+within-run p10/p90 ranges overlapped in two of the three comparisons.
+Runqueue wait was low at the median and occasionally reached 5.8–6.7% at
+p90, so treat the full-call result as a repeatable directional gain rather
+than a precise performance guarantee.
+First-call latency did not regress. A test-only phase capture also showed the
+inverse stage falling from 0.421 to 0.289 ms median; its fixture and timer
+boundaries differ from the parity harness, so it remains diagnostic.
+
+Numerical checks compare the mixed plan to RustFFT's normal full-complex
+planner and the checked inverse, and preserve exact subnormal and `f64::MAX`
+DC outputs. The f32 test confirms it retains the original plan. Full release
+and no-default-feature suites, Clippy, and formatting passed; the full SHT
+benchmark compared both outputs to pinned DUCC. Reproduction details and
+compact timing data are in
+[`plan14-mixed-radix-n361-2026-10-21`](../reports/data/plan14-mixed-radix-n361-2026-10-21/).
+
+**Next:** revalidate the current q8 T3072 full-order analysis result against
+the final Plan 14 source, then rank the largest remaining q8 whole-transform
+excess before selecting another source change. Do not generalize this FFT
+decomposition beyond the measured f64 n=361 case without matched evidence.
 
 ## Current progress — T127 full-order analysis reuses reflected spectra (2026-10-21)
 

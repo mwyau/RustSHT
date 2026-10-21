@@ -186,6 +186,21 @@ fixed-cost attribution across T1–T64. See the
 and earlier [kernel summary](reports/data/plan14-warmed-analysis-kernel-2026-10-21/summary.csv).
 
 
+**Plan 14 n=361 f64 inverse improvement (`a6cfdc49`):** at T720,
+`mmax=180`, the measured `nphi=361=19²` synthesis path now uses two
+existing RustFFT radix-19 butterflies for the ordinary f64 inverse series;
+f32, other lengths and checked inverses retain their previous planner.
+Matched inverse-row medians fell 15.9% q1 and 22.3% q8. Full synthesis
+improved 2.3% q1 and 2.7% q8; the q8 Rust/DUCC ratio moved 1.294→1.264 and
+excess fell about 39 µs. Candidate relative L2 was `5.19e-14` end-to-end.
+The full-call p10/p90 intervals overlapped in two of three q8 process pairs,
+and q8 runqueue wait had occasional 5.8–6.7% p90 spikes. Treat this as a
+directional, case-specific gain; the remaining q8 excess is about 0.332 ms.
+See [Plan 14](plans/14-small-serial-parallel-performance.md) and the
+[comparison CSV](reports/data/plan14-mixed-radix-n361-2026-10-21/comparison.csv).
+Next: rebaseline T3072 full-order q8 analysis on the current source and rank
+the remaining whole-transform excess before another change.
+
 ## Highest-confidence current finding — prefix discontinuity removed
 
 The controlled change at `0bc5f153` removes only RustSHT's global
@@ -459,9 +474,11 @@ q8 scheduling included. No production kernel changed in this checkpoint.
 
 ## Current next steps and deferred work
 
-The q1/q8 inverse-row comparison is complete. Resume the remaining T127 q1
-analysis residual. Keep the odd-length real-inverse gap as a lead, but do not
-replace production FFT code with the already-rejected real C2R candidate.
+The q8 `nphi=361` inverse candidate is integrated and measured. Rebaseline
+the T3072 full-order q8 analysis case under the current Plan 14 source, then
+select the largest measured whole-transform excess. Keep the FFT change
+limited to f64 `nphi=361`; do not revive the rejected standalone C2R engine
+or generalize the mixed-radix route without matched evidence.
 **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
 cache-topology queries and [Plan 13](plans/13-fused-batched-sht.md)
 true basis-shared batches.

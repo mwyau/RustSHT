@@ -1,0 +1,5 @@
+boundary,threads,baseline_rust_ms,baseline_rust_p10_ms,baseline_rust_p90_ms,candidate_rust_ms,candidate_rust_p10_ms,candidate_rust_p90_ms,baseline_ducc_ms,candidate_ducc_ms,baseline_rust_ducc_ratio,candidate_rust_ducc_ratio,baseline_excess_ms,candidate_excess_ms,baseline_relative_l2,candidate_relative_l2,process_invocations_per_backend,batches_per_process
+inverse_rows_n361,1,2.203056,2.189457,2.213269,1.853695,1.842289,1.859616,0.886633,0.859362,2.4847,2.1571,1.316423,0.994333,5.3969e-16,4.2759e-16,3,30
+inverse_rows_n361,8,0.377197,0.357793,0.412552,0.293092,0.288151,0.301153,0.156187,0.157759,2.4150,1.8578,0.221010,0.135333,5.3969e-16,4.2759e-16,3,30
+full_synthesis_t720_m180,1,10.700172,10.637088,11.671888,10.454414,10.438847,11.247637,8.795065,8.615310,1.2166,1.2135,1.905107,1.839104,5.1949e-14,5.1944e-14,3,10
+full_synthesis_t720_m180,8,1.632991,1.615850,1.674185,1.589467,1.575126,1.613774,1.262110,1.257860,1.2939,1.2636,0.370881,0.331607,5.1949e-14,5.1944e-14,3,10
