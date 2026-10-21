@@ -1,0 +1,5 @@
+nphi,threads,baseline_rounds,baseline_batches,candidate_rounds,candidate_batches,baseline_rust_median_us,baseline_rust_p10_min_us,baseline_rust_p90_max_us,candidate_rust_median_us,candidate_rust_p10_us,candidate_rust_p90_us,rust_change_percent,baseline_ducc_median_us,candidate_ducc_median_us,baseline_rust_ducc_ratio,candidate_rust_ducc_ratio,baseline_excess_us,candidate_excess_us,candidate_relative_l2,candidate_max_abs,baseline_first_call_ms,candidate_first_call_ms
+255,1,2,60,1,30,374.762,371.046,378.228,282.961,280.887,315.363,-24.50,295.646,299.806,1.2677,0.9438,79.117,-16.845,8.523778600995024e-15,1.1796119636642288e-15,4.228931,4.162551
+255,8,1,30,1,30,226.204,218.142,241.646,206.118,202.617,208.052,-8.88,81.268,79.699,2.7834,2.5862,144.936,126.419,8.523778600995024e-15,1.1796119636642288e-15,4.444094,4.230801
+256,1,1,30,1,30,338.830,337.245,342.609,248.491,247.234,271.191,-26.66,261.587,261.479,1.2953,0.9503,77.244,-12.988,8.45562666612913e-15,1.0322264293231606e-15,4.192317,4.072150
+256,8,1,30,1,30,187.847,180.959,199.881,172.909,170.401,180.184,-7.95,77.584,73.532,2.4212,2.3515,110.263,99.376,8.45562666612913e-15,1.0322264293231606e-15,4.176227,4.142033

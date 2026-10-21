@@ -43,6 +43,18 @@ in the route control. See the
 [focused report](reports/plan14-t127-table-analysis-simd-2026-10-21.md) and
 [raw data](reports/data/plan14-t127-table-analysis-simd-2026-10-21/).
 
+**Plan 14 T127 reflected-spectrum reuse (2026-10-21):** the V3 compact-table
+analysis kernel now forms north/south sums and differences once per order and
+reuses them for each degree pair, using existing worker buffers. At full
+`mmax`, T127 q1 improved 24.5–26.7% for odd/even longitude counts and moved
+from 1.27–1.30x DUCC to 0.94–0.95x. q8 improved 8.0–8.9%, but remains
+2.35–2.59x DUCC and the q8 result is directional under scheduling
+interference. Relative L2 remained at most `8.53e-15`; full release and
+no-default-feature tests passed. See the
+[matched report](reports/plan14-t127-reflected-spectrum-reuse-2026-10-21.md)
+and [comparison data](reports/data/plan14-t127-reflected-spectrum-reuse-2026-10-21/comparison.csv).
+Next: re-rank the current-source q8 whole-transform excess by stage.
+
 **Plan 14 T64 reduced-order analysis (2026-10-21):** commit `7e51ae43`
 lowers only the f64 checked fused-analysis route floor from T127 to T64.
 T64 `mmax=16` q1 GL analysis improved 35–36% at `nphi=33/36`; T63 controls

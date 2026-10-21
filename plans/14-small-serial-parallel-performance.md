@@ -974,10 +974,37 @@ supported. This direct timing includes packing, row scheduling and output;
 it does not isolate FFT arithmetic from those costs. See the
 [matched row report](../reports/plan14-ducc-inverse-rows-2026-10-21.md).
 
-**Next:** resume the remaining T127 q1 analysis residual. Reopen odd real-FFT
-work only with a new source-grounded candidate that beats the current
-complex route; any such comparison must attribute packing and FFT arithmetic
-before promotion.
+**Next:** the remaining T127 full-order q1 table-analysis residual is
+addressed below. Reopen odd real-FFT work only with a new source-grounded
+candidate that beats the current complex route; any such comparison must
+attribute packing and FFT arithmetic before promotion.
+
+## Current progress — T127 full-order analysis reuses reflected spectra (2026-10-21)
+
+The V3 compact-table analysis loop previously recomputed north/south sums,
+differences and the reflected-lane rotation for every degree pair in an
+order. The current source computes each order's even/odd reflected spectra
+once and reuses the existing per-worker scalar coefficient buffers as
+bounded scratch. It adds no workspace allocation and does not change table
+selection, scalar fallback, f32, synthesis or spin-1.
+
+Matched native T127 full-order GL analysis against DUCC 0.42.0 at
+`nphi=255/256` found q1 Rust reductions of 24.5%/26.7%. Odd q1 moved from
+`1.268x` DUCC (+79.1 µs) to `0.944x` (−16.8 µs); even q1 moved from
+`1.295x` (+77.2 µs) to `0.950x` (−13.0 µs). q8 improved 8.0–8.9%, while
+remaining `2.35–2.59x` slower than DUCC; q8 timing is directional under
+scheduling interference. Relative L2 stayed below `8.53e-15`, and first-call
+latency did not increase. The complete distributions, errors and matched
+reproduction settings are in the
+[T127 reflected-spectrum report](../reports/plan14-t127-reflected-spectrum-reuse-2026-10-21.md)
+and [comparison CSV](../reports/data/plan14-t127-reflected-spectrum-reuse-2026-10-21/comparison.csv).
+All-feature and no-default release suites, strict Clippy and formatting
+passed.
+
+The T127 q1 table residual is now near DUCC for these two longitude lengths.
+Resume Phase B by re-ranking current-source q8 whole-transform excess and
+stage costs; the odd T720 inverse remains the largest measured selected
+synthesis lead, with no supported FFT replacement yet.
 
 ## 5. Phase B — Attribute the remaining q8 large-transform excess
 

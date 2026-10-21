@@ -1926,7 +1926,13 @@ impl<T: ShtScalar> ShtPlan<T> {
                 );
                 phase_started = std::time::Instant::now();
             }
-            self.analyze_scalar_table(order_spectra, alm, table, workspace.execution_capacity);
+            self.analyze_scalar_table(
+                order_spectra,
+                alm,
+                table,
+                workspace.execution_capacity,
+                &mut workspace.recurrence_workers,
+            );
             #[cfg(all(test, feature = "parallel"))]
             {
                 crate::workspace::record_transform_phase(
@@ -2100,6 +2106,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         alm: &mut [Complex<T>],
         table: &crate::legendre::ScalarLegendreTable<T>,
         execution_capacity: usize,
+        recurrence: &mut [crate::workspace::RecurrenceWorkspace<T>],
     ) {
         let order_count = self.harmonics.mmax() + 1;
         #[cfg(not(feature = "parallel"))]
@@ -2108,15 +2115,37 @@ impl<T: ShtScalar> ShtPlan<T> {
         {
             let workers = rayon::current_num_threads()
                 .min(execution_capacity)
+                .min(recurrence.len())
                 .min(order_count)
                 .max(1);
-            self.analyze_scalar_table_groups(order_spectra, table, 0, order_count, alm, workers);
+            self.analyze_scalar_table_groups(
+                order_spectra,
+                table,
+                0,
+                order_count,
+                alm,
+                recurrence,
+                workers,
+            );
         }
         #[cfg(not(feature = "parallel"))]
-        self.analyze_scalar_table_group(order_spectra, table, 0, order_count, alm);
+        self.analyze_scalar_table_group(
+            order_spectra,
+            table,
+            0,
+            order_count,
+            alm,
+            recurrence
+                .first_mut()
+                .expect("the table analysis has one recurrence scratch slot"),
+        );
     }
 
     #[cfg(feature = "parallel")]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Parallel table groups divide coefficient outputs and per-worker scratch together."
+    )]
     fn analyze_scalar_table_groups(
         &self,
         order_spectra: &[Complex<T>],
@@ -2124,10 +2153,20 @@ impl<T: ShtScalar> ShtPlan<T> {
         m_start: usize,
         m_end: usize,
         alm: &mut [Complex<T>],
+        recurrence: &mut [crate::workspace::RecurrenceWorkspace<T>],
         worker_count: usize,
     ) {
         if m_end - m_start <= 1 || worker_count <= 1 {
-            self.analyze_scalar_table_group(order_spectra, table, m_start, m_end, alm);
+            self.analyze_scalar_table_group(
+                order_spectra,
+                table,
+                m_start,
+                m_end,
+                alm,
+                recurrence
+                    .first_mut()
+                    .expect("each table-analysis group has worker scratch"),
+            );
             return;
         }
         let m_mid = weighted_order_midpoint(self.harmonics.lmax(), m_start, m_end);
@@ -2141,6 +2180,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             .expect("the end of an order group starts the next order");
         let (left_alm, right_alm) = alm.split_at_mut(coefficient_mid - coefficient_start);
         let left_worker_count = worker_count.div_ceil(2);
+        let (left_recurrence, right_recurrence) = recurrence.split_at_mut(left_worker_count);
         rayon::join(
             || {
                 self.analyze_scalar_table_groups(
@@ -2149,6 +2189,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     m_start,
                     m_mid,
                     left_alm,
+                    left_recurrence,
                     left_worker_count,
                 );
             },
@@ -2159,6 +2200,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     m_mid,
                     m_end,
                     right_alm,
+                    right_recurrence,
                     worker_count - left_worker_count,
                 );
             },
@@ -2172,7 +2214,13 @@ impl<T: ShtScalar> ShtPlan<T> {
         m_start: usize,
         m_end: usize,
         alm: &mut [Complex<T>],
+        recurrence: &mut crate::workspace::RecurrenceWorkspace<T>,
     ) {
+        // Table analysis does not use paired recurrence coefficients, so its
+        // per-order reflected spectra reuse these already-sized worker buffers.
+        let scratch_len = table.north_ring_count();
+        let even_scratch_len = scratch_len.min(recurrence.fast_scalar_first.len());
+        let odd_scratch_len = scratch_len.min(recurrence.fast_scalar_second.len());
         T::analyze_scalar_table_group(
             order_spectra,
             table,
@@ -2181,6 +2229,8 @@ impl<T: ShtScalar> ShtPlan<T> {
             m_start,
             m_end,
             alm,
+            &mut recurrence.fast_scalar_first[..even_scratch_len],
+            &mut recurrence.fast_scalar_second[..odd_scratch_len],
         );
     }
 

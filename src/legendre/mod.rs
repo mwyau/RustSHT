@@ -127,6 +127,10 @@ pub(crate) trait ShtScalar:
         false
     }
 
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The table accumulator receives packed spectra, basis storage and reusable order scratch."
+    )]
     fn analyze_scalar_table_group(
         order_spectra: &[Complex<Self>],
         table: &ScalarLegendreTable<Self>,
@@ -135,6 +139,8 @@ pub(crate) trait ShtScalar:
         m_start: usize,
         m_end: usize,
         alm: &mut [Complex<Self>],
+        _scratch_even: &mut [Complex<Self>],
+        _scratch_odd: &mut [Complex<Self>],
     ) {
         scalar_table::analyze_group_scalar(order_spectra, table, ntheta, lmax, m_start, m_end, alm);
     }
@@ -777,8 +783,20 @@ impl ShtScalar for f64 {
         m_start: usize,
         m_end: usize,
         alm: &mut [Complex<Self>],
+        scratch_even: &mut [Complex<Self>],
+        scratch_odd: &mut [Complex<Self>],
     ) {
-        scalar_table::analyze_group_f64(order_spectra, table, ntheta, lmax, m_start, m_end, alm);
+        scalar_table::analyze_group_f64(
+            order_spectra,
+            table,
+            ntheta,
+            lmax,
+            m_start,
+            m_end,
+            alm,
+            scratch_even,
+            scratch_odd,
+        );
     }
 
     fn supports_spin_analysis_simd() -> bool {

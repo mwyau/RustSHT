@@ -427,8 +427,14 @@ struct F64TableAnalysisGroup<'a> {
     m_start: usize,
     m_end: usize,
     alm: &'a mut [Complex<f64>],
+    scratch_even: &'a mut [Complex<f64>],
+    scratch_odd: &'a mut [Complex<f64>],
 }
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The table accumulator receives packed spectra, basis storage and reusable order scratch."
+)]
 pub(crate) fn analyze_group_f64(
     order_spectra: &[Complex<f64>],
     table: &ScalarLegendreTable<f64>,
@@ -437,6 +443,8 @@ pub(crate) fn analyze_group_f64(
     m_start: usize,
     m_end: usize,
     alm: &mut [Complex<f64>],
+    scratch_even: &mut [Complex<f64>],
+    scratch_odd: &mut [Complex<f64>],
 ) {
     Arch::new().dispatch(F64TableAnalysisGroup {
         order_spectra,
@@ -446,6 +454,8 @@ pub(crate) fn analyze_group_f64(
         m_start,
         m_end,
         alm,
+        scratch_even,
+        scratch_odd,
     });
 }
 
@@ -454,8 +464,12 @@ impl WithSimd for F64TableAnalysisGroup<'_> {
 
     #[inline(always)]
     fn with_simd<S: Simd>(self, simd: S) {
-        if S::C64_LANES == 2 && self.ntheta.is_multiple_of(4) {
-            analyze_group_f64_two_complex_lanes(self, simd);
+        if S::C64_LANES == 2
+            && self.ntheta.is_multiple_of(4)
+            && self.scratch_even.len() >= self.table.north_ring_count()
+            && self.scratch_odd.len() >= self.table.north_ring_count()
+        {
+            analyze_group_f64_two_complex_lanes_cached(self, simd);
         } else {
             analyze_group_scalar(
                 self.order_spectra,
@@ -471,7 +485,7 @@ impl WithSimd for F64TableAnalysisGroup<'_> {
 }
 
 #[inline(always)]
-fn analyze_group_f64_two_complex_lanes<S: Simd>(group: F64TableAnalysisGroup<'_>, simd: S) {
+fn analyze_group_f64_two_complex_lanes_cached<S: Simd>(group: F64TableAnalysisGroup<'_>, simd: S) {
     debug_assert_eq!(S::C64_LANES, 2);
     debug_assert_eq!(S::F64_LANES, 4);
 
@@ -483,6 +497,8 @@ fn analyze_group_f64_two_complex_lanes<S: Simd>(group: F64TableAnalysisGroup<'_>
         m_start,
         m_end,
         alm,
+        scratch_even,
+        scratch_odd,
     } = group;
     let north_ring_count = table.north_ring_count();
     let lower_complex_lane = simd.mask_between_m64s(2, 4).mask();
@@ -494,28 +510,40 @@ fn analyze_group_f64_two_complex_lanes<S: Simd>(group: F64TableAnalysisGroup<'_>
         let order_start = m * ntheta;
         let order_row = &order_spectra[order_start..order_start + ntheta];
         let paired_ring_count = ntheta / 2;
-        let (north_vectors, north_tail) = S::as_simd_c64s(&order_row[..paired_ring_count]);
-        let south_start = ntheta - paired_ring_count;
-        let (south_vectors, south_tail) = S::as_simd_c64s(&order_row[south_start..]);
-        debug_assert!(north_tail.is_empty());
-        debug_assert!(south_tail.is_empty());
-        debug_assert_eq!(north_vectors.len(), south_vectors.len());
-        let mut degree_offset = 0;
 
+        // The north/south sum, difference and lane rotation depend only on
+        // the order and latitude pair. Reuse them across every degree pair
+        // instead of rebuilding them in the inner table accumulation loop.
+        for north_ring in 0..north_ring_count {
+            let south_ring = ntheta - 1 - north_ring;
+            let north = order_row[north_ring];
+            let south = if south_ring != north_ring {
+                order_row[south_ring]
+            } else {
+                Complex::new(0.0, 0.0)
+            };
+            scratch_even[north_ring] = north + south;
+            scratch_odd[north_ring] = north - south;
+        }
+
+        let (even_vectors, even_tail) = S::as_simd_c64s(&scratch_even[..paired_ring_count]);
+        let (odd_vectors, odd_tail) = S::as_simd_c64s(&scratch_odd[..paired_ring_count]);
+        debug_assert!(even_tail.is_empty());
+        debug_assert!(odd_tail.is_empty());
+        debug_assert_eq!(even_vectors.len(), odd_vectors.len());
+
+        let mut degree_offset = 0;
         while degree_offset + 1 < coefficient_count {
             let even_basis = table.degree_lanes(m, degree_offset);
             let odd_basis = table.degree_lanes(m, degree_offset + 1);
             let mut even_sum = simd.splat_f64s(0.0);
             let mut odd_sum = simd.splat_f64s(0.0);
-            for (vector_index, (&north, &south_forward)) in north_vectors
-                .iter()
-                .zip(south_vectors.iter().rev())
-                .enumerate()
+            for (vector_index, (&even_values, &odd_values)) in
+                even_vectors.iter().zip(odd_vectors.iter()).enumerate()
             {
                 let north_ring = vector_index * 2;
-                let south = simd.rotate_right_c64s(south_forward, 1);
-                let even_values = pulp::bytemuck::cast(simd.add_c64s(north, south));
-                let odd_values = pulp::bytemuck::cast(simd.sub_c64s(north, south));
+                let even_values = pulp::bytemuck::cast(even_values);
+                let odd_values = pulp::bytemuck::cast(odd_values);
                 let even_weights = simd.select_f64s(
                     lower_complex_lane,
                     simd.splat_f64s(even_basis[north_ring + 1]),
@@ -530,19 +558,8 @@ fn analyze_group_f64_two_complex_lanes<S: Simd>(group: F64TableAnalysisGroup<'_>
                 odd_sum = simd.add_f64s(odd_sum, simd.mul_f64s(odd_values, odd_weights));
             }
 
-            let mut even_complex = simd.reduce_sum_c64s(pulp::bytemuck::cast(even_sum));
-            let mut odd_complex = simd.reduce_sum_c64s(pulp::bytemuck::cast(odd_sum));
-            for north_ring in paired_ring_count..north_ring_count {
-                let south_ring = ntheta - 1 - north_ring;
-                let north = order_spectra[order_start + north_ring];
-                let south = if south_ring != north_ring {
-                    order_spectra[order_start + south_ring]
-                } else {
-                    Complex::new(0.0, 0.0)
-                };
-                even_complex += (north + south) * even_basis[north_ring];
-                odd_complex += (north - south) * odd_basis[north_ring];
-            }
+            let even_complex = simd.reduce_sum_c64s(pulp::bytemuck::cast(even_sum));
+            let odd_complex = simd.reduce_sum_c64s(pulp::bytemuck::cast(odd_sum));
             coefficients[degree_offset] = even_complex;
             coefficients[degree_offset + 1] = odd_complex;
             degree_offset += 2;
@@ -555,11 +572,11 @@ fn analyze_group_f64_two_complex_lanes<S: Simd>(group: F64TableAnalysisGroup<'_>
             for (north_ring, &basis) in table.degree_lanes(m, degree_offset).iter().enumerate() {
                 let south_ring = ntheta - 1 - north_ring;
                 let south = if south_ring != north_ring {
-                    order_spectra[order_start + south_ring] * parity
+                    order_row[south_ring] * parity
                 } else {
                     Complex::new(0.0, 0.0)
                 };
-                sum += (order_spectra[order_start + north_ring] + south) * basis;
+                sum += (order_row[north_ring] + south) * basis;
             }
             coefficients[degree_offset] = sum;
         }
