@@ -5636,8 +5636,73 @@ fn spin1_parallel_coefficient_cache_matches_uncached_synthesis() {
         second_max_error <= 2e-13,
         "second component error={second_max_error:.3e}"
     );
+
+    // Reuse both workspaces after changing every coefficient. Poison the
+    // cached rows and the worker-local rows so the cached path must refresh
+    // its input and the polar/scaled fallback must restore its local rows
+    // before reading them.
+    for value in &mut e_alm {
+        *value *= -0.375;
+    }
+    for value in &mut b_alm {
+        *value *= 0.625;
+    }
+    let poison = Complex64::new(f64::NAN, f64::NAN);
+    cached_workspace.spin1_scalar_coefficients.fill(poison);
+    for worker in &mut cached_workspace.recurrence_workers {
+        worker.fast_scalar_first.fill(poison);
+        worker.fast_scalar_second.fill(poison);
+    }
+    cached_first.fill(17.0);
+    cached_second.fill(-23.0);
+    uncached_first.fill(17.0);
+    uncached_second.fill(-23.0);
+    pool.install(|| {
+        plan.synthesis_spin_into(
+            &e_alm,
+            &b_alm,
+            &mut cached_first,
+            &mut cached_second,
+            &mut cached_workspace,
+        )
+    })
+    .unwrap();
+    pool.install(|| {
+        plan.synthesis_spin_into(
+            &e_alm,
+            &b_alm,
+            &mut uncached_first,
+            &mut uncached_second,
+            &mut uncached_workspace,
+        )
+    })
+    .unwrap();
+    let first_reuse_error = cached_first
+        .iter()
+        .zip(&uncached_first)
+        .map(|(&cached, &uncached)| (cached - uncached).abs())
+        .fold(0.0_f64, f64::max);
+    let second_reuse_error = cached_second
+        .iter()
+        .zip(&uncached_second)
+        .map(|(&cached, &uncached)| (cached - uncached).abs())
+        .fold(0.0_f64, f64::max);
+    assert!(
+        first_reuse_error <= 2e-13,
+        "reused first component error={first_reuse_error:.3e}"
+    );
+    assert!(
+        second_reuse_error <= 2e-13,
+        "reused second component error={second_reuse_error:.3e}"
+    );
+    assert!(
+        cached_first
+            .iter()
+            .chain(&cached_second)
+            .all(|value| value.is_finite())
+    );
     eprintln!(
-        "T127 GL spin-1 parallel conversion cache: max absolute component errors {first_max_error:.3e}, {second_max_error:.3e}"
+        "T127 GL spin-1 parallel conversion cache: initial max absolute component errors {first_max_error:.3e}, {second_max_error:.3e}; poisoned reuse errors {first_reuse_error:.3e}, {second_reuse_error:.3e}"
     );
 }
 

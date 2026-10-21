@@ -10,9 +10,11 @@ cached spin-1 scalar-conversion rows directly across ring groups, avoiding
 repeated worker-buffer copies on the paired route. For T720's 23 groups, the
 source-level estimate is 365 MiB of coefficient payload copied per transform
 (about 730 MiB of source-read/write traffic before cache effects). Worker rows
-are still filled before any checked polar/scaled fallback. Release cached/uncached,
-T720 adjoint, general-channel, large-finite and no-default synthesis checks
-pass. The exploratory matched timing run was invalidated by 9–40% runqueue
+are still filled before any checked polar/scaled fallback. Release cached/uncached
+and poisoned-workspace reuse with changed coefficients pass at T127 (maximum
+absolute channel difference `2.17e-18`), along with T720 adjoint,
+general-channel, large-finite and no-default synthesis checks. The exploratory
+matched timing run was invalidated by 9–40% runqueue
 wait and high involuntary-switch counts; do not infer a gain from it. Re-run
 the q1/q8 matched whole-call A/B and stage timing under a quiet host before
 deciding whether to retain this candidate as a production optimization.
