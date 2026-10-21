@@ -105,8 +105,41 @@ impl<T: FftNum + Float> RealFftPlan<T> {
         output: &mut [Complex<T>],
         workspace: &mut RealFftWorkspace<T>,
     ) -> Result<(), ShtError> {
+        self.forward_modes(input, output, workspace, self.spectrum_len())
+    }
+
+    /// Computes only the requested leading nonnegative Fourier modes.
+    /// The real-input FFT still evaluates its full transform; this avoids
+    /// recombining and storing bins that a truncated harmonic transform will
+    /// not consume.
+    #[inline]
+    pub(crate) fn forward_truncated(
+        &self,
+        input: &[T],
+        output: &mut [Complex<T>],
+        workspace: &mut RealFftWorkspace<T>,
+    ) -> Result<(), ShtError> {
+        let output_modes = output.len();
+        self.forward_modes(input, output, workspace, output_modes)
+    }
+
+    #[inline]
+    fn forward_modes(
+        &self,
+        input: &[T],
+        output: &mut [Complex<T>],
+        workspace: &mut RealFftWorkspace<T>,
+        output_modes: usize,
+    ) -> Result<(), ShtError> {
         check_len("real FFT input", self.n, input.len())?;
-        check_len("real FFT spectrum", self.spectrum_len(), output.len())?;
+        if output_modes == 0 || output_modes > self.spectrum_len() {
+            return Err(ShtError::BufferLength {
+                buffer: "real FFT mode count",
+                expected: self.spectrum_len(),
+                actual: output_modes,
+            });
+        }
+        check_len("real FFT spectrum", output_modes, output.len())?;
         self.check_workspace(workspace)?;
 
         match &self.engine {
@@ -141,14 +174,16 @@ impl<T: FftNum + Float> RealFftPlan<T> {
                     }
                 }
                 output[0].im = T::zero();
-                output[half].im = T::zero();
+                if output_modes > half {
+                    output[half].im = T::zero();
+                }
             }
             Engine::Odd { forward, .. } => {
                 for (slot, &sample) in workspace.transform.iter_mut().zip(input) {
                     *slot = Complex::new(sample, T::zero());
                 }
                 forward.process_with_scratch(&mut workspace.transform, &mut workspace.scratch);
-                output.copy_from_slice(&workspace.transform[..self.spectrum_len()]);
+                output.copy_from_slice(&workspace.transform[..output_modes]);
                 output[0].im = T::zero();
             }
         }
@@ -460,6 +495,61 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn truncated_real_fft_matches_full_spectrum_prefix() {
+        for n in [1, 2, 3, 4, 5, 6, 7, 8, 31, 32, 33] {
+            let plan = RealFftPlan::new(n).unwrap();
+            let mut workspace = plan.workspace().unwrap();
+            let mut inputs = sample_rows(n);
+            inputs.push(vec![f64::from_bits(1); n]);
+            inputs.push(
+                (0..n)
+                    .map(|index| {
+                        if index.is_multiple_of(2) {
+                            1.0e307
+                        } else {
+                            -1.0e307
+                        }
+                    })
+                    .collect(),
+            );
+
+            for input in inputs {
+                let mut full = vec![Complex64::new(0.0, 0.0); plan.spectrum_len()];
+                plan.forward(&input, &mut full, &mut workspace).unwrap();
+
+                let spectrum_len = plan.spectrum_len();
+                let mut mode_counts = vec![1, spectrum_len.div_ceil(2), spectrum_len];
+                mode_counts.sort_unstable();
+                mode_counts.dedup();
+                for mode_count in mode_counts {
+                    let sentinel = Complex64::new(17.0, -29.0);
+                    let mut truncated = vec![sentinel; mode_count];
+                    plan.forward_truncated(&input, &mut truncated, &mut workspace)
+                        .unwrap();
+                    assert_eq!(truncated, full[..mode_count], "n={n}, modes={mode_count}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn truncated_real_fft_rejects_invalid_mode_counts() {
+        let plan = RealFftPlan::new(8).unwrap();
+        let mut workspace = plan.workspace().unwrap();
+        let input = [0.0; 8];
+        let mut empty = [];
+        assert!(
+            plan.forward_truncated(&input, &mut empty, &mut workspace)
+                .is_err()
+        );
+        let mut too_many = vec![Complex64::new(0.0, 0.0); plan.spectrum_len() + 1];
+        assert!(
+            plan.forward_truncated(&input, &mut too_many, &mut workspace)
+                .is_err()
+        );
     }
 
     #[test]

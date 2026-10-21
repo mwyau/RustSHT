@@ -649,6 +649,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             self.forward_analysis_rows(
                 first_component,
                 &mut workspace.spectra,
+                spectrum_len,
                 &mut workspace.fft,
                 #[cfg(feature = "parallel")]
                 &mut workspace.fft_worker_workspaces,
@@ -658,6 +659,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             self.forward_analysis_rows(
                 second_component,
                 &mut workspace.spin_spectra,
+                spectrum_len,
                 &mut workspace.fft,
                 #[cfg(feature = "parallel")]
                 &mut workspace.fft_worker_workspaces,

@@ -362,6 +362,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         &self,
         input: &[T],
         output: &mut [Complex<T>],
+        output_modes: usize,
         serial_workspace: &mut RealFftWorkspace<T>,
         #[cfg(feature = "parallel")] worker_workspaces: &mut [RealFftWorkspace<T>],
         #[cfg(feature = "parallel")] execution_capacity: usize,
@@ -369,6 +370,13 @@ impl<T: ShtScalar> ShtPlan<T> {
         let ntheta = self.grid.ntheta();
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
+        if output_modes == 0 || output_modes > spectrum_len {
+            return Err(ShtError::BufferLength {
+                buffer: "analysis FFT output modes",
+                expected: spectrum_len,
+                actual: output_modes,
+            });
+        }
 
         #[cfg(feature = "parallel")]
         {
@@ -393,9 +401,9 @@ impl<T: ShtScalar> ShtPlan<T> {
                         for (offset, spectrum) in spectra.chunks_mut(spectrum_len).enumerate() {
                             let ring = first_ring + offset;
                             let input_start = ring * nphi;
-                            self.fft.forward(
+                            self.fft.forward_truncated(
                                 &input[input_start..input_start + nphi],
-                                spectrum,
+                                &mut spectrum[..output_modes],
                                 fft_workspace,
                             )?;
                         }
@@ -408,9 +416,9 @@ impl<T: ShtScalar> ShtPlan<T> {
         for ring in 0..ntheta {
             let input_start = ring * nphi;
             let spectrum_start = ring * spectrum_len;
-            self.fft.forward(
+            self.fft.forward_truncated(
                 &input[input_start..input_start + nphi],
-                &mut output[spectrum_start..spectrum_start + spectrum_len],
+                &mut output[spectrum_start..spectrum_start + output_modes],
                 serial_workspace,
             )?;
         }
@@ -1618,6 +1626,11 @@ impl<T: ShtScalar> ShtPlan<T> {
         let ntheta = self.grid.ntheta();
         let nphi = self.grid.nphi();
         let spectrum_len = self.fft.spectrum_len();
+        let output_modes = if self.grid.kind() == GridKind::GaussLegendre {
+            self.harmonics.mmax() + 1
+        } else {
+            spectrum_len
+        };
         #[cfg(all(test, feature = "parallel"))]
         let mut phase_started = std::time::Instant::now();
         #[cfg(all(test, feature = "parallel"))]
@@ -1649,6 +1662,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             self.forward_analysis_rows(
                 map,
                 &mut workspace.spectra,
+                output_modes,
                 &mut workspace.fft,
                 #[cfg(feature = "parallel")]
                 &mut workspace.fft_worker_workspaces,
@@ -1659,9 +1673,9 @@ impl<T: ShtScalar> ShtPlan<T> {
             for ring in 0..ntheta {
                 let input_start = ring * nphi;
                 let spectrum_start = ring * spectrum_len;
-                self.fft.forward(
+                self.fft.forward_truncated(
                     &map[input_start..input_start + nphi],
-                    &mut workspace.spectra[spectrum_start..spectrum_start + spectrum_len],
+                    &mut workspace.spectra[spectrum_start..spectrum_start + output_modes],
                     &mut workspace.fft,
                 )?;
             }
