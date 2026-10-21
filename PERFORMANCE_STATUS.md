@@ -19,7 +19,7 @@ active scope and acceptance criteria, see [Plan 11](plans/11-ducc-equivalent-sca
   11.4%..18.0% across all four T720 shape/longitude cases (50 batches per
   backend/case, five process pairs); q1 synthesis was near-neutral. Fixed
   scratch remains an opt-in candidate for broader assessment. Packed reduction
-  is being retired: it improved isolated 64-lane kernel time but gave small,
+  has been removed: it improved isolated 64-lane kernel time but gave small,
   inconsistent full-transform changes. Detailed tables and machine-readable
   results are in the [current T720 A/B](reports/scalar-analysis-cumulative-2026-10-20.md#current-t720-productioncandidate-ab-2026-10-20)
   and [data](reports/data/scalar-analysis-cumulative-2026-10-20/t720-ab-current/).

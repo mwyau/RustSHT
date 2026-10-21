@@ -3380,29 +3380,9 @@ struct FusedAnalysisTwoPairSteps<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
 }
 
 /// Reduces a real/imaginary SIMD pair into one complex sum.
-///
-/// The packed path interleaves matching real and imaginary lanes and reduces
-/// the resulting complex vectors. Other vector widths keep the established
-/// scalar horizontal reductions.
-#[allow(unexpected_cfgs)]
 #[inline(always)]
-fn reduce_analysis_complex_pair<S: Simd, const PACKED_COMPLEX: bool>(
-    simd: S,
-    real: S::f64s,
-    imag: S::f64s,
-) -> Complex64 {
-    if const {
-        PACKED_COMPLEX
-            && S::F64_LANES == 4
-            && std::mem::size_of::<S::f64s>() == std::mem::size_of::<S::c64s>()
-    } {
-        let [even_lanes, odd_lanes] = simd.interleave_shfl_f64s([real, imag]);
-        let even_sum = simd.reduce_sum_c64s(pulp::bytemuck::cast(even_lanes));
-        let odd_sum = simd.reduce_sum_c64s(pulp::bytemuck::cast(odd_lanes));
-        Complex64::new(even_sum.re + odd_sum.re, even_sum.im + odd_sum.im)
-    } else {
-        Complex64::new(simd.reduce_sum_f64s(real), simd.reduce_sum_f64s(imag))
-    }
+fn reduce_analysis_complex_pair<S: Simd>(simd: S, real: S::f64s, imag: S::f64s) -> Complex64 {
+    Complex64::new(simd.reduce_sum_f64s(real), simd.reduce_sum_f64s(imag))
 }
 
 #[inline(always)]
@@ -3767,26 +3747,10 @@ fn fused_analysis_two_pair_steps_with_simd<
 
     let (first_same, first_opposite, second_same, second_opposite) = if ACCUMULATE {
         (
-            reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
-                simd,
-                first_same_re,
-                first_same_im,
-            ),
-            reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
-                simd,
-                first_opposite_re,
-                first_opposite_im,
-            ),
-            reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
-                simd,
-                second_same_re,
-                second_same_im,
-            ),
-            reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
-                simd,
-                second_opposite_re,
-                second_opposite_im,
-            ),
+            reduce_analysis_complex_pair(simd, first_same_re, first_same_im),
+            reduce_analysis_complex_pair(simd, first_opposite_re, first_opposite_im),
+            reduce_analysis_complex_pair(simd, second_same_re, second_same_im),
+            reduce_analysis_complex_pair(simd, second_opposite_re, second_opposite_im),
         )
     } else {
         let zero = Complex64::new(0.0, 0.0);

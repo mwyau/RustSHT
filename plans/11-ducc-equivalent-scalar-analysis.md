@@ -70,8 +70,8 @@ DUCC pairing was unstable. A focused five-pair interleaved q8 synthesis check
 reproduced a fixed-scratch improvement of 11.4%..18.0% across T720 mmax
 180/720 and both longitude sizes, with matching numerical errors; q1 synthesis
 remained near-neutral. Keep fixed scratch opt-in pending a broader
-memory/workspace assessment. Retire the packed-reduction production cfg after
-recording the result; its isolated win did not translate into a consistent
+memory/workspace assessment. The packed-reduction production cfg and path have
+been removed: its isolated win did not translate into a consistent
 whole-transform gain. The previous direct-output and indexed-loop candidates
 remain removed. Do not attribute the seed-prefix and epoch-reuse changes
 separately: they are common to all builds in this A/B.
