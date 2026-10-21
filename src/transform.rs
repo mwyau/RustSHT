@@ -94,6 +94,87 @@ fn finalize_paired_scalar_analysis_coefficients<T: ShtScalar>(
     }
 }
 
+#[inline]
+fn prepare_scalar_analysis_order<T: ShtScalar>(
+    analysis_spectra: &[Complex<T>],
+    spectrum_len: usize,
+    order_spectra: &mut [Complex<T>],
+    order: usize,
+    phase: Complex<T>,
+    ring_order_limits: &[usize],
+    scalar_table_selected: bool,
+    ring_weights: Option<&[f64]>,
+    longitude_count: T,
+    scalar_table_input_limit: Option<T>,
+) -> bool {
+    debug_assert_eq!(order_spectra.len(), ring_order_limits.len());
+    if let Some(ring_weights) = ring_weights {
+        debug_assert_eq!(ring_weights.len(), order_spectra.len());
+    }
+
+    let mut inputs_safe = true;
+    for (ring, output) in order_spectra.iter_mut().enumerate() {
+        let mut weighted = if scalar_table_selected && order > ring_order_limits[ring] {
+            Complex::new(T::zero(), T::zero())
+        } else {
+            analysis_spectra[ring * spectrum_len + order] * phase
+        };
+        if let Some(ring_weights) = ring_weights {
+            let weight = T::from_f64(ring_weights[ring]).expect("ring weight is representable");
+            weighted *= weight / longitude_count;
+        }
+        if let Some(input_limit) = scalar_table_input_limit {
+            inputs_safe &= crate::legendre::ScalarLegendreTable::<T>::input_value_is_safe(
+                weighted.re,
+                input_limit,
+            ) && crate::legendre::ScalarLegendreTable::<T>::input_value_is_safe(
+                weighted.im,
+                input_limit,
+            );
+        }
+        *output = weighted;
+    }
+    inputs_safe
+}
+
+fn prepare_scalar_analysis_orders_serial<T: ShtScalar>(
+    analysis_spectra: &[Complex<T>],
+    spectrum_len: usize,
+    order_spectra: &mut [Complex<T>],
+    order_count: usize,
+    latitude_count: usize,
+    phi0: f64,
+    ring_order_limits: &[usize],
+    scalar_table_selected: bool,
+    ring_weights: Option<&[f64]>,
+    longitude_count: T,
+    scalar_table_input_limit: Option<T>,
+) -> bool {
+    debug_assert_eq!(order_spectra.len(), order_count * latitude_count);
+    let mut inputs_safe = true;
+    for (order, order_row) in order_spectra.chunks_mut(latitude_count).enumerate() {
+        let phase = if order == 0 {
+            Complex::new(T::one(), T::zero())
+        } else {
+            longitude_phase::<T>(order, phi0, true)
+        };
+        let order_safe = prepare_scalar_analysis_order(
+            analysis_spectra,
+            spectrum_len,
+            order_row,
+            order,
+            phase,
+            ring_order_limits,
+            scalar_table_selected,
+            ring_weights,
+            longitude_count,
+            scalar_table_input_limit,
+        );
+        inputs_safe &= order_safe;
+    }
+    inputs_safe
+}
+
 #[cfg(feature = "parallel")]
 pub(crate) fn weighted_order_midpoint(lmax: usize, m_start: usize, m_end: usize) -> usize {
     debug_assert!(m_start < m_end);
@@ -1565,7 +1646,6 @@ impl<T: ShtScalar> ShtPlan<T> {
         ) == LegendreStrategy::CompactTable;
         let scalar_table_input_limit = scalar_table_selected
             .then(crate::legendre::ScalarLegendreTable::<T>::input_scale_limit);
-        let mut scalar_table_inputs_safe = true;
         #[cfg(all(test, feature = "parallel"))]
         {
             crate::workspace::record_transform_phase(
@@ -1694,36 +1774,67 @@ impl<T: ShtScalar> ShtPlan<T> {
             &mut workspace.prepared_spin_spectra[..order_spectrum_len]
         };
         let longitude_count = T::from_usize(nphi).expect("longitude count converts");
-        for m in 0..order_count {
-            let phase = if m == 0 {
-                Complex::new(T::one(), T::zero())
-            } else {
-                longitude_phase::<T>(m, self.grid.phi0(), true)
-            };
-            for ring in 0..analysis_ntheta {
-                let mut weighted = if scalar_table_selected && m > ring_order_limits[ring] {
-                    Complex::new(T::zero(), T::zero())
-                } else {
-                    analysis_spectra[ring * spectrum_len + m] * phase
-                };
-                if let Some(ring_weights) = analysis_ring_weights {
-                    let weight =
-                        T::from_f64(ring_weights[ring]).expect("ring weight is representable");
-                    weighted *= weight / longitude_count;
-                }
-                if let Some(input_limit) = scalar_table_input_limit {
-                    scalar_table_inputs_safe &=
-                        crate::legendre::ScalarLegendreTable::<T>::input_value_is_safe(
-                            weighted.re,
-                            input_limit,
-                        ) && crate::legendre::ScalarLegendreTable::<T>::input_value_is_safe(
-                            weighted.im,
-                            input_limit,
+        #[cfg(feature = "parallel")]
+        let scalar_table_inputs_safe = {
+            let worker_count = rayon::current_num_threads()
+                .min(workspace.execution_capacity)
+                .min(order_count);
+            if !scalar_table_selected && worker_count > 1 {
+                order_spectra
+                    .par_chunks_mut(analysis_ntheta)
+                    .enumerate()
+                    .with_min_len(order_count.div_ceil(worker_count))
+                    .for_each(|(order, order_row)| {
+                        let phase = if order == 0 {
+                            Complex::new(T::one(), T::zero())
+                        } else {
+                            longitude_phase::<T>(order, self.grid.phi0(), true)
+                        };
+                        let inputs_safe = prepare_scalar_analysis_order(
+                            analysis_spectra,
+                            spectrum_len,
+                            order_row,
+                            order,
+                            phase,
+                            ring_order_limits,
+                            false,
+                            analysis_ring_weights,
+                            longitude_count,
+                            None,
                         );
-                }
-                order_spectra[m * analysis_ntheta + ring] = weighted;
+                        debug_assert!(inputs_safe);
+                    });
+                true
+            } else {
+                prepare_scalar_analysis_orders_serial(
+                    analysis_spectra,
+                    spectrum_len,
+                    order_spectra,
+                    order_count,
+                    analysis_ntheta,
+                    self.grid.phi0(),
+                    ring_order_limits,
+                    scalar_table_selected,
+                    analysis_ring_weights,
+                    longitude_count,
+                    scalar_table_input_limit,
+                )
             }
-        }
+        };
+        #[cfg(not(feature = "parallel"))]
+        let scalar_table_inputs_safe = prepare_scalar_analysis_orders_serial(
+            analysis_spectra,
+            spectrum_len,
+            order_spectra,
+            order_count,
+            analysis_ntheta,
+            self.grid.phi0(),
+            ring_order_limits,
+            scalar_table_selected,
+            analysis_ring_weights,
+            longitude_count,
+            scalar_table_input_limit,
+        );
         #[cfg(all(test, feature = "parallel"))]
         {
             crate::workspace::record_transform_phase(
