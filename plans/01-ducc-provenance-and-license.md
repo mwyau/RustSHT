@@ -1,5 +1,7 @@
 # Literature, DUCC reference and licensing
 
+> **Reference document — not an active task.** Bibliography, DUCC source pins, provenance and licensing obligations remain applicable. Any implementation/release sequencing recorded here is historical. Current work is [Plan 11](11-ducc-equivalent-scalar-analysis.md); see the [plans index](README.md).
+
 ## Scientific references
 
 The README cites:
