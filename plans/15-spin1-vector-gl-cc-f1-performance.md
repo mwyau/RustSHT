@@ -3,6 +3,8 @@
 **Status: ACTIVE (2026-10-21), after Plan 14 closeout `f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`. Owner-authorized.**
 The Plan 14 scalar full-transform sweep, four principal figures, validation and closeout are committed and pushed on `opt/sht-performance-parity`. Continue this plan in the same Luna session and branch without another owner prompt. The handoff preserves the scalar baseline and does not expand Plan 15 beyond its stated spin-1 scope.
 
+**Current phase:** resume Phase A's native spin-1 GL → CC → F1 baseline. The temporary owner-priority scalar T64–T256 GL diagnostic is complete and documented in [the focused report](../reports/scalar-t64-256-performance-discontinuities-2026-10-21.md); it did not reopen Plan 14 or modify the spin-1 numerical kernels.
+
 **Goal:** Improve the measured **single-vector-field spin-1** spherical harmonic transforms—STANDARD E/B synthesis and analysis—against native DUCC, for **Gauss–Legendre (GL), Clenshaw–Curtis (CC), and Fejér-1 (F1)** grids, using mathematically identical work and reliable matched full-transform benchmarks. Prioritize absolute residual latency, correct vector results, reusable memory and practical atmospheric resolutions. A documented absence of a justified optimization is a legitimate outcome.
 
 ## 1. Explicit scope and exclusions
@@ -89,7 +91,7 @@ A gap is **closed** if correct matched whole-call results no longer justify furt
 
 1. **Complete:** Plan 14's full scalar sweep, four figures and closeout at `f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`; Plan 15 activation was pushed at `341661a0256ecab329e5de65ad286f96a8a73914`.
 2. **Adapter checkpoint:** native Rust/DUCC spin-1 STANDARD workers and the matched runner are implemented. The T4 GL/CC/F1 A/S q1/q8 smoke passed at `6.19e-16` max relative L2. The full Plan 15 baseline matrix remains pending.
-3. **Temporary owner-priority interruption:** before the broader spin-1 baseline, investigate the scalar GL T64–T256 gaps using existing sweep evidence and focused row-FFT/dispatch diagnostics. Do not reopen Plan 14. Resume the Plan 15 GL → CC → F1 baseline sequence after that bounded diagnostic.
+3. **Temporary owner-priority interruption — complete:** focused scalar GL T64–T256 row-FFT and table/recurrence controls are recorded in [`reports/scalar-t64-256-performance-discontinuities-2026-10-21.md`](../reports/scalar-t64-256-performance-discontinuities-2026-10-21.md). The measured dispatch policies and residual synthesis gap are documented; continue Plan 15 Phase A now.
 4. **Then:** matched native spin-1 GL/CC/F1 baseline; targeted GL optimization; targeted CC optimization; targeted F1 optimization; integrated cross-grid rebenchmark/validation; completion documentation.
 4. **Stay deferred:** Plan 12 cache-topology heuristics; Plan 13 fused multi-field batching; spin 2–4 performance work; scalar CC/F1 optimization outside vector-shared code; and any independent odd-FFT rewrite.
 

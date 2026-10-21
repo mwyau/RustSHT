@@ -12,16 +12,25 @@ next-step text, is preserved
 [here](reports/archive/performance-status-2026-10-21-pre-refresh.md).
 For reproducible raw benchmark tables see [reports/README](reports/README.md).
 
-**Temporary scalar diagnostic priority (2026-10-21):** the newly published
-full sweep showed large q8 scalar GL ratios at selected T64–T256 points,
-including a T256 full-analysis return to near parity. A bounded dispatch and
-parallel-row-FFT investigation now precedes the broader Plan 15 baseline; it
-does not reopen Plan 14. Plan 15's separate native two-channel benchmark
-adapter has been implemented and smoke-validated on T4 GL/CC/F1 for A/S q1/q8
-(24 comparisons, max relative L2 `6.19e-16`, stale-output checks passed).
-The adapter and reproducible smoke command are in
-[`reports/data/plan15-spin1-native-baseline-2026-10-21`](reports/data/plan15-spin1-native-baseline-2026-10-21/README.md);
-the full spin-1 performance matrix remains unrun and will resume afterward.
+**Scalar GL T64–T256 diagnostic complete (2026-10-21):** matched controls
+identified two dispatch causes: q8 row FFTs were disabled by the old
+`ntheta >= 128 && nphi >= 255` gate, and q8 scalar analysis used the compact
+Legendre-value table through T255. The scalar-only row-FFT gate now uses
+`ntheta*nphi >= 4096`; the q8 exact-grid analysis route uses recurrence, and
+q1 uses recurrence above a measured 20 MiB table payload. q8 T124 full-order
+analysis moved from 2.52–2.75x to 0.68–0.95x DUCC; T248/T255 moved from
+2.08–2.91x to 0.86–1.14x. The remaining full-order T248–T256 q8 synthesis
+ratio is 1.15–1.45x and needs a separate measured stage study. The source
+delta from the published sweep baseline contains no earlier scalar production
+change, so these were dispatch deficits rather than newly introduced source
+regressions. Numerical comparisons and release checks passed. See the
+[focused report and matched summary](reports/scalar-t64-256-performance-discontinuities-2026-10-21.md).
+
+Plan 15 resumes at its Phase A native spin-1 baseline, in GL → CC → F1 order.
+Its two-channel adapter was smoke-validated on T4 GL/CC/F1 for A/S q1/q8 (24
+comparisons, max relative L2 `6.19e-16`, stale-output checks passed). The
+adapter and reproducible smoke command are in
+[`reports/data/plan15-spin1-native-baseline-2026-10-21`](reports/data/plan15-spin1-native-baseline-2026-10-21/README.md).
 
 **Current-source full-transform sweep (2026-10-21):** the frozen Rust source
 `e487b85b` was compared with pinned DUCC 0.42.0 `42ce8ab5` across every
