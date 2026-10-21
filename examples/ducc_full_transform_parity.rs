@@ -180,6 +180,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let output_path = &args[11];
     let target_ms: f64 = parse(&args[12], "batch target milliseconds")?;
     let validate = args[13] == "1";
+    let row_fft_parallel_active = cfg!(feature = "parallel")
+        && threads > 1
+        && ntheta
+            .checked_mul(nphi)
+            .is_some_and(|sample_count| sample_count >= 4096)
+        // The T63 full-order synthesis table writes its rows through the
+        // table path and does not call the recurrence inverse-row FFT.
+        && !(operation == "synthesis" && lmax == 63 && mmax >= 48);
 
     let fixture_load_started = Instant::now();
     let map = read_f64(map_path, ntheta * nphi)?;
@@ -409,7 +417,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .unwrap_or(0);
 
     print!(
-        "{{\"backend\":\"rustsht\",\"operation\":\"{operation}\",\"threads\":{threads},\"fixture_load_ms\":{fixture_load_ms:.9},\"buffer_setup_ms\":{buffer_setup_ms:.9},\"pool_ms\":{pool_ms:.9},\"setup_ms\":{setup_ms:.9},\"first_ms\":{first_ms:.9},\"warmup_ms\":{warmup_ms:.9},\"repetitions\":{repetitions},\"batch_ms\":["
+        "{{\"backend\":\"rustsht\",\"operation\":\"{operation}\",\"threads\":{threads},\"row_fft_parallel_active\":{row_fft_parallel_active},\"fixture_load_ms\":{fixture_load_ms:.9},\"buffer_setup_ms\":{buffer_setup_ms:.9},\"pool_ms\":{pool_ms:.9},\"setup_ms\":{setup_ms:.9},\"first_ms\":{first_ms:.9},\"warmup_ms\":{warmup_ms:.9},\"repetitions\":{repetitions},\"batch_ms\":["
     );
     for (index, value) in batch_ms.iter().enumerate() {
         if index != 0 {

@@ -265,6 +265,7 @@ def make_cases(
     selected_lmax: set[int] | None = None,
     max_lmax: int | None = None,
     dense_sweep: bool = False,
+    selected_longitude_modes: set[str] | None = None,
 ) -> list[dict]:
     if smoke and not dense_sweep:
         lmax_values = [0, 4, 16, 64]
@@ -280,6 +281,10 @@ def make_cases(
                 768, 896, 1024, 1280, 1536, 1792, 2047, 2048, 3072,
             }
         )
+    if selected_lmax is not None:
+        # `--lmax` is an explicit case selector, so include requested degrees
+        # outside the standard sweep instead of silently dropping them.
+        lmax_values = sorted(set(lmax_values) | selected_lmax)
     key_sizes = {
         48, 62, 63, 64, 65, 126, 127, 128, 129, 159, 191, 223, 248, 254,
         255, 256, 300, 511, 512, 513, 720, 721, 1024, 1536, 2048,
@@ -319,6 +324,8 @@ def make_cases(
                     if fixed_nphi % 2 == 0 and remainder == 1
                     else "fixed_nphi"
                 ]
+            elif selected_lmax is not None and lmax in selected_lmax and selected_longitude_modes:
+                longitude_modes = sorted(selected_longitude_modes)
             elif dense_sweep:
                 longitude_modes = ["even_smooth"]
                 if lmax in DENSE_SWEEP_ODD_LMAX:
@@ -1898,6 +1905,7 @@ def main() -> None:
             set(args.lmax) if args.lmax else None,
             args.max_lmax,
             args.dense_sweep,
+            set(args.longitude_mode) if args.longitude_mode else None,
         )
     except ValueError as error:
         parser.error(str(error))
