@@ -96,6 +96,14 @@ identified.
    1.122x at T3072 m768. Stage profiles show their recurrence near DUCC and
    locate the next investigation before recurrence. Details and distributions
    are in the [cumulative report](../reports/scalar-analysis-cumulative-2026-10-20.md#q8-independent-order-preparation-candidate-2026-10-20).
+8. **Reduced-`mmax` FFT output pruning is validated** in `41c7223f`.
+   The full real FFT and safe input scan remain; only recombination/stores of
+   bins above `mmax` are skipped for scalar GL analysis. q8 T2047 m511
+   improved 12.4% (21.399 to 18.739 ms), and T3072 m768 improved 7.8%
+   (64.306 to 59.266 ms). T720 reduced mmax improved 6.5%; full-order changes
+   were within the observed spread. q8 output coefficients were bitwise
+   identical before/after and q1 shows no broad regression. See the
+   [comparison](../reports/scalar-analysis-cumulative-2026-10-20.md#reduced-order-real-fft-output-pruning-2026-10-20).
 
 ## Immediate work — priority order
 
@@ -112,15 +120,13 @@ campaign.
 
 ### B. Reduced-order q8 front end — active
 
-The recurrence-plan order-preparation candidate is complete; do not repeat
-its parallelization experiment. Next separate reduced-`mmax` production-path
-input finite scanning, row FFT execution, and output/weight packing at T2047
-m511 and T3072 m768. Rust computes and stores all `nphi/2+1` real-FFT bins,
-while recurrence consumes only through `mmax`. DUCC `map2leg` combines FFT
-and weighting, so first make the stage boundaries comparable before proposing
-a structural change. Keep the recurrence, robust checks, and 256-pair tile
-unchanged unless measurements establish otherwise. Avoid a wholesale FFT
-rewrite.
+The recurrence-plan order-preparation and truncated-spectrum candidates are
+complete; do not repeat their comparisons. Next separate reduced-`mmax`
+production-path input finite-check/copy from row FFT execution at T2047 m511
+and T3072 m768. Output recombination above `mmax` is now skipped, so profile
+the remaining costs before another optimization. DUCC `map2leg` combines FFT
+and weighting; use comparable boundaries. Preserve robust input checks and
+the 256-pair tile. Avoid a wholesale FFT rewrite.
 
 ### C. Close out Plan 11, then activate Plan 14 in the same session
 

@@ -279,6 +279,62 @@ cases relative L2 error was at most `2.08e-13` and maximum absolute
 difference at most `1.44e-15`. Exact per-batch summaries are in
 [`order-prep-q8-candidate/summary.csv`](data/scalar-analysis-cumulative-2026-10-20/order-prep-q8-candidate/summary.csv).
 
+## Reduced-order real-FFT output pruning (2026-10-20)
+
+Commit `41c7223f` adds an internal `forward_truncated` path for scalar GL
+analysis. Rust still scans every map sample for finiteness/headroom and runs
+the complete real-input FFT; it now recombines and stores only modes
+`0..=mmax`, which are the only Fourier orders consumed by scalar GL analysis.
+The existing workspace row stride and all other grid/spin FFT calls retain
+their full spectra. This is a bounded output-pruning change, not an FFT
+algorithm rewrite. The full and truncated paths produce bitwise-identical
+Rust coefficients for every q8 case compared here.
+
+The before build was `3b32f2de`; the candidate was `41c7223f`. Both used Rust
+1.99.1/Pulp V3 strict x86-64-v3 and the same pinned DUCC 0.42.0/GCC 15.2
+build. The six geometries, deterministic full-triangle fixtures, output
+layout, reused plans/workspaces, 25 ms target batches and three interleaved
+process pairs were identical. q8 used the same eight physical cores. Cases
+under 100 ms collected 30 batches per backend; T3072 full-mmax used 15 whole
+calls per backend. Output errors were computed after timing. The baseline and
+candidate screens were separate runs, each interleaved against DUCC, so the
+Rust before/after delta is subject to between-run host variation.
+
+| q8 case | Rust before ms [p10,p90] | Rust after ms [p10,p90] | Rust change | DUCC after ms | After Rust/DUCC | After excess | Paired ratio [p10,p90] |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| T720, m720 | 3.081 [2.966,3.226] | 3.063 [2.988,3.248] | -0.6% | 2.937 | 1.043x | +0.127 ms | 1.052 [1.010,1.123] |
+| T720, m180 | 1.848 [1.801,1.953] | 1.728 [1.668,1.836] | -6.5% | 2.002 | 0.863x | -0.274 ms | 0.864 [0.820,0.919] |
+| T2047, m2047 | 42.655 [41.639,46.416] | 42.907 [42.284,49.223] | +0.6% | 42.563 | 1.008x | +0.344 ms | 1.023 [0.964,1.135] |
+| T2047, m511 | 21.399 [20.975,23.236] | 18.739 [18.271,20.185] | -12.4% | 17.064 | 1.098x | +1.675 ms | 1.099 [0.981,1.180] |
+| T3072, m3072 | 122.835 [122.379,130.428] | 124.428 [123.016,125.892] | +1.3% | 117.119 | 1.062x | +7.309 ms | 1.064 [1.026,1.092] |
+| T3072, m768 | 64.306 [63.197,65.840] | 59.266 [58.633,59.999] | -7.8% | 58.253 | 1.017x | +1.013 ms | 1.019 [0.895,1.042] |
+
+The reduced-order benefit matches the dataflow change: T2047 m511 previously
+materialized 2,049 bins per ring but uses 512; T3072 m768 materialized 3,088
+but uses 769. The candidate reduced q8 excess by 2.30 ms at T2047 and 5.98 ms
+at T3072. Full-order shifts are within the observed spread, including a
+small T3072 increase, so there is no measured full-order gain. The remaining
+reduced-order medians are 1.10x at T2047 m511 and 1.02x at T3072 m768; their
+paired ranges are broad and should not be interpreted as exact parity.
+
+The q1 candidate screen found median Rust/DUCC ratios 1.003x/0.805x at T720
+full/reduced `mmax`, 1.013x/1.019x at T2047, and 1.028x/0.988x at T3072.
+There is no q1 before/after baseline from the same source pair, so these are
+checks against current DUCC only. One q1 process had elevated scheduler wait;
+distributions and host counters are retained in the local raw result.
+Across candidate q1/q8 comparisons, maximum relative L2 error remained
+`2.08e-13` and maximum absolute error `1.44e-15`; q8 Rust coefficients were
+bitwise identical before and after pruning.
+
+Reproduction: build with
+`RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs' cargo build --release --features parallel --example ducc_full_transform_parity`,
+then run the repository's `scripts/benchmark_ducc_full_transform_parity.py`
+for each `--lmax`/`--mmax`/fixed-geometry row in the table, pinned to the
+same DUCC revision and output directory. That harness uses the same native
+workers, calibrated-batch method, affinity helper, fixture generator and
+post-timing output comparison. The compact q1/q8 results are in
+[`truncated-output-candidate/summary.csv`](data/scalar-analysis-cumulative-2026-10-20/truncated-output-candidate/summary.csv).
+
 ## Current T720 production/candidate A/B (2026-10-20)
 
 Source `b25c011d`; identical f64 GL scalar A/S,

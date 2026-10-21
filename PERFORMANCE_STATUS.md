@@ -61,10 +61,19 @@ T3072. Matched whole-transform Rust q8 latency fell 25.6% at T2047 full
 `mmax` (57.310 to 42.655 ms) and 14.9% at T3072 (144.337 to 122.835 ms);
 T720 fell 14.4% (3.597 to 3.081 ms). Current median Rust/DUCC ratios are
 1.003x, 1.042x and 1.067x, respectively, with distribution overlap at
-T2047. Reduced-order cases remain 1.228x at T2047 `mmax=511` and 1.122x at
-T3072 `mmax=768`; stage screens place their larger excess before recurrence.
-See the [candidate results and next stage attribution](reports/scalar-analysis-cumulative-2026-10-20.md#q8-independent-order-preparation-candidate-2026-10-20)
-and [machine-readable summary](reports/data/scalar-analysis-cumulative-2026-10-20/order-prep-q8-candidate/summary.csv).
+T2047. Commit `41c7223f` then pruned unused real-FFT output bins for scalar
+GL analysis without changing the FFT algorithm, finite-input checks,
+workspace stride or other grid/spin paths. Against the preceding source,
+reduced-order q8 latency improved 12.4% at T2047 `mmax=511` (21.399 to
+18.739 ms) and 7.8% at T3072 `mmax=768` (64.306 to 59.266 ms); current
+median ratios are 1.098x and 1.017x. Full-order changes stayed within the
+measured distributions. The q8 Rust outputs were bitwise identical
+before/after, and DUCC errors remained at most `2.08e-13` relative L2. The
+next step is to separate the remaining input scan/copy from FFT execution;
+do not weaken input safeguards. See the [candidate comparison and stage
+findings](reports/scalar-analysis-cumulative-2026-10-20.md#reduced-order-real-fft-output-pruning-2026-10-20),
+[q1/q8 summary](reports/data/scalar-analysis-cumulative-2026-10-20/truncated-output-candidate/summary.csv)
+and [order-preparation results](reports/data/scalar-analysis-cumulative-2026-10-20/order-prep-q8-candidate/summary.csv).
 
 ## Tile decision — not an open recurring benchmark
 
@@ -144,13 +153,13 @@ isolated `m=1` results or a desire to assemble another candidate matrix.
 
 ## Current next steps and deferred work
 
-1. **Active:** isolate the reduced-`mmax` forward analysis front-end cost at
-   T2047 `mmax=511` and T3072 `mmax=768`. Separate input finite checks, FFT
-   execution, and spectrum/weight packing using the production path. Rust
-   computes and retains `nphi/2+1` bins per ring although the recurrence
-   consumes only through `mmax`; DUCC `map2leg` combines FFT and weighting,
-   so no one substage is yet proven responsible. Avoid a wholesale FFT
-   rewrite. Keep 256 as default.
+1. **Active:** separate the remaining reduced-`mmax` forward analysis costs
+   at T2047 `mmax=511` and T3072 `mmax=768`: full input finite-check/copy,
+   real FFT execution, and the now-truncated output recombination. The
+   candidate already removed recombination/stores for unused modes and
+   reduced whole-call excess to 1.7 ms / 1.0 ms in q8 medians. Determine
+   whether the residual comes from FFT implementation or safe input scanning
+   before another source change. Keep 256 as default.
 2. **Then:** investigate opt-in fixed scratch only when a source-grounded
    hypothesis and matched whole-transform measurements justify it.
 3. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
