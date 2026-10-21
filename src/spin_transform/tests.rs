@@ -4450,15 +4450,16 @@ fn scalar_legendre_table_is_materialized_for_standard_analysis_not_derivatives()
         .unwrap();
     assert!(derivative_plan.scalar_legendre_table.get().is_none());
 
-    // Standard scalar analysis retains the compact-table route at T127.
+    // Single-threaded scalar analysis retains the compact table at T127.
     let standard_plan = make_plan(0, 127, 127, 128, 257);
     assert!(standard_plan.scalar_legendre_table.get().is_none());
     let standard_map = vec![0.0; standard_plan.sample_count];
     let mut standard_alm = vec![Complex64::new(0.0, 0.0); standard_plan.harmonics().nalm()];
     let mut standard_workspace = standard_plan.workspace().unwrap();
-    standard_plan
-        .analysis_into(&standard_map, &mut standard_alm, &mut standard_workspace)
-        .unwrap();
+    in_single_thread_pool(|| {
+        standard_plan.analysis_into(&standard_map, &mut standard_alm, &mut standard_workspace)
+    })
+    .unwrap();
     assert!(
         standard_plan
             .scalar_legendre_table

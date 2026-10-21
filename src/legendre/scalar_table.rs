@@ -48,18 +48,36 @@ pub(crate) enum LegendreOperation {
     Analysis,
 }
 
-pub(crate) fn select_scalar_legendre_strategy(
+pub(crate) fn select_scalar_legendre_strategy<T: ShtScalar>(
     lmax: usize,
     mmax: usize,
+    spin: usize,
     ntheta: usize,
     operation: LegendreOperation,
     thread_count: usize,
 ) -> LegendreStrategy {
-    // Matched measurements show that on-the-fly recurrence improves
+    if operation == LegendreOperation::Analysis
+        && spin == 0
+        && T::supports_precomputed_scalar()
+        && lmax.checked_add(1) == Some(ntheta)
+    {
+        // On exact-grid GL transforms, the compact analysis table becomes
+        // memory-bound for q8 and once its payload exceeds 20 MiB for q1.
+        // Matched T64–T256 measurements found recurrence faster in those
+        // regimes. This is intentionally limited to the scalar table path;
+        // spin-1 has a separate selector.
+        let large_single_thread_table = thread_count == 1
+            && estimated_table_bytes::<T>(lmax, mmax, ntheta)
+                .is_some_and(|bytes| bytes >= 20 * 1024 * 1024);
+        if thread_count >= 8 || large_single_thread_table {
+            return LegendreStrategy::Recurrence;
+        }
+    }
+
+    // Matched measurements show that on-the-fly recurrence improves scalar
     // synthesis when the compact table would otherwise be selected, starting
-    // at T64. Analysis retains its operation-specific table policy: switching
-    // full-order q1 analysis to recurrence regressed by 24-30% at T127-T128.
-    // Spin-1 table dispatch uses a separate selection path.
+    // at T64. Small-band q1 analysis retains its table: recurrence regressed
+    // by 24-30% at T127-T128. Spin-1 has a separate table policy.
     if operation == LegendreOperation::Synthesis && lmax > MAX_SCALAR_SYNTHESIS_TABLE_LMAX {
         return LegendreStrategy::Recurrence;
     }
@@ -97,6 +115,16 @@ pub(crate) fn select_scalar_legendre_strategy(
     } else {
         LegendreStrategy::CompactTable
     }
+}
+
+fn estimated_table_bytes<T>(lmax: usize, mmax: usize, ntheta: usize) -> Option<usize> {
+    let order_count = mmax.checked_add(1)?;
+    let unweighted_count = order_count
+        .checked_mul(lmax.checked_add(1)?)?
+        .checked_sub(mmax.checked_mul(order_count)? / 2)?;
+    unweighted_count
+        .checked_mul(ntheta.div_ceil(2))?
+        .checked_mul(std::mem::size_of::<T>())
 }
 
 /// Returns a conservative minimum total-use count for selected table paths.

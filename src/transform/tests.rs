@@ -36,12 +36,25 @@ fn make_f1_plan(lmax: usize, mmax: usize, ntheta: usize, nphi: usize, phi0: f64)
 
 #[cfg(feature = "parallel")]
 #[test]
-fn row_fft_parallelism_covers_smallest_t127_longitude_shapes() {
-    assert!(!make_plan(126, 126, 127, 255, 0.23).row_fft_parallelism_supported());
-    assert!(!make_plan(127, 126, 128, 254, 0.23).row_fft_parallelism_supported());
+fn scalar_gl_row_fft_uses_sample_work_threshold_without_changing_other_routes() {
+    assert!(make_plan(48, 48, 49, 97, 0.23).row_fft_parallelism_supported());
+    assert!(!make_plan(48, 12, 49, 25, 0.23).row_fft_parallelism_supported());
+    assert!(!make_plan(64, 16, 65, 33, 0.23).row_fft_parallelism_supported());
+    assert!(make_plan(96, 24, 97, 49, 0.23).row_fft_parallelism_supported());
+    assert!(make_plan(126, 126, 127, 255, 0.23).row_fft_parallelism_supported());
+    assert!(make_plan(127, 126, 128, 254, 0.23).row_fft_parallelism_supported());
     assert!(make_plan(127, 127, 128, 255, 0.23).row_fft_parallelism_supported());
     assert!(make_plan(127, 127, 128, 256, 0.23).row_fft_parallelism_supported());
     assert!(make_plan(127, 127, 128, 257, 0.23).row_fft_parallelism_supported());
+
+    let cc_plan = make_cc_plan(48, 48, 49, 97, 0.23);
+    assert!(!cc_plan.row_fft_parallelism_supported());
+    let spin1_plan = ShtPlan::<f64>::new(
+        GridSpec::new(GridKind::GaussLegendre, 49, 97, 0.23).unwrap(),
+        HarmonicSpec::new(48, 48, 1).unwrap(),
+    )
+    .unwrap();
+    assert!(!spin1_plan.row_fft_parallelism_supported());
 }
 
 fn prepare_scalar_latitudes(plan: &ShtPlan, workspace: &mut crate::workspace::ShtWorkspace) {
@@ -650,7 +663,7 @@ fn analysis_fft_workspace_respects_shape_threshold_and_pool_migration() {
         .build()
         .unwrap();
 
-    let small_plan = make_plan(63, 63, 64, 129, 0.37);
+    let small_plan = make_plan(63, 15, 64, 31, 0.37);
     let small_workspace = four_threads.install(|| small_plan.workspace()).unwrap();
     assert!(small_workspace.fft_worker_workspaces.is_empty());
 
@@ -2906,7 +2919,7 @@ fn scalar_t64_dispatch_keeps_analysis_tables_and_uses_synthesis_recurrence() {
         (63, Synthesis, [Recurrence, CompactTable]),
         (63, Analysis, [CompactTable, Recurrence]),
         (64, Synthesis, [Recurrence, Recurrence]),
-        (64, Analysis, [CompactTable, CompactTable]),
+        (64, Analysis, [CompactTable, Recurrence]),
     ];
 
     for (lmax, operation, expected_by_pool) in operations {
@@ -2944,6 +2957,52 @@ fn scalar_t64_dispatch_keeps_analysis_tables_and_uses_synthesis_recurrence() {
                 pool.current_num_threads()
             );
         }
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+fn scalar_analysis_table_policy_uses_q_and_payload_evidence() {
+    use LegendreOperation::Analysis;
+    use LegendreStrategy::{CompactTable, Recurrence};
+
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+
+    for (lmax, expected_q1, expected_q8) in [
+        (127, CompactTable, Recurrence),
+        (191, CompactTable, Recurrence),
+        (223, Recurrence, Recurrence),
+        (248, Recurrence, Recurrence),
+        (255, Recurrence, Recurrence),
+        (256, Recurrence, Recurrence),
+    ] {
+        let plan = make_plan(lmax, lmax, lmax + 1, 2 * lmax + 2, 0.23);
+        assert_eq!(
+            one_thread.install(|| plan.scalar_legendre_strategy(Analysis)),
+            expected_q1,
+            "T{lmax} q1 strategy"
+        );
+        assert_eq!(
+            eight_threads.install(|| plan.scalar_legendre_strategy(Analysis)),
+            expected_q8,
+            "T{lmax} q8 strategy"
+        );
+    }
+
+    let reduced = make_plan(127, 31, 128, 64, 0.23);
+    for pool in [&one_thread, &eight_threads] {
+        assert_eq!(
+            pool.install(|| reduced.scalar_legendre_strategy(Analysis)),
+            Recurrence,
+            "reduced mmax remains on recurrence"
+        );
     }
 }
 

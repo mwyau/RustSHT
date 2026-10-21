@@ -279,9 +279,10 @@ impl<T: ShtScalar> ShtPlan<T> {
             return LegendreStrategy::Recurrence;
         }
         let execution_threads = current_execution_thread_count().min(execution_capacity);
-        let strategy = select_scalar_legendre_strategy(
+        let strategy = select_scalar_legendre_strategy::<T>(
             self.harmonics.lmax(),
             self.harmonics.mmax(),
+            self.harmonics.spin(),
             self.grid.ntheta(),
             operation,
             execution_threads,
@@ -421,7 +422,18 @@ impl<T: ShtScalar> ShtPlan<T> {
 
     #[cfg(feature = "parallel")]
     pub(crate) fn row_fft_parallelism_supported(&self) -> bool {
-        self.grid.ntheta() >= 128 && self.grid.nphi() >= 255
+        if self.harmonics.spin() == 0 && self.grid.kind() == crate::grid::GridKind::GaussLegendre {
+            // Matched q8 A/B measurements show row-parallel FFTs pay off once
+            // the scalar GL grid has at least 4096 samples. The area guard
+            // avoids scheduling overhead on reduced-mmax small grids.
+            self.grid
+                .ntheta()
+                .checked_mul(self.grid.nphi())
+                .is_some_and(|sample_count| sample_count >= 4096)
+        } else {
+            // Keep the established policy for spin transforms and CC/F1.
+            self.grid.ntheta() >= 128 && self.grid.nphi() >= 255
+        }
     }
 
     /// Reserves execution scratch and sets the maximum concurrency for a
