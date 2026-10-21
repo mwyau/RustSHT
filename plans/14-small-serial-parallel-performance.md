@@ -1,17 +1,12 @@
 # Follow-on plan 14 — Small-transform latency and large parallel SHT parity
 
-**Status: NEXT, AUTOMATICALLY AFTER PLAN 11 CLOSEOUT (owner-authorized 2026-10-21).**
-The **same running Luna agent session** must finish and document Plan 11,
-commit/push its validated results, and then **continue directly into Plan 14
-on the existing `opt/sht-performance-parity` branch**, without stopping,
-requesting another confirmation, or creating a new branch. Plan 11 stays
-active until its narrowly scoped reduced-`mmax` front-end investigation
-is resolved or its remaining bottleneck is explicitly quantified and
-deferred. After closeout, update `AGENTS.md` and `plans/README.md` to mark
-Plan 14 active; retain Plan 11 as completed historical evidence. Reread
-`AGENTS.md`, Plan 11, `PERFORMANCE_STATUS.md` and the actual production
-source; **rebaseline and prune already-solved experiments before starting
-the Plan 14 optimization work**. Plans 12/13 remain future-only.
+**Status: ACTIVE (2026-10-21), following Plan 11 closeout
+`a37f74d68631ab5fd373a4097640895e9f0c0c23`.** Plan 11 is complete and
+retained as historical evidence. Work continues on the same Luna session
+and `opt/sht-performance-parity` branch. The transition refreshed the
+historical reduced-`mmax` claims below; now rebaseline the Plan 14 target
+cases from this final source and continue its staged evidence-driven work.
+Plans 12/13 remain future-only.
 
 **One-line goal:** Identify and reduce the dominant, measured sources of (1) small **serial** SHT latency and (2) residual large **eight-thread** SHT latency relative to a pinned native DUCC implementation, without sacrificing numerical correctness, portability, or memory safety.
 
@@ -33,25 +28,30 @@ the Plan 14 optimization work**. Plans 12/13 remain future-only.
 
 ## 2. Grounded starting evidence — not final results
 
-The current `opt/sht-performance-parity` checkpoint (2026-10-21) reports:
+Final Plan 11 source and closeout (commit
+`a37f74d68631ab5fd373a4097640895e9f0c0c23`, 2026-10-21) establish:
 
 - At small bands T1–T32, historical matched warm serial scalar transforms had Rust/DUCC geometric-mean ratios of approximately **3.2× for analysis and 3.1× for synthesis**. This is evidence of a latency problem; it does **not** establish that FFT, dispatch, or any one per-call step causes it. The scalar compact Legendre table is **not eligible below T63**, so the T1–T32 excess must not be blamed on a table/recurrence switch without other evidence.
-- **Superseded pre-fix and pre-parallelization values:** historical T720
-  q8 3.90/3.19 ms and 3.04/2.13 ms, and historical T2047 q8
-  62.2/45.8 ms, **must not be presented as the current performance
-  gap**. At `3b32f2de`, after the DUCC prefix fix and q8
-  order-preparation parallelization, full-order q8 analysis medians
-  were T720 **3.081 vs 2.888 ms (1.067×)**, T2047/ntheta2049
-  **42.655 vs 42.515 ms (1.003×)** and T3072
-  **122.835 vs 117.828 ms (1.042×)** (Rust vs DUCC).
-  Distributions overlap at T2047; this is not proof of stable
-  superiority. Reduced-order T2047 m511 was **21.399 vs
-  17.425 ms (1.228×)**, and T3072 m768 **64.306 vs
-  57.315 ms (1.122×)**; the remaining excess is localized toward
-  the forward analysis frontend before recurrence. **Plan 11
-  owns the narrow reduced-order front-end attribution/closeout**;
-  Plan 14 should begin only from the measured residual left
-  after that work, not repeat it.
+- **Final reduced-order q8 values after output pruning:** T720 m180
+  **1.728 vs 2.002 ms (0.863×)**, T2047 m511 **18.739 vs 17.064 ms
+  (1.098×)**, and T3072 m768 **59.266 vs 58.253 ms (1.017×)** (Rust vs
+  DUCC). The earlier 1.228×/1.122× values predate output pruning and are
+  superseded. Full-order q8 analysis in the same checkpoint was T720
+  **3.063 vs 2.937 ms (1.043×)**, T2047 **42.907 vs 42.563 ms (1.008×)**,
+  and T3072 **124.428 vs 117.119 ms (1.062×)**. Reduced T2047/T3072 paired
+  ratio ranges overlap unity; q1 reduced-order values were T720
+  **11.196 vs 13.910 ms**, T2047 **122.010 vs 119.737 ms**, and T3072
+  **380.152 vs 384.761 ms**. These final Plan 11 values replace the
+  pre-pruning table above; Plan 14 must remeasure its selected cases under
+  its own interleaved baseline protocol.
+- The final-source stage profile found Rust's forward input scan/copy,
+  FFT and recombination did not account for an excess over DUCC `map2leg`;
+  Rust q8 recurrence plus separate preparation was comparable with DUCC's
+  combined `leg2alm` stage. The remaining reduced-order q8 whole-call
+  differences were +1.675 ms at T2047 and +1.013 ms at T3072, with paired
+  ranges overlapping unity. The finite-input scan is part of the numerical
+  contract and remains. Plan 14 should investigate its selected small-q1
+  and large-q8 total/stage costs without repeating the closed frontend work.
 - DUCC's author notes that the *DUCC* implementation has multiple parallel regions with microsecond-scale overhead, which hurts small **parallel** transforms. This explains why Rust can occasionally win small q8 cases; **it does not explain why Rust is slower for small q1**.
 - RustSHT's scalar analysis constructs order-major longitude spectra.
   Independent per-order **preparation is already parallel** for recurrence
@@ -69,8 +69,7 @@ The current `opt/sht-performance-parity` checkpoint (2026-10-21) reports:
 
 First, **reuse the existing matched native RustSHT/DUCC benchmark infrastructure**
 and its recent evidence rather than starting a redundant full campaign.
-Freeze the exact **Plan 11 closeout commit on the same feature branch**
-and pin the deliberately selected DUCC `ducc0` revision; the preceding baseline used DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`, Rust 1.99.1/LLVM 23.1.1, and AVX2/FMA on a Ryzen 9 5950X. Record the actual toolchains, source SHAs, flags, CPU affinity, SIMD dispatch, and memory-layout contracts. DUCC's reference SHT objects used `-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3`; Rust used strict FP and Pulp V3. Do not silently conflate FP settings or timings from older versions. A separately matched GCC/Clang DUCC control may isolate compiler effects.
+Freeze final Plan 11 source commit `a37f74d68631ab5fd373a4097640895e9f0c0c23` on this branch and pin DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. The preceding matched builds used Rust 1.99.1/LLVM 23.1.1 and AVX2/FMA on a Ryzen 9 5950X. Record actual toolchains, source SHAs, flags, CPU affinity, SIMD dispatch, and memory-layout contracts. DUCC's reference SHT objects used `-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3`; Rust used strict FP and Pulp V3. Do not silently conflate FP settings or timings from older versions. A separately matched GCC/Clang DUCC control may isolate compiler effects.
 
 - **Small q1 latency screen:** T4, T8, T16, T32, T48, T63, T64, T127, plus a tightly targeted boundary case if necessary. Use f64 GL scalar analysis and synthesis, full `mmax`, one exact matched longitude length per T, and only a few odd-minimum versus even-smooth controls where FFT shape is at issue. Include T1 and T2 only as absolute overhead controls. A cold/first-call table and a steady-state table are separate.
 - **Large throughput screen:** T720 and T2047 with post-Plan-11-safe geometry; optionally T1023 for scaling. At T720 compare full `mmax` and a reduced-order control (such as `mmax=180`); compare matched odd-minimum/even-smooth longitude sampling where relevant. Run q1 and q8; q4 in the same cache domain is an optional discriminator, not a mandatory broad thread sweep. Do not spend time repeating known pathological T2048 cutoff measurements.
@@ -134,26 +133,15 @@ For each accepted candidate:
 4. Commit only validated, evidence-backed changes. Cleanly remove failed cfg paths, redundant temporary kernels and large raw assembly dumps from production. Preserve small machine-readable timing datasets and the decisive diagnostic summary with exact source/toolchain revisions and reproduction commands.
 5. Summarize remaining q1/q8 latency by **absolute time in each stage**, measured Rust/DUCC ratios, 30-batch uncertainty or individual-call counts, accepted/rejected alternatives, accuracy, memory and next justified work. If measured parity is not achieved, report the isolated residual and a tested follow-up mechanism; do not declare success from a 2–5% local change.
 
-## 7. Execution and branch rules for Luna — owner-authorized automatic handoff
+## 7. Execution and branch rules
 
-- **Stay in the same Luna session on `opt/sht-performance-parity`.**
-  Do **not** create `opt/sht-small-serial-parallel-parity`, switch to
-  `main`, open a PR, start another session or ask for approval merely
-  to begin Plan 14. The owner has explicitly authorized the automatic
-  Plan 11 → Plan 14 transition **on this feature branch**.
-- **First complete Plan 11:** resolve or precisely bound its remaining
-  reduced-`mmax` front-end task. Perform the relevant numerical,
-  release/feature/no-default-feature and formatting/Clippy checks;
-  update `PERFORMANCE_STATUS.md` and report evidence; remove
-  retired experimental code where safe; commit and push the
-  Plan 11 closeout. Do not force a speculative fix merely to close.
-- **Then promote Plan 14 immediately:** in the same process/session
-  and on the same checked-out branch, fetch the latest remote state,
-  integrate safely without losing unpublished work, re-read all active
-  instructions and code, record the exact Plan 11 closeout SHA,
-  update `AGENTS.md`, `plans/README.md`, and this plan's status
-  to identify Plan 14 as **ACTIVE**, and commit/push that transition.
-  No confirmation or new human prompt is required.
+- **Active branch/session:** remain on `opt/sht-performance-parity`.
+  Plan 11 closeout `a37f74d6` was pushed and verified. `AGENTS.md`,
+  `plans/README.md`, Plan 11 and this plan mark Plan 11 complete and
+  Plan 14 active. No branch or session change is needed.
+- Rebaseline the target cases from the final Plan 11 commit and use the
+  staged measurements below to select work. Do not rerun the closed
+  reduced-`mmax` frontend, cutoff or tile experiments.
 - **Rebaseline rather than duplicate finished work.** The T2048
   cutoff, fixed 256 tile, q8 order-row preparation, and any additional
   resolved Plan 11 frontend work are accepted baseline. Compare current

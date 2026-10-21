@@ -1,11 +1,9 @@
 # Active plan 11 — Scalar f64 GL analysis parity with DUCC
 
-**Status: ACTIVE until completion; owner-authorized automatic handoff to
-[Plan 14](14-small-serial-parallel-performance.md) afterward (2026-10-21).**
-Continue in the **same Luna agent session** and on
-`opt/sht-performance-parity`, without creating another branch or
-asking for a new session. Finish this plan first; then Plan 14 becomes
-active as detailed below. Read
+**Status: COMPLETE (2026-10-21); closeout commit
+[`a37f74d6`](../reports/scalar-analysis-cumulative-2026-10-20.md#plan-11-reduced-mmax-frontend-closeout-2026-10-21).**
+The reduced-`mmax` frontend was attributed, validated and closed on
+`opt/sht-performance-parity`. Plan 14 is now the active successor. Read
 [AGENTS.md](../AGENTS.md), the current code and
 [PERFORMANCE_STATUS.md](../PERFORMANCE_STATUS.md) before changes.
 The [full preceding Plan 11](../reports/archive/plans/11-ducc-equivalent-scalar-analysis-pre-refresh-2026-10-21.md)
@@ -144,39 +142,25 @@ a material benefit, so the finite scan remains and no FFT rewrite is proposed.
 See the [closeout profile and interpretation](../reports/scalar-analysis-cumulative-2026-10-20.md#plan-11-reduced-mmax-frontend-closeout-2026-10-21)
 and [stage/whole-call data](../reports/data/scalar-analysis-cumulative-2026-10-20/reduced-frontend-attribution-2026-10-21.csv).
 
-### C. Close out Plan 11, then activate Plan 14 in the same session
+### C. Reduced-order frontend closeout and handoff — complete
 
-Complete the remaining narrow reduced-`mmax` front-end investigation:
-attribute the input-finite scan, forward row FFT and
-spectrum/weight packing on the matched production path. Implement
-a change only if it has a demonstrated material whole-transform
-benefit; it is acceptable to document a well-isolated residual
-and defer an unproven redesign to the broader Plan 14 scope.
+The final frontend attribution, validation, cleanup and closeout are
+recorded in the
+[closeout report](../reports/scalar-analysis-cumulative-2026-10-20.md#plan-11-reduced-mmax-frontend-closeout-2026-10-21)
+and machine-readable
+[stage/whole-call data](../reports/data/scalar-analysis-cumulative-2026-10-20/reduced-frontend-attribution-2026-10-21.csv).
+The validated scalar GL analysis FFT-output pruning is in source commit
+`1fddce4a`; full FFT input checking remains. No further front-end change
+was supported by the measured whole-transform results. The distinct Plan 11
+closeout was committed and pushed as
+`a37f74d68631ab5fd373a4097640895e9f0c0c23`.
 
-Record before/after results, correctness, source/build flags,
-measurement uncertainty, residual cause and reproducible commands.
-Remove failed or unnecessary experimental paths where safe, while
-preserving historical evidence and machine-readable data. Run
-relevant release, no-default-feature, Clippy/formatting, analytic,
-DUCC and adjoint checks. Commit and push a **distinct Plan 11 closeout**
-to `opt/sht-performance-parity`; verify remote HEAD. Do not stretch
-Plan 11 into another generalized performance campaign merely
-because some small-serial or reduced-order deficits remain.
-
-**Immediately after that closeout, without ending or replacing the
-current Luna session and without a new human confirmation**, continue
-with [Plan 14 — small serial and large parallel SHT parity](14-small-serial-parallel-performance.md)
-**on the same `opt/sht-performance-parity` branch**.
-Fetch/inspect the latest remote branch safely and reread
-`AGENTS.md`, Plan 14, the current status and code. Mark Plan 11
-**COMPLETE** and Plan 14 **ACTIVE** in Plan 11, Plan 14,
-`AGENTS.md` and `plans/README.md`; record the Plan 11 closeout
-SHA. Commit/push the transition before the next substantive
-optimization. Update Plan 14's historical benchmark claims
-using the final Plan 11 source, then work through its remaining
-evidence-led stages. **Do not create
-`opt/sht-small-serial-parallel-parity` or switch to main.**
-Plans 12 and 13 remain deferred.
+The authorized same-session, same-branch handoff is complete: Plan 14 is
+ACTIVE, and Plans 12/13 remain deferred. Plan 14's initial rebaseline must
+use the final Plan 11 source at the closeout commit, revise stale
+reduced-`mmax` claims, and proceed with its small-q1 and large-q8 evidence
+stages. Do not create `opt/sht-small-serial-parallel-parity` or switch to
+`main`.
 
 ## Tile definition and future 512 experiment (not active)
 
@@ -223,9 +207,9 @@ allocation/capacity changes, range-cache indexing and tail checks.
 
 ## Follow-on, deferred and historical references
 
-- **Next automatically after Plan 11 closeout:**
+- **Active successor:**
   [Plan 14 — small serial and large parallel performance](14-small-serial-parallel-performance.md),
-  **same session, same branch**, as owner-authorized above.
+  on the same session and branch; the Plan 11 closeout SHA is recorded above.
 - [Plan 12: offline-calibrated cache-informed Legendre dispatch](12-cache-informed-legendre-dispatch.md) — **future only**; one-time
   hardware cache query, optional diagnostic pointer-chase, no
   startup transform timing.

@@ -1,28 +1,23 @@
 # RustSHT plans — current status and reference index
 
-**Updated 2026-10-21 UTC.** This index distinguishes the **currently active Plan 11 and its
-owner-authorized automatic successor Plan 14**, deferred proposals,
-numerical contracts and archived historical instructions. In any conflict, current explicit owner
-instructions, [AGENTS.md](../AGENTS.md) and
-[Plan 11](11-ducc-equivalent-scalar-analysis.md) control.
+**Updated 2026-10-21 UTC.** Plan 11 is complete at closeout commit
+`a37f74d68631ab5fd373a4097640895e9f0c0c23`; **Plan 14 is the active
+implementation plan**. This index also distinguishes deferred proposals,
+numerical contracts and archived historical instructions. In any conflict,
+current explicit owner instructions, [AGENTS.md](../AGENTS.md) and
+[Plan 14](14-small-serial-parallel-performance.md) control.
 
-## One active plan
+## Active plan
 
-**[11 — Scalar f64 GL analysis parity](11-ducc-equivalent-scalar-analysis.md)**.
-The T2048 prefix cutoff is fixed and q8 order-row preparation is parallelized.
-Current remaining objective: measure/reconcile reduced-`mmax` frontend
-overhead (finite scan, row FFT, spectra and weight packing), then **validate,
-document, clean up, commit and push Plan 11 completion**. Keep scalar-analysis
-tiles at 256 reflected pairs; do not restart completed 64/128 studies.
+**[14 — Small serial and large parallel SHT parity](14-small-serial-parallel-performance.md)**
+is active on `opt/sht-performance-parity`, using Plan 11's final source
+baseline. It targets small q1 fixed costs and remaining large q8 excess;
+the reduced-`mmax` front end, T2048 cutoff and q8 order preparation are
+closed. See [current benchmark decisions](../PERFORMANCE_STATUS.md).
 
-**Authorized automatic successor:**
-[14 — Small serial and large parallel SHT parity](14-small-serial-parallel-performance.md).
-After Plan 11's closeout, **the same Luna session must immediately
-activate Plan 14 on the same `opt/sht-performance-parity` branch**.
-Update the active status files and rebaseline against the completed
-Plan 11 source. No second session, new branch or user confirmation.
-[Current benchmark decisions](../PERFORMANCE_STATUS.md) govern
-historical comparisons.
+**[11 — Scalar f64 GL analysis parity](11-ducc-equivalent-scalar-analysis.md)**
+is **complete** at `a37f74d68631ab5fd373a4097640895e9f0c0c23`; retain its
+findings and data as the validated baseline rather than reopening its work.
 
 ## Deferred TODOs — Plans 12 and 13 remain inactive
 

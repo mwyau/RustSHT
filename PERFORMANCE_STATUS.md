@@ -1,21 +1,19 @@
 # RustSHT performance checkpoint — current findings
 
 **Updated:** 2026-10-21 UTC. **Branch:** `opt/sht-performance-parity`.
-**Only active objective:** [Plan 11 — scalar f64 GL analysis parity](plans/11-ducc-equivalent-scalar-analysis.md).
+**Active objective:** [Plan 14 — small serial and large parallel SHT parity](plans/14-small-serial-parallel-performance.md).
 This is a **measured checkpoint, not a standalone instruction queue**.
 The previous long status, including intermediate experiments and historical
 next-step text, is preserved
 [here](reports/archive/performance-status-2026-10-21-pre-refresh.md).
 For reproducible raw benchmark tables see [reports/README](reports/README.md).
 
-**Owner-directed continuation (2026-10-21):** Finish the currently active
-Plan 11 reduced-`mmax` frontend investigation and produce a validated,
-committed/pushed Plan 11 closeout. The substage attribution is now complete;
-the closeout documentation is being finalized. **Then, in the same Luna session and on
-the same `opt/sht-performance-parity` branch, immediately activate
-[Plan 14](plans/14-small-serial-parallel-performance.md)** for small q1 and
-large q8 performance work. No new branch/session or owner permission is
-needed. Rebaseline from the final Plan 11 source; leave Plans 12/13 deferred.
+**Plan transition (2026-10-21):** Plan 11's reduced-`mmax` frontend study
+is closed at `a37f74d68631ab5fd373a4097640895e9f0c0c23`. The input scan,
+row FFT, spectrum pruning, order preparation and recurrence stage evidence
+is recorded in the cumulative report and CSV. Plan 14 is now active on the
+same branch/session. Its final-source rebaseline is the next task; Plans
+12/13 remain deferred.
 
 
 ## Highest-confidence current finding — prefix discontinuity removed
@@ -141,12 +139,17 @@ isolated `m=1` results or a desire to assemble another candidate matrix.
   full sweep observed up to 8.39×/7.44× q1/q8 T3072 analysis and remains
   historical, not a current-source claim.
   [Historical baseline](reports/archive/experiments/ducc-full-transform-parity-2026-10-20.md).
-- **T720 current-source residual:** `mmax=720`, odd-minimum
-  q1 analysis 23.60 ms Rust vs 22.16 ms DUCC; even-smooth
-  q1 analysis 16.38 vs 14.60 ms. q8 analysis
-  3.90 vs 3.19 and 3.04 vs 2.13 ms, respectively.
-  This shows **geometry-/thread-dependent** gaps, not one universal 2×.
-  Validate further under quiet-host conditions.
+- **Final Plan 11 current-source analysis checkpoint:** at T720 full
+  `mmax`, q8 Rust/DUCC was 3.063/2.937 ms (1.043×); reduced `mmax=180`
+  was 1.728/2.002 ms (0.863×). At T2047 full `mmax`, q8 was
+  42.907/42.563 ms (1.008×), and reduced `mmax=511` was
+  18.739/17.064 ms (1.098×). At T3072 full `mmax`, q8 was
+  124.428/117.119 ms (1.062×), while reduced `mmax=768` was
+  59.266/58.253 ms (1.017×). The final reduced frontend attribution
+  found no material Rust forward-row excess over DUCC `map2leg`; do not
+  repeat it. Plan 14 should remeasure selected cases with its interleaved
+  protocol and investigate the remaining absolute excess, especially full
+  T3072, separately from small-q1 fixed costs.
 - **Compiler and inner kernel:** GCC/Clang DUCC results differ even
   with verified source flags; host contention limits attribution.
   The corrected warmed T720 `m=1` recurrence/accumulation kernel
@@ -157,12 +160,11 @@ isolated `m=1` results or a desire to assemble another candidate matrix.
 
 ## Current next steps and deferred work
 
-1. **Plan 11 frontend study complete:** the input scan/copy, FFT, output
-   recombination, order preparation and corresponding DUCC stage boundaries
-   were profiled at T2047 m511 and T3072 m768, q1/q8. Output pruning remains
-   validated; the remaining q8 whole-call differences are within paired
-   spread or about 1–2 ms. Close Plan 11, then rebaseline and activate Plan 14
-   in this same session and branch.
+1. **Plan 14 rebaseline:** freeze Plan 11 closeout `a37f74d6`; run the
+   selected small-q1 A/S sweep and T720/T2047 q8 A/S subset with matched
+   Rust/DUCC inputs, process interleaving and calibrated batches. Report
+   cold/setup separately from warm calls, then attribute the largest
+   measured absolute excess before changing production code.
 2. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
    cache-topology queries plus optional offline pointer-chase diagnostic
    (no startup autotuning); [Plan 13](plans/13-fused-batched-sht.md)
@@ -171,4 +173,4 @@ isolated `m=1` results or a desire to assemble another candidate matrix.
 All prior measurements, full machine-readable CSV/JSON, rejected
 experiments, historical plans and source versions are intentionally
 **retained in the archive or reports/data**. Historical sections and
-old forward-looking language do not override Plan 11.
+old forward-looking language do not override active Plan 14.
