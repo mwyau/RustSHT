@@ -1,6 +1,14 @@
 # RustSHT performance checkpoint — current findings
 
 **Updated:** 2026-10-21 UTC. **Branch:** `opt/sht-performance-parity`.
+**Owner-directed cumulative scalar-analysis evaluation (active):** the packed
+complex-reduction candidate is retained behind a compile-time cfg for the
+required combined/ablation study. It changes the complete 64/128/256-lane
+kernel by about -0.9% to -3.3% and T720 whole transforms by -1.3% to +0.4%;
+the isolated reducer is about 3% faster. It is not enabled by
+default. Candidate release suites pass. The source correspondence, timings,
+code shape and remaining steps are tracked in the
+[cumulative ablation record](reports/scalar-analysis-cumulative-ablation-2026-10-21.md).
 **Plan 14:** COMPLETE at closeout commit
 `f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`. **Plan 15:** COMPLETE after the
 spin-1 GL → CC → F1 sequence on this branch; see

@@ -13,6 +13,157 @@ use std::time::Instant;
 const BENCH_LMAX: usize = 720;
 const BENCH_ORDER: usize = 1;
 
+struct PackedComplexReductionProbe;
+
+impl WithSimd for PackedComplexReductionProbe {
+    type Output = Option<([f64; 2], [f64; 2])>;
+
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        if S::F64_LANES != 4 {
+            return None;
+        }
+        let same_re = simd.partial_load_f64s(&[1.0, -2.0, 3.0, 4.0]);
+        let same_im = simd.partial_load_f64s(&[5.0, -6.0, 7.0, -8.0]);
+        let opposite_re = simd.partial_load_f64s(&[-1.0, 2.0, -3.0, 4.0]);
+        let opposite_im = simd.partial_load_f64s(&[8.0, 7.0, 6.0, 5.0]);
+        let same = reduce_analysis_complex_pair::<S, true>(simd, same_re, same_im);
+        let opposite = reduce_analysis_complex_pair::<S, true>(simd, opposite_re, opposite_im);
+        Some(([same.re, same.im], [opposite.re, opposite.im]))
+    }
+}
+
+#[test]
+fn packed_complex_reduction_matches_scalar_lane_sums() {
+    if let Some((same, opposite)) = Arch::new().dispatch(PackedComplexReductionProbe) {
+        assert_eq!(same, [6.0, -2.0]);
+        assert_eq!(opposite, [2.0, 26.0]);
+    }
+}
+
+struct ComplexReductionBatch<const PACKED_COMPLEX: bool> {
+    repetitions: usize,
+}
+
+impl<const PACKED_COMPLEX: bool> WithSimd for ComplexReductionBatch<PACKED_COMPLEX> {
+    type Output = Option<(Complex64, Complex64)>;
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        if S::F64_LANES != 4 {
+            return None;
+        }
+
+        let real0 = simd.partial_load_f64s(&[1.0, -2.0, 3.0, 4.0]);
+        let imag0 = simd.partial_load_f64s(&[5.0, -6.0, 7.0, -8.0]);
+        let real1 = simd.partial_load_f64s(&[-1.0, 2.0, -3.0, 4.0]);
+        let imag1 = simd.partial_load_f64s(&[8.0, 7.0, 6.0, 5.0]);
+        let mut sum0 = Complex64::new(0.0, 0.0);
+        let mut sum1 = Complex64::new(0.0, 0.0);
+
+        for _ in 0..self.repetitions {
+            let value0 = reduce_analysis_complex_pair::<S, PACKED_COMPLEX>(
+                simd,
+                std::hint::black_box(real0),
+                std::hint::black_box(imag0),
+            );
+            let value1 = reduce_analysis_complex_pair::<S, PACKED_COMPLEX>(
+                simd,
+                std::hint::black_box(real1),
+                std::hint::black_box(imag1),
+            );
+            sum0.re += value0.re;
+            sum0.im += value0.im;
+            sum1.re += value1.re;
+            sum1.im += value1.im;
+        }
+
+        Some(std::hint::black_box((sum0, sum1)))
+    }
+}
+
+fn complex_reduction_batch<const PACKED_COMPLEX: bool>(
+    repetitions: usize,
+) -> (f64, Option<(Complex64, Complex64)>) {
+    let started = Instant::now();
+    let output = Arch::new().dispatch(ComplexReductionBatch::<PACKED_COMPLEX> { repetitions });
+    let elapsed_us = started.elapsed().as_secs_f64() * 1.0e6;
+    (elapsed_us, output)
+}
+
+fn calibrate_complex_reduction_batch<const PACKED_COMPLEX: bool>() -> usize {
+    let mut repetitions = 1_000;
+    loop {
+        let (elapsed_us, output) = complex_reduction_batch::<PACKED_COMPLEX>(repetitions);
+        let (sum0, sum1) = output.expect("the benchmark requires four-lane f64 SIMD");
+        assert_eq!(
+            sum0,
+            Complex64::new(6.0 * repetitions as f64, -2.0 * repetitions as f64)
+        );
+        assert_eq!(
+            sum1,
+            Complex64::new(2.0 * repetitions as f64, 26.0 * repetitions as f64)
+        );
+        if elapsed_us >= 30_000.0 {
+            return repetitions;
+        }
+        repetitions = ((repetitions as f64 * (35_000.0 / elapsed_us.max(1.0)).max(1.5)) as usize)
+            .max(repetitions + 1);
+    }
+}
+
+fn reduction_quantile(samples: &[f64], numerator: usize) -> f64 {
+    samples[(samples.len() - 1) * numerator / 100]
+}
+
+#[test]
+#[ignore = "manual calibrated reduction-only comparison; run pinned to one physical core"]
+fn benchmark_scalar_analysis_complex_reduction() {
+    let repetitions = [
+        calibrate_complex_reduction_batch::<false>(),
+        calibrate_complex_reduction_batch::<true>(),
+    ];
+    let mut samples = [Vec::with_capacity(10), Vec::with_capacity(10)];
+    let run = std::env::var("RUSTSHT_REDUCTION_BENCH_RUN").unwrap_or_else(|_| "unspecified".into());
+    eprintln!(
+        "REDUCTION_BENCH_START run={run} arch={:?} lanes=4 repetitions_separate={} packed={}",
+        Arch::new(),
+        repetitions[0],
+        repetitions[1]
+    );
+
+    for batch in 0..10 {
+        let order = if batch % 2 == 0 { [0, 1] } else { [1, 0] };
+        for variant in order {
+            let (elapsed_us, output) = if variant == 0 {
+                complex_reduction_batch::<false>(repetitions[variant])
+            } else {
+                complex_reduction_batch::<true>(repetitions[variant])
+            };
+            std::hint::black_box(output);
+            let per_group_us = elapsed_us / repetitions[variant] as f64;
+            samples[variant].push(per_group_us);
+            eprintln!(
+                "REDUCTION_SAMPLE run={run} batch={batch} variant={} us_per_two_complex={per_group_us:.9} batch_ms={:.3}",
+                if variant == 0 { "separate" } else { "packed" },
+                elapsed_us / 1_000.0
+            );
+        }
+    }
+
+    for (variant, values) in samples.iter_mut().enumerate() {
+        values.sort_by(f64::total_cmp);
+        eprintln!(
+            "REDUCTION_SUMMARY run={run} variant={} p10_median_p90_ns_per_two_complex={:.3},{:.3},{:.3} repetitions={} batches={}",
+            if variant == 0 { "separate" } else { "packed" },
+            reduction_quantile(values, 10) * 1_000.0,
+            reduction_quantile(values, 50) * 1_000.0,
+            reduction_quantile(values, 90) * 1_000.0,
+            repetitions[variant],
+            values.len()
+        );
+    }
+}
+
 fn output_base() -> String {
     std::env::var("RUSTSHT_KERNEL_BENCH_BASE").unwrap_or_else(|_| {
         std::env::temp_dir()
