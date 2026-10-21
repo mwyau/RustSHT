@@ -61,25 +61,17 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
     transform_phase_probe: Option<TransformPhaseProbe>,
 }
 
-#[allow(unexpected_cfgs)]
-#[cfg_attr(rustsht_scalar_analysis_fixed_simd_arrays, repr(C))]
+#[repr(C)]
 pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
-    // Keep the scalar recurrence state and the four packed analysis spectra
-    // together. The fixed-array experiment matches DUCC's per-order SIMD
-    // storage while preserving slice-based Pulp dispatch.
-    #[allow(unexpected_cfgs)]
+    // `repr(C)` keeps these seven 256-entry scratch arrays contiguous. Their
+    // inline representation preserves the existing payload and removes seven
+    // per-worker heap allocations while retaining slice-based Pulp dispatch.
     pub(crate) previous: AnalysisVectorBuffer<T>,
-    #[allow(unexpected_cfgs)]
     pub(crate) current: AnalysisVectorBuffer<T>,
-    #[allow(unexpected_cfgs)]
     pub(crate) next: AnalysisVectorBuffer<T>,
-    #[allow(unexpected_cfgs)]
     pub(crate) analysis_same_real: AnalysisVectorBuffer<T>,
-    #[allow(unexpected_cfgs)]
     pub(crate) analysis_same_imag: AnalysisVectorBuffer<T>,
-    #[allow(unexpected_cfgs)]
     pub(crate) analysis_opposite_real: AnalysisVectorBuffer<T>,
-    #[allow(unexpected_cfgs)]
     pub(crate) analysis_opposite_imag: AnalysisVectorBuffer<T>,
     pub(crate) epsilon: Vec<T>,
     pub(crate) exponents: Vec<i64>,
@@ -123,20 +115,16 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     profile_mixed_blocks: usize,
 }
 
-#[allow(unexpected_cfgs)]
-#[cfg(rustsht_scalar_analysis_fixed_simd_arrays)]
 #[repr(align(64))]
 pub(crate) struct FixedAnalysisVectorBuffer<T: ShtScalar>([T; ANALYSIS_VECTOR_BUFFER_CAPACITY]);
 
-#[allow(unexpected_cfgs)]
-#[cfg(rustsht_scalar_analysis_fixed_simd_arrays)]
 impl<T: ShtScalar> FixedAnalysisVectorBuffer<T> {
     fn new(length: usize, name: &'static str) -> Result<Self, ShtError> {
-        if length > ANALYSIS_VECTOR_BUFFER_CAPACITY {
+        if length != ANALYSIS_VECTOR_BUFFER_CAPACITY {
             return Err(ShtError::BufferLength {
                 buffer: name,
-                expected: length,
-                actual: ANALYSIS_VECTOR_BUFFER_CAPACITY,
+                expected: ANALYSIS_VECTOR_BUFFER_CAPACITY,
+                actual: length,
             });
         }
         Ok(Self([T::zero(); ANALYSIS_VECTOR_BUFFER_CAPACITY]))
@@ -148,8 +136,6 @@ impl<T: ShtScalar> FixedAnalysisVectorBuffer<T> {
     }
 }
 
-#[allow(unexpected_cfgs)]
-#[cfg(rustsht_scalar_analysis_fixed_simd_arrays)]
 impl<T: ShtScalar> std::ops::Deref for FixedAnalysisVectorBuffer<T> {
     type Target = [T];
 
@@ -158,39 +144,19 @@ impl<T: ShtScalar> std::ops::Deref for FixedAnalysisVectorBuffer<T> {
     }
 }
 
-#[allow(unexpected_cfgs)]
-#[cfg(rustsht_scalar_analysis_fixed_simd_arrays)]
 impl<T: ShtScalar> std::ops::DerefMut for FixedAnalysisVectorBuffer<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-#[allow(unexpected_cfgs)]
-#[cfg(rustsht_scalar_analysis_fixed_simd_arrays)]
 type AnalysisVectorBuffer<T> = FixedAnalysisVectorBuffer<T>;
 
-#[allow(unexpected_cfgs)]
-#[cfg(not(rustsht_scalar_analysis_fixed_simd_arrays))]
-type AnalysisVectorBuffer<T> = Vec<T>;
-
-#[allow(unexpected_cfgs)]
-#[cfg(rustsht_scalar_analysis_fixed_simd_arrays)]
 fn allocate_analysis_vector_buffer<T: ShtScalar>(
     length: usize,
     name: &'static str,
 ) -> Result<AnalysisVectorBuffer<T>, ShtError> {
     FixedAnalysisVectorBuffer::new(length, name)
-}
-
-#[allow(unexpected_cfgs)]
-#[cfg(not(rustsht_scalar_analysis_fixed_simd_arrays))]
-fn allocate_analysis_vector_buffer<T: ShtScalar>(
-    length: usize,
-    name: &'static str,
-) -> Result<AnalysisVectorBuffer<T>, ShtError> {
-    debug_assert!(length <= ANALYSIS_VECTOR_BUFFER_CAPACITY);
-    allocate_real(length, name)
 }
 
 #[cfg(all(test, feature = "parallel"))]
@@ -837,9 +803,8 @@ fn allocate_usizes(len: usize, array: &'static str) -> Result<Vec<usize>, ShtErr
     Ok(values)
 }
 
-#[allow(unexpected_cfgs)]
-#[cfg(all(test, rustsht_scalar_analysis_fixed_simd_arrays))]
-mod fixed_analysis_vector_tests {
+#[cfg(test)]
+mod analysis_vector_buffer_tests {
     use super::{ANALYSIS_VECTOR_BUFFER_CAPACITY, FixedAnalysisVectorBuffer, RecurrenceWorkspace};
     use pulp::{Arch, Simd, WithSimd};
 
@@ -856,6 +821,13 @@ mod fixed_analysis_vector_tests {
 
     #[test]
     fn analysis_arrays_are_contiguous_aligned_and_vector_complete() {
+        assert!(
+            FixedAnalysisVectorBuffer::<f64>::new(
+                ANALYSIS_VECTOR_BUFFER_CAPACITY - 1,
+                "short fixed analysis buffer"
+            )
+            .is_err()
+        );
         let workspace =
             RecurrenceWorkspace::<f64>::new(4, 4, 4, 4, ANALYSIS_VECTOR_BUFFER_CAPACITY)
                 .expect("fixed-array recurrence workspace");
@@ -879,6 +851,12 @@ mod fixed_analysis_vector_tests {
                 assert_eq!(*base - bases[index - 1], stride, "buffer {index} stride");
             }
         }
+        assert_eq!(std::mem::align_of::<RecurrenceWorkspace<f64>>(), 64);
+        assert_eq!(
+            std::mem::size_of::<RecurrenceWorkspace<f64>>() % 64,
+            0,
+            "worker scratch stride avoids sharing its boundary cache line"
+        );
 
         let (width, vector_count, tail_count) =
             Arch::new().dispatch(VectorSpan(&workspace.analysis_same_real));
