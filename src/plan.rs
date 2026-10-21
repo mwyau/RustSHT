@@ -422,7 +422,10 @@ impl<T: ShtScalar> ShtPlan<T> {
 
     #[cfg(feature = "parallel")]
     pub(crate) fn row_fft_parallelism_supported(&self) -> bool {
-        if self.harmonics.spin() == 0 && self.grid.kind() == crate::grid::GridKind::GaussLegendre {
+        if T::supports_precomputed_scalar()
+            && self.harmonics.spin() == 0
+            && self.grid.kind() == crate::grid::GridKind::GaussLegendre
+        {
             // Matched q8 A/B measurements show row-parallel FFTs pay off once
             // the scalar GL grid has at least 4096 samples. The area guard
             // avoids scheduling overhead on reduced-mmax small grids.

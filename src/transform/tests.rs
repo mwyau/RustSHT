@@ -55,6 +55,12 @@ fn scalar_gl_row_fft_uses_sample_work_threshold_without_changing_other_routes() 
     )
     .unwrap();
     assert!(!spin1_plan.row_fft_parallelism_supported());
+    let f32_plan = ShtPlan::<f32>::new(
+        GridSpec::new(GridKind::GaussLegendre, 49, 97, 0.23).unwrap(),
+        HarmonicSpec::scalar(48, 48).unwrap(),
+    )
+    .unwrap();
+    assert!(!f32_plan.row_fft_parallelism_supported());
 }
 
 fn prepare_scalar_latitudes(plan: &ShtPlan, workspace: &mut crate::workspace::ShtWorkspace) {
