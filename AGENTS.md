@@ -7,8 +7,13 @@ is **ACTIVE** on `opt/sht-performance-parity` in the same Luna session.
 is complete at closeout commit `f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`.
 Plan 14's full scalar GL sweep and four figures are published, its q8
 sparse-tail validation and remaining stage excess are documented, and its
-release/no-default checks pass. Plan 15 covers spin-1 vector GL → CC → F1;
-do not expand it into scalar CC/F1, spins 2–4 or batch APIs. Plans 12/13
+release/no-default checks pass. The temporary scalar T64–T256 dispatch
+investigation is also complete. Plan 15 covers spin-1 vector GL → CC → F1;
+do not expand it into scalar CC/F1, spins 2–4 or batch APIs. **Owner direction
+2026-10-21: skip odd-length FFT optimization for now—including paired-real
+rows, `realfft` substitution, and standalone/custom FFT integration. Keep
+odd/even longitude cases in native-DUCC baselines and correctness checks,
+but do not pursue their FFT-specific performance gap.** Plans 12/13
 remain deferred.
 Explicit current owner instructions take precedence;
 other archived plans/reviews and benchmark reports are historical evidence.
