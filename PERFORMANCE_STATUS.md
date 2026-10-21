@@ -2,10 +2,11 @@
 
 **Updated:** 2026-10-21 UTC. **Branch:** `opt/sht-performance-parity`.
 **Plan 14:** COMPLETE at closeout commit
-`f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`. **Active objective:**
-[Plan 15 — spin-1 vector GL, CC and F1 performance](plans/15-spin1-vector-gl-cc-f1-performance.md),
-authorized for the same session and branch. Scalar CC/F1 optimization
-outside spin-1 is not included; Plans 12/13 are deferred.
+`f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`. **Plan 15:** COMPLETE after the
+spin-1 GL → CC → F1 sequence on this branch; see
+[the closeout report](reports/plan15-spin1-synthesis-dataflow-closeout-2026-10-21.md)
+and [Plan 15](plans/15-spin1-vector-gl-cc-f1-performance.md). Plans 12/13
+remain deferred.
 **Owner scope decision (2026-10-21): defer odd-length FFT optimization**, including
 paired-real-row FFTs, `realfft` substitution and custom `rustsht-fft`
 integration. Keep odd/even longitude benchmarks and numerical correctness
@@ -13,12 +14,23 @@ controls, but do not initiate an odd-FFT performance campaign. Plan 15 Phase A
 is complete; GL stage work is closed for now. CC and F1 analysis resampling
 are implemented, and the F1 synthesis scheduling screen is complete. A
 current-source T720 GL/CC/F1 integration screen and serialized regression
-suites pass; the remaining synthesis recurrence gap is still under Plan 15.
+suites pass. The remaining spin-1 synthesis recurrence gap is quantified and
+closed as an implementation target after the final matched dataflow A/B found
+no justified production change.
 This is a **measured checkpoint, not a standalone instruction queue**.
 The previous long status, including intermediate experiments and historical
 next-step text, is preserved
 [here](reports/archive/performance-status-2026-10-21-pre-refresh.md).
 For reproducible raw benchmark tables see [reports/README](reports/README.md).
+
+**Plan 15 closeout (2026-10-21):** exact-T720 CC q8 synthesis remains 3.87×
+DUCC full order and 6.48× at `mmax=180`; current F1 is 3.80×/5.63×. Stage
+timing places CC's excess in recurrence/spectrum rather than inverse FFT.
+Active-lane compaction reduced fallback counts by 24% but changed q8 whole
+latency by less than 1%. A pair-outer SIMD candidate that reused coefficient
+broadcasts regressed q1 synthesis 23–27% and full-order q8 by 5%; both
+experimental paths were removed. The residual and assembly/dataflow evidence
+are in the [closeout report and sanitized summaries](reports/plan15-spin1-synthesis-dataflow-closeout-2026-10-21.md).
 
 **Scalar GL T64–T256 diagnostic complete (2026-10-21):** matched controls
 identified separate row-FFT and compact-table costs. The T63→T64 q8 analysis

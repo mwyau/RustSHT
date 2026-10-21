@@ -1,0 +1,233 @@
+diff --git a/src/legendre/scalar_paired.rs b/src/legendre/scalar_paired.rs
+index f3547329..2eb1f5e5 100644
+--- a/src/legendre/scalar_paired.rs
++++ b/src/legendre/scalar_paired.rs
+@@ -740,7 +740,8 @@ pub(crate) fn synthesize_prepared_order_pair_block_dispatched(
+         first_odd,
+         second_even,
+         second_odd,
+-        current: &current[..sin_theta.len()],
++        previous: &mut previous[..sin_theta.len()],
++        current: &mut current[..sin_theta.len()],
+         first_sum_re: &mut first_sum_re[..sin_theta.len()],
+         first_sum_im: &mut first_sum_im[..sin_theta.len()],
+         second_sum_re: &mut second_sum_re[..sin_theta.len()],
+@@ -5185,7 +5186,8 @@ struct FusedPreparedSynthesisPairBlock<'a> {
+     first_odd: &'a [Complex64],
+     second_even: &'a [Complex64],
+     second_odd: &'a [Complex64],
+-    current: &'a [f64],
++    previous: &'a mut [f64],
++    current: &'a mut [f64],
+     first_sum_re: &'a mut [f64],
+     first_sum_im: &'a mut [f64],
+     second_sum_re: &'a mut [f64],
+@@ -5206,6 +5208,7 @@ impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
+             first_odd,
+             second_even,
+             second_odd,
++            previous,
+             current,
+             first_sum_re,
+             first_sum_im,
+@@ -5213,11 +5216,33 @@ impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
+             second_sum_im,
+         } = self;
+         let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
+-        let (initial_vectors, initial_tail) = S::as_simd_f64s(current);
++        let (previous_vectors, previous_tail) = S::as_mut_simd_f64s(previous);
++        let (current_vectors, current_tail) = S::as_mut_simd_f64s(current);
+         let (first_sum_re_vectors, first_sum_re_tail) = S::as_mut_simd_f64s(first_sum_re);
+         let (first_sum_im_vectors, first_sum_im_tail) = S::as_mut_simd_f64s(first_sum_im);
+         let (second_sum_re_vectors, second_sum_re_tail) = S::as_mut_simd_f64s(second_sum_re);
+         let (second_sum_im_vectors, second_sum_im_tail) = S::as_mut_simd_f64s(second_sum_im);
++        debug_assert_eq!(cosine_vectors.len(), previous_vectors.len());
++        debug_assert_eq!(cosine_vectors.len(), current_vectors.len());
++        debug_assert_eq!(cosine_vectors.len(), first_sum_re_vectors.len());
++        debug_assert_eq!(cosine_vectors.len(), first_sum_im_vectors.len());
++        debug_assert_eq!(cosine_vectors.len(), second_sum_re_vectors.len());
++        debug_assert_eq!(cosine_vectors.len(), second_sum_im_vectors.len());
++
++        let zero = simd.splat_f64s(0.0);
++        for lane_block in 0..cosine_vectors.len() {
++            first_sum_re_vectors[lane_block] = zero;
++            first_sum_im_vectors[lane_block] = zero;
++            second_sum_re_vectors[lane_block] = zero;
++            second_sum_im_vectors[lane_block] = zero;
++        }
++        for lane in 0..cosine_tail.len() {
++            first_sum_re_tail[lane] = 0.0;
++            first_sum_im_tail[lane] = 0.0;
++            second_sum_re_tail[lane] = 0.0;
++            second_sum_im_tail[lane] = 0.0;
++        }
++
+         let coefficient_pairs = coefficient_a
+             .iter()
+             .zip(coefficient_b)
+@@ -5226,99 +5251,87 @@ impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
+             .zip(second_even)
+             .zip(second_odd)
+             .enumerate();
+-        for lane_block in 0..cosine_vectors.len() {
+-            let cosine = cosine_vectors[lane_block];
+-            let mut previous = simd.splat_f64s(0.0);
+-            let mut current = initial_vectors[lane_block];
+-            let mut first_re = simd.splat_f64s(0.0);
+-            let mut first_im = simd.splat_f64s(0.0);
+-            let mut second_re = simd.splat_f64s(0.0);
+-            let mut second_im = simd.splat_f64s(0.0);
+-            for (
+-                pair,
+-                (
+-                    ((((coefficient_a, coefficient_b), first_even), first_odd), second_even),
+-                    second_odd,
+-                ),
+-            ) in coefficient_pairs.clone()
+-            {
+-                let first_coefficient_re = simd.mul_add_f64s(
+-                    simd.splat_f64s(first_odd.re),
+-                    cosine,
+-                    simd.splat_f64s(first_even.re),
++
++        for (
++            pair,
++            (((((coefficient_a, coefficient_b), first_even), first_odd), second_even), second_odd),
++        ) in coefficient_pairs
++        {
++            let first_even_re = simd.splat_f64s(first_even.re);
++            let first_even_im = simd.splat_f64s(first_even.im);
++            let first_odd_re = simd.splat_f64s(first_odd.re);
++            let first_odd_im = simd.splat_f64s(first_odd.im);
++            let second_even_re = simd.splat_f64s(second_even.re);
++            let second_even_im = simd.splat_f64s(second_even.im);
++            let second_odd_re = simd.splat_f64s(second_odd.re);
++            let second_odd_im = simd.splat_f64s(second_odd.im);
++            let recurrence_a = simd.splat_f64s(*coefficient_a);
++            let recurrence_b = simd.splat_f64s(*coefficient_b);
++
++            for lane_block in 0..cosine_vectors.len() {
++                let cosine = cosine_vectors[lane_block];
++                let previous = previous_vectors[lane_block];
++                let current = current_vectors[lane_block];
++                let first_coefficient_re = simd.mul_add_f64s(first_odd_re, cosine, first_even_re);
++                let first_coefficient_im = simd.mul_add_f64s(first_odd_im, cosine, first_even_im);
++                let second_coefficient_re =
++                    simd.mul_add_f64s(second_odd_re, cosine, second_even_re);
++                let second_coefficient_im =
++                    simd.mul_add_f64s(second_odd_im, cosine, second_even_im);
++                first_sum_re_vectors[lane_block] = simd.mul_add_f64s(
++                    current,
++                    first_coefficient_re,
++                    first_sum_re_vectors[lane_block],
+                 );
+-                let first_coefficient_im = simd.mul_add_f64s(
+-                    simd.splat_f64s(first_odd.im),
+-                    cosine,
+-                    simd.splat_f64s(first_even.im),
++                first_sum_im_vectors[lane_block] = simd.mul_add_f64s(
++                    current,
++                    first_coefficient_im,
++                    first_sum_im_vectors[lane_block],
+                 );
+-                let second_coefficient_re = simd.mul_add_f64s(
+-                    simd.splat_f64s(second_odd.re),
+-                    cosine,
+-                    simd.splat_f64s(second_even.re),
++                second_sum_re_vectors[lane_block] = simd.mul_add_f64s(
++                    current,
++                    second_coefficient_re,
++                    second_sum_re_vectors[lane_block],
+                 );
+-                let second_coefficient_im = simd.mul_add_f64s(
+-                    simd.splat_f64s(second_odd.im),
+-                    cosine,
+-                    simd.splat_f64s(second_even.im),
++                second_sum_im_vectors[lane_block] = simd.mul_add_f64s(
++                    current,
++                    second_coefficient_im,
++                    second_sum_im_vectors[lane_block],
+                 );
+-                first_re = simd.mul_add_f64s(current, first_coefficient_re, first_re);
+-                first_im = simd.mul_add_f64s(current, first_coefficient_im, first_im);
+-                second_re = simd.mul_add_f64s(current, second_coefficient_re, second_re);
+-                second_im = simd.mul_add_f64s(current, second_coefficient_im, second_im);
+
+                 if pair + 1 < pair_count {
+                     let cosine_squared = simd.mul_f64s(cosine, cosine);
+-                    let leading = simd.mul_add_f64s(
+-                        simd.splat_f64s(*coefficient_a),
+-                        cosine_squared,
+-                        simd.splat_f64s(*coefficient_b),
+-                    );
++                    let leading = simd.mul_add_f64s(recurrence_a, cosine_squared, recurrence_b);
+                     let next = simd.mul_add_f64s(leading, current, previous);
+-                    previous = current;
+-                    current = next;
++                    previous_vectors[lane_block] = current;
++                    current_vectors[lane_block] = next;
+                 }
+             }
+-            first_sum_re_vectors[lane_block] = first_re;
+-            first_sum_im_vectors[lane_block] = first_im;
+-            second_sum_re_vectors[lane_block] = second_re;
+-            second_sum_im_vectors[lane_block] = second_im;
+-        }
+
+-        for lane in 0..cosine_tail.len() {
+-            let cosine = cosine_tail[lane];
+-            let mut previous = 0.0;
+-            let mut current = initial_tail[lane];
+-            let mut first_re = 0.0;
+-            let mut first_im = 0.0;
+-            let mut second_re = 0.0;
+-            let mut second_im = 0.0;
+-            for (
+-                pair,
+-                (
+-                    ((((coefficient_a, coefficient_b), first_even), first_odd), second_even),
+-                    second_odd,
+-                ),
+-            ) in coefficient_pairs.clone()
+-            {
+-                first_re = current.mul_add(first_odd.re.mul_add(cosine, first_even.re), first_re);
+-                first_im = current.mul_add(first_odd.im.mul_add(cosine, first_even.im), first_im);
+-                second_re =
+-                    current.mul_add(second_odd.re.mul_add(cosine, second_even.re), second_re);
+-                second_im =
+-                    current.mul_add(second_odd.im.mul_add(cosine, second_even.im), second_im);
++            for lane in 0..cosine_tail.len() {
++                let cosine = cosine_tail[lane];
++                let current = current_tail[lane];
++                let first_coefficient_re = first_odd.re.mul_add(cosine, first_even.re);
++                let first_coefficient_im = first_odd.im.mul_add(cosine, first_even.im);
++                let second_coefficient_re = second_odd.re.mul_add(cosine, second_even.re);
++                let second_coefficient_im = second_odd.im.mul_add(cosine, second_even.im);
++                first_sum_re_tail[lane] =
++                    current.mul_add(first_coefficient_re, first_sum_re_tail[lane]);
++                first_sum_im_tail[lane] =
++                    current.mul_add(first_coefficient_im, first_sum_im_tail[lane]);
++                second_sum_re_tail[lane] =
++                    current.mul_add(second_coefficient_re, second_sum_re_tail[lane]);
++                second_sum_im_tail[lane] =
++                    current.mul_add(second_coefficient_im, second_sum_im_tail[lane]);
+
+                 if pair + 1 < pair_count {
+-                    let leading = coefficient_a.mul_add(cosine * cosine, *coefficient_b);
+-                    let next = leading.mul_add(current, previous);
+-                    previous = current;
+-                    current = next;
++                    let next = coefficient_a
++                        .mul_add(cosine * cosine, *coefficient_b)
++                        .mul_add(current, previous_tail[lane]);
++                    previous_tail[lane] = current;
++                    current_tail[lane] = next;
+                 }
+             }
+-            first_sum_re_tail[lane] = first_re;
+-            first_sum_im_tail[lane] = first_im;
+-            second_sum_re_tail[lane] = second_re;
+-            second_sum_im_tail[lane] = second_im;
+         }
+     }
+ }

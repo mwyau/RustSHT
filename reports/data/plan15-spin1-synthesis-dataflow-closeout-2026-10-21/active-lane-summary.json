@@ -1,0 +1,1497 @@
+{
+  "schema_version": 1,
+  "metadata": {
+    "baseline_source": "ae78e18044fea2d65316d230dd434e4b4f8222be",
+    "candidate_source": "ae78e18044fea2d65316d230dd434e4b4f8222be-active-lane-working-tree",
+    "binary_sha256": {
+      "baseline": "fb3cab5bd08a4792ea1663c78173c874e99b313a0660bc0b0668a06df6d36f60",
+      "candidate": "2aac562627f6230058cf4286197a3c3c75cd7bcfb1da37a30cc2bb2e074e6831",
+      "ducc": "89125091d06ddd4c24589c6f53e6785682d79f40cf0b991f64ad75a034ae2423"
+    },
+    "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "rust_toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+    "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+    "ducc_compiler": "GCC 15.2.0",
+    "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver -fno-fast-math",
+    "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+    "q1_cpus": [
+      0
+    ],
+    "q8_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "monitor_cpu": 8,
+    "measurement": {
+      "process_pairs": 3,
+      "target_ms": 25.0,
+      "interleaved_order": [
+        "baseline,DUCC,candidate",
+        "candidate,DUCC,baseline",
+        "DUCC,baseline,candidate"
+      ]
+    },
+    "fixture_sha256_by_case": [
+      {
+        "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+        "sha256": {
+          "map0": "d27487b743f150323b8a33c25b41e292a2a338301ca57375546e9020af7d4199",
+          "map1": "047f6349a5bd4dc4c0bbd7a61bd129ef0c8bc61d5754556db7b512a35b757610",
+          "e": "333a9c5403e5051732b254ae7a0a9916e068da0d98378157babcc5527cb0414a",
+          "b": "2f464f02de01197f2c89a5e21b865bcd1d7fee3d32b68f0d9b534bebc35e4201"
+        }
+      },
+      {
+        "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+        "sha256": {
+          "map0": "0ef753888c1dcf2697719846270a85cacff8b1ed0019ece40829884974707985",
+          "map1": "95ffdc443cf192afb7524063c5a8b3e0624e85bc83e33f23aa66180545e4958e",
+          "e": "d4a10dc30a800a986b8944e81e36214355ac74a571b145167378451ecdb8adb6",
+          "b": "fe66537ca2a62828fab75ee3c343b6fd56e34f1831ae0fc50394a3c5c8cb34db"
+        }
+      }
+    ],
+    "host_diagnostics_summary": [
+      {
+        "backend": "baseline",
+        "operation": "analysis",
+        "threads": 1,
+        "wait_fraction": {
+          "median": 0.0529873435154878,
+          "p10": 0.04045164425841552,
+          "p90": 0.066172646114456,
+          "min": 0.04038806050803106,
+          "max": 0.06620201407844913
+        },
+        "involuntary_switches": {
+          "median": 91.0,
+          "min": 80,
+          "max": 101
+        },
+        "observed_frequency_ghz": {
+          "median": 4.689343,
+          "min": 4.074236,
+          "max": 4.816259
+        }
+      },
+      {
+        "backend": "baseline",
+        "operation": "analysis",
+        "threads": 8,
+        "wait_fraction": {
+          "median": 0.010641348846135091,
+          "p10": 0.0053581359671236745,
+          "p90": 0.028306045975380945,
+          "min": 0.005352614771746691,
+          "max": 0.04096141187252604
+        },
+        "involuntary_switches": {
+          "median": 798.0,
+          "min": 200,
+          "max": 1952
+        },
+        "observed_frequency_ghz": {
+          "median": 4.3670405,
+          "min": 1.74646,
+          "max": 4.872401
+        }
+      },
+      {
+        "backend": "baseline",
+        "operation": "synthesis",
+        "threads": 1,
+        "wait_fraction": {
+          "median": 0.05673624258923367,
+          "p10": 0.03085343973968028,
+          "p90": 0.08364687385706943,
+          "min": 0.030659663665401505,
+          "max": 0.08439171097799171
+        },
+        "involuntary_switches": {
+          "median": 92.0,
+          "min": 75,
+          "max": 115
+        },
+        "observed_frequency_ghz": {
+          "median": 4.691492500000001,
+          "min": 4.181876,
+          "max": 4.816251
+        }
+      },
+      {
+        "backend": "baseline",
+        "operation": "synthesis",
+        "threads": 8,
+        "wait_fraction": {
+          "median": 0.008009300050552521,
+          "p10": 0.004069425888838018,
+          "p90": 0.023963479722856076,
+          "min": 0.0016730718185375994,
+          "max": 0.03181799216248102
+        },
+        "involuntary_switches": {
+          "median": 349.5,
+          "min": 173,
+          "max": 1530
+        },
+        "observed_frequency_ghz": {
+          "median": 3.8343499999999997,
+          "min": 1.74646,
+          "max": 4.905452
+        }
+      },
+      {
+        "backend": "candidate",
+        "operation": "analysis",
+        "threads": 1,
+        "wait_fraction": {
+          "median": 0.053017469129796865,
+          "p10": 0.04014246414877576,
+          "p90": 0.06627063082259435,
+          "min": 0.03980817288214562,
+          "max": 0.06631027055183962
+        },
+        "involuntary_switches": {
+          "median": 89.0,
+          "min": 77,
+          "max": 104
+        },
+        "observed_frequency_ghz": {
+          "median": 4.6914665,
+          "min": 3.964045,
+          "max": 4.815539
+        }
+      },
+      {
+        "backend": "candidate",
+        "operation": "analysis",
+        "threads": 8,
+        "wait_fraction": {
+          "median": 0.007354787072399329,
+          "p10": 0.004164091723300521,
+          "p90": 0.010298685162110553,
+          "min": 0.0038067049382667427,
+          "max": 0.01097521926385397
+        },
+        "involuntary_switches": {
+          "median": 423.5,
+          "min": 180,
+          "max": 1358
+        },
+        "observed_frequency_ghz": {
+          "median": 4.414702,
+          "min": 1.74646,
+          "max": 4.887384
+        }
+      },
+      {
+        "backend": "candidate",
+        "operation": "synthesis",
+        "threads": 1,
+        "wait_fraction": {
+          "median": 0.05762990353396236,
+          "p10": 0.03166831044447675,
+          "p90": 0.08404319328210902,
+          "min": 0.031562128575233814,
+          "max": 0.08478334423088739
+        },
+        "involuntary_switches": {
+          "median": 96.5,
+          "min": 74,
+          "max": 116
+        },
+        "observed_frequency_ghz": {
+          "median": 4.716412,
+          "min": 3.747047,
+          "max": 4.816281
+        }
+      },
+      {
+        "backend": "candidate",
+        "operation": "synthesis",
+        "threads": 8,
+        "wait_fraction": {
+          "median": 0.003022797682917522,
+          "p10": 0.001526349602730854,
+          "p90": 0.004695329751168576,
+          "min": 0.001212173827610928,
+          "max": 0.004819606122141488
+        },
+        "involuntary_switches": {
+          "median": 246.0,
+          "min": 28,
+          "max": 299
+        },
+        "observed_frequency_ghz": {
+          "median": 3.8150515,
+          "min": 1.691682,
+          "max": 4.899465
+        }
+      },
+      {
+        "backend": "ducc",
+        "operation": "analysis",
+        "threads": 1,
+        "wait_fraction": {
+          "median": 0.0004076835859827565,
+          "p10": 0.0002155698636099663,
+          "p90": 0.0005718126630669156,
+          "min": 0.00011018629971655121,
+          "max": 0.0006574023006569585
+        },
+        "involuntary_switches": {
+          "median": 10.0,
+          "min": 6,
+          "max": 17
+        },
+        "observed_frequency_ghz": {
+          "median": 4.6415690000000005,
+          "min": 3.773158,
+          "max": 4.786788
+        }
+      },
+      {
+        "backend": "ducc",
+        "operation": "analysis",
+        "threads": 8,
+        "wait_fraction": {
+          "median": 0.001953692406346875,
+          "p10": 0.00014123451739413997,
+          "p90": 0.003964714501516516,
+          "min": 4.029198054936665e-05,
+          "max": 0.005651181177680352
+        },
+        "involuntary_switches": {
+          "median": 38.0,
+          "min": 10,
+          "max": 83
+        },
+        "observed_frequency_ghz": {
+          "median": 4.481502000000001,
+          "min": 1.74646,
+          "max": 4.841169
+        }
+      },
+      {
+        "backend": "ducc",
+        "operation": "synthesis",
+        "threads": 1,
+        "wait_fraction": {
+          "median": 0.00035679918108009524,
+          "p10": 0.00029459157933465357,
+          "p90": 0.0004595106671782795,
+          "min": 0.0002835612265072001,
+          "max": 0.0005380300110673753
+        },
+        "involuntary_switches": {
+          "median": 7.5,
+          "min": 4,
+          "max": 11
+        },
+        "observed_frequency_ghz": {
+          "median": 4.6911015,
+          "min": 3.804276,
+          "max": 4.766125
+        }
+      },
+      {
+        "backend": "ducc",
+        "operation": "synthesis",
+        "threads": 8,
+        "wait_fraction": {
+          "median": 0.0009229034262454128,
+          "p10": 0.000547504812514067,
+          "p90": 0.005247877887457574,
+          "min": 0.0003413782141881243,
+          "max": 0.007092871314925574
+        },
+        "involuntary_switches": {
+          "median": 39.5,
+          "min": 23,
+          "max": 55
+        },
+        "observed_frequency_ghz": {
+          "median": 4.466903,
+          "min": 1.74646,
+          "max": 4.841142
+        }
+      }
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "ntheta": 722,
+      "nphi": 378,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth"
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "ntheta": 722,
+      "nphi": 1458,
+      "latitude_mode": "exact",
+      "longitude_mode": "even-smooth"
+    }
+  ],
+  "backend_summaries": [
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "operation": "analysis",
+      "threads": 1,
+      "backend": "baseline",
+      "median_ms": 70.3071635,
+      "p10_ms": 69.8345039,
+      "p90_ms": 71.8082897,
+      "min_ms": 69.61141599999999,
+      "max_ms": 72.449551,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        70.4147215,
+        70.25506999999999,
+        70.547549
+      ],
+      "first_call_median_ms": 70.75042300000001,
+      "first_call_values_ms": [
+        70.75042300000001,
+        70.94866900000001,
+        70.474671
+      ],
+      "setup_median_ms": 4.352633,
+      "setup_values_ms": [
+        4.383732,
+        4.352633,
+        4.269394999999999
+      ],
+      "binary_sha256": "fb3cab5bd08a4792ea1663c78173c874e99b313a0660bc0b0668a06df6d36f60",
+      "paired_baseline_ducc_median": 2.0506933906238634,
+      "paired_candidate_ducc_median": 2.0420337309016867,
+      "paired_candidate_baseline_median": 0.9957772040609436
+    },
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "operation": "analysis",
+      "threads": 1,
+      "backend": "candidate",
+      "median_ms": 70.17770300000001,
+      "p10_ms": 69.7824074,
+      "p90_ms": 71.2178863,
+      "min_ms": 69.481981,
+      "max_ms": 71.877969,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        70.11737450000001,
+        69.928762,
+        70.87199900000002
+      ],
+      "first_call_median_ms": 70.42378500000001,
+      "first_call_values_ms": [
+        72.95103,
+        69.62409,
+        70.42378500000001
+      ],
+      "setup_median_ms": 4.3106230000000005,
+      "setup_values_ms": [
+        4.3106230000000005,
+        4.5495659999999996,
+        4.196748
+      ],
+      "binary_sha256": "2aac562627f6230058cf4286197a3c3c75cd7bcfb1da37a30cc2bb2e074e6831",
+      "paired_baseline_ducc_median": 2.0506933906238634,
+      "paired_candidate_ducc_median": 2.0420337309016867,
+      "paired_candidate_baseline_median": 0.9957772040609436
+    },
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "operation": "analysis",
+      "threads": 1,
+      "backend": "ducc",
+      "median_ms": 34.2481475,
+      "p10_ms": 33.9432442,
+      "p90_ms": 35.4563829,
+      "min_ms": 33.780993,
+      "max_ms": 36.148836,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        34.3370305,
+        34.3926255,
+        34.122254
+      ],
+      "first_call_median_ms": 34.907656,
+      "first_call_values_ms": [
+        34.907656,
+        36.202578,
+        34.852301
+      ],
+      "setup_median_ms": 6.162631,
+      "setup_values_ms": [
+        6.15205,
+        6.162631,
+        6.198328
+      ],
+      "binary_sha256": "89125091d06ddd4c24589c6f53e6785682d79f40cf0b991f64ad75a034ae2423",
+      "paired_baseline_ducc_median": 2.0506933906238634,
+      "paired_candidate_ducc_median": 2.0420337309016867,
+      "paired_candidate_baseline_median": 0.9957772040609436
+    },
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "operation": "synthesis",
+      "threads": 1,
+      "backend": "baseline",
+      "median_ms": 43.975463,
+      "p10_ms": 43.66811740000001,
+      "p90_ms": 45.3495235,
+      "min_ms": 43.619463999999994,
+      "max_ms": 45.669256,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        44.373071499999995,
+        44.172466,
+        43.8802575
+      ],
+      "first_call_median_ms": 46.216732,
+      "first_call_values_ms": [
+        46.216732,
+        46.492234,
+        44.77396
+      ],
+      "setup_median_ms": 4.24071,
+      "setup_values_ms": [
+        4.24071,
+        4.267822,
+        4.227316
+      ],
+      "binary_sha256": "fb3cab5bd08a4792ea1663c78173c874e99b313a0660bc0b0668a06df6d36f60",
+      "paired_baseline_ducc_median": 2.3957086633346103,
+      "paired_candidate_ducc_median": 2.3811285430899143,
+      "paired_candidate_baseline_median": 0.9989006273727168
+    },
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "operation": "synthesis",
+      "threads": 1,
+      "backend": "candidate",
+      "median_ms": 44.1303915,
+      "p10_ms": 43.855029800000004,
+      "p90_ms": 45.263751299999996,
+      "min_ms": 43.792101,
+      "max_ms": 45.95678,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        44.10302,
+        44.123904,
+        44.149587499999996
+      ],
+      "first_call_median_ms": 45.009716,
+      "first_call_values_ms": [
+        45.009716,
+        44.907393,
+        46.399198000000005
+      ],
+      "setup_median_ms": 4.267372,
+      "setup_values_ms": [
+        4.267372,
+        4.186808999999999,
+        4.267832
+      ],
+      "binary_sha256": "2aac562627f6230058cf4286197a3c3c75cd7bcfb1da37a30cc2bb2e074e6831",
+      "paired_baseline_ducc_median": 2.3957086633346103,
+      "paired_candidate_ducc_median": 2.3811285430899143,
+      "paired_candidate_baseline_median": 0.9989006273727168
+    },
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "operation": "synthesis",
+      "threads": 1,
+      "backend": "ducc",
+      "median_ms": 18.52018975,
+      "p10_ms": 18.23391225,
+      "p90_ms": 18.739959149999997,
+      "min_ms": 18.0339615,
+      "max_ms": 19.1173935,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        18.521898,
+        18.56564125,
+        18.312231
+      ],
+      "first_call_median_ms": 20.97431,
+      "first_call_values_ms": [
+        20.907052,
+        21.064,
+        20.97431
+      ],
+      "setup_median_ms": 6.152131,
+      "setup_values_ms": [
+        6.144737,
+        6.152131,
+        6.42069
+      ],
+      "binary_sha256": "89125091d06ddd4c24589c6f53e6785682d79f40cf0b991f64ad75a034ae2423",
+      "paired_baseline_ducc_median": 2.3957086633346103,
+      "paired_candidate_ducc_median": 2.3811285430899143,
+      "paired_candidate_baseline_median": 0.9989006273727168
+    },
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "operation": "analysis",
+      "threads": 8,
+      "backend": "baseline",
+      "median_ms": 12.339188833333333,
+      "p10_ms": 12.188833466666667,
+      "p90_ms": 12.841551566666665,
+      "min_ms": 12.137512000000001,
+      "max_ms": 13.164329666666667,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        12.246545166666667,
+        12.520609,
+        12.339188833333333
+      ],
+      "first_call_median_ms": 12.056451,
+      "first_call_values_ms": [
+        11.967293,
+        12.056451,
+        12.23997
+      ],
+      "setup_median_ms": 5.246265,
+      "setup_values_ms": [
+        5.246265,
+        5.10135,
+        5.395958
+      ],
+      "binary_sha256": "fb3cab5bd08a4792ea1663c78173c874e99b313a0660bc0b0668a06df6d36f60",
+      "paired_baseline_ducc_median": 1.2205988126485658,
+      "paired_candidate_ducc_median": 1.2245425254748958,
+      "paired_candidate_baseline_median": 1.0003955689523782
+    },
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "operation": "analysis",
+      "threads": 8,
+      "backend": "candidate",
+      "median_ms": 12.312740333333334,
+      "p10_ms": 12.150559766666666,
+      "p90_ms": 12.548784333333334,
+      "min_ms": 12.102566000000001,
+      "max_ms": 12.937383333333331,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        12.286113333333333,
+        12.291931,
+        12.344069833333332
+      ],
+      "first_call_median_ms": 11.975178,
+      "first_call_values_ms": [
+        11.975178,
+        11.90764,
+        12.041494
+      ],
+      "setup_median_ms": 5.3590089999999995,
+      "setup_values_ms": [
+        5.497922,
+        5.315326000000001,
+        5.3590089999999995
+      ],
+      "binary_sha256": "2aac562627f6230058cf4286197a3c3c75cd7bcfb1da37a30cc2bb2e074e6831",
+      "paired_baseline_ducc_median": 1.2205988126485658,
+      "paired_candidate_ducc_median": 1.2245425254748958,
+      "paired_candidate_baseline_median": 1.0003955689523782
+    },
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "operation": "analysis",
+      "threads": 8,
+      "backend": "ducc",
+      "median_ms": 10.043741833333334,
+      "p10_ms": 9.970187766666667,
+      "p90_ms": 10.2544763,
+      "min_ms": 9.963381666666667,
+      "max_ms": 10.296472333333334,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        10.033227166666666,
+        10.015471833333333,
+        10.1367045
+      ],
+      "first_call_median_ms": 12.680794,
+      "first_call_values_ms": [
+        13.177675,
+        12.55726,
+        12.680794
+      ],
+      "setup_median_ms": 6.523925,
+      "setup_values_ms": [
+        6.747217,
+        6.523925,
+        6.493196
+      ],
+      "binary_sha256": "89125091d06ddd4c24589c6f53e6785682d79f40cf0b991f64ad75a034ae2423",
+      "paired_baseline_ducc_median": 1.2205988126485658,
+      "paired_candidate_ducc_median": 1.2245425254748958,
+      "paired_candidate_baseline_median": 1.0003955689523782
+    },
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "baseline",
+      "median_ms": 17.506543,
+      "p10_ms": 17.269099100000002,
+      "p90_ms": 17.95532955,
+      "min_ms": 17.1650715,
+      "max_ms": 18.972439,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        17.681985249999997,
+        17.440542999999998,
+        17.465668
+      ],
+      "first_call_median_ms": 19.161558,
+      "first_call_values_ms": [
+        19.161558,
+        20.71529,
+        18.846531
+      ],
+      "setup_median_ms": 5.383625,
+      "setup_values_ms": [
+        5.128121,
+        5.5384780000000005,
+        5.383625
+      ],
+      "binary_sha256": "fb3cab5bd08a4792ea1663c78173c874e99b313a0660bc0b0668a06df6d36f60",
+      "paired_baseline_ducc_median": 6.576850248286842,
+      "paired_candidate_ducc_median": 6.564965264949145,
+      "paired_candidate_baseline_median": 0.9991213576320417
+    },
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "candidate",
+      "median_ms": 17.4291615,
+      "p10_ms": 17.181204100000002,
+      "p90_ms": 17.6103285,
+      "min_ms": 17.124033999999998,
+      "max_ms": 18.321421,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        17.4001565,
+        17.425219,
+        17.456793750000003
+      ],
+      "first_call_median_ms": 19.108867,
+      "first_call_values_ms": [
+        19.108867,
+        19.364411,
+        18.77742
+      ],
+      "setup_median_ms": 5.67153,
+      "setup_values_ms": [
+        5.823959,
+        5.67153,
+        5.427709
+      ],
+      "binary_sha256": "2aac562627f6230058cf4286197a3c3c75cd7bcfb1da37a30cc2bb2e074e6831",
+      "paired_baseline_ducc_median": 6.576850248286842,
+      "paired_candidate_ducc_median": 6.564965264949145,
+      "paired_candidate_baseline_median": 0.9991213576320417
+    },
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "ducc",
+      "median_ms": 2.6547439500000003,
+      "p10_ms": 2.62938504,
+      "p90_ms": 2.67217548,
+      "min_ms": 2.6198193,
+      "max_ms": 2.7228824,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        2.65045675,
+        2.65659195,
+        2.65562805
+      ],
+      "first_call_median_ms": 5.014105,
+      "first_call_values_ms": [
+        5.091722,
+        4.963821,
+        5.014105
+      ],
+      "setup_median_ms": 6.182528,
+      "setup_values_ms": [
+        6.1992,
+        6.108247,
+        6.182528
+      ],
+      "binary_sha256": "89125091d06ddd4c24589c6f53e6785682d79f40cf0b991f64ad75a034ae2423",
+      "paired_baseline_ducc_median": 6.576850248286842,
+      "paired_candidate_ducc_median": 6.564965264949145,
+      "paired_candidate_baseline_median": 0.9991213576320417
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "analysis",
+      "threads": 1,
+      "backend": "baseline",
+      "median_ms": 179.206042,
+      "p10_ms": 176.05355920000002,
+      "p90_ms": 183.4686708,
+      "min_ms": 175.759704,
+      "max_ms": 185.584249,
+      "batch_count": 15,
+      "process_pair_medians_ms": [
+        176.149153,
+        179.206042,
+        181.149459
+      ],
+      "first_call_median_ms": 178.66179300000002,
+      "first_call_values_ms": [
+        175.754383,
+        178.66179300000002,
+        182.06689500000002
+      ],
+      "setup_median_ms": 13.842399,
+      "setup_values_ms": [
+        14.507854,
+        13.842399,
+        13.613075
+      ],
+      "binary_sha256": "fb3cab5bd08a4792ea1663c78173c874e99b313a0660bc0b0668a06df6d36f60",
+      "paired_baseline_ducc_median": 1.5234769877505785,
+      "paired_candidate_ducc_median": 1.507769075369485,
+      "paired_candidate_baseline_median": 0.9896894324578632
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "analysis",
+      "threads": 1,
+      "backend": "candidate",
+      "median_ms": 177.804781,
+      "p10_ms": 176.5406714,
+      "p90_ms": 182.793365,
+      "min_ms": 175.979648,
+      "max_ms": 186.65491500000002,
+      "batch_count": 15,
+      "process_pair_medians_ms": [
+        179.525707,
+        177.358326,
+        177.406788
+      ],
+      "first_call_median_ms": 177.62135500000002,
+      "first_call_values_ms": [
+        177.62135500000002,
+        185.071368,
+        177.054051
+      ],
+      "setup_median_ms": 13.817261,
+      "setup_values_ms": [
+        13.817261,
+        13.963758,
+        13.450658
+      ],
+      "binary_sha256": "2aac562627f6230058cf4286197a3c3c75cd7bcfb1da37a30cc2bb2e074e6831",
+      "paired_baseline_ducc_median": 1.5234769877505785,
+      "paired_candidate_ducc_median": 1.507769075369485,
+      "paired_candidate_baseline_median": 0.9896894324578632
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "analysis",
+      "threads": 1,
+      "backend": "ducc",
+      "median_ms": 118.338937,
+      "p10_ms": 117.2878042,
+      "p90_ms": 119.5954042,
+      "min_ms": 116.954298,
+      "max_ms": 120.833396,
+      "batch_count": 15,
+      "process_pair_medians_ms": [
+        118.383341,
+        117.629635,
+        118.626471
+      ],
+      "first_call_median_ms": 126.312152,
+      "first_call_values_ms": [
+        128.031835,
+        124.94752,
+        126.312152
+      ],
+      "setup_median_ms": 21.371192,
+      "setup_values_ms": [
+        21.371192,
+        20.912936,
+        22.526428
+      ],
+      "binary_sha256": "89125091d06ddd4c24589c6f53e6785682d79f40cf0b991f64ad75a034ae2423",
+      "paired_baseline_ducc_median": 1.5234769877505785,
+      "paired_candidate_ducc_median": 1.507769075369485,
+      "paired_candidate_baseline_median": 0.9896894324578632
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "synthesis",
+      "threads": 1,
+      "backend": "baseline",
+      "median_ms": 94.61137149999999,
+      "p10_ms": 93.8714816,
+      "p90_ms": 95.3919881,
+      "min_ms": 93.32838,
+      "max_ms": 97.861135,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        94.71452199999999,
+        94.75321500000001,
+        93.9139375
+      ],
+      "first_call_median_ms": 99.071995,
+      "first_call_values_ms": [
+        100.16909100000001,
+        99.071995,
+        98.448325
+      ],
+      "setup_median_ms": 13.674501000000001,
+      "setup_values_ms": [
+        13.674501000000001,
+        13.808684999999999,
+        13.610610000000001
+      ],
+      "binary_sha256": "fb3cab5bd08a4792ea1663c78173c874e99b313a0660bc0b0668a06df6d36f60",
+      "paired_baseline_ducc_median": 2.1535683844008155,
+      "paired_candidate_ducc_median": 2.143039397677246,
+      "paired_candidate_baseline_median": 0.9947276670242798
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "synthesis",
+      "threads": 1,
+      "backend": "candidate",
+      "median_ms": 93.924732,
+      "p10_ms": 93.404796,
+      "p90_ms": 94.48171269999999,
+      "min_ms": 93.05213699999999,
+      "max_ms": 95.612982,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        93.894811,
+        94.25364450000001,
+        93.7908845
+      ],
+      "first_call_median_ms": 99.308192,
+      "first_call_values_ms": [
+        99.308192,
+        99.834679,
+        99.245875
+      ],
+      "setup_median_ms": 13.726299000000001,
+      "setup_values_ms": [
+        13.726299000000001,
+        13.92762,
+        13.473952
+      ],
+      "binary_sha256": "2aac562627f6230058cf4286197a3c3c75cd7bcfb1da37a30cc2bb2e074e6831",
+      "paired_baseline_ducc_median": 2.1535683844008155,
+      "paired_candidate_ducc_median": 2.143039397677246,
+      "paired_candidate_baseline_median": 0.9947276670242798
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "synthesis",
+      "threads": 1,
+      "backend": "ducc",
+      "median_ms": 43.815761,
+      "p10_ms": 43.3224192,
+      "p90_ms": 44.8527953,
+      "min_ms": 43.149575,
+      "max_ms": 45.091399,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        43.813852,
+        44.702543500000004,
+        43.608523500000004
+      ],
+      "first_call_median_ms": 52.413111,
+      "first_call_values_ms": [
+        59.872794,
+        52.413111,
+        51.610332
+      ],
+      "setup_median_ms": 21.056787,
+      "setup_values_ms": [
+        21.082206,
+        20.763583,
+        21.056787
+      ],
+      "binary_sha256": "89125091d06ddd4c24589c6f53e6785682d79f40cf0b991f64ad75a034ae2423",
+      "paired_baseline_ducc_median": 2.1535683844008155,
+      "paired_candidate_ducc_median": 2.143039397677246,
+      "paired_candidate_baseline_median": 0.9947276670242798
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "analysis",
+      "threads": 8,
+      "backend": "baseline",
+      "median_ms": 32.235347000000004,
+      "p10_ms": 31.431600200000002,
+      "p90_ms": 37.357111399999994,
+      "min_ms": 31.232399,
+      "max_ms": 38.781020999999996,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        31.788140500000004,
+        32.169587,
+        34.9466015
+      ],
+      "first_call_median_ms": 31.721244000000002,
+      "first_call_values_ms": [
+        31.148671,
+        31.721244000000002,
+        36.778732
+      ],
+      "setup_median_ms": 14.421013,
+      "setup_values_ms": [
+        14.421013,
+        14.106408,
+        14.475166
+      ],
+      "binary_sha256": "fb3cab5bd08a4792ea1663c78173c874e99b313a0660bc0b0668a06df6d36f60",
+      "paired_baseline_ducc_median": 1.535510435376018,
+      "paired_candidate_ducc_median": 1.5378460498028295,
+      "paired_candidate_baseline_median": 0.9924679325227271
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "analysis",
+      "threads": 8,
+      "backend": "candidate",
+      "median_ms": 32.045552,
+      "p10_ms": 31.761119700000002,
+      "p90_ms": 33.046052399999994,
+      "min_ms": 31.605584999999998,
+      "max_ms": 34.80024,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        32.0107165,
+        31.9272835,
+        32.242454499999994
+      ],
+      "first_call_median_ms": 31.896436,
+      "first_call_values_ms": [
+        31.664515999999995,
+        31.896436,
+        32.221199999999996
+      ],
+      "setup_median_ms": 14.495294000000001,
+      "setup_values_ms": [
+        14.681836,
+        13.731378000000001,
+        14.495294000000001
+      ],
+      "binary_sha256": "2aac562627f6230058cf4286197a3c3c75cd7bcfb1da37a30cc2bb2e074e6831",
+      "paired_baseline_ducc_median": 1.535510435376018,
+      "paired_candidate_ducc_median": 1.5378460498028295,
+      "paired_candidate_baseline_median": 0.9924679325227271
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "analysis",
+      "threads": 8,
+      "backend": "ducc",
+      "median_ms": 20.9130055,
+      "p10_ms": 20.6529073,
+      "p90_ms": 21.24937725,
+      "min_ms": 20.530016,
+      "max_ms": 21.4445015,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        20.81529325,
+        20.950419,
+        20.882683
+      ],
+      "first_call_median_ms": 24.569684,
+      "first_call_values_ms": [
+        24.734135,
+        24.569684,
+        24.421523
+      ],
+      "setup_median_ms": 21.165514,
+      "setup_values_ms": [
+        21.573996,
+        20.803058,
+        21.165514
+      ],
+      "binary_sha256": "89125091d06ddd4c24589c6f53e6785682d79f40cf0b991f64ad75a034ae2423",
+      "paired_baseline_ducc_median": 1.535510435376018,
+      "paired_candidate_ducc_median": 1.5378460498028295,
+      "paired_candidate_baseline_median": 0.9924679325227271
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "baseline",
+      "median_ms": 23.907861500000003,
+      "p10_ms": 23.5428982,
+      "p90_ms": 24.152828250000002,
+      "min_ms": 23.283425,
+      "max_ms": 25.0125865,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        23.92635175,
+        23.936237499999997,
+        23.6672735
+      ],
+      "first_call_median_ms": 30.627224000000002,
+      "first_call_values_ms": [
+        30.627224000000002,
+        31.587391,
+        30.072505
+      ],
+      "setup_median_ms": 14.632984,
+      "setup_values_ms": [
+        14.655918,
+        14.632984,
+        14.438596
+      ],
+      "binary_sha256": "fb3cab5bd08a4792ea1663c78173c874e99b313a0660bc0b0668a06df6d36f60",
+      "paired_baseline_ducc_median": 3.8706863717057947,
+      "paired_candidate_ducc_median": 3.8420099821569753,
+      "paired_candidate_baseline_median": 0.9925913941882658
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "candidate",
+      "median_ms": 23.702382749999998,
+      "p10_ms": 23.392750900000003,
+      "p90_ms": 24.5290606,
+      "min_ms": 23.3614225,
+      "max_ms": 25.058858999999998,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        24.128158499999998,
+        23.702382749999998,
+        23.491932
+      ],
+      "first_call_median_ms": 30.334731,
+      "first_call_values_ms": [
+        31.680417000000002,
+        30.334731,
+        30.071633000000002
+      ],
+      "setup_median_ms": 14.611133,
+      "setup_values_ms": [
+        15.008134,
+        14.611133,
+        13.823934
+      ],
+      "binary_sha256": "2aac562627f6230058cf4286197a3c3c75cd7bcfb1da37a30cc2bb2e074e6831",
+      "paired_baseline_ducc_median": 3.8706863717057947,
+      "paired_candidate_ducc_median": 3.8420099821569753,
+      "paired_candidate_baseline_median": 0.9925913941882658
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "synthesis",
+      "threads": 8,
+      "backend": "ducc",
+      "median_ms": 6.1422366,
+      "p10_ms": 6.09358306,
+      "p90_ms": 6.240484625000001,
+      "min_ms": 6.0851466,
+      "max_ms": 6.51237825,
+      "batch_count": 30,
+      "process_pair_medians_ms": [
+        6.113701600000001,
+        6.21622175,
+        6.114490099999999
+      ],
+      "first_call_median_ms": 9.965374,
+      "first_call_values_ms": [
+        10.093246,
+        9.939886,
+        9.965374
+      ],
+      "setup_median_ms": 20.787879,
+      "setup_values_ms": [
+        20.787879,
+        20.595615,
+        20.79396
+      ],
+      "binary_sha256": "89125091d06ddd4c24589c6f53e6785682d79f40cf0b991f64ad75a034ae2423",
+      "paired_baseline_ducc_median": 3.8706863717057947,
+      "paired_candidate_ducc_median": 3.8420099821569753,
+      "paired_candidate_baseline_median": 0.9925913941882658
+    }
+  ],
+  "paired_comparisons": [
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "operation": "analysis",
+      "threads": 1,
+      "baseline_ducc_pair_ratios": [
+        2.0506933906238634,
+        2.0427364581398413,
+        2.0674938121028
+      ],
+      "candidate_ducc_pair_ratios": [
+        2.0420337309016867,
+        2.03324872653296,
+        2.077002269545266
+      ],
+      "candidate_baseline_pair_ratios": [
+        0.9957772040609436,
+        0.9953553814692665,
+        1.004599025828665
+      ],
+      "baseline_ducc_ratio_median": 2.0506933906238634,
+      "candidate_ducc_ratio_median": 2.0420337309016867,
+      "candidate_baseline_ratio_median": 0.9957772040609436,
+      "candidate_baseline_ratio_min": 0.9953553814692665,
+      "candidate_baseline_ratio_max": 1.004599025828665,
+      "candidate_improvement_percent_median": 0.42227959390563896,
+      "baseline_ducc_relative_l2_max": 6.830903674067347e-14,
+      "candidate_ducc_relative_l2_max": 6.830903674067347e-14,
+      "candidate_baseline_absolute_error_max": 0.0,
+      "candidate_baseline_relative_l2_max": 0.0,
+      "all_finite": true,
+      "reset_repeat_consistent": true
+    },
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "operation": "synthesis",
+      "threads": 1,
+      "baseline_ducc_pair_ratios": [
+        2.3957086633346103,
+        2.379258836534935,
+        2.3962267350166124
+      ],
+      "candidate_ducc_pair_ratios": [
+        2.3811285430899143,
+        2.376643144496827,
+        2.4109343913365877
+      ],
+      "candidate_baseline_pair_ratios": [
+        0.9939140679049006,
+        0.9989006273727168,
+        1.006137840006978
+      ],
+      "baseline_ducc_ratio_median": 2.3957086633346103,
+      "candidate_ducc_ratio_median": 2.3811285430899143,
+      "candidate_baseline_ratio_median": 0.9989006273727168,
+      "candidate_baseline_ratio_min": 0.9939140679049006,
+      "candidate_baseline_ratio_max": 1.006137840006978,
+      "candidate_improvement_percent_median": 0.10993726272832127,
+      "baseline_ducc_relative_l2_max": 3.632237677704203e-13,
+      "candidate_ducc_relative_l2_max": 3.632237677704203e-13,
+      "candidate_baseline_absolute_error_max": 0.0,
+      "candidate_baseline_relative_l2_max": 0.0,
+      "all_finite": true,
+      "reset_repeat_consistent": true
+    },
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "operation": "analysis",
+      "threads": 8,
+      "baseline_ducc_pair_ratios": [
+        1.2205988126485658,
+        1.2501267247668861,
+        1.2172781433387283
+      ],
+      "candidate_ducc_pair_ratios": [
+        1.2245425254748958,
+        1.227294250790082,
+        1.2177596607786418
+      ],
+      "candidate_baseline_pair_ratios": [
+        1.003230965641997,
+        0.9817358724324032,
+        1.0003955689523782
+      ],
+      "baseline_ducc_ratio_median": 1.2205988126485658,
+      "candidate_ducc_ratio_median": 1.2245425254748958,
+      "candidate_baseline_ratio_median": 1.0003955689523782,
+      "candidate_baseline_ratio_min": 0.9817358724324032,
+      "candidate_baseline_ratio_max": 1.003230965641997,
+      "candidate_improvement_percent_median": -0.03955689523782446,
+      "baseline_ducc_relative_l2_max": 6.830903674067347e-14,
+      "candidate_ducc_relative_l2_max": 6.830903674067347e-14,
+      "candidate_baseline_absolute_error_max": 0.0,
+      "candidate_baseline_relative_l2_max": 0.0,
+      "all_finite": true,
+      "reset_repeat_consistent": true
+    },
+    {
+      "case_id": "CC-T720-m180-n722-exact-p378-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 180,
+      "operation": "synthesis",
+      "threads": 8,
+      "baseline_ducc_pair_ratios": [
+        6.671297409399341,
+        6.565006342054148,
+        6.576850248286842
+      ],
+      "candidate_ducc_pair_ratios": [
+        6.564965264949145,
+        6.559238049336105,
+        6.5735085717293895
+      ],
+      "candidate_baseline_pair_ratios": [
+        0.9840612495703787,
+        0.9991213576320417,
+        0.9994919032011831
+      ],
+      "baseline_ducc_ratio_median": 6.576850248286842,
+      "candidate_ducc_ratio_median": 6.564965264949145,
+      "candidate_baseline_ratio_median": 0.9991213576320417,
+      "candidate_baseline_ratio_min": 0.9840612495703787,
+      "candidate_baseline_ratio_max": 0.9994919032011831,
+      "candidate_improvement_percent_median": 0.08786423679583155,
+      "baseline_ducc_relative_l2_max": 3.632237679032239e-13,
+      "candidate_ducc_relative_l2_max": 3.632237679032239e-13,
+      "candidate_baseline_absolute_error_max": 0.0,
+      "candidate_baseline_relative_l2_max": 0.0,
+      "all_finite": true,
+      "reset_repeat_consistent": true
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "analysis",
+      "threads": 1,
+      "baseline_ducc_pair_ratios": [
+        1.4879555815205452,
+        1.5234769877505785,
+        1.5270576412915462
+      ],
+      "candidate_ducc_pair_ratios": [
+        1.5164777871913584,
+        1.507769075369485,
+        1.495507592061809
+      ],
+      "candidate_baseline_pair_ratios": [
+        1.019168721180283,
+        0.9896894324578632,
+        0.9793393200252395
+      ],
+      "baseline_ducc_ratio_median": 1.5234769877505785,
+      "candidate_ducc_ratio_median": 1.507769075369485,
+      "candidate_baseline_ratio_median": 0.9896894324578632,
+      "candidate_baseline_ratio_min": 0.9793393200252395,
+      "candidate_baseline_ratio_max": 1.019168721180283,
+      "candidate_improvement_percent_median": 1.0310567542136773,
+      "baseline_ducc_relative_l2_max": 6.09715459872357e-14,
+      "candidate_ducc_relative_l2_max": 6.09715459872357e-14,
+      "candidate_baseline_absolute_error_max": 0.0,
+      "candidate_baseline_relative_l2_max": 0.0,
+      "all_finite": true,
+      "reset_repeat_consistent": true
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "synthesis",
+      "threads": 1,
+      "baseline_ducc_pair_ratios": [
+        2.1617483438799217,
+        2.1196381141041787,
+        2.1535683844008155
+      ],
+      "candidate_ducc_pair_ratios": [
+        2.143039397677246,
+        2.108462676178594,
+        2.150746619522672
+      ],
+      "candidate_baseline_pair_ratios": [
+        0.9913454559798128,
+        0.9947276670242798,
+        0.9986897258993107
+      ],
+      "baseline_ducc_ratio_median": 2.1535683844008155,
+      "candidate_ducc_ratio_median": 2.143039397677246,
+      "candidate_baseline_ratio_median": 0.9947276670242798,
+      "candidate_baseline_ratio_min": 0.9913454559798128,
+      "candidate_baseline_ratio_max": 0.9986897258993107,
+      "candidate_improvement_percent_median": 0.5272332975720162,
+      "baseline_ducc_relative_l2_max": 2.285323513533807e-13,
+      "candidate_ducc_relative_l2_max": 2.285323513533807e-13,
+      "candidate_baseline_absolute_error_max": 0.0,
+      "candidate_baseline_relative_l2_max": 0.0,
+      "all_finite": true,
+      "reset_repeat_consistent": true
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "analysis",
+      "threads": 8,
+      "baseline_ducc_pair_ratios": [
+        1.5271531425578164,
+        1.535510435376018,
+        1.6734727764626796
+      ],
+      "candidate_ducc_pair_ratios": [
+        1.5378460498028295,
+        1.5239448671647093,
+        1.5439804597905353
+      ],
+      "candidate_baseline_pair_ratios": [
+        1.0070018565571646,
+        0.9924679325227271,
+        0.9226206016055666
+      ],
+      "baseline_ducc_ratio_median": 1.535510435376018,
+      "candidate_ducc_ratio_median": 1.5378460498028295,
+      "candidate_baseline_ratio_median": 0.9924679325227271,
+      "candidate_baseline_ratio_min": 0.9226206016055666,
+      "candidate_baseline_ratio_max": 1.0070018565571646,
+      "candidate_improvement_percent_median": 0.7532067477272864,
+      "baseline_ducc_relative_l2_max": 6.09715459872357e-14,
+      "candidate_ducc_relative_l2_max": 6.09715459872357e-14,
+      "candidate_baseline_absolute_error_max": 0.0,
+      "candidate_baseline_relative_l2_max": 0.0,
+      "all_finite": true,
+      "reset_repeat_consistent": true
+    },
+    {
+      "case_id": "CC-T720-m720-n722-exact-p1458-even-smooth",
+      "grid": "CC",
+      "lmax": 720,
+      "mmax": 720,
+      "operation": "synthesis",
+      "threads": 8,
+      "baseline_ducc_pair_ratios": [
+        3.913562243535078,
+        3.8506086916863924,
+        3.8706863717057947
+      ],
+      "candidate_ducc_pair_ratios": [
+        3.946571173836812,
+        3.812988613219919,
+        3.8420099821569753
+      ],
+      "candidate_baseline_pair_ratios": [
+        1.0084344973320054,
+        0.9902300956865089,
+        0.9925913941882658
+      ],
+      "baseline_ducc_ratio_median": 3.8706863717057947,
+      "candidate_ducc_ratio_median": 3.8420099821569753,
+      "candidate_baseline_ratio_median": 0.9925913941882658,
+      "candidate_baseline_ratio_min": 0.9902300956865089,
+      "candidate_baseline_ratio_max": 1.0084344973320054,
+      "candidate_improvement_percent_median": 0.7408605811734192,
+      "baseline_ducc_relative_l2_max": 2.285323513064065e-13,
+      "candidate_ducc_relative_l2_max": 2.285323513064065e-13,
+      "candidate_baseline_absolute_error_max": 0.0,
+      "candidate_baseline_relative_l2_max": 0.0,
+      "all_finite": true,
+      "reset_repeat_consistent": true
+    }
+  ]
+}
