@@ -8,15 +8,16 @@ the same Luna session. The T2048 latitude-dependent prefix discontinuity
 was fixed at `0bc5f153`; q8 order preparation is implemented at
 `dfed3ff7`/`3b32f2de`; reduced-`mmax` frontend attribution and output
 pruning are closed in Plan 11. Rebaseline Plan 14 from the final Plan 11
-source, then pursue its measured small-q1 and large-q8 objectives. **Owner-
-authorized successor (2026-10-21): [Plan 15](plans/15-spin1-vector-gl-cc-f1-performance.md)
-is NEXT, but NOT ACTIVE until the comprehensive Plan 14 scalar sweep,
+source, then pursue its measured small-q1 and large-q8 objectives.
+
+**Owner-authorized next plan (2026-10-21):** [Plan 15](plans/15-spin1-vector-gl-cc-f1-performance.md)
+is **NEXT, not active** until the comprehensive Plan 14 scalar sweep,
 its four figures, and Plan 14 validation/closeout are committed and
 pushed. Then continue in this same Luna session and on the same branch
 without requesting another approval; mark Plan 14 COMPLETE and Plan 15
 ACTIVE in the plan index and status files. Plan 15 addresses spin-1
 vector GL, then spin-1 CC, then spin-1 F1 only; do not start unrelated
-scalar CC/F1 optimization.** Plans 12/13 remain deferred.
+scalar CC/F1 optimization. Plans 12/13 remain deferred.
 Explicit current owner instructions take precedence;
 other archived plans/reviews and benchmark reports are historical evidence.
 Read the current active plan and production source before acting.
