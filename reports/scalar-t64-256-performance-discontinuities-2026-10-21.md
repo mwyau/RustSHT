@@ -27,6 +27,31 @@ The old longitude-size gate also excluded **reduced-order** q8 transforms well a
 
 The T127 compact-table SIMD report is a separate control: its AVX2 reflected-lane accumulator improved q1 by 5.5%, while q8 changed by +1.1% (within the observed spread). It did not account for the q8 table penalty; the recurrence A/B did. The old row-FFT gate, table-vs-recurrence choice, and table SIMD specialization must therefore be treated as separate mechanisms.
 
+## Current-source confirmation of the row-FFT work floor
+
+A follow-up used current source `ff0fe71676b9a3084ec17e0cd7c8ccbd3ddad6ae` and compared the production predicate with a temporary compile-time override that enabled parallel row FFTs for scalar GL regardless of sample count. Both builds used the same deterministic fixtures, native call boundaries, pinned DUCC 0.42.0, Rust 1.99.1 / Pulp 0.22.3 V3 dispatch, three interleaved process pairs and 30 calibrated batches per case. q1 used CPU 0; q8 used CPUs 0–7. The Rust binary hashes were `fdf783db6c54b03ef2c660bfe6ad725a590c9b6d3dd9648e702759fd624b08a4` (production) and `6db10c72dbfd5d2095ebbe7ccee603c56690d3a7072a9863575abcf0fa64db02` (forced). The in-progress packed-reduction candidate was cfg-disabled. The 32-row matched summary is in [`comparison.csv`](data/scalar-rowfft-work-floor-check-2026-10-21/comparison.csv).
+
+The work floor continues to separate useful row parallelism from scheduling overhead. At T64 quarter order, areas were 2,145 (odd) and 2,340 (even) samples; forcing workers changed q8 analysis by +10.7–12.5% and synthesis by +9.9–28.0%. At T96 quarter order, areas were 4,753/4,850 samples and the force-versus-production differences stayed within 1.7% across both operations and longitude shapes. Full-order T64 already exceeded the floor (8,385/9,100 samples); its q8 differences stayed within 2.1%. q1 remains serial because the active worker count is one. Combined plan/workspace setup was recorded outside timing: the forced q8 T64-quarter route rose from 329 to 362 µs, while T64 full and T96 quarter changed from 401 to 396 µs and 391 to 395 µs. Thus the below-floor route incurs both one-time worker-scratch preparation and warmed FFT scheduling cost. Both builds completed 96 numerical comparisons with no failures; maximum relative L2 was `1.61e-14` and maximum absolute error `6.44e-12`. Median runqueue wait was 2.5%; p90 was 27%, so changes below a few percent are inconclusive.
+
+The temporary override was removed after measurement. For reproduction, insert `if cfg!(rustsht_test_force_parallel_row_fft) { return true; }` inside the scalar GL branch of `row_fft_parallelism_supported`; the benchmark harness reads `RUSTSHT_FULL_TRANSFORM_RUSTFLAGS` (which sets the `RUSTFLAGS` used for its Cargo build). Run the same invocation below with and without the cfg suffix:
+
+```sh
+BASE_FLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs'
+COMMON=(--ducc-src "$DUCC_SRC" \
+  --ducc-revision 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b \
+  --production-source-revision ff0fe71676b9a3084ec17e0cd7c8ccbd3ddad6ae \
+  --lmax 64 --lmax 96 --threads 1 --threads 8 \
+  --longitude-mode even_smooth --longitude-mode odd_minimum --no-report)
+RUSTSHT_FULL_TRANSFORM_RUSTFLAGS="$BASE_FLAGS" \
+  python3 scripts/benchmark_ducc_full_transform_parity.py "${COMMON[@]}" \
+  --results-dir "$BASELINE_DIR"
+RUSTSHT_FULL_TRANSFORM_RUSTFLAGS="$BASE_FLAGS --cfg rustsht_test_force_parallel_row_fft" \
+  python3 scripts/benchmark_ducc_full_transform_parity.py "${COMMON[@]}" \
+  --results-dir "$FORCED_DIR"
+```
+
+The temporary override was removed after measurement. This verifies the current geometry/work predicate without changing the production policy; the prior T124 and high-bandlimit A/B results remain the stage-attribution evidence.
+
 ## Matched whole-transform A/B
 
 RustSHT candidate `985fa844` and baseline `f3a2313c` were measured against DUCC 0.42.0 `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. For each case, runs used q1/q8, both operations, full and quarter `mmax`, even-smooth and odd-minimum `nphi`, three process pairs, and ten calibrated ~25 ms batches per process pair. RustSHT and DUCC were interleaved within each process pair. q1 used CPU 0; q8 used CPUs 0–7 on one L3 domain. Rust used `-C target-cpu=x86-64-v3`; DUCC numerical sources used `-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3`, with its validation driver compiled using `-fno-fast-math`.
