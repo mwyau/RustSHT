@@ -12,8 +12,21 @@ For reproducible raw benchmark tables see [reports/README](reports/README.md).
 is closed at `a37f74d68631ab5fd373a4097640895e9f0c0c23`. The input scan,
 row FFT, spectrum pruning, order preparation and recurrence stage evidence
 is recorded in the cumulative report and CSV. Plan 14 is now active on the
-same branch/session. Its final-source rebaseline is the next task; Plans
-12/13 remain deferred.
+same branch/session. Its first clean-source q8 synthesis comparison is now
+published; small-q1 attribution and the remaining q8 stage profiles are
+still open. Plans 12/13 remain deferred.
+
+**Plan 14 progress (2026-10-21):** `fe0590ac` removes a separate
+order-major-to-ring-major spectrum scatter from parallel scalar GL
+synthesis. On clean parent/candidate builds, q8 T720 cases improved 16–35%;
+T2047 synthesis (`ntheta=2049`, `nphi=4096`) improved from 75.24 ms
+(1.307x DUCC) to 54.89 ms (0.950x), averaged over two candidate runs.
+Maximum relative L2 error was `1.84e-13`. The output buffer is cleared
+before jobs; any declined route clears partial output before fallback.
+The measured change removes an intermediate spectrum pass and a parallel
+scatter region; their individual shares are not isolated. The full
+distributions and comparison data are in the
+[direct-output checkpoint](reports/plan14-direct-spectrum-output-2026-10-21.md).
 
 
 ## Highest-confidence current finding — prefix discontinuity removed
@@ -160,12 +173,17 @@ isolated `m=1` results or a desire to assemble another candidate matrix.
 
 ## Current next steps and deferred work
 
-1. **Plan 14 rebaseline:** freeze Plan 11 closeout `a37f74d6`; run the
-   selected small-q1 A/S sweep and T720/T2047 q8 A/S subset with matched
-   Rust/DUCC inputs, process interleaving and calibrated batches. Report
-   cold/setup separately from warm calls, then attribute the largest
-   measured absolute excess before changing production code.
-2. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
+1. **Plan 14 Phase A:** obtain a clean current-source small-q1 A/S baseline
+   and attribute the largest fixed cost for T4/T8/T16/T32, with T48/T63/T64
+   controls. Keep cold/setup separate from warmed native calls. Do not change
+   production code until the largest excess is measured.
+2. **Plan 14 Phase B:** profile the remaining q8 synthesis stages from
+   `fe0590ac`, then compare q8 analysis on the same clean current source.
+   T720 reduced-order odd-minimum synthesis remains the largest measured
+   residual in this subset (about 0.45 ms); T2047 synthesis is now at
+   DUCC-level latency. Identify whether the remaining absolute cost is
+   recurrence, scheduling or FFT before proposing another change.
+3. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
    cache-topology queries plus optional offline pointer-chase diagnostic
    (no startup autotuning); [Plan 13](plans/13-fused-batched-sht.md)
    true basis-shared batches with measured internal blocking.

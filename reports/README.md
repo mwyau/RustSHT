@@ -1,8 +1,8 @@
 # RustSHT performance evidence — reading guide
 
-**Single current implementation plan:** [Plan 11](../plans/11-ducc-equivalent-scalar-analysis.md).
+**Current implementation plan:** [Plan 14](../plans/14-small-serial-parallel-performance.md).
 **Current factual status and priorities:** [PERFORMANCE_STATUS.md](../PERFORMANCE_STATUS.md).
-**Recent measured result index:** [scalar-analysis T720 A/B and T2047/2048 cutoff](scalar-analysis-cumulative-2026-10-20.md).
+**Recent measured results:** [Plan 14 direct synthesis output](plan14-direct-spectrum-output-2026-10-21.md) and [Plan 11 scalar-analysis closeout](scalar-analysis-cumulative-2026-10-20.md).
 Do not follow forward-looking instructions embedded in historical reports.
 
 ## Current and accepted evidence
@@ -13,7 +13,11 @@ Do not follow forward-looking instructions embedded in historical reports.
   and a severe checked-scaled route regression. Current investigations
   concern the *necessity* of that extra gate, not small tile sweeps.
   Fixed SIMD scratch remains opt-in; packed reduction, indexed
-  traversal and direct output are retired.
+  traversal and direct coefficient accumulation are retired.
+- [Plan 14 direct q8 synthesis output](plan14-direct-spectrum-output-2026-10-21.md):
+  a new order-owned ring-major output path removes the intermediate
+  order-major spectrum and parallel scatter. This is distinct from the
+  retired analysis direct-coefficient-accumulation experiment.
 - [T64 Legendre table/recurrence dispatch decision](scalar-t64-recurrence-transition-2026-10-20.md):
   retained synthesis-only recurrence cutoff; analysis and spin-1
   keep their own policies. This is a **completed** dispatch study,

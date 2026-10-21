@@ -77,6 +77,30 @@ Freeze final Plan 11 source commit `a37f74d68631ab5fd373a4097640895e9f0c0c23` on
 - **Timing:** warm up; for operations shorter than ~100 ms, calibrate repeated complete calls to ~20–100 ms per batch and collect **at least 30 timed batches over multiple independent, interleaved process runs**. For long calls, use repeated individually timed calls across independent interleaved runs, report count, median, p10/p90 and spread. Pin q1 to one physical core; use identical eight **physical** CPU cores and affinity for both libraries at q8. Verify selected Pulp V3 and DUCC V3 actually execute; do not infer ISA from a compiled symbol alone. Check host contention/PSI and frequency; preserve noisy observations and explain uncertainty.
 - **Stage boundary rule:** measure comparable stages in each library, ideally using temporary minimally intrusive native hooks. In particular separate FFT, spectral packing/scaling/reordering, Legendre preparation, ordinary recurrence/accumulation, scaled work, output scatter, scheduler/worker startup and zeroing. Do not subtract incompatible phase timers and label the difference a CPU-cycle measurement. Report total whole-call latency alongside stage numbers.
 
+## Current progress — direct q8 synthesis output (2026-10-21)
+
+Source commit [`fe0590ac`](../reports/plan14-direct-spectrum-output-2026-10-21.md)
+removes the order-major spectrum scratch and its separate parallel scatter
+from scalar GL ordered synthesis. A dynamically scheduled order now writes
+directly to its unique column in the pre-cleared ring-major spectrum. The
+checked fallback clears partial writes before running. This changes neither
+the recurrence nor the serial path.
+
+Matched clean-source q8 runs at T720 (full and reduced `mmax`, odd/even
+longitude sampling) and T2047 (`ntheta=2049`, `nphi=4096`, full `mmax`)
+showed Rust latency reductions of **16–35%**. T2047 changed from **75.24 ms
+(1.307x DUCC)** at parent `a6059cd` to **54.89 ms (0.950x)** averaged over
+two candidate invocations. The maximum relative L2 error was `1.84e-13`;
+the parallel and no-default-feature suites and fallback tests passed. Data,
+per-run distributions, host observations and limitations are in the
+[checkpoint report](../reports/plan14-direct-spectrum-output-2026-10-21.md).
+The earlier dirty-worktree screen is excluded from this comparison.
+
+This is a measured layout/scheduling improvement, not evidence that all of
+the removed 20.35 ms at T2047 came from the transpose alone. The next work
+returns to Phase A's clean small-q1 stage attribution, then profiles the
+remaining q8 synthesis excess using this direct-output source.
+
 ## 4. Phase A — Find and fix small serial fixed costs
 
 **Hypothesis to test:** small T1–T32 transforms spend a significant fraction of wall time in repeated per-call setup, data conversion, buffer handling and/or independent row FFTs rather than in useful Legendre arithmetic. This is a hypothesis, not a proven diagnosis.
