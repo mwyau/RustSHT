@@ -47,7 +47,9 @@ or rerun the rejected tile variants absent new evidence.
 - [Older historical plans](plans/)
 - [Dated experiments](experiments/)
 
-The main `plans/` directory retains historical-link stubs for
-prior plans 00/03/04/05/07/08/09/10, plus the numerical,
-provenance and DUCC contract references. Plans 12 and 13
-are **future-only**, not current work queues.
+The [plans index](../../plans/README.md) links directly to the nine
+archived historical plans (00, 03, 04, both 05 documents, 07–10).
+Their redirect-only stubs were removed from `plans/`.
+The substantive provenance, numerical and DUCC contract references
+remain there, as do completed Plan 11, active Plan 14 and deferred
+Plans 12–13.
