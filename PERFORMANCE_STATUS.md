@@ -148,14 +148,20 @@ full-order q1 Rust latency from `16.090` to `15.459 ms` (candidate/baseline
 `12.435 ms` versus DUCC `leg2alm_internal` at `11.278 ms`, while Rust FFT
 was `3.082 ms` versus DUCC `map2leg` at `3.615 ms`. These profile boundaries
 differ, and q1 scheduler wait was elevated; use these as stage leads rather
-than subtractable counters. The corrected direct `map2alm_kernel` benchmark
-measures the warmed Rust/DUCC ratio at `1.171/1.107/1.083` for 64/128/256
-lanes, with `1.324 us` excess at 256 lanes. Both executed loops use four
-f64 AVX2 lanes and two-degree recurrence grouping; Rust has separate slice
-bases where DUCC uses fixed offsets from one structure. The next test is a
-single-base workspace dataflow candidate, judged by matched latency and
-executed assembly. See [Plan 14](plans/14-small-serial-parallel-performance.md)
-and its [kernel summary](reports/data/plan14-warmed-analysis-kernel-2026-10-21/summary.csv).
+than subtractable counters. The first corrected direct `map2alm_kernel`
+comparison used fragmented Rust `Vec` scratch and overstated the
+production-layout gap. A same-buffer control now uses the current contiguous
+`RecurrenceWorkspace` layout with the production slice dispatch. Its paired
+Rust/DUCC ratios are `1.162/1.095/1.057` for 64/128/256 active lanes; the
+256-lane excess is `0.91 us` per isolated kernel-plus-commit operation. The
+one-base wrapper measured no consistent gain over slice dispatch (paired
+current/one-base ratios `1.013/1.009/0.991`) and is not integrated. Both
+paths execute the same four-lane AVX2/two-degree body; inspection found no
+hot-loop YMM spills. The next Plan 14 task is the remaining small-q1
+fixed-cost attribution across T1–T64. See the
+[workspace-base report](reports/plan14-workspace-base-control-2026-10-21.md),
+[machine-readable results](reports/data/plan14-workspace-base-control-2026-10-21/),
+and earlier [kernel summary](reports/data/plan14-warmed-analysis-kernel-2026-10-21/summary.csv).
 
 
 ## Highest-confidence current finding — prefix discontinuity removed
@@ -397,12 +403,12 @@ observations are in the [batch ablation CSV](reports/data/plan14-analysis-schedu
 
 ## Current next steps and deferred work
 
-1. Test whether giving the warmed fused analysis kernel one workspace base
-   with fixed field offsets improves executed AVX2 dataflow. The matched
-   current kernel gap is 1.324 us per 256-lane block; the candidate must also
-   improve T720 q1 whole-transform timing before adoption.
-2. Recheck representative T720 q8 and reduced-order controls after that
-   candidate; the T2047 q8 direct-input comparison is already complete.
+1. Finish small-q1 fixed-cost attribution across T1–T64, separating setup,
+   FFT and Legendre work before choosing a source change. The one-base
+   workspace candidate is tested and rejected; production already uses
+   contiguous aligned scratch.
+2. Re-rank the largest q8 whole-call excess after that attribution. The
+   T2047 q8 direct-input comparison is already complete.
 3. The odd q8 synthesis inverse excess is quantified at +0.430 ms, but the
    tested alternative was slower. Do not revisit it without a new source-level
    mechanism or matched isolated real-FFT evidence.

@@ -4,6 +4,7 @@
 // production builds and calls the same Pulp implementation as the analysis path.
 
 use super::*;
+use crate::legendre::SCALAR_ORDER_BATCH_SIZE;
 use pulp::{Simd, WithSimd};
 use std::fs::File;
 use std::io::{Read, Write};
@@ -219,6 +220,77 @@ impl Fixture {
                     .expect("write prefix fixture values");
             }
         }
+    }
+}
+
+// This experimental view matches the contiguous seven-array prefix in
+// RecurrenceWorkspace. The dispatch receives one base reference instead of
+// seven independent slice pointers; the inner SIMD implementation remains
+// the production fused kernel.
+#[repr(C, align(64))]
+struct AnalysisPairKernelWorkspace {
+    previous: [f64; SCALAR_ORDER_BATCH_SIZE],
+    current: [f64; SCALAR_ORDER_BATCH_SIZE],
+    next: [f64; SCALAR_ORDER_BATCH_SIZE],
+    same_real: [f64; SCALAR_ORDER_BATCH_SIZE],
+    same_imag: [f64; SCALAR_ORDER_BATCH_SIZE],
+    opposite_real: [f64; SCALAR_ORDER_BATCH_SIZE],
+    opposite_imag: [f64; SCALAR_ORDER_BATCH_SIZE],
+}
+
+impl AnalysisPairKernelWorkspace {
+    fn new(fixture: &Fixture) -> Self {
+        fn copy(values: &[f64]) -> [f64; SCALAR_ORDER_BATCH_SIZE] {
+            assert!(values.len() <= SCALAR_ORDER_BATCH_SIZE);
+            let mut result = [0.0; SCALAR_ORDER_BATCH_SIZE];
+            result[..values.len()].copy_from_slice(values);
+            result
+        }
+        Self {
+            previous: copy(&fixture.previous),
+            current: copy(&fixture.current),
+            next: [0.0; SCALAR_ORDER_BATCH_SIZE],
+            same_real: copy(&fixture.same_real),
+            same_imag: copy(&fixture.same_imag),
+            opposite_real: copy(&fixture.opposite_real),
+            opposite_imag: copy(&fixture.opposite_imag),
+        }
+    }
+}
+
+struct FusedScalarAnalysisPairWorkspace<'a> {
+    fixture: &'a Fixture,
+    workspace: &'a mut AnalysisPairKernelWorkspace,
+    lane_count: usize,
+    staged_coefficients: &'a mut [Complex64],
+}
+
+impl WithSimd for FusedScalarAnalysisPairWorkspace<'_> {
+    type Output = bool;
+
+    #[inline(always)]
+    fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+        let lane_count = self.lane_count;
+        let mut range_check_was_exercised = false;
+        FusedScalarAnalysisPair::<true, false, false, true> {
+            m: BENCH_ORDER,
+            lmax: BENCH_LMAX,
+            range_check_was_exercised: &mut range_check_was_exercised,
+            pair_start: 0,
+            cos_theta: &self.fixture.cosine,
+            cos_theta_squared: &self.fixture.cosine_squared,
+            coefficient_a: &self.fixture.coefficient_a,
+            coefficient_b: &self.fixture.coefficient_b,
+            same_real: &self.workspace.same_real[..lane_count],
+            same_imag: &self.workspace.same_imag[..lane_count],
+            opposite_real: &self.workspace.opposite_real[..lane_count],
+            opposite_imag: &self.workspace.opposite_imag[..lane_count],
+            staged_coefficients: self.staged_coefficients,
+            previous: &mut self.workspace.previous[..lane_count],
+            current: &mut self.workspace.current[..lane_count],
+            next: &mut self.workspace.next[..lane_count],
+        }
+        .with_simd(simd)
     }
 }
 
@@ -534,8 +606,13 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
     let coefficient_count = BENCH_LMAX - BENCH_ORDER + 1;
     let mut checked_staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
     let mut unchecked_staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
+    let mut workspace_staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
+    let mut fields_staged = vec![Complex64::new(0.0, 0.0); coefficient_count];
     let mut checked_output = vec![Complex64::new(0.0, 0.0); coefficient_count];
     let mut unchecked_output = vec![Complex64::new(0.0, 0.0); coefficient_count];
+    let mut workspace_output = vec![Complex64::new(0.0, 0.0); coefficient_count];
+    let mut fields_output = vec![Complex64::new(0.0, 0.0); coefficient_count];
+    let mut kernel_workspace = AnalysisPairKernelWorkspace::new(&fixture);
     let mut previous = vec![0.0; lane_count];
     let mut current = vec![0.0; lane_count];
     let mut next = vec![0.0; lane_count];
@@ -617,10 +694,36 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                 &mut next,
             ));
             commit_staged_coefficients(&unchecked_staged, &mut unchecked_output);
+            reset_fused_scalar_analysis_pair_workspace(
+                &fixture,
+                &mut kernel_workspace,
+                &mut workspace_staged,
+            );
+            assert!(run_fused_scalar_analysis_pair_workspace(
+                arch,
+                &fixture,
+                &mut kernel_workspace,
+                &mut workspace_staged,
+            ));
+            commit_staged_coefficients(&workspace_staged, &mut workspace_output);
+            reset_fused_scalar_analysis_pair_workspace(
+                &fixture,
+                &mut kernel_workspace,
+                &mut fields_staged,
+            );
+            assert!(run_fused_scalar_analysis_pair_workspace_fields(
+                arch,
+                &fixture,
+                &mut kernel_workspace,
+                &mut fields_staged,
+            ));
+            commit_staged_coefficients(&fields_staged, &mut fields_output);
             assert_eq!(checked_output, unchecked_output);
+            assert_eq!(unchecked_output, workspace_output);
+            assert_eq!(workspace_output, fields_output);
             write_complex(&checked_output_path, &checked_output);
             write_complex(&unchecked_output_path, &unchecked_output);
-            eprintln!("RUST_PREPARED lanes={lane_count} output_equal=true");
+            eprintln!("RUST_PREPARED lanes={lane_count} output_equal=true workspace_equal=true");
         }
         Ok("calibrate") => {
             let calibration_repetitions =
@@ -653,14 +756,32 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                 &mut current,
                 &mut next,
             );
+            let workspace_us = calibrate_fused_scalar_analysis_pair_workspace(
+                calibration_repetitions,
+                arch,
+                &fixture,
+                &mut kernel_workspace,
+                &mut workspace_staged,
+                &mut workspace_output,
+            );
+            let fields_us = calibrate_fused_scalar_analysis_pair_workspace_fields(
+                calibration_repetitions,
+                arch,
+                &fixture,
+                &mut kernel_workspace,
+                &mut fields_staged,
+                &mut fields_output,
+            );
             let commit_us = calibrate_commit_only(
                 commit_calibration_repetitions,
                 &checked_staged,
                 &mut checked_output,
             );
             assert_eq!(checked_staged, unchecked_staged);
+            assert_eq!(unchecked_staged, workspace_staged);
+            assert_eq!(workspace_staged, fields_staged);
             eprintln!(
-                "RUST_CALIBRATION lanes={lane_count} repetitions={calibration_repetitions} checked_us={checked_us:.6} unchecked_us={unchecked_us:.6} commit_repetitions={commit_calibration_repetitions} commit_us={commit_us:.6} output_equal=true"
+                "RUST_CALIBRATION lanes={lane_count} repetitions={calibration_repetitions} checked_us={checked_us:.6} unchecked_us={unchecked_us:.6} workspace_us={workspace_us:.6} fields_us={fields_us:.6} commit_repetitions={commit_calibration_repetitions} commit_us={commit_us:.6} output_equal=true"
             );
         }
         Ok("run") => {
@@ -712,9 +833,37 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                     &mut next,
                 ));
                 commit_staged_coefficients(&unchecked_staged, &mut unchecked_output);
+                reset_fused_scalar_analysis_pair_workspace(
+                    &fixture,
+                    &mut kernel_workspace,
+                    &mut workspace_staged,
+                );
+                assert!(run_fused_scalar_analysis_pair_workspace(
+                    arch,
+                    &fixture,
+                    &mut kernel_workspace,
+                    &mut workspace_staged,
+                ));
+                commit_staged_coefficients(&workspace_staged, &mut workspace_output);
+                reset_fused_scalar_analysis_pair_workspace(
+                    &fixture,
+                    &mut kernel_workspace,
+                    &mut fields_staged,
+                );
+                assert!(run_fused_scalar_analysis_pair_workspace_fields(
+                    arch,
+                    &fixture,
+                    &mut kernel_workspace,
+                    &mut fields_staged,
+                ));
+                commit_staged_coefficients(&fields_staged, &mut fields_output);
             }
             assert_eq!(checked_staged, unchecked_staged);
             assert_eq!(checked_output, unchecked_output);
+            assert_eq!(unchecked_staged, workspace_staged);
+            assert_eq!(unchecked_output, workspace_output);
+            assert_eq!(workspace_staged, fields_staged);
+            assert_eq!(workspace_output, fields_output);
             for _ in 0..3 {
                 time_analysis_pair_components::<true>(
                     1,
@@ -787,6 +936,30 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                 eprintln!(
                     "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=kernel_only variant=unchecked kernel_us={:.3} reset_us={:.3} wall_us={:.3}",
                     unchecked_kernel.0, unchecked_kernel.2, unchecked_kernel.1
+                );
+                let workspace_kernel = workspace_kernel_only_batch(
+                    repetitions,
+                    arch,
+                    &fixture,
+                    &mut kernel_workspace,
+                    &mut workspace_staged,
+                );
+                assert_eq!(unchecked_staged, workspace_staged);
+                eprintln!(
+                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=kernel_only variant=workspace kernel_us={:.3} reset_us={:.3} wall_us={:.3}",
+                    workspace_kernel.0, workspace_kernel.2, workspace_kernel.1
+                );
+                let fields_kernel = workspace_fields_kernel_only_batch(
+                    repetitions,
+                    arch,
+                    &fixture,
+                    &mut kernel_workspace,
+                    &mut fields_staged,
+                );
+                assert_eq!(workspace_staged, fields_staged);
+                eprintln!(
+                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=kernel_only variant=fields kernel_us={:.3} reset_us={:.3} wall_us={:.3}",
+                    fields_kernel.0, fields_kernel.2, fields_kernel.1
                 );
 
                 let (checked_commit, unchecked_commit) = if checked_first {
@@ -869,6 +1042,34 @@ fn benchmark_fused_scalar_analysis_pair_kernel() {
                 eprintln!(
                     "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=kernel_plus_commit variant=unchecked kernel_us={:.3} reset_us={:.3} wall_us={:.3}",
                     unchecked_combined.0, unchecked_combined.2, unchecked_combined.1
+                );
+                let workspace_combined = workspace_kernel_plus_commit_batch(
+                    repetitions,
+                    arch,
+                    &fixture,
+                    &mut kernel_workspace,
+                    &mut workspace_staged,
+                    &mut workspace_output,
+                );
+                assert_eq!(unchecked_staged, workspace_staged);
+                assert_eq!(unchecked_output, workspace_output);
+                eprintln!(
+                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=kernel_plus_commit variant=workspace kernel_us={:.3} reset_us={:.3} wall_us={:.3}",
+                    workspace_combined.0, workspace_combined.2, workspace_combined.1
+                );
+                let fields_combined = workspace_fields_kernel_plus_commit_batch(
+                    repetitions,
+                    arch,
+                    &fixture,
+                    &mut kernel_workspace,
+                    &mut fields_staged,
+                    &mut fields_output,
+                );
+                assert_eq!(workspace_staged, fields_staged);
+                assert_eq!(workspace_output, fields_output);
+                eprintln!(
+                    "RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} mode=kernel_plus_commit variant=fields kernel_us={:.3} reset_us={:.3} wall_us={:.3}",
+                    fields_combined.0, fields_combined.2, fields_combined.1
                 );
 
                 let (checked_reset, unchecked_reset) = if checked_first {
@@ -1056,6 +1257,241 @@ fn run_fused_scalar_analysis_pair_variant<
         current: std::hint::black_box(current),
         next: std::hint::black_box(next),
     })
+}
+
+#[inline(never)]
+fn run_fused_scalar_analysis_pair_workspace(
+    arch: Arch,
+    fixture: &Fixture,
+    workspace: &mut AnalysisPairKernelWorkspace,
+    staged: &mut [Complex64],
+) -> bool {
+    arch.dispatch(FusedScalarAnalysisPairWorkspace {
+        fixture,
+        workspace: std::hint::black_box(workspace),
+        lane_count: fixture.cosine.len(),
+        staged_coefficients: std::hint::black_box(staged),
+    })
+}
+
+#[inline(never)]
+fn run_fused_scalar_analysis_pair_workspace_fields(
+    arch: Arch,
+    fixture: &Fixture,
+    workspace: &mut AnalysisPairKernelWorkspace,
+    staged: &mut [Complex64],
+) -> bool {
+    let lane_count = fixture.cosine.len();
+    let mut range_check_was_exercised = false;
+    arch.dispatch(FusedScalarAnalysisPair::<true, false, false, true> {
+        m: BENCH_ORDER,
+        lmax: BENCH_LMAX,
+        range_check_was_exercised: &mut range_check_was_exercised,
+        pair_start: 0,
+        cos_theta: &fixture.cosine,
+        cos_theta_squared: &fixture.cosine_squared,
+        coefficient_a: &fixture.coefficient_a,
+        coefficient_b: &fixture.coefficient_b,
+        same_real: &workspace.same_real[..lane_count],
+        same_imag: &workspace.same_imag[..lane_count],
+        opposite_real: &workspace.opposite_real[..lane_count],
+        opposite_imag: &workspace.opposite_imag[..lane_count],
+        staged_coefficients: std::hint::black_box(staged),
+        previous: &mut workspace.previous[..lane_count],
+        current: &mut workspace.current[..lane_count],
+        next: &mut workspace.next[..lane_count],
+    })
+}
+
+fn reset_fused_scalar_analysis_pair_workspace(
+    fixture: &Fixture,
+    workspace: &mut AnalysisPairKernelWorkspace,
+    staged: &mut [Complex64],
+) {
+    let lane_count = fixture.cosine.len();
+    workspace.previous[..lane_count].copy_from_slice(&fixture.previous);
+    workspace.current[..lane_count].copy_from_slice(&fixture.current);
+    staged.fill(Complex64::new(0.0, 0.0));
+}
+
+fn calibrate_fused_scalar_analysis_pair_workspace(
+    repetitions: usize,
+    arch: Arch,
+    fixture: &Fixture,
+    workspace: &mut AnalysisPairKernelWorkspace,
+    staged: &mut [Complex64],
+    output: &mut [Complex64],
+) -> f64 {
+    for _ in 0..4 {
+        reset_fused_scalar_analysis_pair_workspace(fixture, workspace, staged);
+        assert!(run_fused_scalar_analysis_pair_workspace(
+            arch, fixture, workspace, staged,
+        ));
+    }
+    let started = Instant::now();
+    for _ in 0..repetitions {
+        reset_fused_scalar_analysis_pair_workspace(fixture, workspace, staged);
+        output.fill(Complex64::new(0.0, 0.0));
+        assert!(run_fused_scalar_analysis_pair_workspace(
+            arch, fixture, workspace, staged,
+        ));
+        commit_staged_coefficients(staged, output);
+        std::hint::black_box((&*workspace, &*staged, &*output));
+    }
+    let elapsed_us = started.elapsed().as_secs_f64() * 1.0e6 / repetitions as f64;
+    assert!(
+        output
+            .iter()
+            .all(|value| value.re.is_finite() && value.im.is_finite())
+    );
+    elapsed_us
+}
+
+fn workspace_kernel_only_batch(
+    repetitions: usize,
+    arch: Arch,
+    fixture: &Fixture,
+    workspace: &mut AnalysisPairKernelWorkspace,
+    staged: &mut [Complex64],
+) -> (f64, f64, f64) {
+    let reset_started = Instant::now();
+    for _ in 0..repetitions {
+        reset_fused_scalar_analysis_pair_workspace(fixture, workspace, staged);
+        std::hint::black_box((&*workspace, &*staged));
+    }
+    let reset_us = reset_started.elapsed().as_secs_f64() * 1.0e6;
+
+    let wall_started = Instant::now();
+    let mut all_succeeded = true;
+    for _ in 0..repetitions {
+        reset_fused_scalar_analysis_pair_workspace(fixture, workspace, staged);
+        all_succeeded &= run_fused_scalar_analysis_pair_workspace(arch, fixture, workspace, staged);
+        std::hint::black_box((&*workspace, &*staged));
+    }
+    assert!(all_succeeded);
+    let wall_us = wall_started.elapsed().as_secs_f64() * 1.0e6;
+    ((wall_us - reset_us).max(0.0), wall_us, reset_us)
+}
+
+fn workspace_kernel_plus_commit_batch(
+    repetitions: usize,
+    arch: Arch,
+    fixture: &Fixture,
+    workspace: &mut AnalysisPairKernelWorkspace,
+    staged: &mut [Complex64],
+    output: &mut [Complex64],
+) -> (f64, f64, f64) {
+    let reset_started = Instant::now();
+    for _ in 0..repetitions {
+        reset_fused_scalar_analysis_pair_workspace(fixture, workspace, staged);
+        output.fill(Complex64::new(0.0, 0.0));
+        std::hint::black_box((&*workspace, &*staged, &*output));
+    }
+    let reset_us = reset_started.elapsed().as_secs_f64() * 1.0e6;
+
+    let wall_started = Instant::now();
+    let mut all_succeeded = true;
+    for _ in 0..repetitions {
+        reset_fused_scalar_analysis_pair_workspace(fixture, workspace, staged);
+        output.fill(Complex64::new(0.0, 0.0));
+        all_succeeded &= run_fused_scalar_analysis_pair_workspace(arch, fixture, workspace, staged);
+        commit_staged_coefficients(staged, output);
+        std::hint::black_box((&*workspace, &*staged, &*output));
+    }
+    assert!(all_succeeded);
+    let wall_us = wall_started.elapsed().as_secs_f64() * 1.0e6;
+    ((wall_us - reset_us).max(0.0), wall_us, reset_us)
+}
+
+fn calibrate_fused_scalar_analysis_pair_workspace_fields(
+    repetitions: usize,
+    arch: Arch,
+    fixture: &Fixture,
+    workspace: &mut AnalysisPairKernelWorkspace,
+    staged: &mut [Complex64],
+    output: &mut [Complex64],
+) -> f64 {
+    for _ in 0..4 {
+        reset_fused_scalar_analysis_pair_workspace(fixture, workspace, staged);
+        assert!(run_fused_scalar_analysis_pair_workspace_fields(
+            arch, fixture, workspace, staged,
+        ));
+    }
+    let started = Instant::now();
+    for _ in 0..repetitions {
+        reset_fused_scalar_analysis_pair_workspace(fixture, workspace, staged);
+        output.fill(Complex64::new(0.0, 0.0));
+        assert!(run_fused_scalar_analysis_pair_workspace_fields(
+            arch, fixture, workspace, staged,
+        ));
+        commit_staged_coefficients(staged, output);
+        std::hint::black_box((&*workspace, &*staged, &*output));
+    }
+    let elapsed_us = started.elapsed().as_secs_f64() * 1.0e6 / repetitions as f64;
+    assert!(
+        output
+            .iter()
+            .all(|value| value.re.is_finite() && value.im.is_finite())
+    );
+    elapsed_us
+}
+
+fn workspace_fields_kernel_only_batch(
+    repetitions: usize,
+    arch: Arch,
+    fixture: &Fixture,
+    workspace: &mut AnalysisPairKernelWorkspace,
+    staged: &mut [Complex64],
+) -> (f64, f64, f64) {
+    let reset_started = Instant::now();
+    for _ in 0..repetitions {
+        reset_fused_scalar_analysis_pair_workspace(fixture, workspace, staged);
+        std::hint::black_box((&*workspace, &*staged));
+    }
+    let reset_us = reset_started.elapsed().as_secs_f64() * 1.0e6;
+
+    let wall_started = Instant::now();
+    let mut all_succeeded = true;
+    for _ in 0..repetitions {
+        reset_fused_scalar_analysis_pair_workspace(fixture, workspace, staged);
+        all_succeeded &=
+            run_fused_scalar_analysis_pair_workspace_fields(arch, fixture, workspace, staged);
+        std::hint::black_box((&*workspace, &*staged));
+    }
+    assert!(all_succeeded);
+    let wall_us = wall_started.elapsed().as_secs_f64() * 1.0e6;
+    ((wall_us - reset_us).max(0.0), wall_us, reset_us)
+}
+
+fn workspace_fields_kernel_plus_commit_batch(
+    repetitions: usize,
+    arch: Arch,
+    fixture: &Fixture,
+    workspace: &mut AnalysisPairKernelWorkspace,
+    staged: &mut [Complex64],
+    output: &mut [Complex64],
+) -> (f64, f64, f64) {
+    let reset_started = Instant::now();
+    for _ in 0..repetitions {
+        reset_fused_scalar_analysis_pair_workspace(fixture, workspace, staged);
+        output.fill(Complex64::new(0.0, 0.0));
+        std::hint::black_box((&*workspace, &*staged, &*output));
+    }
+    let reset_us = reset_started.elapsed().as_secs_f64() * 1.0e6;
+
+    let wall_started = Instant::now();
+    let mut all_succeeded = true;
+    for _ in 0..repetitions {
+        reset_fused_scalar_analysis_pair_workspace(fixture, workspace, staged);
+        output.fill(Complex64::new(0.0, 0.0));
+        all_succeeded &=
+            run_fused_scalar_analysis_pair_workspace_fields(arch, fixture, workspace, staged);
+        commit_staged_coefficients(staged, output);
+        std::hint::black_box((&*workspace, &*staged, &*output));
+    }
+    assert!(all_succeeded);
+    let wall_us = wall_started.elapsed().as_secs_f64() * 1.0e6;
+    ((wall_us - reset_us).max(0.0), wall_us, reset_us)
 }
 
 #[expect(

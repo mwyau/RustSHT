@@ -488,6 +488,8 @@ def main() -> None:
             calibration[lane_count] = {
                 "rust_checked": float(rust_cal["checked_us"]),
                 "rust_unchecked": float(rust_cal["unchecked_us"]),
+                "rust_workspace": float(rust_cal["workspace_us"]),
+                "rust_fields": float(rust_cal["fields_us"]),
                 "ducc": float(ducc_cal["reset_inclusive_us"]),
                 "commit_only": float(rust_cal["commit_us"]),
             }
@@ -636,7 +638,7 @@ def main() -> None:
                             reset_observations[(lane_count, mode, variant, backend)].append(
                                 (float(fields["reset_us"]) / reps, invocation + 1)
                             )
-                    expected_lines = BATCHES * (8 if backend == "rust" else 2)
+                    expected_lines = BATCHES * (12 if backend == "rust" else 2)
                     if parsed_count != expected_lines:
                         raise RuntimeError(
                             f"expected {expected_lines} batch records from {backend}, got {parsed_count}\n{stdout}"
@@ -737,7 +739,8 @@ def main() -> None:
             "reset plus operation batch."
         )
         print(
-            "Timed-process warmups: Rust checked and unchecked routes each run three times; "
+            "Timed-process warmups: Rust checked, unchecked, workspace-base and contiguous-field routes each run "
+            "three times; "
             "DUCC runs three reset/kernel/checksum passes before timing."
         )
         print(
@@ -748,11 +751,14 @@ def main() -> None:
         for lane_count in lanes:
             for mode in ("kernel_only", "commit_only", "kernel_plus_commit", "reset_inclusive"):
                 print(f"{mode} lanes={lane_count}")
-                variants = (
-                    ("checked", "unchecked", "ducc")
-                    if mode in ("kernel_plus_commit", "reset_inclusive")
-                    else ("checked", "unchecked")
-                )
+                if mode == "kernel_plus_commit":
+                    variants = ("checked", "unchecked", "workspace", "fields", "ducc")
+                elif mode == "reset_inclusive":
+                    variants = ("checked", "unchecked", "ducc")
+                elif mode == "kernel_only":
+                    variants = ("checked", "unchecked", "workspace", "fields")
+                else:
+                    variants = ("checked", "unchecked")
                 medians = {}
                 for variant in variants:
                     backend = "ducc" if variant == "ducc" else "rust"
@@ -810,7 +816,12 @@ def main() -> None:
                             f"p10/p90={process_p10:.3f}..{process_p90:.3f}us"
                         )
                 if mode in ("kernel_plus_commit", "reset_inclusive"):
-                    for rust_variant in ("checked", "unchecked"):
+                    rust_variants = (
+                        ("checked", "unchecked", "workspace", "fields")
+                        if mode == "kernel_plus_commit"
+                        else ("checked", "unchecked")
+                    )
+                    for rust_variant in rust_variants:
                         paired_ratios = []
                         paired_excess = []
                         for invocation in range(1, INVOCATIONS + 1):
@@ -865,10 +876,21 @@ def main() -> None:
                             f"p10/p90={excess_summary[1]:.3f}..{excess_summary[2]:.3f} "
                             f"range={excess_summary[5]:.3f}..{excess_summary[6]:.3f}"
                         )
-                    print(
+                    ratio_line = (
                         f"  ratios checked/DUCC={medians['checked'] / medians['ducc']:.3f} "
                         f"unchecked/DUCC={medians['unchecked'] / medians['ducc']:.3f}"
                     )
+                    if "workspace" in medians:
+                        ratio_line += (
+                            f" workspace/DUCC="
+                            f"{medians['workspace'] / medians['ducc']:.3f}"
+                        )
+                    if "fields" in medians:
+                        ratio_line += (
+                            f" fields/DUCC="
+                            f"{medians['fields'] / medians['ducc']:.3f}"
+                        )
+                    print(ratio_line)
 
         print(
             "COMPONENT_METHOD full uses the ordinary fused production loop; recurrence-only compiles out spectrum products and horizontal reductions while retaining recurrence, safety checks, state updates, dispatch, and zeroed coefficient stores."

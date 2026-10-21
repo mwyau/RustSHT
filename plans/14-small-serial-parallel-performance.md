@@ -831,11 +831,61 @@ Executed AVX2 loops in both libraries use four f64 lanes and two-degree
 recurrence grouping with packed FMA; no hot-loop YMM spills or scalarized
 recurrence were found. Rust carries separate slice bases for recurrence,
 geometry and four spectrum arrays, while DUCC's `s0data_v` access uses one
-base plus fixed member offsets. That is a code-generation lead, not yet a
-measured cause. Next test a single-workspace-base access path against the
-current production kernel, first at matched 64/128/256-lane boundaries and
-then at T720 q1. Keep it only if the executed loop and latency improve; do
-not infer a win from shorter assembly.
+base plus fixed member offsets. The one-base workspace control and
+same-buffer production-layout comparison are now complete; results follow.
+
+## Current progress — contiguous workspace dispatch control (2026-10-21)
+
+A test-only comparison separated the one-base dispatch hypothesis from the
+already accepted inline scratch layout. The `fields` route constructs the
+current `FusedScalarAnalysisPair` slice dispatch over one aligned contiguous
+seven-array workspace. The `workspace` route passes that same backing as one
+base and derives identical slices inside its `WithSimd` wrapper. Both have
+identical initial state and output; a separate unchecked route using
+independent `Vec` allocations shows the effect of the historical microbench
+layout. The current production `RecurrenceWorkspace` already has the same
+contiguous 64-byte-aligned seven-array layout.
+
+The native comparison used the pinned direct DUCC `map2alm_kernel` boundary
+at `m=1`, `lmax=720`, Pulp V3 and AVX2/FMA on a Ryzen 9 5950X. Rust 1.99.1
+used strict FP and `-C target-cpu=x86-64-v3`; DUCC `42ce8ab5` used GCC 15.2,
+`-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3`, with a strict driver.
+Each lane count had ten interleaved process pairs and six calibrated batches
+per process/backend. Batches were in the 20–100 ms target; process medians
+were stable. The table reports kernel plus coefficient commit; DUCC writes
+the corresponding output directly.
+
+| Active lanes | Current slice route (µs, p10–p90) | One-base route (µs, p10–p90) | DUCC (µs, p10–p90) | Paired current/DUCC | Paired current/one-base |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 64 | 4.824 (4.796–4.963) | 4.757 (4.737–4.886) | 4.148 (4.103–4.298) | 1.162x | 1.013x |
+| 128 | 8.852 (8.788–9.181) | 8.768 (8.709–8.885) | 8.077 (8.015–8.262) | 1.095x | 1.009x |
+| 256 | 16.835 (16.716–17.020) | 16.969 (16.855–17.390) | 15.914 (15.760–16.722) | 1.057x | 0.991x |
+
+The paired current/one-base ratio changes sign across lane counts and stays
+within about 1.3%; it provides no production gain. By contrast, the current
+contiguous route is 1–7% faster than the earlier fragmented-`Vec` unchecked
+route in this run, reaching 6.5% at 256 lanes. That is already provided by
+the production inline workspace and explains why the fragmented microbench
+overstated the remaining kernel gap. The correct same-layout T720 block
+comparison is 1.057x DUCC (about `0.91 µs` excess per 256-lane operation),
+not a one-base workspace improvement.
+
+The two executed Pulp V3 bodies retain the same four-lane AVX2 recurrence
+loop: ten packed FMA operations per two-degree group, the same four spectrum
+loads and eight accumulation chains, with no hot-loop YMM spills. The
+one-base wrapper changes pointer setup/inlining but removes no recurrence or
+accumulation work. Output equality was exact between Rust routes;
+coefficient max scaled difference versus DUCC was `1.97e-16`, relative L2
+was at most `1.63e-13`, and maximum absolute error at most `2.56e-11`. Host
+runqueue wait was 0.038% median and 0.082% maximum; median sampled frequency
+was 4.592 GHz. Full summaries and reproduction are in
+[`plan14-workspace-base-control-2026-10-21.md`](../reports/plan14-workspace-base-control-2026-10-21.md)
+and [`reports/data/plan14-workspace-base-control-2026-10-21`](../reports/data/plan14-workspace-base-control-2026-10-21/).
+
+Do not integrate the one-base wrapper. The next Plan 14 task is to finish the
+remaining small-q1 fixed-cost attribution across T1–T64 and rank the largest
+absolute per-call excess before selecting another source change. Keep the
+existing contiguous production workspace and slice dispatch.
 
 ## 4. Phase A — Find and fix small serial fixed costs
 
