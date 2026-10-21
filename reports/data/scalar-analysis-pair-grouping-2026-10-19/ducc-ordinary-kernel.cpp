@@ -23,10 +23,9 @@
 namespace loop = ducc0::detail_sht::detail_sht_inner_loop;
 using Clock = std::chrono::steady_clock;
 
-extern "C" void rustsht_ducc_map2alm_kernel(
+extern "C" void rustsht_ducc_calc_map2alm(
     loop::s0data_v *data, const loop::Ylmgen *generator,
-    std::complex<double> *alm, size_t l, size_t il, size_t lmax,
-    size_t nv2);
+    std::complex<double> *alm, size_t nth, size_t lstart, size_t lstop);
 
 static inline void escape_memory(const void *pointer) {
 #if defined(__GNUC__) || defined(__clang__)
@@ -51,10 +50,13 @@ static double scaled_diff(double actual, double expected) {
 }
 
 int main(int argc, char **argv) {
-  if (argc != 4) {
-    std::cerr << "usage: ducc-analysis-kernel-bench FIXTURE --calibrate REPETITIONS | FIXTURE REPETITIONS BATCHES\n";
+  if (argc != 4 && argc != 5) {
+    std::cerr << "usage: ducc-analysis-kernel-bench FIXTURE --calibrate REPETITIONS | FIXTURE REPETITIONS BATCHES [--calc-map2alm]\n";
     return 2;
   }
+  const bool production_analysis = argc == 5 && std::string(argv[4]) == "--calc-map2alm";
+  if (argc == 5 && !production_analysis)
+    throw std::runtime_error("unknown optional argument");
   const std::string fixture_path = argv[1];
   const bool calibrate = std::string(argv[2]) == "--calibrate";
   const size_t repetitions = calibrate ? std::stoul(argv[3]) : std::stoul(argv[2]);
@@ -89,6 +91,11 @@ int main(int argc, char **argv) {
   read_values(in, opposite_imag);
   read_values(in, coefficient_a);
   read_values(in, coefficient_b);
+  std::vector<double> sin_theta;
+  if (production_analysis) {
+    sin_theta.resize(lane_count);
+    read_values(in, sin_theta);
+  }
   in.close();
 
   loop::YlmBase base(lmax, m, 0);
@@ -111,6 +118,8 @@ int main(int argc, char **argv) {
       destination[i / loop::VLEN][i % loop::VLEN] = source[i];
   };
   copy_lanes(data.csq, cosine_squared);
+  if (production_analysis)
+    copy_lanes(data.sth, sin_theta);
   copy_lanes(data.p1r, same_real);
   copy_lanes(data.p1i, same_imag);
   copy_lanes(data.p2r, opposite_real);
@@ -118,14 +127,17 @@ int main(int argc, char **argv) {
   std::vector<std::complex<double>> alm(lmax + 2, {0.0, 0.0});
 
   auto reset = [&]() {
-    copy_lanes(data.lam1, previous);
-    copy_lanes(data.lam2, current);
+    if (!production_analysis) {
+      copy_lanes(data.lam1, previous);
+      copy_lanes(data.lam2, current);
+    }
     std::fill(alm.begin() + m, alm.begin() + lmax + 1,
         std::complex<double>(0.0, 0.0));
   };
   auto run = [&]() {
-    rustsht_ducc_map2alm_kernel(
-        &data, &generator, alm.data(), m, 0, lmax, vectors);
+    if (production_analysis)
+      rustsht_ducc_calc_map2alm(
+          &data, &generator, alm.data(), lane_count, m, lmax + 1);
     escape_memory(alm.data());
   };
 
@@ -203,7 +215,8 @@ int main(int argc, char **argv) {
       throw std::runtime_error("DUCC kernel result changed between timed batches");
     std::cout << std::fixed << std::setprecision(3)
               << "DUCC_BATCH lanes=" << lane_count << " batch=" << batch
-              << " repetitions=" << repetitions << " mode=kernel_plus_commit"
+              << " repetitions=" << repetitions
+              << " mode=" << (production_analysis ? "calc_map2alm" : "kernel_plus_commit")
               << " kernel_us=" << kernel_batch_us << " reset_us=" << reset_us
               << " wall_us=" << wall_us
               << " checksum=" << std::setprecision(12) << checksum << "\n";
@@ -242,6 +255,9 @@ int main(int argc, char **argv) {
   std::ifstream rust_in(fixture_path.substr(0, fixture_path.size() - 3) + ".rust",
                         std::ios::binary);
   if (!rust_in) throw std::runtime_error("cannot open Rust output for comparison");
+  std::ofstream ducc_out(fixture_path.substr(0, fixture_path.size() - 3) + ".ducc",
+                         std::ios::binary);
+  if (!ducc_out) throw std::runtime_error("cannot create DUCC output fixture");
   double l2_error = 0.0, l2_reference = 0.0, max_error = 0.0;
   for (size_t offset = 0; offset <= lmax - m; ++offset) {
     double pair[2];
@@ -249,6 +265,8 @@ int main(int argc, char **argv) {
     if (!rust_in) throw std::runtime_error("truncated Rust output");
     const std::complex<double> reference(pair[0], pair[1]);
     const auto difference = alm[m + offset] - reference;
+    const double output_pair[2] = {alm[m + offset].real(), alm[m + offset].imag()};
+    ducc_out.write(reinterpret_cast<const char *>(output_pair), sizeof(output_pair));
     l2_error += std::norm(difference);
     l2_reference += std::norm(reference);
     max_error = std::max(max_error, std::abs(difference));
@@ -257,6 +275,7 @@ int main(int argc, char **argv) {
   std::cout << std::fixed << std::setprecision(3)
             << "DUCC_KERNEL m=" << m << " lmax=" << lmax
             << " lanes=" << lane_count << " vectors=" << vectors
+            << " calc_map2alm=" << (production_analysis ? 1 : 0)
             << " repetitions_per_batch=" << repetitions << " batches=" << batch_count
             << " coefficient_max_scaled_diff=" << std::scientific << coefficient_error
             << " output_relative_l2=" << relative_l2

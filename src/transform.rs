@@ -22,7 +22,6 @@ use crate::plan::ShtPlan;
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 const SCALAR_TRANSITION_MIN_LMAX: usize = 1023;
-const FUSED_SCALAR_ANALYSIS_MIN_LMAX: usize = 255;
 
 #[cfg(feature = "parallel")]
 #[derive(Clone, Copy)]
@@ -2392,7 +2391,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     // Paired degrees l=m+2k use north+south for the even term;
                     // the intervening odd term uses north-south and cos(theta).
                     let staged_count = coefficient_count;
-                    let fast_path_candidate = lmax >= FUSED_SCALAR_ANALYSIS_MIN_LMAX
+                    let fast_path_candidate = lmax >= T::FUSED_SCALAR_ANALYSIS_MIN_LMAX
                         && recurrence.fast_scalar_first.len() >= staged_count;
                     // DUCC's fill_m2a checks the packed spectra and cosine-weights
                     // opposite parity in one pass. Preserve the transformed

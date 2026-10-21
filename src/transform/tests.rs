@@ -47,6 +47,188 @@ fn prepare_scalar_latitudes(plan: &ShtPlan, workspace: &mut crate::workspace::Sh
     }
 }
 
+#[test]
+#[ignore = "Plan 14: capture the production T127 m31 active-ring kernel input"]
+fn capture_plan14_t127_active_ring_kernel_input() {
+    use std::io::Write;
+
+    let (lmax, m, ntheta, nphi) = (127, 31, 128, 63);
+    let plan = make_plan(lmax, m, ntheta, nphi, 0.23);
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut workspace, 1).unwrap();
+    let map: Vec<f64> = (0..plan.sample_count)
+        .map(|index| {
+            let index = index as f64;
+            (index * 0.000173).sin() + 0.2 * (index * 0.000071).cos()
+        })
+        .collect();
+    let spectrum_len = plan.fft.spectrum_len();
+    for ring in 0..ntheta {
+        let map_start = ring * nphi;
+        let spectrum_start = ring * spectrum_len;
+        plan.fft
+            .forward_truncated(
+                &map[map_start..map_start + nphi],
+                &mut workspace.spectra[spectrum_start..spectrum_start + plan.harmonics.mmax() + 1],
+                &mut workspace.fft,
+            )
+            .unwrap();
+    }
+    prepare_scalar_latitudes(&plan, &mut workspace);
+    for ring in 0..ntheta {
+        workspace.theta_cos_squared[ring] =
+            stable_analysis_cosine_squared(workspace.theta_sin[ring], workspace.theta_cos[ring]);
+    }
+
+    let mut order_spectra = vec![Complex64::new(0.0, 0.0); ntheta];
+    let order_preparation = super::ScalarAnalysisOrderPreparation {
+        analysis_spectra: &workspace.spectra,
+        spectrum_len,
+        phi0: plan.grid.phi0(),
+        ring_order_limits: &workspace.ring_order_limits[..ntheta],
+        scalar_table_selected: false,
+        ring_weights: Some(plan.grid.ring_weights()),
+        longitude_count: nphi as f64,
+        scalar_table_input_limit: None,
+    };
+    assert!(order_preparation.prepare_order(m, &mut order_spectra));
+
+    let pair_lane_count = ntheta.div_ceil(2);
+    let block_start =
+        super::first_active_symmetric_pair(m, ntheta, &workspace.ring_order_limits[..ntheta]);
+    let block_len = pair_lane_count - block_start;
+    let recurrence = &mut workspace.recurrence_workers[0];
+    let lane_count = super::prepare_symmetric_analysis_pair_block(
+        m,
+        ntheta,
+        block_start,
+        block_len,
+        true,
+        &order_spectra,
+        &workspace.ring_order_limits[..ntheta],
+        &workspace.theta_sin[..ntheta],
+        &workspace.theta_cos[..ntheta],
+        &workspace.theta_cos_squared[..ntheta],
+        &mut recurrence.analysis_same_real,
+        &mut recurrence.analysis_same_imag,
+        &mut recurrence.analysis_opposite_real,
+        &mut recurrence.analysis_opposite_imag,
+        &mut recurrence.compact_ring_indices,
+        &mut recurrence.compact_theta_sin,
+        &mut recurrence.compact_theta_cos,
+        &mut recurrence.compact_theta_cos_squared,
+    );
+    assert!(lane_count > 0);
+    let unweighted_opposite_real = recurrence.analysis_opposite_real[..lane_count].to_vec();
+    let unweighted_opposite_imag = recurrence.analysis_opposite_imag[..lane_count].to_vec();
+    let active_sin_theta = recurrence.compact_theta_sin[..lane_count].to_vec();
+    assert_eq!(
+        recurrence.analysis_same_real.len().min(lane_count),
+        lane_count
+    );
+    let paired_inputs = <f64 as crate::legendre::ShtScalar>::prepare_scalar_analysis_pair_inputs(
+        &recurrence.analysis_same_real[..lane_count],
+        &recurrence.analysis_same_imag[..lane_count],
+        &mut recurrence.analysis_opposite_real[..lane_count],
+        &mut recurrence.analysis_opposite_imag[..lane_count],
+        &recurrence.compact_theta_cos[..lane_count],
+    )
+    .expect("f64 paired input preflight");
+    assert_eq!(paired_inputs, (true, true));
+
+    let factor_count = lmax / 2 + 2;
+    let mut epsilon = vec![0.0; lmax + 4];
+    let mut alpha = vec![0.0; factor_count];
+    let mut coefficient_a = vec![0.0; factor_count];
+    let mut coefficient_b = vec![0.0; factor_count];
+    <f64 as crate::legendre::ShtScalar>::fill_epsilon(m, lmax, &mut epsilon);
+    assert!(
+        <f64 as crate::legendre::ShtScalar>::fill_paired_scalar_factors(
+            m,
+            lmax,
+            &epsilon,
+            &mut alpha,
+            &mut coefficient_a,
+            &mut coefficient_b,
+        )
+    );
+
+    let mut previous = vec![0.0; lane_count];
+    let mut current = vec![0.0; lane_count];
+    let mut next = vec![0.0; lane_count];
+    let mut exponents = vec![0_i64; lane_count];
+    let mut initial_current = vec![0.0; lane_count];
+    let mut initial_exponents = vec![0_i64; lane_count];
+    let mut captured_seed_lanes = 0;
+    <f64 as crate::legendre::ShtScalar>::for_each_y_lm_dispatched(
+        pulp::Arch::new(),
+        m,
+        lmax,
+        &recurrence.compact_theta_sin[..lane_count],
+        &recurrence.compact_theta_cos[..lane_count],
+        plan.sectoral_norms[m],
+        &epsilon,
+        &mut previous,
+        &mut current,
+        &mut next,
+        &mut exponents,
+        |degree, ring_start, values, value_exponents| {
+            if degree == m {
+                let end = ring_start + values.len();
+                initial_current[ring_start..end].copy_from_slice(values);
+                initial_exponents[ring_start..end].copy_from_slice(value_exponents);
+                captured_seed_lanes += values.len();
+            }
+            Ok(())
+        },
+    )
+    .unwrap();
+    assert_eq!(captured_seed_lanes, lane_count);
+    assert!(initial_exponents.iter().all(|&exponent| exponent == 0));
+    let pair_count = (lmax - m + 2) / 2;
+    let input_path =
+        std::env::var("RUSTSHT_PLAN14_KERNEL_INPUT").expect("set RUSTSHT_PLAN14_KERNEL_INPUT");
+    let mut fixture = std::fs::File::create(input_path).expect("create T127 kernel fixture");
+    for value in [m, lmax, lane_count, pair_count] {
+        fixture
+            .write_all(&(value as u64).to_le_bytes())
+            .expect("write kernel fixture header");
+    }
+    for values in [
+        recurrence.compact_theta_cos[..lane_count].as_ref(),
+        recurrence.compact_theta_cos_squared[..lane_count].as_ref(),
+        previous.as_slice(),
+        initial_current.as_slice(),
+        recurrence.analysis_same_real[..lane_count].as_ref(),
+        recurrence.analysis_same_imag[..lane_count].as_ref(),
+        recurrence.analysis_opposite_real[..lane_count].as_ref(),
+        recurrence.analysis_opposite_imag[..lane_count].as_ref(),
+        &coefficient_a[..pair_count],
+        &coefficient_b[..pair_count],
+    ] {
+        for value in values {
+            fixture
+                .write_all(&value.to_le_bytes())
+                .expect("write kernel fixture values");
+        }
+    }
+    for values in [
+        active_sin_theta.as_slice(),
+        unweighted_opposite_real.as_slice(),
+        unweighted_opposite_imag.as_slice(),
+    ] {
+        for value in values {
+            fixture
+                .write_all(&value.to_le_bytes())
+                .expect("write callback-route fixture extension");
+        }
+    }
+    eprintln!(
+        "PLAN14_KERNEL_FIXTURE m={m} lmax={lmax} ntheta={ntheta} nphi={nphi} block_start={block_start} block_len={block_len} active_lanes={lane_count} padded_lanes={} pairs={pair_count} previous_production_route=paired_callback candidate_route=fused_min_lmax_127",
+        lane_count.div_ceil(4) * 4
+    );
+}
+
 fn scalar_ring_group_spectra(plan: &ShtPlan, alm: &[Complex64]) -> Vec<Complex64> {
     let mut workspace = plan.workspace().unwrap();
     plan.prepare_workspace(&mut workspace, 1).unwrap();
@@ -3733,6 +3915,40 @@ fn scalar_analysis_pair_range_cache_matches_checked_recurrence_and_is_plan_scope
             .unwrap(),
         &compatible_plan.analysis_pair_range_cache_id,
     ));
+}
+
+#[test]
+fn scalar_analysis_fused_route_cutoff_is_f64_specific_and_active_at_t127() {
+    assert_eq!(
+        <f64 as crate::legendre::ShtScalar>::FUSED_SCALAR_ANALYSIS_MIN_LMAX,
+        127
+    );
+    assert_eq!(
+        <f32 as crate::legendre::ShtScalar>::FUSED_SCALAR_ANALYSIS_MIN_LMAX,
+        255
+    );
+
+    for (lmax, ntheta, expect_fused) in [(126, 127, false), (127, 128, true)] {
+        let plan = make_plan(lmax, 31, ntheta, 63, 0.23);
+        assert!(plan.scalar_legendre_table.set(None).is_ok());
+        let mut workspace = plan.workspace().unwrap();
+        plan.prepare_workspace(&mut workspace, 1).unwrap();
+        let input = arbitrary_map(&plan);
+        let mut output = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+        plan.analysis_into(&input, &mut output, &mut workspace)
+            .unwrap();
+        let fused_blocks = workspace
+            .analysis_pair_range_safe
+            .iter()
+            .filter(|safe| safe.load(std::sync::atomic::Ordering::Relaxed))
+            .count();
+        let used_fused_route = fused_blocks != 0;
+        eprintln!("PLAN14_T{lmax}_FUSED_BLOCKS {fused_blocks}");
+        assert_eq!(
+            used_fused_route, expect_fused,
+            "unexpected fused-route dispatch at T{lmax}"
+        );
+    }
 }
 
 #[test]

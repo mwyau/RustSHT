@@ -2042,6 +2042,273 @@ fn benchmark_production_ordinary_scalar_analysis_block() {
 }
 
 #[test]
+#[ignore = "Plan 14 calibrated T127 production routes against pinned DUCC"]
+fn benchmark_plan14_t127_active_ring_route() {
+    let input_path = std::env::var("RUSTSHT_PLAN14_KERNEL_INPUT")
+        .expect("RUSTSHT_PLAN14_KERNEL_INPUT must name the captured block");
+    let output_path = input_path
+        .strip_suffix(".in")
+        .expect("Plan 14 kernel fixture ends in .in")
+        .to_owned()
+        + ".rust";
+    let repetitions = std::env::var("RUSTSHT_PLAN14_CALLBACK_REPETITIONS")
+        .ok()
+        .map(|value| value.parse::<usize>().expect("invalid repetition count"))
+        .unwrap_or(4_000);
+    let batches = std::env::var("RUSTSHT_PLAN14_CALLBACK_BATCHES")
+        .ok()
+        .map(|value| value.parse::<usize>().expect("invalid batch count"))
+        .unwrap_or(30);
+    let route = std::env::var("RUSTSHT_PLAN14_ROUTE").unwrap_or_else(|_| "callback".to_owned());
+    assert!(matches!(route.as_str(), "callback" | "fused"));
+    assert!(repetitions > 0 && batches >= 30);
+
+    let mut file = File::open(&input_path).expect("open T127 active-ring fixture");
+    let m = read_u64(&mut file) as usize;
+    let lmax = read_u64(&mut file) as usize;
+    let lane_count = read_u64(&mut file) as usize;
+    let pair_count = read_u64(&mut file) as usize;
+    assert_eq!((m, lmax, lane_count), (31, 127, 64));
+    assert_eq!(pair_count, (lmax - m + 2) / 2);
+    let fixture = Fixture {
+        cosine: read_f64s(&mut file, lane_count),
+        cosine_squared: read_f64s(&mut file, lane_count),
+        previous: read_f64s(&mut file, lane_count),
+        current: read_f64s(&mut file, lane_count),
+        same_real: read_f64s(&mut file, lane_count),
+        same_imag: read_f64s(&mut file, lane_count),
+        opposite_real: read_f64s(&mut file, lane_count),
+        opposite_imag: read_f64s(&mut file, lane_count),
+        coefficient_a: read_f64s(&mut file, pair_count),
+        coefficient_b: read_f64s(&mut file, pair_count),
+    };
+    let sin_theta = read_f64s(&mut file, lane_count);
+    let opposite_real = read_f64s(&mut file, lane_count);
+    let opposite_imag = read_f64s(&mut file, lane_count);
+    let arch = Arch::new();
+    eprintln!("PLAN14_RUST_ARCH {arch:?} lanes={lane_count} route={route}");
+    let mut epsilon = vec![0.0; lmax + 4];
+    let factor_count = lmax / 2 + 2;
+    let mut alpha = vec![0.0; factor_count];
+    let mut coefficient_a = vec![0.0; factor_count];
+    let mut coefficient_b = vec![0.0; factor_count];
+    <f64 as crate::legendre::ShtScalar>::fill_epsilon(m, lmax, &mut epsilon);
+    assert!(
+        <f64 as crate::legendre::ShtScalar>::fill_paired_scalar_factors(
+            m,
+            lmax,
+            &epsilon,
+            &mut alpha,
+            &mut coefficient_a,
+            &mut coefficient_b,
+        )
+    );
+    for pair in 0..pair_count {
+        assert_eq!(coefficient_a[pair], fixture.coefficient_a[pair]);
+        assert_eq!(coefficient_b[pair], fixture.coefficient_b[pair]);
+    }
+    let sectoral_norm = <f64 as crate::legendre::ShtScalar>::sectoral_normalizations(m)
+        .expect("T127 sectoral factors")[m];
+    let products_safe = <f64 as crate::legendre::ShtScalar>::scalar_analysis_products_safe(
+        &fixture.same_real,
+        &fixture.same_imag,
+        &opposite_real,
+        &opposite_imag,
+        &fixture.cosine,
+    );
+    assert!(products_safe);
+    let mut previous = vec![0.0; lane_count];
+    let mut current = vec![0.0; lane_count];
+    let mut next = vec![0.0; lane_count];
+    let mut exponents = vec![0_i64; lane_count];
+    let mut coefficients = vec![Complex64::new(0.0, 0.0); lmax - m + 1];
+    let mut staged_coefficients = vec![Complex64::new(0.0, 0.0); lmax - m + 1];
+    let mut analysis_scale_epochs = vec![0.0; lane_count];
+    let mut analysis_scale_corrections = vec![1.0; lane_count];
+    let mut range_check_was_exercised = false;
+    let reset = |coefficients: &mut [Complex64]| {
+        coefficients.fill(Complex64::new(0.0, 0.0));
+    };
+    let mut run = |previous: &mut [f64],
+                   current: &mut [f64],
+                   next: &mut [f64],
+                   exponents: &mut [i64],
+                   coefficients: &mut [Complex64]| {
+        if route == "callback" {
+            let succeeded =
+                <f64 as crate::legendre::ShtScalar>::for_each_y_lm_paired_status_dispatched(
+                    arch,
+                    m,
+                    lmax,
+                    &sin_theta,
+                    &fixture.cosine,
+                    sectoral_norm,
+                    &fixture.coefficient_a,
+                    &fixture.coefficient_b,
+                    previous,
+                    current,
+                    next,
+                    exponents,
+                    |degree, ring_start, basis, lane_exponents, normal_range| {
+                        let lane_end = ring_start + basis.len();
+                        let (same, opposite) =
+                            <f64 as crate::legendre::ShtScalar>::accumulate_scalar_analysis_pair(
+                                arch,
+                                products_safe,
+                                normal_range,
+                                &fixture.same_real[ring_start..lane_end],
+                                &fixture.same_imag[ring_start..lane_end],
+                                &opposite_real[ring_start..lane_end],
+                                &opposite_imag[ring_start..lane_end],
+                                basis,
+                                lane_exponents,
+                                &fixture.cosine[ring_start..lane_end],
+                            );
+                        let offset = degree - m;
+                        coefficients[offset] += same;
+                        if degree < lmax {
+                            coefficients[offset + 1] += opposite;
+                        }
+                        Ok(())
+                    },
+                )
+                .expect("T127 paired recurrence");
+            assert!(succeeded, "T127 paired recurrence declined");
+        } else {
+            staged_coefficients.fill(Complex64::new(0.0, 0.0));
+            let succeeded =
+                <f64 as crate::legendre::ShtScalar>::fused_scalar_analysis_pair_block_preweighted(
+                    arch,
+                    m,
+                    lmax,
+                    <f64 as crate::legendre::ShtScalar>::scalar_analysis_prefix_skip_allowed(
+                        lane_count,
+                    ),
+                    false,
+                    &mut range_check_was_exercised,
+                    &sin_theta,
+                    &fixture.cosine,
+                    &fixture.cosine_squared,
+                    sectoral_norm,
+                    &fixture.coefficient_a,
+                    &fixture.coefficient_b,
+                    &fixture.same_real,
+                    &fixture.same_imag,
+                    &fixture.opposite_real,
+                    &fixture.opposite_imag,
+                    &mut staged_coefficients,
+                    previous,
+                    current,
+                    next,
+                    &mut analysis_scale_epochs,
+                    &mut analysis_scale_corrections,
+                    exponents,
+                )
+                .expect("T127 fused recurrence");
+            assert!(succeeded, "T127 fused recurrence declined");
+            coefficients.copy_from_slice(&staged_coefficients);
+        }
+        let mut previous_even = Complex64::new(0.0, 0.0);
+        let mut previous_alpha = 0.0;
+        for (pair_index, degree) in (m..=lmax).step_by(2).enumerate() {
+            let offset = degree - m;
+            let even = coefficients[offset];
+            let odd = if degree < lmax {
+                coefficients[offset + 1]
+            } else {
+                Complex64::new(0.0, 0.0)
+            };
+            let previous_term = previous_even * (previous_alpha * epsilon[degree]);
+            let pair_alpha = alpha[pair_index];
+            coefficients[offset] = even * (pair_alpha * epsilon[degree + 1]) + previous_term;
+            if degree < lmax {
+                coefficients[offset + 1] = odd * pair_alpha;
+            }
+            previous_even = even;
+            previous_alpha = pair_alpha;
+        }
+        std::hint::black_box(coefficients);
+    };
+
+    let mut reference = None;
+    for _ in 0..3 {
+        reset(&mut coefficients);
+        run(
+            &mut previous,
+            &mut current,
+            &mut next,
+            &mut exponents,
+            &mut coefficients,
+        );
+        if let Some(expected) = &reference {
+            assert_eq!(coefficients, *expected, "warmup output changed");
+        } else {
+            reference = Some(coefficients.clone());
+        }
+    }
+    eprintln!(
+        "PLAN14_RUST_WARMUP lanes={lane_count} route={route} checksum={:.12e}",
+        coefficients
+            .iter()
+            .map(|value| value.re + 0.5 * value.im)
+            .sum::<f64>()
+    );
+
+    for batch in 0..batches {
+        let reset_started = Instant::now();
+        for _ in 0..repetitions {
+            reset(&mut coefficients);
+            std::hint::black_box(&coefficients);
+        }
+        let reset_us = reset_started.elapsed().as_secs_f64() * 1.0e6;
+
+        let wall_started = Instant::now();
+        for _ in 0..repetitions {
+            reset(&mut coefficients);
+            run(
+                &mut previous,
+                &mut current,
+                &mut next,
+                &mut exponents,
+                &mut coefficients,
+            );
+        }
+        let wall_us = wall_started.elapsed().as_secs_f64() * 1.0e6;
+        let checksum = coefficients
+            .iter()
+            .map(|value| value.re + 0.5 * value.im)
+            .sum::<f64>();
+        assert_eq!(coefficients, *reference.as_ref().unwrap());
+        eprintln!(
+            "PLAN14_RUST_BATCH lanes={lane_count} batch={batch} repetitions={repetitions} route={route} kernel_us={:.3} reset_inclusive_us={wall_us:.3} reset_us={reset_us:.3} checksum={checksum:.12e}",
+            wall_us - reset_us
+        );
+    }
+
+    reset(&mut coefficients);
+    run(
+        &mut previous,
+        &mut current,
+        &mut next,
+        &mut exponents,
+        &mut coefficients,
+    );
+    drop(run);
+    eprintln!(
+        "PLAN14_RUST_ROUTE_STATUS route={route} range_check_was_exercised={range_check_was_exercised}"
+    );
+    write_complex(&output_path, &coefficients);
+    eprintln!(
+        "PLAN14_RUST_NUMERICS lanes={lane_count} route={route} coefficients={} checksum={:.12e}",
+        coefficients.len(),
+        coefficients
+            .iter()
+            .map(|value| value.re + 0.5 * value.im)
+            .sum::<f64>()
+    );
+}
+
+#[test]
 #[ignore = "manual range-check-only attribution for the ordinary analysis block"]
 fn benchmark_production_ordinary_range_check_loop() {
     let input_path = std::env::var("RUSTSHT_ORDINARY_KERNEL_INPUT")
