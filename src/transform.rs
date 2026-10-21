@@ -2136,18 +2136,28 @@ impl<T: ShtScalar> ShtPlan<T> {
         let failed = AtomicBool::new(false);
         let failure = Mutex::new(None::<ShtError>);
         recurrence.par_iter_mut().for_each(|worker| {
+            #[cfg(all(test, feature = "parallel"))]
+            let profile_order_queue = worker.analysis_schedule_profile_enabled();
             loop {
                 if failed.load(Ordering::Relaxed) {
                     break;
                 }
+                #[cfg(all(test, feature = "parallel"))]
+                let queue_lock_started = profile_order_queue.then(std::time::Instant::now);
                 let job = order_jobs
                     .lock()
                     .expect("scalar analysis order queue is not poisoned")
                     .pop_front();
+                #[cfg(all(test, feature = "parallel"))]
+                let queue_lock_ns = queue_lock_started
+                    .map(|started| started.elapsed().as_nanos())
+                    .unwrap_or(0);
                 let Some((m, coefficients)) = job else {
                     break;
                 };
-                if let Err(error) = self.analyze_order_group(
+                #[cfg(all(test, feature = "parallel"))]
+                let job_started = profile_order_queue.then(std::time::Instant::now);
+                let result = self.analyze_order_group(
                     spectra,
                     latitude_count,
                     theta_sin,
@@ -2161,7 +2171,18 @@ impl<T: ShtScalar> ShtPlan<T> {
                     m + 1,
                     coefficients,
                     worker,
-                ) {
+                );
+                #[cfg(all(test, feature = "parallel"))]
+                if let Some(started) = job_started {
+                    worker.record_analysis_schedule_job(
+                        m,
+                        lmax,
+                        ring_order_limits,
+                        started.elapsed().as_nanos(),
+                        queue_lock_ns,
+                    );
+                }
+                if let Err(error) = result {
                     failed.store(true, Ordering::Relaxed);
                     let mut first_error = failure
                         .lock()

@@ -316,19 +316,31 @@ cost `6.04/6.67 us` across 181 jobs in two diagnostic calls, far below its
 whole-call excess; no synthesis scheduler rewrite is indicated. A polar-
 inactive spectrum skip in GL recurrence analysis saved about `17 us` in the
 preparation phase but did not change whole-call latency beyond noise, so that
-candidate was removed. The next measurement separates analysis order-queue
-locking from worker work imbalance inside the `1.683 ms` recurrence stage.
+candidate was removed. The analysis order-queue and per-thread work profile
+is summarized below.
 Rebaseline distributions and candidate ablation are in
 [Plan 14](plans/14-small-serial-parallel-performance.md) and
 [machine-readable data](reports/data/plan14-q8-rebaseline-2026-10-21/) and
 [the candidate ablation](reports/data/plan14-inactive-ring-preparation-2026-10-21/candidate-ablation.csv).
 
+**Plan 14 T720 q8 analysis queue profile:** a test-only worker-local probe
+counted 721 order jobs. The summed dequeue lock/wait durations were
+38.3/41.7/49.4 us p10/median/p90 across 30 calls. Per-thread accumulated
+order time stayed within 1.660–1.668 ms, while estimated work varied by
+about 7.5% max/min. This profile is not a calibrated wall-stage subtraction;
+the instrumented-call median shifted by 72 us and tail ordering changed.
+Dynamic scheduling appears balanced, so any queue-batching candidate must
+show a matched whole-call q1/q8 benefit without worsening full/reduced-order
+balance. Details and reproduction are in
+[Plan 14](plans/14-small-serial-parallel-performance.md) and
+[the compact queue data](reports/data/plan14-analysis-scheduler-2026-10-21/analysis-queue-profile.csv).
+
 ## Current next steps and deferred work
 
-1. Measure analysis order-queue locking and per-worker order work for the
-   exact T720 full-order q8 analysis case. Rework scheduling only if the
-   measured scheduling/imbalance cost is material against the `+0.355 ms`
-   whole-call excess.
+1. Test one bounded analysis queue-batching candidate against the current
+   T720 q8 full-order scheduler. Keep it only if matched whole-call q1/q8
+   full/reduced-`mmax` timings show an improvement without harming the
+   measured work balance.
 2. **Future only:** [Plan 12](plans/12-cache-informed-legendre-dispatch.md)
    cache-topology queries plus optional offline pointer-chase diagnostic
    (no startup autotuning); [Plan 13](plans/13-fused-batched-sht.md)

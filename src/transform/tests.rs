@@ -1248,6 +1248,124 @@ fn plan14_analysis_phase_batch_profile() {
 
 #[cfg(feature = "parallel")]
 #[test]
+#[ignore = "Plan 14: profile analysis order-queue lock and per-worker work at T720 q8"]
+fn plan14_analysis_order_queue_profile() {
+    use std::time::Instant;
+
+    const LMAX: usize = 720;
+    const MMAX: usize = 720;
+    const NTHETA: usize = 721;
+    const NPHI: usize = 1458;
+    const PROFILE_CALLS: usize = 30;
+    assert_eq!(
+        rayon::current_num_threads(),
+        8,
+        "run with RAYON_NUM_THREADS=8"
+    );
+    let plan = make_plan(LMAX, MMAX, NTHETA, NPHI, 0.23);
+    let mut workspace = plan.workspace().unwrap();
+    plan.prepare_workspace(&mut workspace, 8).unwrap();
+    let map = if let Ok(path) = std::env::var("RUSTSHT_PROFILE_MAP") {
+        let bytes = std::fs::read(path).expect("read matched Plan 14 analysis map fixture");
+        assert_eq!(bytes.len(), plan.sample_count * 8);
+        let (chunks, remainder) = bytes.as_chunks::<8>();
+        assert!(remainder.is_empty());
+        chunks
+            .iter()
+            .map(|chunk| f64::from_le_bytes(*chunk))
+            .collect::<Vec<_>>()
+    } else {
+        arbitrary_map(&plan)
+    };
+    let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+    for _ in 0..3 {
+        plan.analysis_into(&map, &mut alm, &mut workspace).unwrap();
+    }
+
+    let mut uninstrumented_us = Vec::with_capacity(10);
+    for _ in 0..10 {
+        let started = Instant::now();
+        plan.analysis_into(&map, &mut alm, &mut workspace).unwrap();
+        uninstrumented_us.push(started.elapsed().as_secs_f64() * 1.0e6);
+        std::hint::black_box(&alm);
+    }
+
+    workspace.observe_analysis_schedule();
+    let mut wall_us = Vec::with_capacity(PROFILE_CALLS);
+    let mut queue_us = Vec::with_capacity(PROFILE_CALLS);
+    let mut worker_stats =
+        std::collections::BTreeMap::<usize, (u128, u128, u128, u128, usize)>::new();
+    for call in 0..PROFILE_CALLS {
+        workspace.reset_analysis_schedule_stats();
+        let started = Instant::now();
+        plan.analysis_into(&map, &mut alm, &mut workspace).unwrap();
+        wall_us.push(started.elapsed().as_secs_f64() * 1.0e6);
+        std::hint::black_box(&alm);
+        let mut call_queue_ns = 0_u128;
+        let mut call_jobs = 0_usize;
+        for recurrence in &workspace.recurrence_workers {
+            let observation = recurrence.analysis_schedule_stats();
+            let Some(worker) = observation.rayon_thread else {
+                assert_eq!(observation.jobs, 0);
+                continue;
+            };
+            call_jobs += observation.jobs;
+            call_queue_ns += observation.queue_lock_ns;
+            let stats = worker_stats.entry(worker).or_default();
+            stats.0 += observation.estimated_work;
+            stats.1 += observation.active_ring_order_pairs;
+            stats.2 += observation.elapsed_ns;
+            stats.3 += observation.queue_lock_ns;
+            stats.4 += observation.jobs;
+        }
+        assert_eq!(call_jobs, MMAX + 1);
+        queue_us.push(call_queue_ns as f64 / 1.0e3);
+        eprintln!(
+            "PLAN14_ANALYSIS_QUEUE_CALL call={} wall_us={:.3} queue_lock_us={:.3} jobs={}",
+            call + 1,
+            wall_us[call],
+            queue_us[call],
+            call_jobs,
+        );
+    }
+    let quantiles = |values: &[f64]| {
+        let mut sorted = values.to_vec();
+        sorted.sort_by(f64::total_cmp);
+        let at = |q: f64| sorted[((sorted.len() - 1) as f64 * q).round() as usize];
+        (at(0.1), at(0.5), at(0.9))
+    };
+    let (uninstrumented_p10, uninstrumented_median, uninstrumented_p90) =
+        quantiles(&uninstrumented_us);
+    let (wall_p10, wall_median, wall_p90) = quantiles(&wall_us);
+    let (queue_p10, queue_median, queue_p90) = quantiles(&queue_us);
+    eprintln!(
+        "PLAN14_ANALYSIS_QUEUE_SUMMARY calls={PROFILE_CALLS} jobs_per_call={} uninstrumented_wall_us={uninstrumented_p10:.3},{uninstrumented_median:.3},{uninstrumented_p90:.3} instrumented_wall_us={wall_p10:.3},{wall_median:.3},{wall_p90:.3} total_queue_lock_us={queue_p10:.3},{queue_median:.3},{queue_p90:.3}",
+        MMAX + 1,
+    );
+    eprintln!(
+        "PLAN14_ANALYSIS_QUEUE_RAYON_THREAD calls={PROFILE_CALLS} jobs_work_active_pairs_job_elapsed_ms_queue_lock_us={:?}",
+        worker_stats
+            .iter()
+            .map(
+                |(&worker, &(work, active_pairs, elapsed_ns, queue_ns, jobs))| (
+                    worker,
+                    jobs / PROFILE_CALLS,
+                    work / PROFILE_CALLS as u128,
+                    active_pairs / PROFILE_CALLS as u128,
+                    elapsed_ns as f64 / PROFILE_CALLS as f64 / 1.0e6,
+                    queue_ns as f64 / PROFILE_CALLS as f64 / 1.0e3,
+                )
+            )
+            .collect::<Vec<_>>()
+    );
+    assert!(
+        alm.iter()
+            .all(|value| value.re.is_finite() && value.im.is_finite())
+    );
+}
+
+#[cfg(feature = "parallel")]
+#[test]
 #[ignore = "M5 current-source synthesis phase profile; run this diagnostic in release mode"]
 fn m5_synthesis_phase_profile() {
     for (spin, lmax, thread_count) in [

@@ -113,6 +113,10 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     profile_scaled_blocks: usize,
     #[cfg(all(test, feature = "parallel"))]
     profile_mixed_blocks: usize,
+    #[cfg(all(test, feature = "parallel"))]
+    analysis_schedule_profile: bool,
+    #[cfg(all(test, feature = "parallel"))]
+    analysis_schedule_stats: AnalysisScheduleStats,
 }
 
 #[repr(align(64))]
@@ -174,6 +178,17 @@ pub(crate) struct AnalysisLeafObservation {
     pub(crate) normal_blocks: usize,
     pub(crate) scaled_blocks: usize,
     pub(crate) mixed_blocks: usize,
+}
+
+#[cfg(all(test, feature = "parallel"))]
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct AnalysisScheduleStats {
+    pub(crate) jobs: usize,
+    pub(crate) active_ring_order_pairs: u128,
+    pub(crate) estimated_work: u128,
+    pub(crate) elapsed_ns: u128,
+    pub(crate) queue_lock_ns: u128,
+    pub(crate) rayon_thread: Option<usize>,
 }
 
 #[cfg(all(test, feature = "parallel"))]
@@ -363,6 +378,10 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
             profile_scaled_blocks: 0,
             #[cfg(all(test, feature = "parallel"))]
             profile_mixed_blocks: 0,
+            #[cfg(all(test, feature = "parallel"))]
+            analysis_schedule_profile: false,
+            #[cfg(all(test, feature = "parallel"))]
+            analysis_schedule_stats: AnalysisScheduleStats::default(),
         })
     }
 
@@ -382,6 +401,45 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
     #[cfg(all(test, feature = "parallel"))]
     pub(crate) fn analysis_leaf_profile_enabled(&self) -> bool {
         self.analysis_leaf_probe.is_some()
+    }
+
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn analysis_schedule_profile_enabled(&self) -> bool {
+        self.analysis_schedule_profile
+    }
+
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn record_analysis_schedule_job(
+        &mut self,
+        m: usize,
+        lmax: usize,
+        ring_order_limits: &[usize],
+        elapsed_ns: u128,
+        queue_lock_ns: u128,
+    ) {
+        if !self.analysis_schedule_profile {
+            return;
+        }
+        let active_rings = ring_order_limits
+            .iter()
+            .filter(|&&limit| m <= limit)
+            .count() as u128;
+        self.analysis_schedule_stats.jobs += 1;
+        self.analysis_schedule_stats.active_ring_order_pairs += active_rings;
+        self.analysis_schedule_stats.estimated_work += active_rings * (lmax - m + 1) as u128;
+        self.analysis_schedule_stats.elapsed_ns += elapsed_ns;
+        self.analysis_schedule_stats.queue_lock_ns += queue_lock_ns;
+        self.analysis_schedule_stats.rayon_thread = rayon::current_thread_index();
+    }
+
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn analysis_schedule_stats(&self) -> AnalysisScheduleStats {
+        self.analysis_schedule_stats
+    }
+
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn reset_analysis_schedule_stats(&mut self) {
+        self.analysis_schedule_stats = AnalysisScheduleStats::default();
     }
 
     #[cfg(all(test, feature = "parallel"))]
@@ -583,6 +641,21 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             recurrence.analysis_leaf_probe = Some(Arc::clone(&probe));
         }
         probe
+    }
+
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn observe_analysis_schedule(&mut self) {
+        for recurrence in &mut self.recurrence_workers {
+            recurrence.analysis_schedule_profile = true;
+            recurrence.reset_analysis_schedule_stats();
+        }
+    }
+
+    #[cfg(all(test, feature = "parallel"))]
+    pub(crate) fn reset_analysis_schedule_stats(&mut self) {
+        for recurrence in &mut self.recurrence_workers {
+            recurrence.reset_analysis_schedule_stats();
+        }
     }
 
     #[cfg(all(test, feature = "parallel"))]

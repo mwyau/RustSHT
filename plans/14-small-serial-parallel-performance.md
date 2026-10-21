@@ -339,11 +339,39 @@ instrumented calls, mutex acquisition plus pop took `6.04/6.67 us` total;
 the first call's workers processed estimated work from `8.93M` to `10.76M`
 terms in `1.099–1.154 ms`.
 That queue cost cannot explain the `0.375 ms` whole-call excess, so do not
-replace the synthesis scheduler on this evidence. The next q8 analysis
-measurement will separate analysis queue locking from per-order work
-imbalance inside the `1.683 ms` recurrence/accumulation stage. Raw timer and
-process logs remain local under `/tmp`; compact reproducible values are in
+replace the synthesis scheduler on this evidence. The analysis queue and
+worker profile below supersedes the earlier shared-observer-lock probe. Raw
+timer and process logs remain local under `/tmp`; compact reproducible values
+are in
 [`stage.csv`](../reports/data/plan14-q8-rebaseline-2026-10-21/stage.csv).
+
+## Current progress — T720 q8 analysis queue profile (2026-10-21)
+
+A test-only profile of the exact T720 full-order analysis fixture counted 721
+order jobs per call. It times dequeue locking and each order's analysis work
+in worker-local counters; it does not take the shared observation mutex used
+by the first, provisional probe. Across 30 instrumented calls, the sum of
+lock/wait durations over all Rayon threads had p10/median/p90
+`38.258/41.654/49.448 us` per call. This is aggregate thread time, not a
+directly subtractable wall-time stage because each worker's waiting is
+counted in the sum.
+
+Across the eight Rayon threads, average estimated work ranged from `19.12M`
+to `20.54M` ring-degree terms (about a 7.5% max/min spread); accumulated order
+execution time ranged only from `1.660` to `1.668 ms` per thread, with 85–91
+orders per thread. This suggests the dynamic queue is balancing this case
+well. Unprofiled call p10/median/p90 was `2.422/2.464/2.879 ms`; the
+instrumented calls were `2.448/2.536/2.802 ms`. The shifted median and
+reversed upper-tail ordering show that this one-process probe cannot provide
+a calibrated production timing or isolate the instrumentation overhead.
+
+The queue has a measurable cost and is a candidate for one bounded
+batch-dequeue experiment, but this profile does not establish its wall-time
+contribution to the `+0.355 ms` Rust/DUCC whole-call excess. Any candidate
+must preserve the observed work balance and be evaluated with matched q1/q8,
+full/reduced-`mmax` whole transforms before retention. The ignored test is
+`plan14_analysis_order_queue_profile`; its compact measurements are in
+[`analysis-queue-profile.csv`](../reports/data/plan14-analysis-scheduler-2026-10-21/analysis-queue-profile.csv).
 
 ## Current progress — T127 q1 reduced-order dispatch correction (2026-10-21)
 
