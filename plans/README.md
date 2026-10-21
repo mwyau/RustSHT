@@ -1,8 +1,8 @@
 # RustSHT plans — current status and reference index
 
 **Updated 2026-10-21 UTC.** Plan 11 is complete at closeout commit
-`a37f74d68631ab5fd373a4097640895e9f0c0c23`; **Plan 14 is the active
-implementation plan**. This index also distinguishes deferred proposals,
+`a37f74d68631ab5fd373a4097640895e9f0c0c23`; **Plan 14 remains active;
+Plan 15 is scheduled immediately afterward**. This index distinguishes deferred proposals,
 numerical contracts and archived historical instructions. In any conflict,
 current explicit owner instructions, [AGENTS.md](../AGENTS.md) and
 [Plan 14](14-small-serial-parallel-performance.md) control.
@@ -18,6 +18,21 @@ closed. See [current benchmark decisions](../PERFORMANCE_STATUS.md).
 **[11 — Scalar f64 GL analysis parity](11-ducc-equivalent-scalar-analysis.md)**
 is **complete** at `a37f74d68631ab5fd373a4097640895e9f0c0c23`; retain its
 findings and data as the validated baseline rather than reopening its work.
+
+## Scheduled automatic successor — spin-1 across GL, CC and F1
+
+**[15 — Spin-1 vector GL/CC/F1 performance](15-spin1-vector-gl-cc-f1-performance.md)**
+is **NEXT, not yet active**. After Luna has pushed the requested Plan 14 scalar
+full sweep and four figures and fully closed Plan 14, **continue directly to
+Plan 15 in the same session on `opt/sht-performance-parity`** without an
+additional owner prompt. Mark Plan 14 complete and Plan 15 active at that
+handoff; preserve the final scalar baseline.
+
+Plan 15 specifically covers **spin-1 vector E/B analysis and synthesis on
+all three grids in order: GL, CC, then F1**, with the correct grid-specific
+CC/F1 meridional-resampling and adjoint contracts. It is **not** a general
+scalar CC/F1 optimization project. The staged native-DUCC baseline, focused
+code changes, numerical tests and performance report are in the plan.
 
 ## Deferred TODOs — Plans 12 and 13 remain inactive
 
