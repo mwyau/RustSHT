@@ -1,0 +1,149 @@
+{
+  "baseline_source_commit": "9dea41434fe9c222ec4cc815629a48499dab91df",
+  "candidate_source_base": "656a952c7944d12562b6eb8f505d45bfc028441c plus the uncommitted scheduling change described in the report",
+  "production_candidate_binary_sha256": "cae220835cee2ab439872b07621b47ef67ac59645b2f3b45f68993aaae54fd7c",
+  "baseline_binary_sha256": "40cf824726aee10d08373dd09bd0a0a97643f74e94e0ddc1ba1fd0ff9f8d2682",
+  "experimental_candidate_binary_sha256": "bb9e7774920482fc2dcdb7404423c7b203ab1897784de44ad75f782202bc2c1d",
+  "ducc_binary_sha256": "d7648e32ee07c7c17d0a31132526250458b37b2e9a0c07debb473bc5eaa46539",
+  "ducc_commit": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "host": "AMD Ryzen 9 5950X 16-Core Processor",
+  "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13), LLVM 23.1.1",
+  "rust_build": "cargo release defaults; runtime Pulp V3 AVX2/FMA, 8 f32 lanes; no target-cpu override",
+  "ducc_build": "SHT -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; strict native driver",
+  "affinity": "q1 pinned to one physical core; q8 pinned to eight physical cores within one L3 domain",
+  "long_transform_protocol": "3 independent process pairs; 5 individually timed Rust calls/process; DUCC calibrated to approximately 25 ms batches; reusable plan/workspace; warmup and reset checks",
+  "cases": [
+    {
+      "label": "T720-q8-preliminary",
+      "case_id": "GL-T720-M720-even-s1-synthesis-q8",
+      "variant": "experimental minimum chunk=1",
+      "binary_hashes": {
+        "baseline": "40cf824726aee10d08373dd09bd0a0a97643f74e94e0ddc1ba1fd0ff9f8d2682",
+        "candidate": "bb9e7774920482fc2dcdb7404423c7b203ab1897784de44ad75f782202bc2c1d",
+        "ducc": "d7648e32ee07c7c17d0a31132526250458b37b2e9a0c07debb473bc5eaa46539"
+      }
+    },
+    {
+      "label": "T720-q8-production",
+      "case_id": "GL-T720-M720-even-s1-synthesis-q8",
+      "variant": "production group_count>workers rule",
+      "binary_hashes": {
+        "baseline": "40cf824726aee10d08373dd09bd0a0a97643f74e94e0ddc1ba1fd0ff9f8d2682",
+        "candidate": "cae220835cee2ab439872b07621b47ef67ac59645b2f3b45f68993aaae54fd7c",
+        "ducc": "d7648e32ee07c7c17d0a31132526250458b37b2e9a0c07debb473bc5eaa46539"
+      }
+    },
+    {
+      "label": "T720-q1-control",
+      "case_id": "GL-T720-M720-even-s1-synthesis-q1",
+      "variant": "experimental minimum chunk=1 serial control",
+      "binary_hashes": {
+        "baseline": "40cf824726aee10d08373dd09bd0a0a97643f74e94e0ddc1ba1fd0ff9f8d2682",
+        "candidate": "bb9e7774920482fc2dcdb7404423c7b203ab1897784de44ad75f782202bc2c1d",
+        "ducc": "d7648e32ee07c7c17d0a31132526250458b37b2e9a0c07debb473bc5eaa46539"
+      }
+    },
+    {
+      "label": "T511-q8-control",
+      "case_id": "GL-T511-M511-even-s1-synthesis-q8",
+      "variant": "experimental minimum chunk=1; baseline already one",
+      "binary_hashes": {
+        "baseline": "40cf824726aee10d08373dd09bd0a0a97643f74e94e0ddc1ba1fd0ff9f8d2682",
+        "candidate": "bb9e7774920482fc2dcdb7404423c7b203ab1897784de44ad75f782202bc2c1d",
+        "ducc": "d7648e32ee07c7c17d0a31132526250458b37b2e9a0c07debb473bc5eaa46539"
+      }
+    },
+    {
+      "label": "T1023-q8-control",
+      "case_id": "GL-T1023-M1023-even-s1-synthesis-q8",
+      "variant": "experimental minimum chunk=1; matches production condition",
+      "binary_hashes": {
+        "baseline": "40cf824726aee10d08373dd09bd0a0a97643f74e94e0ddc1ba1fd0ff9f8d2682",
+        "candidate": "bb9e7774920482fc2dcdb7404423c7b203ab1897784de44ad75f782202bc2c1d",
+        "ducc": "d7648e32ee07c7c17d0a31132526250458b37b2e9a0c07debb473bc5eaa46539"
+      }
+    }
+  ],
+  "source_metadata": [
+    {
+      "label": "T720-q8-preliminary",
+      "case_id": "GL-T720-M720-even-s1-synthesis-q8",
+      "variant": "experimental minimum chunk=1",
+      "baseline_binary_sha256": "40cf824726aee10d08373dd09bd0a0a97643f74e94e0ddc1ba1fd0ff9f8d2682",
+      "candidate_binary_sha256": "bb9e7774920482fc2dcdb7404423c7b203ab1897784de44ad75f782202bc2c1d",
+      "ducc_binary_sha256": "d7648e32ee07c7c17d0a31132526250458b37b2e9a0c07debb473bc5eaa46539",
+      "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+      "baseline_commit": "9dea41434fe9c222ec4cc815629a48499dab91df",
+      "host": "AMD Ryzen 9 5950X 16-Core Processor",
+      "rustc_vv": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+      "rust_flags": "Cargo release defaults; runtime Pulp dispatch; no target-cpu override",
+      "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; strict driver separately compiled",
+      "affinity_method": "pin q1 to one physical core and q8 to eight cores in one L3 domain; run-specific assignments are in the report",
+      "measurement_method": "same deterministic fixtures; fresh interleaved processes; reusable plans/workspaces; per-worker warmup and output reset validation"
+    },
+    {
+      "label": "T720-q8-production",
+      "case_id": "GL-T720-M720-even-s1-synthesis-q8",
+      "variant": "production group_count>workers rule",
+      "baseline_binary_sha256": "40cf824726aee10d08373dd09bd0a0a97643f74e94e0ddc1ba1fd0ff9f8d2682",
+      "candidate_binary_sha256": "cae220835cee2ab439872b07621b47ef67ac59645b2f3b45f68993aaae54fd7c",
+      "ducc_binary_sha256": "d7648e32ee07c7c17d0a31132526250458b37b2e9a0c07debb473bc5eaa46539",
+      "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+      "baseline_commit": "9dea41434fe9c222ec4cc815629a48499dab91df",
+      "host": "AMD Ryzen 9 5950X 16-Core Processor",
+      "rustc_vv": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+      "rust_flags": "Cargo release defaults; runtime Pulp dispatch; no target-cpu override",
+      "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; strict driver separately compiled",
+      "affinity_method": "pin q1 to one physical core and q8 to eight cores in one L3 domain; run-specific assignments are in the report",
+      "measurement_method": "same deterministic fixtures; fresh interleaved processes; reusable plans/workspaces; per-worker warmup and output reset validation"
+    },
+    {
+      "label": "T720-q1-control",
+      "case_id": "GL-T720-M720-even-s1-synthesis-q1",
+      "variant": "experimental minimum chunk=1 serial control",
+      "baseline_binary_sha256": "40cf824726aee10d08373dd09bd0a0a97643f74e94e0ddc1ba1fd0ff9f8d2682",
+      "candidate_binary_sha256": "bb9e7774920482fc2dcdb7404423c7b203ab1897784de44ad75f782202bc2c1d",
+      "ducc_binary_sha256": "d7648e32ee07c7c17d0a31132526250458b37b2e9a0c07debb473bc5eaa46539",
+      "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+      "baseline_commit": "9dea41434fe9c222ec4cc815629a48499dab91df",
+      "host": "AMD Ryzen 9 5950X 16-Core Processor",
+      "rustc_vv": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+      "rust_flags": "Cargo release defaults; runtime Pulp dispatch; no target-cpu override",
+      "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; strict driver separately compiled",
+      "affinity_method": "pin q1 to one physical core and q8 to eight cores in one L3 domain; run-specific assignments are in the report",
+      "measurement_method": "same deterministic fixtures; fresh interleaved processes; reusable plans/workspaces; per-worker warmup and output reset validation"
+    },
+    {
+      "label": "T511-q8-control",
+      "case_id": "GL-T511-M511-even-s1-synthesis-q8",
+      "variant": "experimental minimum chunk=1; baseline already one",
+      "baseline_binary_sha256": "40cf824726aee10d08373dd09bd0a0a97643f74e94e0ddc1ba1fd0ff9f8d2682",
+      "candidate_binary_sha256": "bb9e7774920482fc2dcdb7404423c7b203ab1897784de44ad75f782202bc2c1d",
+      "ducc_binary_sha256": "d7648e32ee07c7c17d0a31132526250458b37b2e9a0c07debb473bc5eaa46539",
+      "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+      "baseline_commit": "9dea41434fe9c222ec4cc815629a48499dab91df",
+      "host": "AMD Ryzen 9 5950X 16-Core Processor",
+      "rustc_vv": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+      "rust_flags": "Cargo release defaults; runtime Pulp dispatch; no target-cpu override",
+      "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; strict driver separately compiled",
+      "affinity_method": "pin q1 to one physical core and q8 to eight cores in one L3 domain; run-specific assignments are in the report",
+      "measurement_method": "same deterministic fixtures; fresh interleaved processes; reusable plans/workspaces; per-worker warmup and output reset validation"
+    },
+    {
+      "label": "T1023-q8-control",
+      "case_id": "GL-T1023-M1023-even-s1-synthesis-q8",
+      "variant": "experimental minimum chunk=1; matches production condition",
+      "baseline_binary_sha256": "40cf824726aee10d08373dd09bd0a0a97643f74e94e0ddc1ba1fd0ff9f8d2682",
+      "candidate_binary_sha256": "bb9e7774920482fc2dcdb7404423c7b203ab1897784de44ad75f782202bc2c1d",
+      "ducc_binary_sha256": "d7648e32ee07c7c17d0a31132526250458b37b2e9a0c07debb473bc5eaa46539",
+      "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+      "baseline_commit": "9dea41434fe9c222ec4cc815629a48499dab91df",
+      "host": "AMD Ryzen 9 5950X 16-Core Processor",
+      "rustc_vv": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+      "rust_flags": "Cargo release defaults; runtime Pulp dispatch; no target-cpu override",
+      "ducc_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; strict driver separately compiled",
+      "affinity_method": "pin q1 to one physical core and q8 to eight cores in one L3 domain; run-specific assignments are in the report",
+      "measurement_method": "same deterministic fixtures; fresh interleaved processes; reusable plans/workspaces; per-worker warmup and output reset validation"
+    }
+  ]
+}

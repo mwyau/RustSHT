@@ -178,6 +178,20 @@ visitor/accumulation and scheduling costs before changing the kernel. Results
 are in the [precheck report](reports/plan17-f32-spin-normalizer-simd-precheck-2026-10-22.md)
 and [T1023 timing data](reports/data/plan17-f32-spin-normalizer-simd-precheck-2026-10-22/t1023-q8/results.json).
 
+A source-grounded synthesis group-granularity A/B found that coarse static
+ring-group chunks leave q8 work-stealing opportunity when there are more
+groups than workers. The f32 spin-1 synthesis route now selects one-group
+tasks only under that geometry/work condition; q1 and cases already at one
+group per worker retain their previous policy. On T720 q8, current-source
+paired process-median ratios were 0.582–0.740 (median 0.691) versus the prior
+build, with bitwise-identical Rust results. T1023 q8 ratios were 0.890–0.929;
+the T511 q8 control was effectively unchanged because its old grain was
+already one. The remaining Rust/DUCC ratios are roughly 47–55 at T720/T1023.
+Test-only component sampling continues to rank visitor/spectral accumulation
+well above recurrence arithmetic, but is too noisy for timing attribution.
+See the [group-granularity report](reports/plan17-f32-spin1-group-granularity-2026-10-22.md)
+and its [sanitized distributions](reports/data/plan17-f32-spin1-group-granularity-2026-10-22/).
+
 The first Plan 17 spin-f32 normal-range skip candidate passed f32, adjoint,
 extreme and reset checks and improved selected T720 workloads by 2.6–8.8%.
 It also regressed T255/T511 by 2.3–4.6%, including T511 with the scan disabled

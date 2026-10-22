@@ -134,6 +134,11 @@ pub(crate) trait ShtScalar:
         false
     }
 
+    #[cfg(feature = "parallel")]
+    fn prefers_fine_spin1_synthesis_groups() -> bool {
+        false
+    }
+
     #[expect(
         clippy::too_many_arguments,
         reason = "The table accumulator receives packed spectra, basis storage and reusable order scratch."
@@ -1683,6 +1688,11 @@ impl ShtScalar for f32 {
     type SpinInitial = spin_f32::SpinInitial32;
 
     fn supports_spin_analysis_simd() -> bool {
+        true
+    }
+
+    #[cfg(feature = "parallel")]
+    fn prefers_fine_spin1_synthesis_groups() -> bool {
         true
     }
 

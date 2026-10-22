@@ -72,6 +72,21 @@ recurrence/visitor/accumulation attribution for the residual f32 gap; do not
 broaden the precheck into other spins or operations without separate
 evidence. See the T1023 control in the [precheck report](../reports/plan17-f32-spin-normalizer-simd-precheck-2026-10-22.md).
 
+A further source/assembly attribution experiment split sampled visitor,
+recurrence-step and normalizer work. It ranked the visitor path above
+recurrence arithmetic, though instrumentation made the component times too
+noisy for precise percentages. The same profile observed only four distinct
+worker IDs consuming the T720 q8 static ring-group tasks. A bounded
+`with_min_len(1)` A/B then reduced T720 q8 synthesis by about 31% and T1023
+q8 by about 11%, while leaving T511 unchanged where the prior grain was
+already one. Production uses the finer grain only for f32 spin-1 synthesis
+when q>1 and there are more ring groups than workers; the q1 path, f64 and
+other operators keep their prior policy. Rust outputs remained bitwise equal,
+but the DUCC gap is still about 47–59× in these cases. See the
+[group-granularity report](../reports/plan17-f32-spin1-group-granularity-2026-10-22.md).
+After the owner-directed scalar table/recurrence and paired-FFT investigation,
+resume Plan 17 at the visitor/spectral-accumulation dataflow comparison.
+
 Only if Milestone A establishes a material f32 recurrence/accumulation gap:
 - Compare f32's executed spin recurrence and normal/scaled SIMD pathways with the best **validated** Plan 16 f64 algorithm; determine which structural optimizations can be translated safely and which require f32-specific scaling or precision handling.
 - Check reciprocal/sqrt/trigonometric placement, mixed-precision coefficients, unnecessary conversions and intermediate memory traffic against DUCC's actual f32 implementation. Do not assume widening/narrowing is wasteful until correctness/relative costs are measured.

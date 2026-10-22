@@ -1420,13 +1420,28 @@ impl<T: ShtScalar> ShtPlan<T> {
                             Ok(())
                         })?;
                 } else {
+                    // Matched f32 spin-1 synthesis runs show better q8 balance
+                    // when workers can steal individual groups; retain the
+                    // existing grain when q is one or groups do not exceed q.
+                    let minimum_group_chunk = if T::prefers_fine_spin1_synthesis_groups()
+                        && recurrence_spin == 1
+                        && self.harmonics.spin() == 1
+                        && !derivative_norm
+                        && b_alm.is_some()
+                        && execution_threads > 1
+                        && group_count > execution_threads
+                    {
+                        1
+                    } else {
+                        group_count.div_ceil(execution_threads)
+                    };
                     workspace
                         .spectra
                         .par_chunks_mut(group_spectrum_len)
                         .zip(workspace.spin_spectra.par_chunks_mut(group_spectrum_len))
                         .zip(workspace.recurrence_workers[..group_count].par_iter_mut())
                         .enumerate()
-                        .with_min_len(group_count.div_ceil(execution_threads))
+                        .with_min_len(minimum_group_chunk)
                         .try_for_each(|(group_index, ((q_spectra, u_spectra), recurrence))| {
                             let ring_start = group_index * group_ring_count;
                             let ring_end =
