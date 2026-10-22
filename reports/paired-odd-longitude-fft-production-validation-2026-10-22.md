@@ -137,6 +137,12 @@ faster with pairing). This result confirms the changed selector cell still uses
 and benefits from the existing paired inverse route; it does not alter FFT
 eligibility or the empirical guard. See [the sanitized CSV](data/paired-fft-validation-2026-10-22/final-source-t63-q8-synthesis.csv) and [metadata](data/paired-fft-validation-2026-10-22/final-source-t63-q8-synthesis-metadata.json).
 
+The present branch HEAD is `09460dd7`. Since the selector refresh at `32bb8b4b`,
+the production scalar selector, transform and FFT files are unchanged; the
+intervening Plan 17 work adds only f32 code and test-only profiling. The
+exhaustive T0–T256 validation and same-source paired/independent results
+therefore still describe the integrated route at current HEAD.
+
 ## Reproduce the final-source selector refresh
 
 With current HEAD checked out and `DUCC_SRC` pointing at the pinned DUCC tree:
