@@ -1,12 +1,20 @@
 # RustSHT performance checkpoint — current findings
 
-**Active sequence (2026-10-22):** Plans 14–16 and the owner-directed scalar
-Legendre dispatch, paired odd-FFT validation and T0–T3072 full-transform
-checkpoint are complete. Plan 17 Milestone A is complete; Milestone B is **paused** by owner.
-The [new active f64 scalar CC full-band recurrence and GL 20 MiB crossover study](plans/scalar-f64-cc-full-band-and-gl-table-crossover-2026-10-22.md)
-comes first. **No new CC f64 measurements are claimed by this direction.**
-Plans 12 and 13 remain deferred. **Branch:**
-`opt/sht-performance-parity`.
+**Active owner execution sequence (2026-10-22):** [f64 scalar CC benchmark closeout → safe repository cleanup → port proven GL ordered/reflected synthesis to CC → scalar parallel CC analysis → GL 20 MiB policy → f64 spin-1 DUCC algorithm parity](plans/f64-cc-gl-kernel-port-and-spin1-parity-2026-10-22.md). Paused Plan 17 f32 only resumes after broad f64 scalar/spin-1 near-parity. Plans 12–13 remain deferred; no new production kernel optimization is claimed by this documentation change. Branch: `opt/sht-performance-parity`.
+
+### Saved f64 scalar CC performance and incomplete campaign
+
+The [Sol f64 review](reports/f64-ducc-independent-review-2026-10-22.md) contains saved native f64 scalar CC measurements. Full-order CC synthesis Rust/DUCC: T255 q8 `3.128/0.299 ms` (10.45×), T720 q1 `90.315/20.435 ms` (4.42×), T720 q8 `47.916/2.951 ms` (16.24×), T1023 q8 `136.614/8.156 ms` (16.75×), and T2048 q8 `1414.172/65.689 ms` (21.53×). T720 full GL q8 synthesis by contrast was `3.397/3.070 ms`. The CC synthesis fast-path absence is real: `src/transform.rs` restricts ordered scalar synthesis to GL; CC uses ring-group recurrence with documented q8 underfill. Scalar CC analysis has a separate serial meridional-preparation floor; do not conflate this with spin-1's already parallel CC resampling. These historical measurements are not evidence of an implemented new CC optimization.
+
+At the review checkpoint the [independent CC audit](reports/data/f64-ducc-independent-review-2026-10-22/audit.json) required 2,528 operation/thread groups, found 2,456 matching saved groups, 72 missing (24 T1–T3 m=0 plus 48 unsaved high groups), and 16 historical extras. [Astra's later review](reports/repo-state-review-summary-2026-10-22.md) confirms generator/self-audit errors, incomplete numerical acceptance, interrupted-shard persistence risk, recovery provenance mismatches and plot-join problems. Verify whether later local work recovered any cells; **campaign completion remains unverified**. Publish final report and SVG+PNG figures, then inventory and safely clean repository-local non-checked-in artifacts under the active plan.
+
+### f64 GL precomputed-table policy — provisional
+
+The scalar q1 analysis 20 MiB rule is a resource heuristic. Actual two-complex-lane SIMD table analysis requires `ntheta % 4 == 0` and sufficient scratch; neighboring degrees use a different scalar path. Focused nonmonotonic table/recurrence results at T127/T159/T191 thus do **not** prove a single size cutoff. Measure held-out eligible near-full order, independent cold plans, actual dispatch and repeated-use amortization before making a policy-only change. Preserve existing safety/resource gates meanwhile.
+
+### Spin-1 after scalar f64
+
+Plans 15/16 accepted improvements are preserved. Sol's DUCC crosswalk identifies a remaining reflected-pair/normal-to-scaled-check transition hypothesis, not an accepted optimization. Do not repeat rejected all-ring parity separation, loop reversal or coefficient-cache-only experiments. Continue f64 spin-1 GL/CC/F1 after scalar milestones; keep Plan 17 f32 paused until the explicit f64 near-parity gate.
 
 ## Scalar-analysis cumulative ablation
 
@@ -63,8 +71,8 @@ and its sanitized [results](reports/data/plan16-spin1-t1023-cache-extension-2026
 
 The forced-route screen covers all 257 degrees with verified table and
 recurrence execution, q1/q8, scalar f64 GL analysis/synthesis, and odd/even
-longitude shapes. Independent 30-batch repeats support the current q1 analysis
-20 MiB table-footprint threshold; they show recurrence faster for q8 analysis
+longitude shapes. Earlier focused 30-batch repeats were initially reported as supporting the q1
+20 MiB table-footprint threshold, but later independent dispatch analysis establishes that this is not an optimized crossover; they show recurrence faster for q8 analysis
 and for q1/q8 synthesis across the production-eligible region. The only exact
 grid scalar production route at T63 that contradicts this evidence is q8 table
 synthesis. The q1 T255 and q8 T63 analysis exceptions are redundant with the
