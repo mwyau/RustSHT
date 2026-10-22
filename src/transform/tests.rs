@@ -3162,6 +3162,15 @@ fn benchmark_scalar_legendre_table_vs_recurrence_dense() {
         .ok()
         .and_then(|value| value.parse::<usize>().ok())
         .unwrap_or(256);
+    let requested_lmaxes = std::env::var("RUSTSHT_LEGENDRE_BENCH_LMAX_LIST")
+        .ok()
+        .map(|value| {
+            value
+                .split(',')
+                .map(|entry| entry.parse::<usize>().expect("lmax values are integers"))
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_else(|| (min_lmax..=max_lmax).collect());
     let target_us = std::env::var("RUSTSHT_LEGENDRE_BENCH_TARGET_US")
         .ok()
         .and_then(|value| value.parse::<u64>().ok())
@@ -3182,6 +3191,16 @@ fn benchmark_scalar_legendre_table_vs_recurrence_dense() {
     let output_path = std::env::var("RUSTSHT_LEGENDRE_BENCH_OUTPUT")
         .expect("set RUSTSHT_LEGENDRE_BENCH_OUTPUT to a CSV path");
     assert!(min_lmax <= max_lmax && max_lmax <= 256);
+    assert!(
+        !requested_lmaxes.is_empty()
+            && requested_lmaxes.iter().all(|&lmax| lmax <= 256)
+            && requested_lmaxes
+                .iter()
+                .collect::<std::collections::BTreeSet<_>>()
+                .len()
+                == requested_lmaxes.len(),
+        "RUSTSHT_LEGENDRE_BENCH_LMAX_LIST must contain unique values in 0..=256"
+    );
     assert!(target_us > 0 && batches > 0);
     assert!(
         !requested_threads.is_empty()
@@ -3214,7 +3233,7 @@ fn benchmark_scalar_legendre_table_vs_recurrence_dense() {
         63, 64, 65, 96, 120, 124, 126, 127, 128, 159, 191, 223, 248, 254, 255, 256,
     ];
     let mut case_number = 0usize;
-    for lmax in min_lmax..=max_lmax {
+    for lmax in requested_lmaxes {
         let mut mmax_values = vec![lmax];
         if reduced_degrees.contains(&lmax) {
             mmax_values.push((lmax / 4).max(1));
