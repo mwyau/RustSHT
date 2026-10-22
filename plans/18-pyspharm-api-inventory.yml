@@ -138,6 +138,24 @@ references_and_compatibility:
     shaec.f states theta[i]=(i-1)*pi/(nlat-1), including the poles for odd
     and even nlat. Odd nlat contains the equator; even nlat straddles it.
     Both parities therefore map to RustSHT CC geometry.
+  regular_grid_degree_limit_convention: >-
+    Let N=nlat for a Clenshaw-Curtis/regular latitude grid that includes both
+    poles. SPHEREPACK shaec/shsec accepts coefficients through inclusive degree
+    N-1 and pyspharm defaults to ntrunc=N-1. DUCC/RustSHT guarantees exact
+    CC analysis only through inclusive degree N-2. This is a distinction
+    between an accepted coefficient layout and an exact-recovery guarantee,
+    not evidence that SPHEREPACK extracts an additional independent degree.
+    For longitudinal order m=1, associated Legendre modes vanish at both poles,
+    leaving N-2 informative latitude samples to determine N-1 candidate
+    coefficients (degrees 1 through N-1). The SPHEREPACK shaec.f analysis uses
+    discrete normalized zbar functions and parity-specific loops rather than
+    guaranteeing recovery of every degree-N-1 coefficient; some highest-degree
+    parity coefficients are not populated. RustSHT's projected CC analysis at
+    ntrunc=N-1 is a different approximation and need not match that discrete
+    SPHEREPACK boundary convention. Preserve the exact native CC limit; document
+    the Python-wrapper discrepancy without interpreting it as a core SHT bug.
+    Sources: jswhit/pyspharm src/shaec.f and src/shaes.f, and the RustSHT
+    CC exact-analysis contract.
   external_consumers: >-
     windspharm 2.0.0 imports Spharmt and gaussian_lats_wts from spharm and
     calls the documented class API. It does not import _spherepack. Its grid
@@ -163,12 +181,17 @@ tested_results:
     For Gaussian nlat=8, nlon=16, T7 scalar analysis relative L2 error was
     below 3.5e-7 against both references on the recorded deterministic map.
   regular_maximum_truncation: >-
-    Current RustSHT CC projected analysis is callable at the pyspharm default
-    ntrunc=nlat-1, but is not numerically equivalent to SPHEREPACK at this
-    edge. On the recorded map, coefficient relative L2 differences were
-    3.146e-2 for odd nlat=7, T6 and 6.702e-2 for even nlat=8, T7. Default
-    specsmooth on those regular grids differed by about 1.7 percent relative
-    L2. With ntrunc=4, tested regular analysis differences were below 2.2e-7.
+    The pyspharm default ntrunc=nlat-1 is accepted by the RustSHT CC
+    projected-analysis compatibility path, although this is one degree beyond
+    the native exact CC analysis limit nlat-2. SPHEREPACK uses a different
+    discrete projection at this edge and does not recover all degree-nlat-1
+    modes independently (see regular_grid_degree_limit_convention above).
+    On the recorded map, coefficient relative L2 differences were 3.146e-2
+    for odd nlat=7, T6 and 6.702e-2 for even nlat=8, T7. Default specsmooth
+    on those regular grids differed by about 1.7 percent relative L2.
+    With ntrunc=4, tested regular analysis differences were below 2.2e-7.
+    These are documented differences between analysis conventions rather than
+    evidence of an error in RustSHT's exact CC algorithm.
   geodesic_points: >-
     m=2 and m=3 ordering and latitude values match both references within
     float32 error. At a few seam points longitude is 0 versus 360 degrees;
