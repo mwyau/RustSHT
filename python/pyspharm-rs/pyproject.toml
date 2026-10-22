@@ -1,0 +1,30 @@
+# SPDX-FileCopyrightText: 2026 Albert M. W. Yau
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pyspharm-rs"
+version = "0.1.0.dev0"
+description = "pyspharm-compatible spherical harmonic transforms using RustSHT"
+requires-python = ">=3.11"
+license = "GPL-2.0-or-later"
+authors = [{ name = "Albert M. W. Yau" }]
+dependencies = ["numpy>=1.24", "rustsht>=0.1.0.dev0"]
+
+[dependency-groups]
+dev = ["pytest"]
+
+[tool.hatch.build.targets.wheel]
+only-include = ["spharm.py"]
+
+[tool.hatch.build.targets.sdist]
+include = ["pyproject.toml", "spharm.py", "tests/**"]
+
+[tool.uv.sources]
+rustsht = { path = "../..", editable = true }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

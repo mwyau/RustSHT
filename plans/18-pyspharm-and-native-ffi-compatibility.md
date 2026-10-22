@@ -1,6 +1,6 @@
 # Plan 18 — pyspharm compatibility and native-language interfaces
 
-**Status: QUEUED (2026-10-22); planning only.** This plan may be merged to `main` for an independent implementation agent, but implementation must not interrupt the active performance work: [Plan 16](16-ducc-spin1-recurrence-parity.md) followed by [Plan 17](17-f32-atmospheric-performance.md). Base the implementation branch on the current, safely synchronized `main` after the owner merges the desired numerical work. Do not implement this plan on `opt/sht-performance-parity` while that branch is serving the performance investigation. Do not alter Plan 16/17 constraints, optimization kernels or benchmark artifacts as part of this plan.
+**Python compatibility implementation: complete on `feat/pyspharm-numerics` (2026-10-22). Native C/C++/Fortran interfaces remain separate work.** The compatibility implementation was completed in the isolated feature worktree while the performance branch remained untouched. It includes the three Rust arbitrary-position/geodesic functions, their Python bindings, the `pyspharm-rs` pure-Python package, the checked-in API inventory and the Python 3.13 reference and consumer checks. It does not include a native ABI, release workflows, a platform wheel matrix or end-to-end performance benchmarks. Do not merge, push or publish without authorization. Do not alter Plan 16/17 constraints, optimization kernels or benchmark artifacts as part of this plan.
 
 ## Goal and deliverables
 
@@ -19,6 +19,8 @@ Make RustSHT usable from Python applications currently using pyspharm without ch
 4. Original NCAR SPHEREPACK 3.2 and its documented Fortran entry points are the reference **only** for a separate Fortran compatibility effort. A third-party Fortran 2008+ modernization is not an official SPHEREPACK 3.2 ABI.
 5. Existing RustSHT `src/{lib,grid,harmonics,plan,transform,spin_transform}.rs`, `python/src/lib.rs`, `pyproject.toml`, and current parity/adjoint tests. Existing [spharmgrid](https://github.com/mwyau/spharmgrid) is useful for analytic fields, atmospheric spectral operators, normalization checks, and parity tests; do not make it a runtime dependency or copy its DUCC/Xarray stack into RustSHT.
 
+The checked-in, machine-readable inventory is [18-pyspharm-api-inventory.yml](18-pyspharm-api-inventory.yml). It records public signatures, shapes, dtypes, reference revisions, tested results and the measured regular-grid maximum-truncation limitation.
+
 Clone the two pyspharm repositories and windspharm **outside the RustSHT checkout** into an untracked temporary reference directory. Record their precise commit SHAs and the SPHEREPACK source identity used for comparisons. Do not put third-party source into RustSHT or add undocumented licenses/attribution. Verify licenses before borrowing more than mathematical formulas or behavioral conventions.
 
 ## Milestone A — inventory and reproducible baseline (before implementation)
@@ -35,8 +37,8 @@ Create a separate reproducible **Python 3.13** reference environment per impleme
 
 Investigate two known scientific compatibility gaps before claiming complete coverage:
 
-1. Pyspharm regular grids differ by parity: with odd `nlat` the poles are included, whereas with even `nlat` they are excluded. Verify the **exact node locations** from original source before mapping odd grids to RustSHT CC and even grids to F1 or another validated geometry. Never silently call an arbitrary regular grid CC.
-2. Pyspharm documents default `ntrunc=nlat-1`; current RustSHT exact CC analysis requires `nlat>=lmax+2`, while GL/F1 analysis requires `nlat>=lmax+1`. Determine whether a different mathematically justified analysis path is necessary for the maximum regular-grid degree. Keep degree and independent longitude-order limits explicit. Do not silently clamp truncation or claim exact parity for an unsupported bandlimit.
+1. Original `shaec.f` specifies `theta(i)=(i-1)*pi/(nlat-1)` for regular grids. Both odd and even `nlat` include both poles; odd grids include the equator and even grids straddle it. Both parities map to RustSHT CC geometry. `windspharm._common.inspect_gridtype` assumes an even regular grid excludes the poles, so its coordinate checker and pyspharm's source grid nodes disagree for even `nlat`.
+2. Pyspharm documents default `ntrunc=nlat-1`; exact RustSHT CC analysis requires `nlat>=lmax+2`, while GL/F1 analysis requires `nlat>=lmax+1`. The compatibility wrapper calls RustSHT's CC projected-analysis method at the regular-grid maximum rather than clamping truncation. This preserves call shape but does not reproduce the SPHEREPACK result there: deterministic reference comparisons measured 3.146e-2 relative L2 at odd `nlat=7`, `T6`, and 6.702e-2 at even `nlat=8`, `T7`. Tested regular analysis at `T4` differed by less than 2.2e-7 relative L2. The maximum-degree result is therefore a documented numerical limitation, not a parity claim. Keep degree and independent longitude-order limits explicit.
 
 ## Milestone B — reusable Rust numerical functions
 
@@ -99,5 +101,7 @@ Treat original SPHEREPACK 3.2 compatibility as a **separate subproject and relea
 ## Handoff and completion
 
 After the three numerical functions are tested on `feat/pyspharm-numerics`, continue in that isolated feature worktree (or create a successor `feat/pyspharm-rs` branch from its tested HEAD) to implement the Python package and complete its compatibility tests. The eventual integrated branch must be based on safely synchronized `main`, not the active optimization branch. Work on one independently testable milestone at a time, with small commits. Read current `AGENTS.md` before changes; safely fetch and integrate concurrent work before any push, never reset or force-push, and do not change `main` without owner direction.
+
+The Python compatibility scope above is implemented on the isolated `feat/pyspharm-numerics` branch. Keep the active performance branch untouched. Do not push or merge this branch without owner direction. The native ABI remains a later independent milestone; when authorized, create its own implementation branch from synchronized `main` and keep it independent of the Python wheels.
 
 At closeout provide: checked-in API inventory and reference SHAs, numerical and error comparison tables, Rust unit and Python tests, windspharm integration result, Python/version/platform wheel test matrix, measured layout/performance results, public compatibility limitations, release artifacts/workflows when authorized, and a separate disposition of native/SPHEREPACK ABIs. Do not publish packages or tags unless the owner explicitly directs a release.

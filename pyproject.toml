@@ -32,4 +32,5 @@ bindings = "pyo3"
 exclude = [
     "AGENTS.md",
     "plans/**",
+    "python/pyspharm-rs/**",
 ]

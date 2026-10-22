@@ -1,0 +1,208 @@
+# SPDX-FileCopyrightText: 2026 Albert M. W. Yau
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Public API and tested behavior for the pyspharm-rs compatibility module.
+# References are installed in separate Python 3.13 environments because each
+# implementation owns the same top-level `spharm` module.
+schema_version: 1
+status: implemented_with_documented_numerical_limitations
+module:
+  import: "import spharm"
+  implementation_version: "1.0.9"
+  distribution: "pyspharm-rs"
+  distribution_version: "0.1.0.dev0"
+  source_file: "python/pyspharm-rs/spharm.py"
+  native_dependency: "rustsht"
+  runtime_python_dependencies: ["numpy", "rustsht"]
+  not_provided: ["pyspharm distribution metadata", "_spherepack private extension", "SPHEREPACK Fortran ABI"]
+references:
+  original_pyspharm:
+    repository: "https://github.com/jswhit/pyspharm"
+    revision: "a464ebfed334188fc0ef275fad4aafd2d9fa716e"
+    package_version: "1.0.9"
+    python: "3.13.15"
+    numpy: "2.5.4"
+    build: "Built and installed as a wheel in an isolated environment with gfortran."
+  pyspharm_syl:
+    repository: "https://github.com/shenyulu/pyspharm-syl"
+    revision: "9e4446ecec539ef01f77e7b7ed96980b9a9fb262"
+    package_version: "1.2.1"
+    module_version: "1.0.9"
+    python: "3.13.15"
+    numpy: "2.5.4"
+  windspharm:
+    repository: "https://github.com/ajdawson/windspharm"
+    revision: "9a74f0687ac38ea5223aa8fe9839557c86ed6711"
+    package_version: "2.0.0"
+    integration: "Unmodified windspharm.standard.VectorWind source imported through PYTHONPATH."
+constructor:
+  signature: "Spharmt(nlon, nlat, rsphere=6.3712e6, gridtype='regular', legfunc='stored')"
+  accepted_values:
+    nlon: "integer >= 4"
+    nlat: "integer >= 3"
+    rsphere: "positive radius in metres"
+    gridtype: ["regular", "gaussian"]
+    legfunc: ["stored", "computed"]
+  read_only_attributes: ["nlon", "nlat", "rsphere", "gridtype", "legfunc"]
+  repr: "Spharmt({nlon}, {nlat}, {rsphere:.6e}, {gridtype}, {legfunc})"
+  truncation: >-
+    Public ntrunc is limited to 0..nlat-1. The wrapper uses mmax=ntrunc and
+    lets RustSHT reject analysis when longitude sampling cannot represent that
+    order; it does not silently reduce either limit.
+  coordinate_order:
+    latitude: "north to south"
+    longitude: "west to east, beginning at zero degrees east"
+    regular_colatitude: "theta[i] = i*pi/(nlat-1), for i=0..nlat-1; both parities include both poles"
+    gaussian: "roots of the degree-nlat Legendre polynomial; poles excluded"
+  legfunc_behavior: >-
+    Both accepted values produce matching numerical behavior. RustSHT uses
+    reusable plans for both; pyspharm-rs does not reproduce the original
+    stored-versus-recomputed memory and runtime tradeoff.
+array_contract:
+  maps:
+    input_dtype: "float32-compatible; values are converted to float32"
+    ranks: [2, 3]
+    shapes: ["(nlat, nlon)", "(nlat, nlon, nt)"]
+    output_dtype: "float32"
+  spectra:
+    input_dtype: "complex64-compatible; values are converted to complex64"
+    ranks: [1, 2]
+    shapes: ["(nalm,)", "(nalm, nt)"]
+    nalm: "(ntrunc+1)*(ntrunc+2)//2"
+    order: "increasing zonal order m, then increasing degree l from m through ntrunc"
+    output_dtype: "complex64"
+  gaussian_lats_wts:
+    output_dtype: "float64"
+    shapes: ["(nlat,)", "(nlat,)"]
+    units: "latitude degrees north; quadrature weights sum to two"
+  conversion: >-
+    Input arrays of other numeric dtypes and non-C-contiguous layouts are
+    converted or copied to the Rust core layout. Output layouts are C-contiguous.
+class_methods:
+  - name: grdtospec
+    signature: "grdtospec(datagrid, ntrunc=None)"
+    input: "map rank 2 or 3"
+    output: "complex64 spectrum rank 1 for rank-2 maps, rank 2 for rank-3 maps"
+    default_ntrunc: "nlat-1"
+  - name: spectogrd
+    signature: "spectogrd(dataspec)"
+    input: "triangular complex64 spectrum rank 1 or 2"
+    output: "float32 map rank 2 or 3 matching the input rank"
+  - name: getvrtdivspec
+    signature: "getvrtdivspec(ugrid, vgrid, ntrunc=None)"
+    input: "same-shaped eastward/northward float32-compatible map arrays, rank 2 or 3"
+    output: "(vorticity, divergence), each complex64 rank 1 or 2"
+    default_ntrunc: "nlat-1"
+  - name: getuv
+    signature: "getuv(vrtspec, divspec)"
+    input: "same-shaped triangular vorticity and divergence spectra, rank 1 or 2"
+    output: "(eastward, northward), each float32 rank 2 or 3"
+  - name: getpsichi
+    signature: "getpsichi(ugrid, vgrid, ntrunc=None)"
+    input: "same-shaped eastward/northward map arrays, rank 2 or 3"
+    output: "(streamfunction, velocity_potential), each float32 rank 2 or 3"
+    default_ntrunc: "nlat-1"
+  - name: getgrad
+    signature: "getgrad(chispec)"
+    input: "triangular complex64 spectrum rank 1 or 2"
+    output: "(eastward_gradient, northward_gradient), each float32 rank 2 or 3"
+  - name: specsmooth
+    signature: "specsmooth(datagrid, smooth)"
+    input: "map rank 2 or 3 and float32-compatible smooth vector of length nlat"
+    output: "float32 map; observed rank is 3 for single-map input and rank 3 for batched input"
+    default_ntrunc: "nlat-1"
+module_functions:
+  - name: regrid
+    signature: "regrid(grdin, grdout, datagrid, ntrunc=None, smooth=None)"
+    output: "float32 map(s) on grdout; optional smoothing vector has length grdout.nlat"
+    default_ntrunc: "min(grdin.nlat-1, grdout.nlat-1)"
+    note: "With smooth supplied and rank-2 input, reference pyspharm-syl returns rank 3."
+  - name: gaussian_lats_wts
+    signature: "gaussian_lats_wts(nlat)"
+    output: "(float64 latitudes in degrees north, float64 quadrature weights)"
+  - name: getspecindx
+    signature: "getspecindx(ntrunc)"
+    output: "(int32 order indices, int32 degree indices) in packed spectral order"
+    note: "For ntrunc=0, NumPy squeeze returns zero-dimensional int32 arrays."
+  - name: getgeodesicpts
+    signature: "getgeodesicpts(m)"
+    output: "(float32 latitude degrees, float32 longitude degrees), length 10*(m-1)**2+2"
+  - name: legendre
+    signature: "legendre(lat, ntrunc)"
+    output: "float32 packed associated Legendre values in pyspharm normalization"
+  - name: specintrp
+    signature: "specintrp(lon, dataspec, legfuncs)"
+    output: "scalar float32 interpolation at longitude and the latitude represented by legfuncs"
+references_and_compatibility:
+  regular_grid_source: >-
+    Original pyspharm delegates regular transforms to SPHEREPACK shaec/shsec.
+    shaec.f states theta[i]=(i-1)*pi/(nlat-1), including the poles for odd
+    and even nlat. Odd nlat contains the equator; even nlat straddles it.
+    Both parities therefore map to RustSHT CC geometry.
+  external_consumers: >-
+    windspharm 2.0.0 imports Spharmt and gaussian_lats_wts from spharm and
+    calls the documented class API. It does not import _spherepack. Its grid
+    inspection helper assumes even regular coordinate arrays exclude the
+    poles, which conflicts with pyspharm's source regular nodes. Standard
+    VectorWind still accepts arrays without coordinate metadata.
+  private_extension: >-
+    No _spherepack module is included. Private F2PY symbols and SPHEREPACK
+    source/binary ABI are outside this Python compatibility package.
+  windspharm_distribution_resolution: >-
+    windspharm 2.0.0 declares a dependency on pyspharm>=1.0.9. Installing
+    pyspharm-rs does not satisfy that distribution requirement; this package
+    does not provide or spoof the pyspharm distribution metadata.
+tested_results:
+  environment: "uv-managed CPython 3.13.15, NumPy 2.5.4"
+  direct_api_tests: "8 passed; pyspharm-rs pytest suite"
+  low_truncation: >-
+    Gaussian T4 scalar, vector, derivative, smoothing and regrid cases
+    compared with both reference implementations at relative L2 errors below
+    5e-7 for the tested deterministic arrays. Low-degree analytic P00 and
+    normalized Legendre values are tested independently.
+  gaussian_maximum_truncation: >-
+    For Gaussian nlat=8, nlon=16, T7 scalar analysis relative L2 error was
+    below 3.5e-7 against both references on the recorded deterministic map.
+  regular_maximum_truncation: >-
+    Current RustSHT CC projected analysis is callable at the pyspharm default
+    ntrunc=nlat-1, but is not numerically equivalent to SPHEREPACK at this
+    edge. On the recorded map, coefficient relative L2 differences were
+    3.146e-2 for odd nlat=7, T6 and 6.702e-2 for even nlat=8, T7. Default
+    specsmooth on those regular grids differed by about 1.7 percent relative
+    L2. With ntrunc=4, tested regular analysis differences were below 2.2e-7.
+  geodesic_points: >-
+    m=2 and m=3 ordering and latitude values match both references within
+    float32 error. At a few seam points longitude is 0 versus 360 degrees;
+    these represent the same meridian.
+  windspharm_standard: >-
+    Unmodified VectorWind calls magnitude, vorticity, divergence,
+    absolutevorticity, sfvp, helmholtz, gradient, truncate,
+    nondivergentcomponent and irrotationalcomponent on a 12x24 Gaussian grid.
+    Analytic T4 wind inputs produced relative L2 differences no larger than
+    2.9e-6 against original pyspharm and pyspharm-syl for non-negligible
+    outputs; near-zero gradient components are compared by absolute error.
+  validation_commands:
+    cargo_fmt: "cargo fmt --all -- --check: passed"
+    cargo_clippy: "cargo clippy --workspace --all-targets --all-features -- -D warnings: passed"
+    rust_pyspharm_tests: "cargo test -p rustsht pyspharm:: 11 passed"
+    rust_workspace_all_features: >-
+      cargo test --workspace --all-features: 251 passed, 13 failed, 33 ignored.
+      The failures panic at the unchanged src/legendre/scalar_paired.rs:2094
+      debug assertion that latitude lanes do not exceed LATITUDE_BLOCK_SIZE.
+    rust_workspace_no_default_features: >-
+      cargo test --workspace --no-default-features: 251 passed, 13 failed,
+      33 ignored, with the same unchanged scalar-paired debug assertion.
+    python_bindings: "uv run pytest python/tests: 20 passed on CPython 3.11.15"
+    pyspharm_python_313: >-
+      8 passed and 1 optional windspharm test skipped on uv-managed CPython
+      3.13.15; the optional test passed when windspharm 2.0.0 source was on
+      PYTHONPATH.
+    standalone_wheels: >-
+      pyspharm-rs built as a pure Python wheel and sdist; rustsht built as a
+      CPython abi3 wheel. In a fresh wheel-install environment, eight tests
+      passed and the optional windspharm test skipped. All nine tests passed
+      with the windspharm 2.0.0 source tree on PYTHONPATH. The f32 native
+      binding smoke test also passed.
+  validation_scope: >-
+    This evidence covers CPython 3.13.15 on Linux x86-64. Other Python
+    versions, operating systems, package index resolution, and end-to-end
+    performance were not tested here.
