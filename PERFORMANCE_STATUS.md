@@ -89,6 +89,25 @@ was 0.963/0.943× for full-order analysis q1/q8 and 0.905/0.945× for synthesis;
 reduced-order small-`nphi` analysis had some q1 regressions. See the
 [validation report](reports/paired-odd-longitude-fft-production-validation-2026-10-22.md).
 
+### Owner-directed full scalar GL baseline (2026-10-22)
+
+The frozen production source at `819d1f44` was compared with DUCC 0.42.0
+(`42ce8ab5`) across all T0–T256 and 24 selected degrees through T3072. The
+matrix contains 630 geometries and 2,520 complete operation/thread groups
+(analysis/synthesis, q1/q8), with full/reduced order and even-smooth sampling
+throughout; odd-minimum cases are retained at representative sizes. Maximum
+random-output relative L2 was `2.536e-13`; basis, roundtrip, adjoint, exceptional
+input and output-reset checks passed. Performance varies by order and thread
+count: q1 full-order analysis in T129–256 had 1.37× geometric-mean latency,
+while T1537–3072 full-order analysis and synthesis were near or below parity
+in the sampled cases. Some q8 high-degree process pairs were strongly
+interfered with (for example, T2047 reduced-order analysis), so distributions
+and telemetry are retained and no samples were removed. The four ratio plots,
+absolute timings, CSV/JSON results and coverage audit are in the
+[full-sweep report](reports/ducc-full-transform-parity-current-2026-10-22.md).
+This benchmark changes no production code. **Resume Plan 16 Milestone E**
+below.
+
 **Constraints:** preserve strict Rust floating-point semantics, checked
 exceptional-value fallbacks, portable Pulp SIMD, the stable API, and the
 existing guarded paired odd-row scope. Keep DUCC 0.42.0 pinned at

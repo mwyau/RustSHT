@@ -29,6 +29,14 @@ are recorded in the [production validation report](../reports/paired-odd-longitu
 This checkpoint does not expand Plan 16's spin-1 scope or change its Milestone
 E next task.
 
+**Separate owner-directed scalar baseline checkpoint (2026-10-22):** the
+current-source native f64 scalar GL sweep covers every T0–T256 and selected
+degrees through T3072 against pinned DUCC 0.42.0; results and the q8 contention
+limits are in the [full-sweep report](../reports/ducc-full-transform-parity-current-2026-10-22.md).
+It changed no production code and does not alter Plan 16 scope. Resume
+Milestone E: T1023 coefficient-cache eligibility, then CC/F1 spin-1 analysis
+overhead.
+
 ## Execution order and handoff
 
 1. The scalar-analysis cumulative ablation is closed in

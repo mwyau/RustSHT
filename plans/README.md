@@ -17,6 +17,8 @@
 
 **Completed post-closeout evidence, not a new plan:** the guarded paired odd-longitude FFT is present in production on this branch (commits `c70b19a3`/`a2c5535d`). Its original isolated-branch performance results remain historical; the owner-directed current-source T0–T256 correctness validation is in [the production validation report](../reports/paired-odd-longitude-fft-production-validation-2026-10-22.md). Plan 14 remains complete, and Plan 16/17 order is unchanged.
 
+The owner-directed [current-source native scalar sweep](../reports/ducc-full-transform-parity-current-2026-10-22.md) is also complete: exhaustive T0–T256 plus selected sizes through T3072 against pinned DUCC. It changes no production implementation and does not replace Plan 16 Milestone E.
+
 **Owner hold:** do not expand or further optimize the existing paired-real-row odd-length FFT route, substitute `realfft`, or add standalone/custom FFT backends without explicit further owner direction. The current validation and full-transform measurement checkpoint do not change Plan 16/17 scope. Keep odd/even sampling as correctness and performance controls. Do not extend Plan 17 into batch APIs or Plan 12's cache-detection machinery.
 
 ## Retained specifications — references, not task queues
