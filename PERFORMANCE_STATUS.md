@@ -18,6 +18,12 @@ and its cold/warm outputs are not bitwise identical. Production remains
 transactionally staged; keep the candidate only for the required final
 cumulative evaluation. See the detailed matrix in the
 [cumulative ablation record](reports/scalar-analysis-cumulative-ablation-2026-10-21.md).
+The original `ce710` source is now remeasured against pinned DUCC 803 with
+Rust 1.99.1: T720 full/reduced q1/q8 warm analysis is 26.8–39.4% slower than
+the `ff0fe` current-source baseline, and its 64/128/256-lane kernel ratios
+are 1.832×/1.620×/1.561×. Numerical checks passed. This measures aggregate
+source-history change, not one optimization; the final cumulative candidate
+and focused ablations remain pending in the linked report.
 **Plan 14:** COMPLETE at closeout commit
 `f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`. **Plan 15:** COMPLETE after the
 spin-1 GL → CC → F1 sequence on this branch; see

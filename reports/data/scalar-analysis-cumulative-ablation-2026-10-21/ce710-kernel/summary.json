@@ -1,0 +1,165 @@
+{
+  "ducc_compiler": "GCC 15.2",
+  "ducc_driver_flags": "-O3 -DNDEBUG -fno-fast-math -ffp-contract=fast -march=x86-64-v3",
+  "ducc_kernel_flags": "-O3 -DNDEBUG -ffast-math -ffp-contract=fast -march=x86-64-v3",
+  "ducc_source_revision": "80388904b8cfc32400ba84af8a6a45aabfe60f86",
+  "ducc_version": "0.42.0",
+  "lane_results": [
+    {
+      "active_lanes": 64,
+      "batches_per_process_backend": 3,
+      "ducc_kernel_us": {
+        "max_us": 4.158220952864517,
+        "median_us": 4.086794829482948,
+        "min_us": 4.065417787932639,
+        "p10_us": 4.069062460861471,
+        "p90_us": 4.140752263687907
+      },
+      "ducc_reset_inclusive_us": {
+        "max_us": 4.272622916137768,
+        "median_us": 4.208834221883727,
+        "min_us": 4.183637640687146,
+        "p10_us": 4.196164305661335,
+        "p90_us": 4.236326199543031
+      },
+      "numerical_comparison": {
+        "batches": "3",
+        "coefficient_max_scaled_diff": "1.970e-16",
+        "lanes": "64",
+        "lmax": "720",
+        "m": "1",
+        "map2alm_kernel": "1",
+        "output_max_abs": "5.009e-12",
+        "output_relative_l2": "6.670e-14",
+        "repetitions_per_batch": "11817",
+        "vectors": "16"
+      },
+      "paired_excess_us_median": 3.3953551662858588,
+      "paired_rust_ducc_ratio_median": 1.8322724914142396,
+      "process_pairs": 10,
+      "repetitions_per_batch": 11817,
+      "reset_inclusive_excess_us_median": 3.356751248201743,
+      "reset_inclusive_paired_ratio_median": 1.797598409845501,
+      "rust_kernel_us": {
+        "max_us": 7.7954001015486165,
+        "median_us": 7.501949733434882,
+        "min_us": 7.450664551070491,
+        "p10_us": 7.464171007870018,
+        "p90_us": 7.661962892443091
+      },
+      "rust_reset_inclusive_us": {
+        "max_us": 7.887798849115681,
+        "median_us": 7.595104341203351,
+        "min_us": 7.541629601421681,
+        "p10_us": 7.556075755267835,
+        "p90_us": 7.754797283574511
+      }
+    },
+    {
+      "active_lanes": 128,
+      "batches_per_process_backend": 3,
+      "ducc_kernel_us": {
+        "max_us": 8.11943918583485,
+        "median_us": 8.028618649677313,
+        "min_us": 7.909903028297204,
+        "p10_us": 7.9672667383749785,
+        "p90_us": 8.094978768823433
+      },
+      "ducc_reset_inclusive_us": {
+        "max_us": 8.259752606321364,
+        "median_us": 8.175728032434222,
+        "min_us": 8.103862816481879,
+        "p10_us": 8.114919079927189,
+        "p90_us": 8.231165017375476
+      },
+      "numerical_comparison": {
+        "batches": "3",
+        "coefficient_max_scaled_diff": "1.970e-16",
+        "lanes": "128",
+        "lmax": "720",
+        "m": "1",
+        "map2alm_kernel": "1",
+        "output_max_abs": "1.896e-11",
+        "output_relative_l2": "1.628e-13",
+        "repetitions_per_batch": "6043",
+        "vectors": "32"
+      },
+      "paired_excess_us_median": 4.9848823432070155,
+      "paired_rust_ducc_ratio_median": 1.620006711912638,
+      "process_pairs": 10,
+      "repetitions_per_batch": 6043,
+      "reset_inclusive_excess_us_median": 4.935402862816481,
+      "reset_inclusive_paired_ratio_median": 1.603641841972062,
+      "rust_kernel_us": {
+        "max_us": 13.553152076783055,
+        "median_us": 13.033808538805228,
+        "min_us": 12.941717193446964,
+        "p10_us": 12.973076170776103,
+        "p90_us": 13.451087622042033
+      },
+      "rust_reset_inclusive_us": {
+        "max_us": 13.655540129074963,
+        "median_us": 13.136024904848586,
+        "min_us": 13.043717193446964,
+        "p10_us": 13.0746583485024,
+        "p90_us": 13.5550111699487
+      }
+    },
+    {
+      "active_lanes": 256,
+      "batches_per_process_backend": 3,
+      "ducc_kernel_us": {
+        "max_us": 15.918465864759428,
+        "median_us": 15.75101788036411,
+        "min_us": 15.692049089726918,
+        "p10_us": 15.71506742522757,
+        "p90_us": 15.85169411573472
+      },
+      "ducc_reset_inclusive_us": {
+        "max_us": 16.157487646293887,
+        "median_us": 15.972786410923277,
+        "min_us": 15.901134590377113,
+        "p10_us": 15.913294245773733,
+        "p90_us": 16.076068563068922
+      },
+      "numerical_comparison": {
+        "batches": "3",
+        "coefficient_max_scaled_diff": "1.970e-16",
+        "lanes": "256",
+        "lmax": "720",
+        "m": "1",
+        "map2alm_kernel": "1",
+        "output_max_abs": "2.559e-11",
+        "output_relative_l2": "5.928e-14",
+        "repetitions_per_batch": "3076",
+        "vectors": "64"
+      },
+      "paired_excess_us_median": 8.824243823146944,
+      "paired_rust_ducc_ratio_median": 1.560906404615594,
+      "process_pairs": 10,
+      "repetitions_per_batch": 3076,
+      "reset_inclusive_excess_us_median": 8.741319245773731,
+      "reset_inclusive_paired_ratio_median": 1.5470673253680651,
+      "rust_kernel_us": {
+        "max_us": 24.814142392717812,
+        "median_us": 24.600560143042912,
+        "min_us": 24.501440182054615,
+        "p10_us": 24.53258923927178,
+        "p90_us": 24.743477763329
+      },
+      "rust_reset_inclusive_us": {
+        "max_us": 24.941593953185954,
+        "median_us": 24.724396618985693,
+        "min_us": 24.625169375812742,
+        "p10_us": 24.65697233420026,
+        "p90_us": 24.867602080624188
+      }
+    }
+  ],
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs; strict floating point",
+  "rust_simd": "Pulp runtime V3, four f64 lanes, AVX2/FMA",
+  "rust_source_revision": "ce710d3622e3ca37783e0666b8bb800426fd72e0",
+  "rust_toolchain": "1.99.1 (LLVM 23.1.1)",
+  "timing_protocol": "10 interleaved process pairs; 3 calibrated 20-100 ms batches per process/backend/lane size; q1 pinned to one physical CPU; checksum consumed",
+  "workload": "T720 scalar analysis fused pair kernel at harmonic order m=1; reset-subtracted and reset-inclusive timings"
+}

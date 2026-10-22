@@ -9,8 +9,9 @@ production default.
 
 - Current-source reference: RustSHT `ff0fe71676b9a3084ec17e0cd7c8ccbd3ddad6ae`.
 - Original requested starting checkpoint: `ce710d3622e3ca37783e0666b8bb800426fd72e0`.
-  It has **not** yet been remeasured in this continuation; do not treat the
-  current-source reference as the required final A baseline.
+  Its T720 whole-transform analysis and 64/128/256-lane kernel baselines are
+  now remeasured below. The source comparison is historical-to-current
+  evidence, not attribution to an individual change.
 - DUCC kernel reference: `80388904b8cfc32400ba84af8a6a45aabfe60f86`.
 - Rust 1.99.1 / LLVM 23.1.1, Pulp runtime V3 (AVX2/FMA), strict Rust FP,
   `-C target-cpu=x86-64-v3`. DUCC kernel: GCC 15.2,
@@ -86,6 +87,58 @@ Whole-transform shifts are small and overlap the observed ranges; they do not
 establish a production gain. The candidate remains in the cumulative build
 only because the required final interaction/ablation evaluation is still
 pending. It is not enabled by default.
+
+### Original `ce710` whole-transform baseline
+
+The requested original-source A baseline was remeasured with Rust 1.99.1,
+strict x86-64-v3 Rust flags, the same native Rust/DUCC full-call harness, and
+pinned DUCC 803. The `ce710` checkout required a temporary toolchain override
+from its checked-in Rust 1.99.0 pin. The native worker and Python runner were
+copied from the source-equivalent harness at `ff0fe716`; their hashes and executable hashes
+are recorded in the [machine-readable run](data/scalar-analysis-cumulative-ablation-2026-10-21/ce710-full-transform/summary.json).
+The old checkout had only test-module benchmark instrumentation in addition
+to the `ce710` production sources; that instrumentation was not linked into
+the native example. Three interleaved process pairs collected ten calibrated
+20–100 ms batches per process and backend. q1 used CPU 0; q8 used CPUs 0–7 on
+one L3 domain. All six T720 GL even-smooth analysis cases (`mmax` 1, 180 and
+720; q1/q8) completed, with 18 numerical/identity checks and no failures.
+
+The q1/q8 `mmax=1` case is retained as a useful low-work control. The table
+below compares full and quarter-order configurations against the existing
+`ff0fe` current-source measurements above; DUCC medians come from each
+source's matched process pairs. The old-to-current source delta includes all
+intervening implementation changes and does not isolate a single
+optimization.
+
+| T720 GL analysis | `ce710` Rust ms (p10–p90) | `ce710` DUCC ms | `ce710` ratio | `ff0fe` Rust ms | `ff0fe` DUCC ms | `ff0fe` ratio | Rust latency change | Relative L2 (`ce710` / `ff0fe`) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| full, q1 | 21.321 (21.217–21.458) | 14.416 | 1.479× | 15.612 | 14.479 | 1.078× | −26.8% | `4.63e-14` / `4.63e-14` |
+| full, q8 | 3.721 (3.687–3.787) | 2.118 | 1.757× | 2.256 | 2.132 | 1.058× | −39.4% | `4.63e-14` / `4.63e-14` |
+| `mmax=180`, q1 | 8.886 (8.862–9.121) | 5.920 | 1.501× | 6.276 | 5.906 | 1.063× | −29.4% | `4.91e-14` / `4.91e-14` |
+| `mmax=180`, q8 | 1.461 (1.448–1.479) | 0.921 | 1.587× | 0.932 | 0.938 | 0.994× | −36.2% | `4.91e-14` / `4.91e-14` |
+
+The original-source direct-kernel baseline also shows the accumulated source
+improvement at the selected `m=1` order. These reset-subtracted kernel times
+use the same 64/128/256 active-lane work and pinned DUCC kernel; compare them
+with the `ff0fe` kernel baseline in Step 3, not with a whole-transform row.
+
+| Active lanes | `ce710` Rust kernel µs (p10–p90) | DUCC kernel µs (p10–p90) | Ratio | `ff0fe` Rust kernel µs | `ce710` → `ff0fe` Rust change |
+|---:|---:|---:|---:|---:|---:|
+| 64 | 7.502 (7.464–7.662) | 4.087 (4.069–4.141) | 1.832× | 4.765 | −36.5% |
+| 128 | 13.034 (12.973–13.451) | 8.029 (7.967–8.095) | 1.620× | 8.712 | −33.2% |
+| 256 | 24.601 (24.533–24.743) | 15.751 (15.715–15.852) | 1.561× | 16.835 | −31.6% |
+
+Paired ratios and sanitized distributions are in the [kernel summary](data/scalar-analysis-cumulative-ablation-2026-10-21/ce710-kernel/summary.json); raw batch samples remain local.
+
+For the extra `mmax=1` control, `ce710` measured 0.130 ms Rust / 0.136 ms
+DUCC at q1 and 0.099 / 0.137 ms at q8; relative L2 was `6.12e-14`. Median
+runqueue wait across sampled workers was 0.64% (p90 17.0%), with occasional
+involuntary-switch outliers. The distributions for the four full/reduced
+cases support the aggregate source improvement; small changes between
+neighboring builds remain host-sensitive. Setup and first-call observations,
+fixture hashes and p10/median/p90 rows are retained in the sanitized summary.
+Raw process batches remain local. Compact rows are in [`results.csv`](data/scalar-analysis-cumulative-ablation-2026-10-21/ce710-full-transform/results.csv),
+and reproduction details are in the [data README](data/scalar-analysis-cumulative-ablation-2026-10-21/ce710-full-transform/README.md).
 
 ### Generated code
 
@@ -295,7 +348,7 @@ RUSTFLAGS='-C target-cpu=x86-64-v3 --cfg rustsht_packed_complex_pair_reduction -
 
 | Step | State |
 |---|---|
-| 0. Current-source baseline | Recorded at `ff0fe`; remeasure original `ce710` for final A/B. |
+| 0. Source baselines | `ff0fe` current source and original `ce710` are now measured at T720; original-source whole-call and lane-kernel data are linked above. |
 | 1. 64/128/256 pair tiles | Selector and 256 initial setting exist; compare all three in final cumulative evaluation. |
 | 2. Fixed SIMD workspace layout | Existing source layout retained; include in final ablation. |
 | 3. Packed complex reduction | Implemented and validated behind cfg; isolated reducer is 3% faster, whole-transform effect remains inconclusive; retain only for cumulative evaluation. |
@@ -306,7 +359,7 @@ RUSTFLAGS='-C target-cpu=x86-64-v3 --cfg rustsht_packed_complex_pair_reduction -
 | 8. Scaled-to-ordinary transition | Reviewed: guarded correction/promotion and transactional fallback are already integrated. |
 | 9. Reflected active-ring packing | Reviewed: binary-searched first-active pair plus bounded SoA compaction is already integrated. |
 | 10. Coefficient/factor preparation | Reviewed: epsilon and recurrence factors are prepared once per order and reused across ring blocks, matching DUCC `Ylmgen::prepare`. |
-| Final combined evaluation | Pending: original `ce710` baseline, cumulative 64/128/256, DUCC, then one-change-at-a-time ablations. |
+| Final combined evaluation | Pending: run the retained cumulative candidates at 64/128/256 lanes against DUCC, then ablate only candidates with a separable whole-transform effect. |
 
 The scalar analysis objective remains active until this final evaluation and
 the required function crosswalk are complete.
