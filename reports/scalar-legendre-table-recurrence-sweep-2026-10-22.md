@@ -64,6 +64,11 @@ order is rejected by the production table eligibility rule (at least 75% of
 `lmax`), so those production routes use recurrence. Spin-1 has a separate
 strategy and is not changed by the scalar policy work.
 
+After policy commit `6ab40dec`, the q8 T63 exact-grid synthesis cell also uses
+recurrence. All other entries in the table above are unchanged. Thus exact-grid
+scalar synthesis now has one rule, while the existing 20 MiB q1 analysis
+footprint rule and q8 analysis rule remain unchanged.
+
 ## Measured warm costs
 
 Ratios below are table latency divided by recurrence latency; less than 1 favors
@@ -115,11 +120,13 @@ eligibility: the low-degree warm wins do not establish cold/reuse behavior
 well enough to expand eager table construction, and T256 remains recurrence
 even though its experimental table fits under the allocation cap.
 
-The q8 T63 exact-grid synthesis table exception is measured to lose and will
-be removed in the production selector. The exact-grid q8 T63 analysis and q1
-T255 exclusions are already implied by the general thread-count and payload
-rules; their scalar-specific duplicates can be removed while preserving
-shared spin-1 exclusions. The T63/64 and T255/256 boundaries remain as table
+The q8 T63 exact-grid synthesis table exception was measured at 1.56–1.58× the
+recurrence latency in two independent q8 processes and was changed to
+recurrence in `6ab40dec`. The exact-grid q8 T63 analysis and q1 T255 scalar
+exclusions are subsumed by the general thread-count and payload rules; their
+scalar-specific duplicates were removed while the shared spin-1 exclusions
+were preserved. The q1 T255 analysis path remains recurrence because its table
+payload exceeds 20 MiB. The T63/64 and T255/256 boundaries remain table
 eligibility/resource boundaries, not hand-tuned exact-T performance hacks.
 
 ## Reproduction and data

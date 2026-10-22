@@ -60,8 +60,10 @@ grid scalar production route at T63 that contradicts this evidence is q8 table
 synthesis. The q1 T255 and q8 T63 analysis exceptions are redundant with the
 existing byte/thread rules. The table minimum and maximum are retained because
 the low-T warm results do not establish a safe eager-build/reuse policy.
-No production code changed in the measurement commit. See the
-[forced-route report](reports/scalar-legendre-table-recurrence-sweep-2026-10-22.md)
+Commit `6ab40dec` applies that rule, removing the q8 T63 exact-grid synthesis
+table exception; forced whole-transform batches measured the table at 1.56–1.58×
+the recurrence route. Boundary tests cover odd/even `nphi` and verify spin-1's
+existing selector. See the [forced-route report](reports/scalar-legendre-table-recurrence-sweep-2026-10-22.md)
 and its coverage manifest.
 
 The completed scalar GL T64–T256 dispatch diagnosis attributes the q8 analysis
