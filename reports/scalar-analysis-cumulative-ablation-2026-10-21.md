@@ -482,10 +482,11 @@ kernels improved 31.6–36.5% versus `ce710`; current baseline kernels remain
 gain to any single candidate.
 
 **Production decision:** retire the packed complex reducer, scratch-field
-reorder, 64/128 tile selectors and fused direct-output path. Keep the ordinary
-real/imag SIMD reduction, original workspace field order, fixed 256 reflected
-pair tile, checked range-proof cache, staged output and robust fallbacks. The
-known-good source is the no-cfg `current-default` build above. It measured
+reorder, 64/128 tile selectors and fused direct-output path, including its
+unused generic store specialization. Keep the ordinary real/imag SIMD
+reduction, original workspace field order, fixed 256 reflected pair tile,
+checked range-proof cache, staged output and robust fallbacks. The known-good
+source is the no-cfg `current-default` build above. It measured
 about 1.05–1.08× DUCC at q1 and 1.00–1.03× at q8 for T720 `mmax=180`/full
 analysis; q8 tails limit small-delta conclusions.
 

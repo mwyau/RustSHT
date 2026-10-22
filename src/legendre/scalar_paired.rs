@@ -3321,9 +3321,6 @@ struct FusedScalarAnalysisPair<
     // Test-only source attribution compiles the same loop without coefficient
     // products; the production specialization always keeps accumulation.
     const ACCUMULATE: bool = true,
-    // Experimental: write only after a cached recurrence proof and fused
-    // whole-latitude input preflight make the direct route nondeclining.
-    const DIRECT_ACCUMULATE_OUTPUT: bool = false,
 > {
     m: usize,
     lmax: usize,
@@ -3961,23 +3958,16 @@ fn analysis_pair_state_range_mask<S: Simd>(
 }
 
 #[inline(always)]
-fn store_analysis_pair<const ACCUMULATE_OUTPUT: bool>(
+fn store_analysis_pair(
     coefficients: &mut [Complex64],
     offset: usize,
     has_odd: bool,
     same: Complex64,
     opposite: Complex64,
 ) {
-    if ACCUMULATE_OUTPUT {
-        coefficients[offset] += same;
-        if has_odd {
-            coefficients[offset + 1] += opposite;
-        }
-    } else {
-        coefficients[offset] = same;
-        if has_odd {
-            coefficients[offset + 1] = opposite;
-        }
+    coefficients[offset] = same;
+    if has_odd {
+        coefficients[offset + 1] = opposite;
     }
 }
 
@@ -3986,7 +3976,6 @@ impl<
     const CHECK_PAIR_GROUP_RANGE: bool,
     const FUSE_PAIR_GROUP_RANGE_CHECK: bool,
     const ACCUMULATE: bool,
-    const DIRECT_ACCUMULATE_OUTPUT: bool,
 > WithSimd
     for FusedScalarAnalysisPair<
         '_,
@@ -3994,7 +3983,6 @@ impl<
         CHECK_PAIR_GROUP_RANGE,
         FUSE_PAIR_GROUP_RANGE_CHECK,
         ACCUMULATE,
-        DIRECT_ACCUMULATE_OUTPUT,
     >
 {
     type Output = bool;
@@ -4087,7 +4075,7 @@ impl<
 
             let first_l = m + 2 * pair_index;
             let first_offset = first_l - m;
-            store_analysis_pair::<DIRECT_ACCUMULATE_OUTPUT>(
+            store_analysis_pair(
                 staged_coefficients,
                 first_offset,
                 first_l < lmax,
@@ -4097,7 +4085,7 @@ impl<
 
             let second_l = first_l + 2;
             let second_offset = second_l - m;
-            store_analysis_pair::<DIRECT_ACCUMULATE_OUTPUT>(
+            store_analysis_pair(
                 staged_coefficients,
                 second_offset,
                 second_l < lmax,
@@ -4130,7 +4118,7 @@ impl<
             all_vectors_in_range = simd.and_m64s(all_vectors_in_range, pair_vectors_in_range);
             all_tails_in_range &= pair_tails_in_range;
             if ACCUMULATE {
-                store_analysis_pair::<DIRECT_ACCUMULATE_OUTPUT>(
+                store_analysis_pair(
                     staged_coefficients,
                     offset,
                     l < lmax,
@@ -4138,7 +4126,7 @@ impl<
                     opposite_sum,
                 );
             } else {
-                store_analysis_pair::<DIRECT_ACCUMULATE_OUTPUT>(
+                store_analysis_pair(
                     staged_coefficients,
                     offset,
                     l < lmax,
@@ -4168,23 +4156,14 @@ impl<
             let zero = Complex64::new(0.0, 0.0);
             (zero, zero)
         };
-        store_analysis_pair::<DIRECT_ACCUMULATE_OUTPUT>(
+        store_analysis_pair(
             staged_coefficients,
             offset,
             l < lmax,
             same_sum,
             opposite_sum,
         );
-        if DIRECT_ACCUMULATE_OUTPUT {
-            // The cached checked proof covers every recurrence state, and the
-            // input preflight bounds the complete output accumulation. A
-            // decline after the first direct store would violate transaction
-            // safety; keep the invariant visible in debug builds.
-            debug_assert!(analysis_mask_all(simd, all_vectors_in_range) && all_tails_in_range);
-            true
-        } else {
-            analysis_mask_all(simd, all_vectors_in_range) && all_tails_in_range
-        }
+        analysis_mask_all(simd, all_vectors_in_range) && all_tails_in_range
     }
 }
 
