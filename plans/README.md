@@ -6,7 +6,7 @@
 
 1. **COMPLETE:** [Owner-directed scalar-analysis cumulative ablation](../reports/scalar-analysis-cumulative-ablation-2026-10-21.md). The known-good production path is staged output, checked range-proof cache, and fixed 256-pair tile.
 2. **COMPLETE:** [16 — DUCC spin-1 recurrence and dataflow](16-ducc-spin1-recurrence-parity.md). Milestone E extends the bounded q8 coefficient cache to T1023/34 MiB and closes CC/F1 analysis-resampling attribution.
-3. **CURRENT:** [17 — f32 and high-resolution atmospheric SHT performance](17-f32-atmospheric-performance.md). Milestone A is complete. Milestone B retains `#[inline(always)]` on the f32 recurrence step (26.6–44.8% faster on matched T255/T720 cases, bitwise identical); whole-normalizer inlining was rejected after seven of eight regressions. The T720 profile found 15.9–20.3% of normalizer calls touch a scaled lane, but only 0.39–0.55% of lanes rescale. Next is a benchmark-only Pulp SIMD range-precheck comparison. Preserve odd-FFT hold.
+3. **CURRENT:** [17 — f32 and high-resolution atmospheric SHT performance](17-f32-atmospheric-performance.md). Milestone A is complete. Milestone B retains the inlined f32 recurrence step (26.6–44.8% faster) and the Pulp SIMD normalizer precheck (5.6–17.4% faster on matched T255/T720 GL spin-1 A/S q1/q8 cases; Rust outputs bitwise equal). Whole-normalizer inlining remains rejected. Next is a bounded T1023 q8 check, then source-grounded recurrence/dataflow attribution. Preserve odd-FFT hold.
 4. **DEFERRED, NOT AUTOMATIC:** [12 — Cache-informed Legendre dispatch](12-cache-informed-legendre-dispatch.md) and [13 — True fused batched SHT](13-fused-batched-sht.md). These are separate future projects and require explicit owner authorization.
 
 ## Completed and retained

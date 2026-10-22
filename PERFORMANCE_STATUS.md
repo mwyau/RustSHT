@@ -159,8 +159,18 @@ matched cases by 0.2–5.9%. Production keeps the out-of-line normalizer. The
 records all timings. A test-only T720 counter profile found 15.9–20.3% of
 normalizer calls have at least one scaled lane, but only 0.39–0.55% of lanes
 scale (one exponent step each). Counting overhead invalidates the profile's
-latencies; the counters were frequency-only. Next test a SIMD range precheck
-against the lane scan in a benchmark-only variant before changing production.
+latencies; the counters were frequency-only. The accepted Pulp SIMD range
+precheck skips the scalar lane walk when every recurrence pair is already
+inside the normalizer's exact no-op range; unsafe lanes still use the original
+checked scaler. On matched GL spin-1 f32 T255/T720, q1/q8 A/S full transforms
+it reduced warmed Rust latency in all eight cases by 5.6–17.4%, with
+bitwise-identical Rust outputs. The candidate remains 17.1–73.8× DUCC. See the
+[SIMD precheck report](reports/plan17-f32-spin-normalizer-simd-precheck-2026-10-22.md)
+and its raw [JSON](reports/data/plan17-f32-spin-normalizer-simd-precheck-2026-10-22/results.json),
+[summary](reports/data/plan17-f32-spin-normalizer-simd-precheck-2026-10-22/summary.csv)
+and [timing samples](reports/data/plan17-f32-spin-normalizer-simd-precheck-2026-10-22/samples.csv).
+Next is a bounded T1023 q8 check of analysis and synthesis, followed by
+source-grounded recurrence/dataflow attribution for the remaining gap.
 
 The first Plan 17 spin-f32 normal-range skip candidate passed f32, adjoint,
 extreme and reset checks and improved selected T720 workloads by 2.6–8.8%.

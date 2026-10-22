@@ -53,9 +53,21 @@ seven of eight matched full transforms. See the
 The test-only T720 profile counted 15.9–20.3% of normalizer calls with at least
 one rescaled lane, but only 0.39–0.55% of lanes rescaled (one exponent step
 each). Counter overhead invalidates its timings; this is frequency evidence
-only. Next compare a benchmark-only SIMD range precheck with the scalar lane
-scan, including whole transforms and fallback controls. Counts are in the
-[negative A/B report](../reports/plan17-f32-spin-normalizer-inline-2026-10-22.md).
+only. The accepted production precheck uses Pulp to prove that all paired
+values are already in the scalar scaler's no-op range and otherwise calls the
+original normalizer. Matched full-transform T255/T720 GL spin-1 q1/q8
+analysis/synthesis tests found 5.6–17.4% lower warmed Rust latency in all eight
+cases, bitwise-identical Rust outputs and no plan-time setup increase. The
+inlined V3 code uses packed AVX2 integer comparisons and a lane reduction; the
+out-of-line version was rejected after it generated a 512-byte stack frame and
+regressed the T255 q1 screen. See the [precheck report](../reports/plan17-f32-spin-normalizer-simd-precheck-2026-10-22.md)
+and [timing distributions](../reports/data/plan17-f32-spin-normalizer-simd-precheck-2026-10-22/summary.csv).
+
+The next step is a bounded full-order T1023 q8 analysis/synthesis comparison
+against the pre-precheck Rust build. If it remains beneficial, continue
+source-grounded recurrence/dataflow attribution for the residual f32 gap; do
+not broaden this precheck into other spins or operations without separate
+evidence.
 
 Only if Milestone A establishes a material f32 recurrence/accumulation gap:
 - Compare f32's executed spin recurrence and normal/scaled SIMD pathways with the best **validated** Plan 16 f64 algorithm; determine which structural optimizations can be translated safely and which require f32-specific scaling or precision handling.
