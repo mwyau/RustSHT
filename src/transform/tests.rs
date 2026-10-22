@@ -114,7 +114,7 @@ fn run_forced_scalar_route_iterations(
     iterations: usize,
 ) -> Result<(), ShtError> {
     crate::legendre::set_benchmark_strategy_override(Some(strategy));
-    pool.install(|| {
+    let result = pool.install(|| {
         for _ in 0..iterations {
             match operation {
                 LegendreOperation::Synthesis => {
@@ -126,7 +126,9 @@ fn run_forced_scalar_route_iterations(
             }
         }
         Ok(())
-    })?;
+    });
+    crate::legendre::set_benchmark_strategy_override(None);
+    result?;
     let actual = crate::transform::take_scalar_legendre_benchmark_route_counts();
     let mut expected = [0; 4];
     let slot = match (strategy, operation) {
@@ -3196,7 +3198,7 @@ fn benchmark_scalar_legendre_table_vs_recurrence_dense() {
     let mut output = std::fs::File::create(output_path).unwrap();
     writeln!(
         output,
-        "lmax,mmax,nphi,longitude,operation,threads,status,table_payload_estimate_bytes,table_bytes,recurrence_scratch_bytes,plan_workspace_setup_us,table_build_us,first_table_call_after_build_us,first_recurrence_call_us,table_samples_us,recurrence_samples_us,table_over_recurrence,expected_reuse_calls,relative_l2,max_scaled_error,verified_table_timed_calls,verified_recurrence_timed_calls"
+        "lmax,mmax,nphi,longitude,operation,threads,production_strategy,status,table_payload_estimate_bytes,table_bytes,recurrence_scratch_bytes,plan_workspace_setup_us,table_build_us,first_table_call_after_build_us,first_recurrence_call_us,table_samples_us,recurrence_samples_us,table_over_recurrence,expected_reuse_calls,relative_l2,max_scaled_error,verified_table_sample_calls,verified_recurrence_sample_calls"
     )
     .unwrap();
 
@@ -3248,7 +3250,7 @@ fn benchmark_scalar_legendre_table_vs_recurrence_dense() {
                         for threads in requested_threads.iter().copied() {
                             writeln!(
                                 output,
-                                "{lmax},{mmax},{nphi},{longitude},{operation:?},{threads},{table_status},{table_payload_estimate_bytes},,,,,,,,,,,,,,"
+                                "{lmax},{mmax},{nphi},{longitude},{operation:?},{threads},Recurrence,{table_status},{table_payload_estimate_bytes},,,,,,,,,,,,,,"
                             )
                             .unwrap();
                         }
@@ -3269,7 +3271,7 @@ fn benchmark_scalar_legendre_table_vs_recurrence_dense() {
                         for threads in requested_threads.iter().copied() {
                             writeln!(
                                 output,
-                                "{lmax},{mmax},{nphi},{longitude},{operation:?},{threads},unsupported_table_allocation_or_basis,{table_payload_estimate_bytes},{table_bytes},,,{table_build_us:.4},,,,,,,,,,"
+                                "{lmax},{mmax},{nphi},{longitude},{operation:?},{threads},Recurrence,unsupported_table_allocation_or_basis,{table_payload_estimate_bytes},{table_bytes},,,{table_build_us:.4},,,,,,,,,,"
                             )
                             .unwrap();
                         }
@@ -3307,6 +3309,12 @@ fn benchmark_scalar_legendre_table_vs_recurrence_dense() {
                         vec![Complex64::new(f64::NAN, f64::NAN); plan.harmonics().nalm()];
 
                     for operation in [LegendreOperation::Analysis, LegendreOperation::Synthesis] {
+                        let production_strategy = pool.install(|| {
+                            plan.scalar_legendre_strategy_with_capacity(
+                                operation,
+                                workspace.execution_capacity,
+                            )
+                        });
                         let first_table_started = Instant::now();
                         run_forced_scalar_route_iterations(
                             pool,
@@ -3343,6 +3351,31 @@ fn benchmark_scalar_legendre_table_vs_recurrence_dense() {
                             first_recurrence_started.elapsed().as_secs_f64() * 1e6;
                         let recurrence_map_output = map_output.clone();
                         let recurrence_alm_output = alm_output.clone();
+
+                        crate::legendre::set_benchmark_strategy_override(None);
+                        pool.install(|| match operation {
+                            LegendreOperation::Synthesis => {
+                                plan.synthesis_into(&alm_input, &mut map_output, &mut workspace)
+                            }
+                            LegendreOperation::Analysis => {
+                                plan.analysis_into(&map_input, &mut alm_output, &mut workspace)
+                            }
+                        })
+                        .unwrap();
+                        let actual_production_counts =
+                            crate::transform::take_scalar_legendre_benchmark_route_counts();
+                        let production_slot = match (production_strategy, operation) {
+                            (LegendreStrategy::CompactTable, LegendreOperation::Synthesis) => 0,
+                            (LegendreStrategy::Recurrence, LegendreOperation::Synthesis) => 1,
+                            (LegendreStrategy::CompactTable, LegendreOperation::Analysis) => 2,
+                            (LegendreStrategy::Recurrence, LegendreOperation::Analysis) => 3,
+                        };
+                        let mut expected_production_counts = [0; 4];
+                        expected_production_counts[production_slot] = 1;
+                        assert_eq!(
+                            actual_production_counts, expected_production_counts,
+                            "T{lmax} {operation:?} q{threads}: production selected {production_strategy:?} but executed a different route"
+                        );
 
                         let mut table_iterations = 1usize;
                         loop {
@@ -3481,7 +3514,7 @@ fn benchmark_scalar_legendre_table_vs_recurrence_dense() {
                         };
                         writeln!(
                             output,
-                            "{lmax},{mmax},{nphi},{longitude},{operation:?},{threads},complete,{table_payload_estimate_bytes},{table_bytes},{recurrence_scratch_bytes},{:.4},{:.4},{:.4},{:.4},{},{},{:.6},{expected_reuse},{relative_l2:.12e},{max_scaled_error:.12e},{actual_table_calls},{actual_recurrence_calls}",
+                            "{lmax},{mmax},{nphi},{longitude},{operation:?},{threads},{production_strategy:?},complete,{table_payload_estimate_bytes},{table_bytes},{recurrence_scratch_bytes},{:.4},{:.4},{:.4},{:.4},{},{},{:.6},{expected_reuse},{relative_l2:.12e},{max_scaled_error:.12e},{actual_table_calls},{actual_recurrence_calls}",
                             plan_setup_us + workspace_setup_us,
                             table_build_us,
                             first_table_us,
