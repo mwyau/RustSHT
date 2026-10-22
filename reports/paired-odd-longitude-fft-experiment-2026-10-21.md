@@ -132,3 +132,10 @@ Verification completed on the final source:
 The paired route is accepted as an isolated experimental implementation because row-stage and whole-transform synthesis improvements agree across the tested odd lengths, and all numerical/fallback checks pass. Forward pairing remains disabled at N=255. Analysis is promising but less robust under q8; changes of only a few percent should not be treated as conclusive on the observed host. The even control confirms that not every whole-transform difference is caused by the new route.
 
 The candidate changes no public API and adds no dependency. Production integration still conflicts with the active owner direction to defer odd-length FFT work, so it requires a later explicit scope change and a clean matched rerun on that source. Nothing was pushed; the experimental worktree is left available for review. Raw disassembly, per-batch logs and host/process/PSI snapshots remain under the local temporary data paths. Benchmark build outputs are untracked and excluded from the commit.
+
+## Files changed
+
+- Production prototype and FFT tests: src/fft.rs, src/transform.rs and src/transform/tests.rs.
+- Reproducible row benchmarks, DUCC adapter, phase profiler and validation: benches/paired_odd_rows/.
+- Findings: this report and the three sanitized CSV files under reports/data/paired-odd-longitude-fft-2026-10-21/.
+- The initial implementation/harness/evidence commit and follow-up numerical-test commit are identified above. The worktree's latest report-only commits remain local on exp/paired-odd-longitude-fft.
