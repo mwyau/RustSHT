@@ -1,0 +1,91 @@
+# Plan 18 — pyspharm compatibility and native-language interfaces
+
+**Status: QUEUED (2026-10-22); planning only.** This plan may be merged to `main` for an independent implementation agent, but implementation must not interrupt the active performance work: [Plan 16](16-ducc-spin1-recurrence-parity.md) followed by [Plan 17](17-f32-atmospheric-performance.md). Base the implementation branch on the current, safely synchronized `main` after the owner merges the desired numerical work. Do not implement this plan on `opt/sht-performance-parity` while that branch is serving the performance investigation. Do not alter Plan 16/17 constraints, optimization kernels or benchmark artifacts as part of this plan.
+
+## Goal and deliverables
+
+Make RustSHT usable from Python applications currently using pyspharm without changing `import spharm` or the documented pyspharm calls. Implement missing numerical operations in Rust, keep Python compatibility logic thin, and separately expose the reusable Rust core to C, C++ and Fortran. Assess — and, if authorized, implement — a SPHEREPACK 3.2 source/ABI adapter as a distinct deliverable. Each level must be demonstrated by tests rather than described as compatible merely because symbols exist.
+
+- Native distribution: **`rustsht`**, imported as `rustsht`. Runtime Python requirement: NumPy only; Python build dependencies and compiled Rust dependencies are separate.
+- Compatibility distribution: **`pyspharm-rs`**, imported as `spharm`. It depends on the released `rustsht` distribution and does not compile another copy of the numerical core. Users install `pyspharm-rs` and run the existing `import spharm` code unchanged. Original `pyspharm`, `pyspharm-syl`, and `pyspharm-rs` cannot safely install the same `spharm` files in one environment.
+- Keep both distributions in this repository and version/release them independently. Preferred layout: existing `python/rustsht/` and new `python/pyspharm-rs/pyproject.toml`, `python/pyspharm-rs/spharm.py`, `python/pyspharm-rs/tests/`; avoid another `compat/` directory. Ensure the root Maturin build excludes `python/pyspharm-rs/`.
+- Keep an independent native ABI implementation/package (e.g., an FFI Rust crate plus C header and Fortran module) outside the pyspharm compatibility wheel. Do not require a Fortran compiler to use `rustsht` or `pyspharm-rs`.
+
+## References and comparison sources
+
+1. Primary Python behavioral baseline: **original** [jswhit/pyspharm](https://github.com/jswhit/pyspharm), especially `Lib/spharm.py`, `src/getlegfunc.f`, `src/specintrp.f`, `src/ihgeod.f`, and `src/_spherepack.pyf`.
+2. Executable reference on Python 3.13: archived [shenyulu/pyspharm-syl](https://github.com/shenyulu/pyspharm-syl), PyPI 1.2.1. This is derived from pyspharm 1.0.9 and updates Meson/Intel oneAPI builds; it is not proof that every public numerical behavior is unchanged. Published 3.13 wheels cover Windows x86-64 and Linux x86-64, not macOS. Its repository was archived in February 2025.
+3. Consumer integration: [ajdawson/windspharm](https://github.com/ajdawson/windspharm) 2.0.0; `windspharm.standard` imports `from spharm import Spharmt, gaussian_lats_wts`, and PyPI metadata requires **`pyspharm>=1.0.9`**. Installing `pyspharm-rs` does not automatically satisfy that metadata requirement. Test actual unchanged wind-analysis imports and calls in an isolated environment, document distribution-resolution limitations, and do not spoof a `pyspharm` distribution.
+4. Original NCAR SPHEREPACK 3.2 and its documented Fortran entry points are the reference **only** for a separate Fortran compatibility effort. A third-party Fortran 2008+ modernization is not an official SPHEREPACK 3.2 ABI.
+5. Existing RustSHT `src/{lib,grid,harmonics,plan,transform,spin_transform}.rs`, `python/src/lib.rs`, `pyproject.toml`, and current parity/adjoint tests. Existing [spharmgrid](https://github.com/mwyau/spharmgrid) is useful for analytic fields, atmospheric spectral operators, normalization checks, and parity tests; do not make it a runtime dependency or copy its DUCC/Xarray stack into RustSHT.
+
+Clone the two pyspharm repositories and windspharm **outside the RustSHT checkout** into an untracked temporary reference directory. Record their precise commit SHAs and the SPHEREPACK source identity used for comparisons. Do not put third-party source into RustSHT or add undocumented licenses/attribution. Verify licenses before borrowing more than mathematical formulas or behavioral conventions.
+
+## Milestone A — inventory and reproducible baseline (before implementation)
+
+Build a machine-readable, checked-in public API inventory from original pyspharm and pyspharm-syl: signatures, constructors, methods, module-level functions, attributes, defaults, array dtypes/order, shape/rank rules, truncation, exceptions, and observed behavior. Include:
+
+- `Spharmt(nlon, nlat, rsphere=6.3712e6, gridtype='regular', legfunc='stored')`, read-only attributes (`nlon`, `nlat`, `rsphere`, `gridtype`, `legfunc`), and `legfunc='stored'/'computed'` semantics.
+- Methods: `grdtospec`, `spectogrd`, `getuv`, `getvrtdivspec`, `getgrad`, `getpsichi`, `specsmooth`.
+- Module functions: `regrid`, `gaussian_lats_wts`, `getspecindx`, `legendre`, `getgeodesicpts`, `specintrp`; module metadata (`__version__`) where relevant.
+- Inspect whether `_spherepack` functions are used by external projects; document them separately. The first Python compatibility contract is the documented `spharm` API, not the private F2PY extension ABI. Do not claim full private-extension compatibility without tests.
+- Record actual `float32` maps, `complex64` coefficients, `float64` Gaussian coordinates/weights, shapes `(nlat,nlon)` and `(nlat,nlon,nt)`, packed `(nalm,)` and `(nalm,nt)` outputs, coordinate ordering and inferred error behavior. Measure instead of assuming that all dtype/contiguity combinations are accepted.
+
+Create a separate reproducible **Python 3.13** reference environment per implementation (`pyspharm-syl` and, when buildable, original `pyspharm`), pin NumPy/compiler/runtime dependencies and record results, not just snapshots. Add analytic tests independent of either pyspharm package. Do not compare both packages installed in one Python environment because both own `spharm`.
+
+Investigate two known scientific compatibility gaps before claiming complete coverage:
+
+1. Pyspharm regular grids differ by parity: with odd `nlat` the poles are included, whereas with even `nlat` they are excluded. Verify the **exact node locations** from original source before mapping odd grids to RustSHT CC and even grids to F1 or another validated geometry. Never silently call an arbitrary regular grid CC.
+2. Pyspharm documents default `ntrunc=nlat-1`; current RustSHT exact CC analysis requires `nlat>=lmax+2`, while GL/F1 analysis requires `nlat>=lmax+1`. Determine whether a different mathematically justified analysis path is necessary for the maximum regular-grid degree. Keep degree and independent longitude-order limits explicit. Do not silently clamp truncation or claim exact parity for an unsupported bandlimit.
+
+## Milestone B — reusable Rust numerical functions
+
+Implement production Rust APIs, including f32 and f64 where scientifically meaningful, for:
+
+- **Arbitrary-latitude associated Legendre evaluation**: all `0<=m<=l<=L`, packed increasing m then l. Reuse the existing numerical recurrence/scaling safeguards; expose the pyspharm normalization and phase conversion explicitly rather than changing the canonical RustSHT normalization. Check poles, near-poles, high orders, and `P_00=1/sqrt(2)` in the pyspharm convention.
+- **Arbitrary-position scalar spherical-harmonic synthesis**: evaluate coefficients at specified latitudes/longitudes without constructing a rectangular grid or FFT. Support a scalar point and efficient vectors of positions, proper longitude phases, real-field conjugate symmetry and normalization; enable pyspharm `specintrp(lon,dataspec,legfuncs)` with optional precomputed Legendre arrays. Verify independent analytic harmonics, negative/positive longitudes, poles and normalization; start with functionally clear code and optimize only measured bottlenecks.
+- **Icosahedral/geodesic point generation**: implement vertex subdivision/projection with `10*(m-1)^2+2` output points and deterministic ordering. Check `getgeodesicpts(m)` against original `ihgeod` for point order, pole placement, longitude convention, dtype, uniqueness and unit radius. Return the native Rust representation separately from the float32 lat/lon arrays required by pyspharm.
+- Reuse existing coefficient-index, quadrature/grid, spin-1 E/B and scalar derivative machinery for the remaining adapter functions. Add missing Rust operator helpers only when necessary to avoid duplicating numerical formulas in Python. Preserve the existing scalar/spin, GL/CC/F1 and adjoint guarantees.
+
+These are new functions: the current public Rust and PyO3 APIs do **not** expose pyspharm `legendre`, `specintrp` or `getgeodesicpts`. Run Rust unit/analytic tests, available DUCC independent tests and no-default-features tests.
+
+## Milestone C — Python bindings and documented pyspharm interface
+
+1. Make the native `rustsht` extension expose f32/complex64 as well as existing f64/complex128 where supported by Rust; do not force reference float32 inputs through a public float64-only API. Preserve RustSHT's native contiguous ring-major map layout and coefficient storage.
+2. Add `python/pyspharm-rs/spharm.py` implementing every public class method and module function named in Milestone A. Keep numeric transforms in RustSHT; keep shape/phase/scaling/truncation/byte-order/dtype and user API conversion in Python as needed. Implement batching without repeated Python planning and use borrowed NumPy arrays when layout permits; allow measured blocking/packing for incompatible strides.
+3. Match constructor and method semantics, `ntrunc`, `gridtype`, `legfunc`, `rsphere`, shape restoration, error classes and `float32/complex64` outputs as established by tests. Implement wind/streamfunction/velocity-potential/gradient radius factors and eastward/northward sign conventions explicitly, verified with analytic fields, rather than aliases without a mathematical conversion.
+4. Keep `pyspharm-rs` dependent only on the packaged `rustsht` and its transitive NumPy dependency. `rustsht` itself depends only on NumPy at Python runtime. No DUCC0, spharmgrid, Xarray, SciPy, Fortran runtime or Intel toolchain required to import either new package.
+5. Check standalone packaging: the Maturin `rustsht` wheel must not accidentally include `spharm.py`; `pyspharm-rs` wheel must not compile or bundle a second Rust extension.
+
+## Milestone D — compatibility tests, consumers and performance
+
+- Compare original pyspharm and pyspharm-syl baseline for each public function where possible. Then run equivalent inputs against `pyspharm-rs` in isolated processes/environments.
+- Exercise scalar and vector analysis/synthesis, Gaussian/regular even/odd latitudes, high/low/edge truncations, odd/even `nlon`, single/multifield arrays, noncontiguous/Fortran-contiguous arrays, array dtypes, read-only inputs, NaNs/masks, zero/constant/polar/high-m analytic fields, and overflow/error cases. Record supported input behavior instead of assuming every stride is allowed.
+- Compare expected output shape/dtype, packed order, coefficient scaling, phase, signs, radius, exceptional modes and methods `stored`/`computed`. Add individual tolerances supported by f32 numerical errors; no blanket increase of existing core tolerances.
+- Run windspharm's `standard.VectorWind` integration and, when dependencies allow, Xarray/Iris paths using the actual `spharm` import with no source changes. Verify vorticity/divergence, streamfunction/potential, Helmholtz components, gradients and truncation against its tests. Document that windspharm's `pyspharm>=1.0.9` metadata is not satisfied automatically by `pyspharm-rs`. Do not install both implementations together or misrepresent pip dependency satisfaction.
+- Measure end-to-end warmed latency and memory for pyspharm-syl, `pyspharm-rs` and RustSHT native interfaces at representative atmospheric sizes, including packing/allocation/preprocessing and repeated operations. Benchmark comparable data and thread counts. No performance claim based solely on RustSHT-versus-DUCC core kernels.
+- Distinguish baseline parity from newly improved functionality (e.g. batched arbitrary-point synthesis), and report any deliberately unsupported API case before release.
+
+## Milestone E — supported Python platforms and PyPI releases
+
+- **Python 3.13** is the primary reference comparison because pyspharm-syl 1.2.1 publishes CPython 3.13 wheels for Linux x86-64 and Windows x86-64.
+- RustSHT currently declares Python >=3.11 and PyO3 `abi3-py311`. Test CPython **3.11, 3.12, 3.13, 3.14 and 3.15** for the new native and compatibility wheels where Rust/PyO3/NumPy and supported CI runners permit; Python 3.15 was released in October 2026. Do not advertise a version merely because an abi3 wheel tag installs. Include an import+numeric smoke test for every published platform/Python combination; standard CPython and, where supported, free-threaded interpreter behavior must be distinguished.
+- Build/test Linux manylinux x86-64 and aarch64, macOS arm64 and x86-64, Windows x86-64 as CI capacity permits; document any untested platforms. Produce `rustsht` native abi3 wheels/sdist and `pyspharm-rs` pure Python wheel/sdist.
+- Use independent tags `rustsht-vX.Y.Z` and `pyspharm-rs-vX.Y.Z`, independent GitHub Actions workflows and PyPI Trusted Publishing project registrations. Release `rustsht` first, install that exact distribution in a fresh environment, then release compatible `pyspharm-rs` with a verified RustSHT version range. Check PyPI name availability before registering.
+- Test installation from built wheels and sdists with normal pip resolution; check import ownership and do not claim that `pip install windspharm` automatically resolves `pyspharm-rs` in place of a `pyspharm` requirement.
+
+## Milestone F — reusable C/C++/Fortran ABI, independent of Python releases
+
+Once the Rust numerical API is settled, implement and test a versioned **C ABI** as a separate crate/library (`staticlib` and `cdylib` where supported) exposing opaque immutable plans, separate mutable execution workspaces, constructors/destructors, f32/f64 scalar/spin transforms, dimensions, caller-owned buffers, lengths/strides/layout, error/status messages and an ABI version query. Rust enums/Vec/slices, C++ types, thread-local assumptions and Rust panics must never cross an `extern "C"` boundary. Document aliasing, concurrent workspaces and plan ownership. Generate/check the C header and compile tests with a C compiler.
+
+Add a header-only C++ RAII interface and a Fortran `ISO_C_BINDING` module using the C ABI, with sample programs and numerical parity tests against the Rust API. Prefer documented caller-owned data and explicit layouts. Test no-copy paths for compatible contiguous inputs and compare strided versus blocked pack/transposition for Fortran-column-major arrays; **zero-copy at the API boundary is not a zero-scratch/zero-reordering guarantee**. Use actual total-call benchmarks.
+
+Treat original SPHEREPACK 3.2 compatibility as a **separate subproject and release decision**, not a promise made by the two Python wheels. Before source-level or link-compatible claims, inventory every NCAR SPHEREPACK 3.2 routine and its init/error/workspace conventions; test unchanged Fortran callers. Include `shaec/shsec/shagc/shsgc`, initialization routines, stored-Legendre variants, vector transforms, symmetry cases, gradients and spectral elliptic operators. Document compiler-dependent external symbol rules, 32/64-bit Fortran integers, precision, array leading dimensions and reuse of caller-owned initializer buffers. Validate against original SPHEREPACK, including unsupported modes, not against a different modernized package. Avoid unsafe pointers embedded into caller-owned numeric work arrays or unbounded plan caches.
+
+**Release distinction:** full documented pyspharm Python API compatibility, native C ABI, and full SPHEREPACK 3.2 source/binary ABI compatibility are separate claims with separate tested matrices. Neither RustSHT's performance parity with DUCC nor a passing pyspharm test implies SPHEREPACK ABI compatibility.
+
+## Handoff and completion
+
+Create an implementation branch (suggested `feat/pyspharm-rs`) **from synchronized main**, not from the active optimization branch. Work on one independently testable milestone at a time, with small commits. Read current `AGENTS.md` before changes; safely fetch and integrate concurrent work before any push, never reset or force-push, and do not change `main` without owner direction.
+
+At closeout provide: checked-in API inventory and reference SHAs, numerical and error comparison tables, Rust unit and Python tests, windspharm integration result, Python/version/platform wheel test matrix, measured layout/performance results, public compatibility limitations, release artifacts/workflows when authorized, and a separate disposition of native/SPHEREPACK ABIs. Do not publish packages or tags unless the owner explicitly directs a release.
