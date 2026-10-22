@@ -1,0 +1,5 @@
+case_id,lmax,mmax,ntheta,nphi,longitude_mode,operation,threads,process_pair,backend,failure_class,reason,finite_outputs,reset_consistent
+T720-m180-even_smooth,720,180,721,378,even_smooth,analysis,1,0,validation,validation_failed,,True,"{""ducc"": true, ""rustsht"": false}"
+T720-m180-even_smooth,720,180,721,378,even_smooth,analysis,8,0,validation,validation_failed,,True,"{""ducc"": true, ""rustsht"": false}"
+T720-m720-even_smooth,720,720,721,1458,even_smooth,analysis,1,0,validation,validation_failed,,True,"{""ducc"": true, ""rustsht"": false}"
+T720-m720-even_smooth,720,720,721,1458,even_smooth,analysis,8,0,validation,validation_failed,,True,"{""ducc"": true, ""rustsht"": false}"

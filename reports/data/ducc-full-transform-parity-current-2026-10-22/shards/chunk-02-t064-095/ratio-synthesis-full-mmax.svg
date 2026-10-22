@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1260" height="680" viewBox="0 0 1260 680">
+<rect width="100%" height="100%" fill="#fff"/>
+<text x="98" y="35" font-family="sans-serif" font-size="25" font-weight="bold">RustSHT / DUCC — Synthesis (full mmax)</text>
+<text x="98" y="61" font-family="sans-serif" font-size="15" fill="#555">f64 · Gauss–Legendre · even-smooth longitude sampling · warmed full transforms · lower is faster</text>
+<line x1="98" y1="541.0" x2="1220" y2="541.0" stroke="#e3e8ed"/>
+<text x="87" y="545.0" text-anchor="end" font-family="sans-serif" font-size="13" font-weight="normal">0.25×</text>
+<line x1="98" y1="466.5" x2="1220" y2="466.5" stroke="#e3e8ed"/>
+<text x="87" y="470.5" text-anchor="end" font-family="sans-serif" font-size="13" font-weight="normal">0.5×</text>
+<line x1="98" y1="392.0" x2="1220" y2="392.0" stroke="#53616c" stroke-dasharray="6 4"/>
+<text x="87" y="396.0" text-anchor="end" font-family="sans-serif" font-size="13" font-weight="bold">1× parity</text>
+<line x1="98" y1="317.5" x2="1220" y2="317.5" stroke="#e3e8ed"/>
+<text x="87" y="321.5" text-anchor="end" font-family="sans-serif" font-size="13" font-weight="normal">2×</text>
+<line x1="98" y1="273.9" x2="1220" y2="273.9" stroke="#e3e8ed"/>
+<text x="87" y="277.9" text-anchor="end" font-family="sans-serif" font-size="13" font-weight="normal">3×</text>
+<line x1="98" y1="243.0" x2="1220" y2="243.0" stroke="#e3e8ed"/>
+<text x="87" y="247.0" text-anchor="end" font-family="sans-serif" font-size="13" font-weight="normal">4×</text>
+<line x1="98" y1="219.0" x2="1220" y2="219.0" stroke="#e3e8ed"/>
+<text x="87" y="223.0" text-anchor="end" font-family="sans-serif" font-size="13" font-weight="normal">5×</text>
+<line x1="98" y1="199.4" x2="1220" y2="199.4" stroke="#e3e8ed"/>
+<text x="87" y="203.4" text-anchor="end" font-family="sans-serif" font-size="13" font-weight="normal">6×</text>
+<line x1="98" y1="168.5" x2="1220" y2="168.5" stroke="#e3e8ed"/>
+<text x="87" y="172.5" text-anchor="end" font-family="sans-serif" font-size="13" font-weight="normal">8×</text>
+<line x1="98" y1="144.5" x2="1220" y2="144.5" stroke="#e3e8ed"/>
+<text x="87" y="148.5" text-anchor="end" font-family="sans-serif" font-size="13" font-weight="normal">10×</text>
+<line x1="98" y1="124.9" x2="1220" y2="124.9" stroke="#e3e8ed"/>
+<text x="87" y="128.9" text-anchor="end" font-family="sans-serif" font-size="13" font-weight="normal">12×</text>
+<line x1="98" y1="94.0" x2="1220" y2="94.0" stroke="#e3e8ed"/>
+<text x="87" y="98.0" text-anchor="end" font-family="sans-serif" font-size="13" font-weight="normal">16×</text>
+<line x1="98.0" y1="541" x2="98.0" y2="547" stroke="#77818b"/>
+<text transform="translate(98.0 568) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="12" fill="#394651">0</text>
+<line x1="268.4" y1="541" x2="268.4" y2="547" stroke="#77818b"/>
+<text transform="translate(268.4 568) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="12" fill="#394651">1</text>
+<line x1="368.1" y1="541" x2="368.1" y2="547" stroke="#77818b"/>
+<text transform="translate(368.1 568) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="12" fill="#394651">2</text>
+<line x1="493.6" y1="541" x2="493.6" y2="547" stroke="#77818b"/>
+<text transform="translate(493.6 568) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="12" fill="#394651">4</text>
+<line x1="638.1" y1="541" x2="638.1" y2="547" stroke="#77818b"/>
+<text transform="translate(638.1 568) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="12" fill="#394651">8</text>
+<line x1="794.5" y1="541" x2="794.5" y2="547" stroke="#77818b"/>
+<text transform="translate(794.5 568) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="12" fill="#394651">16</text>
+<line x1="889.3" y1="541" x2="889.3" y2="547" stroke="#77818b"/>
+<text transform="translate(889.3 568) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="12" fill="#394651">24</text>
+<line x1="957.5" y1="541" x2="957.5" y2="547" stroke="#77818b"/>
+<text transform="translate(957.5 586) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="12" fill="#394651">32</text>
+<line x1="1054.7" y1="541" x2="1054.7" y2="547" stroke="#77818b"/>
+<text transform="translate(1054.7 568) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="12" fill="#394651">48</text>
+<line x1="1124.1" y1="541" x2="1124.1" y2="547" stroke="#77818b"/>
+<text transform="translate(1124.1 586) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="12" fill="#394651">64</text>
+<line x1="1178.2" y1="541" x2="1178.2" y2="547" stroke="#77818b"/>
+<text transform="translate(1178.2 568) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="12" fill="#394651">80</text>
+<line x1="1124.1" y1="94" x2="1124.1" y2="541" stroke="#7b8794" stroke-dasharray="4 4"/>
+<text x="1128.1" y="133" font-family="sans-serif" font-size="12" fill="#4c5a67">T64</text>
+<line x1="1462.1" y1="94" x2="1462.1" y2="541" stroke="#7b8794" stroke-dasharray="4 4"/>
+<text x="1466.1" y="133" font-family="sans-serif" font-size="12" fill="#4c5a67">T256</text>
+<text x="107" y="114" font-family="sans-serif" font-size="13" fill="#4c5a67">Dense: every lmax = 0…256</text>
+<line x1="98" y1="541" x2="1220" y2="541" stroke="#34404a" stroke-width="1.5"/>
+<line x1="98" y1="94" x2="98" y2="541" stroke="#34404a" stroke-width="1.5"/>
+<polyline fill="none" stroke="#155e99" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="1124.1,382.9 1127.9,381.5 1131.6,384.3 1135.2,383.8 1138.8,381.5 1142.4,382.6 1145.8,379.0 1149.3,380.4 1152.7,368.5 1156.0,368.0 1159.3,420.6 1162.6,376.5 1165.8,375.2 1169.0,375.8 1172.1,376.2 1175.2,376.3 1178.2,373.9 1181.3,382.8 1184.2,382.0 1187.2,382.2 1190.1,373.8 1193.0,375.5 1195.8,373.6 1198.6,373.7 1201.4,374.4 1204.1,375.1 1206.9,378.9 1209.5,377.8 1212.2,379.8 1214.8,377.0 1217.4,377.7 1220.0,377.7"/>
+<circle cx="1124.1" cy="382.9" r="2.4" fill="#155e99"/>
+<circle cx="1127.9" cy="381.5" r="2.4" fill="#155e99"/>
+<circle cx="1131.6" cy="384.3" r="2.4" fill="#155e99"/>
+<circle cx="1135.2" cy="383.8" r="2.4" fill="#155e99"/>
+<circle cx="1138.8" cy="381.5" r="2.4" fill="#155e99"/>
+<circle cx="1142.4" cy="382.6" r="2.4" fill="#155e99"/>
+<circle cx="1145.8" cy="379.0" r="2.4" fill="#155e99"/>
+<circle cx="1149.3" cy="380.4" r="2.4" fill="#155e99"/>
+<circle cx="1152.7" cy="368.5" r="2.4" fill="#155e99"/>
+<circle cx="1156.0" cy="368.0" r="2.4" fill="#155e99"/>
+<circle cx="1159.3" cy="420.6" r="2.4" fill="#155e99"/>
+<circle cx="1162.6" cy="376.5" r="2.4" fill="#155e99"/>
+<circle cx="1165.8" cy="375.2" r="2.4" fill="#155e99"/>
+<circle cx="1169.0" cy="375.8" r="2.4" fill="#155e99"/>
+<circle cx="1172.1" cy="376.2" r="2.4" fill="#155e99"/>
+<circle cx="1175.2" cy="376.3" r="2.4" fill="#155e99"/>
+<circle cx="1178.2" cy="373.9" r="2.4" fill="#155e99"/>
+<circle cx="1181.3" cy="382.8" r="2.4" fill="#155e99"/>
+<circle cx="1184.2" cy="382.0" r="2.4" fill="#155e99"/>
+<circle cx="1187.2" cy="382.2" r="2.4" fill="#155e99"/>
+<circle cx="1190.1" cy="373.8" r="2.4" fill="#155e99"/>
+<circle cx="1193.0" cy="375.5" r="2.4" fill="#155e99"/>
+<circle cx="1195.8" cy="373.6" r="2.4" fill="#155e99"/>
+<circle cx="1198.6" cy="373.7" r="2.4" fill="#155e99"/>
+<circle cx="1201.4" cy="374.4" r="2.4" fill="#155e99"/>
+<circle cx="1204.1" cy="375.1" r="2.4" fill="#155e99"/>
+<circle cx="1206.9" cy="378.9" r="2.4" fill="#155e99"/>
+<circle cx="1209.5" cy="377.8" r="2.4" fill="#155e99"/>
+<circle cx="1212.2" cy="379.8" r="2.4" fill="#155e99"/>
+<circle cx="1214.8" cy="377.0" r="2.4" fill="#155e99"/>
+<circle cx="1217.4" cy="377.7" r="2.4" fill="#155e99"/>
+<circle cx="1220.0" cy="377.7" r="2.4" fill="#155e99"/>
+<polyline fill="none" stroke="#bf3b42" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="1124.1,408.5 1127.9,408.4 1131.6,407.2 1135.2,405.4 1138.8,404.8 1142.4,407.1 1145.8,404.2 1149.3,403.1 1152.7,401.6 1156.0,401.5 1159.3,399.9 1162.6,397.9 1165.8,399.9 1169.0,398.7 1172.1,397.3 1175.2,397.9 1178.2,399.2 1181.3,398.1 1184.2,399.9 1187.2,399.3 1190.1,393.1 1193.0,399.4 1195.8,388.9 1198.6,389.3 1201.4,388.6 1204.1,392.4 1206.9,393.8 1209.5,391.0 1212.2,389.8 1214.8,389.0 1217.4,386.1 1220.0,386.9"/>
+<circle cx="1124.1" cy="408.5" r="2.4" fill="#bf3b42"/>
+<circle cx="1127.9" cy="408.4" r="2.4" fill="#bf3b42"/>
+<circle cx="1131.6" cy="407.2" r="2.4" fill="#bf3b42"/>
+<circle cx="1135.2" cy="405.4" r="2.4" fill="#bf3b42"/>
+<circle cx="1138.8" cy="404.8" r="2.4" fill="#bf3b42"/>
+<circle cx="1142.4" cy="407.1" r="2.4" fill="#bf3b42"/>
+<circle cx="1145.8" cy="404.2" r="2.4" fill="#bf3b42"/>
+<circle cx="1149.3" cy="403.1" r="2.4" fill="#bf3b42"/>
+<circle cx="1152.7" cy="401.6" r="2.4" fill="#bf3b42"/>
+<circle cx="1156.0" cy="401.5" r="2.4" fill="#bf3b42"/>
+<circle cx="1159.3" cy="399.9" r="2.4" fill="#bf3b42"/>
+<circle cx="1162.6" cy="397.9" r="2.4" fill="#bf3b42"/>
+<circle cx="1165.8" cy="399.9" r="2.4" fill="#bf3b42"/>
+<circle cx="1169.0" cy="398.7" r="2.4" fill="#bf3b42"/>
+<circle cx="1172.1" cy="397.3" r="2.4" fill="#bf3b42"/>
+<circle cx="1175.2" cy="397.9" r="2.4" fill="#bf3b42"/>
+<circle cx="1178.2" cy="399.2" r="2.4" fill="#bf3b42"/>
+<circle cx="1181.3" cy="398.1" r="2.4" fill="#bf3b42"/>
+<circle cx="1184.2" cy="399.9" r="2.4" fill="#bf3b42"/>
+<circle cx="1187.2" cy="399.3" r="2.4" fill="#bf3b42"/>
+<circle cx="1190.1" cy="393.1" r="2.4" fill="#bf3b42"/>
+<circle cx="1193.0" cy="399.4" r="2.4" fill="#bf3b42"/>
+<circle cx="1195.8" cy="388.9" r="2.4" fill="#bf3b42"/>
+<circle cx="1198.6" cy="389.3" r="2.4" fill="#bf3b42"/>
+<circle cx="1201.4" cy="388.6" r="2.4" fill="#bf3b42"/>
+<circle cx="1204.1" cy="392.4" r="2.4" fill="#bf3b42"/>
+<circle cx="1206.9" cy="393.8" r="2.4" fill="#bf3b42"/>
+<circle cx="1209.5" cy="391.0" r="2.4" fill="#bf3b42"/>
+<circle cx="1212.2" cy="389.8" r="2.4" fill="#bf3b42"/>
+<circle cx="1214.8" cy="389.0" r="2.4" fill="#bf3b42"/>
+<circle cx="1217.4" cy="386.1" r="2.4" fill="#bf3b42"/>
+<circle cx="1220.0" cy="386.9" r="2.4" fill="#bf3b42"/>
+<line x1="1013" y1="77" x2="1037" y2="77" stroke="#155e99" stroke-width="3"/>
+<text x="1043" y="82" font-family="sans-serif" font-size="14" fill="#24333f">q1</text>
+<line x1="1118" y1="77" x2="1142" y2="77" stroke="#bf3b42" stroke-width="3"/>
+<text x="1148" y="82" font-family="sans-serif" font-size="14" fill="#24333f">q8</text>
+<text x="659.0" y="668" text-anchor="middle" font-family="sans-serif" font-size="15">lmax (log(1 + lmax) spacing; sampled degrees, not evenly spaced)</text>
+<text transform="translate(20 317.5) rotate(-90)" text-anchor="middle" font-family="sans-serif" font-size="15">RustSHT / DUCC runtime (log scale)</text>
+</svg>

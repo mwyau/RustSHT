@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+<rect width="100%" height="100%" fill="white"/>
+<text x="78" y="30" font-family="sans-serif" font-size="21" font-weight="bold">RustSHT first-call vs warmed analysis q1</text>
+<line x1="78" y1="464.0" x2="932" y2="464.0" stroke="#ddd"/>
+<text x="68" y="468.0" text-anchor="end" font-family="sans-serif" font-size="12">-0.488</text>
+<line x1="78" y1="382.4" x2="932" y2="382.4" stroke="#ddd"/>
+<text x="68" y="386.4" text-anchor="end" font-family="sans-serif" font-size="12">1.34</text>
+<line x1="78" y1="300.8" x2="932" y2="300.8" stroke="#ddd"/>
+<text x="68" y="304.8" text-anchor="end" font-family="sans-serif" font-size="12">3.16</text>
+<line x1="78" y1="219.2" x2="932" y2="219.2" stroke="#ddd"/>
+<text x="68" y="223.2" text-anchor="end" font-family="sans-serif" font-size="12">4.98</text>
+<line x1="78" y1="137.6" x2="932" y2="137.6" stroke="#ddd"/>
+<text x="68" y="141.6" text-anchor="end" font-family="sans-serif" font-size="12">6.81</text>
+<line x1="78" y1="56.0" x2="932" y2="56.0" stroke="#ddd"/>
+<text x="68" y="60.0" text-anchor="end" font-family="sans-serif" font-size="12">8.63</text>
+<line x1="78" y1="56" x2="78" y2="464" stroke="#333"/>
+<line x1="78" y1="464" x2="932" y2="464" stroke="#333"/>
+<polyline fill="none" stroke="#174a7e" stroke-width="2" points="78.0,245.9 78.0,245.0 105.5,237.0 133.1,235.5 160.6,234.5 188.2,222.5 215.7,223.2 243.3,219.9 270.8,216.4 298.4,207.3 325.9,205.0 353.5,192.2 381.0,202.1 408.6,188.3 436.1,184.0 463.7,178.3 491.2,180.7 518.8,163.9 546.3,160.5 573.9,153.6 601.4,144.8 629.0,140.8 656.5,132.9 684.1,131.8 711.6,131.9 739.2,115.6 766.7,115.4 794.3,113.5 821.8,111.3 849.4,97.0 876.9,88.3 904.5,79.5 932.0,85.7 932.0,77.9"/>
+<circle cx="78.0" cy="245.9" r="3" fill="#174a7e"/>
+<circle cx="78.0" cy="245.0" r="3" fill="#174a7e"/>
+<circle cx="105.5" cy="237.0" r="3" fill="#174a7e"/>
+<circle cx="133.1" cy="235.5" r="3" fill="#174a7e"/>
+<circle cx="160.6" cy="234.5" r="3" fill="#174a7e"/>
+<circle cx="188.2" cy="222.5" r="3" fill="#174a7e"/>
+<circle cx="215.7" cy="223.2" r="3" fill="#174a7e"/>
+<circle cx="243.3" cy="219.9" r="3" fill="#174a7e"/>
+<circle cx="270.8" cy="216.4" r="3" fill="#174a7e"/>
+<circle cx="298.4" cy="207.3" r="3" fill="#174a7e"/>
+<circle cx="325.9" cy="205.0" r="3" fill="#174a7e"/>
+<circle cx="353.5" cy="192.2" r="3" fill="#174a7e"/>
+<circle cx="381.0" cy="202.1" r="3" fill="#174a7e"/>
+<circle cx="408.6" cy="188.3" r="3" fill="#174a7e"/>
+<circle cx="436.1" cy="184.0" r="3" fill="#174a7e"/>
+<circle cx="463.7" cy="178.3" r="3" fill="#174a7e"/>
+<circle cx="491.2" cy="180.7" r="3" fill="#174a7e"/>
+<circle cx="518.8" cy="163.9" r="3" fill="#174a7e"/>
+<circle cx="546.3" cy="160.5" r="3" fill="#174a7e"/>
+<circle cx="573.9" cy="153.6" r="3" fill="#174a7e"/>
+<circle cx="601.4" cy="144.8" r="3" fill="#174a7e"/>
+<circle cx="629.0" cy="140.8" r="3" fill="#174a7e"/>
+<circle cx="656.5" cy="132.9" r="3" fill="#174a7e"/>
+<circle cx="684.1" cy="131.8" r="3" fill="#174a7e"/>
+<circle cx="711.6" cy="131.9" r="3" fill="#174a7e"/>
+<circle cx="739.2" cy="115.6" r="3" fill="#174a7e"/>
+<circle cx="766.7" cy="115.4" r="3" fill="#174a7e"/>
+<circle cx="794.3" cy="113.5" r="3" fill="#174a7e"/>
+<circle cx="821.8" cy="111.3" r="3" fill="#174a7e"/>
+<circle cx="849.4" cy="97.0" r="3" fill="#174a7e"/>
+<circle cx="876.9" cy="88.3" r="3" fill="#174a7e"/>
+<circle cx="904.5" cy="79.5" r="3" fill="#174a7e"/>
+<circle cx="932.0" cy="85.7" r="3" fill="#174a7e"/>
+<circle cx="932.0" cy="77.9" r="3" fill="#174a7e"/>
+<line x1="78" y1="512" x2="102" y2="512" stroke="#174a7e" stroke-width="3"/>
+<text x="108" y="516" font-family="sans-serif" font-size="12">cold first call</text>
+<polyline fill="none" stroke="#d1495b" stroke-width="2" points="78.0,422.2 78.0,424.2 105.5,424.2 133.1,423.5 160.6,429.7 188.2,422.8 215.7,423.4 243.3,422.0 270.8,428.2 298.4,420.9 325.9,421.4 353.5,420.1 381.0,427.2 408.6,420.0 436.1,420.7 463.7,419.3 491.2,427.1 518.8,417.5 546.3,418.1 573.9,416.6 601.4,424.9 629.0,415.6 656.5,416.0 684.1,415.6 711.6,424.5 739.2,414.6 766.7,415.1 794.3,413.5 821.8,423.5 849.4,412.8 876.9,413.6 904.5,411.6 932.0,418.2 932.0,422.3"/>
+<circle cx="78.0" cy="422.2" r="3" fill="#d1495b"/>
+<circle cx="78.0" cy="424.2" r="3" fill="#d1495b"/>
+<circle cx="105.5" cy="424.2" r="3" fill="#d1495b"/>
+<circle cx="133.1" cy="423.5" r="3" fill="#d1495b"/>
+<circle cx="160.6" cy="429.7" r="3" fill="#d1495b"/>
+<circle cx="188.2" cy="422.8" r="3" fill="#d1495b"/>
+<circle cx="215.7" cy="423.4" r="3" fill="#d1495b"/>
+<circle cx="243.3" cy="422.0" r="3" fill="#d1495b"/>
+<circle cx="270.8" cy="428.2" r="3" fill="#d1495b"/>
+<circle cx="298.4" cy="420.9" r="3" fill="#d1495b"/>
+<circle cx="325.9" cy="421.4" r="3" fill="#d1495b"/>
+<circle cx="353.5" cy="420.1" r="3" fill="#d1495b"/>
+<circle cx="381.0" cy="427.2" r="3" fill="#d1495b"/>
+<circle cx="408.6" cy="420.0" r="3" fill="#d1495b"/>
+<circle cx="436.1" cy="420.7" r="3" fill="#d1495b"/>
+<circle cx="463.7" cy="419.3" r="3" fill="#d1495b"/>
+<circle cx="491.2" cy="427.1" r="3" fill="#d1495b"/>
+<circle cx="518.8" cy="417.5" r="3" fill="#d1495b"/>
+<circle cx="546.3" cy="418.1" r="3" fill="#d1495b"/>
+<circle cx="573.9" cy="416.6" r="3" fill="#d1495b"/>
+<circle cx="601.4" cy="424.9" r="3" fill="#d1495b"/>
+<circle cx="629.0" cy="415.6" r="3" fill="#d1495b"/>
+<circle cx="656.5" cy="416.0" r="3" fill="#d1495b"/>
+<circle cx="684.1" cy="415.6" r="3" fill="#d1495b"/>
+<circle cx="711.6" cy="424.5" r="3" fill="#d1495b"/>
+<circle cx="739.2" cy="414.6" r="3" fill="#d1495b"/>
+<circle cx="766.7" cy="415.1" r="3" fill="#d1495b"/>
+<circle cx="794.3" cy="413.5" r="3" fill="#d1495b"/>
+<circle cx="821.8" cy="423.5" r="3" fill="#d1495b"/>
+<circle cx="849.4" cy="412.8" r="3" fill="#d1495b"/>
+<circle cx="876.9" cy="413.6" r="3" fill="#d1495b"/>
+<circle cx="904.5" cy="411.6" r="3" fill="#d1495b"/>
+<circle cx="932.0" cy="418.2" r="3" fill="#d1495b"/>
+<circle cx="932.0" cy="422.3" r="3" fill="#d1495b"/>
+<line x1="253" y1="512" x2="277" y2="512" stroke="#d1495b" stroke-width="3"/>
+<text x="283" y="516" font-family="sans-serif" font-size="12">warm batches</text>
+<text x="505.0" y="536" text-anchor="middle" font-family="sans-serif" font-size="14">lmax</text>
+<text transform="translate(18 260.0) rotate(-90)" text-anchor="middle" font-family="sans-serif" font-size="14">milliseconds</text>
+</svg>

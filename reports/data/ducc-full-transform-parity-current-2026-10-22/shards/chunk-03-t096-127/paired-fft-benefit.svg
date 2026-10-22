@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1260" height="690" viewBox="0 0 1260 690">
+<rect width="100%" height="100%" fill="#fff"/>
+<text x="100" y="34" font-family="sans-serif" font-size="24" font-weight="bold">Paired odd-row FFT / independent-row FFT</text>
+<text x="100" y="60" font-family="sans-serif" font-size="14" fill="#555">Same-source full-transform boundary A/B, odd-minimum longitude; below 1 favors paired rows</text>
+<line x1="100" y1="498.1" x2="1222" y2="498.1" stroke="#e3e8ed"/>
+<text x="90" y="502.1" text-anchor="end" font-family="sans-serif" font-size="13">0.5×</text>
+<line x1="100" y1="287.3" x2="1222" y2="287.3" stroke="#586675" stroke-dasharray="6 4"/>
+<text x="90" y="291.3" text-anchor="end" font-family="sans-serif" font-size="13">1× parity</text>
+<line x1="100.0" y1="554" x2="100.0" y2="560" stroke="#77818b"/>
+<text transform="translate(100.0 581) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">0</text>
+<line x1="240.2" y1="554" x2="240.2" y2="560" stroke="#77818b"/>
+<text transform="translate(240.2 581) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">1</text>
+<line x1="322.1" y1="554" x2="322.1" y2="560" stroke="#77818b"/>
+<text transform="translate(322.1 581) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">2</text>
+<line x1="425.4" y1="554" x2="425.4" y2="560" stroke="#77818b"/>
+<text transform="translate(425.4 581) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">4</text>
+<line x1="544.3" y1="554" x2="544.3" y2="560" stroke="#77818b"/>
+<text transform="translate(544.3 581) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">8</text>
+<line x1="672.9" y1="554" x2="672.9" y2="560" stroke="#77818b"/>
+<text transform="translate(672.9 581) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">16</text>
+<line x1="807.0" y1="554" x2="807.0" y2="560" stroke="#77818b"/>
+<text transform="translate(807.0 581) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">32</text>
+<line x1="886.9" y1="554" x2="886.9" y2="560" stroke="#77818b"/>
+<text transform="translate(886.9 581) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">48</text>
+<line x1="940.9" y1="554" x2="940.9" y2="560" stroke="#77818b"/>
+<text transform="translate(940.9 581) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">63</text>
+<line x1="944.0" y1="554" x2="944.0" y2="560" stroke="#77818b"/>
+<text transform="translate(944.0 598) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">64</text>
+<line x1="947.1" y1="554" x2="947.1" y2="560" stroke="#77818b"/>
+<text transform="translate(947.1 581) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">65</text>
+<line x1="1025.0" y1="554" x2="1025.0" y2="560" stroke="#77818b"/>
+<text transform="translate(1025.0 598) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">96</text>
+<line x1="1081.1" y1="554" x2="1081.1" y2="560" stroke="#77818b"/>
+<text transform="translate(1081.1 581) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">127</text>
+<line x1="1082.6" y1="554" x2="1082.6" y2="560" stroke="#77818b"/>
+<text transform="translate(1082.6 598) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">128</text>
+<line x1="1084.2" y1="554" x2="1084.2" y2="560" stroke="#77818b"/>
+<text transform="translate(1084.2 581) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">129</text>
+<line x1="1126.2" y1="554" x2="1126.2" y2="560" stroke="#77818b"/>
+<text transform="translate(1126.2 598) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">159</text>
+<line x1="1163.0" y1="554" x2="1163.0" y2="560" stroke="#77818b"/>
+<text transform="translate(1163.0 581) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">191</text>
+<line x1="1194.2" y1="554" x2="1194.2" y2="560" stroke="#77818b"/>
+<text transform="translate(1194.2 598) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">223</text>
+<line x1="1221.2" y1="554" x2="1221.2" y2="560" stroke="#77818b"/>
+<text transform="translate(1221.2 581) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">255</text>
+<line x1="1222.0" y1="554" x2="1222.0" y2="560" stroke="#77818b"/>
+<text transform="translate(1222.0 598) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">256</text>
+<line x1="944.0" y1="100" x2="944.0" y2="554" stroke="#7b8794" stroke-dasharray="4 4"/>
+<text x="947.0" y="120" font-family="sans-serif" font-size="11" fill="#4c5a67">T64</text>
+<line x1="1222.0" y1="100" x2="1222.0" y2="554" stroke="#7b8794" stroke-dasharray="4 4"/>
+<text x="1225.0" y="120" font-family="sans-serif" font-size="11" fill="#4c5a67">T256</text>
+<line x1="100" y1="100" x2="100" y2="554" stroke="#34404a" stroke-width="1.5"/>
+<line x1="100" y1="554" x2="1222" y2="554" stroke="#34404a" stroke-width="1.5"/>
+<polyline fill="none" stroke="#155e99" stroke-width="2.3" points="940.9,312.2 944.0,312.4 1079.5,292.7 1081.1,286.5 1082.6,296.6 1221.2,308.4 1222.0,282.8"/>
+<circle cx="940.9" cy="312.2" r="2.8" fill="#155e99"/>
+<circle cx="944.0" cy="312.4" r="2.8" fill="#155e99"/>
+<circle cx="1079.5" cy="292.7" r="2.8" fill="#155e99"/>
+<circle cx="1081.1" cy="286.5" r="2.8" fill="#155e99"/>
+<circle cx="1082.6" cy="296.6" r="2.8" fill="#155e99"/>
+<circle cx="1221.2" cy="308.4" r="2.8" fill="#155e99"/>
+<circle cx="1222.0" cy="282.8" r="2.8" fill="#155e99"/>
+<line x1="100" y1="82" x2="123" y2="82" stroke="#155e99" stroke-width="3"/>
+<text x="129" y="87" font-family="sans-serif" font-size="12" fill="#24333f">analysis q1</text>
+<polyline fill="none" stroke="#bf3b42" stroke-width="2.3" stroke-dasharray="7 5" points="940.9,296.0 944.0,293.1 1079.5,278.8 1081.1,290.7 1082.6,362.8 1221.2,310.6 1222.0,304.5"/>
+<circle cx="940.9" cy="296.0" r="2.8" fill="#bf3b42"/>
+<circle cx="944.0" cy="293.1" r="2.8" fill="#bf3b42"/>
+<circle cx="1079.5" cy="278.8" r="2.8" fill="#bf3b42"/>
+<circle cx="1081.1" cy="290.7" r="2.8" fill="#bf3b42"/>
+<circle cx="1082.6" cy="362.8" r="2.8" fill="#bf3b42"/>
+<circle cx="1221.2" cy="310.6" r="2.8" fill="#bf3b42"/>
+<circle cx="1222.0" cy="304.5" r="2.8" fill="#bf3b42"/>
+<line x1="380" y1="82" x2="403" y2="82" stroke="#bf3b42" stroke-width="3" stroke-dasharray="7 5"/>
+<text x="409" y="87" font-family="sans-serif" font-size="12" fill="#24333f">analysis q8</text>
+<polyline fill="none" stroke="#2a806c" stroke-width="2.3" points="940.9,326.1 944.0,326.3 1079.5,319.3 1081.1,306.7 1082.6,317.3 1221.2,328.1 1222.0,300.4"/>
+<circle cx="940.9" cy="326.1" r="2.8" fill="#2a806c"/>
+<circle cx="944.0" cy="326.3" r="2.8" fill="#2a806c"/>
+<circle cx="1079.5" cy="319.3" r="2.8" fill="#2a806c"/>
+<circle cx="1081.1" cy="306.7" r="2.8" fill="#2a806c"/>
+<circle cx="1082.6" cy="317.3" r="2.8" fill="#2a806c"/>
+<circle cx="1221.2" cy="328.1" r="2.8" fill="#2a806c"/>
+<circle cx="1222.0" cy="300.4" r="2.8" fill="#2a806c"/>
+<line x1="660" y1="82" x2="683" y2="82" stroke="#2a806c" stroke-width="3"/>
+<text x="689" y="87" font-family="sans-serif" font-size="12" fill="#24333f">synthesis q1</text>
+<polyline fill="none" stroke="#9467bd" stroke-width="2.3" stroke-dasharray="7 5" points="940.9,302.0 944.0,304.4 1079.5,300.6 1081.1,297.1 1082.6,304.6 1221.2,307.2 1222.0,316.2"/>
+<circle cx="940.9" cy="302.0" r="2.8" fill="#9467bd"/>
+<circle cx="944.0" cy="304.4" r="2.8" fill="#9467bd"/>
+<circle cx="1079.5" cy="300.6" r="2.8" fill="#9467bd"/>
+<circle cx="1081.1" cy="297.1" r="2.8" fill="#9467bd"/>
+<circle cx="1082.6" cy="304.6" r="2.8" fill="#9467bd"/>
+<circle cx="1221.2" cy="307.2" r="2.8" fill="#9467bd"/>
+<circle cx="1222.0" cy="316.2" r="2.8" fill="#9467bd"/>
+<line x1="940" y1="82" x2="963" y2="82" stroke="#9467bd" stroke-width="3" stroke-dasharray="7 5"/>
+<text x="969" y="87" font-family="sans-serif" font-size="12" fill="#24333f">synthesis q8</text>
+<text x="661.0" y="678" text-anchor="middle" font-family="sans-serif" font-size="15">lmax (log(1 + lmax) spacing)</text>
+<text transform="translate(20 327.0) rotate(-90)" text-anchor="middle" font-family="sans-serif" font-size="14">paired / independent latency (log scale)</text>
+</svg>
