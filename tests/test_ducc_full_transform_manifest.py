@@ -125,3 +125,18 @@ def test_skipped_build_requires_matching_binary_build_identity(tmp_path) -> None
     actual["rust_binary_sha256"] = "9" * 64
     with pytest.raises(ValueError, match="rust_binary_sha256"):
         benchmark.validate_binary_build_record(path, actual, "a" * 40)
+
+
+def test_sweep_acceptance_is_independent_of_optional_stage_profile() -> None:
+    accepted_group = {
+        "status": "complete",
+        "numerical_status": "accepted",
+        "timing_quality_status": "qualified",
+        "reset_consistency_status": "accepted",
+    }
+    assert benchmark.dense_sweep_measurement_pass(
+        {"CC-T4-m4-even_smooth"},
+        {"CC-T4-m4-even_smooth"},
+        [],
+        {"case|analysis|q1": accepted_group},
+    )

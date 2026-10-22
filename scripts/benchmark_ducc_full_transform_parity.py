@@ -2128,7 +2128,7 @@ def write_cc_gl_comparison_plot(output_dir: pathlib.Path,
                         or int(sample.get("threads", -1)) != int(row["threads"])):
                     continue
                 backend = sample.get("backend")
-                if backend not in counts:
+                if backend not in pairs:
                     continue
                 pairs[backend].add(sample.get("process_pair"))
                 group_samples.append(sample)
@@ -2267,6 +2267,20 @@ def write_cc_gl_comparison_plot(output_dir: pathlib.Path,
     )
     convert_svg_to_png(output)
     return output
+
+
+def dense_sweep_measurement_pass(expected_ids: set[str], actual_ids: set[str],
+                                 low_even_missing: list[str],
+                                 measurement_groups: dict) -> bool:
+    """Return manifest, numerical, timing and reset acceptance independent of profiling."""
+    return (
+        expected_ids <= actual_ids
+        and not low_even_missing
+        and all(group["status"] == "complete" for group in measurement_groups.values())
+        and all(group["numerical_status"] == "accepted" for group in measurement_groups.values())
+        and all(group["timing_quality_status"] == "qualified" for group in measurement_groups.values())
+        and all(group["reset_consistency_status"] == "accepted" for group in measurement_groups.values())
+    )
 
 
 def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
@@ -2493,15 +2507,10 @@ def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
             and all(group["reset_consistency_status"] == "accepted" for group in measurement_groups.values())
         ),
         "recurrence_stage_attribution_status": recurrence_stage_attribution_status,
-        "full_sweep_pass": (
-            expected_ids <= actual_ids
-            and not low_even_missing
-            and all(group["status"] == "complete" for group in measurement_groups.values())
-            and all(group["numerical_status"] == "accepted" for group in measurement_groups.values())
-            and all(group["timing_quality_status"] == "qualified" for group in measurement_groups.values())
-            and all(group["reset_consistency_status"] == "accepted" for group in measurement_groups.values())
-            and recurrence_stage_attribution_status == "measured"
+        "full_sweep_pass": dense_sweep_measurement_pass(
+            expected_ids, actual_ids, low_even_missing, measurement_groups
         ),
+        "recurrence_stage_attribution_required_for_pass": False,
         "coverage_pass": (
             expected_ids <= actual_ids and not low_even_missing
         ),
@@ -2844,7 +2853,7 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
         "",
         "## Coverage audit",
         "",
-        f"The dataset contains {len(coverage['observed_lmax_0_through_256'])}/257 integer degrees in the low range ({257 - len(coverage['observed_lmax_0_through_256'])} absent). The required high-resolution list has {len(coverage['required_high_lmax'])} values; required case-selection check: `{coverage['coverage_pass']}`; missing required cases: {len(coverage['missing_case_ids'])}. Low-degree even-smooth full/reduced omissions: {len(coverage['low_degree_even_smooth_missing'])}. Across {coverage['expected_measurement_group_count']} required operation/thread groups, coverage statuses are `{coverage['measurement_status_counts']}`, numerical statuses are `{coverage['numerical_status_counts']}`, timing-quality statuses are `{coverage['timing_quality_status_counts']}`, target-window statuses are `{coverage['duration_window_status_counts']}`, and reset statuses are `{coverage['reset_consistency_status_counts']}`. Whole-transform pass: `{coverage['whole_transform_pass']}`; recurrence-stage attribution: `{coverage['recurrence_stage_attribution_status']}`; full-sweep status: `{coverage['full_sweep_pass']}`. Incomplete, rejected and timing-insufficient groups remain visible in the coverage audit.",
+        f"The dataset contains {len(coverage['observed_lmax_0_through_256'])}/257 integer degrees in the low range ({257 - len(coverage['observed_lmax_0_through_256'])} absent). The required high-resolution list has {len(coverage['required_high_lmax'])} values; required case-selection check: `{coverage['coverage_pass']}`; missing required cases: {len(coverage['missing_case_ids'])}. Low-degree even-smooth full/reduced omissions: {len(coverage['low_degree_even_smooth_missing'])}. Across {coverage['expected_measurement_group_count']} required operation/thread groups, coverage statuses are `{coverage['measurement_status_counts']}`, numerical statuses are `{coverage['numerical_status_counts']}`, timing-quality statuses are `{coverage['timing_quality_status_counts']}`, target-window statuses are `{coverage['duration_window_status_counts']}`, and reset statuses are `{coverage['reset_consistency_status_counts']}`. Whole-transform pass: `{coverage['whole_transform_pass']}`; recurrence-stage attribution: `{coverage['recurrence_stage_attribution_status']}`; full-sweep status: `{coverage['full_sweep_pass']}` (manifest/numerics/timing/reset only; stage profiling is reported independently). Incomplete, rejected and timing-insufficient groups remain visible in the coverage audit.",
         "",
         "## Warmed whole-transform summary",
         "",
