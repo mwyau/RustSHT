@@ -7,8 +7,8 @@
 The experiment answers whether two adjacent real longitude rows can share one length-N complex transform. It changes only scalar f64 odd-N analysis and synthesis. Even N, f32, spin-1 and other spin paths retain their existing route. A final unpaired latitude row uses the existing independent transform.
 
 - RustSHT baseline source: ef238290f28d5192ca54de8e442c77640549828a.
-- Local implementation, tests, benchmark harness and report commit: 4b74e3a595aacb111d3222d5da4ddab37a43e7c8.
-- Follow-up numerical-test hardening commit: 8342f663b2e441bb1a21e78eb07d5665639969ec. It changes tests only; the production source used for the A/B is unchanged.
+- Initial implementation, benchmark harness and evidence commit: 4b74e3a50a6a683e1ead44650aa6e9b4dad81246.
+- Follow-up numerical-test hardening commit: 8342f6631b9c5791f8e6ba4243e032dcb9d8eabd. It changes tests only; the production source used for the A/B is unchanged.
 - Candidate source diff SHA256 used for the final whole-transform A/B: b5238c0acf3ef06a5edbe35141786f87c64c81aa6ee3a0220e1489b32c3e7b04.
 - DUCC source: 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b, DUCC 0.42.0.
 - Host: AMD Ryzen 9 5950X, performance governor; q1 CPU 8, q8 CPUs 8–15.
