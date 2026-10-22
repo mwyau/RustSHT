@@ -1,0 +1,885 @@
+diff --git a/src/legendre/mod.rs b/src/legendre/mod.rs
+index da6944fa..aa6177c2 100644
+--- a/src/legendre/mod.rs
++++ b/src/legendre/mod.rs
+@@ -368,6 +368,13 @@ pub(crate) trait ShtScalar:
+     ) -> Result<bool, ShtError> {
+         Ok(false)
+     }
++    #[cfg_attr(
++        any(
++            rustsht_spin1_parity_separated,
++            rustsht_spin1_parity_separated_one_channel
++        ),
++        allow(dead_code)
++    )]
+     #[expect(
+         clippy::too_many_arguments,
+         reason = "The prepared dual-channel block receives both spectra and worker scratch explicitly."
+@@ -400,6 +407,72 @@ pub(crate) trait ShtScalar:
+     ) -> Result<bool, ShtError> {
+         Ok(false)
+     }
++    #[cfg(rustsht_spin1_parity_separated)]
++    #[expect(
++        clippy::too_many_arguments,
++        reason = "The parity-separated experiment receives caller-owned per-lane staging arrays."
++    )]
++    fn synthesize_prepared_scalar_pair_parity_block_dispatched(
++        _arch: Arch,
++        _m: usize,
++        _lmax: usize,
++        _sin_theta: &[Self],
++        _cos_theta: &[Self],
++        _sectoral_norm: Self,
++        _coefficient_a: &[Self],
++        _coefficient_b: &[Self],
++        _first_even: &[Complex<Self>],
++        _first_odd: &[Complex<Self>],
++        _second_even: &[Complex<Self>],
++        _second_odd: &[Complex<Self>],
++        _ring_order_limits: &[usize],
++        _spectrum_len: usize,
++        _first_spectra: &mut [Complex<Self>],
++        _second_spectra: &mut [Complex<Self>],
++        _previous: &mut [Self],
++        _current: &mut [Self],
++        _next: &mut [Self],
++        _exponents: &mut [i64],
++        _first_sum_re: &mut [Self],
++        _first_sum_im: &mut [Self],
++        _second_sum_re: &mut [Self],
++        _second_sum_im: &mut [Self],
++    ) -> Result<bool, ShtError> {
++        Ok(false)
++    }
++    #[cfg(rustsht_spin1_parity_separated_one_channel)]
++    #[expect(
++        clippy::too_many_arguments,
++        reason = "The one-channel parity experiment receives caller-owned lane staging arrays."
++    )]
++    fn synthesize_prepared_scalar_pair_parity_one_channel_block_dispatched(
++        _arch: Arch,
++        _m: usize,
++        _lmax: usize,
++        _sin_theta: &[Self],
++        _cos_theta: &[Self],
++        _sectoral_norm: Self,
++        _coefficient_a: &[Self],
++        _coefficient_b: &[Self],
++        _first_even: &[Complex<Self>],
++        _first_odd: &[Complex<Self>],
++        _second_even: &[Complex<Self>],
++        _second_odd: &[Complex<Self>],
++        _ring_order_limits: &[usize],
++        _spectrum_len: usize,
++        _first_spectra: &mut [Complex<Self>],
++        _second_spectra: &mut [Complex<Self>],
++        _previous: &mut [Self],
++        _current: &mut [Self],
++        _next: &mut [Self],
++        _exponents: &mut [i64],
++        _first_sum_re: &mut [Self],
++        _first_sum_im: &mut [Self],
++        _second_sum_re: &mut [Self],
++        _second_sum_im: &mut [Self],
++    ) -> Result<bool, ShtError> {
++        Ok(false)
++    }
+     #[cfg(feature = "parallel")]
+     #[expect(
+         clippy::too_many_arguments,
+@@ -1264,6 +1337,13 @@ impl ShtScalar for f64 {
+         )
+     }
+
++    #[cfg_attr(
++        any(
++            rustsht_spin1_parity_separated,
++            rustsht_spin1_parity_separated_one_channel
++        ),
++        allow(dead_code)
++    )]
+     fn synthesize_prepared_scalar_pair_block_dispatched(
+         arch: Arch,
+         m: usize,
+@@ -1318,6 +1398,116 @@ impl ShtScalar for f64 {
+         )
+     }
+
++    #[cfg(rustsht_spin1_parity_separated)]
++    fn synthesize_prepared_scalar_pair_parity_block_dispatched(
++        arch: Arch,
++        m: usize,
++        lmax: usize,
++        sin_theta: &[Self],
++        cos_theta: &[Self],
++        sectoral_norm: Self,
++        coefficient_a: &[Self],
++        coefficient_b: &[Self],
++        first_even: &[Complex<Self>],
++        first_odd: &[Complex<Self>],
++        second_even: &[Complex<Self>],
++        second_odd: &[Complex<Self>],
++        ring_order_limits: &[usize],
++        spectrum_len: usize,
++        first_spectra: &mut [Complex<Self>],
++        second_spectra: &mut [Complex<Self>],
++        previous: &mut [Self],
++        current: &mut [Self],
++        next: &mut [Self],
++        exponents: &mut [i64],
++        first_sum_re: &mut [Self],
++        first_sum_im: &mut [Self],
++        second_sum_re: &mut [Self],
++        second_sum_im: &mut [Self],
++    ) -> Result<bool, ShtError> {
++        scalar_paired::synthesize_prepared_order_pair_parity_block_dispatched(
++            arch,
++            m,
++            lmax,
++            sin_theta,
++            cos_theta,
++            sectoral_norm,
++            coefficient_a,
++            coefficient_b,
++            first_even,
++            first_odd,
++            second_even,
++            second_odd,
++            ring_order_limits,
++            spectrum_len,
++            first_spectra,
++            second_spectra,
++            previous,
++            current,
++            next,
++            exponents,
++            first_sum_re,
++            first_sum_im,
++            second_sum_re,
++            second_sum_im,
++        )
++    }
++
++    #[cfg(rustsht_spin1_parity_separated_one_channel)]
++    fn synthesize_prepared_scalar_pair_parity_one_channel_block_dispatched(
++        arch: Arch,
++        m: usize,
++        lmax: usize,
++        sin_theta: &[Self],
++        cos_theta: &[Self],
++        sectoral_norm: Self,
++        coefficient_a: &[Self],
++        coefficient_b: &[Self],
++        first_even: &[Complex<Self>],
++        first_odd: &[Complex<Self>],
++        second_even: &[Complex<Self>],
++        second_odd: &[Complex<Self>],
++        ring_order_limits: &[usize],
++        spectrum_len: usize,
++        first_spectra: &mut [Complex<Self>],
++        second_spectra: &mut [Complex<Self>],
++        previous: &mut [Self],
++        current: &mut [Self],
++        next: &mut [Self],
++        exponents: &mut [i64],
++        first_sum_re: &mut [Self],
++        first_sum_im: &mut [Self],
++        second_sum_re: &mut [Self],
++        second_sum_im: &mut [Self],
++    ) -> Result<bool, ShtError> {
++        scalar_paired::synthesize_prepared_order_pair_parity_one_channel_block_dispatched(
++            arch,
++            m,
++            lmax,
++            sin_theta,
++            cos_theta,
++            sectoral_norm,
++            coefficient_a,
++            coefficient_b,
++            first_even,
++            first_odd,
++            second_even,
++            second_odd,
++            ring_order_limits,
++            spectrum_len,
++            first_spectra,
++            second_spectra,
++            previous,
++            current,
++            next,
++            exponents,
++            first_sum_re,
++            first_sum_im,
++            second_sum_re,
++            second_sum_im,
++        )
++    }
++
+     fn try_synthesize_paired_scalar_transition_dispatched(
+         arch: Arch,
+         m: usize,
+diff --git a/src/legendre/scalar_paired.rs b/src/legendre/scalar_paired.rs
+index 5d9f062b..efd4fbe7 100644
+--- a/src/legendre/scalar_paired.rs
++++ b/src/legendre/scalar_paired.rs
+@@ -660,6 +660,7 @@ pub(crate) fn synthesize_order_pair_block_dispatched(
+     clippy::too_many_arguments,
+     reason = "The prepared dual-channel block receives both spectra and caller-owned recurrence scratch."
+ )]
++#[cfg_attr(rustsht_spin1_parity_separated, allow(dead_code))]
+ pub(crate) fn synthesize_prepared_order_pair_block_dispatched(
+     arch: Arch,
+     m: usize,
+@@ -754,6 +755,310 @@ pub(crate) fn synthesize_prepared_order_pair_block_dispatched(
+     Ok(true)
+ }
+
++/// Experimental DUCC-like parity-separated accumulation for the spin-1
++/// scalar-conversion route. It keeps each parity contribution in an
++/// independent register accumulator, then combines parities once per lane.
++/// Results are checked and staged before either spectrum is modified.
++#[cfg(rustsht_spin1_parity_separated)]
++#[expect(
++    clippy::too_many_arguments,
++    reason = "The experimental paired parity kernel receives bounded caller-owned worker scratch."
++)]
++pub(crate) fn synthesize_prepared_order_pair_parity_block_dispatched(
++    arch: Arch,
++    m: usize,
++    lmax: usize,
++    sin_theta: &[f64],
++    cos_theta: &[f64],
++    sectoral_norm: f64,
++    coefficient_a: &[f64],
++    coefficient_b: &[f64],
++    first_even: &[Complex64],
++    first_odd: &[Complex64],
++    second_even: &[Complex64],
++    second_odd: &[Complex64],
++    ring_order_limits: &[usize],
++    spectrum_len: usize,
++    first_spectra: &mut [Complex64],
++    second_spectra: &mut [Complex64],
++    previous: &mut [f64],
++    current: &mut [f64],
++    next: &mut [f64],
++    exponents: &mut [i64],
++    first_sum_re: &mut [f64],
++    first_sum_im: &mut [f64],
++    second_sum_re: &mut [f64],
++    second_sum_im: &mut [f64],
++) -> Result<bool, ShtError> {
++    let lane_count = sin_theta.len();
++    debug_assert_eq!(lane_count, cos_theta.len());
++    debug_assert_eq!(lane_count, ring_order_limits.len());
++    debug_assert!(lane_count <= LATITUDE_BLOCK_SIZE);
++    debug_assert_eq!(first_spectra.len(), lane_count * spectrum_len);
++    debug_assert_eq!(second_spectra.len(), first_spectra.len());
++    debug_assert!(previous.len() >= lane_count);
++    debug_assert!(current.len() >= lane_count);
++    debug_assert!(next.len() >= lane_count);
++    debug_assert!(exponents.len() >= lane_count);
++    debug_assert!(first_sum_re.len() >= lane_count);
++    debug_assert!(first_sum_im.len() >= lane_count);
++    debug_assert!(second_sum_re.len() >= lane_count);
++    debug_assert!(second_sum_im.len() >= lane_count);
++
++    let pair_count = (lmax - m + 2) / 2;
++    debug_assert!(coefficient_a.len() >= pair_count);
++    debug_assert!(coefficient_b.len() >= pair_count);
++    debug_assert!(first_even.len() >= pair_count);
++    debug_assert!(first_odd.len() >= pair_count);
++    debug_assert!(second_even.len() >= pair_count);
++    debug_assert!(second_odd.len() >= pair_count);
++    if lane_count == 0
++        || sin_theta
++            .iter()
++            .any(|&sine| !sine.is_finite() || sine < 0.01)
++        || cos_theta.iter().any(|&cosine| !cosine.is_finite())
++        || ring_order_limits.iter().any(|&limit| m > limit)
++    {
++        return Ok(false);
++    }
++
++    let coefficient_a = &coefficient_a[..pair_count];
++    let coefficient_b = &coefficient_b[..pair_count];
++    let first_even = &first_even[..pair_count];
++    let first_odd = &first_odd[..pair_count];
++    let second_even = &second_even[..pair_count];
++    let second_odd = &second_odd[..pair_count];
++
++    for lane in 0..lane_count {
++        let (value, exponent) = scalar::sectoral_value(sin_theta[lane], m, sectoral_norm)?;
++        previous[lane] = 0.0;
++        current[lane] = value;
++        exponents[lane] = exponent;
++    }
++    if !scalar::normalize_pair_lanes(
++        &mut previous[..lane_count],
++        &mut current[..lane_count],
++        &mut exponents[..lane_count],
++    )? {
++        return Ok(false);
++    }
++
++    arch.dispatch(FusedPreparedSynthesisParityPairBlock {
++        pair_count,
++        cos_theta,
++        coefficient_a,
++        coefficient_b,
++        first_even,
++        first_odd,
++        second_even,
++        second_odd,
++        current: &current[..lane_count],
++        first_sum_re: &mut first_sum_re[..lane_count],
++        first_sum_im: &mut first_sum_im[..lane_count],
++        second_sum_re: &mut second_sum_re[..lane_count],
++        second_sum_im: &mut second_sum_im[..lane_count],
++    });
++
++    if !finite_prefix_sums(
++        &first_sum_re[..lane_count],
++        &first_sum_im[..lane_count],
++        &second_sum_re[..lane_count],
++        &second_sum_im[..lane_count],
++    ) || !lane_values_in_normal_range(&first_sum_re[..lane_count])
++        || !lane_values_in_normal_range(&first_sum_im[..lane_count])
++        || !lane_values_in_normal_range(&second_sum_re[..lane_count])
++        || !lane_values_in_normal_range(&second_sum_im[..lane_count])
++    {
++        return Ok(false);
++    }
++
++    // Validate every result before committing either channel. This prevents
++    // the experimental path from partially updating spectra before a checked
++    // fallback on a cancellation, subnormal or extreme lane.
++    for lane in 0..lane_count {
++        let first = Complex64::new(first_sum_re[lane], first_sum_im[lane]);
++        let second = Complex64::new(second_sum_re[lane], second_sum_im[lane]);
++        if !complex_components_in_normal_range(first) || !complex_components_in_normal_range(second)
++        {
++            return Ok(false);
++        }
++        let spectrum_index = lane * spectrum_len + m;
++        let next_first = first_spectra[spectrum_index] + first;
++        let next_second = second_spectra[spectrum_index] + second;
++        let inverse_sine = sin_theta[lane].recip();
++        let weighted_first = next_first * inverse_sine;
++        let weighted_second = next_second * inverse_sine;
++        if !complex_components_in_normal_range(next_first)
++            || !complex_components_in_normal_range(next_second)
++            || !complex_components_in_normal_range(weighted_first)
++            || !complex_components_in_normal_range(weighted_second)
++        {
++            return Ok(false);
++        }
++    }
++
++    for lane in 0..lane_count {
++        let spectrum_index = lane * spectrum_len + m;
++        first_spectra[spectrum_index] += Complex64::new(first_sum_re[lane], first_sum_im[lane]);
++        second_spectra[spectrum_index] += Complex64::new(second_sum_re[lane], second_sum_im[lane]);
++    }
++    Ok(true)
++}
++
++/// Tests whether parity-separated accumulation can reduce register pressure
++/// enough to offset evaluating the shared recurrence once per channel.
++#[cfg(rustsht_spin1_parity_separated_one_channel)]
++#[expect(
++    clippy::too_many_arguments,
++    reason = "The one-channel parity experiment stages both channel results in caller-owned lane scratch."
++)]
++pub(crate) fn synthesize_prepared_order_pair_parity_one_channel_block_dispatched(
++    arch: Arch,
++    m: usize,
++    lmax: usize,
++    sin_theta: &[f64],
++    cos_theta: &[f64],
++    sectoral_norm: f64,
++    coefficient_a: &[f64],
++    coefficient_b: &[f64],
++    first_even: &[Complex64],
++    first_odd: &[Complex64],
++    second_even: &[Complex64],
++    second_odd: &[Complex64],
++    ring_order_limits: &[usize],
++    spectrum_len: usize,
++    first_spectra: &mut [Complex64],
++    second_spectra: &mut [Complex64],
++    previous: &mut [f64],
++    current: &mut [f64],
++    next: &mut [f64],
++    exponents: &mut [i64],
++    first_sum_re: &mut [f64],
++    first_sum_im: &mut [f64],
++    second_sum_re: &mut [f64],
++    second_sum_im: &mut [f64],
++) -> Result<bool, ShtError> {
++    let lane_count = sin_theta.len();
++    debug_assert_eq!(lane_count, cos_theta.len());
++    debug_assert_eq!(lane_count, ring_order_limits.len());
++    debug_assert!(lane_count <= LATITUDE_BLOCK_SIZE);
++    debug_assert_eq!(first_spectra.len(), lane_count * spectrum_len);
++    debug_assert_eq!(second_spectra.len(), first_spectra.len());
++    debug_assert!(previous.len() >= lane_count);
++    debug_assert!(current.len() >= lane_count);
++    debug_assert!(next.len() >= lane_count);
++    debug_assert!(exponents.len() >= lane_count);
++    debug_assert!(first_sum_re.len() >= lane_count);
++    debug_assert!(first_sum_im.len() >= lane_count);
++    debug_assert!(second_sum_re.len() >= lane_count);
++    debug_assert!(second_sum_im.len() >= lane_count);
++
++    let pair_count = (lmax - m + 2) / 2;
++    debug_assert!(coefficient_a.len() >= pair_count);
++    debug_assert!(coefficient_b.len() >= pair_count);
++    debug_assert!(first_even.len() >= pair_count);
++    debug_assert!(first_odd.len() >= pair_count);
++    debug_assert!(second_even.len() >= pair_count);
++    debug_assert!(second_odd.len() >= pair_count);
++    if lane_count == 0
++        || sin_theta
++            .iter()
++            .any(|&sine| !sine.is_finite() || sine < 0.01)
++        || cos_theta.iter().any(|&cosine| !cosine.is_finite())
++        || ring_order_limits.iter().any(|&limit| m > limit)
++    {
++        return Ok(false);
++    }
++
++    let coefficient_a = &coefficient_a[..pair_count];
++    let coefficient_b = &coefficient_b[..pair_count];
++    let first_even = &first_even[..pair_count];
++    let first_odd = &first_odd[..pair_count];
++    let second_even = &second_even[..pair_count];
++    let second_odd = &second_odd[..pair_count];
++
++    for lane in 0..lane_count {
++        let (value, exponent) = scalar::sectoral_value(sin_theta[lane], m, sectoral_norm)?;
++        previous[lane] = 0.0;
++        current[lane] = value;
++        exponents[lane] = exponent;
++    }
++    if !scalar::normalize_pair_lanes(
++        &mut previous[..lane_count],
++        &mut current[..lane_count],
++        &mut exponents[..lane_count],
++    )? {
++        return Ok(false);
++    }
++
++    arch.dispatch(FusedPreparedSynthesisParityChannelBlock {
++        pair_count,
++        cos_theta,
++        coefficient_a,
++        coefficient_b,
++        even: first_even,
++        odd: first_odd,
++        current: &current[..lane_count],
++        sum_re: &mut first_sum_re[..lane_count],
++        sum_im: &mut first_sum_im[..lane_count],
++    });
++    arch.dispatch(FusedPreparedSynthesisParityChannelBlock {
++        pair_count,
++        cos_theta,
++        coefficient_a,
++        coefficient_b,
++        even: second_even,
++        odd: second_odd,
++        current: &current[..lane_count],
++        sum_re: &mut second_sum_re[..lane_count],
++        sum_im: &mut second_sum_im[..lane_count],
++    });
++
++    if !finite_prefix_sums(
++        &first_sum_re[..lane_count],
++        &first_sum_im[..lane_count],
++        &second_sum_re[..lane_count],
++        &second_sum_im[..lane_count],
++    ) || !lane_values_in_normal_range(&first_sum_re[..lane_count])
++        || !lane_values_in_normal_range(&first_sum_im[..lane_count])
++        || !lane_values_in_normal_range(&second_sum_re[..lane_count])
++        || !lane_values_in_normal_range(&second_sum_im[..lane_count])
++    {
++        return Ok(false);
++    }
++
++    // Validate all lane/channel updates before changing either spectrum, so a
++    // rejected fast route can safely fall back without double accumulation.
++    for lane in 0..lane_count {
++        let first = Complex64::new(first_sum_re[lane], first_sum_im[lane]);
++        let second = Complex64::new(second_sum_re[lane], second_sum_im[lane]);
++        if !complex_components_in_normal_range(first) || !complex_components_in_normal_range(second)
++        {
++            return Ok(false);
++        }
++        let spectrum_index = lane * spectrum_len + m;
++        let next_first = first_spectra[spectrum_index] + first;
++        let next_second = second_spectra[spectrum_index] + second;
++        let inverse_sine = sin_theta[lane].recip();
++        let weighted_first = next_first * inverse_sine;
++        let weighted_second = next_second * inverse_sine;
++        if !complex_components_in_normal_range(next_first)
++            || !complex_components_in_normal_range(next_second)
++            || !complex_components_in_normal_range(weighted_first)
++            || !complex_components_in_normal_range(weighted_second)
++        {
++            return Ok(false);
++        }
++    }
++
++    for lane in 0..lane_count {
++        let spectrum_index = lane * spectrum_len + m;
++        first_spectra[spectrum_index] += Complex64::new(first_sum_re[lane], first_sum_im[lane]);
++        second_spectra[spectrum_index] += Complex64::new(second_sum_re[lane], second_sum_im[lane]);
++    }
++    Ok(true)
++}
++
+ #[expect(
+     clippy::too_many_arguments,
+     reason = "The transition kernel receives coefficient factors and caller-owned lane scratch explicitly."
+@@ -5176,6 +5481,7 @@ fn finite_prefix_sums(
+         .all(|value| value.is_finite() && value.abs() <= limit)
+ }
+
++#[cfg_attr(rustsht_spin1_parity_separated, allow(dead_code))]
+ struct FusedPreparedSynthesisPairBlock<'a> {
+     pair_count: usize,
+     cos_theta: &'a [f64],
+@@ -5192,6 +5498,7 @@ struct FusedPreparedSynthesisPairBlock<'a> {
+     second_sum_im: &'a mut [f64],
+ }
+
++#[cfg_attr(rustsht_spin1_parity_separated, allow(dead_code))]
+ impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
+     type Output = ();
+
+@@ -5323,6 +5630,246 @@ impl WithSimd for FusedPreparedSynthesisPairBlock<'_> {
+     }
+ }
+
++#[cfg(rustsht_spin1_parity_separated)]
++struct FusedPreparedSynthesisParityPairBlock<'a> {
++    pair_count: usize,
++    cos_theta: &'a [f64],
++    coefficient_a: &'a [f64],
++    coefficient_b: &'a [f64],
++    first_even: &'a [Complex64],
++    first_odd: &'a [Complex64],
++    second_even: &'a [Complex64],
++    second_odd: &'a [Complex64],
++    current: &'a [f64],
++    first_sum_re: &'a mut [f64],
++    first_sum_im: &'a mut [f64],
++    second_sum_re: &'a mut [f64],
++    second_sum_im: &'a mut [f64],
++}
++
++#[cfg(rustsht_spin1_parity_separated)]
++impl WithSimd for FusedPreparedSynthesisParityPairBlock<'_> {
++    type Output = ();
++
++    #[inline(always)]
++    fn with_simd<S: Simd>(self, simd: S) {
++        let FusedPreparedSynthesisParityPairBlock {
++            pair_count,
++            cos_theta,
++            coefficient_a,
++            coefficient_b,
++            first_even,
++            first_odd,
++            second_even,
++            second_odd,
++            current,
++            first_sum_re,
++            first_sum_im,
++            second_sum_re,
++            second_sum_im,
++        } = self;
++        let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
++        let (initial_vectors, initial_tail) = S::as_simd_f64s(current);
++        let (first_sum_re_vectors, first_sum_re_tail) = S::as_mut_simd_f64s(first_sum_re);
++        let (first_sum_im_vectors, first_sum_im_tail) = S::as_mut_simd_f64s(first_sum_im);
++        let (second_sum_re_vectors, second_sum_re_tail) = S::as_mut_simd_f64s(second_sum_re);
++        let (second_sum_im_vectors, second_sum_im_tail) = S::as_mut_simd_f64s(second_sum_im);
++
++        for lane_block in 0..cosine_vectors.len() {
++            let cosine = cosine_vectors[lane_block];
++            let mut previous = simd.splat_f64s(0.0);
++            let mut current = initial_vectors[lane_block];
++            let mut first_even_re = simd.splat_f64s(0.0);
++            let mut first_even_im = simd.splat_f64s(0.0);
++            let mut first_odd_re = simd.splat_f64s(0.0);
++            let mut first_odd_im = simd.splat_f64s(0.0);
++            let mut second_even_re = simd.splat_f64s(0.0);
++            let mut second_even_im = simd.splat_f64s(0.0);
++            let mut second_odd_re = simd.splat_f64s(0.0);
++            let mut second_odd_im = simd.splat_f64s(0.0);
++
++            for pair in 0..pair_count {
++                first_even_re =
++                    simd.mul_add_f64s(current, simd.splat_f64s(first_even[pair].re), first_even_re);
++                first_even_im =
++                    simd.mul_add_f64s(current, simd.splat_f64s(first_even[pair].im), first_even_im);
++                first_odd_re =
++                    simd.mul_add_f64s(current, simd.splat_f64s(first_odd[pair].re), first_odd_re);
++                first_odd_im =
++                    simd.mul_add_f64s(current, simd.splat_f64s(first_odd[pair].im), first_odd_im);
++                second_even_re = simd.mul_add_f64s(
++                    current,
++                    simd.splat_f64s(second_even[pair].re),
++                    second_even_re,
++                );
++                second_even_im = simd.mul_add_f64s(
++                    current,
++                    simd.splat_f64s(second_even[pair].im),
++                    second_even_im,
++                );
++                second_odd_re =
++                    simd.mul_add_f64s(current, simd.splat_f64s(second_odd[pair].re), second_odd_re);
++                second_odd_im =
++                    simd.mul_add_f64s(current, simd.splat_f64s(second_odd[pair].im), second_odd_im);
++
++                if pair + 1 < pair_count {
++                    let cosine_squared = simd.mul_f64s(cosine, cosine);
++                    let leading = simd.mul_add_f64s(
++                        simd.splat_f64s(coefficient_a[pair]),
++                        cosine_squared,
++                        simd.splat_f64s(coefficient_b[pair]),
++                    );
++                    let next = simd.mul_add_f64s(leading, current, previous);
++                    previous = current;
++                    current = next;
++                }
++            }
++
++            first_sum_re_vectors[lane_block] =
++                simd.mul_add_f64s(cosine, first_odd_re, first_even_re);
++            first_sum_im_vectors[lane_block] =
++                simd.mul_add_f64s(cosine, first_odd_im, first_even_im);
++            second_sum_re_vectors[lane_block] =
++                simd.mul_add_f64s(cosine, second_odd_re, second_even_re);
++            second_sum_im_vectors[lane_block] =
++                simd.mul_add_f64s(cosine, second_odd_im, second_even_im);
++        }
++
++        for lane in 0..cosine_tail.len() {
++            let cosine = cosine_tail[lane];
++            let mut previous = 0.0;
++            let mut current = initial_tail[lane];
++            let mut first_even_re = 0.0;
++            let mut first_even_im = 0.0;
++            let mut first_odd_re = 0.0;
++            let mut first_odd_im = 0.0;
++            let mut second_even_re = 0.0;
++            let mut second_even_im = 0.0;
++            let mut second_odd_re = 0.0;
++            let mut second_odd_im = 0.0;
++
++            for pair in 0..pair_count {
++                first_even_re = current.mul_add(first_even[pair].re, first_even_re);
++                first_even_im = current.mul_add(first_even[pair].im, first_even_im);
++                first_odd_re = current.mul_add(first_odd[pair].re, first_odd_re);
++                first_odd_im = current.mul_add(first_odd[pair].im, first_odd_im);
++                second_even_re = current.mul_add(second_even[pair].re, second_even_re);
++                second_even_im = current.mul_add(second_even[pair].im, second_even_im);
++                second_odd_re = current.mul_add(second_odd[pair].re, second_odd_re);
++                second_odd_im = current.mul_add(second_odd[pair].im, second_odd_im);
++
++                if pair + 1 < pair_count {
++                    let leading = coefficient_a[pair].mul_add(cosine * cosine, coefficient_b[pair]);
++                    let next = leading.mul_add(current, previous);
++                    previous = current;
++                    current = next;
++                }
++            }
++
++            first_sum_re_tail[lane] = cosine.mul_add(first_odd_re, first_even_re);
++            first_sum_im_tail[lane] = cosine.mul_add(first_odd_im, first_even_im);
++            second_sum_re_tail[lane] = cosine.mul_add(second_odd_re, second_even_re);
++            second_sum_im_tail[lane] = cosine.mul_add(second_odd_im, second_even_im);
++        }
++    }
++}
++
++#[cfg(rustsht_spin1_parity_separated_one_channel)]
++struct FusedPreparedSynthesisParityChannelBlock<'a> {
++    pair_count: usize,
++    cos_theta: &'a [f64],
++    coefficient_a: &'a [f64],
++    coefficient_b: &'a [f64],
++    even: &'a [Complex64],
++    odd: &'a [Complex64],
++    current: &'a [f64],
++    sum_re: &'a mut [f64],
++    sum_im: &'a mut [f64],
++}
++
++#[cfg(rustsht_spin1_parity_separated_one_channel)]
++impl WithSimd for FusedPreparedSynthesisParityChannelBlock<'_> {
++    type Output = ();
++
++    #[inline(always)]
++    fn with_simd<S: Simd>(self, simd: S) {
++        let FusedPreparedSynthesisParityChannelBlock {
++            pair_count,
++            cos_theta,
++            coefficient_a,
++            coefficient_b,
++            even,
++            odd,
++            current,
++            sum_re,
++            sum_im,
++        } = self;
++        let (cosine_vectors, cosine_tail) = S::as_simd_f64s(cos_theta);
++        let (initial_vectors, initial_tail) = S::as_simd_f64s(current);
++        let (sum_re_vectors, sum_re_tail) = S::as_mut_simd_f64s(sum_re);
++        let (sum_im_vectors, sum_im_tail) = S::as_mut_simd_f64s(sum_im);
++
++        for lane_block in 0..cosine_vectors.len() {
++            let cosine = cosine_vectors[lane_block];
++            let mut previous = simd.splat_f64s(0.0);
++            let mut current = initial_vectors[lane_block];
++            let mut even_re = simd.splat_f64s(0.0);
++            let mut even_im = simd.splat_f64s(0.0);
++            let mut odd_re = simd.splat_f64s(0.0);
++            let mut odd_im = simd.splat_f64s(0.0);
++
++            for pair in 0..pair_count {
++                even_re = simd.mul_add_f64s(current, simd.splat_f64s(even[pair].re), even_re);
++                even_im = simd.mul_add_f64s(current, simd.splat_f64s(even[pair].im), even_im);
++                odd_re = simd.mul_add_f64s(current, simd.splat_f64s(odd[pair].re), odd_re);
++                odd_im = simd.mul_add_f64s(current, simd.splat_f64s(odd[pair].im), odd_im);
++
++                if pair + 1 < pair_count {
++                    let cosine_squared = simd.mul_f64s(cosine, cosine);
++                    let leading = simd.mul_add_f64s(
++                        simd.splat_f64s(coefficient_a[pair]),
++                        cosine_squared,
++                        simd.splat_f64s(coefficient_b[pair]),
++                    );
++                    let next = simd.mul_add_f64s(leading, current, previous);
++                    previous = current;
++                    current = next;
++                }
++            }
++
++            sum_re_vectors[lane_block] = simd.mul_add_f64s(cosine, odd_re, even_re);
++            sum_im_vectors[lane_block] = simd.mul_add_f64s(cosine, odd_im, even_im);
++        }
++
++        for lane in 0..cosine_tail.len() {
++            let cosine = cosine_tail[lane];
++            let mut previous = 0.0;
++            let mut current = initial_tail[lane];
++            let mut even_re = 0.0;
++            let mut even_im = 0.0;
++            let mut odd_re = 0.0;
++            let mut odd_im = 0.0;
++
++            for pair in 0..pair_count {
++                even_re = current.mul_add(even[pair].re, even_re);
++                even_im = current.mul_add(even[pair].im, even_im);
++                odd_re = current.mul_add(odd[pair].re, odd_re);
++                odd_im = current.mul_add(odd[pair].im, odd_im);
++
++                if pair + 1 < pair_count {
++                    let leading = coefficient_a[pair].mul_add(cosine * cosine, coefficient_b[pair]);
++                    let next = leading.mul_add(current, previous);
++                    previous = current;
++                    current = next;
++                }
++            }
++
++            sum_re_tail[lane] = cosine.mul_add(odd_re, even_re);
++            sum_im_tail[lane] = cosine.mul_add(odd_im, even_im);
++        }
++    }
++}
++
+ #[cfg(feature = "parallel")]
+ #[expect(
+     clippy::too_many_arguments,
+diff --git a/src/spin_transform.rs b/src/spin_transform.rs
+index efffd1b5..a7bb790a 100644
+--- a/src/spin_transform.rs
++++ b/src/spin_transform.rs
+@@ -2087,6 +2087,10 @@ impl<T: ShtScalar> ShtPlan<T> {
+                 let recurrence_started = recurrence
+                     .spin1_profile_enabled
+                     .then(std::time::Instant::now);
++                #[cfg(not(any(
++                    rustsht_spin1_parity_separated,
++                    rustsht_spin1_parity_separated_one_channel
++                )))]
+                 let fused_pair = T::synthesize_prepared_scalar_pair_block_dispatched(
+                     arch,
+                     m,
+@@ -2113,6 +2117,61 @@ impl<T: ShtScalar> ShtPlan<T> {
+                     &mut recurrence.analysis_opposite_real[..block_len],
+                     &mut recurrence.analysis_opposite_imag[..block_len],
+                 )?;
++                #[cfg(rustsht_spin1_parity_separated)]
++                let fused_pair = T::synthesize_prepared_scalar_pair_parity_block_dispatched(
++                    arch,
++                    m,
++                    scalar_lmax,
++                    theta_sin,
++                    theta_cos,
++                    self.sectoral_norms[m],
++                    &recurrence.spin_coefficient_a,
++                    &recurrence.spin_coefficient_b,
++                    &recurrence.fast_spin_first[..coefficient_pair_count],
++                    &recurrence.fast_spin_second[..coefficient_pair_count],
++                    &recurrence.fast_spin_pair_first[..coefficient_pair_count],
++                    &recurrence.fast_spin_pair_second[..coefficient_pair_count],
++                    ring_order_limits,
++                    spectrum_len,
++                    q_spectra,
++                    u_spectra,
++                    &mut recurrence.previous[..block_len],
++                    &mut recurrence.current[..block_len],
++                    &mut recurrence.next[..block_len],
++                    &mut recurrence.exponents[..block_len],
++                    &mut recurrence.analysis_same_real[..block_len],
++                    &mut recurrence.analysis_same_imag[..block_len],
++                    &mut recurrence.analysis_opposite_real[..block_len],
++                    &mut recurrence.analysis_opposite_imag[..block_len],
++                )?;
++                #[cfg(rustsht_spin1_parity_separated_one_channel)]
++                let fused_pair =
++                    T::synthesize_prepared_scalar_pair_parity_one_channel_block_dispatched(
++                        arch,
++                        m,
++                        scalar_lmax,
++                        theta_sin,
++                        theta_cos,
++                        self.sectoral_norms[m],
++                        &recurrence.spin_coefficient_a,
++                        &recurrence.spin_coefficient_b,
++                        &recurrence.fast_spin_first[..coefficient_pair_count],
++                        &recurrence.fast_spin_second[..coefficient_pair_count],
++                        &recurrence.fast_spin_pair_first[..coefficient_pair_count],
++                        &recurrence.fast_spin_pair_second[..coefficient_pair_count],
++                        ring_order_limits,
++                        spectrum_len,
++                        q_spectra,
++                        u_spectra,
++                        &mut recurrence.previous[..block_len],
++                        &mut recurrence.current[..block_len],
++                        &mut recurrence.next[..block_len],
++                        &mut recurrence.exponents[..block_len],
++                        &mut recurrence.analysis_same_real[..block_len],
++                        &mut recurrence.analysis_same_imag[..block_len],
++                        &mut recurrence.analysis_opposite_real[..block_len],
++                        &mut recurrence.analysis_opposite_imag[..block_len],
++                    )?;
+                 #[cfg(all(test, feature = "parallel"))]
+                 if let Some(recurrence_started) = recurrence_started {
+                     recurrence.spin1_profile_recurrence_ns +=

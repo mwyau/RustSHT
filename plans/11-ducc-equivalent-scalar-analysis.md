@@ -1,13 +1,11 @@
-# Active plan 11 — Scalar f64 GL analysis parity with DUCC
+# Plan 11 — Scalar f64 GL analysis parity with DUCC
 
-**Status: COMPLETE (2026-10-21); closeout commit
-[`a37f74d6`](../reports/scalar-analysis-cumulative-2026-10-20.md#plan-11-reduced-mmax-frontend-closeout-2026-10-21).**
-The reduced-`mmax` frontend was attributed, validated and closed on
-`opt/sht-performance-parity`. Plan 14 is now the active successor. Read
-[AGENTS.md](../AGENTS.md), the current code and
-[PERFORMANCE_STATUS.md](../PERFORMANCE_STATUS.md) before changes.
-The [full preceding Plan 11](../reports/archive/plans/11-ducc-equivalent-scalar-analysis-pre-refresh-2026-10-21.md)
-is preserved as a historical snapshot, **not** a second implementation queue.
+**Status: COMPLETE.** The reduced-mmax frontend and subsequent scalar-analysis
+cumulative ablation are closed. See the [Plan 11 closeout](../reports/scalar-analysis-cumulative-2026-10-20.md)
+and the [cumulative ablation report](../reports/scalar-analysis-cumulative-ablation-2026-10-21.md).
+Plan 16 is the active successor; this file is retained as the implementation
+record, not an active work queue. The earlier Plan 11 snapshot is preserved in
+[the archive](../reports/archive/plans/11-ducc-equivalent-scalar-analysis-pre-refresh-2026-10-21.md).
 
 ## Objective and boundaries
 
@@ -104,7 +102,15 @@ identified.
    identical before/after and q1 shows no broad regression. See the
    [comparison](../reports/scalar-analysis-cumulative-2026-10-20.md#reduced-order-real-fft-output-pruning-2026-10-20).
 
-## Immediate work — priority order
+## Completed milestones — historical record
+
+### Current-source revalidation (historical, 2026-10-22)
+
+A bounded current-source revalidation measured the existing T720/T2047/T3072
+cases. Matched ratios were about 1.00–1.23×, not a universal 2× gap. This
+revalidation did not supersede the scalar cumulative-ablation closeout or
+justify another scalar kernel change. Preserve the 256-pair tile and checked
+fallbacks.
 
 ### A. Prefix-route experiment — complete
 
@@ -155,12 +161,8 @@ was supported by the measured whole-transform results. The distinct Plan 11
 closeout was committed and pushed as
 `a37f74d68631ab5fd373a4097640895e9f0c0c23`.
 
-The authorized same-session, same-branch handoff is complete: Plan 14 is
-ACTIVE, and Plans 12/13 remain deferred. Plan 14's initial rebaseline must
-use the final Plan 11 source at the closeout commit, revise stale
-reduced-`mmax` claims, and proceed with its small-q1 and large-q8 evidence
-stages. Do not create `opt/sht-small-serial-parallel-parity` or switch to
-`main`.
+Plan 11 remains complete. Plan 16 is the active successor; Plans 12 and 13
+remain deferred. Plan 14's closeout is unchanged.
 
 ## Tile definition and future 512 experiment (not active)
 
@@ -207,7 +209,7 @@ allocation/capacity changes, range-cache indexing and tail checks.
 
 ## Follow-on, deferred and historical references
 
-- **Active successor:**
+- Historical successor (not active under the current owner direction):
   [Plan 14 — small serial and large parallel performance](14-small-serial-parallel-performance.md),
   on the same session and branch; the Plan 11 closeout SHA is recorded above.
 - [Plan 12: offline-calibrated cache-informed Legendre dispatch](12-cache-informed-legendre-dispatch.md) — **future only**; one-time

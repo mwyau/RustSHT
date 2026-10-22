@@ -2,7 +2,18 @@
 
 **Successor (queued, not active):** [Plan 17 — f32 and high-resolution atmospheric SHT performance](17-f32-atmospheric-performance.md), to begin only after Plan 16's measured closeout and safe remote sync. Do not mix f32/high-resolution follow-on experiments into current Plan 16.
 
-**Status: ACTIVE (2026-10-22), Milestone B.** Milestone A's executed-path crosswalk and matched-workload Rust stage profile are recorded in [the crosswalk](../reports/plan16-spin1-executed-path-crosswalk-2026-10-22.md). The scalar-analysis cumulative-ablation is closed; its final ablation matrix and production cleanup are committed on the same branch. **Branch:** opt/sht-performance-parity. **Scope:** f64 single-vector-field spin-1 STANDARD E/B analysis and synthesis on GL, CC and F1; optimize the measured synthesis recurrence/spectrum residual first. This is a new investigation, not a reopening or retroactive reinterpretation of completed Plan 15.
+**Status: ACTIVE (2026-10-22), Milestone C.** Milestone A's executed-path crosswalk and matched-workload Rust stage profile are recorded in [the crosswalk](../reports/plan16-spin1-executed-path-crosswalk-2026-10-22.md). Milestone B tested two-channel and one-channel parity-separated accumulation; both candidates were removed after whole-transform regressions or inconclusive results. The scalar-analysis cumulative ablation is closed with the production 256-pair tile. **Branch:** opt/sht-performance-parity. **Scope:** f64 single-vector-field spin-1 STANDARD E/B analysis and synthesis on GL, CC and F1; optimize the measured synthesis recurrence/spectrum residual first. This is a new investigation, not a reopening or retroactive reinterpretation of completed Plan 15.
+
+## Current milestone status
+
+Milestone B is complete. The one-channel parity-separated variant removed
+YMM spills but duplicated recurrence, regressing q1 synthesis about 23% and
+leaving q8 neutral to slower. The two-channel variant spilled accumulators.
+Neither changes production. See the [matched A/B report](../reports/plan16-spin1-parity-separated-ab-2026-10-22.md)
+and its [timing and validation data](../reports/data/plan16-parity-separated-t720-2026-10-22/README.md).
+The next task is Milestone C: quantify repeated paired-coefficient preparation
+across ring groups and test bounded reuse only if its measured cost warrants
+additional workspace.
 
 ## Execution order and handoff
 
