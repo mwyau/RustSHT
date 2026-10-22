@@ -1,19 +1,36 @@
 # Independent review — advisory, subordinate to owner instructions
 
-**Status (2026-10-22): RESOLVED — no active steering request.**  
-**Prior review:** `08b938a1d9f89455b9c7a0b8bd81776988ea314a`.  
-**Owner clarification:** the pyspharm numerical and Python-compatibility code on `opt/sht-performance-parity` was **intentionally integrated**. That overrides the previous independent review's inference from Plan 18's earlier isolation wording.
+**Inspected:** `opt/sht-performance-parity` at `75cf62ecfc4a324fc4f7d9e652c3d285dbf32cc4` on 2026-10-22.
+**Status:** Actionable package test regression; no SHT numerical-kernel finding.
+**Priority:** Fix at the next safe small commit boundary **without interrupting** the owner's active f64 scalar CC full-band sweep and GL 20 MiB table-crossover study.
 
-## Resolved provenance concern
+## Finding: incomplete `spharm_rs` import migration
 
-The previous note incorrectly requested a new owner decision about whether to keep the pyspharm files on the performance branch. **Do not act on that request, remove or relocate the integration, or block Plan 16.** The integration decision is confirmed. Earlier [Plan 18](plans/18-pyspharm-and-native-ffi-compatibility.md) statements that the performance branch was untouched refer to the prior isolated development stage and need not be interpreted as a current prohibition.
+**Verified source evidence**
 
-The separate scientific compatibility limitations recorded in Plan 18 remain relevant **unless new measurements supersede them**: regular-grid maximum-truncation parity is not established (small-grid examples report relative L2 `3.146e-2` at `nlat=7, T6` and `6.702e-2` at `nlat=8, T7`); the `pyspharm-rs` distribution does not automatically satisfy windspharm's `pyspharm>=1.0.9` installation metadata. These are **documented limitations, not a request to reopen Plan 18 immediately**. No PyPI publication was authorized by the clarification.
+- The owner-directed package rename in [`b3ef687`](https://github.com/mwyau/RustSHT/commit/b3ef6873712b0a69739ccae9c9931aae67f975a2) makes `spharm_rs` the intended module name, not `spharm`. This rename is intentional; do not restore an old import alias.
+- [`python/pyspharm-rs/tests/test_api.py`](python/pyspharm-rs/tests/test_api.py) imports `spharm_rs` but still calls the **undefined** `spharm` name on lines **97, 201, 202, 220, 239, 258, 276, 278, 280, 282, 284, 288** of the inspected revision. Representative expressions: `spharm.Spharmt(...)`, `spharm.regrid(...)`, and `spharm.specintrp(...)`. These tests will raise Python `NameError` when executed; that result follows from static source inspection. **This independent review did not execute pytest.**
+- Recent commits [`a81e0e4`](https://github.com/mwyau/RustSHT/commit/a81e0e41adaf7f8d436db3616749cabbc4e5740d) and [`75cf62e`](https://github.com/mwyau/RustSHT/commit/75cf62ecfc4a324fc4f7d9e652c3d285dbf32cc4) clarify the documented difference between nominal SPHEREPACK truncation N-1 and exact CC analysis limit N-2. They do not independently establish a new correctness regression. Do not change native CC limits based on this test-name defect.
+- The owner's approved pyspharm integration is intentional. Do not undo it or treat it as an unauthorized branch merge.
 
-The guarded paired odd-length FFT is likewise intentionally integrated. [Current validation](reports/paired-odd-longitude-fft-production-validation-2026-10-22.md) reports paired/independent whole-transform geometric mean latency ratios for full-order odd-longitude cases of 0.963/0.943 (analysis q1/q8) and 0.905/0.945 (synthesis q1/q8). Its numerical fallback guards do not imply that the entire fast path is slower. Some low-`nphi`, reduced-order q1 analysis cases were 5–11% slower. Those measurements are a bounded screen with scheduling and run-order limitations. **No new FFT eligibility or guard change is authorized.**
+### Goal for Luna/Codex
 
-## Current direction
+**Restore the `spharm_rs` compatibility test suite's namespace consistency, then continue the higher-priority f64 scalar CC benchmark work.**
 
-No independent redirection is warranted from these previously reviewed findings. Plan 16 and the owner-directed scalar dispatch/paired-FFT/full-sweep checkpoint are complete; continue Plan 17 as directed in [AGENTS.md](AGENTS.md).
+Constrained steps:
 
-Future independent reviewers should replace this resolved status only for a fresh, material, evidence-backed finding; otherwise leave it unchanged. This note is advisory and always subordinate to explicit owner instructions.
+1. At the next safe commit boundary, fetch and reconcile the latest `opt/sht-performance-parity` HEAD following [AGENTS.md](AGENTS.md). Check whether another agent already corrected these 12 references; if so, just validate, do not create duplicate edits.
+2. If still present, replace only stale `spharm.` usages in `python/pyspharm-rs/tests/test_api.py` with `spharm_rs.`. Search the rest of `python/pyspharm-rs` for accidental legacy module references, distinguishing intentional historical prose from executable imports. Preserve intentional public API, result expectations, numerical tolerances and packaging names.
+3. Run the full `python/pyspharm-rs` pytest suite in the intended isolated Python environment; verify import of the built wheel as `spharm_rs`, packaging contents, and that no `import spharm` compatibility alias is reintroduced. If tests expose other failures, report separately instead of making broad unrelated changes.
+4. Commit/push a minimal tested fix normally, safely synchronizing with concurrent work. Do not rewrite published history, force-push or touch `main`.
+5. Resume the active [f64 scalar CC full-band and GL table-crossover directive](plans/scalar-f64-cc-full-band-and-gl-table-crossover-2026-10-22.md) without reopening paused Plan 17 f32 work or the odd-length FFT hold.
+
+**No new native Rust/DUCC timing data** was generated by the three package and documentation commits reviewed at this checkpoint.
+
+## Previously resolved findings (not active steering)
+
+- The owner intentionally integrated the pyspharm implementation on this branch. Earlier Plan 18 statements that the performance branch was untouched describe the isolated development phase and do not authorize relocating or removing code.
+- The guarded paired odd-longitude FFT route is intentionally integrated and already validated. Do not change its eligibility, numerical guard or fallback without new owner direction.
+- The previously measured regular-grid maximum-truncation differences and windspharm distribution dependency limitation remain documented scientific/packaging constraints, not new findings or an instruction to change the native CC algorithm.
+
+Independent review notes are advisory; the owner's latest directions in AGENTS.md and the active plan take precedence. Replace this note when the test regression is fixed or superseded by substantial new evidence.
