@@ -1,8 +1,10 @@
 # RustSHT performance checkpoint — current findings
 
-**Active sequence (2026-10-22):** the scalar-analysis cumulative ablation is
-closed; Plan 16 is active at Milestone E. Plans 14 and 15 are complete. Plan 17
-is queued; Plans 12 and 13 remain deferred. **Branch:**
+**Active sequence (2026-10-22):** the scalar-analysis cumulative ablation and
+Plan 16 are complete. The current owner-directed checkpoint is the scalar
+Legendre dispatch and paired odd-FFT validation/sweep; return to Plan 17 after
+that checkpoint. Plans 14 and 15 are complete; Plans 12 and 13 remain deferred.
+**Branch:**
 `opt/sht-performance-parity`.
 
 ## Scalar-analysis cumulative ablation
@@ -44,8 +46,15 @@ reduced CC) and improving worker balance (2.69×→1.01× full; 5.48×→1.30×
 reduced). The remaining Rust/DUCC q8 ratio is 2.03–2.84×. See the [Milestone D
 report](reports/plan16-spin1-order-major-dataflow-2026-10-21.md).
 
-**Next:** Plan 16 Milestone E: test T1023 coefficient-cache eligibility and,
-separately, CC/F1 spin-1 analysis resampling overhead.
+Plan 16 Milestone E is now complete. The q8 spin-1 synthesis coefficient
+cache gate extends to T1023 and 34 MiB. On exact T1023 GL/CC, this activates the
+existing order-major queue and cuts warmed q8 synthesis by 37–67% across full
+and quarter order; F1 remains on its previous path. q1 and analysis controls
+did not move materially. The direct T1023 CC/F1 analysis profiles measured
+Rust's resampling/scatter at 16.2/16.4 ms versus 17.1/18.0 ms for DUCC's
+`resample_to_prepared_CC`; Rust recurrence/accumulation remains about 52 ms.
+See the [Milestone E closeout](reports/plan16-spin1-t1023-cache-extension-2026-10-22.md)
+and its sanitized [results](reports/data/plan16-spin1-t1023-cache-extension-2026-10-22/results.csv).
 
 ## Other measured context
 
@@ -105,8 +114,9 @@ interfered with (for example, T2047 reduced-order analysis), so distributions
 and telemetry are retained and no samples were removed. The four ratio plots,
 absolute timings, CSV/JSON results and coverage audit are in the
 [full-sweep report](reports/ducc-full-transform-parity-current-2026-10-22.md).
-This benchmark changes no production code. **Resume Plan 16 Milestone E**
-below.
+The scalar sweep itself changed no production code. Plan 16 Milestone E is
+closed above; after the owner-directed scalar dispatch/paired-FFT checkpoint,
+resume the original queue at Plan 17.
 
 **Constraints:** preserve strict Rust floating-point semantics, checked
 exceptional-value fallbacks, portable Pulp SIMD, the stable API, and the

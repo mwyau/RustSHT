@@ -1,10 +1,10 @@
 # Plan 16 — DUCC-equivalent spin-1 recurrence and dataflow
 
-**Successor (queued, not active):** [Plan 17 — f32 and high-resolution atmospheric SHT performance](17-f32-atmospheric-performance.md), to begin only after Plan 16's measured closeout and safe remote sync. Do not mix f32/high-resolution follow-on experiments into current Plan 16.
+**Successor (queued, not active):** [Plan 17 — f32 and high-resolution atmospheric SHT performance](17-f32-atmospheric-performance.md), to begin after the owner-directed scalar dispatch/paired-FFT checkpoint and safe remote sync. Do not mix f32/high-resolution follow-on experiments into this checkpoint.
 
-**Status: ACTIVE (2026-10-22), Milestone E.** Milestone A's executed-path crosswalk and matched-workload Rust stage profile are recorded in [the crosswalk](../reports/plan16-spin1-executed-path-crosswalk-2026-10-22.md). Milestone B's parity-separated candidates and Milestone C's paired-coefficient reuse candidate were removed after matched whole-transform tests did not establish a gain. Milestone D's order-major synthesis queue is accepted for eligible q8 scalar-converted spin-1 STANDARD synthesis; its measured scope and remaining gap are recorded in [the Milestone D report](../reports/plan16-spin1-order-major-dataflow-2026-10-21.md). The scalar-analysis cumulative ablation is closed with the production 256-pair tile. **Branch:** opt/sht-performance-parity. **Scope:** f64 single-vector-field spin-1 STANDARD E/B analysis and synthesis on GL, CC and F1; optimize the measured synthesis recurrence/spectrum residual first. This is a new investigation, not a reopening or retroactive reinterpretation of completed Plan 15.
+**Status: COMPLETE (2026-10-22).** Milestone A's executed-path crosswalk and matched-workload Rust stage profile are recorded in [the crosswalk](../reports/plan16-spin1-executed-path-crosswalk-2026-10-22.md). Milestone B's parity-separated candidates and Milestone C's paired-coefficient reuse candidate were removed after matched whole-transform tests did not establish a gain. Milestone D's order-major synthesis queue is accepted for eligible q8 scalar-converted spin-1 STANDARD synthesis; its measured scope and remaining gap are recorded in [the Milestone D report](../reports/plan16-spin1-order-major-dataflow-2026-10-21.md). Milestone E extended the bounded coefficient cache to T1023/34 MiB for eligible spin-1 q8 synthesis; its performance and CC/F1 analysis-resampling closeout are in [the Milestone E report](../reports/plan16-spin1-t1023-cache-extension-2026-10-22.md). The scalar-analysis cumulative ablation is closed with the production 256-pair tile. **Branch:** opt/sht-performance-parity. **Scope:** f64 single-vector-field spin-1 STANDARD E/B analysis and synthesis on GL, CC and F1. **Next original plan:** Plan 17 after the owner-directed scalar dispatch and paired-FFT checkpoint.
 
-## Current milestone status
+## Milestones B–E complete
 
 Milestones B, C and D are complete. The one-channel parity-separated variant
 removed YMM spills but duplicated recurrence, regressing q1 synthesis about
@@ -20,7 +20,7 @@ GL/CC/F1 full/reduced-order cases. Its work-based dispatch requires the
 existing prepared spin-1 coefficient cache, dynamic group queue, q8 or more,
 and at least two order tiles per worker. The per-worker latitude-row scratch
 is allocated lazily and reused. Rust remains 2.03–2.84× slower than DUCC on
-these cases; do not claim parity. Proceed to Milestone E.
+those T720 cases; do not claim parity.
 
 **Separate owner-directed checkpoint (2026-10-22):** the guarded paired odd-
 longitude FFT is already current production code. Its T0–T256 same-source
@@ -33,9 +33,9 @@ E next task.
 current-source native f64 scalar GL sweep covers every T0–T256 and selected
 degrees through T3072 against pinned DUCC 0.42.0; results and the q8 contention
 limits are in the [full-sweep report](../reports/ducc-full-transform-parity-current-2026-10-22.md).
-It changed no production code and does not alter Plan 16 scope. Resume
-Milestone E: T1023 coefficient-cache eligibility, then CC/F1 spin-1 analysis
-overhead.
+It changed no production code and does not alter Plan 16 scope. Milestone E is
+now complete; its T1023 cache comparison and current CC/F1 analysis phase
+profile are in the [closeout report](../reports/plan16-spin1-t1023-cache-extension-2026-10-22.md).
 
 ## Execution order and handoff
 
@@ -44,10 +44,10 @@ overhead.
    production retains the checked staged-output route and 256-pair tile.
 2. Plan 15's GL → CC → F1 sequence is complete in
    [its closeout report](../reports/plan15-spin1-synthesis-dataflow-closeout-2026-10-21.md).
-3. Continue Plan 16 Milestone E on the same branch, one hypothesis at a time.
-   Publish reproducible small commits for accepted improvements and documented
-   negative findings. A negative measurement is a valid result; do not force a
-   new kernel into production.
+3. Plan 16 Milestone E is complete. The T1023 cache extension is retained;
+   CC/F1 analysis resampling remains on the accepted order-tiled path.
+4. Complete the owner-directed scalar Legendre dispatch and paired-FFT
+   checkpoint, then resume the original queue at [Plan 17](17-f32-atmospheric-performance.md).
 
 ## Existing evidence and important distinctions
 

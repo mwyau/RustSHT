@@ -1,0 +1,17 @@
+grid,lmax,mmax,threads,phase,median_ms,p10_ms,p90_ms,n
+CC,1023,1023,8,strategy selection and table setup,3.5000000000000004e-05,3e-05,4e-05,8
+CC,1023,1023,8,forward FFT,2.658536,2.637512,2.695572,8
+CC,1023,1023,8,coefficient initialization,0.8695554999999999,0.854037,0.920572,8
+CC,1023,1023,8,meridional resampling (parallel orders),16.19426,15.932695,16.40545,8
+CC,1023,1023,8,latitude geometry setup,0.0191065,0.018936,0.019317,8
+CC,1023,1023,8,Legendre recurrence and accumulation,51.683687500000005,51.510941,51.728333,8
+CC,1023,1023,8,coefficient cleanup,0.002946,0.002766,0.003466,8
+CC,1023,1023,8,TOTAL transform,71.4292035,71.15498,71.665016,8
+F1,1023,1023,8,strategy selection and table setup,4e-05,2e-05,4e-05,8
+F1,1023,1023,8,forward FFT,2.6218625,2.607024,2.642952,8
+F1,1023,1023,8,coefficient initialization,0.839303,0.815894,0.858134,8
+F1,1023,1023,8,meridional resampling (parallel orders),16.443361,16.191985,16.970198,8
+F1,1023,1023,8,latitude geometry setup,0.019186,0.019076,0.019266,8
+F1,1023,1023,8,Legendre recurrence and accumulation,52.0636465,51.764541,52.245953,8
+F1,1023,1023,8,coefficient cleanup,0.0027555,0.002555,0.003146,8
+F1,1023,1023,8,TOTAL transform,72.05607499999999,71.473272,72.35942,8

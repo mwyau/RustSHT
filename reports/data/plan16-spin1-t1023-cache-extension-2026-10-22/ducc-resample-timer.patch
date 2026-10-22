@@ -1,0 +1,37 @@
+# Local-only timing instrumentation against DUCC 0.42.0 commit 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b.
+# The modified upstream source is GPL-2.0-or-later; this patch is for reproducing
+# the resample_to_prepared_CC stage profile only and is not part of production.
+# Configure with -DDUCC_PROFILE_CC_RESAMPLE=1.
+--- a/src/ducc0/sht/sht.cc
++++ b/src/ducc0/sht/sht.cc
+@@ -23,6 +23,8 @@
+ 
+ #include <vector>
+ #include <cmath>
++#include <chrono>
++#include <cstdio>
+ #include <cstring>
+ #include "ducc0/infra/simd.h"
+ #include "ducc0/sht/sht.h"
+@@ -1169,6 +1171,9 @@
+   bool npi, bool spi, const vmav<complex<T>,3> &lego, size_t spin, size_t lmax,
+   size_t nthreads)
+   {
++#ifdef DUCC_PROFILE_CC_RESAMPLE
++  auto profile_start = std::chrono::steady_clock::now();
++#endif
+   constexpr size_t chunksize=64;
+   MR_assert(legi.shape(0)==lego.shape(0), "number of components mismatch");
+   auto nm = legi.shape(2);
+@@ -1277,6 +1282,11 @@
+         }
+       }
+     });
++#ifdef DUCC_PROFILE_CC_RESAMPLE
++  auto profile_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
++    std::chrono::steady_clock::now()-profile_start).count();
++  std::fprintf(stderr, "DUCC_CC_RESAMPLE_MS,%.6f\n", profile_ns*1e-6);
++#endif
+   }
+ 
+ // NOTE: legi and lego may overlap, with identical start address and strides

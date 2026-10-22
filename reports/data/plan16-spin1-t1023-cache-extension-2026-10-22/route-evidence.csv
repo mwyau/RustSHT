@@ -1,0 +1,11 @@
+variant,grid,lmax,mmax,coefficient_bytes,coefficient_complex_values,order_major_scratch_workers,cache_active
+production baseline,GL,1023,255,0,0,0,False
+production baseline,GL,1023,1023,0,0,0,False
+candidate 17 MiB,GL,1023,255,8396800,524800,8,True
+candidate 17 MiB,GL,1023,1023,0,0,0,False
+candidate 34 MiB,GL,1023,255,8396800,524800,8,True
+candidate 34 MiB,GL,1023,1023,33587200,2099200,8,True
+candidate 34 MiB,CC,1023,255,8396800,524800,8,True
+candidate 34 MiB,CC,1023,1023,33587200,2099200,8,True
+candidate 34 MiB,F1,1023,255,0,0,0,False
+candidate 34 MiB,F1,1023,1023,0,0,0,False

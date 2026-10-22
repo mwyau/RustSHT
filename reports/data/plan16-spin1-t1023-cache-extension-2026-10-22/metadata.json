@@ -1,0 +1,18 @@
+{
+  "baseline_source": "79e28abb",
+  "candidate_source_base": "79e28abb; only cache MAX_LMAX=1023 and MAX_BYTES=34 MiB changed",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "toolchain": "rustc 1.99.1 / LLVM 23.1.1; GCC 15.2.0",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "ducc_sht_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver -fno-fast-math",
+  "baseline_binary_sha256": "efb7a5e6be9897aed7eef1ba4432b6628d174d89c07bca8e79d8bb6f3015a1db",
+  "candidate_binary_sha256": "6a8e41ba2637cee9a1c68ded25e19c5be02f7e6ba9ae64a0abd464c3ffb85656",
+  "ducc_binary_sha256": "e3908ae1ce2502b1a7b9c9ede1442d85d4f977efbb62adc39542482d2352f61d",
+  "host": "AMD Ryzen 9 5950X; q1 CPU 0, q8 CPUs 0-7 within L3 0-7,16-23",
+  "protocol": "three interleaved process pairs; calibrated batches targeting 25 ms; plans/workspaces reused; first-call/setup reported separately",
+  "cases": "T1023 GL/CC/F1 exact latitude, full mmax=1023 and reduced mmax=255, q1/q8, analysis/synthesis",
+  "source_variants": "baseline 720/17 MiB; reduced candidate 1023/17 MiB; final candidate 1023/34 MiB",
+  "raw_host_logs": "not included; per-run wait/frequency details remain local; CSV contains only wait-fraction medians",
+  "complete": true,
+  "numerical_all_finite_repeat_reset": true
+}
