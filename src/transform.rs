@@ -427,6 +427,181 @@ fn first_active_symmetric_pair(
 
 #[allow(private_bounds)]
 impl<T: ShtScalar> ShtPlan<T> {
+    #[inline]
+    fn paired_scalar_odd_fft_supported(&self) -> bool {
+        self.harmonics.spin() == 0
+            && !self.grid.nphi().is_multiple_of(2)
+            && T::epsilon().to_f64() == Some(f64::EPSILON)
+    }
+
+    #[inline]
+    fn paired_scalar_odd_forward_fft_supported(&self) -> bool {
+        // The N=255 forward row benchmark and T127 whole-transform A/B do not
+        // show a repeatable gain, so keep analysis on the established route.
+        self.paired_scalar_odd_fft_supported() && self.grid.nphi() != 255
+    }
+
+    #[inline]
+    fn forward_analysis_row_pair(
+        &self,
+        first_input: &[T],
+        second_input: &[T],
+        first_output: &mut [Complex<T>],
+        second_output: &mut [Complex<T>],
+        fft_workspace: &mut RealFftWorkspace<T>,
+    ) -> Result<(), ShtError> {
+        if self.fft.forward_paired_truncated(
+            first_input,
+            second_input,
+            first_output,
+            second_output,
+            fft_workspace,
+        )? {
+            return Ok(());
+        }
+        self.fft
+            .forward_truncated(first_input, first_output, fft_workspace)?;
+        self.fft
+            .forward_truncated(second_input, second_output, fft_workspace)
+    }
+
+    #[inline]
+    fn inverse_synthesis_row_pair(
+        &self,
+        first_input: &[Complex<T>],
+        second_input: &[Complex<T>],
+        first_output: &mut [T],
+        second_output: &mut [T],
+        fft_workspace: &mut RealFftWorkspace<T>,
+    ) -> Result<(), ShtError> {
+        if self.fft.inverse_paired_series(
+            first_input,
+            second_input,
+            first_output,
+            second_output,
+            fft_workspace,
+        )? {
+            return Ok(());
+        }
+        self.fft
+            .inverse_series(first_input, first_output, fft_workspace)?;
+        self.fft
+            .inverse_series(second_input, second_output, fft_workspace)
+    }
+
+    fn forward_analysis_rows_paired(
+        &self,
+        input: &[T],
+        output: &mut [Complex<T>],
+        output_modes: usize,
+        serial_workspace: &mut RealFftWorkspace<T>,
+        #[cfg(feature = "parallel")] worker_workspaces: &mut [RealFftWorkspace<T>],
+        #[cfg(feature = "parallel")] execution_capacity: usize,
+    ) -> Result<(), ShtError> {
+        debug_assert!(self.paired_scalar_odd_forward_fft_supported());
+        let ntheta = self.grid.ntheta();
+        let nphi = self.grid.nphi();
+        let spectrum_len = self.fft.spectrum_len();
+        if output_modes == 0 || output_modes > spectrum_len {
+            return Err(ShtError::BufferLength {
+                buffer: "analysis FFT output modes",
+                expected: spectrum_len,
+                actual: output_modes,
+            });
+        }
+
+        let pair_count = ntheta / 2;
+        #[cfg(feature = "parallel")]
+        {
+            let worker_count = execution_capacity
+                .min(rayon::current_num_threads())
+                .min(worker_workspaces.len())
+                .min(pair_count);
+            if self.row_fft_parallelism_supported() && worker_count > 1 {
+                let pairs_per_group = pair_count.div_ceil(worker_count);
+                let rows_per_group =
+                    pairs_per_group
+                        .checked_mul(2)
+                        .ok_or(ShtError::IntegerOverflow {
+                            quantity: "paired analysis FFT rows per group",
+                        })?;
+                let output_chunk_len =
+                    rows_per_group
+                        .checked_mul(spectrum_len)
+                        .ok_or(ShtError::IntegerOverflow {
+                            quantity: "paired analysis FFT output chunk length",
+                        })?;
+                let paired_output_len = pair_count
+                    .checked_mul(2)
+                    .and_then(|rows| rows.checked_mul(spectrum_len))
+                    .ok_or(ShtError::IntegerOverflow {
+                        quantity: "paired analysis FFT output length",
+                    })?;
+                output[..paired_output_len]
+                    .par_chunks_mut(output_chunk_len)
+                    .zip(worker_workspaces[..worker_count].par_iter_mut())
+                    .enumerate()
+                    .try_for_each(|(group, (spectra, fft_workspace))| {
+                        let first_ring = group * pairs_per_group * 2;
+                        for (pair_offset, spectra_pair) in
+                            spectra.chunks_mut(2 * spectrum_len).enumerate()
+                        {
+                            let ring = first_ring + pair_offset * 2;
+                            let input_start = ring * nphi;
+                            let (first_spectrum, second_spectrum) =
+                                spectra_pair.split_at_mut(spectrum_len);
+                            self.forward_analysis_row_pair(
+                                &input[input_start..input_start + nphi],
+                                &input[input_start + nphi..input_start + 2 * nphi],
+                                &mut first_spectrum[..output_modes],
+                                &mut second_spectrum[..output_modes],
+                                fft_workspace,
+                            )?;
+                        }
+                        Ok(())
+                    })?;
+                if ntheta.is_multiple_of(2) {
+                    return Ok(());
+                }
+                let ring = ntheta - 1;
+                let input_start = ring * nphi;
+                let spectrum_start = ring * spectrum_len;
+                self.fft.forward_truncated(
+                    &input[input_start..input_start + nphi],
+                    &mut output[spectrum_start..spectrum_start + output_modes],
+                    serial_workspace,
+                )?;
+                return Ok(());
+            }
+        }
+
+        for ring in (0..pair_count * 2).step_by(2) {
+            let input_start = ring * nphi;
+            let spectrum_start = ring * spectrum_len;
+            let (first_spectrum, second_spectrum) = output
+                [spectrum_start..spectrum_start + 2 * spectrum_len]
+                .split_at_mut(spectrum_len);
+            self.forward_analysis_row_pair(
+                &input[input_start..input_start + nphi],
+                &input[input_start + nphi..input_start + 2 * nphi],
+                &mut first_spectrum[..output_modes],
+                &mut second_spectrum[..output_modes],
+                serial_workspace,
+            )?;
+        }
+        if !ntheta.is_multiple_of(2) {
+            let ring = ntheta - 1;
+            let input_start = ring * nphi;
+            let spectrum_start = ring * spectrum_len;
+            self.fft.forward_truncated(
+                &input[input_start..input_start + nphi],
+                &mut output[spectrum_start..spectrum_start + output_modes],
+                serial_workspace,
+            )?;
+        }
+        Ok(())
+    }
+
     pub(crate) fn forward_analysis_rows(
         &self,
         input: &[T],
@@ -507,6 +682,98 @@ impl<T: ShtScalar> ShtPlan<T> {
         let spectrum_len = self.fft.spectrum_len();
         debug_assert_eq!(spectra.len(), ntheta * spectrum_len);
         debug_assert_eq!(output.len(), ntheta * nphi);
+
+        if self.paired_scalar_odd_fft_supported() {
+            let pair_count = ntheta / 2;
+            #[cfg(feature = "parallel")]
+            {
+                let worker_count = execution_capacity
+                    .min(rayon::current_num_threads())
+                    .min(worker_workspaces.len())
+                    .min(pair_count);
+                if self.row_fft_parallelism_supported() && worker_count > 1 {
+                    let pairs_per_group = pair_count.div_ceil(worker_count);
+                    let rows_per_group =
+                        pairs_per_group
+                            .checked_mul(2)
+                            .ok_or(ShtError::IntegerOverflow {
+                                quantity: "paired synthesis FFT rows per group",
+                            })?;
+                    let output_chunk_len =
+                        rows_per_group
+                            .checked_mul(nphi)
+                            .ok_or(ShtError::IntegerOverflow {
+                                quantity: "paired synthesis FFT output chunk length",
+                            })?;
+                    let paired_output_len = pair_count
+                        .checked_mul(2)
+                        .and_then(|rows| rows.checked_mul(nphi))
+                        .ok_or(ShtError::IntegerOverflow {
+                            quantity: "paired synthesis FFT output length",
+                        })?;
+                    output[..paired_output_len]
+                        .par_chunks_mut(output_chunk_len)
+                        .zip(worker_workspaces[..worker_count].par_iter_mut())
+                        .enumerate()
+                        .try_for_each(|(group, (output_rows, fft_workspace))| {
+                            let first_ring = group * pairs_per_group * 2;
+                            for (pair_offset, output_pair) in
+                                output_rows.chunks_mut(2 * nphi).enumerate()
+                            {
+                                let ring = first_ring + pair_offset * 2;
+                                let spectrum_start = ring * spectrum_len;
+                                let (first_output, second_output) = output_pair.split_at_mut(nphi);
+                                self.inverse_synthesis_row_pair(
+                                    &spectra[spectrum_start..spectrum_start + spectrum_len],
+                                    &spectra[spectrum_start + spectrum_len
+                                        ..spectrum_start + 2 * spectrum_len],
+                                    first_output,
+                                    second_output,
+                                    fft_workspace,
+                                )?;
+                            }
+                            Ok(())
+                        })?;
+                    if ntheta.is_multiple_of(2) {
+                        return Ok(());
+                    }
+                    let ring = ntheta - 1;
+                    let spectrum_start = ring * spectrum_len;
+                    let output_start = ring * nphi;
+                    self.fft.inverse_series(
+                        &spectra[spectrum_start..spectrum_start + spectrum_len],
+                        &mut output[output_start..output_start + nphi],
+                        serial_workspace,
+                    )?;
+                    return Ok(());
+                }
+            }
+
+            for ring in (0..pair_count * 2).step_by(2) {
+                let spectrum_start = ring * spectrum_len;
+                let output_start = ring * nphi;
+                let (first_output, second_output) =
+                    output[output_start..output_start + 2 * nphi].split_at_mut(nphi);
+                self.inverse_synthesis_row_pair(
+                    &spectra[spectrum_start..spectrum_start + spectrum_len],
+                    &spectra[spectrum_start + spectrum_len..spectrum_start + 2 * spectrum_len],
+                    first_output,
+                    second_output,
+                    serial_workspace,
+                )?;
+            }
+            if !ntheta.is_multiple_of(2) {
+                let ring = ntheta - 1;
+                let spectrum_start = ring * spectrum_len;
+                let output_start = ring * nphi;
+                self.fft.inverse_series(
+                    &spectra[spectrum_start..spectrum_start + spectrum_len],
+                    &mut output[output_start..output_start + nphi],
+                    serial_workspace,
+                )?;
+            }
+            return Ok(());
+        }
 
         #[cfg(feature = "parallel")]
         {
@@ -1753,28 +2020,61 @@ impl<T: ShtScalar> ShtPlan<T> {
                 .execution_capacity
                 .min(rayon::current_num_threads())
                 > 1;
+        #[cfg(feature = "parallel")]
+        {
+            if self.paired_scalar_odd_forward_fft_supported() {
+                self.forward_analysis_rows_paired(
+                    map,
+                    &mut workspace.spectra,
+                    output_modes,
+                    &mut workspace.fft,
+                    &mut workspace.fft_worker_workspaces,
+                    if parallel_fft {
+                        workspace.execution_capacity
+                    } else {
+                        1
+                    },
+                )?;
+            } else if parallel_fft {
+                self.forward_analysis_rows(
+                    map,
+                    &mut workspace.spectra,
+                    output_modes,
+                    &mut workspace.fft,
+                    &mut workspace.fft_worker_workspaces,
+                    workspace.execution_capacity,
+                )?;
+            } else {
+                for ring in 0..ntheta {
+                    let input_start = ring * nphi;
+                    let spectrum_start = ring * spectrum_len;
+                    self.fft.forward_truncated(
+                        &map[input_start..input_start + nphi],
+                        &mut workspace.spectra[spectrum_start..spectrum_start + output_modes],
+                        &mut workspace.fft,
+                    )?;
+                }
+            }
+        }
         #[cfg(not(feature = "parallel"))]
-        let parallel_fft = false;
-        if parallel_fft {
-            self.forward_analysis_rows(
-                map,
-                &mut workspace.spectra,
-                output_modes,
-                &mut workspace.fft,
-                #[cfg(feature = "parallel")]
-                &mut workspace.fft_worker_workspaces,
-                #[cfg(feature = "parallel")]
-                workspace.execution_capacity,
-            )?;
-        } else {
-            for ring in 0..ntheta {
-                let input_start = ring * nphi;
-                let spectrum_start = ring * spectrum_len;
-                self.fft.forward_truncated(
-                    &map[input_start..input_start + nphi],
-                    &mut workspace.spectra[spectrum_start..spectrum_start + output_modes],
+        {
+            if self.paired_scalar_odd_forward_fft_supported() {
+                self.forward_analysis_rows_paired(
+                    map,
+                    &mut workspace.spectra,
+                    output_modes,
                     &mut workspace.fft,
                 )?;
+            } else {
+                for ring in 0..ntheta {
+                    let input_start = ring * nphi;
+                    let spectrum_start = ring * spectrum_len;
+                    self.fft.forward_truncated(
+                        &map[input_start..input_start + nphi],
+                        &mut workspace.spectra[spectrum_start..spectrum_start + output_modes],
+                        &mut workspace.fft,
+                    )?;
+                }
             }
         }
         #[cfg(all(test, feature = "parallel"))]

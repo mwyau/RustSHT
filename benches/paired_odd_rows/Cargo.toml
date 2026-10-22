@@ -1,0 +1,16 @@
+[package]
+name = "paired-odd-rows"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+num-complex = "0.4"
+rayon = "1"
+rustfft = "6.4"
+
+[features]
+parallel = []
+
+[workspace]
+resolver = "3"

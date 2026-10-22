@@ -152,6 +152,161 @@ impl<T: FftNum + Float> RealFftPlan<T> {
         self.forward_modes(input, output, workspace, output_modes)
     }
 
+    /// Computes two adjacent odd-length real transforms with one complex FFT.
+    /// Returns `false` when headroom or subnormal checks require the ordinary
+    /// independent-row path.
+    pub(crate) fn forward_paired_truncated(
+        &self,
+        first_input: &[T],
+        second_input: &[T],
+        first_output: &mut [Complex<T>],
+        second_output: &mut [Complex<T>],
+        workspace: &mut RealFftWorkspace<T>,
+    ) -> Result<bool, ShtError> {
+        check_len("paired real FFT first input", self.n, first_input.len())?;
+        check_len("paired real FFT second input", self.n, second_input.len())?;
+        if first_output.is_empty()
+            || first_output.len() > self.spectrum_len()
+            || second_output.len() != first_output.len()
+        {
+            return Err(ShtError::BufferLength {
+                buffer: "paired real FFT spectrum",
+                expected: self.spectrum_len(),
+                actual: first_output.len().min(second_output.len()),
+            });
+        }
+        self.check_workspace(workspace)?;
+        if self.n.is_multiple_of(2) {
+            return Ok(false);
+        }
+        let Engine::Odd { forward, .. } = &self.engine else {
+            return Ok(false);
+        };
+
+        let component_bound = paired_component_bound::<T>(self.n);
+        let mut safe = true;
+        let mut first_scale = T::zero();
+        let mut second_scale = T::zero();
+        for (j, (&first, &second)) in first_input.iter().zip(second_input).enumerate() {
+            safe &= paired_component_safe(first, component_bound)
+                && paired_component_safe(second, component_bound);
+            if first.is_finite() {
+                first_scale = first_scale.max(first.abs());
+            }
+            if second.is_finite() {
+                second_scale = second_scale.max(second.abs());
+            }
+            workspace.transform[j] = Complex::new(first, second);
+        }
+        if !safe || !paired_scales_safe(first_scale, second_scale) {
+            return Ok(false);
+        }
+
+        forward.process_with_scratch(&mut workspace.transform, &mut workspace.scratch);
+        let half = T::from_f64(0.5).expect("half is representable");
+        for k in 0..first_output.len() {
+            let value = workspace.transform[k];
+            let mirror = workspace.transform[(self.n - k) % self.n].conj();
+            let sum = value + mirror;
+            let difference = value - mirror;
+            first_output[k] = sum * half;
+            second_output[k] = Complex::new(difference.im * half, -difference.re * half);
+            if complex_has_subnormal(first_output[k]) || complex_has_subnormal(second_output[k]) {
+                return Ok(false);
+            }
+        }
+        first_output[0].im = T::zero();
+        second_output[0].im = T::zero();
+        Ok(true)
+    }
+
+    /// Reconstructs two adjacent odd-length real rows from Hermitian spectra
+    /// with one complex inverse FFT. Returns `false` when the inputs or outputs
+    /// need the independent-row path to preserve numerical safeguards.
+    pub(crate) fn inverse_paired_series(
+        &self,
+        first_input: &[Complex<T>],
+        second_input: &[Complex<T>],
+        first_output: &mut [T],
+        second_output: &mut [T],
+        workspace: &mut RealFftWorkspace<T>,
+    ) -> Result<bool, ShtError> {
+        check_len(
+            "paired real FFT first spectrum",
+            self.spectrum_len(),
+            first_input.len(),
+        )?;
+        check_len(
+            "paired real FFT second spectrum",
+            self.spectrum_len(),
+            second_input.len(),
+        )?;
+        check_len("paired real FFT first output", self.n, first_output.len())?;
+        check_len("paired real FFT second output", self.n, second_output.len())?;
+        self.check_workspace(workspace)?;
+        if first_input[0].im != T::zero() {
+            return Err(ShtError::NonRealFftEdge { index: 0 });
+        }
+        if second_input[0].im != T::zero() {
+            return Err(ShtError::NonRealFftEdge { index: 0 });
+        }
+        if self.n.is_multiple_of(2) {
+            return Ok(false);
+        }
+        let Engine::Odd {
+            inverse,
+            inverse_mixed_radix,
+            ..
+        } = &self.engine
+        else {
+            return Ok(false);
+        };
+
+        let component_bound = paired_component_bound::<T>(self.n);
+        let mut safe = paired_complex_safe(first_input[0], component_bound)
+            && paired_complex_safe(second_input[0], component_bound);
+        let mut first_scale = first_input[0].re.abs();
+        let mut second_scale = second_input[0].re.abs();
+        workspace.transform[0] = Complex::new(first_input[0].re, second_input[0].re);
+        for k in 1..=self.n / 2 {
+            let first = first_input[k];
+            let second = second_input[k];
+            safe &= paired_complex_safe(first, component_bound)
+                && paired_complex_safe(second, component_bound);
+            if first.re.is_finite() && first.im.is_finite() {
+                first_scale = first_scale.max(first.re.abs()).max(first.im.abs());
+            }
+            if second.re.is_finite() && second.im.is_finite() {
+                second_scale = second_scale.max(second.re.abs()).max(second.im.abs());
+            }
+            workspace.transform[k] = Complex::new(first.re - second.im, first.im + second.re);
+            workspace.transform[self.n - k] =
+                Complex::new(first.re + second.im, -first.im + second.re);
+        }
+        if !safe || !paired_scales_safe(first_scale, second_scale) {
+            return Ok(false);
+        }
+
+        inverse_mixed_radix
+            .as_deref()
+            .unwrap_or(inverse.as_ref())
+            .process_with_scratch(&mut workspace.transform, &mut workspace.scratch);
+        for value in &workspace.transform {
+            if value.re.is_subnormal() || value.im.is_subnormal() {
+                return Ok(false);
+            }
+        }
+        for ((first, second), value) in first_output
+            .iter_mut()
+            .zip(second_output)
+            .zip(&workspace.transform)
+        {
+            *first = value.re;
+            *second = value.im;
+        }
+        Ok(true)
+    }
+
     #[inline]
     fn forward_modes(
         &self,
@@ -389,6 +544,42 @@ impl<T: FftNum + Float> RealFftPlan<T> {
     }
 }
 
+#[inline]
+fn paired_component_bound<T: FftNum + Float>(n: usize) -> T {
+    T::max_value()
+        / T::from_f64(8.0).expect("eight is representable")
+        / T::from_usize(n).expect("usize converts to the FFT scalar")
+}
+
+#[inline]
+fn paired_scales_safe<T: FftNum + Float>(first: T, second: T) -> bool {
+    if first == T::zero() || second == T::zero() {
+        return first == T::zero() && second == T::zero();
+    }
+    let smaller = first.min(second);
+    let larger = first.max(second);
+    // The forward split subtracts spectra produced by one complex transform,
+    // so roundoff from a much larger row can leak into its neighbor. Keep the
+    // measured fast path to pairs whose component scales differ by at most 8.
+    let maximum_ratio = T::from_f64(8.0).expect("8 is representable");
+    smaller >= larger / maximum_ratio
+}
+
+#[inline]
+fn paired_component_safe<T: Float>(value: T, bound: T) -> bool {
+    value.is_finite() && !value.is_subnormal() && value.abs() <= bound
+}
+
+#[inline]
+fn paired_complex_safe<T: Float>(value: Complex<T>, bound: T) -> bool {
+    paired_component_safe(value.re, bound) && paired_component_safe(value.im, bound)
+}
+
+#[inline]
+fn complex_has_subnormal<T: Float>(value: Complex<T>) -> bool {
+    value.re.is_subnormal() || value.im.is_subnormal()
+}
+
 fn odd_square_inverse_plan<T: FftNum>(
     planner: &mut FftPlanner<T>,
     transform_len: usize,
@@ -587,6 +778,219 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn paired_odd_fft_matches_independent_rows_and_guards_unsafe_inputs() {
+        for n in [129, 257, 361, 509, 513] {
+            let plan = RealFftPlan::new(n).unwrap();
+            let mut workspace = plan.workspace().unwrap();
+            let first: Vec<_> = (0..n)
+                .map(|j| 8.0 * ((0.37 * j as f64).sin() + (0.61 * j as f64).cos()))
+                .collect();
+            let second: Vec<_> = (0..n)
+                .map(|j| (0.37 * j as f64).sin() + (0.61 * j as f64).cos())
+                .collect();
+            let mut first_expected = vec![Complex64::new(0.0, 0.0); plan.spectrum_len()];
+            let mut second_expected = vec![Complex64::new(0.0, 0.0); plan.spectrum_len()];
+            plan.forward(&first, &mut first_expected, &mut workspace)
+                .unwrap();
+            plan.forward(&second, &mut second_expected, &mut workspace)
+                .unwrap();
+            let mut first_actual = vec![Complex64::new(0.0, 0.0); plan.spectrum_len()];
+            let mut second_actual = vec![Complex64::new(0.0, 0.0); plan.spectrum_len()];
+            assert!(
+                plan.forward_paired_truncated(
+                    &first,
+                    &second,
+                    &mut first_actual,
+                    &mut second_actual,
+                    &mut workspace,
+                )
+                .unwrap()
+            );
+            for (actual, expected) in first_actual.iter().zip(&first_expected) {
+                close_complex(*actual, *expected, 4e-13);
+            }
+            for (actual, expected) in second_actual.iter().zip(&second_expected) {
+                close_complex(*actual, *expected, 4e-13);
+            }
+
+            let mut first_inverse_expected = vec![0.0; n];
+            let mut second_inverse_expected = vec![0.0; n];
+            plan.inverse_series(&first_expected, &mut first_inverse_expected, &mut workspace)
+                .unwrap();
+            plan.inverse_series(
+                &second_expected,
+                &mut second_inverse_expected,
+                &mut workspace,
+            )
+            .unwrap();
+
+            let opposite: Vec<_> = second.iter().map(|value| -*value).collect();
+            assert!(
+                plan.forward_paired_truncated(
+                    &second,
+                    &opposite,
+                    &mut first_actual,
+                    &mut second_actual,
+                    &mut workspace,
+                )
+                .unwrap()
+            );
+            for (actual, expected) in first_actual.iter().zip(&second_expected) {
+                close_complex(*actual, *expected, 4e-13);
+            }
+            for (actual, expected) in second_actual.iter().zip(&second_expected) {
+                close_complex(*actual, -*expected, 4e-13);
+            }
+
+            let mut first_reconstructed = vec![0.0; n];
+            let mut second_reconstructed = vec![0.0; n];
+            assert!(
+                plan.inverse_paired_series(
+                    &first_expected,
+                    &second_expected,
+                    &mut first_reconstructed,
+                    &mut second_reconstructed,
+                    &mut workspace,
+                )
+                .unwrap()
+            );
+            let relative_l2 = |actual: &[f64], expected: &[f64]| {
+                let (error, norm) = actual.iter().zip(expected).fold(
+                    (0.0, 0.0),
+                    |(error, norm), (&actual, &expected)| {
+                        (error + (actual - expected).powi(2), norm + expected.powi(2))
+                    },
+                );
+                (error / norm).sqrt()
+            };
+            assert!(
+                relative_l2(&first_reconstructed, &first_inverse_expected) <= 4e-13,
+                "N={n}, first inverse relative L2={:.3e}",
+                relative_l2(&first_reconstructed, &first_inverse_expected)
+            );
+            assert!(
+                relative_l2(&second_reconstructed, &second_inverse_expected) <= 4e-13,
+                "N={n}, second inverse relative L2={:.3e}",
+                relative_l2(&second_reconstructed, &second_inverse_expected)
+            );
+
+            let zero = vec![0.0; n];
+            assert!(
+                plan.forward_paired_truncated(
+                    &zero,
+                    &zero,
+                    &mut first_actual,
+                    &mut second_actual,
+                    &mut workspace,
+                )
+                .unwrap()
+            );
+            assert!(
+                !plan
+                    .forward_paired_truncated(
+                        &first,
+                        &zero,
+                        &mut first_actual,
+                        &mut second_actual,
+                        &mut workspace,
+                    )
+                    .unwrap()
+            );
+
+            let zero_spectrum = vec![Complex64::new(0.0, 0.0); plan.spectrum_len()];
+            let mut zero_output = vec![0.0; n];
+            assert!(
+                plan.inverse_paired_series(
+                    &zero_spectrum,
+                    &zero_spectrum,
+                    &mut zero_output,
+                    &mut first_reconstructed,
+                    &mut workspace,
+                )
+                .unwrap()
+            );
+            assert!(
+                !plan
+                    .inverse_paired_series(
+                        &first_expected,
+                        &zero_spectrum,
+                        &mut first_reconstructed,
+                        &mut second_reconstructed,
+                        &mut workspace,
+                    )
+                    .unwrap()
+            );
+            let very_unequal_spectrum: Vec<_> = first_expected.iter().map(|v| *v * 1.0e4).collect();
+            assert!(
+                !plan
+                    .inverse_paired_series(
+                        &very_unequal_spectrum,
+                        &second_expected,
+                        &mut first_reconstructed,
+                        &mut second_reconstructed,
+                        &mut workspace,
+                    )
+                    .unwrap()
+            );
+            let very_unequal: Vec<_> = second.iter().map(|value| value * 1.0e4).collect();
+            assert!(
+                !plan
+                    .forward_paired_truncated(
+                        &very_unequal,
+                        &second,
+                        &mut first_actual,
+                        &mut second_actual,
+                        &mut workspace,
+                    )
+                    .unwrap()
+            );
+        }
+
+        let plan = RealFftPlan::new(129).unwrap();
+        let mut workspace = plan.workspace().unwrap();
+        let normal = vec![1.0; 129];
+        let mut exceptional = normal.clone();
+        exceptional[0] = f64::NAN;
+        let mut first_spectrum = vec![Complex64::new(0.0, 0.0); plan.spectrum_len()];
+        let mut second_spectrum = vec![Complex64::new(0.0, 0.0); plan.spectrum_len()];
+        assert!(
+            !plan
+                .forward_paired_truncated(
+                    &exceptional,
+                    &normal,
+                    &mut first_spectrum,
+                    &mut second_spectrum,
+                    &mut workspace,
+                )
+                .unwrap()
+        );
+        exceptional[0] = f64::from_bits(1);
+        assert!(
+            !plan
+                .forward_paired_truncated(
+                    &exceptional,
+                    &normal,
+                    &mut first_spectrum,
+                    &mut second_spectrum,
+                    &mut workspace,
+                )
+                .unwrap()
+        );
+        exceptional[0] = f64::MAX / 2.0;
+        assert!(
+            !plan
+                .forward_paired_truncated(
+                    &exceptional,
+                    &normal,
+                    &mut first_spectrum,
+                    &mut second_spectrum,
+                    &mut workspace,
+                )
+                .unwrap()
+        );
     }
 
     #[test]

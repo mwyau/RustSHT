@@ -35,6 +35,195 @@ fn make_f1_plan(lmax: usize, mmax: usize, ntheta: usize, nphi: usize, phi0: f64)
 }
 
 #[cfg(feature = "parallel")]
+fn run_forward_analysis_rows(
+    plan: &ShtPlan,
+    input: &[f64],
+    output: &mut [num_complex::Complex<f64>],
+    output_modes: usize,
+    workspace: &mut crate::workspace::ShtWorkspace,
+) -> Result<(), ShtError> {
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    pool.install(|| {
+        plan.forward_analysis_rows_paired(
+            input,
+            output,
+            output_modes,
+            &mut workspace.fft,
+            &mut workspace.fft_worker_workspaces,
+            8,
+        )
+    })
+}
+
+#[cfg(not(feature = "parallel"))]
+fn run_forward_analysis_rows(
+    plan: &ShtPlan,
+    input: &[f64],
+    output: &mut [num_complex::Complex<f64>],
+    output_modes: usize,
+    workspace: &mut crate::workspace::ShtWorkspace,
+) -> Result<(), ShtError> {
+    plan.forward_analysis_rows_paired(input, output, output_modes, &mut workspace.fft)
+}
+
+#[cfg(feature = "parallel")]
+fn run_inverse_synthesis_rows(
+    plan: &ShtPlan,
+    spectra: &[num_complex::Complex<f64>],
+    output: &mut [f64],
+    workspace: &mut crate::workspace::ShtWorkspace,
+) -> Result<(), ShtError> {
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    pool.install(|| {
+        plan.inverse_synthesis_rows(
+            spectra,
+            output,
+            &mut workspace.fft,
+            &mut workspace.fft_worker_workspaces,
+            8,
+        )
+    })
+}
+
+#[cfg(not(feature = "parallel"))]
+fn run_inverse_synthesis_rows(
+    plan: &ShtPlan,
+    spectra: &[num_complex::Complex<f64>],
+    output: &mut [f64],
+    workspace: &mut crate::workspace::ShtWorkspace,
+) -> Result<(), ShtError> {
+    plan.inverse_synthesis_rows(spectra, output, &mut workspace.fft)
+}
+
+#[test]
+fn scalar_odd_row_pairing_preserves_fallbacks_and_latitude_tails() {
+    let nphi = 129;
+    for ntheta in [32, 33] {
+        let plan = make_plan(1, 1, ntheta, nphi, 0.23);
+        let mut workspace = plan.workspace().unwrap();
+        #[cfg(feature = "parallel")]
+        plan.prepare_workspace(&mut workspace, 8).unwrap();
+        #[cfg(not(feature = "parallel"))]
+        plan.prepare_workspace(&mut workspace, 1).unwrap();
+
+        let mut input = vec![0.0; ntheta * nphi];
+        for row in 0..ntheta {
+            let scale = if row == 0 {
+                128.0
+            } else if row == 1 {
+                1.0
+            } else {
+                1.0 + 0.01 * (row % 4) as f64
+            };
+            for column in 0..nphi {
+                let value = column as f64;
+                input[row * nphi + column] = scale * ((value * 0.37).sin() + (value * 0.61).cos());
+            }
+        }
+
+        let spectrum_len = plan.fft.spectrum_len();
+        let output_modes = plan.harmonics.mmax() + 1;
+        let sentinel = Complex64::new(17.0, -29.0);
+        let mut actual_spectra = vec![sentinel; ntheta * spectrum_len];
+        let mut expected_spectra = vec![sentinel; ntheta * spectrum_len];
+        run_forward_analysis_rows(
+            &plan,
+            &input,
+            &mut actual_spectra,
+            output_modes,
+            &mut workspace,
+        )
+        .unwrap();
+        let mut reference_workspace = plan.fft.workspace().unwrap();
+        for row in 0..ntheta {
+            let input_start = row * nphi;
+            let spectrum_start = row * spectrum_len;
+            plan.fft
+                .forward_truncated(
+                    &input[input_start..input_start + nphi],
+                    &mut expected_spectra[spectrum_start..spectrum_start + output_modes],
+                    &mut reference_workspace,
+                )
+                .unwrap();
+        }
+        for row in 0..ntheta {
+            let row_start = row * spectrum_len;
+            for (actual, expected) in actual_spectra[row_start..row_start + output_modes]
+                .iter()
+                .zip(&expected_spectra[row_start..row_start + output_modes])
+            {
+                assert!(
+                    (*actual - *expected).norm() <= 4e-13 * expected.norm().max(1.0),
+                    "ntheta={ntheta}, row={row}, actual={actual:?}, expected={expected:?}"
+                );
+            }
+            assert!(
+                actual_spectra[row_start + output_modes..row_start + spectrum_len]
+                    .iter()
+                    .all(|value| *value == sentinel)
+            );
+        }
+        for row in [0, 1].into_iter().chain(ntheta - 1..ntheta) {
+            let row_start = row * spectrum_len;
+            for (actual, expected) in actual_spectra[row_start..row_start + output_modes]
+                .iter()
+                .zip(&expected_spectra[row_start..row_start + output_modes])
+            {
+                assert!(
+                    (*actual - *expected).norm() <= 4e-13 * expected.norm().max(1.0),
+                    "ntheta={ntheta}, fallback or unpaired row differs"
+                );
+            }
+        }
+
+        let mut full_spectra = vec![Complex64::new(0.0, 0.0); ntheta * spectrum_len];
+        for row in 0..ntheta {
+            let input_start = row * nphi;
+            let spectrum_start = row * spectrum_len;
+            plan.fft
+                .forward(
+                    &input[input_start..input_start + nphi],
+                    &mut full_spectra[spectrum_start..spectrum_start + spectrum_len],
+                    &mut reference_workspace,
+                )
+                .unwrap();
+        }
+        let mut actual_map = vec![f64::NAN; ntheta * nphi];
+        let mut expected_map = vec![0.0; ntheta * nphi];
+        run_inverse_synthesis_rows(&plan, &full_spectra, &mut actual_map, &mut workspace).unwrap();
+        for row in 0..ntheta {
+            let spectrum_start = row * spectrum_len;
+            let output_start = row * nphi;
+            plan.fft
+                .inverse_series(
+                    &full_spectra[spectrum_start..spectrum_start + spectrum_len],
+                    &mut expected_map[output_start..output_start + nphi],
+                    &mut reference_workspace,
+                )
+                .unwrap();
+        }
+        for row in 0..ntheta {
+            let start = row * nphi;
+            let actual = &actual_map[start..start + nphi];
+            let expected = &expected_map[start..start + nphi];
+            let (error, norm) = actual.iter().zip(expected).fold(
+                (0.0, 0.0),
+                |(error, norm), (&actual, &expected)| {
+                    (error + (actual - expected).powi(2), norm + expected.powi(2))
+                },
+            );
+            assert!((error / norm).sqrt() <= 4e-13, "ntheta={ntheta}, row={row}");
+        }
+    }
+}
+
+#[cfg(feature = "parallel")]
 #[test]
 fn scalar_gl_row_fft_uses_sample_work_threshold_without_changing_other_routes() {
     assert!(make_plan(48, 48, 49, 97, 0.23).row_fft_parallelism_supported());
