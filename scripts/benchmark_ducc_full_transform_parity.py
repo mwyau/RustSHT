@@ -40,14 +40,13 @@ TARGET_BATCH_MS = 25.0
 PROCESS_PAIRS = 3
 BATCHES_PER_PROCESS = 10
 DENSE_SWEEP_HIGH_LMAX = (
-    129, 159, 191, 223, 248, 254, 255, 256, 257, 300, 320, 384, 448,
-    511, 512, 513, 640, 720, 721, 768, 896, 1024, 1280, 1536, 1792,
-    2047, 2048, 3072,
+    257, 258, 300, 320, 384, 511, 512, 513, 640, 720, 721, 768, 896,
+    1023, 1024, 1025, 1280, 1536, 1792, 2047, 2048, 2049, 2560, 3072,
 )
 DENSE_SWEEP_ODD_LMAX = frozenset({
-    0, 1, 2, 3, 4, 8, 16, 32, 48, 62, 63, 64, 65, 127, 128, 129, 159,
-    191, 223, 248, 254, 255, 256, 257, 511, 512, 513, 720, 721, 1024,
-    2047, 2048, 3072,
+    0, 1, 2, 3, 4, 8, 16, 32, 48, 62, 63, 64, 65, 127, 128, 159, 191,
+    223, 248, 254, 255, 256, 257, 511, 512, 513, 720, 721, 1023, 1024,
+    1025, 2047, 2048, 2049, 2560, 3072,
 })
 
 
@@ -90,6 +89,19 @@ def sha256_file(path: pathlib.Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def portable_evidence(value):
+    """Remove machine-local roots while preserving reproducible flags/data."""
+    if isinstance(value, dict):
+        return {key: portable_evidence(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [portable_evidence(item) for item in value]
+    if isinstance(value, str):
+        value = value.replace(str(ROOT), "<repo>")
+        value = re.sub(r"/tmp/[^\s;'\"]+", "<temporary-path>", value)
+        return value
+    return value
 
 
 def physical_cpus() -> list[int]:
@@ -270,7 +282,7 @@ def make_cases(
     if smoke and not dense_sweep:
         lmax_values = [0, 4, 16, 64]
     elif dense_sweep:
-        lmax_values = sorted(set(range(129)) | set(DENSE_SWEEP_HIGH_LMAX))
+        lmax_values = sorted(set(range(257)) | set(DENSE_SWEEP_HIGH_LMAX))
     else:
         lmax_values = sorted(
             set(range(0, 33))
@@ -1066,9 +1078,9 @@ def plot_issue_ratio_svg(path: pathlib.Path, operation: str, order_label: str,
         suffix = "× parity" if strong else "×"
         parts.append(f'<text x="{left-11}" y="{y+4:.1f}" text-anchor="end" font-family="sans-serif" font-size="13" font-weight="{"bold" if strong else "normal"}">{fmt_number(ratio)}{suffix}</text>')
     xticks = [0, 1, 2, 4, 8, 16, 24, 32, 48, 64, 80, 96, 112, 128,
-              129, 159, 191, 223, 248, 254, 255, 256, 257, 300, 320,
-              384, 448, 511, 512, 513, 640, 720, 721, 768, 896, 1024,
-              1280, 1536, 1792, 2047, 2048, 3072]
+              129, 159, 191, 223, 248, 254, 255, 256, 257, 258, 300, 320,
+              384, 511, 512, 513, 640, 720, 721, 768, 896, 1023, 1024,
+              1025, 1280, 1536, 1792, 2047, 2048, 2049, 2560, 3072]
     xticks = [v for v in xticks if v <= xmax]
     for i, degree in enumerate(xticks):
         x = xcoord(degree)
@@ -1076,9 +1088,11 @@ def plot_issue_ratio_svg(path: pathlib.Path, operation: str, order_label: str,
         # Rotate long tick labels and alternate placement at close transitions.
         label_y = height - bottom + 27 + (18 if i >= 7 and i % 2 else 0)
         parts.append(f'<text transform="translate({x:.1f} {label_y}) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="12" fill="#394651">{degree}</text>')
-    boundary = xcoord(128)
-    parts.append(f'<line x1="{boundary:.1f}" y1="{top}" x2="{boundary:.1f}" y2="{height-bottom}" stroke="#7b8794" stroke-dasharray="4 4"/>')
-    parts.append(f'<text x="{left+9}" y="{top+20}" font-family="sans-serif" font-size="13" fill="#4c5a67">Dense: every lmax = 0…128</text>')
+    for boundary_degree, label in ((64, "T64"), (256, "T256")):
+        boundary = xcoord(boundary_degree)
+        parts.append(f'<line x1="{boundary:.1f}" y1="{top}" x2="{boundary:.1f}" y2="{height-bottom}" stroke="#7b8794" stroke-dasharray="4 4"/>')
+        parts.append(f'<text x="{boundary+4:.1f}" y="{top+39}" font-family="sans-serif" font-size="12" fill="#4c5a67">{label}</text>')
+    parts.append(f'<text x="{left+9}" y="{top+20}" font-family="sans-serif" font-size="13" fill="#4c5a67">Dense: every lmax = 0…256</text>')
     if xmax >= 2048:
         onset = xcoord(2048)
         parts.append(f'<line x1="{onset:.1f}" y1="{top}" x2="{onset:.1f}" y2="{height-bottom}" stroke="#9d752c" stroke-dasharray="4 4"/>')
@@ -1157,17 +1171,19 @@ def plot_issue_runtime_svg(path: pathlib.Path, operation: str,
         parts.append(f'<line x1="{left}" y1="{y:.1f}" x2="{width-right}" y2="{y:.1f}" stroke="#e3e8ed"/>')
         parts.append(f'<text x="{left-11}" y="{y+4:.1f}" text-anchor="end" font-family="sans-serif" font-size="13">{runtime:g}</text>')
     xticks = [0, 1, 2, 4, 8, 16, 24, 32, 48, 64, 80, 96, 112, 128,
-              129, 159, 191, 223, 248, 254, 255, 256, 257, 300, 320,
-              384, 448, 511, 512, 513, 640, 720, 721, 768, 896, 1024,
-              1280, 1536, 1792, 2047, 2048, 3072]
+              129, 159, 191, 223, 248, 254, 255, 256, 257, 258, 300, 320,
+              384, 511, 512, 513, 640, 720, 721, 768, 896, 1023, 1024,
+              1025, 1280, 1536, 1792, 2047, 2048, 2049, 2560, 3072]
     for i, degree in enumerate(v for v in xticks if v <= xmax):
         x = xcoord(degree)
         label_y = height - bottom + 27 + (18 if i >= 7 and i % 2 else 0)
         parts.append(f'<line x1="{x:.1f}" y1="{height-bottom}" x2="{x:.1f}" y2="{height-bottom+6}" stroke="#77818b"/>')
         parts.append(f'<text transform="translate({x:.1f} {label_y}) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="12" fill="#394651">{degree}</text>')
-    boundary = xcoord(128)
-    parts.append(f'<line x1="{boundary:.1f}" y1="{top}" x2="{boundary:.1f}" y2="{height-bottom}" stroke="#7b8794" stroke-dasharray="4 4"/>')
-    parts.append(f'<text x="{left+9}" y="{top+20}" font-family="sans-serif" font-size="13" fill="#4c5a67">Dense: every lmax = 0…128</text>')
+    for boundary_degree, label in ((64, "T64"), (256, "T256")):
+        boundary = xcoord(boundary_degree)
+        parts.append(f'<line x1="{boundary:.1f}" y1="{top}" x2="{boundary:.1f}" y2="{height-bottom}" stroke="#7b8794" stroke-dasharray="4 4"/>')
+        parts.append(f'<text x="{boundary+4:.1f}" y="{top+39}" font-family="sans-serif" font-size="12" fill="#4c5a67">{label}</text>')
+    parts.append(f'<text x="{left+9}" y="{top+20}" font-family="sans-serif" font-size="13" fill="#4c5a67">Dense: every lmax = 0…256</text>')
     if xmax >= 2048:
         onset = xcoord(2048)
         parts.append(f'<line x1="{onset:.1f}" y1="{top}" x2="{onset:.1f}" y2="{height-bottom}" stroke="#9d752c" stroke-dasharray="4 4"/>')
@@ -1246,6 +1262,143 @@ def write_issue_ratio_plots(rows: list[dict], output_dir: pathlib.Path) -> None:
             )
 
 
+def plot_log_degree_series(path: pathlib.Path, title: str, subtitle: str,
+                           series: list[dict], y_label: str) -> None:
+    """Plot observed positive series with log(1+lmax) x and log y axes."""
+    points = [point for item in series for point in item["points"]]
+    if not points:
+        return
+    width, height = 1260, 690
+    left, right, top, bottom = 100, 38, 100, 136
+    plot_w, plot_h = width - left - right, height - top - bottom
+    x_max = max(1, max(int(point["lmax"]) for point in points))
+    y_values = [float(point["value"]) for point in points]
+    y_min = min(y_values) * 0.8
+    y_max = max(y_values) * 1.2
+    if y_max / y_min < 2:
+        y_min /= 1.5
+        y_max *= 1.5
+    log_x_max = math.log1p(x_max)
+    log_y_min, log_y_max = math.log(y_min), math.log(y_max)
+
+    def xcoord(degree: float) -> float:
+        return left + math.log1p(degree) / log_x_max * plot_w
+
+    def ycoord(value: float) -> float:
+        return top + (log_y_max - math.log(value)) / (log_y_max - log_y_min) * plot_h
+
+    colors = ["#155e99", "#bf3b42", "#2a806c", "#9467bd", "#d17a22", "#477ca8"]
+    parts = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
+        '<rect width="100%" height="100%" fill="#fff"/>',
+        f'<text x="{left}" y="34" font-family="sans-serif" font-size="24" font-weight="bold">{title}</text>',
+        f'<text x="{left}" y="60" font-family="sans-serif" font-size="14" fill="#555">{subtitle}</text>',
+    ]
+    y_ticks = [0.125, 0.25, 0.5, 1, 2, 4, 8, 16]
+    for value in y_ticks:
+        if not y_min <= value <= y_max:
+            continue
+        y = ycoord(value)
+        strong = abs(value - 1) < 1e-12
+        parts.append(f'<line x1="{left}" y1="{y:.1f}" x2="{width-right}" y2="{y:.1f}" stroke="{"#586675" if strong else "#e3e8ed"}"{" stroke-dasharray=\"6 4\"" if strong else ""}/>')
+        parts.append(f'<text x="{left-10}" y="{y+4:.1f}" text-anchor="end" font-family="sans-serif" font-size="13">{value:g}{"× parity" if strong else "×"}</text>')
+    xticks = [0, 1, 2, 4, 8, 16, 32, 48, 63, 64, 65, 96, 127, 128, 129,
+              159, 191, 223, 255, 256, 257, 258, 300, 320, 384, 511, 512,
+              513, 640, 720, 721, 768, 896, 1023, 1024, 1025, 1280, 1536,
+              1792, 2047, 2048, 2049, 2560, 3072]
+    for index, degree in enumerate(value for value in xticks if value <= x_max):
+        x = xcoord(degree)
+        label_y = height - bottom + 27 + (17 if index >= 8 and index % 2 else 0)
+        parts.append(f'<line x1="{x:.1f}" y1="{height-bottom}" x2="{x:.1f}" y2="{height-bottom+6}" stroke="#77818b"/>')
+        parts.append(f'<text transform="translate({x:.1f} {label_y}) rotate(-48)" text-anchor="end" font-family="sans-serif" font-size="11" fill="#394651">{degree}</text>')
+    for degree, label in ((64, "T64"), (256, "T256")):
+        x = xcoord(degree)
+        parts.append(f'<line x1="{x:.1f}" y1="{top}" x2="{x:.1f}" y2="{height-bottom}" stroke="#7b8794" stroke-dasharray="4 4"/>')
+        parts.append(f'<text x="{x+3:.1f}" y="{top+20}" font-family="sans-serif" font-size="11" fill="#4c5a67">{label}</text>')
+    parts.append(f'<line x1="{left}" y1="{top}" x2="{left}" y2="{height-bottom}" stroke="#34404a" stroke-width="1.5"/>')
+    parts.append(f'<line x1="{left}" y1="{height-bottom}" x2="{width-right}" y2="{height-bottom}" stroke="#34404a" stroke-width="1.5"/>')
+    for index, item in enumerate(series):
+        color = colors[index % len(colors)]
+        observed = sorted(item["points"], key=lambda point: int(point["lmax"]))
+        coords = [(xcoord(int(point["lmax"])), ycoord(float(point["value"]))) for point in observed]
+        dash = ' stroke-dasharray="7 5"' if item.get("dashed") else ""
+        if len(coords) > 1:
+            path_data = " ".join(f"{x:.1f},{y:.1f}" for x, y in coords)
+            parts.append(f'<polyline fill="none" stroke="{color}" stroke-width="2.3"{dash} points="{path_data}"/>')
+        for x, y in coords:
+            parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="2.8" fill="{color}"/>')
+        legend_x = left + index * min(280, (width-left-right)//max(1, len(series)))
+        legend_y = 82
+        parts.append(f'<line x1="{legend_x}" y1="{legend_y}" x2="{legend_x+23}" y2="{legend_y}" stroke="{color}" stroke-width="3"{dash}/>')
+        parts.append(f'<text x="{legend_x+29}" y="{legend_y+5}" font-family="sans-serif" font-size="12" fill="#24333f">{item["name"]}</text>')
+    parts += [
+        f'<text x="{left+plot_w/2:.1f}" y="{height-12}" text-anchor="middle" font-family="sans-serif" font-size="15">lmax (log(1 + lmax) spacing)</text>',
+        f'<text transform="translate(20 {top+plot_h/2:.1f}) rotate(-90)" text-anchor="middle" font-family="sans-serif" font-size="14">{y_label} (log scale)</text>',
+        '</svg>',
+    ]
+    path.write_text("\n".join(parts) + "\n")
+
+
+def write_dispatch_and_pairing_plots(output_dir: pathlib.Path) -> list[str]:
+    """Add the independent Legendre-route and paired-FFT evidence figures."""
+    generated = []
+    table_csv = ROOT / "reports/data/legendre-policy-2026-10-22/table-recurrence-screen.csv"
+    if table_csv.is_file():
+        table_series = []
+        with table_csv.open(newline="") as handle:
+            table_rows = list(csv.DictReader(handle))
+        for operation in ("Analysis", "Synthesis"):
+            for threads in (1, 8):
+                selected = [row for row in table_rows
+                            if row["operation"] == operation
+                            and int(row["threads"]) == threads
+                            and int(row["mmax"]) == int(row["lmax"])
+                            and row["longitude"] == "even_smooth"
+                            and row["status"] == "complete"
+                            and row["table_over_recurrence"]]
+                table_series.append({
+                    "name": f"{operation.lower()} q{threads}",
+                    "points": [{"lmax": int(row["lmax"]),
+                                "value": float(row["table_over_recurrence"])}
+                               for row in selected],
+                    "dashed": threads == 8,
+                })
+        plot_log_degree_series(
+            output_dir / "legendre-table-vs-recurrence.svg",
+            "Compact Legendre table / on-the-fly recurrence",
+            "Forced-route measurements, full mmax, even-smooth longitude; prior source sweep, not mixed into current-source timings",
+            table_series, "table / recurrence runtime",
+        )
+        generated.append("legendre-table-vs-recurrence.svg")
+
+    paired_csv = ROOT / "reports/data/paired-fft-validation-2026-10-22/matched-boundary-ab.csv"
+    if paired_csv.is_file():
+        paired_series = []
+        with paired_csv.open(newline="") as handle:
+            paired_rows = list(csv.DictReader(handle))
+        for operation in ("analysis", "synthesis"):
+            for threads in (1, 8):
+                selected = [row for row in paired_rows
+                            if row["operation"] == operation
+                            and int(row["threads"]) == threads
+                            and int(row["mmax"]) == int(row["lmax"])]
+                paired_series.append({
+                    "name": f"{operation} q{threads}",
+                    "points": [{"lmax": int(row["lmax"]),
+                                "value": float(row["enabled_over_disabled"])}
+                               for row in selected],
+                    "dashed": threads == 8,
+                })
+        plot_log_degree_series(
+            output_dir / "paired-fft-benefit.svg",
+            "Paired odd-row FFT / independent-row FFT",
+            "Same-source full-transform boundary A/B, odd-minimum longitude; below 1 favors paired rows",
+            paired_series, "paired / independent latency",
+        )
+        generated.append("paired-fft-benefit.svg")
+    return generated
+
+
 def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
                          failures: list[dict]) -> dict:
     expected = make_cases(False, dense_sweep=True)
@@ -1295,10 +1448,10 @@ def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
                         else "missing"
                     ),
                 }
-    low_degrees = sorted({case["lmax"] for case in expected if case["lmax"] <= 128})
-    required_high = sorted(DENSE_SWEEP_HIGH_LMAX)
+    low_degrees = sorted({case["lmax"] for case in expected if case["lmax"] <= 256})
+    required_high = sorted(value for value in DENSE_SWEEP_HIGH_LMAX if value > 256)
     low_even_missing = []
-    for lmax in range(129):
+    for lmax in range(257):
         mmax_values = {lmax}
         if lmax > 0:
             mmax_values.add(max(1, lmax // 4))
@@ -1307,9 +1460,9 @@ def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
             if case_id not in actual_ids:
                 low_even_missing.append(case_id)
     return {
-        "profile": "dense-0-128-plus-selected-high-degrees",
-        "expected_lmax_0_through_128": list(range(129)),
-        "observed_lmax_0_through_128": low_degrees,
+        "profile": "dense-0-256-plus-selected-high-degrees",
+        "expected_lmax_0_through_256": list(range(257)),
+        "observed_lmax_0_through_256": low_degrees,
         "required_high_lmax": required_high,
         "observed_high_lmax": sorted({case["lmax"] for case in cases if case["lmax"] > 128}),
         "expected_case_count": len(expected),
@@ -1347,8 +1500,12 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
         {key: value for key, value in case.items() if key not in {"map_path", "alm_path"}}
         for case in cases
     ]
+    public_samples = [
+        {key: value for key, value in sample.items() if key != "host_diagnostics"}
+        for sample in raw
+    ]
     machine = {
-        "metadata": metadata,
+        "metadata": portable_evidence(metadata),
         "protocol": {
             "source_revision": metadata["ducc_source_revision"],
             "target_batch_ms": TARGET_BATCH_MS,
@@ -1369,10 +1526,10 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
         },
         "cases": sanitized_cases,
         "rows": rows,
-        "samples": raw,
-        "numerics": analysis["errors"],
-        "validation": analysis["validations"],
-        "failures": analysis.get("failures", []),
+        "samples": portable_evidence(public_samples),
+        "numerics": portable_evidence(analysis["errors"]),
+        "validation": portable_evidence(analysis["validations"]),
+        "failures": portable_evidence(analysis.get("failures", [])),
         "host_summary": analysis["host"],
     }
     (output_dir / "results.json").write_text(json.dumps(machine, indent=2, allow_nan=False) + "\n")
@@ -1409,6 +1566,8 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
         )
     write_issue_ratio_plots(rows, output_dir)
     write_issue_runtime_plots(rows, output_dir)
+    if metadata.get("dense_sweep"):
+        write_dispatch_and_pairing_plots(output_dir)
     for operation in ("analysis", "synthesis"):
         speed_series = []
         for backend, key in (("RustSHT", "rust_warm_ms"), ("DUCC", "ducc_warm_ms")):
@@ -1563,7 +1722,7 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
     degree_bands = ((1, 32), (33, 63), (64, 128), (129, 256), (257, 720),
                     (721, 1536), (1537, 3072))
     lines = [
-        "# Current-source native RustSHT/DUCC scalar GL sweep (2026-10-21)",
+        "# Current-source native RustSHT/DUCC scalar GL sweep (2026-10-22)",
         "",
         f"Production Rust source: `{metadata.get('production_source_revision', metadata['rust_source_revision'])}`; benchmark harness commit: `{metadata['rust_source_revision']}`.",
         f"Pinned DUCC 0.42.0 source: `{metadata['ducc_source_revision']}`.",
@@ -1574,13 +1733,13 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
         "",
         "## Scope and method",
         "",
-        f"The case manifest contains {len(cases)} distinct GL geometries: every `lmax=0…128` plus the requested {len(DENSE_SWEEP_HIGH_LMAX)} sampled higher degrees. For each applicable degree it covers full and quarter-order `mmax`, with even FFT-smooth longitude counts throughout and odd-minimum counts at the selected small, boundary and larger degrees. Each transform uses `ntheta=lmax+1`, `phi0=0.23`, the full permitted degree/order triangle and deterministic PCG64 fixtures shared by both native libraries.",
+        f"The case manifest contains {len(cases)} distinct GL geometries: every `lmax=0…256` plus {len([value for value in DENSE_SWEEP_HIGH_LMAX if value > 256])} selected higher degrees through T3072. Every degree includes full and quarter-order `mmax` with even FFT-smooth longitude; selected small, dispatch-boundary and high-resolution cases also include odd-minimum longitude. Each transform uses `ntheta=lmax+1`, `phi0=0.23`, the full permitted degree/order triangle and deterministic PCG64 fixtures shared by both native libraries.",
         f"Both analysis and synthesis were run at q1/q8. Short calls use {PROCESS_PAIRS} interleaved process pairs and {BATCHES_PER_PROCESS} calibrated batches per backend process, targeting {TARGET_BATCH_MS:g} ms; long calls use the existing individually timed rule. Rust plan/workspace setup, first-call and warmed timings are separate. The saved JSON contains every invocation, batch, numerical comparison, validation, frequency sample and scheduler observation; CSV rows are computed from paired process data. Failure records are retained in `failures.csv` and JSON.",
         f"The q1/q8 CPU affinity was pinned to the physical core sets shown above. q8 uses the first eight physical cores visible to the process (one CCD on this host). RustSHT and DUCC receive the same fixtures and reusable caller buffers; DUCC's public API performs its own internal setup on each call.",
         "",
         "## Coverage audit",
         "",
-        f"The low-degree audit includes {len(coverage['observed_lmax_0_through_128'])}/129 integer degrees, with no omitted `lmax` values. The required higher list has {len(coverage['required_high_lmax'])} values; case selection check: `{coverage['coverage_pass']}`. Low-degree even-smooth full/reduced coverage omissions: {len(coverage['low_degree_even_smooth_missing'])}. Across {coverage['expected_measurement_group_count']} operation/thread groups, statuses are `{coverage['measurement_status_counts']}`. Failed or partial groups are listed explicitly rather than silently removed.",
+        f"The low-degree audit includes {len(coverage['observed_lmax_0_through_256'])}/257 integer degrees, with no omitted `lmax` values. The required high-resolution list has {len(coverage['required_high_lmax'])} values; case selection check: `{coverage['coverage_pass']}`. Low-degree even-smooth full/reduced coverage omissions: {len(coverage['low_degree_even_smooth_missing'])}. Across {coverage['expected_measurement_group_count']} operation/thread groups, statuses are `{coverage['measurement_status_counts']}`. Failed or partial groups are listed explicitly rather than silently removed.",
         "",
         "## Warmed whole-transform summary",
         "",
@@ -1701,6 +1860,10 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
         f"- [Analysis, reduced mmax](./{result_prefix}/ratio-analysis-reduced-mmax.svg)",
         f"- [Synthesis, full mmax](./{result_prefix}/ratio-synthesis-full-mmax.svg)",
         f"- [Synthesis, reduced mmax](./{result_prefix}/ratio-synthesis-reduced-mmax.svg)",
+        f"- [Absolute analysis latency](./{result_prefix}/runtime-analysis.svg)",
+        f"- [Absolute synthesis latency](./{result_prefix}/runtime-synthesis.svg)",
+        f"- [Precomputed table versus recurrence](./{result_prefix}/legendre-table-vs-recurrence.svg)",
+        f"- [Paired FFT versus independent rows](./{result_prefix}/paired-fft-benefit.svg)",
         "",
         "The four figures plot measured warmed RustSHT/DUCC ratios for even-smooth longitude cases only; q1 and q8 are separate curves and points are not smoothed. Odd-minimum cases remain in the data and shape summary.",
         "",
@@ -1816,7 +1979,7 @@ def main() -> None:
     parser.add_argument("--merge-shards", type=pathlib.Path, nargs="+",
                         help="merge completed native benchmark shard results.json files")
     parser.add_argument("--dense-sweep", action="store_true",
-                        help="select every lmax 0..128 plus the requested representative higher degrees")
+                        help="select every lmax 0..256 plus representative higher degrees")
     parser.add_argument("--production-source-revision",
                         help="frozen Rust production source commit represented by this benchmark")
     parser.add_argument("--sweep-id", default="",
