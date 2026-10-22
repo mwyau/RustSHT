@@ -237,6 +237,16 @@ impl<T: ShtScalar> ShtPlan<T> {
         self.scalar_legendre_table
             .get_or_init(|| {
                 if self.harmonics.spin() == 0 {
+                    #[cfg(test)]
+                    if crate::legendre::benchmark_strategy_override()
+                        == Some(LegendreStrategy::CompactTable)
+                    {
+                        return ScalarLegendreTable::build_for_benchmark(
+                            &self.grid,
+                            &self.harmonics,
+                            &self.sectoral_norms,
+                        );
+                    }
                     ScalarLegendreTable::build_if_beneficial(
                         &self.grid,
                         &self.harmonics,
@@ -275,6 +285,22 @@ impl<T: ShtScalar> ShtPlan<T> {
         operation: LegendreOperation,
         execution_capacity: usize,
     ) -> LegendreStrategy {
+        #[cfg(test)]
+        if self.harmonics.spin() == 0 {
+            match crate::legendre::benchmark_strategy_override() {
+                Some(LegendreStrategy::Recurrence) => return LegendreStrategy::Recurrence,
+                Some(LegendreStrategy::CompactTable)
+                    if ScalarLegendreTable::<T>::supports_benchmark_grid_and_bandlimit(
+                        &self.grid,
+                        &self.harmonics,
+                    ) =>
+                {
+                    return LegendreStrategy::CompactTable;
+                }
+                Some(LegendreStrategy::CompactTable) => return LegendreStrategy::Recurrence,
+                None => {}
+            }
+        }
         if !ScalarLegendreTable::<T>::supports_grid_and_bandlimit(&self.grid, &self.harmonics) {
             return LegendreStrategy::Recurrence;
         }

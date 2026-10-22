@@ -9,6 +9,8 @@ use rayon::prelude::*;
 use std::collections::VecDeque;
 #[cfg(feature = "parallel")]
 use std::sync::Mutex;
+#[cfg(test)]
+use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::error::{ShtError, check_len};
@@ -22,6 +24,25 @@ use crate::plan::ShtPlan;
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 const SCALAR_TRANSITION_MIN_LMAX: usize = 1023;
+
+#[cfg(test)]
+static SCALAR_TABLE_SYNTHESIS_CALLS: AtomicUsize = AtomicUsize::new(0);
+#[cfg(test)]
+static SCALAR_RECURRENCE_SYNTHESIS_CALLS: AtomicUsize = AtomicUsize::new(0);
+#[cfg(test)]
+static SCALAR_TABLE_ANALYSIS_CALLS: AtomicUsize = AtomicUsize::new(0);
+#[cfg(test)]
+static SCALAR_RECURRENCE_ANALYSIS_CALLS: AtomicUsize = AtomicUsize::new(0);
+
+#[cfg(test)]
+pub(crate) fn take_scalar_legendre_benchmark_route_counts() -> [usize; 4] {
+    [
+        SCALAR_TABLE_SYNTHESIS_CALLS.swap(0, Ordering::Relaxed),
+        SCALAR_RECURRENCE_SYNTHESIS_CALLS.swap(0, Ordering::Relaxed),
+        SCALAR_TABLE_ANALYSIS_CALLS.swap(0, Ordering::Relaxed),
+        SCALAR_RECURRENCE_ANALYSIS_CALLS.swap(0, Ordering::Relaxed),
+    ]
+}
 
 #[cfg(feature = "parallel")]
 #[derive(Clone, Copy)]
@@ -1058,6 +1079,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         {
             return Ok(());
         }
+        #[cfg(test)]
+        SCALAR_RECURRENCE_SYNTHESIS_CALLS.fetch_add(1, Ordering::Relaxed);
         let ordered_scalar_used =
             if T::supports_scalar_ordered() && self.grid.kind() == GridKind::GaussLegendre {
                 if workspace.execution_capacity == 1 {
@@ -1394,6 +1417,8 @@ impl<T: ShtScalar> ShtPlan<T> {
             let map_start = ring * nphi;
             map[map_start..map_start + nphi].copy_from_slice(&workspace.row);
         }
+        #[cfg(test)]
+        SCALAR_TABLE_SYNTHESIS_CALLS.fetch_add(1, Ordering::Relaxed);
         Ok(true)
     }
 
@@ -2249,6 +2274,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         let lmax = self.harmonics.lmax();
         let mmax = self.harmonics.mmax();
         if let Some(table) = scalar_table {
+            #[cfg(test)]
+            SCALAR_TABLE_ANALYSIS_CALLS.fetch_add(1, Ordering::Relaxed);
             // The compact-table accumulator writes through every coefficient
             // by addition, so retain its whole-output initialization.
             alm.fill(Complex::new(T::zero(), T::zero()));
@@ -2292,6 +2319,8 @@ impl<T: ShtScalar> ShtPlan<T> {
             );
             return Ok(());
         }
+        #[cfg(test)]
+        SCALAR_RECURRENCE_ANALYSIS_CALLS.fetch_add(1, Ordering::Relaxed);
         let scalar_analysis_spectra = if let Some(source) = direct_pair_source {
             ScalarAnalysisSpectra::Direct(source)
         } else {

@@ -21,6 +21,8 @@
 
 use num_complex::Complex;
 use pulp::{Arch, Simd, WithSimd};
+#[cfg(test)]
+use std::sync::atomic::{AtomicU8, Ordering};
 
 use crate::grid::{GridKind, GridSpec};
 use crate::harmonics::HarmonicSpec;
@@ -36,6 +38,9 @@ const MAX_TABLE_BYTES: usize = 34 * 1024 * 1024;
 // scales use the binary-scaled recurrence instead.
 const TABLE_INPUT_SCALE_LIMIT: f64 = 1.0e100;
 
+#[cfg(test)]
+static BENCHMARK_STRATEGY_OVERRIDE: AtomicU8 = AtomicU8::new(0);
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum LegendreStrategy {
     Recurrence,
@@ -46,6 +51,26 @@ pub(crate) enum LegendreStrategy {
 pub(crate) enum LegendreOperation {
     Synthesis,
     Analysis,
+}
+
+#[cfg(test)]
+pub(crate) fn set_benchmark_strategy_override(strategy: Option<LegendreStrategy>) {
+    let encoded = match strategy {
+        None => 0,
+        Some(LegendreStrategy::Recurrence) => 1,
+        Some(LegendreStrategy::CompactTable) => 2,
+    };
+    BENCHMARK_STRATEGY_OVERRIDE.store(encoded, Ordering::Relaxed);
+}
+
+#[cfg(test)]
+pub(crate) fn benchmark_strategy_override() -> Option<LegendreStrategy> {
+    match BENCHMARK_STRATEGY_OVERRIDE.load(Ordering::Relaxed) {
+        0 => None,
+        1 => Some(LegendreStrategy::Recurrence),
+        2 => Some(LegendreStrategy::CompactTable),
+        _ => unreachable!("invalid benchmark strategy selector"),
+    }
 }
 
 pub(crate) fn select_scalar_legendre_strategy<T: ShtScalar>(
@@ -208,6 +233,22 @@ fn supported_layout<T: ShtScalar>(
     grid: &GridSpec,
     harmonics: &HarmonicSpec,
 ) -> Option<(usize, usize, usize)> {
+    supported_layout_with_benchmark_range::<T>(grid, harmonics, false)
+}
+
+#[cfg(test)]
+fn supported_layout_for_benchmark<T: ShtScalar>(
+    grid: &GridSpec,
+    harmonics: &HarmonicSpec,
+) -> Option<(usize, usize, usize)> {
+    supported_layout_with_benchmark_range::<T>(grid, harmonics, true)
+}
+
+fn supported_layout_with_benchmark_range<T: ShtScalar>(
+    grid: &GridSpec,
+    harmonics: &HarmonicSpec,
+    benchmark_range: bool,
+) -> Option<(usize, usize, usize)> {
     let lmax = harmonics.lmax();
     let mmax = harmonics.mmax();
     let table_lmax = match harmonics.spin() {
@@ -216,9 +257,15 @@ fn supported_layout<T: ShtScalar>(
         _ => return None,
     };
     let maximum_table_lmax = match harmonics.spin() {
+        0 if benchmark_range => 256,
         0 => MAX_PRECOMPUTED_LMAX,
         1 => MAX_PRECOMPUTED_LMAX + 1,
         _ => unreachable!(),
+    };
+    let minimum_table_lmax = if benchmark_range && harmonics.spin() == 0 {
+        0
+    } else {
+        MIN_PRECOMPUTED_LMAX
     };
     let minimum_ntheta = lmax.checked_add(1)?;
     // The over-resolved measurements used at most twice the minimum GL
@@ -229,9 +276,9 @@ fn supported_layout<T: ShtScalar>(
         || grid.kind() != GridKind::GaussLegendre
         || grid.ntheta() < minimum_ntheta
         || grid.ntheta() > maximum_measured_ntheta
-        || lmax < MIN_PRECOMPUTED_LMAX
-        || !(MIN_PRECOMPUTED_LMAX..=maximum_table_lmax).contains(&table_lmax)
-        || mmax < lmax - lmax / 4
+        || (!benchmark_range && lmax < MIN_PRECOMPUTED_LMAX)
+        || !(minimum_table_lmax..=maximum_table_lmax).contains(&table_lmax)
+        || (!benchmark_range && mmax < lmax - lmax / 4)
         || mmax > (grid.nphi() - 1) / 2
     {
         return None;
@@ -250,6 +297,14 @@ fn supported_layout<T: ShtScalar>(
 impl<T: ShtScalar> ScalarLegendreTable<T> {
     pub(crate) fn supports_grid_and_bandlimit(grid: &GridSpec, harmonics: &HarmonicSpec) -> bool {
         supported_layout::<T>(grid, harmonics).is_some()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn supports_benchmark_grid_and_bandlimit(
+        grid: &GridSpec,
+        harmonics: &HarmonicSpec,
+    ) -> bool {
+        supported_layout_for_benchmark::<T>(grid, harmonics).is_some()
     }
 
     pub(crate) fn input_scale_limit() -> T {
@@ -280,9 +335,39 @@ impl<T: ShtScalar> ScalarLegendreTable<T> {
         harmonics: &HarmonicSpec,
         sectoral_norms: &[T],
     ) -> Option<Self> {
+        Self::build_with_layout(grid, harmonics, sectoral_norms, false)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn build_for_benchmark(
+        grid: &GridSpec,
+        harmonics: &HarmonicSpec,
+        sectoral_norms: &[T],
+    ) -> Option<Self> {
+        Self::build_with_layout(grid, harmonics, sectoral_norms, true)
+    }
+
+    fn build_with_layout(
+        grid: &GridSpec,
+        harmonics: &HarmonicSpec,
+        sectoral_norms: &[T],
+        benchmark_range: bool,
+    ) -> Option<Self> {
         let lmax = harmonics.lmax();
         let mmax = harmonics.mmax();
-        let (table_lmax, north_ring_count, element_count) = supported_layout::<T>(grid, harmonics)?;
+        let layout = if benchmark_range {
+            #[cfg(test)]
+            {
+                supported_layout_for_benchmark::<T>(grid, harmonics)
+            }
+            #[cfg(not(test))]
+            {
+                None
+            }
+        } else {
+            supported_layout::<T>(grid, harmonics)
+        };
+        let (table_lmax, north_ring_count, element_count) = layout?;
         let order_count = mmax.checked_add(1)?;
         let input_scale_limit = Self::input_scale_limit();
 
@@ -381,6 +466,17 @@ impl<T: ShtScalar> ScalarLegendreTable<T> {
 
     pub(crate) fn north_ring_count(&self) -> usize {
         self.north_ring_count
+    }
+
+    #[cfg(test)]
+    pub(crate) fn allocated_bytes_for_benchmark(&self) -> usize {
+        self.values.capacity() * std::mem::size_of::<T>()
+            + self.order_offsets.capacity() * std::mem::size_of::<usize>()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn benchmark_max_table_bytes() -> usize {
+        MAX_TABLE_BYTES
     }
 
     #[inline]

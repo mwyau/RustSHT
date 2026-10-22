@@ -34,6 +34,112 @@ fn make_f1_plan(lmax: usize, mmax: usize, ntheta: usize, nphi: usize, phi0: f64)
     .unwrap()
 }
 
+fn median(samples: &[f64]) -> f64 {
+    assert!(!samples.is_empty());
+    let mut sorted = samples.to_vec();
+    sorted.sort_by(f64::total_cmp);
+    let middle = sorted.len() / 2;
+    if sorted.len().is_multiple_of(2) {
+        (sorted[middle - 1] + sorted[middle]) / 2.0
+    } else {
+        sorted[middle]
+    }
+}
+
+fn even_smooth_nphi(mmax: usize) -> usize {
+    let minimum = 2 * mmax + 2;
+    (minimum..)
+        .find(|&candidate| {
+            if !candidate.is_multiple_of(2) {
+                return false;
+            }
+            let mut remainder = candidate;
+            for factor in [2, 3, 5, 7] {
+                while remainder.is_multiple_of(factor) {
+                    remainder /= factor;
+                }
+            }
+            remainder == 1
+        })
+        .expect("a supported small bandlimit has an even smooth longitude count")
+}
+
+#[cfg(feature = "parallel")]
+fn scalar_table_payload_estimate_bytes(lmax: usize, mmax: usize, ntheta: usize) -> usize {
+    let north_ring_count = ntheta.div_ceil(2);
+    (0..=mmax)
+        .map(|m| (lmax - m + 1) * north_ring_count)
+        .sum::<usize>()
+        * std::mem::size_of::<f64>()
+}
+
+#[cfg(feature = "parallel")]
+fn scalar_recurrence_scratch_bytes(workspace: &crate::workspace::ShtWorkspace) -> usize {
+    workspace
+        .recurrence_workers
+        .iter()
+        .map(|worker| {
+            let inline_arrays = [
+                &worker.previous[..],
+                &worker.current[..],
+                &worker.next[..],
+                &worker.analysis_same_real[..],
+                &worker.analysis_same_imag[..],
+                &worker.analysis_opposite_real[..],
+                &worker.analysis_opposite_imag[..],
+            ]
+            .iter()
+            .map(|buffer| std::mem::size_of_val(*buffer))
+            .sum::<usize>();
+            inline_arrays
+                + worker.epsilon.capacity() * std::mem::size_of::<f64>()
+                + worker.exponents.capacity() * std::mem::size_of::<i64>()
+                + worker.analysis_scale_epochs.capacity() * std::mem::size_of::<f64>()
+                + worker.analysis_scale_corrections.capacity() * std::mem::size_of::<f64>()
+        })
+        .sum()
+}
+
+#[cfg(feature = "parallel")]
+fn run_forced_scalar_route_iterations(
+    pool: &rayon::ThreadPool,
+    plan: &ShtPlan,
+    workspace: &mut crate::workspace::ShtWorkspace,
+    strategy: LegendreStrategy,
+    operation: LegendreOperation,
+    map_input: &[f64],
+    alm_input: &[Complex64],
+    map_output: &mut [f64],
+    alm_output: &mut [Complex64],
+    iterations: usize,
+) -> Result<(), ShtError> {
+    crate::legendre::set_benchmark_strategy_override(Some(strategy));
+    pool.install(|| {
+        for _ in 0..iterations {
+            match operation {
+                LegendreOperation::Synthesis => {
+                    plan.synthesis_into(std::hint::black_box(alm_input), map_output, workspace)?
+                }
+                LegendreOperation::Analysis => {
+                    plan.analysis_into(std::hint::black_box(map_input), alm_output, workspace)?
+                }
+            }
+        }
+        Ok(())
+    })?;
+    let actual = crate::transform::take_scalar_legendre_benchmark_route_counts();
+    let mut expected = [0; 4];
+    let slot = match (strategy, operation) {
+        (LegendreStrategy::CompactTable, LegendreOperation::Synthesis) => 0,
+        (LegendreStrategy::Recurrence, LegendreOperation::Synthesis) => 1,
+        (LegendreStrategy::CompactTable, LegendreOperation::Analysis) => 2,
+        (LegendreStrategy::Recurrence, LegendreOperation::Analysis) => 3,
+    };
+    expected[slot] = iterations;
+    assert_eq!(actual, expected, "forced route did not execute as labeled");
+    Ok(())
+}
+
 #[cfg(feature = "parallel")]
 fn run_forward_analysis_rows(
     plan: &ShtPlan,
@@ -3037,6 +3143,361 @@ fn precomputed_scalar_table_respects_bandlimit_and_grid_bounds() {
     let f32_harmonics = HarmonicSpec::scalar(127, 127).unwrap();
     let f32_plan: ShtPlan<f32> = ShtPlan::new(f32_grid, f32_harmonics).unwrap();
     assert!(f32_plan.get_scalar_legendre_table().is_none());
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+#[ignore = "exhaustive forced table/recurrence screening; set RUSTSHT_LEGENDRE_BENCH_OUTPUT"]
+fn benchmark_scalar_legendre_table_vs_recurrence_dense() {
+    use std::io::Write;
+    use std::time::Instant;
+
+    let min_lmax = std::env::var("RUSTSHT_LEGENDRE_BENCH_MIN")
+        .ok()
+        .and_then(|value| value.parse::<usize>().ok())
+        .unwrap_or(0);
+    let max_lmax = std::env::var("RUSTSHT_LEGENDRE_BENCH_MAX")
+        .ok()
+        .and_then(|value| value.parse::<usize>().ok())
+        .unwrap_or(256);
+    let target_us = std::env::var("RUSTSHT_LEGENDRE_BENCH_TARGET_US")
+        .ok()
+        .and_then(|value| value.parse::<u64>().ok())
+        .unwrap_or(1_000);
+    let batches = std::env::var("RUSTSHT_LEGENDRE_BENCH_BATCHES")
+        .ok()
+        .and_then(|value| value.parse::<usize>().ok())
+        .unwrap_or(3);
+    let requested_threads = std::env::var("RUSTSHT_LEGENDRE_BENCH_THREADS")
+        .ok()
+        .map(|value| {
+            value
+                .split(',')
+                .map(|entry| entry.parse::<usize>().expect("thread counts are integers"))
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_else(|| vec![1, 8]);
+    let output_path = std::env::var("RUSTSHT_LEGENDRE_BENCH_OUTPUT")
+        .expect("set RUSTSHT_LEGENDRE_BENCH_OUTPUT to a CSV path");
+    assert!(min_lmax <= max_lmax && max_lmax <= 256);
+    assert!(target_us > 0 && batches > 0);
+    assert!(
+        !requested_threads.is_empty()
+            && requested_threads
+                .iter()
+                .all(|&threads| [1, 8].contains(&threads)),
+        "RUSTSHT_LEGENDRE_BENCH_THREADS accepts 1, 8, or 1,8"
+    );
+
+    let output_path = std::path::PathBuf::from(output_path);
+    if let Some(parent) = output_path.parent() {
+        std::fs::create_dir_all(parent).unwrap();
+    }
+    let mut output = std::fs::File::create(output_path).unwrap();
+    writeln!(
+        output,
+        "lmax,mmax,nphi,longitude,operation,threads,status,table_payload_estimate_bytes,table_bytes,recurrence_scratch_bytes,plan_workspace_setup_us,table_build_us,first_table_call_after_build_us,first_recurrence_call_us,table_samples_us,recurrence_samples_us,table_over_recurrence,expected_reuse_calls,relative_l2,max_scaled_error,verified_table_timed_calls,verified_recurrence_timed_calls"
+    )
+    .unwrap();
+
+    let pool1 = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let pool8 = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    let reduced_degrees = [
+        63, 64, 65, 96, 120, 124, 126, 127, 128, 159, 191, 223, 248, 254, 255, 256,
+    ];
+    let mut case_number = 0usize;
+    for lmax in min_lmax..=max_lmax {
+        let mut mmax_values = vec![lmax];
+        if reduced_degrees.contains(&lmax) {
+            mmax_values.push((lmax / 4).max(1));
+        }
+        mmax_values.sort_unstable();
+        mmax_values.dedup();
+        for mmax in mmax_values {
+            for (longitude, nphi) in [
+                ("odd_minimum", 2 * mmax + 1),
+                ("even_smooth", even_smooth_nphi(mmax)),
+            ] {
+                let grid = GridSpec::new(GridKind::GaussLegendre, lmax + 1, nphi, 0.23).unwrap();
+                let harmonics = HarmonicSpec::scalar(lmax, mmax).unwrap();
+                let plan_started = Instant::now();
+                let plan = ShtPlan::new(grid, harmonics).unwrap();
+                let plan_setup_us = plan_started.elapsed().as_secs_f64() * 1e6;
+                let table_payload_estimate_bytes =
+                    scalar_table_payload_estimate_bytes(lmax, mmax, plan.grid.ntheta());
+                let table_layout_supported =
+                    crate::legendre::ScalarLegendreTable::<f64>::supports_benchmark_grid_and_bandlimit(
+                        &plan.grid,
+                        &plan.harmonics,
+                    );
+                if !table_layout_supported {
+                    let table_status = if table_payload_estimate_bytes
+                        > crate::legendre::ScalarLegendreTable::<f64>::benchmark_max_table_bytes()
+                    {
+                        "unsupported_memory_cap"
+                    } else {
+                        "unsupported_layout"
+                    };
+                    for operation in [LegendreOperation::Analysis, LegendreOperation::Synthesis] {
+                        for threads in requested_threads.iter().copied() {
+                            writeln!(
+                                output,
+                                "{lmax},{mmax},{nphi},{longitude},{operation:?},{threads},{table_status},{table_payload_estimate_bytes},,,,,,,,,,,,,,"
+                            )
+                            .unwrap();
+                        }
+                    }
+                    continue;
+                }
+
+                crate::legendre::set_benchmark_strategy_override(Some(
+                    LegendreStrategy::CompactTable,
+                ));
+                let table_build_started = Instant::now();
+                let table = plan.get_scalar_legendre_table();
+                let table_build_us = table_build_started.elapsed().as_secs_f64() * 1e6;
+                let table_bytes = table.map_or(0, |table| table.allocated_bytes_for_benchmark());
+                crate::legendre::set_benchmark_strategy_override(None);
+                if table.is_none() {
+                    for operation in [LegendreOperation::Analysis, LegendreOperation::Synthesis] {
+                        for threads in requested_threads.iter().copied() {
+                            writeln!(
+                                output,
+                                "{lmax},{mmax},{nphi},{longitude},{operation:?},{threads},unsupported_table_allocation_or_basis,{table_payload_estimate_bytes},{table_bytes},,,{table_build_us:.4},,,,,,,,,,"
+                            )
+                            .unwrap();
+                        }
+                    }
+                    case_number += 1;
+                    continue;
+                }
+
+                let map_input: Vec<_> = (0..plan.sample_count)
+                    .map(|index| {
+                        let x = index as f64;
+                        0.23 * (0.017 * x).sin() + 0.11 * (0.031 * x).cos()
+                    })
+                    .collect();
+                let mut alm_input: Vec<_> = (0..plan.harmonics().nalm())
+                    .map(|index| {
+                        let x = index as f64;
+                        Complex64::new(1.0e-4 * (0.13 * x).sin(), 1.0e-4 * (0.19 * x).cos())
+                    })
+                    .collect();
+                for degree in 0..=lmax {
+                    alm_input[plan.harmonics().index(degree, 0).unwrap()].im = 0.0;
+                }
+
+                for (threads, pool) in [(1, &pool1), (8, &pool8)]
+                    .into_iter()
+                    .filter(|(threads, _)| requested_threads.contains(threads))
+                {
+                    let workspace_started = Instant::now();
+                    let mut workspace = pool.install(|| plan.workspace().unwrap());
+                    let workspace_setup_us = workspace_started.elapsed().as_secs_f64() * 1e6;
+                    let recurrence_scratch_bytes = scalar_recurrence_scratch_bytes(&workspace);
+                    let mut map_output = vec![f64::NAN; plan.sample_count];
+                    let mut alm_output =
+                        vec![Complex64::new(f64::NAN, f64::NAN); plan.harmonics().nalm()];
+
+                    for operation in [LegendreOperation::Analysis, LegendreOperation::Synthesis] {
+                        let first_table_started = Instant::now();
+                        run_forced_scalar_route_iterations(
+                            pool,
+                            &plan,
+                            &mut workspace,
+                            LegendreStrategy::CompactTable,
+                            operation,
+                            &map_input,
+                            &alm_input,
+                            &mut map_output,
+                            &mut alm_output,
+                            1,
+                        )
+                        .unwrap();
+                        let first_table_us = first_table_started.elapsed().as_secs_f64() * 1e6;
+                        let table_map_output = map_output.clone();
+                        let table_alm_output = alm_output.clone();
+
+                        let first_recurrence_started = Instant::now();
+                        run_forced_scalar_route_iterations(
+                            pool,
+                            &plan,
+                            &mut workspace,
+                            LegendreStrategy::Recurrence,
+                            operation,
+                            &map_input,
+                            &alm_input,
+                            &mut map_output,
+                            &mut alm_output,
+                            1,
+                        )
+                        .unwrap();
+                        let first_recurrence_us =
+                            first_recurrence_started.elapsed().as_secs_f64() * 1e6;
+                        let recurrence_map_output = map_output.clone();
+                        let recurrence_alm_output = alm_output.clone();
+
+                        let mut table_iterations = 1usize;
+                        loop {
+                            let started = Instant::now();
+                            run_forced_scalar_route_iterations(
+                                pool,
+                                &plan,
+                                &mut workspace,
+                                LegendreStrategy::CompactTable,
+                                operation,
+                                &map_input,
+                                &alm_input,
+                                &mut map_output,
+                                &mut alm_output,
+                                table_iterations,
+                            )
+                            .unwrap();
+                            if started.elapsed().as_secs_f64() * 1e6 >= target_us as f64
+                                || table_iterations >= 1 << 20
+                            {
+                                break;
+                            }
+                            table_iterations *= 2;
+                        }
+                        let mut recurrence_iterations = 1usize;
+                        loop {
+                            let started = Instant::now();
+                            run_forced_scalar_route_iterations(
+                                pool,
+                                &plan,
+                                &mut workspace,
+                                LegendreStrategy::Recurrence,
+                                operation,
+                                &map_input,
+                                &alm_input,
+                                &mut map_output,
+                                &mut alm_output,
+                                recurrence_iterations,
+                            )
+                            .unwrap();
+                            if started.elapsed().as_secs_f64() * 1e6 >= target_us as f64
+                                || recurrence_iterations >= 1 << 20
+                            {
+                                break;
+                            }
+                            recurrence_iterations *= 2;
+                        }
+
+                        let mut table_samples = Vec::with_capacity(batches);
+                        let mut recurrence_samples = Vec::with_capacity(batches);
+                        for batch in 0..batches {
+                            let table_first = (batch + case_number).is_multiple_of(2);
+                            for strategy in if table_first {
+                                [LegendreStrategy::CompactTable, LegendreStrategy::Recurrence]
+                            } else {
+                                [LegendreStrategy::Recurrence, LegendreStrategy::CompactTable]
+                            } {
+                                let iterations = match strategy {
+                                    LegendreStrategy::CompactTable => table_iterations,
+                                    LegendreStrategy::Recurrence => recurrence_iterations,
+                                };
+                                let started = Instant::now();
+                                run_forced_scalar_route_iterations(
+                                    pool,
+                                    &plan,
+                                    &mut workspace,
+                                    strategy,
+                                    operation,
+                                    &map_input,
+                                    &alm_input,
+                                    &mut map_output,
+                                    &mut alm_output,
+                                    iterations,
+                                )
+                                .unwrap();
+                                let per_call_us =
+                                    started.elapsed().as_secs_f64() * 1e6 / iterations as f64;
+                                match strategy {
+                                    LegendreStrategy::CompactTable => {
+                                        table_samples.push(per_call_us)
+                                    }
+                                    LegendreStrategy::Recurrence => {
+                                        recurrence_samples.push(per_call_us)
+                                    }
+                                }
+                            }
+                        }
+
+                        let (relative_l2, max_scaled_error) = match operation {
+                            LegendreOperation::Analysis => (
+                                relative_l2_complex(&table_alm_output, &recurrence_alm_output),
+                                table_alm_output
+                                    .iter()
+                                    .zip(&recurrence_alm_output)
+                                    .map(|(left, right)| (*left - *right).norm())
+                                    .fold(0.0_f64, f64::max)
+                                    / recurrence_alm_output
+                                        .iter()
+                                        .map(|value| value.norm())
+                                        .fold(1.0_f64, f64::max),
+                            ),
+                            LegendreOperation::Synthesis => (
+                                relative_l2_real(&table_map_output, &recurrence_map_output),
+                                table_map_output
+                                    .iter()
+                                    .zip(&recurrence_map_output)
+                                    .map(|(left, right)| (left - right).abs())
+                                    .fold(0.0_f64, f64::max)
+                                    / recurrence_map_output
+                                        .iter()
+                                        .map(|value| value.abs())
+                                        .fold(1.0_f64, f64::max),
+                            ),
+                        };
+                        assert!(relative_l2.is_finite() && max_scaled_error.is_finite());
+                        assert!(
+                            relative_l2 <= 5e-11,
+                            "T{lmax} {operation:?} q{threads}: {relative_l2:e}"
+                        );
+                        let table_median = median(&table_samples);
+                        let recurrence_median = median(&recurrence_samples);
+                        let expected_reuse = if table_median < recurrence_median {
+                            ((table_build_us + first_table_us - first_recurrence_us).max(0.0)
+                                / (recurrence_median - table_median))
+                                .ceil() as usize
+                        } else {
+                            0
+                        };
+                        let (actual_table_calls, actual_recurrence_calls) = match operation {
+                            LegendreOperation::Synthesis => {
+                                (table_iterations * batches, recurrence_iterations * batches)
+                            }
+                            LegendreOperation::Analysis => {
+                                (table_iterations * batches, recurrence_iterations * batches)
+                            }
+                        };
+                        writeln!(
+                            output,
+                            "{lmax},{mmax},{nphi},{longitude},{operation:?},{threads},complete,{table_payload_estimate_bytes},{table_bytes},{recurrence_scratch_bytes},{:.4},{:.4},{:.4},{:.4},{},{},{:.6},{expected_reuse},{relative_l2:.12e},{max_scaled_error:.12e},{actual_table_calls},{actual_recurrence_calls}",
+                            plan_setup_us + workspace_setup_us,
+                            table_build_us,
+                            first_table_us,
+                            first_recurrence_us,
+                            table_samples.iter().map(|value| format!("{value:.5}")).collect::<Vec<_>>().join(";"),
+                            recurrence_samples.iter().map(|value| format!("{value:.5}")).collect::<Vec<_>>().join(";"),
+                            table_median / recurrence_median,
+                        )
+                        .unwrap();
+                    }
+                }
+                case_number += 1;
+            }
+        }
+    }
+    crate::legendre::set_benchmark_strategy_override(None);
 }
 
 #[test]
