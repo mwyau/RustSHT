@@ -7,6 +7,7 @@
 The experiment answers whether two adjacent real longitude rows can share one length-N complex transform. It changes only scalar f64 odd-N analysis and synthesis. Even N, f32, spin-1 and other spin paths retain their existing route. A final unpaired latitude row uses the existing independent transform.
 
 - RustSHT baseline source: ef238290f28d5192ca54de8e442c77640549828a.
+- Local implementation, tests, benchmark harness and report commit: 4b74e3a595aacb111d3222d5da4ddab37a43e7c8.
 - Candidate source diff SHA256 used for the final whole-transform A/B: b5238c0acf3ef06a5edbe35141786f87c64c81aa6ee3a0220e1489b32c3e7b04.
 - DUCC source: 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b, DUCC 0.42.0.
 - Host: AMD Ryzen 9 5950X, performance governor; q1 CPU 8, q8 CPUs 8–15.
@@ -112,4 +113,4 @@ Verification completed on the final source:
 
 The paired route is accepted as an isolated experimental implementation because row-stage and whole-transform synthesis improvements agree across the tested odd lengths, and all numerical/fallback checks pass. Forward pairing remains disabled at N=255. Analysis is promising but less robust under q8; changes of only a few percent should not be treated as conclusive on the observed host. The even control confirms that not every whole-transform difference is caused by the new route.
 
-The candidate changes no public API and adds no dependency. Production integration still conflicts with the active owner direction to defer odd-length FFT work, so it requires a later explicit scope change and a clean matched rerun on that source. Nothing was pushed; the experimental worktree is left available for review. Raw disassembly, per-batch logs, local host/process/PSI snapshots and build directories remain outside the repository.
+The candidate changes no public API and adds no dependency. Production integration still conflicts with the active owner direction to defer odd-length FFT work, so it requires a later explicit scope change and a clean matched rerun on that source. Nothing was pushed; the experimental worktree is left available for review. Raw disassembly, per-batch logs and host/process/PSI snapshots remain under the local temporary data paths. Benchmark build outputs are untracked and excluded from the commit.
