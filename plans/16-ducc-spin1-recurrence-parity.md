@@ -1,5 +1,7 @@
 # Plan 16 — DUCC-equivalent spin-1 recurrence and dataflow
 
+**Successor (queued, not active):** [Plan 17 — f32 and high-resolution atmospheric SHT performance](17-f32-atmospheric-performance.md), to begin only after Plan 16's measured closeout and safe remote sync. Do not mix f32/high-resolution follow-on experiments into current Plan 16.
+
 **Status:** QUEUED after the current owner-directed scalar-analysis cumulative-ablation study. **Branch:** opt/sht-performance-parity. **Scope:** f64 single-vector-field spin-1 STANDARD E/B analysis and synthesis on GL, CC and F1; optimize the measured synthesis recurrence/spectrum residual first. This is a new investigation, not a reopening or retroactive reinterpretation of completed Plan 15.
 
 ## Execution order and handoff
