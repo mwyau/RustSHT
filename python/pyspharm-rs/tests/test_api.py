@@ -6,13 +6,13 @@ import math
 import numpy as np
 import pytest
 
-import spharm
+import spharm_rs
 
 
 def test_public_module_functions_and_pyspharm_normalization():
-    assert spharm.__version__ == "1.0.9"
+    assert spharm_rs.__version__ == "1.0.9"
 
-    pbar = spharm.legendre(30.0, 2)
+    pbar = spharm_rs.legendre(30.0, 2)
     latitude = math.radians(30.0)
     expected = np.array(
         [
@@ -30,21 +30,21 @@ def test_public_module_functions_and_pyspharm_normalization():
 
     coefficients = np.array([2.0 + 7.0j], dtype=np.complex64)
     legendre = np.array([1 / math.sqrt(2)], dtype=np.float32)
-    value = spharm.specintrp(123.0, coefficients, legendre)
+    value = spharm_rs.specintrp(123.0, coefficients, legendre)
     assert isinstance(value, np.float32)
     assert value == pytest.approx(math.sqrt(2), rel=2e-7)
 
-    orders, degrees = spharm.getspecindx(2)
+    orders, degrees = spharm_rs.getspecindx(2)
     assert orders.dtype == np.int32
     assert degrees.dtype == np.int32
     np.testing.assert_array_equal(orders, [0, 0, 0, 1, 1, 2])
     np.testing.assert_array_equal(degrees, [0, 1, 2, 1, 2, 2])
-    zero_order, zero_degree = spharm.getspecindx(0)
+    zero_order, zero_degree = spharm_rs.getspecindx(0)
     assert zero_order.shape == zero_degree.shape == ()
     assert zero_order.dtype == zero_degree.dtype == np.int32
     assert zero_order == zero_degree == 0
 
-    latitudes, weights = spharm.gaussian_lats_wts(8)
+    latitudes, weights = spharm_rs.gaussian_lats_wts(8)
     assert latitudes.dtype == np.float64
     assert weights.dtype == np.float64
     np.testing.assert_allclose(
@@ -64,7 +64,7 @@ def test_public_module_functions_and_pyspharm_normalization():
     )
     assert weights.sum() == pytest.approx(2.0, abs=2e-14)
 
-    geodesic_lat, geodesic_lon = spharm.getgeodesicpts(2)
+    geodesic_lat, geodesic_lon = spharm_rs.getgeodesicpts(2)
     assert geodesic_lat.dtype == geodesic_lon.dtype == np.float32
     assert geodesic_lat.shape == geodesic_lon.shape == (12,)
     np.testing.assert_allclose(

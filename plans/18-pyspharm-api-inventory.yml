@@ -1,16 +1,16 @@
 # SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 # SPDX-License-Identifier: GPL-2.0-or-later
 # Public API and tested behavior for the pyspharm-rs compatibility module.
-# References are installed in separate Python 3.13 environments because each
-# implementation owns the same top-level `spharm` module.
+# Reference implementations are installed in separate Python 3.13 environments;
+# this implementation is imported as `spharm_rs` to keep a distinct namespace.
 schema_version: 1
 status: implemented_with_documented_numerical_limitations
 module:
-  import: "import spharm"
+  import: "import spharm_rs"
   implementation_version: "1.0.9"
   distribution: "pyspharm-rs"
   distribution_version: "0.1.0.dev0"
-  source_file: "python/pyspharm-rs/spharm.py"
+  source_file: "python/pyspharm-rs/spharm_rs.py"
   native_dependency: "rustsht"
   runtime_python_dependencies: ["numpy", "rustsht"]
   not_provided: ["pyspharm distribution metadata", "_spherepack private extension", "SPHEREPACK Fortran ABI"]

@@ -8,7 +8,7 @@ build-backend = "hatchling.build"
 [project]
 name = "pyspharm-rs"
 version = "0.1.0.dev0"
-description = "pyspharm-compatible spherical harmonic transforms using RustSHT"
+description = "pyspharm-compatible spherical harmonic transforms imported as spharm_rs"
 requires-python = ">=3.11"
 license = "GPL-2.0-or-later"
 authors = [{ name = "Albert M. W. Yau" }]
@@ -18,10 +18,10 @@ dependencies = ["numpy>=1.24", "rustsht>=0.1.0.dev0"]
 dev = ["pytest"]
 
 [tool.hatch.build.targets.wheel]
-only-include = ["spharm.py"]
+only-include = ["spharm_rs.py"]
 
 [tool.hatch.build.targets.sdist]
-include = ["pyproject.toml", "spharm.py", "tests/**"]
+include = ["pyproject.toml", "spharm_rs.py", "tests/**"]
 
 [tool.uv.sources]
 rustsht = { path = "../..", editable = true }

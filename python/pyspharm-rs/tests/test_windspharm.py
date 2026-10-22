@@ -7,12 +7,12 @@ import pytest
 windspharm_standard = pytest.importorskip("windspharm.standard")
 VectorWind = windspharm_standard.VectorWind
 
-import spharm
+import spharm_rs
 
 
-def test_standard_vectorwind_operators_use_the_spharm_compatibility_api():
-    transform = spharm.Spharmt(24, 12, gridtype="gaussian", legfunc="computed")
-    orders, degrees = spharm.getspecindx(4)
+def test_standard_vectorwind_operators_accept_spharm_rs_fields():
+    transform = spharm_rs.Spharmt(24, 12, gridtype="gaussian", legfunc="computed")
+    orders, degrees = spharm_rs.getspecindx(4)
     vorticity_spectrum = np.zeros(len(orders), dtype=np.complex64)
     divergence_spectrum = np.zeros(len(orders), dtype=np.complex64)
     for index, (order, degree) in enumerate(zip(orders, degrees)):
