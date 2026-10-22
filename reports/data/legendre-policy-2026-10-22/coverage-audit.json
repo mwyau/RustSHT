@@ -1,0 +1,47 @@
+{
+  "baseline_production_commit": "13b82470",
+  "benchmark_commit": "c9de73237274f5a0a1a45be67fd53391701e1035",
+  "lmax_min": 0,
+  "lmax_max": 256,
+  "unique_lmax_count": 257,
+  "expected_unique_lmax_count": 257,
+  "missing_lmax": [],
+  "missing_case_count": 0,
+  "case_rows": 2184,
+  "expected_full_rows": 2056,
+  "reduced_mmax_lmax": [
+    63,
+    64,
+    65,
+    96,
+    120,
+    124,
+    126,
+    127,
+    128,
+    159,
+    191,
+    223,
+    248,
+    254,
+    255,
+    256
+  ],
+  "unsupported_rows": 0,
+  "all_rows_route_verified": true,
+  "max_relative_l2_table_vs_recurrence": 8.229291586047e-14,
+  "max_scaled_error_table_vs_recurrence": 1.599241572503e-14,
+  "max_table_payload_estimate_bytes": 34213896,
+  "screen_protocol": "one process per q, 5 interleaved calibrated batches targeting 1 ms; exploratory only",
+  "measurement_repeats": {
+    "q1": [
+      "repeat-2-q1.csv",
+      "repeat-3-q1.csv",
+      "repeat-4-q1-t120-128.csv"
+    ],
+    "q8": [
+      "repeat-1-q8.csv",
+      "repeat-2-q8.csv"
+    ]
+  }
+}

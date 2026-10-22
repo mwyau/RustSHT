@@ -49,6 +49,21 @@ separately, CC/F1 spin-1 analysis resampling overhead.
 
 ## Other measured context
 
+### Owner-directed scalar table/recurrence dispatch sweep (2026-10-22)
+
+The forced-route screen covers all 257 degrees with verified table and
+recurrence execution, q1/q8, scalar f64 GL analysis/synthesis, and odd/even
+longitude shapes. Independent 30-batch repeats support the current q1 analysis
+20 MiB table-footprint threshold; they show recurrence faster for q8 analysis
+and for q1/q8 synthesis across the production-eligible region. The only exact
+grid scalar production route at T63 that contradicts this evidence is q8 table
+synthesis. The q1 T255 and q8 T63 analysis exceptions are redundant with the
+existing byte/thread rules. The table minimum and maximum are retained because
+the low-T warm results do not establish a safe eager-build/reuse policy.
+No production code changed in the measurement commit. See the
+[forced-route report](reports/scalar-legendre-table-recurrence-sweep-2026-10-22.md)
+and its coverage manifest.
+
 The completed scalar GL T64–T256 dispatch diagnosis attributes the q8 analysis
 cliffs to compact-table selection and serial row FFT eligibility, not a recent
 source regression. The current policy uses recurrence for q8 exact-grid
