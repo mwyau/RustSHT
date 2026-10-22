@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import argparse
 import csv
+import ctypes
+import ctypes.util
 import hashlib
 import json
 import math
@@ -41,6 +43,13 @@ PHI0 = 0.23
 TARGET_BATCH_MS = 25.0
 PROCESS_PAIRS = 3
 BATCHES_PER_PROCESS = 10
+# The random-map gate is stricter than the scalar analysis/synthesis tests in
+# src/transform/tests.rs. Validation uses that existing 5e-11 tolerance; the
+# adjoint gate also covers the cancellation-conditioned T214 dot-product case
+# audited in reports/f64-ducc-independent-review-2026-10-22.md.
+RANDOM_OUTPUT_RELATIVE_L2_TOLERANCE = 5e-12
+VALIDATION_RELATIVE_L2_TOLERANCE = 5e-11
+ADJOINT_RELATIVE_RESIDUAL_TOLERANCE = 5e-11
 DENSE_SWEEP_HIGH_LMAX = (
     257, 258, 300, 320, 384, 511, 512, 513, 640, 720, 721, 768, 896,
     1023, 1024, 1025, 1280, 1536, 1792, 2047, 2048, 2049, 2560, 3072,
@@ -103,6 +112,19 @@ def portable_evidence(value):
         value = value.replace(str(ROOT), "<repo>")
         value = re.sub(r"/tmp/[^\s;'\"]+", "<temporary-path>", value)
         return value
+    return value
+
+
+def finite_json_value(value):
+    """Encode undefined/nonfinite metrics as JSON null, never invalid JSON."""
+    if isinstance(value, dict):
+        return {key: finite_json_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [finite_json_value(item) for item in value]
+    if isinstance(value, (float, np.floating)):
+        return float(value) if math.isfinite(float(value)) else None
+    if isinstance(value, np.integer):
+        return int(value)
     return value
 
 
@@ -315,7 +337,11 @@ def make_cases(
         if fixed_mmax is None:
             mmax_values = {lmax}
             if dense_sweep and lmax > 0:
-                reduced_mmax = max(1, lmax // 4)
+                # The active CC manifest defines reduced order exactly as
+                # floor(lmax / 4), including mmax=0 at T1--T3.  Preserve the
+                # historical GL contract, whose low-degree series used
+                # max(1, floor(lmax / 4)).
+                reduced_mmax = lmax // 4 if grid == "CC" else max(1, lmax // 4)
                 if reduced_mmax <= lmax:
                     mmax_values.add(reduced_mmax)
             elif lmax >= 4:
@@ -404,29 +430,48 @@ def make_fixture(case: dict, directory: pathlib.Path) -> None:
     }
 
 
-def error_metrics(actual: np.ndarray, reference: np.ndarray) -> dict[str, float]:
+def error_metrics(actual: np.ndarray, reference: np.ndarray) -> dict[str, float | int | None | bool]:
     actual = np.asarray(actual)
     reference = np.asarray(reference)
+    if actual.shape != reference.shape:
+        raise ValueError(f"metric shape mismatch: {actual.shape} != {reference.shape}")
+    if not np.isfinite(actual).all() or not np.isfinite(reference).all():
+        return {
+            "absolute_max": None,
+            "relative_l2": None,
+            "max_relative_above_1e-12_peak": None,
+            "near_zero_reference_count": None,
+            "metrics_finite": False,
+        }
     delta = np.abs(actual - reference)
     reference_abs = np.abs(reference)
-
-    def stable_norm(values: np.ndarray) -> float:
-        flat = np.abs(values.ravel())
-        peak = float(flat.max(initial=0.0))
-        if peak == 0.0:
-            return 0.0
-        return peak * math.sqrt(float(np.square(flat / peak).sum()))
-
-    scale = max(stable_norm(reference), np.finfo(np.float64).tiny)
+    error_peak = float(delta.max(initial=0.0))
+    reference_peak = float(reference_abs.max(initial=0.0))
+    if error_peak == 0.0:
+        relative_l2 = 0.0
+    elif reference_peak == 0.0:
+        relative_l2 = math.inf
+    else:
+        scaled_error_norm = math.sqrt(float(np.square(delta / error_peak).sum()))
+        scaled_reference_norm = math.sqrt(float(np.square(reference / reference_peak).sum()))
+        relative_l2 = (error_peak / reference_peak) * (scaled_error_norm / scaled_reference_norm)
     maximum = float(reference_abs.max(initial=0.0))
     near_zero = reference_abs <= max(maximum * 1e-12, np.finfo(np.float64).tiny)
     valid = ~near_zero
     max_relative = float((delta[valid] / reference_abs[valid]).max(initial=0.0)) if valid.any() else 0.0
+    absolute_max: float | None = error_peak if math.isfinite(error_peak) else None
+    relative_l2_value: float | None = relative_l2 if math.isfinite(relative_l2) else None
+    max_relative_value: float | None = max_relative if math.isfinite(max_relative) else None
     return {
-        "absolute_max": float(delta.max(initial=0.0)),
-        "relative_l2": float(stable_norm(delta) / scale),
-        "max_relative_above_1e-12_peak": max_relative,
+        "absolute_max": absolute_max,
+        "relative_l2": relative_l2_value,
+        "max_relative_above_1e-12_peak": max_relative_value,
         "near_zero_reference_count": int(near_zero.sum()),
+        "metrics_finite": (
+            absolute_max is not None
+            and relative_l2_value is not None
+            and max_relative_value is not None
+        ),
     }
 
 
@@ -522,7 +567,98 @@ def compare_validation(case: dict, outputs: dict[str, pathlib.Path], records: di
         backend: bool(records[backend]["reset_consistent"])
         for backend in ("rustsht", "ducc")
     }
+    acceptance_failures = []
+    if not checks["finite_outputs"]:
+        acceptance_failures.append("nonfinite_validation_output")
+    if (set(checks["reset_consistent"]) != {"rustsht", "ducc"}
+            or not all(checks["reset_consistent"].values())):
+        acceptance_failures.append("reused_output_reset_mismatch")
+    expected_finite_flags = {"zero_finite", "extreme_finite", "subnormal_finite"}
+    if any(set(checks["finite_flags"].get(backend, {})) != expected_finite_flags
+           for backend in ("rustsht", "ducc")):
+        acceptance_failures.append("edge_finite_record_missing")
+    if not checks["edge_cases"]["zero"].get("exact_zero", False):
+        acceptance_failures.append("zero_input_was_not_exact_zero")
+    for backend in ("rustsht", "ducc"):
+        for metric_name, metric in checks["roundtrip"][backend].items():
+            if (metric_name == "relative_l2"
+                    and (metric is None or metric > VALIDATION_RELATIVE_L2_TOLERANCE)):
+                acceptance_failures.append(f"{backend}_roundtrip_relative_l2")
+        for operation, field in (("synthesis", "synthesis_relative_residual"),
+                                 ("analysis", "analysis_relative_residual")):
+            residual = checks["adjoints"][backend][field]
+            if (not isinstance(residual, (int, float)) or not math.isfinite(residual)
+                    or residual > ADJOINT_RELATIVE_RESIDUAL_TOLERANCE):
+                acceptance_failures.append(f"{backend}_{operation}_adjoint_residual")
+    expected_modes = set(selected_modes(case["lmax"], case["mmax"]))
+    observed_modes = {(item.get("l"), item.get("m")) for item in checks["basis"]}
+    if observed_modes != expected_modes:
+        acceptance_failures.append("basis_record_set_mismatch")
+    for basis in checks["basis"]:
+        for field in ("map_rust_ducc", "analysis_of_synthesis_rust", "analysis_of_synthesis_ducc"):
+            relative_l2 = basis[field].get("relative_l2")
+            if relative_l2 is None or relative_l2 > VALIDATION_RELATIVE_L2_TOLERANCE:
+                acceptance_failures.append(f"basis_{field}_l{basis['l']}_m{basis['m']}")
+    for edge_name, edge in checks["edge_cases"].items():
+        for field in ("map_rust_ducc", "alm_rust_ducc"):
+            relative_l2 = edge[field].get("relative_l2")
+            if relative_l2 is None or relative_l2 > VALIDATION_RELATIVE_L2_TOLERANCE:
+                acceptance_failures.append(f"{edge_name}_{field}")
+    checks["acceptance_failures"] = acceptance_failures
+    checks["acceptance_status"] = "rejected" if acceptance_failures else "accepted"
     return checks
+
+
+def saved_validation_acceptance(validation: dict) -> tuple[str, list[str]]:
+    """Reconcile a saved validation record against current numeric gates."""
+    failures = []
+    if not validation.get("finite_outputs", False):
+        failures.append("nonfinite_validation_output")
+    reset_flags = validation.get("reset_consistent", {})
+    if set(reset_flags) != {"rustsht", "ducc"} or not all(reset_flags.values()):
+        failures.append("reused_output_reset_mismatch")
+    finite_flags = validation.get("finite_flags", {})
+    expected_finite_flags = {"zero_finite", "extreme_finite", "subnormal_finite"}
+    if any(set(finite_flags.get(backend, {})) != expected_finite_flags
+           for backend in ("rustsht", "ducc")):
+        failures.append("edge_finite_record_missing")
+    if not validation.get("edge_cases", {}).get("zero", {}).get("exact_zero", False):
+        failures.append("zero_input_was_not_exact_zero")
+    for backend in ("rustsht", "ducc"):
+        roundtrip = validation.get("roundtrip", {}).get(backend, {}).get("relative_l2")
+        if roundtrip is None or roundtrip > VALIDATION_RELATIVE_L2_TOLERANCE:
+            failures.append(f"{backend}_roundtrip_relative_l2")
+        for operation in ("synthesis", "analysis"):
+            residual = validation.get("adjoints", {}).get(backend, {}).get(
+                f"{operation}_relative_residual"
+            )
+            if (not isinstance(residual, (int, float)) or not math.isfinite(residual)
+                    or residual > ADJOINT_RELATIVE_RESIDUAL_TOLERANCE):
+                failures.append(f"{backend}_{operation}_adjoint_residual")
+    lmax, mmax = validation.get("lmax"), validation.get("mmax")
+    if not isinstance(lmax, int) or not isinstance(mmax, int):
+        failures.append("validation_geometry_missing")
+        expected_modes = set()
+    else:
+        expected_modes = set(selected_modes(lmax, mmax))
+    observed_modes = {(item.get("l"), item.get("m"))
+                      for item in validation.get("basis", [])}
+    if observed_modes != expected_modes:
+        failures.append("basis_record_set_mismatch")
+    expected_edges = {"zero", "extreme", "subnormal"}
+    if set(validation.get("edge_cases", {})) != expected_edges:
+        failures.append("edge_case_record_set_mismatch")
+    for basis in validation.get("basis", []):
+        for field in ("map_rust_ducc", "analysis_of_synthesis_rust", "analysis_of_synthesis_ducc"):
+            relative_l2 = basis.get(field, {}).get("relative_l2")
+            if relative_l2 is None or relative_l2 > VALIDATION_RELATIVE_L2_TOLERANCE:
+                failures.append(f"basis_{field}_l{basis.get('l')}_m{basis.get('m')}")
+    for edge_name, edge in validation.get("edge_cases", {}).items():
+        for field in ("map_rust_ducc", "alm_rust_ducc"):
+            relative_l2 = edge.get(field, {}).get("relative_l2")
+            if relative_l2 is None or relative_l2 > VALIDATION_RELATIVE_L2_TOLERANCE:
+                failures.append(f"{edge_name}_{field}")
+    return ("rejected" if failures else "accepted"), failures
 
 
 def read_result(path: pathlib.Path, operation: str, case: dict, backend: str) -> np.ndarray:
@@ -545,12 +681,256 @@ def summarize(values: list[float]) -> dict[str, float]:
     }
 
 
+def format_scientific(value) -> str:
+    return f"{value:.3e}" if isinstance(value, (int, float)) and math.isfinite(value) else "unavailable"
+
+
+def convert_svg_to_png(svg_path: pathlib.Path) -> pathlib.Path:
+    """Rasterize an SVG through the system librsvg and Cairo libraries."""
+    svg = svg_path.read_text()
+    dimensions = re.search(r'<svg\b[^>]*\bwidth="(\d+)"[^>]*\bheight="(\d+)"', svg)
+    if not dimensions:
+        raise ValueError(f"SVG dimensions are not explicit: {svg_path}")
+    width, height = map(int, dimensions.groups())
+    rsvg_path = ctypes.util.find_library("rsvg-2")
+    cairo_path = ctypes.util.find_library("cairo")
+    gobject_path = ctypes.util.find_library("gobject-2.0")
+    if not rsvg_path or not cairo_path or not gobject_path:
+        raise RuntimeError("librsvg, Cairo, and GObject are required to emit PNG figure companions")
+    rsvg = ctypes.CDLL(rsvg_path)
+    cairo = ctypes.CDLL(cairo_path)
+    gobject = ctypes.CDLL(gobject_path)
+
+    class RsvgRectangle(ctypes.Structure):
+        _fields_ = [("x", ctypes.c_double), ("y", ctypes.c_double),
+                    ("width", ctypes.c_double), ("height", ctypes.c_double)]
+
+    error = ctypes.c_void_p()
+    rsvg.rsvg_handle_new_from_file.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_void_p)]
+    rsvg.rsvg_handle_new_from_file.restype = ctypes.c_void_p
+    handle = rsvg.rsvg_handle_new_from_file(os.fsencode(svg_path.resolve()), ctypes.byref(error))
+    if not handle:
+        message = "unable to load SVG with librsvg"
+        if error.value:
+            glib = ctypes.CDLL(ctypes.util.find_library("glib-2.0"))
+            glib.g_error_free.argtypes = [ctypes.c_void_p]
+            glib.g_error_free(error)
+        raise RuntimeError(f"{message}: {svg_path}")
+    cairo.cairo_image_surface_create.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int]
+    cairo.cairo_image_surface_create.restype = ctypes.c_void_p
+    cairo.cairo_create.argtypes = [ctypes.c_void_p]
+    cairo.cairo_create.restype = ctypes.c_void_p
+    cairo.cairo_surface_write_to_png.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+    cairo.cairo_surface_write_to_png.restype = ctypes.c_int
+    cairo.cairo_destroy.argtypes = [ctypes.c_void_p]
+    cairo.cairo_surface_destroy.argtypes = [ctypes.c_void_p]
+    rsvg.rsvg_handle_render_document.argtypes = [
+        ctypes.c_void_p, ctypes.c_void_p, ctypes.POINTER(RsvgRectangle),
+        ctypes.POINTER(ctypes.c_void_p),
+    ]
+    rsvg.rsvg_handle_render_document.restype = ctypes.c_int
+    gobject.g_object_unref.argtypes = [ctypes.c_void_p]
+    surface = cairo.cairo_image_surface_create(0, width, height)  # CAIRO_FORMAT_ARGB32
+    if not surface:
+        gobject.g_object_unref(handle)
+        raise RuntimeError("Cairo could not allocate the PNG surface")
+    context = cairo.cairo_create(surface)
+    if not context:
+        cairo.cairo_surface_destroy(surface)
+        gobject.g_object_unref(handle)
+        raise RuntimeError("Cairo could not create a drawing context")
+    viewport = RsvgRectangle(0.0, 0.0, float(width), float(height))
+    rendered = rsvg.rsvg_handle_render_document(handle, context, ctypes.byref(viewport), ctypes.byref(error))
+    png_path = svg_path.with_suffix(".png")
+    write_status = cairo.cairo_surface_write_to_png(surface, os.fsencode(png_path)) if rendered else -1
+    cairo.cairo_destroy(context)
+    cairo.cairo_surface_destroy(surface)
+    gobject.g_object_unref(handle)
+    if error.value:
+        glib = ctypes.CDLL(ctypes.util.find_library("glib-2.0"))
+        glib.g_error_free.argtypes = [ctypes.c_void_p]
+        glib.g_error_free(error)
+    if not rendered or write_status != 0:
+        raise RuntimeError(f"librsvg/Cairo failed to render {svg_path} to PNG")
+    if not png_path.is_file() or not png_path.read_bytes().startswith(b"\x89PNG\r\n\x1a\n"):
+        raise RuntimeError(f"Chromium did not produce a valid PNG for {svg_path}")
+    return png_path
+
+
+def convert_svg_directory_to_png(output_dir: pathlib.Path) -> list[pathlib.Path]:
+    return [convert_svg_to_png(path) for path in sorted(output_dir.glob("*.svg"))]
+
+
+def png_renderer_version() -> str:
+    rsvg_path = ctypes.util.find_library("rsvg-2")
+    cairo_path = ctypes.util.find_library("cairo")
+    if not rsvg_path or not cairo_path:
+        return "unavailable"
+    rsvg = ctypes.CDLL(rsvg_path)
+    cairo = ctypes.CDLL(cairo_path)
+    cairo.cairo_version_string.restype = ctypes.c_char_p
+    rsvg_version = ".".join(
+        str(ctypes.c_uint.in_dll(rsvg, symbol).value)
+        for symbol in ("rsvg_major_version", "rsvg_minor_version", "rsvg_micro_version")
+    )
+    return f"librsvg {rsvg_version} / Cairo {cairo.cairo_version_string().decode()}"
+
+
+def atomic_write_json(path: pathlib.Path, value: dict) -> None:
+    """Replace one checkpoint atomically and sync its directory entry."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    with temporary.open("w") as handle:
+        json.dump(finite_json_value(value), handle, separators=(",", ":"), allow_nan=False)
+        handle.write("\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(temporary, path)
+    directory_fd = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    try:
+        os.fsync(directory_fd)
+    finally:
+        os.close(directory_fd)
+
+
+def checkpoint_identity(metadata: dict, cases: list[dict], operations: list[str],
+                        threads: list[int]) -> dict:
+    """Bind resumable measurements to their exact inputs and timing contract."""
+    case_fields = ("case_id", "grid", "lmax", "mmax", "ntheta", "nphi", "longitude_mode")
+    return {
+        "schema_version": 1,
+        "selected_cases": [
+            {field: case.get(field) for field in case_fields} for case in cases
+        ],
+        "operations": list(operations),
+        "threads": list(threads),
+        "production_source_revision": metadata["production_source_revision"],
+        "binary_source_revision": metadata.get("binary_source_revision"),
+        "binary_build_record_sha256": metadata.get("binary_build_record", {}).get("sha256"),
+        "benchmark_harness_sha256": metadata["benchmark_harness_sha256"],
+        "ducc_source_revision": metadata["ducc_source_revision"],
+        "rust_binary_sha256": metadata["rust_binary_sha256"],
+        "ducc_binary_sha256": metadata["ducc_binary_sha256"],
+        "rustc": metadata["rustc"],
+        "cxx": metadata["cxx"],
+        "rust_flags": metadata["rust_flags"],
+        "ducc_flags": metadata["ducc_flags"],
+        "ducc_sht_compile_command": metadata.get("ducc_sht_compile_command"),
+        "ducc_driver_compile_command": metadata.get("ducc_driver_compile_command"),
+        "cpu_model": metadata["cpu_model"],
+        "selected_q1_cpu": metadata["selected_q1_cpu"],
+        "selected_q8_cpus": metadata["selected_q8_cpus"],
+        "selected_q8_topology": metadata["selected_q8_topology"],
+        "selected_q8_l3_cache_ids": metadata["selected_q8_l3_cache_ids"],
+        "retain_local_host_telemetry": metadata["retain_local_host_telemetry"],
+        "process_pairs": PROCESS_PAIRS,
+        "batches_per_process": BATCHES_PER_PROCESS,
+        "target_batch_ms": TARGET_BATCH_MS,
+        "short_operation_upper_bound_ms": 100.0,
+        "qualified_batch_window_ms": [20.0, 100.0],
+        "long_operation_samples_per_process": 5,
+        "phi0": PHI0,
+    }
+
+
+def execution_protocol(metadata: dict) -> dict:
+    """Fields that must agree before measurements from shards can be merged."""
+    keys = (
+        "production_source_revision", "ducc_source_revision",
+        "grid", "ducc_version", "rustc", "cargo", "cxx", "rust_flags", "ducc_flags",
+        "cpu_model", "selected_q1_cpu", "selected_q8_cpus", "selected_q8_topology",
+        "selected_q8_l3_cache_ids", "process_pairs", "batches_per_process",
+        "target_batch_ms", "phi0", "rust_binary_sha256", "ducc_binary_sha256",
+        "ducc_sht_compile_command", "ducc_driver_compile_command",
+    )
+    protocol = {key: metadata.get(key) for key in keys}
+    # Older shards predate this field. Their production_source_revision was
+    # explicitly supplied as the source represented by the frozen binary.
+    protocol["binary_source_revision"] = metadata.get(
+        "binary_source_revision", metadata.get("production_source_revision")
+    )
+    protocol.update({
+        "short_operation_upper_bound_ms": 100.0,
+        "qualified_batch_window_ms": [20.0, 100.0],
+        "long_operation_samples_per_process": 5,
+        "pairing": "interleaved process-pair median ratios; independent backend batches",
+    })
+    return protocol
+
+
+def validate_binary_build_record(path: pathlib.Path, metadata: dict,
+                                 declared_source_revision: str | None) -> dict:
+    """Verify skipped-build executables against a saved native build record."""
+    payload = json.loads(path.read_text())
+    recorded = payload.get("metadata", payload)
+    source_revision = recorded.get(
+        "binary_source_revision", recorded.get("production_source_revision")
+    )
+    if not source_revision:
+        raise ValueError(f"binary build record has no source revision: {path}")
+    if declared_source_revision and declared_source_revision != source_revision:
+        raise ValueError(
+            f"declared production source {declared_source_revision} does not match "
+            f"binary build record source {source_revision}"
+        )
+    fields = (
+        "rust_binary_sha256", "ducc_binary_sha256", "ducc_source_revision",
+        "rustc", "cxx", "rust_flags", "ducc_flags",
+    )
+    mismatches = [
+        field for field in fields
+        if recorded.get(field) != metadata.get(field)
+    ]
+    if mismatches:
+        raise ValueError(
+            "skipped-build executable does not match binary build record fields: "
+            + ", ".join(mismatches)
+        )
+    return {
+        "path": str(path.resolve()),
+        "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "binary_source_revision": source_revision,
+        "rust_binary_sha256": recorded["rust_binary_sha256"],
+        "ducc_binary_sha256": recorded["ducc_binary_sha256"],
+        "verified_fields": list(fields),
+    }
+
+
+def checkpoint_group_path(directory: pathlib.Path, case_id: str,
+                          operation: str, threads: int) -> pathlib.Path:
+    key = f"{case_id}|{operation}|q{threads}".encode()
+    return directory / f"{hashlib.sha256(key).hexdigest()}.json"
+
+
+def validate_checkpoint_directory(directory: pathlib.Path, identity: dict,
+                                  resume: bool) -> None:
+    identity_path = directory / "run-identity.json"
+    if resume:
+        if not identity_path.exists():
+            raise RuntimeError(f"--resume requested but no checkpoint identity exists in {directory}")
+        saved = json.loads(identity_path.read_text())
+        if saved != identity:
+            raise RuntimeError(
+                "checkpoint identity mismatch; selected cases, binaries, source, host, "
+                "toolchain, or timing protocol changed"
+            )
+        return
+    if directory.exists() and any(directory.iterdir()):
+        raise RuntimeError(
+            f"checkpoint directory {directory} already contains data; pass --resume "
+            "with the identical run identity or select a new directory"
+        )
+    atomic_write_json(identity_path, identity)
+
+
 def run_matrix(
     cases: list[dict],
     binaries: dict[str, pathlib.Path],
     smoke: bool,
     threads_to_run: list[int] | None = None,
     operations_to_run: list[str] | None = None,
+    checkpoint_dir: pathlib.Path | None = None,
+    checkpoint_identity: dict | None = None,
 ) -> tuple[list[dict], dict]:
     physical = physical_cpus()
     monitor_cpu = physical[8]
@@ -563,6 +943,10 @@ def run_matrix(
     failures: list[dict] = []
     validations: list[dict] = []
     host_samples: list[dict] = []
+    checkpoint_identity_hash = (
+        hashlib.sha256(json.dumps(checkpoint_identity, sort_keys=True).encode()).hexdigest()
+        if checkpoint_identity is not None else None
+    )
     total = len(cases) * len(threads_to_run) * len(operations_to_run)
     progress = 0
     for case in cases:
@@ -592,12 +976,85 @@ def run_matrix(
             for threads in threads_to_run:
                 cpus = physical[:threads]
                 for operation in operations_to_run:
+                    checkpoint_path = (
+                        checkpoint_group_path(checkpoint_dir, case["case_id"], operation, threads)
+                        if checkpoint_dir is not None else None
+                    )
+                    if checkpoint_path is not None and checkpoint_path.exists():
+                        checkpoint = json.loads(checkpoint_path.read_text())
+                        if checkpoint.get("identity_sha256") != checkpoint_identity_hash:
+                            raise RuntimeError(f"checkpoint identity mismatch in {checkpoint_path}")
+                        if (checkpoint.get("case_id"), checkpoint.get("operation"),
+                                checkpoint.get("threads")) != (case["case_id"], operation, threads):
+                            raise RuntimeError(f"checkpoint group mismatch in {checkpoint_path}")
+                    else:
+                        checkpoint = {
+                            "identity_sha256": checkpoint_identity_hash,
+                            "case_id": case["case_id"],
+                            "operation": operation,
+                            "threads": threads,
+                            "pairs": {},
+                        }
+                    completed_pairs = set()
+                    for pair_key, pair_state in checkpoint["pairs"].items():
+                        if not pair_state.get("complete"):
+                            continue
+                        pair_payload = pair_state["payload"]
+                        raw.extend(pair_payload.get("samples", []))
+                        errors.extend(pair_payload.get("comparisons", []))
+                        validations.extend(pair_payload.get("validations", []))
+                        failures.extend(pair_payload.get("failures", []))
+                        failures.extend(
+                            {**item, "attempt_status": "recovered"}
+                            for attempt in pair_state.get("attempt_history", [])
+                            for item in attempt.get("failures", [])
+                        )
+                        host_samples.extend(pair_payload.get("host_samples", []))
+                        completed_pairs.add(int(pair_key))
                     progress += 1
                     print(
                         f"CASE {progress}/{total} {case['case_id']} {operation} q{threads}",
                         flush=True,
                     )
                     for pair in range(pairs):
+                        if pair in completed_pairs:
+                            print(f"RESUME {case['case_id']} {operation} q{threads} pair={pair} complete", flush=True)
+                            continue
+                        pair_raw_start = len(raw)
+                        pair_errors_start = len(errors)
+                        pair_validations_start = len(validations)
+                        pair_failures_start = len(failures)
+                        pair_host_start = len(host_samples)
+                        previous_pair = checkpoint["pairs"].get(str(pair))
+
+                        def save_pair_checkpoint(complete: bool) -> None:
+                            if checkpoint_path is None:
+                                return
+                            attempt_history = list(
+                                previous_pair.get("attempt_history", []) if previous_pair else []
+                            )
+                            if previous_pair and not previous_pair.get("complete"):
+                                attempt_history.append(previous_pair.get("payload", {}))
+                            payload = {
+                                "samples": raw[pair_raw_start:],
+                                "comparisons": errors[pair_errors_start:],
+                                "validations": validations[pair_validations_start:],
+                                "failures": failures[pair_failures_start:],
+                                "host_samples": host_samples[pair_host_start:],
+                            }
+                            checkpoint["pairs"][str(pair)] = {
+                                "complete": complete,
+                                "payload": payload,
+                                "attempt_history": attempt_history,
+                            }
+                            atomic_write_json(checkpoint_path, checkpoint)
+                            failure_tag = "recovered" if complete else "superseded"
+                            failures.extend(
+                                {**item, "attempt_status": failure_tag}
+                                for attempt in attempt_history
+                                for item in attempt.get("failures", [])
+                            )
+
                         order = ["rustsht", "ducc"] if pair % 2 == 0 else ["ducc", "rustsht"]
                         outputs = {}
                         pair_records = {}
@@ -654,7 +1111,22 @@ def run_matrix(
                             pair_records[backend] = result
                             outputs[backend] = output_path
                             host_samples.append(diagnostics)
+                            if not result.get("reset_consistent", False):
+                                failures.append({
+                                    "case_id": case["case_id"],
+                                    "lmax": case["lmax"],
+                                    "mmax": case["mmax"],
+                                    "ntheta": case["ntheta"],
+                                    "nphi": case["nphi"],
+                                    "longitude_mode": case["longitude_mode"],
+                                    "operation": operation,
+                                    "threads": threads,
+                                    "process_pair": pair,
+                                    "backend": backend,
+                                    "failure_class": "output_reset_failed",
+                                })
                         if len(outputs) != 2:
+                            save_pair_checkpoint(False)
                             continue
                         try:
                             rust_values = read_result(outputs["rustsht"], operation, case, "rustsht")
@@ -674,18 +1146,28 @@ def run_matrix(
                                 "failure_class": "output_read_error",
                                 "reason": str(error)[:16000],
                             })
+                            save_pair_checkpoint(False)
                             continue
                         all_finite = bool(np.isfinite(rust_values).all() and np.isfinite(ducc_values).all())
                         if all_finite:
                             metrics = error_metrics(rust_values, ducc_values)
+                            numerical_status = (
+                                "accepted"
+                                if metrics["relative_l2"] is not None
+                                and metrics["relative_l2"] <= RANDOM_OUTPUT_RELATIVE_L2_TOLERANCE
+                                else "rejected"
+                            )
                         else:
                             metrics = {
                                 "absolute_max": None,
                                 "relative_l2": None,
                                 "max_relative_above_1e-12_peak": None,
+                                "near_zero_reference_count": None,
+                                "metrics_finite": False,
                                 "nonfinite_rust_values": int((~np.isfinite(rust_values)).sum()),
                                 "nonfinite_ducc_values": int((~np.isfinite(ducc_values)).sum()),
                             }
+                            numerical_status = "rejected"
                             failures.append({
                                 "case_id": case["case_id"],
                                 "lmax": case["lmax"],
@@ -700,6 +1182,23 @@ def run_matrix(
                                 "failure_class": "numerical_nonfinite_output",
                                 **metrics,
                             })
+                        if numerical_status == "rejected" and all_finite:
+                            failures.append({
+                                "case_id": case["case_id"],
+                                "lmax": case["lmax"],
+                                "mmax": case["mmax"],
+                                "ntheta": case["ntheta"],
+                                "nphi": case["nphi"],
+                                "longitude_mode": case["longitude_mode"],
+                                "operation": operation,
+                                "threads": threads,
+                                "process_pair": pair,
+                                "backend": "comparison",
+                                "failure_class": "numerical_tolerance_failed",
+                                "metric": "relative_l2",
+                                "value": metrics["relative_l2"],
+                                "tolerance": RANDOM_OUTPUT_RELATIVE_L2_TOLERANCE,
+                            })
                         errors.append({
                             "case_id": case["case_id"],
                             "lmax": case["lmax"],
@@ -711,6 +1210,7 @@ def run_matrix(
                             "threads": threads,
                             "process_pair": pair,
                             "finite_outputs": all_finite,
+                            "numerical_status": numerical_status,
                             **metrics,
                         })
                         if validate:
@@ -731,6 +1231,7 @@ def run_matrix(
                                     "failure_class": "validation_error",
                                     "reason": str(error)[:16000],
                                 })
+                                save_pair_checkpoint(True)
                                 continue
                             validation.update({
                                 "case_id": case["case_id"],
@@ -741,7 +1242,7 @@ def run_matrix(
                                 "threads": threads,
                             })
                             validations.append(validation)
-                            if not validation["finite_outputs"] or not all(validation["reset_consistent"].values()):
+                            if validation["acceptance_status"] != "accepted":
                                 failures.append({
                                     "case_id": case["case_id"],
                                     "lmax": case["lmax"],
@@ -756,11 +1257,13 @@ def run_matrix(
                                     "failure_class": "validation_failed",
                                     "finite_outputs": validation["finite_outputs"],
                                     "reset_consistent": validation["reset_consistent"],
+                                    "acceptance_failures": validation["acceptance_failures"],
                                 })
                                 print(
                                     f"VALIDATION WARNING {case['case_id']} finite={validation['finite_outputs']} reset={validation['reset_consistent']}",
                                     flush=True,
                                 )
+                        save_pair_checkpoint(True)
             case["map_path"] = str(case["map_path"])
             case["alm_path"] = str(case["alm_path"])
     host = summarize_host(host_samples)
@@ -816,6 +1319,7 @@ def hardware_metadata(ducc_src: pathlib.Path) -> dict:
         "rust_source_worktree_clean": not bool(source_status),
         "repository_worktree_clean": not bool(command_output(["git", "status", "--porcelain"])),
         "cxx": command_output(cxx + ["--version"]).splitlines()[0],
+        "png_renderer": png_renderer_version(),
         "pulp": pulp_match.group(1) if pulp_match else "unknown",
         "ducc_source_revision": command_output(["git", "rev-parse", "HEAD"], ducc_src),
         "ducc_version": ducc_version_match.group(1) if ducc_version_match else "unknown",
@@ -874,7 +1378,9 @@ def percentile(values: list[float], p: float) -> float:
     return float(np.quantile(np.asarray(values, dtype=np.float64), p))
 
 
-def aggregate(raw: list[dict], errors: list[dict]) -> list[dict]:
+def aggregate(raw: list[dict], errors: list[dict],
+              validations: list[dict] | None = None) -> list[dict]:
+    validations = validations or []
     groups: dict[tuple, dict[str, list[dict]]] = defaultdict(lambda: {"rustsht": [], "ducc": []})
     for entry in raw:
         key = (entry["case_id"], entry["operation"], entry["threads"])
@@ -882,32 +1388,43 @@ def aggregate(raw: list[dict], errors: list[dict]) -> list[dict]:
     error_groups: dict[tuple, list[dict]] = defaultdict(list)
     for entry in errors:
         error_groups[(entry["case_id"], entry["operation"], entry["threads"])].append(entry)
+    validation_by_group = {
+        (item["case_id"], item["threads"]): item for item in validations
+    }
     rows = []
     for (case_id, operation, threads), backends in groups.items():
         rust_by_pair = {proc["process_pair"]: proc for proc in backends["rustsht"]}
         ducc_by_pair = {proc["process_pair"]: proc for proc in backends["ducc"]}
-        valid_error_pairs = {
-            item["process_pair"] for item in error_groups[(case_id, operation, threads)]
-            if item.get("relative_l2") is not None
+        errors_by_pair = {
+            item["process_pair"]: item
+            for item in error_groups[(case_id, operation, threads)]
         }
-        common_pairs = sorted(set(rust_by_pair) & set(ducc_by_pair) & valid_error_pairs)
+        common_pairs = sorted(
+            set(rust_by_pair) & set(ducc_by_pair) & set(errors_by_pair)
+        )
         if not common_pairs:
             continue
         matched_rust = [rust_by_pair[pair] for pair in common_pairs]
         matched_ducc = [ducc_by_pair[pair] for pair in common_pairs]
-        rust_values = [value for proc in matched_rust for value in proc["batch_ms"]]
-        ducc_values = [value for proc in matched_ducc for value in proc["batch_ms"]]
-        paired_ratios = []
-        for rust_proc, ducc_proc in zip(matched_rust, matched_ducc):
-            for rust_time, ducc_time in zip(rust_proc["batch_ms"], ducc_proc["batch_ms"]):
-                paired_ratios.append(rust_time / ducc_time)
+        rust_measurements = backends["rustsht"]
+        ducc_measurements = backends["ducc"]
+        rust_values = [value for proc in rust_measurements for value in proc["batch_ms"]]
+        ducc_values = [value for proc in ducc_measurements for value in proc["batch_ms"]]
+        process_pair_ratios = [
+            statistics.median(rust_by_pair[pair]["batch_ms"])
+            / statistics.median(ducc_by_pair[pair]["batch_ms"])
+            for pair in common_pairs
+            if rust_by_pair[pair]["batch_ms"] and ducc_by_pair[pair]["batch_ms"]
+        ]
+        if not rust_values or not ducc_values or not process_pair_ratios:
+            continue
         rs = summarize(rust_values)
         ds = summarize(ducc_values)
-        rust_batch_totals = [value for proc in matched_rust for value in proc["batch_total_ms"]]
-        ducc_batch_totals = [value for proc in matched_ducc for value in proc["batch_total_ms"]]
+        rust_batch_totals = [value for proc in rust_measurements for value in proc["batch_total_ms"]]
+        ducc_batch_totals = [value for proc in ducc_measurements for value in proc["batch_total_ms"]]
         batch_totals = rust_batch_totals + ducc_batch_totals
         short_operation_entries = [
-            entry for backend in (matched_rust, matched_ducc) for entry in backend
+            entry for backend in (rust_measurements, ducc_measurements) for entry in backend
             if entry["warmup_ms"] < 100.0
         ]
         target_window_values = [
@@ -917,17 +1434,72 @@ def aggregate(raw: list[dict], errors: list[dict]) -> list[dict]:
             sum(20.0 <= elapsed <= 100.0 for elapsed in target_window_values) / len(target_window_values)
             if target_window_values else None
         )
-        pair_summary = summarize(paired_ratios)
-        error_values = [
-            item for item in error_groups[(case_id, operation, threads)]
-            if item["process_pair"] in common_pairs and item.get("relative_l2") is not None
-        ]
-        if not error_values:
-            continue
-        errors_summary = {
-            key: max(item[key] for item in error_values)
-            for key in ("absolute_max", "relative_l2", "max_relative_above_1e-12_peak")
+        pair_summary = summarize(process_pair_ratios)
+        error_values = [errors_by_pair[pair] for pair in common_pairs]
+        errors_summary = {}
+        for metric in ("absolute_max", "relative_l2", "max_relative_above_1e-12_peak"):
+            values = [item[metric] for item in error_values if item.get(metric) is not None]
+            errors_summary[metric] = max(values) if values else None
+        comparison_accepted = all(
+            item.get("numerical_status") == "accepted"
+            or (item.get("numerical_status") is None
+                and item.get("relative_l2") is not None
+                and item["relative_l2"] <= RANDOM_OUTPUT_RELATIVE_L2_TOLERANCE)
+            for item in error_values
+        )
+        validation = validation_by_group.get((case_id, threads))
+        reset_consistent = all(
+            proc.get("reset_consistent") is True
+            for proc in (*rust_measurements, *ducc_measurements)
+        )
+        validation_status = (
+            saved_validation_acceptance(validation)[0]
+            if validation is not None
+            else None
+        )
+        if not reset_consistent or not comparison_accepted:
+            numerical_status = "rejected"
+        elif len(common_pairs) != PROCESS_PAIRS:
+            numerical_status = "incomplete"
+        elif validation is None:
+            numerical_status = "comparison_only"
+        elif validation_status == "accepted":
+            numerical_status = "accepted"
+        else:
+            numerical_status = "rejected"
+        coverage_status = (
+            "complete"
+            if len(common_pairs) == PROCESS_PAIRS
+            and len(rust_by_pair) == PROCESS_PAIRS
+            and len(ducc_by_pair) == PROCESS_PAIRS
+            else "partial"
+        )
+        modes = {
+            "long_individual" if proc["warmup_ms"] >= 100.0 else "short_calibrated"
+            for proc in (*rust_measurements, *ducc_measurements)
         }
+        timing_mode = next(iter(modes)) if len(modes) == 1 else "mixed"
+        process_counts_qualified = (
+            len(rust_measurements) == PROCESS_PAIRS
+            and len(ducc_measurements) == PROCESS_PAIRS
+            and all(
+                len(proc["batch_ms"]) >= (5 if proc["warmup_ms"] >= 100.0 else BATCHES_PER_PROCESS)
+                for proc in (*rust_measurements, *ducc_measurements)
+            )
+        )
+        timing_quality_status = (
+            "qualified"
+            if len(common_pairs) == PROCESS_PAIRS and process_counts_qualified
+            else "insufficient"
+        )
+        if target_window_fraction is not None:
+            duration_window_status = (
+                "within_target" if target_window_fraction == 1.0 else "partially_outside_target"
+            )
+        elif timing_mode == "long_individual":
+            duration_window_status = "not_applicable"
+        else:
+            duration_window_status = "mixed_or_unavailable"
         template = matched_rust[0]
         rows.append({
             "case_id": case_id,
@@ -945,27 +1517,35 @@ def aggregate(raw: list[dict], errors: list[dict]) -> list[dict]:
             "ducc_warm_ms": ds["median"],
             "ducc_p10_ms": ds["p10"],
             "ducc_p90_ms": ds["p90"],
-            "rust_ducc_ratio": rs["median"] / ds["median"],
-            "paired_ratio_p10": pair_summary["p10"],
-            "paired_ratio_p90": pair_summary["p90"],
+            "rust_ducc_ratio": pair_summary["median"],
+            "process_pair_ratio_p10": pair_summary["p10"],
+            "process_pair_ratio_p90": pair_summary["p90"],
             "excess_ms": rs["median"] - ds["median"],
             **errors_summary,
-            "rust_cold_first_ms": statistics.median(proc["first_ms"] for proc in matched_rust),
-            "ducc_cold_first_ms": statistics.median(proc["first_ms"] for proc in matched_ducc),
-            "rust_setup_ms": statistics.median(proc["setup_ms"] for proc in matched_rust),
-            "ducc_setup_ms": statistics.median(proc["setup_ms"] for proc in matched_ducc),
-            "rust_fixture_load_ms": statistics.median(proc["fixture_load_ms"] for proc in matched_rust),
-            "ducc_fixture_load_ms": statistics.median(proc["fixture_load_ms"] for proc in matched_ducc),
-            "rust_arch": matched_rust[0]["arch"],
-            "ducc_arch": matched_ducc[0]["arch"],
-            "batch_count": len(rust_values),
+            "rust_cold_first_ms": statistics.median(proc["first_ms"] for proc in rust_measurements),
+            "ducc_cold_first_ms": statistics.median(proc["first_ms"] for proc in ducc_measurements),
+            "rust_setup_ms": statistics.median(proc["setup_ms"] for proc in rust_measurements),
+            "ducc_setup_ms": statistics.median(proc["setup_ms"] for proc in ducc_measurements),
+            "rust_fixture_load_ms": statistics.median(proc["fixture_load_ms"] for proc in rust_measurements),
+            "ducc_fixture_load_ms": statistics.median(proc["fixture_load_ms"] for proc in ducc_measurements),
+            "rust_arch": rust_measurements[0]["arch"],
+            "ducc_arch": ducc_measurements[0]["arch"],
+            "rust_batch_count": len(rust_values),
+            "ducc_batch_count": len(ducc_values),
             "batch_elapsed_median_ms": statistics.median(batch_totals),
             "batch_elapsed_p10_ms": percentile(batch_totals, 0.10),
             "batch_elapsed_p90_ms": percentile(batch_totals, 0.90),
             "20_100ms_batch_fraction_for_short_ops": target_window_fraction,
-            "process_invocations_per_backend": len(matched_rust),
+            "rust_process_pairs": len(rust_by_pair),
+            "ducc_process_pairs": len(ducc_by_pair),
             "completed_process_pairs": len(common_pairs),
-            "measurement_status": "complete" if len(common_pairs) == PROCESS_PAIRS else "partial",
+            "timing_mode": timing_mode,
+            "timing_quality_status": timing_quality_status,
+            "duration_window_status": duration_window_status,
+            "coverage_status": coverage_status,
+            "numerical_status": numerical_status,
+            "reset_consistency_status": "accepted" if reset_consistent else "rejected",
+            "measurement_status": coverage_status,
         })
     return sorted(rows, key=lambda row: (row["lmax"], row["mmax"], row["nphi"], row["operation"], row["threads"]))
 
@@ -1040,6 +1620,17 @@ def grid_display_name(grid: str) -> str:
     return "Clenshaw–Curtis" if grid == "CC" else "Gauss–Legendre"
 
 
+def row_is_plot_eligible(row: dict, grid: str) -> bool:
+    if grid != "CC":
+        return True
+    return (
+        row.get("coverage_status") == "complete"
+        and row.get("numerical_status") == "accepted"
+        and row.get("timing_quality_status") == "qualified"
+        and row.get("reset_consistency_status", "accepted") == "accepted"
+    )
+
+
 def plot_issue_ratio_svg(path: pathlib.Path, operation: str, order_label: str,
                          points_by_threads: dict[int, list[dict]],
                          grid: str = "GL") -> None:
@@ -1060,8 +1651,8 @@ def plot_issue_ratio_svg(path: pathlib.Path, operation: str, order_label: str,
             f'<svg xmlns="http://www.w3.org/2000/svg" width="1260" height="680" viewBox="0 0 1260 680">'
             f'<rect width="100%" height="100%" fill="#fff"/>'
             f'<text x="98" y="35" font-family="sans-serif" font-size="25" font-weight="bold">RustSHT / DUCC — {operation.capitalize()} ({order_label})</text>'
-            f'<text x="98" y="61" font-family="sans-serif" font-size="15" fill="#555">f64 · {grid_display_name(grid)} · even-smooth longitude sampling · warmed full transforms</text>'
-            '<text x="630" y="340" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#555">No completed measurements for this selection</text>'
+            f'<text x="98" y="61" font-family="sans-serif" font-size="15" fill="#555">f64 · {grid_display_name(grid)} · even-smooth sampling · warmed full transforms{ " · accepted complete cells" if grid == "CC" else ""}</text>'
+            f'<text x="630" y="340" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#555">No accepted complete measurements for this selection</text>'
             '<text x="960" y="77" font-family="sans-serif" font-size="14">q1 / q8</text></svg>\n'
         )
         return
@@ -1087,7 +1678,7 @@ def plot_issue_ratio_svg(path: pathlib.Path, operation: str, order_label: str,
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         '<rect width="100%" height="100%" fill="#fff"/>',
         f'<text x="{left}" y="35" font-family="sans-serif" font-size="25" font-weight="bold">RustSHT / DUCC — {operation.capitalize()} ({order_label})</text>',
-        f'<text x="{left}" y="61" font-family="sans-serif" font-size="15" fill="#555">f64 · {grid_display_name(grid)} · even-smooth longitude sampling · warmed full transforms · lower is faster</text>',
+        f'<text x="{left}" y="61" font-family="sans-serif" font-size="15" fill="#555">f64 · {grid_display_name(grid)} · even-smooth sampling · warmed full transforms · lower is faster{" · accepted complete cells" if grid == "CC" else ""}</text>',
     ]
     tick_values = [0.25, 0.5, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16]
     tick_values = [v for v in tick_values if ymin <= v <= ymax]
@@ -1182,7 +1773,7 @@ def plot_issue_runtime_svg(path: pathlib.Path, operation: str,
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         '<rect width="100%" height="100%" fill="#fff"/>',
         f'<text x="{left}" y="35" font-family="sans-serif" font-size="25" font-weight="bold">RustSHT vs DUCC — {operation.capitalize()} runtime (full mmax)</text>',
-        f'<text x="{left}" y="61" font-family="sans-serif" font-size="15" fill="#555">f64 · {grid_display_name(grid)} · even-smooth longitude sampling · warmed full transforms · lower is faster</text>',
+        f'<text x="{left}" y="61" font-family="sans-serif" font-size="15" fill="#555">f64 · {grid_display_name(grid)} · even-smooth sampling · warmed full transforms{" · accepted complete cells" if grid == "CC" else ""}</text>',
     ]
     for runtime in runtime_ticks:
         if not ymin <= runtime <= ymax:
@@ -1252,6 +1843,7 @@ def write_issue_runtime_plots(rows: list[dict], output_dir: pathlib.Path,
                     and int(row["threads"]) == threads
                     and int(row["mmax"]) == int(row["lmax"])
                     and row["longitude_mode"] == "even_smooth"
+                    and row_is_plot_eligible(row, grid)
                 ]
                 series.append({"backend": backend, "threads": threads, "points": points})
         plot_issue_runtime_svg(
@@ -1267,13 +1859,22 @@ def write_issue_ratio_plots(rows: list[dict], output_dir: pathlib.Path,
         for label, full in (("full mmax", True), ("reduced mmax", False)):
             grouped = {}
             for threads in (1, 8):
+                def is_selected_order(row: dict) -> bool:
+                    lmax = int(row["lmax"])
+                    mmax = int(row["mmax"])
+                    if full:
+                        return mmax == lmax
+                    quarter_mmax = lmax // 4 if grid == "CC" else max(1, lmax // 4)
+                    return mmax == quarter_mmax
+
                 grouped[threads] = [
                     {"lmax": int(row["lmax"]), "ratio": float(row["rust_ducc_ratio"])}
                     for row in rows
                     if row["operation"] == operation
                     and int(row["threads"]) == threads
-                    and (int(row["mmax"]) == int(row["lmax"])) == full
+                    and is_selected_order(row)
                     and row["longitude_mode"] == "even_smooth"
+                    and row_is_plot_eligible(row, grid)
                 ]
             plot_issue_ratio_svg(
                 output_dir / f"ratio-{operation}-{label.replace(' ', '-')}.svg",
@@ -1459,7 +2060,7 @@ def write_dispatch_and_pairing_plots(output_dir: pathlib.Path) -> list[str]:
 
 def write_cc_gl_comparison_plot(output_dir: pathlib.Path,
                                 gl_results: pathlib.Path) -> pathlib.Path | None:
-    """Compare matched Rust/DUCC ratios while retaining CC's extra pole row."""
+    """Compare accepted, exactly matched CC/GL cells and report every missing cell."""
     cc_path = output_dir / "results.csv"
     if not cc_path.is_file() or not gl_results.is_file():
         return None
@@ -1469,52 +2070,219 @@ def write_cc_gl_comparison_plot(output_dir: pathlib.Path,
         gl_rows = list(csv.DictReader(handle))
 
     def key(row: dict) -> tuple:
-        return (int(row["lmax"]), int(row["mmax"]), row["longitude_mode"],
-                row["operation"], int(row["threads"]))
+        return (int(row["lmax"]), int(row["mmax"]), int(row["nphi"]),
+                row["longitude_mode"], row["operation"], int(row["threads"]))
 
-    gl_by_key = {key(row): row for row in gl_rows}
+    def unique_rows(rows: list[dict], label: str) -> dict[tuple, dict]:
+        result = {}
+        for row in rows:
+            row_key = key(row)
+            if row_key in result:
+                raise ValueError(f"duplicate {label} CC/GL comparison key: {row_key}")
+            result[row_key] = row
+        return result
+
+    cc_by_key = unique_rows(cc_rows, "CC")
+    gl_by_key = unique_rows(gl_rows, "GL")
+
+    def load_result_json(csv_path: pathlib.Path) -> dict:
+        json_path = csv_path.with_name("results.json")
+        if not json_path.is_file():
+            return {}
+        return json.loads(json_path.read_text())
+
+    cc_machine = load_result_json(cc_path)
+    gl_machine = load_result_json(gl_results)
+
+    def derived_status(row: dict | None, machine: dict) -> tuple[str, str, str]:
+        if row is None:
+            return "missing", "missing", "missing"
+        coverage = row.get("coverage_status", row.get("measurement_status", "missing"))
+        if coverage != "complete":
+            return coverage, "unknown", "insufficient"
+        numeric = row.get("numerical_status")
+        if numeric is None:
+            try:
+                error = float(row["relative_l2"])
+            except (KeyError, TypeError, ValueError):
+                error = math.inf
+            validation_by_group = {
+                (item.get("case_id"), int(item.get("threads", -1))): item
+                for item in machine.get("validation", [])
+            }
+            validation = validation_by_group.get((row.get("case_id"), int(row["threads"])))
+            validation_status = (
+                saved_validation_acceptance(validation)[0] if validation is not None else "missing"
+            )
+            numeric = (
+                "accepted" if error <= RANDOM_OUTPUT_RELATIVE_L2_TOLERANCE
+                and validation_status == "accepted" else "rejected"
+            )
+        timing = row.get("timing_quality_status")
+        if timing is None:
+            pairs = {backend: set() for backend in ("rustsht", "ducc")}
+            group_samples = []
+            for sample in machine.get("samples", []):
+                if (sample.get("case_id") != row.get("case_id")
+                        or sample.get("operation") != row.get("operation")
+                        or int(sample.get("threads", -1)) != int(row["threads"])):
+                    continue
+                backend = sample.get("backend")
+                if backend not in counts:
+                    continue
+                pairs[backend].add(sample.get("process_pair"))
+                group_samples.append(sample)
+            timing = (
+                "qualified" if len(pairs["rustsht"]) == PROCESS_PAIRS
+                and len(pairs["ducc"]) == PROCESS_PAIRS
+                and all(len(sample.get("batch_ms", [])) >= (
+                    5 if sample.get("warmup_ms", 0.0) >= 100.0 else BATCHES_PER_PROCESS
+                ) for sample in group_samples)
+                else "insufficient"
+            )
+        return coverage, numeric, timing
+
+    def comparison_status(cc_row: dict | None, gl_row: dict | None,
+                          cc_state: tuple[str, str, str],
+                          gl_state: tuple[str, str, str]) -> str:
+        if cc_row is None:
+            return "missing_cc_measurement"
+        if gl_row is None:
+            same_geometry = [candidate for candidate in gl_rows
+                             if int(candidate["lmax"]) == int(cc_row["lmax"])
+                             and int(candidate["mmax"]) == int(cc_row["mmax"])
+                             and candidate["longitude_mode"] == cc_row["longitude_mode"]
+                             and candidate["operation"] == cc_row["operation"]
+                             and int(candidate["threads"]) == int(cc_row["threads"])]
+            return "nphi_mismatch" if same_geometry else "missing_gl_measurement"
+        for state in (cc_state, gl_state):
+            if state[0] != "complete":
+                return "incomplete_coverage"
+            if state[1] != "accepted":
+                return "rejected_numerics"
+            if state[2] != "qualified":
+                return "timing_insufficient"
+        return "accepted"
+
+    def metadata_source(machine: dict, field: str) -> str | None:
+        return machine.get("metadata", {}).get(field)
+
+    comparison_records = {}
     series = []
+    expected_cc = make_cases(False, dense_sweep=True, grid="CC")
     for operation in ("analysis", "synthesis"):
         for order_label, full in (("full mmax", True), ("quarter mmax", False)):
             for threads in (1, 8):
                 points = []
-                for cc in cc_rows:
-                    if (cc["longitude_mode"] != "even_smooth"
-                            or cc["operation"] != operation
-                            or int(cc["threads"]) != threads
-                            or ((int(cc["mmax"]) == int(cc["lmax"])) != full)):
+                for case in expected_cc:
+                    if case["longitude_mode"] != "even_smooth":
                         continue
-                    gl = gl_by_key.get(key(cc))
-                    if gl is None:
+                    if full and case["mmax"] != case["lmax"]:
                         continue
-                    points.append({
-                        "lmax": int(cc["lmax"]),
-                        "value": float(cc["rust_ducc_ratio"]) / float(gl["rust_ducc_ratio"]),
-                    })
+                    if not full and case["mmax"] != case["lmax"] // 4:
+                        continue
+                    comparison_key = (
+                        case["lmax"], case["mmax"], case["nphi"],
+                        case["longitude_mode"], operation, threads,
+                    )
+                    cc = cc_by_key.get(comparison_key)
+                    gl = gl_by_key.get(comparison_key)
+                    cc_state = derived_status(cc, cc_machine)
+                    gl_state = derived_status(gl, gl_machine)
+                    status = comparison_status(cc, gl, cc_state, gl_state)
+                    ratio = None
+                    if status == "accepted":
+                        ratio = float(cc["rust_ducc_ratio"]) / float(gl["rust_ducc_ratio"])
+                        points.append({"lmax": case["lmax"], "value": ratio})
+                    record = {
+                        "lmax": case["lmax"],
+                        "mmax": case["mmax"],
+                        "nphi": case["nphi"],
+                        "longitude_mode": case["longitude_mode"],
+                        "operation": operation,
+                        "threads": threads,
+                        "principal_orders": order_label,
+                        "cc_case_id": cc.get("case_id") if cc else case["case_id"],
+                        "gl_case_id": gl.get("case_id") if gl else f"T{case['lmax']}-m{case['mmax']}-even_smooth",
+                        "cc_ntheta": int(cc["ntheta"]) if cc else case["ntheta"],
+                        "gl_ntheta": int(gl["ntheta"]) if gl else case["lmax"] + 1,
+                        "cc_status": "/".join(cc_state),
+                        "gl_status": "/".join(gl_state),
+                        "status": status,
+                        "cc_rust_ducc_ratio": cc.get("rust_ducc_ratio") if cc else None,
+                        "gl_rust_ducc_ratio": gl.get("rust_ducc_ratio") if gl else None,
+                        "cc_over_gl_ratio": ratio,
+                    }
+                    if comparison_key in comparison_records:
+                        labels = set(comparison_records[comparison_key]["principal_orders"].split("+"))
+                        labels.add(order_label)
+                        comparison_records[comparison_key]["principal_orders"] = "+".join(sorted(labels))
+                    else:
+                        comparison_records[comparison_key] = record
                 series.append({
                     "name": f"{operation} {order_label} q{threads}",
                     "points": points,
                     "dashed": threads == 8,
                 })
+    comparisons = [comparison_records[key] for key in sorted(comparison_records)]
     output = output_dir / "cc-versus-gl-matched-ratio.svg"
     plot_log_degree_series(
         output,
         "CC versus GL matched RustSHT/DUCC ratio",
-        "Ratio of Rust/DUCC full-transform ratios; matching lmax, mmax and nphi; CC uses ntheta=lmax+2, GL uses lmax+1",
+        "Accepted cells only; match lmax, mmax, nphi, operation and q; CC ntheta=lmax+2, GL ntheta=lmax+1",
         series,
         "CC ratio / GL ratio",
     )
+    if not output.is_file():
+        width, height = 1260, 690
+        output.write_text(
+            f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
+            '<rect width="100%" height="100%" fill="#fff"/>'
+            '<text x="100" y="34" font-family="sans-serif" font-size="24" font-weight="bold">CC versus GL matched RustSHT/DUCC ratio</text>'
+            '<text x="100" y="380" font-family="sans-serif" font-size="20" fill="#555">No accepted matched cells; see the comparison CSV for missing or rejected statuses.</text>'
+            '</svg>\n'
+        )
+    with (output_dir / "cc-versus-gl-matched-ratio.csv").open("w", newline="") as handle:
+        fields = list(comparisons[0]) if comparisons else [
+            "lmax", "mmax", "nphi", "longitude_mode", "operation", "threads",
+            "principal_orders", "cc_case_id", "gl_case_id", "cc_ntheta", "gl_ntheta", "cc_status",
+            "gl_status", "status", "cc_rust_ducc_ratio", "gl_rust_ducc_ratio",
+            "cc_over_gl_ratio",
+        ]
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(comparisons)
+    metadata = {
+        "comparison_key": ["lmax", "mmax", "nphi", "longitude_mode", "operation", "threads"],
+        "cc_production_source_revision": metadata_source(cc_machine, "production_source_revision"),
+        "gl_production_source_revision": metadata_source(gl_machine, "production_source_revision"),
+        "cc_rust_binary_sha256": metadata_source(cc_machine, "rust_binary_sha256"),
+        "gl_rust_binary_sha256": metadata_source(gl_machine, "rust_binary_sha256"),
+        "ducc_source_revision": metadata_source(cc_machine, "ducc_source_revision"),
+        "status_counts": dict(Counter(row["status"] for row in comparisons)),
+        "note": "Plot contains accepted complete cells only; all expected principal even-smooth cells and statuses are in the CSV.",
+    }
+    (output_dir / "cc-versus-gl-matched-ratio.json").write_text(
+        json.dumps(metadata, indent=2, allow_nan=False) + "\n"
+    )
+    convert_svg_to_png(output)
     return output
 
 
 def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
-                         failures: list[dict], grid: str = "GL") -> dict:
+                         failures: list[dict], grid: str = "GL",
+                         validations: list[dict] | None = None,
+                         recurrence_stage_attribution_status: str = "not_measured") -> dict:
+    validations = validations or []
     expected = make_cases(False, dense_sweep=True, grid=grid)
     expected_by_id = {case["case_id"]: case for case in expected}
     actual_by_id = {case["case_id"]: case for case in cases}
     expected_ids = set(expected_by_id)
     actual_ids = set(actual_by_id)
     measurement_groups = {}
+    validation_by_group = {
+        (item["case_id"], item["threads"]): item for item in validations
+    }
     for case in expected:
         for operation in ("analysis", "synthesis"):
             for threads in (1, 8):
@@ -1529,26 +2297,120 @@ def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
                     }
                     for backend in ("rustsht", "ducc")
                 }
-                comparison_pairs = {
-                    entry["process_pair"] for entry in errors
+                group_errors = [
+                    entry for entry in errors
                     if entry["case_id"] == key[0]
                     and entry["operation"] == operation
                     and entry["threads"] == threads
-                    and entry.get("relative_l2") is not None
-                }
+                ]
+                comparison_pairs = {entry["process_pair"] for entry in group_errors}
                 failed_pairs = {
                     entry["process_pair"] for entry in failures
                     if entry.get("case_id") == key[0]
                     and entry.get("operation") == operation
                     and entry.get("threads") == threads
+                    and entry.get("failure_class") not in {
+                        "numerical_tolerance_failed", "validation_failed",
+                        "output_reset_failed",
+                    }
+                    and entry.get("attempt_status") not in {"recovered", "superseded"}
                 }
                 complete = backend_pairs["rustsht"] & backend_pairs["ducc"] & comparison_pairs
+                group_samples = [
+                    entry for entry in raw
+                    if entry["case_id"] == key[0]
+                    and entry["operation"] == operation
+                    and entry["threads"] == threads
+                ]
+                backend_batch_counts = {
+                    backend: sum(len(entry["batch_ms"]) for entry in group_samples
+                                 if entry["backend"] == backend)
+                    for backend in ("rustsht", "ducc")
+                }
+                reset_flags = [entry.get("reset_consistent") for entry in group_samples]
+                if reset_flags and any(flag is not True for flag in reset_flags):
+                    reset_consistency_status = "rejected"
+                elif (len(group_samples) == 2 * PROCESS_PAIRS
+                      and all(flag is True for flag in reset_flags)):
+                    reset_consistency_status = "accepted"
+                else:
+                    reset_consistency_status = "incomplete"
+                timing_modes = {
+                    "long_individual" if entry["warmup_ms"] >= 100.0 else "short_calibrated"
+                    for entry in group_samples
+                }
+                timing_mode = next(iter(timing_modes)) if len(timing_modes) == 1 else (
+                    "mixed" if timing_modes else "missing"
+                )
+                process_counts_qualified = (
+                    all(len(backend_pairs[backend]) == PROCESS_PAIRS
+                        for backend in ("rustsht", "ducc"))
+                    and all(
+                        len(entry["batch_ms"]) >= (
+                            5 if entry["warmup_ms"] >= 100.0 else BATCHES_PER_PROCESS
+                        )
+                        for entry in group_samples
+                    )
+                )
+                timing_quality_status = (
+                    "qualified"
+                    if len(complete) == PROCESS_PAIRS and process_counts_qualified
+                    else "insufficient"
+                )
+                short_batches = [
+                    total_ms for entry in group_samples if entry["warmup_ms"] < 100.0
+                    for total_ms in entry["batch_total_ms"]
+                ]
+                if short_batches:
+                    in_window = sum(20.0 <= value <= 100.0 for value in short_batches)
+                    duration_window_status = (
+                        "within_target" if in_window == len(short_batches)
+                        else "partially_outside_target"
+                    )
+                elif group_samples and all(entry["warmup_ms"] >= 100.0 for entry in group_samples):
+                    duration_window_status = "not_applicable"
+                else:
+                    duration_window_status = "mixed_or_unavailable"
+                numerical_statuses = [
+                    entry.get("numerical_status")
+                    or ("accepted" if entry.get("relative_l2") is not None
+                        and entry["relative_l2"] <= RANDOM_OUTPUT_RELATIVE_L2_TOLERANCE
+                        else "rejected")
+                    for entry in group_errors
+                ]
+                validation = validation_by_group.get((key[0], threads))
+                validation_status = (
+                    saved_validation_acceptance(validation)[0]
+                    if validation is not None
+                    else None
+                )
+                if reset_consistency_status == "rejected":
+                    numerical_status = "rejected"
+                elif reset_consistency_status != "accepted":
+                    numerical_status = "incomplete"
+                elif not all(status == "accepted" for status in numerical_statuses):
+                    numerical_status = "rejected"
+                elif len(group_errors) != PROCESS_PAIRS:
+                    numerical_status = "incomplete"
+                elif validation is None:
+                    numerical_status = "comparison_only"
+                elif validation_status == "accepted":
+                    numerical_status = "accepted"
+                else:
+                    numerical_status = "rejected"
                 measurement_groups[f"{key[0]}|{operation}|q{threads}"] = {
                     "rust_process_pairs": sorted(backend_pairs["rustsht"]),
                     "ducc_process_pairs": sorted(backend_pairs["ducc"]),
                     "compared_process_pairs": sorted(comparison_pairs),
                     "complete_process_pairs": sorted(complete),
                     "failed_process_pairs": sorted(failed_pairs),
+                    "rust_batch_count": backend_batch_counts["rustsht"],
+                    "ducc_batch_count": backend_batch_counts["ducc"],
+                    "timing_mode": timing_mode,
+                    "timing_quality_status": timing_quality_status,
+                    "duration_window_status": duration_window_status,
+                    "reset_consistency_status": reset_consistency_status,
+                    "numerical_status": numerical_status,
                     "status": (
                         "complete" if len(complete) == PROCESS_PAIRS
                         else "partial" if complete
@@ -1561,7 +2423,9 @@ def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
     low_even_missing = []
     for lmax in range(257):
         mmax_values = {lmax}
-        if lmax > 0:
+        if grid == "CC":
+            mmax_values.add(lmax // 4)
+        elif lmax > 0:
             mmax_values.add(max(1, lmax // 4))
         for mmax in mmax_values:
             grid_tag = "" if grid == "GL" else f"{grid}-"
@@ -1579,12 +2443,33 @@ def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
         "observed_case_count": len(cases),
         "missing_case_ids": sorted(expected_ids - actual_ids),
         "unexpected_case_ids": sorted(actual_ids - expected_ids),
+        "unexpected_geometry_count": len(actual_ids - expected_ids),
+        "unexpected_measurement_group_count": len(actual_ids - expected_ids) * 4,
         "low_degree_even_smooth_missing": low_even_missing,
         "expected_measurement_group_count": len(expected) * 4,
         "measurement_groups": measurement_groups,
         "measurement_status_counts": {
             status: sum(group["status"] == status for group in measurement_groups.values())
             for status in ("complete", "partial", "failed", "missing")
+        },
+        "numerical_status_counts": {
+            status: sum(group["numerical_status"] == status for group in measurement_groups.values())
+            for status in ("accepted", "rejected", "comparison_only", "incomplete")
+        },
+        "timing_quality_status_counts": {
+            status: sum(group["timing_quality_status"] == status for group in measurement_groups.values())
+            for status in ("qualified", "insufficient")
+        },
+        "duration_window_status_counts": {
+            status: sum(group["duration_window_status"] == status
+                        for group in measurement_groups.values())
+            for status in ("within_target", "partially_outside_target",
+                           "not_applicable", "mixed_or_unavailable")
+        },
+        "reset_consistency_status_counts": {
+            status: sum(group["reset_consistency_status"] == status
+                        for group in measurement_groups.values())
+            for status in ("accepted", "rejected", "incomplete")
         },
         "failure_count": len(failures),
         "all_requested_measurements_attempted": all(
@@ -1593,15 +2478,69 @@ def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
         "all_measurements_complete": all(
             group["status"] == "complete" for group in measurement_groups.values()
         ),
+        "all_numerics_accepted": all(
+            group["numerical_status"] == "accepted" for group in measurement_groups.values()
+        ),
+        "all_timing_quality_qualified": all(
+            group["timing_quality_status"] == "qualified" for group in measurement_groups.values()
+        ),
+        "whole_transform_pass": (
+            expected_ids <= actual_ids
+            and not low_even_missing
+            and all(group["status"] == "complete" for group in measurement_groups.values())
+            and all(group["numerical_status"] == "accepted" for group in measurement_groups.values())
+            and all(group["timing_quality_status"] == "qualified" for group in measurement_groups.values())
+            and all(group["reset_consistency_status"] == "accepted" for group in measurement_groups.values())
+        ),
+        "recurrence_stage_attribution_status": recurrence_stage_attribution_status,
+        "full_sweep_pass": (
+            expected_ids <= actual_ids
+            and not low_even_missing
+            and all(group["status"] == "complete" for group in measurement_groups.values())
+            and all(group["numerical_status"] == "accepted" for group in measurement_groups.values())
+            and all(group["timing_quality_status"] == "qualified" for group in measurement_groups.values())
+            and all(group["reset_consistency_status"] == "accepted" for group in measurement_groups.values())
+            and recurrence_stage_attribution_status == "measured"
+        ),
         "coverage_pass": (
-            actual_ids == expected_ids and not low_even_missing
-            and not (expected_ids - actual_ids)
+            expected_ids <= actual_ids and not low_even_missing
         ),
     }
 
 
 def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict], raw: list[dict], analysis: dict) -> None:
-    rows = aggregate(raw, analysis["errors"])
+    failures = list(analysis.get("failures", []))
+    recorded_reset_failures = {
+        (item.get("case_id"), item.get("operation"), item.get("threads"),
+         item.get("process_pair"), item.get("backend"))
+        for item in failures if item.get("failure_class") == "output_reset_failed"
+    }
+    for sample in raw:
+        if sample.get("reset_consistent") is True:
+            continue
+        key = (sample.get("case_id"), sample.get("operation"), sample.get("threads"),
+               sample.get("process_pair"), sample.get("backend"))
+        if key in recorded_reset_failures:
+            continue
+        failures.append({
+            "case_id": sample.get("case_id"),
+            "lmax": sample.get("lmax"),
+            "mmax": sample.get("mmax"),
+            "ntheta": sample.get("ntheta"),
+            "nphi": sample.get("nphi"),
+            "longitude_mode": sample.get("longitude_mode"),
+            "operation": sample.get("operation"),
+            "threads": sample.get("threads"),
+            "process_pair": sample.get("process_pair"),
+            "backend": sample.get("backend"),
+            "failure_class": (
+                "output_reset_failed" if sample.get("reset_consistent") is False
+                else "output_reset_flag_missing"
+            ),
+        })
+        recorded_reset_failures.add(key)
+    analysis["failures"] = failures
+    rows = aggregate(raw, analysis["errors"], analysis.get("validations", []))
     output_dir.mkdir(parents=True, exist_ok=True)
     metadata["runtime_rust_arches"] = sorted({entry["arch"] for entry in raw if entry["backend"] == "rustsht"})
     metadata["runtime_ducc_arches"] = sorted({entry["arch"] for entry in raw if entry["backend"] == "ducc"})
@@ -1644,21 +2583,21 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
         "host_summary": analysis["host"],
     }
     (output_dir / "results.json").write_text(
-        json.dumps(machine, separators=(",", ":"), allow_nan=False) + "\n"
+        json.dumps(finite_json_value(machine), separators=(",", ":"), allow_nan=False) + "\n"
     )
     result_fields = list(rows[0]) if rows else [
         "case_id", "grid", "lmax", "mmax", "ntheta", "nphi", "longitude_mode",
         "operation", "threads", "rust_warm_ms", "rust_p10_ms", "rust_p90_ms",
         "ducc_warm_ms", "ducc_p10_ms", "ducc_p90_ms", "rust_ducc_ratio",
-        "paired_ratio_p10", "paired_ratio_p90", "excess_ms", "absolute_max",
-        "relative_l2", "max_relative_above_1e-12_peak", "batch_count",
-        "completed_process_pairs", "measurement_status",
+        "process_pair_ratio_p10", "process_pair_ratio_p90", "excess_ms", "absolute_max",
+        "relative_l2", "max_relative_above_1e-12_peak", "rust_batch_count",
+        "ducc_batch_count", "completed_process_pairs", "coverage_status",
+        "numerical_status", "timing_mode", "timing_quality_status", "duration_window_status",
     ]
     with (output_dir / "results.csv").open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=result_fields, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
-    failures = analysis.get("failures", [])
     failure_fields = [
         "case_id", "lmax", "mmax", "ntheta", "nphi", "longitude_mode",
         "operation", "threads", "process_pair", "backend", "failure_class", "reason",
@@ -1674,10 +2613,12 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
             })
     if metadata.get("dense_sweep"):
         coverage = dense_sweep_coverage(
-            cases, raw, analysis["errors"], failures, metadata.get("grid", "GL")
+            cases, raw, analysis["errors"], failures, metadata.get("grid", "GL"),
+            analysis.get("validations", []),
+            metadata.get("recurrence_stage_attribution_status", "not_measured"),
         )
         (output_dir / "coverage-audit.json").write_text(
-            json.dumps(coverage, indent=2, allow_nan=False) + "\n"
+            json.dumps(finite_json_value(coverage), indent=2, allow_nan=False) + "\n"
         )
     grid = metadata.get("grid", "GL")
     write_issue_ratio_plots(rows, output_dir, grid)
@@ -1698,8 +2639,13 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
             for threads in (1, 8):
                 matched = []
                 for reduced in rows:
+                    quarter_mmax = (
+                        reduced["lmax"] // 4
+                        if grid == "CC"
+                        else max(1, reduced["lmax"] // 4)
+                    )
                     if (reduced["operation"] != operation or reduced["threads"] != threads
-                            or reduced["mmax"] != max(1, reduced["lmax"] // 4)):
+                            or reduced["mmax"] != quarter_mmax):
                         continue
                     full = next((candidate for candidate in rows
                                  if candidate["operation"] == operation
@@ -1722,6 +2668,7 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
     plot_svg(output_dir / "cold-warm-analysis-rust-q1.svg", "RustSHT first-call vs warmed analysis q1",
              [{"name": "cold first call", "points": cold}, {"name": "warm batches", "points": warm}],
              "lmax", "ms", "milliseconds")
+    convert_svg_directory_to_png(output_dir)
     return rows
 
 
@@ -1750,18 +2697,18 @@ def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cas
         "",
         f"Analysis and synthesis were each timed at q1 and q8. Single-thread processes were pinned to one allowed physical core; q8 used eight physical cores. Rust reused its plan and caller-owned workspace. DUCC's public 2D functions have no persistent plan/workspace object, so the adapter reuses all input/output buffers and reports its internal per-call preparation as part of transform latency. DUCC `mstart` mapped its indexing into a leading-offset view of the same compact coefficient body; no per-call coefficient conversion was timed.",
         "",
-        f"Each backend/case/operation/thread-count collected {PROCESS_PAIRS} interleaved independent process pairs with up to three out-of-sample calibration batches and 10 measured repeated-operation batches per process when each operation was below 100 ms. Target was {TARGET_BATCH_MS:g} ms and each measured short-operation batch was checked against the requested 20–100 ms range. Operations above 100 ms were measured individually five times per process. First-call and setup costs are separate from warmed samples. The runner records median, p10/p90, range, paired per-batch ratios and output error. See `{results_prefix}/results.json` and `.csv` for all cases and samples.",
+        f"Each backend/case/operation/thread-count collected {PROCESS_PAIRS} interleaved independent process pairs with up to three out-of-sample calibration batches and 10 measured repeated-operation batches per process when each operation was below 100 ms. Target was {TARGET_BATCH_MS:g} ms and each measured short-operation batch was checked against the requested 20–100 ms range. Operations above 100 ms were measured individually five times per process. First-call and setup costs are separate from warmed samples. The runner reports independent RustSHT and DUCC batch counts and process-pair median ratios; it does not zip call batches from the independent backends. See `{results_prefix}/results.json` and `.csv` for all cases and samples.",
         "",
         "## Results",
         "",
-        "The table reports warmed native calls; ratios below one indicate lower RustSHT latency. Relative L2 uses the DUCC output norm, with near-zero values excluded only from the separately reported max-relative metric. No fixed parity threshold was applied.",
+        "The table reports warmed native calls; ratios below one indicate lower RustSHT latency. Relative L2 uses the DUCC output norm, with near-zero values excluded only from the separately reported max-relative metric. A random-output relative-L2 gate of 5e-12 and separate finite, exact-zero, output-reset, roundtrip, basis and adjoint gates determine numerical acceptance; timing quality and coverage remain separate statuses.",
         "",
-        "| lmax | mmax | grid | operation | threads | Rust ms [p10,p90] | DUCC ms [p10,p90] | Rust/DUCC | paired ratio [p10,p90] | excess ms | relative L2 |",
+        "| lmax | mmax | grid | operation | threads | Rust ms [p10,p90] | DUCC ms [p10,p90] | Rust/DUCC | process-pair median ratio [p10,p90] | excess ms | relative L2 |",
         "|---:|---:|---|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for row in chosen:
         lines.append(
-            f"| {row['lmax']} | {row['mmax']} | {row.get('grid', grid)} {row['ntheta']}×{row['nphi']} {row['longitude_mode']} | {row['operation']} | {row['threads']} | {row['rust_warm_ms']:.6g} [{row['rust_p10_ms']:.6g},{row['rust_p90_ms']:.6g}] | {row['ducc_warm_ms']:.6g} [{row['ducc_p10_ms']:.6g},{row['ducc_p90_ms']:.6g}] | {row['rust_ducc_ratio']:.4f} | {row['paired_ratio_p10']:.4f}–{row['paired_ratio_p90']:.4f} | {row['excess_ms']:.6g} | {row['relative_l2']:.3e} |"
+            f"| {row['lmax']} | {row['mmax']} | {row.get('grid', grid)} {row['ntheta']}×{row['nphi']} {row['longitude_mode']} | {row['operation']} | {row['threads']} | {row['rust_warm_ms']:.6g} [{row['rust_p10_ms']:.6g},{row['rust_p90_ms']:.6g}] | {row['ducc_warm_ms']:.6g} [{row['ducc_p10_ms']:.6g},{row['ducc_p90_ms']:.6g}] | {row['rust_ducc_ratio']:.4f} | {row['process_pair_ratio_p10']:.4f}–{row['process_pair_ratio_p90']:.4f} | {row['excess_ms']:.6g} | {format_scientific(row['relative_l2'])} |"
         )
     def selected(lmax: int, mmax: int, longitude_mode: str, operation: str,
                  threads: int) -> dict | None:
@@ -1779,14 +2726,19 @@ def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cas
     t3072_a8 = selected(3072, 3072, "even_smooth", "analysis", 8)
     t3072_s1 = selected(3072, 3072, "even_smooth", "synthesis", 1)
     t3072_s8 = selected(3072, 3072, "even_smooth", "synthesis", 8)
-    faster = sum(row["paired_ratio_p90"] < 1.0 for row in rows)
-    slower = sum(row["paired_ratio_p10"] > 1.0 for row in rows)
+    faster = sum(row["process_pair_ratio_p90"] < 1.0 for row in rows)
+    slower = sum(row["process_pair_ratio_p10"] > 1.0 for row in rows)
     unresolved = len(rows) - faster - slower
     window_fractions = [row["20_100ms_batch_fraction_for_short_ops"] for row in rows
                         if row["20_100ms_batch_fraction_for_short_ops"] is not None]
+    short_rows = [row for row in rows if row["timing_mode"] == "short_calibrated"]
+    short_batch_counts = [count for row in short_rows
+                          for count in (row["rust_batch_count"], row["ducc_batch_count"])]
+    relative_errors = [row["relative_l2"] for row in rows if row["relative_l2"] is not None]
+    absolute_errors = [row["absolute_max"] for row in rows if row["absolute_max"] is not None]
     lines += [
         "",
-        f"Across {len(rows)} warm rows, RustSHT was faster in {faster} where the paired p10–p90 ratio interval stayed below 1, slower in {slower} where it stayed above 1, and inconclusive in {unresolved} where the interval crossed 1. This classification follows observed variation rather than a fixed parity band.",
+        f"Across {len(rows)} warm rows, RustSHT was faster in {faster} where the p10–p90 interval of three process-pair median ratios stayed below 1, slower in {slower} where it stayed above 1, and inconclusive in {unresolved} where the interval crossed 1. The ratio interval is process-level; backend call batches remain independent.",
         "### Cross-bandlimit findings",
         "",
     ]
@@ -1806,8 +2758,8 @@ def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cas
             f"At T3072 full mmax, the measured CC Rust/DUCC ratios are: {high_summary or 'no complete comparison row'}. These end-to-end CC timings include its meridional resampling and do not isolate recurrence; stage attribution is recorded separately when available."
         )
     lines += [
-        f"For operations below 100 ms, the median per-row fraction of measured batches in the requested 20–100 ms window was {statistics.median(window_fractions):.1%}; the lowest row fraction was {min(window_fractions):.1%}. {sum(row['batch_count'] == PROCESS_PAIRS * 10 for row in rows)} short-operation rows collected 30 batches per backend. One row median was just below the 20-ms lower bound; its timing distribution is retained without adjustment. Calibration attempts are recorded separately in each process sample.",
-        f"Maximum measured random-output relative L2 error was {max(row['relative_l2'] for row in rows):.3e}; maximum absolute error was {max(row['absolute_max'] for row in rows):.3e}.",
+        f"Short-operation batches were within the requested 20–100 ms window for a median {statistics.median(window_fractions):.1%} of each row's combined independent backend batches; the lowest row fraction was {min(window_fractions):.1%}. There are {len(short_rows)} short-operation rows; per-backend row counts range from {min(short_batch_counts) if short_batch_counts else 0} to {max(short_batch_counts) if short_batch_counts else 0}, with {PROCESS_PAIRS * BATCHES_PER_PROCESS} required for a fully sampled backend. Calibration attempts are recorded separately in each process sample.",
+        f"Maximum measured random-output relative L2 error was {format_scientific(max(relative_errors, default=None))}; maximum absolute error was {format_scientific(max(absolute_errors, default=None))}.",
         f"The out-of-timing checks covered {len(validations)} configurations. Exact-zero/reset consistency held for {sum(all(item['reset_consistent'].values()) for item in validations)}/{len(validations)}; all edge-case outputs were finite for {sum(item['finite_outputs'] for item in validations)}/{len(validations)}. Maximum Rust/DUCC roundtrip relative L2 was {max(max(item['roundtrip'][backend]['relative_l2'] for backend in ('rustsht', 'ducc')) for item in validations):.3e}; maximum selected-basis recovery relative L2 was {max(max(entry[key]['relative_l2'] for entry in item['basis'] for key in ('analysis_of_synthesis_rust', 'analysis_of_synthesis_ducc')) for item in validations):.3e}; maximum adjoint identity relative residual was {max(item['adjoints'][backend][key] for item in validations for backend in ('rustsht', 'ducc') for key in ('synthesis_relative_residual', 'analysis_relative_residual')):.3e}.",
         f"Available host-state summary: frequency median/p10/p90 {fmt(host['frequency_ghz_median'])}/{fmt(host['frequency_ghz_p10'])}/{fmt(host['frequency_ghz_p90'])} GHz; scheduler wait median/p90 {fmt(host['runqueue_wait_fraction_median'])}/{fmt(host['runqueue_wait_fraction_p90'])}; involuntary-switch median/max {fmt(host['involuntary_switches_median'])}/{host['involuntary_switches_max']}. This indicates intermittent scheduling/frequency interference despite low median scheduler wait. No samples were dropped; paired distributions retain the resulting uncertainty.",
         "",
@@ -1858,31 +2810,45 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
     ntheta_rule = "lmax+2 (including both poles)" if grid == "CC" else "lmax+1"
     degree_bands = ((1, 32), (33, 63), (64, 128), (129, 256), (257, 720),
                     (721, 1536), (1537, 3072))
-    timing_count_histogram = Counter(int(row["batch_count"]) for row in rows)
+    timing_count_histogram = Counter(
+        (int(row["rust_batch_count"]), int(row["ducc_batch_count"])) for row in rows
+    )
+    timing_count_text = "; ".join(
+        f"{count} rows have Rust/DUCC batch counts {rust_count}/{ducc_count}"
+        for (rust_count, ducc_count), count in sorted(timing_count_histogram.items())
+    ) or "no rows have timing batches"
+    eligible_rows = [
+        row for row in rows
+        if row["coverage_status"] == "complete"
+        and row["timing_quality_status"] == "qualified"
+        and row["numerical_status"] == "accepted"
+    ]
+    relative_errors = [row["relative_l2"] for row in rows if row["relative_l2"] is not None]
+    absolute_errors = [row["absolute_max"] for row in rows if row["absolute_max"] is not None]
     lines = [
         f"# Current-source native RustSHT/DUCC scalar {grid} sweep (2026-10-22)",
         "",
-        f"Production Rust source: `{metadata.get('production_source_revision', metadata['rust_source_revision'])}`; benchmark harness commit: `{metadata['rust_source_revision']}`.",
+        f"Production Rust source: `{metadata.get('production_source_revision', metadata['rust_source_revision'])}`; benchmark harness variants: `{metadata.get('benchmark_harnesses', [{'revision': metadata.get('benchmark_harness_revision', metadata['rust_source_revision']), 'sha256': metadata.get('benchmark_harness_sha256')}])}`.",
         f"Pinned DUCC 0.42.0 source: `{metadata['ducc_source_revision']}`.",
         f"Host: {metadata['cpu_model']}; selected q1 CPU `{metadata['selected_q1_cpu']}`, q8 CPUs `{','.join(map(str, metadata['selected_q8_cpus']))}`; q8 L3 cache IDs `{metadata['selected_q8_l3_cache_ids']}` (one CCD on this host).",
         f"Toolchains: Rust `{metadata['rustc']}` / {metadata['pulp']} with `{metadata['rust_flags']}`; DUCC `{metadata['cxx']}` with `{metadata['ducc_flags']}`.",
-        f"The production Rust source matches the frozen baseline: `{metadata.get('production_code_matches_baseline')}`; changed production paths since it: `{metadata.get('production_code_changes_since_baseline')}`. Executed Rust Pulp architectures: `{metadata.get('runtime_rust_arches')}`, f64 lane widths `{metadata.get('runtime_rust_f64_lane_widths')}`; DUCC runtime label: `{metadata.get('runtime_ducc_arches')}`.",
+        f"The measured Rust executable source is `{metadata.get('binary_source_revision', metadata.get('production_source_revision'))}` and its binary/build identity is verified: `{metadata.get('binary_provenance_verified')}`. Runner checkout variants: `{metadata.get('source_checkout_variants')}`. Paths changed in a checkout relative to the frozen executable source were not built into the measured binary. Executed Rust Pulp architectures: `{metadata.get('runtime_rust_arches')}`, f64 lane widths `{metadata.get('runtime_rust_f64_lane_widths')}`; DUCC runtime label: `{metadata.get('runtime_ducc_arches')}`.",
         "The exact `rustc -Vv`, DUCC SHT compile command, and strict benchmark-driver compile command are preserved in the result JSON metadata.",
         "",
         "## Scope and method",
         "",
-        f"The target dense manifest contains {coverage['expected_case_count']} distinct {grid_name} geometries covering every `lmax=0…256` plus {len([value for value in DENSE_SWEEP_HIGH_LMAX if value > 256])} selected higher degrees through T3072. This dataset contains {len(cases)} geometries. The target includes full and quarter-order `mmax` with even FFT-smooth longitude where those truncations differ; identical low-degree cases are deduplicated. Selected small, dispatch-boundary and high-resolution cases also include odd-minimum longitude. Each transform uses `{ntheta_rule}`, `phi0=0.23`, the full permitted degree/order triangle and deterministic PCG64 fixtures shared by both native libraries.",
-        f"Both analysis and synthesis were run at q1/q8. Short calls use {PROCESS_PAIRS} interleaved process pairs and {BATCHES_PER_PROCESS} calibrated batches per backend process, targeting {TARGET_BATCH_MS:g} ms; long calls use the existing individually timed rule. Rust plan/workspace setup, first-call and warmed timings are separate. The JSON retains per-process batch distributions, numerical comparisons and validation; aggregate CPU-frequency and scheduler diagnostics are reported below. Raw per-process telemetry stays in local shard captures. Failure records are retained in `failures.csv` and JSON.",
-        f"Timing-count audit: {timing_count_histogram.get(3 * BATCHES_PER_PROCESS, 0)} rows contain 30 calibrated batches (10 in each process pair), {timing_count_histogram.get(15, 0)} contain 15 individually timed long-call observations (five in each pair), and {timing_count_histogram.get(25, 0)} mix two 10-batch pairs with one five-call long pair. The raw JSON records each process's actual timing route; no row is padded to a nominal sample count.",
+        f"The target dense manifest contains {coverage['expected_case_count']} distinct {grid_name} geometries covering every `lmax=0…256` plus {len([value for value in DENSE_SWEEP_HIGH_LMAX if value > 256])} selected higher degrees through T3072. This dataset contains {len(cases)} geometries, including {coverage['unexpected_geometry_count']} supplementary historical geometries ({coverage['unexpected_measurement_group_count']} extra operation/thread groups): `{coverage['unexpected_case_ids']}`. Required full and floor-quarter `mmax` geometries use even FFT-smooth longitude where they differ; T2/T3 `mmax=1` extras are excluded from the principal reduced-order figures. Selected small, dispatch-boundary and high-resolution cases also include odd-minimum longitude. Each transform uses `{ntheta_rule}`, `phi0=0.23`, the full permitted degree/order triangle and deterministic PCG64 fixtures shared by both native libraries.",
+        f"Analysis and synthesis were requested at q1/q8. Short calls target {TARGET_BATCH_MS:g} ms per measured batch, with a 20–100 ms duration window and {PROCESS_PAIRS} interleaved process pairs; long calls use five individually timed observations per process. Rust plan/workspace setup, first-call and warmed timings are separate. The JSON retains independent per-backend batch distributions, numerical comparisons and validation; aggregate CPU-frequency and scheduler diagnostics are reported below. Raw per-process telemetry stays in local shard captures. Failure records are retained in `failures.csv` and JSON.",
+        f"Timing-count audit by independent backend: {timing_count_text}. A short backend row requires {PROCESS_PAIRS * BATCHES_PER_PROCESS} measured batches; a long backend row requires {PROCESS_PAIRS * 5} individual calls. Each backend chooses its short-batch or long-call route independently for each process, so the two backends may have different routes for one transform. Actual counts are reported separately for RustSHT and DUCC, with no cross-backend batch zipping or padding.",
         f"The q1/q8 CPU affinity was pinned to the physical core sets shown above. q8 uses the first eight physical cores visible to the process (one CCD on this host). RustSHT and DUCC receive the same fixtures and reusable caller buffers; DUCC's public API performs its own internal setup on each call.",
         "",
         "## Coverage audit",
         "",
-        f"The dataset contains {len(coverage['observed_lmax_0_through_256'])}/257 integer degrees in the low range ({257 - len(coverage['observed_lmax_0_through_256'])} absent). The required high-resolution list has {len(coverage['required_high_lmax'])} values; complete case-selection check: `{coverage['coverage_pass']}`. Low-degree even-smooth full/reduced coverage omissions: {len(coverage['low_degree_even_smooth_missing'])}. Across {coverage['expected_measurement_group_count']} operation/thread groups, statuses are `{coverage['measurement_status_counts']}`. Failed or partial groups are listed explicitly rather than silently removed.",
+        f"The dataset contains {len(coverage['observed_lmax_0_through_256'])}/257 integer degrees in the low range ({257 - len(coverage['observed_lmax_0_through_256'])} absent). The required high-resolution list has {len(coverage['required_high_lmax'])} values; required case-selection check: `{coverage['coverage_pass']}`; missing required cases: {len(coverage['missing_case_ids'])}. Low-degree even-smooth full/reduced omissions: {len(coverage['low_degree_even_smooth_missing'])}. Across {coverage['expected_measurement_group_count']} required operation/thread groups, coverage statuses are `{coverage['measurement_status_counts']}`, numerical statuses are `{coverage['numerical_status_counts']}`, timing-quality statuses are `{coverage['timing_quality_status_counts']}`, target-window statuses are `{coverage['duration_window_status_counts']}`, and reset statuses are `{coverage['reset_consistency_status_counts']}`. Whole-transform pass: `{coverage['whole_transform_pass']}`; recurrence-stage attribution: `{coverage['recurrence_stage_attribution_status']}`; full-sweep status: `{coverage['full_sweep_pass']}`. Incomplete, rejected and timing-insufficient groups remain visible in the coverage audit.",
         "",
         "## Warmed whole-transform summary",
         "",
-        "Ratios below 1 mean RustSHT was faster. Each table cell reports median ratio, geometric mean ratio, and completed paired case count. Odd-minimum cases are excluded from this even-smooth summary.",
+        "Ratios below 1 mean RustSHT was faster. Each table cell reports median ratio, geometric mean ratio, and case count using only rows with complete process-pair coverage, qualified timing counts, and accepted numerical validation. Odd-minimum cases are excluded from this even-smooth summary; all omitted status counts remain in the coverage audit.",
         "",
         "| lmax band | operation | mmax | threads | median ratio | geomean ratio | cases |",
         "|---|---|---|---:|---:|---:|---:|",
@@ -1893,10 +2859,19 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
                 for threads in (1, 8):
                     selected = [
                         row for row in rows
-                        if lo <= row["lmax"] <= hi
+                        if row in eligible_rows
+                        and lo <= row["lmax"] <= hi
                         and row["operation"] == operation
                         and row["threads"] == threads
-                        and ((row["mmax"] == row["lmax"]) == is_full)
+                        and (
+                            row["mmax"] == row["lmax"]
+                            if is_full
+                            else row["mmax"] == (
+                                row["lmax"] // 4
+                                if grid == "CC"
+                                else max(1, row["lmax"] // 4)
+                            )
+                        )
                         and row["longitude_mode"] == "even_smooth"
                     ]
                     if not selected:
@@ -1908,8 +2883,8 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
                         f"{statistics.median(ratios):.3f} | {geomean:.3f} | {len(selected)} |"
                     )
     lines += ["", "### Fast and slow measured cases", ""]
-    if rows:
-        throughput_rows = [row for row in rows if row["lmax"] > 0]
+    if eligible_rows:
+        throughput_rows = [row for row in eligible_rows if row["lmax"] > 0]
         worst = sorted(throughput_rows, key=lambda row: row["rust_ducc_ratio"], reverse=True)[:8]
         best = sorted(throughput_rows, key=lambda row: row["rust_ducc_ratio"])[:8]
         lines += [
@@ -1921,7 +2896,7 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
             for row in group:
                 lines.append(
                     f"| T{row['lmax']} m{row['mmax']} {row['longitude_mode']} | {row['operation']} | q{row['threads']} | "
-                    f"{row['rust_warm_ms']:.6g} | {row['ducc_warm_ms']:.6g} | {row['rust_ducc_ratio']:.3f} | {row['relative_l2']:.3e} |"
+                    f"{row['rust_warm_ms']:.6g} | {row['ducc_warm_ms']:.6g} | {row['rust_ducc_ratio']:.3f} | {format_scientific(row['relative_l2'])} |"
                 )
     lines += ["", "### Longitude-shape sensitivity", ""]
     shape_summary = []
@@ -1929,10 +2904,10 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
         for threads in (1, 8):
             by_key = {
                 (row["lmax"], row["mmax"], row["operation"], row["threads"], row["longitude_mode"]): row
-                for row in rows
+                for row in eligible_rows
             }
             pairs = []
-            for row in rows:
+            for row in eligible_rows:
                 if row["operation"] != operation or row["threads"] != threads or row["longitude_mode"] != "odd_minimum":
                     continue
                 even = by_key.get((row["lmax"], row["mmax"], operation, threads, "even_smooth"))
@@ -1955,10 +2930,18 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
             for is_full, order_label in ((True, "full"), (False, "reduced")):
                 for threads in (1, 8):
                     selected = sorted(
-                        [row for row in rows if row["lmax"] > 0
+                        [row for row in eligible_rows if row["lmax"] > 0
                          and row["operation"] == operation
                          and row["threads"] == threads
-                         and ((row["mmax"] == row["lmax"]) == is_full)
+                         and (
+                             row["mmax"] == row["lmax"]
+                             if is_full
+                             else row["mmax"] == (
+                                 row["lmax"] // 4
+                                 if grid == "CC"
+                                 else max(1, row["lmax"] // 4)
+                             )
+                         )
                          and row["longitude_mode"] == "even_smooth"],
                         key=lambda row: row["lmax"],
                     )
@@ -1978,9 +2961,12 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
                         f"highest-ratio degree {max(selected, key=lambda row: row['rust_ducc_ratio'])['lmax']}; "
                         f"observed parity crossings {', '.join(crossings) if crossings else 'none in degree order'} (sampled points only)."
                     )
-        max_l2 = max(row["relative_l2"] for row in rows)
-        max_abs = max(row["absolute_max"] for row in rows)
-        lines.append(f"Maximum random-output relative L2 error: `{max_l2:.3e}`; maximum absolute error: `{max_abs:.3e}`.")
+        max_l2 = max(relative_errors, default=None)
+        max_abs = max(absolute_errors, default=None)
+        lines.append(
+            f"Maximum random-output relative L2 error: `{format_scientific(max_l2)}`; "
+            f"maximum absolute error: `{format_scientific(max_abs)}`."
+        )
         lines.append("T0 remains in the raw results, coverage audit, correctness checks and plots; it is excluded from the degree-band and fastest/slowest throughput summaries.")
     finite_validations = sum(item["finite_outputs"] for item in validations)
     reset_validations = sum(all(item["reset_consistent"].values()) for item in validations)
@@ -2023,29 +3009,38 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
     lines += [
         f"Validation ran for {len(validations)} case/thread configurations: finite edge outputs {finite_validations}/{len(validations)}, reused-output reset checks {reset_validations}/{len(validations)}; maximum roundtrip relative L2 `{roundtrip_max:.3e}`, selected-basis recovery `{basis_max:.3e}`, and adjoint residual `{adjoint_max:.3e}`. Sidecar results include zero, subnormal and extreme-finite checks.",
         f"Observed CPU frequency median/p10/p90 `{fmt(host['frequency_ghz_median'])}/{fmt(host['frequency_ghz_p10'])}/{fmt(host['frequency_ghz_p90'])}` GHz; scheduler wait median/p90 `{fmt(host['runqueue_wait_fraction_median'])}/{fmt(host['runqueue_wait_fraction_p90'])}`; involuntary-switch median/max `{fmt(host['involuntary_switches_median'])}/{host['involuntary_switches_max']}`. No batch samples are removed from the saved distributions.",
-        f"There were {len(failures)} recorded failure/warning events. Inspect `{result_prefix}/failures.csv` and the JSON `failures` array; unsupported cases are labeled separately from worker and numerical-validation errors.",
+        f"There were {len(failures)} recorded failure/warning events, including recovered or superseded attempts when applicable. Inspect `{result_prefix}/failures.csv` and the JSON `failures` array; unsupported cases are labeled separately from worker and numerical-validation errors.",
         "",
         "## Principal figures",
         "",
         f"- [Analysis, full mmax](./{result_prefix}/ratio-analysis-full-mmax.svg)",
+        f"- [Analysis, full mmax PNG](./{result_prefix}/ratio-analysis-full-mmax.png)",
         f"- [Analysis, reduced mmax](./{result_prefix}/ratio-analysis-reduced-mmax.svg)",
+        f"- [Analysis, reduced mmax PNG](./{result_prefix}/ratio-analysis-reduced-mmax.png)",
         f"- [Synthesis, full mmax](./{result_prefix}/ratio-synthesis-full-mmax.svg)",
+        f"- [Synthesis, full mmax PNG](./{result_prefix}/ratio-synthesis-full-mmax.png)",
         f"- [Synthesis, reduced mmax](./{result_prefix}/ratio-synthesis-reduced-mmax.svg)",
+        f"- [Synthesis, reduced mmax PNG](./{result_prefix}/ratio-synthesis-reduced-mmax.png)",
         f"- [Absolute analysis latency](./{result_prefix}/runtime-analysis.svg)",
+        f"- [Absolute analysis latency PNG](./{result_prefix}/runtime-analysis.png)",
         f"- [Absolute synthesis latency](./{result_prefix}/runtime-synthesis.svg)",
+        f"- [Absolute synthesis latency PNG](./{result_prefix}/runtime-synthesis.png)",
+        f"- [Matched CC/GL ratio](./{result_prefix}/cc-versus-gl-matched-ratio.svg)",
+        f"- [Matched CC/GL ratio PNG](./{result_prefix}/cc-versus-gl-matched-ratio.png)",
+        f"- [CC/GL matched-cell statuses](./{result_prefix}/cc-versus-gl-matched-ratio.csv)",
         *( [f"- [Precomputed table versus recurrence](./{result_prefix}/legendre-table-vs-recurrence.svg)",
             f"- [Paired FFT versus independent rows](./{result_prefix}/paired-fft-benefit.svg)"]
            if grid == "GL" else
            [f"- [Matched CC/GL comparison](./{result_prefix}/cc-versus-gl-matched-ratio.svg)"] ),
         "",
-        f"The four principal figures plot measured warmed RustSHT/DUCC ratios for even-smooth longitude cases only; q1 and q8 are separate curves and measured points are not smoothed. Odd-minimum cases remain in the data and shape summary. This is a {grid_name} dataset; it is not merged with GL timing rows. The exact CC fixtures use `ntheta=lmax+2` to include both poles, while the GL controls use `ntheta=lmax+1`.",
+        f"The four principal ratio figures and two absolute-latency figures contain accepted measured even-smooth cells; q1 and q8 are separate curves and points are not smoothed. Incomplete, numerically rejected, timing-insufficient and unmatched CC/GL cells are listed in `coverage-audit.json` and `cc-versus-gl-matched-ratio.csv`; the ratio chart omits them. Odd-minimum cases remain in the data and shape summary. The CC and GL datasets retain separate source provenance. The exact CC fixtures use `ntheta=lmax+2` to include both poles, while the GL controls use `ntheta=lmax+1`.",
         "",
         "## Reproduction and attribution",
         "",
-        f"The machine-readable artifacts are [`results.csv`](./{result_prefix}/results.csv), [`results.json`](./{result_prefix}/results.json), and [`coverage-audit.json`](./{result_prefix}/coverage-audit.json). Rust plan setup/first-call fields, calibrated warm batch distributions, process pairing, per-case numerical errors, host scheduling/frequency diagnostics, and every requested geometry are retained.",
+        f"The machine-readable artifacts are [`results.csv`](./{result_prefix}/results.csv), [`results.json`](./{result_prefix}/results.json), and [`coverage-audit.json`](./{result_prefix}/coverage-audit.json). Rust plan setup/first-call fields, independent backend batch distributions, process-pair ratios, per-case numerical errors, host scheduling/frequency diagnostics, and every requested geometry are retained.",
         "",
         "```sh",
-        f"git checkout {metadata.get('benchmark_harness_revision', metadata['rust_source_revision'])}",
+        f"# Compatible harness revisions: {metadata.get('benchmark_harnesses', [{'revision': metadata.get('benchmark_harness_revision', metadata['rust_source_revision']), 'sha256': metadata.get('benchmark_harness_sha256')}])}",
         f"git -C \"$DUCC_SRC\" checkout --detach {metadata['ducc_source_revision']}",
         "# Build once with the checked-in native parity CMake project and the recorded toolchain/flags.",
     ]
@@ -2060,27 +3055,48 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
 
 
 def merge_shards(shard_paths: list[pathlib.Path], output_dir: pathlib.Path,
-                 report_path: pathlib.Path, dense_sweep: bool) -> None:
+                 report_path: pathlib.Path, dense_sweep: bool,
+                 recurrence_stage_attribution: pathlib.Path | None = None) -> None:
     shards = [json.loads(path.read_text()) for path in shard_paths]
     if not shards:
         raise ValueError("no shard results supplied")
     metadata = dict(shards[0]["metadata"])
     invariant_fields = (
-        "rust_source_revision", "production_source_revision", "ducc_source_revision", "grid",
+        "production_source_revision", "ducc_source_revision", "grid",
         "ducc_version", "rustc", "cargo", "cxx", "rust_flags", "ducc_flags",
         "cpu_model", "selected_q1_cpu", "selected_q8_cpus", "selected_q8_topology",
         "selected_q8_l3_cache_ids", "process_pairs", "batches_per_process",
         "target_batch_ms", "phi0", "dense_sweep", "sweep_id",
         "ducc_sht_compile_command", "ducc_driver_compile_command",
-        "production_code_changes_since_baseline", "production_code_matches_baseline",
         "rust_binary_sha256", "ducc_binary_sha256", "rust_build_command",
         "ducc_cmake_build_command",
         "retain_local_host_telemetry",
+    )
+    def shard_protocol(shard_metadata: dict) -> dict:
+        saved = shard_metadata.get("benchmark_execution_protocol")
+        if saved is None:
+            return execution_protocol(shard_metadata)
+        saved_hash = shard_metadata.get("benchmark_execution_protocol_sha256")
+        actual_hash = hashlib.sha256(json.dumps(saved, sort_keys=True).encode()).hexdigest()
+        if saved_hash is not None and saved_hash != actual_hash:
+            raise ValueError("shard benchmark execution protocol hash is invalid")
+        return saved
+
+    base_protocol = shard_protocol(metadata)
+    base_binary_source = metadata.get(
+        "binary_source_revision", metadata.get("production_source_revision")
     )
     for index, shard in enumerate(shards[1:], 2):
         for field in invariant_fields:
             if shard["metadata"].get(field) != metadata.get(field):
                 raise ValueError(f"shard {index} metadata mismatch for {field}")
+        shard_binary_source = shard["metadata"].get(
+            "binary_source_revision", shard["metadata"].get("production_source_revision")
+        )
+        if shard_binary_source != base_binary_source:
+            raise ValueError(f"shard {index} metadata mismatch for binary_source_revision")
+        if shard_protocol(shard["metadata"]) != base_protocol:
+            raise ValueError(f"shard {index} benchmark execution protocol mismatch")
     cases: list[dict] = []
     raw: list[dict] = []
     errors: list[dict] = []
@@ -2125,6 +3141,77 @@ def merge_shards(shard_paths: list[pathlib.Path], output_dir: pathlib.Path,
         }
         for path, shard in zip(shard_paths, shards)
     ]
+    harnesses = {
+        (shard["metadata"].get("benchmark_harness_revision", shard["metadata"].get("rust_source_revision")),
+         shard["metadata"].get("benchmark_harness_sha256"))
+        for shard in shards
+    }
+    metadata["benchmark_harnesses"] = [
+        {"revision": revision, "sha256": digest}
+        for revision, digest in sorted(harnesses, key=lambda item: (str(item[0]), str(item[1])))
+    ]
+    metadata["rust_source_revisions"] = sorted({
+        shard["metadata"].get("rust_source_revision") for shard in shards
+    })
+    source_checkouts = {
+        (
+            shard["metadata"].get("rust_source_revision"),
+            shard["metadata"].get("rust_source_worktree_clean"),
+            shard["metadata"].get("benchmark_harness_revision"),
+            shard["metadata"].get("benchmark_harness_sha256"),
+            json.dumps(
+                shard["metadata"].get("source_checkout_changes_since_binary_source_revision"),
+                sort_keys=True,
+            ),
+        )
+        for shard in shards
+    }
+    metadata["source_checkout_variants"] = [
+        {
+            "rust_source_revision": revision,
+            "rust_source_worktree_clean": worktree_clean,
+            "benchmark_harness_revision": harness_revision,
+            "benchmark_harness_sha256": harness_sha256,
+            "source_checkout_changes_since_binary_source_revision": json.loads(source_delta),
+        }
+        for revision, worktree_clean, harness_revision, harness_sha256, source_delta
+        in sorted(source_checkouts, key=lambda item: (str(item[0]), str(item[2]), str(item[3])))
+    ]
+    build_records = {
+        json.dumps(shard["metadata"].get("binary_build_record"), sort_keys=True)
+        for shard in shards if shard["metadata"].get("binary_build_record")
+    }
+    metadata["binary_build_records"] = [json.loads(record) for record in sorted(build_records)]
+    metadata["binary_source_revision"] = base_binary_source
+    metadata["binary_provenance_verified"] = bool(build_records) and all(
+        shard["metadata"].get("rust_binary_sha256") == metadata["rust_binary_sha256"]
+        and shard["metadata"].get("ducc_binary_sha256") == metadata["ducc_binary_sha256"]
+        and shard["metadata"].get(
+            "binary_source_revision", shard["metadata"].get("production_source_revision")
+        ) == base_binary_source
+        for shard in shards
+    )
+    metadata["benchmark_execution_protocol"] = base_protocol
+    metadata["benchmark_execution_protocol_sha256"] = hashlib.sha256(
+        json.dumps(base_protocol, sort_keys=True).encode()
+    ).hexdigest()
+    metadata["recurrence_stage_attribution_status"] = "not_measured"
+    if recurrence_stage_attribution is not None:
+        attribution = json.loads(recurrence_stage_attribution.read_text())
+        attribution_status = attribution.get("status", "incomplete")
+        if attribution_status not in {"measured", "incomplete", "failed"}:
+            raise ValueError(f"unsupported recurrence-stage attribution status: {attribution_status}")
+        metadata["recurrence_stage_attribution_status"] = attribution_status
+        output_dir.mkdir(parents=True, exist_ok=True)
+        attribution_destination = output_dir / "recurrence-stage-attribution.json"
+        attribution_destination.write_text(
+            json.dumps(finite_json_value(attribution), indent=2, allow_nan=False) + "\n"
+        )
+        metadata["recurrence_stage_attribution_sha256"] = hashlib.sha256(
+            attribution_destination.read_bytes()
+        ).hexdigest()
+    else:
+        metadata["recurrence_stage_attribution_sha256"] = None
     metadata["invocation"] = "merged shard results"
     diagnostics = [sample["host_diagnostics"] for sample in raw if "host_diagnostics" in sample]
     analysis = {
@@ -2141,7 +3228,10 @@ def merge_shards(shard_paths: list[pathlib.Path], output_dir: pathlib.Path,
             ROOT / "reports/data/ducc-full-transform-parity-current-2026-10-22/results.csv",
         )
     if dense_sweep:
-        coverage = dense_sweep_coverage(cases, raw, errors, failures, metadata.get("grid", "GL"))
+        coverage = dense_sweep_coverage(
+            cases, raw, errors, failures, metadata.get("grid", "GL"), validations,
+            metadata.get("recurrence_stage_attribution_status", "not_measured"),
+        )
         write_dense_sweep_report(output_dir, report_path, metadata, rows, cases,
                                  coverage, validations, failures, analysis["host"],
                                  invocations, raw)
@@ -2161,10 +3251,14 @@ def main() -> None:
     parser.add_argument("--plot-only", action="store_true", help="regenerate ratio and runtime SVGs from existing results.csv; no benchmark or DUCC checkout needed")
     parser.add_argument("--merge-shards", type=pathlib.Path, nargs="+",
                         help="merge completed native benchmark shard results.json files")
+    parser.add_argument("--recurrence-stage-attribution", type=pathlib.Path,
+                        help="attach a separately measured CC recurrence-stage attribution JSON during shard merge")
     parser.add_argument("--dense-sweep", action="store_true",
                         help="select every lmax 0..256 plus representative higher degrees")
     parser.add_argument("--production-source-revision",
                         help="frozen Rust production source commit represented by this benchmark")
+    parser.add_argument("--binary-build-record", type=pathlib.Path,
+                        help="saved native results.json whose source/build/binary identity must match when --skip-build is used")
     parser.add_argument("--sweep-id", default="",
                         help="label recorded in machine-readable metadata")
     parser.add_argument("--smoke", action="store_true", help="small harness check; not a parity result")
@@ -2189,6 +3283,10 @@ def main() -> None:
                         help="run only these thread counts; may be repeated (default: 1 and 8)")
     parser.add_argument("--results-dir", type=pathlib.Path,
                         help="directory for machine-readable outputs and plots")
+    parser.add_argument("--checkpoint-dir", type=pathlib.Path,
+                        help="atomic per-process-pair checkpoint directory (default: RESULTS_DIR/.checkpoints)")
+    parser.add_argument("--resume", action="store_true",
+                        help="resume incomplete process pairs after exact checkpoint-identity validation")
     parser.add_argument("--report-path", type=pathlib.Path,
                         help="report path; ignored with --no-report")
     parser.add_argument("--no-report", action="store_true",
@@ -2204,13 +3302,18 @@ def main() -> None:
         merge_shards(
             [path.resolve() for path in args.merge_shards], args.results_dir,
             args.report_path, args.dense_sweep,
+            args.recurrence_stage_attribution.resolve()
+            if args.recurrence_stage_attribution else None,
         )
         if args.dense_sweep:
             with (args.results_dir / "coverage-audit.json").open() as handle:
                 coverage = json.load(handle)
             print(
                 f"MERGED {len(args.merge_shards)} shards; case selection pass="
-                f"{coverage['coverage_pass']}; measurements="
+                f"{coverage['coverage_pass']}; whole-transform pass="
+                f"{coverage['whole_transform_pass']}; stage attribution="
+                f"{coverage['recurrence_stage_attribution_status']}; full sweep="
+                f"{coverage['full_sweep_pass']}; measurements="
                 f"{coverage['measurement_status_counts']}",
                 flush=True,
             )
@@ -2235,6 +3338,7 @@ def main() -> None:
             )
             if comparison is not None:
                 auxiliary.append(comparison.name)
+        convert_svg_directory_to_png(args.results_dir)
         print(
             f"Regenerated four ratio, two runtime and {len(auxiliary)} auxiliary figures "
             f"from {len(rows)} committed rows"
@@ -2288,12 +3392,22 @@ def main() -> None:
         PROCESS_PAIRS = 1
         TARGET_BATCH_MS = 5.0
     metadata = hardware_metadata(ducc_src)
+    if not args.skip_build and args.production_source_revision \
+            and args.production_source_revision != metadata["rust_source_revision"]:
+        raise ValueError(
+            "a newly built Rust worker must use the checked-out Rust source revision "
+            "as --production-source-revision"
+        )
     metadata.update({
-        "production_source_revision": args.production_source_revision or metadata["rust_source_revision"],
+        "production_source_revision": args.production_source_revision or (
+            None if args.skip_build else metadata["rust_source_revision"]
+        ),
         "benchmark_harness_revision": metadata["rust_source_revision"],
+        "benchmark_harness_sha256": sha256_file(pathlib.Path(__file__).resolve()),
         "benchmark_invocation": shlex.join([sys.executable, *sys.argv]),
         "invocation": shlex.join([sys.executable, *sys.argv]),
         "dense_sweep": args.dense_sweep,
+        "recurrence_stage_attribution_status": "not_measured",
         "grid": args.grid,
         "sweep_id": args.sweep_id,
         "retain_local_host_telemetry": args.retain_local_host_telemetry,
@@ -2310,17 +3424,6 @@ def main() -> None:
             "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON; cmake --build " + str(build_dir) + " --parallel 4"
         ),
     })
-    baseline = metadata["production_source_revision"]
-    if re.fullmatch(r"[0-9a-fA-F]{40}", baseline):
-        delta = subprocess.run(
-            ["git", "diff", "--name-only", f"{baseline}..HEAD", "--", "src", "Cargo.toml", "Cargo.lock"],
-            cwd=ROOT, text=True, capture_output=True, check=True,
-        ).stdout.splitlines()
-        metadata["production_code_changes_since_baseline"] = delta
-        metadata["production_code_matches_baseline"] = not delta and metadata["rust_source_worktree_clean"]
-    else:
-        metadata["production_code_changes_since_baseline"] = None
-        metadata["production_code_matches_baseline"] = False
     ducc_commands = json.loads((build_dir / "compile_commands.json").read_text())
     metadata["ducc_sht_compile_command"] = next(
         entry.get("command", " ".join(entry.get("arguments", [])))
@@ -2331,14 +3434,77 @@ def main() -> None:
         for entry in ducc_commands
         if pathlib.Path(entry["file"]).name == "ducc_full_transform_parity.cpp"
     )
+    if args.skip_build and args.binary_build_record:
+        build_record = validate_binary_build_record(
+            args.binary_build_record.resolve(), metadata, args.production_source_revision
+        )
+        metadata["binary_build_record"] = build_record
+        metadata["binary_source_revision"] = build_record["binary_source_revision"]
+        metadata["production_source_revision"] = (
+            args.production_source_revision or build_record["binary_source_revision"]
+        )
+        metadata["binary_provenance_verified"] = True
+    elif args.skip_build:
+        if args.binary_build_record:
+            raise ValueError("--binary-build-record requires --skip-build")
+        metadata["binary_build_record"] = None
+        metadata["binary_source_revision"] = None
+        metadata["binary_provenance_verified"] = False
+    else:
+        if args.binary_build_record:
+            raise ValueError("--binary-build-record is only valid with --skip-build")
+        metadata["binary_build_record"] = None
+        metadata["binary_source_revision"] = metadata["rust_source_revision"]
+        metadata["binary_provenance_verified"] = True
+    production_revision = metadata["production_source_revision"]
+    binary_revision = metadata["binary_source_revision"]
+    if (isinstance(production_revision, str) and isinstance(binary_revision, str)
+            and re.fullmatch(r"[0-9a-fA-F]{40}", production_revision)
+            and re.fullmatch(r"[0-9a-fA-F]{40}", binary_revision)):
+        metadata["production_code_changes_since_baseline"] = subprocess.run(
+            ["git", "diff", "--name-only", f"{production_revision}..{binary_revision}",
+             "--", "src", "Cargo.toml", "Cargo.lock"],
+            cwd=ROOT, text=True, capture_output=True, check=True,
+        ).stdout.splitlines()
+        metadata["source_checkout_changes_since_binary_source_revision"] = subprocess.run(
+            ["git", "diff", "--name-only", f"{binary_revision}..{metadata['rust_source_revision']}",
+             "--", "src", "Cargo.toml", "Cargo.lock"],
+            cwd=ROOT, text=True, capture_output=True, check=True,
+        ).stdout.splitlines()
+        metadata["production_code_matches_baseline"] = (
+            binary_revision == production_revision and metadata["binary_provenance_verified"]
+        )
+    else:
+        metadata["production_code_changes_since_baseline"] = None
+        metadata["source_checkout_changes_since_binary_source_revision"] = None
+        metadata["production_code_matches_baseline"] = False
+    metadata["benchmark_execution_protocol"] = portable_evidence(execution_protocol(metadata))
+    metadata["benchmark_execution_protocol_sha256"] = hashlib.sha256(
+        json.dumps(metadata["benchmark_execution_protocol"], sort_keys=True).encode()
+    ).hexdigest()
     print(f"BUILD rust={binaries['rustsht']} DUCC={binaries['ducc']}", flush=True)
     print(f"ENV cpu={metadata['cpu_model']} x86={metadata['cpu_features']} affinity=q1/q8 physical cores", flush=True)
     print(f"DISPATCH Rust=Pulp V3 selected by worker; DUCC=fixed x86-64-v3", flush=True)
+    operations_to_run = args.operation or ["analysis", "synthesis"]
+    threads_to_run = args.threads or [1, 8]
+    if args.smoke and (args.resume or args.checkpoint_dir):
+        parser.error("checkpointing is disabled for smoke runs")
+    checkpoint_dir = None
+    checkpoint_run_identity = None
+    if not args.smoke:
+        checkpoint_dir = (args.checkpoint_dir or (args.results_dir / ".checkpoints")).resolve()
+        checkpoint_run_identity = checkpoint_identity(
+            metadata, cases, operations_to_run, threads_to_run
+        )
+        validate_checkpoint_directory(checkpoint_dir, checkpoint_run_identity, args.resume)
+        print(f"CHECKPOINTS {checkpoint_dir} resume={args.resume}", flush=True)
     raw, aux = run_matrix(
         cases, binaries, args.smoke, args.threads, args.operation,
+        checkpoint_dir=checkpoint_dir,
+        checkpoint_identity=checkpoint_run_identity,
     )
     if args.smoke:
-        rows = aggregate(raw, aux["errors"])
+        rows = aggregate(raw, aux["errors"], aux.get("validations", []))
         finite_count = sum(item["finite_outputs"] for item in aux["validations"])
         reset_count = sum(all(item["reset_consistent"].values()) for item in aux["validations"])
         print(
@@ -2362,12 +3528,14 @@ def main() -> None:
             )
         return
     output_dir = args.results_dir
-    rows = aggregate(raw, aux["errors"])
+    rows = aggregate(raw, aux["errors"], aux.get("validations", []))
     write_artifacts(output_dir, metadata, cases, raw, aux)
     if not args.no_report:
         if args.dense_sweep:
             coverage = dense_sweep_coverage(
-                cases, raw, aux["errors"], aux.get("failures", []), args.grid
+                cases, raw, aux["errors"], aux.get("failures", []), args.grid,
+                aux.get("validations", []),
+                metadata.get("recurrence_stage_attribution_status", "not_measured"),
             )
             write_dense_sweep_report(
                 output_dir, args.report_path, metadata, rows, cases, coverage,
