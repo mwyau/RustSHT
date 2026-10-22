@@ -15,7 +15,9 @@
 - **[14 — Small serial and parallel SHT parity](14-small-serial-parallel-performance.md):** completed at `f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`.
 - **[15 — Spin-1 vector GL/CC/F1 performance](15-spin1-vector-gl-cc-f1-performance.md):** completed. Its synthesis dataflow closeout retains accepted scheduling/coefficient-reuse changes and negative SIMD experiments.
 
-**Owner hold:** defer odd-length FFT optimization, including paired-real-row FFTs, `realfft` substitution and standalone/custom FFT backends. Keep odd/even sampling as correctness and performance controls only. Do not extend Plan 17 into batch APIs or Plan 12's cache-detection machinery.
+**Completed experimental evidence, not queued:** The separate [guarded odd-longitude FFT experiment](14-small-serial-parallel-performance.md#post-closeout-evidence--paired-odd-longitude-fft-2026-10-22) measured synthesis improvements in 9/9 odd cases at q1 and q8 (median 1.161x/1.198x), and less consistent analysis results. See its [report](../reports/paired-odd-longitude-fft-experiment-2026-10-21.md). Source is on `exp/paired-odd-longitude-fft`, not integrated into production. Plan 16/17 order is unchanged.
+
+**Owner hold:** do not integrate or resume paired-real-row odd-length FFT optimization, `realfft` substitution or standalone/custom FFT backends without explicit further owner direction. The separate experiment is evidence for a possible later integration decision, not an active Plan 16/17 task. Keep odd/even sampling as correctness and performance controls. Do not extend Plan 17 into batch APIs or Plan 12's cache-detection machinery.
 
 ## Retained specifications — references, not task queues
 
