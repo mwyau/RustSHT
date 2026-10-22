@@ -2,9 +2,10 @@
 
 **Active sequence (2026-10-22):** Plans 14–16 and the owner-directed scalar
 Legendre dispatch, paired odd-FFT validation and T0–T3072 full-transform
-checkpoint are complete. Plan 17 Milestone A is complete; Milestone B is
-active. Plans 12 and 13 remain
-deferred. **Branch:**
+checkpoint are complete. Plan 17 Milestone A is complete; Milestone B is **paused** by owner.
+The [new active f64 scalar CC full-band recurrence and GL 20 MiB crossover study](plans/scalar-f64-cc-full-band-and-gl-table-crossover-2026-10-22.md)
+comes first. **No new CC f64 measurements are claimed by this direction.**
+Plans 12 and 13 remain deferred. **Branch:**
 `opt/sht-performance-parity`.
 
 ## Scalar-analysis cumulative ablation
