@@ -140,3 +140,16 @@ def test_sweep_acceptance_is_independent_of_optional_stage_profile() -> None:
         [],
         {"case|analysis|q1": accepted_group},
     )
+
+
+def test_merged_sample_export_strips_local_host_telemetry() -> None:
+    samples = [{"backend": "rustsht", "batch_ms": [1.0], "host_diagnostics": {"wait": 0.2}}]
+    raw_shard = benchmark.samples_for_result_export(
+        samples, {"retain_local_host_telemetry": True}
+    )
+    aggregate = benchmark.samples_for_result_export(
+        samples, {"retain_local_host_telemetry": True, "merged_shards": [{"name": "one"}]}
+    )
+
+    assert raw_shard is samples
+    assert aggregate == [{"backend": "rustsht", "batch_ms": [1.0]}]

@@ -128,6 +128,18 @@ def finite_json_value(value):
     return value
 
 
+def samples_for_result_export(samples: list[dict], metadata: dict) -> list[dict]:
+    """Keep raw shard telemetry local while exporting aggregate sample timings."""
+    retain_local = metadata.get("retain_local_host_telemetry") is True
+    merged = bool(metadata.get("merged_shards"))
+    if retain_local and not merged:
+        return samples
+    return [
+        {key: value for key, value in sample.items() if key != "host_diagnostics"}
+        for sample in samples
+    ]
+
+
 def physical_cpus() -> list[int]:
     allowed = sorted(os.sched_getaffinity(0))
     seen = set()
@@ -2558,10 +2570,9 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
         {key: value for key, value in case.items() if key not in {"map_path", "alm_path"}}
         for case in cases
     ]
-    public_samples = raw if metadata.get("retain_local_host_telemetry") else [
-        {key: value for key, value in sample.items() if key != "host_diagnostics"}
-        for sample in raw
-    ]
+    public_samples = samples_for_result_export(raw, metadata)
+    if metadata.get("merged_shards"):
+        metadata["aggregate_sample_host_telemetry_exported"] = False
     machine = {
         "metadata": portable_evidence(metadata),
         "protocol": {
