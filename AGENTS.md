@@ -4,6 +4,8 @@
 
 **Owner direction (2026-10-21):** defer odd-length FFT optimization (paired-real rows, realfft substitution and standalone/custom FFT integration). Keep odd/even longitude correctness and benchmark controls only. The queued Plan 16 is restricted to spin-1 vector recurrence/dataflow, coefficient handling and (conditionally) CC/F1 spin-1 analysis resampling; not generic scalar CC/F1, spins 2–4, batch APIs or a new FFT engine. Keep the same existing working branch opt/sht-performance-parity.
 
+**Post-hold evidence (2026-10-22; integration still deferred):** the separate [paired odd-length FFT experiment](plans/14-small-serial-parallel-performance.md#post-closeout-evidence--paired-odd-longitude-fft-2026-10-22) and [results](reports/paired-odd-longitude-fft-experiment-2026-10-21.md) show synthesis gains and less consistent analysis gains for f64 scalar odd-longitude rows. Prototype source remains on `exp/paired-odd-longitude-fft`. **This does not authorize integration, lift the existing FFT hold or alter Plan 16/17 execution order.** Do not repeat the completed experiment without new evidence or explicit owner direction.
+
 Explicit current owner instructions take precedence;
 other archived plans/reviews and benchmark reports are historical evidence.
 Read the current active plan and production source before acting.
