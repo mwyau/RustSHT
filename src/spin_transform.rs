@@ -49,9 +49,9 @@ const SPIN1_ORDER_MAJOR_TILE: usize = 8;
 const SPIN1_PARALLEL_MERIDIONAL_RESAMPLING_MIN_ORDER_RING_PAIRS: usize = 65_536;
 const SPIN2_FAST_MIN_SIN_THETA: f64 = 0.01;
 #[cfg(feature = "parallel")]
-const SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_LMAX: usize = 720;
+const SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_LMAX: usize = 1023;
 #[cfg(feature = "parallel")]
-const SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_BYTES: usize = 17 * 1024 * 1024;
+const SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_BYTES: usize = 34 * 1024 * 1024;
 
 #[cfg(feature = "parallel")]
 pub(crate) fn spin1_hemisphere_worker_count<T: ShtScalar>(

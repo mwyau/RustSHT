@@ -6248,6 +6248,129 @@ fn spin1_parallel_coefficient_cache_matches_uncached_synthesis() {
 
 #[cfg(feature = "parallel")]
 #[test]
+fn spin1_t1023_order_major_cache_is_bounded_and_reused() {
+    let single_pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    for mmax in [255, 1023] {
+        let lmax = 1023;
+        let nphi = if mmax == 255 { 512 } else { 2048 };
+        let plan = ShtPlan::new(
+            GridSpec::new(GridKind::GaussLegendre, lmax + 1, nphi, 0.23).unwrap(),
+            HarmonicSpec::new(lmax, mmax, 1).unwrap(),
+        )
+        .unwrap();
+        let mut workspace = pool.install(|| plan.workspace()).unwrap();
+        pool.install(|| plan.prepare_workspace(&mut workspace, 8))
+            .unwrap();
+        let mut single_workspace = single_pool.install(|| plan.workspace()).unwrap();
+        let mut e_alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        let mut b_alm = e_alm.clone();
+        let mode = plan.harmonics.index(2, 1).unwrap();
+        e_alm[mode] = Complex64::new(0.5, -0.25);
+        b_alm[mode] = Complex64::new(-0.125, 0.375);
+        let mut first = vec![f64::NAN; plan.sample_count];
+        let mut second = first.clone();
+
+        pool.install(|| {
+            plan.synthesis_spin_into(&e_alm, &b_alm, &mut first, &mut second, &mut workspace)
+        })
+        .unwrap();
+
+        let expected_coefficient_values = 2 * (mmax + 1) * (lmax + 2);
+        assert_eq!(
+            workspace.spin1_scalar_coefficients.len(),
+            expected_coefficient_values
+        );
+        assert!(
+            expected_coefficient_values * std::mem::size_of::<Complex64>()
+                <= SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_BYTES
+        );
+        assert_eq!(
+            workspace.spin1_scalar_coefficient_finite_orders.len(),
+            mmax + 1
+        );
+        assert!(
+            workspace
+                .spin1_scalar_coefficient_finite_orders
+                .iter()
+                .all(|&finite| finite == 1)
+        );
+        assert_eq!(workspace.spin_order_output_scratch.len(), 8);
+        assert!(first.iter().chain(&second).all(|value| value.is_finite()));
+
+        let mut unsafe_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        let mut unsafe_b = unsafe_e.clone();
+        unsafe_e[mode] = Complex64::new(1.44e308, 0.0);
+        unsafe_b[plan.harmonics.index(1, 1).unwrap()] = Complex64::new(0.0, -1.44e308);
+        first.fill(f64::NAN);
+        second.fill(f64::NAN);
+        pool.install(|| {
+            plan.synthesis_spin_into(
+                &unsafe_e,
+                &unsafe_b,
+                &mut first,
+                &mut second,
+                &mut workspace,
+            )
+        })
+        .unwrap();
+        assert_eq!(workspace.spin1_scalar_coefficient_finite_orders[1], 0);
+        let mut single_first = vec![f64::NAN; plan.sample_count];
+        let mut single_second = single_first.clone();
+        single_pool
+            .install(|| {
+                plan.synthesis_spin_into(
+                    &unsafe_e,
+                    &unsafe_b,
+                    &mut single_first,
+                    &mut single_second,
+                    &mut single_workspace,
+                )
+            })
+            .unwrap();
+        let scale = single_first
+            .iter()
+            .chain(&single_second)
+            .filter(|value| value.is_finite())
+            .map(|value| value.abs())
+            .fold(1.0_f64, f64::max);
+        for (&single, &parallel) in single_first
+            .iter()
+            .zip(&first)
+            .chain(single_second.iter().zip(&second))
+        {
+            if single.is_finite() {
+                assert!(parallel.is_finite());
+                assert!((single / scale - parallel / scale).abs() <= 2e-11);
+            } else if single.is_infinite() {
+                assert!(parallel.is_infinite());
+                assert_eq!(single.is_sign_positive(), parallel.is_sign_positive());
+            } else {
+                assert!(parallel.is_nan());
+            }
+        }
+
+        e_alm.fill(Complex64::new(0.0, 0.0));
+        b_alm.fill(Complex64::new(0.0, 0.0));
+        first.fill(f64::NAN);
+        second.fill(f64::NAN);
+        pool.install(|| {
+            plan.synthesis_spin_into(&e_alm, &b_alm, &mut first, &mut second, &mut workspace)
+        })
+        .unwrap();
+        assert!(first.iter().chain(&second).all(|&value| value == 0.0));
+        assert_eq!(workspace.spin_order_output_scratch.len(), 8);
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
 fn spin1_parallel_nonfinite_conversion_cache_refreshes_fallback_flag() {
     let lmax = 127;
     let ntheta = lmax + 1;
