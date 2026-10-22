@@ -1,6 +1,6 @@
 # Plan 17 — f32 and high-resolution atmospheric SHT performance
 
-**Status: ACTIVE (2026-10-22), Milestone A complete; Milestone B next.** The scalar-analysis cumulative study, [Plan 16 — DUCC spin-1 recurrence parity](16-ducc-spin1-recurrence-parity.md), and the owner-directed scalar Legendre dispatch / paired-FFT / T0–T3072 checkpoint are complete. Milestone A's current f32 baseline is published in [the native benchmark report](../reports/plan17-f32-native-baseline-2026-10-22.md). **Branch:** existing `opt/sht-performance-parity`. **Scope:** current-production CPU scalar spin-0 and vector spin-1 STANDARD f32 performance, with selected f64 high-resolution and scaling controls on GL, CC and F1. Improve measured complete-transform latency and throughput, not an isolated microbenchmark. Plan 17 must not retroactively reopen completed Plans 11, 14, 15 or 16.
+**Status: ACTIVE (2026-10-22), Milestone A complete; Milestone B active.** The scalar-analysis cumulative study, [Plan 16 — DUCC spin-1 recurrence parity](16-ducc-spin1-recurrence-parity.md), and the owner-directed scalar Legendre dispatch / paired-FFT / T0–T3072 checkpoint are complete. Milestone A's current f32 baseline is published in [the native benchmark report](../reports/plan17-f32-native-baseline-2026-10-22.md). **Branch:** existing `opt/sht-performance-parity`. **Scope:** current-production CPU scalar spin-0 and vector spin-1 STANDARD f32 performance, with selected f64 high-resolution and scaling controls on GL, CC and F1. Improve measured complete-transform latency and throughput, not an isolated microbenchmark. Plan 17 must not retroactively reopen completed Plans 11, 14, 15 or 16.
 
 ## Handoff and stopping discipline
 
@@ -38,6 +38,14 @@ improved selected T720 cases but regressed T255/T511 even when its SIMD scan
 was gated off. It passed f32 integration, adjoint and extreme-range tests; the
 candidate and matched measurements are summarized in the
 [experiment report](../reports/plan17-f32-spin-normal-range-2026-10-22.md).
+
+The accepted first Milestone B change marks `spin_f32::recurrence_step`
+`#[inline(always)]`. It removes the outlined vector wrapper from the executed
+V3 degree loop and reduced matched T255/T720 GL spin-1 A/S q1/q8 warm latency
+by 26.6–44.8%, with bitwise-identical Rust outputs. The comparison, assembly
+summary and distributions are in the [inlining report](../reports/plan17-f32-spin-recurrence-inline-2026-10-22.md).
+Next, separate scalar lane normalization, recurrence, coefficient visitor /
+accumulation and scheduling costs; target only the largest measured component.
 
 Only if Milestone A establishes a material f32 recurrence/accumulation gap:
 - Compare f32's executed spin recurrence and normal/scaled SIMD pathways with the best **validated** Plan 16 f64 algorithm; determine which structural optimizations can be translated safely and which require f32-specific scaling or precision handling.

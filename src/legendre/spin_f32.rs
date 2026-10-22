@@ -554,6 +554,7 @@ where
     clippy::too_many_arguments,
     reason = "The recurrence step receives lane vectors and independent spin coefficients explicitly."
 )]
+#[inline(always)]
 fn recurrence_step<S: Simd>(
     simd: S,
     cosine: &[f32],

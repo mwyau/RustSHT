@@ -2,7 +2,8 @@
 
 **Active sequence (2026-10-22):** Plans 14–16 and the owner-directed scalar
 Legendre dispatch, paired odd-FFT validation and T0–T3072 full-transform
-checkpoint are complete. Plan 17 Milestone A is current. Plans 12 and 13 remain
+checkpoint are complete. Plan 17 Milestone A is complete; Milestone B is
+active. Plans 12 and 13 remain
 deferred. **Branch:**
 `opt/sht-performance-parity`.
 
@@ -141,6 +142,16 @@ FFT optimization. See the [baseline report](reports/plan17-f32-native-baseline-2
 and its [CSV](reports/data/plan17-f32-native-baseline-2026-10-22/results/results.csv),
 [JSON distributions](reports/data/plan17-f32-native-baseline-2026-10-22/results/results.json),
 and [coverage audit](reports/data/plan17-f32-native-baseline-2026-10-22/results/coverage-audit.json).
+
+### Plan 17 Milestone B — inline spin-f32 recurrence step (2026-10-22)
+
+Inlining `spin_f32::recurrence_step` removed an outlined Pulp wrapper from the
+executed V3 degree loop. On matched GL spin-1 T255/T720 A/S q1/q8 cases,
+warmed latency fell 26.6–44.8% versus the prior Rust build; outputs were
+bitwise identical. The candidate remains 19.9–82.4× DUCC, so the next task is
+to attribute lane normalization, recurrence, coefficient accumulation and
+scheduling costs before another kernel change. See the [report](reports/plan17-f32-spin-recurrence-inline-2026-10-22.md)
+and [timing distributions](reports/data/plan17-f32-spin-recurrence-inline-2026-10-22/results.csv).
 
 The first Plan 17 spin-f32 normal-range skip candidate passed f32, adjoint,
 extreme and reset checks and improved selected T720 workloads by 2.6–8.8%.

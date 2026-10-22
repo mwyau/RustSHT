@@ -1,0 +1,2284 @@
+{
+  "metadata": {
+    "baseline_rust_commit": "b77bdfa2d8f8390d6178e1430c1fea981b05b62d",
+    "baseline_rust_binary_sha256": "0b3fa6595729f8b721e9abd1f3a4682e6abeb5f9603e0e6770877bd3dde6ef2b",
+    "candidate_source": "baseline commit plus #[inline(always)] on src/legendre/spin_f32.rs::recurrence_step",
+    "candidate_source_patch_sha256": "f3880e58cb2248c7fdafd9611aee7c219f07cb54e031b60c239f173619860f3d",
+    "candidate_binary_sha256": "e8d26630d1c3e1fb506bcb5148147bf2a057765991902eb828589c2829857356",
+    "rustc_vv": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\n",
+    "rust_flags": "Cargo release defaults; no target-cpu override; runtime Pulp dispatch",
+    "executed_backend": "Pulp V3 (AVX2/FMA), 8 f32 lanes",
+    "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+    "ducc_compile_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver separately uses -fno-fast-math -ffp-contract=fast",
+    "host": "AMD Ryzen 9 5950X",
+    "method": "same deterministic fixtures; fresh processes; alternating baseline/candidate or candidate/DUCC; reusable plans/workspaces; target 25 ms; 10 calibrated batches under 100 ms/call and 5 individual calls otherwise",
+    "cases": "f32 GL spin-1 STANDARD, full mmax, even-smooth nphi, T255 (ntheta=256,nphi=512) and T720 (ntheta=721,nphi=1470), phi0=0.23; analysis/synthesis; q1/q8",
+    "cold_warm": "Separate setup/first/warm q8 data at T255/T720 is in cold-warm.csv. CPU PSI snapshots are omitted from sanitized data."
+  },
+  "cases": [
+    {
+      "summary": {
+        "case_id": "GL-T255-M255-even-s1-analysis-q1",
+        "lmax": 255,
+        "mmax": 255,
+        "grid": "GL",
+        "ntheta": 256,
+        "nphi": 512,
+        "phi0": 0.23,
+        "operation": "analysis",
+        "threads": 1,
+        "baseline_rust_ms": 112.188854,
+        "baseline_rust_p10_ms": 112.07609880000001,
+        "baseline_rust_p90_ms": 112.57005520000001,
+        "candidate_rust_ms": 67.85007949999999,
+        "candidate_rust_p10_ms": 67.58307690000001,
+        "candidate_rust_p90_ms": 68.8391586,
+        "candidate_over_baseline_ratio": 0.6049906714292737,
+        "candidate_over_baseline_ratio_p10": 0.6031037595024203,
+        "candidate_over_baseline_ratio_p90": 0.6101334288146896,
+        "candidate_rust_batches": 30,
+        "baseline_rust_batches": 15,
+        "baseline_candidate_process_pairs": 3,
+        "ducc_ms": 2.758215847222222,
+        "ducc_p10_ms": 2.7353938444444448,
+        "ducc_p90_ms": 2.769047325,
+        "candidate_over_ducc_ratio": 24.602427461424856,
+        "candidate_over_ducc_ratio_p10": 24.44550110114411,
+        "candidate_over_ducc_ratio_p90": 24.61947922824036,
+        "candidate_ducc_samples": 30,
+        "ducc_samples": 30,
+        "candidate_ducc_process_pairs": 3,
+        "candidate_ducc_relative_l2": 6.537683114759668e-06,
+        "candidate_ducc_max_absolute": 2.691522240638733e-07,
+        "baseline_candidate_relative_l2_max": 0.0,
+        "backend": "Pulp V3 AVX2/FMA, 8 f32 lanes",
+        "status": "complete"
+      },
+      "rust_ab_process_pairs": [
+        {
+          "pair": 1,
+          "baseline_ms": 112.457563,
+          "inline_ms": 68.758704,
+          "ratio": 0.6114191181610436,
+          "baseline_batches_ms": [
+            112.576908,
+            112.05461,
+            112.108332,
+            112.559776,
+            112.457563
+          ],
+          "inline_batches_ms": [
+            69.087436,
+            68.605624,
+            68.836701,
+            68.736021,
+            68.861277,
+            68.781387,
+            68.648976,
+            68.90342700000001,
+            68.452424,
+            68.26178300000001
+          ],
+          "baseline_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "baseline_lanes": 8,
+          "candidate_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true,
+          "error": {
+            "output_values": 131584,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.004435030794109965,
+            "finite": true
+          }
+        },
+        {
+          "pair": 2,
+          "baseline_ms": 112.188854,
+          "inline_ms": 67.608597,
+          "ratio": 0.602632031520707,
+          "baseline_batches_ms": [
+            112.82357499999999,
+            112.42958999999999,
+            112.188854,
+            112.187551,
+            112.172232
+          ],
+          "inline_batches_ms": [
+            67.62205300000001,
+            67.742721,
+            67.57758899999999,
+            67.583139,
+            67.595141,
+            67.678579,
+            67.52665200000001,
+            67.643885,
+            67.68907899999999,
+            67.582518
+          ],
+          "baseline_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "baseline_lanes": 8,
+          "candidate_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true,
+          "error": {
+            "output_values": 131584,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.004435030794109965,
+            "finite": true
+          }
+        },
+        {
+          "pair": 3,
+          "baseline_ms": 112.150621,
+          "inline_ms": 67.85007949999999,
+          "ratio": 0.6049906714292737,
+          "baseline_batches_ms": [
+            112.045213,
+            112.208712,
+            112.135814,
+            112.156132,
+            112.150621
+          ],
+          "inline_batches_ms": [
+            67.703076,
+            67.922121,
+            67.89255499999999,
+            67.696554,
+            67.990811,
+            68.08184200000001,
+            67.845235,
+            67.854924,
+            67.642251,
+            67.70369699999999
+          ],
+          "baseline_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "baseline_lanes": 8,
+          "candidate_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true,
+          "error": {
+            "output_values": 131584,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.004435030794109965,
+            "finite": true
+          }
+        }
+      ],
+      "candidate_ducc_process_pairs": [
+        {
+          "case": "GL-T255-M255-even-s1-analysis-q1",
+          "pair": 1,
+          "rust_ms": 67.38942750000001,
+          "ducc_ms": 2.7611523125,
+          "ratio": 24.406269511073923,
+          "error": {
+            "output_values": 131584,
+            "relative_l2": 6.537683114759668e-06,
+            "absolute_l2": 1.0517723286666003e-05,
+            "max_absolute": 2.691522240638733e-07,
+            "reference_rms": 0.004435027655057262,
+            "finite": true
+          },
+          "rust_samples": [
+            67.585814,
+            67.304091,
+            67.419379,
+            67.275567,
+            67.31445,
+            67.42292599999999,
+            67.425451,
+            67.359476,
+            67.540378,
+            67.331653
+          ],
+          "ducc_samples": [
+            2.79145275,
+            2.775963375,
+            2.768278875,
+            2.76267325,
+            2.760288875,
+            2.747221625,
+            2.7515685,
+            2.76201575,
+            2.75907775,
+            2.75859925
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        },
+        {
+          "case": "GL-T255-M255-even-s1-analysis-q1",
+          "pair": 2,
+          "rust_ms": 67.675499,
+          "ducc_ms": 2.7483839999999997,
+          "ratio": 24.623742169944233,
+          "error": {
+            "output_values": 131584,
+            "relative_l2": 6.537683114759668e-06,
+            "absolute_l2": 1.0517723286666003e-05,
+            "max_absolute": 2.691522240638733e-07,
+            "reference_rms": 0.004435027655057262,
+            "finite": true
+          },
+          "rust_samples": [
+            67.49812800000001,
+            67.672899,
+            67.799268,
+            67.680763,
+            67.678099,
+            67.614298,
+            67.87462099999999,
+            67.96033299999999,
+            67.584692,
+            67.619869
+          ],
+          "ducc_samples": [
+            2.7484914444444444,
+            2.757353777777778,
+            2.7599475555555557,
+            2.7634296666666667,
+            2.7482765555555555,
+            2.7578324444444444,
+            2.732417777777778,
+            2.7327627777777774,
+            2.7330844444444446,
+            2.7366456666666665
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        },
+        {
+          "case": "GL-T255-M255-even-s1-analysis-q1",
+          "pair": 3,
+          "rust_ms": 67.784861,
+          "ducc_ms": 2.7552102777777776,
+          "ratio": 24.602427461424856,
+          "error": {
+            "output_values": 131584,
+            "relative_l2": 6.537683114759668e-06,
+            "absolute_l2": 1.0517723286666003e-05,
+            "max_absolute": 2.691522240638733e-07,
+            "reference_rms": 0.004435027655057262,
+            "finite": true
+          },
+          "rust_samples": [
+            67.574974,
+            67.677999,
+            67.79745500000001,
+            67.639747,
+            67.69033200000001,
+            67.849363,
+            67.873137,
+            68.019675,
+            67.86492199999999,
+            67.772267
+          ],
+          "ducc_samples": [
+            2.7503437777777777,
+            2.740779,
+            2.750514111111111,
+            2.7639217777777776,
+            2.7599064444444448,
+            2.7401823333333333,
+            2.786828444444444,
+            2.7616241111111113,
+            2.764879111111111,
+            2.7356504444444445
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        }
+      ]
+    },
+    {
+      "summary": {
+        "case_id": "GL-T255-M255-even-s1-analysis-q8",
+        "lmax": 255,
+        "mmax": 255,
+        "grid": "GL",
+        "ntheta": 256,
+        "nphi": 512,
+        "phi0": 0.23,
+        "operation": "analysis",
+        "threads": 8,
+        "baseline_rust_ms": 14.86862575,
+        "baseline_rust_p10_ms": 14.7546709,
+        "baseline_rust_p90_ms": 14.93210835,
+        "candidate_rust_ms": 8.933741666666666,
+        "candidate_rust_p10_ms": 8.897866633333331,
+        "candidate_rust_p90_ms": 9.048070066666666,
+        "candidate_over_baseline_ratio": 0.6011966245126642,
+        "candidate_over_baseline_ratio_p10": 0.600915444774158,
+        "candidate_over_baseline_ratio_p90": 0.6029438344977247,
+        "candidate_rust_batches": 30,
+        "baseline_rust_batches": 30,
+        "baseline_candidate_process_pairs": 3,
+        "ducc_ms": 0.4524516181818182,
+        "ducc_p10_ms": 0.44815737818181817,
+        "ducc_p90_ms": 0.4571573925925926,
+        "candidate_over_ducc_ratio": 19.887630275606764,
+        "candidate_over_ducc_ratio_p10": 19.775378205907185,
+        "candidate_over_ducc_ratio_p90": 19.92434776614942,
+        "candidate_ducc_samples": 30,
+        "ducc_samples": 30,
+        "candidate_ducc_process_pairs": 3,
+        "candidate_ducc_relative_l2": 6.537683114759668e-06,
+        "candidate_ducc_max_absolute": 2.691522240638733e-07,
+        "baseline_candidate_relative_l2_max": 0.0,
+        "backend": "Pulp V3 AVX2/FMA, 8 f32 lanes",
+        "status": "complete"
+      },
+      "rust_ab_process_pairs": [
+        {
+          "pair": 1,
+          "baseline_ms": 14.773310500000001,
+          "inline_ms": 8.913929499999998,
+          "ratio": 0.6033806369939898,
+          "baseline_batches_ms": [
+            14.716821,
+            14.718474,
+            14.749378,
+            14.794878500000001,
+            14.755259,
+            14.77703,
+            14.769591,
+            14.841402,
+            14.8205475,
+            14.818068
+          ],
+          "inline_batches_ms": [
+            8.861560333333333,
+            8.878689333333332,
+            8.889880333333334,
+            8.898753999999998,
+            8.912670333333333,
+            9.037292666666666,
+            8.924686333333332,
+            8.945415666666667,
+            8.915188666666666,
+            8.969628333333334
+          ],
+          "baseline_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "baseline_lanes": 8,
+          "candidate_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true,
+          "error": {
+            "output_values": 131584,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.004435030794109965,
+            "finite": true
+          }
+        },
+        {
+          "pair": 2,
+          "baseline_ms": 14.86862575,
+          "inline_ms": 8.933741666666666,
+          "ratio": 0.6008451498395315,
+          "baseline_batches_ms": [
+            14.810263,
+            14.8237035,
+            14.838726999999999,
+            14.867882,
+            15.0366015,
+            14.850519,
+            14.8693695,
+            14.9319285,
+            14.8819035,
+            14.8825395
+          ],
+          "inline_batches_ms": [
+            8.907630666666668,
+            8.930947999999999,
+            8.936535333333333,
+            8.942860666666666,
+            8.915185,
+            8.921423333333333,
+            8.922796,
+            8.954492666666667,
+            8.957178,
+            8.947916999999999
+          ],
+          "baseline_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "baseline_lanes": 8,
+          "candidate_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true,
+          "error": {
+            "output_values": 131584,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.004435030794109965,
+            "finite": true
+          }
+        },
+        {
+          "pair": 3,
+          "baseline_ms": 14.89251625,
+          "inline_ms": 8.9533305,
+          "ratio": 0.6011966245126642,
+          "baseline_batches_ms": [
+            14.8478745,
+            14.865107,
+            14.894347,
+            14.9938305,
+            14.858554499999999,
+            14.877926,
+            14.906810499999999,
+            14.933727000000001,
+            14.913939500000001,
+            14.8906855
+          ],
+          "inline_batches_ms": [
+            9.145066666666667,
+            8.917252333333334,
+            8.927511666666666,
+            8.938549333333333,
+            8.935376333333334,
+            8.934378,
+            8.968111666666667,
+            8.983384000000001,
+            9.20146,
+            9.284263333333334
+          ],
+          "baseline_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "baseline_lanes": 8,
+          "candidate_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true,
+          "error": {
+            "output_values": 131584,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.004435030794109965,
+            "finite": true
+          }
+        }
+      ],
+      "candidate_ducc_process_pairs": [
+        {
+          "case": "GL-T255-M255-even-s1-analysis-q8",
+          "pair": 1,
+          "rust_ms": 8.952599166666666,
+          "ducc_ms": 0.4491226818181818,
+          "ratio": 19.933527138785085,
+          "error": {
+            "output_values": 131584,
+            "relative_l2": 6.537683114759668e-06,
+            "absolute_l2": 1.0517723286666003e-05,
+            "max_absolute": 2.691522240638733e-07,
+            "reference_rms": 0.004435027655057262,
+            "finite": true
+          },
+          "rust_samples": [
+            9.382362333333335,
+            8.900357,
+            8.888220666666667,
+            8.952656,
+            8.929371666666666,
+            9.068368333333334,
+            8.891069333333332,
+            8.952542333333332,
+            9.102907,
+            9.000927333333333
+          ],
+          "ducc_samples": [
+            0.45408570909090906,
+            0.44755589090909087,
+            0.44929427272727274,
+            0.4580043818181818,
+            0.4462771090909091,
+            0.44779816363636366,
+            0.4491243272727273,
+            0.4495549454545455,
+            0.4481972909090909,
+            0.4491210363636364
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        },
+        {
+          "case": "GL-T255-M255-even-s1-analysis-q8",
+          "pair": 2,
+          "rust_ms": 8.9981905,
+          "ducc_ms": 0.4524516181818182,
+          "ratio": 19.887630275606764,
+          "error": {
+            "output_values": 131584,
+            "relative_l2": 6.537683114759668e-06,
+            "absolute_l2": 1.0517723286666003e-05,
+            "max_absolute": 2.691522240638733e-07,
+            "reference_rms": 0.004435027655057262,
+            "finite": true
+          },
+          "rust_samples": [
+            8.936408666666667,
+            9.001445,
+            8.971157666666667,
+            9.104399666666668,
+            8.994936,
+            8.980348333333334,
+            8.989519,
+            9.430096333333333,
+            9.02876,
+            9.007927333333333
+          ],
+          "ducc_samples": [
+            0.4536682,
+            0.45071421818181817,
+            0.4500019818181818,
+            0.45042732727272733,
+            0.45363267272727276,
+            0.45100460000000003,
+            0.4523271090909091,
+            0.4532167818181818,
+            0.45301787272727273,
+            0.4525761272727273
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        },
+        {
+          "case": "GL-T255-M255-even-s1-analysis-q8",
+          "pair": 3,
+          "rust_ms": 8.969133833333334,
+          "ducc_ms": 0.45419510185185186,
+          "ratio": 19.74731518848229,
+          "error": {
+            "output_values": 131584,
+            "relative_l2": 6.537683114759668e-06,
+            "absolute_l2": 1.0517723286666003e-05,
+            "max_absolute": 2.691522240638733e-07,
+            "reference_rms": 0.004435027655057262,
+            "finite": true
+          },
+          "rust_samples": [
+            8.900053333333334,
+            8.92647,
+            9.026465666666667,
+            8.972720333333333,
+            8.968746333333334,
+            8.964632,
+            8.969521333333333,
+            8.973785666666666,
+            8.956313,
+            9.035219
+          ],
+          "ducc_samples": [
+            0.4532510925925926,
+            0.4573545925925926,
+            0.4571354814814815,
+            0.45423072222222227,
+            0.4513107592592593,
+            0.45337133333333335,
+            0.4541594814814815,
+            0.45014503703703707,
+            0.4560116851851852,
+            0.4586294259259259
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        }
+      ]
+    },
+    {
+      "summary": {
+        "case_id": "GL-T255-M255-even-s1-synthesis-q1",
+        "lmax": 255,
+        "mmax": 255,
+        "grid": "GL",
+        "ntheta": 256,
+        "nphi": 512,
+        "phi0": 0.23,
+        "operation": "synthesis",
+        "threads": 1,
+        "baseline_rust_ms": 129.070833,
+        "baseline_rust_p10_ms": 128.518908,
+        "baseline_rust_p90_ms": 131.3802694,
+        "candidate_rust_ms": 83.8083195,
+        "candidate_rust_p10_ms": 82.00765950000002,
+        "candidate_rust_p90_ms": 86.9588324,
+        "candidate_over_baseline_ratio": 0.6518827757014235,
+        "candidate_over_baseline_ratio_p10": 0.6307732370323255,
+        "candidate_over_baseline_ratio_p90": 0.6687414543580653,
+        "candidate_rust_batches": 30,
+        "baseline_rust_batches": 15,
+        "baseline_candidate_process_pairs": 3,
+        "ducc_ms": 4.095026416666666,
+        "ducc_p10_ms": 4.074052516666667,
+        "ducc_p90_ms": 4.121092533333334,
+        "candidate_over_ducc_ratio": 20.13983672134786,
+        "candidate_over_ducc_ratio_p10": 20.11135729750888,
+        "candidate_over_ducc_ratio_p90": 20.712964623664778,
+        "candidate_ducc_samples": 30,
+        "ducc_samples": 30,
+        "candidate_ducc_process_pairs": 3,
+        "candidate_ducc_relative_l2": 3.7119338054003446e-05,
+        "candidate_ducc_max_absolute": 0.0001735147088766098,
+        "baseline_candidate_relative_l2_max": 0.0,
+        "backend": "Pulp V3 AVX2/FMA, 8 f32 lanes",
+        "status": "complete"
+      },
+      "rust_ab_process_pairs": [
+        {
+          "pair": 1,
+          "baseline_ms": 129.070833,
+          "inline_ms": 86.85900749999999,
+          "ratio": 0.6729561240222258,
+          "baseline_batches_ms": [
+            129.188556,
+            129.070833,
+            128.797294,
+            128.700051,
+            130.77611
+          ],
+          "inline_batches_ms": [
+            85.600205,
+            86.580371,
+            86.54122699999999,
+            86.818792,
+            86.89353299999999,
+            86.946483,
+            87.202558,
+            87.464293,
+            87.06997700000001,
+            86.82448199999999
+          ],
+          "baseline_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "baseline_lanes": 8,
+          "candidate_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true,
+          "error": {
+            "output_values": 262144,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.23006129697501665,
+            "finite": true
+          }
+        },
+        {
+          "pair": 2,
+          "baseline_ms": 131.133286,
+          "inline_ms": 82.0233265,
+          "ratio": 0.6254958523650509,
+          "baseline_batches_ms": [
+            131.133286,
+            130.926885,
+            133.019245,
+            131.544925,
+            130.807119
+          ],
+          "inline_batches_ms": [
+            82.20379799999999,
+            82.171407,
+            82.1783,
+            81.981447,
+            82.02015999999999,
+            82.01057200000001,
+            81.96611800000001,
+            81.780417,
+            82.026493,
+            82.17348
+          ],
+          "baseline_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "baseline_lanes": 8,
+          "candidate_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true,
+          "error": {
+            "output_values": 262144,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.23006129697501665,
+            "finite": true
+          }
+        },
+        {
+          "pair": 3,
+          "baseline_ms": 128.563482,
+          "inline_ms": 83.8083195,
+          "ratio": 0.6518827757014235,
+          "baseline_batches_ms": [
+            128.69977,
+            128.489192,
+            128.702265,
+            128.464505,
+            128.563482
+          ],
+          "inline_batches_ms": [
+            83.761636,
+            83.855003,
+            83.75299,
+            83.725358,
+            83.878197,
+            84.08104,
+            83.711051,
+            84.257064,
+            83.892134,
+            83.58904
+          ],
+          "baseline_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "baseline_lanes": 8,
+          "candidate_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true,
+          "error": {
+            "output_values": 262144,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.23006129697501665,
+            "finite": true
+          }
+        }
+      ],
+      "candidate_ducc_process_pairs": [
+        {
+          "case": "GL-T255-M255-even-s1-synthesis-q1",
+          "pair": 1,
+          "rust_ms": 82.6256415,
+          "ducc_ms": 4.109862,
+          "ratio": 20.104237441549135,
+          "error": {
+            "output_values": 262144,
+            "relative_l2": 3.7119338054003446e-05,
+            "absolute_l2": 0.004372324202701303,
+            "max_absolute": 0.0001735147088766098,
+            "reference_rms": 0.2300605602388954,
+            "finite": true
+          },
+          "rust_samples": [
+            92.030896,
+            83.42861599999999,
+            82.645855,
+            82.60542799999999,
+            83.563471,
+            82.339335,
+            82.443442,
+            82.360134,
+            82.82458299999999,
+            82.357399
+          ],
+          "ducc_samples": [
+            4.111905,
+            4.107819,
+            4.101630666666667,
+            4.090417666666666,
+            4.138051166666666,
+            4.119434166666667,
+            4.116101333333334,
+            4.0955625,
+            4.116998,
+            4.098791833333333
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        },
+        {
+          "case": "GL-T255-M255-even-s1-synthesis-q1",
+          "pair": 2,
+          "rust_ms": 82.607768,
+          "ducc_ms": 4.101709916666667,
+          "ratio": 20.13983672134786,
+          "error": {
+            "output_values": 262144,
+            "relative_l2": 3.7119338054003446e-05,
+            "absolute_l2": 0.004372324202701303,
+            "max_absolute": 0.0001735147088766098,
+            "reference_rms": 0.2300605602388954,
+            "finite": true
+          },
+          "rust_samples": [
+            82.212335,
+            82.626018,
+            82.41908600000001,
+            82.27781900000001,
+            83.49042299999999,
+            82.589518,
+            82.689257,
+            82.34543599999999,
+            82.707171,
+            83.302007
+          ],
+          "ducc_samples": [
+            4.079949500000001,
+            4.121080666666667,
+            4.1109263333333335,
+            4.121199333333333,
+            4.086201333333333,
+            4.098766833333333,
+            4.074392333333333,
+            4.090536166666666,
+            4.104653,
+            4.1316508333333335
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        },
+        {
+          "case": "GL-T255-M255-even-s1-synthesis-q1",
+          "pair": 3,
+          "rust_ms": 85.1312985,
+          "ducc_ms": 4.081813,
+          "ratio": 20.85624659924401,
+          "error": {
+            "output_values": 262144,
+            "relative_l2": 3.7119338054003446e-05,
+            "absolute_l2": 0.004372324202701303,
+            "max_absolute": 0.0001735147088766098,
+            "reference_rms": 0.2300605602388954,
+            "finite": true
+          },
+          "rust_samples": [
+            83.198961,
+            85.320657,
+            84.972448,
+            85.005019,
+            85.778042,
+            85.463537,
+            85.081003,
+            85.161746,
+            85.22790099999999,
+            85.100851
+          ],
+          "ducc_samples": [
+            4.090526166666667,
+            4.087483833333333,
+            4.0608534999999994,
+            4.094490333333334,
+            4.070994166666667,
+            4.081771333333333,
+            4.088300333333334,
+            4.081854666666667,
+            4.078844,
+            4.064845833333333
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        }
+      ]
+    },
+    {
+      "summary": {
+        "case_id": "GL-T255-M255-even-s1-synthesis-q8",
+        "lmax": 255,
+        "mmax": 255,
+        "grid": "GL",
+        "ntheta": 256,
+        "nphi": 512,
+        "phi0": 0.23,
+        "operation": "synthesis",
+        "threads": 8,
+        "baseline_rust_ms": 21.551783625,
+        "baseline_rust_p10_ms": 21.226875049999997,
+        "baseline_rust_p90_ms": 21.932941750000005,
+        "candidate_rust_ms": 15.879203375,
+        "candidate_rust_p10_ms": 15.56233315,
+        "candidate_rust_p90_ms": 18.9681788,
+        "candidate_over_baseline_ratio": 0.7344198492055004,
+        "candidate_over_baseline_ratio_p10": 0.7307522673558834,
+        "candidate_over_baseline_ratio_p90": 0.8302870990902503,
+        "candidate_rust_batches": 60,
+        "baseline_rust_batches": 60,
+        "baseline_candidate_process_pairs": 6,
+        "ducc_ms": 0.5716829999999999,
+        "ducc_p10_ms": 0.5687973104347828,
+        "ducc_p90_ms": 0.5786545179227053,
+        "candidate_over_ducc_ratio": 27.78610435932169,
+        "candidate_over_ducc_ratio_p10": 27.49082934323061,
+        "candidate_over_ducc_ratio_p90": 28.23263410938017,
+        "candidate_ducc_samples": 30,
+        "ducc_samples": 30,
+        "candidate_ducc_process_pairs": 3,
+        "candidate_ducc_relative_l2": 3.7119338054003446e-05,
+        "candidate_ducc_max_absolute": 0.0001735147088766098,
+        "baseline_candidate_relative_l2_max": 0.0,
+        "backend": "Pulp V3 AVX2/FMA, 8 f32 lanes",
+        "status": "complete"
+      },
+      "rust_ab_process_pairs": [
+        {
+          "pair": 1,
+          "baseline_ms": 21.888854000000002,
+          "inline_ms": 16.058816,
+          "ratio": 0.7336526617610953,
+          "baseline_batches_ms": [
+            21.7503365,
+            21.808632000000003,
+            21.925017500000003,
+            21.981915,
+            22.1691645,
+            21.778374499999998,
+            21.8526905,
+            22.1736625,
+            21.9604795,
+            21.843418
+          ],
+          "inline_batches_ms": [
+            15.634067000000002,
+            16.1822395,
+            16.175487,
+            16.572833499999998,
+            15.802405499999999,
+            15.701464500000002,
+            15.942145000000002,
+            15.6829645,
+            16.3245185,
+            16.283391
+          ],
+          "baseline_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "baseline_lanes": 8,
+          "candidate_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true,
+          "error": {
+            "output_values": 262144,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.23006129697501665,
+            "finite": true
+          }
+        },
+        {
+          "pair": 2,
+          "baseline_ms": 21.423506,
+          "inline_ms": 19.70406675,
+          "ratio": 0.9197405293979426,
+          "baseline_batches_ms": [
+            21.560698,
+            21.2268665,
+            21.2703435,
+            21.497518499999998,
+            21.5199455,
+            21.3494935,
+            21.621553000000002,
+            21.328733999999997,
+            21.2233245,
+            21.6455585
+          ],
+          "inline_batches_ms": [
+            21.1058575,
+            19.400159,
+            20.7822,
+            23.847245,
+            21.152205,
+            18.920181,
+            16.289693,
+            18.014732,
+            16.236787999999997,
+            20.0079745
+          ],
+          "baseline_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "baseline_lanes": 8,
+          "candidate_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true,
+          "error": {
+            "output_values": 262144,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.23006129697501665,
+            "finite": true
+          }
+        },
+        {
+          "pair": 3,
+          "baseline_ms": 21.505987,
+          "inline_ms": 15.932359250000001,
+          "ratio": 0.7408336687825581,
+          "baseline_batches_ms": [
+            21.418484000000003,
+            21.58562,
+            21.453375,
+            21.428062,
+            21.5674855,
+            21.4435765,
+            21.559205000000002,
+            21.558599,
+            21.738244,
+            21.248517000000003
+          ],
+          "inline_batches_ms": [
+            17.1333745,
+            16.1273955,
+            18.575122999999998,
+            15.775244,
+            18.8180575,
+            15.564085,
+            15.822653999999998,
+            15.7241275,
+            15.960018999999999,
+            15.904699500000001
+          ],
+          "baseline_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "candidate_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "baseline_lanes": 8,
+          "candidate_lanes": 8,
+          "reset_consistent": true,
+          "repeat_consistent": true,
+          "error": {
+            "output_values": 262144,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.23006129697501665,
+            "finite": true
+          }
+        },
+        {
+          "pair": 1,
+          "baseline_ms": 21.59865475,
+          "inline_ms": 15.739697,
+          "ratio": 0.7287350616130386,
+          "baseline_batches_ms": [
+            21.1418755,
+            21.772133,
+            21.5957245,
+            21.12593,
+            21.226875999999997,
+            21.447668999999998,
+            22.244347,
+            21.637343,
+            21.601585,
+            21.881535500000002
+          ],
+          "inline_batches_ms": [
+            15.728124999999999,
+            18.35675,
+            15.5055385,
+            16.089519,
+            15.671948500000001,
+            15.751268999999999,
+            15.634658499999999,
+            15.98178,
+            15.782963500000001,
+            15.203652499999999
+          ],
+          "error": {
+            "output_values": 262144,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.23006129697501665,
+            "finite": true
+          }
+        },
+        {
+          "pair": 2,
+          "baseline_ms": 21.401474,
+          "inline_ms": 15.734086249999999,
+          "ratio": 0.7351870366499055,
+          "baseline_batches_ms": [
+            21.3871895,
+            21.3132445,
+            21.614595,
+            21.256152,
+            21.601399999999998,
+            21.929882000000003,
+            21.4157585,
+            21.695408,
+            21.269171,
+            21.144305
+          ],
+          "inline_batches_ms": [
+            15.965414,
+            15.733610499999998,
+            15.945772,
+            15.734562,
+            15.4243755,
+            16.226162499999997,
+            15.682233,
+            15.546566499999999,
+            15.6677505,
+            15.7525115
+          ],
+          "error": {
+            "output_values": 262144,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.23006129697501665,
+            "finite": true
+          }
+        },
+        {
+          "pair": 3,
+          "baseline_ms": 21.59758025,
+          "inline_ms": 15.8260475,
+          "ratio": 0.7327694730987282,
+          "baseline_batches_ms": [
+            21.225188,
+            21.288928499999997,
+            21.716803,
+            21.48239,
+            21.662861,
+            21.804775,
+            21.5023825,
+            21.748543499999997,
+            22.1761525,
+            21.5322995
+          ],
+          "inline_batches_ms": [
+            15.864087,
+            15.979646,
+            15.786245000000001,
+            15.9845105,
+            16.412159499999998,
+            15.788008,
+            15.6986595,
+            16.235490000000002,
+            15.4895335,
+            15.5105885
+          ],
+          "error": {
+            "output_values": 262144,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.23006129697501665,
+            "finite": true
+          }
+        }
+      ],
+      "candidate_ducc_process_pairs": [
+        {
+          "case": "GL-T255-M255-even-s1-synthesis-q8",
+          "pair": 1,
+          "rust_ms": 15.67193125,
+          "ducc_ms": 0.5716134222222222,
+          "ratio": 27.41701058920784,
+          "error": {
+            "output_values": 262144,
+            "relative_l2": 3.7119338054003446e-05,
+            "absolute_l2": 0.004372324202701303,
+            "max_absolute": 0.0001735147088766098,
+            "reference_rms": 0.2300605602388954,
+            "finite": true
+          },
+          "rust_samples": [
+            15.3966075,
+            15.7020405,
+            16.116410000000002,
+            15.511860500000001,
+            15.9375465,
+            15.418002999999999,
+            15.641822,
+            15.439959499999999,
+            15.9979505,
+            16.0685445
+          ],
+          "ducc_samples": [
+            0.5688503111111112,
+            0.5714977555555556,
+            0.5800332444444445,
+            0.5716672,
+            0.5949666222222222,
+            0.5711689111111111,
+            0.5715596444444444,
+            0.5707015777777779,
+            0.5726439333333333,
+            0.5721590222222223
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        },
+        {
+          "case": "GL-T255-M255-even-s1-synthesis-q8",
+          "pair": 2,
+          "rust_ms": 15.906663,
+          "ducc_ms": 0.5724682666666667,
+          "ratio": 27.78610435932169,
+          "error": {
+            "output_values": 262144,
+            "relative_l2": 3.7119338054003446e-05,
+            "absolute_l2": 0.004372324202701303,
+            "max_absolute": 0.0001735147088766098,
+            "reference_rms": 0.2300605602388954,
+            "finite": true
+          },
+          "rust_samples": [
+            15.7041195,
+            15.999498500000001,
+            15.898672999999999,
+            15.660987500000001,
+            15.914653000000001,
+            16.081153,
+            16.108144000000003,
+            16.028198,
+            15.858251000000001,
+            15.605814
+          ],
+          "ducc_samples": [
+            0.5801093777777777,
+            0.5716044222222222,
+            0.5723344666666667,
+            0.5726020666666667,
+            0.5694761555555555,
+            0.5751800666666667,
+            0.5736761111111112,
+            0.5719933777777778,
+            0.5716988,
+            0.5732016444444444
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        },
+        {
+          "case": "GL-T255-M255-even-s1-synthesis-q8",
+          "pair": 3,
+          "rust_ms": 16.18014525,
+          "ducc_ms": 0.5708436739130436,
+          "ratio": 28.34426654689479,
+          "error": {
+            "output_values": 262144,
+            "relative_l2": 3.7119338054003446e-05,
+            "absolute_l2": 0.004372324202701303,
+            "max_absolute": 0.0001735147088766098,
+            "reference_rms": 0.2300605602388954,
+            "finite": true
+          },
+          "rust_samples": [
+            16.4856935,
+            16.241816999999998,
+            15.840733499999999,
+            16.4645285,
+            15.8387745,
+            15.760381,
+            16.1184735,
+            16.351665500000003,
+            15.890653,
+            18.711676
+          ],
+          "ducc_samples": [
+            0.5693611956521739,
+            0.5680027391304349,
+            0.5785013260869565,
+            0.567773847826087,
+            0.5751717608695652,
+            0.5703243260869566,
+            0.5713630217391304,
+            0.571922347826087,
+            0.5683203043478261,
+            0.5715011086956522
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        }
+      ]
+    },
+    {
+      "summary": {
+        "case_id": "GL-T720-M720-even-s1-analysis-q1",
+        "lmax": 720,
+        "mmax": 720,
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "phi0": 0.23,
+        "operation": "analysis",
+        "threads": 1,
+        "baseline_rust_ms": 2235.458628,
+        "baseline_rust_p10_ms": 2234.0854208,
+        "baseline_rust_p90_ms": 2249.0008878,
+        "candidate_rust_ms": 1235.7733340000002,
+        "candidate_rust_p10_ms": 1232.1078468,
+        "candidate_rust_p90_ms": 1240.409602,
+        "candidate_over_baseline_ratio": 0.5524518442039809,
+        "candidate_over_baseline_ratio_p10": 0.5516917681395321,
+        "candidate_over_baseline_ratio_p90": 0.5529465948747856,
+        "candidate_rust_batches": 15,
+        "baseline_rust_batches": 15,
+        "baseline_candidate_process_pairs": 3,
+        "ducc_ms": 28.5247775,
+        "ducc_p10_ms": 28.3228779,
+        "ducc_p90_ms": 28.7539832,
+        "candidate_over_ducc_ratio": 43.233873599275334,
+        "candidate_over_ducc_ratio_p10": 42.90506537320728,
+        "candidate_over_ducc_ratio_p90": 43.34990280530694,
+        "candidate_ducc_samples": 15,
+        "ducc_samples": 30,
+        "candidate_ducc_process_pairs": 3,
+        "candidate_ducc_relative_l2": 1.5693451383550116e-05,
+        "candidate_ducc_max_absolute": 2.230517566204071e-07,
+        "baseline_candidate_relative_l2_max": 0.0,
+        "backend": "Pulp V3 AVX2/FMA, 8 f32 lanes",
+        "status": "complete"
+      },
+      "rust_ab_process_pairs": [
+        {
+          "pair": 1,
+          "baseline_ms": 2236.888784,
+          "inline_ms": 1235.7733340000002,
+          "ratio": 0.5524518442039809,
+          "baseline_batches_ms": [
+            2236.888784,
+            2234.970884,
+            2238.264348,
+            2253.6984860000002,
+            2234.696565
+          ],
+          "inline_batches_ms": [
+            1235.7733340000002,
+            1238.8956520000002,
+            1238.113403,
+            1232.330508,
+            1233.786564
+          ],
+          "error": {
+            "output_values": 1041124,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015658156982234965,
+            "finite": true
+          }
+        },
+        {
+          "pair": 2,
+          "baseline_ms": 2234.521564,
+          "inline_ms": 1232.342551,
+          "ratio": 0.5515017491234199,
+          "baseline_batches_ms": [
+            2234.521564,
+            2234.4982999999997,
+            2237.852858,
+            2249.335449,
+            2233.772988
+          ],
+          "inline_batches_ms": [
+            1235.035096,
+            1240.618934,
+            1230.2309149999999,
+            1231.9594060000002,
+            1232.342551
+          ],
+          "error": {
+            "output_values": 1041124,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015658156982234965,
+            "finite": true
+          }
+        },
+        {
+          "pair": 3,
+          "baseline_ms": 2235.458628,
+          "inline_ms": 1236.3657349999999,
+          "ratio": 0.5530702825424868,
+          "baseline_batches_ms": [
+            2233.8101680000004,
+            2235.442527,
+            2235.458628,
+            2248.499046,
+            2240.601771
+          ],
+          "inline_batches_ms": [
+            1236.3657349999999,
+            1234.148959,
+            1241.405602,
+            1240.0956039999999,
+            1234.0834949999999
+          ],
+          "error": {
+            "output_values": 1041124,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015658156982234965,
+            "finite": true
+          }
+        }
+      ],
+      "candidate_ducc_process_pairs": [
+        {
+          "case": "GL-T720-M720-even-s1-analysis-q1",
+          "pair": 1,
+          "rust_ms": 1230.729298,
+          "ducc_ms": 28.466783,
+          "ratio": 43.233873599275334,
+          "error": {
+            "output_values": 1041124,
+            "relative_l2": 1.5693451383550116e-05,
+            "absolute_l2": 2.5073233527330562e-05,
+            "max_absolute": 2.230517566204071e-07,
+            "reference_rms": 0.0015658157252705987,
+            "finite": true
+          },
+          "rust_samples": [
+            1232.276235,
+            1229.043067,
+            1230.729298,
+            1228.59048,
+            1232.893564
+          ],
+          "ducc_samples": [
+            28.502881,
+            28.521836,
+            28.524582,
+            28.524973,
+            28.348238,
+            28.430685,
+            28.373696,
+            28.591348,
+            28.323471,
+            28.386771
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        },
+        {
+          "case": "GL-T720-M720-even-s1-analysis-q1",
+          "pair": 2,
+          "rust_ms": 1230.004015,
+          "ducc_ms": 28.723067999999998,
+          "ratio": 42.82286331669027,
+          "error": {
+            "output_values": 1041124,
+            "relative_l2": 1.5693451383550116e-05,
+            "absolute_l2": 2.5073233527330562e-05,
+            "max_absolute": 2.230517566204071e-07,
+            "reference_rms": 0.0015658157252705987,
+            "finite": true
+          },
+          "rust_samples": [
+            1228.906107,
+            1230.004015,
+            1229.715138,
+            1230.089457,
+            1231.2229619999998
+          ],
+          "ducc_samples": [
+            28.669857,
+            29.063051,
+            28.727817,
+            28.632135,
+            28.580277,
+            28.7454,
+            28.6292,
+            28.722447,
+            28.723689,
+            29.176556
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        },
+        {
+          "case": "GL-T720-M720-even-s1-analysis-q1",
+          "pair": 3,
+          "rust_ms": 1232.857906,
+          "ducc_ms": 28.420675,
+          "ratio": 43.37891010681484,
+          "error": {
+            "output_values": 1041124,
+            "relative_l2": 1.5693451383550116e-05,
+            "absolute_l2": 2.5073233527330562e-05,
+            "max_absolute": 2.230517566204071e-07,
+            "reference_rms": 0.0015658157252705987,
+            "finite": true
+          },
+          "rust_samples": [
+            1232.106645,
+            1232.857906,
+            1231.132931,
+            1233.1852549999999,
+            1241.299732
+          ],
+          "ducc_samples": [
+            28.831232,
+            28.561201,
+            28.279749,
+            28.31754,
+            28.337198,
+            28.482512,
+            28.496298,
+            28.358838,
+            28.293024,
+            28.562654
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        }
+      ]
+    },
+    {
+      "summary": {
+        "case_id": "GL-T720-M720-even-s1-analysis-q8",
+        "lmax": 720,
+        "mmax": 720,
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "phi0": 0.23,
+        "operation": "analysis",
+        "threads": 8,
+        "baseline_rust_ms": 295.056265,
+        "baseline_rust_p10_ms": 294.8104978,
+        "baseline_rust_p90_ms": 295.284633,
+        "candidate_rust_ms": 163.29946,
+        "candidate_rust_p10_ms": 163.140282,
+        "candidate_rust_p90_ms": 163.9827164,
+        "candidate_over_baseline_ratio": 0.5533693853268096,
+        "candidate_over_baseline_ratio_p10": 0.5532575994920708,
+        "candidate_over_baseline_ratio_p90": 0.5543167870032343,
+        "candidate_rust_batches": 15,
+        "baseline_rust_batches": 15,
+        "baseline_candidate_process_pairs": 3,
+        "ducc_ms": 4.1020552142857145,
+        "ducc_p10_ms": 4.043203985714285,
+        "ducc_p90_ms": 4.3527811666666665,
+        "candidate_over_ducc_ratio": 39.99781981311786,
+        "candidate_over_ducc_ratio_p10": 38.55833923843831,
+        "candidate_over_ducc_ratio_p90": 40.089260374884994,
+        "candidate_ducc_samples": 15,
+        "ducc_samples": 30,
+        "candidate_ducc_process_pairs": 3,
+        "candidate_ducc_relative_l2": 1.5693451383550116e-05,
+        "candidate_ducc_max_absolute": 2.230517566204071e-07,
+        "baseline_candidate_relative_l2_max": 0.0,
+        "backend": "Pulp V3 AVX2/FMA, 8 f32 lanes",
+        "status": "complete"
+      },
+      "rust_ab_process_pairs": [
+        {
+          "pair": 1,
+          "baseline_ms": 295.100279,
+          "inline_ms": 163.29946,
+          "ratio": 0.5533693853268096,
+          "baseline_batches_ms": [
+            294.244038,
+            295.100279,
+            295.128472,
+            295.035736,
+            295.150554
+          ],
+          "inline_batches_ms": [
+            163.394269,
+            163.29946,
+            163.29264600000002,
+            163.301884,
+            163.278579
+          ],
+          "error": {
+            "output_values": 1041124,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015658156982234965,
+            "finite": true
+          }
+        },
+        {
+          "pair": 2,
+          "baseline_ms": 295.00930600000004,
+          "inline_ms": 163.207896,
+          "ratio": 0.553229653033386,
+          "baseline_batches_ms": [
+            294.751779,
+            295.00930600000004,
+            294.89857600000005,
+            295.614762,
+            295.208613
+          ],
+          "inline_batches_ms": [
+            164.53832400000002,
+            163.913231,
+            163.1095,
+            162.98248,
+            163.207896
+          ],
+          "error": {
+            "output_values": 1041124,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015658156982234965,
+            "finite": true
+          }
+        },
+        {
+          "pair": 3,
+          "baseline_ms": 295.056265,
+          "inline_ms": 163.624525,
+          "ratio": 0.5545536374223404,
+          "baseline_batches_ms": [
+            295.02213,
+            295.056265,
+            294.97186600000003,
+            295.335313,
+            295.181292
+          ],
+          "inline_batches_ms": [
+            163.186455,
+            163.628472,
+            163.211783,
+            163.624525,
+            164.02903999999998
+          ],
+          "error": {
+            "output_values": 1041124,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.0015658156982234965,
+            "finite": true
+          }
+        }
+      ],
+      "candidate_ducc_process_pairs": [
+        {
+          "case": "GL-T720-M720-even-s1-analysis-q8",
+          "pair": 1,
+          "rust_ms": 162.78189,
+          "ducc_ms": 4.069769071428572,
+          "ratio": 39.99781981311786,
+          "error": {
+            "output_values": 1041124,
+            "relative_l2": 1.5693451383550116e-05,
+            "absolute_l2": 2.5073233527330562e-05,
+            "max_absolute": 2.230517566204071e-07,
+            "reference_rms": 0.0015658157252705987,
+            "finite": true
+          },
+          "rust_samples": [
+            162.404526,
+            162.78189,
+            162.655721,
+            163.19233599999998,
+            162.992048
+          ],
+          "ducc_samples": [
+            4.5441582857142855,
+            5.070786285714285,
+            4.043509428571428,
+            4.053944857142858,
+            4.0949038571428575,
+            4.103342571428572,
+            4.047486999999999,
+            4.040455,
+            4.023108,
+            4.085593285714286
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        },
+        {
+          "case": "GL-T720-M720-even-s1-analysis-q8",
+          "pair": 2,
+          "rust_ms": 163.19272700000002,
+          "ducc_ms": 4.068414357142857,
+          "ratio": 40.11212051532678,
+          "error": {
+            "output_values": 1041124,
+            "relative_l2": 1.5693451383550116e-05,
+            "absolute_l2": 2.5073233527330562e-05,
+            "max_absolute": 2.230517566204071e-07,
+            "reference_rms": 0.0015658157252705987,
+            "finite": true
+          },
+          "rust_samples": [
+            163.130128,
+            163.045249,
+            163.19272700000002,
+            163.310871,
+            171.47957
+          ],
+          "ducc_samples": [
+            4.020233857142857,
+            4.082405857142858,
+            4.048478714285714,
+            4.061517857142857,
+            4.100767857142857,
+            4.068588142857143,
+            4.066407,
+            4.068240571428571,
+            4.119070857142857,
+            4.140491428571429
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        },
+        {
+          "case": "GL-T720-M720-even-s1-analysis-q8",
+          "pair": 3,
+          "rust_ms": 163.075475,
+          "ducc_ms": 4.269162583333333,
+          "ratio": 38.19846909476841,
+          "error": {
+            "output_values": 1041124,
+            "relative_l2": 1.5693451383550116e-05,
+            "absolute_l2": 2.5073233527330562e-05,
+            "max_absolute": 2.230517566204071e-07,
+            "reference_rms": 0.0015658157252705987,
+            "finite": true
+          },
+          "rust_samples": [
+            163.005393,
+            163.075475,
+            163.04041899999999,
+            163.42705099999998,
+            163.686612
+          ],
+          "ducc_samples": [
+            4.205527166666667,
+            4.3371195,
+            4.3328815,
+            4.139480333333333,
+            4.2775834999999995,
+            4.366189666666666,
+            4.244941833333333,
+            4.351291333333333,
+            4.1292678333333335,
+            4.260741666666667
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        }
+      ]
+    },
+    {
+      "summary": {
+        "case_id": "GL-T720-M720-even-s1-synthesis-q1",
+        "lmax": 720,
+        "mmax": 720,
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "phi0": 0.23,
+        "operation": "synthesis",
+        "threads": 1,
+        "baseline_rust_ms": 2722.221181,
+        "baseline_rust_p10_ms": 2654.0804524000005,
+        "baseline_rust_p90_ms": 2742.0441756,
+        "candidate_rust_ms": 1721.9360620000002,
+        "candidate_rust_p10_ms": 1709.155639,
+        "candidate_rust_p90_ms": 1755.1871121999998,
+        "candidate_over_baseline_ratio": 0.6325481830860827,
+        "candidate_over_baseline_ratio_p10": 0.630725592139897,
+        "candidate_over_baseline_ratio_p90": 0.6537577779362392,
+        "candidate_rust_batches": 15,
+        "baseline_rust_batches": 15,
+        "baseline_candidate_process_pairs": 3,
+        "ducc_ms": 39.811572,
+        "ducc_p10_ms": 39.3815077,
+        "ducc_p90_ms": 40.553650999999995,
+        "candidate_over_ducc_ratio": 41.0722260498298,
+        "candidate_over_ducc_ratio_p10": 40.85460229361177,
+        "candidate_over_ducc_ratio_p90": 41.16104597336678,
+        "candidate_ducc_samples": 15,
+        "ducc_samples": 30,
+        "candidate_ducc_process_pairs": 3,
+        "candidate_ducc_relative_l2": 0.0001426412049337804,
+        "candidate_ducc_max_absolute": 0.0011716485023498535,
+        "baseline_candidate_relative_l2_max": 0.0,
+        "backend": "Pulp V3 AVX2/FMA, 8 f32 lanes",
+        "status": "complete"
+      },
+      "rust_ab_process_pairs": [
+        {
+          "pair": 1,
+          "baseline_ms": 2726.8468649999995,
+          "inline_ms": 1718.6496220000001,
+          "ratio": 0.6302699444033505,
+          "baseline_batches_ms": [
+            2746.537959,
+            2726.8468649999995,
+            2711.379554,
+            2721.170783,
+            2738.3694809999997
+          ],
+          "inline_batches_ms": [
+            1720.502338,
+            1708.2598500000001,
+            1709.95609,
+            1721.8996319999999,
+            1718.6496220000001
+          ],
+          "error": {
+            "output_values": 2102436,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.2301818695302276,
+            "finite": true
+          }
+        },
+        {
+          "pair": 2,
+          "baseline_ms": 2722.221181,
+          "inline_ms": 1721.9360620000002,
+          "ratio": 0.6325481830860827,
+          "baseline_batches_ms": [
+            2722.19948,
+            2722.221181,
+            2744.4939719999998,
+            2722.5500340000003,
+            2693.7952250000003
+          ],
+          "inline_batches_ms": [
+            1719.593899,
+            1721.9360620000002,
+            1726.053925,
+            1729.6444800000002,
+            1719.986743
+          ],
+          "error": {
+            "output_values": 2102436,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.2301818695302276,
+            "finite": true
+          }
+        },
+        {
+          "pair": 3,
+          "baseline_ms": 2655.8246470000004,
+          "inline_ms": 1750.348261,
+          "ratio": 0.6590601766487785,
+          "baseline_batches_ms": [
+            2658.546298,
+            2666.436049,
+            2652.917656,
+            2651.2255539999996,
+            2655.8246470000004
+          ],
+          "inline_batches_ms": [
+            1750.348261,
+            1758.4130129999999,
+            1838.142679,
+            1708.622005,
+            1717.4126809999998
+          ],
+          "error": {
+            "output_values": 2102436,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.2301818695302276,
+            "finite": true
+          }
+        }
+      ],
+      "candidate_ducc_process_pairs": [
+        {
+          "case": "GL-T720-M720-even-s1-synthesis-q1",
+          "pair": 1,
+          "rust_ms": 1640.994832,
+          "ducc_ms": 39.953881,
+          "ratio": 41.0722260498298,
+          "error": {
+            "output_values": 2102436,
+            "relative_l2": 0.0001426412049337804,
+            "absolute_l2": 0.04760734751744492,
+            "max_absolute": 0.0011716485023498535,
+            "reference_rms": 0.23018000443253994,
+            "finite": true
+          },
+          "rust_samples": [
+            1639.9626899999998,
+            1640.994832,
+            1649.057221,
+            1641.85471,
+            1639.354639
+          ],
+          "ducc_samples": [
+            40.159531,
+            40.572362,
+            40.343379,
+            39.833423,
+            39.828574,
+            40.805994,
+            39.79457,
+            39.556559,
+            40.074339,
+            39.785042
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        },
+        {
+          "case": "GL-T720-M720-even-s1-synthesis-q1",
+          "pair": 2,
+          "rust_ms": 1643.465649,
+          "ducc_ms": 39.906166,
+          "ratio": 41.18325095425103,
+          "error": {
+            "output_values": 2102436,
+            "relative_l2": 0.0001426412049337804,
+            "absolute_l2": 0.04760734751744492,
+            "max_absolute": 0.0011716485023498535,
+            "reference_rms": 0.23018000443253994,
+            "finite": true
+          },
+          "rust_samples": [
+            1628.87685,
+            1638.0611109999998,
+            1647.904429,
+            1643.465649,
+            1644.404305
+          ],
+          "ducc_samples": [
+            40.551572,
+            39.882005,
+            39.574634,
+            40.196721,
+            39.638525,
+            39.496516,
+            39.533807,
+            39.930327,
+            40.235213,
+            40.064711
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        },
+        {
+          "case": "GL-T720-M720-even-s1-synthesis-q1",
+          "pair": 3,
+          "rust_ms": 1611.9391759999999,
+          "ducc_ms": 39.508123,
+          "ratio": 40.800196354557265,
+          "error": {
+            "output_values": 2102436,
+            "relative_l2": 0.0001426412049337804,
+            "absolute_l2": 0.04760734751744492,
+            "max_absolute": 0.0011716485023498535,
+            "reference_rms": 0.23018000443253994,
+            "finite": true
+          },
+          "rust_samples": [
+            1611.9391759999999,
+            1628.531146,
+            1623.729108,
+            1603.07479,
+            1603.2893669999999
+          ],
+          "ducc_samples": [
+            40.79872,
+            39.385416,
+            39.212548,
+            40.279828,
+            39.33996,
+            39.346432,
+            39.713998,
+            39.63083,
+            39.385405,
+            39.661108
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        }
+      ]
+    },
+    {
+      "summary": {
+        "case_id": "GL-T720-M720-even-s1-synthesis-q8",
+        "lmax": 720,
+        "mmax": 720,
+        "grid": "GL",
+        "ntheta": 721,
+        "nphi": 1458,
+        "phi0": 0.23,
+        "operation": "synthesis",
+        "threads": 8,
+        "baseline_rust_ms": 705.6579859999999,
+        "baseline_rust_p10_ms": 698.4969602000001,
+        "baseline_rust_p90_ms": 714.1991786,
+        "candidate_rust_ms": 463.940994,
+        "candidate_rust_p10_ms": 453.253378,
+        "candidate_rust_p90_ms": 467.9072142,
+        "candidate_over_baseline_ratio": 0.6574587168350987,
+        "candidate_over_baseline_ratio_p10": 0.6463915230053267,
+        "candidate_over_baseline_ratio_p90": 0.6660524249291547,
+        "candidate_rust_batches": 15,
+        "baseline_rust_batches": 15,
+        "baseline_candidate_process_pairs": 3,
+        "ducc_ms": 5.569164499999999,
+        "ducc_p10_ms": 5.53996304,
+        "ducc_p90_ms": 5.6056734200000005,
+        "candidate_over_ducc_ratio": 82.39463056460896,
+        "candidate_over_ducc_ratio_p10": 81.91925367918991,
+        "candidate_over_ducc_ratio_p90": 82.69142320018203,
+        "candidate_ducc_samples": 15,
+        "ducc_samples": 30,
+        "candidate_ducc_process_pairs": 3,
+        "candidate_ducc_relative_l2": 0.0001426412049337804,
+        "candidate_ducc_max_absolute": 0.0011716485023498535,
+        "baseline_candidate_relative_l2_max": 0.0,
+        "backend": "Pulp V3 AVX2/FMA, 8 f32 lanes",
+        "status": "complete"
+      },
+      "rust_ab_process_pairs": [
+        {
+          "pair": 1,
+          "baseline_ms": 711.772077,
+          "inline_ms": 458.114107,
+          "ratio": 0.6436247245478837,
+          "baseline_batches_ms": [
+            711.344678,
+            708.2701500000001,
+            711.772077,
+            714.304049,
+            714.041873
+          ],
+          "inline_batches_ms": [
+            471.01681499999995,
+            454.86229299999997,
+            465.889391,
+            458.114107,
+            452.180768
+          ],
+          "error": {
+            "output_values": 2102436,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.2301818695302276,
+            "finite": true
+          }
+        },
+        {
+          "pair": 2,
+          "baseline_ms": 705.6579859999999,
+          "inline_ms": 463.940994,
+          "ratio": 0.6574587168350987,
+          "baseline_batches_ms": [
+            703.81607,
+            702.903724,
+            709.243261,
+            716.063168,
+            705.6579859999999
+          ],
+          "inline_batches_ms": [
+            468.097991,
+            455.36276999999995,
+            463.940994,
+            467.01631399999997,
+            460.41954000000004
+          ],
+          "error": {
+            "output_values": 2102436,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.2301818695302276,
+            "finite": true
+          }
+        },
+        {
+          "pair": 3,
+          "baseline_ms": 698.760884,
+          "inline_ms": 466.912618,
+          "ratio": 0.6682008519526688,
+          "baseline_batches_ms": [
+            699.925197,
+            702.458091,
+            698.321011,
+            698.760884,
+            698.168724
+          ],
+          "inline_batches_ms": [
+            467.116023,
+            466.912618,
+            450.767554,
+            467.621049,
+            457.153519
+          ],
+          "error": {
+            "output_values": 2102436,
+            "relative_l2": 0.0,
+            "absolute_l2": 0.0,
+            "max_absolute": 0.0,
+            "reference_rms": 0.2301818695302276,
+            "finite": true
+          }
+        }
+      ],
+      "candidate_ducc_process_pairs": [
+        {
+          "case": "GL-T720-M720-even-s1-synthesis-q8",
+          "pair": 1,
+          "rust_ms": 457.224424,
+          "ducc_ms": 5.5492017,
+          "ratio": 82.39463056460896,
+          "error": {
+            "output_values": 2102436,
+            "relative_l2": 0.0001426412049337804,
+            "absolute_l2": 0.04760734751744492,
+            "max_absolute": 0.0011716485023498535,
+            "reference_rms": 0.23018000443253994,
+            "finite": true
+          },
+          "rust_samples": [
+            452.76304,
+            457.038171,
+            459.618003,
+            466.52822100000003,
+            457.224424
+          ],
+          "ducc_samples": [
+            5.5275908000000005,
+            5.54513,
+            5.5281298,
+            5.5674122,
+            5.5464706,
+            5.5801742,
+            5.5519328,
+            5.5592728000000005,
+            5.533442,
+            5.565546599999999
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        },
+        {
+          "case": "GL-T720-M720-even-s1-synthesis-q8",
+          "pair": 2,
+          "rust_ms": 463.129659,
+          "ducc_ms": 5.5956767,
+          "ratio": 82.7656213590753,
+          "error": {
+            "output_values": 2102436,
+            "relative_l2": 0.0001426412049337804,
+            "absolute_l2": 0.04760734751744492,
+            "max_absolute": 0.0011716485023498535,
+            "reference_rms": 0.23018000443253994,
+            "finite": true
+          },
+          "rust_samples": [
+            452.878418,
+            463.129659,
+            458.456465,
+            467.37416199999996,
+            467.33046900000005
+          ],
+          "ducc_samples": [
+            5.583664799999999,
+            5.5658592,
+            5.6077184,
+            5.6139182,
+            5.5853962,
+            5.6001742,
+            5.5761666,
+            5.5973188,
+            5.6054462,
+            5.5940346
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        },
+        {
+          "case": "GL-T720-M720-even-s1-synthesis-q8",
+          "pair": 3,
+          "rust_ms": 455.428475,
+          "ducc_ms": 5.5675574,
+          "ratio": 81.80040945783513,
+          "error": {
+            "output_values": 2102436,
+            "relative_l2": 0.0001426412049337804,
+            "absolute_l2": 0.04760734751744492,
+            "max_absolute": 0.0011716485023498535,
+            "reference_rms": 0.23018000443253994,
+            "finite": true
+          },
+          "rust_samples": [
+            464.846448,
+            454.509195,
+            450.98189,
+            455.428475,
+            466.99825
+          ],
+          "ducc_samples": [
+            5.6274858000000005,
+            5.564114,
+            5.546631,
+            5.5875644,
+            5.5873919999999995,
+            5.561032,
+            5.5781384,
+            5.5406876,
+            5.5709168,
+            5.564197999999999
+          ],
+          "rust_backend": "V3(V3 { sse: Sse, sse2: Sse2, fxsr: Fxsr, sse3: Sse3, ssse3: Ssse3, sse4_1: Sse4_1, sse4_2: Sse4_2, popcnt: Popcnt, avx: Avx, avx2: Avx2, bmi1: Bmi1, bmi2: Bmi2, fma: Fma, lzcnt: Lzcnt })",
+          "rust_lanes": 8,
+          "rust_reset": true,
+          "ducc_reset": true
+        }
+      ]
+    }
+  ]
+}
