@@ -223,6 +223,105 @@ fn scalar_odd_row_pairing_preserves_fallbacks_and_latitude_tails() {
     }
 }
 
+#[test]
+fn scalar_odd_pair_nonfinite_fallback_keeps_other_row_independent() {
+    let plan = make_plan(1, 1, 32, 129, 0.23);
+    let mut workspace = plan.fft.workspace().unwrap();
+    let mut first = (0..129)
+        .map(|j| (0.31 * j as f64).sin() + 0.5 * (0.17 * j as f64).cos())
+        .collect::<Vec<_>>();
+    let mut second = (0..129)
+        .map(|j| 0.75 * ((0.23 * j as f64).cos() - 0.2 * (0.41 * j as f64).sin()))
+        .collect::<Vec<_>>();
+    let mut first_output = vec![Complex64::new(17.0, -29.0); plan.fft.spectrum_len()];
+    let mut second_output = first_output.clone();
+
+    for bad_row in 0..2 {
+        if bad_row == 0 {
+            first[3] = f64::NAN;
+        } else {
+            second[3] = f64::NAN;
+        }
+        plan.forward_analysis_row_pair(
+            &first,
+            &second,
+            &mut first_output,
+            &mut second_output,
+            &mut workspace,
+        )
+        .unwrap();
+        if bad_row == 0 {
+            first[3] = (0.31 * 3.0_f64).sin() + 0.5 * (0.17 * 3.0_f64).cos();
+        } else {
+            second[3] = 0.75 * ((0.23 * 3.0_f64).cos() - 0.2 * (0.41 * 3.0_f64).sin());
+        }
+
+        let good_input = if bad_row == 0 { &second } else { &first };
+        let good_output = if bad_row == 0 {
+            &second_output
+        } else {
+            &first_output
+        };
+        let mut expected = vec![Complex64::new(0.0, 0.0); plan.fft.spectrum_len()];
+        plan.fft
+            .forward(good_input, &mut expected, &mut workspace)
+            .unwrap();
+        assert!(
+            good_output
+                .iter()
+                .all(|value| value.re.is_finite() && value.im.is_finite())
+        );
+        for (actual, expected) in good_output.iter().zip(&expected) {
+            assert!((*actual - *expected).norm() <= 4e-13 * expected.norm().max(1.0));
+        }
+    }
+
+    let mut first_spectrum = vec![Complex64::new(0.0, 0.0); plan.fft.spectrum_len()];
+    let mut second_spectrum = first_spectrum.clone();
+    plan.fft
+        .forward(&first, &mut first_spectrum, &mut workspace)
+        .unwrap();
+    plan.fft
+        .forward(&second, &mut second_spectrum, &mut workspace)
+        .unwrap();
+    let clean_first_spectrum = first_spectrum.clone();
+    let clean_second_spectrum = second_spectrum.clone();
+    let mut first_output_map = vec![0.0; 129];
+    let mut second_output_map = vec![0.0; 129];
+
+    for bad_row in 0..2 {
+        first_spectrum.clone_from(&clean_first_spectrum);
+        second_spectrum.clone_from(&clean_second_spectrum);
+        if bad_row == 0 {
+            first_spectrum[3].re = f64::NAN;
+        } else {
+            second_spectrum[3].re = f64::NAN;
+        }
+        plan.inverse_synthesis_row_pair(
+            &first_spectrum,
+            &second_spectrum,
+            &mut first_output_map,
+            &mut second_output_map,
+            &mut workspace,
+        )
+        .unwrap();
+
+        let (good_spectrum, actual) = if bad_row == 0 {
+            (&second_spectrum, &second_output_map)
+        } else {
+            (&first_spectrum, &first_output_map)
+        };
+        let mut expected = vec![0.0; 129];
+        plan.fft
+            .inverse_series(good_spectrum, &mut expected, &mut workspace)
+            .unwrap();
+        assert!(actual.iter().all(|value| value.is_finite()));
+        for (actual, expected) in actual.iter().zip(&expected) {
+            assert!((actual - expected).abs() <= 4e-13 * expected.abs().max(1.0));
+        }
+    }
+}
+
 #[cfg(feature = "parallel")]
 #[test]
 fn scalar_gl_row_fft_uses_sample_work_threshold_without_changing_other_routes() {

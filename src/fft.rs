@@ -935,6 +935,19 @@ mod tests {
                     )
                     .unwrap()
             );
+            let mut extreme_spectrum = vec![Complex64::new(0.0, 0.0); plan.spectrum_len()];
+            extreme_spectrum[1] = Complex64::new(f64::MAX / 2.0, 0.0);
+            assert!(
+                !plan
+                    .inverse_paired_series(
+                        &extreme_spectrum,
+                        &extreme_spectrum,
+                        &mut first_reconstructed,
+                        &mut second_reconstructed,
+                        &mut workspace,
+                    )
+                    .unwrap()
+            );
             let very_unequal: Vec<_> = second.iter().map(|value| value * 1.0e4).collect();
             assert!(
                 !plan
@@ -991,6 +1004,93 @@ mod tests {
                 )
                 .unwrap()
         );
+    }
+
+    #[test]
+    fn paired_odd_fft_reuses_poisoned_workspace() {
+        for n in [129, 361, 509] {
+            let plan = RealFftPlan::new(n).unwrap();
+            let mut workspace = plan.workspace().unwrap();
+            let mut reference_workspace = plan.workspace().unwrap();
+            let first: Vec<_> = (0..n)
+                .map(|j| (0.31 * j as f64).sin() + 0.5 * (0.17 * j as f64).cos())
+                .collect();
+            let second: Vec<_> = (0..n)
+                .map(|j| 0.75 * ((0.23 * j as f64).cos() - 0.2 * (0.41 * j as f64).sin()))
+                .collect();
+            let mut first_spectrum = vec![Complex64::new(0.0, 0.0); plan.spectrum_len()];
+            let mut second_spectrum = vec![Complex64::new(0.0, 0.0); plan.spectrum_len()];
+            plan.forward(&first, &mut first_spectrum, &mut reference_workspace)
+                .unwrap();
+            plan.forward(&second, &mut second_spectrum, &mut reference_workspace)
+                .unwrap();
+            let mut first_expected = vec![0.0; n];
+            let mut second_expected = vec![0.0; n];
+            plan.inverse_series(
+                &first_spectrum,
+                &mut first_expected,
+                &mut reference_workspace,
+            )
+            .unwrap();
+            plan.inverse_series(
+                &second_spectrum,
+                &mut second_expected,
+                &mut reference_workspace,
+            )
+            .unwrap();
+
+            for _ in 0..3 {
+                workspace
+                    .transform
+                    .fill(Complex64::new(f64::NAN, f64::INFINITY));
+                workspace
+                    .scratch
+                    .fill(Complex64::new(f64::NAN, f64::NEG_INFINITY));
+                let mut first_actual = vec![Complex64::new(17.0, -29.0); plan.spectrum_len()];
+                let mut second_actual = vec![Complex64::new(17.0, -29.0); plan.spectrum_len()];
+                assert!(
+                    plan.forward_paired_truncated(
+                        &first,
+                        &second,
+                        &mut first_actual,
+                        &mut second_actual,
+                        &mut workspace,
+                    )
+                    .unwrap()
+                );
+                for (actual, expected) in first_actual.iter().zip(&first_spectrum) {
+                    close_complex(*actual, *expected, 4e-13);
+                }
+                for (actual, expected) in second_actual.iter().zip(&second_spectrum) {
+                    close_complex(*actual, *expected, 4e-13);
+                }
+
+                workspace
+                    .transform
+                    .fill(Complex64::new(f64::NAN, f64::INFINITY));
+                workspace
+                    .scratch
+                    .fill(Complex64::new(f64::NAN, f64::NEG_INFINITY));
+                let mut first_output = vec![f64::NAN; n];
+                let mut second_output = vec![f64::NAN; n];
+                assert!(
+                    plan.inverse_paired_series(
+                        &first_spectrum,
+                        &second_spectrum,
+                        &mut first_output,
+                        &mut second_output,
+                        &mut workspace,
+                    )
+                    .unwrap()
+                );
+                for (actual, expected) in first_output.iter().zip(&first_expected) {
+                    assert!((actual - expected).abs() <= 4e-13 * expected.abs().max(1.0));
+                }
+                for (actual, expected) in second_output.iter().zip(&second_expected) {
+                    assert!((actual - expected).abs() <= 4e-13 * expected.abs().max(1.0));
+                }
+            }
+        }
     }
 
     #[test]
