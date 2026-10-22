@@ -124,6 +124,8 @@ fn run_forced_scalar_route_iterations(
                     plan.analysis_into(std::hint::black_box(map_input), alm_output, workspace)?
                 }
             }
+            std::hint::black_box(&*map_output);
+            std::hint::black_box(&*alm_output);
         }
         Ok(())
     });
