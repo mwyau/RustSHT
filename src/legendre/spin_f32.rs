@@ -18,6 +18,8 @@
  */
 
 use std::f32::consts::PI;
+#[cfg(all(test, rustsht_profile_spin32_normalizer))]
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use num_complex::Complex32;
 use pulp::{Arch, Simd, WithSimd};
@@ -29,6 +31,37 @@ const BIG: f32 = f32::from_bits(167_u32 << 23);
 const SMALL: f32 = f32::from_bits(87_u32 << 23);
 const SCALE_UP: f32 = f32::from_bits(207_u32 << 23);
 const SCALE_DOWN: f32 = f32::from_bits(47_u32 << 23);
+
+#[cfg(all(test, rustsht_profile_spin32_normalizer))]
+static NORMALIZER_SCALED_CALLS: AtomicU64 = AtomicU64::new(0);
+#[cfg(all(test, rustsht_profile_spin32_normalizer))]
+static NORMALIZER_SCALED_LANES: AtomicU64 = AtomicU64::new(0);
+#[cfg(all(test, rustsht_profile_spin32_normalizer))]
+static NORMALIZER_SCALE_STEPS: AtomicU64 = AtomicU64::new(0);
+#[cfg(all(test, rustsht_profile_spin32_normalizer))]
+static NORMALIZER_CALLS: AtomicU64 = AtomicU64::new(0);
+#[cfg(all(test, rustsht_profile_spin32_normalizer))]
+static NORMALIZER_LANES: AtomicU64 = AtomicU64::new(0);
+
+#[cfg(all(test, rustsht_profile_spin32_normalizer))]
+pub(crate) fn reset_normalizer_profile() {
+    NORMALIZER_SCALED_CALLS.store(0, Ordering::Relaxed);
+    NORMALIZER_SCALED_LANES.store(0, Ordering::Relaxed);
+    NORMALIZER_SCALE_STEPS.store(0, Ordering::Relaxed);
+    NORMALIZER_CALLS.store(0, Ordering::Relaxed);
+    NORMALIZER_LANES.store(0, Ordering::Relaxed);
+}
+
+#[cfg(all(test, rustsht_profile_spin32_normalizer))]
+pub(crate) fn normalizer_profile() -> (u64, u64, u64, u64, u64) {
+    (
+        NORMALIZER_SCALED_CALLS.load(Ordering::Relaxed),
+        NORMALIZER_SCALED_LANES.load(Ordering::Relaxed),
+        NORMALIZER_SCALE_STEPS.load(Ordering::Relaxed),
+        NORMALIZER_CALLS.load(Ordering::Relaxed),
+        NORMALIZER_LANES.load(Ordering::Relaxed),
+    )
+}
 
 #[derive(Clone, Copy)]
 struct ScaledValue {
@@ -598,12 +631,23 @@ fn normalize_pair_lanes(
     current: &mut [f32],
     exponents: &mut [i64],
 ) -> Result<(), ShtError> {
+    #[cfg(all(test, rustsht_profile_spin32_normalizer))]
+    let mut scaled_lanes = 0_u64;
+    #[cfg(all(test, rustsht_profile_spin32_normalizer))]
+    let mut scale_steps = 0_u64;
+    #[cfg(all(test, rustsht_profile_spin32_normalizer))]
+    {
+        NORMALIZER_CALLS.fetch_add(1, Ordering::Relaxed);
+        NORMALIZER_LANES.fetch_add(previous.len() as u64, Ordering::Relaxed);
+    }
     for lane in 0..previous.len() {
         let previous_bits = previous[lane].to_bits() & 0x7fff_ffff;
         let current_bits = current[lane].to_bits() & 0x7fff_ffff;
         debug_assert!(previous_bits < 0x7f80_0000 && current_bits < 0x7f80_0000);
         let mut maximum_bits = previous_bits.max(current_bits);
         let mut maximum = f32::from_bits(maximum_bits);
+        #[cfg(all(test, rustsht_profile_spin32_normalizer))]
+        let mut lane_scaled = false;
         while maximum_bits > BIG.to_bits() {
             previous[lane] *= SCALE_DOWN;
             current[lane] *= SCALE_DOWN;
@@ -614,6 +658,11 @@ fn normalize_pair_lanes(
                 })?;
             maximum *= SCALE_DOWN;
             maximum_bits = maximum.to_bits() & 0x7fff_ffff;
+            #[cfg(all(test, rustsht_profile_spin32_normalizer))]
+            {
+                lane_scaled = true;
+                scale_steps += 1;
+            }
         }
         while maximum_bits != 0 && maximum_bits < SMALL.to_bits() {
             previous[lane] *= SCALE_UP;
@@ -625,7 +674,22 @@ fn normalize_pair_lanes(
                 })?;
             maximum *= SCALE_UP;
             maximum_bits = maximum.to_bits() & 0x7fff_ffff;
+            #[cfg(all(test, rustsht_profile_spin32_normalizer))]
+            {
+                lane_scaled = true;
+                scale_steps += 1;
+            }
         }
+        #[cfg(all(test, rustsht_profile_spin32_normalizer))]
+        if lane_scaled {
+            scaled_lanes += 1;
+        }
+    }
+    #[cfg(all(test, rustsht_profile_spin32_normalizer))]
+    if scaled_lanes != 0 {
+        NORMALIZER_SCALED_CALLS.fetch_add(1, Ordering::Relaxed);
+        NORMALIZER_SCALED_LANES.fetch_add(scaled_lanes, Ordering::Relaxed);
+        NORMALIZER_SCALE_STEPS.fetch_add(scale_steps, Ordering::Relaxed);
     }
     Ok(())
 }

@@ -156,8 +156,11 @@ The follow-up inlined `normalize_pair_lanes`; it removed its two per-degree
 calls but expanded the V3 caller about 28% and regressed seven of eight
 matched cases by 0.2–5.9%. Production keeps the out-of-line normalizer. The
 [negative A/B](reports/plan17-f32-spin-normalizer-inline-2026-10-22.md)
-records all timings; next quantify normalizer/rescale work against recurrence
-and coefficient accumulation before changing the dataflow again.
+records all timings. A test-only T720 counter profile found 15.9–20.3% of
+normalizer calls have at least one scaled lane, but only 0.39–0.55% of lanes
+scale (one exponent step each). Counting overhead invalidates the profile's
+latencies; the counters were frequency-only. Next test a SIMD range precheck
+against the lane scan in a benchmark-only variant before changing production.
 
 The first Plan 17 spin-f32 normal-range skip candidate passed f32, adjoint,
 extreme and reset checks and improved selected T720 workloads by 2.6–8.8%.

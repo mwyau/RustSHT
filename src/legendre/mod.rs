@@ -10,6 +10,9 @@ mod spin;
 mod spin_f32;
 mod spin_fast;
 
+#[cfg(all(test, rustsht_profile_spin32_normalizer))]
+pub(crate) use spin_f32::{normalizer_profile, reset_normalizer_profile};
+
 pub(crate) const SPIN1_FAST_MIN_LMAX: usize = 15;
 pub(crate) const SCALAR_ORDER_BATCH_SIZE: usize = 256;
 

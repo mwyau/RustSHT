@@ -56,4 +56,40 @@ The baseline, candidate and DUCC binary SHA256 values are in the JSON metadata.
 
 ## Next
 
-Keep the accepted `recurrence_step` inlining. Do not inline the full scalar normalizer. The next Plan 17 profiling task is to quantify normalizer/rescale frequency against recurrence and coefficient visitor/accumulation work, then choose a narrower dataflow change only if that component accounts for meaningful absolute time.
+Keep the accepted `recurrence_step` inlining. Do not inline the full scalar
+normalizer. The frequency-only follow-up below narrows the next experiment to a
+SIMD range precheck, but timing evidence is still required before production
+changes.
+
+### Follow-up: normalizer rescale frequency
+
+A test-only counter build of the T720 f32 GL spin-1 phase probe measured three
+identical samples per operation/thread count. At q1, analysis and synthesis
+each called the normalizer 6,229,416 times over 374,284,078 lanes. Q8 analysis
+had the same recurrence work. Q8 synthesis used the order-major route and made
+5,488,990 calls over 341,980,148 lanes. Depending on route, 15.9–20.3% of
+calls had at least one lane rescaled, but only 0.39–0.55% of lanes required
+scaling. Each scaled lane required one exponent step in this deterministic
+T720 workload. Counts and fractions are in the
+[machine-readable summary](data/plan17-f32-spin-normalizer-inline-2026-10-22/normalizer-counts.csv).
+
+The counters were enabled only for the ignored unit-test profile via
+`--cfg rustsht_profile_spin32_normalizer`; they do not compile into production
+or ordinary test builds. Atomic counting materially distorts elapsed time, so
+those timings are excluded. The same test checks finite outputs, and the
+normalizer arithmetic is unchanged. The probe uses the matched even-smooth
+T720 geometry (`721 × 1458`, `phi0=0.23`). Reproduce the counts with:
+
+```sh
+RUSTFLAGS='--cfg rustsht_profile_spin32_normalizer --check-cfg=cfg(rustsht_profile_spin32_normalizer)' \
+  cargo test --release --features parallel --lib \
+  plan17_f32_t720_native_phase_profile -- --ignored --nocapture
+```
+
+This confirms that the helper scans many lanes on every recurrence step while
+only a small fraction actually rescale. It does **not** quantify the helper's
+own latency separately from recurrence and accumulation, so it is not enough
+to claim a performance gain from replacing the scan. Next compare a portable
+SIMD range precheck against the scalar lane scan in a benchmark-only variant,
+including complete transforms and exceptional-value fallbacks, before any
+production change.

@@ -50,8 +50,12 @@ The follow-up that forced `normalize_pair_lanes` inline was rejected: it
 removed two calls per degree but enlarged the V3 caller about 28% and regressed
 seven of eight matched full transforms. See the
 [negative A/B report](../reports/plan17-f32-spin-normalizer-inline-2026-10-22.md).
-The next diagnostic is normalizer/rescale frequency versus recurrence and
-accumulation time, not another unconditional inlining change.
+The test-only T720 profile counted 15.9–20.3% of normalizer calls with at least
+one rescaled lane, but only 0.39–0.55% of lanes rescaled (one exponent step
+each). Counter overhead invalidates its timings; this is frequency evidence
+only. Next compare a benchmark-only SIMD range precheck with the scalar lane
+scan, including whole transforms and fallback controls. Counts are in the
+[negative A/B report](../reports/plan17-f32-spin-normalizer-inline-2026-10-22.md).
 
 Only if Milestone A establishes a material f32 recurrence/accumulation gap:
 - Compare f32's executed spin recurrence and normal/scaled SIMD pathways with the best **validated** Plan 16 f64 algorithm; determine which structural optimizations can be translated safely and which require f32-specific scaling or precision handling.

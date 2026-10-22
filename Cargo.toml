@@ -34,6 +34,7 @@ parallel = ["dep:rayon"]
 unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(rustsht_avx2_mask_all)',
     'cfg(rustsht_disable_analysis_pair_range_cache)',
+    'cfg(rustsht_profile_spin32_normalizer)',
     'cfg(rustsht_unchecked_analysis_pair_range)',
 ] }
 

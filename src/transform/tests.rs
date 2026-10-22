@@ -1836,7 +1836,7 @@ fn plan17_f32_t720_native_phase_profile() {
             let lmax = 720;
             let mmax = lmax;
             let ntheta = lmax + 1;
-            let nphi = 1470;
+            let nphi = GridSpec::fft_friendly_nphi(lmax).unwrap();
             let plan = ShtPlan::<f32>::new(
                 GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, 0.23).unwrap(),
                 HarmonicSpec::new(lmax, mmax, spin).unwrap(),
@@ -1915,6 +1915,8 @@ fn plan17_f32_t720_native_phase_profile() {
                 pool.install(&mut run).unwrap();
                 for sample in 0..3 {
                     probe.lock().unwrap().clear();
+                    #[cfg(all(test, rustsht_profile_spin32_normalizer))]
+                    crate::legendre::reset_normalizer_profile();
                     let started = std::time::Instant::now();
                     pool.install(&mut run).unwrap();
                     let wall_ms = started.elapsed().as_secs_f64() * 1.0e3;
@@ -1928,6 +1930,15 @@ fn plan17_f32_t720_native_phase_profile() {
                         sample + 1,
                         wall_ms - phase_sum_ms,
                     );
+                    #[cfg(all(test, rustsht_profile_spin32_normalizer))]
+                    if spin == 1 {
+                        let (scaled_calls, scaled_lanes, scale_steps, calls, lanes) =
+                            crate::legendre::normalizer_profile();
+                        eprintln!(
+                            "PLAN17_F32_NORMALIZER spin={spin} op={operation} q{threads} sample={} calls={calls} lanes={lanes} scaled_calls={scaled_calls} scaled_lanes={scaled_lanes} scale_steps={scale_steps}",
+                            sample + 1,
+                        );
+                    }
                     for phase in phases {
                         eprintln!(
                             "PLAN17_F32_PHASE spin={spin} op={operation} q{threads} sample={} name={:?} elapsed_ms={:.3}",
