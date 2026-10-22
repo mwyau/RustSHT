@@ -3188,6 +3188,25 @@ fn benchmark_scalar_legendre_table_vs_recurrence_dense() {
                 .collect::<Vec<_>>()
         })
         .unwrap_or_else(|| vec![1, 8]);
+    let reduced_degrees = std::env::var("RUSTSHT_LEGENDRE_BENCH_REDUCED_DEGREES")
+        .ok()
+        .map(|value| {
+            value
+                .split(',')
+                .map(|entry| {
+                    entry
+                        .parse::<usize>()
+                        .expect("reduced degrees are integers")
+                })
+                .collect::<std::collections::BTreeSet<_>>()
+        })
+        .unwrap_or_else(|| {
+            [
+                63, 64, 65, 96, 120, 124, 126, 127, 128, 159, 191, 223, 248, 254, 255, 256,
+            ]
+            .into_iter()
+            .collect()
+        });
     let output_path = std::env::var("RUSTSHT_LEGENDRE_BENCH_OUTPUT")
         .expect("set RUSTSHT_LEGENDRE_BENCH_OUTPUT to a CSV path");
     assert!(min_lmax <= max_lmax && max_lmax <= 256);
@@ -3209,6 +3228,7 @@ fn benchmark_scalar_legendre_table_vs_recurrence_dense() {
                 .all(|&threads| [1, 8].contains(&threads)),
         "RUSTSHT_LEGENDRE_BENCH_THREADS accepts 1, 8, or 1,8"
     );
+    assert!(reduced_degrees.iter().all(|&lmax| lmax <= 256));
 
     let output_path = std::path::PathBuf::from(output_path);
     if let Some(parent) = output_path.parent() {
@@ -3229,9 +3249,6 @@ fn benchmark_scalar_legendre_table_vs_recurrence_dense() {
         .num_threads(8)
         .build()
         .unwrap();
-    let reduced_degrees = [
-        63, 64, 65, 96, 120, 124, 126, 127, 128, 159, 191, 223, 248, 254, 255, 256,
-    ];
     let mut case_number = 0usize;
     for lmax in requested_lmaxes {
         let mut mmax_values = vec![lmax];
