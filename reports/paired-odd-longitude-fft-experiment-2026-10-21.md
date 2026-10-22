@@ -8,6 +8,7 @@ The experiment answers whether two adjacent real longitude rows can share one le
 
 - RustSHT baseline source: ef238290f28d5192ca54de8e442c77640549828a.
 - Local implementation, tests, benchmark harness and report commit: 4b74e3a595aacb111d3222d5da4ddab37a43e7c8.
+- Follow-up numerical-test hardening commit: 8342f663b2e441bb1a21e78eb07d5665639969ec. It changes tests only; the production source used for the A/B is unchanged.
 - Candidate source diff SHA256 used for the final whole-transform A/B: b5238c0acf3ef06a5edbe35141786f87c64c81aa6ee3a0220e1489b32c3e7b04.
 - DUCC source: 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b, DUCC 0.42.0.
 - Host: AMD Ryzen 9 5950X, performance governor; q1 CPU 8, q8 CPUs 8–15.
@@ -116,14 +117,14 @@ The complete matched median matrix is shown below in milliseconds. Rust cells sh
 
 All 40 whole-transform validation groups passed finite-output and reset-consistency checks. Maximum Rust adjoint relative residual was 1.4263e-13; maximum Rust roundtrip relative L2 error was 6.506e-14. Candidate versus baseline maximum relative L2 difference was 2.3113e-15; candidate versus pinned DUCC maximum relative L2 difference was 5.195e-14. These include analysis and synthesis over the listed geometries and q1/q8.
 
-The implementation's unit tests exercise paired versus independent transforms at N=129, 257, 361, 509 and 513, accepted 8:1 inputs, equal/opposite and zero rows, unsafe scale ratios, nonfinite/subnormal/extreme inputs, and N=361 mixed-radix inverse. Transform tests exercise even and odd latitude counts, q8, complete spectrum initialization, forced fallback, and an independent-row inverse comparison. Existing analytic, adjoint, f32, GL, CC, F1 and other-spin regression coverage also passed through the repository suites.
+The implementation's unit tests exercise paired versus independent transforms at N=129, 257, 361, 509 and 513, accepted 8:1 inputs, equal/opposite and zero rows, unsafe scale ratios, nonfinite/subnormal/extreme inputs, and N=361 mixed-radix inverse. A poisoned transform and scratch workspace is reused for three paired forward/inverse cycles at N=129, 361 and 509. Transform tests exercise even and odd latitude counts, q8, complete spectrum initialization, forced fallback, and an independent-row inverse comparison. Separate forward and inverse tests put a nonfinite value in either row, take the independent fallback, and verify the neighboring row remains finite and matches its independent result. Existing analytic, adjoint, f32, GL, CC, F1 and other-spin regression coverage also passed through the repository suites.
 
 Verification completed on the final source:
 
 - cargo fmt --all
 - Strict release Clippy with parallel feature: passed.
-- Release tests with parallel feature: 252 unit tests passed, 34 ignored; all integration suites passed (extreme scaling 4, f32 11 passed/1 ignored, workspace compatibility 1).
-- Release tests with no default features: 204 unit tests passed, 17 ignored; all integration suites passed (extreme scaling 4, f32 11 passed/1 ignored, workspace compatibility 1).
+- Release tests with parallel feature: 254 unit tests passed, 34 ignored; all integration suites passed (extreme scaling 4, f32 11 passed/1 ignored, workspace compatibility 1).
+- Release tests with no default features: 206 unit tests passed, 17 ignored; all integration suites passed (extreme scaling 4, f32 11 passed/1 ignored, workspace compatibility 1).
 - Python syntax compilation for the benchmark runners: passed.
 
 ## Conclusion and limits
