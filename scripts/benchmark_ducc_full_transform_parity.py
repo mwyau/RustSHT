@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Matched native RustSHT/DUCC scalar GL analysis and synthesis benchmark."""
+"""Matched native RustSHT/DUCC scalar GL and CC benchmark."""
 
 from __future__ import annotations
 
@@ -31,6 +31,8 @@ DUCC_REVISION = os.environ.get(
 HISTORICAL_DUCC_REVISION = "80388904b8cfc32400ba84af8a6a45aabfe60f86"
 DATA_DIR = ROOT / "reports/data/ducc-full-transform-parity-2026-10-20"
 REPORT_PATH = ROOT / "reports/ducc-full-transform-parity-2026-10-20.md"
+CC_DATA_DIR = ROOT / "reports/data/ducc-scalar-f64-cc-full-sweep-2026-10-22"
+CC_REPORT_PATH = ROOT / "reports/ducc-scalar-f64-cc-full-sweep-2026-10-22.md"
 RUST_FLAGS = os.environ.get(
     "RUSTSHT_FULL_TRANSFORM_RUSTFLAGS",
     "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
@@ -182,7 +184,7 @@ def worker_command(binary: pathlib.Path, backend: str, case: dict, operation: st
         "--worker", operation, str(threads), str(case["ntheta"]), str(case["nphi"]),
         str(case["lmax"]), str(case["mmax"]), f"{PHI0:.17g}",
         str(case["map_path"]), str(case["alm_path"]), str(output), f"{target_ms:.6g}",
-        "1" if validate else "0",
+        "1" if validate else "0", case.get("grid", "GL"),
     ]
     return [str(executable), *args]
 
@@ -278,7 +280,10 @@ def make_cases(
     max_lmax: int | None = None,
     dense_sweep: bool = False,
     selected_longitude_modes: set[str] | None = None,
+    grid: str = "GL",
 ) -> list[dict]:
+    if grid not in {"GL", "CC"}:
+        raise ValueError(f"unsupported grid {grid}; expected GL or CC")
     if smoke and not dense_sweep:
         lmax_values = [0, 4, 16, 64]
     elif dense_sweep:
@@ -354,16 +359,18 @@ def make_cases(
                     if fixed_nphi is not None
                     else longitude_count(mmax, longitude_mode)
                 )
-                ntheta = fixed_ntheta if fixed_ntheta is not None else lmax + 1
-                if ntheta < lmax + 1:
+                minimum_ntheta = lmax + 1 + int(grid == "CC")
+                ntheta = fixed_ntheta if fixed_ntheta is not None else minimum_ntheta
+                if ntheta < minimum_ntheta:
                     raise ValueError(
-                        f"fixed ntheta={ntheta} cannot exactly analyze lmax={lmax}"
+                        f"fixed ntheta={ntheta} cannot exactly analyze lmax={lmax} on {grid}"
                     )
-                ntheta_tag = "" if ntheta == lmax + 1 else f"-ntheta{ntheta}"
+                ntheta_tag = "" if ntheta == minimum_ntheta else f"-ntheta{ntheta}"
+                grid_tag = "" if grid == "GL" else f"{grid}-"
                 case_id = (
-                    f"T{lmax}-m{mmax}{ntheta_tag}-{longitude_mode}"
+                    f"{grid_tag}T{lmax}-m{mmax}{ntheta_tag}-{longitude_mode}"
                     if fixed_nphi is None
-                    else f"T{lmax}-m{mmax}{ntheta_tag}-nphi{fixed_nphi}"
+                    else f"{grid_tag}T{lmax}-m{mmax}{ntheta_tag}-nphi{fixed_nphi}"
                 )
                 cases.append({
                     "case_id": case_id,
@@ -372,13 +379,17 @@ def make_cases(
                     "ntheta": ntheta,
                     "nphi": nphi,
                     "longitude_mode": longitude_mode,
-                    "grid": "GL",
+                    "grid": grid,
                 })
     return cases
 
 
 def make_fixture(case: dict, directory: pathlib.Path) -> None:
-    rng = np.random.Generator(np.random.PCG64(0xD00C20261020 + case["lmax"] * 65537 + case["mmax"] * 97 + case["nphi"]))
+    grid_salt = 0 if case.get("grid", "GL") == "GL" else 0xCC20261022
+    rng = np.random.Generator(np.random.PCG64(
+        0xD00C20261020 + grid_salt + case["lmax"] * 65537
+        + case["mmax"] * 97 + case["nphi"]
+    ))
     nalm = (case["mmax"] + 1) * (case["lmax"] + 1) - case["mmax"] * (case["mmax"] + 1) // 2
     alm = (rng.standard_normal(nalm) + 1j * rng.standard_normal(nalm)).astype("<c16")
     alm[: case["lmax"] + 1] = alm[: case["lmax"] + 1].real
@@ -784,7 +795,7 @@ def hardware_metadata(ducc_src: pathlib.Path) -> dict:
     cxx = shlex.split(os.environ.get("CXX", "g++"))
     selected_cpus = physical_cpus()
     source_status = command_output(
-        ["git", "status", "--porcelain", "--", "src", "examples", "Cargo.toml", "Cargo.lock"]
+        ["git", "status", "--porcelain", "--", "src", "Cargo.toml", "Cargo.lock"]
     )
     return {
         "cpu_model": cpu_model(),
@@ -920,6 +931,7 @@ def aggregate(raw: list[dict], errors: list[dict]) -> list[dict]:
         template = matched_rust[0]
         rows.append({
             "case_id": case_id,
+            "grid": template.get("grid", "GL"),
             "lmax": template["lmax"],
             "mmax": template["mmax"],
             "ntheta": template["ntheta"],
@@ -1024,8 +1036,13 @@ def issue_lmax_ticks(xmax: int) -> list[int]:
     return [degree for degree in candidates if degree <= xmax]
 
 
+def grid_display_name(grid: str) -> str:
+    return "Clenshaw–Curtis" if grid == "CC" else "Gauss–Legendre"
+
+
 def plot_issue_ratio_svg(path: pathlib.Path, operation: str, order_label: str,
-                         points_by_threads: dict[int, list[dict]]) -> None:
+                         points_by_threads: dict[int, list[dict]],
+                         grid: str = "GL") -> None:
     """Issue-ready full-transform ratio chart: sampled lmax, q1/q8, log axes.
 
     Display even FFT-smooth longitude counts only; odd-minimum FFTs are a
@@ -1043,7 +1060,7 @@ def plot_issue_ratio_svg(path: pathlib.Path, operation: str, order_label: str,
             f'<svg xmlns="http://www.w3.org/2000/svg" width="1260" height="680" viewBox="0 0 1260 680">'
             f'<rect width="100%" height="100%" fill="#fff"/>'
             f'<text x="98" y="35" font-family="sans-serif" font-size="25" font-weight="bold">RustSHT / DUCC — {operation.capitalize()} ({order_label})</text>'
-            '<text x="98" y="61" font-family="sans-serif" font-size="15" fill="#555">f64 · Gauss–Legendre · even-smooth longitude sampling · warmed full transforms</text>'
+            f'<text x="98" y="61" font-family="sans-serif" font-size="15" fill="#555">f64 · {grid_display_name(grid)} · even-smooth longitude sampling · warmed full transforms</text>'
             '<text x="630" y="340" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#555">No completed measurements for this selection</text>'
             '<text x="960" y="77" font-family="sans-serif" font-size="14">q1 / q8</text></svg>\n'
         )
@@ -1070,7 +1087,7 @@ def plot_issue_ratio_svg(path: pathlib.Path, operation: str, order_label: str,
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         '<rect width="100%" height="100%" fill="#fff"/>',
         f'<text x="{left}" y="35" font-family="sans-serif" font-size="25" font-weight="bold">RustSHT / DUCC — {operation.capitalize()} ({order_label})</text>',
-        f'<text x="{left}" y="61" font-family="sans-serif" font-size="15" fill="#555">f64 · Gauss–Legendre · even-smooth longitude sampling · warmed full transforms · lower is faster</text>',
+        f'<text x="{left}" y="61" font-family="sans-serif" font-size="15" fill="#555">f64 · {grid_display_name(grid)} · even-smooth longitude sampling · warmed full transforms · lower is faster</text>',
     ]
     tick_values = [0.25, 0.5, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16]
     tick_values = [v for v in tick_values if ymin <= v <= ymax]
@@ -1127,10 +1144,10 @@ def plot_issue_ratio_svg(path: pathlib.Path, operation: str, order_label: str,
 
 
 def plot_issue_runtime_svg(path: pathlib.Path, operation: str,
-                           series: list[dict]) -> None:
+                           series: list[dict], grid: str = "GL") -> None:
     """Issue-ready log-log absolute timings, matched to the ratio charts.
 
-    The plotted points are the observed warmed full-order, even-smooth GL
+    The plotted points are the observed warmed full-order, even-smooth
     configurations only. Color represents backend; solid/dashed represent q1/q8.
     """
     width, height = 1260, 680
@@ -1165,7 +1182,7 @@ def plot_issue_runtime_svg(path: pathlib.Path, operation: str,
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         '<rect width="100%" height="100%" fill="#fff"/>',
         f'<text x="{left}" y="35" font-family="sans-serif" font-size="25" font-weight="bold">RustSHT vs DUCC — {operation.capitalize()} runtime (full mmax)</text>',
-        f'<text x="{left}" y="61" font-family="sans-serif" font-size="15" fill="#555">f64 · Gauss–Legendre · even-smooth longitude sampling · warmed full transforms · lower is faster</text>',
+        f'<text x="{left}" y="61" font-family="sans-serif" font-size="15" fill="#555">f64 · {grid_display_name(grid)} · even-smooth longitude sampling · warmed full transforms · lower is faster</text>',
     ]
     for runtime in runtime_ticks:
         if not ymin <= runtime <= ymax:
@@ -1220,7 +1237,8 @@ def plot_issue_runtime_svg(path: pathlib.Path, operation: str,
     path.write_text("\n".join(parts) + "\n")
 
 
-def write_issue_runtime_plots(rows: list[dict], output_dir: pathlib.Path) -> None:
+def write_issue_runtime_plots(rows: list[dict], output_dir: pathlib.Path,
+                              grid: str = "GL") -> None:
     """Create issue-ready full-mmax actual runtimes without rerunning timings."""
     output_dir.mkdir(parents=True, exist_ok=True)
     for operation in ("analysis", "synthesis"):
@@ -1237,11 +1255,12 @@ def write_issue_runtime_plots(rows: list[dict], output_dir: pathlib.Path) -> Non
                 ]
                 series.append({"backend": backend, "threads": threads, "points": points})
         plot_issue_runtime_svg(
-            output_dir / f"runtime-{operation}.svg", operation, series,
+            output_dir / f"runtime-{operation}.svg", operation, series, grid,
         )
 
 
-def write_issue_ratio_plots(rows: list[dict], output_dir: pathlib.Path) -> None:
+def write_issue_ratio_plots(rows: list[dict], output_dir: pathlib.Path,
+                            grid: str = "GL") -> None:
     """Regenerate consistent GitHub-issue figures without rerunning timings."""
     output_dir.mkdir(parents=True, exist_ok=True)
     for operation in ("analysis", "synthesis"):
@@ -1258,7 +1277,7 @@ def write_issue_ratio_plots(rows: list[dict], output_dir: pathlib.Path) -> None:
                 ]
             plot_issue_ratio_svg(
                 output_dir / f"ratio-{operation}-{label.replace(' ', '-')}.svg",
-                operation, label, grouped,
+                operation, label, grouped, grid,
             )
 
 
@@ -1438,9 +1457,59 @@ def write_dispatch_and_pairing_plots(output_dir: pathlib.Path) -> list[str]:
     return generated
 
 
+def write_cc_gl_comparison_plot(output_dir: pathlib.Path,
+                                gl_results: pathlib.Path) -> pathlib.Path | None:
+    """Compare matched Rust/DUCC ratios while retaining CC's extra pole row."""
+    cc_path = output_dir / "results.csv"
+    if not cc_path.is_file() or not gl_results.is_file():
+        return None
+    with cc_path.open(newline="") as handle:
+        cc_rows = list(csv.DictReader(handle))
+    with gl_results.open(newline="") as handle:
+        gl_rows = list(csv.DictReader(handle))
+
+    def key(row: dict) -> tuple:
+        return (int(row["lmax"]), int(row["mmax"]), row["longitude_mode"],
+                row["operation"], int(row["threads"]))
+
+    gl_by_key = {key(row): row for row in gl_rows}
+    series = []
+    for operation in ("analysis", "synthesis"):
+        for order_label, full in (("full mmax", True), ("quarter mmax", False)):
+            for threads in (1, 8):
+                points = []
+                for cc in cc_rows:
+                    if (cc["longitude_mode"] != "even_smooth"
+                            or cc["operation"] != operation
+                            or int(cc["threads"]) != threads
+                            or ((int(cc["mmax"]) == int(cc["lmax"])) != full)):
+                        continue
+                    gl = gl_by_key.get(key(cc))
+                    if gl is None:
+                        continue
+                    points.append({
+                        "lmax": int(cc["lmax"]),
+                        "value": float(cc["rust_ducc_ratio"]) / float(gl["rust_ducc_ratio"]),
+                    })
+                series.append({
+                    "name": f"{operation} {order_label} q{threads}",
+                    "points": points,
+                    "dashed": threads == 8,
+                })
+    output = output_dir / "cc-versus-gl-matched-ratio.svg"
+    plot_log_degree_series(
+        output,
+        "CC versus GL matched RustSHT/DUCC ratio",
+        "Ratio of Rust/DUCC full-transform ratios; matching lmax, mmax and nphi; CC uses ntheta=lmax+2, GL uses lmax+1",
+        series,
+        "CC ratio / GL ratio",
+    )
+    return output
+
+
 def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
-                         failures: list[dict]) -> dict:
-    expected = make_cases(False, dense_sweep=True)
+                         failures: list[dict], grid: str = "GL") -> dict:
+    expected = make_cases(False, dense_sweep=True, grid=grid)
     expected_by_id = {case["case_id"]: case for case in expected}
     actual_by_id = {case["case_id"]: case for case in cases}
     expected_ids = set(expected_by_id)
@@ -1487,7 +1556,7 @@ def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
                         else "missing"
                     ),
                 }
-    low_degrees = sorted({case["lmax"] for case in expected if case["lmax"] <= 256})
+    low_degrees = sorted({case["lmax"] for case in cases if case["lmax"] <= 256})
     required_high = sorted(value for value in DENSE_SWEEP_HIGH_LMAX if value > 256)
     low_even_missing = []
     for lmax in range(257):
@@ -1495,11 +1564,13 @@ def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
         if lmax > 0:
             mmax_values.add(max(1, lmax // 4))
         for mmax in mmax_values:
-            case_id = f"T{lmax}-m{mmax}-even_smooth"
+            grid_tag = "" if grid == "GL" else f"{grid}-"
+            case_id = f"{grid_tag}T{lmax}-m{mmax}-even_smooth"
             if case_id not in actual_ids:
                 low_even_missing.append(case_id)
     return {
-        "profile": "dense-0-256-plus-selected-high-degrees",
+        "profile": f"dense-{grid}-0-256-plus-selected-high-degrees",
+        "grid": grid,
         "expected_lmax_0_through_256": list(range(257)),
         "observed_lmax_0_through_256": low_degrees,
         "required_high_lmax": required_high,
@@ -1552,10 +1623,11 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
             "independent_process_pairs": PROCESS_PAIRS,
             "interleaving": "Rust then DUCC for even process-pair indexes; DUCC then Rust for odd indexes",
             "q_values": sorted({entry["threads"] for entry in raw}),
+            "grid": metadata.get("grid", "GL"),
             "thread_control": "Rust process-global Rayon pool configured before plan creation; DUCC DUCC0_NUM_THREADS; both workers report active pool capacity",
             "operations": sorted({entry["operation"] for entry in raw}),
             "input_layout": "identical compact m-major coefficient body; DUCC mstart adds a leading offset and maps without timed conversion",
-            "fixture_generation": "deterministic PCG64 seed derived from lmax, mmax, and nphi; SHA-256 of each alm/map fixture is recorded per case",
+            "fixture_generation": "deterministic PCG64 seed derived from grid, lmax, mmax, and nphi; SHA-256 of each alm/map fixture is recorded per case",
             "output_buffers": "reused across calls; transform outputs read and compared outside timed intervals",
             "timed_region": "direct native ShtPlan transform calls with a process-global Rayon pool reused; pool/workspace setup and first call reported separately",
             "rust_call_boundary": "no per-call ThreadPool::install wrapper; RAYON_NUM_THREADS is set before process startup",
@@ -1575,7 +1647,7 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
         json.dumps(machine, separators=(",", ":"), allow_nan=False) + "\n"
     )
     result_fields = list(rows[0]) if rows else [
-        "case_id", "lmax", "mmax", "ntheta", "nphi", "longitude_mode",
+        "case_id", "grid", "lmax", "mmax", "ntheta", "nphi", "longitude_mode",
         "operation", "threads", "rust_warm_ms", "rust_p10_ms", "rust_p90_ms",
         "ducc_warm_ms", "ducc_p10_ms", "ducc_p90_ms", "rust_ducc_ratio",
         "paired_ratio_p10", "paired_ratio_p90", "excess_ms", "absolute_max",
@@ -1601,13 +1673,16 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
                 for key, value in failure.items()
             })
     if metadata.get("dense_sweep"):
-        coverage = dense_sweep_coverage(cases, raw, analysis["errors"], failures)
+        coverage = dense_sweep_coverage(
+            cases, raw, analysis["errors"], failures, metadata.get("grid", "GL")
+        )
         (output_dir / "coverage-audit.json").write_text(
             json.dumps(coverage, indent=2, allow_nan=False) + "\n"
         )
-    write_issue_ratio_plots(rows, output_dir)
-    write_issue_runtime_plots(rows, output_dir)
-    if metadata.get("dense_sweep"):
+    grid = metadata.get("grid", "GL")
+    write_issue_ratio_plots(rows, output_dir, grid)
+    write_issue_runtime_plots(rows, output_dir, grid)
+    if metadata.get("dense_sweep") and grid == "GL":
         write_dispatch_and_pairing_plots(output_dir)
     for operation in ("analysis", "synthesis"):
         speed_series = []
@@ -1653,6 +1728,9 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
 def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cases: list[dict],
                  host: dict, validations: list[dict], report: pathlib.Path = REPORT_PATH) -> None:
     report.parent.mkdir(parents=True, exist_ok=True)
+    grid = metadata.get("grid", "GL")
+    grid_name = grid_display_name(grid)
+    ntheta_rule = "lmax+2 (including both poles)" if grid == "CC" else "lmax+1"
     results_prefix = pathlib.Path(os.path.relpath(output_dir, report.parent)).as_posix()
     results_from_root = pathlib.Path(os.path.relpath(output_dir, ROOT)).as_posix()
     report_from_root = pathlib.Path(os.path.relpath(report, ROOT)).as_posix()
@@ -1668,7 +1746,7 @@ def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cas
         "",
         "## Scope and method",
         "",
-        f"Measured {len(cases)} GL scalar configurations using RustSHT's native `ShtPlan` and pinned DUCC's native `analysis_2d`/`synthesis_2d` C++ API. Each transform used all coefficients in its permitted `l=0..lmax, m=0..min(l,mmax)` triangle. Maps and coefficients were generated once per configuration and reused by both workers. `phi0=0.23`; `ntheta=lmax+1`; longitude counts cover odd minimum sampling and even FFT-smooth sampling.",
+        f"Measured {len(cases)} {grid_name} scalar configurations using RustSHT's native `ShtPlan` and pinned DUCC's native `analysis_2d`/`synthesis_2d` C++ API. Each transform used all coefficients in its permitted `l=0..lmax, m=0..min(l,mmax)` triangle. Maps and coefficients were generated once per configuration and reused by both workers. `phi0=0.23`; `ntheta={ntheta_rule}`; longitude counts cover odd minimum sampling and even FFT-smooth sampling.",
         "",
         f"Analysis and synthesis were each timed at q1 and q8. Single-thread processes were pinned to one allowed physical core; q8 used eight physical cores. Rust reused its plan and caller-owned workspace. DUCC's public 2D functions have no persistent plan/workspace object, so the adapter reuses all input/output buffers and reports its internal per-call preparation as part of transform latency. DUCC `mstart` mapped its indexing into a leading-offset view of the same compact coefficient body; no per-call coefficient conversion was timed.",
         "",
@@ -1683,7 +1761,7 @@ def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cas
     ]
     for row in chosen:
         lines.append(
-            f"| {row['lmax']} | {row['mmax']} | GL {row['ntheta']}×{row['nphi']} {row['longitude_mode']} | {row['operation']} | {row['threads']} | {row['rust_warm_ms']:.6g} [{row['rust_p10_ms']:.6g},{row['rust_p90_ms']:.6g}] | {row['ducc_warm_ms']:.6g} [{row['ducc_p10_ms']:.6g},{row['ducc_p90_ms']:.6g}] | {row['rust_ducc_ratio']:.4f} | {row['paired_ratio_p10']:.4f}–{row['paired_ratio_p90']:.4f} | {row['excess_ms']:.6g} | {row['relative_l2']:.3e} |"
+            f"| {row['lmax']} | {row['mmax']} | {row.get('grid', grid)} {row['ntheta']}×{row['nphi']} {row['longitude_mode']} | {row['operation']} | {row['threads']} | {row['rust_warm_ms']:.6g} [{row['rust_p10_ms']:.6g},{row['rust_p90_ms']:.6g}] | {row['ducc_warm_ms']:.6g} [{row['ducc_p10_ms']:.6g},{row['ducc_p90_ms']:.6g}] | {row['rust_ducc_ratio']:.4f} | {row['paired_ratio_p10']:.4f}–{row['paired_ratio_p90']:.4f} | {row['excess_ms']:.6g} | {row['relative_l2']:.3e} |"
         )
     def selected(lmax: int, mmax: int, longitude_mode: str, operation: str,
                  threads: int) -> dict | None:
@@ -1711,8 +1789,23 @@ def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cas
         f"Across {len(rows)} warm rows, RustSHT was faster in {faster} where the paired p10–p90 ratio interval stayed below 1, slower in {slower} where it stayed above 1, and inconclusive in {unresolved} where the interval crossed 1. This classification follows observed variation rather than a fixed parity band.",
         "### Cross-bandlimit findings",
         "",
-        f"For even-smooth full-mmax GL, q1 RustSHT was near DUCC at T1536 (analysis {t1536_a['rust_ducc_ratio']:.2f}×; synthesis {t1536_s['rust_ducc_ratio']:.2f}×). At T2048, analysis rose to {t2048_a1['rust_ducc_ratio']:.2f}× q1 and {t2048_a8['rust_ducc_ratio']:.2f}× q8, while synthesis was {t2048_s1['rust_ducc_ratio']:.2f}× q1 and {t2048_s8['rust_ducc_ratio']:.2f}× q8. At T3072, analysis was {t3072_a1['rust_ducc_ratio']:.2f}× q1 ({t3072_a1['excess_ms']:.1f} ms excess) and {t3072_a8['rust_ducc_ratio']:.2f}× q8 ({t3072_a8['excess_ms']:.1f} ms excess); synthesis was {t3072_s1['rust_ducc_ratio']:.2f}× q1 and {t3072_s8['rust_ducc_ratio']:.2f}× q8.",
-        "The large high-bandlimit excess is specific to the complete analysis call in these cases: synthesis remains near DUCC at q1, while q8 synthesis is about 1.5× slower. T1536 q1 is near parity, so the measured analysis gap grows sharply in the next sampled size range. End-to-end timings include FFT and preparation; they do not isolate recurrence as the cause. The next comparison should separate analysis recurrence/accumulation from FFT and output work at the high-bandlimit cases.",
+    ]
+    if grid == "GL":
+        lines += [
+            f"For even-smooth full-mmax GL, q1 RustSHT was near DUCC at T1536 (analysis {t1536_a['rust_ducc_ratio']:.2f}×; synthesis {t1536_s['rust_ducc_ratio']:.2f}×). At T2048, analysis rose to {t2048_a1['rust_ducc_ratio']:.2f}× q1 and {t2048_a8['rust_ducc_ratio']:.2f}× q8, while synthesis was {t2048_s1['rust_ducc_ratio']:.2f}× q1 and {t2048_s8['rust_ducc_ratio']:.2f}× q8. At T3072, analysis was {t3072_a1['rust_ducc_ratio']:.2f}× q1 ({t3072_a1['excess_ms']:.1f} ms excess) and {t3072_a8['rust_ducc_ratio']:.2f}× q8 ({t3072_a8['excess_ms']:.1f} ms excess); synthesis was {t3072_s1['rust_ducc_ratio']:.2f}× q1 and {t3072_s8['rust_ducc_ratio']:.2f}× q8.",
+            "The large high-bandlimit excess is specific to the complete analysis call in these cases: synthesis remains near DUCC at q1, while q8 synthesis is about 1.5× slower. T1536 q1 is near parity, so the measured analysis gap grows sharply in the next sampled size range. End-to-end timings include FFT and preparation; they do not isolate recurrence as the cause. The next comparison should separate analysis recurrence/accumulation from FFT and output work at the high-bandlimit cases.",
+        ]
+    else:
+        high_full = [row for row in rows if row["lmax"] == 3072 and row["mmax"] == row["lmax"]
+                     and row["longitude_mode"] == "even_smooth"]
+        high_summary = "; ".join(
+            f"{row['operation']} q{row['threads']} {row['rust_ducc_ratio']:.3f}× ({row['excess_ms']:.3g} ms excess)"
+            for row in sorted(high_full, key=lambda item: (item["operation"], item["threads"]))
+        )
+        lines.append(
+            f"At T3072 full mmax, the measured CC Rust/DUCC ratios are: {high_summary or 'no complete comparison row'}. These end-to-end CC timings include its meridional resampling and do not isolate recurrence; stage attribution is recorded separately when available."
+        )
+    lines += [
         f"For operations below 100 ms, the median per-row fraction of measured batches in the requested 20–100 ms window was {statistics.median(window_fractions):.1%}; the lowest row fraction was {min(window_fractions):.1%}. {sum(row['batch_count'] == PROCESS_PAIRS * 10 for row in rows)} short-operation rows collected 30 batches per backend. One row median was just below the 20-ms lower bound; its timing distribution is retained without adjustment. Calibration attempts are recorded separately in each process sample.",
         f"Maximum measured random-output relative L2 error was {max(row['relative_l2'] for row in rows):.3e}; maximum absolute error was {max(row['absolute_max'] for row in rows):.3e}.",
         f"The out-of-timing checks covered {len(validations)} configurations. Exact-zero/reset consistency held for {sum(all(item['reset_consistent'].values()) for item in validations)}/{len(validations)}; all edge-case outputs were finite for {sum(item['finite_outputs'] for item in validations)}/{len(validations)}. Maximum Rust/DUCC roundtrip relative L2 was {max(max(item['roundtrip'][backend]['relative_l2'] for backend in ('rustsht', 'ducc')) for item in validations):.3e}; maximum selected-basis recovery relative L2 was {max(max(entry[key]['relative_l2'] for entry in item['basis'] for key in ('analysis_of_synthesis_rust', 'analysis_of_synthesis_ducc')) for item in validations):.3e}; maximum adjoint identity relative residual was {max(item['adjoints'][backend][key] for item in validations for backend in ('rustsht', 'ducc') for key in ('synthesis_relative_residual', 'analysis_relative_residual')):.3e}.",
@@ -1736,7 +1829,7 @@ def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cas
         "",
         "## Measured scope and limitations",
         "",
-        f"The largest completed degree is T{max(case['lmax'] for case in cases)}. The sweep includes exhaustive lmax 0–32, dense low/intermediate sampling, required T255/T256/T511/T512/T513/T720/T721/T1024/T1536/T2048, and T3072 where resources permitted. f64 scalar GL is the full matrix; other precisions, spins, CC and F1 are outside this benchmark. Existing stage-level scalar-analysis measurements remain in `PERFORMANCE_STATUS.md` and the linked active profile; this run times complete native calls including FFT, Legendre work, packing/conversion and output writes.",
+        f"The largest completed degree is T{max(case['lmax'] for case in cases)}. This report covers f64 scalar {grid_name}; the run times complete native calls including FFT, Legendre work, packing/conversion and output writes.",
         "",
         f"The Rust/DUCC output comparison validates identical deterministic random maps and complete-triangle coefficient arrays in every timed configuration at q1 and q8. For each configuration and thread count, the first q1/q8 analysis process also runs out-of-timing roundtrip, zonal/intermediate/sectoral basis, zero, subnormal, extreme-finite and analysis/synthesis adjoint checks. Their per-case results are in `{results_prefix}/results.json`; neither set of checks is inferred from roundtrip alone.",
         "",
@@ -1746,7 +1839,7 @@ def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cas
         "RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs' cargo build --release --example ducc_full_transform_parity --features parallel",
         "cmake -S reports/data/ducc-full-transform-parity-2026-10-20 -B \"${DUCC_BUILD_DIR:-ducc-build}\" -DDUCC_SRC=\"${DUCC_SRC:?set DUCC_SRC to the pinned checkout}\" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++",
         "cmake --build \"${DUCC_BUILD_DIR:-ducc-build}\" --parallel 4",
-        f"python3 scripts/benchmark_ducc_full_transform_parity.py --ducc-src \"${{DUCC_SRC:?set DUCC_SRC to the pinned checkout}}\" --ducc-revision {metadata['ducc_source_revision']} --results-dir {results_from_root} --report-path {report_from_root} --skip-build",
+        f"python3 scripts/benchmark_ducc_full_transform_parity.py --ducc-src \"${{DUCC_SRC:?set DUCC_SRC to the pinned checkout}}\" --ducc-revision {metadata['ducc_source_revision']} --grid {grid} --results-dir {results_from_root} --report-path {report_from_root} --skip-build",
         "```",
         "",
     ]
@@ -1760,11 +1853,14 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
                              invocations: list[str], samples: list[dict]) -> None:
     report.parent.mkdir(parents=True, exist_ok=True)
     result_prefix = pathlib.Path(os.path.relpath(output_dir, report.parent)).as_posix()
+    grid = metadata.get("grid", "GL")
+    grid_name = grid_display_name(grid)
+    ntheta_rule = "lmax+2 (including both poles)" if grid == "CC" else "lmax+1"
     degree_bands = ((1, 32), (33, 63), (64, 128), (129, 256), (257, 720),
                     (721, 1536), (1537, 3072))
     timing_count_histogram = Counter(int(row["batch_count"]) for row in rows)
     lines = [
-        "# Current-source native RustSHT/DUCC scalar GL sweep (2026-10-22)",
+        f"# Current-source native RustSHT/DUCC scalar {grid} sweep (2026-10-22)",
         "",
         f"Production Rust source: `{metadata.get('production_source_revision', metadata['rust_source_revision'])}`; benchmark harness commit: `{metadata['rust_source_revision']}`.",
         f"Pinned DUCC 0.42.0 source: `{metadata['ducc_source_revision']}`.",
@@ -1775,14 +1871,14 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
         "",
         "## Scope and method",
         "",
-        f"The case manifest contains {len(cases)} distinct GL geometries: every `lmax=0…256` plus {len([value for value in DENSE_SWEEP_HIGH_LMAX if value > 256])} selected higher degrees through T3072. Every degree includes full and quarter-order `mmax` with even FFT-smooth longitude where those truncations differ; identical low-degree cases are deduplicated. Selected small, dispatch-boundary and high-resolution cases also include odd-minimum longitude. Each transform uses `ntheta=lmax+1`, `phi0=0.23`, the full permitted degree/order triangle and deterministic PCG64 fixtures shared by both native libraries.",
+        f"The target dense manifest contains {coverage['expected_case_count']} distinct {grid_name} geometries covering every `lmax=0…256` plus {len([value for value in DENSE_SWEEP_HIGH_LMAX if value > 256])} selected higher degrees through T3072. This dataset contains {len(cases)} geometries. The target includes full and quarter-order `mmax` with even FFT-smooth longitude where those truncations differ; identical low-degree cases are deduplicated. Selected small, dispatch-boundary and high-resolution cases also include odd-minimum longitude. Each transform uses `{ntheta_rule}`, `phi0=0.23`, the full permitted degree/order triangle and deterministic PCG64 fixtures shared by both native libraries.",
         f"Both analysis and synthesis were run at q1/q8. Short calls use {PROCESS_PAIRS} interleaved process pairs and {BATCHES_PER_PROCESS} calibrated batches per backend process, targeting {TARGET_BATCH_MS:g} ms; long calls use the existing individually timed rule. Rust plan/workspace setup, first-call and warmed timings are separate. The JSON retains per-process batch distributions, numerical comparisons and validation; aggregate CPU-frequency and scheduler diagnostics are reported below. Raw per-process telemetry stays in local shard captures. Failure records are retained in `failures.csv` and JSON.",
         f"Timing-count audit: {timing_count_histogram.get(3 * BATCHES_PER_PROCESS, 0)} rows contain 30 calibrated batches (10 in each process pair), {timing_count_histogram.get(15, 0)} contain 15 individually timed long-call observations (five in each pair), and {timing_count_histogram.get(25, 0)} mix two 10-batch pairs with one five-call long pair. The raw JSON records each process's actual timing route; no row is padded to a nominal sample count.",
         f"The q1/q8 CPU affinity was pinned to the physical core sets shown above. q8 uses the first eight physical cores visible to the process (one CCD on this host). RustSHT and DUCC receive the same fixtures and reusable caller buffers; DUCC's public API performs its own internal setup on each call.",
         "",
         "## Coverage audit",
         "",
-        f"The low-degree audit includes {len(coverage['observed_lmax_0_through_256'])}/257 integer degrees, with no omitted `lmax` values. The required high-resolution list has {len(coverage['required_high_lmax'])} values; case selection check: `{coverage['coverage_pass']}`. Low-degree even-smooth full/reduced coverage omissions: {len(coverage['low_degree_even_smooth_missing'])}. Across {coverage['expected_measurement_group_count']} operation/thread groups, statuses are `{coverage['measurement_status_counts']}`. Failed or partial groups are listed explicitly rather than silently removed.",
+        f"The dataset contains {len(coverage['observed_lmax_0_through_256'])}/257 integer degrees in the low range ({257 - len(coverage['observed_lmax_0_through_256'])} absent). The required high-resolution list has {len(coverage['required_high_lmax'])} values; complete case-selection check: `{coverage['coverage_pass']}`. Low-degree even-smooth full/reduced coverage omissions: {len(coverage['low_degree_even_smooth_missing'])}. Across {coverage['expected_measurement_group_count']} operation/thread groups, statuses are `{coverage['measurement_status_counts']}`. Failed or partial groups are listed explicitly rather than silently removed.",
         "",
         "## Warmed whole-transform summary",
         "",
@@ -1937,10 +2033,12 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
         f"- [Synthesis, reduced mmax](./{result_prefix}/ratio-synthesis-reduced-mmax.svg)",
         f"- [Absolute analysis latency](./{result_prefix}/runtime-analysis.svg)",
         f"- [Absolute synthesis latency](./{result_prefix}/runtime-synthesis.svg)",
-        f"- [Precomputed table versus recurrence](./{result_prefix}/legendre-table-vs-recurrence.svg)",
-        f"- [Paired FFT versus independent rows](./{result_prefix}/paired-fft-benefit.svg)",
+        *( [f"- [Precomputed table versus recurrence](./{result_prefix}/legendre-table-vs-recurrence.svg)",
+            f"- [Paired FFT versus independent rows](./{result_prefix}/paired-fft-benefit.svg)"]
+           if grid == "GL" else
+           [f"- [Matched CC/GL comparison](./{result_prefix}/cc-versus-gl-matched-ratio.svg)"] ),
         "",
-        "The four principal figures plot measured warmed RustSHT/DUCC ratios for even-smooth longitude cases only; q1 and q8 are separate curves and measured points are not smoothed. Odd-minimum cases remain in the data and shape summary. The compact-table/recurrence figure comes from the separate forced-route source sweep documented in [its report](scalar-legendre-table-recurrence-sweep-2026-10-22.md); the paired-FFT figure comes from the same-source paired/independent validation screen in [its report](paired-odd-longitude-fft-production-validation-2026-10-22.md). These controls are not mixed into the current-source Rust/DUCC timing series.",
+        f"The four principal figures plot measured warmed RustSHT/DUCC ratios for even-smooth longitude cases only; q1 and q8 are separate curves and measured points are not smoothed. Odd-minimum cases remain in the data and shape summary. This is a {grid_name} dataset; it is not merged with GL timing rows. The exact CC fixtures use `ntheta=lmax+2` to include both poles, while the GL controls use `ntheta=lmax+1`.",
         "",
         "## Reproduction and attribution",
         "",
@@ -1968,7 +2066,7 @@ def merge_shards(shard_paths: list[pathlib.Path], output_dir: pathlib.Path,
         raise ValueError("no shard results supplied")
     metadata = dict(shards[0]["metadata"])
     invariant_fields = (
-        "rust_source_revision", "production_source_revision", "ducc_source_revision",
+        "rust_source_revision", "production_source_revision", "ducc_source_revision", "grid",
         "ducc_version", "rustc", "cargo", "cxx", "rust_flags", "ducc_flags",
         "cpu_model", "selected_q1_cpu", "selected_q8_cpus", "selected_q8_topology",
         "selected_q8_l3_cache_ids", "process_pairs", "batches_per_process",
@@ -2012,7 +2110,7 @@ def merge_shards(shard_paths: list[pathlib.Path], output_dir: pathlib.Path,
         invocation = shard["metadata"].get("invocation")
         if invocation:
             invocations.append(invocation)
-    cases.sort(key=lambda case: (case["lmax"], case["mmax"], case["nphi"]))
+    cases.sort(key=lambda case: (case["lmax"], case["mmax"], case["nphi"], case.get("grid", "GL")))
     raw.sort(key=lambda item: (item["lmax"], item["case_id"], item["operation"],
                                item["threads"], item["process_pair"], item["backend"]))
     errors.sort(key=lambda item: (item["lmax"], item["case_id"], item["operation"],
@@ -2037,8 +2135,13 @@ def merge_shards(shard_paths: list[pathlib.Path], output_dir: pathlib.Path,
     }
     metadata.pop("retain_local_host_telemetry", None)
     rows = write_artifacts(output_dir, metadata, cases, raw, analysis)
+    if metadata.get("grid", "GL") == "CC":
+        write_cc_gl_comparison_plot(
+            output_dir,
+            ROOT / "reports/data/ducc-full-transform-parity-current-2026-10-22/results.csv",
+        )
     if dense_sweep:
-        coverage = dense_sweep_coverage(cases, raw, errors, failures)
+        coverage = dense_sweep_coverage(cases, raw, errors, failures, metadata.get("grid", "GL"))
         write_dense_sweep_report(output_dir, report_path, metadata, rows, cases,
                                  coverage, validations, failures, analysis["host"],
                                  invocations, raw)
@@ -2053,6 +2156,8 @@ def main() -> None:
     parser.add_argument("--ducc-src", type=pathlib.Path, default=os.environ.get("DUCC_SRC"))
     parser.add_argument("--ducc-revision", default=DUCC_REVISION,
                         help="required immutable DUCC commit SHA (default: current active pin)")
+    parser.add_argument("--grid", choices=("GL", "CC"), default="GL",
+                        help="native scalar grid; exact CC fixtures use ntheta=lmax+2")
     parser.add_argument("--plot-only", action="store_true", help="regenerate ratio and runtime SVGs from existing results.csv; no benchmark or DUCC checkout needed")
     parser.add_argument("--merge-shards", type=pathlib.Path, nargs="+",
                         help="merge completed native benchmark shard results.json files")
@@ -2073,7 +2178,7 @@ def main() -> None:
     parser.add_argument("--fixed-nphi", type=int,
                         help="use one fixed longitude count for every selected case")
     parser.add_argument("--fixed-ntheta", type=int,
-                        help="use one GL latitude count for every selected case; must be >= lmax + 1")
+                        help="use one latitude count for every selected case; must meet the grid's minimum")
     parser.add_argument("--full-mmax-only", action="store_true",
                         help="omit reduced-order configurations from the selected degrees")
     parser.add_argument("--longitude-mode", choices=("odd_minimum", "even_smooth"), action="append",
@@ -2082,17 +2187,19 @@ def main() -> None:
                         help="run only these operations; may be repeated (default: both)")
     parser.add_argument("--threads", choices=(1, 8), type=int, action="append",
                         help="run only these thread counts; may be repeated (default: 1 and 8)")
-    parser.add_argument("--results-dir", type=pathlib.Path, default=DATA_DIR,
+    parser.add_argument("--results-dir", type=pathlib.Path,
                         help="directory for machine-readable outputs and plots")
-    parser.add_argument("--report-path", type=pathlib.Path, default=REPORT_PATH,
+    parser.add_argument("--report-path", type=pathlib.Path,
                         help="report path; ignored with --no-report")
     parser.add_argument("--no-report", action="store_true",
                         help="write machine-readable artifacts without replacing a report")
     parser.add_argument("--retain-local-host-telemetry", action="store_true",
                         help="retain raw per-process CPU-frequency/scheduling samples in this local shard (do not publish them)")
     args = parser.parse_args()
-    args.results_dir = args.results_dir.resolve()
-    args.report_path = args.report_path.resolve()
+    default_results_dir = CC_DATA_DIR if args.grid == "CC" else DATA_DIR
+    default_report_path = CC_REPORT_PATH if args.grid == "CC" else REPORT_PATH
+    args.results_dir = (args.results_dir or default_results_dir).resolve()
+    args.report_path = (args.report_path or default_report_path).resolve()
     if args.merge_shards:
         merge_shards(
             [path.resolve() for path in args.merge_shards], args.results_dir,
@@ -2115,9 +2222,19 @@ def main() -> None:
             rows = list(csv.DictReader(handle))
         if not rows:
             parser.error("results.csv has no benchmark rows")
-        write_issue_ratio_plots(rows, args.results_dir)
-        write_issue_runtime_plots(rows, args.results_dir)
-        auxiliary = write_dispatch_and_pairing_plots(args.results_dir)
+        with (args.results_dir / "results.json").open() as handle:
+            saved_metadata = json.load(handle).get("metadata", {})
+        grid = saved_metadata.get("grid", args.grid)
+        write_issue_ratio_plots(rows, args.results_dir, grid)
+        write_issue_runtime_plots(rows, args.results_dir, grid)
+        auxiliary = write_dispatch_and_pairing_plots(args.results_dir) if grid == "GL" else []
+        if grid == "CC":
+            comparison = write_cc_gl_comparison_plot(
+                args.results_dir,
+                ROOT / "reports/data/ducc-full-transform-parity-current-2026-10-22/results.csv",
+            )
+            if comparison is not None:
+                auxiliary.append(comparison.name)
         print(
             f"Regenerated four ratio, two runtime and {len(auxiliary)} auxiliary figures "
             f"from {len(rows)} committed rows"
@@ -2153,6 +2270,7 @@ def main() -> None:
             args.max_lmax,
             args.dense_sweep,
             set(args.longitude_mode) if args.longitude_mode else None,
+            args.grid,
         )
     except ValueError as error:
         parser.error(str(error))
@@ -2176,6 +2294,7 @@ def main() -> None:
         "benchmark_invocation": shlex.join([sys.executable, *sys.argv]),
         "invocation": shlex.join([sys.executable, *sys.argv]),
         "dense_sweep": args.dense_sweep,
+        "grid": args.grid,
         "sweep_id": args.sweep_id,
         "retain_local_host_telemetry": args.retain_local_host_telemetry,
         "process_pairs": PROCESS_PAIRS,
@@ -2194,7 +2313,7 @@ def main() -> None:
     baseline = metadata["production_source_revision"]
     if re.fullmatch(r"[0-9a-fA-F]{40}", baseline):
         delta = subprocess.run(
-            ["git", "diff", "--name-only", f"{baseline}..HEAD", "--", "src", "examples", "Cargo.toml", "Cargo.lock"],
+            ["git", "diff", "--name-only", f"{baseline}..HEAD", "--", "src", "Cargo.toml", "Cargo.lock"],
             cwd=ROOT, text=True, capture_output=True, check=True,
         ).stdout.splitlines()
         metadata["production_code_changes_since_baseline"] = delta
@@ -2246,7 +2365,22 @@ def main() -> None:
     rows = aggregate(raw, aux["errors"])
     write_artifacts(output_dir, metadata, cases, raw, aux)
     if not args.no_report:
-        write_report(output_dir, metadata, rows, cases, aux["host"], aux["validations"], args.report_path)
+        if args.dense_sweep:
+            coverage = dense_sweep_coverage(
+                cases, raw, aux["errors"], aux.get("failures", []), args.grid
+            )
+            write_dense_sweep_report(
+                output_dir, args.report_path, metadata, rows, cases, coverage,
+                aux["validations"], aux.get("failures", []), aux["host"],
+                [shlex.join([sys.executable, *sys.argv])], raw,
+            )
+            if args.grid == "CC":
+                write_cc_gl_comparison_plot(
+                    output_dir,
+                    ROOT / "reports/data/ducc-full-transform-parity-current-2026-10-22/results.csv",
+                )
+        else:
+            write_report(output_dir, metadata, rows, cases, aux["host"], aux["validations"], args.report_path)
     max_relative_l2 = max((row["relative_l2"] for row in rows), default=float("nan"))
     print(
         f"RESULTS {len(rows)} rows, {len(aux['errors'])} numerical comparisons, "

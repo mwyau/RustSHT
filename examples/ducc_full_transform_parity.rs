@@ -162,7 +162,7 @@ fn run_once(
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = std::env::args().collect::<Vec<_>>();
-    if args.len() != 14 || args[1] != "--worker" {
+    if !(args.len() == 14 || args.len() == 15) || args[1] != "--worker" {
         return Err("usage: --worker OP THREADS NTHETA NPHI LMAX MMAX PHI0 MAP ALM OUT BATCH_TARGET_MS VALIDATE".into());
     }
     let operation = args[2].as_str();
@@ -180,6 +180,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     let output_path = &args[11];
     let target_ms: f64 = parse(&args[12], "batch target milliseconds")?;
     let validate = args[13] == "1";
+    let grid_name = args.get(14).map(String::as_str).unwrap_or("GL");
+    let grid_kind = match grid_name {
+        "GL" => GridKind::GaussLegendre,
+        "CC" => GridKind::ClenshawCurtis,
+        _ => {
+            return Err(
+                format!("unsupported benchmark grid {grid_name}; expected GL or CC").into(),
+            );
+        }
+    };
     let row_fft_parallel_active = cfg!(feature = "parallel")
         && threads > 1
         && ntheta
@@ -212,7 +222,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .into());
     }
     let setup_started = Instant::now();
-    let grid = GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, phi0)?;
+    let grid = GridSpec::new(grid_kind, ntheta, nphi, phi0)?;
     let harmonics = HarmonicSpec::scalar(lmax, mmax)?;
     let plan = ShtPlan::new(grid, harmonics)?;
     let mut workspace = plan.workspace()?;
@@ -417,7 +427,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .unwrap_or(0);
 
     print!(
-        "{{\"backend\":\"rustsht\",\"operation\":\"{operation}\",\"threads\":{threads},\"row_fft_parallel_active\":{row_fft_parallel_active},\"fixture_load_ms\":{fixture_load_ms:.9},\"buffer_setup_ms\":{buffer_setup_ms:.9},\"pool_ms\":{pool_ms:.9},\"setup_ms\":{setup_ms:.9},\"first_ms\":{first_ms:.9},\"warmup_ms\":{warmup_ms:.9},\"repetitions\":{repetitions},\"batch_ms\":["
+        "{{\"backend\":\"rustsht\",\"grid\":\"{grid_name}\",\"operation\":\"{operation}\",\"threads\":{threads},\"row_fft_parallel_active\":{row_fft_parallel_active},\"fixture_load_ms\":{fixture_load_ms:.9},\"buffer_setup_ms\":{buffer_setup_ms:.9},\"pool_ms\":{pool_ms:.9},\"setup_ms\":{setup_ms:.9},\"first_ms\":{first_ms:.9},\"warmup_ms\":{warmup_ms:.9},\"repetitions\":{repetitions},\"batch_ms\":["
     );
     for (index, value) in batch_ms.iter().enumerate() {
         if index != 0 {

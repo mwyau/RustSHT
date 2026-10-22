@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-// Native benchmark adapter for the pinned DUCC public GL transform API.
+// Native benchmark adapter for pinned DUCC public GL and CC transform APIs.
 // DUCC implementation source remains unmodified and is supplied at build time.
 
 #include <algorithm>
@@ -156,7 +156,7 @@ double time_once(Func &&function) {
 }
 
 void worker(int argc, char **argv) {
-  if (argc != 14 || std::string(argv[1]) != "--worker")
+  if ((argc != 14 && argc != 15) || std::string(argv[1]) != "--worker")
     throw std::runtime_error(
         "usage: --worker OP THREADS NTHETA NPHI LMAX MMAX PHI0 MAP ALM OUT BATCH_TARGET_MS VALIDATE");
   const std::string operation(argv[2]);
@@ -173,6 +173,9 @@ void worker(int argc, char **argv) {
   const std::string output_path(argv[11]);
   const double target_ms = parse_double(argv[12], "batch target milliseconds");
   const bool validate = std::string(argv[13]) == "1";
+  const std::string grid = argc == 15 ? argv[14] : "GL";
+  if (grid != "GL" && grid != "CC")
+    throw std::runtime_error("unsupported benchmark grid; expected GL or CC");
 
   const std::size_t alm_count = (mmax + 1) * (lmax + 1) - mmax * (mmax + 1) / 2;
   const std::size_t map_count = ntheta * nphi;
@@ -207,10 +210,10 @@ void worker(int argc, char **argv) {
 
   auto run_once = [&]() {
     if (operation == "analysis")
-      ducc0::analysis_2d(alm_out, map_in, 0, lmax, mstart_view, 1, "GL", phi0,
+      ducc0::analysis_2d(alm_out, map_in, 0, lmax, mstart_view, 1, grid, phi0,
                          ringfactor, threads);
     else
-      ducc0::synthesis_2d(alm_in, map_out, 0, lmax, mstart_view, 1, "GL", phi0,
+      ducc0::synthesis_2d(alm_in, map_out, 0, lmax, mstart_view, 1, grid, phi0,
                           ringfactor, threads, ducc0::STANDARD);
   };
 
@@ -270,11 +273,11 @@ void worker(int argc, char **argv) {
     const auto suffix = [&](const std::string &name) { return output_path + "." + name; };
     auto run_analysis_for = [&](const std::vector<double> &input) {
       const cmav<double, 3> map_view(input.data(), {1, ntheta, nphi});
-      ducc0::analysis_2d(alm_out, map_view, 0, lmax, mstart_view, 1, "GL", phi0,
+      ducc0::analysis_2d(alm_out, map_view, 0, lmax, mstart_view, 1, grid, phi0,
                          ringfactor, threads);
     };
     const auto run_synthesis = [&]() {
-      ducc0::synthesis_2d(alm_in, map_out, 0, lmax, mstart_view, 1, "GL", phi0,
+      ducc0::synthesis_2d(alm_in, map_out, 0, lmax, mstart_view, 1, grid, phi0,
                           ringfactor, threads, ducc0::STANDARD);
     };
 
@@ -338,10 +341,10 @@ void worker(int argc, char **argv) {
     std::fill(ducc_alm.begin(), ducc_alm.end(), Complex(0,0));
     std::copy(compact_alm.begin(), compact_alm.end(), ducc_alm.begin() + prefix);
     const cmav<Complex, 2> alm_for_adjoint(ducc_alm.data(), {1, ducc_alm_count});
-    ducc0::synthesis_2d(alm_in, map_out, 0, lmax, mstart_view, 1, "GL", phi0,
+    ducc0::synthesis_2d(alm_in, map_out, 0, lmax, mstart_view, 1, grid, phi0,
                         ringfactor, threads, ducc0::STANDARD);
     const auto synthesized = map_output;
-    ducc0::adjoint_synthesis_2d(alm_out, map_in, 0, lmax, mstart_view, 1, "GL", phi0,
+    ducc0::adjoint_synthesis_2d(alm_out, map_in, 0, lmax, mstart_view, 1, grid, phi0,
                                ringfactor, threads, ducc0::STANDARD);
     const double synth_left = real_dot(synthesized, map_input);
     const double synth_right = harmonic_dot(ducc_alm, alm_output, mstart, lmax, prefix);
@@ -349,7 +352,7 @@ void worker(int argc, char **argv) {
     const auto analyzed = alm_output;
     vmav<double, 3> adjoint_map(map_output.data(), {1, ntheta, nphi});
     ducc0::adjoint_analysis_2d(alm_for_adjoint, adjoint_map, 0, lmax, mstart_view, 1,
-                              "GL", phi0, ringfactor, threads);
+                              grid, phi0, ringfactor, threads);
     const double analysis_left = harmonic_dot(analyzed, ducc_alm, mstart, lmax, prefix);
     const double analysis_right = real_dot(map_input, map_output);
     std::ostringstream checks;
@@ -364,7 +367,7 @@ void worker(int argc, char **argv) {
     validation_json = checks.str();
   }
 
-  std::cout << "{\"backend\":\"ducc\",\"operation\":\"" << operation
+  std::cout << "{\"backend\":\"ducc\",\"grid\":\"" << grid << "\",\"operation\":\"" << operation
             << "\",\"threads\":" << threads << ",\"setup_ms\":" << setup_ms
             << ",\"fixture_load_ms\":" << fixture_load_ms
             << ",\"first_ms\":" << first_ms << ",\"warmup_ms\":" << warmup_ms
