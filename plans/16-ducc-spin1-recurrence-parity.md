@@ -2,24 +2,31 @@
 
 **Successor (queued, not active):** [Plan 17 — f32 and high-resolution atmospheric SHT performance](17-f32-atmospheric-performance.md), to begin only after Plan 16's measured closeout and safe remote sync. Do not mix f32/high-resolution follow-on experiments into current Plan 16.
 
-**Status: ACTIVE (2026-10-22), Milestone C.** Milestone A's executed-path crosswalk and matched-workload Rust stage profile are recorded in [the crosswalk](../reports/plan16-spin1-executed-path-crosswalk-2026-10-22.md). Milestone B tested two-channel and one-channel parity-separated accumulation; both candidates were removed after whole-transform regressions or inconclusive results. The scalar-analysis cumulative ablation is closed with the production 256-pair tile. **Branch:** opt/sht-performance-parity. **Scope:** f64 single-vector-field spin-1 STANDARD E/B analysis and synthesis on GL, CC and F1; optimize the measured synthesis recurrence/spectrum residual first. This is a new investigation, not a reopening or retroactive reinterpretation of completed Plan 15.
+**Status: ACTIVE (2026-10-22), Milestone D.** Milestone A's executed-path crosswalk and matched-workload Rust stage profile are recorded in [the crosswalk](../reports/plan16-spin1-executed-path-crosswalk-2026-10-22.md). Milestone B's parity-separated candidates and Milestone C's paired-coefficient reuse candidate were removed after matched whole-transform tests did not establish a gain. The scalar-analysis cumulative ablation is closed with the production 256-pair tile. **Branch:** opt/sht-performance-parity. **Scope:** f64 single-vector-field spin-1 STANDARD E/B analysis and synthesis on GL, CC and F1; optimize the measured synthesis recurrence/spectrum residual first. This is a new investigation, not a reopening or retroactive reinterpretation of completed Plan 15.
 
 ## Current milestone status
 
-Milestone B is complete. The one-channel parity-separated variant removed
-YMM spills but duplicated recurrence, regressing q1 synthesis about 23% and
-leaving q8 neutral to slower. The two-channel variant spilled accumulators.
-Neither changes production. See the [matched A/B report](../reports/plan16-spin1-parity-separated-ab-2026-10-22.md)
-and its [timing and validation data](../reports/data/plan16-parity-separated-t720-2026-10-22/README.md).
-The next task is Milestone C: quantify repeated paired-coefficient preparation
-across ring groups and test bounded reuse only if its measured cost warrants
-additional workspace.
+Milestones B and C are complete. The one-channel parity-separated variant
+removed YMM spills but duplicated recurrence, regressing q1 synthesis about
+23%; the two-channel variant spilled accumulators. Within-ring-group paired
+coefficient reuse reduced q1 preparation calls but did not produce a repeatable
+whole-transform gain, and q8's per-worker preparation opportunity was too small
+to justify a transform-wide 8 MiB cache. Neither candidate changes production.
+See the [Milestone B report](../reports/plan16-spin1-parity-separated-ab-2026-10-22.md)
+and [Milestone C report and data](../reports/plan16-spin1-paired-coefficient-preparation-2026-10-22.md).
+Proceed to Milestone D's controlled order-major dataflow prototype.
 
 ## Execution order and handoff
 
-1. **Finish the ongoing scalar task without interruption.** Follow reports/scalar-analysis-cumulative-ablation-2026-10-21.md and any newer remote instructions. Complete its remaining fixed SIMD workspace-layout experiment, the original/current/cumulative 64/128/256-tile comparison and required candidate ablations/interactions; attribute effects, validate all controls, commit a clear conclusion, and leave a known-good production default. Do not mix scalar and spin-1 code changes in an experiment or declare the scalar task complete prematurely.
-2. **Then start Plan 16 on the same working branch**, after fetching and safely integrating the latest remote head. Read AGENTS.md, PERFORMANCE_STATUS.md, Plan 15's closeout, actual Rust and pinned DUCC sources, and recent native results. A changed upstream branch or a newer explicit owner instruction supersedes this queue; never overwrite concurrent work.
-3. Work one hypothesis at a time. Publish reproducible small commits for accepted improvements and documented negative findings. A negative measurement is a valid result; do not force a new kernel into production.
+1. The scalar-analysis cumulative ablation is closed in
+   [its closeout report](../reports/scalar-analysis-cumulative-ablation-2026-10-21.md);
+   production retains the checked staged-output route and 256-pair tile.
+2. Plan 15's GL → CC → F1 sequence is complete in
+   [its closeout report](../reports/plan15-spin1-synthesis-dataflow-closeout-2026-10-21.md).
+3. Continue Plan 16 Milestone D on the same branch, one hypothesis at a time.
+   Publish reproducible small commits for accepted improvements and documented
+   negative findings. A negative measurement is a valid result; do not force a
+   new kernel into production.
 
 ## Existing evidence and important distinctions
 

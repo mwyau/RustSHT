@@ -1,0 +1,52 @@
+{
+  "experiment": "within-ring-group reuse of checked paired spin-1 scalar coefficient preparation",
+  "baseline_commit": "dd39f82714e7b27b9521671048aab2a84c80f14e",
+  "candidate_source_parent": "dd39f82714e7b27b9521671048aab2a84c80f14e",
+  "candidate_source_diff_sha256": "be502c0fabfc9cf181d175c94bfb24d7cfc4b57f0bbbe2e880b991315bd6557e",
+  "baseline_rust_binary_sha256": "fb3cab5bd08a4792ea1663c78173c874e99b313a0660bc0b0668a06df6d36f60",
+  "candidate_rust_binary_sha256": "758e32d355e484ca1b82c5996c719c1cc696118fbfb8802d4e9a0b0ad8669dc6",
+  "rust_toolchain": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "ducc_version": "0.42.0",
+  "ducc_compiler": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+  "ducc_flags": "SHT numerical sources: -O3 -ffast-math -ffp-contract=fast -march=x86-64-v3; driver adds -fno-fast-math",
+  "ducc_binary_sha256": "e3908ae1ce2502b1a7b9c9ede1442d85d4f977efbb62adc39542482d2352f61d",
+  "cpu_model": "AMD Ryzen 9 5950X 16-Core Processor",
+  "q1_cpus": [
+    0
+  ],
+  "q8_cpus": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "q8_l3_ids": [
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0"
+  ],
+  "measurement": {
+    "process_pairs": 3,
+    "batches_per_short_process": 10,
+    "target_batch_ms": 25.0,
+    "long_call_threshold_ms": 100,
+    "interleaved_backend_order": "Rust then DUCC for even pair; DUCC then Rust for odd pair"
+  },
+  "cases": "T720 CC exact ntheta=722, full and mmax=180, even-smooth and odd-minimum nphi; analysis/synthesis q1/q8; three interleaved Rust/DUCC process pairs per source run. Candidate source bracketed baseline with two independent candidate passes.",
+  "validation": "48 comparisons in each pass; finite outputs, repeat consistency, and destination reset checked. Maximum relative L2 recorded in case-summary.csv.",
+  "raw_artifacts": "2,655 per-batch timing observations and local process/host diagnostics were retained outside the tracked repository. case-summary.csv stores per-run p10/median/p90 summaries.",
+  "candidate_patch_sha256": "be502c0fabfc9cf181d175c94bfb24d7cfc4b57f0bbbe2e880b991315bd6557e",
+  "reproduction_command": "DUCC_SRC=\"$DUCC_SRC\" python3 \"$REPO_ROOT\"/reports/data/plan16-spin1-paired-coefficient-block-reuse-2026-10-22/run_exact_cc.py \"$REPO_ROOT\" --build-dir \"$DUCC_BUILD\" --skip-build --lmax 720 --grid CC --process-pairs 3 --target-ms 25 --results-dir \"$OUT\"; run at dd39f827 baseline and with candidate.patch applied.",
+  "candidate_patch": "candidate.patch (temporary source experiment; deliberately not retained in src/)"
+}

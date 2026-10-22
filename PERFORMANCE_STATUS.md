@@ -26,10 +26,16 @@ recurrences. Neither improved whole transforms. One-channel removed YMM spills
 but duplicated recurrence, regressing q1 synthesis about 23%; q8 was neutral
 to slower. Production remains unchanged. See the [A/B report and data](reports/plan16-spin1-parity-separated-ab-2026-10-22.md).
 
-**Next:** quantify paired-coefficient preparation calls, bytes, worker time,
-and wall-time contribution across ring groups. Prototype bounded prepared
-coefficient reuse only if those measurements justify its memory and validation
-cost. Keep converted scalar-row caching distinct; it is already implemented.
+Milestone C tested reusing prepared paired coefficients across latitude blocks
+within each ring group. At T720 CC q1, preparation calls fell from 5,293 to 721
+full order and from 1,784 to 181 at `mmax=180`; matched q1/q8 whole-transform
+changes stayed within ±0.92% and were not repeatable. The q8 busy-worker cost
+was at most about 1.24 ms of 23–25 ms full calls; a transform-wide cache would
+add about 8 MiB at full order. The prototype was removed. See the [report and
+timing data](reports/plan16-spin1-paired-coefficient-preparation-2026-10-22.md).
+
+**Next:** Plan 16 Milestone D, a controlled order-major synthesis dataflow
+prototype measured end-to-end against the existing group-scheduled path.
 
 ## Other measured context
 

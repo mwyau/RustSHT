@@ -1,0 +1,287 @@
+diff --git a/src/spin_transform.rs b/src/spin_transform.rs
+index efffd1b5..9ba8308b 100644
+--- a/src/spin_transform.rs
++++ b/src/spin_transform.rs
+@@ -1801,6 +1801,11 @@ impl<T: ShtScalar> ShtPlan<T> {
+                     if let Some(factor_started) = factor_started {
+                         recurrence.spin1_profile_factor_ns += factor_started.elapsed().as_nanos();
+                     }
++                    // The scalar and spin factors are fixed for this order,
++                    // and the paired coefficient streams are read-only during
++                    // each latitude block. Reuse their checked preparation
++                    // across all blocks in this ring group.
++                    let mut prepared_pair_coefficients = None;
+                     for block_start in
+                         (0..theta_sin.len()).step_by(crate::legendre::LATITUDE_BLOCK_SIZE)
+                     {
+@@ -1808,10 +1813,11 @@ impl<T: ShtScalar> ShtPlan<T> {
+                             .min(theta_sin.len());
+                         let spectrum_start = block_start * spectrum_len;
+                         let spectrum_end = block_end * spectrum_len;
+-                        self.synthesize_spin1_scalar_block(
++                        self.synthesize_spin1_scalar_block_with_prepared(
+                             m,
+                             scalar_lmax,
+                             spin1_scalar_coefficients,
++                            &mut prepared_pair_coefficients,
+                             spectrum_len,
+                             ring_start + block_start,
+                             allow_spin1_table,
+@@ -1861,6 +1867,59 @@ impl<T: ShtScalar> ShtPlan<T> {
+         Ok(())
+     }
+
++    fn prepare_spin1_paired_scalar_coefficients(
++        &self,
++        m: usize,
++        scalar_lmax: usize,
++        cached_scalar_row: Option<(&[Complex<T>], &[Complex<T>])>,
++        recurrence: &mut RecurrenceWorkspace<T>,
++    ) -> bool {
++        let coefficient_pair_count = (scalar_lmax - m + 2) / 2;
++        let scratch_ready = recurrence.fast_spin_first.len() >= coefficient_pair_count
++            && recurrence.fast_spin_second.len() >= coefficient_pair_count
++            && recurrence.fast_spin_pair_first.len() >= coefficient_pair_count
++            && recurrence.fast_spin_pair_second.len() >= coefficient_pair_count;
++        if !scratch_ready {
++            return false;
++        }
++
++        #[cfg(all(test, feature = "parallel"))]
++        if recurrence.spin1_profile_enabled {
++            recurrence.spin1_profile_pair_prepare_calls += 1;
++        }
++        #[cfg(all(test, feature = "parallel"))]
++        let prepare_started = recurrence
++            .spin1_profile_enabled
++            .then(std::time::Instant::now);
++        let (scalar_first, scalar_second) = cached_scalar_row.unwrap_or((
++            &recurrence.fast_scalar_first[..scalar_lmax + 1],
++            &recurrence.fast_scalar_second[..scalar_lmax + 1],
++        ));
++        let prepared_first = T::prepare_paired_scalar_synthesis_coefficients(
++            m,
++            scalar_lmax,
++            &recurrence.epsilon,
++            &recurrence.spin_alpha,
++            &scalar_first[m..=scalar_lmax],
++            &mut recurrence.fast_spin_first[..coefficient_pair_count],
++            &mut recurrence.fast_spin_second[..coefficient_pair_count],
++        );
++        let prepared_second = T::prepare_paired_scalar_synthesis_coefficients(
++            m,
++            scalar_lmax,
++            &recurrence.epsilon,
++            &recurrence.spin_alpha,
++            &scalar_second[m..=scalar_lmax],
++            &mut recurrence.fast_spin_pair_first[..coefficient_pair_count],
++            &mut recurrence.fast_spin_pair_second[..coefficient_pair_count],
++        );
++        #[cfg(all(test, feature = "parallel"))]
++        if let Some(prepare_started) = prepare_started {
++            recurrence.spin1_profile_pair_prepare_ns += prepare_started.elapsed().as_nanos();
++        }
++        prepared_first && prepared_second
++    }
++
+     #[expect(
+         clippy::too_many_arguments,
+         reason = "Original-coefficient fallback uses one order and caller-owned scratch."
+@@ -1963,6 +2022,46 @@ impl<T: ShtScalar> ShtPlan<T> {
+         recurrence: &mut RecurrenceWorkspace<T>,
+         q_spectra: &mut [Complex<T>],
+         u_spectra: &mut [Complex<T>],
++    ) -> Result<(), ShtError> {
++        let mut prepared_pair_coefficients = None;
++        self.synthesize_spin1_scalar_block_with_prepared(
++            m,
++            scalar_lmax,
++            cached_scalar_coefficients,
++            &mut prepared_pair_coefficients,
++            spectrum_len,
++            global_ring_start,
++            allow_table,
++            theta_sin,
++            theta_cos,
++            ring_order_limits,
++            arch,
++            recurrence,
++            q_spectra,
++            u_spectra,
++        )
++    }
++
++    #[expect(
++        clippy::too_many_arguments,
++        reason = "Spin-1 scalar synthesis uses the plan's recurrence factors and worker scratch."
++    )]
++    fn synthesize_spin1_scalar_block_with_prepared(
++        &self,
++        m: usize,
++        scalar_lmax: usize,
++        cached_scalar_coefficients: Option<&[Complex<T>]>,
++        prepared_pair_coefficients: &mut Option<bool>,
++        spectrum_len: usize,
++        global_ring_start: usize,
++        allow_table: bool,
++        theta_sin: &[T],
++        theta_cos: &[T],
++        ring_order_limits: &[usize],
++        arch: pulp::Arch,
++        recurrence: &mut RecurrenceWorkspace<T>,
++        q_spectra: &mut [Complex<T>],
++        u_spectra: &mut [Complex<T>],
+     ) -> Result<(), ShtError> {
+         let block_len = theta_sin.len();
+         debug_assert_eq!(theta_cos.len(), block_len);
+@@ -2047,38 +2146,18 @@ impl<T: ShtScalar> ShtPlan<T> {
+             }
+             let coefficient_pair_count = (scalar_lmax - m + 2) / 2;
+             let prepared_pair = if paired_channels_eligible {
+-                #[cfg(all(test, feature = "parallel"))]
+-                let prepare_started = recurrence
+-                    .spin1_profile_enabled
+-                    .then(std::time::Instant::now);
+-                let (scalar_first, scalar_second) = cached_scalar_row.unwrap_or((
+-                    &recurrence.fast_scalar_first[..scalar_lmax + 1],
+-                    &recurrence.fast_scalar_second[..scalar_lmax + 1],
+-                ));
+-                let prepared_first = T::prepare_paired_scalar_synthesis_coefficients(
+-                    m,
+-                    scalar_lmax,
+-                    &recurrence.epsilon,
+-                    &recurrence.spin_alpha,
+-                    &scalar_first[m..=scalar_lmax],
+-                    &mut recurrence.fast_spin_first[..coefficient_pair_count],
+-                    &mut recurrence.fast_spin_second[..coefficient_pair_count],
+-                );
+-                let prepared_second = T::prepare_paired_scalar_synthesis_coefficients(
+-                    m,
+-                    scalar_lmax,
+-                    &recurrence.epsilon,
+-                    &recurrence.spin_alpha,
+-                    &scalar_second[m..=scalar_lmax],
+-                    &mut recurrence.fast_spin_pair_first[..coefficient_pair_count],
+-                    &mut recurrence.fast_spin_pair_second[..coefficient_pair_count],
+-                );
+-                #[cfg(all(test, feature = "parallel"))]
+-                if let Some(prepare_started) = prepare_started {
+-                    recurrence.spin1_profile_pair_prepare_ns +=
+-                        prepare_started.elapsed().as_nanos();
++                if let Some(prepared) = *prepared_pair_coefficients {
++                    prepared
++                } else {
++                    let prepared = self.prepare_spin1_paired_scalar_coefficients(
++                        m,
++                        scalar_lmax,
++                        cached_scalar_row,
++                        recurrence,
++                    );
++                    *prepared_pair_coefficients = Some(prepared);
++                    prepared
+                 }
+-                prepared_first && prepared_second
+             } else {
+                 false
+             };
+@@ -2139,33 +2218,24 @@ impl<T: ShtScalar> ShtPlan<T> {
+             // either consumer writes spectra so a single unsafe channel cannot
+             // cause a partial commit.
+             let prepared_separate = if !paired_channels_eligible {
+-                let (scalar_first, scalar_second) = cached_scalar_row.unwrap_or((
+-                    &recurrence.fast_scalar_first[..scalar_lmax + 1],
+-                    &recurrence.fast_scalar_second[..scalar_lmax + 1],
+-                ));
+                 let scratch_ready = recurrence.fast_spin_first.len() >= coefficient_pair_count
+                     && recurrence.fast_spin_second.len() >= coefficient_pair_count
+                     && recurrence.fast_spin_pair_first.len() >= coefficient_pair_count
+                     && recurrence.fast_spin_pair_second.len() >= coefficient_pair_count;
+-                scratch_ready
+-                    && T::prepare_paired_scalar_synthesis_coefficients(
+-                        m,
+-                        scalar_lmax,
+-                        &recurrence.epsilon,
+-                        &recurrence.spin_alpha,
+-                        &scalar_first[m..=scalar_lmax],
+-                        &mut recurrence.fast_spin_first[..coefficient_pair_count],
+-                        &mut recurrence.fast_spin_second[..coefficient_pair_count],
+-                    )
+-                    && T::prepare_paired_scalar_synthesis_coefficients(
++                if !scratch_ready {
++                    false
++                } else if let Some(prepared) = *prepared_pair_coefficients {
++                    prepared
++                } else {
++                    let prepared = self.prepare_spin1_paired_scalar_coefficients(
+                         m,
+                         scalar_lmax,
+-                        &recurrence.epsilon,
+-                        &recurrence.spin_alpha,
+-                        &scalar_second[m..=scalar_lmax],
+-                        &mut recurrence.fast_spin_pair_first[..coefficient_pair_count],
+-                        &mut recurrence.fast_spin_pair_second[..coefficient_pair_count],
+-                    )
++                        cached_scalar_row,
++                        recurrence,
++                    );
++                    *prepared_pair_coefficients = Some(prepared);
++                    prepared
++                }
+             } else {
+                 false
+             };
+diff --git a/src/spin_transform/tests.rs b/src/spin_transform/tests.rs
+index 0f908ce4..0b3c4bac 100644
+--- a/src/spin_transform/tests.rs
++++ b/src/spin_transform/tests.rs
+@@ -9222,6 +9222,7 @@ fn profile_spin1_standard_synthesis_phases() {
+         for worker in &mut workspace.recurrence_workers {
+             worker.spin1_profile_factor_ns = 0;
+             worker.spin1_profile_pair_prepare_ns = 0;
++            worker.spin1_profile_pair_prepare_calls = 0;
+             worker.spin1_profile_recurrence_ns = 0;
+             worker.spin1_profile_fallback_ns = 0;
+             worker.spin1_profile_pair_eligible_blocks = 0;
+@@ -9252,6 +9253,11 @@ fn profile_spin1_standard_synthesis_phases() {
+             .iter()
+             .map(|worker| worker.spin1_profile_pair_prepare_ns)
+             .sum();
++        let pair_prepare_calls: usize = workspace
++            .recurrence_workers
++            .iter()
++            .map(|worker| worker.spin1_profile_pair_prepare_calls)
++            .sum();
+         let recurrence_ns: u128 = workspace
+             .recurrence_workers
+             .iter()
+@@ -9292,7 +9298,7 @@ fn profile_spin1_standard_synthesis_phases() {
+             factor_ns as f64 / 1.0e6,
+         );
+         eprintln!(
+-            "PROFILE_INNER,{lmax},{mmax},{nphi},{phi0},{thread_count},{repetition},worker-sum paired coefficient preparation,{:.6}",
++            "PROFILE_INNER,{lmax},{mmax},{nphi},{phi0},{thread_count},{repetition},worker-sum paired coefficient preparation,{:.6},calls={pair_prepare_calls}",
+             pair_prepare_ns as f64 / 1.0e6,
+         );
+         eprintln!(
+diff --git a/src/workspace.rs b/src/workspace.rs
+index 83308879..263de4ee 100644
+--- a/src/workspace.rs
++++ b/src/workspace.rs
+@@ -135,6 +135,8 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
+     #[cfg(all(test, feature = "parallel"))]
+     pub(crate) spin1_profile_pair_prepare_ns: u128,
+     #[cfg(all(test, feature = "parallel"))]
++    pub(crate) spin1_profile_pair_prepare_calls: usize,
++    #[cfg(all(test, feature = "parallel"))]
+     pub(crate) spin1_profile_recurrence_ns: u128,
+     #[cfg(all(test, feature = "parallel"))]
+     pub(crate) spin1_profile_fallback_ns: u128,
+@@ -425,6 +427,8 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
+             #[cfg(all(test, feature = "parallel"))]
+             spin1_profile_pair_prepare_ns: 0,
+             #[cfg(all(test, feature = "parallel"))]
++            spin1_profile_pair_prepare_calls: 0,
++            #[cfg(all(test, feature = "parallel"))]
+             spin1_profile_recurrence_ns: 0,
+             #[cfg(all(test, feature = "parallel"))]
+             spin1_profile_fallback_ns: 0,
