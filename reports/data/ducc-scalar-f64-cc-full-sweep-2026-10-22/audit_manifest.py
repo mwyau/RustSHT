@@ -104,6 +104,19 @@ def validation_reasons(validation: dict | None) -> list[str]:
         error = zero_case.get(field, {})
         if error.get("absolute_max") != 0.0 or error.get("relative_l2") != 0.0:
             reasons.append(f"exact_zero_{field}_failed")
+    for name in ("extreme", "subnormal"):
+        if name not in edges:
+            reasons.append(f"{name}_edge_case_missing")
+            continue
+        for field in ("map_rust_ducc", "alm_rust_ducc"):
+            error = edges[name].get(field)
+            if not isinstance(error, dict) or not all(
+                finite_number(error.get(metric))
+                for metric in ("absolute_max", "relative_l2")
+            ):
+                reasons.append(f"{name}_{field}_metrics_missing_or_nonfinite")
+            elif name == "extreme" and error["relative_l2"] > VALIDATION_RELATIVE_L2_LIMIT:
+                reasons.append(f"extreme_{field}_validation_failed")
     for name in ("zero", "extreme", "subnormal"):
         for backend, flags in validation.get("finite_flags", {}).items():
             field = f"{name}_finite"
@@ -111,6 +124,18 @@ def validation_reasons(validation: dict | None) -> list[str]:
                 reasons.append(f"{backend}_{field}_failed")
     roundtrip = relative_values(validation.get("roundtrip", {}), "relative_l2")
     basis = relative_values(validation.get("basis", []), "relative_l2")
+    expected_basis_modes = {
+        (0, 0),
+        (validation["lmax"], 0),
+        (validation["lmax"] // 2,
+         min(validation["mmax"], validation["lmax"] // 2)),
+        (validation["lmax"], validation["mmax"]),
+    }
+    observed_basis_modes = {
+        (item.get("l"), item.get("m")) for item in validation.get("basis", [])
+    }
+    if observed_basis_modes != expected_basis_modes:
+        reasons.append("basis_record_count_incomplete")
     # Adjoint leaves use operation-specific field names, so enumerate them directly.
     adjoints = []
     for backend in ("rustsht", "ducc"):
@@ -150,6 +175,8 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
     )
     identities = defaultdict(set)
     harnesses = set()
+    build_records = {}
+    verified_record_shards = 0
 
     for path, doc in zip(shard_paths, docs):
         metadata = doc.get("metadata", {})
@@ -160,6 +187,10 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
             identities[field].add(value)
         harnesses.add((metadata.get("benchmark_harness_revision", metadata.get("rust_source_revision")),
                        metadata.get("benchmark_harness_sha256")))
+        record = metadata.get("binary_build_record")
+        if record:
+            build_records[record.get("sha256")] = record
+        verified_record_shards += metadata.get("binary_provenance_verified") is True
         for case in doc.get("cases", []):
             case_id = case["case_id"]
             if case_id in cases:
@@ -272,6 +303,21 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
             for sample in group_samples
         )
         timing_status = "qualified" if timing_qualified else "insufficient"
+        target_batches = [
+            duration for sample in group_samples
+            if float(sample.get("warmup_ms", 0.0)) < 100.0
+            for duration in sample.get("batch_total_ms", [])
+        ]
+        if target_batches:
+            target_status = (
+                "within_target" if all(20.0 <= value <= 100.0 for value in target_batches)
+                else "partially_outside_target"
+            )
+        elif group_samples and all(float(sample.get("warmup_ms", 0.0)) >= 100.0
+                                   for sample in group_samples):
+            target_status = "not_applicable"
+        else:
+            target_status = "mixed_or_unavailable"
         group_status = "complete" if complete else "missing"
         if expected_group and case_id in {item["case_id"] for item in geometry_mismatches}:
             group_status = "geometry_mismatch"
@@ -291,6 +337,7 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
             "status": group_status,
             "numerical_status": numerical_status,
             "timing_quality_status": timing_status,
+            "duration_window_status": target_status,
             "reset_consistency_status": reset_status,
             "rust_process_pairs": ";".join(map(str, sorted(pair_sets["rustsht"]))),
             "ducc_process_pairs": ";".join(map(str, sorted(pair_sets["ducc"]))),
@@ -337,6 +384,7 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
         "measurement_status": dict(Counter(row["status"] for row in expected_group_records)),
         "numerical_status": dict(Counter(row["numerical_status"] for row in expected_group_records)),
         "timing_quality_status": dict(Counter(row["timing_quality_status"] for row in expected_group_records)),
+        "duration_window_status": dict(Counter(row["duration_window_status"] for row in expected_group_records)),
         "reset_consistency_status": dict(Counter(row["reset_consistency_status"] for row in expected_group_records)),
     }
     audit = {
@@ -354,6 +402,13 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
             {"revision": revision, "sha256": digest}
             for revision, digest in sorted(harnesses, key=lambda pair: (str(pair[0]), str(pair[1])))
         ],
+        "validated_binary_build_records": [
+            {"sha256": digest, "binary_source_revision": record.get("binary_source_revision"),
+             "rust_binary_sha256": record.get("rust_binary_sha256"),
+             "ducc_binary_sha256": record.get("ducc_binary_sha256")}
+            for digest, record in sorted(build_records.items())
+        ],
+        "shards_with_build_record_verified_at_capture": verified_record_shards,
         "source_identity_mismatch_fields": sorted(
             field for field, values in identities.items() if len(values) != 1
         ),
