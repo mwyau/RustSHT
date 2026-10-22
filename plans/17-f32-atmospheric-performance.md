@@ -63,11 +63,14 @@ out-of-line version was rejected after it generated a 512-byte stack frame and
 regressed the T255 q1 screen. See the [precheck report](../reports/plan17-f32-spin-normalizer-simd-precheck-2026-10-22.md)
 and [timing distributions](../reports/data/plan17-f32-spin-normalizer-simd-precheck-2026-10-22/summary.csv).
 
-The next step is a bounded full-order T1023 q8 analysis/synthesis comparison
-against the pre-precheck Rust build. If it remains beneficial, continue
-source-grounded recurrence/dataflow attribution for the residual f32 gap; do
-not broaden this precheck into other spins or operations without separate
-evidence.
+The bounded full-order T1023 q8 analysis/synthesis comparison also favored
+the precheck: paired candidate/baseline ratios were 0.822 for analysis and
+0.889 for synthesis with bitwise-identical Rust outputs. The cross-library
+gap remains 39.18×/47.95×. One synthesis baseline process was strongly
+contended, so its A/B gain is directional. Continue with source-grounded
+recurrence/visitor/accumulation attribution for the residual f32 gap; do not
+broaden the precheck into other spins or operations without separate
+evidence. See the T1023 control in the [precheck report](../reports/plan17-f32-spin-normalizer-simd-precheck-2026-10-22.md).
 
 Only if Milestone A establishes a material f32 recurrence/accumulation gap:
 - Compare f32's executed spin recurrence and normal/scaled SIMD pathways with the best **validated** Plan 16 f64 algorithm; determine which structural optimizations can be translated safely and which require f32-specific scaling or precision handling.

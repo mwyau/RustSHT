@@ -1,0 +1,13 @@
+case_id,comparison,variant,pair,setup_ms,first_ms,warmup_ms,median_warm_ms
+GL-T1023-M1023-even-s1-analysis-q8,rust-before-after,baseline,1,6.278271,456.202755,456.326289,457.324017
+GL-T1023-M1023-even-s1-analysis-q8,rust-before-after,candidate,1,5.9698970000000005,381.993452,376.79432299999996,376.93217400000003
+GL-T1023-M1023-even-s1-analysis-q8,rust-before-after,baseline,2,6.068564,453.57675600000005,455.492611,458.671768
+GL-T1023-M1023-even-s1-analysis-q8,rust-before-after,candidate,2,6.937719,377.128075,374.630939,377.119949
+GL-T1023-M1023-even-s1-analysis-q8,rust-before-after,baseline,3,6.223788,452.505548,452.984325,457.841296
+GL-T1023-M1023-even-s1-analysis-q8,rust-before-after,candidate,3,6.190565,376.821615,376.514083,376.092585
+GL-T1023-M1023-even-s1-synthesis-q8,rust-before-after,baseline,1,6.148756,752.3264379999999,767.287741,755.052316
+GL-T1023-M1023-even-s1-synthesis-q8,rust-before-after,candidate,1,6.635427,665.1894900000001,667.5536450000001,671.4316620000001
+GL-T1023-M1023-even-s1-synthesis-q8,rust-before-after,baseline,2,5.9145129999999995,714.884803,751.956888,728.128164
+GL-T1023-M1023-even-s1-synthesis-q8,rust-before-after,candidate,2,6.354175,679.288331,663.648383,668.426035
+GL-T1023-M1023-even-s1-synthesis-q8,rust-before-after,baseline,3,7.525862,2868.912682,1970.185125,800.918813
+GL-T1023-M1023-even-s1-synthesis-q8,rust-before-after,candidate,3,6.005274,676.642854,667.444428,673.4226610000001

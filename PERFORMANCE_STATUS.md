@@ -169,8 +169,14 @@ bitwise-identical Rust outputs. The candidate remains 17.1–73.8× DUCC. See th
 and its raw [JSON](reports/data/plan17-f32-spin-normalizer-simd-precheck-2026-10-22/results.json),
 [summary](reports/data/plan17-f32-spin-normalizer-simd-precheck-2026-10-22/summary.csv)
 and [timing samples](reports/data/plan17-f32-spin-normalizer-simd-precheck-2026-10-22/samples.csv).
-Next is a bounded T1023 q8 check of analysis and synthesis, followed by
-source-grounded recurrence/dataflow attribution for the remaining gap.
+The T1023 q8 check is complete. The SIMD precheck retained a paired
+candidate/baseline improvement (0.822 analysis, 0.889 synthesis) with
+bitwise-identical Rust outputs. Rust remains 39.18×/47.95× DUCC; the synthesis
+baseline had a contended process with two >2 s calls, so its A/B improvement
+is directional. The next task is to isolate recurrence arithmetic from the
+visitor/accumulation and scheduling costs before changing the kernel. Results
+are in the [precheck report](reports/plan17-f32-spin-normalizer-simd-precheck-2026-10-22.md)
+and [T1023 timing data](reports/data/plan17-f32-spin-normalizer-simd-precheck-2026-10-22/t1023-q8/results.json).
 
 The first Plan 17 spin-f32 normal-range skip candidate passed f32, adjoint,
 extreme and reset checks and improved selected T720 workloads by 2.6–8.8%.

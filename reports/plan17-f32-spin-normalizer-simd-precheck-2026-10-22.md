@@ -106,6 +106,45 @@ normalizer.
 - Release no-default-features suite: 220 passed, 17 ignored; integration
   suites added 16 passes and one ignored test.
 
+## T1023 q8 high-bandlimit control
+
+After publishing the T255/T720 result, the same baseline/candidate pair was
+checked at full-order GL T1023 (`1024 × 2048`, spin 1, `phi0=0.23`) for q8
+analysis and synthesis. This was a bounded control, not a new matrix: three
+fresh interleaved process pairs, five individually timed calls per Rust
+process, and ten calibrated ~25 ms DUCC batches per process. Both Rust builds
+executed Pulp V3 with eight f32 lanes on CPUs 0–7 in one L3 domain. The baseline
+was `4c84b4f049c6ec35355d87d7588ccc5ec227ab13`; the candidate was production
+commit `9dea41434fe9c222ec4cc815629a48499dab91df`; DUCC remained pinned to
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`.
+
+| Operation | Baseline Rust ms, p10–p90 | Candidate Rust ms, p10–p90 (DUCC pairing) | Paired candidate / baseline | DUCC ms, p10–p90 | Candidate / DUCC | Absolute excess over DUCC | Relative L2 vs DUCC |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Analysis q8 | 457.918 (454.919–465.068) | 375.485 (372.677–377.833) | 0.822 | 9.611 (9.466–10.476) | 39.18× | 365.9 ms | 2.35e-5 |
+| Synthesis q8 | 753.555 (727.167–1535.428) | 674.696 (667.211–702.114) | 0.889 | 14.056 (13.940–14.624) | 47.95× | 660.6 ms | 2.01e-4 |
+
+Rust baseline and candidate outputs were bitwise identical. The precheck
+therefore retains its T255/T720 gain at T1023: 17.8% for analysis and 11.1%
+for synthesis by paired process medians. The baseline synthesis distribution
+contains two calls above 2 seconds in one process pair, followed by three
+calls near 0.75 seconds. CPU pressure rose during the roughly two-minute
+screen, so that baseline spread is host-contended; the separate candidate vs
+DUCC comparisons were much tighter. Treat the high-bandlimit speedup as
+directional, while the large remaining DUCC gap is clear. First-call and
+setup measurements are in the JSON and cold/warm CSV.
+
+The full-transform comparison confirms that optimizing the normalizer is no
+longer enough: the q8 gap is about 38–39× for analysis and 48× for synthesis.
+Next, attribute recurrence arithmetic, visitor/accumulation, and scheduling
+costs on the executed f32 spin path before changing its degree-loop dataflow.
+The original q1/q8 T255/T720 comparisons remain the primary measured
+precheck result.
+
+The [T1023 JSON](data/plan17-f32-spin-normalizer-simd-precheck-2026-10-22/t1023-q8/results.json),
+[timed samples](data/plan17-f32-spin-normalizer-simd-precheck-2026-10-22/t1023-q8/samples.csv),
+and [first/warm/setup timings](data/plan17-f32-spin-normalizer-simd-precheck-2026-10-22/t1023-q8/cold-warm.csv)
+preserve the matched runs and their binary hashes.
+
 ## Reproduction and data
 
 Build the pinned baseline at commit `4c84b4f` and the candidate at `9dea4143`
@@ -131,7 +170,22 @@ warmup timings and output errors. The [summary CSV](data/plan17-f32-spin-normali
 reports medians and p10/p90; the [sample CSV](data/plan17-f32-spin-normalizer-simd-precheck-2026-10-22/samples.csv)
 preserves each timed batch/call.
 
+The T1023 control uses the same command and options with these substitutions:
+
+```sh
+python3 scripts/benchmark_plan17_spin_recurrence_inline.py \
+  --baseline-rust build/t1023-baseline/release/examples/ducc_f32_full_transform_parity \
+  --candidate-rust build/t1023-candidate/release/examples/ducc_f32_full_transform_parity \
+  --ducc build/ducc-f32-plan17/ducc_f32_full_transform_parity \
+  --outdir benchmark-output/plan17-normalizer-precheck-t1023-q8 \
+  --lmax 1023 --threads 8 --operations analysis synthesis \
+  --process-pairs 3 --extra-t255-q8-synthesis-pairs 0 --target-ms 25 \
+  --q8-cpus 0,1,2,3,4,5,6,7 \
+  --baseline-commit 4c84b4f049c6ec35355d87d7588ccc5ec227ab13 \
+  --candidate-description 'inlined Pulp SIMD range precheck before existing scalar normalizer'
+```
+
 The precheck is retained in production in commit `9dea4143`. The next Plan 17
-work should target the still-dominant f32 recurrence/dataflow cost, using a
-matched high-bandlimit check before broadening this change into other spins or
-operations.
+work should separate recurrence arithmetic from its coefficient visitor and
+accumulation costs, then address the largest measured component before
+broadening this change into other spins or operations.
