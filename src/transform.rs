@@ -23,10 +23,6 @@ use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 const SCALAR_TRANSITION_MIN_LMAX: usize = 1023;
 
-#[cfg(test)]
-static SCALAR_ANALYSIS_FUSED_DIRECT_PREFLIGHT_BLOCKS: std::sync::atomic::AtomicUsize =
-    std::sync::atomic::AtomicUsize::new(0);
-
 #[cfg(feature = "parallel")]
 #[derive(Clone, Copy)]
 struct ScalarSynthesisCoefficientCacheLayout {
@@ -2590,32 +2586,19 @@ impl<T: ShtScalar> ShtPlan<T> {
                     // Paired degrees l=m+2k use north+south for the even term;
                     // the intervening odd term uses north-south and cos(theta).
                     let staged_count = coefficient_count;
-                    let direct_preflight = cfg!(rustsht_scalar_analysis_fused_direct_preflight)
-                        && range_check_is_proven_safe;
                     let fast_path_candidate = lmax >= T::FUSED_SCALAR_ANALYSIS_MIN_LMAX
                         && recurrence.fast_scalar_first.len() >= staged_count;
                     // DUCC's fill_m2a checks the packed spectra and cosine-weights
                     // opposite parity in one pass. Preserve the transformed
                     // values only when both range checks succeed.
                     let packed_preparation = if fast_path_candidate {
-                        if direct_preflight {
-                            T::prepare_scalar_analysis_pair_inputs_with_lane_bound(
-                                &recurrence.analysis_same_real[..lane_count],
-                                &recurrence.analysis_same_imag[..lane_count],
-                                &mut recurrence.analysis_opposite_real[..lane_count],
-                                &mut recurrence.analysis_opposite_imag[..lane_count],
-                                pair_cos,
-                                latitude_count,
-                            )
-                        } else {
-                            T::prepare_scalar_analysis_pair_inputs(
-                                &recurrence.analysis_same_real[..lane_count],
-                                &recurrence.analysis_same_imag[..lane_count],
-                                &mut recurrence.analysis_opposite_real[..lane_count],
-                                &mut recurrence.analysis_opposite_imag[..lane_count],
-                                pair_cos,
-                            )
-                        }
+                        T::prepare_scalar_analysis_pair_inputs(
+                            &recurrence.analysis_same_real[..lane_count],
+                            &recurrence.analysis_same_imag[..lane_count],
+                            &mut recurrence.analysis_opposite_real[..lane_count],
+                            &mut recurrence.analysis_opposite_imag[..lane_count],
+                            pair_cos,
+                        )
                     } else {
                         None
                     };
@@ -2642,21 +2625,14 @@ impl<T: ShtScalar> ShtPlan<T> {
                             (products_safe, opposite_preparation)
                         };
                     let fast_path_eligible = opposite_preparation == Some(true);
-                    let direct_accumulation = direct_preflight && fast_path_eligible;
                     let mut range_check_was_exercised = false;
                     let fused_block = if fast_path_eligible {
-                        let output_coefficients = if direct_accumulation {
-                            &mut coefficients[..staged_count]
-                        } else {
-                            &mut recurrence.fast_scalar_first[..staged_count]
-                        };
                         T::fused_scalar_analysis_pair_block_preweighted(
                             arch,
                             m,
                             lmax,
                             allow_insignificant_prefix,
                             range_check_is_proven_safe,
-                            direct_accumulation,
                             &mut range_check_was_exercised,
                             pair_sin,
                             pair_cos,
@@ -2668,7 +2644,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             &recurrence.analysis_same_imag[..lane_count],
                             &recurrence.analysis_opposite_real[..lane_count],
                             &recurrence.analysis_opposite_imag[..lane_count],
-                            output_coefficients,
+                            &mut recurrence.fast_scalar_first[..staged_count],
                             &mut recurrence.previous,
                             &mut recurrence.current,
                             &mut recurrence.next,
@@ -2679,11 +2655,6 @@ impl<T: ShtScalar> ShtPlan<T> {
                     } else {
                         false
                     };
-                    #[cfg(test)]
-                    if direct_accumulation && fused_block {
-                        SCALAR_ANALYSIS_FUSED_DIRECT_PREFLIGHT_BLOCKS
-                            .fetch_add(1, Ordering::Relaxed);
-                    }
                     if fused_block {
                         saw_successful_fused_block = true;
                         if !range_check_is_proven_safe && !range_check_was_exercised {
@@ -2693,13 +2664,11 @@ impl<T: ShtScalar> ShtPlan<T> {
                         {
                             block_saw_normal = true;
                         }
-                        if !direct_accumulation {
-                            for (coefficient, contribution) in coefficients
-                                .iter_mut()
-                                .zip(&recurrence.fast_scalar_first[..staged_count])
-                            {
-                                *coefficient += *contribution;
-                            }
+                        for (coefficient, contribution) in coefficients
+                            .iter_mut()
+                            .zip(&recurrence.fast_scalar_first[..staged_count])
+                        {
+                            *coefficient += *contribution;
                         }
                     } else {
                         may_cache_range_safe = false;

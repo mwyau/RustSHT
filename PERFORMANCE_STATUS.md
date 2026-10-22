@@ -1,26 +1,18 @@
 # RustSHT performance checkpoint — current findings
 
-**Owner-approved sequence (2026-10-21):** scalar-analysis cumulative ablation remains in progress; its fixed workspace field-order experiment is complete and had no supported performance effect. Finish the combined candidate/ablation evaluation first, then begin [Plan 16 — DUCC-equivalent spin-1 recurrence and dataflow](plans/16-ducc-spin1-recurrence-parity.md) on the same branch. After Plan 16 closes, [Plan 17 — f32/high-resolution atmospheric performance](plans/17-f32-atmospheric-performance.md) is queued to measure current f32 spin-0/1 GL/CC/F1 DUCC parity and test targeted T1023–T2047 and q1/q8/q16 scaling. Plan 12 cache selection and Plan 13 fused batches remain deferred. Plan 15 remains closed. New hypotheses are **not measured improvements** and do not override the odd-FFT hold.
+**Owner-approved sequence (2026-10-22):** the scalar-analysis cumulative ablation is complete; [Plan 16 — DUCC-equivalent spin-1 recurrence and dataflow](plans/16-ducc-spin1-recurrence-parity.md) is active on this branch. Plan 16 starts with the executed Rust/DUCC kernel crosswalk and prioritizes recurrence/spectrum latency. After Plan 16 closes, [Plan 17 — f32/high-resolution atmospheric performance](plans/17-f32-atmospheric-performance.md) is queued. Plans 12/13 remain deferred, Plan 15 remains closed, and the odd-FFT hold remains in force.
 
 
-**Updated:** 2026-10-21 UTC. **Branch:** `opt/sht-performance-parity`.
-**Owner-directed cumulative scalar-analysis evaluation (active):** the packed
-complex-reduction candidate is retained behind a compile-time cfg for the
-required combined/ablation study. It changes the complete 64/128/256-lane
-kernel by about -0.9% to -3.3% and T720 whole transforms by -1.3% to +0.4%;
-the isolated reducer is about 3% faster. It is not enabled by
-default. Candidate release suites pass. The source correspondence, timings,
-code shape and remaining steps are tracked in the
-[cumulative ablation record](reports/scalar-analysis-cumulative-ablation-2026-10-21.md).
-Step 4 is already implemented by the checked-first recurrence range-proof
-cache (`aeb123d6`); after first validation it skips only the repeated ordinary
-vector scan. Step 5 now has a fused-preflight direct-output candidate behind
-`rustsht_scalar_analysis_fused_direct_preflight`. It is numerically within the
-existing limits but 2.42–2.69× slower than staging at T720 full/reduced q1/q8,
-and its cold/warm outputs are not bitwise identical. Production remains
-transactionally staged; keep the candidate only for the required final
-cumulative evaluation. See the detailed matrix in the
-[cumulative ablation record](reports/scalar-analysis-cumulative-ablation-2026-10-21.md).
+**Updated:** 2026-10-22 UTC. **Branch:** `opt/sht-performance-parity`.
+**Scalar-analysis ablation closeout:** the original `ce710` source, current
+production, packed reduction, scratch layout, direct output, range-cache
+control, and cumulative 64/128/256-pair builds were compared at T720 GL
+analysis. Production remains the staged-output kernel with the checked range
+cache and fixed 256-pair tile. Direct output was 2.44–2.97× slower and failed
+cold/warm reset consistency; the packed reduction and scratch reorder had no
+supported whole-transform gain; 64/128 tiles were slower. The no-cache route
+was 25–40% slower. See the [closeout matrix and dispositions](reports/scalar-analysis-cumulative-ablation-2026-10-21.md)
+and its [sanitized per-case data](reports/data/scalar-analysis-cumulative-ablation-2026-10-21/final-combined/README.md).
 
 **Current-source packed-reducer recheck (`ef238290`):** matched T720 kernels
 improved 4.5%, 1.1% and 3.5% at 64/128/256 active lanes; DUCC ratios moved
@@ -40,8 +32,11 @@ source-history change, not one optimization. The workspace-order experiment
 produced identical hot-loop instruction bytes and no measurable kernel or
 whole-transform improvement; it remains cfg-gated for the final interaction
 and ablation study. See the [sanitized comparison](reports/data/scalar-analysis-cumulative-ablation-2026-10-21/hot-scratch-order/README.md).
-The final cumulative candidate and focused ablations remain pending in the
-linked report.
+The scalar closeout passed release library validation (249 passed, 33
+ignored; no-default-features 201 passed, 16 ignored), formatting, and strict
+all-target/all-feature Clippy. The rejected compile-time paths were removed.
+Plan 16 now starts with matched executed-kernel attribution for the remaining
+spin-1 synthesis recurrence/spectrum gap.
 **Plan 14:** COMPLETE at closeout commit
 `f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`. **Plan 15:** COMPLETE after the
 spin-1 GL → CC → F1 sequence on this branch; see

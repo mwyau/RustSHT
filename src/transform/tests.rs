@@ -4375,7 +4375,6 @@ fn scalar_t511_gl_analysis_matches_ducc_and_analytic_sectoral_field() {
 }
 
 #[test]
-#[allow(unexpected_cfgs)]
 fn scalar_analysis_pair_range_cache_matches_checked_recurrence_and_is_plan_scoped() {
     let plan = ShtPlan::new(
         GridSpec::new(GridKind::GaussLegendre, 1025, 513, 0.37).unwrap(),
@@ -4409,56 +4408,15 @@ fn scalar_analysis_pair_range_cache_matches_checked_recurrence_and_is_plan_scope
     ));
 
     let mut cached_second = vec![Complex64::new(0.0, 0.0); first.len()];
-    #[cfg(rustsht_scalar_analysis_fused_direct_preflight)]
-    super::SCALAR_ANALYSIS_FUSED_DIRECT_PREFLIGHT_BLOCKS
-        .store(0, std::sync::atomic::Ordering::Relaxed);
     plan.analysis_into(&input, &mut cached_second, &mut cached_workspace)
         .unwrap();
-    if cfg!(rustsht_scalar_analysis_fused_direct_preflight) {
-        assert!(
-            super::SCALAR_ANALYSIS_FUSED_DIRECT_PREFLIGHT_BLOCKS
-                .load(std::sync::atomic::Ordering::Relaxed)
-                > 0,
-            "the fused-preflight direct-output candidate did not execute"
-        );
-    }
     let mut checked_workspace = plan.workspace().unwrap();
     plan.prepare_workspace(&mut checked_workspace, 1).unwrap();
     let mut checked = vec![Complex64::new(0.0, 0.0); first.len()];
     plan.analysis_into(&input, &mut checked, &mut checked_workspace)
         .unwrap();
-    let (difference_squared, reference_squared, maximum_difference, differing_coefficients) =
-        cached_second.iter().zip(&checked).fold(
-            (0.0, 0.0, 0.0_f64, 0),
-            |(difference, reference, maximum, count), (actual, expected)| {
-                let error = (*actual - *expected).norm();
-                (
-                    difference + error * error,
-                    reference + expected.norm_sqr(),
-                    maximum.max(error),
-                    count + usize::from(actual != expected),
-                )
-            },
-        );
-    let relative_l2 = (difference_squared / reference_squared.max(f64::MIN_POSITIVE)).sqrt();
-    if cfg!(rustsht_scalar_analysis_fused_direct_preflight) {
-        eprintln!(
-            "fused-preflight direct accumulation: differing={differing_coefficients}, relative_l2={relative_l2:.6e}, max_error={maximum_difference:.6e}"
-        );
-        assert!(
-            relative_l2 <= 4.0e-14,
-            "direct output differs at {differing_coefficients} coefficients; relative L2 {relative_l2:e}, max error {maximum_difference:e}"
-        );
-        let mut cached_third = vec![Complex64::new(0.0, 0.0); first.len()];
-        plan.analysis_into(&input, &mut cached_third, &mut cached_workspace)
-            .unwrap();
-        assert_eq!(
-            cached_third, cached_second,
-            "the warmed direct route must overwrite outputs consistently"
-        );
-    } else {
-        assert_eq!(differing_coefficients, 0);
-    }
+    assert_eq!(cached_second, checked);
+    assert_eq!(cached_second, first);
 
     let zero_input = vec![0.0; plan.sample_count];
     let mut cached_zero = vec![Complex64::new(0.0, 0.0); first.len()];
@@ -4472,9 +4430,6 @@ fn scalar_analysis_pair_range_cache_matches_checked_recurrence_and_is_plan_scope
 
     let subnormal_input: Vec<_> = input.iter().map(|value| value * 1.0e-310).collect();
     let mut cached_subnormal = vec![Complex64::new(0.0, 0.0); first.len()];
-    #[cfg(rustsht_scalar_analysis_fused_direct_preflight)]
-    super::SCALAR_ANALYSIS_FUSED_DIRECT_PREFLIGHT_BLOCKS
-        .store(0, std::sync::atomic::Ordering::Relaxed);
     plan.analysis_into(
         &subnormal_input,
         &mut cached_subnormal,
@@ -4492,9 +4447,6 @@ fn scalar_analysis_pair_range_cache_matches_checked_recurrence_and_is_plan_scope
 
     let extreme_input: Vec<_> = input.iter().map(|value| value * 1.0e300).collect();
     let mut cached_extreme = vec![Complex64::new(0.0, 0.0); first.len()];
-    #[cfg(rustsht_scalar_analysis_fused_direct_preflight)]
-    super::SCALAR_ANALYSIS_FUSED_DIRECT_PREFLIGHT_BLOCKS
-        .store(0, std::sync::atomic::Ordering::Relaxed);
     plan.analysis_into(&extreme_input, &mut cached_extreme, &mut cached_workspace)
         .unwrap();
     let mut checked_extreme = vec![Complex64::new(0.0, 0.0); first.len()];

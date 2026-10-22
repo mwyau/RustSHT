@@ -1,11 +1,11 @@
 # RustSHT plans — current status and reference index
 
-**Updated 2026-10-22 UTC.** This file is an execution queue, not a second source of implementation rules. Follow current explicit owner instructions, [AGENTS.md](../AGENTS.md), the live scalar-ablation record and then the relevant queued plan. Work on `opt/sht-performance-parity`, with safe integration of concurrent remote updates.
+**Updated 2026-10-22 UTC.** This file is an execution queue, not a second source of implementation rules. Follow current explicit owner instructions, [AGENTS.md](../AGENTS.md), and the active plan. Work on `opt/sht-performance-parity`, with safe integration of concurrent remote updates.
 
 ## Execution queue
 
-1. **CURRENT:** Finish the [owner-directed scalar-analysis cumulative-ablation](../reports/scalar-analysis-cumulative-ablation-2026-10-21.md), including the remaining fixed SIMD layout and combined/ablation evaluation. This follow-on is distinct from completed Plan 11.
-2. **QUEUED:** [16 — DUCC spin-1 recurrence and dataflow](16-ducc-spin1-recurrence-parity.md). Optimize verified f64 spin-1 CC/F1/GL recurrence and spectrum overhead with a DUCC algorithm crosswalk, parity-separated SIMD test, downstream prepared-coefficient reuse, and conditional order-major work.
+1. **COMPLETE:** [Owner-directed scalar-analysis cumulative ablation](../reports/scalar-analysis-cumulative-ablation-2026-10-21.md). The known-good production path is staged output, checked range-proof cache, and fixed 256-pair tile.
+2. **CURRENT:** [16 — DUCC spin-1 recurrence and dataflow](16-ducc-spin1-recurrence-parity.md). Optimize verified f64 spin-1 CC/F1/GL recurrence and spectrum overhead with a DUCC algorithm crosswalk, parity-separated SIMD test, downstream prepared-coefficient reuse, and conditional order-major work.
 3. **QUEUED AFTER PLAN 16:** [17 — f32 and high-resolution atmospheric SHT performance](17-f32-atmospheric-performance.md). Establish current matched native DUCC f32 scalar/spin-1 parity and address only measured f32 or T1023–T2047 scaling gaps; preserve odd-FFT hold.
 4. **DEFERRED, NOT AUTOMATIC:** [12 — Cache-informed Legendre dispatch](12-cache-informed-legendre-dispatch.md) and [13 — True fused batched SHT](13-fused-batched-sht.md). These are separate future projects and require explicit owner authorization.
 

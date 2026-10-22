@@ -13,17 +13,8 @@ mod spin_fast;
 pub(crate) const SPIN1_FAST_MIN_LMAX: usize = 15;
 pub(crate) const SCALAR_ORDER_BATCH_SIZE: usize = 256;
 
-/// Compile-time scalar-analysis pair tile used for focused 64/128/256 A/B
-/// builds. The production default is 256 active reflected-latitude pairs.
-#[allow(unexpected_cfgs)]
-pub(crate) const SCALAR_ANALYSIS_PAIR_TILE_SIZE: usize =
-    if cfg!(rustsht_scalar_analysis_pair_tile_64) {
-        64
-    } else if cfg!(rustsht_scalar_analysis_pair_tile_128) {
-        128
-    } else {
-        256
-    };
+/// Production scalar-analysis tile: 256 active reflected-latitude pairs.
+pub(crate) const SCALAR_ANALYSIS_PAIR_TILE_SIZE: usize = 256;
 
 pub(crate) fn recurrence_scratch_len(latitude_count: usize) -> usize {
     latitude_count
@@ -532,16 +523,6 @@ pub(crate) trait ShtScalar:
     ) -> Option<(bool, bool)> {
         None
     }
-    fn prepare_scalar_analysis_pair_inputs_with_lane_bound(
-        _same_real: &[Self],
-        _same_imag: &[Self],
-        _opposite_real: &mut [Self],
-        _opposite_imag: &mut [Self],
-        _cos_theta: &[Self],
-        _total_lane_count: usize,
-    ) -> Option<(bool, bool)> {
-        None
-    }
     fn scalar_analysis_prefix_skip_allowed(_latitude_count: usize) -> bool {
         false
     }
@@ -601,7 +582,6 @@ pub(crate) trait ShtScalar:
         _lmax: usize,
         _allow_insignificant_prefix: bool,
         _range_check_is_proven_safe: bool,
-        _direct_accumulation: bool,
         _range_check_was_exercised: &mut bool,
         _sin_theta: &[Self],
         _cos_theta: &[Self],
@@ -1420,26 +1400,6 @@ impl ShtScalar for f64 {
         ))
     }
 
-    fn prepare_scalar_analysis_pair_inputs_with_lane_bound(
-        same_real: &[Self],
-        same_imag: &[Self],
-        opposite_real: &mut [Self],
-        opposite_imag: &mut [Self],
-        cos_theta: &[Self],
-        total_lane_count: usize,
-    ) -> Option<(bool, bool)> {
-        Some(
-            scalar_paired::prepare_analysis_products_and_opposite_with_lane_bound(
-                same_real,
-                same_imag,
-                opposite_real,
-                opposite_imag,
-                cos_theta,
-                total_lane_count,
-            ),
-        )
-    }
-
     fn scalar_analysis_prefix_skip_allowed(latitude_count: usize) -> bool {
         scalar_paired::insignificant_prefix_skip_allowed(latitude_count)
     }
@@ -1488,7 +1448,6 @@ impl ShtScalar for f64 {
         lmax: usize,
         allow_insignificant_prefix: bool,
         range_check_is_proven_safe: bool,
-        direct_accumulation: bool,
         range_check_was_exercised: &mut bool,
         sin_theta: &[Self],
         cos_theta: &[Self],
@@ -1514,7 +1473,6 @@ impl ShtScalar for f64 {
             lmax,
             allow_insignificant_prefix,
             range_check_is_proven_safe,
-            direct_accumulation,
             range_check_was_exercised,
             sin_theta,
             cos_theta,
@@ -1879,14 +1837,7 @@ mod scalar_analysis_tile_tests {
     #[allow(unexpected_cfgs)]
     #[test]
     fn scalar_analysis_pair_tile_matches_build_configuration() {
-        let expected = if cfg!(rustsht_scalar_analysis_pair_tile_64) {
-            64
-        } else if cfg!(rustsht_scalar_analysis_pair_tile_128) {
-            128
-        } else {
-            256
-        };
-        assert_eq!(SCALAR_ANALYSIS_PAIR_TILE_SIZE, expected);
+        assert_eq!(SCALAR_ANALYSIS_PAIR_TILE_SIZE, 256);
     }
 
     #[test]

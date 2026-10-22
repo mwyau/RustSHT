@@ -1348,32 +1348,11 @@ pub(crate) fn prepare_analysis_products_and_opposite(
     opposite_imag: &mut [f64],
     cos_theta: &[f64],
 ) -> (bool, bool) {
-    prepare_analysis_products_and_opposite_with_lane_bound(
-        same_real,
-        same_imag,
-        opposite_real,
-        opposite_imag,
-        cos_theta,
-        same_real.len(),
-    )
-}
-
-/// Checks a larger accumulation bound while applying the opposite-parity
-/// cosine weight in the same input pass. The bound covers contributions from
-/// all reflected-latitude tiles when direct output accumulation is selected.
-pub(crate) fn prepare_analysis_products_and_opposite_with_lane_bound(
-    same_real: &[f64],
-    same_imag: &[f64],
-    opposite_real: &mut [f64],
-    opposite_imag: &mut [f64],
-    cos_theta: &[f64],
-    total_lane_count: usize,
-) -> (bool, bool) {
     debug_assert_eq!(same_real.len(), same_imag.len());
     debug_assert_eq!(same_real.len(), opposite_real.len());
     debug_assert_eq!(same_real.len(), opposite_imag.len());
     debug_assert_eq!(same_real.len(), cos_theta.len());
-    let max_input = f64::MAX / scalar::BIG / (2.0 * total_lane_count.max(1) as f64);
+    let max_input = f64::MAX / scalar::BIG / (2.0 * same_real.len().max(1) as f64);
     let mut products_safe = true;
     let mut opposite_safe = true;
 
@@ -2003,7 +1982,6 @@ pub(crate) fn fused_scalar_analysis_pair_block_preweighted_dispatched(
     lmax: usize,
     allow_insignificant_prefix: bool,
     range_check_is_proven_safe: bool,
-    direct_accumulation: bool,
     range_check_was_exercised: &mut bool,
     sin_theta: &[f64],
     cos_theta: &[f64],
@@ -2024,57 +2002,6 @@ pub(crate) fn fused_scalar_analysis_pair_block_preweighted_dispatched(
     exponents: &mut [i64],
 ) -> Result<bool, ShtError> {
     *range_check_was_exercised = false;
-    if direct_accumulation {
-        // This route is eligible only after a checked recurrence proof and a
-        // whole-latitude product bound fused into input preparation. Validate
-        // every shape and the normal sectoral seed before touching outputs.
-        if !range_check_is_proven_safe
-            || lmax < SIMD_SECTORAL_INIT_MIN_LMAX
-            || staged_coefficients.len() < lmax - m + 1
-            || previous.len() < sin_theta.len()
-            || current.len() < sin_theta.len()
-            || next.len() < sin_theta.len()
-            || cos_theta.len() != sin_theta.len()
-            || cos_theta_squared.len() != sin_theta.len()
-            || same_real.len() != sin_theta.len()
-            || same_imag.len() != sin_theta.len()
-            || opposite_real.len() != sin_theta.len()
-            || opposite_imag.len() != sin_theta.len()
-        {
-            return Ok(false);
-        }
-        previous[..sin_theta.len()].fill(0.0);
-        let initialization = initialize_normal_analysis_sectoral_dispatched(
-            arch,
-            m,
-            sin_theta,
-            sectoral_norm,
-            &mut current[..sin_theta.len()],
-        )?;
-        if !initialization.complete {
-            return Ok(false);
-        }
-        return Ok(
-            arch.dispatch(FusedScalarAnalysisPair::<true, false, false, true, true> {
-                m,
-                lmax,
-                range_check_was_exercised,
-                pair_start: 0,
-                cos_theta,
-                cos_theta_squared,
-                coefficient_a,
-                coefficient_b,
-                same_real,
-                same_imag,
-                opposite_real,
-                opposite_imag,
-                staged_coefficients,
-                previous: &mut previous[..sin_theta.len()],
-                current: &mut current[..sin_theta.len()],
-                next: &mut next[..sin_theta.len()],
-            }),
-        );
-    }
     if range_check_is_proven_safe {
         fused_scalar_analysis_pair_block_impl::<true, false>(
             arch,
@@ -3454,32 +3381,10 @@ struct FusedAnalysisTwoPairSteps<'a, const OPPOSITE_COSINE_WEIGHTED: bool> {
     second_coefficient_b: f64,
 }
 
-/// Reduces a real/imaginary SIMD pair into one complex sum.
-///
-/// The cumulative DUCC-layout candidate interleaves corresponding real and
-/// imaginary lanes before reducing two complex vectors. Other widths and the
-/// production default retain independent real and imaginary reductions.
-/// The lane layout follows DUCC's `vhsum_cmplx_special` from
-/// `sht_inner_loop.h` at revision `80388904b8cfc32400ba84af8a6a45aabfe60f86`.
-#[allow(unexpected_cfgs)]
+/// Reduces the real and imaginary lanes of one complex spectrum independently.
 #[inline(always)]
-fn reduce_analysis_complex_pair<S: Simd, const PACKED_COMPLEX: bool>(
-    simd: S,
-    real: S::f64s,
-    imag: S::f64s,
-) -> Complex64 {
-    if const {
-        PACKED_COMPLEX
-            && S::F64_LANES == 4
-            && std::mem::size_of::<S::f64s>() == std::mem::size_of::<S::c64s>()
-    } {
-        let [even_lanes, odd_lanes] = simd.interleave_shfl_f64s([real, imag]);
-        let even_sum = simd.reduce_sum_c64s(pulp::bytemuck::cast(even_lanes));
-        let odd_sum = simd.reduce_sum_c64s(pulp::bytemuck::cast(odd_lanes));
-        Complex64::new(even_sum.re + odd_sum.re, even_sum.im + odd_sum.im)
-    } else {
-        Complex64::new(simd.reduce_sum_f64s(real), simd.reduce_sum_f64s(imag))
-    }
+fn reduce_analysis_complex_pair<S: Simd>(simd: S, real: S::f64s, imag: S::f64s) -> Complex64 {
+    Complex64::new(simd.reduce_sum_f64s(real), simd.reduce_sum_f64s(imag))
 }
 
 #[inline(always)]
@@ -3844,26 +3749,10 @@ fn fused_analysis_two_pair_steps_with_simd<
 
     let (first_same, first_opposite, second_same, second_opposite) = if ACCUMULATE {
         (
-            reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
-                simd,
-                first_same_re,
-                first_same_im,
-            ),
-            reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
-                simd,
-                first_opposite_re,
-                first_opposite_im,
-            ),
-            reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
-                simd,
-                second_same_re,
-                second_same_im,
-            ),
-            reduce_analysis_complex_pair::<S, { cfg!(rustsht_packed_complex_pair_reduction) }>(
-                simd,
-                second_opposite_re,
-                second_opposite_im,
-            ),
+            reduce_analysis_complex_pair(simd, first_same_re, first_same_im),
+            reduce_analysis_complex_pair(simd, first_opposite_re, first_opposite_im),
+            reduce_analysis_complex_pair(simd, second_same_re, second_same_im),
+            reduce_analysis_complex_pair(simd, second_opposite_re, second_opposite_im),
         )
     } else {
         let zero = Complex64::new(0.0, 0.0);
@@ -6641,7 +6530,6 @@ mod tests {
             lmax,
             false,
             false,
-            false,
             &mut range_check_was_exercised,
             &sin_theta,
             &cos_theta,
@@ -7300,7 +7188,6 @@ mod tests {
                 lmax,
                 false,
                 false,
-                false,
                 &mut checked_range_was_exercised,
                 &sin_theta,
                 &cos_theta,
@@ -7335,7 +7222,6 @@ mod tests {
             m,
             lmax,
             true,
-            false,
             false,
             &mut range_check_was_exercised,
             &sin_theta,

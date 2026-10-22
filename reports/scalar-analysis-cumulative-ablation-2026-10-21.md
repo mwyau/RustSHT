@@ -1,7 +1,9 @@
 # Cumulative scalar-analysis candidate and ablation record
 
-**Status:** in progress; the final combined candidate and ablation study remain
-required. This owner-directed continuation uses the existing
+**Status: COMPLETE (2026-10-21).** The final combined candidate and required
+ablation study are complete. Production remains on the known-good staged
+output path with the checked range cache and fixed 256-pair tile. This
+owner-directed continuation uses the existing
 `opt/sht-performance-parity` branch. It does not change the public API or the
 production default.
 
@@ -84,9 +86,8 @@ timed batches per backend. Latencies are median (p10–p90), in milliseconds.
 | 180 | 8 | 0.932 (0.914–0.992) | 0.927 (0.912–0.989) | 0.938 → 0.924 | 0.994 → 1.003 | 0.995 | `4.91e-14` |
 
 Whole-transform shifts are small and overlap the observed ranges; they do not
-establish a production gain. The candidate remains in the cumulative build
-only because the required final interaction/ablation evaluation is still
-pending. It is not enabled by default.
+establish a production gain. The candidate was retained only through the
+final interaction/ablation evaluation below and is not enabled by default.
 
 ### Current-source remeasurement at `ef238290`
 
@@ -231,8 +232,8 @@ the checked 256-lane direct-kernel time to the post-group scan. These results
 identify a real validation cost and show the current safe route already
 removes repeated scans after proof. The packed-reduction candidate's focused
 release regression test passed with the cache enabled, including reuse after
-zero, subnormal, extreme-finite and adjoint inputs. Final combined timing will
-still measure interaction with the reduction candidate and all three tiles.
+zero, subnormal, extreme-finite and adjoint inputs. The final combined timing
+below measures interaction with the reduction candidate and all three tiles.
 
 ## Step 5 — output staging and accumulation
 
@@ -247,8 +248,9 @@ global product bound into the existing input-preparation pass, then selected
 direct output only for checked, cached recurrence blocks whose inputs passed
 that whole-latitude bound. Unsafe inputs and unproven blocks still use the
 transactional staged path. This removes the previously duplicated input scan,
-but the direct-output layout remains an experimental compile-time candidate
-(`rustsht_scalar_analysis_fused_direct_preflight`), never the default.
+but the direct-output layout remained an experimental compile-time candidate
+(`rustsht_scalar_analysis_fused_direct_preflight`), never the default. The
+final cumulative run below rejects it for latency and reset behavior.
 
 Matched full-transform comparison used Rust 1.99.1 / LLVM 23.1.1 and the
 release Rust example with Pulp V3 AVX2/FMA and strict Rust FP. DUCC was pinned
@@ -345,12 +347,11 @@ CARGO_TARGET_DIR="${DIRECT_TARGET:?}" RUSTSHT_FULL_TRANSFORM_RUSTFLAGS="$DIRECT_
   --threads 1 --threads 8 --results-dir "${DIRECT_REDUCED_RESULTS:?}" --no-report
 ```
 
-The candidate is 2.42–2.69× slower than staged Rust across these four
+The candidate was 2.42–2.69× slower than staged Rust across these four
 workloads despite removal of the separate bound scan. This is a clear
-whole-transform regression with tight Rust timing distributions and similar
-frequency/runqueue telemetry between builds; the source does not yet isolate
-the cause beyond the direct per-pair read/modify/write output flow. Keep it
-only for the required cumulative interaction/ablation evaluation. The
+whole-transform regression; the source does not yet isolate the cause beyond
+the direct per-pair read/modify/write output flow. It was retained only for
+the required cumulative interaction/ablation evaluation. The
 candidate's first call uses staging to establish the range proof, while warm
 calls use direct output, so the native harness correctly records
 `reset_consistent=false` when comparing cold and warm outputs. Warm candidate
@@ -430,22 +431,64 @@ RUSTFLAGS='-C target-cpu=x86-64-v3 --cfg rustsht_packed_complex_pair_reduction -
   -- --ignored --nocapture --test-threads=1
 ```
 
-## Remaining experiment sequence
+## Final cumulative evaluation and disposition
 
-| Step | State |
-|---|---|
-| 0. Source baselines | `ff0fe` current source and original `ce710` are now measured at T720; original-source whole-call and lane-kernel data are linked above. |
-| 1. 64/128/256 pair tiles | Selector and 256 initial setting exist; compare all three in final cumulative evaluation. |
-| 2. Fixed SIMD workspace layout | Complete as a cfg-gated field-order experiment; kernel assembly and timings show no supported gain. Retain only for final cumulative interaction/ablation. |
-| 3. Packed complex reduction | Implemented and validated behind cfg; isolated reducer is 3% faster, whole-transform effect remains inconclusive; retain only for cumulative evaluation. |
-| 4. Recurrence range-check handling | Complete in production since `aeb123d6`; checked-first cached proof skips only repeated ordinary vector scans. |
-| 5. Output staging and accumulation | Fused-preflight direct-output candidate implemented and validated, but 2.42–2.69× slower; retain only for final cumulative ablation. |
-| 6. Sectoral initialization | Reviewed: existing ordinary/scaled SIMD implementation already covers the production high-bandlimit route; no new change justified. |
-| 7. Scaled prefix/rescaling | Reviewed: existing SIMD threshold/frontier handling matches DUCC's two-pair transition and preserves checked scaling. |
-| 8. Scaled-to-ordinary transition | Reviewed: guarded correction/promotion and transactional fallback are already integrated. |
-| 9. Reflected active-ring packing | Reviewed: binary-searched first-active pair plus bounded SoA compaction is already integrated. |
-| 10. Coefficient/factor preparation | Reviewed: epsilon and recurrence factors are prepared once per order and reused across ring blocks, matching DUCC `Ylmgen::prepare`. |
-| Final combined evaluation | Pending: compare original `ce710` and the cumulative candidate at 64/128/256 lanes, then ablate each candidate and its interactions. |
+The final A/B used current source `2b8d31893d84ffcdc3dc8f76f69581323ae65aa6`
+and pinned DUCC `80388904b8cfc32400ba84af8a6a45aabfe60f86`. Rust was 1.99.1
+(LLVM 23.1.1), Pulp 0.22.3, strict FP and runtime V3; DUCC used GCC 15.2 with
+`-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3` and a strict benchmark
+driver. T720 GL analysis used deterministic even-smooth fixtures at `mmax=1`
+(low-work control), 180 and 720, q1/q8. Each build used three independent
+process pairs and ten calibrated ~25 ms batches per process/backend. Rust and
+DUCC were interleaved within each source build, but candidate builds ran in
+separate blocks; small cross-build deltas are screening evidence, not tightly
+paired attribution. q1 used CPU 0 and q8 CPUs 0–7 on one L3 domain. The
+current-default host runqueue wait was 0.24% median / 15.5% p90; frequency
+ranged 1.75–4.74 GHz (median 3.97 GHz), so marginal q8 shifts are
+inconclusive.
 
-The scalar analysis objective remains active until this final evaluation and
-the required function crosswalk are complete.
+The sanitized per-case table and build manifest are in
+[`summary.csv`](data/scalar-analysis-cumulative-ablation-2026-10-21/final-combined/summary.csv)
+and [`variants.csv`](data/scalar-analysis-cumulative-ablation-2026-10-21/final-combined/variants.csv).
+Raw process JSON and host samples remain local. All variants used the same
+fixtures, output buffers, transform boundary and numerical checks.
+
+| Variant | `mmax=180` q1 / q8 Rust ms (Rust/DUCC) | full `mmax=720` q1 / q8 Rust ms (Rust/DUCC) | Conclusion |
+|---|---:|---:|---|
+| Current default | 6.331 (1.053×) / 0.925 (1.002×) | 15.634 (1.074×) / 2.279 (1.028×) | Known-good reference |
+| Packed reducer only | 6.491 (1.037×) / 1.078 (1.050×) | 16.097 (1.083×) / 2.513 (1.130×) | Isolated kernel gain did not carry to this whole-call screen |
+| Scratch layout only | 6.399 (1.069×) / 1.073 (1.065×) | 16.043 (1.081×) / 2.639 (1.068×) | No supported gain; generated loop bytes were identical |
+| Packed + layout, tile 256 | 6.469 (1.033×) / 0.933 (0.991×) | 15.911 (1.058×) / 2.262 (1.057×) | Mixed, small changes; ranges overlap and no production gain established |
+| Packed + layout, tile 128 | 6.643 (1.040×) / 1.089 (1.085×) | 16.160 (1.089×) / 2.706 (1.096×) | Slower than tile 256 |
+| Packed + layout, tile 64 | 6.654 (1.104×) / 0.992 (1.050×) | 16.554 (1.115×) / 2.429 (1.122×) | Slower than tile 256 |
+| Range cache disabled | 8.044 (1.338×) / 1.165 (1.254×) | 19.713 (1.280×) / 3.183 (1.270×) | Keep the checked-first range cache |
+| Direct output only | 17.029 (2.686×) / 2.745 (2.557×) | 42.735 (2.732×) / 5.571 (2.595×) | Reject: 2.44–2.97× baseline latency and cold/warm reset mismatch |
+| Packed + layout + direct, tile 256 | 17.104 (2.808×) / 2.643 (2.525×) | 41.560 (2.804×) / 6.419 (2.580×) | Reject for the same direct-output regression/reset mismatch |
+
+The low-work `mmax=1` controls remain in the CSV; their q8 shifts varied
+substantially and do not override the full/reduced-work results. All safe
+variants completed 36 backend samples across six configurations with finite
+outputs and stable reset behavior. The two direct-output variants failed
+reset consistency in all three process runs for `mmax=180` and full `mmax`,
+q1/q8. Their numerical relative-L2 errors stayed around `5e-14`; numerical
+agreement does not excuse the output-contract failure. No tolerance or
+exceptional-value safeguard was changed.
+
+The `ce710` versus `ff0fe` comparison remains historical-to-current evidence,
+not attribution to one change: T720 full analysis improved 26.8% q1 and 39.4%
+q8, while `mmax=180` improved 29.4% and 36.2%. Isolated 64/128/256-lane
+kernels improved 31.6–36.5% versus `ce710`; current baseline kernels remain
+1.07–1.18× DUCC. The sanitized historical rows above do not assign that net
+gain to any single candidate.
+
+**Production decision:** retire the packed complex reducer, scratch-field
+reorder, 64/128 tile selectors and fused direct-output path. Keep the ordinary
+real/imag SIMD reduction, original workspace field order, fixed 256 reflected
+pair tile, checked range-proof cache, staged output and robust fallbacks. The
+known-good source is the no-cfg `current-default` build above. It measured
+about 1.05–1.08× DUCC at q1 and 1.00–1.03× at q8 for T720 `mmax=180`/full
+analysis; q8 tails limit small-delta conclusions.
+
+The scalar-analysis cumulative-ablation objective is closed. The next
+implementation study is Plan 16, beginning with its executed-kernel crosswalk
+before changing spin-1 recurrence code.
