@@ -1,5 +1,8 @@
 # RustSHT performance checkpoint — current findings
 
+**Owner-approved next sequence (2026-10-21):** the current scalar-analysis cumulative-ablation remains in progress; finish its pending fixed SIMD workspace/layout and combined candidate evaluation first. Then begin [Plan 16 — DUCC-equivalent spin-1 recurrence and dataflow](plans/16-ducc-spin1-recurrence-parity.md) on the same branch. This new plan investigates parity-separated accumulators versus the current cosine-combined SIMD kernel, full prepared-coefficient reuse, and only then order-major synthesis scheduling/layout; conditional follow-ups cover T1023 coefficient-cache eligibility and CC/F1 analysis resampling. Plan 15 remains closed. New hypotheses are **not measured improvements** and do not override the odd-FFT hold.
+
+
 **Updated:** 2026-10-21 UTC. **Branch:** `opt/sht-performance-parity`.
 **Owner-directed cumulative scalar-analysis evaluation (active):** the packed
 complex-reduction candidate is retained behind a compile-time cfg for the

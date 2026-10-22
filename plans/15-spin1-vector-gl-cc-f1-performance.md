@@ -1,5 +1,8 @@
 # Plan 15 — Spin-1 vector SHT performance on GL, CC and F1
 
+**Follow-on (queued after the current scalar-analysis cumulative-ablation):** [Plan 16 — DUCC-equivalent spin-1 recurrence and dataflow](16-ducc-spin1-recurrence-parity.md). This is a separate new investigation; Plan 15 remains complete and its rejected candidates stay rejected.
+
+
 **Status: COMPLETE (2026-10-21), closeout report: [`reports/plan15-spin1-synthesis-dataflow-closeout-2026-10-21.md`](../reports/plan15-spin1-synthesis-dataflow-closeout-2026-10-21.md).** The Plan 14 scalar full-transform sweep, four principal figures, validation and closeout remain committed on `opt/sht-performance-parity`. Plan 15 completed its spin-1 GL → CC → F1 sequence in the same Luna session and branch.
 
 **Closeout:** The bounded CC/F1 source comparison and two final A/B candidates are recorded in the linked report. Active-ring packing reduced fallback counts but did not yield a measurable whole-transform gain. Pair-outer SIMD traversal removed repeated coefficient broadcasts but regressed q1 synthesis by 23–27% and full-order q8 synthesis by about 5%, consistent with its per-pair lane-state traffic. Both candidates were removed. Accepted GL, CC and F1 changes remain; the large residual is localized to recurrence/spectrum work, with no additional supported production change. Odd-FFT optimization remains excluded per the owner direction below.
