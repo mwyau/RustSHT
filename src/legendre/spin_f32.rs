@@ -572,8 +572,9 @@ where
                 next_minus,
                 true,
             );
-            normalize_pair_lanes(current_plus, next_plus, exponent_plus)?;
-            normalize_pair_lanes(current_minus, next_minus, exponent_minus)?;
+            normalize_pair_lanes_prechecked(simd, current_plus, next_plus, exponent_plus)?;
+
+            normalize_pair_lanes_prechecked(simd, current_minus, next_minus, exponent_minus)?;
             std::mem::swap(&mut previous_plus, &mut current_plus);
             std::mem::swap(&mut current_plus, &mut next_plus);
             std::mem::swap(&mut previous_minus, &mut current_minus);
@@ -694,6 +695,73 @@ fn normalize_pair_lanes(
     Ok(())
 }
 
+/// Skip the scalar lane walk when a Pulp scan proves that every recurrence pair
+/// already satisfies the existing ordinary-range invariant. Any lane outside
+/// that range still uses the original scaler.
+#[inline(always)]
+fn normalize_pair_lanes_prechecked<S: Simd>(
+    simd: S,
+    previous: &mut [f32],
+    current: &mut [f32],
+    exponents: &mut [i64],
+) -> Result<(), ShtError> {
+    if pair_recurrence_state_in_safe_range(simd, previous, current) {
+        debug_assert_eq!(previous.len(), exponents.len());
+        return Ok(());
+    }
+    normalize_pair_lanes(previous, current, exponents)
+}
+
+#[inline(always)]
+fn pair_recurrence_state_in_safe_range<S: Simd>(
+    simd: S,
+    previous: &[f32],
+    current: &[f32],
+) -> bool {
+    if previous.len() != current.len() {
+        return false;
+    }
+
+    let (previous_vectors, previous_tail) = S::as_simd_f32s(previous);
+    let (current_vectors, current_tail) = S::as_simd_f32s(current);
+    debug_assert_eq!(previous_vectors.len(), current_vectors.len());
+    debug_assert_eq!(previous_tail.len(), current_tail.len());
+
+    let sign_mask = simd.splat_u32s(0x7fff_ffff);
+    let zero = simd.splat_u32s(0);
+    let smallest_safe = simd.splat_u32s(SMALL.to_bits());
+    let largest_safe = simd.splat_u32s(BIG.to_bits());
+    for index in 0..previous_vectors.len() {
+        let previous_bits =
+            simd.and_u32s(simd.transmute_u32s_f32s(previous_vectors[index]), sign_mask);
+        let current_bits =
+            simd.and_u32s(simd.transmute_u32s_f32s(current_vectors[index]), sign_mask);
+        let maximum_bits = simd.max_u32s(previous_bits, current_bits);
+        let all_zero = simd.equal_u32s(maximum_bits, zero);
+        let within_scaler_range = simd.and_m32s(
+            simd.greater_than_or_equal_u32s(maximum_bits, smallest_safe),
+            simd.less_than_or_equal_u32s(maximum_bits, largest_safe),
+        );
+        let safe = simd.or_m32s(all_zero, within_scaler_range);
+        if simd.first_true_m32s(simd.not_m32s(safe)) != S::U32_LANES {
+            return false;
+        }
+    }
+
+    previous_tail
+        .iter()
+        .zip(current_tail)
+        .all(|(&previous, &current)| pair_lane_is_in_safe_range(previous, current))
+}
+
+#[inline(always)]
+fn pair_lane_is_in_safe_range(previous: f32, current: f32) -> bool {
+    let previous_bits = previous.to_bits() & 0x7fff_ffff;
+    let current_bits = current.to_bits() & 0x7fff_ffff;
+    let maximum_bits = previous_bits.max(current_bits);
+    maximum_bits == 0 || (SMALL.to_bits()..=BIG.to_bits()).contains(&maximum_bits)
+}
+
 fn power(base: f32, mut exponent: usize) -> Result<ScaledValue, ShtError> {
     let mut result = ScaledValue {
         mantissa: 1.0,
@@ -764,6 +832,33 @@ pub(crate) fn spin_normalization(spin: usize, degree: usize, derivative: bool) -
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    struct CheckPairStateRange<'a> {
+        previous: &'a [f32],
+        current: &'a [f32],
+    }
+
+    impl WithSimd for CheckPairStateRange<'_> {
+        type Output = bool;
+
+        fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+            pair_recurrence_state_in_safe_range(simd, self.previous, self.current)
+        }
+    }
+
+    struct NormalizePairPrechecked<'a> {
+        previous: &'a mut [f32],
+        current: &'a mut [f32],
+        exponents: &'a mut [i64],
+    }
+
+    impl WithSimd for NormalizePairPrechecked<'_> {
+        type Output = Result<(), ShtError>;
+
+        fn with_simd<S: Simd>(self, simd: S) -> Self::Output {
+            normalize_pair_lanes_prechecked(simd, self.previous, self.current, self.exponents)
+        }
+    }
 
     struct AnalysisLanes32 {
         q_real: Vec<f32>,
@@ -851,6 +946,93 @@ mod tests {
                 }
             }
             (e_sum, b_sum)
+        }
+    }
+
+    #[test]
+    fn simd_normalizer_precheck_matches_scalar_scaler_for_boundaries_and_tail() {
+        let safe_previous = vec![
+            0.0, -0.0, 0.25, -0.5, SMALL, -SMALL, BIG, -BIG, 0.0, 1.0, 0.0, 0.25, -0.75, 0.0, 2.0,
+            0.0, 0.5,
+        ];
+        let safe_current = vec![
+            0.0, 0.0, -0.25, 0.5, 0.0, SMALL, 0.0, BIG, -0.0, -1.0, 0.0, -0.25, 0.75, 0.0, -2.0,
+            0.0, -0.5,
+        ];
+        let mut unsafe_previous = safe_previous.clone();
+        let mut unsafe_current = safe_current.clone();
+        unsafe_previous[0] = f32::from_bits(1);
+        unsafe_previous[1] = f32::MAX;
+        unsafe_current[2] = -f32::MAX;
+        unsafe_current[8] = f32::from_bits(SMALL.to_bits() - 1);
+        unsafe_previous[9] = BIG * 2.0;
+        unsafe_current[16] = f32::from_bits(SMALL.to_bits() - 1);
+        let mut nonfinite = safe_current.clone();
+        nonfinite[3] = f32::INFINITY;
+        nonfinite[11] = f32::NAN;
+
+        for (name, arch) in [("scalar", Arch::Scalar), ("runtime", Arch::new())] {
+            assert!(
+                arch.dispatch(CheckPairStateRange {
+                    previous: &safe_previous,
+                    current: &safe_current,
+                }),
+                "{name} backend rejected safe values"
+            );
+            assert!(!arch.dispatch(CheckPairStateRange {
+                previous: &unsafe_previous,
+                current: &unsafe_current,
+            }));
+            assert!(!arch.dispatch(CheckPairStateRange {
+                previous: &safe_previous,
+                current: &nonfinite,
+            }));
+
+            for (initial_previous, initial_current) in [
+                (&safe_previous, &safe_current),
+                (&unsafe_previous, &unsafe_current),
+            ] {
+                let mut expected_previous = initial_previous.clone();
+                let mut expected_current = initial_current.clone();
+                let mut expected_exponents = vec![19_i64; initial_previous.len()];
+                normalize_pair_lanes(
+                    &mut expected_previous,
+                    &mut expected_current,
+                    &mut expected_exponents,
+                )
+                .unwrap();
+
+                let mut actual_previous = initial_previous.clone();
+                let mut actual_current = initial_current.clone();
+                let mut actual_exponents = vec![19_i64; initial_previous.len()];
+                arch.dispatch(NormalizePairPrechecked {
+                    previous: &mut actual_previous,
+                    current: &mut actual_current,
+                    exponents: &mut actual_exponents,
+                })
+                .unwrap();
+                assert_eq!(
+                    actual_previous
+                        .iter()
+                        .map(|value| value.to_bits())
+                        .collect::<Vec<_>>(),
+                    expected_previous
+                        .iter()
+                        .map(|value| value.to_bits())
+                        .collect::<Vec<_>>(),
+                );
+                assert_eq!(
+                    actual_current
+                        .iter()
+                        .map(|value| value.to_bits())
+                        .collect::<Vec<_>>(),
+                    expected_current
+                        .iter()
+                        .map(|value| value.to_bits())
+                        .collect::<Vec<_>>(),
+                );
+                assert_eq!(actual_exponents, expected_exponents);
+            }
         }
     }
 
