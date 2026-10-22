@@ -6,7 +6,7 @@
 
 1. **COMPLETE:** [Owner-directed scalar-analysis cumulative ablation](../reports/scalar-analysis-cumulative-ablation-2026-10-21.md). The known-good production path is staged output, checked range-proof cache, and fixed 256-pair tile.
 2. **COMPLETE:** [16 — DUCC spin-1 recurrence and dataflow](16-ducc-spin1-recurrence-parity.md). Milestone E extends the bounded q8 coefficient cache to T1023/34 MiB and closes CC/F1 analysis-resampling attribution.
-3. **CURRENT:** [17 — f32 and high-resolution atmospheric SHT performance](17-f32-atmospheric-performance.md). Milestone A is complete. Milestone B has accepted `#[inline(always)]` on the f32 spin recurrence step (26.6–44.8% faster on matched T255/T720 cases, bitwise identical); next is phase attribution for lane normalization, recurrence, accumulation and scheduling. Preserve odd-FFT hold.
+3. **CURRENT:** [17 — f32 and high-resolution atmospheric SHT performance](17-f32-atmospheric-performance.md). Milestone A is complete. Milestone B retains `#[inline(always)]` on the f32 recurrence step (26.6–44.8% faster on matched T255/T720 cases, bitwise identical); whole-normalizer inlining was rejected after seven of eight regressions. Next is attribution of normalizer/rescale, recurrence, accumulation and scheduling costs. Preserve odd-FFT hold.
 4. **DEFERRED, NOT AUTOMATIC:** [12 — Cache-informed Legendre dispatch](12-cache-informed-legendre-dispatch.md) and [13 — True fused batched SHT](13-fused-batched-sht.md). These are separate future projects and require explicit owner authorization.
 
 ## Completed and retained

@@ -152,6 +152,12 @@ bitwise identical. The candidate remains 19.9–82.4× DUCC, so the next task is
 to attribute lane normalization, recurrence, coefficient accumulation and
 scheduling costs before another kernel change. See the [report](reports/plan17-f32-spin-recurrence-inline-2026-10-22.md)
 and [timing distributions](reports/data/plan17-f32-spin-recurrence-inline-2026-10-22/results.csv).
+The follow-up inlined `normalize_pair_lanes`; it removed its two per-degree
+calls but expanded the V3 caller about 28% and regressed seven of eight
+matched cases by 0.2–5.9%. Production keeps the out-of-line normalizer. The
+[negative A/B](reports/plan17-f32-spin-normalizer-inline-2026-10-22.md)
+records all timings; next quantify normalizer/rescale work against recurrence
+and coefficient accumulation before changing the dataflow again.
 
 The first Plan 17 spin-f32 normal-range skip candidate passed f32, adjoint,
 extreme and reset checks and improved selected T720 workloads by 2.6–8.8%.

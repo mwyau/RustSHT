@@ -46,6 +46,12 @@ by 26.6–44.8%, with bitwise-identical Rust outputs. The comparison, assembly
 summary and distributions are in the [inlining report](../reports/plan17-f32-spin-recurrence-inline-2026-10-22.md).
 Next, separate scalar lane normalization, recurrence, coefficient visitor /
 accumulation and scheduling costs; target only the largest measured component.
+The follow-up that forced `normalize_pair_lanes` inline was rejected: it
+removed two calls per degree but enlarged the V3 caller about 28% and regressed
+seven of eight matched full transforms. See the
+[negative A/B report](../reports/plan17-f32-spin-normalizer-inline-2026-10-22.md).
+The next diagnostic is normalizer/rescale frequency versus recurrence and
+accumulation time, not another unconditional inlining change.
 
 Only if Milestone A establishes a material f32 recurrence/accumulation gap:
 - Compare f32's executed spin recurrence and normal/scaled SIMD pathways with the best **validated** Plan 16 f64 algorithm; determine which structural optimizations can be translated safely and which require f32-specific scaling or precision handling.
