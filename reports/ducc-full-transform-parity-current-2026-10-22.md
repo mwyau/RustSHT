@@ -134,15 +134,36 @@ There were 0 recorded failure/warning events. Inspect `data/ducc-full-transform-
 ## Principal figures
 
 - [Analysis, full mmax](./data/ducc-full-transform-parity-current-2026-10-22/ratio-analysis-full-mmax.svg)
+- [Analysis, full mmax (PNG)](./data/ducc-full-transform-parity-current-2026-10-22/ratio-analysis-full-mmax.png)
 - [Analysis, reduced mmax](./data/ducc-full-transform-parity-current-2026-10-22/ratio-analysis-reduced-mmax.svg)
+- [Analysis, reduced mmax (PNG)](./data/ducc-full-transform-parity-current-2026-10-22/ratio-analysis-reduced-mmax.png)
 - [Synthesis, full mmax](./data/ducc-full-transform-parity-current-2026-10-22/ratio-synthesis-full-mmax.svg)
+- [Synthesis, full mmax (PNG)](./data/ducc-full-transform-parity-current-2026-10-22/ratio-synthesis-full-mmax.png)
 - [Synthesis, reduced mmax](./data/ducc-full-transform-parity-current-2026-10-22/ratio-synthesis-reduced-mmax.svg)
+- [Synthesis, reduced mmax (PNG)](./data/ducc-full-transform-parity-current-2026-10-22/ratio-synthesis-reduced-mmax.png)
 - [Absolute analysis latency](./data/ducc-full-transform-parity-current-2026-10-22/runtime-analysis.svg)
+- [Absolute analysis latency (PNG)](./data/ducc-full-transform-parity-current-2026-10-22/runtime-analysis.png)
 - [Absolute synthesis latency](./data/ducc-full-transform-parity-current-2026-10-22/runtime-synthesis.svg)
+- [Absolute synthesis latency (PNG)](./data/ducc-full-transform-parity-current-2026-10-22/runtime-synthesis.png)
 - [Precomputed table versus recurrence](./data/ducc-full-transform-parity-current-2026-10-22/legendre-table-vs-recurrence.svg)
+- [Precomputed table versus recurrence (PNG)](./data/ducc-full-transform-parity-current-2026-10-22/legendre-table-vs-recurrence.png)
 - [Paired FFT versus independent rows](./data/ducc-full-transform-parity-current-2026-10-22/paired-fft-benefit.svg)
+- [Paired FFT versus independent rows (PNG)](./data/ducc-full-transform-parity-current-2026-10-22/paired-fft-benefit.png)
 
-The four principal figures plot measured warmed RustSHT/DUCC ratios for even-smooth longitude cases only; q1 and q8 are separate curves and measured points are not smoothed. Odd-minimum cases remain in the data and shape summary. The compact-table/recurrence figure comes from the separate forced-route source sweep documented in [its report](scalar-legendre-table-recurrence-sweep-2026-10-22.md); the paired-FFT figure comes from the same-source paired/independent validation screen in [its report](paired-odd-longitude-fft-production-validation-2026-10-22.md). These controls are not mixed into the current-source Rust/DUCC timing series.
+The four primary ratio figures plot measured warmed RustSHT/DUCC ratios for
+even-smooth longitude cases only; q1 and q8 are separate curves, all measured
+points are retained, and no smoothing is applied. Dense data cover every
+`lmax=0…256`; sparse high-resolution observations extend through T3072. A
+readable subset of x-axis ticks replaces the earlier overlapping labels. Odd-
+minimum cases remain in the machine-readable data and shape analysis. The
+compact-table/recurrence figure comes from the separate forced-route source
+sweep documented in [its report](scalar-legendre-table-recurrence-sweep-2026-10-22.md);
+the paired-FFT figure comes from the same-source paired/independent validation
+screen in [its report](paired-odd-longitude-fft-production-validation-2026-10-22.md).
+Those controls are not mixed into the current-source Rust/DUCC timing series.
+The `--plot-only` mode regenerates all eight SVGs from the already-recorded CSV
+and auxiliary control datasets; it does not rerun transforms. PNG companions
+were rendered from those SVGs with headless Chromium.
 
 ## Reproduction and attribution
 

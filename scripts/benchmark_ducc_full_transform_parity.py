@@ -1017,6 +1017,13 @@ def plot_svg(path: pathlib.Path, title: str, series: list[dict], xkey: str, ykey
 
 
 
+def issue_lmax_ticks(xmax: int) -> list[int]:
+    """Keep the dense low-degree data while labeling a readable subset."""
+    candidates = [0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 320, 512,
+                  720, 1024, 1536, 2048, 2560, 3072]
+    return [degree for degree in candidates if degree <= xmax]
+
+
 def plot_issue_ratio_svg(path: pathlib.Path, operation: str, order_label: str,
                          points_by_threads: dict[int, list[dict]]) -> None:
     """Issue-ready full-transform ratio chart: sampled lmax, q1/q8, log axes.
@@ -1077,11 +1084,7 @@ def plot_issue_ratio_svg(path: pathlib.Path, operation: str, order_label: str,
         parts.append(f'<line x1="{left}" y1="{y:.1f}" x2="{width-right}" y2="{y:.1f}" stroke="{stroke}"{dash}/>')
         suffix = "× parity" if strong else "×"
         parts.append(f'<text x="{left-11}" y="{y+4:.1f}" text-anchor="end" font-family="sans-serif" font-size="13" font-weight="{"bold" if strong else "normal"}">{fmt_number(ratio)}{suffix}</text>')
-    xticks = [0, 1, 2, 4, 8, 16, 24, 32, 48, 64, 80, 96, 112, 128,
-              129, 159, 191, 223, 248, 254, 255, 256, 257, 258, 300, 320,
-              384, 511, 512, 513, 640, 720, 721, 768, 896, 1023, 1024,
-              1025, 1280, 1536, 1792, 2047, 2048, 2049, 2560, 3072]
-    xticks = [v for v in xticks if v <= xmax]
+    xticks = issue_lmax_ticks(xmax)
     for i, degree in enumerate(xticks):
         x = xcoord(degree)
         parts.append(f'<line x1="{x:.1f}" y1="{height-bottom}" x2="{x:.1f}" y2="{height-bottom+6}" stroke="#77818b"/>')
@@ -1170,11 +1173,8 @@ def plot_issue_runtime_svg(path: pathlib.Path, operation: str,
         y = ycoord(runtime)
         parts.append(f'<line x1="{left}" y1="{y:.1f}" x2="{width-right}" y2="{y:.1f}" stroke="#e3e8ed"/>')
         parts.append(f'<text x="{left-11}" y="{y+4:.1f}" text-anchor="end" font-family="sans-serif" font-size="13">{runtime:g}</text>')
-    xticks = [0, 1, 2, 4, 8, 16, 24, 32, 48, 64, 80, 96, 112, 128,
-              129, 159, 191, 223, 248, 254, 255, 256, 257, 258, 300, 320,
-              384, 511, 512, 513, 640, 720, 721, 768, 896, 1023, 1024,
-              1025, 1280, 1536, 1792, 2047, 2048, 2049, 2560, 3072]
-    for i, degree in enumerate(v for v in xticks if v <= xmax):
+    xticks = issue_lmax_ticks(xmax)
+    for i, degree in enumerate(xticks):
         x = xcoord(degree)
         label_y = height - bottom + 27 + (18 if i >= 7 and i % 2 else 0)
         parts.append(f'<line x1="{x:.1f}" y1="{height-bottom}" x2="{x:.1f}" y2="{height-bottom+6}" stroke="#77818b"/>')
@@ -1315,11 +1315,8 @@ def plot_log_degree_series(path: pathlib.Path, title: str, subtitle: str,
         strong = abs(value - 1) < 1e-12
         parts.append(f'<line x1="{left}" y1="{y:.1f}" x2="{width-right}" y2="{y:.1f}" stroke="{"#586675" if strong else "#e3e8ed"}"{" stroke-dasharray=\"6 4\"" if strong else ""}/>')
         parts.append(f'<text x="{left-10}" y="{y+4:.1f}" text-anchor="end" font-family="sans-serif" font-size="13">{value:g}{"× parity" if strong else "×"}</text>')
-    xticks = [0, 1, 2, 4, 8, 16, 32, 48, 63, 64, 65, 96, 127, 128, 129,
-              159, 191, 223, 255, 256, 257, 258, 300, 320, 384, 511, 512,
-              513, 640, 720, 721, 768, 896, 1023, 1024, 1025, 1280, 1536,
-              1792, 2047, 2048, 2049, 2560, 3072]
-    for index, degree in enumerate(value for value in xticks if value <= x_max):
+    xticks = issue_lmax_ticks(x_max)
+    for index, degree in enumerate(xticks):
         x = xcoord(degree)
         label_y = height - bottom + 27 + (17 if index >= 8 and index % 2 else 0)
         parts.append(f'<line x1="{x:.1f}" y1="{height-bottom}" x2="{x:.1f}" y2="{height-bottom+6}" stroke="#77818b"/>')
@@ -2120,7 +2117,11 @@ def main() -> None:
             parser.error("results.csv has no benchmark rows")
         write_issue_ratio_plots(rows, args.results_dir)
         write_issue_runtime_plots(rows, args.results_dir)
-        print(f"Regenerated four ratio and two runtime figures from {len(rows)} committed rows")
+        auxiliary = write_dispatch_and_pairing_plots(args.results_dir)
+        print(
+            f"Regenerated four ratio, two runtime and {len(auxiliary)} auxiliary figures "
+            f"from {len(rows)} committed rows"
+        )
         return
     if args.ducc_src is None:
         parser.error("--ducc-src or DUCC_SRC must name the pinned DUCC checkout")

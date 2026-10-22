@@ -111,7 +111,9 @@ while T1537–3072 full-order analysis and synthesis were near or below parity
 in the sampled cases. Some q8 high-degree process pairs were strongly
 interfered with (for example, T2047 reduced-order analysis), so distributions
 and telemetry are retained and no samples were removed. The four ratio plots,
-absolute timings, CSV/JSON results and coverage audit are in the
+two absolute-latency plots, table/recurrence crossover and paired-FFT A/B now
+have both SVG and PNG figures; plotting changes only declutter x-axis labels
+and preserve every point. The figures, CSV/JSON results and coverage audit are in the
 [full-sweep report](reports/ducc-full-transform-parity-current-2026-10-22.md).
 The scalar sweep itself changed no scalar production code. Its source was
 `819d1f44`; current HEAD `32bb8b4b` adds only the spin-1 T1023 cache gate and
