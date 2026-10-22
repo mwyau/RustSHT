@@ -19,7 +19,7 @@ import sys
 import tempfile
 import threading
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 import numpy as np
 
@@ -1272,7 +1272,9 @@ def plot_log_degree_series(path: pathlib.Path, title: str, subtitle: str,
     left, right, top, bottom = 100, 38, 100, 136
     plot_w, plot_h = width - left - right, height - top - bottom
     x_max = max(1, max(int(point["lmax"]) for point in points))
-    y_values = [float(point["value"]) for point in points]
+    y_values = [float(value) for point in points
+                for value in (point["value"], point.get("low", point["value"]),
+                              point.get("high", point["value"]))]
     y_min = min(y_values) * 0.8
     y_max = max(y_values) * 1.2
     if y_max / y_min < 2:
@@ -1294,6 +1296,17 @@ def plot_log_degree_series(path: pathlib.Path, title: str, subtitle: str,
         f'<text x="{left}" y="34" font-family="sans-serif" font-size="24" font-weight="bold">{title}</text>',
         f'<text x="{left}" y="60" font-family="sans-serif" font-size="14" fill="#555">{subtitle}</text>',
     ]
+    for item in series:
+        for start, end, label in item.get("regions", []):
+            x0, x1 = xcoord(start), xcoord(end)
+            parts.append(
+                f'<rect x="{x0:.1f}" y="{top}" width="{max(1.0, x1-x0):.1f}" '
+                f'height="{plot_h}" fill="#9ab6c8" opacity="0.20"/>'
+            )
+            parts.append(
+                f'<text x="{(x0+x1)/2:.1f}" y="{top+14}" text-anchor="middle" '
+                f'font-family="sans-serif" font-size="10" fill="#405a6b">{label}</text>'
+            )
     y_ticks = [0.125, 0.25, 0.5, 1, 2, 4, 8, 16]
     for value in y_ticks:
         if not y_min <= value <= y_max:
@@ -1325,7 +1338,14 @@ def plot_log_degree_series(path: pathlib.Path, title: str, subtitle: str,
         if len(coords) > 1:
             path_data = " ".join(f"{x:.1f},{y:.1f}" for x, y in coords)
             parts.append(f'<polyline fill="none" stroke="{color}" stroke-width="2.3"{dash} points="{path_data}"/>')
-        for x, y in coords:
+        for point, (x, y) in zip(observed, coords):
+            low = float(point.get("low", point["value"]))
+            high = float(point.get("high", point["value"]))
+            if low < high:
+                low_y, high_y = ycoord(low), ycoord(high)
+                parts.append(f'<line x1="{x:.1f}" y1="{high_y:.1f}" x2="{x:.1f}" y2="{low_y:.1f}" stroke="{color}" stroke-width="1.2"/>')
+                parts.append(f'<line x1="{x-3:.1f}" y1="{high_y:.1f}" x2="{x+3:.1f}" y2="{high_y:.1f}" stroke="{color}" stroke-width="1.2"/>')
+                parts.append(f'<line x1="{x-3:.1f}" y1="{low_y:.1f}" x2="{x+3:.1f}" y2="{low_y:.1f}" stroke="{color}" stroke-width="1.2"/>')
             parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="2.8" fill="{color}"/>')
         legend_x = left + index * min(280, (width-left-right)//max(1, len(series)))
         legend_y = 82
@@ -1356,17 +1376,39 @@ def write_dispatch_and_pairing_plots(output_dir: pathlib.Path) -> list[str]:
                             and row["longitude"] == "even_smooth"
                             and row["status"] == "complete"
                             and row["table_over_recurrence"]]
+                plot_points = []
+                for row in selected:
+                    table_samples = [float(value) for value in row["table_samples_us"].split(";") if value]
+                    recurrence_samples = [float(value) for value in row["recurrence_samples_us"].split(";") if value]
+                    ratios = [table / recurrence for table, recurrence
+                              in zip(table_samples, recurrence_samples) if recurrence > 0]
+                    point = {"lmax": int(row["lmax"]),
+                             "value": float(row["table_over_recurrence"])}
+                    if ratios:
+                        point["low"], point["high"] = min(ratios), max(ratios)
+                    plot_points.append(point)
+                regions = []
+                if operation == "Analysis" and threads == 1:
+                    table_degrees = sorted(int(row["lmax"]) for row in selected
+                                            if row["production_strategy"] == "CompactTable")
+                    if table_degrees:
+                        start = previous = table_degrees[0]
+                        for degree in table_degrees[1:]:
+                            if degree != previous + 1:
+                                regions.append((start, previous, "selected q1 analysis table policy"))
+                                start = degree
+                            previous = degree
+                        regions.append((start, previous, "selected q1 analysis table policy"))
                 table_series.append({
                     "name": f"{operation.lower()} q{threads}",
-                    "points": [{"lmax": int(row["lmax"]),
-                                "value": float(row["table_over_recurrence"])}
-                               for row in selected],
+                    "points": plot_points,
                     "dashed": threads == 8,
+                    "regions": regions,
                 })
         plot_log_degree_series(
             output_dir / "legendre-table-vs-recurrence.svg",
             "Compact Legendre table / on-the-fly recurrence",
-            "Forced-route measurements, full mmax, even-smooth longitude; prior source sweep, not mixed into current-source timings",
+            "Forced-route screen; whiskers show three-sample min–max; shaded band marks selected q1 analysis table degrees (separate source sweep)",
             table_series, "table / recurrence runtime",
         )
         generated.append("legendre-table-vs-recurrence.svg")
@@ -1464,7 +1506,7 @@ def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
         "expected_lmax_0_through_256": list(range(257)),
         "observed_lmax_0_through_256": low_degrees,
         "required_high_lmax": required_high,
-        "observed_high_lmax": sorted({case["lmax"] for case in cases if case["lmax"] > 128}),
+        "observed_high_lmax": sorted({case["lmax"] for case in cases if case["lmax"] > 256}),
         "expected_case_count": len(expected),
         "observed_case_count": len(cases),
         "missing_case_ids": sorted(expected_ids - actual_ids),
@@ -1532,7 +1574,9 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
         "failures": portable_evidence(analysis.get("failures", [])),
         "host_summary": analysis["host"],
     }
-    (output_dir / "results.json").write_text(json.dumps(machine, indent=2, allow_nan=False) + "\n")
+    (output_dir / "results.json").write_text(
+        json.dumps(machine, separators=(",", ":"), allow_nan=False) + "\n"
+    )
     result_fields = list(rows[0]) if rows else [
         "case_id", "lmax", "mmax", "ntheta", "nphi", "longitude_mode",
         "operation", "threads", "rust_warm_ms", "rust_p10_ms", "rust_p90_ms",
@@ -1716,11 +1760,12 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
                              metadata: dict, rows: list[dict], cases: list[dict],
                              coverage: dict, validations: list[dict],
                              failures: list[dict], host: dict,
-                             invocations: list[str]) -> None:
+                             invocations: list[str], samples: list[dict]) -> None:
     report.parent.mkdir(parents=True, exist_ok=True)
     result_prefix = pathlib.Path(os.path.relpath(output_dir, report.parent)).as_posix()
     degree_bands = ((1, 32), (33, 63), (64, 128), (129, 256), (257, 720),
                     (721, 1536), (1537, 3072))
+    timing_count_histogram = Counter(int(row["batch_count"]) for row in rows)
     lines = [
         "# Current-source native RustSHT/DUCC scalar GL sweep (2026-10-22)",
         "",
@@ -1733,8 +1778,9 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
         "",
         "## Scope and method",
         "",
-        f"The case manifest contains {len(cases)} distinct GL geometries: every `lmax=0…256` plus {len([value for value in DENSE_SWEEP_HIGH_LMAX if value > 256])} selected higher degrees through T3072. Every degree includes full and quarter-order `mmax` with even FFT-smooth longitude; selected small, dispatch-boundary and high-resolution cases also include odd-minimum longitude. Each transform uses `ntheta=lmax+1`, `phi0=0.23`, the full permitted degree/order triangle and deterministic PCG64 fixtures shared by both native libraries.",
+        f"The case manifest contains {len(cases)} distinct GL geometries: every `lmax=0…256` plus {len([value for value in DENSE_SWEEP_HIGH_LMAX if value > 256])} selected higher degrees through T3072. Every degree includes full and quarter-order `mmax` with even FFT-smooth longitude where those truncations differ; identical low-degree cases are deduplicated. Selected small, dispatch-boundary and high-resolution cases also include odd-minimum longitude. Each transform uses `ntheta=lmax+1`, `phi0=0.23`, the full permitted degree/order triangle and deterministic PCG64 fixtures shared by both native libraries.",
         f"Both analysis and synthesis were run at q1/q8. Short calls use {PROCESS_PAIRS} interleaved process pairs and {BATCHES_PER_PROCESS} calibrated batches per backend process, targeting {TARGET_BATCH_MS:g} ms; long calls use the existing individually timed rule. Rust plan/workspace setup, first-call and warmed timings are separate. The JSON retains per-process batch distributions, numerical comparisons and validation; aggregate CPU-frequency and scheduler diagnostics are reported below. Raw per-process telemetry stays in local shard captures. Failure records are retained in `failures.csv` and JSON.",
+        f"Timing-count audit: {timing_count_histogram.get(3 * BATCHES_PER_PROCESS, 0)} rows contain 30 calibrated batches (10 in each process pair), {timing_count_histogram.get(15, 0)} contain 15 individually timed long-call observations (five in each pair), and {timing_count_histogram.get(25, 0)} mix two 10-batch pairs with one five-call long pair. The raw JSON records each process's actual timing route; no row is padded to a nominal sample count.",
         f"The q1/q8 CPU affinity was pinned to the physical core sets shown above. q8 uses the first eight physical cores visible to the process (one CCD on this host). RustSHT and DUCC receive the same fixtures and reusable caller buffers; DUCC's public API performs its own internal setup on each call.",
         "",
         "## Coverage audit",
@@ -1770,8 +1816,9 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
                     )
     lines += ["", "### Fast and slow measured cases", ""]
     if rows:
-        worst = sorted(rows, key=lambda row: row["rust_ducc_ratio"], reverse=True)[:8]
-        best = sorted(rows, key=lambda row: row["rust_ducc_ratio"])[:8]
+        throughput_rows = [row for row in rows if row["lmax"] > 0]
+        worst = sorted(throughput_rows, key=lambda row: row["rust_ducc_ratio"], reverse=True)[:8]
+        best = sorted(throughput_rows, key=lambda row: row["rust_ducc_ratio"])[:8]
         lines += [
             "| case | operation | q | Rust ms | DUCC ms | ratio | relative L2 |",
             "|---|---|---:|---:|---:|---:|---:|",
@@ -1815,7 +1862,8 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
             for is_full, order_label in ((True, "full"), (False, "reduced")):
                 for threads in (1, 8):
                     selected = sorted(
-                        [row for row in rows if row["operation"] == operation
+                        [row for row in rows if row["lmax"] > 0
+                         and row["operation"] == operation
                          and row["threads"] == threads
                          and ((row["mmax"] == row["lmax"]) == is_full)
                          and row["longitude_mode"] == "even_smooth"],
@@ -1840,6 +1888,7 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
         max_l2 = max(row["relative_l2"] for row in rows)
         max_abs = max(row["absolute_max"] for row in rows)
         lines.append(f"Maximum random-output relative L2 error: `{max_l2:.3e}`; maximum absolute error: `{max_abs:.3e}`.")
+        lines.append("T0 remains in the raw results, coverage audit, correctness checks and plots; it is excluded from the degree-band and fastest/slowest throughput summaries.")
     finite_validations = sum(item["finite_outputs"] for item in validations)
     reset_validations = sum(all(item["reset_consistent"].values()) for item in validations)
     roundtrip_max = max((item["roundtrip"][backend]["relative_l2"]
@@ -1849,6 +1898,35 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
     adjoint_max = max((item["adjoints"][backend][key] for item in validations
                        for backend in ("rustsht", "ducc")
                        for key in ("synthesis_relative_residual", "analysis_relative_residual")), default=0.0)
+    process_medians: dict[tuple[str, str, int, str], list[tuple[int, float]]] = defaultdict(list)
+    for sample in samples:
+        timings = sample.get("batch_ms", [])
+        if timings:
+            process_medians[(sample["case_id"], sample["operation"],
+                             sample["threads"], sample["backend"])].append(
+                (sample["process_pair"], statistics.median(timings))
+            )
+    process_spreads = []
+    for (case_id, operation, threads, backend), observations in process_medians.items():
+        if threads != 8:
+            continue
+        case = next(item for item in cases if item["case_id"] == case_id)
+        if case["lmax"] < 1024 or len(observations) < 3:
+            continue
+        values = [value for _, value in sorted(observations)]
+        if min(values) > 0:
+            process_spreads.append((max(values) / min(values), case, operation, backend, values))
+    process_spreads.sort(key=lambda item: item[0], reverse=True)
+    if process_spreads:
+        lines += [
+            "",
+            "Largest q8 high-degree process-pair spreads (triplets are per-process medians in ms; all observations are retained):",
+        ]
+        for spread, case, operation, backend, values in process_spreads[:2]:
+            lines.append(
+                f"- T{case['lmax']} m{case['mmax']} {case['longitude_mode']} {operation} {backend}: "
+                f"{spread:.2f}× across process pairs ({', '.join(f'{value:.4g}' for value in values)} ms)."
+            )
     lines += [
         f"Validation ran for {len(validations)} case/thread configurations: finite edge outputs {finite_validations}/{len(validations)}, reused-output reset checks {reset_validations}/{len(validations)}; maximum roundtrip relative L2 `{roundtrip_max:.3e}`, selected-basis recovery `{basis_max:.3e}`, and adjoint residual `{adjoint_max:.3e}`. Sidecar results include zero, subnormal and extreme-finite checks.",
         f"Observed CPU frequency median/p10/p90 `{fmt(host['frequency_ghz_median'])}/{fmt(host['frequency_ghz_p10'])}/{fmt(host['frequency_ghz_p90'])}` GHz; scheduler wait median/p90 `{fmt(host['runqueue_wait_fraction_median'])}/{fmt(host['runqueue_wait_fraction_p90'])}`; involuntary-switch median/max `{fmt(host['involuntary_switches_median'])}/{host['involuntary_switches_max']}`. No batch samples are removed from the saved distributions.",
@@ -1865,7 +1943,7 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
         f"- [Precomputed table versus recurrence](./{result_prefix}/legendre-table-vs-recurrence.svg)",
         f"- [Paired FFT versus independent rows](./{result_prefix}/paired-fft-benefit.svg)",
         "",
-        "The four figures plot measured warmed RustSHT/DUCC ratios for even-smooth longitude cases only; q1 and q8 are separate curves and points are not smoothed. Odd-minimum cases remain in the data and shape summary.",
+        "The four principal figures plot measured warmed RustSHT/DUCC ratios for even-smooth longitude cases only; q1 and q8 are separate curves and measured points are not smoothed. Odd-minimum cases remain in the data and shape summary. The compact-table/recurrence figure comes from the separate forced-route source sweep documented in [its report](scalar-legendre-table-recurrence-sweep-2026-10-22.md); the paired-FFT figure comes from the same-source paired/independent validation screen in [its report](paired-odd-longitude-fft-production-validation-2026-10-22.md). These controls are not mixed into the current-source Rust/DUCC timing series.",
         "",
         "## Reproduction and attribution",
         "",
@@ -1965,7 +2043,8 @@ def merge_shards(shard_paths: list[pathlib.Path], output_dir: pathlib.Path,
     if dense_sweep:
         coverage = dense_sweep_coverage(cases, raw, errors, failures)
         write_dense_sweep_report(output_dir, report_path, metadata, rows, cases,
-                                 coverage, validations, failures, analysis["host"], invocations)
+                                 coverage, validations, failures, analysis["host"],
+                                 invocations, raw)
 
 
 def fmt(value):
