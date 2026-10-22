@@ -15,17 +15,21 @@ report above.
 
 ## Post-closeout evidence — paired odd-longitude FFT (2026-10-22)
 
-**Disposition: experimental candidate, not production; Plan 14 remains COMPLETE.**
-The [separate paired-row experiment](../reports/paired-odd-longitude-fft-experiment-2026-10-21.md)
-on [`exp/paired-odd-longitude-fft`](https://github.com/mwyau/RustSHT/tree/exp/paired-odd-longitude-fft)
-tested a bounded FFT mechanism distinct from the earlier rejected
-standalone real-C2R backend. The experimental baseline was
+**Current status: the guarded paired-row route is production code; Plan 14 remains COMPLETE.**
+The [original paired-row report](../reports/paired-odd-longitude-fft-experiment-2026-10-21.md)
+records measurements from the then-separate
+[`exp/paired-odd-longitude-fft`](https://github.com/mwyau/RustSHT/tree/exp/paired-odd-longitude-fft)
+branch. The route was subsequently integrated on this branch in commits
+`c70b19a3` and `a2c5535d`. Current-source exhaustive numerical validation is
+recorded in the [production validation report](../reports/paired-odd-longitude-fft-production-validation-2026-10-22.md).
+The original experiment tested a bounded FFT mechanism distinct from the earlier rejected
+standalone real-C2R backend. Its experimental baseline was
 `ef238290f28d5192ca54de8e442c77640549828a`; implementation
 `4b74e3a50a6a683e1ead44650aa6e9b4dad81246`, test hardening
 `8342f6631b9c5791f8e6ba4243e032dcb9d8eabd`, and experimental HEAD
 `ce404917ca194adfb4688a3f9acda4e9238921b1`. The separate branch
-is accessible on GitHub; its report and sanitized result tables are
-available on this performance branch, but **the code has not been integrated**.
+is accessible on GitHub; its report and sanitized result tables remain
+historical evidence and do not describe the current production source.
 
 - **Method:** pack two adjacent real longitude rows into one complex FFT,
   split/reconstruct the Hermitian results, and retain the old independent

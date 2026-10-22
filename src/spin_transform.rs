@@ -2183,6 +2183,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         clippy::too_many_arguments,
         reason = "Original-coefficient fallback uses one order and caller-owned scratch."
     )]
+    #[cfg(feature = "parallel")]
     fn synthesize_general_spin_order(
         &self,
         m: usize,
@@ -2307,6 +2308,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         clippy::too_many_arguments,
         reason = "Spin-1 scalar synthesis uses the plan's recurrence factors and worker scratch."
     )]
+    #[cfg(any(feature = "parallel", test))]
     fn synthesize_spin1_scalar_block(
         &self,
         m: usize,

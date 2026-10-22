@@ -1,0 +1,41 @@
+{
+  "baseline_source_revision": "cc6c5aba",
+  "pinned_ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "rust_flags_enabled": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "rust_flags_disabled": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs --cfg rustsht_disable_paired_odd_fft",
+  "ducc_sht_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3",
+  "host": "AMD Ryzen 9 5950X 16-Core Processor",
+  "cases": 60,
+  "process_pairs_per_variant": 3,
+  "batches_per_process": 10,
+  "batches_per_case": 30,
+  "target_batch_ms": 25,
+  "route_run_order": [
+    "all paired-enabled cases",
+    "all compile-time paired-disabled cases"
+  ],
+  "paired_enabled_host_summary": {
+    "frequency_ghz_median": 4.5380970000000005,
+    "frequency_ghz_p10": 3.7275465,
+    "frequency_ghz_p90": 4.6649215,
+    "runqueue_wait_fraction_median": 0.011291574719957505,
+    "runqueue_wait_fraction_p90": 0.26924353018897024,
+    "involuntary_switches_median": 63.0,
+    "involuntary_switches_max": 55526,
+    "sampled_worker_processes": 360
+  },
+  "paired_disabled_host_summary": {
+    "frequency_ghz_median": 4.539256,
+    "frequency_ghz_p10": 3.732776,
+    "frequency_ghz_p90": 4.6664306,
+    "runqueue_wait_fraction_median": 0.014117290170071678,
+    "runqueue_wait_fraction_p90": 0.26918679727433614,
+    "involuntary_switches_median": 63.5,
+    "involuntary_switches_max": 55709,
+    "sampled_worker_processes": 360
+  },
+  "runtime_rust_arch": [
+    "V3 AVX2/FMA"
+  ],
+  "comparison": "Same fixtures, Rust/DUCC full-transform boundaries and source commit; route variants were measured in consecutive source-variant campaigns, not alternated per case. Each campaign internally paired Rust and DUCC."
+}

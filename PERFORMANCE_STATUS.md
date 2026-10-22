@@ -77,7 +77,19 @@ Plan 15's GL→CC→F1 sequence is complete. Its remaining CC/F1 synthesis exces
 was attributed to recurrence/spectrum work; tested dataflow candidates did not
 justify another production kernel. See the [Plan 15 closeout](reports/plan15-spin1-synthesis-dataflow-closeout-2026-10-21.md).
 
+**Paired odd-length FFT validation (2026-10-22):** the guarded scalar f64
+paired-row route is already production code. Exhaustive same-source comparison
+against its independent-row route passed T0–T256 for q1/q8, analysis/synthesis
+and odd/even longitude shapes (2,056 rows; maximum relative L2 `1.91e-15`).
+Serial/no-default coverage also passed all 257 degrees. Exceptional, subnormal,
+poisoned-workspace and late partial-write fallback cases passed. The 8:1 row
+scale guard remains an empirical filter, not a per-mode error bound. In the
+focused same-source boundary screen, paired/independent geometric mean latency
+was 0.963/0.943× for full-order analysis q1/q8 and 0.905/0.945× for synthesis;
+reduced-order small-`nphi` analysis had some q1 regressions. See the
+[validation report](reports/paired-odd-longitude-fft-production-validation-2026-10-22.md).
+
 **Constraints:** preserve strict Rust floating-point semantics, checked
 exceptional-value fallbacks, portable Pulp SIMD, the stable API, and the
-odd-length FFT hold. Keep DUCC 0.42.0 pinned at
+existing guarded paired odd-row scope. Keep DUCC 0.42.0 pinned at
 `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b` for current comparisons.

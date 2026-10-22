@@ -23,12 +23,14 @@ pub(crate) fn recurrence_scratch_len(latitude_count: usize) -> usize {
         .max(SCALAR_ANALYSIS_PAIR_TILE_SIZE)
 }
 
+#[cfg(test)]
+pub(crate) use scalar_table::benchmark_strategy_override;
+#[cfg(all(test, feature = "parallel"))]
+pub(crate) use scalar_table::set_benchmark_strategy_override;
 pub(crate) use scalar_table::{
     LegendreOperation, LegendreStrategy, MAX_OVERSAMPLED_TABLE_ANALYSIS_LMAX, ScalarLegendreTable,
     measured_table_break_even_calls, select_scalar_legendre_strategy,
 };
-#[cfg(test)]
-pub(crate) use scalar_table::{benchmark_strategy_override, set_benchmark_strategy_override};
 pub(crate) use spin_fast::{
     fill_spin2_factors, scalar_to_spin1, scalar_to_spin2, spin1_to_scalar, spin2_to_scalar,
 };

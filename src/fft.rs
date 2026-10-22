@@ -1007,6 +1007,79 @@ mod tests {
     }
 
     #[test]
+    fn paired_odd_fft_matches_equal_peak_rows_with_distinct_spectral_support() {
+        for n in [129, 257, 361, 509] {
+            let plan = RealFftPlan::new(n).unwrap();
+            let mut workspace = plan.workspace().unwrap();
+            let first: Vec<_> = (0..n)
+                .map(|j| (2.0 * PI * 3.0 * j as f64 / n as f64).sin())
+                .collect();
+            let high_frequency = n / 2 - 2;
+            let second: Vec<_> = (0..n)
+                .map(|j| {
+                    0.8 * (2.0 * PI * high_frequency as f64 * j as f64 / n as f64 + 0.17).cos()
+                })
+                .collect();
+            let mut first_expected = vec![Complex64::new(0.0, 0.0); plan.spectrum_len()];
+            let mut second_expected = vec![Complex64::new(0.0, 0.0); plan.spectrum_len()];
+            plan.forward(&first, &mut first_expected, &mut workspace)
+                .unwrap();
+            plan.forward(&second, &mut second_expected, &mut workspace)
+                .unwrap();
+
+            let mut first_actual =
+                vec![Complex64::new(f64::NAN, f64::INFINITY); plan.spectrum_len()];
+            let mut second_actual = first_actual.clone();
+            assert!(
+                plan.forward_paired_truncated(
+                    &first,
+                    &second,
+                    &mut first_actual,
+                    &mut second_actual,
+                    &mut workspace,
+                )
+                .unwrap(),
+                "equal peak input rows should pass the empirical amplitude guard at N={n}"
+            );
+            for (actual, expected) in first_actual.iter().zip(&first_expected) {
+                close_complex(*actual, *expected, 4e-13);
+            }
+            for (actual, expected) in second_actual.iter().zip(&second_expected) {
+                close_complex(*actual, *expected, 4e-13);
+            }
+
+            let mut first_inverse_expected = vec![0.0; n];
+            let mut second_inverse_expected = vec![0.0; n];
+            plan.inverse_series(&first_expected, &mut first_inverse_expected, &mut workspace)
+                .unwrap();
+            plan.inverse_series(
+                &second_expected,
+                &mut second_inverse_expected,
+                &mut workspace,
+            )
+            .unwrap();
+            let mut first_inverse_actual = vec![f64::NAN; n];
+            let mut second_inverse_actual = vec![f64::NAN; n];
+            assert!(
+                plan.inverse_paired_series(
+                    &first_expected,
+                    &second_expected,
+                    &mut first_inverse_actual,
+                    &mut second_inverse_actual,
+                    &mut workspace,
+                )
+                .unwrap()
+            );
+            for (&actual, &expected) in first_inverse_actual.iter().zip(&first_inverse_expected) {
+                assert!((actual - expected).abs() <= 4e-13 * expected.abs().max(1.0));
+            }
+            for (&actual, &expected) in second_inverse_actual.iter().zip(&second_inverse_expected) {
+                assert!((actual - expected).abs() <= 4e-13 * expected.abs().max(1.0));
+            }
+        }
+    }
+
+    #[test]
     fn paired_odd_fft_reuses_poisoned_workspace() {
         for n in [129, 361, 509] {
             let plan = RealFftPlan::new(n).unwrap();

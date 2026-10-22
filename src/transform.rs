@@ -33,8 +33,33 @@ static SCALAR_RECURRENCE_SYNTHESIS_CALLS: AtomicUsize = AtomicUsize::new(0);
 static SCALAR_TABLE_ANALYSIS_CALLS: AtomicUsize = AtomicUsize::new(0);
 #[cfg(test)]
 static SCALAR_RECURRENCE_ANALYSIS_CALLS: AtomicUsize = AtomicUsize::new(0);
+#[cfg(test)]
+static PAIRED_ODD_FFT_DISABLED: AtomicBool = AtomicBool::new(false);
+#[cfg(test)]
+static PAIRED_FORWARD_SUCCESSES: AtomicUsize = AtomicUsize::new(0);
+#[cfg(test)]
+static PAIRED_FORWARD_DECLINES: AtomicUsize = AtomicUsize::new(0);
+#[cfg(test)]
+static PAIRED_INVERSE_SUCCESSES: AtomicUsize = AtomicUsize::new(0);
+#[cfg(test)]
+static PAIRED_INVERSE_DECLINES: AtomicUsize = AtomicUsize::new(0);
 
 #[cfg(test)]
+pub(crate) fn set_paired_odd_fft_disabled_for_test(disabled: bool) {
+    PAIRED_ODD_FFT_DISABLED.store(disabled, Ordering::Relaxed);
+}
+
+#[cfg(test)]
+pub(crate) fn take_paired_odd_fft_row_counts() -> [usize; 4] {
+    [
+        PAIRED_FORWARD_SUCCESSES.swap(0, Ordering::Relaxed),
+        PAIRED_FORWARD_DECLINES.swap(0, Ordering::Relaxed),
+        PAIRED_INVERSE_SUCCESSES.swap(0, Ordering::Relaxed),
+        PAIRED_INVERSE_DECLINES.swap(0, Ordering::Relaxed),
+    ]
+}
+
+#[cfg(all(test, feature = "parallel"))]
 pub(crate) fn take_scalar_legendre_benchmark_route_counts() -> [usize; 4] {
     [
         SCALAR_TABLE_SYNTHESIS_CALLS.swap(0, Ordering::Relaxed),
@@ -450,9 +475,20 @@ fn first_active_symmetric_pair(
 impl<T: ShtScalar> ShtPlan<T> {
     #[inline]
     fn paired_scalar_odd_fft_supported(&self) -> bool {
-        self.harmonics.spin() == 0
-            && !self.grid.nphi().is_multiple_of(2)
-            && T::epsilon().to_f64() == Some(f64::EPSILON)
+        #[cfg(test)]
+        if PAIRED_ODD_FFT_DISABLED.load(Ordering::Relaxed) {
+            return false;
+        }
+        #[cfg(rustsht_disable_paired_odd_fft)]
+        {
+            false
+        }
+        #[cfg(not(rustsht_disable_paired_odd_fft))]
+        {
+            self.harmonics.spin() == 0
+                && !self.grid.nphi().is_multiple_of(2)
+                && T::epsilon().to_f64() == Some(f64::EPSILON)
+        }
     }
 
     #[inline]
@@ -471,13 +507,20 @@ impl<T: ShtScalar> ShtPlan<T> {
         second_output: &mut [Complex<T>],
         fft_workspace: &mut RealFftWorkspace<T>,
     ) -> Result<(), ShtError> {
-        if self.fft.forward_paired_truncated(
+        let paired = self.fft.forward_paired_truncated(
             first_input,
             second_input,
             first_output,
             second_output,
             fft_workspace,
-        )? {
+        )?;
+        #[cfg(test)]
+        if paired {
+            PAIRED_FORWARD_SUCCESSES.fetch_add(1, Ordering::Relaxed);
+        } else {
+            PAIRED_FORWARD_DECLINES.fetch_add(1, Ordering::Relaxed);
+        }
+        if paired {
             return Ok(());
         }
         self.fft
@@ -495,13 +538,20 @@ impl<T: ShtScalar> ShtPlan<T> {
         second_output: &mut [T],
         fft_workspace: &mut RealFftWorkspace<T>,
     ) -> Result<(), ShtError> {
-        if self.fft.inverse_paired_series(
+        let paired = self.fft.inverse_paired_series(
             first_input,
             second_input,
             first_output,
             second_output,
             fft_workspace,
-        )? {
+        )?;
+        #[cfg(test)]
+        if paired {
+            PAIRED_INVERSE_SUCCESSES.fetch_add(1, Ordering::Relaxed);
+        } else {
+            PAIRED_INVERSE_DECLINES.fetch_add(1, Ordering::Relaxed);
+        }
+        if paired {
             return Ok(());
         }
         self.fft

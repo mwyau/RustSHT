@@ -53,7 +53,7 @@ pub(crate) enum LegendreOperation {
     Analysis,
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "parallel"))]
 pub(crate) fn set_benchmark_strategy_override(strategy: Option<LegendreStrategy>) {
     let encoded = match strategy {
         None => 0,
@@ -465,13 +465,13 @@ impl<T: ShtScalar> ScalarLegendreTable<T> {
         self.north_ring_count
     }
 
-    #[cfg(test)]
+    #[cfg(all(test, feature = "parallel"))]
     pub(crate) fn allocated_bytes_for_benchmark(&self) -> usize {
         self.values.capacity() * std::mem::size_of::<T>()
             + self.order_offsets.capacity() * std::mem::size_of::<usize>()
     }
 
-    #[cfg(test)]
+    #[cfg(all(test, feature = "parallel"))]
     pub(crate) fn benchmark_max_table_bytes() -> usize {
         MAX_TABLE_BYTES
     }

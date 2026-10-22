@@ -34,6 +34,7 @@ fn make_f1_plan(lmax: usize, mmax: usize, ntheta: usize, nphi: usize, phi0: f64)
     .unwrap()
 }
 
+#[cfg(feature = "parallel")]
 fn median(samples: &[f64]) -> f64 {
     assert!(!samples.is_empty());
     let mut sorted = samples.to_vec();
@@ -101,6 +102,7 @@ fn scalar_recurrence_scratch_bytes(workspace: &crate::workspace::ShtWorkspace) -
 }
 
 #[cfg(feature = "parallel")]
+#[allow(clippy::too_many_arguments)]
 fn run_forced_scalar_route_iterations(
     pool: &rayon::ThreadPool,
     plan: &ShtPlan,
@@ -430,6 +432,309 @@ fn scalar_odd_pair_nonfinite_fallback_keeps_other_row_independent() {
             assert!((actual - expected).abs() <= 4e-13 * expected.abs().max(1.0));
         }
     }
+}
+
+#[test]
+fn scalar_odd_pair_late_subnormal_decline_is_fully_recomputed() {
+    let plan = make_plan(1, 1, 32, 129, 0.23);
+    let mut workspace = plan.fft.workspace().unwrap();
+    let mut first = vec![0.0_f64; 129];
+    let mut second = vec![0.0_f64; 129];
+    // The inputs are normal, balanced and below the overflow bound. The paired
+    // transform writes DC, then the small nonzero imaginary part of bin 1 is
+    // subnormal and forces its late numerical fallback.
+    first[1] = 3.0e-308;
+    second[1] = 3.0e-308;
+    assert!(first[1].is_normal() && second[1].is_normal());
+    let sentinel = Complex64::new(17.0, -29.0);
+    let mut first_output = vec![sentinel; plan.fft.spectrum_len()];
+    let mut second_output = first_output.clone();
+    assert!(
+        !plan
+            .fft
+            .forward_paired_truncated(
+                &first,
+                &second,
+                &mut first_output,
+                &mut second_output,
+                &mut workspace,
+            )
+            .unwrap()
+    );
+    assert_ne!(
+        first_output[0], sentinel,
+        "the declined route wrote DC first"
+    );
+    assert!(first_output[1].im.is_subnormal());
+
+    first_output.fill(sentinel);
+    second_output.fill(sentinel);
+    plan.forward_analysis_row_pair(
+        &first,
+        &second,
+        &mut first_output,
+        &mut second_output,
+        &mut workspace,
+    )
+    .unwrap();
+    let mut reference_workspace = plan.fft.workspace().unwrap();
+    let mut expected_first = vec![Complex64::new(0.0, 0.0); plan.fft.spectrum_len()];
+    let mut expected_second = expected_first.clone();
+    plan.fft
+        .forward(&first, &mut expected_first, &mut reference_workspace)
+        .unwrap();
+    plan.fft
+        .forward(&second, &mut expected_second, &mut reference_workspace)
+        .unwrap();
+    assert_eq!(first_output, expected_first);
+    assert_eq!(second_output, expected_second);
+}
+
+#[test]
+fn scalar_odd_inverse_nonfinite_fallback_keeps_the_other_row_independent() {
+    let plan = make_plan(1, 1, 32, 129, 0.23);
+    let mut workspace = plan.fft.workspace().unwrap();
+    let first_input: Vec<_> = (0..plan.fft.spectrum_len())
+        .map(|k| Complex64::new((0.19 * k as f64).sin(), (0.07 * k as f64).cos()))
+        .collect();
+    let second_map: Vec<_> = (0..129)
+        .map(|j| (0.31 * j as f64).sin() + 0.4 * (0.13 * j as f64).cos())
+        .collect();
+    let mut second_input = vec![Complex64::new(0.0, 0.0); plan.fft.spectrum_len()];
+    plan.fft
+        .forward(&second_map, &mut second_input, &mut workspace)
+        .unwrap();
+    let mut exceptional_first = first_input;
+    exceptional_first[0].im = 0.0;
+    exceptional_first[3].re = f64::NAN;
+    let mut first_output = vec![17.0; 129];
+    let mut second_output = vec![-29.0; 129];
+    plan.inverse_synthesis_row_pair(
+        &exceptional_first,
+        &second_input,
+        &mut first_output,
+        &mut second_output,
+        &mut workspace,
+    )
+    .unwrap();
+    let mut reference_workspace = plan.fft.workspace().unwrap();
+    let mut expected_second = vec![0.0; 129];
+    plan.fft
+        .inverse_series(
+            &second_input,
+            &mut expected_second,
+            &mut reference_workspace,
+        )
+        .unwrap();
+    assert!(first_output.iter().any(|value| value.is_nan()));
+    for (&actual, &expected) in second_output.iter().zip(&expected_second) {
+        assert!((actual - expected).abs() <= 4e-13 * expected.abs().max(1.0));
+    }
+}
+
+#[test]
+#[ignore = "exhaustive paired-versus-independent production FFT validation"]
+fn paired_scalar_fft_end_to_end_exhaustive_t0_to_t256() {
+    use std::io::Write;
+
+    #[cfg(feature = "parallel")]
+    let pools = [1usize, 8]
+        .into_iter()
+        .map(|threads| {
+            let pool = rayon::ThreadPoolBuilder::new()
+                .num_threads(threads)
+                .build()
+                .unwrap();
+            (threads, pool)
+        })
+        .collect::<Vec<_>>();
+    #[cfg(not(feature = "parallel"))]
+    let pools = vec![(1usize, ())];
+
+    let output_path = std::env::var_os("RUSTSHT_PAIRED_FFT_VALIDATION_CSV")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| std::env::temp_dir().join("rustsht-paired-fft-validation.csv"));
+    let file = std::fs::File::create(&output_path).unwrap();
+    let mut csv = std::io::BufWriter::new(file);
+    writeln!(
+        csv,
+        "lmax,threads,longitude_mode,operation,nphi,paired_successes,paired_declines,relative_l2,max_scaled_error"
+    )
+    .unwrap();
+
+    let mut total_successes = [0usize; 2];
+    let mut total_declines = [0usize; 2];
+    let mut tested = 0usize;
+    for lmax in 0..=256 {
+        let mmax = lmax;
+        let ntheta = lmax + 1;
+        let spec = HarmonicSpec::scalar(lmax, mmax).unwrap();
+        let mut alm = vec![Complex64::new(0.0, 0.0); spec.nalm()];
+        for m in 0..=mmax {
+            for l in m..=lmax {
+                let index = spec.index(l, m).unwrap();
+                let scale = 1.0 / (1.0 + l as f64).sqrt();
+                let seed = (index + 1) as f64;
+                alm[index] = Complex64::new(
+                    scale * (seed * 0.371).sin(),
+                    if m == 0 {
+                        0.0
+                    } else {
+                        scale * (seed * 0.217).cos()
+                    },
+                );
+            }
+        }
+
+        for (longitude_mode, nphi) in [
+            ("odd_minimum", 2 * mmax + 1),
+            ("even_smooth", even_smooth_nphi(mmax)),
+        ] {
+            let plan = make_plan(lmax, mmax, ntheta, nphi, 0.23);
+            let map_input = (0..ntheta * nphi)
+                .map(|index| {
+                    let x = index as f64;
+                    (0.173 * x).sin() + 0.31 * (0.097 * x + 0.11).cos()
+                })
+                .collect::<Vec<_>>();
+
+            for (threads, pool) in &pools {
+                let mut workspace = plan.workspace().unwrap();
+                plan.prepare_workspace(&mut workspace, *threads).unwrap();
+                let mut paired_alm = vec![Complex64::new(41.0, -19.0); spec.nalm()];
+                let mut independent_alm = vec![Complex64::new(-7.0, 13.0); spec.nalm()];
+                let mut paired_map = vec![f64::NAN; ntheta * nphi];
+                let mut independent_map = vec![f64::INFINITY; ntheta * nphi];
+
+                set_paired_odd_fft_disabled_for_test(false);
+                let paired_counts = take_paired_odd_fft_row_counts();
+                assert_eq!(paired_counts, [0; 4]);
+                #[cfg(feature = "parallel")]
+                pool.install(|| {
+                    plan.synthesis_into(&alm, &mut paired_map, &mut workspace)
+                        .unwrap();
+                    plan.analysis_into(&map_input, &mut paired_alm, &mut workspace)
+                        .unwrap();
+                });
+                #[cfg(not(feature = "parallel"))]
+                {
+                    let _ = pool;
+                    plan.synthesis_into(&alm, &mut paired_map, &mut workspace)
+                        .unwrap();
+                    plan.analysis_into(&map_input, &mut paired_alm, &mut workspace)
+                        .unwrap();
+                }
+                let route_counts = take_paired_odd_fft_row_counts();
+                let forward_pairs = route_counts[0] + route_counts[1];
+                let inverse_pairs = route_counts[2] + route_counts[3];
+                if nphi.is_multiple_of(2) || nphi == 255 || ntheta < 2 {
+                    assert_eq!(
+                        forward_pairs, 0,
+                        "unexpected forward pair route at T{lmax}, nphi={nphi}"
+                    );
+                } else {
+                    assert_eq!(
+                        forward_pairs,
+                        ntheta / 2,
+                        "forward pair route count at T{lmax}, nphi={nphi}"
+                    );
+                }
+                if nphi.is_multiple_of(2) || ntheta < 2 {
+                    assert_eq!(
+                        inverse_pairs, 0,
+                        "unexpected inverse pair route at T{lmax}, nphi={nphi}"
+                    );
+                } else {
+                    assert_eq!(
+                        inverse_pairs,
+                        ntheta / 2,
+                        "inverse pair route count at T{lmax}, nphi={nphi}"
+                    );
+                }
+                total_successes[0] += route_counts[0] + route_counts[2];
+                total_declines[0] += route_counts[1] + route_counts[3];
+
+                // Reuse the same workspace after poisoning the transform-wide
+                // spectrum scratch. Each output was prefilled before its route.
+                workspace
+                    .spectra
+                    .fill(Complex64::new(f64::NAN, f64::INFINITY));
+                set_paired_odd_fft_disabled_for_test(true);
+                #[cfg(feature = "parallel")]
+                pool.install(|| {
+                    plan.synthesis_into(&alm, &mut independent_map, &mut workspace)
+                        .unwrap();
+                    plan.analysis_into(&map_input, &mut independent_alm, &mut workspace)
+                        .unwrap();
+                });
+                #[cfg(not(feature = "parallel"))]
+                {
+                    plan.synthesis_into(&alm, &mut independent_map, &mut workspace)
+                        .unwrap();
+                    plan.analysis_into(&map_input, &mut independent_alm, &mut workspace)
+                        .unwrap();
+                }
+                set_paired_odd_fft_disabled_for_test(false);
+                let disabled_counts = take_paired_odd_fft_row_counts();
+                assert_eq!(disabled_counts, [0; 4]);
+
+                let mut analysis_error_sq = 0.0;
+                let mut analysis_reference_sq = 0.0;
+                let mut analysis_max_scaled_error = 0.0_f64;
+                for (paired, independent) in paired_alm.iter().zip(&independent_alm) {
+                    let error = (*paired - *independent).norm();
+                    let reference = independent.norm();
+                    analysis_error_sq += error * error;
+                    analysis_reference_sq += reference * reference;
+                    analysis_max_scaled_error =
+                        analysis_max_scaled_error.max(error / reference.max(1.0));
+                    assert!(
+                        error <= 4e-13 * reference.max(1.0),
+                        "analysis mismatch T{lmax} q{threads} {longitude_mode}: {paired:?} vs {independent:?}"
+                    );
+                }
+                let mut synthesis_error_sq = 0.0;
+                let mut synthesis_reference_sq = 0.0;
+                let mut synthesis_max_scaled_error = 0.0_f64;
+                for (paired, independent) in paired_map.iter().zip(&independent_map) {
+                    let error = paired - independent;
+                    synthesis_error_sq += error * error;
+                    synthesis_reference_sq += independent * independent;
+                    synthesis_max_scaled_error =
+                        synthesis_max_scaled_error.max(error.abs() / independent.abs().max(1.0));
+                    assert!(
+                        error.abs() <= 4e-13 * independent.abs().max(1.0),
+                        "synthesis mismatch T{lmax} q{threads} {longitude_mode}: {paired} vs {independent}"
+                    );
+                }
+                let analysis_relative_l2 =
+                    (analysis_error_sq / analysis_reference_sq.max(f64::MIN_POSITIVE)).sqrt();
+                let synthesis_relative_l2 =
+                    (synthesis_error_sq / synthesis_reference_sq.max(f64::MIN_POSITIVE)).sqrt();
+                writeln!(
+                    csv,
+                    "{lmax},{threads},{longitude_mode},analysis,{nphi},{},{},{analysis_relative_l2:.17e},{analysis_max_scaled_error:.17e}",
+                    route_counts[0], route_counts[1]
+                )
+                .unwrap();
+                writeln!(
+                    csv,
+                    "{lmax},{threads},{longitude_mode},synthesis,{nphi},{},{},{synthesis_relative_l2:.17e},{synthesis_max_scaled_error:.17e}",
+                    route_counts[2], route_counts[3]
+                )
+                .unwrap();
+                tested += 1;
+            }
+        }
+    }
+    csv.flush().unwrap();
+    eprintln!(
+        "PAIRED_FFT_EXHAUSTIVE tested={tested} degrees=257 q={} successes={} declines={} csv={}",
+        pools.len(),
+        total_successes[0],
+        total_declines[0],
+        output_path.display()
+    );
 }
 
 #[cfg(feature = "parallel")]
@@ -2968,13 +3273,14 @@ fn precomputed_scalar_gl_matches_recurrence_for_all_four_operators() {
         let mut run_table_operators = || {
             #[cfg(feature = "parallel")]
             {
+                let expected_synthesis = if ntheta == lmax + 1 || lmax > 63 {
+                    LegendreStrategy::Recurrence
+                } else {
+                    LegendreStrategy::CompactTable
+                };
                 assert_eq!(
                     table_plan.scalar_legendre_strategy(LegendreOperation::Synthesis),
-                    if lmax <= 63 {
-                        LegendreStrategy::CompactTable
-                    } else {
-                        LegendreStrategy::Recurrence
-                    }
+                    expected_synthesis
                 );
                 assert_eq!(
                     table_plan.scalar_legendre_strategy(LegendreOperation::Analysis),
@@ -3285,7 +3591,7 @@ fn benchmark_scalar_legendre_table_vs_recurrence_dense() {
                         "unsupported_layout"
                     };
                     for operation in [LegendreOperation::Analysis, LegendreOperation::Synthesis] {
-                        for threads in requested_threads.iter().copied() {
+                        for threads in requested_threads.iter() {
                             writeln!(
                                 output,
                                 "{lmax},{mmax},{nphi},{longitude},{operation:?},{threads},Recurrence,{table_status},{table_payload_estimate_bytes},,,,,,,,,,,,,,"
@@ -3306,7 +3612,7 @@ fn benchmark_scalar_legendre_table_vs_recurrence_dense() {
                 crate::legendre::set_benchmark_strategy_override(None);
                 if table.is_none() {
                     for operation in [LegendreOperation::Analysis, LegendreOperation::Synthesis] {
-                        for threads in requested_threads.iter().copied() {
+                        for threads in requested_threads.iter() {
                             writeln!(
                                 output,
                                 "{lmax},{mmax},{nphi},{longitude},{operation:?},{threads},Recurrence,unsupported_table_allocation_or_basis,{table_payload_estimate_bytes},{table_bytes},,,{table_build_us:.4},,,,,,,,,,"

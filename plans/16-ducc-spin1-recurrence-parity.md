@@ -22,6 +22,13 @@ and at least two order tiles per worker. The per-worker latitude-row scratch
 is allocated lazily and reused. Rust remains 2.03–2.84× slower than DUCC on
 these cases; do not claim parity. Proceed to Milestone E.
 
+**Separate owner-directed checkpoint (2026-10-22):** the guarded paired odd-
+longitude FFT is already current production code. Its T0–T256 same-source
+paired/independent correctness validation and focused dispatch-boundary screen
+are recorded in the [production validation report](../reports/paired-odd-longitude-fft-production-validation-2026-10-22.md).
+This checkpoint does not expand Plan 16's spin-1 scope or change its Milestone
+E next task.
+
 ## Execution order and handoff
 
 1. The scalar-analysis cumulative ablation is closed in

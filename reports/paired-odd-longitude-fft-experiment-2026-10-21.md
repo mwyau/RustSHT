@@ -1,6 +1,6 @@
 # Paired odd-length longitude FFT experiment
 
-**Decision:** retain the guarded paired-row route on the isolated experiment branch. It improved the scalar f64 odd-longitude synthesis transform in all nine odd cases at q1 and q8; analysis improved in most cases, with smaller and less consistent q8 gains. The benchmarked source is committed locally on exp/paired-odd-longitude-fft only. It is not integrated into the active Plan 15 branch.
+**Historical decision at measurement time:** retain the guarded paired-row route on the isolated experiment branch. It improved the scalar f64 odd-longitude synthesis transform in all nine odd cases at q1 and q8; analysis improved in most cases, with smaller and less consistent q8 gains. The benchmarked source was then committed on `exp/paired-odd-longitude-fft` and was not yet integrated. The route is now present in production on `opt/sht-performance-parity`; see the [current-source validation report](paired-odd-longitude-fft-production-validation-2026-10-22.md). The results below remain measurements of the historical source and must not be presented as same-source current-policy A/B data.
 
 ## Scope and source identity
 
