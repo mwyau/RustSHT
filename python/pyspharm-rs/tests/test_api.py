@@ -94,7 +94,7 @@ def _reference_inputs():
 def test_scalar_and_vector_methods_match_pyspharm_syl_reference():
     # Reference values were recorded with pyspharm-syl 1.2.1, source revision
     # 9e4446ecec539ef01f77e7b7ed96980b9a9fb262, on Python 3.13.15.
-    transform = spharm.Spharmt(16, 8, gridtype="gaussian", legfunc="computed")
+    transform = spharm_rs.Spharmt(16, 8, gridtype="gaussian", legfunc="computed")
     field, eastward, northward = _reference_inputs()
 
     spectrum = transform.grdtospec(field, ntrunc=4)
@@ -198,8 +198,8 @@ def test_scalar_and_vector_methods_match_pyspharm_syl_reference():
         atol=2e-7,
     )
 
-    output_grid = spharm.Spharmt(12, 6, gridtype="gaussian", legfunc="computed")
-    remapped = spharm.regrid(
+    output_grid = spharm_rs.Spharmt(12, 6, gridtype="gaussian", legfunc="computed")
+    remapped = spharm_rs.regrid(
         transform,
         output_grid,
         field,
@@ -217,7 +217,7 @@ def test_scalar_and_vector_methods_match_pyspharm_syl_reference():
 @pytest.mark.parametrize("nlat", [7, 8])
 def test_regular_grid_uses_source_colatitude_nodes_and_preserves_batch_shapes(nlat):
     nlon = 16
-    transform = spharm.Spharmt(nlon, nlat, gridtype="regular", legfunc="stored")
+    transform = spharm_rs.Spharmt(nlon, nlat, gridtype="regular", legfunc="stored")
     assert transform.nlat == nlat
     assert transform.nlon == nlon
     with pytest.raises(AttributeError):
@@ -236,7 +236,7 @@ def test_regular_grid_uses_source_colatitude_nodes_and_preserves_batch_shapes(nl
 
 @pytest.mark.parametrize("nlat", [7, 8])
 def test_regular_grid_default_maximum_truncation_is_supported(nlat):
-    transform = spharm.Spharmt(16, nlat, gridtype="regular", legfunc="computed")
+    transform = spharm_rs.Spharmt(16, nlat, gridtype="regular", legfunc="computed")
     latitude_index = np.arange(nlat, dtype=np.float32)[:, None]
     longitude_index = np.arange(16, dtype=np.float32)[None, :]
     eastward = (0.1 * latitude_index + 0.01 * longitude_index).astype(np.float32)
@@ -255,7 +255,7 @@ def test_regular_grid_default_maximum_truncation_is_supported(nlat):
 
 
 def test_array_layout_conversion_and_legacy_repr():
-    transform = spharm.Spharmt(16, 8, gridtype="gaussian", legfunc="stored")
+    transform = spharm_rs.Spharmt(16, 8, gridtype="gaussian", legfunc="stored")
     assert repr(transform) == "Spharmt(16, 8, 6.371200e+06, gaussian, stored)"
 
     backing = np.arange(16 * 32, dtype=np.float64).reshape(16, 32)
@@ -273,19 +273,19 @@ def test_array_layout_conversion_and_legacy_repr():
 
 def test_invalid_shapes_truncations_and_module_arguments_raise_value_error():
     with pytest.raises(ValueError):
-        spharm.Spharmt(3, 8)
+        spharm_rs.Spharmt(3, 8)
     with pytest.raises(ValueError):
-        spharm.Spharmt(16, 8, rsphere=float("nan"))
+        spharm_rs.Spharmt(16, 8, rsphere=float("nan"))
     with pytest.raises(ValueError):
-        spharm.getgeodesicpts(0)
+        spharm_rs.getgeodesicpts(0)
     with pytest.raises(ValueError):
-        spharm.legendre(0.0, -1)
+        spharm_rs.legendre(0.0, -1)
 
-    transform = spharm.Spharmt(16, 8, gridtype="gaussian")
+    transform = spharm_rs.Spharmt(16, 8, gridtype="gaussian")
     with pytest.raises(ValueError):
         transform.grdtospec(np.ones((8, 16), dtype=np.float32), ntrunc=-1)
     with pytest.raises(ValueError):
-        spharm.specintrp(
+        spharm_rs.specintrp(
             0.0,
             np.zeros(6, dtype=np.complex64),
             np.zeros(3, dtype=np.float32),
