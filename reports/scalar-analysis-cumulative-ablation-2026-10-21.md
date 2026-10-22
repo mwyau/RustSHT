@@ -88,6 +88,58 @@ establish a production gain. The candidate remains in the cumulative build
 only because the required final interaction/ablation evaluation is still
 pending. It is not enabled by default.
 
+### Current-source remeasurement at `ef238290`
+
+The previous Step 3 measurements were rechecked after the range-cache and
+direct-preflight candidates were integrated. Default and packed builds used
+the same current source and differed only by
+`rustsht_packed_complex_pair_reduction`; full-transform and direct-kernel
+summaries are in the [current-source A/B data](data/scalar-analysis-cumulative-ablation-2026-10-21/current-source-packed-ab/README.md).
+The packed candidate adds no heap workspace or scratch arrays. Measured
+median process RSS was within 0.4 MiB between builds; the largest observed
+case difference was 1.7 MiB, within the process-to-process RSS range.
+
+The isolated range-proof-cached fused kernel includes Rust's final staged
+coefficient commit; DUCC uses the matching `map2alm_kernel` output work. These
+latencies include the vector recurrence, reduction and coefficient write,
+while the benchmark separately reports the checked variant and reset cost.
+
+| Active lanes | Default Rust µs (p10–p90) | Packed Rust µs (p10–p90) | DUCC µs, default / packed build | Paired Rust/DUCC ratio, default → packed | Packed/default Rust |
+|---:|---:|---:|---:|---:|---:|
+| 64 | 4.876 (4.831–5.014) | 4.655 (4.620–4.861) | 4.107 / 4.109 | 1.186 → 1.134 | 0.955 |
+| 128 | 8.934 (8.848–9.151) | 8.838 (8.801–8.903) | 8.010 / 8.152 | 1.116 → 1.084 | 0.977 |
+| 256 | 17.888 (17.769–18.156) | 17.261 (17.186–17.365) | 15.798 / 15.790 | 1.130 → 1.092 | 0.965 |
+
+The kernel medians improved 4.5%, 1.1% and 3.5% at 64, 128 and 256 lanes.
+The direct route therefore narrows the per-order kernel excess, with the
+largest absolute remaining excess at 256 lanes (1.449 µs, versus 2.059 µs
+for default). The V3 specialization still uses four f64 lanes, and this
+reducer change does not alter the recurrence or allocate additional memory.
+The isolated kernel runs had low measured runqueue wait (median about 0.04%,
+maximum below 0.1%) and 4.617 GHz median frequency; the 64-lane process spread
+was wider than at 128/256 lanes.
+
+| T720 GL analysis | q | Default Rust ms (p10–p90) | Packed Rust ms (p10–p90) | Rust packed/default | Rust/DUCC ratio, default → packed | Relative L2 |
+|---|---:|---:|---:|---:|---:|---:|
+| `mmax=1` | 1 | 0.09221 (0.09114–0.09316) | 0.09071 (0.09017–0.09200) | 0.984 | 0.684 → 0.659 | `6.12e-14` |
+| `mmax=1` | 8 | 0.07756 (0.07581–0.08000) | 0.07676 (0.07475–0.07929) | 0.990 | 0.584 → 0.585 | `6.12e-14` |
+| `mmax=180` | 1 | 6.268 (6.232–6.303) | 6.159 (6.105–6.284) | 0.983 | 1.062 → 1.041 | `4.91e-14` |
+| `mmax=180` | 8 | 0.936 (0.922–0.971) | 0.927 (0.911–0.976) | 0.990 | 1.009 → 1.005 | `4.91e-14` |
+| full `mmax=720` | 1 | 15.683 (15.482–16.033) | 15.474 (15.349–15.843) | 0.987 | 1.077 → 1.060 | `4.63e-14` |
+| full `mmax=720` | 8 | 2.251 (2.228–2.379) | 2.236 (2.205–2.395) | 0.993 | 1.058 → 1.043 | `4.63e-14` |
+
+All six whole-transform changes are below 1.7% and their p10–p90 intervals
+overlap. q8 runqueue-wait p90 was 15.6–17.9%, so these results do not
+establish an end-to-end speedup. First-call/setup timing and per-case RSS are
+retained in the CSV. All three process pairs completed for every case with no
+numerical or reset failures; maximum relative L2 was `6.12e-14`. Direct-kernel
+coefficient error was `1.97e-16` scaled, with output relative L2 at most
+`1.63e-13` and maximum absolute error `2.56e-11`.
+
+This remeasurement supports keeping the packed reducer in the cumulative
+candidate, not enabling it by default. It is a small isolated improvement,
+and the whole-transform effect remains unresolved under q8 host variation.
+
 ### Original `ce710` whole-transform baseline
 
 The requested original-source A baseline was remeasured with Rust 1.99.1,
@@ -350,7 +402,7 @@ RUSTFLAGS='-C target-cpu=x86-64-v3 --cfg rustsht_packed_complex_pair_reduction -
 |---|---|
 | 0. Source baselines | `ff0fe` current source and original `ce710` are now measured at T720; original-source whole-call and lane-kernel data are linked above. |
 | 1. 64/128/256 pair tiles | Selector and 256 initial setting exist; compare all three in final cumulative evaluation. |
-| 2. Fixed SIMD workspace layout | Existing source layout retained; include in final ablation. |
+| 2. Fixed SIMD workspace layout | Still pending: implement a controlled fixed-array/DUCC-like candidate, then measure it cumulatively with the packed reducer and 256-pair tile. |
 | 3. Packed complex reduction | Implemented and validated behind cfg; isolated reducer is 3% faster, whole-transform effect remains inconclusive; retain only for cumulative evaluation. |
 | 4. Recurrence range-check handling | Complete in production since `aeb123d6`; checked-first cached proof skips only repeated ordinary vector scans. |
 | 5. Output staging and accumulation | Fused-preflight direct-output candidate implemented and validated, but 2.42–2.69× slower; retain only for final cumulative ablation. |
@@ -359,7 +411,7 @@ RUSTFLAGS='-C target-cpu=x86-64-v3 --cfg rustsht_packed_complex_pair_reduction -
 | 8. Scaled-to-ordinary transition | Reviewed: guarded correction/promotion and transactional fallback are already integrated. |
 | 9. Reflected active-ring packing | Reviewed: binary-searched first-active pair plus bounded SoA compaction is already integrated. |
 | 10. Coefficient/factor preparation | Reviewed: epsilon and recurrence factors are prepared once per order and reused across ring blocks, matching DUCC `Ylmgen::prepare`. |
-| Final combined evaluation | Pending: run the retained cumulative candidates at 64/128/256 lanes against DUCC, then ablate only candidates with a separable whole-transform effect. |
+| Final combined evaluation | Pending: after Steps 2 and any remaining justified implementation work, compare original `ce710` and the cumulative candidate at 64/128/256 lanes, then ablate each candidate and its interactions. |
 
 The scalar analysis objective remains active until this final evaluation and
 the required function crosswalk are complete.

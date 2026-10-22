@@ -18,6 +18,17 @@ and its cold/warm outputs are not bitwise identical. Production remains
 transactionally staged; keep the candidate only for the required final
 cumulative evaluation. See the detailed matrix in the
 [cumulative ablation record](reports/scalar-analysis-cumulative-ablation-2026-10-21.md).
+
+**Current-source packed-reducer recheck (`ef238290`):** matched T720 kernels
+improved 4.5%, 1.1% and 3.5% at 64/128/256 active lanes; DUCC ratios moved
+1.186→1.134, 1.116→1.084 and 1.130→1.092. Whole-transform changes stayed
+below 1.7% with overlapping ranges, so the reducer remains experimental.
+Numerical checks passed (kernel output relative L2 ≤`1.63e-13`; full call
+≤`6.12e-14`). The next cumulative implementation step is a DUCC-like fixed
+SIMD workspace-layout candidate, followed by a combined 256-tile evaluation.
+Sanitized distributions, source flags, binary hashes and RSS summaries are
+in the [current-source A/B data](reports/data/scalar-analysis-cumulative-ablation-2026-10-21/current-source-packed-ab/README.md).
+
 The original `ce710` source is now remeasured against pinned DUCC 803 with
 Rust 1.99.1: T720 full/reduced q1/q8 warm analysis is 26.8–39.4% slower than
 the `ff0fe` current-source baseline, and its 64/128/256-lane kernel ratios
