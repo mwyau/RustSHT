@@ -4,6 +4,16 @@
 
 
 **Updated:** 2026-10-22 UTC. **Branch:** `opt/sht-performance-parity`.
+**Plan 16 Milestone A complete:** the exact T720 CC Rust/DUCC source paths
+and matched-workload Rust phase boundaries are recorded in the
+[executed-path crosswalk](reports/plan16-spin1-executed-path-crosswalk-2026-10-22.md).
+The bulk DUCC route converts spin-1 E/B to two scalar channels and uses the
+paired scalar recurrence; its direct-spin route handles the two exact poles.
+Rust's remaining candidate difference is cosine-weighted parity combination
+inside each degree step. Current Rust q8 phase medians are 21.041 ms full and
+17.541 ms at `mmax=180`; the inverse-row stages are 1.190/0.191 ms. The next
+step is a bounded two-channel parity-separated accumulator A/B, preserving
+the lane-outer recurrence and checked fallback.
 **Scalar-analysis ablation closeout:** the original `ce710` source, current
 production, packed reduction, scratch layout, direct output, range-cache
 control, and cumulative 64/128/256-pair builds were compared at T720 GL

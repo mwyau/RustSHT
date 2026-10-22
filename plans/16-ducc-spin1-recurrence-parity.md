@@ -2,7 +2,7 @@
 
 **Successor (queued, not active):** [Plan 17 — f32 and high-resolution atmospheric SHT performance](17-f32-atmospheric-performance.md), to begin only after Plan 16's measured closeout and safe remote sync. Do not mix f32/high-resolution follow-on experiments into current Plan 16.
 
-**Status: ACTIVE (2026-10-22), Milestone A.** The scalar-analysis cumulative-ablation is closed; its final ablation matrix and production cleanup are committed on the same branch. **Branch:** opt/sht-performance-parity. **Scope:** f64 single-vector-field spin-1 STANDARD E/B analysis and synthesis on GL, CC and F1; optimize the measured synthesis recurrence/spectrum residual first. This is a new investigation, not a reopening or retroactive reinterpretation of completed Plan 15.
+**Status: ACTIVE (2026-10-22), Milestone B.** Milestone A's executed-path crosswalk and matched-workload Rust stage profile are recorded in [the crosswalk](../reports/plan16-spin1-executed-path-crosswalk-2026-10-22.md). The scalar-analysis cumulative-ablation is closed; its final ablation matrix and production cleanup are committed on the same branch. **Branch:** opt/sht-performance-parity. **Scope:** f64 single-vector-field spin-1 STANDARD E/B analysis and synthesis on GL, CC and F1; optimize the measured synthesis recurrence/spectrum residual first. This is a new investigation, not a reopening or retroactive reinterpretation of completed Plan 15.
 
 ## Execution order and handoff
 
