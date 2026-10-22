@@ -13,6 +13,73 @@ All remaining stage descriptions below are retained as historical evidence;
 the final disposition and current residuals are summarized in the closeout
 report above.
 
+## Post-closeout evidence — paired odd-longitude FFT (2026-10-22)
+
+**Disposition: experimental candidate, not production; Plan 14 remains COMPLETE.**
+The [separate paired-row experiment](../reports/paired-odd-longitude-fft-experiment-2026-10-21.md)
+on [`exp/paired-odd-longitude-fft`](https://github.com/mwyau/RustSHT/tree/exp/paired-odd-longitude-fft)
+tested a bounded FFT mechanism distinct from the earlier rejected
+standalone real-C2R backend. The experimental baseline was
+`ef238290f28d5192ca54de8e442c77640549828a`; implementation
+`4b74e3a50a6a683e1ead44650aa6e9b4dad81246`, test hardening
+`8342f6631b9c5791f8e6ba4243e032dcb9d8eabd`, and experimental HEAD
+`ce404917ca194adfb4688a3f9acda4e9238921b1`. The separate branch
+is accessible on GitHub; its report and sanitized result tables are
+available on this performance branch, but **the code has not been integrated**.
+
+- **Method:** pack two adjacent real longitude rows into one complex FFT,
+  split/reconstruct the Hermitian results, and retain the old independent
+  transform for rejected pairs or a final unpaired latitude row. Eligibility
+  is restricted to odd-`nphi`, f64, spin-0 analysis/synthesis; even-`nphi`,
+  f32 and non-scalar transforms are unchanged. Guards cover nonfinite values,
+  subnormals, extreme magnitude/headroom and an empirical maximum 8:1 ratio
+  between row component scales. Forward pairing at **`nphi=255` stays disabled**.
+- **Matched whole-transform results:** for nine odd-longitude cases,
+  synthesis improved **9/9 at q1 and q8** with median speedups
+  **1.161x q1 / 1.198x q8**. Analysis improved **8/9 q1, 6/9 q8**
+  with medians **1.114x / 1.091x**. T255 and T256 analysis
+  **regressed 1.8% and 3.2% at q8**, respectively; T127 q8
+  regressed 2.8% despite forward pairing being disabled at `nphi=255`.
+- **Stage evidence and limits:** isolated inverse-row stages improved for
+  `nphi=361/497/509/511/513`. Baseline inverse row-stage shares estimated
+  from separate harnesses at q8 are **39.9% T248**, **39.6% T254**,
+  **25.3% T255**, **26.5% T256**; they are not additive in-call traces.
+  An unchanged even-longitude control nevertheless appeared **1.243x
+  faster at q8 synthesis**, exposing source-layout/host variability.
+  Do not assign small whole-SHT deltas entirely to pairing.
+- **Validation:** 547 row checks; final release suites passed 254
+  parallel and 206 no-default unit tests and integration tests, plus
+  formatting and strict Clippy. Whole-transform candidate/baseline maximum
+  relative L2 difference was **2.3113e-15**. Tests include poisoned-workspace
+  reuse and nonfinite-row fallback. These results do **not** prove a general
+  per-mode error bound.
+
+**Integration follow-up (deferred pending explicit owner authorization):**
+
+1. Keep the experiment and reproducible benchmarks separate; **do not
+   cherry-pick or merge production code automatically**. Plan 16 is active;
+   Plan 17 remains next unless the owner changes the queue.
+2. Independently audit cancellation-sensitive spectra, disparate Fourier-mode
+   magnitudes, subnormal/extreme-value fallbacks, stale-workspace handling,
+   adjoints and all grid/precision/spin controls. The **8:1 row-component
+   scale guard is empirical**, not a theorem limiting per-mode cross-talk.
+3. If reprioritized, port the minimal candidate onto a settled current
+   production baseline, then compare matched guarded isolated row stages and
+   whole transforms, q1/q8, with repeated unchanged even-N controls, source
+   hashes, process spread and host contention. Preserve the pinned DUCC
+   reference, strict FP rules and existing API/workspace behavior.
+4. **Decide inverse synthesis and forward analysis independently**:
+   synthesis has stronger whole-call support; forward q8 is mixed. Retain
+   the `nphi=255` forward fallback until new evidence justifies change.
+   Simplify duplicated pairing/scheduling/fallback code only after tests
+   prove unchanged behavior. Do not impose arbitrary speedup gates.
+5. Record a separate explicit owner integration decision before changing
+   production dispatch or revising the odd-FFT hold in `AGENTS.md`.
+
+This post-closeout evidence supersedes the historical lack of a *supported
+bounded odd-FFT candidate*, but does not reverse the negative result for the
+previous standalone C2R engine, reopen Plan 14, or change Plan 16/17 priorities.
+
 **One-line goal:** Identify and reduce the dominant, measured sources of (1) small **serial** SHT latency and (2) residual large **eight-thread** SHT latency relative to a pinned native DUCC implementation, without sacrificing numerical correctness, portability, or memory safety.
 
 ## 1. Boundaries and relationship to existing plans
