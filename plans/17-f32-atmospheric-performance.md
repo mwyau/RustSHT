@@ -1,6 +1,6 @@
 # Plan 17 — f32 and high-resolution atmospheric SHT performance
 
-**Status: ACTIVE (2026-10-22), Milestone A.** The scalar-analysis cumulative study, [Plan 16 — DUCC spin-1 recurrence parity](16-ducc-spin1-recurrence-parity.md), and the owner-directed scalar Legendre dispatch / paired-FFT / T0–T3072 checkpoint are complete. **Branch:** existing `opt/sht-performance-parity`. **Scope:** current-production CPU scalar spin-0 and vector spin-1 STANDARD f32 performance, with selected f64 high-resolution and scaling controls on GL, CC and F1. Improve measured complete-transform latency and throughput, not an isolated microbenchmark. Plan 17 must not retroactively reopen completed Plans 11, 14, 15 or 16.
+**Status: ACTIVE (2026-10-22), Milestone A complete; Milestone B next.** The scalar-analysis cumulative study, [Plan 16 — DUCC spin-1 recurrence parity](16-ducc-spin1-recurrence-parity.md), and the owner-directed scalar Legendre dispatch / paired-FFT / T0–T3072 checkpoint are complete. Milestone A's current f32 baseline is published in [the native benchmark report](../reports/plan17-f32-native-baseline-2026-10-22.md). **Branch:** existing `opt/sht-performance-parity`. **Scope:** current-production CPU scalar spin-0 and vector spin-1 STANDARD f32 performance, with selected f64 high-resolution and scaling controls on GL, CC and F1. Improve measured complete-transform latency and throughput, not an isolated microbenchmark. Plan 17 must not retroactively reopen completed Plans 11, 14, 15 or 16.
 
 ## Handoff and stopping discipline
 
@@ -25,6 +25,13 @@ Initial representative matrix: T127/T255/T511/T720/T1023, scalar spin 0 plus spi
 Profile the *actual* f32 routes: optimized versus scaled recurrence, SIMD lane utilization, direct-spin versus scalar-converted path, E/B accumulation, coefficient transformation, meridional resampling, longitude row FFT, pack/writeback and worker load. Capture matched-stage timing where equivalent; distinguish the f32-specific bottleneck from a residual that is actually common to f64. Record absolute Rust/DUCC latency and gap in milliseconds, not a ratio alone.
 
 ## Milestone B — f32 spin-1 recurrence, numeric representation and SIMD
+
+Milestone A established a substantial recurrence/accumulation cost in current
+f32 full transforms: the test-only T720 phase probe attributes about 99% of
+wall time to that phase, while the matched full-transform ratios range from
+about 8× to 179× across the screened cells. DUCC's f32 public API uses double
+intermediates in the scalar recurrence. See the baseline report for timings,
+uncertainty, numerical errors and scope limitations.
 
 Only if Milestone A establishes a material f32 recurrence/accumulation gap:
 - Compare f32's executed spin recurrence and normal/scaled SIMD pathways with the best **validated** Plan 16 f64 algorithm; determine which structural optimizations can be translated safely and which require f32-specific scaling or precision handling.

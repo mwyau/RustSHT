@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#[cfg(feature = "parallel")]
+use num_complex::Complex32;
 use num_complex::Complex64;
 use std::f64::consts::{PI, TAU};
 
@@ -1821,6 +1823,121 @@ fn scalar_analysis_phase_profile_selected() {
                     .all(|value| value.re.is_finite() && value.im.is_finite())
             );
             std::hint::black_box(&alm);
+        }
+    }
+}
+
+#[cfg(feature = "parallel")]
+#[test]
+#[ignore = "Plan 17 f32 stage attribution; run in release mode with q1/q8 CPU affinity"]
+fn plan17_f32_t720_native_phase_profile() {
+    for spin in [0, 1] {
+        for threads in [1, 8] {
+            let lmax = 720;
+            let mmax = lmax;
+            let ntheta = lmax + 1;
+            let nphi = 1470;
+            let plan = ShtPlan::<f32>::new(
+                GridSpec::new(GridKind::GaussLegendre, ntheta, nphi, 0.23).unwrap(),
+                HarmonicSpec::new(lmax, mmax, spin).unwrap(),
+            )
+            .unwrap();
+            let pool = rayon::ThreadPoolBuilder::new()
+                .num_threads(threads)
+                .build()
+                .unwrap();
+            let mut workspace = pool.install(|| plan.workspace()).unwrap();
+            pool.install(|| plan.prepare_workspace(&mut workspace, threads))
+                .unwrap();
+            let probe = workspace.observe_transform_phases();
+            let map0 = (0..plan.sample_count)
+                .map(|index| {
+                    let x = index as f32;
+                    (x * 0.000173).sin() + 0.2 * (x * 0.000071).cos()
+                })
+                .collect::<Vec<_>>();
+            let map1 = (0..plan.sample_count)
+                .map(|index| {
+                    let x = index as f32;
+                    (x * 0.000119).cos() - 0.15 * (x * 0.000097).sin()
+                })
+                .collect::<Vec<_>>();
+            let mut alm0 = vec![Complex32::new(0.0, 0.0); plan.harmonics.nalm()];
+            let mut alm1 = vec![Complex32::new(0.0, 0.0); plan.harmonics.nalm()];
+            for m in 0..=mmax {
+                for l in m.max(spin)..=lmax {
+                    let index = plan.harmonics.index(l, m).unwrap();
+                    alm0[index] = Complex32::new(
+                        ((l * 7 + m * 11) % 97) as f32 * 1.0e-5,
+                        if m == 0 {
+                            0.0
+                        } else {
+                            ((l * 13 + m * 5) % 89) as f32 * 1.0e-5
+                        },
+                    );
+                    if spin == 1 {
+                        alm1[index] = Complex32::new(
+                            ((l * 17 + m * 3) % 83) as f32 * 1.0e-5,
+                            if m == 0 {
+                                0.0
+                            } else {
+                                ((l * 19 + m * 7) % 79) as f32 * 1.0e-5
+                            },
+                        );
+                    }
+                }
+            }
+            let mut out_map0 = vec![0.0_f32; plan.sample_count];
+            let mut out_map1 = vec![0.0_f32; plan.sample_count];
+            let mut out_alm0 = vec![Complex32::new(0.0, 0.0); plan.harmonics.nalm()];
+            let mut out_alm1 = vec![Complex32::new(0.0, 0.0); plan.harmonics.nalm()];
+
+            for operation in ["analysis", "synthesis"] {
+                let mut run = || match (operation, spin) {
+                    ("analysis", 0) => plan.analysis_into(&map0, &mut out_alm0, &mut workspace),
+                    ("analysis", 1) => plan.analysis_spin_into(
+                        &map0,
+                        &map1,
+                        &mut out_alm0,
+                        &mut out_alm1,
+                        &mut workspace,
+                    ),
+                    ("synthesis", 0) => plan.synthesis_into(&alm0, &mut out_map0, &mut workspace),
+                    ("synthesis", 1) => plan.synthesis_spin_into(
+                        &alm0,
+                        &alm1,
+                        &mut out_map0,
+                        &mut out_map1,
+                        &mut workspace,
+                    ),
+                    _ => unreachable!(),
+                };
+                pool.install(&mut run).unwrap();
+                for sample in 0..3 {
+                    probe.lock().unwrap().clear();
+                    let started = std::time::Instant::now();
+                    pool.install(&mut run).unwrap();
+                    let wall_ms = started.elapsed().as_secs_f64() * 1.0e3;
+                    let phases = probe.lock().unwrap().clone();
+                    let phase_sum_ms = phases
+                        .iter()
+                        .map(|phase| phase.elapsed_ns as f64 * 1.0e-6)
+                        .sum::<f64>();
+                    eprintln!(
+                        "PLAN17_F32_PHASE_PROFILE spin={spin} op={operation} q{threads} sample={} wall_ms={wall_ms:.3} phase_sum_ms={phase_sum_ms:.3} unmeasured_ms={:.3}",
+                        sample + 1,
+                        wall_ms - phase_sum_ms,
+                    );
+                    for phase in phases {
+                        eprintln!(
+                            "PLAN17_F32_PHASE spin={spin} op={operation} q{threads} sample={} name={:?} elapsed_ms={:.3}",
+                            sample + 1,
+                            phase.phase,
+                            phase.elapsed_ns as f64 * 1.0e-6,
+                        );
+                    }
+                }
+            }
         }
     }
 }

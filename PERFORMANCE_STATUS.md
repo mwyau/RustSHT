@@ -121,8 +121,24 @@ paired-versus-independent correctness test again passed every T0–T256 case at
 q1/q8 and in serial/no-default-features mode. A same-current-source T63 q8
 odd-synthesis refresh measured 36.405 µs paired versus 38.072 µs independent
 (0.956×), with Rust/DUCC ratios 0.481/0.502 and maximum relative L2 below
-`1.5e-14`; this single cell is supplemental, not a new broad FFT claim. Plan 17
-Milestone A is now current.
+`1.5e-14`; this single cell is supplemental, not a new broad FFT claim.
+
+### Plan 17 Milestone A — native f32 baseline (2026-10-22)
+
+The current-source native f32 comparison completed 112/112 cases for scalar
+spin-0 and vector spin-1, analysis/synthesis, q1/q8, GL T127–T1023 plus T255 CC
+and F1 controls. It pins DUCC 0.42.0 and RustSHT `dcb38366`; every output was
+finite and output-reset/repeat checks passed. Full-order GL scalar warmed gaps
+range from 8.04× to 178.66×, with the T720 phase probe assigning roughly
+98.8–99.9% of wall time to recurrence and accumulation. DUCC's public f32 path
+uses double intermediates in the scalar recurrence, while Rust Pulp V3 uses
+eight f32 lanes. The largest observed cross-library relative L2 was `2.981e-4`
+(T1023 scalar synthesis q8); this is not an internal correctness failure.
+The next Plan 17 task is a source/assembly-grounded recurrence analysis, not
+FFT optimization. See the [baseline report](reports/plan17-f32-native-baseline-2026-10-22.md)
+and its [CSV](reports/data/plan17-f32-native-baseline-2026-10-22/results/results.csv),
+[JSON distributions](reports/data/plan17-f32-native-baseline-2026-10-22/results/results.json),
+and [coverage audit](reports/data/plan17-f32-native-baseline-2026-10-22/results/coverage-audit.json).
 
 **Constraints:** preserve strict Rust floating-point semantics, checked
 exceptional-value fallbacks, portable Pulp SIMD, the stable API, and the

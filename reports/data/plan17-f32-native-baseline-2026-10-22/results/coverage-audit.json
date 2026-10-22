@@ -1,0 +1,31 @@
+{
+  "rust_commit": "dcb3836603aaee0133b544fa4510e1da597dca62",
+  "ducc_sha": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "requested_cases": 112,
+  "complete_cases": 112,
+  "failed_cases": [],
+  "by_grid": {
+    "GL": 96,
+    "CC": 8,
+    "F1": 8
+  },
+  "by_threads": {
+    "1": 56,
+    "8": 56
+  },
+  "by_spin": {
+    "0": 56,
+    "1": 56
+  },
+  "by_operation": {
+    "analysis": 56,
+    "synthesis": 56
+  },
+  "all_finite": true,
+  "all_repeat_consistent": true,
+  "all_reset_consistent": true,
+  "relative_l2_max": 0.00029809908396894504,
+  "max_absolute_max": 0.002263963222503662,
+  "sample_count_rust": 2805,
+  "sample_count_ducc": 3345
+}
