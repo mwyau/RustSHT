@@ -81,28 +81,22 @@ pub(crate) fn select_scalar_legendre_strategy<T: ShtScalar>(
     operation: LegendreOperation,
     thread_count: usize,
 ) -> LegendreStrategy {
-    if operation == LegendreOperation::Analysis
-        && spin == 0
-        && T::supports_precomputed_scalar()
-        && lmax.checked_add(1) == Some(ntheta)
-    {
-        // On exact-grid GL transforms, the compact analysis table becomes
-        // memory-bound for q8 and once its payload exceeds 20 MiB for q1.
-        // Matched T64–T256 measurements found recurrence faster in those
-        // regimes. This is intentionally limited to the scalar table path;
-        // spin-1 has a separate selector.
-        let large_single_thread_table = thread_count == 1
+    if spin == 0 && T::supports_precomputed_scalar() && lmax.checked_add(1) == Some(ntheta) {
+        // The exhaustive exact-grid comparison found a simple scalar rule:
+        // synthesis uses recurrence, as does parallel analysis; q1 analysis
+        // uses the compact table until its estimated payload reaches 20 MiB.
+        // Keep this separate from spin-1's table policy.
+        let large_analysis_table = operation == LegendreOperation::Analysis
+            && thread_count == 1
             && estimated_table_bytes::<T>(lmax, mmax, ntheta)
                 .is_some_and(|bytes| bytes >= 20 * 1024 * 1024);
-        if thread_count >= 8 || large_single_thread_table {
+        if operation == LegendreOperation::Synthesis || thread_count >= 8 || large_analysis_table {
             return LegendreStrategy::Recurrence;
         }
     }
 
-    // Matched measurements show that on-the-fly recurrence improves scalar
-    // synthesis when the compact table would otherwise be selected, starting
-    // at T64. Small-band q1 analysis retains its table: recurrence regressed
-    // by 24-30% at T127-T128. Spin-1 has a separate table policy.
+    // Preserve the established synthesis cutoff outside the exact-grid scalar
+    // policy above.
     if operation == LegendreOperation::Synthesis && lmax > MAX_SCALAR_SYNTHESIS_TABLE_LMAX {
         return LegendreStrategy::Recurrence;
     }
@@ -123,18 +117,21 @@ pub(crate) fn select_scalar_legendre_strategy<T: ShtScalar>(
             return LegendreStrategy::Recurrence;
         }
     }
-    // Preserve the existing exact-grid T63 analysis and small-band single-
-    // thread synthesis exceptions, plus measured T255 analysis regressions.
-    let measured_regression = match operation {
-        LegendreOperation::Synthesis => thread_count == 1 && lmax <= 127,
-        LegendreOperation::Analysis => {
-            (thread_count >= 8 && lmax == MIN_PRECOMPUTED_LMAX && ntheta == lmax + 1)
-                || (thread_count == 1 && lmax == MAX_PRECOMPUTED_LMAX && mmax >= 192)
-                || (thread_count >= 16
-                    && lmax == MAX_PRECOMPUTED_LMAX
-                    && mmax == MAX_PRECOMPUTED_LMAX)
-        }
-    };
+    // These measured exclusions remain for spin-1's shared scalar-table
+    // implementation. Scalar exact-grid cases are handled by the
+    // operation/thread/footprint rules above; other scalar cases use the
+    // existing oversampling and lmax cutoffs.
+    let measured_regression = spin != 0
+        && match operation {
+            LegendreOperation::Synthesis => thread_count == 1 && lmax <= 127,
+            LegendreOperation::Analysis => {
+                (thread_count >= 8 && lmax == MIN_PRECOMPUTED_LMAX && ntheta == lmax + 1)
+                    || (thread_count == 1 && lmax == MAX_PRECOMPUTED_LMAX && mmax >= 192)
+                    || (thread_count >= 16
+                        && lmax == MAX_PRECOMPUTED_LMAX
+                        && mmax == MAX_PRECOMPUTED_LMAX)
+            }
+        };
     if measured_regression {
         LegendreStrategy::Recurrence
     } else {

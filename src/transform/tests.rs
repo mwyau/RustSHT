@@ -3727,7 +3727,7 @@ fn scalar_strategy_selects_against_the_executing_pool() {
 
 #[cfg(feature = "parallel")]
 #[test]
-fn scalar_t64_dispatch_keeps_analysis_tables_and_uses_synthesis_recurrence() {
+fn scalar_exact_grid_dispatch_uses_operation_thread_and_footprint_rules() {
     use LegendreOperation::{Analysis, Synthesis};
     use LegendreStrategy::{CompactTable, Recurrence};
 
@@ -3741,47 +3741,55 @@ fn scalar_t64_dispatch_keeps_analysis_tables_and_uses_synthesis_recurrence() {
             .build()
             .unwrap(),
     ];
-    let operations = [
-        (63, Synthesis, [Recurrence, CompactTable]),
-        (63, Analysis, [CompactTable, Recurrence]),
-        (64, Synthesis, [Recurrence, Recurrence]),
-        (64, Analysis, [CompactTable, Recurrence]),
-    ];
+    for lmax in [63, 64, 127, 128, 191, 223, 255, 256] {
+        let q1_analysis_expected = if lmax <= 255
+            && scalar_table_payload_estimate_bytes(lmax, lmax, lmax + 1) < 20 * 1024 * 1024
+        {
+            CompactTable
+        } else {
+            Recurrence
+        };
+        for nphi in [2 * lmax + 1, even_smooth_nphi(lmax)] {
+            for (pool_index, pool) in pools.iter().enumerate() {
+                for operation in [Analysis, Synthesis] {
+                    let plan = make_plan(lmax, lmax, lmax + 1, nphi, 0.37);
+                    let expected = match operation {
+                        Analysis if pool_index == 0 => q1_analysis_expected,
+                        _ => Recurrence,
+                    };
+                    assert_eq!(
+                        pool.install(|| plan.scalar_legendre_strategy(operation)),
+                        expected,
+                        "T{lmax} nphi={nphi} {operation:?} q{} strategy",
+                        pool.current_num_threads()
+                    );
 
-    for (lmax, operation, expected_by_pool) in operations {
-        for (pool_index, pool) in pools.iter().enumerate() {
-            let plan = make_plan(lmax, lmax, lmax + 1, 2 * lmax + 2, 0.37);
-            let expected = expected_by_pool[pool_index];
-            assert_eq!(
-                pool.install(|| plan.scalar_legendre_strategy(operation)),
-                expected,
-                "T{lmax} {operation:?} q{} strategy",
-                pool.current_num_threads()
-            );
-
-            let mut workspace = pool.install(|| plan.workspace()).unwrap();
-            let alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
-            let map = vec![0.0; plan.sample_count];
-            match operation {
-                Synthesis => {
-                    let mut output = vec![0.0; plan.sample_count];
-                    pool.install(|| plan.synthesis_into(&alm, &mut output, &mut workspace))
-                        .unwrap();
-                }
-                Analysis => {
-                    let mut output = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
-                    pool.install(|| plan.analysis_into(&map, &mut output, &mut workspace))
-                        .unwrap();
+                    let mut workspace = pool.install(|| plan.workspace()).unwrap();
+                    let alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+                    let map = vec![0.0; plan.sample_count];
+                    match operation {
+                        Synthesis => {
+                            let mut output = vec![0.0; plan.sample_count];
+                            pool.install(|| plan.synthesis_into(&alm, &mut output, &mut workspace))
+                                .unwrap();
+                        }
+                        Analysis => {
+                            let mut output =
+                                vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+                            pool.install(|| plan.analysis_into(&map, &mut output, &mut workspace))
+                                .unwrap();
+                        }
+                    }
+                    assert_eq!(
+                        plan.scalar_legendre_table
+                            .get()
+                            .is_some_and(Option::is_some),
+                        expected == CompactTable,
+                        "T{lmax} nphi={nphi} {operation:?} q{} executed route",
+                        pool.current_num_threads()
+                    );
                 }
             }
-            assert_eq!(
-                plan.scalar_legendre_table
-                    .get()
-                    .is_some_and(Option::is_some),
-                expected == CompactTable,
-                "T{lmax} {operation:?} q{} executed route",
-                pool.current_num_threads()
-            );
         }
     }
 }
@@ -3878,7 +3886,8 @@ fn scalar_reuse_estimate_gates_tables_at_measured_break_even() {
         LegendreStrategy::CompactTable
     );
 
-    // The T63 q8 exact-grid exception remains in effect.
+    // The over-resolved q8 analysis table still requires its measured
+    // 90-call reuse estimate, so 21 requested calls keep it on recurrence.
     assert_eq!(
         eight_threads
             .install(|| analysis_break_even.scalar_legendre_strategy(LegendreOperation::Analysis)),
