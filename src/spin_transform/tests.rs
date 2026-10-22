@@ -9357,6 +9357,13 @@ fn profile_spin1_standard_synthesis_phases() {
         .unwrap();
         std::hint::black_box((&first, &second));
     }
+    eprintln!(
+        "PROFILE_CACHE_STATE,lmax={lmax},mmax={mmax},coefficient_complex_values={},coefficient_bytes={},finite_orders={},order_major_scratch_workers={}",
+        workspace.spin1_scalar_coefficients.len(),
+        workspace.spin1_scalar_coefficients.len() * std::mem::size_of::<Complex64>(),
+        workspace.spin1_scalar_coefficient_finite_orders.len(),
+        workspace.spin_order_output_scratch.len(),
+    );
     probe.lock().unwrap().clear();
     for worker in &mut workspace.recurrence_workers {
         worker.spin1_profile_enabled = true;

@@ -43,7 +43,7 @@ def main() -> None:
     parser.add_argument("--candidate", type=pathlib.Path, required=True)
     parser.add_argument("--ducc", type=pathlib.Path, required=True)
     parser.add_argument("--output", type=pathlib.Path, required=True)
-    parser.add_argument("--grid", choices=("CC", "F1"), default="F1")
+    parser.add_argument("--grid", choices=("GL", "CC", "F1"), default="F1")
     parser.add_argument(
         "--lmax",
         type=int,
