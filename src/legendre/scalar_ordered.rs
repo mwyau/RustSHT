@@ -177,7 +177,7 @@ pub(crate) fn initialize_inactive_spectrum_tails<T: Copy>(
 
 impl<T: Copy> DisjointSpectrumWriter<'_, T> {
     #[inline]
-    fn write(&self, ring: usize, value: num_complex::Complex<T>) {
+    pub(crate) fn write(&self, ring: usize, value: num_complex::Complex<T>) {
         debug_assert!(ring < self.ntheta);
         debug_assert!(self.order < self.spectrum_len);
         let index = ring * self.spectrum_len + self.order;

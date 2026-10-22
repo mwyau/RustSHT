@@ -10,6 +10,8 @@ use std::collections::VecDeque;
 #[cfg(feature = "parallel")]
 use std::sync::Mutex;
 #[cfg(feature = "parallel")]
+use std::sync::atomic::AtomicUsize;
+#[cfg(feature = "parallel")]
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::error::{ShtError, check_len};
@@ -41,6 +43,8 @@ const SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MIN_LMAX: usize = 63;
 const SPIN1_TABLE_ANALYSIS_SINGLE_THREAD_MAX_LMAX: usize = 224;
 const SPIN1_FAST_MIN_SIN_THETA: f64 = 0.0001;
 const SPIN1_PAIR_MIN_SIN_THETA: f64 = 0.01;
+#[cfg(feature = "parallel")]
+const SPIN1_ORDER_MAJOR_TILE: usize = 8;
 #[cfg(feature = "parallel")]
 const SPIN1_PARALLEL_MERIDIONAL_RESAMPLING_MIN_ORDER_RING_PAIRS: usize = 65_536;
 const SPIN2_FAST_MIN_SIN_THETA: f64 = 0.01;
@@ -1253,6 +1257,23 @@ impl<T: ShtScalar> ShtPlan<T> {
                 } else {
                     false
                 };
+                let order_tile_count = (self.harmonics.mmax() + 1).div_ceil(SPIN1_ORDER_MAJOR_TILE);
+                let order_worker_count = (recurrence_spin == 1
+                    && self.harmonics.spin() == 1
+                    && !derivative_norm
+                    && b_alm.is_some()
+                    && execution_threads >= 8
+                    && order_tile_count >= execution_threads.saturating_mul(2)
+                    && use_dynamic_spin1_group_queue
+                    && spin1_coefficients_ready)
+                    .then_some(
+                        order_tile_count
+                            .min(execution_threads)
+                            .min(workspace.recurrence_workers.len()),
+                    );
+                if let Some(order_worker_count) = order_worker_count {
+                    workspace.ensure_spin_order_output_scratch_count(order_worker_count, ntheta)?;
+                }
                 let spin1_coefficients = spin1_coefficients_ready
                     .then_some(workspace.spin1_scalar_coefficients.as_slice());
                 let spin1_coefficient_finite_orders = spin1_coefficients_ready
@@ -1271,7 +1292,26 @@ impl<T: ShtScalar> ShtPlan<T> {
                         quantity: "spin Fourier spectrum group size",
                     },
                 )?;
-                if use_dynamic_spin1_group_queue {
+                if let Some(order_worker_count) = order_worker_count {
+                    self.synthesize_spin1_order_major_queue(
+                        e_alm,
+                        b_alm.expect("order-major spin-1 synthesis requires B coefficients"),
+                        nphi,
+                        spectrum_len,
+                        phi0,
+                        spin1_coefficients,
+                        spin1_coefficient_finite_orders,
+                        &mut workspace.spectra,
+                        &mut workspace.spin_spectra,
+                        &workspace.theta_sin[..ntheta],
+                        &workspace.theta_cos[..ntheta],
+                        &workspace.ring_order_limits[..ntheta],
+                        arch,
+                        &mut workspace.recurrence_workers[..execution_threads],
+                        &mut workspace.spin_order_output_scratch[..order_worker_count],
+                    )?;
+                    // The order-major queue wrote each complete order.
+                } else if use_dynamic_spin1_group_queue {
                     // Spin-1 synthesis groups have strongly varying work near
                     // polar cutoffs. Queue one group at a time to balance the
                     // work, while limiting active workers to the capacity
@@ -1543,6 +1583,127 @@ impl<T: ShtScalar> ShtPlan<T> {
         true
     }
 
+    #[cfg(feature = "parallel")]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Order-major synthesis tasks share transform inputs, outputs and worker scratch."
+    )]
+    fn synthesize_spin1_order_major_queue(
+        &self,
+        e_alm: &[Complex<T>],
+        b_alm: &[Complex<T>],
+        nphi: usize,
+        spectrum_len: usize,
+        phi0: f64,
+        spin1_scalar_coefficients: Option<&[Complex<T>]>,
+        spin1_scalar_coefficient_finite_orders: Option<&[u8]>,
+        q_spectra: &mut [Complex<T>],
+        u_spectra: &mut [Complex<T>],
+        theta_sin: &[T],
+        theta_cos: &[T],
+        ring_order_limits: &[usize],
+        arch: pulp::Arch,
+        recurrence_workers: &mut [RecurrenceWorkspace<T>],
+        output_scratch: &mut [crate::workspace::SpinOrderOutputScratch<T>],
+    ) -> Result<(), ShtError> {
+        let ntheta = self.grid.ntheta();
+        let order_count = self.harmonics.mmax() + 1;
+        let tile_count = order_count.div_ceil(SPIN1_ORDER_MAJOR_TILE);
+        let worker_count = tile_count
+            .min(recurrence_workers.len())
+            .min(output_scratch.len());
+        debug_assert!(worker_count > 0);
+        debug_assert_eq!(theta_sin.len(), ntheta);
+        debug_assert_eq!(theta_cos.len(), ntheta);
+        debug_assert_eq!(ring_order_limits.len(), ntheta);
+        debug_assert_eq!(q_spectra.len(), ntheta * spectrum_len);
+        debug_assert_eq!(u_spectra.len(), q_spectra.len());
+
+        let q_output = crate::legendre::scalar_ordered::DisjointSpectrumOutput::new(
+            q_spectra,
+            ntheta,
+            spectrum_len,
+        )
+        .expect("the plan workspace has a full Q spectrum");
+        let u_output = crate::legendre::scalar_ordered::DisjointSpectrumOutput::new(
+            u_spectra,
+            ntheta,
+            spectrum_len,
+        )
+        .expect("the plan workspace has a full U spectrum");
+        let next_tile = AtomicUsize::new(0);
+
+        recurrence_workers[..worker_count]
+            .par_iter_mut()
+            .zip(output_scratch[..worker_count].par_iter_mut())
+            .try_for_each(|(recurrence, output_scratch)| {
+                #[cfg(all(test, feature = "parallel"))]
+                if recurrence.spin1_profile_enabled {
+                    recurrence.spin1_profile_group_worker_id =
+                        rayon::current_thread_index().unwrap_or(usize::MAX);
+                }
+                loop {
+                    let tile_start = next_tile.fetch_add(SPIN1_ORDER_MAJOR_TILE, Ordering::Relaxed);
+                    if tile_start >= order_count {
+                        break;
+                    }
+                    let tile_end = (tile_start + SPIN1_ORDER_MAJOR_TILE).min(order_count);
+                    #[cfg(all(test, feature = "parallel"))]
+                    let tile_started = recurrence
+                        .spin1_profile_enabled
+                        .then(std::time::Instant::now);
+                    for m in tile_start..tile_end {
+                        let q_row = &mut output_scratch.q[..ntheta];
+                        let u_row = &mut output_scratch.u[..ntheta];
+                        q_row.fill(Complex::new(T::zero(), T::zero()));
+                        u_row.fill(Complex::new(T::zero(), T::zero()));
+                        self.synthesize_spin_ring_group_orders(
+                            e_alm,
+                            Some(b_alm),
+                            1,
+                            false,
+                            true,
+                            false,
+                            spin1_scalar_coefficients,
+                            spin1_scalar_coefficient_finite_orders,
+                            nphi,
+                            1,
+                            phi0,
+                            0,
+                            ntheta,
+                            m,
+                            m + 1,
+                            q_row,
+                            u_row,
+                            theta_sin,
+                            theta_cos,
+                            ring_order_limits,
+                            arch,
+                            recurrence,
+                        )?;
+                        // SAFETY: each atomic tile is claimed once and contains
+                        // distinct orders; this writer owns one order column
+                        // until the worker loop advances to the next order.
+                        let q_writer = unsafe { q_output.writer_for_unique_order(m) }
+                            .expect("the queued order is within the spectrum");
+                        // SAFETY: the U tile has the same unique order ownership.
+                        let u_writer = unsafe { u_output.writer_for_unique_order(m) }
+                            .expect("the queued order is within the spectrum");
+                        for ring in 0..ntheta {
+                            q_writer.write(ring, q_row[ring]);
+                            u_writer.write(ring, u_row[ring]);
+                        }
+                    }
+                    #[cfg(all(test, feature = "parallel"))]
+                    if let Some(tile_started) = tile_started {
+                        recurrence.spin1_profile_group_ns += tile_started.elapsed().as_nanos();
+                    }
+                }
+                Ok::<(), ShtError>(())
+            })?;
+        Ok(())
+    }
+
     #[expect(
         clippy::too_many_arguments,
         reason = "Each ring group receives plan inputs, optional prepared coefficients and worker scratch."
@@ -1562,6 +1723,61 @@ impl<T: ShtScalar> ShtPlan<T> {
         phi0: f64,
         ring_start: usize,
         ring_end: usize,
+        q_spectra: &mut [Complex<T>],
+        u_spectra: &mut [Complex<T>],
+        theta_sin: &[T],
+        theta_cos: &[T],
+        ring_order_limits: &[usize],
+        arch: pulp::Arch,
+        recurrence: &mut RecurrenceWorkspace<T>,
+    ) -> Result<(), ShtError> {
+        self.synthesize_spin_ring_group_orders(
+            e_alm,
+            b_alm,
+            spin,
+            derivative_norm,
+            allow_fast_scalar,
+            allow_spin1_table,
+            spin1_scalar_coefficients,
+            spin1_scalar_coefficient_finite_orders,
+            nphi,
+            spectrum_len,
+            phi0,
+            ring_start,
+            ring_end,
+            0,
+            self.harmonics.mmax() + 1,
+            q_spectra,
+            u_spectra,
+            theta_sin,
+            theta_cos,
+            ring_order_limits,
+            arch,
+            recurrence,
+        )
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The order-major queue restricts each ring traversal to one order range."
+    )]
+    fn synthesize_spin_ring_group_orders(
+        &self,
+        e_alm: &[Complex<T>],
+        b_alm: Option<&[Complex<T>]>,
+        spin: usize,
+        derivative_norm: bool,
+        allow_fast_scalar: bool,
+        allow_spin1_table: bool,
+        spin1_scalar_coefficients: Option<&[Complex<T>]>,
+        spin1_scalar_coefficient_finite_orders: Option<&[u8]>,
+        nphi: usize,
+        spectrum_len: usize,
+        phi0: f64,
+        ring_start: usize,
+        ring_end: usize,
+        order_start: usize,
+        order_end: usize,
         q_spectra: &mut [Complex<T>],
         u_spectra: &mut [Complex<T>],
         theta_sin: &[T],
@@ -1612,7 +1828,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             }
             let spectrum_start = segment_start * spectrum_len;
             let spectrum_end = segment_end * spectrum_len;
-            self.synthesize_spin_ring_group_mode(
+            self.synthesize_spin_ring_group_mode_orders(
                 e_alm,
                 b_alm,
                 spin,
@@ -1626,6 +1842,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                 phi0,
                 ring_start + segment_start,
                 ring_start + segment_end,
+                order_start,
+                order_end,
                 &mut q_spectra[spectrum_start..spectrum_end],
                 &mut u_spectra[spectrum_start..spectrum_end],
                 &theta_sin[segment_start..segment_end],
@@ -1643,6 +1861,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         clippy::too_many_arguments,
         reason = "Each latitude segment receives transform inputs, optional coefficients and worker scratch."
     )]
+    #[cfg(test)]
     fn synthesize_spin_ring_group_mode(
         &self,
         e_alm: &[Complex<T>],
@@ -1666,8 +1885,62 @@ impl<T: ShtScalar> ShtPlan<T> {
         arch: pulp::Arch,
         recurrence: &mut RecurrenceWorkspace<T>,
     ) -> Result<(), ShtError> {
+        self.synthesize_spin_ring_group_mode_orders(
+            e_alm,
+            b_alm,
+            spin,
+            derivative_norm,
+            fast_scalar,
+            allow_spin1_table,
+            spin1_scalar_coefficients,
+            spin1_scalar_coefficient_finite_orders,
+            nphi,
+            spectrum_len,
+            phi0,
+            ring_start,
+            ring_end,
+            0,
+            self.harmonics.mmax() + 1,
+            q_spectra,
+            u_spectra,
+            theta_sin,
+            theta_cos,
+            ring_order_limits,
+            arch,
+            recurrence,
+        )
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The order-major queue restricts each latitude segment to an order range."
+    )]
+    fn synthesize_spin_ring_group_mode_orders(
+        &self,
+        e_alm: &[Complex<T>],
+        b_alm: Option<&[Complex<T>]>,
+        spin: usize,
+        derivative_norm: bool,
+        fast_scalar: bool,
+        allow_spin1_table: bool,
+        spin1_scalar_coefficients: Option<&[Complex<T>]>,
+        spin1_scalar_coefficient_finite_orders: Option<&[u8]>,
+        nphi: usize,
+        spectrum_len: usize,
+        phi0: f64,
+        ring_start: usize,
+        ring_end: usize,
+        order_start: usize,
+        order_end: usize,
+        q_spectra: &mut [Complex<T>],
+        u_spectra: &mut [Complex<T>],
+        theta_sin: &[T],
+        theta_cos: &[T],
+        ring_order_limits: &[usize],
+        arch: pulp::Arch,
+        recurrence: &mut RecurrenceWorkspace<T>,
+    ) -> Result<(), ShtError> {
         let lmax = self.harmonics.lmax();
-        let mmax = self.harmonics.mmax();
         debug_assert_eq!(ring_end - ring_start, theta_sin.len());
         debug_assert_eq!(q_spectra.len(), (ring_end - ring_start) * spectrum_len);
         debug_assert_eq!(u_spectra.len(), q_spectra.len());
@@ -1680,7 +1953,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                 .max()
                 .unwrap_or(0)
         });
-        for m in 0..=mmax {
+        for m in order_start..order_end {
+            let output_order = m - order_start;
             // Synthesis cleared these spectra, and the polar cutoff excludes this
             // order from every ring in the segment.
             if maximum_ring_order.is_some_and(|limit| m > limit) {
@@ -1767,12 +2041,13 @@ impl<T: ShtScalar> ShtPlan<T> {
             }
             if fast_scalar_order {
                 if spin == 2 {
-                    self.synthesize_spin2_scalar_order(
+                    self.synthesize_spin2_scalar_order_to_order(
                         m,
                         e_alm,
                         b_alm.expect("the scalar conversion requires E and B"),
                         spectrum_len,
                         ring_start,
+                        output_order,
                         q_spectra,
                         u_spectra,
                         theta_sin,
@@ -1808,12 +2083,13 @@ impl<T: ShtScalar> ShtPlan<T> {
                             .min(theta_sin.len());
                         let spectrum_start = block_start * spectrum_len;
                         let spectrum_end = block_end * spectrum_len;
-                        self.synthesize_spin1_scalar_block(
+                        self.synthesize_spin1_scalar_block_to_order(
                             m,
                             scalar_lmax,
                             spin1_scalar_coefficients,
                             spectrum_len,
                             ring_start + block_start,
+                            output_order,
                             allow_spin1_table,
                             &theta_sin[block_start..block_end],
                             &theta_cos[block_start..block_end],
@@ -1826,7 +2102,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     }
                 }
             } else {
-                self.synthesize_general_spin_order(
+                self.synthesize_general_spin_order_to_order(
                     m,
                     e_alm,
                     b_alm,
@@ -1834,6 +2110,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     derivative_norm,
                     spectrum_len,
                     ring_start,
+                    output_order,
                     q_spectra,
                     u_spectra,
                     theta_sin,
@@ -1844,7 +2121,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 )?;
             }
             for group_ring in 0..ring_end - ring_start {
-                let spectrum_index = group_ring * spectrum_len + m;
+                let spectrum_index = group_ring * spectrum_len + output_order;
                 let phased_q = q_spectra[spectrum_index] * phase;
                 let phased_u = u_spectra[spectrum_index] * phase;
                 if nphi.is_multiple_of(2) && m == nphi / 2 {
@@ -1874,6 +2151,47 @@ impl<T: ShtScalar> ShtPlan<T> {
         derivative_norm: bool,
         spectrum_len: usize,
         ring_start: usize,
+        q_spectra: &mut [Complex<T>],
+        u_spectra: &mut [Complex<T>],
+        theta_sin: &[T],
+        theta_cos: &[T],
+        ring_order_limits: &[usize],
+        arch: pulp::Arch,
+        recurrence: &mut RecurrenceWorkspace<T>,
+    ) -> Result<(), ShtError> {
+        self.synthesize_general_spin_order_to_order(
+            m,
+            e_alm,
+            b_alm,
+            spin,
+            derivative_norm,
+            spectrum_len,
+            ring_start,
+            m,
+            q_spectra,
+            u_spectra,
+            theta_sin,
+            theta_cos,
+            ring_order_limits,
+            arch,
+            recurrence,
+        )
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "The order-major path places one order into a compact worker-local output row."
+    )]
+    fn synthesize_general_spin_order_to_order(
+        &self,
+        m: usize,
+        e_alm: &[Complex<T>],
+        b_alm: Option<&[Complex<T>]>,
+        spin: usize,
+        derivative_norm: bool,
+        spectrum_len: usize,
+        ring_start: usize,
+        output_order: usize,
         q_spectra: &mut [Complex<T>],
         u_spectra: &mut [Complex<T>],
         theta_sin: &[T],
@@ -1934,7 +2252,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     let u_value =
                         Complex::<T>::new(T::zero(), T::one()) * e_coefficient * odd_basis
                             + b_coefficient * even_basis;
-                    let spectrum_index = group_ring * spectrum_len + m;
+                    let spectrum_index = group_ring * spectrum_len + output_order;
                     q_spectra[spectrum_index] += q_value;
                     u_spectra[spectrum_index] += u_value;
                 }
@@ -1955,6 +2273,45 @@ impl<T: ShtScalar> ShtPlan<T> {
         cached_scalar_coefficients: Option<&[Complex<T>]>,
         spectrum_len: usize,
         global_ring_start: usize,
+        allow_table: bool,
+        theta_sin: &[T],
+        theta_cos: &[T],
+        ring_order_limits: &[usize],
+        arch: pulp::Arch,
+        recurrence: &mut RecurrenceWorkspace<T>,
+        q_spectra: &mut [Complex<T>],
+        u_spectra: &mut [Complex<T>],
+    ) -> Result<(), ShtError> {
+        self.synthesize_spin1_scalar_block_to_order(
+            m,
+            scalar_lmax,
+            cached_scalar_coefficients,
+            spectrum_len,
+            global_ring_start,
+            m,
+            allow_table,
+            theta_sin,
+            theta_cos,
+            ring_order_limits,
+            arch,
+            recurrence,
+            q_spectra,
+            u_spectra,
+        )
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Order-major scalar synthesis writes one packed order into worker-local spectra."
+    )]
+    fn synthesize_spin1_scalar_block_to_order(
+        &self,
+        m: usize,
+        scalar_lmax: usize,
+        cached_scalar_coefficients: Option<&[Complex<T>]>,
+        spectrum_len: usize,
+        global_ring_start: usize,
+        output_order: usize,
         allow_table: bool,
         theta_sin: &[T],
         theta_cos: &[T],
@@ -2028,7 +2385,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         basis = -basis;
                     }
                     let weighted_basis = basis / theta_sin[lane];
-                    let spectrum_index = lane * spectrum_len + m;
+                    let spectrum_index = lane * spectrum_len + output_order;
                     q_spectra[spectrum_index] += first_coefficient * weighted_basis;
                     u_spectra[spectrum_index] += second_coefficient * weighted_basis;
                 }
@@ -2090,6 +2447,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 let fused_pair = T::synthesize_prepared_scalar_pair_block_dispatched(
                     arch,
                     m,
+                    output_order,
                     scalar_lmax,
                     theta_sin,
                     theta_cos,
@@ -2124,7 +2482,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         recurrence.spin1_profile_pair_success_blocks += 1;
                     }
                     for (ring, &sin_theta) in theta_sin.iter().enumerate() {
-                        let spectrum_index = ring * spectrum_len + m;
+                        let spectrum_index = ring * spectrum_len + output_order;
                         let inverse_sine = sin_theta.recip();
                         q_spectra[spectrum_index] *= inverse_sine;
                         u_spectra[spectrum_index] *= inverse_sine;
@@ -2173,6 +2531,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 T::synthesize_paired_scalar_block_prepared_dispatched(
                     arch,
                     m,
+                    output_order,
                     scalar_lmax,
                     theta_sin,
                     theta_cos,
@@ -2196,6 +2555,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 T::synthesize_paired_scalar_block_prepared_dispatched(
                     arch,
                     m,
+                    output_order,
                     scalar_lmax,
                     theta_sin,
                     theta_cos,
@@ -2218,7 +2578,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             debug_assert_eq!(fused_first, fused_second);
             if fused_first && fused_second {
                 for (ring, &sin_theta) in theta_sin.iter().enumerate() {
-                    let spectrum_index = ring * spectrum_len + m;
+                    let spectrum_index = ring * spectrum_len + output_order;
                     let inverse_sine = sin_theta.recip();
                     q_spectra[spectrum_index] *= inverse_sine;
                     u_spectra[spectrum_index] *= inverse_sine;
@@ -2264,11 +2624,12 @@ impl<T: ShtScalar> ShtPlan<T> {
                     .iter()
                     .any(|&sine| sine >= transition_min_sine)
                 {
-                    split_polar_count = try_synthesize_spin1_transition_safe_lanes(
+                    split_polar_count = try_synthesize_spin1_transition_safe_lanes_to_order(
                         arch,
                         m,
                         scalar_lmax,
                         spectrum_len,
+                        output_order,
                         self.sectoral_norms[m],
                         theta_sin,
                         theta_cos,
@@ -2363,7 +2724,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         if staged_pair {
             for lane in 0..fallback_len {
                 let local_ring = compact_ring_indices.map_or(lane, |indices| indices[lane]);
-                let spectrum_index = local_ring * spectrum_len + m;
+                let spectrum_index = local_ring * spectrum_len + output_order;
                 let inverse_sine = fallback_sin[lane].recip();
                 q_spectra[spectrum_index] += Complex::new(
                     recurrence.analysis_same_real[lane] * inverse_sine,
@@ -2415,7 +2776,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         inverse_sine,
                         exponents[lane],
                     );
-                    let spectrum_index = group_ring * spectrum_len + m;
+                    let spectrum_index = group_ring * spectrum_len + output_order;
                     q_spectra[spectrum_index] += first;
                     u_spectra[spectrum_index] += second;
                 }
@@ -2433,6 +2794,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         clippy::too_many_arguments,
         reason = "Spin-2 scalar synthesis uses the plan's coefficient factors and worker scratch."
     )]
+    #[cfg(test)]
     fn synthesize_spin2_scalar_order(
         &self,
         m: usize,
@@ -2440,6 +2802,43 @@ impl<T: ShtScalar> ShtPlan<T> {
         b_alm: &[Complex<T>],
         spectrum_len: usize,
         ring_start: usize,
+        q_spectra: &mut [Complex<T>],
+        u_spectra: &mut [Complex<T>],
+        theta_sin: &[T],
+        theta_cos: &[T],
+        ring_order_limits: &[usize],
+        arch: pulp::Arch,
+        recurrence: &mut RecurrenceWorkspace<T>,
+    ) -> Result<(), ShtError> {
+        self.synthesize_spin2_scalar_order_to_order(
+            m,
+            e_alm,
+            b_alm,
+            spectrum_len,
+            ring_start,
+            m,
+            q_spectra,
+            u_spectra,
+            theta_sin,
+            theta_cos,
+            ring_order_limits,
+            arch,
+            recurrence,
+        )
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "Order-major spin-2 fallback places one order into worker-local spectra."
+    )]
+    fn synthesize_spin2_scalar_order_to_order(
+        &self,
+        m: usize,
+        e_alm: &[Complex<T>],
+        b_alm: &[Complex<T>],
+        spectrum_len: usize,
+        ring_start: usize,
+        output_order: usize,
         q_spectra: &mut [Complex<T>],
         u_spectra: &mut [Complex<T>],
         theta_sin: &[T],
@@ -2472,7 +2871,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             .chain(&recurrence.fast_scalar_second[m..=scalar_lmax])
             .all(|value| value.re.is_finite() && value.im.is_finite());
         if !converted_finite {
-            return self.synthesize_general_spin_order(
+            return self.synthesize_general_spin_order_to_order(
                 m,
                 e_alm,
                 Some(b_alm),
@@ -2480,6 +2879,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 false,
                 spectrum_len,
                 ring_start,
+                output_order,
                 q_spectra,
                 u_spectra,
                 theta_sin,
@@ -2520,7 +2920,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 &mut recurrence.fast_spin_second[..pair_count],
             );
         if !pairs_finite {
-            return self.synthesize_general_spin_order(
+            return self.synthesize_general_spin_order_to_order(
                 m,
                 e_alm,
                 Some(b_alm),
@@ -2528,6 +2928,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 false,
                 spectrum_len,
                 ring_start,
+                output_order,
                 q_spectra,
                 u_spectra,
                 theta_sin,
@@ -2579,7 +2980,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             )?;
             if fused_pair {
                 for (local_ring, &sine) in block_sine.iter().enumerate() {
-                    let spectrum_index = local_ring * spectrum_len + m;
+                    let spectrum_index = local_ring * spectrum_len + output_order;
                     let inverse_sine = sine.recip();
                     let inverse_sine_squared = inverse_sine * inverse_sine;
                     q_spectra[spectrum_start + spectrum_index] *= inverse_sine_squared;
@@ -2654,7 +3055,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                     let group_ring = block_start + local_ring;
                     let inverse_sine = fallback_sine[lane].recip();
                     let inverse_sine_squared = inverse_sine * inverse_sine;
-                    let spectrum_index = group_ring * spectrum_len + m;
+                    let spectrum_index = group_ring * spectrum_len + output_order;
                     q_spectra[spectrum_index] += Complex::new(
                         recurrence.analysis_same_real[lane] * inverse_sine_squared,
                         recurrence.analysis_same_imag[lane] * inverse_sine_squared,
@@ -2745,7 +3146,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                             cosine_over_sine_squared,
                             exponents[lane],
                         );
-                        let spectrum_index = group_ring * spectrum_len + m;
+                        let spectrum_index = group_ring * spectrum_len + output_order;
                         q_spectra[spectrum_index] += first;
                         u_spectra[spectrum_index] += second;
                     }
@@ -4498,11 +4899,48 @@ impl<T: ShtScalar> ShtPlan<T> {
 )]
 #[cold]
 #[inline(never)]
+#[cfg(test)]
 fn try_synthesize_spin1_transition_safe_lanes<T: ShtScalar>(
     arch: pulp::Arch,
     m: usize,
     scalar_lmax: usize,
     spectrum_len: usize,
+    sectoral_norm: T,
+    theta_sin: &[T],
+    theta_cos: &[T],
+    ring_order_limits: &[usize],
+    q_spectra: &mut [Complex<T>],
+    u_spectra: &mut [Complex<T>],
+    recurrence: &mut RecurrenceWorkspace<T>,
+) -> Result<Option<usize>, ShtError> {
+    try_synthesize_spin1_transition_safe_lanes_to_order(
+        arch,
+        m,
+        scalar_lmax,
+        spectrum_len,
+        m,
+        sectoral_norm,
+        theta_sin,
+        theta_cos,
+        ring_order_limits,
+        q_spectra,
+        u_spectra,
+        recurrence,
+    )
+}
+
+#[expect(
+    clippy::too_many_arguments,
+    reason = "The order-major polar split targets a compact worker-local order spectrum."
+)]
+#[cold]
+#[inline(never)]
+fn try_synthesize_spin1_transition_safe_lanes_to_order<T: ShtScalar>(
+    arch: pulp::Arch,
+    m: usize,
+    scalar_lmax: usize,
+    spectrum_len: usize,
+    output_order: usize,
     sectoral_norm: T,
     theta_sin: &[T],
     theta_cos: &[T],
@@ -4583,7 +5021,7 @@ fn try_synthesize_spin1_transition_safe_lanes<T: ShtScalar>(
     for lane in 0..transition_len {
         let ring = usize::try_from(recurrence.spin_exponents_plus[lane])
             .expect("saved ring index is nonnegative");
-        let spectrum_index = ring * spectrum_len + m;
+        let spectrum_index = ring * spectrum_len + output_order;
         let inverse_sine = recurrence.spin_previous_plus[lane].recip();
         q_spectra[spectrum_index] += Complex::new(
             recurrence.analysis_same_real[lane] * inverse_sine,

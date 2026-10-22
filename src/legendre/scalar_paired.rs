@@ -299,6 +299,7 @@ pub(crate) fn synthesize_order_block_dispatched(
     synthesize_order_block_precomputed_dispatched(
         arch,
         m,
+        m,
         lmax,
         sin_theta,
         cos_theta,
@@ -324,6 +325,7 @@ pub(crate) fn synthesize_order_block_dispatched(
 pub(crate) fn synthesize_order_block_precomputed_dispatched(
     arch: Arch,
     m: usize,
+    output_order: usize,
     lmax: usize,
     sin_theta: &[f64],
     cos_theta: &[f64],
@@ -382,7 +384,7 @@ pub(crate) fn synthesize_order_block_precomputed_dispatched(
         sum_im: &mut next[..sin_theta.len()],
     });
     for ring in 0..sin_theta.len() {
-        spectra[ring * spectrum_len + m] += Complex64::new(previous[ring], next[ring]);
+        spectra[ring * spectrum_len + output_order] += Complex64::new(previous[ring], next[ring]);
     }
     Ok(true)
 }
@@ -663,6 +665,7 @@ pub(crate) fn synthesize_order_pair_block_dispatched(
 pub(crate) fn synthesize_prepared_order_pair_block_dispatched(
     arch: Arch,
     m: usize,
+    output_order: usize,
     lmax: usize,
     sin_theta: &[f64],
     cos_theta: &[f64],
@@ -747,7 +750,7 @@ pub(crate) fn synthesize_prepared_order_pair_block_dispatched(
         second_sum_im: &mut second_sum_im[..sin_theta.len()],
     });
     for ring in 0..sin_theta.len() {
-        let spectrum_index = ring * spectrum_len + m;
+        let spectrum_index = ring * spectrum_len + output_order;
         first_spectra[spectrum_index] += Complex64::new(first_sum_re[ring], first_sum_im[ring]);
         second_spectra[spectrum_index] += Complex64::new(second_sum_re[ring], second_sum_im[ring]);
     }

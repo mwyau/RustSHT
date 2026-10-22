@@ -2,19 +2,25 @@
 
 **Successor (queued, not active):** [Plan 17 — f32 and high-resolution atmospheric SHT performance](17-f32-atmospheric-performance.md), to begin only after Plan 16's measured closeout and safe remote sync. Do not mix f32/high-resolution follow-on experiments into current Plan 16.
 
-**Status: ACTIVE (2026-10-22), Milestone D.** Milestone A's executed-path crosswalk and matched-workload Rust stage profile are recorded in [the crosswalk](../reports/plan16-spin1-executed-path-crosswalk-2026-10-22.md). Milestone B's parity-separated candidates and Milestone C's paired-coefficient reuse candidate were removed after matched whole-transform tests did not establish a gain. The scalar-analysis cumulative ablation is closed with the production 256-pair tile. **Branch:** opt/sht-performance-parity. **Scope:** f64 single-vector-field spin-1 STANDARD E/B analysis and synthesis on GL, CC and F1; optimize the measured synthesis recurrence/spectrum residual first. This is a new investigation, not a reopening or retroactive reinterpretation of completed Plan 15.
+**Status: ACTIVE (2026-10-22), Milestone E.** Milestone A's executed-path crosswalk and matched-workload Rust stage profile are recorded in [the crosswalk](../reports/plan16-spin1-executed-path-crosswalk-2026-10-22.md). Milestone B's parity-separated candidates and Milestone C's paired-coefficient reuse candidate were removed after matched whole-transform tests did not establish a gain. Milestone D's order-major synthesis queue is accepted for eligible q8 scalar-converted spin-1 STANDARD synthesis; its measured scope and remaining gap are recorded in [the Milestone D report](../reports/plan16-spin1-order-major-dataflow-2026-10-21.md). The scalar-analysis cumulative ablation is closed with the production 256-pair tile. **Branch:** opt/sht-performance-parity. **Scope:** f64 single-vector-field spin-1 STANDARD E/B analysis and synthesis on GL, CC and F1; optimize the measured synthesis recurrence/spectrum residual first. This is a new investigation, not a reopening or retroactive reinterpretation of completed Plan 15.
 
 ## Current milestone status
 
-Milestones B and C are complete. The one-channel parity-separated variant
+Milestones B, C and D are complete. The one-channel parity-separated variant
 removed YMM spills but duplicated recurrence, regressing q1 synthesis about
 23%; the two-channel variant spilled accumulators. Within-ring-group paired
 coefficient reuse reduced q1 preparation calls but did not produce a repeatable
 whole-transform gain, and q8's per-worker preparation opportunity was too small
 to justify a transform-wide 8 MiB cache. Neither candidate changes production.
-See the [Milestone B report](../reports/plan16-spin1-parity-separated-ab-2026-10-22.md)
-and [Milestone C report and data](../reports/plan16-spin1-paired-coefficient-preparation-2026-10-22.md).
-Proceed to Milestone D's controlled order-major dataflow prototype.
+See the [Milestone B report](../reports/plan16-spin1-parity-separated-ab-2026-10-22.md),
+[Milestone C report and data](../reports/plan16-spin1-paired-coefficient-preparation-2026-10-22.md),
+and [Milestone D report](../reports/plan16-spin1-order-major-dataflow-2026-10-21.md).
+Milestone D reduced warmed q8 synthesis latency by 19–59% on the tested T720
+GL/CC/F1 full/reduced-order cases. Its work-based dispatch requires the
+existing prepared spin-1 coefficient cache, dynamic group queue, q8 or more,
+and at least two order tiles per worker. The per-worker latitude-row scratch
+is allocated lazily and reused. Rust remains 2.03–2.84× slower than DUCC on
+these cases; do not claim parity. Proceed to Milestone E.
 
 ## Execution order and handoff
 
@@ -23,7 +29,7 @@ Proceed to Milestone D's controlled order-major dataflow prototype.
    production retains the checked staged-output route and 256-pair tile.
 2. Plan 15's GL → CC → F1 sequence is complete in
    [its closeout report](../reports/plan15-spin1-synthesis-dataflow-closeout-2026-10-21.md).
-3. Continue Plan 16 Milestone D on the same branch, one hypothesis at a time.
+3. Continue Plan 16 Milestone E on the same branch, one hypothesis at a time.
    Publish reproducible small commits for accepted improvements and documented
    negative findings. A negative measurement is a valid result; do not force a
    new kernel into production.
@@ -33,6 +39,16 @@ Proceed to Milestone D's controlled order-major dataflow prototype.
 The Plan 15 closeout (reports/plan15-spin1-synthesis-dataflow-closeout-2026-10-21.md) measured **exact T720 CC q8 spin-1 synthesis** at **23.596 ms Rust versus 6.087 ms DUCC full order (3.87x)** and **17.179 versus 2.647 ms at mmax=180 (6.48x)**. Rust's combined order scheduling/recurrence/spectrum phase was 18.994/15.641 ms while inverse rows/writeback were 1.205/0.181 ms. These Rust phases are **not** independently matched DUCC substages. F1 T720 q8 retained approximately 3.80x full and 5.63x reduced whole-transform ratios on a low-wait recheck. Do not blend these runs with the noisier integrated T720 screen (which reported larger ratios).
 
 Already accepted: CC/F1 order-parallel **analysis** meridional preparation; GL/CC/F1 synthesis group scheduling and eligible cross-group scalar coefficient conversion reuse. Already tested and rejected: naive degree-pair-outer SIMD loop reversal (q1 regression 23–27%, q8 full regression ~5%); active-lane compaction (24% fewer fallback blocks but less than 1% whole-call impact). Do not retry unchanged versions. The previous pair-outer regression demonstrates that fewer coefficient broadcasts can lose to SIMD lane-state loads/stores. Repeated coefficient conversion is **not** an unexplored opportunity; only downstream paired-coefficient preparation reuse remains to test.
+
+Milestone D adds a dynamically claimed 8-order queue for spin-1 synthesis.
+Each task computes one Fourier order across all latitudes, reuses its prepared
+coefficients, and writes the unique order column into the ring-major spectrum.
+For T720 CC q8, the measured scheduling/recurrence/spectrum phase fell from
+19.678 to 12.579 ms at full order and 15.628 to 6.470 ms at mmax=180. The
+worker-summed order-factor preparation fell from 13.518 to 1.330 ms and from
+6.434 to 0.578 ms respectively. Per-worker maximum/minimum task time improved
+from 2.69× to 1.01× full and 5.48× to 1.30× reduced. The complete GL/CC/F1
+q8 comparison and numerical results are in the [Milestone D report](../reports/plan16-spin1-order-major-dataflow-2026-10-21.md).
 
 Rust source crosswalk:
 - src/legendre/scalar_paired.rs, FusedPreparedSynthesisPairBlock and synthesize_prepared_order_pair_block_dispatched (around lines 5311–5455 and 663–755 at initial Plan 16 snapshot).

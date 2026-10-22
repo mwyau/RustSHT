@@ -240,6 +240,7 @@ pub(crate) trait ShtScalar:
     fn synthesize_paired_scalar_block_prepared_dispatched(
         _arch: Arch,
         _m: usize,
+        _output_order: usize,
         _lmax: usize,
         _sin_theta: &[Self],
         _cos_theta: &[Self],
@@ -375,6 +376,7 @@ pub(crate) trait ShtScalar:
     fn synthesize_prepared_scalar_pair_block_dispatched(
         _arch: Arch,
         _m: usize,
+        _output_order: usize,
         _lmax: usize,
         _sin_theta: &[Self],
         _cos_theta: &[Self],
@@ -1127,6 +1129,7 @@ impl ShtScalar for f64 {
     fn synthesize_paired_scalar_block_prepared_dispatched(
         arch: Arch,
         m: usize,
+        output_order: usize,
         lmax: usize,
         sin_theta: &[Self],
         cos_theta: &[Self],
@@ -1146,6 +1149,7 @@ impl ShtScalar for f64 {
         scalar_paired::synthesize_order_block_precomputed_dispatched(
             arch,
             m,
+            output_order,
             lmax,
             sin_theta,
             cos_theta,
@@ -1267,6 +1271,7 @@ impl ShtScalar for f64 {
     fn synthesize_prepared_scalar_pair_block_dispatched(
         arch: Arch,
         m: usize,
+        output_order: usize,
         lmax: usize,
         sin_theta: &[Self],
         cos_theta: &[Self],
@@ -1293,6 +1298,7 @@ impl ShtScalar for f64 {
         scalar_paired::synthesize_prepared_order_pair_block_dispatched(
             arch,
             m,
+            output_order,
             lmax,
             sin_theta,
             cos_theta,

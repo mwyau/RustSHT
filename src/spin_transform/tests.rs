@@ -2517,6 +2517,150 @@ fn spin1_public_synthesis_keeps_large_finite_coefficients_finite() {
     assert!(first.iter().chain(&second).all(|value| value.is_finite()));
 }
 
+#[cfg(feature = "parallel")]
+#[test]
+fn spin1_order_major_synthesis_reuses_workspace_across_changed_coefficients() {
+    let lmax = 720;
+    let mmax = 180;
+    let nphi = 378;
+    let single_thread_pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let eight_thread_pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+    for kind in [
+        GridKind::GaussLegendre,
+        GridKind::ClenshawCurtis,
+        GridKind::Fejer1,
+    ] {
+        let ntheta = lmax + usize::from(kind == GridKind::ClenshawCurtis) + 1;
+        let plan = ShtPlan::new(
+            GridSpec::new(kind, ntheta, nphi, 0.37).unwrap(),
+            HarmonicSpec::new(lmax, mmax, 1).unwrap(),
+        )
+        .unwrap();
+        let mut single_workspace = single_thread_pool.install(|| plan.workspace()).unwrap();
+        let mut parallel_workspace = eight_thread_pool.install(|| plan.workspace()).unwrap();
+        assert!(parallel_workspace.spin_order_output_scratch.is_empty());
+
+        let (regular_e, regular_b) = coefficients(&plan);
+        let mut sparse_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        let mut sparse_b = sparse_e.clone();
+        sparse_e[plan.harmonics.index(lmax, mmax).unwrap()] = Complex64::new(0.75, -0.25);
+        sparse_b[plan.harmonics.index(lmax - 1, mmax).unwrap()] = Complex64::new(-0.5, 0.125);
+
+        let mut large_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        let mut large_b = large_e.clone();
+        large_e[plan.harmonics.index(2, 1).unwrap()] = Complex64::new(1.40e308, 0.0);
+        large_e[plan.harmonics.index(3, 1).unwrap()] = Complex64::new(-1.40e308, 0.0);
+        large_b[plan.harmonics.index(1, 1).unwrap()] = Complex64::new(0.0, -1.40e308);
+
+        let mut unsafe_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        let mut unsafe_b = unsafe_e.clone();
+        unsafe_e[plan.harmonics.index(2, 1).unwrap()] = Complex64::new(1.44e308, 0.0);
+        unsafe_b[plan.harmonics.index(1, 1).unwrap()] = Complex64::new(0.0, -1.44e308);
+
+        let mut subnormal_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        let subnormal_b = subnormal_e.clone();
+        subnormal_e[plan.harmonics.index(2, 1).unwrap()] =
+            Complex64::new(f64::from_bits(1), -f64::from_bits(1));
+
+        let zero_e = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+        let zero_b = zero_e.clone();
+        let coefficient_cases = [
+            (&regular_e, &regular_b, "regular"),
+            (&sparse_e, &sparse_b, "sectoral tail"),
+            (&large_e, &large_b, "extreme finite coefficients"),
+            (&unsafe_e, &unsafe_b, "unsafe converted coefficients"),
+            (&subnormal_e, &subnormal_b, "subnormal"),
+            (&zero_e, &zero_b, "zero after prior output"),
+        ];
+
+        let mut single_first = vec![0.0; plan.sample_count];
+        let mut single_second = vec![0.0; plan.sample_count];
+        let mut parallel_first = vec![0.0; plan.sample_count];
+        let mut parallel_second = vec![0.0; plan.sample_count];
+        for (e, b, label) in coefficient_cases {
+            single_first.fill(f64::NAN);
+            single_second.fill(f64::NAN);
+            parallel_first.fill(f64::NAN);
+            parallel_second.fill(f64::NAN);
+            single_thread_pool
+                .install(|| {
+                    plan.synthesis_spin_into(
+                        e,
+                        b,
+                        &mut single_first,
+                        &mut single_second,
+                        &mut single_workspace,
+                    )
+                })
+                .unwrap();
+            eight_thread_pool
+                .install(|| {
+                    plan.synthesis_spin_into(
+                        e,
+                        b,
+                        &mut parallel_first,
+                        &mut parallel_second,
+                        &mut parallel_workspace,
+                    )
+                })
+                .unwrap();
+            assert_eq!(parallel_workspace.spin_order_output_scratch.len(), 8);
+            let preserves_exceptional_outputs = matches!(
+                label,
+                "extreme finite coefficients" | "unsafe converted coefficients"
+            );
+            if label == "unsafe converted coefficients" {
+                assert_eq!(
+                    parallel_workspace.spin1_scalar_coefficient_finite_orders[1],
+                    0
+                );
+            }
+            if !preserves_exceptional_outputs {
+                assert!(
+                    parallel_first
+                        .iter()
+                        .chain(&parallel_second)
+                        .all(|value| value.is_finite()),
+                    "{label}"
+                );
+            }
+            let scale = single_first
+                .iter()
+                .chain(&single_second)
+                .filter(|value| value.is_finite())
+                .map(|value| value.abs())
+                .fold(1.0_f64, f64::max);
+            for (&single, &parallel) in single_first
+                .iter()
+                .zip(&parallel_first)
+                .chain(single_second.iter().zip(&parallel_second))
+            {
+                if single.is_finite() {
+                    assert!(parallel.is_finite(), "{label} changed a finite q1 output");
+                    assert!(
+                        (single / scale - parallel / scale).abs() <= 2e-11,
+                        "{label} changed a finite q8 output"
+                    );
+                } else if single.is_infinite() {
+                    assert!(
+                        parallel.is_infinite(),
+                        "{label} changed infinity to finite/NaN"
+                    );
+                    assert_eq!(single.is_sign_positive(), parallel.is_sign_positive());
+                } else {
+                    assert!(parallel.is_nan(), "{label} changed NaN to finite/infinity");
+                }
+            }
+        }
+    }
+}
+
 #[test]
 fn spin1_scalar_fast_analysis_honors_the_polar_order_cutoff() {
     let lmax = 511;

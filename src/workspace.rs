@@ -62,6 +62,8 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
     pub(crate) execution_capacity: usize,
     pub(crate) fft: RealFftWorkspace<T>,
     #[cfg(feature = "parallel")]
+    pub(crate) spin_order_output_scratch: Vec<SpinOrderOutputScratch<T>>,
+    #[cfg(feature = "parallel")]
     pub(crate) fft_worker_workspaces: Vec<RealFftWorkspace<T>>,
     #[cfg(all(test, feature = "parallel"))]
     transform_phase_probe: Option<TransformPhaseProbe>,
@@ -70,6 +72,12 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
     // Appended to preserve offsets of the existing workspace fields.
     #[cfg(feature = "parallel")]
     pub(crate) spin1_scalar_coefficient_finite_orders: Vec<u8>,
+}
+
+#[cfg(feature = "parallel")]
+pub(crate) struct SpinOrderOutputScratch<T: ShtScalar> {
+    pub(crate) q: Vec<Complex<T>>,
+    pub(crate) u: Vec<Complex<T>>,
 }
 
 #[repr(C)]
@@ -755,6 +763,29 @@ impl<T: ShtScalar> ShtWorkspace<T> {
     }
 
     #[cfg(feature = "parallel")]
+    pub(crate) fn ensure_spin_order_output_scratch_count(
+        &mut self,
+        worker_count: usize,
+        latitude_count: usize,
+    ) -> Result<(), ShtError> {
+        if worker_count <= self.spin_order_output_scratch.len() {
+            return Ok(());
+        }
+        self.spin_order_output_scratch
+            .try_reserve_exact(worker_count - self.spin_order_output_scratch.len())
+            .map_err(|_| ShtError::AllocationFailed {
+                array: "spin order output scratch slots",
+            })?;
+        while self.spin_order_output_scratch.len() < worker_count {
+            self.spin_order_output_scratch.push(SpinOrderOutputScratch {
+                q: allocate_complex(latitude_count, "spin order Q output scratch")?,
+                u: allocate_complex(latitude_count, "spin order U output scratch")?,
+            });
+        }
+        Ok(())
+    }
+
+    #[cfg(feature = "parallel")]
     pub(crate) fn ensure_recurrence_worker_count(
         &mut self,
         worker_count: usize,
@@ -934,6 +965,8 @@ impl<T: ShtScalar> ShtWorkspace<T> {
             ring_group_size,
             execution_capacity,
             fft: fft.workspace()?,
+            #[cfg(feature = "parallel")]
+            spin_order_output_scratch: Vec::new(),
             #[cfg(feature = "parallel")]
             fft_worker_workspaces: Vec::new(),
             #[cfg(all(test, feature = "parallel"))]

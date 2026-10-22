@@ -1,7 +1,7 @@
 # RustSHT performance checkpoint — current findings
 
 **Active sequence (2026-10-22):** the scalar-analysis cumulative ablation is
-closed; Plan 16 is active at Milestone C. Plans 14 and 15 are complete. Plan 17
+closed; Plan 16 is active at Milestone E. Plans 14 and 15 are complete. Plan 17
 is queued; Plans 12 and 13 remain deferred. **Branch:**
 `opt/sht-performance-parity`.
 
@@ -34,8 +34,18 @@ was at most about 1.24 ms of 23–25 ms full calls; a transform-wide cache would
 add about 8 MiB at full order. The prototype was removed. See the [report and
 timing data](reports/plan16-spin1-paired-coefficient-preparation-2026-10-22.md).
 
-**Next:** Plan 16 Milestone D, a controlled order-major synthesis dataflow
-prototype measured end-to-end against the existing group-scheduled path.
+Milestone D's order-major q8 synthesis queue is now the production route when
+the prepared coefficient cache and dynamic group queue are eligible and at
+least two 8-order tiles are available per worker. On T720 GL/CC/F1 it reduced
+q8 warmed synthesis latency by 19–59% across full/reduced order and even/odd
+longitude cases. Same-binary phase profiles attribute the gain to cutting
+worker-summed recurrence-factor preparation (13.5→1.3 ms full CC; 6.4→0.6 ms
+reduced CC) and improving worker balance (2.69×→1.01× full; 5.48×→1.30×
+reduced). The remaining Rust/DUCC q8 ratio is 2.03–2.84×. See the [Milestone D
+report](reports/plan16-spin1-order-major-dataflow-2026-10-21.md).
+
+**Next:** Plan 16 Milestone E: test T1023 coefficient-cache eligibility and,
+separately, CC/F1 spin-1 analysis resampling overhead.
 
 ## Other measured context
 
