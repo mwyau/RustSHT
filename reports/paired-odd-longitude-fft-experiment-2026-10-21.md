@@ -54,7 +54,11 @@ Selected final-guard full-spectrum inverse row-stage medians are below. Each Rus
 
 At N=361, the ordinary paired inverse measured 1.5584 ms q1 and 0.2153 ms q8; the existing mixed-radix paired inverse measured 1.4012 ms q1 and 0.3783 ms q8. q8 N=361 had wide process variation: Rust real process medians ranged 0.2732–0.5572 ms and mixed-radix pair 0.2053–0.3911 ms. The narrower ordinary-pair range was 0.2151–0.2189 ms. Treat the mixed-radix q8 comparison as inconclusive.
 
+The N=255 forward row-stage A/B was negative in both repeated runs: q1 paired medians were 1.6–3.8% slower than Rust real; q8 paired medians were 12–43% slower. The earlier whole-transform A/B at T127 was 2.9% slower q1 and only 0.7% faster q8. This supports disabling forward pairing for N=255.
+
 Across paired and independent Rust row routes, warmed allocations were zero. The f64 workspace size was identical between the two routes: 30,352 bytes/worker at N=361, 15,904 at N=497, 40,912 at N=509, 16,352 at N=511 and 16,416 at N=513. This is the FFT plan workspace measured by the harness; it excludes application-level map/spectrum arrays. Direct two-complex rows were slower than the paired route at these selected lengths. The complete route matrix and per-case process ranges are in [row-stage-summary.csv](data/paired-odd-longitude-fft-2026-10-21/row-stage-summary.csv).
+
+Across the final row-stage matrix, host PSI-derived wait was 1.06% median, p90 9.12%, max 11.40%; q1 median/p90 was 8.87%/9.15%, and q8 was 0.80%/1.83%. The per-process host and scheduler captures remain local.
 
 An earlier calibrated phase profile helps explain the row-stage gains but predates the final 8:1 scale guard, so it is mechanistic evidence only. For N=509 inverse, independent prep/FFT/extract medians were 0.452/7.912/0.416 μs per row pair; paired values were 1.130/3.899/0.720 μs. N=513 inverse was 0.457/3.947/0.419 μs independent versus 1.147/1.806/0.733 μs paired. Pairing roughly halves FFT time at those lengths while adding packing, split and guard work. Final guarded total timings above govern the decision.
 
@@ -65,6 +69,19 @@ The final exact-source matrix covers T124, T127, T248, T254, T255, T256 and T257
 For the nine odd-longitude cases, synthesis improved in 9/9 cases at both q1 and q8. Median speedups were 1.161× q1 and 1.198× q8 (geometric means 1.137× and 1.185×); median absolute savings were 368 μs and 62.6 μs per transform. Analysis improved in 8/9 cases at q1 and 6/9 at q8; median speedups were 1.114× and 1.091×, with median savings 230 μs and 28.6 μs. T127 q8 analysis was 2.8% slower even though forward pairing is disabled there. T256 analysis was neutral at q1 and 3.2% slower at q8. Analysis improvements are therefore less uniform than synthesis.
 
 At T720 full odd longitude, analysis improved 1.151× q1 and 1.091× q8 (2.935 ms and 0.253 ms saved); synthesis improved 1.161× and 1.271× (4.092 ms and 0.946 ms saved). At reduced-order N=361, synthesis improved 1.064× q1 and 1.284× q8. For T248–T256 synthesis, which corresponds to nphi 497, 509, 511 and 513, paired whole-call medians improved 1.055–1.186× q1 and 1.091–1.242× q8. The analysis q8 results at T255 and T256 regressed 1.8% and 3.2% respectively.
+
+The isolated full-spectrum inverse row-stage median divided by the matched whole-synthesis median estimates the FFT-stage share. The two harnesses used the same candidate source and geometry; because these were separate runs, the ratios are stage-share estimates rather than an additive in-call trace.
+
+| Case (nphi) | q | Row stage baseline → paired (ms) | Whole synthesis baseline → paired (ms) | Estimated stage share baseline → paired |
+|---|---:|---:|---:|---:|
+| T248 (497) | 1 | 1.0149 → 0.7081 | 2.3455 → 1.9779 | 43.3% → 35.8% |
+| T248 (497) | 8 | 0.1509 → 0.1154 | 0.3783 → 0.3157 | 39.9% → 36.6% |
+| T254 (509) | 1 | 1.0960 → 0.7103 | 2.4065 → 2.0352 | 45.5% → 34.9% |
+| T254 (509) | 8 | 0.1616 → 0.1114 | 0.4079 → 0.3284 | 39.6% → 33.9% |
+| T255 (511) | 1 | 0.8216 → 0.6150 | 2.3084 → 2.0411 | 35.6% → 30.1% |
+| T255 (511) | 8 | 0.1168 → 0.0914 | 0.4619 → 0.4233 | 25.3% → 21.6% |
+| T256 (513) | 1 | 0.6066 → 0.4994 | 2.0859 → 1.9764 | 29.1% → 25.3% |
+| T256 (513) | 8 | 0.0936 → 0.0790 | 0.3527 → 0.3160 | 26.5% → 25.0% |
 
 The T720 even-smooth synthesis control improved 1.044× q1 and 1.243× q8 although even-N bypasses pairing; even analysis q8 regressed 2.8%. Do not attribute the even synthesis movement to paired rows. It signals source-layout/host variation and limits causal interpretation of the smallest changes. Per-case Rust baseline/candidate/DUCC medians, absolute savings, process ratios and ranges are in [whole-transform-summary.csv](data/paired-odd-longitude-fft-2026-10-21/whole-transform-summary.csv).
 
