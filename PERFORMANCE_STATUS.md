@@ -1,6 +1,6 @@
 # RustSHT performance checkpoint — current findings
 
-**Owner-approved sequence (2026-10-21):** the current scalar-analysis cumulative-ablation remains in progress; finish its pending fixed SIMD workspace/layout and combined candidate evaluation first. Then begin [Plan 16 — DUCC-equivalent spin-1 recurrence and dataflow](plans/16-ducc-spin1-recurrence-parity.md) on the same branch. This new plan investigates parity-separated accumulators versus the current cosine-combined SIMD kernel, full prepared-coefficient reuse, and only then order-major synthesis scheduling/layout; conditional follow-ups cover T1023 coefficient-cache eligibility and CC/F1 analysis resampling. After Plan 16 closes, [Plan 17 — f32/high-resolution atmospheric performance](plans/17-f32-atmospheric-performance.md) is queued to measure current f32 spin-0/1 GL/CC/F1 DUCC parity and test targeted T1023–T2047 and q1/q8/q16 scaling. Plan 12 cache selection and Plan 13 fused batches remain deferred. Plan 15 remains closed. New hypotheses are **not measured improvements** and do not override the odd-FFT hold.
+**Owner-approved sequence (2026-10-21):** scalar-analysis cumulative ablation remains in progress; its fixed workspace field-order experiment is complete and had no supported performance effect. Finish the combined candidate/ablation evaluation first, then begin [Plan 16 — DUCC-equivalent spin-1 recurrence and dataflow](plans/16-ducc-spin1-recurrence-parity.md) on the same branch. After Plan 16 closes, [Plan 17 — f32/high-resolution atmospheric performance](plans/17-f32-atmospheric-performance.md) is queued to measure current f32 spin-0/1 GL/CC/F1 DUCC parity and test targeted T1023–T2047 and q1/q8/q16 scaling. Plan 12 cache selection and Plan 13 fused batches remain deferred. Plan 15 remains closed. New hypotheses are **not measured improvements** and do not override the odd-FFT hold.
 
 
 **Updated:** 2026-10-21 UTC. **Branch:** `opt/sht-performance-parity`.
@@ -36,8 +36,12 @@ The original `ce710` source is now remeasured against pinned DUCC 803 with
 Rust 1.99.1: T720 full/reduced q1/q8 warm analysis is 26.8–39.4% slower than
 the `ff0fe` current-source baseline, and its 64/128/256-lane kernel ratios
 are 1.832×/1.620×/1.561×. Numerical checks passed. This measures aggregate
-source-history change, not one optimization; the final cumulative candidate
-and focused ablations remain pending in the linked report.
+source-history change, not one optimization. The workspace-order experiment
+produced identical hot-loop instruction bytes and no measurable kernel or
+whole-transform improvement; it remains cfg-gated for the final interaction
+and ablation study. See the [sanitized comparison](reports/data/scalar-analysis-cumulative-ablation-2026-10-21/hot-scratch-order/README.md).
+The final cumulative candidate and focused ablations remain pending in the
+linked report.
 **Plan 14:** COMPLETE at closeout commit
 `f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`. **Plan 15:** COMPLETE after the
 spin-1 GL → CC → F1 sequence on this branch; see

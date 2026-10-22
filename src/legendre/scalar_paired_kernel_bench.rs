@@ -379,14 +379,18 @@ impl Fixture {
 // seven independent slice pointers; the inner SIMD implementation remains
 // the production fused kernel.
 #[repr(C, align(64))]
+#[allow(unexpected_cfgs)]
 struct AnalysisPairKernelWorkspace {
     previous: [f64; SCALAR_ORDER_BATCH_SIZE],
     current: [f64; SCALAR_ORDER_BATCH_SIZE],
+    #[cfg(not(rustsht_scalar_analysis_hot_scratch_order))]
     next: [f64; SCALAR_ORDER_BATCH_SIZE],
     same_real: [f64; SCALAR_ORDER_BATCH_SIZE],
     same_imag: [f64; SCALAR_ORDER_BATCH_SIZE],
     opposite_real: [f64; SCALAR_ORDER_BATCH_SIZE],
     opposite_imag: [f64; SCALAR_ORDER_BATCH_SIZE],
+    #[cfg(rustsht_scalar_analysis_hot_scratch_order)]
+    next: [f64; SCALAR_ORDER_BATCH_SIZE],
 }
 
 impl AnalysisPairKernelWorkspace {

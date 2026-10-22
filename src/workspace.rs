@@ -73,17 +73,24 @@ pub struct ShtWorkspace<T: ShtScalar = f64> {
 }
 
 #[repr(C)]
+#[allow(unexpected_cfgs)]
 pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     // `repr(C)` keeps these seven 256-entry scratch arrays contiguous. Their
     // inline representation preserves the existing payload and removes seven
     // per-worker heap allocations while retaining slice-based Pulp dispatch.
+    // The experimental field-order cfg moves `next` after the four hot
+    // spectrum arrays, matching the state-then-spectra order used by the
+    // scalar DUCC kernel without changing capacity or adding a copy.
     pub(crate) previous: AnalysisVectorBuffer<T>,
     pub(crate) current: AnalysisVectorBuffer<T>,
+    #[cfg(not(rustsht_scalar_analysis_hot_scratch_order))]
     pub(crate) next: AnalysisVectorBuffer<T>,
     pub(crate) analysis_same_real: AnalysisVectorBuffer<T>,
     pub(crate) analysis_same_imag: AnalysisVectorBuffer<T>,
     pub(crate) analysis_opposite_real: AnalysisVectorBuffer<T>,
     pub(crate) analysis_opposite_imag: AnalysisVectorBuffer<T>,
+    #[cfg(rustsht_scalar_analysis_hot_scratch_order)]
+    pub(crate) next: AnalysisVectorBuffer<T>,
     pub(crate) epsilon: Vec<T>,
     pub(crate) exponents: Vec<i64>,
     pub(crate) analysis_scale_epochs: Vec<T>,
@@ -1024,15 +1031,27 @@ mod analysis_vector_buffer_tests {
         let workspace =
             RecurrenceWorkspace::<f64>::new(4, 4, 4, 4, ANALYSIS_VECTOR_BUFFER_CAPACITY)
                 .expect("fixed-array recurrence workspace");
-        let bases = [
-            workspace.previous.as_ptr() as usize,
-            workspace.current.as_ptr() as usize,
-            workspace.next.as_ptr() as usize,
-            workspace.analysis_same_real.as_ptr() as usize,
-            workspace.analysis_same_imag.as_ptr() as usize,
-            workspace.analysis_opposite_real.as_ptr() as usize,
-            workspace.analysis_opposite_imag.as_ptr() as usize,
-        ];
+        let bases = if cfg!(rustsht_scalar_analysis_hot_scratch_order) {
+            [
+                workspace.previous.as_ptr() as usize,
+                workspace.current.as_ptr() as usize,
+                workspace.analysis_same_real.as_ptr() as usize,
+                workspace.analysis_same_imag.as_ptr() as usize,
+                workspace.analysis_opposite_real.as_ptr() as usize,
+                workspace.analysis_opposite_imag.as_ptr() as usize,
+                workspace.next.as_ptr() as usize,
+            ]
+        } else {
+            [
+                workspace.previous.as_ptr() as usize,
+                workspace.current.as_ptr() as usize,
+                workspace.next.as_ptr() as usize,
+                workspace.analysis_same_real.as_ptr() as usize,
+                workspace.analysis_same_imag.as_ptr() as usize,
+                workspace.analysis_opposite_real.as_ptr() as usize,
+                workspace.analysis_opposite_imag.as_ptr() as usize,
+            ]
+        };
         let stride = std::mem::size_of::<FixedAnalysisVectorBuffer<f64>>();
         assert_eq!(
             stride,

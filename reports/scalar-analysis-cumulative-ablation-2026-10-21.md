@@ -359,6 +359,40 @@ was `2.5974e-16` relative L2 (`2.5324e-17` maximum absolute); DUCC comparisons
 also passed their existing numerical limits. Release exceptional-input and
 adjoint tests exercise the staged fallback. Do not promote this route.
 
+## Step 2 — fixed SIMD workspace field order
+
+The cfg `rustsht_scalar_analysis_hot_scratch_order` moves the rarely used
+`next` recurrence array after the four spectrum arrays in the fixed
+`RecurrenceWorkspace`; it changes no array capacity, alignment, number of
+allocations, or copying. The benchmark-only kernel fixture uses the same
+ordering. The A/B otherwise keeps the packed complex reducer enabled in both
+builds. Sanitized results and reproduction details are in the
+[scratch-order summary](data/scalar-analysis-cumulative-ablation-2026-10-21/hot-scratch-order/README.md).
+
+The matched q1 kernel comparison found no repeatable difference. For 64,
+128, and 256 lanes, baseline/candidate medians were 4.615/4.621, 8.630/8.592,
+and 16.813/16.824 microseconds; process-median ranges overlapped. DUCC was
+4.279/4.262, 8.240/8.207, and 16.150/16.067 microseconds in the corresponding
+source-build sets. The production V3 recurrence loop had identical instruction
+bytes between builds, so this field reorder did not alter its generated hot
+loop.
+
+The full T720 q1/q8 repeats likewise provide no supported improvement. For
+full order, Rust warm medians changed from 15.323 to 15.519 ms at q1 and 2.336
+to 2.453 ms at q8; at `mmax=180` they changed from 6.160 to 6.140 ms and
+0.919 to 0.956 ms. Their timing distributions overlap, and q8 runqueue-wait
+p90 was about 15% in both repeats. The first process pair was excluded because
+baseline q8 processes had 11–12% runqueue wait while candidate processes had
+less than 1%. Keep the layout cfg only for the requested cumulative interaction
+test; do not enable it in production based on these measurements.
+
+Both repeat sets completed all six cases with no benchmark failures, stable
+reset semantics, finite zero/subnormal/extreme outputs, and basis/roundtrip
+checks. The maximum Rust/DUCC relative L2 across case comparisons was
+`6.12e-14`. Release library tests passed with packed-reducer and layout cfgs
+(250 passed, 34 ignored); no-default-features release tests passed (202 passed,
+17 ignored), as did strict Clippy and formatting.
+
 ## Validation and reproducibility
 
 - Release library suite with packed-reduction and fused-preflight direct cfgs:
@@ -402,7 +436,7 @@ RUSTFLAGS='-C target-cpu=x86-64-v3 --cfg rustsht_packed_complex_pair_reduction -
 |---|---|
 | 0. Source baselines | `ff0fe` current source and original `ce710` are now measured at T720; original-source whole-call and lane-kernel data are linked above. |
 | 1. 64/128/256 pair tiles | Selector and 256 initial setting exist; compare all three in final cumulative evaluation. |
-| 2. Fixed SIMD workspace layout | Still pending: implement a controlled fixed-array/DUCC-like candidate, then measure it cumulatively with the packed reducer and 256-pair tile. |
+| 2. Fixed SIMD workspace layout | Complete as a cfg-gated field-order experiment; kernel assembly and timings show no supported gain. Retain only for final cumulative interaction/ablation. |
 | 3. Packed complex reduction | Implemented and validated behind cfg; isolated reducer is 3% faster, whole-transform effect remains inconclusive; retain only for cumulative evaluation. |
 | 4. Recurrence range-check handling | Complete in production since `aeb123d6`; checked-first cached proof skips only repeated ordinary vector scans. |
 | 5. Output staging and accumulation | Fused-preflight direct-output candidate implemented and validated, but 2.42–2.69× slower; retain only for final cumulative ablation. |
@@ -411,7 +445,7 @@ RUSTFLAGS='-C target-cpu=x86-64-v3 --cfg rustsht_packed_complex_pair_reduction -
 | 8. Scaled-to-ordinary transition | Reviewed: guarded correction/promotion and transactional fallback are already integrated. |
 | 9. Reflected active-ring packing | Reviewed: binary-searched first-active pair plus bounded SoA compaction is already integrated. |
 | 10. Coefficient/factor preparation | Reviewed: epsilon and recurrence factors are prepared once per order and reused across ring blocks, matching DUCC `Ylmgen::prepare`. |
-| Final combined evaluation | Pending: after Steps 2 and any remaining justified implementation work, compare original `ce710` and the cumulative candidate at 64/128/256 lanes, then ablate each candidate and its interactions. |
+| Final combined evaluation | Pending: compare original `ce710` and the cumulative candidate at 64/128/256 lanes, then ablate each candidate and its interactions. |
 
 The scalar analysis objective remains active until this final evaluation and
 the required function crosswalk are complete.
