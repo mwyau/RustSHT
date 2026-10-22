@@ -1,0 +1,59 @@
+backend,operation,lmax,mmax,threads,phase,observations,median_ms,min_ms,max_ms
+ducc,analysis,720,720,1,fft,30,3.9220515000000002,3.844468,4.1220550000000005
+ducc,analysis,720,720,1,legendre,30,11.249628000000001,11.171187,12.112411
+ducc,analysis,720,720,1,resample,30,44.640930499999996,43.429106,46.408811
+ducc,analysis,720,720,1,wall,30,59.9407,58.7996,61.6134
+ducc,analysis,720,720,8,fft,30,0.6555195,0.588422,0.784613
+ducc,analysis,720,720,8,legendre,30,2.11179425,1.976485,2.3309255
+ducc,analysis,720,720,8,resample,30,8.352181250000001,8.133263,8.918978500000001
+ducc,analysis,720,720,8,wall,30,11.142199999999999,10.7841,11.9179
+ducc,synthesis,720,720,1,fft,30,2.787121,2.7316325000000004,3.1689279999999997
+ducc,synthesis,720,720,1,legendre,30,17.0883635,16.566820500000002,17.753608500000002
+ducc,synthesis,720,720,1,wall,30,19.9217,19.3356,20.7054
+ducc,synthesis,720,720,8,fft,30,0.4923613333333333,0.47254444444444443,0.546999888888889
+ducc,synthesis,720,720,8,legendre,30,2.3155324999999998,2.2824063333333333,2.6092475555555557
+ducc,synthesis,720,720,8,wall,30,2.83114,2.78315,3.14903
+rustsht,analysis,720,180,1,Legendre recurrence and accumulation,60,16.449648000000003,16.380359000000002,16.605123
+rustsht,analysis,720,180,1,Legendre table retrieval,60,2e-05,2e-05,2.5e-05
+rustsht,analysis,720,180,1,coefficient cleanup,60,0.000486,0.00047599999999999997,0.000597
+rustsht,analysis,720,180,1,coefficient initialization,60,2.9999999999999997e-05,2.5e-05,6.500000000000001e-05
+rustsht,analysis,720,180,1,forward FFT,60,0.760372,0.757452,0.7695339999999999
+rustsht,analysis,720,180,1,order spectrum preparation,60,0.10531599999999999,0.100438,0.11762
+rustsht,analysis,720,180,1,resampling and latitude setup,60,6.1697425,6.153341999999999,6.24652
+rustsht,analysis,720,180,1,strategy selection,60,3.5000000000000004e-05,2e-05,8.5e-05
+rustsht,analysis,720,180,1,wall,60,23.4868,23.407635,23.633396
+rustsht,analysis,720,180,8,Legendre recurrence and accumulation,60,2.536053,2.4564920000000003,2.9668609999999997
+rustsht,analysis,720,180,8,Legendre table retrieval,60,2.3e-05,2e-05,2.9999999999999997e-05
+rustsht,analysis,720,180,8,coefficient cleanup,60,0.000487,0.000464,0.000929
+rustsht,analysis,720,180,8,coefficient initialization,60,3.3e-05,2.8e-05,3.8e-05
+rustsht,analysis,720,180,8,forward FFT,60,0.14072099999999998,0.113792,0.227159
+rustsht,analysis,720,180,8,order spectrum preparation,60,0.0982605,0.093344,0.105772
+rustsht,analysis,720,180,8,resampling and latitude setup,60,6.456227500000001,6.298818,7.036453000000001
+rustsht,analysis,720,180,8,strategy selection,60,4e-05,2e-05,7.000000000000001e-05
+rustsht,analysis,720,180,8,wall,60,9.233115000000002,8.99535,10.163073
+rustsht,analysis,720,720,1,Legendre recurrence and accumulation,60,31.477162,31.290498,31.909470000000002
+rustsht,analysis,720,720,1,Legendre table retrieval,60,2e-05,2e-05,3.1e-05
+rustsht,analysis,720,720,1,coefficient cleanup,60,0.000817,0.000671,0.001734
+rustsht,analysis,720,720,1,coefficient initialization,60,8.5e-05,2.9999999999999997e-05,0.0005110000000000001
+rustsht,analysis,720,720,1,forward FFT,60,3.2600655000000005,3.2321050000000002,3.300924
+rustsht,analysis,720,720,1,order spectrum preparation,60,0.6804435,0.606281,1.011005
+rustsht,analysis,720,720,1,resampling and latitude setup,60,25.557917000000003,25.163743,26.286275
+rustsht,analysis,720,720,1,strategy selection,60,0.0001205,2e-05,0.0005909999999999999
+rustsht,analysis,720,720,1,wall,60,60.999087,60.309938,62.051089
+rustsht,analysis,720,720,8,Legendre recurrence and accumulation,60,4.3885819999999995,4.277043,5.715906
+rustsht,analysis,720,720,8,Legendre table retrieval,60,2.9999999999999997e-05,2e-05,4e-05
+rustsht,analysis,720,720,8,coefficient cleanup,60,0.000661,0.000481,0.002395
+rustsht,analysis,720,720,8,coefficient initialization,60,4e-05,2e-05,0.00022
+rustsht,analysis,720,720,8,forward FFT,60,0.49088000000000004,0.44505,1.097326
+rustsht,analysis,720,720,8,order spectrum preparation,60,0.38599950000000005,0.294319,0.887154
+rustsht,analysis,720,720,8,resampling and latitude setup,60,26.501843,25.780904999999997,29.745927
+rustsht,analysis,720,720,8,strategy selection,60,0.00013550000000000001,5e-05,0.0005809999999999999
+rustsht,analysis,720,720,8,wall,60,31.817829500000002,30.913584,37.216453
+rustsht,synthesis,720,720,1,Legendre recurrence and spectral accumulation,60,83.1734235,82.649546,106.44505000000001
+rustsht,synthesis,720,720,1,inverse longitude FFT and map writeback,60,2.072799,1.932262,3.1045979999999997
+rustsht,synthesis,720,720,1,latitude setup,60,0.013830499999999999,0.013566,0.020989
+rustsht,synthesis,720,720,1,wall,60,85.67984050000001,84.611354,109.39878599999999
+rustsht,synthesis,720,720,8,Legendre recurrence and spectral accumulation,60,38.074453500000004,37.353901,42.488903
+rustsht,synthesis,720,720,8,inverse longitude FFT and map writeback,60,0.519188,0.387903,0.819448
+rustsht,synthesis,720,720,8,latitude setup,60,0.013956,0.013615,0.026369
+rustsht,synthesis,720,720,8,wall,60,38.556853,37.760559,43.098139

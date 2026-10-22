@@ -1,0 +1,134 @@
+[
+  {
+    "log": "rustsht-cc-independent-720-180-analysis-q1-run1.log",
+    "counts": "ScalarAnalysisRouteCounts { normal_seed_blocks: 232, prefix_enabled_scaled_blocks: 0, checked_scaled_blocks: 130, prefix_initialization_declines: 0, prefix_recurrence_declines: 0, checked_scaled_recurrence_declines: 0 } strategies=Recurrence/Recurrence calls=[0, 0, 0, 2]"
+  },
+  {
+    "log": "rustsht-cc-independent-720-180-analysis-q1-run2.log",
+    "counts": "ScalarAnalysisRouteCounts { normal_seed_blocks: 232, prefix_enabled_scaled_blocks: 0, checked_scaled_blocks: 130, prefix_initialization_declines: 0, prefix_recurrence_declines: 0, checked_scaled_recurrence_declines: 0 } strategies=Recurrence/Recurrence calls=[0, 0, 0, 2]"
+  },
+  {
+    "log": "rustsht-cc-independent-720-180-analysis-q8-run1.log",
+    "counts": "ScalarAnalysisRouteCounts { normal_seed_blocks: 232, prefix_enabled_scaled_blocks: 0, checked_scaled_blocks: 130, prefix_initialization_declines: 0, prefix_recurrence_declines: 0, checked_scaled_recurrence_declines: 0 } strategies=Recurrence/Recurrence calls=[0, 0, 0, 2]"
+  },
+  {
+    "log": "rustsht-cc-independent-720-180-analysis-q8-run2.log",
+    "counts": "ScalarAnalysisRouteCounts { normal_seed_blocks: 232, prefix_enabled_scaled_blocks: 0, checked_scaled_blocks: 130, prefix_initialization_declines: 0, prefix_recurrence_declines: 0, checked_scaled_recurrence_declines: 0 } strategies=Recurrence/Recurrence calls=[0, 0, 0, 2]"
+  },
+  {
+    "log": "rustsht-cc-independent-720-720-analysis-q1-run2.log",
+    "counts": "ScalarAnalysisRouteCounts { normal_seed_blocks: 672, prefix_enabled_scaled_blocks: 0, checked_scaled_blocks: 472, prefix_initialization_declines: 0, prefix_recurrence_declines: 0, checked_scaled_recurrence_declines: 0 } strategies=Recurrence/Recurrence calls=[0, 0, 0, 2]"
+  },
+  {
+    "log": "rustsht-cc-independent-720-720-analysis-q8-run2.log",
+    "counts": "ScalarAnalysisRouteCounts { normal_seed_blocks: 672, prefix_enabled_scaled_blocks: 0, checked_scaled_blocks: 472, prefix_initialization_declines: 0, prefix_recurrence_declines: 0, checked_scaled_recurrence_declines: 0 } strategies=Recurrence/Recurrence calls=[0, 0, 0, 2]"
+  },
+  {
+    "log": "rustsht-cc-independent-720-full-analysis-q1-run1.log",
+    "counts": "ScalarAnalysisRouteCounts { normal_seed_blocks: 672, prefix_enabled_scaled_blocks: 0, checked_scaled_blocks: 472, prefix_initialization_declines: 0, prefix_recurrence_declines: 0, checked_scaled_recurrence_declines: 0 } strategies=Recurrence/Recurrence calls=[0, 0, 0, 2]"
+  },
+  {
+    "log": "rustsht-cc-independent-720-full-analysis-q8-run1.log",
+    "counts": "ScalarAnalysisRouteCounts { normal_seed_blocks: 672, prefix_enabled_scaled_blocks: 0, checked_scaled_blocks: 472, prefix_initialization_declines: 0, prefix_recurrence_declines: 0, checked_scaled_recurrence_declines: 0 } strategies=Recurrence/Recurrence calls=[0, 0, 0, 2]"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T1023-m1023-q8.log",
+    "counts": "pair_eligible=10593,pair_success=9485,fallback=3035"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T1023-m1023-q8.log",
+    "counts": "pair_eligible=10593,pair_success=9485,fallback=3035"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T1023-m1023-q8.log",
+    "counts": "pair_eligible=10593,pair_success=9485,fallback=3035"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T1023-m1023-q8.log",
+    "counts": "pair_eligible=10593,pair_success=9485,fallback=3035"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T1023-m1023-q8.log",
+    "counts": "pair_eligible=10593,pair_success=9485,fallback=3035"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T1023-m255-q8.log",
+    "counts": "pair_eligible=3584,pair_success=3414,fallback=586"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T1023-m255-q8.log",
+    "counts": "pair_eligible=3584,pair_success=3414,fallback=586"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T1023-m255-q8.log",
+    "counts": "pair_eligible=3584,pair_success=3414,fallback=586"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T1023-m255-q8.log",
+    "counts": "pair_eligible=3584,pair_success=3414,fallback=586"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T1023-m255-q8.log",
+    "counts": "pair_eligible=3584,pair_success=3414,fallback=586"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T720-m180-q8.log",
+    "counts": "pair_eligible=1784,pair_success=1736,fallback=305"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T720-m180-q8.log",
+    "counts": "pair_eligible=1784,pair_success=1736,fallback=305"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T720-m180-q8.log",
+    "counts": "pair_eligible=1784,pair_success=1736,fallback=305"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T720-m180-q8.log",
+    "counts": "pair_eligible=1784,pair_success=1736,fallback=305"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T720-m180-q8.log",
+    "counts": "pair_eligible=1784,pair_success=1736,fallback=305"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T720-m720-q1.log",
+    "counts": "pair_eligible=5293,pair_success=5027,fallback=1588"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T720-m720-q1.log",
+    "counts": "pair_eligible=5293,pair_success=5027,fallback=1588"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T720-m720-q1.log",
+    "counts": "pair_eligible=5293,pair_success=5027,fallback=1588"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T720-m720-q1.log",
+    "counts": "pair_eligible=5293,pair_success=5027,fallback=1588"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T720-m720-q1.log",
+    "counts": "pair_eligible=5293,pair_success=5027,fallback=1588"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T720-m720-q8.log",
+    "counts": "pair_eligible=5293,pair_success=5027,fallback=1588"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T720-m720-q8.log",
+    "counts": "pair_eligible=5293,pair_success=5027,fallback=1588"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T720-m720-q8.log",
+    "counts": "pair_eligible=5293,pair_success=5027,fallback=1588"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T720-m720-q8.log",
+    "counts": "pair_eligible=5293,pair_success=5027,fallback=1588"
+  },
+  {
+    "log": "rustsht-cc-independent-spin1-T720-m720-q8.log",
+    "counts": "pair_eligible=5293,pair_success=5027,fallback=1588"
+  }
+]

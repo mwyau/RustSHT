@@ -1,0 +1,67 @@
+{
+  "reviewed_rust_revision": "7b1629d4f45b6a74cb4ee0e3a53c67f4faa51643",
+  "rustflags": "-C target-cpu=x86-64-v3",
+  "checks": [
+    {
+      "command": "cargo fmt --all -- --check",
+      "result": "passed"
+    },
+    {
+      "command": "cargo clippy --workspace --all-targets --all-features -- -D warnings",
+      "result": "passed"
+    },
+    {
+      "command": "cargo test --workspace --all-features --release",
+      "result": "passed",
+      "library_passed": 270,
+      "library_ignored": 36,
+      "extreme_scaling_passed": 4,
+      "f32_passed": 11,
+      "f32_ignored": 1,
+      "workspace_compatibility_passed": 1
+    },
+    {
+      "command": "cargo test --workspace --no-default-features --release",
+      "result": "passed",
+      "note": "Python dependency unifies parallel; this command does not establish serial feature selection."
+    },
+    {
+      "command": "cargo test -p rustsht --no-default-features --release",
+      "result": "passed",
+      "library_passed": 220,
+      "library_ignored": 17,
+      "extreme_scaling_passed": 4,
+      "f32_passed": 11,
+      "f32_ignored": 1,
+      "workspace_compatibility_passed": 1
+    },
+    {
+      "command": "temporary lib test binary: clenshaw_curtis --test-threads=1",
+      "result": "passed",
+      "tests": 11
+    },
+    {
+      "command": "validate_native.py, frozen native workers",
+      "result": "passed",
+      "configurations": 10,
+      "worker_records": 40
+    },
+    {
+      "command": "spin_route_driver clean pinned DUCC versus diagnostic Rust, CC full q1 T499/T500/T511",
+      "result": "passed",
+      "maximum_relative_l2": 1.6264207260229803e-13,
+      "review_gate_relative_l2": 5e-12
+    },
+    {
+      "command": "git apply --check, all four archived diagnostic patches against their recorded base sources",
+      "result": "passed"
+    }
+  ],
+  "target_directories": [
+    "${REVIEW_TMP}/rustsht-independent-check-target",
+    "${REVIEW_TMP}/rustsht-independent-clippy-target",
+    "${REVIEW_TMP}/rustsht-cc-independent-diagnostic-20261022/target"
+  ],
+  "raw_logs": "Local ${REVIEW_TMP}/rustsht-independent-*.log; not committed.",
+  "production_changes": "None; tracked edits are review documentation and evidence only."
+}

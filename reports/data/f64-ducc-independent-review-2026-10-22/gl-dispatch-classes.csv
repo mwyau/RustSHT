@@ -1,0 +1,11 @@
+lmax_lo,lmax_hi,table_dispatch,cases,geomean_table_over_recurrence,minimum_ratio,maximum_ratio,protocol
+63,96,AVX2 cached,9,0.6012210513507673,0.491882,0.64879,"exploratory 5 batches, 1 ms target"
+63,96,scalar,25,0.8429001933963761,0.705751,0.999875,"exploratory 5 batches, 1 ms target"
+97,127,AVX2 cached,8,0.6747154672008717,0.635289,0.712889,"exploratory 5 batches, 1 ms target"
+97,127,scalar,23,1.0101470388130775,0.890435,1.268443,"exploratory 5 batches, 1 ms target"
+128,191,AVX2 cached,16,0.7679600863710666,0.671114,0.96866,"exploratory 5 batches, 1 ms target"
+128,191,scalar,48,1.2184008904222006,1.04531,1.491367,"exploratory 5 batches, 1 ms target"
+192,217,AVX2 cached,6,1.0039389640928333,0.878997,1.225541,"exploratory 5 batches, 1 ms target"
+192,217,scalar,20,1.5838517644718797,1.393549,1.927248,"exploratory 5 batches, 1 ms target"
+218,255,AVX2 cached,10,1.673974437065868,1.185423,2.164019,"exploratory 5 batches, 1 ms target"
+218,255,scalar,28,2.0899213210340126,1.796426,2.654232,"exploratory 5 batches, 1 ms target"

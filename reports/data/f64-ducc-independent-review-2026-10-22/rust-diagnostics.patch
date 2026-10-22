@@ -1,0 +1,171 @@
+--- a/src/transform.rs
++++ b/src/transform.rs
+@@ -24,6 +24,13 @@
+ use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
+ 
+ const SCALAR_TRANSITION_MIN_LMAX: usize = 1023;
++#[cfg(all(test, feature = "parallel"))]
++static REVIEW_SYNTH_ENABLED: AtomicBool = AtomicBool::new(false);
++#[cfg(all(test, feature = "parallel"))]
++static REVIEW_SYNTH_COUNTS: [AtomicUsize; 4] = [const { AtomicUsize::new(0) }; 4];
++#[cfg(all(test, feature = "parallel"))]
++static REVIEW_SYNTH_GROUPS: Mutex<Vec<(usize, usize, u128)>> = Mutex::new(Vec::new());
++
+ 
+ #[cfg(test)]
+ static SCALAR_TABLE_SYNTHESIS_CALLS: AtomicUsize = AtomicUsize::new(0);
+@@ -1579,6 +1586,8 @@
+     ) -> Result<(), ShtError> {
+         #[cfg(all(test, feature = "parallel"))]
+         recurrence.record_active_worker();
++        #[cfg(all(test, feature = "parallel"))]
++        let review_start = REVIEW_SYNTH_ENABLED.load(Ordering::Relaxed).then(std::time::Instant::now);
+         let lmax = self.harmonics.lmax();
+         let mmax = self.harmonics.mmax();
+         debug_assert_eq!(spectra.len(), theta_sin.len() * spectrum_len);
+@@ -1685,6 +1694,10 @@
+                         &mut recurrence.compact_theta_cos[..block_len],
+                         &mut recurrence.compact_ring_indices[..block_len],
+                     )?;
++                    #[cfg(all(test, feature = "parallel"))]
++                    if REVIEW_SYNTH_ENABLED.load(Ordering::Relaxed) {
++                        REVIEW_SYNTH_COUNTS[usize::from(!fused)].fetch_add(1, Ordering::Relaxed);
++                    }
+                     if !fused {
+                         let transition =
+                             if transition_enabled && ring_limits.iter().all(|&limit| m <= limit) {
+@@ -1719,6 +1732,10 @@
+                             } else {
+                                 false
+                             };
++                        #[cfg(all(test, feature = "parallel"))]
++                        if REVIEW_SYNTH_ENABLED.load(Ordering::Relaxed) {
++                            REVIEW_SYNTH_COUNTS[if transition { 2 } else { 3 }].fetch_add(1, Ordering::Relaxed);
++                        }
+                         if transition {
+                             for lane in 0..block_len {
+                                 spectra[spectrum_start + lane * spectrum_len + m] += Complex::new(
+@@ -1905,6 +1922,10 @@
+                     spectra[spectrum_index] = phased;
+                 }
+             }
++        }
++        #[cfg(all(test, feature = "parallel"))]
++        if let Some(start) = review_start {
++            REVIEW_SYNTH_GROUPS.lock().unwrap().push((rayon::current_thread_index().unwrap_or(usize::MAX), group_ring_start, start.elapsed().as_nanos()));
+         }
+         Ok(())
+     }
+--- a/src/transform/tests.rs
++++ b/src/transform/tests.rs
+@@ -1990,7 +1990,7 @@
+         .unwrap_or_else(|| GridSpec::fft_friendly_nphi(lmax).unwrap());
+     assert!(ntheta > lmax);
+     assert!(nphi > 2 * mmax);
+-    let plan = make_plan(lmax, mmax, ntheta, nphi, 0.23);
++    let plan = if std::env::var("RUSTSHT_PROFILE_GRID").as_deref() == Ok("CC") { make_cc_plan(lmax, mmax, ntheta, nphi, 0.23) } else { make_plan(lmax, mmax, ntheta, nphi, 0.23) };
+     let force_recurrence =
+         std::env::var("RUSTSHT_PROFILE_FORCE_RECURRENCE").is_ok_and(|value| value == "1");
+     if force_recurrence {
+@@ -2022,6 +2022,13 @@
+     let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics.nalm()];
+ 
+     plan.analysis_into(&map, &mut alm, &mut workspace).unwrap();
++    crate::legendre::begin_scalar_analysis_route_profile();
++    plan.analysis_into(&map, &mut alm, &mut workspace).unwrap();
++    eprintln!("INDEPENDENT_ROUTE_PROFILE {:?} strategies={:?}/{:?} calls={:?}",
++        crate::legendre::finish_scalar_analysis_route_profile(),
++        plan.scalar_legendre_strategy(LegendreOperation::Analysis),
++        plan.scalar_legendre_strategy(LegendreOperation::Synthesis),
++        take_scalar_legendre_benchmark_route_counts());
+     let started = std::time::Instant::now();
+     plan.analysis_into(&map, &mut alm, &mut workspace).unwrap();
+     let calibration_call_ms = started.elapsed().as_secs_f64() * 1e3;
+@@ -2145,7 +2152,7 @@
+     assert!(nphi > 2 * mmax);
+     assert_eq!(rayon::current_num_threads(), thread_count);
+ 
+-    let plan = make_plan(lmax, mmax, ntheta, nphi, 0.23);
++    let plan = if std::env::var("RUSTSHT_PROFILE_GRID").as_deref() == Ok("CC") { make_cc_plan(lmax, mmax, ntheta, nphi, 0.23) } else { make_plan(lmax, mmax, ntheta, nphi, 0.23) };
+     let mut workspace = plan.workspace().unwrap();
+     plan.prepare_workspace(&mut workspace, thread_count)
+         .unwrap();
+@@ -7363,3 +7370,65 @@
+     run_case(300, 150, 301, 603);
+     run_case(720, 720, 721, 1442);
+ }
++
++#[cfg(feature = "parallel")]
++#[test]
++#[ignore]
++fn independent_cc_synthesis_route_probe() {
++    for q in [1,8] {
++        let pool = rayon::ThreadPoolBuilder::new().num_threads(q).build().unwrap();
++        for (lmax,mmax) in [(255,255),(720,720),(720,180),(1023,1023)] {
++            let plan=make_cc_plan(lmax,mmax,lmax+2,GridSpec::fft_friendly_nphi(mmax).unwrap(),0.23);
++            let mut ws=pool.install(||plan.workspace()).unwrap();
++            pool.install(||plan.prepare_workspace(&mut ws,q)).unwrap();
++            let mut alm=vec![Complex64::new(0.0,0.0);plan.harmonics.nalm()];
++            for m in 0..=mmax { for l in m..=lmax {
++                let phase=(l*31+m*17) as f64*0.00137;
++                alm[plan.harmonics.index(l,m).unwrap()]=Complex64::new(phase.sin()*1e-4,if m==0 {0.0} else {phase.cos()*1e-4});
++            }}
++            let mut map=vec![0.0;plan.sample_count];
++            pool.install(||plan.synthesis_into(&alm,&mut map,&mut ws)).unwrap();
++            for c in &REVIEW_SYNTH_COUNTS {c.store(0,Ordering::Relaxed);}
++            REVIEW_SYNTH_GROUPS.lock().unwrap().clear();
++            REVIEW_SYNTH_ENABLED.store(true,Ordering::Relaxed);
++            pool.install(||plan.synthesis_into(&alm,&mut map,&mut ws)).unwrap();
++            REVIEW_SYNTH_ENABLED.store(false,Ordering::Relaxed);
++            let counts=REVIEW_SYNTH_COUNTS.each_ref().map(|c|c.load(Ordering::Relaxed));
++            eprintln!("REVIEW_SYNTH_ROUTES T{lmax} m{mmax} q{q} fused_declined_transition_fallback={counts:?} groups={:?}",REVIEW_SYNTH_GROUPS.lock().unwrap());
++            assert!(map.iter().all(|x|x.is_finite()));
++        }
++    }
++}
++
++#[cfg(feature = "parallel")]
++#[test]
++#[ignore]
++fn independent_cc_adjoint_cancellation_probe() {
++    let folder=std::path::PathBuf::from(std::env::var("RUSTSHT_REVIEW_ADJOINT_DIR").unwrap());
++    let read_real=|name:&str| std::fs::read(folder.join(name)).unwrap().as_chunks::<8>().0.iter().map(|v|f64::from_le_bytes(*v)).collect::<Vec<_>>();
++    let map=read_real("map.bin");
++    let raw=read_real("alm.bin");
++    let alm=raw.as_chunks::<2>().0.iter().map(|v|Complex64::new(v[0],v[1])).collect::<Vec<_>>();
++    let write_real=|name:&str,values:&[f64]|std::fs::write(folder.join(name),values.iter().flat_map(|v|v.to_le_bytes()).collect::<Vec<_>>()).unwrap();
++    let write_complex=|name:&str,values:&[Complex64]|std::fs::write(folder.join(name),values.iter().flat_map(|v|[v.re.to_le_bytes(),v.im.to_le_bytes()].concat()).collect::<Vec<_>>()).unwrap();
++    for q in [1,8] {
++        let pool=rayon::ThreadPoolBuilder::new().num_threads(q).build().unwrap();
++        let plan=make_cc_plan(214,214,216,432,0.23);
++        assert_eq!(map.len(),plan.sample_count);
++        let mut ws=pool.install(||plan.workspace()).unwrap();
++        pool.install(||plan.prepare_workspace(&mut ws,q)).unwrap();
++        let mut synthesized=vec![0.0;map.len()];let mut adjoint_analysis=synthesized.clone();
++        let mut analyzed=vec![Complex64::new(0.0,0.0);alm.len()];let mut adjoint_synthesis=analyzed.clone();
++        pool.install(|| {
++            plan.synthesis_into(&alm,&mut synthesized,&mut ws).unwrap();
++            plan.adjoint_synthesis_into(&map,&mut adjoint_synthesis,&mut ws).unwrap();
++            plan.analysis_into(&map,&mut analyzed,&mut ws).unwrap();
++            plan.adjoint_analysis_into(&alm,&mut adjoint_analysis,&mut ws).unwrap();
++        });
++        write_real(&format!("synthesized-q{q}.bin"),&synthesized);
++        write_real(&format!("adjoint-analysis-q{q}.bin"),&adjoint_analysis);
++        write_complex(&format!("analyzed-q{q}.bin"),&analyzed);
++        write_complex(&format!("adjoint-synthesis-q{q}.bin"),&adjoint_synthesis);
++        assert!(synthesized.iter().chain(&adjoint_analysis).all(|v|v.is_finite()));
++    }
++}
+--- a/src/spin_transform/tests.rs
++++ b/src/spin_transform/tests.rs
+@@ -9609,6 +9609,10 @@
+             observation.elapsed_ns as f64 / 1.0e6,
+         );
+     }
++    if let Ok(path) = std::env::var("RUSTSHT_REVIEW_SPIN_MAP_OUT") {
++        std::fs::write(path,first.iter().chain(second.iter()).flat_map(|v|v.to_le_bytes()).collect::<Vec<_>>()).unwrap();
++    }
++
+ }
+ 
+ #[cfg(feature = "parallel")]

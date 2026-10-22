@@ -1,0 +1,49 @@
+--- a/src/ducc0/sht/sht.cc
++++ b/src/ducc0/sht/sht.cc
+@@ -1,3 +1,6 @@
++#include <chrono>
++#include <cstdio>
++#include <cstdlib>
+ /*
+  *  This code is free software; you can redistribute it and/or modify
+  *  it under the terms of the GNU General Public License as published by
+@@ -1476,9 +1479,16 @@
+     {
+     auto leg(allocate_leg<T>(map.shape(0), theta.shape(0), mstart.shape(0), true,
+                           false, nthreads));
++    auto review_t0=std::chrono::steady_clock::now();
+     alm2leg(alm, leg, spin, lmax, mval, mstart, lstride, theta, nthreads, mode,
+       theta_interpol);
++    auto review_t1=std::chrono::steady_clock::now();
+     leg2map(map, leg, nphi, phi0, ringstart, ringfactor, pixstride, nthreads);
++    auto review_t2=std::chrono::steady_clock::now();
++    if (std::getenv("RUSTSHT_REVIEW_STAGE"))
++      std::fprintf(stderr, "REVIEW_DUCC_SYNTHESIS legendre_us=%.6f fft_us=%.6f\n",
++        std::chrono::duration<double,std::micro>(review_t1-review_t0).count(),
++        std::chrono::duration<double,std::micro>(review_t2-review_t1).count());
+     }
+   }
+ 
+@@ -1777,13 +1787,22 @@
+     vmav<double,1> ringfactor2(ringfactor.shape());
+     for (size_t i=0; i<nphi.shape(0); ++i)
+       ringfactor2(i) = ringfactor(i)/nphi(i);
++    auto review_t0=std::chrono::steady_clock::now();
+     map2leg(map, legi, nphi, phi0, ringstart, ringfactor2, pixstride, nthreads);
++    auto review_t1=std::chrono::steady_clock::now();
+ 
+     resample_to_prepared_CC(legi, npi, spi, lego, spin, lmax, nthreads);
++    auto review_t2=std::chrono::steady_clock::now();
+     vmav<double,1> newtheta({ntheta_leg}, UNINITIALIZED);
+     for (size_t i=0; i<ntheta_leg; ++i)
+       newtheta(i) = (pi*i)/(ntheta_leg-1);
+     leg2alm_internal(alm, lego, spin, lmax, mval, mstart, lstride, newtheta, nthreads, STANDARD, false, true);
++    auto review_t3=std::chrono::steady_clock::now();
++    if (std::getenv("RUSTSHT_REVIEW_STAGE"))
++      std::fprintf(stderr, "REVIEW_DUCC_ANALYSIS fft_us=%.6f resample_us=%.6f legendre_us=%.6f\n",
++        std::chrono::duration<double,std::micro>(review_t1-review_t0).count(),
++        std::chrono::duration<double,std::micro>(review_t2-review_t1).count(),
++        std::chrono::duration<double,std::micro>(review_t3-review_t2).count());
+     return;
+     }
+   else

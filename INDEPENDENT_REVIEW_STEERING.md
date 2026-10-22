@@ -1,36 +1,43 @@
 # Independent review — advisory, subordinate to owner instructions
 
-**Inspected:** `opt/sht-performance-parity` at `75cf62ecfc4a324fc4f7d9e652c3d285dbf32cc4` on 2026-10-22.
-**Status:** Actionable package test regression; no SHT numerical-kernel finding.
-**Priority:** Fix at the next safe small commit boundary **without interrupting** the owner's active f64 scalar CC full-band sweep and GL 20 MiB table-crossover study.
+Inspected `opt/sht-performance-parity` at `7b1629d4` on 2026-10-22 under the
+owner's explicit independent-review authorization. Production code is unchanged
+by this review. The current active directive and later owner instructions take
+precedence over the implementation suggestions below.
 
-## Finding: incomplete `spharm_rs` import migration
+The [f64 algorithm review](reports/f64-ducc-independent-review-2026-10-22.md)
+and [compact Luna handoff](reports/handoff-f64-independent-review-2026-10-22.md)
+contain source references, numerical controls and reproducible evidence.
 
-**Verified source evidence**
+- **Spin-1:** DUCC's actual STANDARD T>=500 path converts ordinary rings to two
+  scalar streams over reflected pairs, with direct spin at the polar pair.
+  Rust already uses scalar conversion; the remaining large-band path evaluates
+  hemispheres independently and spends substantial worker time in checked
+  scalar fallbacks. The rejected parity-only and loop-reversal experiments
+  remain rejected. Investigate active reflected pairs and scaled transition
+  behavior as a new mechanism, preserving original-coefficient fallback.
+- **Scalar CC:** thirteen saved native shards establish synthesis gaps in their
+  covered cells. The final high shard is stopped without saved JSON. The
+  independent floor-quarter manifest has 72 requested groups missing and
+  16 extra saved groups. Do not label the sweep complete. Scalar analysis's
+  serial resampling and scalar synthesis's four-worker q8 underfill are
+  separate from spin-1's already parallel resampler and order queue.
+- **GL:** the table's AVX2 accumulator is selected only for `ntheta % 4 == 0`.
+  This explains much of the nonmonotonic forced-route behavior. Treat 20 MiB
+  as a provisional resource guard pending dispatch-stratified cold/reuse
+  evidence; do not encode another arbitrary cutoff.
+- **Evidence:** the native harness records many numerical errors without
+  enforcing tolerance gates. Zero recorded failures is not proof that every
+  numerical acceptance condition passed. Reconcile saved metrics explicitly.
 
-- The owner-directed package rename in [`b3ef687`](https://github.com/mwyau/RustSHT/commit/b3ef6873712b0a69739ccae9c9931aae67f975a2) makes `spharm_rs` the intended module name, not `spharm`. This rename is intentional; do not restore an old import alias.
-- [`python/pyspharm-rs/tests/test_api.py`](python/pyspharm-rs/tests/test_api.py) imports `spharm_rs` but still calls the **undefined** `spharm` name on lines **97, 201, 202, 220, 239, 258, 276, 278, 280, 282, 284, 288** of the inspected revision. Representative expressions: `spharm.Spharmt(...)`, `spharm.regrid(...)`, and `spharm.specintrp(...)`. These tests will raise Python `NameError` when executed; that result follows from static source inspection. **This independent review did not execute pytest.**
-- Recent commits [`a81e0e4`](https://github.com/mwyau/RustSHT/commit/a81e0e41adaf7f8d436db3616749cabbc4e5740d) and [`75cf62e`](https://github.com/mwyau/RustSHT/commit/75cf62ecfc4a324fc4f7d9e652c3d285dbf32cc4) clarify the documented difference between nominal SPHEREPACK truncation N-1 and exact CC analysis limit N-2. They do not independently establish a new correctness regression. Do not change native CC limits based on this test-name defect.
-- The owner's approved pyspharm integration is intentional. Do not undo it or treat it as an unauthorized branch merge.
+Production all-feature release tests, package-only serial release tests,
+formatting and strict Clippy passed in this review. Native analytic controls
+and pinned-DUCC spin-1 T499/T500/T511 comparisons passed targeted validation.
+No production optimization, f32 optimization, FFT change or full sweep was
+started. Keep production scalar-analysis tiles at 256 reflected pairs.
 
-### Goal for Luna/Codex
-
-**Restore the `spharm_rs` compatibility test suite's namespace consistency, then continue the higher-priority f64 scalar CC benchmark work.**
-
-Constrained steps:
-
-1. At the next safe commit boundary, fetch and reconcile the latest `opt/sht-performance-parity` HEAD following [AGENTS.md](AGENTS.md). Check whether another agent already corrected these 12 references; if so, just validate, do not create duplicate edits.
-2. If still present, replace only stale `spharm.` usages in `python/pyspharm-rs/tests/test_api.py` with `spharm_rs.`. Search the rest of `python/pyspharm-rs` for accidental legacy module references, distinguishing intentional historical prose from executable imports. Preserve intentional public API, result expectations, numerical tolerances and packaging names.
-3. Run the full `python/pyspharm-rs` pytest suite in the intended isolated Python environment; verify import of the built wheel as `spharm_rs`, packaging contents, and that no `import spharm` compatibility alias is reintroduced. If tests expose other failures, report separately instead of making broad unrelated changes.
-4. Commit/push a minimal tested fix normally, safely synchronizing with concurrent work. Do not rewrite published history, force-push or touch `main`.
-5. Resume the active [f64 scalar CC full-band and GL table-crossover directive](plans/scalar-f64-cc-full-band-and-gl-table-crossover-2026-10-22.md) without reopening paused Plan 17 f32 work or the odd-length FFT hold.
-
-**No new native Rust/DUCC timing data** was generated by the three package and documentation commits reviewed at this checkpoint.
-
-## Previously resolved findings (not active steering)
-
-- The owner intentionally integrated the pyspharm implementation on this branch. Earlier Plan 18 statements that the performance branch was untouched describe the isolated development phase and do not authorize relocating or removing code.
-- The guarded paired odd-longitude FFT route is intentionally integrated and already validated. Do not change its eligibility, numerical guard or fallback without new owner direction.
-- The previously measured regular-grid maximum-truncation differences and windspharm distribution dependency limitation remain documented scientific/packaging constraints, not new findings or an instruction to change the native CC algorithm.
-
-Independent review notes are advisory; the owner's latest directions in AGENTS.md and the active plan take precedence. Replace this note when the test regression is fixed or superseded by substantial new evidence.
+The earlier stale `spharm.` test references were fixed in `a317ec46`; that
+finding is resolved. Owner-approved pyspharm integration and the guarded paired
+odd-longitude FFT route remain intentional. This review does not authorize
+moving/removing either integration, changing exact CC limits, publication,
+or resuming paused f32 work.

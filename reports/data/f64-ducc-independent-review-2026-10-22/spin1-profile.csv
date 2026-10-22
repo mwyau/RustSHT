@@ -1,0 +1,221 @@
+lmax,mmax,nphi,threads,sample,kind,phase,ms
+1023,1023,2048,8,0,worker sum,worker-sum order factors,2.895724
+1023,1023,2048,8,0,worker sum,worker-sum paired coefficient preparation,14.522809
+1023,1023,2048,8,0,worker sum,worker-sum fused recurrence and accumulation,84.702119
+1023,1023,2048,8,0,worker sum,worker-sum scaled/per-degree fallback,210.229129
+1023,1023,2048,8,0,worker sum,worker-sum coefficient finite scans,0.0
+1023,1023,2048,8,1,worker sum,worker-sum order factors,2.904751
+1023,1023,2048,8,1,worker sum,worker-sum paired coefficient preparation,14.433019
+1023,1023,2048,8,1,worker sum,worker-sum fused recurrence and accumulation,96.369834
+1023,1023,2048,8,1,worker sum,worker-sum scaled/per-degree fallback,205.029673
+1023,1023,2048,8,1,worker sum,worker-sum coefficient finite scans,0.0
+1023,1023,2048,8,2,worker sum,worker-sum order factors,7.904211
+1023,1023,2048,8,2,worker sum,worker-sum paired coefficient preparation,14.335585
+1023,1023,2048,8,2,worker sum,worker-sum fused recurrence and accumulation,88.423726
+1023,1023,2048,8,2,worker sum,worker-sum scaled/per-degree fallback,203.080699
+1023,1023,2048,8,2,worker sum,worker-sum coefficient finite scans,0.0
+1023,1023,2048,8,3,worker sum,worker-sum order factors,2.885701
+1023,1023,2048,8,3,worker sum,worker-sum paired coefficient preparation,14.779601
+1023,1023,2048,8,3,worker sum,worker-sum fused recurrence and accumulation,87.784174
+1023,1023,2048,8,3,worker sum,worker-sum scaled/per-degree fallback,211.18568
+1023,1023,2048,8,3,worker sum,worker-sum coefficient finite scans,0.0
+1023,1023,2048,8,4,worker sum,worker-sum order factors,2.830003
+1023,1023,2048,8,4,worker sum,worker-sum paired coefficient preparation,16.577575
+1023,1023,2048,8,4,worker sum,worker-sum fused recurrence and accumulation,82.764294
+1023,1023,2048,8,4,worker sum,worker-sum scaled/per-degree fallback,198.481867
+1023,1023,2048,8,4,worker sum,worker-sum coefficient finite scans,0.0
+1023,1023,2048,8,0,wall phase,latitude and spin-spectrum setup,1.173911
+1023,1023,2048,8,1,wall phase,spin-1 scalar coefficient cache preparation,2.793253
+1023,1023,2048,8,2,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",44.190804
+1023,1023,2048,8,3,wall phase,two inverse longitude FFTs and map writeback,3.056494
+1023,1023,2048,8,4,wall phase,latitude and spin-spectrum setup,1.223854
+1023,1023,2048,8,5,wall phase,spin-1 scalar coefficient cache preparation,2.747387
+1023,1023,2048,8,6,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",43.926811
+1023,1023,2048,8,7,wall phase,two inverse longitude FFTs and map writeback,2.968921
+1023,1023,2048,8,8,wall phase,latitude and spin-spectrum setup,1.173731
+1023,1023,2048,8,9,wall phase,spin-1 scalar coefficient cache preparation,3.582286
+1023,1023,2048,8,10,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",45.409449
+1023,1023,2048,8,11,wall phase,two inverse longitude FFTs and map writeback,3.084647
+1023,1023,2048,8,12,wall phase,latitude and spin-spectrum setup,1.257968
+1023,1023,2048,8,13,wall phase,spin-1 scalar coefficient cache preparation,3.492087
+1023,1023,2048,8,14,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",44.984255
+1023,1023,2048,8,15,wall phase,two inverse longitude FFTs and map writeback,3.036316
+1023,1023,2048,8,16,wall phase,latitude and spin-spectrum setup,1.288545
+1023,1023,2048,8,17,wall phase,spin-1 scalar coefficient cache preparation,2.566049
+1023,1023,2048,8,18,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",42.209707
+1023,1023,2048,8,19,wall phase,two inverse longitude FFTs and map writeback,3.13455
+1023,255,512,8,0,worker sum,worker-sum order factors,1.23066
+1023,255,512,8,0,worker sum,worker-sum paired coefficient preparation,9.634546
+1023,255,512,8,0,worker sum,worker-sum fused recurrence and accumulation,58.10166
+1023,255,512,8,0,worker sum,worker-sum scaled/per-degree fallback,82.014908
+1023,255,512,8,0,worker sum,worker-sum coefficient finite scans,0.0
+1023,255,512,8,1,worker sum,worker-sum order factors,1.230586
+1023,255,512,8,1,worker sum,worker-sum paired coefficient preparation,7.33663
+1023,255,512,8,1,worker sum,worker-sum fused recurrence and accumulation,42.136947
+1023,255,512,8,1,worker sum,worker-sum scaled/per-degree fallback,69.726896
+1023,255,512,8,1,worker sum,worker-sum coefficient finite scans,0.0
+1023,255,512,8,2,worker sum,worker-sum order factors,1.2225
+1023,255,512,8,2,worker sum,worker-sum paired coefficient preparation,9.909764
+1023,255,512,8,2,worker sum,worker-sum fused recurrence and accumulation,44.512235
+1023,255,512,8,2,worker sum,worker-sum scaled/per-degree fallback,64.33106
+1023,255,512,8,2,worker sum,worker-sum coefficient finite scans,0.0
+1023,255,512,8,3,worker sum,worker-sum order factors,1.208792
+1023,255,512,8,3,worker sum,worker-sum paired coefficient preparation,15.585718
+1023,255,512,8,3,worker sum,worker-sum fused recurrence and accumulation,44.151603
+1023,255,512,8,3,worker sum,worker-sum scaled/per-degree fallback,58.41474
+1023,255,512,8,3,worker sum,worker-sum coefficient finite scans,0.0
+1023,255,512,8,4,worker sum,worker-sum order factors,1.204195
+1023,255,512,8,4,worker sum,worker-sum paired coefficient preparation,6.577407
+1023,255,512,8,4,worker sum,worker-sum fused recurrence and accumulation,45.923735
+1023,255,512,8,4,worker sum,worker-sum scaled/per-degree fallback,65.769671
+1023,255,512,8,4,worker sum,worker-sum coefficient finite scans,0.0
+1023,255,512,8,0,wall phase,latitude and spin-spectrum setup,0.167692
+1023,255,512,8,1,wall phase,spin-1 scalar coefficient cache preparation,1.218344
+1023,255,512,8,2,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",22.720834
+1023,255,512,8,3,wall phase,two inverse longitude FFTs and map writeback,0.48242
+1023,255,512,8,4,wall phase,latitude and spin-spectrum setup,0.193401
+1023,255,512,8,5,wall phase,spin-1 scalar coefficient cache preparation,0.895171
+1023,255,512,8,6,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",20.820818
+1023,255,512,8,7,wall phase,two inverse longitude FFTs and map writeback,0.486408
+1023,255,512,8,8,wall phase,latitude and spin-spectrum setup,0.194443
+1023,255,512,8,9,wall phase,spin-1 scalar coefficient cache preparation,0.901804
+1023,255,512,8,10,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",19.462703
+1023,255,512,8,11,wall phase,two inverse longitude FFTs and map writeback,0.299268
+1023,255,512,8,12,wall phase,latitude and spin-spectrum setup,0.199121
+1023,255,512,8,13,wall phase,spin-1 scalar coefficient cache preparation,0.566066
+1023,255,512,8,14,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",19.91573
+1023,255,512,8,15,wall phase,two inverse longitude FFTs and map writeback,0.533656
+1023,255,512,8,16,wall phase,latitude and spin-spectrum setup,0.175798
+1023,255,512,8,17,wall phase,spin-1 scalar coefficient cache preparation,0.935435
+1023,255,512,8,18,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",20.105182
+1023,255,512,8,19,wall phase,two inverse longitude FFTs and map writeback,0.472472
+720,180,378,8,0,worker sum,worker-sum order factors,0.592364
+720,180,378,8,0,worker sum,worker-sum paired coefficient preparation,2.305994
+720,180,378,8,0,worker sum,worker-sum fused recurrence and accumulation,14.626192
+720,180,378,8,0,worker sum,worker-sum scaled/per-degree fallback,20.123116
+720,180,378,8,0,worker sum,worker-sum coefficient finite scans,0.0
+720,180,378,8,1,worker sum,worker-sum order factors,0.59939
+720,180,378,8,1,worker sum,worker-sum paired coefficient preparation,2.446923
+720,180,378,8,1,worker sum,worker-sum fused recurrence and accumulation,15.884246
+720,180,378,8,1,worker sum,worker-sum scaled/per-degree fallback,21.464966
+720,180,378,8,1,worker sum,worker-sum coefficient finite scans,0.0
+720,180,378,8,2,worker sum,worker-sum order factors,0.604075
+720,180,378,8,2,worker sum,worker-sum paired coefficient preparation,2.426488
+720,180,378,8,2,worker sum,worker-sum fused recurrence and accumulation,15.650273
+720,180,378,8,2,worker sum,worker-sum scaled/per-degree fallback,21.477987
+720,180,378,8,2,worker sum,worker-sum coefficient finite scans,0.0
+720,180,378,8,3,worker sum,worker-sum order factors,0.612967
+720,180,378,8,3,worker sum,worker-sum paired coefficient preparation,2.476149
+720,180,378,8,3,worker sum,worker-sum fused recurrence and accumulation,16.469975
+720,180,378,8,3,worker sum,worker-sum scaled/per-degree fallback,25.232258
+720,180,378,8,3,worker sum,worker-sum coefficient finite scans,0.0
+720,180,378,8,4,worker sum,worker-sum order factors,0.594004
+720,180,378,8,4,worker sum,worker-sum paired coefficient preparation,2.504571
+720,180,378,8,4,worker sum,worker-sum fused recurrence and accumulation,16.665898
+720,180,378,8,4,worker sum,worker-sum scaled/per-degree fallback,24.35364
+720,180,378,8,4,worker sum,worker-sum coefficient finite scans,0.0
+720,180,378,8,0,wall phase,latitude and spin-spectrum setup,0.136375
+720,180,378,8,1,wall phase,spin-1 scalar coefficient cache preparation,0.600892
+720,180,378,8,2,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",7.681857
+720,180,378,8,3,wall phase,two inverse longitude FFTs and map writeback,0.266057
+720,180,378,8,4,wall phase,latitude and spin-spectrum setup,0.11251
+720,180,378,8,5,wall phase,spin-1 scalar coefficient cache preparation,0.579411
+720,180,378,8,6,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",7.299002
+720,180,378,8,7,wall phase,two inverse longitude FFTs and map writeback,0.199603
+720,180,378,8,8,wall phase,latitude and spin-spectrum setup,0.122339
+720,180,378,8,9,wall phase,spin-1 scalar coefficient cache preparation,0.496246
+720,180,378,8,10,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",7.068603
+720,180,378,8,11,wall phase,two inverse longitude FFTs and map writeback,0.256559
+720,180,378,8,12,wall phase,latitude and spin-spectrum setup,0.114874
+720,180,378,8,13,wall phase,spin-1 scalar coefficient cache preparation,0.706398
+720,180,378,8,14,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",9.009805
+720,180,378,8,15,wall phase,two inverse longitude FFTs and map writeback,0.311502
+720,180,378,8,16,wall phase,latitude and spin-spectrum setup,0.111909
+720,180,378,8,17,wall phase,spin-1 scalar coefficient cache preparation,0.690749
+720,180,378,8,18,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",8.827325
+720,180,378,8,19,wall phase,two inverse longitude FFTs and map writeback,0.238244
+720,720,1458,1,0,worker sum,worker-sum order factors,1.319777
+720,720,1458,1,0,worker sum,worker-sum paired coefficient preparation,4.389185
+720,720,1458,1,0,worker sum,worker-sum fused recurrence and accumulation,25.955851
+720,720,1458,1,0,worker sum,worker-sum scaled/per-degree fallback,45.644227
+720,720,1458,1,0,worker sum,worker-sum coefficient finite scans,0.502438
+720,720,1458,1,1,worker sum,worker-sum order factors,1.309008
+720,720,1458,1,1,worker sum,worker-sum paired coefficient preparation,4.404583
+720,720,1458,1,1,worker sum,worker-sum fused recurrence and accumulation,25.80014
+720,720,1458,1,1,worker sum,worker-sum scaled/per-degree fallback,45.508356
+720,720,1458,1,1,worker sum,worker-sum coefficient finite scans,0.492891
+720,720,1458,1,2,worker sum,worker-sum order factors,1.312728
+720,720,1458,1,2,worker sum,worker-sum paired coefficient preparation,4.387918
+720,720,1458,1,2,worker sum,worker-sum fused recurrence and accumulation,25.73031
+720,720,1458,1,2,worker sum,worker-sum scaled/per-degree fallback,45.566914
+720,720,1458,1,2,worker sum,worker-sum coefficient finite scans,0.492028
+720,720,1458,1,3,worker sum,worker-sum order factors,1.314168
+720,720,1458,1,3,worker sum,worker-sum paired coefficient preparation,4.369819
+720,720,1458,1,3,worker sum,worker-sum fused recurrence and accumulation,25.804343
+720,720,1458,1,3,worker sum,worker-sum scaled/per-degree fallback,45.60533
+720,720,1458,1,3,worker sum,worker-sum coefficient finite scans,0.497715
+720,720,1458,1,4,worker sum,worker-sum order factors,1.312475
+720,720,1458,1,4,worker sum,worker-sum paired coefficient preparation,4.367292
+720,720,1458,1,4,worker sum,worker-sum fused recurrence and accumulation,25.796805
+720,720,1458,1,4,worker sum,worker-sum scaled/per-degree fallback,45.524487
+720,720,1458,1,4,worker sum,worker-sum coefficient finite scans,0.496579
+720,720,1458,1,0,wall phase,latitude and spin-spectrum setup,0.45528
+720,720,1458,1,1,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",92.890463
+720,720,1458,1,2,wall phase,two inverse longitude FFTs and map writeback,5.361126
+720,720,1458,1,3,wall phase,latitude and spin-spectrum setup,0.504612
+720,720,1458,1,4,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",92.761323
+720,720,1458,1,5,wall phase,two inverse longitude FFTs and map writeback,5.253184
+720,720,1458,1,6,wall phase,latitude and spin-spectrum setup,0.421637
+720,720,1458,1,7,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",92.615991
+720,720,1458,1,8,wall phase,two inverse longitude FFTs and map writeback,5.233508
+720,720,1458,1,9,wall phase,latitude and spin-spectrum setup,0.438689
+720,720,1458,1,10,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",92.758096
+720,720,1458,1,11,wall phase,two inverse longitude FFTs and map writeback,5.328845
+720,720,1458,1,12,wall phase,latitude and spin-spectrum setup,0.464817
+720,720,1458,1,13,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",92.49734
+720,720,1458,1,14,wall phase,two inverse longitude FFTs and map writeback,5.275967
+720,720,1458,8,0,worker sum,worker-sum order factors,1.395322
+720,720,1458,8,0,worker sum,worker-sum paired coefficient preparation,9.11934
+720,720,1458,8,0,worker sum,worker-sum fused recurrence and accumulation,41.259596
+720,720,1458,8,0,worker sum,worker-sum scaled/per-degree fallback,67.038609
+720,720,1458,8,0,worker sum,worker-sum coefficient finite scans,0.0
+720,720,1458,8,1,worker sum,worker-sum order factors,1.404015
+720,720,1458,8,1,worker sum,worker-sum paired coefficient preparation,8.15109
+720,720,1458,8,1,worker sum,worker-sum fused recurrence and accumulation,38.100432
+720,720,1458,8,1,worker sum,worker-sum scaled/per-degree fallback,65.374958
+720,720,1458,8,1,worker sum,worker-sum coefficient finite scans,0.0
+720,720,1458,8,2,worker sum,worker-sum order factors,1.444715
+720,720,1458,8,2,worker sum,worker-sum paired coefficient preparation,5.091015
+720,720,1458,8,2,worker sum,worker-sum fused recurrence and accumulation,34.958542
+720,720,1458,8,2,worker sum,worker-sum scaled/per-degree fallback,61.08662
+720,720,1458,8,2,worker sum,worker-sum coefficient finite scans,0.0
+720,720,1458,8,3,worker sum,worker-sum order factors,1.398931
+720,720,1458,8,3,worker sum,worker-sum paired coefficient preparation,5.117626
+720,720,1458,8,3,worker sum,worker-sum fused recurrence and accumulation,35.069329
+720,720,1458,8,3,worker sum,worker-sum scaled/per-degree fallback,54.944891
+720,720,1458,8,3,worker sum,worker-sum coefficient finite scans,0.0
+720,720,1458,8,4,worker sum,worker-sum order factors,1.42648
+720,720,1458,8,4,worker sum,worker-sum paired coefficient preparation,5.199279
+720,720,1458,8,4,worker sum,worker-sum fused recurrence and accumulation,35.732168
+720,720,1458,8,4,worker sum,worker-sum scaled/per-degree fallback,56.531343
+720,720,1458,8,4,worker sum,worker-sum coefficient finite scans,0.0
+720,720,1458,8,0,wall phase,latitude and spin-spectrum setup,0.427568
+720,720,1458,8,1,wall phase,spin-1 scalar coefficient cache preparation,2.006494
+720,720,1458,8,2,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",17.812534
+720,720,1458,8,3,wall phase,two inverse longitude FFTs and map writeback,1.393331
+720,720,1458,8,4,wall phase,latitude and spin-spectrum setup,0.403974
+720,720,1458,8,5,wall phase,spin-1 scalar coefficient cache preparation,1.98824
+720,720,1458,8,6,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",17.91766
+720,720,1458,8,7,wall phase,two inverse longitude FFTs and map writeback,1.432133
+720,720,1458,8,8,wall phase,latitude and spin-spectrum setup,0.419422
+720,720,1458,8,9,wall phase,spin-1 scalar coefficient cache preparation,1.946894
+720,720,1458,8,10,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",16.295743
+720,720,1458,8,11,wall phase,two inverse longitude FFTs and map writeback,1.450808
+720,720,1458,8,12,wall phase,latitude and spin-spectrum setup,0.496536
+720,720,1458,8,13,wall phase,spin-1 scalar coefficient cache preparation,2.374101
+720,720,1458,8,14,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",15.528261
+720,720,1458,8,15,wall phase,two inverse longitude FFTs and map writeback,1.434708
+720,720,1458,8,16,wall phase,latitude and spin-spectrum setup,0.418672
+720,720,1458,8,17,wall phase,spin-1 scalar coefficient cache preparation,1.92336
+720,720,1458,8,18,wall phase,"order scheduling, Legendre recurrence, and spectral accumulation",15.725378
+720,720,1458,8,19,wall phase,two inverse longitude FFTs and map writeback,1.503876

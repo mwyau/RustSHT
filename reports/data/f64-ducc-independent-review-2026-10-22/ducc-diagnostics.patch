@@ -1,0 +1,116 @@
+--- a/src/ducc0/sht/sht.cc
++++ b/src/ducc0/sht/sht.cc
+@@ -1,3 +1,9 @@
++#include <atomic>
++static bool review_route_on=false;
++static std::atomic<unsigned long long> review_route_counts[7];
++#include <chrono>
++#include <cstdio>
++#include <cstdlib>
+ /*
+  *  This code is free software; you can redistribute it and/or modify
+  *  it under the terms of the GNU General Public License as published by
+@@ -645,6 +651,8 @@
+       }
+     }
+ 
++  review_route_on = std::getenv("RUSTSHT_REVIEW_SPIN_ROUTE") && spin==1;
++  if (review_route_on) for(auto &count:review_route_counts) count.store(0);
+   vector<ringdata> rdata_normal, rdata_fast;
+   if ((lmax>=500)&&(mode==STANDARD)&&((spin==1)||(spin==2)))
+     {
+@@ -656,6 +664,12 @@
+   else
+     rdata_normal = make_ringdata(theta, lmax, spin);
+ 
++  if (review_route_on) {
++    size_t fast_rings=0,normal_rings=0;
++    for (const auto &rd:rdata_fast) fast_rings+=1+(rd.idx!=rd.midx);
++    for (const auto &rd:rdata_normal) normal_rings+=1+(rd.idx!=rd.midx);
++    std::fprintf(stderr,"REVIEW_DUCC_SPIN_DISPATCH lmax=%zu orders=%zu fast_pairs=%zu fast_rings=%zu direct_pairs=%zu direct_rings=%zu\n",lmax,nm,rdata_fast.size(),fast_rings,rdata_normal.size(),normal_rings);
++  }
+   if (!rdata_fast.empty())
+     {
+     auto norm_l = Ylmgen::get_norm (lmax+spin, 0);
+@@ -748,6 +762,7 @@
+         }
+       }); /* end of parallel region */
+     }
++  if (review_route_on) std::fprintf(stderr,"REVIEW_DUCC_SPIN_COUNTS scalar_inner=%llu direct_inner=%llu scalar_calc=%llu direct_calc=%llu ordinary_kernel=%llu scalar_lanes=%llu direct_lanes=%llu\n",review_route_counts[0].load(),review_route_counts[1].load(),review_route_counts[2].load(),review_route_counts[3].load(),review_route_counts[4].load(),review_route_counts[5].load(),review_route_counts[6].load());
+   }
+ template void alm2leg(  // associated Legendre transform
+   const cmav<complex<float>,2> &alm, // (ncomp, lmidx)
+@@ -1476,9 +1491,16 @@
+     {
+     auto leg(allocate_leg<T>(map.shape(0), theta.shape(0), mstart.shape(0), true,
+                           false, nthreads));
++    auto review_t0=std::chrono::steady_clock::now();
+     alm2leg(alm, leg, spin, lmax, mval, mstart, lstride, theta, nthreads, mode,
+       theta_interpol);
++    auto review_t1=std::chrono::steady_clock::now();
+     leg2map(map, leg, nphi, phi0, ringstart, ringfactor, pixstride, nthreads);
++    auto review_t2=std::chrono::steady_clock::now();
++    if (std::getenv("RUSTSHT_REVIEW_STAGE"))
++      std::fprintf(stderr, "REVIEW_DUCC_SYNTHESIS legendre_us=%.6f fft_us=%.6f\n",
++        std::chrono::duration<double,std::micro>(review_t1-review_t0).count(),
++        std::chrono::duration<double,std::micro>(review_t2-review_t1).count());
+     }
+   }
+ 
+@@ -1777,13 +1799,22 @@
+     vmav<double,1> ringfactor2(ringfactor.shape());
+     for (size_t i=0; i<nphi.shape(0); ++i)
+       ringfactor2(i) = ringfactor(i)/nphi(i);
++    auto review_t0=std::chrono::steady_clock::now();
+     map2leg(map, legi, nphi, phi0, ringstart, ringfactor2, pixstride, nthreads);
++    auto review_t1=std::chrono::steady_clock::now();
+ 
+     resample_to_prepared_CC(legi, npi, spi, lego, spin, lmax, nthreads);
++    auto review_t2=std::chrono::steady_clock::now();
+     vmav<double,1> newtheta({ntheta_leg}, UNINITIALIZED);
+     for (size_t i=0; i<ntheta_leg; ++i)
+       newtheta(i) = (pi*i)/(ntheta_leg-1);
+     leg2alm_internal(alm, lego, spin, lmax, mval, mstart, lstride, newtheta, nthreads, STANDARD, false, true);
++    auto review_t3=std::chrono::steady_clock::now();
++    if (std::getenv("RUSTSHT_REVIEW_STAGE"))
++      std::fprintf(stderr, "REVIEW_DUCC_ANALYSIS fft_us=%.6f resample_us=%.6f legendre_us=%.6f\n",
++        std::chrono::duration<double,std::micro>(review_t1-review_t0).count(),
++        std::chrono::duration<double,std::micro>(review_t2-review_t1).count(),
++        std::chrono::duration<double,std::micro>(review_t3-review_t2).count());
+     return;
+     }
+   else
+--- a/src/ducc0/sht/sht_inner_loop.h
++++ b/src/ducc0/sht/sht_inner_loop.h
+@@ -459,6 +459,7 @@
+   const vector<Ylmgen::dbl2> &coef, const dcmplx * DUCC0_RESTRICT alm,
+   size_t l, size_t il, size_t lmax, size_t nv2)
+   {
++  if (review_route_on) review_route_counts[4].fetch_add(1,std::memory_order_relaxed);
+   if constexpr(Tv::size()>4)  // this loop seems to help AVX512
+     for (; l+6<=lmax; il+=4, l+=8)
+       {
+@@ -542,6 +543,7 @@
+ DUCC0_NOINLINE static void calc_alm2map (const dcmplx * DUCC0_RESTRICT alm,
+   const Ylmgen &gen, s0data_v & DUCC0_RESTRICT d, size_t nth, size_t lstart, size_t lstop)
+   {
++  if (review_route_on) {review_route_counts[2].fetch_add(1,std::memory_order_relaxed);review_route_counts[5].fetch_add(nth,std::memory_order_relaxed);}
+   size_t l,il=0;
+   size_t nv2 = (nth+VLEN-1)/VLEN;
+   iter_to_ieee(gen, d, l, il, nv2, lstart, lstop);
+@@ -919,6 +921,7 @@
+ DUCC0_NOINLINE static void calc_alm2map_spin (const dcmplx * DUCC0_RESTRICT alm,
+   const Ylmgen &gen, sxdata_v & DUCC0_RESTRICT d, size_t nth, size_t lstart, size_t lstop)
+   {
++  if (review_route_on) {review_route_counts[3].fetch_add(1,std::memory_order_relaxed);review_route_counts[6].fetch_add(nth,std::memory_order_relaxed);}
+   size_t l;
+   size_t nv2 = (nth+VLEN-1)/VLEN;
+   iter_to_ieee_spin(gen, d, l, nv2, lstart, lstop);
+@@ -1526,6 +1529,7 @@
+   const vmav<complex<T>,3> &phase, const vector<ringdata> &rdata,
+   Ylmgen &gen, size_t mi)
+   {
++  if (review_route_on) review_route_counts[gen.s==0 ? 0 : 1].fetch_add(1,std::memory_order_relaxed);
+   if (gen.s==0)
+     {
+     // adjust the a_lm for the new algorithm

@@ -1,0 +1,51 @@
+{
+  "reviewed_rust_revision": "7b1629d4f45b6a74cb4ee0e3a53c67f4faa51643",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "rustc_verbose": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+  "rust_flags": "-C target-cpu=x86-64-v3",
+  "ducc_kernel_flags": "-O3 -DNDEBUG -ffast-math -ffp-contract=fast -march=x86-64-v3",
+  "driver_flags": "-O3 -fno-fast-math -ffp-contract=fast -march=x86-64-v3 -std=c++17",
+  "diagnostic_affinity": {
+    "q1": [
+      8
+    ],
+    "q8": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ]
+  },
+  "baseline_affinity": {
+    "q1": [
+      0
+    ],
+    "q8": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ]
+  },
+  "hashes": {
+    "frozen_rust_scalar": "26203773054c1e0a37e015d435cac269a59b3e599ea31e988dae6917a2c7da3a",
+    "frozen_ducc_scalar": "3df1d4408407015c65a85e2909aa34219871bf29a75126b23e497bcbb396c89a",
+    "inspected_rust_spin1": "e112b7d0bf23a7e0d78f2658f27e7abd7442a37629d1e9ef7de8fc76ffc6c1f0",
+    "ducc_scalar_stage": "d2a029779b68286be37c2d8e11c5cb87b31104c0ca1f91da7ae734d52926b7dc",
+    "ducc_spin_counter": "e275e03a02fba1cd777deea50fbe02b44493e60bd78a1f794ea89ded77252137",
+    "ducc_spin_clean": "956484cce8afcd8d6a7d1fdaf8c1e39092c85db6ce8a135a57c76d811d0aae6b",
+    "expanded_rust_diagnostic_tests": "e8bb33dd539ff863dd7d35090671b5d57b624f2debf813b52acc9354622287af"
+  },
+  "scalar_stage_source": "rust-scalar-stage.patch and ducc-scalar-stage.patch, applied to reviewed source and pinned DUCC respectively",
+  "scalar_stage_rust_executable_note": "Stage captures preceded later frequency/output probes. The initial Rust diagnostic executable was rebuilt in place; its capture-time hash was not recorded. The timing-only patch preserves its source changes. Frozen production binaries were never replaced.",
+  "frequency_source": "rust-diagnostics.patch and ducc-diagnostics.patch",
+  "hardware_counters": "Not collected; perf_event_paranoid=4. Assembly evidence is tied to source-selected paths and route counters, not instruction sampling."
+}

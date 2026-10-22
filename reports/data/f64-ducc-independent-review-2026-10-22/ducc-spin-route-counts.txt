@@ -1,0 +1,27 @@
+CASE T499 m499 CC q1
+REVIEW_DUCC_SPIN_DISPATCH lmax=499 orders=500 fast_pairs=0 fast_rings=0 direct_pairs=251 direct_rings=501
+REVIEW_DUCC_SPIN_COUNTS scalar_inner=0 direct_inner=500 scalar_calc=0 direct_calc=948 ordinary_kernel=0 scalar_lanes=0 direct_lanes=98310
+CASE T500 m500 CC q1
+REVIEW_DUCC_SPIN_DISPATCH lmax=500 orders=501 fast_pairs=250 fast_rings=500 direct_pairs=1 direct_rings=2
+REVIEW_DUCC_SPIN_COUNTS scalar_inner=1002 direct_inner=501 scalar_calc=1002 direct_calc=102 ordinary_kernel=1002 scalar_lanes=196636 direct_lanes=102
+CASE T511 m511 CC q1
+REVIEW_DUCC_SPIN_DISPATCH lmax=511 orders=512 fast_pairs=256 fast_rings=511 direct_pairs=1 direct_rings=2
+REVIEW_DUCC_SPIN_COUNTS scalar_inner=1024 direct_inner=512 scalar_calc=1024 direct_calc=102 ordinary_kernel=1024 scalar_lanes=205212 direct_lanes=102
+CASE T511 m511 GL q1
+REVIEW_DUCC_SPIN_DISPATCH lmax=511 orders=512 fast_pairs=256 fast_rings=512 direct_pairs=0 direct_rings=0
+REVIEW_DUCC_SPIN_COUNTS scalar_inner=1024 direct_inner=0 scalar_calc=1024 direct_calc=0 ordinary_kernel=1024 scalar_lanes=204944 direct_lanes=0
+CASE T720 m720 CC q1
+REVIEW_DUCC_SPIN_DISPATCH lmax=720 orders=721 fast_pairs=360 fast_rings=720 direct_pairs=1 direct_rings=2
+REVIEW_DUCC_SPIN_COUNTS scalar_inner=1442 direct_inner=721 scalar_calc=2276 direct_calc=102 ordinary_kernel=2276 scalar_lanes=387360 direct_lanes=102
+CASE T720 m720 CC q8
+REVIEW_DUCC_SPIN_DISPATCH lmax=720 orders=721 fast_pairs=360 fast_rings=720 direct_pairs=1 direct_rings=2
+REVIEW_DUCC_SPIN_COUNTS scalar_inner=1442 direct_inner=721 scalar_calc=2276 direct_calc=102 ordinary_kernel=2276 scalar_lanes=387360 direct_lanes=102
+CASE T720 m180 CC q8
+REVIEW_DUCC_SPIN_DISPATCH lmax=720 orders=181 fast_pairs=360 fast_rings=720 direct_pairs=1 direct_rings=2
+REVIEW_DUCC_SPIN_COUNTS scalar_inner=362 direct_inner=181 scalar_calc=724 direct_calc=102 ordinary_kernel=724 scalar_lanes=128406 direct_lanes=102
+CASE T1023 m1023 CC q8
+REVIEW_DUCC_SPIN_DISPATCH lmax=1023 orders=1024 fast_pairs=512 fast_rings=1023 direct_pairs=1 direct_rings=2
+REVIEW_DUCC_SPIN_COUNTS scalar_inner=2048 direct_inner=1024 scalar_calc=3698 direct_calc=102 ordinary_kernel=3698 scalar_lanes=752512 direct_lanes=102
+CASE T1023 m255 CC q8
+REVIEW_DUCC_SPIN_DISPATCH lmax=1023 orders=256 fast_pairs=512 fast_rings=1023 direct_pairs=1 direct_rings=2
+REVIEW_DUCC_SPIN_COUNTS scalar_inner=512 direct_inner=256 scalar_calc=1024 direct_calc=102 ordinary_kernel=1024 scalar_lanes=254728 direct_lanes=102

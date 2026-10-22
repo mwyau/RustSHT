@@ -1,0 +1,38 @@
+[
+  {
+    "lmax": 499,
+    "mmax": 499,
+    "grid": "CC",
+    "ntheta": 501,
+    "nphi": 1000,
+    "threads": 1,
+    "relative_l2_rust_vs_pinned_ducc": 9.898826886074268e-14,
+    "max_absolute_error": 2.35388597502606e-10,
+    "instrumented_ducc_output_exact": true,
+    "instrumented_ducc_relative_l2": 0.0
+  },
+  {
+    "lmax": 500,
+    "mmax": 500,
+    "grid": "CC",
+    "ntheta": 502,
+    "nphi": 1002,
+    "threads": 1,
+    "relative_l2_rust_vs_pinned_ducc": 1.6264207260229803e-13,
+    "max_absolute_error": 4.959304078511195e-10,
+    "instrumented_ducc_output_exact": false,
+    "instrumented_ducc_relative_l2": 6.97558113318457e-16
+  },
+  {
+    "lmax": 511,
+    "mmax": 511,
+    "grid": "CC",
+    "ntheta": 513,
+    "nphi": 1024,
+    "threads": 1,
+    "relative_l2_rust_vs_pinned_ducc": 1.0798503271784213e-13,
+    "max_absolute_error": 3.1522517929261085e-10,
+    "instrumented_ducc_output_exact": false,
+    "instrumented_ducc_relative_l2": 6.171547980391771e-16
+  }
+]

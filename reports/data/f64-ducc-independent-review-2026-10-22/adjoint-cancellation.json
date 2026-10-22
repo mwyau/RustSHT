@@ -1,0 +1,38 @@
+[
+  {
+    "q": 1,
+    "op": "synthesis",
+    "lhs": -13.102216087886102,
+    "rhs": -13.102216087616423,
+    "relative_to_dot": 2.058266326421719e-11,
+    "normwise_residual": 1.985923753080129e-17,
+    "norm_product_over_dot": 1036427.6691033018
+  },
+  {
+    "q": 1,
+    "op": "analysis",
+    "lhs": 0.6298670896131885,
+    "rhs": 0.6298670896132256,
+    "relative_to_dot": 5.893245345100549e-14,
+    "normwise_residual": 1.8198548100883876e-17,
+    "norm_product_over_dot": 3238.3052276650146
+  },
+  {
+    "q": 8,
+    "op": "synthesis",
+    "lhs": -13.102216087888406,
+    "rhs": -13.102216087616423,
+    "relative_to_dot": 2.0758608087048742e-11,
+    "normwise_residual": 2.0028998362242066e-17,
+    "norm_product_over_dot": 1036427.6691031194
+  },
+  {
+    "q": 8,
+    "op": "analysis",
+    "lhs": 0.6298670896131885,
+    "rhs": 0.6298670896132256,
+    "relative_to_dot": 5.893245345100549e-14,
+    "normwise_residual": 1.8198548100883876e-17,
+    "norm_product_over_dot": 3238.3052276650146
+  }
+]
