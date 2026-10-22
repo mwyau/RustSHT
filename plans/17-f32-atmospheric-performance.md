@@ -33,6 +33,12 @@ about 8× to 179× across the screened cells. DUCC's f32 public API uses double
 intermediates in the scalar recurrence. See the baseline report for timings,
 uncertainty, numerical errors and scope limitations.
 
+The first tested f32 spin normal-range skip candidate was not promoted: it
+improved selected T720 cases but regressed T255/T511 even when its SIMD scan
+was gated off. It passed f32 integration, adjoint and extreme-range tests; the
+candidate and matched measurements are summarized in the
+[experiment report](../reports/plan17-f32-spin-normal-range-2026-10-22.md).
+
 Only if Milestone A establishes a material f32 recurrence/accumulation gap:
 - Compare f32's executed spin recurrence and normal/scaled SIMD pathways with the best **validated** Plan 16 f64 algorithm; determine which structural optimizations can be translated safely and which require f32-specific scaling or precision handling.
 - Check reciprocal/sqrt/trigonometric placement, mixed-precision coefficients, unnecessary conversions and intermediate memory traffic against DUCC's actual f32 implementation. Do not assume widening/narrowing is wasteful until correctness/relative costs are measured.

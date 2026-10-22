@@ -142,6 +142,12 @@ and its [CSV](reports/data/plan17-f32-native-baseline-2026-10-22/results/results
 [JSON distributions](reports/data/plan17-f32-native-baseline-2026-10-22/results/results.json),
 and [coverage audit](reports/data/plan17-f32-native-baseline-2026-10-22/results/coverage-audit.json).
 
+The first Plan 17 spin-f32 normal-range skip candidate passed f32, adjoint,
+extreme and reset checks and improved selected T720 workloads by 2.6–8.8%.
+It also regressed T255/T511 by 2.3–4.6%, including T511 with the scan disabled
+below the work cutoff, so the candidate was removed from production. The
+matched evidence is in the [range-skip experiment report](reports/plan17-f32-spin-normal-range-2026-10-22.md).
+
 **Constraints:** preserve strict Rust floating-point semantics, checked
 exceptional-value fallbacks, portable Pulp SIMD, the stable API, and the
 existing guarded paired odd-row scope. Keep DUCC 0.42.0 pinned at
