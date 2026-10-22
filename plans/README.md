@@ -6,7 +6,7 @@
 
 1. **COMPLETE:** [Owner-directed scalar-analysis cumulative ablation](../reports/scalar-analysis-cumulative-ablation-2026-10-21.md). The known-good production path is staged output, checked range-proof cache, and fixed 256-pair tile.
 2. **COMPLETE:** [16 — DUCC spin-1 recurrence and dataflow](16-ducc-spin1-recurrence-parity.md). Milestone E extends the bounded q8 coefficient cache to T1023/34 MiB and closes CC/F1 analysis-resampling attribution.
-3. **NEXT AFTER OWNER CHECKPOINT:** [17 — f32 and high-resolution atmospheric SHT performance](17-f32-atmospheric-performance.md). Establish current matched native DUCC f32 scalar/spin-1 parity and address only measured f32 or T1023–T2047 scaling gaps; preserve odd-FFT hold.
+3. **CURRENT:** [17 — f32 and high-resolution atmospheric SHT performance](17-f32-atmospheric-performance.md). Establish current matched native DUCC f32 scalar/spin-1 parity and address only measured f32 or T1023–T2047 scaling gaps; preserve odd-FFT hold.
 4. **DEFERRED, NOT AUTOMATIC:** [12 — Cache-informed Legendre dispatch](12-cache-informed-legendre-dispatch.md) and [13 — True fused batched SHT](13-fused-batched-sht.md). These are separate future projects and require explicit owner authorization.
 
 ## Completed and retained
@@ -15,9 +15,9 @@
 - **[14 — Small serial and parallel SHT parity](14-small-serial-parallel-performance.md):** completed at `f2d9ce47fdf04946ef5cbe478a30b0fc38956f8e`.
 - **[15 — Spin-1 vector GL/CC/F1 performance](15-spin1-vector-gl-cc-f1-performance.md):** completed. Its synthesis dataflow closeout retains accepted scheduling/coefficient-reuse changes and negative SIMD experiments.
 
-**Owner-directed checkpoint:** the guarded paired odd-longitude FFT is already in production (commits `c70b19a3`/`a2c5535d`). Its current-source T0–T256 correctness validation is in [the production validation report](../reports/paired-odd-longitude-fft-production-validation-2026-10-22.md). Plan 14 remains complete. The current scalar dispatch/paired-FFT evidence checkpoint precedes Plan 17; it does not reopen Plan 14 or authorize an FFT rewrite.
+**Completed owner-directed checkpoint:** the guarded paired odd-longitude FFT is already in production (commits `c70b19a3`/`a2c5535d`). Its current-source T0–T256 correctness validation and selector-refresh A/B are in [the production validation report](../reports/paired-odd-longitude-fft-production-validation-2026-10-22.md). The full scalar sweep and table-policy evidence are linked from [PERFORMANCE_STATUS.md](../PERFORMANCE_STATUS.md). Plan 14 remains complete; the checkpoint did not authorize an FFT rewrite.
 
-The owner-directed [current-source native scalar sweep](../reports/ducc-full-transform-parity-current-2026-10-22.md) covers exhaustive T0–T256 plus selected sizes through T3072 against pinned DUCC. It changes no production scalar implementation. Plan 16 Milestone E is now complete; Plan 17 follows the current owner-directed scalar dispatch/paired-FFT checkpoint.
+The owner-directed [current-source native scalar sweep](../reports/ducc-full-transform-parity-current-2026-10-22.md) covers exhaustive T0–T256 plus selected sizes through T3072 against pinned DUCC. Its scalar and FFT paths are unchanged at current HEAD; intervening commits changed only the spin-1 cache gate and test. Plan 16 is complete and Plan 17 is current.
 
 **Owner hold:** do not expand or further optimize the existing paired-real-row odd-length FFT route, substitute `realfft`, or add standalone/custom FFT backends without explicit further owner direction. The current validation and full-transform measurement checkpoint do not change Plan 16/17 scope. Keep odd/even sampling as correctness and performance controls. Do not extend Plan 17 into batch APIs or Plan 12's cache-detection machinery.
 

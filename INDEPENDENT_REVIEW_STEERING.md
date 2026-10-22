@@ -14,6 +14,6 @@ The guarded paired odd-length FFT is likewise intentionally integrated. [Current
 
 ## Current direction
 
-No independent redirection is warranted from these previously reviewed findings. Continue [Plan 16 Milestone E](plans/16-ducc-spin1-recurrence-parity.md) and then Plan 17, as directed in [AGENTS.md](AGENTS.md).
+No independent redirection is warranted from these previously reviewed findings. Plan 16 and the owner-directed scalar dispatch/paired-FFT/full-sweep checkpoint are complete; continue Plan 17 as directed in [AGENTS.md](AGENTS.md).
 
 Future independent reviewers should replace this resolved status only for a fresh, material, evidence-backed finding; otherwise leave it unchanged. This note is advisory and always subordinate to explicit owner instructions.

@@ -116,6 +116,49 @@ per-process distributions are linked here:
 - [Paired-enabled process samples](data/paired-fft-validation-2026-10-22/matched-ab-enabled.json)
 - [Pair-disabled process samples](data/paired-fft-validation-2026-10-22/matched-ab-disabled.json)
 
+## Final-source selector refresh
+
+The scalar selector changed after the earlier paired-on/off screen only for the
+T63 q8 exact-grid synthesis route (table to recurrence). I rebuilt both paired
+and compile-time pair-disabled workers from current HEAD `32bb8b4b` and reran that
+affected full-order odd-minimum case against the same pinned DUCC. Both builds
+used x86-64-v3; q8 ran on CPUs 0–7. Each route variant collected three
+Rust/DUCC process pairs and 30 calibrated batches targeting 25 ms. The paired
+campaign ran before the independent-row campaign, so the A/B is one-cell
+confirmation rather than a broad route re-evaluation.
+
+| T | route | Rust µs [p10, p90] | DUCC µs [p10, p90] | Rust/DUCC | relative L2 vs DUCC |
+|---:|---|---:|---:|---:|---:|
+| 63 q8 synthesis, nphi=127 | paired | 36.405 [36.115, 37.369] | 75.721 [74.971, 76.611] | 0.481 | `1.465e-14` |
+| 63 q8 synthesis, nphi=127 | independent | 38.072 [37.513, 39.084] | 75.846 [75.122, 78.979] | 0.502 | `1.464e-14` |
+
+The current-source paired/independent Rust median ratio is 0.956 (about 4.4%
+faster with pairing). This result confirms the changed selector cell still uses
+and benefits from the existing paired inverse route; it does not alter FFT
+eligibility or the empirical guard. See [the sanitized CSV](data/paired-fft-validation-2026-10-22/final-source-t63-q8-synthesis.csv) and [metadata](data/paired-fft-validation-2026-10-22/final-source-t63-q8-synthesis-metadata.json).
+
+## Reproduce the final-source selector refresh
+
+With current HEAD checked out and `DUCC_SRC` pointing at the pinned DUCC tree:
+
+```sh
+CARGO_TARGET_DIR=target-paired-final-on \
+RUSTSHT_FULL_TRANSFORM_RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs' \
+python3 scripts/benchmark_ducc_full_transform_parity.py --ducc-src "$DUCC_SRC" \
+  --ducc-revision 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b \
+  --production-source-revision 32bb8b4b --lmax 63 --full-mmax-only \
+  --longitude-mode odd_minimum --operation synthesis --threads 8 \
+  --results-dir paired-final-on --no-report
+
+CARGO_TARGET_DIR=target-paired-final-off \
+RUSTSHT_FULL_TRANSFORM_RUSTFLAGS='-C target-cpu=x86-64-v3 -Aunexpected_cfgs --cfg rustsht_disable_paired_odd_fft' \
+python3 scripts/benchmark_ducc_full_transform_parity.py --ducc-src "$DUCC_SRC" \
+  --ducc-revision 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b \
+  --production-source-revision 32bb8b4b --lmax 63 --full-mmax-only \
+  --longitude-mode odd_minimum --operation synthesis --threads 8 \
+  --results-dir paired-final-off --no-report
+```
+
 ## Source and reproduction
 
 - Production baseline: `cc6c5aba` on `opt/sht-performance-parity`.

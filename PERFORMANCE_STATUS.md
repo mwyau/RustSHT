@@ -1,10 +1,9 @@
 # RustSHT performance checkpoint — current findings
 
-**Active sequence (2026-10-22):** the scalar-analysis cumulative ablation and
-Plan 16 are complete. The current owner-directed checkpoint is the scalar
-Legendre dispatch and paired odd-FFT validation/sweep; return to Plan 17 after
-that checkpoint. Plans 14 and 15 are complete; Plans 12 and 13 remain deferred.
-**Branch:**
+**Active sequence (2026-10-22):** Plans 14–16 and the owner-directed scalar
+Legendre dispatch, paired odd-FFT validation and T0–T3072 full-transform
+checkpoint are complete. Plan 17 Milestone A is current. Plans 12 and 13 remain
+deferred. **Branch:**
 `opt/sht-performance-parity`.
 
 ## Scalar-analysis cumulative ablation
@@ -114,9 +113,16 @@ interfered with (for example, T2047 reduced-order analysis), so distributions
 and telemetry are retained and no samples were removed. The four ratio plots,
 absolute timings, CSV/JSON results and coverage audit are in the
 [full-sweep report](reports/ducc-full-transform-parity-current-2026-10-22.md).
-The scalar sweep itself changed no production code. Plan 16 Milestone E is
-closed above; after the owner-directed scalar dispatch/paired-FFT checkpoint,
-resume the original queue at Plan 17.
+The scalar sweep itself changed no scalar production code. Its source was
+`819d1f44`; current HEAD `32bb8b4b` adds only the spin-1 T1023 cache gate and
+test in `src/spin_transform.rs` and `src/spin_transform/tests.rs`, with no
+changes to scalar Legendre or FFT paths. On current HEAD, the exhaustive
+paired-versus-independent correctness test again passed every T0–T256 case at
+q1/q8 and in serial/no-default-features mode. A same-current-source T63 q8
+odd-synthesis refresh measured 36.405 µs paired versus 38.072 µs independent
+(0.956×), with Rust/DUCC ratios 0.481/0.502 and maximum relative L2 below
+`1.5e-14`; this single cell is supplemental, not a new broad FFT claim. Plan 17
+Milestone A is now current.
 
 **Constraints:** preserve strict Rust floating-point semantics, checked
 exceptional-value fallbacks, portable Pulp SIMD, the stable API, and the

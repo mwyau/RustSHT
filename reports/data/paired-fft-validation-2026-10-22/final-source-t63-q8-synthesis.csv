@@ -1,0 +1,3 @@
+route,source_revision,ducc_revision,lmax,mmax,ntheta,nphi,operation,threads,rust_warm_median_us,rust_warm_p10_us,rust_warm_p90_us,ducc_warm_median_us,ducc_warm_p10_us,ducc_warm_p90_us,rust_ducc_ratio,relative_l2_vs_ducc,batch_count,process_pairs
+paired_enabled,32bb8b4b822a38f1ef20f505c580c09eeba5e0b4,42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b,63,63,64,127,synthesis,8,36.404894999999996,36.1153712,37.369264,75.7206,74.9714,76.61146000000001,0.4807792727474426,1.4646052441390595e-14,30,3
+paired_disabled,32bb8b4b822a38f1ef20f505c580c09eeba5e0b4,42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b,63,63,64,127,synthesis,8,38.0718605,37.512783299999995,39.0836003,75.846,75.12165,78.97870999999999,0.501962667774174,1.4641698399961754e-14,30,3

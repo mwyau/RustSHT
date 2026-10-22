@@ -1,0 +1,14 @@
+{
+  "source_revision": "32bb8b4b822a38f1ef20f505c580c09eeba5e0b4",
+  "ducc_revision": "42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b",
+  "case": "T63 GL scalar f64 synthesis, full mmax=63, ntheta=64, odd-minimum nphi=127, phi0=0.23, q8",
+  "rust_flags": "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
+  "rust_runtime_backend": "Pulp V3, AVX2/FMA",
+  "ducc_sht_flags": "-O3 -ffast-math -ffp-contract=fast -march=x86-64-v3",
+  "ducc_driver_flags": "-O3 -fno-fast-math -ffp-contract=fast -march=x86-64-v3",
+  "host": "AMD Ryzen 9 5950X; q8 CPUs 0-7, one L3 domain",
+  "protocol": "3 independent Rust/DUCC process pairs per route variant; 10 calibrated ~25 ms batches per process; Rust and DUCC interleaved within each process pair; paired-enabled campaign ran before paired-disabled campaign; same fixtures and source, only compile-time paired-route cfg differs.",
+  "route": "Enabled route is supported for odd-nphi f64 scalar; disabled control compiled with rustsht_disable_paired_odd_fft.",
+  "purpose": "Refresh only the T63 q8 synthesis cell whose scalar Legendre route changed after the earlier paired A/B screen. No broader performance conclusion is drawn from this single cell.",
+  "raw_process_telemetry": "Kept local and untracked."
+}
