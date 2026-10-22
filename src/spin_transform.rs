@@ -296,6 +296,43 @@ impl<T: ShtScalar> ShtPlan<T> {
             false,
             Some(self.grid.ring_weights()),
             true,
+            true,
+            workspace,
+        )
+    }
+
+    /// Projects two map components onto spin E/B harmonics using grid
+    /// quadrature without requiring exact latitude sampling.
+    ///
+    /// Under-resolved latitude grids produce quadrature and sampling error.
+    /// Longitude sampling must still support every requested order. Degrees
+    /// below the plan spin are returned as zero.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the plan spin is outside `1..=4`, longitude
+    /// sampling is insufficient, a buffer length differs from the plan, or
+    /// the workspace is incompatible.
+    pub fn analysis_spin_projected_into(
+        &self,
+        first_component: &[T],
+        second_component: &[T],
+        e_alm: &mut [Complex<T>],
+        b_alm: &mut [Complex<T>],
+        workspace: &mut ShtWorkspace<T>,
+    ) -> Result<(), ShtError> {
+        let spin = self.supported_spin()?;
+        self.check_analysis_longitude()?;
+        self.map_to_spin_coefficients(
+            first_component,
+            second_component,
+            e_alm,
+            Some(b_alm),
+            spin,
+            false,
+            Some(self.grid.ring_weights()),
+            true,
+            false,
             workspace,
         )
     }
@@ -331,6 +368,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             false,
             None,
             false,
+            false,
             workspace,
         )
     }
@@ -363,6 +401,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             spin,
             false,
             None,
+            false,
             false,
             workspace,
         )
@@ -420,6 +459,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             1,
             true,
             None,
+            false,
             false,
             workspace,
         )
@@ -583,6 +623,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         derivative_norm: bool,
         ring_weights: Option<&[f64]>,
         normalize_fourier: bool,
+        resample_cc: bool,
         workspace: &mut ShtWorkspace<T>,
     ) -> Result<(), ShtError> {
         if !matches!(recurrence_spin, 1..=MAX_SUPPORTED_SPIN) {
@@ -722,7 +763,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         ) = if let Some(resampling) = self
             .cc_resampling
             .as_ref()
-            .filter(|_| ring_weights.is_some())
+            .filter(|_| ring_weights.is_some() && resample_cc)
         {
             #[cfg(all(test, feature = "parallel"))]
             let meridional_started = std::time::Instant::now();

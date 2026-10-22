@@ -3,13 +3,17 @@
 
 use numpy::ndarray::{ArrayD, IxDyn};
 use numpy::{
-    Complex64, Element, IntoPyArray, PyArrayDyn, PyArrayMethods, PyReadonlyArrayDyn,
+    Complex32, Complex64, Element, IntoPyArray, PyArrayDyn, PyArrayMethods, PyReadonlyArrayDyn,
     PyUntypedArrayMethods,
 };
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use rustsht::{GridKind, GridSpec, HarmonicSpec, ShtError, ShtPlan};
 use std::sync::{Mutex, MutexGuard};
+
+type PythonFloat32ArrayPair<'py> = (Bound<'py, PyArrayDyn<f32>>, Bound<'py, PyArrayDyn<f32>>);
+
+mod pyspharm;
 
 /// Reusable spherical transform plan for GL, CC and F1 grids.
 ///
@@ -659,6 +663,79 @@ fn get_gridweights<'py>(
     output_array(py, &[ntheta], weights)
 }
 
+/// Evaluate pyspharm-normalized associated Legendre functions at one latitude.
+#[pyfunction]
+#[pyo3(signature = (latitude_degrees, ntrunc))]
+fn pyspharm_legendre<'py>(
+    py: Python<'py>,
+    latitude_degrees: f32,
+    ntrunc: usize,
+) -> PyResult<Bound<'py, PyArrayDyn<f32>>> {
+    let values = py
+        .detach(move || rustsht::pyspharm::associated_legendre_f32(latitude_degrees, ntrunc))
+        .map_err(to_python_error)?;
+    output_array(py, &[values.len()], values)
+}
+
+/// Interpolate one pyspharm-packed scalar spectrum at a longitude.
+#[pyfunction]
+#[pyo3(signature = (longitude_degrees, coefficients, legendre))]
+fn pyspharm_specintrp(
+    py: Python<'_>,
+    longitude_degrees: f32,
+    coefficients: PyReadonlyArrayDyn<'_, Complex32>,
+    legendre: PyReadonlyArrayDyn<'_, f32>,
+) -> PyResult<f32> {
+    if coefficients.ndim() != 1 || legendre.ndim() != 1 {
+        return Err(PyValueError::new_err(
+            "coefficients and legendre must be rank-one arrays",
+        ));
+    }
+    let coefficients = coefficients
+        .as_slice()
+        .map_err(|_| contiguous_error("coefficients"))?;
+    let legendre = legendre
+        .as_slice()
+        .map_err(|_| contiguous_error("legendre"))?;
+    py.detach(move || rustsht::pyspharm::specintrp_f32(longitude_degrees, coefficients, legendre))
+        .map_err(to_python_error)
+}
+
+/// Return pyspharm-ordered geodesic latitudes and longitudes in degrees.
+#[pyfunction]
+#[pyo3(signature = (subdivision))]
+fn pyspharm_getgeodesicpts<'py>(
+    py: Python<'py>,
+    subdivision: usize,
+) -> PyResult<PythonFloat32ArrayPair<'py>> {
+    let (latitudes, longitudes) = py
+        .detach(move || {
+            let points = rustsht::pyspharm::geodesic_points(subdivision)?;
+            let mut latitudes = Vec::new();
+            let mut longitudes = Vec::new();
+            latitudes
+                .try_reserve_exact(points.len())
+                .map_err(|_| ShtError::AllocationFailed {
+                    array: "pyspharm geodesic latitudes",
+                })?;
+            longitudes
+                .try_reserve_exact(points.len())
+                .map_err(|_| ShtError::AllocationFailed {
+                    array: "pyspharm geodesic longitudes",
+                })?;
+            for point in points {
+                let (latitude, longitude) = point.pyspharm_lat_lon_degrees();
+                latitudes.push(latitude);
+                longitudes.push(longitude);
+            }
+            Ok((latitudes, longitudes))
+        })
+        .map_err(to_python_error)?;
+    let latitudes = output_array(py, &[latitudes.len()], latitudes)?;
+    let longitudes = output_array(py, &[longitudes.len()], longitudes)?;
+    Ok((latitudes, longitudes))
+}
+
 fn lock_workspace<'a>(
     workspaces: &'a Mutex<Option<rustsht::ShtWorkspace>>,
     plan: &ShtPlan,
@@ -804,5 +881,9 @@ fn _rustsht(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(adjoint_synthesis_2d, module)?)?;
     module.add_function(wrap_pyfunction!(adjoint_analysis_2d, module)?)?;
     module.add_function(wrap_pyfunction!(get_gridweights, module)?)?;
+    module.add_function(wrap_pyfunction!(pyspharm_legendre, module)?)?;
+    module.add_function(wrap_pyfunction!(pyspharm_specintrp, module)?)?;
+    module.add_function(wrap_pyfunction!(pyspharm_getgeodesicpts, module)?)?;
+    pyspharm::register(module)?;
     Ok(())
 }

@@ -14,6 +14,7 @@ mod harmonics;
 mod legendre;
 mod meridional;
 mod plan;
+pub mod pyspharm;
 mod spin_transform;
 mod transform;
 mod workspace;

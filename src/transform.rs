@@ -1881,7 +1881,34 @@ impl<T: ShtScalar> ShtPlan<T> {
         check_len("coefficient output", self.harmonics.nalm(), alm.len())?;
         self.check_workspace(workspace)?;
 
-        self.analyze_map_to_coefficients(map, alm, workspace, Some(self.grid.ring_weights()))
+        self.analyze_map_to_coefficients(map, alm, workspace, Some(self.grid.ring_weights()), true)
+    }
+
+    /// Projects map samples onto scalar harmonics using native ring weights.
+    ///
+    /// This operation skips the CC meridional resampling used by exact
+    /// analysis and does not require enough latitude rings to make the
+    /// projection exact. On an under-resolved grid, the returned coefficients
+    /// include quadrature and sampling error. Longitude sampling must still
+    /// support every requested order.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for non-scalar spin, insufficient longitude sampling,
+    /// a buffer length mismatch, or an incompatible workspace.
+    pub fn analysis_projected_into(
+        &self,
+        map: &[T],
+        alm: &mut [Complex<T>],
+        workspace: &mut ShtWorkspace<T>,
+    ) -> Result<(), ShtError> {
+        self.check_scalar_spin()?;
+        self.check_analysis_longitude()?;
+        check_len("map input", self.sample_count, map.len())?;
+        check_len("coefficient output", self.harmonics.nalm(), alm.len())?;
+        self.check_workspace(workspace)?;
+
+        self.analyze_map_to_coefficients(map, alm, workspace, Some(self.grid.ring_weights()), false)
     }
 
     /// Applies the adjoint of scalar synthesis under the Euclidean map dot
@@ -1906,7 +1933,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         check_len("coefficient output", self.harmonics.nalm(), alm.len())?;
         self.check_workspace(workspace)?;
 
-        self.analyze_map_to_coefficients(map, alm, workspace, None)
+        self.analyze_map_to_coefficients(map, alm, workspace, None, false)
     }
 
     /// Applies the adjoint of exact scalar analysis.
@@ -2011,6 +2038,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         alm: &mut [Complex<T>],
         workspace: &mut ShtWorkspace<T>,
         ring_weights: Option<&[f64]>,
+        resample_cc: bool,
     ) -> Result<(), ShtError> {
         let ntheta = self.grid.ntheta();
         let nphi = self.grid.nphi();
@@ -2111,7 +2139,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         let (analysis_spectra, analysis_ntheta, analysis_ring_weights) = if let Some(resampling) =
             self.cc_resampling
                 .as_ref()
-                .filter(|_| ring_weights.is_some())
+                .filter(|_| ring_weights.is_some() && resample_cc)
         {
             for value in &mut workspace.spectra {
                 *value /= T::from_usize(nphi).expect("longitude count converts");
@@ -3183,6 +3211,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                 ntheta: self.grid.ntheta(),
             });
         }
+        self.check_analysis_longitude()
+    }
+
+    pub(crate) fn check_analysis_longitude(&self) -> Result<(), ShtError> {
         if self.harmonics.mmax() > (self.grid.nphi() - 1) / 2 {
             return Err(ShtError::AnalysisLongitudeUndersampled {
                 mmax: self.harmonics.mmax(),

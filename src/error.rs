@@ -48,6 +48,16 @@ pub enum ShtError {
     NonRealFftEdge { index: usize },
     /// A checked size or offset calculation overflowed `usize`.
     IntegerOverflow { quantity: &'static str },
+    /// A packed coefficient count is not a complete triangular truncation.
+    InvalidTriangularLength { length: usize },
+    /// Latitude and longitude arrays have different point counts.
+    PointCountMismatch { latitudes: usize, longitudes: usize },
+    /// A latitude coordinate is not finite.
+    NonFiniteLatitude,
+    /// A longitude coordinate is not finite.
+    NonFiniteLongitude,
+    /// An icosahedral subdivision must contain at least its two poles.
+    InvalidGeodesicSubdivision { subdivision: usize },
     /// The requested workspace execution capacity is outside this build's limit.
     InvalidExecutionCapacity { requested: usize, maximum: usize },
 }
@@ -140,6 +150,23 @@ impl Display for ShtError {
             Self::IntegerOverflow { quantity } => {
                 write!(f, "{quantity} does not fit in usize")
             }
+            Self::InvalidTriangularLength { length } => write!(
+                f,
+                "packed array length {length} is not a triangular harmonic truncation"
+            ),
+            Self::PointCountMismatch {
+                latitudes,
+                longitudes,
+            } => write!(
+                f,
+                "received {latitudes} latitudes and {longitudes} longitudes"
+            ),
+            Self::NonFiniteLatitude => f.write_str("latitude must be finite"),
+            Self::NonFiniteLongitude => f.write_str("longitude must be finite"),
+            Self::InvalidGeodesicSubdivision { subdivision } => write!(
+                f,
+                "geodesic subdivision must be at least 1, received {subdivision}"
+            ),
             Self::InvalidExecutionCapacity { requested, maximum } => write!(
                 f,
                 "workspace execution capacity must be between 1 and {maximum}, received {requested}"
