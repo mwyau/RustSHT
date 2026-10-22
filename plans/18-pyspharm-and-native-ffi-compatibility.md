@@ -49,6 +49,18 @@ Implement production Rust APIs, including f32 and f64 where scientifically meani
 
 These are new functions: the current public Rust and PyO3 APIs do **not** expose pyspharm `legendre`, `specintrp` or `getgeodesicpts`. Run Rust unit/analytic tests, available DUCC independent tests and no-default-features tests.
 
+## Immediate continuation after Rust numerical milestone
+
+**Owner direction (2026-10-22):** After the separate `feat/pyspharm-numerics` agent has implemented and validated `legendre`, pointwise spectral synthesis/`specintrp`, and `getgeodesicpts`, **continue directly to the `pyspharm-rs` Python package, PyO3 bindings, full pyspharm API and tests in Milestones C–D. Do not stop at a Rust-only report or wait for a new planning prompt.** This explicitly supersedes the earlier standalone numerical-task instruction not to implement Python wrappers, but **only after the three Rust functions have passed their dedicated tests**. Do not start the wrapper while core numerical validity remains unresolved.
+
+Use the isolated numerical feature worktree once the Rust changes are committed, or create a successor feature branch from that tested commit. Do not modify the active `opt/sht-performance-parity` worktree, force-push, merge to `main`, or publish either package. Synchronize with the latest `main` safely before final integration; handle divergent numerical commits by ordinary merge/cherry-pick/rebase on **the isolated feature branch**, never by resetting someone else's branch. Other work on Plans 16/17 continues independently.
+
+**Required Python outcome:** `pip install pyspharm-rs` installs the distribution and its `rustsht` dependency, while existing code uses **`import spharm`** and its ordinary methods with *no source edit*. The compatibility module resides at `python/pyspharm-rs/spharm.py`; `python/pyspharm-rs/pyproject.toml` must explicitly package that `spharm` module. Do not introduce a mandatory `spharm_rs` import, `rustsht.compat` namespace, additional `compat/` directory, or duplicate native numerical extension. User code does not have to import `rustsht` explicitly; the wrapper imports it internally.
+
+Implement the complete documented `Spharmt` and module-level API from the source-derived inventory, **not just adapters for the three new numerical functions**. Reuse RustSHT's scalar/spin, gradient, quadrature and spectral helpers, supplying additional Rust functionality when a mathematical operation is actually missing. Keep Python-level layout, conversion, validation and public-signature behavior in the thin wrapper. Establish parity on `uv`-managed Python 3.13 reference environments with original pyspharm and pyspharm-syl; run unchanged windspharm usage and preserve the distribution-metadata limitation already documented below. Verify clean installation of both wheels without import overlap or unintended non-NumPy Python runtime requirements.
+
+**Scope boundary:** no C, C++, Fortran or SPHEREPACK 3.2 ABI work is required before completing and testing the `pyspharm-rs` Python interface. Those interfaces remain the independent Milestone F. Packaging and publication preparation may proceed, but actual PyPI releases and Git tags require explicit owner authorization.
+
 ## Milestone C — Python bindings and documented pyspharm interface
 
 1. Make the native `rustsht` extension expose f32/complex64 as well as existing f64/complex128 where supported by Rust; do not force reference float32 inputs through a public float64-only API. Preserve RustSHT's native contiguous ring-major map layout and coefficient storage.
@@ -86,6 +98,6 @@ Treat original SPHEREPACK 3.2 compatibility as a **separate subproject and relea
 
 ## Handoff and completion
 
-Create an implementation branch (suggested `feat/pyspharm-rs`) **from synchronized main**, not from the active optimization branch. Work on one independently testable milestone at a time, with small commits. Read current `AGENTS.md` before changes; safely fetch and integrate concurrent work before any push, never reset or force-push, and do not change `main` without owner direction.
+After the three numerical functions are tested on `feat/pyspharm-numerics`, continue in that isolated feature worktree (or create a successor `feat/pyspharm-rs` branch from its tested HEAD) to implement the Python package and complete its compatibility tests. The eventual integrated branch must be based on safely synchronized `main`, not the active optimization branch. Work on one independently testable milestone at a time, with small commits. Read current `AGENTS.md` before changes; safely fetch and integrate concurrent work before any push, never reset or force-push, and do not change `main` without owner direction.
 
 At closeout provide: checked-in API inventory and reference SHAs, numerical and error comparison tables, Rust unit and Python tests, windspharm integration result, Python/version/platform wheel test matrix, measured layout/performance results, public compatibility limitations, release artifacts/workflows when authorized, and a separate disposition of native/SPHEREPACK ABIs. Do not publish packages or tags unless the owner explicitly directs a release.
