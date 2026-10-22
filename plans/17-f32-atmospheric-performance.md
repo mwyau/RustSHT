@@ -4,7 +4,7 @@
 
 ## Handoff and stopping discipline
 
-1. The owner-directed scalar dispatch/paired-FFT/full-sweep checkpoint and Plan 16 closeouts are complete. The current Plan 17 baseline is HEAD `09460dd7`; the full f64 scalar sweep is from `819d1f44`, whose scalar/FFT production paths remain unchanged. The latest commit adds only test-only f32 normalizer counters and reporting. Use current HEAD for f32 comparisons, fetch/integrate remote changes safely, and rerun affected checks after any source update. Later explicit owner instructions supersede this queue.
+1. The owner-directed scalar dispatch/paired-FFT/full-sweep checkpoint and Plan 16 closeouts are complete. Plan 17 Milestone A's initial native f32 baseline used source `dcb3836603aaee0133b544fa4510e1da597dca62`; the full f64 scalar sweep is from `819d1f44`, whose scalar/FFT production paths remain unchanged. The current Plan 17 production source includes the accepted recurrence-step inlining and SIMD normalizer precheck at `9dea4143`; use that source for the next f32 comparison. Fetch/integrate remote changes safely and rerun affected checks after source updates. Later explicit owner instructions supersede this queue.
 2. Build a **current source** benchmark baseline before any f32 optimization. Do not divide October 15 archival Rust f32 timings by current DUCC or present old numbers as current. Stop investigating any operation whose matched whole-transform results are already competitive or whose remaining gap cannot be attributed.
 3. Close each experiment with an accepted improvement or an explained negative result. Continue to the next independently justified milestone rather than waiting for routine approvals. If all hypotheses are closed, conclude Plan 17 rather than inventing work.
 
