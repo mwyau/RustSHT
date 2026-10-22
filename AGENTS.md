@@ -10,6 +10,8 @@ Explicit current owner instructions take precedence;
 other archived plans/reviews and benchmark reports are historical evidence.
 Read the current active plan and production source before acting.
 
+**Independent review (advisory; owner instructions take precedence):** when present, read [INDEPENDENT_REVIEW_STEERING.md](INDEPENDENT_REVIEW_STEERING.md) for evidence-backed branch-state or technical steering before changing scope.
+
 - **Scope/sequence:** Scalar cumulative ablation is closed with production on the staged 256-pair path. Execute Plan 16 milestones A–E, followed by Plan 17's f32/high-bandlimit milestones, one attributable hypothesis at a time. Plans 12/13 remain deferred unless separately authorized. Do not reopen completed Plan 15's rejected loop reversal or fallback compaction without a new measured mechanism. Respect the separate GL/CC/F1 routes and adjoints.
 - **Numerics:** preserve the Rust API, independent `S/A/S*/A*` operators, GL/CC/F1, f32/f64, spin 0–4, correct scaling/phase/weights, subnormal and extreme-value safeguards, SIMD tails, serial/parallel behavior and checked fallbacks. Verify against pinned DUCC **and** analytic/adjoint tests; never relax tolerances for speed.
 - **Implementation:** stable Rust, portable runtime Pulp SIMD and bounded caller-owned scratch. Neutral RustSHT source names, correct GPL-2.0-or-later and translated DUCC attribution. Archive demonstrably retired prototypes; do not retain layers of competing kernels.
