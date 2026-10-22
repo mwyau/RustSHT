@@ -1500,7 +1500,7 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
         {key: value for key, value in case.items() if key not in {"map_path", "alm_path"}}
         for case in cases
     ]
-    public_samples = [
+    public_samples = raw if metadata.get("retain_local_host_telemetry") else [
         {key: value for key, value in sample.items() if key != "host_diagnostics"}
         for sample in raw
     ]
@@ -1734,7 +1734,7 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
         "## Scope and method",
         "",
         f"The case manifest contains {len(cases)} distinct GL geometries: every `lmax=0…256` plus {len([value for value in DENSE_SWEEP_HIGH_LMAX if value > 256])} selected higher degrees through T3072. Every degree includes full and quarter-order `mmax` with even FFT-smooth longitude; selected small, dispatch-boundary and high-resolution cases also include odd-minimum longitude. Each transform uses `ntheta=lmax+1`, `phi0=0.23`, the full permitted degree/order triangle and deterministic PCG64 fixtures shared by both native libraries.",
-        f"Both analysis and synthesis were run at q1/q8. Short calls use {PROCESS_PAIRS} interleaved process pairs and {BATCHES_PER_PROCESS} calibrated batches per backend process, targeting {TARGET_BATCH_MS:g} ms; long calls use the existing individually timed rule. Rust plan/workspace setup, first-call and warmed timings are separate. The saved JSON contains every invocation, batch, numerical comparison, validation, frequency sample and scheduler observation; CSV rows are computed from paired process data. Failure records are retained in `failures.csv` and JSON.",
+        f"Both analysis and synthesis were run at q1/q8. Short calls use {PROCESS_PAIRS} interleaved process pairs and {BATCHES_PER_PROCESS} calibrated batches per backend process, targeting {TARGET_BATCH_MS:g} ms; long calls use the existing individually timed rule. Rust plan/workspace setup, first-call and warmed timings are separate. The JSON retains per-process batch distributions, numerical comparisons and validation; aggregate CPU-frequency and scheduler diagnostics are reported below. Raw per-process telemetry stays in local shard captures. Failure records are retained in `failures.csv` and JSON.",
         f"The q1/q8 CPU affinity was pinned to the physical core sets shown above. q8 uses the first eight physical cores visible to the process (one CCD on this host). RustSHT and DUCC receive the same fixtures and reusable caller buffers; DUCC's public API performs its own internal setup on each call.",
         "",
         "## Coverage audit",
@@ -1902,6 +1902,7 @@ def merge_shards(shard_paths: list[pathlib.Path], output_dir: pathlib.Path,
         "production_code_changes_since_baseline", "production_code_matches_baseline",
         "rust_binary_sha256", "ducc_binary_sha256", "rust_build_command",
         "ducc_cmake_build_command",
+        "retain_local_host_telemetry",
     )
     for index, shard in enumerate(shards[1:], 2):
         for field in invariant_fields:
@@ -1959,6 +1960,7 @@ def merge_shards(shard_paths: list[pathlib.Path], output_dir: pathlib.Path,
         "failures": failures,
         "host": summarize_host(diagnostics),
     }
+    metadata.pop("retain_local_host_telemetry", None)
     rows = write_artifacts(output_dir, metadata, cases, raw, analysis)
     if dense_sweep:
         coverage = dense_sweep_coverage(cases, raw, errors, failures)
@@ -2010,6 +2012,8 @@ def main() -> None:
                         help="report path; ignored with --no-report")
     parser.add_argument("--no-report", action="store_true",
                         help="write machine-readable artifacts without replacing a report")
+    parser.add_argument("--retain-local-host-telemetry", action="store_true",
+                        help="retain raw per-process CPU-frequency/scheduling samples in this local shard (do not publish them)")
     args = parser.parse_args()
     args.results_dir = args.results_dir.resolve()
     args.report_path = args.report_path.resolve()
@@ -2093,6 +2097,7 @@ def main() -> None:
         "invocation": shlex.join([sys.executable, *sys.argv]),
         "dense_sweep": args.dense_sweep,
         "sweep_id": args.sweep_id,
+        "retain_local_host_telemetry": args.retain_local_host_telemetry,
         "process_pairs": PROCESS_PAIRS,
         "batches_per_process": BATCHES_PER_PROCESS,
         "target_batch_ms": TARGET_BATCH_MS,
