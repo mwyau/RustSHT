@@ -2251,11 +2251,13 @@ impl<T: ShtScalar> ShtPlan<T> {
             phase_started = std::time::Instant::now();
         }
 
+        let mut spectra_are_prepared = false;
         let (analysis_spectra, analysis_ntheta, analysis_ring_weights) = if let Some(resampling) =
             self.cc_resampling
                 .as_ref()
                 .filter(|_| ring_weights.is_some() && resample_cc)
         {
+            spectra_are_prepared = true;
             let longitude_scale = T::from_usize(nphi).expect("longitude count converts");
             for spectrum in workspace
                 .spectra
@@ -2357,8 +2359,12 @@ impl<T: ShtScalar> ShtPlan<T> {
             }
             (workspace.spectra.as_slice(), ntheta, ring_weights)
         };
-        let allow_insignificant_prefix = analysis_ring_weights.is_some()
-            && self.grid.kind() == GridKind::GaussLegendre
+        // Prepared CC/F1 spectra already include their meridional weighting;
+        // GL direct spectra carry their ring weights here. In both cases the
+        // checked DUCC prefix route sees the final spectrum scale.
+        let weighted_gl_spectra =
+            analysis_ring_weights.is_some() && self.grid.kind() == GridKind::GaussLegendre;
+        let allow_insignificant_prefix = (weighted_gl_spectra || spectra_are_prepared)
             && T::scalar_analysis_prefix_skip_allowed(analysis_ntheta);
         #[cfg(all(test, feature = "parallel"))]
         {

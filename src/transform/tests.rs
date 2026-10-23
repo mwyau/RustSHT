@@ -5934,7 +5934,18 @@ fn t191_analysis_compaction_matches_ducc_all_grids() {
         let map = arbitrary_map(&plan);
         let mut alm = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
         let mut workspace = plan.workspace().unwrap();
+        #[cfg(feature = "parallel")]
+        crate::legendre::begin_scalar_analysis_route_profile();
         plan.analysis_into(&map, &mut alm, &mut workspace).unwrap();
+        #[cfg(feature = "parallel")]
+        let route_counts = crate::legendre::finish_scalar_analysis_route_profile();
+        #[cfg(feature = "parallel")]
+        if kind != GridKind::GaussLegendre {
+            assert!(
+                route_counts.prefix_enabled_scaled_blocks > 0,
+                "exact {kind:?} analysis did not enter the safeguarded prefix route"
+            );
+        }
 
         for (&(l, m), &reference) in sampled_modes.iter().zip(&expected) {
             let index = plan.harmonics().index(l, m).unwrap();

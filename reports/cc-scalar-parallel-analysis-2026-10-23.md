@@ -299,3 +299,60 @@ python3 reports/data/cc-scalar-synthesis-grain-2026-10-23/checkpoint_identity_co
 ```
 
 Raw benchmark JSON, timed samples, and host telemetry remain under `/tmp`.
+
+## Safeguarded prefix recurrence for prepared CC/F1 analysis
+
+Exact CC/F1 analysis first resamples longitude spectra onto the prepared
+meridional grid. The prepared spectra already carry the resampling weights, so
+the previous gate (`analysis_ring_weights.is_some()`) disabled DUCC's
+safeguarded insignificant-prefix advancement for these grids. The production
+path now marks prepared spectra as eligible for the same f64 prefix route used
+by weighted GL analysis. The `2^-60` threshold, recurrence and input range
+checks, transactional staged-output behavior, and checked scaled fallback are
+unchanged. Projected CC/F1 and adjoint-synthesis inputs remain on the checked
+route. F1 uses the same prepared-spectrum eligibility.
+
+`t191_analysis_compaction_matches_ducc_all_grids` now asserts that exact CC and
+F1 enter the prefix-enabled scaled route while checking saved DUCC 0.41
+reference coefficients and the analysis-adjoint identity. The T191 CC/F1/GL
+reference/adjoint test, the CC/F1 q1/q8 resampling regression, the fused
+scaled-to-ordinary recurrence test, no-default-features T191 test, and the
+benchmark's random-output, reset, zero, extreme, subnormal, and adjoint checks
+passed.
+
+The focused post-change comparison used exact CC T720, `mmax=180`,
+`ntheta=722`, `nphi=1536`, q1, and pinned DUCC 0.42.0. It collected 30 timed
+batches across three interleaved process pairs; all batches landed in the
+20–100 ms target window (median batch duration `32.1 ms`). The paired
+Rust/DUCC ratio p10–p90 was `0.728–0.733`; host runqueue wait was 0.6% median
+and 15.6% p90, with 178 maximum involuntary switches.
+
+| Rust ms | DUCC ms | paired ratio | excess ms | relative L2 |
+|---:|---:|---:|---:|---:|
+| 13.513 | 18.518 | 0.732x | -5.005 | `6.47e-14` |
+
+The saved pre-change tail-padding row on the same geometry was `24.357/18.554`
+ms, Rust/DUCC. The candidate Rust time is about 44.5% lower, but those source
+runs were not interleaved; treat that source-to-source change as directional.
+The current matched candidate beats DUCC on this quarter-order q1 case. This
+does not close full-order, q8, or F1 parity; F1 has not been benchmarked.
+
+Reproduce with `DUCC_SRC` pointing to pinned revision
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`:
+
+```sh
+python3 reports/data/cc-scalar-synthesis-grain-2026-10-23/checkpoint_identity_compat.py \
+  --ducc-src "$DUCC_SRC" \
+  --ducc-revision 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b \
+  --grid CC --lmax 720 --mmax 180 --fixed-nphi 1536 \
+  --longitude-mode even_smooth --operation analysis --threads 1 \
+  --results-dir "$RESULTS_DIR" --no-report --retain-local-host-telemetry \
+  --sweep-id cc-t720-quarter-prefix-q1
+```
+
+Raw JSON and host telemetry remain local and untracked.
+The Rust worker was rebuilt from the working tree based on
+`8898e25a353f122aab6198398433b91eaed30fa6` (dirty at build time; binary
+SHA-256 `09a7ac5a916e529d44c42dd288722f66cdcc38e80f3c1778f09527322bf3db02`).
+The pinned DUCC binary SHA-256 was
+`3df1d4408407015c65a85e2909aa34219871bf29a75126b23e497bcbb396c89a`.
