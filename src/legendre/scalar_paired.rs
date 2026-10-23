@@ -4374,11 +4374,15 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
             current: &mut current[..sin_theta.len()],
             next: &mut next[..sin_theta.len()],
         });
+        // The two-pair groups advance `previous` and `current` directly and
+        // leave `next` untouched. Only the single-pair tail writes that slot.
+        let pair_count = (lmax - m + 2) / 2;
+        let single_pair_tail_writes_next = pair_count.saturating_sub(1) % 2 != 0;
         let state_within_upper_bound = previous[..sin_theta.len()]
             .iter()
             .chain(&current[..sin_theta.len()])
             .all(|value| value.is_finite() && value.abs() <= scalar::BIG)
-            && (lmax - m < 2
+            && (!single_pair_tail_writes_next
                 || next[..sin_theta.len()]
                     .iter()
                     .all(|value| value.is_finite() && value.abs() <= scalar::BIG));
@@ -6616,7 +6620,7 @@ mod tests {
         let mut staged = vec![Complex64::new(17.0, -9.0); coefficient_count];
         let mut previous = vec![0.0; lane_count];
         let mut current = vec![0.0; lane_count];
-        let mut next = vec![0.0; lane_count];
+        let mut next = vec![f64::INFINITY; lane_count];
         let mut exponents = vec![0; lane_count];
         let arch = Arch::new();
 
@@ -7030,6 +7034,7 @@ mod tests {
         .unwrap();
         assert!(fused);
 
+        next.fill(0.0);
         let mut reference: [Vec<Complex64>; 2] =
             std::array::from_fn(|_| vec![Complex64::new(0.0, 0.0); coefficient_count]);
         for_each_y_lm_paired_status_dispatched(
