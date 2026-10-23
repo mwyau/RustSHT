@@ -24,6 +24,10 @@ use crate::plan::ShtPlan;
 use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 const SCALAR_TRANSITION_MIN_LMAX: usize = 1023;
+#[cfg(feature = "parallel")]
+// Complex64 occupies 16 bytes, so four adjacent orders span 64 bytes and
+// reduce cross-worker sharing on 64-byte cache lines in the ring-major output.
+const SCALAR_ORDERED_SYNTHESIS_ORDER_BLOCK_SIZE: usize = 4;
 
 struct F64LaneCount;
 
@@ -976,17 +980,24 @@ impl<T: ShtScalar> ShtPlan<T> {
 
         #[cfg(all(test, feature = "parallel"))]
         let phase_probe = workspace.transform_phase_probe();
-        // Match DUCC's one-order dynamic schedule. Each job owns one Fourier
-        // order column in the ring-major output; the writer's unsafe contract
-        // is established by putting each order in the queue exactly once.
+        // Assign short contiguous order blocks. The ring-major spectrum stores
+        // adjacent orders next to one another, so block ownership reduces
+        // cross-worker cache-line sharing while leaving enough jobs for dynamic
+        // load balancing.
         let mut order_jobs = VecDeque::new();
-        if order_jobs.try_reserve_exact(order_count).is_err() {
+        let order_block_count = order_count.div_ceil(SCALAR_ORDERED_SYNTHESIS_ORDER_BLOCK_SIZE);
+        if order_jobs.try_reserve_exact(order_block_count).is_err() {
             return false;
         }
-        for order in 0..order_count {
-            order_jobs.push_back(order);
+        let mut order_start = 0;
+        while order_start < order_count {
+            let order_end = order_start
+                .saturating_add(SCALAR_ORDERED_SYNTHESIS_ORDER_BLOCK_SIZE)
+                .min(order_count);
+            order_jobs.push_back((order_start, order_end));
+            order_start = order_end;
         }
-        if order_jobs.len() != order_count {
+        if order_jobs.len() != order_block_count {
             return false;
         }
         let order_jobs = Mutex::new(order_jobs);
@@ -1060,7 +1071,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                         let queue_lock_ns = queue_lock_started
                             .map(|started| started.elapsed().as_nanos())
                             .unwrap_or(0);
-                        let Some(order) = job else {
+                        let Some((order_start, order_end)) = job else {
                             break;
                         };
                         #[cfg(all(test, feature = "parallel"))]
@@ -1075,7 +1086,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                                     alm,
                                     lmax,
                                     mmax,
-                                    order,
+                                    order_start,
+                                    order_end,
                                     self.grid.nphi(),
                                     spectrum_len,
                                     self.grid.phi0(),
@@ -1089,8 +1101,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                         #[cfg(all(test, feature = "parallel"))]
                         recurrence.record_scalar_order_leaf(
                             lmax,
-                            order,
-                            order + 1,
+                            order_start,
+                            order_end,
                             &ring_order_limits[..ntheta],
                             leaf_started,
                             queue_lock_ns,

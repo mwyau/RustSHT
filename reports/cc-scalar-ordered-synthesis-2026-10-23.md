@@ -96,3 +96,47 @@ python3 reports/data/cc-scalar-synthesis-grain-2026-10-23/checkpoint_identity_co
   --threads 1 --threads 8 --results-dir "$RESULTS_DIR" --no-report \
   --sweep-id cc-ordered-synthesis-m1 --retain-local-host-telemetry
 ```
+
+## Contiguous-order-block follow-up
+
+The parallel ordered route now queues four contiguous harmonic orders per
+worker job. Four `Complex64` spectrum cells span 64 bytes; short contiguous
+ownership reduces repeated cache-line sharing between workers on the ring-major
+output. This also reduces queue operations by a factor of four.
+The single-order writer remains available to spin-1.
+
+The parallel route test checks that every order is covered exactly once by
+nonoverlapping blocks and compares the output against the general recurrence.
+The cache invalidation test now expects the safeguarded prefix flag for exact
+prepared CC analysis, matching the route enabled in commit `888469a2`.
+The exact CC/F1 ordered synthesis and fallback tests passed. The focused
+release test run passed 18 tests (two ignored timing screens); the matching
+no-default-features run passed 13 tests, strict release Clippy passed, and
+formatting passed.
+
+The focused matched comparison used exact CC T720, full order, even-smooth
+longitude, q8 synthesis, three interleaved process pairs and 30 calibrated
+20–100 ms batches per backend. Both source builds used the same Rust flags;
+both runs used pinned DUCC `42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b` and the
+same DUCC binary. The candidate source is the 2026-10-23 working-tree change
+based on `888469a2`; the production-source patch SHA-256 is
+`4ccd55b9db05f419e88f8b63f8470799a91a1f9a26a5f15ac408ec5739fd094d`.
+
+| Rust source | Rust median [p10, p90] ms | DUCC median [p10, p90] ms | Rust / DUCC | Paired-ratio p10–p90 | Excess ms |
+|---|---:|---:|---:|---:|---:|
+| Before blocks | 3.154 [3.126, 3.193] | 2.687 [2.670, 2.718] | 1.174× | 1.167–1.175× | 0.467 |
+| Four-order blocks | 2.784 [2.747, 2.865] | 2.703 [2.679, 2.732] | 1.034× | 1.022–1.040× | 0.081 |
+
+The candidate lowered Rust latency 11.7% in this case and reduced the measured
+excess from 0.467 ms to 0.081 ms. The relative L2 stayed at `6.45e-14`; reset
+checks were accepted and there were no failure records. The runner marks the
+full numerical status incomplete because this focused run omitted its broad
+validation sidecar; the direct CC/F1 analytic and general-recurrence tests
+passed separately. This result does not establish parity for other degrees,
+q1 or F1. Rust binary SHA-256 values were
+`23500a610650f347862d47b4de400691effd495ecba5c116e0409566c040179e` before
+and `a050a99e8066fc642122add2ab66ae73d1bd7a3617e9bcabba0a0b9451fcddd2`
+after; both runs used DUCC binary SHA-256
+`3df1d4408407015c65a85e2909aa34219871bf29a75126b23e497bcbb396c89a`.
+Raw local results and host telemetry remain under
+the baseline and candidate temporary result directories.

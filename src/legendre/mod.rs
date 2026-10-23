@@ -320,14 +320,15 @@ pub(crate) trait ShtScalar:
     ) -> bool {
         false
     }
-    /// Writes one uniquely scheduled harmonic order directly into a shared
-    /// ring-major spectrum destination.
+    /// Writes one uniquely scheduled contiguous order range directly into a
+    /// shared ring-major spectrum destination.
     ///
     /// # Safety
     ///
-    /// `order` must be assigned to exactly one live parallel job, and that job
-    /// must not write any ring in the order more than once. All jobs must join
-    /// before the destination is read.
+    /// The order range must be assigned to exactly one live parallel job, no
+    /// other job may own an overlapping range, and that job must not write any
+    /// ring/order cell more than once. All jobs must join before the destination
+    /// is read.
     #[expect(
         clippy::too_many_arguments,
         reason = "The private scalar order route receives validated geometry and worker scratch."
@@ -338,7 +339,8 @@ pub(crate) trait ShtScalar:
         _alm: &[Complex<Self>],
         _lmax: usize,
         _mmax: usize,
-        _order: usize,
+        _order_start: usize,
+        _order_end: usize,
         _nphi: usize,
         _spectrum_len: usize,
         _phi0: f64,
@@ -949,7 +951,8 @@ impl ShtScalar for f64 {
         alm: &[Complex<Self>],
         lmax: usize,
         mmax: usize,
-        order: usize,
+        order_start: usize,
+        order_end: usize,
         nphi: usize,
         spectrum_len: usize,
         phi0: f64,
@@ -958,7 +961,7 @@ impl ShtScalar for f64 {
         output: &scalar_ordered::DisjointSpectrumOutput<'_, Self>,
         scratch: &mut scalar_ordered::ScalarOrderedScratch<'_, Self>,
     ) -> bool {
-        // SAFETY: the caller schedules each order exactly once, and the
+        // SAFETY: the caller schedules each order range exactly once, and the
         // scalar kernel emits at most one value per physical ring and order.
         unsafe {
             scalar_ordered::synthesize_order_output_dispatched(
@@ -966,7 +969,8 @@ impl ShtScalar for f64 {
                 alm,
                 lmax,
                 mmax,
-                order,
+                order_start,
+                order_end,
                 nphi,
                 spectrum_len,
                 phi0,

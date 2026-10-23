@@ -47,10 +47,10 @@ pub(crate) struct ScalarOrderedScratch<'a, T> {
     pub(crate) sum_odd_im: &'a mut [T],
 }
 
-/// Shared destination for parallel jobs that each own one Fourier order.
+/// Shared destination for parallel jobs that each own a contiguous Fourier-order range.
 ///
-/// The output is ring-major, while each parallel job writes one disjoint
-/// order column. This avoids materializing and transposing a second full
+/// The output is ring-major, while each parallel job writes disjoint
+/// contiguous order columns. This avoids materializing and transposing a second full
 /// spectrum array.
 pub(crate) struct DisjointSpectrumOutput<'a, T> {
     pointer: NonNull<num_complex::Complex<T>>,
@@ -60,9 +60,9 @@ pub(crate) struct DisjointSpectrumOutput<'a, T> {
 }
 
 // SAFETY: a shared output can only produce a writer through the unsafe
-// `writer_for_unique_order` method. The caller assigns each order exactly once;
-// writers then touch distinct matrix columns, and the buffer is not read until
-// all parallel order jobs have joined.
+// `writer_for_unique_order_range` method. The caller assigns each order exactly
+// once and does not assign overlapping ranges; the buffer is not read until all
+// parallel order jobs have joined.
 unsafe impl<T: Send + Sync> Sync for DisjointSpectrumOutput<'_, T> {}
 
 #[allow(dead_code)]
@@ -84,25 +84,46 @@ impl<'a, T: Send + Sync> DisjointSpectrumOutput<'a, T> {
         })
     }
 
-    /// Creates the sole writer for `order` across the active parallel region.
+    /// Creates the sole writer for `orders` across the active parallel region.
     ///
     /// # Safety
     ///
-    /// The caller must ensure no other live writer targets this order. Each
-    /// ring in that order must also be written at most once before the output
-    /// is read.
+    /// The caller must ensure no other live writer targets any order in the
+    /// range. Each ring and order must also be written at most once before the
+    /// output is read.
+    pub(crate) unsafe fn writer_for_unique_order_range(
+        &self,
+        order_start: usize,
+        order_end: usize,
+    ) -> Option<DisjointSpectrumWriter<'a, T>> {
+        (order_start < order_end && order_end <= self.spectrum_len).then_some(
+            DisjointSpectrumWriter {
+                pointer: self.pointer,
+                ntheta: self.ntheta,
+                spectrum_len: self.spectrum_len,
+                order_start,
+                order_end,
+                _buffer: PhantomData,
+                _not_sync: PhantomData,
+            },
+        )
+    }
+
+    /// Creates a sole writer for one order, retained for spin-1's independent
+    /// per-order output path.
+    ///
+    /// # Safety
+    ///
+    /// No other live writer may target this order, and each ring in the order
+    /// must be written at most once before the output is read.
     pub(crate) unsafe fn writer_for_unique_order(
         &self,
         order: usize,
     ) -> Option<DisjointSpectrumWriter<'a, T>> {
-        (order < self.spectrum_len).then_some(DisjointSpectrumWriter {
-            pointer: self.pointer,
-            ntheta: self.ntheta,
-            spectrum_len: self.spectrum_len,
-            order,
-            _buffer: PhantomData,
-            _not_sync: PhantomData,
-        })
+        let order_end = order.checked_add(1)?;
+        // SAFETY: this wrapper requests a one-element range; exclusivity is
+        // the caller's obligation, as documented above.
+        unsafe { self.writer_for_unique_order_range(order, order_end) }
     }
 }
 
@@ -110,7 +131,8 @@ pub(crate) struct DisjointSpectrumWriter<'a, T> {
     pointer: NonNull<num_complex::Complex<T>>,
     ntheta: usize,
     spectrum_len: usize,
-    order: usize,
+    order_start: usize,
+    order_end: usize,
     _buffer: PhantomData<&'a num_complex::Complex<T>>,
     _not_sync: PhantomData<Cell<()>>,
 }
@@ -176,14 +198,22 @@ pub(crate) fn initialize_inactive_spectrum_tails<T: Copy>(
 }
 
 impl<T: Copy> DisjointSpectrumWriter<'_, T> {
+    #[cfg(feature = "parallel")]
     #[inline]
     pub(crate) fn write(&self, ring: usize, value: num_complex::Complex<T>) {
+        debug_assert_eq!(self.order_end, self.order_start + 1);
+        self.write_order(ring, self.order_start, value);
+    }
+
+    #[inline]
+    pub(crate) fn write_order(&self, ring: usize, order: usize, value: num_complex::Complex<T>) {
         debug_assert!(ring < self.ntheta);
-        debug_assert!(self.order < self.spectrum_len);
-        let index = ring * self.spectrum_len + self.order;
+        debug_assert!((self.order_start..self.order_end).contains(&order));
+        debug_assert!(order < self.spectrum_len);
+        let index = ring * self.spectrum_len + order;
         // SAFETY: the output constructor checked `ntheta * spectrum_len` for
-        // overflow and against the slice length. This writer owns one unique
-        // order, and the recurrence emits each physical ring once for it.
+        // overflow and against the slice length. This writer owns a unique
+        // order range, and the recurrence emits each physical ring once for it.
         unsafe { self.pointer.as_ptr().add(index).write(value) };
     }
 }
@@ -238,23 +268,25 @@ pub(crate) fn synthesize_dispatched<'a>(
 }
 
 #[cfg(feature = "parallel")]
-/// Runs one DUCC-style order against a uniquely owned output column.
+/// Runs a short order range against its uniquely owned output columns.
 ///
 /// # Safety
 ///
-/// The caller must assign `order` to exactly one live parallel job, and that
-/// job must not write any ring in the order more than once. All jobs must join
-/// before the destination is read.
+/// The caller must assign the complete order range to exactly one live
+/// parallel job, no other job may own an overlapping range, and that job must
+/// not write any ring/order cell more than once. All jobs must join before the
+/// destination is read.
 #[expect(
     clippy::too_many_arguments,
-    reason = "The private order dispatch receives validated plan data and a disjoint output column."
+    reason = "The private order-range dispatch receives validated plan data and disjoint output columns."
 )]
 pub(crate) unsafe fn synthesize_order_output_dispatched<'a>(
     arch: Arch,
     alm: &'a [Complex64],
     lmax: usize,
     mmax: usize,
-    order: usize,
+    order_start: usize,
+    order_end: usize,
     nphi: usize,
     spectrum_len: usize,
     phi0: f64,
@@ -263,15 +295,13 @@ pub(crate) unsafe fn synthesize_order_output_dispatched<'a>(
     output: &DisjointSpectrumOutput<'a, f64>,
     scratch: &'a mut ScalarOrderedScratch<'_, f64>,
 ) -> bool {
-    let Some(order_end) = order.checked_add(1) else {
-        return false;
-    };
     if output.ntheta != geometry.sin_theta.len() || output.spectrum_len != spectrum_len {
         return false;
     }
-    // SAFETY: the caller assigns one dynamic job to each order and never
-    // creates another writer for this order during the parallel region.
-    let Some(writer) = (unsafe { output.writer_for_unique_order(order) }) else {
+    // SAFETY: the caller assigns one dynamic job to each nonoverlapping range
+    // and never creates another writer for these orders during the parallel region.
+    let Some(writer) = (unsafe { output.writer_for_unique_order_range(order_start, order_end) })
+    else {
         return false;
     };
     let mut empty_spectra = [];
@@ -280,7 +310,7 @@ pub(crate) unsafe fn synthesize_order_output_dispatched<'a>(
         alm,
         lmax,
         mmax,
-        order,
+        order_start,
         order_end,
         nphi,
         spectrum_len,
@@ -325,10 +355,9 @@ fn synthesize_range_dispatched<'a>(
     };
     let output_len_valid = if disjoint_output.is_some() {
         spectra.is_empty()
-            && order_end == order_start + 1
-            && disjoint_output
-                .as_ref()
-                .is_some_and(|writer| writer.order == order_start)
+            && disjoint_output.as_ref().is_some_and(|writer| {
+                writer.order_start == order_start && writer.order_end == order_end
+            })
     } else {
         spectra.len() == expected_spectrum_count
     };
@@ -591,7 +620,7 @@ fn scratch_output(
     value: Complex64,
 ) {
     if let Some(output) = disjoint_output {
-        output.write(ring, value);
+        output.write_order(ring, order, value);
         return;
     }
     spectra[ring * spectrum_len + order] = value;

@@ -3114,6 +3114,7 @@ fn scalar_ordered_parallel_orders_match_serial_and_ring_group_synthesis() {
         .unwrap();
     prepare_scalar_latitudes(&plan, &mut parallel_workspace);
     let worker_probe = parallel_workspace.observe_active_workers();
+    let order_probe = parallel_workspace.observe_scalar_order_leaves();
 
     eight_threads.install(|| {
         parallel_workspace.spectra.fill(Complex64::new(3.0, -2.0));
@@ -3124,6 +3125,25 @@ fn scalar_ordered_parallel_orders_match_serial_and_ring_group_synthesis() {
         ));
     });
     assert!(worker_probe.lock().unwrap().len() > 1);
+    let mut order_blocks = order_probe.lock().unwrap().clone();
+    order_blocks.sort_by_key(|block| block.m_start);
+    assert_eq!(
+        order_blocks.len(),
+        (plan.harmonics().mmax() + 1).div_ceil(SCALAR_ORDERED_SYNTHESIS_ORDER_BLOCK_SIZE)
+    );
+    let mut next_order = 0;
+    for block in order_blocks {
+        assert_eq!(
+            block.m_start, next_order,
+            "order blocks must not overlap or leave gaps"
+        );
+        next_order = block.m_end;
+        assert!(
+            block.m_end - block.m_start <= SCALAR_ORDERED_SYNTHESIS_ORDER_BLOCK_SIZE,
+            "each synthesis job must remain a short contiguous order block"
+        );
+    }
+    assert_eq!(next_order, plan.harmonics().mmax() + 1);
     let reference_spectra = scalar_ring_group_spectra(&plan, &alm);
     let reference_error = relative_l2_complex(&parallel_workspace.spectra, &reference_spectra);
     assert!(
@@ -6207,7 +6227,7 @@ fn scalar_analysis_pair_range_cache_invalidates_prepared_geometry() {
     let prepared_ntheta = plan.cc_resampling.as_ref().unwrap().prepared_ntheta();
     assert_eq!(
         workspace.analysis_pair_range_geometry,
-        Some((prepared_ntheta, false))
+        Some((prepared_ntheta, true))
     );
 
     let mut cached_adjoint = vec![Complex64::new(0.0, 0.0); analyzed.len()];
@@ -7592,7 +7612,10 @@ fn plan14_odd_inverse_phase_attribution() {
     let order_probe = workspace.observe_scalar_order_leaves();
     plan.synthesis_into(&alm, &mut map, &mut workspace).unwrap();
     let order_leaves = order_probe.lock().unwrap().clone();
-    assert_eq!(order_leaves.len(), plan.harmonics().mmax() + 1);
+    assert_eq!(
+        order_leaves.len(),
+        (plan.harmonics().mmax() + 1).div_ceil(SCALAR_ORDERED_SYNTHESIS_ORDER_BLOCK_SIZE)
+    );
     let mut order_workers =
         std::collections::BTreeMap::<usize, (usize, u128, u128, u128, u128)>::new();
     for leaf in &order_leaves {
