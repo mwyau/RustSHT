@@ -21,6 +21,8 @@
 
 **Current-source analysis check (`bab010ce`):** exact T720/full-order q8, three interleaved process pairs and 30 ~25 ms batches per backend against pinned DUCC `42ce8ab5`. RustSHT/DUCC medians are shown above. Outputs were finite, repeat/reset checks passed, relative L2 error was at most `6.06e-14`, and maximum absolute error at most `1.33e-15`. Raw batches remain local under `reports/data/spin1-analysis-closeout-2026-10-23/`; synthesis rows are selected earlier runs, not a current-source matrix.
 
+**Analysis closeout checks rerun on `4cbc1838`:** focused parallel release analysis/extreme/poison/fallback and T720 adjoint tests passed (6 tests); `spin1_` no-default release tests passed (26 Rust + 2 f32 tests); formatting and strict parallel release Clippy passed. The analysis implementation is unchanged since the measured `bab010ce` checkout.
+
 **Source A/B for range-proof reuse (`8f99a274` vs `c31ef94c`):** GL T720 q8 paired median ratio `0.974` over 30 batches/backend and three process pairs; two low-wait pairs improved 1.8–2.6%, one parent process was contended. The three-grid check above is a current-source comparison to DUCC, not an A/B against the parent.
 
 **Current-source GL T511 q8 synthesis A/B (`68ec59b5` vs q8 order-major dispatch candidate):** three interleaved process pairs, 30 calibrated batches/backend. The specialized hemisphere route measured `14.140 ms`; order-major dispatch measured `7.686 ms`; pinned DUCC measured `2.606 ms`. Relative L2 error versus DUCC was `2.82e-13` / `2.46e-13` for the two map components, and candidate versus parent was at most `1.54e-15`. Scheduler wait ranged from `2.8%` to `13.5%`; the q8 route change is material despite host contention. q4 keeps the hemisphere route.
