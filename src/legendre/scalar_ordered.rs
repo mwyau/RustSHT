@@ -248,6 +248,16 @@ pub(crate) fn synthesize_dispatched<'a>(
     else {
         return false;
     };
+    if !initialize_inactive_spectrum_tails(
+        spectra,
+        spectrum_len,
+        mmax,
+        &geometry,
+        Complex64::new(0.0, 0.0),
+    ) {
+        spectra.fill(Complex64::new(0.0, 0.0));
+        return false;
+    }
     synthesize_range_dispatched(
         arch,
         alm,
@@ -391,18 +401,6 @@ fn synthesize_range_dispatched<'a>(
         return false;
     }
     let output_is_disjoint = disjoint_output.is_some();
-    if disjoint_output.is_none()
-        && !initialize_inactive_spectrum_tails(
-            spectra,
-            spectrum_len,
-            mmax,
-            geometry,
-            Complex64::new(0.0, 0.0),
-        )
-    {
-        spectra.fill(Complex64::new(0.0, 0.0));
-        return false;
-    }
     let succeeded = arch.dispatch(ScalarOrderedSynthesis {
         alm,
         lmax,
