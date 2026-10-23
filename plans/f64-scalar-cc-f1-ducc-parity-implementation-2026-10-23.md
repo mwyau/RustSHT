@@ -75,7 +75,7 @@ When scalar has undergone all high-leverage tests and remaining gaps are near pa
 
 ## Immediate completion checklist for next agent checkpoint
 
-- [ ] **At least one implemented and validated f64 CC or F1 scalar performance algorithm candidate** has been measured against original Rust and pinned DUCC; report accepted or rejected outcome. Do not submit only a new benchmark report.
+- [x] **At least one implemented and validated f64 CC or F1 scalar performance algorithm candidate** has been measured against original Rust and pinned DUCC; report accepted or rejected outcome. Do not submit only a new benchmark report. The ordered/reflected CC/F1 synthesis route is committed in `4d5dcf97`; T255/T720 CC results and remaining q8 excess are in the [M1 report](../reports/cc-scalar-ordered-synthesis-2026-10-23.md).
 - [ ] Small scalar CC and F1 baseline/control rows include both synthesis and analysis, q1/q8 and at least full order, with correct grids and provenance; F1 results remain unknown until actually measured.
 - [ ] A clear follow-up source-level bottleneck and **next code change** is identified; no new exhaustive benchmark runs are launched.
 - [ ] Reports accurately distinguish `MEASURED` from `HYPOTHESIS`; missing historical CC coverage is preserved as an open task.
