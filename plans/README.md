@@ -1,15 +1,14 @@
 # RustSHT plans — current status and reference index
 
-**Updated 2026-10-22 UTC.** This file is an execution queue, not a second source of implementation rules. Follow current explicit owner instructions, [AGENTS.md](../AGENTS.md), and the active plan. Work on `opt/sht-performance-parity`, with safe integration of concurrent remote updates.
+**Updated 2026-10-23 UTC.** This file is an execution queue, not a second source of implementation rules. Follow current explicit owner instructions, [AGENTS.md](../AGENTS.md), and the active plan. Work on `opt/sht-performance-parity`, with safe integration of concurrent remote updates.
 
 ## Execution queue
 
-1. **COMPLETE:** [Owner-directed scalar-analysis cumulative ablation](../reports/scalar-analysis-cumulative-ablation-2026-10-21.md). Retain the staged, checked, 256-pair production path.
-2. **COMPLETE:** [16 — DUCC spin-1 recurrence and dataflow](16-ducc-spin1-recurrence-parity.md). Retain accepted q8 order-major/cache improvements and negative experiments; later spin-1 work is explicitly reauthorized under the new owner directive.
-3. **ACTIVE — latest owner direction (Luna Max):** [f64 CC benchmark closeout, GL algorithm port to CC, then f64 spin-1 parity](f64-cc-gl-kernel-port-and-spin1-parity-2026-10-22.md). Milestone 0 completes CC coverage/acceptance/figures and safe repository cleanup. Then scalar CC synthesis scheduling/ordered-engine reuse; scalar CC parallel analysis; f64 GL table policy; f64 spin-1 DUCC reflected-pair/scale investigation.
-4. **RETAINED SPECIFICATION, SUPERSEDED AS QUEUE:** [Earlier f64 scalar CC full-band and GL table directive](scalar-f64-cc-full-band-and-gl-table-crossover-2026-10-22.md). Its coverage/numerical instructions remain valid; execution order is controlled by the new active plan.
-5. **PAUSED — STRICT f64 GATE:** [17 — f32 and atmospheric SHT performance](17-f32-atmospheric-performance.md). Do not resume simply because the CC sweep or GL cutoff study ends; require representative f64 scalar and spin-1 GL/CC/F1 near native DUCC parity or better, without important systematic gaps.
-6. **DEFERRED, NOT AUTOMATIC:** [12 — Cache-informed Legendre dispatch](12-cache-informed-legendre-dispatch.md) and [13 — True fused batched SHT](13-fused-batched-sht.md). Need explicit future authorization.
+1. **ACTIVE — highest priority:** [f64 scalar CC/F1 DUCC performance parity implementation](f64-scalar-cc-f1-ducc-parity-implementation-2026-10-23.md). Implement tested GL ordered/reflected scalar synthesis adapter for CC/F1 first; reuse bounded parallel scalar CC/F1 analysis second; close the major scalar gap; **then f64 spin-1**. No fresh exhaustive sweep before a validated production-kernel experiment.
+2. **PRESERVED BUT NONBLOCKING:** [2026-10-22 CC benchmark/GL-kernel/spin-1 plan](f64-cc-gl-kernel-port-and-spin1-parity-2026-10-22.md) and [full scalar CC manifest and GL crossover specification](scalar-f64-cc-full-band-and-gl-table-crossover-2026-10-22.md). Audit fixes, 13 saved CC shards, missing coverage and report/figure backlog remain documented; do not let recovery, seven charts, the GL table cutoff or repository cleanup prevent code optimization.
+3. **COMPLETE HISTORICAL:** [scalar-analysis cumulative ablation](../reports/scalar-analysis-cumulative-ablation-2026-10-21.md) and [16 — DUCC spin-1 recurrence and dataflow](16-ducc-spin1-recurrence-parity.md). Preserve accepted kernels and rejected-experiment evidence; follow-on spin-1 is now explicitly authorized **after scalar CC/F1**.
+4. **PAUSED — strict f64 gate:** [17 — f32 and atmospheric SHT performance](17-f32-atmospheric-performance.md). Resume only after representative scalar **and spin-1** f64 GL/CC/F1 near-parity or explicit later owner direction.
+5. **DEFERRED:** [12 — cache-informed Legendre dispatch](12-cache-informed-legendre-dispatch.md) and [13 — fused batched SHT](13-fused-batched-sht.md); require explicit separate authorization.
 
 ## Completed and retained
 
