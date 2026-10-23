@@ -207,7 +207,7 @@ struct ScalarAnalysisDirectSpectra<'a, T> {
     values: &'a [Complex<T>],
     spectrum_len: usize,
     phi0: f64,
-    ring_weights: &'a [f64],
+    ring_weights: Option<&'a [f64]>,
     longitude_count: T,
 }
 
@@ -264,9 +264,11 @@ impl<T: ShtScalar> ScalarAnalysisOrderSpectra<'_, T> {
                 phase,
             } => {
                 let mut value = source.values[ring * source.spectrum_len + order] * phase;
-                let weight =
-                    T::from_f64(source.ring_weights[ring]).expect("ring weight is representable");
-                value *= weight / source.longitude_count;
+                if let Some(ring_weights) = source.ring_weights {
+                    let weight =
+                        T::from_f64(ring_weights[ring]).expect("ring weight is representable");
+                    value *= weight / source.longitude_count;
+                }
                 value
             }
         }
@@ -2352,16 +2354,18 @@ impl<T: ShtScalar> ShtPlan<T> {
         let direct_pair_source = if !scalar_table_selected
             && T::supports_paired_scalar()
             && self.harmonics.lmax() >= T::FUSED_SCALAR_ANALYSIS_MIN_LMAX
-            && self.grid.kind() == GridKind::GaussLegendre
-            && analysis_ntheta == ntheta
         {
-            analysis_ring_weights.map(|ring_weights| ScalarAnalysisDirectSpectra {
-                values: analysis_spectra,
-                spectrum_len,
-                phi0: self.grid.phi0(),
-                ring_weights,
-                longitude_count,
-            })
+            if analysis_ring_weights.is_none() || analysis_ntheta == ntheta {
+                Some(ScalarAnalysisDirectSpectra {
+                    values: analysis_spectra,
+                    spectrum_len,
+                    phi0: self.grid.phi0(),
+                    ring_weights: analysis_ring_weights,
+                    longitude_count,
+                })
+            } else {
+                None
+            }
         } else {
             None
         };

@@ -5518,7 +5518,7 @@ fn scalar_analysis_direct_ring_input_matches_prepared_order_values() {
         values: &workspace.spectra,
         spectrum_len,
         phi0: plan.grid.phi0(),
-        ring_weights: plan.grid.ring_weights(),
+        ring_weights: Some(plan.grid.ring_weights()),
         longitude_count: plan.grid.nphi() as f64,
     });
     for order in 0..order_count {
@@ -5526,6 +5526,89 @@ fn scalar_analysis_direct_ring_input_matches_prepared_order_values() {
         let prepared_order = &prepared[order * latitude_count..(order + 1) * latitude_count];
         for (ring, &prepared_value) in prepared_order.iter().enumerate() {
             assert_eq!(direct_order.value(ring), prepared_value);
+        }
+    }
+}
+
+#[test]
+fn scalar_analysis_direct_prepared_ring_input_matches_order_values() {
+    for kind in [GridKind::ClenshawCurtis, GridKind::Fejer1] {
+        let lmax = 16;
+        let mmax = 3;
+        let ntheta = lmax + usize::from(kind == GridKind::ClenshawCurtis) + 1;
+        let plan = ShtPlan::new(
+            GridSpec::new(kind, ntheta, 65, 0.23).unwrap(),
+            HarmonicSpec::scalar(lmax, mmax).unwrap(),
+        )
+        .unwrap();
+        let map = arbitrary_map(&plan);
+        let mut workspace = plan.workspace().unwrap();
+        let spectrum_len = plan.fft.spectrum_len();
+        let output_modes = mmax + 1;
+        for ring in 0..ntheta {
+            let map_start = ring * plan.grid.nphi();
+            let spectrum_start = ring * spectrum_len;
+            plan.fft
+                .forward_truncated(
+                    &map[map_start..map_start + plan.grid.nphi()],
+                    &mut workspace.spectra[spectrum_start..spectrum_start + output_modes],
+                    &mut workspace.fft,
+                )
+                .unwrap();
+        }
+        let longitude_scale = plan.grid.nphi() as f64;
+        for spectrum in workspace
+            .spectra
+            .chunks_exact_mut(spectrum_len)
+            .take(ntheta)
+        {
+            for value in &mut spectrum[..output_modes] {
+                *value /= longitude_scale;
+            }
+        }
+        let resampling = plan.cc_resampling.as_ref().unwrap();
+        resampling
+            .to_prepared(
+                &workspace.spectra,
+                &mut workspace.prepared_spectra,
+                spectrum_len,
+                mmax,
+                0,
+                &mut workspace.cc_profile,
+                &mut workspace.cc_fft_scratch,
+            )
+            .unwrap();
+
+        let latitude_count = resampling.prepared_ntheta();
+        let ring_order_limits = vec![usize::MAX; latitude_count];
+        let preparation = ScalarAnalysisOrderPreparation {
+            analysis_spectra: &workspace.prepared_spectra,
+            spectrum_len,
+            phi0: plan.grid.phi0(),
+            ring_order_limits: &ring_order_limits,
+            scalar_table_selected: false,
+            ring_weights: None,
+            longitude_count: longitude_scale,
+            scalar_table_input_limit: None,
+        };
+        let direct = ScalarAnalysisSpectra::Direct(ScalarAnalysisDirectSpectra {
+            values: &workspace.prepared_spectra,
+            spectrum_len,
+            phi0: plan.grid.phi0(),
+            ring_weights: None,
+            longitude_count: longitude_scale,
+        });
+        let mut prepared = vec![Complex64::new(0.0, 0.0); latitude_count];
+        for order in 0..=mmax {
+            assert!(preparation.prepare_order(order, &mut prepared));
+            let direct_order = direct.for_order(order);
+            for (ring, &prepared_value) in prepared.iter().enumerate() {
+                assert_eq!(
+                    direct_order.value(ring),
+                    prepared_value,
+                    "{kind:?}, m={order}"
+                );
+            }
         }
     }
 }
@@ -5734,7 +5817,7 @@ fn scalar_cc_f1_analysis_parallelizes_only_large_resampling_work() {
 #[test]
 fn scalar_reduced_order_analysis_ignores_unused_spectrum_tail() {
     for kind in [GridKind::ClenshawCurtis, GridKind::Fejer1] {
-        let lmax = 16;
+        let lmax = 191;
         let ntheta = lmax + usize::from(kind == GridKind::ClenshawCurtis) + 1;
         let plan = ShtPlan::new(
             GridSpec::new(kind, ntheta, 65, 0.23).unwrap(),
