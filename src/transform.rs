@@ -358,6 +358,7 @@ fn prepare_symmetric_analysis_pair_block<T: ShtScalar>(
     block_start: usize,
     block_len: usize,
     compact: bool,
+    all_active: bool,
     order_spectra: ScalarAnalysisOrderSpectra<'_, T>,
     ring_order_limits: &[usize],
     theta_sin: &[T],
@@ -373,6 +374,25 @@ fn prepare_symmetric_analysis_pair_block<T: ShtScalar>(
     compact_theta_cos_squared: &mut [T],
 ) -> usize {
     debug_assert_eq!(latitude_count, theta_cos_squared.len());
+    debug_assert!(!compact || !all_active);
+    if all_active {
+        debug_assert!(block_start + block_len <= latitude_count.div_ceil(2));
+        for lane in 0..block_len {
+            let north_ring = block_start + lane;
+            let south_ring = latitude_count - 1 - north_ring;
+            let north = order_spectra.value(north_ring);
+            let south = if south_ring != north_ring {
+                order_spectra.value(south_ring)
+            } else {
+                Complex::new(T::zero(), T::zero())
+            };
+            same_real[lane] = north.re + south.re;
+            same_imag[lane] = north.im + south.im;
+            opposite_real[lane] = north.re - south.re;
+            opposite_imag[lane] = north.im - south.im;
+        }
+        return block_len;
+    }
     let mut output_lane = 0;
     for lane in 0..block_len {
         let north_ring = block_start + lane;
@@ -471,6 +491,26 @@ fn first_active_symmetric_pair(
         }
     }
     lower
+}
+
+fn symmetric_monotone_analysis_pair_limits(
+    latitude_count: usize,
+    ring_order_limits: &[usize],
+) -> bool {
+    // With equal mirrored limits and a monotone pole-to-equator cutoff,
+    // first_active_symmetric_pair starts at an all-active suffix.
+    debug_assert_eq!(ring_order_limits.len(), latitude_count);
+    let pair_lane_count = latitude_count.div_ceil(2);
+    let mut previous_limit = 0;
+    for north_ring in 0..pair_lane_count {
+        let south_ring = latitude_count - 1 - north_ring;
+        let north_limit = ring_order_limits[north_ring];
+        if north_limit != ring_order_limits[south_ring] || north_limit < previous_limit {
+            return false;
+        }
+        previous_limit = north_limit;
+    }
+    true
 }
 
 #[allow(private_bounds)]
@@ -2981,6 +3021,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         let range_cache_block_count = pair_lane_count.div_ceil(pair_block_size);
         debug_assert!(recurrence.previous.len() >= pair_block_size);
         let mut coefficient_start = 0;
+        let symmetric_monotone_limits =
+            symmetric_monotone_analysis_pair_limits(latitude_count, ring_order_limits);
         #[cfg(all(test, feature = "parallel"))]
         let profiling = recurrence.analysis_leaf_profile_enabled();
 
@@ -3005,13 +3047,15 @@ impl<T: ShtScalar> ShtPlan<T> {
             for block_start in (first_active_pair..pair_lane_count).step_by(pair_block_size) {
                 let block_end = (block_start + pair_block_size).min(pair_lane_count);
                 let block_len = block_end - block_start;
-                let compact_candidate = T::supports_paired_scalar() && lmax >= 127;
+                let compact_candidate =
+                    T::supports_paired_scalar() && lmax >= 127 && !symmetric_monotone_limits;
                 let lane_count = prepare_symmetric_analysis_pair_block(
                     m,
                     latitude_count,
                     block_start,
                     block_len,
                     compact_candidate,
+                    symmetric_monotone_limits,
                     order_spectra,
                     ring_order_limits,
                     theta_sin,
@@ -3153,6 +3197,15 @@ impl<T: ShtScalar> ShtPlan<T> {
                     } else {
                         may_cache_range_safe = false;
                         if opposite_preparation.is_some() {
+                            if !compact_candidate {
+                                for (lane, north_ring) in recurrence.compact_ring_indices
+                                    [..lane_count]
+                                    .iter_mut()
+                                    .enumerate()
+                                {
+                                    *north_ring = block_start + lane;
+                                }
+                            }
                             restore_symmetric_analysis_pair_opposite(
                                 m,
                                 latitude_count,

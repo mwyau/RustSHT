@@ -838,6 +838,7 @@ fn capture_plan14_t127_active_ring_kernel_input() {
         block_start,
         block_len,
         true,
+        false,
         super::ScalarAnalysisOrderSpectra::Weighted(&order_spectra),
         &workspace.ring_order_limits[..ntheta],
         &workspace.theta_sin[..ntheta],
@@ -1157,6 +1158,7 @@ fn report_scalar_analysis_pair_tile_utilization() {
                         block_start,
                         block_len,
                         true,
+                        false,
                         ScalarAnalysisOrderSpectra::Weighted(&order_spectra),
                         &workspace.ring_order_limits,
                         &workspace.theta_sin,
@@ -1980,17 +1982,31 @@ fn plan14_analysis_phase_batch_profile() {
     assert!(mmax <= lmax && thread_count > 0 && batches >= 30);
     assert!((20.0..=100.0).contains(&target_batch_ms));
 
+    let grid_kind = match std::env::var("RUSTSHT_PROFILE_GRID").as_deref() {
+        Ok("GL") | Err(_) => GridKind::GaussLegendre,
+        Ok("CC") => GridKind::ClenshawCurtis,
+        Ok("F1") => GridKind::Fejer1,
+        Ok(value) => panic!("unsupported profile grid {value:?}; use GL, CC or F1"),
+    };
+    let default_ntheta = match grid_kind {
+        GridKind::GaussLegendre | GridKind::Fejer1 => lmax + 1,
+        GridKind::ClenshawCurtis => lmax + 2,
+    };
     let ntheta = std::env::var("RUSTSHT_PROFILE_NTHETA")
         .ok()
         .map(|value| value.parse::<usize>().expect("invalid ntheta"))
-        .unwrap_or(lmax + 1);
+        .unwrap_or(default_ntheta);
     let nphi = std::env::var("RUSTSHT_PROFILE_NPHI")
         .ok()
         .map(|value| value.parse::<usize>().expect("invalid nphi"))
         .unwrap_or_else(|| GridSpec::fft_friendly_nphi(lmax).unwrap());
     assert!(ntheta > lmax);
     assert!(nphi > 2 * mmax);
-    let plan = make_plan(lmax, mmax, ntheta, nphi, 0.23);
+    let plan = ShtPlan::new(
+        GridSpec::new(grid_kind, ntheta, nphi, 0.23).unwrap(),
+        HarmonicSpec::scalar(lmax, mmax).unwrap(),
+    )
+    .unwrap();
     let force_recurrence =
         std::env::var("RUSTSHT_PROFILE_FORCE_RECURRENCE").is_ok_and(|value| value == "1");
     if force_recurrence {
@@ -6237,6 +6253,7 @@ fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
         block_start,
         block_len,
         false,
+        false,
         super::ScalarAnalysisOrderSpectra::Weighted(&spectra),
         &limits,
         &theta_sin,
@@ -6267,6 +6284,7 @@ fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
         block_start,
         block_len,
         true,
+        false,
         super::ScalarAnalysisOrderSpectra::Weighted(&spectra),
         &limits,
         &theta_sin,
@@ -6356,6 +6374,7 @@ fn scalar_analysis_pair_compaction_preserves_mixed_cutoff_lanes() {
         equator_start,
         1,
         true,
+        false,
         super::ScalarAnalysisOrderSpectra::Weighted(&spectra),
         &limits,
         &theta_sin,
@@ -6873,6 +6892,29 @@ fn clenshaw_curtis_analysis_matches_ducc_without_initial_resampling() {
     ] {
         assert_close(analysis_adjoint[index], expected, 8e-13);
     }
+}
+
+#[test]
+fn scalar_analysis_cutoff_fast_path_requires_symmetric_monotone_pairs() {
+    let lmax = 720;
+    for (kind, ntheta) in [
+        (GridKind::ClenshawCurtis, lmax + 2),
+        (GridKind::Fejer1, lmax + 1),
+    ] {
+        let grid = GridSpec::new(kind, ntheta, 1536, 0.23).unwrap();
+        let limits = grid
+            .theta()
+            .iter()
+            .map(|&theta| {
+                let (sine, cosine) = sin_cos_from_f64::<f64>(theta);
+                <f64 as ShtScalar>::polar_order_limit(lmax, 0, sine, cosine)
+            })
+            .collect::<Vec<_>>();
+        assert!(symmetric_monotone_analysis_pair_limits(ntheta, &limits));
+    }
+
+    assert!(!symmetric_monotone_analysis_pair_limits(4, &[1, 2, 3, 1]));
+    assert!(!symmetric_monotone_analysis_pair_limits(4, &[3, 1, 1, 3]));
 }
 
 #[test]
