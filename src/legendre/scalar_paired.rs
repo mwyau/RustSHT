@@ -4254,10 +4254,11 @@ impl<
 /// coefficients must then be discarded by the caller.
 #[expect(
     clippy::too_many_arguments,
-    reason = "The fused two-channel analysis block receives lane spectra and worker-owned recurrence scratch explicitly."
+    reason = "The two-channel analysis block receives lane spectra and worker-owned recurrence scratch explicitly."
 )]
 pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
     arch: Arch,
+    sequential_channels: bool,
     m: usize,
     lmax: usize,
     sin_theta: &[f64],
@@ -4297,36 +4298,93 @@ pub(crate) fn fused_scalar_analysis_pair_channels_block_dispatched(
         return Ok(false);
     }
 
-    if !initialize_analysis_sectoral_lanes(
-        arch,
-        m,
-        lmax,
-        sin_theta,
-        sectoral_norm,
-        previous,
-        current,
-        exponents,
-    )? {
-        return Ok(false);
+    if !sequential_channels {
+        if !initialize_analysis_sectoral_lanes(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            sectoral_norm,
+            &mut previous[..sin_theta.len()],
+            &mut current[..sin_theta.len()],
+            &mut exponents[..sin_theta.len()],
+        )? {
+            return Ok(false);
+        }
+        return Ok(arch.dispatch(FusedScalarAnalysisPairChannels {
+            m,
+            lmax,
+            cos_theta,
+            coefficient_a,
+            coefficient_b,
+            same_real,
+            same_imag,
+            opposite_real,
+            opposite_imag,
+            staged_first: &mut staged_first[..coefficient_count],
+            staged_second: &mut staged_second[..coefficient_count],
+            previous: &mut previous[..sin_theta.len()],
+            current: &mut current[..sin_theta.len()],
+            next: &mut next[..sin_theta.len()],
+        }));
     }
 
-    // Each successful channel overwrites its full row; declined scratch is discarded.
-    Ok(arch.dispatch(FusedScalarAnalysisPairChannels {
-        m,
-        lmax,
-        cos_theta,
-        coefficient_a,
-        coefficient_b,
-        same_real,
-        same_imag,
-        opposite_real,
-        opposite_imag,
-        staged_first: &mut staged_first[..coefficient_count],
-        staged_second: &mut staged_second[..coefficient_count],
-        previous: &mut previous[..sin_theta.len()],
-        current: &mut current[..sin_theta.len()],
-        next: &mut next[..sin_theta.len()],
-    }))
+    let mut cos_theta_squared = [0.0; LATITUDE_BLOCK_SIZE];
+    for (squared, &cosine) in cos_theta_squared.iter_mut().zip(cos_theta) {
+        *squared = cosine * cosine;
+    }
+
+    // DUCC's spin-1 analysis runs one scalar recurrence per converted channel.
+    // Keep the reflected inputs packed once, then reuse the checked single-channel
+    // kernel with its smaller accumulator set for each row.
+    let mut channels_succeeded = true;
+    for (channel, staged) in [
+        (0, &mut staged_first[..coefficient_count]),
+        (1, &mut staged_second[..coefficient_count]),
+    ] {
+        if !initialize_analysis_sectoral_lanes(
+            arch,
+            m,
+            lmax,
+            sin_theta,
+            sectoral_norm,
+            &mut previous[..sin_theta.len()],
+            &mut current[..sin_theta.len()],
+            &mut exponents[..sin_theta.len()],
+        )? {
+            channels_succeeded = false;
+            continue;
+        }
+        let mut range_check_was_exercised = false;
+        let recurrence_succeeded = arch.dispatch(FusedScalarAnalysisPair::<false> {
+            m,
+            lmax,
+            range_check_was_exercised: &mut range_check_was_exercised,
+            pair_start: 0,
+            cos_theta,
+            cos_theta_squared: &cos_theta_squared[..sin_theta.len()],
+            coefficient_a,
+            coefficient_b,
+            same_real: same_real[channel],
+            same_imag: same_imag[channel],
+            opposite_real: opposite_real[channel],
+            opposite_imag: opposite_imag[channel],
+            staged_coefficients: staged,
+            previous: &mut previous[..sin_theta.len()],
+            current: &mut current[..sin_theta.len()],
+            next: &mut next[..sin_theta.len()],
+        });
+        let state_within_upper_bound = previous[..sin_theta.len()]
+            .iter()
+            .chain(&current[..sin_theta.len()])
+            .all(|value| value.is_finite() && value.abs() <= scalar::BIG)
+            && (lmax - m < 2
+                || next[..sin_theta.len()]
+                    .iter()
+                    .all(|value| value.is_finite() && value.abs() <= scalar::BIG));
+        channels_succeeded &= recurrence_succeeded && state_within_upper_bound;
+    }
+    Ok(channels_succeeded)
 }
 
 struct FusedScalarAnalysisPairChannels<'a> {
@@ -6950,6 +7008,7 @@ mod tests {
 
         let fused = fused_scalar_analysis_pair_channels_block_dispatched(
             arch,
+            true,
             m,
             lmax,
             &sin_theta,
@@ -7091,6 +7150,7 @@ mod tests {
 
             let fused = fused_scalar_analysis_pair_channels_block_dispatched(
                 Arch::new(),
+                true,
                 m,
                 lmax,
                 &sin_theta,
@@ -7147,6 +7207,7 @@ mod tests {
 
         let fused = fused_scalar_analysis_pair_channels_block_dispatched(
             Arch::new(),
+            true,
             m,
             lmax,
             &sin_theta,

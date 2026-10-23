@@ -662,6 +662,7 @@ pub(crate) trait ShtScalar:
     )]
     fn fused_scalar_analysis_pair_channels_block(
         _arch: Arch,
+        _sequential_channels: bool,
         _m: usize,
         _lmax: usize,
         _sin_theta: &[Self],
@@ -1583,6 +1584,7 @@ impl ShtScalar for f64 {
 
     fn fused_scalar_analysis_pair_channels_block(
         arch: Arch,
+        sequential_channels: bool,
         m: usize,
         lmax: usize,
         sin_theta: &[Self],
@@ -1603,6 +1605,7 @@ impl ShtScalar for f64 {
     ) -> Result<bool, ShtError> {
         scalar_paired::fused_scalar_analysis_pair_channels_block_dispatched(
             arch,
+            sequential_channels,
             m,
             lmax,
             sin_theta,

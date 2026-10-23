@@ -3781,10 +3781,11 @@ impl<T: ShtScalar> ShtPlan<T> {
 
     #[expect(
         clippy::too_many_arguments,
-        reason = "The fused spin-1 analysis block shares recurrence lanes across Q and U and stages both coefficient rows."
+        reason = "The spin-1 analysis block receives paired spectra and stages both coefficient rows."
     )]
     fn try_fused_spin_scalar_analysis_pair_block(
         arch: pulp::Arch,
+        sequential_channels: bool,
         m: usize,
         scalar_lmax: usize,
         sectoral_norm: T,
@@ -3826,6 +3827,7 @@ impl<T: ShtScalar> ShtPlan<T> {
 
         let fused = T::fused_scalar_analysis_pair_channels_block(
             arch,
+            sequential_channels,
             m,
             scalar_lmax,
             sin_theta,
@@ -3890,6 +3892,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         let scalar_lmax = self.harmonics.lmax() + 1;
         let scalar_coefficient_count = scalar_lmax + 1;
         let fused_analysis_enabled = self.harmonics.lmax() >= SPIN1_FUSED_ANALYSIS_MIN_LMAX;
+        let sequential_channels =
+            fused_analysis_enabled && !single_threaded_execution() && scalar_lmax < 1024;
         #[cfg(all(test, feature = "parallel"))]
         let profiling = recurrence.analysis_leaf_profile_enabled();
         recurrence.fast_scalar_first[..scalar_coefficient_count]
@@ -4052,6 +4056,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             let fused_block = fused_analysis_enabled
                 && Self::try_fused_spin_scalar_analysis_pair_block(
                     arch,
+                    sequential_channels,
                     m,
                     scalar_lmax,
                     self.sectoral_norms[m],
@@ -4556,6 +4561,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             let fused_block = fused_analysis_enabled
                 && Self::try_fused_spin_scalar_analysis_pair_block(
                     arch,
+                    false,
                     m,
                     scalar_lmax,
                     self.sectoral_norms[m],
@@ -4753,6 +4759,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             let fused_block = if q_products_safe && u_products_safe {
                 T::fused_scalar_analysis_pair_channels_block(
                     arch,
+                    false,
                     m,
                     scalar_lmax,
                     &theta_sin[block_start..block_end],
