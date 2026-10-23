@@ -225,3 +225,34 @@ python3 reports/data/cc-scalar-synthesis-grain-2026-10-23/checkpoint_identity_co
 ```
 
 Raw candidate data and host telemetry remain untracked under `/tmp`.
+
+## Symmetric-cutoff pair preparation follow-up
+
+Scalar analysis now checks the actual ring order limits once per transform.
+When mirrored limits match and rise monotonically from the poles, the existing
+binary cutoff identifies an all-active suffix. Its reflected pairs can then be
+prepared directly without compact ring-index and latitude scratch writes or
+per-lane activity branches. Nonmonotone or asymmetric limits keep the previous
+compaction path; the checked recurrence fallback reconstructs direct indices
+only when it needs them.
+
+The guard test confirms the production T720 CC and F1 cutoff geometry satisfies
+the predicate and rejects asymmetric and nonmonotone examples. CC/F1 scalar
+DUCC and adjoint tests, mixed-cutoff compaction tests, T191 all-grid compaction,
+the full release suite (275 passed, 36 ignored), the no-default-features suite
+(223 passed, 17 ignored), strict Clippy, formatting, and diff checks passed.
+After the final checked-fallback index reconstruction adjustment, the targeted
+geometry, CC/F1, and compaction tests passed again in both release build
+configurations. The implementation and regression tests are committed in
+`64f4e745`.
+
+Two independent pinned q1 phase-profile runs used exact CC T720, `mmax=180`,
+`ntheta=722`, `nphi=1536`, `phi0=0.23`, 30 timed batches per process, two
+transform calls per batch, and a 30 ms target batch. Candidate whole-call
+medians were `23.855` and `23.806 ms`; recurrence-plus-accumulation phase
+medians were `15.767` and `15.747 ms`. The saved pre-change profile had one
+30-batch run at `24.101 ms` overall and `16.048 ms` in that phase. This is a
+small directional profile improvement, not a matched full-transform A/B. The
+last matched end-to-end q1 Rust/DUCC row remains `24.523/18.609 ms` (`1.315x`);
+this change does not close the CC q1 gap. The raw profiles remain untracked in
+`/tmp`.
