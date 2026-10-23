@@ -133,6 +133,25 @@ def finite_json_value(value):
     return value
 
 
+def write_json_sidecar(path: pathlib.Path, value, *, indent: int | None = None) -> None:
+    """Write valid JSON while retaining records with undefined numeric fields."""
+    path.write_text(
+        json.dumps(finite_json_value(value), indent=indent, allow_nan=False) + "\n"
+    )
+
+
+def strip_local_host_telemetry(value):
+    """Remove local host-only diagnostics from merged historical attempts."""
+    if isinstance(value, dict):
+        return {
+            key: strip_local_host_telemetry(item)
+            for key, item in value.items() if key not in {"host_diagnostics", "host_samples"}
+        }
+    if isinstance(value, list):
+        return [strip_local_host_telemetry(item) for item in value]
+    return value
+
+
 def samples_for_result_export(samples: list[dict], metadata: dict) -> list[dict]:
     """Keep raw shard telemetry local while exporting aggregate sample timings."""
     retain_local = metadata.get("retain_local_host_telemetry") is True
@@ -532,6 +551,16 @@ def zero_reference_subnormal_comparison_acceptable(
     )
 
 
+def zero_reference_exact_comparison_acceptable(metric: dict, expected_count: int) -> bool:
+    return (
+        metric.get("reference_peak") == 0.0
+        and metric.get("absolute_max") == 0.0
+        and metric.get("relative_l2") == 0.0
+        and metric.get("near_zero_reference_count") == expected_count
+        and metric.get("metrics_finite") is True
+    )
+
+
 def compare_validation(case: dict, outputs: dict[str, pathlib.Path], records: dict[str, dict]) -> dict:
     nmap = case["ntheta"] * case["nphi"]
     nalm = (case["mmax"] + 1) * (case["lmax"] + 1) - case["mmax"] * (case["mmax"] + 1) // 2
@@ -603,118 +632,208 @@ def compare_validation(case: dict, outputs: dict[str, pathlib.Path], records: di
         backend: bool(records[backend]["reset_consistent"])
         for backend in ("rustsht", "ducc")
     }
-    acceptance_failures = []
-    if not checks["finite_outputs"]:
-        acceptance_failures.append("nonfinite_validation_output")
-    if (set(checks["reset_consistent"]) != {"rustsht", "ducc"}
-            or not all(checks["reset_consistent"].values())):
-        acceptance_failures.append("reused_output_reset_mismatch")
-    expected_finite_flags = {"zero_finite", "extreme_finite", "subnormal_finite"}
-    if any(set(checks["finite_flags"].get(backend, {})) != expected_finite_flags
-           for backend in ("rustsht", "ducc")):
-        acceptance_failures.append("edge_finite_record_missing")
-    if not checks["edge_cases"]["zero"].get("exact_zero", False):
-        acceptance_failures.append("zero_input_was_not_exact_zero")
-    for backend in ("rustsht", "ducc"):
-        for metric_name, metric in checks["roundtrip"][backend].items():
-            if (metric_name == "relative_l2"
-                    and (metric is None or metric > VALIDATION_RELATIVE_L2_TOLERANCE)):
-                acceptance_failures.append(f"{backend}_roundtrip_relative_l2")
-        for operation, field in (("synthesis", "synthesis_relative_residual"),
-                                 ("analysis", "analysis_relative_residual")):
-            residual = checks["adjoints"][backend][field]
-            if (not isinstance(residual, (int, float)) or not math.isfinite(residual)
-                    or residual > ADJOINT_RELATIVE_RESIDUAL_TOLERANCE):
-                acceptance_failures.append(f"{backend}_{operation}_adjoint_residual")
-    expected_modes = set(selected_modes(case["lmax"], case["mmax"]))
-    observed_modes = {(item.get("l"), item.get("m")) for item in checks["basis"]}
-    if observed_modes != expected_modes:
-        acceptance_failures.append("basis_record_set_mismatch")
-    for basis in checks["basis"]:
-        for field in ("map_rust_ducc", "analysis_of_synthesis_rust", "analysis_of_synthesis_ducc"):
-            relative_l2 = basis[field].get("relative_l2")
-            if relative_l2 is None or relative_l2 > VALIDATION_RELATIVE_L2_TOLERANCE:
-                acceptance_failures.append(f"basis_{field}_l{basis['l']}_m{basis['m']}")
-    for edge_name, edge in checks["edge_cases"].items():
-        for field in ("map_rust_ducc", "alm_rust_ducc"):
-            metric = edge[field]
-            relative_l2 = metric.get("relative_l2")
-            if relative_l2 is None or relative_l2 > VALIDATION_RELATIVE_L2_TOLERANCE:
-                expected_count = nmap if field == "map_rust_ducc" else nalm
-                if (edge_name == "subnormal"
-                        and zero_reference_subnormal_comparison_acceptable(
-                            metric, expected_count
-                        )):
-                    continue
-                acceptance_failures.append(f"{edge_name}_{field}")
-    checks["acceptance_failures"] = acceptance_failures
-    checks["acceptance_status"] = "rejected" if acceptance_failures else "accepted"
+    checks.update({
+        "lmax": case["lmax"],
+        "mmax": case["mmax"],
+        "ntheta": case["ntheta"],
+        "nphi": case["nphi"],
+    })
+    checks["acceptance_status"], checks["acceptance_failures"] = saved_validation_acceptance(
+        checks, case
+    )
     return checks
 
 
-def saved_validation_acceptance(validation: dict) -> tuple[str, list[str]]:
-    """Reconcile a saved validation record against current numeric gates."""
+def _validation_metric_failures(metric, label: str, limit: float, expected_count: int,
+                                allow_zero_reference_subnormal: bool = False,
+                                require_exact_zero: bool = False) -> list[str]:
+    if not isinstance(metric, dict):
+        return [f"{label}_metrics_missing"]
     failures = []
-    if not validation.get("finite_outputs", False):
+    for field in ("absolute_max", "reference_peak", "max_relative_above_1e-12_peak"):
+        value = metric.get(field)
+        if (isinstance(value, bool) or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+                or value < 0.0):
+            failures.append(f"{label}_{field}_missing_or_nonfinite")
+    near_zero_count = metric.get("near_zero_reference_count")
+    if (not isinstance(near_zero_count, int) or isinstance(near_zero_count, bool) or near_zero_count < 0
+            or near_zero_count > expected_count):
+        failures.append(f"{label}_near_zero_reference_count_invalid")
+    relative_l2 = metric.get("relative_l2")
+    if require_exact_zero:
+        if (metric.get("absolute_max") != 0.0 or isinstance(relative_l2, bool)
+                or not isinstance(relative_l2, (int, float))
+                or not math.isfinite(relative_l2) or relative_l2 != 0.0):
+            failures.append(f"{label}_not_exact_zero")
+        if (metric.get("reference_peak") != 0.0
+                or near_zero_count != expected_count):
+            failures.append(f"{label}_zero_reference_record_invalid")
+        if metric.get("metrics_finite") is not True:
+            failures.append(f"{label}_metrics_not_finite")
+    elif (allow_zero_reference_subnormal
+          and zero_reference_subnormal_comparison_acceptable(metric, expected_count)):
+        if metric.get("metrics_finite") is not False:
+            failures.append(f"{label}_metrics_finite_flag_inconsistent")
+    elif (isinstance(relative_l2, bool) or not isinstance(relative_l2, (int, float))
+          or not math.isfinite(relative_l2)):
+        failures.append(f"{label}_relative_l2_missing_or_nonfinite")
+    elif metric.get("metrics_finite") is not True:
+        failures.append(f"{label}_metrics_not_finite")
+    if (not require_exact_zero and isinstance(metric.get("reference_peak"), (int, float))
+            and not isinstance(metric.get("reference_peak"), bool)
+            and metric["reference_peak"] == 0.0
+            and not (allow_zero_reference_subnormal
+                     and zero_reference_subnormal_comparison_acceptable(metric, expected_count))
+            and not (allow_zero_reference_subnormal
+                     and zero_reference_exact_comparison_acceptable(metric, expected_count))):
+        failures.append(f"{label}_unexpected_zero_reference")
+    if (not isinstance(relative_l2, bool) and isinstance(relative_l2, (int, float))
+            and math.isfinite(relative_l2)
+            and relative_l2 < 0.0):
+        failures.append(f"{label}_relative_l2_invalid")
+    if (isinstance(relative_l2, (int, float)) and math.isfinite(relative_l2)
+            and relative_l2 > limit):
+        failures.append(f"{label}_relative_l2_exceeded")
+    return failures
+
+
+def random_comparison_failures(record: dict | None) -> list[str]:
+    if not isinstance(record, dict):
+        return ["random_numeric_record_missing"]
+    if record.get("finite_outputs") is not True:
+        return ["random_output_nonfinite"]
+    geometry = (record.get("lmax"), record.get("mmax"),
+                record.get("ntheta"), record.get("nphi"))
+    if not all(isinstance(value, int) and not isinstance(value, bool) for value in geometry):
+        return ["random_numeric_geometry_missing"]
+    lmax, mmax, ntheta, nphi = geometry
+    if lmax < 0 or mmax < 0 or mmax > lmax or ntheta <= 0 or nphi <= 0:
+        return ["random_numeric_geometry_invalid"]
+    expected_count = (
+        ntheta * nphi if record.get("operation") == "synthesis"
+        else (mmax + 1) * (lmax + 1) - mmax * (mmax + 1) // 2
+    )
+    return _validation_metric_failures(
+        record, "random_output", RANDOM_OUTPUT_RELATIVE_L2_TOLERANCE, expected_count
+    )
+
+
+def saved_validation_acceptance(validation: dict | None,
+                                expected_case: dict | None = None) -> tuple[str, list[str]]:
+    """Apply strict per-field acceptance to one saved analytic validation record."""
+    if validation is None:
+        return "incomplete", ["missing_validation"]
+    if not isinstance(validation, dict):
+        return "rejected", ["malformed_validation"]
+    failures = []
+    if validation.get("finite_outputs") is not True:
         failures.append("nonfinite_validation_output")
-    reset_flags = validation.get("reset_consistent", {})
-    if set(reset_flags) != {"rustsht", "ducc"} or not all(reset_flags.values()):
-        failures.append("reused_output_reset_mismatch")
-    finite_flags = validation.get("finite_flags", {})
-    expected_finite_flags = {"zero_finite", "extreme_finite", "subnormal_finite"}
-    if any(set(finite_flags.get(backend, {})) != expected_finite_flags
-           for backend in ("rustsht", "ducc")):
-        failures.append("edge_finite_record_missing")
-    if not validation.get("edge_cases", {}).get("zero", {}).get("exact_zero", False):
-        failures.append("zero_input_was_not_exact_zero")
-    for backend in ("rustsht", "ducc"):
-        roundtrip = validation.get("roundtrip", {}).get(backend, {}).get("relative_l2")
-        if roundtrip is None or roundtrip > VALIDATION_RELATIVE_L2_TOLERANCE:
-            failures.append(f"{backend}_roundtrip_relative_l2")
-        for operation in ("synthesis", "analysis"):
-            residual = validation.get("adjoints", {}).get(backend, {}).get(
-                f"{operation}_relative_residual"
-            )
-            if (not isinstance(residual, (int, float)) or not math.isfinite(residual)
-                    or residual > ADJOINT_RELATIVE_RESIDUAL_TOLERANCE):
-                failures.append(f"{backend}_{operation}_adjoint_residual")
+
     lmax, mmax = validation.get("lmax"), validation.get("mmax")
-    if not isinstance(lmax, int) or not isinstance(mmax, int):
-        failures.append("validation_geometry_missing")
-        expected_modes = set()
-    else:
-        expected_modes = set(selected_modes(lmax, mmax))
-    observed_modes = {(item.get("l"), item.get("m"))
-                      for item in validation.get("basis", [])}
-    if observed_modes != expected_modes:
+    ntheta, nphi = validation.get("ntheta"), validation.get("nphi")
+    if expected_case is not None:
+        lmax = expected_case.get("lmax")
+        mmax = expected_case.get("mmax")
+        ntheta = expected_case.get("ntheta")
+        nphi = expected_case.get("nphi")
+    if not all(isinstance(value, int) and not isinstance(value, bool)
+               for value in (lmax, mmax, ntheta, nphi)):
+        return "rejected", failures + ["validation_geometry_missing"]
+    if lmax < 0 or mmax < 0 or mmax > lmax or ntheta <= 0 or nphi <= 0:
+        failures.append("validation_geometry_invalid")
+    if expected_case is not None and any(
+        validation.get(field) != expected_case.get(field)
+        for field in ("lmax", "mmax", "ntheta", "nphi")
+    ):
+        failures.append("validation_geometry_mismatch")
+    nmap = ntheta * nphi
+    nalm = (mmax + 1) * (lmax + 1) - mmax * (mmax + 1) // 2
+
+    reset_flags = validation.get("reset_consistent")
+    if not isinstance(reset_flags, dict) or set(reset_flags) != {"rustsht", "ducc"}:
+        failures.append("reset_backend_set_incomplete")
+    elif any(reset_flags[backend] is not True for backend in ("rustsht", "ducc")):
+        failures.append("reused_output_reset_mismatch")
+
+    expected_finite_flags = {"zero_finite", "extreme_finite", "subnormal_finite"}
+    finite_flags = validation.get("finite_flags")
+    if not isinstance(finite_flags, dict) or set(finite_flags) != {"rustsht", "ducc"}:
+        failures.append("finite_flags_backend_set_incomplete")
+    for backend in ("rustsht", "ducc"):
+        flags = finite_flags.get(backend) if isinstance(finite_flags, dict) else None
+        if not isinstance(flags, dict) or set(flags) != expected_finite_flags:
+            failures.append(f"{backend}_finite_flags_incomplete")
+        elif any(value is not True for value in flags.values()):
+            failures.append(f"{backend}_finite_flags_failed")
+
+    roundtrip = validation.get("roundtrip")
+    expected_roundtrip = {"rustsht", "ducc", "rust_ducc"}
+    if not isinstance(roundtrip, dict) or set(roundtrip) != expected_roundtrip:
+        failures.append("roundtrip_backend_set_incomplete")
+    for backend in expected_roundtrip:
+        failures.extend(_validation_metric_failures(
+            roundtrip.get(backend) if isinstance(roundtrip, dict) else None,
+            f"roundtrip_{backend}", VALIDATION_RELATIVE_L2_TOLERANCE, nalm,
+        ))
+
+    basis = validation.get("basis")
+    if not isinstance(basis, list):
+        basis = []
+        failures.append("basis_records_missing")
+    expected_modes = set(selected_modes(lmax, mmax))
+    observed_modes = {
+        (item.get("l"), item.get("m")) for item in basis if isinstance(item, dict)
+    }
+    if observed_modes != expected_modes or len(basis) != len(expected_modes):
         failures.append("basis_record_set_mismatch")
+    for item in basis:
+        if not isinstance(item, dict):
+            failures.append("basis_record_malformed")
+            continue
+        label = f"basis_l{item.get('l')}_m{item.get('m')}"
+        for field, count in (
+            ("map_rust_ducc", nmap),
+            ("analysis_of_synthesis_rust", nalm),
+            ("analysis_of_synthesis_ducc", nalm),
+        ):
+            failures.extend(_validation_metric_failures(
+                item.get(field), f"{label}_{field}",
+                VALIDATION_RELATIVE_L2_TOLERANCE, count,
+            ))
+
+    adjoints = validation.get("adjoints")
+    if not isinstance(adjoints, dict) or set(adjoints) != {"rustsht", "ducc"}:
+        failures.append("adjoint_backend_set_incomplete")
+    for backend in ("rustsht", "ducc"):
+        backend_adjoints = adjoints.get(backend) if isinstance(adjoints, dict) else None
+        for operation in ("synthesis", "analysis"):
+            residual = (backend_adjoints.get(f"{operation}_relative_residual")
+                        if isinstance(backend_adjoints, dict) else None)
+            if (isinstance(residual, bool) or not isinstance(residual, (int, float))
+                    or not math.isfinite(residual)
+                    or residual < 0.0 or residual > ADJOINT_RELATIVE_RESIDUAL_TOLERANCE):
+                failures.append(f"{backend}_{operation}_adjoint_residual")
+
+    edges = validation.get("edge_cases")
     expected_edges = {"zero", "extreme", "subnormal"}
-    if set(validation.get("edge_cases", {})) != expected_edges:
+    if not isinstance(edges, dict) or set(edges) != expected_edges:
         failures.append("edge_case_record_set_mismatch")
-    for basis in validation.get("basis", []):
-        for field in ("map_rust_ducc", "analysis_of_synthesis_rust", "analysis_of_synthesis_ducc"):
-            relative_l2 = basis.get(field, {}).get("relative_l2")
-            if relative_l2 is None or relative_l2 > VALIDATION_RELATIVE_L2_TOLERANCE:
-                failures.append(f"basis_{field}_l{basis.get('l')}_m{basis.get('m')}")
-    for edge_name, edge in validation.get("edge_cases", {}).items():
-        for field in ("map_rust_ducc", "alm_rust_ducc"):
-            metric = edge.get(field, {})
-            relative_l2 = metric.get("relative_l2")
-            if relative_l2 is None or relative_l2 > VALIDATION_RELATIVE_L2_TOLERANCE:
-                nmap = validation.get("ntheta", 0) * validation.get("nphi", 0)
-                lmax, mmax = validation.get("lmax"), validation.get("mmax")
-                nalm = (
-                    (mmax + 1) * (lmax + 1) - mmax * (mmax + 1) // 2
-                    if isinstance(lmax, int) and isinstance(mmax, int) else 0
-                )
-                expected_count = nmap if field == "map_rust_ducc" else nalm
-                if (edge_name == "subnormal"
-                        and zero_reference_subnormal_comparison_acceptable(
-                            metric, expected_count
-                        )):
-                    continue
-                failures.append(f"{edge_name}_{field}")
-    return ("rejected" if failures else "accepted"), failures
+    for edge_name in ("zero", "extreme", "subnormal"):
+        edge = edges.get(edge_name) if isinstance(edges, dict) else None
+        if not isinstance(edge, dict):
+            failures.append(f"{edge_name}_edge_case_missing")
+            continue
+        if edge_name == "zero" and edge.get("exact_zero") is not True:
+            failures.append("zero_input_was_not_exact_zero")
+        for field, count in (("map_rust_ducc", nmap), ("alm_rust_ducc", nalm)):
+            failures.extend(_validation_metric_failures(
+                edge.get(field), f"{edge_name}_{field}",
+                VALIDATION_RELATIVE_L2_TOLERANCE, count,
+                allow_zero_reference_subnormal=(edge_name == "subnormal"),
+                require_exact_zero=(edge_name == "zero"),
+            ))
+    return ("rejected" if failures else "accepted"), sorted(set(failures))
 
 
 def read_result(path: pathlib.Path, operation: str, case: dict, backend: str) -> np.ndarray:
@@ -959,6 +1078,80 @@ def checkpoint_group_path(directory: pathlib.Path, case_id: str,
     return directory / f"{hashlib.sha256(key).hexdigest()}.json"
 
 
+def checkpoint_pair_is_complete(pair_state: dict, validation_required: bool) -> bool:
+    if pair_state.get("complete") is not True:
+        return False
+    if not validation_required:
+        return pair_state.get("validation_status", "not_required") == "not_required"
+    validation_status = pair_state.get("validation_status")
+    payload = pair_state.get("payload")
+    validations = payload.get("validations") if isinstance(payload, dict) else None
+    return (
+        validation_status in {"accepted", "rejected"}
+        and isinstance(validations, list)
+        and len(validations) == 1
+        and isinstance(validations[0], dict)
+        and validations[0].get("acceptance_status") == validation_status
+    )
+
+
+def checkpoint_history_records(checkpoint: dict, case_id: str, operation: str,
+                               threads: int) -> list[dict]:
+    """Return incomplete and superseded checkpoint attempts without merging their timings."""
+    records = []
+    for pair_key, state in checkpoint.get("pairs", {}).items():
+        try:
+            pair = int(pair_key)
+        except (TypeError, ValueError):
+            pair = pair_key
+        validation_required = operation == "analysis" and pair == 0
+        attempt_status = (
+            "recovered" if checkpoint_pair_is_complete(state, validation_required)
+            else "incomplete"
+        )
+        for attempt in state.get("attempt_history", []):
+            if isinstance(attempt, dict) and isinstance(attempt.get("payload"), dict):
+                payload = attempt["payload"]
+                validation_status = attempt.get("validation_status", "unknown")
+            else:  # Accept legacy checkpoints that stored payloads directly.
+                payload = attempt if isinstance(attempt, dict) else {}
+                validation_status = "unknown"
+            if payload:
+                records.append({
+                    "case_id": case_id, "operation": operation, "threads": threads,
+                    "process_pair": pair, "attempt_status": "superseded",
+                    "validation_status": validation_status, "payload": payload,
+                })
+        if not checkpoint_pair_is_complete(state, validation_required):
+            payload = state.get("payload", {})
+            if payload:
+                records.append({
+                    "case_id": case_id, "operation": operation, "threads": threads,
+                    "process_pair": pair, "attempt_status": attempt_status,
+                    "validation_status": state.get("validation_status", "pending"),
+                    "payload": payload,
+                })
+    return records
+
+
+def checkpoint_pair_state(previous_pair: dict | None, payload: dict, complete: bool,
+                          validation_status: str, validation_required: bool) -> dict:
+    attempt_history = list(previous_pair.get("attempt_history", []) if previous_pair else [])
+    if previous_pair and not checkpoint_pair_is_complete(previous_pair, validation_required):
+        previous_payload = previous_pair.get("payload", {})
+        if previous_payload:
+            attempt_history.append({
+                "validation_status": previous_pair.get("validation_status", "pending"),
+                "payload": previous_payload,
+            })
+    return {
+        "complete": complete,
+        "validation_status": validation_status,
+        "payload": payload,
+        "attempt_history": attempt_history,
+    }
+
+
 def validate_checkpoint_directory(directory: pathlib.Path, identity: dict,
                                   resume: bool) -> None:
     identity_path = directory / "run-identity.json"
@@ -1000,6 +1193,7 @@ def run_matrix(
     failures: list[dict] = []
     validations: list[dict] = []
     host_samples: list[dict] = []
+    historical_attempts: list[dict] = []
     checkpoint_identity_hash = (
         hashlib.sha256(json.dumps(checkpoint_identity, sort_keys=True).encode()).hexdigest()
         if checkpoint_identity is not None else None
@@ -1052,28 +1246,31 @@ def run_matrix(
                             "threads": threads,
                             "pairs": {},
                         }
+                    historical_attempts.extend(
+                        checkpoint_history_records(
+                            checkpoint, case["case_id"], operation, threads
+                        )
+                    )
                     completed_pairs = set()
                     for pair_key, pair_state in checkpoint["pairs"].items():
-                        if not pair_state.get("complete"):
+                        pair_index = int(pair_key)
+                        validation_required = operation == "analysis" and pair_index == 0
+                        if not checkpoint_pair_is_complete(pair_state, validation_required):
                             continue
                         pair_payload = pair_state["payload"]
                         raw.extend(pair_payload.get("samples", []))
                         errors.extend(pair_payload.get("comparisons", []))
                         validations.extend(pair_payload.get("validations", []))
                         failures.extend(pair_payload.get("failures", []))
-                        failures.extend(
-                            {**item, "attempt_status": "recovered"}
-                            for attempt in pair_state.get("attempt_history", [])
-                            for item in attempt.get("failures", [])
-                        )
                         host_samples.extend(pair_payload.get("host_samples", []))
-                        completed_pairs.add(int(pair_key))
+                        completed_pairs.add(pair_index)
                     progress += 1
                     print(
                         f"CASE {progress}/{total} {case['case_id']} {operation} q{threads}",
                         flush=True,
                     )
                     for pair in range(pairs):
+                        validate = operation == "analysis" and pair == 0
                         if pair in completed_pairs:
                             print(f"RESUME {case['case_id']} {operation} q{threads} pair={pair} complete", flush=True)
                             continue
@@ -1084,14 +1281,10 @@ def run_matrix(
                         pair_host_start = len(host_samples)
                         previous_pair = checkpoint["pairs"].get(str(pair))
 
-                        def save_pair_checkpoint(complete: bool) -> None:
+                        def save_pair_checkpoint(complete: bool,
+                                                 validation_status: str | None = None) -> None:
                             if checkpoint_path is None:
                                 return
-                            attempt_history = list(
-                                previous_pair.get("attempt_history", []) if previous_pair else []
-                            )
-                            if previous_pair and not previous_pair.get("complete"):
-                                attempt_history.append(previous_pair.get("payload", {}))
                             payload = {
                                 "samples": raw[pair_raw_start:],
                                 "comparisons": errors[pair_errors_start:],
@@ -1099,23 +1292,19 @@ def run_matrix(
                                 "failures": failures[pair_failures_start:],
                                 "host_samples": host_samples[pair_host_start:],
                             }
-                            checkpoint["pairs"][str(pair)] = {
-                                "complete": complete,
-                                "payload": payload,
-                                "attempt_history": attempt_history,
-                            }
-                            atomic_write_json(checkpoint_path, checkpoint)
-                            failure_tag = "recovered" if complete else "superseded"
-                            failures.extend(
-                                {**item, "attempt_status": failure_tag}
-                                for attempt in attempt_history
-                                for item in attempt.get("failures", [])
+                            validation_status = validation_status or (
+                                "not_required" if not validate else "pending"
                             )
+                            pair_state = checkpoint_pair_state(
+                                previous_pair, payload, complete, validation_status, validate
+                            )
+                            checkpoint["pairs"][str(pair)] = pair_state
+                            atomic_write_json(checkpoint_path, checkpoint)
 
                         order = ["rustsht", "ducc"] if pair % 2 == 0 else ["ducc", "rustsht"]
                         outputs = {}
                         pair_records = {}
-                        validate = operation == "analysis" and pair == 0
+                        validation_status = "pending" if validate else "not_required"
                         for backend in order:
                             output_path = temp / f"{backend}-{operation}-q{threads}-p{pair}.bin"
                             command = worker_command(
@@ -1183,7 +1372,7 @@ def run_matrix(
                                     "failure_class": "output_reset_failed",
                                 })
                         if len(outputs) != 2:
-                            save_pair_checkpoint(False)
+                            save_pair_checkpoint(False, validation_status)
                             continue
                         try:
                             rust_values = read_result(outputs["rustsht"], operation, case, "rustsht")
@@ -1203,7 +1392,7 @@ def run_matrix(
                                 "failure_class": "output_read_error",
                                 "reason": str(error)[:16000],
                             })
-                            save_pair_checkpoint(False)
+                            save_pair_checkpoint(False, validation_status)
                             continue
                         all_finite = bool(np.isfinite(rust_values).all() and np.isfinite(ducc_values).all())
                         if all_finite:
@@ -1288,7 +1477,7 @@ def run_matrix(
                                     "failure_class": "validation_error",
                                     "reason": str(error)[:16000],
                                 })
-                                save_pair_checkpoint(True)
+                                save_pair_checkpoint(False, "error")
                                 continue
                             validation.update({
                                 "case_id": case["case_id"],
@@ -1299,6 +1488,7 @@ def run_matrix(
                                 "threads": threads,
                             })
                             validations.append(validation)
+                            validation_status = validation["acceptance_status"]
                             if validation["acceptance_status"] != "accepted":
                                 failures.append({
                                     "case_id": case["case_id"],
@@ -1320,12 +1510,12 @@ def run_matrix(
                                     f"VALIDATION WARNING {case['case_id']} finite={validation['finite_outputs']} reset={validation['reset_consistent']}",
                                     flush=True,
                                 )
-                        save_pair_checkpoint(True)
+                        save_pair_checkpoint(True, validation_status)
             case["map_path"] = str(case["map_path"])
             case["alm_path"] = str(case["alm_path"])
     host = summarize_host(host_samples)
     return raw, {"errors": errors, "validations": validations, "host": host,
-                 "failures": failures}
+                 "failures": failures, "historical_attempts": historical_attempts}
 
 
 def summarize_host(samples: list[dict]) -> dict:
@@ -1461,6 +1651,12 @@ def aggregate(raw: list[dict], errors: list[dict],
         )
         if not common_pairs:
             continue
+        expected_pairs = set(range(PROCESS_PAIRS))
+        pair_coverage_complete = (
+            set(rust_by_pair) == expected_pairs
+            and set(ducc_by_pair) == expected_pairs
+            and set(errors_by_pair) == expected_pairs
+        )
         matched_rust = [rust_by_pair[pair] for pair in common_pairs]
         matched_ducc = [ducc_by_pair[pair] for pair in common_pairs]
         rust_measurements = backends["rustsht"]
@@ -1498,37 +1694,27 @@ def aggregate(raw: list[dict], errors: list[dict],
             values = [item[metric] for item in error_values if item.get(metric) is not None]
             errors_summary[metric] = max(values) if values else None
         comparison_accepted = all(
-            item.get("numerical_status") == "accepted"
-            or (item.get("numerical_status") is None
-                and item.get("relative_l2") is not None
-                and item["relative_l2"] <= RANDOM_OUTPUT_RELATIVE_L2_TOLERANCE)
-            for item in error_values
+            not random_comparison_failures(item) for item in error_values
         )
         validation = validation_by_group.get((case_id, threads))
         reset_consistent = all(
             proc.get("reset_consistent") is True
             for proc in (*rust_measurements, *ducc_measurements)
         )
-        validation_status = (
-            saved_validation_acceptance(validation)[0]
-            if validation is not None
-            else None
-        )
+        validation_status = saved_validation_acceptance(validation, matched_rust[0])[0]
         if not reset_consistent or not comparison_accepted:
             numerical_status = "rejected"
-        elif len(common_pairs) != PROCESS_PAIRS:
+        elif not pair_coverage_complete:
             numerical_status = "incomplete"
-        elif validation is None:
-            numerical_status = "comparison_only"
         elif validation_status == "accepted":
             numerical_status = "accepted"
+        elif validation_status == "incomplete":
+            numerical_status = "incomplete"
         else:
             numerical_status = "rejected"
         coverage_status = (
             "complete"
-            if len(common_pairs) == PROCESS_PAIRS
-            and len(rust_by_pair) == PROCESS_PAIRS
-            and len(ducc_by_pair) == PROCESS_PAIRS
+            if pair_coverage_complete
             else "partial"
         )
         modes = {
@@ -1537,7 +1723,8 @@ def aggregate(raw: list[dict], errors: list[dict],
         }
         timing_mode = next(iter(modes)) if len(modes) == 1 else "mixed"
         process_counts_qualified = (
-            len(rust_measurements) == PROCESS_PAIRS
+            pair_coverage_complete
+            and len(rust_measurements) == PROCESS_PAIRS
             and len(ducc_measurements) == PROCESS_PAIRS
             and all(
                 len(proc["batch_ms"]) >= (5 if proc["warmup_ms"] >= 100.0 else BATCHES_PER_PROCESS)
@@ -1546,7 +1733,7 @@ def aggregate(raw: list[dict], errors: list[dict],
         )
         timing_quality_status = (
             "qualified"
-            if len(common_pairs) == PROCESS_PAIRS and process_counts_qualified
+            if pair_coverage_complete and process_counts_qualified
             else "insufficient"
         )
         if target_window_fraction is not None:
@@ -2151,13 +2338,29 @@ def write_cc_gl_comparison_plot(output_dir: pathlib.Path,
     cc_machine = load_result_json(cc_path)
     gl_machine = load_result_json(gl_results)
 
-    def derived_status(row: dict | None, machine: dict) -> tuple[str, str, str]:
+    def derived_status(row: dict | None, machine: dict) -> tuple[str, str, str, str, str]:
         if row is None:
-            return "missing", "missing", "missing"
+            return "missing", "missing", "missing", "missing", "missing"
         coverage = row.get("coverage_status", row.get("measurement_status", "missing"))
         if coverage != "complete":
-            return coverage, "unknown", "insufficient"
+            return coverage, "unknown", "insufficient", "mixed_or_unavailable", "incomplete"
         numeric = row.get("numerical_status")
+        group_samples = [
+            sample for sample in machine.get("samples", [])
+            if sample.get("case_id") == row.get("case_id")
+            and sample.get("operation") == row.get("operation")
+            and int(sample.get("threads", -1)) == int(row["threads"])
+        ]
+        expected_pairs = set(range(PROCESS_PAIRS))
+        sample_keys = Counter(
+            (sample.get("backend"), sample.get("process_pair"))
+            for sample in group_samples
+        )
+        one_sample_per_pair = (
+            len(group_samples) == 2 * PROCESS_PAIRS
+            and all(sample_keys[(backend, pair)] == 1
+                    for backend in ("rustsht", "ducc") for pair in expected_pairs)
+        )
         if numeric is None:
             try:
                 error = float(row["relative_l2"])
@@ -2168,36 +2371,60 @@ def write_cc_gl_comparison_plot(output_dir: pathlib.Path,
                 for item in machine.get("validation", [])
             }
             validation = validation_by_group.get((row.get("case_id"), int(row["threads"])))
-            validation_status = (
-                saved_validation_acceptance(validation)[0] if validation is not None else "missing"
-            )
-            numeric = (
-                "accepted" if error <= RANDOM_OUTPUT_RELATIVE_L2_TOLERANCE
-                and validation_status == "accepted" else "rejected"
-            )
+            validation_status = saved_validation_acceptance(validation, row)[0]
+            if not math.isfinite(error) or error > RANDOM_OUTPUT_RELATIVE_L2_TOLERANCE:
+                numeric = "rejected"
+            elif validation_status == "accepted":
+                numeric = "accepted"
+            elif validation_status == "incomplete":
+                numeric = "incomplete"
+            else:
+                numeric = "rejected"
         timing = row.get("timing_quality_status")
         if timing is None:
             pairs = {backend: set() for backend in ("rustsht", "ducc")}
-            group_samples = []
-            for sample in machine.get("samples", []):
-                if (sample.get("case_id") != row.get("case_id")
-                        or sample.get("operation") != row.get("operation")
-                        or int(sample.get("threads", -1)) != int(row["threads"])):
-                    continue
+            for sample in group_samples:
                 backend = sample.get("backend")
                 if backend not in pairs:
                     continue
                 pairs[backend].add(sample.get("process_pair"))
-                group_samples.append(sample)
             timing = (
-                "qualified" if len(pairs["rustsht"]) == PROCESS_PAIRS
-                and len(pairs["ducc"]) == PROCESS_PAIRS
+                "qualified" if one_sample_per_pair
+                and all(pairs[backend] == expected_pairs
+                        for backend in ("rustsht", "ducc"))
                 and all(len(sample.get("batch_ms", [])) >= (
                     5 if sample.get("warmup_ms", 0.0) >= 100.0 else BATCHES_PER_PROCESS
-                ) for sample in group_samples)
+                ) for sample in group_samples
+                    if sample.get("backend") in {"rustsht", "ducc"})
                 else "insufficient"
             )
-        return coverage, numeric, timing
+        duration = row.get("duration_window_status")
+        if duration is None:
+            target_batches = [
+                elapsed for sample in group_samples
+                if sample.get("warmup_ms", 0.0) < 100.0
+                for elapsed in sample.get("batch_total_ms", [])
+            ]
+            if target_batches:
+                duration = (
+                    "within_target" if all(20.0 <= value <= 100.0 for value in target_batches)
+                    else "partially_outside_target"
+                )
+            elif group_samples and all(sample.get("warmup_ms", 0.0) >= 100.0
+                                       for sample in group_samples):
+                duration = "not_applicable"
+            else:
+                duration = "mixed_or_unavailable"
+        reset = row.get("reset_consistency_status")
+        if reset is None:
+            reset = (
+                "accepted" if one_sample_per_pair
+                and all(sample.get("reset_consistent") is True for sample in group_samples)
+                else "rejected" if any(sample.get("reset_consistent") is False
+                                        for sample in group_samples)
+                else "incomplete"
+            )
+        return coverage, numeric, timing, duration, reset
 
     def comparison_status(cc_row: dict | None, gl_row: dict | None,
                           cc_state: tuple[str, str, str],
@@ -2216,9 +2443,13 @@ def write_cc_gl_comparison_plot(output_dir: pathlib.Path,
             if state[0] != "complete":
                 return "incomplete_coverage"
             if state[1] != "accepted":
-                return "rejected_numerics"
+                return "incomplete_numerics" if state[1] == "incomplete" else "rejected_numerics"
             if state[2] != "qualified":
                 return "timing_insufficient"
+            if state[3] not in {"within_target", "not_applicable"}:
+                return "timing_uncalibrated"
+            if state[4] != "accepted":
+                return "reset_inconsistent"
         return "accepted"
 
     def metadata_source(machine: dict, field: str) -> str | None:
@@ -2330,12 +2561,23 @@ def dense_sweep_measurement_pass(expected_ids: set[str], actual_ids: set[str],
                                  low_even_missing: list[str],
                                  measurement_groups: dict) -> bool:
     """Return manifest, numerical, timing and reset acceptance independent of profiling."""
+    expected_groups = {
+        f"{case_id}|{operation}|q{threads}"
+        for case_id in expected_ids
+        for operation in ("analysis", "synthesis")
+        for threads in (1, 8)
+    }
     return (
-        expected_ids <= actual_ids
+        bool(expected_ids)
+        and bool(measurement_groups)
+        and expected_ids <= actual_ids
         and not low_even_missing
+        and set(measurement_groups) == expected_groups
         and all(group["status"] == "complete" for group in measurement_groups.values())
         and all(group["numerical_status"] == "accepted" for group in measurement_groups.values())
         and all(group["timing_quality_status"] == "qualified" for group in measurement_groups.values())
+        and all(group["duration_window_status"] in {"within_target", "not_applicable"}
+                for group in measurement_groups.values())
         and all(group["reset_consistency_status"] == "accepted" for group in measurement_groups.values())
     )
 
@@ -2375,6 +2617,7 @@ def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
                     and entry["threads"] == threads
                 ]
                 comparison_pairs = {entry["process_pair"] for entry in group_errors}
+                expected_pairs = set(range(PROCESS_PAIRS))
                 failed_pairs = {
                     entry["process_pair"] for entry in failures
                     if entry.get("case_id") == key[0]
@@ -2386,7 +2629,16 @@ def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
                     }
                     and entry.get("attempt_status") not in {"recovered", "superseded"}
                 }
-                complete = backend_pairs["rustsht"] & backend_pairs["ducc"] & comparison_pairs
+                complete = (
+                    backend_pairs["rustsht"] & backend_pairs["ducc"]
+                    & comparison_pairs & expected_pairs
+                )
+                pair_coverage_complete = (
+                    backend_pairs["rustsht"] == expected_pairs
+                    and backend_pairs["ducc"] == expected_pairs
+                    and comparison_pairs == expected_pairs
+                    and complete == expected_pairs
+                )
                 group_samples = [
                     entry for entry in raw
                     if entry["case_id"] == key[0]
@@ -2414,8 +2666,7 @@ def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
                     "mixed" if timing_modes else "missing"
                 )
                 process_counts_qualified = (
-                    all(len(backend_pairs[backend]) == PROCESS_PAIRS
-                        for backend in ("rustsht", "ducc"))
+                    pair_coverage_complete
                     and all(
                         len(entry["batch_ms"]) >= (
                             5 if entry["warmup_ms"] >= 100.0 else BATCHES_PER_PROCESS
@@ -2425,7 +2676,7 @@ def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
                 )
                 timing_quality_status = (
                     "qualified"
-                    if len(complete) == PROCESS_PAIRS and process_counts_qualified
+                    if pair_coverage_complete and process_counts_qualified
                     else "insufficient"
                 )
                 short_batches = [
@@ -2443,30 +2694,24 @@ def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
                 else:
                     duration_window_status = "mixed_or_unavailable"
                 numerical_statuses = [
-                    entry.get("numerical_status")
-                    or ("accepted" if entry.get("relative_l2") is not None
-                        and entry["relative_l2"] <= RANDOM_OUTPUT_RELATIVE_L2_TOLERANCE
-                        else "rejected")
+                    "accepted" if not random_comparison_failures(entry) else "rejected"
                     for entry in group_errors
                 ]
                 validation = validation_by_group.get((key[0], threads))
-                validation_status = (
-                    saved_validation_acceptance(validation)[0]
-                    if validation is not None
-                    else None
-                )
+                validation_status = saved_validation_acceptance(validation, case)[0]
                 if reset_consistency_status == "rejected":
                     numerical_status = "rejected"
                 elif reset_consistency_status != "accepted":
                     numerical_status = "incomplete"
                 elif not all(status == "accepted" for status in numerical_statuses):
                     numerical_status = "rejected"
-                elif len(group_errors) != PROCESS_PAIRS:
+                elif (comparison_pairs != expected_pairs
+                      or len(group_errors) != PROCESS_PAIRS):
                     numerical_status = "incomplete"
-                elif validation is None:
-                    numerical_status = "comparison_only"
                 elif validation_status == "accepted":
                     numerical_status = "accepted"
+                elif validation_status == "incomplete":
+                    numerical_status = "incomplete"
                 else:
                     numerical_status = "rejected"
                 measurement_groups[f"{key[0]}|{operation}|q{threads}"] = {
@@ -2481,9 +2726,10 @@ def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
                     "timing_quality_status": timing_quality_status,
                     "duration_window_status": duration_window_status,
                     "reset_consistency_status": reset_consistency_status,
+                    "validation_status": validation_status,
                     "numerical_status": numerical_status,
                     "status": (
-                        "complete" if len(complete) == PROCESS_PAIRS
+                        "complete" if pair_coverage_complete
                         else "partial" if complete
                         else "failed" if failed_pairs
                         else "missing"
@@ -2525,7 +2771,12 @@ def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
         },
         "numerical_status_counts": {
             status: sum(group["numerical_status"] == status for group in measurement_groups.values())
-            for status in ("accepted", "rejected", "comparison_only", "incomplete")
+            for status in ("accepted", "rejected", "incomplete")
+        },
+        "validation_status_counts": {
+            status: sum(group["validation_status"] == status
+                        for group in measurement_groups.values())
+            for status in ("accepted", "rejected", "incomplete")
         },
         "timing_quality_status_counts": {
             status: sum(group["timing_quality_status"] == status for group in measurement_groups.values())
@@ -2561,6 +2812,8 @@ def dense_sweep_coverage(cases: list[dict], raw: list[dict], errors: list[dict],
             and all(group["status"] == "complete" for group in measurement_groups.values())
             and all(group["numerical_status"] == "accepted" for group in measurement_groups.values())
             and all(group["timing_quality_status"] == "qualified" for group in measurement_groups.values())
+            and all(group["duration_window_status"] in {"within_target", "not_applicable"}
+                    for group in measurement_groups.values())
             and all(group["reset_consistency_status"] == "accepted" for group in measurement_groups.values())
         ),
         "recurrence_stage_attribution_status": recurrence_stage_attribution_status,
@@ -2645,11 +2898,14 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
         "numerics": portable_evidence(analysis["errors"]),
         "validation": portable_evidence(analysis["validations"]),
         "failures": portable_evidence(analysis.get("failures", [])),
+        "historical_attempts": portable_evidence(
+            strip_local_host_telemetry(analysis.get("historical_attempts", []))
+            if metadata.get("merged_shards")
+            else analysis.get("historical_attempts", [])
+        ),
         "host_summary": analysis["host"],
     }
-    (output_dir / "results.json").write_text(
-        json.dumps(finite_json_value(machine), separators=(",", ":"), allow_nan=False) + "\n"
-    )
+    write_json_sidecar(output_dir / "results.json", machine)
     result_fields = list(rows[0]) if rows else [
         "case_id", "grid", "lmax", "mmax", "ntheta", "nphi", "longitude_mode",
         "operation", "threads", "rust_warm_ms", "rust_p10_ms", "rust_p90_ms",
@@ -2657,7 +2913,8 @@ def write_artifacts(output_dir: pathlib.Path, metadata: dict, cases: list[dict],
         "process_pair_ratio_p10", "process_pair_ratio_p90", "excess_ms", "absolute_max",
         "relative_l2", "max_relative_above_1e-12_peak", "rust_batch_count",
         "ducc_batch_count", "completed_process_pairs", "coverage_status",
-        "numerical_status", "timing_mode", "timing_quality_status", "duration_window_status",
+        "numerical_status", "timing_mode", "timing_quality_status",
+        "duration_window_status", "reset_consistency_status",
     ]
     with (output_dir / "results.csv").open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=result_fields, lineterminator="\n")
@@ -2909,7 +3166,7 @@ def write_dense_sweep_report(output_dir: pathlib.Path, report: pathlib.Path,
         "",
         "## Coverage audit",
         "",
-        f"The dataset contains {len(coverage['observed_lmax_0_through_256'])}/257 integer degrees in the low range ({257 - len(coverage['observed_lmax_0_through_256'])} absent). The required high-resolution list has {len(coverage['required_high_lmax'])} values; required case-selection check: `{coverage['coverage_pass']}`; missing required cases: {len(coverage['missing_case_ids'])}. Low-degree even-smooth full/reduced omissions: {len(coverage['low_degree_even_smooth_missing'])}. Across {coverage['expected_measurement_group_count']} required operation/thread groups, coverage statuses are `{coverage['measurement_status_counts']}`, numerical statuses are `{coverage['numerical_status_counts']}`, timing-quality statuses are `{coverage['timing_quality_status_counts']}`, target-window statuses are `{coverage['duration_window_status_counts']}`, and reset statuses are `{coverage['reset_consistency_status_counts']}`. Whole-transform pass: `{coverage['whole_transform_pass']}`; recurrence-stage attribution: `{coverage['recurrence_stage_attribution_status']}`; full-sweep status: `{coverage['full_sweep_pass']}` (manifest/numerics/timing/reset only; stage profiling is reported independently). Incomplete, rejected and timing-insufficient groups remain visible in the coverage audit.",
+        f"The dataset contains {len(coverage['observed_lmax_0_through_256'])}/257 integer degrees in the low range ({257 - len(coverage['observed_lmax_0_through_256'])} absent). The required high-resolution list has {len(coverage['required_high_lmax'])} values; required case-selection check: `{coverage['coverage_pass']}`; missing required cases: {len(coverage['missing_case_ids'])}. Low-degree even-smooth full/reduced omissions: {len(coverage['low_degree_even_smooth_missing'])}. Across {coverage['expected_measurement_group_count']} required operation/thread groups, coverage statuses are `{coverage['measurement_status_counts']}`, numerical statuses are `{coverage['numerical_status_counts']}`, analytic-validation statuses are `{coverage['validation_status_counts']}`, timing-quality statuses are `{coverage['timing_quality_status_counts']}`, target-window statuses are `{coverage['duration_window_status_counts']}`, and reset statuses are `{coverage['reset_consistency_status_counts']}`. Whole-transform pass: `{coverage['whole_transform_pass']}`; recurrence-stage attribution: `{coverage['recurrence_stage_attribution_status']}`; full-sweep status: `{coverage['full_sweep_pass']}` (manifest, complete numerical acceptance, qualified timing windows and resets; stage profiling is reported independently). Incomplete, rejected and timing-insufficient groups remain visible in the coverage audit.",
         "",
         "## Warmed whole-transform summary",
         "",
@@ -3167,6 +3424,7 @@ def merge_shards(shard_paths: list[pathlib.Path], output_dir: pathlib.Path,
     errors: list[dict] = []
     validations: list[dict] = []
     failures: list[dict] = []
+    historical_attempts: list[dict] = []
     invocations = []
     seen_case_ids = set()
     seen_samples = set()
@@ -3188,6 +3446,10 @@ def merge_shards(shard_paths: list[pathlib.Path], output_dir: pathlib.Path,
         errors.extend(shard["numerics"])
         validations.extend(shard["validation"])
         failures.extend(shard.get("failures", []))
+        historical_attempts.extend(
+            {"source_shard": path.parent.name, **attempt}
+            for attempt in shard.get("historical_attempts", [])
+        )
         invocation = shard["metadata"].get("invocation")
         if invocation:
             invocations.append(invocation)
@@ -3283,6 +3545,7 @@ def merge_shards(shard_paths: list[pathlib.Path], output_dir: pathlib.Path,
         "errors": errors,
         "validations": validations,
         "failures": failures,
+        "historical_attempts": historical_attempts,
         "host": summarize_host(diagnostics),
     }
     metadata.pop("retain_local_host_telemetry", None)

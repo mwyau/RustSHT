@@ -69,7 +69,7 @@ def expected_cases() -> dict[str, dict]:
 
 
 def finite_number(value) -> bool:
-    return isinstance(value, (int, float)) and math.isfinite(value)
+    return not isinstance(value, bool) and isinstance(value, (int, float)) and math.isfinite(value)
 
 
 def relative_values(tree, field: str) -> list[float]:
@@ -97,93 +97,228 @@ def zero_reference_subnormal_metric_acceptable(error: dict, expected_count: int)
     )
 
 
-def validation_reasons(validation: dict | None) -> list[str]:
+def zero_reference_exact_metric_acceptable(error: dict, expected_count: int) -> bool:
+    return (
+        error.get("reference_peak") == 0.0
+        and error.get("absolute_max") == 0.0
+        and error.get("relative_l2") == 0.0
+        and error.get("near_zero_reference_count") == expected_count
+        and error.get("metrics_finite") is True
+    )
+
+
+def _metric_reasons(metric, label: str, limit: float,
+                    expected_count: int, allow_zero_reference_subnormal: bool = False,
+                    require_exact_zero: bool = False) -> list[str]:
+    if not isinstance(metric, dict):
+        return [f"{label}_metrics_missing"]
+    reasons = []
+    for field in ("absolute_max", "reference_peak", "max_relative_above_1e-12_peak"):
+        if not finite_number(metric.get(field)) or metric[field] < 0.0:
+            reasons.append(f"{label}_{field}_missing_or_nonfinite")
+    near_zero_count = metric.get("near_zero_reference_count")
+    if (not isinstance(near_zero_count, int) or isinstance(near_zero_count, bool) or near_zero_count < 0
+            or near_zero_count > expected_count):
+        reasons.append(f"{label}_near_zero_reference_count_invalid")
+    relative_l2 = metric.get("relative_l2")
+    if require_exact_zero:
+        if (metric.get("absolute_max") != 0.0 or not finite_number(relative_l2)
+                or relative_l2 != 0.0):
+            reasons.append(f"{label}_not_exact_zero")
+        if (metric.get("reference_peak") != 0.0
+                or near_zero_count != expected_count):
+            reasons.append(f"{label}_zero_reference_record_invalid")
+        if metric.get("metrics_finite") is not True:
+            reasons.append(f"{label}_metrics_not_finite")
+    elif (allow_zero_reference_subnormal
+          and zero_reference_subnormal_metric_acceptable(metric, expected_count)):
+        # The relative norm is undefined only for an exactly zero DUCC reference.
+        # The finite absolute error still has the strict subnormal-sized gate above.
+        if metric.get("metrics_finite") is not False:
+            reasons.append(f"{label}_metrics_finite_flag_inconsistent")
+    elif not finite_number(relative_l2):
+        reasons.append(f"{label}_relative_l2_missing_or_nonfinite")
+    elif metric.get("metrics_finite") is not True:
+        reasons.append(f"{label}_metrics_not_finite")
+    if (not require_exact_zero and finite_number(metric.get("reference_peak"))
+            and metric["reference_peak"] == 0.0
+            and not (allow_zero_reference_subnormal
+                     and zero_reference_subnormal_metric_acceptable(metric, expected_count))
+            and not (allow_zero_reference_subnormal
+                     and zero_reference_exact_metric_acceptable(metric, expected_count))):
+        reasons.append(f"{label}_unexpected_zero_reference")
+    if finite_number(relative_l2) and relative_l2 < 0.0:
+        reasons.append(f"{label}_relative_l2_invalid")
+    if finite_number(relative_l2) and relative_l2 > limit:
+        reasons.append(f"{label}_relative_l2_exceeded")
+    return reasons
+
+
+def random_numeric_reasons(record: dict | None) -> list[str]:
+    if not isinstance(record, dict):
+        return ["random_numeric_record_missing"]
+    if record.get("finite_outputs") is not True:
+        return ["random_output_nonfinite"]
+    geometry = (record.get("lmax"), record.get("mmax"),
+                record.get("ntheta"), record.get("nphi"))
+    if not all(isinstance(value, int) and not isinstance(value, bool) for value in geometry):
+        return ["random_numeric_geometry_missing"]
+    lmax, mmax, ntheta, nphi = geometry
+    if lmax < 0 or mmax < 0 or mmax > lmax or ntheta <= 0 or nphi <= 0:
+        return ["random_numeric_geometry_invalid"]
+    expected_count = (
+        ntheta * nphi if record.get("operation") == "synthesis"
+        else (mmax + 1) * (lmax + 1) - mmax * (mmax + 1) // 2
+    )
+    return _metric_reasons(
+        record, "random_output", RANDOM_RELATIVE_L2_LIMIT, expected_count
+    )
+
+
+def validation_reasons(validation: dict | None, expected_case: dict | None = None) -> list[str]:
     if validation is None:
         return ["missing_validation"]
+    if not isinstance(validation, dict):
+        return ["malformed_validation"]
     reasons = []
     if validation.get("finite_outputs") is not True:
         reasons.append("nonfinite_validation_output")
-    for key in ("finite_flags", "reset_consistent"):
-        if set(validation.get(key, {})) != {"rustsht", "ducc"}:
-            reasons.append(f"{key}_backend_set_incomplete")
-    for backend, flags in validation.get("finite_flags", {}).items():
-        if not isinstance(flags, dict) or any(value is not True for value in flags.values()):
+    lmax, mmax = validation.get("lmax"), validation.get("mmax")
+    ntheta, nphi = validation.get("ntheta"), validation.get("nphi")
+    if not all(isinstance(value, int) and not isinstance(value, bool)
+               for value in (lmax, mmax, ntheta, nphi)):
+        return reasons + ["validation_geometry_missing"]
+    if (lmax < 0 or mmax < 0 or mmax > lmax or ntheta <= 0 or nphi <= 0):
+        reasons.append("validation_geometry_invalid")
+    if expected_case is not None and any(
+        validation.get(field) != expected_case.get(field)
+        for field in ("lmax", "mmax", "ntheta", "nphi")
+    ):
+        reasons.append("validation_geometry_mismatch")
+    nmap = ntheta * nphi
+    nalm = (mmax + 1) * (lmax + 1) - mmax * (mmax + 1) // 2
+
+    expected_finite_flags = {"zero_finite", "extreme_finite", "subnormal_finite"}
+    finite_flags = validation.get("finite_flags")
+    reset_flags = validation.get("reset_consistent")
+    if not isinstance(finite_flags, dict) or set(finite_flags) != {"rustsht", "ducc"}:
+        reasons.append("finite_flags_backend_set_incomplete")
+    if not isinstance(reset_flags, dict) or set(reset_flags) != {"rustsht", "ducc"}:
+        reasons.append("reset_consistent_backend_set_incomplete")
+    for backend in ("rustsht", "ducc"):
+        flags = finite_flags.get(backend) if isinstance(finite_flags, dict) else None
+        if not isinstance(flags, dict) or set(flags) != expected_finite_flags:
+            reasons.append(f"{backend}_finite_flags_incomplete")
+        elif any(value is not True for value in flags.values()):
             reasons.append(f"{backend}_finite_flags_failed")
-    for backend, flags in validation.get("reset_consistent", {}).items():
-        if flags is not True:
+        reset = reset_flags.get(backend) if isinstance(reset_flags, dict) else None
+        if reset is not True:
             reasons.append(f"{backend}_validation_reset_failed")
-    edges = validation.get("edge_cases", {})
-    zero_case = edges.get("zero", {})
-    if zero_case.get("exact_zero") is not True:
-        reasons.append("exact_zero_failed")
-    for field in ("map_rust_ducc", "alm_rust_ducc"):
-        error = zero_case.get(field, {})
-        if error.get("absolute_max") != 0.0 or error.get("relative_l2") != 0.0:
-            reasons.append(f"exact_zero_{field}_failed")
-    for name in ("extreme", "subnormal"):
-        if name not in edges:
-            reasons.append(f"{name}_edge_case_missing")
-            continue
-        lmax, mmax = validation.get("lmax"), validation.get("mmax")
-        ntheta, nphi = validation.get("ntheta"), validation.get("nphi")
-        nalm = (
-            (mmax + 1) * (lmax + 1) - mmax * (mmax + 1) // 2
-            if isinstance(lmax, int) and isinstance(mmax, int) else 0
-        )
-        nmap = ntheta * nphi if isinstance(ntheta, int) and isinstance(nphi, int) else 0
-        for field in ("map_rust_ducc", "alm_rust_ducc"):
-            error = edges[name].get(field)
-            expected_count = nmap if field == "map_rust_ducc" else nalm
-            if (name == "subnormal" and isinstance(error, dict)
-                    and zero_reference_subnormal_metric_acceptable(error, expected_count)):
-                continue
-            if not isinstance(error, dict) or not all(
-                finite_number(error.get(metric))
-                for metric in ("absolute_max", "relative_l2")
-            ):
-                reasons.append(f"{name}_{field}_metrics_missing_or_nonfinite")
-            elif name == "extreme" and error["relative_l2"] > VALIDATION_RELATIVE_L2_LIMIT:
-                reasons.append(f"extreme_{field}_validation_failed")
-    for name in ("zero", "extreme", "subnormal"):
-        for backend, flags in validation.get("finite_flags", {}).items():
-            field = f"{name}_finite"
-            if flags.get(field) is not True:
-                reasons.append(f"{backend}_{field}_failed")
-    roundtrip = relative_values(validation.get("roundtrip", {}), "relative_l2")
-    basis = relative_values(validation.get("basis", []), "relative_l2")
+
+    roundtrip = validation.get("roundtrip")
+    expected_roundtrip = {"rustsht", "ducc", "rust_ducc"}
+    if not isinstance(roundtrip, dict) or set(roundtrip) != expected_roundtrip:
+        reasons.append("roundtrip_backend_set_incomplete")
+    for backend in expected_roundtrip:
+        reasons.extend(_metric_reasons(
+            roundtrip.get(backend) if isinstance(roundtrip, dict) else None,
+            f"roundtrip_{backend}", VALIDATION_RELATIVE_L2_LIMIT, nalm,
+        ))
+
     expected_basis_modes = {
         (0, 0),
-        (validation["lmax"], 0),
-        (validation["lmax"] // 2,
-         min(validation["mmax"], validation["lmax"] // 2)),
-        (validation["lmax"], validation["mmax"]),
+        (lmax, 0),
+        (lmax // 2, min(mmax, lmax // 2)),
+        (lmax, mmax),
     }
+    basis_records = validation.get("basis")
+    if not isinstance(basis_records, list):
+        basis_records = []
+        reasons.append("basis_records_missing")
     observed_basis_modes = {
-        (item.get("l"), item.get("m")) for item in validation.get("basis", [])
+        (item.get("l"), item.get("m"))
+        for item in basis_records if isinstance(item, dict)
     }
-    if observed_basis_modes != expected_basis_modes:
-        reasons.append("basis_record_count_incomplete")
-    # Adjoint leaves use operation-specific field names, so enumerate them directly.
-    adjoints = []
+    if (observed_basis_modes != expected_basis_modes
+            or len(basis_records) != len(expected_basis_modes)):
+        reasons.append("basis_record_set_incomplete")
+    for item in basis_records:
+        if not isinstance(item, dict):
+            reasons.append("basis_record_malformed")
+            continue
+        label = f"basis_l{item.get('l')}_m{item.get('m')}"
+        for field, count in (
+            ("map_rust_ducc", nmap),
+            ("analysis_of_synthesis_rust", nalm),
+            ("analysis_of_synthesis_ducc", nalm),
+        ):
+            reasons.extend(_metric_reasons(
+                item.get(field), f"{label}_{field}",
+                VALIDATION_RELATIVE_L2_LIMIT, count,
+            ))
+
+    adjoints = validation.get("adjoints")
+    if not isinstance(adjoints, dict) or set(adjoints) != {"rustsht", "ducc"}:
+        reasons.append("adjoint_backend_set_incomplete")
     for backend in ("rustsht", "ducc"):
-        for operation in ("analysis", "synthesis"):
-            value = validation.get("adjoints", {}).get(backend, {}).get(
-                operation + "_relative_residual"
-            )
-            if finite_number(value):
-                adjoints.append(float(value))
-            else:
+        backend_adjoints = adjoints.get(backend) if isinstance(adjoints, dict) else None
+        for operation in ("synthesis", "analysis"):
+            value = (backend_adjoints.get(operation + "_relative_residual")
+                     if isinstance(backend_adjoints, dict) else None)
+            if not finite_number(value) or value < 0.0:
                 reasons.append(f"{backend}_{operation}_adjoint_missing_or_nonfinite")
-    if not roundtrip or any(value > VALIDATION_RELATIVE_L2_LIMIT for value in roundtrip):
-        reasons.append("roundtrip_validation_failed")
-    if not basis or any(value > VALIDATION_RELATIVE_L2_LIMIT for value in basis):
-        reasons.append("basis_validation_failed")
-    edge_values = relative_values(edges, "relative_l2")
-    if any(value > VALIDATION_RELATIVE_L2_LIMIT for value in edge_values):
-        reasons.append("edge_case_validation_failed")
-    if len(adjoints) != 4 or any(value > ADJOINT_RELATIVE_RESIDUAL_LIMIT for value in adjoints):
-        reasons.append("adjoint_validation_failed")
+            elif value > ADJOINT_RELATIVE_RESIDUAL_LIMIT:
+                reasons.append(f"{backend}_{operation}_adjoint_exceeded")
+
+    edges = validation.get("edge_cases")
+    expected_edges = {"zero", "extreme", "subnormal"}
+    if not isinstance(edges, dict) or set(edges) != expected_edges:
+        reasons.append("edge_case_record_set_incomplete")
+    for name in ("zero", "extreme", "subnormal"):
+        edge = edges.get(name) if isinstance(edges, dict) else None
+        if not isinstance(edge, dict):
+            reasons.append(f"{name}_edge_case_missing")
+            continue
+        if name == "zero" and edge.get("exact_zero") is not True:
+            reasons.append("exact_zero_failed")
+        for field, count in (("map_rust_ducc", nmap), ("alm_rust_ducc", nalm)):
+            reasons.extend(_metric_reasons(
+                edge.get(field), f"{name}_{field}",
+                VALIDATION_RELATIVE_L2_LIMIT, count,
+                allow_zero_reference_subnormal=(name == "subnormal"),
+                require_exact_zero=(name == "zero"),
+            ))
     return reasons
+
+
+def audited_numerical_status(complete: bool, numeric_reasons: list[str],
+                             validation: dict | None, reset_status: str,
+                             expected_case: dict | None = None) -> tuple[str, list[str]]:
+    check_reasons = validation_reasons(validation, expected_case)
+    if numeric_reasons or reset_status == "rejected" or (validation is not None and check_reasons):
+        return "rejected", check_reasons
+    if not complete or reset_status != "accepted" or validation is None:
+        return "incomplete", check_reasons
+    return "accepted", check_reasons
+
+
+def independent_full_sweep_pass(expected_groups: list[dict], missing_cases: list[str],
+                                geometry_mismatches: list[dict], missing_groups: list[str],
+                                timing_incomplete: list[str], duration_incomplete: list[str],
+                                failures: list[dict], duplicates: dict,
+                                identities: dict, metric_contract_pass: bool) -> bool:
+    return (
+        not missing_cases and not geometry_mismatches and not missing_groups
+        and not timing_incomplete and not duration_incomplete and not failures
+        and not any(duplicates.values())
+        and bool(expected_groups)
+        and all(row.get("status") == "complete" for row in expected_groups)
+        and all(row.get("numerical_status") == "accepted" for row in expected_groups)
+        and all(row.get("timing_quality_status") == "qualified" for row in expected_groups)
+        and all(row.get("reset_consistency_status") == "accepted" for row in expected_groups)
+        and all(len(values) == 1 for values in identities.values())
+        and metric_contract_pass
+    )
 
 
 def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
@@ -303,25 +438,24 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
         )
         numeric_reasons = []
         for item in group_numerics:
+            numeric_reasons.extend(random_numeric_reasons(item))
             value = item.get("relative_l2")
-            if item.get("finite_outputs") is not True or not finite_number(value):
-                numeric_reasons.append("nonfinite_or_missing_random_result")
-            elif value > RANDOM_RELATIVE_L2_LIMIT:
-                numeric_reasons.append("random_relative_l2_exceeded")
             if finite_number(value) and (max_random[0] is None or value > max_random[0]):
                 max_random = (value, item["case_id"])
         validation = validations.get((case_id, threads))
-        check_reasons = validation_reasons(validation)
+        expected_case = expected.get(case_id)
+        numerical_status, check_reasons = audited_numerical_status(
+            complete, numeric_reasons, validation, reset_status, expected_case
+        )
         validation_values = relative_values(validation or {}, "relative_l2")
         if validation_values:
             value = max(validation_values)
             if max_validation[0] is None or value > max_validation[0]:
                 max_validation = (value, case_id)
-        validation_rejected = validation is not None and bool(check_reasons)
-        numerical_status = (
-            "rejected" if numeric_reasons or validation_rejected or reset_status == "rejected"
-            else "accepted" if complete and reset_status == "accepted"
-            else "incomplete"
+        validation_status = (
+            "incomplete" if validation is None
+            else "accepted" if not check_reasons
+            else "rejected"
         )
         timing_qualified = complete and all(
             len(sample.get("batch_ms", [])) >= (
@@ -364,6 +498,7 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
             "threads": threads,
             "status": group_status,
             "numerical_status": numerical_status,
+            "validation_status": validation_status,
             "timing_quality_status": timing_status,
             "duration_window_status": target_status,
             "reset_consistency_status": reset_status,
@@ -403,14 +538,24 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
         row["case_id"] + "|" + row["operation"] + "|q" + str(row["threads"])
         for row in group_records if row["expected"] and row["numerical_status"] == "rejected"
     ]
+    numerical_incomplete = [
+        row["case_id"] + "|" + row["operation"] + "|q" + str(row["threads"])
+        for row in group_records if row["expected"] and row["numerical_status"] != "accepted"
+    ]
     timing_incomplete = [
         row["case_id"] + "|" + row["operation"] + "|q" + str(row["threads"])
         for row in group_records if row["expected"] and row["timing_quality_status"] != "qualified"
+    ]
+    duration_incomplete = [
+        row["case_id"] + "|" + row["operation"] + "|q" + str(row["threads"])
+        for row in group_records if row["expected"]
+        and row["duration_window_status"] not in {"within_target", "not_applicable"}
     ]
     expected_group_records = [row for row in group_records if row["expected"]]
     counts = {
         "measurement_status": dict(Counter(row["status"] for row in expected_group_records)),
         "numerical_status": dict(Counter(row["numerical_status"] for row in expected_group_records)),
+        "validation_status": dict(Counter(row["validation_status"] for row in expected_group_records)),
         "timing_quality_status": dict(Counter(row["timing_quality_status"] for row in expected_group_records)),
         "duration_window_status": dict(Counter(row["duration_window_status"] for row in expected_group_records)),
         "reset_consistency_status": dict(Counter(row["reset_consistency_status"] for row in expected_group_records)),
@@ -465,8 +610,12 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
         "missing_group_ids": missing_groups,
         "rejected_group_count": len(rejected),
         "rejected_group_ids": rejected,
+        "numerical_incomplete_group_count": len(numerical_incomplete),
+        "numerical_incomplete_group_ids": numerical_incomplete,
         "timing_incomplete_group_count": len(timing_incomplete),
         "timing_incomplete_group_ids": timing_incomplete,
+        "duration_window_incomplete_group_count": len(duration_incomplete),
+        "duration_window_incomplete_group_ids": duration_incomplete,
         "status_counts": counts,
         "duplicate_record_counts": dict(duplicates),
         "failure_record_count": len(failures),
@@ -480,11 +629,10 @@ def audit(shard_paths: list[pathlib.Path], output_dir: pathlib.Path) -> dict:
             "short_batches_per_process": BATCHES_PER_PROCESS,
             "long_individual_samples_per_process": 5,
         },
-        "full_sweep_pass": (
-            not missing_cases and not geometry_mismatches and not missing_groups
-            and not rejected and not timing_incomplete and not failures and not duplicates
-            and all(len(values) == 1 for values in identities.values())
-            and metric_contract_pass
+        "full_sweep_pass": independent_full_sweep_pass(
+            expected_group_records, missing_cases, geometry_mismatches, missing_groups,
+            timing_incomplete, duration_incomplete, failures, duplicates,
+            identities, metric_contract_pass,
         ),
     }
     (output_dir / "independent-audit.json").write_text(
