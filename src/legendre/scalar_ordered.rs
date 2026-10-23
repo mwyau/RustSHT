@@ -34,9 +34,7 @@ pub(crate) struct ScalarOrderedScratch<'a, T> {
     pub(crate) coefficient_even: &'a mut [num_complex::Complex<T>],
     pub(crate) coefficient_odd: &'a mut [num_complex::Complex<T>],
     pub(crate) packed_sin: &'a mut [T],
-    pub(crate) packed_cos: &'a mut [T],
     pub(crate) packed_csq: &'a mut [T],
-    pub(crate) packed_north: &'a mut [usize],
     pub(crate) previous: &'a mut [T],
     pub(crate) current: &'a mut [T],
     pub(crate) scale: &'a mut [i64],
@@ -45,6 +43,12 @@ pub(crate) struct ScalarOrderedScratch<'a, T> {
     pub(crate) sum_even_im: &'a mut [T],
     pub(crate) sum_odd_re: &'a mut [T],
     pub(crate) sum_odd_im: &'a mut [T],
+}
+
+struct ScalarSynthesisBatch<'a> {
+    sin_theta: &'a [f64],
+    active_lanes: usize,
+    vector_lanes: usize,
 }
 
 /// Shared destination for parallel jobs that each own a contiguous Fourier-order range.
@@ -382,9 +386,7 @@ fn synthesize_range_dispatched<'a>(
         || mmax >= spectrum_len
         || nphi == 0
         || scratch.packed_sin.len() < SCALAR_ORDER_BATCH_SIZE
-        || scratch.packed_cos.len() < SCALAR_ORDER_BATCH_SIZE
         || scratch.packed_csq.len() < SCALAR_ORDER_BATCH_SIZE
-        || scratch.packed_north.len() < SCALAR_ORDER_BATCH_SIZE
         || scratch.previous.len() < SCALAR_ORDER_BATCH_SIZE
         || scratch.current.len() < SCALAR_ORDER_BATCH_SIZE
         || scratch.scale.len() < SCALAR_ORDER_BATCH_SIZE
@@ -516,19 +518,14 @@ impl WithSimd for ScalarOrderedSynthesis<'_, '_> {
                 let active_count = (north_count - ring_cursor).min(SCALAR_ORDER_BATCH_SIZE);
                 for lane in 0..active_count {
                     let north = ring_cursor + lane;
-                    let south = ntheta - 1 - north;
                     let sine = sin_theta[north];
                     let cosine = cos_theta[north];
-                    scratch.packed_sin[lane] = sine;
-                    scratch.packed_cos[lane] = cosine;
                     scratch.packed_csq[lane] = if cosine.abs() > 0.99 {
                         (1.0 - sine) * (1.0 + sine)
                     } else {
                         cosine * cosine
                     };
-                    scratch.packed_north[lane] = north;
                     debug_assert!(m <= ring_order_limits[north]);
-                    debug_assert_eq!(south, ntheta - 1 - scratch.packed_north[lane]);
                 }
 
                 // DUCC pads an incomplete vector with the last valid ring.
@@ -549,8 +546,6 @@ impl WithSimd for ScalarOrderedSynthesis<'_, '_> {
                 if simd_count > active_count {
                     let last = active_count - 1;
                     for lane in active_count..simd_count {
-                        scratch.packed_sin[lane] = scratch.packed_sin[last];
-                        scratch.packed_cos[lane] = scratch.packed_cos[last];
                         scratch.packed_csq[lane] = scratch.packed_csq[last];
                     }
                 }
@@ -562,17 +557,21 @@ impl WithSimd for ScalarOrderedSynthesis<'_, '_> {
                     lmax,
                     sectoral_norm,
                     power_lower_limit,
-                    simd_count,
+                    ScalarSynthesisBatch {
+                        sin_theta: &sin_theta[ring_cursor..ring_cursor + active_count],
+                        active_lanes: active_count,
+                        vector_lanes: simd_count,
+                    },
                 ) {
                     return false;
                 }
                 for lane in 0..active_count {
-                    let north = scratch.packed_north[lane];
+                    let north = ring_cursor + lane;
                     let south = ntheta - 1 - north;
                     let even_re = scratch.sum_even_re[lane];
                     let even_im = scratch.sum_even_im[lane];
-                    let odd_re = scratch.sum_odd_re[lane] * scratch.packed_cos[lane];
-                    let odd_im = scratch.sum_odd_im[lane] * scratch.packed_cos[lane];
+                    let odd_re = scratch.sum_odd_re[lane] * cos_theta[north];
+                    let odd_im = scratch.sum_odd_im[lane] * cos_theta[north];
                     let (mut north_value, mut south_value) = (
                         Complex64::new(even_re + odd_re, even_im + odd_im),
                         Complex64::new(even_re - odd_re, even_im - odd_im),
@@ -702,8 +701,13 @@ fn synthesize_batch<S: Simd>(
     lmax: usize,
     sectoral_norm: f64,
     power_lower_limit: f64,
-    active_count: usize,
+    batch: ScalarSynthesisBatch<'_>,
 ) -> bool {
+    let ScalarSynthesisBatch {
+        sin_theta: sine,
+        active_lanes: input_count,
+        vector_lanes: active_count,
+    } = batch;
     let Some(pair_count) = lmax
         .checked_sub(m)
         .and_then(|n| n.checked_add(2))
@@ -712,26 +716,54 @@ fn synthesize_batch<S: Simd>(
         return false;
     };
     let simd_lanes = S::F64_LANES;
-    if simd_lanes == 0 || !active_count.is_multiple_of(simd_lanes) {
+    if simd_lanes == 0
+        || input_count == 0
+        || sine.len() != input_count
+        || active_count < input_count
+        || active_count > SCALAR_ORDER_BATCH_SIZE
+        || !active_count.is_multiple_of(simd_lanes)
+        || active_count != input_count.div_ceil(simd_lanes) * simd_lanes
+    {
         return false;
     }
 
-    let packed_sin = &scratch.packed_sin[..active_count];
     let packed_csq = &scratch.packed_csq[..active_count];
     let coefficient_a = &scratch.coefficient_a[..];
     let coefficient_b = &scratch.coefficient_b[..];
     let coefficient_even = &scratch.coefficient_even[..];
     let coefficient_odd = &scratch.coefficient_odd[..];
     let sign = if m.is_multiple_of(2) { 1.0 } else { -1.0 };
-    if !initialize_sectoral_batch(
-        simd,
-        packed_sin,
-        &mut scratch.current[..active_count],
-        &mut scratch.scale[..active_count],
-        m,
-        power_lower_limit,
-        sign * sectoral_norm,
-    ) {
+    let initialized = if active_count == input_count {
+        initialize_sectoral_batch(
+            simd,
+            sine,
+            &mut scratch.current[..active_count],
+            &mut scratch.scale[..active_count],
+            m,
+            power_lower_limit,
+            sign * sectoral_norm,
+        )
+    } else {
+        let last = input_count - 1;
+        scratch.packed_sin[..input_count].copy_from_slice(sine);
+        scratch.packed_sin[input_count..active_count].fill(sine[last]);
+        let ScalarOrderedScratch {
+            packed_sin,
+            current,
+            scale,
+            ..
+        } = scratch;
+        initialize_sectoral_batch(
+            simd,
+            &packed_sin[..active_count],
+            &mut current[..active_count],
+            &mut scale[..active_count],
+            m,
+            power_lower_limit,
+            sign * sectoral_norm,
+        )
+    };
+    if !initialized {
         return false;
     }
     scratch.previous[..active_count].fill(0.0);
