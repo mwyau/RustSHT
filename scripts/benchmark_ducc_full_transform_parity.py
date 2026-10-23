@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Matched native RustSHT/DUCC scalar GL and CC benchmark."""
+"""Matched native RustSHT/DUCC scalar GL, CC, and focused F1 benchmark."""
 
 from __future__ import annotations
 
@@ -35,6 +35,8 @@ DATA_DIR = ROOT / "reports/data/ducc-full-transform-parity-2026-10-20"
 REPORT_PATH = ROOT / "reports/ducc-full-transform-parity-2026-10-20.md"
 CC_DATA_DIR = ROOT / "reports/data/ducc-scalar-f64-cc-full-sweep-2026-10-22"
 CC_REPORT_PATH = ROOT / "reports/ducc-scalar-f64-cc-full-sweep-2026-10-22.md"
+F1_DATA_DIR = ROOT / "reports/data/ducc-scalar-f64-f1-performance-2026-10-23"
+F1_REPORT_PATH = ROOT / "reports/ducc-scalar-f64-f1-performance-2026-10-23.md"
 RUST_FLAGS = os.environ.get(
     "RUSTSHT_FULL_TRANSFORM_RUSTFLAGS",
     "-C target-cpu=x86-64-v3 -Aunexpected_cfgs",
@@ -348,8 +350,8 @@ def make_cases(
     selected_longitude_modes: set[str] | None = None,
     grid: str = "GL",
 ) -> list[dict]:
-    if grid not in {"GL", "CC"}:
-        raise ValueError(f"unsupported grid {grid}; expected GL or CC")
+    if grid not in {"GL", "CC", "F1"}:
+        raise ValueError(f"unsupported grid {grid}; expected GL, CC, or F1")
     if smoke and not dense_sweep:
         lmax_values = [0, 4, 16, 64]
     elif dense_sweep:
@@ -455,7 +457,11 @@ def make_cases(
 
 
 def make_fixture(case: dict, directory: pathlib.Path) -> None:
-    grid_salt = 0 if case.get("grid", "GL") == "GL" else 0xCC20261022
+    grid_salt = {
+        "GL": 0,
+        "CC": 0xCC20261022,
+        "F1": 0xF120261023,
+    }.get(case.get("grid", "GL"), 0)
     rng = np.random.Generator(np.random.PCG64(
         0xD00C20261020 + grid_salt + case["lmax"] * 65537
         + case["mmax"] * 97 + case["nphi"]
@@ -1072,7 +1078,7 @@ def checkpoint_identity(metadata: dict, cases: list[dict], operations: list[str]
         "threads": list(threads),
         "production_source_revision": metadata["production_source_revision"],
         "binary_source_revision": metadata.get("binary_source_revision"),
-        "binary_build_record_sha256": metadata.get("binary_build_record", {}).get("sha256"),
+        "binary_build_record_sha256": (metadata.get("binary_build_record") or {}).get("sha256"),
         "benchmark_harness_sha256": metadata["benchmark_harness_sha256"],
         "ducc_source_revision": metadata["ducc_source_revision"],
         "rust_binary_sha256": metadata["rust_binary_sha256"],
@@ -1953,7 +1959,11 @@ def issue_lmax_ticks(xmax: int) -> list[int]:
 
 
 def grid_display_name(grid: str) -> str:
-    return "Clenshaw–Curtis" if grid == "CC" else "Gauss–Legendre"
+    return {
+        "GL": "Gauss–Legendre",
+        "CC": "Clenshaw–Curtis",
+        "F1": "Fejér first-rule",
+    }.get(grid, grid)
 
 
 def row_is_plot_eligible(row: dict, grid: str) -> bool:
@@ -3098,7 +3108,11 @@ def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cas
     target_lmax = {0, 4, 8, 16, 32, 64, 128, 255, 256, 511, 512, 513, 720, 721, 1024, 1536, 2048, 3072}
     chosen = [row for row in rows if row["lmax"] in target_lmax and (row["mmax"] == row["lmax"] or row["lmax"] in {720, 2048})]
     lines = [
-        "# Full-transform RustSHT/DUCC parity benchmark (2026-10-20)",
+        (
+            "# Focused scalar F1 RustSHT/DUCC performance comparison (2026-10-23)"
+            if grid == "F1"
+            else "# Full-transform RustSHT/DUCC parity benchmark (2026-10-20)"
+        ),
         "",
         f"Pinned DUCC revision: `{metadata['ducc_source_revision']}` (DUCC {metadata['ducc_version']}).",
         f"Hardware: {metadata['cpu_model']}; {metadata['physical_cores_visible']} physical cores and {metadata['logical_cpus_visible']} logical CPUs visible; {metadata['installed_ram_gib']} GiB RAM; x86-64 features `{', '.join(metadata['cpu_features'])}`.",
@@ -3161,7 +3175,7 @@ def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cas
             f"For even-smooth full-mmax GL, q1 RustSHT was near DUCC at T1536 (analysis {t1536_a['rust_ducc_ratio']:.2f}×; synthesis {t1536_s['rust_ducc_ratio']:.2f}×). At T2048, analysis rose to {t2048_a1['rust_ducc_ratio']:.2f}× q1 and {t2048_a8['rust_ducc_ratio']:.2f}× q8, while synthesis was {t2048_s1['rust_ducc_ratio']:.2f}× q1 and {t2048_s8['rust_ducc_ratio']:.2f}× q8. At T3072, analysis was {t3072_a1['rust_ducc_ratio']:.2f}× q1 ({t3072_a1['excess_ms']:.1f} ms excess) and {t3072_a8['rust_ducc_ratio']:.2f}× q8 ({t3072_a8['excess_ms']:.1f} ms excess); synthesis was {t3072_s1['rust_ducc_ratio']:.2f}× q1 and {t3072_s8['rust_ducc_ratio']:.2f}× q8.",
             "The large high-bandlimit excess is specific to the complete analysis call in these cases: synthesis remains near DUCC at q1, while q8 synthesis is about 1.5× slower. T1536 q1 is near parity, so the measured analysis gap grows sharply in the next sampled size range. End-to-end timings include FFT and preparation; they do not isolate recurrence as the cause. The next comparison should separate analysis recurrence/accumulation from FFT and output work at the high-bandlimit cases.",
         ]
-    else:
+    elif grid == "CC":
         high_full = [row for row in rows if row["lmax"] == 3072 and row["mmax"] == row["lmax"]
                      and row["longitude_mode"] == "even_smooth"]
         high_summary = "; ".join(
@@ -3170,6 +3184,10 @@ def write_report(output_dir: pathlib.Path, metadata: dict, rows: list[dict], cas
         )
         lines.append(
             f"At T3072 full mmax, the measured CC Rust/DUCC ratios are: {high_summary or 'no complete comparison row'}. These end-to-end CC timings include its meridional resampling and do not isolate recurrence; stage attribution is recorded separately when available."
+        )
+    else:
+        lines.append(
+            "F1 excludes both poles and exact analysis uses the mandatory half-grid meridional phase/resampling. This report covers only the selected F1 cases; it does not imply scalar CC or GL performance."
         )
     lines += [
         f"Short-operation batches were within the requested 20–100 ms window for a median {statistics.median(window_fractions):.1%} of each row's combined independent backend batches; the lowest row fraction was {min(window_fractions):.1%}. There are {len(short_rows)} short-operation rows; per-backend row counts range from {min(short_batch_counts) if short_batch_counts else 0} to {max(short_batch_counts) if short_batch_counts else 0}, with {PROCESS_PAIRS * BATCHES_PER_PROCESS} required for a fully sampled backend. Calibration attempts are recorded separately in each process sample.",
@@ -3705,8 +3723,8 @@ def main() -> None:
     parser.add_argument("--ducc-src", type=pathlib.Path, default=os.environ.get("DUCC_SRC"))
     parser.add_argument("--ducc-revision", default=DUCC_REVISION,
                         help="required immutable DUCC commit SHA (default: current active pin)")
-    parser.add_argument("--grid", choices=("GL", "CC"), default="GL",
-                        help="native scalar grid; exact CC fixtures use ntheta=lmax+2")
+    parser.add_argument("--grid", choices=("GL", "CC", "F1"), default="GL",
+                        help="native scalar grid; exact CC uses lmax+2 latitudes; GL/F1 use lmax+1")
     parser.add_argument("--plot-only", action="store_true", help="regenerate ratio and runtime SVGs from existing results.csv; no benchmark or DUCC checkout needed")
     parser.add_argument("--merge-shards", type=pathlib.Path, nargs="+",
                         help="merge completed native benchmark shard results.json files")
@@ -3753,11 +3771,21 @@ def main() -> None:
     parser.add_argument("--retain-local-host-telemetry", action="store_true",
                         help="retain raw per-process CPU-frequency/scheduling samples in this local shard (do not publish them)")
     args = parser.parse_args()
-    default_results_dir = CC_DATA_DIR if args.grid == "CC" else DATA_DIR
-    default_report_path = CC_REPORT_PATH if args.grid == "CC" else REPORT_PATH
+    default_results_dir = {
+        "GL": DATA_DIR,
+        "CC": CC_DATA_DIR,
+        "F1": F1_DATA_DIR,
+    }[args.grid]
+    default_report_path = {
+        "GL": REPORT_PATH,
+        "CC": CC_REPORT_PATH,
+        "F1": F1_REPORT_PATH,
+    }[args.grid]
     args.results_dir = (args.results_dir or default_results_dir).resolve()
     args.report_path = (args.report_path or default_report_path).resolve()
     if args.merge_shards:
+        if args.grid == "F1":
+            parser.error("F1 focused results do not use the GL/CC shard-merge contract")
         merge_shards(
             [path.resolve() for path in args.merge_shards], args.results_dir,
             args.report_path, args.dense_sweep,
@@ -3803,6 +3831,8 @@ def main() -> None:
             f"from {len(rows)} committed rows"
         )
         return
+    if args.grid == "F1" and args.dense_sweep:
+        parser.error("the dense-sweep manifest and report are defined for GL/CC, not F1")
     if args.ducc_src is None:
         parser.error("--ducc-src or DUCC_SRC must name the pinned DUCC checkout")
     ducc_src = pathlib.Path(args.ducc_src).resolve()

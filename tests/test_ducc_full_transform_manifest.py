@@ -245,6 +245,48 @@ def test_dense_gl_keeps_the_historical_low_degree_order_contract() -> None:
     assert orders_by_degree[3] == {1, 3}
 
 
+def test_f1_scalar_cases_use_f1_exact_latitude_geometry() -> None:
+    cases = benchmark.make_cases(
+        False,
+        fixed_mmax=255,
+        fixed_nphi=512,
+        selected_lmax={255},
+        selected_longitude_modes={"even_smooth"},
+        grid="F1",
+    )
+
+    assert len(cases) == 1
+    assert cases[0]["case_id"] == "F1-T255-m255-nphi512"
+    assert cases[0]["grid"] == "F1"
+    assert cases[0]["ntheta"] == 256
+    assert cases[0]["nphi"] == 512
+
+
+def test_checkpoint_identity_accepts_null_binary_build_record() -> None:
+    metadata = {
+        "production_source_revision": "a" * 40,
+        "binary_build_record": None,
+        "benchmark_harness_sha256": "b" * 64,
+        "ducc_source_revision": "c" * 40,
+        "rust_binary_sha256": "d" * 64,
+        "ducc_binary_sha256": "e" * 64,
+        "rustc": "rustc test",
+        "cxx": "c++ test",
+        "rust_flags": "",
+        "ducc_flags": "",
+        "cpu_model": "test",
+        "selected_q1_cpu": 0,
+        "selected_q8_cpus": list(range(8)),
+        "selected_q8_topology": "test",
+        "selected_q8_l3_cache_ids": [],
+        "retain_local_host_telemetry": False,
+    }
+
+    identity = benchmark.checkpoint_identity(metadata, [], [], [])
+
+    assert identity["binary_build_record_sha256"] is None
+
+
 def test_legacy_execution_protocol_uses_declared_binary_source() -> None:
     legacy = {
         "production_source_revision": "a" * 40,

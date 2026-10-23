@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Albert M. W. Yau
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-// Native benchmark adapter for pinned DUCC public GL and CC transform APIs.
+// Native benchmark adapter for pinned DUCC public GL, CC, and F1 transform APIs.
 // DUCC implementation source remains unmodified and is supplied at build time.
 
 #include <algorithm>
@@ -174,8 +174,8 @@ void worker(int argc, char **argv) {
   const double target_ms = parse_double(argv[12], "batch target milliseconds");
   const bool validate = std::string(argv[13]) == "1";
   const std::string grid = argc == 15 ? argv[14] : "GL";
-  if (grid != "GL" && grid != "CC")
-    throw std::runtime_error("unsupported benchmark grid; expected GL or CC");
+  if (grid != "GL" && grid != "CC" && grid != "F1")
+    throw std::runtime_error("unsupported benchmark grid; expected GL, CC, or F1");
 
   const std::size_t alm_count = (mmax + 1) * (lmax + 1) - mmax * (mmax + 1) / 2;
   const std::size_t map_count = ntheta * nphi;

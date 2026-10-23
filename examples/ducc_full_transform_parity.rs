@@ -184,9 +184,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let grid_kind = match grid_name {
         "GL" => GridKind::GaussLegendre,
         "CC" => GridKind::ClenshawCurtis,
+        "F1" => GridKind::Fejer1,
         _ => {
             return Err(
-                format!("unsupported benchmark grid {grid_name}; expected GL or CC").into(),
+                format!("unsupported benchmark grid {grid_name}; expected GL, CC, or F1").into(),
             );
         }
     };
