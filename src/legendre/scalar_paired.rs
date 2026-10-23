@@ -4517,26 +4517,15 @@ impl WithSimd for AnalysisPairChannelsAccumulation<'_> {
         {
             let basis = *basis;
             let cosine = *cosine;
-            sums_0[0] = simd.add_f64s(sums_0[0], simd.mul_f64s(*same_real, basis));
-            sums_0[1] = simd.add_f64s(sums_0[1], simd.mul_f64s(*same_imag, basis));
-            sums_0[2] = simd.add_f64s(
-                sums_0[2],
-                simd.mul_f64s(simd.mul_f64s(*opposite_real, basis), cosine),
-            );
-            sums_0[3] = simd.add_f64s(
-                sums_0[3],
-                simd.mul_f64s(simd.mul_f64s(*opposite_imag, basis), cosine),
-            );
-            sums_1[0] = simd.add_f64s(sums_1[0], simd.mul_f64s(*same_real_1, basis));
-            sums_1[1] = simd.add_f64s(sums_1[1], simd.mul_f64s(*same_imag_1, basis));
-            sums_1[2] = simd.add_f64s(
-                sums_1[2],
-                simd.mul_f64s(simd.mul_f64s(*opposite_real_1, basis), cosine),
-            );
-            sums_1[3] = simd.add_f64s(
-                sums_1[3],
-                simd.mul_f64s(simd.mul_f64s(*opposite_imag_1, basis), cosine),
-            );
+            let opposite_basis = simd.mul_f64s(basis, cosine);
+            sums_0[0] = simd.mul_add_f64s(*same_real, basis, sums_0[0]);
+            sums_0[1] = simd.mul_add_f64s(*same_imag, basis, sums_0[1]);
+            sums_0[2] = simd.mul_add_f64s(*opposite_real, opposite_basis, sums_0[2]);
+            sums_0[3] = simd.mul_add_f64s(*opposite_imag, opposite_basis, sums_0[3]);
+            sums_1[0] = simd.mul_add_f64s(*same_real_1, basis, sums_1[0]);
+            sums_1[1] = simd.mul_add_f64s(*same_imag_1, basis, sums_1[1]);
+            sums_1[2] = simd.mul_add_f64s(*opposite_real_1, opposite_basis, sums_1[2]);
+            sums_1[3] = simd.mul_add_f64s(*opposite_imag_1, opposite_basis, sums_1[3]);
         }
 
         let mut results = [
@@ -4572,6 +4561,7 @@ impl WithSimd for AnalysisPairChannelsAccumulation<'_> {
         debug_assert_eq!(basis_tail.len(), opposite_imag_tail_1.len());
         debug_assert_eq!(basis_tail.len(), cosine_tail.len());
         for lane in 0..basis_tail.len() {
+            let opposite_basis = basis_tail[lane] * cosine_tail[lane];
             for (channel, same_real, same_imag, opposite_real, opposite_imag) in [
                 (
                     0,
@@ -4588,12 +4578,14 @@ impl WithSimd for AnalysisPairChannelsAccumulation<'_> {
                     opposite_imag_tail_1,
                 ),
             ] {
-                results[channel].0.re += same_real[lane] * basis_tail[lane];
-                results[channel].0.im += same_imag[lane] * basis_tail[lane];
-                results[channel].1.re +=
-                    (opposite_real[lane] * basis_tail[lane]) * cosine_tail[lane];
-                results[channel].1.im +=
-                    (opposite_imag[lane] * basis_tail[lane]) * cosine_tail[lane];
+                results[channel].0.re =
+                    same_real[lane].mul_add(basis_tail[lane], results[channel].0.re);
+                results[channel].0.im =
+                    same_imag[lane].mul_add(basis_tail[lane], results[channel].0.im);
+                results[channel].1.re =
+                    opposite_real[lane].mul_add(opposite_basis, results[channel].1.re);
+                results[channel].1.im =
+                    opposite_imag[lane].mul_add(opposite_basis, results[channel].1.im);
             }
         }
         results
