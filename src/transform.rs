@@ -25,6 +25,17 @@ use crate::workspace::{RecurrenceWorkspace, ShtWorkspace};
 
 const SCALAR_TRANSITION_MIN_LMAX: usize = 1023;
 
+struct F64LaneCount;
+
+impl pulp::WithSimd for F64LaneCount {
+    type Output = usize;
+
+    #[inline(always)]
+    fn with_simd<S: pulp::Simd>(self, _: S) -> Self::Output {
+        S::F64_LANES
+    }
+}
+
 #[cfg(test)]
 static SCALAR_TABLE_SYNTHESIS_CALLS: AtomicUsize = AtomicUsize::new(0);
 #[cfg(test)]
@@ -3020,6 +3031,11 @@ impl<T: ShtScalar> ShtPlan<T> {
         };
         let range_cache_block_count = pair_lane_count.div_ceil(pair_block_size);
         debug_assert!(recurrence.previous.len() >= pair_block_size);
+        let paired_simd_width = if T::supports_paired_scalar() {
+            arch.dispatch(F64LaneCount).max(1)
+        } else {
+            1
+        };
         let mut coefficient_start = 0;
         let symmetric_monotone_limits =
             symmetric_monotone_analysis_pair_limits(latitude_count, ring_order_limits);
@@ -3091,17 +3107,54 @@ impl<T: ShtScalar> ShtPlan<T> {
                 #[cfg(all(test, feature = "parallel"))]
                 let (mut block_saw_normal, mut block_saw_scaled) = (false, false);
                 let compact_mixed_block = compact_candidate && lane_count < block_len;
-                let pair_sin = if compact_mixed_block {
+                let fast_path_candidate = paired_used
+                    && lmax >= T::FUSED_SCALAR_ANALYSIS_MIN_LMAX
+                    && recurrence.fast_scalar_first.len() >= coefficient_count;
+                let fused_lane_count = if fast_path_candidate {
+                    lane_count.div_ceil(paired_simd_width) * paired_simd_width
+                } else {
+                    lane_count
+                };
+                debug_assert!(fused_lane_count <= pair_block_size);
+                if fused_lane_count > lane_count {
+                    if !compact_candidate {
+                        for lane in 0..lane_count {
+                            let north_ring = block_start + lane;
+                            recurrence.compact_theta_sin[lane] = theta_sin[north_ring];
+                            recurrence.compact_theta_cos[lane] = theta_cos[north_ring];
+                            recurrence.compact_theta_cos_squared[lane] =
+                                theta_cos_squared[north_ring];
+                        }
+                    }
+                    // Equatorial dummy lanes keep the padded recurrence finite;
+                    // zero spectra make their coefficient contribution exact zero.
+                    for lane in lane_count..fused_lane_count {
+                        recurrence.compact_theta_sin[lane] = T::one();
+                        recurrence.compact_theta_cos[lane] = T::zero();
+                        recurrence.compact_theta_cos_squared[lane] = T::zero();
+                        recurrence.analysis_same_real[lane] = T::zero();
+                        recurrence.analysis_same_imag[lane] = T::zero();
+                        recurrence.analysis_opposite_real[lane] = T::zero();
+                        recurrence.analysis_opposite_imag[lane] = T::zero();
+                    }
+                }
+                let pair_sin = if fused_lane_count > lane_count {
+                    &recurrence.compact_theta_sin[..fused_lane_count]
+                } else if compact_mixed_block {
                     &recurrence.compact_theta_sin[..lane_count]
                 } else {
                     &theta_sin[block_start..block_end]
                 };
-                let pair_cos = if compact_mixed_block {
+                let pair_cos = if fused_lane_count > lane_count {
+                    &recurrence.compact_theta_cos[..fused_lane_count]
+                } else if compact_mixed_block {
                     &recurrence.compact_theta_cos[..lane_count]
                 } else {
                     &theta_cos[block_start..block_end]
                 };
-                let pair_cos_squared = if compact_mixed_block {
+                let pair_cos_squared = if fused_lane_count > lane_count {
+                    &recurrence.compact_theta_cos_squared[..fused_lane_count]
+                } else if compact_mixed_block {
                     &recurrence.compact_theta_cos_squared[..lane_count]
                 } else {
                     &theta_cos_squared[block_start..block_end]
@@ -3110,17 +3163,15 @@ impl<T: ShtScalar> ShtPlan<T> {
                     // Paired degrees l=m+2k use north+south for the even term;
                     // the intervening odd term uses north-south and cos(theta).
                     let staged_count = coefficient_count;
-                    let fast_path_candidate = lmax >= T::FUSED_SCALAR_ANALYSIS_MIN_LMAX
-                        && recurrence.fast_scalar_first.len() >= staged_count;
                     // DUCC's fill_m2a checks the packed spectra and cosine-weights
                     // opposite parity in one pass. Preserve the transformed
                     // values only when both range checks succeed.
                     let packed_preparation = if fast_path_candidate {
                         T::prepare_scalar_analysis_pair_inputs(
-                            &recurrence.analysis_same_real[..lane_count],
-                            &recurrence.analysis_same_imag[..lane_count],
-                            &mut recurrence.analysis_opposite_real[..lane_count],
-                            &mut recurrence.analysis_opposite_imag[..lane_count],
+                            &recurrence.analysis_same_real[..fused_lane_count],
+                            &recurrence.analysis_same_imag[..fused_lane_count],
+                            &mut recurrence.analysis_opposite_real[..fused_lane_count],
+                            &mut recurrence.analysis_opposite_imag[..fused_lane_count],
                             pair_cos,
                         )
                     } else {
@@ -3131,16 +3182,16 @@ impl<T: ShtScalar> ShtPlan<T> {
                             (products_safe, Some(opposite_safe))
                         } else {
                             let products_safe = T::scalar_analysis_products_safe(
-                                &recurrence.analysis_same_real[..lane_count],
-                                &recurrence.analysis_same_imag[..lane_count],
-                                &recurrence.analysis_opposite_real[..lane_count],
-                                &recurrence.analysis_opposite_imag[..lane_count],
+                                &recurrence.analysis_same_real[..fused_lane_count],
+                                &recurrence.analysis_same_imag[..fused_lane_count],
+                                &recurrence.analysis_opposite_real[..fused_lane_count],
+                                &recurrence.analysis_opposite_imag[..fused_lane_count],
                                 pair_cos,
                             );
                             let opposite_preparation = if fast_path_candidate && products_safe {
                                 T::prepare_scalar_analysis_opposite(
-                                    &mut recurrence.analysis_opposite_real[..lane_count],
-                                    &mut recurrence.analysis_opposite_imag[..lane_count],
+                                    &mut recurrence.analysis_opposite_real[..fused_lane_count],
+                                    &mut recurrence.analysis_opposite_imag[..fused_lane_count],
                                     pair_cos,
                                 )
                             } else {
@@ -3164,10 +3215,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                             self.sectoral_norms[m],
                             &recurrence.spin_coefficient_a,
                             &recurrence.spin_coefficient_b,
-                            &recurrence.analysis_same_real[..lane_count],
-                            &recurrence.analysis_same_imag[..lane_count],
-                            &recurrence.analysis_opposite_real[..lane_count],
-                            &recurrence.analysis_opposite_imag[..lane_count],
+                            &recurrence.analysis_same_real[..fused_lane_count],
+                            &recurrence.analysis_same_imag[..fused_lane_count],
+                            &recurrence.analysis_opposite_real[..fused_lane_count],
+                            &recurrence.analysis_opposite_imag[..fused_lane_count],
                             &mut recurrence.fast_scalar_first[..staged_count],
                             &mut recurrence.previous,
                             &mut recurrence.current,
@@ -3224,8 +3275,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                             arch,
                             m,
                             lmax,
-                            pair_sin,
-                            pair_cos,
+                            &pair_sin[..lane_count],
+                            &pair_cos[..lane_count],
                             self.sectoral_norms[m],
                             &recurrence.spin_coefficient_a,
                             &recurrence.spin_coefficient_b,
@@ -3289,8 +3340,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                         arch,
                         m,
                         lmax,
-                        pair_sin,
-                        pair_cos,
+                        &pair_sin[..lane_count],
+                        &pair_cos[..lane_count],
                         self.sectoral_norms[m],
                         &recurrence.epsilon,
                         &mut recurrence.previous,
