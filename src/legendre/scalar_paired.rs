@@ -38,6 +38,8 @@ const ANALYSIS_SCALE_DOWN: f64 = f64::from_bits(223_u64 << 52);
 const ANALYSIS_FBIGHALF: f64 = f64::from_bits(1423_u64 << 52);
 const ANALYSIS_MAX_SCALE_EPOCH: f64 = 4.5e15;
 const PAIRED_FACTOR_LIMIT: f64 = f64::from_bits(1151_u64 << 52);
+#[cfg(feature = "parallel")]
+pub(crate) const HEMISPHERE_PAIR_DEGREE_TILE: usize = 8;
 
 #[cfg(test)]
 pub(crate) static ANALYSIS_PAIR_GROUP_RANGE_DECLINES: std::sync::atomic::AtomicUsize =
@@ -5426,6 +5428,7 @@ pub(crate) fn synthesize_hemisphere_pair_block_dispatched(
     north_second: &mut [Complex64],
     south_second: &mut [Complex64],
     current: &mut [f64],
+    basis_tile: &mut [f64],
     sums: &mut [&mut [f64]; 8],
 ) -> Result<bool, ShtError> {
     let lane_count = sin_theta.len();
@@ -5436,6 +5439,7 @@ pub(crate) fn synthesize_hemisphere_pair_block_dispatched(
     debug_assert_eq!(north_second.len(), north_first.len());
     debug_assert_eq!(south_second.len(), north_first.len());
     debug_assert!(current.len() >= lane_count);
+    debug_assert!(basis_tile.len() >= HEMISPHERE_PAIR_DEGREE_TILE * lane_count);
     debug_assert!(sums.iter().all(|values| values.len() >= lane_count));
     if sin_theta
         .iter()
@@ -5481,6 +5485,7 @@ pub(crate) fn synthesize_hemisphere_pair_block_dispatched(
         second_even: &second_even[..pair_count],
         second_odd: &second_odd[..pair_count],
         current: &current[..lane_count],
+        basis_tile: &mut basis_tile[..HEMISPHERE_PAIR_DEGREE_TILE * lane_count],
         sums: sums.each_mut().map(|values| &mut values[..lane_count]),
     });
     if !completed {
@@ -5547,6 +5552,7 @@ struct FusedHemispherePairBlock<'a> {
     second_even: &'a [Complex64],
     second_odd: &'a [Complex64],
     current: &'a [f64],
+    basis_tile: &'a mut [f64],
     sums: [&'a mut [f64]; 8],
 }
 
@@ -5556,9 +5562,22 @@ impl WithSimd for FusedHemispherePairBlock<'_> {
 
     #[inline(always)]
     fn with_simd<S: Simd>(self, simd: S) -> bool {
-        let (cos_vectors, cos_tail) = S::as_simd_f64s(self.cos_theta);
-        let (current_vectors, current_tail) = S::as_simd_f64s(self.current);
-        let [sum0, sum1, sum2, sum3, sum4, sum5, sum6, sum7] = self.sums;
+        let FusedHemispherePairBlock {
+            pair_count,
+            cos_theta,
+            coefficient_a,
+            coefficient_b,
+            first_even,
+            first_odd,
+            second_even,
+            second_odd,
+            current,
+            basis_tile,
+            sums,
+        } = self;
+        let (cos_vectors, cos_tail) = S::as_simd_f64s(cos_theta);
+        let (current_vectors, current_tail) = S::as_simd_f64s(current);
+        let [sum0, sum1, sum2, sum3, sum4, sum5, sum6, sum7] = sums;
         let (vector0, tail0) = S::as_mut_simd_f64s(sum0);
         let (vector1, tail1) = S::as_mut_simd_f64s(sum1);
         let (vector2, tail2) = S::as_mut_simd_f64s(sum2);
@@ -5571,57 +5590,115 @@ impl WithSimd for FusedHemispherePairBlock<'_> {
             vector0, vector1, vector2, vector3, vector4, vector5, vector6, vector7,
         ];
         let tail_sums = [tail0, tail1, tail2, tail3, tail4, tail5, tail6, tail7];
+        let lane_count = cos_theta.len();
         for lane_block in 0..cos_vectors.len() {
             let cosine = cos_vectors[lane_block];
+            let cosine_squared = simd.mul_f64s(cosine, cosine);
             let mut previous = simd.splat_f64s(0.0);
             let mut basis = current_vectors[lane_block];
-            let mut sums = [simd.splat_f64s(0.0); 8];
-            for pair in 0..self.pair_count {
-                let first_even = self.first_even[pair];
-                let first_odd = self.first_odd[pair];
-                let second_even = self.second_even[pair];
-                let second_odd = self.second_odd[pair];
-                sums[0] = simd.mul_add_f64s(basis, simd.splat_f64s(first_even.re), sums[0]);
-                sums[1] = simd.mul_add_f64s(basis, simd.splat_f64s(first_even.im), sums[1]);
-                sums[2] = simd.mul_add_f64s(
-                    basis,
-                    simd.mul_f64s(cosine, simd.splat_f64s(first_odd.re)),
-                    sums[2],
-                );
-                sums[3] = simd.mul_add_f64s(
-                    basis,
-                    simd.mul_f64s(cosine, simd.splat_f64s(first_odd.im)),
-                    sums[3],
-                );
-                sums[4] = simd.mul_add_f64s(basis, simd.splat_f64s(second_even.re), sums[4]);
-                sums[5] = simd.mul_add_f64s(basis, simd.splat_f64s(second_even.im), sums[5]);
-                sums[6] = simd.mul_add_f64s(
-                    basis,
-                    simd.mul_f64s(cosine, simd.splat_f64s(second_odd.re)),
-                    sums[6],
-                );
-                sums[7] = simd.mul_add_f64s(
-                    basis,
-                    simd.mul_f64s(cosine, simd.splat_f64s(second_odd.im)),
-                    sums[7],
-                );
-                if pair + 1 < self.pair_count {
-                    let cosine_squared = simd.mul_f64s(cosine, cosine);
-                    let leading = simd.mul_add_f64s(
-                        simd.splat_f64s(self.coefficient_a[pair]),
-                        cosine_squared,
-                        simd.splat_f64s(self.coefficient_b[pair]),
-                    );
-                    let next = simd.mul_add_f64s(leading, basis, previous);
-                    if !simd_values_in_normal_range(simd, next) {
-                        return false;
+            let zero = simd.splat_f64s(0.0);
+            vector_sums[0][lane_block] = zero;
+            vector_sums[1][lane_block] = zero;
+            vector_sums[2][lane_block] = zero;
+            vector_sums[3][lane_block] = zero;
+            vector_sums[4][lane_block] = zero;
+            vector_sums[5][lane_block] = zero;
+            vector_sums[6][lane_block] = zero;
+            vector_sums[7][lane_block] = zero;
+            let mut pair_start = 0;
+            while pair_start < pair_count {
+                let tile_count = (pair_count - pair_start).min(HEMISPHERE_PAIR_DEGREE_TILE);
+
+                // Advance the shared recurrence once and stage a short basis
+                // tile. Channel accumulation then keeps four sums live at a
+                // time instead of spilling all eight AVX2 parity sums.
+                for tile_pair in 0..tile_count {
+                    let basis_row = tile_pair * lane_count;
+                    let pair = pair_start + tile_pair;
+                    {
+                        let row = &mut basis_tile[basis_row..basis_row + lane_count];
+                        let (basis_vectors, _) = S::as_mut_simd_f64s(row);
+                        basis_vectors[lane_block] = basis;
                     }
-                    previous = basis;
-                    basis = next;
+                    if pair + 1 < pair_count {
+                        let leading = simd.mul_add_f64s(
+                            simd.splat_f64s(coefficient_a[pair]),
+                            cosine_squared,
+                            simd.splat_f64s(coefficient_b[pair]),
+                        );
+                        let next = simd.mul_add_f64s(leading, basis, previous);
+                        if !simd_values_in_normal_range(simd, next) {
+                            return false;
+                        }
+                        previous = basis;
+                        basis = next;
+                    }
                 }
-            }
-            for sum in 0..8 {
-                vector_sums[sum][lane_block] = sums[sum];
+
+                let mut first_sum0 = vector_sums[0][lane_block];
+                let mut first_sum1 = vector_sums[1][lane_block];
+                let mut first_sum2 = vector_sums[2][lane_block];
+                let mut first_sum3 = vector_sums[3][lane_block];
+                for tile_pair in 0..tile_count {
+                    let basis_row = tile_pair * lane_count;
+                    let (basis_vectors, _) =
+                        S::as_simd_f64s(&basis_tile[basis_row..basis_row + lane_count]);
+                    let basis = basis_vectors[lane_block];
+                    let pair = pair_start + tile_pair;
+                    let coefficient = first_even[pair];
+                    first_sum0 =
+                        simd.mul_add_f64s(basis, simd.splat_f64s(coefficient.re), first_sum0);
+                    first_sum1 =
+                        simd.mul_add_f64s(basis, simd.splat_f64s(coefficient.im), first_sum1);
+                    let coefficient = first_odd[pair];
+                    first_sum2 = simd.mul_add_f64s(
+                        basis,
+                        simd.mul_f64s(cosine, simd.splat_f64s(coefficient.re)),
+                        first_sum2,
+                    );
+                    first_sum3 = simd.mul_add_f64s(
+                        basis,
+                        simd.mul_f64s(cosine, simd.splat_f64s(coefficient.im)),
+                        first_sum3,
+                    );
+                }
+                vector_sums[0][lane_block] = first_sum0;
+                vector_sums[1][lane_block] = first_sum1;
+                vector_sums[2][lane_block] = first_sum2;
+                vector_sums[3][lane_block] = first_sum3;
+
+                let mut second_sum0 = vector_sums[4][lane_block];
+                let mut second_sum1 = vector_sums[5][lane_block];
+                let mut second_sum2 = vector_sums[6][lane_block];
+                let mut second_sum3 = vector_sums[7][lane_block];
+                for tile_pair in 0..tile_count {
+                    let basis_row = tile_pair * lane_count;
+                    let (basis_vectors, _) =
+                        S::as_simd_f64s(&basis_tile[basis_row..basis_row + lane_count]);
+                    let basis = basis_vectors[lane_block];
+                    let pair = pair_start + tile_pair;
+                    let coefficient = second_even[pair];
+                    second_sum0 =
+                        simd.mul_add_f64s(basis, simd.splat_f64s(coefficient.re), second_sum0);
+                    second_sum1 =
+                        simd.mul_add_f64s(basis, simd.splat_f64s(coefficient.im), second_sum1);
+                    let coefficient = second_odd[pair];
+                    second_sum2 = simd.mul_add_f64s(
+                        basis,
+                        simd.mul_f64s(cosine, simd.splat_f64s(coefficient.re)),
+                        second_sum2,
+                    );
+                    second_sum3 = simd.mul_add_f64s(
+                        basis,
+                        simd.mul_f64s(cosine, simd.splat_f64s(coefficient.im)),
+                        second_sum3,
+                    );
+                }
+                vector_sums[4][lane_block] = second_sum0;
+                vector_sums[5][lane_block] = second_sum1;
+                vector_sums[6][lane_block] = second_sum2;
+                vector_sums[7][lane_block] = second_sum3;
+                pair_start += tile_count;
             }
         }
         for lane in 0..cos_tail.len() {
@@ -5629,11 +5706,11 @@ impl WithSimd for FusedHemispherePairBlock<'_> {
             let mut previous = 0.0;
             let mut basis = current_tail[lane];
             let mut sums = [0.0; 8];
-            for pair in 0..self.pair_count {
-                let first_even = self.first_even[pair];
-                let first_odd = self.first_odd[pair];
-                let second_even = self.second_even[pair];
-                let second_odd = self.second_odd[pair];
+            for pair in 0..pair_count {
+                let first_even = first_even[pair];
+                let first_odd = first_odd[pair];
+                let second_even = second_even[pair];
+                let second_odd = second_odd[pair];
                 sums[0] = basis.mul_add(first_even.re, sums[0]);
                 sums[1] = basis.mul_add(first_even.im, sums[1]);
                 sums[2] = basis.mul_add(cosine * first_odd.re, sums[2]);
@@ -5642,9 +5719,8 @@ impl WithSimd for FusedHemispherePairBlock<'_> {
                 sums[5] = basis.mul_add(second_even.im, sums[5]);
                 sums[6] = basis.mul_add(cosine * second_odd.re, sums[6]);
                 sums[7] = basis.mul_add(cosine * second_odd.im, sums[7]);
-                if pair + 1 < self.pair_count {
-                    let leading =
-                        self.coefficient_a[pair].mul_add(cosine * cosine, self.coefficient_b[pair]);
+                if pair + 1 < pair_count {
+                    let leading = coefficient_a[pair].mul_add(cosine * cosine, coefficient_b[pair]);
                     let next = leading.mul_add(basis, previous);
                     if !scalar_value_in_normal_range(next) {
                         return false;

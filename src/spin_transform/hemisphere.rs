@@ -206,6 +206,7 @@ fn synthesize_group<T: ShtScalar>(
                         &mut north_u[north_offset..north_end],
                         &mut south_u[south_offset..south_end],
                         &mut recurrence.current[..block_len],
+                        &mut recurrence.spin_hemisphere_pair_basis,
                         &mut sums,
                     )?
                 } else {

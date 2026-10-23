@@ -9,6 +9,8 @@ use std::sync::atomic::AtomicBool;
 
 use crate::error::ShtError;
 use crate::fft::{RealFftPlan, RealFftWorkspace};
+#[cfg(feature = "parallel")]
+use crate::legendre::HEMISPHERE_PAIR_DEGREE_TILE;
 use crate::legendre::{
     LATITUDE_BLOCK_SIZE, SCALAR_ANALYSIS_PAIR_TILE_SIZE, ShtScalar, recurrence_scratch_len,
 };
@@ -120,6 +122,8 @@ pub(crate) struct RecurrenceWorkspace<T: ShtScalar> {
     pub(crate) fast_spin_second: Vec<Complex<T>>,
     pub(crate) fast_spin_pair_first: Vec<Complex<T>>,
     pub(crate) fast_spin_pair_second: Vec<Complex<T>>,
+    #[cfg(feature = "parallel")]
+    pub(crate) spin_hemisphere_pair_basis: Vec<T>,
     #[cfg(all(test, feature = "parallel"))]
     worker_probe: Option<Arc<Mutex<BTreeSet<usize>>>>,
     #[cfg(all(test, feature = "parallel"))]
@@ -409,6 +413,15 @@ impl<T: ShtScalar> RecurrenceWorkspace<T> {
             fast_spin_pair_second: allocate_complex(
                 spin_pair_fast_coefficient_count,
                 "spin paired fast second channel coefficients",
+            )?,
+            #[cfg(feature = "parallel")]
+            spin_hemisphere_pair_basis: allocate_real(
+                if T::supports_paired_scalar() && spin_pair_fast_coefficient_count > 0 {
+                    HEMISPHERE_PAIR_DEGREE_TILE * LATITUDE_BLOCK_SIZE
+                } else {
+                    0
+                },
+                "spin hemisphere pair degree tile",
             )?,
             #[cfg(all(test, feature = "parallel"))]
             worker_probe: None,

@@ -26,6 +26,8 @@ pub(crate) fn recurrence_scratch_len(latitude_count: usize) -> usize {
         .max(SCALAR_ANALYSIS_PAIR_TILE_SIZE)
 }
 
+#[cfg(feature = "parallel")]
+pub(crate) use scalar_paired::HEMISPHERE_PAIR_DEGREE_TILE;
 #[cfg(test)]
 pub(crate) use scalar_table::benchmark_strategy_override;
 #[cfg(all(test, feature = "parallel"))]
@@ -474,6 +476,7 @@ pub(crate) trait ShtScalar:
         _north_second: &mut [Complex<Self>],
         _south_second: &mut [Complex<Self>],
         _current: &mut [Self],
+        _basis_tile: &mut [Self],
         _sums: &mut [&mut [Self]; 8],
     ) -> Result<bool, ShtError> {
         Ok(false)
@@ -1062,6 +1065,7 @@ impl ShtScalar for f64 {
         north_second: &mut [Complex<Self>],
         south_second: &mut [Complex<Self>],
         current: &mut [Self],
+        basis_tile: &mut [Self],
         sums: &mut [&mut [Self]; 8],
     ) -> Result<bool, ShtError> {
         scalar_paired::synthesize_hemisphere_pair_block_dispatched(
@@ -1083,6 +1087,7 @@ impl ShtScalar for f64 {
             north_second,
             south_second,
             current,
+            basis_tile,
             sums,
         )
     }
