@@ -3317,6 +3317,7 @@ fn scalar_ordered_synthesis_matches_general_on_exact_cc_and_f1_grids() {
                 let mut workspace = pool.install(|| plan.workspace()).unwrap();
                 pool.install(|| plan.prepare_workspace(&mut workspace, threads))
                     .unwrap();
+                workspace.spectra.fill(Complex64::new(13.0, -17.0));
                 let mut actual_map = vec![0.0; plan.sample_count];
                 pool.install(|| plan.synthesis_into(&alm, &mut actual_map, &mut workspace))
                     .unwrap();
@@ -3325,6 +3326,13 @@ fn scalar_ordered_synthesis_matches_general_on_exact_cc_and_f1_grids() {
                 assert!(
                     spectrum_error < 4e-13,
                     "{kind:?} T{lmax} m{mmax} q{threads}: spectrum error={spectrum_error:.3e}"
+                );
+                assert!(
+                    workspace
+                        .spectra
+                        .iter()
+                        .all(|value| *value != Complex64::new(13.0, -17.0)),
+                    "{kind:?} T{lmax} m{mmax} q{threads}: stale Fourier cells remain"
                 );
                 let map_error = relative_l2_real(&actual_map, &expected_map);
                 assert!(

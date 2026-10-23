@@ -173,7 +173,6 @@ pub(crate) fn validate_reflected_geometry<'a>(
 /// Zeroes only the Fourier cells that the reflected-order kernel will not
 /// write. Each active prefix is written by one order job; the remaining tail
 /// contains polar-excluded orders and modes above `mmax`.
-#[cfg(feature = "parallel")]
 pub(crate) fn initialize_inactive_spectrum_tails<T: Copy>(
     spectra: &mut [num_complex::Complex<T>],
     spectrum_len: usize,
@@ -392,8 +391,17 @@ fn synthesize_range_dispatched<'a>(
         return false;
     }
     let output_is_disjoint = disjoint_output.is_some();
-    if disjoint_output.is_none() {
+    if disjoint_output.is_none()
+        && !initialize_inactive_spectrum_tails(
+            spectra,
+            spectrum_len,
+            mmax,
+            geometry,
+            Complex64::new(0.0, 0.0),
+        )
+    {
         spectra.fill(Complex64::new(0.0, 0.0));
+        return false;
     }
     let succeeded = arch.dispatch(ScalarOrderedSynthesis {
         alm,
