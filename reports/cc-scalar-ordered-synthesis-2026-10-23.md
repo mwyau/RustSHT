@@ -140,3 +140,37 @@ after; both runs used DUCC binary SHA-256
 `3df1d4408407015c65a85e2909aa34219871bf29a75126b23e497bcbb396c89a`.
 Raw local results and host telemetry remain under
 the baseline and candidate temporary result directories.
+
+## Serial ordered-spectrum initialization
+
+The q1 ordered route now initializes only polar-excluded orders and Fourier
+modes above `mmax`. The checked recurrence overwrites every active ring/order
+cell. This removes the previous full-buffer zero pass before those same active
+cells were written. Parallel order jobs retain their existing sparse-tail
+initialization. CC/F1 tests poison the reusable spectrum workspace before q1
+and q8 synthesis, then compare the complete spectrum and map against the
+general ring-group recurrence and analytic fields.
+
+The focused comparison used exact CC T720, full order, even-smooth longitude,
+q1/q8 and pinned DUCC 0.42.0 revision
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. Each backend collected 30
+calibrated batches across three independent process pairs, and every short
+batch met the 20–100 ms target window. Rust/DUCC warm medians were:
+
+| q | Before Rust/DUCC ms | After Rust/DUCC ms | Before ratio | After ratio | Paired-ratio range before → after |
+|---:|---:|---:|---:|---:|---:|
+| 1 | 20.040 / 19.171 | 19.938 / 19.174 | 1.042× | 1.041× | 1.039–1.080× → 1.036–1.048× |
+| 8 | 2.800 / 2.687 | 2.796 / 2.686 | 1.038× | 1.041× | 1.028–1.060× → 1.037–1.048× |
+
+The q1 median changed by `-0.5%`, within the paired process spread; q8 was
+effectively unchanged. Treat the q1 change as directional, not a repeatable
+whole-transform speedup or a parity claim. Random-output relative L2 was
+`6.45e-14` and output-reset checks passed. The focused run omitted the runner's
+broad numerical validation sidecar, so that status remains incomplete; the
+targeted CC/F1 analytic and general-recurrence test passed separately. The
+baseline source was `c41c2ebc58127c1cf36d6ac2c60bb054a90161f3` (Rust binary
+SHA-256 `c2f89e79bdc1b74534edf21fdeb2ddef30332709c9d090332b53a0cd17587645`);
+the candidate source was `8bf9c568f36730ffa82081e218f802fb7a0989e5` (Rust binary
+SHA-256 `5005b3d07e4537c2d38924f8732dfb2db17b5cec91d36bd5b272dd7b38c865e6`).
+Both used the same DUCC binary (`db1f703671b712a8b8b45ab71fbb550c6884879a0808a3db70608db03ef6ec6c`).
+Raw local results and host telemetry remain under `/tmp` and are not committed.
