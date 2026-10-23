@@ -45,8 +45,6 @@ const SPIN1_FAST_MIN_SIN_THETA: f64 = 0.0001;
 const SPIN1_PAIR_MIN_SIN_THETA: f64 = 0.01;
 #[cfg(feature = "parallel")]
 const SPIN1_ORDER_MAJOR_TILE: usize = 8;
-#[cfg(feature = "parallel")]
-const SPIN1_PARALLEL_MERIDIONAL_RESAMPLING_MIN_ORDER_RING_PAIRS: usize = 65_536;
 const SPIN2_FAST_MIN_SIN_THETA: f64 = 0.01;
 #[cfg(feature = "parallel")]
 const SPIN1_SYNTH_COEFFICIENT_CACHE_MAX_LMAX: usize = 1023;
@@ -1038,7 +1036,7 @@ impl<T: ShtScalar> ShtPlan<T> {
                 )
                 && resampling.needs_resampling()
                 && estimated_active_pairs
-                    >= SPIN1_PARALLEL_MERIDIONAL_RESAMPLING_MIN_ORDER_RING_PAIRS
+                    >= crate::meridional::CC_RESAMPLING_PARALLEL_MIN_ORDER_RING_PAIRS
                 && active_workers > 1
             {
                 resampling.to_prepared_parallel(

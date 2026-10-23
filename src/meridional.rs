@@ -38,6 +38,9 @@ use rayon::prelude::*;
 
 #[cfg(feature = "parallel")]
 pub(crate) const CC_RESAMPLING_ORDER_TILE: usize = 128;
+// Reuse the measured spin-1 cutoff at the shared per-order/ring work boundary.
+#[cfg(feature = "parallel")]
+pub(crate) const CC_RESAMPLING_PARALLEL_MIN_ORDER_RING_PAIRS: usize = 65_536;
 
 /// Reusable per-worker scratch for independent meridional order transforms.
 #[cfg(feature = "parallel")]

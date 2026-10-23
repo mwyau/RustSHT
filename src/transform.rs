@@ -2113,6 +2113,8 @@ impl<T: ShtScalar> ShtPlan<T> {
         let mut phase_started = std::time::Instant::now();
         #[cfg(all(test, feature = "parallel"))]
         let phase_probe = workspace.transform_phase_probe();
+        #[cfg(all(test, feature = "parallel"))]
+        let mut resampling_was_parallel = false;
         let scalar_table_selected = self.scalar_legendre_strategy_with_capacity(
             LegendreOperation::Analysis,
             workspace.execution_capacity,
@@ -2205,6 +2207,48 @@ impl<T: ShtScalar> ShtPlan<T> {
             for value in &mut workspace.spectra {
                 *value /= T::from_usize(nphi).expect("longitude count converts");
             }
+            #[cfg(feature = "parallel")]
+            let (use_parallel_resampling, resampling_workers) = {
+                let order_count = self.harmonics.mmax() + 1;
+                let active_workers = rayon::current_num_threads()
+                    .min(workspace.execution_capacity)
+                    .min(workspace.cc_resampling_workers.len())
+                    .min(order_count);
+                let estimated_order_ring_pairs =
+                    order_count.saturating_mul(resampling.prepared_ntheta());
+                (
+                    T::supports_precomputed_scalar()
+                        && resampling.needs_resampling()
+                        && estimated_order_ring_pairs
+                            >= crate::meridional::CC_RESAMPLING_PARALLEL_MIN_ORDER_RING_PAIRS
+                        && active_workers > 1,
+                    active_workers,
+                )
+            };
+            #[cfg(feature = "parallel")]
+            if use_parallel_resampling {
+                resampling.to_prepared_parallel(
+                    &workspace.spectra,
+                    &mut workspace.prepared_spectra,
+                    spectrum_len,
+                    self.harmonics.mmax(),
+                    0,
+                    &mut workspace.cc_resampling_order_tile,
+                    &mut workspace.cc_resampling_workers,
+                    resampling_workers,
+                )?;
+            } else {
+                resampling.to_prepared(
+                    &workspace.spectra,
+                    &mut workspace.prepared_spectra,
+                    spectrum_len,
+                    self.harmonics.mmax(),
+                    0,
+                    &mut workspace.cc_profile,
+                    &mut workspace.cc_fft_scratch,
+                )?;
+            }
+            #[cfg(not(feature = "parallel"))]
             resampling.to_prepared(
                 &workspace.spectra,
                 &mut workspace.prepared_spectra,
@@ -2214,6 +2258,10 @@ impl<T: ShtScalar> ShtPlan<T> {
                 &mut workspace.cc_profile,
                 &mut workspace.cc_fft_scratch,
             )?;
+            #[cfg(all(test, feature = "parallel"))]
+            {
+                resampling_was_parallel = use_parallel_resampling;
+            }
             for (ring, &theta) in resampling.prepared_theta().iter().enumerate() {
                 (workspace.theta_sin[ring], workspace.theta_cos[ring]) =
                     sin_cos_from_f64::<T>(theta);
@@ -2257,7 +2305,11 @@ impl<T: ShtScalar> ShtPlan<T> {
         {
             crate::workspace::record_transform_phase(
                 &phase_probe,
-                "resampling and latitude setup",
+                if resampling_was_parallel {
+                    "resampling (parallel orders) and latitude setup"
+                } else {
+                    "resampling (serial orders) and latitude setup"
+                },
                 phase_started,
             );
             phase_started = std::time::Instant::now();

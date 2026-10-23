@@ -5665,6 +5665,72 @@ fn t255_analysis_matches_ducc_0410_coefficients() {
     );
 }
 
+#[cfg(feature = "parallel")]
+#[test]
+fn scalar_cc_f1_analysis_parallelizes_only_large_resampling_work() {
+    let one_thread = rayon::ThreadPoolBuilder::new()
+        .num_threads(1)
+        .build()
+        .unwrap();
+    let eight_threads = rayon::ThreadPoolBuilder::new()
+        .num_threads(8)
+        .build()
+        .unwrap();
+
+    for kind in [GridKind::ClenshawCurtis, GridKind::Fejer1] {
+        for mmax in [255, 63] {
+            let lmax = 255;
+            let ntheta = lmax + usize::from(kind == GridKind::ClenshawCurtis) + 1;
+            let plan = ShtPlan::new(
+                GridSpec::new(kind, ntheta, 513, 0.23).unwrap(),
+                HarmonicSpec::scalar(lmax, mmax).unwrap(),
+            )
+            .unwrap();
+            let map = arbitrary_map(&plan);
+            let mut serial = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+            let mut parallel = vec![Complex64::new(0.0, 0.0); plan.harmonics().nalm()];
+            let mut serial_workspace = one_thread.install(|| plan.workspace()).unwrap();
+            let mut parallel_workspace = one_thread.install(|| plan.workspace()).unwrap();
+            one_thread
+                .install(|| plan.prepare_workspace(&mut serial_workspace, 1))
+                .unwrap();
+            eight_threads
+                .install(|| plan.prepare_workspace(&mut parallel_workspace, 8))
+                .unwrap();
+            let phase_probe = parallel_workspace.observe_transform_phases();
+
+            one_thread
+                .install(|| plan.analysis_into(&map, &mut serial, &mut serial_workspace))
+                .unwrap();
+            eight_threads
+                .install(|| plan.analysis_into(&map, &mut parallel, &mut parallel_workspace))
+                .unwrap();
+
+            let expected_parallel = plan.cc_resampling.as_ref().is_some_and(|resampling| {
+                resampling.needs_resampling()
+                    && (mmax + 1) * resampling.prepared_ntheta()
+                        >= crate::meridional::CC_RESAMPLING_PARALLEL_MIN_ORDER_RING_PAIRS
+            });
+            let phases = phase_probe.lock().unwrap().clone();
+            assert!(
+                phases.iter().any(|phase| {
+                    phase.phase
+                        == if expected_parallel {
+                            "resampling (parallel orders) and latitude setup"
+                        } else {
+                            "resampling (serial orders) and latitude setup"
+                        }
+                }),
+                "{kind:?} T{lmax} mmax={mmax} used the wrong resampling route"
+            );
+            assert!(
+                relative_l2_complex(&serial, &parallel) < 4e-13,
+                "{kind:?} T{lmax} mmax={mmax}: q1/q8 analysis mismatch"
+            );
+        }
+    }
+}
+
 #[test]
 #[allow(clippy::excessive_precision)]
 fn t191_analysis_compaction_matches_ducc_all_grids() {

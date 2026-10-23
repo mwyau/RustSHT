@@ -462,7 +462,8 @@ impl<T: ShtScalar> ShtPlan<T> {
             self.grid.nphi(),
             self.grid.ntheta(),
             analysis_order_count,
-            self.harmonics.spin() == 1
+            T::supports_precomputed_scalar()
+                && self.harmonics.spin() <= 1
                 && matches!(
                     self.grid.kind(),
                     crate::grid::GridKind::ClenshawCurtis | crate::grid::GridKind::Fejer1
@@ -585,7 +586,8 @@ impl<T: ShtScalar> ShtPlan<T> {
                 execution_capacity
                     .min(analysis_order_count)
                     .min(crate::meridional::CC_RESAMPLING_ORDER_TILE),
-                if self.harmonics.spin() == 1
+                if T::supports_precomputed_scalar()
+                    && self.harmonics.spin() <= 1
                     && matches!(
                         self.grid.kind(),
                         crate::grid::GridKind::ClenshawCurtis | crate::grid::GridKind::Fejer1
