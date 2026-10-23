@@ -266,9 +266,13 @@ def test_pinned_precontract_harness_resolves_only_to_legacy_stable_norm() -> Non
     assert benchmark.metric_contract_from_metadata({
         "benchmark_harness_revision": "38e57b0fd5efe7dfe3db1786bb69b1a2c60d5d50",
     }) is None
+    assert benchmark.metric_contract_from_metadata({
+        "benchmark_harness_revision": "38e57b0fd5efe7dfe3db1786bb69b1a2c60d5d50",
+        "numerical_metric_contract": benchmark.LEGACY_STABLE_NORM_METRIC_CONTRACT,
+    }) is None
 
 
-def test_legacy_metric_schema_is_accepted_but_nonzero_subnormal_error_needs_revalidation() -> None:
+def test_legacy_metric_schema_keeps_its_stable_norm_and_absolute_subnormal_gate() -> None:
     validation = accepted_validation()
     validation["numerical_metric_contract"] = benchmark.LEGACY_STABLE_NORM_METRIC_CONTRACT
     for tree in (validation["roundtrip"],):
@@ -285,13 +289,11 @@ def test_legacy_metric_schema_is_accepted_but_nonzero_subnormal_error_needs_reva
             edge[field].pop("reference_peak")
             edge[field].pop("metrics_finite")
     validation["edge_cases"]["subnormal"]["map_rust_ducc"].update({
-        "absolute_max": 0.0,
-        "relative_l2": 0.0,
+        "relative_l2": 1e-16,
         "max_relative_above_1e-12_peak": 0.0,
     })
     validation["edge_cases"]["subnormal"]["alm_rust_ducc"].update({
-        "absolute_max": 0.0,
-        "relative_l2": 0.0,
+        "relative_l2": 1e-16,
         "max_relative_above_1e-12_peak": 0.0,
     })
 
@@ -304,7 +306,9 @@ def test_legacy_metric_schema_is_accepted_but_nonzero_subnormal_error_needs_reva
         cc_audit_manifest.LEGACY_STABLE_NORM_METRIC_CONTRACT,
     ) == []
 
-    validation["edge_cases"]["subnormal"]["alm_rust_ducc"]["absolute_max"] = np.nextafter(0.0, 1.0)
+    validation["edge_cases"]["subnormal"]["alm_rust_ducc"]["absolute_max"] = (
+        2 * np.finfo(np.float64).tiny
+    )
     runner_status, runner_reasons = benchmark.saved_validation_acceptance(
         validation, SYNTHETIC_CC_CASE,
         benchmark.LEGACY_STABLE_NORM_METRIC_CONTRACT,
@@ -314,9 +318,9 @@ def test_legacy_metric_schema_is_accepted_but_nonzero_subnormal_error_needs_reva
         cc_audit_manifest.LEGACY_STABLE_NORM_METRIC_CONTRACT,
     )
     assert runner_status == "rejected"
-    assert any("legacy_subnormal_reference_peak_unavailable" in reason
+    assert any("legacy_subnormal_absolute_error_exceeded" in reason
                for reason in runner_reasons)
-    assert any("legacy_subnormal_reference_peak_unavailable" in reason
+    assert any("legacy_subnormal_absolute_error_exceeded" in reason
                for reason in audit_reasons)
 
 

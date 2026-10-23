@@ -32,6 +32,7 @@ NUMERICAL_METRIC_CONTRACT = (
 )
 LEGACY_STABLE_NORM_METRIC_CONTRACT = "complex-magnitude-stable-norm-v1"
 LEGACY_STABLE_NORM_HARNESS_REVISION = "cd8beaa3d554b9d45725eee73bb55697767d9a37"
+LEGACY_STABLE_NORM_HARNESS_SHA256 = "2d2181a16a16fe47c97e1c361ff129990e93d33b0d926ecd42ec8caf7bc5ccf2"
 SUPPORTED_METRIC_CONTRACTS = frozenset({
     NUMERICAL_METRIC_CONTRACT,
     LEGACY_STABLE_NORM_METRIC_CONTRACT,
@@ -80,12 +81,19 @@ def finite_number(value) -> bool:
 
 def metric_contract_from_metadata(metadata: dict) -> str | None:
     declared = metadata.get("numerical_metric_contract")
-    if declared is not None:
-        return declared
     harness_revision = metadata.get(
         "benchmark_harness_revision", metadata.get("rust_source_revision")
     )
-    if harness_revision == LEGACY_STABLE_NORM_HARNESS_REVISION:
+    harness_sha256 = metadata.get("benchmark_harness_sha256")
+    if declared == LEGACY_STABLE_NORM_METRIC_CONTRACT:
+        if (harness_revision == LEGACY_STABLE_NORM_HARNESS_REVISION
+                and harness_sha256 in {None, LEGACY_STABLE_NORM_HARNESS_SHA256}):
+            return declared
+        return None
+    if declared is not None:
+        return declared
+    if (harness_revision == LEGACY_STABLE_NORM_HARNESS_REVISION
+            and harness_sha256 in {None, LEGACY_STABLE_NORM_HARNESS_SHA256}):
         return LEGACY_STABLE_NORM_METRIC_CONTRACT
     return None
 
@@ -156,11 +164,9 @@ def _metric_reasons(metric, label: str, limit: float,
         elif allow_zero_reference_subnormal:
             if near_zero_count != expected_count:
                 reasons.append(f"{label}_subnormal_reference_count_invalid")
-            if metric.get("absolute_max") != 0.0:
-                # The pinned legacy norm floors its denominator at MIN_NORMAL.
-                # A nonzero subnormal error cannot establish its true relative
-                # error without the reference peak, so require exact agreement.
-                reasons.append(f"{label}_legacy_subnormal_reference_peak_unavailable")
+            absolute_max = metric.get("absolute_max")
+            if finite_number(absolute_max) and absolute_max > SUBNORMAL_ABSOLUTE_ERROR_LIMIT:
+                reasons.append(f"{label}_legacy_subnormal_absolute_error_exceeded")
         if finite_number(relative_l2) and relative_l2 > limit:
             reasons.append(f"{label}_relative_l2_exceeded")
         return reasons

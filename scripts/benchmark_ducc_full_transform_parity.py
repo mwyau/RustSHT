@@ -56,6 +56,7 @@ ERROR_METRICS_CONTRACT = (
 )
 LEGACY_STABLE_NORM_METRIC_CONTRACT = "complex-magnitude-stable-norm-v1"
 LEGACY_STABLE_NORM_HARNESS_REVISION = "cd8beaa3d554b9d45725eee73bb55697767d9a37"
+LEGACY_STABLE_NORM_HARNESS_SHA256 = "2d2181a16a16fe47c97e1c361ff129990e93d33b0d926ecd42ec8caf7bc5ccf2"
 SUPPORTED_METRIC_CONTRACTS = frozenset({
     ERROR_METRICS_CONTRACT,
     LEGACY_STABLE_NORM_METRIC_CONTRACT,
@@ -525,12 +526,19 @@ def error_metrics(actual: np.ndarray, reference: np.ndarray) -> dict[str, float 
 def metric_contract_from_metadata(metadata: dict) -> str | None:
     """Resolve a declared metric contract or the one pinned pre-contract harness."""
     declared = metadata.get("numerical_metric_contract")
-    if declared is not None:
-        return declared
     harness_revision = metadata.get(
         "benchmark_harness_revision", metadata.get("rust_source_revision")
     )
-    if harness_revision == LEGACY_STABLE_NORM_HARNESS_REVISION:
+    harness_sha256 = metadata.get("benchmark_harness_sha256")
+    if declared == LEGACY_STABLE_NORM_METRIC_CONTRACT:
+        if (harness_revision == LEGACY_STABLE_NORM_HARNESS_REVISION
+                and harness_sha256 in {None, LEGACY_STABLE_NORM_HARNESS_SHA256}):
+            return declared
+        return None
+    if declared is not None:
+        return declared
+    if (harness_revision == LEGACY_STABLE_NORM_HARNESS_REVISION
+            and harness_sha256 in {None, LEGACY_STABLE_NORM_HARNESS_SHA256}):
         return LEGACY_STABLE_NORM_METRIC_CONTRACT
     return None
 
@@ -712,11 +720,11 @@ def _validation_metric_failures(metric, label: str, limit: float, expected_count
         elif allow_zero_reference_subnormal:
             if near_zero_count != expected_count:
                 failures.append(f"{label}_subnormal_reference_count_invalid")
-            if metric.get("absolute_max") != 0.0:
-                # The legacy stable norm floors its denominator at MIN_NORMAL. A
-                # nonzero subnormal error therefore cannot establish the true
-                # relative error without the omitted reference peak.
-                failures.append(f"{label}_legacy_subnormal_reference_peak_unavailable")
+            absolute_max = metric.get("absolute_max")
+            if (isinstance(absolute_max, (int, float))
+                    and not isinstance(absolute_max, bool)
+                    and absolute_max > SUBNORMAL_ABSOLUTE_ERROR_LIMIT):
+                failures.append(f"{label}_legacy_subnormal_absolute_error_exceeded")
         if (isinstance(relative_l2, (int, float)) and not isinstance(relative_l2, bool)
                 and math.isfinite(relative_l2) and relative_l2 > limit):
             failures.append(f"{label}_relative_l2_exceeded")
