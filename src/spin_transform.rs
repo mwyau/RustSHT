@@ -2130,29 +2130,110 @@ impl<T: ShtScalar> ShtPlan<T> {
                     if let Some(factor_started) = factor_started {
                         recurrence.spin1_profile_factor_ns += factor_started.elapsed().as_nanos();
                     }
-                    for block_start in
-                        (0..theta_sin.len()).step_by(crate::legendre::LATITUDE_BLOCK_SIZE)
-                    {
+                    let pair_min_sine = T::from_f64(SPIN1_PAIR_MIN_SIN_THETA)
+                        .expect("spin-1 paired scalar sine limit converts");
+                    // Checked pair coefficients depend on the order, not the latitude block.
+                    let can_reuse_pair_coefficients = spin == 1
+                        && !derivative_norm
+                        && b_alm.is_some()
+                        && !allow_spin1_table
+                        && T::supports_paired_scalar();
+                    let coefficient_pair_count = (scalar_lmax - m + 2) / 2;
+                    let pair_scratch_ready = coefficient_pair_count
+                        <= recurrence.fast_spin_first.len()
+                        && coefficient_pair_count <= recurrence.fast_spin_second.len()
+                        && coefficient_pair_count <= recurrence.fast_spin_pair_first.len()
+                        && coefficient_pair_count <= recurrence.fast_spin_pair_second.len();
+                    let can_prepare_shared_pair = can_reuse_pair_coefficients && pair_scratch_ready;
+                    let pair_safe_block = |start: usize, end: usize| {
+                        theta_sin[start..end]
+                            .iter()
+                            .all(|&sine| sine >= pair_min_sine)
+                            && ring_order_limits[ring_start + start..ring_start + end]
+                                .iter()
+                                .all(|&limit| limit >= m)
+                    };
+                    let mut block_start = 0;
+                    while block_start < theta_sin.len() {
                         let block_end = (block_start + crate::legendre::LATITUDE_BLOCK_SIZE)
                             .min(theta_sin.len());
-                        let spectrum_start = block_start * spectrum_len;
-                        let spectrum_end = block_end * spectrum_len;
-                        self.synthesize_spin1_scalar_block_to_order(
-                            m,
-                            scalar_lmax,
-                            spin1_scalar_coefficients,
-                            spectrum_len,
-                            ring_start + block_start,
-                            output_order,
-                            allow_spin1_table,
-                            &theta_sin[block_start..block_end],
-                            &theta_cos[block_start..block_end],
-                            &ring_order_limits[ring_start + block_start..ring_start + block_end],
-                            arch,
-                            recurrence,
-                            &mut q_spectra[spectrum_start..spectrum_end],
-                            &mut u_spectra[spectrum_start..spectrum_end],
-                        )?;
+                        let mut run_end = block_end;
+                        if can_prepare_shared_pair && pair_safe_block(block_start, block_end) {
+                            while run_end < theta_sin.len() {
+                                let next_end = (run_end + crate::legendre::LATITUDE_BLOCK_SIZE)
+                                    .min(theta_sin.len());
+                                if !pair_safe_block(run_end, next_end) {
+                                    break;
+                                }
+                                run_end = next_end;
+                            }
+                        }
+                        let pair_coefficients_prepared = if run_end > block_end {
+                            let cached_scalar_row = spin1_scalar_coefficients.map(|coefficients| {
+                                let row_len = lmax + 2;
+                                let row_stride = row_len * 2;
+                                let row_start = m * row_stride;
+                                (
+                                    &coefficients[row_start..row_start + row_len],
+                                    &coefficients[row_start + row_len..row_start + row_stride],
+                                )
+                            });
+                            let (scalar_first, scalar_second) = cached_scalar_row.unwrap_or((
+                                &recurrence.fast_scalar_first[..scalar_lmax + 1],
+                                &recurrence.fast_scalar_second[..scalar_lmax + 1],
+                            ));
+                            #[cfg(all(test, feature = "parallel"))]
+                            let prepare_started = recurrence
+                                .spin1_profile_enabled
+                                .then(std::time::Instant::now);
+                            let prepared = T::prepare_paired_scalar_synthesis_coefficient_pair(
+                                m,
+                                scalar_lmax,
+                                &recurrence.epsilon,
+                                &recurrence.spin_alpha,
+                                &scalar_first[m..=scalar_lmax],
+                                &scalar_second[m..=scalar_lmax],
+                                &mut recurrence.fast_spin_first[..coefficient_pair_count],
+                                &mut recurrence.fast_spin_second[..coefficient_pair_count],
+                                &mut recurrence.fast_spin_pair_first[..coefficient_pair_count],
+                                &mut recurrence.fast_spin_pair_second[..coefficient_pair_count],
+                            );
+                            #[cfg(all(test, feature = "parallel"))]
+                            if let Some(prepare_started) = prepare_started {
+                                recurrence.spin1_profile_pair_prepare_ns +=
+                                    prepare_started.elapsed().as_nanos();
+                            }
+                            Some(prepared)
+                        } else {
+                            None
+                        };
+                        for block_start in
+                            (block_start..run_end).step_by(crate::legendre::LATITUDE_BLOCK_SIZE)
+                        {
+                            let block_end =
+                                (block_start + crate::legendre::LATITUDE_BLOCK_SIZE).min(run_end);
+                            let spectrum_start = block_start * spectrum_len;
+                            let spectrum_end = block_end * spectrum_len;
+                            self.synthesize_spin1_scalar_block_to_order(
+                                m,
+                                scalar_lmax,
+                                spin1_scalar_coefficients,
+                                spectrum_len,
+                                ring_start + block_start,
+                                output_order,
+                                allow_spin1_table,
+                                &theta_sin[block_start..block_end],
+                                &theta_cos[block_start..block_end],
+                                &ring_order_limits
+                                    [ring_start + block_start..ring_start + block_end],
+                                arch,
+                                recurrence,
+                                &mut q_spectra[spectrum_start..spectrum_end],
+                                &mut u_spectra[spectrum_start..spectrum_end],
+                                pair_coefficients_prepared,
+                            )?;
+                        }
+                        block_start = run_end;
                     }
                 }
             } else {
@@ -2353,6 +2434,7 @@ impl<T: ShtScalar> ShtPlan<T> {
             recurrence,
             q_spectra,
             u_spectra,
+            None,
         )
     }
 
@@ -2376,6 +2458,7 @@ impl<T: ShtScalar> ShtPlan<T> {
         recurrence: &mut RecurrenceWorkspace<T>,
         q_spectra: &mut [Complex<T>],
         u_spectra: &mut [Complex<T>],
+        pair_coefficients_prepared: Option<bool>,
     ) -> Result<(), ShtError> {
         let block_len = theta_sin.len();
         debug_assert_eq!(theta_cos.len(), block_len);
@@ -2468,18 +2551,20 @@ impl<T: ShtScalar> ShtPlan<T> {
                     &recurrence.fast_scalar_first[..scalar_lmax + 1],
                     &recurrence.fast_scalar_second[..scalar_lmax + 1],
                 ));
-                let prepared_pair = T::prepare_paired_scalar_synthesis_coefficient_pair(
-                    m,
-                    scalar_lmax,
-                    &recurrence.epsilon,
-                    &recurrence.spin_alpha,
-                    &scalar_first[m..=scalar_lmax],
-                    &scalar_second[m..=scalar_lmax],
-                    &mut recurrence.fast_spin_first[..coefficient_pair_count],
-                    &mut recurrence.fast_spin_second[..coefficient_pair_count],
-                    &mut recurrence.fast_spin_pair_first[..coefficient_pair_count],
-                    &mut recurrence.fast_spin_pair_second[..coefficient_pair_count],
-                );
+                let prepared_pair = pair_coefficients_prepared.unwrap_or_else(|| {
+                    T::prepare_paired_scalar_synthesis_coefficient_pair(
+                        m,
+                        scalar_lmax,
+                        &recurrence.epsilon,
+                        &recurrence.spin_alpha,
+                        &scalar_first[m..=scalar_lmax],
+                        &scalar_second[m..=scalar_lmax],
+                        &mut recurrence.fast_spin_first[..coefficient_pair_count],
+                        &mut recurrence.fast_spin_second[..coefficient_pair_count],
+                        &mut recurrence.fast_spin_pair_first[..coefficient_pair_count],
+                        &mut recurrence.fast_spin_pair_second[..coefficient_pair_count],
+                    )
+                });
                 #[cfg(all(test, feature = "parallel"))]
                 if let Some(prepare_started) = prepare_started {
                     recurrence.spin1_profile_pair_prepare_ns +=
