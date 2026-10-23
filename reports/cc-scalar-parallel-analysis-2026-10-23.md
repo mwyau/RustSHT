@@ -85,3 +85,51 @@ python3 reports/data/cc-scalar-synthesis-grain-2026-10-23/checkpoint_identity_co
   --results-dir "$RESULTS_DIR/quarter" --no-report \
   --sweep-id cc-parallel-resampling-m2-quarter
 ```
+
+## Reduced-order Fourier-prefix follow-up
+
+The next source change makes scalar analysis request only `mmax+1` modes from
+the existing truncated real FFT on GL, CC and F1. CC/F1 normalization now also
+touches only that prefix. The remaining stages already consume at most `mmax`,
+so unused ring-major spectrum tails may retain old workspace contents. This
+does not change the FFT engine or the guarded paired-odd route.
+
+`scalar_reduced_order_analysis_ignores_unused_spectrum_tail` poisons the
+unused tail with NaNs, then checks exact analysis, projected analysis, and the
+synthesis adjoint on CC and F1 against clean workspaces. The full release
+library suite passed (273 passed, 36 ignored), as did the no-default-features
+suite (221 passed, 17 ignored), strict Clippy, formatting and diff checks.
+
+The focused comparison used exact CC T720 (`ntheta=722`), `mmax=180`,
+`nphi=1536`, `phi0=0.23`, q1/q8, and DUCC 0.42.0 at
+`42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b`. Each backend collected 30 timed
+batches across three interleaved process pairs and passed the numerical,
+reset, edge-case and adjoint gates (relative L2 `6.47e-14`).
+
+| q | Rust ms | DUCC ms | paired Rust/DUCC ratio | paired ratio p10–p90 | saved Rust ms | Result |
+|---:|---:|---:|---:|---:|---:|---|
+| 1 | 24.810 | 18.833 | 1.322x | 1.308–1.333x | 26.277 | 5.6% lower Rust time; still 5.98 ms slower than DUCC |
+| 8 | 5.988 | 6.275 | 0.924x | 0.871–0.956x | 5.680 | Near DUCC; directional only |
+
+The q1 timing met the 20–100 ms calibrated batch window. For q8, 88.3% of
+measured batch durations landed in that window; host runqueue wait was 15.1% at
+p90, with up to 24,197 involuntary switches. The q8 result is therefore not a
+clean before/after claim. This change narrows the measured q1 gap but does not
+close CC analysis parity; F1 performance remains unmeasured.
+
+Reproduce from the committed candidate with the pinned DUCC checkout in
+`DUCC_SRC`:
+
+```sh
+python3 reports/data/cc-scalar-synthesis-grain-2026-10-23/checkpoint_identity_compat.py \
+  --ducc-src "$DUCC_SRC" \
+  --ducc-revision 42ce8ab5c5d79e0e2fd9af4a09c2ea4693520e1b \
+  --grid CC --lmax 720 --mmax 180 --fixed-nphi 1536 \
+  --threads 1 --threads 8 --operation analysis \
+  --production-source-revision 684f22f0ba3671ac8a8466de33600ed495f2ae32 \
+  --results-dir "$RESULTS_DIR" --no-report --retain-local-host-telemetry \
+  --sweep-id cc-reduced-fft-prefix
+```
+
+Raw JSON, timed batches and host telemetry remain local under `/tmp` and are
+not committed.
