@@ -2,6 +2,24 @@
 
 **Technical plan correction (October 23, 2026, after rejected reflected mapping series; owner performance goal unchanged):** Optimize by **measured DUCC parity**, NOT by mandatory one-recurrence sharing across both components. In pinned DUCC `alm2leg` calls `inner_loop_a2m` **twice** for the two converted scalar components using paired north/south rings; the prior shared recurrence mandate was a hypothesis contradicted by the register-pressure and mapping results. The historical plan archived above records that hypothesis, not an active requirement. **Owner direction:** October 23, 2026. **Branch:** `opt/sht-performance-parity`. **Goal:** f64 spin-1 STANDARD synthesis and analysis on GL/CC/F1, full/reduced mmax and q1/q8, at or better than native pinned DUCC 0.42.0 without numerical regressions. Spin-1 T720 q8 remains about **2.4–2.6× slower**. Do not delay implementation with benchmark completeness; f32 remains paused. [Verbatim original detailed plan](../reports/archive/context-2026-10-23/plans/f64-spin1-ducc-reflected-fused-parity-2026-10-23.md).
 
+## Immediate execution order — 2026-10-23 21:43 UTC
+
+**First close out the in-flight analysis optimization** (`8f99a274` and subsequent correctness work). Check GL/CC/F1 T720 q8, one larger CC regression control if necessary, analytic/adjoint/poisoned workspace, run required release/Clippy and push a concise measured checkpoint. The latest GL T720 analysis is ~1.75× DUCC, CC/F1 ~1.04–1.10×; **do not polish these sub-2× ratios further after the current task**.
+
+**Next work only on ≥2× cases:** f64 spin-1 T720 synthesis CC full ~2.48×, CC quarter ~2.62×, F1 full ~2.41×, GL full ~2.40×. GL T511 q8 full synthesis ~5.19× was measured on an earlier source using the special `hemisphere::synthesize` route; validate its applicability after addressing large-T shared paths. Rank by both absolute time excess and reuse of the same production hot loop.
+
+**Exactly where to investigate:**
+- `src/spin_transform.rs:1225–1351`: the q8 selection gate (cached E/B coefficients, work-group queue, `order_worker_count`) picks the actual T720 **order-major** path; do not assume q1 follows it.
+- `src/spin_transform.rs:1644–1750`: `synthesize_spin1_order_major_queue` owns one Q/U spectrum column per `m` and calls `synthesize_spin_ring_group_orders`. Keep this ownership.
+- `src/spin_transform.rs:2009–2215`: spin1-to-scalar row conversion, paired-factor/coefficient preparation and contiguous physical latitude-block work.
+- `src/spin_transform.rs:2444–2722`: **primary T720 hot loop**, `synthesize_spin1_scalar_block_to_order`; checked fused pair kernel currently processes each physical latitude block, requires all lanes safe/active (`sin>=0.01`), and falls back to separate channels. Look for a DUCC-style compact active **north/south mirrored pair** lane organization with two specialized sequential scalar-channel passes sharing conversion/packing, *not* two high-level scalar transforms.
+- `src/spin_transform.rs:2724–2917`: scaled transition, compact polar/excluded rings and expensive per-degree fallback, which can replay work. Preserve exact numerical decisions and transactional output.
+- `src/legendre/scalar_paired.rs`: prepared scalar pair kernel, independent per-channel kernel and hemisphere-pair kernel; inspect AVX2 live registers/spills and latitude SIMD occupancy. `src/spin_transform/hemisphere.rs` holds the **different GL T319–511** specialized path; check GL T511 separately rather than blindly enabling it at CC/F1 T720.
+
+Pinned DUCC reference: `sht.cc::alm2leg` runs `spin1to0` once per order, then **two** `inner_loop_a2m` calls on reflected pairs; `sht_inner_loop.h::fill_a2m`, `iter_to_ieee`, `alm2map_kernel`, `extract_a2m`. Reusing recurrence across *both* components is optional, not a requirement. Prior reflected parity/category-lane/degree-tile/checked-prefix experiments failed; only attempt a **distinct low-level source mechanism** and test one CC T720 full q8 A/B before expanding.
+
+This priority overrides the older M3 conditional-analysis sequence below. Keep numeric/adjoint/exceptional guarantees, focus on production performance, and limit benchmarking to decisive control cells.
+
 ## Mechanism — implement actual source change
 
 - **Rust:** `src/spin_transform.rs::synthesize_spin1_order_major_queue` owns output orders; `synthesize_spin1_scalar_block_to_order` currently works over physical latitude blocks. `src/legendre/scalar_paired.rs::FusedPreparedSynthesisPairBlock` shares converted-channel recurrence, while `FusedHemispherePairBlock` does reflection only in the restricted **GL T319–511** route. Existing `StagedSynthesisPairTransition` handles checked scale fallback. Preserve accepted coefficient preparation and cache reuse.
